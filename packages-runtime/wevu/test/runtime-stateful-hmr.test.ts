@@ -1,17 +1,25 @@
+import type { StatefulHmrRegistrationInputs } from '@/runtime/register/component/hmrRegistration'
 import type { InternalRuntimeState } from '@/runtime/types'
 import {
   WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY,
+  WEAPP_VITE_STATEFUL_HMR_REGISTRATION_CONTRACT_VERSION,
+  WEAPP_VITE_STATEFUL_HMR_UNSUPPORTED_REGISTRATION_CODE,
+  WEVU_LAYOUT_HOSTS_KEY,
   WEVU_NATIVE_SLOT_CONTEXT_KEY,
   WEVU_NATIVE_SLOT_PARENT_METHOD,
   WEVU_PARENT_INSTANCE_KEY,
+  WEVU_PROPS_ALIASES_KEY,
+  WEVU_PROPS_DERIVED_KEYS_KEY,
   WEVU_PROVIDES_KEY,
   WEVU_RUNTIME_APP_KEY,
+  WEVU_TEMPLATE_REFS_KEY,
 } from '@weapp-core/constants'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, defineComponent, defineStore, nextTick, onAttached, onUnload, reactive, ref, setActivePinia, storeToRefs } from '@/index'
 import { createApp } from '@/runtime/app'
 import { applySnapshotUpdate } from '@/runtime/app/setData/snapshot'
 import { useCssVars } from '@/runtime/css'
+import { installLayout } from '@/runtime/features/layout'
 import { inject, provide } from '@/runtime/provide'
 import { mountRuntimeInstance, registerComponent, teardownRuntimeInstance } from '@/runtime/register'
 
@@ -21,6 +29,7 @@ describe('runtime: stateful HMR', () => {
   let refresh: ((instance: any, stateSnapshot?: Record<string, any>) => void) | undefined
   let registeredDefinition: Record<string, any> | undefined
   let trackedDefinition: Record<string, any> | undefined
+  let registrationContract: (StatefulHmrRegistrationInputs & { version: number }) | undefined
 
   beforeEach(() => {
     setActivePinia(createPinia())
@@ -28,19 +37,23 @@ describe('runtime: stateful HMR', () => {
     dispose = undefined
     registeredDefinition = undefined
     trackedDefinition = undefined
+    registrationContract = undefined
     applying = false
     ;(globalThis as any).Component = vi.fn((definition: Record<string, any>) => {
       registeredDefinition = definition
     })
     ;(globalThis as any)[WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY] = {
+      registrationContractVersion: WEAPP_VITE_STATEFUL_HMR_REGISTRATION_CONTRACT_VERSION,
       isApplying: () => applying,
       trackWevuComponent(
         definition: Record<string, any>,
         callback: (instance: any, stateSnapshot?: Record<string, any>) => void,
         cleanup: (instance: any) => void,
+        contract: StatefulHmrRegistrationInputs & { version: number },
       ) {
         dispose = cleanup
         refresh = callback
+        registrationContract = contract
         trackedDefinition = {
           ...definition,
           __tracked: true,
@@ -59,6 +72,59 @@ describe('runtime: stateful HMR', () => {
   afterEach(() => {
     delete (globalThis as any).Component
     delete (globalThis as any)[WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY]
+  })
+
+  it('passes original host callbacks and generated observer inputs separately from wrappers', () => {
+    const userObservers = { count() {} }
+    const userExport = () => ({ stable: true })
+    const propsAliases = { localCount: 'count' }
+    const propsDerivedKeys = ['localCount']
+    const templateRefs = [{ selector: '.counter', inFor: false, name: 'counter', get: () => 'counter' }]
+    const layoutHosts = [{ key: 'counter', refName: 'counter', selector: '.counter' }]
+    installLayout()
+    registerComponent(createApp({}), {}, undefined, () => ({}), {
+      properties: { count: Number },
+      observers: userObservers,
+      export: userExport,
+      [WEVU_PROPS_ALIASES_KEY]: propsAliases,
+      [WEVU_PROPS_DERIVED_KEYS_KEY]: propsDerivedKeys,
+      [WEVU_TEMPLATE_REFS_KEY]: templateRefs,
+      [WEVU_LAYOUT_HOSTS_KEY]: layoutHosts,
+      setupLifecycle: 'created',
+      [WEVU_NATIVE_SLOT_CONTEXT_KEY]: true,
+    })
+    expect(registrationContract).toEqual({
+      version: WEAPP_VITE_STATEFUL_HMR_REGISTRATION_CONTRACT_VERSION,
+      userObservers,
+      userExport,
+      propsAliases,
+      propsDerivedKeys,
+      templateRefs,
+      layoutHosts,
+      setupLifecycle: 'created',
+      nativeSlotContext: true,
+    })
+    expect(registrationContract!.userObservers).toBe(userObservers)
+    expect(registrationContract!.userExport).toBe(userExport)
+    expect(registrationContract!.templateRefs).toBe(templateRefs)
+    expect(registrationContract!.layoutHosts).toBe(layoutHosts)
+    expect(registeredDefinition!.observers).not.toBe(userObservers)
+    expect(registeredDefinition!.export).not.toBe(userExport)
+  })
+
+  it('records the default setup phase in the host registration contract', () => {
+    registerComponent(createApp({}), {}, undefined, () => ({}), {})
+    expect(registrationContract!.setupLifecycle).toBe('attached')
+  })
+
+  it.each([undefined, WEAPP_VITE_STATEFUL_HMR_REGISTRATION_CONTRACT_VERSION + 1])('rejects an incompatible bridge registration contract version: %s', (version) => {
+    const bridge = (globalThis as any)[WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY]
+    bridge.registrationContractVersion = version
+    expect(() => defineComponent({ setup: () => ({}) })).toThrow(expect.objectContaining({
+      code: WEAPP_VITE_STATEFUL_HMR_UNSUPPORTED_REGISTRATION_CODE,
+    }))
+    expect(bridge.Component).not.toHaveBeenCalled()
+    expect(trackedDefinition).toBeUndefined()
   })
 
   it('re-resolves native slot context during attached HMR and releases only canonical host references', () => {

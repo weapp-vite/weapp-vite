@@ -118,6 +118,12 @@ export function renderDomAcceptanceInventory(inventory: ReturnType<typeof create
       for (const plan of item.plans) {
         lines.push(`- Registration: \`${plan.registration}\`; fixture: \`${cell(plan.fixture)}\`; checkpoints: \`${cell(plan.checkpoints)}\`; source: \`${plan.source}\``)
       }
+      if (item.providerApplicability) {
+        lines.push(`- Applicable providers: ${item.providerApplicability.providers.join(', ') || 'none'}`)
+        for (const condition of item.providerApplicability.conditions) {
+          lines.push(`- Provider condition: \`${condition.modifier}(${cell(condition.expression)})\` at \`${condition.source}\``)
+        }
+      }
       if (item.routes.length) {
         lines.push(`- Routes: ${item.routes.map(route => `\`${cell(route)}\``).join(', ')}`)
       }

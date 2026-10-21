@@ -10,6 +10,23 @@ interface CompilerSourceSnapshot {
 
 const snapshots = new WeakMap<object, CompilerSourceSnapshot>()
 const nativeInputs = new WeakMap<object, { versions: Map<string, string>, accepts: (id: string) => boolean }>()
+const inputObservers = new WeakMap<object, Set<(id: string, source: string) => void>>()
+
+/** 只观察本上下文实际返回的输入；释放回调不会移除其他代际的观察者。 */
+export function observeCompilerInputs(owner: object, observe: (id: string, source: string) => void): () => void {
+  let observers = inputObservers.get(owner)
+  if (!observers) {
+    observers = new Set()
+    inputObservers.set(owner, observers)
+  }
+  observers.add(observe)
+  return () => {
+    observers.delete(observe)
+    if (!observers.size && inputObservers.get(owner) === observers) {
+      inputObservers.delete(owner)
+    }
+  }
+}
 
 export function compilerNativeScriptVersion(source: string): string {
   return createHash('sha256').update(source).digest('hex')
@@ -103,14 +120,27 @@ export function readCompilerSourceSnapshot(sources: ReadonlyMap<string, string |
 }
 
 export async function readCompilerInput(owner: object, id: string, read?: (file: string) => Promise<string>): Promise<string> {
+  const observers = inputObservers.get(owner)
+  const observed = [...(observers ?? [])]
+  const observedId = observers ? compilerSnapshotSourceId(snapshots.get(owner)?.sources, id) : id
+  const observe = (source: string) => {
+    if (inputObservers.get(owner) === observers) {
+      for (const callback of observed) {
+        if (observers?.has(callback)) {
+          callback(observedId, source)
+        }
+      }
+    }
+    return observeNativeInput(owner, id, source)
+  }
   const pinned = readCompilerSourceSnapshot(snapshots.get(owner)?.sources, id)
   if (pinned !== undefined) {
-    return observeNativeInput(owner, id, pinned)
+    return observe(pinned)
   }
   const source = await (read ? read(id) : fs.readFile(id, 'utf8'))
   const host = getCompilerHmrHostByConfig(owner)
   if (host?.onDependencyChange) {
     host.captureRaw(id, source)
   }
-  return observeNativeInput(owner, id, source)
+  return observe(source)
 }

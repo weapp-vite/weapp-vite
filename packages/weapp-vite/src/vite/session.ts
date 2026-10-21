@@ -1,11 +1,16 @@
 import type { InlineConfig, ViteDevServer } from 'vite'
 import type { PreparedNpmOutput } from './npm'
 import { attachDevModuleGraphHost } from '../moduleGraph/host'
+import { getInitialBuildInputObservation } from '../runtime/buildPlugin/initialBuildChanges'
 import { checkAppWorkersOptions } from '../runtime/buildPlugin/workers'
 import { CompilerSession } from '../runtime/compilerSession'
-import { resolveHmrRuntimeDecision } from '../runtime/hmrRuntime'
+import { findSkylineRendererFiles, resolveHmrRuntimeDecision } from '../runtime/hmrRuntime'
+import { getHmrRuntimeCapabilityFallback } from '../runtime/hmrRuntimeCapabilities'
+import { attachHmrRuntimeSession, createHmrRuntimeSession } from '../runtime/hmrRuntimeSession'
 import { createSharedBuildConfig } from '../runtime/sharedBuildConfig'
 import { attachStatefulHmrHost, createStatefulHmrHostPlugins, getStatefulHmrHost } from '../runtime/statefulHmr/hostPlugins'
+import { buildStatefulHmrSnapshot, prepareStatefulHmrSnapshot } from '../runtime/statefulHmr/snapshotBuild'
+import { clearStatefulHmrSnapshot, offerStatefulHmrSnapshot, StatefulHmrSnapshotHandoff } from '../runtime/statefulHmr/snapshotHandoff'
 import { syncManagedTsconfigFiles } from '../runtime/tsconfigSupport'
 import { resolveRealpath } from '../utils/realpathScope'
 import { prepareNpmAssets } from './npm'
@@ -17,6 +22,12 @@ export class WeappBuildSession extends CompilerSession {
   private validating?: Promise<void>
   isWeb = false
   statefulController?: ReturnType<typeof createStatefulHmrHostPlugins>
+
+  constructor(readonly hmrRuntimeSession = createHmrRuntimeSession()) {
+    super()
+    this.onClose(attachHmrRuntimeSession(this.context, hmrRuntimeSession))
+    this.onClose(() => clearStatefulHmrSnapshot(this.context))
+  }
 
   async prepare(config: InlineConfig, cwd: string, mode: string, isDev = false): Promise<InlineConfig> {
     // 与 Vite 的根目录解析一致，扫描和侧车监听不能继续持有另一条目录身份。
@@ -47,15 +58,37 @@ export class WeappBuildSession extends CompilerSession {
       }
       return merged
     }
-    if (isDev && resolveHmrRuntimeDecision({
+    if (isDev && this.hmrRuntimeSession.resolve(resolveHmrRuntimeDecision({
       platform: service.platform,
       configured: service.weappViteConfig.hmr?.runtime,
       compileHotReLoad: service.projectPrivateConfig.setting?.compileHotReLoad,
-    }).runtime === 'stateful-experimental') {
+    })).runtime === 'stateful-experimental') {
       if (service.platform !== 'weapp') {
-        throw new Error('[weapp-vite] stateful-experimental 仅支持微信；其他平台请配置 hmr.runtime=classic。')
+        this.hmrRuntimeSession.requestClassic({ code: 'platform', message: '当前小程序平台不支持状态保持热更新。' })
       }
-      this.statefulController = createStatefulHmrHostPlugins(this.context)
+      else {
+        await this.run(async () => {
+          try {
+            // 在 Vite 创建 bundled-development 宿主前确定首构能力；产物仍为 write:false。
+            // 完整输入版本在编译前捕获，只有编译后及正式接管时均未漂移才复用。
+            const snapshot = prepareStatefulHmrSnapshot(await buildStatefulHmrSnapshot(service.loadOptions, undefined, this.context, undefined, []))
+            const skylineFiles = findSkylineRendererFiles(snapshot.output)
+            if (skylineFiles.length) {
+              this.hmrRuntimeSession.requestClassic({ code: 'skyline', message: '微信 Skyline 暂不支持状态保持 HMR。', files: skylineFiles })
+              return
+            }
+            await offerStatefulHmrSnapshot(this.context, new StatefulHmrSnapshotHandoff(snapshot, snapshot.inputs))
+            this.statefulController = createStatefulHmrHostPlugins(this.context)
+          }
+          catch (error) {
+            const fallback = getHmrRuntimeCapabilityFallback(error)
+            if (!fallback) {
+              throw error
+            }
+            this.hmrRuntimeSession.requestClassic(fallback)
+          }
+        })
+      }
     }
     const merged = this.context.configService.merge(undefined, createSharedBuildConfig(this.context.configService, this.context.scanService))
     return merged
@@ -83,6 +116,9 @@ export class WeappBuildSession extends CompilerSession {
         throw new Error('[weapp-vite] 构建会话已关闭。')
       }
       this.state = 'building'
+    }).catch((error) => {
+      getInitialBuildInputObservation(this.context.configService)?.close()
+      throw error
     }).finally(() => {
       this.validating = undefined
     })
@@ -99,7 +135,13 @@ export class WeappBuildSession extends CompilerSession {
     let reportedReady = false
     const reportReady = () => {
       if (started && successful && !reportedReady && !this.isClosing) {
+        if (this.statefulController && this.hmrRuntimeSession.phase === 'switching') {
+          return
+        }
         reportedReady = true
+        if (!this.statefulController) {
+          this.hmrRuntimeSession.markClassic()
+        }
         server.config.logger.info(`[weapp-vite] 小程序开发产物已就绪 (${this.statefulController ? 'stateful-experimental' : 'classic'})`)
       }
     }

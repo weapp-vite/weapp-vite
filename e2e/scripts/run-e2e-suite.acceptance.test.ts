@@ -62,7 +62,7 @@ describe('IDE full CLI acceptance policy', () => {
       .toBe('uview-plus-compat,wot-ui-compat')
   })
 
-  it.each(['ide-full', 'ide-full:exhaustive', 'ide-dom-headless'])('passes default strict policy for %s to the runner', async (mode) => {
+  it.each(['ide-full', 'ide-full:exhaustive', 'ide-dom-headless', 'ide-hmr', 'ide-hmr-headless'])('passes default strict policy for %s to the runner', async (mode) => {
     await runE2ESuiteCli([mode])
     expect(runTaskSuite).toHaveBeenCalledOnce()
     const [, tasks, options] = vi.mocked(runTaskSuite).mock.calls[0]!

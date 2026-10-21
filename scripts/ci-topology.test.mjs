@@ -90,6 +90,9 @@ describe('independent CI preparation with unchanged validation scope', () => {
       expect(child.jobs[name].needs.every(dependency => ['pr-context', 'build', 'plan'].includes(dependency))).toBe(true)
       expect(child.jobs[name].with.consume_build_artifact).toBe(child.jobs.build.with.build_artifact_name)
     }
+    expect(child.jobs['ide-dom-headless'].with.main_command).toContain('run-e2e-suite.ts ide-dom-headless')
+    expect(child.jobs['ide-dom-headless'].with.checkout_ref).toBe(`\${{ needs.pr-context.outputs.checkout_sha }}`)
+    expect(child.jobs['ide-dom-headless'].with.e2e_exclude_projects).toBe(`\${{ inputs.exclude_projects }}`)
     expect(child.jobs.aggregate.needs).toEqual(['pr-context', 'build', 'plan', 'miniapp'])
     expect(child.jobs.aggregate.if).toContain('!cancelled()')
     expect(child.jobs.aggregate.steps.find(step => step.name === 'Validate complete suite inventory').run).toContain('cli.ts aggregate --plan=')

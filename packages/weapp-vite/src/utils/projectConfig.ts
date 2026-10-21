@@ -9,9 +9,10 @@ interface ProjectConfigOptions {
   ignorePrivate?: boolean
   basePath?: string
   privatePath?: string
+  readFile?: (file: string) => Promise<string>
 }
 
-async function readProjectConfigFile(filePath: string, required: boolean) {
+async function readProjectConfigFile(filePath: string, required: boolean, readFile?: ProjectConfigOptions['readFile']) {
   if (!(await fs.pathExists(filePath))) {
     if (required) {
       throw new Error(`找不到项目配置文件：${filePath}`)
@@ -19,7 +20,9 @@ async function readProjectConfigFile(filePath: string, required: boolean) {
     return {}
   }
   try {
-    return await fs.readJson(filePath) || {}
+    return readFile
+      ? JSON.parse((await readFile(filePath)).replace(/^\uFEFF/, '')) || {}
+      : await fs.readJson(filePath) || {}
   }
   catch {
     throw new Error(`解析 json 格式失败, ${filePath} 为非法的 json 格式`)
@@ -54,15 +57,15 @@ export function resolveProjectConfigRoot(projectConfig: ProjectConfig, platform:
 export async function getProjectConfig(root: string, options?: ProjectConfigOptions) {
   const baseJsonPath = path.resolve(root, options?.basePath ?? 'project.config.json')
   const privateJsonPath = path.resolve(root, options?.privatePath ?? 'project.private.config.json')
-  const baseJson = await readProjectConfigFile(baseJsonPath, true)
-  const privateJson = options?.ignorePrivate ? {} : await readProjectConfigFile(privateJsonPath, false)
+  const baseJson = await readProjectConfigFile(baseJsonPath, true, options?.readFile)
+  const privateJson = options?.ignorePrivate ? {} : await readProjectConfigFile(privateJsonPath, false, options?.readFile)
 
   return defuOverrideArray(privateJson, baseJson) as ProjectConfig
 }
 
-export async function getProjectPrivateConfig(root: string, options?: Pick<ProjectConfigOptions, 'privatePath'>) {
+export async function getProjectPrivateConfig(root: string, options?: Pick<ProjectConfigOptions, 'privatePath' | 'readFile'>) {
   const privateJsonPath = path.resolve(root, options?.privatePath ?? 'project.private.config.json')
-  return await readProjectConfigFile(privateJsonPath, false) as Record<string, any>
+  return await readProjectConfigFile(privateJsonPath, false, options?.readFile) as Record<string, any>
 }
 
 export async function disableProjectPrivateConfigHotReload(filePath: string): Promise<boolean> {

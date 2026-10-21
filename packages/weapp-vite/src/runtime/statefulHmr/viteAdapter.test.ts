@@ -258,6 +258,36 @@ describe('stateful HMR Vite adapter', () => {
     expect(bundledDev._devEngine).toBeUndefined()
   })
 
+  it.each(['sync', 'async'] as const)('preserves a %s failed engine stop for final shutdown and never closes the same engine twice', async (kind) => {
+    const stopping = Promise.withResolvers<void>()
+    const failure = new Error('native engine close failed')
+    const close = vi.fn(() => {
+      if (kind === 'sync') {
+        throw failure
+      }
+      return stopping.promise
+    })
+    const engine = { close }
+    const bundledDev = { _devEngine: engine }
+    const adapter = new StatefulHmrViteAdapter({ root: '/project' } as any, {} as any, {
+      onError: () => {},
+      onOutput: () => {},
+      onPatch: () => true,
+      waitForInitialBundle: async () => {},
+    })
+    Reflect.set(adapter, 'bundledDev', bundledDev)
+    Reflect.set(adapter, 'engine', engine)
+    const stopped = expect(adapter.stopEngineForRestart()).rejects.toBe(failure)
+    const closed = expect(adapter.close()).rejects.toBe(failure)
+    if (kind === 'async') {
+      stopping.reject(failure)
+    }
+    await Promise.all([stopped, closed])
+    expect(bundledDev._devEngine).toBeUndefined()
+    await expect(adapter.close()).rejects.toBe(failure)
+    expect(close).toHaveBeenCalledOnce()
+  })
+
   it('routes DevEngine no-op updates through the stateful fallback', async () => {
     const fallbackFiles: string[][] = []
     let devOptions: any

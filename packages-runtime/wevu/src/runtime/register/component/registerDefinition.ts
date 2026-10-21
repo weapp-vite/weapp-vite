@@ -8,6 +8,7 @@ import type {
   RuntimeApp,
 } from '../../types'
 import type { WatchMap } from '../watch'
+import type { StatefulHmrRegistrationInputs } from './hmrRegistration'
 import {
   WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY,
   WEVU_NATIVE_DECLARATION_METHOD,
@@ -25,6 +26,7 @@ import { runTeardownSteps } from '../../teardown'
 import { enableDeferredSetData, mountRuntimeInstance, refreshRuntimeInstance, setRuntimeSetDataVisibility, teardownRuntimeInstance } from '../runtimeInstance'
 import { receiveNativeDeclaration } from '../runtimeInstance/nativeDeclaration'
 import { receiveNativeSlotParent } from '../runtimeInstance/provideContext'
+import { createStatefulHmrRegistrationContract } from './hmrRegistration'
 import { registerNativeComponentDefinition } from './registerNativeDefinition'
 
 type ImportMetaWithEnv = ImportMeta & { env?: { PLATFORM?: string } }
@@ -34,6 +36,7 @@ export function registerComponentDefinition<D extends object, C extends Computed
   watch: WatchMap | undefined
   setup: DefineComponentOptions<ComponentPropsOptions, D, C, M>['setup']
   restOptions: Record<string, any>
+  statefulHmrRegistration: StatefulHmrRegistrationInputs
   pageLifecycleHooks: Record<string, any>
   finalObservers: Record<string, any>
   userLifetimes: Record<string, any>
@@ -59,6 +62,7 @@ export function registerComponentDefinition<D extends object, C extends Computed
     watch,
     setup,
     restOptions,
+    statefulHmrRegistration,
     pageLifecycleHooks,
     finalObservers,
     userLifetimes,
@@ -466,6 +470,7 @@ export function registerComponentDefinition<D extends object, C extends Computed
 
   const statefulHmrBridge = getMiniProgramRuntimeGlobalObject()?.[WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY]
   if (typeof statefulHmrBridge?.trackWevuComponent === 'function') {
+    const registrationContract = createStatefulHmrRegistrationContract(statefulHmrBridge, statefulHmrRegistration)
     const definition = statefulHmrBridge.trackWevuComponent(componentDefinition, (
       instance: InternalRuntimeState,
       stateSnapshot?: Record<string, any>,
@@ -485,7 +490,7 @@ export function registerComponentDefinition<D extends object, C extends Computed
         () => activeLayoutHosts && layoutHooks?.detachHosts(activeLayoutHosts, instance),
         () => teardownRuntimeInstance(instance, { skipHooks: true }),
       ])
-    })
+    }, registrationContract)
     if (!statefulHmrBridge.isApplying()) {
       registerNativeComponentDefinition(definition, isPage)
     }

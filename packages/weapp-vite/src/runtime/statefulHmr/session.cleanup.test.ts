@@ -19,6 +19,7 @@ const harness = vi.hoisted(() => ({
   closeAdapter: vi.fn(),
   closeProfile: vi.fn(),
   beginProfile: vi.fn(),
+  listen: vi.fn(),
   closeServer: vi.fn(),
   restore: vi.fn(),
   delivery: undefined as HmrDeliveryCoordinator | undefined,
@@ -84,7 +85,7 @@ beforeEach(async () => {
     watcher: Object.assign(new EventEmitter(), { add: vi.fn() }),
     middlewares: { use: vi.fn() },
     httpServer: { address: () => undefined },
-    listen: vi.fn(async () => {}),
+    listen: harness.listen,
     restart: vi.fn(async () => {}),
     close: harness.closeServer,
   }))
@@ -109,6 +110,45 @@ function createContext() {
     },
   } as unknown as MutableCompilerContext
 }
+
+it.each(['none', 'session', 'server', 'both'] as const)('retains startup and independent cleanup failures without duplication: %s', async (failureSource) => {
+  const startupFailure = new Error('server listen failed')
+  const adapterFailure = new Error('adapter cleanup failed')
+  const serverFailure = new Error('server cleanup failed')
+  const failSession = failureSource === 'session' || failureSource === 'both'
+  const failServer = failureSource === 'server' || failureSource === 'both'
+  harness.listen.mockRejectedValueOnce(startupFailure)
+  if (failSession) {
+    harness.closeAdapter.mockRejectedValueOnce(adapterFailure)
+  }
+  if (failServer) {
+    harness.closeServer.mockRejectedValueOnce(serverFailure)
+  }
+  const ctx = createContext()
+  const failure = await runStatefulHmrDev(ctx, { root }, async () => {}, {
+    entryIds: [],
+    initial: { output: [], componentPageGlobalStyleRoutes: [], glassEaselAnalysisByOwner: new Map() },
+    rebuild: async () => { throw new Error('Unexpected snapshot') },
+  }, createDevBuildWatcher()).catch((error: unknown) => error)
+  if (failureSource === 'none') {
+    expect(failure).toBe(startupFailure)
+  }
+  else {
+    const cleanupFailure = failSession && failServer ? expect.any(AggregateError) : failSession ? adapterFailure : serverFailure
+    expect(failure).toBeInstanceOf(AggregateError)
+    expect(failure).toMatchObject({ cause: startupFailure, errors: [startupFailure, cleanupFailure] })
+    if (failSession && failServer) {
+      expect((failure as AggregateError).errors[1]).toMatchObject({ errors: [adapterFailure, serverFailure] })
+    }
+  }
+  expect(harness.closeAdapter).toHaveBeenCalledOnce()
+  expect(harness.closeServer).toHaveBeenCalledOnce()
+  expect(harness.closeProfile).toHaveBeenCalledOnce()
+  expect(harness.closeProfile).toHaveBeenCalledWith('failed')
+  expect(harness.restore).toHaveBeenCalledOnce()
+  expect(harness.closeAssets).not.toHaveBeenCalled()
+  expect(ctx.onStatefulHmrSourceChange).toBeUndefined()
+})
 
 it.each([false, true])('continues ordered cleanup after resource failures and retains lease restoration failure: %s', async (failRestore) => {
   const events: string[] = []
@@ -143,6 +183,64 @@ it.each([false, true])('continues ordered cleanup after resource failures and re
   await expect(watcher.close()).rejects.toMatchObject({ errors, cause: assetFailure })
   expect(events).toEqual(['assets', 'adapter', 'profile', 'restore'])
   expect(harness.closeServer).toHaveBeenCalledOnce()
+  expect(ctx.onStatefulHmrSourceChange).toBeUndefined()
+})
+
+it.each(['session', 'server', 'both'] as const)('retains standalone close failures and shares one pending cleanup: %s', async (failureSource) => {
+  const sessionFailure = new Error('session adapter cleanup failed')
+  const serverFailure = new Error('native server cleanup failed')
+  const failSession = failureSource !== 'server'
+  const failServer = failureSource !== 'session'
+  const serverClosing = Promise.withResolvers<void>()
+  const serverClosed = Promise.withResolvers<void>()
+  if (failSession) {
+    harness.closeAdapter.mockRejectedValueOnce(sessionFailure)
+  }
+  harness.closeServer.mockImplementation(async () => {
+    serverClosing.resolve()
+    await serverClosed.promise
+    if (failServer) {
+      throw serverFailure
+    }
+  })
+  const ctx = createContext()
+  const watcher = await runStatefulHmrDev(ctx, { root }, async () => {}, {
+    entryIds: [],
+    initial: { output: [], componentPageGlobalStyleRoutes: [], glassEaselAnalysisByOwner: new Map() },
+    rebuild: async () => { throw new Error('Unexpected snapshot') },
+  }, createDevBuildWatcher())
+  const closing = watcher.close()
+  const settled = vi.fn()
+  const outcome = closing.then(settled, (error: unknown) => {
+    settled()
+    return error
+  })
+  let failure: unknown
+  try {
+    expect(watcher.close()).toBe(closing)
+    await serverClosing.promise
+    expect(settled).not.toHaveBeenCalled()
+    expect(harness.closeAdapter).toHaveBeenCalledOnce()
+    expect(harness.restore).toHaveBeenCalledOnce()
+  }
+  finally {
+    serverClosed.resolve()
+    failure = await outcome
+  }
+  const errors = [...(failSession ? [sessionFailure] : []), ...(failServer ? [serverFailure] : [])]
+  if (errors.length === 1) {
+    expect(failure).toBe(errors[0])
+  }
+  else {
+    expect(failure).toBeInstanceOf(AggregateError)
+    expect(failure).toMatchObject({ errors })
+  }
+  expect(watcher.close()).toBe(closing)
+  expect(harness.closeAdapter).toHaveBeenCalledOnce()
+  expect(harness.closeServer).toHaveBeenCalledOnce()
+  expect(harness.closeAssets).toHaveBeenCalledOnce()
+  expect(harness.closeProfile).toHaveBeenCalledOnce()
+  expect(harness.restore).toHaveBeenCalledOnce()
   expect(ctx.onStatefulHmrSourceChange).toBeUndefined()
 })
 

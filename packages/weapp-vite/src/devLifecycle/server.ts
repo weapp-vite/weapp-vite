@@ -1,4 +1,5 @@
 import type { ViteDevServer } from 'vite'
+import { WEAPP_VITE_DEV_SERVER_CLOSE_KEY } from '@weapp-core/constants'
 
 type CloseDevServer = () => Promise<void>
 
@@ -7,7 +8,7 @@ export interface DevServerCloseRecord {
   gate?: (close: CloseDevServer) => Promise<void>
 }
 
-const serverCloseRecord = Symbol('weapp-vite:dev-server-close')
+const serverCloseRecord = Symbol.for(WEAPP_VITE_DEV_SERVER_CLOSE_KEY)
 type LifecycleServer = ViteDevServer & { [serverCloseRecord]?: DevServerCloseRecord }
 const dispatchedRecords = new WeakMap<CloseDevServer, { record: DevServerCloseRecord, close: CloseDevServer }>()
 const dispatchedCloses = new WeakMap<CloseDevServer, CloseDevServer>()

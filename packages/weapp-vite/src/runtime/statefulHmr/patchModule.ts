@@ -6,6 +6,7 @@ import path from 'pathe'
 import { normalizeSourceId } from '../../moduleGraph/traversal'
 import { matchesSubPackageDependency, toRelativeRuntimeNpmImport } from '../../plugins/core/lifecycle/emit/rewrite'
 import { parseJsLike, traverse } from '../../utils/babel'
+import { HmrRuntimeCapabilityError } from '../hmrRuntimeCapabilities'
 import { resolveNpmBuildCandidateDependencyRecordSync } from '../npmPlugin/service'
 
 export interface StatefulHmrPatchImports {
@@ -46,14 +47,14 @@ export function transformStatefulHmrPatchImports(code: string, options: Stateful
   })
   for (const statement of ast.program.body) {
     if (statement.type === 'ExportNamedDeclaration' || statement.type === 'ExportDefaultDeclaration' || statement.type === 'ExportAllDeclaration') {
-      throw new Error(`Stateful HMR patch must register exports through the runtime: ${options.filename}`)
+      throw new HmrRuntimeCapabilityError({ code: 'patch-shape', message: `Stateful HMR patch must register exports through the runtime: ${options.filename}` })
     }
     if (statement.type !== 'ImportDeclaration') {
       continue
     }
     const [binding] = statement.specifiers
     if (statement.specifiers.length > 1 || (binding && binding.type !== 'ImportNamespaceSpecifier')) {
-      throw new Error(`Unsupported Stateful HMR external import in ${options.filename}`)
+      throw new HmrRuntimeCapabilityError({ code: 'patch-shape', message: `Unsupported Stateful HMR external import in ${options.filename}` })
     }
     const specifier = options.resolveImport(statement.source.value, binding ? ownersByBinding.get(binding.local.name) ?? [] : [])
     const requireExpression = `require(${JSON.stringify(specifier)})`
@@ -88,7 +89,7 @@ export function createStatefulHmrPatchImportResolver(
       return relative.startsWith('.') ? relative : `./${relative}`
     }
     if ((!importers.length || importers.includes('')) && localPackages.some(meta => matchesSubPackageDependency(meta.dependencies, specifier))) {
-      throw new Error(`Stateful HMR external import has no unambiguous factory owner: ${specifier}`)
+      throw new HmrRuntimeCapabilityError({ code: 'patch-shape', message: `Stateful HMR external import has no unambiguous factory owner: ${specifier}` })
     }
     const sourcePackages = new Set(importers.map((file) => {
       const source = normalizeSourceId(path.resolve(config.cwd, file.split('?', 1)[0]))
@@ -101,7 +102,7 @@ export function createStatefulHmrPatchImportResolver(
         : ''
     }))
     if (roots.size > 1) {
-      throw new Error(`Stateful HMR external import spans different npm roots: ${specifier}`)
+      throw new HmrRuntimeCapabilityError({ code: 'patch-shape', message: `Stateful HMR external import spans different npm roots: ${specifier}` })
     }
     const root = [...roots][0] ?? ''
     if (root || matchesSubPackageDependency(undefined, specifier, dependencies)) {

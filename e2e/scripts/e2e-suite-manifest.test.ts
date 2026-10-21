@@ -101,12 +101,14 @@ describe('e2e suite manifest', () => {
     expect(getWebTasks().some(task => task.label.includes('dimina'))).toBe(false)
   })
 
-  it('runs external CSS file HMR in DevTools without advertising unsupported headless file watching', async () => {
+  it('keeps external CSS HMR and its output-backed headless companion in the full suites', async () => {
     const label = 'ide/issue-1015-css-hmr.runtime.test.ts'
     expect((await getSuiteTasks('ide-full:github-issues')).filter(task => task.label === label)).toHaveLength(1)
     expect((await getSuiteTasks('hmr-regression')).filter(task => task.label === label)).toHaveLength(1)
     expect(getIdeExhaustiveTasks().filter(task => task.label === label)).toHaveLength(1)
-    expect((await getSuiteTasks('ide-headless-full')).some(task => task.label === label)).toBe(false)
+    for (const suite of ['ide-dom-headless', 'ide-headless-full']) {
+      expect((await getSuiteTasks(suite)).filter(task => task.label === label)).toHaveLength(1)
+    }
   })
 
   it.each([

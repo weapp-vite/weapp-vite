@@ -18,7 +18,7 @@ describe('stateful HMR native lifecycle defaults', () => {
       observed = { ...this.data }
     })
     runtime.bridge.beginUpdate()
-    runtime.bridge.Page({ data: { count: 7, input: 'updated' }, increment: latestMethod })
+    runtime.bridge.Page({ data: { count: 7, input: 'updated' }, onLoad() {}, increment: latestMethod })
     runtime.finishUpdate()
 
     definition.increment!.call(facade)
@@ -44,7 +44,7 @@ describe('stateful HMR native lifecycle defaults', () => {
     definition.onLoad!.call(active)
     active.data = { count: 4, input: 'user value' }
     runtime.bridge.beginUpdate()
-    runtime.bridge.Page({ data: { count: 7, input: 'updated' }, onLoad: nextLoad })
+    runtime.bridge.Page({ data: { count: 7, input: 'updated' }, onLoad: nextLoad, increment() {} })
     runtime.finishUpdate()
     expect(active.data).toEqual({ count: 4, input: 'user value' })
 
@@ -105,7 +105,7 @@ describe('stateful HMR native lifecycle defaults', () => {
     definition.onLoad!.call(owner)
     owner.data = { count: 4, input: 'owner state' }
     runtime.bridge.beginUpdate()
-    runtime.bridge.Page({ data: { count: 7, input: 'updated' }, increment() {} })
+    runtime.bridge.Page({ data: { count: 7, input: 'updated' }, onLoad() {}, increment() {} })
     runtime.finishUpdate()
     const facade = createHost()
     facade.data = { count: 99, input: 'facade state' }

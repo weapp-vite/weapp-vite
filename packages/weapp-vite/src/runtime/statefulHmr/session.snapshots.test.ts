@@ -1,5 +1,6 @@
+import type { IncomingMessage, ServerResponse } from 'node:http'
 import type { OutputBundle } from 'rolldown'
-import type { InlineConfig } from 'vite'
+import type { InlineConfig, ViteDevServer } from 'vite'
 import type { HmrProfileJsonSample } from '../../analyze/hmr'
 import type { CompilerContext, MutableCompilerContext } from '../../context'
 import type { WeappCompilerHmrPreparation, WeappCompilerHmrRequest } from '../../types/compilerPlugin'
@@ -12,6 +13,7 @@ import { EventEmitter } from 'node:events'
 import { realpathSync } from 'node:fs'
 import { mkdir, mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
+import { Readable } from 'node:stream'
 import { runInNewContext } from 'node:vm'
 import { WEAPP_VITE_STATEFUL_HMR_GLOBAL_STYLE_BASENAME } from '@weapp-core/constants'
 import path from 'pathe'
@@ -21,6 +23,7 @@ import { refreshGlassEaselNativeScripts } from '../../analyze/glassEasel/nativeS
 import { createLogicalEntryId, createSidecarSourceSpecifier } from '../../moduleGraph/protocol'
 import { CompilerHmrResyncError, compilerSourceId, getCompilerHmrHost } from '../../plugins/compilerPlugin/hmr'
 import { createDevBuildWatcher } from '../buildPlugin/devBuildWatcher'
+import { getHmrRuntimeSession } from '../hmrRuntimeSession'
 import { createRuntimeState } from '../runtimeState'
 import { createStatefulHmrHostPlugins } from './hostPlugins'
 import { StatefulHmrProfile } from './profile'
@@ -150,6 +153,7 @@ function analyzedSnapshot(paired: boolean, selector = '.valid'): StatefulHmrSnap
 }
 
 async function start(initial = snapshot('red'), entryIds: string[] = [], inlineConfig: InlineConfig = {}, nativeSources = new Map<string, string>(), profile?: StatefulHmrProfileHandoff, onContext?: (ctx: MutableCompilerContext) => void) {
+  const controls = vi.spyOn(StatefulHmrTransport.prototype, 'createControl')
   const rebuild = vi.fn(async (_files: string[], _sources?: ReadonlyMap<string, string | null>) => snapshot('blue'))
   const changes = new Map<string, string>()
   const ctx = {
@@ -175,13 +179,28 @@ async function start(initial = snapshot('red'), entryIds: string[] = [], inlineC
   onContext?.(ctx)
   const events = createDevBuildWatcher()
   const restart = vi.fn(async () => {})
+  const classic = vi.fn(async () => {})
+  const runtime = getHmrRuntimeSession(ctx)
+  runtime.bindRequest(classic)
   const watcher = await runStatefulHmrDev(ctx, { root }, restart, { initial, entryIds, rebuild, profile }, events)
   watchers.push(watcher)
   const plugins = harness.createServer.mock.calls.at(-1)![0].plugins as Array<{ name: string, api?: { whenSettled: () => Promise<void> } }>
   const whenSettled = plugins.find(plugin => plugin.name === 'weapp-vite:stateful-hmr-session')!.api!.whenSettled
+  const transport = controls.mock.contexts.at(-1) as StatefulHmrTransport
+  const server = await harness.createServer.mock.results.at(-1)!.value as ViteDevServer
+  const report = vi.mocked(server.middlewares.use).mock.calls[0]![1] as (request: IncomingMessage, response: ServerResponse) => Promise<void>
+  const full = async () => {
+    // 客户端重同步仍使用同一 stateful 引擎；DevEngine FullReload 已属于 classic 能力边界。
+    const request = Object.assign(Readable.from([JSON.stringify({ ...transport.createControl(), action: 'rebuild', sessionId: 'snapshot-client', version: 0 })]), { method: 'POST' })
+    const response = { setHeader: vi.fn(), end: vi.fn(), statusCode: 0 }
+    await report(request as IncomingMessage, response as unknown as ServerResponse)
+    expect(response.statusCode).toBe(202)
+  }
   return {
     rebuild,
     restart,
+    classic,
+    runtime,
     close: () => watcher.close(),
     ctx,
     watcher,
@@ -200,7 +219,7 @@ async function start(initial = snapshot('red'), entryIds: string[] = [], inlineC
       return harness.callbacks!.onPatch([path.join(root, 'src/page.vue')], { type: 'Patch', code: 'void 0', filename: 'update.js' })
     },
     refresh: () => ctx.onStatefulHmrSourceChange!(path.join(root, 'src/page.wxss'), []),
-    full: () => harness.callbacks!.onPatch([path.join(root, 'src/page.vue')], { type: 'FullReload', reason: 'test boundary' }),
+    full,
   }
 }
 
@@ -209,6 +228,43 @@ function writtenAssets() {
 }
 
 describe('stateful snapshot output transactions', () => {
+  it.each([false, true])('admits frozen compiled template registrations before any asset or delta publication (changed=%s)', async (changed) => {
+    const owner = path.join(root, 'src/page.vue')
+    const initial = {
+      ...snapshot('red'),
+      entryIds: [owner],
+      templateRegistrationSignatures: new Map([[owner, 'registered-template']]),
+    }
+    const session = await start(initial, [owner])
+    const server = await harness.createServer.mock.results.at(-1)!.value as ViteDevServer
+    const events = vi.fn()
+    session.events.watcher.on('event', events)
+    const delta = vi.spyOn(StatefulHmrTransport.prototype, 'addDelta').mockImplementation(async (_code, _ids, delivered) => {
+      await delivered?.()
+    })
+    harness.writeOutput.mockClear()
+    session.rebuild.mockResolvedValueOnce({
+      ...snapshot('blue'),
+      entryIds: [owner],
+      templateRegistrationSignatures: new Map([[owner, changed ? 'new-template-registration' : 'registered-template']]),
+    })
+    expect(session.patch(['entry-mixed-asset:1'])).toBe(true)
+    await vi.advanceTimersByTimeAsync(100)
+    expect(server.config.logger.error).not.toHaveBeenCalled()
+    expect(events).not.toHaveBeenCalledWith(expect.objectContaining({ code: 'ERROR' }))
+    if (changed) {
+      expect(session.classic).toHaveBeenCalledOnce()
+      expect(session.runtime.fallback?.code).toBe('native-registration')
+      expect(harness.writeOutput).not.toHaveBeenCalled()
+      expect(delta).not.toHaveBeenCalled()
+    }
+    else {
+      expect(session.classic).not.toHaveBeenCalled()
+      expect(harness.writeOutput).toHaveBeenCalled()
+      expect(delta).toHaveBeenCalledOnce()
+    }
+  })
+
   it('touches refreshed stylesheet outputs after the atomic write', async () => {
     const session = await start()
     session.rebuild.mockResolvedValue(snapshot('blue'))
@@ -249,12 +305,18 @@ describe('stateful snapshot output transactions', () => {
 
   it('rejects failed publication settlement and accepts a later successful refresh', async () => {
     const session = await start()
+    const server = await harness.createServer.mock.results.at(-1)!.value as ViteDevServer
+    const events = vi.fn()
+    session.events.watcher.on('event', events)
     const error = new Error('snapshot output publication failed')
     harness.writeOutput.mockRejectedValueOnce(error)
     session.refresh()
     const rejected = expect(session.whenSettled()).rejects.toBe(error)
     await vi.advanceTimersByTimeAsync(40)
     await rejected
+    expect(events).toHaveBeenCalledWith(expect.objectContaining({ code: 'ERROR', error }))
+    expect(server.config.logger.error).toHaveBeenCalledWith(expect.stringContaining('[weapp-vite] stateful HMR output failed:'))
+    expect(session.classic).not.toHaveBeenCalled()
     session.refresh()
     const recovered = session.whenSettled()
     await vi.advanceTimersByTimeAsync(40)
@@ -270,7 +332,7 @@ describe('stateful snapshot output transactions', () => {
     await expect(session.whenSettled()).rejects.toThrow('not active')
   })
 
-  it('rejects settlement when a topology change requires a host handoff', async () => {
+  it('rejects old-engine settlement when a topology change requests classic', async () => {
     const page = path.join(root, 'src/page.js')
     const session = await start(snapshot('red'), [page])
     session.rebuild.mockResolvedValueOnce({ ...snapshot('blue'), entryIds: [page, path.join(root, 'src/child.js')] })
@@ -279,6 +341,8 @@ describe('stateful snapshot output transactions', () => {
     await vi.advanceTimersByTimeAsync(40)
     await rejected
     expect(session.restart).not.toHaveBeenCalled()
+    expect(session.classic).toHaveBeenCalledOnce()
+    expect(session.runtime.fallback?.code).toBe('entry-topology')
   })
 
   it('does not let an old session release a newer host settlement binding', async () => {
@@ -297,33 +361,33 @@ describe('stateful snapshot output transactions', () => {
     await expect(settle()).rejects.toThrow('not active')
   })
 
-  it('keeps the old host unsettled while its asynchronous restart is in progress', async () => {
+  it('keeps the old host unsettled while its asynchronous classic handoff is in progress', async () => {
     const page = path.join(root, 'src/page.js')
     const session = await start(snapshot('red'), [page])
     const restarted = Promise.withResolvers<void>()
-    session.restart.mockImplementationOnce(() => restarted.promise)
+    session.classic.mockImplementationOnce(() => restarted.promise)
     session.rebuild.mockResolvedValueOnce({ ...snapshot('blue'), entryIds: [page, path.join(root, 'src/child.js')] })
     session.refresh()
     await vi.advanceTimersByTimeAsync(140)
-    expect(session.restart).toHaveBeenCalledOnce()
+    expect(session.classic).toHaveBeenCalledOnce()
+    expect(session.restart).not.toHaveBeenCalled()
     await expect(session.whenSettled()).rejects.toThrow('closed or restarted before settlement')
     restarted.resolve()
     await session.close()
   })
 
-  it('ignores source updates after a topology restart has started', async () => {
+  it('ignores source updates after a topology classic handoff has started', async () => {
     const page = path.join(root, 'src/page.js')
     const child = path.join(root, 'src/child.js')
     const session = await start(snapshot('red'), [page])
     const restarted = Promise.withResolvers<void>()
-    session.restart.mockImplementationOnce(() => restarted.promise)
+    session.classic.mockImplementationOnce(() => restarted.promise)
     session.rebuild.mockResolvedValueOnce({ ...snapshot('blue'), entryIds: [page, child] })
     session.refresh()
     await vi.advanceTimersByTimeAsync(140)
-    expect(session.restart).toHaveBeenCalledOnce()
+    expect(session.classic).toHaveBeenCalledOnce()
 
-    // The replacement callback reloads the latest source state. Scheduling a
-    // second build on the retiring session would race its engine shutdown.
+    // classic 宿主读取最新输入，退休引擎不能再开启第二轮构建。
     session.sourceChange(path.join(root, 'src/app.json'), 'update', ['entry-graph-changed'])
     await vi.advanceTimersByTimeAsync(200)
 
@@ -347,7 +411,7 @@ describe('stateful snapshot output transactions', () => {
     native.resolve()
   })
 
-  it('invalidates a stale topology handoff when a source update arrives before restart', async () => {
+  it('retires a topology snapshot before later source updates can publish it', async () => {
     const page = path.join(root, 'src/page.js')
     const child = path.join(root, 'src/child.js')
     const session = await start(snapshot('red'), [page])
@@ -356,15 +420,16 @@ describe('stateful snapshot output transactions', () => {
     session.refresh()
     await vi.advanceTimersByTimeAsync(50)
     expect(session.rebuild).toHaveBeenCalledOnce()
-    expect(session.restart).not.toHaveBeenCalled()
+    expect(session.classic).toHaveBeenCalledOnce()
     session.sourceChange(path.join(root, 'src/child.js'))
     await vi.advanceTimersByTimeAsync(200)
     expect(session.rebuild).toHaveBeenCalledOnce()
-    expect(session.restart).toHaveBeenCalledOnce()
+    expect(session.classic).toHaveBeenCalledOnce()
+    expect(session.restart).not.toHaveBeenCalled()
     expect(harness.writeOutput).not.toHaveBeenCalled()
   })
 
-  it('cancels an unconsumed topology handoff when the owning session closes', async () => {
+  it('closes a retired topology engine once without another handoff or stale publication', async () => {
     const page = path.join(root, 'src/page.js')
     const session = await start(snapshot('red'), [page])
     session.rebuild.mockResolvedValue({ ...snapshot('blue'), entryIds: [page, path.join(root, 'src/child.js')] })
@@ -374,11 +439,12 @@ describe('stateful snapshot output transactions', () => {
     await Promise.all([session.close(), session.close()])
     await vi.advanceTimersByTimeAsync(200)
     expect(session.restart).not.toHaveBeenCalled()
+    expect(session.classic).toHaveBeenCalledOnce()
+    expect(harness.closeAdapter).toHaveBeenCalledOnce()
     expect(harness.writeOutput).not.toHaveBeenCalled()
   })
 
   it.each([
-    ['app.json', '{"window":{"navigationBarTitleText":"updated"}}'],
     ['pages/shared/index.wxml', '<view>updated</view>'],
     ['pages/shared/index.wxss', '.native-updated { color: blue; }'],
   ])('keeps native %s output when a compiler also scans that source', async (fileName, source) => {
@@ -401,7 +467,36 @@ describe('stateful snapshot output transactions', () => {
     expect(harness.fullBuild).not.toHaveBeenCalled()
   })
 
-  it('rejects compiler-owned metadata assets until a changed entry graph replaces the engine', async () => {
+  it('hands a native app JSON change to classic without publishing a stateful snapshot', async () => {
+    const session = await start()
+    const file = path.join(root, 'src/app.json')
+    const delta = vi.spyOn(StatefulHmrTransport.prototype, 'addDelta')
+    harness.writeOutput.mockClear()
+    session.sourceChange(file, 'update', ['entry-json-only:1'])
+    expect(harness.callbacks!.onPatch([file], { type: 'Noop' })).toBe(false)
+    await vi.advanceTimersByTimeAsync(100)
+    expect(session.classic).toHaveBeenCalledOnce()
+    expect(session.runtime.fallback).toMatchObject({ code: 'config-json', files: [file] })
+    expect(session.rebuild).not.toHaveBeenCalled()
+    expect(harness.fullBuild).not.toHaveBeenCalled()
+    expect(harness.writeOutput).not.toHaveBeenCalled()
+    expect(delta).not.toHaveBeenCalled()
+  })
+
+  it('hands a safe script patch to classic when a registered compiler provider lacks HMR support', async () => {
+    const session = await start(snapshot('red'))
+    getCompilerHmrHost(session.ctx).register('legacy-provider', undefined)
+    harness.writeOutput.mockClear()
+    expect(session.patch([])).toBe(false)
+    await vi.advanceTimersByTimeAsync(100)
+    expect(session.classic).toHaveBeenCalledOnce()
+    expect(session.runtime.fallback?.code).toBe('compiler-provider')
+    expect(session.rebuild).not.toHaveBeenCalled()
+    expect(harness.fullBuild).not.toHaveBeenCalled()
+    expect(harness.writeOutput).not.toHaveBeenCalled()
+  })
+
+  it('hands JSON metadata to classic before a compiler can publish it on the old engine', async () => {
     const page = path.join(root, 'src/page.js')
     const child = path.join(root, 'src/child.js')
     const session = await start(snapshot('red'), [page])
@@ -413,11 +508,14 @@ describe('stateful snapshot output transactions', () => {
     compiler.capture(file, '{"usingComponents":{"child":"./child"}}')
     session.rebuild.mockResolvedValueOnce({ ...snapshot('blue'), entryIds: [page, child] })
     harness.writeOutput.mockClear()
-    session.sourceChange(file, 'update', ['entry-local-asset:1'])
-    expect(harness.callbacks!.onPatch([file], { type: 'Noop' })).toBe(true)
+    session.sourceChange(file, 'update', ['entry-json-only:1'])
+    expect(harness.callbacks!.onPatch([file], { type: 'Noop' })).toBe(false)
     await vi.advanceTimersByTimeAsync(200)
     expect(harness.writeOutput).not.toHaveBeenCalled()
-    expect(dispose).toHaveBeenCalledTimes(1)
+    expect(dispose).not.toHaveBeenCalled()
+    expect(session.rebuild).not.toHaveBeenCalled()
+    expect(session.classic).toHaveBeenCalledOnce()
+    expect(session.runtime.fallback).toMatchObject({ code: 'config-json', files: [file] })
     expect(session.patch([])).toBe(false)
   })
 
@@ -871,7 +969,7 @@ describe('stateful snapshot output transactions', () => {
     expect(harness.fullBuild).not.toHaveBeenCalled()
   })
 
-  it('preserves real directory creation and deletion after a metadata-only update', async () => {
+  it('hands a real directory FullReload to classic after ignoring metadata-only updates', async () => {
     await mkdir(path.join(root, 'src'), { recursive: true })
     const directory = await mkdtemp(path.join(root, 'src/child-topology-'))
     temporaryDirectories.push(directory)
@@ -884,18 +982,20 @@ describe('stateful snapshot output transactions', () => {
     session.sourceChange(directory, 'create')
     harness.callbacks!.onPatch([directory], { type: 'FullReload' })
     await vi.advanceTimersByTimeAsync(100)
-    expect(session.rebuild).toHaveBeenCalledTimes(1)
-    expect(session.rebuild).toHaveBeenLastCalledWith([directory])
+    expect(session.rebuild).not.toHaveBeenCalled()
+    expect(session.runtime.fallback?.code).toBe('engine-full-reload')
+    expect(session.classic).toHaveBeenCalledOnce()
 
     await rm(directory, { recursive: true })
     session.sourceChange(directory, 'delete')
     harness.callbacks!.onPatch([directory], { type: 'FullReload' })
     await vi.advanceTimersByTimeAsync(100)
-    expect(session.rebuild).toHaveBeenCalledTimes(2)
-    expect(session.rebuild).toHaveBeenLastCalledWith([directory])
+    expect(session.rebuild).not.toHaveBeenCalled()
+    expect(session.classic).toHaveBeenCalledOnce()
+    expect(harness.fullBuild).not.toHaveBeenCalled()
   })
 
-  it('keeps new sidecars and executable entry topology updates actionable after directory metadata', async () => {
+  it('refreshes a new visual sidecar but hands executable FullReload to classic after directory metadata', async () => {
     await mkdir(path.join(root, 'src'), { recursive: true })
     const directory = await mkdtemp(path.join(root, 'src/new-sidecar-'))
     temporaryDirectories.push(directory)
@@ -904,7 +1004,7 @@ describe('stateful snapshot output transactions', () => {
     await writeFile(style, '.new { color: red; }')
     session.sourceChange(directory)
     session.sourceChange(style, 'create')
-    harness.callbacks!.onPatch([directory, style], { type: 'FullReload' })
+    harness.callbacks!.onPatch([directory, style], { type: 'Noop' })
     await vi.advanceTimersByTimeAsync(100)
     expect(session.rebuild).toHaveBeenCalledExactlyOnceWith([style])
 
@@ -915,8 +1015,10 @@ describe('stateful snapshot output transactions', () => {
     session.sourceChange(source, 'create')
     harness.callbacks!.onPatch([directory, source], { type: 'FullReload', reason: 'new entry topology' })
     await vi.advanceTimersByTimeAsync(100)
-    expect(session.rebuild).toHaveBeenCalledExactlyOnceWith([source])
-    expect(harness.fullBuild).toHaveBeenCalledTimes(1)
+    expect(session.rebuild).not.toHaveBeenCalled()
+    expect(session.classic).toHaveBeenCalledOnce()
+    expect(session.runtime.fallback?.code).toBe('engine-full-reload')
+    expect(harness.fullBuild).not.toHaveBeenCalled()
   })
 
   it('publishes a mixed visual edit as a patch plus changed assets without a full build', async () => {
@@ -1977,7 +2079,7 @@ describe('stateful snapshot output transactions', () => {
     expect(published.get(styleFile)).toMatchObject({ source: '.probe { color: blue; }' })
 
     harness.nativeOutput = nativeOutput('rebuilt')
-    session.full()
+    await session.full()
     await vi.advanceTimersByTimeAsync(50)
     expect(scopes.map(boot)).toEqual(['rebuilt', 'feature/rebuilt'])
   })
@@ -1988,7 +2090,7 @@ describe('stateful snapshot output transactions', () => {
     harness.beforeFullPrepare.mockImplementationOnce(async () => {
       await harness.callbacks!.onOutput(appOutput(), 'full')
     })
-    session.full()
+    await session.full()
     await vi.advanceTimersByTimeAsync(50)
     expect(writtenAssets().filter(item => item.fileName === styleFile).map(item => item.source)).toEqual([
       '.probe { color: red; }',
@@ -2002,7 +2104,7 @@ describe('stateful snapshot output transactions', () => {
     harness.fullBuild.mockImplementationOnce(async () => {
       await harness.callbacks!.onOutput([{ type: 'chunk', fileName: 'pages/index.js', code: 'Page({})', modules: {} }], 'additional')
     })
-    session.full()
+    await session.full()
     await vi.advanceTimersByTimeAsync(50)
     expect(writtenAssets().some(item => item.fileName === styleFile)).toBe(false)
     session.refresh()
@@ -2020,7 +2122,7 @@ describe('stateful snapshot output transactions', () => {
       await gate.promise
       await harness.callbacks!.onOutput(appOutput(), 'full')
     })
-    session.full()
+    await session.full()
     await vi.advanceTimersByTimeAsync(50)
     expect(writtenAssets().some(item => item.fileName === styleFile)).toBe(false)
     gate.resolve()
@@ -2038,7 +2140,7 @@ describe('stateful snapshot output transactions', () => {
     harness.writeOutput.mockClear()
     session.refresh()
     await vi.advanceTimersByTimeAsync(50)
-    session.full()
+    await session.full()
     await vi.advanceTimersByTimeAsync(50)
     expect(harness.writeOutput.mock.calls.length).toBeGreaterThan(0)
     expect(harness.writeOutput.mock.calls.some(([, output]) => output.some(item => item.fileName === 'app.js'))).toBe(true)
@@ -2066,7 +2168,7 @@ describe('stateful snapshot output transactions', () => {
     expect(commit).toHaveBeenCalledTimes(1)
 
     harness.writeOutput.mockClear()
-    session.full()
+    await session.full()
     await vi.advanceTimersByTimeAsync(50)
     expect(commit).toHaveBeenCalledTimes(2)
     expect(harness.writeOutput.mock.calls.some(([, output]) => output.some(item => item.fileName === 'app.js'))).toBe(true)
@@ -2127,12 +2229,12 @@ describe('stateful snapshot output transactions', () => {
   it('does not retire native-owned preludes omitted from a later full output', async () => {
     harness.nativeOutput = [{ type: 'asset', fileName: 'app.prelude.js', source: 'native prelude' }]
     const session = await start(snapshot('red'))
-    session.full()
+    await session.full()
     await vi.advanceTimersByTimeAsync(50)
 
     harness.nativeOutput = []
     harness.writeOutput.mockClear()
-    session.full()
+    await session.full()
     await vi.advanceTimersByTimeAsync(50)
 
     const retired = harness.writeOutput.mock.calls.flatMap(call => call[3] ?? [])
@@ -2216,12 +2318,17 @@ describe('stateful snapshot output transactions', () => {
     failed.output.push(added)
     const session = await start(initial)
     session.rebuild.mockResolvedValueOnce(failed).mockResolvedValue(initial)
-    harness.writeOutput.mockClear().mockRejectedValueOnce(new Error('write failed after adding a file'))
-    session[mode]()
+    const failure = new Error('write failed after adding a file')
+    harness.writeOutput.mockClear().mockRejectedValueOnce(failure)
+    await session[mode]()
     await vi.advanceTimersByTimeAsync(50)
+    expect(writtenAssets()).toContainEqual(added)
+    await expect(session.whenSettled()).rejects.toBe(failure)
     harness.writeOutput.mockClear()
-    session[mode]()
+    // 完整快照失败后客户端已暂停；真实源码保存才会重新调度完整构建。
+    session.refresh()
     await vi.advanceTimersByTimeAsync(50)
+    await session.whenSettled()
     expect(harness.writeOutput.mock.calls.at(-1)?.[3]).toContain(added.fileName)
   })
 
@@ -2289,7 +2396,7 @@ describe('stateful snapshot output transactions', () => {
       await outputReady.promise
       harness.callbacks!.onOutput(appOutput())
     })
-    session.full()
+    await session.full()
     await vi.advanceTimersByTimeAsync(50)
     expect(harness.writeOutput).not.toHaveBeenCalled()
     outputReady.resolve()
@@ -2302,7 +2409,6 @@ describe('stateful snapshot output transactions', () => {
     await vi.advanceTimersByTimeAsync(50)
     expect(harness.fullBuild).toHaveBeenCalledTimes(2)
     expect(session.rebuild.mock.calls[1]?.[0]).toEqual([
-      path.join(root, 'src/page.vue'),
       path.join(root, 'src/page.wxss'),
     ])
     expect(commit).toHaveBeenCalledTimes(2)
@@ -2316,7 +2422,7 @@ describe('stateful snapshot output transactions', () => {
     const session = await start()
     harness.writeOutput.mockClear()
     harness.fullBuild.mockResolvedValueOnce(undefined)
-    session.full()
+    await session.full()
     await vi.advanceTimersByTimeAsync(50)
     expect(harness.writeOutput).not.toHaveBeenCalled()
     await vi.advanceTimersByTimeAsync(10_000)
@@ -2336,7 +2442,7 @@ describe('stateful snapshot output transactions', () => {
     void harness.callbacks!.onOutput([{ type: 'asset', fileName: 'pending.txt', source: 'pending' }], 'additional')
     await vi.advanceTimersByTimeAsync(1)
     session.rebuild.mockResolvedValueOnce(snapshot('blue', [])).mockResolvedValue(snapshot('green'))
-    session.full()
+    await session.full()
     await vi.advanceTimersByTimeAsync(50)
     expect(session.rebuild).toHaveBeenCalledTimes(1)
     session.refresh()

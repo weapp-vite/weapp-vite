@@ -8,8 +8,11 @@ import path from 'node:path'
 import process from 'node:process'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+  ACCEPTED_DEVTOOLS_CHANNEL_ENV,
   ACCEPTED_DEVTOOLS_VERSION_ENV,
   DEVTOOLS_ACCEPTED_VERSION_ENV,
+  DEVTOOLS_OFFICIAL_CHANNEL_ENV,
+  DEVTOOLS_OFFICIAL_ERROR_ENV,
   DEVTOOLS_OFFICIAL_QUERIED_AT_ENV,
   DEVTOOLS_OFFICIAL_SOURCE_ENV,
   DEVTOOLS_OFFICIAL_VERSION_ENV,
@@ -32,6 +35,25 @@ beforeEach(() => {
   vi.stubEnv('WEAPP_VITE_E2E_ACCEPTANCE_SHA', commitSha)
   vi.stubEnv('WEAPP_VITE_E2E_DOM_ACCEPTANCE', '1')
   vi.stubEnv('WEAPP_VITE_E2E_ACCEPTANCE_TASK', 'template-suite')
+  // 本套件固定构造 DevTools 证据，不能继承外层 headless provider 或真实预检策略。
+  vi.stubEnv('WEAPP_VITE_E2E_RUNTIME_PROVIDER', 'devtools')
+  vi.stubEnv('WEAPP_VITE_E2E_ACCEPTANCE_CASES', undefined)
+  vi.stubEnv('WEAPP_VITE_E2E_TEMPLATE', undefined)
+  for (const key of [
+    ACCEPTED_DEVTOOLS_CHANNEL_ENV,
+    ACCEPTED_DEVTOOLS_VERSION_ENV,
+    DEVTOOLS_ACCEPTED_VERSION_ENV,
+    DEVTOOLS_OFFICIAL_CHANNEL_ENV,
+    DEVTOOLS_OFFICIAL_ERROR_ENV,
+    DEVTOOLS_OFFICIAL_QUERIED_AT_ENV,
+    DEVTOOLS_OFFICIAL_SOURCE_ENV,
+    DEVTOOLS_OFFICIAL_VERSION_ENV,
+    DEVTOOLS_SELECTED_CHANNEL_ENV,
+    DEVTOOLS_SELECTED_VERSION_ENV,
+    DEVTOOLS_VERSION_POLICY_ENV,
+  ]) {
+    vi.stubEnv(key, undefined)
+  }
   const journalPath = path.join(reportDir, 'runtime.jsonl')
   fs.writeFileSync(journalPath, '')
   vi.stubEnv('WEAPP_VITE_E2E_REPORT_EVENT_LOG_FILE', journalPath)
@@ -195,7 +217,7 @@ describe('Vitest DOM reporter lifecycle', () => {
     }
     reporter.onTestRunEnd([createModule([first, second])], [], 'passed')
     const report = readReports()[0]!
-    expect(report).toMatchObject({ status: 'passed', strict: true, errors: [], environment: {
+    expect(report).toMatchObject({ provider: 'devtools', status: 'passed', strict: true, errors: [], environment: {
       ideVersion: '2.02.2608060',
       baseLibraryVersion: null,
       baseLibraryVersions: { 'e2e-apps/base': '3.17.2', 'e2e-apps/other-fixture': '3.17.3' },

@@ -1,6 +1,6 @@
 import type { HeadlessSession } from '../../mpcore/packages/simulator/src'
 import type { launchAutomator } from './automator'
-import { WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY } from '@weapp-core/constants'
+import { WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY, WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY, WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY } from '@weapp-core/constants'
 
 type SnapshotSession = Awaited<ReturnType<typeof launchAutomator>>
 
@@ -20,20 +20,30 @@ export async function readIssue1081SnapshotRuntime(session: SnapshotSession, hea
   const data = headless
     ? record(headless.getCurrentPages().at(-1)?.data)
     : record(record(await session.send('Page.getData', { pageId: before.pageId }, { timeout: 1_000 })).data)
-  const runtime = record(await session.evaluateWithOptions((key: string) => {
+  const runtime = record(await session.evaluateWithOptions((keys: { client: string, bridge: string, control: string }) => {
     const pages = typeof getCurrentPages === 'function' ? getCurrentPages() : []
     const page = pages[pages.length - 1] as any
     const app = typeof getApp === 'function' ? getApp() as any : undefined
-    const client = (globalThis as any)[key]
+    const globals = globalThis as any
+    const client = globals[keys.client]
+    const transport = client?.getTransportState?.()
     return {
       appPresent: Boolean(app && typeof app === 'object'),
       appMarker: app?.__e2eHmrInstanceMarker ?? null,
       pageMarker: page?.__e2eHmrInstanceMarker ?? null,
       pageCount: pages.length,
       route: page?.route ?? page?.__route__ ?? null,
-      transportReady: client?.getTransportState?.().initialReady === true,
+      clientPresent: Boolean(client),
+      bridgePresent: Boolean(globals[keys.bridge]),
+      controlPresent: Boolean(globals[keys.control]),
+      transportReady: transport?.initialReady === true,
+      transportPhase: transport?.phase ?? null,
     }
-  }, { timeout: 1_000 }, WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY))
+  }, { timeout: 1_000 }, {
+    client: WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY,
+    bridge: WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY,
+    control: WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY,
+  }))
   // Headless 的原始协议没有 title 字段；从本次新容器的导航栏状态读取相同语义。
   const title = headless ? headless.getCurrentPageNavigationBarTitle() : before.title
   const after = record(await session.send('App.getCurrentPage', {}, { timeout: 1_000 }))

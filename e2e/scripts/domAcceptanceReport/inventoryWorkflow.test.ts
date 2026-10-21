@@ -2,7 +2,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { assertDomAcceptanceInventoryComplete, createDomAcceptanceInventory } from './inventory'
+import { assertDomAcceptanceInventoryComplete, createDomAcceptanceInventory, renderDomAcceptanceInventory } from './inventory'
 
 vi.mock('../e2e-suite-manifest', () => ({
   getIdeExhaustiveTasks: () => [{ label: 'ide/example.test.ts' }],
@@ -45,5 +45,20 @@ describe('live DOM inventory', () => {
     const inventory = createDomAcceptanceInventory(root)
     expect(inventory.tasks[0]!.cases.map(item => item.name)).toEqual(['initial', 'branch-a', 'branch-b'])
     expect(() => assertDomAcceptanceInventoryComplete(inventory)).not.toThrow()
+  })
+
+  it('lists provider applicability while keeping every declaration and its DOM plan in the static inventory', () => {
+    fs.writeFileSync(source, `
+      import { it } from 'vitest'
+      import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
+      const runtimeProvider = resolveRuntimeProviderName()
+      it('shared', ctx => createDomAcceptance(ctx, 'fixture', []))
+      it.runIf(runtimeProvider === 'headless')('background', ctx => createDomAcceptance(ctx, 'fixture', []))
+    `)
+    const inventory = createDomAcceptanceInventory(root)
+    expect(inventory.summary).toMatchObject({ expandedCaseDeclarations: 2, casesWithPlan: 2, casesMissingPlan: 0 })
+    expect(inventory.tasks[0]!.cases[1]?.providerApplicability).toMatchObject({ providers: ['headless'] })
+    expect(renderDomAcceptanceInventory(inventory)).toContain('- Applicable providers: headless')
+    expect(renderDomAcceptanceInventory(inventory)).toContain('runIf(runtimeProvider === \'headless\')')
   })
 })

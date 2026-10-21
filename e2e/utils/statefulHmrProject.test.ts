@@ -42,6 +42,17 @@ afterEach(async () => {
 })
 
 describe('isolated stateful HMR workspace project', () => {
+  it('uses the fixture-owned Vite+ installation and preserves it when the copied project closes', async () => {
+    const { root, fixture } = await createWorkspace()
+    const hostRoot = path.join(fixture, 'node_modules/vite-plus')
+    await mkdir(hostRoot)
+    await writeFile(path.join(hostRoot, 'package.json'), '{"name":"vite-plus"}')
+    const project = await createStatefulHmrProject(root, { compilerHost: 'vite-plus' })
+    expect(await realpath(path.join(project.projectRoot, 'node_modules/vite-plus'))).toBe(await realpath(hostRoot))
+    await project.cleanup()
+    expect(await readFile(path.join(hostRoot, 'package.json'), 'utf8')).toBe('{"name":"vite-plus"}')
+  })
+
   it('isolates edits and output while preserving the source fixture, dependencies, and other projects', async () => {
     const { root, fixture, unknown } = await createWorkspace()
     const project = await createStatefulHmrProject(root)

@@ -64,6 +64,32 @@ function readComponentJson(outputs: Array<OutputChunk | OutputAsset>) {
 }
 
 describe('stateful snapshot component metadata', () => {
+  it('signs the external template consumed by a frozen snapshot rather than a later save on disk', async () => {
+    const root = await createProject()
+    const file = path.join(root, 'src/components/wevu-leaf/index.vue')
+    const template = path.join(root, 'src/components/wevu-leaf/view.html')
+    const source = '<script setup>defineProps<{ label: string }>()</script><template src="./view.html" />'
+      .replace('<script setup>', '<script setup lang="ts">')
+    const before = '<view><text>{{ label }}</text></view>'
+    const after = '<view><text>{{ label }}</text><text>later template</text></view>'
+    await fs.writeFile(file, source)
+    await fs.writeFile(template, before)
+    const options = { cwd: root, isDev: true, mode: 'development' }
+    const initial = await buildStatefulHmrSnapshot(options)
+    const host = getCompilerHmrHost(createCompilerContextInstance())
+    for (const input of [file, template]) {
+      const read = readCompilerRawInput(input)!
+      host.captureRaw(input, read.source, false, read)
+    }
+    const input = host.freeze([])
+    await fs.writeFile(template, after)
+    const pinned = await buildStatefulHmrSnapshot(options, undefined, undefined, input.sources)
+    const current = await buildStatefulHmrSnapshot(options)
+    const initialSignatures = initial.getTemplateRegistrationSignatures()
+    expect(pinned.getTemplateRegistrationSignatures().get(compilerSourceId(file))).toBe(initialSignatures.get(compilerSourceId(file)))
+    expect(current.getTemplateRegistrationSignatures().get(compilerSourceId(file))).not.toBe(initialSignatures.get(compilerSourceId(file)))
+  })
+
   it.each(['raw', 'pinned'] as const)('records native entry versions actually compiled rather than later disk contents (%s)', async (mode) => {
     const root = await createProject()
     const script = path.join(root, 'src/pages/index/index.ts')

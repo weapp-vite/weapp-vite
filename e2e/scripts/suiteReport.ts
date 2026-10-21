@@ -7,6 +7,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { excludedE2EProjects } from '../../scripts/e2eProjectScope'
 import { createAcceptanceIdentity, sanitizeAcceptanceValue } from './domAcceptanceReport/helpers'
+import { providerOutOfScopeCases } from './domAcceptanceReport/taskCases'
 import { assertE2ETimings } from './verification/timing'
 import { VERIFICATION_TOOL_VERSION } from './verification/types'
 
@@ -37,6 +38,7 @@ export interface SuiteTaskReportEntry {
   runtimeBlocker?: SuiteRuntimeBlocker
   definitionHash?: string
   timings?: VerificationTiming[]
+  providerOutOfScopeCases?: PlannedTaskCase[]
 }
 
 export interface SuiteReportContext extends AcceptanceIdentity {
@@ -79,6 +81,7 @@ export interface SuiteReportPayload {
     skippedCount: number
     notExecutedCount: number
     outOfScopeCount: number
+    providerOutOfScopeCaseCount?: number
   }
   tasks: SuiteTaskReportEntry[]
 }
@@ -152,6 +155,7 @@ function renderSuiteReportMarkdown(payload: SuiteReportPayload, reportDir: strin
     `- 覆盖：\`${payload.coverage}\`，验收：\`${payload.acceptance}\`，严格模式：\`${payload.strict}\``,
     `- 计划/执行：\`${payload.summary.plannedCount}/${payload.summary.executedCount}\`，范围外：\`${payload.summary.outOfScopeCount}\``,
     `- 阻塞/跳过/未执行：\`${payload.summary.blockedCount}/${payload.summary.skippedCount}/${payload.summary.notExecutedCount}\``,
+    `- Provider 不适用 case：\`${payload.summary.providerOutOfScopeCaseCount ?? 0}\`（单列，不计为通过）`,
     `- 任务通过：\`${payload.summary.passedCount}/${payload.summary.taskCount}\``,
     `- 失败任务：\`${payload.summary.failedCount}\``,
     `- 子报告：\`${payload.summary.artifactCount}\``,
@@ -187,6 +191,9 @@ function renderSuiteReportMarkdown(payload: SuiteReportPayload, reportDir: strin
     lines.push(`- [${status}] ${task.label}：exit \`${task.exitCode}\`，耗时 \`${formatDuration(task.durationMs)}\``)
     if (task.reason) {
       lines.push(`  - ${task.reason}`)
+    }
+    for (const item of task.providerOutOfScopeCases ?? []) {
+      lines.push(`  - [provider-out-of-scope] ${item.name}：${item.providerScope!.reason}`)
     }
     if (task.artifacts.length === 0) {
       lines.push('  - 无子报告。')
@@ -229,9 +236,10 @@ export function createSuiteReport(
       return { label: task.label, definitionHash: context.taskDefinitions?.[task.label], status: 'out-of-scope', reason: task.outOfScopeReason, artifacts: [], durationMs: 0, exitCode: 0 }
     }
     const result = resultsByLabel.get(task.label)
+    const providerCases = providerOutOfScopeCases(context.plannedCases?.[task.label])
     return result
-      ? { ...result, definitionHash: context.taskDefinitions?.[task.label] ?? result.definitionHash, status: result.status ?? (result.exitCode === 0 ? 'passed' : 'failed') }
-      : { label: task.label, status: 'not-executed', reason: 'Task was not executed in this run', artifacts: [], durationMs: 0, exitCode: 1 }
+      ? { ...result, ...(providerCases.length ? { providerOutOfScopeCases: providerCases } : {}), definitionHash: context.taskDefinitions?.[task.label] ?? result.definitionHash, status: result.status ?? (result.exitCode === 0 ? 'passed' : 'failed') }
+      : { label: task.label, status: 'not-executed', reason: 'Task was not executed in this run', artifacts: [], durationMs: 0, exitCode: 1, ...(providerCases.length ? { providerOutOfScopeCases: providerCases } : {}) }
   })
   const hasIncomplete = tasks.some(task => task.status !== 'passed' && task.status !== 'out-of-scope')
   const payload: SuiteReportPayload = {
@@ -262,6 +270,7 @@ export function createSuiteReport(
       skippedCount: tasks.filter(task => task.status === 'skipped').length,
       notExecutedCount: tasks.filter(task => task.status === 'not-executed').length,
       outOfScopeCount: tasks.filter(task => task.status === 'out-of-scope').length,
+      ...(tasks.some(task => task.providerOutOfScopeCases?.length) ? { providerOutOfScopeCaseCount: tasks.reduce((count, task) => count + (task.providerOutOfScopeCases?.length ?? 0), 0) } : {}),
       artifactCount: taskResults.reduce((count, task) => count + task.artifacts.length, 0),
     },
     tasks: tasks.map(task => ({

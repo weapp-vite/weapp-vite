@@ -20,11 +20,14 @@ import { registerManagedTailwindcssEntries } from '../../plugins/tailwindcssMark
 import { readCompilerInput, withCompilerSourceSnapshot } from '../../plugins/utils/sourceSnapshot'
 
 import { publishAutoRoutesTopology, registerAutoRoutesTopologySource } from '../autoRoutesPlugin/topology'
+import { HmrRuntimeCapabilityError } from '../hmrRuntimeCapabilities'
+import { getHmrRuntimeSession } from '../hmrRuntimeSession'
 import { resetRuntimeStateForFreshBuild } from '../resetRuntimeState'
 import { createRuntimeState } from '../runtimeState'
 import { StatefulHmrRuntimeCompatibilityError } from '../statefulHmr/commonRuntime'
 import { offerStatefulHmrSnapshot, StatefulHmrSnapshotHandoff } from '../statefulHmr/snapshotHandoff'
 import { createWatcherServicePlugin } from '../watcherPlugin'
+import { getInitialBuildInputObservation, startInitialBuildInputObservation } from './initialBuildChanges'
 import { createBuildService } from './service'
 
 const ALL_MP_PLATFORMS = [...getSupportedMiniProgramPlatforms()]
@@ -83,6 +86,7 @@ const createStatefulHmrSnapshotOptionsMock = vi.hoisted(() => vi.fn(async (_opti
   getChildSources: () => ({ files: [], roots: [] }),
   getTailwindStyleOwners: () => new Map(),
   getGlassEaselAnalysisByOwner: () => new Map<string, GlassEaselAnalysisFact>(),
+  getTemplateRegistrationSignatures: () => new Map<string, string>(),
   getEntryIds: () => new Set<string>(),
   getDelegatedComponentEntryIds: () => new Set<string>(),
 })))
@@ -111,7 +115,8 @@ const createDevModuleGraphProviderMock = vi.hoisted(() => vi.fn(async (_ctx, _co
   return { close: vi.fn(async () => {}) }
 }))
 
-vi.mock('node:fs/promises', () => ({
+vi.mock('node:fs/promises', async importOriginal => ({
+  ...await importOriginal<typeof import('node:fs/promises')>(),
   appendFile: appendFileMock,
   mkdir: mkdirMock,
 }))
@@ -158,7 +163,8 @@ vi.mock('../statefulHmr/session', () => ({
   runStatefulHmrDev: runStatefulHmrDevMock,
 }))
 
-vi.mock('../statefulHmr/snapshotBuild', () => ({
+vi.mock('../statefulHmr/snapshotBuild', async importOriginal => ({
+  ...await importOriginal<typeof import('../statefulHmr/snapshotBuild')>(),
   buildStatefulHmrSnapshot: async (loadOptions: unknown, configure: (options: InlineConfig) => InlineConfig) => {
     const snapshot = await createStatefulHmrSnapshotOptionsMock(loadOptions)
     const options = configure(snapshot.options)
@@ -596,6 +602,7 @@ describe('runtime buildPlugin service', () => {
       getChildSources: () => ({ files: [], roots: [] }),
       getTailwindStyleOwners: () => new Map(),
       getGlassEaselAnalysisByOwner: () => new Map<string, GlassEaselAnalysisFact>(),
+      getTemplateRegistrationSignatures: () => new Map<string, string>(),
       getEntryIds: () => new Set<string>(),
       getDelegatedComponentEntryIds: () => new Set<string>(),
     }))
@@ -734,6 +741,7 @@ describe('runtime buildPlugin service', () => {
       getChildSources: () => ({ files: [], roots: [] }),
       getTailwindStyleOwners: () => new Map(),
       getGlassEaselAnalysisByOwner: () => new Map<string, GlassEaselAnalysisFact>(),
+      getTemplateRegistrationSignatures: () => new Map([[snapshotEntry, 'independent-template-registration']]),
       getEntryIds: () => new Set([snapshotEntry]),
       getDelegatedComponentEntryIds: () => new Set<string>(),
     }).mockResolvedValueOnce({
@@ -742,6 +750,7 @@ describe('runtime buildPlugin service', () => {
       getChildSources: () => ({ files: [], roots: [] }),
       getTailwindStyleOwners: () => new Map(),
       getGlassEaselAnalysisByOwner: () => new Map<string, GlassEaselAnalysisFact>(),
+      getTemplateRegistrationSignatures: () => new Map([[snapshotEntry, 'independent-template-registration']]),
       getEntryIds: () => new Set([snapshotEntry]),
       getDelegatedComponentEntryIds: () => new Set<string>(),
     })
@@ -828,6 +837,7 @@ describe('runtime buildPlugin service', () => {
       delegatedComponentEntryIds: [entry],
       componentPageGlobalStyleRoutes: [],
       glassEaselAnalysisByOwner: new Map<string, GlassEaselAnalysisFact>(),
+      templateRegistrationSignatures: new Map([[entry, 'topology-template-registration']]),
     }
     offerStatefulHmrSnapshot(ctx, new StatefulHmrSnapshotHandoff(snapshot, { scope: { roots: [], files: [], excluded: [] }, versions: new Map() }, async () => current))
     await runStatefulHmrDevMock.mock.calls[0]![2]()
@@ -953,6 +963,81 @@ describe('runtime buildPlugin service', () => {
     expect(runStatefulHmrDevMock).toHaveBeenCalledTimes(1)
   })
 
+  it('retains a restart snapshot failure while the public watcher is closing', async () => {
+    const ctx = createMockContext()
+    ctx.configService.weappViteConfig.hmr = { runtime: 'stateful-experimental' }
+    const statefulOwner = { close: vi.fn(async () => {}) }
+    buildMock.mockResolvedValue({ output: [] })
+    runStatefulHmrDevMock.mockResolvedValue(statefulOwner)
+    const watcher = await createBuildService(ctx).build({ skipNpm: true }) as RolldownWatcher
+    const reached = Promise.withResolvers<void>()
+    const release = Promise.withResolvers<void>()
+    const failure = new Error('restart snapshot failed')
+    buildMock.mockImplementationOnce(async () => {
+      reached.resolve()
+      await release.promise
+      throw failure
+    })
+    const restarting = runStatefulHmrDevMock.mock.calls[0]![2]()
+    const rejectedRestart = expect(restarting).rejects.toBe(failure)
+    await reached.promise
+    const closing = watcher.close()
+    const rejectedClose = expect(closing).rejects.toBe(failure)
+    release.resolve()
+    await Promise.all([rejectedRestart, rejectedClose])
+    await expect(watcher.close()).rejects.toBe(failure)
+    expect(statefulOwner.close).toHaveBeenCalledOnce()
+    expect(runStatefulHmrDevMock).toHaveBeenCalledOnce()
+  })
+
+  it.each(['owner-close', 'snapshot'] as const)('retains a settled %s restart failure for later idempotent public shutdown', async (stage) => {
+    const failure = new Error(`stateful restart ${stage} failed`)
+    const statefulOwner = { close: vi.fn(async () => {
+      if (stage === 'owner-close') {
+        throw failure
+      }
+    }) }
+    buildMock.mockResolvedValue({ output: [] })
+    runStatefulHmrDevMock.mockResolvedValue(statefulOwner)
+    const ctx = createMockContext()
+    ctx.configService.weappViteConfig.hmr = { runtime: 'stateful-experimental' }
+    const watcher = await createBuildService(ctx).build({ skipNpm: true }) as RolldownWatcher
+    if (stage === 'snapshot') {
+      buildMock.mockRejectedValueOnce(failure)
+    }
+    const restart = runStatefulHmrDevMock.mock.calls[0]![2]
+    // 先等待失败任务彻底离开 pending 集合，再调用公共关闭，覆盖历史失败不能丢失。
+    await expect(restart()).rejects.toBe(failure)
+    await expect(restart()).rejects.toBe(failure)
+    const closing = watcher.close()
+    expect(watcher.close()).toBe(closing)
+    await expect(closing).rejects.toBe(failure)
+    await expect(watcher.close()).rejects.toBe(failure)
+    expect(statefulOwner.close).toHaveBeenCalledOnce()
+    expect(runStatefulHmrDevMock).toHaveBeenCalledOnce()
+  })
+
+  it('closes native resources and event subscriptions independently and retains both failures', async () => {
+    const facade = createManualWatcher()
+    const closeEvents = facade.close
+    const ownerFailure = new Error('native session close failed')
+    const eventsFailure = new Error('watcher events close failed')
+    const statefulOwner = { close: vi.fn(async () => {
+      throw ownerFailure
+    }) }
+    closeEvents.mockRejectedValueOnce(eventsFailure)
+    buildMock.mockResolvedValue({ output: [] })
+    runStatefulHmrDevMock.mockResolvedValue(statefulOwner)
+    const ctx = createMockContext()
+    ctx.configService.weappViteConfig.hmr = { runtime: 'stateful-experimental' }
+    const watcher = await createBuildService(ctx).build({ skipNpm: true }) as RolldownWatcher
+    const closing = watcher.close()
+    expect(watcher.close()).toBe(closing)
+    await expect(closing).rejects.toMatchObject({ errors: [ownerFailure, eventsFailure], cause: ownerFailure })
+    expect(statefulOwner.close).toHaveBeenCalledOnce()
+    expect(closeEvents).toHaveBeenCalledOnce()
+  })
+
   it.each([false, true])('keeps original native subscribers and releases sessions when closing during restart=%s', async (closeDuringRestart) => {
     const { createDevBuildWatcher } = await vi.importActual<typeof import('./devBuildWatcher')>('./devBuildWatcher')
     const controller = createDevBuildWatcher()
@@ -1034,27 +1119,19 @@ describe('runtime buildPlugin service', () => {
       setting: { compileHotReLoad },
     }
 
-    const buildPromise = createBuildService(ctx).build({ skipNpm: true })
-    await watcher.subscribed
-    watcher.emit('START')
-    watcher.emit('END')
-    await buildPromise
+    await createBuildService(ctx).build({ skipNpm: true })
 
     expect(runStatefulHmrDevMock).not.toHaveBeenCalled()
     expect(ctx.watcherService.setRollupWatcher).toHaveBeenCalledWith(watcher, '/')
     expect(loggerWarnMock).toHaveBeenCalledWith(expect.stringContaining('app.json'))
     expect(loggerWarnMock).toHaveBeenCalledWith(expect.stringContaining('developers.weixin.qq.com'))
-    expect(loggerInfoMock).toHaveBeenCalledWith('HMR 模式：classic（自动降级：Skyline 暂不支持微信开发者工具热重载）')
-    if (compileHotReLoad) {
-      expect(disableProjectPrivateConfigHotReloadMock).toHaveBeenCalledWith('/project/project.private.config.json')
-      expect(ctx.configService.projectPrivateConfig.setting.compileHotReLoad).toBe(false)
-    }
-    else {
-      expect(disableProjectPrivateConfigHotReloadMock).not.toHaveBeenCalled()
-    }
+    expect(getHmrRuntimeSession(ctx).phase).toBe('classic')
+    expect(getHmrRuntimeSession(ctx).fallback?.code).toBe('skyline')
+    expect(disableProjectPrivateConfigHotReloadMock).not.toHaveBeenCalled()
+    expect(ctx.configService.projectPrivateConfig.setting.compileHotReLoad).toBe(compileHotReLoad)
   })
 
-  it('keeps the Skyline classic fallback when private config writeback fails', async () => {
+  it('keeps Skyline classic fallback without writing private configuration', async () => {
     const watcher = createManualWatcher()
     buildMock
       .mockResolvedValueOnce({
@@ -1064,22 +1141,18 @@ describe('runtime buildPlugin service', () => {
         ],
       })
       .mockResolvedValueOnce(watcher)
-    disableProjectPrivateConfigHotReloadMock.mockRejectedValueOnce(new Error('read-only config'))
     const ctx = createMockContext()
     ctx.configService.projectPrivateConfig = {
       setting: { compileHotReLoad: true },
     }
 
-    const buildPromise = createBuildService(ctx).build({ skipNpm: true })
-    await watcher.subscribed
-    watcher.emit('START')
-    watcher.emit('END')
-    await buildPromise
+    await createBuildService(ctx).build({ skipNpm: true })
 
     expect(runStatefulHmrDevMock).not.toHaveBeenCalled()
-    expect(loggerWarnMock).toHaveBeenCalledWith(expect.stringContaining('无法自动关闭'))
-    expect(loggerWarnMock).toHaveBeenCalledWith(expect.stringContaining('read-only config'))
-    expect(loggerInfoMock).toHaveBeenCalledWith('HMR 模式：classic（自动降级：Skyline 暂不支持微信开发者工具热重载）')
+    expect(disableProjectPrivateConfigHotReloadMock).not.toHaveBeenCalled()
+    expect(ctx.configService.projectPrivateConfig.setting.compileHotReLoad).toBe(true)
+    expect(getHmrRuntimeSession(ctx).phase).toBe('classic')
+    expect(getHmrRuntimeSession(ctx).fallback?.code).toBe('skyline')
   })
 
   it('keeps explicit classic runtime when WeChat hot reload is enabled', async () => {
@@ -1102,26 +1175,202 @@ describe('runtime buildPlugin service', () => {
     expect(loggerInfoMock).toHaveBeenCalledWith(expect.stringContaining('HMR 切换：修改 weapp.hmr.runtime 为 auto 或 stateful-experimental'))
   })
 
-  it('falls back to classic when auto stateful runtime compatibility fails', async () => {
+  it.each(['auto', 'stateful-experimental'] as const)('falls back to classic when %s stateful runtime compatibility fails', async (configured) => {
     const watcher = createManualWatcher()
     buildMock.mockResolvedValueOnce({ output: [] })
     runStatefulHmrDevMock.mockRejectedValueOnce(new StatefulHmrRuntimeCompatibilityError('missing DevRuntime'))
     buildMock.mockResolvedValueOnce(watcher)
     const ctx = createMockContext()
+    ctx.configService.weappViteConfig.hmr = { runtime: configured }
     ctx.configService.projectPrivateConfig = {
       setting: { compileHotReLoad: true },
     }
 
-    const buildPromise = createBuildService(ctx).build({ skipNpm: true })
-    await watcher.subscribed
-    watcher.emit('START')
-    watcher.emit('END')
-    await buildPromise
+    await createBuildService(ctx).build({ skipNpm: true })
 
     expect(runStatefulHmrDevMock).toHaveBeenCalledOnce()
     expect(ctx.watcherService.setRollupWatcher).toHaveBeenCalledWith(watcher, '/')
-    expect(loggerWarnMock).toHaveBeenCalledWith(expect.stringContaining('已自动降级为 classic'))
-    expect(loggerInfoMock).toHaveBeenCalledWith('HMR 模式：classic（自动降级：stateful HMR 运行时兼容性检查失败）')
+    expect(loggerWarnMock).toHaveBeenCalledWith(expect.stringContaining('"reason":"runtime-contract"'))
+    expect(getHmrRuntimeSession(ctx).phase).toBe('classic')
+    expect(getHmrRuntimeSession(ctx).fallback?.code).toBe('runtime-contract')
+  })
+
+  it('closes the active stateful owner once and transfers the original public watcher to classic', async () => {
+    const facade = createManualWatcher()
+    const statefulOwner = { close: vi.fn(async () => {}) }
+    buildMock.mockResolvedValueOnce({ output: [] }).mockResolvedValueOnce(facade)
+    runStatefulHmrDevMock.mockResolvedValueOnce(statefulOwner)
+    const ctx = createMockContext()
+    ctx.configService.weappViteConfig.hmr = { runtime: 'stateful-experimental' }
+    const publicWatcher = await createBuildService(ctx).build({ skipNpm: true }) as RolldownWatcher
+    const runtime = getHmrRuntimeSession(ctx)
+    runtime.requestClassic({ code: 'config-json', message: 'app configuration changed' })
+    await runtime.whenSettled()
+    expect(runtime.phase).toBe('classic')
+    expect(runStatefulHmrDevMock).toHaveBeenCalledOnce()
+    expect(statefulOwner.close).toHaveBeenCalledOnce()
+    expect(buildMock).toHaveBeenCalledTimes(2)
+    expect(ctx.watcherService.rollupWatcherMap.get('/')).toBe(publicWatcher)
+    await publicWatcher.close()
+    expect(statefulOwner.close).toHaveBeenCalledOnce()
+  })
+
+  it.each(['after-reload', 'during-reload'] as const)('keeps the original native facade owned after classic fallback and configuration reload (%s)', async (closeStage) => {
+    const { createDevBuildWatcher } = await vi.importActual<typeof import('./devBuildWatcher')>('./devBuildWatcher')
+    const controllers = Array.from({ length: 3 }, () => {
+      const controller = createDevBuildWatcher()
+      const closed = vi.fn(async () => {})
+      controller.watcher.on('close', closed)
+      devBuildWatcherQueue.push(controller as any)
+      return { ...controller, closed }
+    })
+    const sidecars = [createManualSidecarWatcher(), createManualSidecarWatcher()]
+    for (const sidecar of sidecars) {
+      chokidarWatchMock.mockReturnValueOnce(sidecar)
+    }
+    const root = path.normalize(realpathSync.native(await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-native-classic-reload-'))))
+    const srcRoot = path.join(root, 'src')
+    const owner = path.join(srcRoot, 'pages/index.ts')
+    const shared = path.join(srcRoot, 'shared.js')
+    const config = path.join(root, 'vite.config.ts')
+    await fs.outputFile(owner, 'import "../shared.js"; Page({})')
+    await fs.outputFile(shared, 'export const marker = "before"')
+    await fs.outputFile(config, 'export default {}')
+    const graph = createModuleGraphService()
+    const ctx = createMockContext({ moduleGraphService: graph })
+    Object.assign(ctx.configService, {
+      cwd: root,
+      absoluteSrcRoot: srcRoot,
+      outDir: path.join(root, 'dist'),
+      configFileDependencies: [config],
+      relativeAbsoluteSrcRoot: (id: string) => path.relative(srcRoot, id),
+    })
+    ctx.configService.weappViteConfig.hmr = { runtime: 'stateful-experimental' }
+    const statefulOwner = { close: vi.fn(async () => {}) }
+    runStatefulHmrDevMock.mockResolvedValueOnce(statefulOwner)
+    const publications: string[] = []
+    let reloadStarted = false
+    const finishReload = Promise.withResolvers<void>()
+    buildMock.mockImplementation(async () => {
+      if (closeStage === 'during-reload' && publications.length === 3) {
+        reloadStarted = true
+        await finishReload.promise
+      }
+      graph.replaceEntryDependencies(owner, 'script', [shared])
+      ctx.runtimeState.build.hmr.resolvedEntryMap.set(owner, { id: owner })
+      publications.push(await fs.readFile(shared, 'utf8'))
+      return { output: [] }
+    })
+    let publicWatcher: RolldownWatcher | undefined
+    const awaitClose = async (closing: ReturnType<RolldownWatcher['close']>) => {
+      let settled = false
+      void closing.then(() => {
+        settled = true
+      }, () => {
+        settled = true
+      })
+      await vi.waitFor(() => expect(settled).toBe(true))
+      await closing
+    }
+    try {
+      publicWatcher = await createBuildService(ctx).build({ skipNpm: true }) as RolldownWatcher
+      const closeOriginal = publicWatcher.close.bind(publicWatcher)
+      const events: string[] = []
+      publicWatcher.on('event', (event) => {
+        events.push(event.code)
+      })
+      const runtime = getHmrRuntimeSession(ctx)
+      runtime.requestClassic({ code: 'config-json', message: 'app configuration changed' })
+      await runtime.whenSettled()
+      expect(publicWatcher).toBe(controllers[0]!.watcher)
+      expect(events.filter(event => event === 'END')).toHaveLength(1)
+
+      sidecars[0]!.emit('change', config)
+      let closing: ReturnType<RolldownWatcher['close']>
+      if (closeStage === 'during-reload') {
+        await vi.waitFor(() => expect(reloadStarted).toBe(true))
+        let closed = false
+        closing = closeOriginal()
+        void closing.then(() => {
+          closed = true
+        }, () => {
+          closed = true
+        })
+        await flushAsyncTasks()
+        expect(closed).toBe(false)
+        finishReload.resolve()
+      }
+      else {
+        await vi.waitFor(() => expect(loggerSuccessMock).toHaveBeenCalledWith('Vite 配置已重新加载，小程序开发构建已重启。'))
+        expect(events.filter(event => event === 'END')).toHaveLength(3)
+        for (const marker of ['after', 'before']) {
+          const count = publications.length
+          await fs.writeFile(shared, `export const marker = "${marker}"`)
+          moduleGraphProviderChange.handler!({ event: 'update', file: shared })
+          await vi.waitFor(() => expect(publications).toHaveLength(count + 1))
+          await vi.waitFor(() => expect(events.filter(event => event === 'END')).toHaveLength(count))
+        }
+        expect(ctx.watcherService.rollupWatcherMap.get('/')).toBe(publicWatcher)
+        closing = closeOriginal()
+      }
+      expect(closeOriginal()).toBe(closing)
+      await awaitClose(closing)
+      expect(publications).toEqual((closeStage === 'during-reload'
+        ? ['before', 'before', 'before', 'before']
+        : ['before', 'before', 'before', 'before', 'after', 'before']).map(marker => `export const marker = "${marker}"`))
+      expect(runStatefulHmrDevMock).toHaveBeenCalledOnce()
+      for (const controller of controllers) {
+        expect(controller.closed).toHaveBeenCalledOnce()
+      }
+      for (const sidecar of sidecars) {
+        expect(sidecar.close).toHaveBeenCalledOnce()
+      }
+      for (const result of createDevModuleGraphProviderMock.mock.results) {
+        expect((await result.value).close).toHaveBeenCalledOnce()
+      }
+      expect(statefulOwner.close).toHaveBeenCalledOnce()
+      expect(ctx.watcherService.rollupWatcherMap.size).toBe(0)
+      expect(ctx.watcherService.sidecarWatcherMap.size).toBe(0)
+      expect(graph.collectAffectedEntries(shared)).toEqual(new Set())
+      expect(loggerErrorMock).not.toHaveBeenCalled()
+    }
+    finally {
+      finishReload.resolve()
+      if (publicWatcher) {
+        await awaitClose(publicWatcher.close())
+      }
+      await fs.remove(root)
+    }
+  })
+
+  it.each(['auto', 'stateful-experimental'] as const)('starts classic for an unsupported initial compiler provider (%s)', async (configured) => {
+    const watcher = createManualWatcher()
+    buildMock.mockResolvedValueOnce({ output: [] }).mockResolvedValueOnce(watcher)
+    runStatefulHmrDevMock.mockRejectedValueOnce(new HmrRuntimeCapabilityError({ code: 'compiler-provider', message: 'legacy provider has no HMR preparation' }))
+    const ctx = createMockContext()
+    ctx.configService.weappViteConfig.hmr = { runtime: configured }
+    ctx.configService.projectPrivateConfig = { setting: { compileHotReLoad: true } }
+    await createBuildService(ctx).build({ skipNpm: true })
+    expect(getHmrRuntimeSession(ctx).phase).toBe('classic')
+    expect(getHmrRuntimeSession(ctx).fallback?.code).toBe('compiler-provider')
+    expect(runStatefulHmrDevMock).toHaveBeenCalledOnce()
+    expect(ctx.configService.projectPrivateConfig.setting.compileHotReLoad).toBe(true)
+  })
+
+  it.each([
+    new SyntaxError('invalid source syntax'),
+    Object.assign(new Error('source read denied'), { code: 'EACCES' }),
+    new TypeError('business setup rejected'),
+    new Error('IDE protocol disconnected'),
+  ])('preserves an ordinary startup failure without starting classic: %s', async (failure) => {
+    buildMock.mockResolvedValueOnce({ output: [] })
+    runStatefulHmrDevMock.mockRejectedValueOnce(failure)
+    const ctx = createMockContext()
+    ctx.configService.weappViteConfig.hmr = { runtime: 'stateful-experimental' }
+    await expect(createBuildService(ctx).build({ skipNpm: true })).rejects.toBe(failure)
+    expect(getHmrRuntimeSession(ctx).fallback).toBeUndefined()
+    expect(runStatefulHmrDevMock).toHaveBeenCalledOnce()
+    expect(buildMock).toHaveBeenCalledOnce()
   })
 
   it('runs dev app build with workers without a global refresh for local style updates', async () => {
@@ -1767,6 +2016,90 @@ describe('runtime buildPlugin service', () => {
     expect(touchMock).not.toHaveBeenCalled()
   })
 
+  it.each([
+    ['script', 'html', 'direct'],
+    ['script', 'wxml', 'direct'],
+    ['template', 'wxml', 'metadata'],
+    ['style', 'wxss', 'metadata'],
+  ] as const)('publishes an A→B→A %s dependency with .%s as %s', async (kind, extension, dirtyReason) => {
+    const root = path.normalize(realpathSync.native(await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-external-template-snapshot-'))))
+    const owner = path.join(root, 'pages/index.vue')
+    const unrelated = path.join(root, 'pages/other.vue')
+    const external = path.join(root, `pages/view.${extension}`)
+    const original = kind === 'style' ? 'view { color: red }' : '<button class="increment" @tap="increment">{{ count }}</button>'
+    const changed = kind === 'style'
+      ? 'view { color: blue }'
+      : `<view>{{ count * 10 + 1 }}</view><button class="derived-increment" @tap="count += 2">advance</button>${original}`
+    const ownerSource = `<script setup>const count = 0; function increment() {}</script>${kind === 'script' ? `<template src="./view.${extension}" />` : '<template><view>unchanged</view></template>'}`
+    await fs.outputFile(owner, ownerSource)
+    await fs.outputFile(unrelated, '<template><view>unrelated</view></template>')
+    await fs.outputFile(external, original)
+    const graph = createModuleGraphService()
+    const ctx = createMockContext({ moduleGraphService: graph })
+    Object.assign(ctx.configService, {
+      cwd: root,
+      absoluteSrcRoot: root,
+      outDir: path.join(root, 'dist'),
+      relativeAbsoluteSrcRoot: (id: string) => path.relative(root, id),
+      relativeOutputPath: (id: string) => path.relative(root, id),
+    })
+    const hmr = ctx.runtimeState.build.hmr
+    for (const id of [owner, unrelated]) {
+      hmr.resolvedEntryMap.set(id, { id })
+      hmr.loadedEntrySet.add(id)
+    }
+    const snapshots: Array<{ source: string, reason: string | undefined, loaded: boolean, unrelatedLoaded: boolean, mixed: boolean }> = []
+    const watcher = createManualWatcher()
+    chokidarWatchMock.mockReturnValue(createManualSidecarWatcher())
+    buildMock.mockImplementationOnce(async () => {
+      graph.replaceEntryDependencies(owner, kind, [external])
+      return watcher
+    }).mockImplementation(async () => {
+      snapshots.push({
+        source: await fs.readFile(external, 'utf8'),
+        reason: hmr.dirtyEntryReasons.get(owner),
+        loaded: hmr.loadedEntrySet.has(owner),
+        unrelatedLoaded: hmr.loadedEntrySet.has(unrelated),
+        mixed: hmr.profile.dirtyReasonSummary?.includes('entry-mixed-asset:1') ?? false,
+      })
+      return { output: [] }
+    })
+    try {
+      const firstBuild = createBuildService(ctx).build({ skipNpm: true })
+      await watcher.subscribed
+      watcher.emit('START')
+      watcher.emit('END')
+      await firstBuild
+      const events = createDevBuildWatcherMock.mock.results.at(-1)!.value.emitEvent
+      const settledEvents = () => events.mock.calls.filter(([event]) => event.code === 'END' || event.code === 'ERROR').length
+      for (const source of [changed, original]) {
+        // 模拟上一代入口已消费，恢复时必须再次让同一 Vue owner 的脚本失效。
+        hmr.dirtyEntrySet.clear()
+        hmr.dirtyEntryReasons.clear()
+        hmr.dirtyVueEntryIds.clear()
+        hmr.loadedEntrySet.add(owner)
+        const before = settledEvents()
+        await fs.writeFile(external, source)
+        moduleGraphProviderChange.handler!({ event: 'update', file: external })
+        await vi.waitFor(() => expect(settledEvents()).toBe(before + 1))
+      }
+      expect(snapshots).toEqual([changed, original].map(source => ({
+        source,
+        reason: dirtyReason,
+        loaded: false,
+        unrelatedLoaded: true,
+        mixed: dirtyReason === 'direct',
+      })))
+      expect(buildMock).toHaveBeenCalledTimes(3)
+      expect(await fs.readFile(owner, 'utf8')).toBe(ownerSource)
+      expect(loggerErrorMock).not.toHaveBeenCalled()
+    }
+    finally {
+      await watcher.close()
+      await fs.remove(root)
+    }
+  })
+
   it.each([false, true])('pins initial App shell input and commits that generation when source changes during build (before=%s)', async (before) => {
     const reads: string[] = []
     const source = (present: boolean) => `<script setup>const marker = 'app'</script>${present ? '<template><view><slot /></view></template>' : ''}`
@@ -2075,7 +2408,7 @@ describe('runtime buildPlugin service', () => {
     const ctx = createMockContext()
     const pageId = '/project/src/pages/logs/index.vue'
     ctx.runtimeState.build.hmr.resolvedEntryMap.set(pageId, { id: pageId })
-    ctx.moduleGraphService.collectAffectedEntries.mockReturnValue(new Set([pageId]))
+    ctx.moduleGraphService.collectAffectedEntries.mockImplementation((_file: string, kind?: string) => new Set(kind === 'script' ? [] : [pageId]))
     buildMock
       .mockResolvedValueOnce(watcher)
       .mockImplementation(async () => {
@@ -2731,6 +3064,72 @@ describe('runtime buildPlugin service', () => {
     expect(ctx.watcherService.rollupWatcherMap.size).toBe(0)
   })
 
+  it.each([false, true])('preserves sidecar cleanup failures while releasing the remaining classic resources (multiple=%s)', async (multiple) => {
+    const watcher = createManualWatcher()
+    const nativeClose = watcher.close
+    const sidecarWatcher = createManualSidecarWatcher()
+    const sidecarFailure = new Error('snapshot sidecar cleanup failed')
+    const nativeFailure = new Error('native watcher cleanup failed')
+    const resourceFailure = new Error('retained resource cleanup failed')
+    sidecarWatcher.close.mockRejectedValueOnce(sidecarFailure)
+    chokidarWatchMock.mockReturnValue(sidecarWatcher)
+    buildMock.mockResolvedValueOnce(watcher)
+    const ctx = createMockContext()
+    if (multiple) {
+      nativeClose.mockRejectedValueOnce(nativeFailure)
+      ctx.watcherService.closeAll.mockRejectedValueOnce(resourceFailure)
+    }
+    const firstBuild = createBuildService(ctx).build({ skipNpm: true })
+    await watcher.subscribed
+    watcher.emit('START')
+    watcher.emit('END')
+    const result = await firstBuild
+    const closing = result.close()
+    expect(result.close()).toBe(closing)
+    if (multiple) {
+      await expect(closing).rejects.toMatchObject({ errors: [
+        sidecarFailure,
+        nativeFailure,
+        expect.objectContaining({ errors: [resourceFailure] }),
+      ] })
+    }
+    else {
+      await expect(closing).rejects.toBe(sidecarFailure)
+    }
+    expect(nativeClose).toHaveBeenCalledOnce()
+    expect(sidecarWatcher.close).toHaveBeenCalledOnce()
+    expect(watchAssetSourcesMock.mock.results.at(-1)!.value.close).toHaveBeenCalledOnce()
+    const provider = await createDevModuleGraphProviderMock.mock.results.at(-1)!.value
+    expect(provider.close).toHaveBeenCalledOnce()
+    expect(ctx.watcherService.closeAll).toHaveBeenCalledOnce()
+    expect(ctx.watcherService.sidecarWatcherMap.size).toBe(0)
+    expect(ctx.watcherService.rollupWatcherMap.size).toBe(0)
+  })
+
+  it('releases its original sidecar without deleting or closing a replacement generation', async () => {
+    const watcher = createManualWatcher()
+    const sidecarWatcher = createManualSidecarWatcher()
+    chokidarWatchMock.mockReturnValue(sidecarWatcher)
+    buildMock.mockResolvedValueOnce(watcher)
+    const ctx = createMockContext()
+    const firstBuild = createBuildService(ctx).build({ skipNpm: true })
+    await watcher.subscribed
+    watcher.emit('START')
+    watcher.emit('END')
+    const result = await firstBuild
+    const sidecarRoot = [...ctx.watcherService.sidecarWatcherMap.keys()][0]
+    const replacementSidecar = { close: vi.fn(async () => {}) }
+    const replacementWatcher = { close: vi.fn(async () => {}) }
+    ctx.watcherService.sidecarWatcherMap.set(sidecarRoot, replacementSidecar)
+    ctx.watcherService.rollupWatcherMap.set('/', replacementWatcher)
+    await result.close()
+    expect(sidecarWatcher.close).toHaveBeenCalledOnce()
+    expect(ctx.watcherService.sidecarWatcherMap.get(sidecarRoot)).toBe(replacementSidecar)
+    expect(ctx.watcherService.rollupWatcherMap.get('/')).toBe(replacementWatcher)
+    expect(replacementSidecar.close).not.toHaveBeenCalled()
+    expect(replacementWatcher.close).not.toHaveBeenCalled()
+  })
+
   it('restarts the dev watcher after config dependency changes request a restart', async () => {
     const watcher = createManualWatcher()
     const restartedWatcher = createManualWatcher()
@@ -3160,6 +3559,75 @@ describe('runtime buildPlugin service', () => {
     finally {
       await watcher.close()
       vi.useRealTimers()
+    }
+  })
+
+  it('drains a late consumed startup update without rebuilding and still publishes new content and restoration', async () => {
+    const root = path.normalize(realpathSync.native(await fs.mkdtemp(path.join(os.tmpdir(), 'classic-initial-input-'))))
+    const file = path.join(root, 'app.json')
+    const ctx = createMockContext()
+    const release = startInitialBuildInputObservation(ctx.configService)
+    const observation = getInitialBuildInputObservation(ctx.configService)!
+    const published: string[] = []
+    let watcher: RolldownWatcher | undefined
+    try {
+      await fs.writeFile(file, '{"pages":[]}')
+      // 等价于 validateEntries 的真实消费，观察期先于首构开始。
+      await readCompilerInput(ctx.configService, file)
+      Object.assign(ctx.configService, { cwd: root, absoluteSrcRoot: root, outDir: path.join(root, 'dist') })
+      ctx.runtimeState.build.hmr.resolvedEntryMap.set(HMR_PAGE_ID, { id: HMR_PAGE_ID })
+      ctx.moduleGraphService.collectAffectedEntries.mockReturnValue(new Set([HMR_PAGE_ID]))
+      createManualWatcher()
+      chokidarWatchMock.mockReturnValueOnce(createManualSidecarWatcher())
+      buildMock.mockImplementation(async () => {
+        published.push(await readCompilerInput(ctx.configService, file))
+        return { output: [] }
+      })
+      watcher = await createBuildService(ctx).build({ skipNpm: true }) as RolldownWatcher
+      expect(buildMock).toHaveBeenCalledOnce()
+      const { createDevModuleGraphPlugin } = await vi.importActual<typeof import('../../moduleGraph/devProvider')>('../../moduleGraph/devProvider')
+      const plugin = createDevModuleGraphPlugin(ctx, {}, moduleGraphProviderChange.handler!)
+      const hotUpdate = plugin.hotUpdate as (this: unknown, options: { type: string, file: string, read: () => Promise<string> }) => Promise<void>
+      const filter = observation.filter.bind(observation)
+      let handled = Promise.withResolvers<void>()
+      const filtered = vi.spyOn(observation, 'filter').mockImplementation(async (changes) => {
+        try {
+          return await filter(changes)
+        }
+        finally {
+          handled.resolve()
+        }
+      })
+      vi.useFakeTimers()
+      const update = async (source: string) => {
+        await fs.writeFile(file, source)
+        handled = Promise.withResolvers<void>()
+        await hotUpdate.call({ environment: { name: 'client' } }, { type: 'update', file, read: async () => await fs.readFile(file, 'utf8') })
+        await vi.advanceTimersByTimeAsync(8)
+        // 实际批次的输入检查已完成，随后清空同一串行任务的微任务；不靠 close 抢走计时器。
+        await handled.promise
+        await flushAsyncTasks()
+      }
+      try {
+        await update('{"pages":[]}')
+        expect(await filtered.mock.results[0]!.value).toEqual([])
+        expect(buildMock).toHaveBeenCalledOnce()
+        await update('{"pages":["changed"]}')
+        await vi.waitFor(() => expect(published).toEqual(['{"pages":[]}', '{"pages":["changed"]}']))
+        expect(buildMock).toHaveBeenCalledTimes(2)
+        await update('{"pages":[]}')
+        await vi.waitFor(() => expect(published).toEqual(['{"pages":[]}', '{"pages":["changed"]}', '{"pages":[]}']))
+        expect(buildMock).toHaveBeenCalledTimes(3)
+      }
+      finally {
+        filtered.mockRestore()
+        vi.useRealTimers()
+      }
+    }
+    finally {
+      await watcher?.close()
+      release()
+      await fs.remove(root)
     }
   })
 

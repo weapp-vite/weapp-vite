@@ -34,8 +34,9 @@ afterEach(() => {
 function createClient() {
   const requests: Request[] = []
   const bridge = { ready: true, beginUpdate: vi.fn(), endUpdate: vi.fn() }
+  const diagnostics = { error: vi.fn(), warn: vi.fn() }
   const context: Record<string, unknown> = {
-    console: { error: vi.fn() },
+    console: diagnostics,
     setTimeout,
     clearTimeout,
     __rolldown_runtime__: { prepareUpdate: vi.fn(), applyPreparedUpdate: vi.fn() },
@@ -57,7 +58,7 @@ function createClient() {
     respond('batch-published')
     expect(vi.getTimerCount()).toBe(1)
   }
-  return { client: current, requests, bridge, respond, batch, publish }
+  return { client: current, requests, bridge, diagnostics, respond, batch, publish }
 }
 
 describe('stateful client scheduled request ownership', () => {
@@ -119,9 +120,18 @@ describe('stateful client scheduled request ownership', () => {
     const fixture = createClient()
     fixture.publish()
     fixture.bridge.ready = scenario !== 'missing bridge'
+    const failure = new Error('patch failed')
     fixture.client.receiveBatch(fixture.batch, () => {
-      throw new Error('patch failed')
+      throw failure
     })
+    if (scenario === 'missing bridge') {
+      expect(fixture.diagnostics.warn).toHaveBeenCalledExactlyOnceWith('[weapp-vite] stateful HMR bridge is not ready; rebuilding in classic mode')
+      expect(fixture.diagnostics.error).not.toHaveBeenCalled()
+    }
+    else {
+      expect(fixture.diagnostics.error).toHaveBeenCalledExactlyOnceWith('[weapp-vite] stateful HMR patch failed', failure)
+      expect(fixture.diagnostics.warn).not.toHaveBeenCalled()
+    }
     expect(fixture.requests.at(-1)!.data).toMatchObject({
       action: 'rebuild',
       version: 0,

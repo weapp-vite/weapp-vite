@@ -69,6 +69,14 @@ export const WEAPP_VITE_STATEFUL_HMR_GLOBAL_STYLE_BASENAME = 'weapp-vite-global'
 export const WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY = '__WEAPP_VITE_STATEFUL_HMR_CONTROL__'
 export const WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY = '__WEAPP_VITE_STATEFUL_HMR_CLIENT__'
 export const WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY = '__WEAPP_VITE_STATEFUL_HMR_BRIDGE__'
+export const WEAPP_VITE_STATEFUL_HMR_UNSUPPORTED_REGISTRATION_CODE = 'WEAPP_VITE_STATEFUL_HMR_UNSUPPORTED_REGISTRATION'
+export const WEAPP_VITE_STATEFUL_HMR_REGISTRATION_CONTRACT_VERSION = 1
+/** 仅用于同一 Vite 宿主重启的私有配置载体，配置钩子消费后立即移除。 */
+export const WEAPP_VITE_HOST_RESTART_CONFIG_KEY = '__weappViteHostRestart'
+/** 配置文件重新加载产生新的插件模块时，仍沿同一宿主链接续 HMR 决策。 */
+export const WEAPP_VITE_HMR_RUNTIME_SESSION_HANDOFF_KEY = 'weapp-vite:hmr-runtime-session'
+/** 库模块重新执行后，原生服务器交接仍使用同一个关闭资源记录。 */
+export const WEAPP_VITE_DEV_SERVER_CLOSE_KEY = 'weapp-vite:dev-server-close'
 
 export const WEVU_ROUTER_MODULE_ID = 'wevu/router'
 export const WEVU_DEFINE_PAGE_META_MACRO = 'definePageMeta'

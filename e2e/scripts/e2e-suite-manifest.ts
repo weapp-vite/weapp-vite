@@ -9,6 +9,7 @@ import { MANAGED_PROJECT_MAX_WINDOWS_ENV } from '../../packages/weapp-ide-cli/sr
 import { resolveVerificationTopology, TDESIGN_AGGREGATE_LABEL, TDESIGN_SOURCE_LABELS, topologyEnvironment } from '../../scripts/verification/topology.ts'
 import { TEMPLATE_DEV_OPEN_CASES } from '../ide/template-dev-open-cases'
 import { E2E_TARGET_FILE_ENV } from '../utils/vitestTargetFile'
+import { HMR_ACCEPTANCE_BUILD_TESTS, hmrAcceptanceRuntimeFiles } from './hmr-acceptance-manifest'
 import { HMR_GUARD_ALL_TESTS, HMR_GUARD_SPECIAL_CASES, HMR_GUARD_UTILITY_TESTS } from './hmr-guard-manifest'
 
 const ROOT = path.resolve(import.meta.dirname, '..')
@@ -214,15 +215,6 @@ const IDE_TEMPLATES_PATTERNS = [
   'ide/template-weapp-vite-wevu-template.test.ts',
   'ide/template-wevu-features-app.test.ts',
 ]
-const IDE_HMR_PATTERNS = [
-  'ide/app-shell-presence.hmr.runtime.test.ts',
-  'ide/script-setup-external-src.runtime.test.ts',
-  'ide/issue-1015-css-hmr.runtime.test.ts',
-  'ide/stateful-hmr.runtime.test.ts',
-  'ide/template-tailwindcss-tdesign-hmr.runtime.test.ts',
-  'ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts',
-  'ide/wevu-jsx-tsx.hmr.runtime.test.ts',
-]
 const IDE_FULL_CORE_PATTERNS = [
   'ide/app-shell-presence.hmr.runtime.test.ts',
   'ide/vite-plugin.runtime.test.ts',
@@ -280,7 +272,7 @@ const IDE_GATE_TESTS = [
   'ide/wevu-features.runtime.behavior.test.ts',
 ].map(testPath => path.resolve(ROOT, testPath))
 // #779 的计算样式由真实 IDE 与 simulator 的 pageStyleImports browser companion 验收；逻辑树不提供颜色证据。
-const IDE_DOM_HEADLESS_PATTERNS = [
+const IDE_DOM_HEADLESS_PATTERNS = [...new Set([
   'ide/template-plugin-dev-open.runtime.test.ts',
   'ide/issue-1234-automator.runtime.test.ts',
   'ide/app-shell-presence.hmr.runtime.test.ts',
@@ -349,7 +341,8 @@ const IDE_DOM_HEADLESS_PATTERNS = [
   'ide/worker-host.runtime.test.ts',
   'ide/lib-host.runtime.test.ts',
   'ide/platform-host.runtime.test.ts',
-]
+  ...hmrAcceptanceRuntimeFiles('headless'),
+])]
 const IDE_HEADLESS_FULL_TESTS = [...new Set([
   ...IDE_GATE_TESTS,
   ...IDE_DOM_HEADLESS_PATTERNS.map(filePath => path.resolve(ROOT, filePath)),
@@ -553,10 +546,7 @@ function getHeadlessPatternTasks(patterns: string[]) {
 }
 
 function getIdeDomHeadlessTasks() {
-  const stateful = createHeadlessVitestTask(HEADLESS_CONFIG_PATH, path.resolve(ROOT, 'ide/stateful-hmr.runtime.test.ts'))
-  // 原生样式等待实际 WXSS 产物；计算样式断言仍留在完整真实 IDE suite。
-  stateful.args.push('-t', 'preserves native Page identity|ignores unowned editor files|copied and public asset lifecycle|updates Wevu template-generated|two template edit and restore cycles|isolated script updates and restoration|commits navigation requested|initializes updated native defaults')
-  return [...getHeadlessPatternTasks(IDE_DOM_HEADLESS_PATTERNS), stateful].map(task => ({
+  return getHeadlessPatternTasks(IDE_DOM_HEADLESS_PATTERNS).map(task => ({
     ...task,
     env: { ...task.env, WEAPP_VITE_E2E_DOM_ACCEPTANCE: '1' },
   }))
@@ -748,31 +738,21 @@ export function getIdeComponentLibraryVisualFullTasks(_options: SuiteTaskFactory
   return getIdeComponentLibraryTasksForMode('visual-full')
 }
 
+export function getHmrBuildTasks() {
+  // 每个文件仍使用独立 Vitest 进程，特例保留隔离，smoke/utility 不再重复。
+  return HMR_ACCEPTANCE_BUILD_TESTS.map(file => createVitestTask(CI_CONFIG_PATH, file))
+}
+
+export function getHmrIdeTasks() {
+  return getIdePatternTasks(hmrAcceptanceRuntimeFiles('ide'), { WEAPP_VITE_E2E_RUNTIME_PROVIDER: 'devtools' })
+}
+
+export function getHmrHeadlessTasks() {
+  return getHeadlessPatternTasks(hmrAcceptanceRuntimeFiles('headless'))
+}
+
 export function getHmrRegressionTasks() {
-  return [
-    ...getIdePatternTasks(IDE_HMR_PATTERNS),
-    createVitestTask(CI_CONFIG_PATH, path.resolve(ROOT, 'ci/wevu-router-hmr.test.ts')),
-    {
-      label: 'hmr-guard:smoke',
-      command: 'node',
-      args: ['--import', 'tsx', path.resolve(ROOT, 'scripts', 'run-hmr-guard-suite.ts'), 'smoke'],
-    },
-    {
-      label: 'hmr-guard:full',
-      command: 'node',
-      args: ['--import', 'tsx', path.resolve(ROOT, 'scripts', 'run-hmr-guard-suite.ts'), 'full'],
-    },
-    {
-      label: 'hmr-guard:auto-import-vue-sfc',
-      command: 'node',
-      args: ['--import', 'tsx', path.resolve(ROOT, 'scripts', 'run-hmr-guard-suite.ts'), 'auto-import-vue-sfc'],
-    },
-    {
-      label: 'hmr-guard:shared-chunks-auto',
-      command: 'node',
-      args: ['--import', 'tsx', path.resolve(ROOT, 'scripts', 'run-hmr-guard-suite.ts'), 'shared-chunks-auto'],
-    },
-  ] satisfies SuiteTask[]
+  return [...getHmrBuildTasks(), ...getHmrIdeTasks()]
 }
 
 export function getFullTasks() {
@@ -949,6 +929,21 @@ export const E2E_SUITES: Record<string, E2ESuiteDefinition> = {
     name: 'hmr-regression',
     description: 'Complete HMR regression flow: IDE template HMR plus CI dev-watch HMR guards',
     tasks: getHmrRegressionTasks,
+  },
+  'hmr-build': {
+    name: 'hmr-build',
+    description: 'Complete HMR build and watch contracts, including automatic routes and classic fallback',
+    tasks: getHmrBuildTasks,
+  },
+  'ide-hmr-headless': {
+    name: 'ide-hmr-headless',
+    description: 'Strict provider-compatible HMR support and classic fallback checkpoints',
+    tasks: getHmrHeadlessTasks,
+  },
+  'ide-hmr': {
+    name: 'ide-hmr',
+    description: 'Strict real WeChat IDE HMR support and automatic classic reload acceptance',
+    tasks: getHmrIdeTasks,
   },
   'full': {
     name: 'full',

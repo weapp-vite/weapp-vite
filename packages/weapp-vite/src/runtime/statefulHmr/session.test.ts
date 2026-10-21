@@ -1,6 +1,9 @@
+import type { CompilerContext } from '../../context'
 import { runInNewContext } from 'node:vm'
 import { WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY } from '@weapp-core/constants'
 import { describe, expect, it } from 'vitest'
+import { getCompilerHmrHost } from '../../plugins/compilerPlugin/hmr'
+import { createDevBuildWatcher } from '../buildPlugin/devBuildWatcher'
 import {
   getChangedStatefulHmrSnapshotAssets,
   isCompilerContentDirtyReason,
@@ -10,6 +13,7 @@ import {
   mergeStatefulHmrSnapshotAssets,
   redirectNativeComponentRegistration,
   requiresStatefulHmrSnapshot,
+  runStatefulHmrDev,
   shouldMergeStatefulHmrCompilerStyles,
   shouldRebuildStatefulDependency,
   shouldResetStatefulHmrRetention,
@@ -19,6 +23,16 @@ import {
 } from './session'
 
 describe('stateful hmr session', () => {
+  it('rejects missing compiler provider capability before allocating a server or watcher', async () => {
+    const context = { configService: { platform: 'weapp' } } as unknown as CompilerContext
+    getCompilerHmrHost(context).register('legacy-provider', undefined)
+    await expect(runStatefulHmrDev(context, {}, async () => {}, {
+      entryIds: [],
+      initial: { output: [], componentPageGlobalStyleRoutes: [], glassEaselAnalysisByOwner: new Map() },
+      rebuild: async () => { throw new Error('Unexpected snapshot') },
+    }, createDevBuildWatcher())).rejects.toMatchObject({ fallback: { code: 'compiler-provider' } })
+  })
+
   it('only accepts application script and Vue main modules as HMR boundaries', () => {
     const srcRoot = '/project/src'
     const entryIds = new Set([

@@ -1,12 +1,26 @@
 import type { AcceptanceReport } from './types'
 import { describe, expect, it } from 'vitest'
-import { assertTaskCaseCoverage, readPlannedTaskCases } from './taskCases'
+import { assertTaskCaseCoverage, freezeProviderCaseScope, readPlannedTaskCases } from './taskCases'
 
 const first = { file: 'e2e/ide/aggregate.test.ts', name: 'first suite > first case' }
 const second = { file: first.file, name: 'second suite > second case' }
 
 function report(cases: Array<{ file: string, name: string }>): Pick<AcceptanceReport, 'cases'> {
-  return { cases: cases.map(item => ({ ...item, id: item.name, state: 'passed', status: 'passed', violations: [] })) }
+  return {
+    cases: cases.map(item => ({
+      ...item,
+      id: item.name,
+      state: 'passed',
+      status: 'passed',
+      violations: [],
+      acceptance: {
+        fixture: 'e2e-apps/example',
+        provider: 'headless',
+        checkpoints: [{ id: 'mounted', route: '/pages/index/index', action: 'mount', nodes: [{ selector: '.title', text: 'Ready' }] }],
+        evidence: [{ id: 'mounted', route: 'pages/index/index', source: 'headless-logical-tree', capturedAt: '2026-10-19T00:00:01.000Z', nodes: [{ selector: '.title', query: 'css', count: 1, nodes: [{ text: 'Ready' }] }] }],
+      },
+    })),
+  }
 }
 
 describe('planned DOM cases versus actual collection', () => {
@@ -22,6 +36,41 @@ describe('planned DOM cases versus actual collection', () => {
     for (const substitute of [first, { ...second, name: 'unexpected' }, { ...second, file: 'e2e/ide/other.test.ts' }]) {
       expect(() => assertTaskCaseCoverage([first, second], [report([first, substitute])])).toThrow('DOM case inventory mismatch')
     }
+  })
+
+  it.each(['skipped', 'failed', 'pending', 'blocked', 'missing-evidence'] as const)('rejects a planned %s case even when the collected names match exactly', (fault) => {
+    const actual = report([first, second])
+    const incomplete = actual.cases[1]!
+    if (fault === 'blocked') {
+      incomplete.status = 'blocked'
+    }
+    else if (fault !== 'missing-evidence') {
+      incomplete.state = fault
+    }
+    if (fault === 'skipped' || fault === 'missing-evidence') {
+      delete incomplete.acceptance
+    }
+    expect(() => assertTaskCaseCoverage([first, second], [actual])).toThrow('Planned DOM case did not pass with acceptance evidence')
+  })
+
+  it('preserves explicitly selected scope while requiring every selected case to pass with evidence', () => {
+    const actual = report([first, second])
+    actual.cases[1] = { ...actual.cases[1]!, state: 'skipped', status: 'skipped', acceptance: undefined }
+    expect(() => assertTaskCaseCoverage([first], [actual], true)).not.toThrow()
+    expect(() => assertTaskCaseCoverage([first, second], [actual], true)).toThrow('Planned DOM case did not pass with acceptance evidence')
+  })
+
+  it('accepts only the skipped declaration frozen as inapplicable to the actual provider', () => {
+    const applicability = { providers: ['headless'] as const, conditions: [{ modifier: 'runIf' as const, expression: 'provider === \'headless\'', source: 'e2e/ide/aggregate.test.ts:1' }] }
+    const scoped = { ...second, providerScope: freezeProviderCaseScope({ ...applicability, providers: [...applicability.providers] }, 'devtools') }
+    const actual = report([first, second])
+    actual.cases[1] = { ...actual.cases[1]!, state: 'skipped', status: 'skipped', acceptance: undefined }
+    expect(() => assertTaskCaseCoverage([first, scoped], [actual], false, 'devtools')).not.toThrow()
+    expect(() => assertTaskCaseCoverage([first, scoped], [actual], false, 'headless')).toThrow('Invalid frozen DOM provider')
+    const headless = { ...second, providerScope: freezeProviderCaseScope({ ...applicability, providers: [...applicability.providers] }, 'headless') }
+    expect(() => assertTaskCaseCoverage([first, headless], [actual], false, 'headless')).toThrow('Planned DOM case did not pass')
+    expect(() => assertTaskCaseCoverage([first, second], [actual], false, 'devtools')).toThrow('Planned DOM case did not pass')
+    expect(() => assertTaskCaseCoverage([first, scoped], [report([first, second])], false, 'devtools')).toThrow('Planned DOM case did not pass')
   })
 
   it('enumerates both compiler entrypoints with the same names as runtime collection', async () => {

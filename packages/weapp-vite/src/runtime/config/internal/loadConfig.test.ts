@@ -163,6 +163,25 @@ describe('runtime config internal loadConfig', () => {
     expect(hostConfig).toEqual({ weapp: { srcRoot: 'mini', platform: 'weapp' } })
   })
 
+  it('keeps source plugins unchanged when preparation and snapshot compilation load the same config', async () => {
+    const plugin = { name: 'user-plugin' }
+    const plugins = [plugin]
+    Object.freeze(plugins)
+    const hostConfig = { plugins, weapp: { srcRoot: 'mini', platform: 'weapp' as const, tsconfigPaths: { projects: ['tsconfig.json'] } } }
+    const loadConfig = createFactory()
+    for (let iteration = 0; iteration < 2; iteration++) {
+      const result = await loadConfig({ cwd: '/project', mode: 'test', isDev: true, hostConfig: { config: hostConfig } })
+      expect(result.sourceConfig).toBe(hostConfig)
+      expect(result.config.plugins).not.toBe(plugins)
+      expect(result.config.plugins?.filter(value => value && typeof value === 'object' && 'name' in value).map(value => (value as { name: string }).name)).toEqual([
+        'oxc-vite',
+        'user-plugin',
+        'tsconfig-paths',
+      ])
+      expect(plugins).toEqual([plugin])
+    }
+  })
+
   it('resolves config file paths and loaded weapp config reuse checks', () => {
     expect(resolveConfigFilePath('/project', 'configs/vite.config.ts')).toBe('/project/configs/vite.config.ts')
     expect(resolveConfigFilePath('/project', '/abs/vite.config.ts')).toBe('/abs/vite.config.ts')

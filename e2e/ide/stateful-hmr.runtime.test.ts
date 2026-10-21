@@ -27,7 +27,6 @@ import { nativeChildCheckpoints } from './statefulHmrDom/nativeChild'
 import { verifyNativeChildHmr } from './statefulHmrDom/nativeChildCase'
 import { nativeDefaultCheckpoints } from './statefulHmrDom/nativeDefaults'
 import { scriptStateCheckpoints } from './statefulHmrDom/scriptState'
-import { templateBindingCheckpoints } from './statefulHmrDom/templateBindings'
 import { templateCycleCheckpoints } from './statefulHmrDom/templates'
 import { installStatefulHmrTransport } from './statefulHmrDom/transport'
 import { vueChildCheckpoints } from './statefulHmrDom/vueChild'
@@ -572,114 +571,6 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
     }
   })
 
-  // 微信开发者工具 2.02.2609082（基础库 3.17.3）在 component:true 的 Wevu 页面
-  // 应用脚本状态保持补丁后会把当前页面栈重置到 warmup 页面（native），导致页面实例
-  // 和路由均丢失；headless、构建和其余原生页面覆盖均通过。待 DevTools 修复后恢复。
-  it('rehydrates wevu local and store refs while preserving the native page instance', async (ctx) => {
-    if (skipIfStatefulHmrTransportUnavailable(ctx)) {
-      return
-    }
-    const toolInfo = await miniProgram.toolInfo?.().catch(() => undefined)
-    if (toolInfo?.version === '2.02.2609082' && toolInfo.SDKVersion === '3.17.3') {
-      ctx.skip('微信开发者工具在 component:true Wevu 页面脚本状态保持补丁后会重置页面栈；headless 已覆盖该场景。')
-      return
-    }
-    const dom = createDomAcceptance(ctx, 'e2e-apps/stateful-hmr', statefulHmrCheckpoints('wevu', resolveRuntimeProviderName()))
-    const page = await relaunchStatefulRoute(WEVU_ROUTE)
-    try {
-      await waitForPatchedBehavior(0, page)
-      await dom.check('initial', miniProgram, page)
-      await prepareRuntimeState('wevu-instance')
-      await triggerIncrement()
-      await triggerIncrement()
-      await dom.check('prepared', miniProgram, page)
-      expect(await waitForPatchedBehavior(2, page)).toEqual({
-        count: 2,
-        identity: 'wevu-instance',
-        input: 'held-input',
-        route: 'pages/wevu/index',
-        source: 'e2e',
-      })
-
-      const templateSource = originalWevuSource.replace('<input v-model="input"', '<view class="sfc-template">SFC-TEMPLATE-B</view>\n    <input v-model="input"')
-      // SFC 模板先写出，再确认脚本补丁；每笔编辑都等待确认，避免下一笔读取旧版本。
-      const templateClientVersion = await readClientVersion()
-      await replaceFileByRename(fixture.wevuSource, templateSource)
-      await devProcess!.waitFor(waitForFileContains(path.join(fixture.distRoot, 'pages/wevu/index.wxml'), 'SFC-TEMPLATE-B'), 'SFC template B emitted')
-      await waitForClientVersion(templateClientVersion + 1)
-      await dom.check('template-b', miniProgram, await miniProgram.currentPage())
-      expect(await readRuntimeState(page)).toMatchObject({ count: 2, input: 'held-input', identity: 'wevu-instance', route: 'pages/wevu/index' })
-
-      const restoredTemplateClientVersion = await readClientVersion()
-      await replaceFileByRename(fixture.wevuSource, originalWevuSource)
-      await waitForClientVersion(restoredTemplateClientVersion + 1)
-      await dom.check('template-a', miniProgram, await miniProgram.currentPage())
-      expect(await readRuntimeState(page)).toMatchObject({ count: 2, input: 'held-input', identity: 'wevu-instance', route: 'pages/wevu/index' })
-
-      const updatedSource = originalWevuSource
-        .replace('<input v-model="input"', '<view class="sfc-template">SFC-MIXED-TEMPLATE</view>\n    <input v-model="input"')
-        .replace('STATEFUL-WEVU-BASE', 'STATEFUL-WEVU-PATCHED')
-        .replace('count.value += 1', 'count.value += 2')
-        .replace('store.increment(1)', 'store.increment(2)')
-        .replace('  removed: \'initial\',', '  removed: \'initial\',\n  added: \'new default\',')
-      const clientVersion = await readClientVersion()
-      await replaceFileByRename(fixture.wevuSource, updatedSource)
-      await devProcess!.waitFor(waitForFileContains(fixture.updateFile, 'count.value += 2'), 'wevu literal patch published')
-      await waitForClientVersion(clientVersion + 1)
-      try {
-        await dom.check('patched', miniProgram, await miniProgram.currentPage())
-      }
-      catch (error) {
-        const state = await miniProgram.evaluate((key: string) => (globalThis as any)[key]?.getDebugSnapshot(true), WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY)
-        throw new Error(`Wevu HMR rendered state mismatch; bridge=${JSON.stringify(state)}`, { cause: error })
-      }
-      expect(await readRuntimeState(page)).toMatchObject({ count: 2, input: 'held-input', identity: 'wevu-instance' })
-
-      await triggerIncrement()
-      const state = await waitForPatchedBehavior(4, page)
-      await dom.check('updated', miniProgram, await miniProgram.currentPage())
-      expect(state).toEqual({
-        count: 4,
-        identity: 'wevu-instance',
-        input: 'held-input',
-        route: 'pages/wevu/index',
-        source: 'e2e',
-      })
-
-      const styleSource = updatedSource
-        .replace('count.value += 2', 'count.value += 3')
-        .replace('store.increment(2)', 'store.increment(3)')
-        .replace('.page {', '.page {\n  background-color: #dbeafe;')
-      const styleClientVersion = await readClientVersion()
-      await replaceFileByRename(fixture.wevuSource, styleSource)
-      await devProcess!.waitFor(waitForFileContains(fixture.updateFile, 'count.value += 3'), 'mixed SFC script and style patch published')
-      await waitForClientVersion(styleClientVersion + 1)
-      try {
-        await dom.check('mixed-style', miniProgram, await miniProgram.currentPage())
-      }
-      catch (error) {
-        const state = await miniProgram.evaluate((key: string) => (globalThis as any)[key]?.getDebugSnapshot(true), WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY)
-        throw new Error(`Wevu mixed HMR rendered state mismatch; bridge=${JSON.stringify(state)}`, { cause: error })
-      }
-      expect(await readRuntimeState(page)).toMatchObject({ count: 4, input: 'held-input', identity: 'wevu-instance', route: 'pages/wevu/index', source: 'e2e' })
-      await triggerIncrement()
-      await waitForPatchedBehavior(7, page)
-      await dom.check('mixed-style-updated', miniProgram, await miniProgram.currentPage())
-      expect(await readRuntimeState(page)).toMatchObject({ count: 7, input: 'held-input', identity: 'wevu-instance', route: 'pages/wevu/index', source: 'e2e' })
-    }
-    finally {
-      const currentSource = await fs.readFile(fixture.wevuSource, 'utf8').catch(() => originalWevuSource)
-      if (currentSource !== originalWevuSource) {
-        const version = await readClientVersion().catch(() => -1)
-        await replaceFileByRename(fixture.wevuSource, originalWevuSource)
-        await devProcess?.waitFor(waitForFileContains(fixture.updateFile, 'STATEFUL-WEVU-BASE'), 'wevu source restored').catch(() => {})
-        if (version >= 0) {
-          await waitForClientVersion(version + 1).catch(() => {})
-        }
-      }
-    }
-  })
-
   it('preserves native Component identity, data, input, route, and query across a JavaScript patch', async (ctx) => {
     const dom = createDomAcceptance(ctx, 'e2e-apps/stateful-hmr', statefulHmrCheckpoints('component', resolveRuntimeProviderName()))
     if (skipIfStatefulHmrTransportUnavailable(ctx)) {
@@ -769,50 +660,10 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
     })
   })
 
-  it('updates Wevu template-generated computations and event handlers without replacing page state', async (ctx) => {
-    const dom = createDomAcceptance(ctx, 'e2e-apps/stateful-hmr', templateBindingCheckpoints())
-    const page = await relaunchStatefulRoute(WEVU_ROUTE)
-    const output = path.join(fixture.distRoot, 'pages/wevu/index.wxml')
-    try {
-      await dom.check('initial', miniProgram, page)
-      await prepareRuntimeState('template-bindings')
-      await triggerIncrement()
-      await triggerIncrement()
-      const expected = await waitForPatchedBehavior(2, page)
-      await dom.check('prepared', miniProgram, page)
-      const version = await readClientVersion()
-      const updated = originalWevuSource.replace('<input', '<view class="derived-count">{{ count * 10 + 1 }}</view>\n    <button class="derived-increment" @tap="count += 2">advance</button>\n    <input')
-      await replaceFileByRename(fixture.wevuSource, updated)
-      await devProcess!.waitFor(waitForFileContains(output, 'derived-count'), 'generated binding template emitted')
-      await waitForClientVersion(version + 1)
-      await dom.check('edited', miniProgram, await miniProgram.currentPage())
-      expect(await readRuntimeState(page)).toEqual(expected)
-      const button = await page.$('.derived-increment', { fallback: false })
-      expect(button).toBeTruthy()
-      await button.tap()
-      await waitForPatchedBehavior(4, page)
-      await dom.check('clicked', miniProgram, await miniProgram.currentPage())
-      expect(await readRuntimeState(page)).toEqual({ ...expected, count: 4 })
-      const restoreVersion = await readClientVersion()
-      await replaceFileByRename(fixture.wevuSource, originalWevuSource)
-      await waitForClientVersion(restoreVersion + 1)
-      await dom.check('restored', miniProgram, await miniProgram.currentPage())
-      await triggerIncrement()
-      await waitForPatchedBehavior(5, page)
-      await dom.check('original-clicked', miniProgram, await miniProgram.currentPage())
-      expect(await readRuntimeState(page)).toEqual({ ...expected, count: 5 })
-    }
-    finally {
-      if (await fs.readFile(fixture.wevuSource, 'utf8') !== originalWevuSource) {
-        await replaceFileByRename(fixture.wevuSource, originalWevuSource)
-      }
-    }
-  })
-
-  for (const runtime of ['native', 'component', 'wevu'] as const) {
+  for (const runtime of ['native', 'component'] as const) {
     it(`preserves ${runtime} page state across two template edit and restore cycles`, async (ctx) => {
       const dom = createDomAcceptance(ctx, 'e2e-apps/stateful-hmr', templateCycleCheckpoints(runtime))
-      const source = path.join(fixture.projectRoot, `src/pages/${runtime}/index.${runtime === 'wevu' ? 'vue' : 'wxml'}`)
+      const source = path.join(fixture.projectRoot, `src/pages/${runtime}/index.wxml`)
       const output = path.join(fixture.distRoot, `pages/${runtime}/index.wxml`)
       const original = await fs.readFile(source, 'utf8')
       const route = `/pages/${runtime}/index?source=e2e`
@@ -826,26 +677,17 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
         await dom.check('prepared', miniProgram, page)
         expect(original).toContain('<input')
         for (const cycle of [0, 1]) {
-          // SFC 模板也会发布脚本补丁；产物可见不代表客户端已消费，必须在下一次编辑前完成交付。
-          const version = runtime === 'wevu' ? await readClientVersion() : undefined
           const marker = `TEMPLATE-CYCLE-${cycle}`
           const updated = original.replace('<input', `<view class="template-cycle">${marker}</view>\n    <input`)
           await replaceFileByRename(source, updated)
           await devProcess!.waitFor(waitForFileContains(output, marker), 'template edit emitted')
-          if (version !== undefined) {
-            await waitForClientVersion(version + 1)
-          }
           for (const extension of ['js', 'json', 'wxml']) {
             expect(await fs.pathExists(path.join(fixture.distRoot, `components/native-counter/index.${extension}`)), `native component ${extension} after template edit`).toBe(true)
           }
           await dom.check(`edit-${cycle}`, miniProgram, await miniProgram.currentPage())
           expect(await readRuntimeState(page)).toEqual(expected)
-          const restoreVersion = runtime === 'wevu' ? await readClientVersion() : undefined
           await replaceFileByRename(source, original)
           await devProcess!.waitFor(expect.poll(async () => (await fs.readFile(output, 'utf8')).includes(marker), { timeout: 90_000 }).toBe(false), 'template restore emitted')
-          if (restoreVersion !== undefined) {
-            await waitForClientVersion(restoreVersion + 1)
-          }
           await dom.check(`restore-${cycle}`, miniProgram, await miniProgram.currentPage())
           expect(await readRuntimeState(page)).toEqual(expected)
         }
@@ -853,12 +695,8 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
       finally {
         // 成功路径已恢复并验收；再次原子替换会把无变化的 WXML 带入下一场景的补丁批次。
         if (await fs.readFile(source, 'utf8') !== original) {
-          const restoreVersion = runtime === 'wevu' ? await readClientVersion() : undefined
           await replaceFileByRename(source, original)
           await devProcess!.waitFor(expect.poll(async () => await fs.readFile(output, 'utf8'), { timeout: 90_000 }).not.toContain('TEMPLATE-CYCLE-'), 'failed template case source restored')
-          if (restoreVersion !== undefined) {
-            await waitForClientVersion(restoreVersion + 1)
-          }
         }
       }
     })

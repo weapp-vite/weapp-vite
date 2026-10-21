@@ -1,15 +1,20 @@
 import type { ConfigEnv, Plugin, UserConfig } from 'vite'
+import type { HmrRuntimeSession } from '../runtime/hmrRuntimeSession'
+import type { HostLifecycle } from './lifecycle'
 import type { WeappBuildSession } from './session'
 import process from 'node:process'
+import { WEAPP_VITE_HMR_RUNTIME_SESSION_HANDOFF_KEY } from '@weapp-core/constants'
 import path from 'pathe'
 import { isWeappViteHost } from '../pluginHost'
+import { bindClassicFallback, rethrowAfterHostCleanup } from './classicFallback'
 import { createSessionEnvironmentPlugin } from './environment'
-import { bindHostLifecycle } from './lifecycle'
+import { bindHostLifecycle, setHostRestartData, takeHostConfigRestartData, takeHostLifecycle } from './lifecycle'
 import { resolvePlugins } from './options'
 import { createPluginSlots } from './slots'
 import '../config'
 
 const PLUGIN_NAME = 'weapp-vite:host'
+const hmrRuntimeSessionKey = Symbol.for(WEAPP_VITE_HMR_RUNTIME_SESSION_HANDOFF_KEY)
 
 /** 通过顶层 weapp 配置激活标准 Vite 小程序编译。 */
 export function weapp(): Plugin[] {
@@ -17,6 +22,7 @@ export function weapp(): Plugin[] {
   let initializing = false
   let inactive = false
   let serveRequested = false
+  let inheritedLifecycle: HostLifecycle | undefined
   const apply = (config: UserConfig) => !isWeappViteHost(config)
   const slots = createPluginSlots(apply)
   const coordinator: Plugin = {
@@ -31,6 +37,9 @@ export function weapp(): Plugin[] {
         }
         initializing = true
         try {
+          // Vite 的配置合并不保留 symbol；先消费仅属于重启副本的载体，避免泄露给用户插件。
+          inheritedLifecycle = takeHostLifecycle(config)
+          const inheritedRuntime = takeHostConfigRestartData<HmrRuntimeSession>(inheritedLifecycle, hmrRuntimeSessionKey)
           session = undefined
           serveRequested = false
           slots.bind([])
@@ -55,9 +64,16 @@ export function weapp(): Plugin[] {
             plugins: serveRequested ? userPlugins : [],
           }
           const { WeappBuildSession } = await import('./session')
-          session = new WeappBuildSession()
+          session = new WeappBuildSession(inheritedRuntime)
           try {
-            const merged = await session.prepare(hostConfig, path.resolve(config.root ?? process.cwd()), env.mode, serveRequested)
+            const fallbackBeforePrepare = session.hmrRuntimeSession.fallback
+            let merged = await session.prepare(hostConfig, path.resolve(config.root ?? process.cwd()), env.mode, serveRequested)
+            if (session.hmrRuntimeSession.phase === 'switching' && session.hmrRuntimeSession.fallback !== fallbackBeforePrepare) {
+              const runtime = session.hmrRuntimeSession
+              await session.close()
+              session = new WeappBuildSession(runtime)
+              merged = await session.prepare(hostConfig, path.resolve(config.root ?? process.cwd()), env.mode, serveRequested)
+            }
             // 主构建的用户插件已由宿主安装；子构建仍需复用它们处理各自的输入。
             session.context.configService.options.sourceConfig = { ...hostConfig, root: session.context.configService.cwd, plugins: userPlugins }
             if (session.isWeb) {
@@ -68,7 +84,7 @@ export function weapp(): Plugin[] {
             }
             if (serveRequested) {
               const { prepareDevHostConfig } = await import('./dev')
-              if (!session.statefulController && config.experimental?.bundledDev) {
+              if (!session.statefulController && config.experimental?.bundledDev && !session.hmrRuntimeSession.fallback) {
                 throw new Error('[weapp-vite] classic 开发模式暂不支持 experimental.bundledDev，请关闭此选项。')
               }
               const host = prepareDevHostConfig(session, merged, config)
@@ -86,9 +102,7 @@ export function weapp(): Plugin[] {
             return normalized
           }
           catch (error) {
-            // 清理失败不能掩盖宿主首先收到的编译错误。
-            await session.close().catch(() => {})
-            throw error
+            return await rethrowAfterHostCleanup(error, () => session!.close())
           }
         }
         finally {
@@ -109,13 +123,21 @@ export function weapp(): Plugin[] {
           return result
         }
       }
-      bindHostLifecycle(server, () => active.close())
+      bindHostLifecycle(server, () => active.close(), inheritedLifecycle, () => active.hmrRuntimeSession.phase === 'switching')
+      inheritedLifecycle = undefined
       try {
+        // 每代都转交同一个命令级决策；普通配置重启和新的插件工厂也不能重新开启 stateful。
+        await setHostRestartData(server, hmrRuntimeSessionKey, active.hmrRuntimeSession)
         await active.startDev(server)
       }
       catch (error) {
-        await server.close().catch(() => {})
-        throw error
+        return await rethrowAfterHostCleanup(error, () => server.close())
+      }
+      // 后置钩子在所有 configureServer 完成后安装处理器，避免初始化中的请求关闭自身。
+      return () => {
+        if (!active.isClosing) {
+          active.onClose(bindClassicFallback(server, active.hmrRuntimeSession))
+        }
       }
     },
     configResolved(config) {

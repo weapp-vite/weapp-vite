@@ -14,7 +14,7 @@ import { createPublicAssetPublication } from '../asset/publication'
 import { rewriteWevuInternalRuntimeImports, stabilizeWevuRuntimeChunkAccess } from '../core/helpers/bundle'
 import { resolveRootEntryBasename } from '../core/lifecycle/load/weapi'
 import { collectIndependentOutputFileNames, flushIndependentOutputs } from './independent'
-import { prepareOutputOwnership } from './ownership'
+import { prepareOutputPublicationOwnership } from './ownership'
 
 function outputSourceToString(output: OutputBundle[string]) {
   if (output.type === 'chunk') {
@@ -107,7 +107,7 @@ export function createOutputPublicationPlugin(ctx: CompilerContext, subPackageMe
   const publicAssets = subPackageMeta ? undefined : createPublicAssetPublication(ctx)
   let preserveCompleteBundle = false
   let outDir: string | undefined
-  let pendingOwnership: { outDir: string, outputNames: string[], independentOutputNames: string[], partial: boolean } | undefined
+  let pendingOwnership: (() => Promise<void>) | undefined
 
   function releasePendingOwnership() {
     pendingOwnership = undefined
@@ -133,11 +133,10 @@ export function createOutputPublicationPlugin(ctx: CompilerContext, subPackageMe
       async handler() {
         const pending = pendingOwnership
         releasePendingOwnership()
-        if (pending) {
-          await prepareOutputOwnership(ctx, pending.outDir, pending.outputNames, pending.partial)()
-          await prepareOutputOwnership(ctx, pending.outDir, pending.independentOutputNames, false, [], 'independent')()
-        }
         await publicAssets?.commit()
+        if (pending) {
+          await pending()
+        }
       },
     },
     generateBundle: {
@@ -177,10 +176,6 @@ export function createOutputPublicationPlugin(ctx: CompilerContext, subPackageMe
           // 在后续裁剪与 emitFile 改写 bundle 前冻结编译输出集合，public 使用同一份归属排除碰撞。
           const outputNames = Object.keys(outputBundle)
           const independentOutputNames = collectIndependentOutputFileNames(ctx)
-          if (isWrite && (ctx.configService.isDev || this.meta.watchMode) && !preserveCompleteBundle && outDir) {
-            // 写入意图只保存数据；不能让长寿命状态引用 generateBundle 的词法上下文。
-            pendingOwnership = { outDir, outputNames, independentOutputNames, partial }
-          }
           pruneUnchangedDevHmrOutputs(ctx, outputBundle, undefined, {
             runtimeRewriteDone: true,
             preserveCompleteBundle,
@@ -189,7 +184,23 @@ export function createOutputPublicationPlugin(ctx: CompilerContext, subPackageMe
           for (const asset of independentAssets) {
             this.emitFile(asset)
           }
-          await publicAssets?.emit([...outputNames, ...independentOutputNames], partial, asset => this.emitFile(asset))
+          const publicOutputNames: string[] = []
+          await publicAssets?.emit([...outputNames, ...independentOutputNames], partial, (asset) => {
+            if (asset.fileName) {
+              publicOutputNames.push(asset.fileName)
+            }
+            this.emitFile(asset)
+          })
+          if (isWrite && (ctx.configService.isDev || this.meta.watchMode) && !preserveCompleteBundle && outDir) {
+            // 独立 helper 仅冻结普通归属数据与命令身份，不保留 generateBundle 的插件上下文。
+            pendingOwnership = prepareOutputPublicationOwnership(ctx, outDir, {
+              outputNames,
+              independentOutputNames,
+              publicOutputNames,
+              partial,
+              retireStateful: !partial && !subPackageMeta && (ctx.currentBuildTarget ?? 'app') === 'app',
+            })
+          }
           commitWxmlDependencies(ctx)
           commitValidation?.()
           checkpoint('publicationPruneMs')

@@ -84,6 +84,51 @@ describe('projectConfig utils', () => {
     expect(privateConfig.setting).toEqual({ compileHotReLoad: true })
   })
 
+  it('parses only the bytes returned by an optional reader and preserves native JSON semantics', async () => {
+    const root = await createTempDir()
+    try {
+      const basePath = path.join(root, 'project.config.json')
+      const privatePath = path.join(root, 'project.private.config.json')
+      await fs.writeJson(basePath, { miniprogramRoot: 'disk', setting: { es6: false } })
+      await fs.writeJson(privatePath, { setting: { compileHotReLoad: false } })
+      const readFile = vi.fn(async (file: string) => file === basePath
+        ? '\uFEFF{"miniprogramRoot":"consumed","setting":{"es6":true}}'
+        : '{"setting":{"compileHotReLoad":true,"urlCheck":false}}')
+      const config = await getProjectConfig(root, { readFile })
+      expect(config).toEqual({
+        miniprogramRoot: 'consumed',
+        setting: { es6: true, compileHotReLoad: true, urlCheck: false },
+      })
+      expect(readFile.mock.calls).toEqual([[basePath], [privatePath]])
+      expect(await getProjectPrivateConfig(root, { readFile })).toEqual({ setting: { compileHotReLoad: true, urlCheck: false } })
+      await expect(getProjectPrivateConfig(root, { readFile: async () => 'null' })).resolves.toEqual({})
+    }
+    finally {
+      await fs.remove(root)
+    }
+  })
+
+  it('keeps missing, invalid JSON and read errors unchanged with an optional reader', async () => {
+    const root = await createTempDir()
+    try {
+      const readFile = vi.fn(async () => '{}')
+      await expect(getProjectConfig(root, { readFile })).rejects.toThrow('找不到项目配置文件')
+      await expect(getProjectPrivateConfig(root, { readFile })).resolves.toEqual({})
+      expect(readFile).not.toHaveBeenCalled()
+      await fs.writeJson(path.join(root, 'project.config.json'), {})
+      await fs.writeJson(path.join(root, 'project.private.config.json'), {})
+      for (const consume of [async () => '{invalid', async () => {
+        throw new Error('read failed')
+      }]) {
+        await expect(getProjectConfig(root, { readFile: consume })).rejects.toThrow('非法的 json 格式')
+        await expect(getProjectPrivateConfig(root, { readFile: consume })).rejects.toThrow('非法的 json 格式')
+      }
+    }
+    finally {
+      await fs.remove(root)
+    }
+  })
+
   it('supports custom config paths and falls back empty json payloads to plain objects', async () => {
     const root = await createTempDir()
     const basePath = path.join(root, 'configs', 'custom.project.json')

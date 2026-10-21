@@ -1,5 +1,5 @@
 import { runInNewContext } from 'node:vm'
-import { WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY } from '@weapp-core/constants'
+import { WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY, WEAPP_VITE_STATEFUL_HMR_REGISTRATION_CONTRACT_VERSION } from '@weapp-core/constants'
 import { vi } from 'vitest'
 import { statefulHmrRolldownRuntimeSource } from '../runtimeSource'
 
@@ -29,7 +29,7 @@ export interface RuntimeBridge {
   Page: (definition: Definition) => Definition
   Component: (definition: Definition) => void
   takeNativeDefinitions: (name: string) => Definition[]
-  trackWevuComponent: (definition: Definition, refresh: (instance: HostInstance, snapshot?: HostInstance['data']) => void, dispose?: (instance: HostInstance) => void) => Definition
+  trackWevuComponent: (definition: Definition, refresh: (instance: HostInstance, snapshot?: HostInstance['data']) => void, dispose?: (instance: HostInstance) => void, contract?: { version: number, nativeSlotContext: boolean }) => Definition
   beginUpdate: () => void
   endUpdate: () => void
   getDebugSnapshot: () => { instances: { moduleId: string, count: number }[] }
@@ -45,6 +45,11 @@ export function createRuntime() {
     __rolldown_runtime__: { currentModuleId: string }
   } & Record<typeof WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY, RuntimeBridge>
   const bridge = globals[WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY]
+  const trackWevuComponent = bridge.trackWevuComponent.bind(bridge)
+  bridge.trackWevuComponent = (definition, refresh, dispose) => trackWevuComponent(definition, refresh, dispose, {
+    version: WEAPP_VITE_STATEFUL_HMR_REGISTRATION_CONTRACT_VERSION,
+    nativeSlotContext: false,
+  })
   globals.__rolldown_runtime__.currentModuleId = 'pages/counter'
   bridge.installNative('Page', definition => definition)
   bridge.installNative('App', definition => definition)

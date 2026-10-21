@@ -196,4 +196,17 @@ describe('dev process diagnostics', () => {
     collector.flush()
     expect(appendIdeReportEvent).not.toHaveBeenCalled()
   })
+
+  it('keeps capability handoff warnings distinct from client patch failures without a logger severity prefix', () => {
+    const collector = createDevProcessDiagnostics('apps/demo')
+    collector.write('[vite] [weapp-vite] stateful HMR capability fallback bridge-not-ready: runtime unavailable\n')
+    collector.write('[weapp-vite] stateful HMR capability fallback patch-failed: unsupported registration\nError: unsupported registration\n    at apply (runtime.js:1:2)\n')
+    collector.flush()
+    expect(collector.getBuildErrors()).toEqual([])
+    expect(appendIdeReportEvent).not.toHaveBeenCalled()
+
+    collector.write('[vite] [weapp-vite] stateful HMR client patch-failed: business exception\n')
+    collector.flush()
+    expect(collector.getBuildErrors()).toEqual(['[vite] [weapp-vite] stateful HMR client patch-failed: business exception'])
+  })
 })

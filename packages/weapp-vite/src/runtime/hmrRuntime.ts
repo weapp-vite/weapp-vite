@@ -8,6 +8,7 @@ export type HmrRuntimeDecisionReason
     | 'auto-stateful'
     | 'explicit'
     | 'runtime-compatibility-fallback'
+    | 'capability-fallback'
     | 'skyline-fallback'
 
 export interface HmrRuntimeDecision {
@@ -117,6 +118,12 @@ export function findSkylineRendererFiles(output: Iterable<HmrRuntimeOutputFile>)
 }
 
 export function formatHmrRuntimeStartupMessages(decision: HmrRuntimeDecision): [string, string] {
+  if (decision.reason === 'capability-fallback') {
+    return [
+      'HMR 模式：classic（自动降级：当前更新超出状态保持 HMR 的安全能力）',
+      'HMR 切换：本次 dev 会话将持续使用 classic；退出并重新启动 dev 后重新检测。',
+    ]
+  }
   if (decision.reason === 'skyline-fallback') {
     return [
       'HMR 模式：classic（自动降级：Skyline 暂不支持微信开发者工具热重载）',

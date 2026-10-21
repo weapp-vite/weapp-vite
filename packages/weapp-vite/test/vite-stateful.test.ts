@@ -5,8 +5,6 @@ import path from 'node:path'
 import { WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE } from '@weapp-core/constants'
 import { createLogger, createServer } from 'vite'
 import { expect, it, onTestFailed } from 'vitest'
-import { attributeHmrProfile } from '../src/analyze/hmr/attribution'
-import { readHmrProfileLines } from '../src/analyze/hmr/reader'
 import { weapp } from '../src/vite'
 
 interface TestDevEngine {
@@ -25,7 +23,7 @@ function restartStackNames() {
   }) ?? []
 }
 
-it('hands the validated topology snapshot to the replacement native host without compiling it twice', async () => {
+it('switches JSON topology changes to classic without changing the user hot reload preference', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'weapp-vite-topology-handoff-'))
   let server: ViteDevServer | undefined
   let snapshots = 0
@@ -66,17 +64,11 @@ it('hands the validated topology snapshot to the replacement native host without
     await expect.poll(() => readFile(path.join(root, 'dist/pages/extra/index.js'), 'utf8'), { timeout: 15_000 }).toContain('handoff-added-page')
     expect(JSON.parse(await readFile(path.join(root, 'dist/pages/extra/index.json'), 'utf8')) as unknown).toEqual({})
     expect(await readFile(path.join(root, 'dist/pages/extra/index.wxml'), 'utf8')).toContain('extra')
+    await expect.poll(() => server!.config.experimental.bundledDev, { timeout: 15_000 }).toBe(false)
+    expect(await readFile(path.join(root, 'dist/app.js'), 'utf8')).not.toContain('rolldown-runtime')
     await server.close()
     expect(JSON.parse(await readFile(path.join(root, 'project.private.config.json'), 'utf8')) as unknown).toEqual({ setting: { compileHotReLoad: true } })
     expect(snapshots).toBe(2)
-    const profile = readHmrProfileLines(await readFile(path.join(root, 'profile.jsonl'), 'utf8'))
-    expect(profile.skippedLineCount).toBe(0)
-    expect(profile.samples).toHaveLength(1)
-    expect(profile.samples[0]).toMatchObject({ pipeline: 'stateful', profileMode: 'full', status: 'complete', completionBoundary: 'output-published', correlation: 'known' })
-    expect(profile.samples[0]!.buildId).toEqual(expect.any(String))
-    expect(await readFile(path.join(root, 'dist/app.js'), 'utf8')).toContain(profile.samples[0]!.buildId!)
-    expect(profile.samples[0]!.sourceEvents?.map(event => event.file?.replaceAll('\\', '/').split('/src/')[1])).toEqual(['app.json'])
-    expect(attributeHmrProfile(profile.samples[0]!)).toMatchObject({ status: 'complete' })
   }
   finally {
     await server?.close()
@@ -89,7 +81,7 @@ it.each([
   { middlewareMode: false, holdReplacement: false },
   { middlewareMode: true, holdReplacement: true },
   { middlewareMode: false, holdReplacement: true },
-])('starts stateful in the native host, updates topology and closes (middleware: $middlewareMode, hold replacement: $holdReplacement)', async ({ middlewareMode, holdReplacement }) => {
+])('starts stateful, falls back for topology and keeps later host restarts classic (middleware: $middlewareMode, hold replacement: $holdReplacement)', async ({ middlewareMode, holdReplacement }) => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'weapp-vite-stateful-host-'))
   let server: ViteDevServer | undefined
   const diagnosticEvents: unknown[] = []
@@ -231,12 +223,14 @@ export default { define: { STATEFUL_MESSAGE: JSON.stringify(message) } }`,
           replacement.watcher.on('all', (event, file) => {
             diagnosticEvents.push({ event: 'host-event', generation, watchEvent: event, file: labelFile(String(file)) })
           })
-          const engine = (replacement.environments.client as unknown as { bundledDev: { _devEngine: TestDevEngine } }).bundledDev._devEngine
-          engines.add(engine)
-          const close = engine.close.bind(engine)
-          engine.close = async () => {
-            await close()
-            closedEngines.add(engine)
+          const engine = (replacement.environments.client as unknown as { bundledDev?: { _devEngine?: TestDevEngine } }).bundledDev?._devEngine
+          if (engine) {
+            engines.add(engine)
+            const close = engine.close.bind(engine)
+            engine.close = async () => {
+              await close()
+              closedEngines.add(engine)
+            }
           }
           if (!holdReplacement || ++starts !== 2) {
             return
@@ -280,7 +274,7 @@ export default { define: { STATEFUL_MESSAGE: JSON.stringify(message) } }`,
     await writeFile(path.join(root, 'src/app.json'), '{"pages":["pages/home/index"]}')
     await rm(path.join(root, 'src/pages/extra'), { recursive: true })
     if (holdReplacement) {
-      await expect.poll(() => restartRequestedDuringReplacement, { timeout: 15_000 }).toBe(true)
+      expect(restartRequestedDuringReplacement).toBe(false)
       releaseReplacement.resolve()
     }
     await expect.poll(() => readFile(path.join(root, 'dist/app.json'), 'utf8'), { timeout: 15_000 }).not.toContain('pages/extra/index')
@@ -289,6 +283,10 @@ export default { define: { STATEFUL_MESSAGE: JSON.stringify(message) } }`,
     if (holdReplacement) {
       await server.restart(true)
     }
+    expect(server.config.experimental.bundledDev).toBe(false)
+    expect(server.config.define?.App).toBeUndefined()
+    expect(server.config.define?.Page).toBeUndefined()
+    expect(await readFile(path.join(root, 'dist/app.js'), 'utf8')).not.toContain('rolldown-runtime')
     await writeFile(path.join(root, 'src/pages/home/index.wxml'), '<view>stateful-restarted {{message}}</view>')
     await expect.poll(() => readFile(path.join(root, 'dist/pages/home/index.wxml'), 'utf8'), { timeout: 10_000 }).toContain('stateful-restarted')
     const callsBefore = await readFile(path.join(root, 'config-calls.txt'), 'utf8')
@@ -309,7 +307,9 @@ export default { define: { STATEFUL_MESSAGE: JSON.stringify(message) } }`,
     await server.close()
     expect(closedEngines.size).toBe(engines.size)
     await writeFile(path.join(root, 'src/app.json'), '{"pages":["pages/home/index"],"renderer":"skyline"}')
-    await expect(start()).rejects.toThrow('Skyline 项目请显式选择')
+    server = await start()
+    await expect.poll(() => server!.config.experimental.bundledDev, { timeout: 15_000 }).toBe(false)
+    await expect.poll(() => readFile(path.join(root, 'dist/app.json'), 'utf8'), { timeout: 15_000 }).toContain('skyline')
   }
   finally {
     releaseReplacement.resolve()

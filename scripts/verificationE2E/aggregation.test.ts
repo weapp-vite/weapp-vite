@@ -13,6 +13,17 @@ function timing(invocationId: string): VerificationTiming {
 }
 
 describe('complete E2E shard evidence', () => {
+  it('retains IDE resource cleanup artifacts while aggregating the frozen task results', async () => {
+    const plan = await freeze()
+    const reports = shardReports(plan).map(report => ({
+      ...report,
+      tasks: report.tasks.map(task => ({ ...task, artifacts: [{ kind: 'ide-task-resource-report' as const, indexPath: `docs/reports/resources/${task.label}.json` }] })),
+      summary: { ...report.summary, artifactCount: report.tasks.length },
+    }))
+    const aggregate = await aggregateVerificationReports(plan, reports, { now })
+    expect(aggregate.tasks.every(task => task.artifacts[0]?.kind === 'ide-task-resource-report')).toBe(true)
+  })
+
   it('preserves suite acquisition and task diagnostic timings through aggregation', async () => {
     const plan = await freeze()
     const suites: VerificationTiming[] = [0, 1].map(index => ({ name: 'machine-lease-acquisition', invocationId: `lease-${index}`, startedAt: now.toISOString(), durationMs: 2, status: 'passed' }))

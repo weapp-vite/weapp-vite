@@ -7,8 +7,22 @@ import { assertTaskCaseCoverage, readPlannedTaskCases } from './taskCases'
 
 const root = path.resolve(import.meta.dirname, '../../..')
 const label = 'ide/template-plugin-dev-open.runtime.test.ts'
-function report(cases: Array<{ file: string, name: string }>): Pick<AcceptanceReport, 'cases'> {
-  return { cases: cases.map(item => ({ ...item, id: item.name, state: 'passed', status: 'passed', violations: [] })) }
+function report(cases: Array<{ file: string, name: string }>, provider: 'devtools' | 'headless'): Pick<AcceptanceReport, 'cases'> {
+  return {
+    cases: cases.map(item => ({
+      ...item,
+      id: item.name,
+      state: 'passed',
+      status: 'passed',
+      violations: [],
+      acceptance: {
+        fixture: 'templates/weapp-vite-plugin-template',
+        provider,
+        checkpoints: [{ id: 'opened', route: '/pages/index/index', action: 'open', nodes: [{ selector: '.title', text: 'Ready' }] }],
+        evidence: [{ id: 'opened', route: 'pages/index/index', source: provider === 'headless' ? 'headless-logical-tree' : 'devtools-page-frame', capturedAt: '2026-10-19T00:00:01.000Z', nodes: [{ selector: '.title', query: 'css', count: 1, nodes: [{ text: 'Ready' }] }] }],
+      },
+    })),
+  }
 }
 
 const names = [
@@ -42,11 +56,11 @@ describe('plugin P/W dev:open inventory', () => {
     const task = { label, command: 'pnpm', args: [] }
     const planned = await readPlannedTaskCases(task, provider)
     expect(planned.map(item => item.name)).toEqual(names)
-    const reports = [report(planned)]
+    const reports = [report(planned, provider)]
     expect(() => assertTaskCaseCoverage(planned, reports)).not.toThrow()
     for (const omitted of [0, 1]) {
-      expect(() => assertTaskCaseCoverage(planned, [report(planned.filter((_, index) => index !== omitted))])).toThrow(/inventory mismatch/)
+      expect(() => assertTaskCaseCoverage(planned, [report(planned.filter((_, index) => index !== omitted), provider)])).toThrow(/inventory mismatch/)
     }
-    expect(() => assertTaskCaseCoverage(planned, [report([...planned, planned[0]!])])).toThrow(/inventory mismatch/)
+    expect(() => assertTaskCaseCoverage(planned, [report([...planned, planned[0]!], provider)])).toThrow(/inventory mismatch/)
   })
 })

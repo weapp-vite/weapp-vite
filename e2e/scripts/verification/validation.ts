@@ -17,6 +17,16 @@ const topologySchema = z.object({
   }
 }, 'Verification topology policy mismatch')
 
+const providerCaseScopeSchema = z.object({
+  providers: z.array(z.enum(['devtools', 'headless'])).min(1),
+  conditions: z.array(z.object({ modifier: z.enum(['runIf', 'skipIf']), expression: z.string().min(1), source: z.string().min(1) }).strict()).min(1),
+  provider: z.enum(['devtools', 'headless']),
+  scope: z.enum(['in-scope', 'out-of-scope']),
+  reason: z.string().min(1),
+}).strict()
+
+const plannedCaseSchema = z.object({ file: z.string().min(1), name: z.string().min(1), providerScope: providerCaseScopeSchema.optional() }).strict()
+
 export const verificationPlanSchema = z.object({
   schemaVersion: z.literal(1),
   toolVersion: z.number().int().positive(),
@@ -38,7 +48,7 @@ export const verificationPlanSchema = z.object({
     estimatedDurationMs: z.number().finite().positive(),
     shardIndex: z.number().int().nonnegative(),
     outOfScopeReason: z.string().min(1).optional(),
-    cases: z.array(z.object({ file: z.string().min(1), name: z.string().min(1) })).optional(),
+    cases: z.array(plannedCaseSchema).optional(),
     acceptanceTemplates: z.array(z.string().min(1)).optional(),
   }).strict()).min(1),
 }).strict()
@@ -98,6 +108,7 @@ export const verificationSuiteReportSchema = z.object({
     notExecutedCount: z.number().int().nonnegative(),
     outOfScopeCount: z.number().int().nonnegative(),
     artifactCount: z.number().int().nonnegative(),
+    providerOutOfScopeCaseCount: z.number().int().nonnegative().optional(),
   }).strict(),
   tasks: z.array(z.object({
     label: z.string().min(1),
@@ -106,6 +117,7 @@ export const verificationSuiteReportSchema = z.object({
     exitCode: z.number().int(),
     status: z.enum(['passed', 'failed', 'blocked', 'skipped', 'not-executed', 'out-of-scope']),
     artifacts: z.array(z.object({ kind: z.enum(SUITE_TASK_ARTIFACT_KINDS), indexPath: z.string().min(1) })),
+    providerOutOfScopeCases: z.array(plannedCaseSchema).optional(),
   }).passthrough()),
 }).passthrough().superRefine((report, context) => {
   const count = (status: string) => report.tasks.filter(task => task.status === status).length
@@ -123,5 +135,9 @@ export const verificationSuiteReportSchema = z.object({
   }
   if (Object.entries(expected).some(([key, count]) => report.summary[key as keyof typeof expected] !== count)) {
     context.addIssue({ code: 'custom', message: 'Suite report summary does not match task evidence', path: ['summary'] })
+  }
+  if (report.summary.providerOutOfScopeCaseCount !== undefined
+    && report.summary.providerOutOfScopeCaseCount !== report.tasks.reduce((sum, task) => sum + (task.providerOutOfScopeCases?.length ?? 0), 0)) {
+    context.addIssue({ code: 'custom', message: 'Provider out-of-scope count does not match case scope records', path: ['summary'] })
   }
 })

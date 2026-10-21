@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import vm from 'node:vm'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
+import { getHmrRuntimeCapabilityFallback } from '../hmrRuntimeCapabilities'
 import { createStatefulHmrRolldownRuntimeSource } from './commonRuntime'
 import { createStatefulHmrPatchImportResolver, transformStatefulHmrPatchImports } from './patchModule'
 import { renderBatch } from './transport'
@@ -126,5 +127,26 @@ describe('stateful patch external modules', () => {
     expect(code).toContain('register();')
     expect(() => transformStatefulHmrPatchImports('export const value = 1;', options)).toThrow('register exports through the runtime')
     expect(() => transformStatefulHmrPatchImports('import value from "setup";', options)).toThrow('Unsupported Stateful HMR external import')
+  })
+
+  it('distinguishes unsupported patch structure from an ordinary parser error', () => {
+    const options = { filename: 'update.js', resolveImport: () => '../setup.js' }
+    let capability: unknown
+    let syntax: unknown
+    try {
+      transformStatefulHmrPatchImports('export const value = 1;', options)
+    }
+    catch (error) {
+      capability = error
+    }
+    try {
+      transformStatefulHmrPatchImports('const = ;', options)
+    }
+    catch (error) {
+      syntax = error
+    }
+    expect(getHmrRuntimeCapabilityFallback(capability)?.code).toBe('patch-shape')
+    expect(syntax).toBeInstanceOf(Error)
+    expect(getHmrRuntimeCapabilityFallback(syntax)).toBeUndefined()
   })
 })

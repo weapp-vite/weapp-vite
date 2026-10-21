@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import { expect, it } from 'vitest'
-import { captureCompilerNativeScriptInputs, getCompilerSourceSnapshot, readCompilerInput, setCompilerSourceSnapshot, withCompilerSourceSnapshot } from './sourceSnapshot'
+import { captureCompilerNativeScriptInputs, getCompilerSourceSnapshot, observeCompilerInputs, readCompilerInput, setCompilerSourceSnapshot, withCompilerSourceSnapshot } from './sourceSnapshot'
 
 it('restores nested source versions after success and failure without losing empty inputs', async () => {
   const owner = {}
@@ -61,4 +61,47 @@ it('isolates nested collectors, unrelated owners and failed scopes', async () =>
   expect([...outer.versions]).toEqual([[script, createHash('sha256').update('outer').digest('hex')]])
   const next = await captureCompilerNativeScriptInputs(owner, async () => {})
   expect(next.versions.size).toBe(0)
+})
+
+it('notifies only observers that owned the actual read and still remain attached', async () => {
+  const owner = {}
+  const file = '/project/input.json'
+  const pending = Promise.withResolvers<string>()
+  const first: string[] = []
+  const second: string[] = []
+  const releaseFirst = observeCompilerInputs(owner, (_file, source) => first.push(source))
+  const reading = readCompilerInput(owner, file, async () => await pending.promise)
+  const releaseSecond = observeCompilerInputs(owner, (_file, source) => second.push(source))
+  releaseFirst()
+  releaseFirst()
+  pending.resolve('retired-read')
+  expect(await reading).toBe('retired-read')
+  expect(first).toEqual([])
+  expect(second).toEqual([])
+  await readCompilerInput(owner, file, async () => '')
+  expect(second).toEqual([''])
+  await expect(readCompilerInput(owner, file, async () => {
+    throw new Error('failed read')
+  })).rejects.toThrow('failed read')
+  expect(second).toEqual([''])
+  releaseSecond()
+  await readCompilerInput(owner, file, async () => 'after-release')
+  expect(second).toEqual([''])
+})
+
+it('does not pass a retired asynchronous read to the replacement observer generation', async () => {
+  const owner = {}
+  const pending = Promise.withResolvers<string>()
+  const release = observeCompilerInputs(owner, () => {})
+  const reading = readCompilerInput(owner, '/project/input.json', async () => await pending.promise)
+  release()
+  const values: string[] = []
+  const close = observeCompilerInputs(owner, (_file, source) => values.push(source))
+  pending.resolve('retired-read')
+  await reading
+  await withCompilerSourceSnapshot(owner, new Map([['/project/input.json', 'pinned-current']]), async () => {
+    await readCompilerInput(owner, '/project/input.json')
+  })
+  expect(values).toEqual(['pinned-current'])
+  close()
 })

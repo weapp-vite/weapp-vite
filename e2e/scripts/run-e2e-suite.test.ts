@@ -9,6 +9,16 @@ beforeEach(() => vi.stubEnv('WEAPP_VITE_E2E_RUNTIME_PROVIDER', 'devtools'))
 afterEach(() => vi.unstubAllEnvs())
 
 describe('run-e2e-suite ide cleanup hooks', () => {
+  it('keeps the complete HMR acceptance and IDE-only entry awake through the shared wrapper', () => {
+    for (const stage of ['all', 'ide']) {
+      const invocation = createSleepInhibitedE2ECommand(['hmr-acceptance', stage], 'darwin', 'node-runtime')
+      expect(invocation.command).toBe('caffeinate')
+      expect(path.basename(invocation.args[5]!)).toBe('run-hmr-acceptance.ts')
+      expect(invocation.args.at(-1)).toBe(stage)
+      expect(invocation.args).not.toContain('hmr-acceptance')
+    }
+  })
+
   it('wraps IDE full suites with caffeinate on macOS', () => {
     const invocation = createSleepInhibitedE2ECommand(
       ['ide-full', '--filter=github-issues'],
@@ -34,10 +44,10 @@ describe('run-e2e-suite ide cleanup hooks', () => {
 
   it('orders tasks from a rolling start point and then wraps to the beginning', () => {
     const tasks = [
-      { label: 'ide/first.test.ts', command: 'pnpm', args: [] },
-      { label: 'ide/second.test.ts', command: 'pnpm', args: [] },
-      { label: 'ide/third.test.ts', command: 'pnpm', args: [] },
-      { label: 'ide/fourth.test.ts', command: 'pnpm', args: [] },
+      { label: 'ide/first.test.ts', command: 'pnpm', args: [], env: {} },
+      { label: 'ide/second.test.ts', command: 'pnpm', args: [], env: {} },
+      { label: 'ide/third.test.ts', command: 'pnpm', args: [], env: {} },
+      { label: 'ide/fourth.test.ts', command: 'pnpm', args: [], env: {} },
     ]
 
     expect(orderSuiteTasks(tasks, { filter: '', from: '', rollFrom: '3' }).map(task => task.label)).toEqual([
@@ -56,9 +66,9 @@ describe('run-e2e-suite ide cleanup hooks', () => {
 
   it('keeps from as a non-wrapping suffix selection', () => {
     const tasks = [
-      { label: 'ide/first.test.ts', command: 'pnpm', args: [] },
-      { label: 'ide/second.test.ts', command: 'pnpm', args: [] },
-      { label: 'ide/third.test.ts', command: 'pnpm', args: [] },
+      { label: 'ide/first.test.ts', command: 'pnpm', args: [], env: {} },
+      { label: 'ide/second.test.ts', command: 'pnpm', args: [], env: {} },
+      { label: 'ide/third.test.ts', command: 'pnpm', args: [], env: {} },
     ]
 
     expect(orderSuiteTasks(tasks, { filter: '', from: '2', rollFrom: '' }).map(task => task.label)).toEqual([

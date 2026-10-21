@@ -2,8 +2,10 @@
 
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import type { ViteDevServer } from 'vite'
+import type { HmrRuntimeFallbackReason } from '../hmrRuntimeCapabilities'
 import { Buffer } from 'node:buffer'
 import { randomBytes } from 'node:crypto'
+import { WEAPP_VITE_STATEFUL_HMR_UNSUPPORTED_REGISTRATION_CODE } from '@weapp-core/constants'
 import { bundleHmrCode, readMappedHmrCode } from './patchPreparation'
 import { createStatefulHmrServerState, transitionStatefulHmrServer } from './serverState'
 
@@ -31,6 +33,7 @@ export class StatefulHmrTransport {
   private readonly token = createId()
   private readonly pendingPolls = new Map<string, PendingPoll>()
   private closed = false
+  private retired = false
   private suspended = false
   private confirmationChain: Promise<void> = Promise.resolve()
   private publishedVersion = 0
@@ -48,6 +51,8 @@ export class StatefulHmrTransport {
     private readonly server: ViteDevServer,
     private readonly publishUpdate: (buildId: string, source: string) => Promise<void>,
     private readonly requestFullBuild: () => void,
+    private readonly requestClassic?: (reason: HmrRuntimeFallbackReason) => void,
+    private readonly reportError?: (error: Error) => void,
   ) {}
 
   get retainedDeltaBytes(): number {
@@ -65,7 +70,13 @@ export class StatefulHmrTransport {
   close(): void {
     this.closed = true
     this.cancelPendingDeliveries()
-    this.respondToAll({ type: 'rebuilding' })
+    this.respondToAll({ type: this.retired ? 'retired' : 'rebuilding' })
+  }
+
+  retire(): void {
+    this.retired = true
+    this.cancelPendingDeliveries()
+    this.respondToAll({ type: 'retired' })
   }
 
   addDelta(code: string, changedIds: string[], delivered?: () => Promise<void>): Promise<void> {
@@ -77,10 +88,10 @@ export class StatefulHmrTransport {
     return execution.promise
   }
 
-  cancelPendingDeliveries(): void {
+  cancelPendingDeliveries(error = new Error('Stateful HMR delivery cancelled by full synchronization')): void {
     this.suspended = true
     for (const execution of this.executions.values()) {
-      execution.reject(new Error('Stateful HMR delivery cancelled by full synchronization'))
+      execution.reject(error)
     }
     this.executions.clear()
     this.publishedVersion = 0
@@ -159,6 +170,10 @@ export class StatefulHmrTransport {
   }
 
   private readonly handleRequest = async (request: IncomingMessage, response: ServerResponse) => {
+    if (this.retired) {
+      respond(response, 410, { type: 'retired' })
+      return
+    }
     if (this.closed || request.method !== 'POST') {
       respond(response, 404, { type: 'not-found' })
       return
@@ -181,16 +196,38 @@ export class StatefulHmrTransport {
     }
     if (body.action === 'rebuild') {
       const failure = body.failure
+      let reportedFailure = false
       if (failure && typeof failure === 'object' && 'reason' in failure) {
         const reason = failure.reason
         if (reason === 'bridge-not-ready' || reason === 'patch-failed') {
           const message = 'message' in failure && typeof failure.message === 'string' ? failure.message : ''
           const stack = 'stack' in failure && typeof failure.stack === 'string' ? failure.stack : ''
-          this.server.config.logger.error(`[weapp-vite] stateful HMR client ${reason}: ${message}\n${stack}`)
+          const diagnostic = `[weapp-vite] stateful HMR client ${reason}: ${message}\n${stack}`
+          const capabilityDiagnostic = `[weapp-vite] stateful HMR capability fallback ${reason}: ${message}\n${stack}`
+          if (reason === 'bridge-not-ready') {
+            this.server.config.logger.warn(capabilityDiagnostic)
+            this.requestClassic?.({ code: 'runtime-contract', message: message || '小程序状态保持 HMR bridge 未就绪。' })
+          }
+          else if ('code' in failure && failure.code === WEAPP_VITE_STATEFUL_HMR_UNSUPPORTED_REGISTRATION_CODE) {
+            this.server.config.logger.warn(capabilityDiagnostic)
+            this.requestClassic?.({ code: 'native-registration', message: message || '原生组件注册契约发生不兼容变化。' })
+          }
+          else {
+            this.server.config.logger.error(diagnostic)
+            const error = new Error(message || 'Stateful HMR client patch failed')
+            error.stack = stack || error.stack
+            this.cancelPendingDeliveries(error)
+            this.reportError?.(error)
+            respond(response, 422, { type: 'error' })
+            return
+          }
+          reportedFailure = true
         }
       }
-      this.requestFullBuild()
-      respond(response, 202, { type: 'rebuilding' })
+      if (!reportedFailure) {
+        this.requestFullBuild()
+      }
+      respond(response, this.retired ? 410 : 202, { type: this.retired ? 'retired' : 'rebuilding' })
       return
     }
     if (body.action === 'register') {

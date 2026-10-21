@@ -202,10 +202,13 @@ export function createRequireAnalysisPlugin(state: CorePluginState): Plugin {
       filter: {
         id: REQUIRE_ANALYSIS_FILTER_RE,
       },
-      async handler(code, id) {
+      async handler(code, id, options) {
         try {
           const dynamicImports = resolveDynamicImports()
-          const ast = this.parse(code)
+          // bundled-dev 的原生转换可以晚于 JS hook，按当前模块语言分析原始源码。
+          const moduleType = options?.moduleType ?? (cleanModuleId(id).endsWith('.ts') ? 'ts' : 'js')
+          const lang = moduleType === 'ts' ? 'ts' : moduleType === 'tsx' ? 'tsx' : moduleType === 'jsx' ? 'jsx' : 'js'
+          const ast = this.parse(code, { lang })
           const {
             dynamicImportTokens,
             requireCallbackTokens,

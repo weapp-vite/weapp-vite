@@ -1,5 +1,6 @@
 import type { InlineConfig, ViteDevServer } from 'vite'
 import type { DevServerCloseRecord } from '../devLifecycle/server'
+import { WEAPP_VITE_HOST_RESTART_CONFIG_KEY } from '@weapp-core/constants'
 import { getDevServerCloseRecord, replaceDevServerClose } from '../devLifecycle/server'
 import { getDevShutdownScope } from '../devLifecycle/shutdown'
 
@@ -10,13 +11,17 @@ interface RestartData {
   dispose?: (status: 'incomplete' | 'failed') => void | Promise<void>
 }
 
-interface HostLifecycle {
+export interface HostLifecycle {
   readonly restartTask: Promise<void> | undefined
   readonly data: Map<symbol, RestartData>
   registerReplacement: (generation: DevServerCloseRecord) => void
 }
 
-type HostInlineConfig = InlineConfig & { [hostLifecycleKey]?: HostLifecycle }
+type HostLifecycleCarrier = (() => void) & { [hostLifecycleKey]: HostLifecycle }
+type HostInlineConfig = InlineConfig & {
+  [hostLifecycleKey]?: HostLifecycle
+  [WEAPP_VITE_HOST_RESTART_CONFIG_KEY]?: HostLifecycleCarrier
+}
 const hostData = new WeakMap<ViteDevServer, { incoming?: Map<symbol, RestartData>, outgoing: Map<symbol, RestartData> }>()
 
 async function settleHostCleanup(tasks: Promise<unknown>[]) {
@@ -31,6 +36,25 @@ async function discardRestartData(data: Map<symbol, RestartData> | undefined, st
   const entries = [...data?.values() ?? []]
   data?.clear()
   await settleHostCleanup(entries.map(async entry => await entry.dispose?.(status)))
+}
+
+/** 在配置合并后、编译准备前接管重启链；函数载体不会被 Vite 深拷贝。 */
+export function takeHostLifecycle(config: InlineConfig): HostLifecycle | undefined {
+  const inline = config as HostInlineConfig
+  const carrier = inline[WEAPP_VITE_HOST_RESTART_CONFIG_KEY]
+  const inherited = typeof carrier === 'function' ? carrier[hostLifecycleKey] : inline[hostLifecycleKey]
+  if (inherited) {
+    delete inline[WEAPP_VITE_HOST_RESTART_CONFIG_KEY]
+    delete inline[hostLifecycleKey]
+  }
+  return inherited
+}
+
+/** 需要参与配置准备的数据在 configureServer 之前读取，且只能接管一次。 */
+export function takeHostConfigRestartData<T>(lifecycle: HostLifecycle | undefined, key: symbol): T | undefined {
+  const value = lifecycle?.data.get(key)?.value as T | undefined
+  lifecycle?.data.delete(key)
+  return value
 }
 
 /** 重启附带数据仅属于这一条宿主链，不写入调用方配置或共享的进程缓存。 */
@@ -53,7 +77,7 @@ export function takeHostRestartData<T>(server: ViteDevServer, key: symbol): T | 
 }
 
 /** 关闭等待正在替换服务器的重启，避免旧入口返回后新会话继续写出。 */
-export function bindHostLifecycle(server: ViteDevServer, closeSession: () => Promise<void>) {
+export function bindHostLifecycle(server: ViteDevServer, closeSession: () => Promise<void>, preparedLifecycle?: HostLifecycle, isRetired?: () => boolean) {
   const nativeRestart = server.restart.bind(server)
   const generation = getDevServerCloseRecord(server)
   const nativeClose = generation.close
@@ -61,14 +85,24 @@ export function bindHostLifecycle(server: ViteDevServer, closeSession: () => Pro
   // Vite 在赋值 _restartPromise 前已创建替换宿主，不能用其私有字段识别父重启。
   // 只接收本次原生重启传入的私有配置，新的插件实例也能接续同一条宿主链。
   const inlineConfig = server.config.inlineConfig as HostInlineConfig
-  const inherited = inlineConfig[hostLifecycleKey]
+  const inherited = preparedLifecycle ?? takeHostLifecycle(inlineConfig)
   const inheritedRestart = inherited?.restartTask
   const data = new Map<symbol, RestartData>()
   hostData.set(server, { incoming: inherited?.data, outgoing: data })
-  delete inlineConfig[hostLifecycleKey]
   const stopping = Promise.withResolvers<void>()
   let restartTask: Promise<void> | undefined
   let closeTask: Promise<void> | undefined
+  let retired = false
+  for (const environment of Object.values(server.environments ?? {})) {
+    const listen = environment.listen.bind(environment)
+    // Vite 可在 configureServer 返回后才启动环境；关闭或交接后的旧代不能再次启动引擎。
+    // gate 跟随本代环境永久退役，不在清理时恢复，也不影响替换宿主的新环境。
+    environment.listen = async (...args) => {
+      if (!retired && !isRetired?.()) {
+        await listen(...args)
+      }
+    }
+  }
   const replacements = new Set<DevServerCloseRecord>()
   const lifecycle: HostLifecycle = {
     data,
@@ -92,6 +126,7 @@ export function bindHostLifecycle(server: ViteDevServer, closeSession: () => Pro
   }
 
   const closeResources = async () => {
+    retired = true
     stopping.resolve()
     const sessionCleanup = settleHostCleanup([Promise.resolve().then(closeSession), discardRestartData(data, 'incomplete'), discardRestartData(inherited?.data, 'incomplete')])
     const hostCleanup = (async () => {
@@ -130,14 +165,17 @@ export function bindHostLifecycle(server: ViteDevServer, closeSession: () => Pro
         }
       }
       try {
+        retired = true
         await closeSession()
         if (closeTask || scope?.stopping) {
           return
         }
         const config = server.config
         // 不把重启状态写入调用方的配置；两个独立宿主可以安全复用同一份配置。
-        // Vite 的 force 重启通过对象展开合并 defaults，会继续保留此 symbol。
-        const restartConfig: HostInlineConfig = { ...config.inlineConfig, [hostLifecycleKey]: lifecycle }
+        // Vite 配置合并会丢弃 symbol 键；私有字符串只承载不可深拷贝的函数引用。
+        // 实际资源和一次性数据仍由本条 symbol 生命周期持有，不使用进程级索引。
+        const carrier: HostLifecycleCarrier = Object.assign(() => {}, { [hostLifecycleKey]: lifecycle })
+        const restartConfig: HostInlineConfig = { ...config.inlineConfig, [WEAPP_VITE_HOST_RESTART_CONFIG_KEY]: carrier }
         const restartHostConfig = { ...config, inlineConfig: restartConfig }
         server.config = restartHostConfig
         try {
@@ -148,7 +186,7 @@ export function bindHostLifecycle(server: ViteDevServer, closeSession: () => Pro
           }
         }
         finally {
-          delete restartConfig[hostLifecycleKey]
+          delete restartConfig[WEAPP_VITE_HOST_RESTART_CONFIG_KEY]
           if (server.config === restartHostConfig) {
             server.config = config
           }

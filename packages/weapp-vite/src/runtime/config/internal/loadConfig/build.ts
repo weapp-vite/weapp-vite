@@ -181,8 +181,8 @@ export function configureBuildAndPlugins(options: {
   } = resolveCliPlatformRuntime(cliPlatform)
   injectBuiltinAliases(config, isWebRuntime ? 'build' : undefined)
   if (oxcVitePlugin) {
-    config.plugins ??= []
-    config.plugins.unshift(oxcVitePlugin)
+    // defu 可能借用 sourceConfig 的数组；内部插件只能注入本次规范化配置。
+    config.plugins = [oxcVitePlugin, ...(config.plugins ?? [])]
   }
 
   const platform = config.weapp?.platform === 'web' ? DEFAULT_MP_PLATFORM : (config.weapp?.platform ?? DEFAULT_MP_PLATFORM)

@@ -13,6 +13,7 @@ import path from 'pathe'
 import logger, { configureLogger } from '../../logger'
 import { resolveMultiPlatformConfig } from '../../multiPlatform'
 import { DEFAULT_MP_PLATFORM } from '../../platform'
+import { readCompilerInput } from '../../plugins/utils/sourceSnapshot'
 import { createImportMetaDefineRegistry, pickImportMetaEnvDefineEntries } from '../../utils/importMeta'
 import { normalizeRelativePath, toPosixPath } from '../../utils/path'
 import { resolveRealpath } from '../../utils/realpathScope'
@@ -230,6 +231,8 @@ function createConfigService(ctx: MutableCompilerContext, oxcRuntimeSupport: Oxc
     injectBuiltinAliases,
     oxcRolldownPlugin: oxcRuntimeSupport.rolldownPlugin,
     oxcVitePlugin: oxcRuntimeSupport.vitePlugin,
+    // 项目配置参与模式与输出决策；记录解析器实际消费的字节，不能事后重读猜测启动版本。
+    readProjectConfigFile: file => ctx.configService ? readCompilerInput(ctx.configService, file) : fs.promises.readFile(file, 'utf8'),
   })
 
   function formatConfigDisplayPath(filePath?: string) {

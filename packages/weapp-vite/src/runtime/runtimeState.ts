@@ -158,6 +158,8 @@ export interface RuntimeState {
       entriesMap: Map<string, Entry | undefined>
       vueEntryHasTemplate: Map<string, boolean>
       vueEntrySfcSignatures: Map<string, VueSfcBlockSignatures>
+      /** 当前编译 generation 的模板注册签名，只随成功快照交付为基线。 */
+      vueTemplateRegistrationSignatures?: Map<string, string | undefined>
       vueEntryStyleBindings: Map<string, VueEntryStyleBindings>
       /** 编译 provider 内容签名；key 为入口，value 的 key 为 provider 名称。 */
       vueEntryContentSignatures?: Map<string, Readonly<Record<string, string>>>

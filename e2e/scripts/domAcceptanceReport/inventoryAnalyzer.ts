@@ -1,8 +1,10 @@
+import type { ProviderCaseApplicability } from './inventoryProviders'
 import fs from 'node:fs'
 import path from 'node:path'
 import ts from 'typescript'
 import { readConditionBindingName, readSuiteConditionValue } from './inventoryConditions'
 import { expandSuiteParameters } from './inventoryParameters'
+import { createProviderApplicabilityReader } from './inventoryProviders'
 
 export interface CaseInventory {
   source: string
@@ -11,6 +13,7 @@ export interface CaseInventory {
   routes: string[]
   operations: string[]
   notes: string[]
+  providerApplicability?: ProviderCaseApplicability
 }
 
 type Bindings = Map<string, unknown>
@@ -140,6 +143,7 @@ export function analyzeCaseSource(content: string, file: string, templateNames: 
     ts.forEachChild(node, collectConditionRisks)
   }
   collectConditionRisks(source)
+  const readProviderApplicability = createProviderApplicabilityReader(source, file, uncertainConditions, name => imports.get(name)?.original ?? name)
   const readCondition = (node: ts.Expression | undefined, bindings: Bindings) => readSuiteConditionValue(node, name => (
     (suiteParameters.has(name) || suiteConditionAliases.has(name)) && !uncertainConditions.has(name)
       ? bindings.get(name)
@@ -199,6 +203,10 @@ export function analyzeCaseSource(content: string, file: string, templateNames: 
 
   function inspectCase(node: ts.CallExpression, name: string, bindings: Bindings, inheritedNotes: string[]) {
     const result: CaseInventory = { source: position(node), name, plans: [], routes: [], operations: [], notes: [...inheritedNotes] }
+    const providerApplicability = readProviderApplicability(node)
+    if (providerApplicability) {
+      result.providerApplicability = providerApplicability
+    }
     const visitedHelpers = new Set<string>()
     const visit = (child: ts.Node, activeBindings = bindings) => {
       if (ts.isFunctionDeclaration(child) || (ts.isVariableDeclaration(child) && child.initializer
@@ -274,7 +282,7 @@ export function analyzeCaseSource(content: string, file: string, templateNames: 
     for (const argument of node.arguments.slice(1)) {
       visit(argument)
     }
-    if (expression(node.expression).includes('.skip') || expression(node.expression).includes('.todo')) {
+    if (/\.(?:skip|todo)\b/.test(expression(node.expression))) {
       result.notes.push('skip/todo declaration; cannot be accepted as passed')
     }
     if (!result.plans.length) {
@@ -365,7 +373,7 @@ export function analyzeCaseSource(content: string, file: string, templateNames: 
         return
       }
       if (called.startsWith('describe') && typeof literalName === 'string') {
-        const inherited = expression(node.expression).includes('.skip') ? [...notes, 'Skipped describe'] : notes
+        const inherited = /\.skip\b/.test(expression(node.expression)) ? [...notes, 'Skipped describe'] : notes
         const method = parameterizedMethod(node.expression)
         const rows = method ? expandSuiteParameters(node, literalName, value => readLiteral(value, bindings)) : undefined
         if (rows) {

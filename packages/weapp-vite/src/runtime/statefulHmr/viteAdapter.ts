@@ -12,6 +12,7 @@ import {
   WEAPP_VITE_STATEFUL_HMR_UPDATE_FILE,
 } from '@weapp-core/constants'
 import path from 'pathe'
+import { HmrRuntimeCapabilityError } from '../hmrRuntimeCapabilities'
 import { assertStatefulHmrRuntimeOutput, createStatefulHmrRolldownRuntimeSource } from './commonRuntime'
 import { resolveStatefulHmrModuleRoot, toStableModuleId } from './initialModuleGraph'
 import { StatefulHmrOutputPublication } from './outputPublication'
@@ -148,10 +149,10 @@ export class StatefulHmrViteAdapter {
   install(): void {
     const bundledDev = this.server.environments.client.bundledDev as unknown as BundledDevInternal | undefined
     if (!bundledDev) {
-      throw new Error('stateful-experimental HMR 需要 Vite experimental.bundledDev。')
+      throw new HmrRuntimeCapabilityError({ code: 'runtime-contract', message: 'stateful-experimental HMR 需要 Vite experimental.bundledDev。' })
     }
     if (typeof bundledDev.getRolldownOptions !== 'function' || typeof bundledDev.storeOutputFiles !== 'function' || typeof bundledDev.listen !== 'function') {
-      throw new TypeError('当前 Vite bundled-development 私有 API 与 weapp-vite 不兼容。')
+      throw new HmrRuntimeCapabilityError({ code: 'runtime-contract', message: '当前 Vite bundled-development 私有 API 与 weapp-vite 不兼容。' })
     }
     if (this.bundledDev || this.closed) {
       throw new Error('stateful HMR 适配器不能重复安装或在关闭后安装。')
@@ -226,7 +227,7 @@ export class StatefulHmrViteAdapter {
     if (this.engineCloseTask?.engine === engine) {
       return this.engineCloseTask.task
     }
-    const task = Promise.resolve(engine.close()).finally(() => {
+    const task = Promise.resolve().then(() => engine.close()).finally(() => {
       if (this.bundledDev?._devEngine === engine && this.bundledDev) {
         this.bundledDev._devEngine = undefined
       }
@@ -565,7 +566,7 @@ export class StatefulHmrViteAdapter {
       }
       const rolldownOptions = await bundledDev.getRolldownOptions()
       if (Array.isArray(rolldownOptions.output) && rolldownOptions.output.length > 1) {
-        throw new Error('stateful-experimental HMR 不支持多组 Rolldown output 配置。')
+        throw new HmrRuntimeCapabilityError({ code: 'runtime-contract', message: 'stateful-experimental HMR 不支持多组 Rolldown output 配置。' })
       }
       const outputOptions = Array.isArray(rolldownOptions.output)
         ? rolldownOptions.output[0]

@@ -48,6 +48,7 @@ async function inputLoader(sources: ReadonlyMap<string, string | null>, owner: C
     configService: {
       ...owner.configService,
       options: {},
+      loadOptions: { cwd: root, isDev: true, mode: 'development' },
       load: async () => {},
       merge: (_defaults: unknown, base: unknown) => base,
       relativeAbsoluteSrcRoot: (file: string) => path.relative(owner.configService.absoluteSrcRoot, file),

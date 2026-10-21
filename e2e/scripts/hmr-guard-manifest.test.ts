@@ -4,6 +4,7 @@ import path from 'node:path'
 import fg from 'fast-glob'
 import { describe, expect, it } from 'vitest'
 import { getCiTasks, getSuiteTasks, SKIP_CI_HMR_GUARD_ENV } from './e2e-suite-manifest'
+import { HMR_ACCEPTANCE_BUILD_TESTS, hmrAcceptanceRuntimeFiles } from './hmr-acceptance-manifest'
 import { HMR_GUARD_ALL_TESTS, HMR_GUARD_TEST_GROUPS, HMR_GUARD_UTILITY_TESTS } from './hmr-guard-manifest'
 
 const ROOT = path.resolve(import.meta.dirname, '..')
@@ -104,26 +105,16 @@ describe('hmr-guard manifest', () => {
     const tasks = await getSuiteTasks('hmr-regression')
     const labels = tasks.map(task => task.label)
 
-    expect(labels).toEqual([
-      'ide/app-shell-presence.hmr.runtime.test.ts',
-      'ide/script-setup-external-src.runtime.test.ts',
-      'ide/issue-1015-css-hmr.runtime.test.ts',
-      'ide/stateful-hmr.runtime.test.ts',
-      'ide/template-tailwindcss-tdesign-hmr.runtime.test.ts',
-      'ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts',
-      'ide/wevu-jsx-tsx.hmr.runtime.test.ts',
-      'ci/wevu-router-hmr.test.ts',
-      'hmr-guard:smoke',
-      'hmr-guard:full',
-      'hmr-guard:auto-import-vue-sfc',
-      'hmr-guard:shared-chunks-auto',
-    ])
+    expect(labels).toEqual([...HMR_ACCEPTANCE_BUILD_TESTS.map(toRelativeLabel), ...hmrAcceptanceRuntimeFiles('ide')])
+    expect(new Set(labels).size).toBe(labels.length)
+    expect(labels).toContain('ci/auto-routes-hmr.test.ts')
+    expect(HMR_GUARD_ALL_TESTS.every(file => labels.includes(toRelativeLabel(file)))).toBe(true)
   })
 
   it('exposes the complete HMR regression flow as a package script', () => {
     const scripts = readPackageScripts(path.join(REPO_ROOT, 'package.json'))
 
-    expect(scripts['e2e:hmr:regression']).toBe('node --import tsx ./e2e/scripts/run-e2e-suite.ts hmr-regression')
+    expect(scripts['e2e:hmr:regression']).toBe('pnpm run e2e:hmr:acceptance')
   })
 
   it('allows CI workflows to split non-HMR and HMR guard jobs', async () => {

@@ -1,7 +1,7 @@
 import type { DomCheckpoint } from '../../utils/domAcceptance/types'
 
 /** 模板独立往返只要求结构和状态，便于在两个 provider 上对照。 */
-export function templateCycleCheckpoints(runtime: 'native' | 'component' | 'wevu'): DomCheckpoint[] {
+export function templateCycleCheckpoints(runtime: 'native' | 'component'): DomCheckpoint[] {
   return [
     ['initial', 0, '', undefined],
     ['prepared', 2, 'held-input', undefined],

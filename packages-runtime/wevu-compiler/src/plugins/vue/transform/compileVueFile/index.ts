@@ -17,6 +17,7 @@ import { resolveSetupPropConflicts } from './propsProjection'
 import { compileScriptPhase, resolveEffectivePropsDerivedKeys, resolveScriptSetupPropsAliases } from './script'
 import { compileStylePhase } from './style'
 import { compileTemplatePhase } from './template'
+import { createTemplateRegistrationSignature } from './templateRegistration'
 
 export { refreshVueFileJsonConfig } from './jsonOnly'
 
@@ -260,6 +261,8 @@ export async function compileVueFile(
     scriptSetupMacroHash: parsed.scriptSetupMacroHash,
     defineOptionsHash: parsed.defineOptionsHash,
   })
+
+  result.meta!.templateRegistrationSignature = createTemplateRegistrationSignature(parsed.descriptor, result.template)
 
   return result
 }

@@ -1,5 +1,5 @@
 import { runInNewContext } from 'node:vm'
-import { WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY, WEVU_NATIVE_DECLARATION_ADDRESS_PROP, WEVU_NATIVE_DECLARATION_METHOD } from '@weapp-core/constants'
+import { WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY, WEAPP_VITE_STATEFUL_HMR_REGISTRATION_CONTRACT_VERSION, WEAPP_VITE_STATEFUL_HMR_UNSUPPORTED_REGISTRATION_CODE, WEVU_NATIVE_DECLARATION_ADDRESS_PROP, WEVU_NATIVE_DECLARATION_METHOD } from '@weapp-core/constants'
 import { describe, expect, it } from 'vitest'
 import { statefulHmrRolldownRuntimeSource } from './runtimeSource'
 
@@ -17,7 +17,7 @@ interface Definition {
 interface Bridge {
   Component: (definition: Definition) => void
   takeNativeDefinitions: (name: string) => Definition[]
-  trackWevuComponent: (definition: Definition, refresh: (host: Host) => void) => Definition
+  trackWevuComponent: (definition: Definition, refresh: (host: Host) => void, dispose: undefined, contract: { version: number, nativeSlotContext: boolean }) => Definition
   beginUpdate: () => void
   endUpdate: () => void
 }
@@ -38,7 +38,8 @@ function createRuntime(enabled: boolean) {
     },
     lifetimes: { attached() {} },
   })
-  const initial = bridge.trackWevuComponent(definition(enabled, 1), () => {})
+  const contract = (participates: boolean) => ({ version: WEAPP_VITE_STATEFUL_HMR_REGISTRATION_CONTRACT_VERSION, nativeSlotContext: participates })
+  const initial = bridge.trackWevuComponent(definition(enabled, 1), () => {}, undefined, contract(enabled))
   bridge.Component(initial)
   const [native] = bridge.takeNativeDefinitions('Component')
   const host: Host = {
@@ -54,7 +55,7 @@ function createRuntime(enabled: boolean) {
       try {
         bridge.trackWevuComponent(definition(next, 10), () => {
           refreshes++
-        })
+        }, undefined, contract(next))
       }
       finally {
         bridge.endUpdate()
@@ -71,7 +72,9 @@ function createRuntime(enabled: boolean) {
 describe('stateful HMR native slot registration compatibility', () => {
   it.each([false, true])('requires native re-registration when participation changes from %s', (enabled) => {
     const runtime = createRuntime(enabled)
-    expect(() => runtime.update(!enabled)).toThrow()
+    expect(() => runtime.update(!enabled)).toThrow(expect.objectContaining({
+      code: WEAPP_VITE_STATEFUL_HMR_UNSUPPORTED_REGISTRATION_CODE,
+    }))
     expect(runtime.refreshCount()).toBe(0)
     runtime.increment()
     expect(runtime.host.data.count).toBe(1)

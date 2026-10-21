@@ -4,6 +4,7 @@ import { afterEach, expect, it, vi } from 'vitest'
 import { createDevBuildCompletion } from './devBuildCompletion'
 import { NATIVE_BATCH_EXTENSIONS } from './nativeBatchProject'
 import { NATIVE_BATCH_SETTLEMENT_PREFIX } from './nativeBatchSettlementPlugin'
+import { nativePublicationHash } from './nativePublication/files'
 
 const profile = vi.hoisted(() => ({
   content: '',
@@ -184,6 +185,53 @@ it('waits for the current config publication profile without requiring a complet
   await waiting
   expect(finished).toBe(true)
   expect(dev.getOutput()).toBe(originalOutput)
+  expect(vi.getTimerCount()).toBe(0)
+})
+
+it('requires a source success appended after the native write cursor even when an earlier success matches the same file', async () => {
+  vi.useFakeTimers()
+  const dev = createProcess()
+  const file = path.join(tmpdir(), 'dev-publication', 'page.js')
+  const epoch = performance.timeOrigin + performance.now()
+  const completion = createDevBuildCompletion(dev, { source: { file, profilePath: 'profile.jsonl' } })
+  profile.content = `${sourceRecord(file, epoch + 1)}\n`
+  const cursor = { offset: profile.content.length, prefixHash: nativePublicationHash(profile.content) }
+  let completed = false
+  const waiting = completion.wait(100, cursor).then(() => {
+    completed = true
+  })
+  await vi.advanceTimersByTimeAsync(25)
+  expect(completed).toBe(false)
+  profile.content += `${sourceRecord(file, epoch + 2, { buildId: 'current-build' })}\n`
+  await vi.advanceTimersByTimeAsync(25)
+  await waiting
+  expect(completed).toBe(true)
+  expect(vi.getTimerCount()).toBe(0)
+})
+
+it.each(['truncate', 'replace'])('rejects profile %s after a frozen native byte write cursor', async (mode) => {
+  vi.useFakeTimers()
+  const dev = createProcess()
+  const file = path.join(tmpdir(), 'dev-publication', 'page.js')
+  const epoch = performance.timeOrigin + performance.now()
+  const completion = createDevBuildCompletion(dev, { source: { file, profilePath: 'profile.jsonl' } })
+  profile.content = `${sourceRecord(file, epoch + 1)}\n`
+  const cursor = { offset: profile.content.length, prefixHash: nativePublicationHash(profile.content) }
+  profile.content = mode === 'truncate' ? '' : `${sourceRecord(file, epoch + 2, { buildId: 'replacement' })}\n`
+  await expect(completion.wait(100, cursor)).rejects.toThrow('truncated or replaced after the native byte write')
+  expect(vi.getTimerCount()).toBe(0)
+})
+
+it('rejects a source failure after the native write cursor while preserving earlier source success as insufficient', async () => {
+  vi.useFakeTimers()
+  const dev = createProcess()
+  const file = path.join(tmpdir(), 'dev-publication', 'page.js')
+  const epoch = performance.timeOrigin + performance.now()
+  const completion = createDevBuildCompletion(dev, { source: { file, profilePath: 'profile.jsonl' } })
+  profile.content = `${sourceRecord(file, epoch + 1)}\n`
+  const cursor = { offset: profile.content.length, prefixHash: nativePublicationHash(profile.content) }
+  profile.content += `${sourceRecord(file, epoch + 2, { status: 'failed' })}\n`
+  await expect(completion.wait(100, cursor)).rejects.toThrow('Current source publication failed')
   expect(vi.getTimerCount()).toBe(0)
 })
 

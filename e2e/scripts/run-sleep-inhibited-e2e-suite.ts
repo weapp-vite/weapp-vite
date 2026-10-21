@@ -19,8 +19,10 @@ export function createSleepInhibitedE2ECommand(
   const runnerArgs = [
     '--import',
     'tsx',
-    args[0] === 'devtools-matrix' ? path.join(import.meta.dirname, 'run-devtools-matrix.ts') : E2E_SUITE_RUNNER_PATH,
-    ...(args[0] === 'devtools-matrix' ? args.slice(1) : args),
+    args[0] === 'devtools-matrix'
+      ? path.join(import.meta.dirname, 'run-devtools-matrix.ts')
+      : args[0] === 'hmr-acceptance' ? path.join(import.meta.dirname, 'run-hmr-acceptance.ts') : E2E_SUITE_RUNNER_PATH,
+    ...(['devtools-matrix', 'hmr-acceptance'].includes(args[0] ?? '') ? args.slice(1) : args),
   ]
 
   if (platform === 'darwin') {

@@ -39,5 +39,5 @@ export async function validateTaskAcceptance(task: SuiteTask, identity: Acceptan
       throw new Error(`Template DOM acceptance invocations incomplete: expected ${expected.join(', ')}`)
     }
   }
-  assertTaskCaseCoverage(selected ?? plannedCases ?? await readPlannedTaskCases(task, reports[0]!.provider), reports, Boolean(selected))
+  assertTaskCaseCoverage(selected ?? plannedCases ?? await readPlannedTaskCases(task, reports[0]!.provider), reports, Boolean(selected), reports[0]!.provider)
 }

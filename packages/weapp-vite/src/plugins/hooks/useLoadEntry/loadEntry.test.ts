@@ -2413,6 +2413,48 @@ describe('createEntryLoader', () => {
     expect(emittedResolvedIds).toContain('/project/src/custom-tab-bar/index')
   })
 
+  it('merges fresh auto-routes into native app json when a dev context starts from source config', async () => {
+    const declaredPages = ['pages/home/index']
+    let routePages = [...declaredPages]
+    let nextRoutePages = [...declaredPages, 'pages/added/index']
+    const sourceJson = { pages: declaredPages }
+    const autoRoutesService = {
+      isEnabled: vi.fn(() => true),
+      ensureFresh: vi.fn(async () => { routePages = [...nextRoutePages] }),
+      getSignature: vi.fn(() => JSON.stringify(routePages)),
+      getReference: vi.fn(() => ({ pages: routePages, entries: routePages, subPackages: [] })),
+    }
+    mockFindJsonEntry.mockImplementation(async (filepath: string) => ({
+      path: filepath === '/project/src/app.ts' ? '/project/src/app.json' : undefined,
+      predictions: [],
+    }))
+    const { loader, jsonService, entriesMap, registerJsonAsset } = createLoader({
+      isDev: true,
+      autoRoutesService,
+      weappViteConfig: { autoRoutes: true },
+    })
+    // classic 重新准备上下文或路由签名刷新后，读取到的是源码配置，不能依赖扫描器污染 JSON 缓存。
+    jsonService.read.mockResolvedValue(sourceJson)
+
+    await loader.call(createPluginContext(), '/project/src/app.ts', 'app')
+
+    expect(entriesMap.get('pages/added/index')?.type).toBe('page')
+    expect(registerJsonAsset).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'app',
+      json: expect.objectContaining({ pages: expect.arrayContaining(routePages) }),
+    }))
+    expect(sourceJson).toEqual({ pages: ['pages/home/index'] })
+
+    nextRoutePages = [...declaredPages, 'pages/replacement/index']
+    registerJsonAsset.mockClear()
+    await loader.call(createPluginContext(), '/project/src/app.ts', 'app')
+
+    expect(entriesMap.get('pages/replacement/index')?.type).toBe('page')
+    const appRecord = registerJsonAsset.mock.calls.find(([entry]) => entry.type === 'app')?.[0]
+    expect(appRecord?.json.pages).toEqual(nextRoutePages)
+    expect(sourceJson).toEqual({ pages: ['pages/home/index'] })
+  })
+
   it('marks usingComponents entries as components so native component loaders skip page layout injection', async () => {
     const pageScript = '/project/src/pages/home.js'
     const componentScript = '/project/src/components/HelloWorld/HelloWorld.js'

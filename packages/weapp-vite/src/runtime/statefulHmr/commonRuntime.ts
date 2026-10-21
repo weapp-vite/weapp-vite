@@ -20,15 +20,16 @@ export class StatefulHmrRuntimeCompatibilityError extends Error {
 }
 
 function readRolldownRuntimeSource(subpath: string): { filePath: string, source: string } {
+  let filePath: string
   try {
-    const filePath = require.resolve(subpath)
-    return { filePath, source: readFileSync(filePath, 'utf8') }
+    filePath = require.resolve(subpath)
   }
   catch (error) {
     throw new StatefulHmrRuntimeCompatibilityError(
       `无法读取 Rolldown 状态保持 HMR 基础运行时 ${subpath}：${error instanceof Error ? error.message : String(error)}`,
     )
   }
+  return { filePath, source: readFileSync(filePath, 'utf8') }
 }
 
 function stripModuleSyntax(source: string): string {
@@ -43,14 +44,7 @@ function resolveRuntimeHelpers(runtime: { filePath: string, source: string }): s
   return helperSpecifiers
     .map((specifier) => {
       const helperPath = path.resolve(path.dirname(runtime.filePath), specifier)
-      try {
-        return readFileSync(helperPath, 'utf8')
-      }
-      catch (error) {
-        throw new StatefulHmrRuntimeCompatibilityError(
-          `无法读取 Rolldown dev runtime helper ${specifier}：${error instanceof Error ? error.message : String(error)}`,
-        )
-      }
+      return readFileSync(helperPath, 'utf8')
     })
     .map(stripModuleSyntax)
     .join('\n')

@@ -22,6 +22,7 @@ export interface LoadConfigFactoryOptions {
   injectBuiltinAliases: (config: InlineConfig) => void
   oxcRolldownPlugin: RolldownPluginOption<any> | undefined
   oxcVitePlugin: PluginOption | undefined
+  readProjectConfigFile?: (file: string) => Promise<string>
 }
 
 function injectDefaultSrcAlias(config: InlineConfig, cwd: string, srcRoot: string) {
@@ -289,6 +290,7 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
       pluginOnly,
       isWebRuntime,
       resolvedLibConfig,
+      readProjectConfigFile: options.readProjectConfigFile,
     })
     const aliasEntries = mergeJsonAliasEntries(config.weapp?.jsonAlias)
 
@@ -297,7 +299,7 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
       const usesAdvancedTsconfigPathsOptions = typeof tsconfigPathsOptions === 'object' && tsconfigPathsOptions !== null
       if (usesAdvancedTsconfigPathsOptions) {
         const { default: tsconfigPaths } = await import('vite-tsconfig-paths')
-        config.plugins.push(tsconfigPaths(tsconfigPathsOptions))
+        config.plugins = [...config.plugins, tsconfigPaths(tsconfigPathsOptions)]
       }
       else if (shouldDelegateToNativeTsconfigPaths) {
         config.resolve ??= {}

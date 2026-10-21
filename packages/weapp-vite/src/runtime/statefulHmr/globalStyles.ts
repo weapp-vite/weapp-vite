@@ -20,6 +20,8 @@ export interface StatefulHmrSnapshot {
   inputFiles?: string[]
   inputs?: SnapshotInputs
   nativeScriptVersions?: ReadonlyMap<string, string>
+  /** 与快照同源的编译模板注册签名；缺失项不能证明状态保持兼容。 */
+  templateRegistrationSignatures?: ReadonlyMap<string, string | undefined>
   captureNativeScriptDrift?: () => ReadonlyMap<string, string | null>
 }
 

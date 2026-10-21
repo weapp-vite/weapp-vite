@@ -109,6 +109,7 @@ describe('stateful session initial chunk package boundaries', () => {
       autoRoutesService: {
         isEnabled: () => source === 'auto routes',
         ensureFresh: vi.fn(async () => {}),
+        getSignature: () => JSON.stringify(declaredPackages),
         getReference: () => ({ pages: ['pages/index'], entries: [], subPackages: declaredPackages }),
       },
     } as unknown as MutableCompilerContext

@@ -22,6 +22,7 @@ void compileVueFile(
 ).then((compiled) => {
   expectType<string[] | undefined>(compiled.meta?.cssVars)
   expectType<string[] | undefined>(compiled.meta?.sfcSrcCompilationDeps)
+  expectType<string | undefined>(compiled.meta?.templateRegistrationSignature)
 })
 
 const previous: VueSfcBlockSignatures = {

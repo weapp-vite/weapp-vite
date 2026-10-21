@@ -94,13 +94,16 @@ export async function offerStatefulHmrSnapshot(ctx: SnapshotOwner, handoff: Stat
   }
 }
 
-export function takeStatefulHmrSnapshot(ctx: SnapshotOwner) {
+export async function takeStatefulHmrSnapshot(ctx: SnapshotOwner) {
   const host = getStatefulHmrHost(ctx)
-  if (host) {
-    return takeHostRestartData<StatefulHmrSnapshotHandoff>(host.server, snapshotKey)?.take()
-  }
   const handoff = standalone.get(ctx)
   standalone.delete(ctx)
+  const inherited = host && takeHostRestartData<StatefulHmrSnapshotHandoff>(host.server, snapshotKey)
+  if (inherited) {
+    // 同一宿主链只有一个候选所有者；旧候选失效时不能再复用独立预检的另一份快照。
+    await handoff?.invalidate()
+    return inherited.take()
+  }
   return handoff?.take()
 }
 

@@ -17,7 +17,7 @@ const fixtureEntries = new Set([
 const generatedEntries = new Set(['node_modules', 'dist', '.cache', '.tmp', '.turbo', '.weapp-vite'])
 
 /** 为 workspace HMR 验证复制独占项目；显式发布消费者项目不经过此入口。 */
-export async function createStatefulHmrProject(repositoryRoot = ROOT) {
+export async function createStatefulHmrProject(repositoryRoot = ROOT, options: { compilerHost?: string } = {}) {
   const fixtureRoot = path.join(repositoryRoot, 'e2e-apps/stateful-hmr')
   const parent = path.join(repositoryRoot, '.tmp/e2e-projects')
   await mkdir(parent, { recursive: true })
@@ -48,6 +48,9 @@ export async function createStatefulHmrProject(repositoryRoot = ROOT) {
     await mkdir(path.join(projectRoot, 'node_modules'))
     for (const [name, relative] of [['weapp-vite', 'packages/weapp-vite'], ['wevu', 'packages-runtime/wevu']] as const) {
       await symlink(await realpath(path.join(repositoryRoot, relative)), path.join(projectRoot, 'node_modules', name), 'junction')
+    }
+    if (options.compilerHost === 'vite-plus') {
+      await symlink(await realpath(path.join(fixtureRoot, 'node_modules/vite-plus')), path.join(projectRoot, 'node_modules/vite-plus'), 'junction')
     }
     return { projectRoot, cleanup }
   }

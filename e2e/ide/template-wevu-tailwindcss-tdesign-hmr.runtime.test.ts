@@ -1,474 +1,206 @@
-import { Buffer } from 'node:buffer'
-import fs from 'node:fs/promises'
-import os from 'node:os'
+import type { DomCheckpoint } from '../utils/domAcceptance/types'
+import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
-
-import { WEAPP_VITE_STATEFUL_HMR_GLOBAL_STYLE_BASENAME } from '@weapp-core/constants'
-import { closeSharedMiniProgram } from '@weapp-vite/devtools-runtime'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { resolveProjectAutomatorPort } from 'weapp-ide-cli'
-import { launchAutomator } from '../utils/automator'
-import {
-  cleanupTrackedDevProcesses,
-  startDevProcess,
-} from '../utils/dev-process'
-import { createDevProcessEnv } from '../utils/dev-process-env'
+import { runCleanupSteps } from '../utils/cleanupSteps'
 import { createDomAcceptance } from '../utils/domAcceptance'
-import { readEmittedStylesheet, waitForEmittedStylesheet } from '../utils/emittedStylesheet'
+import { waitForEmittedStylesheet } from '../utils/emittedStylesheet'
+import { replaceFileByRename, waitForFileContains } from '../utils/hmr-helpers'
 import { createHmrRuntimeDiagnostics } from '../utils/hmrRuntimeDiagnostics'
-import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
-import { installStatefulHmrTransport } from '../utils/statefulHmrTransport'
-import { collectCommonJsExportNames } from '../utils/wevu-vendor-exports'
-import { createWevuTailwindHmrFileDiagnostics } from '../utils/wevuTailwindHmrDiagnostics'
-import { attachRuntimeErrorCollector } from './runtimeErrors'
+import { createWevuTailwindHmrProject } from '../utils/wevuTailwindHmrProject'
+import { createWevuTailwindHmrSession } from '../utils/wevuTailwindHmrProject/session'
+import {
+  addWevuTailwindLocalPriority,
+  updateWevuTailwindProbe,
+  WEVU_TAILWIND_INITIAL_CLASS,
+  WEVU_TAILWIND_INITIAL_HEX,
+  WEVU_TAILWIND_PROBE,
+  WEVU_TAILWIND_ROUTE,
+  WEVU_TAILWIND_UPDATES,
+} from '../utils/wevuTailwindHmrProject/source'
 
-const WORKSPACE_ROOT = path.resolve(import.meta.dirname, '../..')
-const CLI_PATH = path.resolve(WORKSPACE_ROOT, 'packages/weapp-vite/bin/weapp-vite.js')
-const TEMPLATE_ROOT = path.resolve(WORKSPACE_ROOT, 'templates/weapp-vite-wevu-tailwindcss-tdesign-template')
-const FIXTURE_PARENT = path.resolve(WORKSPACE_ROOT, '.tmp/e2e/ide-wevu-tailwind-hmr')
-const INDEX_ROUTE = '/pages/index/index'
-const PROBE_ID = 'wevu-tailwind-hmr-probe'
-const STARTUP_ATTEMPTS = 1
-const INITIAL_BACKGROUND_CLASS = 'bg-[#f6f7fb]'
-const INITIAL_BACKGROUND_HEX = 'f6f7fb'
-const BACKGROUND_UPDATES = [
-  { action: 'modify', className: 'bg-[#dbeafe]', css: 'background-color: #dbeafe', escapedClass: 'bg-_b_hdbeafe_B', hex: 'dbeafe' },
-  { action: 'delete', className: '', css: '', escapedClass: '', hex: 'none' },
-  { action: 'add', className: 'bg-[#fef3c7]', css: 'background-color: #fef3c7', escapedClass: 'bg-_b_hfef3c7_B', hex: 'fef3c7' },
-  { action: 'modify', className: 'bg-[#fce7f3]', css: 'background-color: #fce7f3', escapedClass: 'bg-_b_hfce7f3_B', hex: 'fce7f3' },
-] as const
-const FORBIDDEN_RUNTIME_ERRORS = [
-  'unexpected current frame status timedout',
-  'appLaunch with non-empty page stack',
-  'Page route 错误',
-] as const
-
-function findRuntimeProbe(nodes: Array<{ dataset?: Record<string, unknown> }>, expectedHex: string) {
-  return nodes.find(node => String(node.dataset?.e2eBg ?? '') === expectedHex)
-}
-
-function delay(ms: number) {
-  return new Promise(resolve => setTimeout(resolve, ms))
-}
-
-function resolveAutomatorSessionFile(projectPath: string, port?: number) {
-  const normalizedProjectPath = path.resolve(projectPath)
-  const sessionKey = port ? `${normalizedProjectPath}#port-${port}` : normalizedProjectPath
-  const encodedProjectPath = Buffer.from(sessionKey).toString('base64url')
-  return path.join(os.tmpdir(), 'weapp-vite-automator-sessions', `${encodedProjectPath}.json`)
-}
-
-function addRuntimeProbe(source: string) {
-  const target = `<view class="min-h-screen ${INITIAL_BACKGROUND_CLASS}`
-  if (!source.includes(target)) {
-    throw new Error('Expected the template index page to contain the initial Tailwind background class')
-  }
-  return source.replace(
-    target,
-    `<view id="${PROBE_ID}" data-e2e-bg="${INITIAL_BACKGROUND_HEX}" class="min-h-screen ${INITIAL_BACKGROUND_CLASS}`,
-  )
-}
-
-function updateRuntimeProbe(source: string, previousClass: string, nextClass: string, previousHex: string, nextHex: string) {
-  const probeStartTag = new RegExp(`(<view id="${PROBE_ID}" data-e2e-bg=")${previousHex}(" class=")([^"]*)(")`)
-  const match = source.match(probeStartTag)
-  if (!match) {
-    throw new Error(`Expected the runtime probe to use background marker ${previousHex}`)
-  }
-  const classes = match[3]!.split(/\s+/).filter(className => className && className !== previousClass)
-  if (nextClass) {
-    classes.push(nextClass)
-  }
-  return source.replace(probeStartTag, `$1${nextHex}$2${classes.join(' ')}$4`)
-}
-
-async function waitForFileMatch(file: string, matches: (source: string) => boolean, description: string, timeoutMs = 90_000) {
-  const startedAt = Date.now()
-  let latest = ''
-  while (Date.now() - startedAt <= timeoutMs) {
-    latest = await fs.readFile(file, 'utf8').catch(() => '')
-    if (matches(latest)) {
-      return latest
-    }
-    await delay(25)
-  }
-  throw new Error(`Timed out waiting for ${path.relative(WORKSPACE_ROOT, file)} to ${description}.\nLatest content:\n${latest.slice(0, 1000)}`)
-}
-
-async function waitForFileContains(file: string, expected: string, timeoutMs = 90_000) {
-  return waitForFileMatch(file, source => source.includes(expected), `contain ${expected}`, timeoutMs)
-}
+const ROOT = path.resolve(import.meta.dirname, '../..')
+const BASE_COLOR = 'rgb(246, 247, 251)'
+const BASE_TEXT_COLOR = 'rgb(31, 26, 63)'
+const headless = resolveRuntimeProviderName() === 'headless'
 
 describe('template wevu TailwindCSS TDesign HMR in real WeChat DevTools', { concurrent: false }, () => {
-  let appWxssDist = ''
-  let appJsonDist = ''
-  let currentVue = ''
-  let devProcess: ReturnType<typeof startDevProcess> | undefined
-  let distAppJs = ''
-  let indexJsDist = ''
-  let indexWxssDist = ''
-  let distWevuRuntimeJs = ''
-  let fixtureRoot = ''
-  let indexVue = ''
-  let indexWxmlDist = ''
-  let miniProgram: any
-  let disposeTransport: (() => void) | undefined
-  const headless = resolveRuntimeProviderName() === 'headless'
-
-  async function removeAutomatorSessionFiles() {
-    if (!fixtureRoot) {
-      return
-    }
-    await Promise.all([
-      fs.rm(resolveAutomatorSessionFile(fixtureRoot), { force: true }).catch(() => {}),
-      fs.rm(resolveAutomatorSessionFile(fixtureRoot, resolveProjectAutomatorPort(fixtureRoot)), { force: true }).catch(() => {}),
-    ])
-  }
-
-  async function stopDevSession() {
-    disposeTransport?.()
-    disposeTransport = undefined
-    if (miniProgram) {
-      await Promise.resolve(headless ? miniProgram.close?.() : miniProgram.disconnect?.()).catch(() => {})
-      miniProgram = undefined
-    }
-    if (fixtureRoot) {
-      await closeSharedMiniProgram(fixtureRoot).catch(() => {})
-    }
-    await devProcess?.stop().catch(() => {})
-    devProcess = undefined
-    await removeAutomatorSessionFiles()
-    if (!headless) {
-      await cleanupResidualIdeProcesses()
-    }
-  }
-
-  async function waitForAppRuntimeReady(timeoutMs = 120_000) {
-    const startedAt = Date.now()
-    let latestApp = ''
-    let latestAppJson = ''
-    let latestPage = ''
-    let latestRuntime = ''
-    let latestWxml = ''
-    let latestWxss = ''
-    while (Date.now() - startedAt <= timeoutMs) {
-      [latestApp, latestAppJson, latestPage, latestRuntime, latestWxml, latestWxss] = await Promise.all([
-        fs.readFile(distAppJs, 'utf8').catch(() => ''),
-        fs.readFile(appJsonDist, 'utf8').catch(() => ''),
-        fs.readFile(indexJsDist, 'utf8').catch(() => ''),
-        fs.readFile(distWevuRuntimeJs, 'utf8').catch(() => ''),
-        fs.readFile(indexWxmlDist, 'utf8').catch(() => ''),
-        readEmittedStylesheet(appWxssDist).catch(() => ''),
-      ])
-      if (
-        latestApp.includes('require("./weapp-vendors/wevu-runtime.js")')
-        && latestApp.includes('setWevuDefaults')
-        && latestAppJson.includes('pages/index/index')
-        && latestPage.includes('require("../../weapp-vendors/wevu-runtime.js")')
-        && latestPage.includes('createWevuComponent')
-        && (collectCommonJsExportNames(latestPage).has('default') || /\bmodule\.exports\s*=/.test(latestPage))
-        && collectCommonJsExportNames(latestRuntime).has('createApp')
-        && collectCommonJsExportNames(latestRuntime).has('setWevuDefaults')
-        && latestWxml.includes(PROBE_ID)
-        && latestWxss.includes('background-color: #f6f7fb')
-        && !latestApp.includes('from "wevu/internal-runtime"')
-      ) {
-        return { app: latestApp, runtime: latestRuntime }
-      }
-      await delay(500)
-    }
-    throw new Error(`Timed out waiting for the isolated fixture to emit a complete runnable output.\nLatest app:\n${latestApp.slice(0, 1000)}\nLatest app.json:\n${latestAppJson.slice(0, 1000)}\nLatest page:\n${latestPage.slice(0, 1000)}\nLatest runtime:\n${latestRuntime.slice(0, 1000)}\nLatest WXML:\n${latestWxml.slice(0, 1000)}\nLatest WXSS:\n${latestWxss.slice(0, 1000)}`)
-  }
-
-  async function waitForIndexPage(timeoutMs = 90_000) {
-    const startedAt = Date.now()
-    let latestRoute = ''
-    while (Date.now() - startedAt <= timeoutMs) {
-      const page = await miniProgram.currentPage({ retries: 1, timeout: 6_000 }).catch(() => null)
-      latestRoute = page?.path ?? ''
-      if (latestRoute === INDEX_ROUTE.slice(1)) {
-        return page
-      }
-      await delay(500)
-    }
-    throw new Error(`Timed out waiting for ${INDEX_ROUTE}; latest route: ${latestRoute || '<none>'}`)
-  }
-
-  async function waitForRuntimeState(expectedHex: string, timeoutMs = 45_000) {
-    const startedAt = Date.now()
-    let latestNodes: unknown[] = []
-    let latestError: unknown
-    while (Date.now() - startedAt <= timeoutMs) {
-      const page = await waitForIndexPage(8_000)
-      try {
-        const nodes = await page.renderedNodes(`#${PROBE_ID}`, {
-          timeout: 6_000,
-        })
-        latestNodes = nodes
-        if (findRuntimeProbe(nodes, expectedHex)) {
-          return
-        }
-        latestError = undefined
-      }
-      catch (error) {
-        latestError = error
-      }
-      try {
-        const element = await page.$(`#${PROBE_ID}`, { timeout: 1_000 })
-        const dataE2eBg = await element.attribute('data-e2e-bg')
-        latestNodes = [{ dataset: { e2eBg: dataE2eBg } }]
-        if (dataE2eBg === expectedHex) {
-          return
-        }
-      }
-      catch (error) {
-        latestError = error
-      }
-      await delay(120)
-    }
-    const page = await waitForIndexPage(8_000)
-    try {
-      const nodes = await page.renderedNodes(`#${PROBE_ID}`, {
-        timeout: 6_000,
-      })
-      latestNodes = nodes
-      if (findRuntimeProbe(nodes, expectedHex)) {
-        return
-      }
-    }
-    catch (error) {
-      latestError = error
-    }
-    const element = await page.$(`#${PROBE_ID}`, { timeout: 1_000 }).catch(() => null)
-    const latestWxml = element ? await element.outerWxml().catch(() => '') : ''
-    throw new Error(`Timed out waiting for the active DevTools page to render data-e2e-bg=${expectedHex}.\nLatest error:\n${String(latestError)}\nLatest WXML:\n${latestWxml.slice(0, 1000)}\nLatest rendered nodes:\n${JSON.stringify(latestNodes).slice(0, 1000)}`)
-  }
-
-  async function startDevSession() {
-    let lastError: unknown
-    for (let attempt = 1; attempt <= STARTUP_ATTEMPTS; attempt += 1) {
-      await stopDevSession()
-      await removeAutomatorSessionFiles()
-      await delay(1_600)
-      devProcess = startDevProcess(process.execPath, [CLI_PATH, 'dev', '--non-interactive'], {
-        cwd: fixtureRoot,
-        env: createDevProcessEnv(),
-        reject: false,
-      })
-      try {
-        await devProcess.waitForInitialBuild()
-        const initialRuntime = await devProcess.waitFor(
-          waitForAppRuntimeReady(),
-          `wevu Tailwind stateful HMR initial runtime attempt ${attempt}`,
-        )
-        await waitForFileContains(path.join(fixtureRoot, 'dist/app.wxss'), `@import "./${WEAPP_VITE_STATEFUL_HMR_GLOBAL_STYLE_BASENAME}.wxss";`)
-        await waitForEmittedStylesheet(path.join(fixtureRoot, 'dist/pages/index/index.wxss'), 'background-color: #f6f7fb')
-        miniProgram = await launchAutomator({
-          configureHeadlessSession(session) {
-            disposeTransport = installStatefulHmrTransport(session, path.join(fixtureRoot, 'dist'))
-          },
-          bridgeProjectMode: 'direct',
-          engineBuildFallbackSettleMs: 5_000,
-          launchMode: 'bridge',
-          maxLaunchRetries: 1,
-          projectPath: fixtureRoot,
-          warmupAllowRelaunch: false,
-          warmupRoute: INDEX_ROUTE,
-          warmupRootSelectors: [`#${PROBE_ID}`],
-        })
-        await waitForIndexPage()
-        await waitForFileContains(indexWxmlDist, PROBE_ID)
-        await waitForRuntimeState(INITIAL_BACKGROUND_HEX)
-        return initialRuntime
-      }
-      catch (error) {
-        lastError = error
-        process.stdout.write(`[warn] [template-wevu-tailwindcss-tdesign:hmr] restart initial session attempt=${attempt} reason=${error instanceof Error ? error.message : String(error)}\n`)
-      }
-    }
-    throw lastError instanceof Error ? lastError : new Error(String(lastError))
-  }
+  let fixture: Awaited<ReturnType<typeof createWevuTailwindHmrProject>> | undefined
+  let session: ReturnType<typeof createWevuTailwindHmrSession> | undefined
 
   beforeAll(async () => {
-    if (!headless) {
-      await cleanupResidualIdeProcesses()
-    }
-    await fs.mkdir(FIXTURE_PARENT, { recursive: true })
-    fixtureRoot = await fs.mkdtemp(path.join(FIXTURE_PARENT, 'fixture-'))
-    await fs.cp(TEMPLATE_ROOT, fixtureRoot, {
-      filter(source) {
-        const relative = path.relative(TEMPLATE_ROOT, source)
-        return relative !== 'dist'
-          && !relative.startsWith(`dist${path.sep}`)
-          && relative !== 'node_modules'
-          && !relative.startsWith(`node_modules${path.sep}`)
-          && relative !== '.weapp-vite'
-          && !relative.startsWith(`.weapp-vite${path.sep}`)
-      },
-      recursive: true,
-    })
-    indexVue = path.join(fixtureRoot, 'src/pages/index/index.vue')
-    const distRoot = path.join(fixtureRoot, 'dist')
-    appJsonDist = path.join(distRoot, 'app.json')
-    appWxssDist = path.join(distRoot, 'app.wxss')
-    distAppJs = path.join(distRoot, 'app.js')
-    distWevuRuntimeJs = path.join(distRoot, 'weapp-vendors/wevu-runtime.js')
-    indexJsDist = path.join(distRoot, 'pages/index/index.js')
-    indexWxssDist = path.join(distRoot, 'pages/index/index.wxss')
-    indexWxmlDist = path.join(distRoot, 'pages/index/index.wxml')
-    currentVue = addRuntimeProbe(await fs.readFile(indexVue, 'utf8'))
-    await fs.writeFile(indexVue, currentVue, 'utf8')
-    const appVue = path.join(fixtureRoot, 'src/app.vue')
-    const appSource = await fs.readFile(appVue, 'utf8')
-    const setupTag = '<script setup lang="ts">'
-    if (!appSource.startsWith(setupTag)) {
-      throw new Error('Expected the isolated template App to use a script setup block')
-    }
-    await fs.writeFile(appVue, appSource.replace(setupTag, `${setupTag}
-import { getCurrentInstance, onLaunch } from 'wevu'
-const appInstance = getCurrentInstance()
-onLaunch(function (this: Record<string, unknown>) {
-  const launchedAt = Date.now()
-  this.__e2eHmrLaunch = launchedAt
-  if (!appInstance) {
-    throw new Error('App setup instance was unavailable')
-  }
-  appInstance.__e2eHmrLaunch = launchedAt
-  console.info('[hmr-diagnostics:app-launch]', launchedAt)
-})`), 'utf8')
-    await removeAutomatorSessionFiles()
-  }, 60_000)
+    fixture = await createWevuTailwindHmrProject(ROOT)
+    session = createWevuTailwindHmrSession(ROOT, fixture)
+    await session.start()
+  }, 300_000)
 
   afterAll(async () => {
-    await stopDevSession()
-    await cleanupTrackedDevProcesses()
-    if (fixtureRoot) {
-      await fs.rm(fixtureRoot, { force: true, recursive: true }).catch(() => {})
-    }
+    await runCleanupSteps([
+      { label: 'Wevu Tailwind template session', run: async () => { await session?.close() } },
+      { label: 'Wevu Tailwind isolated template', run: async () => {
+        if (session && !session.released) {
+          throw new Error('Preserving fixture because owned runtime or watcher release is unconfirmed')
+        }
+        await fixture?.cleanup()
+      } },
+    ])
   }, 60_000)
 
-  it('serializes consecutive arbitrary background updates without reloading the page stack', async (context) => {
-    const colors = ['rgb(246, 247, 251)', 'rgb(246, 247, 251)', 'rgb(219, 234, 254)', 'rgba(0, 0, 0, 0)', 'rgb(254, 243, 199)', 'rgb(252, 231, 243)']
-    const dom = createDomAcceptance(context, 'templates/weapp-vite-wevu-tailwindcss-tdesign-template', [...colors.map((color, index) => ({
-      id: `background:${index}`,
-      route: INDEX_ROUTE,
-      action: `背景阶段 ${index}：计算样式、布局与点击计数`,
+  it('preserves script and style state and serializes Tailwind template updates through sticky classic', async (context) => {
+    const host = session!
+    const project = fixture!.project
+    const pageWxss = path.join(project, 'dist/pages/index/index.wxss')
+    const pageWxml = path.join(project, 'dist/pages/index/index.wxml')
+    const appWxss = path.join(project, 'dist/app.wxss')
+    const base = { color: BASE_COLOR, textColor: BASE_TEXT_COLOR, hex: WEVU_TAILWIND_INITIAL_HEX }
+    const stages = [
+      { id: 'initial', ...base, count: 0 },
+      { id: 'prepared', ...base, count: 1 },
+      { id: 'script-saved', ...base, count: 1 },
+      { id: 'script-interaction', ...base, count: 3 },
+      { id: 'script-restored', ...base, count: 3 },
+      { id: 'script-restored-interaction', ...base, count: 4 },
+      { id: 'style-saved', ...base, textColor: 'rgb(37, 99, 235)', count: 4 },
+      { id: 'style-restored', ...base, count: 4 },
+      ...WEVU_TAILWIND_UPDATES.flatMap((update, index) => [
+        { id: `background:${index}:default`, ...update, textColor: BASE_TEXT_COLOR, count: 0 },
+        { id: `background:${index}:interaction`, ...update, textColor: BASE_TEXT_COLOR, count: 1 },
+      ]),
+      { id: 'local-style-priority:default', color: 'rgb(252, 231, 243)', textColor: BASE_TEXT_COLOR, hex: 'fce7f3', count: 0, local: true },
+      { id: 'local-style-priority:interaction', color: 'rgb(252, 231, 243)', textColor: BASE_TEXT_COLOR, hex: 'fce7f3', count: 1, local: true },
+      { id: 'restored:default', ...base, count: 0, localAbsent: true },
+      { id: 'restored:interaction', ...base, count: 1, localAbsent: true },
+    ]
+    const checkpoints = stages.map((stage): DomCheckpoint => ({
+      id: stage.id,
+      route: WEVU_TAILWIND_ROUTE,
+      action: `验收 ${stage.id} 的背景、局部优先级、计算文本与交互`,
       nodes: [
-        { selector: `#${PROBE_ID}`, ...(!headless ? { styles: { 'background-color': color }, visible: true } : {}) },
-        { selector: '#count-label', text: `已点击 ${index === 0 ? 0 : 1} 次` },
+        { selector: `#${WEVU_TAILWIND_PROBE}`, count: 1, attributes: { 'data-e2e-bg': stage.hex }, ...(!headless ? { styles: { 'background-color': stage.color, 'color': stage.textColor }, visible: true } : {}) },
+        { selector: '#count-label', count: 1, text: `已点击 ${stage.count} 次` },
+        ...('local' in stage ? [{ selector: '#wevu-tailwind-local-probe', count: 1, text: 'Local style', ...(!headless ? { styles: { 'background-color': 'rgb(31, 41, 55)' }, visible: true } : {}) }] : []),
+        ...('localAbsent' in stage ? [{ selector: '#wevu-tailwind-local-probe', count: 0 }] : []),
       ],
-    })), {
-      id: 'local-style-priority',
-      route: INDEX_ROUTE,
-      action: '新增页面局部样式后，验证局部优先级、全局背景与交互状态',
-      nodes: [
-        { selector: `#${PROBE_ID}`, ...(!headless ? { styles: { 'background-color': 'rgb(252, 231, 243)' }, visible: true } : {}) },
-        { selector: '#wevu-tailwind-local-probe', text: 'Local style', ...(!headless ? { styles: { 'background-color': 'rgb(31, 41, 55)' }, visible: true } : {}) },
-        { selector: '#count-label', text: '已点击 1 次' },
-      ],
-    }])
+    }))
+    const dom = createDomAcceptance(context, 'templates/weapp-vite-wevu-tailwindcss-tdesign-template', checkpoints)
     context.onTestFailed(() => {
-      process.stdout.write(devProcess?.getOutput().slice(-16000) ?? '')
+      process.stdout.write(host.dev.getOutput().slice(-16_000))
     })
-    const initialRuntime = await startDevSession()
-    const initialPage = await waitForIndexPage()
-    await dom.check('background:0', miniProgram, initialPage)
-    await initialPage.callMethodWithOptions('handleCountTap', { routeOnly: true })
-    await dom.check('background:1', miniProgram, initialPage)
-
-    const collector = attachRuntimeErrorCollector(miniProgram)
-    const diagnostics = createHmrRuntimeDiagnostics(miniProgram, 'templates/weapp-vite-wevu-tailwindcss-tdesign-template')
-    const fileDiagnostics = createWevuTailwindHmrFileDiagnostics(miniProgram, fixtureRoot, INDEX_ROUTE)
+    const diagnostics = createHmrRuntimeDiagnostics(host.app, 'templates/weapp-vite-wevu-tailwindcss-tdesign-template')
     const initialIdentity = await diagnostics.initialize()
     expect(initialIdentity.errors).toEqual([])
     expect(initialIdentity.pageId).toEqual(expect.any(Number))
-    expect(initialIdentity.runtime).toMatchObject({ pageMarkerRetained: true, appMarkerRetained: true })
-    expect(initialIdentity.runtime?.appLaunchProbe).toEqual(expect.any(Number))
-    const marker = collector.mark()
-    let previousClass = INITIAL_BACKGROUND_CLASS
-    let previousEscapedClass = 'bg-_b_hf6f7fb_B'
-    let previousHex = INITIAL_BACKGROUND_HEX
+    expect(initialIdentity.runtime).toMatchObject({ pageMarkerRetained: true, appMarkerRetained: true, appLaunchProbe: expect.any(Number) })
+
+    async function check(id: string) {
+      await dom.check(id, host.app, await host.page())
+      await host.captureFiles(`${id}:rendered`)
+      host.assertNoRuntimeErrors()
+    }
+
+    async function interact(id: string) {
+      await (await host.page()).callMethodWithOptions('handleCountTap', { routeOnly: true })
+      await check(id)
+    }
+
+    async function assertStatefulIdentity(id: string) {
+      await host.assertStateful()
+      const rendered = await diagnostics.capture(id)
+      expect(rendered.errors).toEqual([])
+      expect(rendered.pageId).toBe(initialIdentity.pageId)
+      expect(rendered.runtime).toMatchObject({ pageMarkerRetained: true, appMarkerRetained: true })
+    }
+
+    let current = fixture!.original
+    await check('initial')
+    await interact('prepared')
     try {
-      for (const [updateIndex, update] of BACKGROUND_UPDATES.entries()) {
-        await diagnostics.capture(`background:${updateIndex + 2}:before`)
-        await fileDiagnostics.capture(`background:${updateIndex + 2}:before`)
-        const nextVue = updateRuntimeProbe(
-          currentVue,
-          previousClass,
-          update.className,
-          previousHex,
-          update.hex,
-        )
-        expect(nextVue).not.toBe(currentVue)
+      // 只修改 script 中的方法实现；模板静态结构不变，补丁必须保留现有实例和计数。
+      const script = current.replace('count.value += 1', 'count.value += 2')
+      expect(script).not.toBe(current)
+      let version = Number((await host.state()).version)
+      await replaceFileByRename(fixture!.source, script)
+      await expect.poll(async () => Number((await host.state()).version), { timeout: 45_000 }).toBeGreaterThan(version)
+      await assertStatefulIdentity('script-saved')
+      await check('script-saved')
+      await interact('script-interaction')
+      version = Number((await host.state()).version)
+      await replaceFileByRename(fixture!.source, current)
+      await expect.poll(async () => Number((await host.state()).version), { timeout: 45_000 }).toBeGreaterThan(version)
+      await assertStatefulIdentity('script-restored')
+      await check('script-restored')
+      await interact('script-restored-interaction')
+
+      // 纯 style 更新和恢复继续走 stateful，不把后面的模板回退冒充样式增量支持。
+      await replaceFileByRename(fixture!.source, current.replace('color: #1f1a3f', 'color: #2563eb'))
+      await waitForEmittedStylesheet(pageWxss, '#2563eb')
+      await assertStatefulIdentity('style-saved')
+      await check('style-saved')
+      await replaceFileByRename(fixture!.source, current)
+      await waitForEmittedStylesheet(pageWxss, '#2563eb', { absent: true })
+      await assertStatefulIdentity('style-restored')
+      await check('style-restored')
+
+      let previousClass = WEVU_TAILWIND_INITIAL_CLASS
+      let previousEscapedClass = 'bg-_b_hf6f7fb_B'
+      let previousHex = WEVU_TAILWIND_INITIAL_HEX
+      for (const [index, update] of WEVU_TAILWIND_UPDATES.entries()) {
+        await host.captureFiles(`background:${index}:before`)
+        const next = updateWevuTailwindProbe(current, previousClass, update.className, previousHex, update.hex)
+        expect(next).not.toBe(current)
+        await host.markInstances()
+        const publication = host.publication.capture(fixture!.source)
         const startedAt = Date.now()
-        await fs.writeFile(indexVue, nextVue, 'utf8')
-        currentVue = nextVue
-        previousClass = update.className
-        previousHex = update.hex
-
-        const captureReady = async (phase: string) => {
-          const readyAt = Date.now()
-          await fileDiagnostics.capture(`background:${updateIndex + 2}:${phase}`)
-          return readyAt
+        await replaceFileByRename(fixture!.source, next)
+        await publication.wait()
+        const expectedClass = update.escapedClass
+        await expect.poll(async () => {
+          const source = await readFile(pageWxml, 'utf8')
+          return expectedClass ? source.includes(expectedClass) : !source.includes(previousEscapedClass)
+        }, { timeout: 45_000 }).toBe(true)
+        if (update.css) {
+          await waitForEmittedStylesheet(appWxss, update.css)
         }
-
-        const wxmlReady = waitForFileMatch(
-          indexWxmlDist,
-          source => update.escapedClass ? source.includes(update.escapedClass) : !source.includes(previousEscapedClass),
-          update.escapedClass ? `contain ${update.escapedClass}` : 'remove the arbitrary background class',
-        ).then(() => captureReady('wxml-ready'))
-        const wxssReady = update.css
-          ? waitForEmittedStylesheet(appWxssDist, update.css).then(() => captureReady('wxss-ready'))
-          : wxmlReady
-        const runtimeReady = waitForRuntimeState(update.hex).then(() => captureReady('dom-ready'))
-        const [wxmlReadyAt, wxssReadyAt, runtimeReadyAt] = await devProcess!.waitFor(Promise.all([
-          wxmlReady,
-          wxssReady,
-          runtimeReady,
-        ]), `Tailwind background ${update.action}: ${update.hex}`)
-        const outputMs = Math.max(wxmlReadyAt, wxssReadyAt) - startedAt
-        const runtimeMs = runtimeReadyAt - startedAt
-        const devtoolsApplyMs = Math.max(0, runtimeReadyAt - Math.max(wxmlReadyAt, wxssReadyAt))
-        process.stdout.write(`[template-wevu-tailwindcss-tdesign:hmr] update action=${update.action} class=${update.className || '<removed>'} wxmlMs=${wxmlReadyAt - startedAt} wxssMs=${wxssReadyAt - startedAt} outputMs=${outputMs} devtoolsApplyMs=${devtoolsApplyMs} runtimeMs=${runtimeMs}\n`)
+        const outputMs = Date.now() - startedAt
+        await host.observeClassic(update.hex)
+        await check(`background:${index}:default`)
+        const runtimeMs = Date.now() - startedAt
+        process.stdout.write(`[template-wevu-tailwindcss-tdesign:hmr] update action=${update.action} class=${update.className || '<removed>'} outputMs=${outputMs} runtimeMs=${runtimeMs}\n`)
         expect(outputMs).toBeLessThan(45_000)
         expect(runtimeMs).toBeLessThan(45_000)
-        expect((await miniProgram.currentPage({ retries: 1, timeout: 6_000 }))?.path).toBe(INDEX_ROUTE.slice(1))
-        await dom.check(`background:${updateIndex + 2}`, miniProgram, await waitForIndexPage())
-        const renderedIdentity = await diagnostics.capture(`background:${updateIndex + 2}:rendered`)
-        expect(renderedIdentity.errors).toEqual([])
-        expect(renderedIdentity.pageId).toBe(initialIdentity.pageId)
-        expect(renderedIdentity.runtime).toMatchObject({ pageMarkerRetained: true, appMarkerRetained: true })
+        await interact(`background:${index}:interaction`)
+        current = next
+        previousClass = update.className
         previousEscapedClass = update.escapedClass
+        previousHex = update.hex
       }
 
-      // 首轮无自有页面样式，完成后再新增局部规则，覆盖仅全局快照与局部样式共存两条路径。
-      currentVue = currentVue.replace('<t-tag ', '<view id="wevu-tailwind-local-probe" class="bg-[#fce7f3] local-priority">Local style</view>\n      <t-tag ')
-      currentVue += '\n<style>\n.local-priority { background-color: #1f2937; }\n</style>\n'
-      await fs.writeFile(indexVue, currentVue, 'utf8')
-      await Promise.all([
-        waitForFileContains(indexWxmlDist, 'wevu-tailwind-local-probe'),
-        waitForEmittedStylesheet(indexWxssDist, '#1f2937'),
-      ])
-      await dom.check('local-style-priority', miniProgram, await waitForIndexPage())
-      const finalIdentity = await diagnostics.capture('local-style-priority:rendered')
-      expect(finalIdentity.errors).toEqual([])
-      expect(finalIdentity.pageId).toBe(initialIdentity.pageId)
-      expect(finalIdentity.runtime).toMatchObject({ pageMarkerRetained: true, appMarkerRetained: true })
+      await host.markInstances()
+      const local = host.publication.capture(fixture!.source)
+      current = addWevuTailwindLocalPriority(current)
+      await replaceFileByRename(fixture!.source, current)
+      await local.wait()
+      await Promise.all([waitForFileContains(pageWxml, 'wevu-tailwind-local-probe'), waitForEmittedStylesheet(pageWxss, '#1f2937')])
+      await host.observeClassic('fce7f3')
+      await check('local-style-priority:default')
+      await interact('local-style-priority:interaction')
 
-      const runtimeErrors = collector.getSince(marker)
-      expect(runtimeErrors).toEqual([])
-      for (const forbidden of FORBIDDEN_RUNTIME_ERRORS) {
-        expect(collector.getAllLogs().join('\n')).not.toContain(forbidden)
-      }
-      expect(initialRuntime.app).not.toContain('from "wevu/internal-runtime"')
-      expect(collectCommonJsExportNames(initialRuntime.runtime).has('setWevuDefaults')).toBe(true)
+      await host.markInstances()
+      const restored = host.publication.capture(fixture!.source)
+      await replaceFileByRename(fixture!.source, fixture!.original)
+      await restored.wait()
+      await host.observeClassic(WEVU_TAILWIND_INITIAL_HEX)
+      await waitForEmittedStylesheet(pageWxss, '#1f2937', { absent: true })
+      await check('restored:default')
+      await interact('restored:interaction')
+      expect(host.dev.getOutput().match(/\[weapp-vite\] HMR fallback /g)).toHaveLength(1)
+      expect(host.dev.getOutput()).toContain('"reason":"native-registration"')
+      host.assertNoRuntimeErrors()
     }
     finally {
-      await fileDiagnostics.capture('finally')
-      await diagnostics.capture('finally')
-      collector.dispose()
+      await host.captureFiles('finally')
     }
-  }, 420_000)
+  }, 600_000)
 })

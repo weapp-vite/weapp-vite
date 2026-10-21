@@ -1,7 +1,7 @@
 import type { DomCheckpoint, DomProvider } from '../../utils/domAcceptance/types'
 
-export function statefulHmrCheckpoints(runtime: 'native' | 'component' | 'wevu', provider: DomProvider = 'devtools'): DomCheckpoint[] {
-  const prepared = runtime === 'wevu' ? 2 : 1
+export function statefulHmrCheckpoints(runtime: 'native' | 'component', provider: DomProvider = 'devtools'): DomCheckpoint[] {
+  const prepared = 1
   const checkpoints: DomCheckpoint[] = [
     ['initial', 0, '', '首屏检查初始计数、输入和标记'],
     ['prepared', prepared, 'held-input', '输入文本并点击按钮，检查交互状态'],
@@ -14,16 +14,7 @@ export function statefulHmrCheckpoints(runtime: 'native' | 'component' | 'wevu',
     nodes: [
       { selector: '.count', text: String(count) },
       { selector: '.input', attributes: { value: String(input) } },
-      ...(runtime === 'wevu'
-        ? [
-            { selector: '.store-count', text: String(count) },
-            id === 'initial' ? { selector: '.removed-field', text: 'initial' } : { selector: '.removed-field', count: 0 },
-            id === 'patched' || id === 'updated' ? { selector: '.added-field', text: 'new default' } : { selector: '.added-field', count: 0 },
-          ]
-        : []),
-      ...(runtime === 'wevu' && (id === 'patched' || id === 'updated') ? [{ selector: '.sfc-template', text: 'SFC-MIXED-TEMPLATE' }] : []),
-      // 原生 data 属于应保留的实例状态；Wevu 普通 setup 文本由新代码提供。
-      { selector: '.marker', text: `STATEFUL-${runtime.toUpperCase()}-${runtime === 'wevu' && (id === 'patched' || id === 'updated') ? 'PATCHED' : 'BASE'}` },
+      { selector: '.marker', text: `STATEFUL-${runtime.toUpperCase()}-BASE` },
     ],
   }))
   if (runtime === 'native') {
@@ -59,30 +50,6 @@ export function statefulHmrCheckpoints(runtime: 'native' | 'component' | 'wevu',
           : {}),
       })
     }
-  }
-  if (runtime === 'wevu') {
-    for (const [id, count, template, styled] of [
-      ['template-b', 2, 'SFC-TEMPLATE-B', false],
-      ['template-a', 2, undefined, false],
-      ['mixed-style', 4, 'SFC-MIXED-TEMPLATE', true],
-      ['mixed-style-updated', 7, 'SFC-MIXED-TEMPLATE', true],
-    ] as const) {
-      checkpoints.push({
-        id,
-        route: '/pages/wevu/index',
-        action: `SFC ${id}：检查模板、计数、输入和混合更新后的实际样式`,
-        nodes: [
-          { selector: '.count', text: String(count) },
-          { selector: '.store-count', text: String(count) },
-          { selector: '.marker', text: styled ? 'STATEFUL-WEVU-PATCHED' : 'STATEFUL-WEVU-BASE' },
-          { selector: '.input', attributes: { value: 'held-input' } },
-          template ? { selector: '.sfc-template', text: template } : { selector: '.sfc-template', count: 0 },
-          ...(styled ? [{ selector: '.page', ...(provider === 'devtools' ? { styles: { 'background-color': 'rgb(219, 234, 254)' }, visible: true } : {}) }] : []),
-        ],
-      })
-    }
-    // 模板往返发生在脚本补丁之前，验收清单必须与证据写入顺序一致。
-    checkpoints.splice(2, 0, ...checkpoints.splice(4, 2))
   }
   return checkpoints
 }

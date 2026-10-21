@@ -7,6 +7,7 @@ interface GraphHost {
   server: ViteDevServer
   onChange?: (change: DevModuleGraphChange) => void
   onBuild?: (successful: boolean) => void
+  pending: DevModuleGraphChange[]
 }
 const hosts = new WeakMap<HostContext, GraphHost>()
 
@@ -15,7 +16,7 @@ export function attachDevModuleGraphHost(context: HostContext, server: ViteDevSe
   if (hosts.has(context)) {
     throw new Error('[weapp-vite] 编译上下文已经绑定开发宿主。')
   }
-  const host: GraphHost = { server, onBuild }
+  const host: GraphHost = { server, onBuild, pending: [] }
   hosts.set(context, host)
   return () => {
     if (hosts.get(context) === host) {
@@ -25,7 +26,14 @@ export function attachDevModuleGraphHost(context: HostContext, server: ViteDevSe
 }
 
 export function notifyDevModuleGraphHost(context: HostContext, change: DevModuleGraphChange) {
-  hosts.get(context)?.onChange?.(change)
+  const host = hosts.get(context)
+  if (host?.onChange) {
+    host.onChange(change)
+  }
+  else {
+    // 宿主 watcher 早于入口扫描就绪；事件所有权留在原宿主，交给唯一 provider 接管。
+    host?.pending.push(change)
+  }
 }
 
 export function reportDevModuleGraphBuild(context: HostContext, successful: boolean) {
@@ -43,6 +51,9 @@ export function connectDevModuleGraphHost(context: HostContext, onChange: NonNul
   }
   host.onChange = onChange
   const release = context.moduleGraphService.bindDevServer(host.server)
+  for (const change of host.pending.splice(0)) {
+    onChange(change)
+  }
   let closed = false
   return {
     async close() {

@@ -2,15 +2,16 @@ import type { HeadlessSession } from '../../mpcore/packages/simulator/src'
 import { readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
-import { WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY, WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE, WEAPP_VITE_STATEFUL_HMR_UPDATE_FILE } from '@weapp-core/constants'
+import { WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY, WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE, WEAPP_VITE_STATEFUL_HMR_PRELOAD_FILE, WEAPP_VITE_STATEFUL_HMR_UPDATE_FILE } from '@weapp-core/constants'
 import postcss from 'postcss'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { launchAutomator } from '../utils/automator'
+import { launchAutomator, reconnectAutomator } from '../utils/automator'
 import { startDevProcess } from '../utils/dev-process'
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { createDevBuildCompletion } from '../utils/devBuildCompletion'
 import { createDomAcceptance } from '../utils/domAcceptance'
 import { readEmittedStylesheet } from '../utils/emittedStylesheet'
+import { waitForFileRemoved } from '../utils/hmr-helpers'
 import { renameAtomicFile } from '../utils/hmrAtomicRename'
 import { createHmrRuntimeDiagnostics } from '../utils/hmrRuntimeDiagnostics'
 import { createIssue1081Project, ISSUE_1081_CLI } from '../utils/issue1081Project'
@@ -32,9 +33,7 @@ describe('issue #1081: Tailwind snapshot generation', { concurrent: false }, () 
 
   const output = (file: string) => path.join(project!, 'dist', file)
   const source = (file: string) => path.join(project!, 'src', file)
-  const version = () => host!.evaluate((key: string) => (globalThis as any)[key].getVersion(), WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY)
-
-  function openRuntime() {
+  function openRuntime(stateful = true) {
     return launchAutomator({
       projectPath: project!,
       bridgeProjectMode: 'direct',
@@ -42,18 +41,22 @@ describe('issue #1081: Tailwind snapshot generation', { concurrent: false }, () 
       warmupRootSelectors: ['#script-utility'],
       configureHeadlessSession(session) {
         headlessRuntime = session
-        disposeTransport = installStatefulHmrTransport(session, path.join(project!, 'dist'))
+        if (stateful) {
+          disposeTransport = installStatefulHmrTransport(session, path.join(project!, 'dist'))
+        }
       },
     })
   }
 
-  async function replaceHeadlessRuntime() {
+  async function observeClassicRuntime() {
     if (resolveRuntimeProviderName() !== 'headless') {
+      // 只重连既有受管窗口；自动重载证据必须先于任何导航和后续交互。
+      host = await reconnectAutomator(host!)
       return
     }
     const previous = host!
     const previousRuntime = headlessRuntime!
-    // 配置完整构建是容器边界；旧 App/transport 必须终结，再读取新产物创建新容器。
+    // companion 仅验证新 classic 产物；旧容器与 transport 必须终结，不替代真实 IDE 自动重载证据。
     disposeTransport?.()
     disposeTransport = undefined
     await previous.close()
@@ -61,7 +64,7 @@ describe('issue #1081: Tailwind snapshot generation', { concurrent: false }, () 
     await expect(previous.currentPage()).rejects.toThrow(/closed/i)
     host = undefined
     headlessRuntime = undefined
-    host = await openRuntime()
+    host = await openRuntime(false)
   }
 
   async function save(file: string, code: string) {
@@ -103,7 +106,7 @@ describe('issue #1081: Tailwind snapshot generation', { concurrent: false }, () 
     })
   }, 60_000)
 
-  it('reloads config snapshots before preserving the new page state across later script utility patches', async (context) => {
+  it('falls back on config changes and keeps later script utilities functional in sticky classic', async (context) => {
     context.onTestFailed(() => {
       process.stdout.write(dev?.getOutput().slice(-16_000) ?? '')
     })
@@ -123,13 +126,13 @@ describe('issue #1081: Tailwind snapshot generation', { concurrent: false }, () 
       { id: 'config-edited', marker: 'SNAPSHOT_BASE', count: '0', color: '#fce7f3', computed: 'rgb(252, 231, 243)' },
       { id: 'config-restored', marker: 'SNAPSHOT_BASE', count: '0', color: '#fce7f3', computed: 'rgb(252, 231, 243)' },
       { id: 'patch-baseline', marker: 'SNAPSHOT_BASE', count: '1', color: '#fce7f3', computed: 'rgb(252, 231, 243)' },
-      { id: 'utility-patched', marker: 'SNAPSHOT_UPDATED', count: '3', color: '#dbeafe', computed: 'rgb(219, 234, 254)' },
-      { id: 'utility-restored', marker: 'SNAPSHOT_BASE', count: '4', color: '#fce7f3', computed: 'rgb(252, 231, 243)' },
+      { id: 'utility-patched', marker: 'SNAPSHOT_UPDATED', count: '2', color: '#dbeafe', computed: 'rgb(219, 234, 254)' },
+      { id: 'utility-restored', marker: 'SNAPSHOT_BASE', count: '1', color: '#fce7f3', computed: 'rgb(252, 231, 243)' },
     ]
     const acceptance = createDomAcceptance(context, fixture, checkpoints.map(checkpoint => ({
       id: checkpoint.id,
       route,
-      action: '检查配置重载边界、同批产物、计算样式与后续补丁保留的交互状态',
+      action: '检查配置回退边界、同批产物、计算样式与 classic 重载后的交互',
       nodes: [
         { selector: '#template-utility', text: 'fixed utility', ...(resolveRuntimeProviderName() === 'devtools' ? { styles: { 'background-color': 'rgb(252, 231, 243)' } } : {}) },
         { selector: '#script-utility', text: checkpoint.marker, ...(resolveRuntimeProviderName() === 'devtools' ? { styles: { 'background-color': checkpoint.computed } } : {}) },
@@ -137,12 +140,20 @@ describe('issue #1081: Tailwind snapshot generation', { concurrent: false }, () 
       ],
     })))
 
-    async function checkIdentity(label: string) {
+    async function checkIdentity(label: string, stateful = false) {
       const observed = await diagnostics.capture(label)
       expect(observed.errors).toEqual([])
       expect(observed.pageId).toBe(identity.pageId)
       expect(observed.runtime).toMatchObject({ pageMarkerRetained: true, appMarkerRetained: true })
-      expect(await readFile(output(WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE), 'utf8')).toBe(control)
+      if (stateful) {
+        expect(await readFile(output(WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE), 'utf8')).toBe(control)
+      }
+      else {
+        expect(observed.runtime).toMatchObject({ clientPresent: false, bridgeReady: false, controlPresent: false, transportPhase: null })
+        for (const file of [WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE, WEAPP_VITE_STATEFUL_HMR_PRELOAD_FILE, WEAPP_VITE_STATEFUL_HMR_UPDATE_FILE]) {
+          await waitForFileRemoved(output(file))
+        }
+      }
     }
 
     async function checkSnapshot() {
@@ -164,7 +175,7 @@ describe('issue #1081: Tailwind snapshot generation', { concurrent: false }, () 
       await (await page.$('#increment'))!.tap()
       await acceptance.check('initial', host!, await host!.currentPage())
       await checkSnapshot()
-      await checkIdentity('initial')
+      await checkIdentity('initial', true)
       expect(await readIssue1081SnapshotRuntime(host!, headlessRuntime)).toMatchObject({
         appPresent: true,
         pageId: identity.pageId,
@@ -174,23 +185,28 @@ describe('issue #1081: Tailwind snapshot generation', { concurrent: false }, () 
         titleStable: true,
         count: 1,
         transportReady: true,
+        clientPresent: true,
+        bridgePresent: true,
+        controlPresent: true,
+        transportPhase: 'polling',
       })
-      // JSON 完整构建后等待新 App/Page 和实际标题；不使用 delta 版本或追加导航代替重载。
+      // JSON 首次回退后保持 classic；新 App/Page 和实际标题必须在任何后续交互前就绪。
       for (const [id, title, code] of [
         ['config-edited', 'SNAPSHOT_CONFIG', config.replace('SNAPSHOT_BASE', 'SNAPSHOT_CONFIG')],
         ['config-restored', 'SNAPSHOT_BASE', config],
       ] as const) {
         let configIdentity: Awaited<ReturnType<typeof readIssue1081SnapshotRuntime>> | undefined
         await acceptance.act(id, async () => {
-          // 配置快照提交 metadata 并释放 preparation 后才发布本轮来源的完成记录。
-          const publication = createDevBuildCompletion(dev!, { source: { file: configFile, profilePath } })
+          const publication = createDevBuildCompletion(dev!, id === 'config-edited'
+            ? { completed: '[weapp-vite] HMR classic ready ' }
+            : { source: { file: configFile, profilePath } })
           await save(configFile, code)
           await publication.wait()
           await expect.poll(async () => JSON.parse(await readFile(output('app.json'), 'utf8')) as unknown, { timeout: 30_000 }).toMatchObject({
             pages: ['pages/index/index'],
             window: { navigationBarTitleText: title },
           })
-          await replaceHeadlessRuntime()
+          await observeClassicRuntime()
           await expect.poll(async () => {
             configIdentity = await readIssue1081SnapshotRuntime(host!, headlessRuntime)
             return { ...configIdentity, pageReplaced: configIdentity.pageId !== identity.pageId }
@@ -207,10 +223,16 @@ describe('issue #1081: Tailwind snapshot generation', { concurrent: false }, () 
             pageStable: true,
             title,
             titleStable: true,
-            transportReady: true,
+            transportReady: false,
+            clientPresent: false,
+            bridgePresent: false,
+            controlPresent: false,
+            transportPhase: null,
           })
           await checkSnapshot()
-          expect(await readFile(output(WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE), 'utf8')).toBe(control)
+          for (const file of [WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE, WEAPP_VITE_STATEFUL_HMR_PRELOAD_FILE, WEAPP_VITE_STATEFUL_HMR_UPDATE_FILE]) {
+            await waitForFileRemoved(output(file))
+          }
         })
         await acceptance.check(id, host!, await host!.currentPage())
         diagnostics = createHmrRuntimeDiagnostics(host! as any, fixture)
@@ -223,23 +245,50 @@ describe('issue #1081: Tailwind snapshot generation', { concurrent: false }, () 
         await checkIdentity('patch-baseline')
       })
       await acceptance.check('patch-baseline', host!, await host!.currentPage())
-      // 原生补丁保留 data；通过新方法的 setData 验证新 utility 闭包和旧 count 同时成立。
+      // classic 每次保存先重置页面，再用真实点击验证新 utility 闭包和事件步长。
       for (const [id, code, color, marker] of [
         ['utility-patched', script.replace('#fce7f3', '#dbeafe').replace('SNAPSHOT_BASE', 'SNAPSHOT_UPDATED').replace('this.data.count + 1', 'this.data.count + 2'), '#dbeafe', 'SNAPSHOT_UPDATED'],
         ['utility-restored', script, '#fce7f3', 'SNAPSHOT_BASE'],
       ] as const) {
         await acceptance.act(id, async () => {
-          const previous = await version()
+          const publication = createDevBuildCompletion(dev!, { source: { file: scriptFile, profilePath } })
           await save(scriptFile, code)
-          await expect.poll(version, { timeout: 30_000 }).toBeGreaterThan(previous)
+          await publication.wait()
+          await observeClassicRuntime()
+          await expect.poll(async () => {
+            const current = await readIssue1081SnapshotRuntime(host!, headlessRuntime)
+            return { ...current, pageReplaced: current.pageId !== identity.pageId }
+          }, { timeout: 30_000 }).toMatchObject({
+            appPresent: true,
+            appMarker: null,
+            pageMarker: null,
+            pageCount: 1,
+            route: route.slice(1),
+            path: route.slice(1),
+            pageStable: true,
+            pageReplaced: true,
+            title: 'SNAPSHOT_BASE',
+            titleStable: true,
+            marker,
+            count: 0,
+            clientPresent: false,
+            bridgePresent: false,
+            controlPresent: false,
+            transportPhase: null,
+          })
+          diagnostics = createHmrRuntimeDiagnostics(host! as any, fixture)
+          identity = await diagnostics.initialize()
+          expect(identity.errors).toEqual([])
           await (await (await host!.currentPage()).$('#increment'))!.tap()
           const classes = await backgroundClasses(color)
           expect(classes.length).toBeGreaterThan(0)
-          const update = await readFile(output(WEAPP_VITE_STATEFUL_HMR_UPDATE_FILE), 'utf8')
-          expect(update).toContain(marker)
+          const javascript = await readFile(output('pages/index/index.js'), 'utf8')
+          expect(javascript).toContain(marker)
           const node = (await (await host!.currentPage()).$('#script-utility'))!
           const renderedClasses = await (node.attribute ?? node.attr).call(node, 'class')
-          expect(classes.some(name => renderedClasses.split(/\s+/).includes(name) && update.includes(name))).toBe(true)
+          expect(classes.some(name => renderedClasses.split(/\s+/).includes(name) && javascript.includes(name))).toBe(true)
+          const template = await readFile(output('pages/index/index.wxml'), 'utf8')
+          expect((await backgroundClasses('#fce7f3')).some(name => template.includes(name))).toBe(true)
           if (id === 'utility-restored') {
             expect(await backgroundClasses('#dbeafe')).toEqual([])
           }
@@ -247,6 +296,8 @@ describe('issue #1081: Tailwind snapshot generation', { concurrent: false }, () 
         })
         await acceptance.check(id, host!, await host!.currentPage())
       }
+      expect(dev!.getOutput().match(/\[weapp-vite\] HMR fallback /g)).toHaveLength(1)
+      expect(dev!.getOutput()).toContain('"reason":"config-json"')
       expect(dev!.getOutput()).not.toMatch(/Build failed|delivery failed|patch transform failed/)
     }
     finally {

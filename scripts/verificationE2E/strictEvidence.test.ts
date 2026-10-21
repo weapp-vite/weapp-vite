@@ -4,6 +4,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { evaluateAcceptanceCase, summarizeAcceptanceCases } from '../../e2e/scripts/domAcceptanceReport/helpers'
+import { freezeProviderCaseScope } from '../../e2e/scripts/domAcceptanceReport/taskCases'
 import { aggregateVerificationReports } from '../../e2e/scripts/verification/aggregate'
 import { freeze, now, profile, rehash, shardReports } from './fixtures'
 
@@ -12,14 +13,14 @@ afterEach(async () => {
   await Promise.all(roots.splice(0).map(root => fs.rm(root, { recursive: true, force: true })))
 })
 
-async function setup() {
+async function setup(provider: AcceptanceReport['provider'] = 'headless') {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'verification-evidence-'))
   roots.push(root)
   const plan = rehash({
     ...await freeze(),
     suite: 'ide-full',
     strict: true,
-    profile: { ...profile, provider: 'headless' },
+    profile: { ...profile, provider },
     tasks: (await freeze()).tasks.map(task => ({ ...task, cases: [{ file: `e2e/${task.label}`, name: 'mounts' }] })),
   })
   const reports = shardReports(plan)
@@ -37,9 +38,10 @@ async function setup() {
         finishedAt: Date.parse('2026-10-19T00:00:02.000Z'),
         acceptance: {
           fixture: 'e2e-apps/example',
-          provider: 'headless',
+          provider,
+          ...(provider === 'devtools' ? { runtime: { ideVersion: '2.02.2608080', baseLibraryVersion: '3.17.4' } } : {}),
           checkpoints: [{ id: 'mounted', route: '/pages/index/index', action: 'mount', nodes: [{ selector: '.title', text: 'Ready' }] }],
-          evidence: [{ id: 'mounted', route: 'pages/index/index', source: 'headless-logical-tree', capturedAt: checkpointTime, nodes: [{ selector: '.title', query: 'css', count: 1, nodes: [{ text: 'Ready' }] }] }],
+          evidence: [{ id: 'mounted', route: 'pages/index/index', source: provider === 'headless' ? 'headless-logical-tree' : 'devtools-page-frame', capturedAt: checkpointTime, nodes: [{ selector: '.title', query: 'css', count: 1, nodes: [{ text: 'Ready' }] }] }],
         },
       })]
       const report: AcceptanceReport = {
@@ -50,9 +52,9 @@ async function setup() {
         invocationId: `invocation-${task.label}`,
         taskLabel: task.label,
         template: null,
-        provider: 'headless',
+        provider,
         strict: true,
-        environment: { nodeVersion: 'v24.11.0', ideVersion: null, baseLibraryVersion: null },
+        environment: { nodeVersion: 'v24.11.0', ideVersion: provider === 'devtools' ? '2.02.2608080' : null, baseLibraryVersion: provider === 'devtools' ? '3.17.4' : null },
         startedAt: '2026-10-19T00:00:00.000Z',
         finishedAt: '2026-10-19T00:00:02.000Z',
         status: 'passed',
@@ -77,6 +79,77 @@ describe('strict frozen shard aggregation', () => {
   it('revalidates the original case and checkpoint evidence after artifact download', async () => {
     const { plan, reports, files, root } = await setup()
     expect(await aggregateVerificationReports(plan, reports, { files, reportsRoot: root, now })).toMatchObject({ coverage: 'complete', acceptance: 'passed' })
+  })
+
+  it('rejects a frozen case skipped without a DOM plan even when its task report otherwise passed', async () => {
+    const { plan, reports, files, root, evidence } = await setup()
+    const report = evidence[0]!
+    const skipped = evaluateAcceptanceCase({ id: 'skipped-boundary', file: `e2e/${report.taskLabel}`, name: 'checks the boundary', state: 'skipped' })
+    const frozen = rehash({
+      ...plan,
+      tasks: plan.tasks.map(task => task.label === report.taskLabel
+        ? { ...task, cases: [...task.cases!, { file: skipped.file, name: skipped.name }] }
+        : task),
+    })
+    for (const shard of reports) {
+      shard.execution.planHash = frozen.planHash
+    }
+    report.cases.push(skipped)
+    report.summary = summarizeAcceptanceCases(report.cases)
+    expect(report).toMatchObject({ status: 'passed', summary: { plannedCount: 1, passedCount: 1, skippedCount: 1 } })
+    await fs.writeFile(files[0]!, JSON.stringify(report))
+    await expect(aggregateVerificationReports(frozen, reports, { files, reportsRoot: root, now })).rejects.toThrow('Planned DOM case did not pass with acceptance evidence')
+  })
+
+  it('lists a statically frozen headless-only case outside DevTools scope without counting it as passed', async () => {
+    const { plan, reports, files, root, evidence } = await setup('devtools')
+    const report = evidence[0]!
+    const skipped = evaluateAcceptanceCase({ id: 'headless-only', file: `e2e/${report.taskLabel}`, name: 'headless lifecycle', state: 'skipped' })
+    const providerScope = freezeProviderCaseScope({ providers: ['headless'], conditions: [{ modifier: 'runIf', expression: 'provider === \'headless\'', source: 'e2e/ide/example.test.ts:1' }] }, 'devtools')
+    const frozen = rehash({
+      ...plan,
+      tasks: plan.tasks.map(task => task.label === report.taskLabel
+        ? { ...task, cases: [...task.cases!, { file: skipped.file, name: skipped.name, providerScope }] }
+        : task),
+    })
+    for (const shard of reports) {
+      shard.execution.planHash = frozen.planHash
+    }
+    report.cases.push(skipped)
+    report.summary = summarizeAcceptanceCases(report.cases)
+    await fs.writeFile(files[0]!, JSON.stringify(report))
+    const scopedReports = reports.map(shard => ({
+      ...shard,
+      summary: { ...shard.summary, providerOutOfScopeCaseCount: shard.tasks.some(task => task.label === report.taskLabel) ? 1 : 0 },
+      tasks: shard.tasks.map(task => ({ ...task, providerOutOfScopeCases: task.label === report.taskLabel ? [{ file: skipped.file, name: skipped.name, providerScope: structuredClone(providerScope) }] : [] })),
+    }))
+    const aggregate = await aggregateVerificationReports(frozen, scopedReports, { files, reportsRoot: root, now })
+    expect(aggregate).toMatchObject({ coverage: 'complete', acceptance: 'passed', summary: { providerOutOfScopeCaseCount: 1, passedCount: 4 } })
+    expect(aggregate.tasks.find(task => task.label === report.taskLabel)?.providerOutOfScopeCases).toEqual([{ file: skipped.file, name: skipped.name, providerScope }])
+    expect(report.summary).toMatchObject({ passedCount: 1, skippedCount: 1 })
+    const containing = scopedReports.find(shard => shard.tasks.some(task => task.label === report.taskLabel))!
+    containing.tasks.find(task => task.label === report.taskLabel)!.providerOutOfScopeCases[0]!.providerScope.reason = 'unproven exclusion'
+    await expect(aggregateVerificationReports(frozen, scopedReports, { files, reportsRoot: root, now })).rejects.toThrow('scope records do not match')
+  })
+
+  it('still rejects a skipped headless-only case on the headless provider', async () => {
+    const { plan, reports, files, root, evidence } = await setup()
+    const report = evidence[0]!
+    const skipped = evaluateAcceptanceCase({ id: 'headless-only', file: `e2e/${report.taskLabel}`, name: 'headless lifecycle', state: 'skipped' })
+    const providerScope = freezeProviderCaseScope({ providers: ['headless'], conditions: [{ modifier: 'runIf', expression: 'provider === \'headless\'', source: 'e2e/ide/example.test.ts:1' }] }, 'headless')
+    const frozen = rehash({
+      ...plan,
+      tasks: plan.tasks.map(task => task.label === report.taskLabel
+        ? { ...task, cases: [...task.cases!, { file: skipped.file, name: skipped.name, providerScope }] }
+        : task),
+    })
+    for (const shard of reports) {
+      shard.execution.planHash = frozen.planHash
+    }
+    report.cases.push(skipped)
+    report.summary = summarizeAcceptanceCases(report.cases)
+    await fs.writeFile(files[0]!, JSON.stringify(report))
+    await expect(aggregateVerificationReports(frozen, reports, { files, reportsRoot: root, now })).rejects.toThrow('Planned DOM case did not pass with acceptance evidence')
   })
 
   it.each(['checkpoint', 'case', 'duplicate-invocation', 'provider', 'missing-artifact', 'traversal'])(

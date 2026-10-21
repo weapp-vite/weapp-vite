@@ -36,6 +36,7 @@ export async function loadProjectConfig(options: {
   pluginOnly: boolean
   isWebRuntime: boolean
   resolvedLibConfig: LoadConfigResult['weappLib']
+  readProjectConfigFile?: (file: string) => Promise<string>
 }): Promise<Pick<LoadConfigResult, 'projectConfig' | 'projectPrivateConfig' | 'projectConfigPath' | 'projectPrivateConfigPath' | 'mpDistRoot'>> {
   const { config, cwd, platform, multiPlatform, projectConfigPath, outputRoot, pluginOnly, isWebRuntime, resolvedLibConfig } = options
   const buildConfig = config.build ?? (config.build = {})
@@ -72,8 +73,9 @@ export async function loadProjectConfig(options: {
         projectConfigPath,
         isWebRuntime,
       })
-      projectConfig = await getProjectConfig(cwd, { basePath, privatePath })
-      projectPrivateConfig = await getProjectPrivateConfig(cwd, { privatePath })
+      const reader = options.readProjectConfigFile ? { readFile: options.readProjectConfigFile } : {}
+      projectConfig = await getProjectConfig(cwd, { basePath, privatePath, ...reader })
+      projectPrivateConfig = await getProjectPrivateConfig(cwd, { privatePath, ...reader })
       mpDistRoot = resolveProjectConfigRoot(projectConfig, platform) ?? ''
       if (!mpDistRoot) {
         const displayPath = formatProjectConfigPath(cwd, basePath ?? getProjectConfigFileName(platform))

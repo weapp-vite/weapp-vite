@@ -8,8 +8,9 @@ import { excludedE2EProjects, isExcludedE2EProject } from '../../../scripts/e2eP
 import { assertVerificationTopology, resolveVerificationTopology } from '../../../scripts/verification/topology.ts'
 import { ACCEPTANCE_DIRTY_ENV, ACCEPTANCE_ROOT, createAcceptanceIdentity, isStrictDomAcceptanceSuite } from '../domAcceptanceReport/helpers'
 import { collectInventorySources } from '../domAcceptanceReport/inventorySources'
-import { readPlannedTaskCases } from '../domAcceptanceReport/taskCases'
+import { isValidProviderCaseScope, readPlannedTaskCases } from '../domAcceptanceReport/taskCases'
 import { getSuiteTasks } from '../e2e-suite-manifest'
+import { HMR_ACCEPTANCE_CAPABILITIES } from '../hmr-acceptance-manifest'
 import { assertVerificationProfile } from './profile'
 import { VERIFICATION_TOOL_VERSION } from './types'
 
@@ -47,7 +48,7 @@ export function verificationSourceDigest(tasks: SuiteTask[]) {
     ...(fs.existsSync(path.join(ACCEPTANCE_ROOT, 'e2e', task.label)) ? [`e2e/${task.label}`] : []),
     ...task.args.filter(arg => arg.endsWith('.ts') && arg.startsWith(`${ACCEPTANCE_ROOT}${path.sep}e2e${path.sep}`)).map(arg => path.relative(ACCEPTANCE_ROOT, arg).replaceAll('\\', '/')),
   ])]
-  return verificationHash(collectInventorySources(ACCEPTANCE_ROOT, files))
+  return verificationHash({ sources: collectInventorySources(ACCEPTANCE_ROOT, files), hmrCapabilities: HMR_ACCEPTANCE_CAPABILITIES })
 }
 
 export async function resolveVerificationTasks(suite: string, topology?: string) {
@@ -85,7 +86,9 @@ export function assertVerificationPlan(plan: VerificationPlan, options?: { suite
       || (task.outOfScopeReason && task.shardIndex !== 0)
       || (plan.strict && !task.outOfScopeReason && (!task.cases?.length
         || new Set(task.cases.map(item => JSON.stringify([item.file, item.name]))).size !== task.cases.length
-        || task.cases.some(item => item.file !== `e2e/${task.label}`))))) {
+        || task.cases.every(item => item.providerScope?.scope === 'out-of-scope')
+        || task.cases.some(item => item.file !== `e2e/${task.label}`
+          || !isValidProviderCaseScope(item.providerScope, plan.profile.provider === 'headless' ? 'headless' : 'devtools')))))) {
     throw new Error('Invalid or modified frozen verification plan')
   }
   if (!options) {

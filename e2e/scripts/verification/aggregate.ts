@@ -2,8 +2,10 @@ import type { SuiteReportPayload, SuiteTaskReportEntry } from '../suiteReport'
 import type { VerificationPlan, VerificationTiming } from './types'
 import fs from 'node:fs/promises'
 import path from 'node:path'
+import { isDeepStrictEqual } from 'node:util'
 import { assertVerificationTopology } from '../../../scripts/verification/topology.ts'
 import { validateTaskAcceptance } from '../domAcceptanceReport/task'
+import { providerOutOfScopeCases } from '../domAcceptanceReport/taskCases'
 import { assertVerificationPlan, verificationHash } from './plan'
 import { assertVerificationProfile } from './profile'
 import { assertE2ETimings } from './timing'
@@ -89,12 +91,19 @@ export async function aggregateVerificationReports(plan: VerificationPlan, value
       || report.tasks.length !== assigned.length || new Set(report.tasks.map(task => task.label)).size !== report.tasks.length) {
       throw new Error('Shard assigned-task inventory has omissions, duplicates or unexpected tasks')
     }
+    if ((report.summary.providerOutOfScopeCaseCount ?? 0) !== assigned.reduce((sum, task) => sum + providerOutOfScopeCases(task.cases).length, 0)) {
+      throw new Error('Shard provider case scope count does not match the frozen plan')
+    }
     for (const task of report.tasks) {
       const planned = assigned.find(planned => planned.label === task.label)
       if (!planned || seenTasks.has(task.label) || task.definitionHash !== planned.definitionHash || task.exitCode !== 0 || task.status !== 'passed') {
         throw new Error('Shard task did not pass its frozen definition exactly once')
       }
       seenTasks.add(task.label)
+      const providerCases = providerOutOfScopeCases(planned.cases)
+      if (!isDeepStrictEqual(task.providerOutOfScopeCases ?? [], providerCases)) {
+        throw new Error('Shard provider case scope records do not match the frozen plan')
+      }
       if (plan.strict) {
         if (!options.reportsRoot || !planned.cases?.length) {
           throw new Error('Strict shard aggregation requires planned cases and downloaded evidence')
@@ -113,7 +122,7 @@ export async function aggregateVerificationReports(plan: VerificationPlan, value
         }
         await validateTaskAcceptance({ label: task.label, command: 'pnpm', args: [], artifacts, acceptanceTemplates: planned.acceptanceTemplates, env: { WEAPP_VITE_E2E_RUNTIME_PROVIDER: plan.profile.provider === 'headless' ? 'headless' : 'devtools' } }, plan, planned.cases)
       }
-      results.push(task)
+      results.push({ ...task, providerOutOfScopeCases: providerCases })
     }
   }
   const expected = plan.tasks.filter(task => !task.outOfScopeReason)
@@ -144,6 +153,6 @@ export async function aggregateVerificationReports(plan: VerificationPlan, value
     acceptance: 'passed',
     timings,
     tasks,
-    summary: { artifactCount: tasks.reduce((sum, task) => sum + task.artifacts.length, 0), failedCount: 0, passedCount: expected.length, taskCount: tasks.length, plannedCount: expected.length, executedCount: expected.length, blockedCount: 0, skippedCount: 0, notExecutedCount: 0, outOfScopeCount: tasks.length - expected.length },
+    summary: { artifactCount: tasks.reduce((sum, task) => sum + task.artifacts.length, 0), failedCount: 0, passedCount: expected.length, taskCount: tasks.length, plannedCount: expected.length, executedCount: expected.length, blockedCount: 0, skippedCount: 0, notExecutedCount: 0, outOfScopeCount: tasks.length - expected.length, providerOutOfScopeCaseCount: tasks.reduce((sum, task) => sum + (task.providerOutOfScopeCases?.length ?? 0), 0) },
   }
 }

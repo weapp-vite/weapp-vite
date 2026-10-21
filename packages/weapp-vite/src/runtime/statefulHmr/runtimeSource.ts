@@ -2,10 +2,13 @@ import {
   WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY,
   WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY,
   WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY,
+  WEAPP_VITE_STATEFUL_HMR_REGISTRATION_CONTRACT_VERSION,
+  WEAPP_VITE_STATEFUL_HMR_UNSUPPORTED_REGISTRATION_CODE,
   WEVU_NATIVE_DECLARATION_METHOD,
 } from '@weapp-core/constants'
 import { devtoolsTemplateCacheSource } from './devtoolsTemplateCache'
 import { nativeInstanceDefaultsSource } from './nativeInstanceDefaults'
+import { nativeRegistrationSource } from './nativeRegistrationSource'
 import { statefulHmrUpdatePropagationSource } from './updatePropagationSource'
 
 export interface StatefulHmrControl {
@@ -130,6 +133,7 @@ const wevuRefreshGenerations = new Map();
 const wevuInstanceGenerations = new WeakMap();
 let suppressLifecycles = false;
 const nativeRegistrations = {};
+${nativeRegistrationSource}
 ${devtoolsTemplateCacheSource}
 ${nativeInstanceDefaultsSource}
 function getInstances(moduleId) {
@@ -366,6 +370,7 @@ function decorateWevuComponent(definition, moduleId) {
 function registerDefinition(name, definition, nativeRegistration) {
   const moduleId = runtime.currentModuleId || runtime.registrationModuleId || name;
   if (!runtime.applyingPatch && runtime.patchedModules.has(moduleId)) return;
+  if (!wevuRefreshes.has(moduleId)) assertNativeRegistrationShape(moduleId, definition);
   if (!wevuRefreshes.has(moduleId)) definitions.set(moduleId, definition);
   if (registered.has(moduleId)) {
     return;
@@ -427,16 +432,23 @@ globalThis[bridgeKey] = {
       refreshGenerations: [...wevuRefreshGenerations.entries()],
     };
   },
-  trackWevuComponent(definition, refresh, dispose) {
+  registrationContractVersion: ${WEAPP_VITE_STATEFUL_HMR_REGISTRATION_CONTRACT_VERSION},
+  trackWevuComponent(definition, refresh, dispose, registrationContract) {
     const moduleId = runtime.currentModuleId || runtime.registrationModuleId || 'Component';
     if (!runtime.applyingPatch && runtime.patchedModules.has(moduleId)) {
       return decorateWevuComponent(definition, moduleId);
     }
     const previous = definitions.get(moduleId);
+    if (!registrationContract || registrationContract.version !== ${WEAPP_VITE_STATEFUL_HMR_REGISTRATION_CONTRACT_VERSION}) {
+      throw unsupportedNativeRegistration('Wevu registration contract is unavailable; classic rebuild is required.');
+    }
+    assertNativeRegistrationShape(moduleId, definition, registrationContract);
     if (runtime.applyingPatch && previous
       && (typeof previous.methods?.[${JSON.stringify(WEVU_NATIVE_DECLARATION_METHOD)}] === 'function')
         !== (typeof definition.methods?.[${JSON.stringify(WEVU_NATIVE_DECLARATION_METHOD)}] === 'function')) {
-      throw new Error('Native slot context participation changed; a full rebuild is required for native component registration.');
+      const error = new Error('Native slot context participation changed; classic rebuild is required for native component registration.');
+      error.code = ${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_UNSUPPORTED_REGISTRATION_CODE)};
+      throw error;
     }
     definitions.set(moduleId, definition);
     if (typeof refresh === 'function') wevuRefreshes.set(moduleId, refresh);
@@ -512,6 +524,11 @@ globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY)}] = ${JSON.stri
         lastRequestError = undefined;
         const type = result?.data?.type;
         lastResponse = { action, statusCode: result?.statusCode, type };
+        if (type === 'error') console.error('[weapp-vite] stateful HMR stopped after a patch error');
+        if (type === 'retired' || type === 'error' || result?.statusCode === 410) {
+          globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY)}].stop();
+          return;
+        }
         if (action === 'register' && type === 'registered') {
           initialReady = result.data.ready === true;
           phase = 'polling';
@@ -589,6 +606,7 @@ globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY)}] = ${JSON.stri
       phase = 'applying';
       const bridge = globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY)}];
       if (!bridge?.ready) {
+        console.warn('[weapp-vite] stateful HMR bridge is not ready; rebuilding in classic mode');
         phase = 'polling';
         return send('rebuild', { reason: 'bridge-not-ready' });
       }
@@ -600,10 +618,12 @@ globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY)}] = ${JSON.stri
         version = meta.targetVersion;
         phase = meta.compatible === false ? 'relaunching' : 'polling';
       } catch (error) {
-        console.error('[weapp-vite] stateful HMR patch failed', error);
+        const unsupportedRegistration = error?.code === ${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_UNSUPPORTED_REGISTRATION_CODE)};
+        if (unsupportedRegistration) console.warn('[weapp-vite] stateful HMR registration requires a classic rebuild', error);
+        else console.error('[weapp-vite] stateful HMR patch failed', error);
         phase = 'polling';
         // 诊断按最坏 JSON 转义预留预算，避免超过服务端请求上限而丢失重建指令。
-        return send('rebuild', { reason: 'patch-failed', message: String(error?.message || error).slice(0, 4096), stack: typeof error?.stack === 'string' ? error.stack.slice(0, 4096) : undefined });
+        return send('rebuild', { reason: 'patch-failed', code: unsupportedRegistration ? error.code : undefined, message: String(error?.message || error).slice(0, 4096), stack: typeof error?.stack === 'string' ? error.stack.slice(0, 4096) : undefined });
       } finally {
         bridge.endUpdate?.();
       }

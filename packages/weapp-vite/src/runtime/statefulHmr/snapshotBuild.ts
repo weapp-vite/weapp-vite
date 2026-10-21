@@ -1,6 +1,8 @@
 import type { InlineConfig } from 'vite'
 import type { CompilerContext, MutableCompilerContext } from '../../context'
 import type { LoadConfigOptions } from '../config/types'
+import type { StatefulHmrSnapshot } from './globalStyles'
+import type { StatefulHmrOutputFile } from './outputWriter'
 import { readFile } from 'node:fs/promises'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import { fs } from '@weapp-core/shared/node'
@@ -9,7 +11,7 @@ import { build } from 'vite'
 import { createCompilerContextInstance } from '../../context/createCompilerContextInstance'
 import { parseSidecarSourceMetadata } from '../../moduleGraph/protocol'
 import { createPublicAssetSourcePlan } from '../../plugins/asset/publicSources'
-import { compilerSourceId } from '../../plugins/compilerPlugin/hmr'
+import { compilerSourceId, getCompilerHmrHost } from '../../plugins/compilerPlugin/hmr'
 import { bindTailwindSnapshotGeneration, validateTailwindSnapshotGeneration } from '../../plugins/tailwindcss/generation'
 import { validateImportedTailwindSnapshot } from '../../plugins/tailwindcss/importedPreparation'
 import { getTailwindStyleOwners } from '../../plugins/tailwindcss/styleOwners'
@@ -21,13 +23,43 @@ import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { captureWatchDependencies } from '../../utils/watchDependencies'
 import { getWxmlWatchFiles, shareWxmlDependencies } from '../../wxml/processing/dependencies'
 import { getWorkerSources } from '../buildPlugin/workerPlan'
+import { HmrRuntimeCapabilityError } from '../hmrRuntimeCapabilities'
 import { resolveScanAppBasename } from '../scanPlugin/service'
 import { createSharedBuildConfig } from '../sharedBuildConfig'
 import { resolveComponentPageGlobalStyleRoutes } from './componentPageStyles'
 import { createStatefulHmrSidecarPlugin } from './sidecarPlugin'
 import { createSnapshotAssetInputs } from './snapshotAssetInputs'
+import { prepareSnapshotTsconfig } from './snapshotConfig'
 import { captureSnapshotInputs, coversSnapshotInputs, validateSnapshotInputs } from './snapshotInputs'
 import { createSnapshotNativeScriptDriftProbe } from './snapshotNativeScripts'
+import { resolveTemplateRegistrationFallback } from './templateRegistration'
+
+/** 首次预检和后续更新共用同一快照结构，入口身份只取编译器解析的逻辑入口。 */
+export function prepareStatefulHmrSnapshot(snapshot: Awaited<ReturnType<typeof buildStatefulHmrSnapshot>>): StatefulHmrSnapshot {
+  if (!Array.isArray(snapshot.output) && !('output' in snapshot.output)) {
+    throw new TypeError('stateful HMR snapshot build unexpectedly returned a watcher')
+  }
+  const outputs = Array.isArray(snapshot.output) ? snapshot.output : [snapshot.output]
+  const prepared: StatefulHmrSnapshot = {
+    output: outputs.flatMap(result => result.output as StatefulHmrOutputFile[]),
+    childSources: snapshot.getChildSources(),
+    tailwindStyleOwners: snapshot.getTailwindStyleOwners(),
+    entryIds: [...new Set(Array.from(snapshot.getEntryIds(), id => normalizeFsResolvedId(id)))],
+    delegatedComponentEntryIds: [...snapshot.getDelegatedComponentEntryIds()],
+    componentPageGlobalStyleRoutes: snapshot.getGlobalStyleRoutes(),
+    glassEaselAnalysisByOwner: snapshot.getGlassEaselAnalysisByOwner(),
+    inputFiles: snapshot.getInputFiles?.(),
+    inputs: snapshot.getInputs?.(),
+    nativeScriptVersions: snapshot.getNativeScriptVersions?.(),
+    templateRegistrationSignatures: snapshot.getTemplateRegistrationSignatures(),
+    captureNativeScriptDrift: snapshot.getNativeScriptDrift,
+  }
+  const fallback = resolveTemplateRegistrationFallback(prepared.templateRegistrationSignatures, prepared)
+  if (fallback) {
+    throw new HmrRuntimeCapabilityError(fallback)
+  }
+  return prepared
+}
 
 /** 快照独立编译；初始化到构建收尾均不写支持文件，由活动 DevEngine 统一维护。 */
 export async function buildStatefulHmrSnapshot(
@@ -79,7 +111,7 @@ export async function buildStatefulHmrSnapshot(
     const inputs = handoffInputFiles && !sources
       ? await captureSnapshotInputs({
           roots: [config.absoluteSrcRoot, ...(publicDir === false ? [] : [path.resolve(config.cwd, typeof publicDir === 'string' ? publicDir : 'public')])],
-          files: [...handoffInputFiles, ...config.configFileDependencies, ...[config.configFilePath, config.projectConfigPath].filter((file): file is string => Boolean(file))].filter(file => path.isAbsolute(file)),
+          files: [...handoffInputFiles, ...config.configFileDependencies, path.join(config.cwd, 'project.miniapp.json'), path.join(config.cwd, 'tsconfig.json'), ...[config.configFilePath, config.projectConfigPath, config.options.packageJsonPath].filter((file): file is string => Boolean(file))].filter(file => path.isAbsolute(file)),
           excluded: [config.outDir, path.join(config.cwd, '.weapp-vite')].map(file => normalizeFsResolvedId(file)),
           // IDE 私有监听租约会在旧会话关闭时恢复；只有插件明确声明时才属于编译输入。
           skipPaths: [path.join(config.cwd, 'node_modules'), path.join(config.cwd, '.git'), ...(config.projectPrivateConfigPath ? [config.projectPrivateConfigPath] : [])].map(file => normalizeFsResolvedId(file)),
@@ -101,6 +133,7 @@ export async function buildStatefulHmrSnapshot(
       undefined,
       createSharedBuildConfig(ctx.configService, ctx.scanService),
     )
+    await prepareSnapshotTsconfig(config, baseOptions)
     baseOptions.plugins = [...(baseOptions.plugins ?? []), {
       name: 'weapp-vite:stateful-hmr-page-style-metadata',
       enforce: 'post',
@@ -209,12 +242,16 @@ export async function buildStatefulHmrSnapshot(
     }
     await validateTailwindSnapshotGeneration(ctx as CompilerContext, inputFiles, consumedFiles)
     await validateImportedTailwindSnapshot(sources, inputFiles, consumedFiles)
+    if (!getCompilerHmrHost(ctx).supported) {
+      throw new HmrRuntimeCapabilityError({ code: 'compiler-provider', message: '编译 provider 不支持事务式状态保持更新。' })
+    }
     const reusableInputs = inputs && coversSnapshotInputs(inputs, inputFiles) && await validateSnapshotInputs(inputs) ? inputs : undefined
     return {
       output,
       getInputFiles: () => [...inputFiles].filter(file => path.isAbsolute(file)),
       getInputs: () => reusableInputs,
       getNativeScriptVersions: () => nativeScriptVersions,
+      getTemplateRegistrationSignatures: () => new Map(ctx.runtimeState.build.hmr.vueTemplateRegistrationSignatures),
       getNativeScriptDrift: createSnapshotNativeScriptDriftProbe(sources, nativeScriptVersions),
       getChildSources: () => ({
         files: [...new Set([...ctx.runtimeState.build.independent.watchFiles.values()].flatMap(files => [...files]).concat(getWorkerSources(ctx).files))],

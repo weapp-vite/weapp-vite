@@ -5,10 +5,12 @@ import type { InlineConfig, ViteDevServer } from 'vite'
 import type { CompilerContext, MutableCompilerContext } from '../../context'
 import type { HmrProfileSourceEvent } from '../../utils/hmrProfile/provenance'
 import type { DevBuildWatcherController } from '../buildPlugin/devBuildWatcher'
+import type { HmrRuntimeFallbackReason } from '../hmrRuntimeCapabilities'
 import type { StatefulHmrSnapshot } from './globalStyles'
 import type { StatefulHmrOutputSource } from './outputPublication'
 import type { StatefulHmrInitialPublicAssets, StatefulHmrOutputFile } from './outputWriter'
 import type { StatefulHmrProfileBatch, StatefulHmrProfileHandoff } from './profile'
+import type { StatefulHmrSnapshotHandoff } from './snapshotHandoff'
 import type { StatefulHmrDevEngineBatch, StatefulHmrDevEngineUpdate } from './viteAdapter'
 import { Buffer } from 'node:buffer'
 import {
@@ -37,7 +39,10 @@ import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { composeSourceMaps, normalizeEncodedSourceMapLike } from '../../utils/sourcemap'
 import { bindHostLifecycle } from '../../vite/lifecycle'
 import { isWxmlDependency } from '../../wxml/processing/dependencies'
+import { subscribeAutoRoutesTopology } from '../autoRoutesPlugin/topology'
 import { touchExistingOutputStyles } from '../buildPlugin/touchAppWxss'
+import { getHmrRuntimeCapabilityFallback, HmrRuntimeCapabilityError, resolveStatefulHmrInputFallback } from '../hmrRuntimeCapabilities'
+import { getHmrRuntimeSession } from '../hmrRuntimeSession'
 import { watchAssetSources } from '../watch/assets'
 import { createViteWatchIgnored, resolvePollingWatchOptions } from '../watch/options'
 import { installIdeAssetWatch } from './assetWatch'
@@ -57,9 +62,10 @@ import { createStatefulHmrProfile } from './profile'
 import { shouldResetStatefulHmrRetention } from './retention'
 import { createStatefulHmrControlSource } from './runtimeSource'
 import { createStatefulHmrSnapshotDiagnostics } from './snapshotDiagnostics'
-import { offerStatefulHmrSnapshot, StatefulHmrSnapshotHandoff } from './snapshotHandoff'
+import { offerStatefulHmrSnapshot } from './snapshotHandoff'
 import { withStatefulHmrSnapshotPreparation } from './snapshotPreparation'
 import { StatefulHmrSnapshotScheduler } from './snapshotScheduler'
+import { resolveTemplateRegistrationFallback } from './templateRegistration'
 import { StatefulHmrTransport } from './transport'
 import { StatefulHmrViteAdapter } from './viteAdapter'
 
@@ -118,9 +124,14 @@ export async function runStatefulHmrDev(
   const compilerContext = ctx as CompilerContext
   const configService = ctx.configService!
   if (configService.platform !== 'weapp') {
-    throw new Error('weapp.hmr.runtime="stateful-experimental" 目前仅支持微信小程序平台。')
+    throw new HmrRuntimeCapabilityError({ code: 'platform', message: 'weapp.hmr.runtime="stateful-experimental" 目前仅支持微信小程序平台。' })
+  }
+  if (!getCompilerHmrHost(compilerContext).supported) {
+    throw new HmrRuntimeCapabilityError({ code: 'compiler-provider', message: '编译 provider 不支持事务式状态保持更新。' })
   }
   let session: StatefulHmrSession | undefined
+  let standaloneLifecycleBound = false
+  let cleanupStatus: 'incomplete' | 'failed' = 'incomplete'
   const entryIds = new Set(Array.from(snapshots.entryIds, id => normalizeFsResolvedId(id)))
   const delegatedComponentEntryIds = new Set(Array.from(snapshots.delegatedComponentEntryIds ?? [], id => normalizeFsResolvedId(id)))
   const pollingWatchOptions = resolvePollingWatchOptions(configService)
@@ -174,7 +185,8 @@ export async function runStatefulHmrDev(
     session.releaseSettlement = controller.bindSettlement(() => activeSession.whenSettled())
     if (!host) {
       const active = session
-      bindHostLifecycle(server, () => active.close())
+      bindHostLifecycle(server, () => active.close(cleanupStatus))
+      standaloneLifecycleBound = true
     }
     await session.prepareIdeAssetWatch()
     session.install(controller)
@@ -193,17 +205,32 @@ export async function runStatefulHmrDev(
     return createWatcherAdapter(server, session, buildEvents, Boolean(host))
   }
   catch (error) {
-    await session?.close('failed').catch(() => {})
-    if (!host) {
-      await server.close().catch(() => {})
+    cleanupStatus = 'failed'
+    const failures: unknown[] = [error]
+    if (!standaloneLifecycleBound) {
+      try {
+        await session?.close('failed')
+      }
+      catch (cleanupError) {
+        failures.push(cleanupError)
+      }
     }
-    throw error
+    if (!host) {
+      try {
+        await server.close()
+      }
+      catch (cleanupError) {
+        failures.push(cleanupError)
+      }
+    }
+    throw failures.length === 1 ? error : new AggregateError(failures, 'Stateful HMR startup and cleanup failed', { cause: error })
   }
 }
 
 class StatefulHmrSession {
   releaseSettlement?: () => void
   private releaseSidecarInputDrift?: () => void
+  private releaseAutoRoutesTopology?: () => void
   private settlementRevision = 0
   private restarting = false
   private readonly settlementObservers = new Set<() => void>()
@@ -217,6 +244,7 @@ class StatefulHmrSession {
   private resynchronizing = false
   private closed = false
   private closing?: Promise<void>
+  private fallbackSnapshotClose?: Promise<void>
   private readonly initialBundle = Promise.withResolvers<void>()
   private readonly snapshotScheduler: StatefulHmrSnapshotScheduler
   private readonly diagnostics: ReturnType<typeof createStatefulHmrSnapshotDiagnostics>
@@ -228,6 +256,7 @@ class StatefulHmrSession {
   private restartHandoff?: StatefulHmrSnapshotHandoff
   private readonly snapshotAssets = new HmrAssetStore<Extract<StatefulHmrOutputFile, { type: 'asset' }>>()
   private componentPageGlobalStyleRoutes: string[] = []
+  private templateRegistrationSignatures?: StatefulHmrSnapshot['templateRegistrationSignatures']
   private initialSnapshot?: StatefulHmrSnapshot
   private readonly emittedSourceIds: Set<string>
   private readonly directoryUpdates: StatefulHmrDirectoryUpdates
@@ -280,8 +309,17 @@ class StatefulHmrSession {
         })
       },
       () => this.requestFullBuild(),
+      reason => this.requestClassic(reason),
+      (error) => {
+        this.buildEvents.emitEvent({ code: 'ERROR', error, result: undefined as never })
+      },
     )
     this.delivery = new HmrDeliveryCoordinator((error) => {
+      const fallback = getHmrRuntimeCapabilityFallback(error)
+      if (fallback) {
+        this.requestClassic(fallback)
+        return
+      }
       if (error instanceof CompilerHmrResyncError) {
         logger.info(`[weapp-vite] stateful HMR 正在完整重同步：${error.message}`)
         this.requestFullBuild(error.files)
@@ -300,6 +338,11 @@ class StatefulHmrSession {
     this.snapshotScheduler = new StatefulHmrSnapshotScheduler({
       execute: batch => this.profileSnapshotBatch(batch),
       onError: (error) => {
+        const fallback = getHmrRuntimeCapabilityFallback(error)
+        if (fallback) {
+          this.requestClassic(fallback)
+          return
+        }
         if (error instanceof CompilerHmrResyncError) {
           this.server.config.logger.info(`[weapp-vite] stateful HMR 正在完整重同步：${error.message}`)
           this.requestFullBuild(error.files)
@@ -335,6 +378,17 @@ class StatefulHmrSession {
     this.transport.install()
     this.adapter.install()
     this.releaseSidecarInputDrift = controller.bindSidecarInputDrift(file => this.requestFullBuild([file]))
+    // 路由物理 watcher 统一持有目录拓扑；借用 Vite 宿主时不能依赖模拟 App change 推断入口变化。
+    const initialAutoRoutesSignature = this.ctx.autoRoutesService?.getSignature()
+    this.releaseAutoRoutesTopology = subscribeAutoRoutesTopology(this.ctx, (change) => {
+      if (change.topologyChanged || this.ctx.autoRoutesService?.getSignature() !== initialAutoRoutesSignature) {
+        this.requestClassic({
+          code: 'entry-topology',
+          message: '自动路由入口拓扑发生变化，需要重新建立完整构建图。',
+          files: [...new Set((change.sourceChanges ?? [change]).map(source => normalizeFsResolvedId(source.file)))],
+        })
+      }
+    })
     this.ctx.onStatefulHmrSourceChange = this.sourceChangeListener
     getCompilerHmrHost(this.ctx).onDependencyChange = (file) => {
       void this.waitForInitialBundle().then(async () => {
@@ -404,10 +458,12 @@ class StatefulHmrSession {
     this.closed = true
     this.releaseSidecarInputDrift?.()
     this.releaseSidecarInputDrift = undefined
+    this.releaseAutoRoutesTopology?.()
+    this.releaseAutoRoutesTopology = undefined
     // 先同步封闭交付代次，再取消传输；等待必须留到传输解除未确认交付之后。
     const closeDelivery = release(() => this.delivery.close())
     // 同步封闭快照准入，异步等待留到传输关闭后，避免 pending prepare 抢先消费关闭中的会话。
-    const closeSnapshots = release(() => this.snapshotScheduler.close())
+    const closeSnapshots = release(() => this.fallbackSnapshotClose ?? this.snapshotScheduler.close())
     // 保持释放顺序，但某个资源失败不能跳过后续监听器、引擎或诊断的关闭。
     await release(() => this.initialProfile?.finish(status))
     this.initialProfile = undefined
@@ -481,8 +537,7 @@ class StatefulHmrSession {
     }
     if (dirtyReasonSummary.includes(ENTRY_GRAPH_CHANGE_REASON)) {
       this.entryGraphRevision += 1
-      this.stopAdapterForRestart()
-      this.requestFullBuild([normalizedFile])
+      this.requestClassic({ code: 'entry-topology', message: '入口拓扑发生变化，需要重新建立完整构建图。', files: [normalizedFile] })
       return
     }
     const previousReasons = this.sourceDirtyReasons.get(normalizedFile)?.reasons ?? []
@@ -492,16 +547,27 @@ class StatefulHmrSession {
         ? [...new Set([...previousReasons, ...dirtyReasonSummary])]
         : dirtyReasonSummary
     this.sourceDirtyReasons.set(normalizedFile, { reasons })
-    if (this.publicAssetSources.matchesPath(normalizedFile)) {
-      this.requestSnapshotRefresh([normalizedFile])
+    if (shouldRestartStatefulHmrServer([normalizedFile], this.ctx.configService?.configFileDependencies)) {
+      this.requestServerRestart()
       return
     }
-    if (shouldRestartStatefulHmrServer(
-      [normalizedFile],
-      this.ctx.configService?.configFileDependencies,
-      this.ctx.configService?.weappViteConfig?.react,
-    )) {
-      this.requestServerRestart()
+    if (isReactStaticTemplateSource(this.ctx.configService?.weappViteConfig?.react, normalizedFile)) {
+      this.requestClassic({ code: 'patch-shape', message: 'React 静态模板变化需要重新建立完整注册。', files: [normalizedFile] })
+      return
+    }
+    const fallback = resolveStatefulHmrInputFallback({
+      files: [normalizedFile],
+      dirtyReasons: reasons,
+      configurationChanged: /\.json$/i.test(normalizedFile)
+        && !getCompilerHmrHost(this.ctx).ownsDependency(normalizedFile)
+        && !this.publicAssetSources.matchesPath(normalizedFile),
+    })
+    if (fallback) {
+      this.requestClassic(fallback)
+      return
+    }
+    if (this.publicAssetSources.matchesPath(normalizedFile)) {
+      this.requestSnapshotRefresh([normalizedFile])
       return
     }
     if (this.resynchronizing) {
@@ -663,7 +729,7 @@ class StatefulHmrSession {
   }
 
   private handleBatch(batch: StatefulHmrDevEngineBatch): boolean {
-    if (this.closed) {
+    if (this.closed || this.restarting) {
       return false
     }
     this.settlementRevision += 1
@@ -676,6 +742,18 @@ class StatefulHmrSession {
     for (const file of files) {
       this.sourceDirtyReasons.delete(file)
     }
+    const compilerHmrHost = getCompilerHmrHost(this.ctx)
+    const capabilityFallback = resolveStatefulHmrInputFallback({
+      files,
+      dirtyReasons: [...dirtyReasonsByFile.values()].flat(),
+      providerSupported: compilerHmrHost.supported,
+      configurationChanged: files.some(file => /\.json$/i.test(file) && !compilerHmrHost.ownsDependency(file) && !this.publicAssetSources.matchesPath(file)),
+      updateType: updates.some(item => item.update.type === 'FullReload') ? 'FullReload' : undefined,
+    })
+    if (capabilityFallback) {
+      this.requestClassic(capabilityFallback)
+      return false
+    }
     if (this.resynchronizing) {
       this.snapshotScheduler.request('full', files)
       return false
@@ -683,7 +761,6 @@ class StatefulHmrSession {
     if (this.entryGraphRevision !== this.rebuiltEntryGraphRevision) {
       return false
     }
-    const compilerHmrHost = getCompilerHmrHost(this.ctx)
     const isCompilerDependency = (file: string) => compilerHmrHost.ownsDependency(file)
       && (isStatefulHmrAssetFile(file) || (!this.emittedSourceIds.has(file) && !this.entryIds.has(file) && !compilerHmrHost.isNativeSource(file)))
     if (output.type === 'Noop') {
@@ -730,12 +807,8 @@ class StatefulHmrSession {
         }
       }
       else {
-        this.requestFullBuild(files)
+        this.requestClassic({ code: 'patch-shape', message: '当前增量不能保持已有运行时注册契约。', files })
       }
-      return false
-    }
-    if (!getCompilerHmrHost(this.ctx).supported) {
-      this.requestFullBuild(files)
       return false
     }
     this.diagnostics?.delivery('captured', input.revision, files)
@@ -759,7 +832,8 @@ class StatefulHmrSession {
     }
     catch (error) {
       logger.error('[weapp-vite] stateful HMR delivery failed', error)
-      this.requestFullBuild(files)
+      const failure = error instanceof Error ? error : new Error(String(error))
+      this.buildEvents.emitEvent({ code: 'ERROR', error: failure, result: undefined as never })
       return false
     }
     let preparation: ReturnType<ReturnType<typeof getCompilerHmrHost>['prepare']> | undefined
@@ -793,7 +867,7 @@ class StatefulHmrSession {
           })
           const { compilerAssets, snapshot, code, changedIds, filenames } = compiled
           profile?.mark('commitQueueMs')
-          if (snapshot && this.restartForEntryGraph(snapshot, profile, input.sources)) {
+          if (snapshot && this.restartForEntryGraph(snapshot)) {
             // reset 已撤销本代交付；保留 dispose 供协调器释放预编译资源。
             return { commit: async () => {}, publish: async () => {}, dispose: () => {
               profile?.finish('incomplete')
@@ -817,6 +891,9 @@ class StatefulHmrSession {
                       { createIfMissing: true, componentPageGlobalStyleRoutes: this.componentPageGlobalStyleRoutes, refreshPageStyles: true },
                     )
                   : [...this.snapshotAssets.values()]
+              if (snapshot) {
+                this.assertTemplateRegistrations(snapshot)
+              }
               await this.commitSnapshotAssets(next)
               if (snapshot) {
                 this.adoptSnapshot(snapshot, next)
@@ -868,6 +945,9 @@ class StatefulHmrSession {
   }
 
   private requestFullBuild(files: Iterable<string> = []): void {
+    if (this.closed || this.restarting) {
+      return
+    }
     this.settlementRevision += 1
     this.resynchronizing = true
     this.delivery.reset()
@@ -877,6 +957,27 @@ class StatefulHmrSession {
       this.diagnostics.request('full', files as string[])
     }
     this.snapshotScheduler.request('full', files)
+  }
+
+  private requestClassic(reason: HmrRuntimeFallbackReason): void {
+    if (this.closed || this.restarting) {
+      return
+    }
+    this.restarting = true
+    this.interruptSettlement()
+    this.delivery.reset()
+    this.transport.retire()
+    // close 同步撤销快照准入；当前批次由宿主收尾等待，不从批次内反向等待自身。
+    this.fallbackSnapshotClose = this.snapshotScheduler.close()
+    void this.fallbackSnapshotClose.catch(() => {})
+    this.stopAdapterForRestart()
+    const runtimeSession = getHmrRuntimeSession(this.ctx)
+    runtimeSession.requestClassic(reason)
+    void runtimeSession.whenSettled().catch((error) => {
+      const failure = error instanceof Error ? error : new Error(String(error))
+      this.buildEvents.emitEvent({ code: 'ERROR', error: failure, result: undefined as never })
+      this.server.config.logger.error('[weapp-vite] classic HMR 切换失败', { error: failure })
+    })
   }
 
   private stopAdapterForRestart(): void {
@@ -897,6 +998,9 @@ class StatefulHmrSession {
   }
 
   private requestSnapshotRefresh(files: Iterable<string> = []): void {
+    if (this.closed || this.restarting) {
+      return
+    }
     this.settlementRevision += 1
     if (this.unpersistedNativeScripts.size) {
       this.requestFullBuild([...this.unpersistedNativeScripts.keys(), ...files])
@@ -909,23 +1013,12 @@ class StatefulHmrSession {
     this.snapshotScheduler.request('refresh', files)
   }
 
-  private restartForEntryGraph(snapshot: StatefulHmrSnapshot, profile?: StatefulHmrProfileBatch, sources?: ReadonlyMap<string, string | null>): boolean {
+  private restartForEntryGraph(snapshot: StatefulHmrSnapshot): boolean {
     const nextEntryIds = snapshot.entryIds?.map(id => normalizeFsResolvedId(id))
     if (!nextEntryIds || (nextEntryIds.length === this.entryIds.size && nextEntryIds.every(id => this.entryIds.has(id)))) {
       return false
     }
-    if (this.entryGraphRevision === this.rebuiltEntryGraphRevision) {
-      this.entryGraphRevision += 1
-    }
-    // DevEngine 的入口图固定；所有快照交付路径必须先撤销旧引擎批次，再交给新引擎完整发布。
-    this.stopAdapterForRestart()
-    const continuation = profile && this.profile?.transfer(profile)
-    this.delivery.reset()
-    this.transport.cancelPendingDeliveries()
-    this.restartHandoff?.invalidate()
-    this.restartHandoff = new StatefulHmrSnapshotHandoff(snapshot, snapshot.inputs, undefined, continuation, continuation ? sources : undefined)
-    // 延迟重启，避免 close 等待正在执行的批次形成自锁。
-    this.requestServerRestart()
+    this.requestClassic({ code: 'entry-topology', message: '快照发现入口拓扑变化，需要重新建立完整构建图。', files: nextEntryIds })
     return true
   }
 
@@ -963,7 +1056,10 @@ class StatefulHmrSession {
     const outputTask = this.outputChain.then(task)
     // 队列尾部恢复只保证后续任务可执行，当前调用方仍需收到实际写入失败。
     this.outputChain = outputTask.catch((error) => {
-      this.server.config.logger.error(`[weapp-vite] stateful HMR output failed: ${formatStatefulHmrError(error)}`)
+      // 能力边界由调用方交给 classic，不能同时被记录为构建失败。
+      if (!getHmrRuntimeCapabilityFallback(error)) {
+        this.server.config.logger.error(`[weapp-vite] stateful HMR output failed: ${formatStatefulHmrError(error)}`)
+      }
     })
     return outputTask
   }
@@ -1057,9 +1153,10 @@ class StatefulHmrSession {
         handoff = { snapshot, sources: input?.sources }
         return
       }
-      if (this.restartForEntryGraph(snapshot, profile, input?.sources)) {
+      if (this.restartForEntryGraph(snapshot)) {
         return
       }
+      this.assertTemplateRegistrations(snapshot)
       if (batch.mode === 'full') {
         if (nextEntryIds) {
           this.entryIds.clear()
@@ -1114,6 +1211,7 @@ class StatefulHmrSession {
           return
         }
         const output = this.createSnapshotAssets(snapshot)
+        this.assertTemplateRegistrations(snapshot)
         await this.commitSnapshotAssets(output, traceBatchId, batch.isSuperseded())
         // 写盘期间到达的新事件仍须以实际落盘内容为基线；分析事实只提交未被取代的批次。
         this.adoptSnapshot(snapshot, output)
@@ -1127,7 +1225,7 @@ class StatefulHmrSession {
     if (!batch.isSuperseded()) {
       // 刷新资源释放成功后才能交接 profile 或宣布完成；落盘 metadata 保留真实提交事实。
       if (handoff) {
-        this.restartForEntryGraph(handoff.snapshot, profile, handoff.sources)
+        this.restartForEntryGraph(handoff.snapshot)
       }
       else if (refreshed) {
         this.buildEvents.emitEvent({ code: 'END' })
@@ -1183,6 +1281,7 @@ class StatefulHmrSession {
   }
 
   private adoptSnapshot(snapshot: StatefulHmrSnapshot, output: StatefulHmrOutputFile[], completingFullBuild = false): void {
+    this.templateRegistrationSignatures = snapshot.templateRegistrationSignatures && new Map(snapshot.templateRegistrationSignatures)
     const nativeScriptDrift = snapshot.captureNativeScriptDrift?.()
     this.childSources?.adopt(snapshot.childSources)
     this.componentPageGlobalStyleRoutes = [...snapshot.componentPageGlobalStyleRoutes]
@@ -1192,6 +1291,13 @@ class StatefulHmrSession {
     const notified = [...this.unpersistedNativeScripts.keys()].filter(file => this.nativeScriptInputs.needsFullBuild(file))
     if (notified.length && !completingFullBuild) {
       this.requestFullBuild(notified)
+    }
+  }
+
+  private assertTemplateRegistrations(snapshot: StatefulHmrSnapshot): void {
+    const fallback = resolveTemplateRegistrationFallback(this.templateRegistrationSignatures, snapshot)
+    if (fallback) {
+      throw new HmrRuntimeCapabilityError(fallback)
     }
   }
 
@@ -1355,17 +1461,8 @@ function createWatcherAdapter(
   const watcher: RolldownWatcher = {
     ...buildEvents.watcher,
     close() {
-      closePromise ??= (async () => {
-        try {
-          await session.close()
-        }
-        finally {
-          if (!borrowed) {
-            await server.close()
-          }
-        }
-      })()
-      return closePromise
+      // 独立宿主的生命周期已负责关闭会话并聚合错误，不能重复关闭后覆盖原始失败。
+      return closePromise ??= borrowed ? session.close() : server.close()
     },
     on(event, listener) {
       buildEvents.watcher.on(event, listener)

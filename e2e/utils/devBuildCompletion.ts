@@ -1,17 +1,20 @@
 import type { HmrProfileJsonSample } from '../../packages/weapp-vite/src/analyze/hmr'
 import type { HmrProfileSourceEvent } from '../../packages/weapp-vite/src/utils/hmrProfile/provenance'
 import type { startDevProcess } from './dev-process'
+import type { NativePublicationProfileCursor } from './nativePublication/files'
 import { randomUUID } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import path from 'pathe'
 import { readHmrProfileLines } from '../../packages/weapp-vite/src/analyze/hmr/reader'
 import { NATIVE_BATCH_SETTLEMENT_PREFIX } from './nativeBatchSettlementPlugin'
+import { nativePublicationHash } from './nativePublication/files'
 
 type DevProcess = Pick<ReturnType<typeof startDevProcess>, 'getOutput' | 'waitFor'>
 
 interface SourcePublication {
-  file: string
+  file?: string
+  files?: readonly string[]
   profilePath: string
 }
 
@@ -93,7 +96,7 @@ function hasSnapshotSources(content: string, files: ReadonlySet<string>, capture
   return hasAllSources
 }
 
-function captureSourcePublication(source: SourcePublication | SnapshotPublication) {
+function captureSourcePublication(source: SourcePublication | SnapshotPublication, snapshot = false) {
   let previousContent = ''
   try {
     previousContent = readFileSync(source.profilePath, 'utf8')
@@ -105,13 +108,13 @@ function captureSourcePublication(source: SourcePublication | SnapshotPublicatio
   }
   // 两个进程的 performance.now() 原点不同；统一换算为 timeOrigin + 毫秒，不能用完成日志时间归因。
   const capturedAtEpochMs = performance.timeOrigin + performance.now()
-  const files = new Set(('file' in source ? [source.file] : source.files).map(normalizedSource))
+  const files = new Set((('file' in source && source.file) ? [source.file] : source.files ?? []).map(normalizedSource))
   if (!files.size) {
     throw new Error('Native batch publication requires at least one source file')
   }
   let profileStatus = 'not-read'
   let samples: HmrProfileJsonSample[] = []
-  const check = async (signal: AbortSignal) => {
+  const check = async (signal: AbortSignal, profileCursor?: NativePublicationProfileCursor) => {
     let content: string
     try {
       content = await readFile(source.profilePath, { encoding: 'utf8', signal })
@@ -124,29 +127,61 @@ function captureSourcePublication(source: SourcePublication | SnapshotPublicatio
       throw error
     }
     // 文件被截断或替换后重新从头读取；事件时钟仍会拒绝旧来源，不沿用失效的字符游标。
-    const offset = content.startsWith(previousContent) ? previousContent.length : 0
+    let offset = content.startsWith(previousContent) ? previousContent.length : 0
+    if (profileCursor) {
+      if (content.length < profileCursor.offset || nativePublicationHash(content.slice(0, profileCursor.offset)) !== profileCursor.prefixHash) {
+        throw new Error('HMR profile was truncated or replaced after the native byte write')
+      }
+      offset = Math.max(offset, profileCursor.offset)
+    }
     // appendFile 尚未写完的行不能成为完成证据；下次仍从同一游标重新读取。
     const completeLines = content.slice(offset, content.lastIndexOf('\n') + 1)
     profileStatus = 'read'
-    if ('files' in source) {
+    if (snapshot) {
       return hasSnapshotSources(completeLines, files, capturedAtEpochMs)
     }
+    for (const line of completeLines.split(/\r?\n/)) {
+      let value: unknown
+      try {
+        value = JSON.parse(line)
+      }
+      catch {
+        continue
+      }
+      if (profileCursor && value && typeof value === 'object' && 'status' in value && value.status === 'failed'
+        && 'clock' in value && value.clock && typeof value.clock === 'object' && 'timeOrigin' in value.clock && typeof value.clock.timeOrigin === 'number'
+        && 'sourceEvents' in value && Array.isArray(value.sourceEvents)) {
+        const timeOrigin = value.clock.timeOrigin
+        if (value.sourceEvents.some((event: unknown) => event && typeof event === 'object'
+          && 'file' in event && typeof event.file === 'string' && files.has(normalizedSource(event.file))
+          && 'receivedAtMs' in event && typeof event.receivedAtMs === 'number' && Number.isFinite(event.receivedAtMs)
+          && Number.isFinite(timeOrigin + event.receivedAtMs) && timeOrigin + event.receivedAtMs >= capturedAtEpochMs)) {
+          throw new Error('Current source publication failed; preserve the original dev build error')
+        }
+      }
+    }
     samples = readHmrProfileLines(completeLines).samples
-    return samples.some(sample => sample.schemaVersion === 1
+    const published = new Set<string>()
+    for (const sample of samples.filter(sample => sample.schemaVersion === 1
       && sample.status === 'complete'
       && sample.correlation === 'known'
       && Boolean(sample.buildId && sample.batchId)
       && sample.clock?.durations === 'performance.now'
       && Number.isFinite(sample.clock.timeOrigin)
-      && sample.clock.timeOrigin > 0
-      && sample.sourceEvents?.some(event => event.file
-        && files.has(normalizedSource(event.file))
-        && sample.clock!.timeOrigin + event.receivedAtMs >= capturedAtEpochMs))
+      && sample.clock.timeOrigin > 0)) {
+      for (const event of sample.sourceEvents ?? []) {
+        if (event.file && files.has(normalizedSource(event.file)) && Number.isFinite(event.receivedAtMs)
+          && Number.isFinite(sample.clock!.timeOrigin + event.receivedAtMs) && sample.clock!.timeOrigin + event.receivedAtMs >= capturedAtEpochMs) {
+          published.add(normalizedSource(event.file))
+        }
+      }
+    }
+    return published.size === files.size
   }
   return {
     check,
     diagnostics: () => JSON.stringify({
-      ...('file' in source ? { file: normalizedSource(source.file) } : { files: [...files] }),
+      ...('file' in source && source.file ? { file: normalizedSource(source.file) } : { files: [...files] }),
       capturedAtEpochMs,
       profileStatus,
       samples: samples.slice(-4).map(sample => ({
@@ -162,7 +197,7 @@ function captureSourcePublication(source: SourcePublication | SnapshotPublicatio
 }
 
 function captureSnapshotPublication(snapshot: SnapshotPublication) {
-  const sourcesObserved = captureSourcePublication(snapshot)
+  const sourcesObserved = captureSourcePublication(snapshot, true)
   const id = randomUUID()
   let offset = 0
   let requested = false
@@ -213,7 +248,7 @@ export function createDevBuildCompletion(dev: DevProcess, options: CompletionOpt
     ? 'native snapshot settlement'
     : 'completed' in options ? options.completed : 'source profile publication'
   return {
-    async wait(timeoutMs = 30_000): Promise<void> {
+    async wait(timeoutMs = 30_000, profileCursor?: NativePublicationProfileCursor): Promise<void> {
       const completion = Promise.withResolvers<void>()
       const reads = new AbortController()
       let active = true
@@ -233,10 +268,10 @@ export function createDevBuildCompletion(dev: DevProcess, options: CompletionOpt
             const completedAt = output.lastIndexOf(options.completed)
             const startedAt = options.started ? output.lastIndexOf(options.started) : -1
             published = completedAt >= 0 && completedAt > startedAt
-              && (!sourcePublished || await sourcePublished.check(reads.signal))
+              && (!sourcePublished || await sourcePublished.check(reads.signal, profileCursor))
           }
           else if (sourcePublished) {
-            published = await sourcePublished.check(reads.signal)
+            published = await sourcePublished.check(reads.signal, profileCursor)
           }
           else {
             published = false

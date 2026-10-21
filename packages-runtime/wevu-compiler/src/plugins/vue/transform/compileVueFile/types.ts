@@ -41,6 +41,8 @@ export interface VueTransformResult {
     pageMeta?: JsonMergeContext['pageMeta']
     /** @internal */
     componentStyleOptions?: ComponentStyleOptions
+    /** 已解析模板输入和生成结构的注册签名；包含外部模板块。@internal */
+    templateRegistrationSignature?: string
     /** @internal */
     runtimeCapabilities?: WevuRuntimeCapabilityMetadata
     hasScriptSetup?: boolean

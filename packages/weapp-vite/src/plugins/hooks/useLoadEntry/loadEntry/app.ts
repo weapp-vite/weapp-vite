@@ -84,8 +84,8 @@ export async function collectAppEntries(options: CollectAppEntriesOptions): Prom
   } = options
 
   const { jsonService, configService, scanService } = ctx
-  // 初始扫描与 watch 重新加载使用同一份路由合并规则，不修改原始 JSON 缓存。
-  const json = !isPluginBuild && configService.inlineConfig?.build?.watch && !configService.isDev
+  // dev 首构、classic 重建与生产 watch 都从当前路由引用派生配置，不能依赖扫描器修改 JSON 缓存。
+  const json = !isPluginBuild && (configService.isDev || configService.inlineConfig?.build?.watch)
     ? await applyAutoRoutesToAppConfigIfNeeded(ctx, { ...sourceJson })
     : sourceJson
   const entries: string[] = []

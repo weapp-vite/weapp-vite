@@ -7,6 +7,16 @@ import { describe, expect, it } from 'vitest'
 const wrapperSuite = 'automator-bridge-wrapper-hmr.runtime.test.ts'
 const additionalHmrSuites = ['forward-console-demo.runtime.test.ts']
 const ideRoot = path.resolve(import.meta.dirname, '../ide')
+const launchDelegates: Record<string, { module: string, factory: string }> = {
+  'hmr-compiled-template-fallback.runtime.test.ts': {
+    module: './statefulHmrDom/templateFallbackSession',
+    factory: 'createTemplateFallbackSession',
+  },
+  'template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts': {
+    module: '../utils/wevuTailwindHmrProject/session',
+    factory: 'createWevuTailwindHmrSession',
+  },
+}
 
 function unwrap(expression: ts.Expression): ts.Expression {
   while (ts.isParenthesizedExpression(expression) || ts.isAsExpression(expression) || ts.isSatisfiesExpression(expression) || ts.isNonNullExpression(expression)) {
@@ -79,6 +89,35 @@ function auditLaunchMode(source: string, expected: 'direct' | 'snapshot') {
   return { calls, violations }
 }
 
+function callsImportedFactory(source: string, module: string, factory: string) {
+  const file = ts.createSourceFile('fixture.ts', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS)
+  const names = new Set<string>()
+  for (const statement of file.statements) {
+    if (!ts.isImportDeclaration(statement) || !ts.isStringLiteral(statement.moduleSpecifier)
+      || statement.moduleSpecifier.text !== module || statement.importClause?.isTypeOnly) {
+      continue
+    }
+    const bindings = statement.importClause?.namedBindings
+    if (bindings && ts.isNamedImports(bindings)) {
+      for (const binding of bindings.elements) {
+        if (!binding.isTypeOnly && (binding.propertyName ?? binding.name).text === factory) {
+          names.add(binding.name.text)
+        }
+      }
+    }
+  }
+  let called = false
+  function visit(node: ts.Node) {
+    if (ts.isCallExpression(node)) {
+      const callee = unwrap(node.expression)
+      called ||= ts.isIdentifier(callee) && names.has(callee.text)
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(file)
+  return called
+}
+
 describe('IDE HMR launch mode contract', () => {
   it('requires direct launch for product HMR and snapshot only for the wrapper regression', async () => {
     const files = [...new Set([...await glob('**/*hmr*.test.ts', { cwd: ideRoot, onlyFiles: true }), ...additionalHmrSuites])]
@@ -86,7 +125,17 @@ describe('IDE HMR launch mode contract', () => {
     expect(files).toContain(wrapperSuite)
     const audits = await Promise.all(files.sort().map(async (file) => {
       const source = await fs.readFile(path.join(ideRoot, file), 'utf8')
-      return { file, ...auditLaunchMode(source, file === wrapperSuite ? 'snapshot' : 'direct') }
+      const audit = auditLaunchMode(source, file === wrapperSuite ? 'snapshot' : 'direct')
+      const delegate = launchDelegates[file]
+      if (delegate) {
+        expect(callsImportedFactory(source, delegate.module, delegate.factory), `${file}: audited launch helper must be imported and called`).toBe(true)
+        const helper = `${delegate.module}.ts`
+        const delegated = auditLaunchMode(await fs.readFile(path.resolve(ideRoot, helper), 'utf8'), 'direct')
+        expect(delegated.calls, `${file}: helper must reach launchAutomator`).toBeGreaterThan(0)
+        audit.calls += delegated.calls
+        audit.violations.push(...delegated.violations.map(message => `${helper}: ${message}`))
+      }
+      return { file, ...audit }
     }))
     expect(audits.flatMap(audit => audit.violations.map(message => `${audit.file}: ${message}`))).toEqual([])
     // 该专项通过 CLI dev -o 和 waitForOpenedAutomator 连接原项目，不调用桥接启动器。
@@ -123,5 +172,14 @@ const example = "launchAutomator({})"
 launch({ bridgeProjectMode: 'direct' })
 automator.launchAutomator({ bridgeProjectMode: 'direct' })`
     expect(auditLaunchMode(source, 'direct')).toEqual({ calls: 2, violations: [] })
+  })
+
+  it('requires an actual call to the exact imported launch factory before auditing a delegated helper', () => {
+    const imported = 'import { createSession as create } from "./session"'
+    expect(callsImportedFactory(`${imported}\ncreate()`, './session', 'createSession')).toBe(true)
+    expect(callsImportedFactory(imported, './session', 'createSession')).toBe(false)
+    expect(callsImportedFactory(`${imported}\ncreate()`, './other', 'createSession')).toBe(false)
+    expect(callsImportedFactory('import type { createSession } from "./session"\ncreateSession()', './session', 'createSession')).toBe(false)
+    expect(callsImportedFactory('const text = "createSession()"', './session', 'createSession')).toBe(false)
   })
 })

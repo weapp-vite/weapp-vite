@@ -44,6 +44,8 @@ export function prepareDevHostConfig(session: WeappBuildSession, merged: InlineC
       appType: 'custom',
       resolve: merged.resolve,
       define: merged.define,
+      // 上一代 bundled-dev 配置不能在原生重启合并时重新启用 stateful 引擎。
+      experimental: { ...merged.experimental, bundledDev: false },
       optimizeDeps: { noDiscovery: true, include: [], entries: [] },
       server: {
         watch: {
