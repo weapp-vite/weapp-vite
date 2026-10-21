@@ -45,3 +45,12 @@ jobs:
 
       - name: Refresh DeepWiki when due
         run: node .github/scripts/refresh-deepwiki.mjs
+
+      - name: Preserve unsuccessful refresh evidence
+        if: failure() && !cancelled()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: deepwiki-refresh-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .tmp/deepwiki-refresh/
+          include-hidden-files: true
+          if-no-files-found: warn
