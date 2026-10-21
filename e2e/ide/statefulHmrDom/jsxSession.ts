@@ -136,10 +136,15 @@ export function createJsxHmrSession() {
     },
     async saveClassic(kind: 'page' | 'shared', content: string, marker: string) {
       const source = kind === 'page' ? pageSource : sharedSource
+      const appFile = path.join(fixture!.project, 'dist/app.js')
+      const previousApp = await fs.readFile(appFile, 'utf8')
       const pending = publication!.capture(source)
       await mark()
       await replaceFileByRename(source, content)
       await pending.wait()
+      expect(await fs.readFile(appFile, 'utf8')).not.toBe(previousApp)
+      const privateConfig = await fs.readJson(path.join(fixture!.project, 'project.private.config.json')) as { setting?: { compileHotReLoad?: unknown } }
+      expect(privateConfig.setting?.compileHotReLoad).toBe(true)
       await dev!.waitFor(waitForFileContains(path.join(fixture!.project, 'dist/pages/tsx-basic/index.wxml'), marker), 'JSX classic template output')
       if (provider === 'headless') {
         // 原客户端必须自行消费退役响应；手动重开仅作为自动 IDE 重载的 companion。

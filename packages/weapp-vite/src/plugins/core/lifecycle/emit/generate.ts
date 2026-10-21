@@ -17,6 +17,7 @@ import { recordHmrProfileDuration } from '../../../../utils/hmrProfile'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { emitStyleSidecarAsset } from '../../../css'
 import { normalizePreprocessorStyleAssets, pruneUneventedDevHmrChunks } from '../../../outputFinalizer'
+import { shouldPublishClassicGeneration } from '../../../outputFinalizer/classicGeneration'
 import {
   createBundleChunkSnapshot,
   filterPluginBundleOutputs,
@@ -65,11 +66,20 @@ function hasChunkOutputs(bundle: OutputBundle) {
   return Object.values(bundle).some(output => output?.type === 'chunk')
 }
 
+function requiresClassicRootPublication(state: CorePluginState) {
+  return !state.subPackageMeta
+    && state.resolvedConfig?.build?.write !== false
+    && state.resolvedConfig?.experimental?.bundledDev !== true
+    && shouldPublishClassicGeneration(state.ctx)
+}
+
 function pruneHmrMetadataOnlyChunks(bundle: OutputBundle, state: CorePluginState) {
   if (
     !state.ctx.configService.isDev
     || !state.hmrState.hasBuiltOnce
     || !state.hmrState.skipSharedChunkRefresh
+    // classic 由原生 input 重新生成完整注册图，资产更新也需要根入口发出完整重载信号。
+    || requiresClassicRootPublication(state)
   ) {
     return hasChunkOutputs(bundle)
   }
@@ -267,6 +277,9 @@ function shouldRewriteDevHmrChunk(
   }
 
   const chunk = output as OutputChunk
+  if (requiresClassicRootPublication(state) && chunk.isEntry && fileName === 'app.js') {
+    return true
+  }
   if (isActiveHmrEntryFacade(chunk.facadeModuleId, activeEntryIds)) {
     return true
   }
@@ -290,6 +303,8 @@ function resolveDevHmrRewriteBundle(
     !state.ctx.configService.isDev
     || !state.hmrState.hasBuiltOnce
     || state.hmrState.didEmitAllEntries
+    // 元数据批次保留了全部原生 chunk，必须完成全部转换后再按最终字节去重。
+    || (state.hmrState.skipSharedChunkRefresh && requiresClassicRootPublication(state))
   ) {
     return bundle
   }

@@ -426,6 +426,7 @@ describe('core lifecycle emit hook extra branches', () => {
       ctx: {
         configService: {
           isDev: true,
+          weappViteConfig: { hmr: { runtime: 'stateful-experimental' } },
         },
       },
       hmrState: {
@@ -685,14 +686,15 @@ describe('core lifecycle emit hook extra branches', () => {
     const bundle = Object.fromEntries(['app.js', 'components/example.js', 'common.js'].map(fileName => [fileName, {
       type: 'chunk',
       fileName,
+      isEntry: fileName === 'app.js',
       code: 'exports.value = 1',
       imports: [],
       dynamicImports: [],
     }])) as any
     await createGenerateBundleHook(state, false).call({}, {}, bundle)
-    expect(Boolean(bundle['app.js'])).toBe(bundledDev)
+    expect(Boolean(bundle['app.js'])).toBe(true)
     expect(Boolean(bundle['common.js'])).toBe(bundledDev)
-    expect(Boolean(bundle['components/example.js'])).toBe(bundledDev || !metadataOnly)
+    expect(Boolean(bundle['components/example.js'])).toBe(true)
   })
 
   it('keeps shared chunks during full-entry dev hmr refreshes', async () => {

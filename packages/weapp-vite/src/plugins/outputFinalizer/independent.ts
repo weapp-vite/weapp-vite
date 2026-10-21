@@ -61,6 +61,12 @@ export function captureIndependentOutputFileNames(ctx: CompilerContext) {
   return collectIndependentOutputFileNames(ctx)
 }
 
+/** 冻结首个异步等待之前的独立分包内容，后续失效不改写本轮发布代次。 */
+export function captureIndependentOutputAssets(ctx: CompilerContext) {
+  return [...ctx.runtimeState?.build?.independent?.outputs.values() ?? []]
+    .flatMap(output => getBundleOutputs(output).filter(item => !isBundlerDiagnosticAsset(item)).map(toEmittedAsset))
+}
+
 export async function flushIndependentOutputs(
   ctx: CompilerContext,
   subPackageMeta: SubPackageMetaValue | undefined,

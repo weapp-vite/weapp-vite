@@ -1,5 +1,5 @@
 diff --git a/dist/node/chunks/node.js b/dist/node/chunks/node.js
-index 121ef458164ab3687690f0e6d14c23ffe4c5d4a3..820765ec61b749c06c7f9f798cd92337e18041cb 100644
+index 121ef458164ab3687690f0e6d14c23ffe4c5d4a3..b7457f77a3ecbfdd45631da0ec354be7b1d9ba86 100644
 --- a/dist/node/chunks/node.js
 +++ b/dist/node/chunks/node.js
 @@ -11181,50 +11181,72 @@ var require_nodefs_handler = /* @__PURE__ */ __commonJSMin(((exports, module) =>
@@ -101,7 +101,52 @@ index 121ef458164ab3687690f0e6d14c23ffe4c5d4a3..820765ec61b749c06c7f9f798cd92337
  				cont.options = cont.watcher = void 0;
  				Object.freeze(cont);
  			}
-@@ -28668,7 +28690,8 @@ function runOptimizeDeps(environment, depsInfo) {
+@@ -11444,6 +11466,14 @@
+ 		*/
+ 		async _addToNodeFs(path, initialAdd, priorWh, depth, target) {
+ 			const ready = this.fsw._emitReady;
++			// 递归扫描只结算自己的槽；公开 add 的缺失路径在登记父级 fallback 后再结算。
++			const completeMissing = () => {
++				if (priorWh) {
++					ready();
++					return false;
++				}
++				return path;
++			};
+ 			if (this.fsw._isIgnored(path) || this.fsw.closed) {
+ 				ready();
+ 				return false;
+@@ -11485,10 +11515,8 @@
+ 				this.fsw._addPathCloser(path, closer);
+ 				return false;
+ 			} catch (error) {
+-				if (this.fsw._handleError(error)) {
+-					ready();
+-					return path;
+-				}
++				if (this.fsw.closed) return;
++				if (this.fsw._handleError(error)) return completeMissing();
+ 			}
+ 		}
+ 	};
+@@ -12123,13 +12151,13 @@
+ 				if (!this._readyCount) this._readyCount = 0;
+ 				this._readyCount += paths.length;
+ 				Promise.all(paths.map(async (path) => {
+-					const res = await this._nodeFsHandler._addToNodeFs(path, !_internal, 0, 0, _origAdd);
+-					if (res) this._emitReady();
+-					return res;
++					return this._nodeFsHandler._addToNodeFs(path, !_internal, 0, 0, _origAdd);
+ 				})).then((results) => {
+ 					if (this.closed) return;
+ 					results.filter((item) => item).forEach((item) => {
++						// 先登记 fallback 的就绪槽，原路径不能早于父级监听器发布 ready。
+ 						this.add(sysPath.dirname(item), sysPath.basename(_origAdd || item));
++						this._emitReady();
+ 					});
+ 				});
+ 			}
+@@ -28668,7 +28696,8 @@ function runOptimizeDeps(environment, depsInfo) {
  		async cancel() {
  			optimizerContext.cancelled = true;
  			const { context } = await preparedRun;
@@ -111,7 +156,7 @@ index 121ef458164ab3687690f0e6d14c23ffe4c5d4a3..820765ec61b749c06c7f9f798cd92337
  			cleanUp();
  		},
  		result: runResult
-@@ -29161,6 +29184,23 @@ const perEnvironmentOrWorkerPlugin = (name, overrideEnvConfig, f) => {
+@@ -29161,6 +29190,23 @@ const perEnvironmentOrWorkerPlugin = (name, overrideEnvConfig, f) => {
  		}
  	}];
  };
@@ -135,7 +180,7 @@ index 121ef458164ab3687690f0e6d14c23ffe4c5d4a3..820765ec61b749c06c7f9f798cd92337
  function oxcResolvePlugin(resolveOptions, overrideEnvConfig, isJsPluginContainer = false) {
  	return [...resolveOptions.optimizeDeps && !resolveOptions.isBuild ? [optimizerResolvePlugin(resolveOptions)] : [], ...perEnvironmentOrWorkerPlugin("vite:resolve-builtin", overrideEnvConfig, (partialEnv, getEnv) => {
  		const depsOptimizerEnabled = resolveOptions.optimizeDeps && !resolveOptions.isBuild && !partialEnv.config.isBundled && !isDepOptimizationDisabled(partialEnv.config.optimizeDeps);
-@@ -29224,21 +29264,9 @@ function oxcResolvePlugin(resolveOptions, overrideEnvConfig, isJsPluginContainer
+@@ -29224,21 +29270,9 @@ function oxcResolvePlugin(resolveOptions, overrideEnvConfig, isJsPluginContainer
  				const newResolvedId = ensureVersionQuery(resolvedId, rawId, options, depsOptimizer);
  				return newResolvedId === resolvedId ? void 0 : newResolvedId;
  			},
@@ -160,7 +205,7 @@ index 121ef458164ab3687690f0e6d14c23ffe4c5d4a3..820765ec61b749c06c7f9f798cd92337
  		});
  		plugin.perEnvironmentWatchChangeDuringDev = true;
  		return plugin;
-@@ -34906,31 +34934,78 @@ function injectEnvironmentToHooks(environment, chunkMetadataMap, plugin) {
+@@ -34906,31 +34940,78 @@ function injectEnvironmentToHooks(environment, chunkMetadataMap, plugin) {
  	return clone;
  }
  const wrappedHookMap = /* @__PURE__ */ new WeakMap();
@@ -262,7 +307,7 @@ index 121ef458164ab3687690f0e6d14c23ffe4c5d4a3..820765ec61b749c06c7f9f798cd92337
  	return newHook;
  }
  function wrapEnvironmentResolveId(environment, hook, pluginName) {
-@@ -35793,22 +35868,38 @@ function createDepsOptimizer(environment) {
+@@ -35793,22 +35874,38 @@ function createDepsOptimizer(environment) {
  	let waitingForCrawlEnd = false;
  	let optimizationResult;
  	let discover;
@@ -309,7 +354,7 @@ index 121ef458164ab3687690f0e6d14c23ffe4c5d4a3..820765ec61b749c06c7f9f798cd92337
  		firstRunCalled = !!cachedMetadata;
  		metadata = depsOptimizer.metadata = cachedMetadata || initDepsOptimizerMetadata(environment, sessionTimestamp);
  		if (!cachedMetadata) {
-@@ -35816,6 +35907,7 @@ function createDepsOptimizer(environment) {
+@@ -35816,6 +35913,7 @@ function createDepsOptimizer(environment) {
  			currentlyProcessing = true;
  			const manuallyIncludedDeps = {};
  			await addManuallyIncludedOptimizeDeps(environment, manuallyIncludedDeps);
@@ -317,7 +362,7 @@ index 121ef458164ab3687690f0e6d14c23ffe4c5d4a3..820765ec61b749c06c7f9f798cd92337
  			const manuallyIncludedDepsInfo = toDiscoveredDependencies(environment, manuallyIncludedDeps, sessionTimestamp);
  			for (const depInfo of Object.values(manuallyIncludedDepsInfo)) {
  				addOptimizedDepInfo(metadata, "discovered", {
-@@ -35844,6 +35936,7 @@ function createDepsOptimizer(environment) {
+@@ -35844,6 +35942,7 @@ function createDepsOptimizer(environment) {
  						} finally {
  							clearTimeout(scanTimer);
  						}
@@ -325,7 +370,7 @@ index 121ef458164ab3687690f0e6d14c23ffe4c5d4a3..820765ec61b749c06c7f9f798cd92337
  						const manuallyIncluded = Object.keys(manuallyIncludedDepsInfo);
  						discoveredDepsWhileScanning.push(...Object.keys(metadata.discovered).filter((dep) => !deps[dep] && !manuallyIncluded.includes(dep)));
  						for (const id of Object.keys(deps)) if (!metadata.discovered[id]) addMissingDep(id, deps[id]);
-@@ -35881,7 +35974,10 @@ function createDepsOptimizer(environment) {
+@@ -35881,7 +35980,10 @@ function createDepsOptimizer(environment) {
  		}
  		return knownDeps;
  	}
@@ -337,7 +382,7 @@ index 121ef458164ab3687690f0e6d14c23ffe4c5d4a3..820765ec61b749c06c7f9f798cd92337
  		const isRerun = firstRunCalled;
  		firstRunCalled = true;
  		enqueuedRerun = void 0;
-@@ -35935,6 +36031,10 @@ function createDepsOptimizer(environment) {
+@@ -35935,6 +36037,10 @@ function createDepsOptimizer(environment) {
  			};
  			if (!needsReload) {
  				await commitProcessing();
@@ -348,7 +393,7 @@ index 121ef458164ab3687690f0e6d14c23ffe4c5d4a3..820765ec61b749c06c7f9f798cd92337
  				if (!debug$2) {
  					if (newDepsToLogHandle) clearTimeout(newDepsToLogHandle);
  					newDepsToLogHandle = setTimeout(() => {
-@@ -35951,6 +36051,10 @@ function createDepsOptimizer(environment) {
+@@ -35951,6 +36057,10 @@ function createDepsOptimizer(environment) {
  				debug$2?.(import_picocolors.default.green(`delaying reload as new dependencies have been found...`));
  			} else {
  				await commitProcessing();
@@ -359,7 +404,7 @@ index 121ef458164ab3687690f0e6d14c23ffe4c5d4a3..820765ec61b749c06c7f9f798cd92337
  				if (!debug$2) {
  					if (newDepsToLogHandle) clearTimeout(newDepsToLogHandle);
  					newDepsToLogHandle = void 0;
-@@ -36013,6 +36117,7 @@ function createDepsOptimizer(environment) {
+@@ -36013,6 +36123,7 @@ function createDepsOptimizer(environment) {
  		});
  	}
  	function debouncedProcessing(timeout = debounceMs) {
@@ -367,7 +412,7 @@ index 121ef458164ab3687690f0e6d14c23ffe4c5d4a3..820765ec61b749c06c7f9f798cd92337
  		enqueuedRerun = void 0;
  		if (debounceProcessingHandle) clearTimeout(debounceProcessingHandle);
  		if (newDepsToLogHandle) clearTimeout(newDepsToLogHandle);
-@@ -36023,15 +36128,23 @@ function createDepsOptimizer(environment) {
+@@ -36023,15 +36134,23 @@ function createDepsOptimizer(environment) {
  			if (!currentlyProcessing) enqueuedRerun();
  		}, timeout);
  	}

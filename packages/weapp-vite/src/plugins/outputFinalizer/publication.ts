@@ -3,152 +3,194 @@ import type { Plugin } from 'vite'
 import type { CompilerContext } from '../../context'
 import type { SubPackageMetaValue } from '../../types'
 import type { WxmlDependencyCommit } from '../../wxml/processing/dependencies'
-import type { RewriteWevuInternalRuntimeImportsOptions } from '../core/helpers/bundle'
-import { Buffer } from 'node:buffer'
 import path from 'pathe'
 import { createHmrProfileCheckpoint } from '../../utils/hmrProfile'
 import { syncOutputChunkSourceMapAssets } from '../../utils/outputChunk'
 import { commitWxmlDependencies, failWxmlDependencies } from '../../wxml/processing/dependencies'
 import { validateWxmlBundle } from '../../wxml/validate'
 import { createPublicAssetPublication } from '../asset/publication'
-import { rewriteWevuInternalRuntimeImports, stabilizeWevuRuntimeChunkAccess } from '../core/helpers/bundle'
-import { resolveRootEntryBasename } from '../core/lifecycle/load/weapi'
-import { captureIndependentOutputFileNames, flushIndependentOutputs } from './independent'
+import { prepareClassicOutputGeneration, shouldPublishClassicGeneration } from './classicGeneration'
+import { pruneUnchangedDevHmrOutputs } from './hmrPrune'
+import { captureIndependentOutputAssets, captureIndependentOutputFileNames, flushIndependentOutputs } from './independent'
 import { prepareOutputPublicationOwnership } from './ownership'
 
-function outputSourceToString(output: OutputBundle[string]) {
-  if (output.type === 'chunk') {
-    return output.code
-  }
-
-  const source = output.source
-  return typeof source === 'string'
-    ? source
-    : Buffer.from(source).toString('base64')
-}
-
-export function pruneUneventedDevHmrChunks(
-  ctx: CompilerContext,
-  bundle: OutputBundle,
-) {
-  const emittedChunkFileNames = ctx.runtimeState?.build?.hmr?.lastEmittedChunkFileNames
-  if (
-    !ctx.configService?.isDev
-    || ctx.runtimeState?.build?.hmr?.isRebuild !== true
-    || !emittedChunkFileNames?.size
-  ) {
-    return
-  }
-
-  for (const [fileName, output] of Object.entries(bundle)) {
-    if (
-      output?.type === 'chunk'
-      && !emittedChunkFileNames.has(fileName)
-      && !emittedChunkFileNames.has(output.fileName)
-    ) {
-      delete bundle[fileName]
-    }
-  }
-}
-
-export function pruneUnchangedDevHmrOutputs(
-  ctx: CompilerContext,
-  bundle: OutputBundle,
-  rewriteOptions?: RewriteWevuInternalRuntimeImportsOptions,
-  options?: {
-    runtimeRewriteDone?: boolean
-    preserveCompleteBundle?: boolean
-  },
-) {
-  const cache = ctx.runtimeState?.build?.output?.emittedSource
-  if (!ctx.configService?.isDev || !cache) {
-    return
-  }
-
-  const isHmrBuild = !options?.preserveCompleteBundle && ctx.runtimeState?.build?.hmr?.isRebuild === true
-  const emittedChunkFileNames = ctx.runtimeState?.build?.hmr?.lastEmittedChunkFileNames
-  if (!options?.runtimeRewriteDone) {
-    rewriteWevuInternalRuntimeImports(bundle, rewriteOptions)
-    stabilizeWevuRuntimeChunkAccess(bundle)
-  }
-  const rootInputFile = `${resolveRootEntryBasename({ ctx })}.js`
-  for (const [fileName, output] of Object.entries(bundle)) {
-    // 固定根入口由 bundler input 驱动，不属于动态 emitFile 的页面/组件集合。
-    const isRootInput = output.type === 'chunk' && output.isEntry && fileName === rootInputFile
-    const isCurrentHmrChunk = isHmrBuild
-      && output.type === 'chunk'
-      && (
-        emittedChunkFileNames?.has(fileName) === true
-        || emittedChunkFileNames?.has(output.fileName) === true
-      )
-    const shouldForceEmitCurrentHmrChunk = isCurrentHmrChunk
-      && ctx.runtimeState.build.hmr.forceEmitUnchangedChunks !== false
-    if (
-      isHmrBuild
-      && output.type === 'chunk'
-      && emittedChunkFileNames?.size
-      && !isCurrentHmrChunk
-      && !isRootInput
-    ) {
-      delete bundle[fileName]
-      continue
-    }
-    const source = outputSourceToString(output)
-    if (isHmrBuild && !shouldForceEmitCurrentHmrChunk && cache.get(fileName) === source) {
-      delete bundle[fileName]
-      continue
-    }
-    cache.set(fileName, source)
-  }
-}
+export { pruneUnchangedDevHmrOutputs, pruneUneventedDevHmrChunks } from './hmrPrune'
 
 /** 编译器完成所有输出转换后，按最终内容裁剪本轮写入。 */
 export function createOutputPublicationPlugin(ctx: CompilerContext, subPackageMeta?: SubPackageMetaValue): Plugin {
-  const publicAssets = subPackageMeta ? undefined : createPublicAssetPublication(ctx)
+  type PublicAssets = ReturnType<typeof createPublicAssetPublication>
+  interface PendingPublication {
+    epoch: number
+    ownership?: () => Promise<void>
+    generation?: () => unknown
+    sources?: Map<string, string>
+    outputNames: string[]
+    partial: boolean
+  }
+  interface OutputScope {
+    publicAssets?: PublicAssets
+    cache: Map<string, string> | undefined
+    pending?: PendingPublication
+  }
+  const scopes = new Map<string, OutputScope>()
   let preserveCompleteBundle = false
   let outDir: string | undefined
-  let pendingOwnership: (() => Promise<void>) | undefined
+  let resolvedConfig: Parameters<PublicAssets['configure']>[0]
+  let publicConfig: Parameters<PublicAssets['configure']>[0]
+  let environmentConfig: Parameters<PublicAssets['start']>[0]
+  let nativeWrite = false
+  let building = false
+  let epoch = 0
+  let closing = false
+  const writes = new Set<Promise<void>>()
 
   function releasePendingOwnership() {
-    pendingOwnership = undefined
+    epoch++
+    for (const scope of scopes.values()) {
+      scope.pending = undefined
+    }
+  }
+  function outputRoot(options?: { dir?: string }) {
+    return options?.dir ? path.resolve(resolvedConfig.root, options.dir) : outDir
+  }
+  function outputScope(root: string) {
+    let scope = scopes.get(root)
+    if (!scope) {
+      const publicAssets = subPackageMeta ? undefined : createPublicAssetPublication(ctx)
+      publicAssets?.configure(root === outDir ? resolvedConfig : { ...publicConfig, build: { ...publicConfig.build, outDir: root } })
+      scope = { publicAssets, cache: root === outDir ? ctx.runtimeState?.build?.output?.emittedSource : new Map() }
+      scopes.set(root, scope)
+      if (building) {
+        publicAssets?.start(environmentConfig)
+      }
+    }
+    return scope
+  }
+  async function closePublications(releaseScopes: boolean) {
+    closing = true
+    building = false
+    environmentConfig = undefined
+    for (const scope of scopes.values()) {
+      scope.pending = undefined
+    }
+    const results = await Promise.allSettled([...writes])
+    releasePendingOwnership()
+    // closeBundle 也会结束每轮 snapshot，后续 partial 仍需要成功发布的 public 归属账本。
+    if (releaseScopes) {
+      scopes.clear()
+    }
+    closing = false
+    const errors = results.flatMap(result => result.status === 'rejected' ? [result.reason] : [])
+    if (errors.length) {
+      throw errors.length === 1 ? errors[0] : new AggregateError(errors, 'Output publication cleanup failed')
+    }
   }
   return {
     name: 'weapp-vite:output-publication',
     enforce: 'post',
     configResolved(config) {
+      const previousOutDir = outDir
+      const resumesNativePublication = preserveCompleteBundle && config.experimental?.bundledDev !== true
+      building = false
+      environmentConfig = undefined
       // 原生引擎仍发布完整注册图，静态资源去重由 stateful 快照归属处理。
       preserveCompleteBundle = config.experimental?.bundledDev === true
+      nativeWrite = config.build.write !== false
+      resolvedConfig = config
+      // start 会关闭 bundler 自带 public 复制；其他 output 仍须继承原始用户策略。
+      publicConfig = { ...config, build: { ...config.build } }
       outDir = path.resolve(config.root, config.build.outDir)
-      publicAssets?.configure(config)
+      releasePendingOwnership()
+      for (const [root, scope] of scopes) {
+        if (root === outDir) {
+          scope.publicAssets?.configure(config)
+        }
+        else {
+          scopes.delete(root)
+        }
+      }
+      if (previousOutDir && (previousOutDir !== outDir || resumesNativePublication)) {
+        // 新目录尚未写入；bundled 快照缓存也不证明 classic 已完成原生发布。
+        ctx.runtimeState?.build?.output?.emittedSource.clear()
+      }
+      outputScope(outDir)
     },
     buildStart() {
       releasePendingOwnership()
-      publicAssets?.start(this.environment?.config)
+      building = true
+      environmentConfig = this.environment?.config
+      for (const scope of scopes.values()) {
+        scope.publicAssets?.start(environmentConfig)
+      }
     },
-    closeBundle: releasePendingOwnership,
-    closeWatcher: releasePendingOwnership,
+    closeBundle: () => closePublications(false),
+    closeWatcher: () => closePublications(true),
     writeBundle: {
       order: 'post',
       sequential: true,
-      async handler() {
-        const pending = pendingOwnership
-        releasePendingOwnership()
-        await publicAssets?.commit()
-        if (pending) {
-          await pending()
+      async handler(options) {
+        const root = outputRoot(options)
+        const scope = root ? scopes.get(root) : undefined
+        const pending = scope?.pending
+        if (scope) {
+          scope.pending = undefined
+        }
+        if (!pending || closing) {
+          return
+        }
+        const write = async () => {
+          await scope?.publicAssets?.commit()
+          if (pending.ownership) {
+            await pending.ownership()
+          }
+          if (pending.epoch !== epoch) {
+            return
+          }
+          if (!pending.partial) {
+            const retained = new Set(pending.outputNames)
+            for (const file of scope?.cache?.keys() ?? []) {
+              if (!retained.has(file)) {
+                scope?.cache?.delete(file)
+              }
+            }
+          }
+          for (const [file, source] of pending.sources ?? []) {
+            scope?.cache?.set(file, source)
+          }
+          pending.generation?.()
+        }
+        const task = write()
+        writes.add(task)
+        try {
+          await task
+        }
+        finally {
+          writes.delete(task)
         }
       },
     },
     generateBundle: {
       order: 'post',
-      async handler(_options, bundle, isWrite) {
-        releasePendingOwnership()
+      async handler(options, bundle, isWrite) {
+        const root = outputRoot(options)
+        const scope = root ? outputScope(root) : undefined
+        if (scope) {
+          scope.pending = undefined
+        }
+        const publicationEpoch = epoch
+        const assertActive = () => {
+          if (closing || publicationEpoch !== epoch) {
+            throw new Error('[weapp-vite] 原生发布会话已关闭，停止旧代输出。')
+          }
+        }
+        assertActive()
         const checkpoint = createHmrProfileCheckpoint(ctx.configService.isDev ? ctx.runtimeState?.build?.hmr?.profile : undefined)
         const outputBundle = bundle as unknown as OutputBundle
         const partial = ctx.configService.isDev && !preserveCompleteBundle
           && ctx.runtimeState?.build?.hmr?.didEmitAllEntries !== true
           && ctx.runtimeState?.build?.hmr?.isRebuild === true
         const independentOutputNames = new Set(captureIndependentOutputFileNames(ctx))
+        const independentSnapshot = captureIndependentOutputAssets(ctx)
         let commitValidation: WxmlDependencyCommit | undefined
         try {
           commitValidation = await validateWxmlBundle(ctx, outputBundle, {
@@ -157,6 +199,7 @@ export function createOutputPublicationPlugin(ctx: CompilerContext, subPackageMe
             partial,
           }, subPackageMeta?.subPackage.root)
           checkpoint('publicationValidateMs')
+          assertActive()
           // 先等待独立分包成功，失败时不能提前推进主包的 HMR 指纹。
           // 子产物已完成自身校验与裁剪，在主包内不重复处理。
           const independentAssets: EmittedAsset[] = []
@@ -179,39 +222,63 @@ export function createOutputPublicationPlugin(ctx: CompilerContext, subPackageMe
             }
           }
           checkpoint('publicationIndependentMs')
+          assertActive()
           // 在后续裁剪与 emitFile 改写 bundle 前冻结编译输出集合，public 使用同一份归属排除碰撞。
           const outputNames = Object.keys(outputBundle)
+          const publicOutputs: EmittedAsset[] = []
+          await scope?.publicAssets?.emit([...outputNames, ...independentOutputNames], partial, asset => publicOutputs.push(asset))
+          assertActive()
+          const generation = isWrite && nativeWrite && !preserveCompleteBundle && !subPackageMeta && root
+            && shouldPublishClassicGeneration(ctx)
+            ? prepareClassicOutputGeneration(ctx, root, outputBundle, {
+                partial,
+                independentOutputs: [...independentSnapshot, ...independentAssets],
+                independentOutputNames,
+                publicOutputs,
+              })
+            : undefined
+          // 原生写入失败后必须重放同一字节，不能让 generate 阶段提前推进已发布指纹。
+          const stagedSources = ctx.configService.isDev && isWrite && nativeWrite && !preserveCompleteBundle && scope?.cache
+            ? new Map(scope.cache)
+            : undefined
+          syncOutputChunkSourceMapAssets(outputBundle)
           pruneUnchangedDevHmrOutputs(ctx, outputBundle, undefined, {
             runtimeRewriteDone: true,
             preserveCompleteBundle,
+            emittedSource: stagedSources,
           })
-          syncOutputChunkSourceMapAssets(outputBundle)
           for (const asset of independentAssets) {
             this.emitFile(asset)
           }
           const publicOutputNames: string[] = []
-          await publicAssets?.emit([...outputNames, ...independentOutputNames], partial, (asset) => {
+          for (const asset of publicOutputs) {
             if (asset.fileName) {
               publicOutputNames.push(asset.fileName)
             }
             this.emitFile(asset)
-          })
-          if (isWrite && (ctx.configService.isDev || this.meta.watchMode) && !preserveCompleteBundle && outDir) {
+          }
+          if (isWrite && nativeWrite && (ctx.configService.isDev || this.meta.watchMode) && !preserveCompleteBundle && root && scope && publicationEpoch === epoch) {
             // 独立 helper 仅冻结普通归属数据与命令身份，不保留 generateBundle 的插件上下文。
-            pendingOwnership = prepareOutputPublicationOwnership(ctx, outDir, {
+            const ownership = prepareOutputPublicationOwnership(ctx, root, {
               outputNames,
               independentOutputNames: [...independentOutputNames],
               publicOutputNames,
               partial,
               retireStateful: !partial && !subPackageMeta && (ctx.currentBuildTarget ?? 'app') === 'app',
             })
+            const sources = stagedSources
+              ? new Map(Object.keys(outputBundle).map(file => [file, stagedSources.get(file)!]))
+              : undefined
+            scope.pending = { epoch: publicationEpoch, ownership, generation, sources, outputNames, partial }
           }
           commitWxmlDependencies(ctx)
           commitValidation?.()
           checkpoint('publicationPruneMs')
         }
         catch (error) {
-          releasePendingOwnership()
+          if (scope) {
+            scope.pending = undefined
+          }
           failWxmlDependencies(ctx)
           commitValidation?.fail()
           throw error

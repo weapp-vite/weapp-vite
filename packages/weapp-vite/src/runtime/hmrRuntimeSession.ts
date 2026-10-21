@@ -5,9 +5,15 @@ import { logger } from '../context/shared'
 export type HmrRuntimePhase = 'stateful' | 'switching' | 'classic'
 type ClassicRequestHandler = (reason: HmrRuntimeFallbackReason) => void | Promise<void>
 
+export interface HmrOutputGeneration {
+  readonly fingerprint: string
+  readonly scopes: ReadonlyMap<string, ReadonlyMap<string, string>>
+}
+
 /** 一次 dev 命令共享的单向状态；Vite 配置重启只替换宿主绑定，不重置降级决定。 */
 export interface HmrRuntimeSession {
   readonly outputOwnership: Map<string, Map<string, Set<string>>>
+  readonly outputGenerations: Map<string, HmrOutputGeneration>
   readonly phase: HmrRuntimePhase
   readonly fallback: HmrRuntimeFallbackReason | undefined
   resolve: (decision: HmrRuntimeDecision) => HmrRuntimeDecision
@@ -60,6 +66,7 @@ export function createHmrRuntimeSession(): HmrRuntimeSession {
 
   return {
     outputOwnership: new Map(),
+    outputGenerations: new Map(),
     get phase() { return phase },
     get fallback() { return fallback },
     resolve: decision => fallback ? { ...decision, runtime: 'classic', reason: 'capability-fallback' } : decision,

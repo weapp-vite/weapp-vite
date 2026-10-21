@@ -75,6 +75,8 @@ export const WEAPP_VITE_STATEFUL_HMR_REGISTRATION_CONTRACT_VERSION = 1
 export const WEAPP_VITE_HOST_RESTART_CONFIG_KEY = '__weappViteHostRestart'
 /** 配置文件重新加载产生新的插件模块时，仍沿同一宿主链接续 HMR 决策。 */
 export const WEAPP_VITE_HMR_RUNTIME_SESSION_HANDOFF_KEY = 'weapp-vite:hmr-runtime-session'
+/** classic 原生发布的内容代次，驱动宿主完整重载而不修改开发者工具设置。 */
+export const WEAPP_VITE_CLASSIC_GENERATION_MARKER = '__WEAPP_VITE_CLASSIC_GENERATION__'
 /** 库模块重新执行后，原生服务器交接仍使用同一个关闭资源记录。 */
 export const WEAPP_VITE_DEV_SERVER_CLOSE_KEY = 'weapp-vite:dev-server-close'
 
