@@ -1,5 +1,4 @@
-/* stylelint-disable-next-line scss/load-partial-extension */
-@import "../../shared/styles/shared.scss";
+@use "../../shared/styles/shared";
 
 .probe-card {
   padding: 20rpx;

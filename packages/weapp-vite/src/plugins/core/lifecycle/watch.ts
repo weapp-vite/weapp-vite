@@ -328,7 +328,7 @@ async function processChangedFile(
   ) => {
     if (styleScriptChanges?.has(entryId)) {
       reason = 'direct'
-      cause = 'entry-mixed-asset'
+      cause = 'entry-style-bindings'
     }
     state.markEntryDirty(entryId, reason)
     const isJsxTemplateDependency = reason === 'dependency' && /\.(?:jsx|tsx)$/.test(normalizedId)

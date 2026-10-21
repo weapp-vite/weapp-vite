@@ -1,4 +1,5 @@
 import type { ProcessIdentityGapCause } from '../types'
+import type { ResourceKernelPathReader } from './darwinSnapshot'
 import path from 'node:path'
 // eslint-disable-next-line e18e/ban-dependencies -- 只采样系统进程元数据，不读取命令行或环境变量。
 import { execa } from 'execa'
@@ -64,15 +65,19 @@ export async function readResourceRows(deadline: number) {
   return parseResourceProcessRows(frame.stdout).filter(row => row.pid !== frame.inspectorPid)
 }
 
-/** 批次首帧仍是唯一 RSS 锚点；只剔除各自持有的 ps inspector。 */
-export async function readInitialResourceInventory(deadline: number) {
-  const snapshot = await readDarwinSnapshot(deadline, () => readResourceFrame(deadline))
-  const rows = parseResourceProcessRows(snapshot.initial.stdout).filter(row => row.pid !== snapshot.initial.inspectorPid)
-  const afterRows = parseResourceProcessRows(snapshot.after.stdout).filter(row => row.pid !== snapshot.after.inspectorPid)
-  if (snapshot.paths.size !== rows.length || rows.some(row => !snapshot.paths.has(row.pid))) {
-    throw new Error('Resource sampling received incomplete batch process identities.')
-  }
-  return { rows, paths: snapshot.paths, afterRows }
+/** 批次首帧仍是唯一 RSS 锚点；同一 helper 在消费及后续清单闭合期间保持存活。 */
+export function readInitialResourceInventory<T>(
+  deadline: number,
+  consume: (inventory: { rows: ProcessRow[], paths: Map<number, string | null>, afterRows: ProcessRow[] }, readPaths: ResourceKernelPathReader) => Promise<T>,
+) {
+  return readDarwinSnapshot(deadline, () => readResourceFrame(deadline), async (snapshot, readPaths) => {
+    const rows = parseResourceProcessRows(snapshot.initial.stdout).filter(row => row.pid !== snapshot.initial.inspectorPid)
+    const afterRows = parseResourceProcessRows(snapshot.after.stdout).filter(row => row.pid !== snapshot.after.inspectorPid)
+    if (snapshot.paths.size !== rows.length || rows.some(row => !snapshot.paths.has(row.pid))) {
+      throw new Error('Resource sampling received incomplete batch process identities.')
+    }
+    return consume({ rows, paths: snapshot.paths, afterRows }, readPaths)
+  })
 }
 
 export function insideInstallation(root: string, executable: string) {
@@ -160,8 +165,11 @@ export async function inspectResourceRows(
   deadline: number,
   afterKernel?: (rows: ProcessRow[], images: Map<number, string[]>) => Promise<void>,
   round = 1,
+  readPaths?: ResourceKernelPathReader,
 ) {
-  const paths = await readDarwinKernelPaths(rows.map(row => row.pid), remainingProcessBudget(deadline))
+  const pids = rows.map(row => row.pid)
+  const budget = remainingProcessBudget(deadline)
+  const paths = await (readPaths ? readPaths(pids) : readDarwinKernelPaths(pids, budget))
   const afterRows = await readResourceRows(deadline)
   return completeResourceInspection(rows, paths, afterRows, deadline, afterKernel, round)
 }

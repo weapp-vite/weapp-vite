@@ -29,5 +29,7 @@ it('preserves installed Vite hook, resolver and optimizer ownership contracts', 
     'optimizer-crawl-close',
     'optimizer-native-cancel',
     'optimizer-server-scan-close',
+    'polling-owner-slow-close-first',
+    'polling-owner-fast-close-first',
   ])
 }, 40_000)

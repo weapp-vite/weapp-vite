@@ -1,5 +1,6 @@
 /* eslint-disable ts/no-use-before-define */
 import type {
+  ImpactFile,
   ProjectResult,
   ScenarioResult,
   ThresholdIssue,
@@ -8,6 +9,7 @@ import type {
   WorkspaceHmrBaselineScenario,
   WorkspaceHmrThresholds,
 } from './types'
+import { workspaceHmrIncrementalImpact } from './delivery'
 import { formatNumber } from './report'
 
 export { renderThresholdMarkdown } from './report'
@@ -84,7 +86,7 @@ export function createWorkspaceHmrBaseline(
             dirtyCount: scenario.profile?.dirtyCount,
             pendingCount: scenario.profile?.pendingCount,
             emittedCount: scenario.profile?.emittedCount,
-            impactFiles: scenario.impact?.length,
+            impactFiles: workspaceHmrIncrementalImpact(scenario)?.length,
           }]
         })),
       }]
@@ -181,7 +183,14 @@ export function evaluateWorkspaceHmrThresholds(
       const scenarioThresholds = mergeThresholds(projectThresholds, baselineScenario?.thresholds)
 
       checkScenarioTime(issues, project.id, scenario, baselineScenario, scenarioThresholds)
-      checkMetric(issues, project.id, scenario.id, 'impactFiles', scenario.impact?.length, baselineScenario?.impactFiles, scenarioThresholds.maxImpactFiles, scenarioThresholds.maxImpactFileDelta)
+      let incrementalImpact: ImpactFile[] | undefined
+      try {
+        incrementalImpact = workspaceHmrIncrementalImpact(scenario)
+      }
+      catch (error) {
+        issues.push({ project: project.id, scenario: scenario.id, metric: 'delivery-evidence', actual: 0, limit: 1, message: error instanceof Error ? error.message : String(error) })
+      }
+      checkMetric(issues, project.id, scenario.id, 'impactFiles', incrementalImpact?.length, baselineScenario?.impactFiles, scenarioThresholds.maxImpactFiles, scenarioThresholds.maxImpactFileDelta)
       checkMetric(issues, project.id, scenario.id, 'dirtyCount', scenario.profile?.dirtyCount, baselineScenario?.dirtyCount, scenarioThresholds.maxDirtyCount, scenarioThresholds.maxDirtyDelta)
       checkMetric(issues, project.id, scenario.id, 'pendingCount', scenario.profile?.pendingCount, baselineScenario?.pendingCount, scenarioThresholds.maxPendingCount, scenarioThresholds.maxPendingDelta)
       checkMetric(issues, project.id, scenario.id, 'emittedCount', scenario.profile?.emittedCount, baselineScenario?.emittedCount, scenarioThresholds.maxEmittedCount, scenarioThresholds.maxEmittedDelta)

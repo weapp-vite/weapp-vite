@@ -8,6 +8,14 @@ export interface ResourceProcessFrame {
   inspectorPid: number
 }
 
+export interface ResourceProcessSnapshot {
+  initial: ResourceProcessFrame
+  paths: Map<number, string | null>
+  after: ResourceProcessFrame
+}
+
+export type ResourceKernelPathReader = (pids: number[]) => Promise<Map<number, string | null>>
+
 function remaining(deadline: number) {
   const value = Math.floor(deadline - Date.now())
   if (value <= 0) {
@@ -39,8 +47,14 @@ export function parseDarwinKernelResponse(line: string, pids: number[]) {
   return paths
 }
 
-/** 预热先于 RSS 锚点；helper 在后验 ps 完成前保持存活，且不创建自己的 ps。 */
-export async function readDarwinSnapshot(deadline: number, readFrame: () => Promise<ResourceProcessFrame>) {
+export function readDarwinSnapshot(deadline: number, readFrame: () => Promise<ResourceProcessFrame>): Promise<ResourceProcessSnapshot>
+export function readDarwinSnapshot<T>(deadline: number, readFrame: () => Promise<ResourceProcessFrame>, consume: (snapshot: ResourceProcessSnapshot, readPaths: ResourceKernelPathReader) => Promise<T>): Promise<T>
+/** 预热先于 RSS 锚点；同一 helper 贯穿有界后续轮次，且不创建自己的 ps。 */
+export async function readDarwinSnapshot<T>(
+  deadline: number,
+  readFrame: () => Promise<ResourceProcessFrame>,
+  consume?: (snapshot: ResourceProcessSnapshot, readPaths: ResourceKernelPathReader) => Promise<T>,
+) {
   const child = execa('/usr/bin/osascript', ['-l', 'JavaScript', '-e', darwinSnapshotScript], {
     timeout: remaining(deadline),
     reject: false,
@@ -49,8 +63,36 @@ export async function readDarwinSnapshot(deadline: number, readFrame: () => Prom
   const owner = child.nodeChildProcess
   const terminal = Promise.resolve(child)
   const lines = inspectorLines(owner.stdout, terminal)
-  let snapshot: { initial: ResourceProcessFrame, paths: Map<number, string | null>, after: ResourceProcessFrame } | undefined
+  let outcome: ResourceProcessSnapshot | T | undefined
   let failure: unknown
+  let closed = false
+  let requesting = false
+  let requestCount = 0
+  const readPaths: ResourceKernelPathReader = async (pids) => {
+    if (closed || requesting || requestCount >= 3 || !owner.stdin || owner.stdin.destroyed || owner.stdin.writableEnded) {
+      throw new Error('Resource sampling inspector request is unavailable.')
+    }
+    if (new Set(pids).size !== pids.length || pids.some(pid => !Number.isSafeInteger(pid) || pid <= 0)) {
+      throw new Error('Resource sampling received an invalid process identity request.')
+    }
+    const timeout = remaining(deadline)
+    lines.assertComplete()
+    requesting = true
+    requestCount++
+    try {
+      const response = lines.next(timeout)
+      const written = new Promise<void>((resolve, reject) => {
+        owner.stdin!.write(`${JSON.stringify({ pids })}\n`, error => error ? reject(error) : resolve())
+      })
+      const [line] = await Promise.all([response, written])
+      const paths = parseDarwinKernelResponse(line, pids)
+      lines.assertComplete()
+      return paths
+    }
+    finally {
+      requesting = false
+    }
+  }
   try {
     // ready 另有上限，不能把整个共享预算都花在等待 helper 冷启动。
     const ready: unknown = JSON.parse(await lines.next(Math.min(5_000, remaining(deadline))))
@@ -66,22 +108,15 @@ export async function readDarwinSnapshot(deadline: number, readFrame: () => Prom
       }
       return Number(match[1])
     }).filter(pid => pid !== initial.inspectorPid)
-    if (!owner.stdin) {
-      throw new Error('Resource sampling inspector input is unavailable.')
-    }
-    const response = lines.next(remaining(deadline))
-    const written = new Promise<void>((resolve, reject) => {
-      owner.stdin!.write(`${JSON.stringify({ pids })}\n`, error => error ? reject(error) : resolve())
-    })
-    const [line] = await Promise.all([response, written])
-    const paths = parseDarwinKernelResponse(line, pids)
-    lines.assertComplete()
+    const paths = await readPaths(pids)
     const after = await readFrame()
-    snapshot = { initial, paths, after }
+    const snapshot = { initial, paths, after }
+    outcome = consume ? await consume(snapshot, readPaths) : snapshot
   }
   catch (error) {
     failure = error
   }
+  closed = true
   // 无论首帧、路径或后验 ps 在何处失败，都结束 stdin 并等待手中 child 退出。
   try {
     if (owner.stdin && !owner.stdin.destroyed && !owner.stdin.writableEnded) {
@@ -117,5 +152,5 @@ export async function readDarwinSnapshot(deadline: number, readFrame: () => Prom
   if (failure) {
     throw failure
   }
-  return snapshot!
+  return outcome!
 }

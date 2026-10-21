@@ -1,5 +1,5 @@
 /* stylelint-disable-next-line scss/load-partial-extension */
-@import "../../shared/styles/shared.scss";
+@use "../../shared/styles/shared";
 
 .native-page {
   padding: 32rpx;

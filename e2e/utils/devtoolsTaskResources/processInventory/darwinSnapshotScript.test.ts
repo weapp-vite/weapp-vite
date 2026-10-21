@@ -10,11 +10,42 @@ import { inspectorLines } from './inspectorProtocol'
 const row = (pid: number) => `${pid} 1 10 S Mon Oct 19 10:00:00 2026`
 
 describe.skipIf(process.platform !== 'darwin')('real Foundation inspector protocol without RSS sampling', () => {
-  it('round-trips one known live PID through real JXA and releases it after synthetic frames', async () => {
+  it('round-trips the same live PID across three requests in one real JXA and releases it after the consumer', async () => {
     const read = vi.fn(async () => ({ stdout: row(process.pid), inspectorPid: 1 }))
-    const snapshot = await readDarwinSnapshot(Date.now() + 10_000, read)
+    const executable = await fs.realpath(process.execPath)
+    const snapshot = await readDarwinSnapshot(Date.now() + 10_000, read, async (snapshot, readPaths) => {
+      expect(await readPaths([process.pid])).toEqual(new Map([[process.pid, executable]]))
+      expect(await readPaths([process.pid])).toEqual(new Map([[process.pid, executable]]))
+      return snapshot
+    })
     expect(snapshot.paths.get(process.pid)).toBe(await fs.realpath(process.execPath))
     expect(read).toHaveBeenCalledTimes(2)
+  })
+
+  it('rejects a fourth sequential request in the actual helper protocol', async () => {
+    const child = execa('/usr/bin/osascript', ['-l', 'JavaScript', '-e', darwinSnapshotScript], { reject: false, timeout: 5_000 })
+    const terminal = Promise.resolve(child)
+    const lines = inspectorLines(child.nodeChildProcess.stdout, terminal)
+    try {
+      expect(JSON.parse(await lines.next(5_000))).toEqual({ phase: 'ready' })
+      for (let round = 1; round <= 3; round++) {
+        const response = lines.next(5_000)
+        child.nodeChildProcess.stdin!.write(`${JSON.stringify({ pids: [] })}\n`)
+        expect(JSON.parse(await response)).toEqual({ phase: 'paths', paths: [] })
+      }
+      child.nodeChildProcess.stdin!.end(`${JSON.stringify({ pids: [] })}\n`)
+      const result = await terminal
+      expect(result.exitCode).not.toBe(0)
+      expect(result.timedOut).toBe(false)
+      lines.assertComplete()
+    }
+    finally {
+      lines.dispose()
+      if (child.nodeChildProcess.exitCode === null && child.nodeChildProcess.signalCode === null) {
+        child.kill('SIGTERM')
+      }
+      await terminal
+    }
   })
 
   it.each(['{"pids":[1,1]}\n', '{"pids":[0]}\n', '{"pids":[]}\n{}\n', '{}\n'])('rejects malformed single requests and exits (%s)', async (input) => {

@@ -1,7 +1,6 @@
 import { readFile, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
-import { setTimeout as delay } from 'node:timers/promises'
 import { expect, it } from 'vitest'
 import { startDevProcess } from '../utils/dev-process'
 import { createDevProcessEnv } from '../utils/dev-process-env'
@@ -46,13 +45,17 @@ it('watches provider dependencies across consecutive CLI updates', async () => {
   await runWithCleanup(async () => {
     await dev.waitForInitialBuild()
     await dev.waitForOutput('开发服务已就绪', 'watcher is ready')
-    await delay(1_000)
+    const readEvents = () => readFile(path.join(project, 'provider-events.jsonl'), 'utf8')
+    const watchedDependencies = async () => (await readEvents()).split('watch:provider.tokens.json').length - 1
     for (const color of ['#0000ff', '#00ff00', '#ff0000']) {
+      const previous = await watchedDependencies()
       await writeFile(path.join(project, 'src/provider.tokens.json'), JSON.stringify({ color }))
+      await dev.waitFor(expect.poll(watchedDependencies, { timeout: 30_000 }).toBeGreaterThan(previous), 'provider dependency watch notification')
       await dev.waitFor(expect.poll(() => readFile(path.join(project, 'dist/pages/home/index.wxss'), 'utf8'), { timeout: 30_000 }).toContain(color), 'provider dependency rebuild')
     }
-    const events = await readFile(path.join(project, 'provider-events.jsonl'), 'utf8')
+    const events = await readEvents()
     expect(events).toContain('watch:provider.tokens.json')
+    expect(events).not.toContain('watch:../provider-events.jsonl')
     expect(events).not.toContain('dispose')
     await dev.stop(5_000)
     const closed = await readFile(path.join(project, 'provider-events.jsonl'), 'utf8')

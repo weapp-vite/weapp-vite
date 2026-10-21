@@ -23,10 +23,7 @@ export interface WrapperResourceEvent {
   error?: string
 }
 
-export interface NewProcessObservation {
-  pid: number
-  parentPid: number
-  started: string
+export interface NewProcessObservation extends ProcessIdentityGapObservation {
   firstSeenRound: number
   classification: 'verified-foreign' | 'installation-image' | 'descendant' | 'identity-changed' | 'unclassified'
   imageSource: 'kernel-path' | 'text-images' | 'not-verified'

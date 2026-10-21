@@ -7,13 +7,13 @@
 | 类型 | 文件 |
 | --- | --- |
 | app 级 | `src/app.json`、`src/app.wxss`、`src/app.ts` |
-| 原生页面 | `src/pages/native/index.{wxml,wxss,ts,json}` |
-| 原生组件 | `src/components/probe-card/index.{wxml,wxss,ts,json}` |
+| 原生页面 | `src/pages/native/index.{wxml,scss,ts,json}` |
+| 原生组件 | `src/components/probe-card/index.{wxml,scss,ts,json}` |
 | Vue SFC | `src/pages/sfc/index.vue` 的 template/script/style |
 | HTML 模板 | `src/pages/html/index.html` |
 | 共享依赖 | `src/shared/tokens.ts`、`src/shared/styles/shared.scss` |
 | 共享模板/WXS | `src/shared/templates/*.wxml`、`src/shared/wxs/format.wxs` |
-| 分包 | `src/subpackages/lab/pages/sub-native/index.{wxml,wxss,ts,json}` |
+| 分包 | `src/subpackages/lab/pages/sub-native/index.{wxml,scss,ts,json}` |
 
 ## 运行
 

@@ -189,6 +189,8 @@ const projects = [
         'e2e/utils/pluginTemplateDevOpen.test.ts',
         'e2e/utils/queryRequestTransport.test.ts',
         'e2e/utils/statefulHmrProject.test.ts',
+        'e2e/utils/vendorPublication/**/*.test.ts',
+        'e2e/utils/wevuTailwindHmrProject/**/*.test.ts',
         'e2e/utils/statefulHmrTransport.test.ts',
         'e2e/utils/recoverableSession.test.ts',
         'e2e/utils/shared-hmr-fixture.test.ts',

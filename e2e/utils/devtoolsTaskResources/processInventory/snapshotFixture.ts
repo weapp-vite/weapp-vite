@@ -1,3 +1,5 @@
+import type { ResourceKernelPathReader, ResourceProcessSnapshot } from './darwinSnapshot'
+
 interface FixtureInspection extends Promise<{ stdout: string, stderr: string, exitCode: number }> {
   pid: number
 }
@@ -7,7 +9,7 @@ export function createSnapshotFixture(mocks: {
   ps: (...args: unknown[]) => FixtureInspection
   paths: (pids: number[], timeoutMs: number) => Promise<Map<number, string | null>>
 }) {
-  return async (deadline: number) => {
+  return async <T>(deadline: number, _readFrame: unknown, consume: (snapshot: ResourceProcessSnapshot, readPaths: ResourceKernelPathReader) => Promise<T>) => {
     function remaining() {
       const timeout = Math.floor(deadline - Date.now())
       if (timeout <= 0) {
@@ -18,8 +20,9 @@ export function createSnapshotFixture(mocks: {
     const first = mocks.ps('/bin/ps', [], { timeout: remaining() })
     const initial = { ...await first, inspectorPid: first.pid }
     const pids = initial.stdout.trim().split(/\r?\n/).map(line => Number(line.trim().split(/\s+/)[0])).filter(pid => pid !== first.pid)
-    const paths = await mocks.paths(pids, remaining())
+    const readPaths: ResourceKernelPathReader = pids => mocks.paths(pids, remaining())
+    const paths = await readPaths(pids)
     const second = mocks.ps('/bin/ps', [], { timeout: remaining() })
-    return { initial, paths, after: { ...await second, inspectorPid: second.pid } }
+    return consume({ initial, paths, after: { ...await second, inspectorPid: second.pid } }, readPaths)
   }
 }

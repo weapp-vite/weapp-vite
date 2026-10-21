@@ -88,4 +88,51 @@ describe('resource sampling bootstrap race', () => {
       unclassifiedProcesses: [{ pid: 33, final: null, causes: [{ reason: 'process-absent', firstObserved: { round: 1, phase: 'after-kernel' } }] }],
     } })
   })
+
+  it.each([false, true])('reuses the warmed helper for a newly appeared PID without hiding its actual exit (%s)', async (exitBeforePostcondition) => {
+    let inspector: ReturnType<typeof createInspectorFixture> | undefined
+    let frames = 0
+    let transientAlive = true
+    const requests: number[][] = []
+    mocks.execute.mockImplementation((command: string) => {
+      if (command === '/usr/bin/osascript') {
+        if (inspector) {
+          transientAlive = false
+          throw new Error('A second cold helper lost the new identity window.')
+        }
+        inspector = createInspectorFixture({ response(pids) {
+          requests.push(pids)
+          if (exitBeforePostcondition && pids.includes(44)) {
+            transientAlive = false
+          }
+          return JSON.stringify({ phase: 'paths', paths: pids.map(pid => ({ pid, executable: path.join(directory, pid === 11 ? 'selected' : '../foreign') })) })
+        } })
+        return inspector.child
+      }
+      if (command === '/bin/ps') {
+        frames++
+        if (inspector?.owner.exitCode !== null) {
+          transientAlive = false
+        }
+        const stdout = [row(11, frames === 1 ? 10 : 100), row(22), ...(frames > 1 && transientAlive ? [row(44)] : [])].join('\n')
+        return Object.assign(Promise.resolve({ stdout, stderr: '', exitCode: 0 }), { pid: 98 })
+      }
+      throw new Error(`Unexpected inspection command: ${command}`)
+    })
+    const sample = await sampleInstallationProcesses(target, 'darwin')
+    expect(sample).toMatchObject({ status: 'observed', value: {
+      verifiedMemberRssBytes: 10 * 1024,
+      installationRssBytes: exitBeforePostcondition ? { status: 'unavailable' } : { status: 'observed', value: 10 * 1024 },
+      unclassifiedProcessCount: 0,
+      inventoryRoundCount: 2,
+      verifiedNewForeignProcessCount: exitBeforePostcondition ? 0 : 1,
+      uninspectedNewProcessCount: exitBeforePostcondition ? 1 : 0,
+      newProcesses: [{ pid: 44, classification: exitBeforePostcondition ? 'unclassified' : 'verified-foreign', ...(exitBeforePostcondition ? { final: null, causes: [{ reason: 'process-absent', firstObserved: { round: 2, phase: 'after-kernel' } }] } : { causes: [] }) }],
+      rssAnchor: 'initial-ps-inventory-only; later-rows-never-replace-or-add-rss',
+    } })
+    expect(requests).toEqual([[11, 22], [44]])
+    expect(mocks.execute.mock.calls.filter(call => call[0] === '/usr/bin/osascript')).toHaveLength(1)
+    expect(frames).toBe(5)
+    expect(inspector?.events).toEqual(['ready', 'request', 'request', 'eof', 'exit'])
+  })
 })

@@ -9,6 +9,8 @@ describe('stateful HMR capability admission', () => {
   it.each([
     { files: ['src/app.json'], code: 'config-json' },
     { files: ['src/pages/home.vue'], dirtyReasons: ['entry-mixed-config:1'], code: 'config-json' },
+    { files: ['src/pages/home/index.json'], dirtyReasons: ['json-sidecar:2'], configurationChanged: false, code: 'config-json' },
+    { files: ['src/pages/home/index.js'], dirtyReasons: ['json-sidecar:1', 'tailwind-content:1'], configurationChanged: false, code: 'config-json' },
     { files: ['src/pages/new.vue'], dirtyReasons: ['entry-graph-changed'], code: 'entry-topology' },
     { files: ['src/shared.ts'], updateType: 'FullReload', code: 'engine-full-reload' },
   ])('classifies $code before publishing an unsupported update', ({ code, ...input }) => {
@@ -21,8 +23,17 @@ describe('stateful HMR capability admission', () => {
     { files: ['src/style.css'], dirtyReasons: ['entry-style-only:1'] },
     { files: ['public/icon.png'] },
     { files: ['tokens.json'], configurationChanged: false },
+    { files: ['template-rules.json'], dirtyReasons: ['wxml-transform-dependency:1', 'tailwind-content:1'], configurationChanged: false },
   ])('keeps a supported patch or visual update stateful: $files', (input) => {
     expect(resolveStatefulHmrInputFallback(input)).toBeUndefined()
+  })
+
+  it.each([undefined, 'Noop', 'Patch'])('rejects changed external CSS bindings before relying on the native update: %s', (updateType) => {
+    expect(resolveStatefulHmrInputFallback({
+      files: ['src/pages/home/alternate.css'],
+      dirtyReasons: ['entry-style-bindings:1'],
+      updateType,
+    })).toMatchObject({ code: 'patch-shape', files: ['src/pages/home/alternate.css'] })
   })
 
   it('preserves syntax, filesystem, business and IDE errors as errors', () => {

@@ -29,6 +29,59 @@ describe('warmed Darwin inspector boundary', () => {
     expect(mocks.execute.mock.calls[0]![2]).not.toHaveProperty('detached', true)
   })
 
+  it('keeps the same warmed helper through the existing three rounds and closes it only after the consumer', async () => {
+    const fixture = createInspectorFixture()
+    mocks.execute.mockReturnValue(fixture.child)
+    const read = vi.fn(async () => {
+      fixture.events.push('ps')
+      return frame()
+    })
+    const result = await readDarwinSnapshot(Date.now() + 10_000, read, async (snapshot, readPaths) => {
+      expect(snapshot.paths).toEqual(new Map([[11, '/foreign/11']]))
+      expect(await readPaths([22])).toEqual(new Map([[22, '/foreign/22']]))
+      expect(await readPaths([33])).toEqual(new Map([[33, '/foreign/33']]))
+      expect(fixture.owner.exitCode).toBeNull()
+      expect(fixture.events).not.toContain('eof')
+      fixture.events.push('consumer-complete')
+      return 'closed-inventory'
+    })
+    expect(result).toBe('closed-inventory')
+    expect(mocks.execute).toHaveBeenCalledTimes(1)
+    expect(read).toHaveBeenCalledTimes(2)
+    expect(fixture.events).toEqual(['ready', 'ps', 'request', 'ps', 'request', 'request', 'consumer-complete', 'eof', 'exit'])
+  })
+
+  it('rejects a fourth request before dispatch without extending the inventory rounds', async () => {
+    const fixture = createInspectorFixture()
+    mocks.execute.mockReturnValue(fixture.child)
+    await expect(readDarwinSnapshot(Date.now() + 10_000, async () => frame(), async (_snapshot, readPaths) => {
+      await readPaths([22])
+      await readPaths([33])
+      await readPaths([44])
+    })).rejects.toThrow('request is unavailable')
+    expect(fixture.events.filter(event => event === 'request')).toHaveLength(3)
+    expect(mocks.execute).toHaveBeenCalledTimes(1)
+    expect(fixture.events).toContain('exit')
+  })
+
+  it('keeps the original deadline for followup requests and awaits the held child when the consumer fails', async () => {
+    const fixture = createInspectorFixture({ deferExit: true })
+    mocks.execute.mockReturnValue(fixture.child)
+    let now = 0
+    vi.spyOn(Date, 'now').mockImplementation(() => now)
+    let settled = false
+    const outcome = readDarwinSnapshot(10_000, async () => frame(), async (_snapshot, readPaths) => {
+      now = 10_000
+      await readPaths([22])
+    }).catch(error => error).finally(() => { settled = true })
+    await vi.waitFor(() => expect(fixture.events).toContain('kill:SIGKILL'))
+    expect(settled).toBe(false)
+    expect(fixture.events.filter(event => event === 'request')).toHaveLength(1)
+    fixture.finish('SIGKILL')
+    expect(await outcome).toMatchObject({ message: expect.stringContaining('shared process inspection budget') })
+    expect(mocks.execute).toHaveBeenCalledTimes(1)
+  })
+
   it.each([1, 2])('closes stdin and awaits the same held child when ps frame %i throws', async (failedFrame) => {
     const fixture = createInspectorFixture({ deferExit: true })
     mocks.execute.mockReturnValue(fixture.child)

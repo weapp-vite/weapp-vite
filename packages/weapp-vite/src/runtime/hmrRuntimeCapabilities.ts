@@ -48,8 +48,11 @@ export function resolveStatefulHmrInputFallback(options: {
     return { code: 'entry-topology', message: '入口拓扑发生变化，需要重新建立完整构建图。', files }
   }
   if ((options.configurationChanged ?? files.some(file => /\.json(?:[?#]|$)/i.test(file)))
-    || dirtyReasons.some(reason => /^(?:entry-json-only|entry-mixed-config):/.test(reason))) {
+    || dirtyReasons.some(reason => /^(?:entry-json-only|entry-mixed-config|json-sidecar):/.test(reason))) {
     return { code: 'config-json', message: '小程序 JSON 配置发生变化，需要完整发布。', files }
+  }
+  if (dirtyReasons.some(reason => reason.startsWith('entry-style-bindings:'))) {
+    return { code: 'patch-shape', message: '外部样式的 CSS 变量绑定发生变化，需要重新建立脚本注册。', files }
   }
   if (options.updateType === 'FullReload') {
     return { code: 'engine-full-reload', message: 'DevEngine 无法安全接受当前增量，要求完整重载。', files }

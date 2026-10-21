@@ -55,7 +55,7 @@ describe('first-observation process identity capture', () => {
       inventoryRoundCount: 2,
       verifiedNewForeignProcessCount: 1,
       uninspectedNewProcessCount: 0,
-      newProcesses: [{ pid: 44, firstSeenRound: 1, classification: 'verified-foreign', imageSource: 'kernel-path' }],
+      newProcesses: [{ pid: 44, firstSeenRound: 1, classification: 'verified-foreign', imageSource: 'kernel-path', final: null, causes: [{ reason: 'process-absent', firstObserved: { round: 2, phase: 'after-fallback' } }] }],
       rssAnchor: 'initial-ps-inventory-only; later-rows-never-replace-or-add-rss',
     } })
     expect(events).toEqual(['ps', 'paths:11,22,33', 'ps', 'paths:44', 'ps', 'ps', 'fallback:33', 'ps'])
@@ -68,7 +68,7 @@ describe('first-observation process identity capture', () => {
       installationRssBytes: { status: 'unavailable' },
       verifiedNewForeignProcessCount: 0,
       uninspectedNewProcessCount: 1,
-      newProcesses: [{ pid: 44, classification: 'unclassified', imageSource: 'not-verified' }],
+      newProcesses: [{ pid: 44, classification: 'unclassified', imageSource: 'not-verified', final: null, causes: [{ reason: 'process-absent', firstObserved: { round: 2, phase: 'after-kernel' } }] }],
     } })
     expect(mocks.paths.mock.calls.map(call => call[0])).toEqual([[11, 22, 33], [44]])
   })
@@ -122,6 +122,17 @@ describe('first-observation process identity capture', () => {
       reasons: ['returned-after-absence'],
       firstObserved: { round: 1, phase: 'after-fallback' },
     }])
+    expect(sample.value.newProcesses).toEqual([{
+      ...identity,
+      firstSeenRound: 1,
+      classification: 'identity-changed',
+      imageSource: 'kernel-path',
+      final: identity,
+      causes: [
+        { reason: 'process-absent', firstObserved: { round: 2, phase: 'after-fallback' } },
+        { reason: 'identity-changed', firstObserved: { round: 1, phase: 'after-fallback' } },
+      ],
+    }])
     expect(sample.value.identityChangedProcesses).toHaveLength(sample.value.identityChangedProcessCount)
     expect(sample.value.unclassifiedProcesses).toHaveLength(sample.value.unclassifiedProcessCount)
     expect(sample.value.missingIdentities).toHaveLength(sample.value.missingIdentityCount)
@@ -150,7 +161,7 @@ describe('first-observation process identity capture', () => {
       inventoryRoundCount: 3,
       verifiedNewForeignProcessCount: 2,
       uninspectedNewProcessCount: 1,
-      newProcesses: expect.arrayContaining([{ pid: 66, parentPid: 1, started: 'Mon Oct 19 10:00:00 2026', firstSeenRound: 3, classification: 'unclassified', imageSource: 'not-verified' }]),
+      newProcesses: expect.arrayContaining([{ pid: 66, parentPid: 1, started: 'Mon Oct 19 10:00:00 2026', zombie: false, firstSeenRound: 3, classification: 'unclassified', imageSource: 'not-verified', final: { pid: 66, parentPid: 1, started: 'Mon Oct 19 10:00:00 2026', zombie: false }, causes: [] }]),
     } })
     expect(mocks.paths.mock.calls.map(call => call[0])).toEqual([[11, 22, 33], [44], [55]])
     expect(mocks.ps).toHaveBeenCalledTimes(7)
@@ -168,5 +179,54 @@ describe('first-observation process identity capture', () => {
     } })
     expect(mocks.paths).toHaveBeenCalledTimes(2)
     expect(mocks.ps).toHaveBeenCalledTimes(3)
+  })
+
+  it.each([
+    ['text-images-query-failed', new Error('unverifiable images')],
+    ['text-images-empty', []],
+    ['text-images-invalid', ['relative-unverifiable']],
+  ])('persists a new identity fallback gap and its final metadata (%s)', async (reason, images) => {
+    const later = withNew(row(44))
+    inventories(initial, later, later, later, later)
+    mocks.paths.mockResolvedValueOnce(new Map([[11, executable], [22, executable], [33, foreignImage]]))
+    mocks.paths.mockResolvedValueOnce(new Map([[44, null]]))
+    if (images instanceof Error) {
+      mocks.images.mockRejectedValue(images)
+    }
+    else {
+      mocks.images.mockResolvedValue(images)
+    }
+    const sample = await sampleInstallationProcesses(target, 'darwin')
+    const identity = { pid: 44, parentPid: 1, started: 'Mon Oct 19 10:00:00 2026', zombie: false }
+    expect(sample).toMatchObject({ status: 'observed', value: {
+      installationRssBytes: { status: 'unavailable' },
+      verifiedNewForeignProcessCount: 0,
+      uninspectedNewProcessCount: 1,
+      newProcesses: [{ ...identity, final: identity, imageSource: 'not-verified', causes: [{ reason, firstObserved: { round: 2, phase: 'fallback' } }] }],
+    } })
+    expect(JSON.stringify(sample)).not.toContain('unverifiable images')
+    expect(JSON.stringify(sample)).not.toContain('relative-unverifiable')
+    expect(mocks.images).toHaveBeenCalledExactlyOnceWith(44, 10_000)
+    expect(mocks.paths).toHaveBeenCalledTimes(2)
+    expect(mocks.ps).toHaveBeenCalledTimes(5)
+  })
+
+  it('persists an unverifiable kernel path for a new identity without inferring foreign ownership', async () => {
+    const later = withNew(row(44))
+    inventories(initial, later, later, later, later)
+    mocks.paths.mockResolvedValueOnce(new Map([[11, executable], [22, executable], [33, foreignImage]]))
+    mocks.paths.mockResolvedValueOnce(new Map([[44, 'relative-unverifiable']]))
+    const sample = await sampleInstallationProcesses(target, 'darwin')
+    const identity = { pid: 44, parentPid: 1, started: 'Mon Oct 19 10:00:00 2026', zombie: false }
+    expect(sample).toMatchObject({ status: 'observed', value: {
+      installationRssBytes: { status: 'unavailable' },
+      verifiedNewForeignProcessCount: 0,
+      uninspectedNewProcessCount: 1,
+      newProcesses: [{ ...identity, final: identity, imageSource: 'not-verified', causes: [{ reason: 'kernel-path-unverifiable', firstObserved: { round: 2, phase: 'after-kernel' } }] }],
+    } })
+    expect(JSON.stringify(sample)).not.toContain('relative-unverifiable')
+    expect(mocks.images).not.toHaveBeenCalled()
+    expect(mocks.paths).toHaveBeenCalledTimes(2)
+    expect(mocks.ps).toHaveBeenCalledTimes(5)
   })
 })

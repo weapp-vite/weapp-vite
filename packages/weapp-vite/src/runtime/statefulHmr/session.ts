@@ -29,7 +29,7 @@ import { logger } from '../../context/shared'
 import { createDevViteServer } from '../../devLifecycle/vite'
 import { parseSidecarModuleId, parseSidecarSourceRequest } from '../../moduleGraph/protocol'
 import { createPublicAssetSourcePlan } from '../../plugins/asset/publicSources'
-import { CompilerHmrResyncError, getCompilerHmrHost } from '../../plugins/compilerPlugin/hmr'
+import { CompilerHmrResyncError, compilerSourceId, getCompilerHmrHost } from '../../plugins/compilerPlugin/hmr'
 import { ENTRY_GRAPH_CHANGE_REASON } from '../../plugins/hooks/useLoadEntry/entryChunkLifecycle'
 import { prepareOutputOwnership } from '../../plugins/outputFinalizer/ownership'
 import { isReactStaticTemplateSource } from '../../plugins/react'
@@ -259,6 +259,7 @@ class StatefulHmrSession {
   private templateRegistrationSignatures?: StatefulHmrSnapshot['templateRegistrationSignatures']
   private initialSnapshot?: StatefulHmrSnapshot
   private readonly emittedSourceIds: Set<string>
+  private readonly nativeVueBaselines = new Set<string>()
   private readonly directoryUpdates: StatefulHmrDirectoryUpdates
   private entryGraphRevision = 0
   private rebuiltEntryGraphRevision = 0
@@ -315,6 +316,8 @@ class StatefulHmrSession {
       },
     )
     this.delivery = new HmrDeliveryCoordinator((error) => {
+      // freeze 已推进比较输入；失败交付不能继续作为已发布视觉基线的证明。
+      this.nativeVueBaselines.clear()
       const fallback = getHmrRuntimeCapabilityFallback(error)
       if (fallback) {
         this.requestClassic(fallback)
@@ -338,6 +341,7 @@ class StatefulHmrSession {
     this.snapshotScheduler = new StatefulHmrSnapshotScheduler({
       execute: batch => this.profileSnapshotBatch(batch),
       onError: (error) => {
+        this.nativeVueBaselines.clear()
         const fallback = getHmrRuntimeCapabilityFallback(error)
         if (fallback) {
           this.requestClassic(fallback)
@@ -626,9 +630,15 @@ class StatefulHmrSession {
   private handleOutput(output: StatefulHmrOutputFile[], source: StatefulHmrOutputSource): Promise<void> {
     const snapshotBatch = this.activeSnapshotBatch
     // 必须在原生输出回调进入时封存输入，排队写出期间宿主可能已经编译下一次编辑。
-    const nativeInputs = source === 'full'
-      ? this.nativeScriptInputs.capture(new Set([...this.entryIds, ...this.emittedSourceIds, ...collectStatefulHmrEmittedSourceIds(output, this.server.config.root)]), file => getCompilerHmrHost(this.ctx).readSource(file))
+    const outputSourceIds = source === 'full'
+      ? new Set([...this.entryIds, ...this.emittedSourceIds, ...collectStatefulHmrEmittedSourceIds(output, this.server.config.root)])
       : undefined
+    const nativeInputs = outputSourceIds
+      ? this.nativeScriptInputs.capture(outputSourceIds, file => getCompilerHmrHost(this.ctx).readSource(file))
+      : undefined
+    const nativeVueInputs = outputSourceIds && new Map([...outputSourceIds]
+      .filter(file => file.endsWith('.vue'))
+      .map(file => [compilerSourceId(file), getCompilerHmrHost(this.ctx).readSource(file)] as const))
     const outputTask = this.enqueueOutput(async () => {
       if (snapshotBatch?.isSuperseded()) {
         this.diagnostics?.discarded(snapshotBatch.traceBatchId, 'before-output')
@@ -686,19 +696,32 @@ class StatefulHmrSession {
         this.nativeScriptInputs.commit(nativeInputs!)
         this.delivery.reset()
         this.transport.commitFullBuild(buildId)
-        getCompilerHmrHost(this.ctx).setNativeSources(collectStatefulHmrEmittedSourceIds(compatibleOutput, this.server.config.root))
+        const compilerHmrHost = getCompilerHmrHost(this.ctx)
+        const nativeSourceIds = collectStatefulHmrEmittedSourceIds(compatibleOutput, this.server.config.root)
+        compilerHmrHost.setNativeSources(nativeSourceIds)
         this.transport.registerInitialPayloads(compatibleOutput.filter(item => item.type === 'chunk').map(item => item.fileName), file => this.adapter.markPayloadDelivered(file))
         if (snapshot && snapshotOutput) {
           this.adoptSnapshot(snapshot, snapshotOutput, Boolean(snapshotBatch))
           this.initialSnapshot = undefined
         }
-        for (const sourceId of collectStatefulHmrEmittedSourceIds(compatibleOutput, this.server.config.root)) {
+        for (const sourceId of nativeSourceIds) {
           this.emittedSourceIds.add(sourceId)
         }
         if (!snapshotBatch?.isSuperseded()) {
           this.directoryUpdates.seedSources([...this.entryIds, ...this.emittedSourceIds])
         }
         const moduleCount = await this.adapter.registerBundleModules(compatibleOutput)
+        this.nativeVueBaselines.clear()
+        for (const file of new Set([...this.entryIds, ...nativeSourceIds])) {
+          if (!file.endsWith('.vue')) {
+            continue
+          }
+          const sourceId = compilerSourceId(file)
+          const captured = nativeVueInputs?.get(sourceId)
+          if (typeof captured === 'string' && compilerHmrHost.readSource(sourceId) === captured) {
+            this.nativeVueBaselines.add(sourceId)
+          }
+        }
         if (snapshotBatch) {
           snapshotBatch.fullOutputCommitted = true
         }
@@ -767,11 +790,24 @@ class StatefulHmrSession {
     }
     const isCompilerDependency = (file: string) => compilerHmrHost.ownsDependency(file)
       && (isStatefulHmrAssetFile(file) || (!this.emittedSourceIds.has(file) && !this.entryIds.has(file) && !compilerHmrHost.isNativeSource(file)))
+    let needsCompilerNoopSnapshot = false
     if (output.type === 'Noop') {
       // 原批次仍负责恢复原生脚本账本，编译器只接管其中实际拥有的依赖。
       const sources = this.nativeScriptInputs.capture(files, file => compilerHmrHost.readSource(file))
       this.clearRestoredNativeScripts(new Map(this.unpersistedNativeScripts), sources)
-      files = files.filter(isCompilerDependency)
+      const isCompilerNativeVue = (file: string) => file.endsWith('.vue') && compilerHmrHost.ownsDependency(file) && compilerHmrHost.isNativeSource(file)
+      const unknownBaselines = files.filter(file => isCompilerNativeVue(file)
+        && (!this.nativeVueBaselines.has(compilerSourceId(file)) || typeof compilerHmrHost.readSource(file) !== 'string'))
+      if (unknownBaselines.length) {
+        this.requestClassic({ code: 'native-registration', message: '缺少已发布的原生 Vue 源码比较基线，需要 classic 重新建立模板注册。', files: unknownBaselines })
+        return false
+      }
+      files = files.filter((file) => {
+        const nativeVisualChange = isCompilerNativeVue(file) && compilerHmrHost.hasVisualChanges([file])
+        // Noop 只描述脚本交付；已确认的视觉输入仍由同一冻结批次编译和校验注册。
+        needsCompilerNoopSnapshot ||= nativeVisualChange
+        return nativeVisualChange || isCompilerDependency(file)
+      })
     }
     if (files.length === 0) {
       return false
@@ -817,7 +853,7 @@ class StatefulHmrSession {
     }
     this.diagnostics?.delivery('captured', input.revision, files)
     // 编译器扫描依赖不代表接管了原生资产写出；非脚本资源仍走固定输入快照。
-    const needsSnapshot = files.some(file => requiresStatefulHmrSnapshot(file)) || (!getCompilerHmrHost(this.ctx).enabled && allowCompilerContentPatch) || (dirtyReasonSummary.some(reason => reason.startsWith('entry-mixed-asset:'))
+    const needsSnapshot = needsCompilerNoopSnapshot || files.some(file => requiresStatefulHmrSnapshot(file)) || (!getCompilerHmrHost(this.ctx).enabled && allowCompilerContentPatch) || (dirtyReasonSummary.some(reason => reason.startsWith('entry-mixed-asset:'))
       && (!getCompilerHmrHost(this.ctx).enabled || getCompilerHmrHost(this.ctx).hasVisualChanges(files, input)))
     const mergeCompilerStyles = shouldMergeStatefulHmrCompilerStyles(
       files,

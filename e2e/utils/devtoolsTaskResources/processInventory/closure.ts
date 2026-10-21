@@ -1,6 +1,7 @@
 import type { NewProcessObservation, ProcessIdentityChangeObservation, ProcessIdentityGapCause, ProcessInventoryLocation } from '../types'
+import type { ResourceKernelPathReader } from './darwinSnapshot'
 import type { ProcessRow } from './index'
-import { processIdentityMetadata } from './evidence'
+import { processGapObservation, processIdentityMetadata } from './evidence'
 import { insideInstallation, inspectResourceRows, sameProcessIdentity, stableProcess } from './index'
 
 interface TrackedProcess {
@@ -53,6 +54,7 @@ export function createResourceInventory(options: {
   initial: ProcessRow[]
   installationRoot: string
   deadline: number
+  readPaths: ResourceKernelPathReader
 }) {
   const known = new Map(options.initial.map(row => [row.pid, { row, absent: false }]))
   const newProcesses = new Map<number, NewProcess>()
@@ -110,6 +112,9 @@ export function createResourceInventory(options: {
       const entry: NewProcess = { row, absent: false, firstSeenRound: round, inspected: false, classification: 'unclassified', imageSource: 'not-verified' }
       known.set(row.pid, entry)
       newProcesses.set(row.pid, entry)
+      if (row.zombie) {
+        recordIdentityGap(row.pid, 'zombie', location)
+      }
     }
     final = next
   }
@@ -149,7 +154,10 @@ export function createResourceInventory(options: {
           }
         }
         classifyInspected()
-      }, round)
+      }, round, options.readPaths)
+      for (const [pid, cause] of inspection.imageGaps) {
+        recordIdentityGap(pid, cause.reason, cause.firstObserved)
+      }
       observe(inspection.finalRows, round, { round, phase: 'after-fallback' })
       fallbackBudgetExhausted ||= inspection.fallbackBudgetExhausted
       for (const [pid, executableImages] of inspection.images) {
@@ -193,9 +201,7 @@ export function createResourceInventory(options: {
         }
       }
       const observations: NewProcessObservation[] = [...newProcesses.values()].map(entry => ({
-        pid: entry.row.pid,
-        parentPid: entry.row.parentPid,
-        started: entry.row.started,
+        ...processGapObservation(entry.row, final.get(entry.row.pid), undefined, identityGaps.get(entry.row.pid)),
         firstSeenRound: entry.firstSeenRound,
         classification: changed.has(entry.row.pid) ? 'identity-changed' : entry.classification,
         imageSource: entry.imageSource,

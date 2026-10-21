@@ -2,11 +2,13 @@ import type { ViteDevServer } from 'vite'
 import type { CorePluginState } from '../helpers'
 import { fs } from '@weapp-core/shared/fs'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { parse } from 'vue/compiler-sfc'
 import { resolveVueSfcHmrSignatures } from 'wevu/compiler'
 import { attachDevModuleGraphHost } from '../../../moduleGraph/host'
 import { createModuleGraphService } from '../../../moduleGraph/service'
 import { storeVueSfcHmrSignatures } from '../../../runtime/storeVueSfcHmrSignatures'
 import { registerManagedTailwindcssEntries } from '../../tailwindcssMarker'
+import * as vueSfcReader from '../../utils/vueSfc'
 import { createBuildStartHook, createWatchChangeHook } from './watch'
 
 const invalidateFileCacheMock = vi.hoisted(() => vi.fn())
@@ -1238,6 +1240,60 @@ const count = 1
 
     expect(state.markEntryDirty).toHaveBeenCalledWith(entryId, 'metadata')
     expect(state.ctx.onStatefulHmrSourceChange).toHaveBeenCalledWith(stylesheet, ['style-sidecar:1'], state.ctx.runtimeState.build.hmr.profile.sourceEvents.at(-1))
+  })
+
+  it('classifies changed bindings from the active external stylesheet after a src switch', async () => {
+    const state = createState()
+    const entryId = `${state.ctx.configService.absoluteSrcRoot}/pages/logs/index.vue`
+    const previousStyle = `${state.ctx.configService.absoluteSrcRoot}/pages/logs/index.css`
+    const stylesheet = `${state.ctx.configService.absoluteSrcRoot}/pages/logs/alternate.css`
+    const source = '<template><view /></template><style>.page { color: v-bind(accentColor) }</style>'
+    const parsed = parse(source, { filename: entryId })
+    const read = vi.spyOn(vueSfcReader, 'readAndParseSfc').mockResolvedValue({ source, ...parsed })
+    state.loadedEntrySet.add(entryId)
+    state.ctx.runtimeState.build.hmr.vueEntryStyleBindings.set(entryId, { sources: [stylesheet], expressions: ['themeColor'] })
+    state.ctx.onStatefulHmrSourceChange = vi.fn()
+    const hook = createWatchChangeHook(state)
+
+    await hook(previousStyle, { event: 'update' })
+    expect(read).not.toHaveBeenCalled()
+    expect(state.markEntryDirty).not.toHaveBeenCalled()
+
+    await hook(stylesheet, { event: 'update' })
+
+    expect(state.markEntryDirty).toHaveBeenCalledExactlyOnceWith(entryId, 'direct')
+    expect(state.ctx.onStatefulHmrSourceChange).toHaveBeenLastCalledWith(stylesheet, ['entry-style-bindings:1'], state.ctx.runtimeState.build.hmr.profile.sourceEvents.at(-1))
+  })
+
+  it('retains ordinary style delivery when external CSS bindings are unchanged', async () => {
+    const state = createState()
+    const entryId = `${state.ctx.configService.absoluteSrcRoot}/pages/logs/index.vue`
+    const stylesheet = `${state.ctx.configService.absoluteSrcRoot}/pages/logs/external.css`
+    const source = '<template><view /></template><style>.page { color: v-bind(themeColor); background: pink }</style>'
+    vi.spyOn(vueSfcReader, 'readAndParseSfc').mockResolvedValue({ source, ...parse(source, { filename: entryId }) })
+    state.loadedEntrySet.add(entryId)
+    state.ctx.runtimeState.build.hmr.vueEntryStyleBindings.set(entryId, { sources: [stylesheet], expressions: ['themeColor'] })
+    state.ctx.onStatefulHmrSourceChange = vi.fn()
+    collectAffectedEntriesMock.mockReturnValue(new Set([entryId]))
+
+    await createWatchChangeHook(state)(stylesheet, { event: 'update' })
+
+    expect(state.markEntryDirty).toHaveBeenCalledExactlyOnceWith(entryId, 'metadata')
+    expect(state.ctx.onStatefulHmrSourceChange).toHaveBeenCalledExactlyOnceWith(stylesheet, ['style-sidecar:1'], state.ctx.runtimeState.build.hmr.profile.sourceEvents.at(-1))
+  })
+
+  it('preserves external style analysis failures instead of classifying them as a supported fallback', async () => {
+    const state = createState()
+    const entryId = `${state.ctx.configService.absoluteSrcRoot}/pages/logs/index.vue`
+    const stylesheet = `${state.ctx.configService.absoluteSrcRoot}/pages/logs/external.css`
+    const failure = new SyntaxError('external style could not be parsed')
+    vi.spyOn(vueSfcReader, 'readAndParseSfc').mockRejectedValue(failure)
+    state.ctx.runtimeState.build.hmr.vueEntryStyleBindings.set(entryId, { sources: [stylesheet], expressions: ['themeColor'] })
+    state.ctx.onStatefulHmrSourceChange = vi.fn()
+
+    await expect(createWatchChangeHook(state)(stylesheet, { event: 'update' })).rejects.toBe(failure)
+
+    expect(state.ctx.onStatefulHmrSourceChange).not.toHaveBeenCalled()
   })
 
   it('marks vue entry updates as metadata when only json macro content changed', async () => {

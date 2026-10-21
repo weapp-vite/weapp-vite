@@ -24,7 +24,17 @@ export async function createWevuTailwindHmrProject(repositoryRoot: string) {
   try {
     const ignored = new Set(['dist', 'node_modules', '.weapp-vite', '.tmp', '.cache', '.turbo'])
     await cp(template, project, { recursive: true, filter: source => !path.relative(template, source).split(path.sep).some(segment => ignored.has(segment)) })
-    await symlink(await realpath(path.join(template, 'node_modules')), path.join(project, 'node_modules'), 'junction')
+    const manifest = JSON.parse(await readFile(path.join(template, 'package.json'), 'utf8')) as {
+      dependencies?: Record<string, string>
+      devDependencies?: Record<string, string>
+    }
+    await mkdir(path.join(project, 'node_modules'))
+    for (const name of Object.keys({ ...manifest.dependencies, ...manifest.devDependencies })) {
+      const target = path.join(project, 'node_modules', name)
+      await mkdir(path.dirname(target), { recursive: true })
+      // 分别链接真实依赖，避免 Windows 整目录 junction 再穿过 pnpm 链接。
+      await symlink(await realpath(path.join(template, 'node_modules', name)), target, 'junction')
+    }
     const source = path.join(project, 'src/pages/index/index.vue')
     const original = addWevuTailwindProbe(await readFile(source, 'utf8'))
     await writeFile(source, original)

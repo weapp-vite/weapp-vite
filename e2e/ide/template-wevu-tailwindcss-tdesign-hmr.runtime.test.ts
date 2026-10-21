@@ -2,7 +2,9 @@ import type { DomCheckpoint } from '../utils/domAcceptance/types'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
+import { WEAPP_VITE_STATEFUL_HMR_GLOBAL_STYLE_BASENAME } from '@weapp-core/constants'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { sanitizeAcceptanceValue } from '../scripts/domAcceptanceReport/helpers'
 import { runCleanupSteps } from '../utils/cleanupSteps'
 import { createDomAcceptance } from '../utils/domAcceptance'
 import { waitForEmittedStylesheet } from '../utils/emittedStylesheet'
@@ -85,8 +87,23 @@ describe('template wevu TailwindCSS TDesign HMR in real WeChat DevTools', { conc
       ],
     }))
     const dom = createDomAcceptance(context, 'templates/weapp-vite-wevu-tailwindcss-tdesign-template', checkpoints)
-    context.onTestFailed(() => {
+    context.onTestFailed(async () => {
       process.stdout.write(host.dev.getOutput().slice(-16_000))
+      const files = await Promise.all([
+        ['source', fixture!.source],
+        ['page-style', pageWxss],
+        ['global-style', path.join(project, 'dist', `${WEAPP_VITE_STATEFUL_HMR_GLOBAL_STYLE_BASENAME}.wxss`)],
+        ['profile', host.profilePath],
+      ].map(async ([label, file]) => {
+        try {
+          const source = await readFile(file!, 'utf8')
+          return { label, source: label === 'profile' ? source.slice(-64_000) : source, length: source.length }
+        }
+        catch (error) {
+          return { label, error: error instanceof Error ? error.message : String(error) }
+        }
+      }))
+      process.stdout.write(`[template-wevu-tailwindcss-tdesign:failure-files] ${JSON.stringify(sanitizeAcceptanceValue(files))}\n`)
     })
     const diagnostics = createHmrRuntimeDiagnostics(host.app, 'templates/weapp-vite-wevu-tailwindcss-tdesign-template')
     const initialIdentity = await diagnostics.initialize()

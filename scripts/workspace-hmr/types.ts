@@ -1,3 +1,5 @@
+import type { WorkspaceHmrDeliveryContract } from './delivery'
+
 export interface HmrProfileSample {
   timestamp?: string
   totalMs?: number
@@ -40,7 +42,7 @@ export interface ImpactFile {
   sizeAfter?: number
 }
 
-export interface ScenarioResult {
+export interface ScenarioResult extends WorkspaceHmrDeliveryContract {
   id: string
   label: string
   source: string

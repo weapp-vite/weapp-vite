@@ -2,6 +2,7 @@
 import type { WorkspaceHmrAuditBudget } from './workspace-hmr/auditDeadline'
 import type { WorkspaceHmrBaseline, WorkspaceHmrThresholds } from './workspace-hmr/baseline'
 import type { ClassicFallbackDeliveryEvidence } from './workspace-hmr/classicFallback'
+import type { WorkspaceHmrDeliveryContract, WorkspaceHmrExpectedDelivery } from './workspace-hmr/delivery'
 import type { DynamicReactDeliveryEvidence, DynamicReactMutation } from './workspace-hmr/dynamicReactDelivery'
 import type { DistFileSnapshot } from './workspace-hmr/output'
 import type { StatefulHmrAuditEvent } from './workspace-hmr/statefulAuditUpdate'
@@ -31,7 +32,9 @@ import {
   renderThresholdMarkdown,
 } from './workspace-hmr/baseline'
 import { WorkspaceHmrClassicFallback } from './workspace-hmr/classicFallback'
+import { inspectClassicPublication, inspectRetiredClassicTransport } from './workspace-hmr/classicPublication'
 import { collectWorkspaceHmrCleanupErrors, isWorkspaceHmrScenarioRetryable } from './workspace-hmr/cleanup'
+import { assertWorkspaceHmrDelivery, expectedWorkspaceHmrDelivery, orderWorkspaceHmrScenarios, planWorkspaceHmrScenarios } from './workspace-hmr/delivery'
 import { prepareDynamicReactMutation } from './workspace-hmr/dynamicReactDelivery'
 import { listFiles, snapshotDist, waitForInitialDistSnapshot, waitForStableDistSnapshot } from './workspace-hmr/output'
 import { isDynamicReactTemplateOutput } from './workspace-hmr/reactTemplate'
@@ -134,7 +137,7 @@ interface ImpactFile {
   sizeAfter?: number
 }
 
-interface ScenarioResult {
+interface ScenarioResult extends WorkspaceHmrDeliveryContract {
   id: string
   label: string
   source: string
@@ -617,7 +620,7 @@ async function auditProject(project: ProjectCase): Promise<ProjectResult> {
       '__weapp_vite_hmr/control.js',
     )))
     result.initialMode = project.hmrRuntime === 'stateful' ? 'stateful-experimental' : 'classic'
-    scenarios = await discoverScenarios(project, true)
+    scenarios = orderWorkspaceHmrScenarios(await discoverScenarios(project, true))
     selectedScenarios = maxScenariosPerProject
       ? scenarios.slice(0, maxScenariosPerProject)
       : scenarios
@@ -637,16 +640,18 @@ async function auditProject(project: ProjectCase): Promise<ProjectResult> {
     if (!runnableScenarios.length) {
       throw new Error('No discovered HMR scenario produced an initial output.')
     }
+    const plannedScenarios = planWorkspaceHmrScenarios(project.hmrRuntime, runnableScenarios)
+    result.scenarios = result.scenarios.map((scenario, index) => ({ ...scenario, expectedDelivery: plannedScenarios[index]!.expectedDelivery }))
     result.startupMs = performance.now() - startupStart
-    const warmupScenario = runnableScenarios[0]!
-    const warmup = await warmupProjectHmr(project, warmupScenario, profilePath, distRoot)
+    const warmupScenario = runnableScenarios.find(scenario => !scenario.statefulTemplate)
+    const warmup = warmupScenario && await warmupProjectHmr(project, warmupScenario, profilePath, distRoot)
     if (warmup?.update || warmup?.restore) {
-      result.warmup = { scenario: warmupScenario.id, ...warmup }
+      result.warmup = { scenario: warmupScenario!.id, ...warmup }
     }
 
     const scenarioResults: ScenarioResult[] = []
-    for (const scenario of runnableScenarios) {
-      const scenarioResult = await auditScenarioWithRetries(project, scenario, profilePath, distRoot, () => dev.getOutput())
+    for (const scenario of plannedScenarios) {
+      const scenarioResult = await auditScenarioWithRetries(project, scenario, profilePath, distRoot, () => dev.getOutput(), scenario.expectedDelivery)
       scenarioResults.push(scenarioResult)
       if (scenarioResult.cleanupErrors?.length) {
         result.scenarios = [
@@ -700,6 +705,7 @@ async function warmupProjectHmr(
     return
   }
 
+  const expectedDelivery = expectedWorkspaceHmrDelivery(project.hmrRuntime, false, Boolean(scenario.statefulTemplate))
   const mutation = await prepareScenarioMutation(project, scenario)
   const profileLineCount = await countJsonlLines(profilePath)
   let delivery: WorkspaceHmrDeliveryEvidence | undefined
@@ -707,6 +713,7 @@ async function warmupProjectHmr(
   try {
     await writeScenarioSource(scenario.sourcePath, updated)
     delivery = await waitForScenarioMutation(project, scenario, mutation, expectedMarker, true)
+    assertWorkspaceHmrDelivery({ expectedDelivery, deliveryEvidence: delivery, actualMode: classicFallbacks.get(project.root)?.actualMode ?? (project.hmrRuntime === 'stateful' ? 'stateful-experimental' : 'classic') })
     await acknowledgeScenarioArtifact(project, scenario)
     if (project.hmrRuntime === 'standard') {
       await waitForHmrProfileSample(project, profilePath, profileLineCount, scenario.sourcePath, 5_000).catch(() => {})
@@ -714,6 +721,7 @@ async function warmupProjectHmr(
   }
   finally {
     restore = await restoreScenarioMutation(project, scenario, original, expectedMarker)
+    assertWorkspaceHmrDelivery({ expectedDelivery, deliveryEvidence: restore, actualMode: classicFallbacks.get(project.root)?.actualMode ?? (project.hmrRuntime === 'stateful' ? 'stateful-experimental' : 'classic') })
   }
   await waitForStableDistSnapshot(distRoot, startupDistStableMs, scenarioTimeoutMs)
   await rm(profilePath, { force: true }).catch(() => {})
@@ -727,11 +735,15 @@ async function auditScenarioWithRetries(
   profilePath: string,
   distRoot: string,
   getDevOutput: () => string,
+  expectedDelivery: WorkspaceHmrExpectedDelivery,
 ) {
-  let result = await auditScenario(project, scenario, profilePath, distRoot, getDevOutput)
+  let result = await auditScenario(project, scenario, profilePath, distRoot, getDevOutput, expectedDelivery)
   for (let attempt = 1; isWorkspaceHmrScenarioRetryable(result) && attempt <= scenarioRetries; attempt++) {
+    if (expectedDelivery !== 'classic' && classicFallbacks.get(project.root)?.requested) {
+      break
+    }
     process.stdout.write(`[workspace-hmr] retry ${project.id} ${scenario.id}: ${result.error}\n`)
-    result = await auditScenario(project, scenario, profilePath, distRoot, getDevOutput)
+    result = await auditScenario(project, scenario, profilePath, distRoot, getDevOutput, expectedDelivery)
   }
   return result
 }
@@ -742,6 +754,7 @@ async function auditScenario(
   profilePath: string,
   distRoot: string,
   getDevOutput: () => string,
+  expectedDelivery: WorkspaceHmrExpectedDelivery,
 ): Promise<ScenarioResult> {
   const original = await readFile(scenario.sourcePath, 'utf8')
   const marker = createMarker(project.id, scenario.id)
@@ -754,6 +767,7 @@ async function auditScenario(
     source: formatProjectPath(scenario.sourcePath),
     output: formatProjectPath(scenario.outputPath),
     marker,
+    expectedDelivery,
   }
 
   if (updated === original) {
@@ -765,6 +779,9 @@ async function auditScenario(
 
   try {
     const mutation = await prepareScenarioMutation(project, scenario)
+    const previousControl = result.expectedDelivery === 'classic-fallback'
+      ? parseStatefulHmrControlSource(await readFile(path.join(distRoot, '__weapp_vite_hmr/control.js'), 'utf8'))
+      : undefined
     const profileLineCount = await countJsonlLines(profilePath)
     const before = await snapshotDist(distRoot)
     const startedAt = performance.now()
@@ -793,6 +810,32 @@ async function auditScenario(
       ? result.profile?.totalMs ?? result.observedMs
       : undefined
     result.impact = diffDistSnapshots(before, after)
+    assertWorkspaceHmrDelivery(result)
+    if (previousControl) {
+      const transport = await inspectRetiredClassicTransport(previousControl, AbortSignal.timeout(scenarioTimeoutMs))
+      result.classicPublication = { ...await inspectClassicPublication(distRoot, project.platform), transport }
+    }
+    if (result.expectedDelivery === 'classic-fallback') {
+      const restoredBefore = after
+      result.restoreDelivery = await restoreScenarioMutation(project, scenario, original, expectedMarker)
+      await waitForStableDistSnapshot(distRoot, startupDistStableMs, scenarioTimeoutMs)
+      const restoredAfter = await snapshotDist(distRoot)
+      assertWorkspaceHmrDelivery({ expectedDelivery: 'classic', actualMode: classicFallbacks.get(project.root)?.actualMode, deliveryEvidence: result.restoreDelivery })
+      if (result.restoreDelivery?.delivery !== 'classic') {
+        throw new Error('Classic transition restoration did not remain classic.')
+      }
+      await writeScenarioSource(scenario.sourcePath, updated)
+      result.repeatDelivery = await waitForScenarioMutation(project, scenario, undefined, expectedMarker, true)
+      if (result.repeatDelivery?.delivery !== 'classic') {
+        throw new Error('Classic transition repeated save did not remain classic.')
+      }
+      await waitForStableDistSnapshot(distRoot, startupDistStableMs, scenarioTimeoutMs)
+      const repeatedAfter = await snapshotDist(distRoot)
+      const steady = [...diffDistSnapshots(restoredBefore, restoredAfter), ...diffDistSnapshots(restoredAfter, repeatedAfter)]
+      result.steadyClassicImpact = [...new Map(steady.map(file => [file.path, file])).values()]
+      await inspectClassicPublication(distRoot, project.platform)
+      await inspectRetiredClassicTransport(previousControl!, AbortSignal.timeout(scenarioTimeoutMs))
+    }
   }
   catch (error) {
     result.error = sanitizeAcceptanceText(error instanceof Error ? error.message : String(error))
@@ -824,6 +867,9 @@ async function auditScenario(
         label: 'Failed to restore source and verify delivered output',
         run: async () => {
           result.restoreDelivery = await restoreScenarioMutation(project, scenario, original, expectedMarker)
+          if (!result.error) {
+            assertWorkspaceHmrDelivery({ expectedDelivery: expectedDelivery === 'classic-fallback' ? 'classic' : expectedDelivery, deliveryEvidence: result.restoreDelivery, actualMode: classicFallbacks.get(project.root)?.actualMode ?? (project.hmrRuntime === 'stateful' ? 'stateful-experimental' : 'classic') })
+          }
         },
       },
       { label: 'Restored output did not settle', run: () => waitForStableDistSnapshot(distRoot, startupDistStableMs, scenarioTimeoutMs) },
@@ -1982,13 +2028,15 @@ function renderMarkdown(results: ProjectResult[], summary: WorkspaceHmrReportSum
     if (project.warmup) {
       lines.push(`- warmup delivery: ${project.warmup.update?.delivery ?? '-'}; restore: ${project.warmup.restore?.delivery ?? '-'}`, '')
     }
-    lines.push('| scenario | delivery | restore | total(ms) | observed(ms) | build(ms) | transform(ms) | write(ms) | emit(ms) | dirty | pending | emitted | impact | error |')
-    lines.push('| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |')
+    lines.push('| scenario | expected | delivery | restore | repeat | total(ms) | observed(ms) | build(ms) | transform(ms) | write(ms) | emit(ms) | dirty | pending | emitted | physical impact | same-mode impact | error |')
+    lines.push('| --- | --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- | --- |')
     for (const scenario of project.scenarios) {
       lines.push([
         scenario.id,
-        scenario.delivery ?? '-',
+        scenario.expectedDelivery ?? '-',
+        scenario.delivery ?? scenario.actualMode ?? '-',
         scenario.restoreDelivery?.delivery ?? '-',
+        scenario.repeatDelivery?.delivery ?? '-',
         formatMetric(scenario.totalMs),
         formatMetric(scenario.observedMs),
         formatMetric(scenario.profile?.buildCoreMs),
@@ -1999,6 +2047,7 @@ function renderMarkdown(results: ProjectResult[], summary: WorkspaceHmrReportSum
         scenario.profile?.pendingCount == null ? '-' : String(scenario.profile.pendingCount),
         scenario.profile?.emittedCount == null ? '-' : String(scenario.profile.emittedCount),
         scenario.impact?.map(item => item.path).join('<br>') || '-',
+        scenario.steadyClassicImpact?.map(item => item.path).join('<br>') || '-',
         scenario.error ?? '-',
       ].join(' | ').replace(/^/, '| ').replace(/$/, ' |'))
     }

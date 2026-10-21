@@ -18,10 +18,12 @@ export async function sampleInstallationProcesses(target: ResolvedWechatDevtools
     const samplingStartedAt = new Date().toISOString()
     const deadline = Date.now() + 10_000
     const installationRoot = await fs.realpath(resolveWechatDevtoolsInstallationRoot(target, platform))
-    const { rows: before, paths: initialPaths, afterRows } = await readInitialResourceInventory(deadline)
-    const closure = createResourceInventory({ initial: before, installationRoot, deadline })
-    const { paths, images, imageGaps, finalRows, fallbackBudgetExhausted } = await completeResourceInspection(before, initialPaths, afterRows, deadline, closure.afterInitialKernel)
-    const inventory = await closure.close(finalRows, images)
+    const { before, paths, images, imageGaps, fallbackBudgetExhausted, inventory } = await readInitialResourceInventory(deadline, async ({ rows: before, paths: initialPaths, afterRows }, readPaths) => {
+      const closure = createResourceInventory({ initial: before, installationRoot, deadline, readPaths })
+      const inspection = await completeResourceInspection(before, initialPaths, afterRows, deadline, closure.afterInitialKernel)
+      const inventory = await closure.close(inspection.finalRows, inspection.images)
+      return { before, ...inspection, inventory }
+    })
     const { final } = inventory
     const members = new Map<number, 'installation-image' | 'descendant'>()
     let unclassifiedProcessCount = 0

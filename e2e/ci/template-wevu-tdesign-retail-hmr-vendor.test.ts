@@ -3,7 +3,9 @@ import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 import { startDevProcess } from '../utils/dev-process'
 import { createDevProcessEnv } from '../utils/dev-process-env'
+import { createDevBuildCompletion } from '../utils/devBuildCompletion'
 import { disableProjectCompileHotReload, replaceFileByRename, waitForFileContains } from '../utils/hmr-helpers'
+import { waitForVendorMembersIntact } from '../utils/vendorPublication'
 import { waitForFile } from '../wevu-runtime.utils'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
@@ -17,117 +19,17 @@ const HOME_SOURCE_PATH = path.join(TEMPLATE_ROOT, 'src/pages/home/home.vue')
 const HOME_WXML_PATH = path.join(DIST_ROOT, 'pages/home/home.wxml')
 const HOME_JSON_PATH = path.join(DIST_ROOT, 'pages/home/home.json')
 const INITIAL_RETAIL_BUILD_TIMEOUT_MS = 180_000
+const UPDATE_BUILD_TIMEOUT_MS = 90_000
 const SEARCH_PLACEHOLDER_RE = /placeholder="iphone 13 火热发售中[^"]*"/
 const PAGE_TITLE_RE = /navigationBarTitleText:\s*'[^']*'/
-const REQUIRE_VENDOR_MEMBER_RE = /require\("([^"]*weapp-vendors\/[^"]+\.js)"\)\.([A-Za-z_$][\w$]*)/g
-const VENDOR_MEMBER_RE = /const\s+([A-Za-z_$][\w$]*)\s*=\s*require\("([^"]*weapp-vendors\/[^"]+\.js)"\)/g
-const VENDOR_DESTRUCTURE_RE = /const\s+\{([^}]+)\}\s*=\s*require\("([^"]*weapp-vendors\/[^"]+\.js)"\)/g
 const MINIMAL_TAG_TEXT_RE = /(>\s*)wevu(?:321312)?(\s*<\/t-tag>)/
 
-async function collectDistJsFiles(distRoot = DIST_ROOT) {
-  const files = await fs.readdir(distRoot, { recursive: true })
-  return files
-    .filter((file): file is string => typeof file === 'string' && file.endsWith('.js'))
-    .map(file => path.join(distRoot, file))
-}
-
-async function collectVendorExports(vendorPath: string) {
-  const source = await fs.readFile(vendorPath, 'utf8')
-  return new Set(
-    [...source.matchAll(/Object\.defineProperty\(exports,\s*"([^"]+)"/g)]
-      .map(match => match[1])
-      .filter((name): name is string => Boolean(name)),
-  )
-}
-
-async function collectMissingVendorMembers(jsPath: string, distRoot = DIST_ROOT) {
-  const source = await fs.readFile(jsPath, 'utf8')
-  const missing: string[] = []
-  const vendorVariables = new Map<string, string>()
-
-  for (const match of source.matchAll(VENDOR_MEMBER_RE)) {
-    const [, variableName, request] = match
-    if (variableName && request) {
-      vendorVariables.set(variableName, request)
-    }
+function remainingPublicationBudget(deadline: number) {
+  const remainingMs = deadline - Date.now()
+  if (remainingMs <= 0) {
+    throw new Error('Timed out waiting for template build publication')
   }
-
-  const usedMembers: Array<{ request: string, member: string }> = []
-  for (const match of source.matchAll(REQUIRE_VENDOR_MEMBER_RE)) {
-    const [, request, member] = match
-    if (request && member) {
-      usedMembers.push({ request, member })
-    }
-  }
-  for (const match of source.matchAll(VENDOR_DESTRUCTURE_RE)) {
-    const [, bindings, request] = match
-    if (!bindings || !request) {
-      continue
-    }
-    for (const rawBinding of bindings.split(',')) {
-      const [member] = rawBinding.trim().split(/\s*:\s*/)
-      if (member) {
-        usedMembers.push({ request, member })
-      }
-    }
-  }
-
-  for (const [variableName, request] of vendorVariables) {
-    const memberRe = new RegExp(`\\b${variableName.replaceAll('$', '\\$')}\\.([A-Za-z_$][\\w$]*)`, 'g')
-    for (const match of source.matchAll(memberRe)) {
-      const member = match[1]
-      if (member) {
-        usedMembers.push({ request, member })
-      }
-    }
-  }
-
-  const exportCache = new Map<string, Set<string>>()
-  for (const { request, member } of usedMembers) {
-    const resolved = path.resolve(path.dirname(jsPath), request)
-    if (!(await fs.pathExists(resolved))) {
-      continue
-    }
-    let exports = exportCache.get(resolved)
-    if (!exports) {
-      exports = await collectVendorExports(resolved)
-      exportCache.set(resolved, exports)
-    }
-    if (!exports.has(member)) {
-      missing.push(`${path.relative(distRoot, resolved).replaceAll('\\', '/')}#${member}`)
-    }
-  }
-
-  return [...new Set(missing)].sort()
-}
-
-async function collectMissingVendorMembersByFile(distRoot = DIST_ROOT) {
-  const missingByFile: Record<string, string[]> = {}
-  for (const jsPath of await collectDistJsFiles(distRoot)) {
-    if (jsPath.includes('/weapp-vendors/')) {
-      continue
-    }
-    const missing = await collectMissingVendorMembers(jsPath, distRoot)
-    if (missing.length) {
-      missingByFile[path.relative(distRoot, jsPath).replaceAll('\\', '/')] = missing
-    }
-  }
-  return missingByFile
-}
-
-async function waitForVendorMembersIntact(distRoot = DIST_ROOT, timeoutMs = 90_000) {
-  const start = Date.now()
-  let lastMissing: Record<string, string[]> = {}
-
-  while (Date.now() - start < timeoutMs) {
-    lastMissing = await collectMissingVendorMembersByFile(distRoot)
-    if (Object.keys(lastMissing).length === 0) {
-      return lastMissing
-    }
-    await new Promise(resolve => setTimeout(resolve, 250))
-  }
-
-  throw new Error(`Timed out waiting for vendor members to stay exported: ${JSON.stringify(lastMissing)}`)
+  return remainingMs
 }
 
 function replaceSearchPlaceholder(source: string, marker: string) {
@@ -167,15 +69,17 @@ async function withRetailDevWatch<T>(
   })
 
   try {
+    const deadline = Date.now() + INITIAL_RETAIL_BUILD_TIMEOUT_MS
+    await dev.waitForInitialBuild(remainingPublicationBudget(deadline))
     await dev.waitFor(
-      waitForFile(path.join(DIST_ROOT, 'app.json'), INITIAL_RETAIL_BUILD_TIMEOUT_MS),
+      waitForFile(path.join(DIST_ROOT, 'app.json'), remainingPublicationBudget(deadline)),
       'retail template app.json generated',
     )
     await dev.waitFor(
-      waitForFile(path.join(DIST_ROOT, 'pages/home/home.js'), INITIAL_RETAIL_BUILD_TIMEOUT_MS),
+      waitForFile(path.join(DIST_ROOT, 'pages/home/home.js'), remainingPublicationBudget(deadline)),
       'retail template home.js generated',
     )
-    await dev.waitFor(waitForVendorMembersIntact(), 'initial retail template vendor members')
+    await dev.waitFor(waitForVendorMembersIntact(DIST_ROOT, remainingPublicationBudget(deadline)), 'initial retail template vendor members')
     return await task(dev)
   }
   finally {
@@ -201,15 +105,17 @@ async function withMinimalDevWatch<T>(
   })
 
   try {
+    const deadline = Date.now() + INITIAL_RETAIL_BUILD_TIMEOUT_MS
+    await dev.waitForInitialBuild(remainingPublicationBudget(deadline))
     await dev.waitFor(
-      waitForFile(path.join(MINIMAL_DIST_ROOT, 'app.json'), INITIAL_RETAIL_BUILD_TIMEOUT_MS),
+      waitForFile(path.join(MINIMAL_DIST_ROOT, 'app.json'), remainingPublicationBudget(deadline)),
       'minimal template app.json generated',
     )
     await dev.waitFor(
-      waitForFile(path.join(MINIMAL_DIST_ROOT, 'app.js'), INITIAL_RETAIL_BUILD_TIMEOUT_MS),
+      waitForFile(path.join(MINIMAL_DIST_ROOT, 'app.js'), remainingPublicationBudget(deadline)),
       'minimal template app.js generated',
     )
-    await dev.waitFor(waitForVendorMembersIntact(MINIMAL_DIST_ROOT), 'initial minimal template vendor members')
+    await dev.waitFor(waitForVendorMembersIntact(MINIMAL_DIST_ROOT, remainingPublicationBudget(deadline)), 'initial minimal template vendor members')
     return await task(dev)
   }
   finally {
@@ -236,15 +142,18 @@ describe('retail template HMR keeps wevu vendor exports intact', { concurrent: f
         const runtimeVendor = path.join(MINIMAL_DIST_ROOT, 'weapp-vendors/wevu-runtime.js')
         expect(await fs.pathExists(runtimeVendor)).toBe(true)
         expect(await fs.readFile(path.join(MINIMAL_DIST_ROOT, 'app.js'), 'utf8')).toContain('weapp-vendors/wevu-runtime.js')
+        const deadline = Date.now() + UPDATE_BUILD_TIMEOUT_MS
+        const completion = createDevBuildCompletion(dev, { completed: '小程序已重新构建' })
         await replaceFileByRename(MINIMAL_INDEX_SOURCE_PATH, updatedSource)
+        await completion.wait(remainingPublicationBudget(deadline))
 
         const output = await dev.waitFor(
-          waitForFileContains(MINIMAL_INDEX_WXML_PATH, marker),
+          waitForFileContains(MINIMAL_INDEX_WXML_PATH, marker, remainingPublicationBudget(deadline)),
           'updated minimal template tag text',
         )
         expect(output).toContain(marker)
         expect(await fs.pathExists(runtimeVendor)).toBe(true)
-        expect(await dev.waitFor(waitForVendorMembersIntact(MINIMAL_DIST_ROOT), 'minimal template vendor members after text HMR')).toEqual({})
+        expect(await dev.waitFor(waitForVendorMembersIntact(MINIMAL_DIST_ROOT, remainingPublicationBudget(deadline)), 'minimal template vendor members after text HMR')).toEqual({})
       })
     }
     finally {
@@ -259,14 +168,17 @@ describe('retail template HMR keeps wevu vendor exports intact', { concurrent: f
 
     try {
       await withRetailDevWatch(async (dev) => {
+        const deadline = Date.now() + UPDATE_BUILD_TIMEOUT_MS
+        const completion = createDevBuildCompletion(dev, { completed: '小程序已重新构建' })
         await replaceFileByRename(HOME_SOURCE_PATH, updatedSource)
+        await completion.wait(remainingPublicationBudget(deadline))
 
         const output = await dev.waitFor(
-          waitForFileContains(HOME_WXML_PATH, marker),
+          waitForFileContains(HOME_WXML_PATH, marker, remainingPublicationBudget(deadline)),
           'updated retail home search placeholder',
         )
         expect(output).toContain(marker)
-        expect(await dev.waitFor(waitForVendorMembersIntact(), 'retail template vendor members after placeholder HMR')).toEqual({})
+        expect(await dev.waitFor(waitForVendorMembersIntact(DIST_ROOT, remainingPublicationBudget(deadline)), 'retail template vendor members after placeholder HMR')).toEqual({})
       })
     }
     finally {
@@ -281,14 +193,17 @@ describe('retail template HMR keeps wevu vendor exports intact', { concurrent: f
 
     try {
       await withRetailDevWatch(async (dev) => {
+        const deadline = Date.now() + UPDATE_BUILD_TIMEOUT_MS
+        const completion = createDevBuildCompletion(dev, { completed: '小程序已重新构建' })
         await replaceFileByRename(HOME_SOURCE_PATH, updatedSource)
+        await completion.wait(remainingPublicationBudget(deadline))
 
         const output = await dev.waitFor(
-          waitForFileContains(HOME_JSON_PATH, marker),
+          waitForFileContains(HOME_JSON_PATH, marker, remainingPublicationBudget(deadline)),
           'updated retail home definePageJson metadata',
         )
         expect(output).toContain(marker)
-        expect(await dev.waitFor(waitForVendorMembersIntact(), 'retail template vendor members after metadata HMR')).toEqual({})
+        expect(await dev.waitFor(waitForVendorMembersIntact(DIST_ROOT, remainingPublicationBudget(deadline)), 'retail template vendor members after metadata HMR')).toEqual({})
       })
     }
     finally {

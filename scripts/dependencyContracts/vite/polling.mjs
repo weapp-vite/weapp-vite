@@ -6,12 +6,13 @@ import path from 'node:path'
 import process from 'node:process'
 import { createServer } from 'vite'
 import { bounded, deferred, installNativeInstrumentation } from '../chokidar/support.mjs'
+import { assertPollingFixtureRoot, resolvePollingFixtureRoot } from './pollingFixture.mjs'
 
 /** 通过真实 Vite server 观察两个 owner 和另一个原生副本的 polling 归属。 */
 async function verifyPollingCloseOrder(first) {
-  const root = fs.realpathSync(await mkdtemp(path.join(os.tmpdir(), 'vite-polling-owners-')))
+  const root = resolvePollingFixtureRoot(await mkdtemp(path.join(os.tmpdir(), 'vite-polling-owners-')))
   const file = path.join(root, 'marker.txt')
-  const canonicalRoot = fs.realpathSync(root)
+  const canonicalRoot = resolvePollingFixtureRoot(root)
   const canonicalFile = path.join(canonicalRoot, 'marker.txt')
   const instrumentation = installNativeInstrumentation({ root, platform: 'native' })
   const owners = []
@@ -53,6 +54,7 @@ async function verifyPollingCloseOrder(first) {
     const owner = { name, server, events, observed, ready: () => readied }
     owners.push(owner)
     await bounded(ready.promise, 'real Vite polling ready', 10_000)
+    assertPollingFixtureRoot(server.config.root, canonicalRoot)
     return owner
   }
   async function mutate(value, active, mutation) {
@@ -117,8 +119,8 @@ async function verifyPollingCloseOrder(first) {
         name,
         ready: ready(),
         closed: server.watcher.closed,
-        serverRootMatchesFixture: server.config.root === root,
-        serverRootMatchesCanonicalFixture: server.config.root === canonicalRoot,
+        serverRootMatchesFixture: path.resolve(server.config.root) === root,
+        serverRootMatchesCanonicalFixture: path.resolve(server.config.root) === canonicalRoot,
         options: Object.fromEntries(['usePolling', 'interval', 'binaryInterval', 'persistent', 'atomic', 'awaitWriteFinish'].map(key => [key, server.watcher.options[key]])),
         changes: events.map(changed => ({ fixturePathMatch: changed === file, canonicalPathMatch: changed === canonicalFile })),
         observed,

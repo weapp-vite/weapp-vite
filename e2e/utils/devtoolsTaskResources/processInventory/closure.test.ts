@@ -99,7 +99,7 @@ describe('bounded resource inventory closure', () => {
       verifiedMemberRssBytes: 20 * 1024,
       installationRssBytes: { status: 'unavailable' },
       uninspectedNewProcessCount: 1,
-      newProcesses: [{ pid: 44, classification: 'unclassified', imageSource: 'not-verified' }],
+      newProcesses: [{ pid: 44, classification: 'unclassified', imageSource: 'not-verified', zombie: true, final: { pid: 44, parentPid: 1, started: 'Mon Oct 19 10:00:00 2026', zombie: true }, causes: [{ reason: 'zombie', firstObserved: { round: 1, phase: 'after-fallback' } }] }],
     } })
     expect(mocks.paths).toHaveBeenCalledTimes(1)
     expect(mocks.ps).toHaveBeenCalledTimes(3)
@@ -141,7 +141,7 @@ describe('bounded resource inventory closure', () => {
       inventoryRoundCount: 3,
       verifiedNewForeignProcessCount: 2,
       uninspectedNewProcessCount: 1,
-      newProcesses: expect.arrayContaining([{ pid: 66, parentPid: 1, started: 'Mon Oct 19 10:00:00 2026', firstSeenRound: 3, classification: 'unclassified', imageSource: 'not-verified' }]),
+      newProcesses: expect.arrayContaining([{ pid: 66, parentPid: 1, started: 'Mon Oct 19 10:00:00 2026', zombie: false, firstSeenRound: 3, classification: 'unclassified', imageSource: 'not-verified', final: { pid: 66, parentPid: 1, started: 'Mon Oct 19 10:00:00 2026', zombie: false }, causes: [] }]),
     } })
     expect(mocks.paths.mock.calls.map(call => call[0])).toEqual([[11, 22, 33], [44], [55]])
     expect(mocks.ps).toHaveBeenCalledTimes(7)
