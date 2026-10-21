@@ -102,4 +102,36 @@ describe('issue #1065: third-party compiler runtime', { concurrent: false }, () 
     }
     expect(await readFile(path.join(project, 'provider-events.jsonl'), 'utf8')).toContain('prepare')
   }, 180_000)
+
+  it('delivers dependency updates saved alongside an unchanged script without losing event state', async (context) => {
+    const colors = ['#ff0000', '#0000ff', '#00ff00', '#ff0000']
+    const computed = ['rgb(255, 0, 0)', 'rgb(0, 0, 255)', 'rgb(0, 255, 0)', 'rgb(255, 0, 0)']
+    const dom = createDomAcceptance(context, 'e2e-apps/github-issues/fixtures/issue-1065', colors.map((color, index) => ({
+      id: `mixed-${index}`,
+      route,
+      action: `同时保存脚本注释和 provider 依赖后验证样式 ${color} 与计数保持`,
+      nodes: [
+        { selector: '#provider', attributes: { 'data-provider': 'template-after' }, ...(resolveRuntimeProviderName() === 'devtools' ? { styles: { color: computed[index]! } } : {}) },
+        { selector: '#label', text: 'script-after initial' },
+        { selector: '#increment', text: '1' },
+      ],
+    })))
+    await host!.reLaunch(route)
+    await expect.poll(() => host!.evaluate(() => (globalThis as any).__WEAPP_VITE_STATEFUL_HMR_CLIENT__.getTransportState().initialReady), { timeout: 30_000 }).toBe(true)
+    await (await (await host!.currentPage()).$('#increment'))!.tap()
+    for (const [index, color] of colors.entries()) {
+      if (index) {
+        // 原生图可将两个保存合为 Noop；样式依赖仍须独立交付，脚本运行语义保持一致。
+        await Promise.all([
+          writeFile(path.join(project, 'src/provider.tokens.json'), JSON.stringify({ color })),
+          writeFile(path.join(project, 'src/pages/home/label.ts'), `export const label = 'script-before initial' // provider dependency ${index}\n`),
+        ])
+        await dev!.waitFor(expect.poll(() => readFile(path.join(project, 'dist/pages/home/index.wxss'), 'utf8'), { timeout: 30_000 }).toContain(color), 'mixed provider HMR stylesheet')
+      }
+      if (resolveRuntimeProviderName() === 'devtools') {
+        await expect.poll(async () => (await (await host!.currentPage()).$('#provider'))!.style('color'), { timeout: 30_000 }).toBe(computed[index])
+      }
+      await dom.check(`mixed-${index}`, host!, await host!.currentPage())
+    }
+  }, 180_000)
 })

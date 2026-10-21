@@ -672,12 +672,10 @@ class StatefulHmrSession {
     const updates = batch.updates.filter(item => item.update.type !== 'Noop')
     const output = updates[0]?.update ?? { type: 'Noop' as const }
     files = this.directoryUpdates.consume(files)
-    const dirtyReasonSummary = [...new Set(files.flatMap((file) => {
-      const source = normalizeFsResolvedId(path.isAbsolute(file) ? file : path.resolve(this.server.config.root, file))
-      const reasons = this.sourceDirtyReasons.get(source)?.reasons ?? []
-      this.sourceDirtyReasons.delete(source)
-      return reasons
-    }))]
+    const dirtyReasonsByFile = new Map(files.map(file => [file, this.sourceDirtyReasons.get(file)?.reasons ?? []] as const))
+    for (const file of files) {
+      this.sourceDirtyReasons.delete(file)
+    }
     if (this.resynchronizing) {
       this.snapshotScheduler.request('full', files)
       return false
@@ -685,15 +683,20 @@ class StatefulHmrSession {
     if (this.entryGraphRevision !== this.rebuiltEntryGraphRevision) {
       return false
     }
-    const compilerOnly = files.length > 0 && files.every(file => getCompilerHmrHost(this.ctx).ownsDependency(file)
-      && (isStatefulHmrAssetFile(file) || (!this.emittedSourceIds.has(file) && !this.entryIds.has(file) && !getCompilerHmrHost(this.ctx).isNativeSource(file))))
-    if ((output.type === 'Noop' && !compilerOnly) || files.length === 0) {
-      if (output.type === 'Noop') {
-        const sources = this.nativeScriptInputs.capture(files, file => getCompilerHmrHost(this.ctx).readSource(file))
-        this.clearRestoredNativeScripts(new Map(this.unpersistedNativeScripts), sources)
-      }
+    const compilerHmrHost = getCompilerHmrHost(this.ctx)
+    const isCompilerDependency = (file: string) => compilerHmrHost.ownsDependency(file)
+      && (isStatefulHmrAssetFile(file) || (!this.emittedSourceIds.has(file) && !this.entryIds.has(file) && !compilerHmrHost.isNativeSource(file)))
+    if (output.type === 'Noop') {
+      // 原批次仍负责恢复原生脚本账本，编译器只接管其中实际拥有的依赖。
+      const sources = this.nativeScriptInputs.capture(files, file => compilerHmrHost.readSource(file))
+      this.clearRestoredNativeScripts(new Map(this.unpersistedNativeScripts), sources)
+      files = files.filter(isCompilerDependency)
+    }
+    if (files.length === 0) {
       return false
     }
+    const dirtyReasonSummary = [...new Set(files.flatMap(file => dirtyReasonsByFile.get(file) ?? []))]
+    const compilerOnly = files.every(isCompilerDependency)
     const nativeScriptChanges = new Map(files.flatMap((file) => {
       const change = this.unpersistedNativeScripts.get(file)
       return change ? [[file, change] as const] : []
