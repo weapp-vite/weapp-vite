@@ -22,7 +22,7 @@ function reachesSfcOwner(module: ModuleNode, owners: Set<ModuleNode>) {
 
 /** 只将仍连接到 SFC 注册模块的派生节点交给 Vite，避免删除恢复后旧节点触发额外刷新。 */
 export function collectSfcHmrModules<Module extends object>(
-  state: ScanState,
+  states: readonly ScanState[],
   changedFile: string,
   graph: NonNullable<WebDevServer['moduleGraph']>,
   modules?: Module[],
@@ -30,15 +30,17 @@ export function collectSfcHmrModules<Module extends object>(
   const changed = normalizePath(changedFile)
   const owners = new Set<ModuleNode>()
   const candidates = new Set<ModuleNode>()
-  for (const [filename, result] of state.sfcResults) {
-    if (filename !== changed && !result.meta?.sfcSrcDeps?.some(dependency => normalizePath(dependency) === changed)) {
-      continue
-    }
-    for (const file of [filename, `${filename}.${resolveWebVueSfcStyleLanguage(result, filename)}`]) {
-      for (const module of graph.getModulesByFile(file) ?? []) {
-        candidates.add(module)
-        if (module.id && normalizePath(module.id) === filename) {
-          owners.add(module)
+  for (const state of states) {
+    for (const [filename, result] of state.sfcResults) {
+      if (filename !== changed && !result.meta?.sfcSrcDeps?.some(dependency => normalizePath(dependency) === changed)) {
+        continue
+      }
+      for (const file of [filename, `${filename}.${resolveWebVueSfcStyleLanguage(result, filename)}`]) {
+        for (const module of graph.getModulesByFile(file) ?? []) {
+          candidates.add(module)
+          if (module.id && normalizePath(module.id) === filename) {
+            owners.add(module)
+          }
         }
       }
     }

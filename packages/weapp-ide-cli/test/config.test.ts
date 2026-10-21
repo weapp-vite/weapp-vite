@@ -56,7 +56,9 @@ async function loadConfigModule() {
 
 describe('config helpers', () => {
   beforeEach(() => {
-    vi.stubEnv('WEAPP_IDE_CLI_PATH', '')
+    for (const key of ['WEAPP_IDE_CLI_PATH', 'WEAPP_IDE_DEVTOOLS_CHANNEL', 'WEAPP_IDE_DEVTOOLS_VERSION', 'WEAPP_IDE_REQUIRE_OFFICIAL_LATEST']) {
+      vi.stubEnv(key, undefined)
+    }
     vi.resetModules()
     fsMock.ensureDir.mockReset()
     fsMock.writeJSON.mockReset()

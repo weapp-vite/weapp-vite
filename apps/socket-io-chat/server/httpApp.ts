@@ -2,18 +2,6 @@ import type { ErrorRequestHandler, RequestHandler } from 'express'
 import express from 'express'
 import { createApiRouter } from './routes.js'
 
-export function createHttpApp() {
-  const app = express()
-
-  app.use(corsMiddleware)
-  app.use(express.json())
-  app.use(createApiRouter())
-  app.use(notFoundHandler)
-  app.use(errorHandler)
-
-  return app
-}
-
 const corsMiddleware: RequestHandler = (_request, response, next) => {
   response.setHeader('Access-Control-Allow-Credentials', 'true')
   response.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
@@ -39,4 +27,16 @@ const errorHandler: ErrorRequestHandler = (error, _request, response, _next) => 
   response.status(500).json({
     message: 'Internal server error',
   })
+}
+
+export function createHttpApp() {
+  const app = express()
+
+  app.use(corsMiddleware)
+  app.use(express.json())
+  app.use(createApiRouter())
+  app.use(notFoundHandler)
+  app.use(errorHandler)
+
+  return app
 }

@@ -6,6 +6,8 @@ import path from 'pathe'
 import { createServer } from 'vite'
 import { expect, it, vi } from 'vitest'
 import { weappWebPlugin } from '../../../../packages-runtime/web/src/plugin'
+import { createWebRestoreNotifications } from '../../test/helpers/webRestoreNotifications'
+import { createBarrier as barrier, createWebRestoreScanGate } from '../../test/helpers/webRestoreScanGate'
 import { createAutoRoutesService } from '../runtime/autoRoutesPlugin/service'
 import { createRuntimeState } from '../runtime/runtimeState'
 import { autoRoutes } from './autoRoutes'
@@ -21,18 +23,12 @@ vi.mock('chokidar', () => ({
   },
 }))
 
-function barrier() {
-  let release!: () => void
-  const promise = new Promise<void>((resolve) => {
-    release = resolve
-  })
-  return { promise, release }
-}
-
-it.each(['app-first', 'source-started-first', 'source-published-first'] as const)(
+it.each(['app-first', 'app-scan-in-flight', 'app-first-reimported', 'app-first-add-change-overlap', 'source-started-first', 'source-published-first'] as const)(
   'publishes one restored route generation when %s notifications overlap',
   async (order) => {
     sourceWatchers.length = 0
+    const overlapsCreate = order === 'app-first-add-change-overlap'
+    const overlapsScan = order === 'app-scan-in-flight'
     const root = path.normalize(await realpath(await mkdtemp(path.join(tmpdir(), 'weapp-route-restore-'))))
     const srcRoot = path.join(root, 'src')
     const scriptRoot = path.join(srcRoot, 'pageScripts')
@@ -41,12 +37,18 @@ it.each(['app-first', 'source-started-first', 'source-published-first'] as const
     const pageSource = '<script setup src="@page-scripts/restored.mjs"></script><template><view>{{ message }}</view></template>'
     const sourceStarted = barrier()
     const releaseSource = barrier()
-    let nativeUpdateDone: ReturnType<typeof barrier> | undefined
-    let sourcePublicationDone: ReturnType<typeof barrier> | undefined
+    const createStarted = barrier()
+    const releaseCreate = barrier()
+    const scanGate = createWebRestoreScanGate(restored)
+    const notifications = createWebRestoreNotifications()
+    const sourceNotifications: string[] = []
     const reloads: Array<{ source?: string, pages?: string[] }> = []
     const errors: unknown[] = []
     let blockSourceUpdate = false
+    let blockCreateUpdate = false
     let cachedConfig: { pages: string[] } | undefined
+    // 缓存失效只影响下次解析；发布观察使用 resolver 实际交付的配置。
+    let resolvedConfig: { pages: string[] } | undefined
     let server: ViteDevServer | undefined
     const ctx = {
       runtimeState: createRuntimeState(),
@@ -80,17 +82,13 @@ it.each(['app-first', 'source-started-first', 'source-published-first'] as const
       expect(sourceWatchers).toHaveLength(1)
       const callback = sourceWatchers[0]!.get(event)
       expect(callback).toBeTypeOf('function')
-      const done = barrier()
-      sourcePublicationDone = done
-      callback!(restored)
-      return done.promise
+      return notifications.source(restored, event, () => callback!(restored))
     }
-    const nativeEvent = (event: 'change' | 'unlink') => {
-      const done = barrier()
-      nativeUpdateDone = done
-      server!.watcher.emit(event, restored)
-      return done.promise
-    }
+    const nativeEvent = (event: 'add' | 'change' | 'unlink') => notifications.native(
+      restored,
+      event,
+      () => { server!.watcher.emit(event, restored) },
+    )
     const transformPublishedEntry = async () => {
       const entry = await server!.transformRequest('/@weapp-vite/web/entry')
       await server!.transformRequest('/src/app.vue')
@@ -119,10 +117,13 @@ it.each(['app-first', 'source-started-first', 'source-published-first'] as const
           hmrAcceptCode: 'if (import.meta.hot) { import.meta.hot.accept() }',
         },
         async __resolveAppConfig() {
-          cachedConfig ??= { pages: [...service.getSnapshot().pages] }
-          return cachedConfig
+          const config = cachedConfig ??= { pages: [...service.getSnapshot().pages] }
+          await scanGate.blockScan()
+          resolvedConfig = config
+          return config
         },
       })
+      scanGate.observeHotUpdate(webPlugin)
       server = await createServer({
         root,
         configFile: false,
@@ -131,6 +132,28 @@ it.each(['app-first', 'source-started-first', 'source-published-first'] as const
           config: () => ({ weappVite: { name: 'weapp-vite', runtime: 'web' } }),
           resolveId: id => id === 'virtual:test-runtime' ? '\0test-runtime' : null,
           load: id => id === '\0test-runtime' ? 'export const initializePageRoutes = () => {}' : null,
+          watchChange: overlapsCreate
+            ? {
+                order: 'post',
+                sequential: true,
+                async handler(file, change) {
+                  if (blockCreateUpdate && file === restored && change.event === 'create') {
+                    createStarted.release()
+                    await releaseCreate.promise
+                  }
+                },
+              }
+            : undefined,
+          hotUpdate: overlapsCreate
+            ? {
+                order: 'post',
+                handler(context) {
+                  if (this.environment.name === 'client' && context.file === restored) {
+                    sourceNotifications.push(context.type)
+                  }
+                },
+              }
+            : undefined,
         }],
         optimizeDeps: { noDiscovery: true },
         resolve: { alias: { '@page-scripts': scriptRoot } },
@@ -139,26 +162,20 @@ it.each(['app-first', 'source-started-first', 'source-published-first'] as const
           watch: null,
           hmr: { port: 0 },
           async hotUpdateEnvironments(vite, hmr) {
-            await Promise.all(Object.values(vite.environments).map(hmr))
-            nativeUpdateDone?.release()
-            nativeUpdateDone = undefined
+            await notifications.hotUpdateEnvironments(() => Promise.all(Object.values(vite.environments).map(hmr)))
           },
         },
         logLevel: 'silent',
       })
       const watchChange = server.pluginContainer.watchChange.bind(server.pluginContainer)
-      vi.spyOn(server.pluginContainer, 'watchChange').mockImplementation(async (file, change) => {
-        const publication = file === restored && change.event !== 'update' ? sourcePublicationDone : undefined
-        await watchChange(file, change)
-        if (publication) {
-          sourcePublicationDone = undefined
-          // 宿主在 watchChange 返回后同步提交 reload；下一微任务才读取完整发布结果。
-          queueMicrotask(publication.release)
-        }
-      })
+      vi.spyOn(server.pluginContainer, 'watchChange').mockImplementation((file, change) => notifications.watchChange(
+        file,
+        change,
+        () => watchChange(file, change),
+      ))
       server.environments.client!.hot.send = ((payload: { type?: string, triggeredBy?: string }) => {
         if (payload.type === 'full-reload') {
-          reloads.push({ source: payload.triggeredBy, pages: cachedConfig && [...cachedConfig.pages] })
+          reloads.push({ source: payload.triggeredBy, pages: resolvedConfig && [...resolvedConfig.pages] })
         }
         else if (payload.type === 'error') {
           errors.push(payload)
@@ -174,8 +191,10 @@ it.each(['app-first', 'source-started-first', 'source-published-first'] as const
       expect(service.getSnapshot().pages).toEqual(['pages/home/index'])
       expect((await transformPublishedEntry())?.code).not.toContain('/src/pages/restored/index.vue')
       reloads.length = 0
+      sourceNotifications.length = 0
 
       await writeFile(restored, pageSource)
+      const reimportsPage = order === 'app-first-reimported' || overlapsCreate
       let sourceUpdate: Promise<void> | undefined
       if (order === 'source-started-first') {
         blockSourceUpdate = true
@@ -187,30 +206,67 @@ it.each(['app-first', 'source-started-first', 'source-published-first'] as const
         await sourceEvent('add')
       }
       else {
-        await sourceEvent('add')
+        if (overlapsScan) {
+          scanGate.start()
+        }
+        const publication = sourceEvent('add')
+        if (overlapsScan) {
+          // App 使用恢复路由扫描但尚未提交；此时 source HMR 入队，不能提前采用删除快照。
+          await scanGate.started
+          expect(cachedConfig?.pages).toEqual(['pages/home/index', 'pages/restored/index'])
+          sourceUpdate = nativeEvent('change')
+          await scanGate.publishSource(publication)
+        }
+        await publication
       }
-      // Web 快照完整发布后才放行正在处理的 source update。
+      // App 发布后才放行 source update，两个来源必须消费同一恢复 generation。
       if (order === 'source-started-first') {
         releaseSource.release()
-        await sourceUpdate
       }
-      else if (order === 'app-first') {
+      else if (order === 'app-first' || reimportsPage) {
+        if (reimportsPage) {
+          // 浏览器先恢复入口、App 和路由依赖；页面可能尚未重新请求。
+          expect((await transformPublishedEntry())?.code).toContain('/src/pages/restored/index.vue')
+          await transformRestoredPage()
+        }
+        let createUpdate: Promise<void> | undefined
+        if (overlapsCreate) {
+          // 真实 watcher 可先报 add/change，但 create 的 hotUpdate 晚于 change 的 hotUpdate 完成。
+          // 保留真实 Web watchChange 扫描，只在其后用屏障延迟 create 进入 HMR，不依赖计时。
+          blockCreateUpdate = true
+          createUpdate = nativeEvent('add')
+          await createStarted.promise
+        }
         await nativeEvent('change')
+        if (overlapsCreate) {
+          releaseCreate.release()
+          await createUpdate
+        }
+      }
+      await sourceUpdate
+      if (overlapsScan) {
+        expect(scanGate.stop()).toBe(2)
+      }
+      if (overlapsCreate) {
+        expect(sourceNotifications).toEqual(['update', 'create'])
       }
       expect(errors).toEqual([])
       expect(handleChange.mock.calls.filter(([file, event]) => file === restored && event === 'update')).toHaveLength(1)
       expect(service.getSnapshot().pages).toEqual(['pages/home/index', 'pages/restored/index'])
       expect(reloads).toHaveLength(1)
       expect(reloads.map(reload => reload.source)).toEqual([
-        order === 'source-published-first' ? restored : undefined,
+        order === 'source-published-first' || overlapsScan ? restored : undefined,
       ])
       expect(reloads[0]!.pages).toEqual(['pages/home/index', 'pages/restored/index'])
       expect((await transformPublishedEntry())?.code).toContain('/src/pages/restored/index.vue')
     }
     finally {
       releaseSource.release()
+      releaseCreate.release()
+      scanGate.close()
       handleChange.mockRestore()
       await server?.close()
+      notifications.close()
       await rm(root, { recursive: true, force: true })
     }
   },
