@@ -2,6 +2,10 @@ name: Independent Miniapp Platform
 on:
   workflow_call:
     inputs:
+      verification_topology:
+        required: false
+        type: string
+        default: optimized-v1
       pr_context:
         type: string
         required: true
@@ -36,6 +40,7 @@ jobs:
     needs: pr-context
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      verification_topology: ${{ inputs.verification_topology }}
       checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
       base_sha: ${{ needs.pr-context.outputs.base_sha }}
       head_sha: ${{ needs.pr-context.outputs.head_sha }}
@@ -57,6 +62,7 @@ jobs:
     runs-on: ${{ inputs.runs_on }}
     timeout-minutes: 15
     env:
+      WEAPP_VITE_VERIFICATION_TOPOLOGY: ${{ inputs.verification_topology }}
       BUILD_ARTIFACT_EXPECTED_COMMIT: ${{ needs.pr-context.outputs.checkout_sha }}
       WEAPP_VITE_E2E_EXCLUDE_PROJECTS: ${{ inputs.exclude_projects }}
     steps:
@@ -95,6 +101,7 @@ jobs:
     name: Simulator Browser E2E (${{ inputs.runs_on }} / Node ${{ inputs.node_version }})
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      verification_topology: ${{ inputs.verification_topology }}
       checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
       base_sha: ${{ needs.pr-context.outputs.base_sha }}
       head_sha: ${{ needs.pr-context.outputs.head_sha }}
@@ -120,6 +127,7 @@ jobs:
     name: IDE DOM Headless (${{ inputs.runs_on }} / Node ${{ inputs.node_version }})
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      verification_topology: ${{ inputs.verification_topology }}
       checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
       base_sha: ${{ needs.pr-context.outputs.base_sha }}
       head_sha: ${{ needs.pr-context.outputs.head_sha }}
@@ -148,6 +156,7 @@ jobs:
     name: IDE DOM Acceptance Contracts (${{ inputs.runs_on }} / Node ${{ inputs.node_version }})
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      verification_topology: ${{ inputs.verification_topology }}
       checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
       base_sha: ${{ needs.pr-context.outputs.base_sha }}
       head_sha: ${{ needs.pr-context.outputs.head_sha }}
@@ -188,6 +197,7 @@ jobs:
           - 4
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      verification_topology: ${{ inputs.verification_topology }}
       checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
       base_sha: ${{ needs.pr-context.outputs.base_sha }}
       head_sha: ${{ needs.pr-context.outputs.head_sha }}
@@ -217,6 +227,7 @@ jobs:
     if: inputs.mode == 'full' || inputs.runs_on == 'ubuntu-latest'
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      verification_topology: ${{ inputs.verification_topology }}
       checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
       base_sha: ${{ needs.pr-context.outputs.base_sha }}
       head_sha: ${{ needs.pr-context.outputs.head_sha }}
@@ -248,6 +259,7 @@ jobs:
           - latest
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      verification_topology: ${{ inputs.verification_topology }}
       checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
       base_sha: ${{ needs.pr-context.outputs.base_sha }}
       head_sha: ${{ needs.pr-context.outputs.head_sha }}
@@ -281,6 +293,7 @@ jobs:
     runs-on: ${{ inputs.runs_on }}
     timeout-minutes: 15
     env:
+      WEAPP_VITE_VERIFICATION_TOPOLOGY: ${{ inputs.verification_topology }}
       BUILD_ARTIFACT_EXPECTED_COMMIT: ${{ needs.pr-context.outputs.checkout_sha }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1

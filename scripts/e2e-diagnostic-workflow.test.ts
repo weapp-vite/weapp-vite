@@ -87,6 +87,7 @@ describe('bounded HMR workflow diagnosis', () => {
     expect(job.strategy?.['fail-fast']).toBe(false)
     expect(job.strategy?.matrix).toEqual({ os: ['ubuntu-latest', 'windows-latest', 'macos-latest'] })
     expect(job.with).toEqual({
+      verification_topology: `\${{ inputs.verification_topology }}`,
       checkout_ref: `\${{ needs.pr-context.outputs.checkout_sha }}`,
       base_sha: `\${{ needs.pr-context.outputs.base_sha }}`,
       head_sha: `\${{ needs.pr-context.outputs.head_sha }}`,

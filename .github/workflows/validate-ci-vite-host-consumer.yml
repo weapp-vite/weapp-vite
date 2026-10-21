@@ -2,6 +2,10 @@ name: Validate Vite Host Consumer
 on:
   workflow_call:
     inputs:
+      verification_topology:
+        required: false
+        type: string
+        default: optimized-v1
       pr_context:
         required: true
         type: string
@@ -25,6 +29,7 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 90
     env:
+      WEAPP_VITE_VERIFICATION_TOPOLOGY: ${{ inputs.verification_topology }}
       CHOKIDAR_ORIGINAL_BASELINE_SHA: 80d58727ec11fccfc71f1f06edfc993e9ba264aa
     steps:
       - name: Check out frozen candidate
@@ -107,6 +112,7 @@ jobs:
           - macos-latest
     uses: ./.github/workflows/reusable-consumer-platform.yml
     with:
+      verification_topology: ${{ inputs.verification_topology }}
       pr_context: ${{ inputs.pr_context }}
       runs_on: ${{ matrix.os }}
     secrets: inherit

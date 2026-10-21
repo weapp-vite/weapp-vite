@@ -2,6 +2,10 @@ name: Independent Consumer Platform
 on:
   workflow_call:
     inputs:
+      verification_topology:
+        required: false
+        type: string
+        default: optimized-v1
       pr_context:
         type: string
         required: true
@@ -22,6 +26,7 @@ jobs:
     needs: pr-context
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      verification_topology: ${{ inputs.verification_topology }}
       checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
       base_sha: ${{ needs.pr-context.outputs.base_sha }}
       head_sha: ${{ needs.pr-context.outputs.head_sha }}
@@ -107,6 +112,7 @@ jobs:
             .cache/dashboard-public-types.json
             .cache/web-consumer-diagnostic/wv.json
     env:
+      WEAPP_VITE_VERIFICATION_TOPOLOGY: ${{ inputs.verification_topology }}
       BUILD_ARTIFACT_EXPECTED_COMMIT: ${{ needs.pr-context.outputs.checkout_sha }}
       BUILD_ARTIFACT_EXPECTED_NODE_MAJOR: '24'
       BUILD_ARTIFACT_EXPECTED_SCOPE: packages/weapp-vite,packages-runtime/wevu
@@ -118,6 +124,7 @@ jobs:
       - prepare
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      verification_topology: ${{ inputs.verification_topology }}
       checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
       base_sha: ${{ needs.pr-context.outputs.base_sha }}
       head_sha: ${{ needs.pr-context.outputs.head_sha }}
@@ -149,6 +156,7 @@ jobs:
           - npm
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      verification_topology: ${{ inputs.verification_topology }}
       checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
       base_sha: ${{ needs.pr-context.outputs.base_sha }}
       head_sha: ${{ needs.pr-context.outputs.head_sha }}
@@ -185,6 +193,7 @@ jobs:
           - vite-plus
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      verification_topology: ${{ inputs.verification_topology }}
       checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
       base_sha: ${{ needs.pr-context.outputs.base_sha }}
       head_sha: ${{ needs.pr-context.outputs.head_sha }}
@@ -219,6 +228,7 @@ jobs:
           - vite-plus
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      verification_topology: ${{ inputs.verification_topology }}
       checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
       base_sha: ${{ needs.pr-context.outputs.base_sha }}
       head_sha: ${{ needs.pr-context.outputs.head_sha }}
@@ -261,6 +271,7 @@ jobs:
             profile: classic-watch
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      verification_topology: ${{ inputs.verification_topology }}
       checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
       base_sha: ${{ needs.pr-context.outputs.base_sha }}
       head_sha: ${{ needs.pr-context.outputs.head_sha }}
@@ -297,6 +308,7 @@ jobs:
           - vite-plus
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      verification_topology: ${{ inputs.verification_topology }}
       checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
       base_sha: ${{ needs.pr-context.outputs.base_sha }}
       head_sha: ${{ needs.pr-context.outputs.head_sha }}
@@ -333,6 +345,7 @@ jobs:
           - vite-plus
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      verification_topology: ${{ inputs.verification_topology }}
       checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
       base_sha: ${{ needs.pr-context.outputs.base_sha }}
       head_sha: ${{ needs.pr-context.outputs.head_sha }}
@@ -369,6 +382,7 @@ jobs:
           - vite-plus
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      verification_topology: ${{ inputs.verification_topology }}
       checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
       base_sha: ${{ needs.pr-context.outputs.base_sha }}
       head_sha: ${{ needs.pr-context.outputs.head_sha }}
@@ -405,6 +419,7 @@ jobs:
           - vite-plus
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      verification_topology: ${{ inputs.verification_topology }}
       checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
       base_sha: ${{ needs.pr-context.outputs.base_sha }}
       head_sha: ${{ needs.pr-context.outputs.head_sha }}
@@ -441,6 +456,7 @@ jobs:
           - vite-plus
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      verification_topology: ${{ inputs.verification_topology }}
       checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
       base_sha: ${{ needs.pr-context.outputs.base_sha }}
       head_sha: ${{ needs.pr-context.outputs.head_sha }}
@@ -477,6 +493,7 @@ jobs:
           - vite-plus
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      verification_topology: ${{ inputs.verification_topology }}
       checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
       base_sha: ${{ needs.pr-context.outputs.base_sha }}
       head_sha: ${{ needs.pr-context.outputs.head_sha }}
@@ -513,6 +530,7 @@ jobs:
           - vite-plus
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      verification_topology: ${{ inputs.verification_topology }}
       checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
       base_sha: ${{ needs.pr-context.outputs.base_sha }}
       head_sha: ${{ needs.pr-context.outputs.head_sha }}

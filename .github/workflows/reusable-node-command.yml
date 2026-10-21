@@ -3,6 +3,10 @@ name: Reusable Node Command
 on:
   workflow_call:
     inputs:
+      verification_topology:
+        required: false
+        type: string
+        default: optimized-v1
       runs_on:
         required: true
         type: string
@@ -140,6 +144,7 @@ jobs:
     runs-on: ${{ inputs.runs_on }}
     timeout-minutes: ${{ inputs.timeout_minutes }}
     env:
+      WEAPP_VITE_VERIFICATION_TOPOLOGY: ${{ inputs.verification_topology }}
       TURBO_TOKEN: ${{ inputs.pr_number == '' && secrets.TURBO_TOKEN || '' }}
       TURBO_TEAM: ${{ vars.TURBO_TEAM }}
       BUILD_ARTIFACT_EXPECTED_NODE_MAJOR: ${{ inputs.build_artifact_node_major || (startsWith(inputs.node_version, '22') && '22' || startsWith(inputs.node_version, '26') && '26' || '24') }}
