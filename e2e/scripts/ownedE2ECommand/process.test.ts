@@ -9,6 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createIsolatedMachineLease } from '../../utils/testSupport/machineLease'
 import { runOwnedE2ECommand } from '../ownedE2ECommand'
 import { createShutdownFixture } from './fixture'
+import { OwnedCommandShutdownError } from './shutdown'
 
 const mocks = vi.hoisted(() => ({ cleanup: vi.fn(), scopes: [] as MachineE2EChildScope[], machine: undefined as IsolatedMachineLease | undefined }))
 vi.mock('../../../packages/devtools-runtime/src/lease/machine', async (original) => {
@@ -113,16 +114,32 @@ describe.skipIf(process.platform === 'win32')('real owned command process groups
     const controller = new AbortController()
     mocks.cleanup.mockClear()
     const running = runOwnedE2ECommand(process.execPath, [fixture.leaderFile], { signal: controller.signal })
-    const rejected = scenario === 'orphaned-borrower'
-      ? expect(running).rejects.toMatchObject({ errors: [expect.objectContaining({ message: expect.stringContaining('child is still running') })] })
-      : expect(running).rejects.toThrow('stop could not be confirmed')
+    const rejected = running.catch((error: unknown) => error)
     let state: ShutdownFixtureState | undefined
     try {
       state = await fixture.ready()
       if (scenario === 'orphaned-borrower') {
         controller.abort()
       }
-      await rejected
+      const error = await rejected
+      if (scenario === 'orphaned-borrower') {
+        expect(error).toBeInstanceOf(AggregateError)
+        const { errors, cause } = error as AggregateError
+        expect(errors).toEqual([
+          expect.objectContaining({
+            name: 'OwnedCommandExitError',
+            exitCode: undefined,
+            signal: 'SIGKILL',
+            cause: expect.objectContaining({ failed: true, signal: 'SIGKILL', timedOut: false }),
+          }),
+          expect.objectContaining({ message: expect.stringContaining('child is still running') }),
+        ])
+        expect(cause).toBe(errors[1])
+      }
+      else {
+        expect(error).toBeInstanceOf(OwnedCommandShutdownError)
+        expect((error as Error).message).toContain('stop could not be confirmed')
+      }
       expect(await isRunning(state.workerPid)).toBe(true)
       expect(mocks.cleanup).not.toHaveBeenCalled()
     }
