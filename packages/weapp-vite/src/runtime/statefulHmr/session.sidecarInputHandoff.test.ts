@@ -2,11 +2,11 @@ import type { InlineConfig, Plugin } from 'vite'
 import type { CompilerContext } from '../../context'
 import type { StatefulHmrSnapshot } from './globalStyles'
 import type { StatefulHmrOutputFile } from './outputWriter'
-import { EventEmitter } from 'node:events'
 import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'pathe'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+import { createMockViteWatcher } from '../../../test/helpers/viteWatcher'
 import { createSidecarSourceSpecifier } from '../../moduleGraph/protocol'
 import { createModuleGraphService } from '../../moduleGraph/service'
 import { getCompilerHmrHost } from '../../plugins/compilerPlugin/hmr'
@@ -81,7 +81,7 @@ beforeEach(() => {
       logger: { info: vi.fn(), error: vi.fn() },
     },
     moduleGraph: { getModulesByFile: () => undefined },
-    watcher: Object.assign(new EventEmitter(), { add: vi.fn() }),
+    watcher: createMockViteWatcher(),
     middlewares: { use: vi.fn() },
     httpServer: { address: () => undefined },
     close: async () => {},

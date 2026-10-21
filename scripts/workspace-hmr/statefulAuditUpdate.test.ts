@@ -3,6 +3,50 @@ import { StatefulHmrAuditClient } from './statefulAuditClient'
 import { acknowledgeStatefulTemplateArtifact, waitForStatefulHmrAuditUpdate } from './statefulAuditUpdate'
 
 describe('stateful HMR audit mutation acknowledgement', () => {
+  it('shares the original deadline with fallback readiness and rejects a late ready result', async () => {
+    let now = 0
+    vi.spyOn(Date, 'now').mockImplementation(() => now)
+    try {
+      const request = vi.fn()
+      const signal = new AbortController().signal
+      const isClassicFallback = vi.fn(async (budget: { deadline: number, signal?: AbortSignal }) => {
+        expect(budget).toEqual({ deadline: 50, signal })
+        now = 51
+        return true
+      })
+      await expect(waitForStatefulHmrAuditUpdate({
+        client: new StatefulHmrAuditClient(request),
+        readControl: vi.fn(),
+        isCurrentUpdate: vi.fn(),
+        timeoutMs: 1_000,
+        deadline: 50,
+        signal,
+        isClassicFallback,
+      })).rejects.toThrow('Timed out')
+      expect(request).not.toHaveBeenCalled()
+    }
+    finally {
+      vi.restoreAllMocks()
+    }
+  })
+
+  it('preserves cancellation while waiting for classic readiness', async () => {
+    const cancellation = new AbortController()
+    const failure = new Error('mutation cancelled')
+    await expect(waitForStatefulHmrAuditUpdate({
+      client: new StatefulHmrAuditClient(vi.fn()),
+      readControl: vi.fn(),
+      isCurrentUpdate: vi.fn(),
+      timeoutMs: 1_000,
+      signal: cancellation.signal,
+      isClassicFallback: async ({ signal }) => {
+        expect(signal).toBe(cancellation.signal)
+        cancellation.abort(failure)
+        return true
+      },
+    })).rejects.toBe(failure)
+  })
+
   it('keeps polling after an older batch until the current mutation is emitted', async () => {
     const responses = [
       { type: 'registered' },

@@ -1,6 +1,11 @@
 ---
 title: HMR 与历史 IDE 回归映射
 description: 保留历史 IDE 失败 case 的观测表面与回归入口，区分 HMR 分层验收和完整 IDE 验收。
+keywords:
+  - hmr
+  - ide
+  - classic
+  - 回归测试
 ---
 
 # HMR 与历史 IDE 回归映射

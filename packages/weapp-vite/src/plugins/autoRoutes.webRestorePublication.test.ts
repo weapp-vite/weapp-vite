@@ -254,7 +254,7 @@ it.each(['app-first', 'app-scan-in-flight', 'app-first-reimported', 'app-first-a
       expect(handleChange.mock.calls.filter(([file, event]) => file === restored && event === 'update')).toHaveLength(1)
       expect(service.getSnapshot().pages).toEqual(['pages/home/index', 'pages/restored/index'])
       expect(reloads).toHaveLength(1)
-      expect(reloads.map(reload => reload.source)).toEqual([
+      expect(reloads.map(reload => reload.source === undefined ? undefined : path.normalize(reload.source))).toEqual([
         order === 'source-published-first' || overlapsScan ? restored : undefined,
       ])
       expect(reloads[0]!.pages).toEqual(['pages/home/index', 'pages/restored/index'])

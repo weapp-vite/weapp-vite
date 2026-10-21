@@ -6,6 +6,11 @@ inputs:
     description: Node.js version to use
     required: true
 
+outputs:
+  node-version:
+    description: Actual full Node.js version installed for this job
+    value: ${{ steps.toolchain.outputs.node-version }}
+
 runs:
   using: composite
   steps:
@@ -21,9 +26,11 @@ runs:
         cache: pnpm
         cache-dependency-path: pnpm-lock.yaml
     - name: Freeze actual toolchain identity
+      id: toolchain
       shell: bash
       run: |
         node -e "process.stdout.write('REPOCTL_RELEASE_NODE_VERSION=' + process.version + '\nREPOCTL_RELEASE_PLATFORM=' + process.platform + '\nREPOCTL_RELEASE_ARCH=' + process.arch + '\n')" >> "$GITHUB_ENV"
+        node -e "process.stdout.write('node-version=' + process.versions.node + '\n')" >> "$GITHUB_OUTPUT"
         task_pnpm_version="$(pnpm --version)"
         printf 'REPOCTL_RELEASE_PNPM_VERSION=pnpm@%s\nBUILD_ARTIFACT_PACKAGE_MANAGER=pnpm@%s\n' "$task_pnpm_version" "$task_pnpm_version" >> "$GITHUB_ENV"
     - name: Install dependencies

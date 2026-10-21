@@ -2,11 +2,11 @@ import type { MutableCompilerContext } from '../../context'
 import type { HmrDeliveryCoordinator } from './deliveryCoordinator'
 import type { StatefulHmrTransport } from './transport'
 import type { StatefulHmrViteAdapter } from './viteAdapter'
-import { EventEmitter } from 'node:events'
 import { tmpdir } from 'node:os'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+import { createMockViteWatcher } from '../../../test/helpers/viteWatcher'
 import { logger } from '../../context/shared'
 import { getCompilerHmrHost } from '../../plugins/compilerPlugin/hmr'
 import { createDevBuildWatcher } from '../buildPlugin/devBuildWatcher'
@@ -82,7 +82,7 @@ beforeEach(async () => {
   root = await fs.mkdtemp(path.join(tmpdir(), 'stateful-cleanup-'))
   harness.createServer.mockImplementation(async (inlineConfig = {}) => ({
     config: { inlineConfig, root, publicDir: false, build: {}, server: {}, logger: { error: vi.fn() } },
-    watcher: Object.assign(new EventEmitter(), { add: vi.fn() }),
+    watcher: createMockViteWatcher(),
     middlewares: { use: vi.fn() },
     httpServer: { address: () => undefined },
     listen: harness.listen,

@@ -77,6 +77,7 @@ vi.mock('./probe/scenarios.mjs', () => ({
     { id: 'registered-owner-failure', kind: 'shared' },
     { id: 'public-missing-watch-recovery', kind: 'recovery' },
     { id: 'public-still-exists-watch-error', kind: 'error' },
+    { id: 'polling-host-classic-handoff', kind: 'polling-handoff' },
   ],
   nonApplicableReason: () => undefined,
   async exerciseScenario({ owners, errors, injectedError, recoveryFailure }: {
@@ -287,6 +288,18 @@ it.each(['original', 'foreign'] as const)('清理期间迟到的 %s 错误保留
   assert.equal(result.bodyError.originalInjectedError, true)
   assert.equal(result.publicErrors.length, 2)
   assert.deepEqual(result.publicErrors.map(error => error.originalInjectedError), [true, lateCallback === 'original'])
+  assert.equal(result.cleanup.nativeCleanupConfirmed, true)
+  assert.equal(result.cleanup.deletedFixture, true)
+})
+
+it('polling 宿主 body 通过后仍拒绝清理期间迟到的公开错误', async () => {
+  harness.bodyPass = true
+  harness.lateError = new Error('late polling owner error')
+  const result = await runPublicScenario('polling-host-classic-handoff', consumerRoot)
+  assert.equal(result.status, 'failed')
+  assert.equal(result.bodyError, undefined)
+  assert.equal(result.finalPublicError.code, 'ERR_ASSERTION')
+  assert.equal(result.publicErrors[0].message, String(harness.lateError))
   assert.equal(result.cleanup.nativeCleanupConfirmed, true)
   assert.equal(result.cleanup.deletedFixture, true)
 })

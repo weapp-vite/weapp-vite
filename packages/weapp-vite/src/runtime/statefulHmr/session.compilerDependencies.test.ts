@@ -10,6 +10,7 @@ import { tmpdir } from 'node:os'
 import { WEAPP_VITE_STATEFUL_HMR_GLOBAL_STYLE_BASENAME } from '@weapp-core/constants'
 import path from 'pathe'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createMockViteWatcher } from '../../../test/helpers/viteWatcher'
 import { createModuleGraphService } from '../../moduleGraph/service'
 import { createCompilerDependencyTracker } from '../../plugins/compilerPlugin/dependencies'
 import { compilerSourceId, getCompilerHmrHost } from '../../plugins/compilerPlugin/hmr'
@@ -100,7 +101,7 @@ beforeEach(() => {
       logger: { info: vi.fn(), error: vi.fn() },
     },
     moduleGraph: { getModulesByFile: () => undefined },
-    watcher: Object.assign(new EventEmitter(), { add: vi.fn() }),
+    watcher: createMockViteWatcher(),
     middlewares: { use: vi.fn() },
     httpServer: Object.assign(new EventEmitter(), { address: () => undefined }),
     close: async () => {},

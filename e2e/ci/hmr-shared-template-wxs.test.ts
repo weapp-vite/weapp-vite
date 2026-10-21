@@ -4,6 +4,7 @@ import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { createHmrMarker, PLATFORM_EXT, replaceFileByRename, resolvePlatforms, waitForFileContains } from '../utils/hmr-helpers'
+import { createHmrFailureDiagnostics } from '../utils/hmrFailureDiagnostics'
 import {
   buildOriginalHmrPageWxml,
   buildOriginalHmrVueSource,
@@ -63,6 +64,7 @@ afterEach(async () => {
 
 describe('HMR shared template and wxs dependencies (dev watch)', { concurrent: false }, () => {
   it.each(PLATFORM_LIST)('updates all importers when shared template or wxs changes (%s)', async (platform) => {
+    const diagnostics = await createHmrFailureDiagnostics(`shared-template-wxs-${platform}`)
     await fs.remove(DIST_ROOT)
 
     const originalPageWxml = await fs.readFile(SHARED_HMR_PATHS.hmrPageWxml, 'utf8')
@@ -99,10 +101,13 @@ describe('HMR shared template and wxs dependencies (dev watch)', { concurrent: f
     await fs.writeFile(SHARED_HMR_PATHS.hmrSfcVue, sharedHmrVueSource, 'utf8')
 
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
-      env: createDevProcessEnv(),
+      env: { ...createDevProcessEnv(), ...diagnostics?.env },
       stdio: 'inherit',
     })
 
+    const scriptFiles = ['app.js', 'pages/hmr/index.js', 'pages/hmr-sfc/index.js', 'components/e2e-template-probe/index.js']
+    let stage = 'initial-build'
+    let failed = false
     try {
       await dev.waitForInitialBuild()
       await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 90_000), `${platform} app.json generated`)
@@ -113,13 +118,14 @@ describe('HMR shared template and wxs dependencies (dev watch)', { concurrent: f
       await dev.waitFor(waitForFileContains(vueOutputPath, `card-template.${PLATFORM_EXT[platform].template}`), `${platform} vue importer references shared template`)
       await dev.waitFor(waitForFileContains(wxsOutputPath, initialWxsMarker), `${platform} initial shared wxs`)
 
-      const scriptFiles = ['app.js', 'pages/hmr/index.js', 'pages/hmr-sfc/index.js', 'components/e2e-template-probe/index.js']
       const readScriptMtimes = () => Promise.all(scriptFiles.map(async file => [file, (await fs.stat(path.join(DIST_ROOT, file))).mtimeMs]))
       const scriptMtimes = await readScriptMtimes()
+      await diagnostics?.snapshot('initial-scripts', APP_ROOT, scriptFiles.map(file => `dist/${file}`))
       const rebuildCount = () => dev.getOutput().split('小程序已重新构建').length - 1
       let previousBuildCount = rebuildCount()
 
       const updatedSharedTemplate = buildSharedImportTemplate(updatedTemplateMarker)
+      stage = 'shared-import-template'
       await replaceFileByRename(SHARED_HMR_PATHS.sharedImportTemplate, updatedSharedTemplate)
 
       const updatedSharedTemplateOutput = await dev.waitFor(
@@ -141,10 +147,12 @@ describe('HMR shared template and wxs dependencies (dev watch)', { concurrent: f
       )
       expect(updatedSharedTemplateOutput).toContain(updatedTemplateMarker)
       await expect.poll(rebuildCount, { timeout: 30_000 }).toBeGreaterThan(previousBuildCount)
+      await diagnostics?.snapshot('after-import-scripts', APP_ROOT, scriptFiles.map(file => `dist/${file}`))
       expect(await readScriptMtimes()).toEqual(scriptMtimes)
       previousBuildCount = rebuildCount()
 
       const updatedIncludeTemplate = buildSharedIncludeTemplate(updatedIncludeMarker)
+      stage = 'shared-include-template'
       await replaceFileByRename(SHARED_HMR_PATHS.sharedIncludeTemplate, updatedIncludeTemplate)
 
       const includeOutput = await dev.waitFor(
@@ -166,9 +174,11 @@ describe('HMR shared template and wxs dependencies (dev watch)', { concurrent: f
       )
       expect(includeOutput).toContain(updatedIncludeMarker)
       await expect.poll(rebuildCount, { timeout: 30_000 }).toBeGreaterThan(previousBuildCount)
+      await diagnostics?.snapshot('after-include-scripts', APP_ROOT, scriptFiles.map(file => `dist/${file}`))
       expect(await readScriptMtimes()).toEqual(scriptMtimes)
 
       const updatedWxsSource = buildSharedWxs(updatedWxsMarker)
+      stage = 'shared-wxs'
       await replaceFileByRename(SHARED_HMR_PATHS.sharedWxs, updatedWxsSource)
 
       const wxsOutput = await dev.waitFor(
@@ -190,8 +200,15 @@ describe('HMR shared template and wxs dependencies (dev watch)', { concurrent: f
       )
       expect(wxsOutput).toContain(updatedWxsMarker)
     }
+    catch (error) {
+      failed = true
+      throw error
+    }
     finally {
       await dev.stop(5_000)
+      if (failed) {
+        await diagnostics?.failure(APP_ROOT, dev.getOutput(), { platform, stage })
+      }
       await fs.writeFile(SHARED_HMR_PATHS.hmrPageWxml, originalPageWxml, 'utf8')
       await fs.writeFile(SHARED_HMR_PATHS.hmrSfcVue, originalVueSource, 'utf8')
       await fs.remove(SHARED_HMR_PATHS.sharedDir)

@@ -21,6 +21,7 @@ import {
   registerPageDefinition,
 } from '../host'
 import { resolveMiniProgramModule } from '../runtime/moduleResolution'
+import { reloadPageModuleDefinition } from '../runtime/pageDefinitionReload'
 import { createMiniProgramRuntimeGlobals } from '../runtime/runtimeGlobals'
 import { createWorkerHost } from '../runtime/workerHost'
 import { readBrowserVirtualFile } from './virtualFiles'
@@ -31,10 +32,12 @@ export interface BrowserModuleLoader {
   executeComponentModule: (filePath: string, id: string) => HeadlessComponentDefinition
   executeAppModule: (filePath: string) => HeadlessAppDefinition
   executePageModule: (filePath: string, route: string) => HeadlessPageDefinition
+  reloadPageModule: (filePath: string, route: string) => boolean
   wx: HeadlessWx
 }
 
 interface ModuleCacheEntry {
+  source: string
   componentDefinitions: HeadlessComponentDefinition[]
   exports: Record<string, any>
 }
@@ -139,6 +142,7 @@ export function createBrowserModuleLoader(
     }
 
     const module: ModuleCacheEntry = {
+      source,
       componentDefinitions: [],
       exports: {},
     }
@@ -243,6 +247,17 @@ export function createBrowserModuleLoader(
         throw new Error(`Page() was not registered for route "${route}" while executing ${normalize(filePath)}.`)
       }
       return definition
+    },
+    reloadPageModule(filePath, route) {
+      const resolvedPath = normalize(filePath)
+      return reloadPageModuleDefinition({
+        filePath: resolvedPath,
+        route,
+        source: readBrowserVirtualFile(files, resolvedPath),
+        cache: moduleCache,
+        registries,
+        execute: () => loader.executePageModule(resolvedPath, route),
+      })
     },
     executeComponentModule(filePath, id) {
       const loadedModule = executeModule(filePath, { kind: 'component', route: id })

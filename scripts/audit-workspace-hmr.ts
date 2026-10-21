@@ -1,5 +1,7 @@
 /* eslint-disable ts/no-use-before-define */
+import type { WorkspaceHmrAuditBudget } from './workspace-hmr/auditDeadline'
 import type { WorkspaceHmrBaseline, WorkspaceHmrThresholds } from './workspace-hmr/baseline'
+import type { ClassicFallbackDeliveryEvidence } from './workspace-hmr/classicFallback'
 import type { DynamicReactDeliveryEvidence, DynamicReactMutation } from './workspace-hmr/dynamicReactDelivery'
 import type { DistFileSnapshot } from './workspace-hmr/output'
 import type { StatefulHmrAuditEvent } from './workspace-hmr/statefulAuditUpdate'
@@ -20,6 +22,7 @@ import { createDevProcessEnv } from '../e2e/utils/dev-process-env'
 import { readEmittedStylesheet, waitForEmittedStylesheet } from '../e2e/utils/emittedStylesheet'
 import { replaceFileByRename } from '../e2e/utils/hmr-helpers'
 import { assertBenchmarkPrepareCompleted, assertBenchmarkTypeScriptPrepared, createBenchmarkPrepareArgs, discoverBenchmarkTypeScriptProjects } from './benchmarkCheckoutPreparation/typescript'
+import { createEmittedScriptReader } from './benchmarkTemplatesHmr/emittedOutput'
 import { isExcludedE2EProject } from './e2eProjectScope'
 import {
   createWorkspaceHmrBaseline,
@@ -27,6 +30,7 @@ import {
   parseThresholdOverrides,
   renderThresholdMarkdown,
 } from './workspace-hmr/baseline'
+import { WorkspaceHmrClassicFallback } from './workspace-hmr/classicFallback'
 import { collectWorkspaceHmrCleanupErrors, isWorkspaceHmrScenarioRetryable } from './workspace-hmr/cleanup'
 import { prepareDynamicReactMutation } from './workspace-hmr/dynamicReactDelivery'
 import { listFiles, snapshotDist, waitForInitialDistSnapshot, waitForStableDistSnapshot } from './workspace-hmr/output'
@@ -142,9 +146,10 @@ interface ScenarioResult {
   impact?: ImpactFile[]
   error?: string
   cleanupErrors?: string[]
-  delivery?: DynamicReactDeliveryEvidence['delivery']
-  deliveryEvidence?: DynamicReactDeliveryEvidence
-  restoreDelivery?: DynamicReactDeliveryEvidence
+  delivery?: WorkspaceHmrDeliveryEvidence['delivery']
+  deliveryEvidence?: WorkspaceHmrDeliveryEvidence
+  restoreDelivery?: WorkspaceHmrDeliveryEvidence
+  actualMode?: 'stateful-experimental' | 'classic'
   diagnostics?: {
     transport: StatefulHmrAuditEvent[]
     output: { path: string, exists: boolean, sha256?: string, bytes?: number, containsMarker?: boolean }
@@ -162,9 +167,14 @@ interface ProjectResult {
   startupMs?: number
   thresholds?: WorkspaceHmrThresholds
   scenarios: ScenarioResult[]
-  warmup?: { scenario: string, update?: DynamicReactDeliveryEvidence, restore?: DynamicReactDeliveryEvidence }
+  warmup?: { scenario: string, update?: WorkspaceHmrDeliveryEvidence, restore?: WorkspaceHmrDeliveryEvidence }
+  initialMode?: 'stateful-experimental' | 'classic'
+  actualMode?: 'stateful-experimental' | 'classic'
+  fallbackReason?: string
   error?: string
 }
+
+type WorkspaceHmrDeliveryEvidence = DynamicReactDeliveryEvidence | ClassicFallbackDeliveryEvidence
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(__dirname, '..')
@@ -220,6 +230,7 @@ const SKIPPED_PROJECT_IDS = new Set([
   'e2e-apps/script-setup-macros-js-with-defaults-invalid',
 ])
 const statefulHmrAuditClients = new Map<string, StatefulHmrAuditClient>()
+const classicFallbacks = new Map<string, WorkspaceHmrClassicFallback>()
 const WORKSPACE_HMR_BASELINE_PROJECT_ALIASES = new Map<string, string>([
   ['e2e-apps/template-wevu-tdesign-regression', 'templates/weapp-vite-wevu-tailwindcss-tdesign-template'],
 ])
@@ -594,6 +605,8 @@ async function auditProject(project: ProjectCase): Promise<ProjectResult> {
     stderr: 'pipe',
     all: true,
   })
+  const fallback = new WorkspaceHmrClassicFallback(distRoot, () => dev.getOutput())
+  classicFallbacks.set(project.root, fallback)
 
   try {
     const startupStart = performance.now()
@@ -603,6 +616,7 @@ async function auditProject(project: ProjectCase): Promise<ProjectResult> {
       distRoot,
       '__weapp_vite_hmr/control.js',
     )))
+    result.initialMode = project.hmrRuntime === 'stateful' ? 'stateful-experimental' : 'classic'
     scenarios = await discoverScenarios(project, true)
     selectedScenarios = maxScenariosPerProject
       ? scenarios.slice(0, maxScenariosPerProject)
@@ -652,6 +666,8 @@ async function auditProject(project: ProjectCase): Promise<ProjectResult> {
       : message)
   }
   finally {
+    result.actualMode = fallback.actualMode ?? result.initialMode
+    result.fallbackReason = fallback.fallbackReason
     const cleanupErrors = await collectWorkspaceHmrCleanupErrors([
       { label: 'Failed to stop dev process', run: () => dev.stop(5_000) },
       ...[...backups].map(([filePath, source]) => ({
@@ -664,6 +680,7 @@ async function auditProject(project: ProjectCase): Promise<ProjectResult> {
       result.error = [result.error, ...cleanupErrors.map(error => sanitizeAcceptanceText(error))].filter(Boolean).join('\n')
     }
     statefulHmrAuditClients.delete(project.root)
+    classicFallbacks.delete(project.root)
   }
 
   return result
@@ -685,8 +702,8 @@ async function warmupProjectHmr(
 
   const mutation = await prepareScenarioMutation(project, scenario)
   const profileLineCount = await countJsonlLines(profilePath)
-  let delivery: DynamicReactDeliveryEvidence | undefined
-  let restore: DynamicReactDeliveryEvidence | undefined
+  let delivery: WorkspaceHmrDeliveryEvidence | undefined
+  let restore: WorkspaceHmrDeliveryEvidence | undefined
   try {
     await writeScenarioSource(scenario.sourcePath, updated)
     delivery = await waitForScenarioMutation(project, scenario, mutation, expectedMarker, true)
@@ -765,6 +782,7 @@ async function auditScenario(
       result.deliveryEvidence = delivery
       result.output = formatProjectPath(path.join(project.distRoot, delivery.output))
     }
+    result.actualMode = classicFallbacks.get(project.root)?.actualMode ?? (project.hmrRuntime === 'stateful' ? 'stateful-experimental' : 'classic')
     await acknowledgeScenarioArtifact(project, scenario)
     await sleep(settleMs)
     const after = await snapshotDist(distRoot)
@@ -978,6 +996,9 @@ function resolveOutputPath(project: ProjectCase, sourcePath: string, outputExt: 
 }
 
 async function prepareScenarioMutation(project: ProjectCase, scenario: ScenarioCase) {
+  if (await settleClassicFallback(project)) {
+    return undefined
+  }
   if (scenario.dynamicReactEntry) {
     if (scenario.id !== 'react-template' || !scenario.statefulClient) {
       throw new Error('Full-reload delivery is restricted to explicit stateful dynamic React scenarios.')
@@ -989,6 +1010,7 @@ async function prepareScenarioMutation(project: ProjectCase, scenario: ScenarioC
       distRoot: project.distRoot,
       entryFile: scenario.dynamicReactEntry,
       timeoutMs: scenarioTimeoutMs,
+      classicFallback: (marker, contains, budget) => waitForClassicScenarioMutation(project, scenario, marker, contains, budget),
     })
   }
   if (scenario.statefulClient || scenario.statefulTemplate) {
@@ -1005,39 +1027,63 @@ async function waitForScenarioMutation(
   onEvent?: (event: StatefulHmrAuditEvent) => void,
   onObserved?: () => void,
 ) {
+  const budget = { deadline: Date.now() + scenarioTimeoutMs, signal: AbortSignal.timeout(scenarioTimeoutMs) }
+  const remaining = () => Math.max(0, budget.deadline - Date.now())
+  const classic = await waitForClassicScenarioMutation(project, scenario, marker, contains, budget)
+  if (classic) {
+    onEvent?.({ type: 'classic' })
+    onObserved?.()
+    return classic
+  }
   if (scenario.dynamicReactEntry) {
     if (!mutation) {
       throw new Error('Dynamic React mutation is missing its pre-mutation build identity.')
     }
-    const delivery = await mutation.waitForDelivery(marker, contains, onEvent)
+    const delivery = await mutation.waitForDelivery(marker, contains, onEvent, budget)
     onObserved?.()
     return delivery
   }
   if (scenario.statefulClient) {
-    await publishStatefulHmrUpdate(project, scenario.outputPath, marker, contains, onEvent)
+    await publishStatefulHmrUpdate(project, scenario.outputPath, marker, contains, budget, onEvent)
+  }
+  const switched = await waitForClassicScenarioMutation(project, scenario, marker, contains, budget)
+  if (switched) {
+    onObserved?.()
+    return switched
   }
   await measureStatefulTemplateArtifact({
-    client: scenario.statefulTemplate ? await prepareStatefulHmrAuditClient(project) : undefined,
+    client: scenario.statefulTemplate ? statefulHmrAuditClients.get(project.root) : undefined,
     readControl: async signal => parseStatefulHmrControlSource(await readFile(path.join(project.distRoot, '__weapp_vite_hmr/control.js'), { encoding: 'utf8', signal })),
     isCurrentUpdate: async (signal) => {
       const output = await readFile(scenario.outputPath, { encoding: 'utf8', signal })
       return output.length > 0 && output.includes(marker) === contains
     },
-    timeoutMs: scenarioTimeoutMs,
+    timeoutMs: remaining(),
+    deadline: budget.deadline,
+    signal: budget.signal,
+    isClassicFallback: signal => settleClassicFallback(project, { ...budget, signal }),
     onEvent,
     measure: async (signal) => {
       if (contains) {
-        await waitForFileContains(scenario.outputPath, marker, scenarioTimeoutMs, signal)
+        await waitForFileContains(scenario.outputPath, marker, remaining(), signal)
       }
       else {
-        await waitForFileNotContains(scenario.outputPath, marker, scenarioTimeoutMs, signal, scenario.statefulTemplate)
+        await waitForFileNotContains(scenario.outputPath, marker, remaining(), signal, scenario.statefulTemplate)
       }
       onObserved?.()
     },
   })
+  const fallbackDelivery = await waitForClassicScenarioMutation(project, scenario, marker, contains, budget)
+  if (fallbackDelivery) {
+    onObserved?.()
+  }
+  return fallbackDelivery
 }
 
 async function acknowledgeScenarioArtifact(project: ProjectCase, scenario: ScenarioCase) {
+  if (classicFallbacks.get(project.root)?.actualMode === 'classic') {
+    return
+  }
   if (scenario.statefulClient && !scenario.statefulTemplate) {
     await statefulHmrAuditClients.get(project.root)!.acknowledgePublished(scenarioTimeoutMs)
   }
@@ -1064,16 +1110,47 @@ async function publishStatefulHmrUpdate(
   outputPath: string,
   marker: string,
   contains: boolean,
+  budget: WorkspaceHmrAuditBudget,
   onEvent?: (event: StatefulHmrAuditEvent) => void,
 ) {
   const controlPath = path.join(project.distRoot, '__weapp_vite_hmr/control.js')
-  const client = await prepareStatefulHmrAuditClient(project)
+  const client = statefulHmrAuditClients.get(project.root)!
   await waitForStatefulHmrAuditUpdate({
     client,
     readControl: async () => parseStatefulHmrControlSource(await readFile(controlPath, 'utf8')),
     isCurrentUpdate: async () => (await readFile(outputPath, 'utf8')).includes(marker) === contains,
-    timeoutMs: scenarioTimeoutMs,
+    timeoutMs: Math.max(0, budget.deadline - Date.now()),
+    deadline: budget.deadline,
+    signal: budget.signal,
     onEvent,
+    isClassicFallback: current => settleClassicFallback(project, current),
+  })
+}
+
+async function settleClassicFallback(project: ProjectCase, budget: WorkspaceHmrAuditBudget = { deadline: Date.now() + scenarioTimeoutMs }) {
+  const fallback = classicFallbacks.get(project.root)
+  return fallback?.requested ? await fallback.settle(budget) : false
+}
+
+async function waitForClassicScenarioMutation(project: ProjectCase, scenario: ScenarioCase, marker: string, contains: boolean, budget: WorkspaceHmrAuditBudget) {
+  const fallback = classicFallbacks.get(project.root)
+  if (!fallback?.requested) {
+    return undefined
+  }
+  const output = scenario.dynamicReactEntry ?? (scenario.statefulClient
+    ? resolveHmrScriptOutputPath({ ...project, hmrRuntime: 'standard' }, scenario.sourcePath)
+    : scenario.outputPath)
+  const readOutput = path.extname(output) === '.js'
+    ? createEmittedScriptReader(output, project.distRoot)
+    : isStylesheetOutput(output)
+      ? () => readEmittedStylesheet(output)
+      : () => readFile(output, 'utf8')
+  return await fallback.waitForDelivery({
+    readOutput,
+    output: normalizePath(path.relative(project.distRoot, output)),
+    marker,
+    contains,
+    ...budget,
   })
 }
 
@@ -1895,6 +1972,9 @@ function renderMarkdown(results: ProjectResult[], summary: WorkspaceHmrReportSum
   }
   for (const project of results) {
     lines.push(`## ${project.id}`, '')
+    if (project.initialMode) {
+      lines.push(`- HMR mode: ${project.initialMode} → ${project.actualMode ?? project.initialMode}; fallback reason: ${project.fallbackReason ?? '-'}`, '')
+    }
     if (project.error) {
       lines.push(`- project error: ${project.error}`, '')
       continue

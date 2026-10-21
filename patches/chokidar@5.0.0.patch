@@ -42,7 +42,7 @@ index 520571aa4f7339e1a992ebb378c74aa253173f56..084dce7eeaa00f61a3533a92227fbf8c
 +    _addToNodeFs(path: string, initialAdd: boolean, priorWh: WatchHelper | undefined, depth: number, target?: string, isActive?: () => boolean): Promise<string | false | undefined>;
  }
 diff --git a/handler.js b/handler.js
-index 6b12880bfcdae186dd738a9397b53ebb5849f0ac..7888dafae22796d2a147514931677ac12d8efdd7 100644
+index 6b12880bfcdae186dd738a9397b53ebb5849f0ac..5f341e1f76836da018edc8ac3202169d5ddc5701 100644
 --- a/handler.js
 +++ b/handler.js
 @@ -26,6 +26,15 @@ export const EVENTS = {
@@ -91,7 +91,7 @@ index 6b12880bfcdae186dd738a9397b53ebb5849f0ac..7888dafae22796d2a147514931677ac1
          // emit based on events occurring for files from a directory's watcher in
          // case the file's watcher misses it (and rely on throttling to de-dupe)
          if (evPath && path !== evPath) {
-@@ -136,13 +156,65 @@ function createFsWatchInstance(path, options, listener, errHandler, emitRaw) {
+@@ -136,14 +156,66 @@ function createFsWatchInstance(path, options, listener, errHandler, emitRaw) {
   * Helper for passing fs_watch event data to a collection of listeners
   * @param fullPath absolute path bound to fs_watch instance
   */
@@ -106,8 +106,8 @@ index 6b12880bfcdae186dd738a9397b53ebb5849f0ac..7888dafae22796d2a147514931677ac1
 -        listener(val1, val2, val3);
 +        if (isCurrent())
 +            listener(val1, val2, val3);
-+    });
-+};
+     });
+ };
 +/** 为同一个共享容器取得下一代原生句柄，发布前的回调保持失活。 */
 +const createPersistentBinding = (path, fullPath, options, cont, acquireErrorHandler, stats) => {
 +    const binding = {
@@ -154,11 +154,12 @@ index 6b12880bfcdae186dd738a9397b53ebb5849f0ac..7888dafae22796d2a147514931677ac1
 +        else {
 +            broadcastError(error);
 +        }
-     });
++    });
 +    return binding;
- };
++};
  /**
   * Instantiates the fs_watch interface or binds listeners
+  * to an existing one covering the same file system entry
 @@ -152,15 +224,21 @@ const fsWatchBroadcast = (fullPath, listenerType, val1, val2, val3) => {
   * @param options to be passed to fs_watch
   * @param handlers container for event listener functions
@@ -185,7 +186,7 @@ index 6b12880bfcdae186dd738a9397b53ebb5849f0ac..7888dafae22796d2a147514931677ac1
      }
      if (cont) {
          addAndConvert(cont, KEY_LISTENERS, listener);
-@@ -168,56 +246,78 @@ const setFsWatchListener = (path, fullPath, options, handlers) => {
+@@ -168,61 +246,113 @@ const setFsWatchListener = (path, fullPath, options, handlers) => {
          addAndConvert(cont, KEY_RAW, rawEmitter);
      }
      else {
@@ -297,7 +298,131 @@ index 6b12880bfcdae186dd738a9397b53ebb5849f0ac..7888dafae22796d2a147514931677ac1
  };
  // fs_watchFile helpers
  // object to hold per-process fs_watchFile instances
-@@ -302,15 +402,17 @@ export class NodeFsHandler {
+ // (may be shared across chokidar FSWatcher instances)
+ const FsWatchFileInstances = new Map();
++// polling 升级只替换本库的原生订阅，共享 owner 始终保留同一个容器。
++const createFsWatchFileBinding = (path, fullPath, options, cont) => {
++    const binding = { closed: false, watcher: undefined, close: EMPTY_FN };
++    const listener = (curr, prev) => {
++        if (binding.closed || FsWatchFileInstances.get(fullPath) !== cont || cont.binding !== binding)
++            return;
++        const rawEmitters = [...cont.rawEmitters];
++        const listeners = [...cont.listeners];
++        // 已接纳的通知可跨同容器升级完成，但不能交给已退出或下一容器的 owner。
++        rawEmitters.forEach((rawEmitter) => {
++            if (FsWatchFileInstances.get(fullPath) === cont && cont.rawEmitters.has(rawEmitter))
++                rawEmitter(EV.CHANGE, fullPath, { curr, prev });
++        });
++        const currmtime = curr.mtimeMs;
++        if (curr.size !== prev.size || currmtime > prev.mtimeMs || currmtime === 0) {
++            listeners.forEach((listener) => {
++                if (FsWatchFileInstances.get(fullPath) === cont && cont.listeners.has(listener))
++                    listener(path, curr);
++            });
++        }
++    };
++    binding.watcher = watchFile(fullPath, options, listener);
++    binding.close = () => {
++        if (binding.closed)
++            return;
++        binding.closed = true;
++        unwatchFile(fullPath, listener);
++    };
++    return binding;
++};
+ /**
+  * Instantiates the fs_watchFile interface or binds listeners
+  * to an existing one covering the same file system entry
+@@ -235,52 +365,62 @@ const FsWatchFileInstances = new Map();
+ const setFsWatchFileListener = (path, fullPath, options, handlers) => {
+     const { listener, rawEmitter } = handlers;
+     let cont = FsWatchFileInstances.get(fullPath);
+-    // let listeners = new Set();
+-    // let rawEmitters = new Set();
+     const copts = cont && cont.options;
+     if (copts && (copts.persistent < options.persistent || copts.interval > options.interval)) {
+-        // "Upgrade" the watcher to persistence or a quicker interval.
+-        // This creates some unlikely edge case issues if the user mixes
+-        // settings in a very weird way, but solving for those cases
+-        // doesn't seem worthwhile for the added complexity.
+-        // listeners = cont.listeners;
+-        // rawEmitters = cont.rawEmitters;
+-        unwatchFile(fullPath);
+-        cont = undefined;
++        const merged = {
++            ...options,
++            persistent: copts.persistent || options.persistent,
++            interval: Math.min(copts.interval, options.interval),
++        };
++        cont.binding.close();
++        try {
++            cont.binding = createFsWatchFileBinding(path, fullPath, merged, cont);
++        }
++        catch (error) {
++            // 升级失败仍恢复原 owner，且仅重新取得本库精确订阅。
++            try {
++                cont.binding = createFsWatchFileBinding(path, fullPath, copts, cont);
++                cont.watcher = cont.binding.watcher;
++            }
++            catch (restoreError) {
++                throw new AggregateError([error, restoreError], 'polling watcher 升级与恢复均失败');
++            }
++            throw error;
++        }
++        cont.watcher = cont.binding.watcher;
++        cont.options = merged;
+     }
+     if (cont) {
+         addAndConvert(cont, KEY_LISTENERS, listener);
+         addAndConvert(cont, KEY_RAW, rawEmitter);
+     }
+     else {
+-        // TODO
+-        // listeners.add(listener);
+-        // rawEmitters.add(rawEmitter);
+         cont = {
+-            listeners: listener,
+-            rawEmitters: rawEmitter,
++            listeners: new Set([listener]),
++            rawEmitters: new Set([rawEmitter]),
+             options,
+-            watcher: watchFile(fullPath, options, (curr, prev) => {
+-                foreach(cont.rawEmitters, (rawEmitter) => {
+-                    rawEmitter(EV.CHANGE, fullPath, { curr, prev });
+-                });
+-                const currmtime = curr.mtimeMs;
+-                if (curr.size !== prev.size || currmtime > prev.mtimeMs || currmtime === 0) {
+-                    foreach(cont.listeners, (listener) => listener(path, curr));
+-                }
+-            }),
++            watcher: undefined,
++            binding: undefined,
+         };
++        cont.binding = createFsWatchFileBinding(path, fullPath, options, cont);
++        cont.watcher = cont.binding.watcher;
+         FsWatchFileInstances.set(fullPath, cont);
+     }
+     // const index = cont.listeners.indexOf(listener);
+     // Removes this instance's listeners and closes the underlying fs_watchFile
+     // instance if there are no more listeners left.
++    let active = true;
+     return () => {
++        if (!active)
++            return;
++        active = false;
+         delFromSet(cont, KEY_LISTENERS, listener);
+         delFromSet(cont, KEY_RAW, rawEmitter);
+         if (isEmptySet(cont.listeners)) {
+-            FsWatchFileInstances.delete(fullPath);
+-            unwatchFile(fullPath);
++            if (FsWatchFileInstances.get(fullPath) === cont)
++                FsWatchFileInstances.delete(fullPath);
++            cont.binding.close();
++            cont.binding = undefined;
+             cont.options = cont.watcher = undefined;
+             Object.freeze(cont);
+         }
+@@ -302,15 +442,17 @@ export class NodeFsHandler {
       * @param listener on fs change
       * @returns closer for the watcher instance
       */
@@ -318,7 +443,7 @@ index 6b12880bfcdae186dd738a9397b53ebb5849f0ac..7888dafae22796d2a147514931677ac1
          };
          if (!listener)
              listener = EMPTY_FN;
-@@ -324,11 +426,19 @@ export class NodeFsHandler {
+@@ -324,11 +466,19 @@ export class NodeFsHandler {
              });
          }
          else {
@@ -339,7 +464,7 @@ index 6b12880bfcdae186dd738a9397b53ebb5849f0ac..7888dafae22796d2a147514931677ac1
          }
          return closer;
      }
-@@ -342,62 +452,133 @@ export class NodeFsHandler {
+@@ -342,62 +492,133 @@ export class NodeFsHandler {
          }
          const dirname = sp.dirname(file);
          const basename = sp.basename(file);
@@ -437,20 +562,20 @@ index 6b12880bfcdae186dd738a9397b53ebb5849f0ac..7888dafae22796d2a147514931677ac1
                      }
 -                    if ((isMacos || isLinux || isFreeBSD) && prevStats.ino !== newStats.ino) {
 -                        this.fsw._closeFile(path);
-+                    if (isCurrentBinding(binding))
-                         prevStats = newStats;
+-                        prevStats = newStats;
 -                        const closer = this._watchWithNodeFs(file, listener);
 -                        if (closer)
 -                            this.fsw._addPathCloser(path, closer);
 -                    }
 -                    else {
--                        prevStats = newStats;
++                    if (isCurrentBinding(binding))
+                         prevStats = newStats;
 -                    }
--                }
+                 }
 -                catch (error) {
 -                    // Fix issues where mtime is null but file is still present
 -                    this.fsw._remove(dirname, basename);
-                 }
+-                }
 -                // add is about to be emitted if file not already tracked in parent
 -            }
 -            else if (parent.has(basename)) {
@@ -507,7 +632,7 @@ index 6b12880bfcdae186dd738a9397b53ebb5849f0ac..7888dafae22796d2a147514931677ac1
      }
      /**
       * Handle symlinks encountered while reading a dir.
-@@ -407,7 +588,7 @@ export class NodeFsHandler {
+@@ -407,7 +628,7 @@ export class NodeFsHandler {
       * @param item basename of this item
       * @returns true if no more processing is needed for this entry.
       */
@@ -516,7 +641,7 @@ index 6b12880bfcdae186dd738a9397b53ebb5849f0ac..7888dafae22796d2a147514931677ac1
          if (this.fsw.closed) {
              return;
          }
-@@ -426,6 +607,10 @@ export class NodeFsHandler {
+@@ -426,6 +647,10 @@ export class NodeFsHandler {
              }
              if (this.fsw.closed)
                  return;
@@ -527,7 +652,7 @@ index 6b12880bfcdae186dd738a9397b53ebb5849f0ac..7888dafae22796d2a147514931677ac1
              if (dir.has(item)) {
                  if (this.fsw._symlinkPaths.get(full) !== linkPath) {
                      this.fsw._symlinkPaths.set(full, linkPath);
-@@ -446,38 +631,79 @@ export class NodeFsHandler {
+@@ -446,38 +671,79 @@ export class NodeFsHandler {
          }
          this.fsw._symlinkPaths.set(full, true);
      }
@@ -621,7 +746,7 @@ index 6b12880bfcdae186dd738a9397b53ebb5849f0ac..7888dafae22796d2a147514931677ac1
              // Files that present in current directory snapshot
              // but absent in previous are added to watch list and
              // emit `add` event.
-@@ -485,37 +711,32 @@ export class NodeFsHandler {
+@@ -485,37 +751,32 @@ export class NodeFsHandler {
                  this.fsw._incrReadyCount();
                  // ensure relativeness of path is preserved in case of watcher reuse
                  path = sp.join(dir, sp.relative(dir, path));
@@ -680,7 +805,7 @@ index 6b12880bfcdae186dd738a9397b53ebb5849f0ac..7888dafae22796d2a147514931677ac1
      }
      /**
       * Read directory to add / remove files from `@watched` list and re-read it on change.
-@@ -526,34 +747,65 @@ export class NodeFsHandler {
+@@ -526,34 +787,65 @@ export class NodeFsHandler {
       * @param target child path targeted for watch
       * @param wh Common watch helpers for this path
       * @param realpath
@@ -767,7 +892,7 @@ index 6b12880bfcdae186dd738a9397b53ebb5849f0ac..7888dafae22796d2a147514931677ac1
      }
      /**
       * Handle added file, directory, or glob pattern.
-@@ -564,9 +816,17 @@ export class NodeFsHandler {
+@@ -564,9 +856,17 @@ export class NodeFsHandler {
       * @param depth Child path actually targeted for watch
       * @param target Child path actually targeted for watch
       */
@@ -787,7 +912,7 @@ index 6b12880bfcdae186dd738a9397b53ebb5849f0ac..7888dafae22796d2a147514931677ac1
              ready();
              return false;
          }
-@@ -576,11 +836,13 @@ export class NodeFsHandler {
+@@ -576,11 +876,13 @@ export class NodeFsHandler {
              wh.filterDir = (entry) => priorWh.filterDir(entry);
          }
          // evaluate what is at the path we're being asked to watch
@@ -802,7 +927,7 @@ index 6b12880bfcdae186dd738a9397b53ebb5849f0ac..7888dafae22796d2a147514931677ac1
                  ready();
                  return false;
              }
-@@ -591,9 +853,18 @@ export class NodeFsHandler {
+@@ -591,9 +893,18 @@ export class NodeFsHandler {
                  const targetPath = follow ? await fsrealpath(path) : path;
                  if (this.fsw.closed)
                      return;
@@ -822,7 +947,7 @@ index 6b12880bfcdae186dd738a9397b53ebb5849f0ac..7888dafae22796d2a147514931677ac1
                  // preserve this symlink's target path
                  if (absPath !== targetPath && targetPath !== undefined) {
                      this.fsw._symlinkPaths.set(absPath, targetPath);
-@@ -603,12 +874,21 @@ export class NodeFsHandler {
+@@ -603,12 +914,21 @@ export class NodeFsHandler {
                  const targetPath = follow ? await fsrealpath(path) : path;
                  if (this.fsw.closed)
                      return;
@@ -847,7 +972,7 @@ index 6b12880bfcdae186dd738a9397b53ebb5849f0ac..7888dafae22796d2a147514931677ac1
                  // preserve this symlink's target path
                  if (targetPath !== undefined) {
                      this.fsw._symlinkPaths.set(sp.resolve(path), targetPath);
-@@ -623,9 +903,33 @@ export class NodeFsHandler {
+@@ -623,9 +943,33 @@ export class NodeFsHandler {
              return false;
          }
          catch (error) {

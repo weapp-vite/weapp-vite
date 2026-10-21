@@ -9,7 +9,6 @@ import type { StatefulHmrInitialPublicAssets, StatefulHmrOutputFile } from './ou
 import type { StatefulHmrProfileHandoff } from './profile'
 import type { StatefulHmrDevEngineBatch, StatefulHmrDevEngineUpdate } from './viteAdapter'
 import { createHash } from 'node:crypto'
-import { EventEmitter } from 'node:events'
 import { realpathSync } from 'node:fs'
 import { mkdir, mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -18,10 +17,12 @@ import { runInNewContext } from 'node:vm'
 import { WEAPP_VITE_STATEFUL_HMR_GLOBAL_STYLE_BASENAME } from '@weapp-core/constants'
 import path from 'pathe'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createMockViteWatcher } from '../../../test/helpers/viteWatcher'
 import { analyzeGlassEaselBundle, createGlassEaselAnalyzeResult } from '../../analyze/glassEasel'
 import { refreshGlassEaselNativeScripts } from '../../analyze/glassEasel/nativeScripts'
 import { createLogicalEntryId, createSidecarSourceSpecifier } from '../../moduleGraph/protocol'
 import { CompilerHmrResyncError, compilerSourceId, getCompilerHmrHost } from '../../plugins/compilerPlugin/hmr'
+import { beginWxmlDependencies } from '../../wxml/processing/dependencies'
 import { createDevBuildWatcher } from '../buildPlugin/devBuildWatcher'
 import { getHmrRuntimeSession } from '../hmrRuntimeSession'
 import { createRuntimeState } from '../runtimeState'
@@ -467,9 +468,48 @@ describe('stateful snapshot output transactions', () => {
     expect(harness.fullBuild).not.toHaveBeenCalled()
   })
 
-  it('hands a native app JSON change to classic without publishing a stateful snapshot', async () => {
-    const session = await start()
+  it.each(['transform', 'validate'] as const)('keeps registered %s JSON dependencies recoverable without converting validation errors to classic', async (stage) => {
+    const file = path.join(root, `${stage}-rules.json`)
+    const session = await start(snapshot('red'), [], {}, new Map(), undefined, (ctx) => {
+      const dependencies = beginWxmlDependencies(ctx as CompilerContext, 'main', false, stage)
+      dependencies.template(`${route}.wxml`)(file)
+      dependencies.commit()
+    })
+    const events = vi.fn()
+    session.events.watcher.on('event', events)
+    const failure = new SyntaxError(`${stage} rule rejected`)
+    session.rebuild.mockRejectedValueOnce(failure)
+    harness.writeOutput.mockClear()
+
+    session.sourceChange(file)
+    expect(harness.callbacks!.onPatch([file], { type: 'Noop' })).toBe(false)
+    const rejected = expect(session.whenSettled()).rejects.toBe(failure)
+    await vi.advanceTimersByTimeAsync(100)
+    await rejected
+    expect(events).toHaveBeenCalledWith(expect.objectContaining({ code: 'ERROR', error: failure }))
+    expect(session.classic).not.toHaveBeenCalled()
+    expect(session.runtime.fallback).toBeUndefined()
+    expect(harness.writeOutput).not.toHaveBeenCalled()
+
+    session.sourceChange(file)
+    const recovered = session.whenSettled()
+    await vi.advanceTimersByTimeAsync(100)
+    await expect(recovered).resolves.toBeUndefined()
+    expect(session.rebuild).toHaveBeenCalledTimes(2)
+    expect(writtenAssets().findLast(asset => asset.fileName === styleFile)?.source).toContain('blue')
+    expect(events).toHaveBeenCalledWith(expect.objectContaining({ code: 'END' }))
+    expect(session.classic).not.toHaveBeenCalled()
+  })
+
+  it.each([false, true])('hands native app JSON metadata to classic even when it is also a template input (%s)', async (templateDependency) => {
     const file = path.join(root, 'src/app.json')
+    const session = await start(snapshot('red'), [], {}, new Map(), undefined, (ctx) => {
+      if (templateDependency) {
+        const dependencies = beginWxmlDependencies(ctx as CompilerContext, 'main', false)
+        dependencies.template(`${route}.wxml`)(file)
+        dependencies.commit()
+      }
+    })
     const delta = vi.spyOn(StatefulHmrTransport.prototype, 'addDelta')
     harness.writeOutput.mockClear()
     session.sourceChange(file, 'update', ['entry-json-only:1'])
@@ -780,7 +820,7 @@ describe('stateful snapshot output transactions', () => {
           logger: { info: vi.fn(), error: vi.fn() },
         },
         moduleGraph: { getModulesByFile: () => undefined },
-        watcher: Object.assign(new EventEmitter(), { add: vi.fn() }),
+        watcher: createMockViteWatcher(),
         middlewares: { use: vi.fn() },
         httpServer: { address: () => undefined },
         close: harness.closeServer,

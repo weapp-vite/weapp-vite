@@ -66,6 +66,9 @@ Release 无论成功或失败均尝试保存 `npm-publish-summary-<run_attempt>`
   文件 owner closer，在同一共享容器内更换原生句柄，保留其他 owner 的订阅与 closer。
 - 公开监听路径在初始化期间消失时，先登记父目录 fallback 的就绪槽，再结算原路径；
   `ready` 只有在父目录原生监听器生效后发布，递归扫描子项仍由其扫描完成就绪结算。
+- polling 间隔或持久性升级保留同一共享容器，只精确替换本库的原生 listener；旧代通知、
+  重复关闭和任一 owner 退出不能取消幸存 owner、独立原生 listener 或另一项目的监听。升级取得失败时，
+  先恢复既有 owner 的原订阅并抛出原错误；恢复也失败时同时保留两项错误。
 
 `weapp-vite` 将修补后的 Chokidar 与 `readdirp@5.1.1` 打包到 JavaScript 产物，
 使消费发布包时也使用该实现；类型声明继续引用依赖的公开类型。完整 MIT 许可证随包保存在
@@ -96,3 +99,14 @@ Windows 正恢复及原始 tarball 变红必须由真实 Windows 验证；其他
 只有上游发布版本覆盖上述生命周期合同，且移除补丁后的跨平台合同和发布产物回归均通过时，
 才可移除补丁与配套打包策略，并同步检查第三方软件声明。补丁涉及的上游发行文件原本超过
 300 行；保留发行结构能让差分直接对应上游，便于审查和升级，因此不为本地补丁拆分模块。
+
+
+## Vite 内置 polling 副本
+
+`vite@8.3.4.patch` 同步修正其发行文件内置 Chokidar 的 polling listener 归属与升级失败恢复。
+`scripts/dependencyContracts/vite/polling.mjs` 通过真实 Vite server 验证两个 owner、独立原生 listener、
+两种关闭顺序及精确释放，不依赖内置 helper 的局部名称。
+
+这份仓库补丁不会自动进入普通 npm 消费者的外部 Vite。产品宿主重启先等待旧编译会话和精确旧 watcher
+完整关闭，再进入 Vite 的新配置准备；发布消费合同使用未打补丁的 npm Vite 独立验证这一交接约束。
+不能把本机依赖合同通过视为用户已安装补丁。

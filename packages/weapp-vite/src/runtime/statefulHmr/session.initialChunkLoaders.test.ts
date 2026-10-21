@@ -2,11 +2,11 @@ import type { InlineConfig } from 'vite'
 import type { MutableCompilerContext } from '../../context'
 import type { StatefulHmrOutputFile } from './outputWriter'
 import type { StatefulHmrViteAdapter } from './viteAdapter'
-import { EventEmitter } from 'node:events'
 import { tmpdir } from 'node:os'
 import { runInNewContext } from 'node:vm'
 import path from 'pathe'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createMockViteWatcher } from '../../../test/helpers/viteWatcher'
 import { createDevBuildWatcher } from '../buildPlugin/devBuildWatcher'
 import { createRuntimeState } from '../runtimeState'
 import { createScanService } from '../scanPlugin/service'
@@ -73,7 +73,7 @@ describe('stateful session initial chunk package boundaries', () => {
           server: {},
           logger: { info: vi.fn(), error: vi.fn() },
         },
-        watcher: Object.assign(new EventEmitter(), { add: vi.fn() }),
+        watcher: createMockViteWatcher(),
         middlewares: { use: vi.fn() },
         httpServer: { address: () => undefined },
         close: vi.fn(async () => {}),

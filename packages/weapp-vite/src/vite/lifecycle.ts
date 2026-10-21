@@ -81,6 +81,14 @@ export function bindHostLifecycle(server: ViteDevServer, closeSession: () => Pro
   const nativeRestart = server.restart.bind(server)
   const generation = getDevServerCloseRecord(server)
   const nativeClose = generation.close
+  const hostWatcher = server.watcher
+  const nativeWatcherClose = hostWatcher?.close.bind(hostWatcher)
+  let watcherCloseTask: Promise<void> | undefined
+  const closeHostWatcher = () => watcherCloseTask ??= Promise.resolve().then(() => nativeWatcherClose?.()).then(() => {})
+  if (hostWatcher) {
+    // 原生重启随后仍会关闭旧宿主；本代精确资源入口复用同一关闭结果。
+    hostWatcher.close = closeHostWatcher
+  }
   const scope = getDevShutdownScope()
   // Vite 在赋值 _restartPromise 前已创建替换宿主，不能用其私有字段识别父重启。
   // 只接收本次原生重启传入的私有配置，新的插件实例也能接续同一条宿主链。
@@ -167,6 +175,11 @@ export function bindHostLifecycle(server: ViteDevServer, closeSession: () => Pro
       try {
         retired = true
         await closeSession()
+        if (closeTask || scope?.stopping) {
+          return
+        }
+        // Vite 先创建新宿主再关闭旧宿主；提前释放本代 watcher，避免迟到清理取消新代订阅。
+        await closeHostWatcher()
         if (closeTask || scope?.stopping) {
           return
         }

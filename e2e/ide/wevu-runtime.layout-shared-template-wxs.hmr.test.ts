@@ -9,8 +9,11 @@ import { createDomAcceptance } from '../utils/domAcceptance'
 import { createHmrMarker, replaceFileByRename, waitForFileContains } from '../utils/hmr-helpers'
 import { captureHmrProbeFailure } from '../utils/hmrProbeFailureDiagnostics'
 import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
+import { createNativeHmrPublication } from '../utils/nativeHmrPublication'
+import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import { APP_ROOT, CLI_PATH, DIST_ROOT, waitForFile, waitForVendorFileContains } from '../wevu-runtime.utils'
 import { CLASSIC_WXS_RELOAD_CHECKPOINT, waitForClassicWxsReload } from './wevuRuntimeDom/classicWxs'
+import { observeHeadlessCurrentTemplate } from './wevuRuntimeDom/headlessTemplateObservation'
 
 const DEFAULT_LAYOUT_WXML = path.join(APP_ROOT, 'src/layouts/default/index.wxml')
 const ADMIN_LAYOUT_WXML = path.join(APP_ROOT, 'src/layouts/admin/index.wxml')
@@ -150,6 +153,7 @@ async function waitForStorageMarker(miniProgram: any, storageKey: string, expect
     expected,
     files: {
       distRoot: DIST_ROOT,
+      projectPath: APP_ROOT,
       relativePaths: ['shared-layout-hmr/layout-template.wxml', 'shared-layout-hmr/layout-include.wxml', 'shared-layout-hmr/layout-helper.wxs'],
     },
   })
@@ -174,6 +178,7 @@ async function waitForLayoutSharedMarkers(
     wxs?: string
   },
 ) {
+  await observeHeadlessCurrentTemplate(miniProgram)
   if (markers.template) {
     await waitForStorageMarker(miniProgram, LAYOUT_SHARED_TEMPLATE_STORAGE_KEY, markers.template)
   }
@@ -367,6 +372,15 @@ describe('wevu runtime layout shared template/wxs hmr (ide)', { concurrent: fals
       const updatedWxs = buildSharedWxs(updatedWxsMarker)
       await replaceFileByRename(SHARED_WXS, updatedWxs)
       await waitForFileContainsWithRetry(sharedWxsOutput, updatedWxsMarker, SHARED_WXS, updatedWxs)
+      if (resolveRuntimeProviderName() === 'headless') {
+        // companion 只证明 classic 新产物重新求值；真实 IDE 分支独立等待自动 AppService 刷新。
+        const publication = createNativeHmrPublication(APP_ROOT, sharedDev, 'classic')
+        await publication.assertClassicRuntime(miniProgram)
+        await miniProgram.close()
+        sharedMiniProgram = null
+        miniProgram = await getSharedMiniProgram()
+        await publication.assertClassicRuntime(miniProgram)
+      }
       // classic 的全量刷新会丢弃 admin 选择；先验收新页面的默认状态，再进行新的交互。
       await dom.check(CLASSIC_WXS_RELOAD_CHECKPOINT.id, miniProgram, await waitForClassicWxsReload(miniProgram))
       page = await miniProgram.reLaunch('/pages/layouts/index')

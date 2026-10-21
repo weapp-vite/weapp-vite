@@ -13,6 +13,16 @@ interface StatefulHmrAuditResponse {
 
 type StatefulHmrAuditRequest = typeof fetch
 
+class StatefulHmrAuditRequestError extends Error {
+  constructor(action: string, readonly status: number) {
+    super(`Stateful HMR audit client ${action} failed with HTTP ${status}.`)
+  }
+}
+
+export function isStatefulHmrAuditRetirementError(error: unknown) {
+  return error instanceof StatefulHmrAuditRequestError && error.status === 410
+}
+
 export class StatefulHmrAuditClient {
   private control?: StatefulHmrAuditControl
   private registered = false
@@ -96,7 +106,7 @@ export class StatefulHmrAuditClient {
     })
     signal?.throwIfAborted()
     if (!response.ok) {
-      throw new Error(`Stateful HMR audit client ${action} failed with HTTP ${response.status}.`)
+      throw new StatefulHmrAuditRequestError(action, response.status)
     }
     const body = await response.json() as StatefulHmrAuditResponse
     signal?.throwIfAborted()

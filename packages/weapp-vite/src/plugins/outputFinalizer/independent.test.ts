@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { createRuntimeState } from '../../runtime/runtimeState'
-import { collectIndependentOutputFileNames, flushIndependentOutputs } from './independent'
+import { captureIndependentOutputFileNames, collectIndependentOutputFileNames, flushIndependentOutputs } from './independent'
 
 function createContext() {
   return {
@@ -19,6 +19,19 @@ describe('output finalizer independent outputs', () => {
     })
 
     expect(collectIndependentOutputFileNames(ctx)).toEqual(['pkg/pages/index.json'])
+  })
+
+  it('excludes removed packages before freezing the publication generation', () => {
+    const ctx = createContext()
+    ctx.scanService = { independentSubPackageMap: new Map() }
+    ctx.runtimeState.build.independent.watchFiles.set('removed', new Set(['removed/index.js']))
+    ctx.runtimeState.build.independent.outputs.set('removed', {
+      output: [{ type: 'asset', fileName: 'removed/index.js', names: [], originalFileNames: [], source: 'Page({})' }],
+    })
+
+    expect(captureIndependentOutputFileNames(ctx)).toEqual([])
+    expect(ctx.runtimeState.build.independent.watchFiles.has('removed')).toBe(false)
+    expect(ctx.runtimeState.build.independent.outputs.has('removed')).toBe(false)
   })
 
   it('emits completed child chunks and assets once with available provenance', async () => {

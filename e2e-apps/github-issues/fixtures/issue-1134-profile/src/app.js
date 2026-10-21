@@ -1,5 +1,5 @@
-import appConfig from './app.json'
-import plainConfig from './pages/plain/index.json'
+const appConfig = require('./app.json')
+const plainConfig = require('./pages/plain/index.json')
 
 App({
   fixtureConfig: {

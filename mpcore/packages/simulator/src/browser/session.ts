@@ -40,6 +40,7 @@ import { hasPendingComponentConstruction } from '../runtime/componentInstance/co
 import { detachComponentRelations } from '../runtime/componentInstance/relations'
 import { resolveNativeComponentSelection } from '../runtime/componentInstance/selection'
 import { createPackageAssetReader } from '../runtime/packageAsset'
+import { resolvePageDefinitionReloadRoute } from '../runtime/pageDefinitionReload'
 import { createPageInstance } from '../runtime/pageInstance'
 import { runInitialPageLifecycles } from '../runtime/pageLifecycle'
 import { HeadlessRouteEvents } from '../runtime/routeEvents'
@@ -454,6 +455,14 @@ export class BrowserHeadlessSession {
   getCurrentPages() {
     this.assertActive()
     return this.pages.slice()
+  }
+
+  /** 显式重载已变更的页面 entry，保留 App 与依赖缓存；调用者随后自行导航。 */
+  reloadPageDefinition(route: string): boolean {
+    this.assertActive()
+    const record = resolvePageDefinitionReloadRoute(this.project, route)
+    const filePath = join(this.project.miniprogramRootPath, `${record.resourcePath ?? record.route}.js`)
+    return this.moduleLoader.reloadPageModule(filePath, record.route)
   }
 
   getCurrentPageNavigationBarTitle() {

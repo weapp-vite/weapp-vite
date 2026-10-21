@@ -3,6 +3,7 @@ import { mkdir, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
 import { bounded } from './native.mjs'
+import { pollingHostHandoff } from './polling.mjs'
 import { assertOutput, closeOwner, openPublicOwner } from './public.mjs'
 import { mutateAndAssertOutputs } from './publication.mjs'
 import { recoveryScenarioId } from './recoveryFailure.mjs'
@@ -14,6 +15,7 @@ export const scenarios = [
   { id: 'public-non-windows-missing-watch-error', kind: 'error', missing: true, exclude: 'win32' },
   { id: 'shared-test-first', kind: 'shared', first: 'artifact' },
   { id: 'shared-host-first', kind: 'shared', first: 'host' },
+  { id: 'polling-host-classic-handoff', kind: 'polling-handoff', requested: 'stateful-experimental', polling: true },
 ]
 
 export function nonApplicableReason(scenario, platform) {
@@ -111,7 +113,10 @@ async function recovery(ctx) {
 }
 
 export async function exerciseScenario(ctx) {
-  if (ctx.scenario.kind === 'shared') {
+  if (ctx.scenario.kind === 'polling-handoff') {
+    await pollingHostHandoff(ctx)
+  }
+  else if (ctx.scenario.kind === 'shared') {
     await shared(ctx)
   }
   else if (ctx.scenario.kind === 'recovery') {

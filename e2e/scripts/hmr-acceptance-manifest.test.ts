@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest'
 import { isExcludedE2EProject } from '../../scripts/e2eProjectScope'
 import { readPlannedTaskCases } from './domAcceptanceReport/taskCases'
 import { getIdeExhaustiveTasks, getSuiteTasks } from './e2e-suite-manifest'
-import { HMR_ACCEPTANCE_BUILD_TESTS, HMR_ACCEPTANCE_CAPABILITIES, HMR_ACCEPTANCE_SCENARIOS, HMR_ACCEPTANCE_STAGES, hmrAcceptanceRuntimeFiles } from './hmr-acceptance-manifest'
+import { HMR_ACCEPTANCE_BUILD_TESTS, HMR_ACCEPTANCE_CAPABILITIES, HMR_ACCEPTANCE_SCENARIOS, HMR_ACCEPTANCE_STAGES, hmrAcceptanceRuntimeFiles, uniqueHmrBuildTests } from './hmr-acceptance-manifest'
 import { HMR_GUARD_ALL_TESTS } from './hmr-guard-manifest'
 import { HMR_ACCEPTANCE_CAPABILITY_COVERAGE } from './hmrAcceptance/capabilities'
 import { HMR_HISTORICAL_IDE_FAILURES } from './hmrAcceptance/history'
@@ -82,6 +82,12 @@ describe('HMR semantic acceptance inventory', () => {
     const tasks = await getSuiteTasks('hmr-build')
     expect(tasks.map(task => task.label)).toEqual(files)
     expect(tasks.every(task => task.env?.WEAPP_VITE_E2E_TARGET_FILE === task.label)).toBe(true)
+  })
+
+  it('deduplicates mixed Windows and POSIX separators before freezing build tasks', () => {
+    const native = path.win32.resolve('C:/fixture', 'e2e/ci/hmr-platform-fallback.test.ts')
+    const normalized = native.replaceAll('\\', '/')
+    expect(uniqueHmrBuildTests([native, normalized])).toEqual([normalized])
   })
 
   it('keeps the two excluded UI projects outside every required HMR task', async () => {
@@ -195,9 +201,14 @@ describe('HMR semantic acceptance inventory', () => {
     for (const capabilityId of ['config-json', 'native-registration', 'entry-topology', 'compiler-provider', 'runtime-contract']) {
       expect(HMR_ACCEPTANCE_CAPABILITY_COVERAGE.find(item => item.capabilityId === capabilityId)!.runtime).toBe('planned')
     }
-    for (const capabilityId of ['engine-full-reload', 'patch-shape', 'skyline']) {
+    for (const capabilityId of ['engine-full-reload', 'skyline']) {
       expect(HMR_ACCEPTANCE_CAPABILITY_COVERAGE.find(item => item.capabilityId === capabilityId)).toMatchObject({ runtime: 'planned', runtimeScenarios: ['additional-wechat-capability-boundaries'] })
     }
+    expect(HMR_ACCEPTANCE_CAPABILITY_COVERAGE.find(item => item.capabilityId === 'patch-shape')).toMatchObject({
+      runtime: 'planned',
+      build: ['e2e/ci/hmr-issue-1015-external-css-vars.test.ts'],
+      runtimeScenarios: ['additional-wechat-capability-boundaries', 'native-css-and-tailwind'],
+    })
     expect(HMR_ACCEPTANCE_CAPABILITY_COVERAGE.find(item => item.capabilityId === 'platform')).toMatchObject({ runtime: 'pending', runtimeScenarios: [], runtimeApplicability: { target: 'non-wechat', requiredBuildTests: ['e2e/ci/hmr-platform-fallback.test.ts'] } })
   })
 
@@ -230,6 +241,19 @@ describe('HMR semantic acceptance inventory', () => {
     expect(HMR_ACCEPTANCE_SCENARIOS.find(item => item.id === 'tailwind-template-registration-and-local-priority')).toMatchObject({
       expectations: ['stateful', 'classic-fallback'],
       capabilityIds: ['script-patch', 'visual-assets', 'native-registration'],
+    })
+  })
+
+  it.each([['ide-hmr', 'devtools'], ['ide-hmr-headless', 'headless']] as const)('keeps both CSS modes and the schema fallback companion in %s', async (suite, provider) => {
+    const task = (await getSuiteTasks(suite)).find(task => task.label === 'ide/issue-1015-css-hmr.runtime.test.ts')!
+    const cases = await readPlannedTaskCases(task, provider)
+    expect(cases).toHaveLength(2)
+    for (const runtime of ['classic', 'stateful-experimental']) {
+      expect(cases.some(item => item.name.startsWith(`issue #1015 external CSS HMR: ${runtime} > `))).toBe(true)
+    }
+    expect(HMR_ACCEPTANCE_SCENARIOS.find(item => item.id === 'native-css-and-tailwind')).toMatchObject({
+      expectations: ['stateful', 'classic', 'classic-fallback'],
+      capabilityIds: ['script-patch', 'visual-assets', 'patch-shape'],
     })
   })
 

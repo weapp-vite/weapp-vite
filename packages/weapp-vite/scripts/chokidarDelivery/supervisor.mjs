@@ -9,9 +9,12 @@ import { MANAGED_PROJECT_JOURNAL_ENV } from '../../../weapp-ide-cli/src/index.ts
 import { preparePublicWorkerScope } from './validation.mjs'
 
 /** 非 IDE 子进程仅继承机器能力票据，不继承真实 IDE journal 或源码加载别名。 */
-export function ordinaryEnvironment(scopeEnvironment = {}, inheritedEnvironment = process.env) {
+export function ordinaryEnvironment(scopeEnvironment = {}, inheritedEnvironment = process.env, { polling = false } = {}) {
   assert.ok(typeof MANAGED_PROJECT_JOURNAL_ENV === 'string' && MANAGED_PROJECT_JOURNAL_ENV)
-  const environment = { ...inheritedEnvironment, ...scopeEnvironment, CHOKIDAR_USEPOLLING: 'false' }
+  const environment = { ...inheritedEnvironment, ...scopeEnvironment, CHOKIDAR_USEPOLLING: polling ? 'true' : 'false' }
+  if (polling) {
+    environment.CHOKIDAR_INTERVAL = '100'
+  }
   delete environment[MANAGED_PROJECT_JOURNAL_ENV]
   delete environment.NODE_OPTIONS
   delete environment.NODE_PATH
@@ -22,7 +25,7 @@ export function ordinaryEnvironment(scopeEnvironment = {}, inheritedEnvironment 
 export async function runPublicWorker({ scenario, consumerRoot, resultFile, lease, repositoryRoot, signal, variant = 'candidate' }) {
   const cleanupKey = JSON.stringify({ domain: 'chokidar-delivery', variant, scenario: scenario.id, consumerRoot, resultFile, ownerPid: process.pid })
   const { scope, execution: running } = await preparePublicWorkerScope({ lease, cleanupKey, signal, start: scope => new Promise((resolve) => {
-    const environment = ordinaryEnvironment(scope.environment)
+    const environment = ordinaryEnvironment(scope.environment, process.env, scenario)
     // 当前 Node 的绝对可执行文件不经过 shell，也不涉及 Windows 的 .cmd 解析。
     const child = spawn(process.execPath, ['--import', 'tsx', fileURLToPath(new URL('./worker.mjs', import.meta.url)), scenario.id, consumerRoot, resultFile], {
       cwd: repositoryRoot,

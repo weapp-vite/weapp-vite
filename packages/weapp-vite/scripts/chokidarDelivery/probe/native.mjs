@@ -19,10 +19,15 @@ export async function bounded(promise, label, timeoutMs = 30_000) {
 /** 只观测 fixture 精确原生句柄；注入限定为一个目标目录的一次 acquisition。 */
 export function instrumentNative(root, injection, trace) {
   const original = fs.watch
+  const originalWatchFile = fs.watchFile
+  const originalUnwatchFile = fs.unwatchFile
+  const pollingHandles = []
+  const pollingReleases = []
   const handles = []
   const attempts = []
   const restoreEvents = []
   let injected = 0
+  let pollingSequence = 0
   const absolute = file => path.resolve(file instanceof URL ? fileURLToPath(file) : String(file))
   const relative = file => path.relative(root, file).replaceAll('\\', '/')
   fs.watch = function (filename, ...args) {
@@ -81,14 +86,45 @@ export function instrumentNative(root, injection, trace) {
     handles.push(record)
     return native
   }
+  fs.watchFile = function (filename, ...args) {
+    const file = absolute(filename)
+    const label = relative(file)
+    const native = originalWatchFile.call(this, filename, ...args)
+    if (label.startsWith('../') || path.isAbsolute(label)) {
+      return native
+    }
+    const listener = args.findLast(value => typeof value === 'function')
+    let resolveStop
+    const stopped = new Promise((resolve) => {
+      resolveStop = resolve
+    })
+    const record = { file, path: label, listener, native, acquiredSequence: ++pollingSequence, stoppedSequence: undefined, stopEvents: 0, stopped }
+    native.once('stop', () => {
+      record.stopEvents++
+      record.stoppedSequence = ++pollingSequence
+      resolveStop()
+    })
+    pollingHandles.push(record)
+    return native
+  }
+  fs.unwatchFile = function (filename, ...args) {
+    const label = relative(absolute(filename))
+    if (!label.startsWith('../') && !path.isAbsolute(label)) {
+      pollingReleases.push({ path: label, exactListener: typeof args[0] === 'function' })
+    }
+    return originalUnwatchFile.call(this, filename, ...args)
+  }
   syncBuiltinESMExports()
   return {
     handles,
     attempts,
+    pollingHandles,
     get injected() { return injected },
     async assertClosed() {
       await bounded(Promise.all(handles.map(record => record.closed)), 'all acquired native close events')
       assert(handles.every(record => record.closeCalls === 1 && record.closeEvents === 1), 'Every native handle must close exactly once')
+      await bounded(Promise.all(pollingHandles.map(record => record.stopped)), 'all acquired polling stop events')
+      assert(pollingHandles.every(record => record.stopEvents === 1), 'Every polling native handle must stop exactly once')
     },
     async emergencyClose() {
       const open = handles.filter(record => record.closeEvents === 0)
@@ -96,16 +132,23 @@ export function instrumentNative(root, injection, trace) {
         record.native.close()
       }
       await bounded(Promise.all(open.map(record => record.closed)), 'diagnostic cleanup of exact native handles')
-      return open.map(record => record.path)
+      const pollingOpen = pollingHandles.filter(record => record.stopEvents === 0)
+      for (const record of pollingOpen) {
+        originalUnwatchFile(record.file, record.listener)
+      }
+      await bounded(Promise.all(pollingOpen.map(record => record.stopped)), 'diagnostic cleanup of exact polling handles')
+      return [...open.map(record => record.path), ...pollingOpen.map(record => `polling:${record.path}`)]
     },
     snapshot() {
-      return { attempts, injected, handles: handles.map(({ path: file, closeCalls, closeEvents }) => ({ file, closeCalls, closeEvents })) }
+      return { attempts, injected, pollingHandles: pollingHandles.map(({ path, stopEvents, acquiredSequence, stoppedSequence }) => ({ file: path, stopEvents, acquiredSequence, stoppedSequence })), pollingReleases, handles: handles.map(({ path: file, closeCalls, closeEvents }) => ({ file, closeCalls, closeEvents })) }
     },
     restore() {
       for (const restore of restoreEvents) {
         restore()
       }
       fs.watch = original
+      fs.watchFile = originalWatchFile
+      fs.unwatchFile = originalUnwatchFile
       syncBuiltinESMExports()
     },
   }

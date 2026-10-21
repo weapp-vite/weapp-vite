@@ -26,6 +26,7 @@ function prepareOwnershipCommit(
   outDir: string,
   changes: OwnershipChange[],
   protectedNames: Iterable<string> = [],
+  emittedSource?: Map<string, string>,
 ) {
   // 账本由命令会话持有，Vite 更换编译上下文或重新加载插件模块都沿用同一载体。
   const targets = session.outputOwnership
@@ -46,7 +47,12 @@ function prepareOwnershipCommit(
       }
     }
     const retained = new Set([...protectedFiles, ...[...next.values()].flatMap(files => [...files])])
-    await pruneOwnedAssetFiles(root, [...removed].filter(file => !retained.has(file)))
+    const retired = [...removed].filter(file => !retained.has(file))
+    await pruneOwnedAssetFiles(root, retired)
+    // 已删除的文件不能继续命中旧指纹，否则同内容重新出现时会被裁掉而无法交还 bundler 写出。
+    for (const file of retired) {
+      emittedSource?.delete(file)
+    }
     // 所有范围一起提交；裁剪失败时保留旧账本，后续原生写出仍可重试同一交接。
     targets.set(root, next)
   }
@@ -61,7 +67,7 @@ export function prepareOutputOwnership(
   retired: Iterable<string> = [],
   scope: OutputOwnershipScope = 'default',
 ) {
-  return prepareOwnershipCommit(getHmrRuntimeSession(ctx), outDir, [{ scope, names: [...files], partial, retired: new Set(retired) }])
+  return prepareOwnershipCommit(getHmrRuntimeSession(ctx), outDir, [{ scope, names: [...files], partial, retired: new Set(retired) }], [], ctx.runtimeState?.build?.output?.emittedSource)
 }
 
 /** classic 原生完整写出后一次交接所有编译范围，并保护本轮 public 发射文件。 */
@@ -74,5 +80,5 @@ export function prepareOutputPublicationOwnership(ctx: CompilerContext, outDir: 
   if (publication.retireStateful && !publication.partial) {
     changes.push({ scope: 'stateful-hmr', names: [], partial: false, retired: new Set() })
   }
-  return prepareOwnershipCommit(session, outDir, changes, publication.publicOutputNames)
+  return prepareOwnershipCommit(session, outDir, changes, publication.publicOutputNames, ctx.runtimeState?.build?.output?.emittedSource)
 }

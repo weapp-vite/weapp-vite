@@ -1,10 +1,10 @@
 import type { CompilerContext, MutableCompilerContext } from '../../context'
-import { EventEmitter } from 'node:events'
 import { tmpdir } from 'node:os'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import picomatch from 'picomatch'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+import { createMockViteWatcher } from '../../../test/helpers/viteWatcher'
 import { createDevBuildWatcher } from '../buildPlugin/devBuildWatcher'
 import { createRuntimeState } from '../runtimeState'
 import { attachStatefulHmrHost, createStatefulHmrHostPlugins } from './hostPlugins'
@@ -39,7 +39,7 @@ beforeEach(async () => {
   root = await fs.mkdtemp(path.join(tmpdir(), 'stateful-asset-lease-'))
   harness.createServer.mockImplementation(async (inlineConfig = {}) => ({
     config: { inlineConfig, root, publicDir: false, build: {}, server: {}, logger: { error: vi.fn() } },
-    watcher: Object.assign(new EventEmitter(), { add: vi.fn() }),
+    watcher: createMockViteWatcher(),
     middlewares: { use: vi.fn() },
     httpServer: { address: () => undefined },
     listen: harness.listen,

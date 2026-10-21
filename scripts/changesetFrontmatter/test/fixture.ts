@@ -26,7 +26,9 @@ export function createGitFixture(hooks = false) {
   for (const key of ['GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE', 'GIT_COMMON_DIR', 'GIT_PREFIX']) {
     delete env[key]
   }
-  env.GIT_CONFIG_GLOBAL = os.devNull
+  // Git for Windows 不接受 Node 的设备路径；普通空文件同样隔离用户全局配置。
+  env.GIT_CONFIG_GLOBAL = path.join(directory, 'empty.gitconfig')
+  fs.writeFileSync(env.GIT_CONFIG_GLOBAL, '')
   env.GIT_CONFIG_NOSYSTEM = '1'
   env.PATH = `${path.join(repoRoot, 'node_modules/.bin')}${path.delimiter}${env.PATH}`
 

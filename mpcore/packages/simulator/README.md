@@ -12,6 +12,7 @@
 - 提供测试节点句柄上的 `tap()`、`trigger()`、`input()`、`change()`、`blur()` 交互辅助方法
 - 提供测试页面/会话句柄上的 `waitForSelector()`、`waitForText()`、`waitForTextGone()`、`waitForData()`、`waitForCurrentPage()` 等轮询等待方法
 - 测试会话句柄提供与 `miniprogram-automator` 对齐的 `toolInfo()`，headless provider 返回稳定的 simulator 标识
+- Node/browser session 的 `reloadPageDefinition(route)` 显式更新已加载页面的入口定义，返回源码字节是否变化；测试会话句柄返回 `Promise<boolean>`。它保留 App、当前页面和共享依赖缓存，不自动导航；需要新页面时再调用 `reLaunch()`。失败会恢复模块缓存及注册表，但不会撤销业务脚本已经执行的任意副作用。普通导航不自动重载脚本。
 - `disconnect()` 同步开始释放独占运行时并返回可等待的 Promise；并发、重入与后续调用共享关闭结果，关闭失败会保留在该 Promise 中
 - 提供原生形状的 `wx.onAppShow/offAppShow/onAppHide/offAppHide`；Node/browser session 与测试句柄通过 `triggerAppShow(options?)`、`triggerAppHide({ reason })` 显式驱动应用前后台事件，普通页面导航不会伪造应用切换
 - 测试入口 `launch({ configureSession })` 会在执行 `app.js` 前等待配置完成，可安装测试宿主能力；配置失败会关闭会话，默认 request 仍受既有 mock / strict mock 策略约束，不自动开放真实网络

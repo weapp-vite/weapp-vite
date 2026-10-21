@@ -51,6 +51,8 @@ vi.mock('../../packages/devtools-runtime/src/lease/machine', () => ({
 let journalRoot: string
 let previousExitCode: typeof process.exitCode
 beforeEach(() => {
+  // 调度默认值在空环境中验证；外层 headless 验证租约不能改变这些 mock 用例的 provider。
+  vi.stubEnv('WEAPP_VITE_E2E_RUNTIME_PROVIDER', '')
   previousExitCode = process.exitCode
   process.exitCode = undefined
   journalRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'suite-runner-unit-'))
@@ -94,25 +96,31 @@ describe('suiteRunner', () => {
       WEAPP_VITE_E2E_RUNTIME_PROVIDER: 'headless',
       WEAPP_VITE_E2E_DOM_ACCEPTANCE: '1',
     })
-    const filterIndex = task.args.indexOf('-t')
-    expect(filterIndex).toBeGreaterThanOrEqual(0)
-    const filter = new RegExp(task.args[filterIndex + 1]!)
+    expect(task.args).not.toContain('-t')
+    expect(task.args).not.toContain('--testNamePattern')
     const cases = readTaskCases(path.resolve(import.meta.dirname, '../..'), task.label, task.acceptanceTemplates)
-    const selected = cases.filter(item => filter.test(item.name)).map(item => item.name)
+    const selected = cases.map(item => item.name)
     expect(selected.some(name => name.includes('preserves native Page identity, data, input, route, and query across style updates and JavaScript patches'))).toBe(true)
-    expect(selected.some(name => name.includes('template-generated computations and event handlers'))).toBe(true)
+    expect(selected.some(name => name.includes('preserves parent and native child DOM state'))).toBe(true)
+    expect(selected.some(name => name.includes('preserves parent and Vue child DOM state'))).toBe(true)
     expect(selected.some(name => name.includes('ignores unowned editor files'))).toBe(true)
     expect(selected.some(name => name.includes('copied and public asset lifecycle'))).toBe(true)
     expect(selected.some(name => name.includes('isolated script updates and restoration'))).toBe(true)
     expect(selected.some(name => name.includes('initializes updated native defaults'))).toBe(true)
-    for (const runtime of ['native', 'component', 'wevu']) {
+    for (const runtime of ['native', 'component']) {
       expect(selected.some(name => name.includes(`preserves ${runtime} page state across two template`))).toBe(true)
     }
+    const fallback = tasks.find(task => task.label === 'ide/hmr-compiled-template-fallback.runtime.test.ts')!
+    expect(fallback).toBeDefined()
+    expect(fallback.args).not.toContain('-t')
+    const fallbackCases = readTaskCases(path.resolve(import.meta.dirname, '../..'), fallback.label, fallback.acceptanceTemplates)
+    expect(fallbackCases.some(item => item.name.includes('keeps classic across two Wevu template edit and restore cycles'))).toBe(true)
+    expect(fallbackCases.some(item => item.name.includes('reloads Wevu computed bindings and inline events'))).toBe(true)
     for (const hook of ['load', 'show', 'ready']) {
       expect(selected.some(name => name.includes(`commits navigation requested in ${hook}`))).toBe(true)
     }
     expect(selected.filter(name => name.includes('style updates'))).toHaveLength(1)
-    expect(selected.some(name => name.includes('local and store refs'))).toBe(false)
+    expect(selected.some(name => name.includes('preserves Wevu local and store state'))).toBe(true)
   })
 
   it('keeps unchanged plain page App shell transitions in real IDE and headless DOM matrices', async () => {

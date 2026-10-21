@@ -1,9 +1,12 @@
+import type { WorkspaceHmrAuditBudget } from './auditDeadline'
+import type { ClassicFallbackDeliveryEvidence } from './classicFallback'
 import type { StatefulHmrAuditClient, StatefulHmrAuditControl } from './statefulAuditClient'
 import type { StatefulHmrAuditEvent } from './statefulAuditUpdate'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { setTimeout as sleep } from 'node:timers/promises'
 import { createEmittedScriptReader } from '../benchmarkTemplatesHmr/emittedOutput'
+import { assertHmrAuditBudget } from './auditDeadline'
 import { parseStatefulHmrControlSource } from './scenarios'
 
 export interface DynamicReactDeliveryEvidence {
@@ -17,7 +20,7 @@ export interface DynamicReactDeliveryEvidence {
 }
 
 export interface DynamicReactMutation {
-  waitForDelivery: (marker: string, contains: boolean, onEvent?: (event: StatefulHmrAuditEvent) => void) => Promise<DynamicReactDeliveryEvidence>
+  waitForDelivery: (marker: string, contains: boolean, onEvent?: (event: StatefulHmrAuditEvent) => void, budget?: WorkspaceHmrAuditBudget) => Promise<DynamicReactDeliveryEvidence | ClassicFallbackDeliveryEvidence>
 }
 
 interface DynamicReactDeliveryOptions {
@@ -26,6 +29,7 @@ interface DynamicReactDeliveryOptions {
   entryFile: string
   timeoutMs: number
   intervalMs?: number
+  classicFallback?: (marker: string, contains: boolean, budget: WorkspaceHmrAuditBudget) => Promise<ClassicFallbackDeliveryEvidence | undefined>
 }
 
 function readBuildStamp(source: string) {
@@ -62,20 +66,28 @@ export async function prepareDynamicReactMutation(options: DynamicReactDeliveryO
 
   let consumed = false
   return {
-    async waitForDelivery(marker, contains, onEvent) {
+    async waitForDelivery(marker, contains, onEvent, budget = { deadline: Date.now() + options.timeoutMs }) {
       if (consumed) {
         throw new Error('Each dynamic React mutation requires a fresh pre-mutation build identity.')
       }
       consumed = true
-      const deadline = Date.now() + options.timeoutMs
+      const { deadline, signal } = budget
       let lastError: unknown
       while (Date.now() < deadline) {
+        signal?.throwIfAborted()
+        const classic = await options.classicFallback?.(marker, contains, budget)
+        assertHmrAuditBudget(budget, 'Timed out waiting for dynamic React delivery.')
+        if (classic && Date.now() < deadline) {
+          onEvent?.({ type: 'classic' })
+          return classic
+        }
         try {
           const control = await readControl()
-          await options.client.ensureRegistered(control, Math.max(1, Math.min(1_000, deadline - Date.now())))
+          await options.client.ensureRegistered(control, Math.max(1, Math.min(1_000, deadline - Date.now())), signal)
           if (control.buildId !== before.buildId) {
             const reachable = await readCommittedBuild(control)
             if (reachable.includes(marker) === contains && Date.now() < deadline) {
+              assertHmrAuditBudget(budget, 'Timed out waiting for dynamic React delivery.')
               onEvent?.({ type: 'full-reload' })
               return {
                 delivery: 'full-reload',
@@ -89,12 +101,13 @@ export async function prepareDynamicReactMutation(options: DynamicReactDeliveryO
           }
           else {
             // 短轮询允许重读 control；服务重启后旧端口不能挡住完整重载验收。
-            const response = await options.client.poll(Math.max(1, Math.min(1_000, deadline - Date.now())))
+            const response = await options.client.poll(Math.max(1, Math.min(1_000, deadline - Date.now())), signal)
             onEvent?.({ type: response.type ?? 'unknown', targetVersion: response.targetVersion })
             if (response.type === 'batch-published' && response.targetVersion !== undefined && response.targetVersion > beforeVersion) {
               const patch = await readFile(patchFile, 'utf8')
               await readCommittedBuild(control)
               if (patch.includes(marker) === contains && Date.now() < deadline) {
+                assertHmrAuditBudget(budget, 'Timed out waiting for dynamic React delivery.')
                 return {
                   delivery: 'patch',
                   beforeBuildId: before.buildId,
@@ -109,10 +122,11 @@ export async function prepareDynamicReactMutation(options: DynamicReactDeliveryO
           }
         }
         catch (error) {
+          signal?.throwIfAborted()
           lastError = error
           onEvent?.({ type: 'request-error' })
         }
-        await sleep(Math.min(options.intervalMs ?? 25, Math.max(0, deadline - Date.now())))
+        await sleep(Math.min(options.intervalMs ?? 25, Math.max(0, deadline - Date.now())), undefined, { signal })
       }
       const reason = lastError instanceof Error ? lastError.message : ''
       throw new Error(`Timed out waiting for dynamic React delivery matching the current source mutation.${reason ? ` ${reason}` : ''}`, { cause: lastError })

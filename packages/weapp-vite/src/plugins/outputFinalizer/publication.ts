@@ -13,7 +13,7 @@ import { validateWxmlBundle } from '../../wxml/validate'
 import { createPublicAssetPublication } from '../asset/publication'
 import { rewriteWevuInternalRuntimeImports, stabilizeWevuRuntimeChunkAccess } from '../core/helpers/bundle'
 import { resolveRootEntryBasename } from '../core/lifecycle/load/weapi'
-import { collectIndependentOutputFileNames, flushIndependentOutputs } from './independent'
+import { captureIndependentOutputFileNames, flushIndependentOutputs } from './independent'
 import { prepareOutputPublicationOwnership } from './ownership'
 
 function outputSourceToString(output: OutputBundle[string]) {
@@ -148,6 +148,7 @@ export function createOutputPublicationPlugin(ctx: CompilerContext, subPackageMe
         const partial = ctx.configService.isDev && !preserveCompleteBundle
           && ctx.runtimeState?.build?.hmr?.didEmitAllEntries !== true
           && ctx.runtimeState?.build?.hmr?.isRebuild === true
+        const independentOutputNames = new Set(captureIndependentOutputFileNames(ctx))
         let commitValidation: WxmlDependencyCommit | undefined
         try {
           commitValidation = await validateWxmlBundle(ctx, outputBundle, {
@@ -160,7 +161,12 @@ export function createOutputPublicationPlugin(ctx: CompilerContext, subPackageMe
           // 子产物已完成自身校验与裁剪，在主包内不重复处理。
           const independentAssets: EmittedAsset[] = []
           try {
-            await flushIndependentOutputs(ctx, subPackageMeta, asset => independentAssets.push(asset))
+            await flushIndependentOutputs(ctx, subPackageMeta, (asset) => {
+              independentAssets.push(asset)
+              if (asset.fileName) {
+                independentOutputNames.add(asset.fileName)
+              }
+            })
           }
           finally {
             // 子构建没有活动 watcher；主发布者接管其精确依赖，失败时也保留恢复监听。
@@ -175,7 +181,6 @@ export function createOutputPublicationPlugin(ctx: CompilerContext, subPackageMe
           checkpoint('publicationIndependentMs')
           // 在后续裁剪与 emitFile 改写 bundle 前冻结编译输出集合，public 使用同一份归属排除碰撞。
           const outputNames = Object.keys(outputBundle)
-          const independentOutputNames = collectIndependentOutputFileNames(ctx)
           pruneUnchangedDevHmrOutputs(ctx, outputBundle, undefined, {
             runtimeRewriteDone: true,
             preserveCompleteBundle,
@@ -195,7 +200,7 @@ export function createOutputPublicationPlugin(ctx: CompilerContext, subPackageMe
             // 独立 helper 仅冻结普通归属数据与命令身份，不保留 generateBundle 的插件上下文。
             pendingOwnership = prepareOutputPublicationOwnership(ctx, outDir, {
               outputNames,
-              independentOutputNames,
+              independentOutputNames: [...independentOutputNames],
               publicOutputNames,
               partial,
               retireStateful: !partial && !subPackageMeta && (ctx.currentBuildTarget ?? 'app') === 'app',

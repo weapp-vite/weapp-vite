@@ -2,7 +2,7 @@ import type { DevProcessIdentity } from './processes'
 import process from 'node:process'
 import { sameManagedProcess } from '../../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/processIdentity'
 import { traceCleanupStage } from '../cleanupTrace'
-import { captureDevProcessTree, isDevProcessAlive, killWindowsDevProcesses, readDevProcessIdentities, UnconfirmedDevProcessTreeError } from './processes'
+import { captureDevProcessTree, DevProcessTerminationError, isDevProcessAlive, killWindowsDevProcesses, readDevProcessIdentities, UnconfirmedDevProcessTreeError } from './processes'
 
 interface DevProcessCleanupOptions {
   pid?: number
@@ -83,7 +83,30 @@ export function createDevProcessCleanup(options: DevProcessCleanupOptions) {
   const signalOwned = async (signal: 'SIGTERM' | 'SIGKILL') => {
     await reconcileIdentities()
     if (process.platform === 'win32') {
-      await killWindowsDevProcesses([...pending.keys()])
+      try {
+        await killWindowsDevProcesses([...pending.keys()])
+      }
+      catch (error) {
+        if (!(error instanceof DevProcessTerminationError)) {
+          throw error
+        }
+        try {
+          await reconcileIdentities()
+        }
+        catch (inspectionError) {
+          throw new AggregateError([error, inspectionError], 'Dev process termination and independent exit verification failed.', { cause: error })
+        }
+        // 已登记进程可能在核验与 taskkill 派发之间退出；原回执保留，不能仅凭退出码推断终结。
+        try {
+          process.stdout.write(`[e2e-cleanup-termination] ${JSON.stringify({ ...error.evidence, ownedProcessesTerminated: pending.size === 0 })}\n`)
+        }
+        catch {
+          // 诊断失败不能覆盖原终止错误，也不能改变独立核验得到的清理结果。
+        }
+        if (pending.size) {
+          throw error
+        }
+      }
       return
     }
     const errors: unknown[] = []

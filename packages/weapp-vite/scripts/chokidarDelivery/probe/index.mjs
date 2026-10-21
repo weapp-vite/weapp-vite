@@ -35,7 +35,7 @@ export async function runPublicScenario(id, consumerRoot) {
     const target = path.join(root, 'src/reborn')
     injectedError = Object.assign(new Error('Injected native directory registration EPERM'), { code: 'EPERM', syscall: 'watch', path: target })
     trace = createDeliveryTrace(root, consumerRoot, injectedError)
-    instrumentation = instrumentNative(root, scenario.kind === 'shared' ? undefined : { target, missing: scenario.kind === 'recovery' || scenario.missing, error: injectedError }, trace)
+    instrumentation = instrumentNative(root, ['shared', 'polling-handoff'].includes(scenario.kind) ? undefined : { target, missing: scenario.kind === 'recovery' || scenario.missing, error: injectedError }, trace)
     await trace.installChokidar()
     trace.record('scenario.enter', { id })
     await exerciseScenario({ scenario, root, owners, errors, instrumentation, injectedError, recoveryFailure, evidence: result.evidence })
@@ -81,7 +81,7 @@ export async function runPublicScenario(id, consumerRoot) {
       catch (error) { result.cleanup.errors.push(describeError(error)) }
     }
     result.publicErrors = errors.map(error => describePublicError(error, injectedError))
-    if (scenario.kind === 'recovery' && result.status === 'passed') {
+    if (['recovery', 'shared', 'polling-handoff'].includes(scenario.kind) && result.status === 'passed') {
       try {
         assert.deepEqual(errors, [])
       }

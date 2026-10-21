@@ -32,6 +32,54 @@ async function createClient(request: typeof fetch, explicit: boolean | ((buildId
 }
 
 describe('concurrent template artifact consumption', () => {
+  it('rejects fallback readiness after the caller absolute deadline', async () => {
+    const { client } = await createClient(vi.fn())
+    let now = 0
+    vi.spyOn(Date, 'now').mockImplementation(() => now)
+    try {
+      await expect(measureStatefulTemplateArtifact({
+        client,
+        readControl: async () => control,
+        isCurrentUpdate: async () => true,
+        timeoutMs: 1_000,
+        deadline: 50,
+        isClassicFallback: async (signal, deadline) => {
+          expect(signal.aborted).toBe(false)
+          expect(deadline).toBe(50)
+          now = 51
+          return true
+        },
+        measure: async () => 42,
+      })).rejects.toThrow('Timed out consuming')
+    }
+    finally {
+      vi.restoreAllMocks()
+    }
+  })
+
+  it.each([false, true])('retires a 410 only after exact classic fallback readiness: %s', async (ready) => {
+    let retired = false
+    const { client, requests } = await createClient(async () => {
+      retired = true
+      return new Response('gone', { status: 410 })
+    })
+    const measurement = measureStatefulTemplateArtifact({
+      client,
+      readControl: async () => control,
+      isCurrentUpdate: async () => true,
+      isClassicFallback: async () => retired && ready,
+      measure: async () => 42,
+      timeoutMs: 100,
+    })
+    if (ready) {
+      await expect(measurement).resolves.toBe(42)
+    }
+    else {
+      await expect(measurement).rejects.toThrow('poll failed with HTTP 410')
+    }
+    expect(requests.map(item => item.action)).toEqual(['register', 'poll'])
+  })
+
   it('preserves the marker measurement instead of including acknowledgement latency', async () => {
     const acknowledge = Promise.withResolvers<void>()
     const acknowledging = Promise.withResolvers<void>()

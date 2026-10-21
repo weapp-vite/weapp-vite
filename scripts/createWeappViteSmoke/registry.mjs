@@ -7,7 +7,7 @@ export const REGISTRY_PROFILES = {
   npmmirror: 'https://registry.npmmirror.com/',
 }
 const NETWORK_ERROR_RE = /\b(?:EAI_AGAIN|ENOTFOUND|ECONNREFUSED|ECONNRESET|ETIMEDOUT|ECONNABORTED|ENETUNREACH|EHOSTUNREACH|EPIPE|E(?:HTTP)?(?:401|403|429|50\d)|ERR_PNPM_FETCH_(?:401|403|429|50\d)|CERT_HAS_EXPIRED|UNABLE_TO_VERIFY_LEAF_SIGNATURE|SELF_SIGNED_CERT_IN_CHAIN)\b|fetch failed|failed to fetch|error sending request:\s*operation timed out|socket hang up|certificate|(?:HTTP|status(?: code)?)[\s:=]*(?:401|403|429|50\d)/i
-const REGISTRY_MISSING_RE = /\b(?:E404|ETARGET|ERR_PNPM_NO_MATCHING_VERSION|ERR_PNPM_FETCH_404)\b|404 Not Found/i
+const REGISTRY_MISSING_RE = /\b(?:E404|ETARGET|ERR_PNPM_NO_MATCHING_VERSION|ERR_PNPM_FETCH_404)\b|404 Not Found|Couldn't find any versions for ["'][^"'\r\n]+["'] that matches ["'][^"'\r\n]+["']/i
 const LIFECYCLE_OUTPUT_RE = /\b(?:preinstall|postinstall|prepare|prepublish(?:Only)?|prebuild|postbuild)\b|\b(?:install|build)\s*[:$]|(?:^|\n)\s*>[^\n]*\b(?:install|build)\b|(?:^|\n)[^\n]*[>$]\s*(?:wv|vite|rollup|rolldown|tsc)\b/i
 const PRODUCT_ERROR_RE = /\b(?:ERR_PNPM_(?:IGNORED_BUILDS|PEER_DEP_ISSUES|UNSUPPORTED_ENGINE|NO_SCRIPT|OUTDATED_LOCKFILE|LOCKFILE_BREAKING_CHANGE)|ERR_MODULE_NOT_FOUND|MODULE_NOT_FOUND|ERR_PACKAGE_PATH_NOT_EXPORTED|ERR_UNKNOWN_FILE_EXTENSION)\b/i
 

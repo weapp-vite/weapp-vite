@@ -1,4 +1,5 @@
-import type { DomCheckpoint, DomNodeExpectation } from '../../utils/domAcceptance/types'
+import type { DomCheckpoint, DomNodeExpectation, DomProvider } from '../../utils/domAcceptance/types'
+import { resolveRuntimeProviderName } from '../../utils/runtimeProvider'
 import { runtimeLayoutNodes } from './allPages'
 
 export interface CoreHmrMarkers {
@@ -18,7 +19,8 @@ function checkpoint(id: string, route: string, nodes: DomNodeExpectation[]): Dom
   return { id, route: `/pages/${route}/index`, action: `classic HMR ${id} 实际界面及对应更新状态`, nodes }
 }
 
-export function coreHmrPlan(markers: CoreHmrMarkers): DomCheckpoint[] {
+export function coreHmrPlan(markers: CoreHmrMarkers, provider: DomProvider = resolveRuntimeProviderName()): DomCheckpoint[] {
+  const realLayout = provider === 'devtools'
   const hmr = (title: string, script: string, count = 1): DomNodeExpectation[] => [
     { selector: '.title', text: title },
     { selector: '#hmr-script', text: `script: ${script}` },
@@ -45,14 +47,14 @@ export function coreHmrPlan(markers: CoreHmrMarkers): DomCheckpoint[] {
     checkpoint('page:script', 'hmr', hmr(markers.pageTemplateMarker, markers.pageScriptMarker)),
     checkpoint('page:style', 'hmr', [
       ...hmr(markers.pageTemplateMarker, markers.pageScriptMarker),
-      { selector: '.page', styles: { 'background-color': 'rgb(220, 252, 231)' }, visible: true },
+      ...(realLayout ? [{ selector: '.page', styles: { 'background-color': 'rgb(220, 252, 231)' }, visible: true }] : []),
     ]),
     checkpoint('sfc:initial', 'hmr-sfc', sfc('HMR-SFC', 'HMR-SFC-SCRIPT')),
     checkpoint('sfc:template', 'hmr-sfc', sfc(markers.sfcTemplateMarker, 'HMR-SFC-SCRIPT')),
     checkpoint('sfc:script', 'hmr-sfc', sfc(markers.sfcTemplateMarker, markers.sfcScriptMarker)),
     checkpoint('sfc:style', 'hmr-sfc', [
       ...sfc(markers.sfcTemplateMarker, markers.sfcScriptMarker),
-      { selector: '.marker', styles: { color: 'rgb(190, 18, 60)' }, visible: true },
+      ...(realLayout ? [{ selector: '.marker', styles: { color: 'rgb(190, 18, 60)' }, visible: true }] : []),
     ]),
     checkpoint('layout:initial', 'layouts', layout('LAYOUTS-PAGE-TEMPLATE-BASE', 'LAYOUTS-PAGE-SCRIPT-BASE', 'default')),
     checkpoint('layout:admin', 'layouts', layout('LAYOUTS-PAGE-TEMPLATE-BASE', 'LAYOUTS-PAGE-SCRIPT-BASE')),
@@ -61,7 +63,7 @@ export function coreHmrPlan(markers: CoreHmrMarkers): DomCheckpoint[] {
     checkpoint('layout:script-admin', 'layouts', layout(markers.layoutPageTemplateMarker, markers.layoutPageScriptMarker)),
     checkpoint('layout:style', 'layouts', [
       ...layout(markers.layoutPageTemplateMarker, markers.layoutPageScriptMarker),
-      { selector: '.page', styles: { 'background-color': 'rgb(224, 242, 254)' }, visible: true },
+      ...(realLayout ? [{ selector: '.page', styles: { 'background-color': 'rgb(224, 242, 254)' }, visible: true }] : []),
     ]),
     checkpoint('store:initial', 'store', [...store, { selector: '#store-initial-name', text: 'initial name: init' }]),
     checkpoint('store:restarted', 'store', [...store, { selector: '#store-initial-name', text: `initial name: ${markers.sharedStoreMarker}` }]),

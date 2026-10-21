@@ -51,6 +51,7 @@ import { detachComponentRelations } from './componentInstance/relations'
 import { resolveNativeComponentSelection } from './componentInstance/selection'
 import { createModuleLoader } from './moduleLoader'
 import { createPackageAssetReader } from './packageAsset'
+import { resolvePageDefinitionReloadRoute } from './pageDefinitionReload'
 import { createPageInstance } from './pageInstance'
 import { runInitialPageLifecycles } from './pageLifecycle'
 import { renderRuntimePageTree } from './render'
@@ -491,6 +492,14 @@ export class HeadlessSession {
   getCurrentPages() {
     this.assertActive()
     return this.pages.slice()
+  }
+
+  /** 显式重载已变更的页面 entry，保留 App 与依赖缓存；调用者随后自行导航。 */
+  reloadPageDefinition(route: string): boolean {
+    this.assertActive()
+    const record = resolvePageDefinitionReloadRoute(this.project, route)
+    const filePath = path.resolve(this.project.miniprogramRootPath, `${record.resourcePath ?? record.route}.js`)
+    return this.moduleLoader.reloadPageModule(filePath, record.route)
   }
 
   getWx() {

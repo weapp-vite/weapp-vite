@@ -1,4 +1,4 @@
-import type { OutputBundle, OutputChunk, RolldownWatcher } from 'rolldown'
+import type { OutputBundle, OutputChunk, RolldownOutput, RolldownWatcher } from 'rolldown'
 import type { InlineConfig, Plugin, ViteDevServer } from 'vite'
 import type { GlassEaselAnalysisFact } from '../../analyze/glassEasel/types'
 import type { HmrProfileJsonSample } from '../../analyze/hmr'
@@ -16,6 +16,7 @@ import { createModuleGraphService } from '../../moduleGraph/service'
 import { getSupportedMiniProgramPlatforms } from '../../platform'
 import { compilerSourceId } from '../../plugins/compilerPlugin/hmr'
 import { createGenerateBundleHook } from '../../plugins/core/lifecycle/emit/generate'
+import { captureIndependentOutputFileNames } from '../../plugins/outputFinalizer/independent'
 import { registerManagedTailwindcssEntries } from '../../plugins/tailwindcssMarker'
 import { readCompilerInput, withCompilerSourceSnapshot } from '../../plugins/utils/sourceSnapshot'
 
@@ -1864,6 +1865,62 @@ describe('runtime buildPlugin service', () => {
     expect(sequence).toEqual(['initial-start', 'initial-write-complete', 'snapshot-write'])
   })
 
+  it.each([undefined, '/project/config/vite.config.ts'])('ignores managed support output throughout initial publication (config: %s)', async (configFilePath) => {
+    const watcher = createManualWatcher()
+    const sidecarWatcher = createManualSidecarWatcher()
+    chokidarWatchMock.mockReturnValue(sidecarWatcher)
+    const ctx = createMockContext()
+    ctx.configService.configFilePath = configFilePath
+    const supportRoot = path.join(configFilePath ? path.dirname(configFilePath) : ctx.configService.cwd, '.weapp-vite')
+    const initialStarted = Promise.withResolvers<void>()
+    const initialRelease = Promise.withResolvers<void>()
+    const files = ['auto-import-components.json', 'components.d.ts', 'typed-components.d.ts', 'mini-program.html-data.json', 'wevu-layouts.d.ts']
+    ctx.runtimeState.build.hmr.resolvedEntryMap.set(HMR_PAGE_ID, { id: HMR_PAGE_ID })
+    ctx.moduleGraphService.collectAffectedEntries.mockReturnValue(new Set([HMR_PAGE_ID]))
+    buildMock.mockImplementationOnce(async () => {
+      initialStarted.resolve()
+      await initialRelease.promise
+      return watcher
+    }).mockResolvedValue({ output: [] })
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    const firstBuild = createBuildService(ctx).build({ skipNpm: true })
+    try {
+      await initialStarted.promise
+      for (const file of files) {
+        moduleGraphProviderChange.handler?.({ event: 'update', file: path.join(supportRoot, file) })
+      }
+      initialRelease.resolve()
+      await watcher.subscribed
+      watcher.emit('START')
+      watcher.emit('END')
+      await firstBuild
+      await vi.runOnlyPendingTimersAsync()
+      expect(buildMock).toHaveBeenCalledTimes(1)
+      const initialCacheResets = resetEmittedOutputCachesMock.mock.calls.length
+
+      for (const file of files) {
+        moduleGraphProviderChange.handler?.({ event: 'update', file: path.join(supportRoot, file) })
+        sidecarWatcher.emit('change', path.join(supportRoot, file))
+      }
+      // 相同文件名的用户源码仍由依赖图接收，并且与真实页面更新合为一个窄快照。
+      moduleGraphProviderChange.handler?.({ event: 'update', file: '/project/src/auto-import-components.json' })
+      moduleGraphProviderChange.handler?.({ event: 'update', file: HMR_PAGE_ID })
+      await vi.runOnlyPendingTimersAsync()
+      await watcher.close()
+      expect(buildMock).toHaveBeenCalledTimes(2)
+      expect(ctx.moduleGraphService.recordChangedFile.mock.calls).toEqual([
+        ['/project/src/auto-import-components.json', 'update'],
+        [HMR_PAGE_ID, 'update'],
+      ])
+      expect(resetEmittedOutputCachesMock.mock.calls.length).toBe(initialCacheResets)
+    }
+    finally {
+      initialRelease.resolve()
+      await watcher.close()
+      vi.useRealTimers()
+    }
+  })
+
   it('rescans entry topology when external input capture fails after source refresh', async () => {
     const { ctx, watcher, onChange } = await startClassicSnapshotContext()
     ctx.scanService.markDirty = vi.fn()
@@ -2356,12 +2413,7 @@ describe('runtime buildPlugin service', () => {
     }
   })
 
-  it.each([
-    [false, false],
-    [false, true],
-    [true, false],
-    [true, true],
-  ])('publishes independent updates without invalidating unrelated main entries (shared=%s, mainGraphModule=%s)', async (shared, mainGraphModule) => {
+  it.each([false, true].flatMap(shared => [false, true].flatMap(mainGraphModule => [false, true].map(watchRegistered => ({ shared, mainGraphModule, watchRegistered })))))('publishes independent updates without invalidating unrelated main entries (shared=$shared, mainGraphModule=$mainGraphModule, watchRegistered=$watchRegistered)', async ({ shared, mainGraphModule, watchRegistered }) => {
     const watcher = createManualWatcher()
     const sidecarWatcher = createManualSidecarWatcher()
     const ctx = createMockContext()
@@ -2370,7 +2422,9 @@ describe('runtime buildPlugin service', () => {
     const unrelated = '/project/src/pages/other/index.ts'
     ctx.scanService.markIndependentDirty = vi.fn()
     ctx.scanService.independentSubPackageMap = new Map([['independent', {}]])
-    ctx.runtimeState.build.independent.watchFiles.set('independent', new Set([file]))
+    if (watchRegistered) {
+      ctx.runtimeState.build.independent.watchFiles.set('independent', new Set([file]))
+    }
     ctx.moduleGraphService.hasModule.mockReturnValue(mainGraphModule)
     ctx.moduleGraphService.collectAffectedEntries.mockReturnValue(new Set(shared ? [entry] : []))
     for (const id of [entry, unrelated]) {
@@ -2386,6 +2440,7 @@ describe('runtime buildPlugin service', () => {
     watcher.emit('END')
     await firstBuild
 
+    expect(chokidarWatchMock.mock.calls[0]?.[0]).toContain('/project/src')
     sidecarWatcher.emit('change', file)
     await waitForMockCalls(buildMock, 2)
     expect(independentInvalidateMock).toHaveBeenCalledWith('independent')
@@ -2398,6 +2453,202 @@ describe('runtime buildPlugin service', () => {
       build: expect.objectContaining({ emptyOutDir: false }),
     }))
     await watcher.close()
+  })
+
+  it.each(['sidecar', 'rapid-roots', 'removed-root', 'wxml-provider'] as const)('preserves independent publication ownership until the next serial snapshot consumes its event (%s)', async (source) => {
+    const watcher = createManualWatcher()
+    const sidecarWatcher = createManualSidecarWatcher()
+    const ctx = createMockContext()
+    const roots = ['current', 'queued', 'rapid', 'unrelated']
+    const affectedRoots = source === 'wxml-provider' ? roots : source === 'rapid-roots' ? ['queued', 'rapid'] : ['queued']
+    const outputFor = (root: string): RolldownOutput => ({
+      output: [{ type: 'asset', fileName: `${root}/index.js`, source: root, names: [], originalFileNames: [] }],
+    })
+    ctx.scanService.markIndependentDirty = vi.fn()
+    ctx.scanService.independentSubPackageMap = new Map(roots.map(root => [root, {}]))
+    independentInvalidateMock.mockImplementation((root: string) => {
+      ctx.runtimeState.build.independent.outputs.delete(root)
+    })
+    const currentBuildEntered = Promise.withResolvers<void>()
+    const resumeCurrentBuild = Promise.withResolvers<void>()
+    const nextBuildEntered = Promise.withResolvers<void>()
+    let currentPublicationNames: string[] = []
+    let queuedRootInvalidatedBeforeConsumption = false
+    chokidarWatchMock.mockReturnValue(sidecarWatcher)
+    buildMock
+      .mockResolvedValueOnce(watcher)
+      .mockImplementationOnce(async () => {
+        // options 已完成独立分包任务 drain，主包仍在异步 load/transform；尚未进入 generateBundle。
+        ctx.runtimeState.build.independent.outputs.set('current', outputFor('current'))
+        ctx.runtimeState.build.independent.pendingOutputs = []
+        currentBuildEntered.resolve()
+        await resumeCurrentBuild.promise
+        // publication 的第一步读取当前 generation 的独立分包所有权，必须保留尚未消费的下一次保存。
+        currentPublicationNames = captureIndependentOutputFileNames(ctx)
+        return { output: [] }
+      })
+      .mockImplementationOnce(async () => {
+        // 下一代 options 消费最新分包拓扑；移除发生在本轮串行消费后，不能撤销上一代发布归属。
+        if (source === 'removed-root') {
+          ctx.scanService.independentSubPackageMap.delete('queued')
+        }
+        for (const root of affectedRoots) {
+          if (ctx.scanService.independentSubPackageMap.has(root)) {
+            ctx.runtimeState.build.independent.outputs.set(root, outputFor(root))
+          }
+        }
+        nextBuildEntered.resolve()
+        return { output: [] }
+      })
+    const service = createBuildService(ctx)
+    try {
+      const firstBuild = service.build({ skipNpm: true })
+      await watcher.subscribed
+      watcher.emit('START')
+      watcher.emit('END')
+      await firstBuild
+      for (const root of roots) {
+        ctx.runtimeState.build.independent.outputs.set(root, outputFor(root))
+      }
+
+      sidecarWatcher.emit('change', '/project/src/current/index.json')
+      await currentBuildEntered.promise
+      independentInvalidateMock.mockClear()
+      ctx.scanService.markIndependentDirty.mockClear()
+      ctx.scanService.markDirty.mockClear()
+      if (source === 'wxml-provider') {
+        const dependency = '/project/transform-rules.json'
+        ctx.runtimeState.wxmlProcessing.references.set(dependency, 1)
+        moduleGraphProviderChange.handler?.({ event: 'update', file: dependency })
+      }
+      else {
+        sidecarWatcher.emit('change', '/project/src/queued/index.json')
+        if (source === 'rapid-roots') {
+          sidecarWatcher.emit('change', '/project/src/queued/index.json')
+          sidecarWatcher.emit('change', '/project/src/rapid/index.json')
+        }
+      }
+      queuedRootInvalidatedBeforeConsumption = !ctx.runtimeState.build.independent.outputs.has('queued')
+        || independentInvalidateMock.mock.calls.length > 0
+        || ctx.scanService.markIndependentDirty.mock.calls.length > 0
+        || ctx.scanService.markDirty.mock.calls.length > 0
+      resumeCurrentBuild.resolve()
+      await nextBuildEntered.promise
+      await watcher.close()
+
+      expect(currentPublicationNames.sort()).toEqual(roots.map(root => `${root}/index.js`).sort())
+      expect(queuedRootInvalidatedBeforeConsumption).toBe(false)
+      expect(independentInvalidateMock.mock.calls).toEqual(affectedRoots.map(root => [root]))
+      expect(ctx.scanService.markIndependentDirty.mock.calls).toEqual(affectedRoots.map(root => [root]))
+      expect(ctx.runtimeState.build.independent.outputs.has('unrelated')).toBe(true)
+      if (source === 'removed-root') {
+        expect(captureIndependentOutputFileNames(ctx)).not.toContain('queued/index.js')
+        expect(ctx.runtimeState.build.independent.outputs.has('queued')).toBe(false)
+      }
+      for (const [options] of buildMock.mock.calls) {
+        expect(options.build.watch).toBeUndefined()
+      }
+      expect(ctx.runtimeState.build.hmr.dirtyEntrySet.size).toBe(0)
+    }
+    finally {
+      resumeCurrentBuild.resolve()
+      await watcher.close()
+      independentInvalidateMock.mockReset()
+    }
+  })
+
+  it('replays failed independent invalidation signals in the next serial batch without invalidating unrelated roots', async () => {
+    const watcher = createManualWatcher()
+    const sidecarWatcher = createManualSidecarWatcher()
+    const ctx = createMockContext()
+    ctx.scanService.independentSubPackageMap = new Map(['failed', 'recovery', 'unrelated'].map(root => [root, {}]))
+    ctx.scanService.markIndependentDirty = vi.fn()
+    chokidarWatchMock.mockReturnValue(sidecarWatcher)
+    const failed = new Error('independent child syntax failed')
+    const failedBuildEntered = Promise.withResolvers<void>()
+    const recoveryBuildEntered = Promise.withResolvers<void>()
+    buildMock
+      .mockResolvedValueOnce(watcher)
+      .mockImplementationOnce(async () => {
+        failedBuildEntered.resolve()
+        throw failed
+      })
+      .mockImplementationOnce(async () => {
+        recoveryBuildEntered.resolve()
+        return { output: [] }
+      })
+    try {
+      const firstBuild = createBuildService(ctx).build({ skipNpm: true })
+      await watcher.subscribed
+      watcher.emit('START')
+      watcher.emit('END')
+      await firstBuild
+
+      sidecarWatcher.emit('change', '/project/src/failed/index.json')
+      expect(independentInvalidateMock).not.toHaveBeenCalled()
+      expect(ctx.scanService.markDirty).not.toHaveBeenCalled()
+      await failedBuildEntered.promise
+      await waitForMockCalls(loggerErrorMock, 1)
+      expect(loggerErrorMock).toHaveBeenCalledWith(failed)
+      expect(independentInvalidateMock.mock.calls).toEqual([['failed']])
+      ctx.scanService.markDirty.mockClear()
+
+      sidecarWatcher.emit('change', '/project/src/recovery/index.json')
+      expect(independentInvalidateMock.mock.calls).toEqual([['failed']])
+      expect(ctx.scanService.markDirty).not.toHaveBeenCalled()
+      await recoveryBuildEntered.promise
+      await watcher.close()
+
+      expect(independentInvalidateMock.mock.calls).toEqual([['failed'], ['failed'], ['recovery']])
+      expect(ctx.scanService.markIndependentDirty.mock.calls).toEqual([['failed'], ['failed'], ['recovery']])
+      expect(ctx.scanService.markDirty).toHaveBeenCalledOnce()
+      expect(ctx.runtimeState.build.hmr.dirtyEntrySet.size).toBe(0)
+    }
+    finally {
+      await watcher.close()
+    }
+  })
+
+  it('preserves known WXML child invalidation received while the initial snapshot is still building', async () => {
+    const watcher = createManualWatcher()
+    const sidecarWatcher = createManualSidecarWatcher()
+    const ctx = createMockContext()
+    const dependency = '/project/transform-rules.json'
+    ctx.runtimeState.wxmlProcessing.references.set(dependency, 1)
+    ctx.scanService.independentSubPackageMap = new Map([['independent', {}]])
+    ctx.scanService.markIndependentDirty = vi.fn()
+    ctx.moduleGraphService.hasModule.mockReturnValue(false)
+    chokidarWatchMock.mockReturnValue(sidecarWatcher)
+    const initialBuildEntered = Promise.withResolvers<void>()
+    const resumeInitialBuild = Promise.withResolvers<void>()
+    buildMock
+      .mockImplementationOnce(async () => {
+        initialBuildEntered.resolve()
+        await resumeInitialBuild.promise
+        return { output: [] }
+      })
+      .mockResolvedValue({ output: [] })
+    try {
+      const firstBuild = createBuildService(ctx).build({ skipNpm: true })
+      await initialBuildEntered.promise
+      moduleGraphProviderChange.handler?.({ event: 'update', file: dependency })
+      expect(independentInvalidateMock).not.toHaveBeenCalled()
+      expect(ctx.scanService.markIndependentDirty).not.toHaveBeenCalled()
+      resumeInitialBuild.resolve()
+      await watcher.subscribed
+      watcher.emit('START')
+      watcher.emit('END')
+      await firstBuild
+      await waitForMockCalls(buildMock, 2)
+
+      expect(buildMock).toHaveBeenCalledTimes(2)
+      expect(independentInvalidateMock.mock.calls).toEqual([['independent']])
+      expect(ctx.scanService.markIndependentDirty.mock.calls).toEqual([['independent']])
+    }
+    finally {
+      resumeInitialBuild.resolve()
+      await watcher.close()
+    }
   })
 
   it('classifies imported style changes through their graph-owned entry', async () => {
@@ -2985,7 +3236,7 @@ describe('runtime buildPlugin service', () => {
     await firstBuild
 
     const [patterns] = chokidarWatchMock.mock.calls[0]!
-    expect(patterns).toContain('/workspace/packages/shared/**')
+    expect(patterns).toContain('/workspace/packages/shared')
 
     sidecarWatcher.emit('change', '/workspace/packages/shared/message.ts')
     await flushAsyncTasks()
@@ -3207,7 +3458,7 @@ describe('runtime buildPlugin service', () => {
     expect(buildMock).toHaveBeenCalledTimes(1)
   })
 
-  it('narrows snapshot sidecar watcher to sidecar globs and ignores generated roots', async () => {
+  it('registers real snapshot sidecar directories and ignores generated roots', async () => {
     const watcher = createManualWatcher()
     const sidecarWatcher = createManualSidecarWatcher()
     chokidarWatchMock.mockReturnValue(sidecarWatcher)
@@ -3227,13 +3478,7 @@ describe('runtime buildPlugin service', () => {
     await firstBuild
 
     const [patterns, options] = chokidarWatchMock.mock.calls[0]!
-    expect(patterns).toEqual(expect.arrayContaining([
-      '/project/**/*.json',
-      '/project/**/*.wxml',
-      '/project/**/*.wxss',
-      '/project/**/*.wxs',
-    ]))
-    expect(patterns).not.toContain('/project')
+    expect(patterns).toEqual(['/project'])
     expect(options.ignored('/project/node_modules/tdesign-miniprogram/miniprogram_dist/button/button.wxml')).toBe(true)
     expect(options.ignored('/project/dist/pages/index/index.wxml')).toBe(true)
     expect(options.ignored('/project/.weapp-vite/components.d.ts')).toBe(true)

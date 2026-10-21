@@ -3,6 +3,7 @@ import { realpathSync } from 'node:fs'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { compileVueFile } from 'wevu/compiler'
 import { createLogicalEntryId } from '../../../moduleGraph/protocol'
+import { getHmrRuntimeSession } from '../../../runtime/hmrRuntimeSession'
 import { normalizeVueTemplateForPlatform } from './bundle/platform'
 import { createCompileVueFileOptions, isVueTransformSourceMapEnabled, resolveSfcStylePreprocessOptions, resolveVueTemplatePlatformOptions } from './compileOptions'
 
@@ -31,6 +32,7 @@ const isAutoSetDataPickEnabledWithPresetMock = vi.hoisted(() => vi.fn(() => true
 vi.mock('../../../logger', () => ({
   default: {
     warn: loggerWarnMock,
+    info: vi.fn(),
   },
 }))
 
@@ -1297,6 +1299,28 @@ describe('resolveVueTemplatePlatformOptions', () => {
     )
 
     expect(options.stabilizeCssVarsRuntime).toBe(false)
+  })
+
+  it.each(['auto', 'stateful-experimental'] as const)('uses classic compiler options after %s falls back without rewriting user configuration', (runtime) => {
+    const ctx = {} as CompilerContext
+    const config = {
+      platform: 'weapp',
+      isDev: true,
+      outputExtensions: {},
+      projectPrivateConfig: { setting: { compileHotReLoad: true } },
+      weappViteConfig: { hmr: { runtime } },
+      relativeOutputPath: () => undefined,
+    }
+    const state = { reExportResolutionCache: new Map(), classStyleRuntimeWarned: { value: false }, compileOptionsCache: new Map() }
+    const compileOptions = () => createCompileVueFileOptions(ctx, {}, 'src/pages/index.vue', true, false, config as any, state)
+    expect(compileOptions().stabilizeCssVarsRuntime).toBe(true)
+    const session = getHmrRuntimeSession(ctx)
+    session.requestClassic({ code: 'patch-shape', message: 'CSS variable registration changed' })
+    expect(compileOptions().stabilizeCssVarsRuntime).toBe(false)
+    session.markClassic()
+    expect(compileOptions().stabilizeCssVarsRuntime).toBe(false)
+    expect(config.weappViteConfig.hmr.runtime).toBe(runtime)
+    expect(config.projectPrivateConfig.setting.compileHotReLoad).toBe(true)
   })
 
   it('reuses cached compile options for the same vue entry', () => {

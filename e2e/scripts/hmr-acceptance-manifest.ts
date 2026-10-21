@@ -78,8 +78,8 @@ export const HMR_ACCEPTANCE_SCENARIOS: HmrAcceptanceScenario[] = [
   },
   {
     id: 'native-css-and-tailwind',
-    expectations: ['stateful', 'classic'],
-    capabilityIds: ['script-patch', 'visual-assets'],
+    expectations: ['stateful', 'classic', 'classic-fallback'],
+    capabilityIds: ['script-patch', 'visual-assets', 'patch-shape'],
     ide: ['ide/issue-1015-css-hmr.runtime.test.ts', 'ide/issue-998-tailwind.runtime.test.ts', 'ide/template-tailwindcss-tdesign-hmr.runtime.test.ts'],
     headless: ['ide/issue-1015-css-hmr.runtime.test.ts', 'ide/issue-998-tailwind.runtime.test.ts'],
   },
@@ -174,7 +174,12 @@ export const HMR_ACCEPTANCE_SCENARIOS: HmrAcceptanceScenario[] = [
 
 const ROOT = path.resolve(import.meta.dirname, '..')
 
-export const HMR_ACCEPTANCE_BUILD_TESTS = [...new Set([
+/** 先统一分隔符再去重，避免 Windows 的原生路径与清单 POSIX 路径重复执行。 */
+export function uniqueHmrBuildTests(files: readonly string[]) {
+  return [...new Set(files.map(file => file.replaceAll('\\', '/')))]
+}
+
+export const HMR_ACCEPTANCE_BUILD_TESTS = uniqueHmrBuildTests([
   ...HMR_GUARD_ALL_TESTS,
   ...[
     'ci/stateful-app-shell-hmr.test.ts',
@@ -187,7 +192,7 @@ export const HMR_ACCEPTANCE_BUILD_TESTS = [...new Set([
     'ci/issue-1081-batch-recovery.test.ts',
     'ci/hmr-platform-fallback.test.ts',
   ].map(file => path.resolve(ROOT, file)),
-])]
+])
 
 export function hmrAcceptanceRuntimeFiles(provider: 'ide' | 'headless') {
   return [...new Set(HMR_ACCEPTANCE_SCENARIOS.flatMap(scenario => scenario[provider]))]

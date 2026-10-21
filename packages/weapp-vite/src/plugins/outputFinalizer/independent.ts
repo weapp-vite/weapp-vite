@@ -42,6 +42,25 @@ export function collectIndependentOutputFileNames(ctx: CompilerContext) {
   return [...names]
 }
 
+function pruneRemovedIndependentOutputs(ctx: CompilerContext) {
+  const independentState = ctx.runtimeState?.build?.independent
+  if (!independentState) {
+    return
+  }
+  for (const root of independentState.watchFiles?.keys() ?? []) {
+    if (!ctx.scanService.independentSubPackageMap.has(root)) {
+      independentState.watchFiles.delete(root)
+      independentState.outputs.delete(root)
+    }
+  }
+}
+
+/** 在本轮首次异步等待前冻结有效子产物，后续事件失效只影响下一轮构建。 */
+export function captureIndependentOutputFileNames(ctx: CompilerContext) {
+  pruneRemovedIndependentOutputs(ctx)
+  return collectIndependentOutputFileNames(ctx)
+}
+
 export async function flushIndependentOutputs(
   ctx: CompilerContext,
   subPackageMeta: SubPackageMetaValue | undefined,
@@ -55,12 +74,7 @@ export async function flushIndependentOutputs(
   if (!independentState) {
     return
   }
-  for (const root of independentState.watchFiles?.keys() ?? []) {
-    if (!ctx.scanService.independentSubPackageMap.has(root)) {
-      independentState.watchFiles.delete(root)
-      independentState.outputs.delete(root)
-    }
-  }
+  pruneRemovedIndependentOutputs(ctx)
   const pendingOutputs = independentState.pendingOutputs
   if (pendingOutputs.length === 0) {
     return

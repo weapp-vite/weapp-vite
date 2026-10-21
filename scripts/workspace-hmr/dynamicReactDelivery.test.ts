@@ -2,6 +2,8 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createEmittedScriptReader } from '../benchmarkTemplatesHmr/emittedOutput'
+import { WorkspaceHmrClassicFallback } from './classicFallback'
 import { prepareDynamicReactMutation } from './dynamicReactDelivery'
 import { StatefulHmrAuditClient } from './statefulAuditClient'
 
@@ -84,6 +86,34 @@ describe('explicit dynamic React audit delivery', () => {
     })
   })
 
+  it('switches to proven classic output before reading the removed control or polling again', async () => {
+    const request = vi.fn(async () => new Response(JSON.stringify({ type: 'registered' })))
+    const fallback = new WorkspaceHmrClassicFallback(root, () => [
+      '[weapp-vite] HMR fallback {"from":"stateful-experimental","to":"classic","reason":"patch-shape"}',
+      '[weapp-vite] HMR classic ready {"reason":"patch-shape"}',
+    ].join('\n'))
+    const mutation = await prepareDynamicReactMutation({
+      client: new StatefulHmrAuditClient(request),
+      distRoot: root,
+      entryFile: path.join(root, 'pages/index.js'),
+      timeoutMs,
+      classicFallback: (currentMarker, contains, budget) => fallback.waitForDelivery({
+        readOutput: createEmittedScriptReader(path.join(root, 'pages/index.js'), root),
+        output: 'pages/index.js',
+        marker: currentMarker,
+        contains,
+        ...budget,
+      }),
+    })
+    await rm(path.join(root, '__weapp_vite_hmr'), { recursive: true })
+    await write('app.js', 'App({});')
+    await write('app.json', JSON.stringify({ pages: ['pages/index'] }))
+    await write('pages/index.js', 'require("./render.js");')
+    await write('pages/render.js', `console.log('${marker}');`)
+    await expect(mutation.waitForDelivery(marker, true)).resolves.toMatchObject({ delivery: 'classic', reason: 'patch-shape', containsMarker: true })
+    expect(request).toHaveBeenCalledOnce()
+  })
+
   it.each(['full-reload', 'patch'])('rejects %s delivery when transport exhausts the deadline', async (delivery) => {
     const mutation = await prepare()
     if (delivery === 'full-reload') {
@@ -95,6 +125,18 @@ describe('explicit dynamic React audit delivery', () => {
     }
     requestElapsedMs = timeoutMs
     await expect(mutation.waitForDelivery(marker, true)).rejects.toThrow('Timed out')
+  })
+
+  it('does not extend the caller deadline when a classic callback returns late', async () => {
+    const signal = new AbortController().signal
+    const classicFallback = vi.fn(async (_marker, _contains, budget) => {
+      expect(budget).toEqual({ deadline: 40, signal })
+      clock.now = 41
+      return { delivery: 'classic' as const, from: 'stateful-experimental' as const, actualMode: 'classic' as const, reason: 'patch-shape', output: 'pages/index.js', containsMarker: true }
+    })
+    const mutation = await prepareDynamicReactMutation({ client, distRoot: root, entryFile: path.join(root, 'pages/index.js'), timeoutMs, classicFallback })
+    await expect(mutation.waitForDelivery(marker, true, undefined, { deadline: 40, signal })).rejects.toThrow('Timed out')
+    expect(classicFallback).toHaveBeenCalledOnce()
   })
 
   it('binds restore to a new pre-mutation identity and accepts only current reachable marker absence', async () => {

@@ -157,7 +157,7 @@ jobs:
       head_ref: ${{ needs.pr-context.outputs.head_ref }}
       base_ref: ${{ needs.pr-context.outputs.base_ref }}
       runs_on: ${{ inputs.runs_on }}
-      node_version: ${{ inputs.node_version }}
+      node_version: ${{ needs.build.outputs.node_version }}
       timeout_minutes: 40
       consume_build_artifact: quality-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-build
       consume_aux_artifact: coverage-plan-${{ inputs.runs_on }}-node-${{ inputs.node_version }}
@@ -190,7 +190,7 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup-node-pnpm
         with:
-          node-version: ${{ inputs.node_version }}
+          node-version: ${{ needs.build.outputs.node_version }}
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
           name: quality-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-build

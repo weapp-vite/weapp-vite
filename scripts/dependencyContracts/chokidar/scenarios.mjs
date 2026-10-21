@@ -23,6 +23,8 @@ export const scenarios = [
   { id: 'native-inode-rebind-observes-next-change', kind: 'file-branches', platform: 'native', branch: 'inode' },
   { id: 'shared-native-inode-direct-file', kind: 'shared-inode', platform: 'native', branch: 'inode' },
   { id: 'polling-file-events-and-exact-stop', kind: 'file-branches', platform: 'native', branch: 'polling' },
+  { id: 'polling-upgrade-old-owner-close', kind: 'polling-owners', platform: 'native', closeUpgrader: false },
+  { id: 'polling-upgrade-new-owner-close', kind: 'polling-owners', platform: 'native', closeUpgrader: true },
   { id: 'synchronous-add-cancel-preserves-shared-owner', kind: 'file-branches', platform: 'native', branch: 'sync-add-cancel' },
   { id: 'shared-native-inode-late-sibling-enoent', kind: 'shared-inode-late-error', platform: 'native', branch: 'inode' },
   { id: 'shared-native-inode-survivor-after-close', kind: 'shared-inode-survivor', platform: 'native', branch: 'inode' },

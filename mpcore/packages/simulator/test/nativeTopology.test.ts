@@ -29,6 +29,10 @@ it.each(['node', 'browser'] as const)('%s renders changed native component and r
       const session = provider === 'node' ? createHeadlessSession({ projectPath }) : createBrowserHeadlessSession({ files })
       try {
         session.reLaunch('/pages/plain/index')
+        expect(session.getApp()?.fixtureConfig).toEqual({
+          pages: ['pages/plain/index', 'pages/imported/index', ...(enabled ? ['pages/optional/index'] : [])],
+          plainUsingComponents: enabled ? { 'optional-card': '/components/optional/index' } : {},
+        })
         const nodes = parseDocument(session.renderCurrentPage().wxml).children
         expect(textContent(selectOne('.plain', nodes)!)).toBe('baseline')
         expect(selectOne('#optional-component', nodes) !== null).toBe(enabled)

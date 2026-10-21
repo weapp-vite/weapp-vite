@@ -2,6 +2,10 @@ name: Reusable Node Command
 
 on:
   workflow_call:
+    outputs:
+      node_version:
+        description: Actual full Node.js version used by this command
+        value: ${{ jobs.run.outputs.node_version }}
     inputs:
       verification_topology:
         required: false
@@ -143,6 +147,8 @@ jobs:
   run:
     runs-on: ${{ inputs.runs_on }}
     timeout-minutes: ${{ inputs.timeout_minutes }}
+    outputs:
+      node_version: ${{ steps.toolchain.outputs.node-version }}
     env:
       WEAPP_VITE_VERIFICATION_TOPOLOGY: ${{ inputs.verification_topology }}
       TURBO_TOKEN: ${{ inputs.pr_number == '' && secrets.TURBO_TOKEN || '' }}
@@ -174,6 +180,7 @@ jobs:
           PR_BASE_SHA: ${{ inputs.base_sha }}
         run: git fetch --no-tags origin "$PR_BASE_SHA"
       - uses: ./.github/actions/setup-node-pnpm
+        id: toolchain
         with:
           node-version: ${{ inputs.node_version }}
       - name: Restore trusted workspace task cache

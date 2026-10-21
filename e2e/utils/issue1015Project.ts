@@ -1,10 +1,10 @@
-import { cp, mkdir, mkdtemp, realpath, rm, symlink } from 'node:fs/promises'
+import { cp, mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
 const ROOT = path.resolve(import.meta.dirname, '../..')
 export const ISSUE_1015_CLI = path.join(ROOT, 'packages/weapp-vite/bin/weapp-vite.js')
 
-export async function createIssue1015Project() {
+export async function createIssue1015Project(options: { nativePublication?: boolean } = {}) {
   const parent = path.join(ROOT, '.tmp/e2e-projects')
   await mkdir(parent, { recursive: true })
   const project = await mkdtemp(path.join(parent, 'issue-1015-'))
@@ -16,6 +16,15 @@ export async function createIssue1015Project() {
   await mkdir(path.join(project, 'node_modules'))
   for (const [name, relative] of [['weapp-vite', 'packages/weapp-vite'], ['wevu', 'packages-runtime/wevu']] as const) {
     await symlink(await realpath(path.join(ROOT, relative)), path.join(project, 'node_modules', name), 'junction')
+  }
+  if (options.nativePublication) {
+    const configPath = path.join(project, 'weapp-vite.config.mjs')
+    const observer = path.relative(project, path.join(ROOT, 'e2e/utils/nativePublication/plugin.ts')).replaceAll('\\', '/')
+    const config = await readFile(configPath, 'utf8')
+    await writeFile(configPath, `import { nativePublicationPlugin } from ${JSON.stringify(observer)}\n${config.replace(
+      'export default defineConfig({',
+      'export default defineConfig({\n  plugins: [nativePublicationPlugin({ profilePath: process.env.WEAPP_VITE_HMR_PROFILE_JSON })],',
+    )}`)
   }
   return project
 }

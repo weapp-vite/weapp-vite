@@ -23,6 +23,7 @@ import { removeExtensionDeep } from '@weapp-core/shared'
 import { fs } from '@weapp-core/shared/node'
 import chokidar from 'chokidar'
 import path from 'pathe'
+import picomatch from 'picomatch'
 import { build } from 'vite'
 import { debug, logger } from '../../context/shared'
 import { createDevModuleGraphProvider } from '../../moduleGraph/devProvider'
@@ -37,9 +38,7 @@ import {
   isSidecarFile,
   watchedCssExts,
   watchedCssSuffixes,
-  watchedScriptModuleSuffixes,
   watchedTemplateExts,
-  watchedTemplateSuffixes,
 } from '../../plugins/utils/invalidateEntry/shared'
 import { isLayoutSourcePath } from '../../plugins/utils/layoutSourcePath'
 import { isAppVueFile } from '../../plugins/vue/transform/appShell'
@@ -49,6 +48,7 @@ import { resolveCompilerOutputExtensions } from '../../utils/outputExtensions'
 import { syncProjectConfigToOutput } from '../../utils/projectConfig'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { isWxmlDependency } from '../../wxml/processing/dependencies'
+import { resolveBaseDir, WEAPP_VITE_INTERNAL_DIRNAME } from '../autoImport/config/base'
 import { ownsAutoRoutesTopologyChange, subscribeAutoRoutesTopology } from '../autoRoutesPlugin/topology'
 import { waitForBuildTasks } from '../compilerSession/tasks'
 import { findSkylineRendererFiles, formatHmrRuntimeStartupMessages, resolveHmrRuntimeDecision } from '../hmrRuntime'
@@ -220,6 +220,8 @@ interface SnapshotBuildReason {
   file?: string
   forceFullRescan?: boolean
   independentOutput?: boolean
+  independentRoots?: string[]
+  independentMetadata?: boolean
 }
 
 interface SnapshotBuildBatch {
@@ -267,7 +269,6 @@ function resolveSnapshotSidecarDirtySummary(
 }
 
 type ActiveConfigService = NonNullable<MutableCompilerContext['configService']>
-const watchedSnapshotScriptExts = new Set(['.ts', '.tsx', '.js', '.jsx', '.mts', '.cts', '.mjs', '.cjs'])
 const SNAPSHOT_BUILD_BATCH_DELAY_MS = 8
 const SIDECAR_WATCHER_READY_TIMEOUT_MS = 30_000
 
@@ -364,17 +365,14 @@ function resolveUserBuildWatchInclude(configService: ActiveConfigService, inline
 }
 
 function createSnapshotSidecarWatchPatterns(configService: ActiveConfigService, inlineConfig?: InlineConfig) {
-  const root = configService.absoluteSrcRoot
   const patterns: string[] = [
-    ...configSuffixes.map(suffix => path.join(root, `**/*${suffix}`)),
-    ...watchedCssSuffixes.map(ext => path.join(root, `**/*${ext}`)),
-    ...watchedTemplateSuffixes.map(ext => path.join(root, `**/*${ext}`)),
-    ...watchedScriptModuleSuffixes.map(ext => path.join(root, `**/*${ext}`)),
-    ...Array.from(watchedSnapshotScriptExts).map(ext => path.join(root, `**/*${ext}`)),
+    // Chokidar 4+ 不再展开 glob；目录监听才能覆盖尚未进入主依赖图的独立包 sidecar。
+    configService.absoluteSrcRoot,
     ...(configService.configFileDependencies ?? []).map(dependency => path.normalize(dependency)),
   ]
   for (const include of resolveUserBuildWatchInclude(configService, inlineConfig)) {
-    patterns.push(include)
+    const scanned = picomatch.scan(include)
+    patterns.push(scanned.isGlob ? scanned.base || path.parse(include).root : include)
   }
   return patterns
 }
@@ -1277,8 +1275,10 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
 
   function isDevOutputFile(filePath: string) {
     const normalizedOutDir = normalizeFsResolvedId(configService.outDir)
+    const normalizedSupportDir = normalizeFsResolvedId(path.join(resolveBaseDir(configService), WEAPP_VITE_INTERNAL_DIRNAME))
     const normalizedFile = normalizeFsResolvedId(filePath)
-    return normalizedFile === normalizedOutDir || normalizedFile.startsWith(`${normalizedOutDir}/`)
+    return [normalizedOutDir, normalizedSupportDir]
+      .some(root => normalizedFile === root || normalizedFile.startsWith(`${root}/`))
   }
 
   function shouldRestartDevBuild(target: BuildTarget) {
@@ -1722,6 +1722,15 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         if (batchReasons.length !== receivedReasons.length) {
           reason = resolveSnapshotBatchReason({ reasons: batchReasons, startedAt: eventStartedAt })
         }
+        // 后续文件事件只能入队；当前串行批次才可撤销缓存及扫描结果，避免夺走上一代待发布的子产物。
+        if (batchReasons.some(batchReason => batchReason.independentMetadata)) {
+          scanService.markDirty()
+        }
+        const independentRoots = new Set(batchReasons.flatMap(batchReason => batchReason.independentRoots ?? []))
+        for (const root of independentRoots) {
+          invalidateIndependentOutput(root)
+          scanService.markIndependentDirty(root)
+        }
         // 当前串行构建独占 graph pending；后续事件继续留在本地批次队列。
         for (const batchReason of batchReasons) {
           if (batchReason.file) {
@@ -1997,15 +2006,22 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       debug?.(`[module-graph-provider] event=${event} change=${configService.relativeAbsoluteSrcRoot(id)} module=${hasModule}`)
       if (!emittedEntryTopology) {
         // 首构尚未登记依赖图；已接收的保存仍须在首次写出后进入同一串行快照队列。
-        scheduleSnapshotBuild({ event, file: id, forceFullRescan: true, verifyInitialInput: true }, receivedAtMs)
+        scheduleSnapshotBuild({
+          event,
+          file: id,
+          forceFullRescan: true,
+          verifyInitialInput: true,
+          independentRoots: isWxmlDependency(ctx, id) ? [...scanService.independentSubPackageMap.keys()] : undefined,
+        }, receivedAtMs)
         return
       }
       if (isWxmlDependency(ctx, id)) {
-        for (const root of scanService.independentSubPackageMap.keys()) {
-          invalidateIndependentOutput(root)
-          scanService.markIndependentDirty(root)
-        }
-        scheduleSnapshotBuild({ event, file: id, forceFullRescan: true }, receivedAtMs)
+        scheduleSnapshotBuild({
+          event,
+          file: id,
+          forceFullRescan: true,
+          independentRoots: [...scanService.independentSubPackageMap.keys()],
+        }, receivedAtMs)
         return
       }
       if (!hasModule && !initialBuildFailed) {
@@ -2327,16 +2343,6 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           requestedConfigRestartBuilds.add(target)
         }
         const independentConfigDependency = independentSource && configSuffixes.some(suffix => normalizedId.endsWith(suffix))
-        if (independentConfigDependency) {
-          // Independent child metadata is not part of the main entry map, so
-          // topology changes there must invalidate the scan snapshot before
-          // the child bundle is rebuilt.
-          scanService.markDirty()
-        }
-        for (const root of independentRoots) {
-          invalidateIndependentOutput(root)
-          scanService.markIndependentDirty(root)
-        }
         const sidecarStartedAt = performance.now()
         const normalizedEvent = event.startsWith('unlink')
           ? 'delete'
@@ -2347,6 +2353,8 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           event: normalizedEvent,
           file: id,
           independentOutput: independentRoots.size > 0,
+          independentRoots: [...independentRoots],
+          independentMetadata: independentConfigDependency,
           forceFullRescan: !independentSource || isConfigDependency,
         }, sidecarStartedAt)
       })

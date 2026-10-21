@@ -7,6 +7,8 @@ import { createDevProcessEnv } from '../utils/dev-process-env'
 import { createDomAcceptance } from '../utils/domAcceptance'
 import { createHmrMarker, replaceFileByRename, waitForFileContains } from '../utils/hmr-helpers'
 import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
+import { createNativeHmrPublication } from '../utils/nativeHmrPublication'
+import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import {
   buildSharedHmrPageWxml,
   buildSharedHmrVueSource,
@@ -16,6 +18,7 @@ import {
 } from '../utils/shared-hmr-fixture'
 import { APP_ROOT, CLI_PATH, DIST_ROOT, waitForFile, waitForVendorFileContains } from '../wevu-runtime.utils'
 import { CLASSIC_WXS_RELOAD_CHECKPOINT, waitForClassicWxsReload } from './wevuRuntimeDom/classicWxs'
+import { observeHeadlessCurrentTemplate } from './wevuRuntimeDom/headlessTemplateObservation'
 
 const SHARED_HMR_PATHS = resolveSharedHmrPaths(APP_ROOT)
 const SHARED_HMR_IMPORTS = resolveSharedHmrRelativeImports()
@@ -92,6 +95,7 @@ async function waitForSharedMarkers(
     wxs?: string
   },
 ) {
+  await observeHeadlessCurrentTemplate(miniProgram)
   if (markers.template) {
     await waitForStorageMarker(miniProgram, SHARED_TEMPLATE_STORAGE_KEY, markers.template)
   }
@@ -346,6 +350,15 @@ describe('wevu runtime shared template/wxs hmr (ide)', { concurrent: false }, ()
         updatedWxsSource,
       )
       expect(updatedWxsOutput).toContain(updatedWxsMarker)
+      if (resolveRuntimeProviderName() === 'headless') {
+        // companion 验证明确配置的 classic 新产物冷启动；不把重开 VM 当作 IDE 自动刷新。
+        const publication = createNativeHmrPublication(APP_ROOT, sharedDev, 'classic')
+        await publication.assertClassicRuntime(miniProgram)
+        await miniProgram.close()
+        sharedMiniProgram = null
+        miniProgram = await getSharedMiniProgram()
+        await publication.assertClassicRuntime(miniProgram)
+      }
       // classic 的 WXS 更新重启 AppService；这里显式验收刷新，不能按 stateful 状态保持处理。
       await dom.check(CLASSIC_WXS_RELOAD_CHECKPOINT.id, miniProgram, await waitForClassicWxsReload(miniProgram))
       page = await miniProgram.reLaunch('/pages/hmr-sfc/index')

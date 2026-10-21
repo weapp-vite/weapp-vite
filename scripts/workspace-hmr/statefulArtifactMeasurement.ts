@@ -1,6 +1,7 @@
 import type { StatefulHmrAuditClient, StatefulHmrAuditControl } from './statefulAuditClient'
 import type { StatefulHmrAuditEvent } from './statefulAuditUpdate'
 import { setTimeout as sleep } from 'node:timers/promises'
+import { isStatefulHmrAuditRetirementError } from './statefulAuditClient'
 
 interface StatefulArtifactMeasurementOptions<T> {
   client?: StatefulHmrAuditClient
@@ -8,9 +9,11 @@ interface StatefulArtifactMeasurementOptions<T> {
   isCurrentUpdate: (signal?: AbortSignal) => Promise<boolean>
   measure: (signal: AbortSignal) => Promise<T>
   timeoutMs: number
+  deadline?: number
   signal?: AbortSignal
   onEvent?: (event: StatefulHmrAuditEvent) => void
   onAcknowledgement?: (event: { phase: 'start' | 'complete', buildId: string, targetVersion: number }) => void
+  isClassicFallback?: (signal: AbortSignal, deadline: number) => Promise<boolean>
 }
 
 function abortable<T>(task: Promise<T>, signal: AbortSignal): Promise<T> {
@@ -36,7 +39,8 @@ export async function measureStatefulTemplateArtifact<T>(options: StatefulArtifa
   }
   const deadline = new AbortController()
   const timeoutFailure = new Error('Timed out consuming a stateful HMR batch matching the current template artifact.')
-  const deadlineTimer = setTimeout(() => deadline.abort(timeoutFailure), options.timeoutMs)
+  const deadlineAt = options.deadline ?? Date.now() + options.timeoutMs
+  const deadlineTimer = setTimeout(() => deadline.abort(timeoutFailure), Math.max(0, deadlineAt - Date.now()))
   const consumerSignal = AbortSignal.any([signal, deadline.signal])
   const consumeUntilCancelled = <R>(task: Promise<R>) => abortable(task, consumerSignal)
   const measurement = abortable((async () => options.measure(signal))(), signal)
@@ -44,6 +48,13 @@ export async function measureStatefulTemplateArtifact<T>(options: StatefulArtifa
   async function readControl() {
     while (true) {
       consumerSignal.throwIfAborted()
+      if (await options.isClassicFallback?.(consumerSignal, deadlineAt)) {
+        consumerSignal.throwIfAborted()
+        if (Date.now() >= deadlineAt) {
+          throw timeoutFailure
+        }
+        return undefined
+      }
       try {
         return await consumeUntilCancelled(options.readControl(consumerSignal))
       }
@@ -62,6 +73,9 @@ export async function measureStatefulTemplateArtifact<T>(options: StatefulArtifa
       while (true) {
         consumerSignal.throwIfAborted()
         const control = await readControl()
+        if (!control) {
+          return
+        }
         // 总期限由同一个 signal 持有；请求计时器不再重新取整剩余时间、争抢截止错误。
         await consumeUntilCancelled(client.ensureRegistered(control, options.timeoutMs, consumerSignal))
         if (!client.supportsExplicitAcknowledgement) {
@@ -82,6 +96,9 @@ export async function measureStatefulTemplateArtifact<T>(options: StatefulArtifa
             throw error
           })
           const current = await readControl()
+          if (!current) {
+            return
+          }
           if (current.buildId !== control.buildId || current.token !== control.token || current.url !== control.url) {
             continue
           }
@@ -95,6 +112,13 @@ export async function measureStatefulTemplateArtifact<T>(options: StatefulArtifa
       }
     }
     catch (error) {
+      if (isStatefulHmrAuditRetirementError(error) && await options.isClassicFallback?.(consumerSignal, deadlineAt)) {
+        consumerSignal.throwIfAborted()
+        if (Date.now() >= deadlineAt) {
+          throw timeoutFailure
+        }
+        return
+      }
       if (error !== timeoutFailure) {
         throw error
       }

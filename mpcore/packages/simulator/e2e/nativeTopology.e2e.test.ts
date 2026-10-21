@@ -28,6 +28,10 @@ it('renders native imported style updates and restored component and route topol
       }
       try {
         render('/pages/plain/index')
+        expect(session.getApp()?.fixtureConfig).toEqual({
+          pages: ['pages/plain/index', 'pages/imported/index', ...(enabled ? ['pages/optional/index'] : [])],
+          plainUsingComponents: enabled ? { 'optional-card': '/components/optional/index' } : {},
+        })
         expect(content.querySelector('.plain')?.textContent).toBe('baseline')
         expect(content.querySelector('#optional-component')?.textContent?.trim() ?? null).toBe(enabled ? 'optional-component' : null)
         for (const [color, computed] of [['#123', 'rgb(17, 34, 51)'], ['#456', 'rgb(68, 85, 102)'], ['#123', 'rgb(17, 34, 51)']]) {

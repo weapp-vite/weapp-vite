@@ -182,6 +182,11 @@ export class HeadlessTestingSessionHandle {
     return await this.requireCurrentPage('reLaunch', route)
   }
 
+  /** 只更新页面定义；不隐式导航，也不替换当前页面或应用实例。 */
+  async reloadPageDefinition(route: string): Promise<boolean> {
+    return this.session.reloadPageDefinition(route)
+  }
+
   async navigateTo(route: string) {
     await this.navigation.invoke('navigateTo', {
       url: route,

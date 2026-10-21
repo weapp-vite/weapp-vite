@@ -1,5 +1,6 @@
 import type { TemplateNodeLike, TemplateRenderState } from './templateRuntime'
 import type { WxsModuleBindings } from './wxs'
+import { expandTemplateIncludes } from './templateIncludes'
 import { createTemplateRenderState } from './templateRuntime'
 
 export function createImportedTemplateState<T extends TemplateNodeLike>(
@@ -16,12 +17,14 @@ export function createImportedTemplateState<T extends TemplateNodeLike>(
     if (existing) {
       return existing
     }
+    const owners = expandTemplateIncludes(node, owner, loadImport)
     const state = createTemplateRenderState(node)
     const wxsModules: WxsModuleBindings = Object.create(null)
     const ownDefinitions = new Map(state.definitions)
     const document = { state, exports: ownDefinitions }
     documents.set(owner, document)
     const visit = (child: T) => {
+      const sourceOwner = owners.get(child) ?? owner
       if (child.name === 'wxs' && loadWxs) {
         const name = child.attribs?.module
         if (!name || !/^[a-z_$][\w$]*$/i.test(name) || ['__proto__', 'constructor', 'prototype'].includes(name)) {
@@ -30,12 +33,12 @@ export function createImportedTemplateState<T extends TemplateNodeLike>(
         if (Object.hasOwn(wxsModules, name)) {
           throw new Error(`Duplicate WXS module in ${owner}: ${name}`)
         }
-        wxsModules[name] = loadWxs(owner, child)
+        wxsModules[name] = loadWxs(sourceOwner, child)
         return
       }
       if (child.name === 'import' && child.attribs?.src) {
         const source = child.attribs.src
-        const imported = loadImport(owner, source.endsWith('.wxml') ? source : `${source}.wxml`)
+        const imported = loadImport(sourceOwner, source.endsWith('.wxml') ? source : `${source}.wxml`)
         const importedDocument = collect(imported.root, imported.filePath)
         for (const [name, definition] of importedDocument.exports) {
           state.definitions.set(name, definition)

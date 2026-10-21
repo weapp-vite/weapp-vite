@@ -1,6 +1,6 @@
 # Chokidar 依赖契约
 
-正式入口只读取当前安装的 `chokidar`，固定运行 27 个场景中的全部适用项，不接受候选入口、场景筛选或超时覆盖参数：
+正式入口只读取当前安装的 `chokidar`，固定运行 29 个场景中的全部适用项，不接受候选入口、场景筛选或超时覆盖参数：
 
 ```sh
 node --import tsx scripts/dependencyContracts/chokidar/run.mjs --report .tmp/dependency-contracts/chokidar.json
@@ -24,6 +24,7 @@ node --import tsx scripts/dependencyContracts/chokidar/run.mjs --report .tmp/dep
 - 旧文件监听回调的真实 ENOENT 延迟返回，不得移除同路径的新代文件。
 - 真实 inode 更替后的原生重新绑定：同一 fixture 文件系统内、watched 目录外预先准备替换文件，订阅后先排空已观察的旧事件，再登记匹配替换文件 dev/ino/size 的 change waiter 并执行 rename；原 inode 的迟到事件不能代替重绑证据。第二次写入使用更长的 `r+` 内容并核验新大小与最终文本。
 - polling 的 change/unlink/add/change 和实际 stop 事件，以及同步 ADD/ready 回调中的 close/unwatch。
+- polling 的 120ms 非持久订阅升级为 100ms 持久订阅，保留已有 owner 的 raw/change；分别重复关闭旧 owner 或升级 owner，随后关闭所有 public owner，同路径独立原生 listener 和另一项目仍观察真实写入，最后精确释放并确认每个 StatWatcher 的 stop。
 - 两个 owner 直接监听同一真实文件，在真实 rename 替换 inode 后共享一个新原生 handle，双方收到随后真实 write 的 change；全程禁止父目录 watcher，旧 handle 与最终新 handle 均只关闭一次。该项和单 owner inode 项在 Windows 均明确记录 `non-applicable`。
 - 同一个共享原生代的两个 stat 同步派发后，先冻结一个 sibling 的真实 ENOENT，另一 sibling 取得新 inode 并完成 rebind；释放原 Error 后，两者均不能发布 unlink/add，且继续收到随后真实 write。门禁只控制原生读取及交还，不人工调用 watcher 回调。
 - 共享 inode rebind 后关闭并重复关闭一个 owner，新 handle 由幸存 owner 保持；后续真实 write 仍发布 change，末个 owner 关闭时每个 native handle 只 close 一次。新增两个 inode 边界在 Windows 同样明确记录 `non-applicable`。

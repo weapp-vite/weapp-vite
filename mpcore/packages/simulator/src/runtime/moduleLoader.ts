@@ -23,6 +23,7 @@ import {
 } from '../host'
 import { createWorkerHost } from '../runtime/workerHost'
 import { resolveMiniProgramModule } from './moduleResolution'
+import { reloadPageModuleDefinition } from './pageDefinitionReload'
 import { createMiniProgramRuntimeGlobals } from './runtimeGlobals'
 import { closeRuntimeWxsLoader } from './wxs'
 
@@ -32,10 +33,12 @@ export interface HeadlessModuleLoader {
   executeComponentModule: (filePath: string, id: string) => HeadlessComponentDefinition
   executeAppModule: (filePath: string) => HeadlessAppDefinition
   executePageModule: (filePath: string, route: string) => HeadlessPageDefinition
+  reloadPageModule: (filePath: string, route: string) => boolean
   wx: HeadlessWx
 }
 
 interface ModuleCacheEntry {
+  source: string
   componentDefinitions: HeadlessComponentDefinition[]
   exports: Record<string, any>
 }
@@ -285,6 +288,7 @@ export function createModuleLoader(
       throw new TypeError(`Missing module in headless runtime: ${normalize(resolvedPath)}`)
     }
     const module: ModuleCacheEntry = {
+      source,
       componentDefinitions: [],
       exports: {},
     }
@@ -387,6 +391,17 @@ export function createModuleLoader(
         throw new Error(`Page() was not registered for route "${route}" while executing ${normalize(filePath)}.`)
       }
       return definition
+    },
+    reloadPageModule(filePath, route) {
+      const resolvedPath = path.resolve(filePath)
+      return reloadPageModuleDefinition({
+        filePath: resolvedPath,
+        route,
+        source: options.artifactSource.readText(resolvedPath),
+        cache: moduleCache,
+        registries,
+        execute: () => loader.executePageModule(resolvedPath, route),
+      })
     },
     executeComponentModule(filePath, id) {
       const loadedModule = executeModule(filePath, { kind: 'component', route: id })

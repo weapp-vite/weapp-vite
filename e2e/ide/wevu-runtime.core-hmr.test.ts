@@ -1,7 +1,8 @@
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { isDevtoolsHttpPortError, launchAutomator } from '../utils/automator'
+import { isDevtoolsHttpPortError, launchAutomator, reconnectAutomator } from '../utils/automator'
+import { runCleanupSteps } from '../utils/cleanupSteps'
 import { startDevProcess } from '../utils/dev-process'
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { createDomAcceptance } from '../utils/domAcceptance'
@@ -18,10 +19,13 @@ import {
   cleanupResidualIdeProcesses,
 } from '../utils/ide-devtools-cleanup'
 import { appendIdeReportEvent } from '../utils/ideWarningReport'
+import { createNativeHmrPublication } from '../utils/nativeHmrPublication'
+import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import { waitForWevuRuntimeChunkContaining } from '../utils/wevu-vendor'
 import { APP_ROOT, CLI_PATH, DIST_ROOT, waitForFile } from '../wevu-runtime.utils'
-import { relaunchPage } from './github-issues.runtime.shared'
 import { coreHmrPlan } from './wevuRuntimeDom/coreHmr'
+import { enterCoreHmrRoute } from './wevuRuntimeDom/coreHmrSession'
+import { observeHeadlessCurrentTemplate } from './wevuRuntimeDom/headlessTemplateObservation'
 
 const BRIDGE_POST_CONNECT_REFRESH_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_POST_CONNECT_REFRESH'
 const HMR_PAGE_WXML = path.join(APP_ROOT, 'src/pages/hmr/index.wxml')
@@ -183,7 +187,7 @@ async function assertRuntimeProbe<T>(options: {
       route: options.route,
       storageKey: options.storageKey,
       expected: options.markers.join(', '),
-      files: { distRoot: DIST_ROOT, relativePaths: [path.relative(DIST_ROOT, options.distPath)], markers: options.markers },
+      files: { distRoot: DIST_ROOT, projectPath: APP_ROOT, relativePaths: [path.relative(DIST_ROOT, options.distPath)], markers: options.markers },
     })
     if (!isDevtoolsRuntimeProbeUnavailable(error)) {
       throw error
@@ -241,7 +245,7 @@ async function waitForStorageResultOk(miniProgram: any, storageKey: string, expe
 async function resetStorageMarker(miniProgram: any, storageKey: string) {
   await miniProgram.callWxMethodWithOptions('removeStorageSync', {
     timeout: 2_500,
-  }, storageKey).catch(() => {})
+  }, storageKey)
 }
 
 async function waitForTemplateProbeMarker(miniProgram: any, route: string, marker: string, timeoutMs = 12_000) {
@@ -344,7 +348,7 @@ async function closeMiniProgram() {
   if (!sharedMiniProgram) {
     return
   }
-  await sharedMiniProgram.close().catch(() => {})
+  await sharedMiniProgram.close()
   sharedMiniProgram = null
 }
 
@@ -357,6 +361,8 @@ async function ensureMiniProgram(ctx: { skip: (message?: string) => void }) {
       bridgeProjectMode: 'direct',
       projectPath: APP_ROOT,
       skipWarmup: true,
+      maxLaunchRetries: 1,
+      disableRelaunchSessionRecovery: true,
     })
     return sharedMiniProgram
   }
@@ -396,14 +402,12 @@ async function relaunchIdeRoute(
   readyText: string | undefined,
   ctx: { skip: (message?: string) => void },
   options: {
-    allowCurrentSession?: boolean
     storageReady?: { expected: string, field: string, key: string, requireOk?: boolean }
     validate?: (page: any) => Promise<void>
   } = {},
 ) {
-  // 同一套件优先复用 automator，会话确实失效时才清缓存并重连。
-  let lastError: unknown = null
   const createReadiness = (miniProgram: any, timeoutMs = 2_600) => async (page: any) => {
+    await observeHeadlessCurrentTemplate(miniProgram)
     if (readyText) {
       const distPath = resolveTemplateProbeDistPath(route)
       if (!distPath) {
@@ -444,65 +448,21 @@ async function relaunchIdeRoute(
     await options.validate?.(page)
     return true
   }
-  if (options.allowCurrentSession !== false && sharedMiniProgram) {
-    const currentPage = await sharedMiniProgram.currentPage({ appFunctionFallback: false })
-    if (currentPage?.path?.replace(/^\//, '') === route.replace(/^\//, '')) {
-      await createReadiness(sharedMiniProgram, 20_000)(currentPage)
-      const refreshedPage = await sharedMiniProgram.currentPage({ appFunctionFallback: false })
-      if (refreshedPage?.path?.replace(/^\//, '') !== route.replace(/^\//, '')) {
-        throw new Error(`Current route changed while waiting for HMR readiness: ${route}`)
-      }
-      return refreshedPage
-    }
-  }
-  if (options.allowCurrentSession !== false && sharedMiniProgram) {
-    try {
+  return await enterCoreHmrRoute({
+    session: await ensureMiniProgram(ctx),
+    route,
+    reconnect: resolveRuntimeProviderName() === 'devtools' ? reconnectAutomator : undefined,
+    replaceSession: (session) => { sharedMiniProgram = session },
+    readiness: (session, page, timeoutMs) => createReadiness(session, timeoutMs)(page),
+    beforeNavigate: async (session) => {
       const storageKey = readyText ? resolveTemplateProbeStorageKey(route) : ''
       if (storageKey) {
-        await resetStorageMarker(sharedMiniProgram, storageKey)
+        await resetStorageMarker(session, storageKey)
       }
       if (options.storageReady) {
-        await resetStorageMarker(sharedMiniProgram, options.storageReady.key)
+        await resetStorageMarker(session, options.storageReady.key)
       }
-      const page = await relaunchPage(sharedMiniProgram, route, undefined, 24_000, {
-        readiness: () => true,
-      })
-      if (page) {
-        await createReadiness(sharedMiniProgram)(page)
-        return page
-      }
-    }
-    catch (error) {
-      lastError = error
-    }
-  }
-
-  const recoveryPasses = [1_200, 1_800, 2_400] as const
-
-  for (const settleDelay of recoveryPasses) {
-    await closeMiniProgram()
-    await cleanupResidualDevtoolsProcesses()
-    await waitForIdeRecompileSettled(settleDelay)
-
-    const miniProgram = await ensureMiniProgram(ctx)
-    const storageKey = readyText ? resolveTemplateProbeStorageKey(route) : ''
-    if (storageKey) {
-      await resetStorageMarker(miniProgram, storageKey)
-    }
-    if (options.storageReady) {
-      await resetStorageMarker(miniProgram, options.storageReady.key)
-    }
-    const page = await relaunchPage(miniProgram, route, undefined, 24_000, {
-      readiness: () => true,
-    })
-    if (page) {
-      await createReadiness(miniProgram)(page)
-      return page
-    }
-  }
-
-  throw new Error(`Failed to relaunch IDE route: ${route}`, {
-    cause: lastError as Error,
+    },
   })
 }
 
@@ -568,8 +528,10 @@ describe('wevu runtime core hmr matrix (ide)', { concurrent: false }, () => {
 
   afterAll(async () => {
     try {
-      await closeMiniProgram()
-      await cleanupResidualIdeProcesses()
+      await runCleanupSteps([
+        { label: 'core HMR runtime', run: closeMiniProgram },
+        { label: 'core HMR owned resources', run: cleanupResidualIdeProcesses },
+      ])
     }
     finally {
       if (previousBridgePostConnectRefresh == null) {
@@ -637,7 +599,17 @@ describe('wevu runtime core hmr matrix (ide)', { concurrent: false }, () => {
       env: createDevProcessEnv(),
       stdio: 'inherit',
     })
+    const reloadHeadlessPageDefinition = async (route: string) => {
+      if (resolveRuntimeProviderName() !== 'headless') {
+        return
+      }
+      // companion 显式更新 classic 页面入口，保留共享 Store；真实 IDE 仍观察自动刷新。
+      await createNativeHmrPublication(APP_ROOT, dev, 'classic').assertClassicRuntime(sharedMiniProgram)
+      expect(await sharedMiniProgram.reloadPageDefinition(route)).toBe(true)
+      await sharedMiniProgram.reLaunch(route)
+    }
 
+    let primaryFailure: { error: unknown } | undefined
     try {
       await waitForInitialHmrDistReady(dev)
       expectSfcKeepImportResolved(await fs.readFile(HMR_SFC_WXSS_DIST, 'utf8'))
@@ -673,6 +645,7 @@ describe('wevu runtime core hmr matrix (ide)', { concurrent: false }, () => {
         'page script hmr marker emitted',
       )
       await waitForIdeRecompileSettled()
+      await reloadHeadlessPageDefinition('/pages/hmr/index')
       await relaunchIdeRoute('/pages/hmr/index', undefined, ctx, {
         storageReady: {
           expected: pageScriptMarker,
@@ -695,6 +668,7 @@ describe('wevu runtime core hmr matrix (ide)', { concurrent: false }, () => {
         'page style hmr marker emitted',
       )
       expect(pageStyleOutput).toContain(pageStyleMarker)
+      expect(pageStyleOutput).toMatch(/background-color\s*:\s*#dcfce7\b/i)
       await waitForIdeRecompileSettled()
       await relaunchIdeRoute('/pages/hmr/index', undefined, ctx, {
         storageReady: {
@@ -736,6 +710,7 @@ describe('wevu runtime core hmr matrix (ide)', { concurrent: false }, () => {
         'sfc script hmr marker emitted',
       )
       await waitForIdeRecompileSettled()
+      await reloadHeadlessPageDefinition('/pages/hmr-sfc/index')
       await relaunchIdeRoute('/pages/hmr-sfc/index', undefined, ctx, {
         storageReady: {
           expected: sfcScriptMarker,
@@ -758,6 +733,7 @@ describe('wevu runtime core hmr matrix (ide)', { concurrent: false }, () => {
         'sfc style hmr marker emitted',
       )
       expect(sfcStyleOutput).toContain(sfcStyleMarker)
+      expect(sfcStyleOutput).toMatch(/\bcolor\s*:\s*#be123c\b/i)
       expectSfcKeepImportResolved(sfcStyleOutput)
       await waitForIdeRecompileSettled()
       await relaunchIdeRoute('/pages/hmr-sfc/index', undefined, ctx, {
@@ -804,6 +780,7 @@ describe('wevu runtime core hmr matrix (ide)', { concurrent: false }, () => {
         'layout page script hmr marker emitted',
       )
       await waitForIdeRecompileSettled()
+      await reloadHeadlessPageDefinition('/pages/layouts/index')
       let refreshedLayoutPage: Awaited<ReturnType<typeof relaunchIdeRoute>>
       try {
         await layoutDiagnostics.capture('layout-script-emitted')
@@ -854,6 +831,7 @@ describe('wevu runtime core hmr matrix (ide)', { concurrent: false }, () => {
         'layout page style hmr marker emitted',
       )
       expect(layoutPageStyleOutput).toContain(layoutPageStyleMarker)
+      expect(layoutPageStyleOutput).toMatch(/background-color\s*:\s*#e0f2fe\b/i)
       await waitForIdeRecompileSettled()
       // 样式更新必须保留已交互的页面；DOM 轮询只等待当前路由，禁止导航恢复重置状态。
       let renderedIdentity: Awaited<ReturnType<typeof layoutStyleDiagnostics.capture>>
@@ -895,7 +873,6 @@ describe('wevu runtime core hmr matrix (ide)', { concurrent: false }, () => {
       })
       await check('store:restarted')
       await relaunchIdeRoute('/pages/store-share/index', undefined, ctx, {
-        allowCurrentSession: true,
         storageReady: {
           expected: 'store-share',
           field: 'name',
@@ -905,13 +882,28 @@ describe('wevu runtime core hmr matrix (ide)', { concurrent: false }, () => {
       })
       await check('store:shared')
     }
-    finally {
-      await closeMiniProgram()
-      await dev.stop(5_000)
-      for (const [filePath, source] of originalSources) {
-        await fs.writeFile(filePath, source, 'utf8')
+    catch (error) {
+      primaryFailure = { error }
+    }
+    try {
+      await runCleanupSteps([
+        { label: 'core HMR runtime', run: closeMiniProgram },
+        { label: 'core HMR dev watcher', run: () => dev.stop(5_000) },
+        ...[...originalSources].map(([filePath, source]) => ({
+          label: `core HMR source ${path.relative(APP_ROOT, filePath)}`,
+          run: () => fs.writeFile(filePath, source, 'utf8'),
+        })),
+        { label: 'core HMR owned resources', run: cleanupResidualIdeProcesses },
+      ])
+    }
+    catch (cleanupError) {
+      if (primaryFailure) {
+        throw new AggregateError([primaryFailure.error, cleanupError], 'Core HMR failed and cleanup did not complete', { cause: primaryFailure.error })
       }
-      await cleanupResidualIdeProcesses()
+      throw cleanupError
+    }
+    if (primaryFailure) {
+      throw primaryFailure.error
     }
   })
 })

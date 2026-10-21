@@ -560,6 +560,7 @@ class StatefulHmrSession {
       dirtyReasons: reasons,
       configurationChanged: /\.json$/i.test(normalizedFile)
         && !getCompilerHmrHost(this.ctx).ownsDependency(normalizedFile)
+        && !isWxmlDependency(this.ctx, normalizedFile)
         && !this.publicAssetSources.matchesPath(normalizedFile),
     })
     if (fallback) {
@@ -747,7 +748,10 @@ class StatefulHmrSession {
       files,
       dirtyReasons: [...dirtyReasonsByFile.values()].flat(),
       providerSupported: compilerHmrHost.supported,
-      configurationChanged: files.some(file => /\.json$/i.test(file) && !compilerHmrHost.ownsDependency(file) && !this.publicAssetSources.matchesPath(file)),
+      configurationChanged: files.some(file => /\.json$/i.test(file)
+        && !compilerHmrHost.ownsDependency(file)
+        && !isWxmlDependency(this.ctx, file)
+        && !this.publicAssetSources.matchesPath(file)),
       updateType: updates.some(item => item.update.type === 'FullReload') ? 'FullReload' : undefined,
     })
     if (capabilityFallback) {

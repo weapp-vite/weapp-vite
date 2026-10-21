@@ -118,15 +118,16 @@ it.each(['create', 'delete'] as const)('hands atomic route-directory %s and an i
   const project = await fixture(event === 'delete')
   let server: ViteDevServer | undefined
   const expectRoutes = async (containsAddedRoute: boolean) => {
-    await expect.poll(async () => {
+    // 原生 write 可并发发布文件；App JSON 就绪不能代替整个路由产物组就绪。
+    await vi.waitFor(async () => {
       const app = JSON.parse(await project.read('app.json')) as { pages?: string[] }
-      return app.pages?.includes(addedRoute)
-    }, { timeout: 15_000 }).toBe(containsAddedRoute)
-    if (containsAddedRoute) {
-      expect(await project.read(`${addedRoute}.js`)).toContain('topology-added-route')
-      expect(JSON.parse(await project.read(`${addedRoute}.json`)) as unknown).toMatchObject({ navigationBarTitleText: 'topology-added-title' })
-      expect(await project.read(`${addedRoute}.wxml`)).toContain('{{marker}}')
-    }
+      expect(app.pages?.includes(addedRoute)).toBe(containsAddedRoute)
+      if (containsAddedRoute) {
+        expect(await project.read(`${addedRoute}.js`)).toContain('topology-added-route')
+        expect(JSON.parse(await project.read(`${addedRoute}.json`)) as unknown).toMatchObject({ navigationBarTitleText: 'topology-added-title' })
+        expect(await project.read(`${addedRoute}.wxml`)).toContain('{{marker}}')
+      }
+    }, { timeout: 15_000 })
   }
   const expectClassic = async () => {
     expect(project.runtime().phase).toBe('classic')

@@ -7,6 +7,7 @@ import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { replaceFileByRename } from '../utils/hmr-helpers'
+import { createNativeHmrPublication } from '../utils/nativeHmrPublication'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/src/cli.ts')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/github-issues')
@@ -149,6 +150,7 @@ describe('issue #1015 external CSS variables HMR', { concurrent: false }, () => 
         stdio: 'inherit',
       },
     )
+    const publication = createNativeHmrPublication(APP_ROOT, devProcess, runtime, ['patch-shape'])
 
     try {
       const initial = await devProcess.waitFor(
@@ -168,6 +170,7 @@ describe('issue #1015 external CSS variables HMR', { concurrent: false }, () => 
       )
       expect(styleOnly.cssVarNames).toEqual(initial.cssVarNames)
       expect(styleOnly.buildId).toBe(initial.buildId)
+      expect(publication.stateful).toBe(stateful)
 
       await replaceFileByRename(
         PAGE_SOURCE_PATH,
@@ -181,17 +184,22 @@ describe('issue #1015 external CSS variables HMR', { concurrent: false }, () => 
         'issue-1015 switched external style source',
       )
       expect(switched.cssVarNames).toEqual(initial.cssVarNames)
+      expect(publication.stateful).toBe(stateful)
 
       const changedCss = originalCss
         .replace('v-bind(themeColor)', 'v-bind(accentColor)')
         .replace('\n}', '\n  --issue-1015-hmr: changed;\n}')
       await replaceFileByRename(ALTERNATE_CSS_PATH, changedCss)
+      if (stateful) {
+        await devProcess.waitForOutput('[weapp-vite] HMR classic ready ', 'CSS variable schema classic handoff')
+      }
+      await publication.assertClassicOutput()
       const changed = await devProcess.waitFor(
         waitForCssVarOutput(output => (
           output.pageWxss.includes('--issue-1015-hmr: changed')
           && hasRegisteredCssVars(output)
           && output.cssVarNames.every(cssVarName => !initial.cssVarNames.includes(cssVarName))
-        ), stateful, switched.buildId),
+        )),
         'issue-1015 changed external CSS variable output',
       )
       expect(changed.cssVarNames).toHaveLength(1)
@@ -205,15 +213,15 @@ describe('issue #1015 external CSS variables HMR', { concurrent: false }, () => 
         waitForCssVarOutput(output => (
           output.pageWxss.includes('--issue-1015-hmr: removed')
           && output.cssVarNames.length === 0
-          // stateful 保留稳定绑定槽；classic 则应移除无变量的模板绑定。
-          && /style="\{\{__wv_style_\d+\}\}"/.test(output.pageWxml) === stateful
+          && !/style="\{\{__wv_style_\d+\}\}"/.test(output.pageWxml)
           && [...initial.cssVarNames, ...changed.cssVarNames].every(cssVarName => !output.registeredCssVarNames.has(cssVarName))
-        ), stateful, changed.buildId),
+        )),
         'issue-1015 removed external CSS variable output',
       )
       for (const changedName of changed.cssVarNames) {
         expect(removed.registeredCssVarNames).not.toContain(changedName)
       }
+      await publication.assertClassicOutput()
 
       const readdedCss = originalCss.replace('\n}', '\n  --issue-1015-hmr: readded;\n}')
       await replaceFileByRename(ALTERNATE_CSS_PATH, readdedCss)
@@ -222,11 +230,25 @@ describe('issue #1015 external CSS variables HMR', { concurrent: false }, () => 
           output.pageWxss.includes('--issue-1015-hmr: readded')
           && hasRegisteredCssVars(output)
           && output.cssVarNames.length === initial.cssVarNames.length
-        ), stateful, removed.buildId),
+        )),
         'issue-1015 readded external CSS variable output',
       )
       expect(readded.cssVarNames).toEqual(initial.cssVarNames)
-      expect(devProcess.getOutput()).not.toContain('Build failed')
+      await publication.assertClassicOutput()
+
+      await replaceFileByRename(EXTERNAL_CSS_PATH, originalCss)
+      await replaceFileByRename(PAGE_SOURCE_PATH, originalPageSource)
+      const restored = await devProcess.waitFor(
+        waitForCssVarOutput(output => hasRegisteredCssVars(output)
+          && output.cssVarNames.length === initial.cssVarNames.length
+          && !output.pageWxss.includes('--issue-1015-hmr:')),
+        'issue-1015 restored external style source in classic',
+      )
+      expect(restored.cssVarNames).toEqual(initial.cssVarNames)
+      expect(restored.pageWxml).toBe(initial.pageWxml)
+      expect(restored.pageWxss).toBe(initial.pageWxss)
+      await publication.assertClassicOutput()
+      expect(devProcess.getBuildErrors()).toEqual([])
     }
     finally {
       await devProcess.stop(2_000)

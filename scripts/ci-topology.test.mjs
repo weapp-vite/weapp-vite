@@ -1,4 +1,6 @@
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
+import { parse } from 'yaml'
 import { consumerContractGroups } from './consumerArtifacts/contracts.mjs'
 import { readVerificationTopologyVariant, readWorkflowFixture, readWorkflowGraph } from './workflowFixture.mjs'
 
@@ -7,6 +9,27 @@ const read = name => readWorkflowFixture(name)
 const baseline = readVerificationTopologyVariant() === 'baseline'
 
 describe('independent CI preparation with unchanged validation scope', () => {
+  it('installs the build actual Node version in every coverage shard and merge', () => {
+    const action = parse(readFileSync(new URL('../.github/actions/setup-node-pnpm/action.yml', import.meta.url), 'utf8'))
+    const freeze = action.runs.steps.find(step => step.name === 'Freeze actual toolchain identity')
+    expect(action.outputs['node-version'].value).toBe(`\${{ steps.toolchain.outputs.node-version }}`)
+    expect(freeze.id).toBe('toolchain')
+    expect(freeze.run).toMatch(/'node-version=' \+ process\.versions\.node/)
+    expect(freeze.run).toContain('"$GITHUB_OUTPUT"')
+
+    const command = read('reusable-node-command.yml')
+    const setup = command.jobs.run.steps.find(step => step.uses === './.github/actions/setup-node-pnpm')
+    expect(setup.id).toBe('toolchain')
+    expect(command.jobs.run.outputs.node_version).toBe(`\${{ steps.toolchain.outputs.node-version }}`)
+    expect(command.on.workflow_call.outputs.node_version.value).toBe(`\${{ jobs.run.outputs.node_version }}`)
+
+    const quality = read('reusable-quality-platform.yml')
+    expect(quality.jobs.build.with.node_version).toBe(`\${{ inputs.node_version }}`)
+    expect(quality.jobs.coverage.with.node_version).toBe(`\${{ needs.build.outputs.node_version }}`)
+    const mergeSetup = quality.jobs['coverage-merge'].steps.find(step => step.uses === './.github/actions/setup-node-pnpm')
+    expect(mergeSetup.with['node-version']).toBe(`\${{ needs.build.outputs.node_version }}`)
+  })
+
   it('preserves quality matrices, lint/type coverage and all four coverage shards', () => {
     const quality = read('validate-ci.yml')
     if (baseline) {

@@ -9,6 +9,7 @@ import { findAutoImportCandidates } from '../../plugins/autoImport'
 import { pickImportMetaEnvDefineEntries } from '../../utils/importMeta'
 import { shareWxmlDependencies } from '../../wxml/processing/dependencies'
 import { getAutoImportConfig } from '../autoImport/config'
+import { attachHmrRuntimeSession, getHmrRuntimeSession } from '../hmrRuntimeSession'
 import { createIndependentBuildError } from '../independentError'
 import { collectIndependentWatchFiles } from './independentWatch'
 
@@ -28,6 +29,28 @@ function syncImportMetaEnvDefineOverride(
 
   return () => {
     configService.setImportMetaEnvDefineOverride(previous)
+  }
+}
+
+async function runIndependentCompilation<T>(
+  owner: Pick<MutableCompilerContext, 'runtimeState'> | undefined,
+  compile: (ctx: ReturnType<typeof createCompilerContextInstance>) => Promise<T>,
+) {
+  const ctx = createCompilerContextInstance()
+  const releaseHmrSession = owner ? attachHmrRuntimeSession(ctx, getHmrRuntimeSession(owner)) : undefined
+  try {
+    if (owner) {
+      shareWxmlDependencies(owner, ctx)
+    }
+    return await compile(ctx)
+  }
+  finally {
+    try {
+      ctx.moduleGraphService.resetSession()
+    }
+    finally {
+      releaseHmrSession?.()
+    }
   }
 }
 
@@ -60,11 +83,7 @@ export function createIndependentBuilder(
     const task = (async () => {
       try {
         const chunkRoot = meta.subPackage.root ?? root
-        const isolatedCtx = createCompilerContextInstance()
-        if (owner) {
-          shareWxmlDependencies(owner, isolatedCtx)
-        }
-        return await isolatedCtx.autoImportService.runWithoutOutputWrites(async () => {
+        return await runIndependentCompilation(owner, async isolatedCtx => await isolatedCtx.autoImportService.runWithoutOutputWrites(async () => {
           await isolatedCtx.configService.load({
             ...configService.loadOptions,
             cwd: configService.cwd,
@@ -144,7 +163,7 @@ export function createIndependentBuilder(
           watch.commit()
           storeIndependentOutput(root, output)
           return output
-        }).finally(() => isolatedCtx.moduleGraphService.resetSession())
+        }))
       }
       catch (error) {
         const normalized = createIndependentBuildError(root, error)

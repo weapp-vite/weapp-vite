@@ -76,8 +76,8 @@ export const HMR_ACCEPTANCE_CAPABILITY_COVERAGE: HmrCapabilityCoverage[] = [
   {
     capabilityId: 'patch-shape',
     unit: [`${RUNTIME}/statefulHmr/patchModule.test.ts`],
-    build: [],
-    runtimeScenarios: ['additional-wechat-capability-boundaries'],
+    build: ['e2e/ci/hmr-issue-1015-external-css-vars.test.ts'],
+    runtimeScenarios: ['additional-wechat-capability-boundaries', 'native-css-and-tailwind'],
     runtime: 'planned',
   },
   {

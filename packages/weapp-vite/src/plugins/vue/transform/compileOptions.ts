@@ -11,7 +11,8 @@ import { getMiniProgramTemplatePlatform } from 'wevu/compiler'
 import logger from '../../../logger'
 import { createLogicalEntryId } from '../../../moduleGraph/protocol'
 import { normalizeSourceId } from '../../../moduleGraph/traversal'
-import { resolveHmrRuntime } from '../../../runtime/hmrRuntime'
+import { resolveHmrRuntimeDecision } from '../../../runtime/hmrRuntime'
+import { getHmrRuntimeSession } from '../../../runtime/hmrRuntimeSession'
 import { createCachedEntryResolveOptions, resolveEntryPath } from '../../../utils/entryResolve'
 import { toPosixPath } from '../../../utils/path'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../utils/resolvedId'
@@ -228,11 +229,11 @@ function buildCompileVueFileOptions(
   const wevuMinify = isWevuMinifyEnabled(configService.weappViteConfig, configService.isDev)
   const jsonKind = isApp ? 'app' : isPage ? 'page' : 'component'
   const sourceMap = isVueTransformSourceMapEnabled(configService)
-  const stabilizeCssVarsRuntime = configService.isDev && resolveHmrRuntime({
+  const stabilizeCssVarsRuntime = configService.isDev && getHmrRuntimeSession(ctx).resolve(resolveHmrRuntimeDecision({
     platform: configService.platform,
     configured: configService.weappViteConfig?.hmr?.runtime,
     compileHotReLoad: configService.projectPrivateConfig?.setting?.compileHotReLoad,
-  }) === 'stateful-experimental'
+  })).runtime === 'stateful-experimental'
   async function resolvePotentialVueSfcEntryId(candidate: string | undefined, importerFilename: string) {
     const trimmed = candidate?.trim()
     if (!trimmed) {

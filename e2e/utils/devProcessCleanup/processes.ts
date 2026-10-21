@@ -17,6 +17,20 @@ export { type DevProcessCandidate, UnconfirmedDevProcessTreeError } from './wind
 
 export type DevProcessIdentity = ManagedWechatHostIdentity
 
+/** 保留精确终止回执，退出竞态必须由独立身份核验判定。 */
+export class DevProcessTerminationError extends Error {
+  constructor(readonly evidence: {
+    pids: number[]
+    exitCode: number | undefined
+    signal?: string
+    timedOut?: boolean
+    stdout: string
+    stderr: string
+  }) {
+    super(`Dev process termination failed: exitCode=${evidence.exitCode ?? 'none'}.`)
+  }
+}
+
 function inspectionError() {
   return new Error('Dev process identity could not be verified; no unverified process was signalled.')
 }
@@ -225,6 +239,13 @@ export async function killWindowsDevProcesses(pids: number[]) {
     windowsHide: true,
   }), { processCount: pids.length, timeoutMs })
   if (result.exitCode !== 0) {
-    throw new Error(`Dev process termination failed: exitCode=${result.exitCode ?? 'none'}.`)
+    throw new DevProcessTerminationError({
+      pids: [...pids],
+      exitCode: result.exitCode,
+      signal: result.signal,
+      timedOut: result.timedOut,
+      stdout: result.stdout,
+      stderr: result.stderr,
+    })
   }
 }

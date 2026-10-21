@@ -8,6 +8,7 @@ import { MANAGED_PROJECT_JOURNAL_ENV } from '../../../packages/weapp-ide-cli/src
 import { createContext } from './context.mjs'
 import { verifyFileBranches } from './fileBranches.mjs'
 import { closeDuringScan, removeDuringStat, shared } from './lifecycle.mjs'
+import { verifyPollingOwners } from './pollingOwners.mjs'
 import { classify, recover } from './registration.mjs'
 import { verifyRemoveCooldown } from './removeCooldown.mjs'
 import { verifyReplacementRead } from './replacementRead.mjs'
@@ -58,6 +59,9 @@ async function exercise(ctx) {
   }
   else if (scenario.kind === 'file-branches') {
     await verifyFileBranches({ ...options, branch: scenario.branch })
+  }
+  else if (scenario.kind === 'polling-owners') {
+    await verifyPollingOwners({ ...options, closeUpgrader: scenario.closeUpgrader })
   }
   else if (scenario.kind === 'shared-inode') {
     await verifySharedInode(options)

@@ -2,6 +2,25 @@ import { describe, expect, it } from 'vitest'
 import { classifyFailure } from '../../../scripts/createWeappViteSmoke/registry.mjs'
 
 describe('scaffold smoke network failure classification', () => {
+  const yarnMissingVersion = 'error Couldn\'t find any versions for "@rolldown/binding-freebsd-x64" that matches "1.2.15"'
+
+  it.each(['registry', 'create', 'install'])('recognizes Yarn mirror metadata gaps during %s', (stage) => {
+    expect(classifyFailure(new Error(yarnMissingVersion), { registryProfile: 'npmmirror', stage })).toBe('registry-unavailable')
+  })
+
+  it('retains product classification for a missing version on the official registry', () => {
+    expect(classifyFailure(new Error(yarnMissingVersion), { registryProfile: 'npmjs', stage: 'install' })).toBe('product')
+  })
+
+  it.each(['prepare', 'build', 'dev'])('does not attribute %s failures to earlier mirror metadata output', (stage) => {
+    expect(classifyFailure(new Error(yarnMissingVersion), { registryProfile: 'npmmirror', stage })).toBe('product')
+  })
+
+  it('prioritizes a terminal product error over a mirror metadata gap', () => {
+    const message = `${yarnMissingVersion}\nError [ERR_MODULE_NOT_FOUND]: Cannot find package vite`
+    expect(classifyFailure(new Error(message), { registryProfile: 'npmmirror', stage: 'install' })).toBe('product')
+  })
+
   it.each([
     '[WARN] GET https://registry.npmjs.org/vite error (Failed to fetch https://registry.npmjs.org/vite)',
     'error sending request: operation timed out',

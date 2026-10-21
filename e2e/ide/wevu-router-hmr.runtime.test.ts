@@ -7,6 +7,8 @@ import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { createDomAcceptance } from '../utils/domAcceptance'
 import { createHmrMarker, replaceFileByRename, waitForFileContains } from '../utils/hmr-helpers'
+import { createNativeHmrPublication } from '../utils/nativeHmrPublication'
+import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import { attachRuntimeErrorCollector } from './runtimeErrors'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
@@ -19,6 +21,17 @@ const BASE_MARKER = 'ROUTER-HMR-BASE'
 const ROUTER_HMR_MARKER_KEY = '__wevuRouterHmrMarker'
 const BARE_WEVU_ROUTER_RE = /from\s+['"]wevu\/router['"]|require\(\s*['"]wevu\/router['"]\s*\)/
 const DEVTOOLS_ROUTE_INFRA_RE = /Timeout in raw reLaunch|Timeout in read current page|DEVTOOLS_PROTOCOL_TIMEOUT|simulator not found|模拟器启动失败/i
+const provider = resolveRuntimeProviderName()
+
+async function connectAutomatorSession() {
+  return await launchAutomator({
+    bridgeProjectMode: 'direct',
+    projectPath: APP_ROOT,
+    skipRelaunchPageRootCheck: true,
+    skipWarmup: true,
+    timeout: 120_000,
+  })
+}
 
 function isDevtoolsRouteInfraError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error)
@@ -123,13 +136,7 @@ describe('wevu/router HMR fixture runtime', { concurrent: false }, () => {
     await devProcess.waitFor(waitForFileContains(PAGE_JS_PATH, 'weapp-vendors/wevu-router.js'), 'initial page imports wevu router vendor')
 
     try {
-      miniProgram = await launchAutomator({
-        bridgeProjectMode: 'direct',
-        projectPath: APP_ROOT,
-        skipRelaunchPageRootCheck: true,
-        skipWarmup: true,
-        timeout: 120_000,
-      })
+      miniProgram = await connectAutomatorSession()
     }
     catch (error) {
       if (isDevtoolsRouteInfraError(error)) {
@@ -158,7 +165,7 @@ describe('wevu/router HMR fixture runtime', { concurrent: false }, () => {
         { selector: '.title', text: BASE_MARKER },
         { selector: '.route', text: INDEX_ROUTE },
       ] },
-      { id: 'router:updated', route: INDEX_ROUTE, action: '保存后当前页面标题更新、router 路由保留', nodes: [
+      { id: 'router:updated', route: INDEX_ROUTE, action: provider === 'headless' ? 'headless companion：从新 classic 产物冷启，验收标题与 router 路由' : '保存后当前页面标题更新、router 路由保留', nodes: [
         { selector: '.title', text: marker },
         { selector: '.route', text: INDEX_ROUTE },
       ] },
@@ -172,7 +179,7 @@ describe('wevu/router HMR fixture runtime', { concurrent: false }, () => {
 
     const updatedPageSource = replaceMarker(originalPageSource, marker)
 
-    const collector = attachRuntimeErrorCollector(miniProgram)
+    let collector = attachRuntimeErrorCollector(miniProgram)
     try {
       const beforeHmr = collector.mark()
       try {
@@ -187,10 +194,23 @@ describe('wevu/router HMR fixture runtime', { concurrent: false }, () => {
       }
       expect(collector.getSince(beforeHmr)).toEqual([])
 
-      const afterHmr = collector.mark()
+      let afterHmr = collector.mark()
       await replaceFileByRename(PAGE_VUE_PATH, updatedPageSource)
       await devProcess.waitFor(waitForFileContains(PAGE_JS_PATH, marker), 'updated router page script emitted')
       await devProcess.waitFor(waitForFileContains(PAGE_JS_PATH, 'weapp-vendors/wevu-router.js'), 'page keeps router vendor after HMR')
+
+      if (provider === 'headless') {
+        // headless 没有 IDE 的脚本重编译监听；独立 companion 只验证新产物，真实 IDE 仍验收自动更新。
+        const publication = createNativeHmrPublication(APP_ROOT, devProcess, 'classic')
+        await publication.assertClassicRuntime(miniProgram)
+        expect(collector.getSince(afterHmr)).toEqual([])
+        collector.dispose()
+        await miniProgram.close()
+        miniProgram = await connectAutomatorSession()
+        await publication.assertClassicRuntime(miniProgram)
+        collector = attachRuntimeErrorCollector(miniProgram)
+        afterHmr = collector.mark()
+      }
 
       try {
         const page = await miniProgram.currentPage()

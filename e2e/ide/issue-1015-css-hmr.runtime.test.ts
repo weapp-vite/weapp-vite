@@ -3,7 +3,8 @@ import path from 'node:path'
 import process from 'node:process'
 import { WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY, WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE, WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY } from '@weapp-core/constants'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { launchAutomator } from '../utils/automator'
+import { launchAutomator, reconnectAutomator } from '../utils/automator'
+import { runCleanupSteps } from '../utils/cleanupSteps'
 import { startDevProcess } from '../utils/dev-process'
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { createDomAcceptance } from '../utils/domAcceptance'
@@ -11,48 +12,62 @@ import { createHmrOutputDiagnostics } from '../utils/hmrOutputDiagnostics'
 import { createHmrRuntimeDiagnostics } from '../utils/hmrRuntimeDiagnostics'
 import { createIssue1015HmrDiagnostics } from '../utils/issue1015HmrDiagnostics'
 import { createIssue1015Project, ISSUE_1015_CLI } from '../utils/issue1015Project'
+import { createNativeHmrPublication } from '../utils/nativeHmrPublication'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import { installStatefulHmrTransport } from '../utils/statefulHmrTransport'
 
 const ROUTE = '/pages/issue-1015/index'
 
-for (const runtime of ['classic', 'stateful-experimental']) {
+for (const runtime of ['classic', 'stateful-experimental'] as const) {
   describe(`issue #1015 external CSS HMR: ${runtime}`, () => {
     let project: string
     let dev: ReturnType<typeof startDevProcess> | undefined
     let miniProgram: Awaited<ReturnType<typeof launchAutomator>> | undefined
     let disposeTransport: (() => void) | undefined
+    let publication: ReturnType<typeof createNativeHmrPublication>
+    let runtimeReleased = true
+    let devReleased = true
     const runtimeErrors: unknown[] = []
 
-    async function connect() {
-      miniProgram = await launchAutomator({
-        configureHeadlessSession: (session) => {
-          disposeTransport = installStatefulHmrTransport(session, path.join(project, 'dist'))
-        },
-        projectPath: project,
-        bridgeProjectMode: 'direct',
-        warmupRoute: ROUTE,
-        warmupRootSelectors: ['#issue-1015-page'],
-      })
-      miniProgram.on('exception', (event: { message?: unknown }) => {
+    function observeRuntime(session: Awaited<ReturnType<typeof launchAutomator>>) {
+      session.on('exception', (event: { message?: unknown }) => {
         runtimeErrors.push(event.message)
         process.stdout.write(`[issue-1015-exception] ${JSON.stringify(event)}\n`)
       })
-      miniProgram.on('console', (event: { level?: unknown }) => {
+      session.on('console', (event: { level?: unknown }) => {
         if (event.level === 'error') {
           process.stdout.write(`[issue-1015-console] ${JSON.stringify(event)}\n`)
         }
       })
-      return miniProgram
+      miniProgram = session
+      return session
+    }
+
+    async function connect() {
+      runtimeReleased = false
+      return observeRuntime(await launchAutomator({
+        ...(publication.stateful
+          ? { configureHeadlessSession: (session: Parameters<typeof installStatefulHmrTransport>[0]) => {
+              disposeTransport = installStatefulHmrTransport(session, path.join(project, 'dist'))
+            } }
+          : {}),
+        projectPath: project,
+        bridgeProjectMode: 'direct',
+        warmupRoute: ROUTE,
+        warmupRootSelectors: ['#issue-1015-page'],
+      }))
     }
 
     beforeAll(async () => {
-      project = await createIssue1015Project()
+      project = await createIssue1015Project({ nativePublication: true })
+      const profilePath = path.join(project, '.tmp/hmr-profile.jsonl')
+      devReleased = false
       dev = startDevProcess(process.execPath, [ISSUE_1015_CLI, 'dev', '--non-interactive'], {
         cwd: project,
-        env: { ...createDevProcessEnv(), WEAPP_GITHUB_ISSUE_1015_HMR_RUNTIME: runtime },
+        env: { ...createDevProcessEnv(), WEAPP_GITHUB_ISSUE_1015_HMR_RUNTIME: runtime, WEAPP_VITE_HMR_PROFILE_JSON: profilePath },
         reject: false,
       })
+      publication = createNativeHmrPublication(project, dev, runtime, ['patch-shape'], profilePath)
       await dev.waitForInitialBuild()
       for (const extension of ['js', 'json', 'wxml', 'wxss']) {
         expect(await readFile(path.join(project, `dist/pages/issue-1015/index.${extension}`), 'utf8')).not.toBe('')
@@ -61,12 +76,29 @@ for (const runtime of ['classic', 'stateful-experimental']) {
     }, 180_000)
 
     afterAll(async () => {
-      disposeTransport?.()
-      await miniProgram?.close()
-      await dev?.stop()
-      if (project) {
-        await rm(project, { recursive: true, force: true })
-      }
+      await runCleanupSteps([
+        { label: 'CSS transport', run: () => { disposeTransport?.() } },
+        { label: 'CSS runtime', run: async () => {
+          if (miniProgram) {
+            await miniProgram.close()
+            runtimeReleased = true
+          }
+        } },
+        { label: 'CSS dev watcher', run: async () => {
+          if (dev) {
+            await dev.stop()
+            devReleased = true
+          }
+        } },
+        { label: 'CSS isolated fixture', run: async () => {
+          if (!runtimeReleased || !devReleased) {
+            throw new Error('Preserving CSS fixture because runtime or watcher ownership is not confirmed released')
+          }
+          if (project) {
+            await rm(project, { recursive: true, force: true })
+          }
+        } },
+      ])
     }, 60_000)
 
     it('renders all seven updates including removing and restoring every CSS variable', async (context) => {
@@ -117,9 +149,14 @@ for (const runtime of ['classic', 'stateful-experimental']) {
       })
       await host.reLaunch(ROUTE)
       await diagnostics.initialize()
+      const originalMarkers = await host.evaluate(() => {
+        const pages = getCurrentPages()
+        return { app: (getApp() as any).__e2eHmrInstanceMarker, page: (pages[pages.length - 1] as any).__e2eHmrInstanceMarker }
+      })
+      expect(originalMarkers).toEqual({ app: expect.any(String), page: expect.any(String) })
 
       async function syncHeadlessFullBuild() {
-        if (computedStyles) {
+        if (computedStyles || publication.stateful) {
           return
         }
         const script = await readFile(emittedScript, 'utf8')
@@ -127,12 +164,17 @@ for (const runtime of ['classic', 'stateful-experimental']) {
           await outputDiagnostics.capture('before-headless-reload', loadedScript)
           // headless 没有 IDE 的磁盘重编译监听；仅完整启动脚本变化时换 VM。
           // update.js 的增量交付继续复用当前 VM，不能靠重连掩盖 patch 失败。
+          await expect.poll(() => host.evaluate((key: string) => {
+            const globals = globalThis as any
+            return [globals[key], globals.wx?.[key]].every(client => !client || client.getTransportState?.().phase === 'stopped')
+          }, WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY), { timeout: 30_000 }).toBe(true)
           disposeTransport?.()
+          disposeTransport = undefined
           await host.close()
+          runtimeReleased = true
           host = await connect()
           loadedScript = script
           diagnostics = createHmrRuntimeDiagnostics(host as any, 'e2e-apps/github-issues/fixtures/issue-1015')
-          await host.reLaunch(ROUTE)
           await diagnostics.initialize()
           await outputDiagnostics.capture('after-headless-reload', loadedScript)
         }
@@ -144,7 +186,7 @@ for (const runtime of ['classic', 'stateful-experimental']) {
         if (id === 'style-only') {
           expect(await readFile(emittedAppScript, 'utf8')).toBe(initialAppScript)
         }
-        if (runtime === 'stateful-experimental') {
+        if (publication.stateful) {
           await expect.poll(async () => {
             await syncHeadlessFullBuild()
             const control = await readFile(path.join(project, 'dist', WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE), 'utf8')
@@ -192,18 +234,35 @@ for (const runtime of ['classic', 'stateful-experimental']) {
           expect(await readFile(emittedAppScript, 'utf8')).toBe(initialAppScript)
           expect(runtimeState.runtime).toMatchObject({ appMarkerRetained: true, pageMarkerRetained: true })
         }
+        if (!publication.stateful) {
+          await publication.assertClassicRuntime(host)
+          if (runtime === 'stateful-experimental') {
+            expect(await host.evaluate((markers: { app: string, page: string }) => {
+              const pages = getCurrentPages()
+              return { app: (getApp() as any).__e2eHmrInstanceMarker === markers.app, page: (pages[pages.length - 1] as any).__e2eHmrInstanceMarker === markers.page }
+            }, originalMarkers)).toEqual({ app: false, page: false })
+          }
+        }
         await outputDiagnostics.capture(`${id}-passed`, loadedScript)
         process.stdout.write(`[issue-1015] ${runtime} ${id} passed\n`)
       }
 
       async function updateCss(file: string, content: string, id: string) {
+        const published = id === 'replace-variable' || !publication.stateful ? publication.capture(file) : undefined
         await writeFile(file, `${content}\n.issue1015-page { --issue-1015-step: ${id}; }\n`)
+        await published?.wait()
         await expect.poll(() => readFile(emittedCss, 'utf8'), { timeout: 45_000 }).toContain(id).catch((error) => {
           process.stdout.write(`[issue-1015-build] ${dev!.getOutput()}\n`)
           throw error
         })
         if (id === 'style-only') {
           await failureDiagnostics.captureFirstStyleOnly()
+          expect(publication.stateful).toBe(runtime === 'stateful-experimental')
+        }
+        if (computedStyles && published) {
+          // 只重连原窗口；先验收自动刷新后的节点与样式，不能用导航制造新页面。
+          host = observeRuntime(await reconnectAutomator(host))
+          diagnostics = createHmrRuntimeDiagnostics(host as any, 'e2e-apps/github-issues/fixtures/issue-1015')
         }
         await check(id)
       }
@@ -211,9 +270,16 @@ for (const runtime of ['classic', 'stateful-experimental']) {
       await check('initial')
       await updateCss(cssPath, `${css}\n.issue1015-page { background-color: yellow; }`, 'style-only')
       await writeFile(alternatePath, `${css}\n.issue1015-page { background-color: pink; --issue-1015-step: source-switch; }`)
+      const switched = publication.stateful ? undefined : publication.capture(sourcePath)
       await writeFile(sourcePath, source.replace('./index.css', './alternate.css'))
+      await switched?.wait()
+      if (computedStyles && switched) {
+        host = observeRuntime(await reconnectAutomator(host))
+        diagnostics = createHmrRuntimeDiagnostics(host as any, 'e2e-apps/github-issues/fixtures/issue-1015')
+      }
       await expect.poll(() => readFile(emittedCss, 'utf8'), { timeout: 45_000 }).toContain('source-switch')
       await check('source-switch')
+      expect(publication.stateful).toBe(runtime === 'stateful-experimental')
       await updateCss(alternatePath, '.issue1015-page { color: v-bind(accentColor); }', 'replace-variable')
       await updateCss(alternatePath, '.issue1015-page { color: black; }', 'remove-variable')
       await updateCss(alternatePath, '.issue1015-page { color: v-bind(themeColor); }', 'restore-variable')
@@ -226,7 +292,8 @@ for (const runtime of ['classic', 'stateful-experimental']) {
         process.stdout.write(`[issue-1015-build] ${dev!.getOutput()}\n`)
       }
       expect(runtimeErrors).toEqual([])
-      expect(dev!.getOutput()).not.toContain('Build failed')
+      await publication.assertClassicOutput()
+      expect(dev!.getBuildErrors()).toEqual([])
     }, 300_000)
   })
 }

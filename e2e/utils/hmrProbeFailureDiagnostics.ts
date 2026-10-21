@@ -10,13 +10,13 @@ async function observe(read: () => Promise<unknown>) {
     return { status: 'fulfilled', value: await read() }
   }
   catch (error) {
-    return { status: 'rejected', error: error instanceof Error ? error.name : typeof error }
+    return { status: 'rejected', error: error instanceof Error ? error.name : typeof error, message: error instanceof Error ? error.message : String(error) }
   }
 }
 
-async function captureFiles(miniProgram: any, distRoot: string, relativePaths: string[], markers: string[]) {
+async function captureFiles(miniProgram: any, distRoot: string, relativePaths: string[], markers: string[], sourceProjectPath?: string) {
   const metadata = Reflect.get(miniProgram, '__WEAPP_VITE_SESSION_METADATA') as { projectPath?: string } | undefined
-  const projectPath = metadata?.projectPath
+  const projectPath = metadata?.projectPath ?? sourceProjectPath
   if (!projectPath) {
     throw new Error('Session metadata has no projectPath')
   }
@@ -67,13 +67,25 @@ async function captureFiles(miniProgram: any, distRoot: string, relativePaths: s
   }
 }
 
-/** 失败时并列记录真实节点、组件属性与存储，不修改页面或替代原验收结果。 */
+async function readComponentProperty(component: any, name: string) {
+  if (resolveRuntimeProviderName() === 'headless') {
+    const scope = await component.componentScope()
+    const snapshot = await scope?.snapshot()
+    if (!snapshot) {
+      throw new Error('Headless component has no scope snapshot for property diagnostics.')
+    }
+    return snapshot.properties?.[name]
+  }
+  return await component.property(name)
+}
+
+/** 失败时并列记录真实节点、组件属性与存储，不导航或注入业务状态，也不替代原验收结果。 */
 export async function captureHmrProbeFailure(options: {
   miniProgram: any
   route: string
   storageKey: string
   expected: string
-  files?: { distRoot: string, relativePaths: string[], markers?: string[] }
+  files?: { distRoot: string, projectPath?: string, relativePaths: string[], markers?: string[] }
 }) {
   const { miniProgram, route, storageKey, expected } = options
   const label = `probe-failure:${storageKey}`
@@ -100,8 +112,8 @@ export async function captureHmrProbeFailure(options: {
           result: await observe(async () => {
             const children = await scope.$$('component', { fallback: false, timeout: 2_500 })
             return await Promise.all(children.map(async (component: any) => ({
-              storageKey: await observe(async () => await component.property('storageKey')),
-              marker: await observe(async () => await component.property('marker')),
+              storageKey: await observe(async () => await readComponentProperty(component, 'storageKey')),
+              marker: await observe(async () => await readComponentProperty(component, 'marker')),
             })))
           }),
         })))
@@ -118,7 +130,7 @@ export async function captureHmrProbeFailure(options: {
           appMarker: app?.__e2eHmrInstanceMarker ?? null,
         }
       })),
-      options.files ? observe(async () => await captureFiles(miniProgram, options.files!.distRoot, options.files!.relativePaths, options.files!.markers ?? [expected])) : undefined,
+      options.files ? observe(async () => await captureFiles(miniProgram, options.files!.distRoot, options.files!.relativePaths, options.files!.markers ?? [expected], options.files!.projectPath)) : undefined,
     ])
     const finalPage = await observe(async () => {
       const current = await miniProgram.currentPage({ appFunctionFallback: false, retries: 1, timeout: 2_500 })
@@ -143,6 +155,6 @@ export async function captureHmrProbeFailure(options: {
     process.stdout.write(`[hmr-probe-diagnostics] ${text}\n`)
   }
   catch (error) {
-    process.stdout.write(`[hmr-probe-diagnostics] ${JSON.stringify({ label, error: error instanceof Error ? error.name : typeof error })}\n`)
+    process.stdout.write(`[hmr-probe-diagnostics] ${JSON.stringify({ label, error: error instanceof Error ? error.name : typeof error, message: error instanceof Error ? error.message : String(error) })}\n`)
   }
 }

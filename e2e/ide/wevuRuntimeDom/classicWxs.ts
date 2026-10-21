@@ -1,14 +1,16 @@
 import type { DomCheckpoint, DomPage } from '../../utils/domAcceptance/types'
+import { resolveRuntimeProviderName } from '../../utils/runtimeProvider'
 
 export const CLASSIC_WXS_RELOAD_CHECKPOINT: DomCheckpoint = {
   id: 'classic-wxs:app-reloaded',
   route: '/pages/reactivity/index',
-  action: 'classic WXS 更新触发全量刷新，验收启动页；随后复用 session 重新进入目标页，不要求保留页面状态',
+  action: resolveRuntimeProviderName() === 'headless'
+    ? 'headless companion：从已验证的 classic WXS 新产物冷启并验收启动页，随后复用新 VM 进入目标页'
+    : 'classic WXS 更新触发全量刷新，验收启动页；随后复用 session 重新进入目标页，不要求保留页面状态',
   nodes: [{ selector: '.title', text: 'Reactivity' }],
 }
 
-// headless 当前只提供导航与 WXS 求值 API，没有 IDE 编译自动刷新事件，不能替代此检查。
-// 对应 API 覆盖在 simulator/test/wxs.test.ts 与 e2e/browser.e2e.test.ts；更新后的文本仍需 IDE 验收。
+// headless companion 显式冷启新产物后复用此启动页断言；真实 IDE 必须自己完成自动刷新。
 export async function waitForClassicWxsReload(miniProgram: { currentPage: () => Promise<DomPage | null | undefined> }) {
   const deadline = Date.now() + 20_000
   let lastError: unknown

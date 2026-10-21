@@ -4,6 +4,7 @@ import path from 'pathe'
 import { describe, expect, it, vi } from 'vitest'
 import { createLogicalEntryId, createSidecarModuleId, parseSidecarSourceRequest } from '../../../moduleGraph/protocol'
 import { createModuleGraphService } from '../../../moduleGraph/service'
+import { getHmrRuntimeSession } from '../../../runtime/hmrRuntimeSession'
 import { isStatefulHmrBoundary } from '../../../runtime/statefulHmr/boundaries'
 import { isSafeJavaScriptPatch } from '../../../runtime/statefulHmr/session'
 import { createStatefulHmrSidecarModuleCode } from '../../../runtime/statefulHmr/sidecarPlugin'
@@ -47,10 +48,25 @@ function fixture(type: 'app' | 'page' | 'component' | 'layout', externalTemplate
   } as unknown as CorePluginState
   const plugin = { addWatchFile: vi.fn(), resolve: vi.fn(async (id: string) => ({ id })) }
   const load = createLogicalEntryLoadHook(state).bind(plugin as never)
-  return { srcRoot, sourceId, templatePath, graph, load }
+  return { srcRoot, sourceId, templatePath, graph, load, state }
 }
 
 describe('app shell logical template ownership', () => {
+  it.each(['auto', 'stateful-experimental'] as const)('retires logical HMR accept after %s falls back while preserving requested configuration', async (runtime) => {
+    const { state, sourceId, load } = fixture('page')
+    state.ctx.configService.weappViteConfig = { hmr: { runtime } } as any
+    state.ctx.configService.projectPrivateConfig = { setting: { compileHotReLoad: true } } as any
+    const entry = createLogicalEntryId(sourceId, 'page')
+    expect((await load(entry))?.code).toContain('import.meta.hot.accept()')
+    const session = getHmrRuntimeSession(state.ctx)
+    session.requestClassic({ code: 'patch-shape', message: 'registration changed' })
+    expect((await load(entry))?.code).not.toContain('import.meta.hot.accept()')
+    session.markClassic()
+    expect((await load(entry))?.code).not.toContain('import.meta.hot.accept()')
+    expect(state.ctx.configService.weappViteConfig.hmr?.runtime).toBe(runtime)
+    expect(state.ctx.configService.projectPrivateConfig.setting?.compileHotReLoad).toBe(true)
+  })
+
   it.each([false, true])('retains the app source template edge after logical loading (external template: %s)', async (externalTemplate) => {
     const { sourceId, templatePath, graph, load } = fixture('app', externalTemplate)
     const result = await load(createLogicalEntryId(sourceId, 'app'))
