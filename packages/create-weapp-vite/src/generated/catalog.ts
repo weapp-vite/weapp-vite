@@ -28,6 +28,7 @@ export const TEMPLATE_CATALOG = {
   '@vue/compiler-core': '^3.5.44',
   '@vue/compiler-dom': '^3.5.44',
   '@vue/language-core': '^3.3.13',
+  '@vue/reactivity': '^3.5.44',
   '@wot-ui/ui': '2.3.2',
   'antd-mini': '^3.4.3',
   'bundle-require': '^5.1.0',
