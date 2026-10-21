@@ -2,6 +2,14 @@
 "weapp-vite": patch
 "@wevu/compiler": patch
 "@mpcore/simulator": patch
+"@weapp-core/constants": patch
+"@weapp-vite/i18n": patch
+"@weapp-vite/mcp": patch
+"@weapp-vite/react": patch
+"@weapp-vite/web": patch
+"@wevu/test-utils": patch
+"@wevu/web-apis": patch
+"wevu": patch
 "create-weapp-vite": patch
 ---
 
