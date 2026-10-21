@@ -184,6 +184,7 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
       }
     }
     const result = scanQueue.then(async () => {
+      const previousState = state
       const nextState = createEmptyScanState()
       await scanProject({
         srcRoot,
@@ -229,9 +230,10 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
           }
         }
       }
+      return [previousState, nextState] as const
     })
     // 调用方仍接收原始错误；队尾只负责允许下一次文件变更恢复扫描。
-    scanQueue = result.catch(() => {})
+    scanQueue = result.then(() => {}, () => {})
     return result
   }
 
@@ -242,7 +244,7 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
       return
     }
     if (state.templatePathSet.has(normalized) || clean.endsWith('.json') || isTemplateFile(clean) || isWxsFile(clean) || clean.endsWith('.wxss') || SCRIPT_EXTS.includes(extname(clean))) {
-      await scan(context)
+      return scan(context)
     }
   }
 
@@ -456,11 +458,12 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
     },
     async handleHotUpdate<Module extends object>(this: WebPluginContext, ctx: WebHmrContext<Module>) {
       const graph = devServer?.moduleGraph
-      // 在扫描替换入口快照前收集有效节点，覆盖外部块删除及样式后缀变更。
+      // 扫描排队期间仍可能发布前一轮拓扑；节点归属必须来自本轮实际提交的前后快照。
+      // 保留前快照中的已删除 owner、外部块和旧样式后缀，同时用后快照识别恢复的 SFC。
+      const snapshots = await scanChangedFile(this, ctx.file)
       const affected = graph
-        ? collectSfcHmrModules(state, cleanUrl(ctx.file), graph, ctx.modules)
+        ? collectSfcHmrModules(snapshots ?? [state], cleanUrl(ctx.file), graph, ctx.modules)
         : ctx.modules
-      await scanChangedFile(this, ctx.file)
       return ctx.modules || affected?.length ? affected : undefined
     },
     async transform(this: WebPluginContext, code: string, id: string) {

@@ -1,5 +1,6 @@
 import { createJiti } from 'jiti'
 import { defineEslintConfig } from 'repoctl/tooling'
+import { fixtureOverrides } from './scripts/eslint/fixtureOverrides.js'
 
 const jiti = createJiti(import.meta.url)
 const {
@@ -343,6 +344,6 @@ export default await defineEslintConfig({
       rules: {
         'e18e/prefer-static-regex': 'off',
       },
-    }],
+    }, ...fixtureOverrides],
   },
 })
