@@ -33,7 +33,165 @@ const independentStore = {
   PNPM_CONFIG_ENABLE_GLOBAL_VIRTUAL_STORE: 'false',
 }
 
+const expandedConsumerJobs = [
+  'node-support',
+  'dependency-compatibility',
+  'react-host-paths',
+  'watch-validation',
+  'route-topology',
+  'host-paths',
+  'native-path-controls',
+  'consumer',
+  'stateful-runtime',
+  'classic-runtime',
+  'react-runtime',
+  'independent-runtime',
+  'worker-runtime',
+  'plugin-runtime',
+  'lib-runtime',
+  'platform-runtime',
+  'web-runtime',
+]
+
 describe('Windows ordinary npm watcher delivery workflow', () => {
+  it('keeps full validation as the default and isolates an explicit trace-only dispatch', () => {
+    const entry = parse(readFileSync(new URL('../.github/workflows/ci-vite-host-consumer.yml', import.meta.url), 'utf8'))
+    const reusable = parse(readFileSync(new URL('../.github/workflows/validate-ci-vite-host-consumer.yml', import.meta.url), 'utf8'))
+    const native = parse(readFileSync(new URL('../.github/workflows/ci-pr.yml', import.meta.url), 'utf8'))
+    expect(entry.on.workflow_dispatch.inputs['chokidar-delivery-diagnostic']).toMatchObject({ required: false, default: false, type: 'boolean' })
+    expect(entry.jobs.validation.with.chokidar_delivery_diagnostic).toBe('${{ inputs.chokidar-delivery-diagnostic || false }}')
+    expect(reusable.on.workflow_call.inputs.chokidar_delivery_diagnostic).toEqual({ required: false, type: 'boolean', default: false })
+    expect(native.jobs['ci-vite-host-consumer'].with).toEqual({ pr_context: '${{ needs.plan.outputs.pr_context }}' })
+    const validationJobs = Object.entries(reusable.jobs).filter(([name]) => name !== 'pr-context')
+    const platform = reusable.jobs['consumer-platform']
+    expect(validationJobs.map(([name]) => name).sort()).toEqual((platform
+      ? ['chokidar-delivery-windows', 'consumer-platform']
+      : ['chokidar-delivery-windows', ...expandedConsumerJobs]).sort())
+    for (const [name, value] of validationJobs) {
+      const candidate = value as { if: string }
+      expect(candidate.if).toBe(name === 'chokidar-delivery-windows'
+        ? 'needs.pr-context.outputs.should_run == \'true\''
+        : 'needs.pr-context.outputs.should_run == \'true\' && !inputs.chokidar_delivery_diagnostic')
+    }
+    if (platform) {
+      expect(platform).toMatchObject({
+        needs: 'pr-context',
+        uses: './.github/workflows/reusable-consumer-platform.yml',
+        with: { pr_context: '${{ inputs.pr_context }}', runs_on: '${{ matrix.os }}' },
+        secrets: 'inherit',
+      })
+      expect(platform.strategy.matrix).toEqual({ os: ['ubuntu-latest', 'windows-latest', 'macos-latest'] })
+    }
+    expect(step('Verify ordinary npm delivery and original negative control under the machine lease').env).toEqual({
+      WEAPP_VITE_DELIVERY_TRACE: '${{ inputs.chokidar_delivery_diagnostic && \'1\' || \'0\' }}',
+    })
+  })
+
+  it('maps every expanded workload to the complete aggregate consumer graph', async () => {
+    const reusable = parse(readFileSync(new URL('../.github/workflows/validate-ci-vite-host-consumer.yml', import.meta.url), 'utf8'))
+    if (!reusable.jobs['consumer-platform']) {
+      return
+    }
+    const child = parse(readFileSync(new URL('../.github/workflows/reusable-consumer-platform.yml', import.meta.url), 'utf8'))
+    const { consumerContractGroups } = await import(new URL('./consumerArtifacts/contracts.mjs', import.meta.url).href) as { consumerContractGroups: Record<string, string[]> }
+    expect(consumerContractGroups).toEqual({
+      'react-host-paths': ['packages/weapp-vite/test/vite-react.test.ts'],
+      'watch-validation': ['packages/weapp-vite/test/vite-watch-validation.test.ts', 'packages/weapp-vite/test/vite-watch.test.ts', 'packages/weapp-vite/test/vite-worker.test.ts', 'packages/weapp-vite/test/wxml-transform-watch.test.ts', 'packages/weapp-vite/src/vite/session.test.ts', 'packages/weapp-vite/src/runtime/buildPlugin/workers.test.ts'],
+      'route-topology': ['packages/weapp-vite/src/plugins/core/lifecycle/autoRoutesTopology.test.ts', 'packages/weapp-vite/src/plugins/core/lifecycle/watch.test.ts', 'packages/weapp-vite/test/vite-watch.test.ts'],
+      'host-paths': ['packages/weapp-vite/src/runtime/libDts.test.ts', 'packages/weapp-vite/src/runtime/compilerSession/session.test.ts', 'packages/weapp-vite/test/vite-lib.test.ts'],
+      'native-path-controls': ['packages/weapp-vite/test/vite-native-path-controls.test.ts', 'packages/weapp-vite/test/vite-native-watch-topology.test.ts', 'packages/weapp-vite/src/plugins/tailwindcss/contentInvalidation.test.ts', 'packages/weapp-vite/src/runtime/statefulHmr/snapshotAssetInputs.test.ts'],
+    })
+    const runtimeProfiles = ['stateful', 'classic', 'react', 'independent', 'worker', 'plugin', 'lib', 'platform', 'web']
+    const runtimeJobs = runtimeProfiles.map(profile => `${profile}-runtime`)
+    expect([...Object.keys(consumerContractGroups), 'node-support', 'dependency-compatibility', 'consumer', ...runtimeJobs].sort()).toEqual([...expandedConsumerJobs].sort())
+    expect(Object.keys(child.jobs).sort()).toEqual(['pr-context', 'prepare', 'node-support', 'contracts', 'dependency-compatibility', 'consumer', ...runtimeJobs].sort())
+    expect(child.jobs['pr-context']).toMatchObject({
+      uses: './.github/workflows/reusable-frozen-pr-context.yml',
+      with: { pr_context: '${{ inputs.pr_context }}', profile: 'ci-vite-host-consumer' },
+    })
+    const build = 'consumer-${{ inputs.runs_on }}-node-24-build'
+    const archives = 'consumer-tarballs-${{ inputs.runs_on }}'
+    const prepare = child.jobs.prepare
+    expect(prepare.if).toBeUndefined()
+    expect(prepare.needs).toBe('pr-context')
+    expect(prepare.uses).toBe('./.github/workflows/reusable-node-command.yml')
+    expect(prepare.with).toMatchObject({
+      checkout_ref: '${{ needs.pr-context.outputs.checkout_sha }}',
+      base_sha: '${{ needs.pr-context.outputs.base_sha }}',
+      head_sha: '${{ needs.pr-context.outputs.head_sha }}',
+      pr_number: '${{ needs.pr-context.outputs.pr_number }}',
+      head_ref: '${{ needs.pr-context.outputs.head_ref }}',
+      base_ref: '${{ needs.pr-context.outputs.base_ref }}',
+      node_version: '24',
+      runs_on: '${{ inputs.runs_on }}',
+      build_command: 'pnpm exec turbo run build --filter=weapp-vite... --filter=@weapp-vite/react... --filter=rolldown-require... --filter=@mpcore/simulator...',
+      main_command: 'node scripts/consumerArtifacts/manifest.mjs pack .cache/node-support-tarballs',
+      build_artifact_name: build,
+      artifact_name: archives,
+      artifact_path: '.cache/node-support-tarballs',
+    })
+    const nodeSupport = child.jobs['node-support']
+    expect(nodeSupport.strategy.matrix).toEqual({ node: ['22.18.0', '24.11.0', '26.0.0', '22', '24'] })
+    expect(nodeSupport['runs-on']).toBe('${{ inputs.runs_on }}')
+    expect(nodeSupport.env).toMatchObject({ BUILD_ARTIFACT_EXPECTED_COMMIT: '${{ needs.pr-context.outputs.checkout_sha }}', BUILD_ARTIFACT_EXPECTED_NODE_MAJOR: '24', WEAPP_VITE_CONSUMER_TARBALLS: '.cache/node-support-tarballs' })
+    expect(nodeSupport.steps.find((item: Step) => item.uses?.startsWith('actions/setup-node@'))?.with).toEqual({ 'node-version': '${{ matrix.node }}' })
+    expect(nodeSupport.steps.find((item: Step) => item.uses?.startsWith('actions/checkout@'))?.with).toMatchObject({ 'ref': '${{ needs.pr-context.outputs.checkout_sha }}', 'persist-credentials': false })
+    expect(nodeSupport.steps.filter((item: Step) => item.uses?.startsWith('actions/download-artifact@')).map((item: Step) => item.with?.name)).toEqual([build, archives])
+    expect(nodeSupport.steps.find((item: Step) => item.name === 'Verify immutable candidate archives')?.run).toBe('node scripts/consumerArtifacts/manifest.mjs verify .cache/node-support-tarballs')
+    expect(nodeSupport.steps.find((item: Step) => item.name === 'Verify packed Dashboard public types without mini-program ambient globals')?.run).toBe('node packages/weapp-vite/scripts/verify-dashboard-public-types.mjs')
+    expect(nodeSupport.steps.find((item: Step) => item.name === 'Install and verify published native, SFC, Tailwind and Web consumers')).toMatchObject({
+      run: 'node packages/weapp-vite/scripts/verify-vite-host-install.mjs wv',
+      env: { WEAPP_VITE_CONSUMER_WEB: '1', WEAPP_VITE_CONSUMER_DEPENDENCIES: '1', WEAPP_VITE_CONSUMER_TARBALLS: '.cache/node-support-tarballs' },
+    })
+    expect(child.jobs['dependency-compatibility'].strategy.matrix).toEqual({ manager: ['pnpm', 'npm'] })
+    expect(child.jobs['dependency-compatibility'].with.main_command).toBe('pnpm exec cross-env WEAPP_VITE_DEPENDENCY_EVIDENCE=.cache/dependency-compatibility.json node packages/weapp-vite/scripts/verify-dependency-install.mjs ${{ matrix.manager }}')
+    expect(child.jobs.contracts.with.main_command).toBe('node scripts/consumerArtifacts/contracts.mjs')
+    expect(child.jobs.consumer.strategy.matrix).toEqual({ toolchain: ['wv', 'vite', 'vite-plus'] })
+    expect(child.jobs.consumer.with.main_command).toBe('node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.toolchain }}')
+    for (const [name, value] of Object.entries(child.jobs)) {
+      const candidate = value as { if?: string, needs: string[], uses: string, with: Record<string, unknown> }
+      if (name === 'pr-context' || name === 'prepare') {
+        continue
+      }
+      expect(candidate.needs).toEqual(['pr-context', 'prepare'])
+      expect(candidate.if).toBe(['node-support', 'contracts', 'dependency-compatibility'].includes(name) ? undefined : 'inputs.runs_on == \'ubuntu-latest\'')
+      if (name !== 'node-support') {
+        expect(candidate.uses).toBe('./.github/workflows/reusable-node-command.yml')
+        expect(candidate.with).toMatchObject({
+          checkout_ref: '${{ needs.pr-context.outputs.checkout_sha }}',
+          base_sha: '${{ needs.pr-context.outputs.base_sha }}',
+          head_sha: '${{ needs.pr-context.outputs.head_sha }}',
+          pr_number: '${{ needs.pr-context.outputs.pr_number }}',
+          head_ref: '${{ needs.pr-context.outputs.head_ref }}',
+          base_ref: '${{ needs.pr-context.outputs.base_ref }}',
+          runs_on: '${{ inputs.runs_on }}',
+          node_version: '24',
+          consume_build_artifact: build,
+          build_artifact_node_major: '24',
+          consume_aux_artifact: archives,
+          aux_artifact_path: '.cache/node-support-tarballs',
+          consumer_tarballs: '.cache/node-support-tarballs',
+        })
+      }
+    }
+    for (const profile of runtimeProfiles) {
+      const runtime = child.jobs[`${profile}-runtime`]
+      expect(runtime.strategy.matrix).toEqual(profile === 'classic'
+        ? { host: ['wv', 'vite', 'vite-plus'], profile: ['classic', 'classic-watch'], exclude: [{ host: 'wv', profile: 'classic-watch' }] }
+        : { host: ['wv', 'vite', 'vite-plus'] })
+      if (profile === 'web') {
+        expect(runtime.with).toMatchObject({ install_playwright: true, playwright_browsers: 'chromium', artifact_path: '.cache/web-consumer-diagnostic/host-capability-*.json' })
+        expect(runtime.with.main_command.trim().split('\n')).toEqual([
+          'pnpm exec vitest run --config scripts/vitest.config.mjs scripts/hostCapabilityDiagnostic.test.mjs',
+          'pnpm exec cross-env WEAPP_VITE_CONSUMER_HOST_DIAGNOSTICS=1 node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.host }} headless web',
+        ])
+      }
+      else {
+        expect(runtime.with.main_command).toBe(`node packages/weapp-vite/scripts/verify-vite-host-install.mjs \${{ matrix.host }} headless ${profile === 'classic' ? '${{ matrix.profile }}' : profile}`)
+      }
+    }
+  })
+
   it('freezes the candidate and original source independently on an actual Windows worker', () => {
     expect(job.if).toBe('needs.pr-context.outputs.should_run == \'true\'')
     expect(job.needs).toBe('pr-context')
