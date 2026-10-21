@@ -6,6 +6,7 @@ import { bounded } from './native.mjs'
 import { assertOutput, closeOwner, openPublicOwner } from './public.mjs'
 import { mutateAndAssertOutputs } from './publication.mjs'
 import { recoveryScenarioId } from './recoveryFailure.mjs'
+import { getDeliveryTrace } from './trace.mjs'
 
 export const scenarios = [
   { id: recoveryScenarioId, kind: 'recovery', platform: 'win32' },
@@ -80,12 +81,25 @@ async function recovery(ctx) {
   assert.equal(instrumentation.injected, 1, 'Recovery must actually exercise one failed native acquisition')
   const reborn = path.join(root, 'src/reborn')
   const marker = path.join(reborn, 'marker.txt')
+  const trace = getDeliveryTrace(root)
   await mutateAndAssertOutputs([owner], 'reborn/marker.txt', 'recreated-directory', async () => {
+    trace?.record('mutation.enter', { operation: 'mkdir', file: trace.file(reborn) })
     await mkdir(reborn)
+    trace?.record('mutation.completed', { operation: 'mkdir', file: trace.file(reborn) })
+    trace?.record('mutation.enter', { operation: 'create', file: 'src/reborn/marker.txt' })
     await writeFile(marker, 'recreated-directory')
+    trace?.record('mutation.completed', { operation: 'create', file: 'src/reborn/marker.txt' })
   }, 'create')
-  await mutateAndAssertOutputs([owner], 'reborn/marker.txt', 'changed-after-recovery', () => writeFile(marker, 'changed-after-recovery'), 'change')
-  await mutateAndAssertOutputs([owner], 'reborn/marker.txt', null, () => rm(marker), 'delete')
+  await mutateAndAssertOutputs([owner], 'reborn/marker.txt', 'changed-after-recovery', async () => {
+    trace?.record('mutation.enter', { operation: 'change', file: 'src/reborn/marker.txt' })
+    await writeFile(marker, 'changed-after-recovery')
+    trace?.record('mutation.completed', { operation: 'change', file: 'src/reborn/marker.txt' })
+  }, 'change')
+  await mutateAndAssertOutputs([owner], 'reborn/marker.txt', null, async () => {
+    trace?.record('mutation.enter', { operation: 'unlink', file: 'src/reborn/marker.txt' })
+    await rm(marker)
+    trace?.record('mutation.completed', { operation: 'unlink', file: 'src/reborn/marker.txt' })
+  }, 'delete')
   try {
     assert.deepEqual(errors, [])
   }

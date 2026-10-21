@@ -38,9 +38,14 @@ vi.mock('node:fs/promises', async (importOriginal) => {
   }
 })
 
-vi.mock('./probe/fixture.mjs', () => ({
+vi.mock('./probe/fixture.mjs', async importOriginal => ({
+  ...await importOriginal<typeof import('./probe/fixture.mjs')>(),
   weappOptions: {},
-  createFixture: async () => { harness.events.push('fixture') },
+  async createFixture(root: string) {
+    harness.events.push('fixture')
+    const actual = await importOriginal<typeof import('./probe/fixture.mjs')>()
+    await actual.createFixture(root)
+  },
   verifyPublicResolution: () => [],
   waitForFile: vi.fn(),
 }))
@@ -170,6 +175,8 @@ it('owner 登记后原 body error 保留，cwd 不变且原生句柄严格幂等
   assert.deepEqual(harness.events, ['fixture', 'close', 'close', 'assertClosed', 'restore', 'rm'])
   assert.deepEqual(result.native.handles, [{ file: 'src/owned', closeCalls: 1, closeEvents: 1 }])
   assert.deepEqual(result.cleanup, { nativeCleanupConfirmed: true, deletedFixture: true, forcedNativeCloses: [], errors: [] })
+  assert.equal(result.fixtureInputs.length, 10)
+  assert(result.fixtureInputs.every((input: { bytes: number, sha256: string }) => input.bytes > 0 && /^[a-f\d]{64}$/.test(input.sha256)))
 })
 
 it('重复公开关闭失败与首个 body error 分别保留，不能改记通过', async () => {
