@@ -1,5 +1,6 @@
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
+import { createClassicAssetScriptContract } from '../utils/classicAssetScriptContract'
 import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
@@ -110,6 +111,7 @@ describe('HMR shared template and wxs dependencies (dev watch)', { concurrent: f
     let failed = false
     try {
       await dev.waitForInitialBuild()
+      expect(dev.getOutput()).toContain('HMR 模式：classic')
       await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 90_000), `${platform} app.json generated`)
       await dev.waitFor(waitForFileContains(sharedImportOutputPath, initialTemplateMarker), `${platform} initial shared import output`)
       await dev.waitFor(waitForFileContains(sharedIncludeOutputPath, initialIncludeMarker), `${platform} initial shared include output`)
@@ -118,8 +120,7 @@ describe('HMR shared template and wxs dependencies (dev watch)', { concurrent: f
       await dev.waitFor(waitForFileContains(vueOutputPath, `card-template.${PLATFORM_EXT[platform].template}`), `${platform} vue importer references shared template`)
       await dev.waitFor(waitForFileContains(wxsOutputPath, initialWxsMarker), `${platform} initial shared wxs`)
 
-      const readScriptMtimes = () => Promise.all(scriptFiles.map(async file => [file, (await fs.stat(path.join(DIST_ROOT, file))).mtimeMs]))
-      const scriptMtimes = await readScriptMtimes()
+      const scripts = await createClassicAssetScriptContract(DIST_ROOT, platform)
       await diagnostics?.snapshot('initial-scripts', APP_ROOT, scriptFiles.map(file => `dist/${file}`))
       const rebuildCount = () => dev.getOutput().split('小程序已重新构建').length - 1
       let previousBuildCount = rebuildCount()
@@ -148,7 +149,7 @@ describe('HMR shared template and wxs dependencies (dev watch)', { concurrent: f
       expect(updatedSharedTemplateOutput).toContain(updatedTemplateMarker)
       await expect.poll(rebuildCount, { timeout: 30_000 }).toBeGreaterThan(previousBuildCount)
       await diagnostics?.snapshot('after-import-scripts', APP_ROOT, scriptFiles.map(file => `dist/${file}`))
-      expect(await readScriptMtimes()).toEqual(scriptMtimes)
+      await scripts.assertUpdated()
       previousBuildCount = rebuildCount()
 
       const updatedIncludeTemplate = buildSharedIncludeTemplate(updatedIncludeMarker)
@@ -175,7 +176,8 @@ describe('HMR shared template and wxs dependencies (dev watch)', { concurrent: f
       expect(includeOutput).toContain(updatedIncludeMarker)
       await expect.poll(rebuildCount, { timeout: 30_000 }).toBeGreaterThan(previousBuildCount)
       await diagnostics?.snapshot('after-include-scripts', APP_ROOT, scriptFiles.map(file => `dist/${file}`))
-      expect(await readScriptMtimes()).toEqual(scriptMtimes)
+      await scripts.assertUpdated()
+      previousBuildCount = rebuildCount()
 
       const updatedWxsSource = buildSharedWxs(updatedWxsMarker)
       stage = 'shared-wxs'
@@ -199,6 +201,9 @@ describe('HMR shared template and wxs dependencies (dev watch)', { concurrent: f
         `${platform} updated shared wxs`,
       )
       expect(wxsOutput).toContain(updatedWxsMarker)
+      await expect.poll(rebuildCount, { timeout: 30_000 }).toBeGreaterThan(previousBuildCount)
+      await diagnostics?.snapshot('after-wxs-scripts', APP_ROOT, scriptFiles.map(file => `dist/${file}`))
+      await scripts.assertUpdated()
     }
     catch (error) {
       failed = true

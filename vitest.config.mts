@@ -175,6 +175,7 @@ const projects = [
         'e2e/utils/hmr-helpers.test.ts',
         'e2e/utils/hmrRuntimeDiagnostics.test.ts',
         'e2e/utils/hmrOutputDiagnostics.test.ts',
+        'e2e/utils/classicAssetScriptContract.test.ts',
         'e2e/utils/ide-devtools-cleanup.test.ts',
         'e2e/utils/machineGlobalSetup.test.ts',
         'e2e/utils/managedAutomatorBridge.test.ts',

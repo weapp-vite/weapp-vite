@@ -1,5 +1,6 @@
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
+import { createClassicAssetScriptContract } from '../utils/classicAssetScriptContract'
 import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
@@ -92,12 +93,10 @@ describe('wevu runtime hmr (dev watch)', { concurrent: false }, () => {
       await dev.waitFor(waitForFileContains(distTemplatePath, 'HMR'), `${platform} initial hmr template`)
 
       await dev.waitForInitialBuild()
-      const scriptsBefore = new Map<string, string>()
-      for (const file of await fs.readdir(DIST_ROOT, { recursive: true })) {
-        if (file.endsWith('.js')) {
-          scriptsBefore.set(file, await fs.readFile(path.join(DIST_ROOT, file), 'utf8'))
-        }
-      }
+      expect(dev.getOutput()).toContain('HMR 模式：classic')
+      const scripts = await createClassicAssetScriptContract(DIST_ROOT, platform)
+      const rebuildCount = () => dev.getOutput().split('小程序已重新构建').length - 1
+      const previousBuildCount = rebuildCount()
 
       await rewriteTemplateSourceForWatch(HMR_SOURCE_TEMPLATE_PATH, updatedSource)
 
@@ -110,9 +109,8 @@ describe('wevu runtime hmr (dev watch)', { concurrent: false }, () => {
         `${platform} updated hmr marker`,
       )
       expect(nextTemplate).toContain(marker)
-      for (const [file, source] of scriptsBefore) {
-        expect(await fs.readFile(path.join(DIST_ROOT, file), 'utf8'), file).toBe(source)
-      }
+      await expect.poll(rebuildCount, { timeout: 30_000 }).toBeGreaterThan(previousBuildCount)
+      await scripts.assertUpdated()
     }
     finally {
       await dev.stop(5_000)
