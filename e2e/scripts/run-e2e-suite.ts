@@ -8,12 +8,13 @@ import process from 'node:process'
 import { pathToFileURL } from 'node:url'
 import { splitWechatDevtoolsSelectionArgs } from 'weapp-ide-cli'
 import { excludedE2EProjects, isExcludedE2EProject } from '../../scripts/e2eProjectScope'
+import { resolveVerificationTopology } from '../../scripts/verification/topology.ts'
 import { withWechatE2ESelectionEnvironment } from '../utils/devtoolsCli'
 import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { createAcceptanceIdentity, isStrictDomAcceptanceSuite } from './domAcceptanceReport/helpers'
 import { getSuiteTasks, listE2ESuites, partitionE2ETasks } from './e2e-suite-manifest'
 import { isDevtoolsVitestTask, runTaskSuite } from './suiteRunner'
-import { assertVerificationPlan, createVerificationIdentity } from './verification/plan'
+import { assertVerificationPlan, createVerificationIdentity, taskDefinitionHash } from './verification/plan'
 import { currentVerificationProfile } from './verification/profile'
 import { verificationPlanSchema } from './verification/validation'
 
@@ -144,6 +145,7 @@ async function runSelectedE2ESuiteCli(args: string[], callbacks: SuiteCallbacks)
   const rollFrom = readOption(args, 'roll-from', TASK_ROLL_FROM_ENV)
   let shardIndex = readOption(args, 'shard-index', TASK_SHARD_INDEX_ENV)
   let shardTotal = readOption(args, 'shard-total', TASK_SHARD_TOTAL_ENV)
+  const executionTopology = resolveVerificationTopology(args.find(arg => arg.startsWith('--topology='))?.slice('--topology='.length))
   const planFile = args.find(arg => arg.startsWith('--plan='))?.slice('--plan='.length)
   const expectedPlanHash = args.find(arg => arg.startsWith('--expected-plan-hash='))?.slice('--expected-plan-hash='.length)
   let frozenPlan: VerificationPlan | undefined
@@ -158,7 +160,7 @@ async function runSelectedE2ESuiteCli(args: string[], callbacks: SuiteCallbacks)
     process.exit(0)
   }
 
-  let tasks = await getSuiteTasks(mode)
+  let tasks = await getSuiteTasks(mode, { topology: executionTopology.id })
   const excludedProjects = excludedE2EProjects()
   tasks = tasks.map(task => isExcludedE2EProject(task.label, excludedProjects)
     ? { ...task, outOfScopeReason: 'Excluded by WEAPP_VITE_E2E_EXCLUDE_PROJECTS' }
@@ -180,7 +182,7 @@ async function runSelectedE2ESuiteCli(args: string[], callbacks: SuiteCallbacks)
         throw new Error('Frozen shard plans cannot be combined with ad-hoc filters or a separate shard total')
       }
       frozenPlan = verificationPlanSchema.parse(JSON.parse(await fs.readFile(planFile, 'utf8')))
-      assertVerificationPlan(frozenPlan, { suite: mode, profile: currentVerificationProfile(mode), tasks, identity: createVerificationIdentity() })
+      assertVerificationPlan(frozenPlan, { suite: mode, profile: currentVerificationProfile(mode), tasks, identity: createVerificationIdentity(), topology: executionTopology.id })
       if (expectedPlanHash && frozenPlan.planHash !== expectedPlanHash) {
         throw new Error('Frozen verification plan hash does not match the expected artifact')
       }
@@ -228,6 +230,8 @@ async function runSelectedE2ESuiteCli(args: string[], callbacks: SuiteCallbacks)
     stopOnTaskFailure: !allowFailures && shouldStopIdeSuiteAfterTaskFailure(tasks),
     reportContext: {
       ...(frozenPlan ? { runId: frozenPlan.runId, commitSha: frozenPlan.commitSha, workingTreeDirty: frozenPlan.workingTreeDirty } : createAcceptanceIdentity()),
+      executionTopology,
+      taskDefinitions: Object.fromEntries(plannedTasks.map(task => [task.label, taskDefinitionHash(task)])),
       strict: isStrictDomAcceptanceSuite(mode),
       partial: Boolean(filter || from || shardIndex || shardTotal || process.env.WEAPP_VITE_E2E_TEMPLATE),
       plannedTasks: frozenPlan ? tasks : plannedTasks,
@@ -235,7 +239,7 @@ async function runSelectedE2ESuiteCli(args: string[], callbacks: SuiteCallbacks)
         ? {
             taskDefinitions: Object.fromEntries(frozenPlan.tasks.map(task => [task.label, task.definitionHash])),
             plannedCases: Object.fromEntries(frozenPlan.tasks.filter(task => task.cases).map(task => [task.label, task.cases!])),
-            execution: { scope: 'shard' as const, status: 'incomplete' as const, profile: frozenPlan.profile, planHash: frozenPlan.planHash, shardIndex: Number(shardIndex), shardTotal: frozenPlan.shardTotal, assignedTasks: tasks.map(task => task.label), startedAt: new Date().toISOString(), finishedAt: '' },
+            execution: { scope: 'shard' as const, status: 'incomplete' as const, profile: frozenPlan.profile, executionTopology: frozenPlan.executionTopology, planHash: frozenPlan.planHash, shardIndex: Number(shardIndex), shardTotal: frozenPlan.shardTotal, assignedTasks: tasks.map(task => task.label), startedAt: new Date().toISOString(), finishedAt: '' },
           }
         : {}),
     },

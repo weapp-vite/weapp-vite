@@ -10,6 +10,7 @@ export interface PreparationOptions {
   mode: VerificationMode
   selection?: SelectionMode
   jobs?: string | number
+  topology?: string
 }
 
 /** 每轮读取真实变更、依赖图、工具链和资源预算，不复用陈旧推导。 */
@@ -25,6 +26,7 @@ export async function prepareVerificationPlan(root: string, options: Preparation
     resources: getResourceBudget({ jobs: options.jobs }),
     mode: options.mode,
     selection: options.selection,
+    topology: options.topology,
     partial: Boolean(options.files?.length),
   })
 }

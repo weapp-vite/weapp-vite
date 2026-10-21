@@ -3,7 +3,7 @@ import type { VerificationPlan, VerificationTiming } from './types'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { validateTaskAcceptance } from '../domAcceptanceReport/task'
-import { assertVerificationPlan } from './plan'
+import { assertVerificationPlan, verificationHash } from './plan'
 import { assertVerificationProfile } from './profile'
 import { assertE2ETimings } from './timing'
 import { VERIFICATION_TOOL_VERSION } from './types'
@@ -68,6 +68,9 @@ export async function aggregateVerificationReports(plan: VerificationPlan, value
   for (const report of reports) {
     const execution = report.execution
     assertVerificationProfile(plan.profile, execution.profile)
+    if (verificationHash(execution.executionTopology) !== verificationHash(plan.executionTopology)) {
+      throw new Error('Shard verification topology mismatch')
+    }
     if (report.runId !== plan.runId || report.commitSha !== plan.commitSha || report.workingTreeDirty !== false
       || report.strict !== plan.strict || execution.planHash !== plan.planHash || execution.scope !== 'shard'
       || execution.shardTotal !== plan.shardTotal || !execution.shardIndex || execution.shardIndex > plan.shardTotal
@@ -123,7 +126,7 @@ export async function aggregateVerificationReports(plan: VerificationPlan, value
   return {
     schemaVersion: 2,
     toolVersion: VERIFICATION_TOOL_VERSION,
-    execution: { scope: 'full', status: 'passed', profile: plan.profile, planHash: plan.planHash, assignedTasks: expected.map(task => task.label), startedAt, finishedAt },
+    execution: { scope: 'full', status: 'passed', profile: plan.profile, executionTopology: plan.executionTopology, planHash: plan.planHash, assignedTasks: expected.map(task => task.label), startedAt, finishedAt },
     excludedProjects: [],
     generatedAt: (options.now ?? new Date()).toISOString(),
     jsonFile: 'aggregate.json',

@@ -32,6 +32,7 @@ export function shardReports(plan: VerificationPlan) {
         scope: 'shard',
         status: 'passed',
         profile: plan.profile,
+        executionTopology: plan.executionTopology,
         planHash: plan.planHash,
         shardIndex: index + 1,
         shardTotal: plan.shardTotal,

@@ -8,6 +8,7 @@ import { fullRuntimeBlock } from './runtime.ts'
 import { fingerprintConfiguration } from './snapshot.ts'
 import { toolchainEnvironment } from './toolchain.ts'
 import { ROOT_REPOSITORY_TEST_GLOBS, scriptTestInventory, workflowContractInventory } from './toolTests.ts'
+import { resolveVerificationTopology, topologyEnvironment } from './topology.ts'
 import { analyzePackageImpact, ownerOf } from './workspace.ts'
 
 const GLOBAL_INPUTS = ['package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'turbo.json', 'tsconfig.json', 'tsconfig.base.json', '.npmrc', 'eslint.config.js', 'stylelint.config.js']
@@ -24,6 +25,7 @@ export interface PlanOptions {
   mode: VerificationMode
   partial?: boolean
   selection?: SelectionMode
+  topology?: string
 }
 
 function task(id: string, kind: VerificationTask['kind'], args: string[], reason: string, dependencies: string[] = []): VerificationTask {
@@ -53,6 +55,7 @@ async function nearbyTests(root: string, files: string[]): Promise<string[]> {
 /** 将变更分成可并行静态检查、共享构建与受管 runtime 阶段。 */
 export async function createVerificationPlan(options: PlanOptions): Promise<VerificationPlan> {
   const { root, changes, packages, resources, mode } = options
+  const executionTopology = resolveVerificationTopology(options.topology)
   const selection = options.selection ?? DEFAULT_SELECTION
   const global = changes.fallback || mode === 'full' || changes.files.some(file => GLOBAL_INPUTS.includes(file) || GLOBAL_PREFIXES.some(prefix => file.startsWith(prefix)))
   const unknown = changes.files.filter(file => !ownerOf(file, packages)
@@ -214,7 +217,7 @@ export async function createVerificationPlan(options: PlanOptions): Promise<Veri
   }
   const toolchain = await toolchainEnvironment(root)
   for (const item of tasks) {
-    item.env = { ...toolchain, ...item.env }
+    item.env = { ...toolchain, ...item.env, ...topologyEnvironment(executionTopology) }
     if (item.kind === 'types') {
       await usePreparedTypeChecks(root, item)
     }
@@ -241,6 +244,6 @@ export async function createVerificationPlan(options: PlanOptions): Promise<Veri
   }
   const configuration = await fingerprintConfiguration(root, packages)
   const budget = { cpus: resources.cpus, cpuBudget: resources.cpuBudget, jobs: resources.jobs, workersPerTask: resources.workersPerTask, buildConcurrency: resources.buildConcurrency }
-  const fingerprint = createHash('sha256').update(JSON.stringify({ source: changes.fingerprint, mode, selection, tasks, remaining, toolchain, configuration, packages, budget })).digest('hex')
-  return { version: 1, fingerprint, mode, selection, changes, resources, affected: [...affected].sort(), selected: selected.map(item => item.name).sort(), suggested: [...suggested].sort(), tasks, remaining, warnings }
+  const fingerprint = createHash('sha256').update(JSON.stringify({ source: changes.fingerprint, mode, selection, executionTopology, tasks, remaining, toolchain, configuration, packages, budget })).digest('hex')
+  return { version: 1, fingerprint, mode, selection, executionTopology, changes, resources, affected: [...affected].sort(), selected: selected.map(item => item.name).sort(), suggested: [...suggested].sort(), tasks, remaining, warnings }
 }

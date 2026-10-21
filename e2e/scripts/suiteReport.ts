@@ -1,6 +1,7 @@
+import type { VerificationTopology } from '../../scripts/verification/topology.ts'
 import type { PlannedTaskCase } from './domAcceptanceReport/taskCases'
 import type { AcceptanceIdentity, AcceptanceStatus } from './domAcceptanceReport/types'
-import type { VerificationExecution, VerificationTiming } from './verification/types'
+import type { SuiteTaskArtifactKind, VerificationExecution, VerificationTiming } from './verification/types'
 import { randomUUID } from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -17,7 +18,7 @@ const EDGE_DASH_PATTERN = /^-|-$/g
 
 export interface SuiteTaskArtifact {
   indexPath: string
-  kind: 'ide-warning-report' | 'suite-report' | 'dom-acceptance-report' | 'ide-task-resource-report'
+  kind: SuiteTaskArtifactKind
 }
 
 export interface SuiteRuntimeBlocker {
@@ -39,6 +40,7 @@ export interface SuiteTaskReportEntry {
 }
 
 export interface SuiteReportContext extends AcceptanceIdentity {
+  executionTopology?: VerificationTopology
   timings?: VerificationTiming[]
   partial: boolean
   strict: boolean
@@ -224,7 +226,7 @@ export function createSuiteReport(
   const resultsByLabel = new Map(taskResults.map(task => [task.label, task]))
   const tasks: SuiteTaskReportEntry[] = context.plannedTasks.map((task) => {
     if (task.outOfScopeReason) {
-      return { label: task.label, status: 'out-of-scope', reason: task.outOfScopeReason, artifacts: [], durationMs: 0, exitCode: 0 }
+      return { label: task.label, definitionHash: context.taskDefinitions?.[task.label], status: 'out-of-scope', reason: task.outOfScopeReason, artifacts: [], durationMs: 0, exitCode: 0 }
     }
     const result = resultsByLabel.get(task.label)
     return result

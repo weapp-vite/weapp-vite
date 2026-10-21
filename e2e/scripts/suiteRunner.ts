@@ -13,6 +13,7 @@ import process from 'node:process'
 import { execa } from 'execa'
 import { withMachineE2ELease } from '../../packages/devtools-runtime/src/lease/machine'
 import { MANAGED_PROJECT_JOURNAL_ENV } from '../../packages/weapp-ide-cli/src/devtoolsProjectOwnership'
+import { assertVerificationTopology, resolveVerificationTopology } from '../../scripts/verification/topology.ts'
 import { claimDevtoolsHost, DEVTOOLS_HOST_CLAIMED_ENV, quitClaimedDevtoolsHost } from '../utils/devtoolsHostLifecycle'
 import { createDevtoolsProjectJournal } from '../utils/devtoolsProcessOwnership'
 import { cleanupDevtoolsCommandScope } from '../utils/devtoolsScopeCleanup'
@@ -25,6 +26,7 @@ import { assertOwnedCommandStopped, OwnedCommandShutdownError, stopOwnedCommand 
 import { createSuiteReport } from './suiteReport'
 import { prepareTaskLaunch, remainingTaskTimeoutMs } from './suiteRunner/launchBudget'
 import { createSuiteSignalScope } from './suiteRunner/signals'
+import { taskDefinitionHash } from './verification/plan'
 import { currentVerificationProfile } from './verification/profile'
 import { E2E_TIMING_FILE_ENV, measureE2EPhase, readE2ETimings } from './verification/timing'
 
@@ -620,6 +622,20 @@ async function runOwnedTaskSuite(
     partial: false,
     plannedTasks: tasks,
   }
+  const recordedTopologies = [reportContext.executionTopology, reportContext.execution?.executionTopology].filter(value => value !== undefined)
+  for (const topology of recordedTopologies) {
+    assertVerificationTopology(topology)
+  }
+  const executionTopology = resolveVerificationTopology(recordedTopologies[0]?.id)
+  if (recordedTopologies.some(topology => topology.id !== executionTopology.id)) {
+    throw new Error('Suite execution topology differs from its frozen context')
+  }
+  reportContext.executionTopology = executionTopology
+  const definitions = Object.fromEntries(tasks.map(task => [task.label, taskDefinitionHash(task)]))
+  if (reportContext.taskDefinitions && Object.entries(definitions).some(([label, hash]) => reportContext.taskDefinitions?.[label] !== hash)) {
+    throw new Error('Suite task definition differs from its frozen context')
+  }
+  reportContext.taskDefinitions ??= definitions
   const suiteTimings = [...(reportContext.timings ?? []), leaseTiming]
   const suiteStartedAt = new Date().toISOString()
   let resourceCleanupFailed = false
@@ -877,6 +893,7 @@ async function runOwnedTaskSuite(
   const executionStatus = signal.aborted ? 'cancelled' : results.length !== assignedTasks.length ? 'incomplete' : results.some(result => result.exitCode !== 0 || result.status !== 'passed') ? 'failed' : 'passed'
   reportContext.execution = {
     ...(reportContext.execution ?? { scope: reportContext.partial ? 'ad-hoc' : 'full', profile: currentVerificationProfile(suiteName.replace(/^e2e:/, '').split(/\s/)[0]!), assignedTasks, startedAt: suiteStartedAt, finishedAt: '' }),
+    executionTopology,
     status: executionStatus,
     finishedAt: new Date().toISOString(),
   }

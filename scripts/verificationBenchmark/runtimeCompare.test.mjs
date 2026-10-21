@@ -1,4 +1,5 @@
 import { expect, it } from 'vitest'
+import { resolveVerificationTopology, TOPOLOGY_COMPARISON_PROTOCOL } from '../verification/topology.ts'
 import { compareSamples, validateSample } from './compare.mjs'
 
 function samples() {
@@ -38,3 +39,55 @@ it.each(['arch', 'packageManager', 'ideVersion', 'baseLibraryVersion'])('rejects
     expect(() => validateSample(sample)).toThrow(/optional benchmark profile/)
   }
 })
+
+function topologySamples() {
+  return samples().map(sample => ({ ...sample, revision: 'same-final-main', sourceFingerprint: 'a'.repeat(64), comparisonProtocol: TOPOLOGY_COMPARISON_PROTOCOL, executionTopology: resolveVerificationTopology(sample.variant === 'baseline' ? 'legacy-v1' : 'optimized-v1') }))
+}
+
+it('compares only the explicitly reviewed topology pair at one final revision', () => {
+  const report = compareSamples(topologySamples())
+  expect(report).toMatchObject({ comparisonProtocol: TOPOLOGY_COMPARISON_PROTOCOL, meetsTarget: true, cohorts: { baseline: { executionTopology: { id: 'legacy-v1' } }, candidate: { executionTopology: { id: 'optimized-v1' } } } })
+})
+
+it.each(['swapped', 'same-topology', 'missing-topology', 'missing-protocol', 'unknown-protocol', 'changed-policy', 'other-revision', 'other-source', 'scope', 'input', 'resources'])(
+  'rejects %s without weakening complete scope, inputs or resource identity',
+  (fault) => {
+    const values = topologySamples()
+    const sample = values[5]
+    if (fault === 'swapped' || fault === 'same-topology') {
+      sample.executionTopology = resolveVerificationTopology('legacy-v1')
+    }
+    if (fault === 'missing-topology') {
+      delete sample.executionTopology
+    }
+    if (fault === 'missing-protocol') {
+      delete sample.comparisonProtocol
+    }
+    if (fault === 'unknown-protocol') {
+      sample.comparisonProtocol = 'unchecked'
+    }
+    if (fault === 'changed-policy') {
+      sample.executionTopology.policyDigest = 'f'.repeat(64)
+    }
+    if (fault === 'other-revision') {
+      for (const value of values.filter(value => value.variant === 'candidate')) {
+        value.revision = 'other-main'
+      }
+    }
+    if (fault === 'other-source') {
+      for (const value of values.filter(value => value.variant === 'candidate')) {
+        value.sourceFingerprint = 'b'.repeat(64)
+      }
+    }
+    if (fault === 'scope') {
+      sample.scopeDigest = 'e'.repeat(64)
+    }
+    if (fault === 'input') {
+      sample.inputDigest = 'e'.repeat(64)
+    }
+    if (fault === 'resources') {
+      sample.profile.cachePolicy = 'different'
+    }
+    expect(() => compareSamples(values)).toThrow()
+  },
+)

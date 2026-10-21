@@ -4,6 +4,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { evaluateAcceptanceCase, summarizeAcceptanceCases } from '../../e2e/scripts/domAcceptanceReport/helpers.ts'
 import { createBuildArtifactManifest } from '../buildArtifact/index.mjs'
+import { resolveVerificationTopology, topologyEnvironment } from '../verification/topology.ts'
 import { localDigest, localSave } from './localIo.mjs'
 
 /** 测试专用的完整原始证据树；每个子凭据均可单独篡改以验证拒绝边界。 */
@@ -13,15 +14,16 @@ export async function localEvidenceFixture() {
   await mkdir(directory, { recursive: true })
   const base = Date.now()
   const time = offset => new Date(base + offset).toISOString()
-  const identity = { runId: 'fixture-run', commitSha: 'a'.repeat(40), fingerprint: 'b'.repeat(64), packageManager: 'pnpm@12.11.2' }
+  const executionTopology = resolveVerificationTopology()
+  const identity = { executionTopology, runId: 'fixture-run', commitSha: 'a'.repeat(40), fingerprint: 'b'.repeat(64), packageManager: 'pnpm@12.11.2' }
   const tasks = [
     { id: 'build', kind: 'build', evidence: 'turbo-summary', dependencies: [] },
     { id: 'tests', kind: 'test', dependencies: ['build'] },
     { id: 'runtime:headless', kind: 'runtime', dependencies: ['tests'] },
     { id: 'runtime:full', kind: 'runtime', dependencies: ['runtime:headless'] },
-  ].map(task => ({ ...task, command: 'pnpm', args: ['run', task.id], directory: '.' }))
-  const plan = { version: 1, mode: 'full', selection: 'shadow', fingerprint: 'c'.repeat(64), tasks, selected: ['library'], remaining: [] }
-  const report = { version: 1, mode: 'full', fingerprint: plan.fingerprint, startedAt: time(1), status: 'passed', remaining: [], results: tasks.map(task => ({ id: task.id, status: 'passed', exitCode: 0, durationMs: 10, execution: 'actual' })) }
+  ].map(task => ({ ...task, command: 'pnpm', args: ['run', task.id], directory: '.', env: topologyEnvironment(executionTopology) }))
+  const plan = { version: 1, executionTopology, mode: 'full', selection: 'shadow', fingerprint: 'c'.repeat(64), tasks, selected: ['library'], remaining: [] }
+  const report = { version: 1, executionTopology, mode: 'full', fingerprint: plan.fingerprint, startedAt: time(1), status: 'passed', remaining: [], results: tasks.map(task => ({ id: task.id, status: 'passed', exitCode: 0, durationMs: 10, execution: 'actual' })) }
   await localSave(path.join(directory, 'verification/plan.json'), plan)
   await localSave(path.join(directory, 'verification/report.json'), report)
   await mkdir(path.join(root, 'packages/library/dist'), { recursive: true })
@@ -43,7 +45,7 @@ export async function localEvidenceFixture() {
   }
   const suitePath = name => `docs/reports/2026-10-19-000000-${name.replaceAll(':', '-')}-suite-report/index.json`
   const suite = async (name, entries, started = 3, finished = 8) => {
-    const value = { schemaVersion: 2, toolVersion: 1, ...identity, workingTreeDirty: false, suiteName: name.startsWith('hmr-guard:') ? name : `e2e:${name}`, generatedAt: time(finished), strict: name === 'ide-full', coverage: 'complete', acceptance: 'passed', excludedProjects: [], execution: { scope: 'full', status: 'passed', profile: { ...profile, provider: name === 'ide-headless-full' ? 'headless' : name === 'ide-full' ? 'devtools' : 'none' }, assignedTasks: entries.map(item => item.label), startedAt: time(started), finishedAt: time(finished) }, tasks: entries.map(item => ({ label: item.label, definitionHash: 'd'.repeat(64), status: 'passed', exitCode: 0, durationMs: 2, artifacts: item.artifacts ?? [] })), summary: { taskCount: entries.length, plannedCount: entries.length, executedCount: entries.length, passedCount: entries.length, failedCount: 0, blockedCount: 0, skippedCount: 0, notExecutedCount: 0, outOfScopeCount: 0, artifactCount: entries.reduce((sum, item) => sum + (item.artifacts?.length ?? 0), 0) } }
+    const value = { schemaVersion: 2, toolVersion: 1, ...identity, workingTreeDirty: false, suiteName: name.startsWith('hmr-guard:') ? name : `e2e:${name}`, generatedAt: time(finished), strict: name === 'ide-full', coverage: 'complete', acceptance: 'passed', excludedProjects: [], execution: { executionTopology, scope: 'full', status: 'passed', profile: { ...profile, provider: name === 'ide-headless-full' ? 'headless' : name === 'ide-full' ? 'devtools' : 'none' }, assignedTasks: entries.map(item => item.label), startedAt: time(started), finishedAt: time(finished) }, tasks: entries.map(item => ({ label: item.label, definitionHash: 'd'.repeat(64), status: 'passed', exitCode: 0, durationMs: 2, artifacts: item.artifacts ?? [] })), summary: { taskCount: entries.length, plannedCount: entries.length, executedCount: entries.length, passedCount: entries.length, failedCount: 0, blockedCount: 0, skippedCount: 0, notExecutedCount: 0, outOfScopeCount: 0, artifactCount: entries.reduce((sum, item) => sum + (item.artifacts?.length ?? 0), 0) } }
     await save(suitePath(name), value)
     return value
   }
@@ -58,7 +60,7 @@ export async function localEvidenceFixture() {
   await suite('full-regression', inventories['full-regression'].map(({ label, childSuite }) => ({ label, artifacts: [{ kind: 'suite-report', indexPath: suitePath(childSuite).replace(/\.json$/u, '.md') }] })))
   for (const task of tasks) {
     const invocationId = task.id.replaceAll(':', '-')
-    const receipt = { schemaVersion: 1, runId: identity.runId, taskId: task.id, invocationId, sourceFingerprint: identity.fingerprint, nodeVersion: process.version, command: task.command, args: task.args, effectiveArgs: task.args, directory: '.', startedAt: time(2), finishedAt: time(9), exitCode: 0, cancelled: false, signal: null }
+    const receipt = { schemaVersion: 1, executionTopology, effectiveTopology: topologyEnvironment(executionTopology), runId: identity.runId, taskId: task.id, invocationId, sourceFingerprint: identity.fingerprint, nodeVersion: process.version, command: task.command, args: task.args, effectiveArgs: task.args, directory: '.', startedAt: time(2), finishedAt: time(9), exitCode: 0, cancelled: false, signal: null }
     let stdout = ''
     if (task.id === 'build') {
       receipt.artifacts = artifacts

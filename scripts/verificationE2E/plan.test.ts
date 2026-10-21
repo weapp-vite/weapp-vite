@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { assertVerificationPlan, createVerificationIdentity, createVerificationPlan, fallbackTaskDuration } from '../../e2e/scripts/verification/plan'
 import { assertVerificationProfile } from '../../e2e/scripts/verification/profile'
+import { resolveVerificationTopology } from '../verification/topology.ts'
 import { freeze, identity, now, profile, rehash, tasks } from './fixtures'
 
 describe('frozen E2E verification plans', () => {
@@ -58,4 +59,17 @@ describe('frozen E2E verification plans', () => {
     await expect(freeze({ history: { ...history, toolVersion: 2 } })).rejects.toThrow('version')
     await expect(createVerificationPlan({ suite: 'ci-full', shards: 0, profile, tasks })).rejects.toThrow('positive')
   })
+})
+
+it('binds topology into the frozen hash and refuses missing, unknown or mismatched identities', async () => {
+  const legacy = await freeze({ topology: 'legacy-v1', sourceDigest: undefined })
+  const optimized = await freeze({ topology: 'optimized-v1', sourceDigest: undefined })
+  expect(legacy.planHash).not.toBe(optimized.planHash)
+  expect(legacy.tasks).toEqual(optimized.tasks)
+  expect(legacy.profile).toEqual(optimized.profile)
+  expect(legacy.sourceDigest).toBe(optimized.sourceDigest)
+  expect(() => assertVerificationPlan(legacy, { suite: 'ci-full', profile, tasks, identity, topology: 'optimized-v1' })).toThrow('topology mismatch')
+  expect(() => assertVerificationPlan(legacy, { suite: 'ci-full', profile, tasks, identity, topology: 'legacy-v1' })).not.toThrow()
+  expect(() => assertVerificationPlan(rehash({ ...legacy, executionTopology: undefined! }))).toThrow('topology')
+  expect(() => assertVerificationPlan(rehash({ ...legacy, executionTopology: { ...resolveVerificationTopology('legacy-v1'), policyDigest: '0'.repeat(64) } }))).toThrow('topology')
 })

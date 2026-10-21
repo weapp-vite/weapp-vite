@@ -35,7 +35,7 @@ function hmrTasks(root, name, manifest) {
 }
 
 /** 冻结正式 suite 原始任务定义；仅严格 IDE 原入口要求 DOM 清单。 */
-export async function freezeLocalSuites(root) {
+export async function freezeLocalSuites(root, executionTopology) {
   const [manifest, definitions, hmr] = await Promise.all([
     import(pathToFileURL(path.join(root, 'e2e/scripts/e2e-suite-manifest.ts')).href),
     import(pathToFileURL(path.join(root, 'e2e/scripts/verification/plan.ts')).href),
@@ -45,11 +45,11 @@ export async function freezeLocalSuites(root) {
   const pending = Object.values(localSuites).flat()
   for (const name of pending) {
     assert(!suites[name], 'Local formal suite hierarchy contains a duplicate or cycle')
-    const tasks = name.startsWith('hmr-guard:') ? hmrTasks(root, name.slice('hmr-guard:'.length), hmr) : await manifest.getSuiteTasks(name)
+    const tasks = name.startsWith('hmr-guard:') ? hmrTasks(root, name.slice('hmr-guard:'.length), hmr) : await manifest.getSuiteTasks(name, { topology: executionTopology?.id })
     suites[name] = tasks.map(task => ({ label: task.label, definitionHash: definitions.taskDefinitionHash(task), outOfScopeReason: task.outOfScopeReason, acceptanceTemplates: task.acceptanceTemplates, childSuite: childSuite(task), caseEvidence: task.args.includes('vitest') || Boolean(task.acceptanceTemplates) }))
     pending.push(...suites[name].map(task => task.childSuite).filter(Boolean))
   }
-  suites['ide-full'] = (await createRuntimeInventory(root, 'ide-full')).map(task => ({ ...suites['ide-full'].find(item => item.label === task.label), ...task }))
+  suites['ide-full'] = (await createRuntimeInventory(root, 'ide-full', executionTopology)).map(task => ({ ...suites['ide-full'].find(item => item.label === task.label), ...task }))
   return suites
 }
 
@@ -68,6 +68,9 @@ export async function readLocalSuites(root, receipt, stdout, frozen, identity, r
     const document = await localDocument(root, marker, 'docs/reports/')
     raw.suites.push(document)
     const report = verificationSuiteReportSchema.parse(document.value)
+    if (identity.executionTopology) {
+      assert.deepEqual(report.execution.executionTopology, identity.executionTopology, 'Local child suite topology differs from its frozen capture')
+    }
     assert(report.suiteName?.replace(/^e2e:/u, '') === name && frozen[name], 'Local runtime child suite belongs to another formal task')
     assert(report.runId === identity.runId && report.commitSha === identity.commitSha && report.workingTreeDirty === false
       && report.coverage === 'complete' && report.acceptance === 'passed' && report.execution.scope === 'full'
@@ -86,7 +89,7 @@ export async function readLocalSuites(root, receipt, stdout, frozen, identity, r
       const planned = frozen[name].find(item => item.label === task.label)
       if (task.status !== 'out-of-scope') {
         assert(task.status === 'passed' && task.exitCode === 0 && task.durationMs > 0
-          && (!task.definitionHash || task.definitionHash === planned.definitionHash), 'Local runtime task did not pass its frozen definition')
+          && task.definitionHash === planned.definitionHash, 'Local runtime task did not pass its frozen definition')
       }
       const children = task.artifacts.filter(item => item.kind === 'suite-report')
       assert(children.length === (planned.childSuite && !planned.outOfScopeReason ? 1 : 0), 'Local runtime is missing or adding formal child suite artifacts')

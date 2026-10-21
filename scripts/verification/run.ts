@@ -137,6 +137,7 @@ export async function runVerification(plan: VerificationPlan, execute: TaskExecu
   return {
     version: 1,
     mode: plan.mode,
+    executionTopology: plan.executionTopology,
     fingerprint: plan.fingerprint,
     startedAt,
     durationMs: performance.now() - started,

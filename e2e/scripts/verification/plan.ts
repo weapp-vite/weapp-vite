@@ -5,6 +5,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
 import { excludedE2EProjects, isExcludedE2EProject } from '../../../scripts/e2eProjectScope'
+import { assertVerificationTopology, resolveVerificationTopology } from '../../../scripts/verification/topology.ts'
 import { ACCEPTANCE_DIRTY_ENV, ACCEPTANCE_ROOT, createAcceptanceIdentity, isStrictDomAcceptanceSuite } from '../domAcceptanceReport/helpers'
 import { collectInventorySources } from '../domAcceptanceReport/inventorySources'
 import { readPlannedTaskCases } from '../domAcceptanceReport/taskCases'
@@ -49,9 +50,9 @@ export function verificationSourceDigest(tasks: SuiteTask[]) {
   return verificationHash(collectInventorySources(ACCEPTANCE_ROOT, files))
 }
 
-export async function resolveVerificationTasks(suite: string) {
+export async function resolveVerificationTasks(suite: string, topology?: string) {
   const excluded = excludedE2EProjects()
-  const tasks = (await getSuiteTasks(suite)).map(task => isExcludedE2EProject(task.label, excluded)
+  const tasks = (await getSuiteTasks(suite, { topology })).map(task => isExcludedE2EProject(task.label, excluded)
     ? { ...task, outOfScopeReason: 'Excluded by WEAPP_VITE_E2E_EXCLUDE_PROJECTS' }
     : task)
   if (!tasks.length || new Set(tasks.map(task => task.label)).size !== tasks.length) {
@@ -70,7 +71,8 @@ export function fallbackTaskDuration(label: string) {
   return label.includes('platform') || label.includes('template') ? 40_000 : 20_000
 }
 
-export function assertVerificationPlan(plan: VerificationPlan, options?: { suite: string, profile: VerificationProfile, tasks: SuiteTask[], identity: ReturnType<typeof createAcceptanceIdentity> }) {
+export function assertVerificationPlan(plan: VerificationPlan, options?: { suite: string, profile: VerificationProfile, tasks: SuiteTask[], identity: ReturnType<typeof createAcceptanceIdentity>, topology?: string }) {
+  assertVerificationTopology(plan.executionTopology)
   const { planHash, ...content } = plan
   if (plan.schemaVersion !== 1 || plan.toolVersion !== VERIFICATION_TOOL_VERSION || planHash !== verificationHash(content)
     || plan.workingTreeDirty !== false || !plan.profile.arch
@@ -90,6 +92,9 @@ export function assertVerificationPlan(plan: VerificationPlan, options?: { suite
     return
   }
   assertVerificationProfile(plan.profile, options.profile)
+  if (verificationHash(plan.executionTopology) !== verificationHash(resolveVerificationTopology(options.topology))) {
+    throw new Error('Frozen verification plan topology mismatch')
+  }
   if (options.identity.workingTreeDirty !== false || plan.suite !== options.suite || plan.commitSha !== options.identity.commitSha || plan.workingTreeDirty !== options.identity.workingTreeDirty
     || plan.sourceDigest !== verificationSourceDigest(options.tasks)
     || verificationHash(plan.tasks.map(task => [task.label, task.definitionHash])) !== verificationHash(options.tasks.map(task => [task.label, taskDefinitionHash(task)]))) {
@@ -99,6 +104,7 @@ export function assertVerificationPlan(plan: VerificationPlan, options?: { suite
 
 export async function createVerificationPlan(options: {
   suite: string
+  topology?: string
   shards: number
   profile: VerificationProfile
   history?: DurationHistory
@@ -123,7 +129,8 @@ export async function createVerificationPlan(options: {
       throw new Error('Duration history is expired or has an invalid timestamp')
     }
   }
-  const tasks = options.tasks ?? await resolveVerificationTasks(options.suite)
+  const executionTopology = resolveVerificationTopology(options.topology)
+  const tasks = options.tasks ?? await resolveVerificationTasks(options.suite, executionTopology.id)
   if (!tasks.length || new Set(tasks.map(task => task.label)).size !== tasks.length) {
     throw new Error('Cannot freeze an empty or duplicate task inventory')
   }
@@ -159,6 +166,7 @@ export async function createVerificationPlan(options: {
     suite: options.suite,
     strict,
     profile: options.profile,
+    executionTopology,
     sourceDigest: options.sourceDigest ?? verificationSourceDigest(tasks),
     shardTotal: options.shards,
     tasks: planned,

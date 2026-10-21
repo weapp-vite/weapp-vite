@@ -236,3 +236,32 @@ it('rejects final artifact drift after all task receipts were successfully recor
   await writeFile(path.join(value.root, 'packages/library/dist/index.js'), 'changed after verification')
   await expect(collect(value)).rejects.toThrow('checksum')
 })
+
+it.each(['plan', 'report', 'receipt', 'effective-env', 'nested-suite'])(
+  'rejects changed or missing %s topology in otherwise complete local evidence',
+  async (fault) => {
+    const value = await fixture()
+    const targets = {
+      'plan': ['.tmp/run/verification/plan.json', document => delete document.executionTopology],
+      'report': ['.tmp/run/verification/report.json', document => delete document.executionTopology],
+      'receipt': ['.tmp/run/tasks/runtime-full/receipt.json', document => document.executionTopology.id = 'legacy-v1'],
+      'effective-env': ['.tmp/run/tasks/runtime-full/receipt.json', document => document.effectiveTopology.WEAPP_VITE_VERIFICATION_TOPOLOGY = 'legacy-v1'],
+      'nested-suite': [value.suitePath('hmr-guard:full'), document => delete document.execution.executionTopology],
+    }
+    await mutate(value, ...targets[fault])
+    await expect(collect(value)).rejects.toThrow(/topology/)
+  },
+)
+
+it.each(['missing', 'changed'])('rejects %s nested HMR task definitions despite passing outer wrappers', async (fault) => {
+  const value = await fixture()
+  await mutate(value, value.suitePath('hmr-guard:full'), (document) => {
+    if (fault === 'missing') {
+      delete document.tasks[0].definitionHash
+    }
+    else {
+      document.tasks[0].definitionHash = 'f'.repeat(64)
+    }
+  })
+  await expect(collect(value)).rejects.toThrow(/task definition/)
+})

@@ -262,3 +262,23 @@ it('rejects workflow commands or filters that cannot be represented by the share
     await rm(root, { recursive: true, force: true })
   }
 })
+
+it('freezes topology separately while preserving all original full commands, scope and resources', async () => {
+  const root = await createPlanRoot()
+  try {
+    const input = { root, changes: changes([]), packages, resources, mode: 'full' as const }
+    const legacy = await createVerificationPlan({ ...input, topology: 'legacy-v1' })
+    const optimized = await createVerificationPlan({ ...input, topology: 'optimized-v1' })
+    expect(legacy.fingerprint).not.toBe(optimized.fingerprint)
+    expect(legacy.executionTopology.policyDigest).toBe(optimized.executionTopology.policyDigest)
+    const commands = (plan: typeof legacy) => plan.tasks.map(({ env: _env, ...task }) => task)
+    expect(commands(legacy)).toEqual(commands(optimized))
+    expect(legacy.resources).toEqual(optimized.resources)
+    expect(legacy.selected).toEqual(optimized.selected)
+    expect(legacy.tasks.every(task => task.env?.WEAPP_VITE_VERIFICATION_TOPOLOGY === 'legacy-v1')).toBe(true)
+    expect(optimized.tasks.every(task => task.env?.WEAPP_VITE_VERIFICATION_TOPOLOGY === 'optimized-v1')).toBe(true)
+  }
+  finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})

@@ -17,6 +17,7 @@ export async function main(args = process.argv.slice(2), root = ROOT): Promise<n
       base: { type: 'string' },
       mode: { type: 'string', default: 'quick' },
       selection: { type: 'string' },
+      topology: { type: 'string' },
       file: { type: 'string', multiple: true },
       jobs: { type: 'string' },
       output: { type: 'string' },
@@ -25,7 +26,7 @@ export async function main(args = process.argv.slice(2), root = ROOT): Promise<n
     },
   })
   if (values.help) {
-    process.stdout.write('verify <plan|run> [--base REF] [--mode quick|review|full] [--selection shadow|affected] [--file PATH] [--jobs N] [--output DIR] [--json]\n')
+    process.stdout.write('verify <plan|run> [--base REF] [--mode quick|review|full] [--selection shadow|affected] [--topology legacy-v1|optimized-v1] [--file PATH] [--jobs N] [--output DIR] [--json]\n')
     return 0
   }
   const command = positionals[0] ?? 'plan'
@@ -47,6 +48,7 @@ export async function main(args = process.argv.slice(2), root = ROOT): Promise<n
     jobs: values.jobs,
     mode: values.mode as VerificationMode,
     selection: values.selection as SelectionMode | undefined,
+    topology: values.topology,
   }
   const plan = await prepareVerificationPlan(root, options)
   const directory = path.resolve(root, values.output ?? `.tmp/verification/${new Date().toISOString().replaceAll(':', '-')}`)

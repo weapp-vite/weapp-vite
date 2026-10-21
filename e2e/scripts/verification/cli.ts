@@ -34,7 +34,7 @@ export async function runVerificationCli(args = process.argv.slice(2)) {
   const profile = { ...suppliedProfile, arch: suppliedProfile.arch ?? process.arch }
   if (command === 'plan') {
     const historyFile = option(args, 'history')
-    const plan = await createVerificationPlan({ suite, shards: Number(option(args, 'shards') ?? 1), profile, history: historyFile ? durationHistorySchema.parse(await readJson(historyFile)) : undefined })
+    const plan = await createVerificationPlan({ suite, topology: option(args, 'topology'), shards: Number(option(args, 'shards') ?? 1), profile, history: historyFile ? durationHistorySchema.parse(await readJson(historyFile)) : undefined })
     await writeJson(output, plan)
     console.log(JSON.stringify({ planHash: plan.planHash, runId: plan.runId, tasks: plan.tasks.length, shardTotal: plan.shardTotal }))
     return

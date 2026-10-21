@@ -1,3 +1,5 @@
+import type { VerificationTopology } from './topology.ts'
+
 export type VerificationMode = 'quick' | 'review' | 'full'
 export type SelectionMode = 'shadow' | 'affected'
 export type ExecutionState = 'actual' | 'cached' | 'mixed' | 'not-executed' | 'unknown'
@@ -49,6 +51,7 @@ export interface VerificationTask {
 export interface VerificationPlan {
   version: 1
   fingerprint: string
+  executionTopology: VerificationTopology
   mode: VerificationMode
   selection: SelectionMode
   changes: ChangeSet
@@ -73,6 +76,7 @@ export interface TaskResult {
 
 export interface VerificationReport {
   version: 1
+  executionTopology?: VerificationTopology
   mode: VerificationMode
   fingerprint: string
   startedAt: string

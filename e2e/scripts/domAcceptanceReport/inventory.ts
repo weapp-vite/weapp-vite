@@ -6,6 +6,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 // eslint-disable-next-line e18e/ban-dependencies -- 使用跨平台子进程及 stdin 隔离 ESLint 与 tsx 的加载边界。
 import { execa } from 'execa'
 import { assertDomInventoryUntracked, DOM_INVENTORY_FILES } from '../../../scripts/dom-inventory-policy.mjs'
+import { resolveVerificationTopology } from '../../../scripts/verification/topology.ts'
 import { chunkExtraCases, chunkMatrixCases, runtimeBaseRoutes, selectIdeRuntimeChunkExtraCases, selectIdeRuntimeChunkMatrixCases } from '../../chunk-modes.matrix'
 import { getIdeExhaustiveTasks, getIdeHeadlessTasks } from '../e2e-suite-manifest'
 import { ACCEPTANCE_ROOT } from './helpers'
@@ -33,9 +34,10 @@ export function readTaskCases(root: string, label: string, templates?: string[])
     }))
 }
 
-export function createDomAcceptanceInventory(root = ACCEPTANCE_ROOT) {
+export function createDomAcceptanceInventory(root = ACCEPTANCE_ROOT, topology?: string) {
+  const executionTopology = resolveVerificationTopology(topology)
   const headlessLabels = new Set(getIdeHeadlessTasks().map(task => task.label))
-  const tasks = getIdeExhaustiveTasks().map(task => ({
+  const tasks = getIdeExhaustiveTasks({ topology: executionTopology.id }).map(task => ({
     task: task.label,
     scope: task.outOfScopeReason ? 'out-of-scope' : 'wechat',
     reason: task.outOfScopeReason ?? null,
@@ -48,6 +50,7 @@ export function createDomAcceptanceInventory(root = ACCEPTANCE_ROOT) {
   return {
     schemaVersion: 1,
     kind: 'static-plan-inventory',
+    executionTopology,
     summary: {
       taskCount: tasks.length,
       wechatTaskCount: wechat.length,
