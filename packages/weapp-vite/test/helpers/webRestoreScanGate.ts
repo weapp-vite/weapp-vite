@@ -9,13 +9,12 @@ export function createBarrier() {
 }
 
 /** 用可观察的扫描与发布阶段固定恢复竞争，不修改生产钩子结果或 Vite 模块图。 */
-export function createWebRestoreScanGate(app: string, restored: string) {
+export function createWebRestoreScanGate(restored: string) {
   const started = createBarrier()
   const releaseApp = createBarrier()
   const sourceQueued = createBarrier()
   const sourceStarted = createBarrier()
   const releaseSource = createBarrier()
-  const appReloaded = createBarrier()
   let active = false
   let scans = 0
   return {
@@ -33,11 +32,6 @@ export function createWebRestoreScanGate(app: string, restored: string) {
         await (first ? releaseApp : releaseSource).promise
       }
     },
-    observeReload(file?: string) {
-      if (active && file === app) {
-        appReloaded.release()
-      }
-    },
     observeHotUpdate(plugin: WeappWebVitePlugin) {
       const handleWebUpdate = plugin.handleHotUpdate!
       plugin.handleHotUpdate = function <Module extends object>(this: WebPluginContext, context: WebHmrContext<Module>) {
@@ -49,11 +43,12 @@ export function createWebRestoreScanGate(app: string, restored: string) {
         return pending
       }
     },
-    async publishSource() {
+    async publishSource(publication: Promise<void>) {
       await sourceQueued.promise
       releaseApp.release()
       await sourceStarted.promise
-      await appReloaded.promise
+      // native pre hook 可取得 reload 发布权；先等结构扫描真实提交，再让 source 完成本轮扫描。
+      await publication
       releaseSource.release()
     },
     close() {

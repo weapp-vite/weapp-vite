@@ -275,6 +275,7 @@ jobs:
       e2e_exclude_projects: ${{ inputs.exclude-e2e-projects }}
       runs_on: ${{ matrix.os }}
       node_version: '${{ matrix.node-version }}'
+      verification_telemetry: true
       timeout_minutes: 30
       consume_build_artifact: miniapp-${{ matrix.os }}-node-${{ matrix.node-version }}-weapp-build
       main_command: |
@@ -401,6 +402,7 @@ jobs:
       e2e_exclude_projects: ${{ inputs.exclude-e2e-projects }}
       runs_on: ${{ matrix.os }}
       node_version: '22'
+      verification_telemetry: true
       timeout_minutes: 40
       build_command: ${{ matrix.build-command }}
       main_command: node -e "console.log('workspace build artifact ready')"
@@ -433,6 +435,7 @@ jobs:
       e2e_exclude_projects: ${{ inputs.exclude-e2e-projects }}
       runs_on: ${{ matrix.os }}
       node_version: '22'
+      verification_telemetry: true
       timeout_minutes: 40
       main_command: ${{ matrix.os == 'windows-latest' && 'pnpm exec cross-env WEAPP_VITE_E2E_CLEANUP_TRACE=1 pnpm e2e:ci:pr' || 'pnpm e2e:ci:pr' }}
       e2e_platform: weapp
@@ -515,6 +518,7 @@ jobs:
       e2e_exclude_projects: ${{ inputs.exclude-e2e-projects }}
       runs_on: ${{ matrix.os }}
       node_version: '${{ matrix.node-version }}'
+      verification_telemetry: true
       timeout_minutes: 40
       build_command: ${{ matrix.build-command }}
       main_command: node -e "console.log('workspace build artifact ready')"
@@ -606,6 +610,7 @@ jobs:
       e2e_exclude_projects: ${{ inputs.exclude-e2e-projects }}
       runs_on: ${{ matrix.os }}
       node_version: '${{ matrix.node-version }}'
+      verification_telemetry: true
       timeout_minutes: 40
       main_command: pnpm e2e:ci:full -- --shard-index=${{ matrix.shard }} --shard-total=4
       e2e_platform: weapp

@@ -106,6 +106,14 @@ describe('Windows ordinary npm watcher delivery workflow', () => {
     expect(action.inputs['working-directory']?.default).toBe('.')
     expect(action.runs.steps).toHaveLength(2)
     expect(action.runs.steps.every(item => item['working-directory'] === '${{ inputs.working-directory }}')).toBe(true)
-    expect(action.runs.steps[1]?.run).toBe('pnpm install --frozen-lockfile --ignore-scripts')
+    for (const [index, item] of action.runs.steps.entries()) {
+      const phase = index === 0 ? 'build' : 'refresh-links'
+      expect(item.env?.CI_TIMING_SCRIPT).toBe('${{ github.action_path }}/../../scripts/ci-timing.mjs')
+      expect(item.run?.trim().split('\n')).toEqual([
+        `node "$CI_TIMING_SCRIPT" start ${phase}`,
+        `trap 'phase_exit=$?; node "$CI_TIMING_SCRIPT" finish ${phase} "$phase_exit"; exit "$phase_exit"' EXIT`,
+        index === 0 ? '${{ inputs.build-command }}' : 'pnpm install --frozen-lockfile --ignore-scripts',
+      ])
+    }
   })
 })

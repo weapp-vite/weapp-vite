@@ -4,7 +4,13 @@ import type { MutableCompilerContext } from '../context'
 import type { WeappViteRuntime } from '../pluginHost'
 import type { AutoRoutesService } from '../runtime/autoRoutesPlugin/service'
 import { realpath } from 'node:fs/promises'
-import { WEVU_AUTO_ROUTES_MODULE_ID, WEVU_AUTO_ROUTES_VIRTUAL_MODULE_ID } from '@weapp-core/constants'
+import {
+  WEAPP_VITE_WEB_AUTO_ROUTES_RESOLVED_MODULE_ID,
+  WEAPP_VITE_WEB_ENTRY_RESOLVED_MODULE_ID,
+  WEVU_AUTO_ROUTES_MODULE_ID,
+  WEVU_AUTO_ROUTES_VIRTUAL_MODULE_ID,
+} from '@weapp-core/constants'
+import { removeExtensionDeep } from '@weapp-core/shared'
 import chokidar from 'chokidar'
 import { mayContainPageDeclaration, stripPageDeclaration } from 'wevu/compiler'
 import { scriptExtensions, vueExtensions } from '../constants'
@@ -14,6 +20,7 @@ import {
   isAutoRoutesPagesRelatedPath,
   resolveAutoRoutesAliasTargets,
   resolveAutoRoutesMatcherContext,
+  resolveAutoRoutesPath,
 } from '../runtime/autoRoutesPlugin/shared'
 import { publishAutoRoutesTopology, registerAutoRoutesTopologySource } from '../runtime/autoRoutesPlugin/topology'
 import { createAutoRoutesWatchDirectoryRegistry } from '../runtime/autoRoutesPlugin/watchDirectories'
@@ -36,6 +43,7 @@ import {
   shouldStartAutoRoutesWatcher,
   WEVU_AUTO_ROUTES_RESOLVED_MODULE_ID,
 } from './autoRoutes.shared'
+import { createAutoRoutesWebPublication } from './autoRoutes/publication'
 import { markAppEntryForAutoRoutesTopology } from './core/lifecycle/autoRoutesTopology'
 import { parseRequest } from './utils/parse'
 
@@ -43,12 +51,19 @@ import { parseRequest } from './utils/parse'
  * 路由文件监听器的唯一标识，用于在 sidecarWatcherMap 中注册。
  */
 const ROUTE_WATCHER_KEY = '__auto-routes-source-watcher__'
-const AUTO_ROUTES_RESOLVED_IDS: readonly string[] = [RESOLVED_VIRTUAL_ID, WEVU_AUTO_ROUTES_RESOLVED_MODULE_ID]
+const AUTO_ROUTES_RESOLVED_IDS: readonly string[] = [
+  RESOLVED_VIRTUAL_ID,
+  WEVU_AUTO_ROUTES_RESOLVED_MODULE_ID,
+  // Web 的路由快照由扫描入口生成，刷新前必须失效入口与其路由模块。
+  WEAPP_VITE_WEB_ENTRY_RESOLVED_MODULE_ID,
+  WEAPP_VITE_WEB_AUTO_ROUTES_RESOLVED_MODULE_ID,
+]
 const AUTO_ROUTES_VUE_SUFFIXES = vueExtensions.map(extension => `.${extension}`)
 
 interface AutoRoutesWatcherSubscriber {
   readonly topologyDirtyEntries: Set<string>
   readonly devServer?: ViteDevServer
+  readonly webPublication: ReturnType<typeof createAutoRoutesWebPublication>
 }
 
 interface AutoRoutesWatcherController {
@@ -57,6 +72,26 @@ interface AutoRoutesWatcherController {
   readonly subscribers: Map<WeappViteRuntime, AutoRoutesWatcherSubscriber>
   readonly servingSubscribers: Map<WeappViteRuntime, AutoRoutesWatcherSubscriber>
   close: () => void | Promise<void>
+}
+
+interface PendingRouteStructureChange {
+  filePath: string
+  event: 'create' | 'delete'
+  controller: AutoRoutesWatcherController
+  receivedAtMs: number
+}
+
+interface RouteStructureChangeResult {
+  controller: AutoRoutesWatcherController
+  changedSource: string
+  declarationOwners: Set<string>
+  didChangeRoutes: boolean
+  change: {
+    file: string
+    event: 'create' | 'delete'
+    topologyChanged: boolean
+    receivedAtMs: number
+  }
 }
 
 function isAutoRoutesWatcherController(watcher: unknown): watcher is AutoRoutesWatcherController {
@@ -90,7 +125,12 @@ function isPageScriptTransformRequest(id: string, normalizedId: string) {
 function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutesService): Plugin {
   let resolvedConfig: ResolvedConfig | undefined
   let devServer: ViteDevServer | undefined
-  let servedRouteSignature: string | undefined
+  const webPublication = createAutoRoutesWebPublication()
+  let pendingRouteStructureChanges: PendingRouteStructureChange[] = []
+  let routeStructureChangeTimer: ReturnType<typeof setTimeout> | undefined
+  // sidecar 可能在同一次文件操作中同时发出 add/unlink。所有扫描必须串行，
+  // 否则后完成的旧快照会覆盖较新的路由拓扑（尤其是目录 rename）。
+  let routeStructureChangeQueue = Promise.resolve()
   const autoRoutesAliasTargets = new Set<string>()
   const autoRoutesTopologyDirtyEntries = new Set<string>()
   const watcherSubscriber: AutoRoutesWatcherSubscriber = {
@@ -98,6 +138,7 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
     get devServer() {
       return devServer
     },
+    webPublication,
   }
 
   function createPageDeclarationSourceResolver(pluginContext: PluginContext): Parameters<AutoRoutesService['setPageDeclarationSourceResolver']>[0] {
@@ -197,19 +238,22 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
     }
   }
 
-  async function handleRouteStructureChange(
+  async function applyRouteStructureChange(
     filePath: string,
     event: 'create' | 'delete',
     controller: AutoRoutesWatcherController,
-  ) {
-    const receivedAtMs = performance.now()
+    receivedAtMs: number,
+  ): Promise<RouteStructureChangeResult | undefined> {
+    if (!isCurrentRouteWatcher(controller)) {
+      return undefined
+    }
     const changedSource = normalizeFsResolvedId(filePath)
     const declarationOwners = new Set(service.getPageDeclarationOwners(changedSource))
     const previousSignature = service.getSignature()
     const didChangeRoutes = await service.handleFileChange(filePath, resolveAutoRoutesWatchChangeEvent(event))
     // 关闭或替换期间完成的扫描不再拥有 watcher、构建图和错误通知。
     if (!isCurrentRouteWatcher(controller)) {
-      return
+      return undefined
     }
     controller.addWatchTargets([...service.getWatchDirectories()])
     const change = {
@@ -218,46 +262,162 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
       topologyChanged: previousSignature !== service.getSignature(),
       receivedAtMs,
     }
-    if (!didChangeRoutes) {
-      publishAutoRoutesTopology(ctx, change)
-      return
-    }
     for (const owner of service.getPageDeclarationOwners(changedSource)) {
       declarationOwners.add(owner)
     }
-    const servers = new Set<ViteDevServer>()
-    for (const subscriber of controller.servingSubscribers.values()) {
-      if (subscriber.devServer) {
-        servers.add(subscriber.devServer)
-      }
+    return { controller, changedSource, declarationOwners, didChangeRoutes, change }
+  }
+
+  async function publishRouteStructureChanges(results: RouteStructureChangeResult[]) {
+    const current = results.filter(result => isCurrentRouteWatcher(result.controller))
+    if (current.length === 0) {
+      return
     }
-    for (const server of servers) {
-      invalidateAutoRoutesVirtualModules(server, AUTO_ROUTES_RESOLVED_IDS)
+    const controller = current[0]!.controller
+    const didChangeRoutes = current.some(result => result.didChangeRoutes)
+    const topologyChanged = didChangeRoutes || current.some(result => result.change.topologyChanged)
+    const servers = new Set<ViteDevServer>()
+    if (topologyChanged) {
+      for (const subscriber of controller.servingSubscribers.values()) {
+        if (subscriber.devServer) {
+          servers.add(subscriber.devServer)
+        }
+      }
+      for (const server of servers) {
+        invalidateAutoRoutesVirtualModules(server, AUTO_ROUTES_RESOLVED_IDS)
+      }
+      markAutoRoutesTopologyDirty(controller)
+      ctx.scanService?.markDirty()
+    }
+    // 一次递归删除通常会产生多个 unlink；全部扫描完成后只向宿主发布一次，
+    // 避免在文件集合处于中间态时启动 snapshot 构建。
+    const last = current[current.length - 1]!
+    const change = {
+      ...last.change,
+      topologyChanged,
+      // 一次发布可以合并多个结构事件，但来源不能压缩为最后一个文件。
+      ...(current.length > 1 ? { sourceChanges: current.map(result => result.change) } : {}),
+    }
+    const nativeNotified = publishAutoRoutesTopology(ctx, change)
+    if (!topologyChanged) {
+      return
+    }
+    const notificationFiles = new Set<string>()
+    for (const result of current) {
+      for (const owner of result.declarationOwners) {
+        if (owner !== result.changedSource) {
+          notificationFiles.add(owner)
+        }
+      }
     }
     const appEntryPath = ctx.scanService?.appEntry?.path
-    markAutoRoutesTopologyDirty(controller)
-    ctx.scanService?.markDirty()
-    const nativeNotified = publishAutoRoutesTopology(ctx, change)
-    const notificationFiles = new Set<string>()
-    for (const owner of declarationOwners) {
-      if (owner !== changedSource) {
-        notificationFiles.add(owner)
-      }
-    }
     if (appEntryPath) {
       notificationFiles.add(appEntryPath)
     }
-    const notificationServers = new Set<ViteDevServer>()
+    const webSubscriber = controller.servingSubscribers.get('web')
+    const fullReloadServers = new Set<ViteDevServer>()
+    const notificationServers = new Map<ViteDevServer, AutoRoutesWatcherSubscriber>()
     for (const [runtime, subscriber] of controller.servingSubscribers) {
-      if (subscriber.devServer && !(runtime === 'miniprogram' && nativeNotified)) {
-        notificationServers.add(subscriber.devServer)
+      if (!subscriber.devServer) {
+        continue
+      }
+      if (runtime === 'web') {
+        fullReloadServers.add(subscriber.devServer)
+      }
+      else if (!(runtime === 'miniprogram' && nativeNotified)) {
+        notificationServers.set(subscriber.devServer, subscriber)
       }
     }
-    for (const server of notificationServers) {
+    // Web 的扫描状态由 Web plugin 的 watchChange 维护。sidecar 事件绕过
+    // Vite watcher 时，必须等待它完成扫描，再发送 full-reload，否则入口会
+    // 在旧的页面脚本集合上重新求值，路由表虽已更新但页面 loader 仍缺失。
+    for (const server of fullReloadServers) {
+      for (const result of current) {
+        if (!isCurrentRouteWatcher(controller) || controller.servingSubscribers.get('web') !== webSubscriber || webSubscriber?.devServer !== server) {
+          break
+        }
+        await server.pluginContainer.watchChange(result.changedSource, {
+          event: result.change.event,
+        })
+      }
+    }
+    if (!isCurrentRouteWatcher(controller)) {
+      return
+    }
+    // Web 的入口在创建 router 时会捕获路由快照。扫描完成后直接发送一次
+    // full-reload，避免把 app entry 伪装成文件变更而被 Vite watcher 丢弃。
+    for (const server of fullReloadServers) {
+      if (controller.servingSubscribers.get('web') !== webSubscriber || webSubscriber?.devServer !== server) {
+        continue
+      }
+      const signature = service.getSignature()
+      const sources = current.map(result => ({
+        file: result.changedSource,
+        fingerprint: service.getSourceFingerprint(result.changedSource),
+      }))
+      if (!webSubscriber.webPublication.matches(signature, sources)) {
+        server.ws.send({ type: 'full-reload' })
+        // 发送失败或宿主替换不能消费该快照；后续结构通知仍保留自己的发布权。
+        if (isCurrentRouteWatcher(controller)
+          && controller.servingSubscribers.get('web') === webSubscriber
+          && webSubscriber.devServer === server) {
+          webSubscriber.webPublication.commit(signature, sources)
+        }
+      }
+    }
+    for (const [server, subscriber] of notificationServers) {
+      if (subscriber.devServer !== server || ![...controller.servingSubscribers.values()].includes(subscriber)) {
+        continue
+      }
       for (const file of notificationFiles) {
         server.watcher.emit('change', file)
       }
     }
+  }
+
+  async function processRouteStructureChangeBatch(changes: PendingRouteStructureChange[]) {
+    const results: RouteStructureChangeResult[] = []
+    for (const { filePath, event, controller, receivedAtMs } of changes) {
+      try {
+        const result = await applyRouteStructureChange(filePath, event, controller, receivedAtMs)
+        if (result) {
+          results.push(result)
+        }
+      }
+      catch (error) {
+        reportRouteStructureChangeError(filePath, event, error, controller)
+      }
+    }
+    await publishRouteStructureChanges(results)
+  }
+
+  function enqueueRouteStructureChangeBatch(changes: PendingRouteStructureChange[]) {
+    const run = routeStructureChangeQueue
+      .catch(() => { })
+      .then(() => processRouteStructureChangeBatch(changes))
+      .catch((error) => {
+        const first = changes[0]
+        if (first) {
+          reportRouteStructureChangeError(first.filePath, first.event, error, first.controller)
+        }
+      })
+    routeStructureChangeQueue = run
+    return run
+  }
+
+  function scheduleRouteStructureChange(filePath: string, event: 'create' | 'delete', controller: AutoRoutesWatcherController) {
+    const receivedAtMs = performance.now()
+    pendingRouteStructureChanges.push({ filePath, event, controller, receivedAtMs })
+    clearTimeout(routeStructureChangeTimer)
+    // chokidar 不会为 unlink 应用 awaitWriteFinish；增删使用同一稳定窗口，
+    // 让目录重命名、递归删除只发布一次完整拓扑。
+    routeStructureChangeTimer = setTimeout(() => {
+      routeStructureChangeTimer = undefined
+      const changes = pendingRouteStructureChanges
+      pendingRouteStructureChanges = []
+      void enqueueRouteStructureChangeBatch(changes)
+    }, 80)
+    routeStructureChangeTimer.unref?.()
   }
 
   /**
@@ -333,11 +493,14 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
     }))
     const sidecarWatcher = createAutoRoutesSidecarWatcher(watcher)
     const ownsTopologyFile = (filePath: string) => {
-      const currentConfig = resolveAutoRoutesMatcherContext(ctx).autoRoutesConfig
+      const { autoRoutesConfig: currentConfig, matcher } = resolveAutoRoutesMatcherContext(ctx)
+      const resolved = resolveAutoRoutesPath(filePath, configService)
+      const matchesRoute = service.isPageDeclarationSource(filePath)
+        || Boolean(resolved && isPagesRelatedPath(filePath) && matcher.matches(removeExtensionDeep(resolved.relativePath)))
       return currentConfig.enabled && currentConfig.watch && service.isEnabled() && isAutoRoutesWatchFile(
         filePath,
         allowedExtensions,
-        isPagesRelatedPath,
+        () => matchesRoute,
         service.isPageDeclarationSource,
       )
     }
@@ -353,6 +516,13 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
       subscribers,
       servingSubscribers,
       async close() {
+        if (pendingRouteStructureChanges.some(change => change.controller === controller)) {
+          pendingRouteStructureChanges = pendingRouteStructureChanges.filter(change => change.controller !== controller)
+          if (pendingRouteStructureChanges.length === 0) {
+            clearTimeout(routeStructureChangeTimer)
+            routeStructureChangeTimer = undefined
+          }
+        }
         releaseTopologySource()
         if (sidecarWatcherMap.get(ROUTE_WATCHER_KEY) === controller) {
           sidecarWatcherMap.delete(ROUTE_WATCHER_KEY)
@@ -368,9 +538,7 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
         return
       }
       logger.info(`[auto-routes:watch] 新增路由文件 ${configService.relativeCwd(filePath)}`)
-      void handleRouteStructureChange(filePath, 'create', controller).catch((error) => {
-        reportRouteStructureChangeError(filePath, 'create', error, controller)
-      })
+      scheduleRouteStructureChange(filePath, 'create', controller)
     })
 
     watcher.on('unlink', (filePath) => {
@@ -378,9 +546,7 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
         return
       }
       logger.info(`[auto-routes:watch] 删除路由文件 ${configService.relativeCwd(filePath)}`)
-      void handleRouteStructureChange(filePath, 'delete', controller).catch((error) => {
-        reportRouteStructureChangeError(filePath, 'delete', error, controller)
-      })
+      scheduleRouteStructureChange(filePath, 'delete', controller)
     })
 
     // 注册到 sidecarWatcherMap，由 watcherService.closeAll() 统一回收
@@ -405,6 +571,9 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
     },
 
     configureServer(server) {
+      if (devServer !== server) {
+        webPublication.reset()
+      }
       devServer = server
     },
 
@@ -459,7 +628,7 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
       }
       startRouteFileWatcher()
       if (resolvedConfig?.weappVite?.runtime === 'web') {
-        servedRouteSignature ??= service.getSignature()
+        webPublication.initialize(service.getSignature())
       }
 
       return {
@@ -495,11 +664,12 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
 
     async watchChange(id, change) {
       const event = change?.event
-      if (resolvedConfig?.command === 'serve' && resolvedConfig.weappVite?.runtime === 'web'
+      if (resolvedConfig?.command === 'serve'
+        && (resolvedConfig.weappVite?.runtime === 'web' || resolvedConfig.weappVite?.runtime === 'miniprogram')
         && (event === 'create' || event === 'delete')) {
         const watcher = ctx.runtimeState.watcher.sidecarWatcherMap.get(ROUTE_WATCHER_KEY)
         if (isAutoRoutesWatcherController(watcher)
-          && watcher.servingSubscribers.get('web') === watcherSubscriber
+          && watcher.servingSubscribers.get(resolvedConfig.weappVite?.runtime ?? 'miniprogram') === watcherSubscriber
           && watcher.ownsFile(id)) {
           // sidecar 独占结构变更；提前重扫并 add 新目录会吞掉 ignoreInitial 下的新增事件。
           return
@@ -539,7 +709,7 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
           // 路由 watcher 扫描完成后统一通知 App，避免 Vite 提前刷新后再次重置页面。
           if (webRuntime && isAutoRoutesWatcherController(watcher)
             && watcher.servingSubscribers.get('web') === watcherSubscriber
-            && watcher.ownsFile(context.file) && service.isRouteFile(context.file)) {
+            && watcher.ownsFile(context.file)) {
             return []
           }
           return
@@ -580,7 +750,7 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
 
         const signature = webRuntime ? service.getSignature() : undefined
         const reloadRoutes = webRuntime
-          && (servedRouteSignature === undefined ? topologyChanged : signature !== servedRouteSignature)
+          && (webPublication.signature === undefined ? topologyChanged : signature !== webPublication.signature)
         const modules = new Set<EnvironmentModuleNode>(!webRuntime || reloadRoutes
           ? AUTO_ROUTES_RESOLVED_IDS
               .map(id => moduleGraph.getModuleById(id))
@@ -606,7 +776,10 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
         }
         if (modules.size > 0) {
           if (reloadRoutes) {
-            servedRouteSignature = signature
+            webPublication.commit(signature!, [{
+              file: changedSource,
+              fingerprint: service.getSourceFingerprint(changedSource),
+            }])
             return collectAutoRoutesReloadModules(modules)
           }
           return [...modules]

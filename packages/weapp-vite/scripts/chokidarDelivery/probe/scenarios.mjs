@@ -4,10 +4,12 @@ import path from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
 import { bounded } from './native.mjs'
 import { assertOutput, closeOwner, openPublicOwner } from './public.mjs'
+import { mutateAndAssertOutputs } from './publication.mjs'
+import { recoveryScenarioId } from './recoveryFailure.mjs'
 import { getDeliveryTrace } from './trace.mjs'
 
 export const scenarios = [
-  { id: 'public-missing-watch-recovery', kind: 'recovery', platform: 'win32' },
+  { id: recoveryScenarioId, kind: 'recovery', platform: 'win32' },
   { id: 'public-still-exists-watch-error', kind: 'error', missing: false },
   { id: 'public-non-windows-missing-watch-error', kind: 'error', missing: true, exclude: 'win32' },
   { id: 'shared-test-first', kind: 'shared', first: 'artifact' },
@@ -50,15 +52,11 @@ async function shared(ctx) {
   assert.equal(handles.length, 1, 'Two public entry graphs must share the native Chokidar subscription')
   assert.equal(instrumentation.attempts.filter(file => file === 'src/shared').length, attemptsBefore, 'The second entry must reuse the existing native registration')
   const marker = path.join(target, 'marker.txt')
-  await writeFile(marker, 'both-public-owners')
-  for (const owner of [first, second]) {
-    await assertOutput(owner, 'shared/marker.txt', 'both-public-owners')
-  }
+  await mutateAndAssertOutputs([first, second], 'shared/marker.txt', 'both-public-owners', () => writeFile(marker, 'both-public-owners'), 'shared write')
   await closeOwner(first)
   assert.equal(initial[0].closeCalls, 0, 'First owner close cannot close the survivor native handle')
   assert.equal(initial[0].closeEvents, 0)
-  await writeFile(marker, 'surviving-public-owner')
-  await assertOutput(second, 'shared/marker.txt', 'surviving-public-owner')
+  await mutateAndAssertOutputs([second], 'shared/marker.txt', 'surviving-public-owner', () => writeFile(marker, 'surviving-public-owner'), 'survivor write')
   await closeOwner(second)
   await bounded(initial[0].closed, 'shared directory native close event')
   assert.equal(initial[0].closeCalls, 1)
@@ -78,32 +76,38 @@ async function errorBoundary(ctx) {
 }
 
 async function recovery(ctx) {
-  const { root, owners, errors, instrumentation, injectedError, evidence } = ctx
+  const { root, owners, errors, instrumentation, evidence } = ctx
   const owner = await openPublicOwner('artifact', root, owners, errors)
   assert.equal(instrumentation.injected, 1, 'Recovery must actually exercise one failed native acquisition')
   const reborn = path.join(root, 'src/reborn')
+  const marker = path.join(reborn, 'marker.txt')
   const trace = getDeliveryTrace(root)
-  trace?.record('mutation.enter', { operation: 'mkdir', file: trace.file(reborn) })
-  await mkdir(reborn)
-  trace?.record('mutation.completed', { operation: 'mkdir', file: trace.file(reborn) })
-  trace?.record('mutation.enter', { operation: 'create', file: 'src/reborn/marker.txt' })
-  await writeFile(path.join(reborn, 'marker.txt'), 'recreated-directory')
-  trace?.record('mutation.completed', { operation: 'create', file: 'src/reborn/marker.txt' })
-  await assertOutput(owner, 'reborn/marker.txt', 'recreated-directory')
-  trace?.record('mutation.enter', { operation: 'change', file: 'src/reborn/marker.txt' })
-  await writeFile(path.join(reborn, 'marker.txt'), 'changed-after-recovery')
-  trace?.record('mutation.completed', { operation: 'change', file: 'src/reborn/marker.txt' })
-  await assertOutput(owner, 'reborn/marker.txt', 'changed-after-recovery')
-  trace?.record('mutation.enter', { operation: 'unlink', file: 'src/reborn/marker.txt' })
-  await rm(path.join(reborn, 'marker.txt'))
-  trace?.record('mutation.completed', { operation: 'unlink', file: 'src/reborn/marker.txt' })
-  await assertOutput(owner, 'reborn/marker.txt', null)
-  Object.assign(evidence, { injectedOnce: true, factoryCompleted: true, createEmitted: true, changeEmitted: true, deleteEmitted: true })
-  // 负控可能完成输出恢复后才公开原始错误；只透传精确单例，其他失败仍保留断言。
-  if (errors.length === 1 && errors[0] === injectedError) {
-    throw injectedError
+  await mutateAndAssertOutputs([owner], 'reborn/marker.txt', 'recreated-directory', async () => {
+    trace?.record('mutation.enter', { operation: 'mkdir', file: trace.file(reborn) })
+    await mkdir(reborn)
+    trace?.record('mutation.completed', { operation: 'mkdir', file: trace.file(reborn) })
+    trace?.record('mutation.enter', { operation: 'create', file: 'src/reborn/marker.txt' })
+    await writeFile(marker, 'recreated-directory')
+    trace?.record('mutation.completed', { operation: 'create', file: 'src/reborn/marker.txt' })
+  }, 'create')
+  await mutateAndAssertOutputs([owner], 'reborn/marker.txt', 'changed-after-recovery', async () => {
+    trace?.record('mutation.enter', { operation: 'change', file: 'src/reborn/marker.txt' })
+    await writeFile(marker, 'changed-after-recovery')
+    trace?.record('mutation.completed', { operation: 'change', file: 'src/reborn/marker.txt' })
+  }, 'change')
+  await mutateAndAssertOutputs([owner], 'reborn/marker.txt', null, async () => {
+    trace?.record('mutation.enter', { operation: 'unlink', file: 'src/reborn/marker.txt' })
+    await rm(marker)
+    trace?.record('mutation.completed', { operation: 'unlink', file: 'src/reborn/marker.txt' })
+  }, 'delete')
+  try {
+    assert.deepEqual(errors, [])
   }
-  assert.deepEqual(errors, [])
+  catch (error) {
+    ctx.recoveryFailure.capture(error, errors, ctx.injectedError)
+    throw error
+  }
+  Object.assign(evidence, { injectedOnce: true, factoryCompleted: true, createEmitted: true, changeEmitted: true, deleteEmitted: true })
 }
 
 export async function exerciseScenario(ctx) {

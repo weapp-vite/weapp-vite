@@ -76,6 +76,11 @@ async function exercise(ctx) {
       }
     }
   }
+  for (const owner of ctx.observations) {
+    if (owner.eventPhases.failures.length) {
+      throw owner.eventPhases.failures[0]
+    }
+  }
 }
 
 try {
@@ -88,6 +93,7 @@ try {
     const cleanupErrors = []
     let forcedNativeCloses = []
     let nativeCleanupConfirmed = false
+    let listenerCleanupConfirmed = false
     let deletedTempRoot = false
     try {
       await ctx.prepare()
@@ -112,6 +118,15 @@ try {
           }
           catch (error) { cleanupErrors.push(String(error)) }
         }
+        const listenerCleanupErrors = []
+        for (const owner of ctx.observations) {
+          try {
+            await owner.eventPhases.settle(ctx.timeoutMs)
+          }
+          catch (error) { listenerCleanupErrors.push(String(error)) }
+        }
+        cleanupErrors.push(...listenerCleanupErrors)
+        listenerCleanupConfirmed = listenerCleanupErrors.length === 0
         try {
           await ctx.instrumentation.assertAllClosed(ctx.timeoutMs, scenario.kind.startsWith('shared-inode'))
           nativeCleanupConfirmed = true
@@ -127,8 +142,9 @@ try {
       }
       else {
         nativeCleanupConfirmed = true
+        listenerCleanupConfirmed = true
       }
-      if (nativeCleanupConfirmed) {
+      if (nativeCleanupConfirmed && listenerCleanupConfirmed) {
         try {
           await rm(root, { recursive: true, force: true })
           await assert.rejects(access(root), { code: 'ENOENT' })
@@ -137,7 +153,8 @@ try {
         catch (error) { cleanupErrors.push(String(error)) }
       }
     }
-    const passed = !bodyError && cleanupErrors.length === 0 && forcedNativeCloses.length === 0 && deletedTempRoot
+    const listenerFailures = ctx.observations.flatMap(owner => owner.eventPhases.failures)
+    const passed = !bodyError && !listenerFailures.length && cleanupErrors.length === 0 && forcedNativeCloses.length === 0 && deletedTempRoot
     result = {
       id: scenario.id,
       status: passed ? 'passed' : 'failed',
@@ -152,10 +169,12 @@ try {
       owners: ctx.observations.map(owner => ({
         readyCount: owner.readyCount,
         errors: owner.errors.map(error => ({ code: error.code, syscall: error.syscall, originalInjectedError: error === ctx.injectedError, message: error.message })),
+        listenerFailures: owner.eventPhases.failures.map(error => ({ name: error?.name, code: error?.code, message: String(error?.message ?? error), stack: error?.stack })),
+        pendingListeners: owner.eventPhases.pending,
         events: owner.events,
       })),
       native: ctx.instrumentation?.snapshot(),
-      cleanup: { nativeCleanupConfirmed, deletedTempRoot, cleanupErrors, forcedNativeCloses, machineLeaseReleased: false },
+      cleanup: { nativeCleanupConfirmed, listenerCleanupConfirmed, deletedTempRoot, cleanupErrors, forcedNativeCloses, machineLeaseReleased: false },
     }
   })
   result.cleanup.machineLeaseReleased = true

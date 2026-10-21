@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict'
 import path from 'node:path'
-import { waitForFile, weappOptions } from './fixture.mjs'
+import { matchesOutput, waitForFile, weappOptions } from './fixture.mjs'
 import { bounded } from './native.mjs'
+import { createPublicationObserver } from './publication.mjs'
 import { deliveryBuildTracePlugin, getDeliveryTrace } from './trace.mjs'
 
 /** 从普通 npm 安装的两个公开入口取得 owner，不导入维护仓库源码。 */
@@ -10,6 +11,9 @@ export async function openPublicOwner(kind, root, owners, errors) {
   const trace = getDeliveryTrace(root)
   trace?.record('owner.open.enter', { kind })
   if (kind === 'artifact') {
+    const publications = createPublicationObserver(outDir, (file, expected) => matchesOutput(file, expected, (observed) => {
+      trace?.record('output.observed', { file: trace.file(file), ...observed })
+    }))
     const { watchTestArtifact } = await import('weapp-vite/test')
     const watcher = await bounded(watchTestArtifact({
       cwd: root,
@@ -20,9 +24,10 @@ export async function openPublicOwner(kind, root, owners, errors) {
       },
       onRebuilt: (artifact) => {
         trace?.record('artifact.published', { kind, outDir: trace.file(artifact.miniprogramRootPath) })
+        return publications.onRebuilt(artifact)
       },
     }), 'public watchTestArtifact initialization', 60_000)
-    const owner = { kind, outDir, trace, close: () => watcher.close() }
+    const owner = { kind, outDir, publications, trace, close: () => watcher.close() }
     trace?.record('owner.open.completed', { kind })
     owners.push(owner)
     assert.equal(path.resolve(watcher.artifact.miniprogramRootPath), path.resolve(outDir))
@@ -73,7 +78,7 @@ export async function assertOutput(owner, relative, text) {
       }
     : undefined
   try {
-    await waitForFile(file, text, observe)
+    await waitForFile(file, text, { observe })
     trace?.record('assert.passed', { file: trace.file(file), expected: text })
   }
   catch (error) {

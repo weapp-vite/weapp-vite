@@ -2,18 +2,23 @@ import { Buffer } from 'node:buffer'
 import { readFile, rm, stat, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
+import { PassThrough } from 'node:stream'
+import { pathToFileURL } from 'node:url'
 import postcss from 'postcss'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { launchAutomator } from '../utils/automator'
 import { startDevProcess } from '../utils/dev-process'
 import { createDevProcessEnv } from '../utils/dev-process-env'
+import { createDevBuildCompletion } from '../utils/devBuildCompletion'
 import { createDomAcceptance } from '../utils/domAcceptance'
 import { readEmittedStylesheet } from '../utils/emittedStylesheet'
 import { renameAtomicFile } from '../utils/hmrAtomicRename'
 import { createHmrRuntimeDiagnostics } from '../utils/hmrRuntimeDiagnostics'
 import { createIssue1081Project, ISSUE_1081_CLI } from '../utils/issue1081Project'
+import { NATIVE_BATCH_SETTLEMENT_PREFIX } from '../utils/nativeBatchSettlementPlugin'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import { installStatefulHmrTransport } from '../utils/statefulHmrTransport'
+import { cleanupTemporaryRuntimeProject } from '../utils/temporaryRuntimeProject'
 
 const route = '/pages/index/index'
 
@@ -22,12 +27,29 @@ describe('issue #1081: Tailwind batch delivery', { concurrent: false }, () => {
   let project: string
   let dev: ReturnType<typeof startDevProcess> | undefined
   let miniProgram: Awaited<ReturnType<typeof launchAutomator>> | undefined
+  const settlementInput = new PassThrough()
+
+  function capturePublication(file: string) {
+    return createDevBuildCompletion(dev!, {
+      snapshot: {
+        files: [file],
+        profilePath: path.join(project, '.weapp-vite/hmr-profile.jsonl'),
+        requestSettlement: (id) => {
+          settlementInput.write(`${NATIVE_BATCH_SETTLEMENT_PREFIX}${JSON.stringify({ id })}\n`)
+        },
+      },
+    })
+  }
 
   beforeAll(async () => {
     project = await createIssue1081Project()
+    const config = path.join(project, 'weapp-vite.config.mjs')
+    const plugin = pathToFileURL(path.resolve(import.meta.dirname, '../utils/nativeBatchSettlementPlugin.ts')).href
+    await writeFile(config, `import { nativeBatchSettlementPlugin } from ${JSON.stringify(plugin)}\n${(await readFile(config, 'utf8')).replace('export default {', 'export default {\n  plugins: [nativeBatchSettlementPlugin()],')}`)
     dev = startDevProcess(process.execPath, [ISSUE_1081_CLI, 'dev', '--non-interactive'], {
       cwd: project,
-      env: createDevProcessEnv(),
+      env: { ...createDevProcessEnv(), WEAPP_VITE_HMR_PROFILE_JSON: path.join(project, '.weapp-vite/hmr-profile.jsonl') },
+      input: settlementInput,
       reject: false,
       stderr: 'inherit',
     })
@@ -47,12 +69,19 @@ describe('issue #1081: Tailwind batch delivery', { concurrent: false }, () => {
   }, 180_000)
 
   afterAll(async () => {
-    disposeTransport?.()
-    await miniProgram?.close()
-    await dev?.stop()
-    if (project) {
-      await rm(project, { recursive: true, force: true })
-    }
+    await cleanupTemporaryRuntimeProject({
+      project,
+      disposeTransport,
+      closeSession: async () => { await miniProgram?.close() },
+      stopDev: async () => {
+        try {
+          await dev?.stop()
+        }
+        finally {
+          settlementInput.end()
+        }
+      },
+    })
   }, 60_000)
 
   it('replaces and removes utilities while retaining the page and click state', async (context) => {
@@ -117,13 +146,19 @@ describe('issue #1081: Tailwind batch delivery', { concurrent: false }, () => {
     await expect.poll(() => readFile(stylesheet, 'utf8'), { timeout: 45_000 }).toContain('#445567')
     await rm(path.join(project, 'src/shared.ts'))
     await expect.poll(() => readFile(stylesheet, 'utf8'), { timeout: 45_000 }).not.toContain('19px')
-    await writeFile(path.join(project, 'src/new-source.ts'), 'export const utility = \'h-[23px]\'\n')
+    const newSource = path.join(project, 'src/new-source.ts')
+    const stylePublication = capturePublication(newSource)
+    await writeFile(newSource, 'export const utility = \'h-[23px]\'\n')
     await expect.poll(() => readFile(stylesheet, 'utf8'), { timeout: 45_000 }).toContain('23px')
+    // 字节可见时，原生发布后的样式触发仍可能未完成；以实际来源通知和宿主空闲回执固定基线。
+    await stylePublication.wait()
     const stableStyle = await stat(stylesheet)
     const version = await host.evaluate(() => (globalThis as any).__WEAPP_VITE_STATEFUL_HMR_CLIENT__.getVersion())
+    const scriptPublication = capturePublication(source)
     code = code.replace('count.value += 1', 'count.value += 2')
     await writeFile(pending, code)
     await renameAtomicFile(pending, source)
+    await scriptPublication.wait()
     await expect.poll(() => host.evaluate(() => (globalThis as any).__WEAPP_VITE_STATEFUL_HMR_CLIENT__.getVersion()), { timeout: 30_000 }).toBeGreaterThan(version)
     expect((await stat(stylesheet)).mtimeMs).toBe(stableStyle.mtimeMs)
     await (await (await host.currentPage()).$('#increment'))!.tap()

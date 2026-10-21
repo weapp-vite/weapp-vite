@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { access, readFile, rename, rm, stat, writeFile } from 'node:fs/promises'
 import path from 'node:path'
-import { bounded, deferred, releaseCompletedEventPhase, turn } from './support.mjs'
+import { bounded, deferred, turn, waitForObservedEventPhase } from './support.mjs'
 
 async function openDirectOwners({ chokidar, root, file, open, ready, instrumentation }) {
   assert.ok(['darwin', 'linux', 'freebsd'].includes(instrumentation.actualPlatform))
@@ -95,7 +95,7 @@ export async function verifyLateSiblingError(options) {
       assert.equal(ownEvents.some(event => ['unlink', 'add'].includes(event.event)), false, 'a late sibling error cannot remove or rediscover the replacement file')
       assert.equal(owner.events.slice(boundaries[index]).some(event => ['unlink', 'add'].includes(event.event)), false)
       assert.deepEqual(owner.errors, [])
-      releaseCompletedEventPhase(owner, file, evidence)
+      await waitForObservedEventPhase(owner, file, evidence, timeoutMs)
     }
     const nextChanges = owners.map(owner => owner.event('change', file, timeoutMs))
     await writeFile(file, 'both direct owners still observe a real change after the old sibling ENOENT')
@@ -126,7 +126,7 @@ export async function verifyReboundSurvivor(options) {
   await bounded(closing.watcher.close(), 'the closed post-rebind owner repeats close', timeoutMs)
   assert.equal(rebound.closed, false)
   assert.equal(rebound.closeCalls, 0, 'closing one owner cannot close the shared replacement handle')
-  releaseCompletedEventPhase(survivor, file, evidence)
+  await waitForObservedEventPhase(survivor, file, evidence, timeoutMs)
   const boundary = closing.events.length
   const nextChange = survivor.event('change', file, timeoutMs)
   await writeFile(file, 'the surviving owner observes the next real write on the rebound inode')

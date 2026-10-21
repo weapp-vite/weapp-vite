@@ -41,26 +41,29 @@ ${traceSource}export default defineConfig({ ${tracePlugins}weapp: ${JSON.stringi
   }
 }
 
-export async function waitForFile(file, expected, observe) {
-  const deadline = Date.now() + 45_000
+export async function matchesOutput(file, expected, observe) {
+  try {
+    const value = await readFile(file, 'utf8')
+    observe?.({ exists: true, text: value })
+    return expected !== null && value === expected
+  }
+  catch (error) {
+    if (error.code !== 'ENOENT') {
+      throw error
+    }
+    observe?.({ exists: false })
+    return expected === null
+  }
+}
+
+export async function waitForFile(file, expected, { deadline = Date.now() + 45_000, signal, observe } = {}) {
   while (Date.now() < deadline) {
-    try {
-      const value = await readFile(file, 'utf8')
-      observe?.({ exists: true, text: value })
-      if (expected !== null && value === expected) {
-        return
-      }
+    signal?.throwIfAborted()
+    if (await matchesOutput(file, expected, observe)) {
+      signal?.throwIfAborted()
+      return
     }
-    catch (error) {
-      if (error.code !== 'ENOENT') {
-        throw error
-      }
-      observe?.({ exists: false })
-      if (expected === null) {
-        return
-      }
-    }
-    await delay(20)
+    await delay(20, undefined, { signal })
   }
   assert.fail(`Consumer output did not reach expected state: ${path.basename(file)}`)
 }

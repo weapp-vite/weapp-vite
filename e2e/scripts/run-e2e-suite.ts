@@ -1,16 +1,22 @@
 import type { SuiteReportPayload } from './suiteReport'
 import type { SuiteTask } from './suiteRunner'
 import type { TaskLaunchHook } from './suiteRunner/launchBudget'
+import type { VerificationPlan } from './verification/types'
+import fs from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
 import { splitWechatDevtoolsSelectionArgs } from 'weapp-ide-cli'
 import { excludedE2EProjects, isExcludedE2EProject } from '../../scripts/e2eProjectScope'
+import { loadBaselineSuitePlan, writeBaselineSuiteTelemetry } from '../../scripts/verificationTelemetry/suite'
 import { withWechatE2ESelectionEnvironment } from '../utils/devtoolsCli'
 import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { createAcceptanceIdentity, isStrictDomAcceptanceSuite } from './domAcceptanceReport/helpers'
 import { getSuiteTasks, listE2ESuites, partitionE2ETasks } from './e2e-suite-manifest'
 import { isDevtoolsVitestTask, runTaskSuite } from './suiteRunner'
+import { assertVerificationPlan, createVerificationIdentity } from './verification/plan'
+import { currentVerificationProfile } from './verification/profile'
+import { verificationPlanSchema } from './verification/validation'
 
 const TASK_FILTER_ENV = 'WEAPP_VITE_E2E_TASK_FILTER'
 const TASK_FROM_ENV = 'WEAPP_VITE_E2E_TASK_FROM'
@@ -137,8 +143,11 @@ async function runSelectedE2ESuiteCli(args: string[], callbacks: SuiteCallbacks)
   const filter = readOption(args, 'filter', TASK_FILTER_ENV)
   const from = readOption(args, 'from', TASK_FROM_ENV)
   const rollFrom = readOption(args, 'roll-from', TASK_ROLL_FROM_ENV)
-  const shardIndex = readOption(args, 'shard-index', TASK_SHARD_INDEX_ENV)
-  const shardTotal = readOption(args, 'shard-total', TASK_SHARD_TOTAL_ENV)
+  let shardIndex = readOption(args, 'shard-index', TASK_SHARD_INDEX_ENV)
+  let shardTotal = readOption(args, 'shard-total', TASK_SHARD_TOTAL_ENV)
+  const planFile = args.find(arg => arg.startsWith('--plan='))?.slice('--plan='.length)
+  const expectedPlanHash = args.find(arg => arg.startsWith('--expected-plan-hash='))?.slice('--expected-plan-hash='.length)
+  let frozenPlan: VerificationPlan | undefined
   const mode = args.find(arg => !arg.startsWith('--')) ?? 'full'
 
   if (mode === 'list') {
@@ -159,6 +168,7 @@ async function runSelectedE2ESuiteCli(args: string[], callbacks: SuiteCallbacks)
     console.log(`[e2e:${mode}] excluded projects: ${excludedProjects.join(', ')}`)
   }
   const plannedTasks = [...tasks]
+  const telemetryPlan = await loadBaselineSuitePlan(mode, tasks, { filtered: Boolean(filter || from || rollFrom || process.env.WEAPP_VITE_E2E_TEMPLATE || planFile) })
 
   if (tasks.length === 0) {
     console.error(`Unknown e2e suite: ${mode}`)
@@ -167,8 +177,28 @@ async function runSelectedE2ESuiteCli(args: string[], callbacks: SuiteCallbacks)
     return
   }
   try {
-    tasks = orderSuiteTasks(tasks, { filter, from, rollFrom })
-    if (shardIndex || shardTotal) {
+    if (planFile) {
+      if (filter || from || rollFrom || process.env.WEAPP_VITE_E2E_TEMPLATE || shardTotal) {
+        throw new Error('Frozen shard plans cannot be combined with ad-hoc filters or a separate shard total')
+      }
+      frozenPlan = verificationPlanSchema.parse(JSON.parse(await fs.readFile(planFile, 'utf8')))
+      assertVerificationPlan(frozenPlan, { suite: mode, profile: currentVerificationProfile(mode), tasks, identity: createVerificationIdentity() })
+      if (expectedPlanHash && frozenPlan.planHash !== expectedPlanHash) {
+        throw new Error('Frozen verification plan hash does not match the expected artifact')
+      }
+      shardIndex ||= '1'
+      const index = Number(shardIndex)
+      if (!Number.isInteger(index) || index < 1 || index > frozenPlan.shardTotal) {
+        throw new Error('Frozen verification shard index is outside the planned range')
+      }
+      shardTotal = String(frozenPlan.shardTotal)
+      const assigned = new Set(frozenPlan.tasks.filter(task => !task.outOfScopeReason && task.shardIndex === index).map(task => task.label))
+      tasks = tasks.filter(task => assigned.has(task.label))
+    }
+    else {
+      tasks = orderSuiteTasks(tasks, { filter, from, rollFrom })
+    }
+    if (!frozenPlan && (shardIndex || shardTotal)) {
       const oneBasedIndex = Number(shardIndex)
       const total = Number(shardTotal)
       if (!Number.isInteger(oneBasedIndex) || !Number.isInteger(total) || oneBasedIndex < 1 || oneBasedIndex > total) {
@@ -193,18 +223,35 @@ async function runSelectedE2ESuiteCli(args: string[], callbacks: SuiteCallbacks)
   }
 
   const cleanupHooks = createIdeSuiteCleanupHooks(tasks)
-  return await runTaskSuite(`e2e:${mode}${shardLabel.replace('/', '-')}`, tasks, {
+  let actualReport: SuiteReportPayload | undefined
+  const result = await runTaskSuite(`e2e:${mode}${shardLabel.replace('/', '-')}`, tasks, {
     ...cleanupHooks,
     ...callbacks,
+    onReport(report) {
+      actualReport = report
+      callbacks.onReport?.(report)
+    },
     failOnTaskFailure: !allowFailures,
     stopOnTaskFailure: !allowFailures && shouldStopIdeSuiteAfterTaskFailure(tasks),
     reportContext: {
-      ...createAcceptanceIdentity(),
+      ...(frozenPlan || telemetryPlan ? { runId: (frozenPlan ?? telemetryPlan)!.runId, commitSha: (frozenPlan ?? telemetryPlan)!.commitSha, workingTreeDirty: (frozenPlan ?? telemetryPlan)!.workingTreeDirty } : createAcceptanceIdentity()),
       strict: isStrictDomAcceptanceSuite(mode),
       partial: Boolean(filter || from || shardIndex || shardTotal || process.env.WEAPP_VITE_E2E_TEMPLATE),
-      plannedTasks,
+      plannedTasks: frozenPlan ? tasks : plannedTasks,
+      ...(telemetryPlan ? { taskDefinitions: Object.fromEntries(telemetryPlan.tasks.map(task => [task.label, task.definitionHash])), plannedCases: Object.fromEntries(telemetryPlan.tasks.filter(task => task.cases).map(task => [task.label, task.cases!])) } : {}),
+      ...(frozenPlan
+        ? {
+            taskDefinitions: Object.fromEntries(frozenPlan.tasks.map(task => [task.label, task.definitionHash])),
+            plannedCases: Object.fromEntries(frozenPlan.tasks.filter(task => task.cases).map(task => [task.label, task.cases!])),
+            execution: { scope: 'shard' as const, status: 'incomplete' as const, profile: frozenPlan.profile, planHash: frozenPlan.planHash, shardIndex: Number(shardIndex), shardTotal: frozenPlan.shardTotal, assignedTasks: tasks.map(task => task.label), startedAt: new Date().toISOString(), finishedAt: '' },
+          }
+        : {}),
     },
   })
+  if (telemetryPlan && result === 0 && actualReport) {
+    await writeBaselineSuiteTelemetry(telemetryPlan, actualReport, Number(shardIndex || 1), tasks.filter(task => !task.outOfScopeReason).map(task => task.label))
+  }
+  return result
 }
 
 /** 选择仅在本轮 suite 生效，失败与取消同样恢复调用方环境。 */

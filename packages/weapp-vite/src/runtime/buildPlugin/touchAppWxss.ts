@@ -1,6 +1,6 @@
 import type { MpPlatform } from '../../types'
 import { randomUUID } from 'node:crypto'
-import { rename } from 'node:fs/promises'
+import { copyFile, rename } from 'node:fs/promises'
 import { supportsMiniProgramAutoTouchAppStyle } from '@weapp-core/shared'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
@@ -55,40 +55,33 @@ export async function touchExistingAppStyle(filename: string) {
  */
 async function recreateExistingStyle(filename: string) {
   const temporary = `${filename}.weapp-vite-style-${randomUUID()}.tmp`
-  let moved = false
   try {
-    await rename(filename, temporary)
-    moved = true
-    await rename(temporary, filename)
-    moved = false
+    // 先复制完整字节，再用单次原子替换发布目标，避免目标路径在两次 rename
+    // 之间短暂消失，宿主或诊断读取方不会观察到 ENOENT。
+    await copyFile(filename, temporary)
+    try {
+      await rename(temporary, filename)
+    }
+    catch (error) {
+      // Windows 宿主可能在读取 WXSS 时保持目标文件句柄。此时替换目标会返回
+      // EPERM/EBUSY，但原生构建器已经写出完整内容；保留目标文件并刷新元数据，
+      // 避免把宿主的读锁误报为构建失败。
+      const code = (error as NodeJS.ErrnoException).code
+      if (code === 'EPERM' || code === 'EBUSY' || code === 'EACCES') {
+        return await touchExistingAppStyle(filename)
+      }
+      throw error
+    }
     return await touchExistingAppStyle(filename)
   }
   catch (error) {
-    if (moved) {
-      try {
-        await rename(temporary, filename)
-        moved = false
-      }
-      catch (restoreError) {
-        // 原生构建器可能在两次重命名之间接管并替换文件；此时临时文件
-        // 已被并发清理，保留宿主刚写入的文件并结束本轮触发即可。
-        if ((error as NodeJS.ErrnoException).code === 'ENOENT'
-          && (restoreError as NodeJS.ErrnoException).code === 'ENOENT') {
-          moved = false
-          return false
-        }
-        throw new AggregateError([error, restoreError], `无法恢复样式文件：${filename}`)
-      }
-    }
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
       return false
     }
     throw error
   }
   finally {
-    if (!moved) {
-      await fs.rm(temporary, { force: true }).catch(() => {})
-    }
+    await fs.rm(temporary, { force: true }).catch(() => {})
   }
 }
 

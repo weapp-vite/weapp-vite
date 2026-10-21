@@ -8,8 +8,17 @@ import { expect, it, vi } from 'vitest'
 import { weappWebPlugin } from '../../../../packages-runtime/web/src/plugin'
 import { autoRoutes } from './autoRoutes'
 
+const sidecarHandlers = vi.hoisted(() => new Map<string, (filePath: string) => void>())
 vi.mock('chokidar', () => ({
-  default: { watch: () => ({ add() {}, on() {}, close() {} }) },
+  default: {
+    watch: () => ({
+      add() {},
+      on(event: string, handler: (filePath: string) => void) {
+        sidecarHandlers.set(event, handler)
+      },
+      close() {},
+    }),
+  },
 }))
 
 function barrier() {
@@ -21,6 +30,7 @@ function barrier() {
 }
 
 it('publishes the refreshed Web entry before reloading a restored route source', async () => {
+  sidecarHandlers.clear()
   const root = path.normalize(await realpath(await mkdtemp(path.join(tmpdir(), 'weapp-route-publication-'))))
   const srcRoot = path.join(root, 'src')
   const app = path.join(srcRoot, 'app.js')
@@ -45,6 +55,7 @@ it('publishes the refreshed Web entry before reloading a restored route source',
     getWatchFiles: () => [],
     getWatchDirectories: () => [srcRoot],
     getSignature: () => JSON.stringify(pages()),
+    getSourceFingerprint: () => undefined,
     getModuleCode: () => `export const pages = ${JSON.stringify(pages())}`,
     getNamedModuleCode: () => `export const routes = ${JSON.stringify(pages())}`,
     isRouteFile: (file: string) => file === restored,
@@ -120,8 +131,9 @@ it('publishes the refreshed Web entry before reloading a restored route source',
       }
     }) as typeof server.environments.client.hot.send
 
-    // Vite 可把删除后恢复的同一路径报告为 update；共享路由刷新先于 Web 快照消费。
-    server.watcher.emit('change', restored)
+    // sidecar 负责结构性新增；共享路由刷新先于 Web 快照消费。
+    expect(sidecarHandlers.get('add')).toBeTypeOf('function')
+    sidecarHandlers.get('add')!(restored)
     await coreStarted.promise
     coreRelease.release()
     try {

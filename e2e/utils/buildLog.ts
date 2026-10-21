@@ -8,6 +8,7 @@ import { stripVTControlCharacters } from 'node:util'
 import { fs as fsExtra } from '@weapp-core/shared/node'
 import { execa } from 'execa'
 import { resolveNpmBuildCandidateDependenciesSync } from '../../packages/weapp-vite/src/runtime/npmPlugin/service/dependencies'
+import { measureE2EPhase } from '../scripts/verification/timing'
 import { sanitizeBuildCommandEnv } from './buildCommandEnv'
 import { appendIdeReportEvent, resolveReportProjectPath } from './ideWarningReport'
 import { resolveJsFormatConfigOverride } from './jsFormat'
@@ -159,7 +160,7 @@ function readDependencyMeta(projectRoot: string): DependencyMeta {
   }
 }
 
-export async function runWeappViteBuildWithLogCapture(options: BuildCommandOptions) {
+async function runBuildWithLogCapture(options: BuildCommandOptions) {
   const {
     cliPath,
     configFile,
@@ -273,4 +274,8 @@ export async function runWeappViteBuildWithLogCapture(options: BuildCommandOptio
   finally {
     await configOverride.cleanup()
   }
+}
+
+export async function runWeappViteBuildWithLogCapture(options: BuildCommandOptions) {
+  return await measureE2EPhase('fixture-build', () => runBuildWithLogCapture(options))
 }

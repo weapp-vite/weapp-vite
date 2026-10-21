@@ -1,9 +1,10 @@
 import * as filesystem from 'node:fs/promises'
-import { glob, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import { parse } from 'yaml'
+import { collectContracts, readManifest } from './publicTypeTestCoverage/contracts'
 import { workspaceTypeTestPackages } from './turboCacheContract/fixture'
 import { readWorkflowFixture } from './workflowFixture.mjs'
 
@@ -15,8 +16,9 @@ vi.mock('node:fs/promises', async (importOriginal) => {
 const root = path.resolve(import.meta.dirname, '..')
 const standardContracts = 'tsd --files "test-d/**/*.test-d.ts"'
 const jsxContracts = 'tsd --files "test-d/**/*.test-d.{ts,tsx}"'
-const pureContracts = 'pnpm run test:types:pure'
-const wevuContracts = `${jsxContracts} && tsd --files "test-d/router-named-map.test-types.ts" && pnpm run test:types:host && ${pureContracts}`
+const pureContracts = 'cd test-d-pure && tsd --files "**/*.test-d.ts"'
+const hostContracts = 'tsd test-d-host --files root.test-d.ts && tsd test-d-host --files internal-runtime.test-d.ts'
+const wevuContracts = `${jsxContracts} && tsd --files "test-d/router-named-map.test-types.ts"`
 const weappViteFixtures = [
   'auto-import-presets',
   'auto-routes-define-app-json',
@@ -35,8 +37,8 @@ const weappViteFixtures = [
 const weappViteContracts = weappViteFixtures.map((fixture, index) =>
   `cd ${index === 0 ? 'test-d/' : '../'}${fixture} && tsd --files "**/*.test-d.ts"`,
 ).join(' && ')
-const packages: readonly (readonly [directory: string, build: string, check: string, prebuild?: boolean])[] = [
-  ['@weapp-core/api', '', `tsd && ${pureContracts}`, true],
+const packages: readonly (readonly [directory: string, build: string, check: string, prebuild?: boolean, pure?: boolean, host?: boolean])[] = [
+  ['@weapp-core/api', '', 'tsd', true, true],
   ['@weapp-core/logger', '', 'tsd --typings dist/index.d.ts --files test/index.test-d.ts'],
   ['@weapp-core/shared', '', standardContracts],
   ['@weapp-core/types', 'build', 'tsd --typings dist/index.d.mts --files "test-d/**/*.test-d.ts"'],
@@ -54,14 +56,14 @@ const packages: readonly (readonly [directory: string, build: string, check: str
   ['packages/weapp-ide-cli', 'build', standardContracts],
   ['packages/weapp-vite', '', weappViteContracts],
   ['packages-runtime/glass-easel-web-adapter', 'build', 'tsd --typings dist/index.d.mts --files test-d/public-api.test-d.ts'],
-  ['packages-runtime/i18n', 'build', `${standardContracts} && ${pureContracts}`],
+  ['packages-runtime/i18n', 'build', standardContracts, false, true],
   ['packages-runtime/json-render', 'build', jsxContracts],
   ['packages-runtime/json-render-components', 'build', standardContracts],
   ['packages-runtime/react', '', standardContracts],
   ['packages-runtime/weapi', '', 'tsd', true],
   ['packages-runtime/web', 'build', standardContracts],
-  ['packages-runtime/web-apis', '', `${standardContracts} && ${pureContracts}`, true],
-  ['packages-runtime/wevu', 'build:types', wevuContracts],
+  ['packages-runtime/web-apis', '', standardContracts, true, true],
+  ['packages-runtime/wevu', 'build:types', wevuContracts, false, true, true],
   ['packages-runtime/wevu-compiler', 'build', standardContracts],
   ['packages-runtime/wevu-query', 'build', jsxContracts],
   ['packages-runtime/wevu-test-utils', 'build', standardContracts],
@@ -71,12 +73,6 @@ const packages: readonly (readonly [directory: string, build: string, check: str
   ['mpcore/packages/weapp-vite', 'build', standardContracts],
 ]
 
-interface Manifest {
-  types?: string
-  scripts: Record<string, string>
-  tsd?: { directory?: string }
-}
-
 interface Workflow {
   jobs: Record<string, {
     if?: string
@@ -84,10 +80,6 @@ interface Workflow {
     with?: { main_command?: string }
     steps?: { name?: string, shell?: string, run?: string }[]
   }>
-}
-
-async function readManifest(directory: string): Promise<Manifest> {
-  return JSON.parse(await readFile(path.join(directory, 'package.json'), 'utf8')) as Manifest
 }
 
 async function filesUnder(directory: string): Promise<string[]> {
@@ -102,85 +94,11 @@ async function filesUnder(directory: string): Promise<string[]> {
   }
 }
 
-async function matchingFiles(directory: string, patterns: string[]): Promise<string[]> {
-  const files: string[] = []
-  // Node 最低支持版本已包含 glob；由固定前缀限定遍历，不扫描包内的依赖和构建产物。
-  for await (const file of glob(patterns, { cwd: directory })) {
-    files.push(file.replaceAll('\\', '/'))
-  }
-  return files
-}
-
-async function collectContracts(packageRoot: string, script: string, activeScripts = new Set<string>()): Promise<string[]> {
-  let directory = packageRoot
-  const selected = new Set<string>()
-  for (const command of script.split(/\s*&&\s*/)) {
-    if (command.startsWith('cd ')) {
-      directory = path.resolve(directory, command.slice(3))
-      expect(path.relative(packageRoot, directory).startsWith('..')).toBe(false)
-      continue
-    }
-    const tokens = command.match(/"[^"]*"|\S+/g)?.map(token => token.replace(/^"|"$/g, '')) ?? []
-    if (tokens[0] === 'pnpm') {
-      expect(tokens.slice(0, 2)).toEqual(['pnpm', 'run'])
-      expect(tokens).toHaveLength(3)
-      const name = tokens[2]!
-      expect(name).toMatch(/^test:types:(?:host|pure)$/)
-      const manifest = await readManifest(directory)
-      const nestedScript = manifest.scripts[name]
-      expect(nestedScript).toBeTypeOf('string')
-      expect(manifest.scripts[`pre${name}`]).toBeUndefined()
-      expect(manifest.scripts[`post${name}`]).toBeUndefined()
-      const key = path.join(directory, name)
-      expect(activeScripts.has(key), 'Type-test scripts must not invoke themselves recursively').toBe(false)
-      // pnpm 子脚本有独立 shell；其中的 cd 不能改变后续主脚本的目录。
-      for (const file of await collectContracts(directory, nestedScript!, new Set([...activeScripts, key]))) {
-        selected.add(path.relative(packageRoot, path.join(directory, file)).replaceAll('\\', '/'))
-      }
-      continue
-    }
-    expect(tokens[0], 'The internal type check must only select and run tsd contracts').toBe('tsd')
-    const contractDirectory = tokens[1] && !tokens[1].startsWith('-') ? path.resolve(directory, tokens[1]) : directory
-    expect(path.relative(packageRoot, contractDirectory).startsWith('..')).toBe(false)
-    const manifest = await readManifest(contractDirectory)
-    const filesIndex = tokens.indexOf('--files')
-    let matches: string[]
-    if (filesIndex !== -1) {
-      const pattern = tokens[filesIndex + 1]!
-      matches = (await matchingFiles(contractDirectory, [pattern])).filter(file => path.matchesGlob(file, pattern))
-      if (pattern.includes('**')) {
-        const futureFile = pattern.startsWith('test-d/') ? 'test-d/nested/future.test-d.ts' : 'nested/future.test-d.ts'
-        expect(path.matchesGlob(futureFile, pattern)).toBe(true)
-      }
-    }
-    else {
-      const typingsIndex = tokens.indexOf('--typings')
-      const typings = typingsIndex === -1 ? manifest.types ?? 'index.d.ts' : tokens[typingsIndex + 1]!
-      // 与 tsd 的默认选择规则一致；.d.mts 不会被替换，必须使用显式 --files。
-      const candidates = [typings.replace(/\.d\.ts$/, '.test-d.ts'), typings.replace(/\.d\.ts$/, '.test-d.tsx')]
-        .map(file => file.replace(/^\.\//, ''))
-      matches = (await matchingFiles(contractDirectory, candidates)).filter(file => candidates.includes(file))
-      if (matches.length === 0) {
-        const testDirectory = manifest.tsd?.directory ?? 'test-d'
-        const patterns = [`${testDirectory}/**/*.ts`, `${testDirectory}/**/*.tsx`]
-        matches = (await matchingFiles(contractDirectory, patterns))
-          .filter(file => patterns.some(pattern => path.matchesGlob(file, pattern)))
-      }
-    }
-    expect(matches.length, `${command} must select real contracts`).toBeGreaterThan(0)
-    expect(matches.filter(file => /\.d\.[cm]?ts$/.test(file)), 'Declarations must never be treated as test files').toEqual([])
-    for (const file of matches) {
-      selected.add(path.relative(packageRoot, path.join(contractDirectory, file)).replaceAll('\\', '/'))
-    }
-  }
-  return [...selected].sort()
-}
-
 describe('public type tests in CI', () => {
   it.each([
     { script: jsxContracts, isolated: false },
     { script: 'tsd', isolated: false },
-    { script: `${jsxContracts} && pnpm run test:types:host && ${pureContracts} && ${jsxContracts}`, isolated: true },
+    { script: `${jsxContracts} && pnpm run test:types:host && pnpm run test:types:pure && ${jsxContracts}`, isolated: true },
   ])('selects all contracts without recursively reading unrelated package trees: $script', async ({ script, isolated }) => {
     const packageRoot = await mkdtemp(path.join(tmpdir(), 'type-contract-scope-'))
     const enumerate = vi.spyOn(filesystem, 'readdir')
@@ -225,33 +143,81 @@ describe('public type tests in CI', () => {
     expect(actual.sort()).toEqual([...packages.map(([directory]) => directory), 'e2e-apps/lib-mode'].sort())
   })
 
-  it.each(packages.map(([directory, build, check, prebuild]) => ({ directory, build, check, prebuild })))('$directory preserves standalone freshness and checks every real contract', async ({ directory, build, check, prebuild }) => {
+  it.each(packages.map(([directory, build, check, prebuild, pure, host]) => ({ directory, build, check, prebuild, pure, host })))('$directory preserves standalone freshness and checks every real contract', async ({ directory, build, check, prebuild, pure, host }) => {
     const packageRoot = path.join(root, directory)
     const manifest = await readManifest(packageRoot)
     expect(manifest.scripts['test:types']).toBe(`${build ? `pnpm ${build} && ` : ''}pnpm run test:types:check`)
     expect(manifest.scripts['pretest:types']).toBe(prebuild ? 'pnpm build' : undefined)
-    expect(manifest.scripts['test:types:check']).toBe(check)
+    const expectedCheck = `${check}${host ? ' && pnpm run test:types:host' : ''}${pure ? ' && pnpm run test:types:pure' : ''}`
+    expect(manifest.scripts['test:types:check']).toBe(expectedCheck)
+    expect(manifest.scripts['test:types:pure']).toBe(pure ? pureContracts : undefined)
+    expect(manifest.scripts['test:types:host']).toBe(host ? hostContracts : undefined)
     expect(manifest.scripts['pretest:types:check']).toBeUndefined()
     expect(manifest.scripts['posttest:types:check']).toBeUndefined()
+    const expectedRoots = [directory === '@weapp-core/logger' ? 'test' : 'test-d', ...(pure ? ['test-d-pure'] : []), ...(host ? ['test-d-host'] : [])]
     const contractRoots = directory === '@weapp-core/logger'
       ? ['test']
       : (await readdir(packageRoot, { withFileTypes: true }))
           .filter(entry => entry.isDirectory() && /^test-d(?:-|$)/.test(entry.name))
           .map(entry => entry.name)
-    const contracts = (await Promise.all(contractRoots.map(async contractRoot =>
-      (await filesUnder(path.join(packageRoot, contractRoot)))
+    expect(contractRoots.sort()).toEqual(expectedRoots.sort())
+    const contracts: string[] = []
+    for (const contractRoot of contractRoots) {
+      const files = (await filesUnder(path.join(packageRoot, contractRoot)))
         .filter(file => /\.(?:test-d|test-types)\.tsx?$/.test(file))
-        .map(file => `${contractRoot}/${file}`),
-    ))).flat().sort()
+        .map(file => `${contractRoot}/${file}`)
+      expect(files.length, `${contractRoot} must contain real contracts`).toBeGreaterThan(0)
+      contracts.push(...files)
+    }
     expect(contracts.length).toBeGreaterThan(0)
-    expect(await collectContracts(packageRoot, check)).toEqual(contracts)
+    expect(await collectContracts(packageRoot, manifest.scripts['test:types:check']!)).toEqual(contracts.sort())
   })
 
   it('keeps wevu ordinary build separate from the standalone declaration build', async () => {
     const manifest = await readManifest(path.join(root, 'packages-runtime/wevu'))
     expect(manifest.scripts.build).toBe('tsdown')
     expect(manifest.scripts['build:types']).toBe('tsdown --dts')
-    expect(manifest.scripts['test:types:check']).toBe(wevuContracts)
+    expect(manifest.scripts['test:types:check']).toBe(`${wevuContracts} && pnpm run test:types:host && pnpm run test:types:pure`)
+  })
+
+  it('isolates wevu host entry programs from automatic globals and pure contracts', async () => {
+    const packageRoot = path.join(root, 'packages-runtime/wevu')
+    const hostRoot = path.join(packageRoot, 'test-d-host')
+    const manifest = await readManifest(hostRoot)
+    expect(manifest.types).toBe('index.d.ts')
+    expect(manifest.tsd?.compilerOptions).toEqual({
+      target: 'ES2022',
+      module: 'NodeNext',
+      moduleResolution: 'NodeNext',
+      lib: ['ES2022', 'DOM'],
+      types: [],
+      strict: true,
+      skipLibCheck: false,
+      paths: {
+        'wevu': ['../dist/index.d.mts'],
+        'wevu/internal-runtime': ['../dist/internal-runtime.d.mts'],
+      },
+    })
+    expect(await collectContracts(packageRoot, 'pnpm run test:types:host')).toEqual([
+      'test-d-host/internal-runtime.test-d.ts',
+      'test-d-host/root.test-d.ts',
+    ])
+    const pureContracts = (await filesUnder(path.join(packageRoot, 'test-d-pure')))
+      .filter(file => /\.(?:test-d|test-types)\.tsx?$/.test(file))
+      .map(file => `test-d-pure/${file}`)
+      .sort()
+    expect(await collectContracts(packageRoot, 'pnpm run test:types:pure')).toEqual(pureContracts)
+    const pureManifest = await readManifest(path.join(packageRoot, 'test-d-pure'))
+    expect(pureManifest.tsd?.compilerOptions).toMatchObject({
+      lib: ['ES2022'],
+      types: [],
+      strict: true,
+      skipLibCheck: false,
+      paths: {
+        'wevu/config': ['../dist/config.d.mts'],
+        'wevu/types': ['../dist/types.d.mts'],
+      },
+    })
   })
 
   it('preserves the lib-mode fixture preparation and selects all its original contracts', async () => {

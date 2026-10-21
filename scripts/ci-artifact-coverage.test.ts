@@ -72,6 +72,7 @@ describe('CI artifact coverage', () => {
       '@weapp-core/*/bin/**',
       'mpcore/packages/*/bin/**',
       '.tmp/build-artifact-manifest.json',
+      '.tmp/verification-telemetry/plans/**',
     ])
   })
 

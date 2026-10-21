@@ -6,6 +6,7 @@ import process from 'node:process'
 import { createFixture, verifyPublicResolution } from './fixture.mjs'
 import { instrumentNative } from './native.mjs'
 import { closeOwner } from './public.mjs'
+import { createRecoveryFailureObserver, describePublicError } from './recoveryFailure.mjs'
 import { exerciseScenario, nonApplicableReason, scenarios } from './scenarios.mjs'
 import { createDeliveryTrace } from './trace.mjs'
 
@@ -20,6 +21,7 @@ export async function runPublicScenario(id, consumerRoot) {
   const result = { id, pid: process.pid, platform: process.platform, fixture: root, status: 'failed', evidence: {}, cleanup: { nativeCleanupConfirmed: false, deletedFixture: false, forcedNativeCloses: [], errors: [] } }
   const owners = []
   const errors = []
+  const recoveryFailure = createRecoveryFailureObserver()
   let instrumentation
   let trace
   let injectedError
@@ -36,13 +38,14 @@ export async function runPublicScenario(id, consumerRoot) {
     instrumentation = instrumentNative(root, scenario.kind === 'shared' ? undefined : { target, missing: scenario.kind === 'recovery' || scenario.missing, error: injectedError }, trace)
     await trace.installChokidar()
     trace.record('scenario.enter', { id })
-    await exerciseScenario({ scenario, root, owners, errors, instrumentation, injectedError, evidence: result.evidence })
+    await exerciseScenario({ scenario, root, owners, errors, instrumentation, injectedError, recoveryFailure, evidence: result.evidence })
     trace.record('scenario.completed', { id })
     result.status = 'passed'
   }
   catch (error) {
     trace?.record('scenario.failed', { error: trace.error(error) })
     result.bodyError = { ...describeError(error), originalInjectedError: error === injectedError }
+    result.recoveryFailure = recoveryFailure.describe(error)
   }
   finally {
     for (const owner of owners) {
@@ -77,7 +80,16 @@ export async function runPublicScenario(id, consumerRoot) {
       }
       catch (error) { result.cleanup.errors.push(describeError(error)) }
     }
-    result.publicErrors = errors.map(error => ({ ...describeError(error), originalInjectedError: error === injectedError }))
+    result.publicErrors = errors.map(error => describePublicError(error, injectedError))
+    if (scenario.kind === 'recovery' && result.status === 'passed') {
+      try {
+        assert.deepEqual(errors, [])
+      }
+      catch (error) {
+        result.finalPublicError = describeError(error)
+        result.status = 'failed'
+      }
+    }
     if (result.cleanup.errors.length || result.cleanup.forcedNativeCloses.length || !result.cleanup.deletedFixture) {
       result.status = 'failed'
     }

@@ -1,5 +1,6 @@
 import type { MiniProgram } from '@weapp-vite/miniprogram-automator'
 import { connectOpenedAutomator, resolveProjectAutomatorPort } from 'weapp-ide-cli'
+import { measureE2EPhase } from '../scripts/verification/timing'
 import { enhanceMiniProgramWithRuntimeLogs } from './automator'
 import { readWechatE2ESelection } from './devtoolsCli'
 import { resolveReportProjectPath } from './ideWarningReport'
@@ -77,9 +78,9 @@ async function waitForOpenedMiniProgramReady(miniProgram: MiniProgram, timeoutMs
   throw new Error(`Opened automator page is not ready: expected ${expectedRoute ?? '<any route>'}, current ${latestRoute || '<none>'}`)
 }
 
-export async function waitForOpenedAutomator(
+async function waitForOpenedAutomatorWithoutTiming(
   projectPath: string,
-  options: WaitForOpenedAutomatorOptions = {},
+  options: WaitForOpenedAutomatorOptions,
 ) {
   const {
     appReadyTimeoutMs = DEFAULT_APP_READY_TIMEOUT,
@@ -145,4 +146,11 @@ export async function waitForOpenedAutomator(
 
   const reason = formatOpenedAutomatorError(lastError)
   throw new Error(`Timed out waiting for opened automator ${wsEndpoint} after ${timeoutMs}ms: ${reason}`)
+}
+
+export async function waitForOpenedAutomator(
+  projectPath: string,
+  options: WaitForOpenedAutomatorOptions = {},
+) {
+  return await measureE2EPhase('opened-automator-ready', () => waitForOpenedAutomatorWithoutTiming(projectPath, options))
 }

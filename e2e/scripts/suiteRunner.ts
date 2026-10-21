@@ -5,6 +5,8 @@ import type { DevtoolsHostExitEvidence, DevtoolsHostLease } from '../utils/devto
 import type { TaskResourceRecorder } from '../utils/devtoolsTaskResources'
 import type { SuiteReportContext, SuiteRuntimeBlocker, SuiteTaskArtifact } from './suiteReport'
 import type { TaskLaunchBudget, TaskLaunchHook } from './suiteRunner/launchBudget'
+import type { VerificationTiming } from './verification/types'
+import { randomUUID } from 'node:crypto'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
@@ -23,6 +25,8 @@ import { assertOwnedCommandStopped, OwnedCommandShutdownError, stopOwnedCommand 
 import { createSuiteReport } from './suiteReport'
 import { prepareTaskLaunch, remainingTaskTimeoutMs } from './suiteRunner/launchBudget'
 import { createSuiteSignalScope } from './suiteRunner/signals'
+import { currentVerificationProfile } from './verification/profile'
+import { E2E_TIMING_FILE_ENV, measureE2EPhase, readE2ETimings } from './verification/timing'
 
 const REPORT_MARKER_ENV = 'WEAPP_VITE_E2E_REPORT_MARKERS'
 const AUTOMATOR_LAUNCH_MODE_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE'
@@ -59,6 +63,7 @@ export interface SuiteTaskResult {
   reason?: string
   runtimeVersions?: SuiteTask['runtimeVersions']
   runtimeBlocker?: SuiteRuntimeBlocker
+  timings?: VerificationTiming[]
 }
 
 interface RunSuiteOptions {
@@ -604,16 +609,19 @@ async function runOwnedTaskSuite(
   options: RunSuiteOptions,
   signal: AbortSignal,
   lease: MachineE2ELease,
+  leaseTiming: VerificationTiming,
 ) {
   const failOnTaskFailure = options.failOnTaskFailure ?? true
   const writeReport = options.writeReport ?? true
   const results: SuiteTaskResult[] = []
-  const reportContext = options.reportContext ?? {
+  const reportContext: SuiteReportContext = options.reportContext ?? {
     ...createAcceptanceIdentity(),
     strict: isStrictDomAcceptanceSuite(suiteName),
     partial: false,
     plannedTasks: tasks,
   }
+  const suiteTimings = [...(reportContext.timings ?? []), leaseTiming]
+  const suiteStartedAt = new Date().toISOString()
   let resourceCleanupFailed = false
   let suiteReportArtifact: SuiteTaskArtifact | undefined
   const ideHmrCompanionSentinelPath = shouldShareIdeHmrCompanion(suiteName)
@@ -636,6 +644,13 @@ async function runOwnedTaskSuite(
     console.log(formatSuiteProgress(suiteName, results.length, tasks.length, 'running', task.label, taskIndex))
     console.log(`[${suiteName}] run ${task.label}`)
     const startedAt = Date.now()
+    const timings: VerificationTiming[] = []
+    const recordTiming = (timing: VerificationTiming) => {
+      timings.push(timing)
+    }
+    const timingFile = path.join(ACCEPTANCE_ROOT, '.tmp/e2e-verification-timings', reportContext.runId, `${randomUUID()}.jsonl`)
+    await fs.mkdir(path.dirname(timingFile), { recursive: true })
+    await fs.rm(timingFile, { force: true })
     const stopHeartbeat = startTaskHeartbeat(suiteName, task.label, startedAt, results.length, tasks.length, taskIndex)
     let exitCode = 1
     let reason: string | undefined
@@ -658,6 +673,7 @@ async function runOwnedTaskSuite(
         [ACCEPTANCE_DIRTY_ENV]: reportContext.workingTreeDirty == null ? 'unknown' : reportContext.workingTreeDirty ? '1' : '0',
         [ACCEPTANCE_TASK_ENV]: task.label,
         [ACCEPTANCE_REPORT_DIR_ENV]: path.join(ACCEPTANCE_ROOT, 'docs/reports/dom-acceptance', reportContext.runId),
+        [E2E_TIMING_FILE_ENV]: timingFile,
         ...(reportContext.strict ? { [DOM_ACCEPTANCE_ENV]: '1' } : {}),
       }
       if (ideHmrCompanionSentinelPath && isDevtoolsVitestTask(task)) {
@@ -667,7 +683,9 @@ async function runOwnedTaskSuite(
         }
       }
       signal.throwIfAborted()
-      await options.beforeEachTask?.(task)
+      await measureE2EPhase('task-preflight', async () => {
+        await options.beforeEachTask?.(task)
+      }, recordTiming)
       signal.throwIfAborted()
       if (isDevtoolsVitestTask(task)) {
         if (writeReport) {
@@ -677,7 +695,7 @@ async function runOwnedTaskSuite(
         }
         // 只在任务启动前认领冷宿主；已有或无法核验的宿主会阻断本 lane，避免继续累积 renderer。
         // 上一宿主已在 task 收尾退出，新宿主必须执行自己的 global setup 登录预检。
-        devtoolsHostLease = await claimDevtoolsHost(task.env?.WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH ?? process.env.WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH)
+        devtoolsHostLease = await measureE2EPhase('host-claim', () => claimDevtoolsHost(task.env?.WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH ?? process.env.WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH), recordTiming)
         if (devtoolsHostLease) {
           await resources?.beforeTask(devtoolsHostLease)
           task.env = {
@@ -690,13 +708,24 @@ async function runOwnedTaskSuite(
         ? await prepareTaskLaunch(task, signal, resolveTaskTimeoutMs(task), options.beforeTaskLaunch)
         : undefined
       signal.throwIfAborted()
-      exitCode = options.runTask
-        ? await options.runTask(task, signal)
-        : await defaultRunTask(task, signal, launchBudget)
+      await measureE2EPhase('task-process', async () => {
+        exitCode = options.runTask
+          ? await options.runTask(task, signal)
+          : await defaultRunTask(task, signal, launchBudget)
+      }, (timing) => {
+        let status = timing.status
+        if (signal.aborted) {
+          status = 'cancelled'
+        }
+        else if (status === 'passed' && exitCode !== 0) {
+          status = 'failed'
+        }
+        recordTiming({ ...timing, status })
+      })
       signal.throwIfAborted()
       if (reportContext.strict) {
         try {
-          await validateTaskAcceptance(task, reportContext)
+          await measureE2EPhase('acceptance-validation', () => validateTaskAcceptance(task, reportContext, reportContext.plannedCases?.[task.label]), recordTiming)
         }
         catch (error) {
           blocked = exitCode === 0 || !task.artifacts?.some(artifact => artifact.kind === 'dom-acceptance-report')
@@ -744,7 +773,7 @@ async function runOwnedTaskSuite(
           }
         }
         try {
-          await cleanupDevtoolsCommandScope(childScope, journalPath)
+          await measureE2EPhase('project-cleanup', () => cleanupDevtoolsCommandScope(childScope, journalPath!), recordTiming)
         }
         catch (error) {
           scopeError = scopeError === undefined ? error : new AggregateError([scopeError, error], 'Child scope sealing and cleanup both failed')
@@ -752,7 +781,7 @@ async function runOwnedTaskSuite(
         }
         try {
           if (devtoolsHostLease) {
-            hostExit = await quitClaimedDevtoolsHost(devtoolsHostLease)
+            hostExit = await measureE2EPhase('host-quit', () => quitClaimedDevtoolsHost(devtoolsHostLease!), recordTiming)
           }
         }
         catch (error) {
@@ -790,6 +819,14 @@ async function runOwnedTaskSuite(
       }
       stopHeartbeat()
     }
+    try {
+      timings.push(...readE2ETimings(timingFile))
+      await fs.rm(timingFile, { force: true })
+    }
+    catch (error) {
+      exitCode = 1
+      reason = [reason, error instanceof Error ? error.message : String(error)].filter(Boolean).join('; ')
+    }
 
     if (signal.aborted) {
       exitCode = 1
@@ -810,6 +847,7 @@ async function runOwnedTaskSuite(
       durationMs,
       status: task.devtoolsLaunchSkipped ? 'blocked' : blocked ? 'blocked' : exitCode === 0 ? 'passed' : 'failed',
       reason,
+      timings,
     })
 
     if (task.unsafeRuntimeReason) {
@@ -835,8 +873,15 @@ async function runOwnedTaskSuite(
   }
 
   await options.afterAll?.()
+  const assignedTasks = tasks.filter(task => !task.outOfScopeReason).map(task => task.label)
+  const executionStatus = signal.aborted ? 'cancelled' : results.length !== assignedTasks.length ? 'incomplete' : results.some(result => result.exitCode !== 0 || result.status !== 'passed') ? 'failed' : 'passed'
+  reportContext.execution = {
+    ...(reportContext.execution ?? { scope: reportContext.partial ? 'ad-hoc' : 'full', profile: currentVerificationProfile(suiteName.replace(/^e2e:/, '').split(/\s/)[0]!), assignedTasks, startedAt: suiteStartedAt, finishedAt: '' }),
+    status: executionStatus,
+    finishedAt: new Date().toISOString(),
+  }
   if (writeReport) {
-    const report = createSuiteReport(results, suiteName, undefined, undefined, { ...reportContext, partial: reportContext.partial || signal.aborted })
+    const report = createSuiteReport(results, suiteName, undefined, undefined, { ...reportContext, timings: suiteTimings, partial: reportContext.partial || signal.aborted })
     options.onReport?.(report)
     suiteReportArtifact = {
       kind: 'suite-report',
@@ -859,8 +904,11 @@ async function runOwnedTaskSuite(
     }
   }
 
-  const incomplete = reportContext.strict && (reportContext.partial
-    || results.length !== reportContext.plannedTasks.filter(task => !task.outOfScopeReason).length
+  const plannedExecution = reportContext.execution?.scope === 'shard'
+    ? assignedTasks.length
+    : reportContext.plannedTasks.filter(task => !task.outOfScopeReason).length
+  const incomplete = reportContext.strict && ((reportContext.partial && reportContext.execution?.scope !== 'shard')
+    || results.length !== plannedExecution
     || !results.length || results.some(result => result.status !== 'passed'))
   if (signal.aborted || ((resourceCleanupFailed || failOnTaskFailure || reportContext.strict) && (results.some(result => result.exitCode !== 0) || incomplete))) {
     process.exitCode = 1
@@ -876,8 +924,19 @@ export async function runTaskSuite(
   options: RunSuiteOptions = {},
 ) {
   const signals = createSuiteSignalScope()
+  const leaseStartedAt = new Date().toISOString()
+  const leaseStarted = performance.now()
   try {
-    const code = await withMachineE2ELease(lease => runOwnedTaskSuite(suiteName, tasks, options, signals.signal, lease), options.machineLeaseOptions)
+    const code = await withMachineE2ELease((lease) => {
+      const leaseTiming: VerificationTiming = {
+        name: 'machine-lease-acquisition',
+        invocationId: randomUUID(),
+        startedAt: leaseStartedAt,
+        durationMs: performance.now() - leaseStarted,
+        status: 'passed',
+      }
+      return runOwnedTaskSuite(suiteName, tasks, options, signals.signal, lease, leaseTiming)
+    }, options.machineLeaseOptions)
     return signals.exitCode ?? code
   }
   finally {

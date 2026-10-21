@@ -5,6 +5,9 @@ import { syncBuiltinESMExports } from 'node:module'
 import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
+import { observeFileListeners } from './eventPhase.mjs'
+
+export { waitForObservedEventPhase } from './eventPhase.mjs'
 
 export function deferred() {
   let resolve
@@ -27,19 +30,6 @@ export function bounded(promise, label, timeoutMs) {
 }
 
 export const turn = () => new Promise(resolve => setImmediate(resolve))
-
-/** 精确隔离已完成的事件节流，不补事件，也不改变 watcher/native 归属。 */
-export function releaseCompletedEventPhase(owner, file, evidence) {
-  const cleared = []
-  for (const action of ['watch', 'change']) {
-    const entry = owner.watcher._throttled?.get(action)?.get(file)
-    if (entry) {
-      entry.clear()
-      cleared.push(action)
-    }
-  }
-  evidence.push({ checkpoint: 'explicit-event-phase-isolation', file: path.basename(file), originalThrottleClears: cleared })
-}
 
 export function absolutePath(value) {
   const file = value instanceof URL ? fileURLToPath(value) : String(value)
@@ -177,7 +167,8 @@ export function installNativeInstrumentation({ root, platform, beforeWatch, prom
 }
 
 export function observeWatcher(chokidar, root, watchedPaths, options = {}) {
-  const watcher = chokidar.watch(watchedPaths, { persistent: true, usePolling: false, atomic: false, ...options })
+  const watcher = new chokidar.FSWatcher({ persistent: true, usePolling: false, atomic: false, ...options })
+  const eventPhases = observeFileListeners(watcher)
   const events = []
   const errors = []
   const ready = deferred()
@@ -191,19 +182,28 @@ export function observeWatcher(chokidar, root, watchedPaths, options = {}) {
     readyCount++
     ready.resolve()
   })
+  watcher.add(watchedPaths)
   return {
     watcher,
+    eventPhases,
     events,
     errors,
     ready: ready.promise,
     get readyCount() { return readyCount },
-    event(eventName, absolute, timeoutMs) {
+    /**
+     * 等待精确路径的后续事件，可用文件状态谓词拒绝旧观察结果。
+     * @param {string} eventName 事件名。
+     * @param {string} absolute 目标绝对路径。
+     * @param {number} timeoutMs 本次等待预算。
+     * @param {(stats: import('node:fs').Stats | undefined) => boolean} [predicate] 目标文件状态谓词。
+     */
+    event(eventName, absolute, timeoutMs, predicate = () => true) {
       const expected = path.relative(root, absolute).replaceAll('\\', '/') || '.'
       let listener
       const event = new Promise((resolve) => {
-        listener = (actualEvent, file) => {
+        listener = (actualEvent, file, stats) => {
           const actual = path.resolve(options.cwd || process.cwd(), String(file))
-          if (actualEvent === eventName && actual === absolute) {
+          if (actualEvent === eventName && actual === absolute && predicate(stats)) {
             resolve({ event: actualEvent, path: expected })
           }
         }

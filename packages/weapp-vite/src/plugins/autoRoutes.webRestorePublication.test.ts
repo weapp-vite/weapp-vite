@@ -6,6 +6,7 @@ import path from 'pathe'
 import { createServer } from 'vite'
 import { expect, it, vi } from 'vitest'
 import { weappWebPlugin } from '../../../../packages-runtime/web/src/plugin'
+import { createWebRestoreNotifications } from '../../test/helpers/webRestoreNotifications'
 import { createBarrier as barrier, createWebRestoreScanGate } from '../../test/helpers/webRestoreScanGate'
 import { createAutoRoutesService } from '../runtime/autoRoutesPlugin/service'
 import { createRuntimeState } from '../runtime/runtimeState'
@@ -38,12 +39,11 @@ it.each(['app-first', 'app-scan-in-flight', 'app-first-reimported', 'app-first-a
     const releaseSource = barrier()
     const createStarted = barrier()
     const releaseCreate = barrier()
-    const scanGate = createWebRestoreScanGate(app, restored)
+    const scanGate = createWebRestoreScanGate(restored)
+    const notifications = createWebRestoreNotifications()
     const sourceNotifications: string[] = []
-    const updateWaiters = new Map<number, ReturnType<typeof barrier>>()
     const reloads: Array<{ source?: string, pages?: string[] }> = []
     const errors: unknown[] = []
-    let completedUpdates = 0
     let blockSourceUpdate = false
     let blockCreateUpdate = false
     let cachedConfig: { pages: string[] } | undefined
@@ -78,20 +78,17 @@ it.each(['app-first', 'app-scan-in-flight', 'app-first-reimported', 'app-first-a
       }
       return handleFileChange(file, event)
     })
-    const waitForUpdate = (target: number) => {
-      if (completedUpdates >= target) {
-        return Promise.resolve()
-      }
-      const done = barrier()
-      updateWaiters.set(target, done)
-      return done.promise
-    }
-    const sidecarEvent = (event: 'add' | 'unlink') => {
+    const sourceEvent = (event: 'add' | 'unlink') => {
       expect(sourceWatchers).toHaveLength(1)
       const callback = sourceWatchers[0]!.get(event)
       expect(callback).toBeTypeOf('function')
-      callback!(restored)
+      return notifications.source(restored, event, () => callback!(restored))
     }
+    const nativeEvent = (event: 'add' | 'change' | 'unlink') => notifications.native(
+      restored,
+      event,
+      () => { server!.watcher.emit(event, restored) },
+    )
     const transformPublishedEntry = async () => {
       const entry = await server!.transformRequest('/@weapp-vite/web/entry')
       await server!.transformRequest('/src/app.vue')
@@ -165,18 +162,20 @@ it.each(['app-first', 'app-scan-in-flight', 'app-first-reimported', 'app-first-a
           watch: null,
           hmr: { port: 0 },
           async hotUpdateEnvironments(vite, hmr) {
-            await Promise.all(Object.values(vite.environments).map(hmr))
-            completedUpdates += 1
-            updateWaiters.get(completedUpdates)?.release()
-            updateWaiters.delete(completedUpdates)
+            await notifications.hotUpdateEnvironments(() => Promise.all(Object.values(vite.environments).map(hmr)))
           },
         },
         logLevel: 'silent',
       })
+      const watchChange = server.pluginContainer.watchChange.bind(server.pluginContainer)
+      vi.spyOn(server.pluginContainer, 'watchChange').mockImplementation((file, change) => notifications.watchChange(
+        file,
+        change,
+        () => watchChange(file, change),
+      ))
       server.environments.client!.hot.send = ((payload: { type?: string, triggeredBy?: string }) => {
         if (payload.type === 'full-reload') {
           reloads.push({ source: payload.triggeredBy, pages: resolvedConfig && [...resolvedConfig.pages] })
-          scanGate.observeReload(payload.triggeredBy)
         }
         else if (payload.type === 'error') {
           errors.push(payload)
@@ -187,12 +186,8 @@ it.each(['app-first', 'app-scan-in-flight', 'app-first-reimported', 'app-first-a
 
       // 先完整发布删除并让 Vite 收到同一物理 unlink，保留真实删除恢复的模块图。
       await rm(restored)
-      let nextUpdate = completedUpdates + 1
-      sidecarEvent('unlink')
-      await waitForUpdate(nextUpdate)
-      nextUpdate = completedUpdates + 1
-      server.watcher.emit('unlink', restored)
-      await waitForUpdate(nextUpdate)
+      await sourceEvent('unlink')
+      await nativeEvent('unlink')
       expect(service.getSnapshot().pages).toEqual(['pages/home/index'])
       expect((await transformPublishedEntry())?.code).not.toContain('/src/pages/restored/index.vue')
       reloads.length = 0
@@ -200,32 +195,29 @@ it.each(['app-first', 'app-scan-in-flight', 'app-first-reimported', 'app-first-a
 
       await writeFile(restored, pageSource)
       const reimportsPage = order === 'app-first-reimported' || overlapsCreate
-      const target = completedUpdates + (overlapsCreate ? 3 : 2)
+      let sourceUpdate: Promise<void> | undefined
       if (order === 'source-started-first') {
         blockSourceUpdate = true
-        server.watcher.emit('change', restored)
+        sourceUpdate = nativeEvent('change')
         await sourceStarted.promise
       }
       if (order === 'source-published-first') {
-        server.watcher.emit('change', restored)
-        await waitForUpdate(target - 1)
-        sidecarEvent('add')
+        await nativeEvent('change')
+        await sourceEvent('add')
       }
       else {
         if (overlapsScan) {
           scanGate.start()
         }
-        sidecarEvent('add')
+        const publication = sourceEvent('add')
         if (overlapsScan) {
           // App 使用恢复路由扫描但尚未提交；此时 source HMR 入队，不能提前采用删除快照。
           await scanGate.started
           expect(cachedConfig?.pages).toEqual(['pages/home/index', 'pages/restored/index'])
-          server.watcher.emit('change', restored)
-          await scanGate.publishSource()
+          sourceUpdate = nativeEvent('change')
+          await scanGate.publishSource(publication)
         }
-        else {
-          await waitForUpdate(target - (overlapsCreate ? 2 : 1))
-        }
+        await publication
       }
       // App 发布后才放行 source update，两个来源必须消费同一恢复 generation。
       if (order === 'source-started-first') {
@@ -237,20 +229,21 @@ it.each(['app-first', 'app-scan-in-flight', 'app-first-reimported', 'app-first-a
           expect((await transformPublishedEntry())?.code).toContain('/src/pages/restored/index.vue')
           await transformRestoredPage()
         }
+        let createUpdate: Promise<void> | undefined
         if (overlapsCreate) {
           // 真实 watcher 可先报 add/change，但 create 的 hotUpdate 晚于 change 的 hotUpdate 完成。
           // 保留真实 Web watchChange 扫描，只在其后用屏障延迟 create 进入 HMR，不依赖计时。
           blockCreateUpdate = true
-          server.watcher.emit('add', restored)
+          createUpdate = nativeEvent('add')
           await createStarted.promise
         }
-        server.watcher.emit('change', restored)
+        await nativeEvent('change')
         if (overlapsCreate) {
-          await waitForUpdate(target - 1)
           releaseCreate.release()
+          await createUpdate
         }
       }
-      await waitForUpdate(target)
+      await sourceUpdate
       if (overlapsScan) {
         expect(scanGate.stop()).toBe(2)
       }
@@ -260,8 +253,9 @@ it.each(['app-first', 'app-scan-in-flight', 'app-first-reimported', 'app-first-a
       expect(errors).toEqual([])
       expect(handleChange.mock.calls.filter(([file, event]) => file === restored && event === 'update')).toHaveLength(1)
       expect(service.getSnapshot().pages).toEqual(['pages/home/index', 'pages/restored/index'])
-      expect(reloads.map(reload => path.relative(root, reload.source ?? ''))).toEqual([
-        order === 'source-published-first' ? 'src/pages/restored/index.vue' : 'src/app.vue',
+      expect(reloads).toHaveLength(1)
+      expect(reloads.map(reload => reload.source)).toEqual([
+        order === 'source-published-first' || overlapsScan ? restored : undefined,
       ])
       expect(reloads[0]!.pages).toEqual(['pages/home/index', 'pages/restored/index'])
       expect((await transformPublishedEntry())?.code).toContain('/src/pages/restored/index.vue')
@@ -272,6 +266,7 @@ it.each(['app-first', 'app-scan-in-flight', 'app-first-reimported', 'app-first-a
       scanGate.close()
       handleChange.mockRestore()
       await server?.close()
+      notifications.close()
       await rm(root, { recursive: true, force: true })
     }
   },

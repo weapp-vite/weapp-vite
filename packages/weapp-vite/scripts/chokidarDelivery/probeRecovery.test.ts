@@ -3,6 +3,7 @@ import { mkdir, mkdtemp, rm } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { afterEach, beforeEach, it, vi } from 'vitest'
+import { createRecoveryFailureObserver } from './probe/recoveryFailure.mjs'
 import { exerciseScenario } from './probe/scenarios.mjs'
 
 const publicApi = vi.hoisted(() => ({
@@ -12,6 +13,14 @@ const publicApi = vi.hoisted(() => ({
 }))
 
 vi.mock('./probe/public.mjs', () => publicApi)
+vi.mock('./probe/publication.mjs', () => ({
+  async mutateAndAssertOutputs(owners: unknown[], relative: string, expected: string | null, mutate: () => Promise<void>) {
+    await mutate()
+    for (const owner of owners) {
+      await publicApi.assertOutput(owner, relative, expected)
+    }
+  },
+}))
 
 let root: string
 
@@ -34,6 +43,7 @@ function context(injectedError: Error, errors: Error[]) {
     errors,
     instrumentation: { injected: 1 },
     injectedError,
+    recoveryFailure: createRecoveryFailureObserver(),
     evidence: {},
   }
 }
@@ -53,12 +63,22 @@ it('零公开错误保留正恢复通过，create/change/delete 顺序不变', a
   assert.deepEqual(ctx.errors, [])
 })
 
-it('完整恢复后仅精确单例原错误继续抛出，身份与错误码不变', async () => {
+it('完整恢复后保留实际零错断言，精确单例原错误由同一异常对象绑定的现场记录证明', async () => {
   const original = injected()
   const ctx = context(original, [original])
-  await assert.rejects(exerciseScenario(ctx), error => error === original)
+  await assert.rejects(exerciseScenario(ctx), (error: unknown) => {
+    assert(error instanceof Error && 'code' in error && error.code === 'ERR_ASSERTION')
+    assert.notEqual(error, original)
+    const failure = ctx.recoveryFailure.describe(error)
+    assert.equal(failure.stage, 'recovery-final-public-errors')
+    assert.equal(failure.publicErrors.length, 1)
+    assert.equal(failure.publicErrors[0].originalInjectedError, true)
+    assert.equal(failure.publicErrors[0].code, 'EPERM')
+    assert.equal(ctx.recoveryFailure.describe(new Error(error.message)), undefined)
+    return true
+  })
   assert.equal(original.code, 'EPERM')
-  assert.deepEqual(ctx.evidence, completed)
+  assert.deepEqual(ctx.evidence, {})
   assert.deepEqual(ctx.errors, [original])
   assert.equal(publicApi.assertOutput.mock.calls.length, 3)
 })
@@ -76,7 +96,7 @@ it.each(invalidErrors)('%s 不得伪装成原始负控错误', async (_label, er
   await assert.rejects(exerciseScenario(ctx), (error: unknown) =>
     error !== original && error instanceof Error && 'code' in error && error.code === 'ERR_ASSERTION')
   assert.deepEqual(ctx.errors, callbacks)
-  assert.deepEqual(ctx.evidence, completed)
+  assert.deepEqual(ctx.evidence, {})
 })
 
 it('先前输出失败不被已公开的原 EPERM 覆盖，也不补造完整恢复证据', async () => {

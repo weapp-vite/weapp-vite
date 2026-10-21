@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFile, rename, rm, stat, writeFile } from 'node:fs/promises'
 import path from 'node:path'
-import { bounded, deferred, releaseCompletedEventPhase, turn } from './support.mjs'
+import { bounded, deferred, turn, waitForObservedEventPhase } from './support.mjs'
 
 async function verifyInode({ chokidar, root, watched, timeoutMs, open, ready, instrumentation, evidence }) {
   assert.ok(['darwin', 'linux', 'freebsd'].includes(instrumentation.actualPlatform), 'native inode branch requires darwin/linux/freebsd; another native host is a diagnostic limitation')
@@ -25,7 +25,7 @@ async function verifyInode({ chokidar, root, watched, timeoutMs, open, ready, in
   assert.equal(live.length, 1, 'inode replacement acquired exactly one live native file handle')
   assert.notEqual(live[0], originalHandle)
   evidence.push({ checkpoint: 'real-inode-rebind', passed: true, actualPlatform: instrumentation.actualPlatform })
-  releaseCompletedEventPhase(owner, file, evidence)
+  await waitForObservedEventPhase(owner, file, evidence, timeoutMs)
   const secondChange = owner.event('change', file, timeoutMs)
   await writeFile(file, 'the rebound native file watcher observes this second change')
   await secondChange
@@ -41,6 +41,7 @@ async function verifyPolling({ chokidar, watched, timeoutMs, open, ready, instru
   await ready(owner)
   assert.ok(instrumentation.pollingHandles.length > 0, 'polling uses real native StatWatcher subscriptions')
   assert.equal(instrumentation.handles.length, 0, 'the polling case did not fall back to fs.watch')
+  await waitForObservedEventPhase(owner, file, evidence, timeoutMs)
   const firstChange = owner.event('change', file, timeoutMs)
   await writeFile(file, 'first observed polling file update with a different size')
   await firstChange
@@ -50,7 +51,7 @@ async function verifyPolling({ chokidar, watched, timeoutMs, open, ready, instru
   const add = owner.event('add', file, timeoutMs)
   await writeFile(file, 'recreated polling file')
   await add
-  releaseCompletedEventPhase(owner, file, evidence)
+  await waitForObservedEventPhase(owner, file, evidence, timeoutMs)
   const nextChange = owner.event('change', file, timeoutMs)
   await writeFile(file, 'the recreated polling file reports its next real update')
   await nextChange
@@ -106,7 +107,7 @@ async function verifySynchronousAddCancel({ chokidar, root, watched, timeoutMs, 
     }
     assert.equal(nativeHandle.closed, false, 'synchronous cancellation preserves the other native owner')
     const transientBoundary = transient.events.length
-    releaseCompletedEventPhase(shared, file, evidence)
+    await waitForObservedEventPhase(shared, file, evidence, timeoutMs)
     const sharedChange = shared.event('change', file, timeoutMs)
     await writeFile(file, `shared owner still observes update after synchronous ${phase} ${mode}`)
     await sharedChange

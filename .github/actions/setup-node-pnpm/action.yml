@@ -13,16 +13,22 @@ runs:
       if: runner.os == 'Windows'
       shell: bash
       run: git config --system core.longpaths true
-
     - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
-
     - name: Setup Node.js environment
       uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
       with:
         node-version: ${{ inputs.node-version }}
         cache: pnpm
         cache-dependency-path: pnpm-lock.yaml
-
+    - name: Freeze actual toolchain identity
+      shell: bash
+      run: |
+        node -e "process.stdout.write('REPOCTL_RELEASE_NODE_VERSION=' + process.version + '\nREPOCTL_RELEASE_PLATFORM=' + process.platform + '\nREPOCTL_RELEASE_ARCH=' + process.arch + '\n')" >> "$GITHUB_ENV"
+        task_pnpm_version="$(pnpm --version)"
+        printf 'REPOCTL_RELEASE_PNPM_VERSION=pnpm@%s\nBUILD_ARTIFACT_PACKAGE_MANAGER=pnpm@%s\n' "$task_pnpm_version" "$task_pnpm_version" >> "$GITHUB_ENV"
     - name: Install dependencies
       shell: bash
-      run: pnpm install --frozen-lockfile
+      run: |-
+        node .github/scripts/ci-timing.mjs start install
+        trap 'phase_exit=$?; node .github/scripts/ci-timing.mjs finish install "$phase_exit"; exit "$phase_exit"' EXIT
+        pnpm install --frozen-lockfile

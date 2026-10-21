@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
+import { measureE2EPhase } from '../../scripts/verification/timing'
 import { flushRuntimeConsoleSessions } from '../runtimeConsoleSessions'
 import { resolveRuntimeProviderName } from '../runtimeProvider'
 import { captureDomCheckpoint, validateDomPlan } from './checkpoint'
@@ -57,7 +58,7 @@ export function createDomAcceptance(context: TestContext, fixture: string, check
       await flushRuntimeConsoleSessions()
       let evidence
       try {
-        evidence = await captureDomCheckpoint(session, page, checkpoint, plan.provider, timeout)
+        evidence = await measureE2EPhase(`checkpoint:${fixture}:${id}`, () => captureDomCheckpoint(session, page, checkpoint, plan.provider, timeout))
       }
       catch (error) {
         const failure: NonNullable<DomAcceptance['failures']>[number] = { checkpoint: id }

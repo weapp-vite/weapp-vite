@@ -16,9 +16,18 @@ runs:
     - name: Build workspace artifacts
       shell: bash
       working-directory: ${{ inputs.working-directory }}
-      run: ${{ inputs.build-command }}
-
+      env:
+        CI_TIMING_SCRIPT: ${{ github.action_path }}/../../scripts/ci-timing.mjs
+      run: |-
+        node "$CI_TIMING_SCRIPT" start build
+        trap 'phase_exit=$?; node "$CI_TIMING_SCRIPT" finish build "$phase_exit"; exit "$phase_exit"' EXIT
+        ${{ inputs.build-command }}
     - name: Refresh injected workspace dependencies
       shell: bash
       working-directory: ${{ inputs.working-directory }}
-      run: pnpm install --frozen-lockfile --ignore-scripts
+      env:
+        CI_TIMING_SCRIPT: ${{ github.action_path }}/../../scripts/ci-timing.mjs
+      run: |-
+        node "$CI_TIMING_SCRIPT" start refresh-links
+        trap 'phase_exit=$?; node "$CI_TIMING_SCRIPT" finish refresh-links "$phase_exit"; exit "$phase_exit"' EXIT
+        pnpm install --frozen-lockfile --ignore-scripts

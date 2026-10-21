@@ -42,22 +42,7 @@ export async function runCandidateValidation({ report, verifyTypes, runScenario,
   signal.throwIfAborted()
 }
 
-/** 原始负控只接受完整恢复后公开的一次原对象 EPERM，收尾期间的追加错误也必须拒绝。 */
-export function isOriginalRecoveryRejection(result) {
-  const report = result.report
-  const publicErrors = report?.publicErrors
-  return result.id === 'public-missing-watch-recovery' && result.variant === 'baseline'
-    && result.status === 'failed' && result.code === 1 && result.signal === null
-    && result.timedOut === false && result.interrupted === false && result.launchError === undefined
-    && result.cleanupConfirmed === true && result.scope === 'completed'
-    && report?.id === result.id && report.platform === 'win32' && report.status === 'failed'
-    && report.native?.injected === 1 && report.bodyError?.originalInjectedError === true
-    && report.bodyError.code === 'EPERM'
-    && Array.isArray(publicErrors) && publicErrors.length === 1
-    && publicErrors[0]?.originalInjectedError === true && publicErrors[0].code === 'EPERM'
-    && ['injectedOnce', 'factoryCompleted', 'createEmitted', 'changeEmitted', 'deleteEmitted']
-      .every(key => report.evidence?.[key] === true)
-}
+export { isConfirmedBaselineRejection as isOriginalRecoveryRejection } from './negativeControl.mjs'
 
 /** 类型与 runtime 分别汇总；任一类型失败都不得将整体验收标记为通过。 */
 export function completePublicValidation(report, nativePlatform, planned) {

@@ -16,6 +16,7 @@ import { importManagedDevtoolsProject } from '../../packages/weapp-ide-cli/src/c
 import { getRuntimeWechatDevtoolsServicePort, setRuntimeWechatDevtoolsServicePort } from '../../packages/weapp-ide-cli/src/cli/wechatDevtoolsRuntimePort'
 import { cleanupManagedWechatProjects, closeManagedWechatProject, MANAGED_PROJECT_JOURNAL_ENV } from '../../packages/weapp-ide-cli/src/devtoolsProjectOwnership'
 import { normalizeRuntimeConsoleText } from '../ide/runtimeErrors'
+import { measureE2EPhase } from '../scripts/verification/timing'
 import { extractWechatDevtoolsServicePort } from './automator.cli-bridge'
 import { launchHeadlessAutomator } from './automator.headless'
 import { createDevtoolsSimulatorBootLogMonitor, DEVTOOLS_LOG_SCAN_INTERVAL, DevtoolsSimulatorBootLogError } from './automatorBootLogMonitor'
@@ -2725,27 +2726,30 @@ async function connectAutomatorViaCliBridge(
   assertBridgeLaunchBudget(lifecycle)
   process.stdout.write(`[info] [runtime:launch-bridge-step] bootstrap-start project=${project}\n`)
   // 直接等待真实子进程完成；lifecycle.step 的取消 race 不能作为窗口收尾的进程退出证据。
-  const result = await execa('node', ['--import', 'tsx', AUTOMATOR_CLI_BRIDGE_PATH, JSON.stringify({ ...options, timeout: lifecycle.remainingMs(options.timeout) })], {
-    cwd: options.cwd,
-    reject: false,
-    cancelSignal: lifecycle.signal,
-    gracefulCancel: true,
-    killDescendants: false,
-    env: {
-      ...process.env,
-      [AUTOMATOR_LAUNCH_MODE_ENV]: '',
-      ...(journalPath ? { [MANAGED_PROJECT_JOURNAL_ENV]: journalPath } : {}),
-    },
+  const result = await measureE2EPhase('automator-startup', async () => {
+    const result = await execa('node', ['--import', 'tsx', AUTOMATOR_CLI_BRIDGE_PATH, JSON.stringify({ ...options, timeout: lifecycle.remainingMs(options.timeout) })], {
+      cwd: options.cwd,
+      reject: false,
+      cancelSignal: lifecycle.signal,
+      gracefulCancel: true,
+      killDescendants: false,
+      env: {
+        ...process.env,
+        [AUTOMATOR_LAUNCH_MODE_ENV]: '',
+        ...(journalPath ? { [MANAGED_PROJECT_JOURNAL_ENV]: journalPath } : {}),
+      },
+    })
+    lifecycle.throwIfAborted()
+    process.stdout.write(`[info] [runtime:launch-bridge-step] bootstrap-exit code=${result.exitCode ?? 1} project=${project}\n`)
+    if ((result.exitCode ?? 1) !== 0) {
+      const stderr = typeof result.stderr === 'string' ? result.stderr.trim() : ''
+      const stdout = typeof result.stdout === 'string' ? result.stdout.trim() : ''
+      const details = stderr || stdout || `bridge exit code ${(result.exitCode ?? 1)}`
+      throw new Error(`Failed to bootstrap automator cli bridge: ${details}`)
+    }
+    return result
   })
   lifecycle.throwIfAborted()
-  process.stdout.write(`[info] [runtime:launch-bridge-step] bootstrap-exit code=${result.exitCode ?? 1} project=${project}\n`)
-
-  if ((result.exitCode ?? 1) !== 0) {
-    const stderr = typeof result.stderr === 'string' ? result.stderr.trim() : ''
-    const stdout = typeof result.stdout === 'string' ? result.stdout.trim() : ''
-    const details = stderr || stdout || `bridge exit code ${(result.exitCode ?? 1)}`
-    throw new Error(`Failed to bootstrap automator cli bridge: ${details}`)
-  }
 
   const rawStdout = typeof result.stdout === 'string' ? result.stdout.trim() : ''
   if (!rawStdout) {
@@ -2794,7 +2798,7 @@ async function connectAutomatorViaCliBridge(
     try {
       monitor?.assertClean(`connect automator bridge ${bridgeResult.wsEndpoint}`)
       process.stdout.write(`[info] [runtime:launch-bridge-step] connect-attempt endpoint=${bridgeResult.wsEndpoint} project=${project}\n`)
-      miniProgram = await lifecycle.step(
+      miniProgram = await measureE2EPhase('automator-connect', () => lifecycle.step(
         () => (automator as typeof automator & {
           connect: (options: { wsEndpoint: string, timeout?: number, signal?: AbortSignal }) => Promise<any>
         }).connect({
@@ -2803,7 +2807,7 @@ async function connectAutomatorViaCliBridge(
           timeout: lifecycle.remainingMs(4_000),
         }),
         { stage: 'bridge-connect', waitForExit: true, disposeLate: disconnectLaunchSession },
-      )
+      ))
       process.stdout.write(`[info] [runtime:launch-bridge-step] connect-ok endpoint=${bridgeResult.wsEndpoint} project=${project}\n`)
       break
     }
@@ -2938,7 +2942,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
         return await lifecycle.run(
           async () => {
             process.stdout.write(`[info] [runtime:launch-step] preflight project=${project}\n`)
-            const projectMeta = await lifecycle.step(() => resolveLaunchProjectMeta(rest.projectPath))
+            const projectMeta = await measureE2EPhase('automator-preflight', () => lifecycle.step(() => resolveLaunchProjectMeta(rest.projectPath)))
             const resolvedWarmupRoute = typeof warmupRoute === 'string' && warmupRoute.trim()
               ? `/${warmupRoute.trim().replace(LEADING_SLASH_PATTERN, '')}`
               : projectMeta?.warmupRoute
@@ -2999,7 +3003,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
               ? await (bridgeLaunch = launchAutomatorViaCliBridge(launchOptions, project, lifecycle, devtoolsLogMonitor, onSessionMetadata, (close) => {
                   closeAttemptProject = close
                 }))
-              : await lifecycle.step(() => runWithDevtoolsLogMonitor(
+              : await measureE2EPhase('automator-startup', () => lifecycle.step(() => runWithDevtoolsLogMonitor(
                   () => automator.launch({ ...launchOptions, signal: lifecycle.signal, timeout: lifecycle.remainingMs(launchTimeout) }),
                   lifecycle.remainingMs(launchTimeout),
                   'connect direct',
@@ -3011,7 +3015,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
                     catch {
                     }
                   },
-                ), { disposeLate: disconnectLaunchSession })
+                ), { disposeLate: disconnectLaunchSession }))
             lifecycle.own(() => disconnectLaunchSession(miniProgram), 'automator-session')
             // engine build 可能先开项目；受管任务必须先取得 agent start 的窗口回执。
             if (shouldPrebuild && managedProject) {
@@ -3076,7 +3080,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
                 startupDiagnostics.set(resolvedWarmupRoute, diagnostics)
               }
               process.stdout.write(`[info] [runtime:launch-step] warmup-start route=${resolvedWarmupRoute} project=${project}\n`)
-              await lifecycle.step(() => warmupMiniProgramRoute(withRuntimeLogs, resolvedWarmupRoute, project, {
+              await measureE2EPhase('first-screen', () => lifecycle.step(() => warmupMiniProgramRoute(withRuntimeLogs, resolvedWarmupRoute, project, {
                 startupDiagnostics: diagnostics,
                 signal: lifecycle.signal,
                 allowAnyPage: warmupAnyPage,
@@ -3086,7 +3090,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
                   devtoolsLogMonitor.assertClean(...args)
                 },
                 rootSelectors: warmupRootSelectors,
-              }))
+              })))
             }
             lifecycle.throwIfAborted()
             await lifecycle.step(() => devtoolsLogMonitor.finishStartup(lifecycle))
@@ -3192,7 +3196,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
   })
 }
 
-export async function assertDevtoolsLoggedIn(projectPath: string) {
+async function assertDevtoolsLoggedInWithoutTiming(projectPath: string) {
   if (loginPreflightPassed) {
     return
   }
@@ -3233,6 +3237,10 @@ export async function assertDevtoolsLoggedIn(projectPath: string) {
   if (closeError) {
     throw closeError
   }
+}
+
+export async function assertDevtoolsLoggedIn(projectPath: string) {
+  return await measureE2EPhase('login-preflight', () => assertDevtoolsLoggedInWithoutTiming(projectPath))
 }
 
 export function isDevtoolsHttpPortError(error: unknown) {
