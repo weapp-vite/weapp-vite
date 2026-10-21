@@ -141,22 +141,28 @@ export function ownerOf(file: string, packages: WorkspacePackage[]): WorkspacePa
     .sort((a, b) => b.directory.length - a.directory.length)[0]
 }
 
-/** 包依赖与显式跨根输入共同决定影响闭包。 */
-export function affectedPackages(files: string[], packages: WorkspacePackage[], all = false): Set<string> {
+export interface PackageImpact {
+  direct: Set<string>
+  affected: Set<string>
+  fallback?: { reason: 'unmapped-cross-directory', files: string[] }
+}
+
+/** 包依赖与显式跨根输入共同决定影响闭包，并保留无法证明归属时的回退原因。 */
+export function analyzePackageImpact(files: string[], packages: WorkspacePackage[], all = false): PackageImpact {
   // 跨目录 fixture 和工具输入不能仅凭其 workspace owner 推断测试 owner；缺映射时回到全范围。
-  all ||= files.some(file => CROSS_DIRECTORY_PREFIX.test(file)
+  const unmapped = files.filter(file => CROSS_DIRECTORY_PREFIX.test(file)
     && !packages.some(item => item.extraInputs.some(pattern => path.posix.matchesGlob(file, pattern))))
-  const affected = new Set(all
-    ? packages.map(item => item.name)
-    : files.flatMap((file) => {
-        const owner = ownerOf(file, packages)
-        return owner ? [owner.name] : []
-      }))
+  const fallback = unmapped.length ? { reason: 'unmapped-cross-directory' as const, files: unmapped } : undefined
+  const direct = new Set(files.flatMap((file) => {
+    const owner = ownerOf(file, packages)
+    return owner ? [owner.name] : []
+  }))
   for (const item of packages) {
     if (files.some(file => item.extraInputs.some(pattern => path.posix.matchesGlob(file, pattern)))) {
-      affected.add(item.name)
+      direct.add(item.name)
     }
   }
+  const affected = new Set(all || fallback ? packages.map(item => item.name) : direct)
   let changed = true
   while (changed) {
     changed = false
@@ -167,5 +173,5 @@ export function affectedPackages(files: string[], packages: WorkspacePackage[], 
       }
     }
   }
-  return affected
+  return { direct, affected, fallback }
 }

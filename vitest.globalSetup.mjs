@@ -1,5 +1,4 @@
 import fs from 'node:fs/promises'
-import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -150,7 +149,7 @@ async function hasManagedTsconfigReference(projectRoot) {
   return content.includes(`${MANAGED_TSCONFIG_DIRNAME}/tsconfig.`)
 }
 
-async function syncManagedTsconfigBootstrapFiles(projectRoot) {
+export async function syncManagedTsconfigBootstrapFiles(projectRoot) {
   if (!await hasManagedTsconfigReference(projectRoot)) {
     return
   }
@@ -196,19 +195,9 @@ async function syncWorkspaceManagedTsconfigBootstrapFiles() {
   await Promise.all(roots.map(root => syncManagedTsconfigBootstrapFiles(root)))
 }
 
-async function syncHomeManagedTsconfigBootstrapFiles() {
-  const homeDir = os.homedir()
-  if (!homeDir || path.resolve(homeDir) === ROOT_DIR) {
-    return
-  }
-
-  await syncManagedTsconfigBootstrapFiles(homeDir)
-}
-
 export default async function setup() {
   await fs.mkdir(path.resolve(ROOT_DIR, 'coverage/.tmp'), { recursive: true })
   await cleanupFixtureProjects()
   await syncWorkspaceManagedTsconfigBootstrapFiles()
-  await syncHomeManagedTsconfigBootstrapFiles()
   await ensureExternalProjectPackageLinks()
 }

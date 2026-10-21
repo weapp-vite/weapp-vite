@@ -116,6 +116,8 @@ function resolveProjects(): string[] {
 const projects = [
   {
     extends: false,
+    // 脚本项目只剥离类型，不加载 workspace 的应用 solution references。
+    oxc: { tsconfig: false },
     // 只限制测试发现范围；保留 Vite 默认转换，让跨目录导入的 TypeScript 依赖同样完成类型剥离。
     test: {
       name: 'repo-scripts',
@@ -196,7 +198,6 @@ export default defineConfig(() => {
     test: {
       reporters: localReporters(),
       ...localTestPolicy(),
-      globalSetup: [path.resolve(ROOT_DIR, 'vitest.globalSetup.mjs')],
       maxWorkers: workspaceMaxWorkers,
       projects,
       sharedViteServer: false,

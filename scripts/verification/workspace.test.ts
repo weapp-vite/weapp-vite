@@ -3,7 +3,7 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { expect, it } from 'vitest'
-import { affectedPackages, ownerOf, readWorkspace } from './workspace.ts'
+import { analyzePackageImpact, ownerOf, readWorkspace } from './workspace.ts'
 
 function pkg(name: string, directory: string, dependencies: string[] = [], extraInputs: string[] = []): WorkspacePackage {
   return { name, directory, dependencies, extraInputs, scripts: {} }
@@ -25,8 +25,8 @@ async function fixture(run: (root: string, write: (file: string, content: unknow
 
 it('includes dev, peer and explicit cross-root dependencies in the reverse closure', () => {
   const packages = [pkg('source', 'packages/source'), pkg('consumer', 'apps/consumer', ['source']), pkg('other', 'packages/other', [], ['skills/shared/**'])]
-  expect([...affectedPackages(['packages/source/src/index.ts'], packages)].sort()).toEqual(['consumer', 'source'])
-  expect([...affectedPackages(['skills/shared/SKILL.md'], packages)]).toEqual(['other'])
+  expect([...analyzePackageImpact(['packages/source/src/index.ts'], packages).affected].sort()).toEqual(['consumer', 'source'])
+  expect([...analyzePackageImpact(['skills/shared/SKILL.md'], packages).affected]).toEqual(['other'])
   expect(ownerOf('packages/source/src/index.ts', packages)?.name).toBe('source')
   expect(ownerOf('packages/source-copy/index.ts', packages)).toBeUndefined()
 })
@@ -69,11 +69,11 @@ it('includes root Turbo global inputs, generic tasks and scoped package task dep
     const packages = await readWorkspace(root)
     expect(packages.find(item => item.name === 'consumer')?.dependencies).toEqual(['source'])
     expect(packages.find(item => item.name === 'other')?.dependencies).toEqual([])
-    expect([...affectedPackages(['packages/source/index.ts'], packages)].sort()).toEqual(['consumer', 'source'])
-    expect([...affectedPackages(['skills/consumer/SKILL.md'], packages)]).toEqual(['consumer'])
+    expect([...analyzePackageImpact(['packages/source/index.ts'], packages).affected].sort()).toEqual(['consumer', 'source'])
+    expect([...analyzePackageImpact(['skills/consumer/SKILL.md'], packages).affected]).toEqual(['consumer'])
     const all = packages.map(item => item.name).sort()
     for (const file of ['e2e/utils/requestClientsRealHostTraceRuntime.ts', 'shared/build/config.json', 'packages/eslint/src/index.ts']) {
-      expect([...affectedPackages([file], packages)].sort()).toEqual(all)
+      expect([...analyzePackageImpact([file], packages).affected].sort()).toEqual(all)
     }
   })
 })
@@ -97,9 +97,9 @@ it('resolves all four dependency groups, workspace aliases and local package pat
       extraInputs: ['scripts/assets', 'scripts/assets/**'],
     })
     for (const name of ['runtime', 'dev', 'peer', 'optional', 'aliased', 'linked']) {
-      expect(affectedPackages([`packages/${name}/index.ts`], packages).has('consumer')).toBe(true)
+      expect(analyzePackageImpact([`packages/${name}/index.ts`], packages).affected.has('consumer')).toBe(true)
     }
-    expect([...affectedPackages(['scripts/assets/token.json'], packages)]).toEqual(['consumer'])
+    expect([...analyzePackageImpact(['scripts/assets/token.json'], packages).affected]).toEqual(['consumer'])
   })
 })
 
@@ -113,10 +113,10 @@ it('routes shared fixtures back to their test owners and keeps E2E helper dist p
     await write('test/fixture-projects/weapp-vite/basic/package.json', { name: 'fixture-basic', devDependencies: { 'weapp-vite': 'workspace:*' } })
     await write('templates/example/package.json', { name: 'template-example' })
     const packages = await readWorkspace(root)
-    expect([...affectedPackages(['test/fixture-projects/weapp-vite/basic/src/index.ts'], packages)].sort()).toEqual(['fixture-basic', 'weapp-vite'])
-    expect([...affectedPackages(['templates/example/src/index.ts'], packages)].sort()).toEqual(['create-weapp-vite', 'template-example'])
+    expect([...analyzePackageImpact(['test/fixture-projects/weapp-vite/basic/src/index.ts'], packages).affected].sort()).toEqual(['fixture-basic', 'weapp-vite'])
+    expect([...analyzePackageImpact(['templates/example/src/index.ts'], packages).affected].sort()).toEqual(['create-weapp-vite', 'template-example'])
     for (const file of ['e2e/scripts/suiteRunner.ts', 'e2e/utils/automator.ts']) {
-      const affected = affectedPackages([file], packages)
+      const { affected } = analyzePackageImpact([file], packages)
       for (const name of names.filter(name => !['create-weapp-vite', 'unrelated'].includes(name))) {
         expect(affected.has(name)).toBe(true)
       }
@@ -124,8 +124,10 @@ it('routes shared fixtures back to their test owners and keeps E2E helper dist p
     }
     const all = packages.map(item => item.name).sort()
     for (const file of ['scripts/unmapped.ts', 'e2e/new-kind/input.json', 'test/fixture-projects/unmapped/input.wxml', 'skills/unmapped/SKILL.md']) {
-      expect([...affectedPackages([file], packages)].sort()).toEqual(all)
+      const impact = analyzePackageImpact([file], packages)
+      expect([...impact.affected].sort()).toEqual(all)
+      expect(impact.fallback).toEqual({ reason: 'unmapped-cross-directory', files: [file] })
     }
-    expect([...affectedPackages(['docs/guide.md'], packages)]).toEqual([])
+    expect([...analyzePackageImpact(['docs/guide.md'], packages).affected]).toEqual([])
   })
 })

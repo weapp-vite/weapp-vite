@@ -195,6 +195,22 @@ describe('Turbo release cache contract', () => {
     expect(await project.read('packages/library/.runs/check')).toBe('run\nrun\n')
   }, 60_000)
 
+  it('caches audited pure tests and invalidates their source, configuration and toolchain inputs', async () => {
+    const project = await fixture()
+    const baseline = await project.plan('test:pure')
+    expect(baseline.resolvedTaskDefinition.cache).toBe(true)
+    await project.run('test:pure')
+    await project.run('test:pure')
+    expect(await project.read('packages/library/.runs/pure')).toBe('run\n')
+    for (const file of ['packages/library/src/index.js', 'packages/library/vitest.config.mts', 'vitest.coverage.ts']) {
+      const original = await project.read(file)
+      await project.write(file, `${original}\nchanged\n`)
+      expect((await project.plan('test:pure')).hash, file).not.toBe(baseline.hash)
+      await project.write(file, original)
+    }
+    expect((await project.plan('test:pure', undefined, { REPOCTL_RELEASE_NODE_VERSION: 'different' })).hash).not.toBe(baseline.hash)
+  }, 60_000)
+
   it('always rebuilds Dashboard without restoring its tracked generated declarations', async () => {
     const project = await fixture()
     const name = '@weapp-vite/dashboard'

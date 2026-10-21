@@ -40,6 +40,7 @@
     "build": "tsdown",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run -c vitest.config.ts",
+    "test:pure": "vitest run -c vitest.config.ts --coverage.enabled=false --maxWorkers=1",
     "test:types": "pnpm run test:types:check",
     "test:types:check": "tsd --files \"test-d/**/*.test-d.ts\"",
     "lint": "eslint ."
