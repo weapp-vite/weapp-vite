@@ -6,6 +6,7 @@ export interface DevProcessStopOptions {
 export interface DevProcessForcedShutdown {
   gracefulTimeoutMs: number
   cancelled?: { reason: unknown }
+  requestError?: unknown
 }
 
 export interface DevProcessExitInfo {
@@ -33,10 +34,10 @@ export function createDevProcessShutdownFailure(info: DevProcessExitInfo, summar
   if (forced) {
     return new DevProcessGracefulShutdownError(formatMessage(
       `Dev process graceful session cleanup did not complete before its deadline, cancellation, or forced termination: ${summary}; gracefulTimeoutMs=${forced.gracefulTimeoutMs}; cancelled=${Boolean(forced.cancelled)}`,
-    ), forced, { cause: forced.cancelled?.reason ?? info.error })
+    ), forced, { cause: forced.requestError ?? forced.cancelled?.reason ?? info.error })
   }
   if (info.exitCode !== 0 || info.signal) {
-    return new Error(formatMessage(`Dev process failed during IPC shutdown: ${summary}`), { cause: info.error })
+    return new Error(formatMessage(`Dev process failed during graceful shutdown: ${summary}`), { cause: info.error })
   }
 }
 

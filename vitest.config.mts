@@ -169,6 +169,7 @@ const projects = [
         'e2e/utils/dev-process.cleanup.test.ts',
         'e2e/utils/dev-process.graceful.test.ts',
         'e2e/utils/dev-process.watch-close.test.ts',
+        'e2e/utils/runtimeDevProcess.integration.test.ts',
         'e2e/utils/nativeBatchSettlementPlugin.test.ts',
         'e2e/utils/devProcessCleanup/darwinProcesses.test.ts',
         'e2e/utils/devProcessCleanup/windowsTermination.test.ts',

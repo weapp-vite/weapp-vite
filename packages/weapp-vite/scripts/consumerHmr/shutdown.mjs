@@ -9,9 +9,9 @@ import { promisify } from 'node:util'
 const run = promisify(execFile)
 const preload = new URL('./stdinPreload.mjs', import.meta.url).href
 
-/** 保留既有 Node 参数，让所有实际开发宿主通过原生 stdin EOF 正常关闭。 */
-export function consumerProcessEnvironment(operation, inherited = process.env) {
-  if (operation === 'build-watch') {
+/** 显式控制协议不激活 stdin；旧 EOF 宿主继续保留既有 Node 参数与关闭路径。 */
+export function consumerProcessEnvironment(operation, inherited = process.env, { explicitControl = false } = {}) {
+  if (operation === 'build-watch' || explicitControl) {
     return { ...inherited }
   }
   return { ...inherited, CI: 'false', NODE_OPTIONS: [inherited.NODE_OPTIONS, `--import=${preload}`].filter(Boolean).join(' ') }
@@ -108,20 +108,26 @@ async function forceStop(child) {
 }
 
 /** 正常退出、输出排空和成功退出码缺一不可；强制回收只能保留为失败证据。 */
-export async function stopConsumerProcess({ child, done, operation, toolchain, timeoutMs = 10_000, requestWatchStop = stopWatch, forceCleanup = forceStop }) {
+export async function stopConsumerProcess({ child, done, operation, toolchain, timeoutMs = 10_000, requestShutdown, disposeShutdown, requestWatchStop = stopWatch, forceCleanup = forceStop }) {
   // EOF 可能同步触发 EPIPE，必须先为每条流登记终结与错误监听。
   const resources = [
     done,
     finished(child.stdout, { cleanup: true }),
     finished(child.stderr, { cleanup: true }),
-    ...operation === 'build-watch' ? [] : [finished(child.stdin, { cleanup: true, readable: false })],
+    ...operation === 'build-watch' || requestShutdown ? [] : [finished(child.stdin, { cleanup: true, readable: false })],
   ]
   const completion = Promise.all(resources).then(([result]) => result)
   // 提前消费拒绝，避免关闭请求本身抛错时遗留无人处理的 stream 错误。
   void completion.catch(() => {})
+  let failure
+  let disposalFailure
   try {
     const result = await within((async () => {
-      if (operation === 'build-watch') {
+      if (requestShutdown) {
+        // 父 CLI 可先退出；完全排空前仍通过本任务 token 关闭叶宿主。
+        await Promise.race([Promise.resolve().then(requestShutdown), completion])
+      }
+      else if (operation === 'build-watch') {
         await requestWatchStop(child, toolchain)
       }
       else if (isHeld(child)) {
@@ -132,8 +138,8 @@ export async function stopConsumerProcess({ child, done, operation, toolchain, t
     if (result.error) {
       throw result.error
     }
-    if (operation !== 'build-watch') {
-      assert.deepEqual(result, { code: 0, signal: null }, 'Development EOF must finish successfully without a terminating signal')
+    if (operation !== 'build-watch' || requestShutdown) {
+      assert.deepEqual(result, { code: 0, signal: null }, 'Development shutdown must finish successfully without a terminating signal')
     }
   }
   catch (error) {
@@ -159,6 +165,25 @@ export async function stopConsumerProcess({ child, done, operation, toolchain, t
     }
     child.stdout.destroy()
     child.stderr.destroy()
-    throw new AggregateError(errors, `Native ${toolchain} ${operation} did not close cleanly`, { cause: error })
+    failure = new AggregateError(errors, `Native ${toolchain} ${operation} did not close cleanly`, { cause: error })
+  }
+  finally {
+    // 子进程尚持有资源时保留控制配置；已退出后仍必须关闭本任务的测试端口。
+    if (!isHeld(child)) {
+      try {
+        await disposeShutdown?.()
+      }
+      catch (error) {
+        disposalFailure = { error }
+      }
+    }
+  }
+  if (disposalFailure) {
+    throw failure
+      ? new AggregateError([failure, disposalFailure.error], 'Consumer shutdown and control disposal failed', { cause: failure })
+      : disposalFailure.error
+  }
+  if (failure) {
+    throw failure
   }
 }

@@ -41,13 +41,21 @@ function controlledProcess() {
   return { child, done: result.promise, resolve: result.resolve, forceCleanup, output: () => ({ stdout, stderr }) }
 }
 
-it('preserves inherited Node options and gives native hosts an EOF consumer outside CI suppression', () => {
+it('preserves inherited Node options and gives legacy hosts an EOF consumer outside CI suppression', () => {
   const inherited = { CI: 'true', NODE_OPTIONS: '--no-warnings', OTHER: 'preserved' }
   const environment = consumerProcessEnvironment('stateful-dev', inherited)
   expect(environment).toMatchObject({ CI: 'false', OTHER: 'preserved' })
   expect(environment.NODE_OPTIONS).toMatch(/^--no-warnings --import=file:.*\/stdinPreload\.mjs$/)
   expect(inherited).toEqual({ CI: 'true', NODE_OPTIONS: '--no-warnings', OTHER: 'preserved' })
   expect(consumerProcessEnvironment('build-watch', inherited)).toEqual(inherited)
+})
+
+it.each(['dev', 'stateful-dev', 'build-watch'])('does not activate stdin or replace CI for explicit %s host control', (operation) => {
+  const inherited = { CI: 'true', NODE_OPTIONS: '--no-warnings', OTHER: 'preserved' }
+  const environment = consumerProcessEnvironment(operation, inherited, { explicitControl: true })
+  expect(environment).toEqual(inherited)
+  expect(environment).not.toBe(inherited)
+  expect(environment.NODE_OPTIONS).not.toContain('stdinPreload')
 })
 
 it('uses EOF to let a real Node host finish cleanup and collect its final output', async () => {
@@ -218,6 +226,87 @@ it('preserves the build-watch stop path and does not request EOF', async () => {
   await stopConsumerProcess({ ...fixture, operation: 'build-watch', toolchain: 'vite', requestWatchStop })
   expect(requestWatchStop).toHaveBeenCalledWith(fixture.child, 'vite')
   expect(end).not.toHaveBeenCalled()
+})
+
+it('uses explicit native watch control and waits for exit plus both final output streams', async () => {
+  const fixture = controlledProcess()
+  const requestShutdown = vi.fn(async () => undefined)
+  const disposeShutdown = vi.fn(async () => undefined)
+  const requestWatchStop = vi.fn()
+  const end = vi.spyOn(fixture.child.stdin, 'end')
+  let stopped = false
+  const stopping = stopConsumerProcess({ ...fixture, operation: 'build-watch', toolchain: 'vite-plus', requestShutdown, disposeShutdown, requestWatchStop })
+    .then(() => stopped = true)
+  await setImmediate()
+  expect(requestShutdown).toHaveBeenCalledOnce()
+  expect(requestWatchStop).not.toHaveBeenCalled()
+  expect(end).not.toHaveBeenCalled()
+  expect(stopped).toBe(false)
+  fixture.child.exitCode = 0
+  fixture.resolve({ code: 0, signal: null })
+  fixture.child.stdout.end('late native stdout')
+  await setImmediate()
+  expect(stopped).toBe(false)
+  expect(disposeShutdown).not.toHaveBeenCalled()
+  fixture.child.stderr.end('late native stderr')
+  await stopping
+  expect(fixture.output()).toEqual({ stdout: 'late native stdout', stderr: 'late native stderr' })
+  expect(disposeShutdown).toHaveBeenCalledOnce()
+})
+
+it('requires a zero native watch exit even when host-control acknowledges success', async () => {
+  const fixture = controlledProcess()
+  const requestShutdown = vi.fn(async () => {
+    fixture.child.exitCode = 1
+    fixture.resolve({ code: 1, signal: null })
+    fixture.child.stdout.end()
+    fixture.child.stderr.end('native watch cleanup failure')
+  })
+  await expect(stopConsumerProcess({ ...fixture, operation: 'build-watch', toolchain: 'vite', requestShutdown }))
+    .rejects
+    .toMatchObject({ cause: { message: expect.stringContaining('finish successfully') } })
+  expect(fixture.output().stderr).toBe('native watch cleanup failure')
+})
+
+it('requests token-owned leaf shutdown after its parent CLI has already exited', async () => {
+  const fixture = controlledProcess()
+  fixture.child.exitCode = 0
+  fixture.resolve({ code: 0, signal: null })
+  const requestShutdown = vi.fn(async () => {
+    fixture.child.stdout.end('remaining native leaf output')
+    fixture.child.stderr.end('remaining native leaf diagnostic')
+  })
+  const disposeShutdown = vi.fn(async () => undefined)
+  await stopConsumerProcess({ ...fixture, operation: 'dev', toolchain: 'vite-plus', requestShutdown, disposeShutdown })
+  expect(requestShutdown).toHaveBeenCalledOnce()
+  expect(disposeShutdown).toHaveBeenCalledOnce()
+  expect(fixture.output()).toEqual({ stdout: 'remaining native leaf output', stderr: 'remaining native leaf diagnostic' })
+})
+
+it('preserves the host-control error and a separate disposal failure after forced cleanup', async () => {
+  const fixture = controlledProcess()
+  const original = new Error('native closeWatcher failed')
+  const disposal = new Error('control directory removal failed')
+  const requestShutdown = vi.fn(async () => {
+    throw original
+  })
+  const disposeShutdown = vi.fn(async () => {
+    throw disposal
+  })
+  const forceCleanup = vi.fn(async () => {
+    fixture.child.exitCode = 1
+    fixture.resolve({ code: 1, signal: null })
+    fixture.child.stdout.end()
+    fixture.child.stderr.end('original native failure')
+  })
+  await expect(stopConsumerProcess({ ...fixture, operation: 'build-watch', toolchain: 'vite-plus', requestShutdown, disposeShutdown, forceCleanup }))
+    .rejects
+    .toMatchObject({
+      errors: [expect.objectContaining({ cause: original }), disposal],
+      cause: expect.objectContaining({ cause: original }),
+    })
+  expect(forceCleanup).toHaveBeenCalledOnce()
+  expect(disposeShutdown).toHaveBeenCalledOnce()
 })
 
 it('rejects retained or changed private configuration without repairing it in the test', async () => {

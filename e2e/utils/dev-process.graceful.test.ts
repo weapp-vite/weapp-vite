@@ -143,7 +143,7 @@ it('reports a real shutdown cleanup failure after restoring resources without re
     const failure: unknown = await stopping.catch(error => error)
     expect(failure).toBeInstanceOf(Error)
     expect(failure).toMatchObject({
-      message: expect.stringContaining('IPC shutdown: exitCode=1, signal=none'),
+      message: expect.stringContaining('graceful shutdown: exitCode=1, signal=none'),
       cause: { exitCode: 1, stderr: expect.stringContaining('shutdown cleanup failure: fixture cleanup failed') },
     })
     expect((failure as Error).message).toContain('classic owner released before shutdown failure')

@@ -1,3 +1,4 @@
+import type { startDevProcess } from '../utils/dev-process'
 import type { DomCheckpoint } from '../utils/domAcceptance/types'
 import { rename } from 'node:fs/promises'
 import path from 'node:path'
@@ -7,13 +8,13 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { resolveRuntimeCompilerCli } from '../../packages/weapp-vite/scripts/consumerRuntimeHost.mjs'
 import { launchAutomator, reconnectAutomator } from '../utils/automator'
 import { runCleanupSteps } from '../utils/cleanupSteps'
-import { startDevProcess } from '../utils/dev-process'
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { createDevBuildCompletion } from '../utils/devBuildCompletion'
 import { createDomAcceptance } from '../utils/domAcceptance'
 import { replaceFileByRename, waitForFileContains, waitForStatefulHmrControl } from '../utils/hmr-helpers'
 import { createNativeHmrPublication } from '../utils/nativeHmrPublication'
 import { captureNativePublication } from '../utils/nativePublication'
+import { startRuntimeDevProcess } from '../utils/runtimeDevProcess'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import { createStatefulHmrProject } from '../utils/statefulHmrProject'
 import { stylesheetFallbackCheckpoints, verifyStylesheetFallback } from './statefulHmrDom/stylesheetFallback'
@@ -201,7 +202,7 @@ for (const host of hosts) {
         }
         const cli = resolveRuntimeCompilerCli(host!, app, { repositoryRoot: ROOT })
         devReleased = false
-        dev = startDevProcess(process.execPath, host === 'wv'
+        dev = await startRuntimeDevProcess(host, host === 'wv'
           ? [cli, 'dev', app, '--platform', 'weapp', '--skipNpm']
           : [cli, 'dev', '--config', 'vite.stateful.config.mts', '--host', '127.0.0.1', '--port', '0'], {
           cwd: app,
@@ -240,7 +241,7 @@ for (const host of hosts) {
             await fixture?.cleanup()
           } },
         ])
-      })
+      }, 240_000)
 
       it('hands unsupported updates and rapid saves to classic, then keeps classic across restore and config reload', async (ctx) => {
         if (reason === 'stylesheet-output') {

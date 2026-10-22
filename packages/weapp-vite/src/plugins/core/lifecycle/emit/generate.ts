@@ -571,17 +571,6 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
           }
           state.hmrState.hasBuiltOnce = true
         }
-        if (!nativeDevBundle) {
-          const publicationDependencies = requiresClassicRootPublication(state)
-            ? collectNativePublicationDependencies(rolldownBundle, { rootFileName: 'app.js', requestGlobalsPrelude: shouldInjectRequestGlobalsPrelude })
-            : new Set<string>()
-          activeImportedChunkIds = prunePartialHmrStableSharedChunks(rolldownBundle, state, publicationDependencies)
-          retainFullEntryHmrChunks(rolldownBundle, state)
-          // 模板批次没有 script emit 也可能保留页面发射计划；根与 prelude 的依赖不能随 shared 优化早退。
-          registerNativePublicationDependencies(rolldownBundle, publicationDependencies, ctx.runtimeState?.build?.hmr?.lastEmittedChunkFileNames, 'app.js')
-          pruneUneventedDevHmrChunks(ctx, rolldownBundle)
-        }
-
         const matchSubPackage = createSubPackageMatcher(subPackageRoots)
         const resolveBundleChunk = createBundleChunkResolver(rolldownBundle)
 
@@ -726,6 +715,18 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
               }
             : undefined,
         })
+
+        if (!nativeDevBundle) {
+          // 共享转换依赖完整 importer 图；先统一最终路径，再按本代发布计划裁剪。
+          const publicationDependencies = requiresClassicRootPublication(state)
+            ? collectNativePublicationDependencies(rolldownBundle, { rootFileName: 'app.js', requestGlobalsPrelude: shouldInjectRequestGlobalsPrelude })
+            : new Set<string>()
+          activeImportedChunkIds = prunePartialHmrStableSharedChunks(rolldownBundle, state, publicationDependencies)
+          retainFullEntryHmrChunks(rolldownBundle, state)
+          // 模板批次没有 script emit 也可能保留页面发射计划；根与 prelude 的依赖不能随 shared 优化早退。
+          registerNativePublicationDependencies(rolldownBundle, publicationDependencies, ctx.runtimeState?.build?.hmr?.lastEmittedChunkFileNames, 'app.js')
+          pruneUneventedDevHmrChunks(ctx, rolldownBundle)
+        }
 
         if (shouldWarnOnDuplicate && redundantBytesTotal > duplicateWarningBytes) {
           logger.warn(`[分包] 分包复制共享模块产生冗余体积 ${formatBytes(redundantBytesTotal)}，已超过阈值 ${formatBytes(duplicateWarningBytes)}，建议调整分包划分或运行 weapp-vite analyze 定位问题。`)

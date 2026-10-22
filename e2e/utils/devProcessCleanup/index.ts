@@ -10,6 +10,7 @@ interface DevProcessCleanupOptions {
   pid?: number
   isRootHeld: () => boolean
   disconnectRoot: () => boolean
+  requestRootShutdown?: () => Promise<void>
   settledExit: Promise<unknown>
   /** 根未收到强制信号且全部资源排空后，通知调用方核验 IPC 退出状态。 */
   onIpcExit?: () => void
@@ -201,12 +202,22 @@ export function createDevProcessCleanup(options: DevProcessCleanupOptions) {
       captured = true
     }
     assertCaptureComplete()
-    if (!disconnected && options.isRootHeld() && options.disconnectRoot()) {
+    if (!disconnected && (options.requestRootShutdown || (options.isRootHeld() && options.disconnectRoot()))) {
       disconnected = true
       const gracefulTimeoutMs = stopOptions.gracefulTimeoutMs ?? forceKillDelayMs
-      const outcome = await traceCleanupStage('dev-ipc-exit', () => waitForGracefulExit(options.settledExit, { ...stopOptions, gracefulTimeoutMs }), { timeoutMs: gracefulTimeoutMs })
-      if (outcome !== 'exited') {
-        forcedShutdown = { gracefulTimeoutMs, ...(outcome === 'cancelled' ? { cancelled: { reason: stopOptions.signal?.reason } } : {}) }
+      let requestFailure: { error: unknown } | undefined
+      const gracefulExit = options.requestRootShutdown
+        ? Promise.race([
+            options.settledExit,
+            Promise.resolve().then(options.requestRootShutdown).then(() => options.settledExit),
+          ]).catch((error: unknown) => {
+            // 协议失败先保存，随后仍按登记身份释放进程，不能跳过资源收尾。
+            requestFailure = { error }
+          })
+        : options.settledExit
+      const outcome = await traceCleanupStage('dev-ipc-exit', () => waitForGracefulExit(gracefulExit, { ...stopOptions, gracefulTimeoutMs }), { timeoutMs: gracefulTimeoutMs })
+      if (outcome !== 'exited' || requestFailure) {
+        forcedShutdown = { gracefulTimeoutMs, ...requestFailure ? { requestError: requestFailure.error } : {}, ...(outcome === 'cancelled' ? { cancelled: { reason: stopOptions.signal?.reason } } : {}) }
       }
     }
     forgetExitedRoot()

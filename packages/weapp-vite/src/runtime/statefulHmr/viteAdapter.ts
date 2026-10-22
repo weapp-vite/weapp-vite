@@ -14,6 +14,7 @@ import {
 import path from 'pathe'
 import { getHmrRuntimeCapabilityFallback, HmrRuntimeCapabilityError } from '../hmrRuntimeCapabilities'
 import { assertStatefulHmrRuntimeOutput, createStatefulHmrRolldownRuntimeSource } from './commonRuntime'
+import { bindStatefulCssShutdown } from './cssShutdown'
 import { resolveStatefulHmrModuleRoot, toStableModuleId } from './initialModuleGraph'
 import { StatefulHmrOutputPublication } from './outputPublication'
 import { createViteDevEngine } from './viteDevEngine'
@@ -489,6 +490,7 @@ export class StatefulHmrViteAdapter {
     const original = bundledDev.getRolldownOptions.bind(bundledDev)
     bundledDev.getRolldownOptions = async () => {
       const options = await original()
+      options.plugins = await bindStatefulCssShutdown(options.plugins)
       options.cwd = resolveStatefulHmrModuleRoot(this.config.root, options.cwd)
       const output = Array.isArray(options.output)
         ? (options.output[0] ??= {})
