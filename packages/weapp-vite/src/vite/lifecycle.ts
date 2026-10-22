@@ -1,5 +1,6 @@
 import type { InlineConfig, ViteDevServer } from 'vite'
 import type { DevServerCloseRecord } from '../devLifecycle/server'
+import { AsyncLocalStorage } from 'node:async_hooks'
 import { WEAPP_VITE_HOST_RESTART_CONFIG_KEY } from '@weapp-core/constants'
 import { getDevServerCloseRecord, replaceDevServerClose } from '../devLifecycle/server'
 import { getDevShutdownScope } from '../devLifecycle/shutdown'
@@ -11,9 +12,30 @@ interface RestartData {
   dispose?: (status: 'incomplete' | 'failed') => void | Promise<void>
 }
 
+function createHostOperations() {
+  const operations = new AsyncLocalStorage<{ active: boolean }>()
+  return {
+    isInternal: () => operations.getStore()?.active === true,
+    run: async (action: () => Promise<void>) => {
+      const operation = { active: true }
+      return operations.run(operation, async () => {
+        try {
+          await action()
+        }
+        finally {
+          // 重启期间注册的外部回调不能永久继承内部清理权限。
+          operation.active = false
+        }
+      })
+    },
+  }
+}
+
 export interface HostLifecycle {
   readonly restartTask: Promise<void> | undefined
   readonly data: Map<symbol, RestartData>
+  readonly operations: ReturnType<typeof createHostOperations>
+  close: () => Promise<void>
   registerReplacement: (generation: DevServerCloseRecord) => void
 }
 
@@ -94,6 +116,7 @@ export function bindHostLifecycle(server: ViteDevServer, closeSession: (reason: 
   // 只接收本次原生重启传入的私有配置，新的插件实例也能接续同一条宿主链。
   const inlineConfig = server.config.inlineConfig as HostInlineConfig
   const inherited = preparedLifecycle ?? takeHostLifecycle(inlineConfig)
+  const operations = inherited?.operations ?? createHostOperations()
   const inheritedRestart = inherited?.restartTask
   let inheritedRestartSettled = !inheritedRestart
   void inheritedRestart?.then(() => {
@@ -119,17 +142,6 @@ export function bindHostLifecycle(server: ViteDevServer, closeSession: (reason: 
   }
   const replacements = new Set<DevServerCloseRecord>()
   let restartCleanupFailure: { error: unknown } | undefined
-  const lifecycle: HostLifecycle = {
-    data,
-    registerReplacement(replacement) {
-      // 连续原生交接中已成为活动宿主的代由 Vite 持有，不能再次按遗弃代关闭。
-      replacements.delete(getDevServerCloseRecord(server))
-      replacements.add(replacement)
-    },
-    get restartTask() {
-      return restartTask
-    },
-  }
   const discardRestartResources = async (status: 'incomplete' | 'failed') => {
     const active = getDevServerCloseRecord(server)
     const abandoned = [...replacements].filter(replacement => replacement !== active)
@@ -170,11 +182,32 @@ export function bindHostLifecycle(server: ViteDevServer, closeSession: (reason: 
       await finalize?.()
     }
   }
-  const close = (): Promise<void> => closeTask ??= scope
-    ? scope.run('cleanup', closeResources)
-    : closeResources()
+  function close(): Promise<void> {
+    return closeTask ??= scope
+      ? scope.run('cleanup', closeResources)
+      : closeResources()
+  }
+  const lifecycle: HostLifecycle = {
+    data,
+    operations,
+    close,
+    registerReplacement(replacement) {
+      // 连续原生交接中已成为活动宿主的代由 Vite 持有，不能再次按遗弃代关闭。
+      replacements.delete(getDevServerCloseRecord(server))
+      replacements.add(replacement)
+    },
+    get restartTask() {
+      return restartTask
+    },
+  }
 
   replaceDevServerClose(server, close)
+  // 原生宿主为每代登记 EOF/SIGTERM 后各自 process.exit；任何一代都必须等父链收尾。
+  // configureServer（包括用户 hook）失败时仍允许内部局部 close，不能反等父重启。
+  // CLI 已安装命令级 gate，继续由其持有更外层的退出边界。
+  generation.gate ??= closeLocal => inheritedRestart && !inheritedRestartSettled && !operations.isInternal()
+    ? inherited!.close()
+    : closeLocal()
   // 直接使用 Vite 的消费者没有 CLI acquisition gate，父链必须持有未提交的新代。
   inherited?.registerReplacement(generation)
   server.restart = (force) => {
@@ -234,7 +267,8 @@ export function bindHostLifecycle(server: ViteDevServer, closeSession: (reason: 
       }
       await discardRestartResources('incomplete')
     }
-    return restartTask ??= (scope ? scope.run('restart', restart) : restart()).finally(() => {
+    const runRestart = () => operations.run(restart)
+    return restartTask ??= (scope ? scope.run('restart', runRestart) : runRestart()).finally(() => {
       restartTask = undefined
     })
   }
