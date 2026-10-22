@@ -322,6 +322,194 @@ describe('dev process cleanup ownership', () => {
     expect([...fixture.processes.keys()]).toEqual([71, 72])
   })
 
+  it('uses an explicit native shutdown request on Windows and waits for real exit after its receipt', async () => {
+    vi.useFakeTimers()
+    vi.spyOn(process, 'platform', 'get').mockReturnValue('win32')
+    const fixture = mockProcessTree()
+    const request = vi.fn(async () => undefined)
+    const dispose = vi.fn(async () => undefined)
+    const dev = startDevProcess('node', ['native-vite-cli.js'], { ipc: false, gracefulShutdown: request, disposeShutdown: dispose })
+    let stopped = false
+    const stopping = dev.stop(100, { gracefulTimeoutMs: 1_000 })
+    void stopping.then(() => stopped = true)
+    await vi.advanceTimersByTimeAsync(0)
+    expect(request).toHaveBeenCalledOnce()
+    expect(stopped).toBe(false)
+    expect(dispose).not.toHaveBeenCalled()
+    expect(fixture.signals).toEqual([])
+    fixture.finish()
+    await vi.runAllTimersAsync()
+    await stopping
+    expect(dispose).toHaveBeenCalledOnce()
+    expect(dev.stop(100)).toBe(stopping)
+    expect(execaMock).toHaveBeenCalledWith('node', ['native-vite-cli.js'], expect.objectContaining({ ipc: false }))
+  })
+
+  it('retains an explicit host-control failure while cleaning only registered processes', async () => {
+    vi.useFakeTimers()
+    const fixture = mockProcessTree()
+    fixture.ignoreTermPids.clear()
+    const failure = new Error('native host cleanup receipt failed')
+    const request = vi.fn(async () => {
+      throw failure
+    })
+    const dispose = vi.fn(async () => undefined)
+    const dev = startDevProcess('node', ['native-vite-cli.js'], { gracefulShutdown: request, disposeShutdown: dispose })
+    const stopping = dev.stop(100)
+    const result = await settleCleanup(stopping)
+    expect(result).toMatchObject({
+      status: 'rejected',
+      reason: { name: 'DevProcessGracefulShutdownError', cause: failure, evidence: { requestError: failure } },
+    })
+    expect(request).toHaveBeenCalledOnce()
+    expect(dispose).toHaveBeenCalledOnce()
+    expect([...fixture.processes.keys()]).toEqual([71, 72])
+    expect(dev.stop(100)).toBe(stopping)
+    expect(execaMock).toHaveBeenCalledWith('node', ['native-vite-cli.js'], expect.objectContaining({ ipc: false }))
+  })
+
+  it('fails an acknowledged native shutdown that still needs forced termination', async () => {
+    vi.useFakeTimers()
+    const fixture = mockProcessTree()
+    const request = vi.fn(async () => undefined)
+    const dev = startDevProcess('node', ['native-vite-cli.js'], { gracefulShutdown: request })
+    const result = await settleCleanup(dev.stop(100, { gracefulTimeoutMs: 100 }))
+    expect(result).toMatchObject({
+      status: 'rejected',
+      reason: { name: 'DevProcessGracefulShutdownError', evidence: { gracefulTimeoutMs: 100 } },
+    })
+    expect(request).toHaveBeenCalledOnce()
+    expect([...fixture.processes.keys()]).toEqual([71, 72])
+  })
+
+  it('keeps control disposal registered for retry without repeating native shutdown', async () => {
+    vi.useFakeTimers()
+    const fixture = mockProcessTree()
+    const request = vi.fn(async () => fixture.finish())
+    const failure = new Error('native control temporary config still in use')
+    const dispose = vi.fn(async () => undefined).mockRejectedValueOnce(failure)
+    const kill = vi.spyOn(process, 'kill').mockImplementation(() => true)
+    const dev = startDevProcess('node', ['native-vite-cli.js'], { gracefulShutdown: request, disposeShutdown: dispose })
+    const stopping = dev.stop(0)
+    expect(dev.stop(0)).toBe(stopping)
+    expect(await settleCleanup(stopping)).toEqual({ status: 'rejected', reason: failure })
+    expect(await settleCleanup(cleanupTrackedDevProcesses(0))).toEqual({ status: 'fulfilled', value: undefined })
+    expect(dispose).toHaveBeenCalledTimes(2)
+    expect(request).toHaveBeenCalledOnce()
+    expect(kill).not.toHaveBeenCalled()
+    await dev.stop(0)
+    expect(dispose).toHaveBeenCalledTimes(2)
+  })
+
+  it('preserves native shutdown failure while retrying failed control disposal', async () => {
+    vi.useFakeTimers()
+    const fixture = mockProcessTree()
+    fixture.ignoreTermPids.clear()
+    const original = new Error('native host cleanup failed')
+    const disposal = new Error('native control directory removal failed')
+    const request = vi.fn(async () => {
+      throw original
+    })
+    const dispose = vi.fn(async () => undefined).mockRejectedValueOnce(disposal)
+    const dev = startDevProcess('node', ['native-vite-cli.js'], { gracefulShutdown: request, disposeShutdown: dispose })
+    const first = await settleCleanup(dev.stop(100))
+    expect(first).toMatchObject({
+      status: 'rejected',
+      reason: { errors: [expect.objectContaining({ cause: original }), disposal] },
+    })
+    const signals = [...fixture.signals]
+    await expect(cleanupTrackedDevProcesses(100)).rejects.toMatchObject({ cause: original })
+    expect(dispose).toHaveBeenCalledTimes(2)
+    expect(request).toHaveBeenCalledOnce()
+    expect(fixture.signals).toEqual(signals)
+    await expect(cleanupTrackedDevProcesses(100)).resolves.toBeUndefined()
+  })
+
+  it('rejects a zero exit when its native cleanup receipt never arrives', async () => {
+    vi.useFakeTimers()
+    const owned = createChild()
+    execaMock.mockReturnValue(owned.child)
+    const request = vi.fn(() => new Promise<void>(() => {}))
+    const dispose = vi.fn(async () => undefined)
+    const dev = startDevProcess('node', ['native-vite-cli.js'], { gracefulShutdown: request, disposeShutdown: dispose })
+    owned.exit()
+    const result = await settleCleanup(dev.stop(0, { gracefulTimeoutMs: 100 }))
+    expect(result).toMatchObject({ status: 'rejected', reason: { name: 'DevProcessGracefulShutdownError' } })
+    expect(request).toHaveBeenCalledOnce()
+    expect(dispose).toHaveBeenCalledOnce()
+  })
+
+  it('preserves a native receipt rejection that arrives after zero exit and output drain', async () => {
+    vi.useFakeTimers()
+    const owned = createChild()
+    execaMock.mockReturnValue(owned.child)
+    const receipt = Promise.withResolvers<void>()
+    const failure = new Error('late native cleanup receipt failed')
+    const dev = startDevProcess('node', ['native-vite-cli.js'], { gracefulShutdown: () => receipt.promise })
+    owned.exit()
+    setTimeout(() => receipt.reject(failure), 10)
+    const stopping = dev.stop(0, { gracefulTimeoutMs: 100 })
+    expect(await settleCleanup(stopping)).toMatchObject({
+      status: 'rejected',
+      reason: { cause: failure, evidence: { requestError: failure } },
+    })
+    expect(dev.stop()).toBe(stopping)
+  })
+
+  it.each([1, 0])('reports an unsuccessful startup with exitCode=%s before the receipt deadline without replacing its error', async (exitCode) => {
+    vi.useFakeTimers()
+    const owned = createChild()
+    const failure = Object.assign(new Error('native startup failed'), { exitCode, stderr: 'original startup diagnostic' })
+    const child = Object.assign(owned.child.then(() => {
+      throw failure
+    }), {
+      pid: owned.child.pid,
+      all: owned.child.all,
+      nodeChildProcess: owned.child.nodeChildProcess,
+    })
+    execaMock.mockReturnValue(child)
+    const dev = startDevProcess('node', ['native-vite-cli.js'], { gracefulShutdown: () => new Promise<void>(() => {}) })
+    owned.exit()
+    let result: unknown
+    void dev.stop(0).catch(error => result = error)
+    await vi.advanceTimersByTimeAsync(0)
+    expect(result).toMatchObject({ name: 'Error', cause: failure, message: expect.stringContaining('original startup diagnostic') })
+    expect(result).not.toBeInstanceOf(DevProcessGracefulShutdownError)
+  })
+
+  it('rejects a disconnected explicit IPC channel even when fallback termination exits zero', async () => {
+    vi.useFakeTimers()
+    const fixture = mockProcessTree()
+    const dev = startDevProcess('node', ['wv.js'], { ipc: true })
+    const result = await settleCleanup(dev.stop(0))
+    expect(result).toMatchObject({
+      status: 'rejected',
+      reason: { evidence: { requestError: expect.objectContaining({ message: expect.stringContaining('IPC channel is disconnected') }) } },
+    })
+    expect(fixture.owned.child.nodeChildProcess.exitCode).toBe(0)
+    expect([...fixture.processes.keys()]).toEqual([71, 72])
+  })
+
+  it.each([1, 0])('retains an already-failed explicit IPC process with exitCode=%s before stop', async (exitCode) => {
+    const owned = createChild()
+    const failure = Object.assign(new Error('IPC process failed before stop'), { exitCode, stderr: 'original IPC exit diagnostic' })
+    const child = Object.assign(owned.child.then(() => {
+      throw failure
+    }), {
+      pid: owned.child.pid,
+      all: owned.child.all,
+      nodeChildProcess: owned.child.nodeChildProcess,
+    })
+    execaMock.mockReturnValue(child)
+    const dev = startDevProcess('node', ['wv.js'], { ipc: true })
+    owned.exit()
+    await expect(dev.stop(0)).rejects.toMatchObject({
+      cause: failure,
+      message: expect.stringContaining('original IPC exit diagnostic'),
+    })
+    await expect(cleanupTrackedDevProcesses(0)).resolves.toBeUndefined()
+  })
+
   it('reports incomplete Windows IPC cleanup after force killing only its held child', async () => {
     vi.useFakeTimers()
     vi.spyOn(process, 'platform', 'get').mockReturnValue('win32')

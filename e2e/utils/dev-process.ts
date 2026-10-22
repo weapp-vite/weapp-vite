@@ -6,7 +6,7 @@ import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { execa } from 'execa'
 import { createDevProcessCleanup } from './devProcessCleanup'
-import { createDevProcessShutdownFailure, DEV_PROCESS_GRACEFUL_TIMEOUT_MS } from './devProcessCleanup/shutdown'
+import { createDevProcessShutdownFailure, DEV_PROCESS_GRACEFUL_TIMEOUT_MS, requestDevProcessShutdown } from './devProcessCleanup/shutdown'
 import { createDevProcessDiagnostics } from './devProcessDiagnostics'
 import { captureDevProcessOutput } from './devProcessStdio'
 import { createDevProcessTrace } from './devProcessTrace'
@@ -26,6 +26,13 @@ interface DevProcessSpawnInfo {
   args: readonly string[]
   command: string
   cwd?: string | URL
+}
+
+type DevProcessOptions = Options & {
+  /** 原生宿主通过明确控制协议关闭，不能按 Node 可执行文件推定其支持 IPC。 */
+  gracefulShutdown?: () => Promise<void>
+  /** 仅在登记进程与输出均已排空后释放测试控制通道和临时配置。 */
+  disposeShutdown?: () => Promise<void>
 }
 
 const TRACKED_DEV_DISPOSERS = new Set<(forceKillDelayMs: number) => Promise<void>>()
@@ -88,8 +95,9 @@ export async function cleanupTrackedDevProcesses(forceKillDelayMs = 3_000) {
 export function startDevProcess(
   command: string,
   args: readonly string[],
-  options?: Options,
+  options?: DevProcessOptions,
 ): DevProcessController {
+  const { gracefulShutdown, disposeShutdown, ...spawnOptions } = options ?? {}
   const spawnInfo: DevProcessSpawnInfo = {
     args,
     command,
@@ -105,9 +113,9 @@ export function startDevProcess(
   const spawn = () => {
     try {
       return execa(command, args, {
-        ...captureDevProcessOutput(options),
+        ...captureDevProcessOutput(spawnOptions),
         // Windows 没有可捕获的 SIGTERM；直接 Node 入口通过 IPC 正常释放开发会话。
-        ipc: options?.ipc ?? (command === process.execPath || /(?:^|[/\\])node(?:\.exe)?$/i.test(command)),
+        ipc: options?.ipc ?? (!gracefulShutdown && (command === process.execPath || /(?:^|[/\\])node(?:\.exe)?$/i.test(command))),
         env: options?.env ?? process.env,
         extendEnv: false,
       })
@@ -220,6 +228,7 @@ export function startDevProcess(
   const cleanup = createDevProcessCleanup({
     pid: child.pid,
     settledExit,
+    requestRootShutdown: gracefulShutdown ? () => requestDevProcessShutdown(gracefulShutdown, settledExit) : undefined,
     onIpcExit: () => {
       exitedAfterIpc = true
     },
@@ -229,6 +238,9 @@ export function startDevProcess(
     isRootHeld: () => !exited && child.nodeChildProcess?.exitCode == null && child.nodeChildProcess?.signalCode == null,
     disconnectRoot: () => {
       if (!child.nodeChildProcess?.connected) {
+        if (options?.ipc === true) {
+          throw new Error('IPC channel is disconnected before graceful shutdown.')
+        }
         return false
       }
       child.nodeChildProcess.disconnect()
@@ -245,19 +257,28 @@ export function startDevProcess(
     }
     if (!stopTask) {
       // 并发调用共享同一次清理；只有核验退出和输出排空后才撤销登记。
-      const cleanupTask = cleanup(forceKillDelayMs, { ...options, gracefulTimeoutMs: options.gracefulTimeoutMs ?? DEV_PROCESS_GRACEFUL_TIMEOUT_MS }).then(() => {
+      let shutdownFailure: unknown
+      const cleanupTask = cleanup(forceKillDelayMs, { ...options, gracefulTimeoutMs: options.gracefulTimeoutMs ?? DEV_PROCESS_GRACEFUL_TIMEOUT_MS }).then(async () => {
+        if (forcedShutdown || exitedAfterIpc || gracefulShutdown || spawnOptions.ipc === true) {
+          const info = await settledExit
+          shutdownFailure = createDevProcessShutdownFailure(info, formatExitInfo(info), message => appendRecentOutput(message, outputChunks, spawnInfo), forcedShutdown)
+        }
+        try {
+          await disposeShutdown?.()
+        }
+        catch (error) {
+          throw shutdownFailure
+            ? new AggregateError([shutdownFailure, error], 'Development shutdown and control disposal failed', { cause: shutdownFailure })
+            : error
+        }
         TRACKED_DEV_DISPOSERS.delete(stop)
       }).catch((error: unknown) => {
         stopTask = undefined
         throw withTraceFailure(error)
       })
-      stopTask = cleanupTask.then(async () => {
-        if (forcedShutdown || exitedAfterIpc) {
-          const info = await settledExit
-          const failure = createDevProcessShutdownFailure(info, formatExitInfo(info), message => appendRecentOutput(message, outputChunks, spawnInfo), forcedShutdown)
-          if (failure) {
-            throw withTraceFailure(failure)
-          }
+      stopTask = cleanupTask.then(() => {
+        if (shutdownFailure) {
+          throw withTraceFailure(shutdownFailure)
         }
         if (trace?.getFailure()) {
           throw trace.getFailure()

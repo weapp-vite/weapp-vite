@@ -1,15 +1,16 @@
+import type { startDevProcess } from '../utils/dev-process'
 import path from 'node:path'
 import { fs } from '@weapp-core/shared/node'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { resolveRuntimeCompilerCli, selectClassicRuntimeHost } from '../../packages/weapp-vite/scripts/consumerRuntimeHost.mjs'
 import { launchAutomator, reconnectAutomator } from '../utils/automator'
 import { runCleanupSteps } from '../utils/cleanupSteps'
-import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { createDomAcceptance } from '../utils/domAcceptance'
 import { replaceFileByRename, waitForFileContains } from '../utils/hmr-helpers'
 import { cleanupResidualDevtoolsProcesses, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
+import { startRuntimeDevProcess } from '../utils/runtimeDevProcess'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 
 const ROOT = path.resolve(import.meta.dirname, '../..')
@@ -157,7 +158,7 @@ for (const host of hosts) {
         : host.endsWith('-watch')
           ? [cli, 'build', '--watch', '--config', 'vite.plugin.config.mts']
           : [cli, 'dev', '--config', 'vite.plugin.config.mts', '--host', '127.0.0.1', '--port', '0']
-      devProcess = startDevProcess(process.execPath, args, {
+      devProcess = await startRuntimeDevProcess(compilerHost, args, {
         all: true,
         cwd: APP_ROOT,
         env: createDevProcessEnv(),
@@ -194,7 +195,7 @@ for (const host of hosts) {
         { label: 'classic residual dev resources', run: cleanupResidualDevProcesses },
         { label: 'classic residual IDE resources', run: cleanupResidualDevtoolsProcesses },
       ])
-    })
+    }, 240_000)
 
     it('uses direct output and reloads the page instead of preserving its state', async (ctx) => {
       let patchedObserved = false
