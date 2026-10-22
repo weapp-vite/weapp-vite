@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { confirmationConfigurations, createMatrix, metricsForShard, needsSmoke, policy, shards, targetKey } from './contract.mjs'
+import { confirmationConfigurations, createMatrix, metricsForShard, needsSmoke, policy, shards, statusContext, targetKey } from './contract.mjs'
 
 it('freezes 150 metrics into nine disjoint shards on all three OSes', () => {
   const metrics = shards.flatMap(metricsForShard)
@@ -19,6 +19,17 @@ it('deduplicates a SHA independently of PR labels, driver SHA and previous verdi
   expect(targetKey(target)).toBe(targetKey({ ...target, prNumber: 8, driverSha: 'b'.repeat(40), status: 'failure' }))
   expect(targetKey(target)).not.toBe(targetKey({ ...target, headSha: 'b'.repeat(40) }))
   expect(() => targetKey({ ...target, headSha: 'main' })).toThrow()
+})
+
+it.each([
+  ['paired-v3-profile-capability', '8c2e268703caa99eeb0301ecd6488845a6f168b636fd8b64fc83493d1e6ef923'],
+  ['paired-v4-template-consumption', '4b02ed9519e3969e8ff2644f400fef228c218d17a492bda85551068251774290'],
+])('preserves the registered %s identity independently of the runtime-profile contract', (contract, key) => {
+  const target = { headSha: 'a'.repeat(40), baselineSha: policy.baselineSha }
+  expect(policy.samplingContract).toBe('paired-v5-runtime-profile')
+  expect(targetKey(target, contract)).toBe(key)
+  expect(statusContext(target, contract)).toBe(`Performance Nightly / ${key.slice(0, 32)}`)
+  expect(targetKey(target)).not.toBe(key)
 })
 
 describe('smoke path routing', () => {
@@ -48,7 +59,7 @@ it('accepts frozen historical smoke contracts without mixing them into full perf
     stages: shards.map(shard => ({ shard, values: smokeMetrics(shard).map((id: string) => ({ id, ms: 100, output: { pageCount: 1, configDigest: 'a'.repeat(64), templateDigest: 'b'.repeat(64) } })) })),
   }
   expect(() => verifySmoke(report, headSha)).not.toThrow()
-  for (const samplingContract of ['paired-v2-template-shards', 'paired-v3-profile-capability']) {
+  for (const samplingContract of ['paired-v2-template-shards', 'paired-v3-profile-capability', 'paired-v4-template-consumption']) {
     expect(() => verifySmoke({ ...report, samplingContract }, headSha)).not.toThrow()
   }
   expect(() => verifySmoke({ ...report, samplingContract: 'untrusted-contract' }, headSha)).toThrow('conclusion')
