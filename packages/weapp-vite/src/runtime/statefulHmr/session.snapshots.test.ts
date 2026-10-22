@@ -339,6 +339,91 @@ describe('stateful snapshot output transactions', () => {
     }
   }
 
+  const compilerStyleReasonOrders = [
+    { label: 'direct', reasons: ['entry-direct:1'] },
+    { label: 'content', reasons: ['tailwind-content:1'] },
+    { label: 'direct then content', reasons: ['entry-direct:1', 'tailwind-content:1'] },
+    { label: 'content then direct', reasons: ['tailwind-content:1', 'entry-direct:1'] },
+  ]
+
+  it.each(compilerStyleReasonOrders)('keeps unchanged provider CSS stateful after a script-only save ($label)', async ({ reasons }) => {
+    const file = path.join(root, 'src/page.vue')
+    const original = '<script setup>let count = 0; function increment() { count += 1 }</script><template><view /></template>'
+    const changed = original.replace('count += 1', 'count += 2')
+    const session = await start(compiledStylesheetSnapshot('red'), [file], {}, new Map([[file, original]]))
+    await session.whenSettled()
+    const host = getCompilerHmrHost(session.ctx)
+    const prepare = vi.fn(async (_input: WeappCompilerHmrRequest) => ({
+      assets: [{ fileName: 'app.wxss', code: '.stylesheet { color: red; }' }],
+    }))
+    host.register('stylesheet-provider', prepare)
+    const delta = vi.spyOn(StatefulHmrTransport.prototype, 'addDelta').mockImplementation(async (_code, _ids, delivered) => {
+      await delivered?.()
+    })
+    harness.writeOutput.mockClear()
+    host.captureNative(file, changed)
+    for (const reason of reasons) {
+      session.sourceChange(file, 'update', [reason])
+    }
+    expect(harness.callbacks!.onPatch([file], { type: 'Patch', code: 'void 0', filename: 'update.js' })).toBe(true)
+    await vi.advanceTimersByTimeAsync(100)
+    await session.whenSettled()
+
+    expect(prepare).toHaveBeenCalledOnce()
+    expect(prepare.mock.calls[0]?.[0].sources.get(file)).toBe(changed)
+    expect(session.rebuild).not.toHaveBeenCalled()
+    expect(harness.writeOutput).not.toHaveBeenCalled()
+    expect(delta).toHaveBeenCalledOnce()
+    expect(session.classic).not.toHaveBeenCalled()
+    expect(session.runtime.phase).toBe('stateful')
+    expect(session.runtime.fallback).toBeUndefined()
+  })
+
+  it.each(compilerStyleReasonOrders)('hands changed provider CSS from a script class literal to classic ($label)', async ({ reasons }) => {
+    const file = path.join(root, 'src/page.vue')
+    const original = '<script setup>const utility = "w-[37px]"</script><template><view /></template>'
+    const changed = original.replace('w-[37px]', 'w-[53px]')
+    const initial: StatefulHmrSnapshot = {
+      output: [{ type: 'asset', fileName: 'app.wxss', source: '.utility { width: 37px; }' }],
+      componentPageGlobalStyleRoutes: [],
+      glassEaselAnalysisByOwner: new Map(),
+    }
+    const session = await start(initial, [file], {}, new Map([[file, original]]))
+    await session.whenSettled()
+    const host = getCompilerHmrHost(session.ctx)
+    const prepare = vi.fn(async (_input: WeappCompilerHmrRequest) => ({
+      assets: [{ fileName: 'app.wxss', code: '.utility { width: 53px; }' }],
+    }))
+    host.register('stylesheet-provider', prepare)
+    session.classic.mockImplementation(async () => {
+      await session.close()
+      session.runtime.markClassic()
+    })
+    const delta = vi.spyOn(StatefulHmrTransport.prototype, 'addDelta').mockResolvedValue()
+    harness.writeOutput.mockClear()
+    host.captureNative(file, changed)
+    for (const reason of reasons) {
+      session.sourceChange(file, 'update', [reason])
+    }
+    expect(harness.callbacks!.onPatch([file], { type: 'Patch', code: 'void 0', filename: 'update.js' })).toBe(true)
+    await vi.advanceTimersByTimeAsync(100)
+    await expect(session.runtime.whenSettled()).resolves.toBeUndefined()
+
+    expect(prepare).toHaveBeenCalledOnce()
+    expect(prepare.mock.calls[0]?.[0].sources.get(file)).toBe(changed)
+    expect(session.rebuild).not.toHaveBeenCalled()
+    expect(harness.writeOutput).not.toHaveBeenCalled()
+    expect(delta).not.toHaveBeenCalled()
+    expect(harness.registerPatchModules).not.toHaveBeenCalled()
+    expect(harness.markPayloadDelivered).not.toHaveBeenCalled()
+    expect(session.classic).toHaveBeenCalledOnce()
+    expect(session.runtime.phase).toBe('classic')
+    expect(session.runtime.fallback).toMatchObject({
+      code: 'stylesheet-output',
+      files: [`${WEAPP_VITE_STATEFUL_HMR_GLOBAL_STYLE_BASENAME}.wxss`],
+    })
+  })
+
   it.each(['refresh', 'mixed', 'full', 'additional', 'compiler-assets'] as const)('hands changed compiled styles to classic before any %s write, delta or acknowledgement', async (mode) => {
     const session = await start(compiledStylesheetSnapshot('red'))
     await session.whenSettled()

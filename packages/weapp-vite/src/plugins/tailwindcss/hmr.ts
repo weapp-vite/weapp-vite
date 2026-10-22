@@ -289,7 +289,7 @@ export function createTailwindHmrAdapter(ctx: CompilerContext, options: Options)
       isOutput: file => Boolean(ctx.configService.outDir && isPathInside(ctx.configService.outDir, file)),
       captureRequest: hasImportedRoots
         ? async (key, effective) => {
-          effectiveRequests.set(key, await importedGenerationRequest(effective, request.sources))
+          effectiveRequests.set(key, await importedGenerationRequest(effective, request.sources, input.roots.get(key)!.request))
         }
         : undefined,
       reusePreprocessedCss(file, previous, current) {

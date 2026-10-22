@@ -33,7 +33,7 @@ export const HMR_ACCEPTANCE_CAPABILITY_COVERAGE: HmrCapabilityCoverage[] = [
   },
   {
     capabilityId: 'stylesheet-output',
-    unit: [`${RUNTIME}/hmrRuntimeCapabilities.test.ts`, `${RUNTIME}/statefulHmr/outputCapabilities.test.ts`, `${RUNTIME}/statefulHmr/session.snapshots.test.ts`, `${RUNTIME}/classicIdeConfig/owner.test.ts`, `${RUNTIME}/__tests__/watcherService.test.ts`],
+    unit: ['packages/tailwindcss/src/rootsRpx.test.ts', `${RUNTIME}/hmrRuntimeCapabilities.test.ts`, `${RUNTIME}/statefulHmr/compileBatch.test.ts`, `${RUNTIME}/statefulHmr/outputCapabilities.test.ts`, `${RUNTIME}/statefulHmr/session.snapshots.test.ts`, `${RUNTIME}/classicIdeConfig/owner.test.ts`, `${RUNTIME}/__tests__/watcherService.test.ts`],
     build: ['e2e/ci/hmr-issue-1015-external-css-vars.test.ts', 'e2e/ci/issue-1081-batch-recovery.test.ts'],
     runtimeScenarios: ['unsupported-capability-classic-transition', 'native-css-and-tailwind', 'tailwind-template-registration-and-local-priority', 'compiler-provider-and-tailwind-transactions'],
     runtime: 'planned',

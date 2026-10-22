@@ -283,6 +283,7 @@ describe('HMR semantic acceptance inventory', () => {
       expect(scripts[name]).not.toContain('--allow-failures')
     }
     const hmrFilters = scripts['test:hmr']!.split(/\s+/)
+    expect(hmrFilters).toContain('packages/tailwindcss/src')
     for (const file of [
       'packages/weapp-vite/src/utils/file.test.ts',
       'packages/weapp-vite/src/utils/file/vueConfig.snapshot.test.ts',

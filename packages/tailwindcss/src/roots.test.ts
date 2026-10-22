@@ -70,6 +70,7 @@ it.each([false, true])('filters captured inputs by the resolved CSS base (relati
       captured.sources[0].content = 'w-[91px]'
     }).toThrow(TypeError)
     expect(captured.scanSources).toBe(false)
+    expect(captured.scanMode).toBe('compiled')
     expect(captured.sourceOptions.cssEntries).toEqual([])
     expect(captured.sourceOptions.cssSources).toEqual([{ file: entry, css, base: base.replaceAll('\\', '/'), dependencies: [entry] }])
     expect(captured.sources).toContainEqual({ content: '<view class="w-[53px]"/>', extension: 'html' })
@@ -79,6 +80,7 @@ it.each([false, true])('filters captured inputs by the resolved CSS base (relati
     expect(prepared.get('root')?.css).not.toContain('91px')
     expect(request.sourceOptions.base).toBe(relative ? 'src' : base)
     expect(request.sourceOptions.cssEntries).toEqual([entry])
+    expect(Object.hasOwn(request, 'scanMode')).toBe(false)
   }
   finally {
     await compiler.dispose()

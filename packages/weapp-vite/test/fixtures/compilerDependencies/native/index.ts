@@ -94,7 +94,7 @@ async function acquireNativeFixture(root: string, kind: Kind, trace: Trace, acqu
   trace.install(host)
   const prepare = vi.fn(async (input: WeappCompilerHmrRequest) => {
     trace.record('provider.prepare', { revision: input.revision, changedFiles: input.changedFiles.map(trace.file), tokenHash: trace.hash(String(input.sources.get(compilerSourceId(token)))) })
-    return { assets: [{ fileName: styleFile, code: `.probe { color: ${color(input.sources)}; }` }] }
+    return { assets: [{ fileName: 'app.wxss', code: `.probe { color: ${color(input.sources)}; }` }] }
   })
   host.register('token-provider', prepare)
   let whenSettled: (() => Promise<void>) | undefined

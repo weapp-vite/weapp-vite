@@ -10,12 +10,26 @@ export interface ImportedTailwindGeneration {
   roots: ReadonlyMap<number | string, { request: CompilerGenerateRequest, entry: TailwindGenerationEntry }>
 }
 
-/** 把磁盘入口映射成同一冻结来源的内存请求，只排除来源扫描的执行方式。 */
-export async function importedGenerationRequest(request: CompilerGenerateRequest, sources: ReadonlyMap<string, string | null>) {
+/** 把磁盘入口映射到冻结来源；仅在内部候选适配边界恢复原 root 的显式模式。 */
+export async function importedGenerationRequest(request: CompilerGenerateRequest, sources: ReadonlyMap<string, string | null>, originalRequest?: CompilerGenerateRequest) {
   const copied = comparableGenerationRequest(request)
+  const original = originalRequest && comparableGenerationRequest(originalRequest)
   const descriptors = Object.getOwnPropertyDescriptors(copied)
   delete descriptors.sources
   delete descriptors.scanSources
+  if (original) {
+    if (copied.scanMode !== 'compiled') {
+      throw new CompilerHmrResyncError([], 'Tailwind imported memory generation requires compiled candidate processing')
+    }
+    // 只撤销适配器注入的模式；省略、显式 undefined 和显式 compiled 仍是不同输入。
+    const scanMode = Object.getOwnPropertyDescriptor(original, 'scanMode')
+    if (scanMode) {
+      descriptors.scanMode = scanMode
+    }
+    else {
+      delete descriptors.scanMode
+    }
+  }
   const input = Object.create(Object.getPrototypeOf(copied), descriptors) as CompilerGenerateRequest
   const sourceOptions = input.sourceOptions
   if (!sourceOptions) {
