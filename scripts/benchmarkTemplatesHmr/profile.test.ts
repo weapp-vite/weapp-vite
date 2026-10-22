@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { collectBenchmarkHmrProfile, matchesHmrProfileSource } from './profile'
+import { collectBenchmarkHmrPhaseProfile, collectBenchmarkHmrProfile, matchesHmrProfileSource } from './profile'
 
 describe('benchmark compiler profile capability', () => {
   it('does not read a disabled profile during overhead comparisons', async () => {
@@ -16,6 +16,35 @@ describe('benchmark compiler profile capability', () => {
   it('retains real standard compiler timing', async () => {
     const profile = { totalMs: 18, transformMs: 9 }
     expect(await collectBenchmarkHmrProfile('standard', async () => profile)).toEqual({ profile, status: 'available' })
+  })
+
+  it('reads the published runtime separately for the edit and restore phases after fallback', async () => {
+    const readRuntime = vi.fn().mockResolvedValue('standard')
+    const profile = { schemaVersion: 1, status: 'complete', pipeline: 'standard', totalMs: 18 }
+    const reader = vi.fn().mockResolvedValueOnce({}).mockResolvedValueOnce(profile)
+    const edit = await collectBenchmarkHmrPhaseProfile('stateful', readRuntime, reader)
+    const restore = await collectBenchmarkHmrPhaseProfile(edit.runtimeAfter, readRuntime, reader)
+    expect(edit).toEqual({ profile: {}, status: 'missing', runtimeBefore: 'stateful', runtimeAfter: 'standard' })
+    expect(restore).toEqual({ profile, status: 'available', runtimeBefore: 'standard', runtimeAfter: 'standard' })
+    expect(reader.mock.calls).toEqual([['standard'], ['standard']])
+    expect(readRuntime).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not relabel a failed stateful fallback profile or accept standard timing before fallback', async () => {
+    const failed = { schemaVersion: 1, status: 'failed', pipeline: 'stateful', totalMs: undefined, elapsedMs: 12 }
+    expect(await collectBenchmarkHmrPhaseProfile('stateful', async () => 'standard', async () => failed)).toEqual({
+      profile: {},
+      status: 'incomplete',
+      runtimeBefore: 'stateful',
+      runtimeAfter: 'standard',
+    })
+    const standard = { schemaVersion: 1, status: 'complete', pipeline: 'standard', totalMs: 18 }
+    expect(await collectBenchmarkHmrPhaseProfile('stateful', async () => 'stateful', async () => standard)).toEqual({
+      profile: {},
+      status: 'incompatible',
+      runtimeBefore: 'stateful',
+      runtimeAfter: 'stateful',
+    })
   })
 
   it.each([
