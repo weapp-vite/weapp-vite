@@ -158,6 +158,8 @@ const projects = [
         'e2e/utils/automator.relaunch.test.ts',
         'e2e/utils/automator.rootBudget.test.ts',
         'e2e/utils/automator.runtime-logs.test.ts',
+        'e2e/utils/automator.reconnect-logs.test.ts',
+        'e2e/utils/runtimeLogSubscription.test.ts',
         'e2e/utils/automatorBridgeCleanup.test.ts',
         'e2e/utils/automatorReconnect.test.ts',
         'e2e/utils/automatorLaunchEvidence.test.ts',

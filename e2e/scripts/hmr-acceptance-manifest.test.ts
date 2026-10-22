@@ -286,6 +286,8 @@ describe('HMR semantic acceptance inventory', () => {
     const hmrFilters = scripts['test:hmr']!.split(/\s+/)
     expect(hmrFilters).toContain('packages/tailwindcss/src')
     for (const file of [
+      'e2e/utils/automator.reconnect-logs.test.ts',
+      'e2e/utils/runtimeLogSubscription.test.ts',
       'packages/weapp-vite/src/utils/file.test.ts',
       'packages/weapp-vite/src/utils/file/vueConfig.snapshot.test.ts',
       'packages/weapp-vite/src/utils/file/vueConfig.loading.test.ts',
@@ -325,6 +327,8 @@ describe('HMR semantic acceptance inventory', () => {
     expect(include).toBeTruthy()
     const patterns = [...include!.matchAll(/['"]([^'"]+)['"]/g)].map(match => match[1]!)
     const files = [
+      'e2e/utils/automator.reconnect-logs.test.ts',
+      'e2e/utils/runtimeLogSubscription.test.ts',
       'e2e/scripts/hmr-acceptance-manifest.test.ts',
       'e2e/scripts/hmr-launch-mode.test.ts',
       'e2e/scripts/run-hmr-acceptance.test.ts',
