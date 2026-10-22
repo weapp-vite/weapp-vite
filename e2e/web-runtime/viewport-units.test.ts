@@ -105,6 +105,13 @@ describe('WXSS viewport units in Chromium', { concurrent: false }, () => {
         fallback: rect('#viewport-fallback').width,
         variable: rect('#viewport-variable').width,
         exponent: rect('#viewport-exponent').width,
+        minProduct: rect('#viewport-min-product').width,
+        clampProduct: rect('#viewport-clamp-product').width,
+        uppercaseProduct: rect('#viewport-uppercase-product').width,
+        groupedProduct: rect('#viewport-grouped-product').width,
+        variableProduct: rect('#viewport-variable-product').width,
+        customProduct: rect('#viewport-custom-product').width,
+        escapedUrl: getComputedStyle(root.querySelector('.viewport-demo')!).getPropertyValue('--escaped-url').trim(),
         fixed: rect('#viewport-fixed'),
         content: getComputedStyle(root.querySelector('#viewport-string')!, '::before').content,
         image: getComputedStyle(root.querySelector('#viewport-image')!).backgroundImage,
@@ -118,6 +125,13 @@ describe('WXSS viewport units in Chromium', { concurrent: false }, () => {
     expect(geometry.fallback).toBeCloseTo(width / 4, 1)
     expect(geometry.variable).toBe(23)
     expect(geometry.exponent).toBe(width)
+    expect(geometry.minProduct).toBeCloseTo(Math.min(width, 800), 1)
+    expect(geometry.clampProduct).toBeCloseTo(Math.min(width, 800), 1)
+    expect(geometry.uppercaseProduct).toBeCloseTo(width / 100, 1)
+    expect(geometry.groupedProduct).toBeCloseTo(width, 1)
+    expect(geometry.variableProduct).toBeCloseTo(Math.min(width, 800), 1)
+    expect(geometry.customProduct).toBeCloseTo(width, 1)
+    expect(geometry.escapedUrl).toBe(String.raw`u\72 l(100vw)`)
     expect(geometry.fixed.width).toBe(width)
     expect(geometry.fixed.left).toBe(geometry.app.left)
     expect(geometry.fixed.right).toBe(geometry.app.right)

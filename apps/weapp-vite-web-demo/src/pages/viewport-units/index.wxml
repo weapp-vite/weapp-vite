@@ -8,6 +8,12 @@
   <view id="viewport-fallback" class="probe viewport-fallback">fallback</view>
   <view id="viewport-variable" class="probe viewport-variable">变量名</view>
   <view id="viewport-exponent" class="probe viewport-exponent">指数尺寸</view>
+  <view id="viewport-min-product" class="probe viewport-min-product">min 乘法</view>
+  <view id="viewport-clamp-product" class="probe viewport-clamp-product">clamp 乘法</view>
+  <view id="viewport-uppercase-product" class="probe viewport-uppercase-product">CALC 乘法</view>
+  <view id="viewport-grouped-product" class="probe viewport-grouped-product">括号乘法</view>
+  <view id="viewport-variable-product" class="probe viewport-variable-product">变量乘法</view>
+  <view id="viewport-custom-product" class="probe viewport-custom-product">自定义属性乘法</view>
   <view id="viewport-string" class="viewport-string" />
   <view id="viewport-image" class="viewport-image" />
   <view id="viewport-fixed" class="viewport-fixed">固定栏 / 100vw</view>

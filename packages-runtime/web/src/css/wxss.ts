@@ -1,6 +1,6 @@
+import { tokenize, TokenType } from '@csstools/css-tokenizer'
 import postcss from 'postcss'
 import selectorParser from 'postcss-selector-parser'
-import valueParser from 'postcss-value-parser'
 import { resolveNativeComponentWebTag } from '../shared/nativeComponents'
 
 export interface WxssTransformOptions {
@@ -49,27 +49,28 @@ function resolveViewportUnitBase(unit: string) {
 }
 
 function transformViewportUnits(value: string) {
-  const parsed = valueParser(value)
-  parsed.walk((node, index, nodes) => {
-    if (node.type === 'function' && node.value.toLowerCase() === 'url') {
-      return false
+  let urlDepth = 0
+  return tokenize({ css: value }).map((token) => {
+    if (urlDepth > 0) {
+      if (token[0] === TokenType.Function || token[0] === TokenType.OpenParen) {
+        urlDepth += 1
+      }
+      else if (token[0] === TokenType.CloseParen) {
+        urlDepth -= 1
+      }
+      return token[1]
     }
-    if (node.type !== 'word') {
-      return
+    if (token[0] === TokenType.Function && token[4].value.toLowerCase() === 'url') {
+      urlDepth = 1
+      return token[1]
     }
-    const dimension = valueParser.unit(node.value)
-    if (!dimension || !/^(?:vw|vh|vmin|vmax)$/i.test(dimension.unit)) {
-      return
+    if (token[0] !== TokenType.Dimension || !/^(?:vw|vh|vmin|vmax)$/i.test(token[4].unit) || !Number.isFinite(token[4].value)) {
+      return token[1]
     }
-    const numeric = Number(dimension.number)
-    if (!Number.isFinite(numeric)) {
-      return
-    }
-    const base = resolveViewportUnitBase(dimension.unit.toLowerCase())
-    const replacement = numeric === 0 ? '0px' : numeric === 100 ? base : `calc(${base} * ${numeric} / 100)`
-    nodes[index] = valueParser(replacement).nodes[0]!
-  })
-  return parsed.toString()
+    const numeric = token[4].value
+    const base = resolveViewportUnitBase(token[4].unit.toLowerCase())
+    return numeric === 0 ? '0px' : numeric === 100 ? base : `calc(${base} * ${numeric} / 100)`
+  }).join('')
 }
 
 function isDeepPseudo(pseudo: selectorParser.Pseudo) {

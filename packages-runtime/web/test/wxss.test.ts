@@ -189,6 +189,8 @@ describe('transformWxssToCss', () => {
     ['1e2VW', 'var(--weapp-viewport-width)'],
     ['1E-2vmax', 'calc(max(var(--weapp-viewport-width), var(--weapp-viewport-height)) * 0.01 / 100)'],
     ['-0vw', '0px'],
+    [String.raw`100v\77`, 'var(--weapp-viewport-width)'],
+    [String.raw`50\76 h`, 'calc(var(--weapp-viewport-height) * 50 / 100)'],
   ])('converts complete CSS dimensions including %s', (value, expected) => {
     expect(transformWxssToCss(`.probe { margin: ${value}; }`).css)
       .toBe(`.probe { margin: ${expected}; }`)
@@ -205,6 +207,21 @@ describe('transformWxssToCss', () => {
     'width: 100vwx',
     'width: 1.E2vw',
     'width: 1e999vw',
+    'content: "min(100vw*1,800px)"',
+    'background-image: URL("100vw*1.png")',
+    'width: var(--size\\*100vw)',
+    'width: 100vw\\*1',
+    String.raw`background-image: u\72l(100vw)`,
+    String.raw`background-image: u\000072l(100vw)`,
+    String.raw`background-image: u\rl(100vw)`,
+    String.raw`background-image: u\72 l(100vw)`,
+    String.raw`background-image: u\72 l("100vw*2")`,
+    String.raw`content: "100v\77*2"`,
+    String.raw`width: var(--100vw\*100vw)`,
+    '--expression: foo100vw*2',
+    '--expression: --100vw*2',
+    '--expression: 100vw-name*2',
+    '--expression: #100vw',
   ])('preserves non-dimension tokens in %s', (declaration) => {
     const source = `.probe { ${declaration}; }`
     expect(transformWxssToCss(source).css).toBe(source)
@@ -217,11 +234,39 @@ describe('transformWxssToCss', () => {
     )
   })
 
+  it('converts dimensions after a quoted URL without rewriting its contents', () => {
+    expect(transformWxssToCss('.probe { background: url("100vw") 100vw / 50vh; }').css).toBe(
+      '.probe { background: url("100vw") var(--weapp-viewport-width) / calc(var(--weapp-viewport-height) * 50 / 100); }',
+    )
+  })
+
   it('preserves media and supports conditions while transforming their declarations', () => {
     const source = '@media (min-width: 50vw) { @supports (width: 100vw) { .probe { width: 100vw; } } }'
     expect(transformWxssToCss(source).css).toBe(
       '@media (min-width: 50vw) { @supports (width: 100vw) { .probe { width: var(--weapp-viewport-width); } } }',
     )
+  })
+
+  it.each([
+    ['min(100vw*1,800px)', 'min(var(--weapp-viewport-width)*1,800px)'],
+    ['clamp(0px,100vw*1,800px)', 'clamp(0px,var(--weapp-viewport-width)*1,800px)'],
+    ['CALC(2*100vw)', 'CALC(2*var(--weapp-viewport-width))'],
+    ['calc((100vw*1) - 0px)', 'calc((var(--weapp-viewport-width)*1) - 0px)'],
+    ['max(1e-2*1e2VW,10px)', 'max(1e-2*var(--weapp-viewport-width),10px)'],
+    ['min(100vw*var(--scale,1),800px)', 'min(var(--weapp-viewport-width)*var(--scale,1),800px)'],
+    ['min(var(--scale,1)*100vw,800px)', 'min(var(--scale,1)*var(--weapp-viewport-width),800px)'],
+    ['min(var(--fallback,100vw*1),800px)', 'min(var(--fallback,var(--weapp-viewport-width)*1),800px)'],
+    ['100vw*1', 'var(--weapp-viewport-width)*1'],
+    ['min(2*+1e2VW,800px)', 'min(2*var(--weapp-viewport-width),800px)'],
+    ['max(-.5vmin*2,0px)', 'max(calc(min(var(--weapp-viewport-width), var(--weapp-viewport-height)) * -0.5 / 100)*2,0px)'],
+    ['calc((+1e2vw*1) - 0px)', 'calc((var(--weapp-viewport-width)*1) - 0px)'],
+    [String.raw`m\69 n(100v\77*1,800px)`, String.raw`m\69 n(var(--weapp-viewport-width)*1,800px)`],
+    ['var(--100vw,100vw)', 'var(--100vw,var(--weapp-viewport-width))'],
+  ])('converts product dimensions regardless of their parser grouping: %s', (value, expected) => {
+    const source = `.probe { --expression: ${value}; }`
+    const css = transformWxssToCss(source).css
+    expect(css).toBe(`.probe { --expression: ${expected}; }`)
+    expect(transformWxssToCss(css).css).toBe(css)
   })
 
   it('keeps repeated conversions stable across the direct and PostCSS entrypoints', async () => {
