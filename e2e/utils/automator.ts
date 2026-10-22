@@ -38,7 +38,7 @@ import {
 } from './ideWarningReport'
 import { attachManagedProjectSession } from './managedProjectSession'
 import { registerRuntimeConsoleSession } from './runtimeConsoleSessions'
-import { createRuntimeLogSubscription } from './runtimeLogSubscription'
+import { createRuntimeLogSubscription, waitForRuntimeLogSubscription } from './runtimeLogSubscription'
 import {
   assertRuntimeProviderImplemented,
   resolveRuntimeProviderName,
@@ -2015,6 +2015,27 @@ export function enhanceMiniProgramWithRuntimeLogs(miniProgram: any, project: str
   return miniProgram
 }
 
+/** 重连只重建同一会话的日志订阅，不触发项目启动或导航。 */
+export async function enableReconnectedAutomatorRuntimeLogs(
+  miniProgram: MiniProgram,
+  project: string,
+  lifecycle: AutomatorLaunchLifecycle,
+  assertClean: () => void,
+) {
+  enhanceMiniProgramWithRuntimeLogs(miniProgram, project)
+  await lifecycle.step(() => waitForRuntimeLogSubscription({
+    deadlineAt: lifecycle.deadlineAt,
+    signal: lifecycle.signal,
+    subscribe: timeoutMs => miniProgram.enableLog(timeoutMs, { structured: true }),
+    assertClean,
+    onRetry: ({ attempt, elapsedMs, remainingMs, error }) => {
+      lifecycle.recordFailure(error)
+      const message = error instanceof Error ? error.message : String(error)
+      process.stdout.write(`[info] [runtime:reconnect-log-subscription-retry] ${JSON.stringify({ attempt, elapsedMs: Math.round(elapsedMs), remainingMs, project, error: message })}\n`)
+    },
+  }), { stage: 'reconnect runtime log subscription' })
+}
+
 export function resetAutomatorRuntimeLogs(miniProgram: any) {
   const meta = (miniProgram as Record<string, any>)[RUNTIME_LOG_META_KEY] as RuntimeLogMeta | undefined
   meta?.reset()
@@ -3126,9 +3147,9 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
                 connect: options => automator.connect(options) as Promise<MiniProgram>,
                 configure: async (session, reconnectScope) => {
                   await reconnectScope.step(() => assertSelectedWechatDevtoolsRuntime(selectedTarget, session))
-                  enhanceMiniProgramWithRuntimeLogs(session, project)
-                  await reconnectScope.step(() => session.enableLog(reconnectScope.remainingMs(), { structured: true }))
-                  devtoolsLogMonitor.assertClean('reconnect runtime log subscription', true)
+                  await enableReconnectedAutomatorRuntimeLogs(session, project, reconnectScope, () => {
+                    devtoolsLogMonitor.assertClean('reconnect runtime log subscription', true)
+                  })
                   enhanceMiniProgramRelaunch(session, relaunchOptions)
                 },
               })

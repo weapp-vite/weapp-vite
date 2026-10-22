@@ -17,11 +17,12 @@ export async function createNativeHostControl(root, configFile) {
   let received = false
   const server = createServer((socket) => {
     sockets.add(socket)
-    socket.on('error', (error) => {
+    const failChannel = (error) => {
       if (socket === peer) {
         completed.reject(error)
       }
-    })
+    }
+    socket.on('error', failChannel)
     socket.on('close', () => {
       sockets.delete(socket)
       if (socket === peer && !received) {
@@ -29,6 +30,8 @@ export async function createNativeHostControl(root, configFile) {
       }
     })
     const input = createInterface({ input: socket })
+    // readline 会重新派发输入流错误，两层必须共用原有失败结果。
+    input.on('error', failChannel)
     input.on('line', (line) => {
       let message
       try {

@@ -44,7 +44,11 @@ export default {
   await writeFile(bridge, `
 import { spawn } from 'node:child_process'
 import process from 'node:process'
-const child = spawn(process.execPath, [${JSON.stringify(nativeCli)}, ...process.argv.slice(2)], { stdio: 'inherit' })
+// Windows 的非独立子进程属于父进程 Job；仅 unref 无法在父进程退出后保留叶宿主。
+const child = spawn(process.execPath, [${JSON.stringify(nativeCli)}, ...process.argv.slice(2)], {
+  stdio: 'inherit',
+  detached: process.platform === 'win32' && ${launch.startsWith('orphan-parent')},
+})
 child.once('error', error => { console.error(error); process.exitCode = 1 })
 child.once('exit', (code, signal) => { process.exitCode = signal ? 1 : code })
 ${launch.startsWith('orphan-parent')
