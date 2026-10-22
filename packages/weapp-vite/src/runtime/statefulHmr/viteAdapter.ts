@@ -12,7 +12,7 @@ import {
   WEAPP_VITE_STATEFUL_HMR_UPDATE_FILE,
 } from '@weapp-core/constants'
 import path from 'pathe'
-import { HmrRuntimeCapabilityError } from '../hmrRuntimeCapabilities'
+import { getHmrRuntimeCapabilityFallback, HmrRuntimeCapabilityError } from '../hmrRuntimeCapabilities'
 import { assertStatefulHmrRuntimeOutput, createStatefulHmrRolldownRuntimeSource } from './commonRuntime'
 import { resolveStatefulHmrModuleRoot, toStableModuleId } from './initialModuleGraph'
 import { StatefulHmrOutputPublication } from './outputPublication'
@@ -134,6 +134,7 @@ export class StatefulHmrViteAdapter {
     private readonly server: ViteDevServer,
     private readonly callbacks: {
       onError: (message: string) => void
+      onNativeError?: (error: Error) => void
       onOutput: (output: StatefulHmrOutputFile[], source: StatefulHmrOutputSource) => void | Promise<void>
       onBatch?: (batch: StatefulHmrDevEngineBatch) => void
       onPatch: (files: string[], output: StatefulHmrDevEngineUpdate) => boolean
@@ -549,7 +550,9 @@ export class StatefulHmrViteAdapter {
         this.rememberChunkModules(output, source)
         void this.publication.publish(publicationSource, () => this.callbacks.onOutput(output, publicationSource)).catch((error) => {
           this.initialOutputError = error instanceof Error ? error : new Error(String(error))
-          this.callbacks.onError(this.initialOutputError.message)
+          if (!getHmrRuntimeCapabilityFallback(error)) {
+            this.callbacks.onError(this.initialOutputError.message)
+          }
         })
       }
       catch (error) {
@@ -618,6 +621,12 @@ export class StatefulHmrViteAdapter {
       return
     }
     if (result instanceof Error) {
+      try {
+        this.callbacks.onNativeError?.(result)
+      }
+      catch {
+        // 诊断失败不能覆盖原生错误或阻止原有日志输出。
+      }
       this.callbacks.onError(result.message)
       return
     }

@@ -329,6 +329,7 @@ export interface RuntimeState {
     transformedSidecarSource: Map<string, { code: string, diskSource: string }>
     emittedSource: Map<string, string>
     sidecarImports: Set<string>
+    sidecarImportsByOwner: Map<string, Set<string>>
   }
   watcher: {
     rollupWatcherMap: Map<string, WatcherInstance>
@@ -470,6 +471,7 @@ export function createRuntimeState(): RuntimeState {
       transformedSidecarSource: new Map<string, { code: string, diskSource: string }>(),
       emittedSource: new Map<string, string>(),
       sidecarImports: new Set<string>(),
+      sidecarImportsByOwner: new Map<string, Set<string>>(),
     },
     watcher: {
       rollupWatcherMap: new Map<string, WatcherInstance>(),

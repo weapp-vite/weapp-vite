@@ -25,6 +25,7 @@ import { CompilerHmrResyncError, compilerSourceId, getCompilerHmrHost } from '..
 import * as compilerInputs from '../../plugins/utils/sourceSnapshot'
 import { beginWxmlDependencies } from '../../wxml/processing/dependencies'
 import { createDevBuildWatcher } from '../buildPlugin/devBuildWatcher'
+import { HmrRuntimeCapabilityError } from '../hmrRuntimeCapabilities'
 import { getHmrRuntimeSession } from '../hmrRuntimeSession'
 import { createRuntimeState } from '../runtimeState'
 import { createStatefulHmrHostPlugins } from './hostPlugins'
@@ -33,6 +34,7 @@ import { runStatefulHmrDev } from './session'
 import { StatefulHmrTransport } from './transport'
 
 interface AdapterCallbacks {
+  onNativeError: (error: Error) => void
   onOutput: (output: StatefulHmrOutputFile[], source?: 'full' | 'additional') => Promise<void>
   onBatch: (batch: StatefulHmrDevEngineBatch) => void
   onPatch: (files: string[], output: StatefulHmrDevEngineUpdate) => boolean
@@ -54,11 +56,6 @@ const harness = vi.hoisted(() => ({
   markPayloadDelivered: vi.fn<(filename: string) => Promise<void>>(),
   closeAdapter: vi.fn<() => Promise<void>>(),
   closeServer: vi.fn<() => Promise<void>>(),
-  touchExistingOutputStyles: vi.fn<(
-    outDir: string,
-    fileNames: Iterable<string>,
-    styleExtension: string,
-  ) => Promise<Set<string>>>(),
 }))
 
 vi.mock('vite', async importOriginal => ({
@@ -66,7 +63,6 @@ vi.mock('vite', async importOriginal => ({
   createServer: harness.createServer,
 }))
 vi.mock('./outputWriter', () => ({ writeStatefulHmrOutput: harness.writeOutput }))
-vi.mock('../buildPlugin/touchAppWxss', () => ({ touchExistingOutputStyles: harness.touchExistingOutputStyles }))
 vi.mock('../../plugins/asset/prune', () => ({ pruneOwnedAssetFiles: vi.fn(async () => {}) }))
 vi.mock('./viteAdapter', () => ({
   StatefulHmrViteAdapter: class {
@@ -105,7 +101,8 @@ vi.mock('./viteAdapter', () => ({
 }))
 
 const route = 'pages/shared/index'
-const styleFile = `${WEAPP_VITE_STATEFUL_HMR_GLOBAL_STYLE_BASENAME}.wxss`
+const contentFile = 'snapshot-content.wxml'
+const pageContentFile = 'pages/shared/snapshot-content.wxml'
 const root = path.join(realpathSync(tmpdir()), 'stateful-session-snapshots')
 const watchers: Array<{ close: () => Promise<void> }> = []
 const temporaryDirectories: string[] = []
@@ -116,8 +113,11 @@ function appOutput(): StatefulHmrOutputFile[] {
 
 function snapshot(color: string, routes: string[] = [route]): StatefulHmrSnapshot {
   return {
-    output: [{ type: 'asset', fileName: 'app.wxss', source: `.probe { color: ${color}; }` }],
-    componentPageGlobalStyleRoutes: routes,
+    output: [
+      { type: 'asset', fileName: contentFile, source: `<view data-color="${color}"></view>` },
+      { type: 'asset', fileName: pageContentFile, source: routes.includes(route) ? `<view data-color="${color}"></view>` : '' },
+    ],
+    componentPageGlobalStyleRoutes: [],
     glassEaselAnalysisByOwner: new Map(),
   }
 }
@@ -165,6 +165,7 @@ async function start(initial = snapshot('red'), entryIds: string[] = [], inlineC
       cwd: root,
       absoluteSrcRoot: path.join(root, 'src'),
       outDir: path.join(root, 'dist'),
+      multiPlatform: { enabled: false },
       weappViteConfig: { hmr: { profileJson: profile ? true : undefined } },
       inlineConfig,
     },
@@ -330,18 +331,201 @@ describe('stateful snapshot output transactions', () => {
     }
   })
 
-  it('touches refreshed stylesheet outputs after the atomic write', async () => {
-    const session = await start()
-    session.rebuild.mockResolvedValue(snapshot('blue'))
+  function compiledStylesheetSnapshot(color: string): StatefulHmrSnapshot {
+    return {
+      output: [{ type: 'asset', fileName: 'app.wxss', source: `.stylesheet { color: ${color}; }` }],
+      componentPageGlobalStyleRoutes: [],
+      glassEaselAnalysisByOwner: new Map(),
+    }
+  }
 
+  it.each(['refresh', 'mixed', 'full', 'additional', 'compiler-assets'] as const)('hands changed compiled styles to classic before any %s write, delta or acknowledgement', async (mode) => {
+    const session = await start(compiledStylesheetSnapshot('red'))
+    await session.whenSettled()
+    session.classic.mockImplementation(async () => {
+      await session.close()
+      session.runtime.markClassic()
+    })
+    const delta = vi.spyOn(StatefulHmrTransport.prototype, 'addDelta').mockResolvedValue()
+    const full = vi.spyOn(StatefulHmrTransport.prototype, 'commitFullBuild').mockClear()
+    const events = vi.fn()
+    session.events.watcher.on('event', events)
+    harness.writeOutput.mockClear()
+    session.rebuild.mockResolvedValue(compiledStylesheetSnapshot('blue'))
+    if (mode === 'additional') {
+      await expect(harness.callbacks!.onOutput([
+        { type: 'asset', fileName: 'pages/new/index.wxss', source: '.stylesheet { color: blue; }' },
+      ], 'additional')).rejects.toMatchObject({ fallback: { code: 'stylesheet-output' } })
+    }
+    else if (mode === 'compiler-assets') {
+      getCompilerHmrHost(session.ctx).register('stylesheet-provider', async () => ({
+        assets: [{ fileName: `${WEAPP_VITE_STATEFUL_HMR_GLOBAL_STYLE_BASENAME}.wxss`, code: '.stylesheet { color: blue; }' }],
+      }))
+      expect(session.patch(['tailwind-content:1'])).toBe(true)
+    }
+    else if (mode === 'mixed') {
+      expect(session.patch(['compiler-content:tailwind'])).toBe(true)
+    }
+    else {
+      await session[mode]()
+    }
+    await vi.advanceTimersByTimeAsync(100)
+    await expect(session.runtime.whenSettled()).resolves.toBeUndefined()
+    expect(session.runtime.phase).toBe('classic')
+    expect(session.classic).toHaveBeenCalledOnce()
+    expect(session.runtime.fallback?.code).toBe('stylesheet-output')
+    expect(harness.writeOutput).not.toHaveBeenCalled()
+    expect(delta).not.toHaveBeenCalled()
+    expect(full).not.toHaveBeenCalled()
+    expect(harness.registerPatchModules).not.toHaveBeenCalled()
+    expect(harness.markPayloadDelivered).not.toHaveBeenCalled()
+    expect(events).not.toHaveBeenCalledWith(expect.objectContaining({ code: 'ERROR' }))
+    expect(harness.callbacks!.onPatch([path.join(root, 'src/page.js')], { type: 'Patch', code: 'stale()', filename: 'stale.js' })).toBe(false)
+    await harness.callbacks!.onOutput([{ type: 'asset', fileName: 'stale.txt', source: 'stale' }], 'additional')
+    expect(harness.writeOutput).not.toHaveBeenCalled()
+    expect(session.classic).toHaveBeenCalledOnce()
+  })
+
+  it('hands an explicitly removed compiled stylesheet to classic before deleting any asset', async () => {
+    const initial = compiledStylesheetSnapshot('red')
+    initial.output.push({ type: 'asset', fileName: 'retired.wxss', source: '.retired {}' })
+    const session = await start(initial)
+    session.classic.mockImplementation(async () => {
+      await session.close()
+      session.runtime.markClassic()
+    })
+    session.rebuild.mockResolvedValue(compiledStylesheetSnapshot('red'))
+    harness.writeOutput.mockClear()
     session.refresh()
-    await vi.advanceTimersByTimeAsync(50)
+    await vi.advanceTimersByTimeAsync(100)
+    await expect(session.runtime.whenSettled()).resolves.toBeUndefined()
+    expect(session.runtime.phase).toBe('classic')
+    expect(session.runtime.fallback).toMatchObject({ code: 'stylesheet-output', files: ['retired.wxss'] })
+    expect(session.classic).toHaveBeenCalledOnce()
+    expect(harness.writeOutput).not.toHaveBeenCalled()
+  })
 
-    expect(harness.touchExistingOutputStyles).toHaveBeenCalledOnce()
-    const [outDir, fileNames, styleExtension] = harness.touchExistingOutputStyles.mock.calls[0]!
-    expect(outDir).toBe(path.join(root, 'dist'))
-    expect([...fileNames]).toContain(`${route}.wxss`)
-    expect(styleExtension).toBe('wxss')
+  it('keeps a real classic handoff rejected when closing the old adapter fails', async () => {
+    const session = await start(compiledStylesheetSnapshot('red'))
+    const cleanup = new Error('retiring adapter cleanup failed')
+    harness.closeAdapter.mockRejectedValueOnce(cleanup)
+    session.classic.mockImplementation(async () => {
+      await session.close()
+      session.runtime.markClassic()
+    })
+    session.rebuild.mockResolvedValue(compiledStylesheetSnapshot('blue'))
+    harness.writeOutput.mockClear()
+    session.refresh()
+    await vi.advanceTimersByTimeAsync(100)
+
+    await expect(session.runtime.whenSettled()).rejects.toBe(cleanup)
+    expect(session.runtime.phase).toBe('switching')
+    expect(session.runtime.fallback?.code).toBe('stylesheet-output')
+    expect(session.classic).toHaveBeenCalledOnce()
+    expect(harness.writeOutput).not.toHaveBeenCalled()
+    await expect(session.close()).rejects.toBe(cleanup)
+    // 本用例已经断言并接管了不可重复成功的 close，公共清理不得再次把预期拒绝当成套件失败。
+    watchers.splice(watchers.indexOf(session.watcher), 1)
+  })
+
+  it('keeps preparation cleanup failure alongside the capability that initiated a real classic handoff', async () => {
+    const session = await start(compiledStylesheetSnapshot('red'))
+    const cleanup = new Error('retiring preparation cleanup failed')
+    getCompilerHmrHost(session.ctx).register('retiring-provider', async () => ({ dispose: () => {
+      throw cleanup
+    } }))
+    session.classic.mockImplementation(async () => {
+      await session.close()
+      session.runtime.markClassic()
+    })
+    session.rebuild.mockResolvedValue(compiledStylesheetSnapshot('blue'))
+    harness.writeOutput.mockClear()
+    session.refresh()
+    await vi.advanceTimersByTimeAsync(100)
+
+    const combined = {
+      cause: expect.objectContaining({ fallback: expect.objectContaining({ code: 'stylesheet-output' }) }),
+      errors: [expect.objectContaining({ fallback: expect.objectContaining({ code: 'stylesheet-output' }) }), cleanup],
+    }
+    await expect(session.runtime.whenSettled()).rejects.toMatchObject(combined)
+    expect(session.runtime.phase).toBe('switching')
+    expect(session.classic).toHaveBeenCalledOnce()
+    expect(harness.writeOutput).not.toHaveBeenCalled()
+    await expect(session.close()).rejects.toMatchObject(combined)
+    watchers.splice(watchers.indexOf(session.watcher), 1)
+  })
+
+  it.each([
+    { shutdown: 'classic', kind: 'io' },
+    { shutdown: 'classic', kind: 'capability' },
+    { shutdown: 'classic', kind: 'aggregate' },
+    { shutdown: 'close', kind: 'io' },
+    { shutdown: 'close', kind: 'capability' },
+    { shutdown: 'close', kind: 'aggregate' },
+  ] as const)('preserves an in-flight $kind output rejection during $shutdown retirement', async ({ shutdown, kind }) => {
+    const session = await start()
+    const entered = Promise.withResolvers<void>()
+    const pending = Promise.withResolvers<void>()
+    const io = new Error('retiring output write failed')
+    const capability = new HmrRuntimeCapabilityError({ code: 'stylesheet-output', message: 'unrelated retiring capability failure' })
+    const failure = kind === 'io' ? io : kind === 'capability' ? capability : new AggregateError([capability, io], 'retiring output and cleanup failed', { cause: capability })
+    harness.writeOutput.mockClear().mockImplementationOnce(async () => {
+      entered.resolve()
+      await pending.promise
+    })
+    const publication = expect(harness.callbacks!.onOutput([
+      { type: 'asset', fileName: 'pending.txt', source: 'pending' },
+    ], 'additional')).rejects.toBe(failure)
+    await entered.promise
+
+    let retired: Promise<void>
+    if (shutdown === 'classic') {
+      session.classic.mockImplementation(async () => {
+        await session.close()
+        session.runtime.markClassic()
+      })
+      session.sourceChange(path.join(root, 'src/app.json'))
+      expect(session.runtime.phase).toBe('switching')
+      expect(session.runtime.fallback?.code).toBe('config-json')
+      retired = session.runtime.whenSettled()
+    }
+    else {
+      retired = session.close()
+    }
+    const retirement = expect(retired).rejects.toBe(failure)
+    pending.reject(failure)
+    await publication
+    await retirement
+    await expect(session.close()).rejects.toBe(failure)
+    if (shutdown === 'classic') {
+      expect(session.classic).toHaveBeenCalledOnce()
+      expect(session.runtime.phase).toBe('switching')
+      expect(session.runtime.fallback?.code).toBe('config-json')
+    }
+    else {
+      expect(session.classic).not.toHaveBeenCalled()
+    }
+    // 本用例接管了预期失败的关闭结果，公共清理不能将其重复记为套件失败。
+    watchers.splice(watchers.indexOf(session.watcher), 1)
+  })
+
+  it('publishes a compiler patch when its regenerated stylesheet bytes remain unchanged', async () => {
+    const session = await start(compiledStylesheetSnapshot('red'))
+    const delta = vi.spyOn(StatefulHmrTransport.prototype, 'addDelta').mockImplementation(async (_code, _ids, delivered) => {
+      await delivered?.()
+    })
+    getCompilerHmrHost(session.ctx).register('stylesheet-provider', async () => ({
+      assets: [{ fileName: `${WEAPP_VITE_STATEFUL_HMR_GLOBAL_STYLE_BASENAME}.wxss`, code: '.stylesheet { color: red; }' }],
+    }))
+    harness.writeOutput.mockClear()
+    expect(session.patch(['tailwind-content:1'])).toBe(true)
+    await vi.advanceTimersByTimeAsync(100)
+    await session.whenSettled()
+    expect(session.classic).not.toHaveBeenCalled()
+    expect(harness.writeOutput).not.toHaveBeenCalled()
+    expect(delta).toHaveBeenCalledOnce()
+    expect(harness.registerPatchModules).toHaveBeenCalledExactlyOnceWith('void 0')
+    expect(harness.markPayloadDelivered).toHaveBeenCalledExactlyOnceWith('update.js')
   })
 
   it('keeps settlement pending through a debounced refresh and its final output write', async () => {
@@ -512,7 +696,7 @@ describe('stateful snapshot output transactions', () => {
   it.each([
     ['pages/shared/index.wxml', '<view>updated</view>'],
     ['pages/shared/index.wxss', '.native-updated { color: blue; }'],
-  ])('keeps native %s output when a compiler also scans that source', async (fileName, source) => {
+  ])('admits native %s output by compiled capability when a compiler also scans that source', async (fileName, source) => {
     const session = await start()
     const file = path.join(root, 'src', fileName)
     const compiler = getCompilerHmrHost(session.ctx)
@@ -528,7 +712,15 @@ describe('stateful snapshot output transactions', () => {
     await vi.advanceTimersByTimeAsync(100)
     expect(session.rebuild).toHaveBeenCalledTimes(1)
     expect(session.rebuild).toHaveBeenCalledWith([file], expect.any(Map))
-    expect(writtenAssets().findLast(asset => asset.fileName === fileName)?.source).toContain(source)
+    if (fileName.endsWith('.wxss')) {
+      expect(session.runtime.fallback).toMatchObject({ code: 'stylesheet-output', files: [fileName] })
+      expect(session.classic).toHaveBeenCalledOnce()
+      expect(writtenAssets().filter(asset => asset.fileName === fileName)).toEqual([])
+    }
+    else {
+      expect(writtenAssets().findLast(asset => asset.fileName === fileName)?.source).toContain(source)
+      expect(session.classic).not.toHaveBeenCalled()
+    }
     expect(harness.fullBuild).not.toHaveBeenCalled()
   })
 
@@ -560,7 +752,7 @@ describe('stateful snapshot output transactions', () => {
     await vi.advanceTimersByTimeAsync(100)
     await expect(recovered).resolves.toBeUndefined()
     expect(session.rebuild).toHaveBeenCalledTimes(2)
-    expect(writtenAssets().findLast(asset => asset.fileName === styleFile)?.source).toContain('blue')
+    expect(writtenAssets().findLast(asset => asset.fileName === contentFile)?.source).toContain('blue')
     expect(events).toHaveBeenCalledWith(expect.objectContaining({ code: 'END' }))
     expect(session.classic).not.toHaveBeenCalled()
   })
@@ -651,7 +843,7 @@ describe('stateful snapshot output transactions', () => {
     expect(session.rebuild).toHaveBeenCalledOnce()
     expect(session.classic).not.toHaveBeenCalled()
     expect(session.runtime.fallback).toBeUndefined()
-    expect(writtenAssets().findLast(asset => asset.fileName === styleFile)?.source).toContain('blue')
+    expect(writtenAssets().findLast(asset => asset.fileName === contentFile)?.source).toContain('blue')
   })
 
   it('hands a safe script patch to classic when a registered compiler provider lacks HMR support', async () => {
@@ -727,11 +919,11 @@ describe('stateful snapshot output transactions', () => {
     // 新源事件以完整重同步恢复；不得用失败前的字节快照省略真实写回。
     session.refresh()
     await vi.advanceTimersByTimeAsync(100)
-    expect(writtenAssets()).toContainEqual(expect.objectContaining({ fileName: styleFile, source: '.probe { color: red; }' }))
+    expect(writtenAssets()).toContainEqual(expect.objectContaining({ fileName: contentFile, source: '<view data-color="red"></view>' }))
     expect(harness.writeOutput.mock.calls.flatMap(call => call[3] ?? [])).toContain('resources/partial.txt')
   })
 
-  it('issue #1081: commits final compiler styles before publishing a patch and only acknowledges scripts after execution', async () => {
+  it('issue #1081: commits final compiler assets before publishing a patch and only acknowledges scripts after execution', async () => {
     const applied = Promise.withResolvers<void>()
     const delta = vi.spyOn(StatefulHmrTransport.prototype, 'addDelta').mockImplementation(async (_code, _ids, delivered) => {
       await applied.promise
@@ -747,8 +939,8 @@ describe('stateful snapshot output transactions', () => {
     try {
       expect(session.patch(['compiler-content:tailwind'])).toBe(true)
       await vi.advanceTimersByTimeAsync(50)
-      expect(writtenAssets()).toContainEqual(expect.objectContaining({ fileName: styleFile, source: '.probe { color: blue; }' }))
-      expect(writtenAssets()).toContainEqual(expect.objectContaining({ fileName: `${route}.wxss`, source: expect.stringContaining('color: blue') }))
+      expect(writtenAssets()).toContainEqual(expect.objectContaining({ fileName: contentFile, source: '<view data-color="blue"></view>' }))
+      expect(writtenAssets()).toContainEqual(expect.objectContaining({ fileName: pageContentFile, source: expect.stringContaining('data-color="blue"') }))
       expect(delta).not.toHaveBeenCalled()
       expect(harness.registerPatchModules).not.toHaveBeenCalled()
       expect(harness.markPayloadDelivered).not.toHaveBeenCalled()
@@ -773,13 +965,13 @@ describe('stateful snapshot output transactions', () => {
     }
   })
 
-  it('issue #1081: does not publish or acknowledge a patch when final styles fail and restores the store before a later batch', async () => {
+  it('issue #1081: does not publish or acknowledge a patch when final assets fail and restores the store before a later batch', async () => {
     const delta = vi.spyOn(StatefulHmrTransport.prototype, 'addDelta').mockImplementation(async (_code, _ids, delivered) => {
       await delivered?.()
     })
     const initial = snapshot('red')
     const session = await start(initial)
-    const failure = new Error('compiler stylesheet write failed')
+    const failure = new Error('compiler asset write failed')
     session.rebuild.mockResolvedValueOnce(snapshot('blue')).mockResolvedValue(initial)
     harness.writeOutput.mockClear().mockRejectedValueOnce(failure)
     expect(session.patch(['compiler-content:tailwind'])).toBe(true)
@@ -794,19 +986,19 @@ describe('stateful snapshot output transactions', () => {
     await vi.advanceTimersByTimeAsync(100)
     await session.whenSettled()
     expect(harness.fullBuild).toHaveBeenCalledOnce()
-    expect(writtenAssets()).toContainEqual(expect.objectContaining({ fileName: styleFile, source: '.probe { color: red; }' }))
+    expect(writtenAssets()).toContainEqual(expect.objectContaining({ fileName: contentFile, source: '<view data-color="red"></view>' }))
 
     session.rebuild.mockResolvedValue(snapshot('green'))
     expect(session.patch(['compiler-content:tailwind'])).toBe(true)
     await vi.advanceTimersByTimeAsync(100)
     await session.whenSettled()
-    expect(writtenAssets()).toContainEqual(expect.objectContaining({ fileName: styleFile, source: '.probe { color: green; }' }))
+    expect(writtenAssets()).toContainEqual(expect.objectContaining({ fileName: contentFile, source: '<view data-color="green"></view>' }))
     expect(delta).toHaveBeenCalledOnce()
     expect(harness.registerPatchModules).toHaveBeenCalledOnce()
     expect(harness.markPayloadDelivered).toHaveBeenCalledExactlyOnceWith('update.js')
   })
 
-  it('issue #1081: shares one final stylesheet across ordered patches and commits the next batch after acknowledgement', async () => {
+  it('issue #1081: shares one final asset snapshot across ordered patches and commits the next batch after acknowledgement', async () => {
     const applied = Promise.withResolvers<void>()
     const order: string[] = []
     const delta = vi.spyOn(StatefulHmrTransport.prototype, 'addDelta').mockImplementation(async (_code, _ids, delivered) => {
@@ -819,9 +1011,9 @@ describe('stateful snapshot output transactions', () => {
     const session = await start()
     session.rebuild.mockResolvedValueOnce(snapshot('blue')).mockResolvedValueOnce(snapshot('green'))
     harness.writeOutput.mockClear().mockImplementation(async (_outDir, output) => {
-      const style = output.find(item => item.fileName === styleFile)
-      if (style?.type === 'asset') {
-        order.push(`write:${style.source}`)
+      const content = output.find(item => item.fileName === contentFile)
+      if (content?.type === 'asset') {
+        order.push(`write:${content.source}`)
       }
     })
     harness.registerPatchModules.mockImplementation(async (code) => {
@@ -848,7 +1040,7 @@ describe('stateful snapshot output transactions', () => {
       const executed: string[] = []
       runInNewContext(delta.mock.calls[0]![0], { order: executed })
       expect(executed).toEqual(['first', 'second'])
-      expect(order).toEqual(['write:.probe { color: blue; }', 'publish'])
+      expect(order).toEqual(['write:<view data-color="blue"></view>', 'publish'])
 
       expect(session.patch(['compiler-content:tailwind'])).toBe(true)
       await vi.advanceTimersByTimeAsync(50)
@@ -863,13 +1055,13 @@ describe('stateful snapshot output transactions', () => {
       expect(delta).toHaveBeenCalledTimes(2)
       expect(harness.writeOutput).toHaveBeenCalledTimes(2)
       expect(order).toEqual([
-        'write:.probe { color: blue; }',
+        'write:<view data-color="blue"></view>',
         'publish',
         'register:order.push("first")',
         'mark:first.js',
         'register:order.push("second")',
         'mark:second.js',
-        'write:.probe { color: green; }',
+        'write:<view data-color="green"></view>',
         'publish',
         'register:void 0',
         'mark:update.js',
@@ -907,7 +1099,7 @@ describe('stateful snapshot output transactions', () => {
     const session = await start()
     const compiler = getCompilerHmrHost(session.ctx)
     compiler.register('scan-only-provider', async () => ({
-      assets: [{ fileName: styleFile, code: '.probe { color: blue; }' }],
+      assets: [{ fileName: contentFile, code: '<view data-color="blue"></view>' }],
     }))
     const file = path.join(root, 'src/page.js')
     // Core watch can classify the source as a mixed entry update while the
@@ -919,7 +1111,7 @@ describe('stateful snapshot output transactions', () => {
     await vi.advanceTimersByTimeAsync(50)
     await session.whenSettled()
     expect(delta).toHaveBeenCalledOnce()
-    expect(writtenAssets()).toContainEqual(expect.objectContaining({ fileName: styleFile, source: '.probe { color: blue; }' }))
+    expect(writtenAssets()).toContainEqual(expect.objectContaining({ fileName: contentFile, source: '<view data-color="blue"></view>' }))
   })
 
   beforeEach(() => {
@@ -929,7 +1121,6 @@ describe('stateful snapshot output transactions', () => {
     harness.initialOutput = true
     harness.nativeSettlement.mockReset().mockResolvedValue()
     harness.writeOutput.mockReset().mockResolvedValue()
-    harness.touchExistingOutputStyles.mockReset().mockResolvedValue(new Set())
     harness.beforeInitialReady.mockReset().mockResolvedValue()
     harness.beforeFullPrepare.mockReset().mockResolvedValue()
     harness.registerBundleModules.mockReset().mockResolvedValue(1)
@@ -989,6 +1180,55 @@ describe('stateful snapshot output transactions', () => {
     expect(samples.filter(sample => sample.profileMode === 'refresh')).toEqual([
       expect.objectContaining({ status: 'complete', eventId: 'core-ingress', sourceEvents: [sourceEvent] }),
     ])
+  })
+
+  it('keeps all pending source identities after an uncorrelated native failure and delivers their later successful patches', async () => {
+    const samples: HmrProfileJsonSample[] = []
+    vi.spyOn(StatefulHmrProfile.prototype, 'record').mockImplementation(sample => samples.push(sample))
+    const delta = vi.spyOn(StatefulHmrTransport.prototype, 'addDelta').mockImplementation(async (_code, _ids, delivered) => {
+      await delivered?.()
+    })
+    const session = await start(snapshot('red'), [], {}, new Map(), undefined, (ctx) => {
+      ctx.configService!.weappViteConfig.hmr = { profileJson: true }
+    })
+    const sources = ['a.js', 'b.js', 'c.js'].map((file, index) => ({
+      eventId: `pending-source-${index}`,
+      event: 'update' as const,
+      file: path.join(root, 'src', file),
+      receivedAtMs: performance.now(),
+    }))
+    samples.splice(0)
+    harness.writeOutput.mockClear()
+    session.ctx.onStatefulHmrSourceChange!(sources[0]!.file, [], { ...sources[0]!, eventId: 'older-a' })
+    for (const source of sources) {
+      session.ctx.onStatefulHmrSourceChange!(source.file, [], source)
+    }
+    harness.callbacks!.onNativeError(Object.assign(new Error('native transform failed'), { id: sources[0]!.file }))
+    expect(samples).toEqual([expect.objectContaining({ status: 'failed', correlation: 'unknown', sourceEvents: [] })])
+    expect(samples[0]!.file).toBeUndefined()
+    expect(samples[0]!.eventId).toBeUndefined()
+    expect(session.classic).not.toHaveBeenCalled()
+    expect(session.restart).not.toHaveBeenCalled()
+    expect(session.rebuild).not.toHaveBeenCalled()
+    expect(harness.fullBuild).not.toHaveBeenCalled()
+    expect(harness.writeOutput).not.toHaveBeenCalled()
+    expect(delta).not.toHaveBeenCalled()
+    expect(session.runtime.phase).toBe('stateful')
+    for (const [index, source] of sources.entries()) {
+      expect(harness.callbacks!.onPatch([source.file], { type: 'Patch', code: 'void 0', filename: `update-${index}.js` })).toBe(true)
+      await vi.advanceTimersByTimeAsync(50)
+      await session.whenSettled()
+    }
+    expect(samples.slice(1)).toEqual(sources.map(source => expect.objectContaining({
+      status: 'complete',
+      correlation: 'known',
+      sourceEvents: [source],
+      eventId: source.eventId,
+    })))
+    expect(delta).toHaveBeenCalledTimes(3)
+    expect(session.classic).not.toHaveBeenCalled()
+    expect(session.rebuild).not.toHaveBeenCalled()
+    expect(harness.writeOutput).not.toHaveBeenCalled()
   })
 
   it.each(['write', 'register'] as const)('keeps a transferred profile pending until replacement %s succeeds', async (stage) => {
@@ -1073,9 +1313,9 @@ describe('stateful snapshot output transactions', () => {
     session.refresh()
     await vi.advanceTimersByTimeAsync(100)
     expect(session.patch([])).toBe(false)
-    const currentStyle = writtenAssets().filter(item => item.fileName === `${styleFile}`).at(-1)
-    expect(currentStyle?.source).toContain('color: red')
-    expect(currentStyle?.source).not.toContain('color: blue')
+    const currentContent = writtenAssets().filter(item => item.fileName === contentFile).at(-1)
+    expect(currentContent?.source).toContain('data-color="red"')
+    expect(currentContent?.source).not.toContain('data-color="blue"')
   })
 
   afterEach(async () => {
@@ -1204,8 +1444,8 @@ describe('stateful snapshot output transactions', () => {
 
     expect(session.rebuild).toHaveBeenCalledTimes(1)
     expect(writtenAssets()).toContainEqual(expect.objectContaining({
-      fileName: `${route}.wxss`,
-      source: expect.stringContaining('color: blue'),
+      fileName: pageContentFile,
+      source: expect.stringContaining('data-color="blue"'),
     }))
     expect(delta).toHaveBeenCalledTimes(1)
     expect(harness.fullBuild).not.toHaveBeenCalled()
@@ -1233,7 +1473,7 @@ describe('stateful snapshot output transactions', () => {
     await vi.advanceTimersByTimeAsync(100)
 
     expect(session.rebuild).toHaveBeenCalledOnce()
-    expect(writtenAssets()).toContainEqual(expect.objectContaining({ source: expect.stringContaining('color: blue') }))
+    expect(writtenAssets()).toContainEqual(expect.objectContaining({ source: expect.stringContaining('data-color="blue"') }))
     expect(harness.fullBuild).not.toHaveBeenCalled()
   })
 
@@ -1406,7 +1646,7 @@ describe('stateful snapshot output transactions', () => {
     await vi.advanceTimersByTimeAsync(100)
     await session.whenSettled()
     expect(session.rebuild).toHaveBeenCalledOnce()
-    expect(published.get(styleFile)).toContain('color: blue')
+    expect(published.get(contentFile)).toContain('data-color="blue"')
 
     // 已稳定的资产批次不能使后续独立脚本编辑被强制完整重载。
     harness.nativeOutput = [{ type: 'chunk', fileName: 'pages/index/index.js', code: current, modules: {} }]
@@ -1545,7 +1785,7 @@ describe('stateful snapshot output transactions', () => {
     await vi.advanceTimersByTimeAsync(100)
     await session.whenSettled()
     expect(harness.fullBuild).not.toHaveBeenCalled()
-    expect(writtenAssets()).toContainEqual(expect.objectContaining({ fileName: styleFile, source: '.probe { color: blue; }' }))
+    expect(writtenAssets()).toContainEqual(expect.objectContaining({ fileName: contentFile, source: '<view data-color="blue"></view>' }))
 
     getCompilerHmrHost(session.ctx).captureNative(script, current)
     session.sourceChange(script, 'update', ['entry-direct:1'])
@@ -1643,7 +1883,7 @@ describe('stateful snapshot output transactions', () => {
     prepared.resolve({ ...snapshot('blue'), nativeScriptVersions: new Map([[script, createHash('sha256').update(current).digest('hex')]]) })
     await vi.advanceTimersByTimeAsync(100)
     await session.whenSettled()
-    expect(writtenAssets().filter(item => item.fileName === styleFile).at(-1)?.source).toContain('color: green')
+    expect(writtenAssets().filter(item => item.fileName === contentFile).at(-1)?.source).toContain('data-color="green"')
     const delta = vi.spyOn(StatefulHmrTransport.prototype, 'addDelta').mockImplementation(async (_code, _ids, delivered) => {
       await delivered?.()
     })
@@ -1695,7 +1935,7 @@ describe('stateful snapshot output transactions', () => {
     await vi.advanceTimersByTimeAsync(100)
     await session.whenSettled()
     expect(harness.fullBuild).toHaveBeenCalledOnce()
-    expect(writtenAssets().filter(item => item.fileName === styleFile).at(-1)?.source).toContain('color: red')
+    expect(writtenAssets().filter(item => item.fileName === contentFile).at(-1)?.source).toContain('data-color="red"')
   })
 
   it('preserves a newer native event during the correcting full write and clears only consumed input debt', async () => {
@@ -1787,7 +2027,7 @@ describe('stateful snapshot output transactions', () => {
     ready.resolve(snapshot('blue'))
     await vi.advanceTimersByTimeAsync(100)
     expect(session.rebuild).toHaveBeenCalledTimes(1)
-    expect(writtenAssets()).toContainEqual(expect.objectContaining({ fileName: styleFile, source: '.probe { color: blue; }' }))
+    expect(writtenAssets()).toContainEqual(expect.objectContaining({ fileName: contentFile, source: '<view data-color="blue"></view>' }))
   })
 
   it('keeps source classifications across unrelated profile writes and consumes only the delivered files', async () => {
@@ -1805,8 +2045,8 @@ describe('stateful snapshot output transactions', () => {
     expect(session.rebuild).toHaveBeenCalledExactlyOnceWith([component, other])
     expect(harness.fullBuild).not.toHaveBeenCalled()
     expect(writtenAssets()).toContainEqual(expect.objectContaining({
-      fileName: `${route}.wxss`,
-      source: expect.stringContaining('color: blue'),
+      fileName: pageContentFile,
+      source: expect.stringContaining('data-color="blue"'),
     }))
   })
 
@@ -1840,14 +2080,16 @@ describe('stateful snapshot output transactions', () => {
     expect(harness.fullBuild).not.toHaveBeenCalled()
   })
 
-  it.each(['style', 'template'] as const)('prepares and restores compiler-owned native Vue %s inputs from Noop batches', async (kind) => {
+  it.each(['style', 'template'] as const)('prepares native Vue %s inputs from Noop and preserves only supported restoration delivery', async (kind) => {
     const component = path.join(root, 'src/native.vue')
     const previous = '<script setup>const count = 1</script><template><view>before</view></template><style>view { color: red }</style>'
     const changed = kind === 'style'
       ? previous.replace('color: red', 'color: blue')
       : previous.replace('<view>before</view>', '<view>after</view>')
     const visualSnapshot = (source: string) => {
-      const value = snapshot(source.includes('color: blue') ? 'blue' : 'red')
+      const value = kind === 'style'
+        ? compiledStylesheetSnapshot(source.includes('color: blue') ? 'blue' : 'red')
+        : snapshot('red')
       value.output.push({ type: 'asset', fileName: `${route}.wxml`, source: source.includes('<view>after</view>') ? '<view>after</view>' : '<view>before</view>' })
       return value
     }
@@ -1873,27 +2115,36 @@ describe('stateful snapshot output transactions', () => {
       // JS 无补丁不代表编译器的样式或模板输入已发布，恢复原文同样需要准备。
       harness.callbacks!.onPatch([component], { type: 'Noop' })
       await vi.advanceTimersByTimeAsync(40)
-      await session.whenSettled()
+      if (kind === 'template') {
+        await session.whenSettled()
+      }
 
       expect(prepare).toHaveBeenCalledTimes(index + 1)
       const input = prepare.mock.calls[index]?.[0]
       expect(input?.changedFiles).toEqual([component])
       expect(input?.sources.get(compilerSourceId(component))).toBe(source)
       expect(session.rebuild).toHaveBeenNthCalledWith(index + 1, [component], input?.sources)
-      const fileName = kind === 'style' ? styleFile : `${route}.wxml`
-      const expected = kind === 'style'
-        ? index === 0 ? 'color: blue' : 'color: red'
-        : index === 0 ? '<view>after</view>' : '<view>before</view>'
-      expect(writtenAssets().findLast(asset => asset.fileName === fileName)?.source).toContain(expected)
+      if (kind === 'style') {
+        expect(session.runtime.fallback?.code).toBe('stylesheet-output')
+        expect(session.classic).toHaveBeenCalledOnce()
+        expect(harness.writeOutput).not.toHaveBeenCalled()
+        host.captureNative(component, previous)
+        session.sourceChange(component, 'update', ['entry-style-only:1'])
+        expect(harness.callbacks!.onPatch([component], { type: 'Noop' })).toBe(false)
+        await vi.advanceTimersByTimeAsync(40)
+        expect(prepare).toHaveBeenCalledOnce()
+        break
+      }
+      expect(writtenAssets().findLast(asset => asset.fileName === `${route}.wxml`)?.source).toContain(index === 0 ? '<view>after</view>' : '<view>before</view>')
 
-      session.sourceChange(component, 'update', [kind === 'style' ? 'entry-style-only:1' : 'entry-local-asset:1'])
+      session.sourceChange(component, 'update', ['entry-local-asset:1'])
       expect(harness.callbacks!.onPatch([component], { type: 'Noop' })).toBe(false)
       await vi.advanceTimersByTimeAsync(40)
       await session.whenSettled()
       expect(prepare).toHaveBeenCalledTimes(index + 1)
     }
     expect(harness.fullBuild).not.toHaveBeenCalled()
-    expect(session.classic).not.toHaveBeenCalled()
+    expect(session.classic).toHaveBeenCalledTimes(kind === 'style' ? 1 : 0)
     expect(delta).not.toHaveBeenCalled()
   })
 
@@ -1902,7 +2153,7 @@ describe('stateful snapshot output transactions', () => {
     const template = path.join(root, 'src/template.vue')
     const previous = '<script setup>const count = 1</script><template><view>before</view></template><style>view { color: red }</style>'
     const changed = new Map([[style, previous.replace('color: red', 'color: blue')], [template, previous.replace('<view>before</view>', '<view>after</view>')]])
-    const initial = snapshot('red')
+    const initial = compiledStylesheetSnapshot('red')
     initial.output.push({ type: 'asset', fileName: `${route}.wxml`, source: '<view>before</view>' })
     const session = await start(initial, [style, template], {}, new Map([[style, previous], [template, previous]]))
     const host = getCompilerHmrHost(session.ctx)
@@ -1913,13 +2164,13 @@ describe('stateful snapshot output transactions', () => {
       host.captureNative(file, source)
       session.sourceChange(file, 'update', [file === style ? 'entry-style-only:1' : 'entry-local-asset:1'])
     }
-    const next = snapshot('blue')
+    const next = compiledStylesheetSnapshot('blue')
     next.output.push({ type: 'asset', fileName: `${route}.wxml`, source: '<view>after</view>' })
     session.rebuild.mockResolvedValueOnce(next)
     const freeze = vi.spyOn(host, 'freeze')
     expect(harness.callbacks!.onPatch([style, template], { type: 'Noop' })).toBe(true)
+    harness.writeOutput.mockClear()
     await vi.advanceTimersByTimeAsync(40)
-    await session.whenSettled()
 
     expect(freeze).toHaveBeenCalledExactlyOnceWith([style, template])
     expect(prepare).toHaveBeenCalledOnce()
@@ -1929,10 +2180,10 @@ describe('stateful snapshot output transactions', () => {
       expect(input?.sources.get(compilerSourceId(file))).toBe(source)
     }
     expect(session.rebuild).toHaveBeenCalledExactlyOnceWith([style, template], input?.sources)
-    expect(writtenAssets().findLast(asset => asset.fileName === styleFile)?.source).toContain('color: blue')
-    expect(writtenAssets().findLast(asset => asset.fileName === `${route}.wxml`)?.source).toBe('<view>after</view>')
+    expect(harness.writeOutput).not.toHaveBeenCalled()
+    expect(session.runtime.fallback?.code).toBe('stylesheet-output')
     expect(harness.fullBuild).not.toHaveBeenCalled()
-    expect(session.classic).not.toHaveBeenCalled()
+    expect(session.classic).toHaveBeenCalledOnce()
   })
 
   it.each(['style', 'template'] as const)('retains a known native Vue %s change when a later script event replaces its classification', async (kind) => {
@@ -1941,7 +2192,7 @@ describe('stateful snapshot output transactions', () => {
     const changed = (kind === 'style'
       ? previous.replace('color: red', 'color: blue')
       : previous.replace('<view>before</view>', '<view>after</view>')).replace('count = 1', 'count = 2')
-    const session = await start(snapshot('red'), [component], {}, new Map([[component, previous]]))
+    const session = await start(kind === 'style' ? compiledStylesheetSnapshot('red') : snapshot('red'), [component], {}, new Map([[component, previous]]))
     const host = getCompilerHmrHost(session.ctx)
     const prepare = vi.fn(async (_input: WeappCompilerHmrRequest) => ({}))
     host.seed(component, previous)
@@ -1950,24 +2201,33 @@ describe('stateful snapshot output transactions', () => {
     expect(host.hasVisualChanges([component])).toBe(false)
     host.captureNative(component, changed)
     expect(host.hasVisualChanges([component])).toBe(true)
-    const next = snapshot('blue')
+    const next = kind === 'style' ? compiledStylesheetSnapshot('blue') : snapshot('blue')
     next.output.push({ type: 'asset', fileName: `${route}.wxml`, source: '<view>after</view>' })
     session.rebuild.mockResolvedValueOnce(next)
     session.sourceChange(component, 'update', [kind === 'style' ? 'entry-style-only:1' : 'entry-local-asset:1'])
     session.sourceChange(component, 'update', ['entry-direct:1'])
     const freeze = vi.spyOn(host, 'freeze')
+    harness.writeOutput.mockClear()
     harness.callbacks!.onPatch([component], { type: 'Noop' })
     await vi.advanceTimersByTimeAsync(40)
-    await session.whenSettled()
+    if (kind === 'template') {
+      await session.whenSettled()
+    }
 
     expect(prepare).toHaveBeenCalledOnce()
     expect(freeze).toHaveBeenCalledExactlyOnceWith([component])
     const input = prepare.mock.calls[0]?.[0]
     expect(input?.sources.get(compilerSourceId(component))).toBe(changed)
     expect(session.rebuild).toHaveBeenCalledExactlyOnceWith([component], input?.sources)
-    expect(writtenAssets().findLast(asset => asset.fileName === (kind === 'style' ? styleFile : `${route}.wxml`))?.source).toContain(kind === 'style' ? 'color: blue' : '<view>after</view>')
+    if (kind === 'style') {
+      expect(harness.writeOutput).not.toHaveBeenCalled()
+      expect(session.runtime.fallback?.code).toBe('stylesheet-output')
+    }
+    else {
+      expect(writtenAssets().findLast(asset => asset.fileName === `${route}.wxml`)?.source).toContain('<view>after</view>')
+    }
     expect(harness.fullBuild).not.toHaveBeenCalled()
-    expect(session.classic).not.toHaveBeenCalled()
+    expect(session.classic).toHaveBeenCalledTimes(kind === 'style' ? 1 : 0)
   })
 
   it.each([
@@ -1975,16 +2235,14 @@ describe('stateful snapshot output transactions', () => {
     ['Patch', 'core-style-then-tailwind'],
     ['Noop', 'tailwind-only'],
     ['Noop', 'core-style-then-tailwind'],
-  ] as const)('publishes consecutive native Vue styles with %s and %s notifications', async (type, notification) => {
-    vi.spyOn(StatefulHmrTransport.prototype, 'addDelta').mockImplementation(async (_code, _ids, delivered) => {
-      await delivered?.()
-    })
+  ] as const)('hands native Vue stylesheet output to sticky classic with %s and %s notifications', async (type, notification) => {
+    const delta = vi.spyOn(StatefulHmrTransport.prototype, 'addDelta')
     const component = path.join(root, 'src/native.vue')
     const previous = '<script setup>const count = 1</script><template><view>same</view></template><style>.probe { color: red; }</style>'
     const styleSnapshot = (color: string): StatefulHmrSnapshot => ({
-      ...snapshot('white'),
+      ...compiledStylesheetSnapshot('white'),
       output: [
-        ...snapshot('white').output,
+        ...compiledStylesheetSnapshot('white').output,
         { type: 'asset', fileName: `${route}.wxss`, source: `.probe { color: ${color}; }` },
       ],
       entryIds: [component],
@@ -1992,39 +2250,39 @@ describe('stateful snapshot output transactions', () => {
     })
     const session = await start(styleSnapshot('red'), [component], {}, new Map([[component, previous]]))
     const host = getCompilerHmrHost(session.ctx)
-    const prepare = vi.fn(async (_input: WeappCompilerHmrRequest) => ({ assets: [{ fileName: 'app.wxss', code: '.probe { color: white; }' }] }))
+    const prepare = vi.fn(async (_input: WeappCompilerHmrRequest) => ({}))
     host.seed(component, previous)
     host.register('source-provider', prepare)
     const freeze = vi.spyOn(host, 'freeze')
+    harness.writeOutput.mockClear()
 
     for (const [index, color] of ['blue', 'red', 'green'].entries()) {
       const changed = previous.replace('color: red', `color: ${color}`)
       host.captureNative(component, changed)
-      expect(host.hasVisualChanges([component])).toBe(true)
       session.rebuild.mockResolvedValueOnce(styleSnapshot(color))
-      harness.writeOutput.mockClear()
       if (notification === 'core-style-then-tailwind') {
         session.sourceChange(component, 'update', ['entry-style-only:1'])
       }
       session.sourceChange(component, 'update', ['tailwind-content:1'])
       expect(harness.callbacks!.onPatch([component], type === 'Noop'
         ? { type }
-        : { type, code: 'void 0', filename: `update-${index}.js`, changedIds: [component] })).toBe(true)
+        : { type, code: 'void 0', filename: `update-${index}.js`, changedIds: [component] })).toBe(index === 0)
       await vi.advanceTimersByTimeAsync(40)
-      await session.whenSettled()
-
-      expect(prepare).toHaveBeenCalledTimes(index + 1)
-      expect(freeze).toHaveBeenCalledTimes(index + 1)
-      expect(freeze).toHaveBeenNthCalledWith(index + 1, [component])
-      const input = prepare.mock.calls[index]?.[0]
-      expect(input?.changedFiles).toEqual([component])
-      expect(input?.sources.get(compilerSourceId(component))).toBe(changed)
-      expect(session.rebuild).toHaveBeenCalledTimes(index + 1)
-      expect(session.rebuild).toHaveBeenNthCalledWith(index + 1, [component], input?.sources)
-      expect(writtenAssets().findLast(asset => asset.fileName === `${route}.wxss`)?.source).toContain(`color: ${color}`)
-      expect(harness.fullBuild).not.toHaveBeenCalled()
-      expect(session.classic).not.toHaveBeenCalled()
+      expect(session.runtime.fallback).toMatchObject({ code: 'stylesheet-output', files: [`${route}.wxss`] })
+      expect(session.classic).toHaveBeenCalledOnce()
     }
+
+    expect(prepare).toHaveBeenCalledOnce()
+    expect(freeze).toHaveBeenCalledExactlyOnceWith([component])
+    const input = prepare.mock.calls[0]?.[0]
+    expect(input?.changedFiles).toEqual([component])
+    expect(input?.sources.get(compilerSourceId(component))).toBe(previous.replace('color: red', 'color: blue'))
+    expect(session.rebuild).toHaveBeenCalledExactlyOnceWith([component], input?.sources)
+    expect(harness.writeOutput).not.toHaveBeenCalled()
+    expect(delta).not.toHaveBeenCalled()
+    expect(harness.registerPatchModules).not.toHaveBeenCalled()
+    expect(harness.markPayloadDelivered).not.toHaveBeenCalled()
+    expect(harness.fullBuild).not.toHaveBeenCalled()
   })
 
   it('publishes a compiler-owned native Vue script Patch without rebuilding its unchanged visuals', async () => {
@@ -2203,7 +2461,7 @@ describe('stateful snapshot output transactions', () => {
   it('does not trust a live Vue input captured during a full output write', async () => {
     const component = path.join(root, 'src/native.vue')
     const previous = '<script setup>const count = 1</script><template><view>before</view></template><style>view { color: red }</style>'
-    const changed = previous.replace('color: red', 'color: blue')
+    const changed = previous.replace('<view>before</view>', '<view>after</view>')
     harness.nativeOutput = [{ type: 'chunk', fileName: `${route}.js`, code: 'Page({});', modules: { [component]: {} } }]
     const session = await start(snapshot('red'), [component], {}, new Map([[component, previous]]))
     const host = getCompilerHmrHost(session.ctx)
@@ -2221,13 +2479,13 @@ describe('stateful snapshot output transactions', () => {
     try {
       await writing.promise
       host.captureNative(component, changed)
-      session.sourceChange(component, 'update', ['entry-style-only:1'])
+      session.sourceChange(component, 'update', ['entry-local-asset:1'])
       write.resolve()
       await publication
 
       expect(host.readSource(component)).toBe(changed)
       expect(host.isNativeSource(component)).toBe(true)
-      expect(writtenAssets().findLast(asset => asset.fileName === styleFile)?.source).toContain('color: red')
+      expect(writtenAssets().findLast(asset => asset.fileName === contentFile)?.source).toContain('data-color="red"')
       expect(harness.callbacks!.onPatch([component], { type: 'Noop' })).toBe(false)
       await vi.advanceTimersByTimeAsync(40)
       expect(session.classic).toHaveBeenCalledOnce()
@@ -2263,24 +2521,24 @@ describe('stateful snapshot output transactions', () => {
   })
 
   it('prepares a refresh from the raw source captured before its notification', async () => {
-    const style = path.join(root, 'src/page.wxss')
-    const previous = '.probe { color: red; }'
-    const changed = '.probe { color: blue; }'
-    const session = await start(snapshot('red'), [], {}, new Map([[style, previous]]))
+    const template = path.join(root, 'src/page.wxml')
+    const previous = '<view data-color="red"></view>'
+    const changed = '<view data-color="blue"></view>'
+    const session = await start(snapshot('red'), [], {}, new Map([[template, previous]]))
     const host = getCompilerHmrHost(session.ctx)
     const prepare = vi.fn(async (_input: WeappCompilerHmrRequest) => ({}))
     host.register('source-provider', prepare)
-    host.captureNative(style, changed)
-    session.sourceChange(style, 'update', ['style-sidecar:1'])
+    host.captureNative(template, changed)
+    session.sourceChange(template, 'update', ['entry-local-asset:1'])
 
     // 定时器只派发既定 debounce；是否使用本轮输入由真实 preparation/rebuild 观察证明。
     await vi.advanceTimersByTimeAsync(40)
     await session.whenSettled()
 
     expect(prepare).toHaveBeenCalledOnce()
-    expect(prepare.mock.calls[0]?.[0]).toMatchObject({ changedFiles: [style] })
+    expect(prepare.mock.calls[0]?.[0]).toMatchObject({ changedFiles: [template] })
     const sources = session.rebuild.mock.calls[0]?.[1]
-    expect(sources?.get(compilerSourceId(style))).toBe(changed)
+    expect(sources?.get(compilerSourceId(template))).toBe(changed)
     expect(harness.fullBuild).not.toHaveBeenCalled()
   })
 
@@ -2342,7 +2600,7 @@ describe('stateful snapshot output transactions', () => {
     const rejected = expect(session.whenSettled()).rejects.toBe(failure)
     await vi.advanceTimersByTimeAsync(40)
     await rejected
-    expect(writtenAssets()).toContainEqual(expect.objectContaining({ fileName: styleFile, source: '.probe { color: blue; }' }))
+    expect(writtenAssets()).toContainEqual(expect.objectContaining({ fileName: contentFile, source: '<view data-color="blue"></view>' }))
     expect(events).not.toHaveBeenCalledWith(expect.objectContaining({ code: 'END' }))
     expect(events).toHaveBeenCalledWith(expect.objectContaining({ code: 'ERROR', error: failure }))
     expect(samples).toEqual([expect.objectContaining({ profileMode: 'refresh', status: 'failed' })])
@@ -2533,12 +2791,12 @@ describe('stateful snapshot output transactions', () => {
     })
     const component = path.join(root, 'src/component.vue')
     const previous = '<script setup>const count = 1</script><template><view>{{ count }}</view></template><style>view { color: red }</style>'
-    const changed = previous.replace('color: red', 'color: blue')
+    const changed = previous.replace('<view>{{ count }}</view>', '<view>updated {{ count }}</view>')
     const session = await start(snapshot('red'), [component], {}, new Map([[component, previous]]))
     const host = getCompilerHmrHost(session.ctx)
     host.register('source-provider', async () => ({}))
     host.captureNative(component, changed)
-    session.sourceChange(component, 'update', ['entry-style-only:1'])
+    session.sourceChange(component, 'update', ['entry-local-asset:1'])
     await vi.advanceTimersByTimeAsync(40)
     await session.whenSettled()
     expect(session.rebuild).toHaveBeenCalledOnce()
@@ -2652,7 +2910,7 @@ describe('stateful snapshot output transactions', () => {
     session.refresh()
     await vi.advanceTimersByTimeAsync(50)
     expect(scopes.map(boot)).toEqual(['additional', 'feature/additional'])
-    expect(published.get(styleFile)).toMatchObject({ source: '.probe { color: blue; }' })
+    expect(published.get(contentFile)).toMatchObject({ source: '<view data-color="blue"></view>' })
 
     harness.nativeOutput = nativeOutput('rebuilt')
     await session.full()
@@ -2668,9 +2926,9 @@ describe('stateful snapshot output transactions', () => {
     })
     await session.full()
     await vi.advanceTimersByTimeAsync(50)
-    expect(writtenAssets().filter(item => item.fileName === styleFile).map(item => item.source)).toEqual([
-      '.probe { color: red; }',
-      '.probe { color: blue; }',
+    expect(writtenAssets().filter(item => item.fileName === contentFile).map(item => item.source)).toEqual([
+      '<view data-color="red"></view>',
+      '<view data-color="blue"></view>',
     ])
   })
 
@@ -2682,11 +2940,11 @@ describe('stateful snapshot output transactions', () => {
     })
     await session.full()
     await vi.advanceTimersByTimeAsync(50)
-    expect(writtenAssets().some(item => item.fileName === styleFile)).toBe(false)
+    expect(writtenAssets().some(item => item.fileName === contentFile)).toBe(false)
     session.refresh()
     await vi.advanceTimersByTimeAsync(50)
     expect(harness.fullBuild).toHaveBeenCalledTimes(2)
-    expect(writtenAssets()).toContainEqual({ type: 'asset', fileName: styleFile, source: '.probe { color: blue; }' })
+    expect(writtenAssets()).toContainEqual({ type: 'asset', fileName: contentFile, source: '<view data-color="blue"></view>' })
   })
 
   it('waits for the actual full callback after additional assets before adopting the snapshot', async () => {
@@ -2700,10 +2958,10 @@ describe('stateful snapshot output transactions', () => {
     })
     await session.full()
     await vi.advanceTimersByTimeAsync(50)
-    expect(writtenAssets().some(item => item.fileName === styleFile)).toBe(false)
+    expect(writtenAssets().some(item => item.fileName === contentFile)).toBe(false)
     gate.resolve()
     await vi.advanceTimersByTimeAsync(1)
-    expect(writtenAssets()).toContainEqual({ type: 'asset', fileName: styleFile, source: '.probe { color: blue; }' })
+    expect(writtenAssets()).toContainEqual({ type: 'asset', fileName: contentFile, source: '<view data-color="blue"></view>' })
   })
 
   it('assigns resolved public publication only to the first complete output', async () => {
@@ -2738,8 +2996,8 @@ describe('stateful snapshot output transactions', () => {
     expect(completeOutputs.map(([, , publicAssets]) => publicAssets)).toEqual([initialPublicAssets, initialPublicAssets])
     expect(completeOutputs[1]?.[1]).toContainEqual({
       type: 'asset',
-      fileName: `${route}.wxss`,
-      source: expect.stringContaining('.probe { color: red; }'),
+      fileName: pageContentFile,
+      source: expect.stringContaining('<view data-color="red"></view>'),
     })
     expect(commit).toHaveBeenCalledTimes(1)
 
@@ -2771,19 +3029,27 @@ describe('stateful snapshot output transactions', () => {
     await starting
   })
 
-  it('uses initial snapshot routes and clears global-only styles when a refresh changes isolation', async () => {
-    const session = await start()
+  it('publishes initial inherited styles and hands an isolation change to classic before clearing them', async () => {
+    const initial = { ...compiledStylesheetSnapshot('red'), componentPageGlobalStyleRoutes: [route] }
+    const session = await start(initial)
+    session.classic.mockImplementation(async () => {
+      await session.close()
+      session.runtime.markClassic()
+    })
     expect(writtenAssets()).toContainEqual({
       type: 'asset',
       fileName: `${route}.wxss`,
-      source: expect.stringContaining('.probe { color: red; }'),
+      source: expect.stringContaining('.stylesheet { color: red; }'),
     })
     harness.writeOutput.mockClear()
-    session.rebuild.mockResolvedValue(snapshot('blue', []))
+    session.rebuild.mockResolvedValue(compiledStylesheetSnapshot('red'))
     session.refresh()
     await vi.advanceTimersByTimeAsync(50)
-    expect(writtenAssets()).toContainEqual({ type: 'asset', fileName: `${route}.wxss`, source: '' })
-    expect(writtenAssets()).not.toContainEqual(expect.objectContaining({ fileName: 'app.wxss' }))
+    await expect(session.runtime.whenSettled()).resolves.toBeUndefined()
+    expect(session.runtime.phase).toBe('classic')
+    expect(session.runtime.fallback).toMatchObject({ code: 'stylesheet-output', files: [`${route}.wxss`] })
+    expect(session.classic).toHaveBeenCalledOnce()
+    expect(harness.writeOutput).not.toHaveBeenCalled()
   })
 
   it('does not retire native-owned preludes missing from an asset refresh', async () => {
@@ -2923,7 +3189,7 @@ describe('stateful snapshot output transactions', () => {
     expect(writtenAssets()).toContainEqual(copied)
   })
 
-  it('retries the complete asset diff after a failed refresh instead of adopting unwritten styles', async () => {
+  it('retries the complete asset diff after a failed refresh instead of adopting unwritten assets', async () => {
     const session = await start(snapshot('red', []))
     harness.writeOutput.mockClear().mockRejectedValueOnce(new Error('simulated write failure'))
     session.refresh()
@@ -2932,8 +3198,8 @@ describe('stateful snapshot output transactions', () => {
     session.refresh()
     await vi.advanceTimersByTimeAsync(50)
     expect(writtenAssets()).toEqual(expect.arrayContaining([
-      { type: 'asset', fileName: styleFile, source: '.probe { color: blue; }' },
-      { type: 'asset', fileName: `${route}.wxss`, source: expect.stringContaining('.probe { color: blue; }') },
+      { type: 'asset', fileName: contentFile, source: '<view data-color="blue"></view>' },
+      { type: 'asset', fileName: pageContentFile, source: expect.stringContaining('<view data-color="blue"></view>') },
     ]))
   })
 
@@ -2950,13 +3216,13 @@ describe('stateful snapshot output transactions', () => {
     blocked.resolve()
     await vi.advanceTimersByTimeAsync(50)
     expect(session.rebuild).toHaveBeenCalledTimes(2)
-    expect(writtenAssets().filter(item => item.fileName === styleFile)).toEqual([
-      { type: 'asset', fileName: styleFile, source: '.probe { color: blue; }' },
+    expect(writtenAssets().filter(item => item.fileName === contentFile)).toEqual([
+      { type: 'asset', fileName: contentFile, source: '<view data-color="blue"></view>' },
     ])
     expect(writtenAssets()).toContainEqual({
       type: 'asset',
-      fileName: `${route}.wxss`,
-      source: expect.stringContaining('.probe { color: blue; }'),
+      fileName: pageContentFile,
+      source: expect.stringContaining('<view data-color="blue"></view>'),
     })
   })
 
@@ -2989,8 +3255,8 @@ describe('stateful snapshot output transactions', () => {
     ])
     expect(commit).toHaveBeenCalledTimes(2)
     expect(writtenAssets()).toEqual(expect.arrayContaining([
-      { type: 'asset', fileName: styleFile, source: '.probe { color: blue; }' },
-      { type: 'asset', fileName: `${route}.wxss`, source: '' },
+      { type: 'asset', fileName: contentFile, source: '<view data-color="blue"></view>' },
+      { type: 'asset', fileName: pageContentFile, source: '' },
     ]))
   })
 
@@ -3025,11 +3291,11 @@ describe('stateful snapshot output transactions', () => {
     blocked.resolve()
     await vi.advanceTimersByTimeAsync(50)
     expect(commit).toHaveBeenCalledTimes(2)
-    expect(writtenAssets().filter(item => item.fileName === styleFile)).toEqual([
-      { type: 'asset', fileName: styleFile, source: '.probe { color: green; }' },
+    expect(writtenAssets().filter(item => item.fileName === contentFile)).toEqual([
+      { type: 'asset', fileName: contentFile, source: '<view data-color="green"></view>' },
     ])
-    expect(writtenAssets().filter(item => item.fileName === `${route}.wxss`)).toEqual([
-      { type: 'asset', fileName: `${route}.wxss`, source: expect.stringContaining('.probe { color: green; }') },
+    expect(writtenAssets().filter(item => item.fileName === pageContentFile)).toEqual([
+      { type: 'asset', fileName: pageContentFile, source: expect.stringContaining('<view data-color="green"></view>') },
     ])
   })
 

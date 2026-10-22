@@ -1,19 +1,22 @@
 import type { DevOptions } from 'rolldown/experimental'
-import type { ViteDevServer } from 'vite'
+import type { Plugin, ViteDevServer } from 'vite'
+import type { HmrRuntimeSession } from '../runtime/hmrRuntimeSession'
 import type { StatefulHmrOutputFile } from '../runtime/statefulHmr/outputWriter'
+import type { WeappVitePluginApi } from '../types'
 import { readFileSync } from 'node:fs'
-import { mkdir, mkdtemp, readFile, realpath, rename, rm, symlink, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readdir, readFile, realpath, rename, rm, symlink, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
-import { WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY, WEAPP_VITE_STATEFUL_HMR_GLOBAL_STYLE_BASENAME } from '@weapp-core/constants'
+import { WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY, WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE, WEAPP_VITE_STATEFUL_HMR_PRELOAD_FILE, WEAPP_VITE_STATEFUL_HMR_UPDATE_FILE } from '@weapp-core/constants'
 import { createServer } from 'vite'
 import { expect, it, onTestFailed, vi } from 'vitest'
 import { installStatefulHmrTransport } from '../../../../e2e/utils/statefulHmrTransport'
 import { createHeadlessSession } from '../../../../mpcore/packages/simulator/src/runtime'
 import { querySelectorAll } from '../../../../mpcore/packages/simulator/src/view/selectors'
+import { getHmrRuntimeSession } from '../runtime/hmrRuntimeSession'
 import { weapp } from './index'
 
 const harness = vi.hoisted(() => ({
@@ -28,7 +31,7 @@ vi.mock('../runtime/statefulHmr/outputWriter', async (importOriginal) => {
     ...actual,
     async writeStatefulHmrOutput(...args: Parameters<typeof actual.writeStatefulHmrOutput>) {
       await actual.writeStatefulHmrOutput(...args)
-      // 原生 bundler 已实际写盘；这里只暂停当前提交完成，不伪造快照、资产或交付回调。
+      // 只观察原生 bundler 实际写盘，不伪造快照、资产或交付回调。
       await harness.afterWrite?.(args[0], args[1])
     },
   }
@@ -81,7 +84,7 @@ async function within<T>(operation: Promise<T>, label: string): Promise<T> {
   }
 }
 
-it('restores a Tailwind SFC saved after native CSS write while its first commit is blocked', async () => {
+it('restores a Tailwind SFC saved after native classic CSS write while its first fallback commit is blocked', async () => {
   const root = await realpath(await mkdtemp(path.join(os.tmpdir(), 'weapp-vite-tailwind-style-restore-')))
   const outDir = path.join(root, 'dist')
   const pageStyle = 'pages/index/index.wxss'
@@ -96,14 +99,15 @@ function increment() { count.value += 1 }
   const releaseCommit = Promise.withResolvers<void>()
   const wroteBlue = Promise.withResolvers<void>()
   const restoredSourceObserved = Promise.withResolvers<void>()
-  const restoredBatchObserved = Promise.withResolvers<void>()
-  const publications: Array<{ files: string[], blue: boolean, green: boolean }> = []
+  const publications: Array<{ mode: 'stateful' | 'classic', files: string[], blue: boolean, green: boolean }> = []
   const events: Array<Record<string, unknown>> = []
   const startedAt = performance.now()
   let blockBlue = false
+  let publicationBlocked = false
   let restoring = false
   let phase = 'fixture'
   let server: ViteDevServer | undefined
+  let hmrRuntime: HmrRuntimeSession | undefined
   let runtime: ReturnType<typeof createHeadlessSession> | undefined
   let releaseTransport: (() => void) | undefined
   const record = (event: string, details: Record<string, unknown> = {}) => {
@@ -112,10 +116,13 @@ function increment() { count.value += 1 }
       events.shift()
     }
   }
-  const readStyles = async () => ({
-    page: await readFile(path.join(outDir, pageStyle), 'utf8'),
-    global: await readFile(path.join(outDir, `${WEAPP_VITE_STATEFUL_HMR_GLOBAL_STYLE_BASENAME}.wxss`), 'utf8'),
-  })
+  const readStyles = async () => {
+    const files = (await readdir(outDir, { recursive: true })).filter(file => file.endsWith('.wxss'))
+    return {
+      page: await readFile(path.join(outDir, pageStyle), 'utf8'),
+      all: (await Promise.all(files.map(file => readFile(path.join(outDir, file), 'utf8')))).join('\n'),
+    }
+  }
   let finalStyles: Awaited<ReturnType<typeof readStyles>> | undefined
   const save = async (content: string) => {
     record('save:start', { color: content.match(/color: (#[a-f\d]+)/)?.[1] })
@@ -123,6 +130,57 @@ function increment() { count.value += 1 }
     await writeFile(temporary, content)
     await rename(temporary, source)
     record('save:renamed')
+  }
+  const classicGate: Plugin = {
+    name: 'tailwind-classic-publication-gate',
+    configureServer(host) {
+      if (!hmrRuntime) {
+        const api = host.config.plugins.find(plugin => plugin.name === 'weapp-vite:context')?.api as WeappVitePluginApi | undefined
+        if (!api) {
+          throw new Error('The initial host did not expose its compiler context')
+        }
+        hmrRuntime = getHmrRuntimeSession(api.ctx)
+      }
+    },
+    writeBundle: {
+      order: 'post',
+      sequential: true,
+      async handler(_options, bundle) {
+        if (!hmrRuntime || hmrRuntime.phase === 'stateful') {
+          return
+        }
+        const styles = Object.values(bundle).filter(item => item.type === 'asset' && item.fileName.endsWith('.wxss'))
+        const blue = styles.some(item => item.type === 'asset' && String(item.source).includes('#2563eb'))
+        publications.push({ mode: 'classic', files: Object.keys(bundle), blue, green: styles.some(item => item.type === 'asset' && String(item.source).includes('#16a34a')) })
+        record('classic-output-written', { blue, files: Object.keys(bundle) })
+        if (blockBlue && blue && bundle[pageStyle]) {
+          blockBlue = false
+          publicationBlocked = true
+          expect(hmrRuntime.phase).toBe('switching')
+          // 原生 classic write 已落盘；暂停提交完成，让真实 watcher 接收期间的恢复保存。
+          expect((await readStyles()).page).toContain('#2563eb')
+          phase = 'blue-written-classic-commit-blocked'
+          record('commit:blocked')
+          wroteBlue.resolve()
+          await releaseCommit.promise
+          publicationBlocked = false
+          record('commit:released')
+        }
+      },
+    },
+    hotUpdate({ file }) {
+      if (publicationBlocked && restoring && path.resolve(file) === source) {
+        record('classic-hotUpdate')
+        try {
+          if (readFileSync(source, 'utf8') === initial) {
+            restoredSourceObserved.resolve()
+          }
+        }
+        catch (error) {
+          restoredSourceObserved.reject(error)
+        }
+      }
+    },
   }
   onTestFailed(() => {
     process.stderr.write(`[tailwind-style-restore] ${JSON.stringify({ phase, publications, events, styles: finalStyles })}\n`)
@@ -149,16 +207,6 @@ function increment() { count.value += 1 }
         return
       }
       record(`devengine-watchChange:${stage}`)
-      if (restoring && stage === 'completed') {
-        try {
-          if (readFileSync(source, 'utf8') === initial) {
-            restoredSourceObserved.resolve()
-          }
-        }
-        catch (error) {
-          restoredSourceObserved.reject(error)
-        }
-      }
     }
     harness.batch = (result) => {
       if (result instanceof Error) {
@@ -167,9 +215,6 @@ function increment() { count.value += 1 }
       }
       if (result.changedFiles.some(file => path.resolve(root, file) === source)) {
         record('devengine-batch', { updates: result.updates.map(item => item.update.type) })
-        if (restoring) {
-          restoredBatchObserved.resolve()
-        }
       }
     }
     harness.afterWrite = async (directory, output) => {
@@ -178,33 +223,19 @@ function increment() { count.value += 1 }
       }
       const styles = output.filter(item => item.type === 'asset' && item.fileName.endsWith('.wxss'))
       const blue = styles.some(item => item.type === 'asset' && String(item.source).includes('#2563eb'))
-      publications.push({ files: output.map(item => item.fileName), blue, green: styles.some(item => item.type === 'asset' && String(item.source).includes('#16a34a')) })
-      record('output-written', { blue, files: output.map(item => item.fileName) })
-      if (blockBlue && blue && output.some(item => item.fileName === pageStyle)) {
-        blockBlue = false
-        expect((await readStyles()).page).toContain('#2563eb')
-        phase = 'blue-written-commit-blocked'
-        record('commit:blocked')
-        wroteBlue.resolve()
-        await releaseCommit.promise
-        record('commit:released')
-      }
+      publications.push({ mode: 'stateful', files: output.map(item => item.fileName), blue, green: styles.some(item => item.type === 'asset' && String(item.source).includes('#16a34a')) })
+      record('stateful-output-written', { blue, files: output.map(item => item.fileName) })
     }
     server = await createServer({
       root,
       configFile: false,
       logLevel: 'silent',
-      plugins: [weapp()],
+      plugins: [weapp(), classicGate],
       weapp: { srcRoot: 'src', autoRoutes: false, hmr: { runtime: 'stateful-experimental' }, tailwindcss: { cssEntries: ['src/app.css'] } },
       build: { minify: false },
       server: { host: '127.0.0.1', port: 0 },
     })
     await server.listen()
-    const settlement = server.config.plugins.find(plugin => plugin.name === 'weapp-vite:stateful-hmr-session')?.api as { whenSettled?: () => Promise<void> } | undefined
-    if (!settlement?.whenSettled) {
-      throw new Error('The real stateful session did not expose settlement')
-    }
-    const settle = () => within(settlement.whenSettled!(), phase)
     runtime = createHeadlessSession({ projectPath: root })
     releaseTransport = installStatefulHmrTransport(runtime, outDir)
     runtime.reLaunch('/pages/index/index')
@@ -212,6 +243,7 @@ function increment() { count.value += 1 }
     const page = runtime.getCurrentPages()[0]
     expect(runtime.renderCurrentPage().wxml).toContain('count: 0')
     expect((await readStyles()).page).toContain('#1f1a3f')
+    expect((await readStyles()).all).toMatch(/width:\s*37px/)
     const increment = async (expected: number) => {
       const button = querySelectorAll(runtime!.renderCurrentPage().root, '#increment')[0]
       expect(button).toBeDefined()
@@ -239,35 +271,62 @@ function increment() { count.value += 1 }
     phase = 'restoring-while-commit-blocked'
     restoring = true
     await save(initial)
-    // bundledDev 的源码由 DevEngine 自己持有；必须观察真实宿主 watchChange，不能依赖 Vite 根 watcher。
+    // 旧 DevEngine 已退役；必须观察 classic 宿主真实 hotUpdate，不能发射合成事件。
     await within(restoredSourceObserved.promise, phase)
     expect(await readFile(source, 'utf8')).toBe(initial)
     releaseCommit.resolve()
     phase = 'processing-restoration-after-release'
-    await within(restoredBatchObserved.promise, phase)
-    phase = 'settling-restoration'
-    await settle()
+    await within(hmrRuntime!.whenSettled(), phase)
+    await expect.poll(async () => (await readStyles()).page, { timeout: 30_000 }).toContain('#1f1a3f')
+    await expect.poll(() => publications.filter(item => item.mode === 'classic').length, { timeout: 30_000 }).toBeGreaterThan(1)
     const restored = await readStyles()
     expect(restored.page).toContain('#1f1a3f')
     expect(restored.page).not.toContain('#2563eb')
-    expect(restored.global).not.toContain('#2563eb')
-    expect(runtime.renderCurrentPage().wxml).toContain('count: 4')
+    expect(restored.all).not.toContain('#2563eb')
+    expect(restored.all).toMatch(/width:\s*37px/)
+    expect(hmrRuntime!.phase).toBe('classic')
+    expect(hmrRuntime!.fallback?.code).toBe('stylesheet-output')
+    expect(server.config.experimental.bundledDev).toBe(false)
+    await expect.poll(() => runtime!.evaluateRuntime(`() => globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY)}]?.getTransportState().phase`), { timeout: 30_000 }).toBe('stopped')
+    for (const file of [WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE, WEAPP_VITE_STATEFUL_HMR_PRELOAD_FILE, WEAPP_VITE_STATEFUL_HMR_UPDATE_FILE]) {
+      await expect(readFile(path.join(outDir, file))).rejects.toMatchObject({ code: 'ENOENT' })
+    }
+    releaseTransport()
+    releaseTransport = undefined
+    const previousRuntime = runtime
+    previousRuntime.close()
+    expect(previousRuntime.isClosed).toBe(true)
+    const openClassicCompanion = async () => {
+      runtime?.close()
+      // 新 VM 仅验证 classic 实际产物；真实 IDE 的自动重载由对应 runtime suite 验收。
+      runtime = createHeadlessSession({ projectPath: root })
+      runtime.reLaunch('/pages/index/index')
+      expect(runtime.renderCurrentPage().wxml).toContain('count: 0')
+      expect(runtime.evaluateRuntime(`() => globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY)}] === undefined`)).toBe(true)
+      await increment(1)
+    }
+    await openClassicCompanion()
 
     for (const [label, content, present, absent] of [
       ['third-color', initial.replace('#1f1a3f', '#16a34a'), '#16a34a', '#2563eb'],
       ['restored-again', initial, '#1f1a3f', '#16a34a'],
     ] as const) {
       phase = label
+      const previousPublications = publications.length
       await save(content)
       await expect.poll(async () => (await readStyles()).page, { timeout: 30_000 }).toContain(present)
-      await settle()
+      await expect.poll(() => publications.length, { timeout: 30_000 }).toBeGreaterThan(previousPublications)
       const current = await readStyles()
       expect(current.page).toContain(present)
       expect(current.page).not.toContain(absent)
-      expect(current.global).not.toContain(absent)
-      expect(runtime.getCurrentPages()[0]).toBe(page)
-      expect(server.config.experimental.bundledDev).toBe(true)
+      expect(current.all).not.toContain(absent)
+      expect(current.all).toMatch(/width:\s*37px/)
+      expect(hmrRuntime!.phase).toBe('classic')
+      expect(server.config.experimental.bundledDev).toBe(false)
+      await openClassicCompanion()
     }
+    expect(publications.filter(item => item.mode === 'stateful' && (item.blue || item.green))).toEqual([])
+    expect(publications.filter(item => item.mode === 'classic' && item.blue)).toHaveLength(1)
     if (process.env.WEAPP_VITE_HMR_STYLE_RESTORE_DIAGNOSTICS === '1') {
       process.stdout.write(`[tailwind-style-restore:passed] ${JSON.stringify({ phase, events, publications })}\n`)
     }

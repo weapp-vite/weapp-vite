@@ -1,6 +1,7 @@
 import type { HmrRuntimeDecision } from './hmrRuntime'
 import type { HmrRuntimeFallbackReason } from './hmrRuntimeCapabilities'
 import { logger } from '../context/shared'
+import { ClassicIdeConfigOwner } from './classicIdeConfig'
 
 export type HmrRuntimePhase = 'stateful' | 'switching' | 'classic'
 type ClassicRequestHandler = (reason: HmrRuntimeFallbackReason) => void | Promise<void>
@@ -12,6 +13,7 @@ export interface HmrOutputGeneration {
 
 /** 一次 dev 命令共享的单向状态；Vite 配置重启只替换宿主绑定，不重置降级决定。 */
 export interface HmrRuntimeSession {
+  readonly classicIdeConfig: ClassicIdeConfigOwner
   readonly outputOwnership: Map<string, Map<string, Set<string>>>
   readonly outputGenerations: Map<string, HmrOutputGeneration>
   readonly phase: HmrRuntimePhase
@@ -23,7 +25,7 @@ export interface HmrRuntimeSession {
   whenSettled: () => Promise<void>
 }
 
-const sessions = new WeakMap<object, { session: HmrRuntimeSession }>()
+const sessions = new WeakMap<object, { session: HmrRuntimeSession, borrowed?: boolean }>()
 
 export function createHmrRuntimeSession(): HmrRuntimeSession {
   let phase: HmrRuntimePhase = 'stateful'
@@ -65,6 +67,7 @@ export function createHmrRuntimeSession(): HmrRuntimeSession {
   }
 
   return {
+    classicIdeConfig: new ClassicIdeConfigOwner(),
     outputOwnership: new Map(),
     outputGenerations: new Map(),
     get phase() { return phase },
@@ -115,8 +118,13 @@ export function getHmrRuntimeSession(ctx: object): HmrRuntimeSession {
   return binding.session
 }
 
-export function attachHmrRuntimeSession(ctx: object, session: HmrRuntimeSession): () => void {
-  const binding = { session }
+/** 子插件共享命令决策和请求视图，但不能为自己的输出根再次接管 IDE 配置。 */
+export function isBorrowedHmrRuntimeSession(ctx: object): boolean {
+  return sessions.get(ctx)?.borrowed === true
+}
+
+export function attachHmrRuntimeSession(ctx: object, session: HmrRuntimeSession, options?: { borrowed: boolean }): () => void {
+  const binding = { session, borrowed: options?.borrowed }
   sessions.set(ctx, binding)
   return () => {
     if (sessions.get(ctx) === binding) {

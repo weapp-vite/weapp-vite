@@ -92,6 +92,7 @@ export function createNativeHmrPublication(
       }
     },
     capture(sourceFiles?: string | readonly string[]) {
+      const outputOffset = readOutput().length
       const mode = updateMode()
       const publication = captureNativePublication(dev, project)
       const completion = profilePath && sourceFiles && createDevBuildCompletion(dev, {
@@ -100,12 +101,14 @@ export function createNativeHmrPublication(
       return {
         async wait() {
           const receipt = await publication.wait(90_000)
+          let needsSourceCompletion = mode === 'classic'
           if (mode === 'stateful-experimental') {
-            // 首次降级只接受编辑后新出现的 ready，不能复用旧 owner 的通知。
-            await expect.poll(() => readOutput().slice(receipt.outputOffset).includes(classicReadyPrefix), { timeout: 90_000 }).toBe(true)
+            // 首构的正式 END 先于新 ready；若最终收据更晚，必须另验该次 source END。
+            await expect.poll(() => readOutput().slice(outputOffset).includes(classicReadyPrefix), { timeout: 90_000 }).toBe(true)
             expect(updateMode()).toBe('classic')
+            needsSourceCompletion = readOutput().indexOf(classicReadyPrefix, outputOffset) < receipt.outputOffset
           }
-          else {
+          if (needsSourceCompletion) {
             if (!completion || !receipt.profileCursor) {
               throw new Error('Classic publication requires explicit source files, profile path and the native write profile cursor')
             }

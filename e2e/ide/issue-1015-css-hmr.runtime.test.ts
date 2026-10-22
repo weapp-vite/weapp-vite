@@ -3,6 +3,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY, WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE, WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY } from '@weapp-core/constants'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { captureAppReloadMarker, waitForAppReload } from '../utils/appReload'
 import { launchAutomator, reconnectAutomator } from '../utils/automator'
 import { createClassicAssetScriptContract } from '../utils/classicAssetScriptContract'
 import { runCleanupSteps } from '../utils/cleanupSteps'
@@ -68,7 +69,7 @@ for (const runtime of ['classic', 'stateful-experimental'] as const) {
         env: { ...createDevProcessEnv(), WEAPP_GITHUB_ISSUE_1015_HMR_RUNTIME: runtime, WEAPP_VITE_HMR_PROFILE_JSON: profilePath },
         reject: false,
       })
-      publication = createNativeHmrPublication(project, dev, runtime, ['patch-shape'], profilePath)
+      publication = createNativeHmrPublication(project, dev, runtime, ['stylesheet-output'], profilePath)
       await dev.waitForInitialBuild()
       for (const extension of ['js', 'json', 'wxml', 'wxss']) {
         expect(await readFile(path.join(project, `dist/pages/issue-1015/index.${extension}`), 'utf8')).not.toBe('')
@@ -151,7 +152,7 @@ for (const runtime of ['classic', 'stateful-experimental'] as const) {
         getDevOutput: () => dev!.getOutput(),
       })
       await host.reLaunch(ROUTE)
-      const initialRuntime = await diagnostics.initialize()
+      await diagnostics.initialize()
       const originalMarkers = await host.evaluate(() => {
         const pages = getCurrentPages()
         return { app: (getApp() as any).__e2eHmrInstanceMarker, page: (pages[pages.length - 1] as any).__e2eHmrInstanceMarker }
@@ -193,7 +194,8 @@ for (const runtime of ['classic', 'stateful-experimental'] as const) {
             await classicScripts.assertUpdated()
           }
           else {
-            expect(await readFile(emittedAppScript, 'utf8')).toBe(initialAppScript)
+            expect(publication.stateful).toBe(false)
+            expect(await readFile(emittedAppScript, 'utf8')).not.toBe(initialAppScript)
           }
         }
         if (publication.stateful) {
@@ -240,10 +242,7 @@ for (const runtime of ['classic', 'stateful-experimental'] as const) {
         })
         await dom.check(id, host, await host.currentPage())
         const runtimeState = await diagnostics.capture(id)
-        if (id === 'style-only' && publication.stateful) {
-          expect(await readFile(emittedAppScript, 'utf8')).toBe(initialAppScript)
-          expect(runtimeState).toMatchObject({ errors: [], pageId: initialRuntime.pageId, runtime: { appMarkerRetained: true, pageMarkerRetained: true } })
-        }
+        expect(runtimeState.errors).toEqual([])
         if (!publication.stateful) {
           await publication.assertClassicRuntime(host)
           if (runtime === 'stateful-experimental' || id === 'style-only') {
@@ -258,38 +257,44 @@ for (const runtime of ['classic', 'stateful-experimental'] as const) {
       }
 
       async function updateCss(file: string, content: string, id: string) {
-        const published = id === 'replace-variable' || !publication.stateful ? publication.capture(file) : undefined
+        const reloadMarker = computedStyles ? await captureAppReloadMarker(host) : undefined
+        const published = publication.capture(file)
         await writeFile(file, `${content}\n.issue1015-page { --issue-1015-step: ${id}; }\n`)
-        await published?.wait()
+        await published.wait()
         await expect.poll(() => readFile(emittedCss, 'utf8'), { timeout: 45_000 }).toContain(id).catch((error) => {
           process.stdout.write(`[issue-1015-build] ${dev!.getOutput()}\n`)
           throw error
         })
         if (id === 'style-only') {
           await failureDiagnostics.captureFirstStyleOnly()
-          expect(publication.stateful).toBe(runtime === 'stateful-experimental')
+          expect(publication.stateful).toBe(false)
         }
-        if (computedStyles && published) {
+        if (reloadMarker) {
           // 只重连原窗口；先验收自动刷新后的节点与样式，不能用导航制造新页面。
           host = observeRuntime(await reconnectAutomator(host))
           diagnostics = createHmrRuntimeDiagnostics(host as any, 'e2e-apps/github-issues/fixtures/issue-1015')
+          const reloaded = await waitForAppReload(host, reloadMarker, '#issue-1015-page')
+          expect(reloaded.route).toBe(ROUTE.slice(1))
         }
         await check(id)
       }
 
       await check('initial')
       await updateCss(cssPath, `${css}\n.issue1015-page { background-color: yellow; }`, 'style-only')
+      const switchedReloadMarker = computedStyles ? await captureAppReloadMarker(host) : undefined
+      const switched = publication.capture(sourcePath)
       await writeFile(alternatePath, `${css}\n.issue1015-page { background-color: pink; --issue-1015-step: source-switch; }`)
-      const switched = publication.stateful ? undefined : publication.capture(sourcePath)
       await writeFile(sourcePath, source.replace('./index.css', './alternate.css'))
-      await switched?.wait()
-      if (computedStyles && switched) {
+      await switched.wait()
+      if (switchedReloadMarker) {
         host = observeRuntime(await reconnectAutomator(host))
         diagnostics = createHmrRuntimeDiagnostics(host as any, 'e2e-apps/github-issues/fixtures/issue-1015')
+        const reloaded = await waitForAppReload(host, switchedReloadMarker, '#issue-1015-page')
+        expect(reloaded.route).toBe(ROUTE.slice(1))
       }
       await expect.poll(() => readFile(emittedCss, 'utf8'), { timeout: 45_000 }).toContain('source-switch')
       await check('source-switch')
-      expect(publication.stateful).toBe(runtime === 'stateful-experimental')
+      expect(publication.stateful).toBe(false)
       await updateCss(alternatePath, '.issue1015-page { color: v-bind(accentColor); }', 'replace-variable')
       await updateCss(alternatePath, '.issue1015-page { color: black; }', 'remove-variable')
       await updateCss(alternatePath, '.issue1015-page { color: v-bind(themeColor); }', 'restore-variable')

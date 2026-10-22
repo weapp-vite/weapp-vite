@@ -7,6 +7,7 @@ import { detectAiDevelopmentEnvironment } from '../../../aiEnvironment'
 import { getBackendForCapability } from '../../../backends'
 import { createCompilerContext } from '../../../createContext'
 import logger from '../../../logger'
+import { getHmrRuntimeSession } from '../../../runtime/hmrRuntimeSession'
 import { startAnalyzeDashboard } from '../../analyze/dashboard'
 import { startDevHotkeys } from '../../devHotkeys'
 import { formatDuration } from '../../formatDuration'
@@ -49,9 +50,24 @@ export async function startServeCommand(root: string, options: GlobalCLIOptions,
     projectConfigPath: options.projectConfig,
   })
   const { configService } = ctx
+  let backendCloseFailed = false
+  // LIFO：全部后端关闭后才恢复 IDE 设置；任一关闭失败都保留租约供精确诊断。
+  shutdown.own(async () => {
+    if (!backendCloseFailed) {
+      await getHmrRuntimeSession(ctx).classicIdeConfig.close()
+    }
+  })
   targets = resolveConfiguredRuntimeTargets(targets, configService.options?.sourceConfig?.weapp?.platform)
   for (const backend of targets.select('dev')) {
-    shutdown.own(() => backend.driver.close(ctx))
+    shutdown.own(async () => {
+      try {
+        await backend.driver.close(ctx)
+      }
+      catch (error) {
+        backendCloseFailed = true
+        throw error
+      }
+    })
   }
   if (shutdown.stopping) {
     return

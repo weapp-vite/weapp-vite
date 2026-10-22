@@ -4,6 +4,7 @@ import path from 'pathe'
 import logger from '../../../logger'
 import { getSelectedAutoRouteSource } from '../../../runtime/autoRoutesPlugin/selection'
 import { findJsEntry, findVueEntry, touch } from '../../../utils/file'
+import { invalidateFileCache } from '../cache'
 import { collectAffectedScriptsAndImporters } from './cssGraph'
 import { configSuffixes, normalizePath, watchedCssExts, watchedScriptModuleSuffixes, watchedTemplateExts } from './shared'
 
@@ -28,6 +29,14 @@ export async function invalidateEntryForSidecar(ctx: CompilerContext, filePath: 
 
   if (!scriptBasePath && !isScriptModuleSidecar) {
     return
+  }
+
+  const isCssSidecar = Boolean(ext && watchedCssExts.has(ext))
+  const isTemplateSidecar = Boolean(ext && watchedTemplateExts.has(ext))
+  if (isCssSidecar) {
+    // watcher 只失效读取缓存；可选样式归属统一由入口本轮扫描结果替换。
+    invalidateFileCache(normalizedPath)
+    ctx.runtimeState?.css?.transformedSidecarSource.delete(normalizedPath)
   }
 
   const touchedTargets = new Set<string>()
@@ -68,11 +77,6 @@ export async function invalidateEntryForSidecar(ctx: CompilerContext, filePath: 
     }
   }
 
-  const isCssSidecar = Boolean(ext && watchedCssExts.has(ext))
-  const isTemplateSidecar = Boolean(ext && watchedTemplateExts.has(ext))
-  if (isCssSidecar) {
-    ctx.runtimeState?.css?.transformedSidecarSource.delete(normalizedPath)
-  }
   const sidecarCause = configSuffix
     ? 'json-sidecar' as const
     : isCssSidecar

@@ -5,10 +5,13 @@ import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
 import { describe, expect, it, vi } from 'vitest'
+import { MANAGED_PROJECT_JOURNAL_ENV } from 'weapp-ide-cli'
 import { createBridgeWrapperProjectConfig, enhanceMiniProgramRelaunch, extractDevtoolsCliLoginState, formatRuntimeStatsLine, isDevtoolsHttpPortError, isLikelyRelaunchRetryableError, isWarmupPageRootTimeoutError, isWarmupRelaunchTimeoutError, resolveAutomatorLaunchMode, resolveLaunchRetryCount, shouldCloseCurrentPageQueryTimeout, shouldPrebuildAutomatorProject, validateLaunchProjectAssets } from './automator'
 import { terminateOwnedCliProcess } from './automatorCliProcess'
 import { ownDevtoolsCleanup } from './devtoolsProcessOwnership'
 import { cleanupResidualDevtoolsProcesses } from './ide-devtools-cleanup'
+import { E2E_RUNTIME_PROVIDER_ENV } from './runtimeProvider'
+import { createIsolatedMachineLease } from './testSupport/machineLease'
 
 type RelaunchMock<TPage> = (...args: Parameters<MiniProgram['reLaunch']>) => Promise<TPage>
 
@@ -384,36 +387,85 @@ describe('automator', () => {
     })).toBe('[e2e-runtime-stats] warn=4 error=5 exception=6 total=15 log=3 info=2 debug=1 all=21')
   })
 
-  it('cleans a real owned CLI child while preserving an unrelated process', async () => {
-    const isolatedLogRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'weapp-vite-automator-log-root-'))
-    const previousLogRoot = process.env.WEAPP_VITE_E2E_DEVTOOLS_LOG_ROOT
-    process.env.WEAPP_VITE_E2E_DEVTOOLS_LOG_ROOT = isolatedLogRoot
+  it.each(['devtools', 'headless'] as const)('isolates %s cleanup of a real owned CLI child from an unrelated process', async (provider) => {
+    // 清理契约显式选择 provider，日志与 journal 均限定在本测试的独立租约。
+    const fixture = await createIsolatedMachineLease()
+    const isolatedLogRoot = path.join(fixture.stateDirectory, 'devtools-logs')
+    const environment = {
+      ...fixture.environment,
+      [MANAGED_PROJECT_JOURNAL_ENV]: fixture.journalPath,
+      [E2E_RUNTIME_PROVIDER_ENV]: provider,
+      WEAPP_VITE_E2E_DEVTOOLS_LOG_ROOT: isolatedLogRoot,
+    }
+    const previous = new Map(Object.keys(environment).map(key => [key, process.env[key]]))
     const spawnChild = () => spawn(process.execPath, ['-e', 'setInterval(() => {}, 10_000)'], {
       detached: process.platform !== 'win32',
       stdio: 'ignore',
     })
-    const owned = spawnChild()
-    const unrelated = spawnChild()
-    const ownedPid = await waitForSpawn(owned)
-    const unrelatedPid = await waitForSpawn(unrelated)
-    const dispose = ownDevtoolsCleanup(() => terminateOwnedCliProcess(owned))
+    let owned: ReturnType<typeof spawn> | undefined
+    let unrelated: ReturnType<typeof spawn> | undefined
+    const cleanup = vi.fn(async () => {
+      if (owned) {
+        await terminateOwnedCliProcess(owned)
+      }
+    })
+    const dispose = ownDevtoolsCleanup(cleanup)
+    let bodyError: unknown
+    let bodyFailed = false
+    const cleanupErrors: unknown[] = []
     try {
+      fs.mkdirSync(isolatedLogRoot)
+      Object.assign(process.env, environment)
+      owned = spawnChild()
+      unrelated = spawnChild()
+      const ownedPid = await waitForSpawn(owned)
+      const unrelatedPid = await waitForSpawn(unrelated)
       await cleanupResidualDevtoolsProcesses()
-      await expect(waitForProcessGone(ownedPid)).resolves.toBeUndefined()
-      expect(() => process.kill(unrelatedPid, 0)).not.toThrow()
-      await dispose()
-      expect(() => process.kill(unrelatedPid, 0)).not.toThrow()
-    }
-    finally {
-      await dispose()
-      await terminateOwnedCliProcess(unrelated)
-      if (previousLogRoot === undefined) {
-        delete process.env.WEAPP_VITE_E2E_DEVTOOLS_LOG_ROOT
+      if (provider === 'devtools') {
+        expect(cleanup).toHaveBeenCalledOnce()
+        await expect(waitForProcessGone(ownedPid)).resolves.toBeUndefined()
       }
       else {
-        process.env.WEAPP_VITE_E2E_DEVTOOLS_LOG_ROOT = previousLogRoot
+        expect(cleanup).not.toHaveBeenCalled()
+        expect(() => process.kill(ownedPid, 0)).not.toThrow()
       }
-      fs.rmSync(isolatedLogRoot, { recursive: true, force: true })
+      expect(() => process.kill(unrelatedPid, 0)).not.toThrow()
+      await dispose()
+      expect(cleanup).toHaveBeenCalledOnce()
+      await expect(waitForProcessGone(ownedPid)).resolves.toBeUndefined()
+      expect(() => process.kill(unrelatedPid, 0)).not.toThrow()
+    }
+    catch (error) {
+      bodyError = error
+      bodyFailed = true
+    }
+    finally {
+      try {
+        const results = await Promise.allSettled([dispose(), ...(unrelated ? [terminateOwnedCliProcess(unrelated)] : [])])
+        cleanupErrors.push(...results.filter(result => result.status === 'rejected').map(result => result.reason))
+        if (!cleanupErrors.length) {
+          await fixture.dispose()
+        }
+      }
+      catch (error) {
+        cleanupErrors.push(error)
+      }
+      finally {
+        for (const [key, value] of previous) {
+          if (value === undefined) {
+            delete process.env[key]
+          }
+          else {
+            process.env[key] = value
+          }
+        }
+      }
+    }
+    if (cleanupErrors.length) {
+      throw new AggregateError(bodyFailed ? [bodyError, ...cleanupErrors] : cleanupErrors, 'Automator cleanup fixture failed', { cause: bodyFailed ? bodyError : cleanupErrors[0] })
+    }
+    if (bodyFailed) {
+      throw bodyError
     }
   }, 15_000)
 

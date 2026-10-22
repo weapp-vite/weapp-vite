@@ -160,6 +160,7 @@ const projects = [
         'e2e/utils/automator.runtime-logs.test.ts',
         'e2e/utils/automatorBridgeCleanup.test.ts',
         'e2e/utils/automatorReconnect.test.ts',
+        'e2e/utils/automatorLaunchEvidence.test.ts',
         'e2e/utils/automatorCliProcess.test.ts',
         'e2e/utils/automatorWarmup.test.ts',
         'e2e/utils/cleanupSteps.test.ts',

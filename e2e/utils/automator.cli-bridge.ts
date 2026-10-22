@@ -7,11 +7,13 @@ import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 // eslint-disable-next-line e18e/ban-dependencies
 import { getCancelSignal } from 'execa'
+import { createAutomatorLaunchEvidence } from './automatorLaunchEvidence'
 import { AutomatorLaunchLifecycle } from './automatorLaunchLifecycle'
 import { resolveWechatCliPath } from './devtoolsCli'
 import { startManagedAutomatorBridge } from './managedAutomatorBridge'
 
 interface AutomatorCliBridgePayload {
+  launchEvidenceId?: string
   projectPath?: string
   cliPath?: string
   cwd?: string
@@ -515,6 +517,8 @@ export async function extendProjectConfig(projectPath: string, projectConfig?: R
   fs.writeFileSync(configPath, nextSource, 'utf8')
 }
 
+let childLaunchEvidence: ReturnType<typeof createAutomatorLaunchEvidence> | undefined
+
 async function main() {
   const rawPayload = process.argv[2]
   if (!rawPayload) {
@@ -527,8 +531,15 @@ async function main() {
     throw new Error('Missing projectPath for automator cli bridge')
   }
   const resolvedProjectPath = path.resolve(projectPath)
+  childLaunchEvidence = createAutomatorLaunchEvidence(import.meta.url, {
+    launchId: payload.launchEvidenceId,
+    requestedProjectPath: projectPath,
+    actualProjectPath: resolvedProjectPath,
+    launchOptions: payload,
+  })
 
   await extendProjectConfig(resolvedProjectPath, payload.projectConfig)
+  childLaunchEvidence.record('bridge-project-config-ready')
   const autoPort = await reserveLoopbackPort()
   const cliPath = resolveWechatCliPath(payload.cliPath)
   const cancellation = new AbortController()
@@ -564,6 +575,7 @@ const entryFilePath = process.argv[1] ? path.resolve(process.argv[1]) : ''
 
 if (entryFilePath === currentFilePath) {
   main().catch((error) => {
+    (childLaunchEvidence ?? createAutomatorLaunchEvidence(import.meta.url)).record('bridge-rejected', { rejection: error })
     const message = error instanceof Error ? error.stack || error.message : String(error)
     process.stderr.write(`${message}\n`)
     process.exitCode = 1

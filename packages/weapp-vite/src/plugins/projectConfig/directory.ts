@@ -1,5 +1,9 @@
 import type { Plugin } from 'vite'
 import type { CompilerContext } from '../../context'
+import { Buffer } from 'node:buffer'
+import path from 'pathe'
+import { resolveIdePrivateConfigPath } from '../../runtime/classicIdeConfig'
+import { getHmrRuntimeSession } from '../../runtime/hmrRuntimeSession'
 import { resolveProjectConfigSyncDirs } from '../../utils/projectConfig'
 import { collectProjectConfigAssets, publishProjectConfigAssets } from '../../utils/projectConfigOutput'
 
@@ -29,7 +33,18 @@ export function createProjectConfigDirectoryPlugin(ctx: CompilerContext): Plugin
           return
         }
         const assets = await collectProjectConfigAssets(dirs.sourceDir, dirs.outputRoot, service.outDir, file => this.addWatchFile(file))
-        owned = await publishProjectConfigAssets(dirs.outputRoot, assets, owned)
+        const privateConfigPath = service.isDev && service.platform === 'weapp' ? resolveIdePrivateConfigPath(service) : undefined
+        const privateConfig = assets.find(asset => path.resolve(dirs.outputRoot, asset.fileName) === privateConfigPath)
+        let commitPrivateConfig: (() => Promise<void>) | undefined
+        if (privateConfigPath && privateConfig) {
+          const source = typeof privateConfig.source === 'string' ? privateConfig.source : Buffer.from(privateConfig.source).toString('utf8')
+          const publication = await getHmrRuntimeSession(ctx).classicIdeConfig.preparePublication(privateConfigPath, source)
+          privateConfig.source = publication.source
+          commitPrivateConfig = publication.commit
+        }
+        const published = await publishProjectConfigAssets(dirs.outputRoot, assets, owned)
+        await commitPrivateConfig?.()
+        owned = published
       },
     },
   }

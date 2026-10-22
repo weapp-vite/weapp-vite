@@ -180,7 +180,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
   const vueConfigCache = new Map<string, VueConfigCacheRecord>()
   const staticPageLayoutPlanCache = new Map<string, ResolvedPageLayoutPlan | null>()
   const templateEntryPathCache = new Map<string, string>()
-  const styleImportsCache = new Map<string, string[]>()
+  const styleScannedEntryIds = new Set<string>()
   let resolveCacheVersion = 0
 
   const shouldEmitScriptlessVueLayoutJs = async (layoutFile: string) => {
@@ -794,7 +794,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
           relativeCwdId,
           getTime,
           emittedWxmlCodeCache: ctx.runtimeState?.wxml?.emittedCode,
-          styleImportsCache,
+          styleScannedEntryIds,
           resolvedPageLayoutPlan,
           resolveNativeLayoutAssets,
           entryCodeSource,
@@ -832,7 +832,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
       vueConfigCache.clear()
       staticPageLayoutPlanCache.clear()
       templateEntryPathCache.clear()
-      styleImportsCache.clear()
+      styleScannedEntryIds.clear()
       resolveCacheVersion += 1
       appEntryOutputCache.current = undefined
     },

@@ -3,6 +3,8 @@ import os from 'node:os'
 import path from 'pathe'
 import { afterEach, expect, it } from 'vitest'
 import { readCompilerInput } from '../../plugins/utils/sourceSnapshot'
+import { ClassicIdeConfigOwner } from '../classicIdeConfig'
+import { bindRequestedIdeConfigReader, readRequestedIdeConfig } from '../classicIdeConfig/reader'
 import { getInitialBuildInputObservation, startInitialBuildInputObservation } from './initialBuildChanges'
 
 const cleanup: Array<() => void | Promise<void>> = []
@@ -21,6 +23,25 @@ afterEach(async () => {
   for (const close of cleanup.splice(0).reverse()) {
     await close()
   }
+})
+
+it('compares the same requested IDE config view after installing a classic override', async () => {
+  const { file, owner, observation } = await fixture()
+  const original = '{"setting":{"compileHotReLoad":true}}'
+  await writeFile(file, original)
+  const classic = new ClassicIdeConfigOwner()
+  cleanup.push(() => classic.close())
+  bindRequestedIdeConfigReader(owner, (input, read) => classic.readRequested(input, read))
+  await readCompilerInput(owner, file, () => readRequestedIdeConfig(owner, file))
+  observation.begin()
+  await classic.activate(file)
+  observation.commit()
+  const change = { file, event: 'update', verifyInitialInput: true }
+  expect(await observation.filter([change])).toEqual([])
+  await classic.activate(file)
+  expect(await observation.filter([change])).toEqual([])
+  await writeFile(file, '{"setting":{"compileHotReLoad":false,"urlCheck":false}}')
+  expect(await observation.filter([change])).toEqual([change])
 })
 
 it('deduplicates only actual consumed startup content and retires the baseline before later restoration', async () => {

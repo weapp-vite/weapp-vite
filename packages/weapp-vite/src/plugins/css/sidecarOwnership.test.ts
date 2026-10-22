@@ -9,11 +9,13 @@ import { describe, expect, it } from 'vitest'
 import { createLogicalEntryModuleCode, createSidecarModuleCode } from '../../moduleGraph/logicalEntry'
 import { createLogicalEntryId, parseLogicalEntryId, parseSidecarModuleId, resolveVirtualModuleId } from '../../moduleGraph/protocol'
 import { createModuleGraphService } from '../../moduleGraph/service'
+import { replaceEntryStyleImports } from '../../runtime/cssSidecarOwnership'
 import { createRuntimeState } from '../../runtime/runtimeState'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { compilerSourceId } from '../compilerPlugin/hmr'
 import { css } from '../css'
 import { createOutputFinalizerPlugin, createOutputPublicationPlugin } from '../outputFinalizer'
+import { invalidateEntryForSidecar } from '../utils/invalidateEntry/sidecar'
 
 describe('warm graph style ownership', () => {
   it.each(['none', 'direct', 'junction'])('keeps graph dependencies inert and preserves transformed CSS with collected sidecars: %s', async (sidecarIdentity) => {
@@ -47,6 +49,7 @@ describe('warm graph style ownership', () => {
         outputExtensions: { wxss: 'wxss', wxml: 'wxml' },
         relativeOutputPath: (file: string) => path.relative(src, compilerSourceId(file)).replaceAll('\\', '/'),
         relativeAbsoluteSrcRoot: (file: string) => path.relative(src, compilerSourceId(file)).replaceAll('\\', '/'),
+        relativeCwd: (file: string) => path.relative(root, file).replaceAll('\\', '/'),
       },
     } as unknown as CompilerContext
     const graph: Plugin = {
@@ -77,9 +80,7 @@ describe('warm graph style ownership', () => {
       },
     }
     if (collectSidecar) {
-      runtimeState.css.sidecarImports.add(collectedStyle)
-      runtimeState.css.sidecarImports.add(style)
-      runtimeState.css.sidecarImports.add(nativeStyle)
+      replaceEntryStyleImports(runtimeState.css, owner, [collectedStyle, style, nativeStyle])
     }
     const plugins = [graph, preTransform, ...css(ctx), createOutputFinalizerPlugin(ctx), createOutputPublicationPlugin(ctx)]
     const render = async () => await build({
@@ -119,11 +120,19 @@ describe('warm graph style ownership', () => {
       expect(styles(await render())).toEqual([])
 
       await rm(nativeStyle)
-      runtimeState.css.sidecarImports.delete(nativeStyle)
+      await invalidateEntryForSidecar(ctx, nativeStyle, 'delete')
+      replaceEntryStyleImports(runtimeState.css, owner, collectSidecar ? [collectedStyle, style] : [])
+      expect(runtimeState.css.sidecarImports.has(nativeStyle)).toBe(false)
       const fallback = styles(await render())
       expect(fallback).toMatchObject(collectSidecar
         ? [{ fileName: 'pages/index/index.wxss', source: '.page { color: blue; }\n' }]
         : [])
+
+      // 可选相邻样式退出登记后，真正 import 的缺失依然必须中止编译。
+      await writeFile(owner, 'import "./index.css"; export const count = 3')
+      await rm(style)
+      await invalidateEntryForSidecar(ctx, style, 'delete')
+      await expect(render()).rejects.toThrow(/index\.css/)
     }
     finally {
       await rm(root, { recursive: true, force: true })

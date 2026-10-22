@@ -4,7 +4,7 @@ import type { WeappBuildSession } from './session'
 import { describe, expect, it, vi } from 'vitest'
 import { createSessionEnvironmentPlugin } from './environment'
 
-type Phase = 'options' | 'buildStart' | 'generateBundle' | 'writeBundle'
+type Phase = 'options' | 'buildStart' | 'generateBundle' | 'writeBundle' | 'closeWatcher'
 
 function fixture(watchMode = false, serve = false) {
   const dependencies: PreparedNpmOutput = {
@@ -17,6 +17,7 @@ function fixture(watchMode = false, serve = false) {
     buildDependencies: vi.fn(async () => dependencies),
     publishDependencies: vi.fn(async () => {}),
     close: vi.fn(async () => {}),
+    closeHostGeneration: vi.fn(async (_reason: 'restart' | 'close') => {}),
   }
   const context = {
     meta: { watchMode },
@@ -36,6 +37,19 @@ function fixture(watchMode = false, serve = false) {
 }
 
 describe('standard Vite environment dependency publication', () => {
+  it.each([false, true])('leaves terminal IDE restoration to the serving host (serve=%s)', async (serve) => {
+    const { session, run } = fixture(true, serve)
+    await run('closeWatcher')
+    if (serve) {
+      expect(session.closeHostGeneration).toHaveBeenCalledExactlyOnceWith('close')
+      expect(session.close).not.toHaveBeenCalled()
+    }
+    else {
+      expect(session.close).toHaveBeenCalledOnce()
+      expect(session.closeHostGeneration).not.toHaveBeenCalled()
+    }
+  })
+
   it.each([false, true])('finishes dependency input registration before scanning and emits during generate (write: %s)', async (write) => {
     const { dependencies, session, context, run } = fixture()
     const prepared = Promise.withResolvers<PreparedNpmOutput>()

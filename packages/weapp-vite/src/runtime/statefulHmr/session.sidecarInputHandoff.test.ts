@@ -118,7 +118,7 @@ async function start() {
   const rebuild = vi.fn(async (_files: string[]) => asset(await readFile(file, 'utf8')))
   const ctx = {
     runtimeState: createRuntimeState(),
-    configService: { platform: 'weapp', cwd: root, absoluteSrcRoot: srcRoot, outDir: path.join(root, 'dist'), weappViteConfig: { hmr: {} }, inlineConfig: {} },
+    configService: { platform: 'weapp', cwd: root, absoluteSrcRoot: srcRoot, outDir: path.join(root, 'dist'), multiPlatform: { enabled: false }, weappViteConfig: { hmr: {} }, inlineConfig: {} },
     scanService: { subPackageMap: new Map() },
     moduleGraphService: createModuleGraphService(),
   } as unknown as CompilerContext

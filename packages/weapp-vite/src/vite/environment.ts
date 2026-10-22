@@ -70,7 +70,12 @@ export function createSessionEnvironmentPlugin(session: WeappBuildSession, serve
       },
     },
     async closeWatcher() {
-      await session.close()
+      if (serve) {
+        await session.closeHostGeneration('close')
+      }
+      else {
+        await session.close()
+      }
     },
   }
 }

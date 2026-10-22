@@ -1,14 +1,17 @@
 import type { InlineConfig, ViteDevServer } from 'vite'
+import type { HmrRuntimeSession } from '../runtime/hmrRuntimeSession'
 import type { PreparedNpmOutput } from './npm'
 import { attachDevModuleGraphHost } from '../moduleGraph/host'
 import { getInitialBuildInputObservation } from '../runtime/buildPlugin/initialBuildChanges'
 import { checkAppWorkersOptions } from '../runtime/buildPlugin/workers'
+import { prepareClassicIdeConfig } from '../runtime/classicIdeConfig/prepare'
 import { CompilerSession } from '../runtime/compilerSession'
 import { findSkylineRendererFiles, resolveHmrRuntimeDecision } from '../runtime/hmrRuntime'
 import { getHmrRuntimeCapabilityFallback } from '../runtime/hmrRuntimeCapabilities'
 import { attachHmrRuntimeSession, createHmrRuntimeSession } from '../runtime/hmrRuntimeSession'
 import { createSharedBuildConfig } from '../runtime/sharedBuildConfig'
 import { attachStatefulHmrHost, createStatefulHmrHostPlugins, getStatefulHmrHost } from '../runtime/statefulHmr/hostPlugins'
+import { prepareStatefulClassicHandoff } from '../runtime/statefulHmr/session'
 import { buildStatefulHmrSnapshot, prepareStatefulHmrSnapshot } from '../runtime/statefulHmr/snapshotBuild'
 import { clearStatefulHmrSnapshot, offerStatefulHmrSnapshot, StatefulHmrSnapshotHandoff } from '../runtime/statefulHmr/snapshotHandoff'
 import { syncManagedTsconfigFiles } from '../runtime/tsconfigSupport'
@@ -16,15 +19,20 @@ import { resolveRealpath } from '../utils/realpathScope'
 import { prepareNpmAssets } from './npm'
 import { publishOwnedNpmAssets } from './npm/ownership'
 
+const runtimeOwners = new WeakMap<HmrRuntimeSession, WeappBuildSession>()
+
 /** 标准插件的目标校验和依赖准备，共享底层编译会话生命周期。 */
 export class WeappBuildSession extends CompilerSession {
   private dependencyBuild?: Promise<PreparedNpmOutput>
   private validating?: Promise<void>
+  private hostClosing?: Promise<void>
+  private terminalClosing?: Promise<void>
   isWeb = false
   statefulController?: ReturnType<typeof createStatefulHmrHostPlugins>
 
   constructor(readonly hmrRuntimeSession = createHmrRuntimeSession()) {
     super()
+    runtimeOwners.set(hmrRuntimeSession, this)
     this.onClose(attachHmrRuntimeSession(this.context, hmrRuntimeSession))
     this.onClose(() => clearStatefulHmrSnapshot(this.context))
   }
@@ -58,6 +66,7 @@ export class WeappBuildSession extends CompilerSession {
       }
       return merged
     }
+    await prepareClassicIdeConfig(this.context)
     if (isDev && this.hmrRuntimeSession.resolve(resolveHmrRuntimeDecision({
       platform: service.platform,
       configured: service.weappViteConfig.hmr?.runtime,
@@ -92,6 +101,39 @@ export class WeappBuildSession extends CompilerSession {
     }
     const merged = this.context.configService.merge(undefined, createSharedBuildConfig(this.context.configService, this.context.scanService))
     return merged
+  }
+
+  /** 只关闭本代资源；宿主负责在原生 watcher 和服务器均退出后恢复 IDE 设置。 */
+  closeHostGeneration(reason: 'restart' | 'close'): Promise<void> {
+    if (!this.hostClosing) {
+      if (reason === 'restart' && this.hmrRuntimeSession.fallback) {
+        prepareStatefulClassicHandoff(this.context)
+      }
+      this.hostClosing = super.close()
+    }
+    return this.hostClosing
+  }
+
+  /** 无宿主的构建或首次配置失败可直接释放，已绑定宿主必须走其关闭门禁。 */
+  override close(reason: 'restart' | 'close' = 'close'): Promise<void> {
+    return reason === 'restart'
+      ? this.closeHostGeneration(reason)
+      : this.terminalClosing ??= this.closeHostGeneration(reason).then(() => this.releaseClassicIdeConfig())
+  }
+
+  /** 只释放仍未被替换宿主接管的 owner，初始化失败和遗弃交接使用同一关闭门禁。 */
+  async releaseClassicIdeConfig(): Promise<void> {
+    await super.close()
+    if (runtimeOwners.get(this.hmrRuntimeSession) === this) {
+      await this.hmrRuntimeSession.classicIdeConfig.close()
+    }
+  }
+
+  /** 原生宿主链已完全退出后，连同尚未绑定宿主的失败替换代一起释放。 */
+  async releaseHostClassicIdeConfig(): Promise<void> {
+    const current = runtimeOwners.get(this.hmrRuntimeSession)
+    await current?.closeHostGeneration('close')
+    await this.hmrRuntimeSession.classicIdeConfig.close()
   }
 
   validateEntries(): Promise<void> {
