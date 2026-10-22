@@ -22,6 +22,10 @@ PR 的 `Performance Smoke` 通过 Actions 手动填写 `pr-number`，或由 AI �
 
 当前 `paired-v5-runtime-profile` 修正请求 runtime 与实际执行管线混淆的问题。请求 `stateful-experimental` 的会话可在配置或样式更新后回退 classic；旧采集器继续只匹配 stateful profile，丢弃后续真实 standard 记录，令每轮编辑、恢复分别空等 15 秒，并耗尽 smoke 总采集预算。现在每个编辑和恢复阶段分别记录请求 runtime 与实际管线，按实际管线关联源文件和 profile，保留 stateful 发布协议及完整产物恢复校验。首次触发回退的阶段若没有完整 profile，仍记录缺失、内部耗时未知，不伪造记录、不用 wall 耗时填充，也不关闭候选采集。
 
+自动导入 HMR 的模板标记还可能触发 `native-registration` 回退，导致旧 stateful transport 返回 410。v5 只接受同一开发进程的该原因转换、对应 classic ready、已释放的 stateful 控制产物及通过检查的完整 classic 入口；410 或控制文件缺失本身均不能作为成功证据。每次编辑和恢复继续验证 marker 或对应模式的完整原始产物，并在原始报告保留前后 runtime、回退原因和 ready 核验结果。metric id、样本数和测量边界不变；独立诊断遇到回退仍显式失败，不伪造 stateful 证据。
+
+stateful 初始模板包含用于稳定 CSS 变量运行时的样式绑定槽，classic 会正常移除这些槽，因此跨模式恢复不能直接与 stateful 初始字节比较。v5 在首次 source mutation 前，用被测 checkout 的公开 `wevu/compiler` 对原始源码生成两种模式的内存参考；先要求初始模式参考与真实 emitted WXML 逐字节相等，否则立即失败。仅在严格确认回退后，恢复阶段才选择预先冻结的 classic 参考并做完整字节比较；不会删属性做规范化，也不会从本次恢复产物反推基线。原始报告记录源码、两份参考的 SHA-256/字节数、编译器仓库相对来源/版本和参考准备耗时。该准备位于原测量区间外，仍计入既有 collector 总预算，不新增 CLI 构建，不修改既定源码输入。
+
 减少无效 profile 等待会改变阶段间隔，因此使用 v5 契约，禁止与旧契约样本混合。固定基线、模板和场景顺序、7/20 对采样、唯一等量确认、5% 门槛、15 秒 profile 等待以及所有准备、分片和总 deadline 均不变。本次迁移只验证正确性冒烟，不触发 Nightly / Candidate 完整性能重新采样；正式完整验收仍通过既有显式选择入口运行。
 
 升级时已登记的 v3 / v4 计划可由可信报告器按自身契约完成原状态登记，继续使用原状态键并核验冻结计划、27 个分片及全部原始证据；旧计划不能消费 v5 分片，v5 计划也不能消费旧分片。旧结果不得覆盖同一 HEAD 的 v5 评论。planner 只为当前契约创建尝试，不因支持旧报告而重新采集历史样本。
