@@ -128,9 +128,9 @@ async function fixture() {
   const publish = typeof publicationHook === 'function' ? publicationHook : publicationHook.handler
   const published = new Map<string, string>()
 
-  function createBundle(pageCode = 'exports.value = "initial";', dependencies: OutputBundle = {}): OutputBundle {
+  function createBundle(pageCode = 'exports.value = "initial";', dependencies: OutputBundle = {}, appCode = 'exports.value = "app";'): OutputBundle {
     return {
-      'app.js': chunk('app.js', 'exports.value = "app";', sources.app),
+      'app.js': chunk('app.js', appCode, sources.app),
       'pages/a/index.js': chunk('pages/a/index.js', pageCode, sources.pageA, Object.keys(dependencies).slice(0, 1)),
       'pages/b/index.js': chunk('pages/b/index.js', 'exports.value = "retained";', sources.pageB),
       ...dependencies,
@@ -204,5 +204,17 @@ describe('sharedChunks off publication lifecycle', () => {
     expect(readPublishedValue(published, 'pages/a/index.js')).toBe('stored:new dependency')
     expect(readPublishedValue(published, 'pages/b/index.js')).toBe('retained')
     expect(second).not.toContain('pages/b/index.js')
+  })
+
+  it('publishes a changed root input while retaining unchanged pages', async () => {
+    const { build, createBundle, published } = await fixture()
+    await build(createBundle())
+
+    const second = await build(createBundle('exports.value = "updated";', {}, 'exports.value = "updated app";'), true)
+
+    expect(second).toEqual(expect.arrayContaining(['app.js', 'pages/a/index.js']))
+    expect(second).not.toContain('pages/b/index.js')
+    expect(readPublishedValue(published, 'app.js')).toBe('updated app')
+    expect(readPublishedValue(published, 'pages/b/index.js')).toBe('retained')
   })
 })

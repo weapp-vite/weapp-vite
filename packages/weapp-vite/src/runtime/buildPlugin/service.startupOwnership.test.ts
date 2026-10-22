@@ -45,7 +45,7 @@ function createContext(outDir = path.join(root, 'dist'), isDev = true) {
       inlineConfig: {},
       weappViteConfig: { cleanOutputsInDev: true },
     },
-    watcherService: {},
+    watcherService: { closeAll: vi.fn(async () => {}) },
     npmService: {},
     scanService: {},
     moduleGraphService: { resetSession: vi.fn() },

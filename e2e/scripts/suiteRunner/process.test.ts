@@ -49,6 +49,39 @@ describe('suiteRunner real process and machine lease integration', () => {
     }
   })
 
+  it('stops after fragmented incomplete dev shutdown evidence even when task failures are allowed', async () => {
+    const previousExitCode = process.exitCode
+    process.exitCode = undefined
+    const beforeEachTask = vi.fn()
+    const beforeTaskLaunch = vi.fn()
+    const onUnsafeRuntime = vi.fn()
+    const task = {
+      label: 'incomplete-dev-shutdown',
+      command: process.execPath,
+      args: ['-e', `
+        process.stderr.write('DevProcessGraceful');
+        setImmediate(() => {
+          process.stderr.write('ShutdownError: session cleanup did not finish before forced termination\\n');
+          process.exitCode = 1;
+        });
+      `],
+    }
+    try {
+      expect(await runTaskSuite('e2e:test', [
+        task,
+        { label: 'must-not-run', command: process.execPath, args: ['-e', 'process.exit(0)'] },
+      ], { beforeEachTask, beforeTaskLaunch, onUnsafeRuntime, failOnTaskFailure: false, stopOnTaskFailure: false, writeReport: false })).toBe(1)
+      expect(beforeEachTask).toHaveBeenCalledTimes(1)
+      expect(beforeTaskLaunch).toHaveBeenCalledTimes(1)
+      expect(task).toMatchObject({ unsafeRuntimeReason: expect.stringContaining('DevProcessGracefulShutdownError') })
+      expect(onUnsafeRuntime).toHaveBeenCalledOnce()
+      expect(onUnsafeRuntime).toHaveBeenCalledWith(expect.stringContaining('DevProcessGracefulShutdownError'))
+    }
+    finally {
+      process.exitCode = previousExitCode
+    }
+  })
+
   it.skipIf(process.platform === 'win32')('stops the suite after an unexpected SIGKILL instead of launching another task', async () => {
     const previousExitCode = process.exitCode
     process.exitCode = undefined

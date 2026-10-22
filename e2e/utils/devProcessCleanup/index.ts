@@ -1,8 +1,10 @@
 import type { DevProcessIdentity } from './processes'
+import type { DevProcessForcedShutdown, DevProcessStopOptions } from './shutdown'
 import process from 'node:process'
 import { sameManagedProcess } from '../../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/processIdentity'
 import { traceCleanupStage } from '../cleanupTrace'
 import { captureDevProcessTree, DevProcessTerminationError, isDevProcessAlive, killWindowsDevProcesses, readDevProcessIdentities, UnconfirmedDevProcessTreeError } from './processes'
+import { waitForGracefulExit } from './shutdown'
 
 interface DevProcessCleanupOptions {
   pid?: number
@@ -11,6 +13,8 @@ interface DevProcessCleanupOptions {
   settledExit: Promise<unknown>
   /** 根未收到强制信号且全部资源排空后，通知调用方核验 IPC 退出状态。 */
   onIpcExit?: () => void
+  /** 正常关闭等待已取消、超时或根已收到强制信号；全部登记进程终结后仍须报告验收失败。 */
+  onForcedRootExit?: (evidence: DevProcessForcedShutdown) => void
 }
 
 function sleep(ms: number) {
@@ -36,6 +40,7 @@ export function createDevProcessCleanup(options: DevProcessCleanupOptions) {
   let captured = false
   let disconnected = false
   let rootTerminationRequested = false
+  let forcedShutdown: DevProcessForcedShutdown | undefined
   let unconfirmed: UnconfirmedDevProcessTreeError | undefined
   let incompleteCapture: { cause: unknown } | undefined
 
@@ -140,7 +145,7 @@ export function createDevProcessCleanup(options: DevProcessCleanupOptions) {
     }
   }
 
-  return async (forceKillDelayMs: number) => {
+  return async (forceKillDelayMs: number, stopOptions: DevProcessStopOptions = {}) => {
     if (!options.isRootHeld()) {
       assertCaptureComplete()
     }
@@ -198,7 +203,11 @@ export function createDevProcessCleanup(options: DevProcessCleanupOptions) {
     assertCaptureComplete()
     if (!disconnected && options.isRootHeld() && options.disconnectRoot()) {
       disconnected = true
-      await traceCleanupStage('dev-ipc-exit', () => waitForExit(options.settledExit, forceKillDelayMs), { timeoutMs: forceKillDelayMs })
+      const gracefulTimeoutMs = stopOptions.gracefulTimeoutMs ?? forceKillDelayMs
+      const outcome = await traceCleanupStage('dev-ipc-exit', () => waitForGracefulExit(options.settledExit, { ...stopOptions, gracefulTimeoutMs }), { timeoutMs: gracefulTimeoutMs })
+      if (outcome !== 'exited') {
+        forcedShutdown = { gracefulTimeoutMs, ...(outcome === 'cancelled' ? { cancelled: { reason: stopOptions.signal?.reason } } : {}) }
+      }
     }
     forgetExitedRoot()
     if (pending.size) {
@@ -220,8 +229,13 @@ export function createDevProcessCleanup(options: DevProcessCleanupOptions) {
       throw new Error('Dev process exit or stdio drain timed out; cleanup remains registered for retry.')
     }
     // 根可先自然退出、后代继续持有输出；全部登记资源结算后才核验 IPC 退出结果。
-    if (disconnected && !rootTerminationRequested) {
-      options.onIpcExit?.()
+    if (disconnected) {
+      if (forcedShutdown || rootTerminationRequested) {
+        options.onForcedRootExit?.(forcedShutdown ?? { gracefulTimeoutMs: stopOptions.gracefulTimeoutMs ?? forceKillDelayMs })
+      }
+      else {
+        options.onIpcExit?.()
+      }
     }
   }
 }

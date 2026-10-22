@@ -14,6 +14,7 @@ import { execa } from 'execa'
 import { withMachineE2ELease } from '../../packages/devtools-runtime/src/lease/machine'
 import { MANAGED_PROJECT_JOURNAL_ENV } from '../../packages/weapp-ide-cli/src/devtoolsProjectOwnership'
 import { assertVerificationTopology, resolveVerificationTopology } from '../../scripts/verification/topology.ts'
+import { DEV_PROCESS_GRACEFUL_SHUTDOWN_ERROR_NAME } from '../utils/devProcessCleanup/shutdown'
 import { claimDevtoolsHost, DEVTOOLS_HOST_CLAIMED_ENV, quitClaimedDevtoolsHost } from '../utils/devtoolsHostLifecycle'
 import { createDevtoolsProjectJournal } from '../utils/devtoolsProcessOwnership'
 import { cleanupDevtoolsCommandScope } from '../utils/devtoolsScopeCleanup'
@@ -154,7 +155,7 @@ function createTaskArtifactCollector() {
       if (/DEVTOOLS_LOGIN_REQUIRED|WechatIdeLoginRequiredError|检测到微信开发者工具登录状态失效|\[runtime:launch-login\]/.test(line)) {
         runtimeBlocker ??= { code: 'needs-login', reason: line.trim() }
       }
-      if (/WECHAT_DEVTOOLS_HOST_IDENTITY_MISMATCH|DEVTOOLS_INSTALLATION_MISMATCH|FATAL ERROR.*(?:heap|memory)|out of memory|DevTools.*OOM/i.test(line)) {
+      if (line.includes(DEV_PROCESS_GRACEFUL_SHUTDOWN_ERROR_NAME) || /WECHAT_DEVTOOLS_HOST_IDENTITY_MISMATCH|DEVTOOLS_INSTALLATION_MISMATCH|FATAL ERROR.*(?:heap|memory)|out of memory|DevTools.*OOM/i.test(line)) {
         unsafeRuntimeReason ??= line
       }
       const runtimeMatch = /\[devtools:runtime\] (\{.*\})/.exec(line)

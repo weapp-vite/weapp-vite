@@ -126,8 +126,12 @@ export function createBuildEndHook(state: CorePluginState) {
 
       if (metadataOnly && !replacesOutput) {
         for (const entryId of affectedEntries) {
-          state.loadedEntrySet.delete(entryId)
+          const wasLoaded = state.loadedEntrySet.delete(entryId)
           await state.loadEntry.call(this, entryId, resolveEntryType(state, entryId), { metadataOnly: true })
+          // 元数据刷新不能退休已有脚本入口，否则后续无关更新会再次发射它。
+          if (wasLoaded) {
+            state.loadedEntrySet.add(entryId)
+          }
         }
       }
     }

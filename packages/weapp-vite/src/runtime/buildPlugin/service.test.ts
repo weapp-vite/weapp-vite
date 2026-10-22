@@ -1260,6 +1260,8 @@ describe('runtime buildPlugin service', () => {
     await fs.outputFile(config, 'export default {}')
     const graph = createModuleGraphService()
     const ctx = createMockContext({ moduleGraphService: graph })
+    // 使用真实 drain 验证 façade 关闭委托到 classic 本代资源时不会反向等待公共关闭。
+    createWatcherServicePlugin(ctx)
     Object.assign(ctx.configService, {
       cwd: root,
       absoluteSrcRoot: srcRoot,
@@ -3512,11 +3514,10 @@ describe('runtime buildPlugin service', () => {
     const closing = result.close()
     expect(result.close()).toBe(closing)
     if (multiple) {
-      await expect(closing).rejects.toMatchObject({ errors: [
-        sidecarFailure,
-        nativeFailure,
-        expect.objectContaining({ errors: [resourceFailure] }),
-      ] })
+      const collectFailures = (error: unknown): unknown[] => error instanceof AggregateError ? error.errors.flatMap(collectFailures) : [error]
+      const failure = await closing.catch(error => error as unknown)
+      expect(failure).toBeInstanceOf(AggregateError)
+      expect(collectFailures(failure)).toEqual([sidecarFailure, nativeFailure, resourceFailure])
     }
     else {
       await expect(closing).rejects.toBe(sidecarFailure)

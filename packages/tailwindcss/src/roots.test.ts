@@ -102,7 +102,7 @@ it('keeps captured rule topology while observing output callback field changes b
     const second = path.join(base, 'second.ts')
     const third = path.join(base, 'third.jsx')
     const ignored = path.join(base, 'node_modules/dependency.ts')
-    const css = '@import "tailwindcss/utilities"; @source "./*.ts";'
+    const css = '@import "tailwindcss/utilities"; @source "./*.ts"; @source "./*.jsx";'
     await writeFile(entry, css)
     await writeFile(first, 'export const utility = "w-[37px]"')
     await writeFile(second, 'export const utility = "w-[53px]"')

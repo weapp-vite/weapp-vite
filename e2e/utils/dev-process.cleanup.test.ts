@@ -3,6 +3,7 @@ import process from 'node:process'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanupTrackedDevProcesses, startDevProcess } from './dev-process'
 import { cleanupResidualDevProcesses } from './dev-process-cleanup'
+import { DEV_PROCESS_GRACEFUL_TIMEOUT_MS, DevProcessGracefulShutdownError } from './devProcessCleanup/shutdown'
 import { createChild, createProcessTreeFixture } from './devProcessCleanupFixture'
 
 const execaMock = vi.hoisted(() => vi.fn())
@@ -245,8 +246,15 @@ describe('dev process cleanup ownership', () => {
     const result = await settleCleanup(stopping)
     expect(result).toMatchObject({
       status: 'rejected',
-      reason: { cause: failure, message: expect.stringContaining('IPC shutdown: exitCode=1, signal=none') },
+      reason: {
+        name: 'DevProcessGracefulShutdownError',
+        cause: failure,
+        evidence: { gracefulTimeoutMs: DEV_PROCESS_GRACEFUL_TIMEOUT_MS },
+        message: expect.stringContaining('exitCode=1, signal=none, reason=original cleanup error'),
+      },
     })
+    expect(result.status === 'rejected' && result.reason).toBeInstanceOf(DevProcessGracefulShutdownError)
+    expect(result.status === 'rejected' && result.reason.cause).toBe(failure)
     expect(fixture.signals).toEqual([{ pid: 62, signal: 'SIGTERM' }, { pid: 62, signal: 'SIGKILL' }])
     expect([...fixture.processes.keys()]).toEqual([71, 72])
     expect(result.status === 'rejected' && result.reason.message).toContain('final registered descendant output')
@@ -256,7 +264,7 @@ describe('dev process cleanup ownership', () => {
     await expect(cleanupTrackedDevProcesses(0)).resolves.toBeUndefined()
   })
 
-  it('preserves forced root termination after an IPC timeout without asserting a graceful exit code', async () => {
+  it('retains forced root termination as an incomplete graceful shutdown after an IPC timeout', async () => {
     vi.useFakeTimers()
     const fixture = mockProcessTree()
     const failure = Object.assign(new Error('forced termination'), { exitCode: 1, signal: 'SIGTERM' })
@@ -268,7 +276,12 @@ describe('dev process cleanup ownership', () => {
     const disconnect = vi.fn()
     Object.assign(nodeChildProcess, { connected: true, disconnect })
     const dev = startDevProcess('node', ['fixture.js'])
-    expect(await settleCleanup(dev.stop(100))).toEqual({ status: 'fulfilled', value: undefined })
+    const stopping = dev.stop(100, { gracefulTimeoutMs: 100 })
+    const result = await settleCleanup(stopping)
+    expect(result).toMatchObject({ status: 'rejected', reason: expect.any(DevProcessGracefulShutdownError) })
+    expect(result.status === 'rejected' && result.reason.cause).toBe(failure)
+    expect(dev.stop(100)).toBe(stopping)
+    await expect(dev.stop(100)).rejects.toBe(result.status === 'rejected' ? result.reason : undefined)
     expect(disconnect).toHaveBeenCalledOnce()
     expect(fixture.signals).toContainEqual({ pid, signal: 'SIGTERM' })
     expect([...fixture.processes.keys()]).toEqual([71, 72])
@@ -309,22 +322,115 @@ describe('dev process cleanup ownership', () => {
     expect([...fixture.processes.keys()]).toEqual([71, 72])
   })
 
-  it('force kills only its held Windows child when IPC cleanup does not finish', async () => {
+  it('reports incomplete Windows IPC cleanup after force killing only its held child', async () => {
     vi.useFakeTimers()
     vi.spyOn(process, 'platform', 'get').mockReturnValue('win32')
     const fixture = mockProcessTree()
     const disconnect = vi.fn()
     Object.assign(fixture.owned.child.nodeChildProcess, { connected: true, disconnect })
     const dev = startDevProcess('node', ['fixture.js'], { ipc: true })
-    const stopping = dev.stop(100)
+    const stopping = dev.stop(100, { gracefulTimeoutMs: 100 })
+    const result = Promise.allSettled([stopping])
     await vi.advanceTimersByTimeAsync(0)
     expect(disconnect).toHaveBeenCalledOnce()
     await vi.advanceTimersByTimeAsync(100)
     await vi.runAllTimersAsync()
-    await stopping
+    const [stopped] = await result
+    expect(stopped).toMatchObject({ status: 'rejected', reason: expect.any(DevProcessGracefulShutdownError) })
+    expect(dev.stop(100)).toBe(stopping)
+    await expect(dev.stop(100)).rejects.toBe(stopped?.status === 'rejected' ? stopped.reason : undefined)
     expect(execaMock.mock.calls.filter(([command]) => command === 'taskkill')).toEqual([
       ['taskkill', ['/PID', '62', '/PID', '61', '/F'], expect.objectContaining({ reject: false })],
     ])
+    expect([...fixture.processes.keys()]).toEqual([71, 72])
+  })
+
+  it('keeps Windows inspection and an active build outside the force observation budget', async () => {
+    vi.useFakeTimers()
+    vi.spyOn(process, 'platform', 'get').mockReturnValue('win32')
+    const fixture = mockProcessTree()
+    kernelQueryMock.mockImplementationOnce(async () => {
+      await new Promise(resolve => setTimeout(resolve, 30_000))
+      return fixture.queryWindows()
+    })
+    const disconnect = vi.fn(() => setTimeout(() => fixture.finish(), 6_000))
+    Object.assign(fixture.owned.child.nodeChildProcess, { connected: true, disconnect })
+    const dev = startDevProcess('node', ['fixture.js'])
+    const stopping = dev.stop(5_000)
+    await vi.advanceTimersByTimeAsync(30_000)
+    expect(disconnect).toHaveBeenCalledOnce()
+    await vi.advanceTimersByTimeAsync(5_000)
+    expect(fixture.processes.has(61)).toBe(true)
+    expect(execaMock.mock.calls.some(([command]) => command === 'taskkill')).toBe(false)
+    await vi.advanceTimersByTimeAsync(1_000)
+    await stopping
+    expect(execaMock.mock.calls.some(([command]) => command === 'taskkill')).toBe(false)
+    expect([...fixture.processes.keys()]).toEqual([71, 72])
+  })
+
+  it.each(['darwin', 'win32'] as const)('retains cancellation while draining only owned processes on %s', async (platform) => {
+    vi.useFakeTimers()
+    vi.spyOn(process, 'platform', 'get').mockReturnValue(platform)
+    const fixture = mockProcessTree()
+    const disconnect = vi.fn()
+    Object.assign(fixture.owned.child.nodeChildProcess, { connected: true, disconnect })
+    const cancelled = new Error('fixture shutdown cancelled')
+    const controller = new AbortController()
+    const dev = startDevProcess('node', ['fixture.js'])
+    const stopping = dev.stop(100, { signal: controller.signal })
+    const result = Promise.allSettled([stopping])
+    await vi.advanceTimersByTimeAsync(0)
+    expect(disconnect).toHaveBeenCalledOnce()
+    controller.abort(cancelled)
+    await vi.runAllTimersAsync()
+    const [stopped] = await result
+    expect(stopped).toMatchObject({
+      status: 'rejected',
+      reason: { name: 'DevProcessGracefulShutdownError', cause: cancelled, evidence: { cancelled: { reason: cancelled } } },
+    })
+    expect([...fixture.processes.keys()]).toEqual([71, 72])
+    expect(dev.stop(100)).toBe(stopping)
+    await expect(dev.stop(100)).rejects.toBe(stopped?.status === 'rejected' ? stopped.reason : undefined)
+  })
+
+  it.each(['cancelled', 'timeout'] as const)('retains %s shutdown evidence when the Windows root exits during identity inspection', async (outcome) => {
+    vi.useFakeTimers()
+    vi.spyOn(process, 'platform', 'get').mockReturnValue('win32')
+    const fixture = mockProcessTree()
+    const disconnect = vi.fn()
+    Object.assign(fixture.owned.child.nodeChildProcess, { connected: true, disconnect })
+    const cancelled = new Error('fixture shutdown cancelled during identity inspection')
+    const controller = new AbortController()
+    const dev = startDevProcess('node', ['fixture.js'])
+    const stopping = dev.stop(100, { gracefulTimeoutMs: 100, signal: controller.signal })
+    const result = Promise.allSettled([stopping])
+    await vi.advanceTimersByTimeAsync(0)
+    expect(disconnect).toHaveBeenCalledOnce()
+    const identityQuery = Promise.withResolvers<void>()
+    const inspectionStarted = vi.fn()
+    kernelQueryMock.mockImplementationOnce(async (pids?: readonly number[]) => {
+      inspectionStarted(pids)
+      await identityQuery.promise
+      return fixture.queryWindows(pids)
+    })
+    if (outcome === 'cancelled') {
+      controller.abort(cancelled)
+    }
+    await vi.advanceTimersByTimeAsync(outcome === 'timeout' ? 100 : 0)
+    fixture.finish()
+    identityQuery.resolve()
+    await vi.runAllTimersAsync()
+    const [stopped] = await result
+    const failure: unknown = stopped?.status === 'rejected' ? stopped.reason : undefined
+    expect(inspectionStarted).toHaveBeenCalledOnce()
+    expect(inspectionStarted).toHaveBeenCalledWith(expect.arrayContaining([61]))
+    expect(failure).toBeInstanceOf(DevProcessGracefulShutdownError)
+    if (failure instanceof DevProcessGracefulShutdownError) {
+      expect(failure.evidence).toEqual({ gracefulTimeoutMs: 100, ...(outcome === 'cancelled' ? { cancelled: { reason: cancelled } } : {}) })
+      expect(failure.cause).toBe(outcome === 'cancelled' ? cancelled : undefined)
+    }
+    expect(fixture.signals).toEqual([])
+    expect(execaMock.mock.calls.some(([command]) => command === 'taskkill')).toBe(false)
     expect([...fixture.processes.keys()]).toEqual([71, 72])
   })
 
