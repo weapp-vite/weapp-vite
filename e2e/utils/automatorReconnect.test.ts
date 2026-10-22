@@ -30,8 +30,9 @@ vi.mock('../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/journal', () 
 function createSession() {
   const disconnect = vi.fn()
   const rawClose = vi.fn(async () => {})
-  const session = { close: rawClose, disconnect } as unknown as MiniProgram
-  return { session, disconnect, rawClose }
+  const waitForAppReady = vi.fn(async (_timeout: number) => {})
+  const session = { close: rawClose, disconnect, waitForAppReady } as unknown as MiniProgram
+  return { session, disconnect, rawClose, waitForAppReady }
 }
 
 function createFixture() {
@@ -87,6 +88,34 @@ beforeEach(() => {
 })
 
 describe('managed automator reconnect', () => {
+  it('does not configure CDP on a Tool-ready socket before the reloaded App is ready', async () => {
+    const fixture = createFixture()
+    const appReady = Promise.withResolvers<void>()
+    fixture.next.waitForAppReady.mockImplementation(() => appReady.promise)
+    const pending = reconnectAutomator(fixture.previous.session)
+    await vi.waitFor(() => expect(fixture.next.waitForAppReady).toHaveBeenCalledOnce())
+    expect(fixture.configure).not.toHaveBeenCalled()
+    const [budget] = fixture.next.waitForAppReady.mock.calls[0]!
+    expect(budget).toBeGreaterThan(0)
+    expect(budget).toBeLessThanOrEqual(120_000)
+    appReady.resolve()
+    expect(await pending).toBe(fixture.next.session)
+    expect(fixture.configure).toHaveBeenCalledOnce()
+    expect(fixture.closeOwner).not.toHaveBeenCalled()
+  })
+
+  it('keeps the original owner and error when the reloaded App never becomes ready', async () => {
+    const fixture = createFixture()
+    const failure = new Error('reloaded App initialization failed')
+    fixture.next.waitForAppReady.mockRejectedValueOnce(failure)
+    await expect(reconnectAutomator(fixture.previous.session)).rejects.toBe(failure)
+    expect(fixture.configure).not.toHaveBeenCalled()
+    expect(fixture.next.disconnect).toHaveBeenCalledOnce()
+    expect(fixture.closeOwner).not.toHaveBeenCalled()
+    await fixture.previous.session.close()
+    expect(fixture.closeOwner).toHaveBeenCalledOnce()
+  })
+
   it('awaits old socket closure before creating another connection to the owned endpoint', async () => {
     const fixture = createFixture()
     const barrier = Promise.withResolvers<void>()

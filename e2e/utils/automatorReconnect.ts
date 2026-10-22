@@ -111,6 +111,8 @@ export function reconnectAutomator(session: MiniProgram): Promise<MiniProgram> {
         managedProject: { ...context.metadata.managedProject },
       })
       await scope.step(() => assertReconnectIdentity(context))
+      // Tool 域仍可响应时 AppService 可能正在重载；先等待真实页面就绪再建立 CDP 日志通道。
+      await scope.step(() => next.waitForAppReady(scope.remainingMs()), { stage: 'app-ready' })
       await scope.step(() => context.configure(next, scope))
       scope.throwIfAborted()
       contexts.set(next, context)
