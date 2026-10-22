@@ -1598,6 +1598,24 @@ describe('createEntryLoader', () => {
     expect(result.code).toBe('transformed')
   })
 
+  it('preserves Vue source locations while registering adjacent style dependencies', async () => {
+    const entry = path.resolve('src/pages/source-location/index.vue')
+    const style = path.resolve('src/pages/source-location/index.css')
+    const sharedStyle = path.resolve('src/pages/source-location/shared.css')
+    const source = '<script setup>const message = "hello"</script>\n<template><view>{{ message }}</view></template>\n<style src="./index.css"></style>'
+    existsMock.mockImplementation(async (target: string) => target === style)
+    readFileMock.mockImplementation(async (target: string) => target === style
+      ? '@import "./shared.css";\n.page { color: red; }'
+      : source)
+
+    const { loader, runtimeState } = createLoader({ isDev: true })
+    const result = await loader.call(createPluginContext(), entry, 'page')
+
+    expect(result.code).toBe(source)
+    expect(runtimeState.css.sidecarImports).toContain(style)
+    expect(runtimeState.css.dependencyToImporters.get(sharedStyle)).toEqual(new Set([style]))
+  })
+
   it('prefetches entry source and style sidecars while child chunks are emitting', async () => {
     const pageScript = '/project/src/pages/home.js'
     const eventsBeforeRelease: string[] = []

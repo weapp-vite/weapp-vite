@@ -279,6 +279,7 @@ describe('HMR semantic acceptance inventory', () => {
     }
     const hmrFilters = scripts['test:hmr']!.split(/\s+/)
     for (const file of [
+      'packages/weapp-vite/src/plugins/hooks/useLoadEntry/loadEntry/vueSidecarSource.test.ts',
       'packages/weapp-vite/src/moduleGraph/host.ownership.test.ts',
       'packages/weapp-vite/src/runtime/config/internal/loadConfig.test.ts',
       'packages/weapp-vite/test/vite-stateful.test.ts',

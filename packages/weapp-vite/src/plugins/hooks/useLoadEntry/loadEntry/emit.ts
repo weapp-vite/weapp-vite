@@ -568,7 +568,9 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
 
   debug?.(`loadEntry ${relativeCwdId} 耗时 ${getTime()}`)
 
-  if (styleImports.length === 0) {
+  // SFC 始终使用原始源码坐标；相邻样式已登记，由 CSS 原生资源阶段发布。
+  // 将 JS import 前置到 SFC 外会使首轮绑定位置与直接读取源码的 watch 编译漂移。
+  if (styleImports.length === 0 || id.endsWith('.vue')) {
     return {
       code,
     }

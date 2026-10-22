@@ -4,6 +4,7 @@ import process from 'node:process'
 import { WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY, WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE, WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY } from '@weapp-core/constants'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { launchAutomator, reconnectAutomator } from '../utils/automator'
+import { createClassicAssetScriptContract } from '../utils/classicAssetScriptContract'
 import { runCleanupSteps } from '../utils/cleanupSteps'
 import { startDevProcess } from '../utils/dev-process'
 import { createDevProcessEnv } from '../utils/dev-process-env'
@@ -138,7 +139,9 @@ for (const runtime of ['classic', 'stateful-experimental'] as const) {
       const emittedScript = path.join(project, 'dist/pages/issue-1015/index.js')
       const emittedAppScript = path.join(project, 'dist/app.js')
       const initialAppScript = await readFile(emittedAppScript, 'utf8')
+      let loadedAppScript = initialAppScript
       let loadedScript = await readFile(emittedScript, 'utf8')
+      const classicScripts = runtime === 'classic' ? await createClassicAssetScriptContract(path.join(project, 'dist'), 'weapp') : undefined
       const outputDiagnostics = createHmrOutputDiagnostics(path.join(project, 'dist'), 'e2e-apps/github-issues/fixtures/issue-1015')
       const failureDiagnostics = createIssue1015HmrDiagnostics({
         stylesheetPath: emittedCss,
@@ -148,7 +151,7 @@ for (const runtime of ['classic', 'stateful-experimental'] as const) {
         getDevOutput: () => dev!.getOutput(),
       })
       await host.reLaunch(ROUTE)
-      await diagnostics.initialize()
+      const initialRuntime = await diagnostics.initialize()
       const originalMarkers = await host.evaluate(() => {
         const pages = getCurrentPages()
         return { app: (getApp() as any).__e2eHmrInstanceMarker, page: (pages[pages.length - 1] as any).__e2eHmrInstanceMarker }
@@ -159,10 +162,11 @@ for (const runtime of ['classic', 'stateful-experimental'] as const) {
         if (computedStyles || publication.stateful) {
           return
         }
-        const script = await readFile(emittedScript, 'utf8')
-        if (script !== loadedScript) {
+        const [script, appScript] = await Promise.all([readFile(emittedScript, 'utf8'), readFile(emittedAppScript, 'utf8')])
+        if (script !== loadedScript || appScript !== loadedAppScript) {
           await outputDiagnostics.capture('before-headless-reload', loadedScript)
-          // headless 没有 IDE 的磁盘重编译监听；仅完整启动脚本变化时换 VM。
+          // headless 没有 IDE 的磁盘重编译监听；根入口 generation 或页面完整脚本变化时换 VM。
+          // 这是 classic 的 companion；真实 IDE 分支必须由宿主自动重载，不能手动换页。
           // update.js 的增量交付继续复用当前 VM，不能靠重连掩盖 patch 失败。
           await expect.poll(() => host.evaluate((key: string) => {
             const globals = globalThis as any
@@ -173,6 +177,7 @@ for (const runtime of ['classic', 'stateful-experimental'] as const) {
           await host.close()
           runtimeReleased = true
           host = await connect()
+          loadedAppScript = appScript
           loadedScript = script
           diagnostics = createHmrRuntimeDiagnostics(host as any, 'e2e-apps/github-issues/fixtures/issue-1015')
           await diagnostics.initialize()
@@ -184,7 +189,12 @@ for (const runtime of ['classic', 'stateful-experimental'] as const) {
         const expected = checkpoints.find(checkpoint => checkpoint.id === id)!
         await outputDiagnostics.capture(`${id}-before-runtime`, loadedScript)
         if (id === 'style-only') {
-          expect(await readFile(emittedAppScript, 'utf8')).toBe(initialAppScript)
+          if (classicScripts) {
+            await classicScripts.assertUpdated()
+          }
+          else {
+            expect(await readFile(emittedAppScript, 'utf8')).toBe(initialAppScript)
+          }
         }
         if (publication.stateful) {
           await expect.poll(async () => {
@@ -230,17 +240,17 @@ for (const runtime of ['classic', 'stateful-experimental'] as const) {
         })
         await dom.check(id, host, await host.currentPage())
         const runtimeState = await diagnostics.capture(id)
-        if (id === 'style-only') {
+        if (id === 'style-only' && publication.stateful) {
           expect(await readFile(emittedAppScript, 'utf8')).toBe(initialAppScript)
-          expect(runtimeState.runtime).toMatchObject({ appMarkerRetained: true, pageMarkerRetained: true })
+          expect(runtimeState).toMatchObject({ errors: [], pageId: initialRuntime.pageId, runtime: { appMarkerRetained: true, pageMarkerRetained: true } })
         }
         if (!publication.stateful) {
           await publication.assertClassicRuntime(host)
-          if (runtime === 'stateful-experimental') {
-            expect(await host.evaluate((markers: { app: string, page: string }) => {
+          if (runtime === 'stateful-experimental' || id === 'style-only') {
+            await expect.poll(() => host.evaluate((markers: { app: string, page: string }) => {
               const pages = getCurrentPages()
               return { app: (getApp() as any).__e2eHmrInstanceMarker === markers.app, page: (pages[pages.length - 1] as any).__e2eHmrInstanceMarker === markers.page }
-            }, originalMarkers)).toEqual({ app: false, page: false })
+            }, originalMarkers), { timeout: 45_000 }).toEqual({ app: false, page: false })
           }
         }
         await outputDiagnostics.capture(`${id}-passed`, loadedScript)
