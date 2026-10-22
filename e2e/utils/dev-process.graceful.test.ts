@@ -4,9 +4,67 @@ import path from 'node:path'
 import process from 'node:process'
 import { expect, it } from 'vitest'
 import { cleanupTrackedDevProcesses, startDevProcess } from './dev-process'
+import { DevProcessGracefulShutdownError } from './devProcessCleanup/shutdown'
 
 const shutdownModule = new URL('../../packages/weapp-vite/src/devLifecycle/shutdown.ts', import.meta.url).href
 const ownerModule = new URL('../../packages/weapp-vite/src/runtime/classicIdeConfig/index.ts', import.meta.url).href
+
+it('fails forced teardown after an IPC stop when the classic session has not released its lease', async () => {
+  const project = await mkdtemp(path.join(os.tmpdir(), 'dev-process-classic-incomplete-'))
+  const config = path.join(project, 'project.private.config.json')
+  const journal = path.join(project, '.weapp-vite/ide-classic-project.private.config.json')
+  const original = '{\r\n\t"setting": { "compileHotReLoad": true }\r\n}\r\n'
+  await writeFile(config, original)
+  const dev = startDevProcess(process.execPath, ['--import', 'tsx', '--input-type=module', '-e', `
+    import { DevShutdownScope } from ${JSON.stringify(shutdownModule)};
+    import { ClassicIdeConfigOwner } from ${JSON.stringify(ownerModule)};
+    const owner = new ClassicIdeConfigOwner();
+    const scope = new DevShutdownScope();
+    const hold = setInterval(() => {}, 30_000);
+    process.once('disconnect', () => console.log('fixture IPC stop received'));
+    scope.own(async () => {
+      console.log('fixture session close started');
+      // 模拟尚未结算的构建关闭；强杀不能冒充后端关闭和配置租约恢复完成。
+      await new Promise(() => {});
+      await owner.close();
+      clearInterval(hold);
+      console.log('fixture classic lease released');
+    });
+    await scope.run('startup', () => owner.activate(${JSON.stringify(config)}));
+    console.log('fixture classic owner ready');
+    await scope.done;
+  `])
+  try {
+    await dev.waitForOutput('fixture classic owner ready', 'classic config acquisition', 10_000)
+    const installed = await readFile(config, 'utf8')
+    const savedJournal = await readFile(journal, 'utf8')
+    const failure: unknown = await dev.stop(500, { gracefulTimeoutMs: 500 }).catch(error => error)
+    const repeated: unknown = await dev.stop(500).catch(error => error)
+    const output = dev.getOutput()
+    expect(output).toContain('fixture IPC stop received')
+    expect(output).toContain('fixture session close started')
+    expect(output).not.toContain('fixture classic lease released')
+    expect(await readFile(journal, 'utf8')).toBe(savedJournal)
+    expect(await readFile(config, 'utf8')).toBe(installed)
+    const { ClassicIdeConfigOwner } = await import('../../packages/weapp-vite/src/runtime/classicIdeConfig')
+    const next = new ClassicIdeConfigOwner()
+    const conflict: unknown = await next.activate(config).catch(error => error)
+    expect(conflict).toMatchObject({ code: 'EEXIST' })
+    await expect(next.close()).rejects.toBe(conflict)
+    expect(await readFile(journal, 'utf8')).toBe(savedJournal)
+    expect(await readFile(config, 'utf8')).toBe(installed)
+    await expect(cleanupTrackedDevProcesses(0)).resolves.toBeUndefined()
+    // 进程已终结仍须报告未完成收尾，后续 stop 不能把首错改写为成功。
+    expect(failure).toBeInstanceOf(DevProcessGracefulShutdownError)
+    expect(failure).toMatchObject({ evidence: { gracefulTimeoutMs: 500 } })
+    expect(repeated).toBe(failure)
+    await expect(dev.stop(500)).rejects.toBe(failure)
+  }
+  finally {
+    await dev.stop(500).catch(() => {})
+    await rm(project, { recursive: true, force: true })
+  }
+})
 
 it.each([
   undefined,

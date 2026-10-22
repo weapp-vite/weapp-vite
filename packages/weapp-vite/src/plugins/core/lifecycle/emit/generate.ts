@@ -31,6 +31,7 @@ import {
 } from '../../helpers'
 import { injectAppPreludeCode, resolveAppPreludeCode, resolveAppPreludeOptions } from './appPrelude'
 import { PRETTY_NODE_MODULES_RE } from './constants'
+import { collectNativePublicationDependencies, registerNativePublicationDependencies } from './nativePublicationDependencies'
 import {
   collapseRequestGlobalsRuntimeSupportChunk,
   injectAxiosFetchAdapterEnv,
@@ -353,7 +354,7 @@ export function shouldWarmupBundleScriptAnalysis(options: {
   )
 }
 
-function prunePartialHmrStableSharedChunks(bundle: OutputBundle, state: CorePluginState) {
+function prunePartialHmrStableSharedChunks(bundle: OutputBundle, state: CorePluginState, publicationDependencies: ReadonlySet<string>) {
   if (
     !state.ctx.configService.isDev
     || !state.hmrState.hasBuiltOnce
@@ -379,6 +380,10 @@ function prunePartialHmrStableSharedChunks(bundle: OutputBundle, state: CorePlug
       addEmittedChunkFileName(emittedChunkFileNames, fileName, chunk)
       collectResolvedImportedChunkIds(activeImportedChunkIds, importerFileName, chunk.imports)
       collectResolvedImportedChunkIds(activeImportedChunkIds, importerFileName, chunk.dynamicImports)
+    }
+
+    if (publicationDependencies.has(toPosixPath(chunk.fileName))) {
+      continue
     }
 
     if (!isStableHmrSharedChunk(fileName)) {
@@ -519,6 +524,23 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
       }
 
       const sharedStartedAt = performance.now()
+      if (assetOnlyDevHmrBundle) {
+        state.hmrState.affectedSharedChunkIds?.clear()
+        normalizePreprocessorStyleAssets(
+          rolldownBundle,
+          state.ctx.configService.outputExtensions?.wxss,
+          asset => this.emitFile(asset),
+        )
+        return
+      }
+      const shouldInjectRequestGlobalsPrelude = injectRequestGlobalsOptions?.prelude === true
+        && Boolean(scanService.appEntry || subPackageMeta)
+      // 先移除无效预加载并同步当前 require 边，再推导本代真实发布依赖。
+      removeImplicitPagePreloads(rolldownBundle, {
+        configService,
+        entriesMap: state.entriesMap,
+      })
+      syncChunkImportsFromRequireCalls(rolldownBundle)
       let activeImportedChunkIds: Set<string> | undefined
       if (!subPackageMeta) {
         const sharedStrategy = configService.weappViteConfig?.chunks?.sharedStrategy ?? DEFAULT_SHARED_CHUNK_STRATEGY
@@ -532,13 +554,6 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
         if (configService.isDev) {
           const forceFullSharedChunkRefresh = ctx.runtimeState.build.hmr.forceFullSharedChunkRefresh
           if (
-            assetOnlyDevHmrBundle
-            && !forceFullSharedChunkRefresh
-          ) {
-            // 纯模板、样式、JSON 宏更新不会产出新的 JS chunk；此时刷新 shared chunk 图会让
-            // DevTools hotreload 误认为页面 JS/vendor 也需要替换，产生新旧模块短暂错位。
-          }
-          else if (
             state.hmrSharedChunksMode === 'full'
             || state.hmrState.didEmitAllEntries
             || !state.hmrState.hasBuiltOnce
@@ -557,22 +572,14 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
           state.hmrState.hasBuiltOnce = true
         }
         if (!nativeDevBundle) {
-          // 增量页面 chunk 的源码 require 可能尚未反映到 Rolldown imports；先同步
-          // 这些边，才能在裁剪共享 vendor 前保留页面运行时实际需要的模块。
-          syncChunkImportsFromRequireCalls(rolldownBundle)
-          activeImportedChunkIds = prunePartialHmrStableSharedChunks(rolldownBundle, state)
+          const publicationDependencies = requiresClassicRootPublication(state)
+            ? collectNativePublicationDependencies(rolldownBundle, { rootFileName: 'app.js', requestGlobalsPrelude: shouldInjectRequestGlobalsPrelude })
+            : new Set<string>()
+          activeImportedChunkIds = prunePartialHmrStableSharedChunks(rolldownBundle, state, publicationDependencies)
           retainFullEntryHmrChunks(rolldownBundle, state)
+          // 模板批次没有 script emit 也可能保留页面发射计划；根与 prelude 的依赖不能随 shared 优化早退。
+          registerNativePublicationDependencies(rolldownBundle, publicationDependencies, ctx.runtimeState?.build?.hmr?.lastEmittedChunkFileNames, 'app.js')
           pruneUneventedDevHmrChunks(ctx, rolldownBundle)
-        }
-
-        if (assetOnlyDevHmrBundle) {
-          state.hmrState.affectedSharedChunkIds?.clear()
-          normalizePreprocessorStyleAssets(
-            rolldownBundle,
-            state.ctx.configService.outputExtensions?.wxss,
-            asset => this.emitFile(asset),
-          )
-          return
         }
 
         const matchSubPackage = createSubPackageMatcher(subPackageRoots)
@@ -726,12 +733,6 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
       }
       recordHmrProfileDuration(ctx.runtimeState?.build?.hmr?.profile, 'generateSharedMs', performance.now() - sharedStartedAt)
 
-      const preloadBundleSnapshot = createBundleChunkSnapshot(rolldownBundle)
-      removeImplicitPagePreloads(rolldownBundle, {
-        configService,
-        entriesMap: state.entriesMap,
-      }, preloadBundleSnapshot)
-
       const rewriteStartedAt = performance.now()
       const rewriteBundle = resolveDevHmrRewriteBundle(rolldownBundle, state, activeImportedChunkIds)
       const subPackageMap = scanService.subPackageMap ?? new Map<string, SubPackageMetaValue>()
@@ -820,8 +821,6 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
       }
 
       const appPreludePath = scanService.appEntry?.preludePath
-      const shouldInjectRequestGlobalsPrelude = injectRequestGlobalsOptions?.prelude === true
-        && Boolean(scanService.appEntry || subPackageMeta)
       const appPreludeOptions = resolveAppPreludeOptions(state)
       const shouldRunAppPrelude = (appPreludeOptions.enabled && Boolean(appPreludePath))
         || shouldInjectRequestGlobalsPrelude

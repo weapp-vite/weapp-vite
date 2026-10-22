@@ -8,6 +8,7 @@ import { createDebugger } from '../../../debugger'
 import { createLogicalEntryId } from '../../../moduleGraph/protocol'
 import { prepareIndependentOutputs } from '../../../runtime/buildPlugin/independentPlan'
 import { resetEmittedOutputCaches } from '../../../runtime/buildPlugin/outputs'
+import { getHmrStyleUpdatePlan } from '../../../runtime/hmrStyleUpdate'
 import { changeFileExtension } from '../../../utils'
 import { recordHmrProfileDuration } from '../../../utils/hmrProfile'
 import { normalizeFsResolvedId } from '../../../utils/resolvedId'
@@ -107,16 +108,6 @@ function isSharedChunkSourceRepresentativeRefresh(dirtyReasonSummary?: string[])
   )
 }
 
-function isCssImporterOnlyRefresh(dirtyReasonSummary?: string[]) {
-  return Boolean(
-    dirtyReasonSummary?.length
-    && dirtyReasonSummary.every(item =>
-      item.startsWith('css-importer:')
-      || item.startsWith('css-importer-fallback:'),
-    ),
-  )
-}
-
 function isWxmlImportOnlyRefresh(dirtyReasonSummary?: string[]) {
   return Boolean(
     dirtyReasonSummary?.length
@@ -128,7 +119,7 @@ function isVueEntryId(entryId: string) {
   return vueExtensions.some(ext => entryId.endsWith(`.${ext}`))
 }
 
-function resolveCssImporterRepresentative(
+function resolveAssetImporterRepresentative(
   pending: Set<string>,
   resolvedEntryMap: Map<string, ResolvedId>,
   rootInputIds?: Set<string>,
@@ -196,6 +187,7 @@ function resolvePendingEntryIds(options: {
   sharedChunksByEntry?: Map<string, Set<string>>
   sourceSharedChunks?: Set<string>
   rootInputIds?: Set<string>
+  styleOwners?: ReadonlySet<string>
 }): PendingEntryResolution {
   const pending = new Set(options.dirtyEntrySet)
   const pendingReasonSummary = resolveUpstreamPendingReasonSummary(options.dirtyReasonSummary)
@@ -214,15 +206,16 @@ function resolvePendingEntryIds(options: {
     }
   }
 
-  const isRepresentativeOnlyRefresh = isCssImporterOnlyRefresh(options.dirtyReasonSummary)
-    || isWxmlImportOnlyRefresh(options.dirtyReasonSummary)
-  if (isRepresentativeOnlyRefresh && pending.size > 1) {
-    const representative = resolveCssImporterRepresentative(pending, options.resolvedEntryMap, options.rootInputIds)
+  // 每个样式 owner 都必须进入真实逻辑入口图；共享脚本的 importer 不能替代或扩大样式编译归属。
+  const styleOwners = options.styleOwners
+  if (styleOwners?.size && [...pending].every(entryId => styleOwners.has(entryId) && options.dirtyEntryReasons.get(entryId) !== 'direct')) {
+    return { pending, pendingReasonSummary }
+  }
+
+  if (isWxmlImportOnlyRefresh(options.dirtyReasonSummary) && pending.size > 1) {
+    const representative = resolveAssetImporterRepresentative(pending, options.resolvedEntryMap, options.rootInputIds)
     if (representative) {
-      const reason = isWxmlImportOnlyRefresh(options.dirtyReasonSummary)
-        ? 'wxml-importer-import-representative'
-        : 'css-importer-representative'
-      pendingReasonSummary.push(`${reason}:1/${pending.size}`)
+      pendingReasonSummary.push(`wxml-importer-import-representative:1/${pending.size}`)
       return {
         pending: new Set([representative]),
         hmrEntries: pending,
@@ -638,6 +631,7 @@ export function useLoadEntry(
         return
       }
       const dirtyCount = activeDirtyEntrySet.size
+      const styleOwners = getHmrStyleUpdatePlan(ctx.configService)?.cssImporterOwners
       const pendingResolution = resolvePendingEntryIds({
         isDev: Boolean(ctx.configService?.isDev),
         mode: hmrSharedChunksMode,
@@ -649,6 +643,7 @@ export function useLoadEntry(
         sharedChunksByEntry: hmrSharedChunksByEntry,
         sourceSharedChunks: options?.hmr?.sourceSharedChunks,
         rootInputIds,
+        styleOwners,
       })
       const pendingEntryIds = pendingResolution.pending
       // 发射集合还会包含元数据扫描发现的已有组件；仅脚本失效才需要重写内容未变的入口。
@@ -685,7 +680,10 @@ export function useLoadEntry(
       for (const entryId of pendingEntryIds) {
         const reason = dirtyEntryReasons.get(entryId)
         if (reason === 'metadata') {
-          metadataEntryIds.add(entryId)
+          // JSON/模板可以仅刷新元数据；样式仍须由逻辑入口导入，交给 Vite 编译完整依赖闭包。
+          if (!styleOwners?.has(entryId)) {
+            metadataEntryIds.add(entryId)
+          }
           pendingMetadataEntryIds.add(entryId)
         }
         if (rootInputIds?.has(entryId)) {

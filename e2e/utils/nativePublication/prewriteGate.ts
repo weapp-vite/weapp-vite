@@ -89,7 +89,6 @@ export function nativePrewriteGatePlugin(): Plugin {
     apply: (config, { command }) => command === 'build' && config.build?.write !== false,
     generateBundle: {
       order: 'post',
-      sequential: true,
       async handler(outputOptions) {
         const config = this.environment.config
         if (config.plugins.some(plugin => plugin.name === 'weapp-vite:workers')

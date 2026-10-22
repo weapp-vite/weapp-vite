@@ -23,11 +23,6 @@ const sections: HomeData['sections'] = [
     url: '/pages/features/ui/index',
   },
   {
-    title: '构建 & 配置',
-    desc: '分包策略、auto-import、worker、配置展示',
-    url: '/pages/features/build/index',
-  },
-  {
     title: '分包场景',
     desc: '跨分包共享 chunk、独立分包示例',
     url: '/pages/subpackages/demo',

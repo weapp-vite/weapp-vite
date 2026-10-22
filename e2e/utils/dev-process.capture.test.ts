@@ -8,9 +8,11 @@ vi.mock('./ideWarningReport', () => ({ appendIdeReportEvent: vi.fn(), resolveRep
 describe('dev process real inherited output capture', () => {
   it.each([false, true])('captures both streams with all=%s and preserves startup diagnostics', async (all) => {
     const dev = startDevProcess(process.execPath, ['-e', `
+      const hold = setTimeout(() => {}, 30000);
+      process.once('disconnect', () => clearTimeout(hold));
+      process.once('exit', code => console.log('capture fixture normal exit=' + code));
       process.stdout.write('小程序初次构建完成\\n');
       process.stderr.write('[error] capture regression diagnostic\\n');
-      setTimeout(() => {}, 30000);
     `], { stdio: 'inherit', all })
     try {
       await dev.waitForInitialBuild(5_000)
@@ -26,6 +28,7 @@ describe('dev process real inherited output capture', () => {
     }
     finally {
       await dev.stop()
+      expect(dev.getOutput()).toContain('capture fixture normal exit=0')
     }
   })
 })

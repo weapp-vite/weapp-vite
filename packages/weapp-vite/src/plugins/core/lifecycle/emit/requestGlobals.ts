@@ -205,9 +205,6 @@ export function injectRequestGlobalsBundleRuntime(
       continue
     }
     const chunk = output as OutputChunk
-    if (chunk.code.includes(REQUEST_GLOBAL_BUNDLE_MARKER)) {
-      continue
-    }
     const installerName = resolveRequestGlobalsInstallerName(chunk.code)
     const exportName = resolveRequestGlobalsExportName(chunk.code)
     if (!installerName) {
@@ -216,6 +213,10 @@ export function injectRequestGlobalsBundleRuntime(
     const resolvedExportName = exportName ?? REQUEST_GLOBAL_SYNTHETIC_EXPORT_NAME
 
     installerChunks.set(toPosixPath(chunk.fileName), resolvedExportName)
+    // 已后处理的 chunk 仍参与本轮依赖和 prelude 归属，只跳过重复代码注入。
+    if (chunk.code.includes(REQUEST_GLOBAL_BUNDLE_MARKER)) {
+      continue
+    }
     const chunkTargets = resolveChunkRequestGlobalsTargets(chunk.code, targets, mode)
     if (chunkTargets.length === 0) {
       continue

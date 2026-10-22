@@ -92,7 +92,9 @@ describe('createCoreLifecyclePlugin', () => {
       expect(moduleGraphService.hasModule(source)).toBe(true)
       observed.push(moduleGraphService.getTransformDependencies(source))
     })
-    await (plugin.buildEnd as () => Promise<void>).call(context)
+    const buildEnd = plugin.buildEnd as { order: string, sequential: boolean, handler: () => Promise<void> }
+    expect(buildEnd).toMatchObject({ order: 'pre', sequential: true })
+    await buildEnd.handler.call(context)
     expect(observed).toEqual([])
     moduleGraphService.replaceTransformDependencies(source, [dependency])
     const writeBundle = plugin.writeBundle as { order: string, sequential: boolean, handler: () => Promise<void> }

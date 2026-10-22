@@ -1,7 +1,8 @@
 import type { MutableCompilerContext } from '../../context'
 import { describe, expect, it, vi } from 'vitest'
 import { createRuntimeState } from '../runtimeState'
-import { captureWatcherCloseOperation, createWatcherControllerClose, createWatcherServicePlugin, retainWatcherService } from '../watcherPlugin'
+import { bindWatcherServiceController } from '../watcher/controllerClose'
+import { createWatcherServicePlugin, retainWatcherService } from '../watcherPlugin'
 
 function createService() {
   const context = { runtimeState: createRuntimeState() } as MutableCompilerContext
@@ -19,8 +20,10 @@ describe('watcher service close operation handoff', () => {
       started.resolve()
       await local.promise
     })
-    const close = createWatcherControllerClose(service, closeLocal)
-    service.setRollupWatcher({ close })
+    const watcher = { close: closeLocal }
+    bindWatcherServiceController(service, watcher)
+    const close = watcher.close
+    service.setRollupWatcher(watcher)
     context.webService = { close: vi.fn(() => web.promise) } as unknown as NonNullable<MutableCompilerContext['webService']>
     const initial = first === 'controller' ? close() : service.closeAll()
     const publicClose = close()
@@ -47,8 +50,10 @@ describe('watcher service close operation handoff', () => {
     const failure = new Error('generation failed to close')
     const local = Promise.withResolvers<void>()
     const web = Promise.withResolvers<void>()
-    const close = createWatcherControllerClose(service, () => local.promise)
-    service.setRollupWatcher({ close })
+    const watcher = { close: () => local.promise }
+    bindWatcherServiceController(service, watcher)
+    const close = watcher.close
+    service.setRollupWatcher(watcher)
     context.webService = { close: vi.fn(() => web.promise) } as unknown as NonNullable<MutableCompilerContext['webService']>
     const initial = first === 'controller' ? close() : service.closeAll()
     const publicClose = close()
@@ -73,17 +78,15 @@ describe('watcher service close operation handoff', () => {
     const release = retainWatcherService(service)
     const generation = Promise.withResolvers<void>()
     const web = Promise.withResolvers<void>()
-    let runClose!: ReturnType<typeof captureWatcherCloseOperation>
     context.webService = { close: vi.fn(() => web.promise) } as unknown as NonNullable<MutableCompilerContext['webService']>
     service.setRollupWatcher({
       close: async () => {
-        runClose = captureWatcherCloseOperation(service)
         await generation.promise
       },
     })
     const closing = service.closeAll()
-    // 新代在先前创建的异步链中收尾，必须显式使用父关闭交接的归属。
-    await runClose(release)
+    // 新代在先前创建的异步链中收尾，只释放其持有的资源；外部调用仍等待完整 drain。
+    await release.releaseResources()
     let externalFinished = false
     const external = release().then(() => {
       externalFinished = true
@@ -98,22 +101,26 @@ describe('watcher service close operation handoff', () => {
 
   it('does not reuse a finished operation to bypass a later drain', async () => {
     const { context, service } = createService()
-    let previousClose!: ReturnType<typeof captureWatcherCloseOperation>
+    const resumePrevious = Promise.withResolvers<void>()
+    let release!: ReturnType<typeof retainWatcherService>
+    let stale!: Promise<void>
+    let staleFinished = false
     service.setRollupWatcher({ close: async () => {
-      previousClose = captureWatcherCloseOperation(service)
+      // 保留真实的旧异步上下文；旧操作结束后不能把它当作新 drain 的内部权限。
+      stale = resumePrevious.promise.then(async () => {
+        await release()
+        staleFinished = true
+      })
     } })
     await service.closeAll()
-    const release = retainWatcherService(service)
+    release = retainWatcherService(service)
     const web = Promise.withResolvers<void>()
     context.webService = { close: vi.fn(() => web.promise) } as unknown as NonNullable<MutableCompilerContext['webService']>
     service.setRollupWatcher({ close: async () => {
       await release()
     } })
     const closing = service.closeAll()
-    let staleFinished = false
-    const stale = previousClose(release).then(() => {
-      staleFinished = true
-    })
+    resumePrevious.resolve()
     await Promise.resolve()
     expect(staleFinished).toBe(false)
     web.resolve()
@@ -127,17 +134,16 @@ describe('watcher service close operation handoff', () => {
     const release = retainWatcherService(second.service)
     const web = Promise.withResolvers<void>()
     second.context.webService = { close: vi.fn(() => web.promise) } as unknown as NonNullable<MutableCompilerContext['webService']>
-    let wrongServiceClose!: ReturnType<typeof captureWatcherCloseOperation>
+    let secondClosing!: Promise<void>
+    let finished = false
     first.service.setRollupWatcher({
       close: async () => {
-        wrongServiceClose = captureWatcherCloseOperation(second.service)
+        secondClosing = release().then(() => {
+          finished = true
+        })
       },
     })
     const firstClosing = first.service.closeAll()
-    let finished = false
-    const secondClosing = wrongServiceClose(release).then(() => {
-      finished = true
-    })
     await firstClosing
     expect(finished).toBe(false)
     web.resolve()

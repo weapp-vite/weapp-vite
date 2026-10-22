@@ -31,7 +31,7 @@ keywords:
 | `issue-1126-1128.test.ts` | `521111092_0_3` | 原生边界后续调用连接已关闭。 | 完整 IDE：原任务保留 |
 | `issue-1126-1128.test.ts` | `521111092_0_4` | 原生主路径后续调用连接已关闭。 | 完整 IDE：原任务保留 |
 | `issue-1126-1128.test.ts` | `521111092_0_5` | 原生边界后续调用连接已关闭。 | 完整 IDE：原任务保留 |
-| `issue-1140-mode-cache.runtime.test.ts` | `1272146000_1_0` | mode-cache empty-false step0 封装错误、缺实际版本；report 的 boot 首错属于另一个 passed case，不能移用归因。 | 完整 IDE：原任务保留 |
+| `issue-1140-mode-cache.runtime.test.ts` | `1272146000_1_0` | emptyOutDir=false step0 在宿主初始化阶段失败；原始 fixture/window 证据指向该 case，runtimeDiagnostics 的 case0 标签不能证明错误属于前一个 passed case；尚未进入页面断言，不能据此归因 mode/cache 产品行为。 | 完整 IDE：原任务保留 |
 | `issue-998-tailwind.runtime.test.ts` | `-677312916_0_0` | ordinary CSS 后点击计数0，预期1。 | HMR：`native-css-and-tailwind` |
 | `layout-power-demo.runtime-vendor-hmr.test.ts` | `-1112925670_0_0` | runtime vendor 方法调用后的 AppService 与原生页面状态不等。 | HMR：`shared-host-framework-adapters` |
 | `mcp-runtime-tools.runtime.test.ts` | `1497806994_0_0` | MCP 原生组件方法调用报 this.mark is not a function。 | 完整 IDE：原任务保留 |

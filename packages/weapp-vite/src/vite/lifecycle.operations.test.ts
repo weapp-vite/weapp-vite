@@ -3,7 +3,12 @@ import { AsyncLocalStorage } from 'node:async_hooks'
 import { expect, it, vi } from 'vitest'
 import { bindHostLifecycle } from './lifecycle'
 
-it('does not let a callback captured by a completed restart bypass the next host exit gate', async () => {
+it.each([false, true])('does not let a callback captured by a completed restart bypass the next host exit gate (reloaded=%s)', async (reloaded) => {
+  let bindReplacement = bindHostLifecycle
+  if (reloaded) {
+    vi.resetModules()
+    bindReplacement = (await import('./lifecycle')).bindHostLifecycle
+  }
   const entered = Promise.withResolvers<void>()
   const released = Promise.withResolvers<void>()
   const nativeClose = vi.fn(async () => {})
@@ -23,7 +28,7 @@ it('does not let a callback captured by a completed restart bypass the next host
             close: nativeClose,
             restart: vi.fn(async () => {}),
           } as unknown as ViteDevServer
-          bindHostLifecycle(second, async () => {})
+          bindReplacement(second, async () => {})
           entered.resolve()
           await released.promise
           Object.assign(first, second)
