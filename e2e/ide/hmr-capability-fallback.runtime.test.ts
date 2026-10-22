@@ -16,6 +16,7 @@ import { createNativeHmrPublication } from '../utils/nativeHmrPublication'
 import { captureNativePublication } from '../utils/nativePublication'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import { createStatefulHmrProject } from '../utils/statefulHmrProject'
+import { stylesheetFallbackCheckpoints, verifyStylesheetFallback } from './statefulHmrDom/stylesheetFallback'
 import { installStatefulHmrTransport } from './statefulHmrDom/transport'
 
 const ROOT = path.resolve(import.meta.dirname, '../..')
@@ -28,6 +29,8 @@ const scenarios = [
   { requested: 'stateful-experimental', reason: 'entry-topology' },
   { requested: 'auto', reason: 'runtime-contract' },
   { requested: 'stateful-experimental', reason: 'runtime-contract' },
+  { requested: 'auto', reason: 'stylesheet-output' },
+  { requested: 'stateful-experimental', reason: 'stylesheet-output' },
 ] as const
 
 for (const host of hosts) {
@@ -170,8 +173,9 @@ for (const host of hosts) {
         profilePath = path.join(app, '.tmp/hmr-profile.jsonl')
         initialSource = await fs.readFile(source, 'utf8')
         const observerImport = path.relative(app, path.join(ROOT, 'e2e/utils/nativePublication/plugin.ts')).replaceAll('\\', '/')
-        configSource = `import { nativePublicationPlugin } from ${JSON.stringify(observerImport)}\n${await fs.readFile(configFile, 'utf8')}`
-          .replace('export default defineConfig({', 'export default defineConfig({\n  plugins: [nativePublicationPlugin({ profilePath: process.env.WEAPP_VITE_HMR_PROFILE_JSON })],\n  define: { __HMR_CAPABILITY_CONFIG_MARKER__: JSON.stringify(\'CONFIG-A\') },')
+        const gateImport = path.relative(app, path.join(ROOT, 'e2e/utils/nativePublication/prewriteGate.ts')).replaceAll('\\', '/')
+        configSource = `import { nativePrewriteGatePlugin } from ${JSON.stringify(gateImport)}\nimport { nativePublicationPlugin } from ${JSON.stringify(observerImport)}\n${await fs.readFile(configFile, 'utf8')}`
+          .replace('export default defineConfig({', 'export default defineConfig({\n  plugins: [nativePrewriteGatePlugin(), nativePublicationPlugin({ profilePath: process.env.WEAPP_VITE_HMR_PROFILE_JSON })],\n  define: { __HMR_CAPABILITY_CONFIG_MARKER__: JSON.stringify(\'CONFIG-A\') },')
           .replace('logLevel: \'verbose\',', `runtime: '${requested}', logLevel: 'verbose',`)
         if (reason === 'entry-topology') {
           configSource = configSource.replace('srcRoot: \'src\',', 'srcRoot: \'src\',\n    autoRoutes: true,')
@@ -206,7 +210,7 @@ for (const host of hosts) {
           reject: false,
         })
         // auto 的有效初始模式已由真实 control 文件确认，回退理由按当前场景精确验收。
-        publication = createNativeHmrPublication(app, dev, 'stateful-experimental', [reason])
+        publication = createNativeHmrPublication(app, dev, 'stateful-experimental', [reason], profilePath)
         await dev.waitFor(waitForStatefulHmrControl(controlFile), 'initial stateful control')
         for (const extension of ['js', 'json', 'wxml']) {
           expect(await fs.pathExists(path.join(app, `dist/pages/native/index.${extension}`))).toBe(true)
@@ -239,6 +243,25 @@ for (const host of hosts) {
       })
 
       it('hands unsupported updates and rapid saves to classic, then keeps classic across restore and config reload', async (ctx) => {
+        if (reason === 'stylesheet-output') {
+          const dom = createDomAcceptance(ctx, 'e2e-apps/stateful-hmr', stylesheetFallbackCheckpoints(provider))
+          await verifyStylesheetFallback({
+            project: fixture!.projectRoot,
+            dev: dev!,
+            publication: publication!,
+            app: () => miniProgram,
+            observeClassic,
+            saveClassic,
+            initialSource,
+            configFile,
+            configSource,
+            compilerHost: host,
+            check: async (id) => {
+              await dom.check(id, miniProgram, await miniProgram.currentPage())
+            },
+          })
+          return
+        }
         const stages = [
           ['prepared', 'STATEFUL-NATIVE-BASE', 1, 'held-fallback-input'],
           ['fallback', 'FALLBACK-A', 0, ''],
@@ -279,7 +302,7 @@ for (const host of hosts) {
               .replace('  increment() {', '  nextStep() { this.setData({ count: this.data.count + 2 }) },\n  increment() {')
               .replace('this.setData({ count: this.data.count + 1 })', 'this.nextStep()')
         const handoff = async () => {
-          const completed = publication!.capture()
+          const completed = publication!.capture(source)
           const nativeWrite = captureNativePublication(dev!, fixture!.projectRoot)
           if (reason === 'config-json') {
             const json = JSON.parse(await fs.readFile(jsonFile, 'utf8')) as Record<string, unknown>

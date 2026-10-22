@@ -41,7 +41,7 @@ export function createConsumerRuntimeProfile(profile, host, provider) {
   }
   if (profile === 'stateful') {
     specification = ['stateful-hmr', 'STATEFUL', 'stateful HMR in real WeChat DevTools', [
-      ...(provider === 'devtools' ? ['preserves native Page identity, data, input, route, and query across style updates and JavaScript patches'] : []),
+      ...(provider === 'devtools' ? ['preserves native Page identity, data, input, route, and query across JavaScript patches and restoration'] : []),
       'preserves native Component identity, data, input, route, and query across a JavaScript patch',
       'preserves native page state across two template edit and restore cycles',
       'preserves Wevu local and store state across isolated script updates and restoration',

@@ -1,6 +1,6 @@
-import { readFile } from 'node:fs/promises'
 import { compilerSourceId } from '../../plugins/compilerPlugin/hmr'
 import { compilerNativeScriptVersion, observeCompilerInputs } from '../../plugins/utils/sourceSnapshot'
+import { readRequestedIdeConfig } from '../classicIdeConfig/reader'
 
 interface StartupChange {
   file?: string
@@ -56,7 +56,7 @@ function observeInitialBuildInputs(owner: object) {
         let current: string | undefined
         if (version && change.file) {
           try {
-            current = compilerNativeScriptVersion(await readFile(change.file, 'utf8'))
+            current = compilerNativeScriptVersion(await readRequestedIdeConfig(owner, change.file))
           }
           catch (error) {
             if (!['ENOENT', 'ENOTDIR'].includes((error as NodeJS.ErrnoException).code ?? '')) {

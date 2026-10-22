@@ -4,10 +4,11 @@ import path from 'node:path'
 import process from 'node:process'
 import { execa } from 'execa'
 import { sanitizeBuildCommandEnv } from './buildLog'
+import { addNativePublicationPlugin } from './nativePublication/fixture'
 
 const ROOT = path.resolve(import.meta.dirname, '../..')
 
-export async function createIssue1065Project() {
+export async function createIssue1065Project(options: { nativePublication?: boolean } = {}) {
   const parent = path.join(ROOT, '.tmp/e2e-projects')
   await mkdir(parent, { recursive: true })
   const project = await mkdtemp(path.join(parent, 'issue-1065-'))
@@ -16,6 +17,9 @@ export async function createIssue1065Project() {
   // 避免 Windows 穿过整目录 junction 后再次解析 pnpm 的包链接。
   for (const [name, relative] of [['weapp-vite', 'packages/weapp-vite'], ['wevu', 'packages-runtime/wevu']] as const) {
     await symlink(await realpath(path.join(ROOT, relative)), path.join(project, 'node_modules', name), 'junction')
+  }
+  if (options.nativePublication) {
+    await addNativePublicationPlugin(path.join(project, 'weapp-vite.config.ts'))
   }
   return project
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { getHmrRuntimeCapabilityFallback, HMR_RUNTIME_CAPABILITIES, HmrRuntimeCapabilityError, resolveStatefulHmrInputFallback } from './hmrRuntimeCapabilities'
+import { getHmrRuntimeCapabilityFallback, HMR_RUNTIME_CAPABILITIES, HmrRuntimeCapabilityError, resolveStatefulHmrInputFallback, resolveStatefulHmrOutputFallback } from './hmrRuntimeCapabilities'
 
 describe('stateful HMR capability admission', () => {
   it('requires an actual classic transition for an unsupported provider instead of requesting another stateful snapshot', () => {
@@ -42,6 +42,24 @@ describe('stateful HMR capability admission', () => {
     }
     const fallback = { code: 'patch-shape' as const, message: 'unsupported external owner' }
     expect(getHmrRuntimeCapabilityFallback(new HmrRuntimeCapabilityError(fallback))).toBe(fallback)
+  })
+
+  it.each(['wxss', 'acss', '.ttss'])('classifies added, changed and removed compiled styles with the configured %s extension', (styleExtension) => {
+    const extension = styleExtension.replace(/^\./, '')
+    const changed = { fileName: `pages/home/index.${extension}` }
+    const removed = `pages/removed/index.${extension}`
+    expect(resolveStatefulHmrOutputFallback({ changed: [changed, changed, { fileName: 'pages/home/index.js' }], removed: [removed], styleExtension })).toMatchObject({
+      code: 'stylesheet-output',
+      files: [changed.fileName, removed],
+    })
+  })
+
+  it('keeps templates, static assets, source maps and style-free script output stateful', () => {
+    expect(resolveStatefulHmrOutputFallback({
+      changed: [{ fileName: 'pages/home/index.wxml' }, { fileName: 'icon.svg' }, { fileName: 'pages/home/index.wxss.map' }],
+      removed: ['retired.png'],
+      styleExtension: 'wxss',
+    })).toBeUndefined()
   })
 
   it('gives every capability a unique stable identifier', () => {

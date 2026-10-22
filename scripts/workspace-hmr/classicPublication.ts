@@ -3,11 +3,11 @@ import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { parse } from '@babel/parser'
 import traverseModule from '@babel/traverse'
-import { WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY } from '@weapp-core/constants'
 import { Parser } from 'htmlparser2'
 import postcss from 'postcss'
 import { resolveMiniProgramComponent } from '../../mpcore/packages/simulator/src/runtime/componentResolution'
 import { resolveMiniProgramModule } from '../../mpcore/packages/simulator/src/runtime/moduleResolution'
+import { assertNoStatefulInstallations } from '../../packages/weapp-vite/scripts/consumerHmr/installedRuntime.mjs'
 import { createExtendedLibManager } from '../../packages/weapp-vite/src/plugins/hooks/useLoadEntry/extendedLib'
 import { inspectClassicEmittedScript } from './classicRuntimeInspection'
 import { snapshotDist } from './output'
@@ -87,6 +87,7 @@ export async function inspectClassicPublication(root: string, platform: 'weapp' 
     }
   }
   const inspectScript = (file: string, source: string) => {
+    assertNoStatefulInstallations(file, source)
     const ast = parse(source, { sourceType: 'unambiguous', createImportExpressions: true })
     inspectClassicEmittedScript(ast)
     const imports: string[] = []
@@ -181,7 +182,7 @@ export async function inspectClassicPublication(root: string, platform: 'weapp' 
     if (file.endsWith('.js') || file.endsWith(extensions.module)) {
       const source = await read(file)
       inspectScript(file, source)
-      if (source.includes('__weapp_vite_hmr') || source.includes(WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY) || /^\/\/ weapp-vite-stateful-build:/m.test(source)) {
+      if (/^\/\/ weapp-vite-stateful-build:/m.test(source)) {
         throw new Error(`Classic publication retained a stateful client: ${file}`)
       }
     }

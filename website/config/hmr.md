@@ -44,13 +44,14 @@ export default defineConfig({
 
 `auto` 会在 `wv dev` 启动时读取微信项目的 `project.private.config.json`：当 `setting.compileHotReLoad` 严格为 `true` 时使用 `stateful-experimental`，否则使用 `classic`。非微信平台也会回退到 `classic`。该判断只发生在启动阶段，修改微信开发者工具设置后需要重启 `wv dev` 才会重新选择模式。启动日志会显示最终模式、选择来源，以及通过 DevTools 热重载开关或 `weapp.hmr.runtime` 切换模式的方法。显式配置通常优先，但 Skyline 兼容降级不受显式配置覆盖。
 
-`stateful-experimental` 目前只支持微信小程序平台。它使用 Vite bundled dev graph 和微信 App Service 内的增量补丁协议，安全的 JavaScript/Vue 脚本更新会在现有实例上替换方法并恢复状态。不改变运行时注册和配置的模板、样式及静态资源更新走资产同步；页面是否实际应用新内容，仍需检查运行时与渲染结果。
+`stateful-experimental` 目前只支持微信小程序平台。它使用 Vite bundled dev graph 和微信 App Service 内的增量补丁协议，安全的 JavaScript/Vue 脚本更新会在现有实例上替换方法并恢复状态。不改变运行时注册、配置和编译后样式字节的模板及静态资源更新走资产同步。编译后样式内容变化会交接到 classic；页面是否实际应用新内容，仍需检查运行时与渲染结果。
 
 遇到以下能力边界时，当前开发会话会交回 `classic`，由完整构建和微信 IDE 刷新接管后续保存，不继续承诺保留实例状态。即使显式选择 `stateful-experimental`，这些边界仍然生效。
 
 | 变更或环境 | 处理方式 |
 | --- | --- |
-| 安全脚本增量，或不改变注册与配置的模板、样式、静态资源 | 状态保持补丁或资产更新 |
+| 安全脚本增量，或不改变注册、配置及样式字节的模板、静态资源 | 状态保持补丁或资产更新 |
+| 编译后样式字节变化，包括普通 WXSS、Vue 样式、CSS Modules 和 Tailwind 输出 | 回退 `classic`，以完整构建和 IDE 自动刷新应用新样式 |
 | 小程序 JSON 配置、页面/组件/依赖入口拓扑变化 | 回退 `classic`，重新建立完整构建图 |
 | Vue SFC 编译模板的注册结构变化，包括 `<template src>` | 回退 `classic`，重新编译模板生成的计算、事件和渲染注册 |
 | DevEngine 要求完整重载，原生注册或增量模块结构不兼容 | 回退 `classic`，验收新页面的默认状态和更新后的事件 |
@@ -59,19 +60,21 @@ export default defineConfig({
 
 回退在同一开发会话内保持生效，重启开发服务后才重新评估状态保持能力。交接期间的新保存仍须进入最终构建；旧状态保持会话、传输和 watcher 完成关闭后，后续编辑由 classic 宿主处理。普通编译错误和业务异常继续作为错误报告，不会因为发生异常就被归类为“不支持 HMR”。
 
+classic 开发期间，weapp-vite 会临时将当前项目私有配置的 `setting.compileHotReLoad` 设为 `false`，避免 IDE 局部脚本热重载与完整重载竞争。stateful 回退时，这项变更发生在旧交付链路关闭后、首次 classic 产物写出前；配置重载继续沿用同一会话的设置。开发命令正常关闭并成功释放构建器和 watcher 后，恢复原请求值，并保留用户修改的其他字段。该过程不会改写 `weapp.hmr.runtime`，也不会注销微信开发者账号。配置租约身份不明或资源释放失败时会保留错误，不能记为回退成功。
+
 状态保持开发期间，weapp-vite 会临时在 IDE 私有配置中排除输出目录内静态资源的原生监听，避免 PNG 等资源变更触发整页重编译。资源仍由 Vite 写出，运行时按路径重新读取时可获得最新内容。代码、模板、样式和 JSON 配置继续交给 IDE 处理。JSON 声明的资源（包括 tabBar 图标和主题图标）保留在 IDE 原生文件索引中，其变更仍由 IDE 编译处理。会话关闭或下一次构建前会恢复原有监听配置，并保留用户在会话内修改的其他设置；发布前请运行正式构建，不直接使用开发产物。
 
-Vue `<style module>` 同时参与样式和脚本类名映射的编译。修改其内容、模块名称或 `src`，以及新增或移除该块时，会将脚本与样式一起纳入更新，避免后续脚本补丁引用未交付的样式模块。独立的普通 `<style>` 变化仍按纯样式处理；真实页面是否已经应用颜色需要在 DevTools 中验证。
+Vue `<style module>` 同时参与样式和脚本类名映射的编译。修改其内容、模块名称或 `src`，以及新增或移除该块时，会将脚本与样式一起纳入更新，避免后续脚本补丁引用未交付的样式模块。无论样式来自独立 WXSS、普通 `<style>` 还是 CSS Modules，只要编译后的样式字节变化，就按 `stylesheet-output` 交接 classic。仅脚本变化且样式字节相同的批次继续使用状态保持协议。
 
-内置 Tailwind 将对应的样式与 JavaScript 作为一个编译批次处理：先完成资产提交，再发布全部补丁，最后根据客户端执行回报通知 DevEngine。样式生成或写入失败时不发布该批次补丁，后续更新可以重试；最终样式内容未变化时不重复写入。写入成功与页面已经应用新样式是不同的阶段，排查视觉更新时还需检查实际页面的计算样式。
+内置 Tailwind 将对应的样式与 JavaScript 作为一个编译批次处理。最终样式字节变化时，在该批次写出或发布补丁前交接 classic，避免混合交付两种模式。样式字节未变化时继续使用原有批次协议，不重复写入；编译或写入失败仍保留原始错误。写入成功与页面已经应用新样式是不同的阶段，排查视觉更新时还需检查实际页面的计算样式。
 
 样式合并按真实文件身份判断所有权：已由模块图处理的样式，即使又通过符号链接、目录连接或 Windows 路径别名被发现，也不会作为独立原生样式重复读取并合并。固定输入批次保持该批次的样式内容，不混入同一文件较新的磁盘保存；真正独立的原生同名样式仍参与输出，移除显式样式导入后仍保留原生样式回退。
 
 回退时，同一输出当前收集到的多个 sidecar 按收集顺序合并后一次发布，不会相互覆盖；指向同一真实文件的重复路径只保留一份。常规 HMR 更新按完整合并内容去重，而不是分别缓存每个片段。
 
-上述保证不涵盖原生样式文件删除事件对历史登记集合的清理；本次修复没有验证或改变该上游生命周期。
+样式删除、重建和连续保存也纳入 classic 回退场景；只有本轮对应的 build、headless 和真实 IDE 证据齐全，才能确认这些生命周期的验收结果。
 
-微信开发者工具[暂不支持 Skyline 热重载](https://developers.weixin.qq.com/miniprogram/dev/framework/runtime/skyline/migration/compatibility.html#%E5%B8%B8%E8%A7%81%E7%9A%84%E5%85%BC%E5%AE%B9%E9%97%AE%E9%A2%98)。首次编译检测到任意生成的应用或页面 JSON 使用 `renderer: 'skyline'` 时，`wv dev` 会输出兼容性警告，将当前项目私有配置中的 `setting.compileHotReLoad` 持久化为 `false`，并强制使用 `classic`，即使用户显式配置了 `stateful-experimental`。其他私有配置字段不会改变；切回 WebView 后需要由开发者按需重新开启热重载。
+微信开发者工具[暂不支持 Skyline 热重载](https://developers.weixin.qq.com/miniprogram/dev/framework/runtime/skyline/migration/compatibility.html#%E5%B8%B8%E8%A7%81%E7%9A%84%E5%85%BC%E5%AE%B9%E9%97%AE%E9%A2%98)。首次编译检测到任意生成的应用或页面 JSON 使用 `renderer: 'skyline'` 时，开发命令会输出兼容性警告，并在本会话强制使用 `classic`，即使用户显式配置了 `stateful-experimental`。IDE 局部热重载开关遵循上述临时接管与正常关闭恢复流程。
 
 使用前请确认：
 
@@ -95,13 +98,13 @@ Vue `<style module>` 同时参与样式和脚本类名映射的编译。修改�
 
 历史 IDE 审计中的 26 个失败 case 按原 task 与 case ID [逐项映射到回归入口](./hmr-regression-history.md)。HMR 分层覆盖其中 18 个，其余 8 个继续保留在完整 IDE suite；映射表不表示这些失败已修复，也不将连接、加载或 MCP 失败归因于 HMR。
 
-能力覆盖计划另行记录 unit、build 和真实 runtime 场景。stateful→classic 场景覆盖 `config-json`、`native-registration`、`entry-topology` 和运行时 bridge 能力缺失；缺少 `prepareHmr` 的 compiler provider 另有启动回退场景。运行时和编译器能力缺失均覆盖 `wv`、Vite 和 Vite+ 的 auto/显式 stateful 配置，检查 classic 更新、后续编辑、源码恢复和配置重载。
+能力覆盖计划另行记录 unit、build 和真实 runtime 场景。stateful→classic 场景覆盖 `stylesheet-output`、`config-json`、`native-registration`、`entry-topology` 和运行时 bridge 能力缺失；缺少 `prepareHmr` 的 compiler provider 另有启动回退场景。运行时和编译器能力缺失均覆盖 `wv`、Vite 和 Vite+ 的 auto/显式 stateful 配置，检查 classic 更新、后续编辑、源码恢复和配置重载。
 
 引擎完整重载（`engine-full-reload`）、React 模块结构（`patch-shape`）、Skyline 启动边界及 Vue 编译模板注册（`native-registration`）已接入独立的微信 IDE/headless 场景，覆盖真实输入变更、后续 classic 保存及源码恢复。编译模板场景保留混合 script/template/style 保存、模板生成计算与事件、两轮结构编辑/恢复和外部模板 `src` 的功能检查；独立原生 WXML 仍保留原有覆盖。这些场景与其他已接入场景均标记为 `planned`，表示测试已纳入清单；某轮是否 `passed`，仍须复核同一提交的实际任务、case 和 checkpoint 报告。新增测试、单测通过或覆盖映射均不能作为真实 IDE 已通过的证据。
 
 非微信 `platform` 的真实 runtime 仍为 `pending`，本轮只纳入其 CLI/dev 产物回归，未执行其他平台真实 IDE。综合报告的验收范围是微信 runtime 与跨平台构建；只有这两部分必需证据齐全时，才可标记 `passed-for-scope`，同时保留全局 runtime 覆盖 `incomplete` 及非微信未执行原因。缺少必需能力、未知能力或跨平台构建证据时，全量命令保留不完整报告并失败。原有 classic 功能测试不能代替独立的回退证据。
 
-wevu Tailwind TDesign 模板回归分别检查两种更新契约：纯 script/style 保存及恢复保留实例与点击计数；背景静态 class、模板属性或局部节点变化走编译模板注册边界并交接 classic。后一部分保留背景改、删、加、改的连续更新、局部样式优先级、默认状态与新交互、后续保存及完整源码恢复；真实 IDE 通过原窗口自动刷新验收，headless 仅证明新产物可运行。
+wevu Tailwind TDesign 模板回归先检查纯 script 保存及恢复保留实例与点击计数，再由首次样式字节变化交接 classic。后续保留背景改、删、加、改的连续更新、局部样式优先级、默认状态与新交互、后续保存及完整源码恢复；编译模板注册边界另有独立场景。真实 IDE 通过原窗口自动刷新验收，headless 仅证明新产物可运行。
 
 `pnpm e2e:hmr:regression` 保留为综合验收的兼容入口。全部 IDE 功能的最终验收仍运行 `pnpm e2e:ide:full:exhaustive`，HMR 专项通过不能代替它。
 
@@ -163,7 +166,7 @@ export default defineConfig({
 该选项不会创建缺失的 `app.wxss`，也不会改写构建器生成的内容；除文件不存在以外的刷新错误会输出到开发日志。
 
 适用建议：
-- 一般保持默认值，让局部样式更新保留页面交互状态。
+- 一般保持默认值；`touchAppWxss` 不改变样式字节变化触发 classic 回退的能力边界。
 - 只有确认需要每轮全局重载的旧集成才显式开启 `true`。
 
 ## `weapp.hmr.logLevel` {#weapp-hmr-loglevel}

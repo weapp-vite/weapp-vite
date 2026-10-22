@@ -1,6 +1,7 @@
-import { describe, expect, it } from 'vitest'
+import type { HmrStageEvidence } from './report'
+import { beforeAll, describe, expect, it } from 'vitest'
 import { resolveVerificationTopology } from '../../../scripts/verification/topology.ts'
-import { useIsolatedTopologyTestEnvironment } from '../../../scripts/verification/topologyTestFixture.ts'
+import { isolateTopologyTestEnvironment, useIsolatedTopologyTestEnvironment } from '../../../scripts/verification/topologyTestFixture.ts'
 import { rehash } from '../../../scripts/verificationE2E/fixtures'
 import { HMR_ACCEPTANCE_STAGES } from '../hmr-acceptance-manifest'
 import { assertHmrAcceptanceComplete, createHmrAcceptanceSummary, evaluateHmrCapabilityCoverage } from './report'
@@ -8,9 +9,26 @@ import { createHmrStageEvidence, createHmrUnitReceipt } from './testFixtures'
 
 useIsolatedTopologyTestEnvironment()
 
+let frozenStages: HmrStageEvidence[]
+
+beforeAll(async () => {
+  const restore = isolateTopologyTestEnvironment()
+  try {
+    frozenStages = await Promise.all(HMR_ACCEPTANCE_STAGES.map(createHmrStageEvidence))
+  }
+  finally {
+    restore()
+  }
+})
+
+/** 每例保留独立可变证据，但真实场景清单和来源文件只冻结一次。 */
+function cloneStages() {
+  return structuredClone(frozenStages)
+}
+
 describe('HMR acceptance across distinct runtime providers', () => {
-  it('reports the three verified stages together without substituting one provider for another', async () => {
-    const stages = await Promise.all(HMR_ACCEPTANCE_STAGES.map(createHmrStageEvidence))
+  it('reports the three verified stages together without substituting one provider for another', () => {
+    const stages = cloneStages()
     const result = createHmrAcceptanceSummary(HMR_ACCEPTANCE_STAGES, stages, createHmrUnitReceipt())
     expect(result).toMatchObject({ scope: 'full', coverage: 'complete', acceptance: 'passed' })
     expect(result.capabilityAcceptance).toMatchObject({
@@ -32,8 +50,8 @@ describe('HMR acceptance across distinct runtime providers', () => {
 
   it.each(['missing-report', 'different-report', 'mixed-stages', 'invalid-plan'])(
     'rejects %s execution topology at the summary boundary',
-    async (fault) => {
-      const stages = await Promise.all(HMR_ACCEPTANCE_STAGES.map(createHmrStageEvidence))
+    (fault) => {
+      const stages = cloneStages()
       const last = stages.at(-1)!
       const otherTopology = resolveVerificationTopology('legacy-v1')
       if (fault === 'missing-report') {
@@ -55,9 +73,9 @@ describe('HMR acceptance across distinct runtime providers', () => {
     },
   )
 
-  it('labels an independently passing stage without claiming full HMR acceptance', async () => {
+  it('labels an independently passing stage without claiming full HMR acceptance', () => {
     const build = HMR_ACCEPTANCE_STAGES[0]
-    const result = createHmrAcceptanceSummary([build], [await createHmrStageEvidence(build)])
+    const result = createHmrAcceptanceSummary([build], [cloneStages()[0]!])
     expect(result.scope).toBe('stage')
     expect(result.capabilityAcceptance.status).toBe('not-evaluated')
     expect(result.capabilityAcceptance.missingRuntimeCoverage).toContain('engine-full-reload')
@@ -66,8 +84,8 @@ describe('HMR acceptance across distinct runtime providers', () => {
 
   it.each(['missing', 'duplicate', 'sha', 'run', 'dirty', 'partial', 'skipped', 'blocked', 'provider', 'strict', 'plan', 'cleanup-failed', 'out-of-scope-plan', 'out-of-scope-report', 'out-of-scope-count'])(
     'rejects %s evidence instead of accepting a zero command exit code',
-    async (fault) => {
-      const stages = await Promise.all(HMR_ACCEPTANCE_STAGES.map(createHmrStageEvidence))
+    (fault) => {
+      const stages = cloneStages()
       const last = stages.at(-1)!
       if (fault === 'missing') {
         stages.pop()
@@ -118,8 +136,8 @@ describe('HMR acceptance across distinct runtime providers', () => {
     },
   )
 
-  it('rejects three passing E2E layers without successful matching unit evidence', async () => {
-    const stages = await Promise.all(HMR_ACCEPTANCE_STAGES.map(createHmrStageEvidence))
+  it('rejects three passing E2E layers without successful matching unit evidence', () => {
+    const stages = cloneStages()
     const empty = createHmrUnitReceipt({ summary: { testFiles: 0, totalTests: 0, passedTests: 0, failedTests: 0, pendingTests: 0, todoTests: 0 } })
     for (const unit of [
       undefined,
@@ -136,8 +154,8 @@ describe('HMR acceptance across distinct runtime providers', () => {
 
   it.each(['missing', 'sha', 'provider', 'tasks', 'cases', 'checkpoints', 'invalid-checkpoints'])(
     'rejects %s runtime receipts even when every task exit code is zero',
-    async (fault) => {
-      const stages = await Promise.all(HMR_ACCEPTANCE_STAGES.map(createHmrStageEvidence))
+    (fault) => {
+      const stages = cloneStages()
       const runtime = stages[2]!.runtime!
       if (fault === 'missing') {
         delete stages[2]!.runtime
@@ -166,8 +184,8 @@ describe('HMR acceptance across distinct runtime providers', () => {
 
   it.each(['ide/hmr-additional-capabilities.runtime.test.ts', 'ci/hmr-platform-fallback.test.ts'])(
     'cannot claim full success when the frozen inventory omits required evidence for %s',
-    async (label) => {
-      const stages = await Promise.all(HMR_ACCEPTANCE_STAGES.map(createHmrStageEvidence))
+    (label) => {
+      const stages = cloneStages()
       const stage = stages.find(item => item.plan.tasks.some(task => task.label === label))!
       stage.plan = rehash({ ...stage.plan, tasks: stage.plan.tasks.filter(task => task.label !== label) })
       stage.report.tasks = stage.report.tasks.filter(task => task.label !== label)

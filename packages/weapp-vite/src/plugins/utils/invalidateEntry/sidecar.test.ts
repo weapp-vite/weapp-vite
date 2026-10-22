@@ -1,8 +1,9 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { invalidateEntryForSidecar } from './sidecar'
 
 const touchMock = vi.hoisted(() => vi.fn(async () => {}))
+const invalidateFileCacheMock = vi.hoisted(() => vi.fn<(file: string) => void>())
 const findJsEntryMock = vi.hoisted(() => vi.fn(async () => ({ path: undefined, predictions: [] })))
 const findVueEntryMock = vi.hoisted(() => vi.fn(async () => undefined))
 const collectAffectedScriptsAndImportersMock = vi.hoisted(() => vi.fn(async () => ({
@@ -18,6 +19,10 @@ vi.mock('../../../utils/file', () => ({
   findJsEntry: findJsEntryMock,
   findVueEntry: findVueEntryMock,
   touch: touchMock,
+}))
+
+vi.mock('../cache', () => ({
+  invalidateFileCache: invalidateFileCacheMock,
 }))
 
 vi.mock('./cssGraph', () => ({
@@ -52,6 +57,7 @@ function createContext() {
     runtimeState: {
       css: {
         transformedSidecarSource: new Map<string, { code: string, diskSource: string }>(),
+        sidecarImports: new Set<string>(),
       },
     },
   } as any
@@ -66,6 +72,10 @@ describe('invalidateEntryForSidecar', () => {
       importers: new Set<string>(),
       scripts: new Set<string>(),
     })
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
   })
 
   it('skips touching direct script entries for template update sidecars', async () => {
@@ -113,5 +123,32 @@ describe('invalidateEntryForSidecar', () => {
     await invalidateEntryForSidecar(ctx, '/project/src/shared/theme.css', event)
 
     expect(ctx.runtimeState.css.transformedSidecarSource.has('/project/src/shared/theme.css')).toBe(false)
+    expect(invalidateFileCacheMock).toHaveBeenCalledWith('/project/src/shared/theme.css')
+  })
+
+  it('invalidates reads before triggering the owner without mutating scan-owned style registration', async () => {
+    const ctx = createContext()
+    const style = '/project/src/pages/hmr/index.wxss'
+    const owner = '/project/src/pages/hmr/index.ts'
+    const otherStyle = '/project/src/components/counter/index.wxss'
+    ctx.runtimeState.css.sidecarImports.add(style)
+    ctx.runtimeState.css.sidecarImports.add(otherStyle)
+    ctx.runtimeState.css.transformedSidecarSource.set(style, { code: '.compiled {}', diskSource: '.original {}' })
+    findJsEntryMock.mockResolvedValueOnce({ path: owner, predictions: [owner] })
+    let beforeTouch: { registered: boolean, transformed: boolean, invalidated: boolean } | undefined
+    touchMock.mockImplementationOnce(async () => {
+      beforeTouch = {
+        registered: ctx.runtimeState.css.sidecarImports.has(style),
+        transformed: ctx.runtimeState.css.transformedSidecarSource.has(style),
+        invalidated: invalidateFileCacheMock.mock.calls.some(([file]) => file === style),
+      }
+    })
+
+    await invalidateEntryForSidecar(ctx, style, 'delete')
+
+    expect(beforeTouch).toEqual({ registered: true, transformed: false, invalidated: true })
+    expect(touchMock).toHaveBeenCalledWith(owner)
+    expect(ctx.runtimeState.css.sidecarImports.has(style)).toBe(true)
+    expect(ctx.runtimeState.css.sidecarImports.has(otherStyle)).toBe(true)
   })
 })

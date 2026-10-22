@@ -34,6 +34,7 @@ const STAGES = [
   { id: 'initial', shell: false },
   { id: 'added', shell: true },
   { id: 'removed', shell: false },
+  { id: 'restored', shell: true },
 ] as const
 
 function readScopedSlotMetadata(script: string) {
@@ -92,9 +93,11 @@ async function readPublishedState() {
   const config = JSON.parse(jsonText) as { usingComponents?: Record<string, string> }
   const app = JSON.parse(appText) as { pages?: string[] }
   const shellWrapper = wxml.includes('<weapp-app-shell')
+  const shellBase = path.join(DIST_ROOT, '__weapp_vite_app_shell')
+  // 页面引用移除后仍独立检查磁盘，避免旧壳资产残留被无 wrapper 的分支掩盖。
+  const shellFiles = Object.fromEntries(await Promise.all(['js', 'json', 'wxml'].map(async extension => [extension, await fs.pathExists(`${shellBase}.${extension}`)])))
   let shellAssets: boolean | null = null
   if (shellWrapper) {
-    const shellBase = path.join(DIST_ROOT, '__weapp_vite_app_shell')
     const [shellJs, shellWxml, shellJson] = await Promise.all([
       fs.readFile(`${shellBase}.js`, 'utf8'),
       fs.readFile(`${shellBase}.wxml`, 'utf8'),
@@ -107,6 +110,7 @@ async function readPublishedState() {
   return {
     ...readScopedSlotMetadata(script),
     shellWrapper,
+    shellFiles,
     shellAssets,
     shellComponent: config.usingComponents?.['weapp-app-shell'] ?? null,
     layoutWrapper: wxml.includes('<weapp-layout-'),
@@ -201,7 +205,7 @@ describe('App template presence HMR on an unchanged plain page', { concurrent: f
     ])
   }, 60_000)
 
-  it('adds and removes App template slot ownership, rendered page content and events without editing the page', async (ctx) => {
+  it('adds, removes and restores App template slot ownership, rendered page content and events without editing the page', async (ctx) => {
     ctx.onTestFailed(() => {
       process.stdout.write(dev?.getOutput().slice(-12_000) ?? '')
     })
@@ -209,6 +213,7 @@ describe('App template presence HMR on an unchanged plain page', { concurrent: f
       ownerRequired: false,
       declaredFeature: false,
       shellWrapper: false,
+      shellFiles: { js: false, json: false, wxml: false },
       shellAssets: null,
       shellComponent: null,
       layoutWrapper: false,
@@ -232,6 +237,7 @@ describe('App template presence HMR on an unchanged plain page', { concurrent: f
           ownerRequired: stage.shell,
           declaredFeature: stage.shell,
           shellWrapper: stage.shell,
+          shellFiles: { js: stage.shell, json: stage.shell, wxml: stage.shell },
           shellAssets: stage.shell ? true : null,
           shellComponent: stage.shell ? '/__weapp_vite_app_shell' : null,
           layoutWrapper: false,

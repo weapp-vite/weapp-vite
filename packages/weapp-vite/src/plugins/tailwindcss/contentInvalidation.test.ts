@@ -224,10 +224,14 @@ it.each([0, 1])('removes deleted CSS root %i from pending invalidation and subse
   await writeFile(app.source, 'export const utility = "w-[53px]"')
   await app.change()
   const entry = app.cssEntries[entryIndex]!
-  // 并行生成的观察记录按完成顺序追加，必须按实际入口识别待删除 root。
-  const removed = app.record.generations.find(({ request }) =>
-    request.sourceOptions?.cssEntries?.some(file => path.normalize(file) === path.normalize(entry)),
-  )!.request.id
+  // 并行生成按完成顺序追加；入口已解析为 source，按其真实依赖识别待删除 root。
+  const removedGeneration = app.record.generations.find(({ request }) =>
+    request.source?.dependencies.some(file => path.normalize(file) === path.normalize(entry)),
+  )
+  expect(removedGeneration).toBeDefined()
+  expect(removedGeneration!.request.sourceOptions).toBeUndefined()
+  expect(removedGeneration!.request.source?.base).toBe(path.dirname(entry))
+  const removed = removedGeneration!.request.id
   await rm(entry)
   await app.change(entry, 'delete')
   const before = app.record.generations.length

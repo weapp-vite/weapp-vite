@@ -4,57 +4,13 @@ import { createClassicAssetScriptContract } from '../utils/classicAssetScriptCon
 import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
-import { PLATFORM_EXT, resolvePlatforms, waitForFileContains } from '../utils/hmr-helpers'
+import { createDevBuildCompletion } from '../utils/devBuildCompletion'
+import { PLATFORM_EXT, replaceFileByRename, resolvePlatforms, waitForFileContains } from '../utils/hmr-helpers'
 import { APP_ROOT, CLI_PATH, DIST_ROOT, waitForFile } from '../wevu-runtime.utils'
 
 const HMR_SOURCE_TEMPLATE_PATH = path.join(APP_ROOT, 'src/pages/hmr/index.wxml')
 
 const PLATFORM_LIST = resolvePlatforms()
-
-function detectEol(source: string) {
-  return source.includes('\r\n') ? '\r\n' : '\n'
-}
-
-async function rewriteTemplateSourceForWatch(
-  templatePath: string,
-  targetSource: string,
-) {
-  const eol = detectEol(targetSource)
-  const marker = `<!-- wevu-runtime-hmr-retry-${Date.now()} -->`
-  await fs.writeFile(
-    templatePath,
-    `${targetSource}${eol}${marker}${eol}`,
-    'utf8',
-  )
-  await new Promise(resolve => setTimeout(resolve, 120))
-  await fs.writeFile(templatePath, targetSource, 'utf8')
-}
-
-async function waitForFileWithSourceHeartbeat<T>(
-  task: () => Promise<T>,
-  touchFilePath: string,
-  touchContent: string,
-  timeoutMs = 60_000,
-  heartbeatMs = 2_000,
-) {
-  const deadline = Date.now() + timeoutMs
-  let nextTouchAt = Date.now() + heartbeatMs
-
-  while (Date.now() < deadline) {
-    try {
-      return await task()
-    }
-    catch {
-      if (Date.now() >= nextTouchAt) {
-        await rewriteTemplateSourceForWatch(touchFilePath, touchContent)
-        nextTouchAt = Date.now() + heartbeatMs
-      }
-      await new Promise(resolve => setTimeout(resolve, 250))
-    }
-  }
-
-  return await task()
-}
 
 beforeEach(async () => {
   await cleanupResidualDevProcesses()
@@ -69,6 +25,7 @@ describe('wevu runtime hmr (dev watch)', { concurrent: false }, () => {
     await fs.remove(DIST_ROOT)
     const originalSource = await fs.readFile(HMR_SOURCE_TEMPLATE_PATH, 'utf8')
     const distTemplatePath = path.join(DIST_ROOT, `pages/hmr/index.${PLATFORM_EXT[platform].template}`)
+    const profilePath = path.join(APP_ROOT, '.tmp', `wevu-runtime-hmr-${platform}.jsonl`)
     const marker = `HMR-HOT-${platform.toUpperCase()}`
 
     const updatedSource = originalSource.replace('HMR', marker)
@@ -76,46 +33,42 @@ describe('wevu runtime hmr (dev watch)', { concurrent: false }, () => {
       throw new Error('Failed to update hmr source marker.')
     }
 
+    await fs.remove(profilePath)
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
-      env: createDevProcessEnv(),
+      env: { ...createDevProcessEnv(), WEAPP_VITE_HMR_PROFILE_JSON: profilePath },
       stdio: 'inherit',
     })
 
     try {
-      await dev.waitFor(
-        waitForFileWithSourceHeartbeat(
-          () => waitForFile(path.join(DIST_ROOT, 'app.json'), 1_000),
-          HMR_SOURCE_TEMPLATE_PATH,
-          originalSource,
-        ),
-        `${platform} app.json generated`,
-      )
-      await dev.waitFor(waitForFileContains(distTemplatePath, 'HMR'), `${platform} initial hmr template`)
-
       await dev.waitForInitialBuild()
+      await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json')), `${platform} app.json generated`)
+      const initialTemplate = await dev.waitFor(waitForFileContains(distTemplatePath, 'HMR'), `${platform} initial hmr template`)
       expect(dev.getOutput()).toContain('HMR 模式：classic')
       const scripts = await createClassicAssetScriptContract(DIST_ROOT, platform)
-      const rebuildCount = () => dev.getOutput().split('小程序已重新构建').length - 1
-      const previousBuildCount = rebuildCount()
 
-      await rewriteTemplateSourceForWatch(HMR_SOURCE_TEMPLATE_PATH, updatedSource)
+      const publishTemplate = async (source: string, expectedMarker: string) => {
+        const completion = createDevBuildCompletion(dev, {
+          source: { file: HMR_SOURCE_TEMPLATE_PATH, profilePath },
+        })
+        await replaceFileByRename(HMR_SOURCE_TEMPLATE_PATH, source)
+        await completion.wait(90_000)
+        const template = await dev.waitFor(waitForFileContains(distTemplatePath, expectedMarker), `${platform} published hmr template`)
+        await scripts.assertUpdated()
+        expect(dev.getBuildErrors()).toEqual([])
+        return template
+      }
 
-      const nextTemplate = await dev.waitFor(
-        waitForFileWithSourceHeartbeat(
-          () => waitForFileContains(distTemplatePath, marker),
-          HMR_SOURCE_TEMPLATE_PATH,
-          updatedSource,
-        ),
-        `${platform} updated hmr marker`,
-      )
+      const nextTemplate = await publishTemplate(updatedSource, marker)
       expect(nextTemplate).toContain(marker)
-      await expect.poll(rebuildCount, { timeout: 30_000 }).toBeGreaterThan(previousBuildCount)
-      await scripts.assertUpdated()
+      expect(await publishTemplate(originalSource, 'HMR')).toBe(initialTemplate)
+      expect(await fs.readFile(HMR_SOURCE_TEMPLATE_PATH, 'utf8')).toBe(originalSource)
     }
     finally {
       await dev.stop(5_000)
 
-      await fs.writeFile(HMR_SOURCE_TEMPLATE_PATH, originalSource, 'utf8')
+      if (await fs.readFile(HMR_SOURCE_TEMPLATE_PATH, 'utf8') !== originalSource) {
+        await replaceFileByRename(HMR_SOURCE_TEMPLATE_PATH, originalSource)
+      }
     }
   })
 })

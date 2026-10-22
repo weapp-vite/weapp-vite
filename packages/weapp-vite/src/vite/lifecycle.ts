@@ -26,7 +26,7 @@ const hostData = new WeakMap<ViteDevServer, { incoming?: Map<symbol, RestartData
 
 async function settleHostCleanup(tasks: Promise<unknown>[]) {
   const results = await Promise.allSettled(tasks)
-  const errors = results.flatMap(result => result.status === 'rejected' ? [result.reason] : [])
+  const errors = [...new Set(results.flatMap(result => result.status === 'rejected' ? [result.reason] : []))]
   if (errors.length) {
     throw errors.length === 1 ? errors[0] : new AggregateError(errors, 'Host cleanup failed')
   }
@@ -77,7 +77,7 @@ export function takeHostRestartData<T>(server: ViteDevServer, key: symbol): T | 
 }
 
 /** 关闭等待正在替换服务器的重启，避免旧入口返回后新会话继续写出。 */
-export function bindHostLifecycle(server: ViteDevServer, closeSession: () => Promise<void>, preparedLifecycle?: HostLifecycle, isRetired?: () => boolean) {
+export function bindHostLifecycle(server: ViteDevServer, closeSession: (reason: 'restart' | 'close') => Promise<void>, preparedLifecycle?: HostLifecycle, isRetired?: () => boolean, finalize?: () => Promise<void>) {
   const nativeRestart = server.restart.bind(server)
   const generation = getDevServerCloseRecord(server)
   const nativeClose = generation.close
@@ -95,6 +95,12 @@ export function bindHostLifecycle(server: ViteDevServer, closeSession: () => Pro
   const inlineConfig = server.config.inlineConfig as HostInlineConfig
   const inherited = preparedLifecycle ?? takeHostLifecycle(inlineConfig)
   const inheritedRestart = inherited?.restartTask
+  let inheritedRestartSettled = !inheritedRestart
+  void inheritedRestart?.then(() => {
+    inheritedRestartSettled = true
+  }, () => {
+    inheritedRestartSettled = true
+  })
   const data = new Map<symbol, RestartData>()
   hostData.set(server, { incoming: inherited?.data, outgoing: data })
   const stopping = Promise.withResolvers<void>()
@@ -112,6 +118,7 @@ export function bindHostLifecycle(server: ViteDevServer, closeSession: () => Pro
     }
   }
   const replacements = new Set<DevServerCloseRecord>()
+  let restartCleanupFailure: { error: unknown } | undefined
   const lifecycle: HostLifecycle = {
     data,
     registerReplacement(replacement) {
@@ -130,27 +137,38 @@ export function bindHostLifecycle(server: ViteDevServer, closeSession: () => Pro
     await settleHostCleanup([
       discardRestartData(data, status),
       ...abandoned.map(replacement => Promise.resolve().then(() => replacement.close())),
-    ])
+    ]).catch((error) => {
+      restartCleanupFailure ??= { error }
+      throw error
+    })
   }
 
   const closeResources = async () => {
     retired = true
     stopping.resolve()
-    const sessionCleanup = settleHostCleanup([Promise.resolve().then(closeSession), discardRestartData(data, 'incomplete'), discardRestartData(inherited?.data, 'incomplete')])
+    const sessionCleanup = settleHostCleanup([Promise.resolve().then(() => closeSession('close')), discardRestartData(data, 'incomplete'), discardRestartData(inherited?.data, 'incomplete')])
     const hostCleanup = (async () => {
       // 资源与宿主的错误分别保留；后续关闭失败不能覆盖前面的恢复错误。
       await sessionCleanup.catch(() => {})
       await restartTask?.catch(() => {})
       // 以原生交接的代际记录识别替换宿主，不能把公共退出 gate 当成新资源入口。
       const current = getDevServerCloseRecord(server)
-      if (current !== generation) {
-        await current.close()
-      }
-      else {
-        await nativeClose()
+      await settleHostCleanup([
+        closeHostWatcher(),
+        Promise.resolve().then(() => current !== generation ? current.close() : nativeClose()),
+      ])
+    })()
+    const restartCleanup = (async () => {
+      await restartTask?.catch(() => {})
+      if (restartCleanupFailure) {
+        throw restartCleanupFailure.error
       }
     })()
-    await settleHostCleanup([sessionCleanup, hostCleanup])
+    await settleHostCleanup([sessionCleanup, hostCleanup, restartCleanup])
+    // 初始化失败可在父 nativeRestart 尚未完成时关闭替换宿主；租约仍交由父链终结。
+    if (inheritedRestartSettled) {
+      await finalize?.()
+    }
   }
   const close = (): Promise<void> => closeTask ??= scope
     ? scope.run('cleanup', closeResources)
@@ -174,7 +192,7 @@ export function bindHostLifecycle(server: ViteDevServer, closeSession: () => Pro
       }
       try {
         retired = true
-        await closeSession()
+        await closeSession('restart')
         if (closeTask || scope?.stopping) {
           return
         }
@@ -214,9 +232,7 @@ export function bindHostLifecycle(server: ViteDevServer, closeSession: () => Pro
         }
         throw error
       }
-      finally {
-        await discardRestartResources('incomplete')
-      }
+      await discardRestartResources('incomplete')
     }
     return restartTask ??= (scope ? scope.run('restart', restart) : restart()).finally(() => {
       restartTask = undefined

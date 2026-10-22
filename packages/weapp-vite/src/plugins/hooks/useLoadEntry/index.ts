@@ -583,6 +583,7 @@ export function useLoadEntry(
         // 生产 watch 每轮发布完整目标；模块转换缓存与产物元数据的所有权分开处理。
         resetEmittedOutputCaches(ctx.runtimeState)
         ctx.runtimeState.css.sidecarImports.clear()
+        ctx.runtimeState.css.sidecarImportsByOwner.clear()
         loadedEntrySet.clear()
         dirtyEntrySet.clear()
         dirtyEntryReasons.clear()

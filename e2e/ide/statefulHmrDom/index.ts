@@ -18,20 +18,11 @@ export function statefulHmrCheckpoints(runtime: 'native' | 'component', provider
     ],
   }))
   if (runtime === 'native') {
-    checkpoints.splice(2, 0, {
-      id: 'style-updated',
-      route: '/pages/native/index',
-      action: '先更新邻接 WXSS，检查实际背景变化且页面计数和输入保留',
-      nodes: [
-        { selector: '.count', text: '1' },
-        { selector: '.input', attributes: { value: 'held-input' } },
-      ],
-    })
     for (const [id, count] of [['restored', 3], ['restored-updated', 4]] as const) {
       checkpoints.push({
         id,
         route: '/pages/native/index',
-        action: id === 'restored' ? '恢复脚本与 WXSS，检查原背景和交互状态' : '执行恢复后的加一逻辑，检查计数和输入',
+        action: id === 'restored' ? '恢复脚本，检查背景不变和交互状态保留' : '执行恢复后的加一逻辑，检查计数和输入',
         nodes: [
           { selector: '.count', text: String(count) },
           { selector: '.input', attributes: { value: 'held-input' } },
@@ -39,12 +30,11 @@ export function statefulHmrCheckpoints(runtime: 'native' | 'component', provider
       })
     }
     for (const checkpoint of checkpoints) {
-      const styled = ['style-updated', 'patched', 'updated'].includes(checkpoint.id)
       checkpoint.nodes.push({
         selector: '.page',
         ...(provider === 'devtools'
           ? {
-              styles: { 'background-color': styled ? 'rgb(219, 234, 254)' : 'rgb(255, 255, 255)' },
+              styles: { 'background-color': 'rgb(255, 255, 255)' },
               visible: true,
             }
           : {}),

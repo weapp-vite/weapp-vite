@@ -1,14 +1,23 @@
 import type { HotUpdateOptions, Plugin, PluginContext, ResolvedConfig, ViteDevServer } from 'vite'
+import { EventEmitter } from 'node:events'
 import chokidar from 'chokidar'
 import path from 'pathe'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { autoRoutes } from './autoRoutes'
 
-const chokidarWatchMock = vi.hoisted(() => vi.fn(() => ({
-  add: vi.fn(),
-  on: vi.fn(),
-  close: vi.fn(),
-})))
+const chokidarWatchMock = vi.hoisted(() => vi.fn(() => {
+  const events = new EventEmitter()
+  void Promise.resolve().then(() => events.emit('ready'))
+  return {
+    add: vi.fn(),
+    on: vi.fn(events.on.bind(events)),
+    once: vi.fn(events.once.bind(events)),
+    off: vi.fn(events.off.bind(events)),
+    close: vi.fn(async () => {
+      events.removeAllListeners()
+    }),
+  }
+}))
 
 const loggerMock = vi.hoisted(() => ({
   error: vi.fn(),
@@ -307,12 +316,14 @@ describe('auto-routes plugin alias fallback', () => {
       command: 'serve',
     } as any)
 
-    expect(plugin.buildStart?.call(pluginContext)).toBeUndefined()
+    const started = plugin.buildStart?.call(pluginContext)
+    expect(started).toBeInstanceOf(Promise)
     expect(ensureFresh).not.toHaveBeenCalled()
     expect(addWatchFile).not.toHaveBeenCalled()
     expect(chokidar.watch).toHaveBeenCalledTimes(1)
     expect(setPageDeclarationSourceResolver).not.toHaveBeenCalled()
     expect(resolve).not.toHaveBeenCalled()
+    await started
   })
 
   it('does not retain a disposed build resolver for later route refreshes', async () => {

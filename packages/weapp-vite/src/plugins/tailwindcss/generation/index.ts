@@ -5,16 +5,19 @@ import path from 'pathe'
 import { CompilerHmrResyncError, compilerSourceId } from '../../compilerPlugin/hmr'
 import { captureGenerationDependencies, comparableGenerationRequest, copyGenerationValue, equalGenerationValue, generationRequest, isGenerationSourceFile } from './inputs'
 
+export type TailwindSourceRules = readonly Readonly<CompilerGenerateResult['sources'][number]>[]
+
 export interface TailwindGenerationEntry {
   readonly rawCss: string
   readonly css: string
   readonly dependencies: readonly string[]
   readonly snapshot: CompilerGenerateResult['snapshot']
+  readonly sourceRules?: TailwindSourceRules
 }
 
 interface CapturedRoot {
   readonly request: CompilerGenerateRequest
-  readonly sources: CompilerGenerateResult['sources']
+  readonly sources: TailwindSourceRules
   readonly entry: TailwindGenerationEntry
 }
 
@@ -34,6 +37,11 @@ const builds = new WeakMap<ReadonlyMap<string, string | null>, Generation>()
 const contexts = new WeakMap<CompilerContext, Generation>()
 const validations = new WeakMap<CompilerContext, (files: Iterable<string>, consumed: Iterable<string>) => Promise<void>>()
 
+/** 仅交接当前 root 已解析的来源规则，不保留活动 AST 或可变规则容器。 */
+export function freezeTailwindSourceRules(sources: TailwindSourceRules): TailwindSourceRules {
+  return Object.freeze(copyGenerationValue(sources).map(source => Object.freeze(source)))
+}
+
 /** 封存本批投影，不把活动 compiler、PostCSS root 或输出容器交给快照。 */
 export function rememberTailwindGeneration(
   preparation: WeappCompilerHmrPreparation,
@@ -48,11 +56,14 @@ export function rememberTailwindGeneration(
       request,
       sources: new Map(request.sources),
       options: copyGenerationValue(options),
-      roots: roots.map(root => ({
-        request: comparableGenerationRequest(root.request),
-        sources: copyGenerationValue(root.sources),
-        entry: Object.freeze({ rawCss: root.result.rawCss, css: root.result.css, dependencies: Object.freeze([...root.result.dependencies]), snapshot: root.result.snapshot }),
-      })),
+      roots: roots.map((root) => {
+        const sourceRules = freezeTailwindSourceRules(root.sources)
+        return {
+          request: comparableGenerationRequest(root.request),
+          sources: sourceRules,
+          entry: Object.freeze({ rawCss: root.result.rawCss, css: root.result.css, dependencies: Object.freeze([...root.result.dependencies]), snapshot: root.result.snapshot, sourceRules }),
+        }
+      }),
       assertActive,
       disposed: false,
     }

@@ -1,6 +1,7 @@
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
+import { WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY, WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY, WEAPP_VITE_STATEFUL_HMR_DIRECTORY } from '@weapp-core/constants'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { inspectClassicPublication, inspectRetiredClassicTransport } from './classicPublication'
 
@@ -66,6 +67,28 @@ describe('classic full publication closure', () => {
   it('examines unreferenced emitted files too, so stale stateful code cannot hide outside app imports', async () => {
     await write('orphan.js', '// weapp-vite-stateful-build:old\nvoid 0;')
     await expect(inspectClassicPublication(root)).rejects.toThrow('stateful client')
+  })
+
+  it.each([
+    [WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY, 'WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY'],
+    [WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY, 'WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY'],
+    [WEAPP_VITE_STATEFUL_HMR_DIRECTORY, 'WEAPP_VITE_STATEFUL_HMR_DIRECTORY'],
+  ])('allows inert public %s constants while checking every emitted script for executable uses', async (key, publicName) => {
+    await write('shared.js', `const alias = ${JSON.stringify(key)}; exports.${publicName} = alias;`)
+    await write('orphan.js', `export const ${publicName} = ${JSON.stringify(key)};`)
+    await expect(inspectClassicPublication(root)).resolves.toBeDefined()
+    await write('orphan.js', `const alias = ${JSON.stringify(key)}; globalThis[alias] = {};`)
+    await expect(inspectClassicPublication(root)).rejects.toThrow(`must remove ${key}`)
+  })
+
+  it.each([
+    `require('./${WEAPP_VITE_STATEFUL_HMR_DIRECTORY}/control.js');`,
+    `import './${WEAPP_VITE_STATEFUL_HMR_DIRECTORY}/control.js';`,
+    `const directory = ${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_DIRECTORY)}; require(directory + '/control.js');`,
+    `const directory = ${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_DIRECTORY)}; const entry = \`\${directory}/update.js\`; read(entry);`,
+  ])('rejects executable control paths without requiring the retired file to exist: %s', async (source) => {
+    await write('shared.js', source)
+    await expect(inspectClassicPublication(root)).rejects.toThrow(`must remove ${WEAPP_VITE_STATEFUL_HMR_DIRECTORY}`)
   })
 
   it('rejects a retired control artifact and output imports escaping the publication', async () => {

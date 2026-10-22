@@ -17,7 +17,7 @@ export interface VueEntryUpdateInspector {
 const DEFAULT_COMPILER_CONTENT_PROVIDER = 'tailwindcss'
 
 export function createVueEntryUpdateInspector(
-  state: CorePluginState,
+  state: Pick<CorePluginState, 'ctx'>,
   normalizedId: string,
   options: {
     readFile?: (file: string, encoding: 'utf-8') => Promise<string>

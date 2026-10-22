@@ -2,6 +2,11 @@ import type { ImpactFile } from './types'
 
 export type WorkspaceHmrExpectedDelivery = 'stateful' | 'classic' | 'classic-fallback'
 
+export interface WorkspaceHmrScenarioCapability {
+  statefulTemplate?: boolean
+  classicFallbackReason?: string
+}
+
 export interface WorkspaceHmrDeliveryContract {
   expectedDelivery?: WorkspaceHmrExpectedDelivery
   expectedFallbackReason?: string
@@ -14,22 +19,28 @@ export interface WorkspaceHmrDeliveryContract {
 }
 
 /** 预期取自修改前的能力和会话模式，不能由修改后的实际回退反推。 */
-export function expectedWorkspaceHmrDelivery(mode: 'standard' | 'stateful', classic: boolean, changesCompiledTemplate: boolean): WorkspaceHmrExpectedDelivery {
-  return mode === 'standard' || classic ? 'classic' : changesCompiledTemplate ? 'classic-fallback' : 'stateful'
+export function expectedWorkspaceHmrDelivery(mode: 'standard' | 'stateful', classic: boolean, requiresClassic: boolean): WorkspaceHmrExpectedDelivery {
+  return mode === 'standard' || classic ? 'classic' : requiresClassic ? 'classic-fallback' : 'stateful'
 }
 
-/** 支持的增量必须先完成，避免单向回退提前遮蔽脚本和样式覆盖。 */
-export function orderWorkspaceHmrScenarios<T extends { statefulTemplate?: boolean }>(scenarios: T[]): T[] {
-  return [...scenarios.filter(scenario => !scenario.statefulTemplate), ...scenarios.filter(scenario => scenario.statefulTemplate)]
+/** 修改语义在执行前声明回退原因；不能由实际交付或场景名称反推能力。 */
+export function workspaceHmrFallbackReason(scenario: WorkspaceHmrScenarioCapability): string | undefined {
+  return scenario.classicFallbackReason ?? (scenario.statefulTemplate ? 'native-registration' : undefined)
+}
+
+/** 先完成可靠增量；所有需要回退的变化保持相对顺序，后续场景持续使用 classic。 */
+export function orderWorkspaceHmrScenarios<T extends WorkspaceHmrScenarioCapability>(scenarios: T[]): T[] {
+  return [...scenarios.filter(scenario => !workspaceHmrFallbackReason(scenario)), ...scenarios.filter(scenario => workspaceHmrFallbackReason(scenario))]
 }
 
 /** 一次冻结整套计划，意外回退和重试都不能改变尚未执行场景的能力预期。 */
-export function planWorkspaceHmrScenarios<T extends { statefulTemplate?: boolean, classicFallbackReason?: string }>(mode: 'standard' | 'stateful', scenarios: T[]) {
+export function planWorkspaceHmrScenarios<T extends WorkspaceHmrScenarioCapability>(mode: 'standard' | 'stateful', scenarios: T[]) {
   let classic = mode === 'standard'
   return orderWorkspaceHmrScenarios(scenarios).map((scenario) => {
-    const expectedDelivery = expectedWorkspaceHmrDelivery(mode, classic, Boolean(scenario.statefulTemplate))
+    const fallbackReason = workspaceHmrFallbackReason(scenario)
+    const expectedDelivery = expectedWorkspaceHmrDelivery(mode, classic, Boolean(fallbackReason))
     classic ||= expectedDelivery === 'classic-fallback'
-    const expectedFallbackReason = expectedDelivery === 'classic-fallback' ? scenario.classicFallbackReason ?? 'native-registration' : undefined
+    const expectedFallbackReason = expectedDelivery === 'classic-fallback' ? fallbackReason : undefined
     return { ...scenario, expectedDelivery, expectedFallbackReason }
   })
 }
@@ -43,7 +54,7 @@ export function assertWorkspaceHmrDelivery(contract: WorkspaceHmrDeliveryContrac
   }
   if (contract.expectedDelivery === 'classic-fallback' && (contract.actualMode !== 'classic'
     || !contract.expectedFallbackReason || contract.deliveryEvidence?.delivery !== 'classic' || contract.deliveryEvidence.reason !== contract.expectedFallbackReason)) {
-    throw new Error('Template mutation did not perform its declared capability classic fallback.')
+    throw new Error('Mutation did not perform its declared capability classic fallback.')
   }
 }
 

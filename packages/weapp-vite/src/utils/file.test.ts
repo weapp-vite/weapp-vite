@@ -342,19 +342,39 @@ defineThemeJson({
         )
 
         const first = await extractConfigFromVue(file)
-        const readSource = vi.fn(async () => {
-          throw new Error('cached config should not read source')
-        })
-        const second = await extractConfigFromVue(file, { readSource })
+        const second = await extractConfigFromVue(file)
 
         expect(first).toMatchObject({ navigationBarTitleText: 'cached' })
         expect(second).toMatchObject({ navigationBarTitleText: 'cached' })
-        expect(readSource).not.toHaveBeenCalled()
         const readCalls = readSpy.mock.calls.filter(call => String(call[0]) === file)
         expect(readCalls.length).toBe(1)
       }
       finally {
         readSpy.mockRestore()
+        await fs.remove(root)
+      }
+    })
+
+    it.each(['value', 'missing', 'error'] as const)('reads an explicit source ahead of warm disk cache when it returns %s', async (result) => {
+      const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-extract-vue-'))
+      const file = path.join(root, 'cache.vue')
+      const diskConfig = { navigationBarTitleText: 'cached' }
+      const explicitConfig = { navigationBarTitleText: 'explicit' }
+      try {
+        await fs.writeFile(file, `<template><view /></template><json>${JSON.stringify(diskConfig)}</json>`, 'utf8')
+        expect(await extractConfigFromVue(file)).toEqual(diskConfig)
+        const readSource = vi.fn(async () => {
+          if (result === 'error') {
+            throw new Error('explicit source unavailable')
+          }
+          return result === 'value' ? `<template><view /></template><json>${JSON.stringify(explicitConfig)}</json>` : undefined
+        })
+
+        expect(await extractConfigFromVue(file, { readSource })).toEqual(result === 'value' ? explicitConfig : undefined)
+        expect(readSource).toHaveBeenCalledOnce()
+        expect(await extractConfigFromVue(file)).toEqual(diskConfig)
+      }
+      finally {
         await fs.remove(root)
       }
     })

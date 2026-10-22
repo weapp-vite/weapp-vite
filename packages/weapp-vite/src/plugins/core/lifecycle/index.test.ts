@@ -3,6 +3,7 @@ import type { CorePluginState } from '../helpers'
 import { describe, expect, it, vi } from 'vitest'
 import { createLogicalEntryId } from '../../../moduleGraph/protocol'
 import { createModuleGraphService } from '../../../moduleGraph/service'
+import { beginHmrStyleUpdatePlan, createHmrStyleUpdatePlan, getHmrStyleUpdatePlan, recordHmrStyleUpdate, settleHmrStyleUpdatePlan, withHmrStyleUpdatePlan } from '../../../runtime/hmrStyleUpdate'
 import { createCoreLifecyclePlugin } from './index'
 
 vi.mock('./emit', () => ({
@@ -29,6 +30,55 @@ vi.mock('./watch', () => ({
 }))
 
 describe('createCoreLifecyclePlugin', () => {
+  const createStyleLifecycle = () => {
+    const configService = { isDev: true, weappViteConfig: {} }
+    const moduleGraphService = createModuleGraphService()
+    const state = {
+      ctx: { configService, moduleGraphService, runtimeState: { build: { hmr: {} } } },
+      hmrState: { hasBuiltOnce: true },
+      resolvedConfig: { command: 'build', build: { write: true, watch: {} } },
+    } as unknown as CorePluginState
+    const plugin = createCoreLifecyclePlugin(state)
+    const context = { meta: { watchMode: true }, getModuleIds: () => [] }
+    return { configService, plugin, context }
+  }
+
+  it('keeps native style facts through write hooks until the watcher settles the whole generation', async () => {
+    const { configService, plugin, context } = createStyleLifecycle()
+    recordHmrStyleUpdate(configService, '/src/page.vue', { compilerContentOwners: [['/src/app.vue', 'tailwind-content']] })
+    await (plugin.buildStart as () => Promise<void>).call(context)
+    const current = getHmrStyleUpdatePlan(configService)!
+    const writeBundle = plugin.writeBundle as { handler: () => Promise<void> }
+    await writeBundle.handler.call(context)
+    ;(plugin.closeBundle as () => void).call(context)
+    expect(getHmrStyleUpdatePlan(configService)).toBe(current)
+    settleHmrStyleUpdatePlan(configService, current, false)
+    const release = beginHmrStyleUpdatePlan(configService, ['/src/page.vue'])
+    expect(getHmrStyleUpdatePlan(configService)!.compilerContentOwners.get('/src/app.vue')).toBe('tailwind-content')
+    release()
+    ;(plugin.closeWatcher as () => void)()
+    ;(plugin.closeWatcher as () => void)()
+    expect(getHmrStyleUpdatePlan(configService)).toBeUndefined()
+  })
+
+  it('borrows the outer snapshot style plan without marking a late post-write failure successful', async () => {
+    const { configService, plugin, context } = createStyleLifecycle()
+    const plan = createHmrStyleUpdatePlan(['/src/page.vue'], { compilerContentOwners: [['/src/app.vue', 'tailwind-content']] })
+    await expect(withHmrStyleUpdatePlan(configService, plan, async () => {
+      await (plugin.buildStart as () => Promise<void>).call(context)
+      await (plugin.writeBundle as { handler: () => Promise<void> }).handler.call(context)
+      ;(plugin.closeBundle as () => void).call(context)
+      settleHmrStyleUpdatePlan(configService, plan, true)
+      expect(getHmrStyleUpdatePlan(configService)).toBe(plan)
+      throw new Error('later write hook failed')
+    })).rejects.toThrow('later write hook failed')
+    expect(getHmrStyleUpdatePlan(configService)).toBeUndefined()
+    const release = beginHmrStyleUpdatePlan(configService, ['/src/page.vue'])
+    expect(getHmrStyleUpdatePlan(configService)!.compilerContentOwners.get('/src/app.vue')).toBe('tailwind-content')
+    release()
+    ;(plugin.closeWatcher as () => void)()
+  })
+
   it('synchronizes output compiler dependencies after writing and before releasing the build scope', async () => {
     const moduleGraphService = createModuleGraphService()
     const state = { ctx: { moduleGraphService } } as unknown as CorePluginState

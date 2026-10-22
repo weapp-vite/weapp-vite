@@ -228,6 +228,24 @@ it.each([false, true])('reuses a real generation across a change from incrementa
   await withTailwindSnapshotGeneration(app.input, [app.preparation], app.consume)
 })
 
+it('hands off immutable per-root source scopes without exposing a live AST', async () => {
+  const app = await fixture(2)
+  const reused = await withTailwindSnapshotGeneration(app.input, [app.preparation], app.consume)
+  const { createTailwindV4SourceEntryMatcher } = await import('@weapp-tailwindcss/engine')
+  for (const [index, entry] of reused!.entries.entries()) {
+    expect(entry.sourceRules).toBeDefined()
+    expect(Object.isFrozen(entry.sourceRules)).toBe(true)
+    expect(entry.sourceRules!.every(Object.isFrozen)).toBe(true)
+    expect('root' in entry).toBe(false)
+    const matches = createTailwindV4SourceEntryMatcher(entry.sourceRules!.map(rule => ({ ...rule })))
+    const source = path.join(path.dirname(app.requests[index]!.sourceOptions!.cssEntries![0]!), 'page.html')
+    const other = path.join(path.dirname(app.requests[index === 0 ? 1 : 0]!.sourceOptions!.cssEntries![0]!), 'page.html')
+    expect(matches?.(source)).toBe(true)
+    expect(matches?.(other)).toBe(false)
+    expect(entry.sourceRules).toEqual(expect.arrayContaining([expect.objectContaining({ pattern: '**/*', negated: true })]))
+  }
+})
+
 it.each(['getter', 'proxy'] as const)('refuses an unsafe %s request without reading it or changing the owner', async (kind) => {
   const app = await fixture()
   const read = vi.fn(() => app.first.request.sourceOptions)

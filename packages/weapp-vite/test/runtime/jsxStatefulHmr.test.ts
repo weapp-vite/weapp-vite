@@ -230,6 +230,11 @@ export default defineComponent({data(){return {count:0}},methods:{increment(){th
   finally {
     runtime?.close()
     await ctx?.watcherService.closeAll()
+    // 直接创建的上下文由调用方持有命令级配置 owner，所有 watcher 退出后再恢复请求值。
+    if (ctx) {
+      await getHmrRuntimeSession(ctx).classicIdeConfig.close()
+    }
+    expect(await fs.readJSON(path.join(cwd, 'project.private.config.json'))).toEqual({ setting: { compileHotReLoad: true } })
     errorSpy.mockRestore()
     await fs.remove(cwd)
   }

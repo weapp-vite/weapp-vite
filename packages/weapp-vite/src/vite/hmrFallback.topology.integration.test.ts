@@ -4,6 +4,7 @@ import type { WeappVitePluginApi } from '../types'
 import { mkdir, mkdtemp, readFile, realpath, rename, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
+import process from 'node:process'
 import {
   WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY,
   WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE,
@@ -11,7 +12,7 @@ import {
   WEAPP_VITE_STATEFUL_HMR_UPDATE_FILE,
 } from '@weapp-core/constants'
 import { createServer } from 'vite'
-import { expect, it, vi } from 'vitest'
+import { expect, it, onTestFailed, vi } from 'vitest'
 import { getHmrRuntimeSession } from '../runtime/hmrRuntimeSession'
 import { weapp } from './index'
 
@@ -86,6 +87,15 @@ async function fixture(initialAddedRoute: boolean) {
     root,
     hosts,
     runtime: () => runtime!,
+    inspect: () => hosts.map((host) => {
+      const api = host.server.config.plugins.find(plugin => plugin.name === 'weapp-vite:context')?.api as WeappVitePluginApi | undefined
+      return {
+        bundledDev: host.server.config.experimental.bundledDev,
+        routes: api?.ctx.autoRoutesService.getSnapshot(),
+        fullEntryScan: api?.ctx.runtimeState.build.hmr.fullEntryScan,
+        watcherClosed: host.watcherCloseCalls(),
+      }
+    }),
     read: (file: string) => readFile(path.join(root, 'dist', file), 'utf8'),
     save: (marker: string) => writeFile(path.join(root, homeScript), `Page({ data: { marker: ${JSON.stringify(marker)} } })`),
     changeTopology: () => initialAddedRoute ? rename(routeDirectory, stagingDirectory) : rename(stagingDirectory, routeDirectory),
@@ -117,11 +127,22 @@ async function fixture(initialAddedRoute: boolean) {
 it.each(['create', 'delete'] as const)('hands atomic route-directory %s and an immediate script save to classic', async (event) => {
   const project = await fixture(event === 'delete')
   let server: ViteDevServer | undefined
-  const expectRoutes = async (containsAddedRoute: boolean) => {
+  let routesDiagnostic: unknown
+  onTestFailed(() => {
+    process.stderr.write(`[classic-topology] ${JSON.stringify(routesDiagnostic)}\n`)
+  })
+  const expectRoutes = async (containsAddedRoute: boolean, checkpoint: string) => {
     // 原生 write 可并发发布文件；App JSON 就绪不能代替整个路由产物组就绪。
     await vi.waitFor(async () => {
       const app = JSON.parse(await project.read('app.json')) as { pages?: string[] }
-      expect(app.pages?.includes(addedRoute)).toBe(containsAddedRoute)
+      const source = await readFile(path.join(project.root, 'src', `${addedRoute}.js`), 'utf8').catch((error: NodeJS.ErrnoException) => {
+        if (error.code === 'ENOENT') {
+          return undefined
+        }
+        throw error
+      })
+      routesDiagnostic = { checkpoint, event, phase: project.runtime().phase, containsAddedRoute, emittedPages: app.pages, sourcePresent: source !== undefined, hosts: project.inspect() }
+      expect(app.pages?.includes(addedRoute), `route publication at ${checkpoint}`).toBe(containsAddedRoute)
       if (containsAddedRoute) {
         expect(await project.read(`${addedRoute}.js`)).toContain('topology-added-route')
         expect(JSON.parse(await project.read(`${addedRoute}.json`)) as unknown).toMatchObject({ navigationBarTitleText: 'topology-added-title' })
@@ -140,14 +161,14 @@ it.each(['create', 'delete'] as const)('hands atomic route-directory %s and an i
   try {
     server = await project.start()
     expect(server.config.experimental.bundledDev).toBe(true)
-    await expectRoutes(event === 'delete')
+    await expectRoutes(event === 'delete', 'initial-stateful')
     // 完整页面目录先原子移动，再立即保存既有页面；不能靠 App 文件的模拟 change 触发能力回退。
     await project.changeTopology()
     await project.save('saved-with-route-topology')
     await expect.poll(() => project.runtime().fallback?.code, { timeout: 15_000 }).toBe('entry-topology')
     await project.runtime().whenSettled()
     await expectClassic()
-    await expectRoutes(event === 'create')
+    await expectRoutes(event === 'create', 'classic-handoff')
     await expect.poll(() => project.read('pages/home/index.js')).toContain('saved-with-route-topology')
     expect(project.runtime().fallback?.files).toEqual(expect.arrayContaining([
       path.join(project.root, 'src/pages/added/index.js').replaceAll('\\', '/'),
@@ -159,7 +180,7 @@ it.each(['create', 'delete'] as const)('hands atomic route-directory %s and an i
 
     await project.restoreTopology()
     await project.save('saved-after-route-restoration')
-    await expectRoutes(event === 'delete')
+    await expectRoutes(event === 'delete', 'classic-restoration')
     await expect.poll(() => project.read('pages/home/index.js')).toContain('saved-after-route-restoration')
     await expectClassic()
     expect(project.hosts).toHaveLength(2)

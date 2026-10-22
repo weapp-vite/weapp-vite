@@ -154,7 +154,7 @@ export function createWevuTailwindHmrSession(repositoryRoot: string, fixture: Aw
         env: { ...createDevProcessEnv(), WEAPP_VITE_HMR_PROFILE_JSON: profilePath },
         reject: false,
       })
-      publication = createNativeHmrPublication(fixture.project, dev, 'stateful-experimental', ['native-registration'], profilePath)
+      publication = createNativeHmrPublication(fixture.project, dev, 'stateful-experimental', ['stylesheet-output'], profilePath)
       await dev.waitForInitialBuild()
       await dev.waitFor(waitForStatefulHmrControl(control), 'template initial stateful control')
       await waitForFileContains(path.join(dist, 'app.wxss'), `@import "./${WEAPP_VITE_STATEFUL_HMR_GLOBAL_STYLE_BASENAME}.wxss";`)

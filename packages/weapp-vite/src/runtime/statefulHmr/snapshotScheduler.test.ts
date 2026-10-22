@@ -43,6 +43,38 @@ describe('stateful hmr snapshot scheduler', () => {
     await expect(scheduler.close()).resolves.toBeUndefined()
   })
 
+  it('does not count the exact rejection that initiated close as a second cleanup failure', async () => {
+    vi.useFakeTimers()
+    const pending = createDeferred()
+    const cause = new Error('classic handoff requested')
+    const onError = vi.fn()
+    const execute = vi.fn(() => pending.promise)
+    const scheduler = new StatefulHmrSnapshotScheduler({ execute, onError })
+    scheduler.request('refresh', ['page.wxml'])
+    await vi.advanceTimersByTimeAsync(40)
+    const closing = scheduler.close({ cause })
+    pending.reject(cause)
+    await expect(closing).resolves.toBeUndefined()
+    await expect(scheduler.close()).resolves.toBeUndefined()
+    expect(onError).toHaveBeenCalledExactlyOnceWith(cause)
+    expect(execute).toHaveBeenCalledOnce()
+  })
+
+  it.each(['different', 'combined'] as const)('preserves a %s failure after an explicit close cause', async (kind) => {
+    vi.useFakeTimers()
+    const pending = createDeferred()
+    const cause = new Error('classic handoff requested')
+    const cleanup = new Error('preparation cleanup failed')
+    const failure = kind === 'different' ? cleanup : new AggregateError([cause, cleanup], 'handoff and cleanup failed', { cause })
+    const scheduler = new StatefulHmrSnapshotScheduler({ execute: () => pending.promise })
+    scheduler.request('refresh', ['page.wxml'])
+    await vi.advanceTimersByTimeAsync(40)
+    const closing = expect(scheduler.close({ cause })).rejects.toBe(failure)
+    pending.reject(failure)
+    await closing
+    await expect(scheduler.close({ cause: failure })).rejects.toBe(failure)
+  })
+
   it('settles only after debounce, execution, and a newer queued refresh finish', async () => {
     vi.useFakeTimers()
     const first = createDeferred()

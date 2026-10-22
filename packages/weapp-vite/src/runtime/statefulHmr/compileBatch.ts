@@ -20,7 +20,6 @@ interface CompileHmrBatchOptions {
   prepareProviders: () => Promise<WeappCompilerHmrPreparation[]>
   rebuild: (files: string[], sources?: ReadonlyMap<string, string | null>) => Promise<StatefulHmrSnapshot>
   sourcemap: boolean
-  mergeCompilerStyles?: boolean
   onPreparationStage?: (observation: HmrPreparationObservation) => void
 }
 
@@ -55,13 +54,11 @@ export async function compileHmrBatch(options: CompileHmrBatchOptions) {
   }
   try {
     const needsSnapshot = options.needsSnapshot || requiresImportedTailwindSnapshot(preparations)
+    // 固定输入的 provider 资产参与真实字节比较，不按 watcher 通知顺序推断样式是否变化。
     const compilerAssets = preparations.flatMap(preparation => preparation.assets ?? [])
     const styleExtension = compilerAssets.length
       ? resolveOutputExtensions(ctx.configService.outputExtensions).styleExtension
       : undefined
-    const publishedCompilerAssets = options.mergeCompilerStyles === false && styleExtension
-      ? compilerAssets.filter(asset => !asset.fileName.endsWith(`.${styleExtension}`))
-      : compilerAssets
     if (needsSnapshot) {
       profile?.begin('snapshot-build')
     }
@@ -71,9 +68,9 @@ export async function compileHmrBatch(options: CompileHmrBatchOptions) {
     profile?.finish()
     // 原生输出可能仅暴露 getter；批次转换使用自己的容器，保留构建器快照。
     const snapshot = builtSnapshot ? { ...builtSnapshot, output: [...builtSnapshot.output] } : undefined
-    if (snapshot && publishedCompilerAssets.length && options.mergeCompilerStyles !== false && styleExtension) {
+    if (snapshot && compilerAssets.length && styleExtension) {
       const snapshotFileNames = new Set(snapshot.output.map(asset => asset.fileName))
-      const styles = publishedCompilerAssets.filter(asset => asset.fileName.endsWith(`.${styleExtension}`) && !snapshotFileNames.has(asset.fileName))
+      const styles = compilerAssets.filter(asset => asset.fileName.endsWith(`.${styleExtension}`) && !snapshotFileNames.has(asset.fileName))
       if (styles.length) {
         snapshot.output = [
           ...snapshot.output,
@@ -116,7 +113,7 @@ export async function compileHmrBatch(options: CompileHmrBatchOptions) {
     }
     profile?.finish()
     const code = bundleHmrCode(transformed)
-    return { compilerAssets: publishedCompilerAssets, snapshot, code, changedIds, filenames, dispose }
+    return { compilerAssets, snapshot, code, changedIds, filenames, dispose }
   }
   catch (error) {
     profile?.finish('rejected', error)

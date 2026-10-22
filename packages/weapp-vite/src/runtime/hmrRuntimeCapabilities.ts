@@ -1,6 +1,7 @@
 export const HMR_RUNTIME_CAPABILITIES = [
   { id: 'script-patch', mode: 'stateful', description: '可安全接受的脚本增量' },
-  { id: 'visual-assets', mode: 'stateful', description: '不改变注册和配置的样式、模板及静态资源' },
+  { id: 'visual-assets', mode: 'stateful', description: '不改变注册和配置的模板及静态资源' },
+  { id: 'stylesheet-output', mode: 'classic', description: '编译后样式字节变化，宿主未提供可靠的样式更新确认契约' },
   { id: 'config-json', mode: 'classic', description: '小程序 JSON 配置变化' },
   { id: 'entry-topology', mode: 'classic', description: '页面、组件和依赖入口拓扑变化' },
   { id: 'engine-full-reload', mode: 'classic', description: 'DevEngine 明确要求完整重载' },
@@ -30,6 +31,26 @@ export class HmrRuntimeCapabilityError extends Error {
 
 export function getHmrRuntimeCapabilityFallback(error: unknown): HmrRuntimeFallbackReason | undefined {
   return error instanceof HmrRuntimeCapabilityError ? error.fallback : undefined
+}
+
+/** 仅根据最终发布资产识别样式能力边界，不由源码扩展名推测编译结果。 */
+export function resolveStatefulHmrOutputFallback(options: {
+  changed: readonly { fileName: string }[]
+  removed?: readonly string[]
+  styleExtension: string
+}): HmrRuntimeFallbackReason | undefined {
+  const suffix = `.${options.styleExtension.replace(/^\./, '').toLowerCase()}`
+  const files = [...new Set([
+    ...options.changed.map(asset => asset.fileName),
+    ...(options.removed ?? []),
+  ].filter(file => file.toLowerCase().endsWith(suffix)))].sort()
+  if (files.length) {
+    return {
+      code: 'stylesheet-output',
+      message: '编译后样式发生变化，当前宿主没有可靠的状态保持样式更新确认契约，需要 classic 完整发布。',
+      files,
+    }
+  }
 }
 
 /** 在快照或增量排队前识别会改变运行时注册语义的输入。 */

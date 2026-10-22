@@ -1,3 +1,4 @@
+import type { parse } from '@babel/parser'
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
@@ -31,6 +32,29 @@ describe('template benchmark emitted ownership', () => {
     expect(output).toContain('shared-marker')
     expect(output).toContain('update-marker')
     expect(output).not.toContain('unreachable-marker')
+  })
+
+  it('inspects each real source and relative filename with an independent AST and rechecks changed dependencies', async () => {
+    const entrySource = 'const alias = "entry"; require("./shared.js");'
+    const sharedSource = 'const alias = "dependency";'
+    const entry = await write('pages/index.js', entrySource)
+    await write('pages/shared.js', sharedSource)
+    const inspect = vi.fn((ast: ReturnType<typeof parse>, source: string, filename: string) => {
+      expect(ast.type).toBe('File')
+      expect(ast.program.body[0].type).toBe('VariableDeclaration')
+      if (source.includes('invalid-installation')) {
+        throw new Error(`Invalid installation in ${filename}`)
+      }
+    })
+    const read = createEmittedScriptReader(entry, root, { inspect })
+    await expect(read()).resolves.toBe(`${entrySource}\n${sharedSource}`)
+    expect(inspect.mock.calls.map(([, source, filename]) => [source, filename])).toEqual([
+      [entrySource, 'pages/index.js'],
+      [sharedSource, 'pages/shared.js'],
+    ])
+    await write('pages/shared.js', 'const alias = "invalid-installation";')
+    await expect(read()).rejects.toThrow('Invalid installation in pages/shared.js')
+    expect(inspect).toHaveBeenCalledTimes(3)
   })
 
   it('does not follow fake requires inside comments, strings, or a shadowed require function', async () => {
