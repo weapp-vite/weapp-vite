@@ -197,3 +197,23 @@ it('discards malformed unauthenticated messages without affecting the native pee
   await current.control.requestClose()
   expect(close).toHaveBeenCalledOnce()
 })
+
+it('preserves a native peer TCP reset as the shutdown failure without an unhandled readline error', async () => {
+  const current = await fixture()
+  const source = await readFile(current.control.configFile, 'utf8')
+  const serialized = source.match(/createNativeHostControlPlugin\((\{[^{}\r\n]*\})\)/)?.[1]
+  expect(serialized).toBeDefined()
+  const endpoint = JSON.parse(serialized!) as { port: number, token: string }
+  const socket = connect({ host: '127.0.0.1', port: endpoint.port })
+  const stopping = current.control.requestClose()
+  const rejected = expect(stopping).rejects.toMatchObject({ code: 'ECONNRESET' })
+  socket.once('connect', () => socket.write(`${JSON.stringify({ type: 'ready', token: endpoint.token })}\n`))
+  socket.once('data', () => socket.resetAndDestroy())
+  try {
+    await rejected
+    expect(current.control.requestClose()).toBe(stopping)
+  }
+  finally {
+    socket.destroy()
+  }
+})
