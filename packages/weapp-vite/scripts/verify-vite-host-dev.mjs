@@ -6,6 +6,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { setTimeout as delay } from 'node:timers/promises'
 import { readEmittedStylesheet } from '../../../e2e/utils/emittedStylesheet.ts'
+import { createNativeHostControl } from './consumerHmr/hostControl/index.mjs'
 import { assertConsumerPrivateConfigRestored, consumerProcessEnvironment, readConsumerPrivateConfig, stopConsumerProcess } from './consumerHmr/shutdown.mjs'
 import { verifyStylesheetHmr } from './consumerHmr/stylesheet.mjs'
 
@@ -41,7 +42,11 @@ if (operation === 'stateful-dev') {
   await writeFile(path.join(root, 'vite.config.mts'), originals.get('vite.config.mts').replace('runtime: \'classic\'', 'runtime: \'stateful-experimental\''))
 }
 const args = operation === 'build-watch' ? ['build', '--watch', '--logLevel', 'info'] : ['dev', ...toolchain === 'wv' ? [] : ['--host', '127.0.0.1', '--port', '0', '--logLevel', 'info']]
-const child = execFile(process.execPath, [cli, ...args], { cwd: root, detached: process.platform !== 'win32', maxBuffer: 10 * 1024 * 1024, env: consumerProcessEnvironment(operation) })
+const hostControl = toolchain === 'wv' ? undefined : await createNativeHostControl(root, 'vite.config.mts')
+if (hostControl) {
+  args.push('--config', hostControl.configFile)
+}
+const child = execFile(process.execPath, [cli, ...args], { cwd: root, detached: process.platform !== 'win32', maxBuffer: 10 * 1024 * 1024, env: consumerProcessEnvironment(operation, process.env, { explicitControl: Boolean(hostControl) }) })
 const done = new Promise((resolve) => {
   child.once('error', error => resolve({ error }))
   child.once('exit', (code, signal) => {
@@ -255,7 +260,14 @@ catch (error) {
 finally {
   let stopped = false
   try {
-    await stopConsumerProcess({ child, done, operation, toolchain })
+    await stopConsumerProcess({
+      child,
+      done,
+      operation,
+      toolchain,
+      requestShutdown: hostControl && (() => hostControl.requestClose()),
+      disposeShutdown: hostControl && (() => hostControl.dispose()),
+    })
     stopped = true
   }
   catch (error) {

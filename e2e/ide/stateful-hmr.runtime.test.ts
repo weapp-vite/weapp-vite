@@ -1,3 +1,4 @@
+import type { startDevProcess } from '../utils/dev-process'
 import path from 'node:path'
 import process from 'node:process'
 import { WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY } from '@weapp-core/constants'
@@ -6,7 +7,6 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { resolveRuntimeCompilerCli } from '../../packages/weapp-vite/scripts/consumerRuntimeHost.mjs'
 import { launchAutomator } from '../utils/automator'
 import { traceCleanupStage } from '../utils/cleanupTrace'
-import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { createDomAcceptance } from '../utils/domAcceptance'
@@ -17,6 +17,7 @@ import {
   waitForStatefulHmrControl,
 } from '../utils/hmr-helpers'
 import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
+import { startRuntimeDevProcess } from '../utils/runtimeDevProcess'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import { createStatefulHmrProject } from '../utils/statefulHmrProject'
 import { relaunchPage } from './github-issues.runtime.shared'
@@ -282,7 +283,7 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
     ])
     await fs.remove(fixture.distRoot)
 
-    devProcess = startDevProcess(process.execPath, HOST === 'wv'
+    devProcess = await startRuntimeDevProcess(HOST, HOST === 'wv'
       ? [COMPILER_CLI, 'dev', fixture.projectRoot, '--platform', 'weapp', '--skipNpm']
       : [COMPILER_CLI, 'dev', '--config', 'vite.stateful.config.mts', '--host', '127.0.0.1', '--port', '0'], {
       all: true,
@@ -407,7 +408,7 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
     if (errors.length) {
       throw new AggregateError(errors, 'Stateful HMR teardown failed')
     }
-  })
+  }, 240_000)
 
   it('preserves native Page identity, data, input, route, and query across JavaScript patches and restoration', async (ctx) => {
     const provider = resolveRuntimeProviderName()
