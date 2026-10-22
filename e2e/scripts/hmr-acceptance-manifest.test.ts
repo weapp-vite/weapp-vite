@@ -284,6 +284,11 @@ describe('HMR semantic acceptance inventory', () => {
     }
     const hmrFilters = scripts['test:hmr']!.split(/\s+/)
     for (const file of [
+      'packages/weapp-vite/src/utils/file.test.ts',
+      'packages/weapp-vite/src/utils/file/vueConfig.snapshot.test.ts',
+      'packages/weapp-vite/src/utils/file/vueConfig.loading.test.ts',
+      'packages/weapp-vite/src/utils/file/vueConfig.sessions.test.ts',
+      'packages/weapp-vite/src/utils/file/vueConfig.autoRoutes.test.ts',
       'packages/weapp-vite/src/runtime/classicIdeConfig',
       'packages/weapp-vite/src/runtime/__tests__/watcherService.test.ts',
       'packages/weapp-vite/src/plugins/projectConfig',

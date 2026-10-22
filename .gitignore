@@ -102,6 +102,9 @@ docs/reports/*-ide-type-uncompatible-warning-report.md
 docs/reports/*-ide-type-uncompatible-warning-report.json
 docs/reports/*-e2e-ci-suite-report/
 docs/reports/*-e2e-ide-full-suite-report/
+docs/reports/*-e2e-hmr-build-*-suite-report/
+docs/reports/*-e2e-ide-hmr-*-suite-report/
+docs/reports/*-e2e-ide-full-exhaustive-*-suite-report/
 docs/reports/*-hmr-guard-*-suite-report/
 
 # website build-generated SEO/LLM assets
