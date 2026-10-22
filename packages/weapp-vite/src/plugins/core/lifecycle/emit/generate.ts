@@ -564,10 +564,10 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
             refreshSharedChunkImporters(rolldownBundle, state)
           }
           else {
-            // 依赖图跟随实际编译入口；完整注册可能重排未失效入口的共享 chunk。
-            const compiledEntryIds = resolveActiveHmrEntryIds(state)
-            if (compiledEntryIds?.size) {
-              refreshPartialSharedChunkImporters(rolldownBundle, state, compiledEntryIds)
+            // 编译注册图可以大于 HMR owner 集合，原生重新生成的依赖都必须刷新。
+            const activeEntryIds = resolveActiveHmrEntryIds(state)
+            if (activeEntryIds?.size) {
+              refreshPartialSharedChunkImporters(rolldownBundle, state, activeEntryIds)
             }
           }
           state.hmrState.hasBuiltOnce = true
