@@ -10,7 +10,7 @@ import { resolveVerificationTopology, TDESIGN_AGGREGATE_LABEL, TDESIGN_SOURCE_LA
 import { TEMPLATE_DEV_OPEN_CASES } from '../ide/template-dev-open-cases'
 import { E2E_TARGET_FILE_ENV } from '../utils/vitestTargetFile'
 import { HMR_ACCEPTANCE_BUILD_TESTS, hmrAcceptanceRuntimeFiles } from './hmr-acceptance-manifest'
-import { HMR_GUARD_ALL_TESTS, HMR_GUARD_SPECIAL_CASES, HMR_GUARD_UTILITY_TESTS } from './hmr-guard-manifest'
+import { HMR_GUARD_ALL_TESTS, HMR_GUARD_SPECIAL_CASES, HMR_GUARD_UTILITIES_ALREADY_RUN_OPTION, HMR_GUARD_UTILITY_TESTS } from './hmr-guard-manifest'
 
 const ROOT = path.resolve(import.meta.dirname, '..')
 const CI_CONFIG_PATH = path.resolve(ROOT, 'vitest.e2e.ci.config.ts')
@@ -593,10 +593,10 @@ export async function getCiTasks(_options: SuiteTaskFactoryOptions = {}) {
   const tasks = [
     ...buildOnlyFiles.map(filePath => createVitestTask(CI_CONFIG_PATH, filePath)),
     ...HMR_GUARD_UTILITY_TESTS.map(filePath => createVitestTask(CI_CONFIG_PATH, filePath)),
-    createCommandTask('hmr-guard:full', ['full']),
-    createCommandTask('hmr-guard:auto-import-vue-sfc', ['auto-import-vue-sfc']),
-    createCommandTask('hmr-guard:auto-routes-hmr', ['auto-routes-hmr']),
-    createCommandTask('hmr-guard:shared-chunks-auto', ['shared-chunks-auto']),
+    createCommandTask('hmr-guard:full', ['full', HMR_GUARD_UTILITIES_ALREADY_RUN_OPTION]),
+    createCommandTask('hmr-guard:auto-import-vue-sfc', ['auto-import-vue-sfc', HMR_GUARD_UTILITIES_ALREADY_RUN_OPTION]),
+    createCommandTask('hmr-guard:auto-routes-hmr', ['auto-routes-hmr', HMR_GUARD_UTILITIES_ALREADY_RUN_OPTION]),
+    createCommandTask('hmr-guard:shared-chunks-auto', ['shared-chunks-auto', HMR_GUARD_UTILITIES_ALREADY_RUN_OPTION]),
   ]
 
   return tasks

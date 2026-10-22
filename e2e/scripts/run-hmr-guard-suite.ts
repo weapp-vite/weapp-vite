@@ -1,13 +1,14 @@
+import type { HmrGuardSuiteName } from './hmr-guard-manifest'
 import path from 'node:path'
 import process from 'node:process'
 import { withMachineE2ELease } from '../../packages/devtools-runtime/src/lease/machine'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { E2E_TARGET_FILE_ENV } from '../utils/vitestTargetFile'
 import {
+  getHmrGuardTestPaths,
   HMR_GUARD_ALL_TESTS,
-  HMR_GUARD_SMOKE_TESTS,
-  HMR_GUARD_SPECIAL_CASES,
-  HMR_GUARD_STABLE_TESTS,
+  HMR_GUARD_SUITES,
+  HMR_GUARD_UTILITIES_ALREADY_RUN_OPTION,
   HMR_GUARD_UTILITY_TESTS,
 } from './hmr-guard-manifest'
 import {
@@ -20,41 +21,12 @@ import { runTaskSuite } from './suiteRunner'
 const VITEST_CONFIG_PATH = path.resolve(import.meta.dirname, '../vitest.e2e.ci.config.ts')
 const E2E_ROOT = path.resolve(import.meta.dirname, '..')
 
-const SUITES = {
-  'full': {
-    description: '稳定 HMR 护栏全集，不包含需独立运行的 auto-import-vue-sfc / auto-routes-hmr / shared-chunks-auto 特例',
-    tests: HMR_GUARD_STABLE_TESTS,
-  },
-  'smoke': {
-    description: '本地快速 HMR smoke 子集',
-    tests: HMR_GUARD_SMOKE_TESTS,
-  },
-  'auto-import-vue-sfc': {
-    description: 'auto-import Vue SFC 特例，单独运行以避免被前序 dev-watch 用例污染',
-    tests: [HMR_GUARD_SPECIAL_CASES.autoImportVueSfc],
-  },
-  'shared-chunks-auto': {
-    description: 'sharedChunks=auto 特例，需独立运行避免与其他 dev-watch 用例互相干扰',
-    tests: [HMR_GUARD_SPECIAL_CASES.sharedChunksAuto],
-  },
-  'auto-routes-hmr': {
-    description: 'auto-routes HMR 特例，需独立运行避免与其他 dev-watch 用例互相干扰',
-    tests: [HMR_GUARD_SPECIAL_CASES.autoRoutesHmr],
-  },
-} as const
-
-type SuiteName = keyof typeof SUITES
-
 function formatLabel(testPath: string) {
   return path.relative(E2E_ROOT, testPath).replaceAll('\\', '/')
 }
 
-async function runSuite(name: SuiteName) {
-  const suite = SUITES[name]
-  const testPaths = [
-    ...HMR_GUARD_UTILITY_TESTS,
-    ...suite.tests,
-  ]
+async function runSuite(name: HmrGuardSuiteName, utilitiesAlreadyRun: boolean) {
+  const testPaths = getHmrGuardTestPaths(name, { utilitiesAlreadyRun })
   if (!shouldForceDiskBackedMiniProgramDevChecks()) {
     const hasDiskBackedDevOutput = await supportsDiskBackedMiniProgramDev()
     if (!hasDiskBackedDevOutput) {
@@ -89,7 +61,7 @@ function printList() {
   for (const testPath of HMR_GUARD_UTILITY_TESTS) {
     console.log(`  - ${formatLabel(testPath)}`)
   }
-  for (const [name, suite] of Object.entries(SUITES)) {
+  for (const [name, suite] of Object.entries(HMR_GUARD_SUITES)) {
     console.log(`- ${name}: ${suite.description}`)
     for (const testPath of suite.tests) {
       console.log(`  - ${formatLabel(testPath)}`)
@@ -101,13 +73,17 @@ function printList() {
   }
 }
 
-const command = process.argv[2] ?? 'full'
+const [command = 'full', ...options] = process.argv.slice(2)
 
-if (command === 'list') {
+if (options.some(option => option !== HMR_GUARD_UTILITIES_ALREADY_RUN_OPTION)) {
+  console.error(`Unknown HMR guard option: ${options.find(option => option !== HMR_GUARD_UTILITIES_ALREADY_RUN_OPTION)}`)
+  process.exitCode = 1
+}
+else if (command === 'list') {
   printList()
 }
-else if (command in SUITES) {
-  await withMachineE2ELease(() => runSuite(command as SuiteName))
+else if (command in HMR_GUARD_SUITES) {
+  await withMachineE2ELease(() => runSuite(command as HmrGuardSuiteName, options.includes(HMR_GUARD_UTILITIES_ALREADY_RUN_OPTION)))
 }
 else {
   console.error(`Unknown HMR guard suite: ${command}`)

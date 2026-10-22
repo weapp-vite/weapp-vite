@@ -82,3 +82,38 @@ export const HMR_GUARD_ALL_TESTS = [
   HMR_GUARD_SPECIAL_CASES.autoRoutesHmr,
   HMR_GUARD_SPECIAL_CASES.sharedChunksAuto,
 ]
+
+export const HMR_GUARD_UTILITIES_ALREADY_RUN_OPTION = '--utilities-already-run'
+
+export const HMR_GUARD_SUITES = {
+  'full': {
+    description: '稳定 HMR 护栏全集，不包含需独立运行的 auto-import-vue-sfc / auto-routes-hmr / shared-chunks-auto 特例',
+    tests: HMR_GUARD_STABLE_TESTS,
+  },
+  'smoke': {
+    description: '本地快速 HMR smoke 子集',
+    tests: HMR_GUARD_SMOKE_TESTS,
+  },
+  'auto-import-vue-sfc': {
+    description: 'auto-import Vue SFC 特例，单独运行以避免被前序 dev-watch 用例污染',
+    tests: [HMR_GUARD_SPECIAL_CASES.autoImportVueSfc],
+  },
+  'shared-chunks-auto': {
+    description: 'sharedChunks=auto 特例，需独立运行避免与其他 dev-watch 用例互相干扰',
+    tests: [HMR_GUARD_SPECIAL_CASES.sharedChunksAuto],
+  },
+  'auto-routes-hmr': {
+    description: 'auto-routes HMR 特例，需独立运行避免与其他 dev-watch 用例互相干扰',
+    tests: [HMR_GUARD_SPECIAL_CASES.autoRoutesHmr],
+  },
+} as const
+
+export type HmrGuardSuiteName = keyof typeof HMR_GUARD_SUITES
+
+/** 独立入口保留工具测试；仅在父级已安排执行时显式移交这部分覆盖。 */
+export function getHmrGuardTestPaths(name: HmrGuardSuiteName, options: { utilitiesAlreadyRun?: boolean } = {}) {
+  return [
+    ...(options.utilitiesAlreadyRun ? [] : HMR_GUARD_UTILITY_TESTS),
+    ...HMR_GUARD_SUITES[name].tests,
+  ]
+}
