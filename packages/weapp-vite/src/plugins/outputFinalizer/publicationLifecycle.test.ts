@@ -179,6 +179,29 @@ describe('output publication lifetime', () => {
     expect(api.getEpoch()).toBe(epoch)
   })
 
+  it('observes one output scope across native and normalized directory spellings', async () => {
+    const { plugin, root, hookContext } = fixture()
+    const api = plugin.api!
+    const outDir = path.join(root, 'dist')
+    const nativeOutDir = outDir.replaceAll('/', '\\')
+    const bundle = { 'page.txt': { type: 'asset', fileName: 'page.txt', source: 'native bytes' } } as OutputBundle
+    await handler(plugin.generateBundle).call(hookContext, { dir: nativeOutDir }, bundle, true)
+    const epoch = api.getEpoch()
+    const pending = api.whenCommitted(nativeOutDir, epoch)
+    expect(api.readCommitted(nativeOutDir, epoch)).toBeUndefined()
+    await expect(api.whenCommitted(path.join(root, 'another-dist'), epoch)).resolves.toBeUndefined()
+    await handler(plugin.writeBundle).call(hookContext, { dir: outDir }, bundle)
+    const snapshot = await pending
+    expect(snapshot?.root).toBe(outDir)
+    expect(snapshot?.outputs.get('page.txt')).toBe('native bytes')
+    expect(api.readCommitted(nativeOutDir, epoch)?.outputs.get('page.txt')).toBe('native bytes')
+    expect(api.readCommitted(outDir, epoch)?.outputs.get('page.txt')).toBe('native bytes')
+    expect(api.readCommitted(path.join(root, 'another-dist'), epoch)).toBeUndefined()
+    await handler(plugin.buildStart).call(hookContext)
+    expect(api.readCommitted(nativeOutDir, epoch)).toBeUndefined()
+    await expect(api.whenCommitted(nativeOutDir, epoch)).resolves.toBeUndefined()
+  })
+
   it.each(['public', 'ownership'] as const)('does not expose a no-op commit when the %s write stage fails', async (failure) => {
     const { plugin, root, hookContext } = fixture()
     const api = plugin.api!

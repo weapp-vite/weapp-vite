@@ -230,7 +230,7 @@ it.each([0, 1])('removes deleted CSS root %i from pending invalidation and subse
   )
   expect(removedGeneration).toBeDefined()
   expect(removedGeneration!.request.sourceOptions).toBeUndefined()
-  expect(removedGeneration!.request.source?.base).toBe(path.dirname(entry))
+  expect(removedGeneration!.request.source?.base.replaceAll('\\', '/')).toBe(path.dirname(entry).replaceAll('\\', '/'))
   const removed = removedGeneration!.request.id
   await rm(entry)
   await app.change(entry, 'delete')
