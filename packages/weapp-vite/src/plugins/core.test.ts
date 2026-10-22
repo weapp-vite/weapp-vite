@@ -164,6 +164,7 @@ describe('weapp-vite:pre load', () => {
     const bundle = {
       'pages/data/index.js': {
         type: 'chunk',
+        fileName: 'pages/data/index.js',
         isEntry: true,
         facadeModuleId: dataEntry,
         imports: ['common.js'],
@@ -172,6 +173,7 @@ describe('weapp-vite:pre load', () => {
       },
       'pages/index/index.js': {
         type: 'chunk',
+        fileName: 'pages/index/index.js',
         isEntry: true,
         facadeModuleId: indexEntry,
         imports: ['common.js'],
@@ -180,6 +182,7 @@ describe('weapp-vite:pre load', () => {
       },
       'common.js': {
         type: 'chunk',
+        fileName: 'common.js',
         isEntry: false,
         facadeModuleId: '/project/src/common.ts',
         imports: [],
@@ -273,6 +276,7 @@ describe('weapp-vite:pre load', () => {
     const firstBundle = {
       'pages/data/index.js': {
         type: 'chunk',
+        fileName: 'pages/data/index.js',
         isEntry: true,
         facadeModuleId: dataEntry,
         imports: ['common.js'],
@@ -281,6 +285,7 @@ describe('weapp-vite:pre load', () => {
       },
       'pages/index/index.js': {
         type: 'chunk',
+        fileName: 'pages/index/index.js',
         isEntry: true,
         facadeModuleId: indexEntry,
         imports: ['common.js'],
@@ -289,6 +294,7 @@ describe('weapp-vite:pre load', () => {
       },
       'common.js': {
         type: 'chunk',
+        fileName: 'common.js',
         isEntry: false,
         facadeModuleId: '/project/src/common.ts',
         imports: [],
@@ -307,6 +313,7 @@ describe('weapp-vite:pre load', () => {
     const secondBundle = {
       'pages/data/index.js': {
         type: 'chunk',
+        fileName: 'pages/data/index.js',
         isEntry: true,
         facadeModuleId: dataEntry,
         imports: ['common.js'],
@@ -315,6 +322,7 @@ describe('weapp-vite:pre load', () => {
       },
       'common.js': {
         type: 'chunk',
+        fileName: 'common.js',
         isEntry: false,
         facadeModuleId: '/project/src/common.ts',
         imports: [],
@@ -364,6 +372,7 @@ describe('weapp-vite:pre load', () => {
     const firstBundle = {
       'pages/data/index.js': {
         type: 'chunk',
+        fileName: 'pages/data/index.js',
         isEntry: true,
         facadeModuleId: dataEntry,
         imports: ['common.js'],
@@ -372,6 +381,7 @@ describe('weapp-vite:pre load', () => {
       },
       'pages/index/index.js': {
         type: 'chunk',
+        fileName: 'pages/index/index.js',
         isEntry: true,
         facadeModuleId: indexEntry,
         imports: ['common.js'],
@@ -380,6 +390,7 @@ describe('weapp-vite:pre load', () => {
       },
       'common.js': {
         type: 'chunk',
+        fileName: 'common.js',
         isEntry: false,
         facadeModuleId: '/project/src/common.ts',
         imports: [],
@@ -394,6 +405,7 @@ describe('weapp-vite:pre load', () => {
     const secondBundle = {
       'pages/data/index.js': {
         type: 'chunk',
+        fileName: 'pages/data/index.js',
         isEntry: true,
         facadeModuleId: dataEntry,
         imports: ['common-next.js'],
@@ -402,6 +414,7 @@ describe('weapp-vite:pre load', () => {
       },
       'common-next.js': {
         type: 'chunk',
+        fileName: 'common-next.js',
         isEntry: false,
         facadeModuleId: '/project/src/common-next.ts',
         imports: [],
@@ -521,6 +534,7 @@ describe('weapp-vite:pre load', () => {
     const firstBundle = {
       'pages/data/index.js': {
         type: 'chunk',
+        fileName: 'pages/data/index.js',
         isEntry: true,
         facadeModuleId: dataEntry,
         imports: ['common.js'],
@@ -529,6 +543,7 @@ describe('weapp-vite:pre load', () => {
       },
       'pages/index/index.js': {
         type: 'chunk',
+        fileName: 'pages/index/index.js',
         isEntry: true,
         facadeModuleId: indexEntry,
         imports: ['common.js'],
@@ -537,6 +552,7 @@ describe('weapp-vite:pre load', () => {
       },
       'common.js': {
         type: 'chunk',
+        fileName: 'common.js',
         isEntry: false,
         facadeModuleId: '/project/src/common.ts',
         imports: [],
@@ -553,6 +569,7 @@ describe('weapp-vite:pre load', () => {
     const secondBundle = {
       'common-next.js': {
         type: 'chunk',
+        fileName: 'common-next.js',
         isEntry: false,
         facadeModuleId: '/project/src/common-next.ts',
         imports: [],
@@ -601,6 +618,7 @@ describe('weapp-vite:pre load', () => {
     const bundle = {
       'pages/index/index.js': {
         type: 'chunk',
+        fileName: 'pages/index/index.js',
         isEntry: true,
         facadeModuleId: pageEntry,
         imports: ['layouts/default.js'],
@@ -609,6 +627,7 @@ describe('weapp-vite:pre load', () => {
       },
       'layouts/default.js': {
         type: 'chunk',
+        fileName: 'layouts/default.js',
         isEntry: true,
         facadeModuleId: layoutEntry,
         imports: ['common.js'],
@@ -617,6 +636,7 @@ describe('weapp-vite:pre load', () => {
       },
       'common.js': {
         type: 'chunk',
+        fileName: 'common.js',
         isEntry: false,
         facadeModuleId: '/project/src/shared/layout.ts',
         imports: [],

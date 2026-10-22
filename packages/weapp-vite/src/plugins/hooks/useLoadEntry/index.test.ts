@@ -3,6 +3,7 @@ import { fs } from '@weapp-core/shared/fs'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { parseLogicalEntryId } from '../../../moduleGraph/protocol'
 import { createHmrStyleUpdatePlan, withHmrStyleUpdatePlan } from '../../../runtime/hmrStyleUpdate'
+import { createRuntimeState } from '../../../runtime/runtimeState'
 import { useLoadEntry } from './index'
 
 const loadEntryMock = vi.hoisted(() => vi.fn(async () => ({ code: '' })))
@@ -101,6 +102,116 @@ function seedResolvedEntries(
 describe('useLoadEntry emitDirtyEntries', () => {
   beforeEach(() => {
     loadEntryMock.mockClear()
+  })
+
+  it('keeps a save discovered during a topology scan eligible for the next load', async () => {
+    const ctx = createContext()
+    ctx.runtimeState = createRuntimeState()
+    const app = 'app.ts'
+    const child = 'pages/next.ts'
+    ctx.scanService.markDirty = vi.fn()
+    ctx.scanService.loadAppEntry = vi.fn(async () => ({ path: app }))
+    ctx.scanService.independentSubPackageMap = new Map()
+    ctx.scanService.loadSubPackages = vi.fn()
+    ctx.scanService.drainIndependentDirtyRoots = vi.fn(() => [])
+    ctx.runtimeState.build.hmr.fullEntryScan = true
+    const hook = useLoadEntry(ctx)
+    loadEntryMock.mockImplementationOnce(async () => {
+      ctx.runtimeState.build.hmr.profile.eventId = 'next'
+      hook.resolvedEntryMap.set(child, { id: child } as any)
+      hook.markEntryDirty(child, 'direct')
+      hook.loadedEntrySet.add(child)
+      return { code: '' }
+    })
+    await hook.emitDirtyEntries.call(createPluginContext())
+    expect(hook.dirtyEntrySet).toEqual(new Set([child]))
+    expect(hook.loadedEntrySet.has(child)).toBe(false)
+    ctx.runtimeState.build.hmr.fullEntryScan = false
+    const next = createPluginContext()
+    await hook.emitDirtyEntries.call(next)
+    expect(next.load).toHaveBeenCalled()
+    expect(hook.dirtyEntrySet.size).toBe(0)
+  })
+
+  it.each([
+    ['wxml-importer-import:3'],
+    ['shared-chunk-source:3', 'compiler-content:1'],
+    [],
+  ])('emits the required registration graph despite representative or metadata selection: %j', async (...summary) => {
+    const ctx = createContext()
+    ctx.runtimeState.build.hmr.profile = { dirtyReasonSummary: summary }
+    const ids = ['pages/current.ts', 'components/retained.ts', 'layouts/default.ts']
+    const requiredPublicationEntryIds = new Set(ids)
+    const setLastEmittedEntries = vi.fn()
+    const setDidEmitAllEntries = vi.fn()
+    const hook = useLoadEntry(ctx, {
+      hmr: {
+        requiredPublicationEntryIds,
+        sharedChunks: 'auto',
+        sharedChunkImporters: new Map([['weapp-vendors/runtime.js', new Set(ids)]]),
+        sharedChunksByEntry: new Map(ids.map(id => [id, new Set(['weapp-vendors/runtime.js'])])),
+        sourceSharedChunks: new Set(['weapp-vendors/runtime.js']),
+        setLastEmittedEntries,
+        setDidEmitAllEntries,
+      },
+    })
+    seedResolvedEntries(hook.resolvedEntryMap, ids)
+    for (const id of ids) {
+      hook.markEntryDirty(id, 'metadata')
+    }
+    const pluginCtx = createPluginContext()
+    await hook.emitDirtyEntries.call(pluginCtx)
+
+    for (const id of ids) {
+      expectEmittedEntry(pluginCtx, id)
+    }
+    expect(setLastEmittedEntries).toHaveBeenLastCalledWith(new Set(ids))
+    expect(ctx.runtimeState.build.hmr.forceEmitUnchangedChunks).toBe(false)
+    // 完整注册图只是 tree-shaking 的编译边界，不能清退本轮缓存省略的原生 JSON。
+    expect(setDidEmitAllEntries).toHaveBeenLastCalledWith(false)
+    // 下一代只使用当前必需集合；删除的入口与上一代计划均不能继续参与。
+    requiredPublicationEntryIds.clear()
+    hook.resolvedEntryMap.delete(ids[1]!)
+    hook.markEntryDirty(ids[0]!, 'direct')
+    const next = createPluginContext()
+    await hook.emitDirtyEntries.call(next)
+    expect(countEmittedEntries(next, ids[1]!)).toBe(0)
+  })
+
+  it.each([false, true])('preserves saves outside the active event while compiling required entries (root input=%s)', async (rootInput) => {
+    const ctx = createContext()
+    const ids = ['pages/current.ts', 'components/next.ts']
+    const hook = useLoadEntry(ctx, {
+      hmr: {
+        requiredPublicationEntryIds: new Set(ids),
+        rootInputIds: rootInput ? new Set([ids[0]!]) : undefined,
+      },
+    })
+    seedResolvedEntries(hook.resolvedEntryMap, ids)
+    ctx.runtimeState.build.hmr.profile.eventId = 'current'
+    hook.markEntryDirty(ids[0]!, 'metadata')
+    ctx.runtimeState.build.hmr.profile.eventId = 'next'
+    hook.markEntryDirty(ids[1]!, 'direct')
+    ctx.runtimeState.build.hmr.profile.eventId = 'current'
+    const pluginCtx = createPluginContext()
+    pluginCtx.load.mockImplementationOnce(async () => {
+      ctx.runtimeState.build.hmr.profile.eventId = 'next'
+      hook.markEntryDirty(ids[0]!, 'direct')
+      return null
+    })
+    await hook.emitDirtyEntries.call(pluginCtx)
+
+    expect(hook.dirtyEntrySet).toEqual(new Set(ids))
+    expect(ctx.runtimeState.build.hmr.dirtyEntryReasons).toEqual(new Map(ids.map(id => [id, 'direct'])))
+    expect(countEmittedEntries(pluginCtx, ids[0]!)).toBe(rootInput ? 0 : 1)
+    expect(countEmittedEntries(pluginCtx, ids[1]!)).toBe(1)
+    for (const id of ids) {
+      expect(hook.loadedEntrySet.has(id)).toBe(false)
+    }
+    const next = createPluginContext()
+    await hook.emitDirtyEntries.call(next)
+    expect(next.load).toHaveBeenCalled()
+    expect(hook.dirtyEntrySet.size).toBe(0)
   })
 
   it.each(['metadata', 'direct', 'dependency'] as const)('derives unchanged chunk publication from %s invalidation', async (reason) => {

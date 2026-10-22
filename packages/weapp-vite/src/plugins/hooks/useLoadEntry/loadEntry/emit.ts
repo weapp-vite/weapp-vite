@@ -444,9 +444,7 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
       loadedEntrySet.delete(normalizedResolvedId)
     }
     pendingResolvedIds.push(resolvedId)
-    if (isDirtyEntry || isForcedEntry) {
-      dirtyEntrySet.delete(normalizedResolvedId)
-    }
+    // 发现子入口只扩大编译图；dirty 事件由外层发布计划按捕获的 revision 消费。
   }
 
   if (pendingResolvedIds.length && !metadataOnly) {

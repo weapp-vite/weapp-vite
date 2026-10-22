@@ -25,6 +25,7 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
     lastHmrEntryIds: new Set<string>(),
     lastEmittedEntryIds: new Set<string>(),
     skipSharedChunkRefresh: false,
+    requiredPublicationEntryIds: new Set<string>(),
   }
   const {
     loadEntry,
@@ -45,6 +46,7 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
       sharedChunksByEntry: hmrSharedChunksByEntry,
       sourceSharedChunks: hmrSourceSharedChunks,
       rootInputIds: hmrRootInputIds,
+      requiredPublicationEntryIds: hmrState.requiredPublicationEntryIds,
       setDidEmitAllEntries: (value) => {
         hmrState.didEmitAllEntries = value
         if (ctx.runtimeState?.build?.hmr) {

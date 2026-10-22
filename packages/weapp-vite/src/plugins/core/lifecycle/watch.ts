@@ -32,6 +32,7 @@ import { addNormalizedWatchFiles } from '../../utils/watchFiles'
 import { isAppVueFile } from '../../vue/transform/appShell'
 import { collectAffectedSharedChunkEntriesAndChunks } from '../helpers'
 import { markAppEntryForAutoRoutesTopology as markAppEntryForAutoRoutesTopologyDirty } from './autoRoutesTopology'
+import { prepareClassicPublicationEntries } from './classicPublicationEntries'
 import { resolveCompilerContentUpdate } from './compilerContent'
 import { createVueEntryUpdateInspector } from './vueEntryUpdate'
 import { collectVueStyleScriptChanges } from './vueStyleDependency'
@@ -255,6 +256,7 @@ export function createBuildStartHook(state: CorePluginState) {
           }
         }
       }
+      prepareClassicPublicationEntries(state)
       await emitDirtyEntries.call(this)
     }
     finally {
