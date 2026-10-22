@@ -154,3 +154,42 @@ it.each([true, false])('keeps relocated shared imports closed across metadata up
     vi.unstubAllEnvs()
   }
 })
+
+it('refreshes compiler entry dependencies independently of the smaller HMR owner set', async () => {
+  vi.stubEnv('WEAPP_VITE_NATIVE', '0')
+  try {
+    const state = fixture()
+    state.ctx.scanService.subPackageMap.clear()
+    const active = 'pages/active/index.ts'
+    const retained = 'pages/retained/index.ts'
+    state.resolvedEntryMap = new Map([active, retained].map(id => [id, { id }]))
+    const makeBundle = (dependency: string): OutputBundle => ({
+      'app.js': chunk('app.js', 'App({})', [], 'app.ts'),
+      'pages/active/index.js': chunk('pages/active/index.js', 'Page({})', [], active),
+      'pages/retained/index.js': chunk('pages/retained/index.js', `const runtime = require('../../${dependency}'); Page({ data: { value: runtime.value } });`, [dependency], retained),
+      [dependency]: chunk(dependency, 'exports.value = "retained-shared-value";'),
+    })
+    const generate = createGenerateBundleHook(state, false)
+    await generate.call({}, {}, makeBundle('previous-shared.js'))
+    expect(state.hmrSharedChunkImporters.get('previous-shared.js')).toEqual(new Set([retained]))
+
+    state.hmrState.didEmitAllEntries = false
+    state.hmrState.lastHmrEntryIds = new Set([active])
+    state.hmrState.lastEmittedEntryIds = new Set([active, retained])
+    state.ctx.runtimeState.build.hmr.isRebuild = true
+    state.ctx.runtimeState.build.hmr.lastEmittedChunkFileNames = new Set(['pages/active/index.js', 'pages/retained/index.js'])
+    const output = makeBundle('current-shared.js')
+
+    await generate.call({}, {}, output)
+
+    expect(state.hmrState.lastHmrEntryIds).toEqual(new Set([active]))
+    expect(state.hmrSharedChunkImporters.has('previous-shared.js')).toBe(false)
+    expect(state.hmrSharedChunkImporters.get('current-shared.js')).toEqual(new Set([retained]))
+    expect(state.hmrSharedChunksByEntry.get(retained)).toEqual(new Set(['current-shared.js']))
+    expect(output['current-shared.js']).toBeDefined()
+    expect(state.ctx.runtimeState.build.hmr.lastEmittedChunkFileNames.has('current-shared.js')).toBe(true)
+  }
+  finally {
+    vi.unstubAllEnvs()
+  }
+})
