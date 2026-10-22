@@ -136,7 +136,9 @@ describe('hmr sharedChunks auto diagnostics (dev watch)', { concurrent: false },
       expect(sample.dirtyCount).toBe(1)
       expect(sample.pendingCount).toBe(1)
       expect(sample.emittedCount).toBe(1)
-      expect(sample.pendingReasonSummary ?? []).toEqual([])
+      expect(sample.pendingReasonSummary).toEqual([
+        expect.stringMatching(/^classic-registration:[1-9]\d*$/),
+      ])
       await dev.waitForOutput(REBUILD_READY_RE, 'direct page edit rebuild log')
     }
     finally {

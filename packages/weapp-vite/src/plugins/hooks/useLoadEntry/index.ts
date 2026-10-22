@@ -660,7 +660,9 @@ export function useLoadEntry(
         rootInputIds,
         styleOwners,
       })
-      const pendingEntryIds = pendingResolution.pending
+      const hmrPendingEntryIds = pendingResolution.pending
+      // 完整注册图是编译边界，不能扩大当前事件的失效计划与 HMR owner。
+      const pendingEntryIds = new Set(hmrPendingEntryIds)
       const requiredPublicationEntries = options?.hmr?.requiredPublicationEntryIds
       // 必需发布入口属于原生共享图，不能被模板或共享源码的代表入口优化裁掉。
       for (const entryId of requiredPublicationEntries ?? []) {
@@ -672,6 +674,7 @@ export function useLoadEntry(
       ctx.runtimeState.build.hmr.forceEmitUnchangedChunks = !requiredPublicationEntries?.size
         && [...pendingEntryIds].some(entryId => dirtyEntryReasons.get(entryId) !== 'metadata')
       const pending: ResolvedId[] = []
+      let hmrPendingCount = 0
       chunkEmitStats.chunkEmitCount = 0
       chunkEmitStats.emitFileMs = 0
       chunkEmitStats.loadCount = 0
@@ -721,6 +724,14 @@ export function useLoadEntry(
           continue
         }
         pending.push(resolvedId)
+        if (hmrPendingEntryIds.has(entryId)) {
+          hmrPendingCount += 1
+        }
+      }
+
+      const pendingReasonSummary = [...pendingResolution.pendingReasonSummary ?? []]
+      if (requiredPublicationEntries?.size) {
+        pendingReasonSummary.push(`classic-registration:${pending.length}`)
       }
 
       for (const resolvedId of pending) {
@@ -778,7 +789,7 @@ export function useLoadEntry(
         }
       }
       let hmrEntryIds = new Set(
-        Array.from(actualEmittedEntryIds).filter(entryId => pendingEntryIds.has(entryId)),
+        Array.from(actualEmittedEntryIds).filter(entryId => hmrPendingEntryIds.has(entryId)),
       )
       if (pendingResolution.hmrEntries) {
         hmrEntryIds = pendingResolution.hmrEntries
@@ -787,7 +798,7 @@ export function useLoadEntry(
         if (!isWxmlImportOnlyRefresh(ctx.runtimeState.build.hmr.profile.dirtyReasonSummary) || !pendingResolution.hmrEntries) {
           hmrEntryIds = new Set(pendingMetadataEntryIds)
           for (const entryId of actualChunkEmittedEntryIds) {
-            if (pendingEntryIds.has(entryId) && !metadataEntryIds.has(entryId)) {
+            if (hmrPendingEntryIds.has(entryId) && !metadataEntryIds.has(entryId)) {
               hmrEntryIds.add(entryId)
             }
           }
@@ -821,9 +832,9 @@ export function useLoadEntry(
         loadCount: chunkEmitStats.loadCount,
         skippedLoadedCount: chunkEmitStats.skippedLoadedCount,
         dirtyCount,
-        pendingCount: pending.length,
+        pendingCount: hmrPendingCount,
         emittedCount: hmrEntryIds.size,
-        pendingReasonSummary: pendingResolution.pendingReasonSummary,
+        pendingReasonSummary,
       }
 
       if (debug) {
