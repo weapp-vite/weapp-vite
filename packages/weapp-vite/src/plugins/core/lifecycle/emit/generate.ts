@@ -563,11 +563,12 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
           else if (forceFullSharedChunkRefresh) {
             refreshSharedChunkImporters(rolldownBundle, state)
           }
-          else if (state.hmrState.lastHmrEntryIds?.size) {
-            refreshPartialSharedChunkImporters(rolldownBundle, state, state.hmrState.lastHmrEntryIds)
-          }
-          else if (state.hmrState.lastEmittedEntryIds?.size) {
-            refreshPartialSharedChunkImporters(rolldownBundle, state, state.hmrState.lastEmittedEntryIds)
+          else {
+            // 编译注册图可以大于 HMR owner 集合，原生重新生成的依赖都必须刷新。
+            const activeEntryIds = resolveActiveHmrEntryIds(state)
+            if (activeEntryIds?.size) {
+              refreshPartialSharedChunkImporters(rolldownBundle, state, activeEntryIds)
+            }
           }
           state.hmrState.hasBuiltOnce = true
         }

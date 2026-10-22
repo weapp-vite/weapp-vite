@@ -178,6 +178,84 @@ describe('useLoadEntry emitDirtyEntries', () => {
     expect(countEmittedEntries(next, ids[1]!)).toBe(0)
   })
 
+  it.each(['direct', 'metadata'] as const)('keeps %s HMR owners separate from the complete classic registration graph', async (reason) => {
+    const ctx = createContext()
+    ctx.runtimeState.build.hmr.profile.dirtyReasonSummary = [reason === 'metadata' ? 'entry-local-asset:1' : 'entry-direct:1']
+    const ids = ['pages/current.ts', 'components/retained.ts', 'layouts/default.ts']
+    const setLastEmittedEntries = vi.fn()
+    const setLastHmrEntries = vi.fn()
+    const setDidEmitAllEntries = vi.fn()
+    const hook = useLoadEntry(ctx, {
+      hmr: {
+        requiredPublicationEntryIds: new Set(ids),
+        setLastEmittedEntries,
+        setLastHmrEntries,
+        setDidEmitAllEntries,
+      },
+    })
+    seedResolvedEntries(hook.resolvedEntryMap, ids)
+    hook.markEntryDirty(ids[0]!, reason)
+
+    const pluginCtx = createPluginContext()
+    await hook.emitDirtyEntries.call(pluginCtx)
+
+    for (const id of ids) {
+      expectEmittedEntry(pluginCtx, id)
+    }
+    expect(setLastEmittedEntries).toHaveBeenLastCalledWith(new Set(ids))
+    expect(setLastHmrEntries).toHaveBeenLastCalledWith(new Set([ids[0]]))
+    expect(setDidEmitAllEntries).toHaveBeenLastCalledWith(false)
+    expect(ctx.runtimeState.build.hmr.profile).toMatchObject({
+      dirtyCount: 1,
+      pendingCount: 1,
+      emittedCount: 1,
+      chunkEmitCount: 3,
+      loadCount: 3,
+    })
+    expect(ctx.runtimeState.build.hmr.forceEmitUnchangedChunks).toBe(false)
+    expect(hook.dirtyEntrySet.size).toBe(0)
+  })
+
+  it('keeps representative HMR selection while registering every classic compiler entry', async () => {
+    const ctx = createContext()
+    ctx.runtimeState.build.hmr.profile.dirtyReasonSummary = ['shared-chunk-source:3']
+    const ids = ['pages/current.ts', 'components/retained.ts', 'layouts/default.ts']
+    const sharedChunk = 'weapp-vendors/shared-source.js'
+    const setLastEmittedEntries = vi.fn()
+    const setLastHmrEntries = vi.fn()
+    const hook = useLoadEntry(ctx, {
+      hmr: {
+        requiredPublicationEntryIds: new Set(ids),
+        sharedChunkImporters: new Map([[sharedChunk, new Set(ids)]]),
+        sharedChunksByEntry: new Map(ids.map(id => [id, new Set([sharedChunk])])),
+        sourceSharedChunks: new Set([sharedChunk]),
+        setLastEmittedEntries,
+        setLastHmrEntries,
+      },
+    })
+    seedResolvedEntries(hook.resolvedEntryMap, ids)
+    for (const id of ids) {
+      hook.markEntryDirty(id, 'dependency')
+    }
+
+    const pluginCtx = createPluginContext()
+    await hook.emitDirtyEntries.call(pluginCtx)
+
+    for (const id of ids) {
+      expectEmittedEntry(pluginCtx, id)
+    }
+    expect(setLastEmittedEntries).toHaveBeenLastCalledWith(new Set(ids))
+    expect(setLastHmrEntries).toHaveBeenLastCalledWith(new Set(ids))
+    expect(ctx.runtimeState.build.hmr.profile).toMatchObject({
+      dirtyCount: 3,
+      pendingCount: 1,
+      emittedCount: 3,
+      chunkEmitCount: 3,
+      loadCount: 3,
+      pendingReasonSummary: ['shared-chunk-representative:1/3'],
+    })
+  })
+
   it.each([false, true])('preserves saves outside the active event while compiling required entries (root input=%s)', async (rootInput) => {
     const ctx = createContext()
     const ids = ['pages/current.ts', 'components/next.ts']

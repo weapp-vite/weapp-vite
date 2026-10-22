@@ -660,18 +660,20 @@ export function useLoadEntry(
         rootInputIds,
         styleOwners,
       })
-      const pendingEntryIds = pendingResolution.pending
+      const pendingEntryIds = new Set(pendingResolution.pending)
+      const registrationEntryIds = new Set(pendingEntryIds)
       const requiredPublicationEntries = options?.hmr?.requiredPublicationEntryIds
-      // 必需发布入口属于原生共享图，不能被模板或共享源码的代表入口优化裁掉。
+      // 完整注册图服务于原生 tree-shaking，不扩大本轮真正失效的 HMR 入口。
       for (const entryId of requiredPublicationEntries ?? []) {
         if (resolvedEntryMap.has(entryId)) {
-          pendingEntryIds.add(entryId)
+          registrationEntryIds.add(entryId)
         }
       }
       // 发射集合还会包含元数据扫描发现的已有组件；仅脚本失效才需要重写内容未变的入口。
       ctx.runtimeState.build.hmr.forceEmitUnchangedChunks = !requiredPublicationEntries?.size
         && [...pendingEntryIds].some(entryId => dirtyEntryReasons.get(entryId) !== 'metadata')
       const pending: ResolvedId[] = []
+      const registrationPending: ResolvedId[] = []
       chunkEmitStats.chunkEmitCount = 0
       chunkEmitStats.emitFileMs = 0
       chunkEmitStats.loadCount = 0
@@ -700,7 +702,7 @@ export function useLoadEntry(
         await loadEntry.call(this, resolvedId.id, entryType)
       }
 
-      for (const entryId of pendingEntryIds) {
+      for (const entryId of registrationEntryIds) {
         const reason = dirtyEntryReasons.get(entryId)
         if (reason === 'metadata' && !requiredPublicationEntries?.has(entryId)) {
           // JSON/模板可以仅刷新元数据；样式仍须由逻辑入口导入，交给 Vite 编译完整依赖闭包。
@@ -720,10 +722,13 @@ export function useLoadEntry(
           debug?.(`hmr unresolved entry ${entryId}`)
           continue
         }
-        pending.push(resolvedId)
+        registrationPending.push(resolvedId)
+        if (pendingEntryIds.has(entryId)) {
+          pending.push(resolvedId)
+        }
       }
 
-      for (const resolvedId of pending) {
+      for (const resolvedId of registrationPending) {
         const baseName = removeExtensionDeep(resolvedId.id)
         if (!ctx.runtimeState.autoImport?.pendingEntriesByImporter.has(baseName)) {
           continue
@@ -731,10 +736,10 @@ export function useLoadEntry(
         await reloadPendingAutoImportEntry(resolvedId)
       }
 
-      if (pending.length) {
+      if (registrationPending.length) {
         const entryChunkEmitStartedAt = performance.now()
         try {
-          await Promise.all(emitEntriesChunks.call(this, pending))
+          await Promise.all(emitEntriesChunks.call(this, registrationPending))
         }
         finally {
           recordHmrProfileDuration(
@@ -744,7 +749,7 @@ export function useLoadEntry(
           )
         }
       }
-      for (const resolvedId of pending) {
+      for (const resolvedId of registrationPending) {
         const baseName = removeExtensionDeep(resolvedId.id)
         const autoImportComponents = ctx.wxmlService.getAggregatedAutoImportComponents?.(baseName)
         if (!autoImportComponents || Object.keys(autoImportComponents).length === 0) {
@@ -758,7 +763,7 @@ export function useLoadEntry(
       for (const entryId of activeDirtyEntrySet) {
         consumeActiveDirtyEntry(entryId)
       }
-      for (const entryId of pendingEntryIds) {
+      for (const entryId of registrationEntryIds) {
         if (dirtyEntrySet.has(entryId)) {
           loadedEntrySet.delete(entryId)
         }
@@ -827,7 +832,7 @@ export function useLoadEntry(
       }
 
       if (debug) {
-        debug(`hmr emit dirty=${dirtyCount} resolved=${resolvedEntryMap.size} emitAll=${shouldEmitAllEntries} pending=${pending.length}`)
+        debug(`hmr emit dirty=${dirtyCount} resolved=${resolvedEntryMap.size} emitAll=${shouldEmitAllEntries} pending=${pending.length} registration=${registrationPending.length}`)
       }
     },
   }
