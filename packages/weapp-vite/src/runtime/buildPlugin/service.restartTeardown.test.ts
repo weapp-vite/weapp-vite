@@ -3,7 +3,7 @@ import type { MutableCompilerContext } from '../../context'
 import type { createDevBuildWatcher } from './devBuildWatcher'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createRuntimeState } from '../runtimeState'
-import { createWatcherServicePlugin } from '../watcherPlugin'
+import { createWatcherServicePlugin, deferWatcherResourceCleanup } from '../watcherPlugin'
 import { createBuildService } from './service'
 
 const mocks = vi.hoisted(() => ({
@@ -135,6 +135,62 @@ afterEach(() => {
 })
 
 describe('classic config restart teardown ownership', () => {
+  it.each([false, true])('drains startup resources before rejecting without a registered public controller: cleanup failure %s', async (failedCleanup) => {
+    vi.stubEnv('WEAPP_VITE_HMR_PROFILE_JSON', '')
+    const ctx = createContext()
+    const startupFailure = new Error('initial publication failed')
+    const cleanupFailure = new Error('startup sidecar cleanup failed')
+    const sidecar = Promise.withResolvers<void>()
+    const sidecarEntered = Promise.withResolvers<void>()
+    const web = Promise.withResolvers<void>()
+    const sidecarClose = vi.fn(async () => {
+      sidecarEntered.resolve()
+      await sidecar.promise
+      if (failedCleanup) {
+        throw cleanupFailure
+      }
+    })
+    const webClose = vi.fn(() => web.promise)
+    const deferredClose = vi.fn(async () => {})
+    const providerClose = vi.fn(async () => {})
+    const context = ctx as unknown as MutableCompilerContext
+    context.webService = { close: webClose } as unknown as NonNullable<MutableCompilerContext['webService']>
+    mocks.provider.mockResolvedValue({ close: providerClose })
+    mocks.build.mockImplementation(async () => {
+      // 模拟自动导入等插件在首构中登记资源，尚未来得及返回公共 watcher。
+      expect(deferWatcherResourceCleanup(ctx.watcherService, deferredClose)).toBe(true)
+      ctx.watcherService.sidecarWatcherMap.set('initial-auto-import', { close: sidecarClose })
+      throw startupFailure
+    })
+    let result: PromiseSettledResult<unknown> | undefined
+    const building = createBuildService(context).build({ skipNpm: true })
+    const observed = building.then(
+      value => result = { status: 'fulfilled', value },
+      reason => result = { status: 'rejected', reason },
+    )
+    await sidecarEntered.promise
+    expect(result).toBeUndefined()
+    expect(ctx.watcherService.rollupWatcherMap.size).toBe(0)
+    expect(webClose).toHaveBeenCalledOnce()
+    expect(deferredClose).toHaveBeenCalledOnce()
+    expect(providerClose).toHaveBeenCalledOnce()
+    sidecar.resolve()
+    await sidecar.promise
+    await Promise.resolve()
+    expect(result).toBeUndefined()
+    web.resolve()
+    await observed
+    if (failedCleanup) {
+      expect(result).toMatchObject({ status: 'rejected', reason: { errors: [startupFailure, cleanupFailure] } })
+    }
+    else {
+      expect(result).toEqual({ status: 'rejected', reason: startupFailure })
+    }
+    expect(sidecarClose).toHaveBeenCalledOnce()
+    expect(ctx.watcherService.sidecarWatcherMap.size).toBe(0)
+    expect(mocks.forbiddenIo).not.toHaveBeenCalled()
+  })
+
   it('owns the first generation before replaying END and closes later generations through the first handle', async () => {
     vi.stubEnv('WEAPP_VITE_HMR_PROFILE_JSON', '')
     const ctx = createContext()

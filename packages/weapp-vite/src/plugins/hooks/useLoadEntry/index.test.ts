@@ -2,6 +2,7 @@ import { removeExtensionDeep } from '@weapp-core/shared'
 import { fs } from '@weapp-core/shared/fs'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { parseLogicalEntryId } from '../../../moduleGraph/protocol'
+import { createHmrStyleUpdatePlan, withHmrStyleUpdatePlan } from '../../../runtime/hmrStyleUpdate'
 import { useLoadEntry } from './index'
 
 const loadEntryMock = vi.hoisted(() => vi.fn(async () => ({ code: '' })))
@@ -1261,118 +1262,44 @@ describe('useLoadEntry emitDirtyEntries', () => {
     expect(ctx.runtimeState.build.hmr.profile.emittedCount).toBe(2)
   })
 
-  it('emits one representative entry for css importer only updates while keeping all hmr entries', async () => {
+  it.each(['css-importer', 'css-importer-fallback'])('compiles every metadata style owner through its logical entry (%s)', async (label) => {
     const ctx = createContext()
     const setLastEmittedEntries = vi.fn()
     const setLastHmrEntries = vi.fn()
-    ctx.runtimeState.build.hmr.profile = {
-      dirtyReasonSummary: ['css-importer:3'],
-    }
+    const ids = ['/project/src/app.js', '/project/src/components/native/index.js', '/project/src/components/sfc/index.vue']
+    ctx.runtimeState.build.hmr.profile = { dirtyReasonSummary: [`${label}:3`] }
     const hook = useLoadEntry(ctx, {
       hmr: {
         sharedChunks: 'auto',
+        rootInputIds: new Set([ids[0]!]),
         setLastEmittedEntries,
         setLastHmrEntries,
       },
     })
-
-    const ids = ['/project/src/a.js', '/project/src/b.js', '/project/src/c.js']
     seedResolvedEntries(hook.resolvedEntryMap, ids)
     for (const id of ids) {
-      hook.markEntryDirty(id, 'dependency')
+      hook.markEntryDirty(id, 'metadata')
     }
 
     const pluginCtx = createPluginContext()
-    await hook.emitDirtyEntries.call(pluginCtx)
+    const plan = createHmrStyleUpdatePlan(['/project/src/theme.wxss'], { cssImporterOwners: ids })
+    await withHmrStyleUpdatePlan(ctx.configService, plan, () => hook.emitDirtyEntries.call(pluginCtx))
 
-    expect(pluginCtx.emitFile).toHaveBeenCalledTimes(1)
-    expectEmittedEntry(pluginCtx, ids[0]!)
-    expect(setLastEmittedEntries).toHaveBeenLastCalledWith(new Set([ids[0]]))
+    // app 已有原生 input；其余每个 owner 都必须有真实逻辑 facade，不能仅物理 preload。
+    expect(loadEntryMock).toHaveBeenCalledWith(ids[0], 'app')
+    expect(pluginCtx.emitFile).toHaveBeenCalledTimes(2)
+    for (const id of ids.slice(1)) {
+      expectEmittedEntry(pluginCtx, id)
+      expect(pluginCtx.load.mock.calls.some(([entry]: [{ id: string }]) => parseLogicalEntryId(entry.id)?.sourceId === id)).toBe(true)
+    }
+    expect(setLastEmittedEntries).toHaveBeenLastCalledWith(new Set(ids))
     expect(setLastHmrEntries).toHaveBeenLastCalledWith(new Set(ids))
-    expect(ctx.runtimeState.build.hmr.profile.pendingCount).toBe(1)
+    expect(ctx.runtimeState.build.hmr.forceEmitUnchangedChunks).toBe(false)
+    expect(ctx.runtimeState.build.hmr.profile.pendingCount).toBe(3)
     expect(ctx.runtimeState.build.hmr.profile.emittedCount).toBe(3)
     expect(hook.dirtyEntrySet.size).toBe(0)
     expect(ctx.runtimeState.build.hmr.dirtyEntryReasons.size).toBe(0)
-    expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual([
-      'css-importer-representative:1/3',
-    ])
-  })
-
-  it('emits one representative entry for css importer fallback updates while keeping all hmr entries', async () => {
-    const ctx = createContext()
-    const setLastEmittedEntries = vi.fn()
-    const setLastHmrEntries = vi.fn()
-    ctx.runtimeState.build.hmr.profile = {
-      dirtyReasonSummary: ['css-importer-fallback:3'],
-    }
-    const hook = useLoadEntry(ctx, {
-      hmr: {
-        sharedChunks: 'auto',
-        setLastEmittedEntries,
-        setLastHmrEntries,
-      },
-    })
-
-    const ids = ['/project/src/a.js', '/project/src/b.js', '/project/src/c.js']
-    seedResolvedEntries(hook.resolvedEntryMap, ids)
-    for (const id of ids) {
-      hook.markEntryDirty(id, 'dependency')
-    }
-
-    const pluginCtx = createPluginContext()
-    await hook.emitDirtyEntries.call(pluginCtx)
-
-    expect(pluginCtx.emitFile).toHaveBeenCalledTimes(1)
-    expectEmittedEntry(pluginCtx, ids[0]!)
-    expect(setLastEmittedEntries).toHaveBeenLastCalledWith(new Set([ids[0]]))
-    expect(setLastHmrEntries).toHaveBeenLastCalledWith(new Set(ids))
-    expect(ctx.runtimeState.build.hmr.profile.pendingCount).toBe(1)
-    expect(ctx.runtimeState.build.hmr.profile.emittedCount).toBe(3)
-    expect(hook.dirtyEntrySet.size).toBe(0)
-    expect(ctx.runtimeState.build.hmr.dirtyEntryReasons.size).toBe(0)
-    expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual([
-      'css-importer-representative:1/3',
-    ])
-  })
-
-  it('prefers non-root entries for css importer fallback representatives', async () => {
-    const ctx = createContext()
-    const setLastEmittedEntries = vi.fn()
-    const setLastHmrEntries = vi.fn()
-    const appEntry = '/project/src/app.vue'
-    const pageEntry = '/project/src/pages/home/index.vue'
-    const componentEntry = '/project/src/components/card/index.vue'
-    ctx.runtimeState.build.hmr.profile = {
-      dirtyReasonSummary: ['css-importer-fallback:3'],
-    }
-    const hook = useLoadEntry(ctx, {
-      hmr: {
-        sharedChunks: 'auto',
-        rootInputIds: new Set([appEntry]),
-        setLastEmittedEntries,
-        setLastHmrEntries,
-      },
-    })
-
-    const ids = [appEntry, pageEntry, componentEntry]
-    seedResolvedEntries(hook.resolvedEntryMap, ids)
-    for (const id of ids) {
-      hook.markEntryDirty(id, 'dependency')
-    }
-
-    const pluginCtx = createPluginContext()
-    await hook.emitDirtyEntries.call(pluginCtx)
-
-    expect(loadEntryMock).not.toHaveBeenCalledWith(appEntry, 'app')
-    expect(pluginCtx.emitFile).toHaveBeenCalledTimes(1)
-    expectEmittedEntry(pluginCtx, pageEntry)
-    expect(setLastEmittedEntries).toHaveBeenLastCalledWith(new Set([pageEntry]))
-    expect(setLastHmrEntries).toHaveBeenLastCalledWith(new Set(ids))
-    expect(ctx.runtimeState.build.hmr.profile.pendingCount).toBe(1)
-    expect(ctx.runtimeState.build.hmr.profile.emittedCount).toBe(3)
-    expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual([
-      'css-importer-representative:1/3',
-    ])
+    expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual([])
   })
 
   it('emits one representative entry for wxml import-only updates while keeping all hmr entries', async () => {
@@ -1417,94 +1344,44 @@ describe('useLoadEntry emitDirtyEntries', () => {
     ])
   })
 
-  it('prefers native entries as css importer representatives when vue entries are dirty first', async () => {
+  it('keeps all CSS owners without expanding unrelated shared script importers', async () => {
     const ctx = createContext()
     const setLastEmittedEntries = vi.fn()
     const setLastHmrEntries = vi.fn()
-    ctx.runtimeState.build.hmr.profile = {
-      dirtyReasonSummary: ['css-importer:3'],
-    }
-    const hook = useLoadEntry(ctx, {
-      hmr: {
-        sharedChunks: 'auto',
-        setLastEmittedEntries,
-        setLastHmrEntries,
-      },
-    })
-
-    const ids = [
-      '/project/src/pages/sfc/index.vue',
-      '/project/src/pages/native/index.ts',
-      '/project/src/components/probe-card/index.ts',
-    ]
-    seedResolvedEntries(hook.resolvedEntryMap, ids)
-    for (const id of ids) {
-      hook.markEntryDirty(id, 'dependency')
-    }
-
-    const pluginCtx = createPluginContext()
-    await hook.emitDirtyEntries.call(pluginCtx)
-
-    expect(pluginCtx.emitFile).toHaveBeenCalledTimes(1)
-    expectEmittedEntry(pluginCtx, ids[1]!)
-    expect(setLastEmittedEntries).toHaveBeenLastCalledWith(new Set([ids[1]]))
-    expect(setLastHmrEntries).toHaveBeenLastCalledWith(new Set(ids))
-    expect(ctx.runtimeState.build.hmr.profile.pendingCount).toBe(1)
-    expect(ctx.runtimeState.build.hmr.profile.emittedCount).toBe(3)
-    expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual([
-      'css-importer-representative:1/3',
-    ])
-  })
-
-  it('keeps css importer only updates representative even when shared chunk indexes match', async () => {
-    const ctx = createContext()
-    const setLastEmittedEntries = vi.fn()
-    const setLastHmrEntries = vi.fn()
-    ctx.runtimeState.build.hmr.profile = {
-      dirtyReasonSummary: ['css-importer:4'],
-    }
-    const sharedChunkImporters = new Map<string, Set<string>>()
-    const sharedChunksByEntry = new Map<string, Set<string>>()
-    const sourceSharedChunks = new Set<string>()
+    const ids = ['/project/src/components/sfc/index.vue', '/project/src/components/native/index.ts']
+    const unrelated = '/project/src/pages/unrelated/index.ts'
+    const all = [...ids, unrelated]
+    const sharedChunkImporters = new Map([['common.js', new Set(all)]])
+    const sharedChunksByEntry = new Map(all.map(id => [id, new Set(['common.js'])]))
     const hook = useLoadEntry(ctx, {
       hmr: {
         sharedChunks: 'auto',
         sharedChunkImporters,
         sharedChunksByEntry,
-        sourceSharedChunks,
+        sourceSharedChunks: new Set(['common.js']),
         setLastEmittedEntries,
         setLastHmrEntries,
       },
     })
-
-    const ids = [
-      '/project/src/pages/native/index.ts',
-      '/project/src/pages/sfc/index.vue',
-      '/project/src/components/probe-card/index.ts',
-      '/project/src/subpackages/lab/pages/sub-native/index.ts',
-    ]
-    seedResolvedEntries(hook.resolvedEntryMap, ids)
-    sharedChunkImporters.set('common.js', new Set(ids))
+    seedResolvedEntries(hook.resolvedEntryMap, all)
     for (const id of ids) {
-      sharedChunksByEntry.set(id, new Set(['common.js']))
       hook.markEntryDirty(id, 'dependency')
     }
-    sourceSharedChunks.add('common.js')
 
     const pluginCtx = createPluginContext()
-    await hook.emitDirtyEntries.call(pluginCtx)
+    const plan = createHmrStyleUpdatePlan(['/project/src/theme.css'], { cssImporterOwners: ids })
+    await withHmrStyleUpdatePlan(ctx.configService, plan, () => hook.emitDirtyEntries.call(pluginCtx))
 
-    expect(pluginCtx.emitFile).toHaveBeenCalledTimes(1)
-    expectEmittedEntry(pluginCtx, ids[0]!)
-    expect(setLastEmittedEntries).toHaveBeenLastCalledWith(new Set([ids[0]]))
+    expect(pluginCtx.emitFile).toHaveBeenCalledTimes(ids.length)
+    for (const id of ids) {
+      expectEmittedEntry(pluginCtx, id)
+    }
+    expect(countEmittedEntries(pluginCtx, unrelated)).toBe(0)
+    expect(setLastEmittedEntries).toHaveBeenLastCalledWith(new Set(ids))
     expect(setLastHmrEntries).toHaveBeenLastCalledWith(new Set(ids))
-    expect(ctx.runtimeState.build.hmr.profile.pendingCount).toBe(1)
-    expect(ctx.runtimeState.build.hmr.profile.emittedCount).toBe(4)
-    expect(hook.dirtyEntrySet.size).toBe(0)
-    expect(ctx.runtimeState.build.hmr.dirtyEntryReasons.size).toBe(0)
-    expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual([
-      'css-importer-representative:1/4',
-    ])
+    expect(ctx.runtimeState.build.hmr.profile.pendingCount).toBe(ids.length)
+    expect(ctx.runtimeState.build.hmr.profile.emittedCount).toBe(ids.length)
+    expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual([])
   })
 
   it('keeps incremental rebuilds when dirty entries have no related shared chunk index hit', async () => {

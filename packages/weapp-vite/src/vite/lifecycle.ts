@@ -1,5 +1,6 @@
 import type { InlineConfig, ViteDevServer } from 'vite'
 import type { DevServerCloseRecord } from '../devLifecycle/server'
+import { AsyncLocalStorage } from 'node:async_hooks'
 import { WEAPP_VITE_HOST_RESTART_CONFIG_KEY } from '@weapp-core/constants'
 import { getDevServerCloseRecord, replaceDevServerClose } from '../devLifecycle/server'
 import { getDevShutdownScope } from '../devLifecycle/shutdown'
@@ -11,9 +12,35 @@ interface RestartData {
   dispose?: (status: 'incomplete' | 'failed') => void | Promise<void>
 }
 
+interface HostOperations {
+  isInternal: () => boolean
+  run: <T>(action: () => T | Promise<T>) => Promise<T>
+}
+
+function createHostOperations(): HostOperations {
+  const operations = new AsyncLocalStorage<{ active: boolean }>()
+  return {
+    isInternal: () => operations.getStore()?.active === true,
+    run: (action) => {
+      const operation = { active: true }
+      return operations.run(operation, async () => {
+        try {
+          return await action()
+        }
+        finally {
+          // 重启期间创建的异步回调不能在交接完成后继续持有内部清理权限。
+          operation.active = false
+        }
+      })
+    },
+  }
+}
+
 export interface HostLifecycle {
   readonly restartTask: Promise<void> | undefined
   readonly data: Map<symbol, RestartData>
+  readonly operations: HostOperations
+  readonly close: () => Promise<void>
   registerReplacement: (generation: DevServerCloseRecord) => void
 }
 
@@ -94,6 +121,7 @@ export function bindHostLifecycle(server: ViteDevServer, closeSession: (reason: 
   // 只接收本次原生重启传入的私有配置，新的插件实例也能接续同一条宿主链。
   const inlineConfig = server.config.inlineConfig as HostInlineConfig
   const inherited = preparedLifecycle ?? takeHostLifecycle(inlineConfig)
+  const operations = inherited?.operations ?? createHostOperations()
   const inheritedRestart = inherited?.restartTask
   let inheritedRestartSettled = !inheritedRestart
   void inheritedRestart?.then(() => {
@@ -119,17 +147,6 @@ export function bindHostLifecycle(server: ViteDevServer, closeSession: (reason: 
   }
   const replacements = new Set<DevServerCloseRecord>()
   let restartCleanupFailure: { error: unknown } | undefined
-  const lifecycle: HostLifecycle = {
-    data,
-    registerReplacement(replacement) {
-      // 连续原生交接中已成为活动宿主的代由 Vite 持有，不能再次按遗弃代关闭。
-      replacements.delete(getDevServerCloseRecord(server))
-      replacements.add(replacement)
-    },
-    get restartTask() {
-      return restartTask
-    },
-  }
   const discardRestartResources = async (status: 'incomplete' | 'failed') => {
     const active = getDevServerCloseRecord(server)
     const abandoned = [...replacements].filter(replacement => replacement !== active)
@@ -146,11 +163,12 @@ export function bindHostLifecycle(server: ViteDevServer, closeSession: (reason: 
   const closeResources = async () => {
     retired = true
     stopping.resolve()
+    const pendingRestart = restartTask
     const sessionCleanup = settleHostCleanup([Promise.resolve().then(() => closeSession('close')), discardRestartData(data, 'incomplete'), discardRestartData(inherited?.data, 'incomplete')])
     const hostCleanup = (async () => {
       // 资源与宿主的错误分别保留；后续关闭失败不能覆盖前面的恢复错误。
       await sessionCleanup.catch(() => {})
-      await restartTask?.catch(() => {})
+      await pendingRestart?.catch(() => {})
       // 以原生交接的代际记录识别替换宿主，不能把公共退出 gate 当成新资源入口。
       const current = getDevServerCloseRecord(server)
       await settleHostCleanup([
@@ -159,22 +177,50 @@ export function bindHostLifecycle(server: ViteDevServer, closeSession: (reason: 
       ])
     })()
     const restartCleanup = (async () => {
-      await restartTask?.catch(() => {})
+      // 退出期间失败的重启仍属于本轮操作；清理资源不能把它改写为成功退出。
+      await pendingRestart
       if (restartCleanupFailure) {
         throw restartCleanupFailure.error
       }
     })()
-    await settleHostCleanup([sessionCleanup, hostCleanup, restartCleanup])
-    // 初始化失败可在父 nativeRestart 尚未完成时关闭替换宿主；租约仍交由父链终结。
-    if (inheritedRestartSettled) {
-      await finalize?.()
-    }
+    const finalizeCleanup = (async () => {
+      await settleHostCleanup([sessionCleanup, hostCleanup])
+      // 初始化失败可局部关闭，但租约仍交由父链终结；资源失败则保留恢复证据。
+      if (!restartCleanupFailure && inheritedRestartSettled) {
+        await finalize?.()
+      }
+    })()
+    await settleHostCleanup([finalizeCleanup, restartCleanup])
   }
+  const closeLocal = () => operations.run(closeResources)
   const close = (): Promise<void> => closeTask ??= scope
-    ? scope.run('cleanup', closeResources)
-    : closeResources()
+    ? scope.run('cleanup', closeLocal)
+    : closeLocal()
+  const lifecycle: HostLifecycle = {
+    data,
+    operations,
+    // 跨模块交接会改写旧 record；退出入口必须持有不可变的根资源函数。
+    close: inherited?.close ?? close,
+    registerReplacement(replacement) {
+      // 连续原生交接中已成为活动宿主的代由 Vite 持有，不能再次按遗弃代关闭。
+      replacements.delete(getDevServerCloseRecord(server))
+      replacements.add(replacement)
+    },
+    get restartTask() {
+      return restartTask
+    },
+  }
 
   replaceDevServerClose(server, close)
+  if (inherited) {
+    const previousGate = generation.gate
+    generation.gate = (closeResources) => {
+      // Vite 的每代 EOF 回调都会独立请求退出；外部入口须等整条宿主链收尾。
+      // 初始化失败仍需局部关闭，不能把父重启的等待写入本代 closeTask。
+      const dispatch = () => operations.isInternal() ? closeResources() : inherited.close()
+      return previousGate ? previousGate(dispatch) : dispatch()
+    }
+  }
   // 直接使用 Vite 的消费者没有 CLI acquisition gate，父链必须持有未提交的新代。
   inherited?.registerReplacement(generation)
   server.restart = (force) => {
@@ -234,7 +280,8 @@ export function bindHostLifecycle(server: ViteDevServer, closeSession: (reason: 
       }
       await discardRestartResources('incomplete')
     }
-    return restartTask ??= (scope ? scope.run('restart', restart) : restart()).finally(() => {
+    const runRestart = () => operations.run(restart)
+    return restartTask ??= (scope ? scope.run('restart', runRestart) : runRestart()).finally(() => {
       restartTask = undefined
     })
   }

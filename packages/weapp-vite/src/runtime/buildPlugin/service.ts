@@ -71,6 +71,7 @@ import { clearStatefulHmrSnapshot, takeStatefulHmrSnapshot } from '../statefulHm
 import { syncProjectSupportFiles } from '../supportFiles'
 import { watchAssetSources } from '../watch/assets'
 import { createSidecarWatchOptions } from '../watch/options'
+import { bindWatcherServiceController, closeWatcherControllerResources } from '../watcher/controllerClose'
 import { retainWatcherService } from '../watcherPlugin'
 import { captureAppShellSnapshot, resolveAppShellSnapshotChange, withInitialAppShellSnapshot } from './appShellSnapshot'
 import { createDevBuildWatcher } from './devBuildWatcher'
@@ -238,7 +239,6 @@ interface SnapshotBuildBatch {
 
 interface DevWatcherCleanup {
   releaseSession: () => void
-  closePromise?: Promise<void>
 }
 
 function collectStatefulHmrEntryIds(
@@ -1352,7 +1352,9 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         activeStatefulWatcher = undefined
         const failures: unknown[] = []
         try {
-          await activeWatcher?.close()
+          if (activeWatcher) {
+            await closeWatcherControllerResources(watcherService, activeWatcher)
+          }
         }
         catch (error) {
           failures.push(error)
@@ -1398,6 +1400,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         throw failures.length === 1 ? failures[0] : new AggregateError(failures, 'Stateful watcher cleanup failed', { cause: failures[0] })
       }
     })()
+    bindWatcherServiceController(watcherService, buildEvents.watcher)
     statefulBuildEvents = buildEvents
     return buildEvents
   }
@@ -1477,7 +1480,9 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         if (hmrRuntimeSession.fallback) {
           prepareStatefulClassicHandoff(ctx)
         }
-        await activeWatcher?.close()
+        if (activeWatcher) {
+          await closeWatcherControllerResources(watcherService, activeWatcher)
+        }
         if (statefulWatcherClosed) {
           return
         }
@@ -1560,7 +1565,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           },
         }, nativeBuildEvents)
         if (statefulWatcherClosed) {
-          await watcher.close()
+          await closeWatcherControllerResources(watcherService, watcher)
           return nativeBuildEvents.watcher
         }
         activeStatefulWatcher = watcher
@@ -2206,7 +2211,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         async () => releaseAutoRoutesTopology?.(),
         async () => await moduleGraphProvider?.close(),
         async () => await devBuildWatcher?.watcher.close(),
-        async () => await releaseWatcherResources?.(),
+        async () => await releaseWatcherResources?.releaseResources(),
       ].map(async close => await close()))
       const errors = [...startupErrors, ...cleanup.flatMap(result => result.status === 'rejected' ? [result.reason] : [])]
       throw errors.length === 1 ? errors[0] : new AggregateError(errors, 'Development watcher startup failed')
@@ -2260,7 +2265,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
                 await classicSession.stopGeneration(watcher)
               }
               else {
-                await watcher.close()
+                await closeWatcherControllerResources(watcherService, watcher)
               }
               if (classicSession?.isClosing || isPluginProjectClosing(ctx as CompilerContext)) {
                 return
@@ -2492,18 +2497,28 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           logger.error(error)
         },
       })
+      let closingSidecar: Promise<void> | undefined
       watcherService.sidecarWatcherMap.set(snapshotWatcherRoot, {
-        close: async () => {
+        close: () => closingSidecar ??= (async () => {
+          // 完整 drain 与本代关闭可同时持有此记录，重复调用必须等待同一份资源结果。
+          const results = await Promise.allSettled([
+            async () => releaseAutoRoutesTopology?.(),
+            async () => unobserveWorkers(),
+            async () => independentWatch.watchListeners.delete(observeIndependent),
+            async () => await snapshotWatcher.close(),
+            async () => await assetWatcher.close(),
+          ].map(async close => await close()))
+          const errors = results.flatMap(result => result.status === 'rejected' ? [result.reason] : [])
           try {
-            releaseAutoRoutesTopology?.()
-            unobserveWorkers()
-            independentWatch.watchListeners.delete(observeIndependent)
-            await Promise.all([snapshotWatcher.close(), assetWatcher.close()])
-          }
-          finally {
             await moduleGraphProvider?.close()
           }
-        },
+          catch (error) {
+            errors.push(error)
+          }
+          if (errors.length) {
+            throw errors.length === 1 ? errors[0] : new AggregateError(errors, 'Development sidecar cleanup failed', { cause: errors[0] })
+          }
+        })(),
       })
       attachSidecarWatcherToWatcherClose({
         watcher,
@@ -2522,7 +2537,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           pendingSnapshotBatch = undefined
           queuedSnapshotReasons.clear()
         },
-        releaseResources: releaseWatcherResources,
+        releaseResources: releaseWatcherResources?.releaseResources,
       })
       try {
         await Promise.all([waitForSidecarWatcherReady(snapshotWatcher), assetWatcher.ready])
@@ -2532,13 +2547,14 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         throw error
       }
     }
-    if (watcherService.rollupWatcherMap.get(watcherRoot) !== registeredWatcher) {
-      watcherService.setRollupWatcher(registeredWatcher, watcherRoot)
-    }
     if (classicSession) {
       // 初次 END 可以在订阅时回放；先登记完整代际，再允许配置重启消费该事件。
       await classicSession.own(watcher)
       watcher.on('event', onWatcherEvent)
+    }
+    if (!classicSession?.isClosing && !(target === 'app' && statefulWatcherClosed)
+      && watcherService.rollupWatcherMap.get(watcherRoot) !== registeredWatcher) {
+      watcherService.setRollupWatcher(registeredWatcher, watcherRoot)
     }
     try {
       await watcherEventCompletion
@@ -2557,7 +2573,8 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     }
     return publicBuildEvents?.watcher ?? watcher
   }
-  async function runDev(target: BuildTarget, classicOwner = createDevWatcherSession()): Promise<RolldownWatcher> {
+  async function runDev(target: BuildTarget, inheritedClassicOwner?: DevWatcherSession): Promise<RolldownWatcher> {
+    const classicOwner = inheritedClassicOwner ?? createDevWatcherSession(watcherService)
     const session = {}
     activeDevSession = session
     const releaseSession = () => {
@@ -2574,17 +2591,19 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       const watcher = await startDev(target, nextTarget => runDev(nextTarget, classicOwner), classicOwner)
       if (classicOwner.hasOwnership && watcher !== statefulBuildEvents?.watcher) {
         await classicOwner.own(watcher)
+        bindWatcherServiceController(watcherService, watcher)
         return watcher
       }
       // 递归降级或重启已经把所有权交给新会话，旧关闭回调不能清空新图。
       if (activeDevSession !== session) {
+        bindWatcherServiceController(watcherService, watcher)
         return watcher
       }
       const existingCleanup = devWatcherCleanups.get(watcher)
       if (existingCleanup) {
         // native 重启复用公共 watcher；已保存的 close 也必须释放当前会话。
         existingCleanup.releaseSession = releaseSession
-        if (existingCleanup.closePromise) {
+        if (bindWatcherServiceController(watcherService, watcher)) {
           // 原生启动已在关闭标记下释放新资源；公共 close 正在等待本轮重启，不在这里形成循环等待。
           releaseSession()
         }
@@ -2592,15 +2611,22 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       }
       const cleanup: DevWatcherCleanup = { releaseSession }
       devWatcherCleanups.set(watcher, cleanup)
-      const close = watcher.close.bind(watcher)
-      watcher.close = () => {
-        cleanup.closePromise ??= close().finally(() => cleanup.releaseSession())
-        return cleanup.closePromise
-      }
+      bindWatcherServiceController(watcherService, watcher, () => cleanup.releaseSession())
       return watcher
     }
     catch (error) {
       releaseSession()
+      // 最外层启动失败尚无公共控制器负责完整 drain；递归重启必须把失败交回父控制器，避免等待自身。
+      if (!inheritedClassicOwner) {
+        try {
+          await watcherService.closeAll()
+        }
+        catch (cleanupError) {
+          if (cleanupError !== error) {
+            throw new AggregateError([error, cleanupError], 'Development watcher startup and cleanup failed', { cause: error })
+          }
+        }
+      }
       throw error
     }
   }

@@ -1,11 +1,13 @@
 import type { RolldownWatcher } from 'rolldown'
+import type { WatcherService } from '../watcherPlugin'
+import { bindWatcherServiceController } from '../watcher/controllerClose'
 
 interface DevWatcherGeneration {
   stop: () => Promise<void>
 }
 
 /** 将 classic 开发控制器的永久关闭与配置重启时的单代释放分开。 */
-export function createDevWatcherSession() {
+export function createDevWatcherSession(service?: WatcherService) {
   const generations = new Set<DevWatcherGeneration>()
   const watcherGenerations = new WeakMap<RolldownWatcher, DevWatcherGeneration>()
   const restarts = new Set<Promise<void>>()
@@ -57,6 +59,9 @@ export function createDevWatcherSession() {
         generations.add(generation)
         watcherGenerations.set(watcher, generation)
         watcher.close = close
+        if (service) {
+          bindWatcherServiceController(service, watcher)
+        }
       }
       if (closed) {
         await watcherGenerations.get(watcher)!.stop()

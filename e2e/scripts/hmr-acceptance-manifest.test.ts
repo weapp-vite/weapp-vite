@@ -81,6 +81,7 @@ describe('HMR semantic acceptance inventory', () => {
     expect(files).toContain('ci/auto-routes-hmr.test.ts')
     expect(files).toContain('ci/skyline-hmr-fallback.test.ts')
     expect(files).toContain('ci/hmr-platform-fallback.test.ts')
+    expect(files).toContain('ci/hmr-request-globals-prelude.test.ts')
     const tasks = await getSuiteTasks('hmr-build')
     expect(tasks.map(task => task.label)).toEqual(files)
     expect(tasks.every(task => task.env?.WEAPP_VITE_E2E_TARGET_FILE === task.label)).toBe(true)

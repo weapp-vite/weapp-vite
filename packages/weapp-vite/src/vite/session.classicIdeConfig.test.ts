@@ -186,3 +186,75 @@ it('does not restore while failed replacement startup closes inside the original
   await server.close()
   expect(await fs.readFile(file, 'utf8')).toBe(original)
 })
+
+it('restores the exact private config before replacement terminal close can finish during native handoff', async () => {
+  const { file, original, runtime, session } = await fixture()
+  const key = Symbol('runtime')
+  const prepared = Promise.withResolvers<ViteDevServer>()
+  const handoff = Promise.withResolvers<void>()
+  const hostClosing = Promise.withResolvers<void>()
+  const hostReleased = Promise.withResolvers<void>()
+  const watcherClosing = Promise.withResolvers<void>()
+  const watcherReleased = Promise.withResolvers<void>()
+  const nativeClose = vi.fn(async () => {})
+  const replacementClose = vi.fn(async () => {
+    hostClosing.resolve()
+    await hostReleased.promise
+  })
+  const closeWatcher = vi.fn(async () => {
+    watcherClosing.resolve()
+    await watcherReleased.promise
+  })
+  const server = {
+    config: { inlineConfig: {} },
+    close: nativeClose,
+    restart: async () => {
+      const lifecycle = takeHostLifecycle(server.config.inlineConfig)
+      const replacementSession = new WeappBuildSession(takeHostConfigRestartData<typeof runtime>(lifecycle, key))
+      cleanup.push(() => replacementSession.close())
+      const replacement = {
+        config: { inlineConfig: {} },
+        watcher: { close: closeWatcher },
+        close: replacementClose,
+        restart: vi.fn(async () => {}),
+      } as unknown as ViteDevServer
+      bindHostLifecycle(replacement, reason => replacementSession.closeHostGeneration(reason), lifecycle, undefined, () => replacementSession.releaseHostClassicIdeConfig())
+      prepared.resolve(replacement)
+      await handoff.promise
+      Object.assign(server, replacement)
+    },
+  } as unknown as ViteDevServer
+  bindHostLifecycle(server, reason => session.closeHostGeneration(reason), undefined, undefined, () => session.releaseHostClassicIdeConfig())
+  await setHostRestartData(server, key, runtime)
+  const restarting = server.restart()
+  const replacement = await prepared.promise
+  const exited = vi.fn()
+  const closing = replacement.close().then(exited)
+  const journal = path.join(path.dirname(file), '.weapp-vite/ide-classic-project.private.config.json')
+  try {
+    expect((await fs.readJSON(file) as { setting: { compileHotReLoad: boolean } }).setting.compileHotReLoad).toBe(false)
+    expect(exited).not.toHaveBeenCalled()
+    expect(replacementClose).not.toHaveBeenCalled()
+    handoff.resolve()
+    await Promise.all([hostClosing.promise, watcherClosing.promise])
+    hostReleased.resolve()
+    expect(await fs.pathExists(journal)).toBe(true)
+    expect(exited).not.toHaveBeenCalled()
+    watcherReleased.resolve()
+    await Promise.all([restarting, closing])
+    expect(await fs.readFile(file, 'utf8')).toBe(original)
+    expect(await fs.pathExists(journal)).toBe(false)
+  }
+  finally {
+    handoff.resolve()
+    hostReleased.resolve()
+    watcherReleased.resolve()
+    await Promise.all([restarting, closing])
+  }
+  await Promise.all([server.close(), replacement.close(), replacement.close()])
+  expect(await fs.readFile(file, 'utf8')).toBe(original)
+  expect(exited).toHaveBeenCalledOnce()
+  expect(replacementClose).toHaveBeenCalledOnce()
+  expect(closeWatcher).toHaveBeenCalledOnce()
+  expect(nativeClose).not.toHaveBeenCalled()
+})

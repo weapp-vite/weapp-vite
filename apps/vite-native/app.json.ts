@@ -5,7 +5,6 @@ export default <App>{
     'pages/index/index',
     'pages/features/runtime/index',
     'pages/features/ui/index',
-    'pages/features/build/index',
     'pages/subpackages/demo',
   ],
   window: {

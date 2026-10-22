@@ -15,9 +15,12 @@ describe('watcher service close ownership', () => {
     const release = retainWatcherService(service)
     const resources = Promise.withResolvers<void>()
     const web = Promise.withResolvers<void>()
+    const sidecarStarted = Promise.withResolvers<void>()
     const cleanup = vi.fn(() => resources.promise)
     const webClose = vi.fn(() => web.promise)
-    const sidecarClose = vi.fn(async () => {})
+    const sidecarClose = vi.fn(async () => {
+      sidecarStarted.resolve()
+    })
     const controllerClose = vi.fn(() => release())
     deferWatcherResourceCleanup(service, cleanup)
     context.webService = { close: webClose } as unknown as NonNullable<MutableCompilerContext['webService']>
@@ -34,6 +37,7 @@ describe('watcher service close ownership', () => {
     })
     resources.resolve()
     await controllerClose.mock.results[0]!.value
+    await sidecarStarted.promise
     expect(externalFinished).toBe(false)
     expect(webClose).toHaveBeenCalledOnce()
     expect(sidecarClose).toHaveBeenCalledOnce()
@@ -113,6 +117,7 @@ describe('watcher service close ownership', () => {
     const sidecarFailure = new Error('sidecar close failed')
     const webFailure = new Error('web close failed')
     const remaining = Promise.withResolvers<void>()
+    const remainingStarted = Promise.withResolvers<void>()
     const cleanup = vi.fn(async () => {
       throw cleanupFailure
     })
@@ -120,7 +125,10 @@ describe('watcher service close ownership', () => {
     const sidecarClose = vi.fn(async () => {
       throw sidecarFailure
     })
-    const remainingClose = vi.fn(() => remaining.promise)
+    const remainingClose = vi.fn(() => {
+      remainingStarted.resolve()
+      return remaining.promise
+    })
     const webClose = vi.fn(async () => {
       throw webFailure
     })
@@ -142,7 +150,7 @@ describe('watcher service close ownership', () => {
     }, () => {
       complete = true
     })
-    await Promise.resolve()
+    await remainingStarted.promise
     expect(complete).toBe(false)
     expect(secondCleanup).toHaveBeenCalledOnce()
     expect(remainingClose).toHaveBeenCalledOnce()

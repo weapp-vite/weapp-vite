@@ -184,8 +184,8 @@ export function emitAppPreludeRequireAssets(
   }
   else {
     preludeFileNames.add(APP_PRELUDE_REQUIRE_FILE_BASENAME)
-    for (const root of state.ctx.scanService.subPackageMap.keys()) {
-      if (root) {
+    for (const [root, meta] of state.ctx.scanService.subPackageMap) {
+      if (root && meta?.subPackage?.independent !== true) {
         preludeFileNames.add(`${root}/${APP_PRELUDE_REQUIRE_FILE_BASENAME}`)
       }
     }
@@ -200,6 +200,12 @@ export function emitAppPreludeRequireAssets(
     const sortedScopeChunks = [
       ...scopeChunks.filter(chunk => !requestGlobalsPreludeOptions.installerChunks.has(toPosixPath(chunk.fileName))),
       ...scopeChunks.filter(chunk => requestGlobalsPreludeOptions.installerChunks.has(toPosixPath(chunk.fileName))),
+      // 普通分包本代没有页面 JS 时，仍可引用当前主包的安装器；独立分包只使用自身 bundle。
+      ...(!state.subPackageMeta && fileName !== APP_PRELUDE_REQUIRE_FILE_BASENAME
+        ? Object.values(bundle).filter((output): output is OutputChunk => output.type === 'chunk'
+          && resolveAppPreludeRequireFileName(output.fileName, state) === APP_PRELUDE_REQUIRE_FILE_BASENAME
+          && requestGlobalsPreludeOptions.installerChunks.has(toPosixPath(output.fileName)))
+        : []),
     ]
     let requestGlobalsPreludeCode: string | undefined
     if (requestGlobalsPreludeOptions.enabled) {

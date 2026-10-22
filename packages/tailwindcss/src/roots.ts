@@ -39,19 +39,12 @@ export async function prepareTailwindRoots<K>(
   if (!capturedRoots.size) {
     return entries
   }
-  const { createTailwindV4CompiledSourceEntries, isFileMatchedByTailwindV4SourceEntries } = await import('@weapp-tailwindcss/engine')
+  const { isFileMatchedByTailwindV4SourceEntries } = await import('@weapp-tailwindcss/engine')
   const matches = createTailwindSourceMatcher(isFileMatchedByTailwindV4SourceEntries)
   for (const [index, root] of capturedRoots) {
     const sourceOptions = root.request.sourceOptions
-    const projectRoot = sourceOptions?.projectRoot ?? root.request.source?.projectRoot ?? options.cwd
-    const base = sourceOptions?.base === undefined
-      ? root.request.source?.base ?? projectRoot
-      : path.resolve(projectRoot, sourceOptions.base)
-    const sourceEntries = createTailwindV4CompiledSourceEntries(
-      root.result.root,
-      [...root.result.sources],
-      base,
-    )
+    // raw 结果已包含最终扫描计划；再次补入自动根会扩大显式 @source/content 范围。
+    const sourceEntries = [...root.result.sources]
     // 条目拓扑属于本轮捕获，字段与真实路径仍在每文件判断时重新读取。
     const sources = [...request.sources].flatMap(([file, content]) => content !== null && sourceEntries.length > 0
       && matches(file, sourceEntries)

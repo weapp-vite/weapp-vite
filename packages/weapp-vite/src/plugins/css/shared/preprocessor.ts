@@ -69,7 +69,11 @@ export async function renderSharedStyleEntry(
   entry: StyleEntry,
   _configService: CompilerContext['configService'],
   resolvedConfig?: ResolvedConfig,
+  prepared?: PreprocessedStyleResult,
 ): Promise<PreprocessedStyleResult> {
+  if (prepared) {
+    return { ...prepared, dependencies: [...prepared.dependencies] }
+  }
   const absolutePath = entry.absolutePath
   const cacheKey = `${absolutePath}:${resolvedConfig ? 'resolved' : 'raw'}`
 

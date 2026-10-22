@@ -186,6 +186,8 @@ describe('dev process real process tree cleanup', () => {
         cwd: directory,
         env: { ...process.env, WEAPP_VITE_PROCESS_FIXTURE_DIR: managedDirectory },
         all: true,
+        // 本测试刻意验证不合作进程树的精确强制清理，不声明开发会话正常退出协议。
+        ipc: false,
         windowsHide: true,
       })
       external = spawn(process.execPath, args, {

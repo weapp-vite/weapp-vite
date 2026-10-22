@@ -9,6 +9,7 @@ import { execa } from 'execa'
 import { resolveWechatInspectionTimeout } from '../../../packages/weapp-ide-cli/src/devtoolsTarget/inspection'
 import { traceCleanupStage } from '../cleanupTrace'
 import { runWithCleanup } from '../runWithCleanup'
+import { observeWindowsCompilerChild } from './windowsCompilerChildTrace'
 import { traceWindowsQueryChild } from './windowsQueryChildTrace'
 
 interface WindowsKernelQueryResult {
@@ -60,19 +61,31 @@ async function compileInspector(deadline: number): Promise<Uint8Array> {
     const executable = join(directory, 'snapshot.exe')
     const compiler = join(windowsRoot, 'Microsoft.NET', process.arch === 'ia32' ? 'Framework' : 'Framework64', 'v4.0.30319', 'csc.exe')
     const timeout = remaining(deadline)
-    const result = await traceCleanupStage('dev-kernel-compile', () => execa(compiler, [
-      '/nologo',
-      '/codepage:65001',
-      '/utf8output',
-      '/optimize+',
-      '/target:exe',
-      '/platform:anycpu',
-      `/out:${executable}`,
-      fileURLToPath(new URL('./windowsKernelQuery.cs', import.meta.url)),
-    ], { stdin: 'ignore', timeout, reject: false, windowsHide: true }), { timeoutMs: timeout })
-    if (result.exitCode !== 0) {
-      throw new Error(`Windows kernel inspector compilation failed: exitCode=${result.exitCode ?? 'none'}, signal=${result.signal ?? 'none'}, timedOut=${result.timedOut ?? false}.`, { cause: result })
-    }
+    await traceCleanupStage('dev-kernel-compile', async () => {
+      const startedMs = performance.now()
+      const subprocess = execa(compiler, [
+        '/nologo',
+        '/codepage:65001',
+        '/utf8output',
+        '/optimize+',
+        '/target:exe',
+        '/platform:anycpu',
+        `/out:${executable}`,
+        fileURLToPath(new URL('./windowsKernelQuery.cs', import.meta.url)),
+      ], { stdin: 'ignore', timeout, reject: false, windowsHide: true })
+      const observation = observeWindowsCompilerChild(subprocess, startedMs)
+      try {
+        const result = await subprocess.catch((error: unknown) => {
+          throw new Error(`Windows kernel inspector compilation rejected: child=${JSON.stringify(observation.snapshot())}.`, { cause: error })
+        })
+        if (result.exitCode !== 0) {
+          throw new Error(`Windows kernel inspector compilation failed: exitCode=${result.exitCode ?? 'none'}, signal=${result.signal ?? 'none'}, timedOut=${result.timedOut ?? false}, child=${JSON.stringify(observation.snapshot())}.`, { cause: result })
+        }
+      }
+      finally {
+        observation.dispose()
+      }
+    }, { timeoutMs: timeout })
     return fs.readFile(executable)
   })
 }

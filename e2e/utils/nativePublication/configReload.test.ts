@@ -1,5 +1,4 @@
 import type { captureNativePublication } from '.'
-import type { startDevProcess } from '../dev-process'
 import { afterEach, expect, it, vi } from 'vitest'
 import { captureNativeConfigReload } from './configReload'
 import { nativePublicationGeneration, nativePublicationHash } from './files'
@@ -21,10 +20,10 @@ function fixture(host: keyof typeof hostReady, initialOutput = '') {
   let output = initialOutput
   const native = Promise.withResolvers<NativeObservation>()
   capture.native.mockReturnValue({ wait: vi.fn(() => native.promise) })
-  const dev = {
+  const dev: Parameters<typeof captureNativeConfigReload>[0] = {
     getOutput: () => output,
     waitFor: async <T>(pending: Promise<T>) => await pending,
-  } as ReturnType<typeof startDevProcess>
+  }
   const publication = captureNativeConfigReload(dev, 'fixture-project', host)
   return {
     native,
