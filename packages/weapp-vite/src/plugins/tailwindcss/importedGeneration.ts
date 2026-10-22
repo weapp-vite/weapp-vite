@@ -1,7 +1,8 @@
 import type { CompilerGenerateRequest, CompilerGenerateResult } from 'weapp-tailwindcss/core'
-import type { TailwindGenerationEntry } from './generation'
+import type { TailwindGenerationEntry, TailwindSourceRules } from './generation'
 import path from 'pathe'
 import { CompilerHmrResyncError, compilerSourceId } from '../compilerPlugin/hmr'
+import { freezeTailwindSourceRules } from './generation'
 import { comparableGenerationRequest, copyGenerationValue, equalGenerationValue, generationRequest, withGenerationProperty } from './generation/inputs'
 
 export interface ImportedTailwindGeneration {
@@ -32,7 +33,7 @@ export async function importedGenerationRequest(request: CompilerGenerateRequest
 }
 
 /** 只交接不可变生成投影，不跨快照共享活动 compiler 或可变 CSS AST。 */
-export function captureImportedTailwindGeneration(requests: ReadonlyMap<number | string, CompilerGenerateRequest>, generated: ReadonlyMap<number | string, CompilerGenerateResult>, options: unknown): ImportedTailwindGeneration {
+export function captureImportedTailwindGeneration(requests: ReadonlyMap<number | string, CompilerGenerateRequest>, generated: ReadonlyMap<number | string, CompilerGenerateResult>, options: unknown, sourceRules: ReadonlyMap<number | string, TailwindSourceRules>): ImportedTailwindGeneration {
   return {
     options: copyGenerationValue(options),
     roots: new Map([...generated].map(([key, result]) => {
@@ -40,9 +41,13 @@ export function captureImportedTailwindGeneration(requests: ReadonlyMap<number |
       if (!request) {
         throw new CompilerHmrResyncError([], 'Tailwind imported generation has no effective request')
       }
+      const rules = sourceRules.get(key)
+      if (!rules) {
+        throw new CompilerHmrResyncError([], 'Tailwind imported generation has no captured source rules')
+      }
       return [key, {
         request: comparableGenerationRequest(request),
-        entry: Object.freeze({ rawCss: result.rawCss, css: result.css, dependencies: Object.freeze([...result.dependencies]), snapshot: result.snapshot }),
+        entry: Object.freeze({ rawCss: result.rawCss, css: result.css, dependencies: Object.freeze([...result.dependencies]), snapshot: result.snapshot, sourceRules: freezeTailwindSourceRules(rules) }),
       }]
     })),
   }

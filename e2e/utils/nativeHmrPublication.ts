@@ -12,6 +12,7 @@ import {
   WEAPP_VITE_STATEFUL_HMR_UPDATE_FILE,
 } from '@weapp-core/constants'
 import { expect, vi } from 'vitest'
+import { assertNoStatefulInstallations } from '../../packages/weapp-vite/scripts/consumerHmr/installedRuntime.mjs'
 import { createDevBuildCompletion } from './devBuildCompletion'
 import { captureNativePublication } from './nativePublication'
 
@@ -78,9 +79,7 @@ export function createNativeHmrPublication(
     expect(scripts.length).toBeGreaterThan(0)
     for (const file of scripts) {
       const source = await readFile(path.join(outDir, file), 'utf8')
-      for (const key of [WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY, WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY]) {
-        expect(source, `classic ${file.replaceAll('\\', '/')} must retire ${key}`).not.toContain(key)
-      }
+      assertNoStatefulInstallations(file, source)
     }
   }
 

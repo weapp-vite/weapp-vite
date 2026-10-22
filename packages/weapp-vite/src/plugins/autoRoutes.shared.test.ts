@@ -1,3 +1,4 @@
+import { EventEmitter } from 'node:events'
 import { describe, expect, it } from 'vitest'
 import {
   addAutoRoutesWatchTargets,
@@ -103,16 +104,22 @@ describe('auto routes plugin shared helpers', () => {
     })).toBe(true)
   })
 
-  it('wraps sidecar watcher close handle', () => {
+  it('wraps sidecar watcher close handle and releases initial readiness', async () => {
+    const events = new EventEmitter()
     let closed = false
     const sidecarWatcher = createAutoRoutesSidecarWatcher({
-      close: () => {
+      once: events.once.bind(events),
+      off: events.off.bind(events),
+      close: async () => {
         closed = true
       },
     })
 
-    sidecarWatcher.close()
+    await sidecarWatcher.close()
+    await sidecarWatcher.ready
     expect(closed).toBe(true)
+    expect(events.listenerCount('ready')).toBe(0)
+    expect(events.listenerCount('error')).toBe(0)
   })
 
   it('adds watch targets and tolerates individual addWatchFile failures', () => {

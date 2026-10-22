@@ -65,9 +65,11 @@ afterEach(async () => {
 })
 
 describe('Skyline HMR compatibility fallback', { concurrent: false }, () => {
-  it('preserves the DevTools hot reload choice and publishes classic updates and restoration', async () => {
+  it('temporarily disables DevTools hot reload for classic updates and restores the original configuration on stop', async () => {
     const originalSource = await fs.readFile(SOURCE_WXML_PATH, 'utf8')
     const originalPrivateConfig = await fs.readFile(PRIVATE_CONFIG_PATH, 'utf8')
+    const requestedPrivateConfig = JSON.parse(originalPrivateConfig) as PrivateConfig
+    expect(requestedPrivateConfig.setting?.compileHotReLoad).toBe(true)
     const dev = startDevProcess(process.execPath, [
       CLI_PATH,
       'dev',
@@ -88,11 +90,14 @@ describe('Skyline HMR compatibility fallback', { concurrent: false }, () => {
       await publication.assertClassicOutput()
       const privateConfig = await fs.readJson(PRIVATE_CONFIG_PATH) as PrivateConfig
       expect(privateConfig.setting).toMatchObject({
-        compileHotReLoad: true,
+        compileHotReLoad: false,
         skylineRenderEnable: true,
         urlCheck: false,
       })
-      expect(await fs.readFile(PRIVATE_CONFIG_PATH, 'utf8')).toBe(originalPrivateConfig)
+      expect(privateConfig).toEqual({
+        ...requestedPrivateConfig,
+        setting: { ...requestedPrivateConfig.setting, compileHotReLoad: false },
+      })
       expect(dev.getBuildErrors()).toEqual([])
     }
 
@@ -130,7 +135,9 @@ describe('Skyline HMR compatibility fallback', { concurrent: false }, () => {
     }
     finally {
       await dev.stop(5_000)
+      const restoredPrivateConfig = await fs.readFile(PRIVATE_CONFIG_PATH, 'utf8')
+      expect(restoredPrivateConfig).toBe(originalPrivateConfig)
+      expect((JSON.parse(restoredPrivateConfig) as PrivateConfig).setting?.compileHotReLoad).toBe(true)
     }
-    expect(await fs.readFile(PRIVATE_CONFIG_PATH, 'utf8')).toBe(originalPrivateConfig)
   })
 })

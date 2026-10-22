@@ -63,6 +63,7 @@ export function captureNativePublication(
       let checking = false
       const inputs = await readNativePublicationInputs(project, options, reads.signal)
       const generation = nativePublicationGeneration(inputs)
+      let diagnostics: unknown = { expectedInputGeneration: generation, receipt: null }
       const check = async () => {
         if (!active || checking) {
           return
@@ -73,13 +74,35 @@ export function captureNativePublication(
           if (/Build failed|classic HMR 切换失败|classic 回退失败/.test(output)) {
             throw new Error('Native publication failed; preserve the original dev build error')
           }
-          for (const receipt of receipts(output).reverse()) {
-            if (nativePublicationGeneration(receipt.inputs) !== generation) {
+          for (const [index, receipt] of receipts(output).reverse().entries()) {
+            const inputGeneration = nativePublicationGeneration(receipt.inputs)
+            const matchingInputs = inputGeneration === generation
+            if (index > 0 && !matchingInputs) {
               continue
             }
             try {
-              const matches = await Promise.all(Object.entries(receipt.outputs).map(async ([file, hash]) => nativePublicationHash(await readFile(path.join(project, 'dist', file), { signal: reads.signal })) === hash))
-              if (matches.every(Boolean)) {
+              const files = await Promise.all(Object.entries(receipt.outputs).map(async ([file, expected]) => {
+                try {
+                  return { file, expected, actual: nativePublicationHash(await readFile(path.join(project, 'dist', file), { signal: reads.signal })) }
+                }
+                catch (error) {
+                  const code = (error as NodeJS.ErrnoException).code ?? 'unknown'
+                  if (code !== 'ENOENT' && matchingInputs) {
+                    throw error
+                  }
+                  return { file, expected, error: code }
+                }
+              }))
+              if (index === 0) {
+                // 超时保留最新收据与真实磁盘的差异；只记录相对路径和哈希，不输出源码。
+                diagnostics = {
+                  expectedInputGeneration: generation,
+                  receipt: { boundary: receipt.boundary, generation: receipt.generation, inputGeneration },
+                  inputDifferences: [...new Set([...Object.keys(inputs), ...Object.keys(receipt.inputs)])].sort().filter(file => inputs[file] !== receipt.inputs[file]).map(file => ({ file, expected: inputs[file], actual: receipt.inputs[file] })),
+                  outputs: files,
+                }
+              }
+              if (matchingInputs && files.every(file => 'actual' in file && file.actual === file.expected)) {
                 if (nativePublicationGeneration(await readNativePublicationInputs(project, options, reads.signal)) !== generation) {
                   throw new Error('Native publication input changed while awaiting the final write')
                 }
@@ -109,7 +132,7 @@ export function captureNativePublication(
         void check()
       }, 25)
       const deadline = setTimeout(() => {
-        completed.reject(new Error('Timed out: final source generation must reach the native root write boundary'))
+        completed.reject(new Error(`Timed out: final source generation must reach the native root write boundary\nNative publication diagnostics: ${JSON.stringify(diagnostics)}`))
       }, timeoutMs)
       try {
         void check()

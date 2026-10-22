@@ -46,6 +46,23 @@ describe('dev process cleanup ownership', () => {
     vi.useRealTimers()
   })
 
+  it.each([
+    ['node', undefined, true],
+    ['NODE.EXE', undefined, true],
+    ['C:\\Program Files\\nodejs\\node.exe', undefined, true],
+    [process.execPath, undefined, true],
+    ['node', false, false],
+    ['pnpm', undefined, false],
+    ['bun', undefined, false],
+  ] as const)('chooses a graceful channel for %s with override=%s', async (command, ipc, expected) => {
+    const owned = createChild()
+    execaMock.mockReturnValue(owned.child)
+    const dev = startDevProcess(command, [], ipc === undefined ? undefined : { ipc })
+    expect(execaMock).toHaveBeenCalledWith(command, [], expect.objectContaining({ ipc: expected }))
+    owned.exit()
+    await dev.stop(0)
+  })
+
   it('releases registered children once while preserving identical unowned commands', async () => {
     vi.useFakeTimers()
     const fixture = mockProcessTree()
@@ -203,6 +220,60 @@ describe('dev process cleanup ownership', () => {
     expect([...fixture.processes.keys()]).toEqual([71, 72])
   })
 
+  it('drains registered descendants before reporting an IPC exit failure and unregisters completed cleanup', async () => {
+    vi.useFakeTimers()
+    const fixture = mockProcessTree()
+    const failure = Object.assign(new Error('fixture shutdown cleanup failed'), { exitCode: 1, stderr: 'original cleanup error' })
+    const { pid, all, nodeChildProcess } = fixture.owned.child
+    const child = Object.assign(fixture.owned.child.then(() => {
+      throw failure
+    }), { pid, all, nodeChildProcess })
+    execaMock.mockImplementationOnce(() => child)
+    const disconnect = vi.fn(() => {
+      fixture.processes.delete(pid)
+      nodeChildProcess.exitCode = 1
+    })
+    Object.assign(nodeChildProcess, { connected: true, disconnect })
+    fixture.afterSignal = (candidate, signal) => {
+      if (candidate === 62 && signal === 'SIGKILL') {
+        all.emit('data', 'final registered descendant output')
+        fixture.owned.settle()
+      }
+    }
+    const dev = startDevProcess('node', ['fixture.js'])
+    const stopping = dev.stop(100)
+    const result = await settleCleanup(stopping)
+    expect(result).toMatchObject({
+      status: 'rejected',
+      reason: { cause: failure, message: expect.stringContaining('IPC shutdown: exitCode=1, signal=none') },
+    })
+    expect(fixture.signals).toEqual([{ pid: 62, signal: 'SIGTERM' }, { pid: 62, signal: 'SIGKILL' }])
+    expect([...fixture.processes.keys()]).toEqual([71, 72])
+    expect(result.status === 'rejected' && result.reason.message).toContain('final registered descendant output')
+    expect(disconnect).toHaveBeenCalledOnce()
+    expect(dev.stop(100)).toBe(stopping)
+    await expect(dev.stop(100)).rejects.toBe(result.status === 'rejected' ? result.reason : undefined)
+    await expect(cleanupTrackedDevProcesses(0)).resolves.toBeUndefined()
+  })
+
+  it('preserves forced root termination after an IPC timeout without asserting a graceful exit code', async () => {
+    vi.useFakeTimers()
+    const fixture = mockProcessTree()
+    const failure = Object.assign(new Error('forced termination'), { exitCode: 1, signal: 'SIGTERM' })
+    const { pid, all, nodeChildProcess } = fixture.owned.child
+    const child = Object.assign(fixture.owned.child.then(() => {
+      throw failure
+    }), { pid, all, nodeChildProcess })
+    execaMock.mockImplementationOnce(() => child)
+    const disconnect = vi.fn()
+    Object.assign(nodeChildProcess, { connected: true, disconnect })
+    const dev = startDevProcess('node', ['fixture.js'])
+    expect(await settleCleanup(dev.stop(100))).toEqual({ status: 'fulfilled', value: undefined })
+    expect(disconnect).toHaveBeenCalledOnce()
+    expect(fixture.signals).toContainEqual({ pid, signal: 'SIGTERM' })
+    expect([...fixture.processes.keys()]).toEqual([71, 72])
+  })
+
   it.each([undefined, '1'])('batches Windows identity checks and terminates only the registered PID list once with cleanup tracing %s', async (trace) => {
     vi.stubEnv('WEAPP_VITE_E2E_CLEANUP_TRACE', trace)
     vi.spyOn(process, 'platform', 'get').mockReturnValue('win32')
@@ -229,7 +300,8 @@ describe('dev process cleanup ownership', () => {
     const fixture = mockProcessTree()
     const disconnect = vi.fn(() => fixture.finish())
     Object.assign(fixture.owned.child.nodeChildProcess, { connected: true, disconnect })
-    const dev = startDevProcess('node', ['fixture.js'], { ipc: true })
+    const dev = startDevProcess('node', ['fixture.js'])
+    expect(execaMock).toHaveBeenCalledWith('node', ['fixture.js'], expect.objectContaining({ ipc: true }))
     await Promise.all([dev.stop(100), dev.stop(100)])
     expect(disconnect).toHaveBeenCalledOnce()
     expect(execaMock.mock.calls.some(([command]) => command === 'taskkill')).toBe(false)

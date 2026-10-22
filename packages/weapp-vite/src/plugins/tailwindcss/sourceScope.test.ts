@@ -58,26 +58,43 @@ function createAdapter(root: string, compiler: Compiler) {
   return { adapter, host, watcher, httpServer, logger, onSourceChange }
 }
 
-it('captures a newly added source file outside the explicit Tailwind source entries', async () => {
+it.each([false, true])('discovers new files only within the compiler source entries (source(none): %s)', async (disabled) => {
   await withProject(async (root, compiler) => {
     const entry = path.join(root, 'src/app.css')
     const shared = path.join(root, 'src/shared.ts')
     const added = path.join(root, 'src/new-source.ts')
-    await writeFile(entry, '@import "tailwindcss" source(none); @source "./shared.ts";')
+    const outside = path.join(root, 'src/outside.ts')
+    const excluded = path.join(root, 'src/new-ignored.ts')
+    await writeFile(entry, `@import "tailwindcss"${disabled ? ' source(none)' : ''}; @source "./shared.ts"; @source "./new-*.ts"; @source not "./new-ignored.ts";`)
     await writeFile(shared, 'export const utility = "h-[19px]"')
-    await writeFile(added, 'export const utility = "h-[23px]"')
     const request: CompilerGenerateRequest = { id: 'dynamic-source', sourceOptions: { projectRoot: root, cssEntries: [entry] }, scanSources: true, target: 'weapp' }
     const generated = await compiler.generate(request)
-    const { adapter, host, watcher, httpServer } = createAdapter(root, compiler)
+    const { adapter, host, watcher, httpServer, logger } = createAdapter(root, compiler)
     host.onDependencyChange = vi.fn()
     try {
       await adapter.rememberRoot(0, request, generated)
       expect(generated.css).toContain('19px')
+      await writeFile(outside, 'export const utility = "h-[29px]"')
+      await writeFile(excluded, 'export const utility = "h-[31px]"')
+      await writeFile(added, 'export const utility = "h-[23px]"')
+      watcher.emit('add', outside)
+      watcher.emit('add', excluded)
       watcher.emit('add', added)
       await vi.waitFor(() => expect(host.onDependencyChange).toHaveBeenCalledWith(added))
+      expect(host.onDependencyChange).toHaveBeenCalledTimes(1)
+      expect(host.readSource(outside)).toBeUndefined()
+      expect(host.readSource(excluded)).toBeUndefined()
+      expect(logger.error).not.toHaveBeenCalled()
       const prepared = await adapter.prepare(host.freeze([added]))
       expect(prepared.assets?.[0]?.code).toContain('19px')
       expect(prepared.assets?.[0]?.code).toContain('23px')
+      expect(prepared.assets?.[0]?.code).not.toContain('29px')
+      expect(prepared.assets?.[0]?.code).not.toContain('31px')
+      compiler.invalidate([request.id])
+      const disk = await compiler.generate(request)
+      expect(disk.classSet.has('h-[23px]')).toBe(true)
+      expect(disk.classSet.has('h-[29px]')).toBe(false)
+      expect(disk.classSet.has('h-[31px]')).toBe(false)
     }
     finally {
       httpServer.emit('close')

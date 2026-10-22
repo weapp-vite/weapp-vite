@@ -58,6 +58,8 @@ describe('HMR semantic acceptance inventory', () => {
         expectations: ['classic', 'classic-fallback'],
       })
     }
+    expect(HMR_ACCEPTANCE_SCENARIOS.find(item => item.id === 'native-dependency-and-route-topology')?.capabilityIds)
+      .toEqual(['config-json', 'entry-topology', 'stylesheet-output'])
     for (const [id, configured] of [['wxml-watch-dependency-recovery', 'auto'], ['automatic-route-watch-topology-recovery', 'classic']]) {
       expect(HMR_ACCEPTANCE_SCENARIOS.find(item => item.id === id)).toMatchObject({
         observation: 'watch-output-and-runtime',

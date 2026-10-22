@@ -67,6 +67,7 @@ interface AutoRoutesWatcherSubscriber {
 }
 
 interface AutoRoutesWatcherController {
+  readonly ready: Promise<void>
   addWatchTargets: (paths: string[]) => void
   readonly ownsFile: (filePath: string) => boolean
   readonly subscribers: Map<WeappViteRuntime, AutoRoutesWatcherSubscriber>
@@ -98,6 +99,8 @@ function isAutoRoutesWatcherController(watcher: unknown): watcher is AutoRoutesW
   return Boolean(
     watcher
     && typeof watcher === 'object'
+    && 'ready' in watcher
+    && watcher.ready instanceof Promise
     && 'addWatchTargets' in watcher
     && typeof watcher.addWatchTargets === 'function'
     && 'ownsFile' in watcher
@@ -468,7 +471,7 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
       if (isServingSubscriber) {
         activeWatcher.servingSubscribers.set(subscriberId, watcherSubscriber)
       }
-      return
+      return activeWatcher.ready
     }
     if (activeWatcher) {
       return
@@ -506,6 +509,7 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
     }
     const releaseTopologySource = registerAutoRoutesTopologySource(ctx, ownsTopologyFile)
     const controller: AutoRoutesWatcherController = {
+      ready: sidecarWatcher.ready,
       ownsFile: ownsTopologyFile,
       addWatchTargets(paths) {
         const additions = watchDirectories.add(paths)
@@ -551,6 +555,7 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
 
     // 注册到 sidecarWatcherMap，由 watcherService.closeAll() 统一回收
     sidecarWatcherMap.set(ROUTE_WATCHER_KEY, controller)
+    return controller.ready
   }
 
   return {
@@ -587,11 +592,11 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
             directories: await Promise.all([...service.getWatchDirectories()].map(dir => realpath(dir).catch(() => dir))),
           })
           if (resolvedConfig?.command === 'serve' && resolvedConfig.weappVite?.runtime === 'web') {
-            startRouteFileWatcher()
+            await startRouteFileWatcher()
           }
         })
       }
-      startRouteFileWatcher()
+      return startRouteFileWatcher()
     },
 
     resolveId(id) {
@@ -626,7 +631,7 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
           directories: resolvedConfig?.command === 'serve' ? [] : service.getWatchDirectories(),
         })
       }
-      startRouteFileWatcher()
+      await startRouteFileWatcher()
       if (resolvedConfig?.weappVite?.runtime === 'web') {
         webPublication.initialize(service.getSignature())
       }
@@ -648,7 +653,7 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
         return null
       }
       await service.ensureFresh(createPageDeclarationSourceResolver(this))
-      startRouteFileWatcher()
+      await startRouteFileWatcher()
       if (!service.isPageDeclarationSource(normalizedId)) {
         return null
       }
@@ -680,7 +685,7 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
           return
         }
         await service.handleFileChange(id, resolveAutoRoutesWatchChangeEvent(event) ?? event)
-        startRouteFileWatcher()
+        await startRouteFileWatcher()
         return
       }
 
@@ -692,7 +697,7 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
       const resolvedEvent = resolveAutoRoutesWatchChangeEvent(event)
       if (resolvedEvent) {
         await service.handleFileChange(id, resolvedEvent)
-        startRouteFileWatcher()
+        await startRouteFileWatcher()
       }
     },
 
@@ -732,7 +737,7 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
           if (webRuntime && didChangeRoutes) {
             ctx.scanService?.markDirty()
           }
-          startRouteFileWatcher()
+          await startRouteFileWatcher()
           for (const owner of service.getPageDeclarationOwners(changedSource)) {
             declarationOwners.add(owner)
           }

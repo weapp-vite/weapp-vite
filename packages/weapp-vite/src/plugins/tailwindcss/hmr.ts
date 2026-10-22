@@ -20,6 +20,7 @@ import { rememberImportedTailwindPreparation } from './importedPreparation'
 import { createImportedTailwindValidation } from './importedValidation'
 import { TailwindContentInvalidation } from './invalidation'
 import { TailwindRootLifecycle } from './lifecycle'
+import { resolveTailwindContentSourceRules } from './sourceRules'
 import { getTailwindStyleOwners, rememberTailwindStyleOwners } from './styleOwners'
 
 interface Root {
@@ -51,6 +52,8 @@ export function createTailwindHmrAdapter(ctx: CompilerContext, options: Options)
 
   const watchFiles = new Set<string>()
   const nativeDependencies = new Set<string>()
+  const compilerDependencyOwners = new Map<number | string, ReadonlySet<string>>()
+  const compilerDependencies = new Set<string>()
   const discoveredSources = new Set<string>()
   let server: ViteDevServer | undefined
   let stopWatching: (() => void) | undefined
@@ -58,6 +61,12 @@ export function createTailwindHmrAdapter(ctx: CompilerContext, options: Options)
   function rebuildOwnedWatchFiles() {
     watchFiles.clear()
     nativeDependencies.clear()
+    compilerDependencies.clear()
+    for (const dependencies of compilerDependencyOwners.values()) {
+      for (const file of dependencies) {
+        compilerDependencies.add(file)
+      }
+    }
     for (const root of roots.values()) {
       for (const file of root.watchFiles) {
         watchFiles.add(file)
@@ -84,7 +93,7 @@ export function createTailwindHmrAdapter(ctx: CompilerContext, options: Options)
     else {
       registrations.set(index, registration)
     }
-    const { createTailwindV4CompiledSourceEntries, createTailwindV4SourceEntryMatcher, resolveProjectSourceFiles } = await import('@weapp-tailwindcss/engine')
+    const { createTailwindV4SourceEntryMatcher, resolveProjectSourceFiles } = await import('@weapp-tailwindcss/engine')
     const { resolveTailwindV4Source } = await import('weapp-tailwindcss/generator')
     const source = request.source ?? await resolveTailwindV4Source(request.sourceOptions)
     // 内存重编译与新增来源发现必须沿用 core 解析的 CSS base，不能扩大到项目根。
@@ -92,10 +101,7 @@ export function createTailwindHmrAdapter(ctx: CompilerContext, options: Options)
       ? { ...request, sourceOptions: { ...request.sourceOptions, base: source.base } }
       : request
     // 初始编译发现的扫描文件也属于下一次更新的完整输入视图。
-    const sources = createTailwindV4CompiledSourceEntries(result.root, [...result.sources], source.base)
-    if (ctx.configService.outDir) {
-      sources.push({ base: ctx.configService.outDir, pattern: '**/*', negated: true })
-    }
+    const sources = resolveTailwindContentSourceRules(result, ctx.configService.outDir)
     const files = sources.some(source => !source.negated) ? await resolveProjectSourceFiles({ cwd: ctx.configService.cwd, sources, filter: createTailwindV4SourceEntryMatcher(sources) }) : []
     if (disposed || registrations.get(index) !== registration) {
       return
@@ -115,6 +121,7 @@ export function createTailwindHmrAdapter(ctx: CompilerContext, options: Options)
     const inputs = [...request.sourceOptions?.cssEntries ?? [], ...request.sourceOptions?.cssSources?.flatMap(source => source.file ? [source.file] : []) ?? []]
     const matches = createTailwindV4SourceEntryMatcher(sources)
     roots.set(index, { generation: registration, request: capturedRequest, result, sources, matches, watchFiles: [...result.dependencies, ...files].filter(file => !ctx.configService.outDir || !isPathInside(ctx.configService.outDir, file)), rawSources: new Map(inputs.map(file => [compilerSourceId(file), host.readSource(file)])) })
+    compilerDependencyOwners.set(index, new Set(result.dependencies.map(compilerSourceId)))
     lifecycle.remember(index, request.id)
     rebuildOwnedWatchFiles()
     invalidation.rememberRoot(index, capturedRequest, result, matches)
@@ -147,7 +154,7 @@ export function createTailwindHmrAdapter(ctx: CompilerContext, options: Options)
     stopWatching?.()
     server = currentServer
     const added = async (file: string) => {
-      if (disposed || !host.onDependencyChange || host.isNativeSource(file) || nativeDependencies.has(compilerSourceId(file))
+      if (disposed || !host.onDependencyChange || host.isNativeSource(file) || nativeDependencies.has(compilerSourceId(file)) || compilerDependencies.has(compilerSourceId(file))
         || (ctx.configService.outDir && isPathInside(ctx.configService.outDir, file))) {
         return
       }
@@ -156,22 +163,9 @@ export function createTailwindHmrAdapter(ctx: CompilerContext, options: Options)
       }
       const { createTailwindV4SourceEntryMatcher, resolveProjectSourceFiles } = await import('@weapp-tailwindcss/engine')
       for (const [index, root] of roots) {
-        let sources = root.sources
-        let matches = createTailwindV4SourceEntryMatcher(sources)
-        if (!matches?.(file)) {
-          const sourceRoot = ctx.configService.absoluteSrcRoot ?? ctx.configService.cwd
-          const extension = path.extname(file).toLowerCase()
-          if (!isPathInside(sourceRoot, file) || !['.cjs', '.cts', '.html', '.js', '.jsx', '.mjs', '.mts', '.ts', '.tsx', '.vue', '.wxml'].includes(extension)) {
-            continue
-          }
-          // Tailwind 的显式 @source 只描述初始文件；新增的项目源码仍需作为
-          // 精确条目加入当前 root，后续内容更新才能进入同一份编译快照。
-          const dynamicSource = { base: path.dirname(file), pattern: path.basename(file), negated: false }
-          sources = [...sources, dynamicSource]
-          matches = createTailwindV4SourceEntryMatcher(sources)
-        }
-        const sourceMatches = matches
-        if (!sourceMatches) {
+        const sources = root.sources
+        const sourceMatches = createTailwindV4SourceEntryMatcher(sources)
+        if (!sourceMatches?.(file)) {
           continue
         }
         const sourceId = compilerSourceId(file)
@@ -190,13 +184,6 @@ export function createTailwindHmrAdapter(ctx: CompilerContext, options: Options)
         if (roots.get(index) !== root) {
           continue
         }
-        if (root.sources !== sources) {
-          root.sources = sources
-          root.matches = sourceMatches
-          root.result = { ...root.result, sources: [...root.result.sources, sources.at(-1)!] }
-          invalidation.rememberRoot(index, root.request, root.result, sourceMatches)
-          server?.watcher.add(sources.filter(source => !source.negated).map(source => source.base))
-        }
         captureFile(file, false)
         discoveredSources.add(compilerSourceId(file))
         host.seed(file, host.readSource(file) ?? null)
@@ -209,6 +196,13 @@ export function createTailwindHmrAdapter(ctx: CompilerContext, options: Options)
     }
     const updateMatchedSource = (file: string, deleted: boolean) => {
       const sourceId = compilerSourceId(file)
+      // CSS 编译依赖由原生模块图交付；来源扫描也匹配时只刷新文本，
+      // 不能抢在原生 transform 前另开批次并封存即将撤销的 root。
+      // imported root 重建期间仍保留依赖归属，直到新一代成功替换或真正移除。
+      if (compilerDependencies.has(sourceId)) {
+        captureFile(file, deleted)
+        return true
+      }
       if (![...roots.values()].some(root => root.matches?.(file))) {
         return false
       }
@@ -335,7 +329,7 @@ export function createTailwindHmrAdapter(ctx: CompilerContext, options: Options)
         }
       })
       const preparation = createTailwindPreparation(compiler, snapshot)
-      rememberImportedTailwindPreparation(preparation, validate, request.sources, captureImportedTailwindGeneration(effectiveRequests, generated, importedOptions))
+      rememberImportedTailwindPreparation(preparation, validate, request.sources, captureImportedTailwindGeneration(effectiveRequests, generated, importedOptions, new Map([...input.roots].map(([key, root]) => [key, root.sources]))))
       return preparation
     }
     const bundle = Object.fromEntries(Object.entries(input.bundle).map(([file, output]) => [file, { ...output }])) as OutputBundle
@@ -384,6 +378,7 @@ export function createTailwindHmrAdapter(ctx: CompilerContext, options: Options)
   function removeRoot(index: number | string) {
     registrations.delete(index)
     roots.delete(index)
+    compilerDependencyOwners.delete(index)
     invalidation.removeRoot(index)
     lifecycle.remove(index)
     rebuildOwnedWatchFiles()
@@ -399,6 +394,8 @@ export function createTailwindHmrAdapter(ctx: CompilerContext, options: Options)
     invalidation.clear()
     watchFiles.clear()
     nativeDependencies.clear()
+    compilerDependencyOwners.clear()
+    compilerDependencies.clear()
     discoveredSources.clear()
     captured = new WeakMap()
   }

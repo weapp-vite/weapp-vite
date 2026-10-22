@@ -33,6 +33,21 @@ describe('scaffold smoke network failure classification', () => {
     expect(classifyFailure(new Error(message), { registryProfile: 'npmjs', stage })).toBe('network')
   })
 
+  it.each(['create', 'install'])('preserves pnpm binary bootstrap network evidence during %s', (stage) => {
+    const message = 'Downloading the pnpm 12.15.0 binary for linux-x64...\r\nCould not download the pnpm 12.15.0 binary: Could not reach https://registry.npmjs.org/@pnpm/exe.linux-x64/12.15.0: timed out after 30s'
+    expect(classifyFailure(new Error(message), { registryProfile: 'npmjs', stage })).toBe('network')
+  })
+
+  it('keeps terminal product failures above an earlier pnpm binary bootstrap timeout', () => {
+    const message = 'Could not download the pnpm 12.15.0 binary: Could not reach https://registry.npmjs.org/@pnpm/exe.win-x64/12.15.0: timed out after 30s\nError [ERR_MODULE_NOT_FOUND]: Cannot find package vite'
+    expect(classifyFailure(new Error(message), { registryProfile: 'npmjs', stage: 'create' })).toBe('product')
+  })
+
+  it.each(['prepare', 'build', 'dev'])('does not infer a %s network failure from an earlier pnpm bootstrap timeout', (stage) => {
+    const message = 'Could not download the pnpm 12.15.0 binary: Could not reach https://registry.npmjs.org/@pnpm/exe.linux-x64/12.15.0: timed out after 30s\nTimed out waiting for outputs'
+    expect(classifyFailure(new Error(message), { registryProfile: 'npmjs', stage })).toBe('product')
+  })
+
   it.each([
     'node_modules/esbuild postinstall$ node install.js',
     '> app@1.0.0 prepare\n> wv prepare',

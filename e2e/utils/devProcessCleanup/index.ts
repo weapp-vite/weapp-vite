@@ -9,6 +9,8 @@ interface DevProcessCleanupOptions {
   isRootHeld: () => boolean
   disconnectRoot: () => boolean
   settledExit: Promise<unknown>
+  /** 根未收到强制信号且全部资源排空后，通知调用方核验 IPC 退出状态。 */
+  onIpcExit?: () => void
 }
 
 function sleep(ms: number) {
@@ -33,6 +35,7 @@ export function createDevProcessCleanup(options: DevProcessCleanupOptions) {
   const pending = new Map<number, DevProcessIdentity>()
   let captured = false
   let disconnected = false
+  let rootTerminationRequested = false
   let unconfirmed: UnconfirmedDevProcessTreeError | undefined
   let incompleteCapture: { cause: unknown } | undefined
 
@@ -83,13 +86,17 @@ export function createDevProcessCleanup(options: DevProcessCleanupOptions) {
   const signalOwned = async (signal: 'SIGTERM' | 'SIGKILL') => {
     await reconcileIdentities()
     if (process.platform === 'win32') {
+      const terminatesRoot = options.pid != null && pending.has(options.pid)
       try {
         await killWindowsDevProcesses([...pending.keys()])
+        rootTerminationRequested ||= terminatesRoot
       }
       catch (error) {
         if (!(error instanceof DevProcessTerminationError)) {
           throw error
         }
+        // 原生命令启动失败没有终止回执，不能豁免随后自然完成的 IPC 退出核验。
+        rootTerminationRequested ||= terminatesRoot
         try {
           await reconcileIdentities()
         }
@@ -117,6 +124,7 @@ export function createDevProcessCleanup(options: DevProcessCleanupOptions) {
       }
       try {
         process.kill(pid, signal)
+        rootTerminationRequested ||= pid === options.pid
       }
       catch (error) {
         if ((error as NodeJS.ErrnoException).code === 'ESRCH') {
@@ -210,6 +218,10 @@ export function createDevProcessCleanup(options: DevProcessCleanupOptions) {
     }
     if (!await traceCleanupStage('dev-stdio-drain', () => waitForExit(options.settledExit, forceKillDelayMs + 1_000), { timeoutMs: forceKillDelayMs + 1_000 })) {
       throw new Error('Dev process exit or stdio drain timed out; cleanup remains registered for retry.')
+    }
+    // 根可先自然退出、后代继续持有输出；全部登记资源结算后才核验 IPC 退出结果。
+    if (disconnected && !rootTerminationRequested) {
+      options.onIpcExit?.()
     }
   }
 }

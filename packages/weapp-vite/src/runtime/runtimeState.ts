@@ -174,6 +174,8 @@ export interface RuntimeState {
       isRebuild: boolean
       /** 当前快照从根入口重建可达图；完整发布后才撤销旧产物。 */
       fullEntryScan?: boolean
+      /** 当前快照已清空输出缓存并重发全部资源，不要求重新扫描入口拓扑。 */
+      fullSnapshotOutput: boolean
       didEmitAllEntries: boolean
       lastHmrEntryIds: Set<string>
       lastEmittedEntryIds: Set<string>
@@ -446,6 +448,7 @@ export function createRuntimeState(): RuntimeState {
         appEntryAutoRoutesSignature: undefined,
         dirtyVueEntryIds: new Set<string>(),
         isRebuild: false,
+        fullSnapshotOutput: false,
         didEmitAllEntries: false,
         lastHmrEntryIds: new Set<string>(),
         lastEmittedEntryIds: new Set<string>(),

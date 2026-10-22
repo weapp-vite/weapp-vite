@@ -11,6 +11,7 @@ import process from 'node:process'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { resolveVueSfcHmrSignatures } from 'wevu/compiler'
 import { attachDevModuleGraphHost } from '../../moduleGraph/host'
 import { createModuleGraphService } from '../../moduleGraph/service'
 import { getSupportedMiniProgramPlatforms } from '../../platform'
@@ -23,10 +24,12 @@ import { readCompilerInput, withCompilerSourceSnapshot } from '../../plugins/uti
 import { publishAutoRoutesTopology, registerAutoRoutesTopologySource } from '../autoRoutesPlugin/topology'
 import { HmrRuntimeCapabilityError } from '../hmrRuntimeCapabilities'
 import { getHmrRuntimeSession } from '../hmrRuntimeSession'
+import { beginHmrStyleUpdatePlan, getHmrStyleUpdatePlan, recordHmrStyleUpdate } from '../hmrStyleUpdate'
 import { resetRuntimeStateForFreshBuild } from '../resetRuntimeState'
 import { createRuntimeState } from '../runtimeState'
 import { StatefulHmrRuntimeCompatibilityError } from '../statefulHmr/commonRuntime'
 import { offerStatefulHmrSnapshot, StatefulHmrSnapshotHandoff } from '../statefulHmr/snapshotHandoff'
+import { storeVueSfcHmrSignatures } from '../storeVueSfcHmrSignatures'
 import { createWatcherServicePlugin } from '../watcherPlugin'
 import { getInitialBuildInputObservation, startInitialBuildInputObservation } from './initialBuildChanges'
 import { createBuildService } from './service'
@@ -379,7 +382,8 @@ const runVueStyleSnapshotMock: typeof import('./vueStyleSnapshot').withVueStyleD
   if (!preparation) {
     return await run()
   }
-  const sources = new Map(await Promise.all(Array.from(preparation.entries, async entry => [entry, await fs.readFile(entry, 'utf8')] as const)))
+  const inputs = new Set([...preparation.entries, ...(preparation.inputs ?? [])])
+  const sources = new Map(await Promise.all(Array.from(inputs, async entry => [entry, await fs.readFile(entry, 'utf8')] as const)))
   return await withCompilerSourceSnapshot(ctx.configService, sources, async () => {
     await preparation.resolveAffectedEntries()
     return await run()
@@ -1999,6 +2003,71 @@ describe('runtime buildPlugin service', () => {
       initialRelease.resolve()
       await watcher.close()
       vi.useRealTimers()
+    }
+  })
+
+  it('refreshes the App compiler owner for consecutive classic utility changes while keeping handler changes local', async () => {
+    const scenario = await createAppShellSnapshotHarness(false)
+    const { ctx, appId, appSource, pageIds } = scenario
+    const page = pageIds[0]
+    const source = `<script setup>const utility = 'bg-red-500'; function tap() { return 1 }</script><template><view :class="utility" /></template>`
+    const handler = source.replace('return 1', 'return 2')
+    const publications: Array<{ source: string, appReason: string | undefined, pageReason: string | undefined, summary: string[] | undefined, full: boolean }> = []
+    try {
+      await fs.writeFile(path.join(path.dirname(appId), 'app.css'), '@import "tailwindcss";')
+      storeVueSfcHmrSignatures(ctx.runtimeState.build.hmr, page, resolveVueSfcHmrSignatures(source, page))
+      ctx.moduleGraphService.collectAffectedEntries.mockReturnValue(new Set([page]))
+      buildMock.mockImplementation(async () => {
+        const source = await readCompilerInput(ctx.configService, page)
+        publications.push({
+          source,
+          appReason: ctx.runtimeState.build.hmr.dirtyEntryReasons.get(appId),
+          pageReason: ctx.runtimeState.build.hmr.dirtyEntryReasons.get(page),
+          summary: ctx.runtimeState.build.hmr.profile.dirtyReasonSummary,
+          full: ctx.runtimeState.build.hmr.forceFullSharedChunkRefresh === true,
+        })
+        storeVueSfcHmrSignatures(ctx.runtimeState.build.hmr, page, resolveVueSfcHmrSignatures(source, page))
+        return { output: [] }
+      })
+      const sources = [handler, handler.replace('bg-red-500', 'bg-blue-500'), handler.replace('bg-red-500', 'bg-green-500'), source]
+      for (const next of sources) {
+        await fs.writeFile(page, next)
+        await scenario.update(appSource(false), page)
+        scenario.consumeDirtyEntries()
+      }
+      expect(publications).toEqual(sources.map((source, index) => ({
+        source,
+        appReason: index === 0 ? undefined : 'metadata',
+        pageReason: 'direct',
+        summary: index === 0 ? ['importer-graph:1'] : ['importer-graph:1', 'tailwind-content:1'],
+        full: false,
+      })))
+    }
+    finally {
+      await scenario.close()
+    }
+  })
+
+  it('retains an App script dependency reason when the same classic batch changes compiler content', async () => {
+    const scenario = await createAppShellSnapshotHarness(false)
+    const { ctx, appId, appSource, pageIds } = scenario
+    const page = pageIds[0]
+    const source = '<template><view class="bg-red-500" /></template>'
+    try {
+      await fs.writeFile(path.join(path.dirname(appId), 'app.css'), '@import "tailwindcss";')
+      await fs.writeFile(page, source.replace('bg-red-500', 'bg-blue-500'))
+      storeVueSfcHmrSignatures(ctx.runtimeState.build.hmr, page, resolveVueSfcHmrSignatures(source, page))
+      ctx.moduleGraphService.collectAffectedEntries.mockReturnValue(new Set([page, appId]))
+      let appReason: string | undefined
+      buildMock.mockImplementationOnce(async () => {
+        appReason = ctx.runtimeState.build.hmr.dirtyEntryReasons.get(appId)
+        return { output: [] }
+      })
+      await scenario.update(appSource(false), page)
+      expect(appReason).toBe('direct')
+    }
+    finally {
+      await scenario.close()
     }
   })
 
@@ -3847,6 +3916,98 @@ describe('runtime buildPlugin service', () => {
     }
     finally {
       styleRelease.resolve()
+      await watcher.close()
+    }
+  })
+
+  it.each([false, true])('settles native plugin END only after its style refresh and isolates the next generation (failure=%s)', async (fails) => {
+    const watcher = createManualWatcher()
+    watcher.close.mockResolvedValue(undefined)
+    const ctx = createMockContext()
+    ctx.configService.pluginOnly = true
+    ctx.configService.absolutePluginRoot = '/project/src/plugin'
+    ctx.configService.weappViteConfig.hmr = { profileJson: true }
+    buildMock.mockResolvedValueOnce(watcher)
+    const firstBuild = createBuildService(ctx).build({ skipNpm: true })
+    await watcher.subscribed
+    const onEvent = watcher.on.mock.calls.find(([event]: [string]) => event === 'event')![1] as (event: { code: string }) => void | Promise<void>
+    await onEvent({ code: 'START' })
+    await onEvent({ code: 'END' })
+    await firstBuild
+
+    const firstFile = '/project/src/plugin/components/control/index.ts'
+    const lateFile = '/project/src/plugin/components/control/handler.ts'
+    const styleFile = '/project/src/plugin/components/control/theme.css'
+    const failure = Object.assign(new Error('plugin output style metadata denied'), { code: 'EACCES' })
+    const started = Promise.withResolvers<void>()
+    const release = Promise.withResolvers<void>()
+    const successLogs = loggerSuccessMock.mock.calls.length
+    touchOutputStylesMock.mockImplementationOnce(async () => {
+      started.resolve()
+      await release.promise
+      if (fails) {
+        throw failure
+      }
+      return new Set<string>()
+    })
+    recordHmrStyleUpdate(ctx.configService, firstFile, {
+      styleFiles: [styleFile],
+      compilerContentOwners: [[firstFile, 'tailwind-content']],
+      cssImporterOwners: [firstFile],
+    })
+    const releaseFirst = beginHmrStyleUpdatePlan(ctx.configService, [firstFile])
+    const firstPlan = getHmrStyleUpdatePlan(ctx.configService)
+    ctx.runtimeState.build.hmr.lastEmittedChunkFileNames.add('components/control/index.wxss')
+    ctx.runtimeState.build.hmr.profile = { eventId: 'plugin-first', file: firstFile, event: 'update', batchId: 'plugin-first-batch' }
+    await onEvent({ code: 'START' })
+    // 与 Rolldown 一样等待 listener 返回值；普通手动 watcher 的 emit 会丢掉 Promise。
+    const completion = Promise.resolve(onEvent({ code: 'END' })).then(() => undefined, error => error)
+    const pendingPlan = getHmrStyleUpdatePlan(ctx.configService)
+    recordHmrStyleUpdate(ctx.configService, lateFile)
+    let nextStarted = false
+    let releaseNext: (() => void) | undefined
+    const next = completion.then((outcome) => {
+      nextStarted = true
+      releaseNext = beginHmrStyleUpdatePlan(ctx.configService, [lateFile])
+      ctx.runtimeState.build.hmr.profile = { eventId: 'plugin-next', file: lateFile, event: 'update', batchId: 'plugin-next-batch' }
+      onEvent({ code: 'START' })
+      return outcome
+    })
+    try {
+      await started.promise
+      await flushAsyncTasks()
+      const startedBeforeRefresh = nextStarted
+      release.resolve()
+      await vi.waitFor(() => fails
+        ? expect(loggerErrorMock).toHaveBeenCalledWith(failure)
+        : expect(loggerSuccessMock).toHaveBeenCalledTimes(successLogs + 1))
+      const outcome = await next
+      const nextPlan = getHmrStyleUpdatePlan(ctx.configService)!
+      const nextProfile = ctx.runtimeState.build.hmr.profile
+      await onEvent({ code: 'END' })
+      await vi.waitFor(() => expect(appendFileMock).toHaveBeenCalledTimes(2))
+
+      expect(pendingPlan).toBe(firstPlan)
+      expect(startedBeforeRefresh).toBe(false)
+      expect(outcome).toBe(fails ? failure : undefined)
+      expect(nextPlan.id).not.toBe(firstPlan!.id)
+      expect(nextPlan.sourceFiles).toEqual(new Set(fails ? [firstFile, lateFile] : [lateFile]))
+      expect(nextPlan.styleFiles).toEqual(new Set(fails ? [styleFile] : []))
+      expect(nextPlan.compilerContentOwners).toEqual(new Map(fails ? [[firstFile, 'tailwind-content']] : []))
+      expect(nextPlan.cssImporterOwners).toEqual(new Set(fails ? [firstFile] : []))
+      expect(nextProfile.eventId).toBe('plugin-next')
+      const samples = appendFileMock.mock.calls.map(call => JSON.parse(call[1]) as HmrProfileJsonSample)
+      expect(samples.map(sample => sample.eventId)).toEqual(['plugin-first', 'plugin-next'])
+      expect(samples.map(sample => sample.status)).toEqual([fails ? 'failed' : 'complete', 'complete'])
+      expect(new Set(samples.map(sample => sample.buildId)).size).toBe(2)
+      expect(ctx.runtimeState.build.hmr.profile).toEqual({})
+      expect(getHmrStyleUpdatePlan(ctx.configService)).toBeUndefined()
+    }
+    finally {
+      release.resolve()
+      await next
+      releaseFirst()
+      releaseNext?.()
       await watcher.close()
     }
   })

@@ -3,6 +3,7 @@ import type { Plugin } from 'vite'
 import path from 'node:path'
 import postcss from 'postcss'
 import { describe, expect, it, vi } from 'vitest'
+import { createTailwindGenerateResult } from '../../../test/helpers/tailwindCompiler'
 import { createRuntimeState } from '../../runtime/runtimeState'
 import { normalizeRelativePath } from '../../utils/path'
 import { css } from '../css'
@@ -36,9 +37,9 @@ function fixture(entry: string, relative = path.relative) {
   const cwd = path.resolve('tailwind-output-hmr-fixture')
   // 与真实 configService 一致，输出路径在所有平台都使用正斜杠。
   const relativeSource = (file: string) => normalizeRelativePath(relative(path.join(cwd, 'src'), file))
-  const snapshot = { classSet: new Set(), roots: [], sources: [], target: 'weapp' }
+  const snapshot = { classSet: new Set<string>(), dependencies: [], roots: [], sources: [], target: 'weapp' as const }
   const compiler = {
-    generate: vi.fn(async () => ({ css: '.updated { color: red; }', rawCss: '.updated { color: red; }', snapshot, dependencies: [] })),
+    generate: vi.fn(async () => createTailwindGenerateResult('.updated { color: red; }', snapshot)),
     mergeSnapshots: vi.fn(() => snapshot),
     transformCss: vi.fn(async (source: string) => ({ css: source })),
     transformJavaScript: vi.fn(async (code: string) => ({ code })),
@@ -96,7 +97,7 @@ describe('Tailwind content HMR through the CSS owner', () => {
     ctx.runtimeState.build.hmr.isRebuild = true
 
     ctx.runtimeState.build.hmr.profile = { event: 'update', dirtyReasonSummary: dirty ? ['tailwind-content:1'] : ['entry-direct:1'] }
-    compiler.generate.mockResolvedValueOnce({ css: '.updated { color: blue; }', rawCss: '.updated { color: blue; }', snapshot, dependencies: [] })
+    compiler.generate.mockResolvedValueOnce(createTailwindGenerateResult('.updated { color: blue; }', snapshot))
     const updated = {
       'pages/index/index.js': { type: 'chunk', fileName: 'pages/index/index.js', code: 'export {}' },
       ...(includesOwner ? { 'app.js': { type: 'chunk', fileName: 'app.js', facadeModuleId: path.join(cwd, 'src/app.ts'), code: 'App({})' } } : {}),
@@ -248,7 +249,7 @@ describe('Tailwind content HMR through the CSS owner', () => {
       event: 'update',
       dirtyReasonSummary: dirty ? ['tailwind-content:1'] : ['entry-direct:1'],
     }
-    compiler.generate.mockResolvedValueOnce({ css: '.updated { color: blue; }', rawCss: '.updated { color: blue; }', snapshot, dependencies: [] })
+    compiler.generate.mockResolvedValueOnce(createTailwindGenerateResult('.updated { color: blue; }', snapshot))
     const updated = pendingBundle()
     await generate(manager, updated)
     await generate(owner, updated)

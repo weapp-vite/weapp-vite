@@ -7,7 +7,7 @@ import { build } from 'vite'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { captureNativePublication } from '.'
 import { createDevBuildCompletion } from '../devBuildCompletion'
-import { NATIVE_PUBLICATION_PREFIX, nativePublicationHash } from './files'
+import { NATIVE_PUBLICATION_PREFIX, nativePublicationGeneration, nativePublicationHash, readNativePublicationInputs } from './files'
 import { nativePublicationPlugin } from './plugin'
 
 let project: string
@@ -222,6 +222,33 @@ it('rejects a complete receipt when later native output has replaced its actual 
     }],
   })
   await expect(pending.wait(100)).rejects.toThrow('final source generation')
+})
+
+it('reports stale input hashes, changed output bytes and missing files at publication timeout', async () => {
+  const pending = captureNativePublication(dev(), project)
+  const inputs = await readNativePublicationInputs(project)
+  const expected = nativePublicationHash('expected output')
+  const actual = nativePublicationHash('actual output')
+  const source = 'console.info("FINAL")'
+  const outputs = { 'app.js': expected, 'app.json': nativePublicationHash('expected config') }
+  await mkdir(path.join(project, 'dist'))
+  await writeFile(path.join(project, 'dist/app.js'), 'actual output')
+  await writeFile(path.join(project, 'src/app.js'), source)
+  output += `${NATIVE_PUBLICATION_PREFIX}${JSON.stringify({ boundary: 'native-byte-write', generation: nativePublicationGeneration(outputs), inputs, outputs })}\n`
+  try {
+    await pending.wait(100)
+    expect.unreachable('A stale receipt with mismatched disk bytes cannot pass')
+  }
+  catch (error) {
+    expect(error).toBeInstanceOf(Error)
+    const message = (error as Error).message
+    expect(message).toContain('final source generation')
+    expect(message).toContain(`"file":"src/app.js","expected":"${nativePublicationHash(source)}","actual":"${inputs['src/app.js']}"`)
+    expect(message).toContain(`"file":"app.js","expected":"${expected}","actual":"${actual}"`)
+    expect(message).toContain(`"file":"app.json","expected":"${outputs['app.json']}","error":"ENOENT"`)
+    expect(message).not.toContain(project)
+    expect(message).not.toContain('actual output')
+  }
 })
 
 it('stops polling at child exit instead of reading a released fixture until the publication deadline', async () => {

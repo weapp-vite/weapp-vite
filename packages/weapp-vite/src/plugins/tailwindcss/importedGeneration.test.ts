@@ -19,10 +19,11 @@ async function fixture() {
   const sources = new Map<string, string | null>([[compilerSourceId(file), css]])
   const request: CompilerGenerateRequest = { id: 'owner', target: 'weapp', sourceOptions: { projectRoot: root, cssEntries: [file] }, scanSources: true, incrementalCache: false }
   const options = { generator: { styleOptions: { isMainChunk: false } } }
+  const sourceRules = [{ base: root, pattern: '*.ts', negated: false }, { base: path.join(root, 'dist'), pattern: '**/*', negated: true }]
   const result = { rawCss: css, css, dependencies: [file], snapshot: { classSet: new Set(), dependencies: [file], roots: [], sources: [], target: 'weapp' } } as unknown as CompilerGenerateResult
   const captured = await importedGenerationRequest(request, sources)
-  const generation = captureImportedTailwindGeneration(new Map([['owner', captured]]), new Map([['owner', result]]), options)
-  return { root, file, css, sources, request, options, result, generation }
+  const generation = captureImportedTailwindGeneration(new Map([['owner', captured]]), new Map([['owner', result]]), options, new Map([['owner', sourceRules]]))
+  return { root, file, css, sources, request, options, result, generation, sourceRules }
 }
 
 it('matches frozen CSS entry and equivalent in-memory requests without sharing mutable input options', async () => {
@@ -51,6 +52,24 @@ it('copies source content before normalization awaits and retains the full origi
   expect(normalized.sourceOptions?.cssSources?.[0]?.css).toBe(app.css)
 })
 
+it('hands off an immutable source scope without retaining mutable rules or a live root', async () => {
+  const app = await fixture()
+  const expected = app.sourceRules.map(rule => ({ ...rule }))
+  app.sourceRules[0]!.pattern = '*.html'
+  app.sourceRules.pop()
+  const entry = await takeImportedGeneration(app.generation, 'owner', app.request, app.sources, app.options)
+  expect(entry.sourceRules).toEqual(expected)
+  expect(Object.isFrozen(entry.sourceRules)).toBe(true)
+  expect(entry.sourceRules!.every(Object.isFrozen)).toBe(true)
+  expect('root' in entry).toBe(false)
+})
+
+it('rejects an imported projection without a captured source scope', async () => {
+  const app = await fixture()
+  const request = await importedGenerationRequest(app.request, app.sources)
+  expect(() => captureImportedTailwindGeneration(new Map([['owner', request]]), new Map([['owner', app.result]]), app.options, new Map())).toThrow('no captured source rules')
+})
+
 it.each(['request', 'sourceOptions', 'null-prototype', 'symbol'] as const)('retains %s identity fields when admitting an imported generation', async (field) => {
   const app = await fixture()
   const key = field === 'symbol' ? Symbol('owner-option') : 'ownerOption'
@@ -64,7 +83,7 @@ it.each(['request', 'sourceOptions', 'null-prototype', 'symbol'] as const)('reta
   const projected = field === 'sourceOptions' ? effective.sourceOptions! : effective
   expect(Object.getOwnPropertyDescriptor(projected, key)).toMatchObject({ enumerable: false, value: { nested: 'initial' } })
   expect(Object.getPrototypeOf(projected)).toBe(field === 'null-prototype' ? null : Object.prototype)
-  const generation = captureImportedTailwindGeneration(new Map([['owner', effective]]), new Map([['owner', app.result]]), app.options)
+  const generation = captureImportedTailwindGeneration(new Map([['owner', effective]]), new Map([['owner', app.result]]), app.options, new Map([['owner', app.sourceRules]]))
   await expect(takeImportedGeneration(generation, 'owner', app.request, app.sources, app.options)).resolves.toHaveProperty('rawCss', app.css)
   metadata.nested = 'changed'
   await expect(takeImportedGeneration(generation, 'owner', app.request, app.sources, app.options)).rejects.toBeInstanceOf(CompilerHmrResyncError)

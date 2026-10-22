@@ -110,7 +110,7 @@ export const HMR_ACCEPTANCE_SCENARIOS: HmrAcceptanceScenario[] = [
     id: 'native-dependency-and-route-topology',
     expectations: ['classic', 'classic-fallback'],
     configuredModes: ['classic', 'stateful-experimental'],
-    capabilityIds: ['config-json', 'entry-topology'],
+    capabilityIds: ['config-json', 'entry-topology', 'stylesheet-output'],
     ide: ['ide/issue-1134-native-topology.runtime.test.ts'],
     headless: ['ide/issue-1134-native-topology.runtime.test.ts'],
   },

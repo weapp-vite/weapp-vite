@@ -165,6 +165,8 @@ const projects = [
         'e2e/utils/automatorWarmup.test.ts',
         'e2e/utils/cleanupSteps.test.ts',
         'e2e/utils/dev-process.cleanup.test.ts',
+        'e2e/utils/dev-process.graceful.test.ts',
+        'e2e/utils/nativeBatchSettlementPlugin.test.ts',
         'e2e/utils/devProcessCleanup/darwinProcesses.test.ts',
         'e2e/utils/devProcessCleanup/windowsTermination.test.ts',
         'e2e/utils/dev-memory.test.ts',

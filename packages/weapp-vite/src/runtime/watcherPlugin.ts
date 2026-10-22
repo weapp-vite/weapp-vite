@@ -117,7 +117,9 @@ function createWatcherService(ctx: MutableCompilerContext): WatcherService {
       if (activeDrain) {
         return activeDrain.task
       }
-      if (closeAllTask && !rollupWatcherMap.size && !sidecarWatcherMap.size) {
+      // 配置重启的新代可以只登记独立依赖；空 watcher 图不代表旧 drain 已释放这些资源。
+      const independent = ctx.runtimeState.build.independent
+      if (closeAllTask && !rollupWatcherMap.size && !sidecarWatcherMap.size && !independent.watchFiles.size && !independent.watchListeners.size) {
         return closeAllTask
       }
       const previous = closeAllTask

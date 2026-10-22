@@ -111,6 +111,8 @@ export function startDevProcess(
     try {
       return execa(command, args, {
         ...captureDevProcessOutput(options),
+        // Windows 没有可捕获的 SIGTERM；直接 Node 入口通过 IPC 正常释放开发会话。
+        ipc: options?.ipc ?? (command === process.execPath || /(?:^|[/\\])node(?:\.exe)?$/i.test(command)),
         env: options?.env ?? process.env,
         extendEnv: false,
       })
@@ -218,9 +220,13 @@ export function startDevProcess(
     throw withTraceFailure(new Error(appendRecentOutput(`Timed out waiting for dev output: ${description}`, outputChunks, spawnInfo)))
   }
 
+  let exitedAfterIpc = false
   const cleanup = createDevProcessCleanup({
     pid: child.pid,
     settledExit,
+    onIpcExit: () => {
+      exitedAfterIpc = true
+    },
     isRootHeld: () => !exited && child.nodeChildProcess?.exitCode == null && child.nodeChildProcess?.signalCode == null,
     disconnectRoot: () => {
       if (!child.nodeChildProcess?.connected) {
@@ -246,7 +252,17 @@ export function startDevProcess(
         stopTask = undefined
         throw withTraceFailure(error)
       })
-      stopTask = cleanupTask.then(() => {
+      stopTask = cleanupTask.then(async () => {
+        if (exitedAfterIpc) {
+          const info = await settledExit
+          if (info.exitCode !== 0 || info.signal) {
+            throw withTraceFailure(new Error(appendRecentOutput(
+              `Dev process failed during IPC shutdown: ${formatExitInfo(info)}`,
+              outputChunks,
+              spawnInfo,
+            ), { cause: info.error }))
+          }
+        }
         if (trace?.getFailure()) {
           throw trace.getFailure()
         }

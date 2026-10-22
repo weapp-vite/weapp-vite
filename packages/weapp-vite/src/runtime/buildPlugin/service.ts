@@ -28,9 +28,13 @@ import { build } from 'vite'
 import { debug, logger } from '../../context/shared'
 import { createDevModuleGraphProvider } from '../../moduleGraph/devProvider'
 import { hasDevModuleGraphHost, reportDevModuleGraphBuild } from '../../moduleGraph/host'
+import { ownsCompilerContentSource } from '../../plugins/compilerPlugin/contentSources'
 import { compilerSourceId } from '../../plugins/compilerPlugin/hmr'
 import { hasManagedCompilerEntries } from '../../plugins/compilerPluginRegistry'
+import { isCompilerContentSource, resolveCompilerContentOwner, resolveCompilerContentUpdate } from '../../plugins/core/lifecycle/compilerContent'
+import { createVueEntryUpdateInspector } from '../../plugins/core/lifecycle/vueEntryUpdate'
 import { collectVueStyleScriptChanges } from '../../plugins/core/lifecycle/vueStyleDependency'
+import { invalidateSharedStyleCache } from '../../plugins/css/shared/preprocessor'
 import { invalidateFileCache } from '../../plugins/utils/cache'
 import {
   configSuffixes,
@@ -41,6 +45,7 @@ import {
   watchedTemplateExts,
 } from '../../plugins/utils/invalidateEntry/shared'
 import { isLayoutSourcePath } from '../../plugins/utils/layoutSourcePath'
+import { readCompilerInput } from '../../plugins/utils/sourceSnapshot'
 import { isAppVueFile } from '../../plugins/vue/transform/appShell'
 import { changeFileExtension } from '../../utils/file'
 import { createHmrProfileEventId, recordHmrProfileDuration, resolveActiveHmrProfileJsonPath } from '../../utils/hmrProfile'
@@ -55,6 +60,7 @@ import { waitForBuildTasks } from '../compilerSession/tasks'
 import { findSkylineRendererFiles, formatHmrRuntimeStartupMessages, resolveHmrRuntimeDecision } from '../hmrRuntime'
 import { getHmrRuntimeCapabilityFallback, HmrRuntimeCapabilityError } from '../hmrRuntimeCapabilities'
 import { getHmrRuntimeSession } from '../hmrRuntimeSession'
+import { createHmrStyleUpdatePlan, getHmrStyleUpdatePlan, mergeHmrStyleUpdatePlan, settleHmrStyleUpdatePlan, withHmrStyleUpdatePlan } from '../hmrStyleUpdate'
 import { resetRuntimeStateForFreshBuild } from '../resetRuntimeState'
 import { createSharedBuildConfig } from '../sharedBuildConfig'
 import { isStatefulHmrRuntimeCompatibilityError } from '../statefulHmr/commonRuntime'
@@ -1334,6 +1340,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       return statefulBuildEvents
     }
     const buildEvents = createDevBuildWatcher()
+    // stateful 编译使用 write:false，由 core.closeBundle 释放样式计划；此处不提前消费公共首轮事件。
     const closeEvents = buildEvents.watcher.close.bind(buildEvents.watcher)
     let stopPromise: Promise<void> | undefined
     stopStatefulWatcher = () => {
@@ -1810,17 +1817,29 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           graphAffectedEntries.add(entryId)
         }
         const appShellInput = emittedAppShellSnapshot?.appId ?? scanService.appEntry?.path
+        const snapshotAppShell = appShellInput && isAppVueFile(appShellInput) && !configService.weappLibConfig?.enabled
+          ? appShellInput
+          : undefined
+        const compilerContentChanges = requiresFullRescan
+          ? []
+          : batchReasons.flatMap(item => item.file && isCompilerContentSource(item.file, configService) ? [{ file: item.file, event: item.event ?? 'update' as const }] : [])
+        const compilerContentOwner = compilerContentChanges.length ? await resolveCompilerContentOwner(ctx as CompilerContext) : undefined
+        const compilerContentInputs = compilerContentOwner?.styles.length
+          ? [...compilerContentChanges.map(item => item.file), ...compilerContentOwner.styles.map(style => style.path)]
+          : []
+        const styleUpdatePlan = createHmrStyleUpdatePlan(batchReasons.flatMap(item => item.file ? [item.file] : []), { full: requiresFullRescan })
         let appShellDependentEntries = new Set<string>()
         return await withVueStyleDependencySnapshot(
           { runtimeState: ctx.runtimeState, moduleGraphService: ctx.moduleGraphService, configService },
           graphAffectedEntries,
           batchReasons.flatMap(item => item.file ? [item.file] : []),
-          async (snapshot) => {
+          async snapshot => withHmrStyleUpdatePlan(configService, styleUpdatePlan, async () => {
             if (snapshot?.forceFullRescan) {
               requiresFullRescan = true
               fullEntryScan = true
               scanService.markDirty()
             }
+            mergeHmrStyleUpdatePlan(configService, { full: requiresFullRescan })
             const scriptChanges = new Set(scriptAffectedVueEntries)
             for (const batchReason of requiresFullRescan ? [] : batchReasons) {
               if (!batchReason.file) {
@@ -1831,6 +1850,49 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
                 graphAffectedEntries.add(entryId)
               }
             }
+            const compilerOnlyEntries = new Set<string>()
+            const compilerContentReasons = new Map<string, Set<string>>()
+            const inspectors = new Map<string, ReturnType<typeof createVueEntryUpdateInspector>>()
+            for (const batchReason of requiresFullRescan ? [] : batchReasons) {
+              if (!batchReason.file) {
+                continue
+              }
+              const file = normalizeFsResolvedId(batchReason.file)
+              if (watchedCssExts.has(path.extname(file))) {
+                mergeHmrStyleUpdatePlan(configService, { cssImporterOwners: graphAffectedEntriesByFile.get(file) })
+              }
+              if (file.endsWith('.vue')) {
+                const inspector = createVueEntryUpdateInspector({ ctx: ctx as CompilerContext }, file, { readFile: file => readCompilerInput(configService, file) })
+                inspectors.set(file, inspector)
+                if ((await inspector.getChangedBlocks())?.includes('style')) {
+                  mergeHmrStyleUpdatePlan(configService, { styleFiles: [file] })
+                }
+              }
+            }
+            for (const change of requiresFullRescan || !compilerContentInputs.length ? [] : compilerContentChanges) {
+              const update = await resolveCompilerContentUpdate(ctx as CompilerContext, normalizeFsResolvedId(change.file), change.event, {
+                owner: compilerContentOwner ?? null,
+                inspector: inspectors.get(normalizeFsResolvedId(change.file)),
+                readFile: file => readCompilerInput(configService, file),
+              })
+              if (!update) {
+                continue
+              }
+              mergeHmrStyleUpdatePlan(configService, { compilerContentOwners: [[update.appEntryId, update.reason]] })
+            }
+            // 失败的上一代可能已推进源码签名，重放仍须保留尚未交付的编译器 owner。
+            for (const [appEntryId, contentReason] of getHmrStyleUpdatePlan(configService)?.compilerContentOwners ?? []) {
+              if (!graphAffectedEntries.has(appEntryId)) {
+                compilerOnlyEntries.add(appEntryId)
+                graphAffectedEntries.add(appEntryId)
+              }
+              const owners = compilerContentReasons.get(contentReason) ?? new Set<string>()
+              owners.add(appEntryId)
+              compilerContentReasons.set(contentReason, owners)
+            }
+            if (compilerContentReasons.size) {
+              invalidateSharedStyleCache()
+            }
             // 独立包失效也需要主 bundler 发布，但不因此重新编译未受影响的主包入口。
             const hasIndependentOutput = batchReasons.some(batchReason => batchReason.independentOutput)
             if (!requiresFullRescan && (graphAffectedEntries.size || hasIndependentOutput)) {
@@ -1839,9 +1901,9 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
                 ? 'direct'
                 : dirtyReasons.includes('dependency') ? 'dependency' : 'metadata'
               for (const entryId of graphAffectedEntries) {
-                if (ctx.runtimeState.build.hmr.resolvedEntryMap.has(entryId)) {
+                if (ctx.runtimeState.build.hmr.resolvedEntryMap.has(entryId) || compilerOnlyEntries.has(entryId)) {
                   const isStructuralDependency = routeDependentEntries.has(entryId) || appShellDependentEntries.has(entryId)
-                  markSnapshotEntryDirty(entryId, reason, scriptChanges.has(entryId) ? 'direct' : isStructuralDependency ? 'dependency' : dirtyReason)
+                  markSnapshotEntryDirty(entryId, reason, scriptChanges.has(entryId) ? 'direct' : isStructuralDependency ? 'dependency' : compilerOnlyEntries.has(entryId) ? 'metadata' : dirtyReason)
                 }
               }
               const summaryCounts = new Map<string, number>()
@@ -1860,6 +1922,9 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
               }
               if (appShellDependentEntries.size) {
                 summaryCounts.set('app-shell-dependent', appShellDependentEntries.size)
+              }
+              for (const [contentReason, owners] of compilerContentReasons) {
+                summaryCounts.set(contentReason, owners.size)
               }
               ctx.runtimeState.build.hmr.profile.dirtyReasonSummary = Array.from(
                 summaryCounts,
@@ -1902,6 +1967,8 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             // 完整 snapshot 重发全部资源；旧产物由成功 write 后的发布清单裁剪。
             resetEmittedOutputCaches(ctx.runtimeState)
             const hmr = ctx.runtimeState.build.hmr
+            const previousFullSnapshotOutput = hmr.fullSnapshotOutput
+            hmr.fullSnapshotOutput = true
             hmr.forceFullSharedChunkRefresh = true
             hmr.fullEntryScan = fullEntryScan
             let endEventEmitted = false
@@ -1938,10 +2005,11 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
               throw error
             }
             finally {
+              hmr.fullSnapshotOutput = previousFullSnapshotOutput
               hmr.forceFullSharedChunkRefresh = false
               hmr.fullEntryScan = false
             }
-          },
+          }),
           (changes) => {
             for (const change of changes) {
               const queued = [...queuedSnapshotReasons].filter(reason => reason.file
@@ -1957,10 +2025,17 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
               scheduleSnapshotBuild({ ...change, forceFullRescan: true }, performance.now())
             }
           },
-          appShellInput && isAppVueFile(appShellInput) && !configService.weappLibConfig?.enabled
+          snapshotAppShell || compilerContentInputs.length
             ? {
-                entries: [appShellInput],
+                entries: [
+                  ...(snapshotAppShell ? [snapshotAppShell] : []),
+                  ...compilerContentInputs.filter(file => file.endsWith('.vue')),
+                ],
+                inputs: compilerContentInputs,
                 async resolveAffectedEntries() {
+                  if (!snapshotAppShell) {
+                    return []
+                  }
                   const change = await resolveAppShellSnapshotChange(ctx, emittedAppShellSnapshot)
                   if (!change) {
                     return []
@@ -2043,7 +2118,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         }, receivedAtMs)
         return
       }
-      if (!hasModule && !initialBuildFailed) {
+      if (!hasModule && !ownsCompilerContentSource(configService, id) && !initialBuildFailed) {
         return
       }
       scheduleSnapshotBuild({ event, file: id, verifyInitialInput: true }, receivedAtMs)
@@ -2083,7 +2158,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           try {
             await ctx.autoRoutesService?.ensureFresh()
             const routeSignature = ctx.autoRoutesService?.getSignature()
-            await withInitialAppShellSnapshot(ctx, async () => {
+            await withHmrStyleUpdatePlan(configService, createHmrStyleUpdatePlan([], { full: true }), async () => withInitialAppShellSnapshot(ctx, async () => {
               await build(createSnapshotBuildConfig(snapshotBuildOptions))
               emittedAutoRoutesSignature = routeSignature
               emittedEntryTopology = captureEntryTopology(ctx)
@@ -2092,7 +2167,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
               for (const change of changes) {
                 scheduleSnapshotBuild({ ...change, forceFullRescan: true }, performance.now())
               }
-            })
+            }))
             initialBuildInputs?.commit()
             devBuildWatcher!.emitEvent({ code: 'END' })
             return devBuildWatcher!.watcher
@@ -2151,6 +2226,13 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       : undefined
 
     const onWatcherEvent = (e: RolldownWatcherEvent) => {
+      const completedStylePlan = e.code === 'END' || e.code === 'ERROR'
+        ? getHmrStyleUpdatePlan(configService)
+        : undefined
+      if (e.code === 'ERROR' || devWatcherClosed) {
+        // 仅结算本事件开始时的计划；scoped 代仍由外层 build 持有。
+        settleHmrStyleUpdatePlan(configService, completedStylePlan, false)
+      }
       if (devWatcherClosed) {
         return
       }
@@ -2168,6 +2250,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         const completion = (async () => {
           if (shouldRestart) {
             reportDevModuleGraphBuild(ctx, true)
+            settleHmrStyleUpdatePlan(configService, completedStylePlan, true)
             const restart = () => runPluginProjectRestart(ctx as CompilerContext, async () => {
               if (classicSession) {
                 await classicSession.stopGeneration(watcher)
@@ -2251,8 +2334,11 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           }
           reportDevModuleGraphBuild(ctx, true)
           resetHmrProfile()
+          settleHmrStyleUpdatePlan(configService, completedStylePlan, true)
           resolveWatcher(e)
         })().catch(async (error) => {
+          // 样式刷新失败也属于本代失败，先归还重试事实，再等待失败报告写出。
+          settleHmrStyleUpdatePlan(configService, completedStylePlan, false)
           if (!shouldRestart) {
             reportDevModuleGraphBuild(ctx, false)
             // 先冻结并写出失败归属，再释放 profile；原始收尾异常仍由当前发布向外传播。
@@ -2268,6 +2354,10 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         // 配置重启会关闭并等待当前批次，不能让该批次反向等待自己的重启任务。
         watcherEventCompletion = shouldRestart ? Promise.resolve() : completion
         void completion.catch(() => {})
+        if (!shouldRestart) {
+          // 原生 watcher 必须等本代样式与 profile 收尾，才能启动下一代。
+          return completion
+        }
       }
       else if (e.code === 'ERROR') {
         reportDevModuleGraphBuild(ctx, false)
