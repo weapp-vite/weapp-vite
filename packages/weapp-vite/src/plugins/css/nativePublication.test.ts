@@ -44,7 +44,7 @@ it('retains native styles until publication records ownership and compares final
     build: {
       emptyOutDir: false,
       minify: false,
-      rolldownOptions: { input: entry, output: { format: 'es' } },
+      rolldownOptions: { input: entry, output: { format: 'es', entryFileNames: 'app.js' } },
     },
   })
   try {
