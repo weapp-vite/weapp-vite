@@ -79,7 +79,6 @@ interface BundleStyleAnalysis {
 type SharedStyleImportCache = Map<string, string[]>
 
 const LEADING_BLANK_LINES_RE = /^(?:[ \t]*\r?\n)+/
-const COMPILER_CONTENT_HMR_NONCE_RE = /\n\/\* weapp-vite (?:compiler-content|tailwind-content) [^*\n]+ \*\/$/
 const VITE_PREPROCESS_STYLE_RE = /\.(?:acss|css|less|sass|scss|styl|stylus|pcss|postcss|sss)$/
 const TAILWIND_GENERATOR_PLACEHOLDER = '/*! weapp-tailwindcss generator-placeholder */'
 const VITE_STYLE_ASSET_PLACEHOLDER_RE = /__VITE_ASSET__([\w$]+)__(?:\$_(.*?)__)?/g
@@ -151,25 +150,6 @@ function isSourceStyleAsset(fileName: string) {
   const extension = path.extname(fileName)
   return isSourceStyleExtension(extension)
     || /\.(?:stylus|pcss|postcss|sss)$/.test(fileName)
-}
-
-function hasCompilerContentDirtyReason(ctx: CompilerContext) {
-  return Boolean(getHmrStyleUpdatePlan(ctx.configService)?.compilerContentOwners.size)
-}
-
-function appendCompilerContentHmrNonce(ctx: CompilerContext, source: string) {
-  const plan = getHmrStyleUpdatePlan(ctx.configService)
-  if (!plan?.compilerContentOwners.size) {
-    return source
-  }
-  const marker = [...plan.compilerContentOwners.values()].includes('compiler-content')
-    ? 'compiler-content'
-    : 'tailwind-content'
-  return `${source}\n/* weapp-vite ${marker} ${plan.id} */`
-}
-
-function stripCompilerContentHmrNonce(source: string) {
-  return source.replace(COMPILER_CONTENT_HMR_NONCE_RE, '')
 }
 
 function isStyleBundleAsset(output: OutputBundle[string], bundleKey: string): output is OutputAsset {
@@ -307,13 +287,10 @@ function emitPreparedCssAsset(
   const cache = ctx.runtimeState?.css?.emittedSource
   const existing = bundle[fileName]
   const resolvedSource = resolveViteStyleAssetPlaceholders(source, fileName, pluginCtx)
-  const emittedSource = hasManagedCompilerOutputMarker(resolvedSource)
-    ? resolvedSource
-    : appendCompilerContentHmrNonce(ctx, resolvedSource)
   if (existing?.type === 'asset') {
     const current = existing.source?.toString?.() ?? ''
-    if (current !== emittedSource) {
-      existing.source = emittedSource
+    if (current !== resolvedSource) {
+      existing.source = resolvedSource
     }
     cache?.set(normalizedFileName, resolvedSource)
     return true
@@ -323,7 +300,7 @@ function emitPreparedCssAsset(
     type: 'asset',
     fileName,
     ...(options?.originalFileName ? { originalFileName: options.originalFileName } : {}),
-    source: emittedSource,
+    source: resolvedSource,
   })
   cache?.set(normalizedFileName, resolvedSource)
   return true
@@ -600,19 +577,16 @@ async function handleBundleEntry(
 
     if (fileName) {
       const source = asset.source.toString()
-      const canonicalSource = hasCompilerContentDirtyReason(ctx)
-        ? source
-        : stripCompilerContentHmrNonce(source)
       const normalizedFileName = toPosixPath(fileName)
       const freshHmrStyleSourcePath = resolveFreshHmrStyleSourcePath(ctx, normalizedFileName)
       const preprocessId = freshHmrStyleSourcePath ?? absOriginal
       const shouldPreprocess = shouldPreprocessWithVite(preprocessId)
-      const graphSource = await readStyleGraphSource(preprocessId, canonicalSource)
+      const graphSource = await readStyleGraphSource(preprocessId, source)
       const preprocessInput = freshHmrStyleSourcePath
         ? await resolveMemoryStyleSource(ctx, freshHmrStyleSourcePath) ?? graphSource
-        : shouldPreprocess && hasViteStyleAssetPlaceholder(canonicalSource)
+        : shouldPreprocess && hasViteStyleAssetPlaceholder(source)
           ? graphSource
-          : canonicalSource
+          : source
       const { css, dependencies } = await preprocessStyleSource(preprocessInput, preprocessId, resolvedConfig, {
         enabled: shouldPreprocess,
       })
