@@ -2040,6 +2040,10 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
                   if (!change) {
                     return []
                   }
+                  // 应用壳有无会改变合成组件与页面注册拓扑，必须完整发布后统一退休旧产物。
+                  requiresFullRescan = true
+                  fullEntryScan = true
+                  scanService.markDirty()
                   appShellDependentEntries = change.pageIds
                   const affected = [change.appId, ...change.pageIds]
                   for (const entryId of affected) {

@@ -2322,11 +2322,11 @@ describe('runtime buildPlugin service', () => {
       expect(reads).toEqual([source(before), source(before)])
       await scenario.update(source(!before))
       for (const id of scenario.pageIds) {
-        expect(scenario.ctx.runtimeState.build.hmr.dirtyEntryReasons.get(id)).toBe('dependency')
+        expect(scenario.ctx.runtimeState.build.hmr.dirtyEntryReasons.get(id)).toBe('direct')
         expect(scenario.ctx.runtimeState.build.hmr.loadedEntrySet.has(id)).toBe(false)
       }
-      expect(scenario.ctx.runtimeState.build.hmr.dirtyEntrySet.has(scenario.componentId)).toBe(false)
-      expect(scenario.ctx.runtimeState.build.hmr.loadedEntrySet.has(scenario.componentId)).toBe(true)
+      expect(scenario.ctx.runtimeState.build.hmr.dirtyEntrySet.has(scenario.componentId)).toBe(true)
+      expect(scenario.ctx.runtimeState.build.hmr.loadedEntrySet.has(scenario.componentId)).toBe(false)
     }
     finally {
       await scenario.close()
@@ -2365,29 +2365,41 @@ describe('runtime buildPlugin service', () => {
     }
   })
 
-  it.each([false, true])('invalidates page scripts when an App shell template changes presence (before=%s)', async (before) => {
+  it.each([false, true])('publishes complete native output when an App shell template changes presence (before=%s)', async (before) => {
     const scenario = await createAppShellSnapshotHarness(before)
     const { appId, appSource, pageIds, componentId, ctx } = scenario
     try {
       let dirtyReasonSummary: string[] | undefined
+      let fullOutput: boolean | undefined
+      let fullScan: boolean | undefined
+      const resets = resetEmittedOutputCachesMock.mock.calls.length
+      ctx.scanService.markDirty.mockClear()
       buildMock.mockImplementationOnce(async () => {
         dirtyReasonSummary = ctx.runtimeState.build.hmr.profile.dirtyReasonSummary
+        fullOutput = ctx.runtimeState.build.hmr.fullSnapshotOutput
+        fullScan = ctx.runtimeState.build.hmr.fullEntryScan
         return { output: [] }
       })
       expect(ctx.runtimeState.build.hmr.vueEntryHasTemplate.get(appId)).toBe(before)
       await scenario.update(appSource(!before))
 
       expect(buildMock).toHaveBeenCalledTimes(2)
-      for (const id of pageIds) {
+      for (const id of [appId, ...pageIds, componentId]) {
         expect(ctx.runtimeState.build.hmr.dirtyEntrySet.has(id)).toBe(true)
-        expect(ctx.runtimeState.build.hmr.dirtyEntryReasons.get(id)).toBe('dependency')
+        expect(ctx.runtimeState.build.hmr.dirtyEntryReasons.get(id)).toBe('direct')
         expect(ctx.runtimeState.build.hmr.loadedEntrySet.has(id)).toBe(false)
-        expect(ctx.runtimeState.build.hmr.dirtyVueEntryIds.has(id)).toBe(false)
+        expect(ctx.runtimeState.build.hmr.dirtyVueEntryIds.has(id)).toBe(true)
+      }
+      for (const id of pageIds) {
         expect(await fs.readFile(id, 'utf8')).toBe('<template><view>unchanged</view></template>')
       }
-      expect(ctx.runtimeState.build.hmr.dirtyEntrySet.has(componentId)).toBe(false)
-      expect(ctx.runtimeState.build.hmr.loadedEntrySet.has(componentId)).toBe(true)
-      expect(dirtyReasonSummary).toContain('app-shell-dependent:2')
+      expect(dirtyReasonSummary).toEqual(['snapshot-full:4'])
+      expect(fullOutput).toBe(true)
+      expect(fullScan).toBe(true)
+      expect(ctx.scanService.markDirty).toHaveBeenCalled()
+      expect(resetEmittedOutputCachesMock.mock.calls.length).toBe(resets + 1)
+      expect(ctx.runtimeState.build.hmr.fullSnapshotOutput).toBe(false)
+      expect(ctx.runtimeState.build.hmr.fullEntryScan).toBe(false)
     }
     finally {
       await scenario.close()
@@ -2503,7 +2515,7 @@ describe('runtime buildPlugin service', () => {
     }
   })
 
-  it.each(['content', 'style', 'config'] as const)('keeps App shell %s changes local after successfully publishing its presence', async (kind) => {
+  it.each(['content', 'script', 'style', 'config'] as const)('keeps App shell %s changes local after successfully publishing its presence', async (kind) => {
     const scenario = await createAppShellSnapshotHarness(false)
     const { appId, appSource, pageIds, componentId, ctx } = scenario
     try {
@@ -2513,13 +2525,24 @@ describe('runtime buildPlugin service', () => {
       })
       await scenario.update(appSource(true))
       scenario.consumeDirtyEntries()
+      ctx.scanService.markDirty.mockClear()
+      const resets = resetEmittedOutputCachesMock.mock.calls.length
       const source = kind === 'content'
         ? appSource(true).replace('<view>', '<view class="changed">')
-        : appSource(true) + (kind === 'style' ? '<style>.changed { color: red; }</style>' : '<config>{"window":{"navigationBarTitleText":"changed"}}</config>')
+        : kind === 'script'
+          ? appSource(true).replace('marker = \'app\'', 'marker = \'updated\'')
+          : appSource(true) + (kind === 'style' ? '<style>.changed { color: red; }</style>' : '<config>{"window":{"navigationBarTitleText":"changed"}}</config>')
+      buildMock.mockImplementationOnce(async () => {
+        expect(ctx.runtimeState.build.hmr.fullSnapshotOutput).toBe(false)
+        expect(ctx.runtimeState.build.hmr.fullEntryScan).toBe(false)
+        return { output: [] }
+      })
       await scenario.update(source)
 
       expect(buildMock).toHaveBeenCalledTimes(3)
       expect(ctx.runtimeState.build.hmr.dirtyEntrySet).toEqual(new Set([appId]))
+      expect(ctx.scanService.markDirty).not.toHaveBeenCalled()
+      expect(resetEmittedOutputCachesMock.mock.calls.length).toBe(resets)
       for (const id of [...pageIds, componentId]) {
         expect(ctx.runtimeState.build.hmr.loadedEntrySet.has(id)).toBe(true)
       }
