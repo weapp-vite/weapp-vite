@@ -25,6 +25,7 @@ export interface CorePluginState {
     didEmitAllEntries: boolean
     hasBuiltOnce: boolean
     affectedSharedChunkIds?: Set<string>
+    requiredPublicationEntryIds?: Set<string>
     styleSidecarFiles?: Set<string>
     lastHmrEntryIds?: Set<string>
     lastEmittedEntryIds?: Set<string>

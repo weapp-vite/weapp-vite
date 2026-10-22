@@ -3,6 +3,7 @@ import type { TailwindRootState } from './roots'
 import { mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
+import { HmrCompilerHost } from '@weapp-vite/hmr'
 import path from 'pathe'
 import { expect, it } from 'vitest'
 import { createCompiler } from 'weapp-tailwindcss/core'
@@ -43,23 +44,20 @@ it.each([
     expect(initial.classSet.has('w-[37px]')).toBe(true)
     expect(initial.classSet.has('w-[91px]')).toBe(automatic)
     expect(initial.classSet.has('w-[73px]')).toBe(automatic)
-    const sources = new Map<string, string>()
+    const host = new HmrCompilerHost({ sourceId: path.normalize })
     for (const file of [...initial.dependencies, source, outside, ignored]) {
-      sources.set(file, await readFile(file, 'utf8'))
+      // Windows 依赖可保留反斜杠，捕获与 CSS 入口查询必须使用同一宿主身份。
+      host.capture(file.replaceAll('/', '\\'), await readFile(file, 'utf8'))
     }
-    const state: TailwindRootState = { request, result: initial, rawSources: new Map([[entry, css]]) }
+    const state: TailwindRootState = { request, result: initial, rawSources: host.freeze([]).sources }
     for (const [index, nextSource] of [
       `${initialSource}\nconsole.log("script-only");`,
       initialSource.replace('37px', '53px'),
     ].entries()) {
       await writeFile(source, nextSource)
-      sources.set(source, nextSource)
+      host.capture(source, nextSource)
       const expected = await reference.generate({ ...request, id: `disk-scope-${index}` })
-      const prepared = await prepareTailwindRoots(compiler, {
-        revision: index + 1,
-        changedFiles: [source],
-        sources,
-      }, new Map([['root', state]]), { cwd: root, sourceId: file => file })
+      const prepared = await prepareTailwindRoots(compiler, host.freeze([source]), new Map([['root', state]]), { cwd: root, sourceId: path.normalize })
       const actual = prepared.get('root')!
       expect(actual.rawCss).toBe(expected.rawCss)
       expect(actual.css).toBe(expected.css)

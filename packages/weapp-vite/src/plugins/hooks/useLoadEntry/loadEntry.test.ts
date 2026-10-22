@@ -358,6 +358,7 @@ function createLoader(options?: CreateLoaderOptions) {
     extendedLibManager,
     runtimeState,
     wxmlService: compilerCtx.wxmlService,
+    dirtyEntrySet,
   }
 }
 
@@ -3009,6 +3010,27 @@ describe('createEntryLoader', () => {
     ;(loader as any).invalidateResolveCache?.()
     await (loader as any).call(pluginCtx, appScript, 'app')
     expect((pluginCtx.resolve as unknown as Mock).mock.calls.length).toBeGreaterThan(firstResolveCalls)
+  })
+
+  it('preserves child dirty events when an app scan discovers their compilation entries', async () => {
+    const appScript = '/project/src/app.js'
+    const child = '/project/src/pages/a/index.js'
+    existsMock.mockImplementation(async (id: string) => id === child)
+    mockFindJsonEntry.mockImplementation(async (filepath: string) => ({
+      path: filepath === appScript ? '/project/src/app.json' : undefined,
+      predictions: [],
+    }))
+    const { loader, jsonService, dirtyEntrySet, loadedEntrySet, emitEntriesChunks } = createLoader({ isDev: true })
+    jsonService.read.mockResolvedValue({ pages: ['pages/a/index'] })
+    dirtyEntrySet.add(child)
+    loadedEntrySet.add(child)
+    const pluginCtx = createPluginContext()
+    pluginCtx.resolve = vi.fn(async (id: string) => ({ id: id.includes('pages/a/index') ? child : id }))
+
+    await loader.call(pluginCtx, appScript, 'app')
+
+    expect(emitEntriesChunks.mock.calls.some(([entries]) => entries.some(entry => entry.id === child))).toBe(true)
+    expect(dirtyEntrySet).toEqual(new Set([child]))
   })
 
   it('short-circuits app entry resolution on cached app json', async () => {
