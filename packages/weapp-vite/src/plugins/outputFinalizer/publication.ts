@@ -83,9 +83,9 @@ export function createOutputPublicationPlugin(ctx: CompilerContext, subPackageMe
     enforce: 'post',
     api: Object.freeze({
       getEpoch: () => epoch,
-      readCommitted: (root: string, expectedEpoch: number) => !closing && expectedEpoch === epoch ? scopes.get(root)?.observation.readCommitted(expectedEpoch) : undefined,
+      readCommitted: (root: string, expectedEpoch: number) => !closing && expectedEpoch === epoch ? scopes.get(path.resolve(root))?.observation.readCommitted(expectedEpoch) : undefined,
       whenCommitted: (root: string, expectedEpoch: number) => !closing && expectedEpoch === epoch
-        ? scopes.get(root)?.observation.whenCommitted(expectedEpoch) ?? Promise.resolve(undefined)
+        ? scopes.get(path.resolve(root))?.observation.whenCommitted(expectedEpoch) ?? Promise.resolve(undefined)
         : Promise.resolve(undefined),
     }),
     configResolved(config) {

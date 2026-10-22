@@ -402,7 +402,13 @@ describe('managed Tailwind integration', () => {
     }))
     const generatedRequest = compiler.generate.mock.calls[0]![0]
     expect(generatedRequest.sourceOptions).toBeUndefined()
-    expect(generatedRequest.source).toMatchObject({
+    const generatedSource = generatedRequest.source
+    expect(generatedSource && {
+      ...generatedSource,
+      projectRoot: generatedSource.projectRoot.replaceAll('\\', '/'),
+      base: generatedSource.base.replaceAll('\\', '/'),
+      dependencies: generatedSource.dependencies.map(file => file.replaceAll('\\', '/')),
+    }).toMatchObject({
       projectRoot: root.replaceAll('\\', '/'),
       base: path.dirname(entry).replaceAll('\\', '/'),
       css: `@import "${createRequire(import.meta.url).resolve('tailwindcss/index.css').replaceAll('\\', '/')}";`,
