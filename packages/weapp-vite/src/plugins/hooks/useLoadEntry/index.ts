@@ -35,6 +35,7 @@ interface HmrOptions {
   setLastHmrEntries?: (entryIds: Set<string>) => void
   setSkipSharedChunkRefresh?: (value: boolean) => void
   rootInputIds?: Set<string>
+  requiredPublicationEntryIds?: ReadonlySet<string>
 }
 
 interface PendingEntryResolution {
@@ -429,6 +430,7 @@ export function useLoadEntry(
   const dirtyEntrySet = ctx.runtimeState.build.hmr.dirtyEntrySet
   const dirtyEntryReasons = ctx.runtimeState.build.hmr.dirtyEntryReasons as Map<string, DirtyEntryReason>
   const dirtyEntryEventIds = new Map<string, string | undefined>()
+  const dirtyEntryRevisions = new Map<string, object>()
   const resolvedEntryMap = ctx.runtimeState.build.hmr.resolvedEntryMap as Map<string, ResolvedId>
   const lastActualEmittedEntryIds = new Set<string>()
   const lastChunkEmittedEntryIds = new Set<string>()
@@ -545,6 +547,7 @@ export function useLoadEntry(
     dirtyEntrySet.delete(entryId)
     dirtyEntryReasons.delete(entryId)
     dirtyEntryEventIds.delete(entryId)
+    dirtyEntryRevisions.delete(entryId)
   }
 
   return {
@@ -560,6 +563,7 @@ export function useLoadEntry(
     markEntryDirty(entryId: string, reason: DirtyEntryReason = 'direct') {
       dirtyEntrySet.add(entryId)
       dirtyEntryEventIds.set(entryId, ctx.runtimeState.build.hmr.profile.eventId)
+      dirtyEntryRevisions.set(entryId, {})
       const previous = dirtyEntryReasons.get(entryId)
       const nextReason = previous === 'dependency' || reason === 'dependency'
         ? 'dependency'
@@ -581,6 +585,7 @@ export function useLoadEntry(
         dirtyEntrySet.clear()
         dirtyEntryReasons.clear()
         dirtyEntryEventIds.clear()
+        dirtyEntryRevisions.clear()
         lastActualEmittedEntryIds.clear()
         lastChunkEmittedEntryIds.clear()
         lastEmittedChunkFileNames.clear()
@@ -603,6 +608,9 @@ export function useLoadEntry(
         const app = await ctx.scanService.loadAppEntry()
         await prepareIndependentOutputs(ctx)
         await loadEntry.call(this, app.path, 'app')
+        for (const entryId of dirtyEntrySet) {
+          loadedEntrySet.delete(entryId)
+        }
         options?.hmr?.setDidEmitAllEntries?.(true)
         options?.hmr?.setSkipSharedChunkRefresh?.(false)
         return
@@ -622,7 +630,7 @@ export function useLoadEntry(
             const eventId = dirtyEntryEventIds.get(entryId)
             return eventId === undefined || eventId === currentEventId
           }))
-        : dirtyEntrySet
+        : new Set(dirtyEntrySet)
       if (!activeDirtyEntrySet.size) {
         options?.hmr?.setDidEmitAllEntries?.(false)
         options?.hmr?.setLastEmittedEntries?.(new Set())
@@ -631,6 +639,13 @@ export function useLoadEntry(
         return
       }
       const dirtyCount = activeDirtyEntrySet.size
+      const activeRevisions = new Map([...activeDirtyEntrySet].map(id => [id, dirtyEntryRevisions.get(id)]))
+      // 完整编译图不拥有下一次保存的事件；异步加载期间重入的同一入口也必须保留。
+      const consumeActiveDirtyEntry = (entryId: string) => {
+        if (activeDirtyEntrySet.has(entryId) && activeRevisions.get(entryId) === dirtyEntryRevisions.get(entryId)) {
+          clearDirtyEntry(entryId)
+        }
+      }
       const styleOwners = getHmrStyleUpdatePlan(ctx.configService)?.cssImporterOwners
       const pendingResolution = resolvePendingEntryIds({
         isDev: Boolean(ctx.configService?.isDev),
@@ -646,8 +661,16 @@ export function useLoadEntry(
         styleOwners,
       })
       const pendingEntryIds = pendingResolution.pending
+      const requiredPublicationEntries = options?.hmr?.requiredPublicationEntryIds
+      // 必需发布入口属于原生共享图，不能被模板或共享源码的代表入口优化裁掉。
+      for (const entryId of requiredPublicationEntries ?? []) {
+        if (resolvedEntryMap.has(entryId)) {
+          pendingEntryIds.add(entryId)
+        }
+      }
       // 发射集合还会包含元数据扫描发现的已有组件；仅脚本失效才需要重写内容未变的入口。
-      ctx.runtimeState.build.hmr.forceEmitUnchangedChunks = [...pendingEntryIds].some(entryId => dirtyEntryReasons.get(entryId) !== 'metadata')
+      ctx.runtimeState.build.hmr.forceEmitUnchangedChunks = !requiredPublicationEntries?.size
+        && [...pendingEntryIds].some(entryId => dirtyEntryReasons.get(entryId) !== 'metadata')
       const pending: ResolvedId[] = []
       chunkEmitStats.chunkEmitCount = 0
       chunkEmitStats.emitFileMs = 0
@@ -679,7 +702,7 @@ export function useLoadEntry(
 
       for (const entryId of pendingEntryIds) {
         const reason = dirtyEntryReasons.get(entryId)
-        if (reason === 'metadata') {
+        if (reason === 'metadata' && !requiredPublicationEntries?.has(entryId)) {
           // JSON/模板可以仅刷新元数据；样式仍须由逻辑入口导入，交给 Vite 编译完整依赖闭包。
           if (!styleOwners?.has(entryId)) {
             metadataEntryIds.add(entryId)
@@ -690,7 +713,7 @@ export function useLoadEntry(
           deferredDirtyEntryIds.add(entryId)
         }
         else {
-          clearDirtyEntry(entryId)
+          consumeActiveDirtyEntry(entryId)
         }
         const resolvedId = resolvedEntryMap.get(entryId)
         if (!resolvedId) {
@@ -730,10 +753,15 @@ export function useLoadEntry(
         await reloadPendingAutoImportEntry(resolvedId)
       }
       for (const entryId of deferredDirtyEntryIds) {
-        clearDirtyEntry(entryId)
+        consumeActiveDirtyEntry(entryId)
       }
       for (const entryId of activeDirtyEntrySet) {
-        clearDirtyEntry(entryId)
+        consumeActiveDirtyEntry(entryId)
+      }
+      for (const entryId of pendingEntryIds) {
+        if (dirtyEntrySet.has(entryId)) {
+          loadedEntrySet.delete(entryId)
+        }
       }
 
       const actualEmittedEntryIds = new Set(lastActualEmittedEntryIds)
@@ -770,7 +798,8 @@ export function useLoadEntry(
         }
       }
       const skipSharedChunkRefresh = actualChunkEmittedEntryIds.size === 0
-      const shouldEmitAllEntries = actualChunkEmittedEntryIds.size > 0 && (
+      // 注册图完整不代表本轮原生资产清单完整；缓存省略的 JSON 仍属于已提交视图。
+      const shouldEmitAllEntries = !requiredPublicationEntries?.size && actualChunkEmittedEntryIds.size > 0 && (
         actualEmittedEntryIds.size === resolvedEntryMap.size
         || pendingResolution.shouldEmitAllEntries === true
       )
