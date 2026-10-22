@@ -1496,6 +1496,9 @@ importers:
       '@weapp-vite/dashboard':
         specifier: workspace:*
         version: link:../../packages/dashboard
+      '@weapp-vite/web':
+        specifier: workspace:*
+        version: link:../../packages-runtime/web
       miniprogram-api-typings:
         specifier: 'catalog:'
         version: 5.2.3
@@ -2804,6 +2807,9 @@ importers:
       postcss-selector-parser:
         specifier: 'catalog:'
         version: 7.1.6
+      postcss-value-parser:
+        specifier: 4.2.0
+        version: 4.2.0
       rolldown:
         specifier: 1.2.14
         version: 1.2.14(patch_hash=61de75b4db18dfb15bfc1a547cbf43938d0602149f61d9a2e81e14b117aeb6a0)

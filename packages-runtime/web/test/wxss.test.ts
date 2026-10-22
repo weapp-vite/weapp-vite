@@ -182,4 +182,53 @@ describe('transformWxssToCss', () => {
     const { css } = transformWxssToCss('.page { width: 100vw; }', { pxPerRpx: 0.5 })
     expect(css).toContain('width: 100vw')
   })
+
+  it.each([
+    ['+50VH', 'calc(var(--weapp-viewport-height) * 50 / 100)'],
+    ['-.5vmin', 'calc(min(var(--weapp-viewport-width), var(--weapp-viewport-height)) * -0.5 / 100)'],
+    ['1e2VW', 'var(--weapp-viewport-width)'],
+    ['1E-2vmax', 'calc(max(var(--weapp-viewport-width), var(--weapp-viewport-height)) * 0.01 / 100)'],
+    ['-0vw', '0px'],
+  ])('converts complete CSS dimensions including %s', (value, expected) => {
+    expect(transformWxssToCss(`.probe { margin: ${value}; }`).css)
+      .toBe(`.probe { margin: ${expected}; }`)
+  })
+
+  it.each([
+    'content: "100vw 50vh"',
+    'background-image: url("/assets/100vw.png")',
+    'background-image: url(100vw)',
+    'background-image: URL(100vw)',
+    'background-image: url("data:image/svg+xml,<svg width=\'100vw\'/>")',
+    '--size-100vw: 23px; width: var(--size-100vw)',
+    'width: 100dvw',
+    'width: 100vwx',
+    'width: 1.E2vw',
+    'width: 1e999vw',
+  ])('preserves non-dimension tokens in %s', (declaration) => {
+    const source = `.probe { ${declaration}; }`
+    expect(transformWxssToCss(source).css).toBe(source)
+  })
+
+  it('transforms nested fallbacks and math without changing identifiers or comments', () => {
+    const source = '.probe { width: var(--size-100vw, clamp(10px, calc(100vw/2), 50vh)); /* 100vw */ }'
+    expect(transformWxssToCss(source).css).toBe(
+      '.probe { width: var(--size-100vw, clamp(10px, calc(var(--weapp-viewport-width)/2), calc(var(--weapp-viewport-height) * 50 / 100))); /* 100vw */ }',
+    )
+  })
+
+  it('preserves media and supports conditions while transforming their declarations', () => {
+    const source = '@media (min-width: 50vw) { @supports (width: 100vw) { .probe { width: 100vw; } } }'
+    expect(transformWxssToCss(source).css).toBe(
+      '@media (min-width: 50vw) { @supports (width: 100vw) { .probe { width: var(--weapp-viewport-width); } } }',
+    )
+  })
+
+  it('keeps repeated conversions stable across the direct and PostCSS entrypoints', async () => {
+    const source = '.probe { width: calc(100vw - 40rpx); height: var(--size-100vw, 50vmin); content: "100vw"; }'
+    const { css } = transformWxssToCss(source)
+    expect(transformWxssToCss(css).css).toBe(css)
+    const result = await postcss([createWxssPostcssPlugin()]).process(css, { from: undefined })
+    expect(result.css).toBe(css)
+  })
 })

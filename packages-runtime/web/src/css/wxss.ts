@@ -1,5 +1,6 @@
 import postcss from 'postcss'
 import selectorParser from 'postcss-selector-parser'
+import valueParser from 'postcss-value-parser'
 import { resolveNativeComponentWebTag } from '../shared/nativeComponents'
 
 export interface WxssTransformOptions {
@@ -25,7 +26,6 @@ export interface WxssTransformResult {
 }
 
 const RPX_RE = /(-?(?:\d+(?:\.\d+)?|\.\d+))rpx/gi
-const VIEWPORT_UNIT_RE = /(-?(?:\d+(?:\.\d+)?|\.\d+))(vw|vh|vmin|vmax)\b/gi
 const SAFE_AREA_ENV_RE = /env\(\s*safe-area-inset-(top|right|bottom|left)(?:\s*,[^)]*)?\)/gi
 const PAGE_HOST_SELECTOR = selectorParser().astSync(':host(:where([data-weapp-page-active]))').nodes[0]!.nodes[0]!
 
@@ -49,17 +49,27 @@ function resolveViewportUnitBase(unit: string) {
 }
 
 function transformViewportUnits(value: string) {
-  return value.replace(VIEWPORT_UNIT_RE, (whole, numericRaw: string, rawUnit: string) => {
-    const numeric = Number.parseFloat(numericRaw)
+  const parsed = valueParser(value)
+  parsed.walk((node, index, nodes) => {
+    if (node.type === 'function' && node.value.toLowerCase() === 'url') {
+      return false
+    }
+    if (node.type !== 'word') {
+      return
+    }
+    const dimension = valueParser.unit(node.value)
+    if (!dimension || !/^(?:vw|vh|vmin|vmax)$/i.test(dimension.unit)) {
+      return
+    }
+    const numeric = Number(dimension.number)
     if (!Number.isFinite(numeric)) {
-      return whole
+      return
     }
-    if (numeric === 0) {
-      return '0px'
-    }
-    const base = resolveViewportUnitBase(rawUnit.toLowerCase())
-    return numeric === 100 ? base : `calc(${base} * ${numeric} / 100)`
+    const base = resolveViewportUnitBase(dimension.unit.toLowerCase())
+    const replacement = numeric === 0 ? '0px' : numeric === 100 ? base : `calc(${base} * ${numeric} / 100)`
+    nodes[index] = valueParser(replacement).nodes[0]!
   })
+  return parsed.toString()
 }
 
 function isDeepPseudo(pseudo: selectorParser.Pseudo) {

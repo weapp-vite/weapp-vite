@@ -1,0 +1,65 @@
+.viewport-demo {
+  --size-100vw: 23px;
+
+  padding-bottom: 32px;
+  font-size: 12px;
+}
+
+.probe {
+  box-sizing: border-box;
+  height: 24px;
+  margin-bottom: 4px;
+  background: #e6f2ef;
+}
+
+.viewport-width {
+  width: 100vw;
+}
+
+.viewport-height {
+  height: 50vh;
+}
+
+.viewport-min {
+  width: 10vmin;
+}
+
+.viewport-max {
+  width: 10vmax;
+}
+
+.viewport-calc {
+  width: calc(100vw - 20px);
+}
+
+.viewport-fallback {
+  width: var(--missing-100vw, 25vw);
+}
+
+.viewport-variable {
+  width: var(--size-100vw);
+}
+
+.viewport-exponent {
+  width: 1e2vw;
+}
+
+.viewport-string::before {
+  content: "100vw";
+}
+
+.viewport-image {
+  width: 16px;
+  height: 16px;
+  background-image: url("/viewport-100vw.svg");
+}
+
+.viewport-fixed {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100vw;
+  height: 24px;
+  color: #fff;
+  background: #087f5b;
+}

@@ -86,6 +86,7 @@
     "pathe": "catalog:",
     "postcss": "catalog:",
     "postcss-selector-parser": "catalog:",
+    "postcss-value-parser": "4.2.0",
     "rolldown": "catalog:",
     "rolldown-require": "workspace:*",
     "vite": "catalog:",

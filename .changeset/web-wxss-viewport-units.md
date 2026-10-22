@@ -9,3 +9,4 @@ fix(web): wxss 中的 vw/vh 按设备视口换算。
 - `vw` / `vh` / `vmin` / `vmax` 统一改写为运行时的 `--weapp-viewport-width` / `--weapp-viewport-height`，`vmin` / `vmax` 取两者的 `min()` / `max()`
 - 只在运行时变量模式下改写；`pxPerRpx` 静态换算模式保持原样
 - `:root` 补充 `--weapp-viewport-height: 100dvh`
+- 按 CSS 值节点转换完整尺寸，保留字符串、资源 URL 和变量名，支持带符号、指数及大小写单位；嵌套表达式与重复转换保持正确

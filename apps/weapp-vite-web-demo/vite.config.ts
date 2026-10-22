@@ -22,17 +22,6 @@ export default defineConfig({
       typedComponents: '.weapp-vite/typed-components.d.ts',
       htmlCustomData: '.weapp-vite/mini-program.html-data.json',
     },
-    typescript: {
-      app: {
-        compilerOptions: {
-          paths: {
-            '@weapp-vite/web': [
-              '../../packages-runtime/web/src/index.ts',
-            ],
-          },
-        },
-      },
-    },
     web: {
       pluginOptions: {
         runtime: {

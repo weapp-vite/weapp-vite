@@ -1,0 +1,14 @@
+<view class="viewport-demo">
+  <text>设备视口尺寸与 CSS 值保留</text>
+  <view id="viewport-width" class="probe viewport-width">100vw</view>
+  <view id="viewport-height" class="probe viewport-height">50vh</view>
+  <view id="viewport-min" class="probe viewport-min">10vmin</view>
+  <view id="viewport-max" class="probe viewport-max">10vmax</view>
+  <view id="viewport-calc" class="probe viewport-calc">calc</view>
+  <view id="viewport-fallback" class="probe viewport-fallback">fallback</view>
+  <view id="viewport-variable" class="probe viewport-variable">变量名</view>
+  <view id="viewport-exponent" class="probe viewport-exponent">指数尺寸</view>
+  <view id="viewport-string" class="viewport-string" />
+  <view id="viewport-image" class="viewport-image" />
+  <view id="viewport-fixed" class="viewport-fixed">固定栏 / 100vw</view>
+</view>
