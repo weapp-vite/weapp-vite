@@ -71,7 +71,7 @@ import { clearStatefulHmrSnapshot, takeStatefulHmrSnapshot } from '../statefulHm
 import { syncProjectSupportFiles } from '../supportFiles'
 import { watchAssetSources } from '../watch/assets'
 import { createSidecarWatchOptions } from '../watch/options'
-import { retainWatcherService } from '../watcherPlugin'
+import { captureWatcherCloseOperation, createWatcherControllerClose, retainWatcherService } from '../watcherPlugin'
 import { captureAppShellSnapshot, resolveAppShellSnapshotChange, withInitialAppShellSnapshot } from './appShellSnapshot'
 import { createDevBuildWatcher } from './devBuildWatcher'
 import { createDevWatcherSession } from './devWatcherSession'
@@ -1303,6 +1303,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
   let statefulRestartQueue = Promise.resolve()
   let statefulRestartFailure: { error: unknown } | undefined
   let stopStatefulWatcher: (() => Promise<void>) | undefined
+  let runStatefulCloseOperation: ReturnType<typeof captureWatcherCloseOperation> = close => close()
   let releaseClassicRequest: (() => void) | undefined
 
   async function trackStatefulRestart(restart: () => Promise<void>) {
@@ -1348,6 +1349,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       releaseClassicRequest?.()
       releaseClassicRequest = undefined
       stopPromise ??= (async () => {
+        runStatefulCloseOperation = captureWatcherCloseOperation(watcherService)
         const activeWatcher = activeStatefulWatcher
         activeStatefulWatcher = undefined
         const failures: unknown[] = []
@@ -2155,7 +2157,11 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       : undefined
 
     // classic 的多轮一次性构建共用控制器资源，必须保留到正在执行的快照结束后再释放。
-    const releaseWatcherResources = devBuildWatcher ? retainWatcherService(watcherService) : undefined
+    const releaseWatcherOwner = devBuildWatcher ? retainWatcherService(watcherService) : undefined
+    // 晚到的新代仍在父关闭等待的重启链中；只转交资源释放，不能反向 join 同一 drain。
+    const releaseWatcherResources = releaseWatcherOwner && (() => statefulWatcherClosed
+      ? runStatefulCloseOperation(releaseWatcherOwner)
+      : releaseWatcherOwner())
     const watcherPromise = target === 'app'
       ? (async () => {
           devBuildWatcher!.emitEvent({ code: 'START' })
@@ -2593,10 +2599,13 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       const cleanup: DevWatcherCleanup = { releaseSession }
       devWatcherCleanups.set(watcher, cleanup)
       const close = watcher.close.bind(watcher)
-      watcher.close = () => {
+      const closeLocal = () => {
         cleanup.closePromise ??= close().finally(() => cleanup.releaseSession())
         return cleanup.closePromise
       }
+      watcher.close = watcher === statefulBuildEvents?.watcher
+        ? createWatcherControllerClose(watcherService, closeLocal)
+        : closeLocal
       return watcher
     }
     catch (error) {
