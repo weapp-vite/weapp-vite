@@ -37,3 +37,16 @@ it('does not accept invalid observations as valid samples', () => {
     expect((error as PartialHmrCollectionError).samples.every(value => Number.isFinite(value.ms))).toBe(true)
   }
 })
+
+it('keeps the requested mode separate from actual fallback pipelines and missing timing', () => {
+  const edit = { wallMs: 10, phase: 'edit', profileStatus: 'missing', timingSource: 'output-observation', runtimeBefore: 'stateful' as const, runtimeAfter: 'standard' as const }
+  const restore = { wallMs: 20, phase: 'restore', profileStatus: 'available', timingSource: 'compiler-profile', totalMs: 15, pipeline: 'standard' as const, runtimeBefore: 'standard' as const, runtimeAfter: 'standard' as const }
+  const cycle = { edit, restore }
+  const values = readHmrSamples({ templates: [{ id: 'native', scenarios: [{ id: 'app-json', samples: [edit, edit], cycles: [cycle, cycle] }] }] }, 'stateful-experimental')
+  expect(values).toHaveLength(4)
+  expect(values[0]).toMatchObject({ requestedRuntime: 'stateful-experimental', runtimeBefore: 'stateful', runtimeAfter: 'standard', profileStatus: 'missing' })
+  expect(values[0]?.profile).toBeUndefined()
+  expect(values[0]?.profilePipeline).toBeUndefined()
+  expect(values[1]).toMatchObject({ requestedRuntime: 'stateful-experimental', runtimeBefore: 'standard', runtimeAfter: 'standard', profilePipeline: 'standard', profileStatus: 'available', profile: { totalMs: 15 } })
+  expect(values.every(value => value.id.startsWith('hmr:stateful-experimental:'))).toBe(true)
+})

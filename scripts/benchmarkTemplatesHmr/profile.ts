@@ -29,6 +29,21 @@ export async function collectBenchmarkHmrProfile<T extends { totalMs?: number }>
   }
 }
 
+/** 每次产物发布后重新确认管线；classic 回退不能沿用场景开始时的 stateful 过滤条件。 */
+export async function collectBenchmarkHmrPhaseProfile<T extends { totalMs?: number }>(
+  runtimeBefore: BenchmarkHmrRuntime,
+  readRuntime: () => Promise<BenchmarkHmrRuntime>,
+  readProfile: (runtime: BenchmarkHmrRuntime) => Promise<T>,
+  enabled = true,
+) {
+  const runtimeAfter = await readRuntime()
+  return {
+    ...await collectBenchmarkHmrProfile(runtimeAfter, () => readProfile(runtimeAfter), enabled),
+    runtimeBefore,
+    runtimeAfter,
+  }
+}
+
 /** 只接受明确的文件关联；多文件批次从 sourceEvents 匹配，不把无来源样本归给当前编辑。 */
 export function matchesHmrProfileSource(sample: HmrProfileJsonSample, expectedPaths: string[]) {
   const normalize = (value: string) => value.replaceAll('\\', '/')

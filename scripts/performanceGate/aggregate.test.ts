@@ -112,7 +112,7 @@ it('does not convert baseline patch failures into passes or accept evidence from
   report.primary.samples[0]!.values = []
   expect(verifyShard({ ...report, gate: { status: 'incomplete' } }, identity).gate.status).toBe('incomplete')
   expect(() => verifyShard(report, identity)).toThrow('Stored gate')
-  for (const samplingContract of ['paired-v2-template-shards', 'paired-v3-profile-capability']) {
+  for (const samplingContract of ['paired-v2-template-shards', 'paired-v3-profile-capability', 'paired-v4-template-consumption']) {
     expect(() => verifyShard({ ...report, samplingContract }, identity)).toThrow('samplingContract')
   }
 })
@@ -151,8 +151,7 @@ it('rejects forged planner metadata and refuses to overwrite a newer PR HEAD', a
   expect(calls).toEqual(['/pulls/7'])
 })
 
-it('finishes a registered v3 attempt after migration without mixing v4 shards or replacing its comment', async () => {
-  const samplingContract = 'paired-v3-profile-capability'
+it.each(['paired-v3-profile-capability', 'paired-v4-template-consumption'])('finishes a registered %s attempt without mixing current shards or replacing its comment', async (samplingContract) => {
   const historicalPlan = { ...plan, samplingContract, targets: [{ ...target, key: targetKey(target, samplingContract) }] }
   const run = { id: 10, name: 'Nightly Performance', event: 'workflow_dispatch', path: '.github/workflows/nightly-performance.yml', head_sha: plan.driverSha, head_branch: 'main', head_repository: { full_name: plan.repository }, html_url: 'https://github.com/owner/repo/actions/runs/10' }
   const context = statusContext(target, samplingContract)
@@ -196,6 +195,9 @@ it('finishes a registered v3 attempt after migration without mixing v4 shards or
       await writeFile(path.join(directory, 'report.json'), JSON.stringify({ ...fixture(row.shard, row.os).report, samplingContract }))
     }
     expect((await aggregatePlan(historicalPlan, root)).targets[0].status).toBe('passed')
+    const currentReport = await aggregatePlan(plan, root)
+    expect(currentReport.targets[0].status).toBe('incomplete')
+    expect(currentReport.targets[0].systems[0].parts[0].errors).toContain('Error: Shard identity mismatch: samplingContract')
     const planDirectory = path.join(root, 'performance-plan')
     await mkdir(planDirectory)
     await writeFile(path.join(planDirectory, 'plan.json'), JSON.stringify(historicalPlan))
