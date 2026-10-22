@@ -197,6 +197,7 @@ function isPartialStylePublication(ctx: CompilerContext, resolvedConfig?: Resolv
 function shouldSkipUnchangedStyleHmrBundle(
   ctx: CompilerContext,
   bundle: OutputBundle,
+  updatingSidecarOwners: ReadonlySet<string> | undefined,
   resolvedConfig?: ResolvedConfig,
 ) {
   if (!isPartialStylePublication(ctx, resolvedConfig)) {
@@ -208,7 +209,8 @@ function shouldSkipUnchangedStyleHmrBundle(
     return false
   }
 
-  return !plan.styleFiles.size && !plan.compilerContentOwners.size && !hasStyleBundleAsset(bundle)
+  return !plan.styleFiles.size && !plan.compilerContentOwners.size
+    && !updatingSidecarOwners?.size && !hasStyleBundleAsset(bundle)
 }
 
 function shouldPreprocessWithVite(fileName: string) {
@@ -873,49 +875,63 @@ async function emitSharedStyleImportsForChunks(
   }
 }
 
+function collectUpdatingSidecarOwners(
+  ctx: CompilerContext,
+  pluginCtx: CssEmitPluginContext,
+  bundle: OutputBundle,
+  resolvedConfig?: ResolvedConfig,
+): Set<string> | undefined {
+  const plan = ctx.configService.isDev ? getHmrStyleUpdatePlan(ctx.configService) : undefined
+  // 完整发布会替换归属清单，即使样式计划只涉及一个 owner，也必须登记全部独立 sidecar。
+  if (!plan || plan.full || !isPartialStylePublication(ctx, resolvedConfig)) {
+    return
+  }
+  const outputOwners = (sources: Iterable<string>) => Array.from(sources).flatMap((source) => {
+    const output = resolveOutputStyleFileName(ctx.configService, source)
+    return output ? [toPosixPath(output)] : []
+  })
+  const registeredOwners = new Set(outputOwners(ctx.runtimeState?.css?.sidecarImports ?? []))
+  if (!registeredOwners.size) {
+    return registeredOwners
+  }
+  const updatingOwners = new Set(outputOwners([
+    ...plan.styleFiles,
+    ...plan.cssImporterOwners,
+    ...plan.compilerContentOwners.keys(),
+  ]).filter(owner => registeredOwners.has(owner)))
+  for (const output of Object.values(bundle)) {
+    if (output.type !== 'chunk' || !output.facadeModuleId) {
+      continue
+    }
+    const source = resolveStyleOwnerId(output.facadeModuleId)
+    if (!plan.sourceFiles.has(normalizeFsResolvedId(source))) {
+      continue
+    }
+    const owner = outputOwners([source])[0]
+    if (!owner || !registeredOwners.has(owner) || updatingOwners.has(owner)
+      || !pluginCtx.getModuleInfo?.(output.facadeModuleId)) {
+      continue
+    }
+    // 本轮真实入口撤销最后一个 CSS 导入时，只让剩余独立 sidecar 接管。
+    // 此归属同时阻止提前跳过，仍有真实样式来源的入口继续使用 Vite 产物。
+    if (!collectRenderedStyleSources(pluginCtx, output.facadeModuleId).size) {
+      updatingOwners.add(owner)
+    }
+  }
+  return updatingOwners
+}
+
 async function emitCollectedStyleSidecars(
   this: any,
   ctx: CompilerContext,
   bundle: OutputBundle,
   emittedOwners: Set<string>,
+  updatingOwners: ReadonlySet<string> | undefined,
   resolvedConfig?: ResolvedConfig,
 ) {
   const sidecarImports = ctx.runtimeState?.css?.sidecarImports
   if (!sidecarImports?.size) {
     return
-  }
-
-  const plan = ctx.configService.isDev ? getHmrStyleUpdatePlan(ctx.configService) : undefined
-  // 完整发布会替换归属清单，即使样式计划只涉及一个 owner，也必须登记全部独立 sidecar。
-  const updatingOwners = plan && !plan.full && isPartialStylePublication(ctx, resolvedConfig)
-    ? new Set([
-        ...plan.styleFiles,
-        ...plan.cssImporterOwners,
-        ...plan.compilerContentOwners.keys(),
-      ].flatMap((source) => {
-        const output = resolveOutputStyleFileName(ctx.configService, source)
-        return output ? [toPosixPath(output)] : []
-      }))
-    : undefined
-  if (plan && updatingOwners) {
-    for (const output of Object.values(bundle)) {
-      if (output.type !== 'chunk' || !output.facadeModuleId) {
-        continue
-      }
-      const source = resolveStyleOwnerId(output.facadeModuleId)
-      if (!plan.sourceFiles.has(normalizeFsResolvedId(source)) || !this.getModuleInfo?.(output.facadeModuleId)) {
-        continue
-      }
-      // 本轮真实入口撤销最后一个 CSS 导入时，只让剩余独立 sidecar 接管。
-      // 仍有真实样式来源或本轮没有参与构建的入口不能被原始内容覆盖。
-      if (collectRenderedStyleSources(this, output.facadeModuleId).size) {
-        continue
-      }
-      const fileName = resolveOutputStyleFileName(ctx.configService, source)
-      if (fileName) {
-        updatingOwners.add(toPosixPath(fileName))
-      }
-    }
   }
   const ownerSidecars = new Map<string, {
     fileName: string
@@ -964,6 +980,7 @@ async function generateBundleSharedCss(
   configService: CompilerContext['configService'],
   bundle: OutputBundle,
   analysis: BundleStyleAnalysis,
+  updatingSidecarOwners: ReadonlySet<string> | undefined,
   resolvedConfig?: ResolvedConfig,
 ) {
   pendingOwnerStyleSources.delete(ctx)
@@ -1044,7 +1061,7 @@ async function generateBundleSharedCss(
     emitted.add(normalizedFileName)
   }
   // 最终资产、真实 CSS 和独立 sidecar 共用本轮输出归属；共享导入只补尚未生成的 owner。
-  await emitCollectedStyleSidecars.call(this, ctx, bundle, emitted, resolvedConfig)
+  await emitCollectedStyleSidecars.call(this, ctx, bundle, emitted, updatingSidecarOwners, resolvedConfig)
   await emitSharedStyleEntries.call(this, ctx, sharedStyles, emitted, configService, bundle, resolvedConfig)
   await emitSharedStyleImportsForChunks.call(this, ctx, sharedStyles, emitted, configService, bundle, facadeChunks, sharedStyleImportCache)
 }
@@ -1122,9 +1139,10 @@ export function css(ctx: CompilerContext): Plugin[] {
         async handler(_opts, bundle) {
           assertStylePreprocessing(ctx, this)
           const rolldownBundle = bundle as unknown as OutputBundle
-          if (!shouldSkipUnchangedStyleHmrBundle(ctx, rolldownBundle, resolvedConfig)) {
+          const updatingSidecarOwners = collectUpdatingSidecarOwners(ctx, this, rolldownBundle, resolvedConfig)
+          if (!shouldSkipUnchangedStyleHmrBundle(ctx, rolldownBundle, updatingSidecarOwners, resolvedConfig)) {
             const styleAnalysis = analyzeBundleStyles(rolldownBundle)
-            await generateBundleSharedCss.call(this, ctx, configService, bundle, styleAnalysis, resolvedConfig)
+            await generateBundleSharedCss.call(this, ctx, configService, bundle, styleAnalysis, updatingSidecarOwners, resolvedConfig)
           }
           emitMissingManagedStyleAssets(ctx, this, rolldownBundle)
         },
