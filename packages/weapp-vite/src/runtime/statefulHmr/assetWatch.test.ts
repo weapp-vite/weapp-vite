@@ -2,11 +2,13 @@ import os from 'node:os'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import picomatch from 'picomatch'
-import { afterEach, expect, it } from 'vitest'
+import { afterEach, expect, it, vi } from 'vitest'
+import { ClassicIdeConfigOwner } from '../classicIdeConfig'
 import { installIdeAssetWatch, restoreIdeAssetWatch } from './assetWatch'
 
 const roots: string[] = []
 afterEach(async () => {
+  vi.restoreAllMocks()
   await Promise.all(roots.splice(0).map(root => fs.remove(root)))
 })
 
@@ -19,6 +21,75 @@ async function fixture(original?: string) {
   }
   return { configPath, outDir: path.join(root, 'dist') }
 }
+
+it('hands asset ignores to classic in one project write and keeps the original requested setting', async () => {
+  const original = '{\r\n  "setting": { "compileHotReLoad": true },\r\n  "watchOptions": { "ignore": ["user/**"] }\r\n}\r\n'
+  const options = await fixture(original)
+  const restore = await installIdeAssetWatch(options)
+  const classic = new ClassicIdeConfigOwner()
+  const write = vi.spyOn(fs, 'writeFile')
+  try {
+    await restore(classic)
+    expect(write.mock.calls.filter(([file]) => file === options.configPath)).toHaveLength(1)
+    expect(await fs.readJSON(options.configPath)).toEqual({ setting: { compileHotReLoad: false }, watchOptions: { ignore: ['user/**'] } })
+    expect(await classic.readRequested(options.configPath)).toBe(original)
+    await restore(classic)
+    expect(write.mock.calls.filter(([file]) => file === options.configPath)).toHaveLength(1)
+  }
+  finally {
+    await classic.close()
+  }
+  expect(await fs.readFile(options.configPath, 'utf8')).toBe(original)
+})
+
+it.each([false, true])('preserves BOM and CRLF through asset cleanup and classic handoff=%s', async (handoff) => {
+  const original = '\uFEFF{\r\n  "setting": { "compileHotReLoad": true },\r\n  "watchOptions": { "ignore": ["user/**"] }\r\n}\r\n'
+  const options = await fixture(original)
+  const restore = await installIdeAssetWatch(options)
+  expect((await fs.readFile(options.configPath, 'utf8')).startsWith('\uFEFF')).toBe(true)
+  const classic = handoff ? new ClassicIdeConfigOwner() : undefined
+  try {
+    await restore(classic)
+    if (classic) {
+      expect(await classic.readRequested(options.configPath)).toBe(original)
+      expect((await fs.readJSON(options.configPath) as { setting: { compileHotReLoad: boolean } }).setting.compileHotReLoad).toBe(false)
+    }
+  }
+  finally {
+    await classic?.close()
+  }
+  expect(await fs.readFile(options.configPath, 'utf8')).toBe(original)
+})
+
+it('keeps the asset journal and first error when classic cannot acquire the config', async () => {
+  const options = await fixture('{}')
+  const restore = await installIdeAssetWatch(options)
+  const classic = new ClassicIdeConfigOwner()
+  const journal = path.join(path.dirname(options.configPath), '.weapp-vite/ide-classic-project.private.config.json')
+  await fs.outputJSON(journal, { owner: 'unrelated-owner' })
+  const installed = await fs.readFile(options.configPath, 'utf8')
+  const failure = await restore(classic).catch((error: unknown) => error)
+  expect(failure).toMatchObject({ code: 'EEXIST' })
+  expect(await fs.readFile(options.configPath, 'utf8')).toBe(installed)
+  expect(await fs.pathExists(path.join(path.dirname(options.configPath), '.weapp-vite/ide-asset-watch.json'))).toBe(true)
+  await expect(classic.close()).rejects.toBe(failure)
+  await expect(restore()).rejects.toBe(failure)
+})
+
+it('does not let a retired restore release a replacement asset owner', async () => {
+  const options = await fixture('{}')
+  const first = await installIdeAssetWatch(options)
+  await first()
+  const second = await installIdeAssetWatch(options)
+  const installed = await fs.readFile(options.configPath, 'utf8')
+  await first()
+  await expect(restoreIdeAssetWatch(options.configPath, 'unrelated-owner')).rejects.toThrow('租约身份不匹配')
+  await expect(restoreIdeAssetWatch(options.configPath)).rejects.toThrow('租约身份不匹配')
+  expect(await fs.readFile(options.configPath, 'utf8')).toBe(installed)
+  expect(await fs.pathExists(path.join(path.dirname(options.configPath), '.weapp-vite/ide-asset-watch.json'))).toBe(true)
+  await second()
+  expect(await fs.readFile(options.configPath, 'utf8')).toBe('{}')
+})
 
 it('delegates only output static assets and restores the exact original config', async () => {
   const original = '{"setting":{"compileHotReLoad":true},"watchOptions":{"ignore":["scratch/**"]}}\n'
@@ -38,22 +109,25 @@ it('delegates only output static assets and restores the exact original config',
 
 it('preserves user edits while removing owned and inherited temporary rules', async () => {
   const options = await fixture('{"setting":{"compileHotReLoad":true}}')
-  await installIdeAssetWatch({ ...options, inheritedWatchOptions: { ignore: ['scratch/**'] } })
+  const restore = await installIdeAssetWatch({ ...options, inheritedWatchOptions: { ignore: ['scratch/**'] } })
   const config = await fs.readJSON(options.configPath) as { setting: Record<string, unknown>, watchOptions: { ignore: string[] } }
   config.setting.urlCheck = false
   config.watchOptions.ignore.push('user-added/**')
   await fs.writeJSON(options.configPath, config)
-  await restoreIdeAssetWatch(options.configPath)
+  await restore()
   expect(await fs.readJSON(options.configPath)).toEqual({
     setting: { compileHotReLoad: true, urlCheck: false },
     watchOptions: { ignore: ['user-added/**'] },
   })
 })
 
-it('recovers an interrupted session before another install and removes newly created private config', async () => {
+it('refuses an existing asset lease and removes only its own newly created private config', async () => {
   const options = await fixture()
-  await installIdeAssetWatch(options)
+  const firstRestore = await installIdeAssetWatch(options)
   const first = await fs.readFile(options.configPath, 'utf8')
+  await expect(installIdeAssetWatch(options)).rejects.toMatchObject({ code: 'EEXIST' })
+  expect(await fs.readFile(options.configPath, 'utf8')).toBe(first)
+  await firstRestore()
   const restore = await installIdeAssetWatch(options)
   expect(await fs.readFile(options.configPath, 'utf8')).toBe(first)
   await restore()

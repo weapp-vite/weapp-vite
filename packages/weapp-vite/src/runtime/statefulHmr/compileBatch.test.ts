@@ -5,6 +5,8 @@ import type { HmrPreparationObservation } from './preparationProfile'
 import path from 'pathe'
 import { afterEach, expect, it, vi } from 'vitest'
 import { compileHmrBatch } from './compileBatch'
+import { createStatefulHmrGlobalStyleAssets, mergeStatefulHmrCompilerAssets } from './globalStyles'
+import { StatefulHmrOutputCapabilities } from './outputCapabilities'
 
 afterEach(() => vi.restoreAllMocks())
 
@@ -85,6 +87,9 @@ it('keeps snapshot styles authoritative when compiler preparation also returns t
 
 it('keeps snapshot styles authoritative when compiler preparation returns the same asset', async () => {
   const preparationAsset = { fileName: 'app.wxss', code: '.after{}' }
+  const initial = createStatefulHmrGlobalStyleAssets([{ type: 'asset', fileName: 'app.wxss', source: '.before{}' }], 'wxss')
+  const capabilities = new StatefulHmrOutputCapabilities('wxss')
+  capabilities.published(initial, [], true)
   const result = await compileHmrBatch({
     ctx: { configService: { outputExtensions: { wxml: 'wxml', wxss: 'wxss' } } } as CompilerContext,
     input: { revision: 1, changedFiles: ['page.vue'], sources: new Map() },
@@ -97,6 +102,9 @@ it('keeps snapshot styles authoritative when compiler preparation returns the sa
 
   expect(result.snapshot?.output).toEqual([{ type: 'asset', fileName: 'app.wxss', source: '.before{}' }])
   expect(result.compilerAssets).toEqual([preparationAsset])
+  const published = createStatefulHmrGlobalStyleAssets(result.snapshot!.output, 'wxss')
+  expect(published).toEqual(initial)
+  expect(capabilities.fallback(published)).toBeUndefined()
   await result.dispose()
 })
 
@@ -118,20 +126,43 @@ it('adds compiler styles that are missing from a style snapshot', async () => {
   await result.dispose()
 })
 
-it('does not publish compiler styles for a script-only batch', async () => {
+it.each([
+  { label: 'unchanged', width: 37 },
+  { label: 'changed', width: 53 },
+])('compares $label script-only provider CSS with the published bytes', async ({ width }) => {
+  const initial = createStatefulHmrGlobalStyleAssets([{ type: 'asset', fileName: 'app.wxss', source: '.utility { width: 37px; }' }], 'wxss')
+  const capabilities = new StatefulHmrOutputCapabilities('wxss')
+  capabilities.published(initial, [], true)
+  const assets = [{ fileName: 'app.wxss', code: `.utility { width: ${width}px; }` }]
+  const rebuild = vi.fn(async () => {
+    throw new Error('Script-only preparation must not require a snapshot')
+  })
   const result = await compileHmrBatch({
     ctx: { configService: { outputExtensions: { wxml: 'wxml', wxss: 'wxss' } } } as CompilerContext,
-    input: { revision: 1, changedFiles: ['src/page.ts'], sources: new Map() },
+    input: { revision: 1, changedFiles: ['src/page.ts'], sources: new Map([['src/page.ts', `const utility = "w-[${width}px]"`]]) },
     needsSnapshot: false,
-    mergeCompilerStyles: false,
     patches: [],
-    prepareProviders: async () => [{ assets: [{ fileName: 'app.wxss', code: '.stale{}' }] }],
-    rebuild: async () => ({ output: [] }),
+    prepareProviders: async () => [{ assets }],
+    rebuild,
     sourcemap: false,
   })
 
   expect(result.snapshot).toBeUndefined()
-  expect(result.compilerAssets).toEqual([])
+  expect(result.compilerAssets).toEqual(assets)
+  expect(rebuild).not.toHaveBeenCalled()
+  const published = mergeStatefulHmrCompilerAssets(initial, result.compilerAssets.map(asset => ({
+    type: 'asset',
+    fileName: asset.fileName,
+    source: asset.code,
+  })), 'wxss', { createIfMissing: true })
+  if (width === 37) {
+    expect(published).toEqual(initial)
+    expect(capabilities.fallback(published)).toBeUndefined()
+  }
+  else {
+    expect(published).toContainEqual(expect.objectContaining({ source: '.utility { width: 53px; }' }))
+    expect(capabilities.fallback(published)).toMatchObject({ code: 'stylesheet-output' })
+  }
   await result.dispose()
 })
 

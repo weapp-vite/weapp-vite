@@ -6,8 +6,10 @@ import { parse } from 'vue/compiler-sfc'
 import { resolveVueSfcHmrSignatures } from 'wevu/compiler'
 import { attachDevModuleGraphHost } from '../../../moduleGraph/host'
 import { createModuleGraphService } from '../../../moduleGraph/service'
+import { createRuntimeState } from '../../../runtime/runtimeState'
 import { storeVueSfcHmrSignatures } from '../../../runtime/storeVueSfcHmrSignatures'
 import { registerManagedTailwindcssEntries } from '../../tailwindcssMarker'
+import { invalidateEntryForSidecar as invalidateSidecarOwnership } from '../../utils/invalidateEntry/sidecar'
 import * as vueSfcReader from '../../utils/vueSfc'
 import { createBuildStartHook, createWatchChangeHook } from './watch'
 
@@ -126,6 +128,7 @@ function createState(overrides: Record<string, any> = {}) {
         handleFileChange: vi.fn(async () => false),
       },
       runtimeState: {
+        css: createRuntimeState().css,
         glassEasel: {
           analysisByOwner: new Map(),
           warnedDiagnostics: new Set(),
@@ -218,6 +221,32 @@ describe('core lifecycle watch hook', () => {
       affectedChunks: collectAffectedSharedChunksMock(),
       affectedEntries: collectAffectedEntriesFromSharedChunksMock(),
     }))
+  })
+
+  it.each([false, true])('invalidates missing optional style reads and leaves registration to its next owner scan: exists=%s', async (exists) => {
+    const state = createState()
+    const style = '/project/src/pages/index/index.wxss'
+    const otherStyle = '/project/src/components/counter/index.wxss'
+    const css = state.ctx.runtimeState.css
+    css.sidecarImports.add(style)
+    css.sidecarImports.add(otherStyle)
+    css.transformedSidecarSource.set(style, { code: '.compiled {}', diskSource: '.original {}' })
+    vi.mocked(fs.pathExists).mockResolvedValue(exists)
+    if (!exists) {
+      invalidateEntryForSidecarMock.mockImplementationOnce(() => invalidateSidecarOwnership(state.ctx, style, 'delete'))
+    }
+
+    await createWatchChangeHook(state)(style, { event: 'delete' })
+
+    if (exists) {
+      expect(invalidateEntryForSidecarMock).not.toHaveBeenCalled()
+    }
+    else {
+      expect(invalidateEntryForSidecarMock).toHaveBeenCalledWith(state.ctx, style, 'delete')
+    }
+    expect(css.sidecarImports.has(style)).toBe(true)
+    expect(css.transformedSidecarSource.has(style)).toBe(exists)
+    expect(css.sidecarImports.has(otherStyle)).toBe(true)
   })
 
   it('adds loaded config dependencies to dev build watch files', async () => {

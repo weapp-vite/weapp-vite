@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url'
 import { dirname, relative, resolve } from 'pathe'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createLogicalEntryId } from '../moduleGraph/protocol'
+import { createHmrStyleUpdatePlan, withHmrStyleUpdatePlan } from '../runtime/hmrStyleUpdate'
 import { normalizeWatchPath } from '../utils/path'
 import {
   createManagedTailwindcssOutputMarker,
@@ -231,28 +232,29 @@ describe('css plugin shared style injection', () => {
         hmr: {
           profile: {
             eventId: 'tailwind-hmr-1',
-            dirtyReasonSummary: ['entry-local-asset:1', 'tailwind-content:1'],
+            dirtyReasonSummary: ['entry-direct:1'],
           },
         },
       },
     }
+    const devConfig = { ...configService, isDev: true }
+    const plan = createHmrStyleUpdatePlan([resolve(absoluteSrcRoot, 'pages/index/index.vue')], {
+      compilerContentOwners: [[resolve(absoluteSrcRoot, 'app.vue'), 'tailwind-content']],
+    })
     const plugin = css({
-      configService: {
-        ...configService,
-        isDev: true,
-      },
+      configService: devConfig,
       scanService: { subPackageMap: new Map() },
       runtimeState,
     } as unknown as CompilerContext)[0]
 
     await invokeHook(plugin.configResolved, pluginContext, resolvedConfig)
-    await invokeHook(plugin.generateBundle, pluginContext, {} as any, {}, true)
+    await withHmrStyleUpdatePlan(devConfig, plan, async () => invokeHook(plugin.generateBundle, pluginContext, {} as any, {}, true))
 
     expect(emitted).toEqual([
       expect.objectContaining({
         type: 'asset',
         fileName: 'app.wxss',
-        source: `${placeholder}\n/* weapp-vite tailwind-content tailwind-hmr-1 */`,
+        source: `${placeholder}\n/* weapp-vite tailwind-content ${plan.id} */`,
       }),
     ])
     expect(runtimeState.css.emittedSource.get('app.wxss')).toBe(placeholder)
@@ -284,37 +286,39 @@ describe('css plugin shared style injection', () => {
         },
       },
     }
+    const devConfig = { ...configService, isDev: true }
+    const page = resolve(absoluteSrcRoot, 'pages/index/index.vue')
+    const contentPlan = createHmrStyleUpdatePlan([page], {
+      compilerContentOwners: [[resolve(absoluteSrcRoot, 'app.vue'), 'tailwind-content']],
+    })
     const plugin = css({
-      configService: {
-        ...configService,
-        isDev: true,
-      },
+      configService: devConfig,
       scanService: { subPackageMap: new Map() },
       runtimeState,
     } as unknown as CompilerContext)[0]
 
     await invokeHook(plugin.configResolved, pluginContext, resolvedConfig)
-    await invokeHook(plugin.generateBundle, pluginContext, {} as any, {}, true)
+    await withHmrStyleUpdatePlan(devConfig, contentPlan, async () => invokeHook(plugin.generateBundle, pluginContext, {} as any, {}, true))
 
     expect(emitted).toHaveLength(1)
-    expect(emitted[0]?.source).toBe(`${placeholder}\n/* weapp-vite tailwind-content tailwind-hmr-1 */`)
+    expect(emitted[0]?.source).toBe(`${placeholder}\n/* weapp-vite tailwind-content ${contentPlan.id} */`)
     expect(runtimeState.css.emittedSource.get('app.wxss')).toBe(placeholder)
 
     emitted = []
     runtimeState.build.hmr.profile = {
       event: 'update',
       eventId: 'script-hmr-1',
-      dirtyReasonSummary: ['entry-direct:1'],
+      dirtyReasonSummary: ['tailwind-content:1'],
     }
     const bundle: Record<string, any> = {
       'app.wxss': {
         type: 'asset',
         fileName: 'app.wxss',
-        source: `${placeholder}\n/* weapp-vite tailwind-content tailwind-hmr-1 */`,
+        source: `${placeholder}\n/* weapp-vite tailwind-content ${contentPlan.id} */`,
       },
     }
 
-    await invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, true)
+    await withHmrStyleUpdatePlan(devConfig, createHmrStyleUpdatePlan([page]), async () => invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, true))
 
     expect(bundle['app.wxss']?.source).toBe(placeholder)
     expect(emitted).toEqual([])
@@ -543,16 +547,14 @@ describe('css plugin shared style injection', () => {
   })
 
   it('skips shared style work for hmr bundles without style changes', async () => {
+    const devConfig = { ...configService, isDev: true }
     const plugin = css({
-      configService: {
-        ...configService,
-        isDev: true,
-      },
+      configService: devConfig,
       runtimeState: {
         build: {
           hmr: {
             profile: {
-              dirtyReasonSummary: ['sidecar-direct:1'],
+              dirtyReasonSummary: ['tailwind-content:1', 'css-importer:1'],
             },
           },
         },
@@ -581,24 +583,23 @@ describe('css plugin shared style injection', () => {
     }
 
     await invokeHook(plugin.configResolved, pluginContext, resolvedConfig)
-    await invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, true)
+    const plan = createHmrStyleUpdatePlan([resolve(absoluteSrcRoot, 'subpackages/foo/pages/list.ts')])
+    await withHmrStyleUpdatePlan(devConfig, plan, async () => invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, true))
 
     expect(renderSharedStyleEntry).not.toHaveBeenCalled()
     expect(processCssWithCache).not.toHaveBeenCalled()
     expect(emitted).toEqual([])
   })
 
-  it('keeps style work for Tailwind content hmr bundles without style assets', async () => {
+  it.each([{ dirtyReasonSummary: [] }, { dirtyReasonSummary: ['entry-direct:1'] }])('keeps compiler style work with diagnostic reasons $dirtyReasonSummary and no style assets', async ({ dirtyReasonSummary }) => {
+    const devConfig = { ...configService, isDev: true }
     const plugin = css({
-      configService: {
-        ...configService,
-        isDev: true,
-      },
+      configService: devConfig,
       runtimeState: {
         build: {
           hmr: {
             profile: {
-              dirtyReasonSummary: ['tailwind-content:1'],
+              dirtyReasonSummary,
             },
           },
         },
@@ -622,7 +623,10 @@ describe('css plugin shared style injection', () => {
     }
 
     await invokeHook(plugin.configResolved, pluginContext, resolvedConfig)
-    await invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, true)
+    const plan = createHmrStyleUpdatePlan([resolve(absoluteSrcRoot, 'pages/index/index.ts')], {
+      compilerContentOwners: [[resolve(absoluteSrcRoot, 'app.vue'), 'tailwind-content']],
+    })
+    await withHmrStyleUpdatePlan(devConfig, plan, async () => invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, true))
 
     expect(renderSharedStyleEntry).toHaveBeenCalled()
     expect(processCssWithCache).toHaveBeenCalled()
@@ -966,6 +970,7 @@ describe('css plugin shared style injection', () => {
   it('emits shared style imports for css importer hmr entries outside the representative bundle', async () => {
     const pageA = resolve(absoluteSrcRoot, 'pages/a/index.ts')
     const pageB = resolve(absoluteSrcRoot, 'pages/b/index.ts')
+    const devConfig = { ...configService, isDev: true }
     const runtimeState = {
       build: {
         hmr: {
@@ -973,16 +978,13 @@ describe('css plugin shared style injection', () => {
           lastEmittedEntryIds: new Set([pageA]),
           profile: {
             event: 'update',
-            dirtyReasonSummary: ['css-importer:2'],
+            dirtyReasonSummary: [],
           },
         },
       },
     }
     const plugin = css({
-      configService: {
-        ...configService,
-        isDev: true,
-      },
+      configService: devConfig,
       runtimeState,
       scanService: {
         subPackageMap: new Map([
@@ -1013,7 +1015,8 @@ describe('css plugin shared style injection', () => {
     }
 
     await invokeHook(plugin.configResolved, pluginContext, resolvedConfig)
-    await invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, false)
+    const plan = createHmrStyleUpdatePlan([styleAbsolutePath], { cssImporterOwners: [pageA, pageB] })
+    await withHmrStyleUpdatePlan(devConfig, plan, async () => invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, false))
 
     expect(emitted.map(asset => asset.fileName).sort()).toEqual([
       'pages/a/index.wxss',
@@ -1025,6 +1028,7 @@ describe('css plugin shared style injection', () => {
   it('emits shared style imports for css importer fallback hmr entries outside the representative bundle', async () => {
     const pageA = resolve(absoluteSrcRoot, 'pages/a/index.ts')
     const pageB = resolve(absoluteSrcRoot, 'pages/b/index.ts')
+    const devConfig = { ...configService, isDev: true }
     const runtimeState = {
       build: {
         hmr: {
@@ -1032,16 +1036,13 @@ describe('css plugin shared style injection', () => {
           lastEmittedEntryIds: new Set([pageA]),
           profile: {
             event: 'update',
-            dirtyReasonSummary: ['css-importer-fallback:2'],
+            dirtyReasonSummary: ['entry-direct:1'],
           },
         },
       },
     }
     const plugin = css({
-      configService: {
-        ...configService,
-        isDev: true,
-      },
+      configService: devConfig,
       runtimeState,
       scanService: {
         subPackageMap: new Map([
@@ -1072,7 +1073,8 @@ describe('css plugin shared style injection', () => {
     }
 
     await invokeHook(plugin.configResolved, pluginContext, resolvedConfig)
-    await invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, false)
+    const plan = createHmrStyleUpdatePlan([styleAbsolutePath], { cssImporterOwners: [pageA, pageB] })
+    await withHmrStyleUpdatePlan(devConfig, plan, async () => invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, false))
 
     expect(emitted.map(asset => asset.fileName).sort()).toEqual([
       'pages/a/index.wxss',
@@ -1288,6 +1290,7 @@ describe('css plugin shared style injection', () => {
 
   it('rebuilds hmr style assets from the transformed sidecar source', async () => {
     const stylePath = resolve(absoluteSrcRoot, 'pages/index/index.scss')
+    const devConfig = { ...configService, isDev: true }
     const transformedSource = '$brand: purple;\n.page { .title { color: $brand; } }'
     preprocessCSSMock.mockResolvedValueOnce({
       code: '.page .title{color:purple}',
@@ -1310,16 +1313,13 @@ describe('css plugin shared style injection', () => {
           lastEmittedEntryIds: new Set(),
           profile: {
             event: 'update',
-            file: stylePath,
+            file: resolve(absoluteSrcRoot, 'unrelated.scss'),
           },
         },
       },
     }
     const plugin = css({
-      configService: {
-        ...configService,
-        isDev: true,
-      },
+      configService: devConfig,
       runtimeState,
       scanService,
     } as unknown as CompilerContext)[0]
@@ -1333,7 +1333,8 @@ describe('css plugin shared style injection', () => {
     }
 
     await invokeHook(plugin.configResolved, pluginContext, resolvedConfig)
-    await invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, true)
+    const plan = createHmrStyleUpdatePlan([stylePath])
+    await withHmrStyleUpdatePlan(devConfig, plan, async () => invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, true))
 
     expect(readFileMock).toHaveBeenCalledWith(stylePath, 'utf8')
     expect(preprocessCSSMock).toHaveBeenCalledWith(transformedSource, stylePath, resolvedConfig)
@@ -1342,6 +1343,7 @@ describe('css plugin shared style injection', () => {
 
   it('rebuilds the current hmr final style asset from the latest sidecar source', async () => {
     const stylePath = resolve(absoluteSrcRoot, 'pages/index/index.scss')
+    const devConfig = { ...configService, isDev: true }
     readFileMock.mockResolvedValueOnce('$brand: green;\n.page { .title { color: $brand; } }')
     preprocessCSSMock.mockResolvedValueOnce({
       code: '.page .title{color:green}',
@@ -1360,17 +1362,14 @@ describe('css plugin shared style injection', () => {
           lastEmittedEntryIds: new Set(),
           profile: {
             event: 'update',
-            file: stylePath,
+            file: resolve(absoluteSrcRoot, 'unrelated.scss'),
           },
         },
       },
     }
 
     const plugin = css({
-      configService: {
-        ...configService,
-        isDev: true,
-      },
+      configService: devConfig,
       runtimeState,
       scanService,
     } as unknown as CompilerContext)[0]
@@ -1384,7 +1383,8 @@ describe('css plugin shared style injection', () => {
     }
 
     await invokeHook(plugin.configResolved, pluginContext, resolvedConfig)
-    await invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, true)
+    const plan = createHmrStyleUpdatePlan([stylePath])
+    await withHmrStyleUpdatePlan(devConfig, plan, async () => invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, true))
 
     expect(readFileMock).toHaveBeenCalledWith(stylePath, 'utf8')
     expect(preprocessCSSMock).toHaveBeenCalledWith(

@@ -90,6 +90,23 @@ describe('e2e suite manifest', () => {
     }
   })
 
+  it.each([
+    ['ide/hmr-capability-fallback.runtime.test.ts', '1800000'],
+    ['ide/hmr-startup-fallback.runtime.test.ts', '900000'],
+    ['ide/hmr-additional-capabilities.runtime.test.ts', '600000'],
+    ['ide/hmr-compiled-template-fallback.runtime.test.ts', '600000'],
+  ])('keeps %s on an explicit finite initial suite budget without pruning cases', async (label, budget) => {
+    for (const suite of ['ide-hmr', 'hmr-regression', 'ide-full:exhaustive']) {
+      const matching = (await getSuiteTasks(suite)).filter(task => task.label === label)
+      expect(matching).toHaveLength(1)
+      const task = matching[0]!
+      expect(task.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe(budget)
+      expect(task.env?.WEAPP_VITE_E2E_TARGET_FILE).toBe(label)
+      expect(task.env?.WEAPP_VITE_E2E_ACCEPTANCE_CASES).toBeUndefined()
+      expect(task.args.some(arg => arg === '-t' || arg.startsWith('--testNamePattern'))).toBe(false)
+    }
+  })
+
   it('runs the prepared benchmark CLI entrypoint in PR and full CI suites', async () => {
     const label = 'ci/benchmark-hmr-entrypoint.test.ts'
     expect((await getCiPrTasks()).filter(task => task.label === label)).toHaveLength(1)

@@ -2,6 +2,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { parse } from '@babel/parser'
+import { WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY, WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY, WEAPP_VITE_STATEFUL_HMR_DIRECTORY } from '@weapp-core/constants'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createEmittedScriptReader } from '../benchmarkTemplatesHmr/emittedOutput'
 import { WorkspaceHmrClassicFallback } from './classicFallback'
@@ -166,6 +167,60 @@ describe('workspace HMR classic fallback evidence', () => {
     await expect(fallback.settle({ deadline: Date.now() + 100 })).rejects.toThrow('active stateful bridge')
   })
 
+  it('checks separate files with the same constant alias without combining their lexical scopes', async () => {
+    output = `${requested}\n${ready}`
+    await writeFile(path.join(root, 'app.js'), `
+      const alias = ${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY)};
+      exports.WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY = alias;
+      require('./shared.js'); App({});
+    `)
+    await writeFile(path.join(root, 'shared.js'), `
+      const alias = ${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_DIRECTORY)};
+      exports.WEAPP_VITE_STATEFUL_HMR_DIRECTORY = alias;
+    `)
+    await expect(fallback.settle({ deadline: Date.now() + 100 })).resolves.toBe(true)
+    await writeFile(path.join(root, 'pages/render.js'), `
+      const alias = ${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY)};
+      exports.WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY = alias;
+      require('../shared.js'); console.log('changed');
+    `)
+    await expect(fallback.waitForDelivery({
+      readOutput: createEmittedScriptReader(path.join(root, 'pages/index.js'), root),
+      output: 'pages/index.js',
+      marker: 'changed',
+      contains: true,
+      deadline: Date.now() + 100,
+    })).resolves.toMatchObject({ delivery: 'classic' })
+  })
+
+  it.each([WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY, WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY, WEAPP_VITE_STATEFUL_HMR_DIRECTORY])('rejects an executable %s alias in an app dependency', async (key) => {
+    output = `${requested}\n${ready}`
+    await writeFile(path.join(root, 'app.js'), 'require("./shared.js"); App({});')
+    await writeFile(path.join(root, 'shared.js'), `const alias = ${JSON.stringify(key)}; globalThis[alias] = {};`)
+    await expect(fallback.settle({ deadline: Date.now() + 100 })).rejects.toThrow(`must remove ${key}`)
+  })
+
+  it('rejects a composed control path in an app dependency', async () => {
+    output = `${requested}\n${ready}`
+    await writeFile(path.join(root, 'app.js'), 'require("./shared.js"); App({});')
+    await writeFile(path.join(root, 'shared.js'), `const directory = ${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_DIRECTORY)}; require(directory + '/control.js');`)
+    await expect(fallback.settle({ deadline: Date.now() + 100 })).rejects.toThrow(`must remove ${WEAPP_VITE_STATEFUL_HMR_DIRECTORY}`)
+  })
+
+  it('still rejects retired control paths in non-script outputs', async () => {
+    output = `${requested}\n${ready}`
+    await expect(fallback.waitForDelivery({
+      readOutput: async () => `<wxs src="/${WEAPP_VITE_STATEFUL_HMR_DIRECTORY}/control.js"/>changed`,
+      output: 'pages/index.wxml',
+      marker: 'changed',
+      contains: true,
+      deadline: Date.now() + 100,
+    })).rejects.toMatchObject({
+      message: 'Classic output does not match the current source mutation.',
+      cause: { message: 'Classic fallback output retained a stateful control path.' },
+    })
+  })
+
   it('accepts optional runtime capability probes without installing a bridge', async () => {
     output = `${requested}\n${ready}`
     await writeFile(path.join(root, 'pages/render.js'), `
@@ -193,7 +248,7 @@ describe('workspace HMR classic fallback evidence', () => {
   it('rejects an app that still imports the retired client and isolates project evidence', async () => {
     output = `${requested}\n${ready}`
     await writeFile(path.join(root, 'app.js'), 'require("./__weapp_vite_hmr/control.js");')
-    await expect(fallback.settle({ deadline: Date.now() + 100 })).rejects.toThrow('retained stateful control')
+    await expect(fallback.settle({ deadline: Date.now() + 100 })).rejects.toThrow(`must remove ${WEAPP_VITE_STATEFUL_HMR_DIRECTORY}`)
     const another = new WorkspaceHmrClassicFallback(root, () => '')
     expect(another.requested).toBe(false)
     await expect(another.settle({ deadline: Date.now() + 30 })).rejects.toThrow('no matching ready transition')

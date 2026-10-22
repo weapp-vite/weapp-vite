@@ -178,6 +178,11 @@ export class StatefulHmrProfile {
     return batch
   }
 
+  /** 原生补丁错误没有代次身份；只记录未知失败，不从后续待处理事件反推输入。 */
+  recordNativeFailure() {
+    this.begin([], 'delivery').finish('failed')
+  }
+
   transfer(batch: StatefulHmrProfileBatch) {
     if (!this.active.delete(batch)) {
       return undefined

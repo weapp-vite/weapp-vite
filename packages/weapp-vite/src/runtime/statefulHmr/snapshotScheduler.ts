@@ -28,6 +28,7 @@ export class StatefulHmrSnapshotScheduler {
   private failed = false
   private failure: unknown
   private closeFailure?: { error: unknown }
+  private closeCause?: { error: unknown }
 
   constructor(options: StatefulHmrSnapshotSchedulerOptions) {
     this.debounceMs = options.debounceMs ?? DEFAULT_SNAPSHOT_DEBOUNCE_MS
@@ -74,7 +75,11 @@ export class StatefulHmrSnapshotScheduler {
     this.changed = Promise.withResolvers<void>()
   }
 
-  async close(): Promise<void> {
+  /** 只排除触发本次关闭的同一拒绝对象，后续写入或释放错误仍须阻止交接。 */
+  async close(options?: { cause: unknown }): Promise<void> {
+    if (!this.closed && options) {
+      this.closeCause = { error: options.cause }
+    }
     this.closed = true
     if (this.timer) {
       clearTimeout(this.timer)
@@ -123,7 +128,7 @@ export class StatefulHmrSnapshotScheduler {
         failed = true
         this.failed = true
         this.failure = error
-        if (this.closed) {
+        if (this.closed && (!this.closeCause || error !== this.closeCause.error)) {
           this.closeFailure = { error }
         }
         try {

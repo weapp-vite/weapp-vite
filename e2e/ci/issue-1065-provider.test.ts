@@ -1,11 +1,67 @@
 import { readFile, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
-import { expect, it } from 'vitest'
+import { expect, it, vi } from 'vitest'
+import { fakeProvider } from '../../e2e-apps/github-issues/fixtures/issue-1065/fakeProvider'
 import { startDevProcess } from '../utils/dev-process'
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { createIssue1065Project, runIssue1065Command } from '../utils/issue1065Project'
 import { runWithCleanup } from '../utils/runWithCleanup'
+
+it('shares the complete stylesheet contract between formal output and frozen HMR preparation', async () => {
+  const project = await createIssue1065Project()
+  try {
+    const srcRoot = path.join(project, 'src')
+    const stylesheet = path.join(srcRoot, 'pages/home/index.css')
+    const tokens = path.join(srcRoot, 'provider.tokens.json')
+    const readSource = vi.fn((id: string) => readFile(id, 'utf8'))
+    const controller = await fakeProvider().create({
+      root: project,
+      srcRoot,
+      platform: 'weapp',
+      outputExtensions: { js: 'js', json: 'json', wxml: 'wxml', wxss: 'wxss' },
+      isDev: true,
+      readFile: readSource,
+      resolve: async () => null,
+      addWatchFile: vi.fn(),
+      invalidate: vi.fn(),
+      warn: vi.fn(),
+      error: (message) => { throw new Error(message) },
+      claimSource: vi.fn(),
+      getSourceOwner: () => undefined,
+    })
+    const sources = new Map([
+      [stylesheet.replaceAll('\\', '/'), await readSource(stylesheet)],
+      [tokens.replaceAll('\\', '/'), await readSource(tokens)],
+    ])
+    const formal = await controller.transformCss!({
+      fileName: 'pages/home/index.wxss',
+      code: '.provider-page { color: #ff0000;\n}\n\n',
+    })
+    expect(formal?.dependencies).toEqual([tokens, stylesheet])
+    expect(formal?.code).toContain('.provider-finalized { opacity: 1; }')
+    const readsBeforePreparation = readSource.mock.calls.length
+    await writeFile(tokens, JSON.stringify({ color: '#00ff00' }))
+    const prepare = (revision: number, changedFile = path.join(srcRoot, 'pages/home/label.ts')) => controller.prepareHmr!({
+      revision,
+      changedFiles: [changedFile],
+      sources,
+    })
+    const prepared = await prepare(1)
+    expect(prepared.assets).toEqual([{ fileName: 'pages/home/index.wxss', code: formal?.code }])
+    expect(readSource).toHaveBeenCalledTimes(readsBeforePreparation)
+    sources.set(tokens.replaceAll('\\', '/'), JSON.stringify({ color: '#0000ff' }))
+    const changed = await prepare(2, tokens)
+    expect(changed.assets?.[0]?.code).toContain('#0000ff')
+    expect(changed.assets?.[0]?.code).toContain('provider-finalized')
+    expect(changed.assets?.[0]?.code).not.toBe(formal?.code)
+    expect(prepared.assets?.[0]?.code).toBe(formal?.code)
+    expect(readSource).toHaveBeenCalledTimes(readsBeforePreparation)
+  }
+  finally {
+    await rm(project, { recursive: true, force: true })
+  }
+})
 
 it('consumes a third-party provider through CLI source, output, bundle and lifecycle hooks', async () => {
   const project = await createIssue1065Project()

@@ -5,8 +5,9 @@ import { createRequire } from 'node:module'
 import path from 'node:path'
 import process from 'node:process'
 import { setTimeout as delay } from 'node:timers/promises'
-import { promisify } from 'node:util'
 import { readEmittedStylesheet } from '../../../e2e/utils/emittedStylesheet.ts'
+import { assertConsumerPrivateConfigRestored, consumerProcessEnvironment, readConsumerPrivateConfig, stopConsumerProcess } from './consumerHmr/shutdown.mjs'
+import { verifyStylesheetHmr } from './consumerHmr/stylesheet.mjs'
 
 const root = path.resolve(process.argv[2])
 const toolchain = process.argv[3]
@@ -22,6 +23,7 @@ assert(consumer.private && consumer.name.startsWith('weapp-vite-host-'))
 assert(['wv', 'vite', 'vite-plus'].includes(toolchain))
 const packageName = toolchain === 'wv' ? 'weapp-vite' : toolchain
 const cli = path.join(path.dirname(require.resolve(`${packageName}/package.json`)), toolchain === 'wv' ? 'bin/weapp-vite.js' : toolchain === 'vite-plus' ? 'bin/vp' : 'bin/vite.js')
+const originalPrivateConfig = operation === 'build-watch' ? undefined : await readConsumerPrivateConfig(root)
 await rm(path.join(root, 'dist'), { recursive: true, force: true })
 if (profile === 'plugin') {
   await rm(path.join(root, 'dist-plugin'), { recursive: true, force: true })
@@ -39,7 +41,7 @@ if (operation === 'stateful-dev') {
   await writeFile(path.join(root, 'vite.config.mts'), originals.get('vite.config.mts').replace('runtime: \'classic\'', 'runtime: \'stateful-experimental\''))
 }
 const args = operation === 'build-watch' ? ['build', '--watch', '--logLevel', 'info'] : ['dev', ...toolchain === 'wv' ? [] : ['--host', '127.0.0.1', '--port', '0', '--logLevel', 'info']]
-const child = execFile(process.execPath, [cli, ...args], { cwd: root, detached: process.platform !== 'win32', maxBuffer: 10 * 1024 * 1024 })
+const child = execFile(process.execPath, [cli, ...args], { cwd: root, detached: process.platform !== 'win32', maxBuffer: 10 * 1024 * 1024, env: consumerProcessEnvironment(operation) })
 const done = new Promise((resolve) => {
   child.once('error', error => resolve({ error }))
   child.once('exit', (code, signal) => {
@@ -99,7 +101,7 @@ async function waitForDevReady() {
   assert(/开发服务已就绪|小程序开发产物已就绪/.test(logs), `Native ${toolchain} dev did not become ready: ${logs}`)
 }
 
-let shutdownFailed = false
+const errors = []
 try {
   if (profile === 'platform') {
     await waitForOutput(`${platform}/dist/pages/index/index.${templateExt}`, 'platform-marker')
@@ -130,14 +132,15 @@ try {
   await waitForWatchRound(1)
   await waitForDevReady()
   if (profile === 'tailwind') {
-    await waitForOutput('app.wxss', /width:\s*37px/)
-    const file = 'src/pages/native/index.wxml'
-    await writeFile(path.join(root, file), originals.get(file).replace('37px', '53px'))
-    await waitForOutput('app.wxss', /width:\s*53px/)
-    await writeFile(path.join(root, file), originals.get(file))
-    await waitForOutput('pages/native/index.wxml', '37px')
-    await waitForOutput('app.wxss', /width:\s*37px/)
-    assert.equal(await readFile(path.join(root, 'config-calls.txt'), 'utf8'), 'loaded\n')
+    await verifyStylesheetHmr({
+      root,
+      operation,
+      originalTemplate: originals.get('src/pages/native/index.wxml'),
+      waitForOutput,
+      readOutput: () => logs,
+      isExited: () => exited,
+    })
+    console.log(`${toolchain}: native ${operation} stylesheet updates and restorations passed with ${operation === 'stateful-dev' ? 'one classic handoff' : 'one config evaluation'}`)
   }
   else if (profile === 'platform') {
     const file = 'src/pages/index/index.vue'
@@ -246,50 +249,27 @@ try {
     console.log(`${toolchain}: native ${operation} initial output and TS/Vue updates passed with one config evaluation`)
   }
 }
+catch (error) {
+  errors.push(error)
+}
 finally {
-  if (process.platform === 'win32') {
-    await promisify(execFile)('taskkill', ['/PID', String(child.pid), '/T', '/F']).catch(() => {})
+  let stopped = false
+  try {
+    await stopConsumerProcess({ child, done, operation, toolchain })
+    stopped = true
   }
-  else {
-    const { stdout } = await promisify(execFile)('ps', ['-axo', 'pid=,ppid='])
-    const processes = stdout.trim().split('\n').map(line => line.trim().split(/\s+/).map(Number))
-    const descendants = []
-    const visit = (pid) => {
-      for (const [candidate, parent] of processes) {
-        if (parent === pid) {
-          visit(candidate)
-          descendants.push(candidate)
-        }
-      }
-    }
-    visit(child.pid)
-    // Vite+ 的原生启动器转交给独立进程组；wv/vite 直接接收信号并清理自己拥有的子进程。
-    for (const pid of toolchain === 'vite-plus' && descendants.length ? descendants : [child.pid]) {
-      try {
-        process.kill(pid, 'SIGTERM')
-      }
-      catch (error) {
-        shutdownFailed ||= error.code !== 'ESRCH'
-      }
-    }
+  catch (error) {
+    errors.push(new Error(`Consumer shutdown failed: ${logs}`, { cause: error }))
   }
-  const stopped = await Promise.race([done, delay(10_000, undefined, { ref: false })])
-  if (!stopped) {
-    if (process.platform !== 'win32') {
-      try {
-        process.kill(-child.pid, 'SIGKILL')
-      }
-      catch {}
-    }
-    child.kill('SIGKILL')
-    await done
-    shutdownFailed = true
+  if (originalPrivateConfig !== undefined) {
+    await assertConsumerPrivateConfigRestored(root, originalPrivateConfig).catch(error => errors.push(error))
   }
-  child.stdout.destroy()
-  child.stderr.destroy()
-  for (const [file, content] of originals) {
-    await writeFile(path.join(root, file), content)
+  if (stopped) {
+    for (const [file, content] of originals) {
+      await writeFile(path.join(root, file), content).catch(error => errors.push(error))
+    }
   }
 }
-
-assert(!shutdownFailed, `Native ${toolchain} ${operation} did not exit after SIGTERM: ${logs}`)
+if (errors.length) {
+  throw errors.length === 1 ? errors[0] : new AggregateError(errors, 'Consumer verification and cleanup failed', { cause: errors[0] })
+}

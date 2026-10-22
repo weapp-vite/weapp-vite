@@ -1,5 +1,6 @@
 import type { Plugin, ViteDevServer } from 'vite'
 import type { MutableCompilerContext } from '../context'
+import { EventEmitter } from 'node:events'
 import { mkdir, mkdtemp, realpath, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'pathe'
@@ -11,13 +12,22 @@ import { autoRoutes } from './autoRoutes'
 const sidecarHandlers = vi.hoisted(() => new Map<string, (filePath: string) => void>())
 vi.mock('chokidar', () => ({
   default: {
-    watch: () => ({
-      add() {},
-      on(event: string, handler: (filePath: string) => void) {
-        sidecarHandlers.set(event, handler)
-      },
-      close() {},
-    }),
+    watch() {
+      const events = new EventEmitter()
+      void Promise.resolve().then(() => events.emit('ready'))
+      return {
+        add() {},
+        on(event: string, handler: (filePath: string) => void) {
+          sidecarHandlers.set(event, handler)
+          return events.on(event, handler)
+        },
+        once: events.once.bind(events),
+        off: events.off.bind(events),
+        close() {
+          events.removeAllListeners()
+        },
+      }
+    },
   },
 }))
 

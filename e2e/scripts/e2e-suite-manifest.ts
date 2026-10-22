@@ -49,6 +49,11 @@ const IDE_TASK_TIMEOUT_MS_BY_LABEL = new Map([
   [IDE_TDESIGN_AGGREGATE_LABEL, '900000'],
   ['ide/github-issues.runtime.lifecycle.test.ts', '600000'],
   ['ide/github-issues.runtime.props.test.ts', '600000'],
+  // 独占 fixture 串行运行的有限初始 suite 预算，非完整 IDE 健康耗时的实测上界；不调整 case、hook 或断言等待。
+  ['ide/hmr-capability-fallback.runtime.test.ts', '1800000'],
+  ['ide/hmr-startup-fallback.runtime.test.ts', '900000'],
+  ['ide/hmr-additional-capabilities.runtime.test.ts', '600000'],
+  ['ide/hmr-compiled-template-fallback.runtime.test.ts', '600000'],
   ['ide/stateful-hmr.runtime.test.ts', '900000'],
   ['ide/subpackage-shared-strategy-complex.runtime.test.ts', '600000'],
   ['ide/template-dev-open-all.runtime.test.ts', '1800000'],

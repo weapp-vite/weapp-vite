@@ -112,6 +112,8 @@ export async function prepareTailwindRoots<K>(
       ...root.request,
       sourceOptions: { ...sourceOptions, cssEntries: [], cssSources: [...cssSources ?? [], ...entrySources] },
       sources,
+      // 内存候选也先由上游按宿主目标归一化，避免 rpx 字号被误判为颜色。
+      scanMode: 'compiled',
       scanSources: false,
     }
     // 先交接实际内存请求；宿主复制后即可同时覆盖生成与缓存命中的批次。

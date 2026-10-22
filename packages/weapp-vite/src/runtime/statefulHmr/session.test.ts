@@ -14,7 +14,6 @@ import {
   redirectNativeComponentRegistration,
   requiresStatefulHmrSnapshot,
   runStatefulHmrDev,
-  shouldMergeStatefulHmrCompilerStyles,
   shouldRebuildStatefulDependency,
   shouldResetStatefulHmrRetention,
   shouldRestartStatefulHmrServer,
@@ -262,15 +261,6 @@ describe('stateful hmr session', () => {
     expect(isStatefulHmrAssetFile('/project/app.wxss')).toBe(true)
     expect(isStatefulHmrAssetFile('/project/pages/index/index.js')).toBe(false)
     expect(isStatefulHmrAssetFile('/project/src/pages/index.vue')).toBe(false)
-  })
-
-  it('merges compiler styles only for style-affecting batches', () => {
-    expect(shouldMergeStatefulHmrCompilerStyles(['/project/src/pages/index.ts'], [])).toBe(false)
-    expect(shouldMergeStatefulHmrCompilerStyles(['/project/src/pages/index.vue'], ['entry-direct:1'])).toBe(false)
-    expect(shouldMergeStatefulHmrCompilerStyles(['/project/src/pages/index.vue'], ['entry-style-only:1'])).toBe(true)
-    expect(shouldMergeStatefulHmrCompilerStyles(['/project/src/theme.css'], [])).toBe(true)
-    expect(shouldMergeStatefulHmrCompilerStyles(['/project/src/pages/index.vue'], ['css-importer-fallback:1'])).toBe(true)
-    expect(shouldMergeStatefulHmrCompilerStyles(['/project/src/pages/index.vue'], ['entry-mixed-asset:1'])).toBe(true)
   })
 
   it('stamps every JavaScript chunk in a full build with the same build id', () => {

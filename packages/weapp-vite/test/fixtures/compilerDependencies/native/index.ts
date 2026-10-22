@@ -10,13 +10,14 @@ import { createModuleGraphService } from '../../../../src/moduleGraph/service'
 import { createCompilerDependencyTracker } from '../../../../src/plugins/compilerPlugin/dependencies'
 import { compilerSourceId, getCompilerHmrHost } from '../../../../src/plugins/compilerPlugin/hmr'
 import { createDevBuildWatcher } from '../../../../src/runtime/buildPlugin/devBuildWatcher'
+import { getHmrRuntimeSession } from '../../../../src/runtime/hmrRuntimeSession'
 import { createRuntimeState } from '../../../../src/runtime/runtimeState'
 import { createSharedBuildOutput } from '../../../../src/runtime/sharedBuildConfig'
 import { runStatefulHmrDev } from '../../../../src/runtime/statefulHmr/session'
 import { normalizeFsResolvedId } from '../../../../src/utils/resolvedId'
 import { createNativeCompilerTrace } from './trace'
 
-type Kind = 'token-only' | 'label-only' | 'mixed' | 'vite-only'
+type Kind = 'token-only' | 'label-only' | 'mixed' | 'vite-only' | 'same-style'
 type Trace = ReturnType<typeof createNativeCompilerTrace>
 let blockedByCleanup: Error | undefined
 
@@ -93,7 +94,7 @@ async function acquireNativeFixture(root: string, kind: Kind, trace: Trace, acqu
   trace.install(host)
   const prepare = vi.fn(async (input: WeappCompilerHmrRequest) => {
     trace.record('provider.prepare', { revision: input.revision, changedFiles: input.changedFiles.map(trace.file), tokenHash: trace.hash(String(input.sources.get(compilerSourceId(token)))) })
-    return { assets: [{ fileName: styleFile, code: `.probe { color: ${color(input.sources)}; }` }] }
+    return { assets: [{ fileName: 'app.wxss', code: `.probe { color: ${color(input.sources)}; }` }] }
   })
   host.register('token-provider', prepare)
   let whenSettled: (() => Promise<void>) | undefined
@@ -155,6 +156,7 @@ async function acquireNativeFixture(root: string, kind: Kind, trace: Trace, acqu
   }
   return {
     host,
+    runtimeSession: getHmrRuntimeSession(ctx),
     token,
     label,
     outDir,

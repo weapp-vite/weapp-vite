@@ -1,5 +1,6 @@
 import type { Plugin, ViteDevServer } from 'vite'
 import type { MutableCompilerContext } from '../context'
+import { EventEmitter } from 'node:events'
 import { mkdir, mkdtemp, realpath, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'pathe'
@@ -17,8 +18,22 @@ vi.mock('chokidar', () => ({
   default: {
     watch() {
       const callbacks = new Map<string, (file: string) => void>()
+      const events = new EventEmitter()
+      void Promise.resolve().then(() => events.emit('ready'))
       sourceWatchers.push(callbacks)
-      return { add() {}, on: callbacks.set.bind(callbacks), close: () => callbacks.clear() }
+      return {
+        add() {},
+        on(event: string, handler: (file: string) => void) {
+          callbacks.set(event, handler)
+          return events.on(event, handler)
+        },
+        once: events.once.bind(events),
+        off: events.off.bind(events),
+        close() {
+          callbacks.clear()
+          events.removeAllListeners()
+        },
+      }
     },
   },
 }))

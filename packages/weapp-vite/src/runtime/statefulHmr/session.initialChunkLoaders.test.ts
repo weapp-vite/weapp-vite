@@ -103,6 +103,7 @@ describe('stateful session initial chunk package boundaries', () => {
         cwd: root,
         absoluteSrcRoot: path.join(root, 'src'),
         outDir: path.join(root, 'dist'),
+        multiPlatform: { enabled: false },
         weappViteConfig: {},
       },
       jsonService: { read: vi.fn(async () => appConfig) },

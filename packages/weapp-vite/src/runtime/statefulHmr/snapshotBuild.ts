@@ -24,6 +24,7 @@ import { captureWatchDependencies } from '../../utils/watchDependencies'
 import { getWxmlWatchFiles, shareWxmlDependencies } from '../../wxml/processing/dependencies'
 import { getWorkerSources } from '../buildPlugin/workerPlan'
 import { HmrRuntimeCapabilityError } from '../hmrRuntimeCapabilities'
+import { attachHmrRuntimeSession, getHmrRuntimeSession } from '../hmrRuntimeSession'
 import { resolveScanAppBasename } from '../scanPlugin/service'
 import { createSharedBuildConfig } from '../sharedBuildConfig'
 import { resolveComponentPageGlobalStyleRoutes } from './componentPageStyles'
@@ -82,6 +83,7 @@ export async function buildStatefulHmrSnapshot(
         .map(async id => await fs.pathExists(id) ? normalizeFsResolvedId(id) : undefined))).filter((id): id is string => Boolean(id))
     : []
   if (owner) {
+    attachHmrRuntimeSession(ctx, getHmrRuntimeSession(owner))
     shareWxmlDependencies(owner, ctx)
     // 入口快照在独立上下文中重建，但组件解析注册表属于活动 DevEngine。
     // 复用同一注册表，确保仅更新共享模块时仍能生成原有组件 logical entry。

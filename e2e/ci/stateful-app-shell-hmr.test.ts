@@ -14,6 +14,7 @@ const configFile = path.join(appRoot, 'weapp-vite.config.ts')
 const profileFile = path.join(appRoot, '.tmp/app-shell-hmr-profile.jsonl')
 const dist = path.join(appRoot, 'dist')
 const baseMarker = 'APP-VUE-HMR-ALIAS-APP-BASE'
+const shellOutputs = ['js', 'json', 'wxml'].map(extension => path.join(dist, `__weapp_vite_app_shell.${extension}`))
 
 async function buildId() {
   const script = await fs.readFile(path.join(dist, 'app.js'), 'utf8')
@@ -61,12 +62,14 @@ it('hands app shell registration changes to classic and publishes removal and re
     await replaceFileByRename(appFile, original.replace(baseMarker, marker))
     await changed.wait()
     await dev.waitFor(waitForFileContains(path.join(dist, '__weapp_vite_app_shell.wxml'), marker), 'updated shell')
+    expect(await Promise.all(shellOutputs.map(file => fs.pathExists(file)))).toEqual([true, true, true])
     expect(render()).toContain(marker)
 
     const removed = publication.capture(appFile)
     await replaceFileByRename(appFile, original.replace(/<template>[\s\S]*?<\/template>/, ''))
     await removed.wait()
     await expect.poll(async () => fs.pathExists(path.join(dist, '__weapp_vite_app_shell.wxml')), { timeout: 30_000 }).toBe(false)
+    expect(await Promise.all(shellOutputs.map(file => fs.pathExists(file)))).toEqual([false, false, false])
     const rendered = render()
     expect(rendered).not.toContain('app-vue-hmr-alias-app__marker')
     expect(rendered).toContain('APP-VUE-HMR-ALIAS-PAGE')
@@ -74,6 +77,7 @@ it('hands app shell registration changes to classic and publishes removal and re
     const restored = publication.capture(appFile)
     await replaceFileByRename(appFile, original)
     await restored.wait()
+    expect(await Promise.all(shellOutputs.map(file => fs.pathExists(file)))).toEqual([true, true, true])
     expect(render()).toContain(baseMarker)
     expect(await fs.readFile(appFile, 'utf8')).toBe(original)
   }

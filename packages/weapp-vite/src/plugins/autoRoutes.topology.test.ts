@@ -1,12 +1,25 @@
 import type { Plugin, PluginContext, ResolvedConfig, ViteDevServer } from 'vite'
 import type { MutableCompilerContext } from '../context'
+import { EventEmitter } from 'node:events'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { logger } from '../context/shared'
 import { ownsAutoRoutesTopologyChange, subscribeAutoRoutesTopology } from '../runtime/autoRoutesPlugin/topology'
 import { createRuntimeState } from '../runtime/runtimeState'
 import { autoRoutes } from './autoRoutes'
 
-const watch = vi.hoisted(() => vi.fn(() => ({ add: vi.fn(), on: vi.fn(), close: vi.fn() })))
+const watch = vi.hoisted(() => vi.fn(() => {
+  const events = new EventEmitter()
+  void Promise.resolve().then(() => events.emit('ready'))
+  return {
+    add: vi.fn(),
+    on: vi.fn(events.on.bind(events)),
+    once: vi.fn(events.once.bind(events)),
+    off: vi.fn(events.off.bind(events)),
+    close: vi.fn(async () => {
+      events.removeAllListeners()
+    }),
+  }
+}))
 vi.mock('chokidar', () => ({ default: { watch } }))
 vi.mock('../context/shared', () => ({ logger: { info: vi.fn(), error: vi.fn() } }))
 

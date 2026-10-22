@@ -1,7 +1,7 @@
 import type { ProjectResult, ScenarioResult } from './types'
 import { describe, expect, it } from 'vitest'
 import { evaluateWorkspaceHmrThresholds } from './baseline'
-import { assertWorkspaceHmrDelivery, expectedWorkspaceHmrDelivery, orderWorkspaceHmrScenarios, planWorkspaceHmrScenarios } from './delivery'
+import { assertWorkspaceHmrDelivery, expectedWorkspaceHmrDelivery, orderWorkspaceHmrScenarios, planWorkspaceHmrScenarios, workspaceHmrFallbackReason } from './delivery'
 
 const impact = (count: number) => Array.from({ length: count }, (_, index) => ({ path: `pages/page-${index}.js`, status: 'modified' as const }))
 const transition: ScenarioResult = {
@@ -28,19 +28,55 @@ describe('workspace HMR delivery admission and impact measurement', () => {
     ['stateful', true, false, 'classic'],
     ['stateful', true, true, 'classic'],
     ['standard', false, true, 'classic'],
-  ] as const)('freezes %s / classic=%s / template=%s as %s', (mode, classic, template, expected) => {
-    expect(expectedWorkspaceHmrDelivery(mode, classic, template)).toBe(expected)
+  ] as const)('freezes %s / classic=%s / requiresClassic=%s as %s', (mode, classic, requiresClassic, expected) => {
+    expect(expectedWorkspaceHmrDelivery(mode, classic, requiresClassic)).toBe(expected)
   })
 
-  it('preserves every case and runs supported script/style scenarios before irreversible fallback', () => {
+  it('preserves every case and runs supported scripts before irreversible stylesheet or template fallback', () => {
     const scenarios = [
       { id: 'native-template' },
+      { id: 'native-style', classicFallbackReason: 'stylesheet-output' },
       { id: 'vue-template', statefulTemplate: true },
       { id: 'vue-script' },
-      { id: 'vue-style' },
+      { id: 'vue-style', classicFallbackReason: 'stylesheet-output' },
     ]
-    expect(orderWorkspaceHmrScenarios(scenarios).map(item => item.id)).toEqual(['native-template', 'vue-script', 'vue-style', 'vue-template'])
-    expect(scenarios.map(item => item.id)).toEqual(['native-template', 'vue-template', 'vue-script', 'vue-style'])
+    expect(orderWorkspaceHmrScenarios(scenarios).map(item => item.id)).toEqual(['native-template', 'vue-script', 'native-style', 'vue-template', 'vue-style'])
+    expect(scenarios.map(item => item.id)).toEqual(['native-template', 'native-style', 'vue-template', 'vue-script', 'vue-style'])
+  })
+
+  it('uses declared change semantics without inferring a capability from scenario names', () => {
+    expect(workspaceHmrFallbackReason({ classicFallbackReason: 'stylesheet-output' })).toBe('stylesheet-output')
+    expect(workspaceHmrFallbackReason({ statefulTemplate: true })).toBe('native-registration')
+    expect(workspaceHmrFallbackReason({ statefulTemplate: true, classicFallbackReason: 'patch-shape' })).toBe('patch-shape')
+    expect(workspaceHmrFallbackReason({})).toBeUndefined()
+    expect(planWorkspaceHmrScenarios('stateful', [
+      { id: 'arbitrary-first', classicFallbackReason: 'stylesheet-output' },
+      { id: 'arbitrary-supported' },
+      { id: 'arbitrary-next', classicFallbackReason: 'patch-shape' },
+    ]).map(({ id, expectedDelivery, expectedFallbackReason }) => [id, expectedDelivery, expectedFallbackReason])).toEqual([
+      ['arbitrary-supported', 'stateful', undefined],
+      ['arbitrary-first', 'classic-fallback', 'stylesheet-output'],
+      ['arbitrary-next', 'classic', undefined],
+    ])
+  })
+
+  it.each(['native-style', 'vue-style'])('freezes %s as the one stylesheet fallback and keeps every following save classic', (id) => {
+    const planned = planWorkspaceHmrScenarios('stateful', [
+      { id, classicFallbackReason: 'stylesheet-output' },
+      { id: 'native-script' },
+      { id: 'vue-template', statefulTemplate: true },
+      { id: 'vue-script' },
+      { id: 'later-style', classicFallbackReason: 'stylesheet-output' },
+    ])
+    expect(planned.map(({ id, expectedDelivery, expectedFallbackReason }) => [id, expectedDelivery, expectedFallbackReason])).toEqual([
+      ['native-script', 'stateful', undefined],
+      ['vue-script', 'stateful', undefined],
+      [id, 'classic-fallback', 'stylesheet-output'],
+      ['vue-template', 'classic', undefined],
+      ['later-style', 'classic', undefined],
+    ])
+    expect(planWorkspaceHmrScenarios('standard', [{ id, classicFallbackReason: 'stylesheet-output' }])[0])
+      .toMatchObject({ expectedDelivery: 'classic', expectedFallbackReason: undefined })
   })
 
   it('keeps all physical transition files while applying unchanged impact limits to later same-mode saves', () => {
@@ -65,16 +101,16 @@ describe('workspace HMR delivery admission and impact measurement', () => {
     expect(planWorkspaceHmrScenarios('standard', [{ id: 'template', statefulTemplate: true }])[0]?.expectedDelivery).toBe('classic')
   })
 
-  it('freezes a React template capability reason after supported native scripts and styles', () => {
+  it('freezes a React template capability reason after supported scripts and keeps later styles classic', () => {
     const planned = planWorkspaceHmrScenarios('stateful', [
       { id: 'react-template', statefulTemplate: true, classicFallbackReason: 'patch-shape' },
       { id: 'native-script' },
-      { id: 'native-style' },
+      { id: 'native-style', classicFallbackReason: 'stylesheet-output' },
     ])
     expect(planned.map(({ id, expectedDelivery, expectedFallbackReason }) => [id, expectedDelivery, expectedFallbackReason])).toEqual([
       ['native-script', 'stateful', undefined],
-      ['native-style', 'stateful', undefined],
       ['react-template', 'classic-fallback', 'patch-shape'],
+      ['native-style', 'classic', undefined],
     ])
     expect(() => assertWorkspaceHmrDelivery({
       expectedDelivery: 'classic-fallback',
@@ -114,6 +150,25 @@ describe('workspace HMR delivery admission and impact measurement', () => {
     { deliveryEvidence: { delivery: 'classic', reason: 'patch-shape' } },
   ])('rejects a transition with missing or mismatched evidence: %j', (missing) => {
     expect(evaluateWorkspaceHmrThresholds([project({ ...transition, ...missing })]).issues).toMatchObject([{ metric: 'delivery-evidence' }])
+  })
+
+  it('requires complete publication, retired transport, restored output and repeated saves for a stylesheet transition', () => {
+    const stylesheet: ScenarioResult = {
+      ...transition,
+      id: 'native-style',
+      expectedFallbackReason: 'stylesheet-output',
+      deliveryEvidence: { delivery: 'classic', reason: 'stylesheet-output' },
+    }
+    expect(evaluateWorkspaceHmrThresholds([project(stylesheet)]).issues).toEqual([])
+    for (const missing of [
+      { classicPublication: undefined },
+      { restoreDelivery: undefined },
+      { repeatDelivery: undefined },
+      { steadyClassicImpact: undefined },
+      { deliveryEvidence: { delivery: 'classic', reason: 'native-registration' } },
+    ]) {
+      expect(evaluateWorkspaceHmrThresholds([project({ ...stylesheet, ...missing })]).issues).toMatchObject([{ metric: 'delivery-evidence' }])
+    }
   })
 
   it('fails unexpected classic even when its small impact would fit the old budget', () => {

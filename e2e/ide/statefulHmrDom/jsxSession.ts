@@ -28,6 +28,8 @@ export function createJsxHmrSession() {
   let sharedSource = ''
   let originalPage = ''
   let originalShared = ''
+  let privateConfigPath = ''
+  let originalPrivateConfig = ''
   let compiledTemplatePaths: string[] = []
   let runtimeReleased = true
   let devReleased = true
@@ -99,6 +101,9 @@ export function createJsxHmrSession() {
       sharedSource = path.join(project, 'src/shared.tsx')
       originalPage = await fs.readFile(pageSource, 'utf8')
       originalShared = await fs.readFile(sharedSource, 'utf8')
+      privateConfigPath = path.join(project, 'project.private.config.json')
+      originalPrivateConfig = await fs.readFile(privateConfigPath, 'utf8')
+      expect((JSON.parse(originalPrivateConfig) as { setting?: { compileHotReLoad?: unknown } }).setting?.compileHotReLoad).toBe(true)
       const profilePath = path.join(project, '.tmp/hmr-profile.jsonl')
       devReleased = false
       dev = startDevProcess(process.execPath, [WEVU_JSX_CLI_PATH, 'dev', project, '--platform', 'weapp', '--skipNpm'], {
@@ -143,8 +148,9 @@ export function createJsxHmrSession() {
       await replaceFileByRename(source, content)
       await pending.wait()
       expect(await fs.readFile(appFile, 'utf8')).not.toBe(previousApp)
-      const privateConfig = await fs.readJson(path.join(fixture!.project, 'project.private.config.json')) as { setting?: { compileHotReLoad?: unknown } }
-      expect(privateConfig.setting?.compileHotReLoad).toBe(true)
+      const privateConfig = await fs.readJson(privateConfigPath) as { setting?: { compileHotReLoad?: unknown } }
+      // classic 由正式构建触发完整重载；IDE 自带热重载在开发会话中持续关闭。
+      expect(privateConfig.setting?.compileHotReLoad).toBe(false)
       await dev!.waitFor(waitForFileContains(path.join(fixture!.project, 'dist/pages/tsx-basic/index.wxml'), marker), 'JSX classic template output')
       if (provider === 'headless') {
         // 原客户端必须自行消费退役响应；手动重开仅作为自动 IDE 重载的 companion。
@@ -184,6 +190,7 @@ export function createJsxHmrSession() {
         { label: 'JSX HMR dev process', run: async () => {
           if (dev) {
             await dev.stop(5_000)
+            expect(await fs.readFile(privateConfigPath, 'utf8')).toBe(originalPrivateConfig)
             devReleased = true
           }
         } },

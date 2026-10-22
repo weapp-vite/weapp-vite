@@ -3,6 +3,21 @@ import { expect, it, vi } from 'vitest'
 import { getDevServerCloseRecord } from '../devLifecycle/server'
 import { bindHostLifecycle, setHostRestartData, takeHostRestartData } from './lifecycle'
 
+it('distinguishes restart handoff from terminal shutdown without changing the original error', async () => {
+  const failure = new Error('native restart failed')
+  const closeSession = vi.fn(async (_reason: 'restart' | 'close') => {})
+  const server = {
+    config: { inlineConfig: {} },
+    close: vi.fn(async () => {}),
+    restart: vi.fn(async () => { throw failure }),
+  } as unknown as ViteDevServer
+  bindHostLifecycle(server, closeSession)
+  await expect(server.restart()).rejects.toBe(failure)
+  expect(closeSession.mock.calls).toEqual([['restart']])
+  await server.close()
+  expect(closeSession.mock.calls).toEqual([['restart'], ['close']])
+})
+
 it.each(['unchanged', 'config-only', 'bound'] as const)('rejects a resolved native restart without a committed replacement (%s)', async (replacementStage) => {
   const key = Symbol('profile')
   const dispose = vi.fn(async () => {})
@@ -83,7 +98,7 @@ it('preserves restart failure while closing the exact uncommitted replacement', 
   expect(replacementSession).toHaveBeenCalledOnce()
   expect(replacementClose).toHaveBeenCalledOnce()
   expect(dispose).toHaveBeenCalledExactlyOnceWith('failed')
-  await server.close()
+  await expect(server.close()).rejects.toBe(cleanupFailure)
   expect(replacementClose).toHaveBeenCalledOnce()
 })
 

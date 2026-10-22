@@ -41,7 +41,7 @@ import { composeSourceMaps, normalizeEncodedSourceMapLike } from '../../utils/so
 import { bindHostLifecycle } from '../../vite/lifecycle'
 import { isWxmlDependency } from '../../wxml/processing/dependencies'
 import { subscribeAutoRoutesTopology } from '../autoRoutesPlugin/topology'
-import { touchExistingOutputStyles } from '../buildPlugin/touchAppWxss'
+import { resolveIdePrivateConfigPath } from '../classicIdeConfig'
 import { getHmrRuntimeCapabilityFallback, HmrRuntimeCapabilityError, resolveStatefulHmrInputFallback } from '../hmrRuntimeCapabilities'
 import { getHmrRuntimeSession } from '../hmrRuntimeSession'
 import { watchAssetSources } from '../watch/assets'
@@ -56,6 +56,7 @@ import { createStatefulHmrHostPlugins, getStatefulHmrHost } from './hostPlugins'
 import { registerStatefulHmrInitialChunkLoaders } from './initialChunkLoaders'
 import { isChangedNativeComponentSidecar } from './nativeComponentSidecar'
 import { NativeScriptInputs } from './nativeScriptInputs'
+import { StatefulHmrOutputCapabilities } from './outputCapabilities'
 import { isStatefulHmrSnapshotAsset, selectStatefulHmrAdditionalOutput } from './outputOwnership'
 import { writeStatefulHmrOutput } from './outputWriter'
 import { readMappedHmrCode, wrapHmrCode } from './patchPreparation'
@@ -81,6 +82,13 @@ interface StatefulHmrSnapshots {
   initial: StatefulHmrSnapshot
   profile?: StatefulHmrProfileHandoff
   rebuild: (files: string[], sources?: ReadonlyMap<string, string | null>) => Promise<StatefulHmrSnapshot>
+}
+
+const classicHandoffs = new WeakMap<object, () => void>()
+
+/** 仅将精确旧代的下一次关闭标记为 classic 交接；已开始的 terminal close 不接受接管。 */
+export function prepareStatefulClassicHandoff(ctx: object): void {
+  classicHandoffs.get(ctx)?.()
 }
 
 interface ActiveSnapshotBatch {
@@ -183,6 +191,7 @@ export async function runStatefulHmrDev(
       usePolling: pollingWatchOptions.usePolling,
     }, delegatedComponentEntryIds, buildEvents)
     const activeSession = session
+    classicHandoffs.set(ctx, () => activeSession.prepareClassicHandoff())
     session.releaseSettlement = controller.bindSettlement(() => activeSession.whenSettled())
     if (!host) {
       const active = session
@@ -238,13 +247,15 @@ class StatefulHmrSession {
   private readonly publicAssetSources: ReturnType<typeof createPublicAssetSourcePlan>
   private childSources?: ReturnType<typeof observeChildSources>
   private assetWatcher?: ReturnType<typeof watchAssetSources>
-  private restoreIdeAssetWatch?: () => Promise<void>
+  private restoreIdeAssetWatch?: Awaited<ReturnType<typeof installIdeAssetWatch>>
+  private classicHandoff = false
   private activeSnapshotBatch?: ActiveSnapshotBatch
   private readonly adapter: StatefulHmrViteAdapter
   private readonly delivery: HmrDeliveryCoordinator
   private resynchronizing = false
   private closed = false
   private closing?: Promise<void>
+  private fallbackCause?: { error: unknown }
   private fallbackSnapshotClose?: Promise<void>
   private readonly initialBundle = Promise.withResolvers<void>()
   private readonly snapshotScheduler: StatefulHmrSnapshotScheduler
@@ -253,9 +264,11 @@ class StatefulHmrSession {
   private initialProfile?: StatefulHmrProfileBatch
   private readonly transport: StatefulHmrTransport
   private outputChain: Promise<void> = Promise.resolve()
+  private readonly retiringOutputFailures = new Set<unknown>()
   private restartTimer?: ReturnType<typeof setTimeout>
   private restartHandoff?: StatefulHmrSnapshotHandoff
   private readonly snapshotAssets = new HmrAssetStore<Extract<StatefulHmrOutputFile, { type: 'asset' }>>()
+  private readonly outputCapabilities: StatefulHmrOutputCapabilities
   private componentPageGlobalStyleRoutes: string[] = []
   private templateRegistrationSignatures?: StatefulHmrSnapshot['templateRegistrationSignatures']
   private initialSnapshot?: StatefulHmrSnapshot
@@ -295,6 +308,7 @@ class StatefulHmrSession {
     this.emittedSourceIds = collectStatefulHmrEmittedSourceIds(snapshots.initial.output, server.config.root)
     this.directoryUpdates.seedSources([...this.entryIds, ...this.emittedSourceIds])
     this.initialSnapshot = snapshots.initial
+    this.outputCapabilities = new StatefulHmrOutputCapabilities(resolveOutputExtensions(ctx.configService?.outputExtensions).styleExtension)
     setTailwindStyleOwners(ctx, snapshots.initial.tailwindStyleOwners)
     this.transport = new StatefulHmrTransport(
       server,
@@ -321,7 +335,7 @@ class StatefulHmrSession {
       this.nativeVueBaselines.clear()
       const fallback = getHmrRuntimeCapabilityFallback(error)
       if (fallback) {
-        this.requestClassic(fallback)
+        this.requestClassic(fallback, error)
         return
       }
       if (error instanceof CompilerHmrResyncError) {
@@ -334,6 +348,7 @@ class StatefulHmrSession {
     }, () => this.requestFullBuild())
     this.adapter = new StatefulHmrViteAdapter(server.config, server, {
       onError: message => logger.error(`[weapp-vite] stateful HMR: ${message}`),
+      onNativeError: () => this.profile?.recordNativeFailure(),
       onOutput: (output, source) => this.handleOutput(output, source),
       onBatch: batch => this.handleBatch(batch),
       onPatch: (files, output) => this.handleBatch({ changedFiles: files, updates: [{ clientId: 'weapp-vite-stateful-hmr', update: output }] }),
@@ -345,7 +360,7 @@ class StatefulHmrSession {
         this.nativeVueBaselines.clear()
         const fallback = getHmrRuntimeCapabilityFallback(error)
         if (fallback) {
-          this.requestClassic(fallback)
+          this.requestClassic(fallback, error)
           return
         }
         if (error instanceof CompilerHmrResyncError) {
@@ -363,18 +378,22 @@ class StatefulHmrSession {
 
   async prepareIdeAssetWatch(): Promise<void> {
     const config = this.ctx.configService
-    if (!config.projectPrivateConfigPath) {
+    const configPath = resolveIdePrivateConfigPath(config)
+    if (!configPath) {
       return
     }
-    const configPath = config.multiPlatform.enabled
-      ? path.join(path.dirname(config.outDir), 'project.private.config.json')
-      : config.projectPrivateConfigPath
     this.restoreIdeAssetWatch = await installIdeAssetWatch({
       configPath,
       outDir: config.outDir,
       inheritedWatchOptions: config.projectConfig?.watchOptions,
       output: this.snapshots.initial.output,
     })
+  }
+
+  prepareClassicHandoff(): void {
+    if (!this.closing) {
+      this.classicHandoff = true
+    }
   }
 
   install(controller: Pick<ReturnType<typeof createStatefulHmrHostPlugins>, 'bindSidecarInputDrift'>): void {
@@ -429,6 +448,7 @@ class StatefulHmrSession {
   }
 
   close(status: 'incomplete' | 'failed' = 'incomplete'): Promise<void> {
+    const handoff = this.classicHandoff
     return this.closing ??= (async () => {
       const failures: unknown[] = []
       try {
@@ -440,7 +460,7 @@ class StatefulHmrSession {
       const restore = this.restoreIdeAssetWatch
       this.restoreIdeAssetWatch = undefined
       try {
-        await restore?.()
+        await restore?.(!failures.length && handoff ? getHmrRuntimeSession(this.ctx).classicIdeConfig : undefined)
       }
       catch (error) {
         failures.push(error)
@@ -496,6 +516,11 @@ class StatefulHmrSession {
     this.unpersistedNativeScripts.clear()
     this.nativeScriptInputs.clear()
     await release(() => this.outputChain)
+    for (const error of this.retiringOutputFailures) {
+      if (!failures.includes(error)) {
+        failures.push(error)
+      }
+    }
     await release(() => this.profile?.close(status))
   }
 
@@ -689,6 +714,12 @@ class StatefulHmrSession {
         setAsset(compatibleOutput, WEAPP_VITE_STATEFUL_HMR_PRELOAD_FILE, 'void 0;\n')
         setAsset(compatibleOutput, WEAPP_VITE_STATEFUL_HMR_UPDATE_FILE, 'void 0;\n')
       }
+      const currentOutputFiles = new Set(compatibleOutput.map(item => item.fileName))
+      const publicationOutput = fullBuild
+        ? compatibleOutput
+        : selectStatefulHmrAdditionalOutput(compatibleOutput, snapshotOutput ?? this.snapshotAssets.values())
+      const removedAssets = fullBuild ? this.snapshotAssets.ownedNames().filter(file => !currentOutputFiles.has(file)) : []
+      this.assertOutputCapabilities(publicationOutput, removedAssets)
       if (fullBuild) {
         for (const item of snapshotOutput ?? this.snapshotAssets.values()) {
           if (isStatefulHmrSnapshotAsset(item)) {
@@ -696,17 +727,14 @@ class StatefulHmrSession {
           }
         }
       }
-      const currentOutputFiles = new Set(compatibleOutput.map(item => item.fileName))
       await this.writeOutput(
         fullBuild ? 'full' : 'additional',
-        fullBuild
-          ? compatibleOutput
-          : selectStatefulHmrAdditionalOutput(compatibleOutput, snapshotOutput ?? this.snapshotAssets.values()),
+        publicationOutput,
         fullBuild && this.initialSnapshot
           ? { publicDir: this.server.config.publicDir, copyPublicDir: this.server.config.build.copyPublicDir }
           : undefined,
         snapshotBatch?.traceBatchId,
-        fullBuild ? this.snapshotAssets.ownedNames().filter(file => !currentOutputFiles.has(file)) : [],
+        removedAssets,
         fullBuild && Boolean(this.initialSnapshot),
       )
       if (buildId) {
@@ -871,11 +899,6 @@ class StatefulHmrSession {
     // 编译器扫描依赖不代表接管了原生资产写出；非脚本资源仍走固定输入快照。
     const needsSnapshot = needsNativeVueSnapshot || files.some(file => requiresStatefulHmrSnapshot(file)) || (!getCompilerHmrHost(this.ctx).enabled && allowCompilerContentPatch) || (dirtyReasonSummary.some(reason => reason.startsWith('entry-mixed-asset:'))
       && (!getCompilerHmrHost(this.ctx).enabled || getCompilerHmrHost(this.ctx).hasVisualChanges(files, input)))
-    const mergeCompilerStyles = shouldMergeStatefulHmrCompilerStyles(
-      files,
-      dirtyReasonSummary,
-      resolveOutputExtensions(this.ctx.configService?.outputExtensions).styleExtension,
-    )
     const patches = (compilerOnly && !files.some(file => /\.module\.[^.]+$/.test(file)) ? [] : updates).filter(item => item.update.type === 'Patch').map(item => ({ ...item, update: { ...item.update } }))
     let scriptFacts: ReturnType<StatefulHmrViteAdapter['captureGlassEaselScriptUpdates']> | undefined
     try {
@@ -916,7 +939,6 @@ class StatefulHmrSession {
             prepareProviders,
             rebuild: (files, sources) => sources ? this.snapshots.rebuild(files, sources) : this.snapshots.rebuild(files),
             sourcemap: Boolean(this.server.config.build.sourcemap),
-            mergeCompilerStyles,
             onPreparationStage: this.diagnostics
               ? observation => this.diagnostics!.preparation(input.revision, files, observation)
               : undefined,
@@ -1015,7 +1037,7 @@ class StatefulHmrSession {
     this.snapshotScheduler.request('full', files)
   }
 
-  private requestClassic(reason: HmrRuntimeFallbackReason): void {
+  private requestClassic(reason: HmrRuntimeFallbackReason, cause?: unknown): void {
     if (this.closed || this.restarting) {
       return
     }
@@ -1023,8 +1045,11 @@ class StatefulHmrSession {
     this.interruptSettlement()
     this.delivery.reset()
     this.transport.retire()
+    if (getHmrRuntimeCapabilityFallback(cause) === reason) {
+      this.fallbackCause = { error: cause }
+    }
     // close 同步撤销快照准入；当前批次由宿主收尾等待，不从批次内反向等待自身。
-    this.fallbackSnapshotClose = this.snapshotScheduler.close()
+    this.fallbackSnapshotClose = this.snapshotScheduler.close(this.fallbackCause ? { cause: this.fallbackCause.error } : undefined)
     void this.fallbackSnapshotClose.catch(() => {})
     this.stopAdapterForRestart()
     const runtimeSession = getHmrRuntimeSession(this.ctx)
@@ -1109,12 +1134,24 @@ class StatefulHmrSession {
   }
 
   private enqueueOutput(task: () => Promise<void>): Promise<void> {
-    const outputTask = this.outputChain.then(task)
+    const outputTask = this.outputChain.then(async () => {
+      if (!this.closed && !this.restarting) {
+        await task()
+      }
+    })
     // 队列尾部恢复只保证后续任务可执行，当前调用方仍需收到实际写入失败。
     this.outputChain = outputTask.catch((error) => {
-      // 能力边界由调用方交给 classic，不能同时被记录为构建失败。
-      if (!getHmrRuntimeCapabilityFallback(error)) {
+      // 能力边界请求 classic 并保留当前拒绝，不能同时被记录为构建失败。
+      const fallback = getHmrRuntimeCapabilityFallback(error)
+      if (fallback) {
+        this.requestClassic(fallback, error)
+      }
+      else {
         this.server.config.logger.error(`[weapp-vite] stateful HMR output failed: ${formatStatefulHmrError(error)}`)
+      }
+      // 队列恢复不能证明正在释放的写出成功；只有触发本次回退的同一能力拒绝可排除。
+      if ((this.closed || this.restarting) && (!this.fallbackCause || error !== this.fallbackCause.error)) {
+        this.retiringOutputFailures.add(error)
       }
     })
     return outputTask
@@ -1128,20 +1165,15 @@ class StatefulHmrSession {
     removedAssets: string[] = [],
     replaceOwnership = false,
   ): Promise<void> {
+    this.assertOutputCapabilities(output, removedAssets)
     const outDir = this.ctx.configService!.outDir
     // DevEngine 的 full 回调仍可能省略未变化的原生模块（例如 app.prelude.js）；
     // stateful scope 必须保留这些已有文件，只有显式 removedAssets 才允许删除旧产物。
     const commitOwnership = prepareOutputOwnership(this.ctx, outDir, output.map(item => item.fileName), !replaceOwnership, removedAssets, 'stateful-hmr')
     const write = async () => {
       await writeStatefulHmrOutput(outDir, output, initialPublicAssets, removedAssets)
-      if (kind === 'refresh') {
-        await touchExistingOutputStyles(
-          outDir,
-          output.map(item => item.fileName),
-          resolveOutputExtensions(this.ctx.configService?.outputExtensions).styleExtension,
-        )
-      }
       await commitOwnership()
+      this.outputCapabilities.published(output, removedAssets, kind === 'full')
     }
     const pending = this.diagnostics ? this.diagnostics.write({ kind, batchId }, output, write) : write()
     return pending.catch((error) => {
@@ -1295,10 +1327,18 @@ class StatefulHmrSession {
     const assets = output.filter(isStatefulHmrSnapshotAsset)
     const retainedFileNames = output.map(item => item.fileName)
     const changes = this.snapshotAssets.diff(assets, retainedFileNames)
+    this.assertOutputCapabilities(assets, changes.removed)
     this.diagnostics?.diff(traceBatchId, this.snapshotAssets.values(), output, changes.changed, superseded)
     await this.snapshotAssets.commit(assets, async ({ changed, removed }) => {
       await this.writeOutput('refresh', changed, undefined, traceBatchId, removed)
     }, retainedFileNames)
+  }
+
+  private assertOutputCapabilities(output: readonly StatefulHmrOutputFile[], removed: readonly string[] = []): void {
+    const fallback = this.outputCapabilities.fallback(output, removed)
+    if (fallback) {
+      throw new HmrRuntimeCapabilityError(fallback)
+    }
   }
 
   private createSnapshotAssets(snapshot: StatefulHmrSnapshot): StatefulHmrOutputFile[] {
@@ -1553,14 +1593,6 @@ export function requiresStatefulHmrSnapshot(file: string, dirtyReasonSummary: st
 
 export function isStatefulHmrAssetFile(file: string): boolean {
   return !/\.(?:[cm]?[jt]sx?|vue)$/.test(file)
-}
-
-export function shouldMergeStatefulHmrCompilerStyles(files: readonly string[], dirtyReasonSummary: readonly string[], styleExtension = 'wxss'): boolean {
-  const sourceStyleExtensions = new Set(['css', 'acss', 'scss', 'sass', 'less', 'styl', 'stylus', 'pcss', 'postcss', 'sss', styleExtension.toLowerCase()])
-  if (files.some(file => sourceStyleExtensions.has(path.extname(file).slice(1).toLowerCase()))) {
-    return true
-  }
-  return dirtyReasonSummary.some(reason => /^(?:style-sidecar|css-importer|css-importer-fallback|entry-style-only|compiler-content|tailwind-content|entry-mixed-asset):/.test(reason))
 }
 
 function isUnsafeStatefulHmrReason(reason: string, allowCompilerContent = false): boolean {

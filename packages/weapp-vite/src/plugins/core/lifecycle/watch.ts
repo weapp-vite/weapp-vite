@@ -13,17 +13,16 @@ import { isAutoRoutesGeneratedPath, resolveAutoRoutesManagedOutputPaths } from '
 import { getSelectedAutoRouteSource } from '../../../runtime/autoRoutesPlugin/selection'
 import { isAutoRoutesPagesRelatedPath, resolveAutoRoutesMatcherContext } from '../../../runtime/autoRoutesPlugin/shared'
 import { resetTakeImportRegistry } from '../../../runtime/chunkStrategy'
+import { recordHmrStyleUpdate } from '../../../runtime/hmrStyleUpdate'
 import { resolveScanPluginBasename } from '../../../runtime/scanPlugin/service'
 import { getProjectConfigFileName, getProjectPrivateConfigFileName } from '../../../utils'
-import { findCssEntry, findJsEntry, findVueEntry } from '../../../utils/file'
+import { findJsEntry, findVueEntry } from '../../../utils/file'
 import { createHmrProfileEventId, recordHmrProfileDuration } from '../../../utils/hmrProfile'
 import { resolveRealpath } from '../../../utils/realpathScope'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../utils/resolvedId'
 import { getWxmlWatchFiles, isWxmlDependency } from '../../../wxml/processing/dependencies'
-import { isManagedCompilerEntry } from '../../compilerPluginRegistry'
 import { invalidateSharedStyleCache } from '../../css/shared/preprocessor'
 import { isReactHmrTemplateSource } from '../../react/hmr'
-import { getManagedTailwindcssEntries, isManagedTailwindcssEntry } from '../../tailwindcssMarker'
 import { invalidateFileCache } from '../../utils/cache'
 import { ensureSidecarWatcher, invalidateEntryForSidecar } from '../../utils/invalidateEntry'
 import { extractCssImportDependencies } from '../../utils/invalidateEntry/cssGraph'
@@ -33,24 +32,11 @@ import { addNormalizedWatchFiles } from '../../utils/watchFiles'
 import { isAppVueFile } from '../../vue/transform/appShell'
 import { collectAffectedSharedChunkEntriesAndChunks } from '../helpers'
 import { markAppEntryForAutoRoutesTopology as markAppEntryForAutoRoutesTopologyDirty } from './autoRoutesTopology'
+import { resolveCompilerContentUpdate } from './compilerContent'
 import { createVueEntryUpdateInspector } from './vueEntryUpdate'
 import { collectVueStyleScriptChanges } from './vueStyleDependency'
 
 const ATOMIC_SAVE_RECHECK_DELAYS_MS = [20, 60]
-const compilerContentExtensions = new Set([
-  '.vue',
-  ...watchedTemplateExts,
-  ...watchedScriptModuleSuffixes,
-  '.js',
-  '.jsx',
-  '.ts',
-  '.tsx',
-  '.mts',
-  '.cts',
-  '.mjs',
-  '.cjs',
-])
-const TAILWIND_APP_STYLE_RE = /@import\s+['"]tailwindcss['"]|@tailwind\s+(?:base|components|utilities)\b|weapp-tailwindcss|tailwindcss\/vite/
 
 interface WatchPathKind {
   configSuffix?: string
@@ -135,16 +121,6 @@ function isConfigFileDependencyChange(state: CorePluginState, normalizedId: stri
 
 function isHostOwnedConfigFileDependency(state: CorePluginState, normalizedId: string) {
   return hasDevModuleGraphHost(state.ctx) && isConfigFileDependencyChange(state, normalizedId)
-}
-
-async function isTailwindAppStyleSource(stylePath: string) {
-  try {
-    const source = await fs.readFile(stylePath, 'utf8')
-    return TAILWIND_APP_STYLE_RE.test(source)
-  }
-  catch {
-    return false
-  }
 }
 
 function collectEmittedJsonPaths(state: CorePluginState) {
@@ -331,6 +307,12 @@ async function processChangedFile(
       cause = 'entry-style-bindings'
     }
     state.markEntryDirty(entryId, reason)
+    if (cause === 'style-sidecar' || cause === 'entry-style-only' || cause === 'css-importer' || cause === 'css-importer-fallback') {
+      recordHmrStyleUpdate(configService, normalizedId, {
+        styleFiles: [normalizedId],
+        cssImporterOwners: cause.startsWith('css-importer') ? [entryId] : [],
+      })
+    }
     const isJsxTemplateDependency = reason === 'dependency' && /\.(?:jsx|tsx)$/.test(normalizedId)
     if (/\.(?:vue|jsx|tsx)$/.test(entryId) && (reason !== 'dependency' || isJsxTemplateDependency)) {
       const hmr = ctx.runtimeState.build.hmr
@@ -416,60 +398,12 @@ async function processChangedFile(
     })
   }
   const markAppEntryForTailwindContent = async () => {
-    // 删除受 Tailwind 扫描的源码同样会改变候选集合；宿主已在本钩子之前捕获 tombstone，
-    // 因此需要沿用 update 的内容失效路径，触发一次新的编译器样式快照。
-    if ((event !== 'update' && event !== 'create' && event !== 'delete') || pathKind.isStyle || pathKind.configSuffix || !compilerContentExtensions.has(pathKind.extension)) {
+    const update = await resolveCompilerContentUpdate(ctx, normalizedId, event, { inspector: vueEntryUpdateInspector })
+    if (!update) {
       return false
     }
-    if (vueEntryUpdateInspector) {
-      const genericProviders = Object.keys(
-        ctx.runtimeState.build.hmr.vueEntryContentSignatures?.get(normalizedId) ?? {},
-      ).filter(provider => provider !== 'tailwindcss')
-      if (genericProviders.length > 0) {
-        const compilerContentChanged = await Promise.all(
-          genericProviders.map(provider => vueEntryUpdateInspector.isCompilerContentUpdate(provider)),
-        )
-        if (!compilerContentChanged.some(Boolean)) {
-          return false
-        }
-      }
-      else if (!await vueEntryUpdateInspector.isTailwindContentUpdate()) {
-        return false
-      }
-    }
-    // 配置文件变化会使扫描服务主动清空 appEntry；后续内容变更仍需重新加载
-    // 应用入口，才能找到 Tailwind 样式入口并刷新编译器快照。
-    let appEntry = scanService.appEntry
-    if (!appEntry) {
-      try {
-        appEntry = await scanService.loadAppEntry()
-      }
-      catch {
-        return false
-      }
-    }
-    const appEntryId = appEntry?.path
-      ? normalizeFsResolvedId(appEntry.path)
-      : undefined
-    if (!appEntryId || appEntryId === normalizedId) {
-      return false
-    }
-    const styleEntry = await findCssEntry(appEntryId, ctx.configService.platform)
-    const stylePaths = styleEntry.path ? [styleEntry.path] : getManagedTailwindcssEntries(ctx)
-    if (!stylePaths.length) {
-      return false
-    }
-    const styleOwnership = await Promise.all(stylePaths.map(async stylePath => ({
-      isManagedTailwindcss: isManagedTailwindcssEntry(ctx, stylePath),
-      isManagedCompiler: isManagedCompilerEntry(ctx, stylePath),
-      isTailwind: await isTailwindAppStyleSource(stylePath),
-    })))
-    if (!styleOwnership.some(({ isManagedTailwindcss, isManagedCompiler, isTailwind }) => isManagedTailwindcss || isManagedCompiler || isTailwind)) {
-      return false
-    }
-    const contentReason = styleOwnership.some(({ isManagedTailwindcss, isTailwind }) => isManagedTailwindcss || isTailwind)
-      ? 'tailwind-content'
-      : 'compiler-content'
+    const { appEntryId, reason: contentReason } = update
+    recordHmrStyleUpdate(configService, normalizedId, { compilerContentOwners: [[appEntryId, contentReason]] })
     if (
       concreteChangedEntryId !== appEntryId
       && (loadedEntrySet.has(concreteChangedEntryId) || resolvedEntryMap.has(concreteChangedEntryId))
@@ -840,6 +774,8 @@ export function createWatchChangeHook(state: CorePluginState) {
       return
     }
     state.ctx.moduleGraphService?.recordChangedFile?.(normalizedId, event)
+    const changedBlocks = await vueEntryUpdateInspector?.getChangedBlocks()
+    recordHmrStyleUpdate(state.ctx.configService, normalizedId, { styleFiles: changedBlocks?.includes('style') ? [normalizedId] : [] })
     const profile = state.ctx.runtimeState.build.hmr.profile
     profile.sourceEvents ??= []
     const sourceEvent = { eventId, event, file: normalizedId, receivedAtMs: startedAt }

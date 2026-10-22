@@ -4,8 +4,10 @@ import process from 'node:process'
 import path from 'pathe'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { getSupportedMiniProgramPlatforms } from '../../platform'
+import { observeCompilerInputs } from '../../plugins/utils/sourceSnapshot'
 import { createAdvancedChunkNameResolver } from '../advancedChunks'
 import { resetTakeImportRegistry } from '../chunkStrategy'
+import { getHmrRuntimeSession } from '../hmrRuntimeSession'
 import { createConfigService } from './createConfigService'
 
 const ALL_MP_PLATFORMS = [...getSupportedMiniProgramPlatforms()]
@@ -193,6 +195,33 @@ describe('createConfigService', () => {
       aliasEntries: [],
       relativeSrcRoot: (p: string) => path.relative('/work/src', p) || '.',
     })
+  })
+
+  it('feeds the requested IDE bytes into config parsing and compiler input observations across owned writes', async () => {
+    const root = fs.mkdtempSync(path.join(tmpdir(), 'requested-ide-config-'))
+    const file = path.join(root, 'project.private.config.json')
+    const original = '{\r\n  "setting": { "compileHotReLoad": true }\r\n}\r\n'
+    fs.writeFileSync(file, original)
+    const ctx = createCtx()
+    const service = createConfigService(ctx)
+    ctx.configService = service
+    const runtime = getHmrRuntimeSession(ctx)
+    const observed: string[] = []
+    const release = observeCompilerInputs(service, (_file, source) => observed.push(source))
+    const read = loadConfigFactoryOptionsMock.value.readProjectConfigFile as (file: string) => Promise<string>
+    try {
+      await runtime.classicIdeConfig.activate(file)
+      expect(await read(file)).toBe(original)
+      await runtime.classicIdeConfig.activate(file)
+      expect(await read(file)).toBe(original)
+      expect(observed).toEqual([original, original])
+      expect(JSON.parse(fs.readFileSync(file, 'utf8'))).toEqual({ setting: { compileHotReLoad: false } })
+    }
+    finally {
+      release()
+      await runtime.classicIdeConfig.close()
+      fs.rmSync(root, { recursive: true, force: true })
+    }
   })
 
   it('resolves source roots once per chunk decision and refreshes them for the next decision', () => {

@@ -33,7 +33,7 @@ import {
 import { WorkspaceHmrClassicFallback } from './workspace-hmr/classicFallback'
 import { inspectClassicPublication, inspectRetiredClassicTransport } from './workspace-hmr/classicPublication'
 import { collectWorkspaceHmrCleanupErrors, isWorkspaceHmrScenarioRetryable } from './workspace-hmr/cleanup'
-import { assertWorkspaceHmrDelivery, expectedWorkspaceHmrDelivery, orderWorkspaceHmrScenarios, planWorkspaceHmrScenarios } from './workspace-hmr/delivery'
+import { assertWorkspaceHmrDelivery, expectedWorkspaceHmrDelivery, orderWorkspaceHmrScenarios, planWorkspaceHmrScenarios, workspaceHmrFallbackReason } from './workspace-hmr/delivery'
 import { listFiles, snapshotDist, waitForInitialDistSnapshot, waitForStableDistSnapshot } from './workspace-hmr/output'
 import { isDynamicReactTemplateOutput, resolveReactTemplateScenarioCapability, waitForReactTemplateScriptOutput } from './workspace-hmr/reactTemplate'
 import { renderWorkspaceHmrExecution, summarizeWorkspaceHmrExecution } from './workspace-hmr/report'
@@ -646,7 +646,7 @@ async function auditProject(project: ProjectCase): Promise<ProjectResult> {
       expectedFallbackReason: plannedScenarios[index]!.expectedFallbackReason,
     }))
     result.startupMs = performance.now() - startupStart
-    const warmupScenario = runnableScenarios.find(scenario => !scenario.statefulTemplate)
+    const warmupScenario = plannedScenarios.find(scenario => !workspaceHmrFallbackReason(scenario))
     const warmup = warmupScenario && await warmupProjectHmr(project, warmupScenario, profilePath, distRoot)
     if (warmup?.update || warmup?.restore) {
       result.warmup = { scenario: warmupScenario!.id, ...warmup }
@@ -708,7 +708,7 @@ async function warmupProjectHmr(
     return
   }
 
-  const expectedDelivery = expectedWorkspaceHmrDelivery(project.hmrRuntime, false, Boolean(scenario.statefulTemplate))
+  const expectedDelivery = expectedWorkspaceHmrDelivery(project.hmrRuntime, false, Boolean(workspaceHmrFallbackReason(scenario)))
   await prepareScenarioMutation(project, scenario)
   const profileLineCount = await countJsonlLines(profilePath)
   let delivery: WorkspaceHmrDeliveryEvidence | undefined
@@ -771,7 +771,7 @@ async function auditScenario(
     output: formatProjectPath(scenario.outputPath),
     marker,
     expectedDelivery,
-    expectedFallbackReason: expectedDelivery === 'classic-fallback' ? scenario.classicFallbackReason ?? 'native-registration' : undefined,
+    expectedFallbackReason: expectedDelivery === 'classic-fallback' ? workspaceHmrFallbackReason(scenario) : undefined,
   }
 
   if (updated === original) {
@@ -969,6 +969,7 @@ function createNativeStyleScenario(project: ProjectCase, sourcePath: string): Sc
   return {
     id: 'native-style',
     label: 'native style',
+    classicFallbackReason: 'stylesheet-output',
     sourcePath,
     outputPath: resolveOutputPath(project, sourcePath, PLATFORM_EXT[project.platform].style),
     expectedMarker: marker => toCssIdent(marker),
@@ -1000,6 +1001,7 @@ function createVueScenarios(project: ProjectCase, sourcePath: string, source: st
     {
       id: 'vue-style',
       label: 'Vue SFC style',
+      classicFallbackReason: 'stylesheet-output',
       sourcePath,
       outputPath: styleOutput,
       expectedMarker: marker => toCssIdent(marker),

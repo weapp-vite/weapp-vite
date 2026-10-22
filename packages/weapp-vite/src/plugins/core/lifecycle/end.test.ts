@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { createLogicalEntryId, createSidecarModuleId, createSidecarSourceSpecifier } from '../../../moduleGraph/protocol'
 import { createModuleGraphService } from '../../../moduleGraph/service'
+import { createHmrStyleUpdatePlan, withHmrStyleUpdatePlan } from '../../../runtime/hmrStyleUpdate'
 import { createBuildEndHook } from './end'
 
 function createState(file: string, entryId: string) {
@@ -75,7 +76,7 @@ describe('core lifecycle buildEnd hook', () => {
 
     expect(state.hmrState.didEmitAllEntries).toBe(full)
     expect(state.hmrState.skipSharedChunkRefresh).toBe(!full)
-    expect(state.ctx.runtimeState.build.hmr.didEmitAllEntries).toBe(full ? true : undefined)
+    expect(state.ctx.runtimeState.build.hmr.didEmitAllEntries).toBe(full)
   })
 
   it('resolves a pending sidecar through the active graph and refreshes metadata only', async () => {
@@ -140,6 +141,75 @@ describe('core lifecycle buildEnd hook', () => {
     expect(state.hmrState.lastHmrEntryIds).toEqual(new Set([entryId]))
     expect(state.hmrState.skipSharedChunkRefresh).toBe(false)
     expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['entry-direct:1'])
+  })
+
+  it('preserves compiler-owned App metadata when the physical graph only resolves the changed page', async () => {
+    const page = '/project/src/pages/home/index.vue'
+    const app = '/project/src/app.vue'
+    const { loadEntry, moduleGraphService, state } = createState(page, page)
+    const logicalId = createLogicalEntryId(page, 'page')
+    const infos = new Map<string, any>([
+      [page, { importers: [logicalId] }],
+      [logicalId, { importers: [], isEntry: true }],
+    ])
+    state.resolvedEntryMap.set(app, { id: app })
+    state.hmrState.lastHmrEntryIds = new Set([page, app])
+    state.hmrState.lastEmittedEntryIds = new Set([page])
+    moduleGraphService.recordChangedFile(page, 'update')
+    const plan = createHmrStyleUpdatePlan([page], { compilerContentOwners: [[app, 'tailwind-content']] })
+
+    await withHmrStyleUpdatePlan(state.ctx.configService, plan, async () => {
+      await createBuildEndHook(state).call({
+        getModuleIds: () => infos.keys(),
+        getModuleInfo: (id: string) => infos.get(id),
+      })
+      expect(plan.compilerContentOwners.get(app)).toBe('tailwind-content')
+    })
+
+    expect(loadEntry).not.toHaveBeenCalled()
+    expect(state.hmrState.lastHmrEntryIds).toEqual(new Set([page, app]))
+    expect(state.ctx.runtimeState.build.hmr.lastHmrEntryIds).toEqual(new Set([page, app]))
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['entry-direct:1'])
+  })
+
+  it.each([
+    { fullEntryScan: false, fullSnapshotOutput: false, fullStyle: false, full: false },
+    { fullEntryScan: true, fullSnapshotOutput: false, fullStyle: false, full: true },
+    { fullEntryScan: false, fullSnapshotOutput: true, fullStyle: false, full: true },
+    { fullEntryScan: false, fullSnapshotOutput: false, fullStyle: true, full: false },
+  ])('uses actual output completeness after every script entry was emitted (entry=$fullEntryScan/snapshot=$fullSnapshotOutput/style=$fullStyle)', async ({ fullEntryScan, fullSnapshotOutput, fullStyle, full }) => {
+    const page = '/project/src/pages/home/index.vue'
+    const app = '/project/src/app.js'
+    const { moduleGraphService, state } = createState(page, page)
+    const logicalId = createLogicalEntryId(page, 'page')
+    const infos = new Map<string, any>([
+      [page, { importers: [logicalId] }],
+      [logicalId, { importers: [], isEntry: true }],
+    ])
+    state.ctx.configService.isDev = true
+    state.ctx.runtimeState.build.hmr.fullEntryScan = fullEntryScan
+    state.ctx.runtimeState.build.hmr.fullSnapshotOutput = fullSnapshotOutput
+    // loader 可以重发全部脚本，而未变化的原生 JSON 仍由增量缓存持有。
+    state.hmrState.didEmitAllEntries = true
+    state.ctx.runtimeState.build.hmr.didEmitAllEntries = true
+    state.hmrState.hasBuiltOnce = true
+    state.resolvedEntryMap.set(app, { id: app })
+    state.hmrState.lastHmrEntryIds = new Set([page, app])
+    state.hmrState.lastEmittedEntryIds = new Set([page, app])
+    moduleGraphService.recordChangedFile(page, 'update')
+    const plan = createHmrStyleUpdatePlan([page], { full: fullStyle, compilerContentOwners: [[app, 'tailwind-content']] })
+
+    await withHmrStyleUpdatePlan(state.ctx.configService, plan, async () => {
+      await createBuildEndHook(state).call({
+        getModuleIds: () => infos.keys(),
+        getModuleInfo: (id: string) => infos.get(id),
+      })
+    })
+
+    expect(state.hmrState.didEmitAllEntries).toBe(full)
+    expect(state.ctx.runtimeState.build.hmr.didEmitAllEntries).toBe(full)
+    expect(state.ctx.runtimeState.build.hmr.lastHmrEntryIds).toEqual(new Set([page, app]))
+    expect(state.hmrState.skipSharedChunkRefresh).toBe(false)
   })
 
   it('keeps logical layout script changes on the chunk emission path', async () => {

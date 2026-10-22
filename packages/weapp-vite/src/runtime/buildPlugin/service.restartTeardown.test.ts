@@ -75,6 +75,7 @@ vi.mock('./pluginProject', () => ({
   },
 }))
 vi.mock('../statefulHmr/session', () => ({
+  prepareStatefulClassicHandoff: () => mocks.forbiddenIo('stateful classic handoff'),
   runStatefulHmrDev: () => mocks.forbiddenIo('stateful dev'),
 }))
 vi.mock('../statefulHmr/snapshotBuild', () => ({

@@ -1,6 +1,7 @@
 import type { DevOptions } from 'rolldown/experimental'
 import type { StatefulHmrOutputFile } from './outputWriter'
 import { describe, expect, it, vi } from 'vitest'
+import { HmrRuntimeCapabilityError } from '../hmrRuntimeCapabilities'
 import { createStatefulHmrRolldownRuntimeSource } from './commonRuntime'
 import { StatefulHmrViteAdapter } from './viteAdapter'
 
@@ -12,7 +13,7 @@ function full() {
 }
 const additional = () => ({ output: [{ type: 'chunk', fileName: 'pages/index.js', code: 'Page({})', modules: {} }] as StatefulHmrOutputFile[] })
 
-async function setup(publish: (output: StatefulHmrOutputFile[], source: string) => void | Promise<void> = () => {}) {
+function fixture(publish: (output: StatefulHmrOutputFile[], source: string) => void | Promise<void> = () => {}) {
   let callbacks: DevOptions
   const calls: string[] = []
   const engine = {
@@ -26,10 +27,13 @@ async function setup(publish: (output: StatefulHmrOutputFile[], source: string) 
   }
   const bundled = { getRolldownOptions: async () => ({}), storeOutputFiles: vi.fn(), listen: async () => {} }
   const onError = vi.fn()
+  const onNativeError = vi.fn<(error: Error) => void>()
+  const onBatch = vi.fn()
+  const onPatch = vi.fn(() => true)
   const adapter = new StatefulHmrViteAdapter(
     { root: '/project', build: { rolldownOptions: {} } } as any,
     { environments: { client: { bundledDev: bundled } } } as any,
-    { onError, onOutput: publish, onPatch: () => true, waitForInitialBundle: async () => {} },
+    { onError, onNativeError, onBatch, onOutput: publish, onPatch, waitForInitialBundle: async () => {} },
     {},
     (async (_input, _output, options) => {
       callbacks = options!
@@ -38,9 +42,26 @@ async function setup(publish: (output: StatefulHmrOutputFile[], source: string) 
     30,
   )
   adapter.install()
-  await bundled.listen()
-  calls.length = 0
-  return { adapter, engine, callbacks: callbacks!, calls, onError }
+  return {
+    adapter,
+    engine,
+    get callbacks() {
+      return callbacks!
+    },
+    calls,
+    onError,
+    onNativeError,
+    onBatch,
+    onPatch,
+    start: () => bundled.listen(),
+  }
+}
+
+async function setup(publish?: (output: StatefulHmrOutputFile[], source: string) => void | Promise<void>) {
+  const state = fixture(publish)
+  await state.start()
+  state.calls.length = 0
+  return state
 }
 
 describe('stateful adapter output publication', () => {
@@ -58,12 +79,41 @@ describe('stateful adapter output publication', () => {
     expect(settled).toBe(false)
     published.reject(failure)
     await rejected
+    expect(state.onError).toHaveBeenCalledExactlyOnceWith(failure.message)
+    expect(state.onNativeError).not.toHaveBeenCalled()
     await expect(state.adapter.whenSettled()).rejects.toBe(failure)
     state.callbacks.onAdditionalAssets!(additional() as any)
     await expect(state.adapter.whenSettled()).rejects.toBe(failure)
     state.callbacks.onOutput!(full() as any)
     await expect(state.adapter.whenSettled()).resolves.toBeUndefined()
     expect(publish).toHaveBeenCalledTimes(3)
+    await state.adapter.close()
+  })
+
+  it('retains an output capability rejection without reporting it as an additional build error', async () => {
+    const capability = new HmrRuntimeCapabilityError({ code: 'stylesheet-output', message: 'stylesheet publication requires classic' })
+    const state = await setup(() => {
+      throw capability
+    })
+    state.callbacks.onAdditionalAssets!(additional() as any)
+
+    await expect(state.adapter.whenSettled()).rejects.toBe(capability)
+    expect(state.onError).not.toHaveBeenCalled()
+    await state.adapter.close()
+  })
+
+  it('rejects startup with the original output capability error without replacing it with a generic report', async () => {
+    const capability = new HmrRuntimeCapabilityError({ code: 'runtime-contract', message: 'initial publication requires classic' })
+    const state = fixture(() => {
+      throw capability
+    })
+    state.engine.ensureCurrentBuildFinish.mockImplementation(async () => {
+      state.callbacks.onOutput!(full() as any)
+    })
+
+    await expect(state.start()).rejects.toBe(capability)
+    await expect(state.adapter.whenSettled()).rejects.toBe(capability)
+    expect(state.onError).not.toHaveBeenCalled()
     await state.adapter.close()
   })
 
@@ -74,6 +124,23 @@ describe('stateful adapter output publication', () => {
     await expect(state.adapter.waitForNativeUpdates()).rejects.toThrow('当前原生构建失败')
     state.engine.getBundleState.mockResolvedValue({ lastBuildErrored: false })
     await expect(state.adapter.waitForNativeUpdates()).resolves.toBeUndefined()
+    await state.adapter.close()
+  })
+
+  it.each([false, true])('observes the original native error without producing a batch (diagnostic throws: %s)', async (diagnosticThrows) => {
+    const state = await setup()
+    const failure = Object.assign(new Error('invalid native source'), { id: 'src/a.ts', errors: [new SyntaxError('invalid token')] })
+    if (diagnosticThrows) {
+      state.onNativeError.mockImplementation(() => {
+        throw new Error('diagnostic sink failed')
+      })
+    }
+    expect(() => state.callbacks.onHmrUpdates!(failure)).not.toThrow()
+    expect(state.onNativeError).toHaveBeenCalledExactlyOnceWith(failure)
+    expect(state.onNativeError.mock.calls[0]![0]).toBe(failure)
+    expect(state.onError).toHaveBeenCalledExactlyOnceWith(failure.message)
+    expect(state.onBatch).not.toHaveBeenCalled()
+    expect(state.onPatch).not.toHaveBeenCalled()
     await state.adapter.close()
   })
 

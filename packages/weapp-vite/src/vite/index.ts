@@ -39,7 +39,6 @@ export function weapp(): Plugin[] {
         try {
           // Vite 的配置合并不保留 symbol；先消费仅属于重启副本的载体，避免泄露给用户插件。
           inheritedLifecycle = takeHostLifecycle(config)
-          const inheritedRuntime = takeHostConfigRestartData<HmrRuntimeSession>(inheritedLifecycle, hmrRuntimeSessionKey)
           session = undefined
           serveRequested = false
           slots.bind([])
@@ -64,13 +63,14 @@ export function weapp(): Plugin[] {
             plugins: serveRequested ? userPlugins : [],
           }
           const { WeappBuildSession } = await import('./session')
+          const inheritedRuntime = takeHostConfigRestartData<HmrRuntimeSession>(inheritedLifecycle, hmrRuntimeSessionKey)
           session = new WeappBuildSession(inheritedRuntime)
           try {
             const fallbackBeforePrepare = session.hmrRuntimeSession.fallback
             let merged = await session.prepare(hostConfig, path.resolve(config.root ?? process.cwd()), env.mode, serveRequested)
             if (session.hmrRuntimeSession.phase === 'switching' && session.hmrRuntimeSession.fallback !== fallbackBeforePrepare) {
               const runtime = session.hmrRuntimeSession
-              await session.close()
+              await session.close('restart')
               session = new WeappBuildSession(runtime)
               merged = await session.prepare(hostConfig, path.resolve(config.root ?? process.cwd()), env.mode, serveRequested)
             }
@@ -102,7 +102,8 @@ export function weapp(): Plugin[] {
             return normalized
           }
           catch (error) {
-            return await rethrowAfterHostCleanup(error, () => session!.close())
+            // 继承链的原宿主尚在 nativeRestart 中，配置失败不能提前恢复命令级 IDE 设置。
+            return await rethrowAfterHostCleanup(error, () => session!.close(inheritedLifecycle ? 'restart' : 'close'))
           }
         }
         finally {
@@ -123,7 +124,7 @@ export function weapp(): Plugin[] {
           return result
         }
       }
-      bindHostLifecycle(server, () => active.close(), inheritedLifecycle, () => active.hmrRuntimeSession.phase === 'switching')
+      bindHostLifecycle(server, reason => active.closeHostGeneration(reason), inheritedLifecycle, () => active.hmrRuntimeSession.phase === 'switching', () => active.releaseHostClassicIdeConfig())
       inheritedLifecycle = undefined
       try {
         // 每代都转交同一个命令级决策；普通配置重启和新的插件工厂也不能重新开启 stateful。

@@ -22,6 +22,7 @@ import { launchHeadlessAutomator } from './automator.headless'
 import { createDevtoolsSimulatorBootLogMonitor, DEVTOOLS_LOG_SCAN_INTERVAL, DevtoolsSimulatorBootLogError } from './automatorBootLogMonitor'
 import { attachBridgeWrapperSyncCleanup, cleanupFailedBridgeLaunch, createRetryableCleanup } from './automatorBridgeCleanup'
 import { copyDistEntryForBridgeWrapper, safeReadDirectory, safeStat } from './automatorBridgeFiles'
+import { createAutomatorLaunchEvidence } from './automatorLaunchEvidence'
 import { AutomatorLaunchLifecycle } from './automatorLaunchLifecycle'
 import { createAutomatorProjectTrust } from './automatorProjectTrust'
 import { registerAutomatorReconnect } from './automatorReconnect'
@@ -355,6 +356,7 @@ interface LaunchAutomatorOptions extends AutomatorLaunchOptions {
 }
 
 interface AutomatorCliBridgePayload {
+  launchEvidenceId?: string
   projectPath?: string
   cliPath?: string
   cwd?: string
@@ -2926,6 +2928,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
   const launchRetries = resolveLaunchRetryCount(maxLaunchRetries)
   const launchMode = requestedLaunchMode ?? resolveAutomatorLaunchMode()
   const startupDiagnostics = new Map<string, ReturnType<typeof createStartupProtocolDiagnostics>>()
+  const launchEvidence = createAutomatorLaunchEvidence(import.meta.url, { requestedProjectPath: rest.projectPath })
   let forceProjectRefreshAfterRetry = false
   let lastLaunchFailure: { error: unknown } | undefined
   const operation = new AutomatorLaunchLifecycle(launchTimeout, 'launch automator')
@@ -2992,6 +2995,12 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
             const shouldPrebuild = launchMode === AUTOMATOR_LAUNCH_MODE_BRIDGE
               ? shouldPrebuildAutomatorBridgeProject()
               : shouldPrebuildAutomatorProject()
+            launchEvidence.record('launch-options-ready', {
+              attempt,
+              actualProjectPath: launchProjectPath,
+              selectedInstallation: selectedTarget,
+              launchOptions: { ...launchOptions, launchMode, bridgeProjectMode, warmupRoute: resolvedWarmupRoute, skipWarmup, warmupAllowRelaunch, refreshProjectAfterConnect, prebuild: shouldPrebuild, maxLaunchRetries },
+            })
             const managedProject = Boolean(process.env[MANAGED_PROJECT_JOURNAL_ENV])
             if (shouldPrebuild && !managedProject) {
               await lifecycle.step(() => prebuildAutomatorProjectIndex(launchProjectPath, project, {
@@ -3003,7 +3012,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
             lifecycle.throwIfAborted()
             process.stdout.write(`[info] [runtime:launch-step] connect-start mode=${launchMode || 'direct'} project=${project}\n`)
             miniProgram = launchMode === AUTOMATOR_LAUNCH_MODE_BRIDGE || Boolean(process.env[MANAGED_PROJECT_JOURNAL_ENV])
-              ? await (bridgeLaunch = launchAutomatorViaCliBridge(launchOptions, project, lifecycle, devtoolsLogMonitor, onSessionMetadata, (close) => {
+              ? await (bridgeLaunch = launchAutomatorViaCliBridge(launchEvidence.enabled ? { ...launchOptions, launchEvidenceId: launchEvidence.launchId } : launchOptions, project, lifecycle, devtoolsLogMonitor, onSessionMetadata, (close) => {
                   closeAttemptProject = close
                 }))
               : await measureE2EPhase('automator-startup', () => lifecycle.step(() => runWithDevtoolsLogMonitor(
@@ -3129,6 +3138,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
         )
       }
       catch (caughtError) {
+        launchEvidence.record('launch-rejected', { attempt, actualProjectPath: bridgeWrapperProject?.path ?? rest.projectPath, selectedInstallation: selectedTarget, rejection: caughtError })
         const normalizedError = caughtError instanceof AutomatorBridgeBudgetError && lastLaunchFailure
           ? lastLaunchFailure.error
           : runtimeLogSubscription?.normalizeError(caughtError) ?? caughtError

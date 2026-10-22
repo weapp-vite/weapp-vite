@@ -26,10 +26,13 @@ describe('React HMR template discovery', () => {
     const planned = planWorkspaceHmrScenarios('stateful', [
       { id: 'template', ...capability },
       { id: 'native-script', statefulTemplate: false },
-      { id: 'native-style', statefulTemplate: false },
+      { id: 'native-style', classicFallbackReason: 'stylesheet-output' },
     ])
-    expect(planned.map(item => item.id)).toEqual(['native-script', 'native-style', 'template'])
-    expect(planned.at(-1)).toMatchObject({ expectedDelivery: 'classic-fallback', expectedFallbackReason: 'patch-shape' })
+    expect(planned.map(item => [item.id, item.expectedDelivery, item.expectedFallbackReason])).toEqual([
+      ['native-script', 'stateful', undefined],
+      ['template', 'classic-fallback', 'patch-shape'],
+      ['native-style', 'classic', undefined],
+    ])
     const classic = resolveReactTemplateScenarioCapability(source, '/project/src/pages/index/view.tsx', dynamic, 'standard')
     expect(planWorkspaceHmrScenarios('standard', [{ id: 'template', ...classic }])[0]).toMatchObject({ expectedDelivery: 'classic', expectedFallbackReason: undefined })
   })
