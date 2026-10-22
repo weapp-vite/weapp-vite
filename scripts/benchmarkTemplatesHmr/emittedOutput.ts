@@ -9,7 +9,7 @@ const traverse = (traverseModule as unknown as { default?: typeof traverseModule
 
 /** 仅沿入口实际引用的本地脚本读取，包含入口引用的 stateful HMR 载荷。 */
 export function createEmittedScriptReader(entryFile: string, outputRoot: string, options: {
-  inspect?: (ast: ReturnType<typeof parse>) => void
+  inspect?: (ast: ReturnType<typeof parse>, source: string, filename: string) => void
 } = {}) {
   const root = path.resolve(outputRoot)
   const importCache = new Map<string, { source: string, imports: string[] }>()
@@ -52,7 +52,7 @@ export function createEmittedScriptReader(entryFile: string, outputRoot: string,
     catch (error) {
       throw new Error(`Cannot parse emitted script ${label(filename)}: ${error instanceof Error ? error.message : 'unknown syntax error'}`)
     }
-    options.inspect?.(ast)
+    options.inspect?.(ast, source, label(filename))
     traverse(ast, {
       CallExpression(nodePath) {
         const { callee, arguments: args } = nodePath.node

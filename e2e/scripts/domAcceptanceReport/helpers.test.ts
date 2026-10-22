@@ -59,6 +59,8 @@ describe('DOM acceptance report validation', () => {
     'ide-full',
     'ide-full:exhaustive',
     'ide-dom-headless',
+    'ide-hmr',
+    'ide-hmr-headless',
     'e2e:ide-dom-headless',
     'e2e:ide-dom-headless shard=1-2',
     'e2e:ide-full',

@@ -1,21 +1,27 @@
 import { createHash } from 'node:crypto'
 import { expect, it } from 'vitest'
 import { captureCompilerNativeScriptInputs, getCompilerSourceSnapshot, observeCompilerInputs, readCompilerInput, readCompilerInputSync, setCompilerSourceSnapshot, withCompilerSourceSnapshot } from './sourceSnapshot'
+import { readCompilerSourceSnapshotInput } from './sourceSnapshot/registry'
 
 it('restores nested source versions after success and failure without losing empty inputs', async () => {
   const owner = {}
   const original = new Map([['/project/input.ts', 'original']])
   setCompilerSourceSnapshot(owner, original)
+  expect(readCompilerSourceSnapshotInput(owner, '/project/input.ts')).toBe('original')
   const outer = new Map([['/project/input.ts', '']])
   await withCompilerSourceSnapshot(owner, outer, async () => {
     expect(await readCompilerInput(owner, '/project/input.ts')).toBe('')
+    expect(readCompilerSourceSnapshotInput(owner, '/project/input.ts')).toBe('')
     await expect(withCompilerSourceSnapshot(owner, new Map([['/project/input.ts', 'inner']]), async () => {
       expect(await readCompilerInput(owner, '/project/input.ts')).toBe('inner')
+      expect(readCompilerSourceSnapshotInput(owner, '/project/input.ts')).toBe('inner')
       throw new Error('cancelled')
     })).rejects.toThrow('cancelled')
     expect(getCompilerSourceSnapshot(owner)).toBe(outer)
+    expect(readCompilerSourceSnapshotInput(owner, '/project/input.ts')).toBe('')
   })
   expect(getCompilerSourceSnapshot(owner)).toBe(original)
+  expect(readCompilerSourceSnapshotInput(owner, '/project/input.ts')).toBe('original')
 })
 
 it('removes only the temporary snapshot when no outer version exists', async () => {
@@ -24,6 +30,7 @@ it('removes only the temporary snapshot when no outer version exists', async () 
     throw new Error('failed build')
   })).rejects.toThrow('failed build')
   expect(getCompilerSourceSnapshot(owner)).toBeUndefined()
+  expect(readCompilerSourceSnapshotInput(owner, '/project/input.ts')).toBeUndefined()
 })
 
 it('uses the same frozen JSX source and observers for synchronous compiler reads', () => {
@@ -34,7 +41,9 @@ it('uses the same frozen JSX source and observers for synchronous compiler reads
   const values: Array<[string, string]> = []
   const close = observeCompilerInputs(owner, (id, source) => values.push([id, source]))
   expect(readCompilerInputSync(owner, file)).toBe('')
+  expect(readCompilerSourceSnapshotInput(owner, file)).toBe('')
   expect(() => readCompilerInputSync(owner, removed)).toThrow('Source removed from compiler snapshot:')
+  expect(() => readCompilerSourceSnapshotInput(owner, removed)).toThrow('Source removed from compiler snapshot:')
   expect(values).toEqual([[file, '']])
   close()
   expect(readCompilerInputSync(owner, file)).toBe('')

@@ -10,7 +10,13 @@ export function nativeBatchSettlementPlugin(options: { input?: Readable, output?
   return {
     name: 'e2e:native-batch-settlement',
     configureServer(server) {
-      const api: unknown = server.config.plugins.find(plugin => plugin.name === 'weapp-vite:stateful-hmr-session')?.api
+      const owner = server.config.plugins.find(plugin => plugin.name === 'weapp-vite:stateful-hmr-session')
+      // classic 的模块图宿主不拥有 stateful 队列；其发布由独立 native publication 观察。
+      // 不挂载输入监听器，也不能用已完成 Promise 伪造旧会话的 settlement。
+      if (!owner) {
+        return
+      }
+      const api: unknown = owner.api
       if (!api || typeof api !== 'object' || !('whenSettled' in api) || typeof api.whenSettled !== 'function') {
         throw new Error('Native batch observation requires the stateful session settlement API')
       }

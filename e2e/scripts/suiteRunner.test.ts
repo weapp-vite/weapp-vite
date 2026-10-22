@@ -100,7 +100,7 @@ describe('suiteRunner', () => {
     expect(task.args).not.toContain('--testNamePattern')
     const cases = readTaskCases(path.resolve(import.meta.dirname, '../..'), task.label, task.acceptanceTemplates)
     const selected = cases.map(item => item.name)
-    expect(selected.some(name => name.includes('preserves native Page identity, data, input, route, and query across style updates and JavaScript patches'))).toBe(true)
+    expect(selected.some(name => name.includes('preserves native Page identity, data, input, route, and query across JavaScript patches and restoration'))).toBe(true)
     expect(selected.some(name => name.includes('preserves parent and native child DOM state'))).toBe(true)
     expect(selected.some(name => name.includes('preserves parent and Vue child DOM state'))).toBe(true)
     expect(selected.some(name => name.includes('ignores unowned editor files'))).toBe(true)
@@ -119,7 +119,10 @@ describe('suiteRunner', () => {
     for (const hook of ['load', 'show', 'ready']) {
       expect(selected.some(name => name.includes(`commits navigation requested in ${hook}`))).toBe(true)
     }
-    expect(selected.filter(name => name.includes('style updates'))).toHaveLength(1)
+    const styles = tasks.find(task => task.label === 'ide/hmr-capability-fallback.runtime.test.ts')!
+    expect(styles).toBeDefined()
+    const styleCases = readTaskCases(path.resolve(import.meta.dirname, '../..'), styles.label, styles.acceptanceTemplates)
+    expect(styleCases.filter(item => item.name.includes('stylesheet-output'))).toHaveLength(6)
     expect(selected.some(name => name.includes('preserves Wevu local and store state'))).toBe(true)
   })
 

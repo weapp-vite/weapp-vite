@@ -14,6 +14,7 @@ import path from 'pathe'
 import { mayContainPageDeclaration, stripPageDeclaration } from 'wevu/compiler'
 import logger from '../../../../logger'
 import { normalizeSourceId } from '../../../../moduleGraph/traversal'
+import { replaceEntryStyleImports } from '../../../../runtime/cssSidecarOwnership'
 import { recordHmrProfileDuration } from '../../../../utils/hmrProfile'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { registerNativePageLayoutOutput } from '../../../outputFinalizer/pageLayout'
@@ -139,7 +140,7 @@ interface EmitEntryOutputOptions {
   skipEntries?: boolean
   entryResolveRoot: string
   emittedWxmlCodeCache?: Map<string, string>
-  styleImportsCache?: Map<string, string[]>
+  styleScannedEntryIds?: Set<string>
   resolvedPageLayoutPlan?: ResolvedPageLayoutPlan | null
   resolveNativeLayoutAssets?: typeof collectNativeLayoutAssets
   entryCodeSource?: string
@@ -148,7 +149,7 @@ interface EmitEntryOutputOptions {
 
 function isEntryStyleStableHmr(runtimeState: CompilerContext['runtimeState']) {
   const profile = runtimeState?.build?.hmr?.profile
-  if (profile?.event === undefined) {
+  if (profile?.event === undefined || profile.event === 'create' || profile.event === 'delete') {
     return false
   }
   const dirtyReasonSummary = profile.dirtyReasonSummary
@@ -202,7 +203,7 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
     relativeCwdId,
     getTime,
     emittedWxmlCodeCache,
-    styleImportsCache,
+    styleScannedEntryIds,
     resolvedPageLayoutPlan,
     resolveNativeLayoutAssets = collectNativeLayoutAssets,
     entryCodeSource,
@@ -224,20 +225,24 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
         }
       })())
     : prefetch(Promise.resolve(entryCodeSource))
-  const cachedStyleImports = configService.isDev && isEntryStyleStableHmr(runtimeState)
-    ? styleImportsCache?.get(id)
+  const normalizedStyleOwner = normalizeFsResolvedId(id)
+  const cachedStyleImports = configService.isDev && isEntryStyleStableHmr(runtimeState) && styleScannedEntryIds?.has(normalizedStyleOwner)
+    ? runtimeState?.css?.sidecarImportsByOwner.get(normalizedStyleOwner)
     : undefined
   const styleImportsTask = prefetch((async () => {
     if (cachedStyleImports) {
-      return cachedStyleImports
+      if (runtimeState?.css) {
+        replaceEntryStyleImports(runtimeState.css, id, cachedStyleImports)
+      }
+      return Array.from(cachedStyleImports)
     }
     const startedAt = performance.now()
     try {
       const styleImports = await collectStyleImports(pluginCtx, id, existsCache, pathExistsTtlMs)
-      for (const styleImport of styleImports) {
-        runtimeState?.css?.sidecarImports.add(styleImport)
+      if (runtimeState?.css) {
+        replaceEntryStyleImports(runtimeState.css, id, styleImports)
       }
-      styleImportsCache?.set(id, styleImports)
+      styleScannedEntryIds?.add(normalizedStyleOwner)
       return styleImports
     }
     finally {

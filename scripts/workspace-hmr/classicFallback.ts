@@ -2,10 +2,16 @@ import type { WorkspaceHmrAuditBudget } from './auditDeadline'
 import { access, readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { setTimeout as sleep } from 'node:timers/promises'
-import { WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY } from '@weapp-core/constants'
+import { WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY, WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY, WEAPP_VITE_STATEFUL_HMR_DIRECTORY } from '@weapp-core/constants'
+import { assertNoStatefulInstallations } from '../../packages/weapp-vite/scripts/consumerHmr/installedRuntime.mjs'
 import { createEmittedScriptReader } from '../benchmarkTemplatesHmr/emittedOutput'
 import { assertHmrAuditBudget } from './auditDeadline'
 import { inspectClassicEmittedScript } from './classicRuntimeInspection'
+
+function inspectClassicSource(ast: Parameters<typeof inspectClassicEmittedScript>[0], source: string, filename: string) {
+  inspectClassicEmittedScript(ast)
+  assertNoStatefulInstallations(filename, source)
+}
 
 export interface ClassicFallbackDeliveryEvidence {
   delivery: 'classic'
@@ -23,7 +29,7 @@ export class WorkspaceHmrClassicFallback {
   private readonly readApp: () => Promise<string>
 
   constructor(private readonly distRoot: string, private readonly getOutput: () => string) {
-    this.readApp = createEmittedScriptReader(path.join(distRoot, 'app.js'), distRoot, { inspect: inspectClassicEmittedScript })
+    this.readApp = createEmittedScriptReader(path.join(distRoot, 'app.js'), distRoot, { inspect: inspectClassicSource })
   }
 
   get requested() {
@@ -96,7 +102,7 @@ export class WorkspaceHmrClassicFallback {
   }
 
   private assertNoStatefulRuntime(source: string) {
-    if (source.includes('__weapp_vite_hmr') || source.includes(WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY) || /^\/\/ weapp-vite-stateful-build:/m.test(source)) {
+    if (/^\/\/ weapp-vite-stateful-build:/m.test(source)) {
       throw new Error('Classic fallback output retained stateful control or a full-build stamp.')
     }
   }
@@ -133,7 +139,7 @@ export class WorkspaceHmrClassicFallback {
   } & WorkspaceHmrAuditBudget): Promise<ClassicFallbackDeliveryEvidence> {
     await this.settle(options)
     const readOutput = options.output.endsWith('.js')
-      ? createEmittedScriptReader(path.resolve(this.distRoot, options.output), this.distRoot, { inspect: inspectClassicEmittedScript })
+      ? createEmittedScriptReader(path.resolve(this.distRoot, options.output), this.distRoot, { inspect: inspectClassicSource })
       : options.readOutput
     let lastError: unknown
     while (Date.now() < options.deadline) {
@@ -143,6 +149,9 @@ export class WorkspaceHmrClassicFallback {
         options.signal?.throwIfAborted()
         await this.assertClassicArtifacts(options.signal)
         this.assertNoStatefulRuntime(output)
+        if (!options.output.endsWith('.js') && [WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY, WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY, WEAPP_VITE_STATEFUL_HMR_DIRECTORY].some(key => output.includes(key))) {
+          throw new Error('Classic fallback output retained a stateful control path.')
+        }
         if (output.trim() && output.includes(options.marker) === options.contains && Date.now() < options.deadline) {
           return { delivery: 'classic', from: 'stateful-experimental', actualMode: 'classic', reason: this.reason!, output: options.output, containsMarker: options.contains }
         }

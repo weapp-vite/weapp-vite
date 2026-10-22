@@ -8,6 +8,7 @@ import { preprocessCSS } from 'vite'
 import { resolveGraphOutputOwner } from '../moduleGraph/outputMetadata'
 import { parseSidecarSourceRequest } from '../moduleGraph/protocol'
 import { isSourceStyleExtension } from '../platforms/sourceAssets'
+import { getHmrStyleUpdatePlan } from '../runtime/hmrStyleUpdate'
 import { changeFileExtension, isJsOrTs } from '../utils'
 import { getPathExistsTtlMs } from '../utils/cachePolicy'
 import { normalizeWatchPath } from '../utils/path'
@@ -152,33 +153,19 @@ function isSourceStyleAsset(fileName: string) {
     || /\.(?:stylus|pcss|postcss|sss)$/.test(fileName)
 }
 
-function hasStyleDirtyReason(dirtyReasonSummary: string[]) {
-  return dirtyReasonSummary.some(reason =>
-    reason.startsWith('style-sidecar:')
-    || reason.startsWith('css-importer:')
-    || reason.startsWith('css-importer-fallback:')
-    || reason.startsWith('entry-style-only:')
-    || reason.startsWith('compiler-content:')
-    || reason.startsWith('tailwind-content:'),
-  )
-}
-
 function hasCompilerContentDirtyReason(ctx: CompilerContext) {
-  return ctx.runtimeState?.build?.hmr?.profile?.dirtyReasonSummary?.some(reason =>
-    reason.startsWith('compiler-content:') || reason.startsWith('tailwind-content:'),
-  ) === true
+  return Boolean(getHmrStyleUpdatePlan(ctx.configService)?.compilerContentOwners.size)
 }
 
 function appendCompilerContentHmrNonce(ctx: CompilerContext, source: string) {
-  const reasons = ctx.runtimeState?.build?.hmr?.profile?.dirtyReasonSummary ?? []
-  if (!hasCompilerContentDirtyReason(ctx)) {
+  const plan = getHmrStyleUpdatePlan(ctx.configService)
+  if (!plan?.compilerContentOwners.size) {
     return source
   }
-  const eventId = ctx.runtimeState?.build?.hmr?.profile?.eventId ?? 'unknown'
-  const marker = reasons.some(reason => reason.startsWith('compiler-content:'))
+  const marker = [...plan.compilerContentOwners.values()].includes('compiler-content')
     ? 'compiler-content'
     : 'tailwind-content'
-  return `${source}\n/* weapp-vite ${marker} ${eventId} */`
+  return `${source}\n/* weapp-vite ${marker} ${plan.id} */`
 }
 
 function stripCompilerContentHmrNonce(source: string) {
@@ -210,12 +197,12 @@ function shouldSkipUnchangedStyleHmrBundle(
     return false
   }
 
-  const dirtyReasonSummary = ctx.runtimeState?.build?.hmr?.profile?.dirtyReasonSummary
-  if (!dirtyReasonSummary?.length) {
+  const plan = getHmrStyleUpdatePlan(ctx.configService)
+  if (!plan || plan.full) {
     return false
   }
 
-  return !hasStyleDirtyReason(dirtyReasonSummary) && !hasStyleBundleAsset(bundle)
+  return !plan.styleFiles.size && !plan.compilerContentOwners.size && !hasStyleBundleAsset(bundle)
 }
 
 function shouldPreprocessWithVite(fileName: string) {
@@ -288,16 +275,10 @@ function resolveCurrentHmrStyleSourcePath(
   ctx: CompilerContext,
   normalizedFileName: string,
 ) {
-  const hmrState = ctx.runtimeState?.build?.hmr
-  const currentHmrFile = hmrState?.profile.file
-  if (typeof currentHmrFile !== 'string') {
-    return undefined
-  }
-  const currentOutputFile = resolveOutputStyleFileName(ctx.configService, currentHmrFile)
-  if (currentOutputFile === undefined || toPosixPath(currentOutputFile) !== normalizedFileName) {
-    return undefined
-  }
-  return currentHmrFile
+  return [...getHmrStyleUpdatePlan(ctx.configService)?.styleFiles ?? []].find((file) => {
+    const outputFile = resolveOutputStyleFileName(ctx.configService, file)
+    return outputFile !== undefined && toPosixPath(outputFile) === normalizedFileName
+  })
 }
 
 function resolveFreshHmrStyleSourcePath(
@@ -855,17 +836,13 @@ async function emitSharedStyleImportsForChunks(
     return
   }
 
-  const dirtyReasonSummary = ctx.runtimeState?.build?.hmr?.profile?.dirtyReasonSummary
-  const isCssImporterHmr = dirtyReasonSummary?.some(reason =>
-    reason.startsWith('css-importer:')
-    || reason.startsWith('css-importer-fallback:'),
-  ) === true
-  if (!isCssImporterHmr) {
+  const importerOwners = getHmrStyleUpdatePlan(ctx.configService)?.cssImporterOwners
+  if (!importerOwners?.size) {
     return
   }
 
   const hmrImportAssets = await Promise.all(
-    Array.from(ctx.runtimeState?.build?.hmr?.lastHmrEntryIds ?? []).map(async (moduleId) => {
+    Array.from(importerOwners).map(async (moduleId) => {
       if (handledModuleIds.has(normalizeFsResolvedId(moduleId))) {
         return
       }

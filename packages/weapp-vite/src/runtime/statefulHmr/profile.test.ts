@@ -92,6 +92,37 @@ it('does not consume the next source event when an older batch completes', () =>
   expect(samples[0]!.eventId).not.toBe(samples[1]!.eventId)
 })
 
+it('records native failure as unknown without consuming any pending source identity', () => {
+  const samples: HmrProfileJsonSample[] = []
+  const profile = new StatefulHmrProfile({ root: '/fixture', emit: sample => samples.push(sample) })
+  const sources = ['a.ts', 'b.ts', 'c.ts'].map((file, index): HmrProfileSourceEvent => ({
+    eventId: `source-${index}`,
+    event: 'update',
+    file,
+    receivedAtMs: performance.now(),
+  }))
+  profile.source('a.ts', { ...sources[0]!, eventId: 'older-a' })
+  for (const source of sources) {
+    profile.source(source.file!, source)
+  }
+  profile.recordNativeFailure()
+  expect(samples).toHaveLength(1)
+  expect(samples[0]).toMatchObject({ status: 'failed', correlation: 'unknown', sourceEvents: [] })
+  expect(samples[0]!.eventId).toBeUndefined()
+  expect(samples[0]!.file).toBeUndefined()
+  expect(samples[0]!.sourceToBatchMs).toBeUndefined()
+  expect(samples[0]!.totalMs).toBeUndefined()
+  for (const source of sources) {
+    profile.begin([source.file!], 'delivery').finish('complete')
+  }
+  expect(samples.slice(1)).toEqual(sources.map(source => expect.objectContaining({
+    status: 'complete',
+    correlation: 'known',
+    sourceEvents: [source],
+    eventId: source.eventId,
+  })))
+})
+
 it('keeps batch identity separate from the active transport build identity', () => {
   const samples: HmrProfileJsonSample[] = []
   let buildId: string | undefined

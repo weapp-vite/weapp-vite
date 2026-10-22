@@ -74,7 +74,8 @@ describe.each(['classic', 'stateful-experimental'] as const)('issue #1134 native
     profilePath = path.join(project, '.tmp/hmr-profile.jsonl')
     dev = startDevProcess(process.execPath, [NATIVE_BATCH_CLI, 'dev', '--non-interactive'], { cwd: project, env: { ...createDevProcessEnv(), WEAPP_VITE_HMR_PROFILE_JSON: profilePath }, all: true })
     await dev.waitForInitialBuild()
-    publication = createNativeHmrPublication(project, dev, runtime, ['config-json'], profilePath)
+    // 本例先保存导入样式，首次回退必须由该变化触发；后续配置继续验证同一 classic 会话。
+    publication = createNativeHmrPublication(project, dev, runtime, ['stylesheet-output'], profilePath)
     miniProgram = await connect()
   }, 180_000)
 
@@ -107,8 +108,10 @@ describe.each(['classic', 'stateful-experimental'] as const)('issue #1134 native
       await miniProgram!.reLaunch(styleRoute)
       if (index) {
         const marker = await captureAppReloadMarker(miniProgram!)
+        const stylePublication = publication.capture(path.join(project, 'src/styles/theme.wxss'))
         await saveNativeProfileSource(project, 'styles/theme.wxss', style.replace('#123', color))
         await expect.poll(() => read('dist/pages/imported/index.wxss'), { timeout: 30_000 }).toContain(color)
+        await stylePublication.wait()
         await reconnect(marker)
       }
       const page = await miniProgram!.currentPage()
@@ -120,8 +123,8 @@ describe.each(['classic', 'stateful-experimental'] as const)('issue #1134 native
     const app = JSON.parse(appConfig) as { pages: string[] }
     // 沿用既有导航次数，在保存前进入目标页，后续断言只能观察自动重载。
     await miniProgram!.reLaunch(route)
-    // 配置注册与模板引用是两次保存；先验收独立 JSON 更新，冻结首次降级的准确原因。
-    // 连续先写 WXML 可能让不安全模板补丁先于 JSON 准入，不能把两个批次假设成一次配置更新。
+    // 样式更新已完成 classic 回退；配置注册与模板引用仍分两次保存，分别验收后续完整发布。
+    // JSON 登记完成时模板尚未引用组件，不能把两个批次合并成一次配置更新。
     const registrationReload = await captureAppReloadMarker(miniProgram!)
     const registrationPublication = publication.capture(path.join(project, 'src/pages/plain/index.json'))
     await saveNativeProfileSource(project, 'pages/plain/index.json', JSON.stringify({ usingComponents: { 'optional-card': '/components/optional/index' } }))

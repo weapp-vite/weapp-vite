@@ -79,7 +79,8 @@ it('retains a watcher close failure and stops replacement preparation without re
   expect(restart).not.toHaveBeenCalled()
   await expect(server.restart()).rejects.toBe(failure)
   expect(closeWatcher).toHaveBeenCalledOnce()
-  await Promise.all([server.close(), server.close()])
+  await expect(server.close()).rejects.toMatchObject({ errors: [failure, handoffFailure] })
+  await expect(server.close()).rejects.toMatchObject({ errors: [failure, handoffFailure] })
   expect(close).toHaveBeenCalledOnce()
 })
 

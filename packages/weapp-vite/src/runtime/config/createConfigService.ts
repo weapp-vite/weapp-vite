@@ -18,6 +18,8 @@ import { createImportMetaDefineRegistry, pickImportMetaEnvDefineEntries } from '
 import { normalizeRelativePath, toPosixPath } from '../../utils/path'
 import { resolveRealpath } from '../../utils/realpathScope'
 import { SUB_PACKAGE_SHARED_DIR } from '../chunkStrategy/constants'
+import { bindRequestedIdeConfigReader, readRequestedIdeConfig } from '../classicIdeConfig/reader'
+import { getHmrRuntimeSession } from '../hmrRuntimeSession'
 import { safeGetPackageInfoSync } from '../localPkg'
 import { createOxcRuntimeSupport } from '../oxcRuntime'
 import { createAliasManager } from './internal/alias'
@@ -232,7 +234,9 @@ function createConfigService(ctx: MutableCompilerContext, oxcRuntimeSupport: Oxc
     oxcRolldownPlugin: oxcRuntimeSupport.rolldownPlugin,
     oxcVitePlugin: oxcRuntimeSupport.vitePlugin,
     // 项目配置参与模式与输出决策；记录解析器实际消费的字节，不能事后重读猜测启动版本。
-    readProjectConfigFile: file => ctx.configService ? readCompilerInput(ctx.configService, file) : fs.promises.readFile(file, 'utf8'),
+    readProjectConfigFile: file => ctx.configService
+      ? readCompilerInput(ctx.configService, file, () => readRequestedIdeConfig(ctx.configService!, file))
+      : getHmrRuntimeSession(ctx).classicIdeConfig.readRequested(file),
   })
 
   function formatConfigDisplayPath(filePath?: string) {
@@ -308,7 +312,7 @@ function createConfigService(ctx: MutableCompilerContext, oxcRuntimeSupport: Oxc
     oxcRolldownPlugin: oxcRuntimeSupport.rolldownPlugin,
   })
 
-  return {
+  const service: ConfigService = {
     get options() {
       return options
     },
@@ -490,6 +494,8 @@ function createConfigService(ctx: MutableCompilerContext, oxcRuntimeSupport: Oxc
       return remapOutputPath(relative)
     },
   }
+  bindRequestedIdeConfigReader(service, (file, read) => getHmrRuntimeSession(ctx).classicIdeConfig.readRequested(file, read))
+  return service
 }
 
 export { createConfigService }

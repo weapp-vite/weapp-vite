@@ -58,6 +58,8 @@ describe('HMR semantic acceptance inventory', () => {
         expectations: ['classic', 'classic-fallback'],
       })
     }
+    expect(HMR_ACCEPTANCE_SCENARIOS.find(item => item.id === 'native-dependency-and-route-topology')?.capabilityIds)
+      .toEqual(['config-json', 'entry-topology', 'stylesheet-output'])
     for (const [id, configured] of [['wxml-watch-dependency-recovery', 'auto'], ['automatic-route-watch-topology-recovery', 'classic']]) {
       expect(HMR_ACCEPTANCE_SCENARIOS.find(item => item.id === id)).toMatchObject({
         observation: 'watch-output-and-runtime',
@@ -128,15 +130,15 @@ describe('HMR semantic acceptance inventory', () => {
     }
   })
 
-  it.each([['ide-hmr', 'devtools'], ['ide-hmr-headless', 'headless']] as const)('freezes all twenty-one fallback cases in %s without unresolved matrix parameters', async (suite, provider) => {
+  it.each([['ide-hmr', 'devtools'], ['ide-hmr-headless', 'headless']] as const)('freezes all twenty-seven fallback cases in %s without unresolved matrix parameters', async (suite, provider) => {
     const tasks = await getSuiteTasks(suite)
     const transition = tasks.find(task => task.label === 'ide/hmr-capability-fallback.runtime.test.ts')!
     const startup = tasks.find(task => task.label === 'ide/hmr-startup-fallback.runtime.test.ts')!
     const transitionCases = await readPlannedTaskCases(transition, provider)
     const startupCases = await readPlannedTaskCases(startup, provider)
-    expect(transitionCases).toHaveLength(15)
+    expect(transitionCases).toHaveLength(21)
     expect(startupCases).toHaveLength(6)
-    expect(new Set([...transitionCases, ...startupCases].map(item => `${item.file}#${item.name}`)).size).toBe(21)
+    expect(new Set([...transitionCases, ...startupCases].map(item => `${item.file}#${item.name}`)).size).toBe(27)
     for (const host of ['wv', 'vite', 'vite-plus']) {
       for (const [requested, reason] of [
         ['auto', 'config-json'],
@@ -144,6 +146,8 @@ describe('HMR semantic acceptance inventory', () => {
         ['stateful-experimental', 'entry-topology'],
         ['auto', 'runtime-contract'],
         ['stateful-experimental', 'runtime-contract'],
+        ['auto', 'stylesheet-output'],
+        ['stateful-experimental', 'stylesheet-output'],
       ]) {
         expect(transitionCases.some(item => item.name.startsWith(`${host} ${requested} ${reason} capability fallback > `))).toBe(true)
       }
@@ -163,7 +167,7 @@ describe('HMR semantic acceptance inventory', () => {
     expect(HMR_ACCEPTANCE_SCENARIOS.find(item => item.id === 'wevu-page-layout-and-wxs')!.expectations).toEqual(['classic'])
     expect(HMR_ACCEPTANCE_SCENARIOS.find(item => item.id === 'unsupported-capability-classic-transition')).toMatchObject({
       expectations: ['classic-fallback'],
-      capabilityIds: ['config-json', 'native-registration', 'entry-topology', 'runtime-contract'],
+      capabilityIds: ['config-json', 'native-registration', 'entry-topology', 'runtime-contract', 'stylesheet-output'],
     })
     expect(HMR_ACCEPTANCE_SCENARIOS.find(item => item.id === 'unsupported-compiler-startup-classic')).toMatchObject({
       expectations: ['classic-fallback'],
@@ -198,7 +202,7 @@ describe('HMR semantic acceptance inventory', () => {
         expect(HMR_ACCEPTANCE_SCENARIOS.find(item => item.id === id)?.capabilityIds).toContain(capability.capabilityId)
       }
     }
-    for (const capabilityId of ['config-json', 'native-registration', 'entry-topology', 'compiler-provider', 'runtime-contract']) {
+    for (const capabilityId of ['config-json', 'native-registration', 'entry-topology', 'compiler-provider', 'runtime-contract', 'stylesheet-output']) {
       expect(HMR_ACCEPTANCE_CAPABILITY_COVERAGE.find(item => item.capabilityId === capabilityId)!.runtime).toBe('planned')
     }
     for (const capabilityId of ['engine-full-reload', 'skyline']) {
@@ -206,8 +210,8 @@ describe('HMR semantic acceptance inventory', () => {
     }
     expect(HMR_ACCEPTANCE_CAPABILITY_COVERAGE.find(item => item.capabilityId === 'patch-shape')).toMatchObject({
       runtime: 'planned',
-      build: ['e2e/ci/hmr-issue-1015-external-css-vars.test.ts'],
-      runtimeScenarios: ['additional-wechat-capability-boundaries', 'native-css-and-tailwind'],
+      build: ['e2e/ci/stateful-app-shell-hmr.test.ts'],
+      runtimeScenarios: ['additional-wechat-capability-boundaries'],
     })
     expect(HMR_ACCEPTANCE_CAPABILITY_COVERAGE.find(item => item.capabilityId === 'platform')).toMatchObject({ runtime: 'pending', runtimeScenarios: [], runtimeApplicability: { target: 'non-wechat', requiredBuildTests: ['e2e/ci/hmr-platform-fallback.test.ts'] } })
   })
@@ -230,6 +234,7 @@ describe('HMR semantic acceptance inventory', () => {
   it.each([['ide-hmr', 'devtools'], ['ide-hmr-headless', 'headless']] as const)('preserves all four compiled template boundaries in %s', async (suite, provider) => {
     const task = (await getSuiteTasks(suite)).find(task => task.label === 'ide/hmr-compiled-template-fallback.runtime.test.ts')!
     expect(await readPlannedTaskCases(task, provider)).toHaveLength(4)
+    expect(HMR_ACCEPTANCE_SCENARIOS.find(item => item.id === 'compiled-template-registration-fallback')!.configuredModes).toEqual(['auto', 'stateful-experimental'])
     expect(HMR_ACCEPTANCE_CAPABILITY_COVERAGE.find(item => item.capabilityId === 'native-registration')!.runtimeScenarios).toContain('compiled-template-registration-fallback')
   })
 
@@ -237,10 +242,10 @@ describe('HMR semantic acceptance inventory', () => {
     const task = (await getSuiteTasks(suite)).find(task => task.label === 'ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts')!
     const cases = await readPlannedTaskCases(task, provider)
     expect(cases).toHaveLength(1)
-    expect(cases[0]!.name).toContain('preserves script and style state and serializes Tailwind template updates through sticky classic')
+    expect(cases[0]!.name).toContain('preserves script state and serializes stylesheet and Tailwind template updates through sticky classic')
     expect(HMR_ACCEPTANCE_SCENARIOS.find(item => item.id === 'tailwind-template-registration-and-local-priority')).toMatchObject({
       expectations: ['stateful', 'classic-fallback'],
-      capabilityIds: ['script-patch', 'visual-assets', 'native-registration'],
+      capabilityIds: ['script-patch', 'visual-assets', 'stylesheet-output'],
     })
   })
 
@@ -258,7 +263,7 @@ describe('HMR semantic acceptance inventory', () => {
     expect(HMR_ACCEPTANCE_CAPABILITY_COVERAGE.find(item => item.capabilityId === 'native-registration')!.runtimeScenarios).toContain('jsx-and-sibling-script-updates')
   })
 
-  it.each([['ide-hmr', 'devtools'], ['ide-hmr-headless', 'headless']] as const)('keeps both CSS modes and the schema fallback companion in %s', async (suite, provider) => {
+  it.each([['ide-hmr', 'devtools'], ['ide-hmr-headless', 'headless']] as const)('keeps classic CSS and requested stateful fallback companions in %s', async (suite, provider) => {
     const task = (await getSuiteTasks(suite)).find(task => task.label === 'ide/issue-1015-css-hmr.runtime.test.ts')!
     const cases = await readPlannedTaskCases(task, provider)
     expect(cases).toHaveLength(2)
@@ -266,8 +271,8 @@ describe('HMR semantic acceptance inventory', () => {
       expect(cases.some(item => item.name.startsWith(`issue #1015 external CSS HMR: ${runtime} > `))).toBe(true)
     }
     expect(HMR_ACCEPTANCE_SCENARIOS.find(item => item.id === 'native-css-and-tailwind')).toMatchObject({
-      expectations: ['stateful', 'classic', 'classic-fallback'],
-      capabilityIds: ['script-patch', 'visual-assets', 'patch-shape'],
+      expectations: ['classic', 'classic-fallback'],
+      capabilityIds: ['script-patch', 'visual-assets', 'stylesheet-output'],
     })
   })
 
@@ -278,8 +283,20 @@ describe('HMR semantic acceptance inventory', () => {
       expect(scripts[name]).not.toContain('--allow-failures')
     }
     const hmrFilters = scripts['test:hmr']!.split(/\s+/)
+    expect(hmrFilters).toContain('packages/tailwindcss/src')
     for (const file of [
-      'packages/weapp-vite/src/plugins/css/nativePublication.test.ts',
+      'packages/weapp-vite/src/utils/file.test.ts',
+      'packages/weapp-vite/src/utils/file/vueConfig.snapshot.test.ts',
+      'packages/weapp-vite/src/utils/file/vueConfig.loading.test.ts',
+      'packages/weapp-vite/src/utils/file/vueConfig.sessions.test.ts',
+      'packages/weapp-vite/src/utils/file/vueConfig.autoRoutes.test.ts',
+      'packages/weapp-vite/src/runtime/classicIdeConfig',
+      'packages/weapp-vite/src/runtime/__tests__/watcherService.test.ts',
+      'packages/weapp-vite/src/plugins/projectConfig',
+      'packages/weapp-vite/src/runtime/cssSidecarOwnership.test.ts',
+      'packages/weapp-vite/src/runtime/resetRuntimeState.test.ts',
+      'packages/weapp-vite/src/plugins/css/sidecarOwnership.test.ts',
+      'packages/weapp-vite/src/plugins/utils/invalidateEntry/sidecar.test.ts',
       'packages/weapp-vite/src/plugins/hooks/useLoadEntry/loadEntry/vueSidecarSource.test.ts',
       'packages/weapp-vite/src/moduleGraph/host.ownership.test.ts',
       'packages/weapp-vite/src/runtime/config/internal/loadConfig.test.ts',

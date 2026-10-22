@@ -265,7 +265,7 @@ it('retains both the native failure and a failed handoff cleanup', async () => {
     throw cleanup
   })
   await expect(server.restart()).rejects.toMatchObject({ errors: [failure, cleanup], cause: failure })
-  await server.close()
+  await expect(server.close()).rejects.toBe(cleanup)
 })
 
 it('releases the handoff as failed when closing the original session fails before native restart', async () => {

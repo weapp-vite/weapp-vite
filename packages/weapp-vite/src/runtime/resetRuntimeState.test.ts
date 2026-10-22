@@ -37,6 +37,7 @@ describe('runtime state fresh build reset', () => {
     })
     state.css.emittedSource.set('app.wxss', '.page {}')
     state.css.sidecarImports.add('/project/src/components/removed/index.wxss')
+    state.css.sidecarImportsByOwner.set('/project/src/components/removed/index.ts', new Set(['/project/src/components/removed/index.wxss']))
     state.wxml.emittedCode.set('pages/index/index.wxml', '<view />')
     state.scan.warnedMessages.add('warning')
     state.glassEasel.analysisByOwner.set('output:main:app.json', {
@@ -66,6 +67,7 @@ describe('runtime state fresh build reset', () => {
     expect(state.css.transformedSidecarSource.size).toBe(0)
     expect(state.css.emittedSource.size).toBe(0)
     expect(state.css.sidecarImports.size).toBe(0)
+    expect(state.css.sidecarImportsByOwner.size).toBe(0)
     expect(state.wxml.emittedCode.size).toBe(0)
     expect(state.scan.warnedMessages.size).toBe(0)
     expect(state.glassEasel.analysisByOwner.size).toBe(0)

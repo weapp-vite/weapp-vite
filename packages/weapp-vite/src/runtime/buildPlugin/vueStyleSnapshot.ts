@@ -8,10 +8,11 @@ import { isSkippableResolvedId } from '../../utils/resolvedId'
 
 export interface VueSnapshotPreparation {
   entries: Iterable<string>
+  inputs?: Iterable<string>
   resolveAffectedEntries: () => Promise<Iterable<string>>
 }
 
-/** 外部块及应用壳预分析与编译共用一份输入，漂移统一交回下一快照处理。 */
+/** 内容分析、外部块及应用壳与编译共用一份输入，漂移统一交回下一快照处理。 */
 export async function withVueStyleDependencySnapshot<T>(
   ctx: Pick<CompilerContext, 'runtimeState' | 'moduleGraphService' | 'configService'>,
   affectedEntries: Iterable<string>,
@@ -101,7 +102,10 @@ export async function withVueStyleDependencySnapshot<T>(
   try {
     // 结构输入先固定；依赖展开与后续外部块捕获共用同一代源码及解析身份。
     const seeds = Array.from(preparation?.entries ?? [], compilerSourceId)
-    const prepared = await Promise.allSettled(seeds.map(captureSfc))
+    const prepared = await Promise.allSettled([
+      ...seeds.map(captureSfc),
+      ...Array.from(preparation?.inputs ?? [], capture),
+    ])
     if (prepared.some(result => result.status === 'rejected')) {
       captureFailed = true
     }

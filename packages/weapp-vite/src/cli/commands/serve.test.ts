@@ -13,6 +13,7 @@ import { createCompilerContext } from '../../createContext'
 import { readDashboardFileContent } from '../../dashboard/content'
 import { createDevShutdownScope } from '../../devLifecycle/shutdown'
 import { createDevBuildWatcher } from '../../runtime/buildPlugin/devBuildWatcher'
+import { getHmrRuntimeSession } from '../../runtime/hmrRuntimeSession'
 import { startAnalyzeDashboard } from '../analyze/dashboard'
 import { registerServeCommand } from './serve'
 import { createAnalyzeController } from './serve/analyze'
@@ -311,6 +312,37 @@ describe('serve cli command', () => {
     syncSupportFileResolverComponentsMock.mockReset()
     syncSupportFileResolverComponentsMock.mockResolvedValue(undefined)
     fakeProcess.removeAllListeners()
+  })
+
+  it.each([false, true])('restores classic config only after all backends close successfully: failure %s', async (failClose) => {
+    isUiEnabledMock.mockReturnValueOnce(false)
+    const events: string[] = []
+    const failure = new Error('owned backend close failed')
+    watcherCloseAllMock.mockImplementation(async () => {
+      events.push('backend')
+      if (failClose) {
+        throw failure
+      }
+    })
+    const action = createServeActionHandler()('/project', {})
+    await vi.waitFor(() => expect(logBuildAppFinishMock).toHaveBeenCalled())
+    const ctx = await createCompilerContextMock.mock.results[0]!.value as CompilerContext
+    const restore = vi.spyOn(getHmrRuntimeSession(ctx).classicIdeConfig, 'close').mockImplementation(async () => {
+      events.push('restore')
+    })
+    try {
+      fakeProcess.emit('SIGINT')
+      if (failClose) {
+        await expect(action).rejects.toBe(failure)
+      }
+      else {
+        await action
+      }
+      expect(events).toEqual(failClose ? ['backend'] : ['backend', 'restore'])
+    }
+    finally {
+      restore.mockRestore()
+    }
   })
 
   it('cancels before the initial build and releases the acquired context backend', async () => {

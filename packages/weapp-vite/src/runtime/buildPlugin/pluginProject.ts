@@ -5,6 +5,7 @@ import { BuildEnvironment, createBuilder } from 'vite'
 import { getWxmlWatchFiles } from '../../wxml/processing/dependencies'
 import { CompilerSession } from '../compilerSession'
 import { waitForBuildTasks } from '../compilerSession/tasks'
+import { attachHmrRuntimeSession, getHmrRuntimeSession } from '../hmrRuntimeSession'
 import { createSharedBuildConfig } from '../sharedBuildConfig'
 import { collectIndependentWatchFiles } from './independentWatch'
 import { cleanOutputs, shouldCleanOutputs } from './outputs'
@@ -44,6 +45,7 @@ export function assertPluginProjectOutput(ctx: CompilerContext) {
 export async function createPluginProjectSession(ctx: CompilerContext) {
   const owner = ctx.configService
   const session = new CompilerSession()
+  session.onClose(attachHmrRuntimeSession(session.context, getHmrRuntimeSession(ctx), { borrowed: true }))
   sessions.set(session.context, session)
   try {
     await session.initialize({
@@ -53,7 +55,8 @@ export async function createPluginProjectSession(ctx: CompilerContext) {
       isDev: owner.isDev,
       pluginOnly: true,
       cliPlatform: owner.platform,
-      projectConfigPath: owner.projectConfigPath,
+      // 默认配置与显式平台配置的 private 文件命名不同，保留调用方的原始解析策略。
+      projectConfigPath: owner.loadOptions.projectConfigPath,
       hostConfig: { config: owner.options.sourceConfig ?? {}, path: owner.configFilePath, dependencies: owner.configFileDependencies },
       inlineConfig: {
         ...owner.loadOptions?.inlineConfig,

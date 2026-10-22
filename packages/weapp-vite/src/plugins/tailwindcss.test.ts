@@ -1,9 +1,12 @@
 import type { OutputBundle } from 'rolldown'
+import type { CompilerGenerateRequest } from 'weapp-tailwindcss/core'
 import fs from 'node:fs/promises'
+import { createRequire } from 'node:module'
 import os from 'node:os'
 import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { compileVueStyleToWxss, readAndParseSfc } from 'wevu/compiler'
+import { createTailwindGenerateResult } from '../../test/helpers/tailwindCompiler'
 import { createSidecarSourceSpecifier } from '../moduleGraph/protocol'
 import { createTailwindcssPlugin, resolveManagedTailwindcssOptions } from './tailwindcss'
 import { hasManagedTailwindcssEntries } from './tailwindcssMarker'
@@ -135,9 +138,9 @@ describe('managed Tailwind integration', () => {
   it('activates on the first Tailwind import after earlier dormant source updates', async () => {
     mocks.packageInfo = { version: '4.3.3' }
     const entry = '/project/src/app.css'
-    const snapshot = { classSet: new Set<string>(), dependencies: [entry], roots: [{ id: 'late-root', revision: 1 }], sources: [], target: 'weapp' }
+    const snapshot = { classSet: new Set<string>(), dependencies: [entry], roots: [{ id: 'late-root', revision: 1 }], sources: [], target: 'weapp' as const }
     const compiler = {
-      generate: vi.fn(async () => ({ css: '.late { color: red; }', rawCss: '.late { color: red; }', dependencies: [entry], snapshot })),
+      generate: vi.fn(async () => createTailwindGenerateResult('.late { color: red; }', snapshot)),
       mergeSnapshots: vi.fn(() => snapshot),
       transformCss: vi.fn(async (source: string) => ({ css: source })),
       invalidate: vi.fn(),
@@ -274,7 +277,7 @@ describe('managed Tailwind integration', () => {
       dependencies: [entry],
       roots: [{ id: 'tailwind-root', revision: 1 }],
       sources: [],
-      target: 'weapp',
+      target: 'weapp' as const,
     }
     const compiler = {
       createSnapshot: vi.fn(() => snapshot),
@@ -282,16 +285,9 @@ describe('managed Tailwind integration', () => {
         calls.push('merge')
         return snapshot
       }),
-      generate: vi.fn(async () => {
+      generate: vi.fn(async (_request: CompilerGenerateRequest) => {
         calls.push('generate')
-        return {
-          classSet: new Set(['gap-4.25']),
-          css: '.gap-4_d25{gap:17rpx}',
-          rawCss: '.gap-4_d25{gap:17rpx}',
-          dependencies: [entry],
-          snapshot,
-          target: 'weapp',
-        }
+        return createTailwindGenerateResult('.gap-4_d25{gap:17rpx}', snapshot)
       }),
       transformCss: vi.fn(async (source: string) => {
         calls.push('wxss')
@@ -344,8 +340,15 @@ describe('managed Tailwind integration', () => {
     } as any)
     const sidecarEntry = createSidecarSourceSpecifier(path.join(root, 'src/app.ts'), entry, 'style')
     const virtualEntry = await getHookHandler(plugin.resolveId)?.call({} as any, sidecarEntry, undefined, {} as any)
-    const loaded = await getHookHandler(plugin.load)?.call({} as any, virtualEntry)
-    const marker = getHookHandler(plugin.transform)?.call({} as any, loaded, virtualEntry, {} as any)?.code
+    expect(virtualEntry).toBe(sidecarEntry)
+    const loadedSidecar = await getHookHandler(plugin.load)?.call({} as any, virtualEntry)
+    expect(loadedSidecar).toMatchObject({
+      code: 'export default ""',
+      meta: { weappViteStyleSources: [(await fs.realpath(entry)).replaceAll('\\', '/')] },
+    })
+    const loaded = await getHookHandler(plugin.load)?.call({} as any, entry)
+    expect(loaded).toBe('@import "tailwindcss";')
+    const marker = getHookHandler(plugin.transform)?.call({} as any, loaded, entry, {} as any)?.code
     const bundle = {
       'app.wxss': {
         type: 'asset',
@@ -395,16 +398,16 @@ describe('managed Tailwind integration', () => {
         maxRoots: 32,
         onRootEvicted,
       },
+      tailwindcss: { v4: { sources: [{ base: root, pattern: 'src/**/*.{vue,ts}', negated: false }] } },
     }))
-    expect(compiler.generate).toHaveBeenCalledWith(expect.objectContaining({
-      sourceOptions: expect.objectContaining({
-        sources: [{
-          base: root,
-          pattern: 'src/**/*.{vue,ts}',
-          negated: false,
-        }],
-      }),
-    }))
+    const generatedRequest = compiler.generate.mock.calls[0]![0]
+    expect(generatedRequest.sourceOptions).toBeUndefined()
+    expect(generatedRequest.source).toMatchObject({
+      projectRoot: root.replaceAll('\\', '/'),
+      base: path.dirname(entry).replaceAll('\\', '/'),
+      css: `@import "${createRequire(import.meta.url).resolve('tailwindcss/index.css').replaceAll('\\', '/')}";`,
+      dependencies: [entry.replaceAll('\\', '/')],
+    })
     expect(calls).toEqual([
       'start',
       'load',
@@ -456,15 +459,10 @@ describe('managed Tailwind integration', () => {
       dependencies: [entry],
       roots: [{ id: 'tailwind-root', revision: 1 }],
       sources: [],
-      target: 'weapp',
+      target: 'weapp' as const,
     }
     const compiler = {
-      generate: vi.fn(async () => ({
-        css: '',
-        rawCss: '',
-        dependencies: [entry],
-        snapshot,
-      })),
+      generate: vi.fn(async () => createTailwindGenerateResult('', snapshot)),
       mergeSnapshots: vi.fn(() => snapshot),
       transformCss: vi.fn(async (source: string) => ({ css: source })),
       invalidate: vi.fn(() => ['root']),

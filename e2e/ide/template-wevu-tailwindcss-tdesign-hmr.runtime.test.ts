@@ -50,7 +50,7 @@ describe('template wevu TailwindCSS TDesign HMR in real WeChat DevTools', { conc
     ])
   }, 60_000)
 
-  it('preserves script and style state and serializes Tailwind template updates through sticky classic', async (context) => {
+  it('preserves script state and serializes stylesheet and Tailwind template updates through sticky classic', async (context) => {
     const host = session!
     const project = fixture!.project
     const pageWxss = path.join(project, 'dist/pages/index/index.wxss')
@@ -64,8 +64,10 @@ describe('template wevu TailwindCSS TDesign HMR in real WeChat DevTools', { conc
       { id: 'script-interaction', ...base, count: 3 },
       { id: 'script-restored', ...base, count: 3 },
       { id: 'script-restored-interaction', ...base, count: 4 },
-      { id: 'style-saved', ...base, textColor: 'rgb(37, 99, 235)', count: 4 },
-      { id: 'style-restored', ...base, count: 4 },
+      { id: 'style-saved', ...base, textColor: 'rgb(37, 99, 235)', count: 0 },
+      { id: 'style-interaction', ...base, textColor: 'rgb(37, 99, 235)', count: 1 },
+      { id: 'style-restored', ...base, count: 0 },
+      { id: 'style-restored-interaction', ...base, count: 1 },
       ...WEVU_TAILWIND_UPDATES.flatMap((update, index) => [
         { id: `background:${index}:default`, ...update, textColor: BASE_TEXT_COLOR, count: 0 },
         { id: `background:${index}:interaction`, ...update, textColor: BASE_TEXT_COLOR, count: 1 },
@@ -150,15 +152,23 @@ describe('template wevu TailwindCSS TDesign HMR in real WeChat DevTools', { conc
       await check('script-restored')
       await interact('script-restored-interaction')
 
-      // 纯 style 更新和恢复继续走 stateful，不把后面的模板回退冒充样式增量支持。
+      // 首次纯样式变更触发 classic；恢复及后续模板变化都不得重启旧客户端。
+      await host.markInstances()
+      const styled = host.publication.capture(fixture!.source)
       await replaceFileByRename(fixture!.source, current.replace('color: #1f1a3f', 'color: #2563eb'))
+      await styled.wait()
       await waitForEmittedStylesheet(pageWxss, '#2563eb')
-      await assertStatefulIdentity('style-saved')
+      await host.observeClassic(WEVU_TAILWIND_INITIAL_HEX)
       await check('style-saved')
+      await interact('style-interaction')
+      await host.markInstances()
+      const styleRestored = host.publication.capture(fixture!.source)
       await replaceFileByRename(fixture!.source, current)
+      await styleRestored.wait()
       await waitForEmittedStylesheet(pageWxss, '#2563eb', { absent: true })
-      await assertStatefulIdentity('style-restored')
+      await host.observeClassic(WEVU_TAILWIND_INITIAL_HEX)
       await check('style-restored')
+      await interact('style-restored-interaction')
 
       let previousClass = WEVU_TAILWIND_INITIAL_CLASS
       let previousEscapedClass = 'bg-_b_hf6f7fb_B'
@@ -213,7 +223,7 @@ describe('template wevu TailwindCSS TDesign HMR in real WeChat DevTools', { conc
       await check('restored:default')
       await interact('restored:interaction')
       expect(host.dev.getOutput().match(/\[weapp-vite\] HMR fallback /g)).toHaveLength(1)
-      expect(host.dev.getOutput()).toContain('"reason":"native-registration"')
+      expect(host.dev.getOutput()).toContain('"reason":"stylesheet-output"')
       host.assertNoRuntimeErrors()
     }
     finally {

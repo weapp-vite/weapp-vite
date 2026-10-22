@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { resolveVueSfcHmrSignatures } from 'wevu/compiler'
 import logger from '../../../logger'
 import { createModuleGraphService } from '../../../moduleGraph/service'
+import { replaceEntryStyleImports } from '../../../runtime/cssSidecarOwnership'
 import { createRuntimeState } from '../../../runtime/runtimeState'
 import { createWxmlServicePlugin } from '../../../runtime/wxmlPlugin'
 import { extractConfigFromVue } from '../../../utils/file/vueConfig'
@@ -1245,6 +1246,46 @@ describe('createEntryLoader', () => {
     expect(existsMock).not.toHaveBeenCalledWith(stylePath, expect.anything())
     expect(readFileMock).not.toHaveBeenCalledWith(stylePath, expect.anything())
     expect(magicStringPrependMock).toHaveBeenCalledWith(`import '${stylePath}';\n`)
+  })
+
+  it('reads cached style imports from the current owner scan instead of reviving a detached sidecar', async () => {
+    const { loader, runtimeState } = createLoader({ isDev: true })
+    const pluginCtx = createPluginContext()
+    const entry = path.resolve('src/pages/cached-owner/index.ts')
+    const style = path.resolve('src/pages/cached-owner/index.wxss')
+    existsMock.mockImplementation(async (file: string) => file === style)
+    readFileMock.mockImplementation(async (file: string) => file === style ? '.cached {}' : 'console.log("cached-owner")')
+    await loader.call(pluginCtx, entry, 'page')
+    replaceEntryStyleImports(runtimeState.css, entry, [])
+    runtimeState.build.hmr.profile = { event: 'update', dirtyReasonSummary: ['entry-direct:1'] }
+    existsMock.mockClear()
+    magicStringPrependMock.mockClear()
+
+    await loader.call(pluginCtx, entry, 'page')
+
+    expect(existsMock).not.toHaveBeenCalledWith(style, expect.anything())
+    expect(magicStringPrependMock).not.toHaveBeenCalled()
+    expect(runtimeState.css.sidecarImports.has(style)).toBe(false)
+  })
+
+  it('replaces an owner style scan across repeated sidecar removal and restoration', async () => {
+    const { loader, runtimeState } = createLoader({ isDev: true })
+    const pluginCtx = createPluginContext()
+    const entry = path.resolve('src/pages/style-cycle/index.vue')
+    const style = path.resolve('src/pages/style-cycle/index.wxss')
+    let present = true
+    existsMock.mockImplementation(async (file: string) => present && file === style)
+    readFileMock.mockImplementation(async (file: string) => file === style ? '.cycle {}' : '<script setup>const marker = "cycle"</script><template><view>{{ marker }}</view></template>')
+    await loader.call(pluginCtx, entry, 'page')
+    expect(runtimeState.css.sidecarImports.has(style)).toBe(true)
+    for (const exists of [false, true, false, true]) {
+      present = exists
+      // provider 的内容失效原因不一定标成 sidecar；结构事件仍必须重扫存在性。
+      runtimeState.build.hmr.profile = { event: exists ? 'create' : 'delete', dirtyReasonSummary: ['compiler-content:1'] }
+      await loader.call(pluginCtx, entry, 'page')
+      expect(runtimeState.css.sidecarImports.has(style)).toBe(exists)
+      expect(runtimeState.css.sidecarImportsByOwner.get(entry)).toEqual(new Set(exists ? [style] : []))
+    }
   })
 
   it('rescans style imports for style sidecar hmr', async () => {

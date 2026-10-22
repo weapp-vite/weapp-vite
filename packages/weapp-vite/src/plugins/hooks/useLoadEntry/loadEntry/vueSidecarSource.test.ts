@@ -8,6 +8,7 @@ import { build } from 'vite'
 import { expect, it, vi } from 'vitest'
 import { compileVueFile } from 'wevu/compiler'
 import { createRuntimeState } from '../../../../runtime/runtimeState'
+import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { css } from '../../../css'
 import { createOutputFinalizerPlugin, createOutputPublicationPlugin } from '../../../outputFinalizer'
 import { readCompilerInput } from '../../../utils/sourceSnapshot'
@@ -92,7 +93,7 @@ it('keeps first-load and watch binding locations identical while natively publis
     await writeFile(style, '.page { color: red; }')
     const loaded = await load()
     expect(loaded?.code).toBe(source)
-    expect(runtimeState.css.sidecarImports).toContain(style)
+    expect(runtimeState.css.sidecarImports).toContain(normalizeFsResolvedId(style))
     const first = await compileVueFile(loaded!.code, filename)
     const direct = await compileVueFile(await readCompilerInput(configService, filename), filename)
     expect(first.bindingManifest).toEqual(direct.bindingManifest)

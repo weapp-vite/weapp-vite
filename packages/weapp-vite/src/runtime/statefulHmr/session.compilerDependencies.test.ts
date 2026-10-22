@@ -7,7 +7,6 @@ import type { StatefulHmrDevEngineBatch } from './viteAdapter'
 import { EventEmitter } from 'node:events'
 import { mkdir, mkdtemp, realpath, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { WEAPP_VITE_STATEFUL_HMR_GLOBAL_STYLE_BASENAME } from '@weapp-core/constants'
 import path from 'pathe'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMockViteWatcher } from '../../../test/helpers/viteWatcher'
@@ -38,7 +37,6 @@ vi.mock('vite', async importOriginal => ({
   createServer: harness.createServer,
 }))
 vi.mock('./outputWriter', () => ({ writeStatefulHmrOutput: harness.writeOutput }))
-vi.mock('../buildPlugin/touchAppWxss', () => ({ touchExistingOutputStyles: vi.fn(async () => new Set()) }))
 vi.mock('../../plugins/asset/prune', () => ({ pruneOwnedAssetFiles: vi.fn(async () => {}) }))
 // 本套件只注入适配器和系统事件边界，不启动额外 watcher、服务或原生引擎。
 vi.mock('../watch/assets', () => ({ watchAssetSources: () => ({ ready: Promise.resolve(), close: async () => {} }) }))
@@ -66,7 +64,7 @@ vi.mock('./viteAdapter', () => ({
 const roots: string[] = []
 const sessions: Array<{ close: () => Promise<void> }> = []
 const trackers: Array<{ dispose: () => void }> = []
-const styleFile = `${WEAPP_VITE_STATEFUL_HMR_GLOBAL_STYLE_BASENAME}.wxss`
+const contentFile = 'provider-content.wxml'
 
 function appOutput(): StatefulHmrOutputFile[] {
   return [{ type: 'chunk', fileName: 'app.js', code: 'App({});', modules: {} }]
@@ -74,7 +72,7 @@ function appOutput(): StatefulHmrOutputFile[] {
 
 function snapshot(color: string): StatefulHmrSnapshot {
   return {
-    output: [{ type: 'asset', fileName: 'app.wxss', source: `.probe { color: ${color}; }` }],
+    output: [{ type: 'asset', fileName: contentFile, source: `<view data-color="${color}"></view>` }],
     componentPageGlobalStyleRoutes: [],
     glassEaselAnalysisByOwner: new Map(),
   }
@@ -143,7 +141,7 @@ async function start(beforePrepare?: () => Promise<void>) {
   const rebuild = vi.fn(async (_files: string[], sources?: ReadonlyMap<string, string | null>) => snapshot(color(sources)))
   const ctx = {
     runtimeState: createRuntimeState(),
-    configService: { isDev: true, platform: 'weapp', cwd: root, absoluteSrcRoot: srcRoot, outDir: path.join(root, 'dist'), weappViteConfig: { hmr: {} }, inlineConfig: {} },
+    configService: { isDev: true, platform: 'weapp', cwd: root, absoluteSrcRoot: srcRoot, outDir: path.join(root, 'dist'), multiPlatform: { enabled: false }, weappViteConfig: { hmr: {} }, inlineConfig: {} },
     scanService: { subPackageMap: new Map() },
     moduleGraphService: createModuleGraphService(),
   } as unknown as CompilerContext
@@ -153,7 +151,7 @@ async function start(beforePrepare?: () => Promise<void>) {
   const prepare = vi.fn(async (input: WeappCompilerHmrRequest) => {
     const value = color(input.sources)
     await beforePrepare?.()
-    return { assets: [{ fileName: styleFile, code: `.probe { color: ${value}; }` }] }
+    return { assets: [{ fileName: contentFile, code: `<view data-color="${value}"></view>` }] }
   })
   host.register('token-provider', prepare)
   host.captureNative(label, labelSource)
@@ -209,7 +207,7 @@ describe('compiler dependency delivery boundary', () => {
       expect(input.sources.get(compilerSourceId(token))).toBe(after)
       expect(input.sources.has(compilerSourceId(label))).toBe(true)
       expect(fixture.rebuild).toHaveBeenCalledExactlyOnceWith([token], input.sources)
-      expect(writtenAssets()).toContainEqual(expect.objectContaining({ fileName: styleFile, source: '.probe { color: blue; }' }))
+      expect(writtenAssets()).toContainEqual(expect.objectContaining({ fileName: contentFile, source: '<view data-color="blue"></view>' }))
     }
     expect(harness.fullBuild).not.toHaveBeenCalled()
   })
@@ -230,7 +228,7 @@ describe('compiler dependency delivery boundary', () => {
     const input = prepare.mock.calls[0]![0]
     expect(input.changedFiles).toEqual([token])
     expect(rebuild).toHaveBeenCalledExactlyOnceWith([token], input.sources)
-    expect(writtenAssets()).toContainEqual(expect.objectContaining({ fileName: styleFile, source: '.probe { color: blue; }' }))
+    expect(writtenAssets()).toContainEqual(expect.objectContaining({ fileName: contentFile, source: '<view data-color="blue"></view>' }))
     expect(harness.fullBuild).not.toHaveBeenCalled()
     prepare.mockClear()
     rebuild.mockClear()
@@ -275,7 +273,7 @@ describe('compiler dependency delivery boundary', () => {
       expect(harness.writeOutput).not.toHaveBeenCalled()
       prepareRelease.resolve()
       await fixture.whenSettled()
-      expect(writtenAssets()).toContainEqual(expect.objectContaining({ fileName: styleFile, source: '.probe { color: blue; }' }))
+      expect(writtenAssets()).toContainEqual(expect.objectContaining({ fileName: contentFile, source: '<view data-color="blue"></view>' }))
       expect(fixture.rebuild).toHaveBeenCalledExactlyOnceWith([token], prepare.mock.calls[0]![0].sources)
       expect(harness.fullBuild).not.toHaveBeenCalled()
     }

@@ -1,3 +1,4 @@
+import type { FSWatcher } from 'chokidar'
 import type { EnvironmentModuleNode, ModuleNode, ViteDevServer } from 'vite'
 import type { ConfigService } from '../runtime/config/types'
 import {
@@ -89,13 +90,41 @@ export function shouldStartAutoRoutesWatcher(options: {
 }
 
 /**
- * 生成 sidecar watcher map 使用的关闭句柄。
+ * 初扫完成前阻止路由构建发布；关闭时主动释放等待，不依赖物理 watcher 的 close 事件。
  */
 export function createAutoRoutesSidecarWatcher(
-  watcher: { close: () => unknown | Promise<unknown> },
+  watcher: Pick<FSWatcher, 'once' | 'off' | 'close'>,
 ) {
+  let settleReady!: () => void
+  const ready = new Promise<void>((resolve, reject) => {
+    const listeners = {
+      cleanup() {
+        watcher.off('ready', listeners.ready)
+        watcher.off('error', listeners.error)
+      },
+      ready() {
+        listeners.cleanup()
+        resolve()
+      },
+      error(error: unknown) {
+        listeners.cleanup()
+        reject(error)
+      },
+    }
+    settleReady = listeners.ready
+    watcher.once('ready', listeners.ready)
+    watcher.once('error', listeners.error)
+  })
+  let closing: Promise<void> | undefined
   return {
-    close: async () => { await watcher.close() },
+    ready,
+    close() {
+      closing ??= (async () => {
+        settleReady()
+        await watcher.close()
+      })()
+      return closing
+    },
   }
 }
 

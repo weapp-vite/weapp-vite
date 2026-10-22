@@ -73,6 +73,38 @@ describe('watcherService', () => {
   })
 
   describe('close and closeAll', () => {
+    it.each([false, true])('retains watcher errors through repeated cleanup while still closing sidecars and web: %s', async (failWeb) => {
+      const failure = new Error('watcher close failed')
+      const webFailure = new Error('web close failed')
+      const sidecarClose = vi.fn(async () => {})
+      const webClose = vi.fn(async () => {
+        if (failWeb) {
+          throw webFailure
+        }
+      })
+      vi.mocked(mockWatcher.close).mockImplementation(async () => {
+        throw failure
+      })
+      ctx.webService = { close: webClose } as unknown as NonNullable<MutableCompilerContext['webService']>
+      watcherService.setRollupWatcher(mockWatcher)
+      watcherService.sidecarWatcherMap.set('sidecar', { close: sidecarClose })
+      const closing = watcherService.closeAll()
+      const expected = failWeb ? { errors: [failure, webFailure], cause: failure } : undefined
+      if (expected) {
+        await expect(closing).rejects.toMatchObject(expected)
+        await expect(watcherService.closeAll()).rejects.toMatchObject(expected)
+      }
+      else {
+        await expect(closing).rejects.toBe(failure)
+        await expect(watcherService.closeAll()).rejects.toBe(failure)
+      }
+      expect(sidecarClose).toHaveBeenCalledOnce()
+      expect(webClose).toHaveBeenCalledOnce()
+      expect(mockWatcher.close).toHaveBeenCalledOnce()
+      expect(watcherService.rollupWatcherMap.size).toBe(0)
+      expect(watcherService.sidecarWatcherMap.size).toBe(0)
+    })
+
     it('closes rollup + sidecar watcher by root and closes web service when all cleared', async () => {
       const sidecarClose = vi.fn(async () => {})
       const webClose = vi.fn(async () => {})
@@ -312,22 +344,25 @@ describe('watcherService', () => {
       const closePromise = new Promise<void>((resolve) => {
         finishClose = resolve
       })
+      const failure = new Error('close failed')
       watcherService.sidecarWatcherMap.set('broken', { close: vi.fn(() => {
-        throw new Error('close failed')
+        throw failure
       }) })
       const close = vi.fn(() => closePromise)
       watcherService.sidecarWatcherMap.set('pending', { close })
       let complete = false
-      const closing = Promise.resolve(plugin.closeBundle?.()).then(() => {
+      const closing = Promise.resolve(plugin.closeBundle?.()).finally(() => {
         complete = true
       })
+      const rejected = expect(closing).rejects.toBe(failure)
       await Promise.resolve()
       expect(close).toHaveBeenCalledTimes(1)
       expect(complete).toBe(false)
       finishClose()
-      await closing
+      await rejected
       expect(complete).toBe(true)
       expect(watcherService.sidecarWatcherMap.size).toBe(0)
+      await expect(plugin.closeBundle?.()).rejects.toBe(failure)
     })
   })
 })

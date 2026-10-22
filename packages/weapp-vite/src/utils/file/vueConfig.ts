@@ -6,6 +6,7 @@ import { createBabelBackendLoader } from '@weapp-vite/ast/babelLoader'
 import { recursive as mergeRecursive } from 'merge'
 import path from 'pathe'
 import { parse } from 'vue/compiler-sfc'
+import { readCompilerSourceSnapshotInput } from '../../plugins/utils/sourceSnapshot/registry'
 import { hasAutoRoutesMacroImport, inlineAutoRoutesImports, resolveAutoRoutesInlineSnapshot } from './autoRoutes'
 
 const loadVueCompiler = createBabelBackendLoader(() => import('wevu/compiler'))
@@ -80,11 +81,18 @@ export async function extractConfigFromVue(
 ): Promise<Record<string, any> | undefined> {
   try {
     const context = options?.compilerContext
+    const hasExplicitSource = options?.source !== undefined || options?.readSource !== undefined
+    let snapshotSource: string | undefined
+    if (!hasExplicitSource && context?.configService) {
+      snapshotSource = readCompilerSourceSnapshotInput(context.configService, vueFilePath)
+    }
+    // 固定输入不能复用或覆盖磁盘缓存，避免连续保存时串用不同代际的配置。
+    const useDiskCache = !hasExplicitSource && snapshotSource === undefined
     const cache = context ? contextConfigCaches.get(context) ?? new Map() : vueConfigCache
     if (context) {
       contextConfigCaches.set(context, cache)
     }
-    const cached = options?.force ? undefined : cache.get(vueFilePath)
+    const cached = options?.force || !useDiskCache ? undefined : cache.get(vueFilePath)
     let autoRoutesInline: AutoRoutesInlineSnapshot | undefined
     if (cached?.autoRoutesSignature !== undefined) {
       autoRoutesInline = await resolveAutoRoutesInlineSnapshot(context)
@@ -97,7 +105,7 @@ export async function extractConfigFromVue(
     const content = options?.source ?? (
       options?.readSource
         ? await options.readSource()
-        : await fs.readFile(vueFilePath, 'utf-8')
+        : snapshotSource ?? await fs.readFile(vueFilePath, 'utf-8')
     )
     if (content === undefined) {
       return undefined
@@ -170,29 +178,31 @@ export async function extractConfigFromVue(
       }
     }
 
-    const normalizedDependencies = [...new Set(
-      macroDependencies
-        .filter(dep => dep && !NODE_MODULES_RE.test(dep))
-        .map(dep => path.normalize(dep)),
-    )]
-    const dependencyMtimeMs = new Map<string, number>()
-    await Promise.all(
-      normalizedDependencies.map(async (dep) => {
-        const mtime = await getMtimeCached(dep)
-        if (mtime !== undefined) {
-          dependencyMtimeMs.set(dep, mtime)
-        }
-      }),
-    )
-    const fileMtimeMs = await getMtimeCached(vueFilePath)
     const hasConfig = Object.keys(mergedConfig).length > 0
-    cache.set(vueFilePath, {
-      config: hasConfig ? mergedConfig : undefined,
-      autoRoutesSignature: autoRoutesInline && JSON.stringify(autoRoutesInline),
-      fileMtimeMs,
-      dependencies: normalizedDependencies,
-      dependencyMtimeMs,
-    })
+    if (useDiskCache) {
+      const normalizedDependencies = [...new Set(
+        macroDependencies
+          .filter(dep => dep && !NODE_MODULES_RE.test(dep))
+          .map(dep => path.normalize(dep)),
+      )]
+      const dependencyMtimeMs = new Map<string, number>()
+      await Promise.all(
+        normalizedDependencies.map(async (dep) => {
+          const mtime = await getMtimeCached(dep)
+          if (mtime !== undefined) {
+            dependencyMtimeMs.set(dep, mtime)
+          }
+        }),
+      )
+      const fileMtimeMs = await getMtimeCached(vueFilePath)
+      cache.set(vueFilePath, {
+        config: hasConfig ? mergedConfig : undefined,
+        autoRoutesSignature: autoRoutesInline && JSON.stringify(autoRoutesInline),
+        fileMtimeMs,
+        dependencies: normalizedDependencies,
+        dependencyMtimeMs,
+      })
+    }
 
     return hasConfig ? mergedConfig : undefined
   }
