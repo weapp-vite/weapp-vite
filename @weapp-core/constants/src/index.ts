@@ -77,6 +77,8 @@ export const WEAPP_VITE_HOST_RESTART_CONFIG_KEY = '__weappViteHostRestart'
 export const WEAPP_VITE_HMR_RUNTIME_SESSION_HANDOFF_KEY = 'weapp-vite:hmr-runtime-session'
 /** classic 原生发布的内容代次，驱动宿主完整重载而不修改开发者工具设置。 */
 export const WEAPP_VITE_CLASSIC_GENERATION_MARKER = '__WEAPP_VITE_CLASSIC_GENERATION__'
+/** 原生输出发布者的内部只读观察接口所在插件。 */
+export const WEAPP_VITE_OUTPUT_PUBLICATION_PLUGIN_NAME = 'weapp-vite:output-publication'
 /** 库模块重新执行后，原生服务器交接仍使用同一个关闭资源记录。 */
 export const WEAPP_VITE_DEV_SERVER_CLOSE_KEY = 'weapp-vite:dev-server-close'
 

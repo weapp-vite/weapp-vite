@@ -15,11 +15,12 @@ export interface NativePublicationProfileCursor {
 }
 
 export interface NativePublicationReceipt {
-  boundary: 'native-byte-write'
+  boundary: 'native-byte-write' | 'native-noop'
   generation: string
   inputs: Record<string, string>
   outputs: Record<string, string>
   profileCursor?: NativePublicationProfileCursor
+  publicationEpoch?: number
 }
 
 export function nativePublicationHash(source: string | Uint8Array) {

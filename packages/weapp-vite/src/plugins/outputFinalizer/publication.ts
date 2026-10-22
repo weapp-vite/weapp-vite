@@ -3,6 +3,8 @@ import type { Plugin } from 'vite'
 import type { CompilerContext } from '../../context'
 import type { SubPackageMetaValue } from '../../types'
 import type { WxmlDependencyCommit } from '../../wxml/processing/dependencies'
+import type { NativeOutputPublicationApi, OutputPublicationScope } from './publicationObservation'
+import { WEAPP_VITE_OUTPUT_PUBLICATION_PLUGIN_NAME } from '@weapp-core/constants'
 import path from 'pathe'
 import { createHmrProfileCheckpoint } from '../../utils/hmrProfile'
 import { syncOutputChunkSourceMapAssets } from '../../utils/outputChunk'
@@ -13,26 +15,14 @@ import { prepareClassicOutputGeneration, shouldPublishClassicGeneration } from '
 import { pruneUnchangedDevHmrOutputs } from './hmrPrune'
 import { captureIndependentOutputAssets, captureIndependentOutputFileNames, flushIndependentOutputs } from './independent'
 import { prepareOutputPublicationOwnership } from './ownership'
+import { createNativePublicationObservation } from './publicationObservation'
 
 export { pruneUnchangedDevHmrOutputs, pruneUneventedDevHmrChunks } from './hmrPrune'
 
 /** 编译器完成所有输出转换后，按最终内容裁剪本轮写入。 */
-export function createOutputPublicationPlugin(ctx: CompilerContext, subPackageMeta?: SubPackageMetaValue): Plugin {
+export function createOutputPublicationPlugin(ctx: CompilerContext, subPackageMeta?: SubPackageMetaValue): Plugin<NativeOutputPublicationApi> {
   type PublicAssets = ReturnType<typeof createPublicAssetPublication>
-  interface PendingPublication {
-    epoch: number
-    ownership?: () => Promise<void>
-    generation?: () => unknown
-    sources?: Map<string, string>
-    outputNames: string[]
-    partial: boolean
-  }
-  interface OutputScope {
-    publicAssets?: PublicAssets
-    cache: Map<string, string> | undefined
-    pending?: PendingPublication
-  }
-  const scopes = new Map<string, OutputScope>()
+  const scopes = new Map<string, OutputPublicationScope>()
   let preserveCompleteBundle = false
   let outDir: string | undefined
   let resolvedConfig: Parameters<PublicAssets['configure']>[0]
@@ -48,6 +38,7 @@ export function createOutputPublicationPlugin(ctx: CompilerContext, subPackageMe
     epoch++
     for (const scope of scopes.values()) {
       scope.pending = undefined
+      scope.observation.invalidate()
     }
   }
   function outputRoot(options?: { dir?: string }) {
@@ -58,7 +49,8 @@ export function createOutputPublicationPlugin(ctx: CompilerContext, subPackageMe
     if (!scope) {
       const publicAssets = subPackageMeta ? undefined : createPublicAssetPublication(ctx)
       publicAssets?.configure(root === outDir ? resolvedConfig : { ...publicConfig, build: { ...publicConfig.build, outDir: root } })
-      scope = { publicAssets, cache: root === outDir ? ctx.runtimeState?.build?.output?.emittedSource : new Map() }
+      const cache = root === outDir ? ctx.runtimeState?.build?.output?.emittedSource : new Map<string, string>()
+      scope = { publicAssets, cache, observation: createNativePublicationObservation(root, cache) }
       scopes.set(root, scope)
       if (building) {
         publicAssets?.start(environmentConfig)
@@ -72,6 +64,7 @@ export function createOutputPublicationPlugin(ctx: CompilerContext, subPackageMe
     environmentConfig = undefined
     for (const scope of scopes.values()) {
       scope.pending = undefined
+      scope.observation.invalidate()
     }
     const results = await Promise.allSettled([...writes])
     releasePendingOwnership()
@@ -86,8 +79,15 @@ export function createOutputPublicationPlugin(ctx: CompilerContext, subPackageMe
     }
   }
   return {
-    name: 'weapp-vite:output-publication',
+    name: WEAPP_VITE_OUTPUT_PUBLICATION_PLUGIN_NAME,
     enforce: 'post',
+    api: Object.freeze({
+      getEpoch: () => epoch,
+      readCommitted: (root: string, expectedEpoch: number) => !closing && expectedEpoch === epoch ? scopes.get(root)?.observation.readCommitted(expectedEpoch) : undefined,
+      whenCommitted: (root: string, expectedEpoch: number) => !closing && expectedEpoch === epoch
+        ? scopes.get(root)?.observation.whenCommitted(expectedEpoch) ?? Promise.resolve(undefined)
+        : Promise.resolve(undefined),
+    }),
     configResolved(config) {
       const previousOutDir = outDir
       const resumesNativePublication = preserveCompleteBundle && config.experimental?.bundledDev !== true
@@ -104,6 +104,9 @@ export function createOutputPublicationPlugin(ctx: CompilerContext, subPackageMe
       for (const [root, scope] of scopes) {
         if (root === outDir) {
           scope.publicAssets?.configure(config)
+          if (!nativeWrite || preserveCompleteBundle || resumesNativePublication) {
+            scope.observation.reset()
+          }
         }
         else {
           scopes.delete(root)
@@ -123,12 +126,18 @@ export function createOutputPublicationPlugin(ctx: CompilerContext, subPackageMe
         scope.publicAssets?.start(environmentConfig)
       }
     },
+    buildEnd(error) {
+      if (error) {
+        releasePendingOwnership()
+      }
+    },
+    renderError: releasePendingOwnership,
     closeBundle: () => closePublications(false),
     closeWatcher: () => closePublications(true),
     writeBundle: {
       order: 'post',
       sequential: true,
-      async handler(options) {
+      async handler(options, bundle = {}) {
         const root = outputRoot(options)
         const scope = root ? scopes.get(root) : undefined
         const pending = scope?.pending
@@ -158,11 +167,16 @@ export function createOutputPublicationPlugin(ctx: CompilerContext, subPackageMe
             scope?.cache?.set(file, source)
           }
           pending.generation?.()
+          scope?.observation.commit(pending.epoch, bundle as unknown as OutputBundle, pending.observedAssets)
         }
         const task = write()
         writes.add(task)
         try {
           await task
+        }
+        catch (error) {
+          scope?.observation.invalidate()
+          throw error
         }
         finally {
           writes.delete(task)
@@ -176,6 +190,7 @@ export function createOutputPublicationPlugin(ctx: CompilerContext, subPackageMe
         const scope = root ? outputScope(root) : undefined
         if (scope) {
           scope.pending = undefined
+          scope.observation.invalidate()
         }
         const publicationEpoch = epoch
         const assertActive = () => {
@@ -247,6 +262,9 @@ export function createOutputPublicationPlugin(ctx: CompilerContext, subPackageMe
             preserveCompleteBundle,
             emittedSource: stagedSources,
           })
+          const sources = stagedSources
+            ? new Map(Object.keys(outputBundle).map(file => [file, stagedSources.get(file)!]))
+            : undefined
           for (const asset of independentAssets) {
             this.emitFile(asset)
           }
@@ -266,10 +284,7 @@ export function createOutputPublicationPlugin(ctx: CompilerContext, subPackageMe
               partial,
               retireStateful: !partial && !subPackageMeta && (ctx.currentBuildTarget ?? 'app') === 'app',
             })
-            const sources = stagedSources
-              ? new Map(Object.keys(outputBundle).map(file => [file, stagedSources.get(file)!]))
-              : undefined
-            scope.pending = { epoch: publicationEpoch, ownership, generation, sources, outputNames, partial }
+            scope.pending = { epoch: publicationEpoch, ownership, generation, sources, outputNames, partial, observedAssets: [...independentSnapshot, ...independentAssets, ...publicOutputs] }
           }
           commitWxmlDependencies(ctx)
           commitValidation?.()
@@ -278,6 +293,7 @@ export function createOutputPublicationPlugin(ctx: CompilerContext, subPackageMe
         catch (error) {
           if (scope) {
             scope.pending = undefined
+            scope.observation.invalidate()
           }
           failWxmlDependencies(ctx)
           commitValidation?.fail()

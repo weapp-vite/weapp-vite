@@ -27,11 +27,15 @@ function receipts(output: string): NativePublicationObservation[] {
       return []
     }
     const value: unknown = JSON.parse(line.slice(start + NATIVE_PUBLICATION_PREFIX.length))
-    if (!value || typeof value !== 'object' || !('boundary' in value) || value.boundary !== 'native-byte-write'
+    if (!value || typeof value !== 'object' || !('boundary' in value) || (value.boundary !== 'native-byte-write' && value.boundary !== 'native-noop')
       || !('generation' in value) || typeof value.generation !== 'string'
       || !('inputs' in value) || !isFingerprint(value.inputs) || !('outputs' in value) || !isFingerprint(value.outputs)
       || value.generation !== nativePublicationGeneration(value.outputs)) {
       throw new Error('Invalid native publication receipt')
+    }
+    if (value.boundary === 'native-noop'
+      && (!('publicationEpoch' in value) || !Number.isSafeInteger(value.publicationEpoch) || Number(value.publicationEpoch) < 0)) {
+      throw new Error('Invalid native no-op publication epoch')
     }
     if ('profileCursor' in value) {
       const cursor = value.profileCursor

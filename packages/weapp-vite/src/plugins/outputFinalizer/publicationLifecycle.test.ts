@@ -1,4 +1,4 @@
-import type { EmittedAsset } from 'rolldown'
+import type { EmittedAsset, OutputBundle } from 'rolldown'
 import type { CompilerContext } from '../../context'
 import type { SubPackageMetaValue } from '../../types'
 import path from 'pathe'
@@ -137,5 +137,103 @@ describe('output publication lifetime', () => {
     ctx.currentBuildTarget = 'plugin'
     await handler(plugin.generateBundle).call(hookContext, {}, {}, true)
     expect(prepare).toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.objectContaining({ retireStateful: false }))
+  })
+
+  it.each(['buildStart', 'buildEnd', 'renderError', 'configResolved', 'closeBundle', 'closeWatcher'] as const)('invalidates a pending read-only publication at the real %s hook', async (boundary) => {
+    const { plugin, root, hookContext } = fixture()
+    const api = plugin.api!
+    const outDir = path.join(root, 'dist')
+    const bundle = { 'page.txt': { type: 'asset', fileName: 'page.txt', source: 'native bytes' } } as OutputBundle
+    await handler(plugin.generateBundle).call(hookContext, {}, bundle, true)
+    await handler(plugin.writeBundle).call(hookContext, {}, bundle)
+    const previousEpoch = api.getEpoch()
+    expect(api.readCommitted(outDir, previousEpoch)?.outputs.get('page.txt')).toBe('native bytes')
+    await handler(plugin.buildStart).call(hookContext)
+    await handler(plugin.generateBundle).call(hookContext, {}, {}, true)
+    const epoch = api.getEpoch()
+    const pending = api.whenCommitted(outDir, epoch)
+    if (boundary === 'configResolved') {
+      handler(plugin.configResolved)({ root, build: { outDir: 'dist' } })
+    }
+    else {
+      await handler(plugin[boundary]).call(hookContext, new Error('native publication abandoned'))
+    }
+    expect(await pending).toBeUndefined()
+    await handler(plugin.writeBundle).call(hookContext, {}, {})
+    expect(api.readCommitted(outDir, epoch)).toBeUndefined()
+    expect(api.readCommitted(outDir, previousEpoch)).toBeUndefined()
+    expect(await api.whenCommitted(path.join(root, 'another-dist'), api.getEpoch())).toBeUndefined()
+  })
+
+  it('keeps a pending publication active after a successful buildEnd', async () => {
+    const { plugin, root, hookContext } = fixture()
+    const api = plugin.api!
+    const outDir = path.join(root, 'dist')
+    const bundle = { 'page.txt': { type: 'asset', fileName: 'page.txt', source: 'native bytes' } } as OutputBundle
+    await handler(plugin.generateBundle).call(hookContext, {}, bundle, true)
+    const epoch = api.getEpoch()
+    const pending = api.whenCommitted(outDir, epoch)
+    await handler(plugin.buildEnd).call(hookContext)
+    await handler(plugin.writeBundle).call(hookContext, {}, bundle)
+    expect((await pending)?.outputs.get('page.txt')).toBe('native bytes')
+    expect(api.getEpoch()).toBe(epoch)
+  })
+
+  it.each(['public', 'ownership'] as const)('does not expose a no-op commit when the %s write stage fails', async (failure) => {
+    const { plugin, root, hookContext } = fixture()
+    const api = plugin.api!
+    const outDir = path.join(root, 'dist')
+    const bundle = { 'page.txt': { type: 'asset', fileName: 'page.txt', source: 'native bytes' } } as OutputBundle
+    await handler(plugin.generateBundle).call(hookContext, {}, bundle, true)
+    await handler(plugin.writeBundle).call(hookContext, {}, bundle)
+    await handler(plugin.buildStart).call(hookContext)
+    await handler(plugin.generateBundle).call(hookContext, {}, {}, true)
+    const epoch = api.getEpoch()
+    const pending = api.whenCommitted(outDir, epoch)
+    const stage = failure === 'public' ? commitPublic : commit
+    stage.mockRejectedValueOnce(new Error(`${failure} commit failed`))
+    await expect(handler(plugin.writeBundle).call(hookContext, {}, {})).rejects.toThrow(`${failure} commit failed`)
+    expect(await pending).toBeUndefined()
+    expect(api.readCommitted(outDir, epoch)).toBeUndefined()
+  })
+
+  it('keeps partial views complete across compiled, public and independent outputs and retires removed files', async () => {
+    const { ctx, plugin, root, hookContext } = fixture()
+    const api = plugin.api!
+    const outDir = path.join(root, 'dist')
+    ctx.scanService = { independentSubPackageMap: new Map([['pkg', {}]]) } as CompilerContext['scanService']
+    // 与独立构建的 watch.commit() 一致，先登记分包归属再保留可复用产物。
+    ctx.runtimeState.build.independent.watchFiles.set('pkg', new Set())
+    ctx.runtimeState.build.independent.outputs.set('pkg', { output: [
+      { type: 'asset', fileName: 'pkg/page.txt', source: 'independent', names: [], originalFileNames: [] },
+    ] })
+    emit.mockImplementation(async (_files, _partial, emitFile) => {
+      emitFile({ type: 'asset', fileName: 'public.bin', source: new Uint8Array([0, 255]) })
+    })
+    const first = {
+      'retained.txt': { type: 'asset', fileName: 'retained.txt', source: 'retained' },
+      'page.txt': { type: 'asset', fileName: 'page.txt', source: 'BASE' },
+    } as OutputBundle
+    await handler(plugin.generateBundle).call(hookContext, {}, first, true)
+    await handler(plugin.writeBundle).call(hookContext, {}, first)
+    await handler(plugin.buildStart).call(hookContext)
+    ctx.runtimeState.build.hmr.isRebuild = true
+    ctx.runtimeState.build.hmr.didEmitAllEntries = false
+    const next = { 'page.txt': { type: 'asset', fileName: 'page.txt', source: 'FINAL' } } as OutputBundle
+    await handler(plugin.generateBundle).call(hookContext, {}, next, true)
+    await handler(plugin.writeBundle).call(hookContext, {}, next)
+    expect(Object.fromEntries(api.readCommitted(outDir, api.getEpoch())!.outputs)).toEqual({
+      'retained.txt': 'retained',
+      'page.txt': 'FINAL',
+      'pkg/page.txt': 'independent',
+      'public.bin': new Uint8Array([0, 255]),
+    })
+    await handler(plugin.buildStart).call(hookContext)
+    ctx.runtimeState.build.hmr.didEmitAllEntries = true
+    ctx.scanService.independentSubPackageMap.clear()
+    emit.mockImplementation(async () => {})
+    await handler(plugin.generateBundle).call(hookContext, {}, next, true)
+    await handler(plugin.writeBundle).call(hookContext, {}, next)
+    expect(Object.fromEntries(api.readCommitted(outDir, api.getEpoch())!.outputs)).toEqual({ 'page.txt': 'FINAL' })
   })
 })
