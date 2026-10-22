@@ -14,7 +14,7 @@ afterEach(() => {
 })
 
 describe('warmed Darwin inspector boundary', () => {
-  it('boots before initial RSS and keeps the held child alive until after ps, then waits for its exit', async () => {
+  it('boots before identity preparation and holds the same child through consumer-owned anchor sampling', async () => {
     const fixture = createInspectorFixture()
     mocks.execute.mockReturnValue(fixture.child)
     const read = vi.fn(async () => {

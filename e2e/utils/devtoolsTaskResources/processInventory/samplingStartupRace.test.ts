@@ -6,8 +6,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { sampleInstallationProcesses } from '../processes'
 import { createInspectorFixture } from './inspectorFixture'
 
-const mocks = vi.hoisted(() => ({ execute: vi.fn(), root: '' }))
+const mocks = vi.hoisted(() => ({ execute: vi.fn(), images: vi.fn(), root: '' }))
 vi.mock('execa', () => ({ execa: mocks.execute }))
+vi.mock('../../../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/installationExit/darwin', () => ({ readDarwinTextImages: mocks.images }))
 vi.mock('../../../../packages/weapp-ide-cli/src/devtoolsTarget/host', () => ({ resolveWechatDevtoolsInstallationRoot: () => mocks.root }))
 
 const target = { installationId: 'selected' } as ResolvedWechatDevtoolsTarget
@@ -18,20 +19,25 @@ beforeEach(async () => {
   vi.resetAllMocks()
   directory = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'sampling-startup-contract-')))
   mocks.root = directory
+  mocks.images.mockRejectedValue(new Error('Fixture text image unavailable'))
 })
 afterEach(async () => {
   vi.restoreAllMocks()
   await fs.rm(directory, { recursive: true, force: true })
 })
 
-function scheduler(exit: 'bootstrap' | 'after-anchor') {
+function scheduler(exit: 'bootstrap' | 'preparation' | 'after-anchor') {
   const events: string[] = []
   let ready = false
   let transientAlive = true
   let frames = 0
   const frame = () => {
-    events.push('anchor')
-    return [row(11, frames++ ? 100 : 10), row(22), ...(transientAlive ? [row(33)] : [])].join('\n')
+    frames++
+    events.push(frames === 4 ? 'rss-anchor' : 'identity-frame')
+    if (exit === 'after-anchor' && frames === 5) {
+      transientAlive = false
+    }
+    return [row(11, frames === 4 ? 40 : frames * 100), row(22), ...(transientAlive ? [row(33)] : [])].join('\n')
   }
   const bootstrap = () => {
     if (!ready) {
@@ -43,7 +49,7 @@ function scheduler(exit: 'bootstrap' | 'after-anchor') {
     }
   }
   const paths = (pids: number[]) => {
-    if (exit === 'after-anchor') {
+    if (exit === 'preparation') {
       transientAlive = false
     }
     return pids.map(pid => ({ pid, executable: pid === 33 ? null : path.join(directory, pid === 11 ? 'selected' : '../foreign') }))
@@ -68,24 +74,40 @@ function scheduler(exit: 'bootstrap' | 'after-anchor') {
 }
 
 describe('resource sampling bootstrap race', () => {
-  it('takes the initial RSS anchor after inspector bootstrap instead of spending its identity window on startup', async () => {
+  it('prepares identities after bootstrap and then takes exactly one independent RSS anchor', async () => {
     const events = scheduler('bootstrap')
     const sample = await sampleInstallationProcesses(target, 'darwin')
     expect(sample).toMatchObject({ status: 'observed', value: {
-      installationRssBytes: { status: 'observed', value: 10 * 1024 },
+      installationRssBytes: { status: 'observed', value: 40 * 1024 },
       unclassifiedProcessCount: 0,
-      rssAnchor: 'initial-ps-inventory-only; later-rows-never-replace-or-add-rss',
+      rssAnchor: 'single-post-preparation-ps-inventory; preparation-and-later-rows-never-contribute-rss',
     } })
-    expect(events.indexOf('bootstrap')).toBeLessThan(events.indexOf('anchor'))
+    expect(events).toEqual(['bootstrap', 'identity-frame', 'identity-frame', 'identity-frame', 'rss-anchor', 'identity-frame'])
   })
 
-  it('retains an exit after the initial anchor as an unknown identity without filling later RSS', async () => {
+  it('records an unknown preparation exit without inventing foreign ownership or using preparation RSS', async () => {
+    const events = scheduler('preparation')
+    expect(await sampleInstallationProcesses(target, 'darwin')).toMatchObject({ status: 'observed', value: {
+      verifiedMemberRssBytes: 40 * 1024,
+      installationRssBytes: { status: 'observed', value: 40 * 1024 },
+      unclassifiedProcessCount: 0,
+      verifiedNewForeignProcessCount: 0,
+      preAnchorExitedProcesses: [{ pid: 33, final: null, causes: [
+        { reason: 'process-absent', firstObserved: { round: 1, phase: 'after-kernel' } },
+        { reason: 'pre-anchor-exited', firstObserved: { round: 1, phase: 'rss-anchor' } },
+      ] }],
+    } })
+    expect(events.filter(event => event === 'rss-anchor')).toHaveLength(1)
+    expect(mocks.images).not.toHaveBeenCalled()
+  })
+
+  it('retains an unknown exit after the fixed anchor without filling later RSS', async () => {
     scheduler('after-anchor')
     expect(await sampleInstallationProcesses(target, 'darwin')).toMatchObject({ status: 'observed', value: {
-      verifiedMemberRssBytes: 10 * 1024,
+      verifiedMemberRssBytes: 40 * 1024,
       installationRssBytes: { status: 'unavailable' },
       unclassifiedProcessCount: 1,
-      unclassifiedProcesses: [{ pid: 33, final: null, causes: [{ reason: 'process-absent', firstObserved: { round: 1, phase: 'after-kernel' } }] }],
+      unclassifiedProcesses: [{ pid: 33, final: null, causes: [{ reason: 'text-images-query-failed', firstObserved: { round: 1, phase: 'fallback' } }, { reason: 'process-absent', firstObserved: { round: 1, phase: 'after-anchor' } }] }],
     } })
   })
 
@@ -114,25 +136,25 @@ describe('resource sampling bootstrap race', () => {
         if (inspector?.owner.exitCode !== null) {
           transientAlive = false
         }
-        const stdout = [row(11, frames === 1 ? 10 : 100), row(22), ...(frames > 1 && transientAlive ? [row(44)] : [])].join('\n')
+        const stdout = [row(11, frames === 4 ? 40 : frames * 100), row(22), ...(frames > 4 && transientAlive ? [row(44)] : [])].join('\n')
         return Object.assign(Promise.resolve({ stdout, stderr: '', exitCode: 0 }), { pid: 98 })
       }
       throw new Error(`Unexpected inspection command: ${command}`)
     })
     const sample = await sampleInstallationProcesses(target, 'darwin')
     expect(sample).toMatchObject({ status: 'observed', value: {
-      verifiedMemberRssBytes: 10 * 1024,
-      installationRssBytes: exitBeforePostcondition ? { status: 'unavailable' } : { status: 'observed', value: 10 * 1024 },
+      verifiedMemberRssBytes: 40 * 1024,
+      installationRssBytes: exitBeforePostcondition ? { status: 'unavailable' } : { status: 'observed', value: 40 * 1024 },
       unclassifiedProcessCount: 0,
       inventoryRoundCount: 2,
       verifiedNewForeignProcessCount: exitBeforePostcondition ? 0 : 1,
       uninspectedNewProcessCount: exitBeforePostcondition ? 1 : 0,
       newProcesses: [{ pid: 44, classification: exitBeforePostcondition ? 'unclassified' : 'verified-foreign', ...(exitBeforePostcondition ? { final: null, causes: [{ reason: 'process-absent', firstObserved: { round: 2, phase: 'after-kernel' } }] } : { causes: [] }) }],
-      rssAnchor: 'initial-ps-inventory-only; later-rows-never-replace-or-add-rss',
+      rssAnchor: 'single-post-preparation-ps-inventory; preparation-and-later-rows-never-contribute-rss',
     } })
     expect(requests).toEqual([[11, 22], [44]])
     expect(mocks.execute.mock.calls.filter(call => call[0] === '/usr/bin/osascript')).toHaveLength(1)
-    expect(frames).toBe(5)
+    expect(frames).toBe(7)
     expect(inspector?.events).toEqual(['ready', 'request', 'request', 'eof', 'exit'])
   })
 })

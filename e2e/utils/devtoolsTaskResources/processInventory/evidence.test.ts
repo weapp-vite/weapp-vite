@@ -23,7 +23,8 @@ const initial = [row(11), row(22, 11), row(33)].join('\n')
 const identity = (pid: number, parentPid = 1, birth = started, zombie = false) => ({ pid, parentPid, started: birth, zombie })
 
 function inventories(...values: string[]) {
-  for (const stdout of values) {
+  // 前三帧固定准备身份，随后依次提供唯一 RSS 锚点与后验闭合帧。
+  for (const stdout of [values[0]!, values[0]!, ...values]) {
     mocks.ps.mockImplementationOnce(() => Object.assign(Promise.resolve({ stdout, stderr: '', exitCode: 0 }), { pid: 99 }))
   }
 }
@@ -49,10 +50,10 @@ beforeEach(() => {
 afterEach(() => vi.restoreAllMocks())
 
 describe('installation process sampling failure evidence', () => {
-  it('keeps complete samples empty without adding inventory or image queries', async () => {
+  it('keeps complete evidence empty with exactly one prepared RSS anchor and no extra image queries', async () => {
     inventories(initial, initial, initial)
     expect(await sample()).toMatchObject({ unclassifiedProcesses: [], missingIdentities: [], identityChangedProcesses: [], verifiedMemberRssBytes: 20 * 1024 })
-    expect(mocks.ps).toHaveBeenCalledTimes(3)
+    expect(mocks.ps).toHaveBeenCalledTimes(5)
     expect(mocks.paths).toHaveBeenCalledExactlyOnceWith([11, 22, 33], 10_000)
     expect(mocks.images).not.toHaveBeenCalled()
   })
@@ -76,7 +77,7 @@ describe('installation process sampling failure evidence', () => {
     expect(JSON.stringify(result)).not.toContain(foreignImage)
     expect(JSON.stringify(result)).not.toContain('relative-unverifiable')
     expect(mocks.images).toHaveBeenCalledExactlyOnceWith(33, 10_000)
-    expect(mocks.ps).toHaveBeenCalledTimes(3)
+    expect(mocks.ps).toHaveBeenCalledTimes(5)
   })
 
   it.each([undefined, 'relative-unverifiable'])('records an unverified kernel image without creating a fallback (%s)', async (image) => {
@@ -100,14 +101,15 @@ describe('installation process sampling failure evidence', () => {
   })
 
   it('retains the first absence when the same seconds-resolution identity returns', async () => {
-    inventories(initial, [row(11), row(22, 11)].join('\n'), initial)
+    const later = `${initial}\n${row(44)}`
+    inventories(initial, initial, [row(11), row(22, 11), row(44)].join('\n'), later, later)
     const result = await sample()
     expect(result).toMatchObject({
       unclassifiedProcesses: [{ ...identity(33), final: identity(33), causes: [
-        { reason: 'process-absent', firstObserved: { round: 1, phase: 'after-kernel' } },
-        { reason: 'identity-changed', firstObserved: { round: 1, phase: 'after-fallback' } },
+        { reason: 'process-absent', firstObserved: { round: 1, phase: 'after-anchor' } },
+        { reason: 'identity-changed', firstObserved: { round: 2, phase: 'after-kernel' } },
       ] }],
-      identityChangedProcesses: [{ ...identity(33), changedTo: identity(33), reasons: ['returned-after-absence'], firstObserved: { round: 1, phase: 'after-fallback' } }],
+      identityChangedProcesses: [{ ...identity(33), changedTo: identity(33), reasons: ['returned-after-absence'], firstObserved: { round: 2, phase: 'after-kernel' } }],
     })
     expect(result.installationRssBytes.status).toBe('unavailable')
   })
@@ -115,7 +117,7 @@ describe('installation process sampling failure evidence', () => {
   it('records a selected identity that remains absent without inventing a change', async () => {
     const absent = [row(22, 11), row(33)].join('\n')
     inventories(initial, absent, absent)
-    expect(await sample()).toMatchObject({ missingIdentities: [{ ...identity(11), final: null, causes: [{ reason: 'process-absent', firstObserved: { round: 1, phase: 'after-kernel' } }] }], identityChangedProcesses: [] })
+    expect(await sample()).toMatchObject({ missingIdentities: [{ ...identity(11), final: null, causes: [{ reason: 'process-absent', firstObserved: { round: 1, phase: 'rss-anchor' } }] }], identityChangedProcesses: [] })
   })
 
   it.each([
@@ -125,8 +127,8 @@ describe('installation process sampling failure evidence', () => {
   ])('keeps the first changed identity after the process restores its original fields (%s)', async (replacement, changedTo, reason) => {
     inventories(initial, [replacement, row(22, 11), row(33)].join('\n'), initial)
     expect(await sample()).toMatchObject({
-      missingIdentities: [{ ...identity(11), final: identity(11), causes: [{ reason: 'identity-changed', firstObserved: { round: 1, phase: 'after-kernel' } }] }],
-      identityChangedProcesses: [{ ...identity(11), changedTo, reasons: [reason], firstObserved: { round: 1, phase: 'after-kernel' } }],
+      missingIdentities: [{ ...changedTo, final: identity(11), causes: [{ reason: 'identity-changed', firstObserved: { round: 1, phase: 'rss-anchor' } }] }],
+      identityChangedProcesses: [{ ...identity(11), changedTo, reasons: [reason], firstObserved: { round: 1, phase: 'rss-anchor' } }],
     })
   })
 
@@ -134,21 +136,21 @@ describe('installation process sampling failure evidence', () => {
     const newProcess = row(44)
     const absent = [row(11), row(22, 11), newProcess].join('\n')
     const changed = [row(11), row(22, 11), row(33, 22, changedStarted, 'Z'), newProcess].join('\n')
-    inventories(initial, absent, changed, `${initial}\n${newProcess}`, `${initial}\n${newProcess}`)
+    inventories(initial, initial, absent, changed, `${initial}\n${newProcess}`)
     const result = await sample()
     expect(result.identityChangedProcesses).toEqual([{ ...identity(33), changedTo: identity(33, 22, changedStarted, true), reasons: ['returned-after-absence', 'started-changed', 'parent-changed', 'zombie-changed'], firstObserved: { round: 2, phase: 'after-kernel' } }])
     expect(result.unclassifiedProcesses[0]!.causes).toEqual([
-      { reason: 'process-absent', firstObserved: { round: 1, phase: 'after-kernel' } },
+      { reason: 'process-absent', firstObserved: { round: 1, phase: 'after-anchor' } },
       { reason: 'identity-changed', firstObserved: { round: 2, phase: 'after-kernel' } },
     ])
     expect(result.unclassifiedProcesses[0]!.final).toEqual(identity(33))
   })
 
-  it('labels the outer fallback observation as round one after an eager second round', async () => {
+  it('labels the post-anchor terminal observation with its actual kernel round', async () => {
     const later = `${initial}\n${row(44)}`
     const changed = [row(11, 33), row(22, 11), row(33), row(44)].join('\n')
     inventories(initial, later, later, later, changed)
-    expect(await sample()).toMatchObject({ identityChangedProcesses: [{ ...identity(11), changedTo: identity(11, 33), reasons: ['parent-changed'], firstObserved: { round: 1, phase: 'after-fallback' } }] })
+    expect(await sample()).toMatchObject({ identityChangedProcesses: [{ ...identity(11), changedTo: identity(11, 33), reasons: ['parent-changed'], firstObserved: { round: 2, phase: 'after-fallback' } }] })
   })
 
   it('retains an image-query gap alongside a later identity absence', async () => {
@@ -157,7 +159,7 @@ describe('installation process sampling failure evidence', () => {
     mocks.images.mockRejectedValue(new Error('fixture inspection failed'))
     expect(await sample()).toMatchObject({ unclassifiedProcesses: [{ ...identity(33), final: null, causes: [
       { reason: 'text-images-query-failed', firstObserved: { round: 1, phase: 'fallback' } },
-      { reason: 'process-absent', firstObserved: { round: 1, phase: 'after-fallback' } },
+      { reason: 'process-absent', firstObserved: { round: 1, phase: 'after-anchor' } },
     ] }], identityChangedProcesses: [] })
   })
 

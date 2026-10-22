@@ -17,7 +17,8 @@ const row = (pid: number, parentPid = 1, rss = 10, started = 'Mon Oct 19 10:00:0
 const initial = [row(11), row(22, 11), row(33)].join('\n')
 
 function inventories(...values: string[]) {
-  for (const stdout of values) {
+  // 前三帧固定准备身份，随后依次提供唯一 RSS 锚点与后验闭合帧。
+  for (const stdout of [values[0]!, values[0]!, ...values]) {
     mocks.ps.mockImplementationOnce(() => Object.assign(Promise.resolve({ stdout, stderr: '', exitCode: 0 }), { pid: 99 }))
   }
 }
@@ -60,7 +61,7 @@ describe('IDE task installation RSS sampling', () => {
     expect(JSON.stringify(sample)).not.toContain(foreignImage)
   })
 
-  it('does not classify a disappeared null-path process as selected or invent its earlier RSS ownership', async () => {
+  it('keeps an unknown anchored process incomplete when it exits after the anchor', async () => {
     inventories(initial, initial, [row(11), row(22, 11)].join('\n'))
     mocks.paths.mockResolvedValue(new Map([[11, executable], [22, `${executable} Helper`], [33, null]]))
     mocks.images.mockRejectedValue(new Error('Process exited during image inspection'))

@@ -49,7 +49,7 @@ function relationToInstallation(
   return row.parentPid <= 1 || parentRelation === 'foreign' ? 'foreign' : 'unknown'
 }
 
-/** 总计最多三轮；首个后验清单发现的新身份提前核验，初始 RSS 与未知不被覆盖。 */
+/** 总计最多三轮；准备身份后只冻结一次 RSS 锚点，已知缺口及 PID 复用均不被覆盖。 */
 export function createResourceInventory(options: {
   initial: ProcessRow[]
   installationRoot: string
@@ -62,11 +62,14 @@ export function createResourceInventory(options: {
   const identityChanges = new Map<number, ProcessIdentityChangeObservation>()
   const identityGaps = new Map<number, ProcessIdentityGapCause[]>()
   const images = new Map<number, string[]>()
+  const preAnchorExited = new Set<number>()
   let final = new Map(options.initial.map(row => [row.pid, row]))
   let inventoryRoundCount = 1
   let inventoryBudgetExhausted = false
   let fallbackBudgetExhausted = false
   let inventoryInspectionError: string | undefined
+  let rssAnchorFrozen = false
+  let preparedSelectedRows: ProcessRow[] = []
 
   function recordIdentityGap(pid: number, reason: ProcessIdentityGapCause['reason'], firstObserved: ProcessInventoryLocation) {
     const causes = identityGaps.get(pid) ?? []
@@ -121,7 +124,7 @@ export function createResourceInventory(options: {
 
   function classifyInspected() {
     for (const entry of newProcesses.values()) {
-      if (!entry.inspected || !stableProcess(entry.row, final.get(entry.row.pid)) || changed.has(entry.row.pid)) {
+      if (preAnchorExited.has(entry.row.pid) || !entry.inspected || !stableProcess(entry.row, final.get(entry.row.pid)) || changed.has(entry.row.pid)) {
         continue
       }
       const relation = relationToInstallation(entry.row, options.installationRoot, known, images, final, changed)
@@ -185,14 +188,56 @@ export function createResourceInventory(options: {
         images.set(pid, executableImages)
       }
       observe(rows, 1, { round: 1, phase: 'after-kernel' })
-      // 复用原第 2 轮预算；先绑定新身份，再等待初始 null-path 的 lsof fallback。
-      await inspectPending(2)
+      // 准备阶段只固定身份；第 2、3 轮留给唯一 RSS 锚点后的新增身份。
+    },
+    completePreparation(rows: ProcessRow[], preparationImages: Map<number, string[]>, imageGaps: Map<number, ProcessIdentityGapCause>) {
+      for (const [pid, executableImages] of preparationImages) {
+        images.set(pid, executableImages)
+      }
+      for (const [pid, cause] of imageGaps) {
+        recordIdentityGap(pid, cause.reason, cause.firstObserved)
+      }
+      observe(rows, 1, { round: 1, phase: 'after-fallback' })
+    },
+    freezeRssAnchor(rows: ProcessRow[], preparationMembers: Set<number>) {
+      if (rssAnchorFrozen) {
+        throw new Error('Resource sampling cannot replace its fixed RSS anchor.')
+      }
+      rssAnchorFrozen = true
+      observe(rows, 1, { round: 1, phase: 'rss-anchor' })
+      let added = true
+      while (added) {
+        added = false
+        for (const [pid, entry] of known) {
+          if (!preparationMembers.has(pid) && preparationMembers.has(entry.row.parentPid)) {
+            preparationMembers.add(pid)
+            added = true
+          }
+        }
+      }
+      preparedSelectedRows = [...known.values()].filter(entry => preparationMembers.has(entry.row.pid)).map(entry => entry.row)
+      for (const [pid, entry] of known) {
+        if (final.has(pid) || changed.has(pid) || preparationMembers.has(pid)) {
+          continue
+        }
+        const relation = relationToInstallation(entry.row, options.installationRoot, known, images, final, changed)
+        if (relation === 'installation-image' || relation === 'descendant') {
+          continue
+        }
+        // 准备阶段未知身份已在 RSS 锚点前退出，记录事实而不推断外国归属。
+        preAnchorExited.add(pid)
+        recordIdentityGap(pid, 'pre-anchor-exited', { round: 1, phase: 'rss-anchor' })
+        const pending = newProcesses.get(pid)
+        if (pending) {
+          pending.classification = 'pre-anchor-exited'
+        }
+      }
     },
     async close(rows: ProcessRow[], initialImages: Map<number, string[]>) {
       for (const [pid, executableImages] of initialImages) {
         images.set(pid, executableImages)
       }
-      observe(rows, inventoryRoundCount, { round: 1, phase: 'after-fallback' })
+      observe(rows, inventoryRoundCount, { round: 1, phase: rssAnchorFrozen ? 'after-anchor' : 'after-fallback' })
       // 已经前后核验的外国身份后来退出不抹除证据；从未核验的退出条目仍未知。
       classifyInspected()
       for (let round = inventoryRoundCount + 1; round <= 3 && !inventoryInspectionError && !inventoryBudgetExhausted; round++) {
@@ -208,6 +253,9 @@ export function createResourceInventory(options: {
       }))
       return {
         final,
+        images,
+        preparedSelectedRows,
+        preAnchorExitedProcesses: [...preAnchorExited].map(pid => processGapObservation(known.get(pid)!.row, final.get(pid), undefined, identityGaps.get(pid))),
         changedProcessPids: changed,
         identityGaps,
         identityChangedProcesses: [...identityChanges.values()],

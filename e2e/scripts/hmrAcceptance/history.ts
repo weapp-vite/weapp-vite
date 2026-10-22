@@ -112,7 +112,7 @@ export const HMR_HISTORICAL_IDE_FAILURES: HistoricalIdeFailure[] = [
     caseId: '1272146000_1_0',
     caseName: 'issue #1140 production runtime after mode/cache transitions (emptyOutDir=false) > renders every production result and matches a fresh build in a separate directory',
     category: '证据不足以归因',
-    observation: 'mode-cache empty-false step0 封装错误、缺实际版本；report 的 boot 首错属于另一个 passed case，不能移用归因。',
+    observation: 'emptyOutDir=false step0 在宿主初始化阶段失败；原始 fixture/window 证据指向该 case，随后日志订阅及启动超时。runtimeDiagnostics 的 case0 标签不能证明错误属于前一个 passed case；尚未进入页面断言，不能据此归因 mode/cache 产品行为。',
     scenarioId: null,
   },
   {

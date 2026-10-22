@@ -19,7 +19,8 @@ const withNew = (...rows: string[]) => [initial, ...rows].join('\n')
 const result = (stdout: string) => Object.assign(Promise.resolve({ stdout, stderr: '', exitCode: 0 }), { pid: 99 })
 
 function inventories(...values: string[]) {
-  for (const stdout of values) {
+  // 前三帧固定准备身份，随后依次提供唯一 RSS 锚点与后验闭合帧。
+  for (const stdout of [values[0]!, values[0]!, ...values]) {
     mocks.ps.mockImplementationOnce(() => result(stdout))
   }
 }
@@ -33,10 +34,10 @@ beforeEach(() => {
 afterEach(() => vi.restoreAllMocks())
 
 describe('first-observation process identity capture', () => {
-  it('uses the existing second round before initial fallback and retains a verified foreign process that then exits', async () => {
+  it('prepares fallback before the unique RSS anchor and retains a subsequently verified foreign exit', async () => {
     const events: string[] = []
     const later = withNew(row(44, 1, 500))
-    const values = [initial, later, later, initial, initial]
+    const values = [initial, initial, initial, later, later, later, initial]
     mocks.ps.mockImplementation(() => {
       events.push('ps')
       return result(values.shift()!)
@@ -56,14 +57,14 @@ describe('first-observation process identity capture', () => {
       verifiedNewForeignProcessCount: 1,
       uninspectedNewProcessCount: 0,
       newProcesses: [{ pid: 44, firstSeenRound: 1, classification: 'verified-foreign', imageSource: 'kernel-path', final: null, causes: [{ reason: 'process-absent', firstObserved: { round: 2, phase: 'after-fallback' } }] }],
-      rssAnchor: 'initial-ps-inventory-only; later-rows-never-replace-or-add-rss',
+      rssAnchor: 'single-post-preparation-ps-inventory; preparation-and-later-rows-never-contribute-rss',
     } })
-    expect(events).toEqual(['ps', 'paths:11,22,33', 'ps', 'paths:44', 'ps', 'ps', 'fallback:33', 'ps'])
+    expect(events).toEqual(['ps', 'paths:11,22,33', 'ps', 'fallback:33', 'ps', 'ps', 'ps', 'paths:44', 'ps', 'ps'])
     expect(mocks.paths).toHaveBeenCalledTimes(2)
   })
 
   it('keeps an exit before the kernel-path postcondition unknown even when the path query returned a foreign image', async () => {
-    inventories(initial, withNew(row(44)), initial, initial, initial)
+    inventories(initial, initial, withNew(row(44)), initial, initial)
     expect(await sampleInstallationProcesses(target, 'darwin')).toMatchObject({ status: 'observed', value: {
       installationRssBytes: { status: 'unavailable' },
       verifiedNewForeignProcessCount: 0,
@@ -78,7 +79,7 @@ describe('first-observation process identity capture', () => {
     [foreignImage, 11, 'descendant'],
   ])('does not erase a newly verified selected member when it exits before the terminal inventory (%s, %i)', async (image, parentPid, classification) => {
     const later = withNew(row(44, parentPid))
-    inventories(initial, later, later, initial, initial)
+    inventories(initial, later, later, later, initial)
     mocks.paths.mockResolvedValueOnce(new Map([[11, executable], [22, executable], [33, foreignImage]]))
     mocks.paths.mockResolvedValueOnce(new Map([[44, image]]))
     expect(await sampleInstallationProcesses(target, 'darwin')).toMatchObject({ status: 'observed', value: {
@@ -105,12 +106,18 @@ describe('first-observation process identity capture', () => {
 
   it('rejects a verified PID that disappears and returns with the same seconds-resolution identity', async () => {
     const later = withNew(row(44))
-    inventories(initial, later, later, initial, later)
+    const returned = withNew(row(44), row(55))
+    inventories(initial, later, later, later, withNew(row(55)), returned, returned)
     const sample = await sampleInstallationProcesses(target, 'darwin')
     expect(sample).toMatchObject({ status: 'observed', value: {
       installationRssBytes: { status: 'unavailable' },
       identityChangedProcessCount: 1,
-      newProcesses: [{ pid: 44, firstSeenRound: 1, classification: 'identity-changed' }],
+      verifiedNewForeignProcessCount: 1,
+      uninspectedNewProcessCount: 0,
+      newProcesses: [
+        { pid: 44, firstSeenRound: 1, classification: 'identity-changed' },
+        { pid: 55, firstSeenRound: 2, classification: 'verified-foreign', imageSource: 'kernel-path' },
+      ],
     } })
     if (sample.status !== 'observed') {
       throw new Error(sample.reason)
@@ -120,9 +127,9 @@ describe('first-observation process identity capture', () => {
       ...identity,
       changedTo: identity,
       reasons: ['returned-after-absence'],
-      firstObserved: { round: 1, phase: 'after-fallback' },
+      firstObserved: { round: 3, phase: 'after-kernel' },
     }])
-    expect(sample.value.newProcesses).toEqual([{
+    expect(sample.value.newProcesses).toEqual(expect.arrayContaining([{
       ...identity,
       firstSeenRound: 1,
       classification: 'identity-changed',
@@ -130,19 +137,19 @@ describe('first-observation process identity capture', () => {
       final: identity,
       causes: [
         { reason: 'process-absent', firstObserved: { round: 2, phase: 'after-fallback' } },
-        { reason: 'identity-changed', firstObserved: { round: 1, phase: 'after-fallback' } },
+        { reason: 'identity-changed', firstObserved: { round: 3, phase: 'after-kernel' } },
       ],
-    }])
+    }]))
     expect(sample.value.identityChangedProcesses).toHaveLength(sample.value.identityChangedProcessCount)
     expect(sample.value.unclassifiedProcesses).toHaveLength(sample.value.unclassifiedProcessCount)
     expect(sample.value.missingIdentities).toHaveLength(sample.value.missingIdentityCount)
-    expect(mocks.ps).toHaveBeenCalledTimes(5)
-    expect(mocks.paths.mock.calls.map(call => call[0])).toEqual([[11, 22, 33], [44]])
+    expect(mocks.ps).toHaveBeenCalledTimes(9)
+    expect(mocks.paths.mock.calls.map(call => call[0])).toEqual([[11, 22, 33], [44], [55]])
   })
 
   it('does not infer foreign ownership from a foreign image and an unknown parent before the process exits', async () => {
     const later = withNew(row(44, 88))
-    inventories(initial, later, later, initial, initial)
+    inventories(initial, later, later, later, initial)
     expect(await sampleInstallationProcesses(target, 'darwin')).toMatchObject({ status: 'observed', value: {
       installationRssBytes: { status: 'unavailable' },
       verifiedNewForeignProcessCount: 0,
@@ -164,11 +171,11 @@ describe('first-observation process identity capture', () => {
       newProcesses: expect.arrayContaining([{ pid: 66, parentPid: 1, started: 'Mon Oct 19 10:00:00 2026', zombie: false, firstSeenRound: 3, classification: 'unclassified', imageSource: 'not-verified', final: { pid: 66, parentPid: 1, started: 'Mon Oct 19 10:00:00 2026', zombie: false }, causes: [] }]),
     } })
     expect(mocks.paths.mock.calls.map(call => call[0])).toEqual([[11, 22, 33], [44], [55]])
-    expect(mocks.ps).toHaveBeenCalledTimes(7)
+    expect(mocks.ps).toHaveBeenCalledTimes(9)
   })
 
   it('retains an early inspection failure without retrying the identity or spending another round', async () => {
-    inventories(initial, withNew(row(44)), initial)
+    inventories(initial, withNew(row(44)), withNew(row(44)))
     mocks.paths.mockResolvedValueOnce(new Map([[11, executable], [22, executable], [33, foreignImage]]))
     mocks.paths.mockRejectedValueOnce(new Error('fixture early kernel inspection failed'))
     expect(await sampleInstallationProcesses(target, 'darwin')).toMatchObject({ status: 'observed', value: {
@@ -178,7 +185,7 @@ describe('first-observation process identity capture', () => {
       uninspectedNewProcessCount: 1,
     } })
     expect(mocks.paths).toHaveBeenCalledTimes(2)
-    expect(mocks.ps).toHaveBeenCalledTimes(3)
+    expect(mocks.ps).toHaveBeenCalledTimes(5)
   })
 
   it.each([
@@ -208,7 +215,7 @@ describe('first-observation process identity capture', () => {
     expect(JSON.stringify(sample)).not.toContain('relative-unverifiable')
     expect(mocks.images).toHaveBeenCalledExactlyOnceWith(44, 10_000)
     expect(mocks.paths).toHaveBeenCalledTimes(2)
-    expect(mocks.ps).toHaveBeenCalledTimes(5)
+    expect(mocks.ps).toHaveBeenCalledTimes(7)
   })
 
   it('persists an unverifiable kernel path for a new identity without inferring foreign ownership', async () => {
@@ -227,6 +234,6 @@ describe('first-observation process identity capture', () => {
     expect(JSON.stringify(sample)).not.toContain('relative-unverifiable')
     expect(mocks.images).not.toHaveBeenCalled()
     expect(mocks.paths).toHaveBeenCalledTimes(2)
-    expect(mocks.ps).toHaveBeenCalledTimes(5)
+    expect(mocks.ps).toHaveBeenCalledTimes(7)
   })
 })

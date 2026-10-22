@@ -49,7 +49,7 @@ export function parseDarwinKernelResponse(line: string, pids: number[]) {
 
 export function readDarwinSnapshot(deadline: number, readFrame: () => Promise<ResourceProcessFrame>): Promise<ResourceProcessSnapshot>
 export function readDarwinSnapshot<T>(deadline: number, readFrame: () => Promise<ResourceProcessFrame>, consume: (snapshot: ResourceProcessSnapshot, readPaths: ResourceKernelPathReader) => Promise<T>): Promise<T>
-/** 预热先于 RSS 锚点；同一 helper 贯穿有界后续轮次，且不创建自己的 ps。 */
+/** 预热先于身份准备；同一 helper 贯穿独立 RSS 锚点及有界后续轮次，不创建自己的 ps。 */
 export async function readDarwinSnapshot<T>(
   deadline: number,
   readFrame: () => Promise<ResourceProcessFrame>,

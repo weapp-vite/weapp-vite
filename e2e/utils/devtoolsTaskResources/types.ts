@@ -25,7 +25,7 @@ export interface WrapperResourceEvent {
 
 export interface NewProcessObservation extends ProcessIdentityGapObservation {
   firstSeenRound: number
-  classification: 'verified-foreign' | 'installation-image' | 'descendant' | 'identity-changed' | 'unclassified'
+  classification: 'verified-foreign' | 'installation-image' | 'descendant' | 'identity-changed' | 'unclassified' | 'pre-anchor-exited'
   imageSource: 'kernel-path' | 'text-images' | 'not-verified'
 }
 
@@ -38,11 +38,11 @@ export interface ProcessIdentityMetadata {
 
 export interface ProcessInventoryLocation {
   round: number
-  phase: 'initial' | 'after-kernel' | 'fallback' | 'after-fallback'
+  phase: 'initial' | 'after-kernel' | 'fallback' | 'after-fallback' | 'rss-anchor' | 'after-anchor'
 }
 
 export interface ProcessIdentityGapCause {
-  reason: 'process-absent' | 'identity-changed' | 'zombie' | 'kernel-path-unverifiable' | 'text-images-query-failed' | 'text-images-empty' | 'text-images-invalid' | 'fallback-budget-exhausted'
+  reason: 'process-absent' | 'identity-changed' | 'zombie' | 'kernel-path-unverifiable' | 'text-images-query-failed' | 'text-images-empty' | 'text-images-invalid' | 'fallback-budget-exhausted' | 'pre-anchor-exited'
   firstObserved: ProcessInventoryLocation
 }
 
@@ -74,11 +74,12 @@ export interface InstallationProcessSample {
   unclassifiedProcesses: ProcessIdentityGapObservation[]
   missingIdentities: ProcessIdentityGapObservation[]
   identityChangedProcesses: ProcessIdentityChangeObservation[]
+  preAnchorExitedProcesses: ProcessIdentityGapObservation[]
   inventoryRoundCount: number
   inventoryBudgetExhausted: boolean
   inventoryInspectionError?: string
   samplingBudgetMs: 10000
-  rssAnchor: 'initial-ps-inventory-only; later-rows-never-replace-or-add-rss'
+  rssAnchor: 'single-post-preparation-ps-inventory; preparation-and-later-rows-never-contribute-rss'
   fallbackBudgetExhausted: boolean
   semantics: 'point-in-time-rss-not-peak'
   coverage: 'selected-installation-inventory-and-descendants'

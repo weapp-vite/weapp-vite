@@ -65,7 +65,7 @@ export async function readResourceRows(deadline: number) {
   return parseResourceProcessRows(frame.stdout).filter(row => row.pid !== frame.inspectorPid)
 }
 
-/** 批次首帧仍是唯一 RSS 锚点；同一 helper 在消费及后续清单闭合期间保持存活。 */
+/** 首批只准备身份，其 RSS 不用于采样；同一 helper 在独立锚点和后续闭合期间保持存活。 */
 export function readInitialResourceInventory<T>(
   deadline: number,
   consume: (inventory: { rows: ProcessRow[], paths: Map<number, string | null>, afterRows: ProcessRow[] }, readPaths: ResourceKernelPathReader) => Promise<T>,

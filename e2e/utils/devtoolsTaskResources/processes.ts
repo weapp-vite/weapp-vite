@@ -3,13 +3,14 @@ import type { InstallationProcessSample, ProcessIdentityGapObservation, Resource
 import fs from 'node:fs/promises'
 import process from 'node:process'
 import { resolveWechatDevtoolsInstallationRoot } from '../../../packages/weapp-ide-cli/src/devtoolsTarget/host'
-import { completeResourceInspection, insideInstallation, readInitialResourceInventory, stableProcess, validProcessImage } from './processInventory'
+import { completeResourceInspection, insideInstallation, readInitialResourceInventory, readResourceRows, stableProcess, validProcessImage } from './processInventory'
 import { createResourceInventory } from './processInventory/closure'
 import { processGapObservation } from './processInventory/evidence'
+import { observedPreparationMembers } from './processInventory/preparation'
 
 export { parseResourceProcessRows } from './processInventory'
 
-/** 保留初始 RSS 锚点，仅以三轮有界清单闭合核验新增外国进程，不重采样碰绿。 */
+/** 准备身份后无条件固定一次 RSS 锚点，共用一个 helper 及三轮内核批次，不重采样碰绿。 */
 export async function sampleInstallationProcesses(target: ResolvedWechatDevtoolsTarget, platform = process.platform): Promise<ResourceObservation<InstallationProcessSample>> {
   if (platform !== 'darwin') {
     return { status: 'unavailable', reason: `Selected-installation RSS sampling is not implemented for ${platform}.` }
@@ -18,13 +19,18 @@ export async function sampleInstallationProcesses(target: ResolvedWechatDevtools
     const samplingStartedAt = new Date().toISOString()
     const deadline = Date.now() + 10_000
     const installationRoot = await fs.realpath(resolveWechatDevtoolsInstallationRoot(target, platform))
-    const { before, paths, images, imageGaps, fallbackBudgetExhausted, inventory } = await readInitialResourceInventory(deadline, async ({ rows: before, paths: initialPaths, afterRows }, readPaths) => {
-      const closure = createResourceInventory({ initial: before, installationRoot, deadline, readPaths })
-      const inspection = await completeResourceInspection(before, initialPaths, afterRows, deadline, closure.afterInitialKernel)
-      const inventory = await closure.close(inspection.finalRows, inspection.images)
+    const { before, paths, imageGaps, fallbackBudgetExhausted, inventory } = await readInitialResourceInventory(deadline, async ({ rows: preparation, paths: initialPaths, afterRows }, readPaths) => {
+      const closure = createResourceInventory({ initial: preparation, installationRoot, deadline, readPaths })
+      const inspection = await completeResourceInspection(preparation, initialPaths, afterRows, deadline, closure.afterInitialKernel)
+      closure.completePreparation(inspection.finalRows, inspection.images, inspection.imageGaps)
+      // 准备清单中的 RSS 全部丢弃；此处无条件读取一次，后续清单不得替换或补加 RSS。
+      const before = await readResourceRows(deadline)
+      const preparationMembers = observedPreparationMembers(preparation, initialPaths, inspection.images, installationRoot)
+      closure.freezeRssAnchor(before, preparationMembers)
+      const inventory = await closure.close(await readResourceRows(deadline), inspection.images)
       return { before, ...inspection, inventory }
     })
-    const { final } = inventory
+    const { final, images } = inventory
     const members = new Map<number, 'installation-image' | 'descendant'>()
     let unclassifiedProcessCount = 0
     let missingIdentityCount = 0
@@ -32,8 +38,8 @@ export async function sampleInstallationProcesses(target: ResolvedWechatDevtools
     const missingIdentities: ProcessIdentityGapObservation[] = []
     for (const row of before) {
       const executableImages = images.get(row.pid)
-      // RSS 来自 before；后来退出不能补造当时的负归属，未知条目仍使完整 RSS 不可用。
-      if (!row.zombie && !executableImages) {
+      // RSS 仅来自准备后的固定锚点；后来退出不能补造该时点的负归属。
+      if (!row.zombie && (!executableImages || inventory.changedProcessPids.has(row.pid))) {
         unclassifiedProcessCount++
         unclassifiedProcesses.push(processGapObservation(row, final.get(row.pid), imageGaps.get(row.pid), inventory.identityGaps.get(row.pid)))
       }
@@ -68,6 +74,15 @@ export async function sampleInstallationProcesses(target: ResolvedWechatDevtools
         }
       }
     }
+    // 准备阶段已经看见所选映像或后代的身份，锚点前退出也不能静默消除。
+    const anchor = new Map(before.map(row => [row.pid, row]))
+    for (const row of inventory.preparedSelectedRows) {
+      if ((!stableProcess(row, anchor.get(row.pid)) || !stableProcess(row, final.get(row.pid)) || inventory.changedProcessPids.has(row.pid))
+        && !missingIdentities.some(entry => entry.pid === row.pid)) {
+        missingIdentityCount++
+        missingIdentities.push(processGapObservation(row, final.get(row.pid), imageGaps.get(row.pid), inventory.identityGaps.get(row.pid)))
+      }
+    }
     const processes = before.filter(row => members.has(row.pid)).map(row => ({
       pid: row.pid,
       parentPid: row.parentPid,
@@ -95,6 +110,7 @@ export async function sampleInstallationProcesses(target: ResolvedWechatDevtools
       unclassifiedProcesses,
       missingIdentities,
       identityChangedProcesses: inventory.identityChangedProcesses,
+      preAnchorExitedProcesses: inventory.preAnchorExitedProcesses,
       semantics: 'point-in-time-rss-not-peak',
       uninspectedNewProcessCount: inventory.uninspectedNewProcessCount,
       verifiedNewForeignProcessCount: inventory.verifiedNewForeignProcessCount,
@@ -105,7 +121,7 @@ export async function sampleInstallationProcesses(target: ResolvedWechatDevtools
       inventoryBudgetExhausted,
       inventoryInspectionError: inventory.inventoryInspectionError,
       samplingBudgetMs: 10_000,
-      rssAnchor: 'initial-ps-inventory-only; later-rows-never-replace-or-add-rss',
+      rssAnchor: 'single-post-preparation-ps-inventory; preparation-and-later-rows-never-contribute-rss',
       fallbackBudgetExhausted: fallbackBudgetExhausted || inventory.fallbackBudgetExhausted,
       coverage: 'selected-installation-inventory-and-descendants',
       atomicity: 'non-atomic-ps-and-kernel-path-samples; seconds-resolution-start-time-is-not-ownership-proof',

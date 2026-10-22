@@ -19,7 +19,8 @@ const withNew = (...rows: string[]) => [initial, ...rows].join('\n')
 const result = (stdout: string) => Object.assign(Promise.resolve({ stdout, stderr: '', exitCode: 0 }), { pid: 99 })
 
 function inventories(...values: string[]) {
-  for (const stdout of values) {
+  // 前三帧固定准备身份，随后依次提供唯一 RSS 锚点与后验闭合帧。
+  for (const stdout of [values[0]!, values[0]!, ...values]) {
     mocks.ps.mockImplementationOnce(() => result(stdout))
   }
 }
@@ -33,18 +34,18 @@ beforeEach(() => {
 afterEach(() => vi.restoreAllMocks())
 
 describe('bounded resource inventory closure', () => {
-  it('classifies a new unrelated PID without adding or replacing any initial RSS', async () => {
+  it('uses the single post-preparation anchor and never replaces its RSS during closure', async () => {
     const later = [row(11, 1, 100), row(22, 11, 200), row(33), row(44, 1, 500)].join('\n')
     inventories(initial, later, later, later, later)
     const sample = await sampleInstallationProcesses(target, 'darwin')
     expect(sample).toMatchObject({ status: 'observed', value: {
-      verifiedMemberRssBytes: 20 * 1024,
-      installationRssBytes: { status: 'observed', value: 20 * 1024 },
+      verifiedMemberRssBytes: 300 * 1024,
+      installationRssBytes: { status: 'observed', value: 300 * 1024 },
       inventoryRoundCount: 2,
       verifiedNewForeignProcessCount: 1,
       uninspectedNewProcessCount: 0,
       newProcesses: [{ pid: 44, parentPid: 1, firstSeenRound: 1, classification: 'verified-foreign', imageSource: 'kernel-path' }],
-      rssAnchor: 'initial-ps-inventory-only; later-rows-never-replace-or-add-rss',
+      rssAnchor: 'single-post-preparation-ps-inventory; preparation-and-later-rows-never-contribute-rss',
     } })
     expect(mocks.paths.mock.calls.map(call => call[0])).toEqual([[11, 22, 33], [44]])
     expect(JSON.stringify(sample)).not.toContain(foreignImage)
@@ -83,7 +84,7 @@ describe('bounded resource inventory closure', () => {
   })
 
   it('does not infer a transient new process was unrelated after it disappears before inspection', async () => {
-    inventories(initial, withNew(row(44)), initial, initial, initial)
+    inventories(initial, initial, withNew(row(44)), initial, initial)
     expect(await sampleInstallationProcesses(target, 'darwin')).toMatchObject({ status: 'observed', value: {
       uninspectedNewProcessCount: 1,
       installationRssBytes: { status: 'unavailable' },
@@ -99,10 +100,10 @@ describe('bounded resource inventory closure', () => {
       verifiedMemberRssBytes: 20 * 1024,
       installationRssBytes: { status: 'unavailable' },
       uninspectedNewProcessCount: 1,
-      newProcesses: [{ pid: 44, classification: 'unclassified', imageSource: 'not-verified', zombie: true, final: { pid: 44, parentPid: 1, started: 'Mon Oct 19 10:00:00 2026', zombie: true }, causes: [{ reason: 'zombie', firstObserved: { round: 1, phase: 'after-fallback' } }] }],
+      newProcesses: [{ pid: 44, classification: 'unclassified', imageSource: 'not-verified', zombie: true, final: { pid: 44, parentPid: 1, started: 'Mon Oct 19 10:00:00 2026', zombie: true }, causes: [{ reason: 'zombie', firstObserved: { round: 1, phase: 'after-anchor' } }] }],
     } })
     expect(mocks.paths).toHaveBeenCalledTimes(1)
-    expect(mocks.ps).toHaveBeenCalledTimes(3)
+    expect(mocks.ps).toHaveBeenCalledTimes(5)
   })
 
   it.each([
@@ -144,7 +145,7 @@ describe('bounded resource inventory closure', () => {
       newProcesses: expect.arrayContaining([{ pid: 66, parentPid: 1, started: 'Mon Oct 19 10:00:00 2026', zombie: false, firstSeenRound: 3, classification: 'unclassified', imageSource: 'not-verified', final: { pid: 66, parentPid: 1, started: 'Mon Oct 19 10:00:00 2026', zombie: false }, causes: [] }]),
     } })
     expect(mocks.paths.mock.calls.map(call => call[0])).toEqual([[11, 22, 33], [44], [55]])
-    expect(mocks.ps).toHaveBeenCalledTimes(7)
+    expect(mocks.ps).toHaveBeenCalledTimes(9)
   })
 
   it.each([
@@ -178,7 +179,7 @@ describe('bounded resource inventory closure', () => {
     inventories(initial, [row(11), row(22, 11)].join('\n'), initial)
     expect(await sampleInstallationProcesses(target, 'darwin')).toMatchObject({ status: 'observed', value: {
       identityChangedProcessCount: 1,
-      unclassifiedProcessCount: 1,
+      unclassifiedProcessCount: 0,
       installationRssBytes: { status: 'unavailable' },
     } })
     expect(mocks.paths).toHaveBeenCalledTimes(1)
@@ -212,10 +213,10 @@ describe('bounded resource inventory closure', () => {
     let calls = 0
     mocks.ps.mockImplementation(() => {
       calls++
-      if (calls === 3) {
+      if (calls === 5) {
         now = 10_001
       }
-      return result(calls === 3 ? withNew(row(44)) : initial)
+      return result(calls === 5 ? withNew(row(44)) : initial)
     })
     expect(await sampleInstallationProcesses(target, 'darwin')).toMatchObject({ status: 'observed', value: {
       inventoryBudgetExhausted: true,
@@ -224,7 +225,7 @@ describe('bounded resource inventory closure', () => {
       installationRssBytes: { status: 'unavailable' },
     } })
     expect(mocks.paths).toHaveBeenCalledTimes(1)
-    expect(mocks.ps).toHaveBeenCalledTimes(3)
+    expect(mocks.ps).toHaveBeenCalledTimes(5)
   })
 
   it.each([10_000, 10_001])('rejects a completed final inventory at or beyond the deadline without new PIDs (%i ms)', async (completedAt) => {
@@ -232,7 +233,7 @@ describe('bounded resource inventory closure', () => {
     vi.spyOn(Date, 'now').mockImplementation(() => now)
     let calls = 0
     mocks.ps.mockImplementation(() => {
-      if (++calls === 3) {
+      if (++calls === 5) {
         now = completedAt
       }
       return result(initial)
@@ -244,7 +245,7 @@ describe('bounded resource inventory closure', () => {
       installationRssBytes: { status: 'unavailable' },
     } })
     expect(mocks.paths).toHaveBeenCalledTimes(1)
-    expect(mocks.ps).toHaveBeenCalledTimes(3)
+    expect(mocks.ps).toHaveBeenCalledTimes(5)
   })
 
   it('passes the same diminishing budget through ps, kernel paths, fallback and closure', async () => {
@@ -270,6 +271,6 @@ describe('bounded resource inventory closure', () => {
     } })
     expect(mocks.paths.mock.calls.map(call => call[1])).toEqual([10_000, 8500])
     expect(mocks.images).toHaveBeenCalledExactlyOnceWith(33, 9500)
-    expect(mocks.ps.mock.calls.map(call => (call[2] as { timeout: number }).timeout)).toEqual([10_000, 9500, 8500, 7500, 7500])
+    expect(mocks.ps.mock.calls.map(call => (call[2] as { timeout: number }).timeout)).toEqual([10_000, 9500, 8500, 8500, 8500, 7500, 7500])
   })
 })
