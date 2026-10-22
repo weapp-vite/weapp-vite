@@ -1,21 +1,16 @@
 /* eslint-disable e18e/ban-dependencies -- e2e dev 进程控制需要 execa 驱动子进程并清理残留 watcher。 */
 import type { Options } from 'execa'
+import type { DevProcessExitInfo, DevProcessForcedShutdown, DevProcessStopOptions } from './devProcessCleanup/shutdown'
 import { Buffer } from 'node:buffer'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { execa } from 'execa'
 import { createDevProcessCleanup } from './devProcessCleanup'
+import { createDevProcessShutdownFailure, DEV_PROCESS_GRACEFUL_TIMEOUT_MS } from './devProcessCleanup/shutdown'
 import { createDevProcessDiagnostics } from './devProcessDiagnostics'
 import { captureDevProcessOutput } from './devProcessStdio'
 import { createDevProcessTrace } from './devProcessTrace'
 import { resolveReportProjectPath } from './ideWarningReport'
-
-interface DevProcessExitInfo {
-  exitCode: number | null | undefined
-  signal: string | undefined
-  reason: string
-  error?: unknown
-}
 
 interface DevProcessController {
   pid: number | undefined
@@ -24,7 +19,7 @@ interface DevProcessController {
   waitForInitialBuild: (timeoutMs?: number) => Promise<string>
   getOutput: () => string
   getBuildErrors: () => readonly string[]
-  stop: (forceKillDelayMs?: number) => Promise<void>
+  stop: (forceKillDelayMs?: number, options?: DevProcessStopOptions) => Promise<void>
 }
 
 interface DevProcessSpawnInfo {
@@ -221,11 +216,15 @@ export function startDevProcess(
   }
 
   let exitedAfterIpc = false
+  let forcedShutdown: DevProcessForcedShutdown | undefined
   const cleanup = createDevProcessCleanup({
     pid: child.pid,
     settledExit,
     onIpcExit: () => {
       exitedAfterIpc = true
+    },
+    onForcedRootExit: (evidence) => {
+      forcedShutdown ??= evidence
     },
     isRootHeld: () => !exited && child.nodeChildProcess?.exitCode == null && child.nodeChildProcess?.signalCode == null,
     disconnectRoot: () => {
@@ -237,7 +236,7 @@ export function startDevProcess(
     },
   })
 
-  const stop = (forceKillDelayMs = 3_000) => {
+  const stop = (forceKillDelayMs = 3_000, options: DevProcessStopOptions = {}) => {
     const traceFailure = trace?.getFailure()
     if (stopSucceeded && traceFailure) {
       // 已完成的清理不重跑；迟到输出使后续 stop 稳定观察到新的采集失败。
@@ -246,21 +245,18 @@ export function startDevProcess(
     }
     if (!stopTask) {
       // 并发调用共享同一次清理；只有核验退出和输出排空后才撤销登记。
-      const cleanupTask = cleanup(forceKillDelayMs).then(() => {
+      const cleanupTask = cleanup(forceKillDelayMs, { ...options, gracefulTimeoutMs: options.gracefulTimeoutMs ?? DEV_PROCESS_GRACEFUL_TIMEOUT_MS }).then(() => {
         TRACKED_DEV_DISPOSERS.delete(stop)
       }).catch((error: unknown) => {
         stopTask = undefined
         throw withTraceFailure(error)
       })
       stopTask = cleanupTask.then(async () => {
-        if (exitedAfterIpc) {
+        if (forcedShutdown || exitedAfterIpc) {
           const info = await settledExit
-          if (info.exitCode !== 0 || info.signal) {
-            throw withTraceFailure(new Error(appendRecentOutput(
-              `Dev process failed during IPC shutdown: ${formatExitInfo(info)}`,
-              outputChunks,
-              spawnInfo,
-            ), { cause: info.error }))
+          const failure = createDevProcessShutdownFailure(info, formatExitInfo(info), message => appendRecentOutput(message, outputChunks, spawnInfo), forcedShutdown)
+          if (failure) {
+            throw withTraceFailure(failure)
           }
         }
         if (trace?.getFailure()) {

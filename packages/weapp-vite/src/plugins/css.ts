@@ -2,9 +2,9 @@ import type { OutputAsset, OutputBundle, OutputChunk } from 'rolldown'
 import type { Plugin, ResolvedConfig } from 'vite'
 import type { CompilerContext } from '../context'
 import type { StyleEntry } from '../types'
+import type { StylePreprocessorHookContext } from './css/preprocessorLifecycle'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
-import { preprocessCSS } from 'vite'
 import { resolveGraphOutputOwner } from '../moduleGraph/outputMetadata'
 import { parseSidecarSourceRequest } from '../moduleGraph/protocol'
 import { isSourceStyleExtension } from '../platforms/sourceAssets'
@@ -16,6 +16,23 @@ import { normalizeFsResolvedId } from '../utils/resolvedId'
 import { toAbsoluteId } from '../utils/toAbsoluteId'
 import { compilerSourceId } from './compilerPlugin/hmr'
 import { findManagedCompilerEntryMarker, hasManagedCompilerOutputMarker, isManagedCompilerEntry } from './compilerPluginRegistry'
+import { resolveNativeStyleAssetUrls } from './css/assetUrls'
+import {
+  assertStylePreprocessing,
+  beginStylePreprocessing,
+  captureCompiledStyleSource,
+  captureStylePreprocessorInput,
+  closeStylePreprocessing,
+  consumeStylePreprocessing,
+  findPreparedStyleDependencies,
+  findPreparedStyleSource,
+  getPreparedSharedStyle,
+  getPreparedStyleSource,
+  hasStylePreprocessing,
+  markCompiledStyleSource,
+  prepareStylePreprocessing,
+  recordStylePreprocessingError,
+} from './css/preprocessorLifecycle'
 import { cssCodeCache, processCssWithCache, renderSharedStyleEntry } from './css/shared/preprocessor'
 import {
   collectSharedStyleEntries,
@@ -83,7 +100,7 @@ const VITE_PREPROCESS_STYLE_RE = /\.(?:acss|css|less|sass|scss|styl|stylus|pcss|
 const TAILWIND_GENERATOR_PLACEHOLDER = '/*! weapp-tailwindcss generator-placeholder */'
 const VITE_STYLE_ASSET_PLACEHOLDER_RE = /__VITE_ASSET__([\w$]+)__(?:\$_(.*?)__)?/g
 
-interface CssEmitPluginContext {
+interface CssEmitPluginContext extends StylePreprocessorHookContext {
   addWatchFile?: (id: string) => void
   emitFile: (asset: { type: 'asset', fileName: string, source: string, originalFileName?: string }) => void
   getFileName?: (referenceId: string) => string
@@ -169,11 +186,20 @@ function hasStyleBundleAsset(bundle: OutputBundle) {
   return false
 }
 
+function isPartialStylePublication(ctx: CompilerContext, resolvedConfig?: ResolvedConfig) {
+  const hmr = ctx.runtimeState?.build?.hmr
+  return ctx.configService.isDev
+    && resolvedConfig?.experimental?.bundledDev !== true
+    && hmr?.isRebuild === true
+    && hmr.didEmitAllEntries !== true
+}
+
 function shouldSkipUnchangedStyleHmrBundle(
   ctx: CompilerContext,
   bundle: OutputBundle,
+  resolvedConfig?: ResolvedConfig,
 ) {
-  if (!ctx.configService?.isDev) {
+  if (!isPartialStylePublication(ctx, resolvedConfig)) {
     return false
   }
 
@@ -194,6 +220,8 @@ function hasViteStyleAssetPlaceholder(source: string) {
 }
 
 async function preprocessStyleSource(
+  ctx: CompilerContext,
+  pluginCtx: StylePreprocessorHookContext,
   code: string,
   fileName: string,
   resolvedConfig: ResolvedConfig | undefined,
@@ -205,18 +233,21 @@ async function preprocessStyleSource(
   if (!resolvedConfig || options?.enabled === false || !shouldPreprocessWithVite(fileName)) {
     return {
       css: normalizedCss,
-      dependencies: [] as string[],
+      dependencies: findPreparedStyleDependencies(ctx, pluginCtx, fileName),
     }
   }
 
-  const processed = await preprocessCSS(normalizedCss, fileName, resolvedConfig)
+  const processed = await consumeStylePreprocessing(ctx, pluginCtx, resolvedConfig, fileName, normalizedCss)
   return {
     css: stripLeadingBlankLines(processed.code),
     dependencies: processed.deps ? Array.from(processed.deps) : [],
   }
 }
 
-async function readStyleGraphSource(stylePath: string, fallback: string) {
+async function readStyleGraphSource(ctx: CompilerContext, hook: StylePreprocessorHookContext, stylePath: string, fallback: string, required = true) {
+  if (hasStylePreprocessing(ctx, hook) && isSourceStyleAsset(stylePath)) {
+    return required ? getPreparedStyleSource(ctx, hook, stylePath, true)! : findPreparedStyleSource(ctx, hook, stylePath) ?? fallback
+  }
   try {
     return await fs.readFile(stylePath, 'utf8')
   }
@@ -225,7 +256,10 @@ async function readStyleGraphSource(stylePath: string, fallback: string) {
   }
 }
 
-async function resolveMemoryStyleSource(ctx: CompilerContext, stylePath: string) {
+async function resolveMemoryStyleSource(ctx: CompilerContext, stylePath: string, hook?: StylePreprocessorHookContext) {
+  if (hook && hasStylePreprocessing(ctx, hook)) {
+    return getPreparedStyleSource(ctx, hook, stylePath)
+  }
   const sourceId = normalizeFsResolvedId(stylePath, { stripLeadingNullByte: true })
   const cache = ctx.runtimeState?.css?.transformedSidecarSource
   const cached = cache?.get(sourceId)
@@ -407,6 +441,7 @@ async function prepareStyleSidecarAsset(
   ctx: CompilerContext,
   pluginCtx: CssEmitPluginContext,
   stylePath: string,
+  bundle: OutputBundle,
   resolvedConfig?: ResolvedConfig,
 ) {
   const { configService } = ctx
@@ -418,15 +453,17 @@ async function prepareStyleSidecarAsset(
     return false
   }
 
-  const rawCss = await resolveMemoryStyleSource(ctx, stylePath) ?? await fs.readFile(stylePath, 'utf8')
-  const { css, dependencies } = await preprocessStyleSource(rawCss, stylePath, resolvedConfig)
-  syncCssImportDependencies(ctx, stylePath, rawCss, dependencies)
+  const rawCss = await resolveMemoryStyleSource(ctx, stylePath, pluginCtx) ?? await fs.readFile(stylePath, 'utf8')
+  const { css, dependencies } = await preprocessStyleSource(ctx, pluginCtx, rawCss, stylePath, resolvedConfig)
+  const graphSource = hasStylePreprocessing(ctx, pluginCtx) ? getPreparedStyleSource(ctx, pluginCtx, stylePath, true)! : rawCss
+  syncCssImportDependencies(ctx, stylePath, graphSource, dependencies)
   if (typeof pluginCtx.addWatchFile === 'function') {
     for (const dependency of dependencies) {
       pluginCtx.addWatchFile(normalizeWatchPath(dependency))
     }
   }
-  const processedCss = await processCssWithCache(css, configService)
+  const assetCss = resolveNativeStyleAssetUrls(css, stylePath, fileName, bundle, resolvedConfig?.root ?? configService.cwd)
+  const processedCss = await processCssWithCache(assetCss, configService)
   const sharedStyles = collectSharedStyleEntries(ctx, configService)
   const cssWithImports = injectSharedStyleImports(
     processedCss,
@@ -436,7 +473,7 @@ async function prepareStyleSidecarAsset(
     configService,
   )
 
-  return { fileName, css: cssWithImports }
+  return { fileName, css: resolveViteStyleAssetPlaceholders(cssWithImports, fileName, pluginCtx) }
 }
 
 export async function emitStyleSidecarAsset(
@@ -449,7 +486,7 @@ export async function emitStyleSidecarAsset(
   stylePath: string,
   resolvedConfig?: ResolvedConfig,
 ) {
-  const prepared = await prepareStyleSidecarAsset(ctx, pluginCtx, stylePath, resolvedConfig)
+  const prepared = await prepareStyleSidecarAsset(ctx, pluginCtx, stylePath, bundle, resolvedConfig)
   return prepared
     ? emitPreparedCssAsset(ctx, pluginCtx, bundle, prepared.fileName, prepared.css, { originalFileName: stylePath })
     : false
@@ -494,11 +531,11 @@ async function handleBundleEntry(
     let cached = preparedStyleAssets.get(cacheKey)
     if (!cached) {
       cached = (async () => {
-        const graphSource = await readStyleGraphSource(preprocessId, rawCss)
+        const graphSource = await readStyleGraphSource(ctx, this, preprocessId, rawCss, shouldPreprocess)
         const preprocessInput = shouldPreprocess && hasViteStyleAssetPlaceholder(rawCss)
           ? graphSource
           : rawCss
-        const { css, dependencies } = await preprocessStyleSource(preprocessInput, preprocessId, resolvedConfig, {
+        const { css, dependencies } = await preprocessStyleSource(ctx, this, preprocessInput, preprocessId, resolvedConfig, {
           enabled: shouldPreprocess,
         })
         syncCssImportDependencies(ctx, preprocessId, graphSource, dependencies)
@@ -532,7 +569,7 @@ async function handleBundleEntry(
       fileName,
       modulePath: owner,
       normalizedFileName: toPosixPath(fileName),
-      processedCss,
+      processedCss: resolveNativeStyleAssetUrls(processedCss, preprocessId, fileName, bundle, resolvedConfig?.root ?? configService.cwd),
     }
   }
 
@@ -581,13 +618,14 @@ async function handleBundleEntry(
       const freshHmrStyleSourcePath = resolveFreshHmrStyleSourcePath(ctx, normalizedFileName)
       const preprocessId = freshHmrStyleSourcePath ?? absOriginal
       const shouldPreprocess = shouldPreprocessWithVite(preprocessId)
-      const graphSource = await readStyleGraphSource(preprocessId, source)
+        && (Boolean(freshHmrStyleSourcePath) || hasViteStyleAssetPlaceholder(source) || !hasStylePreprocessing(ctx, this))
+      const graphSource = await readStyleGraphSource(ctx, this, preprocessId, source, shouldPreprocess)
       const preprocessInput = freshHmrStyleSourcePath
-        ? await resolveMemoryStyleSource(ctx, freshHmrStyleSourcePath) ?? graphSource
+        ? await resolveMemoryStyleSource(ctx, freshHmrStyleSourcePath, this) ?? graphSource
         : shouldPreprocess && hasViteStyleAssetPlaceholder(source)
           ? graphSource
           : source
-      const { css, dependencies } = await preprocessStyleSource(preprocessInput, preprocessId, resolvedConfig, {
+      const { css, dependencies } = await preprocessStyleSource(ctx, this, preprocessInput, preprocessId, resolvedConfig, {
         enabled: shouldPreprocess,
       })
       const graphCss = freshHmrStyleSourcePath ? preprocessInput : graphSource
@@ -597,8 +635,9 @@ async function handleBundleEntry(
           this.addWatchFile(normalizeWatchPath(dependency))
         }
       }
+      const assetCss = resolveNativeStyleAssetUrls(css, preprocessId, fileName, bundle, resolvedConfig?.root ?? configService.cwd)
       const processedCss = resolveViteStyleAssetPlaceholders(
-        await processCssWithCache(css, configService),
+        await processCssWithCache(assetCss, configService),
         fileName,
         this,
       )
@@ -686,14 +725,15 @@ async function emitSharedStyleEntries(
   }
 
   const renderedEntries = await Promise.all(tasks.map(async (task): Promise<SharedStyleEmissionResult | undefined> => {
-    const { entry, absolutePath } = task
+    const { entry, absolutePath, fileName } = task
 
     if (!await pathExistsCached(absolutePath, { ttlMs: getPathExistsTtlMs(configService) })) {
       return undefined
     }
 
-    const { css: renderedCss, dependencies, source } = await renderSharedStyleEntry(entry, configService, resolvedConfig)
-    const graphCss = source ?? await readStyleGraphSource(absolutePath, renderedCss)
+    const prepared = hasStylePreprocessing(ctx, this) ? getPreparedSharedStyle(ctx, this, absolutePath) : undefined
+    const { css: renderedCss, dependencies, source } = await renderSharedStyleEntry(entry, configService, resolvedConfig, prepared)
+    const graphCss = source ?? await readStyleGraphSource(ctx, this, absolutePath, renderedCss)
     syncCssImportDependencies(ctx, absolutePath, graphCss, dependencies)
     if (typeof this.addWatchFile === 'function' && dependencies.length) {
       for (const dependency of dependencies) {
@@ -703,7 +743,8 @@ async function emitSharedStyleEntries(
       }
     }
 
-    const css = await processCssWithCache(renderedCss, configService)
+    const assetCss = resolveNativeStyleAssetUrls(renderedCss, absolutePath, fileName, bundle, resolvedConfig?.root ?? configService.cwd)
+    const css = resolveViteStyleAssetPlaceholders(await processCssWithCache(assetCss, configService), fileName, this)
 
     return {
       ...task,
@@ -832,6 +873,91 @@ async function emitSharedStyleImportsForChunks(
   }
 }
 
+async function emitCollectedStyleSidecars(
+  this: any,
+  ctx: CompilerContext,
+  bundle: OutputBundle,
+  emittedOwners: Set<string>,
+  resolvedConfig?: ResolvedConfig,
+) {
+  const sidecarImports = ctx.runtimeState?.css?.sidecarImports
+  if (!sidecarImports?.size) {
+    return
+  }
+
+  const plan = ctx.configService.isDev ? getHmrStyleUpdatePlan(ctx.configService) : undefined
+  // 完整发布会替换归属清单，即使样式计划只涉及一个 owner，也必须登记全部独立 sidecar。
+  const updatingOwners = plan && !plan.full && isPartialStylePublication(ctx, resolvedConfig)
+    ? new Set([
+        ...plan.styleFiles,
+        ...plan.cssImporterOwners,
+        ...plan.compilerContentOwners.keys(),
+      ].flatMap((source) => {
+        const output = resolveOutputStyleFileName(ctx.configService, source)
+        return output ? [toPosixPath(output)] : []
+      }))
+    : undefined
+  if (plan && updatingOwners) {
+    for (const output of Object.values(bundle)) {
+      if (output.type !== 'chunk' || !output.facadeModuleId) {
+        continue
+      }
+      const source = resolveStyleOwnerId(output.facadeModuleId)
+      if (!plan.sourceFiles.has(normalizeFsResolvedId(source)) || !this.getModuleInfo?.(output.facadeModuleId)) {
+        continue
+      }
+      // 本轮真实入口撤销最后一个 CSS 导入时，只让剩余独立 sidecar 接管。
+      // 仍有真实样式来源或本轮没有参与构建的入口不能被原始内容覆盖。
+      if (collectRenderedStyleSources(this, output.facadeModuleId).size) {
+        continue
+      }
+      const fileName = resolveOutputStyleFileName(ctx.configService, source)
+      if (fileName) {
+        updatingOwners.add(toPosixPath(fileName))
+      }
+    }
+  }
+  const ownerSidecars = new Map<string, {
+    fileName: string
+    originalFileName: string
+    sources: Map<string, string>
+  }>()
+  for (const stylePath of sidecarImports) {
+    const fileName = resolveOutputStyleFileName(ctx.configService, stylePath)
+    if (!fileName) {
+      continue
+    }
+    const owner = toPosixPath(fileName)
+    // 本轮 owner 产物已包含真实导入和独立原生 sidecar，仅补尚未生成的目标。
+    if (emittedOwners.has(owner)) {
+      continue
+    }
+    // 登记并集属于整个开发会话；增量代只能补发本轮样式计划涉及的 owner。
+    // 未触碰 owner 的完整编译结果由原生发布保留，不能用原始 sidecar 覆盖。
+    if (updatingOwners && !updatingOwners.has(owner)) {
+      continue
+    }
+    let group = ownerSidecars.get(owner)
+    if (!group) {
+      group = { fileName, originalFileName: stylePath, sources: new Map() }
+      ownerSidecars.set(owner, group)
+    }
+    group.sources.set(compilerSourceId(stylePath), stylePath)
+  }
+  await Promise.all(Array.from(ownerSidecars.values(), async (group) => {
+    const sidecars = await Promise.all(Array.from(group.sources.values(), stylePath =>
+      prepareStyleSidecarAsset(ctx, this, stylePath, bundle, resolvedConfig)))
+    const fragments = sidecars.flatMap(sidecar => sidecar ? [sidecar.css] : [])
+    if (fragments.length) {
+      // 同一输出合并后只发布一次，避免并发 sidecar 覆盖彼此及完整内容缓存。
+      emitPreparedCssAsset(ctx, this, bundle, group.fileName, fragments.join('\n'), {
+        originalFileName: group.originalFileName,
+      })
+      emittedOwners.add(toPosixPath(group.fileName))
+    }
+  }))
+}
+
 async function generateBundleSharedCss(
   this: any,
   ctx: CompilerContext,
@@ -842,16 +968,12 @@ async function generateBundleSharedCss(
 ) {
   pendingOwnerStyleSources.delete(ctx)
   const sharedStyles = collectSharedStyleEntries(ctx, configService)
-  const renderedOwners = new Set<string>()
+  const emitted = new Set<string>()
   const {
     facadeChunks,
     ownersByCssAsset,
     styleAssets,
   } = analysis
-  if (!sharedStyles.size && !styleAssets.length) {
-    return renderedOwners
-  }
-  const emitted = new Set<string>()
   const sharedStyleImportCache: SharedStyleImportCache = new Map()
   const tasks = styleAssets.map(({ bundleKey, asset }) => {
     return handleBundleEntry.call(this, ctx, bundle, bundleKey, asset, configService, sharedStyles, ownersByCssAsset, emitted, sharedStyleImportCache, resolvedConfig)
@@ -896,7 +1018,7 @@ async function generateBundleSharedCss(
       return output && toPosixPath(output) === normalizedFileName && !group.sources.has(compilerSourceId(stylePath))
     })
     const sidecarStyles = await Promise.all(independentSidecars.map(stylePath =>
-      prepareStyleSidecarAsset(ctx, this, stylePath, resolvedConfig),
+      prepareStyleSidecarAsset(ctx, this, stylePath, bundle, resolvedConfig),
     ))
     const sidecarCss = sidecarStyles.flatMap(style => style ? [style.css] : [])
     if (sidecarCss.length) {
@@ -920,58 +1042,11 @@ async function generateBundleSharedCss(
     }
     emitPreparedCssAsset(ctx, this, bundle, group.fileName, cssWithImports)
     emitted.add(normalizedFileName)
-    renderedOwners.add(normalizedFileName)
   }
+  // 最终资产、真实 CSS 和独立 sidecar 共用本轮输出归属；共享导入只补尚未生成的 owner。
+  await emitCollectedStyleSidecars.call(this, ctx, bundle, emitted, resolvedConfig)
   await emitSharedStyleEntries.call(this, ctx, sharedStyles, emitted, configService, bundle, resolvedConfig)
   await emitSharedStyleImportsForChunks.call(this, ctx, sharedStyles, emitted, configService, bundle, facadeChunks, sharedStyleImportCache)
-  return renderedOwners
-}
-
-async function emitCollectedStyleSidecars(
-  this: any,
-  ctx: CompilerContext,
-  bundle: OutputBundle,
-  renderedOwners: Set<string>,
-  resolvedConfig?: ResolvedConfig,
-) {
-  const sidecarImports = ctx.runtimeState?.css?.sidecarImports
-  if (!sidecarImports?.size) {
-    return
-  }
-
-  const ownerSidecars = new Map<string, {
-    fileName: string
-    originalFileName: string
-    sources: Map<string, string>
-  }>()
-  for (const stylePath of sidecarImports) {
-    const fileName = resolveOutputStyleFileName(ctx.configService, stylePath)
-    if (!fileName) {
-      continue
-    }
-    const owner = toPosixPath(fileName)
-    // 本轮 owner 产物已包含真实导入和独立原生 sidecar，仅补尚未生成的目标。
-    if (renderedOwners.has(owner)) {
-      continue
-    }
-    let group = ownerSidecars.get(owner)
-    if (!group) {
-      group = { fileName, originalFileName: stylePath, sources: new Map() }
-      ownerSidecars.set(owner, group)
-    }
-    group.sources.set(compilerSourceId(stylePath), stylePath)
-  }
-  await Promise.all(Array.from(ownerSidecars.values(), async (group) => {
-    const sidecars = await Promise.all(Array.from(group.sources.values(), stylePath =>
-      prepareStyleSidecarAsset(ctx, this, stylePath, resolvedConfig)))
-    const fragments = sidecars.flatMap(sidecar => sidecar ? [sidecar.css] : [])
-    if (fragments.length) {
-      // 同一输出合并后只发布一次，避免并发 sidecar 覆盖彼此及完整内容缓存。
-      emitPreparedCssAsset(ctx, this, bundle, group.fileName, fragments.join('\n'), {
-        originalFileName: group.originalFileName,
-      })
-    }
-  }))
 }
 
 export function css(ctx: CompilerContext): Plugin[] {
@@ -984,15 +1059,72 @@ export function css(ctx: CompilerContext): Plugin[] {
       configResolved(config) {
         resolvedConfig = config
       },
+      buildStart() {
+        beginStylePreprocessing(ctx, this)
+      },
+      async transform(code, id) {
+        const sidecar = parseSidecarSourceRequest(id)
+        if (!resolvedConfig || (sidecar && (sidecar.kind !== 'style' || sidecar.dependencyOnly)) || (!sidecar && !shouldPreprocessWithVite(id))) {
+          return null
+        }
+        const sourceId = normalizeFsResolvedId(sidecar?.sourceId ?? id, { stripLeadingNullByte: true })
+        if (!shouldPreprocessWithVite(sourceId)) {
+          return null
+        }
+        try {
+          const diskSource = await fs.readFile(sourceId, 'utf8')
+          captureStylePreprocessorInput(ctx, this, sourceId, { code, diskSource })
+        }
+        catch {}
+        return null
+      },
+      buildEnd: {
+        order: 'pre',
+        sequential: true,
+        async handler(error) {
+          if (error || !resolvedConfig) {
+            closeStylePreprocessing(ctx, this)
+            return
+          }
+          try {
+            const sharedFiles = new Set([...collectSharedStyleEntries(ctx, configService).values()].flatMap(entries => entries.map(entry => entry.absolutePath)))
+            const files = new Set([
+              ...ctx.runtimeState?.css?.sidecarImports ?? [],
+              ...ctx.runtimeState?.css?.transformedSidecarSource.keys() ?? [],
+              ...getHmrStyleUpdatePlan(configService)?.styleFiles ?? [],
+              ...sharedFiles,
+            ])
+            for (const id of this.getModuleIds()) {
+              if (parseSidecarSourceRequest(id)?.dependencyOnly || /[?&](?:raw|url)(?:[=&]|$)/.test(id)) {
+                continue
+              }
+              const file = normalizeFsResolvedId(id, { stripLeadingNullByte: true })
+              if (isSourceStyleAsset(file)) {
+                files.add(file)
+              }
+            }
+            await prepareStylePreprocessing(ctx, this, resolvedConfig, files, file => shouldPreprocessWithVite(file) || sharedFiles.has(file))
+          }
+          catch (error) {
+            recordStylePreprocessingError(ctx, this, error)
+          }
+        },
+      },
+      closeBundle() {
+        closeStylePreprocessing(ctx, this)
+      },
+      closeWatcher() {
+        closeStylePreprocessing(ctx, this)
+      },
       generateBundle: {
         // Vite 必须先完成 CSS 分块、纯样式 chunk 清理和产物定稿，再把资产归属到小程序 owner。
         order: 'post',
         async handler(_opts, bundle) {
+          assertStylePreprocessing(ctx, this)
           const rolldownBundle = bundle as unknown as OutputBundle
-          if (!shouldSkipUnchangedStyleHmrBundle(ctx, rolldownBundle)) {
+          if (!shouldSkipUnchangedStyleHmrBundle(ctx, rolldownBundle, resolvedConfig)) {
             const styleAnalysis = analyzeBundleStyles(rolldownBundle)
-            const renderedOwners = await generateBundleSharedCss.call(this, ctx, configService, bundle, styleAnalysis, resolvedConfig)
-            await emitCollectedStyleSidecars.call(this, ctx, rolldownBundle, renderedOwners, resolvedConfig)
+            await generateBundleSharedCss.call(this, ctx, configService, bundle, styleAnalysis, resolvedConfig)
           }
           emitMissingManagedStyleAssets(ctx, this, rolldownBundle)
         },
@@ -1000,15 +1132,37 @@ export function css(ctx: CompilerContext): Plugin[] {
     },
     {
       name: 'weapp-vite:css-sidecar-source',
+      buildEnd: {
+        order: 'post',
+        sequential: true,
+        handler() {
+          assertStylePreprocessing(ctx, this)
+        },
+      },
       async transform(code, id) {
         const sidecar = parseSidecarSourceRequest(id)
+        if (!sidecar && resolvedConfig && hasStylePreprocessing(ctx, this) && shouldPreprocessWithVite(id)) {
+          // 普通图内样式同样已经过 Vite CSS；只保存规范请求，避免混淆不同 query 的转换。
+          try {
+            const sourceId = normalizeFsResolvedId(id, { stripLeadingNullByte: true })
+            const diskSource = await fs.readFile(sourceId, 'utf8')
+            captureCompiledStyleSource(ctx, this, sourceId, { code, diskSource }, resolvedConfig)
+          }
+          catch {}
+          return null
+        }
         if (!sidecar || sidecar.kind !== 'style' || sidecar.dependencyOnly) {
           return null
         }
         const sourceId = normalizeFsResolvedId(sidecar.sourceId, { stripLeadingNullByte: true })
         try {
           const diskSource = await fs.readFile(sourceId, 'utf8')
-          ctx.runtimeState?.css?.transformedSidecarSource.set(sourceId, { code, diskSource })
+          const source = { code, diskSource }
+          if (resolvedConfig && shouldPreprocessWithVite(sourceId)) {
+            markCompiledStyleSource(source, resolvedConfig, this)
+            captureCompiledStyleSource(ctx, this, sourceId, source, resolvedConfig)
+          }
+          ctx.runtimeState?.css?.transformedSidecarSource.set(sourceId, source)
         }
         catch {
           ctx.runtimeState?.css?.transformedSidecarSource.delete(sourceId)

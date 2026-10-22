@@ -26,8 +26,8 @@ export const HMR_ACCEPTANCE_CAPABILITY_COVERAGE: HmrCapabilityCoverage[] = [
   },
   {
     capabilityId: 'visual-assets',
-    unit: [`${RUNTIME}/statefulHmr/session.snapshots.test.ts`],
-    build: ['e2e/ci/stateful-app-shell-hmr.test.ts', 'e2e/ci/native-sidecar-watch.hmr.test.ts'],
+    unit: [`${RUNTIME}/statefulHmr/session.snapshots.test.ts`, 'packages/weapp-vite/src/plugins/core/lifecycle/emit/requestGlobals/incrementalPrelude.test.ts'],
+    build: ['e2e/ci/stateful-app-shell-hmr.test.ts', 'e2e/ci/native-sidecar-watch.hmr.test.ts', 'e2e/ci/hmr-request-globals-prelude.test.ts'],
     runtimeScenarios: ['native-css-and-tailwind', 'native-wevu-state-and-template-boundaries'],
     runtime: 'planned',
   },

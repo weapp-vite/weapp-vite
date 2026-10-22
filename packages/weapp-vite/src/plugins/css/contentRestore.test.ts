@@ -10,7 +10,11 @@ import { createRuntimeState } from '../../runtime/runtimeState'
 import { css } from '../css'
 import { createOutputFinalizerPlugin, createOutputPublicationPlugin } from '../outputFinalizer'
 
-it('restores App and page Sass bytes after content updates without publishing unchanged styles', async () => {
+it.each([
+  { publication: 'partial', didEmitAllEntries: false, bundledDev: false },
+  { publication: 'complete', didEmitAllEntries: true, bundledDev: false },
+  { publication: 'bundled development', didEmitAllEntries: false, bundledDev: true },
+])('restores App and page Sass bytes after script and content updates ($publication)', async ({ didEmitAllEntries, bundledDev }) => {
   const root = await realpath(await mkdtemp(path.join(os.tmpdir(), 'weapp-content-style-restore-')))
   const src = path.join(root, 'src')
   const entry = path.join(src, 'app.ts')
@@ -53,6 +57,7 @@ it('restores App and page Sass bytes after content updates without publishing un
       configFile: false,
       logLevel: 'silent',
       plugins: [...css(ctx), createOutputFinalizerPlugin(ctx), createOutputPublicationPlugin(ctx), observer],
+      experimental: { bundledDev },
       css: { preprocessorMaxWorkers: 0 },
       build: {
         emptyOutDir: false,
@@ -79,27 +84,35 @@ it('restores App and page Sass bytes after content updates without publishing un
     expect(original[1]).toBe('/* empty */')
     expect(published.at(-1)).toEqual(outputNames)
     runtimeState.build.hmr.isRebuild = true
-    runtimeState.build.hmr.didEmitAllEntries = true
+    runtimeState.build.hmr.didEmitAllEntries = didEmitAllEntries
+
+    // 普通脚本计划没有样式或 compiler-content 标记，完整发布仍须保有全部样式归属。
+    for (let index = 0; index < 2; index++) {
+      await writeFile(entry, `export const revision = ${index}`)
+      await render([entry])
+      expect(await readStyles()).toEqual(original)
+      expect(published.at(-1)).toEqual(bundledDev ? outputNames : [])
+    }
 
     // 内容更新必须保留真实样式字节；两代输入不能仅靠随机注释制造差异。
     for (let index = 0; index < 2; index++) {
       await render([content], true)
       expect(await readStyles()).toEqual(original)
-      expect(published.at(-1)).toEqual([])
+      expect(published.at(-1)).toEqual(bundledDev ? outputNames : [])
     }
     for (const [index, file] of styles.entries()) {
       const filename = path.join(src, file)
       await writeFile(filename, `${initialSources[index]}\n.edited { color: blue; }\n`)
       await render([filename])
       expect((await readStyles())[index]).toContain('color: blue')
-      expect(published.at(-1)).toEqual([outputNames[index]])
+      expect(published.at(-1)).toEqual(bundledDev ? outputNames : [outputNames[index]])
       await writeFile(filename, initialSources[index]!)
       await render([filename])
       expect(await readStyles()).toEqual(original)
-      expect(published.at(-1)).toEqual([outputNames[index]])
+      expect(published.at(-1)).toEqual(bundledDev ? outputNames : [outputNames[index]])
       await render([content], true)
       expect(await readStyles()).toEqual(original)
-      expect(published.at(-1)).toEqual([])
+      expect(published.at(-1)).toEqual(bundledDev ? outputNames : [])
     }
   }
   finally {

@@ -553,6 +553,8 @@ describe('css plugin shared style injection', () => {
       runtimeState: {
         build: {
           hmr: {
+            isRebuild: true,
+            didEmitAllEntries: false,
             profile: {
               dirtyReasonSummary: ['tailwind-content:1', 'css-importer:1'],
             },

@@ -86,12 +86,17 @@ export function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
         await state.ctx.moduleGraphService.syncDevGraph(this)
       },
     },
-    async buildEnd(error) {
-      state.entryChunkLifecycle?.endBuild()
-      if (error) {
-        releaseStyleGeneration(false)
-      }
-      return await buildEnd.call(this)
+    buildEnd: {
+      // 先完成本代入口与样式计划，再准备 CSS；此时 Vite 的预处理资源仍然有效。
+      order: 'pre',
+      sequential: true,
+      async handler(error) {
+        state.entryChunkLifecycle?.endBuild()
+        if (error) {
+          releaseStyleGeneration(false)
+        }
+        return await buildEnd.call(this)
+      },
     },
     closeBundle() {
       if (state.resolvedConfig?.build?.write === false) {

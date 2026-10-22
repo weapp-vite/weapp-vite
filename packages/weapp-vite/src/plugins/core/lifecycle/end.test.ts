@@ -98,6 +98,37 @@ describe('core lifecycle buildEnd hook', () => {
     })
   })
 
+  it.each([false, true])('preserves existing script load ownership after metadata refresh (loaded=%s)', async (wasLoaded) => {
+    const file = '/project/src/pages/home/index.json'
+    const entryId = '/project/src/pages/home/index.ts'
+    const { loadEntry, moduleGraphService, pluginContext, state } = createState(file, entryId)
+    state.loadedEntrySet.clear()
+    if (wasLoaded) {
+      state.loadedEntrySet.add(entryId)
+    }
+    loadEntry.mockImplementation(async () => {
+      expect(state.loadedEntrySet.has(entryId)).toBe(false)
+    })
+    moduleGraphService.recordChangedFile(file, 'update')
+
+    await createBuildEndHook(state).call(pluginContext)
+
+    expect(loadEntry).toHaveBeenCalledWith(entryId, 'page', { metadataOnly: true })
+    expect(state.loadedEntrySet.has(entryId)).toBe(wasLoaded)
+  })
+
+  it('leaves failed metadata refreshes unloaded so a later build can retry', async () => {
+    const file = '/project/src/pages/home/index.json'
+    const entryId = '/project/src/pages/home/index.ts'
+    const { loadEntry, moduleGraphService, pluginContext, state } = createState(file, entryId)
+    loadEntry.mockRejectedValue(new Error('metadata refresh failed'))
+    moduleGraphService.recordChangedFile(file, 'update')
+
+    await expect(createBuildEndHook(state).call(pluginContext)).rejects.toThrow('metadata refresh failed')
+
+    expect(state.loadedEntrySet.has(entryId)).toBe(false)
+  })
+
   it('leaves script dependencies to Rolldown chunk emission', async () => {
     const file = '/project/src/shared/value.ts'
     const entryId = '/project/src/pages/home/index.ts'
