@@ -34,6 +34,17 @@ it('keeps component method receivers, rendered state and single error side effec
     expect(preview.querySelector('#second .component-label')?.textContent).toBe('component-initial')
     expect(session.selectComponent('#first')).toBe(first)
     expect(session.selectComponent('#second')).toBe(second)
+
+    expect(session.callScopeMethodDirect(scopeId, 'completeWithoutValue')).toBeUndefined()
+    render()
+    expect(preview.querySelector('#first .component-label')?.textContent).toBe('undefined-method')
+    expect(first.data).toMatchObject({ undefinedCalls: 1, asyncCalls: 0 })
+    await expect(session.callScopeMethodDirect(scopeId, 'completeAsync', 'async-method')).resolves.toEqual({ label: 'async-method', calls: 1 })
+    render()
+    expect(preview.querySelector('#first .component-label')?.textContent).toBe('async-method')
+    expect(first.data).toMatchObject({ undefinedCalls: 1, asyncCalls: 1 })
+    expect(second.data).toMatchObject({ label: 'component-initial', undefinedCalls: 0, asyncCalls: 0 })
+    expect(preview.querySelector('#second .component-label')?.textContent).toBe('component-initial')
   }
   finally {
     session.close()

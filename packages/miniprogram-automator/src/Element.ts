@@ -3,6 +3,7 @@
  */
 import type Connection from './Connection'
 import type { RouteElementSnapshot } from './pageRouteSnapshot'
+import { invokeComponentMethod } from './componentCaller'
 import { isStr, isUndef, sleep } from './internal/compat'
 import { readRouteElementSnapshot } from './pageRouteSnapshot'
 /** IElementOptions 的类型定义。 */
@@ -63,7 +64,7 @@ export default class Element {
   protected nodeId: string | null
   private videoId: string | null
   private id: string
-  private pageId: number
+  protected pageId: number
   private publicProps?: Record<string, any>
   constructor(protected readonly connection: Connection, options: IElementOptions, private elementMap: ElementMap) {
     this.id = options.elementId
@@ -449,6 +450,12 @@ export class CustomElement extends Element {
   }
 
   async callMethod(method: string, ...args: any[]) {
+    if (this.connection.prefersComponentCallerBridge) {
+      const nodeId = this.nodeId === null ? Number.NaN : Number(this.nodeId)
+      return await invokeComponentMethod(this.connection, { nodeId, pageId: this.pageId }, method, args, async () => {
+        return (await this.send('Element.callMethod', { method, args })).result
+      })
+    }
     return (await this.send('Element.callMethod', { method, args })).result
   }
 }

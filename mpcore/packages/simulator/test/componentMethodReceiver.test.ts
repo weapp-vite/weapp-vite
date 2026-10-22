@@ -60,4 +60,25 @@ describe('browser component method receivers', () => {
       session.close()
     }
   })
+
+  it('preserves undefined and fulfilled promise results with one mutation per direct call', async () => {
+    const session = createSession()
+    try {
+      session.reLaunch('/pages/index/index')
+      const first = session.selectComponent('#first')!
+      const second = session.selectComponent('#second')!
+      const scopeId = session.getScopeIdForComponent(first)!
+
+      expect(session.callScopeMethodDirect(scopeId, 'completeWithoutValue')).toBeUndefined()
+      expect(first.data).toMatchObject({ label: 'undefined-method', undefinedCalls: 1, asyncCalls: 0 })
+      await expect(session.callScopeMethodDirect(scopeId, 'completeAsync', 'async-method')).resolves.toEqual({ label: 'async-method', calls: 1 })
+      expect(first.data).toMatchObject({ label: 'async-method', undefinedCalls: 1, asyncCalls: 1 })
+      expect(second.data).toMatchObject({ label: 'component-initial', undefinedCalls: 0, asyncCalls: 0 })
+      expect(session.selectComponent('#first')).toBe(first)
+      expect(session.selectComponent('#second')).toBe(second)
+    }
+    finally {
+      session.close()
+    }
+  })
 })

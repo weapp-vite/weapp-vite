@@ -11,6 +11,8 @@ export const componentMethodReceiverFiles: Array<[string, string]> = [
       label: 'component-initial',
       previousLabel: '',
       calls: 0,
+      undefinedCalls: 0,
+      asyncCalls: 0,
       syncFailures: 0,
       asyncFailures: 0,
     },
@@ -22,6 +24,15 @@ export const componentMethodReceiverFiles: Array<[string, string]> = [
           calls: this.data.calls + 1,
         })
         return 'component:' + value
+      },
+      completeWithoutValue() {
+        this.setData({ label: 'undefined-method', undefinedCalls: this.data.undefinedCalls + 1 })
+      },
+      async completeAsync(value) {
+        this.setData({ asyncCalls: this.data.asyncCalls + 1 })
+        await Promise.resolve()
+        this.setData({ label: value })
+        return { label: this.data.label, calls: this.data.asyncCalls }
       },
       fail() {
         this.setData({ syncFailures: this.data.syncFailures + 1 })

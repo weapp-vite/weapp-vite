@@ -73,4 +73,30 @@ describe('testing bridge component method receivers', () => {
       await miniProgram.close()
     }
   })
+
+  it('keeps undefined results and awaits fulfilled component promises without repeating their mutations', async () => {
+    const miniProgram = await createSession()
+    try {
+      const page = await miniProgram.currentPage()
+      const first = await page!.selectComponent('#first')
+      const second = await page!.selectComponent('#second')
+
+      await expect(first!.callMethod('completeWithoutValue')).resolves.toBeUndefined()
+      await expect(first!.snapshot()).resolves.toMatchObject({
+        data: { label: 'undefined-method', undefinedCalls: 1, asyncCalls: 0 },
+      })
+      await expect(first!.callMethod('completeAsync', 'async-method')).resolves.toEqual({ label: 'async-method', calls: 1 })
+      await expect(first!.snapshot()).resolves.toMatchObject({
+        data: { label: 'async-method', undefinedCalls: 1, asyncCalls: 1 },
+      })
+      await expect(second!.snapshot()).resolves.toMatchObject({
+        data: { label: 'component-initial', undefinedCalls: 0, asyncCalls: 0 },
+      })
+      expect(await (await (await page!.$('#first'))!.$('.component-label'))?.text()).toBe('async-method')
+      expect(await (await (await page!.$('#second'))!.$('.component-label'))?.text()).toBe('component-initial')
+    }
+    finally {
+      await miniProgram.close()
+    }
+  })
 })

@@ -4,6 +4,7 @@
 import { EventEmitter } from 'node:events'
 import { createDebug } from 'obug'
 import WebSocket from 'ws'
+import { cleanupComponentCallers } from './componentCaller'
 import { dateFormat, stringify, uuid } from './internal/compat'
 import Transport from './Transport'
 
@@ -31,6 +32,7 @@ interface ProtocolResponse {
 }
 interface ToolInfo {
   version?: string
+  SDKVersion?: string
 }
 /** Page frame 定向消息失效、需要切换到 App-service Page 协议的 DevTools 版本。 */
 const APP_SERVICE_PAGE_PROTOCOL_VERSIONS = new Set([
@@ -47,6 +49,7 @@ export default class Connection extends EventEmitter {
   private callbacks = new Map<string, PendingCallback>()
   private useAppServicePageProtocol = false
   private useAppServicePageMethod = false
+  private useComponentCallerBridge = false
   constructor(private transport: Transport) {
     super()
     transport.on('message', this.onMessage)
@@ -98,6 +101,17 @@ export default class Connection extends EventEmitter {
       this.disposing = undefined
       throw error
     })
+    const cleanup = cleanupComponentCallers(this)
+    if (cleanup) {
+      void cleanup.then(() => this.closeTransport(resolve, reject), reject)
+    }
+    else {
+      this.closeTransport(resolve, reject)
+    }
+    return this.disposing
+  }
+
+  private closeTransport(resolve: () => void, reject: (reason: unknown) => void) {
     const errors: unknown[] = []
     try {
       this.onClose()
@@ -128,7 +142,6 @@ export default class Connection extends EventEmitter {
       errors.push(error)
       finish()
     }
-    return this.disposing
   }
 
   /** 根据 DevTools 版本选择稳定的 Page 协议实现。 */
@@ -136,6 +149,7 @@ export default class Connection extends EventEmitter {
     const version = String(info.version ?? '')
     this.useAppServicePageProtocol = APP_SERVICE_PAGE_PROTOCOL_VERSIONS.has(version)
     this.useAppServicePageMethod = this.useAppServicePageProtocol || APP_SERVICE_PAGE_METHOD_VERSIONS.has(version)
+    this.useComponentCallerBridge = version === '2.02.2608080' && info.SDKVersion === '3.17.5'
   }
 
   get prefersAppServicePageProtocol() {
@@ -145,6 +159,11 @@ export default class Connection extends EventEmitter {
   /** 页面方法调用独立选择协议，不影响节点查询及其组件作用域。 */
   get prefersAppServicePageMethod() {
     return this.useAppServicePageMethod
+  }
+
+  /** 仅为实测存在跨上下文 token 错绑的 IDE 与基础库启用真实 caller 桥接。 */
+  get prefersComponentCallerBridge() {
+    return this.useComponentCallerBridge
   }
 
   private onMessage = (message: string) => {
