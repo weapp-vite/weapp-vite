@@ -563,11 +563,12 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
           else if (forceFullSharedChunkRefresh) {
             refreshSharedChunkImporters(rolldownBundle, state)
           }
-          else if (state.hmrState.lastHmrEntryIds?.size) {
-            refreshPartialSharedChunkImporters(rolldownBundle, state, state.hmrState.lastHmrEntryIds)
-          }
-          else if (state.hmrState.lastEmittedEntryIds?.size) {
-            refreshPartialSharedChunkImporters(rolldownBundle, state, state.hmrState.lastEmittedEntryIds)
+          else {
+            // 依赖图跟随实际编译入口；完整注册可能重排未失效入口的共享 chunk。
+            const compiledEntryIds = resolveActiveHmrEntryIds(state)
+            if (compiledEntryIds?.size) {
+              refreshPartialSharedChunkImporters(rolldownBundle, state, compiledEntryIds)
+            }
           }
           state.hmrState.hasBuiltOnce = true
         }
