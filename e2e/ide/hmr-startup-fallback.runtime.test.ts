@@ -1,3 +1,4 @@
+import type { startDevProcess } from '../utils/dev-process'
 import path from 'node:path'
 import { WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY, WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY } from '@weapp-core/constants'
 import { fs } from '@weapp-core/shared/node'
@@ -5,10 +6,10 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { resolveRuntimeCompilerCli } from '../../packages/weapp-vite/scripts/consumerRuntimeHost.mjs'
 import { launchAutomator, reconnectAutomator } from '../utils/automator'
 import { runCleanupSteps } from '../utils/cleanupSteps'
-import { startDevProcess } from '../utils/dev-process'
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { createDomAcceptance } from '../utils/domAcceptance'
 import { replaceFileByRename, waitForFileContains, waitForFileRemoved } from '../utils/hmr-helpers'
+import { startRuntimeDevProcess } from '../utils/runtimeDevProcess'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import { createStatefulHmrProject } from '../utils/statefulHmrProject'
 
@@ -114,7 +115,7 @@ for (const host of hosts) {
           .replace('hmr: { runtime: \'stateful-experimental\', logLevel: \'verbose\' },', 'hmr: config.weapp.hmr,'), 'utf8')
         const cli = resolveRuntimeCompilerCli(host!, app, { repositoryRoot: ROOT })
         devReleased = false
-        dev = startDevProcess(process.execPath, host === 'wv'
+        dev = await startRuntimeDevProcess(host, host === 'wv'
           ? [cli, 'dev', app, '--platform', 'weapp', '--skipNpm']
           : [cli, 'dev', '--config', 'vite.stateful.config.mts', '--host', '127.0.0.1', '--port', '0'], {
           cwd: app,
@@ -153,7 +154,7 @@ for (const host of hosts) {
             await fixture?.cleanup()
           } },
         ])
-      })
+      }, 240_000)
 
       it('starts in classic and keeps functional edits, source restoration and config reload in classic', async (ctx) => {
         const stages = [
