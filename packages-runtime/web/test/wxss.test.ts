@@ -163,4 +163,23 @@ describe('transformWxssToCss', () => {
       .process('.card { width: 8rpx; }', { from: undefined })
     expect(result.css).toContain('width: 2px')
   })
+
+  it('rewrites vw/vh units to the emulated device viewport', () => {
+    const { css } = transformWxssToCss(`
+      .overlay { width: 100vw; height: 100vh; }
+      .panel { width: calc(100vw - 40rpx); min-height: 50vmin; max-height: 80vmax; margin: 0vw 0vh; }
+    `)
+
+    expect(css).toContain('width: var(--weapp-viewport-width)')
+    expect(css).toContain('height: var(--weapp-viewport-height)')
+    expect(css).toContain('width: calc(var(--weapp-viewport-width) - calc(var(--rpx) * 40))')
+    expect(css).toContain('min-height: calc(min(var(--weapp-viewport-width), var(--weapp-viewport-height)) * 50 / 100)')
+    expect(css).toContain('max-height: calc(max(var(--weapp-viewport-width), var(--weapp-viewport-height)) * 80 / 100)')
+    expect(css).toContain('margin: 0px 0px')
+  })
+
+  it('keeps vw/vh untouched when rpx is compiled to static pixels', () => {
+    const { css } = transformWxssToCss('.page { width: 100vw; }', { pxPerRpx: 0.5 })
+    expect(css).toContain('width: 100vw')
+  })
 })

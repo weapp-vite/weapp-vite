@@ -25,8 +25,42 @@ export interface WxssTransformResult {
 }
 
 const RPX_RE = /(-?(?:\d+(?:\.\d+)?|\.\d+))rpx/gi
+const VIEWPORT_UNIT_RE = /(-?(?:\d+(?:\.\d+)?|\.\d+))(vw|vh|vmin|vmax)\b/gi
 const SAFE_AREA_ENV_RE = /env\(\s*safe-area-inset-(top|right|bottom|left)(?:\s*,[^)]*)?\)/gi
 const PAGE_HOST_SELECTOR = selectorParser().astSync(':host(:where([data-weapp-page-active]))').nodes[0]!.nodes[0]!
+
+/**
+ * 小程序里 `1vw` 是屏幕宽度的 1%，浏览器里是窗口宽度的 1%。
+ * 宽屏下运行时会把页面放进居中的设备视口（默认 375px），直接用 `vw` 会让全屏弹层、
+ * 遮罩按浏览器窗口宽度渲染。这里改为读取运行时提供的设备视口变量，
+ * 与 safe-area 的处理方式一致。
+ */
+function resolveViewportUnitBase(unit: string) {
+  if (unit === 'vw') {
+    return 'var(--weapp-viewport-width)'
+  }
+  if (unit === 'vh') {
+    return 'var(--weapp-viewport-height)'
+  }
+  if (unit === 'vmin') {
+    return 'min(var(--weapp-viewport-width), var(--weapp-viewport-height))'
+  }
+  return 'max(var(--weapp-viewport-width), var(--weapp-viewport-height))'
+}
+
+function transformViewportUnits(value: string) {
+  return value.replace(VIEWPORT_UNIT_RE, (whole, numericRaw: string, rawUnit: string) => {
+    const numeric = Number.parseFloat(numericRaw)
+    if (!Number.isFinite(numeric)) {
+      return whole
+    }
+    if (numeric === 0) {
+      return '0px'
+    }
+    const base = resolveViewportUnitBase(rawUnit.toLowerCase())
+    return numeric === 100 ? base : `calc(${base} * ${numeric} / 100)`
+  })
+}
 
 function isDeepPseudo(pseudo: selectorParser.Pseudo) {
   return pseudo.value === ':deep' || pseudo.value === '::v-deep'
@@ -170,6 +204,9 @@ function transformWxssRoot(root: postcss.Root, options?: WxssTransformOptions) {
         const converted = Math.round(numeric * ratio * 1000) / 1000
         return `${converted}px`
       })
+    if (useVariable) {
+      declaration.value = transformViewportUnits(declaration.value)
+    }
   })
 }
 

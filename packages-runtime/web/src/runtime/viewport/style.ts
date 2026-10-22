@@ -8,6 +8,7 @@ export function createWebViewportStyle(config: ResolvedWebViewportConfig) {
   return `
 :root {
   --weapp-viewport-width: 100vw;
+  --weapp-viewport-height: 100dvh;
   --weapp-viewport-max-width: ${maxWidth};
   --weapp-viewport-left: 0px;
   --weapp-viewport-right: 0px;
