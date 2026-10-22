@@ -1,8 +1,28 @@
 import { getNativeComponentDescriptor } from '../../shared/nativeComponents'
+import { getWebViewportWidth } from '../viewport'
 import { dispatchMiniProgramEvent, readBooleanAttribute, resolveContainingShadowRoot } from './helpers'
 import { ensureNativeComponentStyle } from './style'
 
 const BaseElement = (globalThis.HTMLElement ?? class {}) as typeof HTMLElement
+const DEFAULT_SCROLL_THRESHOLD = 50
+const RPX_VALUE_RE = /^([+-]?(?:\d+(?:\.\d+)?|\.\d+))rpx$/i
+
+/**
+ * 距离阈值与真机一致：默认 50px，支持 px / rpx 两种单位。
+ * rpx 的换算基准与 `--rpx` 一致，使用设备视口宽度而不是浏览器窗口宽度。
+ */
+function resolveScrollThreshold(element: Element, name: string) {
+  const raw = element.getAttribute(name)?.trim()
+  if (!raw) {
+    return DEFAULT_SCROLL_THRESHOLD
+  }
+  const rpxMatch = raw.match(RPX_VALUE_RE)
+  const numeric = rpxMatch ? Number.parseFloat(rpxMatch[1]!) : Number.parseFloat(raw)
+  if (!Number.isFinite(numeric) || numeric < 0) {
+    return DEFAULT_SCROLL_THRESHOLD
+  }
+  return rpxMatch ? numeric * getWebViewportWidth() / 750 : numeric
+}
 
 export function createScrollEventDetail(
   viewport: Pick<HTMLDivElement, 'scrollHeight' | 'scrollLeft' | 'scrollTop' | 'scrollWidth'>,
@@ -24,6 +44,8 @@ export class WeappScrollView extends BaseElement {
   #viewport?: HTMLDivElement
   #lastScrollLeft = 0
   #lastScrollTop = 0
+  #atLowerBoundary = false
+  #atUpperBoundary = false
 
   get scrollTop() {
     return this.#viewport?.scrollTop ?? 0
@@ -86,9 +108,50 @@ export class WeappScrollView extends BaseElement {
         bubbles: false,
         composed: false,
       })
+      this.#dispatchBoundaryEvents(viewport)
     })
     root.append(style, viewport)
     this.#viewport = viewport
+  }
+
+  /**
+   * 真机只在「进入」阈值区间时派发一次边界事件：内容加载后滚离边界再回来会重新派发，
+   * 停在边界上继续滚动不会重复触发。
+   */
+  #dispatchBoundaryEvents(viewport: HTMLDivElement) {
+    // 内容不足以滚动时真机不会派发边界事件，这里保持同样的语义。
+    const scrollY = readBooleanAttribute(this, 'scroll-y') && viewport.scrollHeight > viewport.clientHeight
+    const scrollX = readBooleanAttribute(this, 'scroll-x') && viewport.scrollWidth > viewport.clientWidth
+    const lowerThreshold = resolveScrollThreshold(this, 'lower-threshold')
+    const upperThreshold = resolveScrollThreshold(this, 'upper-threshold')
+    const atBottom = scrollY
+      && viewport.scrollTop + viewport.clientHeight >= viewport.scrollHeight - lowerThreshold
+    const atRight = scrollX
+      && viewport.scrollLeft + viewport.clientWidth >= viewport.scrollWidth - lowerThreshold
+    const atTop = scrollY && viewport.scrollTop <= upperThreshold
+    const atLeft = scrollX && viewport.scrollLeft <= upperThreshold
+
+    const atLower = atBottom || atRight
+    if (atLower !== this.#atLowerBoundary) {
+      this.#atLowerBoundary = atLower
+      if (atLower) {
+        dispatchMiniProgramEvent(this, 'scrolltolower', { direction: atRight ? 'right' : 'bottom' }, {
+          bubbles: false,
+          composed: false,
+        })
+      }
+    }
+
+    const atUpper = atTop || atLeft
+    if (atUpper !== this.#atUpperBoundary) {
+      this.#atUpperBoundary = atUpper
+      if (atUpper) {
+        dispatchMiniProgramEvent(this, 'scrolltoupper', { direction: atLeft ? 'left' : 'top' }, {
+          bubbles: false,
+          composed: false,
+        })
+      }
+    }
   }
 
   #syncAttributes(changedName?: string, initializePosition = false) {
