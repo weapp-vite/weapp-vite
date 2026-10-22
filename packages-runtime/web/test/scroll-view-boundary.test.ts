@@ -3,43 +3,7 @@
 import { afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { ensureNativeComponentsDefined } from '../src/runtime/nativeComponents'
 
-type ScrollViewElement = HTMLElement & {
-  scrollLeft: number
-  scrollTop: number
-}
-
-function createScrollView(attributes: Record<string, string> = {}) {
-  const element = document.createElement('weapp-scroll-view') as ScrollViewElement
-  for (const [name, value] of Object.entries(attributes)) {
-    element.setAttribute(name, value)
-  }
-  document.body.append(element)
-  return element
-}
-
-function getViewport(element: HTMLElement) {
-  return element.shadowRoot!.querySelector('.viewport') as HTMLDivElement
-}
-
-function setMetrics(
-  viewport: HTMLDivElement,
-  metrics: { scrollHeight?: number, clientHeight?: number, scrollWidth?: number, clientWidth?: number },
-) {
-  Object.defineProperties(viewport, Object.fromEntries(
-    Object.entries(metrics).map(([name, value]) => [name, { configurable: true, value }]),
-  ))
-}
-
-function scrollTo(element: ScrollViewElement, position: { top?: number, left?: number }) {
-  const viewport = getViewport(element)
-  if (position.top !== undefined) {
-    element.scrollTop = position.top
-  }
-  if (position.left !== undefined) {
-    element.scrollLeft = position.left
-  }
-  viewport.dispatchEvent(new Event('scroll'))
-}
+import { createScrollView, getViewport, scrollTo, setMetrics } from './scrollView/helpers'
 
 describe('scroll-view boundary events', () => {
   beforeAll(() => ensureNativeComponentsDefined())

@@ -24,6 +24,12 @@
           "scene": null
         },
         {
+          "name": "滚动边界与连续分页",
+          "pathName": "pages/scroll-boundary/index",
+          "query": "",
+          "scene": null
+        },
+        {
           "name": "展示组件语义矩阵",
           "pathName": "pages/display-parity/index",
           "query": "",

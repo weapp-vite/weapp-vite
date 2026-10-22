@@ -9,3 +9,5 @@ fix(web): scroll-view 补齐 scrolltolower / scrolltoupper 边界事件。
 - 滚动到底部 / 右边派发 `scrolltolower`（`detail.direction` 为 `bottom` / `right`），滚动到顶部 / 左边派发 `scrolltoupper`（`direction` 为 `top` / `left`）
 - 按 `lower-threshold` / `upper-threshold`（默认 50px，支持 px / rpx）判定触发距离
 - 只在进入阈值区间时派发一次，滚离后再次进入会重新派发，内容不足以滚动时不派发
+- 追加内容或容器尺寸变化后，按当前滚动范围重新判断上次位置，保证一次滚动到新底部也能继续分页
+- 横纵轴独立维护边界状态，避免停在一轴边界时吞掉另一轴的新进入事件
