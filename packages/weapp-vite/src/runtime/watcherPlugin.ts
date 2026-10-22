@@ -35,6 +35,41 @@ const resourceOwners = new WeakMap<WatcherService, WatcherResourceOwner>()
 const serviceDrains = new WeakMap<WatcherService, WatcherServiceDrain>()
 const watcherCloseOperations = new AsyncLocalStorage<WatcherCloseOperation>()
 
+/** 将父 drain 正在等待的新代清理带回原关闭操作；结束或换代后不再继承内部权限。 */
+export function captureWatcherCloseOperation(service: WatcherService): <T>(close: () => T) => T {
+  const operation = watcherCloseOperations.getStore()
+  return close => operation?.active && operation.service === service && operation.drain === serviceDrains.get(service)
+    ? watcherCloseOperations.run(operation, close)
+    : close()
+}
+
+/** 公开控制器关闭先登记父 drain，只有它正在等待的内部调用执行局部收尾。 */
+export function createWatcherControllerClose(service: WatcherService, closeLocal: () => Promise<void>): () => Promise<void> {
+  let local: Promise<void> | undefined
+  const stop = () => local ??= Promise.resolve().then(closeLocal)
+  let closing: Promise<void> | undefined
+  return () => {
+    const operation = watcherCloseOperations.getStore()
+    if (operation?.active && operation.service === service && operation.drain === serviceDrains.get(service)) {
+      return stop()
+    }
+    if (closing) {
+      return closing
+    }
+    const completed = Promise.withResolvers<void>()
+    closing = completed.promise
+    void (async () => {
+      const drain = (async () => await service.closeAll())()
+      const results = await Promise.allSettled([drain, stop()])
+      const errors = [...new Set(results.flatMap(result => result.status === 'rejected' ? [result.reason] : []))]
+      if (errors.length) {
+        throw errors.length === 1 ? errors[0] : new AggregateError(errors, 'Development controller shutdown failed', { cause: errors[0] })
+      }
+    })().then(completed.resolve, completed.reject)
+    return closing
+  }
+}
+
 async function settleControllerResources(tasks: Promise<void>[]): Promise<void> {
   const results = await Promise.allSettled(tasks)
   const errors = results.flatMap(result => result.status === 'rejected' ? [result.reason] : [])
