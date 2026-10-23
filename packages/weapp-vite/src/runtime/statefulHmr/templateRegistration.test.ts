@@ -131,12 +131,37 @@ describe('published native Vue template input admission', () => {
     source.replace('<view>', '<view v-if="count">'),
     source.replace('<view>', '<view class="changed">'),
     source.replace('<view>', '<text>').replace('</view>', '</text>'),
-    source.replace('{{ count }}', '{{ count as number }}'),
   ])('rejects a validated pure template edit before preparing a snapshot', (next) => {
     const baseline = new NativeVueTemplateBaselines()
     baseline.commit(owner, source)
     expect(baseline.resolveFallback([owner], new Map([[owner, next]])))
       .toMatchObject({ code: 'native-registration', files: [owner] })
+  })
+
+  it.each([
+    'count as number',
+    '(() => { const value: number = count; return value })()',
+    'foo<number>()',
+  ])('leaves TypeScript template syntax in a JavaScript SFC to formal compilation (%s)', (expression) => {
+    const baseline = new NativeVueTemplateBaselines()
+    baseline.commit(owner, source)
+    const next = source.replace('{{ count }}', `{{ ${expression} }}`)
+    expect(baseline.resolveFallback([owner], new Map([[owner, next]]))).toBeUndefined()
+  })
+
+  it.each(['ts', 'tsx'])('validates TypeScript template expressions for a %s script', (lang) => {
+    const baseline = new NativeVueTemplateBaselines()
+    const previous = source.replace('<script setup>', `<script setup lang="${lang}">`)
+    baseline.commit(owner, previous)
+    for (const expression of [
+      'count as number',
+      '(() => { const value: number = count; return value })()',
+      'foo<number>()',
+    ]) {
+      const next = previous.replace('{{ count }}', `{{ ${expression} }}`)
+      expect(baseline.resolveFallback([owner], new Map([[owner, next]])))
+        .toMatchObject({ code: 'native-registration', files: [owner] })
+    }
   })
 
   it('includes attribute value edits in the registration boundary', () => {

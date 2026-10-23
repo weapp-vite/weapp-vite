@@ -170,6 +170,16 @@ interface HmrProfileJsonSample extends HmrProfileRecordMetadata {
   snapshotResolveMs?: number
   snapshotBuildMs?: number
   writeMs?: number
+  /** Tailwind 六个连续输出阶段均包含在 writeMs 中，不能与 writeMs 再次相加。 */
+  tailwindPrepareMs?: number
+  tailwindGenerateMs?: number
+  tailwindCssMs?: number
+  tailwindTemplateMs?: number
+  tailwindJavaScriptMs?: number
+  tailwindFinalizeMs?: number
+  /** 来源解析与磁盘生成是 tailwindGenerateMs 的累计子项，多 root 可重叠，不能当作连续阶段相加。 */
+  tailwindSourceResolveMs?: number
+  tailwindDiskGenerateMs?: number
   finalizePrepareMs?: number
   finalizeTemplateMs?: number
   finalizePublishMs?: number
@@ -517,6 +527,14 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       snapshotResolveMs: profile.snapshotResolveMs,
       snapshotBuildMs: profile.snapshotBuildMs,
       writeMs: profile.writeMs,
+      tailwindPrepareMs: profile.tailwindPrepareMs,
+      tailwindGenerateMs: profile.tailwindGenerateMs,
+      tailwindCssMs: profile.tailwindCssMs,
+      tailwindTemplateMs: profile.tailwindTemplateMs,
+      tailwindJavaScriptMs: profile.tailwindJavaScriptMs,
+      tailwindFinalizeMs: profile.tailwindFinalizeMs,
+      tailwindSourceResolveMs: profile.tailwindSourceResolveMs,
+      tailwindDiskGenerateMs: profile.tailwindDiskGenerateMs,
       finalizePrepareMs: profile.finalizePrepareMs,
       finalizeTemplateMs: profile.finalizeTemplateMs,
       finalizePublishMs: profile.finalizePublishMs,

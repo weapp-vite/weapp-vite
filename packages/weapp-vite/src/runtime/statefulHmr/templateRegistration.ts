@@ -11,6 +11,23 @@ interface NativeVueTemplateBaseline {
   templateContext?: string
 }
 
+/** Vue 会以 TypeScript 解析模板表达式；JS 脚本不能据此提前接受 TS 语法。 */
+function hasTypeScriptSyntax(value: unknown, visited = new WeakSet<object>()): boolean {
+  if (value === null || typeof value !== 'object') {
+    return false
+  }
+  if (visited.has(value)) {
+    return false
+  }
+  visited.add(value)
+  if (Array.isArray(value)) {
+    return value.some(item => hasTypeScriptSyntax(item, visited))
+  }
+  const node = value as Record<string, unknown>
+  return (typeof node.type === 'string' && node.type.startsWith('TS'))
+    || Object.values(node).some(item => hasTypeScriptSyntax(item, visited))
+}
+
 function resolveNativeVueTemplateBaseline(source: string, file: string, validateTemplate = false): NativeVueTemplateBaseline {
   const blocks = resolveVueSfcHmrSignatures(source, file).blockSignatures
   if (!blocks) {
@@ -31,13 +48,20 @@ function resolveNativeVueTemplateBaseline(source: string, file: string, validate
       { ...serializeBlock(template), content: undefined },
       descriptor.customBlocks.filter(block => block.type !== 'json' && block.type !== 'config').map(serializeBlock),
     ]
+    const isTypeScript = descriptor.script?.lang === 'ts'
+      || descriptor.script?.lang === 'tsx'
+      || descriptor.scriptSetup?.lang === 'ts'
+      || descriptor.scriptSetup?.lang === 'tsx'
+    if (validateTemplate && !isTypeScript && hasTypeScriptSyntax(template.ast)) {
+      return { blocks }
+    }
     // 仅使用内置 Vue 编译器校验 inline HTML；不执行用户插件、预处理器或读取外部依赖。
     // 错误仍交给正式编译路径报告，不能把语法错误转换成能力回退。
     if (validateTemplate && compileTemplate({
       source: template.content,
       filename: file,
       id: 'weapp-vite-hmr-capability',
-      compilerOptions: { expressionPlugins: ['typescript'] },
+      compilerOptions: { expressionPlugins: isTypeScript ? ['typescript'] : [] },
     }).errors.length) {
       return { blocks }
     }

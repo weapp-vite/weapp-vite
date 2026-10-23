@@ -4742,6 +4742,14 @@ describe('runtime buildPlugin service', () => {
     ctx.runtimeState.build.hmr.profile = {
       eventId: 'hmr-event-1',
       finalizePrepareMs: 0.1,
+      tailwindPrepareMs: 0,
+      tailwindGenerateMs: 1.1,
+      tailwindCssMs: 1.2,
+      tailwindTemplateMs: 1.3,
+      tailwindJavaScriptMs: 1.4,
+      tailwindFinalizeMs: 1.5,
+      tailwindSourceResolveMs: 0.7,
+      tailwindDiskGenerateMs: 0.8,
       finalizeTemplateMs: 0.2,
       finalizePublishMs: 0.3,
       publicationValidateMs: 0.4,
@@ -4801,6 +4809,16 @@ describe('runtime buildPlugin service', () => {
     expect(payload.endsWith('\n')).toBe(true)
     expect(payload).toContain('"event":"update"')
     expect(payload).toContain('"eventId":"hmr-event-1"')
+    expect(JSON.parse(payload) as HmrProfileJsonSample).toMatchObject({
+      tailwindPrepareMs: 0,
+      tailwindGenerateMs: 1.1,
+      tailwindCssMs: 1.2,
+      tailwindTemplateMs: 1.3,
+      tailwindJavaScriptMs: 1.4,
+      tailwindFinalizeMs: 1.5,
+      tailwindSourceResolveMs: 0.7,
+      tailwindDiskGenerateMs: 0.8,
+    })
     expect(payload).toContain('"finalizePrepareMs":0.1')
     expect(payload).toContain('"finalizeTemplateMs":0.2')
     expect(payload).toContain('"finalizePublishMs":0.3')

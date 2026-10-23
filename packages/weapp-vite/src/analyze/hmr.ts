@@ -72,6 +72,16 @@ export interface HmrProfileJsonSample extends Partial<Omit<HmrProfileRecordMetad
   snapshotResolveMs?: number
   snapshotBuildMs?: number
   writeMs?: number
+  /** Tailwind 六个连续输出阶段均包含在 writeMs 中，不能与 writeMs 再次相加。 */
+  tailwindPrepareMs?: number
+  tailwindGenerateMs?: number
+  tailwindCssMs?: number
+  tailwindTemplateMs?: number
+  tailwindJavaScriptMs?: number
+  tailwindFinalizeMs?: number
+  /** 来源解析与磁盘生成是 tailwindGenerateMs 的累计子项，多 root 可重叠，不能当作连续阶段相加。 */
+  tailwindSourceResolveMs?: number
+  tailwindDiskGenerateMs?: number
   watchToDirtyMs?: number
   emitMs?: number
   sharedChunkResolveMs?: number

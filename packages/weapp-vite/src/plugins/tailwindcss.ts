@@ -10,6 +10,7 @@ import type {
 } from 'weapp-tailwindcss/core'
 import type { UserDefinedOptions } from 'weapp-tailwindcss/types'
 import type { CompilerContext } from '../context'
+import type { HmrProfileDurationKey } from '../utils/hmrProfile'
 import type { TailwindGenerationEntry } from './tailwindcss/generation'
 import { Buffer } from 'node:buffer'
 import fs from 'node:fs'
@@ -21,6 +22,7 @@ import { resolveBuildScope } from '../runtime/buildScope'
 import { safeGetPackageInfoSync } from '../runtime/localPkg'
 import { deferWatcherResourceCleanup } from '../runtime/watcherPlugin'
 import { changeFileExtension } from '../utils'
+import { createHmrProfileCheckpoint } from '../utils/hmrProfile'
 import { applyOutputChunkTransform } from '../utils/outputChunk'
 import { isPathInside } from '../utils/path'
 import { normalizeFsResolvedId } from '../utils/resolvedId'
@@ -67,6 +69,7 @@ type TailwindcssConfigWithNestedRuntime = TailwindcssRuntimeConfig & {
   tailwindcss?: TailwindcssRuntimeConfig
 }
 type ManagedTailwindcssOptions = UserDefinedOptions & Pick<CreateCompilerOptions, 'compiler'>
+type TailwindHmrProfile = Partial<Record<HmrProfileDurationKey, number | undefined>>
 
 interface ResolvedManagedTailwindcssOptions {
   basedir: string
@@ -339,7 +342,7 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
     }
   }
 
-  async function generateRootCss(compiler: Compiler, index: number | string, request: CompilerGenerateRequest, generation?: symbol): Promise<CompilerGenerateResult | TailwindGenerationEntry> {
+  async function generateRootCss(compiler: Compiler, index: number | string, request: CompilerGenerateRequest, generation?: symbol, profile?: TailwindHmrProfile): Promise<CompilerGenerateResult | TailwindGenerationEntry> {
     const frozen = await takeImportedTailwindGeneration(getCompilerSourceSnapshot(ctx.configService), index, request, resolved.options)
     if (frozen) {
       if (statefulCompiler) {
@@ -347,14 +350,18 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
       }
       return frozen
     }
+    // 来源解析和磁盘生成是 tailwindGenerateMs 内的累计子项，多 root 可重叠，不能再次相加。
+    const checkpoint = createHmrProfileCheckpoint(profile)
     const { resolveTailwindV4Source } = await import('weapp-tailwindcss/generator')
     // 同一次已解析 CSS 同时供生成和范围登记使用，不能在编译后重读磁盘推测来源。
     const { sourceOptions, ...requestFields } = request
     const source = request.source ?? await resolveTailwindV4Source(sourceOptions)
     const input: CompilerGenerateRequest = { ...requestFields, source }
+    checkpoint('tailwindSourceResolveMs')
     const generated = await (generation
       ? hmr.generateDiskRoot(compiler, input, index, generation)
       : hmr.generateDisk(compiler, input))
+    checkpoint('tailwindDiskGenerateMs')
     const rules = resolveTailwindContentSourceRules(generated, ctx.configService.outDir)
     return { ...generated, sourceRules: freezeTailwindSourceRules(rules) }
   }
@@ -374,10 +381,10 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
     contentSources.replace(id, createTailwindV4SourceEntryMatcher(generated.sourceRules.map(rule => ({ ...rule }))), generation)
   }
 
-  async function generateEntryCss(compiler: Compiler, index: number, request: CompilerGenerateRequest) {
+  async function generateEntryCss(compiler: Compiler, index: number, request: CompilerGenerateRequest, profile?: TailwindHmrProfile) {
     const sourceGeneration = contentSources.begin(request.id)
     const generation = statefulCompiler ? hmr.beginRootGeneration(index) : undefined
-    const generated = await generateRootCss(compiler, index, request, generation)
+    const generated = await generateRootCss(compiler, index, request, generation, profile)
     if (statefulCompiler && 'root' in generated) {
       await hmr.rememberRoot(index, request, generated, generation)
     }
@@ -477,6 +484,9 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
     if (resolved.autoDetected && resolved.cssEntries.length === 0) {
       return
     }
+    // pinned preparation 属于外层 stateful 批次，不能写入当前 classic output 的事件记录。
+    const profile = !pinned && ctx.configService.isDev ? ctx.runtimeState?.build?.hmr?.profile : undefined
+    const checkpoint = createHmrProfileCheckpoint(profile)
     const compiler = await getCompiler()
     if (!pinned) {
       hmr.rememberBundle(bundle)
@@ -486,10 +496,11 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
     for (const file of reused?.files ?? []) {
       this.addWatchFile(file)
     }
+    checkpoint('tailwindPrepareMs')
     const generatedEntries: readonly TailwindGenerationEntry[] = pinned?.entries ?? reused?.entries ?? (resolved.options.generator === false
       ? []
       : await (generatedEntriesPromise ??= Promise.all(requests.map((request, index) =>
-          generateEntryCss(compiler, index, request)))))
+          generateEntryCss(compiler, index, request, profile)))))
     if (reused) {
       await Promise.all(reused.entries.map((generated, index) => {
         const id = requests[index]!.id
@@ -512,6 +523,7 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
     const styleExtension = ctx.configService.outputExtensions.wxss
     const templateExtension = ctx.configService.outputExtensions.wxml
     const scriptSourceMap = Boolean(resolvedConfig?.build.sourcemap)
+    checkpoint('tailwindGenerateMs')
 
     for (const output of Object.values(bundle)) {
       if (output.type !== 'asset') {
@@ -575,6 +587,7 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
         await stripResidualTailwindSourceDirectives(transformed.css),
       )
     }
+    checkpoint('tailwindCssMs')
 
     if (!ctx.configService.isDev && resolved.options.generator !== false) {
       const fullProductionGraph = !resolved.autoDetected
@@ -600,6 +613,7 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
         output.source = await compiler.transformTemplate(outputAssetSource(output), snapshot, {
           filename: output.fileName,
         })
+        checkpoint('tailwindTemplateMs')
         continue
       }
       if (output.type !== 'chunk' || !output.fileName.endsWith('.js')) {
@@ -613,6 +627,7 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
         throw transformed.error
       }
       applyOutputChunkTransform(output as OutputChunk, transformed.code, labelSourceMapInput(transformed.map, output.fileName, output.code))
+      checkpoint('tailwindJavaScriptMs')
     }
     reused?.validate()
     const dependenciesBySource = new Map<string, Set<string>>()
@@ -630,6 +645,7 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
     for (const [source, dependencies] of dependenciesBySource) {
       ctx.moduleGraphService?.replaceTransformDependencies?.(source, dependencies)
     }
+    checkpoint('tailwindFinalizeMs')
   }
 
   function importedSourceKey(id: string) {
