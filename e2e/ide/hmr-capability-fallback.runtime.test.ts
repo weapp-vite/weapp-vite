@@ -211,7 +211,7 @@ for (const host of hosts) {
           reject: false,
         })
         // auto 的有效初始模式已由真实 control 文件确认，回退理由按当前场景精确验收。
-        publication = createNativeHmrPublication(app, dev, 'stateful-experimental', [reason], profilePath)
+        publication = createNativeHmrPublication(app, dev, requested, [reason], profilePath)
         await dev.waitFor(waitForStatefulHmrControl(controlFile), 'initial stateful control')
         for (const extension of ['js', 'json', 'wxml']) {
           expect(await fs.pathExists(path.join(app, `dist/pages/native/index.${extension}`))).toBe(true)

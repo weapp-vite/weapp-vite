@@ -18,15 +18,19 @@ vi.mock('../nativePublication', () => ({ captureNativePublication: capture.nativ
 vi.mock('../devBuildCompletion', () => ({ createDevBuildCompletion: capture.completion }))
 
 const roots: string[] = []
-const fallback = '[weapp-vite] HMR fallback {"from":"stateful-experimental","to":"classic","reason":"stylesheet-output"}\n'
-const ready = '[weapp-vite] HMR classic ready {"reason":"stylesheet-output"}\n'
+const fallbackRecord = { from: 'stateful-experimental', to: 'classic', reason: 'stylesheet-output', message: 'compiled stylesheet changed', requested: 'stateful-experimental', actual: 'classic', phase: 'switching' }
+const readyRecord = { reason: 'stylesheet-output', requested: 'stateful-experimental', actual: 'classic', phase: 'classic' }
+const fallbackLog = (record: Record<string, unknown>) => `[weapp-vite] HMR fallback ${JSON.stringify(record)}\n`
+const readyLog = (record: Record<string, unknown>) => `[weapp-vite] HMR classic ready ${JSON.stringify(record)}\n`
+const fallback = fallbackLog(fallbackRecord)
+const ready = readyLog(readyRecord)
 
 afterEach(async () => {
   vi.resetAllMocks()
   await Promise.all(roots.splice(0).map(root => rm(root, { recursive: true, force: true })))
 })
 
-async function fixture(initialOutput = 'initial native build complete\n') {
+async function fixture(initialOutput = 'initial native build complete\n', requested: 'auto' | 'classic' | 'stateful-experimental' = 'stateful-experimental') {
   const project = await mkdtemp(path.join(tmpdir(), 'native-hmr-publication-'))
   roots.push(project)
   await mkdir(path.join(project, 'dist'))
@@ -36,7 +40,7 @@ async function fixture(initialOutput = 'initial native build complete\n') {
   const native = Promise.withResolvers<NativeObservation>()
   const nativeWait = vi.fn(() => native.promise)
   capture.native.mockReturnValue({ wait: nativeWait })
-  const publication = createNativeHmrPublication(project, dev, 'stateful-experimental', ['stylesheet-output'], path.join(project, 'profile.jsonl'))
+  const publication = createNativeHmrPublication(project, dev, requested, ['stylesheet-output'], path.join(project, 'profile.jsonl'))
   const append = (text: string) => {
     output += text
   }
@@ -53,6 +57,42 @@ async function fixture(initialOutput = 'initial native build complete\n') {
   }
   return { append, native, nativeWait, publication, receipt }
 }
+
+it.each(['auto', 'stateful-experimental'] as const)('validates the configured %s request independently of the initial stateful delivery', async (requested) => {
+  const run = await fixture('initial native build complete\n', requested)
+  expect(run.publication.stateful).toBe(true)
+  run.append(fallbackLog({ ...fallbackRecord, requested }))
+  expect(run.publication.stateful).toBe(true)
+  run.append(readyLog({ ...readyRecord, requested }))
+  expect(run.publication.stateful).toBe(false)
+  await expect(run.publication.assertClassicOutput()).resolves.toBeUndefined()
+})
+
+it('rejects internally consistent logs for a different configured request', async () => {
+  const run = await fixture(fallback + ready, 'auto')
+  expect(() => run.publication.stateful).toThrow()
+})
+
+it.each([
+  ['fallback', 'requested', undefined],
+  ['fallback', 'requested', 'auto'],
+  ['fallback', 'actual', undefined],
+  ['fallback', 'actual', 'stateful-experimental'],
+  ['fallback', 'phase', undefined],
+  ['fallback', 'phase', 'classic'],
+  ['ready', 'requested', undefined],
+  ['ready', 'requested', 'auto'],
+  ['ready', 'actual', undefined],
+  ['ready', 'actual', 'stateful-experimental'],
+  ['ready', 'phase', undefined],
+  ['ready', 'phase', 'switching'],
+] as const)('rejects invalid %s %s evidence: %s', async (event, field, value) => {
+  const output = event === 'fallback'
+    ? fallbackLog({ ...fallbackRecord, [field]: value }) + ready
+    : fallback + readyLog({ ...readyRecord, [field]: value })
+  const run = await fixture(output)
+  expect(() => run.publication.stateful).toThrow()
+})
 
 it('requires final source completion when a new classic ready precedes the final receipt', async () => {
   const run = await fixture()

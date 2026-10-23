@@ -33,11 +33,12 @@ async function exists(file: string) {
 export function createNativeHmrPublication(
   project: string,
   dev: ReturnType<typeof startDevProcess>,
-  requested: 'classic' | 'stateful-experimental',
+  requested: 'auto' | 'classic' | 'stateful-experimental',
   fallbackReasons: readonly HmrRuntimeFallbackCode[] = ['config-json', 'entry-topology'],
   profilePath?: string,
 ) {
-  let effective = requested
+  // auto 场景仍以首构 control/runtime 断言确认初始 stateful，日志必须保留真实配置请求。
+  let effective: 'classic' | 'stateful-experimental' = requested === 'classic' ? 'classic' : 'stateful-experimental'
   const readOutput = () => {
     const output = dev.getOutput()
     expect(output).not.toMatch(/Build failed|delivery failed|patch transform failed|classic HMR 切换失败|classic 回退失败/)
@@ -46,17 +47,26 @@ export function createNativeHmrPublication(
   const updateMode = () => {
     const output = readOutput()
     if (output.includes(classicReadyPrefix)) {
-      expect(requested).toBe('stateful-experimental')
+      expect(requested).not.toBe('classic')
       expect(output.split(fallbackPrefix)).toHaveLength(2)
       expect(output.split(classicReadyPrefix)).toHaveLength(2)
       const fallback = output.match(/\[weapp-vite\] HMR fallback (\{[^\r\n]*\})/)
       const ready = output.match(/\[weapp-vite\] HMR classic ready (\{[^\r\n]*\})/)
       expect(fallback).not.toBeNull()
       expect(ready).not.toBeNull()
-      const reason = JSON.parse(fallback![1]!) as { from?: unknown, to?: unknown, reason?: unknown }
-      expect(reason).toMatchObject({ from: 'stateful-experimental', to: 'classic' })
+      const reason = JSON.parse(fallback![1]!) as Record<string, unknown>
+      expect(reason).toEqual({
+        from: 'stateful-experimental',
+        to: 'classic',
+        reason: reason.reason,
+        message: expect.any(String),
+        requested,
+        actual: 'classic',
+        phase: 'switching',
+      })
       expect(fallbackReasons).toContain(reason.reason)
-      expect(JSON.parse(ready![1]!) as unknown).toEqual({ reason: reason.reason })
+      expect(JSON.parse(ready![1]!) as unknown).toEqual({ reason: reason.reason, requested, actual: 'classic', phase: 'classic' })
+      expect(fallback!.index).toBeLessThan(ready!.index!)
       effective = 'classic'
     }
     return effective
@@ -65,8 +75,8 @@ export function createNativeHmrPublication(
   async function assertClassicOutput() {
     expect(updateMode()).toBe('classic')
     const output = readOutput()
-    expect(output.split(fallbackPrefix)).toHaveLength(requested === 'stateful-experimental' ? 2 : 1)
-    expect(output.split(classicReadyPrefix)).toHaveLength(requested === 'stateful-experimental' ? 2 : 1)
+    expect(output.split(fallbackPrefix)).toHaveLength(requested === 'classic' ? 1 : 2)
+    expect(output.split(classicReadyPrefix)).toHaveLength(requested === 'classic' ? 1 : 2)
     const outDir = path.join(project, 'dist')
     for (const file of [WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE, WEAPP_VITE_STATEFUL_HMR_PRELOAD_FILE, WEAPP_VITE_STATEFUL_HMR_UPDATE_FILE]) {
       await vi.waitFor(async () => {

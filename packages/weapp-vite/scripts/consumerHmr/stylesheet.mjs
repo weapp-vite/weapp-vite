@@ -79,12 +79,17 @@ export async function assertStylesheetClassic({ root, operation, output, endpoin
     const ready = output.match(/\[weapp-vite\] HMR classic ready (\{[^\r\n]*\})/)
     assert(fallback && ready, 'Classic handoff must publish structured capability evidence')
     const reason = JSON.parse(fallback[1])
-    assert.deepEqual({ from: reason.from, to: reason.to, reason: reason.reason }, {
+    assert.equal(typeof reason.message, 'string', 'Classic fallback must retain its capability message')
+    assert.deepEqual(reason, {
       from: 'stateful-experimental',
       to: 'classic',
       reason: 'stylesheet-output',
+      message: reason.message,
+      requested: 'stateful-experimental',
+      actual: 'classic',
+      phase: 'switching',
     })
-    assert.deepEqual(JSON.parse(ready[1]), { reason: 'stylesheet-output' })
+    assert.deepEqual(JSON.parse(ready[1]), { reason: 'stylesheet-output', requested: 'stateful-experimental', actual: 'classic', phase: 'classic' })
     assert(fallback.index < ready.index, 'Classic readiness must follow its capability decision')
     assert(endpoint, 'Classic handoff must retain the original stateful transport identity')
   }
