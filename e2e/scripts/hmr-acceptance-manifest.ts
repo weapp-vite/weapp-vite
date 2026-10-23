@@ -1,5 +1,6 @@
 import path from 'node:path'
 import { HMR_RUNTIME_CAPABILITIES } from '../../packages/weapp-vite/src/runtime/hmrRuntimeCapabilities'
+import { CAPABILITY_FALLBACK_TASKS } from '../ide/statefulHmrDom/capabilityFallbackCases'
 import { HMR_GUARD_ALL_TESTS } from './hmr-guard-manifest'
 
 export interface HmrAcceptanceScenario {
@@ -43,8 +44,8 @@ export const HMR_ACCEPTANCE_SCENARIOS: HmrAcceptanceScenario[] = [
     id: 'unsupported-capability-classic-transition',
     expectations: ['classic-fallback'],
     capabilityIds: ['config-json', 'native-registration', 'entry-topology', 'runtime-contract', 'stylesheet-output'],
-    ide: ['ide/hmr-capability-fallback.runtime.test.ts'],
-    headless: ['ide/hmr-capability-fallback.runtime.test.ts'],
+    ide: CAPABILITY_FALLBACK_TASKS,
+    headless: CAPABILITY_FALLBACK_TASKS,
   },
   {
     id: 'unsupported-compiler-startup-classic',
@@ -165,7 +166,9 @@ export const HMR_ACCEPTANCE_SCENARIOS: HmrAcceptanceScenario[] = [
   },
   {
     id: 'snapshot-wrapper-ownership',
-    expectations: ['classic'],
+    expectations: [],
+    observation: 'watch-output-and-runtime',
+    configuredModes: ['classic'],
     capabilityIds: ['visual-assets'],
     ide: ['ide/automator-bridge-wrapper-hmr.runtime.test.ts'],
     headless: [],

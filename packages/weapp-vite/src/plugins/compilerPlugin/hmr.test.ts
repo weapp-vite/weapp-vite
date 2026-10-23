@@ -78,6 +78,65 @@ it('isolates input revisions and retains deleted sources for providers', async (
   expect(second.revision).toBeGreaterThan(first.revision)
 })
 
+it.each(['capture', 'raw-native', 'raw-sidecar', 'module'] as const)('tracks per-source content revisions from the %s owner', (owner) => {
+  const host = new CompilerHmrHost()
+  const file = path.join(sourceFixture(), 'page.ts')
+  const capture = (code: string | null) => {
+    if (owner === 'capture') {
+      host.capture(file, code)
+    }
+    else if (owner === 'module' && code !== null) {
+      host.captureNative(file, code)
+    }
+    else {
+      host.captureRaw(file, code, owner === 'raw-native')
+    }
+  }
+  expect(host.sourceRevision(file)).toBe(0)
+  capture('first')
+  const first = host.sourceRevision(file)
+  expect(first).toBeGreaterThan(0)
+  capture('first')
+  host.capture(path.join(path.dirname(file), 'unrelated.ts'), 'different file')
+  expect(host.sourceRevision(file)).toBe(first)
+  capture('second')
+  const second = host.sourceRevision(file)
+  expect(second).toBeGreaterThan(first)
+  capture('first')
+  expect(host.sourceRevision(file)).toBeGreaterThan(second)
+  capture(null)
+  expect(host.readSource(file)).toBeNull()
+  expect(host.sourceRevision(file)).toBeGreaterThan(second)
+})
+
+it('tracks seeded inputs without changing their revision when the seed is already owned', () => {
+  const host = new CompilerHmrHost()
+  const file = path.join(sourceFixture(), 'seed.json')
+  host.seed(file, 'first')
+  const first = host.sourceRevision(file)
+  expect(first).toBeGreaterThan(0)
+  host.seed(file, 'ignored seed')
+  expect(host.readSource(file)).toBe('first')
+  expect(host.sourceRevision(file)).toBe(first)
+})
+
+it('uses the same source revision for a canonical file and its alias', () => {
+  const host = new CompilerHmrHost()
+  const root = sourceFixture()
+  const directory = path.join(root, 'physical')
+  const alias = path.join(root, 'alias')
+  mkdirSync(directory)
+  const file = path.join(directory, 'page.ts')
+  writeFileSync(file, 'first')
+  symlinkSync(directory, alias, 'junction')
+  const aliasFile = path.join(alias, 'page.ts')
+  host.captureRaw(aliasFile, 'first', false)
+  const first = host.sourceRevision(file)
+  expect(host.sourceRevision(aliasFile)).toBe(first)
+  host.captureNative(file, 'second')
+  expect(host.sourceRevision(aliasFile)).toBeGreaterThan(first)
+})
+
 it('rejects legacy content providers instead of publishing an untransformed patch', async () => {
   const host = new CompilerHmrHost()
   host.register('legacy')

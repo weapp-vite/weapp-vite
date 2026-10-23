@@ -59,13 +59,29 @@ describe('complete headless DOM workflow sharding', () => {
       timing_artifact_name: 'timing-ide-dom-headless-${{ inputs.runs_on }}-${{ inputs.node_version }}-${{ inputs.mode }}-${{ matrix.shard }}',
     })
     const commands = String(job.with!.main_command).trim().split('\n')
-    expect(commands).toHaveLength(2)
+    const cleanupCommand = commands.find(command => command.includes('pnpm vitest run'))!
+    const runtimeCommand = commands.find(command => command.includes('e2e/scripts/run-e2e-suite.ts'))!
+    expect(commands.filter(command => command.includes('pnpm vitest run'))).toHaveLength(1)
+    expect(commands.filter(command => command.includes('e2e/scripts/run-e2e-suite.ts'))).toHaveLength(1)
+    const preparationIndex = commands.findIndex(command => command.includes('mkdirSync(\'.tmp/ide-dom-headless-preflight\''))
+    expect(preparationIndex).toBeGreaterThanOrEqual(0)
+    expect(preparationIndex).toBeLessThan(commands.indexOf(cleanupCommand))
+    expect(commands.indexOf(cleanupCommand)).toBeLessThan(commands.indexOf(runtimeCommand))
     for (const name of ['windowsKernelQuery', 'processes', 'windowsProcessTree', 'windowsProcessRows', 'windowsQueryTrace']) {
-      expect(commands[0]).toContain(`e2e/utils/devProcessCleanup/${name}.test.ts`)
+      expect(cleanupCommand).toContain(`e2e/utils/devProcessCleanup/${name}.test.ts`)
     }
-    expect(commands[0]).toContain('e2e/utils/dev-process.cleanup.test.ts')
-    expect(commands[1]).toBe('pnpm exec cross-env WEAPP_VITE_E2E_CLEANUP_TRACE=1 node --import tsx e2e/scripts/run-e2e-suite.ts ide-dom-headless --plan=.tmp/verification-plan/ide-dom-headless.json --shard-index=${{ matrix.shard }}')
-    expect(job.with!.artifact_path).toBe('docs/reports/dom-acceptance/**\ndocs/reports/*-e2e-ide-dom-headless-*-suite-report/**\n')
+    expect(cleanupCommand).toContain('WEAPP_VITE_E2E_CLEANUP_TRACE=1')
+    expect(cleanupCommand).toContain('e2e/utils/dev-process.cleanup.test.ts')
+    expect(cleanupCommand).toContain('2>&1 | tee .tmp/ide-dom-headless-preflight/cleanup.log')
+    expect(runtimeCommand).toContain('node --import tsx e2e/scripts/run-e2e-suite.ts ide-dom-headless --plan=.tmp/verification-plan/ide-dom-headless.json --shard-index=${{ matrix.shard }}')
+    for (const setting of ['WEAPP_VITE_E2E_CLEANUP_TRACE=1', 'WEAPP_VITE_E2E_DEV_PROCESS_TRACE=1', 'WEAPP_VITE_E2E_DEV_SHUTDOWN_TRACE=1', 'WEAPP_VITE_E2E_DOM_SCOPE_TRACE_CHECKPOINTS=home-ready']) {
+      expect(runtimeCommand).toContain(setting)
+    }
+    expect(String(job.with!.artifact_path).trim().split('\n')).toEqual([
+      'docs/reports/dom-acceptance/**',
+      '.tmp/ide-dom-headless-preflight/**',
+      'docs/reports/*-e2e-ide-dom-headless-*-suite-report/**',
+    ])
     expect(job.with!.verification_telemetry).toBeUndefined()
   })
 

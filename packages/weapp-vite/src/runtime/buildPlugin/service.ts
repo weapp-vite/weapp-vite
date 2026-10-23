@@ -1,4 +1,3 @@
-import type { FSWatcher } from 'chokidar'
 import type PQueue from 'p-queue'
 import type {
   RolldownOutput,
@@ -71,6 +70,7 @@ import { clearStatefulHmrSnapshot, takeStatefulHmrSnapshot } from '../statefulHm
 import { syncProjectSupportFiles } from '../supportFiles'
 import { watchAssetSources } from '../watch/assets'
 import { createSidecarWatchOptions } from '../watch/options'
+import { createSidecarWatcherReadiness } from '../watch/sidecarReadiness'
 import { bindWatcherServiceController, closeWatcherControllerResources } from '../watcher/controllerClose'
 import { retainWatcherService } from '../watcherPlugin'
 import { captureAppShellSnapshot, resolveAppShellSnapshotChange, withInitialAppShellSnapshot } from './appShellSnapshot'
@@ -277,48 +277,6 @@ function resolveSnapshotSidecarDirtySummary(
 
 type ActiveConfigService = NonNullable<MutableCompilerContext['configService']>
 const SNAPSHOT_BUILD_BATCH_DELAY_MS = 8
-const SIDECAR_WATCHER_READY_TIMEOUT_MS = 30_000
-
-function waitForSidecarWatcherReady(watcher: FSWatcher) {
-  const candidate = watcher as { off?: unknown, once?: unknown }
-  if (typeof candidate.once !== 'function' || typeof candidate.off !== 'function') {
-    return Promise.resolve()
-  }
-
-  return new Promise<void>((resolve, reject) => {
-    let settled = false
-    let timer: ReturnType<typeof setTimeout>
-    let cleanup = () => {}
-    const finish = (error?: unknown) => {
-      if (settled) {
-        return
-      }
-      settled = true
-      cleanup()
-      if (error) {
-        reject(error)
-      }
-      else {
-        resolve()
-      }
-    }
-    const onReady = () => finish()
-    const onError = (error: unknown) => finish(error)
-
-    cleanup = () => {
-      clearTimeout(timer)
-      watcher.off('ready', onReady)
-      watcher.off('error', onError)
-    }
-
-    timer = setTimeout(() => {
-      finish(new Error('Sidecar watcher ready timed out'))
-    }, SIDECAR_WATCHER_READY_TIMEOUT_MS)
-
-    watcher.once('ready', onReady)
-    watcher.once('error', onError)
-  })
-}
 
 function shouldHandleSnapshotSidecarFile(filePath: string, ctx: MutableCompilerContext) {
   const configService = ctx.configService!
@@ -2399,6 +2357,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           ignored: createSnapshotSidecarIgnoredMatcher(ctx),
         }),
       )
+      const sidecarReadiness = createSidecarWatcherReadiness(snapshotWatcher)
       const unobserveWorkers = observeWorkerSources(ctx, files => snapshotWatcher.add(files))
       const independentWatch = ctx.runtimeState.build.independent
       const observeIndependent = (files: string[]) => {
@@ -2500,6 +2459,8 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       let closingSidecar: Promise<void> | undefined
       watcherService.sidecarWatcherMap.set(snapshotWatcherRoot, {
         close: () => closingSidecar ??= (async () => {
+          // Chokidar.close 会移除 ready/error 监听器，须先终结本代仍在等待的扫描。
+          sidecarReadiness.close()
           // 完整 drain 与本代关闭可同时持有此记录，重复调用必须等待同一份资源结果。
           const results = await Promise.allSettled([
             async () => releaseAutoRoutesTopology?.(),
@@ -2540,19 +2501,33 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         releaseResources: releaseWatcherResources?.releaseResources,
       })
       try {
-        await Promise.all([waitForSidecarWatcherReady(snapshotWatcher), assetWatcher.ready])
+        const [readiness] = await Promise.all([sidecarReadiness.ready, assetWatcher.ready])
+        if (readiness === 'closed') {
+          // 新代尚未 own 时也可能被全服务 drain 认领；关闭结果不能登记成可用新代。
+          await watcher.close()
+          return publicBuildEvents?.watcher ?? watcher
+        }
       }
       catch (error) {
-        await watcher.close()
+        try {
+          await watcher.close()
+        }
+        catch (cleanupError) {
+          if (cleanupError !== error) {
+            throw new AggregateError([error, cleanupError], 'Sidecar watcher startup and cleanup failed', { cause: error })
+          }
+        }
         throw error
       }
     }
     if (classicSession) {
       // 初次 END 可以在订阅时回放；先登记完整代际，再允许配置重启消费该事件。
       await classicSession.own(watcher)
-      watcher.on('event', onWatcherEvent)
+      if (!devWatcherClosed && !classicSession.isClosing) {
+        watcher.on('event', onWatcherEvent)
+      }
     }
-    if (!classicSession?.isClosing && !(target === 'app' && statefulWatcherClosed)
+    if (!devWatcherClosed && !classicSession?.isClosing && !(target === 'app' && statefulWatcherClosed)
       && watcherService.rollupWatcherMap.get(watcherRoot) !== registeredWatcher) {
       watcherService.setRollupWatcher(registeredWatcher, watcherRoot)
     }

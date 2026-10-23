@@ -16,6 +16,7 @@ import { resetTakeImportRegistry } from '../../../runtime/chunkStrategy'
 import { recordHmrStyleUpdate } from '../../../runtime/hmrStyleUpdate'
 import { resolveScanPluginBasename } from '../../../runtime/scanPlugin/service'
 import { getProjectConfigFileName, getProjectPrivateConfigFileName } from '../../../utils'
+import { normalizeAtomicDeleteEvent } from '../../../utils/atomicWatchEvent'
 import { findJsEntry, findVueEntry } from '../../../utils/file'
 import { createHmrProfileEventId, recordHmrProfileDuration } from '../../../utils/hmrProfile'
 import { resolveRealpath } from '../../../utils/realpathScope'
@@ -36,8 +37,6 @@ import { prepareClassicPublicationEntries } from './classicPublicationEntries'
 import { resolveCompilerContentUpdate } from './compilerContent'
 import { createVueEntryUpdateInspector } from './vueEntryUpdate'
 import { collectVueStyleScriptChanges } from './vueStyleDependency'
-
-const ATOMIC_SAVE_RECHECK_DELAYS_MS = [20, 60]
 
 interface WatchPathKind {
   configSuffix?: string
@@ -186,14 +185,7 @@ async function normalizeWatchEvent(
     return event
   }
 
-  for (const delayMs of ATOMIC_SAVE_RECHECK_DELAYS_MS) {
-    if (await fs.pathExists(id)) {
-      return 'update' satisfies ChangeEvent
-    }
-    await new Promise(resolve => setTimeout(resolve, delayMs))
-  }
-
-  return await fs.pathExists(id) ? 'update' : event
+  return await normalizeAtomicDeleteEvent(id)
 }
 
 export function createBuildStartHook(state: CorePluginState) {

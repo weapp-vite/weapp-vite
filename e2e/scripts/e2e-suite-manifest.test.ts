@@ -91,7 +91,9 @@ describe('e2e suite manifest', () => {
   })
 
   it.each([
-    ['ide/hmr-capability-fallback.runtime.test.ts', '1800000'],
+    ['ide/hmr-capability-fallback.wv.runtime.test.ts', '900000'],
+    ['ide/hmr-capability-fallback.vite.runtime.test.ts', '900000'],
+    ['ide/hmr-capability-fallback.vite-plus.runtime.test.ts', '900000'],
     ['ide/hmr-startup-fallback.runtime.test.ts', '900000'],
     ['ide/hmr-additional-capabilities.runtime.test.ts', '600000'],
     ['ide/hmr-compiled-template-fallback.runtime.test.ts', '600000'],
@@ -129,6 +131,7 @@ describe('e2e suite manifest', () => {
   })
 
   it.each([
+    'ide/native-property-delivery.runtime.test.ts',
     'ide/issue-1234-automator.runtime.test.ts',
     'ide/auto-routes-define-app-json.runtime.test.ts',
     'ide/script-setup-external-src.runtime.test.ts',
@@ -181,6 +184,11 @@ describe('e2e suite manifest', () => {
     })
     expect(getIdeExhaustiveTasks().filter(task => task.label === label)).toHaveLength(1)
     expect((await getSuiteTasks('ide-headless-full')).filter(task => task.label === label)).toHaveLength(1)
+  })
+
+  it('keeps native property delivery parity in the ordinary full IDE suite', async () => {
+    const tasks = await getSuiteTasks('ide-full')
+    expect(tasks.filter(task => task.label === 'ide/native-property-delivery.runtime.test.ts')).toHaveLength(1)
   })
 
   it('keeps ordinary full within WeChat scope and only three optional Baidu tasks outside exhaustive', () => {

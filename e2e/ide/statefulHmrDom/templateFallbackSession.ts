@@ -12,6 +12,7 @@ import { replaceFileByRename, waitForStatefulHmrControl } from '../../utils/hmr-
 import { createNativeHmrPublication } from '../../utils/nativeHmrPublication'
 import { resolveRuntimeProviderName } from '../../utils/runtimeProvider'
 import { createStatefulHmrProject } from '../../utils/statefulHmrProject'
+import { captureScopedSlotDiagnostics } from './scopedSlotDiagnostic'
 import { installStatefulHmrTransport } from './transport'
 
 const ROOT = path.resolve(import.meta.dirname, '../../..')
@@ -19,7 +20,7 @@ const ROUTE = '/pages/wevu/index?source=compiled-template'
 const provider = resolveRuntimeProviderName()
 
 /** 同一 fixture 复用唯一宿主；真实 IDE 更新后只重连，headless 重开单独作为 companion。 */
-export function createTemplateFallbackSession(external: boolean) {
+export function createTemplateFallbackSession(external: boolean, options: { scopedSlots?: boolean } = {}) {
   let fixture: Awaited<ReturnType<typeof createStatefulHmrProject>> | undefined
   let dev: ReturnType<typeof startDevProcess> | undefined
   let publication: ReturnType<typeof createNativeHmrPublication> | undefined
@@ -28,8 +29,27 @@ export function createTemplateFallbackSession(external: boolean) {
   let original = ''
   let source = ''
   let profilePath = ''
+  let saveGeneration = 0
   let runtimeReleased = true
   let devReleased = true
+
+  async function assertScopedSlotOutputs() {
+    if (!options.scopedSlots) {
+      return
+    }
+    const configFile = path.join(fixture!.projectRoot, 'dist/pages/wevu/index.json')
+    const config = await fs.readJson(configFile) as { usingComponents?: Record<string, string> }
+    const slots = Object.values(config.usingComponents ?? {}).filter(target => target.includes('.__scoped-slot-'))
+    expect(slots.length, 'the page must publish its scoped-slot component dependencies').toBeGreaterThan(0)
+    for (const slot of slots) {
+      const base = slot.startsWith('/')
+        ? path.join(fixture!.projectRoot, 'dist', slot.slice(1))
+        : path.resolve(path.dirname(configFile), slot)
+      for (const extension of ['js', 'json', 'wxml']) {
+        expect(await fs.pathExists(`${base}.${extension}`), `scoped-slot dependency .${extension}`).toBe(true)
+      }
+    }
+  }
 
   async function connect(stateful: boolean) {
     runtimeReleased = false
@@ -95,6 +115,7 @@ export function createTemplateFallbackSession(external: boolean) {
       statefulKeys: [false, false, false],
     })
     await publication!.assertClassicRuntime(miniProgram)
+    await assertScopedSlotOutputs()
   }
 
   return {
@@ -111,6 +132,13 @@ export function createTemplateFallbackSession(external: boolean) {
       const project = fixture.projectRoot
       source = path.join(project, 'src/pages/wevu/index.vue')
       original = await fs.readFile(source, 'utf8')
+      if (options.scopedSlots) {
+        const component = path.join(project, 'src/components/scoped-host/index.vue')
+        await fs.ensureDir(path.dirname(component))
+        await fs.writeFile(component, '<script setup lang="ts">\nconst value = \'SLOT-READY\'\n</script>\n<template><view><slot :value="value" /></view></template>\n')
+        original = original.replace('<input', '<scoped-host id="scoped-host"><template #default="{ value }"><view class="scoped-value">{{ value + \':\' + count }}</view></template></scoped-host>\n    <input')
+        await fs.writeFile(source, original)
+      }
       if (external) {
         const template = original.match(/<template>([\s\S]*?)<\/template>/)?.[1]
         expect(template).toBeTruthy()
@@ -146,9 +174,11 @@ export function createTemplateFallbackSession(external: boolean) {
       })
       publication = createNativeHmrPublication(project, dev, external ? 'stateful-experimental' : 'auto', ['native-registration'], profilePath)
       await dev.waitFor(waitForStatefulHmrControl(path.join(project, 'dist/__weapp_vite_hmr/control.js')), 'initial compiled template stateful control')
+      await dev.waitForInitialBuild(90_000)
       for (const extension of ['js', 'json', 'wxml']) {
         expect(await fs.pathExists(path.join(project, `dist/pages/wevu/index.${extension}`))).toBe(true)
       }
+      await assertScopedSlotOutputs()
       miniProgram = await connect(true)
       await vi.waitFor(async () => {
         expect((await state()).statefulKeys).toEqual([true, true, true])
@@ -158,6 +188,11 @@ export function createTemplateFallbackSession(external: boolean) {
       expect(await fs.readFile(source, 'utf8'), 'previous compiled template case must restore its source').toBe(original)
       await miniProgram.reLaunch(ROUTE)
       await expect.poll(async () => (await state()).count).toBe(0)
+    },
+    async diagnoseScopedSlot(stage: string) {
+      if (options.scopedSlots && fixture) {
+        await captureScopedSlotDiagnostics(fixture.projectRoot, miniProgram, stage)
+      }
     },
     async prepare() {
       await miniProgram.evaluate(() => {
@@ -174,6 +209,10 @@ export function createTemplateFallbackSession(external: boolean) {
       await (await (await miniProgram.currentPage()).$(selector, { fallback: false })).tap()
     },
     async save(content: string, marker = 'STATEFUL-WEVU-BASE') {
+      await miniProgram.evaluate((identity: string) => {
+        const pages = getCurrentPages()
+        ;(pages[pages.length - 1] as any).__compiledTemplateIdentity = identity
+      }, `before-template-save-${++saveGeneration}`)
       const stateful = publication!.stateful
       const pending = publication!.capture(source)
       await replaceFileByRename(source, content)

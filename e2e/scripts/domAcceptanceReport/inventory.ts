@@ -8,6 +8,7 @@ import { execa } from 'execa'
 import { assertDomInventoryUntracked, DOM_INVENTORY_FILES } from '../../../scripts/dom-inventory-policy.mjs'
 import { resolveVerificationTopology } from '../../../scripts/verification/topology.ts'
 import { chunkExtraCases, chunkMatrixCases, runtimeBaseRoutes, selectIdeRuntimeChunkExtraCases, selectIdeRuntimeChunkMatrixCases } from '../../chunk-modes.matrix'
+import { CAPABILITY_FALLBACK_HOSTS, capabilityFallbackScenarios } from '../../ide/statefulHmrDom/capabilityFallbackCases'
 import { getIdeExhaustiveTasks, getIdeHeadlessTasks } from '../e2e-suite-manifest'
 import { ACCEPTANCE_ROOT } from './helpers'
 import { analyzeCaseSource, readCaseInventory, readFactoryTitle } from './inventoryAnalyzer'
@@ -15,8 +16,21 @@ import { collectInventorySources } from './inventorySources'
 
 export function readTaskCases(root: string, label: string, templates?: string[]) {
   const file = `e2e/${label}`
+  const content = fs.readFileSync(path.join(root, file), 'utf8')
+  const capabilityHost = readFactoryTitle(content, file, 'createHmrCapabilityFallbackSuite')
+  if (typeof capabilityHost === 'string') {
+    const host = CAPABILITY_FALLBACK_HOSTS.find(host => host === capabilityHost)
+    if (!host) {
+      throw new Error(`Unknown capability fallback host: ${capabilityHost}`)
+    }
+    const factory = 'e2e/ide/statefulHmrDom/capabilityFallback.ts'
+    return analyzeCaseSource(fs.readFileSync(path.join(root, factory), 'utf8'), factory, [], {
+      host,
+      scenarios: capabilityFallbackScenarios(host),
+    })
+  }
   const cases = readCaseInventory(root, file, templates)
-  const title = readFactoryTitle(fs.readFileSync(path.join(root, file), 'utf8'), file, 'createChunkModesRuntimeSuite')
+  const title = readFactoryTitle(content, file, 'createChunkModesRuntimeSuite')
   if (typeof title !== 'string') {
     return cases
   }

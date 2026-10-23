@@ -27,10 +27,11 @@ describe('instance properties data view', () => {
       definition: { data: { own: 'initial', nested: { count: 1 } }, properties: { label: String } },
       properties: { label: 'parent', undeclared: 'host' },
     })
-    expect(component.properties).toEqual({ own: 'initial', nested: { count: 1 }, label: 'parent', undeclared: 'host' })
+    expect(component.properties).toBe(component.data)
+    expect(component.properties).toEqual({ own: 'initial', nested: { count: 1 }, label: 'parent' })
     expect(component.data).toEqual({ own: 'initial', nested: { count: 1 }, label: 'parent' })
     component.setData({ 'own': 'updated', 'nested.count': 2, 'added': 'new' })
-    expect(component.properties).toEqual({ own: 'updated', nested: { count: 2 }, label: 'parent', undeclared: 'host', added: 'new' })
+    expect(component.properties).toEqual({ own: 'updated', nested: { count: 2 }, label: 'parent', added: 'new' })
     expect(component.data).not.toHaveProperty('undeclared')
   })
 
