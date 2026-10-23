@@ -58,7 +58,7 @@ describe('bounded HMR workflow diagnosis', () => {
 
   it('requires an explicit manual selection and uses a separate concurrency group', async () => {
     const config = await workflow()
-    expect(config.on.workflow_dispatch.inputs['hmr-diagnostic']).toMatchObject({ default: 'full', options: ['full', 'shared-layout-windows', 'lifecycle', 'runtime-publication', 'plugin-watch-readiness', 'workspace-hmr', 'windows-process-narrow', 'windows-dev-cleanup', 'native-compiler-batch', 'bun-cli'] })
+    expect(config.on.workflow_dispatch.inputs['hmr-diagnostic']).toMatchObject({ default: 'full', options: ['full', 'shared-layout-windows', 'lifecycle', 'runtime-publication', 'plugin-watch-readiness', 'workspace-hmr', 'windows-process-narrow', 'windows-native-runtime-cleanup', 'windows-dev-cleanup', 'native-compiler-batch', 'bun-cli'] })
     expect(config.concurrency.group).toContain('inputs.hmr-diagnostic || \'full\'')
     const job = config.jobs['shared-layout-windows-diagnostic']!
     expect(job.if).toBe(diagnosticCondition('shared-layout-windows'))
@@ -119,6 +119,33 @@ describe('bounded HMR workflow diagnosis', () => {
       artifact_name: expect.stringMatching(/^windows-process-narrow-.*matrix\.node-version.*needs\.pr-context\.outputs\.checkout_sha/),
       artifact_path: '.tmp/windows-process-narrow-report.json',
       timeout_minutes: 15,
+    })
+  })
+
+  it('isolates native runtime cleanup on Windows while preserving its real process and query budgets', async () => {
+    const { jobs } = await workflow()
+    const job = jobs['windows-native-runtime-cleanup-diagnostic']!
+    expect(job.if).toBe(diagnosticCondition('windows-native-runtime-cleanup'))
+    expect(job.needs).toBe('pr-context')
+    expect(job.uses).toBe('./.github/workflows/reusable-node-command.yml')
+    expect(job.strategy?.['fail-fast']).toBe(false)
+    expect(job.strategy?.matrix).toEqual({ 'node-version': [22, 24] })
+    expect(job.with).toEqual({
+      verification_topology: `\${{ inputs.verification_topology }}`,
+      checkout_ref: `\${{ needs.pr-context.outputs.checkout_sha }}`,
+      base_sha: `\${{ needs.pr-context.outputs.base_sha }}`,
+      head_sha: `\${{ needs.pr-context.outputs.head_sha }}`,
+      pr_number: `\${{ needs.pr-context.outputs.pr_number }}`,
+      head_ref: `\${{ needs.pr-context.outputs.head_ref }}`,
+      base_ref: `\${{ needs.pr-context.outputs.base_ref }}`,
+      e2e_exclude_projects: `\${{ inputs.exclude-e2e-projects }}`,
+      runs_on: 'windows-latest',
+      node_version: `\${{ format('{0}', matrix.node-version) }}`,
+      timeout_minutes: 15,
+      build_command: 'pnpm exec turbo run build --filter=weapp-vite...',
+      main_command: 'pnpm exec cross-env WEAPP_VITE_E2E_CLEANUP_TRACE=1 WEAPP_VITE_E2E_DEV_PROCESS_TRACE=1 WEAPP_VITE_E2E_DEV_SHUTDOWN_TRACE=1 WEAPP_VITE_E2E_DEV_PROCESS_TRACE_DIR=.tmp/windows-native-runtime-cleanup/dev-process pnpm vitest run -c e2e/vitest.e2e.internal.config.ts e2e/utils/runtimeDevProcess.integration.test.ts --maxWorkers=1 --no-file-parallelism --reporter=default --reporter=json --outputFile=.tmp/windows-native-runtime-cleanup/report.json',
+      artifact_name: `windows-native-runtime-cleanup-node-\${{ matrix.node-version }}-\${{ needs.pr-context.outputs.checkout_sha }}`,
+      artifact_path: '.tmp/windows-native-runtime-cleanup/**',
     })
   })
 
@@ -211,7 +238,7 @@ describe('bounded HMR workflow diagnosis', () => {
       expect(jobs[name]?.strategy?.matrix.include?.map(row => `${row.os}/${row['node-version']}`).sort()).toEqual(expected)
     }
     for (const [name, job] of Object.entries(jobs)) {
-      if (['pr-context', 'shared-layout-windows-diagnostic', 'lifecycle-diagnostic', 'runtime-publication-diagnostic', 'plugin-watch-readiness-diagnostic', 'windows-process-narrow-diagnostic', 'windows-dev-cleanup-diagnostic', 'native-compiler-batch-diagnostic', 'bun-build-diagnostic'].includes(name)) {
+      if (['pr-context', 'shared-layout-windows-diagnostic', 'lifecycle-diagnostic', 'runtime-publication-diagnostic', 'plugin-watch-readiness-diagnostic', 'windows-process-narrow-diagnostic', 'windows-native-runtime-cleanup-diagnostic', 'windows-dev-cleanup-diagnostic', 'native-compiler-batch-diagnostic', 'bun-build-diagnostic'].includes(name)) {
         continue
       }
       expect(job.if, `${name} must stay outside a bounded diagnostic run`).toSatisfy((condition: string) =>

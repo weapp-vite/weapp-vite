@@ -58,7 +58,7 @@ it('prepares both original suites from the supplied native topology environment'
   const env = { GITHUB_RUN_ID: '31', GITHUB_RUN_ATTEMPT: '2', WEAPP_VITE_VERIFICATION_TOPOLOGY: 'legacy-v1' }
   vi.spyOn(planApi, 'createVerificationIdentity').mockImplementation(current => ({ ...identity, runId: current!.WEAPP_VITE_E2E_ACCEPTANCE_RUN_ID! }))
   const resolve = vi.spyOn(planApi, 'resolveVerificationTasks').mockResolvedValue(tasks)
-  vi.spyOn(taskCases, 'readPlannedTaskCases').mockImplementation(async task => [{ file: `e2e/${task.label}`, name: 'observable case' }])
+  vi.spyOn(taskCases, 'createPlannedTaskCaseReader').mockReturnValue(async task => [{ file: `e2e/${task.label}`, name: 'observable case' }])
   await prepareBaselineSuites(root, 'pr', env)
   for (const suite of ['ci-pr', 'ide-dom-headless']) {
     const plan = JSON.parse(await fs.readFile(path.join(root, '.tmp/verification-telemetry/plans', `${suite}.json`), 'utf8')) as VerificationPlan

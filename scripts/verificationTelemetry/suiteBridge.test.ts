@@ -118,7 +118,7 @@ it('keeps original full-suite partition order and checks the exact frozen assign
 it('retains complete strict headless cases and explicit out-of-scope inventory', async () => {
   const selected = [...tasks, { label: 'ci/excluded.test.ts', command: 'fake-child', args: [], env: {}, outOfScopeReason: 'Explicitly excluded' }]
   vi.mocked(getSuiteTasks).mockResolvedValue(selected)
-  vi.spyOn(taskCases, 'readPlannedTaskCases').mockImplementation(async task => [{ file: `e2e/${task.label}`, name: 'observable case' }])
+  vi.spyOn(taskCases, 'createPlannedTaskCaseReader').mockReturnValue(async task => [{ file: `e2e/${task.label}`, name: 'observable case' }])
   plan = await createBaselineSuitePlan({ suite: 'ide-dom-headless', topology: 'legacy-v1', shards: 1, tasks: selected, profile: currentVerificationProfile('ide-dom-headless'), identity: { runId: 'native-attempt-headless', commitSha: 'a'.repeat(40), workingTreeDirty: false }, sourceDigest: 'b'.repeat(64) })
   expect(await runE2ESuiteCli(['ide-dom-headless', '--topology=legacy-v1', '--allow-failures'])).toBe(0)
   const options = vi.mocked(runTaskSuite).mock.calls[0]![2]
