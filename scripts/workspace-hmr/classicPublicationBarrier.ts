@@ -1,4 +1,4 @@
-import type { NativePublicationProfileCursor } from '../../e2e/utils/nativePublication/files'
+import type { NativePublicationCompletionEvidence, NativePublicationProfileCursor, NativePublicationSourceEvidence } from '../../e2e/utils/nativePublication/files'
 import type { WorkspaceHmrAuditBudget } from './auditDeadline'
 import type { WorkspaceHmrStageObserver } from './stageRecorder'
 import { assertHmrAuditBudget } from './auditDeadline'
@@ -6,12 +6,13 @@ import { assertHmrAuditBudget } from './auditDeadline'
 interface ClassicPublicationObservation {
   outputOffset: number
   profileCursor?: NativePublicationProfileCursor
+  sourcePublications?: readonly NativePublicationSourceEvidence[]
 }
 
 export interface ClassicPublicationBarrierOptions<T> {
   mode: 'stateful-experimental' | 'classic'
   native: { wait: (timeoutMs: number) => Promise<ClassicPublicationObservation> }
-  completion: { wait: (timeoutMs: number, cursor?: NativePublicationProfileCursor) => Promise<void> }
+  completion: { wait: (timeoutMs: number, cursor?: NativePublicationCompletionEvidence) => Promise<void> }
   ready: () => Promise<number>
   stable: (timeoutMs: number, signal?: AbortSignal) => Promise<unknown>
   inspect: () => Promise<T>
@@ -38,7 +39,7 @@ export async function inspectSettledClassicPublication<T>(options: ClassicPublic
     if (!receipt.profileCursor) {
       throw new Error('Classic publication requires the native write profile cursor.')
     }
-    await observe('formal-end', () => options.completion.wait(remaining(), receipt.profileCursor))
+    await observe('formal-end', () => options.completion.wait(remaining(), receipt.sourcePublications ?? receipt.profileCursor))
     remaining()
   }
   await observe('stable-output', () => options.stable(remaining(), budget.signal))

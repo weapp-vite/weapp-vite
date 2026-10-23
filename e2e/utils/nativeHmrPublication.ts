@@ -104,7 +104,12 @@ export function createNativeHmrPublication(
       const outputOffset = readOutput().length
       const mode = updateMode()
       const files = typeof sourceFiles === 'string' ? [sourceFiles] : sourceFiles
-      const publication = captureNativePublication(dev, project, mode === 'classic' ? { expectedSourceFiles: files } : {})
+      const publication = captureNativePublication(dev, project, {
+        expectedSourceFiles: files,
+        ...(mode === 'stateful-experimental'
+          ? { allowSourceFreePublication: (receiptOffset: number) => readOutput().indexOf(classicReadyPrefix, outputOffset) >= receiptOffset }
+          : {}),
+      })
       const completion = profilePath && sourceFiles && createDevBuildCompletion(dev, {
         source: { files, profilePath },
       })
@@ -123,7 +128,7 @@ export function createNativeHmrPublication(
               throw new Error('Classic publication requires explicit source files, profile path and the native write profile cursor')
             }
             // 字节收据可先于后置写出失败；只读该次写出游标之后的 source complete。
-            await completion.wait(90_000, receipt.profileCursor)
+            await completion.wait(90_000, receipt.sourcePublications ?? receipt.profileCursor)
           }
           await assertClassicOutput()
         },

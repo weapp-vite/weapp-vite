@@ -1,4 +1,4 @@
-import type { NativePublicationProfileCursor } from '../../e2e/utils/nativePublication/files'
+import type { NativePublicationProfileCursor, NativePublicationSourceEvidence } from '../../e2e/utils/nativePublication/files'
 import type { ClassicPublicationBarrierOptions } from './classicPublicationBarrier'
 import type { WorkspaceHmrStageReport } from './stageRecorder'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -8,7 +8,7 @@ import { createWorkspaceHmrStageRecorder } from './stageRecorder'
 const profileCursor: NativePublicationProfileCursor = { offset: 12, prefixHash: 'a'.repeat(64) }
 
 function fixture(mode: ClassicPublicationBarrierOptions<unknown>['mode'] = 'stateful-experimental') {
-  const native = Promise.withResolvers<{ outputOffset: number, profileCursor?: NativePublicationProfileCursor }>()
+  const native = Promise.withResolvers<{ outputOffset: number, profileCursor?: NativePublicationProfileCursor, sourcePublications?: NativePublicationSourceEvidence[] }>()
   const ready = Promise.withResolvers<number>()
   const complete = Promise.withResolvers<void>()
   const stable = Promise.withResolvers<void>()
@@ -45,12 +45,32 @@ describe('workspace classic publication inspection barrier', () => {
 
   it('waits for cold classic readiness after the native receipt without demanding a nonexistent source END', async () => {
     const run = fixture()
-    run.native.resolve({ outputOffset: 10, profileCursor })
+    run.native.resolve({ outputOffset: 10 })
     const inspection = inspectSettledClassicPublication(run.options, { deadline: Date.now() + 1_000 })
     await vi.waitFor(() => expect(run.options.ready).toHaveBeenCalledOnce())
     expect(run.options.inspect).not.toHaveBeenCalled()
     expect(run.options.completion.wait).not.toHaveBeenCalled()
     run.ready.resolve(20)
+    run.stable.resolve()
+    await expect(inspection).resolves.toEqual({ checkedFileCount: 3 })
+    expect(run.options.inspect).toHaveBeenCalledOnce()
+  })
+
+  it.each(['classic', 'stateful-experimental'] as const)('preserves all source identities inside the same %s inspection budget', async (mode) => {
+    const run = fixture(mode)
+    const sourcePublications = ['src/page.js', 'src/page.css'].map((file, index) => ({
+      cursor: { ...profileCursor, identity: { buildId: `source-build-${index}`, batchId: `source-batch-${index}`, sourceEvents: [{ eventId: `source-event-${index}`, file }] } },
+      files: [file],
+    }))
+    run.native.resolve({ outputOffset: 20, profileCursor, sourcePublications })
+    run.ready.resolve(10)
+    const inspection = inspectSettledClassicPublication(run.options, { deadline: Date.now() + 1_000 })
+    await vi.waitFor(() => expect(run.options.completion.wait).toHaveBeenCalledOnce())
+    expect(run.options.completion.wait).toHaveBeenCalledWith(expect.any(Number), sourcePublications)
+    expect(run.options.stable).not.toHaveBeenCalled()
+    expect(run.options.inspect).not.toHaveBeenCalled()
+    run.complete.resolve()
+    await vi.waitFor(() => expect(run.options.stable).toHaveBeenCalledOnce())
     run.stable.resolve()
     await expect(inspection).resolves.toEqual({ checkedFileCount: 3 })
     expect(run.options.inspect).toHaveBeenCalledOnce()

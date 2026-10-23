@@ -1,18 +1,13 @@
+import type { ClassicContentAnalysis } from './classicPublication/analysis'
 import type { StatefulHmrControl } from './scenarios'
+import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
-import { parse } from '@babel/parser'
-import traverseModule from '@babel/traverse'
-import { Parser } from 'htmlparser2'
-import postcss from 'postcss'
 import { resolveMiniProgramComponent } from '../../mpcore/packages/simulator/src/runtime/componentResolution'
 import { resolveMiniProgramModule } from '../../mpcore/packages/simulator/src/runtime/moduleResolution'
-import { assertNoStatefulInstallations } from '../../packages/weapp-vite/scripts/consumerHmr/installedRuntime.mjs'
 import { createExtendedLibManager } from '../../packages/weapp-vite/src/plugins/hooks/useLoadEntry/extendedLib'
-import { inspectClassicEmittedScript } from './classicRuntimeInspection'
+import { analyzeClassicContent, classicContentKind } from './classicPublication/analysis'
 import { snapshotDist } from './output'
-
-const traverse = (traverseModule as unknown as { default?: typeof traverseModule }).default ?? traverseModule
 
 function refusedCapturedEndpoint(error: unknown, endpoint: URL): boolean {
   if (!error || typeof error !== 'object') {
@@ -62,8 +57,7 @@ export async function inspectRetiredClassicTransport(control: StatefulHmrControl
   }
 }
 
-/** 核对整个发布集合及本地依赖闭合，不以修改文件数量限制一次完整模式转换。 */
-export async function inspectClassicPublication(root: string, platform: 'weapp' | 'alipay' = 'weapp') {
+async function inspectPublication(root: string, platform: 'weapp' | 'alipay', cache: ReadonlyMap<string, ClassicContentAnalysis>, nextCache: Map<string, ClassicContentAnalysis>) {
   const before = await snapshotDist(root)
   const checked = new Set<string>()
   const extensions = platform === 'weapp' ? { template: '.wxml', style: '.wxss', module: '.wxs' } : { template: '.axml', style: '.acss', module: '.sjs' }
@@ -80,41 +74,19 @@ export async function inspectClassicPublication(root: string, platform: 'weapp' 
       throw new Error(`Classic publication is missing ${file}`)
     }
   }
-  const read = (file: string) => readFile(path.join(root, file), 'utf8')
+  const read = async (file: string) => {
+    const source = await readFile(path.join(root, file))
+    if (createHash('sha256').update(source).digest('hex') !== before.get(file)?.hash) {
+      throw new Error('Classic publication changed during its complete output inspection.')
+    }
+    return source.toString('utf8')
+  }
   const requireEntry = (entry: string) => {
     for (const suffix of ['.js', '.json', extensions.template]) {
       requireFile(`${entry}${suffix}`)
     }
   }
-  const inspectScript = (file: string, source: string) => {
-    assertNoStatefulInstallations(file, source)
-    const ast = parse(source, { sourceType: 'unambiguous', createImportExpressions: true })
-    inspectClassicEmittedScript(ast)
-    const imports: string[] = []
-    traverse(ast, {
-      CallExpression(nodePath) {
-        const { callee, arguments: args } = nodePath.node
-        if (callee.type === 'Identifier' && callee.name === 'require' && !nodePath.scope.hasBinding('require') && args[0]?.type === 'StringLiteral') {
-          imports.push(args[0].value)
-        }
-        if (callee.type === 'Import' && args[0]?.type === 'StringLiteral') {
-          imports.push(args[0].value)
-        }
-      },
-      ImportExpression(nodePath) {
-        if (nodePath.node.source.type !== 'StringLiteral') {
-          throw new Error(`Classic publication has an unsupported dynamic import: ${file}`)
-        }
-        imports.push(nodePath.node.source.value)
-      },
-      ImportDeclaration(nodePath) { imports.push(nodePath.node.source.value) },
-      ExportNamedDeclaration(nodePath) {
-        if (nodePath.node.source) {
-          imports.push(nodePath.node.source.value)
-        }
-      },
-      ExportAllDeclaration(nodePath) { imports.push(nodePath.node.source.value) },
-    })
+  const inspectScript = (file: string, imports: readonly string[]) => {
     for (const target of imports) {
       if (target.startsWith('.') || target.startsWith('/')) {
         resolve(file, target)
@@ -134,7 +106,8 @@ export async function inspectClassicPublication(root: string, platform: 'weapp' 
   }
   requireFile('app.js')
   requireFile('app.json')
-  const app = record(JSON.parse(await read('app.json')) as unknown)
+  const appSource = await read('app.json')
+  const app = record(JSON.parse(appSource) as unknown)
   const extendedLib = createExtendedLibManager()
   extendedLib.syncFromAppJson(app)
   const plugins = record(app.plugins ?? {})
@@ -175,53 +148,38 @@ export async function inspectClassicPublication(root: string, platform: 'weapp' 
     }
     pages(subpackage.pages, subpackage.root)
   }
-  for (const file of before.keys()) {
+  for (const [file, snapshot] of before) {
     if (file.startsWith('__weapp_vite_hmr/')) {
       throw new Error(`Classic publication retained a stateful control file: ${file}`)
     }
-    if (file.endsWith('.js') || file.endsWith(extensions.module)) {
-      const source = await read(file)
-      inspectScript(file, source)
-      if (/^\/\/ weapp-vite-stateful-build:/m.test(source)) {
-        throw new Error(`Classic publication retained a stateful client: ${file}`)
+    const kind = classicContentKind(file, extensions)
+    if (!kind) {
+      checked.add(file)
+      continue
+    }
+    const key = `${kind}:${snapshot.hash}`
+    const analysis = nextCache.get(key) ?? cache.get(key) ?? analyzeClassicContent(kind, file, file === 'app.json' ? appSource : await read(file))
+    nextCache.set(key, analysis)
+    if (analysis.kind === 'script') {
+      inspectScript(file, analysis.dependencies)
+    }
+    else if (analysis.kind === 'configuration') {
+      for (const target of analysis.dependencies) {
+        inspectComponent(file, target)
       }
     }
-    else if (file.endsWith('.json') && !file.endsWith('.map.json')) {
-      const config = JSON.parse(await read(file)) as unknown
-      if (config && typeof config === 'object' && !Array.isArray(config) && 'usingComponents' in config) {
-        for (const target of Object.values(record(config.usingComponents))) {
-          if (typeof target !== 'string') {
-            throw new TypeError(`Classic publication has an invalid component path: ${file}`)
-          }
-          inspectComponent(file, target)
-        }
+    else if (analysis.kind === 'template') {
+      for (const dependency of analysis.dependencies) {
+        const request = dependency.template && !dependency.target.endsWith(extensions.template)
+          ? `${dependency.target}${extensions.template}`
+          : dependency.target
+        requireFile(resolve(file, request))
       }
     }
-    else if (file.endsWith(extensions.template)) {
-      const parser = new Parser({
-        onopentag(name, attributes) {
-          const target = attributes.src ?? (name === 'import-sjs' ? attributes.from : undefined)
-          if (['import', 'include', 'wxs', 'sjs', 'import-sjs'].includes(name) && target) {
-            const request = ['import', 'include'].includes(name) && !target.endsWith(extensions.template)
-              ? `${target}${extensions.template}`
-              : target
-            requireFile(resolve(file, request))
-          }
-        },
-      }, { xmlMode: true })
-      parser.end(await read(file))
-    }
-    else if (file.endsWith(extensions.style)) {
-      postcss.parse(await read(file)).walkAtRules('import', (rule) => {
-        const match = rule.params.trim().match(/^(?:"([^"\\]*)"|'([^'\\]*)'|url\(\s*(?:"([^"\\]*)"|'([^'\\]*)'|([^'"\s()\\]+))\s*\))(?:\s+\S.*)?$/i)
-        const target = match?.slice(1).find(value => value !== undefined)
-        if (!target) {
-          throw new Error(`Classic publication has an unsupported stylesheet import: ${file}`)
-        }
-        if (!/^(?:[a-z][a-z\d+.-]*:|\/\/)/i.test(target)) {
-          requireFile(resolve(file, target))
-        }
-      })
+    else if (analysis.kind === 'style') {
+      for (const target of analysis.dependencies) {
+        requireFile(resolve(file, target))
+      }
     }
     checked.add(file)
   }
@@ -229,5 +187,22 @@ export async function inspectClassicPublication(root: string, platform: 'weapp' 
   if (after.size !== before.size || [...before].some(([file, value]) => after.get(file)?.hash !== value.hash)) {
     throw new Error('Classic publication changed during its complete output inspection.')
   }
-  return { files: [...before].map(([file, value]) => ({ path: file, ...value })), checkedFileCount: checked.size }
+  return { files: [...after].map(([file, value]) => ({ path: file, ...value })), checkedFileCount: checked.size, snapshot: after }
+}
+
+/** 一个检查器只属于同一项目的开发会话；缓存不跨会话、项目或平台共享。 */
+export function createClassicPublicationInspector(root: string, platform: 'weapp' | 'alipay' = 'weapp') {
+  let cache = new Map<string, ClassicContentAnalysis>()
+  return async () => {
+    const nextCache = new Map<string, ClassicContentAnalysis>()
+    const result = await inspectPublication(root, platform, cache, nextCache)
+    // 仅保留本轮完整检查使用的内容摘要，删除文件和旧版本不会在会话中累积。
+    cache = nextCache
+    return result
+  }
+}
+
+/** 核对整个发布集合及本地依赖闭合，不以修改文件数量限制一次完整模式转换。 */
+export async function inspectClassicPublication(root: string, platform: 'weapp' | 'alipay' = 'weapp') {
+  return createClassicPublicationInspector(root, platform)()
 }

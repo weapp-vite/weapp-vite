@@ -3,6 +3,18 @@ export interface WorkspaceHmrCleanupStep {
   run: () => Promise<unknown>
 }
 
+/** 正式验收默认不重试；显式正数仅用于诊断，不能替代首轮失败证据。 */
+export function readWorkspaceHmrScenarioRetries(raw: string | undefined) {
+  if (raw === undefined || raw.trim() === '') {
+    return 0
+  }
+  const value = Number(raw)
+  if (!/^\d+$/.test(raw.trim()) || !Number.isSafeInteger(value) || value < 0) {
+    throw new Error(`Invalid WORKSPACE_HMR_SCENARIO_RETRIES: ${raw}`)
+  }
+  return value
+}
+
 /** 恢复错误必须保留；某一步失败后仍尝试后续清理和产物校验。 */
 export async function collectWorkspaceHmrCleanupErrors(steps: WorkspaceHmrCleanupStep[]) {
   const errors: string[] = []

@@ -1,5 +1,5 @@
 import type { startDevProcess } from '../dev-process'
-import type { NativePublicationOptions, NativePublicationReceipt } from './files'
+import type { NativePublicationOptions, NativePublicationReceipt, NativePublicationSourceEvidence } from './files'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { normalizedSource } from '../devBuildCompletion/nativeIdentity'
@@ -18,6 +18,12 @@ function isFingerprint(value: unknown): value is Record<string, string> {
 
 interface NativePublicationObservation extends NativePublicationReceipt {
   outputOffset: number
+  sourcePublications?: NativePublicationSourceEvidence[]
+}
+
+interface NativePublicationCaptureOptions extends NativePublicationOptions {
+  /** 仅由调用方以本次完整冷构建完成边界证明来源 END 可省略。 */
+  allowSourceFreePublication?: (outputOffset: number) => boolean
 }
 
 function receipts(output: string): NativePublicationObservation[] {
@@ -57,7 +63,7 @@ function receipts(output: string): NativePublicationObservation[] {
 export function captureNativePublication(
   dev: Pick<ReturnType<typeof startDevProcess>, 'getOutput' | 'waitFor'>,
   project: string,
-  options: NativePublicationOptions = {},
+  options: NativePublicationCaptureOptions = {},
 ) {
   const offset = dev.getOutput().length
   const outputRoot = path.resolve(project, options.outputRoot ?? 'dist')
@@ -81,12 +87,14 @@ export function captureNativePublication(
           if (/Build failed|classic HMR 切换失败|classic 回退失败/.test(output)) {
             throw new Error('Native publication failed; preserve the original dev build error')
           }
+          const candidates: NativePublicationObservation[] = []
+          const sourcePublications: NativePublicationSourceEvidence[] = []
+          const observedSources = new Set<string>()
           for (const [index, receipt] of receipts(output).reverse().entries()) {
             const inputGeneration = nativePublicationGeneration(receipt.inputs)
             const matchingInputs = inputGeneration === generation
             const sources = new Set(receipt.profileCursor?.identity?.sourceEvents.map(event => normalizedSource(event.file)))
-            const matchingSources = [...expectedSources].every(file => sources.has(file))
-            if (index > 0 && (!matchingInputs || !matchingSources)) {
+            if (index > 0 && !matchingInputs) {
               continue
             }
             try {
@@ -107,25 +115,41 @@ export function captureNativePublication(
                 diagnostics = {
                   expectedInputGeneration: generation,
                   receipt: { boundary: receipt.boundary, generation: receipt.generation, inputGeneration, identity: receipt.profileCursor?.identity },
-                  missingSources: [...expectedSources].filter(file => !sources.has(file)),
                   inputDifferences: [...new Set([...Object.keys(inputs), ...Object.keys(receipt.inputs)])].sort().filter(file => inputs[file] !== receipt.inputs[file]).map(file => ({ file, expected: inputs[file], actual: receipt.inputs[file] })),
                   outputs: files,
                 }
               }
-              if (matchingInputs && matchingSources && files.every(file => 'actual' in file && file.actual === file.expected)) {
-                if (nativePublicationGeneration(await readNativePublicationInputs(project, options, reads.signal)) !== generation) {
-                  throw new Error('Native publication input changed while awaiting the final write')
+              if (matchingInputs && files.every(file => 'actual' in file && file.actual === file.expected)) {
+                const identity = receipt.profileCursor?.identity
+                const matchingFiles = [...expectedSources].filter(file => sources.has(file))
+                const outputOffset = offset + receipt.outputOffset
+                if (!expectedSources.size || matchingFiles.length || options.allowSourceFreePublication?.(outputOffset)) {
+                  candidates.push({ ...receipt, outputOffset })
                 }
-                if (active) {
-                  completed.resolve({ ...receipt, outputOffset: offset + receipt.outputOffset })
+                if (identity && receipt.profileCursor && matchingFiles.length) {
+                  sourcePublications.unshift({ cursor: { ...receipt.profileCursor, identity }, files: matchingFiles })
+                  for (const file of matchingFiles) {
+                    observedSources.add(file)
+                  }
                 }
-                return
               }
             }
             catch (error) {
               if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
                 throw error
               }
+            }
+          }
+          diagnostics = { ...diagnostics as object, missingSources: [...expectedSources].filter(file => !observedSources.has(file)) }
+          // 同一最终输入可被多个真实通知批次消费；每个来源保留自身的原生写出和 END 游标。
+          const covered = observedSources.size === expectedSources.size
+          const receipt = candidates.find(candidate => covered || options.allowSourceFreePublication?.(candidate.outputOffset))
+          if (receipt) {
+            if (nativePublicationGeneration(await readNativePublicationInputs(project, options, reads.signal)) !== generation) {
+              throw new Error('Native publication input changed while awaiting the final write')
+            }
+            if (active) {
+              completed.resolve({ ...receipt, ...(covered && expectedSources.size ? { sourcePublications } : {}) })
             }
           }
         }

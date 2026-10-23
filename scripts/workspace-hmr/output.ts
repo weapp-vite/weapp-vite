@@ -45,19 +45,37 @@ export async function listFiles(root: string, allowMissingRoot = true): Promise<
 }
 
 export async function snapshotDist(distRoot: string) {
-  const snapshot = new Map<string, DistFileSnapshot>()
-  for (const filePath of await listFiles(distRoot, false)) {
-    const fileStat = await stat(filePath)
-    if (!fileStat.isFile()) {
-      continue
+  const files = await listFiles(distRoot, false)
+  const entries = Array.from<[string, DistFileSnapshot] | undefined>({ length: files.length })
+  let nextIndex = 0
+  let failure: { error: unknown } | undefined
+  // 大型 npm 产物也逐字节检查；限制同时持有的文件句柄，并等待失败前已开始的读取收束。
+  await Promise.all(Array.from({ length: Math.min(16, files.length) }, async () => {
+    while (!failure) {
+      const index = nextIndex++
+      const filePath = files[index]
+      if (filePath === undefined) {
+        return
+      }
+      try {
+        const fileStat = await stat(filePath)
+        if (fileStat.isFile()) {
+          const content = await readFile(filePath)
+          entries[index] = [path.relative(distRoot, filePath).replaceAll('\\', '/'), {
+            hash: createHash('sha256').update(content).digest('hex'),
+            size: fileStat.size,
+          }]
+        }
+      }
+      catch (error) {
+        failure ??= { error }
+      }
     }
-    const content = await readFile(filePath)
-    snapshot.set(path.relative(distRoot, filePath).replaceAll('\\', '/'), {
-      hash: createHash('sha256').update(content).digest('hex'),
-      size: fileStat.size,
-    })
+  }))
+  if (failure) {
+    throw failure.error
   }
-  return snapshot
+  return new Map(entries.filter((entry): entry is [string, DistFileSnapshot] => entry !== undefined))
 }
 
 export async function waitForStableDistSnapshot(distRoot: string, stableMs: number, timeoutMs: number, signal?: AbortSignal) {

@@ -166,16 +166,24 @@ function isPublicExportValue(nodePath, key) {
   return false
 }
 
-/** 公开常量声明及导出可保留；其他用途必须证明没有残留的客户端或控制器。 */
-export function assertNoStatefulInstallations(filename, source) {
-  let ast
+/** 统一源码与预解析调用方的语法选项，避免同一发布检查重复解析脚本。 */
+export function parseClassicJavaScript(filename, source) {
   try {
     // 转义字面量和静态模板也能表示 runtime key，不能按原始文本提前跳过。
-    ast = parse(source, { sourceType: 'unambiguous', sourceFilename: filename })
+    return parse(source, { sourceType: 'unambiguous', sourceFilename: filename, createImportExpressions: true })
   }
   catch (error) {
     assert.fail(`Cannot inspect classic JavaScript: ${filename}: ${error.message}`)
   }
+}
+
+/** 保留源码检查入口；需要进一步语义检查的调用方可共享同一棵临时语法树。 */
+export function assertNoStatefulInstallations(filename, source) {
+  assertNoStatefulInstallationsAst(filename, parseClassicJavaScript(filename, source))
+}
+
+/** 公开常量声明及导出可保留；其他用途必须证明没有残留的客户端或控制器。 */
+export function assertNoStatefulInstallationsAst(filename, ast) {
   const fail = key => assert.fail(`Classic ${filename.replaceAll('\\', '/')} must remove ${key} runtime usage`)
   const inspectValue = (nodePath, key) => {
     let value = nodePath

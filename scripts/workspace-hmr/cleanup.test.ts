@@ -1,7 +1,19 @@
 import { describe, expect, it } from 'vitest'
-import { collectWorkspaceHmrCleanupErrors, isWorkspaceHmrScenarioRetryable } from './cleanup'
+import { collectWorkspaceHmrCleanupErrors, isWorkspaceHmrScenarioRetryable, readWorkspaceHmrScenarioRetries } from './cleanup'
 
 describe('workspace HMR cleanup', () => {
+  it('defaults to a single attempt and accepts an explicit zero retry budget', () => {
+    expect(readWorkspaceHmrScenarioRetries(undefined)).toBe(0)
+    expect(readWorkspaceHmrScenarioRetries('')).toBe(0)
+    expect(readWorkspaceHmrScenarioRetries('  ')).toBe(0)
+    expect(readWorkspaceHmrScenarioRetries('0')).toBe(0)
+    expect(readWorkspaceHmrScenarioRetries(' 2 ')).toBe(2)
+  })
+
+  it.each(['-1', '0.5', '1tail', 'Infinity', '0x2', '1e2', '9007199254740992'])('rejects an invalid retry budget %s', (raw) => {
+    expect(() => readWorkspaceHmrScenarioRetries(raw)).toThrow('Invalid WORKSPACE_HMR_SCENARIO_RETRIES')
+  })
+
   it('preserves failed source restoration and still checks emitted output', async () => {
     const operations: string[] = []
     const errors = await collectWorkspaceHmrCleanupErrors([

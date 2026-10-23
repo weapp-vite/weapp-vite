@@ -71,14 +71,20 @@ it.each(['classic', 'after-fallback'] as const)('filters native receipt sources 
   expect(capture.native).toHaveBeenCalledTimes(2)
 })
 
-it.each(['auto', 'stateful-experimental'] as const)('does not filter a %s native receipt before cold classic readiness', async (requested) => {
+it.each(['auto', 'stateful-experimental'] as const)('requires %s source identities until a new cold classic readiness proves the receipt complete', async (requested) => {
   const run = await fixture('initial native build complete\n', requested)
   run.publication.capture('src/app.js')
-  expect(capture.native).toHaveBeenLastCalledWith(run.dev, run.project, {})
+  const options = capture.native.mock.calls[0]![2]!
+  expect(options.expectedSourceFiles).toEqual(['src/app.js'])
+  expect(options.allowSourceFreePublication?.(run.dev.getOutput().length)).toBe(false)
   run.append(fallbackLog({ ...fallbackRecord, requested }))
+  const receiptEnd = run.dev.getOutput().length
+  expect(options.allowSourceFreePublication?.(receiptEnd)).toBe(false)
+  run.append(readyLog({ ...readyRecord, requested }))
+  expect(options.allowSourceFreePublication?.(receiptEnd)).toBe(true)
+  expect(options.allowSourceFreePublication?.(run.dev.getOutput().length)).toBe(false)
   run.publication.capture(['src/app.js', 'src/page.vue'])
-  expect(capture.native).toHaveBeenLastCalledWith(run.dev, run.project, {})
-  expect(capture.native).toHaveBeenCalledTimes(2)
+  expect(capture.native).toHaveBeenLastCalledWith(run.dev, run.project, { expectedSourceFiles: ['src/app.js', 'src/page.vue'] })
 })
 
 it.each(['auto', 'stateful-experimental'] as const)('validates the configured %s request independently of the initial stateful delivery', async (requested) => {
@@ -146,9 +152,28 @@ it('requires final source completion when a new classic ready precedes the final
   expect(run.publication.stateful).toBe(false)
 })
 
+it('passes every selected source identity to completion after classic readiness', async () => {
+  const run = await fixture()
+  const completionWait = vi.fn(async () => {})
+  capture.completion.mockReturnValue({ wait: completionWait })
+  const publication = run.publication.capture(['src/app.js', 'src/page.vue'])
+  run.append(fallback + ready)
+  run.append('final source generation published\n')
+  const receipt = run.receipt()
+  const sourcePublications = ['src/app.js', 'src/page.vue'].map((file, index) => ({
+    cursor: { ...receipt.profileCursor!, identity: { buildId: `source-build-${index}`, batchId: `source-batch-${index}`, sourceEvents: [{ eventId: `event-${index}`, file }] } },
+    files: [file],
+  }))
+  run.native.resolve({ ...receipt, sourcePublications })
+  await publication.wait()
+  expect(completionWait).toHaveBeenCalledExactlyOnceWith(90_000, sourcePublications)
+})
+
 it.each([true, false])('accepts cold classic readiness after the final receipt with fallback logged before it: %s', async (fallbackBeforeReceipt) => {
   const run = await fixture()
-  const publication = run.publication.capture()
+  const completionWait = vi.fn(async () => {})
+  capture.completion.mockReturnValue({ wait: completionWait })
+  const publication = run.publication.capture('src/app.js')
   if (fallbackBeforeReceipt) {
     run.append(fallback)
   }
@@ -157,7 +182,7 @@ it.each([true, false])('accepts cold classic readiness after the final receipt w
   run.append(fallbackBeforeReceipt ? ready : fallback + ready)
   await expect(publication.wait()).resolves.toBeUndefined()
   expect(run.publication.stateful).toBe(false)
-  expect(capture.completion).not.toHaveBeenCalled()
+  expect(completionWait).not.toHaveBeenCalled()
 })
 
 it('preserves a final source post-write failure even when fallback is already ready', async () => {

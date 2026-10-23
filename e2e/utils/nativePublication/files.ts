@@ -23,6 +23,13 @@ export interface NativePublicationProfileIdentity {
   sourceEvents: Array<{ eventId: string, file: string }>
 }
 
+export interface NativePublicationSourceEvidence {
+  cursor: NativePublicationProfileCursor & { identity: NativePublicationProfileIdentity }
+  files: readonly string[]
+}
+
+export type NativePublicationCompletionEvidence = NativePublicationProfileCursor | readonly NativePublicationSourceEvidence[]
+
 export interface NativePublicationReceipt {
   boundary: 'native-byte-write' | 'native-noop'
   generation: string

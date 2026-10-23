@@ -1,6 +1,6 @@
 import type { startDevProcess } from './dev-process'
 import type { SnapshotPublication, SourcePublication } from './devBuildCompletion/sourcePublication'
-import type { NativePublicationProfileCursor } from './nativePublication/files'
+import type { NativePublicationCompletionEvidence } from './nativePublication/files'
 import { randomUUID } from 'node:crypto'
 import { captureSourcePublication } from './devBuildCompletion/sourcePublication'
 import { NATIVE_BATCH_SETTLEMENT_PREFIX } from './nativeBatchSettlementPlugin'
@@ -69,7 +69,7 @@ export function createDevBuildCompletion(dev: DevProcess, options: CompletionOpt
     ? 'native snapshot settlement'
     : 'completed' in options ? options.completed : 'source profile publication'
   return {
-    async wait(timeoutMs = 30_000, profileCursor?: NativePublicationProfileCursor): Promise<void> {
+    async wait(timeoutMs = 30_000, profileCursor?: NativePublicationCompletionEvidence): Promise<void> {
       const completion = Promise.withResolvers<void>()
       const reads = new AbortController()
       let active = true

@@ -1,6 +1,6 @@
 import type { HmrProfileJsonSample } from '../../../packages/weapp-vite/src/analyze/hmr'
 import type { HmrProfileSourceEvent } from '../../../packages/weapp-vite/src/utils/hmrProfile/provenance'
-import type { NativePublicationProfileCursor } from '../nativePublication/files'
+import type { NativePublicationCompletionEvidence, NativePublicationSourceEvidence } from '../nativePublication/files'
 import { readFileSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import { readHmrProfileLines } from '../../../packages/weapp-vite/src/analyze/hmr/reader'
@@ -17,6 +17,10 @@ export interface SnapshotPublication {
   files: readonly string[]
   profilePath: string
   requestSettlement: (id: string) => void
+}
+
+function isSourceEvidence(value: NativePublicationCompletionEvidence | undefined): value is readonly NativePublicationSourceEvidence[] {
+  return Array.isArray(value)
 }
 
 function hasSnapshotSources(content: string, files: ReadonlySet<string>, capturedAtEpochMs: number) {
@@ -95,7 +99,8 @@ export function captureSourcePublication(source: SourcePublication | SnapshotPub
   }
   let profileStatus = 'not-read'
   let samples: HmrProfileJsonSample[] = []
-  const check = async (signal: AbortSignal, profileCursor?: NativePublicationProfileCursor) => {
+  let publicationDiagnostics: unknown
+  const check = async (signal: AbortSignal, evidence?: NativePublicationCompletionEvidence) => {
     let content: string
     try {
       content = await readFile(source.profilePath, { encoding: 'utf8', signal })
@@ -107,70 +112,83 @@ export function captureSourcePublication(source: SourcePublication | SnapshotPub
       }
       throw error
     }
+    profileStatus = 'read'
     // 文件被截断或替换后重新从头读取；事件时钟仍会拒绝旧来源，不沿用失效的字符游标。
-    let offset = content.startsWith(previousContent) ? previousContent.length : 0
-    if (profileCursor) {
-      if (content.length < profileCursor.offset || nativePublicationHash(content.slice(0, profileCursor.offset)) !== profileCursor.prefixHash) {
+    const capturedOffset = content.startsWith(previousContent) ? previousContent.length : 0
+    const publications = isSourceEvidence(evidence) ? evidence : [{ cursor: evidence, files: [...files] }]
+    for (const { cursor } of publications) {
+      if (cursor && (content.length < cursor.offset || nativePublicationHash(content.slice(0, cursor.offset)) !== cursor.prefixHash)) {
         throw new Error('HMR profile was truncated or replaced after the native byte write')
       }
-      offset = Math.max(offset, profileCursor.offset)
     }
-    // appendFile 尚未写完的行不能成为完成证据；下次仍从同一游标重新读取。
-    const completeLines = content.slice(offset, content.lastIndexOf('\n') + 1)
-    profileStatus = 'read'
     if (snapshot) {
-      return hasSnapshotSources(completeLines, files, capturedAtEpochMs)
+      return publications.length > 0 && publications.every(({ cursor }) => hasSnapshotSources(content.slice(Math.max(capturedOffset, cursor?.offset ?? 0), content.lastIndexOf('\n') + 1), files, capturedAtEpochMs))
     }
-    for (const line of completeLines.split(/\r?\n/)) {
-      let value: unknown
-      try {
-        value = JSON.parse(line)
-      }
-      catch {
-        continue
-      }
-      if (profileCursor?.identity) {
-        if (value && typeof value === 'object' && 'status' in value && value.status === 'failed'
-          && nativeIdentitySources(value, profileCursor.identity, files).size) {
-          throw new Error('Current source publication failed; preserve the original dev build error')
-        }
-        continue
-      }
-      if (profileCursor && value && typeof value === 'object' && 'status' in value && value.status === 'failed'
-        && 'clock' in value && value.clock && typeof value.clock === 'object' && 'timeOrigin' in value.clock && typeof value.clock.timeOrigin === 'number'
-        && 'sourceEvents' in value && Array.isArray(value.sourceEvents)) {
-        const timeOrigin = value.clock.timeOrigin
-        if (value.sourceEvents.some((event: unknown) => event && typeof event === 'object'
-          && 'file' in event && typeof event.file === 'string' && files.has(normalizedSource(event.file))
-          && 'receivedAtMs' in event && typeof event.receivedAtMs === 'number' && Number.isFinite(event.receivedAtMs)
-          && Number.isFinite(timeOrigin + event.receivedAtMs) && timeOrigin + event.receivedAtMs >= capturedAtEpochMs)) {
-          throw new Error('Current source publication failed; preserve the original dev build error')
-        }
-      }
-    }
-    samples = readHmrProfileLines(completeLines).samples
+    publicationDiagnostics = publications.map(({ cursor, files }) => ({ offset: cursor?.offset, identity: cursor?.identity, files }))
+    samples = []
     const published = new Set<string>()
-    for (const sample of samples.filter(sample => sample.schemaVersion === 1
-      && sample.status === 'complete'
-      && sample.correlation === 'known'
-      && Boolean(sample.buildId && sample.batchId)
-      && sample.clock?.durations === 'performance.now'
-      && Number.isFinite(sample.clock.timeOrigin)
-      && sample.clock.timeOrigin > 0)) {
-      if (profileCursor?.identity) {
-        for (const file of nativeIdentitySources(sample, profileCursor.identity, files)) {
-          published.add(file)
+    let allPublished = true
+    for (const publication of publications) {
+      const profileCursor = publication.cursor
+      const publicationFiles = new Set(publication.files.map(normalizedSource).filter(file => files.has(file)))
+      const currentPublished = new Set<string>()
+      // 各身份从自己的写出游标读取；后批次的游标不能抹去先批次已完成的 END。
+      const offset = Math.max(capturedOffset, profileCursor?.offset ?? 0)
+      const completeLines = content.slice(offset, content.lastIndexOf('\n') + 1)
+      for (const line of completeLines.split(/\r?\n/)) {
+        let value: unknown
+        try {
+          value = JSON.parse(line)
         }
-        continue
-      }
-      for (const event of sample.sourceEvents ?? []) {
-        if (event.file && files.has(normalizedSource(event.file)) && Number.isFinite(event.receivedAtMs)
-          && Number.isFinite(sample.clock!.timeOrigin + event.receivedAtMs) && sample.clock!.timeOrigin + event.receivedAtMs >= capturedAtEpochMs) {
-          published.add(normalizedSource(event.file))
+        catch {
+          continue
+        }
+        if (profileCursor?.identity) {
+          if (value && typeof value === 'object' && 'status' in value && value.status === 'failed'
+            && nativeIdentitySources(value, profileCursor.identity, publicationFiles).size) {
+            throw new Error('Current source publication failed; preserve the original dev build error')
+          }
+          continue
+        }
+        if (profileCursor && value && typeof value === 'object' && 'status' in value && value.status === 'failed'
+          && 'clock' in value && value.clock && typeof value.clock === 'object' && 'timeOrigin' in value.clock && typeof value.clock.timeOrigin === 'number'
+          && 'sourceEvents' in value && Array.isArray(value.sourceEvents)) {
+          const timeOrigin = value.clock.timeOrigin
+          if (value.sourceEvents.some((event: unknown) => event && typeof event === 'object'
+            && 'file' in event && typeof event.file === 'string' && publicationFiles.has(normalizedSource(event.file))
+            && 'receivedAtMs' in event && typeof event.receivedAtMs === 'number' && Number.isFinite(event.receivedAtMs)
+            && Number.isFinite(timeOrigin + event.receivedAtMs) && timeOrigin + event.receivedAtMs >= capturedAtEpochMs)) {
+            throw new Error('Current source publication failed; preserve the original dev build error')
+          }
         }
       }
+      const currentSamples = readHmrProfileLines(completeLines).samples
+      samples.push(...currentSamples)
+      for (const sample of currentSamples.filter(sample => sample.schemaVersion === 1
+        && sample.status === 'complete'
+        && sample.correlation === 'known'
+        && Boolean(sample.buildId && sample.batchId)
+        && sample.clock?.durations === 'performance.now'
+        && Number.isFinite(sample.clock.timeOrigin)
+        && sample.clock.timeOrigin > 0)) {
+        if (profileCursor?.identity) {
+          for (const file of nativeIdentitySources(sample, profileCursor.identity, publicationFiles)) {
+            published.add(file)
+            currentPublished.add(file)
+          }
+          continue
+        }
+        for (const event of sample.sourceEvents ?? []) {
+          if (event.file && publicationFiles.has(normalizedSource(event.file)) && Number.isFinite(event.receivedAtMs)
+            && Number.isFinite(sample.clock!.timeOrigin + event.receivedAtMs) && sample.clock!.timeOrigin + event.receivedAtMs >= capturedAtEpochMs) {
+            published.add(normalizedSource(event.file))
+            currentPublished.add(normalizedSource(event.file))
+          }
+        }
+      }
+      allPublished &&= currentPublished.size === publicationFiles.size
     }
-    return published.size === files.size
+    return allPublished && published.size === files.size
   }
   return {
     check,
@@ -178,6 +196,7 @@ export function captureSourcePublication(source: SourcePublication | SnapshotPub
       ...('file' in source && source.file ? { file: normalizedSource(source.file) } : { files: [...files] }),
       capturedAtEpochMs,
       profileStatus,
+      publications: publicationDiagnostics,
       samples: samples.slice(-4).map(sample => ({
         status: sample.status,
         correlation: sample.correlation,

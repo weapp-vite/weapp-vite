@@ -19,7 +19,14 @@ export function captureWorkspaceClassicPublication(options: {
 }) {
   const { project, dev } = options
   const offset = dev.getOutput().length
-  const native = captureNativePublication(dev, project.root, { sourceRoot: path.relative(project.root, project.sourceRoot) || '.', outputRoot: project.distRoot })
+  const native = captureNativePublication(dev, project.root, {
+    sourceRoot: path.relative(project.root, project.sourceRoot) || '.',
+    outputRoot: project.distRoot,
+    expectedSourceFiles: [options.sourceFile],
+    ...(options.mode === 'stateful-experimental'
+      ? { allowSourceFreePublication: (receiptOffset: number) => dev.getOutput().indexOf('[weapp-vite] HMR classic ready ', offset) >= receiptOffset }
+      : {}),
+  })
   const completion = createDevBuildCompletion(dev, { source: { files: [options.sourceFile], profilePath: options.profilePath } })
   return {
     inspect<T>(budget: WorkspaceHmrAuditBudget, inspect: () => Promise<T>) {

@@ -1,8 +1,18 @@
 import { WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY, WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY, WEAPP_VITE_STATEFUL_HMR_DIRECTORY } from '@weapp-core/constants'
 import { describe, expect, it } from 'vitest'
-import { assertNoStatefulInstallations } from './installedRuntime.mjs'
+import { assertNoStatefulInstallations, assertNoStatefulInstallationsAst, parseClassicJavaScript } from './installedRuntime.mjs'
 
 describe('classic emitted stateful installation inspection', () => {
+  it('shares parser semantics between the source wrapper and temporary AST inspection', () => {
+    const source = 'import("./lazy.js");'
+    const ast = parseClassicJavaScript('runtime.js', source)
+    expect(ast.program.body[0]).toMatchObject({ type: 'ExpressionStatement', expression: { type: 'ImportExpression' } })
+    expect(() => assertNoStatefulInstallations('runtime.js', source)).not.toThrow()
+    expect(() => assertNoStatefulInstallationsAst('runtime.js', ast)).not.toThrow()
+    const unsafe = `const key = ${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY)}; globalThis[key] = {};`
+    expect(() => assertNoStatefulInstallationsAst('runtime.js', parseClassicJavaScript('runtime.js', unsafe))).toThrow('must remove')
+  })
+
   it.each([
     [WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY, 'WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY'],
     [WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY, 'WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY'],

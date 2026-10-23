@@ -171,6 +171,102 @@ describe('workspace HMR initial output publication', () => {
 })
 
 describe('workspace HMR output snapshot races', () => {
+  it('bounds simultaneous reads and preserves sorted inventory when files finish out of order', async () => {
+    const root = await createOutput()
+    const names = Array.from({ length: 35 }, (_, index) => `asset-${String(index).padStart(2, '0')}.txt`)
+    await Promise.all(names.map(name => writeFile(path.join(root, name), name)))
+    const saturated = Promise.withResolvers<void>()
+    const release = Promise.withResolvers<void>()
+    const othersStarted = Promise.withResolvers<void>()
+    const releaseApp = Promise.withResolvers<void>()
+    let active = 0
+    let peak = 0
+    let started = 0
+    fsHooks.beforeRead = async (filename) => {
+      peak = Math.max(peak, ++active)
+      if (active === 16) {
+        saturated.resolve()
+      }
+      if (++started === names.length + 1) {
+        othersStarted.resolve()
+      }
+      try {
+        await release.promise
+        if (filename === path.join(root, 'app.json')) {
+          await releaseApp.promise
+        }
+      }
+      finally {
+        active -= 1
+      }
+    }
+    const waiting = snapshotDist(root)
+    try {
+      await saturated.promise
+      expect(peak).toBe(16)
+      expect(started).toBe(16)
+      release.resolve()
+      await othersStarted.promise
+      releaseApp.resolve()
+      const snapshot = await waiting
+      expect(peak).toBe(16)
+      expect([...snapshot.keys()]).toEqual(['app.json', ...names])
+      expect(snapshot.size).toBe(36)
+    }
+    finally {
+      release.resolve()
+      releaseApp.resolve()
+      await waiting
+    }
+  })
+
+  it('waits for in-flight reads to settle after a failure and never starts the queued remainder', async () => {
+    const root = await createOutput()
+    await Promise.all(Array.from({ length: 30 }, (_, index) => writeFile(path.join(root, `asset-${index}.txt`), 'asset')))
+    const saturated = Promise.withResolvers<void>()
+    const failed = Promise.withResolvers<void>()
+    const release = Promise.withResolvers<void>()
+    const failure = new Error('strict output read failed')
+    let started = 0
+    let finished = 0
+    let settled = false
+    fsHooks.beforeRead = async (filename) => {
+      if (++started === 16) {
+        saturated.resolve()
+      }
+      if (filename === path.join(root, 'app.json')) {
+        await saturated.promise
+        failed.resolve()
+        throw failure
+      }
+      await release.promise
+      finished += 1
+    }
+    const waiting = snapshotDist(root)
+    void waiting.then(() => {
+      settled = true
+    }, () => {
+      settled = true
+    })
+    const rejected = expect(waiting).rejects.toBe(failure)
+    try {
+      await failed.promise
+      // 让读取错误传递到 worker，随后才释放仍在执行的其他读取。
+      await Promise.resolve()
+      await Promise.resolve()
+      expect(settled).toBe(false)
+      expect(started).toBe(16)
+      expect(finished).toBe(0)
+    }
+    finally {
+      release.resolve()
+      await rejected
+    }
+    expect(settled).toBe(true)
+    expect(started).toBe(16)
+    expect(finished).toBe(15)
+  })
+
   it.each([
     { change: 'removed', operation: 'stat', injectedCode: undefined },
     { change: 'removed', operation: 'readFile', injectedCode: undefined },
