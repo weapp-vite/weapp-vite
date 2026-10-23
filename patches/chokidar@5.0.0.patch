@@ -42,7 +42,7 @@ index 520571aa4f7339e1a992ebb378c74aa253173f56..084dce7eeaa00f61a3533a92227fbf8c
 +    _addToNodeFs(path: string, initialAdd: boolean, priorWh: WatchHelper | undefined, depth: number, target?: string, isActive?: () => boolean): Promise<string | false | undefined>;
  }
 diff --git a/handler.js b/handler.js
-index 6b12880bfcdae186dd738a9397b53ebb5849f0ac..5f341e1f76836da018edc8ac3202169d5ddc5701 100644
+index 6b12880bfcdae186dd738a9397b53ebb5849f0ac..eae21f1e01ee82018a3b893d918fd4a6814629d0 100644
 --- a/handler.js
 +++ b/handler.js
 @@ -26,6 +26,15 @@ export const EVENTS = {
@@ -562,14 +562,14 @@ index 6b12880bfcdae186dd738a9397b53ebb5849f0ac..5f341e1f76836da018edc8ac3202169d
                      }
 -                    if ((isMacos || isLinux || isFreeBSD) && prevStats.ino !== newStats.ino) {
 -                        this.fsw._closeFile(path);
--                        prevStats = newStats;
++                    if (isCurrentBinding(binding))
+                         prevStats = newStats;
 -                        const closer = this._watchWithNodeFs(file, listener);
 -                        if (closer)
 -                            this.fsw._addPathCloser(path, closer);
 -                    }
 -                    else {
-+                    if (isCurrentBinding(binding))
-                         prevStats = newStats;
+-                        prevStats = newStats;
 -                    }
                  }
 -                catch (error) {
@@ -652,7 +652,7 @@ index 6b12880bfcdae186dd738a9397b53ebb5849f0ac..5f341e1f76836da018edc8ac3202169d
              if (dir.has(item)) {
                  if (this.fsw._symlinkPaths.get(full) !== linkPath) {
                      this.fsw._symlinkPaths.set(full, linkPath);
-@@ -446,38 +671,79 @@ export class NodeFsHandler {
+@@ -446,38 +671,80 @@ export class NodeFsHandler {
          }
          this.fsw._symlinkPaths.set(full, true);
      }
@@ -709,6 +709,7 @@ index 6b12880bfcdae186dd738a9397b53ebb5849f0ac..5f341e1f76836da018edc8ac3202169d
 -        });
 -        if (!stream)
 -            return;
++        let missingDirectory = false;
 +        try {
 +            stream = this.fsw._readdirp(directory, {
 +                fileFilter: (entry) => wh.filterPath(entry),
@@ -746,7 +747,7 @@ index 6b12880bfcdae186dd738a9397b53ebb5849f0ac..5f341e1f76836da018edc8ac3202169d
              // Files that present in current directory snapshot
              // but absent in previous are added to watch list and
              // emit `add` event.
-@@ -485,37 +751,32 @@ export class NodeFsHandler {
+@@ -485,37 +752,42 @@ export class NodeFsHandler {
                  this.fsw._incrReadyCount();
                  // ensure relativeness of path is preserved in case of watcher reuse
                  path = sp.join(dir, sp.relative(dir, path));
@@ -774,12 +775,22 @@ index 6b12880bfcdae186dd738a9397b53ebb5849f0ac..5f341e1f76836da018edc8ac3202169d
 -                    return item !== directory && !current.has(item);
 -                })
 -                    .forEach((item) => {
++            .on('warn', (error) => {
++            // readdirp 将根 ENOENT 作为 warn 后正常结束；空目录也必须释放消失的旧监听代。
++            if (error?.code === 'ENOENT' && typeof error.path === 'string' &&
++                sp.resolve(error.path) === sp.resolve(directory))
++                missingDirectory = true;
++        })
 +            .on(EV.ERROR, this._boundHandleError)
 +            .once(STR_CLOSE, finish)
 +            .once(STR_END, () => {
 +            const wasThrottled = finish();
 +            if (this.fsw.closed || !isActive())
 +                return;
++            if (missingDirectory) {
++                this.fsw._remove(sp.dirname(directory), sp.basename(directory), true);
++                return;
++            }
 +            // Files that absent in current directory snapshot
 +            // but present in previous emit `remove` event
 +            // and are removed from @watched[directory].
@@ -805,7 +816,7 @@ index 6b12880bfcdae186dd738a9397b53ebb5849f0ac..5f341e1f76836da018edc8ac3202169d
      }
      /**
       * Read directory to add / remove files from `@watched` list and re-read it on change.
-@@ -526,34 +787,65 @@ export class NodeFsHandler {
+@@ -526,34 +798,65 @@ export class NodeFsHandler {
       * @param target child path targeted for watch
       * @param wh Common watch helpers for this path
       * @param realpath
@@ -892,7 +903,7 @@ index 6b12880bfcdae186dd738a9397b53ebb5849f0ac..5f341e1f76836da018edc8ac3202169d
      }
      /**
       * Handle added file, directory, or glob pattern.
-@@ -564,9 +856,17 @@ export class NodeFsHandler {
+@@ -564,9 +867,17 @@ export class NodeFsHandler {
       * @param depth Child path actually targeted for watch
       * @param target Child path actually targeted for watch
       */
@@ -912,7 +923,7 @@ index 6b12880bfcdae186dd738a9397b53ebb5849f0ac..5f341e1f76836da018edc8ac3202169d
              ready();
              return false;
          }
-@@ -576,11 +876,13 @@ export class NodeFsHandler {
+@@ -576,11 +887,13 @@ export class NodeFsHandler {
              wh.filterDir = (entry) => priorWh.filterDir(entry);
          }
          // evaluate what is at the path we're being asked to watch
@@ -927,7 +938,7 @@ index 6b12880bfcdae186dd738a9397b53ebb5849f0ac..5f341e1f76836da018edc8ac3202169d
                  ready();
                  return false;
              }
-@@ -591,9 +893,18 @@ export class NodeFsHandler {
+@@ -591,9 +904,18 @@ export class NodeFsHandler {
                  const targetPath = follow ? await fsrealpath(path) : path;
                  if (this.fsw.closed)
                      return;
@@ -947,7 +958,7 @@ index 6b12880bfcdae186dd738a9397b53ebb5849f0ac..5f341e1f76836da018edc8ac3202169d
                  // preserve this symlink's target path
                  if (absPath !== targetPath && targetPath !== undefined) {
                      this.fsw._symlinkPaths.set(absPath, targetPath);
-@@ -603,12 +914,21 @@ export class NodeFsHandler {
+@@ -603,12 +925,21 @@ export class NodeFsHandler {
                  const targetPath = follow ? await fsrealpath(path) : path;
                  if (this.fsw.closed)
                      return;
@@ -972,7 +983,7 @@ index 6b12880bfcdae186dd738a9397b53ebb5849f0ac..5f341e1f76836da018edc8ac3202169d
                  // preserve this symlink's target path
                  if (targetPath !== undefined) {
                      this.fsw._symlinkPaths.set(sp.resolve(path), targetPath);
-@@ -623,9 +943,33 @@ export class NodeFsHandler {
+@@ -623,9 +954,33 @@ export class NodeFsHandler {
              return false;
          }
          catch (error) {

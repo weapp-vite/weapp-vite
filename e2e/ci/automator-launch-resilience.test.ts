@@ -1482,18 +1482,41 @@ describe('automator launch resilience', { concurrent: false, timeout: 30_000 }, 
       pages: ['pages/index/index'],
     })
 
+    const rootProbeWaits = [Promise.withResolvers<void>(), Promise.withResolvers<void>()]
+    const relaunchStarted = Promise.withResolvers<void>()
+    const recoveryStarted = Promise.withResolvers<void>()
+    const refreshStarted = Promise.withResolvers<void>()
+    const compileStarted = Promise.withResolvers<void>()
+    let rootProbeWaitIndex = 0
     const missingRootPage = createMockPage('/pages/index/index')
     missingRootPage.$ = vi.fn(async (selector: string) => selector === '#ready-root' ? null : { tag: 'generic-root' })
     missingRootPage.$$ = vi.fn(async (selector: string) => selector === '#ready-root' ? [] : [{ tag: 'generic-root' }])
+    missingRootPage.waitFor = vi.fn((timeoutMs: number) => {
+      const waiting = new Promise<void>(resolve => setTimeout(resolve, timeoutMs))
+      rootProbeWaits[rootProbeWaitIndex++]?.resolve()
+      return waiting
+    })
     const firstMiniProgram = createMockMiniProgram({ currentPage: missingRootPage })
     firstMiniProgram.reLaunch = firstMiniProgram.__rawReLaunch = vi.fn(async () => {
-      await new Promise(resolve => setTimeout(resolve, 80))
+      const waiting = new Promise<void>(resolve => setTimeout(resolve, 80))
+      relaunchStarted.resolve()
+      await waiting
       return missingRootPage
     })
     const secondMiniProgram = createMockMiniProgram({ currentPage: createMockPage('/pages/index/index') })
+    secondMiniProgram.__rawCompile.mockImplementationOnce(async () => {
+      compileStarted.resolve()
+    })
     launchMock
       .mockResolvedValueOnce(firstMiniProgram)
       .mockResolvedValueOnce(secondMiniProgram)
+    cleanupResidualDevtoolsProcessesMock.mockImplementationOnce(async () => {
+      recoveryStarted.resolve()
+    })
+    openWechatIdeProjectByHttpMock.mockImplementationOnce(async () => {
+      refreshStarted.resolve()
+      return ''
+    })
     execaMock.mockResolvedValueOnce({
       exitCode: 0,
       stdout: '',
@@ -1501,12 +1524,61 @@ describe('automator launch resilience', { concurrent: false, timeout: 30_000 }, 
     })
 
     const { launchAutomator } = await import('../utils/automator')
-    await expect(launchAutomator({
-      projectPath: sandboxRoot,
-      retryWarmupTimeout: true,
-      timeout: 3_000,
-      warmupRootSelectors: ['#ready-root'],
-    })).resolves.toBeTruthy()
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date', 'performance'] })
+    let launchTask: ReturnType<typeof launchAutomator> | undefined
+    try {
+      launchTask = launchAutomator({
+        projectPath: sandboxRoot,
+        retryWarmupTimeout: true,
+        timeout: 3_000,
+        warmupRootSelectors: ['#ready-root'],
+      })
+      const outcome = launchTask.then(
+        value => ({ status: 'fulfilled' as const, value }),
+        reason => ({ status: 'rejected' as const, reason }),
+      )
+      const waitForStage = async (started: Promise<void>, stage: string) => {
+        await Promise.race([
+          started,
+          outcome.then((result) => {
+            if (result.status === 'rejected') {
+              throw result.reason
+            }
+            throw new Error(`Launch completed before ${stage}`)
+          }),
+        ])
+      }
+
+      // 仅在已观察到对应等待阶段后推进时钟，真实文件预检和报告 IO 不消耗 mock 启动预算。
+      await waitForStage(rootProbeWaits[0]!.promise, 'initial root probe')
+      await vi.advanceTimersByTimeAsync(121)
+      await waitForStage(relaunchStarted.promise, 'warmup relaunch')
+      await vi.advanceTimersByTimeAsync(20)
+      await waitForStage(rootProbeWaits[1]!.promise, 'fallback root probe')
+      await vi.advanceTimersByTimeAsync(120)
+      await waitForStage(recoveryStarted.promise, 'launch recovery')
+      await vi.advanceTimersByTimeAsync(1)
+      // 第二轮包含真实 fs.promises 预检；等待 HTTP mock 握手后再推进刷新和编译的固定等待。
+      await waitForStage(refreshStarted.promise, 'project refresh')
+      await vi.advanceTimersByTimeAsync(1_000)
+      await waitForStage(compileStarted.promise, 'project compile')
+      await vi.advanceTimersByTimeAsync(1_200)
+      await expect(launchTask).resolves.toBeTruthy()
+      expect(performance.now()).toBeLessThan(3_000)
+      expect(vi.getTimerCount()).toBe(0)
+    }
+    finally {
+      try {
+        // 断言失败时也收束迟到的 mock 调用和启动 promise，再让 afterEach 使用真实时钟清理。
+        await vi.runAllTimersAsync()
+        if (launchTask) {
+          await Promise.allSettled([launchTask])
+        }
+      }
+      finally {
+        vi.useRealTimers()
+      }
+    }
 
     expect(launchMock).toHaveBeenCalledTimes(2)
     expect(firstMiniProgram.__rawDisconnect).toHaveBeenCalledTimes(1)
