@@ -23,6 +23,7 @@ import { refreshGlassEaselNativeScripts } from '../../analyze/glassEasel/nativeS
 import { createLogicalEntryId, createSidecarSourceSpecifier } from '../../moduleGraph/protocol'
 import { CompilerHmrResyncError, compilerSourceId, getCompilerHmrHost } from '../../plugins/compilerPlugin/hmr'
 import * as compilerInputs from '../../plugins/utils/sourceSnapshot'
+import * as realpaths from '../../utils/realpathScope'
 import { beginWxmlDependencies } from '../../wxml/processing/dependencies'
 import { createDevBuildWatcher } from '../buildPlugin/devBuildWatcher'
 import { HmrRuntimeCapabilityError } from '../hmrRuntimeCapabilities'
@@ -228,6 +229,19 @@ async function start(initial = snapshot('red'), entryIds: string[] = [], inlineC
 
 function writtenAssets() {
   return harness.writeOutput.mock.calls.flatMap(([, output]) => output).filter(item => item.type === 'asset')
+}
+
+function nativeTemplateSourceFile(identity: 'native' | 'windows-canonical') {
+  if (identity === 'native') {
+    return path.join(root, 'src/native.vue')
+  }
+  const file = 'C:/workspace/PROJEC~1/src/native.vue'
+  const canonical = 'C:/workspace/project-name/src/native.vue'
+  const resolve = realpaths.resolveRealpath
+  vi.spyOn(realpaths, 'resolveRealpath').mockImplementation(id => id === file || id === canonical
+    ? canonical.replaceAll('/', '\\')
+    : resolve(id))
+  return file
 }
 
 describe('stateful snapshot output transactions', () => {
@@ -2507,8 +2521,11 @@ describe('stateful snapshot output transactions', () => {
     expect(session.runtime.fallback).toMatchObject({ code: 'native-registration', files: [component] })
   })
 
-  it.each(['Noop', 'Patch'] as const)('rejects a known native template text %s before provider preparation or snapshot compilation', async (type) => {
-    const component = path.join(root, 'src/native.vue')
+  const nativeTemplateAdmissionCases = (['Noop', 'Patch'] as const).flatMap(type =>
+    (['native', 'windows-canonical'] as const).flatMap(identity =>
+      (['text', 'structure'] as const).map(edit => ({ type, identity, edit }))))
+  it.each(nativeTemplateAdmissionCases)('rejects a known native template $edit $type before provider preparation or snapshot compilation ($identity)', async ({ type, identity, edit }) => {
+    const component = nativeTemplateSourceFile(identity)
     const previous = '<script setup>const count = 1</script><template><view>before</view></template>'
     const session = await start({
       ...snapshot('red'),
@@ -2526,7 +2543,9 @@ describe('stateful snapshot output transactions', () => {
       return input
     })
     host.seed(component, previous)
-    host.captureNative(component, previous.replace('<view>before</view>', '<view>after</view>'))
+    host.captureNative(component, edit === 'text'
+      ? previous.replace('<view>before</view>', '<view>after</view>')
+      : previous.replace('</template>', '<view hidden>audit-marker</view>\n</template>'))
     host.register('source-provider', prepare)
     session.rebuild.mockResolvedValueOnce({
       ...snapshot('blue'),
@@ -2553,8 +2572,8 @@ describe('stateful snapshot output transactions', () => {
     expect(delta).not.toHaveBeenCalled()
   })
 
-  it.each([false, true])('advances native template text baselines only after a successful full publication (success=%s)', async (success) => {
-    const component = path.join(root, 'src/native.vue')
+  it.each([false, true].flatMap(success => (['native', 'windows-canonical'] as const).map(identity => ({ success, identity }))))('advances native template text baselines only after a successful full publication (success=$success, $identity)', async ({ success, identity }) => {
+    const component = nativeTemplateSourceFile(identity)
     const previous = '<script setup>const count = 1</script><template><view>before</view></template>'
     const changed = previous.replace('before', 'after')
     harness.nativeOutput = [{ type: 'chunk', fileName: `${route}.js`, code: 'Page({});', modules: { [component]: {} } }]

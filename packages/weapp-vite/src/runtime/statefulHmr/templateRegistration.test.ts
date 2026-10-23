@@ -1,5 +1,11 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { compileVueFile } from 'wevu/compiler'
+import * as realpaths from '../../utils/realpathScope'
 import { NativeVueTemplateBaselines, resolveTemplateRegistrationFallback } from './templateRegistration'
+
+afterEach(() => {
+  vi.restoreAllMocks()
+})
 
 describe('compiled template capability admission', () => {
   const owner = 'src/pages/compiled/index.vue'
@@ -48,6 +54,26 @@ describe('compiled template capability admission', () => {
     expect(resolveTemplateRegistrationFallback(previous, { templateRegistrationSignatures: frozen })).toBeUndefined()
     expect(resolveTemplateRegistrationFallback(previous, { templateRegistrationSignatures: live })?.code).toBe('native-registration')
   })
+
+  it('compares Windows lexical registrations and native compiler inputs using the same source identity', () => {
+    const lexical = 'C:/workspace/PROJEC~1/src/page.vue'
+    const canonical = 'C:/workspace/project-name/src/page.vue'
+    const resolve = realpaths.resolveRealpath
+    vi.spyOn(realpaths, 'resolveRealpath').mockImplementation(file => file === lexical || file === canonical
+      ? canonical.replaceAll('/', '\\')
+      : resolve(file))
+    for (const [before, after] of [[lexical, canonical], [canonical, lexical]]) {
+      const previous = new Map([[before!, 'registered-template']])
+      expect(resolveTemplateRegistrationFallback(previous, {
+        entryIds: [after!],
+        templateRegistrationSignatures: new Map([[after!, 'registered-template']]),
+      })).toBeUndefined()
+      expect(resolveTemplateRegistrationFallback(previous, {
+        entryIds: [after!],
+        templateRegistrationSignatures: new Map([[after!, 'changed-template']]),
+      })).toMatchObject({ code: 'native-registration', files: [canonical] })
+    }
+  })
 })
 
 describe('published native Vue template input admission', () => {
@@ -68,35 +94,57 @@ describe('published native Vue template input admission', () => {
     expect(baseline.resolveFallback([owner], live)).toBeUndefined()
   })
 
+  it('rejects the audit hidden-view append and restoration before preparing a redundant snapshot', async () => {
+    const appended = source.replace('</template>', '<view hidden>audit-marker</view>\n</template>')
+    const [before, after] = await Promise.all([compileVueFile(source, owner), compileVueFile(appended, owner)])
+    expect(before.meta?.templateRegistrationSignature).toEqual(expect.any(String))
+    expect(after.meta?.templateRegistrationSignature).toEqual(expect.any(String))
+    expect(after.meta?.templateRegistrationSignature).not.toBe(before.meta?.templateRegistrationSignature)
+    const baseline = new NativeVueTemplateBaselines()
+    baseline.commit(owner, source)
+    expect(baseline.resolveFallback([owner], new Map([[owner, appended]])))
+      .toMatchObject({ code: 'native-registration', files: [owner] })
+    baseline.commit(owner, appended)
+    expect(baseline.resolveFallback([owner], new Map([[owner, source]])))
+      .toMatchObject({ code: 'native-registration', files: [owner] })
+  })
+
   it.each([
+    source,
     source.replace('count = 1', 'count = 2'),
     source.replace('color: red', 'color: blue'),
     changed.replace('count = 1', 'const ='),
     changed.replace('color: red', 'color: '),
     changed.replace('</script>', 'definePageJson({ title: "changed" })</script>'),
-    source.replace('{{ count }}', '{{ count + 1 }}'),
-    source.replace('<view>', '<view v-if="count">'),
-    source.replace('<view>', '<view class="changed">'),
-    source.replace('<view>', '<text>').replace('</view>', '</text>'),
     `${changed}<wxs module="probe">module.exports = { value: 1 }</wxs>`,
     source.replace('<template>', '<template lang="pug">'),
+    source.replace('<template>', '<template lang="html">').replace('before', 'after'),
+    source.replace(/<template>.*<\/template>/, '<template src="./view.html" />'),
   ])('leaves unchanged templates and mixed edits to their existing compilation path', (next) => {
     const baseline = new NativeVueTemplateBaselines()
     baseline.commit(owner, source)
     expect(baseline.resolveFallback([owner], new Map([[owner, next]]))).toBeUndefined()
   })
 
-  it('does not ignore expression content when only its length and positions match', () => {
+  it.each([
+    source.replace('{{ count }}', '{{ count + 1 }}'),
+    source.replace('<view>', '<view v-if="count">'),
+    source.replace('<view>', '<view class="changed">'),
+    source.replace('<view>', '<text>').replace('</view>', '</text>'),
+    source.replace('{{ count }}', '{{ count as number }}'),
+  ])('rejects a validated pure template edit before preparing a snapshot', (next) => {
     const baseline = new NativeVueTemplateBaselines()
     baseline.commit(owner, source)
-    expect(baseline.resolveFallback([owner], new Map([[owner, source.replace('{{ count }}', '{{ other }}')]]))).toBeUndefined()
+    expect(baseline.resolveFallback([owner], new Map([[owner, next]])))
+      .toMatchObject({ code: 'native-registration', files: [owner] })
   })
 
-  it('preserves attribute text values when comparing surrounding template text', () => {
+  it('includes attribute value edits in the registration boundary', () => {
     const baseline = new NativeVueTemplateBaselines()
     const previous = source.replace('<view>', '<view class="before">')
     baseline.commit(owner, previous)
-    expect(baseline.resolveFallback([owner], new Map([[owner, previous.replace('class="before"', 'class="after"')]]))).toBeUndefined()
+    expect(baseline.resolveFallback([owner], new Map([[owner, previous.replace('class="before"', 'class="after"')]])))
+      .toMatchObject({ code: 'native-registration', files: [owner] })
   })
 
   it('recognizes comment changes while preserving all surrounding template structure', () => {
@@ -113,6 +161,8 @@ describe('published native Vue template input admission', () => {
     '<template><view v-if="count.">changed</view></template>',
     '<template><view v-for="item in list.">changed</view></template>',
     '<template><view @tap="const = 1">changed</view></template>',
+    '<template><view v-else>changed</view></template>',
+    '<template><input v-model="count + 1" /></template>',
   ])('does not convert invalid template syntax into a capability fallback (%s)', (template) => {
     const baseline = new NativeVueTemplateBaselines()
     baseline.commit(owner, source)

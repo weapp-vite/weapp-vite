@@ -9,6 +9,10 @@ export function createStatefulHmrSidecarModuleCode(id: string, source: string): 
   if (!request || (request.kind === 'style' && !request.dependencyOnly)) {
     return
   }
+  if (request.kind === 'script' && request.ownerId === request.sourceId) {
+    // 真实源码 import 持有脚本执行；同源侧车只保留依赖身份，不能提前交付无执行语义的摘要更新。
+    return `export default ${JSON.stringify(request.sourceId)};\n`
+  }
   let dependencySource = source
   if ((request.kind === 'using-component' || request.kind === 'template') && request.sourceId.endsWith('.vue')) {
     const blocks = resolveVueSfcHmrSignatures(source, request.sourceId).blockSignatures

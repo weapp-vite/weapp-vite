@@ -41,7 +41,7 @@ describe('Vue component dependency digests', () => {
       createStatefulHmrSidecarModuleCode(token, initial),
     )
     const script = createSidecarSourceSpecifier(component, component, 'script')
-    expect(createStatefulHmrSidecarModuleCode(script, initial.replace('1', '2'))).not.toBe(
+    expect(createStatefulHmrSidecarModuleCode(script, initial.replace('1', '2'))).toBe(
       createStatefulHmrSidecarModuleCode(script, initial),
     )
   })

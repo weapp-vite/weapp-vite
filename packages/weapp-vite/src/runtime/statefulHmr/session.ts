@@ -67,7 +67,7 @@ import { createStatefulHmrSnapshotDiagnostics } from './snapshotDiagnostics'
 import { offerStatefulHmrSnapshot } from './snapshotHandoff'
 import { withStatefulHmrSnapshotPreparation } from './snapshotPreparation'
 import { StatefulHmrSnapshotScheduler } from './snapshotScheduler'
-import { NativeVueTemplateBaselines, resolveTemplateRegistrationFallback } from './templateRegistration'
+import { NativeVueTemplateBaselines, normalizeTemplateRegistrationSignatures, resolveTemplateRegistrationFallback } from './templateRegistration'
 import { StatefulHmrTransport } from './transport'
 import { StatefulHmrViteAdapter } from './viteAdapter'
 
@@ -1397,7 +1397,7 @@ class StatefulHmrSession {
   }
 
   private adoptSnapshot(snapshot: StatefulHmrSnapshot, output: StatefulHmrOutputFile[], completingFullBuild = false): void {
-    this.templateRegistrationSignatures = snapshot.templateRegistrationSignatures && new Map(snapshot.templateRegistrationSignatures)
+    this.templateRegistrationSignatures = normalizeTemplateRegistrationSignatures(snapshot.templateRegistrationSignatures)
     const nativeScriptDrift = snapshot.captureNativeScriptDrift?.()
     this.childSources?.adopt(snapshot.childSources)
     this.componentPageGlobalStyleRoutes = [...snapshot.componentPageGlobalStyleRoutes]

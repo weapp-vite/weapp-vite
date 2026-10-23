@@ -28,15 +28,44 @@ describe('stateful HMR sidecar plugin', () => {
     }
   })
 
-  it('replaces raw script sidecars with a stable path module', () => {
+  it('keeps self script sidecars stable until the actual script module changes', () => {
     const id = '/project/src/pages/index.ts?raw&weapp-vite-sidecar-owner=%2Fproject%2Fsrc%2Fpages%2Findex.ts&weapp-vite-sidecar=script&lang.js'
 
     expect(createStatefulHmrSidecarModuleCode(id, 'require("../../vendor.js")')).toBe(
-      'export default "63dc21344fd84cbfb60c2fbb892599bb1a5d2e22573acc80e4790f0a5fe49cf5";\n',
+      'export default "/project/src/pages/index.ts";\n',
     )
-    expect(createStatefulHmrSidecarModuleCode(id, 'require("../../changed.js")')).not.toBe(
+    expect(createStatefulHmrSidecarModuleCode(id, 'require("../../changed.js")')).toBe(
       createStatefulHmrSidecarModuleCode(id, 'require("../../vendor.js")'),
     )
+  })
+
+  it('retains content invalidation for a distinct script dependency', () => {
+    const id = createSidecarSourceSpecifier('/project/src/pages/index.vue', '/project/src/pages/setup.ts', 'script')
+    expect(createStatefulHmrSidecarModuleCode(id, 'export const step = 2')).not.toBe(
+      createStatefulHmrSidecarModuleCode(id, 'export const step = 1'),
+    )
+  })
+
+  it('keeps observing self script inputs while only their execution module changes', async () => {
+    const root = await realpath(await mkdtemp(path.join(tmpdir(), 'weapp-vite-self-script-')))
+    const source = path.join(root, 'index.vue')
+    const addWatchFile = vi.fn()
+    const initial = '<script setup>function increment() { return 1 }</script><template><view /></template>'
+    try {
+      const id = createSidecarSourceSpecifier(source, source, 'script')
+      const plugin = createStatefulHmrSidecarPlugin()
+      const load = plugin.load as (...args: any[]) => any
+      const outputs: string[] = []
+      for (const content of [initial, initial.replace('return 1', 'return 2'), initial]) {
+        await writeFile(source, content)
+        outputs.push((await load.call({ addWatchFile }, id)).code)
+      }
+      expect(new Set(outputs).size).toBe(1)
+      expect(addWatchFile.mock.calls).toEqual([[normalizePath(source)], [normalizePath(source)], [normalizePath(source)]])
+    }
+    finally {
+      await rm(root, { force: true, recursive: true })
+    }
   })
 
   it('leaves style and unrelated modules to their existing loaders', () => {

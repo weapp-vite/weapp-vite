@@ -15,16 +15,16 @@ export function isStatefulHmrBoundary(id: string, srcRoot: string, entryIds?: It
     return isStatefulHmrBoundary(logicalEntry.sourceId, srcRoot, entryIds)
   }
   const sidecar = parseSidecarSourceRequest(id)
+  // script 侧车只有依赖摘要，不执行源码；接受边界必须留给实际脚本或其注册所有者。
+  if (sidecar?.kind === 'script') {
+    return false
+  }
   // 组件源码仅导出 options 时，更新必须继续传播到实际执行注册的 logical entry。
   if (!sidecar && delegatedComponentEntryIds.has(normalizeFsResolvedId(id))) {
     return false
   }
-  const nativeComponentSource = sidecar?.kind === 'script'
-    ? undefined
-    : getNativeComponentSidecarSource(id, srcRoot, entryIds)
-  const sourceId = sidecar?.kind === 'script'
-    ? sidecar.sourceId
-    : nativeComponentSource ?? (id.includes('?') ? undefined : id)
+  const nativeComponentSource = getNativeComponentSidecarSource(id, srcRoot, entryIds)
+  const sourceId = nativeComponentSource ?? (id.includes('?') ? undefined : id)
   if (!sourceId) {
     return false
   }

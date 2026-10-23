@@ -46,7 +46,7 @@ describe('stateful hmr session', () => {
       '/project/src/pages/index.ts?raw&weapp-vite-sidecar-owner=%2Fproject%2Fsrc%2Fpages%2Findex.ts&weapp-vite-sidecar=script&lang.js',
       srcRoot,
       entryIds,
-    )).toBe(true)
+    )).toBe(false)
     expect(isStatefulHmrBoundary('/project/src/pages/index.vue?type=style&lang.css', srcRoot, entryIds)).toBe(false)
     expect(isStatefulHmrBoundary('/project/src/pages/index.vue?type=template', srcRoot, entryIds)).toBe(false)
     expect(isStatefulHmrBoundary(
