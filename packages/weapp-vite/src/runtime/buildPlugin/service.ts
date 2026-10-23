@@ -76,7 +76,7 @@ import { watchAssetSources } from '../watch/assets'
 import { createSidecarWatchOptions } from '../watch/options'
 import { claimSidecarDelivery } from '../watch/sidecarDelivery'
 import { createSidecarWatcherReadiness } from '../watch/sidecarReadiness'
-import { bindWatcherServiceController, closeWatcherControllerResources } from '../watcher/controllerClose'
+import { bindWatcherServiceController, closeWatcherControllerResources, registerWatcherServiceController } from '../watcher/controllerClose'
 import { retainWatcherService } from '../watcherPlugin'
 import { captureAppShellSnapshot, resolveAppShellSnapshotChange, withInitialAppShellSnapshot } from './appShellSnapshot'
 import { createClassicConfigWatcher } from './classicConfigWatcher'
@@ -1350,6 +1350,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       return stopPromise
     }
     let closePromise: Promise<void> | undefined
+    let unregisterController: (() => void) | undefined
     buildEvents.watcher.close = () => closePromise ??= (async () => {
       const failures: unknown[] = []
       try {
@@ -1374,11 +1375,13 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       if (statefulRestartFailure && !failures.includes(statefulRestartFailure.error)) {
         failures.push(statefulRestartFailure.error)
       }
+      unregisterController?.()
       if (failures.length) {
         throw failures.length === 1 ? failures[0] : new AggregateError(failures, 'Stateful watcher cleanup failed', { cause: failures[0] })
       }
     })()
     bindWatcherServiceController(watcherService, buildEvents.watcher)
+    unregisterController = registerWatcherServiceController(watcherService, buildEvents.watcher)
     statefulBuildEvents = buildEvents
     return buildEvents
   }
@@ -2218,6 +2221,12 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       return snapshotWatchPatterns.some(root => isPathInside(root, id))
     }
 
+    function ownsSnapshotSidecarUpdate(file: string) {
+      return ctx.moduleGraphService.hasModule(file) || ownsCompilerContentSource(configService, file)
+        // 首构写盘早于依赖图预热；物理 owner 先接收保存，发布后再核验实际归属。
+        || (!emittedEntryTopology && ownsSnapshotPhysicalSidecar(file))
+    }
+
     function createSnapshotSidecarScope() {
       const snapshotWatcher = chokidar.watch(
         snapshotWatchPatterns,
@@ -2293,7 +2302,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         const isConfigDependency = (configService.configFileDependencies ?? [])
           .some(dependency => normalizeFsResolvedId(dependency) === normalizedId)
         if (!event.startsWith('add') && !event.startsWith('unlink') && !isConfigDependency && !independentSource) {
-          if (isSidecarFile(id) && (ctx.moduleGraphService.hasModule(id) || ownsCompilerContentSource(configService, id))) {
+          if (isSidecarFile(id) && ownsSnapshotSidecarUpdate(id)) {
             onModuleGraphChange({ event: 'update', file: id })
           }
           return
@@ -2411,7 +2420,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           if (!isSidecarFile(file) || isDevOutputFile(file)) {
             return false
           }
-          return ctx.moduleGraphService.hasModule(file) || ownsCompilerContentSource(configService, file)
+          return ownsSnapshotSidecarUpdate(file)
             || isWxmlDependency(ctx, file) || ownsWorkerSource(ctx, file)
             || (ownsSnapshotPhysicalSidecar(file) && event !== 'update')
             || [...ctx.runtimeState.build.independent.watchFiles.values()].some(files => files.has(file))

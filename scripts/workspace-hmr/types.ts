@@ -1,4 +1,5 @@
 import type { WorkspaceHmrDeliveryContract } from './delivery'
+import type { WorkspaceHmrStageReport } from './stageRecorder'
 
 export interface HmrProfileSample {
   timestamp?: string
@@ -42,7 +43,7 @@ export interface ImpactFile {
   sizeAfter?: number
 }
 
-export interface ScenarioResult extends WorkspaceHmrDeliveryContract {
+export interface ScenarioResult extends WorkspaceHmrDeliveryContract, WorkspaceHmrStageReport {
   id: string
   label: string
   source: string
@@ -53,6 +54,7 @@ export interface ScenarioResult extends WorkspaceHmrDeliveryContract {
   profile?: HmrProfileSample
   impact?: ImpactFile[]
   error?: string
+  cleanupRestoreDelivery?: { delivery: string }
 }
 
 export interface ProjectResult {

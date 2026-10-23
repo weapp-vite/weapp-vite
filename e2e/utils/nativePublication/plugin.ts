@@ -1,11 +1,13 @@
 import type { Plugin } from 'vite'
 import type { NativeOutputPublicationApi, NativeOutputPublicationSnapshot } from '../../../packages/weapp-vite/src/plugins/outputFinalizer/publicationObservation'
+import type { WeappVitePluginApi } from '../../../packages/weapp-vite/src/types/plugin'
 import type { NativePublicationOptions } from './files'
 import { readFile } from 'node:fs/promises'
 import process from 'node:process'
 import { WEAPP_VITE_OUTPUT_PUBLICATION_PLUGIN_NAME } from '@weapp-core/constants'
 import path from 'pathe'
 import {
+  isNativePublicationProfileIdentity,
   NATIVE_PUBLICATION_PREFIX,
   nativePublicationGeneration,
   nativePublicationHash,
@@ -93,6 +95,16 @@ export function nativePublicationPlugin(options: NativePublicationOptions = {}):
         if (!byteWrite && !committed) {
           return
         }
+        const contextApi = this.environment.config.plugins.find(plugin => plugin.name === 'weapp-vite:context')?.api as WeappVitePluginApi | undefined
+        const currentProfile = contextApi?.ctx?.runtimeState?.build?.hmr?.profile
+        // 首次异步读取前复制本轮身份，避免下一轮原地更新或清空共享 profile。
+        const identity = isNativePublicationProfileIdentity(currentProfile)
+          ? {
+              buildId: currentProfile.buildId,
+              batchId: currentProfile.batchId,
+              sourceEvents: currentProfile.sourceEvents.map(({ eventId, file }) => ({ eventId, file })),
+            }
+          : undefined
         // END 成功样本只能在 writeBundle 返回后追加；冻结旧样本游标，防止它与后续失败字节拼接。
         const profile = options.profilePath
           ? await readFile(options.profilePath, 'utf8').catch((error: NodeJS.ErrnoException) => {
@@ -138,7 +150,7 @@ export function nativePublicationPlugin(options: NativePublicationOptions = {}):
             inputs: current.inputs,
             outputs: files,
             ...(!byteWrite ? { publicationEpoch: snapshot!.epoch } : {}),
-            ...(profile === undefined ? {} : { profileCursor: { offset: profile.length, prefixHash: nativePublicationHash(profile) } }),
+            ...(profile === undefined ? {} : { profileCursor: { offset: profile.length, prefixHash: nativePublicationHash(profile), ...(identity ? { identity } : {}) } }),
           })}\n`)
         }
         if (byteWrite) {

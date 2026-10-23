@@ -3,6 +3,7 @@ import type { NativePublicationOptions, NativePublicationReceipt } from './files
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import {
+  isNativePublicationProfileIdentity,
   NATIVE_PUBLICATION_PREFIX,
   nativePublicationGeneration,
   nativePublicationHash,
@@ -42,6 +43,9 @@ function receipts(output: string): NativePublicationObservation[] {
       if (!cursor || typeof cursor !== 'object' || !('offset' in cursor) || !Number.isSafeInteger(cursor.offset) || Number(cursor.offset) < 0
         || !('prefixHash' in cursor) || typeof cursor.prefixHash !== 'string' || !/^[a-f\d]{64}$/.test(cursor.prefixHash)) {
         throw new Error('Invalid native publication profile cursor')
+      }
+      if ('identity' in cursor && !isNativePublicationProfileIdentity(cursor.identity)) {
+        throw new Error('Invalid native publication profile identity')
       }
     }
     return [{ ...value as NativePublicationReceipt, outputOffset }]

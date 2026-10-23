@@ -88,6 +88,61 @@ it('observes a real native write without changing emitted files or their bytes',
   expect(output).toBe('')
 })
 
+it('freezes the compiler build identity before the publication hook first yields', async () => {
+  const source = path.join(project, 'src/app.js')
+  const profilePath = path.join(project, 'hmr-profile.jsonl')
+  await writeFile(profilePath, '')
+  const profile = {
+    buildId: 'compiler-session:7',
+    batchId: 'current-batch',
+    sourceEvents: [{ eventId: 'current-event', file: source, receivedAtMs: 10 }],
+  }
+  const ctx = { runtimeState: { build: { hmr: { profile } } } }
+  const observer = nativePublicationPlugin({ profilePath })
+  const hook = observer.writeBundle
+  if (!hook || typeof hook === 'function' || !('handler' in hook)) {
+    throw new Error('Expected an ordered native publication write hook')
+  }
+  const handler = hook.handler
+  observer.writeBundle = {
+    ...hook,
+    async handler(...args) {
+      const pending = handler.apply(this, args)
+      // 原生写出仍在等待异步读取；下一轮可以原地更新 profile，不能污染本轮身份。
+      profile.buildId = 'compiler-session:8'
+      profile.batchId = 'next-batch'
+      profile.sourceEvents[0]!.eventId = 'next-event'
+      profile.sourceEvents[0]!.file = path.join(project, 'src/other.js')
+      profile.sourceEvents.push({ eventId: 'added-event', file: source, receivedAtMs: 11 })
+      await pending
+    },
+  }
+  const pending = captureNativePublication(dev(), project)
+  await nativeBuild({
+    observe: false,
+    plugins: [{ name: 'weapp-vite:context', api: { ctx } }],
+    afterObserverPlugins: [observer],
+  })
+  const receipt = await pending.wait()
+  expect(receipt.profileCursor).toEqual({
+    offset: 0,
+    prefixHash: nativePublicationHash(''),
+    identity: {
+      buildId: 'compiler-session:7',
+      batchId: 'current-batch',
+      sourceEvents: [{ eventId: 'current-event', file: source }],
+    },
+  })
+})
+
+it('preserves legacy profile cursors when the native build has no compiler context', async () => {
+  const profilePath = path.join(project, 'hmr-profile.jsonl')
+  await writeFile(profilePath, '')
+  const pending = captureNativePublication(dev(), project)
+  await nativeBuild({ profilePath })
+  expect((await pending.wait()).profileCursor).toEqual({ offset: 0, prefixHash: nativePublicationHash('') })
+})
+
 it('does not acknowledge write:false snapshots or independent in-memory builds', async () => {
   await nativeBuild({ write: false })
   expect(output).toBe('')

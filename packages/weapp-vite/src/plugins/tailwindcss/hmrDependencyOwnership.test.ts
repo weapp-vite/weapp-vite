@@ -57,6 +57,23 @@ async function fixture() {
   return { adapter, compiler, host, watcher, logger, onSourceChange, request, generated, entry, dependency, candidate, source }
 }
 
+async function deleteAndObserve(file: string, host: ReturnType<typeof getCompilerHmrHost>, watcher: EventEmitter) {
+  const deleted = Promise.withResolvers<void>()
+  const stop = host.observeInputCaptures((observation) => {
+    if (observation.after.source.state === 'deleted') {
+      deleted.resolve()
+    }
+  })
+  try {
+    await rm(file)
+    watcher.emit('unlink', file)
+    await deleted.promise
+  }
+  finally {
+    stop()
+  }
+}
+
 it('captures native CSS dependency changes without starting a duplicate content batch', async () => {
   const { adapter, host, watcher, logger, onSourceChange, request, generated, dependency, candidate, source } = await fixture()
   await adapter.rememberRoot('imported-owner', request, generated)
@@ -65,8 +82,7 @@ it('captures native CSS dependency changes without starting a duplicate content 
   expect(host.readSource(dependency)).toContain('blue')
   expect(host.onDependencyChange).not.toHaveBeenCalled()
   expect(onSourceChange).not.toHaveBeenCalled()
-  await rm(dependency)
-  watcher.emit('unlink', dependency)
+  await deleteAndObserve(dependency, host, watcher)
   expect(host.readSource(dependency)).toBeNull()
   expect(host.onDependencyChange).not.toHaveBeenCalled()
   expect(onSourceChange).not.toHaveBeenCalled()
@@ -94,8 +110,7 @@ it('retains native dependency ownership while an imported root is between genera
     watcher.emit('change', dependency)
     expect(host.readSource(dependency)).toContain(color)
   }
-  await rm(dependency)
-  watcher.emit('unlink', dependency)
+  await deleteAndObserve(dependency, host, watcher)
   expect(host.readSource(dependency)).toBeNull()
   expect(host.onDependencyChange).not.toHaveBeenCalled()
   expect(onSourceChange).not.toHaveBeenCalled()

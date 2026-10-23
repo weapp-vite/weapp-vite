@@ -165,7 +165,7 @@ export function createModuleLoader(
         resolvedPath,
         request,
         options.miniprogramRootPath,
-        candidate => options.artifactSource.readText(candidate) !== undefined,
+        candidate => options.artifactSource.has(candidate),
       )
       if (!requiredPath) {
         throw createRequireNotFoundError(request, resolvedPath)

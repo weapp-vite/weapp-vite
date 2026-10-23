@@ -13,6 +13,7 @@ import {
 import { createServer } from 'vite'
 import { expect, it } from 'vitest'
 import { assertNoStatefulInstallations } from '../../scripts/consumerHmr/installedRuntime.mjs'
+import { observeClassicFallback } from './hmrFallback/settlementProbe'
 import { weapp } from './index'
 
 const deliveryFiles = [
@@ -114,8 +115,10 @@ it('keeps classic across source restoration, config reload and fresh plugin fact
         && source.includes(WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY))
       .map(([file]) => file)
     expect(statefulRuntimeFiles.length).toBeGreaterThan(0)
-    await writeFile(path.join(project.root, 'src/pages/home/index.json'), '{"navigationBarTitleText":"classic-title"}')
-    await expect.poll(() => server!.config.experimental.bundledDev).toBe(false)
+    const runtime = await observeClassicFallback(server, () => writeFile(path.join(project.root, 'src/pages/home/index.json'), '{"navigationBarTitleText":"classic-title"}'))
+    expect(runtime.fallback?.code).toBe('config-json')
+    expect(runtime.phase).toBe('classic')
+    expect(server.config.experimental.bundledDev).toBe(false)
     expectClassicHost(server)
     await expect.poll(() => project.read('pages/home/index.json')).toContain('classic-title')
     await expectClassicOutput(project.root)

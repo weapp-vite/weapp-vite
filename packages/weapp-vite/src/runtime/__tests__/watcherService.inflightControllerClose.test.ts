@@ -137,9 +137,10 @@ it.each([false, true])('drains a classic generation registered by an independent
       await lease.releaseResources()
     })
     watcher.close = generationClose
-    await owner.own(watcher)
     // stateful → classic 沿用已关闭的 public façade，不能再次捕获其完整关闭包装器。
+    // 与 runDev 一样先登记会话清理；closing owner 的迟到获取可能在释放时直接抛错。
     bindWatcherServiceController(service, facade, releaseSession)
+    await owner.own(watcher)
     service.setRollupWatcher(facade)
     if (closed) {
       await owner.stopGeneration(watcher)

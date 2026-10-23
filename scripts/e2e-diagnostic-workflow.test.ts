@@ -157,6 +157,7 @@ describe('bounded HMR workflow diagnosis', () => {
     expect(job.with?.main_command).toContain('WEAPP_VITE_E2E_RUNTIME_PROVIDER=headless WEAPP_VITE_E2E_DOM_ACCEPTANCE=1')
     expect(job.with?.main_command).toContain('WEAPP_VITE_E2E_DEV_SHUTDOWN_TRACE=1 WEAPP_VITE_E2E_DEV_PROCESS_TRACE_DIR=.tmp/windows-startup-fallback/dev-process')
     expect(job.with?.main_command).toContain('-c e2e/vitest.e2e.headless.config.ts e2e/ide/hmr-startup-fallback.runtime.test.ts')
+    expect(job.with?.main_command).toContain('--reporter=./e2e/scripts/domAcceptanceReport/reporter.ts')
     expect(job.with?.artifact_path).toContain('.tmp/windows-startup-fallback/**')
     expect(job.with?.artifact_path).toContain('docs/reports/dom-acceptance/**')
     const child = readWorkflowFixture('reusable-miniapp-platform.yml')

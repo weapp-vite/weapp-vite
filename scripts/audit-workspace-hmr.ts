@@ -4,6 +4,7 @@ import type { WorkspaceHmrBaseline, WorkspaceHmrThresholds } from './workspace-h
 import type { ClassicFallbackDeliveryEvidence } from './workspace-hmr/classicFallback'
 import type { WorkspaceHmrDeliveryContract, WorkspaceHmrExpectedDelivery } from './workspace-hmr/delivery'
 import type { DistFileSnapshot } from './workspace-hmr/output'
+import type { WorkspaceHmrStageObserver, WorkspaceHmrStagePhase, WorkspaceHmrStageReport } from './workspace-hmr/stageRecorder'
 import type { StatefulHmrAuditEvent } from './workspace-hmr/statefulAuditUpdate'
 import { execFile as execFileCallback } from 'node:child_process'
 import { createHash } from 'node:crypto'
@@ -50,6 +51,7 @@ import {
   resolveWorkspaceHmrRuntime,
 } from './workspace-hmr/scenarios'
 import { assertWorkspaceHmrSelection, resolveWorkspaceHmrSelection } from './workspace-hmr/selection'
+import { createWorkspaceHmrStageRecorder } from './workspace-hmr/stageRecorder'
 import { measureStatefulTemplateArtifact } from './workspace-hmr/statefulArtifactMeasurement'
 import { StatefulHmrAuditClient } from './workspace-hmr/statefulAuditClient'
 import { waitForStatefulHmrAuditUpdate } from './workspace-hmr/statefulAuditUpdate'
@@ -139,7 +141,7 @@ interface ImpactFile {
   sizeAfter?: number
 }
 
-interface ScenarioResult extends WorkspaceHmrDeliveryContract {
+interface ScenarioResult extends WorkspaceHmrDeliveryContract, WorkspaceHmrStageReport {
   id: string
   label: string
   source: string
@@ -154,6 +156,7 @@ interface ScenarioResult extends WorkspaceHmrDeliveryContract {
   delivery?: WorkspaceHmrDeliveryEvidence['delivery']
   deliveryEvidence?: WorkspaceHmrDeliveryEvidence
   restoreDelivery?: WorkspaceHmrDeliveryEvidence
+  cleanupRestoreDelivery?: WorkspaceHmrDeliveryEvidence
   actualMode?: 'stateful-experimental' | 'classic'
   diagnostics?: {
     transport: StatefulHmrAuditEvent[]
@@ -793,6 +796,8 @@ async function auditScenario(
     expectedDelivery,
     expectedFallbackReason: expectedDelivery === 'classic-fallback' ? workspaceHmrFallbackReason(scenario) : undefined,
   }
+  const stages = createWorkspaceHmrStageRecorder(result)
+  let phase: Exclude<WorkspaceHmrStagePhase, 'cleanup'> = 'update'
 
   if (updated === original) {
     return {
@@ -802,40 +807,42 @@ async function auditScenario(
   }
 
   try {
-    await prepareScenarioMutation(project, scenario)
+    const preparation = stages.phase('update')
+    await preparation('prepare', () => prepareScenarioMutation(project, scenario))
     const previousControl = result.expectedDelivery === 'classic-fallback'
-      ? parseStatefulHmrControlSource(await readFile(path.join(distRoot, '__weapp_vite_hmr/control.js'), 'utf8'))
+      ? parseStatefulHmrControlSource(await preparation('read-control', () => readFile(path.join(distRoot, '__weapp_vite_hmr/control.js'), 'utf8')))
       : undefined
-    const profileLineCount = await countJsonlLines(profilePath)
-    const before = await snapshotDist(distRoot)
+    const profileLineCount = await preparation('profile-cursor', () => countJsonlLines(profilePath))
+    const before = await preparation('snapshot-baseline', () => snapshotDist(distRoot))
     const budget = createScenarioBudget()
-    const publication = captureScenarioClassicPublication(project, scenario, dev, profilePath)
+    const update = stages.phase('update', budget)
+    const publication = captureScenarioClassicPublication(project, scenario, dev, profilePath, update)
     const startedAt = performance.now()
-    await writeScenarioSource(scenario.sourcePath, updated)
-    const delivery = await waitForScenarioMutation(project, scenario, expectedMarker, true, (event) => {
+    await update('write-source', () => writeScenarioSource(scenario.sourcePath, updated))
+    const delivery = await update('delivery', () => waitForScenarioMutation(project, scenario, expectedMarker, true, (event) => {
       transport.push(event)
       if (transport.length > 32) {
         transport.shift()
       }
     }, () => {
       result.observedMs = performance.now() - startedAt
-    }, budget)
+    }, budget))
     if (delivery) {
       result.delivery = delivery.delivery
       result.deliveryEvidence = delivery
       result.output = formatProjectPath(path.join(project.distRoot, delivery.output))
     }
     result.actualMode = classicFallbacks.get(project.root)?.actualMode ?? (project.hmrRuntime === 'stateful' ? 'stateful-experimental' : 'classic')
-    await acknowledgeScenarioArtifact(project, scenario, budget)
+    await update('acknowledge', () => acknowledgeScenarioArtifact(project, scenario, budget))
     const classicPublication = classicFallbacks.get(project.root)?.actualMode === 'classic'
-      ? await publication.inspect(budget, () => inspectClassicPublication(distRoot, project.platform))
+      ? await update('publication', () => publication.inspect(budget, () => inspectClassicPublication(distRoot, project.platform)))
       : undefined
     if (!classicPublication) {
-      await sleep(Math.min(settleMs, remainingScenarioBudget(budget)))
+      await update('settle', () => sleep(Math.min(settleMs, remainingScenarioBudget(budget))))
     }
-    const after = await snapshotDist(distRoot)
+    const after = await update('snapshot-output', () => snapshotDist(distRoot))
     if (project.hmrRuntime === 'standard') {
-      result.profile = await waitForHmrProfileSample(project, profilePath, profileLineCount, scenario.sourcePath, 5_000)
+      result.profile = await update('profile-sample', () => waitForHmrProfileSample(project, profilePath, profileLineCount, scenario.sourcePath, 5_000))
     }
     result.totalMs = project.hmrRuntime === 'standard'
       ? result.profile?.totalMs ?? result.observedMs
@@ -843,34 +850,39 @@ async function auditScenario(
     result.impact = diffDistSnapshots(before, after)
     assertWorkspaceHmrDelivery(result)
     if (previousControl) {
-      const transport = await inspectRetiredClassicTransport(previousControl, budget.signal)
+      const transport = await update('retired-transport', () => inspectRetiredClassicTransport(previousControl, budget.signal))
       remainingScenarioBudget(budget)
       result.classicPublication = { ...classicPublication!, transport }
     }
     if (result.expectedDelivery === 'classic-fallback') {
       const restoredBefore = after
-      result.restoreDelivery = await restoreScenarioMutation(project, scenario, original, expectedMarker, { dev, profilePath }, budget)
-      const restoredAfter = await snapshotDist(distRoot)
+      phase = 'restore'
+      const restore = stages.phase('restore', budget)
+      result.restoreDelivery = await restore('restore', () => restoreScenarioMutation(project, scenario, original, expectedMarker, { dev, profilePath }, budget, restore))
+      const restoredAfter = await restore('snapshot-output', () => snapshotDist(distRoot))
       assertWorkspaceHmrDelivery({ expectedDelivery: 'classic', actualMode: classicFallbacks.get(project.root)?.actualMode, deliveryEvidence: result.restoreDelivery })
       if (result.restoreDelivery?.delivery !== 'classic') {
         throw new Error('Classic transition restoration did not remain classic.')
       }
-      const repeatedPublication = captureScenarioClassicPublication(project, scenario, dev, profilePath)
+      phase = 'repeat'
+      const repeat = stages.phase('repeat', budget)
+      const repeatedPublication = captureScenarioClassicPublication(project, scenario, dev, profilePath, repeat)
       remainingScenarioBudget(budget)
-      await writeScenarioSource(scenario.sourcePath, updated)
-      result.repeatDelivery = await waitForScenarioMutation(project, scenario, expectedMarker, true, undefined, undefined, budget)
+      await repeat('write-source', () => writeScenarioSource(scenario.sourcePath, updated))
+      result.repeatDelivery = await repeat('delivery', () => waitForScenarioMutation(project, scenario, expectedMarker, true, undefined, undefined, budget))
       if (result.repeatDelivery?.delivery !== 'classic') {
         throw new Error('Classic transition repeated save did not remain classic.')
       }
-      await repeatedPublication.inspect(budget, () => inspectClassicPublication(distRoot, project.platform))
-      const repeatedAfter = await snapshotDist(distRoot)
+      await repeat('publication', () => repeatedPublication.inspect(budget, () => inspectClassicPublication(distRoot, project.platform)))
+      const repeatedAfter = await repeat('snapshot-output', () => snapshotDist(distRoot))
       const steady = [...diffDistSnapshots(restoredBefore, restoredAfter), ...diffDistSnapshots(restoredAfter, repeatedAfter)]
       result.steadyClassicImpact = [...new Map(steady.map(file => [file.path, file])).values()]
-      await inspectRetiredClassicTransport(previousControl!, budget.signal)
+      await repeat('retired-transport', () => inspectRetiredClassicTransport(previousControl!, budget.signal))
       remainingScenarioBudget(budget)
     }
   }
   catch (error) {
+    result.failedStage ??= { phase, step: 'between-stages' }
     result.error = sanitizeAcceptanceText(error instanceof Error ? error.message : String(error))
     const output = await readFile(scenario.outputPath).catch(() => undefined)
     result.diagnostics = {
@@ -894,18 +906,19 @@ async function auditScenario(
     }
   }
   finally {
+    const cleanup = stages.phase('cleanup')
     const restoreProfileLineCount = await countJsonlLines(profilePath).catch(() => 0)
     const cleanupErrors = await collectWorkspaceHmrCleanupErrors([
       {
         label: 'Failed to restore source and verify delivered output',
         run: async () => {
-          result.restoreDelivery = await restoreScenarioMutation(project, scenario, original, expectedMarker, { dev, profilePath })
+          result.cleanupRestoreDelivery = await cleanup('restore', () => restoreScenarioMutation(project, scenario, original, expectedMarker, { dev, profilePath }, undefined, cleanup))
           if (!result.error) {
-            assertWorkspaceHmrDelivery({ expectedDelivery: expectedDelivery === 'classic-fallback' ? 'classic' : expectedDelivery, deliveryEvidence: result.restoreDelivery, actualMode: classicFallbacks.get(project.root)?.actualMode ?? (project.hmrRuntime === 'stateful' ? 'stateful-experimental' : 'classic') })
+            assertWorkspaceHmrDelivery({ expectedDelivery: expectedDelivery === 'classic-fallback' ? 'classic' : expectedDelivery, deliveryEvidence: result.cleanupRestoreDelivery, actualMode: classicFallbacks.get(project.root)?.actualMode ?? (project.hmrRuntime === 'stateful' ? 'stateful-experimental' : 'classic') })
           }
         },
       },
-      { label: 'Restored output did not settle', run: () => waitForStableDistSnapshot(distRoot, startupDistStableMs, scenarioTimeoutMs) },
+      { label: 'Restored output did not settle', run: () => cleanup('stable-output', () => waitForStableDistSnapshot(distRoot, startupDistStableMs, scenarioTimeoutMs)) },
     ])
     if (cleanupErrors.length) {
       result.cleanupErrors = cleanupErrors.map(error => sanitizeAcceptanceText(error))
@@ -1085,7 +1098,7 @@ function remainingScenarioBudget(budget: WorkspaceHmrAuditBudget) {
   return budget.deadline - Date.now()
 }
 
-function captureScenarioClassicPublication(project: ProjectCase, scenario: ScenarioCase, dev: ReturnType<typeof startDevProcess>, profilePath: string) {
+function captureScenarioClassicPublication(project: ProjectCase, scenario: ScenarioCase, dev: ReturnType<typeof startDevProcess>, profilePath: string, observe?: WorkspaceHmrStageObserver) {
   return captureWorkspaceClassicPublication({
     project,
     dev,
@@ -1093,6 +1106,7 @@ function captureScenarioClassicPublication(project: ProjectCase, scenario: Scena
     profilePath,
     mode: classicFallbacks.get(project.root)?.actualMode === 'classic' || project.hmrRuntime === 'standard' ? 'classic' : 'stateful-experimental',
     stableMs: startupDistStableMs,
+    observe,
   })
 }
 
@@ -1186,17 +1200,19 @@ async function restoreScenarioMutation(
   marker: string,
   publicationContext: { dev: ReturnType<typeof startDevProcess>, profilePath: string },
   budget: WorkspaceHmrAuditBudget = createScenarioBudget(),
+  observation?: WorkspaceHmrStageObserver,
 ) {
+  const observe: WorkspaceHmrStageObserver = observation ?? (async (_step, action) => await action())
   let preparationError: unknown
-  await prepareScenarioMutation(project, scenario, budget).catch((error) => {
+  await observe('prepare', () => prepareScenarioMutation(project, scenario, budget)).catch((error) => {
     preparationError = error
   })
   let sourceChanged = true
   let publication: ReturnType<typeof captureScenarioClassicPublication> | undefined
   try {
-    sourceChanged = await readFile(scenario.sourcePath, 'utf8') !== source
+    sourceChanged = await observe('read-source', () => readFile(scenario.sourcePath, 'utf8')) !== source
     if (sourceChanged) {
-      publication = captureScenarioClassicPublication(project, scenario, publicationContext.dev, publicationContext.profilePath)
+      publication = captureScenarioClassicPublication(project, scenario, publicationContext.dev, publicationContext.profilePath, observation)
     }
   }
   catch (error) {
@@ -1204,20 +1220,21 @@ async function restoreScenarioMutation(
   }
   // 即使当前构建无法读取，也先恢复源码；缺失构建身份不能被当作恢复验收通过。
   if (sourceChanged || preparationError) {
-    await writeScenarioSource(scenario.sourcePath, source)
+    await observe('write-source', () => writeScenarioSource(scenario.sourcePath, source))
   }
   if (preparationError) {
     throw preparationError
   }
-  const delivery = await waitForScenarioMutation(project, scenario, marker, false, undefined, undefined, budget)
-  await acknowledgeScenarioArtifact(project, scenario, budget)
+  const delivery = await observe('delivery', () => waitForScenarioMutation(project, scenario, marker, false, undefined, undefined, budget))
+  await observe('acknowledge', () => acknowledgeScenarioArtifact(project, scenario, budget))
   if (classicFallbacks.get(project.root)?.actualMode === 'classic') {
     if (publication) {
-      await publication.inspect(budget, () => inspectClassicPublication(project.distRoot, project.platform))
+      const capturedPublication = publication
+      await observe('publication', () => capturedPublication.inspect(budget, () => inspectClassicPublication(project.distRoot, project.platform)))
     }
     else {
       // 源码已是原字节时没有新保存，也不能要求或伪造本轮来源 END。
-      await inspectClassicPublication(project.distRoot, project.platform)
+      await observe('publication.inspect-output', () => inspectClassicPublication(project.distRoot, project.platform))
       remainingScenarioBudget(budget)
     }
   }

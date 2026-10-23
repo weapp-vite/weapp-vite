@@ -1,6 +1,6 @@
 import type { RolldownWatcher } from 'rolldown'
 import type { WatcherService } from '../watcherPlugin'
-import { bindWatcherServiceController } from '../watcher/controllerClose'
+import { bindWatcherServiceController, registerWatcherServiceController } from '../watcher/controllerClose'
 
 interface DevWatcherGeneration {
   stop: () => Promise<void>
@@ -16,6 +16,7 @@ export function createDevWatcherSession(service?: WatcherService) {
   let hasOwnership = false
   let closing: Promise<void> | undefined
   let cleanup: (() => void) | undefined
+  let unregisterController: (() => void) | undefined
 
   function close() {
     closed = true
@@ -35,12 +36,15 @@ export function createDevWatcherSession(service?: WatcherService) {
       catch (error) {
         errors.push(error)
       }
+      unregisterController?.()
       if (errors.length) {
         throw errors.length === 1 ? errors[0] : new AggregateError(errors, 'Development watcher shutdown failed')
       }
     })()
     return closing
   }
+
+  unregisterController = service ? registerWatcherServiceController(service, { close }) : undefined
 
   return {
     close,

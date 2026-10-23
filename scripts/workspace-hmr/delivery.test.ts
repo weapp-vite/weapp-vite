@@ -2,6 +2,7 @@ import type { ProjectResult, ScenarioResult } from './types'
 import { describe, expect, it } from 'vitest'
 import { evaluateWorkspaceHmrThresholds } from './baseline'
 import { assertWorkspaceHmrDelivery, expectedWorkspaceHmrDelivery, orderWorkspaceHmrScenarios, planWorkspaceHmrScenarios, workspaceHmrFallbackReason } from './delivery'
+import { summarizeWorkspaceHmrExecution } from './report'
 
 const impact = (count: number) => Array.from({ length: count }, (_, index) => ({ path: `pages/page-${index}.js`, status: 'modified' as const }))
 const transition: ScenarioResult = {
@@ -150,6 +151,25 @@ describe('workspace HMR delivery admission and impact measurement', () => {
     { deliveryEvidence: { delivery: 'classic', reason: 'patch-shape' } },
   ])('rejects a transition with missing or mismatched evidence: %j', (missing) => {
     expect(evaluateWorkspaceHmrThresholds([project({ ...transition, ...missing })]).issues).toMatchObject([{ metric: 'delivery-evidence' }])
+  })
+
+  it.each(['restoreDelivery', 'repeatDelivery'] as const)('does not accept successful cleanup as missing formal %s evidence', (missing) => {
+    const scenario: ScenarioResult = {
+      ...transition,
+      marker: 'updated-source',
+      [missing]: undefined,
+      error: 'The operation was aborted due to timeout',
+      failedStage: { phase: missing === 'restoreDelivery' ? 'restore' : 'repeat', step: 'publication.formal-end' },
+      cleanupRestoreDelivery: { delivery: 'classic' },
+    }
+    const results = [project(scenario)]
+    expect(evaluateWorkspaceHmrThresholds(results).issues).toMatchObject([{ metric: 'delivery-evidence' }])
+    expect(summarizeWorkspaceHmrExecution(results)).toMatchObject({
+      executedScenarioCount: 1,
+      successfulScenarioCount: 0,
+      failedScenarioCount: 1,
+      notExecutedScenarioCount: 0,
+    })
   })
 
   it('requires complete publication, retired transport, restored output and repeated saves for a stylesheet transition', () => {

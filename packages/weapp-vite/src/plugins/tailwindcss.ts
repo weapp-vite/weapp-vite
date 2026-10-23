@@ -900,7 +900,7 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
     },
     async watchChange(id, change) {
       if (statefulCompiler) {
-        hmr.captureFile(id, change.event === 'delete')
+        await hmr.captureFile(id, change.event === 'delete')
       }
       await invalidateCompilerForFile(id, change.event)
     },

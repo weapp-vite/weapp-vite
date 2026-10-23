@@ -1,5 +1,4 @@
 import type { OutputAsset, OutputBundle } from 'rolldown'
-import type { ViteDevServer } from 'vite'
 import type { Compiler, CompilerGenerateRequest, CompilerGenerateResult, CompilerSnapshot } from 'weapp-tailwindcss/core'
 import type { CompilerContext } from '../../context'
 import type { WeappCompilerHmrPreparation, WeappCompilerHmrRequest } from '../../types/compilerPlugin'
@@ -10,11 +9,11 @@ import { resolveVueSfcHmrSignatures } from 'wevu/compiler'
 import { changeFileExtension } from '../../utils/file'
 import { resolveOutputExtensions } from '../../utils/outputExtensions'
 import { isPathInside } from '../../utils/path'
-import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { CompilerHmrResyncError, compilerSourceId, getCompilerHmrHost } from '../compilerPlugin/hmr'
 import { findManagedTailwindcssEntryMarker, hasManagedTailwindcssOutputMarker } from '../tailwindcssMarker'
 import { rememberTailwindGeneration } from './generation'
 import { copyGenerationValue, equalGenerationValue } from './generation/inputs'
+import { createTailwindHmrSources } from './hmrSources'
 import { captureImportedTailwindGeneration, importedGenerationRequest } from './importedGeneration'
 import { rememberImportedTailwindPreparation } from './importedPreparation'
 import { createImportedTailwindValidation } from './importedValidation'
@@ -54,9 +53,7 @@ export function createTailwindHmrAdapter(ctx: CompilerContext, options: Options)
   const nativeDependencies = new Set<string>()
   const compilerDependencyOwners = new Map<number | string, ReadonlySet<string>>()
   const compilerDependencies = new Set<string>()
-  const discoveredSources = new Set<string>()
-  let server: ViteDevServer | undefined
-  let stopWatching: (() => void) | undefined
+  const sourceCapture = createTailwindHmrSources(ctx, roots, nativeDependencies, compilerDependencies)
 
   function rebuildOwnedWatchFiles() {
     watchFiles.clear()
@@ -73,11 +70,7 @@ export function createTailwindHmrAdapter(ctx: CompilerContext, options: Options)
         nativeDependencies.add(compilerSourceId(file))
       }
     }
-    for (const file of discoveredSources) {
-      if (![...roots.values()].some(root => root.matches?.(file))) {
-        discoveredSources.delete(file)
-      }
-    }
+    sourceCapture.prune()
   }
 
   async function rememberRoot(index: number | string, request: CompilerGenerateRequest, result: CompilerGenerateResult, generation?: symbol) {
@@ -106,7 +99,7 @@ export function createTailwindHmrAdapter(ctx: CompilerContext, options: Options)
     if (disposed || registrations.get(index) !== registration) {
       return
     }
-    server?.watcher.add(sources.filter(source => !source.negated).map(source => source.base))
+    sourceCapture.watch(sources.filter(source => !source.negated).map(source => source.base))
     for (const file of [...result.dependencies, ...files]) {
       if (ctx.configService.outDir && isPathInside(ctx.configService.outDir, file)) {
         continue
@@ -125,117 +118,6 @@ export function createTailwindHmrAdapter(ctx: CompilerContext, options: Options)
     lifecycle.remember(index, request.id)
     rebuildOwnedWatchFiles()
     invalidation.rememberRoot(index, capturedRequest, result, matches)
-  }
-
-  function captureFile(file: string, deleted: boolean) {
-    if (disposed || (ctx.configService.outDir && isPathInside(ctx.configService.outDir, file))) {
-      return
-    }
-    try {
-      host.capture(file, deleted ? null : readFileSync(file, 'utf8'))
-    }
-    catch {
-      host.capture(file, null)
-    }
-  }
-
-  function notifyContentChange(file: string) {
-    // 新增内容文件不会经过 Rolldown 的 watchChange 钩子；先登记 Tailwind
-    // 内容失效原因，再让状态化引擎交付 compiler-only 批次。更新已发现文件
-    // 也复用这条路径，避免空 reason 覆盖同批次的内容失效标记。
-    ctx.onStatefulHmrSourceChange?.(file, ['tailwind-content:1'])
-    host.onDependencyChange?.(file)
-  }
-
-  function configureServer(currentServer: ViteDevServer) {
-    if (disposed) {
-      return
-    }
-    stopWatching?.()
-    server = currentServer
-    const added = async (file: string) => {
-      if (disposed || !host.onDependencyChange || host.isNativeSource(file) || nativeDependencies.has(compilerSourceId(file)) || compilerDependencies.has(compilerSourceId(file))
-        || (ctx.configService.outDir && isPathInside(ctx.configService.outDir, file))) {
-        return
-      }
-      if (!roots.size) {
-        return
-      }
-      const { createTailwindV4SourceEntryMatcher, resolveProjectSourceFiles } = await import('@weapp-tailwindcss/engine')
-      for (const [index, root] of roots) {
-        const sources = root.sources
-        const sourceMatches = createTailwindV4SourceEntryMatcher(sources)
-        if (!sourceMatches?.(file)) {
-          continue
-        }
-        const sourceId = compilerSourceId(file)
-        const watchedId = normalizeFsResolvedId(file)
-        const selected = await resolveProjectSourceFiles({
-          cwd: ctx.configService.cwd,
-          sources,
-          filter: (candidate) => {
-            const id = normalizeFsResolvedId(candidate)
-            return (id === sourceId || id === watchedId) && sourceMatches(candidate)
-          },
-        })
-        if (disposed || !selected.length || host.isNativeSource(file)) {
-          return
-        }
-        if (roots.get(index) !== root) {
-          continue
-        }
-        captureFile(file, false)
-        discoveredSources.add(compilerSourceId(file))
-        host.seed(file, host.readSource(file) ?? null)
-        notifyContentChange(file)
-        return
-      }
-    }
-    const listener = (file: string) => {
-      void added(file).catch(error => currentServer.config.logger.error(String(error)))
-    }
-    const updateMatchedSource = (file: string, deleted: boolean) => {
-      const sourceId = compilerSourceId(file)
-      // CSS 编译依赖由原生模块图交付；来源扫描也匹配时只刷新文本，
-      // 不能抢在原生 transform 前另开批次并封存即将撤销的 root。
-      // imported root 重建期间仍保留依赖归属，直到新一代成功替换或真正移除。
-      if (compilerDependencies.has(sourceId)) {
-        captureFile(file, deleted)
-        return true
-      }
-      if (![...roots.values()].some(root => root.matches?.(file))) {
-        return false
-      }
-      // 初始 Tailwind 来源通常已被原生入口捕获，compiler dependency watcher
-      // 会跳过这类文件；仍需刷新宿主中的文本，才能让下一次 snapshot 看到脚本的新候选。
-      if (nativeDependencies.has(sourceId) || host.isNativeSource(file)) {
-        captureFile(file, deleted)
-        notifyContentChange(file)
-        return true
-      }
-      return false
-    }
-    const updateDiscovered = (file: string, deleted: boolean) => {
-      if (updateMatchedSource(file, deleted)) {
-        return
-      }
-      if (discoveredSources.has(compilerSourceId(file)) && !nativeDependencies.has(compilerSourceId(file)) && !host.isNativeSource(file)) {
-        captureFile(file, deleted)
-        notifyContentChange(file)
-      }
-    }
-    const changed = (file: string) => updateDiscovered(file, false)
-    const removed = (file: string) => updateDiscovered(file, true)
-    currentServer.watcher.on('add', listener).on('change', changed).on('unlink', removed)
-    const stop = () => {
-      currentServer.watcher.off('add', listener).off('change', changed).off('unlink', removed)
-      currentServer.httpServer?.off('close', stop)
-      if (server === currentServer) {
-        server = undefined
-      }
-    }
-    stopWatching = stop
-    currentServer.httpServer?.once('close', stop)
   }
 
   function rememberBundle(bundle: OutputBundle) {
@@ -386,8 +268,7 @@ export function createTailwindHmrAdapter(ctx: CompilerContext, options: Options)
 
   function dispose() {
     disposed = true
-    stopWatching?.()
-    stopWatching = undefined
+    sourceCapture.dispose()
     roots.clear()
     lifecycle.clear()
     registrations.clear()
@@ -396,13 +277,12 @@ export function createTailwindHmrAdapter(ctx: CompilerContext, options: Options)
     nativeDependencies.clear()
     compilerDependencyOwners.clear()
     compilerDependencies.clear()
-    discoveredSources.clear()
     captured = new WeakMap()
   }
 
   return {
-    captureFile,
-    configureServer,
+    captureFile: sourceCapture.captureFile,
+    configureServer: sourceCapture.configureServer,
     prepare,
     rememberBundle,
     rememberRoot,

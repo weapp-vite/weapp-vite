@@ -4,7 +4,8 @@ import type { SidecarWatcher, WatcherInstance } from './watcher/types'
 import { AsyncLocalStorage } from 'node:async_hooks'
 import { clearWxmlDependencies } from '../wxml/processing/dependencies'
 import { clearIndependentWatchFiles } from './buildPlugin/independentWatch'
-import { closeWatcherControllerResources } from './watcher/controllerClose'
+import { deduplicateCleanupErrors } from './watcher/cleanupErrors'
+import { closeWatcherControllerResources, getRegisteredWatcherServiceControllers } from './watcher/controllerClose'
 
 export type { WatcherInstance } from './watcher/types'
 
@@ -146,7 +147,7 @@ function createWatcherService(ctx: MutableCompilerContext): WatcherService {
       }
       // 配置重启的新代可以只登记独立依赖；空 watcher 图不代表旧 drain 已释放这些资源。
       const independent = ctx.runtimeState.build.independent
-      if (closeAllTask && !rollupWatcherMap.size && !sidecarWatcherMap.size && !independent.watchFiles.size && !independent.watchListeners.size && !drainCleanups.get(service)?.size) {
+      if (closeAllTask && !rollupWatcherMap.size && !sidecarWatcherMap.size && !getRegisteredWatcherServiceControllers(service).length && !independent.watchFiles.size && !independent.watchListeners.size && !drainCleanups.get(service)?.size) {
         return closeAllTask
       }
       const previous = closeAllTask
@@ -156,7 +157,7 @@ function createWatcherService(ctx: MutableCompilerContext): WatcherService {
       closeAllTask = drain.task
       serviceDrains.set(service, drain)
       const closeWatchers = () => {
-        const controllers = [...rollupWatcherMap.values()]
+        const controllers = [...new Set([...rollupWatcherMap.values(), ...getRegisteredWatcherServiceControllers(service)])]
         const sidecars = [...sidecarWatcherMap.values()]
         // 常驻 classic 控制器的在途快照仍可能消费自动导入等共享 sidecar。
         // 先启动完整 drain，但保留这批资源直到控制器完成本代释放；无 lease 的普通资源仍可并行关闭。
@@ -193,11 +194,15 @@ function createWatcherService(ctx: MutableCompilerContext): WatcherService {
       // 一个关闭失败不能中断其余资源回收；快照退出需等全部监听器停止。
       void (async () => {
         try {
-          const errors: unknown[] = []
+          const errors = new Set<unknown>()
           let pending = tasks
           do {
             const results = await Promise.allSettled(pending)
-            errors.push(...results.flatMap(result => result.status === 'rejected' ? [result.reason] : []))
+            for (const result of results) {
+              if (result.status === 'rejected') {
+                errors.add(result.reason)
+              }
+            }
             // 关闭期间接管的新 watcher 也由当前 drain 释放，公共调用共用同一完整结果。
             pending = closeWatchers()
           } while (pending.length)
@@ -211,11 +216,12 @@ function createWatcherService(ctx: MutableCompilerContext): WatcherService {
               cleanup()
             }
             catch (error) {
-              errors.push(error)
+              errors.add(error)
             }
           }
-          if (errors.length) {
-            throw errors.length === 1 ? errors[0] : new AggregateError(errors, 'Watcher service cleanup failed', { cause: errors[0] })
+          if (errors.size) {
+            const failures = deduplicateCleanupErrors(errors)
+            throw failures.length === 1 ? failures[0] : new AggregateError(failures, 'Watcher service cleanup failed', { cause: failures[0] })
           }
           // 空图确认与结束归属必须在同一微任务，随后注册的 watcher 才能取得新的关闭代次。
           serviceDrains.delete(service)

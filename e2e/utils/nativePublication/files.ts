@@ -13,6 +13,13 @@ export interface NativePublicationOptions {
 export interface NativePublicationProfileCursor {
   offset: number
   prefixHash: string
+  identity?: NativePublicationProfileIdentity
+}
+
+export interface NativePublicationProfileIdentity {
+  buildId: string
+  batchId: string
+  sourceEvents: Array<{ eventId: string, file: string }>
 }
 
 export interface NativePublicationReceipt {
@@ -30,6 +37,17 @@ export function nativePublicationHash(source: string | Uint8Array) {
 
 export function nativePublicationGeneration(files: Record<string, string>) {
   return nativePublicationHash(JSON.stringify(Object.entries(files).sort(([left], [right]) => left.localeCompare(right))))
+}
+
+/** 只接收可与本轮正式 END 精确关联的完整构建和来源身份。 */
+export function isNativePublicationProfileIdentity(value: unknown): value is NativePublicationProfileIdentity {
+  return Boolean(value && typeof value === 'object' && !Array.isArray(value)
+    && 'buildId' in value && typeof value.buildId === 'string' && value.buildId.length
+    && 'batchId' in value && typeof value.batchId === 'string' && value.batchId.length
+    && 'sourceEvents' in value && Array.isArray(value.sourceEvents) && value.sourceEvents.length
+    && value.sourceEvents.every((event: unknown) => event && typeof event === 'object' && !Array.isArray(event)
+      && 'eventId' in event && typeof event.eventId === 'string' && event.eventId.length
+      && 'file' in event && typeof event.file === 'string' && event.file.length))
 }
 
 /** 输入指纹仅包含真实源码和构建配置，不把 IDE 私有配置或生成目录算成保存来源。 */
@@ -50,7 +68,10 @@ export async function readNativePublicationInputs(project: string, options: Nati
         await collect(file)
       }
       else if (entry.isFile() && !entry.name.endsWith('.tmp') && !/^\.weapp-vite-e2e-[a-f\d]{8}(?:-[a-f\d]{4}){3}-[a-f\d]{12}\.config\.mjs$/.test(entry.name)) {
-        sources.push(path.relative(project, file).replaceAll('\\', '/'))
+        const relativeFile = path.relative(project, file).replaceAll('\\', '/')
+        if (relativeFile !== 'project.private.config.json') {
+          sources.push(relativeFile)
+        }
       }
     }
   }

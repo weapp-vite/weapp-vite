@@ -1269,7 +1269,7 @@ describe('runtime buildPlugin service', () => {
     expect(prepareStatefulClassicHandoffMock).toHaveBeenCalledOnce()
   })
 
-  it.each(['after-reload', 'during-reload'] as const)('keeps the original native facade owned after classic fallback and configuration reload (%s)', async (closeStage) => {
+  it.each(['after-reload', 'during-reload', 'service-drain-during-reload'] as const)('keeps the original native facade owned after classic fallback and configuration reload (%s)', async (closeStage) => {
     const { createDevBuildWatcher } = await vi.importActual<typeof import('./devBuildWatcher')>('./devBuildWatcher')
     const controllers = Array.from({ length: 3 }, () => {
       const controller = createDevBuildWatcher()
@@ -1317,12 +1317,17 @@ describe('runtime buildPlugin service', () => {
     })
     ctx.configService.weappViteConfig.hmr = { runtime: 'stateful-experimental' }
     const statefulOwner = { close: vi.fn(async () => {}) }
-    runStatefulHmrDevMock.mockResolvedValueOnce(statefulOwner)
+    if (closeStage === 'service-drain-during-reload') {
+      runStatefulHmrDevMock.mockRejectedValueOnce(new HmrRuntimeCapabilityError({ code: 'compiler-provider', message: 'legacy provider has no HMR preparation' }))
+    }
+    else {
+      runStatefulHmrDevMock.mockResolvedValueOnce(statefulOwner)
+    }
     const publications: string[] = []
     let reloadStarted = false
     const finishReload = Promise.withResolvers<void>()
     buildMock.mockImplementation(async () => {
-      if (closeStage === 'during-reload' && publications.length === 2) {
+      if (closeStage !== 'after-reload' && publications.length === 2) {
         reloadStarted = true
         await finishReload.promise
       }
@@ -1345,22 +1350,32 @@ describe('runtime buildPlugin service', () => {
     try {
       publicWatcher = await createBuildService(ctx).build({ skipNpm: true }) as RolldownWatcher
       const closeOriginal = publicWatcher.close.bind(publicWatcher)
+      // CLI backend 只持有 service drain；不能靠测试保存的 façade 弥补本代退休后的空图窗口。
+      const close = closeStage === 'service-drain-during-reload'
+        ? () => Promise.resolve(ctx.watcherService.closeAll())
+        : closeOriginal
       const events: string[] = []
       publicWatcher.on('event', (event) => {
         events.push(event.code)
       })
       const runtime = getHmrRuntimeSession(ctx)
-      runtime.requestClassic({ code: 'config-json', message: 'app configuration changed' })
+      if (closeStage === 'service-drain-during-reload') {
+        expect(runtime.fallback?.code).toBe('compiler-provider')
+      }
+      else {
+        runtime.requestClassic({ code: 'config-json', message: 'app configuration changed' })
+      }
       await runtime.whenSettled()
+      expect(runtime.phase).toBe('classic')
       expect(publicWatcher).toBe(controllers[0]!.watcher)
       expect(events.filter(event => event === 'END')).toHaveLength(1)
 
       sidecars[0]!.emit('all', 'change', config)
       let closing: ReturnType<RolldownWatcher['close']>
-      if (closeStage === 'during-reload') {
+      if (closeStage !== 'after-reload') {
         await vi.waitFor(() => expect(reloadStarted).toBe(true))
         let closed = false
-        closing = closeOriginal()
+        closing = close()
         void closing.then(() => {
           closed = true
         }, () => {
@@ -1382,11 +1397,11 @@ describe('runtime buildPlugin service', () => {
           await vi.waitFor(() => expect(events.filter(event => event === 'END')).toHaveLength(count))
         }
         expect(ctx.watcherService.rollupWatcherMap.get('/')).toBe(publicWatcher)
-        closing = closeOriginal()
+        closing = close()
       }
-      expect(closeOriginal()).toBe(closing)
+      expect(close()).toBe(closing)
       await awaitClose(closing)
-      expect(publications).toEqual((closeStage === 'during-reload'
+      expect(publications).toEqual((closeStage !== 'after-reload'
         ? ['before', 'before', 'before']
         : ['before', 'before', 'before', 'after', 'before']).map(marker => `export const marker = "${marker}"`))
       expect(runStatefulHmrDevMock).toHaveBeenCalledOnce()
@@ -1399,11 +1414,17 @@ describe('runtime buildPlugin service', () => {
       for (const result of createDevModuleGraphProviderMock.mock.results) {
         expect((await result.value).close).toHaveBeenCalledOnce()
       }
-      expect(statefulOwner.close).toHaveBeenCalledOnce()
+      if (closeStage === 'service-drain-during-reload') {
+        expect(statefulOwner.close).not.toHaveBeenCalled()
+      }
+      else {
+        expect(statefulOwner.close).toHaveBeenCalledOnce()
+      }
       expect(ctx.watcherService.rollupWatcherMap.size).toBe(0)
       expect(ctx.watcherService.sidecarWatcherMap.size).toBe(0)
       expect(graph.collectAffectedEntries(shared)).toEqual(new Set())
       expect(loggerErrorMock).not.toHaveBeenCalled()
+      expect(close()).toBe(closing)
     }
     finally {
       finishReload.resolve()

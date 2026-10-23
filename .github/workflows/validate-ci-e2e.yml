@@ -168,7 +168,7 @@ jobs:
       node_version: ${{ format('{0}', matrix.node-version) }}
       timeout_minutes: 20
       build_command: pnpm exec turbo run build --filter=weapp-vite... --filter=@mpcore/simulator...
-      main_command: pnpm exec cross-env WEAPP_VITE_E2E_RUNTIME_PROVIDER=headless WEAPP_VITE_E2E_DOM_ACCEPTANCE=1 WEAPP_VITE_E2E_CLEANUP_TRACE=1 WEAPP_VITE_E2E_DEV_PROCESS_TRACE=1 WEAPP_VITE_E2E_DEV_SHUTDOWN_TRACE=1 WEAPP_VITE_E2E_DEV_PROCESS_TRACE_DIR=.tmp/windows-startup-fallback/dev-process pnpm vitest run -c e2e/vitest.e2e.headless.config.ts e2e/ide/hmr-startup-fallback.runtime.test.ts --reporter=default --reporter=json --outputFile=.tmp/windows-startup-fallback/report.json
+      main_command: pnpm exec cross-env WEAPP_VITE_E2E_RUNTIME_PROVIDER=headless WEAPP_VITE_E2E_DOM_ACCEPTANCE=1 WEAPP_VITE_E2E_CLEANUP_TRACE=1 WEAPP_VITE_E2E_DEV_PROCESS_TRACE=1 WEAPP_VITE_E2E_DEV_SHUTDOWN_TRACE=1 WEAPP_VITE_E2E_DEV_PROCESS_TRACE_DIR=.tmp/windows-startup-fallback/dev-process pnpm vitest run -c e2e/vitest.e2e.headless.config.ts e2e/ide/hmr-startup-fallback.runtime.test.ts --reporter=default --reporter=json --reporter=./e2e/scripts/domAcceptanceReport/reporter.ts --outputFile=.tmp/windows-startup-fallback/report.json
       e2e_platform: weapp
       artifact_name: windows-startup-fallback-node-${{ matrix.node-version }}-${{ needs.pr-context.outputs.checkout_sha }}
       artifact_path: |

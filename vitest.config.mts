@@ -180,6 +180,7 @@ const projects = [
         'e2e/utils/devProcessCleanup/windowsKernelQuery.compiler.test.ts',
         'e2e/utils/dev-memory.test.ts',
         'e2e/utils/devBuildCompletion.test.ts',
+        'e2e/utils/devBuildCompletion.nativeIdentity.test.ts',
         'e2e/utils/devProcessDiagnostics.test.ts',
         'e2e/utils/devProcessShutdownTrace.test.ts',
         'e2e/utils/nativePublication/**/*.test.ts',

@@ -59,6 +59,45 @@ it('excludes the exact custom output and generated tools while preserving same-n
   expect(nativePublicationGeneration(await readNativePublicationInputs(root, options))).not.toBe(nativePublicationGeneration(inputs))
 })
 
+it.each(['src', '.'])('keeps the input generation stable when IDE private settings change (sourceRoot=%s)', async (sourceRoot) => {
+  const root = await fixture({
+    'src/app.ts': 'app',
+    'src/project.private.config.json': 'source-owned config',
+    'project.config.json': '{"miniprogramRoot":"dist"}',
+    'project.private.config.json': '{"setting":{"compileHotReLoad":true}}',
+    'weapp-vite.config.ts': 'config',
+  })
+  const options = { sourceRoot }
+  const before = await readNativePublicationInputs(root, options)
+  // classic 首次原生写出前合法关闭 IDE 局部热载，不能将它误记为新的源码保存。
+  await writeFile(path.join(root, 'project.private.config.json'), '{"setting":{"compileHotReLoad":false}}')
+  const after = await readNativePublicationInputs(root, options)
+  expect(nativePublicationGeneration(after)).toBe(nativePublicationGeneration(before))
+  expect(after).not.toHaveProperty('project.private.config.json')
+  expect(after['src/project.private.config.json']).toBe(nativePublicationHash('source-owned config'))
+})
+
+it.each(['src', '.'])('retains real source and build configuration changes in the input generation (sourceRoot=%s)', async (sourceRoot) => {
+  const root = await fixture({
+    'src/app.ts': 'app',
+    'src/project.private.config.json': 'source-owned config',
+    'project.config.json': '{"miniprogramRoot":"dist"}',
+    'project.private.config.json': '{"setting":{"compileHotReLoad":true}}',
+    'weapp-vite.config.ts': 'config',
+  })
+  const options = { sourceRoot }
+  const tracked = ['src/app.ts', 'src/project.private.config.json', 'weapp-vite.config.ts', ...(sourceRoot === '.' ? ['project.config.json'] : [])]
+  let before = await readNativePublicationInputs(root, options)
+  for (const file of tracked) {
+    const source = `updated ${file}`
+    await writeFile(path.join(root, file), source)
+    const after = await readNativePublicationInputs(root, options)
+    expect(after[file]).toBe(nativePublicationHash(source))
+    expect(nativePublicationGeneration(after), file).not.toBe(nativePublicationGeneration(before))
+    before = after
+  }
+})
+
 it.each([undefined, 'output/miniapp'])('validates native receipt bytes against %s output without consulting another dist', async (outputRoot) => {
   const output = outputRoot ?? 'dist'
   const root = await fixture({ 'src/app.ts': 'app', [`${output}/app.js`]: 'actual publication' })

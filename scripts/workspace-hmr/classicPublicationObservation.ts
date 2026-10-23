@@ -1,5 +1,6 @@
 import type { startDevProcess } from '../../e2e/utils/dev-process'
 import type { WorkspaceHmrAuditBudget } from './auditDeadline'
+import type { WorkspaceHmrStageObserver } from './stageRecorder'
 import path from 'node:path'
 import { createDevBuildCompletion } from '../../e2e/utils/devBuildCompletion'
 import { captureNativePublication } from '../../e2e/utils/nativePublication'
@@ -14,6 +15,7 @@ export function captureWorkspaceClassicPublication(options: {
   profilePath: string
   mode: 'stateful-experimental' | 'classic'
   stableMs: number
+  observe?: WorkspaceHmrStageObserver
 }) {
   const { project, dev } = options
   const offset = dev.getOutput().length
@@ -22,6 +24,7 @@ export function captureWorkspaceClassicPublication(options: {
   return {
     inspect<T>(budget: WorkspaceHmrAuditBudget, inspect: () => Promise<T>) {
       return inspectSettledClassicPublication({
+        observe: options.observe,
         mode: options.mode,
         native,
         completion,

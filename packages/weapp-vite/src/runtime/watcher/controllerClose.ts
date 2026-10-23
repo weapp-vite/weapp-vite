@@ -11,6 +11,25 @@ interface ControllerCloseRecord {
 }
 
 const controllerCloses = new WeakMap<WatcherService, WeakMap<WatcherInstance, ControllerCloseRecord>>()
+const registeredControllers = new WeakMap<WatcherService, Set<WatcherInstance>>()
+
+/** 会话控制器跨代际保留归属；旧代退休后的空图不能让完整 drain 漏掉在途重启。 */
+export function registerWatcherServiceController(service: WatcherService, controller: WatcherInstance): () => void {
+  const controllers = registeredControllers.get(service) ?? new Set<WatcherInstance>()
+  controllers.add(controller)
+  registeredControllers.set(service, controllers)
+  return () => {
+    controllers.delete(controller)
+    if (!controllers.size && registeredControllers.get(service) === controllers) {
+      registeredControllers.delete(service)
+    }
+  }
+}
+
+/** 只返回本服务仍持有的控制器快照，代际 map 不承担会话生命周期。 */
+export function getRegisteredWatcherServiceControllers(service: WatcherService): WatcherInstance[] {
+  return [...registeredControllers.get(service) ?? []]
+}
 
 function closeResources(record: ControllerCloseRecord): Promise<void> {
   if (!record.closing) {

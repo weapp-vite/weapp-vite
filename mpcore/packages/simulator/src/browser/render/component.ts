@@ -41,8 +41,7 @@ export function resolveComponentRegistryEntry(
   genericComponentBasePath?: string,
 ) {
   // eslint-disable-next-line ts/no-use-before-define
-  const usingComponents = resolveUsingComponents(context, ownerJsonPath, ownerFilePath)
-  const componentBasePath = genericComponentBasePath ?? usingComponents.get(alias)
+  const componentBasePath = genericComponentBasePath ?? resolveUsingComponent(context, ownerJsonPath, ownerFilePath, alias)
   if (!componentBasePath) {
     return null
   }
@@ -70,36 +69,34 @@ function readComponentConfig(files: BrowserVirtualFiles, jsonPath: string) {
   }
 }
 
-function resolveUsingComponents(
+function resolveUsingComponent(
   context: BrowserRendererContext,
   ownerJsonPath: string,
   ownerFilePath: string,
+  alias: string,
 ) {
   try {
     const parsed = readComponentConfig(context.files, join(context.project.miniprogramRootPath, ownerJsonPath))
     const usingComponents = parsed.usingComponents
     if (!usingComponents || typeof usingComponents !== 'object' || Array.isArray(usingComponents)) {
-      return new Map<string, string>()
+      return undefined
     }
 
-    const resolved = new Map<string, string>()
-    for (const [alias, rawPath] of Object.entries(usingComponents)) {
-      if (typeof rawPath !== 'string') {
-        continue
-      }
-      const pluginRequest = resolvePluginRequest(context.project.plugins, rawPath, 'publicComponent')
-      const basePath = pluginRequest?.resourcePath ?? resolveMiniProgramComponent(
-        ownerFilePath,
-        rawPath,
-        context.project.miniprogramRootPath,
-        candidate => readBrowserVirtualFile(context.files, candidate) !== undefined,
-      )
-      resolved.set(alias, basePath.replace(LEADING_SLASH_RE, ''))
+    const rawPath = usingComponents[alias]
+    if (typeof rawPath !== 'string') {
+      return undefined
     }
-    return resolved
+    const pluginRequest = resolvePluginRequest(context.project.plugins, rawPath, 'publicComponent')
+    const basePath = pluginRequest?.resourcePath ?? resolveMiniProgramComponent(
+      ownerFilePath,
+      rawPath,
+      context.project.miniprogramRootPath,
+      candidate => readBrowserVirtualFile(context.files, candidate) !== undefined,
+    )
+    return basePath.replace(LEADING_SLASH_RE, '')
   }
   catch {
-    return new Map<string, string>()
+    return undefined
   }
 }
 
@@ -117,11 +114,10 @@ export function resolveComponentGenerics(
     return undefined
   }
 
-  const ownerComponents = resolveUsingComponents(context, ownerJsonPath, ownerFilePath)
   const resolved = new Map<string, string>()
   for (const [genericName, definition] of Object.entries(componentGenerics)) {
     const selectedAlias = hostNode.attribs?.[`generic:${genericName}`]
-    const selectedPath = selectedAlias ? ownerGenerics?.get(selectedAlias) ?? ownerComponents.get(selectedAlias) : undefined
+    const selectedPath = selectedAlias ? ownerGenerics?.get(selectedAlias) ?? resolveUsingComponent(context, ownerJsonPath, ownerFilePath, selectedAlias) : undefined
     if (selectedPath) {
       resolved.set(genericName, selectedPath)
       continue

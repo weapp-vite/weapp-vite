@@ -2,6 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 export interface ArtifactSource {
+  /** 判断产物文件是否存在，目录不属于产物。 */
   has: (filePath: string) => boolean
   readText: (filePath: string) => string | undefined
 }
@@ -12,7 +13,15 @@ function normalizeArtifactPath(filePath: string) {
 
 export function createFileSystemArtifactSource(): ArtifactSource {
   return {
-    has: filePath => fs.existsSync(filePath),
+    has(filePath) {
+      try {
+        // stat 跟随符号链接，目录候选继续交由模块解析查找 index 文件。
+        return fs.statSync(filePath).isFile()
+      }
+      catch {
+        return false
+      }
+    },
     readText(filePath) {
       try {
         return fs.readFileSync(filePath, 'utf8')
