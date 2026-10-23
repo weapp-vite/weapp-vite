@@ -32,6 +32,15 @@ export function showToastBridge(options?: any): Promise<any> {
   return Promise.resolve(result)
 }
 
+export function hideToastBridge(options?: any): Promise<any> {
+  hideToastElement()
+  if (toastHideTimer) {
+    clearTimeout(toastHideTimer)
+    toastHideTimer = undefined
+  }
+  return Promise.resolve(callMiniProgramAsyncSuccess(options, { errMsg: 'hideToast:ok' }))
+}
+
 export function showLoadingBridge(options?: any): Promise<any> {
   const loading = getLoadingElement()
   if (loading) {
