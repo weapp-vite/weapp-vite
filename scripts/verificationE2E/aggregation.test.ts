@@ -46,6 +46,32 @@ describe('complete E2E shard evidence', () => {
     expect(report).toMatchObject({ coverage: 'complete', acceptance: 'passed', execution: { scope: 'full', status: 'passed' }, summary: { taskCount: 4, executedCount: 4 } })
   })
 
+  it('reports the rejected task and original reason when strict runtime execution fails', async () => {
+    const plan = await freeze({
+      suite: 'ide-hmr-headless',
+      shards: 1,
+      profile: { ...profile, provider: 'headless' },
+      readCases: async task => [{ file: `e2e/${task.label}`, name: 'restores the final generation' }],
+    })
+    const shard = shardReports(plan)[0]!
+    const label = shard.tasks[0]!.label
+    const report = {
+      ...shard,
+      acceptance: 'failed',
+      execution: { ...shard.execution, status: 'failed' },
+      tasks: shard.tasks.map(task => task.label === label
+        ? { ...task, status: 'failed', exitCode: 1, reason: 'DOM acceptance did not finish all collected cases successfully' }
+        : task),
+      summary: { ...shard.summary, passedCount: shard.tasks.length - 1, failedCount: 1 },
+    }
+    expect(plan.strict).toBe(true)
+    const aggregation = aggregateVerificationReports(plan, [report], { now })
+    await expect(aggregation).rejects.toThrow('Shard identity, execution status or frozen plan does not match')
+    await expect(aggregation).rejects.toThrow('execution.status=failed, coverage=partial, acceptance=failed')
+    await expect(aggregation).rejects.toThrow('Task results: passed=3, failed=1')
+    await expect(aggregation).rejects.toThrow(`${label}: status=failed, exitCode=1; reason=DOM acceptance did not finish all collected cases successfully`)
+  })
+
   it('preserves every shard root timing and the original per-task timings', async () => {
     const plan = await freeze()
     const shards = shardReports(plan).map((report, index) => ({

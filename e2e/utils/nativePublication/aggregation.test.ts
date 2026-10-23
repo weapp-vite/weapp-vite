@@ -108,7 +108,8 @@ it.each(['different-inputs', 'foreign-disk', 'before-capture'] as const)('does n
     first.inputs = { ...first.inputs, 'src/page.css': nativePublicationHash('previous source') }
   }
   if (variant === 'foreign-disk') {
-    first.outputs = { 'page.wxss': nativePublicationHash('foreign disk bytes') }
+    await writeFile(path.join(run.project, 'dist/unshadowed.wxss'), 'actual unshadowed stylesheet')
+    first.outputs = { 'unshadowed.wxss': nativePublicationHash('foreign disk bytes') }
     first.generation = nativePublicationGeneration(first.outputs)
   }
   if (variant === 'before-capture') {
@@ -120,6 +121,44 @@ it.each(['different-inputs', 'foreign-disk', 'before-capture'] as const)('does n
   }
   run.append(run.receipt(run.pageIdentity))
   await expect(publication.wait(100)).rejects.toThrow('final source generation')
+})
+
+it.each(['complete', 'stale-final', 'stale-unshadowed', 'missing-first-end', 'foreign-superseding-inputs'] as const)('validates overlapping output publications with independent exact END identities: %s', async (variant) => {
+  const run = await fixture()
+  const ordinary = '.ordinary { color: red; }'
+  await writeFile(path.join(run.project, 'dist/ordinary.wxss'), ordinary)
+  const publication = captureNativePublication(run.dev, run.project, { expectedSourceFiles: [run.css, run.page] })
+  const completion = createDevBuildCompletion(run.dev, { source: { files: [run.css, run.page], profilePath: run.profilePath } })
+  const firstEnd = sourceEnd(run.cssIdentity)
+  const first = run.receipt(run.cssIdentity, '', true)
+  first.outputs = { 'ordinary.wxss': nativePublicationHash(ordinary), 'page.wxss': nativePublicationHash('intermediate shared stylesheet') }
+  first.generation = nativePublicationGeneration(first.outputs)
+  run.append(first)
+  const last = run.receipt(run.pageIdentity, variant === 'missing-first-end' ? '' : firstEnd)
+  if (variant === 'stale-final') {
+    last.outputs = { ...last.outputs, 'page.wxss': nativePublicationHash('unwritten final stylesheet') }
+    last.generation = nativePublicationGeneration(last.outputs)
+  }
+  if (variant === 'foreign-superseding-inputs') {
+    last.inputs = { ...last.inputs, 'src/page.css': nativePublicationHash('foreign source') }
+  }
+  run.append(last)
+  if (variant === 'stale-unshadowed') {
+    await writeFile(path.join(run.project, 'dist/ordinary.wxss'), 'stale ordinary stylesheet')
+  }
+  await writeFile(run.profilePath, (variant === 'missing-first-end' ? '' : firstEnd) + sourceEnd(run.pageIdentity))
+  if (variant !== 'complete' && variant !== 'missing-first-end') {
+    await expect(publication.wait(100)).rejects.toThrow('final source generation')
+    return
+  }
+  const receipt = await publication.wait(1_000)
+  expect(receipt.sourcePublications?.map(value => value.cursor.identity)).toEqual([run.cssIdentity, run.pageIdentity])
+  if (variant === 'missing-first-end') {
+    await expect(completion.wait(100, receipt.sourcePublications)).rejects.toThrow('source profile publication')
+  }
+  else {
+    await expect(completion.wait(100, receipt.sourcePublications)).resolves.toBeUndefined()
+  }
 })
 
 it('requires every selected identity END when separate batches contain the same source', async () => {

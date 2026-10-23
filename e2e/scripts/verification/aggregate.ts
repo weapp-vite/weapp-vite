@@ -82,7 +82,15 @@ export async function aggregateVerificationReports(plan: VerificationPlan, value
       || report.coverage !== 'partial' || report.acceptance !== 'incomplete'
       || Date.parse(execution.finishedAt) < Date.parse(execution.startedAt)
       || Date.parse(execution.finishedAt) > (options.now ?? new Date()).getTime()) {
-      throw new Error('Shard identity, execution status or frozen plan does not match')
+      const rejectedTasks = report.tasks
+        .filter(task => task.status !== 'passed' || task.exitCode !== 0)
+        .map(task => `- ${task.label}: status=${task.status}, exitCode=${task.exitCode}${typeof task.reason === 'string' ? `; reason=${task.reason}` : ''}`)
+      throw new Error([
+        'Shard identity, execution status or frozen plan does not match',
+        `Shard ${execution.shardIndex}/${execution.shardTotal}: execution.status=${execution.status}, coverage=${report.coverage}, acceptance=${report.acceptance}`,
+        `Task results: passed=${report.summary.passedCount}, failed=${report.summary.failedCount}, blocked=${report.summary.blockedCount}, skipped=${report.summary.skippedCount}, not-executed=${report.summary.notExecutedCount}`,
+        ...rejectedTasks,
+      ].join('\n'))
     }
     seenShards.add(execution.shardIndex)
     const assigned = plan.tasks.filter(task => !task.outOfScopeReason && task.shardIndex === execution.shardIndex)

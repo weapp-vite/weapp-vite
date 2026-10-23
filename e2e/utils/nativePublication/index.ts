@@ -90,53 +90,46 @@ export function captureNativePublication(
           const candidates: NativePublicationObservation[] = []
           const sourcePublications: NativePublicationSourceEvidence[] = []
           const observedSources = new Set<string>()
-          for (const [index, receipt] of receipts(output).reverse().entries()) {
-            const inputGeneration = nativePublicationGeneration(receipt.inputs)
-            const matchingInputs = inputGeneration === generation
-            const sources = new Set(receipt.profileCursor?.identity?.sourceEvents.map(event => normalizedSource(event.file)))
-            if (index > 0 && !matchingInputs) {
-              continue
-            }
+          const publications = receipts(output).reverse()
+          const matching = publications.filter(receipt => nativePublicationGeneration(receipt.inputs) === generation)
+          // 同一最终输入可分批重写共享产物；按文件保留最后一次原生写出，而来源仍逐身份验 END。
+          const finalOutputs = Object.fromEntries([...matching].reverse().flatMap(receipt => Object.entries(receipt.outputs)))
+          const files = await Promise.all(Object.entries(matching.length ? finalOutputs : publications[0]?.outputs ?? {}).map(async ([file, expected]) => {
             try {
-              const files = await Promise.all(Object.entries(receipt.outputs).map(async ([file, expected]) => {
-                try {
-                  return { file, expected, actual: nativePublicationHash(await readFile(path.join(outputRoot, file), { signal: reads.signal })) }
-                }
-                catch (error) {
-                  const code = (error as NodeJS.ErrnoException).code ?? 'unknown'
-                  if (code !== 'ENOENT' && matchingInputs) {
-                    throw error
-                  }
-                  return { file, expected, error: code }
-                }
-              }))
-              if (index === 0) {
-                // 超时保留最新收据与真实磁盘的差异；只记录相对路径和哈希，不输出源码。
-                diagnostics = {
-                  expectedInputGeneration: generation,
-                  receipt: { boundary: receipt.boundary, generation: receipt.generation, inputGeneration, identity: receipt.profileCursor?.identity },
-                  inputDifferences: [...new Set([...Object.keys(inputs), ...Object.keys(receipt.inputs)])].sort().filter(file => inputs[file] !== receipt.inputs[file]).map(file => ({ file, expected: inputs[file], actual: receipt.inputs[file] })),
-                  outputs: files,
-                }
-              }
-              if (matchingInputs && files.every(file => 'actual' in file && file.actual === file.expected)) {
-                const identity = receipt.profileCursor?.identity
-                const matchingFiles = [...expectedSources].filter(file => sources.has(file))
-                const outputOffset = offset + receipt.outputOffset
-                if (!expectedSources.size || matchingFiles.length || options.allowSourceFreePublication?.(outputOffset)) {
-                  candidates.push({ ...receipt, outputOffset })
-                }
-                if (identity && receipt.profileCursor && matchingFiles.length) {
-                  sourcePublications.unshift({ cursor: { ...receipt.profileCursor, identity }, files: matchingFiles })
-                  for (const file of matchingFiles) {
-                    observedSources.add(file)
-                  }
-                }
-              }
+              return { file, expected, actual: nativePublicationHash(await readFile(path.join(outputRoot, file), { signal: reads.signal })) }
             }
             catch (error) {
-              if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+              const code = (error as NodeJS.ErrnoException).code ?? 'unknown'
+              if (code !== 'ENOENT' && matching.length) {
                 throw error
+              }
+              return { file, expected, error: code }
+            }
+          }))
+          const latest = publications[0]
+          if (latest) {
+            diagnostics = {
+              expectedInputGeneration: generation,
+              receipt: { boundary: latest.boundary, generation: latest.generation, inputGeneration: nativePublicationGeneration(latest.inputs), identity: latest.profileCursor?.identity },
+              inputDifferences: [...new Set([...Object.keys(inputs), ...Object.keys(latest.inputs)])].sort().filter(file => inputs[file] !== latest.inputs[file]).map(file => ({ file, expected: inputs[file], actual: latest.inputs[file] })),
+              outputs: files,
+            }
+          }
+          if (!matching.length || !files.every(file => 'actual' in file && file.actual === file.expected)) {
+            return
+          }
+          for (const receipt of matching) {
+            const sources = new Set(receipt.profileCursor?.identity?.sourceEvents.map(event => normalizedSource(event.file)))
+            const identity = receipt.profileCursor?.identity
+            const matchingFiles = [...expectedSources].filter(file => sources.has(file))
+            const outputOffset = offset + receipt.outputOffset
+            if (!expectedSources.size || matchingFiles.length || options.allowSourceFreePublication?.(outputOffset)) {
+              candidates.push({ ...receipt, outputOffset })
+            }
+            if (identity && receipt.profileCursor && matchingFiles.length) {
+              sourcePublications.unshift({ cursor: { ...receipt.profileCursor, identity }, files: matchingFiles })
+              for (const file of matchingFiles) {
+                observedSources.add(file)
               }
             }
           }
