@@ -6,8 +6,8 @@ import { measureStatefulTemplateArtifact } from '../../../../scripts/workspace-h
 import { StatefulHmrAuditClient } from '../../../../scripts/workspace-hmr/statefulAuditClient'
 import { createAutoImportHmrFallback } from './hmrFallback'
 
-const requested = '[weapp-vite] HMR fallback {"from":"stateful-experimental","to":"classic","reason":"native-registration"}'
-const ready = '[weapp-vite] HMR classic ready {"reason":"native-registration"}'
+const requested = '[weapp-vite] HMR fallback {"from":"stateful-experimental","to":"classic","reason":"native-registration","message":"native registration changed","requested":"auto","actual":"classic","phase":"switching"}'
+const ready = '[weapp-vite] HMR classic ready {"reason":"native-registration","requested":"auto","actual":"classic","phase":"classic"}'
 
 it('requires matching native-registration readiness and released runtime artifacts across phases', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'auto-import-fallback-'))
