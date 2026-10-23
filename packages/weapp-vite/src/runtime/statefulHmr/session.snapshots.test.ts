@@ -104,7 +104,7 @@ vi.mock('./viteAdapter', () => ({
 const route = 'pages/shared/index'
 const contentFile = 'snapshot-content.wxml'
 const pageContentFile = 'pages/shared/snapshot-content.wxml'
-const root = path.join(realpathSync(tmpdir()), 'stateful-session-snapshots')
+const root = path.join(realpathSync.native(tmpdir()), 'stateful-session-snapshots')
 const watchers: Array<{ close: () => Promise<void> }> = []
 const temporaryDirectories: string[] = []
 

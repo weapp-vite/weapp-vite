@@ -29,6 +29,8 @@ it.each(['vue', 'native'] as const)('publishes %s App compiler styles across con
   const root = await realpath(await mkdtemp(path.join(os.tmpdir(), 'weapp-classic-compiler-content-')))
   const outDir = path.join(root, 'dist')
   const page = path.join(root, 'src/pages/index/index.vue')
+  const pageId = page.replaceAll('\\', '/')
+  const appOwner = path.join(root, 'src', appKind === 'vue' ? 'app.vue' : 'app.js').replaceAll('\\', '/')
   const shared = path.join(root, 'src/shared.ts')
   const added = path.join(root, 'src/new-source.ts')
   const markdown = path.join(root, 'src/content.md')
@@ -76,7 +78,7 @@ function increment() { count.value += ${handler}; return { handlerStep: ${handle
         ordinal,
         stage: 'run',
         forceFullRescan: options?.forceFullRescan,
-        capturedHandler: handlerStep(getCompilerSourceSnapshot(ctx.configService)?.get(page)),
+        capturedHandler: handlerStep(getCompilerSourceSnapshot(ctx.configService)?.get(pageId)),
         // 只读取可重复数组，不能为诊断消费一次性 Iterable。
         sources: Array.isArray(changedFiles) ? changedFiles.map(sourceVersion) : [],
       })
@@ -114,6 +116,7 @@ function increment() { count.value += ${handler}; return { handlerStep: ${handle
     expect(failures).toHaveLength(expectedFailure ? 1 : 0)
   }
   let failNextWrite = false
+  let failedWrite: PublicationReceipt | undefined
   let initialAppJson: string | undefined
   const pending = new WeakMap<object, { api: NativeOutputPublicationApi, epoch: number }>()
   const observer: Plugin = {
@@ -138,10 +141,6 @@ function increment() { count.value += ${handler}; return { handlerStep: ${handle
           throw new Error('Native write has no matching generation')
         }
         pending.delete(this.environment)
-        if (failNextWrite) {
-          failNextWrite = false
-          throw writeFailure
-        }
         const plan = getHmrStyleUpdatePlan(session.context.configService)
         const profile = session.context.runtimeState.build.hmr.profile
         const pageScript = bundle['pages/index/index.js']
@@ -149,10 +148,15 @@ function increment() { count.value += ${handler}; return { handlerStep: ${handle
           files: Object.keys(bundle),
           epoch: publication.epoch,
           snapshotCall: snapshotBuilds.mock.calls.length,
-          capturedHandler: handlerStep(getCompilerSourceSnapshot(session.context.configService)?.get(page)),
+          capturedHandler: handlerStep(getCompilerSourceSnapshot(session.context.configService)?.get(pageId)),
           emittedHandler: handlerStep(pageScript?.type === 'chunk' ? pageScript.code : undefined),
           profile: { eventId: profile.eventId, batchId: profile.batchId, event: profile.event, file: profile.file },
           plan: plan ? { id: plan.id, full: plan.full, sourceFiles: [...plan.sourceFiles], styleFiles: [...plan.styleFiles], compilerContentOwners: [...plan.compilerContentOwners] } : undefined,
+        }
+        if (failNextWrite) {
+          failNextWrite = false
+          failedWrite = receipt
+          throw writeFailure
         }
         receipts.push(receipt)
         // 观察原生发布完成；不能在 write hook 等待后置提交，或自行写出样式。
@@ -201,6 +205,7 @@ function increment() { count.value += ${handler}; return { handlerStep: ${handle
         return { files: receipt.files, epoch: receipt.epoch, snapshotCall: receipt.snapshotCall, capturedHandler: receipt.capturedHandler, emittedHandler: receipt.emittedHandler, committedHandler: handlerStep(receipt.snapshot?.outputs.get('pages/index/index.js')), profile: receipt.profile, committed: Boolean(receipt.snapshot), plan: receipt.plan, styles: { length: styles.length, colors: styles.match(/background-color:[^;]+/g), nonce: styles.match(/weapp-vite tailwind-content [^*]+/)?.[0] } }
       }),
       errors: errors.map(String),
+      failedWrite,
       snapshots: snapshotDiagnostics,
     })}\n`)
   })
@@ -279,6 +284,8 @@ function increment() { count.value += ${handler}; return { handlerStep: ${handle
     // 纯业务逻辑不应重新生成全局编译器样式，原生发布仍须保留其所有权。
     expect(handler.files).not.toContain('app.wxss')
 
+    const retryCursor = receipts.length
+    const failedSnapshotCursor = snapshotBuilds.mock.calls.length
     failNextWrite = true
     await writeFile(page, source('#fef3c7', 17002))
     await expect.poll(() => buildErrors.map(error => error.message), { timeout: 15_000 }).toEqual([
@@ -286,17 +293,46 @@ function increment() { count.value += ${handler}; return { handlerStep: ${handle
     ])
     expect(snapshotBuilds.mock.calls.length).toBeGreaterThan(drainedSnapshots)
     await drainSnapshotBuilds(writeFailure)
-    // 签名已推进但原生交付失败，后续仅改 handler 仍必须重试尚未交付的样式 owner。
-    const retryCursor = receipts.length
+    expect(failedWrite).toBeDefined()
+    const failed = failedWrite!
+    expect(failed.snapshotCall).toBeGreaterThan(failedSnapshotCursor)
+    expect(failed.emittedHandler).toBe(17002)
+    expect(failed.files).toContain('app.wxss')
+    expect(failed.plan?.compilerContentOwners).toContainEqual([appOwner, 'tailwind-content'])
+    // 已排队的保存可能先于显式 handler 修改完成重试；失败前冻结 cursor，认领首个真实成功提交。
     await writeFile(page, source('#fef3c7', 17003))
-    const retry = await waitForPublication(retryCursor, '#fef3c7', 17003)
+    const retryHandler = await waitForPublication(retryCursor, '#fef3c7', 17003)
+    const retry = receipts.slice(retryCursor).find(receipt => receipt.snapshot)!
+    expect(retry.snapshot).toBeDefined()
+    expect(retry.epoch).toBeGreaterThan(failed.epoch)
+    expect(retry.snapshotCall).toBeGreaterThan(failed.snapshotCall)
+    expect(snapshotBuilds.mock.calls[retry.snapshotCall - 1]?.[0].configService).toBe(session.context.configService)
+    expect(retry.snapshot!.epoch).toBe(retry.epoch)
     expect(retry.files).toContain('app.wxss')
-    const localCursor = receipts.length
-    await writeFile(page, source('#fef3c7', 17004))
-    const local = await waitForPublication(localCursor, '#fef3c7', 17004)
-    expect(local.files).not.toContain('app.wxss')
-    expect(local.snapshot!.outputs.get('app.wxss')).toMatch(/height:\s*19px/)
-    expect(local.snapshot!.outputs.get('app.wxss')).toMatch(/max-width:\s*43px/)
+    expect(retry.plan?.compilerContentOwners).toContainEqual([appOwner, 'tailwind-content'])
+    expect([17002, 17003]).toContain(retry.emittedHandler)
+    expect(retry.capturedHandler).toBe(retry.emittedHandler)
+    expect(handlerStep(retry.snapshot!.outputs.get('pages/index/index.js'))).toBe(retry.emittedHandler)
+    const retriedStyles = retry.snapshot!.outputs.get('app.wxss')
+    expect(retriedStyles).toContain('#fef3c7')
+    expect(retriedStyles).toBe(retryHandler.snapshot!.outputs.get('app.wxss'))
+    expect(await readFile(path.join(outDir, 'app.wxss'), 'utf8')).toBe(retriedStyles)
+    if (retry !== retryHandler) {
+      expect(retryHandler.files).not.toContain('app.wxss')
+      expect(retryHandler.plan?.compilerContentOwners).toEqual([])
+    }
+    // owner 交付成功后，两个 handler 值的后续修改都必须保持局部，不能继续重发全局样式。
+    for (const nextHandler of [17004, 17003, 17004]) {
+      const localCursor = receipts.length
+      await writeFile(page, source('#fef3c7', nextHandler))
+      const local = await waitForPublication(localCursor, '#fef3c7', nextHandler)
+      expect(local.files).toContain('pages/index/index.js')
+      expect(local.files).not.toContain('app.wxss')
+      expect(local.plan?.compilerContentOwners).toEqual([])
+      expect(local.snapshot!.outputs.get('app.wxss')).toBe(retriedStyles)
+      expect(local.snapshot!.outputs.get('app.wxss')).toMatch(/height:\s*19px/)
+      expect(local.snapshot!.outputs.get('app.wxss')).toMatch(/max-width:\s*43px/)
+    }
 
     // 仅供 @source 扫描的脚本没有模块导入，更新、删除和恢复仍须驱动原生样式发布。
     const sharedUpdateCursor = receipts.length
