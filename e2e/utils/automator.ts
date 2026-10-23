@@ -38,6 +38,7 @@ import {
 } from './ideWarningReport'
 import { attachManagedProjectSession } from './managedProjectSession'
 import { registerRuntimeConsoleSession } from './runtimeConsoleSessions'
+import { captureRuntimeLogDiagnostics } from './runtimeLogDiagnostics.ts'
 import { createRuntimeLogSubscription, waitForRuntimeLogSubscription } from './runtimeLogSubscription'
 import {
   assertRuntimeProviderImplemented,
@@ -256,6 +257,7 @@ interface RuntimeLogMeta {
   closed: boolean
   closing: boolean
   closeWrapped: boolean
+  startSubscription: () => void
 }
 
 export type MiniProgramWithRuntimeLogs = MiniProgram & {
@@ -510,6 +512,8 @@ function ensureRuntimeLogMeta(miniProgram: any, project: string): RuntimeLogMeta
   }
 
   const entries: RuntimeLogEntry[] = []
+  const sessionId = crypto.randomUUID()
+  let subscriptionId = crypto.randomUUID()
   const stats: RuntimeLogStats = {
     debug: 0,
     info: 0,
@@ -520,7 +524,7 @@ function ensureRuntimeLogMeta(miniProgram: any, project: string): RuntimeLogMeta
     total: 0,
   }
 
-  const appendRuntimeLogEvent = (entry: RuntimeLogEntry) => {
+  const appendRuntimeLogEvent = (entry: RuntimeLogEntry, payload: unknown) => {
     appendIdeReportEvent({
       source: 'runtime',
       kind: 'message',
@@ -528,6 +532,7 @@ function ensureRuntimeLogMeta(miniProgram: any, project: string): RuntimeLogMeta
       level: entry.level,
       channel: entry.level === 'exception' ? 'exception' : 'runtime',
       text: entry.text,
+      runtimeLogDiagnostics: captureRuntimeLogDiagnostics(payload, { sessionId, subscriptionId, receivedAtMonotonicMs: performance.now() }),
     })
   }
 
@@ -541,7 +546,7 @@ function ensureRuntimeLogMeta(miniProgram: any, project: string): RuntimeLogMeta
     stats.total += 1
     const runtimeEntry = { level, text }
     entries.push(runtimeEntry)
-    appendRuntimeLogEvent(runtimeEntry)
+    appendRuntimeLogEvent(runtimeEntry, entry)
   }
 
   const onException = (entry: any) => {
@@ -552,7 +557,7 @@ function ensureRuntimeLogMeta(miniProgram: any, project: string): RuntimeLogMeta
     stats.total += 1
     const runtimeEntry = { level: 'exception', text } satisfies RuntimeLogEntry
     entries.push(runtimeEntry)
-    appendRuntimeLogEvent(runtimeEntry)
+    appendRuntimeLogEvent(runtimeEntry, entry)
   }
 
   // SDK 的 on('console') 会隐式发起无超时订阅；先被动挂监听，由启动流程统一等待 enableLog。
@@ -567,6 +572,9 @@ function ensureRuntimeLogMeta(miniProgram: any, project: string): RuntimeLogMeta
     project,
     entries,
     stats,
+    startSubscription() {
+      subscriptionId = crypto.randomUUID()
+    },
     dispose() {
       unregisterConsoleSession()
       miniProgram.removeListener('console', onConsole)
@@ -2026,7 +2034,10 @@ export async function enableReconnectedAutomatorRuntimeLogs(
   await lifecycle.step(() => waitForRuntimeLogSubscription({
     deadlineAt: lifecycle.deadlineAt,
     signal: lifecycle.signal,
-    subscribe: timeoutMs => miniProgram.enableLog(timeoutMs, { structured: true }),
+    subscribe: (timeoutMs) => {
+      ensureRuntimeLogMeta(miniProgram, project).startSubscription()
+      return miniProgram.enableLog(timeoutMs, { structured: true })
+    },
     assertClean,
     onRetry: ({ attempt, elapsedMs, remainingMs, error }) => {
       lifecycle.recordFailure(error)
@@ -3072,7 +3083,10 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
                 `Timeout in runtime log subscription after ${subscriptionTimeout}ms`,
                 `Timeout in launch automator#${attempt} after ${attemptBudget}ms`,
               ],
-              subscribe: timeoutMs => miniProgram.enableLog(timeoutMs, { structured: true }),
+              subscribe: (timeoutMs) => {
+                ensureRuntimeLogMeta(miniProgram, project).startSubscription()
+                return miniProgram.enableLog(timeoutMs, { structured: true })
+              },
               assertClean: () => devtoolsLogMonitor.assertClean('runtime log subscription', true),
               onRetry: ({ attempt, elapsedMs, remainingMs }) => {
                 process.stdout.write(`[info] [runtime:log-subscription-retry] attempt=${attempt} elapsed=${Math.round(elapsedMs)}ms remaining=${remainingMs}ms project=${project}\n`)

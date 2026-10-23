@@ -12,7 +12,7 @@ describe('local root sparse pattern contracts', () => {
     vi.unstubAllEnvs()
   })
 
-  it.each([false, true])('preserves inherited pattern getters (non-index key=%s)', (extraKey) => {
+  it.each([false, true])('preserves inherited pattern getters across original require matches (non-index key=%s)', (extraKey) => {
     const index = '99'
     const descriptor = Object.getOwnPropertyDescriptor(Array.prototype, index)
     expect(descriptor).toBeUndefined()
@@ -24,7 +24,7 @@ describe('local root sparse pattern contracts', () => {
     const chunk = {
       type: 'chunk',
       fileName: 'pages/index.js',
-      code: String.raw`const matcher = /\B/; const dep = require('other-lib/button')`,
+      code: String.raw`const matcher = /\B/; const unmatched = require('./relative'); const dep = require('other-lib/button')`,
       map: null,
       imports: [],
       moduleIds: [],

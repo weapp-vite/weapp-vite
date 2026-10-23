@@ -14,6 +14,7 @@ import { createSetDataPhaseFiles } from './test/helpers/setDataPhases'
 import { createStatefulAppBootstrapFiles } from './test/helpers/statefulAppBootstrap'
 import { createStatefulBatchDeliveryFiles } from './test/helpers/statefulBatchDelivery'
 import { createStatefulNativeComponentFiles } from './test/helpers/statefulNativeComponent'
+import { createStatefulNativeEntryReplayFiles } from './test/helpers/statefulNativeEntryReplay'
 import { createStatefulNativePageFiles } from './test/helpers/statefulNativePage'
 import { createStatefulStoreBindingFiles } from './test/helpers/statefulStoreBindings'
 import { createStatefulVueComponentFiles } from './test/helpers/statefulVueComponent'
@@ -52,6 +53,9 @@ export default defineConfig({
   plugins: [vue(), tailwindcss(), {
     name: 'stateful-native-component-fixture',
     resolveId(id) {
+      if (id === 'virtual:stateful-native-entry-replay-fixture') {
+        return `\0${id}`
+      }
       if (id === 'virtual:production-mount-fixture') {
         return `\0${id}`
       }
@@ -75,6 +79,9 @@ export default defineConfig({
       }
     },
     async load(id) {
+      if (id === '\0virtual:stateful-native-entry-replay-fixture') {
+        return `export default ${JSON.stringify(await createStatefulNativeEntryReplayFiles())}`
+      }
       if (id === '\0virtual:production-mount-fixture') {
         return `export default ${JSON.stringify(await createProductionMountFiles())}`
       }

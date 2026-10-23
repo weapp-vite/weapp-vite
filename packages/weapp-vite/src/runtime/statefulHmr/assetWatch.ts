@@ -2,10 +2,10 @@ import type { ClassicIdeConfigOwner } from '../classicIdeConfig'
 import type { StatefulHmrOutputFile } from './outputWriter'
 import { Buffer } from 'node:buffer'
 import { randomUUID } from 'node:crypto'
-import { isDeepStrictEqual } from 'node:util'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { defaultAssetExtensions } from '../../defaults'
+import { readIdeAssetWatchLease, releaseIdeAssetWatchLease, restoreOwnedIdeAssetWatch, restoreRequestedAssetWatch } from '../classicIdeConfig/assetLease'
 import { formatIdeConfig, parseIdeConfig, readIdeConfig } from '../classicIdeConfig/document'
 import { classicIdeConfigLeasePath, ideAssetWatchLeasePath } from '../classicIdeConfig/leases'
 
@@ -52,47 +52,24 @@ function assetPattern(output: StatefulHmrOutputFile[]) {
 }
 
 /** 恢复开发期间临时接管的资产监听；保留用户在会话内修改的其他配置。 */
-export async function restoreIdeAssetWatch(configPath: string, owner?: string, classic?: ClassicIdeConfigOwner): Promise<void> {
+export async function restoreIdeAssetWatch(configPath: string, owner?: string, classic?: ClassicIdeConfigOwner, outDir?: string): Promise<void> {
   const savedPath = ideAssetWatchLeasePath(configPath)
   if (!await fs.pathExists(savedPath)) {
     return
   }
-  const saved = await fs.readJSON(savedPath) as WatchLease
-  if (!owner || saved.owner !== owner) {
-    throw new Error('[weapp-vite] IDE 资产配置租约身份不匹配，拒绝恢复未知 owner 的配置。')
-  }
-  const source = await readIdeConfig(configPath)
-  let restored = source
-  if (source !== null) {
-    const current = parseIdeConfig(source) as PrivateConfig
-    if (isDeepStrictEqual(current, saved.installed)) {
-      restored = saved.original
-    }
-    else if (current.watchOptions) {
-      const original = parseIdeConfig(saved.original) as PrivateConfig
-      const remaining = (current.watchOptions.ignore ?? []).filter(rule => !saved.added.includes(rule))
-      current.watchOptions.ignore = remaining
-      if (!remaining.length && !original.watchOptions?.ignore) {
-        delete current.watchOptions.ignore
-      }
-      if (!Object.keys(current.watchOptions).length && !original.watchOptions) {
-        delete current.watchOptions
-      }
-      restored = formatIdeConfig(current, source)
-    }
+  const saved = await readIdeAssetWatchLease(configPath, owner)
+  if (classic && outDir) {
+    await classic.addPendingAssetHandoff(configPath, { assetOwner: owner!, outDir })
+    return
   }
   if (classic) {
+    const restored = restoreRequestedAssetWatch(await readIdeConfig(configPath), saved)
     await classic.activate(configPath, { source: restored, assetOwner: owner })
+    await releaseIdeAssetWatchLease(configPath, owner!)
   }
-  else if (restored !== source) {
-    if (restored === null) {
-      await fs.remove(configPath)
-    }
-    else {
-      await fs.writeFile(configPath, restored)
-    }
+  else {
+    await restoreOwnedIdeAssetWatch(configPath, owner!)
   }
-  await fs.remove(savedPath)
 }
 
 /**
@@ -157,5 +134,5 @@ export async function installIdeAssetWatch(options: {
     throw error
   }
   let closing: Promise<void> | undefined
-  return classic => closing ??= restoreIdeAssetWatch(configPath, owner, classic)
+  return classic => closing ??= restoreIdeAssetWatch(configPath, owner, classic, outDir)
 }

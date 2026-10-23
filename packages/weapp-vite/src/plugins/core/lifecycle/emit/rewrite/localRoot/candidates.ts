@@ -69,7 +69,9 @@ export function createLocalRootNpmCandidateCheck(
     hasLiteralScope = hasUnchangedArrayMethod('some', ARRAY_SOME_DESCRIPTOR)
       && hasUnchangedArrayMethod(Symbol.iterator, ARRAY_ITERATOR_DESCRIPTOR)
       && !isProxy(dependencies) && hasStaticPatternArray(dependencyPatterns)
-    tokens = collectDependencyTokens(dependencyPatterns, dependencies)
+    if (hasLiteralScope) {
+      tokens = collectDependencyTokens(dependencyPatterns, dependencies)
+    }
   }
   catch {
     // 依赖对象无法静态枚举时，仍由原重写流程处理。

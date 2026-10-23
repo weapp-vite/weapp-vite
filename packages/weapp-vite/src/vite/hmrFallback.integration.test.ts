@@ -5,7 +5,6 @@ import os from 'node:os'
 import path from 'node:path'
 import {
   WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY,
-  WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY,
   WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE,
   WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY,
   WEAPP_VITE_STATEFUL_HMR_PRELOAD_FILE,
@@ -13,6 +12,7 @@ import {
 } from '@weapp-core/constants'
 import { createServer } from 'vite'
 import { expect, it } from 'vitest'
+import { assertNoStatefulInstallations } from '../../scripts/consumerHmr/installedRuntime.mjs'
 import { weapp } from './index'
 
 const deliveryFiles = [
@@ -33,11 +33,14 @@ async function readOutputScripts(root: string): Promise<Record<string, string>> 
 async function expectClassicOutput(root: string): Promise<void> {
   const retiredFiles = new Set(deliveryFiles)
   await expect.poll(async () => Object.entries(await readOutputScripts(root))
-    .filter(([file, source]) => retiredFiles.has(file) || [
-      WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY,
-      WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY,
-      WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY,
-    ].some(marker => source.includes(marker)))
+    .filter(([file, source]) => {
+      // 退役 realm 的只读入口 guard 可以保留；安装、轮询和控制链路仍须全部移除。
+      assertNoStatefulInstallations(file, source)
+      return retiredFiles.has(file) || [
+        WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY,
+        WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY,
+      ].some(marker => source.includes(marker))
+    })
     .map(([file]) => file)).toEqual([])
 }
 

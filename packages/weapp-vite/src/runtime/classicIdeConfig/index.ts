@@ -3,8 +3,9 @@ import { randomUUID } from 'node:crypto'
 import { isDeepStrictEqual } from 'node:util'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
+import { assertIdeAssetHandoff, readIdeAssetWatchLease, releaseIdeAssetWatchLease, restoreOwnedIdeAssetWatch, restoreRequestedAssetWatch } from './assetLease'
 import { formatIdeConfig, parseIdeConfig, readIdeConfig, restoreRequestedHotReload } from './document'
-import { classicIdeConfigLeasePath, ideAssetWatchLeasePath } from './leases'
+import { classicIdeConfigLeasePath } from './leases'
 
 interface ClassicLease {
   owner: string
@@ -12,10 +13,16 @@ interface ClassicLease {
   installed: string
 }
 
+interface PendingAssetHandoff {
+  assetOwner: string
+  outDir: string
+}
+
 const owners = new Map<string, string>()
 
 export interface ClassicIdeConfigPublication {
   source: string
+  deferred?: boolean
   commit?: () => Promise<void>
 }
 
@@ -23,12 +30,13 @@ export interface ClassicIdeConfigPublication {
 export class ClassicIdeConfigOwner {
   private readonly identity = randomUUID()
   private readonly leases = new Map<string, ClassicLease>()
+  private readonly assetHandoffs = new Map<string, PendingAssetHandoff>()
   private pending = Promise.resolve()
   private closing?: Promise<void>
   private closed = false
   private failure?: { error: unknown }
 
-  private enqueue<T>(operation: () => Promise<T>): Promise<T> {
+  private enqueue<T>(operation: () => Promise<T>, retainFailure = true): Promise<T> {
     if (this.closed) {
       return Promise.reject(new Error('[weapp-vite] classic IDE 配置 owner 已关闭。'))
     }
@@ -39,7 +47,9 @@ export class ClassicIdeConfigOwner {
       return await operation()
     })
     this.pending = task.then(() => {}, (error) => {
-      this.failure ??= { error }
+      if (retainFailure) {
+        this.failure ??= { error }
+      }
     })
     return task
   }
@@ -53,67 +63,147 @@ export class ClassicIdeConfigOwner {
     return isDeepStrictEqual(restored, current) ? source : formatIdeConfig(restored, source)
   }
 
-  async readRequested(file: string, read = () => fs.readFile(file, 'utf8')): Promise<string> {
-    const source = await read()
-    const configPath = path.resolve(file)
-    const saved = this.leases.get(configPath)
-    if (!saved) {
-      return source
-    }
-    await this.assertOwnership(configPath)
-    return this.requested(source, saved) ?? '{}'
+  readRequested(file: string, read = () => fs.readFile(file, 'utf8')): Promise<string> {
+    return this.enqueue(async () => {
+      const source = await read()
+      const configPath = path.resolve(file)
+      const saved = this.leases.get(configPath)
+      if (!saved) {
+        const handoff = this.assetHandoffs.get(configPath)
+        if (handoff) {
+          return restoreRequestedAssetWatch(source, await readIdeAssetWatchLease(configPath, handoff.assetOwner)) ?? '{}'
+        }
+        return source
+      }
+      await this.assertOwnership(configPath)
+      return this.requested(source, saved) ?? '{}'
+    }, false)
   }
 
   /** 资产 owner 可以直接交入撤销 ignore 后的请求文本，保证交接只写一次项目配置。 */
   activate(file: string, handoff?: { source: string | null, assetOwner?: string }): Promise<void> {
     return this.enqueue(async () => {
-      const configPath = path.resolve(file)
-      await this.assertAssetHandoff(configPath, handoff?.assetOwner)
-      const previous = this.leases.get(configPath)
-      const current = await readIdeConfig(configPath)
-      const original = handoff ? handoff.source : previous && current !== null ? this.requested(current, previous) : current
-      const config = parseIdeConfig(original)
-      config.setting = { ...config.setting, compileHotReLoad: false }
-      const installed = formatIdeConfig(config, original)
-      const saved: ClassicLease = { owner: this.identity, original, installed }
-      const journal = classicIdeConfigLeasePath(configPath)
-      if (previous) {
+      await this.activateOwned(file, handoff)
+    })
+  }
+
+  private async activateOwned(file: string, handoff?: { source: string | null, assetOwner?: string }, pendingAssetOwner?: string, isActive?: () => boolean): Promise<boolean> {
+    const configPath = path.resolve(file)
+    const assetOwner = pendingAssetOwner ?? handoff?.assetOwner
+    await assertIdeAssetHandoff(configPath, assetOwner)
+    const asset = pendingAssetOwner ? await readIdeAssetWatchLease(configPath, pendingAssetOwner) : undefined
+    const previous = this.leases.get(configPath)
+    const current = await readIdeConfig(configPath)
+    const original = asset
+      ? restoreRequestedAssetWatch(current, asset)
+      : handoff ? handoff.source : previous && current !== null ? this.requested(current, previous) : current
+    const config = parseIdeConfig(original)
+    config.setting = { ...config.setting, compileHotReLoad: false }
+    const installed = formatIdeConfig(config, original)
+    const saved: ClassicLease = { owner: this.identity, original, installed }
+    const journal = classicIdeConfigLeasePath(configPath)
+    if (isActive && !isActive()) {
+      return false
+    }
+    if (previous) {
+      await this.assertOwnership(configPath)
+      await fs.writeJSON(journal, saved)
+    }
+    else {
+      if (owners.has(configPath)) {
+        throw new Error('[weapp-vite] IDE 项目配置已由另一个开发命令持有。')
+      }
+      await fs.ensureDir(path.dirname(journal))
+      if (isActive && !isActive()) {
+        return false
+      }
+      // 独占 journal 防止不同命令、不同进程相互接管；未知旧租约需要显式恢复。
+      await fs.writeFile(journal, JSON.stringify(saved), { flag: 'wx' })
+      owners.set(configPath, this.identity)
+    }
+    this.leases.set(configPath, saved)
+    const releaseUnwritten = async () => {
+      if (!previous) {
         await this.assertOwnership(configPath)
-        await fs.writeJSON(journal, saved)
+        await fs.remove(journal)
+        this.leases.delete(configPath)
+        owners.delete(configPath)
       }
-      else {
-        if (owners.has(configPath)) {
-          throw new Error('[weapp-vite] IDE 项目配置已由另一个开发命令持有。')
+    }
+    let writeStarted = false
+    try {
+      await assertIdeAssetHandoff(configPath, assetOwner)
+      if (isActive && !isActive()) {
+        await releaseUnwritten()
+        return false
+      }
+      if (current !== installed) {
+        writeStarted = true
+        await fs.writeFile(configPath, installed)
+      }
+      return true
+    }
+    catch (error) {
+      if (!previous && !writeStarted) {
+        try {
+          // 竞争失败且尚未修改配置，只撤销本次独占创建的 journal，不恢复对方配置。
+          await releaseUnwritten()
         }
-        await fs.ensureDir(path.dirname(journal))
-        // 独占 journal 防止不同命令、不同进程相互接管；未知旧租约需要显式恢复。
-        await fs.writeFile(journal, JSON.stringify(saved), { flag: 'wx' })
-        owners.set(configPath, this.identity)
-      }
-      this.leases.set(configPath, saved)
-      let writeStarted = false
-      try {
-        await this.assertAssetHandoff(configPath, handoff?.assetOwner)
-        if (current !== installed) {
-          writeStarted = true
-          await fs.writeFile(configPath, installed)
+        catch (cleanupError) {
+          throw new AggregateError([error, cleanupError], 'Classic IDE config acquisition and cleanup failed', { cause: error })
         }
       }
-      catch (error) {
-        if (!previous && !writeStarted) {
-          try {
-            // 竞争失败且尚未修改配置，只撤销本次独占创建的 journal，不恢复对方配置。
-            await this.assertOwnership(configPath)
-            await fs.remove(journal)
-            this.leases.delete(configPath)
-            owners.delete(configPath)
-          }
-          catch (cleanupError) {
-            throw new AggregateError([error, cleanupError], 'Classic IDE config acquisition and cleanup failed', { cause: error })
-          }
-        }
-        throw error
+      throw error
+    }
+  }
+
+  /** 关闭旧 stateful 后仅接管路径和 token，磁盘租约及项目配置保持原样。 */
+  addPendingAssetHandoff(file: string, handoff: PendingAssetHandoff): Promise<void> {
+    return this.enqueue(async () => {
+      const configPath = path.resolve(file)
+      const next = { assetOwner: handoff.assetOwner, outDir: path.resolve(handoff.outDir) }
+      const previous = this.assetHandoffs.get(configPath)
+      if (previous && (previous.assetOwner !== next.assetOwner || previous.outDir !== next.outDir)) {
+        throw new Error('[weapp-vite] classic 交接已有其他资产 owner 或输出根，拒绝替换。')
       }
+      await readIdeAssetWatchLease(configPath, next.assetOwner)
+      if (this.leases.has(configPath) || owners.has(configPath) || await fs.pathExists(classicIdeConfigLeasePath(configPath))) {
+        throw Object.assign(new Error('[weapp-vite] IDE classic 配置已由其他 owner 持有。'), { code: 'EEXIST' })
+      }
+      this.assetHandoffs.set(configPath, next)
+    })
+  }
+
+  hasPendingAssetHandoff(file: string, outDir?: string): boolean {
+    const pending = this.assetHandoffs.get(path.resolve(file))
+    return pending !== undefined && (outDir === undefined || pending.outDir === path.resolve(outDir))
+  }
+
+  preservesPendingOutput(outDir: string): boolean {
+    const root = path.resolve(outDir)
+    return [...this.assetHandoffs.values()].some(handoff => handoff.outDir === root)
+  }
+
+  /** 完整原生写出前重读用户配置，在同一 owner 内一次交接 ignore 与重载开关。 */
+  activatePendingAssetHandoff(file: string, outDir: string, isActive?: () => boolean): Promise<boolean> {
+    return this.enqueue(async () => {
+      if (this.closed || (isActive && !isActive())) {
+        return false
+      }
+      const configPath = path.resolve(file)
+      const handoff = this.assetHandoffs.get(configPath)
+      if (!handoff) {
+        return false
+      }
+      if (handoff.outDir !== path.resolve(outDir)) {
+        throw new Error('[weapp-vite] classic 原生发布输出根与资产交接不匹配。')
+      }
+      if (!await this.activateOwned(configPath, undefined, handoff.assetOwner, () => !this.closed && (!isActive || isActive()))) {
+        return false
+      }
+      await releaseIdeAssetWatchLease(configPath, handoff.assetOwner)
+      this.assetHandoffs.delete(configPath)
+      return true
     })
   }
 
@@ -121,6 +211,9 @@ export class ClassicIdeConfigOwner {
   preparePublication(file: string, source: string): Promise<ClassicIdeConfigPublication> {
     return this.enqueue(async () => {
       const configPath = path.resolve(file)
+      if (this.assetHandoffs.has(configPath)) {
+        return { source, deferred: true }
+      }
       if (!this.leases.has(configPath)) {
         return { source }
       }
@@ -141,16 +234,6 @@ export class ClassicIdeConfigOwner {
     })
   }
 
-  private async assertAssetHandoff(configPath: string, owner?: string) {
-    const journal = ideAssetWatchLeasePath(configPath)
-    if (await fs.pathExists(journal)) {
-      const saved = await fs.readJSON(journal) as { owner?: string }
-      if (!owner || saved.owner !== owner) {
-        throw new Error('[weapp-vite] IDE 资产配置已由其他 owner 持有，拒绝接管 classic 配置。')
-      }
-    }
-  }
-
   private async assertOwnership(configPath: string) {
     const saved = await fs.readJSON(classicIdeConfigLeasePath(configPath)) as ClassicLease
     if (saved.owner !== this.identity || owners.get(configPath) !== this.identity) {
@@ -164,10 +247,21 @@ export class ClassicIdeConfigOwner {
     return this.closing ??= (async () => {
       await this.pending
       const errors: unknown[] = this.failure ? [this.failure.error] : []
+      for (const [configPath, handoff] of this.assetHandoffs) {
+        try {
+          await restoreOwnedIdeAssetWatch(configPath, handoff.assetOwner)
+          this.assetHandoffs.delete(configPath)
+        }
+        catch (error) {
+          if (!errors.includes(error)) {
+            errors.push(error)
+          }
+        }
+      }
       for (const [configPath, saved] of this.leases) {
         try {
           await this.assertOwnership(configPath)
-          await this.assertAssetHandoff(configPath)
+          await assertIdeAssetHandoff(configPath)
           const current = await readIdeConfig(configPath)
           if (current !== null) {
             const restored = this.requested(current, saved)

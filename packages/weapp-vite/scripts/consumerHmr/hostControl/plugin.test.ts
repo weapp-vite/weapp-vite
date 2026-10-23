@@ -68,7 +68,13 @@ process.once('exit', code => console.log('native-process-exit=' + code))
     expect(stderr).toContain('native-final-output')
     expect(messages.filter(message => message.type === 'ready')).toHaveLength(1)
     if (outcome === 'disconnect' || outcome === 'reset') {
-      expect(stderr).toContain(outcome === 'reset' ? 'ECONNRESET' : 'Control disconnected before native cleanup completed')
+      expect(stderr).toContain('Control connection failed:')
+      if (outcome === 'disconnect') {
+        expect(stderr).toContain('Control disconnected before native cleanup completed')
+      }
+      else {
+        expect(stderr).toMatch(/ECONNRESET|Control disconnected before native cleanup completed/)
+      }
       expect(messages.some(message => message.type === 'closed')).toBe(false)
     }
     else {

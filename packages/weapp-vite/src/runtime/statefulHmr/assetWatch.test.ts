@@ -22,18 +22,25 @@ async function fixture(original?: string) {
   return { configPath, outDir: path.join(root, 'dist') }
 }
 
-it('hands asset ignores to classic in one project write and keeps the original requested setting', async () => {
+it('keeps the old config while handing its lease to classic and activates once before publication', async () => {
   const original = '{\r\n  "setting": { "compileHotReLoad": true },\r\n  "watchOptions": { "ignore": ["user/**"] }\r\n}\r\n'
   const options = await fixture(original)
   const restore = await installIdeAssetWatch(options)
+  const installed = await fs.readFile(options.configPath, 'utf8')
   const classic = new ClassicIdeConfigOwner()
   const write = vi.spyOn(fs, 'writeFile')
   try {
     await restore(classic)
+    expect(write.mock.calls.filter(([file]) => file === options.configPath)).toHaveLength(0)
+    expect(await fs.readFile(options.configPath, 'utf8')).toBe(installed)
+    expect(classic.hasPendingAssetHandoff(options.configPath, options.outDir)).toBe(true)
+    expect(await classic.readRequested(options.configPath)).toBe(original)
+    await classic.activatePendingAssetHandoff(options.configPath, options.outDir)
     expect(write.mock.calls.filter(([file]) => file === options.configPath)).toHaveLength(1)
     expect(await fs.readJSON(options.configPath)).toEqual({ setting: { compileHotReLoad: false }, watchOptions: { ignore: ['user/**'] } })
     expect(await classic.readRequested(options.configPath)).toBe(original)
     await restore(classic)
+    await classic.activatePendingAssetHandoff(options.configPath, options.outDir)
     expect(write.mock.calls.filter(([file]) => file === options.configPath)).toHaveLength(1)
   }
   finally {
@@ -51,6 +58,7 @@ it.each([false, true])('preserves BOM and CRLF through asset cleanup and classic
   try {
     await restore(classic)
     if (classic) {
+      await classic.activatePendingAssetHandoff(options.configPath, options.outDir)
       expect(await classic.readRequested(options.configPath)).toBe(original)
       expect((await fs.readJSON(options.configPath) as { setting: { compileHotReLoad: boolean } }).setting.compileHotReLoad).toBe(false)
     }

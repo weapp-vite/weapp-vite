@@ -139,6 +139,14 @@ describe('stateful client scheduled request ownership', () => {
     })
     expect(vi.getTimerCount()).toBe(0)
     fixture.requests.at(-1)!.fail({ errMsg: 'rebuild unavailable' })
+    if (scenario === 'missing bridge') {
+      expect(vi.getTimerCount()).toBe(0)
+      expect(fixture.diagnostics.error).toHaveBeenCalledExactlyOnceWith('[weapp-vite] stateful HMR classic fallback request failed', expect.objectContaining({ action: 'rebuild', errMsg: 'rebuild unavailable' }))
+      const requestCount = fixture.requests.length
+      await vi.advanceTimersByTimeAsync(2500)
+      expect(fixture.requests).toHaveLength(requestCount)
+      return
+    }
     expect(vi.getTimerCount()).toBe(1)
     await vi.advanceTimersByTimeAsync(500)
     expect(fixture.requests.at(-1)!.data).toMatchObject({ action: 'poll', version: 0 })

@@ -149,7 +149,7 @@ describe('stateful HMR client failure reporting', () => {
     const requests: any[] = []
     const context: Record<string, any> = {
       console: { error: vi.fn(), warn: vi.fn() },
-      __rolldown_runtime__: { prepareUpdate: vi.fn() },
+      __rolldown_runtime__: { prepareUpdate: vi.fn(), applyPreparedUpdate: vi.fn() },
       setTimeout: vi.fn(),
       clearTimeout: vi.fn(),
       wx: {
@@ -199,7 +199,7 @@ describe('stateful HMR client failure reporting', () => {
     const message = scenario === 'registration-like business exception' ? 'Native registration failed; classic rebuild is required.' : 'replacement setup failed'
     const context: Record<string, any> = {
       console: { error: vi.fn(), warn: vi.fn() },
-      __rolldown_runtime__: { prepareUpdate: vi.fn() },
+      __rolldown_runtime__: { prepareUpdate: vi.fn(), applyPreparedUpdate: vi.fn() },
       setTimeout: vi.fn(),
       clearTimeout: vi.fn(),
       wx: {
