@@ -1,0 +1,4 @@
+{
+  "$schema": "https://vite.weapp.dev/page.json",
+  "navigationStyle": "custom"
+}

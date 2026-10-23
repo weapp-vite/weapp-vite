@@ -175,6 +175,7 @@ const projects = [
         'e2e/utils/runtimeDevProcess.integration.test.ts',
         'e2e/utils/nativeBatchSettlementPlugin.test.ts',
         'e2e/utils/devProcessCleanup/darwinProcesses.test.ts',
+        'e2e/utils/devProcessCleanup/processes.test.ts',
         'e2e/utils/devProcessCleanup/windowsTermination.test.ts',
         'e2e/utils/devProcessCleanup/windowsCompilerChildTrace.test.ts',
         'e2e/utils/devProcessCleanup/windowsKernelQuery.compiler.test.ts',

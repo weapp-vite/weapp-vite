@@ -2500,17 +2500,20 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         },
         releaseResources: releaseWatcherResources?.releaseResources,
       })
+      // 重启已有会话时先登记新代，公共关闭才可终结它的就绪等待；初次启动仍由外层 drain 负责。
+      const startupOwnership = classicSession?.hasOwnership ? classicSession.own(watcher) : undefined
+      const closeStartupGeneration = () => startupOwnership ? classicSession!.stopGeneration(watcher) : watcher.close()
       try {
-        const [readiness] = await Promise.all([sidecarReadiness.ready, assetWatcher.ready])
+        const [readiness] = await Promise.all([sidecarReadiness.ready, assetWatcher.ready, startupOwnership])
         if (readiness === 'closed') {
-          // 新代尚未 own 时也可能被全服务 drain 认领；关闭结果不能登记成可用新代。
-          await watcher.close()
+          // 公共关闭正在等待本次启动，只释放本代，不能反向等待整个会话。
+          await closeStartupGeneration()
           return publicBuildEvents?.watcher ?? watcher
         }
       }
       catch (error) {
         try {
-          await watcher.close()
+          await closeStartupGeneration()
         }
         catch (cleanupError) {
           if (cleanupError !== error) {

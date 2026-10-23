@@ -6,7 +6,7 @@ import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { execa } from 'execa'
 import { createDevProcessCleanup } from './devProcessCleanup'
-import { createDevProcessShutdownFailure, DEV_PROCESS_GRACEFUL_TIMEOUT_MS } from './devProcessCleanup/shutdown'
+import { createDevProcessShutdownFailure, DEV_PROCESS_GRACEFUL_TIMEOUT_MS, requestDevProcessShutdown } from './devProcessCleanup/shutdown'
 import { createDevProcessDiagnostics } from './devProcessDiagnostics'
 import { captureDevProcessOutput } from './devProcessStdio'
 import { createDevProcessTrace } from './devProcessTrace'
@@ -228,7 +228,7 @@ export function startDevProcess(
   const cleanup = createDevProcessCleanup({
     pid: child.pid,
     settledExit,
-    requestRootShutdown: gracefulShutdown,
+    requestRootShutdown: gracefulShutdown ? () => requestDevProcessShutdown(gracefulShutdown, settledExit) : undefined,
     onIpcExit: () => {
       exitedAfterIpc = true
     },
@@ -238,6 +238,9 @@ export function startDevProcess(
     isRootHeld: () => !exited && child.nodeChildProcess?.exitCode == null && child.nodeChildProcess?.signalCode == null,
     disconnectRoot: () => {
       if (!child.nodeChildProcess?.connected) {
+        if (options?.ipc === true) {
+          throw new Error('IPC channel is disconnected before graceful shutdown.')
+        }
         return false
       }
       child.nodeChildProcess.disconnect()
@@ -256,7 +259,7 @@ export function startDevProcess(
       // 并发调用共享同一次清理；只有核验退出和输出排空后才撤销登记。
       let shutdownFailure: unknown
       const cleanupTask = cleanup(forceKillDelayMs, { ...options, gracefulTimeoutMs: options.gracefulTimeoutMs ?? DEV_PROCESS_GRACEFUL_TIMEOUT_MS }).then(async () => {
-        if (forcedShutdown || exitedAfterIpc || gracefulShutdown) {
+        if (forcedShutdown || exitedAfterIpc || gracefulShutdown || spawnOptions.ipc === true) {
           const info = await settledExit
           shutdownFailure = createDevProcessShutdownFailure(info, formatExitInfo(info), message => appendRecentOutput(message, outputChunks, spawnInfo), forcedShutdown)
         }

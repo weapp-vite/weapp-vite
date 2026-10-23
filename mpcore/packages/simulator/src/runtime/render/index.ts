@@ -31,6 +31,7 @@ import {
   resolveComponentProperties,
   resolveComponentRegistryEntry,
 } from './component'
+import { withComponentRegistrySnapshot } from './registry'
 import {
   applyNodeBindings,
   cloneNode,
@@ -582,11 +583,13 @@ export function renderRuntimePageTree(
   context: RuntimeRendererContext,
   page: HeadlessPageInstance,
 ): RuntimeRenderedPageTree {
-  const { root, roots } = reconcileRuntimePageTree(context, page)
-  return {
-    root,
-    wxml: roots.map(serializeDomNode).join(''),
-  }
+  return withComponentRegistrySnapshot(context, () => {
+    const { root, roots } = reconcileRuntimePageTree(context, page)
+    return {
+      root,
+      wxml: roots.map(serializeDomNode).join(''),
+    }
+  })
 }
 
 export type { RuntimeRenderedPageTree, RuntimeRendererContext } from './types'

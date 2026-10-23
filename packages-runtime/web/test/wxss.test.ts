@@ -163,4 +163,117 @@ describe('transformWxssToCss', () => {
       .process('.card { width: 8rpx; }', { from: undefined })
     expect(result.css).toContain('width: 2px')
   })
+
+  it('rewrites vw/vh units to the emulated device viewport', () => {
+    const { css } = transformWxssToCss(`
+      .overlay { width: 100vw; height: 100vh; }
+      .panel { width: calc(100vw - 40rpx); min-height: 50vmin; max-height: 80vmax; margin: 0vw 0vh; }
+    `)
+
+    expect(css).toContain('width: var(--weapp-viewport-width)')
+    expect(css).toContain('height: var(--weapp-viewport-height)')
+    expect(css).toContain('width: calc(var(--weapp-viewport-width) - calc(var(--rpx) * 40))')
+    expect(css).toContain('min-height: calc(min(var(--weapp-viewport-width), var(--weapp-viewport-height)) * 50 / 100)')
+    expect(css).toContain('max-height: calc(max(var(--weapp-viewport-width), var(--weapp-viewport-height)) * 80 / 100)')
+    expect(css).toContain('margin: 0px 0px')
+  })
+
+  it('keeps vw/vh untouched when rpx is compiled to static pixels', () => {
+    const { css } = transformWxssToCss('.page { width: 100vw; }', { pxPerRpx: 0.5 })
+    expect(css).toContain('width: 100vw')
+  })
+
+  it.each([
+    ['+50VH', 'calc(var(--weapp-viewport-height) * 50 / 100)'],
+    ['-.5vmin', 'calc(min(var(--weapp-viewport-width), var(--weapp-viewport-height)) * -0.5 / 100)'],
+    ['1e2VW', 'var(--weapp-viewport-width)'],
+    ['1E-2vmax', 'calc(max(var(--weapp-viewport-width), var(--weapp-viewport-height)) * 0.01 / 100)'],
+    ['-0vw', '0px'],
+    [String.raw`100v\77`, 'var(--weapp-viewport-width)'],
+    [String.raw`50\76 h`, 'calc(var(--weapp-viewport-height) * 50 / 100)'],
+  ])('converts complete CSS dimensions including %s', (value, expected) => {
+    expect(transformWxssToCss(`.probe { margin: ${value}; }`).css)
+      .toBe(`.probe { margin: ${expected}; }`)
+  })
+
+  it.each([
+    'content: "100vw 50vh"',
+    'background-image: url("/assets/100vw.png")',
+    'background-image: url(100vw)',
+    'background-image: URL(100vw)',
+    'background-image: url("data:image/svg+xml,<svg width=\'100vw\'/>")',
+    '--size-100vw: 23px; width: var(--size-100vw)',
+    'width: 100dvw',
+    'width: 100vwx',
+    'width: 1.E2vw',
+    'width: 1e999vw',
+    'content: "min(100vw*1,800px)"',
+    'background-image: URL("100vw*1.png")',
+    'width: var(--size\\*100vw)',
+    'width: 100vw\\*1',
+    String.raw`background-image: u\72l(100vw)`,
+    String.raw`background-image: u\000072l(100vw)`,
+    String.raw`background-image: u\rl(100vw)`,
+    String.raw`background-image: u\72 l(100vw)`,
+    String.raw`background-image: u\72 l("100vw*2")`,
+    String.raw`content: "100v\77*2"`,
+    String.raw`width: var(--100vw\*100vw)`,
+    '--expression: foo100vw*2',
+    '--expression: --100vw*2',
+    '--expression: 100vw-name*2',
+    '--expression: #100vw',
+  ])('preserves non-dimension tokens in %s', (declaration) => {
+    const source = `.probe { ${declaration}; }`
+    expect(transformWxssToCss(source).css).toBe(source)
+  })
+
+  it('transforms nested fallbacks and math without changing identifiers or comments', () => {
+    const source = '.probe { width: var(--size-100vw, clamp(10px, calc(100vw/2), 50vh)); /* 100vw */ }'
+    expect(transformWxssToCss(source).css).toBe(
+      '.probe { width: var(--size-100vw, clamp(10px, calc(var(--weapp-viewport-width)/2), calc(var(--weapp-viewport-height) * 50 / 100))); /* 100vw */ }',
+    )
+  })
+
+  it('converts dimensions after a quoted URL without rewriting its contents', () => {
+    expect(transformWxssToCss('.probe { background: url("100vw") 100vw / 50vh; }').css).toBe(
+      '.probe { background: url("100vw") var(--weapp-viewport-width) / calc(var(--weapp-viewport-height) * 50 / 100); }',
+    )
+  })
+
+  it('preserves media and supports conditions while transforming their declarations', () => {
+    const source = '@media (min-width: 50vw) { @supports (width: 100vw) { .probe { width: 100vw; } } }'
+    expect(transformWxssToCss(source).css).toBe(
+      '@media (min-width: 50vw) { @supports (width: 100vw) { .probe { width: var(--weapp-viewport-width); } } }',
+    )
+  })
+
+  it.each([
+    ['min(100vw*1,800px)', 'min(var(--weapp-viewport-width)*1,800px)'],
+    ['clamp(0px,100vw*1,800px)', 'clamp(0px,var(--weapp-viewport-width)*1,800px)'],
+    ['CALC(2*100vw)', 'CALC(2*var(--weapp-viewport-width))'],
+    ['calc((100vw*1) - 0px)', 'calc((var(--weapp-viewport-width)*1) - 0px)'],
+    ['max(1e-2*1e2VW,10px)', 'max(1e-2*var(--weapp-viewport-width),10px)'],
+    ['min(100vw*var(--scale,1),800px)', 'min(var(--weapp-viewport-width)*var(--scale,1),800px)'],
+    ['min(var(--scale,1)*100vw,800px)', 'min(var(--scale,1)*var(--weapp-viewport-width),800px)'],
+    ['min(var(--fallback,100vw*1),800px)', 'min(var(--fallback,var(--weapp-viewport-width)*1),800px)'],
+    ['100vw*1', 'var(--weapp-viewport-width)*1'],
+    ['min(2*+1e2VW,800px)', 'min(2*var(--weapp-viewport-width),800px)'],
+    ['max(-.5vmin*2,0px)', 'max(calc(min(var(--weapp-viewport-width), var(--weapp-viewport-height)) * -0.5 / 100)*2,0px)'],
+    ['calc((+1e2vw*1) - 0px)', 'calc((var(--weapp-viewport-width)*1) - 0px)'],
+    [String.raw`m\69 n(100v\77*1,800px)`, String.raw`m\69 n(var(--weapp-viewport-width)*1,800px)`],
+    ['var(--100vw,100vw)', 'var(--100vw,var(--weapp-viewport-width))'],
+  ])('converts product dimensions regardless of their parser grouping: %s', (value, expected) => {
+    const source = `.probe { --expression: ${value}; }`
+    const css = transformWxssToCss(source).css
+    expect(css).toBe(`.probe { --expression: ${expected}; }`)
+    expect(transformWxssToCss(css).css).toBe(css)
+  })
+
+  it('keeps repeated conversions stable across the direct and PostCSS entrypoints', async () => {
+    const source = '.probe { width: calc(100vw - 40rpx); height: var(--size-100vw, 50vmin); content: "100vw"; }'
+    const { css } = transformWxssToCss(source)
+    expect(transformWxssToCss(css).css).toBe(css)
+    const result = await postcss([createWxssPostcssPlugin()]).process(css, { from: undefined })
+    expect(result.css).toBe(css)
+  })
 })

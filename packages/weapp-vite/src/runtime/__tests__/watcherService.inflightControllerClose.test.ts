@@ -25,6 +25,83 @@ function containsFailure(error: unknown, failure: Error): boolean {
   return error === failure || (error instanceof AggregateError && error.errors.some(nested => containsFailure(nested, failure)))
 }
 
+it('retains each classic session independently when no generation is in its service map', async () => {
+  const first = createService()
+  const second = createService()
+  await first.closeAll()
+  const firstOwner = createDevWatcherSession(first)
+  const secondOwner = createDevWatcherSession(second)
+  const firstController = createDevBuildWatcher()
+  const secondController = createDevBuildWatcher()
+  const stopping = Promise.withResolvers<void>()
+  const firstStopped = vi.fn(() => stopping.promise)
+  const secondStopped = vi.fn(async () => {})
+  const sidecarClosed = vi.fn(async () => {})
+  firstController.watcher.on('close', firstStopped)
+  secondController.watcher.on('close', secondStopped)
+  await firstOwner.own(firstController.watcher)
+  await firstOwner.own(firstController.watcher)
+  await secondOwner.own(secondController.watcher)
+  first.sidecarWatcherMap.set('shared', { close: sidecarClosed })
+
+  const closing = first.closeAll()
+  try {
+    await vi.waitFor(() => expect(firstStopped).toHaveBeenCalledOnce())
+    expect(sidecarClosed).not.toHaveBeenCalled()
+  }
+  finally {
+    stopping.resolve()
+  }
+  await closing
+  await first.closeAll()
+  expect(firstStopped).toHaveBeenCalledOnce()
+  expect(sidecarClosed).toHaveBeenCalledOnce()
+  expect(secondStopped).not.toHaveBeenCalled()
+  expect(firstOwner.isClosing).toBe(true)
+  expect(secondOwner.isClosing).toBe(false)
+  await second.closeAll()
+  await second.closeAll()
+  expect(secondStopped).toHaveBeenCalledOnce()
+})
+
+it('waits for an owner-only restart and its late generation before closing shared sidecars', async () => {
+  const service = createService()
+  const owner = createDevWatcherSession(service)
+  const first = createDevBuildWatcher()
+  const replacement = createDevBuildWatcher()
+  const entered = Promise.withResolvers<void>()
+  const resume = Promise.withResolvers<void>()
+  const trace: string[] = []
+  const replacementStopped = vi.fn(async () => {
+    trace.push('replacement-stopped')
+  })
+  const sidecarStopped = vi.fn(async () => {
+    trace.push('sidecar-stopped')
+  })
+  replacement.watcher.on('close', replacementStopped)
+  await owner.own(first.watcher)
+  const restarting = owner.restart(async () => {
+    await owner.stopGeneration(first.watcher)
+    entered.resolve()
+    await resume.promise
+    await owner.own(replacement.watcher)
+  })
+  await entered.promise
+  service.sidecarWatcherMap.set('shared', { close: sidecarStopped })
+  const closing = service.closeAll()
+  try {
+    await Promise.resolve()
+    expect(sidecarStopped).not.toHaveBeenCalled()
+  }
+  finally {
+    resume.resolve()
+  }
+  await Promise.all([closing, restarting])
+  expect(replacementStopped).toHaveBeenCalledOnce()
+  expect(sidecarStopped).toHaveBeenCalledOnce()
+  expect(trace).toEqual(['replacement-stopped', 'sidecar-stopped'])
+})
+
 it.each([false, true])('joins a controller close started before the service drain without waiting on itself: cleanup failure %s', async (failedCleanup) => {
   const service = createService()
   const other = createService()

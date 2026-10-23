@@ -6,6 +6,12 @@
     "miniprogram": {
       "list": [
         {
+          "name": "设备视口单位",
+          "pathName": "pages/viewport-units/index",
+          "query": "",
+          "scene": null
+        },
+        {
           "name": "基础组件视觉矩阵",
           "pathName": "pages/visual-parity/index",
           "query": "",

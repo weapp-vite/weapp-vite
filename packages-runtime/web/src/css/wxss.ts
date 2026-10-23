@@ -1,3 +1,4 @@
+import { tokenize, TokenType } from '@csstools/css-tokenizer'
 import postcss from 'postcss'
 import selectorParser from 'postcss-selector-parser'
 import { resolveNativeComponentWebTag } from '../shared/nativeComponents'
@@ -27,6 +28,50 @@ export interface WxssTransformResult {
 const RPX_RE = /(-?(?:\d+(?:\.\d+)?|\.\d+))rpx/gi
 const SAFE_AREA_ENV_RE = /env\(\s*safe-area-inset-(top|right|bottom|left)(?:\s*,[^)]*)?\)/gi
 const PAGE_HOST_SELECTOR = selectorParser().astSync(':host(:where([data-weapp-page-active]))').nodes[0]!.nodes[0]!
+
+/**
+ * 小程序里 `1vw` 是屏幕宽度的 1%，浏览器里是窗口宽度的 1%。
+ * 宽屏下运行时会把页面放进居中的设备视口（默认 375px），直接用 `vw` 会让全屏弹层、
+ * 遮罩按浏览器窗口宽度渲染。这里改为读取运行时提供的设备视口变量，
+ * 与 safe-area 的处理方式一致。
+ */
+function resolveViewportUnitBase(unit: string) {
+  if (unit === 'vw') {
+    return 'var(--weapp-viewport-width)'
+  }
+  if (unit === 'vh') {
+    return 'var(--weapp-viewport-height)'
+  }
+  if (unit === 'vmin') {
+    return 'min(var(--weapp-viewport-width), var(--weapp-viewport-height))'
+  }
+  return 'max(var(--weapp-viewport-width), var(--weapp-viewport-height))'
+}
+
+function transformViewportUnits(value: string) {
+  let urlDepth = 0
+  return tokenize({ css: value }).map((token) => {
+    if (urlDepth > 0) {
+      if (token[0] === TokenType.Function || token[0] === TokenType.OpenParen) {
+        urlDepth += 1
+      }
+      else if (token[0] === TokenType.CloseParen) {
+        urlDepth -= 1
+      }
+      return token[1]
+    }
+    if (token[0] === TokenType.Function && token[4].value.toLowerCase() === 'url') {
+      urlDepth = 1
+      return token[1]
+    }
+    if (token[0] !== TokenType.Dimension || !/^(?:vw|vh|vmin|vmax)$/i.test(token[4].unit) || !Number.isFinite(token[4].value)) {
+      return token[1]
+    }
+    const numeric = token[4].value
+    const base = resolveViewportUnitBase(token[4].unit.toLowerCase())
+    return numeric === 0 ? '0px' : numeric === 100 ? base : `calc(${base} * ${numeric} / 100)`
+  }).join('')
+}
 
 function isDeepPseudo(pseudo: selectorParser.Pseudo) {
   return pseudo.value === ':deep' || pseudo.value === '::v-deep'
@@ -170,6 +215,9 @@ function transformWxssRoot(root: postcss.Root, options?: WxssTransformOptions) {
         const converted = Math.round(numeric * ratio * 1000) / 1000
         return `${converted}px`
       })
+    if (useVariable) {
+      declaration.value = transformViewportUnits(declaration.value)
+    }
   })
 }
 

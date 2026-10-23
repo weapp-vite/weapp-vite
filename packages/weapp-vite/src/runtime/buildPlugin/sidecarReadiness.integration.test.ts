@@ -210,7 +210,7 @@ it('delivers replacement readiness and cleanup errors through the original close
   }
 })
 
-it('closes a classic config restart before its replacement sidecar is ready through the original handle', async () => {
+it.each(['original handle', 'service drain'])('closes a classic config restart before its replacement sidecar is ready through the %s', async (closeVia) => {
   const fixture = await createSnapshotTemplateFixture(harness, cleanups)
   const original = fixture.ctx.watcherService.getRollupWatcher()!
   const initialSidecars = harness.sidecars.length
@@ -225,8 +225,9 @@ it('closes a classic config restart before its replacement sidecar is ready thro
   })
   // 第二代已真正发布新字节，但还没有取得 ready；这是原测试 finally 开始关闭的窗口。
   expect(await fixture.readOutput('shared/card.wxml')).toContain('restart publication')
-  const closing = original.close()
-  expect(original.close()).toBe(closing)
+  const close = closeVia === 'original handle' ? () => original.close() : () => fixture.ctx.watcherService.closeAll()
+  const closing = close()
+  expect(close()).toBe(closing)
   await expect(closing).resolves.toBeUndefined()
   expect(fixture.ctx.watcherService.sidecarWatcherMap.size).toBe(0)
   expect(fixture.ctx.watcherService.rollupWatcherMap.size).toBe(0)

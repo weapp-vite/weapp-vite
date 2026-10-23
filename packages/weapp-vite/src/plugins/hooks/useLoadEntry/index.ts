@@ -728,6 +728,11 @@ export function useLoadEntry(
         }
       }
 
+      const pendingReasonSummary = [...pendingResolution.pendingReasonSummary ?? []]
+      if (requiredPublicationEntries?.size) {
+        pendingReasonSummary.push(`classic-registration:${registrationPending.length}`)
+      }
+
       for (const resolvedId of registrationPending) {
         const baseName = removeExtensionDeep(resolvedId.id)
         if (!ctx.runtimeState.autoImport?.pendingEntriesByImporter.has(baseName)) {
@@ -828,7 +833,7 @@ export function useLoadEntry(
         dirtyCount,
         pendingCount: pending.length,
         emittedCount: hmrEntryIds.size,
-        pendingReasonSummary: pendingResolution.pendingReasonSummary,
+        pendingReasonSummary,
       }
 
       if (debug) {

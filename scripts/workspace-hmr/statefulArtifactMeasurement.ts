@@ -67,6 +67,24 @@ export async function measureStatefulTemplateArtifact<T>(options: StatefulArtifa
     }
   }
 
+  async function waitForRetiredFallback() {
+    if (!options.isClassicFallback) {
+      throw new Error('Stateful HMR transport retired without a classic fallback verifier.')
+    }
+    while (true) {
+      consumerSignal.throwIfAborted()
+      const ready = await consumeUntilCancelled(options.isClassicFallback(consumerSignal, deadlineAt))
+      consumerSignal.throwIfAborted()
+      if (Date.now() >= deadlineAt) {
+        throw timeoutFailure
+      }
+      if (ready) {
+        return
+      }
+      await consumeUntilCancelled(sleep(25, undefined, { signal: consumerSignal }))
+    }
+  }
+
   async function consume() {
     const client = options.client!
     try {
@@ -84,6 +102,11 @@ export async function measureStatefulTemplateArtifact<T>(options: StatefulArtifa
         const beforeVersion = client.acknowledgedVersion
         const response = await consumeUntilCancelled(client.poll(Math.min(30_000, options.timeoutMs), consumerSignal))
         options.onEvent?.({ type: response.type ?? 'unknown', targetVersion: response.targetVersion })
+        if (response.type === 'retired') {
+          // 退役是旧传输的终态；日志可能晚于 HTTP 到达，仍须在原期限内核验完整 classic 交付。
+          await waitForRetiredFallback()
+          return
+        }
         if (response.type === 'batch-published') {
           if (response.targetVersion === undefined || response.targetVersion <= beforeVersion) {
             throw new Error('Stateful template consumption requires a newly published batch version.')
