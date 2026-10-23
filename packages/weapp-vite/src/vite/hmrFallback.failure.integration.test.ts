@@ -33,6 +33,9 @@ async function fixture() {
   const buildErrors = vi.spyOn(buildLogger, 'error')
   let failClassicPublication = false
   let publications = 0
+  let publicationGate: Promise<void> | undefined
+  let publicationStarted = false
+  let releasePublications = () => {}
   for (const [file, content] of Object.entries({
     'package.json': '{"name":"classic-failure-fixture","type":"module"}',
     'project.config.json': '{"miniprogramRoot":"dist"}',
@@ -81,7 +84,11 @@ async function fixture() {
       phasesAtFailure.push(getHmrRuntimeSession(api.ctx).phase)
       throw failure
     },
-    writeBundle() {
+    async writeBundle() {
+      if (publicationGate) {
+        publicationStarted = true
+        await publicationGate
+      }
       publications += 1
     },
   }
@@ -93,6 +100,16 @@ async function fixture() {
     failure,
     phasesAtFailure,
     publications: () => publications,
+    holdPublications() {
+      publicationStarted = false
+      publicationGate = new Promise<void>((resolve) => {
+        releasePublications = () => {
+          publicationGate = undefined
+          resolve()
+        }
+      })
+      return { started: () => publicationStarted, release: () => releasePublications() }
+    },
     read: (file: string) => readFile(path.join(root, 'dist', file), 'utf8'),
     save: (marker: string) => writeFile(path.join(root, 'src/pages/home/index.js'), `Page({ data: { marker: ${JSON.stringify(marker)} } })`),
     start: (requested: 'classic' | 'stateful-experimental', unsupported = false) => createServer({
@@ -114,6 +131,7 @@ async function fixture() {
       plugins: [probe, weapp()],
     }),
     cleanup: async () => {
+      releasePublications()
       try {
         await Promise.all(hosts.map(host => host.server.close()))
       }
@@ -217,9 +235,14 @@ it('keeps ordinary classic startup failures recoverable after the source is corr
     expect(project.hosts).toHaveLength(1)
     expectOriginalFailure(project)
     expect(project.hosts[0]!.watcherCloseCalls()).toBe(0)
+    const publication = project.holdPublications()
     await project.save('ordinary-classic-recovered')
     await expect.poll(() => project.read('pages/home/index.js').catch(() => ''), { timeout: 15_000 }).toContain('ordinary-classic-recovered')
-    expect(project.publications()).toBeGreaterThan(0)
+    // 原生写盘先于 writeBundle 完成，固定此时序后等待完整发布，不能把磁盘可见当成回调已完成。
+    await expect.poll(() => publication.started(), { timeout: 15_000 }).toBe(true)
+    expect(project.publications()).toBe(0)
+    publication.release()
+    await expect.poll(() => project.publications(), { timeout: 15_000 }).toBeGreaterThan(0)
     expect(server.config.experimental.bundledDev).toBe(false)
     await server.close()
     expectOwnersClosed(project)

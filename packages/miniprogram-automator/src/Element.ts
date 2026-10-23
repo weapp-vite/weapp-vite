@@ -203,7 +203,9 @@ export default class Element {
       await this.send(`Element.${eventName}`, touchOptions)
       return
     }
-    await this.send('Element.dispatchEvent', payload)
+    // 公开 API 使用 detail；宿主的通用事件协议从 eventData 读取事件数据。
+    const { detail, ...event } = payload
+    await this.send('Element.dispatchEvent', detail === undefined ? event : { ...event, eventData: detail })
   }
 
   protected async _property(name: string | string[]) {

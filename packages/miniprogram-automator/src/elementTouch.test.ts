@@ -30,7 +30,7 @@ describe('touch event protocol compatibility', () => {
       $: '#child',
       touches: [],
       changedTouches: [],
-      detail: { source: 'test' },
+      eventData: { source: 'test' },
     })
   })
 })

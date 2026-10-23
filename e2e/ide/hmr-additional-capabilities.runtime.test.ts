@@ -208,7 +208,14 @@ for (const reason of ['engine-full-reload', 'patch-shape', 'skyline'] as const) 
         const pages = getCurrentPages()
         ;(pages[pages.length - 1] as any).__capabilityIdentity = 'before-boundary'
       })
-      await (await page.$('.input', { fallback: false })).input('boundary-input')
+      const inputElement = await page.$('.input', { fallback: false })
+      if ((await state()).renderer === 'skyline') {
+        // Skyline 的原生 input.input 协议不派发输入事件，显式事件仍须通过真实绑定及节点值断言。
+        await inputElement.dispatchEvent({ eventName: 'input', detail: { value: 'boundary-input' } })
+      }
+      else {
+        await inputElement.input('boundary-input')
+      }
       await (await page.$('.increment', { fallback: false })).tap()
       await waitState('STATEFUL-NATIVE-BASE', 1, 'boundary-input', 'before-boundary')
       await dom.check('prepared', app(), page)

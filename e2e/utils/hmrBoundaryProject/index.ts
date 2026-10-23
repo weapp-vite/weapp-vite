@@ -10,8 +10,7 @@ export type HmrBoundaryReason = 'engine-full-reload' | 'patch-shape' | 'skyline'
 const appSource = `App({
   globalData: {},
   onLaunch() {
-    const host = wx as unknown as { onAppRouteDone?: (callback: (event: { renderer?: string }) => void) => void }
-    host.onAppRouteDone?.((event) => {
+    wx.onAppRoute((event) => {
       Object.assign(this.globalData, { renderer: event.renderer })
     })
   },

@@ -119,6 +119,9 @@ export interface HeadlessWxRouteEvent {
   timeStamp: number
 }
 
+/** 路由动画完成只提供路由身份，不携带接受路由时的渲染引擎字段。 */
+export type HeadlessWxRouteDoneEvent = Omit<HeadlessWxRouteEvent, 'renderer'>
+
 /** 页面销毁前的原生实例，仍可同步读取页面数据。 */
 export interface HeadlessWxBeforePageUnloadEvent extends HeadlessWxRouteEvent {
   page: HeadlessPageInstance
@@ -131,8 +134,8 @@ export interface HeadlessWxRouteListeners {
   offBeforePageUnload: (listener?: (event: HeadlessWxBeforePageUnloadEvent) => void) => void
   onAppRoute: (listener: (event: HeadlessWxRouteEvent) => void) => void
   offAppRoute: (listener?: (event: HeadlessWxRouteEvent) => void) => void
-  onAppRouteDone: (listener: (event: HeadlessWxRouteEvent) => void) => void
-  offAppRouteDone: (listener?: (event: HeadlessWxRouteEvent) => void) => void
+  onAppRouteDone: (listener: (event: HeadlessWxRouteDoneEvent) => void) => void
+  offAppRouteDone: (listener?: (event: HeadlessWxRouteDoneEvent) => void) => void
 }
 
 export interface HeadlessWxDriver extends HeadlessWxDriverCapabilities, HeadlessWxRouteListeners {

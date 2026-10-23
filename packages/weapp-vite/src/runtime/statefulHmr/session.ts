@@ -836,17 +836,20 @@ class StatefulHmrSession {
     }
     const isCompilerDependency = (file: string) => compilerHmrHost.ownsDependency(file)
       && (isStatefulHmrAssetFile(file) || (!this.emittedSourceIds.has(file) && !this.entryIds.has(file) && !compilerHmrHost.isNativeSource(file)))
-    const isCompilerNativeVue = (file: string) => file.endsWith('.vue') && compilerHmrHost.ownsDependency(file) && compilerHmrHost.isNativeSource(file)
+    const isCompilerNativeVue = (file: string) => file.endsWith('.vue') && compilerHmrHost.isNativeSource(file)
+    // 原生源码身份独立于 provider 附加依赖；Patch 与 Noop 都只能使用已发布的能力证明。
+    const unknownBaselines = files.filter(file => isCompilerNativeVue(file)
+      && (!this.nativeVueBaselines.has(compilerSourceId(file))
+        || typeof compilerHmrHost.readSource(file) !== 'string'
+        || !this.templateRegistrationSignatures?.get(compilerSourceId(file))))
+    if (unknownBaselines.length) {
+      this.requestClassic({ code: 'native-registration', message: '缺少已发布的原生 Vue 源码或模板注册能力证明，需要 classic 重新建立模板注册。', files: unknownBaselines })
+      return false
+    }
     if (output.type === 'Noop') {
       // 原批次仍负责恢复原生脚本账本，编译器只接管其中实际拥有的依赖。
       const sources = this.nativeScriptInputs.capture(files, file => compilerHmrHost.readSource(file))
       this.clearRestoredNativeScripts(new Map(this.unpersistedNativeScripts), sources)
-      const unknownBaselines = files.filter(file => isCompilerNativeVue(file)
-        && (!this.nativeVueBaselines.has(compilerSourceId(file)) || typeof compilerHmrHost.readSource(file) !== 'string'))
-      if (unknownBaselines.length) {
-        this.requestClassic({ code: 'native-registration', message: '缺少已发布的原生 Vue 源码比较基线，需要 classic 重新建立模板注册。', files: unknownBaselines })
-        return false
-      }
       files = files.filter((file) => {
         const nativeVisualChange = isCompilerNativeVue(file) && compilerHmrHost.hasVisualChanges([file])
         return nativeVisualChange || isCompilerDependency(file)
@@ -864,10 +867,7 @@ class StatefulHmrSession {
     const input = getCompilerHmrHost(this.ctx).freeze(files)
     this.diagnostics?.input(input)
     const nativeVueFiles = files.filter(isCompilerNativeVue).map(compilerSourceId)
-    const templateFallback = this.nativeVueBaselines.resolveFallback(
-      nativeVueFiles.filter(file => Boolean(this.templateRegistrationSignatures?.get(file))),
-      input.sources,
-    )
+    const templateFallback = this.nativeVueBaselines.resolveFallback(nativeVueFiles, input.sources)
     if (templateFallback) {
       this.requestClassic(templateFallback)
       return false

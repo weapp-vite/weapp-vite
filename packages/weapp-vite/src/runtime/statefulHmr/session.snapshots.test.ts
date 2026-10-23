@@ -123,6 +123,11 @@ function snapshot(color: string, routes: string[] = [route]): StatefulHmrSnapsho
   }
 }
 
+function registeredSnapshot(value: StatefulHmrSnapshot, owners: string[], signature = 'synthetic-template-registration'): StatefulHmrSnapshot {
+  // 脚本与样式用例显式合成稳定注册证据，不替代真实编译器的模板准入覆盖。
+  return { ...value, templateRegistrationSignatures: new Map(owners.map(owner => [owner, signature])) }
+}
+
 function analyzedSnapshot(paired: boolean, selector = '.valid'): StatefulHmrSnapshot {
   // 分析器只读取配置与真实 runtime state；文件系统由现有 session harness 隔离。
   const producer = {
@@ -364,7 +369,7 @@ describe('stateful snapshot output transactions', () => {
     const file = path.join(root, 'src/page.vue')
     const original = '<script setup>let count = 0; function increment() { count += 1 }</script><template><view /></template>'
     const changed = original.replace('count += 1', 'count += 2')
-    const session = await start(compiledStylesheetSnapshot('red'), [file], {}, new Map([[file, original]]))
+    const session = await start(registeredSnapshot(compiledStylesheetSnapshot('red'), [file]), [file], {}, new Map([[file, original]]))
     await session.whenSettled()
     const host = getCompilerHmrHost(session.ctx)
     const prepare = vi.fn(async (_input: WeappCompilerHmrRequest) => ({
@@ -402,7 +407,7 @@ describe('stateful snapshot output transactions', () => {
       componentPageGlobalStyleRoutes: [],
       glassEaselAnalysisByOwner: new Map(),
     }
-    const session = await start(initial, [file], {}, new Map([[file, original]]))
+    const session = await start(registeredSnapshot(initial, [file]), [file], {}, new Map([[file, original]]))
     await session.whenSettled()
     const host = getCompilerHmrHost(session.ctx)
     const prepare = vi.fn(async (_input: WeappCompilerHmrRequest) => ({
@@ -2179,7 +2184,7 @@ describe('stateful snapshot output transactions', () => {
     expect(harness.fullBuild).not.toHaveBeenCalled()
   })
 
-  it.each(['style', 'template'] as const)('prepares native Vue %s inputs from Noop and preserves only supported restoration delivery', async (kind) => {
+  it.each(['style', 'template'] as const)('hands a native Vue %s Noop to classic at its capability boundary and keeps restoration sticky', async (kind) => {
     const component = path.join(root, 'src/native.vue')
     const previous = '<script setup>const count = 1</script><template><view>before</view></template><style>view { color: red }</style>'
     const changed = kind === 'style'
@@ -2190,69 +2195,65 @@ describe('stateful snapshot output transactions', () => {
         ? compiledStylesheetSnapshot(source.includes('color: blue') ? 'blue' : 'red')
         : snapshot('red')
       value.output.push({ type: 'asset', fileName: `${route}.wxml`, source: source.includes('<view>after</view>') ? '<view>after</view>' : '<view>before</view>' })
-      return value
+      return registeredSnapshot(value, [component])
     }
     const session = await start(visualSnapshot(previous), [component], {}, new Map([[component, previous]]))
     const host = getCompilerHmrHost(session.ctx)
     const prepare = vi.fn(async (_input: WeappCompilerHmrRequest) => ({}))
     const delta = vi.spyOn(StatefulHmrTransport.prototype, 'addDelta')
+    const freeze = vi.spyOn(host, 'freeze')
     host.seed(component, previous)
     host.captureNative(component, previous)
     host.register('source-provider', prepare)
     expect(host.ownsDependency(component)).toBe(true)
     expect(host.isNativeSource(component)).toBe(true)
 
-    for (const [index, source] of [changed, previous].entries()) {
-      harness.writeOutput.mockClear()
-      session.rebuild.mockResolvedValueOnce(visualSnapshot(source))
-      host.captureNative(component, source)
-      session.sourceChange(component, 'update', [kind === 'style' ? 'entry-style-only:1' : 'entry-local-asset:1'])
-      await vi.advanceTimersByTimeAsync(40)
-      await session.whenSettled()
-      expect(prepare).toHaveBeenCalledTimes(index)
+    harness.writeOutput.mockClear()
+    session.rebuild.mockResolvedValueOnce(visualSnapshot(changed))
+    host.captureNative(component, changed)
+    session.sourceChange(component, 'update', [kind === 'style' ? 'entry-style-only:1' : 'entry-local-asset:1'])
+    await vi.advanceTimersByTimeAsync(40)
+    await session.whenSettled()
+    expect(prepare).not.toHaveBeenCalled()
 
-      // JS 无补丁不代表编译器的样式或模板输入已发布，恢复原文同样需要准备。
-      harness.callbacks!.onPatch([component], { type: 'Noop' })
-      await vi.advanceTimersByTimeAsync(40)
-      if (kind === 'template') {
-        await session.whenSettled()
-      }
-
-      expect(prepare).toHaveBeenCalledTimes(index + 1)
-      const input = prepare.mock.calls[index]?.[0]
+    // JS 无补丁仍需检查固定视觉输入；已知模板变化必须在 provider 前回退。
+    expect(harness.callbacks!.onPatch([component], { type: 'Noop' })).toBe(kind === 'style')
+    await vi.advanceTimersByTimeAsync(40)
+    expect(freeze).toHaveBeenCalledExactlyOnceWith([component])
+    expect(freeze.mock.results[0]?.value.sources.get(compilerSourceId(component))).toBe(changed)
+    if (kind === 'style') {
+      expect(prepare).toHaveBeenCalledOnce()
+      const input = prepare.mock.calls[0]?.[0]
       expect(input?.changedFiles).toEqual([component])
-      expect(input?.sources.get(compilerSourceId(component))).toBe(source)
-      expect(session.rebuild).toHaveBeenNthCalledWith(index + 1, [component], input?.sources)
-      if (kind === 'style') {
-        expect(session.runtime.fallback?.code).toBe('stylesheet-output')
-        expect(session.classic).toHaveBeenCalledOnce()
-        expect(harness.writeOutput).not.toHaveBeenCalled()
-        host.captureNative(component, previous)
-        session.sourceChange(component, 'update', ['entry-style-only:1'])
-        expect(harness.callbacks!.onPatch([component], { type: 'Noop' })).toBe(false)
-        await vi.advanceTimersByTimeAsync(40)
-        expect(prepare).toHaveBeenCalledOnce()
-        break
-      }
-      expect(writtenAssets().findLast(asset => asset.fileName === `${route}.wxml`)?.source).toContain(index === 0 ? '<view>after</view>' : '<view>before</view>')
-
-      session.sourceChange(component, 'update', ['entry-local-asset:1'])
-      expect(harness.callbacks!.onPatch([component], { type: 'Noop' })).toBe(false)
-      await vi.advanceTimersByTimeAsync(40)
-      await session.whenSettled()
-      expect(prepare).toHaveBeenCalledTimes(index + 1)
+      expect(input?.sources.get(compilerSourceId(component))).toBe(changed)
+      expect(session.rebuild).toHaveBeenCalledExactlyOnceWith([component], input?.sources)
+      expect(session.runtime.fallback?.code).toBe('stylesheet-output')
     }
+    else {
+      expect(prepare).not.toHaveBeenCalled()
+      expect(session.rebuild).not.toHaveBeenCalled()
+      expect(session.runtime.fallback).toMatchObject({ code: 'native-registration', files: [component] })
+    }
+    expect(harness.writeOutput).not.toHaveBeenCalled()
+    expect(session.classic).toHaveBeenCalledOnce()
+
+    host.captureNative(component, previous)
+    session.sourceChange(component, 'update', [kind === 'style' ? 'entry-style-only:1' : 'entry-local-asset:1'])
+    expect(harness.callbacks!.onPatch([component], { type: 'Noop' })).toBe(false)
+    await vi.advanceTimersByTimeAsync(40)
+    expect(freeze).toHaveBeenCalledOnce()
+    expect(prepare).toHaveBeenCalledTimes(kind === 'style' ? 1 : 0)
     expect(harness.fullBuild).not.toHaveBeenCalled()
-    expect(session.classic).toHaveBeenCalledTimes(kind === 'style' ? 1 : 0)
+    expect(session.classic).toHaveBeenCalledOnce()
     expect(delta).not.toHaveBeenCalled()
   })
 
-  it('freezes all compiler-owned native visual inputs once for a multi-file Noop', async () => {
+  it('freezes all native visual inputs once and rejects a multi-file Noop containing a known template change before preparation', async () => {
     const style = path.join(root, 'src/style.vue')
     const template = path.join(root, 'src/template.vue')
     const previous = '<script setup>const count = 1</script><template><view>before</view></template><style>view { color: red }</style>'
     const changed = new Map([[style, previous.replace('color: red', 'color: blue')], [template, previous.replace('<view>before</view>', '<view>after</view>')]])
-    const initial = compiledStylesheetSnapshot('red')
+    const initial = registeredSnapshot(compiledStylesheetSnapshot('red'), [style, template])
     initial.output.push({ type: 'asset', fileName: `${route}.wxml`, source: '<view>before</view>' })
     const session = await start(initial, [style, template], {}, new Map([[style, previous], [template, previous]]))
     const host = getCompilerHmrHost(session.ctx)
@@ -2267,20 +2268,20 @@ describe('stateful snapshot output transactions', () => {
     next.output.push({ type: 'asset', fileName: `${route}.wxml`, source: '<view>after</view>' })
     session.rebuild.mockResolvedValueOnce(next)
     const freeze = vi.spyOn(host, 'freeze')
-    expect(harness.callbacks!.onPatch([style, template], { type: 'Noop' })).toBe(true)
+    expect(harness.callbacks!.onPatch([style, template], { type: 'Noop' })).toBe(false)
     harness.writeOutput.mockClear()
     await vi.advanceTimersByTimeAsync(40)
 
     expect(freeze).toHaveBeenCalledExactlyOnceWith([style, template])
-    expect(prepare).toHaveBeenCalledOnce()
-    const input = prepare.mock.calls[0]?.[0]
+    expect(prepare).not.toHaveBeenCalled()
+    const input = freeze.mock.results[0]?.value
     expect(input?.changedFiles).toEqual([style, template])
     for (const [file, source] of changed) {
       expect(input?.sources.get(compilerSourceId(file))).toBe(source)
     }
-    expect(session.rebuild).toHaveBeenCalledExactlyOnceWith([style, template], input?.sources)
+    expect(session.rebuild).not.toHaveBeenCalled()
     expect(harness.writeOutput).not.toHaveBeenCalled()
-    expect(session.runtime.fallback?.code).toBe('stylesheet-output')
+    expect(session.runtime.fallback).toMatchObject({ code: 'native-registration', files: [template] })
     expect(harness.fullBuild).not.toHaveBeenCalled()
     expect(session.classic).toHaveBeenCalledOnce()
   })
@@ -2291,7 +2292,7 @@ describe('stateful snapshot output transactions', () => {
     const changed = (kind === 'style'
       ? previous.replace('color: red', 'color: blue')
       : previous.replace('<view>before</view>', '<view>after</view>')).replace('count = 1', 'count = 2')
-    const session = await start(kind === 'style' ? compiledStylesheetSnapshot('red') : snapshot('red'), [component], {}, new Map([[component, previous]]))
+    const session = await start(registeredSnapshot(kind === 'style' ? compiledStylesheetSnapshot('red') : snapshot('red'), [component]), [component], {}, new Map([[component, previous]]))
     const host = getCompilerHmrHost(session.ctx)
     const prepare = vi.fn(async (_input: WeappCompilerHmrRequest) => ({}))
     host.seed(component, previous)
@@ -2300,7 +2301,7 @@ describe('stateful snapshot output transactions', () => {
     expect(host.hasVisualChanges([component])).toBe(false)
     host.captureNative(component, changed)
     expect(host.hasVisualChanges([component])).toBe(true)
-    const next = kind === 'style' ? compiledStylesheetSnapshot('blue') : snapshot('blue')
+    const next = registeredSnapshot(kind === 'style' ? compiledStylesheetSnapshot('blue') : snapshot('blue'), [component], kind === 'style' ? 'synthetic-template-registration' : 'changed-template-registration')
     next.output.push({ type: 'asset', fileName: `${route}.wxml`, source: '<view>after</view>' })
     session.rebuild.mockResolvedValueOnce(next)
     session.sourceChange(component, 'update', [kind === 'style' ? 'entry-style-only:1' : 'entry-local-asset:1'])
@@ -2309,10 +2310,6 @@ describe('stateful snapshot output transactions', () => {
     harness.writeOutput.mockClear()
     harness.callbacks!.onPatch([component], { type: 'Noop' })
     await vi.advanceTimersByTimeAsync(40)
-    if (kind === 'template') {
-      await session.whenSettled()
-    }
-
     expect(prepare).toHaveBeenCalledOnce()
     expect(freeze).toHaveBeenCalledExactlyOnceWith([component])
     const input = prepare.mock.calls[0]?.[0]
@@ -2323,10 +2320,11 @@ describe('stateful snapshot output transactions', () => {
       expect(session.runtime.fallback?.code).toBe('stylesheet-output')
     }
     else {
-      expect(writtenAssets().findLast(asset => asset.fileName === `${route}.wxml`)?.source).toContain('<view>after</view>')
+      expect(harness.writeOutput).not.toHaveBeenCalled()
+      expect(session.runtime.fallback).toMatchObject({ code: 'native-registration', files: [component] })
     }
     expect(harness.fullBuild).not.toHaveBeenCalled()
-    expect(session.classic).toHaveBeenCalledTimes(kind === 'style' ? 1 : 0)
+    expect(session.classic).toHaveBeenCalledOnce()
   })
 
   it.each([
@@ -2391,7 +2389,7 @@ describe('stateful snapshot output transactions', () => {
     const component = path.join(root, 'src/native.vue')
     const previous = '<script setup>const count = 1</script><template><view>same</view></template><style>.probe { color: red; }</style>'
     const changed = previous.replace('count = 1', 'count = 2')
-    const session = await start(snapshot('red'), [component], {}, new Map([[component, previous]]))
+    const session = await start(registeredSnapshot(snapshot('red'), [component]), [component], {}, new Map([[component, previous]]))
     const host = getCompilerHmrHost(session.ctx)
     const prepare = vi.fn(async (_input: WeappCompilerHmrRequest) => ({}))
     host.seed(component, previous)
@@ -2425,14 +2423,22 @@ describe('stateful snapshot output transactions', () => {
       : kind === 'script-only-vue' || kind === 'native-script'
         ? previous.replace('count = 1', 'count = 2')
         : previous.replace('color: red', 'color: blue')
-    const session = await start(snapshot('red'), [component], {}, new Map([[component, previous]]))
+    const session = await start(registeredSnapshot(snapshot('red'), [component]), [component], {}, kind === 'non-compiler-vue' ? new Map() : new Map([[component, previous]]))
     const host = getCompilerHmrHost(session.ctx)
     const prepare = vi.fn(async (_input: WeappCompilerHmrRequest) => ({}))
     host.register('source-provider', prepare)
     if (kind !== 'non-compiler-vue') {
       host.seed(component, previous)
     }
-    host.captureNative(component, changed)
+    if (kind === 'non-compiler-vue') {
+      host.capture(component, changed)
+      expect(host.isNativeSource(component)).toBe(false)
+      expect(host.ownsDependency(component)).toBe(false)
+    }
+    else {
+      host.captureNative(component, changed)
+      expect(host.isNativeSource(component)).toBe(true)
+    }
     const reasons = kind === 'native-script' || kind === 'non-compiler-vue' ? ['entry-direct:1'] : ['entry-style-only:1']
     session.sourceChange(component, 'update', reasons)
     expect(harness.callbacks!.onPatch([component], { type: 'Noop' })).toBe(false)
@@ -2445,10 +2451,13 @@ describe('stateful snapshot output transactions', () => {
     expect(session.classic).not.toHaveBeenCalled()
   })
 
-  it.each(['uncaptured-initial-source', 'unpublished-native-source', 'missing-current-source'] as const)('hands a native Vue Noop with %s to classic without inventing a baseline', async (kind) => {
+  const missingNativeVueEvidenceCases = (['Noop', 'Patch'] as const).flatMap(type =>
+    (['uncaptured-initial-source', 'unpublished-native-source', 'missing-current-source', 'missing-registration-signature'] as const).map(kind => ({ type, kind })))
+  it.each(missingNativeVueEvidenceCases)('hands a native Vue $type with $kind to classic without inventing a baseline', async ({ type, kind }) => {
     const component = path.join(root, 'src/native.vue')
     const previous = '<script setup>const count = 1</script><template><view>before</view></template>'
-    const session = await start(snapshot('red'), kind === 'unpublished-native-source' ? [] : [component], {}, kind === 'uncaptured-initial-source' ? new Map() : new Map([[component, previous]]))
+    const initial = kind === 'missing-registration-signature' ? snapshot('red') : registeredSnapshot(snapshot('red'), [component])
+    const session = await start(initial, kind === 'unpublished-native-source' ? [] : [component], {}, kind === 'uncaptured-initial-source' ? new Map() : new Map([[component, previous]]))
     const host = getCompilerHmrHost(session.ctx)
     const prepare = vi.fn(async (_input: WeappCompilerHmrRequest) => ({}))
     const freeze = vi.spyOn(host, 'freeze')
@@ -2460,7 +2469,9 @@ describe('stateful snapshot output transactions', () => {
     host.register('source-provider', prepare)
     harness.writeOutput.mockClear()
     session.sourceChange(component, 'update', ['entry-local-asset:1'])
-    expect(harness.callbacks!.onPatch([component], { type: 'Noop' })).toBe(false)
+    expect(harness.callbacks!.onPatch([component], type === 'Noop'
+      ? { type }
+      : { type, code: 'void 0', filename: 'update.js', changedIds: [component] })).toBe(false)
     await vi.advanceTimersByTimeAsync(40)
     expect(session.classic).toHaveBeenCalledOnce()
     session.runtime.markClassic()
@@ -2478,7 +2489,7 @@ describe('stateful snapshot output transactions', () => {
   it.each(['prepare', 'syntax', 'write'] as const)('preserves a native Vue Noop %s error and invalidates its failed comparison baseline', async (stage) => {
     const component = path.join(root, 'src/native.vue')
     const previous = '<script setup>const count = 1</script><template><view>before</view></template>'
-    const session = await start(snapshot('red'), [component], {}, new Map([[component, previous]]))
+    const session = await start(registeredSnapshot(snapshot('red'), [component]), [component], {}, new Map([[component, previous]]))
     const host = getCompilerHmrHost(session.ctx)
     const failure = stage === 'syntax' ? new SyntaxError('invalid Vue template') : new Error(`${stage} failed`)
     const prepare = vi.fn(async (_input: WeappCompilerHmrRequest) => ({}))
@@ -2486,7 +2497,7 @@ describe('stateful snapshot output transactions', () => {
     const events = vi.fn()
     session.events.watcher.on('event', events)
     host.seed(component, previous)
-    host.captureNative(component, stage === 'syntax' ? '<template><view>' : previous.replace('<view>before</view>', '<view>after</view>'))
+    host.captureNative(component, stage === 'syntax' ? '<template><view>' : previous.replace('count = 1', 'count = 2').replace('<view>before</view>', '<view>after</view>'))
     host.register('source-provider', prepare)
     harness.writeOutput.mockClear()
     if (stage === 'prepare') {
@@ -2496,6 +2507,7 @@ describe('stateful snapshot output transactions', () => {
       session.rebuild.mockRejectedValueOnce(failure)
     }
     else {
+      session.rebuild.mockResolvedValueOnce(registeredSnapshot(snapshot('blue'), [component]))
       harness.writeOutput.mockRejectedValueOnce(failure)
     }
     session.sourceChange(component, 'update', ['entry-local-asset:1'])
@@ -2614,7 +2626,7 @@ describe('stateful snapshot output transactions', () => {
     const previous = '<script setup>const count = 1</script><template><view>before</view></template><style>view { color: red }</style>'
     const changed = previous.replace('<view>before</view>', '<view>after</view>')
     harness.nativeOutput = [{ type: 'chunk', fileName: `${route}.js`, code: 'Page({});', modules: { [component]: {} } }]
-    const session = await start(snapshot('red'), [component], {}, new Map([[component, previous]]))
+    const session = await start(registeredSnapshot(snapshot('red'), [component]), [component], {}, new Map([[component, previous]]))
     const host = getCompilerHmrHost(session.ctx)
     const prepare = vi.fn(async (_input: WeappCompilerHmrRequest) => ({}))
     const freeze = vi.spyOn(host, 'freeze')
@@ -2936,22 +2948,29 @@ describe('stateful snapshot output transactions', () => {
     expect(harness.fullBuild).not.toHaveBeenCalled()
   })
 
-  it('preserves the visual before value for a mixed patch arriving after a refresh', async () => {
+  it('keeps the native template baseline through a refresh and rejects its later mixed Patch before delivery', async () => {
     const delta = vi.spyOn(StatefulHmrTransport.prototype, 'addDelta').mockImplementation(async (_code, _ids, delivered) => {
       await delivered?.()
     })
     const component = path.join(root, 'src/component.vue')
     const previous = '<script setup>const count = 1</script><template><view>{{ count }}</view></template><style>view { color: red }</style>'
     const changed = previous.replace('<view>{{ count }}</view>', '<view>updated {{ count }}</view>')
-    const session = await start(snapshot('red'), [component], {}, new Map([[component, previous]]))
+    const session = await start(registeredSnapshot(snapshot('red'), [component]), [component], {}, new Map([[component, previous]]))
     const host = getCompilerHmrHost(session.ctx)
-    host.register('source-provider', async () => ({}))
+    const prepare = vi.fn(async (_input: WeappCompilerHmrRequest) => ({}))
+    host.register('source-provider', prepare)
+    session.rebuild.mockResolvedValueOnce(registeredSnapshot(snapshot('blue'), [component]))
     host.captureNative(component, changed)
     session.sourceChange(component, 'update', ['entry-local-asset:1'])
     await vi.advanceTimersByTimeAsync(40)
     await session.whenSettled()
     expect(session.rebuild).toHaveBeenCalledOnce()
     expect(host.hasVisualChanges([component])).toBe(true)
+    expect(session.runtime.fallback).toBeUndefined()
+    // 前序刷新没有原生脚本交付，不能据此把活动模板输入提升为已发布基线。
+    prepare.mockClear()
+    harness.writeOutput.mockClear()
+    const freeze = vi.spyOn(host, 'freeze')
 
     session.sourceChange(component, 'update', ['entry-mixed-asset:1'])
     expect(harness.callbacks!.onPatch([component], {
@@ -2959,12 +2978,19 @@ describe('stateful snapshot output transactions', () => {
       code: 'void 0',
       filename: 'late-mixed.js',
       changedIds: [component],
-    })).toBe(true)
-    await session.whenSettled()
+    })).toBe(false)
+    await vi.advanceTimersByTimeAsync(40)
 
-    expect(session.rebuild).toHaveBeenCalledTimes(2)
-    expect(delta).toHaveBeenCalledOnce()
-    expect(harness.markPayloadDelivered).toHaveBeenCalledExactlyOnceWith('late-mixed.js')
+    expect(freeze).toHaveBeenCalledExactlyOnceWith([component])
+    expect(freeze.mock.results[0]?.value.sources.get(compilerSourceId(component))).toBe(changed)
+    expect(prepare).not.toHaveBeenCalled()
+    expect(session.rebuild).toHaveBeenCalledOnce()
+    expect(session.classic).toHaveBeenCalledOnce()
+    expect(session.runtime.fallback).toMatchObject({ code: 'native-registration', files: [component] })
+    expect(harness.writeOutput).not.toHaveBeenCalled()
+    expect(delta).not.toHaveBeenCalled()
+    expect(harness.registerPatchModules).not.toHaveBeenCalled()
+    expect(harness.markPayloadDelivered).not.toHaveBeenCalled()
     expect(harness.fullBuild).not.toHaveBeenCalled()
   })
 

@@ -1,4 +1,4 @@
-import type { HeadlessWxBeforePageUnloadEvent, HeadlessWxRouteEvent } from '../host/wx/api'
+import type { HeadlessWxBeforePageUnloadEvent, HeadlessWxRouteDoneEvent, HeadlessWxRouteEvent } from '../host/wx/api'
 import type { HeadlessWxCallbackOption } from '../host/wx/core'
 import type { HeadlessPageInstance } from './pageInstance'
 import { createHeadlessUniEventBus } from '../host/wx/eventBus'
@@ -7,7 +7,7 @@ interface RouteEventMap {
   beforeAppRoute: HeadlessWxRouteEvent
   beforePageUnload: HeadlessWxBeforePageUnloadEvent
   appRoute: HeadlessWxRouteEvent
-  appRouteDone: HeadlessWxRouteEvent
+  appRouteDone: HeadlessWxRouteDoneEvent
 }
 
 interface PageRouteState {
@@ -127,7 +127,15 @@ export class HeadlessRouteEvents {
       const callbacks = state.callbacks
       state.callbacks = undefined
       try {
-        this.bus.$emit('appRouteDone', state.event)
+        const event = state.event
+        this.bus.$emit('appRouteDone', {
+          path: event.path,
+          query: { ...event.query },
+          openType: event.openType,
+          webviewId: event.webviewId,
+          routeEventId: event.routeEventId,
+          timeStamp: event.timeStamp,
+        } satisfies HeadlessWxRouteDoneEvent)
       }
       finally {
         this.settle(callbacks)

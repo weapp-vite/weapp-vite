@@ -1,4 +1,4 @@
-import type { HeadlessWx, HeadlessWxRouteEvent } from '../src/host'
+import type { HeadlessWx, HeadlessWxRouteDoneEvent } from '../src/host'
 import { expect, it, vi } from 'vitest'
 import { createApp, h, ref } from 'vue'
 import DevicePreview from '../../../demos/web/src/components/DevicePreview.vue'
@@ -55,7 +55,7 @@ it('publishes route completion after the browser render commit and captures befo
     const home = session.reLaunch('/pages/home/index')
     const wx = session.getApp()!.getWx() as HeadlessWx
     const displayed: Array<{ path: string, routeEventId: string, text: string | null }> = []
-    const done = (event: HeadlessWxRouteEvent) => {
+    const done = (event: HeadlessWxRouteDoneEvent) => {
       displayed.push({ path: event.path, routeEventId: event.routeEventId, text: preview.querySelector('#ready')?.textContent ?? null })
     }
     wx.onAppRouteDone(done)

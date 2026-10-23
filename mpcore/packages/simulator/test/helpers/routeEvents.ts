@@ -82,3 +82,14 @@ Page({
   } })`],
   ['components/child/index.wxml', '<view>child</view>'],
 ]
+
+/** 仅切换应用渲染配置，供两种运行时复用同一路由事件场景。 */
+export function createRouteRendererFiles(renderer: 'webview' | 'skyline') {
+  return routeEventFiles.map(([file, source]): [string, string] => {
+    if (file !== 'app.json') {
+      return [file, source]
+    }
+    const app = JSON.parse(source) as Record<string, unknown>
+    return [file, JSON.stringify({ ...app, renderer })]
+  })
+}
