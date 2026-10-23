@@ -17,6 +17,12 @@ function runPropertyObservers(
     if (!changedRoots.has(changedKey)) {
       continue
     }
+    const value = instance.properties[changedKey]
+    if ((value === null || typeof value !== 'object')
+      && Object.hasOwn(previousProperties, changedKey)
+      && Object.is(value, previousProperties[changedKey])) {
+      continue
+    }
     const option = propOptions[changedKey]
     if (!option || typeof option !== 'object' || Array.isArray(option)) {
       continue
@@ -25,7 +31,9 @@ function runPropertyObservers(
     if (typeof observer !== 'function') {
       continue
     }
-    observer.call(instance, instance.properties[changedKey], previousProperties[changedKey])
+    const changedPath = parseDataPath(changedKeys.find(key => parseDataPath(key)[0] === changedKey)!)
+      .map(segment => isArrayIndexSegment(segment) ? Number(segment) : segment)
+    observer.call(instance, value, previousProperties[changedKey], changedPath)
   }
 }
 

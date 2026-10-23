@@ -4060,6 +4060,9 @@ Component({
       ['components/status-card/index.json', '{}'],
       ['components/status-card/index.js', `
 const base = Behavior({
+  properties: {
+    count: Number
+  },
   data: {
     level: 'base'
   },

@@ -75,7 +75,7 @@ it('captures a newly published JSON dependency saved before its first native sid
   expect(resync).toHaveBeenCalledExactlyOnceWith(file)
 })
 
-it('does not request a second build after the native watch owner already captured the same bytes', async () => {
+it.each(['update', 'delete'] as const)('does not request a second build after native %s captured the same existing bytes', async (event) => {
   const { host, controller, file, after, load } = await fixture()
   const resync = vi.fn()
   controller.bindSidecarInputDrift(resync)
@@ -83,7 +83,7 @@ it('does not request a second build after the native watch owner already capture
   const input = controller.plugins.find(plugin => plugin.name === 'weapp-vite:hmr-input')!
   const hook = input.watchChange!
   const watch = typeof hook === 'function' ? hook : hook.handler
-  await watch.call({} as never, file, { event: 'update' })
+  await watch.call({} as never, file, { event })
   const native = host.isNativeSource(file)
   await load()
   await load()

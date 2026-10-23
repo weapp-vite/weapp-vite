@@ -16,17 +16,15 @@ export { cloneValue, coerceComponentPropertyValue, hasComponentPropertyValueChan
 
 export function createComponentInstance(options: CreateComponentInstanceOptions): HeadlessComponentInstance {
   const definition = normalizeComponentDefinition(options.definition)
-  const inputProperties = resolveInitialProperties(definition, options.properties ?? {})
   const data = {
     ...resolveInitialData(definition),
-    ...Object.fromEntries(Object.keys(definition.properties ?? {}).map(key => [key, inputProperties[key]])),
+    ...resolveInitialProperties(definition, options.properties ?? {}),
   }
-  const properties = { ...data, ...inputProperties }
   const instance: HeadlessComponentInstance = {
     __definition__: definition,
     data,
     __propertySnapshots__: {},
-    properties,
+    properties: data,
     getRelationNodes(key) {
       return getComponentRelationNodes(instance, key)
     },
@@ -39,10 +37,6 @@ export function createComponentInstance(options: CreateComponentInstanceOptions)
       for (const [key, value] of Object.entries(patch)) {
         assignByPath(instance.data, key, value)
       }
-      for (const key of dataKeys) {
-        instance.properties[key] = instance.data[key]
-      }
-
       synchronizeAttachmentBindings(instance)
       runComponentObservers(definition, instance, changedKeys, previousProperties)
       if (options.requestRender) {

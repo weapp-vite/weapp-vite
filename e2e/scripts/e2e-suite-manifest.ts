@@ -49,8 +49,12 @@ const IDE_TASK_TIMEOUT_MS_BY_LABEL = new Map([
   [IDE_TDESIGN_AGGREGATE_LABEL, '900000'],
   ['ide/github-issues.runtime.lifecycle.test.ts', '600000'],
   ['ide/github-issues.runtime.props.test.ts', '600000'],
-  // 独占 fixture 串行运行的有限初始 suite 预算，非完整 IDE 健康耗时的实测上界；不调整 case、hook 或断言等待。
+  // 兼容旧入口的原有预算；正式按宿主分别执行，不增加 case、hook 或断言等待。
   ['ide/hmr-capability-fallback.runtime.test.ts', '1800000'],
+  // Stable 实测 wv/vite 七例约 647/676 秒；wv 额外一例样式回退约 154 秒，保留 worker 收尾余量。
+  ['ide/hmr-capability-fallback.wv.runtime.test.ts', '900000'],
+  ['ide/hmr-capability-fallback.vite.runtime.test.ts', '900000'],
+  ['ide/hmr-capability-fallback.vite-plus.runtime.test.ts', '900000'],
   ['ide/hmr-startup-fallback.runtime.test.ts', '900000'],
   ['ide/hmr-additional-capabilities.runtime.test.ts', '600000'],
   ['ide/hmr-compiled-template-fallback.runtime.test.ts', '600000'],
@@ -221,6 +225,7 @@ const IDE_TEMPLATES_PATTERNS = [
   'ide/template-wevu-features-app.test.ts',
 ]
 const IDE_FULL_CORE_PATTERNS = [
+  'ide/native-property-delivery.runtime.test.ts',
   'ide/app-shell-presence.hmr.runtime.test.ts',
   'ide/vite-plugin.runtime.test.ts',
   'ide/vite-plugin-npm.runtime.test.ts',
@@ -258,6 +263,8 @@ const IDE_COMPONENT_LIBRARY_PATTERNS = [
 const IDE_COMPONENT_LIBRARY_PATTERN_SET = new Set(IDE_COMPONENT_LIBRARY_PATTERNS)
 const IDE_HELPER_TEST_PATTERNS = new Set([
   'ide/runtimeErrors.test.ts',
+  // 旧入口保留手动兼容；正式清单通过三个宿主入口覆盖同一矩阵。
+  'ide/hmr-capability-fallback.runtime.test.ts',
 ])
 const IDE_MANUAL_DEVTOOLS_TEST_PATTERNS = new Set([
   // tdesign 官方 retail 示例在当前 DevTools 自动化上下文中会返回空白截图和空 app-service 页面栈。
@@ -278,6 +285,7 @@ const IDE_GATE_TESTS = [
 ].map(testPath => path.resolve(ROOT, testPath))
 // #779 的计算样式由真实 IDE 与 simulator 的 pageStyleImports browser companion 验收；逻辑树不提供颜色证据。
 const IDE_DOM_HEADLESS_PATTERNS = [...new Set([
+  'ide/native-property-delivery.runtime.test.ts',
   'ide/template-plugin-dev-open.runtime.test.ts',
   'ide/issue-1234-automator.runtime.test.ts',
   'ide/app-shell-presence.hmr.runtime.test.ts',

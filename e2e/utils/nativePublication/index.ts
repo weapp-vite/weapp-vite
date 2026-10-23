@@ -55,6 +55,7 @@ export function captureNativePublication(
   options: NativePublicationOptions = {},
 ) {
   const offset = dev.getOutput().length
+  const outputRoot = path.resolve(project, options.outputRoot ?? 'dist')
   return {
     async wait(timeoutMs = 30_000) {
       const reads = new AbortController()
@@ -83,7 +84,7 @@ export function captureNativePublication(
             try {
               const files = await Promise.all(Object.entries(receipt.outputs).map(async ([file, expected]) => {
                 try {
-                  return { file, expected, actual: nativePublicationHash(await readFile(path.join(project, 'dist', file), { signal: reads.signal })) }
+                  return { file, expected, actual: nativePublicationHash(await readFile(path.join(outputRoot, file), { signal: reads.signal })) }
                 }
                 catch (error) {
                   const code = (error as NodeJS.ErrnoException).code ?? 'unknown'

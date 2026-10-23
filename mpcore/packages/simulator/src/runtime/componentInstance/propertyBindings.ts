@@ -21,6 +21,9 @@ export function syncComponentProperties(
   const changedRootKeys: string[] = []
   const previousProperties: Record<string, any> = {}
   for (const [key, value] of Object.entries(nextProperties)) {
+    if (!Object.hasOwn(definition.properties ?? {}, key)) {
+      continue
+    }
     const nextValue = normalizeComponentPropertyValue(definition, key, value)
     const bindingExpression = bindingExpressions[key]
     const bindingAffected = freshPageChanges && !!bindingExpression && changedPageKeys.some((changedKey) => {
@@ -34,9 +37,6 @@ export function syncComponentProperties(
       // 属性跨组件边界传递时必须隔离引用，否则父级深层 patch 会提前改写子级旧值。
       const deliveredValue = cloneValue(nextValue)
       instance.properties[key] = deliveredValue
-      if (Object.hasOwn(definition.properties ?? {}, key)) {
-        instance.data[key] = deliveredValue
-      }
       changedRootKeys.push(key)
     }
     instance.__propertySnapshots ??= {}
