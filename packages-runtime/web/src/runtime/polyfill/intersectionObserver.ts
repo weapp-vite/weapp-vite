@@ -1,3 +1,4 @@
+import { readRuntimeDataset } from '../dataset'
 import { resolveSelectorTargets } from './selectorQuery'
 
 export interface IntersectionMargins {
@@ -62,7 +63,7 @@ function mapIntersectionEntry(entry: IntersectionObserverEntry) {
   const target = entry.target as HTMLElement & { getAttribute?: (name: string) => string | null }
   return {
     id: target.id ?? target.getAttribute?.('id') ?? '',
-    dataset: { ...(target.dataset ?? {}) },
+    dataset: { ...readRuntimeDataset(target) },
     intersectionRatio: entry.intersectionRatio,
     intersectionRect: toRect(entry.intersectionRect),
     boundingClientRect: toRect(entry.boundingClientRect),

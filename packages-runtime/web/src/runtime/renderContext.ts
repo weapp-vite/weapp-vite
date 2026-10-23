@@ -1,6 +1,7 @@
 import type { ComponentPublicInstance } from './component'
 import type { TemplateScope } from './template'
 import { nameRuntimeEventHandler } from './componentEvents'
+import { readRuntimeDataset } from './dataset'
 import { getRuntimeExecutionMode, warnRuntimeExecutionOnce } from './execution'
 import { invokeMiniProgramEventHandler } from './inputHandlerResult'
 import { emitRuntimeWarning } from './warning'
@@ -137,13 +138,13 @@ function createEventHandler(
     }
     const target = nativeEvent.target as HTMLElement | null
     const currentTarget = nativeEvent.currentTarget as HTMLElement | null
-    const dataset = currentTarget?.dataset ?? {}
+    const dataset = readRuntimeDataset(currentTarget)
     const syntheticEvent = {
       type: eventName,
       timeStamp: nativeEvent.timeStamp,
       detail: (nativeEvent as CustomEvent).detail ?? (nativeEvent as InputEvent).data ?? undefined,
       target: {
-        dataset: target?.dataset ?? dataset,
+        dataset: (target as HTMLElement | null)?.dataset ? readRuntimeDataset(target) : dataset,
       },
       currentTarget: {
         dataset,
