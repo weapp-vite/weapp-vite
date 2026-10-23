@@ -48,6 +48,7 @@ export class WorkspaceHmrClassicFallback {
   private readTransition() {
     let ready = false
     let transitions = 0
+    let requestedMode: 'auto' | 'stateful-experimental' | undefined
     for (const line of this.getOutput().split(/\r?\n/)) {
       const fallback = line.match(/\[weapp-vite\] HMR fallback (\{.*\})/)
       if (fallback) {
@@ -55,19 +56,24 @@ export class WorkspaceHmrClassicFallback {
           throw new Error('Classic fallback transitioned more than once within one development session.')
         }
         const record = JSON.parse(fallback[1]!) as Record<string, unknown>
-        if (record.from !== 'stateful-experimental' || record.to !== 'classic' || typeof record.reason !== 'string' || !record.reason) {
+        if (record.from !== 'stateful-experimental' || record.to !== 'classic'
+          || typeof record.reason !== 'string' || !record.reason || typeof record.message !== 'string'
+          || (record.requested !== 'auto' && record.requested !== 'stateful-experimental')
+          || record.actual !== 'classic' || record.phase !== 'switching') {
           throw new Error('Invalid classic fallback transition evidence.')
         }
         if (this.reason && this.reason !== record.reason) {
           throw new Error('Classic fallback reason changed within one development session.')
         }
         this.reason = record.reason
+        requestedMode = record.requested
         ready = false
       }
       const completion = line.match(/\[weapp-vite\] HMR classic ready (\{.*\})/)
       if (completion) {
         const record = JSON.parse(completion[1]!) as Record<string, unknown>
-        if (!this.reason || record.reason !== this.reason) {
+        if (!this.reason || record.reason !== this.reason || record.requested !== requestedMode
+          || record.actual !== 'classic' || record.phase !== 'classic') {
           throw new Error('Classic readiness does not match its fallback transition.')
         }
         ready = true
