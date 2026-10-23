@@ -22,6 +22,7 @@ export {
 } from './host'
 export type { WebRuntimeClipboard, WebRuntimeDialogs, WebRuntimeHost, WebRuntimeStorage } from './host'
 export { installWebHostGlobals } from './hostGlobals'
+export { resetInlineStyleUnitCache, transformInlineStyleValue } from './inlineStyle'
 export {
   createInputEventDetail,
   createScrollEventDetail,
