@@ -5,6 +5,7 @@ import process from 'node:process'
 import { pathToFileURL } from 'node:url'
 import { withMachineE2ELease } from '../../packages/devtools-runtime/src/lease/machine'
 import { ACCEPTANCE_ROOT, DOM_ACCEPTANCE_ENV, sanitizeAcceptanceValue } from './domAcceptanceReport/helpers'
+import { createPlannedTaskCaseReader } from './domAcceptanceReport/taskCases'
 import { HMR_ACCEPTANCE_STAGES } from './hmr-acceptance-manifest'
 import { assertHmrAcceptanceComplete, createHmrAcceptanceSummary } from './hmrAcceptance/report'
 import { readHmrRuntimeReceipt } from './hmrAcceptance/runtimeEvidence'
@@ -66,6 +67,7 @@ export async function runHmrAcceptanceCli(args = process.argv.slice(2)) {
         ? await runHmrUnitValidation({ repositoryRoot: ACCEPTANCE_ROOT, directory: path.join(output, 'unit'), identity, environment: lease.environment })
         : undefined
       const results = []
+      const readCases = createPlannedTaskCaseReader()
       for (const { stage, tasks } of requiredStages) {
         process.env[DOM_ACCEPTANCE_ENV] = stage.provider === 'none' ? '0' : '1'
         if (stage.provider === 'none') {
@@ -75,7 +77,7 @@ export async function runHmrAcceptanceCli(args = process.argv.slice(2)) {
           process.env.WEAPP_VITE_E2E_RUNTIME_PROVIDER = stage.provider
         }
         const profile = currentVerificationProfile(stage.suite)
-        const plan = await createVerificationPlan({ suite: stage.suite, shards: 1, profile, tasks, identity })
+        const plan = await createVerificationPlan({ suite: stage.suite, shards: 1, profile, tasks, identity, readCases })
         const stageRoot = path.join(output, stage.name)
         const planFile = path.join(stageRoot, 'plan.json')
         await writeEvidence(planFile, plan)

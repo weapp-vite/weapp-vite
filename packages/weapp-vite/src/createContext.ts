@@ -10,6 +10,7 @@ interface CreateCompilerContextOptions extends InitializeCompilerContextOptions 
 export async function createCompilerContext(options?: CreateCompilerContextOptions) {
   const key = options?.key ?? 'default'
   if (!options?.key) {
+    await getCompilerContext(key).watcherService.closeAll()
     resetCompilerContext(key)
   }
   setActiveCompilerContextKey(key)

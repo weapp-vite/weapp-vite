@@ -13,6 +13,7 @@ import { isPathInside } from '../../utils/path'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { isStatefulHmrBoundary } from './boundaries'
 import { createStatefulHmrHostFormatPlugin } from './hostFormat'
+import { createStatefulHmrInputTrace } from './inputTrace'
 import { createStatefulHmrSidecarPlugin } from './sidecarPlugin'
 
 function captureKnownRawInput(host: CompilerHmrHost, id: string): void {
@@ -75,10 +76,11 @@ export function redirectNativeComponentRegistration(code: string): string {
 
 /** 插件先注册，入口身份在快照准备完成后绑定；不在工厂阶段扫描或启动服务。 */
 export function createStatefulHmrHostPlugins(ctx: CompilerContext) {
+  const inputTrace = createStatefulHmrInputTrace({ root: () => ctx.configService.cwd })
   let entryIds = new Set<string>()
   let delegatedEntryIds = new Set<string>()
   let settlement: (() => Promise<void>) | undefined
-  let sidecarInputDrift: { notify: (file: string) => void } | undefined
+  let sidecarInputDrift: { notify: (file: string) => void, releaseTrace?: () => void } | undefined
   const plugins: Plugin[] = [{
     name: 'weapp-vite:stateful-style-client',
     enforce: 'pre',
@@ -104,7 +106,9 @@ export function createStatefulHmrHostPlugins(ctx: CompilerContext) {
         return
       }
       const host = getCompilerHmrHost(ctx)
-      if (!entryIds.has(normalizeFsResolvedId(id)) && !host.isRawInput(id)) {
+      const entry = entryIds.has(normalizeFsResolvedId(id))
+      inputTrace?.input('transform', id, host, { entry })
+      if (!entry && !host.isRawInput(id)) {
         host.captureNative(id, code)
       }
     },
@@ -116,6 +120,7 @@ export function createStatefulHmrHostPlugins(ctx: CompilerContext) {
           return
         }
         const host = getCompilerHmrHost(ctx)
+        inputTrace?.input('watch-before', id, host, { event: change.event })
         if (change.event === 'delete') {
           return normalizeAtomicDeleteEvent(id).then((event) => {
             if (event === 'update') {
@@ -127,15 +132,18 @@ export function createStatefulHmrHostPlugins(ctx: CompilerContext) {
             else {
               host.capture(id, null)
             }
+            inputTrace?.input('watch-after', id, host, { event })
           })
         }
         // 普通 update/create 保持同步捕获，不能让后续消费者先冻结旧输入。
         captureKnownRawInput(host, id)
+        inputTrace?.input('watch-after', id, host, { event: change.event })
       },
     },
   }, createStatefulHmrSidecarPlugin(async (file) => {
     const binding = sidecarInputDrift
     const host = getCompilerHmrHost(ctx)
+    inputTrace?.input('sidecar-before', file, host, { bound: Boolean(binding) })
     // 没有活动会话或只有 module loader 归属时，保持原读取与输入分类。
     if (!binding || !host.ownsRawSource(file)) {
       return await readFile(file, 'utf8')
@@ -148,12 +156,14 @@ export function createStatefulHmrHostPlugins(ctx: CompilerContext) {
     }
     catch (error) {
       if (error instanceof CompilerHmrResyncError) {
+        inputTrace?.input('sidecar-read-error', file, host, { resync: true })
         binding.notify(file)
       }
       throw error
     }
     const source = read?.source ?? null
     host.captureRaw(file, source, false, read ?? undefined)
+    inputTrace?.input('sidecar-after', file, host, { drift: previous !== undefined && previous !== source })
     if (previous !== undefined && previous !== source) {
       // 入口资产可能已经消费旧值；同一 owner 的完整重建负责重新读取和发射。
       binding.notify(file)
@@ -181,9 +191,11 @@ export function createStatefulHmrHostPlugins(ctx: CompilerContext) {
   return {
     plugins,
     bindSidecarInputDrift(notify: (file: string) => void) {
-      const binding = { notify }
+      sidecarInputDrift?.releaseTrace?.()
+      const binding = { notify, releaseTrace: inputTrace?.observe(getCompilerHmrHost(ctx)) }
       sidecarInputDrift = binding
       return () => {
+        binding.releaseTrace?.()
         if (sidecarInputDrift === binding) {
           sidecarInputDrift = undefined
         }

@@ -1,7 +1,7 @@
 import type { ChildProcess } from 'node:child_process'
 import { spawn } from 'node:child_process'
 import { once } from 'node:events'
-import { mkdir, mkdtemp, readFile, realpath, rename, rm, symlink, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
@@ -15,12 +15,6 @@ const dependencies = fileURLToPath(new URL('../../../../../node_modules', import
 const privateConfig = '{"setting":{"compileHotReLoad":true},"condition":{"miniprogram":{"list":[{"name":"Startup fallback","pathName":"pages/home/index"}]}}}'
 // 与真实 runtime DevProcess 的退出门禁一致；超时后的强杀只能使测试失败。
 const shutdownTimeout = 90_000
-
-async function replaceSource(file: string, source: string) {
-  const next = `${file}.next`
-  await writeFile(next, source)
-  await rename(next, file)
-}
 
 async function waitFor(check: () => boolean | Promise<boolean>, exited: Promise<unknown>, label: string, output: () => string) {
   const deadline = Date.now() + 20_000
@@ -139,11 +133,11 @@ it.each(['auto', 'stateful-experimental'] as const)('naturally exits after %s st
     const readTarget = () => readFile(target, 'utf8').catch(() => '')
     await waitFor(() => stdout.includes('[weapp-vite] HMR classic ready '), exited, 'startup classic readiness', output)
     expect(output()).toContain('"reason":"compiler-provider"')
-    await replaceSource(source, original.replace('WV-STARTUP-BASE', 'WV-STARTUP-EDITED'))
+    await writeFile(source, original.replace('WV-STARTUP-BASE', 'WV-STARTUP-EDITED'))
     await waitFor(async () => (await readTarget()).includes('WV-STARTUP-EDITED'), exited, 'script edit publication', output)
-    await replaceSource(source, original.replace('"WV-STARTUP-BASE"', '__STARTUP_CONFIG_MARKER__'))
+    await writeFile(source, original.replace('"WV-STARTUP-BASE"', '__STARTUP_CONFIG_MARKER__'))
     await waitFor(async () => (await readTarget()).includes('WV-CONFIG-A'), exited, 'config marker publication', output)
-    await replaceSource(configFile, config.replace('WV-CONFIG-A', 'WV-CONFIG-B'))
+    await writeFile(configFile, config.replace('WV-CONFIG-A', 'WV-CONFIG-B'))
     await waitFor(async () => (await readTarget()).includes('WV-CONFIG-B')
       && stdout.includes('Vite 配置已重新加载，小程序开发构建已重启。'), exited, 'configuration restart publication', output)
     expect(output().match(/\[weapp-vite\] HMR fallback /g)).toHaveLength(1)

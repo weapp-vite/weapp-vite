@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { claimSidecarDelivery } from '../../../runtime/watch/sidecarDelivery'
 
 import { invalidateEntryForSidecar } from './sidecar'
 
@@ -150,5 +151,73 @@ describe('invalidateEntryForSidecar', () => {
     expect(touchMock).toHaveBeenCalledWith(owner)
     expect(ctx.runtimeState.css.sidecarImports.has(style)).toBe(true)
     expect(ctx.runtimeState.css.sidecarImports.has(otherStyle)).toBe(true)
+  })
+
+  it.each(['create', 'delete', 'update'] as const)('keeps cache invalidation but avoids synthetic script delivery for an owned %s', async (event) => {
+    const ctx = createContext()
+    const style = '/project/src/pages/hmr/index.wxss'
+    ctx.runtimeState.css.transformedSidecarSource.set(style, { code: '.old {}', diskSource: '.old {}' })
+    findJsEntryMock.mockResolvedValueOnce({ path: '/project/src/pages/hmr/index.ts', predictions: [] })
+    const release = claimSidecarDelivery(ctx, file => file === style)
+    try {
+      await invalidateEntryForSidecar(ctx, style, event)
+      expect(touchMock).not.toHaveBeenCalled()
+      expect(invalidateFileCacheMock).toHaveBeenCalledWith(style)
+      expect(ctx.runtimeState.css.transformedSidecarSource.has(style)).toBe(false)
+      expect(loggerMock.success).not.toHaveBeenCalled()
+    }
+    finally {
+      release()
+    }
+  })
+
+  it('rechecks the active owner after asynchronous sidecar discovery', async () => {
+    const ctx = createContext()
+    const entry = Promise.withResolvers<{ path: undefined, predictions: string[] }>()
+    findJsEntryMock.mockReturnValueOnce(entry.promise)
+    collectAffectedScriptsAndImportersMock.mockResolvedValueOnce({ importers: new Set(), scripts: new Set(['/project/src/page.ts']) })
+    const changing = invalidateEntryForSidecar(ctx, '/project/src/shared/theme.css', 'delete')
+    const release = claimSidecarDelivery(ctx, () => true)
+    try {
+      entry.resolve({ path: undefined, predictions: [] })
+      await changing
+      expect(collectAffectedScriptsAndImportersMock).toHaveBeenCalled()
+      expect(touchMock).not.toHaveBeenCalled()
+    }
+    finally {
+      release()
+    }
+  })
+
+  it('keeps fallback when an asynchronous discovery outlives a scope replacement', async () => {
+    const ctx = createContext()
+    const entry = Promise.withResolvers<{ path: undefined, predictions: string[] }>()
+    findJsEntryMock.mockReturnValueOnce(entry.promise)
+    collectAffectedScriptsAndImportersMock.mockResolvedValueOnce({ importers: new Set(), scripts: new Set(['/project/src/page.ts']) })
+    const previous = claimSidecarDelivery(ctx, file => file.startsWith('/project/src/'))
+    const changing = invalidateEntryForSidecar(ctx, '/external/theme.css', 'delete')
+    const current = claimSidecarDelivery(ctx, file => file.startsWith('/project/src/'))
+    previous()
+    try {
+      entry.resolve({ path: undefined, predictions: [] })
+      await changing
+      expect(touchMock).toHaveBeenCalledWith('/project/src/page.ts')
+    }
+    finally {
+      current()
+    }
+  })
+
+  it('does not revive synthetic delivery after its original generation closes', async () => {
+    const ctx = createContext()
+    const entry = Promise.withResolvers<{ path: undefined, predictions: string[] }>()
+    findJsEntryMock.mockReturnValueOnce(entry.promise)
+    collectAffectedScriptsAndImportersMock.mockResolvedValueOnce({ importers: new Set(), scripts: new Set(['/project/src/page.ts']) })
+    const release = claimSidecarDelivery(ctx, () => true)
+    const changing = invalidateEntryForSidecar(ctx, '/project/src/shared/theme.css', 'delete')
+    release()
+    entry.resolve({ path: undefined, predictions: [] })
+    await changing
+    expect(touchMock).not.toHaveBeenCalled()
   })
 })

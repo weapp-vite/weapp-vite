@@ -67,6 +67,21 @@ export async function measureStatefulTemplateArtifact<T>(options: StatefulArtifa
     }
   }
 
+  async function waitForRetiredFallback() {
+    while (true) {
+      consumerSignal.throwIfAborted()
+      const classic = await consumeUntilCancelled(Promise.resolve(options.isClassicFallback?.(consumerSignal, deadlineAt)))
+      consumerSignal.throwIfAborted()
+      if (Date.now() >= deadlineAt) {
+        throw timeoutFailure
+      }
+      if (classic) {
+        return
+      }
+      await consumeUntilCancelled(sleep(Math.min(25, Math.max(0, deadlineAt - Date.now())), undefined, { signal: consumerSignal }))
+    }
+  }
+
   async function consume() {
     const client = options.client!
     try {
@@ -84,6 +99,11 @@ export async function measureStatefulTemplateArtifact<T>(options: StatefulArtifa
         const beforeVersion = client.acknowledgedVersion
         const response = await consumeUntilCancelled(client.poll(Math.min(30_000, options.timeoutMs), consumerSignal))
         options.onEvent?.({ type: response.type ?? 'unknown', targetVersion: response.targetVersion })
+        if (response.type === 'retired') {
+          // 在途轮询可收到明确退休响应；旧会话此后不再发请求，仍须等待正式 classic 就绪。
+          await waitForRetiredFallback()
+          return
+        }
         if (response.type === 'batch-published') {
           if (response.targetVersion === undefined || response.targetVersion <= beforeVersion) {
             throw new Error('Stateful template consumption requires a newly published batch version.')

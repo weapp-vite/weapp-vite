@@ -1,6 +1,6 @@
 import type { InitializeCompilerContextOptions } from './context'
 import { createCompilerContextInstance } from '../../context/createCompilerContextInstance'
-import { startInitialBuildInputObservation } from '../buildPlugin/initialBuildChanges'
+import { closeInitialBuildInputObservation } from '../buildPlugin/initialBuildChanges'
 import { retainWatcherService } from '../watcherPlugin'
 import { initializeCompilerContext } from './context'
 
@@ -13,13 +13,7 @@ export class CompilerSession {
   private readonly pending = new Set<Promise<unknown>>()
   private readonly cleanup = new Set<() => void | Promise<void>>()
   private readonly release = retainWatcherService(this.context.watcherService)
-  private readonly releaseInitialBuildInputs: () => void
   private closing?: Promise<void>
-
-  constructor() {
-    this.releaseInitialBuildInputs = startInitialBuildInputObservation(this.context.configService)
-    this.onClose(this.releaseInitialBuildInputs)
-  }
 
   get isClosing() {
     return this.state === 'closing' || this.state === 'closed'
@@ -47,13 +41,11 @@ export class CompilerSession {
     return this.track(async () => {
       const context = await initializeCompilerContext(this.context, options)
       if (this.state !== 'preparing') {
+        closeInitialBuildInputObservation(this.context.configService)
         throw new Error('[weapp-vite] 编译会话已关闭。')
       }
       this.state = 'ready'
       return context
-    }).catch((error) => {
-      this.releaseInitialBuildInputs()
-      throw error
     })
   }
 
@@ -70,7 +62,7 @@ export class CompilerSession {
   close(): Promise<void> {
     return this.closing ??= (async () => {
       this.state = 'closing'
-      this.releaseInitialBuildInputs()
+      closeInitialBuildInputObservation(this.context.configService)
       await Promise.allSettled([...this.pending])
       const errors: unknown[] = []
       try {

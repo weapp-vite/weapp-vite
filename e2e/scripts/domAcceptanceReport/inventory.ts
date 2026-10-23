@@ -1,4 +1,6 @@
 import type { ESLint } from 'eslint'
+import type { CaseInventory } from './inventoryAnalyzer'
+import type { InventorySourceReader } from './inventorySourceReader'
 import fs from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
@@ -12,25 +14,26 @@ import { CAPABILITY_FALLBACK_HOSTS, capabilityFallbackScenarios } from '../../id
 import { getIdeExhaustiveTasks, getIdeHeadlessTasks } from '../e2e-suite-manifest'
 import { ACCEPTANCE_ROOT } from './helpers'
 import { analyzeCaseSource, readCaseInventory, readFactoryTitle } from './inventoryAnalyzer'
+import { createInventorySourceReader } from './inventorySourceReader'
 import { collectInventorySources } from './inventorySources'
 
-export function readTaskCases(root: string, label: string, templates?: string[]) {
+function readTaskCaseSources(root: string, label: string, templates: string[] | undefined, readSource: InventorySourceReader) {
   const file = `e2e/${label}`
-  const content = fs.readFileSync(path.join(root, file), 'utf8')
-  const capabilityHost = readFactoryTitle(content, file, 'createHmrCapabilityFallbackSuite')
+  const source = readSource(file)
+  const capabilityHost = readFactoryTitle(source, file, 'createHmrCapabilityFallbackSuite')
   if (typeof capabilityHost === 'string') {
     const host = CAPABILITY_FALLBACK_HOSTS.find(host => host === capabilityHost)
     if (!host) {
       throw new Error(`Unknown capability fallback host: ${capabilityHost}`)
     }
     const factory = 'e2e/ide/statefulHmrDom/capabilityFallback.ts'
-    return analyzeCaseSource(fs.readFileSync(path.join(root, factory), 'utf8'), factory, [], {
+    return analyzeCaseSource(readSource(factory), factory, [], {
       host,
       scenarios: capabilityFallbackScenarios(host),
     })
   }
-  const cases = readCaseInventory(root, file, templates)
-  const title = readFactoryTitle(content, file, 'createChunkModesRuntimeSuite')
+  const cases = readCaseInventory(root, file, templates, new Set(), readSource)
+  const title = readFactoryTitle(source, file, 'createChunkModesRuntimeSuite')
   if (typeof title !== 'string') {
     return cases
   }
@@ -38,7 +41,7 @@ export function readTaskCases(root: string, label: string, templates?: string[])
     ? selectIdeRuntimeChunkExtraCases(chunkExtraCases)
     : selectIdeRuntimeChunkMatrixCases(chunkMatrixCases).filter(item => item.strategy === (label.includes('.duplicate.') ? 'duplicate' : 'hoist'))
   const factory = 'e2e/ide/chunk-modes.runtime.shared.ts'
-  return analyzeCaseSource(fs.readFileSync(path.join(root, factory), 'utf8'), factory, [], {
+  return analyzeCaseSource(readSource(factory), factory, [], {
     suiteName: title,
     runtimeCases: runtimeCases.map(item => ({ ...item, routes: runtimeBaseRoutes })),
   })
@@ -48,16 +51,41 @@ export function readTaskCases(root: string, label: string, templates?: string[])
     }))
 }
 
+/** 同一操作共享静态分析，所有直接与导入源码仍按字节重新确认。 */
+export function createTaskCaseReader(root: string, readSource: InventorySourceReader = createInventorySourceReader(root)) {
+  const tasks = new Map<string, { cases: CaseInventory[], sources: Map<string, ReturnType<InventorySourceReader>> }>()
+  return (label: string, templates?: string[]): CaseInventory[] => {
+    const key = JSON.stringify([label, templates ?? []])
+    const previous = tasks.get(key)
+    if (previous && [...previous.sources].every(([file, source]) => readSource(file) === source)) {
+      return structuredClone(previous.cases)
+    }
+    const sources = new Map<string, ReturnType<InventorySourceReader>>()
+    const cases = readTaskCaseSources(root, label, templates, (file) => {
+      const source = readSource(file)
+      sources.set(file, source)
+      return source
+    })
+    tasks.set(key, { cases, sources })
+    return structuredClone(cases)
+  }
+}
+
+export function readTaskCases(root: string, label: string, templates?: string[]) {
+  return createTaskCaseReader(root)(label, templates)
+}
+
 export function createDomAcceptanceInventory(root = ACCEPTANCE_ROOT, topology?: string) {
   const executionTopology = resolveVerificationTopology(topology)
   const headlessLabels = new Set(getIdeHeadlessTasks().map(task => task.label))
+  const readCases = createTaskCaseReader(root)
   const tasks = getIdeExhaustiveTasks({ topology: executionTopology.id }).map(task => ({
     task: task.label,
     scope: task.outOfScopeReason ? 'out-of-scope' : 'wechat',
     reason: task.outOfScopeReason ?? null,
     providers: task.outOfScopeReason ? ['swan'] : headlessLabels.has(task.label) ? ['devtools', 'headless'] : ['devtools'],
     templates: task.acceptanceTemplates ?? [],
-    cases: readTaskCases(root, task.label, task.acceptanceTemplates),
+    cases: readCases(task.label, task.acceptanceTemplates),
   }))
   const wechat = tasks.filter(task => task.scope === 'wechat')
   const cases = wechat.flatMap(task => task.cases)

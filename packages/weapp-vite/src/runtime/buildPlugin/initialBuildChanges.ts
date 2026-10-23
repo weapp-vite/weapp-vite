@@ -1,14 +1,24 @@
+import type { WatcherService } from '../watcherPlugin'
 import { compilerSourceId } from '../../plugins/compilerPlugin/hmr'
 import { compilerNativeScriptVersion, observeCompilerInputs } from '../../plugins/utils/sourceSnapshot'
 import { readRequestedIdeConfig } from '../classicIdeConfig/reader'
+import { onWatcherServiceDrained } from '../watcherPlugin'
+
+export interface InitialBuildRouteEvidence {
+  signature: string | undefined
+}
 
 interface StartupChange {
   file?: string
   event?: string
   verifyInitialInput?: boolean
+  initialRoute?: InitialBuildRouteEvidence
 }
 
-const observations = new WeakMap<object, ReturnType<typeof observeInitialBuildInputs>>()
+const observations = new WeakMap<object, {
+  observation: ReturnType<typeof observeInitialBuildInputs>
+  release: () => void
+}>()
 
 /** 扫描与首构共用实际读取摘要；只剔除已发布版本的迟到更新通知。 */
 function observeInitialBuildInputs(owner: object) {
@@ -16,6 +26,7 @@ function observeInitialBuildInputs(owner: object) {
   const unstable = new Set<string>()
   let collecting: Map<string, string> | undefined
   let published: ReadonlyMap<string, string> | undefined
+  let publishedRouteSignature: string | undefined
   const release = observeCompilerInputs(owner, (file, source) => {
     const id = compilerSourceId(file)
     const version = compilerNativeScriptVersion(source)
@@ -36,8 +47,9 @@ function observeInitialBuildInputs(owner: object) {
     begin() {
       collecting = new Map([...latest].filter(([file]) => !unstable.has(file)))
     },
-    commit() {
+    commit(routeSignature?: string) {
       published = collecting
+      publishedRouteSignature = routeSignature
       collecting = undefined
       latest.clear()
       unstable.clear()
@@ -50,7 +62,12 @@ function observeInitialBuildInputs(owner: object) {
       }
       const retained: T[] = []
       for (const change of changes) {
-        const version = change.verifyInitialInput && change.event === 'update' && change.file
+        // 路由 owner 的所有通知都须证明同一已发布拓扑；未知签名不能借用普通模块的更新语义。
+        const samePublishedRoutes = publishedRouteSignature !== undefined
+          && change.initialRoute?.signature === publishedRouteSignature
+        const consumedSourceUpdate = change.event === 'update' && (!change.initialRoute || samePublishedRoutes)
+        const consumedRouteCreation = change.event === 'create' && samePublishedRoutes
+        const version = change.verifyInitialInput && (consumedSourceUpdate || consumedRouteCreation) && change.file
           ? baseline.get(compilerSourceId(change.file))
           : undefined
         let current: string | undefined
@@ -71,6 +88,7 @@ function observeInitialBuildInputs(owner: object) {
       // 第一个真实后续批次开始后不再借用启动版本，源码恢复必须重新发布。
       if (retained.length) {
         published = undefined
+        publishedRouteSignature = undefined
       }
       return retained
     },
@@ -79,23 +97,36 @@ function observeInitialBuildInputs(owner: object) {
       latest.clear()
       unstable.clear()
       collecting = published = undefined
+      publishedRouteSignature = undefined
     },
   }
 }
 
 /** 编译会话拥有观察期，保证预扫描失败和构建尚未开始时也能释放。 */
-export function startInitialBuildInputObservation(owner: object): () => void {
-  observations.get(owner)?.close()
+export function startInitialBuildInputObservation(owner: object, watcherService?: WatcherService): () => void {
+  observations.get(owner)?.release()
   const observation = observeInitialBuildInputs(owner)
-  observations.set(owner, observation)
-  return () => {
+  let unregisterDrain: (() => void) | undefined
+  const release = () => {
+    unregisterDrain?.()
+    unregisterDrain = undefined
     observation.close()
-    if (observations.get(owner) === observation) {
+    if (observations.get(owner)?.observation === observation) {
       observations.delete(owner)
     }
   }
+  observations.set(owner, { observation, release })
+  if (watcherService) {
+    unregisterDrain = onWatcherServiceDrained(watcherService, release)
+  }
+  return release
+}
+
+/** 初始化失败或尚未构建就关闭时，也释放当前输入代次的 drain 回调。 */
+export function closeInitialBuildInputObservation(owner: object): void {
+  observations.get(owner)?.release()
 }
 
 export function getInitialBuildInputObservation(owner: object) {
-  return observations.get(owner)
+  return observations.get(owner)?.observation
 }

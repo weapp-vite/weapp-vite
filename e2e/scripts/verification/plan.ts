@@ -1,3 +1,4 @@
+import type { PlannedTaskCaseReader } from '../domAcceptanceReport/taskCases'
 import type { SuiteTask } from '../suiteRunner'
 import type { DurationHistory, VerificationPlan, VerificationProfile } from './types'
 import { createHash } from 'node:crypto'
@@ -8,7 +9,7 @@ import { excludedE2EProjects, isExcludedE2EProject } from '../../../scripts/e2eP
 import { assertVerificationTopology, resolveVerificationTopology } from '../../../scripts/verification/topology.ts'
 import { ACCEPTANCE_DIRTY_ENV, ACCEPTANCE_ROOT, createAcceptanceIdentity, isStrictDomAcceptanceSuite } from '../domAcceptanceReport/helpers'
 import { collectInventorySources } from '../domAcceptanceReport/inventorySources'
-import { isValidProviderCaseScope, readPlannedTaskCases } from '../domAcceptanceReport/taskCases'
+import { createPlannedTaskCaseReader, isValidProviderCaseScope } from '../domAcceptanceReport/taskCases'
 import { getSuiteTasks } from '../e2e-suite-manifest'
 import { HMR_ACCEPTANCE_CAPABILITIES } from '../hmr-acceptance-manifest'
 import { assertVerificationProfile } from './profile'
@@ -115,6 +116,7 @@ export async function createVerificationPlan(options: {
   identity?: ReturnType<typeof createAcceptanceIdentity>
   sourceDigest?: string
   now?: Date
+  readCases?: PlannedTaskCaseReader
 }): Promise<VerificationPlan> {
   if (!Number.isInteger(options.shards) || options.shards < 1) {
     throw new Error('Shard total must be a positive integer')
@@ -141,13 +143,14 @@ export async function createVerificationPlan(options: {
     throw new Error('Shard total exceeds the executable task inventory')
   }
   const strict = isStrictDomAcceptanceSuite(options.suite)
+  const readCases = options.readCases ?? createPlannedTaskCaseReader()
   const planned = await Promise.all(tasks.map(async task => ({
     label: task.label,
     definitionHash: taskDefinitionHash(task),
     estimatedDurationMs: options.history?.tasks[task.label]?.durationMs ?? fallbackTaskDuration(task.label),
     shardIndex: 0,
     ...(task.outOfScopeReason ? { outOfScopeReason: task.outOfScopeReason } : {}),
-    ...(strict && !task.outOfScopeReason ? { cases: await readPlannedTaskCases(task, options.profile.provider === 'headless' ? 'headless' : 'devtools') } : {}),
+    ...(strict && !task.outOfScopeReason ? { cases: await readCases(task, options.profile.provider === 'headless' ? 'headless' : 'devtools') } : {}),
     ...(task.acceptanceTemplates ? { acceptanceTemplates: task.acceptanceTemplates } : {}),
   })))
   const loads = Array.from<number>({ length: options.shards }).fill(0)

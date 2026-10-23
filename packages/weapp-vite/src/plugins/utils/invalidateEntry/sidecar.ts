@@ -3,15 +3,17 @@ import type { ChangeEvent } from '../../../types'
 import path from 'pathe'
 import logger from '../../../logger'
 import { getSelectedAutoRouteSource } from '../../../runtime/autoRoutesPlugin/selection'
+import { ownsSidecarDelivery } from '../../../runtime/watch/sidecarDelivery'
 import { findJsEntry, findVueEntry, touch } from '../../../utils/file'
 import { invalidateFileCache } from '../cache'
 import { collectAffectedScriptsAndImporters } from './cssGraph'
 import { configSuffixes, normalizePath, watchedCssExts, watchedScriptModuleSuffixes, watchedTemplateExts } from './shared'
 
-export async function invalidateEntryForSidecar(ctx: CompilerContext, filePath: string, event: ChangeEvent = 'update') {
+export async function invalidateEntryForSidecar(ctx: CompilerContext, filePath: string, event: ChangeEvent = 'update', options?: { isActive: () => boolean }) {
   const configSuffix = configSuffixes.find(suffix => filePath.endsWith(suffix))
   const ext = path.extname(filePath)
   const normalizedPath = normalizePath(filePath)
+  const ownedDelivery = ownsSidecarDelivery(ctx, normalizedPath, event)
 
   let scriptBasePath: string | undefined
 
@@ -87,6 +89,9 @@ export async function invalidateEntryForSidecar(ctx: CompilerContext, filePath: 
   const sidecarDirtyFiles = ctx.runtimeState?.watcher?.sidecarDirtyFiles
 
   for (const target of touchedTargets) {
+    if (options?.isActive() === false || ownedDelivery || ownsSidecarDelivery(ctx, normalizedPath, event)) {
+      return
+    }
     sidecarDirtyFiles?.set(normalizePath(target), sidecarCause)
     try {
       await touch(target)
@@ -95,6 +100,9 @@ export async function invalidateEntryForSidecar(ctx: CompilerContext, filePath: 
   }
 
   for (const script of touchedScripts) {
+    if (options?.isActive() === false || ownedDelivery || ownsSidecarDelivery(ctx, normalizedPath, event)) {
+      return
+    }
     sidecarDirtyFiles?.set(normalizePath(script), sidecarCause)
     try {
       await touch(script)

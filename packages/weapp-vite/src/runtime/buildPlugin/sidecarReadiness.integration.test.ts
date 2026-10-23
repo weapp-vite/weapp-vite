@@ -181,12 +181,17 @@ it('delivers replacement readiness and cleanup errors through the original close
   const fixture = await createSnapshotTemplateFixture(harness, cleanups)
   const original = fixture.ctx.watcherService.getRollupWatcher()!
   const initialSidecars = harness.sidecars.length
+  const initialBuilds = harness.build.mock.calls.length
   harness.holdReadiness = true
   fixture.ctx.buildService.requestConfigRestart()
+  // 相同字节的迟到通知会被首构去重；真实保存才能完成旧代发布并消费显式重启请求。
+  await fixture.save('shared/card.wxml', '<template name="card"><view>restart before readiness failure</view></template>')
   fixture.update('shared/card.wxml')
   const replacementWatchers = () => harness.sidecars.slice(initialSidecars)
   await vi.waitFor(() => expect(replacementWatchers().some(watcher => watcher.listenerCount('all') > 0 && watcher.listenerCount('ready') > 0)).toBe(true))
   const replacement = replacementWatchers().find(watcher => watcher.listenerCount('all') > 0 && watcher.listenerCount('ready') > 0)!
+  expect(await fixture.readOutput('shared/card.wxml')).toContain('restart before readiness failure')
+  expect(harness.build).toHaveBeenCalledTimes(initialBuilds + 1)
   const scanFailure = new Error('replacement registration failed')
   const closeFailure = new Error('replacement cleanup failed')
   replacement.close.mockImplementationOnce(async () => {
@@ -214,6 +219,7 @@ it('closes a classic config restart before its replacement sidecar is ready thro
   const fixture = await createSnapshotTemplateFixture(harness, cleanups)
   const original = fixture.ctx.watcherService.getRollupWatcher()!
   const initialSidecars = harness.sidecars.length
+  const initialBuilds = harness.build.mock.calls.length
   harness.holdReadiness = true
   fixture.ctx.buildService.requestConfigRestart()
   await fixture.save('shared/card.wxml', '<template name="card"><view>restart publication</view></template>')
@@ -223,8 +229,9 @@ it('closes a classic config restart before its replacement sidecar is ready thro
     expect(replacement.length).toBeGreaterThan(0)
     expect(replacement.some(watcher => watcher.listenerCount('ready') > 0)).toBe(true)
   })
-  // 第二代已真正发布新字节，但还没有取得 ready；这是原测试 finally 开始关闭的窗口。
+  // 触发重启的旧代已发布；第二代仍待扫描，不能在就绪前启动自己的首次构建。
   expect(await fixture.readOutput('shared/card.wxml')).toContain('restart publication')
+  expect(harness.build).toHaveBeenCalledTimes(initialBuilds + 1)
   const closing = original.close()
   expect(original.close()).toBe(closing)
   await expect(closing).resolves.toBeUndefined()

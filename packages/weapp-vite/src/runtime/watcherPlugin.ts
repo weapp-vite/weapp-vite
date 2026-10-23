@@ -39,7 +39,21 @@ export interface WatcherServiceLease {
 
 const resourceOwners = new WeakMap<WatcherService, WatcherResourceOwner>()
 const serviceDrains = new WeakMap<WatcherService, WatcherServiceDrain>()
+const drainCleanups = new WeakMap<WatcherService, Set<() => void>>()
 const watcherCloseOperations = new AsyncLocalStorage<WatcherCloseOperation>()
+
+/** 完整 drain 停下全部监听器后同步终结交付归属，不在此启动新的异步资源。 */
+export function onWatcherServiceDrained(service: WatcherService, cleanup: () => void) {
+  const callbacks = drainCleanups.get(service) ?? new Set<() => void>()
+  callbacks.add(cleanup)
+  drainCleanups.set(service, callbacks)
+  return () => {
+    callbacks.delete(cleanup)
+    if (!callbacks.size && drainCleanups.get(service) === callbacks) {
+      drainCleanups.delete(service)
+    }
+  }
+}
 
 async function settleControllerResources(tasks: Promise<void>[]): Promise<void> {
   const results = await Promise.allSettled(tasks)
@@ -132,7 +146,7 @@ function createWatcherService(ctx: MutableCompilerContext): WatcherService {
       }
       // 配置重启的新代可以只登记独立依赖；空 watcher 图不代表旧 drain 已释放这些资源。
       const independent = ctx.runtimeState.build.independent
-      if (closeAllTask && !rollupWatcherMap.size && !sidecarWatcherMap.size && !independent.watchFiles.size && !independent.watchListeners.size) {
+      if (closeAllTask && !rollupWatcherMap.size && !sidecarWatcherMap.size && !independent.watchFiles.size && !independent.watchListeners.size && !drainCleanups.get(service)?.size) {
         return closeAllTask
       }
       const previous = closeAllTask
@@ -190,6 +204,16 @@ function createWatcherService(ctx: MutableCompilerContext): WatcherService {
           clearWxmlDependencies(ctx)
           clearIndependentWatchFiles(ctx.runtimeState.build.independent.watchFiles)
           ctx.runtimeState.build.independent.watchListeners.clear()
+          const callbacks = drainCleanups.get(service)
+          drainCleanups.delete(service)
+          for (const cleanup of callbacks ?? []) {
+            try {
+              cleanup()
+            }
+            catch (error) {
+              errors.push(error)
+            }
+          }
           if (errors.length) {
             throw errors.length === 1 ? errors[0] : new AggregateError(errors, 'Watcher service cleanup failed', { cause: errors[0] })
           }

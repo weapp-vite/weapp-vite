@@ -7,7 +7,7 @@ import { tasks as fixtureTasks, identity, now, profile } from '../../scripts/ver
 import { HMR_ACCEPTANCE_STAGES } from './hmr-acceptance-manifest'
 import { createHmrAcceptanceSummary } from './hmrAcceptance/report'
 import { readHmrRuntimeReceipt } from './hmrAcceptance/runtimeEvidence'
-import { createHmrStageEvidence, createHmrUnitReceipt } from './hmrAcceptance/testFixtures'
+import { createHmrStageEvidenceSet, createHmrUnitReceipt } from './hmrAcceptance/testFixtures'
 import { runHmrUnitValidation } from './hmrAcceptance/unit'
 import { runE2ESuiteCli } from './run-e2e-suite'
 import { runHmrAcceptanceCli, selectHmrAcceptanceStages } from './run-hmr-acceptance'
@@ -65,7 +65,7 @@ beforeEach(async () => {
 })
 
 async function prepareStages(onStage: (stage: string) => void = () => {}) {
-  const evidence = await Promise.all(HMR_ACCEPTANCE_STAGES.map(createHmrStageEvidence))
+  const evidence = await createHmrStageEvidenceSet(HMR_ACCEPTANCE_STAGES)
   vi.mocked(createVerificationPlan).mockImplementation(async ({ suite }) => evidence.find(item => item.stage.suite === suite)!.plan)
   vi.mocked(runE2ESuiteCli).mockImplementation(async (args, callbacks) => {
     const current = evidence.find(item => item.stage.suite === args?.[0])!

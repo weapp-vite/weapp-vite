@@ -3,6 +3,7 @@ import type { OutputBundle } from 'rolldown'
 import type { InlineConfig, Plugin } from 'vite'
 import { mkdir, mkdtemp, readFile, realpath, rename, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
+import chokidar from 'chokidar'
 import path from 'pathe'
 import { expect, vi } from 'vitest'
 import { createTestCompilerContext } from '../utils'
@@ -123,10 +124,22 @@ export async function createSnapshotTemplateFixture(harness: SnapshotHarness, cl
     throw new Error('Expected the classic snapshot scheduler')
   }
   cleanups.push(async () => await watcher.close())
-  const sidecar = harness.sidecars.find(watcher => watcher.listenerCount('all') > 0)
-  if (!sidecar) {
+  const snapshotSidecar = () => {
+    const watch = vi.mocked(chokidar.watch)
+    for (let index = watch.mock.calls.length - 1; index >= 0; index -= 1) {
+      const roots = watch.mock.calls[index]?.[0]
+      const result = watch.mock.results[index]
+      if (!Array.isArray(roots) || !roots.includes(compiler.ctx.configService.absoluteSrcRoot) || result?.type !== 'return') {
+        continue
+      }
+      const candidate = harness.sidecars.find(watcher => watcher === result.value && watcher.listenerCount('all') > 0)
+      if (candidate) {
+        return candidate
+      }
+    }
     throw new Error('Missing snapshot sidecar event source')
   }
+  const sidecar = snapshotSidecar()
   const save = async (file: string, source: string) => {
     const temporary = `${absolute(file)}.save`
     await writeFile(temporary, source)
@@ -138,6 +151,8 @@ export async function createSnapshotTemplateFixture(harness: SnapshotHarness, cl
     }
     for (const file of files) {
       harness.change({ event: 'update', file: absolute(file) })
+      // 同一次保存通知真实监听范围内的物理 watcher；实现自行选择唯一交付方。
+      snapshotSidecar().emit('all', 'change', absolute(file))
     }
   }
   const nextBundle = async (previousCount: number) => {

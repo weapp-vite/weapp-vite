@@ -1,6 +1,7 @@
 import type { CompilerContext } from '../../context'
 import type { LoadConfigOptions } from '../config/types'
 import logger from '../../logger'
+import { startInitialBuildInputObservation } from '../buildPlugin/initialBuildChanges'
 import { syncProjectSupportFiles } from '../supportFiles'
 import { hasManagedTsconfigBootstrapCompleted, syncManagedTsconfigBootstrapFiles } from '../tsconfigSupport'
 
@@ -10,8 +11,12 @@ export interface InitializeCompilerContextOptions extends Partial<LoadConfigOpti
   preloadAppEntry?: boolean
 }
 
-/** 初始化调用方明确提供的上下文，不访问或切换进程级活动上下文。 */
-export async function initializeCompilerContext(ctx: CompilerContext, options?: InitializeCompilerContextOptions) {
+/** 旧构建已退出后建立新输入代次；完整 drain 仅释放自己仍持有的观察者。 */
+export function restartCompilerContextInputObservation(ctx: CompilerContext): () => void {
+  return startInitialBuildInputObservation(ctx.configService, ctx.watcherService)
+}
+
+async function loadCompilerContext(ctx: CompilerContext, options: InitializeCompilerContextOptions | undefined, releaseInitialBuildInputs: () => void) {
   const bootstrapManagedTsconfigPromise = !options?.hostConfig && options?.cwd && !hasManagedTsconfigBootstrapCompleted(options.cwd)
     ? Promise.resolve().then(() => syncManagedTsconfigBootstrapFiles(options.cwd!)).catch((error) => {
         const message = error instanceof Error ? error.message : String(error)
@@ -47,9 +52,23 @@ export async function initializeCompilerContext(ctx: CompilerContext, options?: 
       await scanService.loadAppEntry()
     }
     catch {
+      releaseInitialBuildInputs()
       // 预检失败时忽略
     }
   }
 
   return ctx
+}
+
+/** 初始化调用方明确提供的上下文，不访问或切换进程级活动上下文。 */
+export async function initializeCompilerContext(ctx: CompilerContext, options?: InitializeCompilerContextOptions) {
+  await ctx.watcherService.closeAll()
+  const releaseInitialBuildInputs = restartCompilerContextInputObservation(ctx)
+  try {
+    return await loadCompilerContext(ctx, options, releaseInitialBuildInputs)
+  }
+  catch (error) {
+    releaseInitialBuildInputs()
+    throw error
+  }
 }

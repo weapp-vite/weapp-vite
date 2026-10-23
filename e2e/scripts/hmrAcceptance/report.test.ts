@@ -5,7 +5,7 @@ import { isolateTopologyTestEnvironment, useIsolatedTopologyTestEnvironment } fr
 import { rehash } from '../../../scripts/verificationE2E/fixtures'
 import { HMR_ACCEPTANCE_STAGES } from '../hmr-acceptance-manifest'
 import { assertHmrAcceptanceComplete, createHmrAcceptanceSummary, evaluateHmrCapabilityCoverage } from './report'
-import { createHmrStageEvidence, createHmrUnitReceipt } from './testFixtures'
+import { createHmrStageEvidenceSet, createHmrUnitReceipt } from './testFixtures'
 
 useIsolatedTopologyTestEnvironment()
 
@@ -14,7 +14,7 @@ let frozenStages: HmrStageEvidence[]
 beforeAll(async () => {
   const restore = isolateTopologyTestEnvironment()
   try {
-    frozenStages = await Promise.all(HMR_ACCEPTANCE_STAGES.map(createHmrStageEvidence))
+    frozenStages = await createHmrStageEvidenceSet(HMR_ACCEPTANCE_STAGES)
   }
   finally {
     restore()

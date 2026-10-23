@@ -6,12 +6,21 @@ import { ensureSidecarWatcher } from './watcher'
 const chokidarWatchMock = vi.hoisted(() => vi.fn())
 const loggerMock = vi.hoisted(() => ({
   info: vi.fn(),
+  success: vi.fn(),
   warn: vi.fn(),
 }))
 const invalidateEntryForSidecarMock = vi.hoisted(() => vi.fn(async () => {}))
 const scanMock = vi.hoisted(() => vi.fn(async () => null))
 const extractCssImportDependenciesMock = vi.hoisted(() => vi.fn())
 const cleanupCssImporterGraphMock = vi.hoisted(() => vi.fn())
+const touchMock = vi.hoisted(() => vi.fn(async () => {}))
+const findJsEntryMock = vi.hoisted(() => vi.fn())
+
+vi.mock('../../../utils/file', async importOriginal => ({
+  ...await importOriginal<typeof import('../../../utils/file')>(),
+  findJsEntry: findJsEntryMock,
+  touch: touchMock,
+}))
 
 vi.mock('chokidar', () => ({
   default: {
@@ -148,7 +157,7 @@ describe('invalidateEntry sidecar watcher', () => {
     await vi.advanceTimersByTimeAsync(120)
 
     expect(invalidateEntryForSidecarMock).toHaveBeenCalledTimes(1)
-    expect(invalidateEntryForSidecarMock).toHaveBeenCalledWith(ctx, '/project/src/pages/hmr/index.wxml', 'update')
+    expect(invalidateEntryForSidecarMock).toHaveBeenCalledWith(ctx, '/project/src/pages/hmr/index.wxml', 'update', expect.objectContaining({ isActive: expect.any(Function) }))
     expect(scanMock).toHaveBeenCalledWith('/project/src/pages/hmr/index.wxml')
     expect(loggerMock.info).toHaveBeenCalledWith('[watch:rename->update] src/pages/hmr/index.wxml')
   })
@@ -173,7 +182,7 @@ describe('invalidateEntry sidecar watcher', () => {
     await vi.advanceTimersByTimeAsync(120)
 
     expect(extractCssImportDependenciesMock).toHaveBeenCalledWith(ctx, '/project/src/pages/hmr/hello.css')
-    expect(invalidateEntryForSidecarMock).toHaveBeenCalledWith(ctx, '/project/src/pages/hmr/hello.css', 'update')
+    expect(invalidateEntryForSidecarMock).toHaveBeenCalledWith(ctx, '/project/src/pages/hmr/hello.css', 'update', expect.objectContaining({ isActive: expect.any(Function) }))
     expect(loggerMock.info).toHaveBeenCalledWith('[watch:rename->update] src/pages/hmr/hello.css')
   })
 
@@ -191,7 +200,7 @@ describe('invalidateEntry sidecar watcher', () => {
     watcher.emit('change', '/project/src/pages/hmr/index.wxml')
     await vi.advanceTimersByTimeAsync(120)
     expect(invalidateEntryForSidecarMock).toHaveBeenCalledTimes(1)
-    expect(invalidateEntryForSidecarMock).toHaveBeenCalledWith(ctx, '/project/src/pages/hmr/index.wxml', 'update')
+    expect(invalidateEntryForSidecarMock).toHaveBeenCalledWith(ctx, '/project/src/pages/hmr/index.wxml', 'update', expect.objectContaining({ isActive: expect.any(Function) }))
   })
 
   it.each([true, false])('leaves covered paths to Chokidar stable file events (already covered: %s)', async (coveredFirst) => {
@@ -215,7 +224,7 @@ describe('invalidateEntry sidecar watcher', () => {
     watcher.emit('change', '/project/src/pages/hmr/index.wxml')
     await Promise.resolve()
     await Promise.resolve()
-    expect(invalidateEntryForSidecarMock).toHaveBeenCalledExactlyOnceWith(ctx, '/project/src/pages/hmr/index.wxml', 'update')
+    expect(invalidateEntryForSidecarMock).toHaveBeenCalledExactlyOnceWith(ctx, '/project/src/pages/hmr/index.wxml', 'update', expect.objectContaining({ isActive: expect.any(Function) }))
   })
 
   it('does not drop pre-ready atomic restore events for known sidecar files', async () => {
@@ -247,7 +256,7 @@ describe('invalidateEntry sidecar watcher', () => {
     await Promise.resolve()
 
     expect(scanMock).toHaveBeenCalledWith('/project/src/pages/hmr/index.wxml')
-    expect(invalidateEntryForSidecarMock).toHaveBeenCalledWith(ctx, '/project/src/pages/hmr/index.wxml', 'create')
+    expect(invalidateEntryForSidecarMock).toHaveBeenCalledWith(ctx, '/project/src/pages/hmr/index.wxml', 'create', expect.objectContaining({ isActive: expect.any(Function) }))
     expect(loggerMock.info).toHaveBeenCalledWith('[watch:create] src/pages/hmr/index.wxml')
   })
 
@@ -276,7 +285,7 @@ describe('invalidateEntry sidecar watcher', () => {
     await vi.advanceTimersByTimeAsync(120)
 
     expect(invalidateEntryForSidecarMock).toHaveBeenCalledTimes(1)
-    expect(invalidateEntryForSidecarMock).toHaveBeenCalledWith(ctx, '/project/src/pages/hmr/index.wxml', 'delete')
+    expect(invalidateEntryForSidecarMock).toHaveBeenCalledWith(ctx, '/project/src/pages/hmr/index.wxml', 'delete', expect.objectContaining({ isActive: expect.any(Function) }))
     expect(loggerMock.info).toHaveBeenCalledWith('[watch:rename->delete] src/pages/hmr/index.wxml')
   })
 
@@ -298,7 +307,7 @@ describe('invalidateEntry sidecar watcher', () => {
     watcher.emit('ready')
     watcher.emit('change', '/project/src/shared/helper.wxs')
 
-    expect(invalidateEntryForSidecarMock).toHaveBeenCalledWith(ctx, '/project/src/shared/helper.wxs', 'update')
+    expect(invalidateEntryForSidecarMock).toHaveBeenCalledWith(ctx, '/project/src/shared/helper.wxs', 'update', expect.objectContaining({ isActive: expect.any(Function) }))
     expect(loggerMock.info).toHaveBeenCalledWith('[watch:update] src/shared/helper.wxs')
   })
 
@@ -323,7 +332,7 @@ describe('invalidateEntry sidecar watcher', () => {
     await Promise.resolve()
 
     expect(extractCssImportDependenciesMock).toHaveBeenCalledWith(ctx, '/project/src/pages/hmr/hello.css')
-    expect(invalidateEntryForSidecarMock).toHaveBeenCalledWith(ctx, '/project/src/pages/hmr/hello.css', 'update')
+    expect(invalidateEntryForSidecarMock).toHaveBeenCalledWith(ctx, '/project/src/pages/hmr/hello.css', 'update', expect.objectContaining({ isActive: expect.any(Function) }))
     expect(loggerMock.info).toHaveBeenCalledWith('[watch:update] src/pages/hmr/hello.css')
   })
 
@@ -348,7 +357,7 @@ describe('invalidateEntry sidecar watcher', () => {
     await Promise.resolve()
 
     expect(scanMock).toHaveBeenCalledWith('/project/src/pages/hmr/index.wxml')
-    expect(invalidateEntryForSidecarMock).toHaveBeenCalledWith(ctx, '/project/src/pages/hmr/index.wxml', 'update')
+    expect(invalidateEntryForSidecarMock).toHaveBeenCalledWith(ctx, '/project/src/pages/hmr/index.wxml', 'update', expect.objectContaining({ isActive: expect.any(Function) }))
     expect(loggerMock.info).toHaveBeenCalledWith('[watch:update] src/pages/hmr/index.wxml')
   })
 
@@ -370,5 +379,107 @@ describe('invalidateEntry sidecar watcher', () => {
 
     expect(scanMock).toHaveBeenCalledWith('/project/src/pages/hmr/index.wxml')
     expect(invalidateEntryForSidecarMock).not.toHaveBeenCalled()
+  })
+
+  it('waits for in-flight sidecar discovery and prevents touch after close begins', async () => {
+    vi.stubEnv('VITEST', '')
+    vi.stubEnv('NODE_ENV', 'development')
+    vi.spyOn(fs, 'existsSync').mockReturnValue(true)
+    const nativeWatcher = createChokidarWatcher()
+    chokidarWatchMock.mockReturnValue(nativeWatcher)
+    const discovery = Promise.withResolvers<{ path: string, predictions: string[] }>()
+    const realSidecar = await vi.importActual<typeof import('./sidecar')>('./sidecar')
+    invalidateEntryForSidecarMock.mockImplementationOnce(realSidecar.invalidateEntryForSidecar)
+    findJsEntryMock.mockReturnValueOnce(discovery.promise)
+    const ctx = createContext()
+    ensureSidecarWatcher(ctx, '/project/src')
+    nativeWatcher.emit('ready')
+    nativeWatcher.emit('unlink', '/project/src/pages/hmr/index.wxss')
+    const owner = ctx.runtimeState.watcher.sidecarWatcherMap.get('/project/src')!
+    const closing = owner.close()
+    expect(owner.close()).toBe(closing)
+    let closed = false
+    void Promise.resolve(closing).then(() => closed = true)
+    try {
+      await Promise.resolve()
+      await Promise.resolve()
+      expect(nativeWatcher.close).toHaveBeenCalledOnce()
+      expect(closed).toBe(false)
+    }
+    finally {
+      discovery.resolve({ path: '/project/src/pages/hmr/index.ts', predictions: [] })
+      await closing
+    }
+    expect(touchMock).not.toHaveBeenCalled()
+    expect(cleanupCssImporterGraphMock).toHaveBeenCalledWith(ctx, '/project/src/pages/hmr/index.wxss')
+  })
+
+  it('joins an already started touch before close completes', async () => {
+    vi.stubEnv('VITEST', '')
+    vi.stubEnv('NODE_ENV', 'development')
+    vi.spyOn(fs, 'existsSync').mockReturnValue(true)
+    const nativeWatcher = createChokidarWatcher()
+    chokidarWatchMock.mockReturnValue(nativeWatcher)
+    const touched = Promise.withResolvers<void>()
+    const realSidecar = await vi.importActual<typeof import('./sidecar')>('./sidecar')
+    invalidateEntryForSidecarMock.mockImplementationOnce(realSidecar.invalidateEntryForSidecar)
+    findJsEntryMock.mockResolvedValueOnce({ path: '/project/src/pages/hmr/index.ts', predictions: [] })
+    touchMock.mockReturnValueOnce(touched.promise)
+    const ctx = createContext()
+    ensureSidecarWatcher(ctx, '/project/src')
+    nativeWatcher.emit('ready')
+    nativeWatcher.emit('unlink', '/project/src/pages/hmr/index.wxss')
+    await Promise.resolve()
+    expect(touchMock).toHaveBeenCalledOnce()
+    const owner = ctx.runtimeState.watcher.sidecarWatcherMap.get('/project/src')!
+    const closing = owner.close()
+    let closed = false
+    void Promise.resolve(closing).then(() => closed = true)
+    try {
+      await Promise.resolve()
+      await Promise.resolve()
+      expect(closed).toBe(false)
+      nativeWatcher.emit('unlink', '/project/src/pages/hmr/another.wxss')
+      expect(invalidateEntryForSidecarMock).toHaveBeenCalledOnce()
+    }
+    finally {
+      touched.resolve()
+      await closing
+    }
+    expect(touchMock).toHaveBeenCalledOnce()
+    expect(nativeWatcher.close).toHaveBeenCalledOnce()
+  })
+
+  it.each([false, true])('retains settled task errors and native cleanup failure: %s', async (failedCleanup) => {
+    vi.stubEnv('VITEST', '')
+    vi.stubEnv('NODE_ENV', 'development')
+    vi.spyOn(fs, 'existsSync').mockReturnValue(true)
+    const nativeWatcher = createChokidarWatcher()
+    chokidarWatchMock.mockReturnValue(nativeWatcher)
+    const taskFailure = new Error('sidecar discovery failed')
+    const closeFailure = new Error('native sidecar close failed')
+    extractCssImportDependenciesMock.mockImplementationOnce(() => {
+      throw taskFailure
+    })
+    if (failedCleanup) {
+      nativeWatcher.close.mockRejectedValueOnce(closeFailure)
+    }
+    const ctx = createContext()
+    ensureSidecarWatcher(ctx, '/project/src')
+    nativeWatcher.emit('ready')
+    nativeWatcher.emit('change', '/project/src/pages/hmr/index.wxss')
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(loggerMock.warn).toHaveBeenCalledWith('[监听] 侧车更新失败：sidecar discovery failed')
+    const owner = ctx.runtimeState.watcher.sidecarWatcherMap.get('/project/src')!
+    const closing = owner.close()
+    expect(owner.close()).toBe(closing)
+    if (failedCleanup) {
+      await expect(closing).rejects.toMatchObject({ errors: [closeFailure, taskFailure], cause: closeFailure })
+    }
+    else {
+      await expect(closing).rejects.toBe(taskFailure)
+    }
+    expect(nativeWatcher.close).toHaveBeenCalledOnce()
   })
 })

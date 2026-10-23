@@ -1,132 +1,29 @@
 import type { RolldownWatcher } from 'rolldown'
 import type { MutableCompilerContext } from '../../context'
 import type { createDevBuildWatcher } from './devBuildWatcher'
-import { afterEach, describe, expect, it, vi } from 'vitest'
-import { createRuntimeState } from '../runtimeState'
-import { createWatcherServicePlugin, deferWatcherResourceCleanup } from '../watcherPlugin'
-import { createBuildService } from './service'
+import { EventEmitter } from 'node:events'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { claimSidecarDelivery, ownsSidecarDelivery } from '../watch/sidecarDelivery'
+import { deferWatcherResourceCleanup } from '../watcherPlugin'
+import { createContext, mocks } from './serviceRestart/fixture'
 
-const mocks = vi.hoisted(() => ({
-  build: vi.fn(),
-  provider: vi.fn(),
-  watch: vi.fn(),
-  assets: vi.fn(),
-  logger: { info: vi.fn(), success: vi.fn(), error: vi.fn(), warn: vi.fn() },
-  restarts: [] as Promise<void>[],
-  forbiddenIo: vi.fn((operation: string) => {
-    throw new Error(`Pure mock regression attempted real IO: ${operation}`)
-  }),
-}))
+// 共享夹具先登记 mock，再加载生产模块；不经重导出提前求值。
+const { createBuildService } = await import('./service')
 
-vi.mock('vite', () => ({ build: mocks.build }))
-vi.mock('chokidar', () => ({ default: { watch: mocks.watch } }))
-vi.mock('../../moduleGraph/devProvider', () => ({ createDevModuleGraphProvider: mocks.provider }))
-vi.mock('../watch/assets', () => ({ watchAssetSources: mocks.assets }))
-vi.mock('../../context/shared', () => ({ debug: vi.fn(), logger: mocks.logger }))
-vi.mock('node:fs/promises', () => ({
-  appendFile: (...args: unknown[]) => mocks.forbiddenIo(`appendFile:${args[0]}`),
-  mkdir: (...args: unknown[]) => mocks.forbiddenIo(`mkdir:${args[0]}`),
-}))
-vi.mock('@weapp-core/shared/fs', () => ({
-  fs: new Proxy({}, { get: (_target, key) => () => mocks.forbiddenIo(`fs.${String(key)}`) }),
-}))
-vi.mock('@weapp-core/shared/node', async importOriginal => ({
-  ...await importOriginal<typeof import('@weapp-core/shared/node')>(),
-  fs: new Proxy({}, { get: (_target, key) => () => mocks.forbiddenIo(`fs.${String(key)}`) }),
-}))
-vi.mock('./outputs', () => ({
-  shouldCleanOutputs: () => false,
-  cleanOutputs: () => mocks.forbiddenIo('cleanOutputs'),
-  resetEmittedOutputCaches: vi.fn(),
-  isOutputRootInsideOutDir: () => true,
-}))
-vi.mock('../sharedBuildConfig', () => ({ createSharedBuildConfig: () => ({}) }))
-vi.mock('../supportFiles', () => ({
-  syncProjectSupportFiles: async () => ({ managedTsconfigWarnings: [] }),
-}))
-vi.mock('../../utils/projectConfig', () => ({
-  disableProjectPrivateConfigHotReload: () => mocks.forbiddenIo('project private config'),
-  syncProjectConfigToOutput: () => mocks.forbiddenIo('project output config'),
-}))
-vi.mock('./workers', () => ({
-  checkWorkersOptions: () => ({ hasWorkersDir: false }),
-}))
-vi.mock('./touchAppWxss', () => ({
-  resolveTouchAppWxssEnabled: () => false,
-  touchExistingAppStyle: () => mocks.forbiddenIo('touch app style'),
-}))
-vi.mock('./independent', () => ({
-  createIndependentBuilder: () => ({
-    buildIndependentBundle: () => mocks.forbiddenIo('independent build'),
-    getIndependentOutput: () => undefined,
-    invalidateIndependentOutput: vi.fn(),
-  }),
-}))
-vi.mock('./pluginProject', () => ({
-  assertPluginProjectOutput: vi.fn(),
-  setPluginProjectBuildOptions: vi.fn(),
-  createPluginProjectSession: () => mocks.forbiddenIo('plugin project session'),
-  isPluginProjectClosing: () => false,
-  // 普通 app 没有插件 CompilerSession，正式实现直接调用 restart；这里仅登记任务以确定完成边界。
-  runPluginProjectRestart: (_ctx: unknown, restart: () => Promise<void>) => {
-    const task = restart()
-    mocks.restarts.push(task)
-    return task
-  },
-}))
-vi.mock('../statefulHmr/session', () => ({
-  prepareStatefulClassicHandoff: () => mocks.forbiddenIo('stateful classic handoff'),
-  runStatefulHmrDev: () => mocks.forbiddenIo('stateful dev'),
-}))
-vi.mock('../statefulHmr/snapshotBuild', () => ({
-  buildStatefulHmrSnapshot: () => mocks.forbiddenIo('stateful snapshot'),
-}))
-
-function createContext() {
-  const ctx = {
-    runtimeState: createRuntimeState(),
-    configService: {
-      inlineConfig: {},
-      weappViteConfig: { hmr: { runtime: 'classic' } },
-      loadOptions: { cwd: '/project', isDev: true, mode: 'development' },
-      load: vi.fn(async () => {}),
-      merge: vi.fn((_meta: unknown, _inline: unknown, next: unknown) => next ?? {}),
-      outDir: '/project/dist',
-      outputExtensions: { wxss: 'wxss' },
-      absoluteSrcRoot: '/project/src',
-      relativeAbsoluteSrcRoot: (id: string) => id.replace('/project/src/', ''),
-      relativeCwd: (id: string) => id.replace('/project/', ''),
-      platform: 'weapp',
-      multiPlatform: { enabled: false },
-      packageJson: {},
-      cwd: '/project',
-      projectPrivateConfig: {},
-      isDev: true,
-      configFileDependencies: [],
-    },
-    npmService: { build: () => mocks.forbiddenIo('npm build') },
-    scanService: {
-      subPackageMap: new Map(),
-      markDirty: vi.fn(),
-      loadAppEntry: vi.fn(async () => {}),
-      loadSubPackages: vi.fn(() => []),
-      drainIndependentDirtyRoots: () => [],
-    },
-    moduleGraphService: {
-      bindBuildContext: vi.fn(),
-      bindPluginContext: vi.fn(),
-      clearPendingChanges: vi.fn(),
-      resetSession: vi.fn(),
-      removeEntryDependencies: vi.fn(),
-      collectAffectedEntries: () => new Set<string>(),
-      hasModule: () => false,
-      isLogicalLayoutEntry: () => false,
-      recordChangedFile: vi.fn(),
-    },
-  }
-  createWatcherServicePlugin(ctx as unknown as MutableCompilerContext)
-  return ctx as typeof ctx & { watcherService: NonNullable<MutableCompilerContext['watcherService']> }
+async function waitForRestartCheckpoint(checkpoint: Promise<void>, name: string, count = 1) {
+  await vi.waitFor(() => expect(mocks.restarts).toHaveLength(count))
+  await Promise.race([
+    checkpoint,
+    Promise.all(mocks.restarts).then(() => {
+      throw new Error(`Configuration restart completed before ${name}`)
+    }),
+  ])
 }
+
+beforeEach(() => {
+  mocks.watch.mockImplementation(() => ({ add: vi.fn(), on: vi.fn(), close: vi.fn(async () => {}) }))
+  mocks.assets.mockImplementation(() => ({ ready: Promise.resolve(), close: vi.fn(async () => {}) }))
+})
 
 afterEach(() => {
   vi.unstubAllEnvs()
@@ -135,6 +32,104 @@ afterEach(() => {
 })
 
 describe('classic config restart teardown ownership', () => {
+  it.each((['provider', 'readiness', 'publication'] as const).flatMap(checkpoint => [false, true].map(failedCleanup => ({ checkpoint, failedCleanup }))))('automatically drains a failed replacement $checkpoint without caller close (cleanup failure: $failedCleanup)', async ({ checkpoint, failedCleanup }) => {
+    vi.stubEnv('WEAPP_VITE_HMR_PROFILE_JSON', '')
+    const ctx = createContext()
+    const other = createContext()
+    const source = '/project/src/pages/home/index.wxss'
+    const releaseOther = claimSidecarDelivery(other as unknown as MutableCompilerContext, () => true, other.watcherService)
+    const startupFailure = new Error(`replacement ${checkpoint} failed`)
+    const cleanupFailure = new Error('replacement sidecar cleanup failed')
+    const providers: { close: ReturnType<typeof vi.fn> }[] = []
+    const controllers: ReturnType<typeof createDevBuildWatcher>[] = []
+    const sidecars: Array<EventEmitter & { close: ReturnType<typeof vi.fn> }> = []
+    const deferredClose = vi.fn(async () => {})
+    const auxiliaryClose = vi.fn(async () => {})
+    mocks.watch.mockImplementation(() => {
+      const replacement = sidecars.length === 1
+      const sidecar = Object.assign(new EventEmitter(), {
+        add: vi.fn(),
+        close: vi.fn(async () => {
+          sidecar.removeAllListeners()
+          if (replacement && failedCleanup) {
+            throw cleanupFailure
+          }
+        }),
+      })
+      sidecars.push(sidecar)
+      if (replacement) {
+        ctx.watcherService.sidecarWatcherMap.set('replacement-auto-import', { close: auxiliaryClose })
+        expect(deferWatcherResourceCleanup(ctx.watcherService, deferredClose)).toBe(true)
+      }
+      setImmediate(() => {
+        if (replacement && checkpoint === 'readiness') {
+          sidecar.emit('error', startupFailure)
+        }
+        else {
+          sidecar.emit('ready')
+        }
+      })
+      return sidecar
+    })
+    mocks.provider.mockImplementation(async () => {
+      if (providers.length === 1 && checkpoint === 'provider') {
+        throw startupFailure
+      }
+      const provider = { close: vi.fn(async () => {}) }
+      providers.push(provider)
+      return provider
+    })
+    mocks.build.mockImplementation(async () => {
+      if (mocks.build.mock.calls.length === 2 && checkpoint === 'publication') {
+        throw startupFailure
+      }
+      return { output: [] }
+    })
+    const { createDevBuildWatcher: realController } = await vi.importActual<typeof import('./devBuildWatcher')>('./devBuildWatcher')
+    const controllerSpy = vi.spyOn(await import('./devBuildWatcher'), 'createDevBuildWatcher').mockImplementation(() => {
+      const controller = realController()
+      controllers.push(controller)
+      return controller
+    })
+    const leafErrors = (error: unknown): unknown[] => error instanceof AggregateError ? error.errors.flatMap(leafErrors) : [error]
+    let original: RolldownWatcher | undefined
+    try {
+      const service = createBuildService(ctx as unknown as MutableCompilerContext)
+      original = await service.build({ skipNpm: true }) as RolldownWatcher
+      expect(ownsSidecarDelivery(ctx as unknown as MutableCompilerContext, source, 'create')).toBe(true)
+      service.requestConfigRestart('app')
+      controllers[0]!.emitEvent({ code: 'END' })
+      await Promise.allSettled(mocks.restarts)
+      // 不能靠测试主动 close 完成收尾；生产错误处理必须自行 drain 整个 session。
+      await vi.waitFor(() => expect(mocks.logger.error).toHaveBeenCalledOnce())
+      const failure = mocks.logger.error.mock.calls[0]![0]
+      expect(leafErrors(failure)).toContain(startupFailure)
+      if (failedCleanup) {
+        expect(leafErrors(failure)).toContain(cleanupFailure)
+      }
+      expect(ctx.watcherService.rollupWatcherMap.size).toBe(0)
+      expect(ctx.watcherService.sidecarWatcherMap.size).toBe(0)
+      expect(ctx.runtimeState.build.independent.watchListeners.size).toBe(0)
+      expect(ownsSidecarDelivery(ctx as unknown as MutableCompilerContext, source, 'create')).toBe(false)
+      expect(ownsSidecarDelivery(other as unknown as MutableCompilerContext, source, 'create')).toBe(true)
+      expect(providers.every(provider => provider.close.mock.calls.length === 1)).toBe(true)
+      expect(sidecars.every(sidecar => sidecar.close.mock.calls.length === 1)).toBe(true)
+      expect(deferredClose).toHaveBeenCalledOnce()
+      expect(auxiliaryClose).toHaveBeenCalledOnce()
+      const closing = original.close()
+      expect(original.close()).toBe(closing)
+      expect(leafErrors(await closing.then(() => undefined, error => error))).toContain(startupFailure)
+      expect(mocks.forbiddenIo).not.toHaveBeenCalled()
+    }
+    finally {
+      await Promise.allSettled(mocks.restarts)
+      await ctx.watcherService.closeAll().catch(() => {})
+      releaseOther()
+      await other.watcherService.closeAll()
+      controllerSpy.mockRestore()
+    }
+  })
+
   it.each([false, true])('drains startup resources before rejecting without a registered public controller: cleanup failure %s', async (failedCleanup) => {
     vi.stubEnv('WEAPP_VITE_HMR_PROFILE_JSON', '')
     const ctx = createContext()
@@ -168,27 +163,39 @@ describe('classic config restart teardown ownership', () => {
       value => result = { status: 'fulfilled', value },
       reason => result = { status: 'rejected', reason },
     )
-    await sidecarEntered.promise
-    expect(result).toBeUndefined()
-    expect(ctx.watcherService.rollupWatcherMap.size).toBe(0)
-    expect(webClose).toHaveBeenCalledOnce()
-    expect(deferredClose).toHaveBeenCalledOnce()
-    expect(providerClose).toHaveBeenCalledOnce()
-    sidecar.resolve()
-    await sidecar.promise
-    await Promise.resolve()
-    expect(result).toBeUndefined()
-    web.resolve()
-    await observed
-    if (failedCleanup) {
-      expect(result).toMatchObject({ status: 'rejected', reason: { errors: [startupFailure, cleanupFailure] } })
+    try {
+      await Promise.race([
+        sidecarEntered.promise,
+        building.then(() => {
+          throw new Error('Initial build completed before startup sidecar cleanup')
+        }),
+      ])
+      expect(result).toBeUndefined()
+      expect(ctx.watcherService.rollupWatcherMap.size).toBe(0)
+      expect(webClose).toHaveBeenCalledOnce()
+      expect(deferredClose).toHaveBeenCalledOnce()
+      expect(providerClose).toHaveBeenCalledOnce()
+      sidecar.resolve()
+      await sidecar.promise
+      await Promise.resolve()
+      expect(result).toBeUndefined()
+      web.resolve()
+      await observed
+      if (failedCleanup) {
+        expect(result).toMatchObject({ status: 'rejected', reason: { errors: [startupFailure, cleanupFailure] } })
+      }
+      else {
+        expect(result).toEqual({ status: 'rejected', reason: startupFailure })
+      }
+      expect(sidecarClose).toHaveBeenCalledOnce()
+      expect(ctx.watcherService.sidecarWatcherMap.size).toBe(0)
+      expect(mocks.forbiddenIo).not.toHaveBeenCalled()
     }
-    else {
-      expect(result).toEqual({ status: 'rejected', reason: startupFailure })
+    finally {
+      sidecar.resolve()
+      web.resolve()
+      await observed
     }
-    expect(sidecarClose).toHaveBeenCalledOnce()
-    expect(ctx.watcherService.sidecarWatcherMap.size).toBe(0)
-    expect(mocks.forbiddenIo).not.toHaveBeenCalled()
   })
 
   it('owns the first generation before replaying END and closes later generations through the first handle', async () => {
@@ -232,11 +239,11 @@ describe('classic config restart teardown ownership', () => {
     try {
       service = createBuildService(ctx as unknown as MutableCompilerContext)
       const first = await service.build({ skipNpm: true }) as RolldownWatcher
-      await publications[0]!.promise
+      await waitForRestartCheckpoint(publications[0]!.promise, 'first replacement publication')
       await Promise.all(mocks.restarts)
       service.requestConfigRestart('app')
       controllers[1]!.emitEvent({ code: 'END' })
-      await publications[1]!.promise
+      await waitForRestartCheckpoint(publications[1]!.promise, 'second replacement publication', 2)
       await Promise.all(mocks.restarts)
       expect(precedingProviderClosed).toEqual([true, true])
       expect(ctx.watcherService.rollupWatcherMap.get('/')).toBe(controllers[2]!.watcher)
@@ -303,7 +310,7 @@ describe('classic config restart teardown ownership', () => {
       service.requestConfigRestart('app')
       controllers[0]!.emitEvent({ code: 'START' })
       controllers[0]!.emitEvent({ code: 'END' })
-      await entered.promise
+      await waitForRestartCheckpoint(entered.promise, `${checkpoint} checkpoint`)
       trace.push('shutdown-started')
       const shutdown = (async () => {
         await watcher!.close()

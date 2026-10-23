@@ -36,13 +36,7 @@ export function createSfcResolveSrcOptions(
   const options: ResolveSfcBlockSrcOptions = {
     ...(snapshot || host?.onDependencyChange
       ? {
-          readFile: async (id: string, options?: { checkMtime?: boolean }) => {
-            const source = snapshot ? await readCompilerInput(configService, id) : await readFile(id, options)
-            if (!snapshot) {
-              host?.captureRaw(id, source)
-            }
-            return source
-          },
+          readFile: (id: string, options?: { checkMtime?: boolean }) => readCompilerInput(configService, id, file => readFile(file, options)),
         }
       : {}),
     resolveId: async (source, importer) => {

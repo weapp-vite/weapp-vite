@@ -71,7 +71,84 @@ it.each(['create', 'delete', 'topology', 'unknown'])('keeps %s reasons even when
   expect(await observation.filter([change])).toEqual([change])
 })
 
-it.each(['scan', 'build'])('keeps an input that returned multiple versions during the initial %s', async (stage) => {
+it('deduplicates a route creation only after publishing the consumed input and route signature', async () => {
+  const { owner, file, observation } = await fixture()
+  await readCompilerInput(owner, file)
+  observation.begin()
+  observation.commit('initial-routes')
+  const change = { file, event: 'create', verifyInitialInput: true, initialRoute: { signature: 'initial-routes' } }
+  expect(await observation.filter([change])).toEqual([])
+  expect(await observation.filter([change])).toEqual([])
+})
+
+it.each(['changed-signature', 'missing-signature', 'missing-published-signature'] as const)('retains an auto-routes update without matching publication evidence: %s', async (boundary) => {
+  const { owner, file, observation } = await fixture()
+  await readCompilerInput(owner, file)
+  observation.begin()
+  observation.commit(boundary === 'missing-published-signature' ? undefined : 'initial-routes')
+  const change = { file, event: 'update', verifyInitialInput: true, initialRoute: { signature: boundary === 'changed-signature' ? 'next-routes' : boundary === 'missing-signature' ? undefined : 'initial-routes' } }
+  expect(await observation.filter([change])).toEqual([change])
+})
+
+it.each(['matching-route', 'ordinary-module'] as const)('deduplicates a consumed startup update with %s evidence', async (source) => {
+  const { owner, file, observation } = await fixture()
+  await readCompilerInput(owner, file)
+  observation.begin()
+  observation.commit('initial-routes')
+  const change = { file, event: 'update', verifyInitialInput: true, initialRoute: source === 'matching-route' ? { signature: 'initial-routes' } : undefined }
+  expect(await observation.filter([change])).toEqual([])
+})
+
+it.each(['missing-signature', 'changed-signature', 'unconsumed-source', 'changed-source', 'deleted-source', 'ordinary-create', 'delete'] as const)('retains a route creation without complete initial publication evidence: %s', async (boundary) => {
+  const { owner, file, observation } = await fixture()
+  await readCompilerInput(owner, file)
+  observation.begin()
+  observation.commit(boundary === 'missing-signature' ? undefined : 'initial-routes')
+  if (boundary === 'changed-source') {
+    await writeFile(file, '{"pages":["new"]}')
+  }
+  if (boundary === 'deleted-source') {
+    await rm(file)
+  }
+  const change = {
+    file: boundary === 'unconsumed-source' ? path.join(path.dirname(file), 'new.ts') : file,
+    event: boundary === 'delete' ? 'delete' : 'create',
+    verifyInitialInput: true,
+    initialRoute: boundary === 'ordinary-create' ? undefined : { signature: boundary === 'changed-signature' ? 'next-routes' : 'initial-routes' },
+  }
+  expect(await observation.filter([change])).toEqual([change])
+})
+
+it('keeps unconsumed sidecars in a coalesced route creation and retires the initial baseline', async () => {
+  const { owner, file, observation } = await fixture()
+  const sidecars = ['new.json', 'new.wxml'].map(name => path.join(path.dirname(file), name))
+  await readCompilerInput(owner, file)
+  observation.begin()
+  observation.commit('initial-routes')
+  const changes = [file, ...sidecars].map(file => ({ file, event: 'create', verifyInitialInput: true, initialRoute: { signature: 'initial-routes' } }))
+  expect(await observation.filter(changes)).toEqual(changes.slice(1))
+  // 真正未发布的输入已进入下一批；之后恢复相同字节仍需重新发布。
+  expect(await observation.filter([changes[0]!])).toEqual([changes[0]])
+})
+
+it('preserves the original source read failure while verifying a consumed route creation', async () => {
+  const { owner, file, observation } = await fixture()
+  await readCompilerInput(owner, file)
+  observation.begin()
+  observation.commit('initial-routes')
+  const failure = Object.assign(new Error('route source access denied'), { code: 'EPERM' })
+  bindRequestedIdeConfigReader(owner, async () => {
+    throw failure
+  })
+  await expect(observation.filter([{ file, event: 'create', verifyInitialInput: true, initialRoute: { signature: 'initial-routes' } }])).rejects.toBe(failure)
+})
+
+it.each([
+  ['scan', false],
+  ['build', false],
+  ['scan', true],
+  ['build', true],
+] as const)('keeps an input that returned multiple versions during the initial %s (restored=%s)', async (stage, restored) => {
   const { owner, file, observation } = await fixture()
   await readCompilerInput(owner, file)
   if (stage === 'build') {
@@ -79,6 +156,10 @@ it.each(['scan', 'build'])('keeps an input that returned multiple versions durin
   }
   await writeFile(file, '{"pages":["changed"]}')
   await readCompilerInput(owner, file)
+  if (restored) {
+    await writeFile(file, '{"pages":[]}')
+    await readCompilerInput(owner, file)
+  }
   if (stage === 'scan') {
     observation.begin()
   }

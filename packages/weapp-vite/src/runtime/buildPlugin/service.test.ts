@@ -5,6 +5,7 @@ import type { HmrProfileJsonSample } from '../../analyze/hmr'
 import type { CompilerContext } from '../../context'
 import type { CorePluginState } from '../../plugins/core/helpers'
 import type { DevBuildWatcherController } from './devBuildWatcher'
+import { EventEmitter } from 'node:events'
 import { realpathSync } from 'node:fs'
 import os from 'node:os'
 import process from 'node:process'
@@ -15,6 +16,7 @@ import { resolveVueSfcHmrSignatures } from 'wevu/compiler'
 import { attachDevModuleGraphHost } from '../../moduleGraph/host'
 import { createModuleGraphService } from '../../moduleGraph/service'
 import { getSupportedMiniProgramPlatforms } from '../../platform'
+import { createCompilerContentSourceOwner } from '../../plugins/compilerPlugin/contentSources'
 import { compilerSourceId } from '../../plugins/compilerPlugin/hmr'
 import { createGenerateBundleHook } from '../../plugins/core/lifecycle/emit/generate'
 import { captureIndependentOutputFileNames } from '../../plugins/outputFinalizer/independent'
@@ -30,6 +32,7 @@ import { createRuntimeState } from '../runtimeState'
 import { StatefulHmrRuntimeCompatibilityError } from '../statefulHmr/commonRuntime'
 import { offerStatefulHmrSnapshot, StatefulHmrSnapshotHandoff } from '../statefulHmr/snapshotHandoff'
 import { storeVueSfcHmrSignatures } from '../storeVueSfcHmrSignatures'
+import { ownsSidecarDelivery } from '../watch/sidecarDelivery'
 import { createWatcherServicePlugin } from '../watcherPlugin'
 import { getInitialBuildInputObservation, startInitialBuildInputObservation } from './initialBuildChanges'
 import { createBuildService } from './service'
@@ -278,6 +281,7 @@ function createManualSidecarWatcher() {
   let allCallback: ((event: string, id?: string) => void) | undefined
   const watcher: any = {
     add: vi.fn(),
+    unwatch: vi.fn(async () => {}),
     on: vi.fn((event: string, callback: (event: string, id?: string) => void) => {
       if (event === 'all') {
         allCallback = callback
@@ -289,6 +293,15 @@ function createManualSidecarWatcher() {
     },
     close: vi.fn(),
   }
+  return watcher
+}
+
+function createScanningSidecarWatcher() {
+  const watcher = createManualSidecarWatcher()
+  const readiness = new EventEmitter()
+  watcher.once = vi.fn(readiness.once.bind(readiness))
+  watcher.off = vi.fn(readiness.off.bind(readiness))
+  watcher.ready = () => readiness.emit('ready')
   return watcher
 }
 
@@ -527,6 +540,24 @@ async function emitSharedChunkSnapshot(
   return Object.keys(bundle).sort()
 }
 
+/** 一次物理保存会分别通知 Vite 与 Chokidar，由真实控制器决定唯一交付方。 */
+function createSourceChangeEmitter() {
+  const providerChange = moduleGraphProviderChange.handler
+  const sidecar = chokidarWatchMock.mock.results.at(-1)?.value
+  const watched = chokidarWatchMock.mock.calls.at(-1)?.[0]
+  const roots = (Array.isArray(watched) ? watched : [watched]).filter((root): root is string => typeof root === 'string')
+  return (change: { event: 'create' | 'update' | 'delete', file: string }) => {
+    providerChange?.(change)
+    if (roots.some(root => change.file === root || change.file.startsWith(`${root}/`))) {
+      sidecar?.emit?.(change.event === 'create' ? 'add' : change.event === 'delete' ? 'unlink' : 'change', change.file)
+    }
+  }
+}
+
+function emitSourceChange(change: { event: 'create' | 'update' | 'delete', file: string }) {
+  createSourceChangeEmitter()(change)
+}
+
 async function startClassicSnapshotContext() {
   const watcher = createManualWatcher()
   const sidecarWatcher = createManualSidecarWatcher()
@@ -544,7 +575,7 @@ async function startClassicSnapshotContext() {
   if (!onChange) {
     throw new Error('Classic HMR graph provider did not subscribe')
   }
-  return { ctx, watcher, onChange }
+  return { ctx, watcher, onChange: createSourceChangeEmitter(), onProviderChange: onChange }
 }
 
 async function flushAsyncTasks() {
@@ -742,7 +773,8 @@ describe('runtime buildPlugin service', () => {
     const laterClose = vi.fn(async () => {})
     ctx.watcherService.sidecarWatcherMap.set('later-build', { close: laterClose })
     plugin.configResolved?.({ command: 'build', build: {} } as any)
-    await plugin.closeBundle?.()
+    // 同一 service 保留上轮关闭错误，但仍须释放之后登记的资源。
+    await expect(plugin.closeBundle?.()).rejects.toBe(closeError)
     expect(laterClose).toHaveBeenCalledTimes(1)
   })
 
@@ -1246,9 +1278,23 @@ describe('runtime buildPlugin service', () => {
       devBuildWatcherQueue.push(controller as any)
       return { ...controller, closed }
     })
-    const sidecars = [createManualSidecarWatcher(), createManualSidecarWatcher()]
+    const sidecars = Array.from({ length: 3 }, () => {
+      const events = new EventEmitter()
+      return Object.assign(events, {
+        add: vi.fn(),
+        unwatch: vi.fn(async () => {}),
+        on: vi.fn(events.on.bind(events)),
+        once: vi.fn(events.once.bind(events)),
+        off: vi.fn(events.off.bind(events)),
+        close: vi.fn(async () => {}),
+      })
+    })
     for (const sidecar of sidecars) {
-      chokidarWatchMock.mockReturnValueOnce(sidecar)
+      chokidarWatchMock.mockImplementationOnce(() => {
+        // 模拟真实扫描在监听器登记后完成，配置 watcher 与每代 sidecar 都须等待 ready。
+        queueMicrotask(() => sidecar.emit('ready'))
+        return sidecar
+      })
     }
     const root = path.normalize(realpathSync.native(await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-native-classic-reload-'))))
     const srcRoot = path.join(root, 'src')
@@ -1276,7 +1322,7 @@ describe('runtime buildPlugin service', () => {
     let reloadStarted = false
     const finishReload = Promise.withResolvers<void>()
     buildMock.mockImplementation(async () => {
-      if (closeStage === 'during-reload' && publications.length === 3) {
+      if (closeStage === 'during-reload' && publications.length === 2) {
         reloadStarted = true
         await finishReload.promise
       }
@@ -1309,7 +1355,7 @@ describe('runtime buildPlugin service', () => {
       expect(publicWatcher).toBe(controllers[0]!.watcher)
       expect(events.filter(event => event === 'END')).toHaveLength(1)
 
-      sidecars[0]!.emit('change', config)
+      sidecars[0]!.emit('all', 'change', config)
       let closing: ReturnType<RolldownWatcher['close']>
       if (closeStage === 'during-reload') {
         await vi.waitFor(() => expect(reloadStarted).toBe(true))
@@ -1326,7 +1372,8 @@ describe('runtime buildPlugin service', () => {
       }
       else {
         await vi.waitFor(() => expect(loggerSuccessMock).toHaveBeenCalledWith('Vite 配置已重新加载，小程序开发构建已重启。'))
-        expect(events.filter(event => event === 'END')).toHaveLength(3)
+        // 配置通知直接退休旧代，不再用旧有效配置额外发布一轮来触发 END。
+        expect(events.filter(event => event === 'END')).toHaveLength(2)
         for (const marker of ['after', 'before']) {
           const count = publications.length
           await fs.writeFile(shared, `export const marker = "${marker}"`)
@@ -1340,8 +1387,8 @@ describe('runtime buildPlugin service', () => {
       expect(closeOriginal()).toBe(closing)
       await awaitClose(closing)
       expect(publications).toEqual((closeStage === 'during-reload'
-        ? ['before', 'before', 'before', 'before']
-        : ['before', 'before', 'before', 'before', 'after', 'before']).map(marker => `export const marker = "${marker}"`))
+        ? ['before', 'before', 'before']
+        : ['before', 'before', 'before', 'after', 'before']).map(marker => `export const marker = "${marker}"`))
       expect(runStatefulHmrDevMock).toHaveBeenCalledOnce()
       for (const controller of controllers) {
         expect(controller.closed).toHaveBeenCalledOnce()
@@ -1667,7 +1714,7 @@ describe('runtime buildPlugin service', () => {
     await firstBuild
 
     nowValue = 20
-    moduleGraphProviderChange.handler?.({ event: 'update', file: '/project/src/pages/logs/index.wxml' })
+    emitSourceChange({ event: 'update', file: '/project/src/pages/logs/index.wxml' })
     nowValue = 28
     await waitForMockCalls(loggerSuccessMock, 1)
 
@@ -1852,6 +1899,146 @@ describe('runtime buildPlugin service', () => {
     }
   })
 
+  it.each([
+    { event: 'delete' as const, file: '/project/.tmp/verification-gate/armed' },
+    { event: 'update' as const, file: '/project/project.private.config.json' },
+    { event: 'create' as const, file: '/project/unowned-source.ts' },
+  ])('does not publish an unowned startup module notification: $event $file', async (change) => {
+    const watcher = createManualWatcher()
+    chokidarWatchMock.mockReturnValueOnce(createManualSidecarWatcher())
+    const ctx = createMockContext()
+    ctx.moduleGraphService.hasModule.mockReturnValue(false)
+    ctx.runtimeState.build.hmr.resolvedEntryMap.set(HMR_PAGE_ID, { id: HMR_PAGE_ID })
+    buildMock.mockImplementationOnce(async () => {
+      emitSourceChange(change)
+      return { output: [] }
+    }).mockResolvedValue({ output: [] })
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    try {
+      await createBuildService(ctx).build({ skipNpm: true })
+      await vi.runOnlyPendingTimersAsync()
+      await flushAsyncTasks()
+      expect(buildMock).toHaveBeenCalledOnce()
+      expect(ctx.moduleGraphService.recordChangedFile).not.toHaveBeenCalled()
+      expect(ctx.scanService.markDirty).not.toHaveBeenCalled()
+    }
+    finally {
+      await watcher.close()
+      vi.useRealTimers()
+    }
+  })
+
+  it.each(['graph', 'compiler-content'] as const)('retains startup input after its %s owner is registered by the initial build', async (owner) => {
+    const watcher = createManualWatcher()
+    const ctx = createMockContext()
+    const file = '/external/inputs/late-content.ts'
+    const content = createCompilerContentSourceOwner(ctx.configService)
+    ctx.moduleGraphService.hasModule.mockReturnValue(false)
+    ctx.moduleGraphService.collectAffectedEntries.mockReturnValue(new Set([HMR_PAGE_ID]))
+    ctx.runtimeState.build.hmr.resolvedEntryMap.set(HMR_PAGE_ID, { id: HMR_PAGE_ID })
+    chokidarWatchMock.mockReturnValueOnce(createManualSidecarWatcher())
+    buildMock.mockImplementationOnce(async () => {
+      emitSourceChange({ event: 'create', file })
+      if (owner === 'graph') {
+        ctx.moduleGraphService.hasModule.mockImplementation((id: string) => id === file)
+      }
+      else {
+        content.replace('content-scan', source => source === file)
+      }
+      return { output: [] }
+    }).mockResolvedValue({ output: [] })
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    try {
+      await createBuildService(ctx).build({ skipNpm: true })
+      await vi.runOnlyPendingTimersAsync()
+      await flushAsyncTasks()
+      expect(buildMock).toHaveBeenCalledTimes(2)
+      expect(ctx.moduleGraphService.recordChangedFile).toHaveBeenCalledExactlyOnceWith(file, 'create')
+    }
+    finally {
+      await watcher.close()
+      content.dispose()
+      vi.useRealTimers()
+    }
+  })
+
+  it('keeps the consumed startup baseline after discarding unowned module notifications', async () => {
+    const root = path.normalize(realpathSync.native(await fs.mkdtemp(path.join(os.tmpdir(), 'classic-initial-owner-'))))
+    const file = path.join(root, 'app.json')
+    const ctx = createMockContext()
+    const release = startInitialBuildInputObservation(ctx.configService)
+    const observation = getInitialBuildInputObservation(ctx.configService)!
+    const filter = observation.filter.bind(observation)
+    let handled = Promise.withResolvers<unknown[]>()
+    const filtered = vi.spyOn(observation, 'filter').mockImplementation(async (changes) => {
+      const retained = await filter(changes)
+      handled.resolve(retained)
+      return retained
+    })
+    const watcher = createManualWatcher()
+    Object.assign(ctx.configService, { cwd: root, absoluteSrcRoot: root, outDir: path.join(root, 'dist') })
+    ctx.moduleGraphService.hasModule.mockImplementation((id: string) => id === file)
+    chokidarWatchMock.mockReturnValueOnce(createManualSidecarWatcher())
+    buildMock.mockImplementation(async () => {
+      await readCompilerInput(ctx.configService, file)
+      emitSourceChange({ event: 'update', file: path.join(root, 'unowned.ts') })
+      return { output: [] }
+    })
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    try {
+      await fs.writeFile(file, '{"pages":[]}')
+      await createBuildService(ctx).build({ skipNpm: true })
+      await vi.runOnlyPendingTimersAsync()
+      expect(await handled.promise).toEqual([])
+      await flushAsyncTasks()
+      expect(buildMock).toHaveBeenCalledOnce()
+
+      handled = Promise.withResolvers<unknown[]>()
+      emitSourceChange({ event: 'update', file })
+      await vi.runOnlyPendingTimersAsync()
+      expect(await handled.promise).toEqual([])
+      await flushAsyncTasks()
+      expect(buildMock).toHaveBeenCalledOnce()
+      expect(ctx.moduleGraphService.recordChangedFile).not.toHaveBeenCalled()
+    }
+    finally {
+      filtered.mockRestore()
+      await watcher.close()
+      release()
+      vi.useRealTimers()
+      await fs.remove(root)
+    }
+  })
+
+  it('retains a queued missing dependency for recovery after the initial build fails', async () => {
+    const watcher = createManualWatcher()
+    const ctx = createMockContext()
+    const file = '/external/inputs/recovered.ts'
+    const failure = new Error('initial dependency is missing')
+    ctx.moduleGraphService.hasModule.mockReturnValue(false)
+    ctx.runtimeState.build.hmr.resolvedEntryMap.set(HMR_PAGE_ID, { id: HMR_PAGE_ID })
+    chokidarWatchMock.mockReturnValueOnce(createManualSidecarWatcher())
+    const detachHost = attachDevModuleGraphHost(ctx, {} as ViteDevServer)
+    buildMock.mockImplementationOnce(async () => {
+      emitSourceChange({ event: 'create', file })
+      throw failure
+    }).mockResolvedValue({ output: [] })
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    try {
+      await createBuildService(ctx).build({ skipNpm: true })
+      await vi.runOnlyPendingTimersAsync()
+      await flushAsyncTasks()
+      expect(loggerErrorMock).toHaveBeenCalledWith(failure)
+      expect(buildMock).toHaveBeenCalledTimes(2)
+      expect(ctx.moduleGraphService.recordChangedFile).toHaveBeenCalledExactlyOnceWith(file, 'create')
+    }
+    finally {
+      await watcher.close()
+      detachHost()
+      vi.useRealTimers()
+    }
+  })
+
   it('serializes source changes received during the initial publication behind that build', async () => {
     const watcher = createManualWatcher()
     chokidarWatchMock.mockReturnValue(createManualSidecarWatcher())
@@ -1874,7 +2061,7 @@ describe('runtime buildPlugin service', () => {
     const firstBuild = createBuildService(ctx).build({ skipNpm: true })
     await initialStarted.promise
     try {
-      moduleGraphProviderChange.handler?.({ event: 'update', file: HMR_PAGE_ID })
+      emitSourceChange({ event: 'update', file: HMR_PAGE_ID })
       await waitForTimers(25)
       expect(buildMock).toHaveBeenCalledTimes(1)
     }
@@ -1921,7 +2108,7 @@ describe('runtime buildPlugin service', () => {
     const firstBuild = createBuildService(ctx).build({ skipNpm: true })
     try {
       await initialStarted.promise
-      moduleGraphProviderChange.handler?.({ event: 'update', file: HMR_PAGE_ID })
+      emitSourceChange({ event: 'update', file: HMR_PAGE_ID })
       await waitForTimers(25)
       initialRelease.resolve()
       await assetCreated.promise
@@ -1974,7 +2161,7 @@ describe('runtime buildPlugin service', () => {
     try {
       await initialStarted.promise
       for (const file of files) {
-        moduleGraphProviderChange.handler?.({ event: 'update', file: path.join(supportRoot, file) })
+        emitSourceChange({ event: 'update', file: path.join(supportRoot, file) })
       }
       initialRelease.resolve()
       await watcher.subscribed
@@ -1986,12 +2173,12 @@ describe('runtime buildPlugin service', () => {
       const initialCacheResets = resetEmittedOutputCachesMock.mock.calls.length
 
       for (const file of files) {
-        moduleGraphProviderChange.handler?.({ event: 'update', file: path.join(supportRoot, file) })
+        emitSourceChange({ event: 'update', file: path.join(supportRoot, file) })
         sidecarWatcher.emit('change', path.join(supportRoot, file))
       }
       // 相同文件名的用户源码仍由依赖图接收，并且与真实页面更新合为一个窄快照。
-      moduleGraphProviderChange.handler?.({ event: 'update', file: '/project/src/auto-import-components.json' })
-      moduleGraphProviderChange.handler?.({ event: 'update', file: HMR_PAGE_ID })
+      emitSourceChange({ event: 'update', file: '/project/src/auto-import-components.json' })
+      emitSourceChange({ event: 'update', file: HMR_PAGE_ID })
       await vi.runOnlyPendingTimersAsync()
       await watcher.close()
       expect(buildMock).toHaveBeenCalledTimes(2)
@@ -2167,7 +2354,7 @@ describe('runtime buildPlugin service', () => {
     }).mockResolvedValue({ output: [] })
     const failure = expect(createBuildService(ctx).build({ skipNpm: true })).rejects.toBe(error)
     await initialStarted.promise
-    moduleGraphProviderChange.handler?.({ event: 'update', file: HMR_PAGE_ID })
+    emitSourceChange({ event: 'update', file: HMR_PAGE_ID })
     await waitForTimers(25)
     initialRelease.resolve()
     await failure
@@ -2210,7 +2397,7 @@ describe('runtime buildPlugin service', () => {
     await firstBuild
     touchMock.mockClear()
 
-    moduleGraphProviderChange.handler?.({ event: 'update', file: '/project/src/pages/logs/index.wxml' })
+    emitSourceChange({ event: 'update', file: '/project/src/pages/logs/index.wxml' })
     await waitForMockCalls(buildMock, 2)
     expect(await emitted.promise).toEqual(HMR_METADATA_CORE_OUTPUTS)
 
@@ -2290,7 +2477,7 @@ describe('runtime buildPlugin service', () => {
         hmr.loadedEntrySet.add(owner)
         const before = settledEvents()
         await fs.writeFile(external, source)
-        moduleGraphProviderChange.handler!({ event: 'update', file: external })
+        emitSourceChange({ event: 'update', file: external })
         await vi.waitFor(() => expect(settledEvents()).toBe(before + 1))
       }
       expect(snapshots).toEqual([changed, original].map(source => ({
@@ -2695,7 +2882,7 @@ describe('runtime buildPlugin service', () => {
       if (source === 'wxml-provider') {
         const dependency = '/project/transform-rules.json'
         ctx.runtimeState.wxmlProcessing.references.set(dependency, 1)
-        moduleGraphProviderChange.handler?.({ event: 'update', file: dependency })
+        emitSourceChange({ event: 'update', file: dependency })
       }
       else {
         sidecarWatcher.emit('change', '/project/src/queued/index.json')
@@ -2785,12 +2972,14 @@ describe('runtime buildPlugin service', () => {
     }
   })
 
-  it('preserves known WXML child invalidation received while the initial snapshot is still building', async () => {
+  it.each(['before-change', 'after-change'] as const)('preserves WXML child invalidation registered %s while the initial snapshot is building', async (registration) => {
     const watcher = createManualWatcher()
     const sidecarWatcher = createManualSidecarWatcher()
     const ctx = createMockContext()
     const dependency = '/project/transform-rules.json'
-    ctx.runtimeState.wxmlProcessing.references.set(dependency, 1)
+    if (registration === 'before-change') {
+      ctx.runtimeState.wxmlProcessing.references.set(dependency, 1)
+    }
     ctx.scanService.independentSubPackageMap = new Map([['independent', {}]])
     ctx.scanService.markIndependentDirty = vi.fn()
     ctx.moduleGraphService.hasModule.mockReturnValue(false)
@@ -2807,7 +2996,10 @@ describe('runtime buildPlugin service', () => {
     try {
       const firstBuild = createBuildService(ctx).build({ skipNpm: true })
       await initialBuildEntered.promise
-      moduleGraphProviderChange.handler?.({ event: 'update', file: dependency })
+      emitSourceChange({ event: 'update', file: dependency })
+      if (registration === 'after-change') {
+        ctx.runtimeState.wxmlProcessing.references.set(dependency, 1)
+      }
       expect(independentInvalidateMock).not.toHaveBeenCalled()
       expect(ctx.scanService.markIndependentDirty).not.toHaveBeenCalled()
       resumeInitialBuild.resolve()
@@ -2850,7 +3042,7 @@ describe('runtime buildPlugin service', () => {
     watcher.emit('END')
     await firstBuild
 
-    moduleGraphProviderChange.handler?.({ event: 'update', file: '/project/src/pages/logs/hello.css' })
+    emitSourceChange({ event: 'update', file: '/project/src/pages/logs/hello.css' })
     await waitForMockCalls(buildMock, 2)
 
     expect(dirtySummaries).toEqual([['css-importer:1']])
@@ -2893,8 +3085,8 @@ describe('runtime buildPlugin service', () => {
     watcher.emit('END')
     await firstBuild
 
-    moduleGraphProviderChange.handler?.({ event: 'update', file: '/project/src/pages/logs/index.wxml' })
-    moduleGraphProviderChange.handler?.({ event: 'update', file: '/project/src/pages/about/index.wxss' })
+    emitSourceChange({ event: 'update', file: '/project/src/pages/logs/index.wxml' })
+    emitSourceChange({ event: 'update', file: '/project/src/pages/about/index.wxss' })
     await waitForMockCalls(buildMock, 2)
     expect(await emitted.promise).toEqual(HMR_METADATA_CORE_OUTPUTS)
 
@@ -2938,12 +3130,12 @@ describe('runtime buildPlugin service', () => {
     watcher.emit('END')
     await firstBuild
     try {
-      moduleGraphProviderChange.handler?.({ event: 'update', file })
+      emitSourceChange({ event: 'update', file })
       await waitForMockCalls(buildMock, 2)
-      moduleGraphProviderChange.handler?.({ event: 'update', file: HMR_PAGE_ID })
+      emitSourceChange({ event: 'update', file: HMR_PAGE_ID })
       await waitForMockCalls(buildMock, 3)
       expect(scans).toEqual([true, true])
-      moduleGraphProviderChange.handler?.({ event: 'update', file: HMR_PAGE_ID })
+      emitSourceChange({ event: 'update', file: HMR_PAGE_ID })
       await waitForMockCalls(buildMock, 4)
       expect(scans).toEqual([true, true, false])
       expect(ctx.runtimeState.build.hmr.fullEntryScan).toBe(false)
@@ -3029,8 +3221,7 @@ describe('runtime buildPlugin service', () => {
     watcher.emit('END')
     await firstBuild
 
-    moduleGraphProviderChange.handler?.({ event: 'create', file })
-    sidecarWatcher.emit('add', file)
+    emitSourceChange({ event: 'create', file })
     await waitForMockCalls(buildMock, 2)
     expect(await emitted.promise).toEqual(HMR_FULL_OUTPUTS)
 
@@ -3067,12 +3258,132 @@ describe('runtime buildPlugin service', () => {
     await waitForMockCalls(loggerErrorMock, 1)
 
     const restoredFile = '/project/src/pages/logs/index.wxss'
-    sidecarWatcher.emit('add', restoredFile)
-    moduleGraphProviderChange.handler?.({ event: 'create', file: restoredFile })
+    emitSourceChange({ event: 'create', file: restoredFile })
     await waitForMockCalls(buildMock, 3)
     await waitForMockCalls(loggerSuccessMock, 1)
 
     expect(buildMock).toHaveBeenCalledTimes(3)
+  })
+
+  it('establishes snapshot scanning before starting the provider or first publication', async () => {
+    const watcher = createManualWatcher()
+    const sidecarWatcher = createScanningSidecarWatcher()
+    chokidarWatchMock.mockReturnValueOnce(sidecarWatcher)
+    buildMock.mockResolvedValue({ output: [] })
+    const ctx = createMockContext()
+    const firstBuild = createBuildService(ctx).build({ skipNpm: true })
+    try {
+      await waitForMockCalls(chokidarWatchMock, 1)
+      expect(chokidarWatchMock).toHaveBeenCalledOnce()
+      expect(createDevModuleGraphProviderMock).not.toHaveBeenCalled()
+      expect(buildMock).not.toHaveBeenCalled()
+      sidecarWatcher.ready()
+      await watcher.subscribed
+      watcher.emit('START')
+      watcher.emit('END')
+      await firstBuild
+      expect(createDevModuleGraphProviderMock).toHaveBeenCalledOnce()
+      expect(buildMock).toHaveBeenCalledOnce()
+    }
+    finally {
+      sidecarWatcher.ready()
+      // 旧顺序在首构 END 后才创建 sidecar 扫描；RED 也须完成本次模拟会话。
+      await flushAsyncTasks()
+      watcher.emit('START')
+      watcher.emit('END')
+      await flushAsyncTasks()
+      sidecarWatcher.ready()
+      const active = await firstBuild
+      await active.close()
+    }
+  })
+
+  it('gives a scoped sidecar one physical owner even after deletion drops its module registration', async () => {
+    const { ctx, watcher, onProviderChange: onChange } = await startClassicSnapshotContext()
+    const sidecarWatcher = chokidarWatchMock.mock.results.at(-1)!.value
+    const file = '/project/src/pages/logs/index.wxss'
+    buildMock.mockImplementation(async () => {
+      ctx.moduleGraphService.hasModule.mockReturnValue(false)
+      return { output: [] }
+    })
+    try {
+      // Vite 的通知可先于 Chokidar，且原生重新扫描会撤销已经缺失的 style 依赖。
+      onChange({ event: 'delete', file })
+      await waitForTimers()
+      expect(buildMock).toHaveBeenCalledTimes(1)
+      sidecarWatcher.emit('unlink', file)
+      await waitForMockCalls(buildMock, 2)
+      expect(ctx.moduleGraphService.hasModule(file)).toBe(false)
+      await waitForTimers()
+      onChange({ event: 'delete', file })
+      await waitForTimers()
+      expect(buildMock).toHaveBeenCalledTimes(2)
+      expect(ctx.moduleGraphService.recordChangedFile).toHaveBeenCalledOnce()
+    }
+    finally {
+      await watcher.close()
+    }
+  })
+
+  it.each((['graph', 'compiler-content'] as const).flatMap(owner => (['create', 'update', 'delete'] as const).map(event => ({ owner, event }))))('delivers external $owner sidecar $event through its provider owner', async ({ owner, event }) => {
+    const { ctx, watcher, onProviderChange } = await startClassicSnapshotContext()
+    const file = '/external/inputs/content.wxss'
+    const content = createCompilerContentSourceOwner(ctx.configService)
+    ctx.moduleGraphService.hasModule.mockReturnValue(owner === 'graph')
+    if (owner === 'compiler-content') {
+      content.replace('external-content', source => source === file)
+    }
+    buildMock.mockResolvedValue({ output: [] })
+    try {
+      expect(ownsSidecarDelivery(ctx, file, event)).toBe(true)
+      onProviderChange({ event, file })
+      await waitForMockCalls(buildMock, 2)
+      expect(buildMock).toHaveBeenCalledTimes(2)
+      expect(ctx.moduleGraphService.recordChangedFile).toHaveBeenCalledExactlyOnceWith(file, event)
+    }
+    finally {
+      await watcher.close()
+      content.dispose()
+    }
+  })
+
+  it('keeps unknown external sidecar updates available to the legacy owner', async () => {
+    const { ctx, watcher, onProviderChange } = await startClassicSnapshotContext()
+    const file = '/external/inputs/unknown.wxss'
+    ctx.moduleGraphService.hasModule.mockReturnValue(false)
+    try {
+      expect(ownsSidecarDelivery(ctx, file, 'update')).toBe(false)
+      onProviderChange({ event: 'update', file })
+      await waitForTimers()
+      expect(buildMock).toHaveBeenCalledOnce()
+      expect(ctx.moduleGraphService.recordChangedFile).not.toHaveBeenCalled()
+    }
+    finally {
+      await watcher.close()
+    }
+  })
+
+  it('delivers a scoped compiler-only update through the physical sidecar owner', async () => {
+    const { ctx, watcher, onProviderChange } = await startClassicSnapshotContext()
+    const file = '/project/src/shared/content.wxss'
+    const content = createCompilerContentSourceOwner(ctx.configService)
+    ctx.moduleGraphService.hasModule.mockReturnValue(false)
+    content.replace('scoped-content', source => source === file)
+    buildMock.mockResolvedValue({ output: [] })
+    try {
+      expect(ownsSidecarDelivery(ctx, file, 'update')).toBe(true)
+      onProviderChange({ event: 'update', file })
+      await waitForTimers()
+      expect(buildMock).toHaveBeenCalledOnce()
+      chokidarWatchMock.mock.results.at(-1)!.value.emit('change', file)
+      await waitForMockCalls(buildMock, 2)
+      expect(buildMock).toHaveBeenCalledTimes(2)
+      expect(ctx.moduleGraphService.recordChangedFile).toHaveBeenCalledExactlyOnceWith(file, 'update')
+    }
+    finally {
+      await watcher.close()
+      content.dispose()
+    }
   })
 
   it('ignores vue updates in snapshot sidecar watcher', async () => {
@@ -3144,7 +3455,7 @@ describe('runtime buildPlugin service', () => {
       if (event === 'delete') {
         buildMock.mockRejectedValueOnce(missingDependency)
       }
-      moduleGraphProviderChange.handler?.({ event, file: dependency })
+      emitSourceChange({ event, file: dependency })
       await waitForMockCalls(buildMock, 2)
       expect(buildMock).toHaveBeenCalledTimes(2)
       expect(independentInvalidateMock).toHaveBeenCalledWith('independent')
@@ -3157,7 +3468,7 @@ describe('runtime buildPlugin service', () => {
       if (event === 'delete') {
         const controller = createDevBuildWatcherMock.mock.results.at(-1)?.value
         expect(controller.emitEvent).toHaveBeenCalledWith(expect.objectContaining({ code: 'ERROR', error: missingDependency }))
-        moduleGraphProviderChange.handler?.({ event: 'create', file: dependency })
+        emitSourceChange({ event: 'create', file: dependency })
         await waitForMockCalls(buildMock, 3)
         expect(buildMock).toHaveBeenCalledTimes(3)
         expect(controller.emitEvent).toHaveBeenLastCalledWith({ code: 'END' })
@@ -3195,7 +3506,7 @@ describe('runtime buildPlugin service', () => {
       await firstBuild
       let count = 1
       for (const event of ['create', 'delete', 'create'] as const) {
-        moduleGraphProviderChange.handler?.({ event, file })
+        emitSourceChange({ event, file })
         await waitForTimers()
         expect(buildMock).toHaveBeenCalledTimes(count)
         expect(publishAutoRoutesTopology(ctx, { event, file, topologyChanged: true })).toBe(true)
@@ -3377,7 +3688,7 @@ describe('runtime buildPlugin service', () => {
     watcher.emit('END')
     await firstBuild
 
-    moduleGraphProviderChange.handler?.({ event: 'update', file: layoutId })
+    emitSourceChange({ event: 'update', file: layoutId })
     await waitForMockCalls(buildMock, 2)
 
     expect(ctx.runtimeState.build.hmr.dirtyEntrySet).toEqual(new Set([layoutId, pageId]))
@@ -4192,6 +4503,62 @@ describe('runtime buildPlugin service', () => {
     }
   })
 
+  it.each(['building', 'published'] as const)('drains a consumed startup topology create without a second publication (%s)', async (arrival) => {
+    const root = path.normalize(realpathSync.native(await fs.mkdtemp(path.join(os.tmpdir(), 'classic-initial-topology-'))))
+    const file = path.join(root, 'pages/added/index.ts')
+    const ctx = createMockContext()
+    const release = startInitialBuildInputObservation(ctx.configService)
+    const observation = getInitialBuildInputObservation(ctx.configService)!
+    const filteredBatch = Promise.withResolvers<unknown[]>()
+    const filter = observation.filter.bind(observation)
+    const filtered = vi.spyOn(observation, 'filter').mockImplementation(async (changes) => {
+      const retained = await filter(changes)
+      filteredBatch.resolve(retained)
+      return retained
+    })
+    let watcher: RolldownWatcher | undefined
+    try {
+      await fs.outputFile(file, 'Page({ data: { marker: "already-published" } })')
+      Object.assign(ctx.configService, { cwd: root, absoluteSrcRoot: root, outDir: path.join(root, 'dist') })
+      ctx.configService.weappViteConfig.autoRoutes = true
+      ctx.autoRoutesService = {
+        ensureFresh: vi.fn(async () => {}),
+        getSignature: () => 'initial-route-generation',
+        handleFileChange: vi.fn(async () => false),
+      }
+      ctx.runtimeState.build.hmr.resolvedEntryMap.set(file, { id: file })
+      ctx.runtimeState.build.hmr.entriesMap.set(file, { path: file, type: 'page' })
+      ctx.moduleGraphService.collectAffectedEntries.mockReturnValue(new Set([file]))
+      createManualWatcher()
+      chokidarWatchMock.mockReturnValueOnce(createManualSidecarWatcher())
+      buildMock.mockImplementation(async () => {
+        // 首构真实消费新增入口；迟到目录通知不能再次发布相同的输入代次。
+        await readCompilerInput(ctx.configService, file)
+        if (arrival === 'building' && buildMock.mock.calls.length === 1) {
+          publishAutoRoutesTopology(ctx, { event: 'create', file, topologyChanged: true })
+        }
+        return { output: [] }
+      })
+      vi.useFakeTimers()
+      watcher = await createBuildService(ctx).build({ skipNpm: true }) as RolldownWatcher
+      expect(buildMock).toHaveBeenCalledOnce()
+      if (arrival === 'published') {
+        publishAutoRoutesTopology(ctx, { event: 'create', file, topologyChanged: false })
+      }
+      await vi.advanceTimersByTimeAsync(8)
+      expect(await filteredBatch.promise).toEqual([])
+      await flushAsyncTasks()
+      expect(buildMock).toHaveBeenCalledOnce()
+    }
+    finally {
+      filtered.mockRestore()
+      vi.useRealTimers()
+      await watcher?.close()
+      release()
+      await fs.remove(root)
+    }
+  })
+
   it('drains a late consumed startup update without rebuilding and still publishes new content and restoration', async () => {
     const root = path.normalize(realpathSync.native(await fs.mkdtemp(path.join(os.tmpdir(), 'classic-initial-input-'))))
     const file = path.join(root, 'app.json')
@@ -4233,6 +4600,7 @@ describe('runtime buildPlugin service', () => {
         await fs.writeFile(file, source)
         handled = Promise.withResolvers<void>()
         await hotUpdate.call({ environment: { name: 'client' } }, { type: 'update', file, read: async () => await fs.readFile(file, 'utf8') })
+        chokidarWatchMock.mock.results.at(-1)!.value.emit('change', file)
         await vi.advanceTimersByTimeAsync(8)
         // 实际批次的输入检查已完成，随后清空同一串行任务的微任务；不靠 close 抢走计时器。
         await handled.promise

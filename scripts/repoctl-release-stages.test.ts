@@ -1,10 +1,9 @@
 import { afterEach, expect, it } from 'vitest'
-import { cleanupReleaseFixtures, createReleaseFixture, packages } from './repoctl-release/fixtures'
+import { cleanupReleaseFixtures, packages, withReleaseFixture } from './repoctl-release/fixtures'
 
 afterEach(cleanupReleaseFixtures)
 
-it('runs quality once and preserves publish hooks across the six native stages', async () => {
-  const fixture = await createReleaseFixture()
+it('runs quality once and preserves publish hooks across the six native stages', ({ signal }) => withReleaseFixture(signal, async (fixture) => {
   fixture.setPublish(() => {
     fixture.summary()
     packages.forEach(pkg => fixture.visible.add(pkg.name))
@@ -25,10 +24,9 @@ it('runs quality once and preserves publish hooks across the six native stages',
   const progress = await fixture.stageProgress()
   expect(progress.done).toEqual(['plan', 'verify', 'prepare', 'upload', 'confirm', 'finalize'])
   expect(progress.stages.every(stage => stage.status === 'complete' && stage.elapsedMs >= 0)).toBe(true)
-})
+}))
 
-it('requires successful verification before preparation or upload', async () => {
-  const fixture = await createReleaseFixture()
+it('requires successful verification before preparation or upload', ({ signal }) => withReleaseFixture(signal, async (fixture) => {
   await fixture.runStage('plan')
   await expect(fixture.runStage('prepare')).rejects.toThrow(/preceding stage/)
 
@@ -40,12 +38,10 @@ it('requires successful verification before preparation or upload', async () => 
   expect(fixture.publishes).toEqual([])
   expect(fixture.github.ensurePullRequest).not.toHaveBeenCalled()
   expect((await fixture.stageProgress()).stages.at(-1)).toMatchObject({ stage: 'verify', status: 'failed' })
-})
+}))
 
-it.each(['source', 'diff', 'candidates', 'configuration', 'run', 'attempt'] as const)(
-  'rejects a verified receipt after its %s changes',
-  async (change) => {
-    const fixture = await createReleaseFixture()
+for (const change of ['source', 'diff', 'candidates', 'configuration', 'run', 'attempt'] as const) {
+  it(`rejects a verified receipt after its ${change} changes`, ({ signal }) => withReleaseFixture(signal, async (fixture) => {
     await fixture.runStage('plan')
     await fixture.runStage('verify')
     if (change === 'source') {
@@ -68,5 +64,5 @@ it.each(['source', 'diff', 'candidates', 'configuration', 'run', 'attempt'] as c
     await expect(fixture.runStage('prepare', overrides)).rejects.toThrow(/Stale release stage receipt/)
     expect(fixture.hooks).toEqual(['quality'])
     expect(fixture.publishes).toEqual([])
-  },
-)
+  }))
+}

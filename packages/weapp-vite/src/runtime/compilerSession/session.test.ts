@@ -1,4 +1,5 @@
 import type { InlineConfig } from 'vite'
+import type { WatcherInstance } from '../watcherPlugin'
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
@@ -8,6 +9,7 @@ import { getActiveCompilerContextKey } from '../../context/getInstance'
 import { getInitialBuildInputObservation } from '../buildPlugin/initialBuildChanges'
 import { installIdeAssetWatch } from '../statefulHmr/assetWatch'
 import { deferWatcherResourceCleanup } from '../watcherPlugin'
+import { restartCompilerContextInputObservation } from './context'
 import { CompilerSession } from './index'
 
 const sessions: CompilerSession[] = []
@@ -63,6 +65,7 @@ it('waits for initialization before cleanup and rejects startup that was closed'
   vi.spyOn(session.context.configService, 'load').mockImplementation(async () => {
     started.resolve()
     await finish.promise
+    return session.context.configService.options
   })
   const initializing = session.initialize({ hostConfig: { config: {} }, syncSupportFiles: false, preloadAppEntry: false })
   const rejected = expect(initializing).rejects.toThrow('已关闭')
@@ -76,6 +79,55 @@ it('waits for initialization before cleanup and rejects startup that was closed'
   await closing
   expect(cleanup).toHaveBeenCalledOnce()
   expect(session.state).toBe('closed')
+})
+
+it('releases initialized input ownership when closed before starting a build', async () => {
+  const session = createSession()
+  expect(getInitialBuildInputObservation(session.context.configService)).toBeUndefined()
+  vi.spyOn(session.context.configService, 'load').mockResolvedValue(session.context.configService.options)
+  await session.initialize({ hostConfig: { config: {} }, syncSupportFiles: false, preloadAppEntry: false })
+  expect(getInitialBuildInputObservation(session.context.configService)).toBeDefined()
+  const closing = session.close()
+  expect(getInitialBuildInputObservation(session.context.configService)).toBeUndefined()
+  await closing
+  expect(session.state).toBe('closed')
+})
+
+it('does not leave an observer behind when close races the previous watcher drain', async () => {
+  const session = createSession()
+  const started = Promise.withResolvers<void>()
+  const finish = Promise.withResolvers<void>()
+  session.context.watcherService.rollupWatcherMap.set('/', {
+    async close() {
+      started.resolve()
+      await finish.promise
+    },
+  } as WatcherInstance)
+  vi.spyOn(session.context.configService, 'load').mockResolvedValue(session.context.configService.options)
+  const initializing = session.initialize({ hostConfig: { config: {} }, syncSupportFiles: false, preloadAppEntry: false })
+  const rejected = expect(initializing).rejects.toThrow('已关闭')
+  await started.promise
+  const closing = session.close()
+  expect(getInitialBuildInputObservation(session.context.configService)).toBeUndefined()
+  finish.resolve()
+  await rejected
+  await closing
+  expect(getInitialBuildInputObservation(session.context.configService)).toBeUndefined()
+  expect(session.state).toBe('closed')
+})
+
+it('does not let an initialization failure release a replacement input generation', async () => {
+  const session = createSession()
+  const failure = new Error('old initialization failed')
+  let replacement: ReturnType<typeof getInitialBuildInputObservation>
+  vi.spyOn(session.context.configService, 'load').mockImplementation(async () => {
+    restartCompilerContextInputObservation(session.context)
+    replacement = getInitialBuildInputObservation(session.context.configService)
+    throw failure
+  })
+  await expect(session.initialize({ hostConfig: { config: {} }, syncSupportFiles: false, preloadAppEntry: false })).rejects.toBe(failure)
+  expect(replacement).toBeDefined()
+  expect(getInitialBuildInputObservation(session.context.configService)).toBe(replacement)
 })
 
 it('recognizes restored IDE configuration consumed by the new session and retains later user edits', async () => {

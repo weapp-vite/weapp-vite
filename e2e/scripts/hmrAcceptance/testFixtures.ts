@@ -1,7 +1,9 @@
+import type { PlannedTaskCaseReader } from '../domAcceptanceReport/taskCases'
 import type { HmrAcceptanceStage } from '../hmr-acceptance-manifest'
 import type { HmrStageEvidence } from './report'
 import type { HmrUnitReceipt } from './unit'
 import { freeze, identity, profile, shardReports } from '../../../scripts/verificationE2E/fixtures'
+import { createPlannedTaskCaseReader } from '../domAcceptanceReport/taskCases'
 import { getSuiteTasks } from '../e2e-suite-manifest'
 
 export function createHmrUnitReceipt(overrides: Partial<HmrUnitReceipt> = {}): HmrUnitReceipt {
@@ -20,8 +22,8 @@ export function createHmrUnitReceipt(overrides: Partial<HmrUnitReceipt> = {}): H
   }
 }
 
-export async function createHmrStageEvidence(stage: HmrAcceptanceStage): Promise<HmrStageEvidence> {
-  const plan = await freeze({ suite: stage.suite, tasks: await getSuiteTasks(stage.suite), shards: 1, profile: { ...profile, provider: stage.provider } })
+async function freezeHmrStageEvidence(stage: HmrAcceptanceStage, readCases: PlannedTaskCaseReader): Promise<HmrStageEvidence> {
+  const plan = await freeze({ suite: stage.suite, tasks: await getSuiteTasks(stage.suite), shards: 1, profile: { ...profile, provider: stage.provider }, readCases })
   const shard = shardReports(plan)[0]!
   const cases = plan.tasks.flatMap(task => task.cases ?? []).filter(item => item.providerScope?.scope !== 'out-of-scope').length
   return {
@@ -49,6 +51,15 @@ export async function createHmrStageEvidence(stage: HmrAcceptanceStage): Promise
       jsonFile: 'aggregate.json',
     },
   }
+}
+
+export function createHmrStageEvidence(stage: HmrAcceptanceStage) {
+  return freezeHmrStageEvidence(stage, createPlannedTaskCaseReader())
+}
+
+export function createHmrStageEvidenceSet(stages: readonly HmrAcceptanceStage[]) {
+  const readCases = createPlannedTaskCaseReader()
+  return Promise.all(stages.map(stage => freezeHmrStageEvidence(stage, readCases)))
 }
 
 export function passingVitestJson() {

@@ -1,10 +1,11 @@
 import type { ProviderCaseApplicability } from './inventoryProviders'
-import fs from 'node:fs'
+import type { InventorySourceReader } from './inventorySourceReader'
 import path from 'node:path'
 import ts from 'typescript'
 import { readConditionBindingName, readSuiteConditionValue } from './inventoryConditions'
 import { expandSuiteParameters } from './inventoryParameters'
 import { createProviderApplicabilityReader } from './inventoryProviders'
+import { createInventorySourceReader, parseInventorySource } from './inventorySourceReader'
 
 export interface CaseInventory {
   source: string
@@ -104,8 +105,8 @@ function objectProperty(node: ts.Expression | undefined, name: string) {
   return property && ts.isPropertyAssignment(property) ? property.initializer : undefined
 }
 
-export function analyzeCaseSource(content: string, file: string, templateNames: string[] = [], initialBindings: Record<string, unknown> = {}): CaseInventory[] {
-  const source = ts.createSourceFile(file, content, ts.ScriptTarget.Latest, true)
+export function analyzeCaseSource(content: string | ts.SourceFile, file: string, templateNames: string[] = [], initialBindings: Record<string, unknown> = {}): CaseInventory[] {
+  const source = typeof content === 'string' ? parseInventorySource(content, file) : content
   const cases: CaseInventory[] = []
   const globals: Bindings = new Map(Object.entries(initialBindings))
   const imports = new Map<string, { original: string, source: string }>()
@@ -405,16 +406,16 @@ export function analyzeCaseSource(content: string, file: string, templateNames: 
   return cases
 }
 
-export function importedTestSources(content: string, file: string) {
-  const source = ts.createSourceFile(file, content, ts.ScriptTarget.Latest, true)
+export function importedTestSources(content: string | ts.SourceFile, file: string) {
+  const source = typeof content === 'string' ? parseInventorySource(content, file) : content
   return source.statements.filter(ts.isImportDeclaration)
     .map(node => ts.isStringLiteral(node.moduleSpecifier) ? node.moduleSpecifier.text : '')
     .filter(specifier => specifier.startsWith('.') && /\.test(?:\.ts)?$/.test(specifier))
     .map(specifier => path.posix.normalize(path.posix.join(path.posix.dirname(file), specifier.endsWith('.ts') ? specifier : `${specifier}.ts`)))
 }
 
-export function readFactoryTitle(content: string, file: string, factory: string) {
-  const source = ts.createSourceFile(file, content, ts.ScriptTarget.Latest, true)
+export function readFactoryTitle(content: string | ts.SourceFile, file: string, factory: string) {
+  const source = typeof content === 'string' ? parseInventorySource(content, file) : content
   for (const statement of source.statements) {
     if (ts.isExpressionStatement(statement) && ts.isCallExpression(statement.expression)
       && callRoot(statement.expression.expression) === factory) {
@@ -424,14 +425,14 @@ export function readFactoryTitle(content: string, file: string, factory: string)
   return undefined
 }
 
-export function readCaseInventory(root: string, file: string, templates: string[] = [], seen = new Set<string>()): CaseInventory[] {
+export function readCaseInventory(root: string, file: string, templates: string[] = [], seen = new Set<string>(), readSource: InventorySourceReader = createInventorySourceReader(root)): CaseInventory[] {
   if (seen.has(file)) {
     return []
   }
   seen.add(file)
-  const content = fs.readFileSync(path.join(root, file), 'utf8')
+  const source = readSource(file)
   return [
-    ...analyzeCaseSource(content, file, templates),
-    ...importedTestSources(content, file).flatMap(child => readCaseInventory(root, child, [], seen)),
+    ...analyzeCaseSource(source, file, templates),
+    ...importedTestSources(source, file).flatMap(child => readCaseInventory(root, child, [], seen, readSource)),
   ]
 }

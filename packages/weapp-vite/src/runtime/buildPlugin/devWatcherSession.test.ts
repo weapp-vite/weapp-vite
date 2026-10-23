@@ -10,6 +10,51 @@ function generation() {
 }
 
 describe('classic development watcher session', () => {
+  it('retains session resources across generation stops and joins their final shutdown', async () => {
+    const owner = createDevWatcherSession()
+    const first = generation()
+    const next = generation()
+    const release = Promise.withResolvers<void>()
+    const closeResource = vi.fn(() => release.promise)
+    await owner.ownResource(closeResource)
+    await owner.own(first.watcher)
+    await owner.restart(async () => {
+      await owner.stopGeneration(first.watcher)
+      await owner.own(next.watcher)
+    })
+    expect(closeResource).not.toHaveBeenCalled()
+    const closing = first.watcher.close()
+    expect(owner.close()).toBe(closing)
+    let closed = false
+    void closing.then(() => closed = true)
+    await Promise.resolve()
+    expect(closeResource).toHaveBeenCalledOnce()
+    expect(closed).toBe(false)
+    release.resolve()
+    await closing
+    expect(closed).toBe(true)
+    expect(next.stopped).toHaveBeenCalledOnce()
+    const lateResource = vi.fn(async () => {})
+    await owner.ownResource(lateResource)
+    expect(lateResource).toHaveBeenCalledOnce()
+  })
+
+  it('retains session resource failures while still draining every generation', async () => {
+    const owner = createDevWatcherSession()
+    const first = generation()
+    const failure = new Error('session config watcher close failed')
+    const closeResource = vi.fn(async () => {
+      throw failure
+    })
+    await owner.own(first.watcher)
+    await owner.ownResource(closeResource)
+    const closing = owner.close()
+    await expect(closing).rejects.toBe(failure)
+    expect(owner.close()).toBe(closing)
+    expect(first.stopped).toHaveBeenCalledOnce()
+    expect(closeResource).toHaveBeenCalledOnce()
+  })
+
   it('closes the current provider through the earliest handle after multiple generations', async () => {
     const owner = createDevWatcherSession()
     const first = generation()
@@ -122,5 +167,30 @@ describe('classic development watcher session', () => {
     await Promise.all([rejectedRestart, rejectedClose])
     expect(first.stopped).toHaveBeenCalledOnce()
     expect(second.stopped).toHaveBeenCalledOnce()
+  })
+
+  it('retains a settled restart failure through the original idempotent close handle', async () => {
+    const owner = createDevWatcherSession()
+    const first = generation()
+    const replacement = generation()
+    const failure = new Error('replacement startup failed')
+    await owner.own(first.watcher)
+    await owner.restart(async () => {
+      await owner.stopGeneration(first.watcher)
+      await owner.own(replacement.watcher)
+    })
+    await expect(owner.restart(async () => {
+      throw failure
+    })).rejects.toBe(failure)
+    const closing = first.watcher.close()
+    expect(first.watcher.close()).toBe(closing)
+    expect(replacement.watcher.close()).toBe(closing)
+    await expect(closing).rejects.toBe(failure)
+    expect(first.stopped).toHaveBeenCalledOnce()
+    expect(replacement.stopped).toHaveBeenCalledOnce()
+    const other = createDevWatcherSession()
+    const unrelated = generation()
+    await other.own(unrelated.watcher)
+    await expect(unrelated.watcher.close()).resolves.toBeUndefined()
   })
 })

@@ -6,15 +6,17 @@ import type {
 } from 'rolldown'
 import type { InlineConfig } from 'vite'
 import type { BuildTarget, CompilerContext, MutableCompilerContext } from '../../context'
-import type { DevModuleGraphChange } from '../../moduleGraph/devProvider'
+import type { DevModuleGraphChange, DevModuleGraphProvider } from '../../moduleGraph/devProvider'
 import type { PublicAssetOptions } from '../../plugins/asset/publicSources'
 import type { ChangeEvent, SubPackageMetaValue } from '../../types'
 import type { HmrProfileRecordMetadata, HmrProfileSourceEvent } from '../../utils/hmrProfile/provenance'
 import type { HmrRuntimeDecision } from '../hmrRuntime'
 import type { StatefulHmrProfileHandoff } from '../statefulHmr/profile'
 import type { AppShellSnapshot } from './appShellSnapshot'
+import type { ClassicConfigWatcher } from './classicConfigWatcher'
 import type { DevBuildWatcherController } from './devBuildWatcher'
 import type { DevWatcherSession } from './devWatcherSession'
+import type { InitialBuildRouteEvidence } from './initialBuildChanges'
 import { randomUUID } from 'node:crypto'
 import { appendFile, mkdir } from 'node:fs/promises'
 import process from 'node:process'
@@ -49,12 +51,14 @@ import { isAppVueFile } from '../../plugins/vue/transform/appShell'
 import { changeFileExtension } from '../../utils/file'
 import { createHmrProfileEventId, recordHmrProfileDuration, resolveActiveHmrProfileJsonPath } from '../../utils/hmrProfile'
 import { resolveCompilerOutputExtensions } from '../../utils/outputExtensions'
+import { isPathInside } from '../../utils/path'
 import { syncProjectConfigToOutput } from '../../utils/projectConfig'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { isWxmlDependency } from '../../wxml/processing/dependencies'
 import { resolveBaseDir, WEAPP_VITE_INTERNAL_DIRNAME } from '../autoImport/config/base'
 import { ownsAutoRoutesTopologyChange, subscribeAutoRoutesTopology } from '../autoRoutesPlugin/topology'
 import { prepareClassicIdeConfig } from '../classicIdeConfig/prepare'
+import { restartCompilerContextInputObservation } from '../compilerSession/context'
 import { waitForBuildTasks } from '../compilerSession/tasks'
 import { findSkylineRendererFiles, formatHmrRuntimeStartupMessages, resolveHmrRuntimeDecision } from '../hmrRuntime'
 import { getHmrRuntimeCapabilityFallback, HmrRuntimeCapabilityError } from '../hmrRuntimeCapabilities'
@@ -70,10 +74,12 @@ import { clearStatefulHmrSnapshot, takeStatefulHmrSnapshot } from '../statefulHm
 import { syncProjectSupportFiles } from '../supportFiles'
 import { watchAssetSources } from '../watch/assets'
 import { createSidecarWatchOptions } from '../watch/options'
+import { claimSidecarDelivery } from '../watch/sidecarDelivery'
 import { createSidecarWatcherReadiness } from '../watch/sidecarReadiness'
 import { bindWatcherServiceController, closeWatcherControllerResources } from '../watcher/controllerClose'
 import { retainWatcherService } from '../watcherPlugin'
 import { captureAppShellSnapshot, resolveAppShellSnapshotChange, withInitialAppShellSnapshot } from './appShellSnapshot'
+import { createClassicConfigWatcher } from './classicConfigWatcher'
 import { createDevBuildWatcher } from './devBuildWatcher'
 import { createDevWatcherSession } from './devWatcherSession'
 import { captureEntryTopology } from './entryTopology'
@@ -100,6 +106,17 @@ export interface BuildService {
   buildIndependentBundle: (root: string, meta: SubPackageMetaValue) => Promise<RolldownOutput>
   getIndependentOutput: (root: string) => RolldownOutput | undefined
   invalidateIndependentOutput: (root: string) => void
+}
+
+/** 同一资源可能经局部释放和整体 drain 重复返回原错，聚合时只保留一次。 */
+function containsFailure(error: unknown, failure: unknown): boolean {
+  if (error === failure) {
+    return true
+  }
+  if (failure instanceof AggregateError) {
+    return failure.errors.every((item: unknown) => containsFailure(error, item))
+  }
+  return error instanceof AggregateError && error.errors.some((item: unknown) => containsFailure(item, failure))
 }
 
 interface HmrProfileJsonSample extends HmrProfileRecordMetadata {
@@ -223,6 +240,8 @@ interface HmrPhaseRegressionCandidate {
 
 interface SnapshotBuildReason {
   verifyInitialInput?: boolean
+  verifyInitialModuleOwner?: boolean
+  initialRoute?: InitialBuildRouteEvidence
   sourceEvent?: HmrProfileSourceEvent
   event?: ChangeEvent
   file?: string
@@ -329,11 +348,11 @@ function resolveUserBuildWatchInclude(configService: ActiveConfigService, inline
     .map(pattern => path.normalize(path.isAbsolute(pattern) ? pattern : path.resolve(configService.cwd, pattern)))
 }
 
-function createSnapshotSidecarWatchPatterns(configService: ActiveConfigService, inlineConfig?: InlineConfig) {
+function createSnapshotSidecarWatchPatterns(configService: ActiveConfigService, inlineConfig?: InlineConfig, includeConfigDependencies = true) {
   const patterns: string[] = [
     // Chokidar 4+ 不再展开 glob；目录监听才能覆盖尚未进入主依赖图的独立包 sidecar。
     configService.absoluteSrcRoot,
-    ...(configService.configFileDependencies ?? []).map(dependency => path.normalize(dependency)),
+    ...(includeConfigDependencies ? configService.configFileDependencies ?? [] : []).map(dependency => path.normalize(dependency)),
   ]
   for (const include of resolveUserBuildWatchInclude(configService, inlineConfig)) {
     const scanned = picomatch.scan(include)
@@ -1223,6 +1242,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
   const buildState = ctx.runtimeState.build
   const { queue } = buildState
   const requestedConfigRestartBuilds = new Set<BuildTarget>()
+  const classicConfigWatchers = new WeakMap<DevWatcherSession, ClassicConfigWatcher>()
   const {
     buildIndependentBundle,
     getIndependentOutput,
@@ -1447,6 +1467,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         logger.info(hmrRuntimeSession.fallback ? '正在切换到 classic HMR 构建...' : '检测到配置更新，正在重启微信状态保持 HMR 构建...')
         ctx.moduleGraphService.resetSession()
         resetRuntimeStateForFreshBuild(ctx.runtimeState)
+        restartCompilerContextInputObservation(ctx as CompilerContext)
         await configService.load(configService.loadOptions)
         await scanService.loadAppEntry()
         scanService.loadSubPackages()
@@ -1578,17 +1599,49 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       },
     }
     delete snapshotBuildOptions.build?.watch
+    let configWatcher: ClassicConfigWatcher | undefined
+    if (target === 'app' && !hasDevModuleGraphHost(ctx)
+      && (classicConfigWatchers.has(classicOwner) || configService.configFileDependencies?.length)) {
+      configWatcher = classicConfigWatchers.get(classicOwner)
+      if (!configWatcher) {
+        configWatcher = createClassicConfigWatcher(configService, () => {
+          void classicOwner.close().catch(error => logger.error(error))
+        })
+        classicConfigWatchers.set(classicOwner, configWatcher)
+        const configWatcherRoot = `${configService.absoluteSrcRoot}::classic-config-session`
+        const ownedConfigWatcher = configWatcher
+        const resource = {
+          async close() {
+            try {
+              await ownedConfigWatcher.close()
+            }
+            finally {
+              if (watcherService.sidecarWatcherMap.get(configWatcherRoot) === resource) {
+                watcherService.sidecarWatcherMap.delete(configWatcherRoot)
+              }
+            }
+          },
+        }
+        watcherService.sidecarWatcherMap.set(configWatcherRoot, resource)
+        await classicOwner.ownResource(() => resource.close())
+      }
+    }
     const snapshotWatcherRoot = `${configService.absoluteSrcRoot}::dev-snapshot`
     // 首构写出及其事件回放均须结束，后续批次才能取得共享 profile 和输出的所有权。
     const initialSnapshot = Promise.withResolvers<undefined>()
     let snapshotBuildChain: Promise<'snapshot' | 'closed' | undefined> = target === 'app' ? initialSnapshot.promise : Promise.resolve(undefined)
     let watcherEventCompletion = Promise.resolve()
     let devWatcherClosed = false
+    let snapshotConfigRestartRequested = false
+    let generationReadyForRestart = false
+    let configRestartTask: Promise<void> | undefined
+    let releaseConfigNotifications: (() => void) | undefined
     let pendingSnapshotBatch: SnapshotBuildBatch | undefined
     const queuedSnapshotReasons = new Set<SnapshotBuildReason>()
     let failedSnapshotReasons: SnapshotBuildReason[] = []
     let failedEntryTopologyChange = false
     let initialBuildFailed = false
+    let skippedInitialConfigPublication = false
     let snapshotBatchTimer: ReturnType<typeof setTimeout> | undefined
     // Web 可能先刷新共享服务，native 快照必须比较自身已成功写出的路由版本。
     let emittedAutoRoutesSignature: string | undefined
@@ -1675,7 +1728,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       batchReasons: SnapshotBuildReason[] = reason ? [reason] : [],
       eventStartedAt = reason ? performance.now() : 0,
     ) => {
-      if (devWatcherClosed) {
+      if (devWatcherClosed || snapshotConfigRestartRequested) {
         return snapshotBuildChain
       }
       const queuedAt = performance.now()
@@ -1683,7 +1736,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         for (const queued of batchReasons) {
           queuedSnapshotReasons.delete(queued)
         }
-        if (devWatcherClosed) {
+        if (devWatcherClosed || snapshotConfigRestartRequested) {
           return
         }
         if (failedSnapshotReasons.length) {
@@ -1693,8 +1746,22 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           resetEmittedOutputCaches(ctx.runtimeState)
         }
         const receivedReasons = batchReasons
+        batchReasons = batchReasons.filter((batchReason) => {
+          if (!batchReason.verifyInitialModuleOwner || !batchReason.file) {
+            return true
+          }
+          // 首构结束后依赖归属才完整；只重新认领提前到达的模块通知，保留其他 watcher 的明确所有权。
+          batchReason.verifyInitialModuleOwner = false
+          if (isWxmlDependency(ctx, batchReason.file)) {
+            batchReason.independentRoots = [...scanService.independentSubPackageMap.keys()]
+            return true
+          }
+          return ctx.moduleGraphService.hasModule(batchReason.file)
+            || ownsCompilerContentSource(configService, batchReason.file)
+            || initialBuildFailed
+        })
         batchReasons = await initialBuildInputs?.filter(batchReasons) ?? batchReasons
-        if (devWatcherClosed || (receivedReasons.length && !batchReasons.length)) {
+        if (devWatcherClosed || snapshotConfigRestartRequested || (receivedReasons.length && !batchReasons.length)) {
           return
         }
         if (batchReasons.length !== receivedReasons.length) {
@@ -1842,6 +1909,9 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
                 continue
               }
               mergeHmrStyleUpdatePlan(configService, { compilerContentOwners: [[update.appEntryId, update.reason]] })
+            }
+            if (devWatcherClosed || snapshotConfigRestartRequested) {
+              return
             }
             // 失败的上一代可能已推进源码签名，重放仍须保留尚未交付的编译器 owner。
             for (const [appEntryId, contentReason] of getHmrStyleUpdatePlan(configService)?.compilerContentOwners ?? []) {
@@ -2026,7 +2096,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     }
 
     function scheduleSnapshotBuild(reason: SnapshotBuildReason, startedAt: number) {
-      if (devWatcherClosed) {
+      if (devWatcherClosed || snapshotConfigRestartRequested) {
         return
       }
       reason.sourceEvent ??= { eventId: createHmrProfileEventId(), event: reason.event, file: reason.file, receivedAtMs: startedAt }
@@ -2059,7 +2129,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       }, SNAPSHOT_BUILD_BATCH_DELAY_MS)
     }
 
-    function onModuleGraphChange({ event, file: id }: DevModuleGraphChange, receivedAtMs = performance.now()) {
+    function onModuleGraphChange({ event, file: id }: DevModuleGraphChange, receivedAtMs = performance.now(), initialRoute?: InitialBuildRouteEvidence) {
       if (isDevOutputFile(id)) {
         return
       }
@@ -2072,6 +2142,8 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           file: id,
           forceFullRescan: true,
           verifyInitialInput: true,
+          verifyInitialModuleOwner: !initialRoute,
+          initialRoute,
           independentRoots: isWxmlDependency(ctx, id) ? [...scanService.independentSubPackageMap.keys()] : undefined,
         }, receivedAtMs)
         return
@@ -2088,273 +2160,71 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       if (!hasModule && !ownsCompilerContentSource(configService, id) && !initialBuildFailed) {
         return
       }
-      scheduleSnapshotBuild({ event, file: id, verifyInitialInput: true }, receivedAtMs)
+      scheduleSnapshotBuild({ event, file: id, verifyInitialInput: true, initialRoute }, receivedAtMs)
     }
 
-    // 附着宿主与独立 Vite provider 共用同一事件入口；路由结构由目录 watcher 完成解析后交回。
-    const moduleGraphProvider = target === 'app'
-      ? await createDevModuleGraphProvider(ctx, buildOptions, (change) => {
-          if (ownsAutoRoutesTopologyChange(ctx, change)) {
-            return
-          }
-          onModuleGraphChange(change)
-        })
-      : undefined
-    const releaseAutoRoutesTopology = target === 'app'
-      ? subscribeAutoRoutesTopology(ctx, (change) => {
-          const { topologyChanged, sourceChanges = [change] } = change
-          // 其他事件的扫描可能已发现该页面；构建图尚未登记时，仍须由 native 发布基线接收本轮真实通知。
-          const forceFullRescan = topologyChanged || ctx.autoRoutesService?.getSignature() !== emittedAutoRoutesSignature
-          for (const { file, event, receivedAtMs = performance.now() } of sourceChanges) {
-            if (forceFullRescan) {
-              scheduleSnapshotBuild({ event, file, forceFullRescan: true }, receivedAtMs)
-            }
-            else {
-              // 非页面脚本或原子恢复可能不改变路由，但已有依赖仍须处理原始源事件。
-              onModuleGraphChange({ file, event }, receivedAtMs)
-            }
-          }
-        })
-      : undefined
-
-    // classic 的多轮一次性构建共用控制器资源，必须保留到正在执行的快照结束后再释放。
     const releaseWatcherResources = devBuildWatcher ? retainWatcherService(watcherService) : undefined
-    const watcherPromise = target === 'app'
-      ? (async () => {
-          devBuildWatcher!.emitEvent({ code: 'START' })
-          try {
-            await ctx.autoRoutesService?.ensureFresh()
-            const routeSignature = ctx.autoRoutesService?.getSignature()
-            await withHmrStyleUpdatePlan(configService, createHmrStyleUpdatePlan([], { full: true }), async () => withInitialAppShellSnapshot(ctx, async () => {
-              await build(createSnapshotBuildConfig(snapshotBuildOptions))
-              emittedAutoRoutesSignature = routeSignature
-              emittedEntryTopology = captureEntryTopology(ctx)
-              emittedAppShellSnapshot = await captureAppShellSnapshot(ctx)
-            }, (changes) => {
-              for (const change of changes) {
-                scheduleSnapshotBuild({ ...change, forceFullRescan: true }, performance.now())
-              }
-            }))
-            initialBuildInputs?.commit()
-            devBuildWatcher!.emitEvent({ code: 'END' })
-            return devBuildWatcher!.watcher
-          }
-          catch (error) {
-            initialBuildInputs?.close()
-            devBuildWatcher!.emitEvent({
-              code: 'ERROR',
-              error: error instanceof Error ? error : new Error(String(error)),
-              result: undefined as never,
-            })
-            // 转换的首个 classic 发布必须成功；失败由宿主停止交接，不能保留纠错 watcher。
-            if (!hasDevModuleGraphHost(ctx) || getHmrRuntimeSession(ctx).phase === 'switching') {
-              devWatcherClosed = true
-              throw error
-            }
-            // 借用宿主时保留恢复调度，首构建失败后下次输入变更执行完整快照。
-            initialBuildFailed = true
-            failedSnapshotReasons = [{ forceFullRescan: true }]
-            logger.error(error)
-            return devBuildWatcher!.watcher
-          }
-        })()
-      : build(buildOptions) as unknown as Promise<RolldownWatcher>
-    const startup = await Promise.allSettled([watcherPromise])
-    const startupErrors = startup.flatMap(result => result.status === 'rejected' ? [result.reason] : [])
-    if (startupErrors.length > 0) {
+    let moduleGraphProvider: DevModuleGraphProvider | undefined
+    let releaseAutoRoutesTopology: (() => void) | undefined
+    let assetWatcher: ReturnType<typeof watchAssetSources> | undefined
+    const snapshotWatchPatterns = createSnapshotSidecarWatchPatterns(configService, buildOptions, !configWatcher)
+    const snapshotSidecarIgnored = createSnapshotSidecarIgnoredMatcher(ctx)
+    let snapshotSidecarReady = false
+
+    function clearPendingSnapshotBuilds() {
+      if (snapshotBatchTimer) {
+        clearTimeout(snapshotBatchTimer)
+        snapshotBatchTimer = undefined
+      }
+      pendingSnapshotBatch = undefined
+      queuedSnapshotReasons.clear()
+    }
+
+    function markSnapshotClosed() {
       devWatcherClosed = true
       initialSnapshot.resolve(undefined)
-      // worker 属于初次发布事务；一个关闭失败不能遗留控制器租约。
-      const cleanup = await Promise.allSettled([
-        async () => releaseAutoRoutesTopology?.(),
-        async () => await moduleGraphProvider?.close(),
-        async () => await devBuildWatcher?.watcher.close(),
-        async () => await releaseWatcherResources?.releaseResources(),
-      ].map(async close => await close()))
-      const errors = [...startupErrors, ...cleanup.flatMap(result => result.status === 'rejected' ? [result.reason] : [])]
-      throw errors.length === 1 ? errors[0] : new AggregateError(errors, 'Development watcher startup failed')
+      releaseAutoRoutesTopology?.()
+      releaseConfigNotifications?.()
+      clearPendingSnapshotBuilds()
     }
-    const watcher = (startup[0] as PromiseFulfilledResult<RolldownWatcher>).value
 
-    debug?.('dev build watcher end')
-    debug?.('dev watcher listen start')
-
-    let startTime: DOMHighResTimeStamp
-    let firstBuildCompleted = false
-    let resolveWatcher: (value: unknown) => void
-    let rejectWatcher: (reason?: any) => void
-    const promise = new Promise((res, rej) => {
-      resolveWatcher = res
-      rejectWatcher = rej
-    })
-    const { styleExtension } = resolveCompilerOutputExtensions(configService.outputExtensions)
-    const appWxssPath = target === 'app'
-      ? path.join(configService.outDir, `app.${styleExtension}`)
-      : undefined
-
-    const onWatcherEvent = (e: RolldownWatcherEvent) => {
-      const completedStylePlan = e.code === 'END' || e.code === 'ERROR'
-        ? getHmrStyleUpdatePlan(configService)
-        : undefined
-      if (e.code === 'ERROR' || devWatcherClosed) {
-        // 仅结算本事件开始时的计划；scoped 代仍由外层 build 持有。
-        settleHmrStyleUpdatePlan(configService, completedStylePlan, false)
-      }
+    function requestSnapshotConfigRestart() {
       if (devWatcherClosed) {
         return
       }
-      if (e.code === 'START') {
-        startTime = performance.now()
-        ctx.runtimeState.build.hmr.profile.buildId = `${profileSessionId}:${++profileBuildSequence}`
-      }
-      else if (e.code === 'END') {
-        initialBuildFailed = false
-        const bundlerDurationMs = performance.now() - startTime
-        const durationMs = bundlerDurationMs
-          + (target === 'app' ? ctx.runtimeState.build.hmr.profile.watchToDirtyMs ?? 0 : 0)
-        recordHmrProfileDuration(ctx.runtimeState.build.hmr.profile, 'bundlerMs', bundlerDurationMs)
-        const shouldRestart = shouldRestartDevBuild(target)
-        const completion = (async () => {
-          if (shouldRestart) {
-            reportDevModuleGraphBuild(ctx, true)
-            settleHmrStyleUpdatePlan(configService, completedStylePlan, true)
-            const restart = () => runPluginProjectRestart(ctx as CompilerContext, async () => {
-              if (classicSession) {
-                await classicSession.stopGeneration(watcher)
-              }
-              else {
-                await closeWatcherControllerResources(watcherService, watcher)
-              }
-              if (classicSession?.isClosing || isPluginProjectClosing(ctx as CompilerContext)) {
-                return
-              }
-              logger.info('检测到 Vite 配置变更，正在重启小程序开发构建...')
-              ctx.moduleGraphService.resetSession()
-              resetRuntimeStateForFreshBuild(ctx.runtimeState)
-              await configService.load(configService.loadOptions)
-              if (classicSession?.isClosing || isPluginProjectClosing(ctx as CompilerContext)) {
-                return
-              }
-              try {
-                if (!configService.pluginOnly) {
-                  const supportFiles = await syncProjectSupportFiles(ctx)
-                  for (const warning of supportFiles.managedTsconfigWarnings) {
-                    logger.warn(warning)
-                  }
-                }
-              }
-              catch (error) {
-                const message = error instanceof Error ? error.message : String(error)
-                logger.warn(`[prepare] 自动同步 .weapp-vite 支持文件失败：${message}`)
-              }
-              if (classicSession?.isClosing || isPluginProjectClosing(ctx as CompilerContext)) {
-                return
-              }
-              await scanService.loadAppEntry()
-              scanService.loadSubPackages()
-              if (classicSession?.isClosing || isPluginProjectClosing(ctx as CompilerContext)) {
-                return
-              }
-              await restartDev(target)
-              if (!classicSession?.isClosing && !isPluginProjectClosing(ctx as CompilerContext)) {
-                logger.success('Vite 配置已重新加载，小程序开发构建已重启。')
-              }
-            })
-            await (classicSession ? classicSession.restart(restart) : restart())
-            resolveWatcher(e)
-            return
-          }
-
-          if (firstBuildCompleted) {
-            const { styleExtension } = resolveCompilerOutputExtensions(configService.outputExtensions)
-            const emittedStyleSuffix = `.${styleExtension.replace(/^\./, '')}`
-            const emittedStyleFileNames = new Set(ctx.runtimeState.build.hmr.lastEmittedChunkFileNames)
-            const profileFile = ctx.runtimeState.build.hmr.profile.file
-            const normalizedProfileFile = typeof profileFile === 'string' ? profileFile.replaceAll('\\', '/') : undefined
-            if (normalizedProfileFile && watchedCssSuffixes.some(suffix => normalizedProfileFile.endsWith(suffix))) {
-              emittedStyleFileNames.add(configService.relativeOutputPath(
-                changeFileExtension(normalizedProfileFile, styleExtension),
-              ))
-            }
-            const emittedStyleFiles = Array.from(emittedStyleFileNames)
-              .filter((fileName) => {
-                const normalized = fileName.replaceAll('\\', '/')
-                return normalized.endsWith(emittedStyleSuffix) && normalized !== `app${emittedStyleSuffix}`
-              })
-            if (emittedStyleFiles.length > 0) {
-              await touchExistingOutputStyles(configService.outDir, emittedStyleFiles, styleExtension)
-            }
-            if (appWxssPath && shouldTouchAppWxss()) {
-              await touchExistingAppStyle(appWxssPath)
-            }
-            // 样式收尾属于本次发布；完成证据不能早于任何仍可能失败的宿主刷新。
-            finalizeHmrProfile(bundlerDurationMs)
-            recordHmrProfile(durationMs)
-            void writeHmrProfileJsonSample(durationMs).catch((error) => {
-              debug?.(`write hmr profile json failed: ${String(error)}`)
-            })
-            logger.success(formatHmrLogLine(durationMs))
-            shouldLogSlowHmrTip()
-          }
-          else {
-            firstBuildCompleted = true
-          }
-          reportDevModuleGraphBuild(ctx, true)
-          resetHmrProfile()
-          settleHmrStyleUpdatePlan(configService, completedStylePlan, true)
-          resolveWatcher(e)
-        })().catch(async (error) => {
-          // 样式刷新失败也属于本代失败，先归还重试事实，再等待失败报告写出。
-          settleHmrStyleUpdatePlan(configService, completedStylePlan, false)
-          if (!shouldRestart) {
-            reportDevModuleGraphBuild(ctx, false)
-            // 先冻结并写出失败归属，再释放 profile；原始收尾异常仍由当前发布向外传播。
-            await writeHmrProfileJsonSample(Math.max(0, performance.now() - startTime), 'failed').catch((profileError) => {
-              debug?.(`write failed hmr profile json failed: ${String(profileError)}`)
-            })
-          }
-          resetHmrProfile()
-          logger.error(error)
-          rejectWatcher(error)
-          throw error
-        })
-        // 配置重启会关闭并等待当前批次，不能让该批次反向等待自己的重启任务。
-        watcherEventCompletion = shouldRestart ? Promise.resolve() : completion
+      snapshotConfigRestartRequested = true
+      // 待执行的旧配置批次没有发布所有权；新代完整扫描会读取其中所有最新源码。
+      clearPendingSnapshotBuilds()
+      if (generationReadyForRestart && !configRestartTask) {
+        // eslint-disable-next-line ts/no-use-before-define -- 订阅前已完成本代控制器及错误处理初始化。
+        const completion = restartConfigGeneration(true).catch(error => failConfigRestart(error))
         void completion.catch(() => {})
-        if (!shouldRestart) {
-          // 原生 watcher 必须等本代样式与 profile 收尾，才能启动下一代。
-          return completion
-        }
-      }
-      else if (e.code === 'ERROR') {
-        reportDevModuleGraphBuild(ctx, false)
-        void writeHmrProfileJsonSample(Math.max(0, performance.now() - startTime), 'failed').catch((error) => {
-          debug?.(`write failed hmr profile json: ${String(error)}`)
-        })
-        resetHmrProfile()
-        if (target !== 'app') {
-          rejectWatcher(e)
-        }
       }
     }
-    if (!classicSession) {
-      watcher.on('event', onWatcherEvent)
-    }
-    if (target !== 'app') {
-      await promise
+    releaseConfigNotifications = configWatcher?.subscribe(requestSnapshotConfigRestart)
+
+    function ownsSnapshotPhysicalSidecar(file: string) {
+      const id = normalizeFsResolvedId(file)
+      if (!snapshotSidecarReady || !isSidecarFile(id) || isDevOutputFile(id) || snapshotSidecarIgnored?.(id)
+        || isWxmlDependency(ctx, id) || ownsWorkerSource(ctx, id)
+        || (configService.configFileDependencies ?? []).some(dependency => normalizeFsResolvedId(dependency) === id)) {
+        return false
+      }
+      const relative = configService.relativeAbsoluteSrcRoot(id)
+      if ([...ctx.runtimeState.build.independent.watchFiles].some(([, files]) => files.has(id))
+        || [...scanService.independentSubPackageMap?.keys?.() ?? []].some(root => relative === root || relative.startsWith(`${root}/`))) {
+        return false
+      }
+      return snapshotWatchPatterns.some(root => isPathInside(root, id))
     }
 
-    const watcherRoot = target === 'plugin'
-      ? configService.absolutePluginRoot ?? configService.absoluteSrcRoot
-      : '/'
-    const registeredWatcher = target === 'app' ? publicBuildEvents?.watcher ?? watcher : watcher
-    if (target === 'app' && !watcherService.sidecarWatcherMap.has(snapshotWatcherRoot)) {
+    function createSnapshotSidecarScope() {
       const snapshotWatcher = chokidar.watch(
-        createSnapshotSidecarWatchPatterns(configService, buildOptions),
+        snapshotWatchPatterns,
         createSidecarWatchOptions(configService, {
           persistent: true,
           ignoreInitial: true,
-          ignored: createSnapshotSidecarIgnoredMatcher(ctx),
+          ignored: snapshotSidecarIgnored,
         }),
       )
       const sidecarReadiness = createSidecarWatcherReadiness(snapshotWatcher)
@@ -2375,6 +2245,10 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           return
         }
         const normalizedId = normalizeFsResolvedId(id)
+        // 配置监听跨 generation 保持连续，普通 sidecar watcher 不再交付同一配置保存。
+        if (configWatcher && (configService.configFileDependencies ?? []).some(dependency => normalizeFsResolvedId(dependency) === normalizedId)) {
+          return
+        }
         if (isWxmlDependency(ctx, normalizedId)) {
           return
         }
@@ -2419,9 +2293,9 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         const isConfigDependency = (configService.configFileDependencies ?? [])
           .some(dependency => normalizeFsResolvedId(dependency) === normalizedId)
         if (!event.startsWith('add') && !event.startsWith('unlink') && !isConfigDependency && !independentSource) {
-          return
-        }
-        if (event.startsWith('add') && !isConfigDependency && ctx.moduleGraphService.hasModule(id)) {
+          if (isSidecarFile(id) && (ctx.moduleGraphService.hasModule(id) || ownsCompilerContentSource(configService, id))) {
+            onModuleGraphChange({ event: 'update', file: id })
+          }
           return
         }
         if (isConfigDependency) {
@@ -2429,7 +2303,8 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           if (hasDevModuleGraphHost(ctx)) {
             return
           }
-          requestedConfigRestartBuilds.add(target)
+          requestSnapshotConfigRestart()
+          return
         }
         const independentConfigDependency = independentSource && configSuffixes.some(suffix => normalizedId.endsWith(suffix))
         const sidecarStartedAt = performance.now()
@@ -2447,19 +2322,11 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           forceFullRescan: !independentSource || isConfigDependency,
         }, sidecarStartedAt)
       })
-      const assetWatcher = watchAssetSources(configService, {
-        publicAssets,
-        isModule: file => ctx.moduleGraphService.hasModule(file),
-        onChange: (file, event) => scheduleSnapshotBuild({ file, event, forceFullRescan: true }, performance.now()),
-        onError: (error) => {
-          devBuildWatcher?.emitEvent({ code: 'ERROR', error, result: undefined as never })
-          logger.error(error)
-        },
-      })
       let closingSidecar: Promise<void> | undefined
-      watcherService.sidecarWatcherMap.set(snapshotWatcherRoot, {
+      const resource = {
         close: () => closingSidecar ??= (async () => {
           // Chokidar.close 会移除 ready/error 监听器，须先终结本代仍在等待的扫描。
+          markSnapshotClosed()
           sidecarReadiness.close()
           // 完整 drain 与本代关闭可同时持有此记录，重复调用必须等待同一份资源结果。
           const results = await Promise.allSettled([
@@ -2467,7 +2334,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             async () => unobserveWorkers(),
             async () => independentWatch.watchListeners.delete(observeIndependent),
             async () => await snapshotWatcher.close(),
-            async () => await assetWatcher.close(),
+            async () => await assetWatcher?.close(),
           ].map(async close => await close()))
           const errors = results.flatMap(result => result.status === 'rejected' ? [result.reason] : [])
           try {
@@ -2480,6 +2347,391 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             throw errors.length === 1 ? errors[0] : new AggregateError(errors, 'Development sidecar cleanup failed', { cause: errors[0] })
           }
         })(),
+      }
+      watcherService.sidecarWatcherMap.set(snapshotWatcherRoot, resource)
+      return { resource, ready: sidecarReadiness.ready }
+    }
+
+    let snapshotSidecar: ReturnType<typeof createSnapshotSidecarScope> | undefined
+    try {
+      await configWatcher?.updateDependencies()
+      if (target === 'app' && (configWatcher?.isClosed || classicOwner.isClosing)) {
+        markSnapshotClosed()
+        await devBuildWatcher?.watcher.close()
+        await releaseWatcherResources?.releaseResources()
+        return publicBuildEvents?.watcher ?? devBuildWatcher!.watcher
+      }
+      if (target === 'app' && !watcherService.sidecarWatcherMap.has(snapshotWatcherRoot)) {
+        snapshotSidecar = createSnapshotSidecarScope()
+        const readiness = await snapshotSidecar.ready
+        if (readiness === 'closed') {
+          await snapshotSidecar.resource.close()
+          await releaseWatcherResources?.releaseResources()
+          await devBuildWatcher?.watcher.close()
+          return publicBuildEvents?.watcher ?? devBuildWatcher!.watcher
+        }
+        snapshotSidecarReady = true
+      }
+      // 附着宿主与独立 Vite provider 共用同一事件入口；路由结构由目录 watcher 完成解析后交回。
+      moduleGraphProvider = target === 'app'
+        ? await createDevModuleGraphProvider(ctx, buildOptions, (change) => {
+            if (ownsAutoRoutesTopologyChange(ctx, change) || ownsSnapshotPhysicalSidecar(change.file)
+              || (configService.configFileDependencies ?? []).some(dependency => normalizeFsResolvedId(dependency) === normalizeFsResolvedId(change.file))) {
+              return
+            }
+            onModuleGraphChange(change)
+          })
+        : undefined
+      if (devWatcherClosed) {
+        await moduleGraphProvider?.close()
+        await releaseWatcherResources?.releaseResources()
+        await devBuildWatcher?.watcher.close()
+        return publicBuildEvents?.watcher ?? devBuildWatcher!.watcher
+      }
+      releaseAutoRoutesTopology = target === 'app'
+        ? subscribeAutoRoutesTopology(ctx, (change) => {
+            const { topologyChanged, sourceChanges = [change] } = change
+            const routeSignature = ctx.autoRoutesService?.getSignature()
+            // 其他事件的扫描可能已发现该页面；构建图尚未登记时，仍须由 native 发布基线接收本轮真实通知。
+            const forceFullRescan = topologyChanged || routeSignature !== emittedAutoRoutesSignature
+            for (const { file, event, receivedAtMs = performance.now() } of sourceChanges) {
+              if (forceFullRescan) {
+                scheduleSnapshotBuild({ event, file, forceFullRescan: true, verifyInitialInput: true, initialRoute: { signature: routeSignature } }, receivedAtMs)
+              }
+              else {
+              // 非页面脚本或原子恢复可能不改变路由，但已有依赖仍须处理原始源事件。
+                onModuleGraphChange({ file, event }, receivedAtMs, { signature: routeSignature })
+              }
+            }
+          })
+        : undefined
+
+      if (snapshotSidecarReady && !devWatcherClosed) {
+        claimSidecarDelivery(ctx as CompilerContext, (file, event) => {
+          if (!isSidecarFile(file) || isDevOutputFile(file)) {
+            return false
+          }
+          return ctx.moduleGraphService.hasModule(file) || ownsCompilerContentSource(configService, file)
+            || isWxmlDependency(ctx, file) || ownsWorkerSource(ctx, file)
+            || (ownsSnapshotPhysicalSidecar(file) && event !== 'update')
+            || [...ctx.runtimeState.build.independent.watchFiles.values()].some(files => files.has(file))
+            || (configService.configFileDependencies ?? []).some(dependency => normalizeFsResolvedId(dependency) === file)
+            || [...scanService.independentSubPackageMap?.keys?.() ?? []].some((root) => {
+              const relative = configService.relativeAbsoluteSrcRoot(file)
+              return relative === root || relative.startsWith(`${root}/`)
+            })
+        }, watcherService)
+      }
+    }
+    catch (error) {
+      markSnapshotClosed()
+      const cleanup = await Promise.allSettled([
+        async () => await snapshotSidecar?.resource.close(),
+        async () => !snapshotSidecar && await moduleGraphProvider?.close(),
+        async () => await releaseWatcherResources?.releaseResources(),
+      ].map(async close => await close()))
+      const errors = [...new Set(cleanup.flatMap(result => result.status === 'rejected' && result.reason !== error ? [result.reason] : []))]
+      if (errors.length) {
+        throw new AggregateError([error, ...errors], 'Sidecar watcher startup and cleanup failed', { cause: error })
+      }
+      throw error
+    }
+    const watcherPromise = target === 'app'
+      ? (async () => {
+          if (configWatcher?.hasPendingChanges) {
+            // 尚未写出的旧配置代可直接退休；首个发布由重新加载配置的新代完成。
+            skippedInitialConfigPublication = true
+            return devBuildWatcher!.watcher
+          }
+          devBuildWatcher!.emitEvent({ code: 'START' })
+          try {
+            await ctx.autoRoutesService?.ensureFresh()
+            const routeSignature = ctx.autoRoutesService?.getSignature()
+            await withHmrStyleUpdatePlan(configService, createHmrStyleUpdatePlan([], { full: true }), async () => withInitialAppShellSnapshot(ctx, async () => {
+              if (configWatcher?.hasPendingChanges) {
+                skippedInitialConfigPublication = true
+                return
+              }
+              await build(createSnapshotBuildConfig(snapshotBuildOptions))
+              emittedAutoRoutesSignature = routeSignature
+              emittedEntryTopology = captureEntryTopology(ctx)
+              emittedAppShellSnapshot = await captureAppShellSnapshot(ctx)
+            }, (changes) => {
+              for (const change of changes) {
+                scheduleSnapshotBuild({ ...change, forceFullRescan: true }, performance.now())
+              }
+            }))
+            if (skippedInitialConfigPublication) {
+              return devBuildWatcher!.watcher
+            }
+            initialBuildInputs?.commit(routeSignature)
+            devBuildWatcher!.emitEvent({ code: 'END' })
+            return devBuildWatcher!.watcher
+          }
+          catch (error) {
+            initialBuildInputs?.close()
+            devBuildWatcher!.emitEvent({
+              code: 'ERROR',
+              error: error instanceof Error ? error : new Error(String(error)),
+              result: undefined as never,
+            })
+            // 转换的首个 classic 发布必须成功；失败由宿主停止交接，不能保留纠错 watcher。
+            if (!hasDevModuleGraphHost(ctx) || getHmrRuntimeSession(ctx).phase === 'switching') {
+              devWatcherClosed = true
+              throw error
+            }
+            // 借用宿主时保留恢复调度，首构建失败后下次输入变更执行完整快照。
+            initialBuildFailed = true
+            failedSnapshotReasons = [{ forceFullRescan: true }]
+            logger.error(error)
+            return devBuildWatcher!.watcher
+          }
+        })()
+      : build(buildOptions) as unknown as Promise<RolldownWatcher>
+    const startup = await Promise.allSettled([watcherPromise])
+    const startupErrors = startup.flatMap(result => result.status === 'rejected' ? [result.reason] : [])
+    if (startupErrors.length > 0) {
+      devWatcherClosed = true
+      initialSnapshot.resolve(undefined)
+      // worker 属于初次发布事务；一个关闭失败不能遗留控制器租约。
+      const cleanup = await Promise.allSettled([
+        async () => releaseAutoRoutesTopology?.(),
+        async () => await snapshotSidecar?.resource.close(),
+        async () => !snapshotSidecar && await moduleGraphProvider?.close(),
+        async () => await devBuildWatcher?.watcher.close(),
+        async () => await releaseWatcherResources?.releaseResources(),
+      ].map(async close => await close()))
+      const errors = [...startupErrors, ...cleanup.flatMap(result => result.status === 'rejected' ? [result.reason] : [])]
+      throw errors.length === 1 ? errors[0] : new AggregateError(errors, 'Development watcher startup failed', { cause: startupErrors[0] })
+    }
+    const watcher = (startup[0] as PromiseFulfilledResult<RolldownWatcher>).value
+
+    debug?.('dev build watcher end')
+    debug?.('dev watcher listen start')
+
+    let startTime: DOMHighResTimeStamp
+    let firstBuildCompleted = false
+    let resolveWatcher: (value: unknown) => void
+    let rejectWatcher: (reason?: any) => void
+    const promise = new Promise((res, rej) => {
+      resolveWatcher = res
+      rejectWatcher = rej
+    })
+    const { styleExtension } = resolveCompilerOutputExtensions(configService.outputExtensions)
+    const appWxssPath = target === 'app'
+      ? path.join(configService.outDir, `app.${styleExtension}`)
+      : undefined
+
+    function restartConfigGeneration(waitForSnapshotBuilds: boolean) {
+      if (configRestartTask) {
+        return configRestartTask
+      }
+      snapshotConfigRestartRequested = true
+      clearPendingSnapshotBuilds()
+      const restart = () => runPluginProjectRestart(ctx as CompilerContext, async () => {
+        // 直接配置通知先等待已开始的发布和收尾；END 路径必须让当前批次先退出，避免自等待。
+        if (waitForSnapshotBuilds) {
+          await snapshotBuildChain
+        }
+        if (classicSession) {
+          await classicSession.stopGeneration(watcher)
+        }
+        else {
+          await closeWatcherControllerResources(watcherService, watcher)
+        }
+        if (classicSession?.isClosing || isPluginProjectClosing(ctx as CompilerContext)) {
+          return
+        }
+        logger.info('检测到 Vite 配置变更，正在重启小程序开发构建...')
+        const isClosing = () => Boolean(classicSession?.isClosing || isPluginProjectClosing(ctx as CompilerContext))
+        const reload = async () => {
+          ctx.moduleGraphService.resetSession()
+          resetRuntimeStateForFreshBuild(ctx.runtimeState)
+          restartCompilerContextInputObservation(ctx as CompilerContext)
+          await configService.load(configService.loadOptions)
+          if (classicSession?.isClosing || isPluginProjectClosing(ctx as CompilerContext)) {
+            return
+          }
+          try {
+            if (!configService.pluginOnly) {
+              const supportFiles = await syncProjectSupportFiles(ctx)
+              for (const warning of supportFiles.managedTsconfigWarnings) {
+                logger.warn(warning)
+              }
+            }
+          }
+          catch (error) {
+            const message = error instanceof Error ? error.message : String(error)
+            logger.warn(`[prepare] 自动同步 .weapp-vite 支持文件失败：${message}`)
+          }
+          if (classicSession?.isClosing || isPluginProjectClosing(ctx as CompilerContext)) {
+            return
+          }
+          await scanService.loadAppEntry()
+          scanService.loadSubPackages()
+        }
+        if (configWatcher) {
+          await configWatcher.reload(reload, isClosing)
+        }
+        else {
+          await reload()
+        }
+        if (isClosing()) {
+          return
+        }
+        await restartDev(target)
+        if (!isClosing()) {
+          logger.success('Vite 配置已重新加载，小程序开发构建已重启。')
+        }
+      })
+      configRestartTask = classicSession ? classicSession.restart(restart) : restart()
+      return configRestartTask
+    }
+
+    async function failConfigRestart(error: unknown, completedStylePlan = getHmrStyleUpdatePlan(configService)): Promise<never> {
+      let failure = error
+      // restart 已从 owner 的在途集合退出，完整 close 才不会反向等待自己。
+      try {
+        await watcher.close()
+      }
+      catch (cleanupError) {
+        if (!containsFailure(error, cleanupError)) {
+          failure = new AggregateError([error, cleanupError], 'Development restart and cleanup failed', { cause: error })
+        }
+      }
+      settleHmrStyleUpdatePlan(configService, completedStylePlan, false)
+      resetHmrProfile()
+      logger.error(failure)
+      rejectWatcher(failure)
+      throw failure
+    }
+
+    const onWatcherEvent = (e: RolldownWatcherEvent) => {
+      const completedStylePlan = e.code === 'END' || e.code === 'ERROR'
+        ? getHmrStyleUpdatePlan(configService)
+        : undefined
+      if (e.code === 'ERROR' || devWatcherClosed) {
+        // 仅结算本事件开始时的计划；scoped 代仍由外层 build 持有。
+        settleHmrStyleUpdatePlan(configService, completedStylePlan, false)
+      }
+      if (devWatcherClosed) {
+        return
+      }
+      if (e.code === 'START') {
+        startTime = performance.now()
+        ctx.runtimeState.build.hmr.profile.buildId = `${profileSessionId}:${++profileBuildSequence}`
+      }
+      else if (e.code === 'END') {
+        initialBuildFailed = false
+        const bundlerDurationMs = performance.now() - startTime
+        const durationMs = bundlerDurationMs
+          + (target === 'app' ? ctx.runtimeState.build.hmr.profile.watchToDirtyMs ?? 0 : 0)
+        recordHmrProfileDuration(ctx.runtimeState.build.hmr.profile, 'bundlerMs', bundlerDurationMs)
+        const shouldRestart = shouldRestartDevBuild(target)
+        const completion = (async () => {
+          if (shouldRestart) {
+            reportDevModuleGraphBuild(ctx, true)
+            settleHmrStyleUpdatePlan(configService, completedStylePlan, true)
+            await restartConfigGeneration(false)
+            resolveWatcher(e)
+            return
+          }
+
+          if (firstBuildCompleted) {
+            const { styleExtension } = resolveCompilerOutputExtensions(configService.outputExtensions)
+            const emittedStyleSuffix = `.${styleExtension.replace(/^\./, '')}`
+            const emittedStyleFileNames = new Set(ctx.runtimeState.build.hmr.lastEmittedChunkFileNames)
+            const profileFile = ctx.runtimeState.build.hmr.profile.file
+            const normalizedProfileFile = typeof profileFile === 'string' ? profileFile.replaceAll('\\', '/') : undefined
+            if (normalizedProfileFile && watchedCssSuffixes.some(suffix => normalizedProfileFile.endsWith(suffix))) {
+              emittedStyleFileNames.add(configService.relativeOutputPath(
+                changeFileExtension(normalizedProfileFile, styleExtension),
+              ))
+            }
+            const emittedStyleFiles = Array.from(emittedStyleFileNames)
+              .filter((fileName) => {
+                const normalized = fileName.replaceAll('\\', '/')
+                return normalized.endsWith(emittedStyleSuffix) && normalized !== `app${emittedStyleSuffix}`
+              })
+            if (emittedStyleFiles.length > 0) {
+              await touchExistingOutputStyles(configService.outDir, emittedStyleFiles, styleExtension)
+            }
+            if (appWxssPath && shouldTouchAppWxss()) {
+              await touchExistingAppStyle(appWxssPath)
+            }
+            // 样式收尾属于本次发布；完成证据不能早于任何仍可能失败的宿主刷新。
+            finalizeHmrProfile(bundlerDurationMs)
+            recordHmrProfile(durationMs)
+            void writeHmrProfileJsonSample(durationMs).catch((error) => {
+              debug?.(`write hmr profile json failed: ${String(error)}`)
+            })
+            logger.success(formatHmrLogLine(durationMs))
+            shouldLogSlowHmrTip()
+          }
+          else {
+            firstBuildCompleted = true
+          }
+          reportDevModuleGraphBuild(ctx, true)
+          resetHmrProfile()
+          settleHmrStyleUpdatePlan(configService, completedStylePlan, true)
+          resolveWatcher(e)
+        })().catch(async (error) => {
+          if (shouldRestart) {
+            return await failConfigRestart(error, completedStylePlan)
+          }
+          // 样式刷新失败也属于本代失败，先归还重试事实，再等待失败报告写出。
+          settleHmrStyleUpdatePlan(configService, completedStylePlan, false)
+          if (!shouldRestart) {
+            reportDevModuleGraphBuild(ctx, false)
+            // 先冻结并写出失败归属，再释放 profile；原始收尾异常仍由当前发布向外传播。
+            await writeHmrProfileJsonSample(Math.max(0, performance.now() - startTime), 'failed').catch((profileError) => {
+              debug?.(`write failed hmr profile json failed: ${String(profileError)}`)
+            })
+          }
+          resetHmrProfile()
+          logger.error(error)
+          rejectWatcher(error)
+          throw error
+        })
+        // 配置重启会关闭并等待当前批次，不能让该批次反向等待自己的重启任务。
+        watcherEventCompletion = shouldRestart ? Promise.resolve() : completion
+        void completion.catch(() => {})
+        if (!shouldRestart) {
+          // 原生 watcher 必须等本代样式与 profile 收尾，才能启动下一代。
+          return completion
+        }
+      }
+      else if (e.code === 'ERROR') {
+        reportDevModuleGraphBuild(ctx, false)
+        void writeHmrProfileJsonSample(Math.max(0, performance.now() - startTime), 'failed').catch((error) => {
+          debug?.(`write failed hmr profile json: ${String(error)}`)
+        })
+        resetHmrProfile()
+        if (target !== 'app') {
+          rejectWatcher(e)
+        }
+      }
+    }
+    if (!classicSession) {
+      watcher.on('event', onWatcherEvent)
+    }
+    if (target !== 'app') {
+      await promise
+    }
+
+    const watcherRoot = target === 'plugin'
+      ? configService.absolutePluginRoot ?? configService.absoluteSrcRoot
+      : '/'
+    const registeredWatcher = target === 'app' ? publicBuildEvents?.watcher ?? watcher : watcher
+    if (snapshotSidecar) {
+      assetWatcher = watchAssetSources(configService, {
+        publicAssets,
+        isModule: file => ctx.moduleGraphService.hasModule(file),
+        onChange: (file, event) => scheduleSnapshotBuild({ file, event, forceFullRescan: true }, performance.now()),
+        onError: (error) => {
+          devBuildWatcher?.emitEvent({ code: 'ERROR', error, result: undefined as never })
+          logger.error(error)
+        },
       })
       attachSidecarWatcherToWatcherClose({
         watcher,
@@ -2487,23 +2739,12 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         watcherRoot,
         sidecarRoot: snapshotWatcherRoot,
         waitForPendingSnapshotBuilds: () => snapshotBuildChain,
-        markClosed: () => {
-          devWatcherClosed = true
-          initialSnapshot.resolve(undefined)
-          releaseAutoRoutesTopology?.()
-          if (snapshotBatchTimer) {
-            clearTimeout(snapshotBatchTimer)
-            snapshotBatchTimer = undefined
-          }
-          pendingSnapshotBatch = undefined
-          queuedSnapshotReasons.clear()
-        },
+        markClosed: markSnapshotClosed,
         releaseResources: releaseWatcherResources?.releaseResources,
       })
       try {
-        const [readiness] = await Promise.all([sidecarReadiness.ready, assetWatcher.ready])
-        if (readiness === 'closed') {
-          // 新代尚未 own 时也可能被全服务 drain 认领；关闭结果不能登记成可用新代。
+        await assetWatcher.ready
+        if (devWatcherClosed) {
           await watcher.close()
           return publicBuildEvents?.watcher ?? watcher
         }
@@ -2513,7 +2754,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           await watcher.close()
         }
         catch (cleanupError) {
-          if (cleanupError !== error) {
+          if (!containsFailure(error, cleanupError)) {
             throw new AggregateError([error, cleanupError], 'Sidecar watcher startup and cleanup failed', { cause: error })
           }
         }
@@ -2537,7 +2778,14 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     finally {
       initialSnapshot.resolve(undefined)
     }
-    if (target === 'app' && statefulBuildEvents) {
+    generationReadyForRestart = true
+    if (snapshotConfigRestartRequested) {
+      requestSnapshotConfigRestart()
+    }
+    if (skippedInitialConfigPublication) {
+      await configRestartTask
+    }
+    if (target === 'app' && statefulBuildEvents && !skippedInitialConfigPublication) {
       if (statefulWatcherClosed) {
         // 公共关闭可能正在等待本次重启；这里只释放新代，不能反向等待整个会话。
         await classicSession!.stopGeneration(watcher)
@@ -2597,7 +2845,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           await watcherService.closeAll()
         }
         catch (cleanupError) {
-          if (cleanupError !== error) {
+          if (!containsFailure(error, cleanupError)) {
             throw new AggregateError([error, cleanupError], 'Development watcher startup and cleanup failed', { cause: error })
           }
         }

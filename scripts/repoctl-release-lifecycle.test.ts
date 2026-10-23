@@ -1,11 +1,10 @@
 import { performance } from 'node:perf_hooks'
 import { afterEach, expect, it, vi } from 'vitest'
-import { cleanupReleaseFixtures, createReleaseFixture, packages } from './repoctl-release/fixtures'
+import { cleanupReleaseFixtures, packages, withReleaseFixture } from './repoctl-release/fixtures'
 
 afterEach(cleanupReleaseFixtures)
 
-it('runs metadata and post-publish hooks once after recovered versions become visible', async () => {
-  const fixture = await createReleaseFixture()
+it('runs metadata and post-publish hooks once after recovered versions become visible', ({ signal }) => withReleaseFixture(signal, async (fixture) => {
   fixture.setPublish((_args, attempt) => {
     if (attempt === 1) {
       fixture.summary([packages[0]])
@@ -30,11 +29,10 @@ it('runs metadata and post-publish hooks once after recovered versions become vi
   expect(fixture.hooks).toEqual(['quality', 'before', 'after'])
   expect(fixture.hookVisibility.at(-1)).toEqual(packages.map(pkg => pkg.name))
   expect(await fixture.progress()).toMatchObject({ status: 'complete', confirmedPackages: packages })
-})
+}))
 
-it('does not run metadata or post-publish hooks when visibility confirmation times out', async () => {
+it('does not run metadata or post-publish hooks when visibility confirmation times out', ({ signal }) => withReleaseFixture(signal, async (fixture) => {
   vi.spyOn(performance, 'now').mockReturnValue(0)
-  const fixture = await createReleaseFixture()
   fixture.setPublish(() => {
     fixture.summary()
     return { status: 0, stdout: '', stderr: '' }
@@ -50,4 +48,4 @@ it('does not run metadata or post-publish hooks when visibility confirmation tim
     acceptedPackages: packages,
     confirmedPackages: [],
   })
-})
+}))

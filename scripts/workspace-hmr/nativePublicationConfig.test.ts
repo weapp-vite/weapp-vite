@@ -2,6 +2,7 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
+import { normalize } from 'pathe'
 import { afterEach, expect, it, vi } from 'vitest'
 
 vi.mock('../../packages/weapp-vite/scripts/consumerHmr/configWrapper.mjs', () => ({
@@ -29,10 +30,15 @@ async function fixture(files: string[]) {
 
 it('preserves default Vite priority and the separate weapp overlay without editing either config', async () => {
   const { root, options } = await fixture(['vite.config.ts', 'vite.config.mjs', 'weapp-vite.config.ts'])
-  expect(options.configFiles).toEqual([path.join(root, 'vite.config.ts'), path.join(root, 'weapp-vite.config.ts')])
+  expect(options.configFiles.map(normalize)).toEqual([path.join(root, 'vite.config.ts'), path.join(root, 'weapp-vite.config.ts')].map(normalize))
   expect(options.pluginExport).toBe('nativePublicationPlugin')
   expect(options.pluginUrl).toBe(new URL('../../e2e/utils/nativePublication/plugin.ts', import.meta.url).href)
-  expect(options.pluginOptions).toEqual({ sourceRoot: 'miniprogram', outputRoot: path.join('output', 'miniapp'), profilePath: path.join(root, '.weapp-vite/hmr-profile.jsonl') })
+  expect({
+    ...options.pluginOptions,
+    sourceRoot: normalize(options.pluginOptions.sourceRoot),
+    outputRoot: normalize(options.pluginOptions.outputRoot),
+    profilePath: normalize(options.pluginOptions.profilePath),
+  }).toEqual({ sourceRoot: 'miniprogram', outputRoot: 'output/miniapp', profilePath: normalize(path.join(root, '.weapp-vite/hmr-profile.jsonl')) })
   expect(options.mergeUrl).toBe(import.meta.resolve('@weapp-core/shared'))
   expect(options.mergeUrl).toMatch(/^file:/)
   expect(await readFile(path.join(root, 'vite.config.ts'), 'utf8')).toBe('export default {}\n')
@@ -41,13 +47,13 @@ it('preserves default Vite priority and the separate weapp overlay without editi
 
 it.each(['vite.config.mts', 'weapp-vite.config.mjs'])('keeps a sole %s in its own directory', async (file) => {
   const { root, options } = await fixture([file])
-  expect(options.directory).toBe(root)
-  expect(options.configFiles).toEqual([path.join(root, file)])
+  expect(normalize(options.directory)).toBe(normalize(root))
+  expect(options.configFiles.map(normalize)).toEqual([normalize(path.join(root, file))])
   expect(pathToFileURL(options.configFiles[0]).protocol).toBe('file:')
 })
 
 it('keeps the default empty config when the project has no config files', async () => {
   const { root, options } = await fixture([])
-  expect(options.directory).toBe(root)
+  expect(normalize(options.directory)).toBe(normalize(root))
   expect(options.configFiles).toEqual([])
 })

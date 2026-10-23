@@ -1,5 +1,7 @@
 import type { CompilerContext } from '../../context'
 import type { CompilerRawBinding, CompilerRawRead } from './rawInputs'
+import { Buffer } from 'node:buffer'
+import { createHash } from 'node:crypto'
 import { HmrCompilerHost } from '@weapp-vite/hmr'
 import { resolveVueSfcHmrSignatures } from 'wevu/compiler'
 import { normalizeSourceId } from '../../moduleGraph/traversal'
@@ -17,6 +19,27 @@ const rawSnapshots = new WeakMap<ReadonlyMap<string, string | null>, {
   reads: ReadonlyMap<string, CompilerRawRead>
   bindings: ReadonlyMap<string, CompilerRawBinding>
 }>()
+
+type InputOperation = 'capture' | 'native' | 'raw' | 'seed'
+
+export interface CompilerInputObservation {
+  identity: { lexical: string, canonical: string }
+  revision: number
+  source: { state: 'missing' | 'deleted' } | { state: 'present', bytes: number, sha256: string }
+  raw: boolean
+  explicitRaw: boolean
+  native: boolean
+  module: boolean
+  seeded: boolean
+}
+
+export interface CompilerInputCaptureObservation {
+  operation: InputOperation
+  owner: InputOperation
+  before: CompilerInputObservation
+  after: CompilerInputObservation
+  status: 'returned' | 'threw'
+}
 
 /** raw 身份与冻结 Map 同步绑定，不从后续活动宿主推断旧批次的输入归属。 */
 export function getCompilerRawSnapshot(sources: ReadonlyMap<string, string | null>) {
@@ -36,6 +59,66 @@ export class CompilerHmrHost extends HmrCompilerHost {
   private readonly rawBindings = new Map<string, CompilerRawBinding>()
   private readonly sourceRevisions = new Map<string, number>()
   private nativeInputIds = new Set<string>()
+  private readonly inputObservers = new Set<(observation: CompilerInputCaptureObservation) => void>()
+  private inputOperation?: InputOperation
+
+  /** 仅显式诊断订阅计算摘要；回调不接收源码、绝对路径或 native 对象。 */
+  observeInputCaptures(observe: (observation: CompilerInputCaptureObservation) => void): () => void {
+    this.inputObservers.add(observe)
+    return () => this.inputObservers.delete(observe)
+  }
+
+  /** 输出标量身份和内容摘要，不暴露输入账本本身。 */
+  inspectInput(id: string): CompilerInputObservation {
+    const sourceId = compilerSourceId(id)
+    const source = super.readSource(sourceId)
+    const digest = (value: string) => createHash('sha256').update(value).digest('hex')
+    return {
+      identity: { lexical: digest(normalizeFsResolvedId(id)), canonical: digest(sourceId) },
+      revision: this.sourceRevisions.get(sourceId) ?? 0,
+      source: source === undefined ? { state: 'missing' } : source === null ? { state: 'deleted' } : { state: 'present', bytes: Buffer.byteLength(source), sha256: digest(source) },
+      raw: this.ownsRawSource(id),
+      explicitRaw: this.rawInputs.has(sourceId),
+      native: this.isNativeSource(sourceId),
+      module: this.moduleInputs.has(sourceId),
+      seeded: this.seededInputs.has(sourceId),
+    }
+  }
+
+  private observeCapture(operation: InputOperation, id: string, capture: () => void): void {
+    if (!this.inputObservers.size) {
+      capture()
+      return
+    }
+    let before: CompilerInputObservation
+    try {
+      before = this.inspectInput(id)
+    }
+    catch {
+      capture()
+      return
+    }
+    const previousOperation = this.inputOperation
+    const owner = previousOperation ?? operation
+    this.inputOperation = owner
+    let status: CompilerInputCaptureObservation['status'] = 'threw'
+    try {
+      capture()
+      status = 'returned'
+    }
+    finally {
+      this.inputOperation = previousOperation
+      try {
+        const observation = { operation, owner, before, after: this.inspectInput(id), status }
+        for (const observe of [...this.inputObservers]) {
+          observe(observation)
+        }
+      }
+      catch {
+        // 只读诊断不能影响真实捕获、原始返回值或异常。
+      }
+    }
+  }
 
   sourceRevision(id: string): number {
     return this.sourceRevisions.get(compilerSourceId(id)) ?? 0
@@ -44,14 +127,14 @@ export class CompilerHmrHost extends HmrCompilerHost {
   /** 所有输入 owner 共用单一内容版本，异步读取只比较自己的 physical 文件。 */
   override capture(id: string, code: string | null): void {
     if (!id.includes('?') && !id.startsWith('\0')) {
-      withRealpathScope(() => {
+      this.observeCapture('capture', id, () => withRealpathScope(() => {
         const sourceId = compilerSourceId(id)
         const changed = super.readSource(sourceId) !== code
         super.capture(sourceId, code)
         if (changed) {
           this.sourceRevisions.set(sourceId, (this.sourceRevisions.get(sourceId) ?? 0) + 1)
         }
-      })
+      }))
     }
   }
 
@@ -66,17 +149,17 @@ export class CompilerHmrHost extends HmrCompilerHost {
 
   override captureNative(id: string, code: string): void {
     if (!id.includes('?') && !id.startsWith('\0')) {
-      withRealpathScope(() => {
+      this.observeCapture('native', id, () => withRealpathScope(() => {
         this.moduleInputs.add(compilerSourceId(id))
         super.captureNative(id, code)
-      })
+      }))
     }
   }
 
   /** 真实文本读取 owner 与 module loader 输出分别登记，原生分类重建不撤销 raw 身份。 */
   captureRaw(id: string, code: string | null, native = true, read?: CompilerRawRead): void {
     if (!id.includes('?') && !id.startsWith('\0')) {
-      withRealpathScope(() => {
+      this.observeCapture('raw', id, () => withRealpathScope(() => {
         const sourceId = compilerSourceId(id)
         this.rawInputs.add(sourceId)
         if (native && code !== null) {
@@ -92,7 +175,7 @@ export class CompilerHmrHost extends HmrCompilerHost {
         else {
           this.rawReads.delete(sourceId)
         }
-      })
+      }))
     }
   }
 
@@ -110,7 +193,7 @@ export class CompilerHmrHost extends HmrCompilerHost {
   }
 
   override seed(id: string, code: string | null, read?: CompilerRawRead): void {
-    withRealpathScope(() => {
+    this.observeCapture('seed', id, () => withRealpathScope(() => {
       const sourceId = compilerSourceId(id)
       const missing = super.readSource(id) === undefined
       this.seededInputs.add(sourceId)
@@ -119,7 +202,7 @@ export class CompilerHmrHost extends HmrCompilerHost {
       if (missing && read?.source === code) {
         this.rawReads.set(sourceId, read)
       }
-    })
+    }))
   }
 
   override setNativeSources(ids: Iterable<string>): void {

@@ -39,9 +39,22 @@ export function ensureSidecarWatcher(ctx: CompilerContext, rootDir: string) {
   const preReadyDeletedKnownFiles = new Set<string>()
   const renameTimers = new Map<string, ReturnType<typeof setTimeout>>()
   const RENAME_SETTLE_MS = 120
+  let closed = false
+  let closing: Promise<void> | undefined
+  const pending = new Set<Promise<void>>()
+  const failures: unknown[] = []
+  const delivery = { isActive: () => !closed }
+  const observe = (task: Promise<void>) => {
+    pending.add(task)
+    void task.then(() => pending.delete(task), (error) => {
+      pending.delete(task)
+      failures.push(error)
+      logger.warn(`[监听] 侧车更新失败：${error instanceof Error ? error.message : String(error)}`)
+    })
+  }
 
   const handleSidecarChange = (event: ChangeEvent, filePath: string, ready: boolean) => {
-    if (!isSidecarFile(filePath)) {
+    if (closed || !isSidecarFile(filePath)) {
       return
     }
 
@@ -54,7 +67,7 @@ export function ensureSidecarWatcher(ctx: CompilerContext, rootDir: string) {
       && (ctx.wxmlService?.getImporters(filePath).size ?? 0) > 0
 
     if (isCssFile && (event === 'create' || event === 'update')) {
-      void extractCssImportDependencies(ctx, filePath)
+      observe((async () => await extractCssImportDependencies(ctx, filePath))())
     }
 
     const isDeleteEvent = event === 'delete'
@@ -63,18 +76,18 @@ export function ensureSidecarWatcher(ctx: CompilerContext, rootDir: string) {
       || isDeleteEvent
       || (event === 'update' && (isCssFile || hasReverseImporters || isTemplateFile || isConfigFile))
     if (shouldInvalidate) {
-      void (async () => {
+      observe((async () => {
         if (isTemplateFile && event !== 'delete') {
           await ctx.wxmlService?.scan(filePath)
         }
         if (isOwnedByModuleGraph) {
           return
         }
-        await invalidateEntryForSidecar(ctx, filePath, event)
+        await invalidateEntryForSidecar(ctx, filePath, event, delivery)
         if (isCssFile && isDeleteEvent) {
           cleanupCssImporterGraph(ctx, filePath)
         }
-      })()
+      })())
       return
     }
 
@@ -98,7 +111,7 @@ export function ensureSidecarWatcher(ctx: CompilerContext, rootDir: string) {
   }))
 
   const forwardChange = (event: ChangeEvent, input: string, options?: { silent?: boolean }) => {
-    if (!input) {
+    if (closed || !input) {
       return
     }
     const normalizedPath = path.normalize(input)
@@ -138,7 +151,7 @@ export function ensureSidecarWatcher(ctx: CompilerContext, rootDir: string) {
     }
   })
   watcher.on('raw', (eventName, rawPath, details) => {
-    if (eventName !== 'rename') {
+    if (closed || eventName !== 'rename') {
       return
     }
     const candidate = typeof rawPath === 'string'
@@ -215,13 +228,30 @@ export function ensureSidecarWatcher(ctx: CompilerContext, rootDir: string) {
 
   sidecarWatcherMap.set(absRoot, {
     close: () => {
-      for (const timer of renameTimers.values()) {
-        clearTimeout(timer)
+      if (!closing) {
+        closed = true
+        const completion = Promise.withResolvers<void>()
+        closing = completion.promise
+        for (const timer of renameTimers.values()) {
+          clearTimeout(timer)
+        }
+        renameTimers.clear()
+        watchedDirectories.clear()
+        preReadyDeletedKnownFiles.clear()
+        void (async () => {
+          try {
+            await watcher.close()
+          }
+          catch (error) {
+            failures.unshift(error)
+          }
+          await Promise.allSettled([...pending])
+          if (failures.length) {
+            throw failures.length === 1 ? failures[0] : new AggregateError(failures, 'Sidecar watcher cleanup failed', { cause: failures[0] })
+          }
+        })().then(completion.resolve, completion.reject)
       }
-      renameTimers.clear()
-      watchedDirectories.clear()
-      preReadyDeletedKnownFiles.clear()
-      return watcher.close()
+      return closing
     },
   })
 }

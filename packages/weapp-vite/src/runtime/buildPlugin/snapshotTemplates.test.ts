@@ -208,6 +208,7 @@ describe('classic template snapshot source freshness', () => {
     const restoredSource = `<template name="card"><view>card ${content}</view></template>`
     await fixture.save('shared/card.wxml', restoredSource)
     harness.change!({ event: 'create', file: card })
+    fixture.sidecar.emit('all', 'add', card)
     const restored = await fixture.nextBundle(1)
     expect(restored['shared/card.wxml']).toMatchObject({ source: restoredSource })
     expect(fixture.ctx.wxmlService.tokenMap.get(card)?.code).toBe(restoredSource)

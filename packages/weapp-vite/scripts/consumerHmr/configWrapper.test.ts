@@ -1,4 +1,5 @@
-import { access, mkdir, mkdtemp, readdir, readFile, realpath, rm, writeFile } from 'node:fs/promises'
+import { realpathSync } from 'node:fs'
+import { access, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
@@ -101,7 +102,15 @@ it('imports file URLs with escaped spaces and preserves config-relative imports'
   expect(source).toContain(pathToFileURL(current.configFiles[0]!).href)
   expect(source).not.toContain(`from ${JSON.stringify(current.configFiles[0])}`)
   expect(fileURLToPath(new URL(pathToFileURL(current.configFiles[0]!).href))).toBe(current.configFiles[0])
-  expect(await wrapped.load({})).toMatchObject({ value: 'relative-support', location: pathToFileURL(await realpath(current.configFiles[0]!)).href })
+  const config = await wrapped.load({})
+  expect(config.value).toBe('relative-support')
+  expect(config.location).toContain('/nested%20directory/has%20%23%20and%20spaces/')
+  const location = new URL(config.location)
+  expect(location.protocol).toBe('file:')
+  expect(location.search).toBe('')
+  expect(location.hash).toBe('')
+  // Node ESM 的 realpathSync 可保留 Windows 短路径拼写；两端按原生真实路径比较文件身份。
+  expect(realpathSync.native(fileURLToPath(location))).toBe(realpathSync.native(current.configFiles[0]!))
   expect(path.dirname(wrapped.wrapper.configFile)).toBe(current.directory)
 })
 

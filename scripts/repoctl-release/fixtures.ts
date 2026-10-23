@@ -7,6 +7,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { publishStable, releaseCi } from 'repoctl'
 import { vi } from 'vitest'
+import { FixtureLifecycle } from '../verification/fixtureLifecycle.ts'
 
 interface PublishedPackage {
   name: string
@@ -21,20 +22,39 @@ interface PublishProgress {
   confirmedPackages: PublishedPackage[]
 }
 
-const roots: string[] = []
+interface ReleaseFixtureRecord {
+  lifecycle: FixtureLifecycle
+  cwd?: string
+}
+
+const fixtures = new Set<ReleaseFixtureRecord>()
 export const packages = [
   { name: '@release-fixture/first', version: '1.0.0' },
   { name: '@release-fixture/second', version: '2.0.0' },
 ]
 
 export async function cleanupReleaseFixtures() {
+  const active = [...fixtures]
+  await Promise.all(active.map(fixture => fixture.lifecycle.close()))
   vi.restoreAllMocks()
-  await Promise.all(roots.splice(0).map(root => rm(root, { recursive: true, force: true })))
+  await Promise.all(active.map(async (fixture) => {
+    if (fixture.cwd) {
+      await rm(fixture.cwd, { recursive: true, force: true })
+    }
+    fixtures.delete(fixture)
+  }))
 }
 
-export async function createReleaseFixture() {
+function registerFixture(signal: AbortSignal): ReleaseFixtureRecord {
+  const fixture = { lifecycle: new FixtureLifecycle(signal) }
+  fixtures.add(fixture)
+  return fixture
+}
+
+async function initializeReleaseFixture(fixture: ReleaseFixtureRecord) {
+  const { lifecycle } = fixture
   const cwd = await mkdtemp(path.join(tmpdir(), 'repoctl-publish-'))
-  roots.push(cwd)
+  fixture.cwd = cwd
   await writeFile(path.join(cwd, 'package.json'), JSON.stringify({ private: true }))
   await writeFile(path.join(cwd, 'pnpm-workspace.yaml'), 'packages:\n  - packages/*\n')
   for (const [index, pkg] of packages.entries()) {
@@ -133,24 +153,27 @@ export async function createReleaseFixture() {
     summary(entries = packages) {
       writeFileSync(path.join(cwd, 'pnpm-publish-summary.json'), JSON.stringify({ publishedPackages: entries }))
     },
-    async readSummary() {
-      return JSON.parse(await readFile(path.join(cwd, 'pnpm-publish-summary.json'), 'utf8')) as { publishedPackages: PublishedPackage[] }
-    },
-    async progress() {
-      return JSON.parse(await readFile(path.join(cwd, 'repoctl-publish-progress.json'), 'utf8')) as PublishProgress
-    },
-    async stageProgress() {
-      return JSON.parse(await readFile(path.join(cwd, 'repoctl-ci-progress.json'), 'utf8')) as ReleaseCiStageResult
-    },
-    runStage: (stage: ReleaseCiStage, overrides: Pick<ReleaseCiOptions, 'env' | 'config'> = {}) => releaseCi({
+    readSummary: () => lifecycle.run(async () => JSON.parse(await readFile(path.join(cwd, 'pnpm-publish-summary.json'), 'utf8')) as { publishedPackages: PublishedPackage[] }),
+    progress: () => lifecycle.run(async () => JSON.parse(await readFile(path.join(cwd, 'repoctl-publish-progress.json'), 'utf8')) as PublishProgress),
+    stageProgress: () => lifecycle.run(async () => JSON.parse(await readFile(path.join(cwd, 'repoctl-ci-progress.json'), 'utf8')) as ReleaseCiStageResult),
+    runStage: (stage: ReleaseCiStage, overrides: Pick<ReleaseCiOptions, 'env' | 'config'> = {}) => lifecycle.run(() => releaseCi({
       ...options,
       ...overrides,
       env: { ...options.env, GITHUB_REPOSITORY: 'release-fixture/repository', GITHUB_RUN_ID: 'fixture-run', GITHUB_RUN_ATTEMPT: '1', ...overrides.env },
       mode: 'publish',
       github: stagedGithub,
       stage,
-    }),
-    run: () => publishStable(options),
-    runCi: () => releaseCi({ ...options, mode: 'publish', github }),
+    })),
+    run: () => lifecycle.run(() => publishStable(options)),
+    runCi: () => lifecycle.run(() => releaseCi({ ...options, mode: 'publish', github })),
   }
+}
+
+export function withReleaseFixture<T>(signal: AbortSignal, work: (fixture: Awaited<ReturnType<typeof initializeReleaseFixture>>) => Promise<T>): Promise<T> {
+  const fixture = registerFixture(signal)
+  return fixture.lifecycle.run(async () => {
+    const initialized = await initializeReleaseFixture(fixture)
+    fixture.lifecycle.signal.throwIfAborted()
+    return work(initialized)
+  })
 }

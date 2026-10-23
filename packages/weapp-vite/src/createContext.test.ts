@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createCompilerContext } from './createContext'
+import { readCompilerInput } from './plugins/utils/sourceSnapshot'
+import { closeInitialBuildInputObservation, getInitialBuildInputObservation } from './runtime/buildPlugin/initialBuildChanges'
+import { bindRequestedIdeConfigReader } from './runtime/classicIdeConfig/reader'
 
 const resetCompilerContextMock = vi.hoisted(() => vi.fn())
 const setActiveCompilerContextKeyMock = vi.hoisted(() => vi.fn())
@@ -37,6 +40,7 @@ describe('createCompilerContext', () => {
     hasManagedTsconfigBootstrapCompletedMock.mockReturnValue(false)
     syncManagedTsconfigBootstrapFilesMock.mockResolvedValue(false)
     getCompilerContextMock.mockReturnValue({
+      watcherService: { closeAll: vi.fn(async () => {}) },
       configService: {
         load: vi.fn(async () => {}),
       },
@@ -69,6 +73,32 @@ describe('createCompilerContext', () => {
     })
   })
 
+  it('observes inputs consumed by the legacy context entry before the first build', async () => {
+    const ctx = {
+      watcherService: { closeAll: vi.fn(async () => {}) },
+      configService: { load: vi.fn(async () => {}) },
+      scanService: { loadAppEntry: vi.fn(async () => {}) },
+    }
+    getCompilerContextMock.mockReturnValue(ctx)
+    const file = 'src/app.json'
+    const source = '{"pages":[]}'
+    bindRequestedIdeConfigReader(ctx.configService, async () => source)
+    ctx.configService.load.mockImplementation(async () => {
+      await readCompilerInput(ctx.configService, file, async () => source)
+    })
+    try {
+      await createCompilerContext({ syncSupportFiles: false, preloadAppEntry: false })
+      const observation = getInitialBuildInputObservation(ctx.configService)!
+      expect(observation).toBeDefined()
+      observation.begin()
+      observation.commit()
+      expect(await observation.filter([{ file, event: 'update', verifyInitialInput: true }])).toEqual([])
+    }
+    finally {
+      closeInitialBuildInputObservation(ctx.configService)
+    }
+  })
+
   it('waits for managed tsconfig bootstrap before loading config', async () => {
     let resolveBootstrap!: (changed: boolean) => void
     syncManagedTsconfigBootstrapFilesMock.mockReturnValueOnce(new Promise<boolean>((resolve) => {
@@ -76,6 +106,7 @@ describe('createCompilerContext', () => {
     }))
 
     const ctx = {
+      watcherService: { closeAll: vi.fn(async () => {}) },
       configService: {
         load: vi.fn(async () => {}),
       },
@@ -83,7 +114,7 @@ describe('createCompilerContext', () => {
         loadAppEntry: vi.fn(async () => {}),
       },
     }
-    getCompilerContextMock.mockReturnValueOnce(ctx)
+    getCompilerContextMock.mockReturnValue(ctx)
 
     const createPromise = createCompilerContext({
       cwd: '/project',
@@ -110,7 +141,8 @@ describe('createCompilerContext', () => {
       resolveBootstrap = resolve
     }))
     const configError = new Error('invalid config')
-    getCompilerContextMock.mockReturnValueOnce({
+    getCompilerContextMock.mockReturnValue({
+      watcherService: { closeAll: vi.fn(async () => {}) },
       configService: { load: vi.fn().mockRejectedValue(configError) },
       scanService: { loadAppEntry: vi.fn() },
     })

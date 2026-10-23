@@ -30,8 +30,13 @@ export function parseChangedNames(output: string): string[] {
   return [...new Set(files)].sort()
 }
 
-export async function readChanges(root: string, options: { base?: string, files?: string[] } = {}): Promise<ChangeSet> {
-  const git = async (args: string[]) => (await execa('git', args, { cwd: root })).stdout
+export async function readChanges(root: string, options: { base?: string, files?: string[], signal?: AbortSignal } = {}): Promise<ChangeSet> {
+  const git = async (args: string[]) => {
+    options.signal?.throwIfAborted()
+    const result = await execa('git', args, { cwd: root, cancelSignal: options.signal })
+    options.signal?.throwIfAborted()
+    return result.stdout
+  }
   const head = (await git(['rev-parse', 'HEAD'])).trim()
   const warnings: string[] = []
   let base: string | null = null
@@ -45,7 +50,9 @@ export async function readChanges(root: string, options: { base?: string, files?
         base = (await git(['merge-base', 'HEAD', ref])).trim()
         break
       }
-      catch {}
+      catch {
+        options.signal?.throwIfAborted()
+      }
     }
   }
   if (!base) {
@@ -63,16 +70,19 @@ export async function readChanges(root: string, options: { base?: string, files?
   const fingerprint = createHash('sha256').update(head).update(base ?? '')
   fingerprint.update(await git(['diff', '--cached', '--raw', '-z', base ?? 'HEAD', '--']))
   for (const file of files) {
+    options.signal?.throwIfAborted()
     fingerprint.update(`\0${file}\0`)
     try {
-      fingerprint.update(await readFile(path.join(root, file)))
+      fingerprint.update(await readFile(path.join(root, file), { signal: options.signal }))
     }
     catch (error) {
+      options.signal?.throwIfAborted()
       if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
         throw error
       }
       fingerprint.update('<deleted>')
     }
   }
+  options.signal?.throwIfAborted()
   return { base, head, files, fingerprint: fingerprint.digest('hex'), fallback: !base, warnings }
 }

@@ -1,11 +1,10 @@
 import { performance } from 'node:perf_hooks'
 import { afterEach, expect, it, vi } from 'vitest'
-import { cleanupReleaseFixtures, createReleaseFixture, packages } from './repoctl-release/fixtures'
+import { cleanupReleaseFixtures, packages, withReleaseFixture } from './repoctl-release/fixtures'
 
 afterEach(cleanupReleaseFixtures)
 
-it('does not republish acknowledged uploads while npm metadata is delayed after an OIDC failure', async () => {
-  const fixture = await createReleaseFixture()
+it('does not republish acknowledged uploads while npm metadata is delayed after an OIDC failure', ({ signal }) => withReleaseFixture(signal, async (fixture) => {
   fixture.setPublish((args, attempt) => {
     if (attempt === 1) {
       // pnpm 12.5.1 在递归发布失败时没有写入部分成功的 summary。
@@ -19,10 +18,9 @@ it('does not republish acknowledged uploads while npm metadata is delayed after 
 
   expect(await fixture.run()).toEqual(expect.arrayContaining(packages))
   expect(fixture.publishes).toHaveLength(2)
-})
+}))
 
-it('uses partial summaries and keeps them when a later retry fails permanently', async () => {
-  const fixture = await createReleaseFixture()
+it('uses partial summaries and keeps them when a later retry fails permanently', ({ signal }) => withReleaseFixture(signal, async (fixture) => {
   fixture.setPublish((args, attempt) => {
     if (attempt === 1) {
       fixture.summary([packages[0]])
@@ -41,10 +39,9 @@ it('uses partial summaries and keeps them when a later retry fails permanently',
     acceptedPackages: [packages[0]],
     confirmedPackages: [],
   })
-})
+}))
 
-it('refreshes registry state after backoff before retrying a staged conflict', async () => {
-  const fixture = await createReleaseFixture()
+it('refreshes registry state after backoff before retrying a staged conflict', ({ signal }) => withReleaseFixture(signal, async (fixture) => {
   fixture.setPublish((_args, attempt) => {
     if (attempt === 1) {
       return { status: 1, stdout: '', stderr: '409 Conflict: Cannot publish over previously staged version' }
@@ -57,10 +54,9 @@ it('refreshes registry state after backoff before retrying a staged conflict', a
 
   expect(await fixture.run()).toEqual(expect.arrayContaining(packages))
   expect(fixture.publishes).toHaveLength(1)
-})
+}))
 
-it('waits for acknowledged uploads to become visible without uploading them again', async () => {
-  const fixture = await createReleaseFixture()
+it('waits for acknowledged uploads to become visible without uploading them again', ({ signal }) => withReleaseFixture(signal, async (fixture) => {
   fixture.setPublish(() => ({ status: 1, stdout: packages.map(pkg => `✅ Published package ${pkg.name}@${pkg.version}`).join('\n'), stderr: 'HTTP 503' }))
   fixture.sleep.mockImplementation(async () => {
     packages.forEach(pkg => fixture.visible.add(pkg.name))
@@ -69,11 +65,10 @@ it('waits for acknowledged uploads to become visible without uploading them agai
   expect(await fixture.run()).toEqual(expect.arrayContaining(packages))
   expect(fixture.publishes).toHaveLength(1)
   expect(fixture.sleep).toHaveBeenCalledTimes(1)
-})
+}))
 
-it('fails explicitly if acknowledged uploads never become visible', async () => {
+it('fails explicitly if acknowledged uploads never become visible', ({ signal }) => withReleaseFixture(signal, async (fixture) => {
   vi.spyOn(performance, 'now').mockReturnValue(0)
-  const fixture = await createReleaseFixture()
   fixture.setPublish(() => ({ status: 1, stdout: packages.map(pkg => `✅ Published package ${pkg.name}@${pkg.version}`).join('\n'), stderr: 'HTTP 503' }))
 
   await expect(fixture.run()).rejects.toThrow(/visibility confirmation timed out.*pending versions:/)
@@ -85,46 +80,47 @@ it('fails explicitly if acknowledged uploads never become visible', async () => 
     acceptedPackages: packages,
     confirmedPackages: [],
   })
-})
+}))
 
-it.each(['E403 Forbidden', '404 Not Found'])('does not retry permanent failures: %s', async (stderr) => {
-  const fixture = await createReleaseFixture()
-  fixture.setPublish(() => ({ status: 1, stdout: '', stderr }))
+for (const stderr of ['E403 Forbidden', '404 Not Found']) {
+  it(`does not retry permanent failures: ${stderr}`, ({ signal }) => withReleaseFixture(signal, async (fixture) => {
+    fixture.setPublish(() => ({ status: 1, stdout: '', stderr }))
 
-  await expect(fixture.run()).rejects.toThrow('command failed:')
-  expect(fixture.publishes).toHaveLength(1)
-  expect(fixture.sleep).not.toHaveBeenCalled()
-})
+    await expect(fixture.run()).rejects.toThrow('command failed:')
+    expect(fixture.publishes).toHaveLength(1)
+    expect(fixture.sleep).not.toHaveBeenCalled()
+  }))
+}
 
-it.each(['npm error code E503\nnpm error 503 Service Unavailable', ''])('does not retry uploads when registry state is unknown: %j', async (stderr) => {
-  const fixture = await createReleaseFixture()
-  fixture.setRegistry(() => ({ status: 1, stdout: '', stderr }))
-  fixture.setPublish(() => {
-    fixture.summary([packages[0]])
-    return { status: 1, stdout: '', stderr: 'HTTP 503 Service Unavailable' }
-  })
+for (const stderr of ['npm error code E503\nnpm error 503 Service Unavailable', '']) {
+  it(`does not retry uploads when registry state is unknown: ${JSON.stringify(stderr)}`, ({ signal }) => withReleaseFixture(signal, async (fixture) => {
+    fixture.setRegistry(() => ({ status: 1, stdout: '', stderr }))
+    fixture.setPublish(() => {
+      fixture.summary([packages[0]])
+      return { status: 1, stdout: '', stderr: 'HTTP 503 Service Unavailable' }
+    })
 
-  await expect(fixture.run()).rejects.toThrow(`npm registry state is unknown; refusing to retry uploads for: ${packages[1].name}@${packages[1].version}`)
-  expect(fixture.publishes).toHaveLength(1)
-  // 新版 registry 会有界重试查询；状态未知始终不能重传已接受的版本。
-  for (const pkg of packages) {
-    const queries = fixture.registryQueries.filter(query => query.name === pkg.name)
-    expect(queries.length).toBeGreaterThanOrEqual(3)
-    expect(queries.length).toBeLessThanOrEqual(6)
-  }
-  const wait = fixture.sleep.mock.calls.reduce((total, [milliseconds]) => total + milliseconds, 0)
-  expect(wait).toBeGreaterThan(0)
-  expect(wait).toBeLessThan(900_000)
-  expect(await fixture.readSummary()).toEqual({ publishedPackages: [packages[0]] })
-  expect(await fixture.progress()).toMatchObject({
-    status: 'failed',
-    acceptedPackages: [packages[0]],
-    confirmedPackages: [],
-  })
-})
+    await expect(fixture.run()).rejects.toThrow(`npm registry state is unknown; refusing to retry uploads for: ${packages[1].name}@${packages[1].version}`)
+    expect(fixture.publishes).toHaveLength(1)
+    // 新版 registry 会有界重试查询；状态未知始终不能重传已接受的版本。
+    for (const pkg of packages) {
+      const queries = fixture.registryQueries.filter(query => query.name === pkg.name)
+      expect(queries.length).toBeGreaterThanOrEqual(3)
+      expect(queries.length).toBeLessThanOrEqual(6)
+    }
+    const wait = fixture.sleep.mock.calls.reduce((total, [milliseconds]) => total + milliseconds, 0)
+    expect(wait).toBeGreaterThan(0)
+    expect(wait).toBeLessThan(900_000)
+    expect(await fixture.readSummary()).toEqual({ publishedPackages: [packages[0]] })
+    expect(await fixture.progress()).toMatchObject({
+      status: 'failed',
+      acceptedPackages: [packages[0]],
+      confirmedPackages: [],
+    })
+  }))
+}
 
-it('does not accept another version or an attempted upload as an acknowledgement', async () => {
-  const fixture = await createReleaseFixture()
+it('does not accept another version or an attempted upload as an acknowledgement', ({ signal }) => withReleaseFixture(signal, async (fixture) => {
   fixture.setPublish(() => ({
     status: 1,
     stdout: `✅ Published package ${packages[0].name}@0.9.0\n📦 ${packages[1].name}@2.0.0 → registry\n`,
@@ -134,10 +130,9 @@ it('does not accept another version or an attempted upload as an acknowledgement
   await expect(fixture.run()).rejects.toThrow('command failed after 3 publish attempts')
   expect(fixture.publishes).toHaveLength(3)
   expect(fixture.publishes[2].filter((_, index) => fixture.publishes[2][index - 1] === '--filter')).toEqual(packages.map(pkg => pkg.name))
-})
+}))
 
-it('preserves ordinary successful publishing and its summary', async () => {
-  const fixture = await createReleaseFixture()
+it('preserves ordinary successful publishing and its summary', ({ signal }) => withReleaseFixture(signal, async (fixture) => {
   fixture.setPublish(() => {
     fixture.summary()
     packages.forEach(pkg => fixture.visible.add(pkg.name))
@@ -147,10 +142,9 @@ it('preserves ordinary successful publishing and its summary', async () => {
   expect(await fixture.run()).toEqual(packages)
   expect(fixture.publishes).toHaveLength(1)
   expect(fixture.sleep).not.toHaveBeenCalled()
-})
+}))
 
-it('confirms delayed metadata after an otherwise successful upload', async () => {
-  const fixture = await createReleaseFixture()
+it('confirms delayed metadata after an otherwise successful upload', ({ signal }) => withReleaseFixture(signal, async (fixture) => {
   fixture.setPublish(() => {
     fixture.summary()
     return { status: 0, stdout: '', stderr: '' }
@@ -174,4 +168,4 @@ it('confirms delayed metadata after an otherwise successful upload', async () =>
     acceptedPackages: packages,
     confirmedPackages: packages,
   })
-})
+}))

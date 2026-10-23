@@ -12,7 +12,6 @@ import { createCachedEntryResolveOptions, resolveEntryPath } from '../../../../u
 import { recordHmrProfileDuration } from '../../../../utils/hmrProfile'
 import { getMiniProgramPlatformGlobalKey } from '../../../../utils/miniProgramGlobals'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
-import { getCompilerHmrHostByConfig } from '../../../compilerPlugin/hmr'
 import { pathExists as pathExistsCached, readFile as readFileCached } from '../../../utils/cache'
 import { getCssRealPath, parseRequest } from '../../../utils/parse'
 import { getCompilerSourceSnapshot, readCompilerInput } from '../../../utils/sourceSnapshot'
@@ -141,14 +140,15 @@ export function createLoadHook(state: CorePluginState) {
             return { code: await readCompilerInput(configService, realPath) }
           }
           try {
-            const css = await readFileCached(realPath, { checkMtime: configService.isDev })
-            const host = getCompilerHmrHostByConfig(configService)
-            if (host?.onDependencyChange) {
-              host.captureRaw(realPath, css)
-            }
+            const css = await readCompilerInput(configService, realPath, file => readFileCached(file, { checkMtime: configService.isDev }))
             return { code: css }
           }
-          catch {}
+          catch (error) {
+            const missing = error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT'
+            if (!missing) {
+              throw error
+            }
+          }
         }
         return null
       }

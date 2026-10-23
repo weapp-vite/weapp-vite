@@ -9,6 +9,7 @@ import { readFile as readFileCached } from './cache'
  */
 export interface ResolveSfcBlockSrcOptions {
   resolveId?: (source: string, importer?: string) => Promise<string | undefined>
+  /** 自定义读取器的异常原样传出，保留调用方用于重试或重新同步的控制流。 */
   readFile?: (id: string, options?: { checkMtime?: boolean }) => Promise<string>
   checkMtime?: boolean
 }
@@ -144,14 +145,17 @@ async function readBlockContent(
   filename: string,
   options?: ResolveSfcBlockSrcOptions,
 ) {
-  const reader = options?.readFile ?? readFileCached
+  const reader = options?.readFile
   const checkMtime = options?.checkMtime
-  try {
+  if (reader) {
     return await reader(resolvedId, { checkMtime })
+  }
+  try {
+    return await readFileCached(resolvedId, { checkMtime })
   }
   catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    throw new Error(`解析 ${filename} 失败：读取 ${resolvedId} 失败：${message}`)
+    throw new Error(`解析 ${filename} 失败：读取 ${resolvedId} 失败：${message}`, { cause: error })
   }
 }
 

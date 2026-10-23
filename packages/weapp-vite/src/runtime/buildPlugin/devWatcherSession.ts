@@ -11,6 +11,7 @@ export function createDevWatcherSession(service?: WatcherService) {
   const generations = new Set<DevWatcherGeneration>()
   const watcherGenerations = new WeakMap<RolldownWatcher, DevWatcherGeneration>()
   const restarts = new Set<Promise<void>>()
+  const restartFailures = new Set<unknown>()
   let closed = false
   let hasOwnership = false
   let closing: Promise<void> | undefined
@@ -24,7 +25,10 @@ export function createDevWatcherSession(service?: WatcherService) {
         ...Array.from(generations, generation => generation.stop()),
         ...restarts,
       ])
-      const errors = results.flatMap(result => result.status === 'rejected' ? [result.reason] : [])
+      const errors = [...new Set([
+        ...results.flatMap(result => result.status === 'rejected' ? [result.reason] : []),
+        ...restartFailures,
+      ])]
       try {
         cleanup?.()
       }
@@ -39,6 +43,7 @@ export function createDevWatcherSession(service?: WatcherService) {
   }
 
   return {
+    close,
     get isClosing() {
       return closed
     },
@@ -47,6 +52,16 @@ export function createDevWatcherSession(service?: WatcherService) {
     },
     setCleanup(value: () => void) {
       cleanup = value
+    },
+    async ownResource(closeResource: () => Promise<void>) {
+      let stopping: Promise<void> | undefined
+      const resource: DevWatcherGeneration = {
+        stop: () => stopping ??= Promise.resolve().then(closeResource).finally(() => generations.delete(resource)),
+      }
+      generations.add(resource)
+      if (closed) {
+        await resource.stop()
+      }
     },
     async own(watcher: RolldownWatcher) {
       hasOwnership = true
@@ -81,7 +96,10 @@ export function createDevWatcherSession(service?: WatcherService) {
         }
       })
       restarts.add(task)
-      void task.then(() => restarts.delete(task), () => restarts.delete(task))
+      void task.then(() => restarts.delete(task), (error) => {
+        restartFailures.add(error)
+        restarts.delete(task)
+      })
       return task
     },
   }
