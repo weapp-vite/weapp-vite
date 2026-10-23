@@ -3,7 +3,7 @@ import path from 'node:path'
 import { createStatefulHmrControlSource } from '../../../../../packages/weapp-vite/src/runtime/statefulHmr/runtimeSource'
 import { compileVueHmrSequence } from './compiledVueComponentHmr'
 
-/** 真实 Wevu 页面依次编辑模板、还原模板和修改脚本，共用实际 HMR 客户端与 Store。 */
+/** 验证显式模板资产提交与脚本补丁共用实际客户端及 Store，不代表生产编译模板支持状态保持。 */
 export async function createStatefulStoreBindingFiles(): Promise<Array<[string, string]>> {
   const root = path.resolve(import.meta.dirname, '../../../../..')
   const sourceRoot = path.join(root, 'e2e-apps/stateful-hmr/src')
@@ -16,6 +16,7 @@ export async function createStatefulStoreBindingFiles(): Promise<Array<[string, 
     .replace('store.increment(1)', 'store.increment(2)')
   const compiled = await compileVueHmrSequence(root, source, [templateB, source, scriptPatch], {
     type: 'page',
+    templateAssetDelivery: true,
     modules: {
       'virtual:companion-store': `import { createStore, setActivePinia } from 'wevu';
         setActivePinia(createStore());

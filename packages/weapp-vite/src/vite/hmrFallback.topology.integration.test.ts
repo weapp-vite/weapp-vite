@@ -26,6 +26,23 @@ const deliveryFiles = [
 
 async function fixture(initialAddedRoute: boolean) {
   const root = await realpath(await mkdtemp(path.join(os.tmpdir(), 'weapp-vite-classic-topology-')))
+  const startedAt = performance.now()
+  let eventSequence = 0
+  let droppedWatcherEvents = 0
+  const watcherEvents: Array<{ sequence: number, elapsedMs: number, host: number, event: string, file?: string }> = []
+  const relativeFile = (file: string) => {
+    const relative = path.relative(root, path.resolve(root, file))
+    return relative === '..' || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)
+      ? '<external>'
+      : relative.replaceAll('\\', '/') || '.'
+  }
+  const recordWatcherEvent = (host: number, event: string, file?: string) => {
+    if (watcherEvents.length === 128) {
+      watcherEvents.shift()
+      droppedWatcherEvents++
+    }
+    watcherEvents.push({ sequence: ++eventSequence, elapsedMs: performance.now() - startedAt, host, event, file: file && relativeFile(file) })
+  }
   const hosts: Array<{
     server: ViteDevServer
     watcher: ViteDevServer['watcher']
@@ -61,6 +78,11 @@ async function fixture(initialAddedRoute: boolean) {
     name: 'classic-topology-host-probe',
     enforce: 'pre',
     configureServer(server) {
+      const host = hosts.length
+      const onAll = (event: string, file: string) => recordWatcherEvent(host, event, file)
+      const onReady = () => recordWatcherEvent(host, 'ready')
+      server.watcher.on('all', onAll).on('ready', onReady)
+      recordWatcherEvent(host, (server.watcher as typeof server.watcher & { _readyEmitted?: boolean })._readyEmitted ? 'attached-after-ready' : 'attached-before-ready')
       const watcherClose = vi.spyOn(server.watcher, 'close')
       const wsClose = vi.spyOn(server.ws, 'close')
       hosts.push({
@@ -69,6 +91,7 @@ async function fixture(initialAddedRoute: boolean) {
         watcherCloseCalls: () => watcherClose.mock.calls.length,
         wsCloseCalls: () => wsClose.mock.calls.length,
         restore() {
+          server.watcher.off('all', onAll).off('ready', onReady)
           watcherClose.mockRestore()
           wsClose.mockRestore()
         },
@@ -95,6 +118,27 @@ async function fixture(initialAddedRoute: boolean) {
         fullEntryScan: api?.ctx.runtimeState.build.hmr.fullEntryScan,
         watcherClosed: host.watcherCloseCalls(),
       }
+    }),
+    diagnose: async () => ({
+      phase: runtime?.phase,
+      fallback: runtime?.fallback && { ...runtime.fallback, files: runtime.fallback.files?.map(relativeFile) },
+      sources: await Promise.all([
+        homeScript,
+        'src/app.json',
+        `src/${addedRoute}.js`,
+        'route-staging/index.js',
+      ].map(async file => ({
+        file,
+        source: await readFile(path.join(root, file), 'utf8').catch((error: NodeJS.ErrnoException) => ({ errorCode: error.code })),
+      }))),
+      hosts: hosts.map(host => ({
+        bundledDev: host.server.config.experimental.bundledDev,
+        watcherClosed: host.watcher.closed,
+        watcherReady: (host.watcher as typeof host.watcher & { _readyEmitted?: boolean })._readyEmitted,
+        watched: Object.entries(host.watcher.getWatched()).map(([directory, files]) => ({ directory: relativeFile(directory), files })),
+      })),
+      watcherEvents: [...watcherEvents],
+      droppedWatcherEvents,
     }),
     read: (file: string) => readFile(path.join(root, 'dist', file), 'utf8'),
     save: (marker: string) => writeFile(path.join(root, homeScript), `Page({ data: { marker: ${JSON.stringify(marker)} } })`),
@@ -128,8 +172,9 @@ it.each(['create', 'delete'] as const)('hands atomic route-directory %s and an i
   const project = await fixture(event === 'delete')
   let server: ViteDevServer | undefined
   let routesDiagnostic: unknown
-  onTestFailed(() => {
-    process.stderr.write(`[classic-topology] ${JSON.stringify(routesDiagnostic)}\n`)
+  let failureDiagnostic: unknown
+  onTestFailed(async () => {
+    process.stderr.write(`[classic-topology] ${JSON.stringify({ lastRoutesCheck: routesDiagnostic, failure: failureDiagnostic ?? await project.diagnose() })}\n`)
   })
   const expectRoutes = async (containsAddedRoute: boolean, checkpoint: string) => {
     // 原生 write 可并发发布文件；App JSON 就绪不能代替整个路由产物组就绪。
@@ -196,6 +241,11 @@ it.each(['create', 'delete'] as const)('hands atomic route-directory %s and an i
       expect(host.watcher.getWatched()).toEqual({})
     }
     expect(JSON.parse(await readFile(path.join(project.root, 'project.private.config.json'), 'utf8')) as unknown).toEqual({ setting: { compileHotReLoad: true } })
+  }
+  catch (error) {
+    // onTestFailed 在 finally 清理后运行，必须先冻结仍存活的文件与 watcher 状态。
+    failureDiagnostic = await project.diagnose().catch(error => ({ diagnosticError: error instanceof Error ? error.name : 'unknown' }))
+    throw error
   }
   finally {
     try {

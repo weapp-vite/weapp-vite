@@ -1,26 +1,30 @@
 import type { RolldownOutput } from 'rolldown'
 import type { StatefulHmrDevEngineUpdate } from '../../../../../packages/weapp-vite/src/runtime/statefulHmr/viteAdapter'
+import assert from 'node:assert/strict'
 import { mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { dev } from 'rolldown/experimental'
-import { compileVueFile } from 'wevu/compiler'
+import { compileVueFile, resolveVueSfcHmrSignatures } from 'wevu/compiler'
 import { renameAtomicFile } from '../../../../../e2e/utils/hmrAtomicRename'
 import { createLogicalEntryModuleCode, createSidecarModuleCode } from '../../../../../packages/weapp-vite/src/moduleGraph/logicalEntry'
-import { createLogicalEntryId, parseSidecarModuleId, parseSidecarSourceRequest } from '../../../../../packages/weapp-vite/src/moduleGraph/protocol'
+import { createLogicalEntryId, createSidecarSourceSpecifier, parseSidecarModuleId, parseSidecarSourceRequest } from '../../../../../packages/weapp-vite/src/moduleGraph/protocol'
 import { isStatefulHmrBoundary } from '../../../../../packages/weapp-vite/src/runtime/statefulHmr/boundaries'
 import { createStatefulHmrRolldownRuntimeSource } from '../../../../../packages/weapp-vite/src/runtime/statefulHmr/commonRuntime'
 import { createStatefulHmrHostFormatPlugin } from '../../../../../packages/weapp-vite/src/runtime/statefulHmr/hostFormat'
+import { toStableModuleId } from '../../../../../packages/weapp-vite/src/runtime/statefulHmr/initialModuleGraph'
 import { createStatefulHmrSidecarModuleCode } from '../../../../../packages/weapp-vite/src/runtime/statefulHmr/sidecarPlugin'
 import { compileVueSharedRuntime } from './compileVueSharedRuntime'
 
 interface VueHmrSequenceOptions {
   type: 'component' | 'page'
   modules?: Record<string, string>
+  /** 仅客户端低层伴随测试显式提交模板资产；生产编译模板注册变化仍须回退 classic。 */
+  templateAssetDelivery?: boolean
 }
 
 async function collectVueHmrSequence(repoRoot: string, source: string, updates: string[], options: VueHmrSequenceOptions) {
-  const { type, modules = {} } = options
+  const { type, modules = {}, templateAssetDelivery = false } = options
   const runtime = await compileVueSharedRuntime(repoRoot)
   const root = await realpath(await mkdtemp(path.join(tmpdir(), 'vue-client-companion-')))
   const sourceId = path.join(root, 'index.vue').replaceAll('\\', '/')
@@ -29,6 +33,8 @@ async function collectVueHmrSequence(repoRoot: string, source: string, updates: 
   const delegatedEntries = new Set(type === 'component' ? [sourceId] : [])
   await writeFile(sourceId, source)
   const compiled = await compileVueFile(source, sourceId, compileOptions)
+  let previousSource = source
+  let previousCompiled = compiled
   let output: RolldownOutput | undefined
   let buildError: Error | undefined
   let nextUpdate: PromiseWithResolvers<StatefulHmrDevEngineUpdate> | undefined
@@ -57,8 +63,11 @@ async function collectVueHmrSequence(repoRoot: string, source: string, updates: 
           return runtime.code
         }
         if (id === ownerId) {
-          // SFC 的源码侧车保留静态模板编辑；仅编译脚本会把这类变更折叠为相同内容。
-          return createLogicalEntryModuleCode({ sourceId, type }, type === 'page' ? [{ kind: 'script', sourceId }] : [])
+          // 脚本侧车只持有依赖身份；低层客户端伴随测试以独立模板边观察宿主资产提交。
+          // 此边不进入生产页面图，也不声明 Vue 编译模板可以保留状态更新。
+          return createLogicalEntryModuleCode({ sourceId, type }, type === 'page'
+            ? [{ kind: 'script', sourceId }, ...(templateAssetDelivery ? [{ kind: 'template' as const, sourceId }] : [])]
+            : [])
         }
         const sidecar = parseSidecarModuleId(id)
         if (sidecar) {
@@ -130,12 +139,34 @@ async function collectVueHmrSequence(repoRoot: string, source: string, updates: 
         if (patch.type !== 'Patch') {
           throw new Error(`Expected Vue ${type} patch, received ${patch.type}`)
         }
+        const currentCompiled = await compileVueFile(updated, sourceId, compileOptions)
+        if (templateAssetDelivery) {
+          const changedIds = patch.changedIds
+          assert(Array.isArray(changedIds), 'Template asset companion requires changed module IDs')
+          // 与正式适配器使用同一 cwd-relative runtime ID，保留查询参数中的模板边及 owner 身份。
+          const changedModuleIds = changedIds.map(id => toStableModuleId(id, root))
+          const changedModuleDiagnostics = JSON.stringify({ changedIds, changedModuleIds })
+          const before = resolveVueSfcHmrSignatures(previousSource, sourceId).blockSignatures
+          const after = resolveVueSfcHmrSignatures(updated, sourceId).blockSignatures
+          assert(before && after, 'Template asset companion requires valid Vue block signatures')
+          if (before.script === after.script && before.template !== after.template) {
+            assert.equal(currentCompiled.script, previousCompiled.script, 'Template-only asset delivery must not invent an executable script change')
+            const templateRequest = toStableModuleId(createSidecarSourceSpecifier(sourceId, sourceId, 'template'), root)
+            assert(changedModuleIds.includes(templateRequest), `Template asset delivery must include its real template source request ${JSON.stringify(templateRequest)}; actual=${changedModuleDiagnostics}`)
+          }
+          if (before.script !== after.script) {
+            assert.notEqual(currentCompiled.script, previousCompiled.script, 'Script delivery requires a changed executable module')
+            assert(changedModuleIds.includes(toStableModuleId(sourceId, root)), `Script delivery must include its executing source module; actual=${changedModuleDiagnostics}`)
+          }
+        }
         patches.push(patch)
-        templates.push((await compileVueFile(updated, sourceId, compileOptions)).template ?? '')
+        templates.push(currentCompiled.template ?? '')
         await engine.notifyPayloadDelivered(patch.filename)
         // 回调先于原生监听路径提交；下一次写文件必须等完整 coordinator 事务结束。
         await engine.ensureCurrentBuildFinish()
         await engine.getBundleState()
+        previousSource = updated
+        previousCompiled = currentCompiled
       }
       finally {
         clearTimeout(timer)

@@ -9,6 +9,7 @@ import { captureNativePublication } from '.'
 import { createDevBuildCompletion } from '../devBuildCompletion'
 import { NATIVE_PUBLICATION_PREFIX, nativePublicationGeneration, nativePublicationHash, readNativePublicationInputs } from './files'
 import { nativePublicationPlugin } from './plugin'
+import { createNativeWriteLifecycle } from './testHelpers/nativeWriteLifecycle'
 
 let project: string
 let output: string
@@ -220,9 +221,12 @@ it('keeps worker output separate even when its real write uses the app output di
 
 it('closes every native watch publication before watcher shutdown, including consecutive partial writes', async () => {
   let builds = 0
+  const lifecycle = createNativeWriteLifecycle(() => output)
   const first = captureNativePublication(dev(), project)
   const result = await nativeBuild({
     watch: true,
+    observe: false,
+    afterObserverPlugins: [lifecycle.plugin],
     plugins: [{
       name: 'fixture:partial-native-output',
       enforce: 'post',
@@ -252,12 +256,83 @@ it('closes every native watch publication before watcher shutdown, including con
     expect(receipt.boundary).toBe('native-byte-write')
     expect(receipt.outputs).toEqual({ 'pages/native/index.js': nativePublicationHash(source) })
   }
-  // 原生 watcher 可以合并或重复底层文件事件；关闭后逐轮核对发布，不能把保存次数当成构建次数。
+  // buildStart 后仍可因关闭而取消，也可因来源被替代而拒绝收据；逐一核对真实写出钩子的完成。
   await watcher.close()
   watcher = undefined
   expect(builds).toBeGreaterThanOrEqual(3)
-  const emitted = output.split('\n').filter(line => line.startsWith(NATIVE_PUBLICATION_PREFIX)).map(line => JSON.parse(line.slice(NATIVE_PUBLICATION_PREFIX.length)))
-  expect(emitted, JSON.stringify({ builds, emitted })).toHaveLength(builds)
+  expect(lifecycle.pending.size).toBe(0)
+  expect(lifecycle.writes.length).toBeGreaterThanOrEqual(3)
+  expect(lifecycle.writes.every(write => write.settled)).toBe(true)
+  expect(lifecycle.writes.flatMap(write => write.receipts)).toEqual(lifecycle.receipts())
+  for (const write of lifecycle.writes) {
+    for (const receipt of write.receipts) {
+      expect(receipt.boundary).toBe('native-byte-write')
+      expect(receipt.outputs).toEqual(write.outputs)
+    }
+  }
+}, 30_000)
+
+it('rejects an obsolete watch write and settles the final native publication before close', async () => {
+  const lifecycle = createNativeWriteLifecycle(() => output)
+  const release = Promise.withResolvers<void>()
+  const source = path.join(project, 'src/app.js')
+  const next = 'console.info("NEXT")'
+  const final = 'console.info("FINAL")'
+  let obsoleteIndex: number | undefined
+  let obsoleteOutput: string | undefined
+  const first = captureNativePublication(dev(), project)
+  try {
+    const result = await nativeBuild({
+      watch: true,
+      observe: false,
+      plugins: [{
+        name: 'fixture:hold-obsolete-native-write',
+        enforce: 'post',
+        writeBundle: {
+          order: 'post',
+          sequential: true,
+          async handler(_options, bundle) {
+            const app = bundle['app.js']
+            if (obsoleteIndex === undefined && app?.type === 'chunk' && app.code.includes('"NEXT"')) {
+              // 已完成原生写盘，暂停在真实观察器之前，使下一次保存确定地替代本轮来源。
+              obsoleteIndex = lifecycle.writes.length
+              obsoleteOutput = nativePublicationHash(app.code)
+              await release.promise
+            }
+          },
+        },
+      }],
+      afterObserverPlugins: [lifecycle.plugin],
+    })
+    if (Array.isArray(result) || !('on' in result) || !('close' in result)) {
+      throw new Error('Expected a real native build watcher')
+    }
+    watcher = result
+    await first.wait(10_000)
+    await writeFile(source, next)
+    await vi.waitFor(() => expect(obsoleteIndex).toBeDefined(), { timeout: 10_000 })
+    expect(nativePublicationHash(await readFile(path.join(project, 'dist/app.js')))).toBe(obsoleteOutput)
+    const pending = captureNativePublication(dev(), project)
+    await writeFile(source, final)
+    release.resolve()
+    const receipt = await pending.wait(10_000)
+    expect(receipt.boundary).toBe('native-byte-write')
+    expect(receipt.inputs['src/app.js']).toBe(nativePublicationHash(final))
+    expect(receipt.outputs['app.js']).toBe(nativePublicationHash(await readFile(path.join(project, 'dist/app.js'))))
+    await watcher.close()
+    watcher = undefined
+    expect(lifecycle.writes[obsoleteIndex!]).toEqual({ outputs: { 'app.js': obsoleteOutput, 'app.json': nativePublicationHash('{"pages":["pages/index"]}') }, receipts: [], settled: true })
+    expect(lifecycle.receipts().some(value => value.inputs['src/app.js'] === nativePublicationHash(next))).toBe(false)
+    expect(lifecycle.receipts()).toContainEqual(expect.objectContaining({ inputs: expect.objectContaining({ 'src/app.js': nativePublicationHash(final) }) }))
+    expect(lifecycle.pending.size).toBe(0)
+    expect(lifecycle.writes.every(write => write.settled)).toBe(true)
+    expect(lifecycle.writes.flatMap(write => write.receipts)).toEqual(lifecycle.receipts())
+  }
+  finally {
+    release.resolve()
+    await watcher?.close()
+    watcher = undefined
+  }
 }, 30_000)
 
 it('rejects a newly logged receipt from an earlier source generation', async () => {

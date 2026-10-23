@@ -49,8 +49,32 @@ it.each([false, true])('naturally exits after Sass updates hand the stateful eng
         await writeFile(path.join(root, file), source)
       }
       let buildStarts = 0
+      const startedAt = performance.now()
+      const hosts = []
+      const watcherEvents = []
+      let eventSequence = 0
+      let droppedWatcherEvents = 0
+      const relativeFile = file => {
+        const relative = path.relative(root, path.resolve(root, file))
+        return relative === '..' || relative.startsWith('..' + path.sep) || path.isAbsolute(relative)
+          ? '<external>' : relative.split(path.sep).join('/') || '.'
+      }
+      const recordWatcherEvent = (host, event, file) => {
+        if (watcherEvents.length === 128) {
+          watcherEvents.shift()
+          droppedWatcherEvents++
+        }
+        watcherEvents.push({ sequence: ++eventSequence, elapsedMs: performance.now() - startedAt, host, event, file: file && relativeFile(file) })
+      }
       const server = await createServer({ root, configFile: false, logLevel: 'silent', plugins: [weapp(), {
         name: 'sass-generation-observer', buildStart() { buildStarts++ },
+        configureServer(host) {
+          const index = hosts.length
+          hosts.push({ config: host.config, watcher: host.watcher })
+          host.watcher.on('all', (event, file) => recordWatcherEvent(index, event, file))
+          host.watcher.on('ready', () => recordWatcherEvent(index, 'ready'))
+          recordWatcherEvent(index, host.watcher._readyEmitted ? 'attached-after-ready' : 'attached-before-ready')
+        },
       }],
         weapp: { srcRoot: 'src', autoRoutes: false, vue: { enable: false }, hmr: { runtime: 'stateful-experimental' },
           tailwindcss: ${tailwind ? '{ cssEntries: ["src/tailwind.css"] }' : 'false'},
@@ -64,10 +88,34 @@ it.each([false, true])('naturally exits after Sass updates hand the stateful eng
         const session = getHmrRuntimeSession(context)
         assert.equal(session.phase, 'stateful')
         const output = path.join(root, 'dist/pages/home/index.wxss')
+        const diagnose = async label => {
+          const read = file => readFile(file, 'utf8').then(source => source.slice(0,2000), error => ({ errorCode: error.code }))
+          process.stderr.write('[sass-handoff] ' + JSON.stringify({
+            label, phase: session.phase,
+            fallback: session.fallback && { ...session.fallback, files: session.fallback.files?.map(relativeFile) },
+            buildStarts,
+            style: await read(path.join(root, 'src/pages/home/index.scss')),
+            output: await read(output),
+            hosts: hosts.map(host => {
+              const current = host.config.plugins.find(plugin => plugin.name === 'weapp-vite:context')?.api?.ctx
+              return {
+                bundledDev: host.config.experimental.bundledDev,
+                runtime: current?.configService.weappViteConfig.hmr,
+                compileHotReLoad: current?.configService.projectPrivateConfig.setting?.compileHotReLoad,
+                watcherClosed: host.watcher.closed, watcherReady: host.watcher._readyEmitted,
+                watched: Object.entries(host.watcher.getWatched()).map(([directory, files]) => ({ directory: relativeFile(directory), files })),
+              }
+            }),
+            watcherEvents, droppedWatcherEvents,
+          }) + '\\n')
+        }
         const until = async (check, label) => {
           const deadline = Date.now() + 10000
           while (!(await check())) {
-            if (Date.now() >= deadline) throw new Error(label)
+            if (Date.now() >= deadline) {
+              await diagnose(label).catch(error => process.stderr.write('[sass-handoff-diagnostic-error] ' + error.name + '\\n'))
+              throw new Error(label)
+            }
             await delay(20)
           }
         }
