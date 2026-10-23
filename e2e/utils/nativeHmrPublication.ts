@@ -103,9 +103,10 @@ export function createNativeHmrPublication(
     capture(sourceFiles?: string | readonly string[]) {
       const outputOffset = readOutput().length
       const mode = updateMode()
-      const publication = captureNativePublication(dev, project)
+      const files = typeof sourceFiles === 'string' ? [sourceFiles] : sourceFiles
+      const publication = captureNativePublication(dev, project, mode === 'classic' ? { expectedSourceFiles: files } : {})
       const completion = profilePath && sourceFiles && createDevBuildCompletion(dev, {
-        source: { files: typeof sourceFiles === 'string' ? [sourceFiles] : sourceFiles, profilePath },
+        source: { files, profilePath },
       })
       return {
         async wait() {

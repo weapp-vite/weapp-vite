@@ -55,8 +55,31 @@ async function fixture(initialOutput = 'initial native build complete\n', reques
       profileCursor: { offset: 0, prefixHash: nativePublicationHash('') },
     }
   }
-  return { append, native, nativeWait, publication, receipt }
+  return { append, dev, native, nativeWait, project, publication, receipt }
 }
+
+it.each(['classic', 'after-fallback'] as const)('filters native receipt sources when the effective mode is %s', async (mode) => {
+  const run = mode === 'classic'
+    ? await fixture('initial native build complete\n', 'classic')
+    : await fixture(fallback + ready)
+  for (const sourceFiles of ['src/app.js', ['src/app.js', 'src/page.vue']] as const) {
+    run.publication.capture(sourceFiles)
+    expect(capture.native).toHaveBeenLastCalledWith(run.dev, run.project, {
+      expectedSourceFiles: typeof sourceFiles === 'string' ? [sourceFiles] : sourceFiles,
+    })
+  }
+  expect(capture.native).toHaveBeenCalledTimes(2)
+})
+
+it.each(['auto', 'stateful-experimental'] as const)('does not filter a %s native receipt before cold classic readiness', async (requested) => {
+  const run = await fixture('initial native build complete\n', requested)
+  run.publication.capture('src/app.js')
+  expect(capture.native).toHaveBeenLastCalledWith(run.dev, run.project, {})
+  run.append(fallbackLog({ ...fallbackRecord, requested }))
+  run.publication.capture(['src/app.js', 'src/page.vue'])
+  expect(capture.native).toHaveBeenLastCalledWith(run.dev, run.project, {})
+  expect(capture.native).toHaveBeenCalledTimes(2)
+})
 
 it.each(['auto', 'stateful-experimental'] as const)('validates the configured %s request independently of the initial stateful delivery', async (requested) => {
   const run = await fixture('initial native build complete\n', requested)

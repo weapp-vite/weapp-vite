@@ -2,6 +2,7 @@ import type { startDevProcess } from '../dev-process'
 import type { NativePublicationOptions, NativePublicationReceipt } from './files'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
+import { normalizedSource } from '../devBuildCompletion/nativeIdentity'
 import {
   isNativePublicationProfileIdentity,
   NATIVE_PUBLICATION_PREFIX,
@@ -60,6 +61,7 @@ export function captureNativePublication(
 ) {
   const offset = dev.getOutput().length
   const outputRoot = path.resolve(project, options.outputRoot ?? 'dist')
+  const expectedSources = new Set(options.expectedSourceFiles?.map(normalizedSource))
   return {
     async wait(timeoutMs = 30_000) {
       const reads = new AbortController()
@@ -82,7 +84,9 @@ export function captureNativePublication(
           for (const [index, receipt] of receipts(output).reverse().entries()) {
             const inputGeneration = nativePublicationGeneration(receipt.inputs)
             const matchingInputs = inputGeneration === generation
-            if (index > 0 && !matchingInputs) {
+            const sources = new Set(receipt.profileCursor?.identity?.sourceEvents.map(event => normalizedSource(event.file)))
+            const matchingSources = [...expectedSources].every(file => sources.has(file))
+            if (index > 0 && (!matchingInputs || !matchingSources)) {
               continue
             }
             try {
@@ -102,12 +106,13 @@ export function captureNativePublication(
                 // 超时保留最新收据与真实磁盘的差异；只记录相对路径和哈希，不输出源码。
                 diagnostics = {
                   expectedInputGeneration: generation,
-                  receipt: { boundary: receipt.boundary, generation: receipt.generation, inputGeneration },
+                  receipt: { boundary: receipt.boundary, generation: receipt.generation, inputGeneration, identity: receipt.profileCursor?.identity },
+                  missingSources: [...expectedSources].filter(file => !sources.has(file)),
                   inputDifferences: [...new Set([...Object.keys(inputs), ...Object.keys(receipt.inputs)])].sort().filter(file => inputs[file] !== receipt.inputs[file]).map(file => ({ file, expected: inputs[file], actual: receipt.inputs[file] })),
                   outputs: files,
                 }
               }
-              if (matchingInputs && files.every(file => 'actual' in file && file.actual === file.expected)) {
+              if (matchingInputs && matchingSources && files.every(file => 'actual' in file && file.actual === file.expected)) {
                 if (nativePublicationGeneration(await readNativePublicationInputs(project, options, reads.signal)) !== generation) {
                   throw new Error('Native publication input changed while awaiting the final write')
                 }

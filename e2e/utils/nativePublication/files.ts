@@ -8,6 +8,7 @@ export interface NativePublicationOptions {
   sourceRoot?: string
   outputRoot?: string
   profilePath?: string
+  expectedSourceFiles?: readonly string[]
 }
 
 export interface NativePublicationProfileCursor {
