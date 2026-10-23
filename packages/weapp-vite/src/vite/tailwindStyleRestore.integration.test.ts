@@ -20,6 +20,7 @@ import { sanitizeBenchmarkDevLog } from '../../../../scripts/benchmarkTemplatesH
 import { getHmrRuntimeSession } from '../runtime/hmrRuntimeSession'
 import { StatefulHmrSnapshotScheduler } from '../runtime/statefulHmr/snapshotScheduler'
 import { weapp } from './index'
+import { createStyleRestoreDiagnostics } from './tailwindStyleRestore/diagnostics'
 
 const harness = vi.hoisted(() => ({
   afterWrite: undefined as undefined | ((outDir: string, output: StatefulHmrOutputFile[]) => Promise<void>),
@@ -144,21 +145,10 @@ function increment() { count.value += 1 }
   const wroteBlue = Promise.withResolvers<void>()
   const restoredSourceObserved = Promise.withResolvers<void>()
   const publications: Array<{ mode: 'stateful' | 'classic', files: string[], blue: boolean, green: boolean }> = []
-  const events: Array<Record<string, unknown>> = []
-  const snapshotTrace: unknown[] = []
-  const snapshotRequests: unknown[] = []
-  const logs: Array<Record<string, unknown>> = []
   const repoRoot = fileURLToPath(new URL('../../../../', import.meta.url))
   const sanitize = (value: string) => sanitizeBenchmarkDevLog(value.replaceAll('\\', '/')
     .replaceAll(root.replaceAll('\\', '/'), '<fixture>')
     .replaceAll(path.dirname(root).replaceAll('\\', '/'), '<temp>'), repoRoot)
-  const diagnosticJson = (value: unknown) => JSON.stringify(value, (_key, entry: unknown) => {
-    if (entry instanceof Error) {
-      return { name: entry.name, message: entry.message, stack: entry.stack, cause: entry.cause, ...('code' in entry ? { code: entry.code } : {}), ...('errors' in entry ? { errors: entry.errors } : {}) }
-    }
-    return typeof entry === 'string' ? sanitize(entry) : entry
-  })
-  const startedAt = performance.now()
   let blockBlue = false
   let publicationBlocked = false
   let restoring = false
@@ -167,28 +157,10 @@ function increment() { count.value += 1 }
   let hmrRuntime: HmrRuntimeSession | undefined
   let runtime: ReturnType<typeof createHeadlessSession> | undefined
   let releaseTransport: (() => void) | undefined
-  const record = (event: string, details: Record<string, unknown> = {}) => {
-    events.push({ at: Math.round(performance.now() - startedAt), event, phase, ...details })
-    if (events.length > 100) {
-      events.shift()
-    }
-  }
-  harness.snapshot = (line) => {
-    const observation: unknown = JSON.parse(line.slice('[stateful-hmr-snapshot] '.length))
-    snapshotTrace.push(JSON.parse(diagnosticJson(observation)))
-    if (snapshotTrace.length > 250) {
-      snapshotTrace.shift()
-    }
-  }
-  harness.log = (source, level, values) => {
-    if (level === 'info' && !values.some(value => typeof value === 'string' && /HMR|重同步/.test(value))) {
-      return
-    }
-    logs.push({ at: Math.round(performance.now() - startedAt), phase, source, level, values: JSON.parse(diagnosticJson(values)) })
-    if (logs.length > 100) {
-      logs.shift()
-    }
-  }
+  const diagnostics = createStyleRestoreDiagnostics({ sanitize, phase: () => phase })
+  const record = diagnostics.record
+  harness.snapshot = diagnostics.snapshot
+  harness.log = diagnostics.log
   const viteLogger = createLogger('silent')
   for (const level of ['info', 'warn', 'error'] as const) {
     const original = viteLogger[level]
@@ -211,6 +183,7 @@ function increment() { count.value += 1 }
   }
   let finalStyles: Awaited<ReturnType<typeof readStyles>> | undefined
   const save = async (content: string) => {
+    diagnostics.source(content)
     record('save:start', { color: content.match(/color: (#[a-f\d]+)/)?.[1] })
     const temporary = `${source}.save.tmp`
     await writeFile(temporary, content)
@@ -269,23 +242,13 @@ function increment() { count.value += 1 }
     },
   }
   onTestFailed(() => {
-    process.stderr.write(`[tailwind-style-restore] ${diagnosticJson({ phase, publications, events, snapshotRequests, snapshotTrace, logs, styles: finalStyles })}\n`)
+    process.stderr.write(`[tailwind-style-restore] ${diagnostics.json({ phase, publications, styles: finalStyles })}\n`)
   })
   const originalRequest = StatefulHmrSnapshotScheduler.prototype.request
   const requestObserver = vi.spyOn(StatefulHmrSnapshotScheduler.prototype, 'request').mockImplementation(function (this: StatefulHmrSnapshotScheduler, ...args) {
     try {
       // 默认只同步观察请求；不读取磁盘、不消费单次 iterable，原参数及接收者原样交回。
-      const files = args[1]
-      snapshotRequests.push(JSON.parse(diagnosticJson({
-        at: Math.round(performance.now() - startedAt),
-        phase,
-        mode: args[0],
-        files: files === undefined ? [] : Array.isArray(files) || files instanceof Set ? [...files] : '<iterable>',
-        requestStack: new Error('snapshot request observation').stack,
-      })))
-      if (snapshotRequests.length > 100) {
-        snapshotRequests.shift()
-      }
+      diagnostics.request(args[0], args[1])
     }
     catch {
       // 观察失败不覆盖真实 request 的返回值或异常。
@@ -321,6 +284,7 @@ function increment() { count.value += 1 }
         return
       }
       if (result.changedFiles.some(file => path.resolve(root, file) === source)) {
+        diagnostics.batch(result)
         record('devengine-batch', { updates: result.updates.map(item => item.update.type) })
       }
     }
@@ -328,6 +292,7 @@ function increment() { count.value += 1 }
       if (path.resolve(directory) !== outDir) {
         return
       }
+      diagnostics.output(output)
       const styles = output.filter(item => item.type === 'asset' && item.fileName.endsWith('.wxss'))
       const blue = styles.some(item => item.type === 'asset' && String(item.source).includes('#2563eb'))
       publications.push({ mode: 'stateful', files: output.map(item => item.fileName), blue, green: styles.some(item => item.type === 'asset' && String(item.source).includes('#16a34a')) })
@@ -348,6 +313,7 @@ function increment() { count.value += 1 }
     releaseTransport = installStatefulHmrTransport(runtime, outDir)
     runtime.reLaunch('/pages/index/index')
     await expect.poll(() => runtime!.evaluateRuntime(`() => globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY)}]?.getTransportState().phase`), { timeout: 30_000 }).toBe('polling')
+    diagnostics.runtime.install(runtime)
     const page = runtime.getCurrentPages()[0]
     expect(runtime.renderCurrentPage().wxml).toContain('count: 0')
     expect((await readStyles()).page).toContain('#1f1a3f')
@@ -355,8 +321,10 @@ function increment() { count.value += 1 }
     const increment = async (expected: number) => {
       const button = querySelectorAll(runtime!.renderCurrentPage().root, '#increment')[0]
       expect(button).toBeDefined()
+      diagnostics.runtime.capture(runtime, 'before-tap', { expected })
       runtime!.dispatchNativeNodeEvent(button!, 'tap', {})
-      await expect.poll(() => runtime!.renderCurrentPage().wxml, { timeout: 30_000 }).toContain(`count: ${expected}`)
+      diagnostics.runtime.capture(runtime, 'after-tap-dispatch', { expected })
+      await expect.poll(() => diagnostics.render(runtime!.renderCurrentPage().wxml), { timeout: 30_000 }).toContain(`count: ${expected}`)
     }
     const version = () => Number(runtime!.evaluateRuntime(`() => globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY)}]?.getVersion()`))
     await increment(1)
@@ -366,8 +334,10 @@ function increment() { count.value += 1 }
     ] as const) {
       phase = label
       const previous = version()
+      diagnostics.runtime.capture(runtime, 'before-save', { previous })
       await save(content)
       await expect.poll(version, { timeout: 30_000 }).toBeGreaterThan(previous)
+      diagnostics.runtime.capture(runtime, 'version-barrier-satisfied', { previous })
       expect(runtime.getCurrentPages()[0]).toBe(page)
       await increment(expected)
     }
@@ -402,6 +372,7 @@ function increment() { count.value += 1 }
     releaseTransport()
     releaseTransport = undefined
     const previousRuntime = runtime
+    diagnostics.runtime.capture(previousRuntime, 'stateful-before-close')
     previousRuntime.close()
     expect(previousRuntime.isClosed).toBe(true)
     const openClassicCompanion = async () => {
@@ -436,10 +407,11 @@ function increment() { count.value += 1 }
     expect(publications.filter(item => item.mode === 'stateful' && (item.blue || item.green))).toEqual([])
     expect(publications.filter(item => item.mode === 'classic' && item.blue)).toHaveLength(1)
     if (process.env.WEAPP_VITE_HMR_STYLE_RESTORE_DIAGNOSTICS === '1') {
-      process.stdout.write(`[tailwind-style-restore:passed] ${diagnosticJson({ phase, events, publications, snapshotRequests, snapshotTrace, logs })}\n`)
+      process.stdout.write(`[tailwind-style-restore:passed] ${diagnostics.json({ phase, publications })}\n`)
     }
   }
   finally {
+    diagnostics.runtime.capture(runtime, 'before-cleanup')
     finalStyles = await readStyles().catch(() => undefined)
     releaseCommit.resolve()
     harness.afterWrite = undefined
