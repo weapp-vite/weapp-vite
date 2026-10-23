@@ -11,19 +11,63 @@ import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY, WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE, WEAPP_VITE_STATEFUL_HMR_PRELOAD_FILE, WEAPP_VITE_STATEFUL_HMR_UPDATE_FILE } from '@weapp-core/constants'
-import { createServer } from 'vite'
+import { createLogger, createServer } from 'vite'
 import { expect, it, onTestFailed, vi } from 'vitest'
 import { installStatefulHmrTransport } from '../../../../e2e/utils/statefulHmrTransport'
 import { createHeadlessSession } from '../../../../mpcore/packages/simulator/src/runtime'
 import { querySelectorAll } from '../../../../mpcore/packages/simulator/src/view/selectors'
+import { sanitizeBenchmarkDevLog } from '../../../../scripts/benchmarkTemplatesHmr/diagnostics'
 import { getHmrRuntimeSession } from '../runtime/hmrRuntimeSession'
+import { StatefulHmrSnapshotScheduler } from '../runtime/statefulHmr/snapshotScheduler'
 import { weapp } from './index'
 
 const harness = vi.hoisted(() => ({
   afterWrite: undefined as undefined | ((outDir: string, output: StatefulHmrOutputFile[]) => Promise<void>),
   sourceHook: undefined as undefined | ((file: string, phase: 'entered' | 'completed' | 'failed') => void),
   batch: undefined as undefined | ((result: Parameters<NonNullable<DevOptions['onHmrUpdates']>>[0]) => void),
+  snapshot: undefined as undefined | ((line: string) => void),
+  log: undefined as undefined | ((source: 'build' | 'vite', level: string, values: unknown[]) => void),
 }))
+
+vi.mock('../runtime/statefulHmr/snapshotDiagnostics', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../runtime/statefulHmr/snapshotDiagnostics')>()
+  return {
+    ...actual,
+    createStatefulHmrSnapshotDiagnostics(...[options]: Parameters<typeof actual.createStatefulHmrSnapshotDiagnostics>) {
+      return actual.createStatefulHmrSnapshotDiagnostics({
+        ...options,
+        enabled: process.env.WEAPP_VITE_HMR_STYLE_RESTORE_DIAGNOSTICS === '1' ? '1' : '0',
+        emit(line) {
+          harness.snapshot?.(line)
+        },
+      })
+    },
+  }
+})
+
+vi.mock('../logger', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../logger')>()
+  return {
+    ...actual,
+    default: new Proxy(actual.default, {
+      get(target, property, receiver) {
+        const value: unknown = Reflect.get(target, property, receiver)
+        if (typeof value === 'function' && ['info', 'warn', 'error'].includes(String(property))) {
+          return (...values: unknown[]) => {
+            try {
+              harness.log?.('build', String(property), values)
+            }
+            catch {
+              // 只读诊断失败不能改变原日志调用的返回或异常。
+            }
+            return Reflect.apply(value, target, values)
+          }
+        }
+        return value
+      },
+    }),
+  }
+})
 
 vi.mock('../runtime/statefulHmr/outputWriter', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../runtime/statefulHmr/outputWriter')>()
@@ -101,6 +145,19 @@ function increment() { count.value += 1 }
   const restoredSourceObserved = Promise.withResolvers<void>()
   const publications: Array<{ mode: 'stateful' | 'classic', files: string[], blue: boolean, green: boolean }> = []
   const events: Array<Record<string, unknown>> = []
+  const snapshotTrace: unknown[] = []
+  const snapshotRequests: unknown[] = []
+  const logs: Array<Record<string, unknown>> = []
+  const repoRoot = fileURLToPath(new URL('../../../../', import.meta.url))
+  const sanitize = (value: string) => sanitizeBenchmarkDevLog(value.replaceAll('\\', '/')
+    .replaceAll(root.replaceAll('\\', '/'), '<fixture>')
+    .replaceAll(path.dirname(root).replaceAll('\\', '/'), '<temp>'), repoRoot)
+  const diagnosticJson = (value: unknown) => JSON.stringify(value, (_key, entry: unknown) => {
+    if (entry instanceof Error) {
+      return { name: entry.name, message: entry.message, stack: entry.stack, cause: entry.cause, ...('code' in entry ? { code: entry.code } : {}), ...('errors' in entry ? { errors: entry.errors } : {}) }
+    }
+    return typeof entry === 'string' ? sanitize(entry) : entry
+  })
   const startedAt = performance.now()
   let blockBlue = false
   let publicationBlocked = false
@@ -114,6 +171,35 @@ function increment() { count.value += 1 }
     events.push({ at: Math.round(performance.now() - startedAt), event, phase, ...details })
     if (events.length > 100) {
       events.shift()
+    }
+  }
+  harness.snapshot = (line) => {
+    const observation: unknown = JSON.parse(line.slice('[stateful-hmr-snapshot] '.length))
+    snapshotTrace.push(JSON.parse(diagnosticJson(observation)))
+    if (snapshotTrace.length > 250) {
+      snapshotTrace.shift()
+    }
+  }
+  harness.log = (source, level, values) => {
+    if (level === 'info' && !values.some(value => typeof value === 'string' && /HMR|重同步/.test(value))) {
+      return
+    }
+    logs.push({ at: Math.round(performance.now() - startedAt), phase, source, level, values: JSON.parse(diagnosticJson(values)) })
+    if (logs.length > 100) {
+      logs.shift()
+    }
+  }
+  const viteLogger = createLogger('silent')
+  for (const level of ['info', 'warn', 'error'] as const) {
+    const original = viteLogger[level]
+    viteLogger[level] = (...values) => {
+      try {
+        harness.log?.('vite', level, values)
+      }
+      catch {
+        // 保留 Vite logger 的原返回值及失败语义。
+      }
+      return original.apply(viteLogger, values)
     }
   }
   const readStyles = async () => {
@@ -183,7 +269,28 @@ function increment() { count.value += 1 }
     },
   }
   onTestFailed(() => {
-    process.stderr.write(`[tailwind-style-restore] ${JSON.stringify({ phase, publications, events, styles: finalStyles })}\n`)
+    process.stderr.write(`[tailwind-style-restore] ${diagnosticJson({ phase, publications, events, snapshotRequests, snapshotTrace, logs, styles: finalStyles })}\n`)
+  })
+  const originalRequest = StatefulHmrSnapshotScheduler.prototype.request
+  const requestObserver = vi.spyOn(StatefulHmrSnapshotScheduler.prototype, 'request').mockImplementation(function (this: StatefulHmrSnapshotScheduler, ...args) {
+    try {
+      // 默认只同步观察请求；不读取磁盘、不消费单次 iterable，原参数及接收者原样交回。
+      const files = args[1]
+      snapshotRequests.push(JSON.parse(diagnosticJson({
+        at: Math.round(performance.now() - startedAt),
+        phase,
+        mode: args[0],
+        files: files === undefined ? [] : Array.isArray(files) || files instanceof Set ? [...files] : '<iterable>',
+        requestStack: new Error('snapshot request observation').stack,
+      })))
+      if (snapshotRequests.length > 100) {
+        snapshotRequests.shift()
+      }
+    }
+    catch {
+      // 观察失败不覆盖真实 request 的返回值或异常。
+    }
+    return Reflect.apply(originalRequest, this, args)
   })
   try {
     for (const [file, content] of Object.entries({
@@ -230,6 +337,7 @@ function increment() { count.value += 1 }
       root,
       configFile: false,
       logLevel: 'silent',
+      customLogger: viteLogger,
       plugins: [weapp(), classicGate],
       weapp: { srcRoot: 'src', autoRoutes: false, hmr: { runtime: 'stateful-experimental' }, tailwindcss: { cssEntries: ['src/app.css'] } },
       build: { minify: false },
@@ -328,7 +436,7 @@ function increment() { count.value += 1 }
     expect(publications.filter(item => item.mode === 'stateful' && (item.blue || item.green))).toEqual([])
     expect(publications.filter(item => item.mode === 'classic' && item.blue)).toHaveLength(1)
     if (process.env.WEAPP_VITE_HMR_STYLE_RESTORE_DIAGNOSTICS === '1') {
-      process.stdout.write(`[tailwind-style-restore:passed] ${JSON.stringify({ phase, events, publications })}\n`)
+      process.stdout.write(`[tailwind-style-restore:passed] ${diagnosticJson({ phase, events, publications, snapshotRequests, snapshotTrace, logs })}\n`)
     }
   }
   finally {
@@ -339,7 +447,14 @@ function increment() { count.value += 1 }
     harness.batch = undefined
     releaseTransport?.()
     runtime?.close()
-    await server?.close()
+    try {
+      await server?.close()
+    }
+    finally {
+      requestObserver.mockRestore()
+      harness.snapshot = undefined
+      harness.log = undefined
+    }
     await rm(root, { recursive: true, force: true })
   }
 }, 120_000)

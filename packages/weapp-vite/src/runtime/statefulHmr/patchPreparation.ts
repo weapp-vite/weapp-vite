@@ -1,5 +1,6 @@
 import type { WeappCompilerHmrPreparation } from '../../types/compilerPlugin'
 import type { EncodedSourceMapLike } from '../../utils/sourcemap'
+import type { PreparedHmrCode } from './mappedCode'
 import type { StatefulHmrPatchImports } from './patchModule'
 import type { StatefulHmrDevEngineUpdate } from './viteAdapter'
 import { Buffer } from 'node:buffer'
@@ -10,21 +11,8 @@ import { transformWithOxc } from 'vite'
 import { composeSourceMaps, normalizeEncodedSourceMapLike } from '../../utils/sourcemap'
 import { transformStatefulHmrPatchImports } from './patchModule'
 
-export interface PreparedHmrCode {
-  code: string
-  filename: string
-  map?: EncodedSourceMapLike | null
-}
-
-export function wrapHmrCode(part: PreparedHmrCode, prefix = '', suffix = ''): string {
-  const source = new MagicString(part.code).prepend(prefix).append(suffix)
-  const code = source.toString()
-  if (!part.map) {
-    return code
-  }
-  const map = composeSourceMaps(source.generateMap({ source: part.filename, includeContent: true, hires: true }), part.map)
-  return `${code}\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,${Buffer.from(JSON.stringify(map)).toString('base64')}`
-}
+export type { PreparedHmrCode } from './mappedCode'
+export { readMappedHmrCode, wrapHmrCode } from './mappedCode'
 
 /** 转换每一层都组合旧映射，避免最终更新模块携带原始 Patch 的失效 map。 */
 export async function prepareHmrPatch(
@@ -78,16 +66,4 @@ export function bundleHmrCode(parts: PreparedHmrCode[], prefix = '', suffix = ''
   const generated = bundle.generateMap({ hires: true, includeContent: true })
   const map = remapping(generated as any, (source, context) => context.depth === 1 ? maps.get(source) as any ?? null : null)
   return `${code}\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,${Buffer.from(JSON.stringify(map)).toString('base64')}`
-}
-
-export function readMappedHmrCode(code: string, filename: string): PreparedHmrCode {
-  const match = /\n\/\/# sourceMappingURL=data:application\/json;charset=utf-8;base64,(\S+)\s*$/.exec(code)
-  if (!match) {
-    return { code, filename }
-  }
-  return {
-    code: code.slice(0, match.index),
-    filename,
-    map: normalizeEncodedSourceMapLike(JSON.parse(Buffer.from(match[1]!, 'base64').toString('utf8'))),
-  }
 }

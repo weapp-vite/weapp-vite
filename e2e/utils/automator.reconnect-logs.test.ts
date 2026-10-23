@@ -40,6 +40,35 @@ function after(ms: number) {
 }
 
 describe('reconnected automator runtime log subscription', () => {
+  it.each([false, true])('keeps replayed CDP time without merging errors (same session: %s)', async (sameSession) => {
+    vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
+    const first = fixture()
+    for (let index = 0; index < 2; index += 1) {
+      const { connection, session, lifecycle, assertClean } = index === 0 || sameSession ? first : fixture()
+      await enableReconnectedAutomatorRuntimeLogs(session, 'e2e-apps/base', lifecycle, assertClean)
+      connection.emit('App.CDPEvent', {
+        domain: 'Runtime',
+        event: 'consoleAPICalled',
+        params: { type: 'error', timestamp: 50, executionContextId: 7, args: [{ type: 'string', value: 'replayed host error' }] },
+      })
+      await session.flushConsole()
+    }
+    const events = vi.mocked(appendIdeReportEvent).mock.calls.map(([event]) => event).filter(event => event.text === 'replayed host error')
+    expect(events).toHaveLength(2)
+    expect(events.every(event => event.level === 'error')).toBe(true)
+    expect(events.map(event => event.runtimeLogDiagnostics)).toEqual([
+      expect.objectContaining({ originalTimestamp: 50, executionContextId: 7, receivedAtMonotonicMs: expect.any(Number), sessionId: expect.any(String), subscriptionId: expect.any(String) }),
+      expect.objectContaining({ originalTimestamp: 50, executionContextId: 7, receivedAtMonotonicMs: expect.any(Number), sessionId: expect.any(String), subscriptionId: expect.any(String) }),
+    ])
+    if (sameSession) {
+      expect(events[0]?.runtimeLogDiagnostics?.sessionId).toBe(events[1]?.runtimeLogDiagnostics?.sessionId)
+    }
+    else {
+      expect(events[0]?.runtimeLogDiagnostics?.sessionId).not.toBe(events[1]?.runtimeLogDiagnostics?.sessionId)
+    }
+    expect(events[0]?.runtimeLogDiagnostics?.subscriptionId).not.toBe(events[1]?.runtimeLogDiagnostics?.subscriptionId)
+  })
+
   it.each(['App.CDPEnable', 'App.CDPCommand'])('keeps the socket and listeners through a ten-second %s host response timeout', async (failedMethod) => {
     const { connection, session, lifecycle, assertClean } = fixture()
     const failure = new Error('timeout waiting for automator response')

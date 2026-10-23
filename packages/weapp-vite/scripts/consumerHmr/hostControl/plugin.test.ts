@@ -6,7 +6,7 @@ import process from 'node:process'
 import { createInterface } from 'node:readline'
 import { expect, it } from 'vitest'
 
-it.each(['disconnect', 'close-failure', 'normal'] as const)('drains native resources and reports %s through its real process exit', async (outcome) => {
+it.each(['disconnect', 'reset', 'close-failure', 'normal'] as const)('drains native resources and reports %s through its real process exit', async (outcome) => {
   const token = randomUUID()
   const sockets = new Set<import('node:net').Socket>()
   const messages: Array<{ type: string, token: string, error?: string }> = []
@@ -22,6 +22,9 @@ it.each(['disconnect', 'close-failure', 'normal'] as const)('drains native resou
       }
       if (outcome === 'disconnect') {
         socket.end()
+      }
+      else if (outcome === 'reset') {
+        socket.resetAndDestroy()
       }
       else {
         socket.write(`${JSON.stringify({ type: 'close', token })}\n`)
@@ -64,8 +67,14 @@ process.once('exit', code => console.log('native-process-exit=' + code))
     expect(stdout).toContain(`native-process-exit=${code}`)
     expect(stderr).toContain('native-final-output')
     expect(messages.filter(message => message.type === 'ready')).toHaveLength(1)
-    if (outcome === 'disconnect') {
-      expect(stderr).toContain('Control disconnected before native cleanup completed')
+    if (outcome === 'disconnect' || outcome === 'reset') {
+      expect(stderr).toContain('Control connection failed:')
+      if (outcome === 'disconnect') {
+        expect(stderr).toContain('Control disconnected before native cleanup completed')
+      }
+      else {
+        expect(stderr).toMatch(/ECONNRESET|Control disconnected before native cleanup completed/)
+      }
       expect(messages.some(message => message.type === 'closed')).toBe(false)
     }
     else {

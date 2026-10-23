@@ -28,6 +28,8 @@ function createControl(endpoint) {
     }
     socket.once('connect', () => socket.write(`${JSON.stringify({ type: 'ready', token: endpoint.token })}\n`))
     const input = createInterface({ input: socket })
+    // 不允许 readline 将同一控制通道错误变成未捕获异常并打断原生资源收尾。
+    input.on('error', failChannel)
     input.on('line', (line) => {
       let request
       try {

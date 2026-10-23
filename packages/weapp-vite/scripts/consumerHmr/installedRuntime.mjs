@@ -9,6 +9,7 @@ import {
   WEAPP_VITE_STATEFUL_HMR_PRELOAD_FILE,
   WEAPP_VITE_STATEFUL_HMR_UPDATE_FILE,
 } from '@weapp-core/constants'
+import { isRetiredRealmGuardRead } from './retiredRealmGuard.mjs'
 
 const traverse = traverseModule.default ?? traverseModule
 const contracts = new Map([
@@ -231,6 +232,10 @@ export function assertNoStatefulInstallations(filename, source) {
     'MemberExpression|OptionalMemberExpression': (nodePath) => {
       const property = propertyName(nodePath.node, nodePath.scope)
       if (contracts.has(property)) {
+        if (isRetiredRealmGuardRead(nodePath)) {
+          nodePath.skip()
+          return
+        }
         fail(property)
       }
       const key = publicNames.get(property)

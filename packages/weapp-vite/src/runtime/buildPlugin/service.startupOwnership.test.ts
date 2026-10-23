@@ -1,11 +1,12 @@
 import type { CompilerContext, MutableCompilerContext } from '../../context'
-import { mkdtemp, realpath, rm } from 'node:fs/promises'
+import { mkdtemp, realpath, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { prepareOutputOwnership } from '../../plugins/outputFinalizer/ownership'
 import { attachHmrRuntimeSession, getHmrRuntimeSession } from '../hmrRuntimeSession'
 import { createRuntimeState } from '../runtimeState'
+import { installIdeAssetWatch } from '../statefulHmr/assetWatch'
 import { createBuildService } from './service'
 
 const mocks = vi.hoisted(() => ({
@@ -123,4 +124,28 @@ it('keeps production startup cleanup even when the command already owns the root
   await prepareStartup(context)
   expect(mocks.clean).toHaveBeenCalledWith(context.configService)
   expect(mocks.reset).toHaveBeenCalledWith(context.runtimeState)
+})
+
+it.each(['same-output', 'different-output', 'production'] as const)('preserves only the development output awaiting its IDE handoff: %s', async (target) => {
+  const context = createContext(target === 'different-output' ? path.join(root, 'other') : undefined, target !== 'production')
+  const runtime = getHmrRuntimeSession(context)
+  const configPath = path.join(root, 'project.private.config.json')
+  await writeFile(configPath, JSON.stringify({ setting: { compileHotReLoad: true } }))
+  const release = await installIdeAssetWatch({ configPath, outDir: path.join(root, 'dist') })
+  try {
+    await release(runtime.classicIdeConfig)
+    expect(runtime.outputOwnership.size).toBe(0)
+    await prepareStartup(context)
+    if (target === 'same-output') {
+      expect(mocks.clean).not.toHaveBeenCalled()
+      expect(mocks.reset).not.toHaveBeenCalled()
+    }
+    else {
+      expect(mocks.clean).toHaveBeenCalledWith(context.configService)
+      expect(mocks.reset).toHaveBeenCalledWith(context.runtimeState)
+    }
+  }
+  finally {
+    await runtime.classicIdeConfig.close()
+  }
 })

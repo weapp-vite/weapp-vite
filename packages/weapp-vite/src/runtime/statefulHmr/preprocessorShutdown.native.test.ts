@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process'
 import { once } from 'node:events'
-import { mkdtemp, realpath, rm, symlink, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, realpath, rm, symlink, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
@@ -16,11 +16,16 @@ it.each([false, true])('naturally exits after Sass updates hand the stateful eng
   let child: ReturnType<typeof spawn> | undefined
   let timeout: ReturnType<typeof setTimeout> | undefined
   try {
-    await symlink(dependencies, path.join(root, 'node_modules'), process.platform === 'win32' ? 'junction' : 'dir')
+    // 保留 fixture 自有的 npm 缓存目录，避免整棵依赖链接把写入带到共享工作区。
+    const nodeModules = path.join(root, 'node_modules')
+    await mkdir(nodeModules)
+    for (const name of tailwind ? ['sass-embedded', 'tailwindcss'] : ['sass-embedded']) {
+      await symlink(await realpath(path.join(dependencies, name)), path.join(nodeModules, name), process.platform === 'win32' ? 'junction' : 'dir')
+    }
     const script = path.join(root, 'sass-handoff.mts')
     await writeFile(script, `
       import assert from 'node:assert/strict'
-      import { mkdir, readFile, writeFile } from 'node:fs/promises'
+      import { mkdir, readFile, realpath, writeFile } from 'node:fs/promises'
       import path from 'node:path'
       import { setTimeout as delay } from 'node:timers/promises'
       import { createServer, preprocessCSS } from ${JSON.stringify(import.meta.resolve('vite'))}
@@ -86,6 +91,8 @@ it.each([false, true])('naturally exits after Sass updates hand the stateful eng
           assert.equal(session.phase, 'classic')
           assert.equal(session.fallback?.code, 'stylesheet-output')
         }
+        const cacheDirectory = path.join(root, 'node_modules/weapp-vite/.cache')
+        assert.equal(await realpath(cacheDirectory), cacheDirectory, 'npm cache escaped the isolated fixture')
       }
       finally { await server.close() }
       process.stdout.write('SASS_CLASSIC_HANDOFF_CLOSED\\n')

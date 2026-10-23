@@ -22,7 +22,6 @@ import {
 } from '@weapp-core/constants'
 import { HmrAssetStore } from '@weapp-vite/hmr'
 import path from 'pathe'
-import { transformWithOxc } from 'vite'
 import { isNativeScriptAnalysisOwner, refreshGlassEaselNativeScripts } from '../../analyze/glassEasel/nativeScripts'
 import { isGlassEaselDetected } from '../../analyze/glassEasel/state'
 import { logger } from '../../context/shared'
@@ -37,7 +36,6 @@ import { setTailwindStyleOwners } from '../../plugins/tailwindcss/styleOwners'
 import { readCompilerInputSync } from '../../plugins/utils/sourceSnapshot'
 import { resolveOutputExtensions } from '../../utils/outputExtensions'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
-import { composeSourceMaps, normalizeEncodedSourceMapLike } from '../../utils/sourcemap'
 import { bindHostLifecycle } from '../../vite/lifecycle'
 import { isWxmlDependency } from '../../wxml/processing/dependencies'
 import { subscribeAutoRoutesTopology } from '../autoRoutesPlugin/topology'
@@ -55,9 +53,11 @@ import { createStatefulHmrGlobalStyleAssets, mergeStatefulHmrCompilerAssets } fr
 import { createStatefulHmrHostPlugins, getStatefulHmrHost } from './hostPlugins'
 import { registerStatefulHmrInitialChunkLoaders } from './initialChunkLoaders'
 import { isChangedNativeComponentSidecar } from './nativeComponentSidecar'
+import { protectStatefulHmrNativeEntries } from './nativeEntryContract'
 import { NativeScriptInputs } from './nativeScriptInputs'
 import { StatefulHmrOutputCapabilities } from './outputCapabilities'
 import { isStatefulHmrSnapshotAsset, selectStatefulHmrAdditionalOutput } from './outputOwnership'
+import { transformStatefulHmrOutput } from './outputTransform'
 import { writeStatefulHmrOutput } from './outputWriter'
 import { readMappedHmrCode, wrapHmrCode } from './patchPreparation'
 import { createStatefulHmrProfile } from './profile'
@@ -689,7 +689,7 @@ class StatefulHmrSession {
       const snapshot = snapshotBatch?.snapshot ?? this.initialSnapshot
       const snapshotOutput = snapshot ? this.createSnapshotAssets(snapshot) : undefined
       const compatibleOutput = createStatefulHmrGlobalStyleAssets(
-        await transformOutput(output, Boolean(this.server.config.build.sourcemap)),
+        await transformStatefulHmrOutput(output, Boolean(this.server.config.build.sourcemap)),
         resolveOutputExtensions(this.ctx.configService?.outputExtensions).styleExtension,
         {
           componentPageGlobalStyleRoutes: snapshot?.componentPageGlobalStyleRoutes ?? this.componentPageGlobalStyleRoutes,
@@ -714,6 +714,7 @@ class StatefulHmrSession {
         setAsset(compatibleOutput, WEAPP_VITE_STATEFUL_HMR_PRELOAD_FILE, 'void 0;\n')
         setAsset(compatibleOutput, WEAPP_VITE_STATEFUL_HMR_UPDATE_FILE, 'void 0;\n')
       }
+      protectStatefulHmrNativeEntries(compatibleOutput)
       const currentOutputFiles = new Set(compatibleOutput.map(item => item.fileName))
       const publicationOutput = fullBuild
         ? compatibleOutput
@@ -1624,31 +1625,6 @@ export function shouldUseStatefulHmrSnapshotOnly(dirtyReasonSummary: string[]): 
 function isNonJavaScriptSidecarId(id: string): boolean {
   const sidecar = parseSidecarSourceRequest(id) ?? parseSidecarModuleId(id)
   return sidecar !== undefined && sidecar.kind !== 'script' && sidecar.kind !== 'jsx'
-}
-
-async function transformOutput(output: StatefulHmrOutputFile[], sourcemap: boolean): Promise<StatefulHmrOutputFile[]> {
-  const mapFiles = new Set(output.flatMap(item => item.type === 'chunk' ? [item.sourcemapFileName ?? `${item.fileName}.map`] : []))
-  return await Promise.all(output.filter(item => !mapFiles.has(item.fileName)).map(async (item) => {
-    if (item.type !== 'chunk') {
-      return item
-    }
-    const code = item.code.replace(/^\/\/[#@] sourceMappingURL=.*$/gm, '')
-    const result = await transformWithOxc(code, item.fileName, {
-      assumptions: { setPublicClassFields: true },
-      lang: 'js',
-      sourcemap,
-      target: 'es2018',
-      tsconfig: false,
-    })
-    return {
-      ...item,
-      code: wrapHmrCode({
-        code: result.code,
-        filename: item.fileName,
-        map: sourcemap ? composeSourceMaps(normalizeEncodedSourceMapLike(result.map), normalizeEncodedSourceMapLike(item.map)) : null,
-      }),
-    }
-  }))
 }
 
 function setAsset(output: StatefulHmrOutputFile[], fileName: string, source: string): void {

@@ -6,6 +6,7 @@ import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { afterEach, expect, it, vi } from 'vitest'
 import { getHmrRuntimeSession } from '../../runtime/hmrRuntimeSession'
+import { installIdeAssetWatch } from '../../runtime/statefulHmr/assetWatch'
 import { createProjectConfigDirectoryPlugin } from './directory'
 
 const cleanup: Array<() => Promise<void>> = []
@@ -51,7 +52,7 @@ async function fixture(source: string, existingOutput = false) {
   const publish = () => handler.call({ addWatchFile: watchFile } as unknown as PluginContext, {} as never, {
     'app.json': { type: 'asset', fileName: 'app.json', source: '{}' },
   } as never)
-  return { owner, publish, sourcePrivate, outputPrivate, watchFile }
+  return { owner, publish, sourcePrivate, outputPrivate, watchFile, outDir: ctx.configService.outDir }
 }
 
 it.each([false, true])('keeps native directory publication classic and restores the source request: existing output %s', async (existingOutput) => {
@@ -90,6 +91,30 @@ it('publishes the original private configuration when no classic owner holds the
   const project = await fixture(source)
   await project.publish()
   expect(await fs.readFile(project.outputPrivate, 'utf8')).toBe(source)
+  await project.owner.close()
+  expect(await fs.readFile(project.outputPrivate, 'utf8')).toBe(source)
+})
+
+it.each([false, true])('keeps pending private config and ownership intact before the full native handoff: source removed=%s', async (removeSource) => {
+  const source = '{"setting":{"compileHotReLoad":true}}\n'
+  const project = await fixture(source)
+  await project.publish()
+  const restore = await installIdeAssetWatch({ configPath: project.outputPrivate, outDir: project.outDir })
+  await restore(project.owner)
+  const installed = await fs.readFile(project.outputPrivate, 'utf8')
+  if (removeSource) {
+    await fs.remove(project.sourcePrivate)
+  }
+  else {
+    await fs.writeFile(project.sourcePrivate, '{"setting":{"compileHotReLoad":true},"description":"new request"}\n')
+  }
+  await project.publish()
+  expect(await fs.readFile(project.outputPrivate, 'utf8')).toBe(installed)
+  expect(project.owner.hasPendingAssetHandoff(project.outputPrivate)).toBe(true)
+  await fs.writeFile(project.sourcePrivate, source)
+  await project.owner.activatePendingAssetHandoff(project.outputPrivate, project.outDir)
+  await project.publish()
+  expect(await fs.readJSON(project.outputPrivate)).toEqual({ setting: { compileHotReLoad: false } })
   await project.owner.close()
   expect(await fs.readFile(project.outputPrivate, 'utf8')).toBe(source)
 })

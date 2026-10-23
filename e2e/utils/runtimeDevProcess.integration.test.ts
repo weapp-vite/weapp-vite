@@ -41,10 +41,11 @@ export default {
   await writeFile(path.join(root, 'original.config.mjs'), original)
   const bridge = path.join(root, 'bridge.mjs')
   // 模拟 Vite+ 的叶 CLI 边界：启动参数和 stdio 继承，父 IPC 不传播。
+  // Windows 的非 detached 子进程会随父进程的 libuv job 终止，unref 不能单独产生 orphan。
   await writeFile(bridge, `
 import { spawn } from 'node:child_process'
 import process from 'node:process'
-const child = spawn(process.execPath, [${JSON.stringify(nativeCli)}, ...process.argv.slice(2)], { stdio: 'inherit' })
+const child = spawn(process.execPath, [${JSON.stringify(nativeCli)}, ...process.argv.slice(2)], { stdio: 'inherit', detached: ${launch.startsWith('orphan-parent')}, windowsHide: true })
 child.once('error', error => { console.error(error); process.exitCode = 1 })
 child.once('exit', (code, signal) => { process.exitCode = signal ? 1 : code })
 ${launch.startsWith('orphan-parent')
@@ -59,6 +60,10 @@ process.once('exit', code => console.log('native bridge exited before leaf=' + c
   let released = false
   try {
     await dev.waitForOutput(operation === 'dev' ? 'ready in' : 'built in', 'native CLI startup', 20_000)
+    if (launch.startsWith('orphan-parent')) {
+      // 父 bridge 必须已退出；后续 close 只能由叶宿主的认证控制通道完成。
+      expect(dev.getOutput()).toContain(`native bridge exited before leaf=${launch === 'orphan-parent-failed' ? 7 : 0}`)
+    }
     const stopping = dev.stop(3_000, { gracefulTimeoutMs: 15_000 })
     expect(dev.stop(3_000)).toBe(stopping)
     if (launch === 'orphan-parent-failed') {
