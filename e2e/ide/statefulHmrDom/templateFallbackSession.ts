@@ -218,7 +218,7 @@ export function createTemplateFallbackSession(external: boolean, options: { scop
       await replaceFileByRename(source, content)
       await pending.wait()
       if (stateful) {
-        expect(dev!.getOutput()).toContain('编译模板注册签名')
+        expect(publication!.stateful, 'compiled template registration must complete the classic handoff').toBe(false)
       }
       await observeReload(marker)
       expect(dev!.getBuildErrors()).toEqual([])
