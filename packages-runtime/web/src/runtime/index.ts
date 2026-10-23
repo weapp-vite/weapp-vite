@@ -8,6 +8,8 @@ export type { WebTabBarConfig, WebTabBarItem } from './appShell/tabBar'
 export { ensureButtonDefined, setButtonFormConfig } from './button'
 export type { ButtonFormConfig } from './button'
 export { defineComponent } from './component'
+export { readRuntimeDataset, storeRuntimeDataset, toDatasetKey } from './dataset'
+export { bindRuntimeDataset } from './datasetBinding'
 export { bindRuntimeEvent } from './eventBinding'
 export { getRuntimeExecutionMode, setRuntimeExecutionMode } from './execution'
 export {

@@ -62,7 +62,7 @@ describe('WXML attribute contracts', () => {
       skipControl: true,
     })
     expect(rendered).toContain('.customValue=')
-    expect(rendered).toContain(' data-id=')
+    expect(rendered).toContain('bindRuntimeDataset("id"')
     expect(rendered).toContain(' aria-label=')
     expect(rendered).toContain(' class=')
     expect(rendered).not.toContain('wx:if')
@@ -77,5 +77,18 @@ describe('WXML attribute contracts', () => {
     expect(preferred).toContain('.value=')
     expect(preferred).not.toContain('.id=')
     expect(renderAttributes({ plain: 'value' }, 'scope', 'wxs')).toContain(' plain=')
+  })
+
+  it('routes data-* bindings through the runtime dataset directive', () => {
+    const rendered = renderAttributes({
+      'data-item': '{{item}}',
+      'data-item-name': '{{item.name}}',
+      'class': 'row',
+    }, 'scope', 'wxs')
+
+    expect(rendered).toContain('bindRuntimeDataset("item", ')
+    expect(rendered).toContain('bindRuntimeDataset("itemName", ')
+    expect(rendered).toContain(' class=')
+    expect(rendered).not.toContain('data-item=')
   })
 })

@@ -9,6 +9,18 @@ import {
 } from '../../shared/wxml'
 import { buildExpression, parseInterpolations } from './interpolation'
 
+/**
+ * `data-item-name` → `itemName`。返回 `undefined` 表示不是 `data-*`。
+ */
+function toDatasetAttributeKey(rawName: string) {
+  if (!/^data-[a-z0-9-]+$/i.test(rawName)) {
+    return undefined
+  }
+  return rawName
+    .slice(5)
+    .replace(/-([a-z0-9])/gi, (_, char: string) => char.toUpperCase())
+}
+
 export function extractFor(attribs: Record<string, string>) {
   const expr = resolveControlAttributeValue(attribs, 'for')
   const itemName = resolveControlAttributeValue(attribs, 'for-item')?.trim() || 'item'
@@ -115,6 +127,12 @@ export function renderAttributes(
       && (options?.preferProperty || options?.propertyAttributes?.includes(rawName))
     const name = useProperty ? normalizePropertyName(rawName) : normalizeAttributeName(rawName)
     const expr = buildExpression(parseInterpolations(rawValue ?? ''), scopeVar, wxsVar)
+    // data-* 允许绑定对象，attribute 只能存字符串，交给 runtime 旁路保存（详见 dataset.ts）。
+    const datasetKey = useProperty ? undefined : toDatasetAttributeKey(rawName)
+    if (datasetKey) {
+      buffer += ` \${bindRuntimeDataset(${JSON.stringify(datasetKey)}, ${expr})}`
+      continue
+    }
     buffer += ` ${useProperty ? '.' : ''}${name}=\${${expr}}`
   }
   return buffer
