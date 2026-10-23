@@ -24,6 +24,39 @@ function leafErrors(error: unknown): unknown[] {
 }
 
 describe('development watcher controller close', () => {
+  it.each(['public', 'service'] as const)('publishes the full drain before a controller releases its lease through the %s entry', async (entry) => {
+    const { context, service } = createService()
+    const lease = retainWatcherService(service)
+    const resourcesReleased = Promise.withResolvers<void>()
+    const web = Promise.withResolvers<void>()
+    const resourceClose = vi.fn(async () => {
+      await lease()
+      resourcesReleased.resolve()
+    })
+    const watcher: WatcherInstance = { close: resourceClose }
+    bindWatcherServiceController(service, watcher)
+    service.setRollupWatcher(watcher)
+    context.webService = { close: () => web.promise } as unknown as NonNullable<MutableCompilerContext['webService']>
+
+    const closing = entry === 'public' ? startClose(watcher) : Promise.resolve(service.closeAll())
+    const publicClosing = startClose(watcher)
+    let finished = false
+    const completed = Promise.all([closing, publicClosing]).then(() => {
+      finished = true
+    })
+    try {
+      await resourcesReleased.promise
+      expect(finished).toBe(false)
+      expect(resourceClose).toHaveBeenCalledOnce()
+      expect(watcher.close()).toBe(publicClosing)
+    }
+    finally {
+      web.resolve()
+    }
+    await completed
+    expect(finished).toBe(true)
+  })
+
   it('keeps direct public close pending until controller, sidecar and web resources finish', async () => {
     const { context, service } = createService()
     const resources = Promise.withResolvers<void>()

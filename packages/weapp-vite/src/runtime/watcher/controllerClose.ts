@@ -11,6 +11,29 @@ interface ControllerCloseRecord {
 }
 
 const controllerCloses = new WeakMap<WatcherService, WeakMap<WatcherInstance, ControllerCloseRecord>>()
+const controllerOwners = new WeakMap<WatcherService, Set<WatcherInstance>>()
+
+/** 会话跨代持有局部关闭入口；当前 watcher 退出不能让整体关闭丢失该归属。 */
+export function registerWatcherControllerOwner(service: WatcherService, owner: WatcherInstance) {
+  let owners = controllerOwners.get(service)
+  if (!owners) {
+    owners = new Set()
+    controllerOwners.set(service, owners)
+  }
+  owners.add(owner)
+}
+
+/** 空 watcher 图仍可能有尚未结束的跨代会话。 */
+export function hasWatcherControllerOwners(service: WatcherService) {
+  return Boolean(controllerOwners.get(service)?.size)
+}
+
+/** 将会话归属一次性交给完整 drain；后续登记属于其下一轮快照。 */
+export function takeWatcherControllerOwners(service: WatcherService) {
+  const owners = controllerOwners.get(service)
+  controllerOwners.delete(service)
+  return owners ? [...owners] : []
+}
 
 function closeResources(record: ControllerCloseRecord): Promise<void> {
   if (!record.closing) {
@@ -76,9 +99,11 @@ export function bindWatcherServiceController(service: WatcherService, watcher: W
       const completed = Promise.withResolvers<void>()
       closing = completed.promise
       void (async () => {
+        // 先登记完整 drain；其中同步进入的资源释放继承本次归属，不会反向等待自身。
+        const drain = (async () => await service.closeAll())()
         const results = await Promise.allSettled([
+          drain,
           Promise.resolve().then(() => closeResources(owned)),
-          Promise.resolve().then(() => service.closeAll()),
         ])
         const errors = [...new Set(results.flatMap(result => result.status === 'rejected' ? [result.reason] : []))]
         if (errors.length) {

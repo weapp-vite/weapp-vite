@@ -252,7 +252,7 @@ describe('useLoadEntry emitDirtyEntries', () => {
       emittedCount: 3,
       chunkEmitCount: 3,
       loadCount: 3,
-      pendingReasonSummary: ['shared-chunk-representative:1/3'],
+      pendingReasonSummary: ['shared-chunk-representative:1/3', 'classic-registration:3'],
     })
   })
 

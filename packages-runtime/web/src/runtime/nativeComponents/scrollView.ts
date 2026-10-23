@@ -1,8 +1,28 @@
 import { getNativeComponentDescriptor } from '../../shared/nativeComponents'
+import { getWebViewportWidth } from '../viewport'
 import { dispatchMiniProgramEvent, readBooleanAttribute, resolveContainingShadowRoot } from './helpers'
 import { ensureNativeComponentStyle } from './style'
 
 const BaseElement = (globalThis.HTMLElement ?? class {}) as typeof HTMLElement
+const DEFAULT_SCROLL_THRESHOLD = 50
+const RPX_VALUE_RE = /^([+-]?(?:\d+(?:\.\d+)?|\.\d+))rpx$/i
+
+/**
+ * 距离阈值与真机一致：默认 50px，支持 px / rpx 两种单位。
+ * rpx 的换算基准与 `--rpx` 一致，使用设备视口宽度而不是浏览器窗口宽度。
+ */
+function resolveScrollThreshold(element: Element, name: string) {
+  const raw = element.getAttribute(name)?.trim()
+  if (!raw) {
+    return DEFAULT_SCROLL_THRESHOLD
+  }
+  const rpxMatch = raw.match(RPX_VALUE_RE)
+  const numeric = rpxMatch ? Number.parseFloat(rpxMatch[1]!) : Number.parseFloat(raw)
+  if (!Number.isFinite(numeric) || numeric < 0) {
+    return DEFAULT_SCROLL_THRESHOLD
+  }
+  return rpxMatch ? numeric * getWebViewportWidth() / 750 : numeric
+}
 
 export function createScrollEventDetail(
   viewport: Pick<HTMLDivElement, 'scrollHeight' | 'scrollLeft' | 'scrollTop' | 'scrollWidth'>,
@@ -24,6 +44,7 @@ export class WeappScrollView extends BaseElement {
   #viewport?: HTMLDivElement
   #lastScrollLeft = 0
   #lastScrollTop = 0
+  #boundaries = { top: false, bottom: false, left: false, right: false }
 
   get scrollTop() {
     return this.#viewport?.scrollTop ?? 0
@@ -76,19 +97,53 @@ export class WeappScrollView extends BaseElement {
       if (event.target !== viewport) {
         return
       }
-      const detail = createScrollEventDetail(viewport, {
-        scrollLeft: this.#lastScrollLeft,
-        scrollTop: this.#lastScrollTop,
-      })
+      const previous = { scrollLeft: this.#lastScrollLeft, scrollTop: this.#lastScrollTop }
+      const detail = createScrollEventDetail(viewport, previous)
+      const boundaries = this.#collectBoundaryEvents(viewport, previous)
       this.#lastScrollLeft = viewport.scrollLeft
       this.#lastScrollTop = viewport.scrollTop
       dispatchMiniProgramEvent(this, 'scroll', detail, {
         bubbles: false,
         composed: false,
       })
+      for (const [name, direction] of boundaries) {
+        dispatchMiniProgramEvent(this, name, { direction }, { bubbles: false, composed: false })
+      }
     })
     root.append(style, viewport)
     this.#viewport = viewport
+  }
+
+  /** 用当前尺寸重新判断上次位置，避免追加内容后直接滚到新边界时沿用旧状态。 */
+  #collectBoundaryEvents(viewport: HTMLDivElement, previous: { scrollLeft: number, scrollTop: number }) {
+    const scrollY = readBooleanAttribute(this, 'scroll-y') && viewport.scrollHeight > viewport.clientHeight
+    const scrollX = readBooleanAttribute(this, 'scroll-x') && viewport.scrollWidth > viewport.clientWidth
+    const lowerThreshold = resolveScrollThreshold(this, 'lower-threshold')
+    const upperThreshold = resolveScrollThreshold(this, 'upper-threshold')
+    const bottom = viewport.scrollHeight - viewport.clientHeight - lowerThreshold
+    const right = viewport.scrollWidth - viewport.clientWidth - lowerThreshold
+    const current = {
+      top: scrollY && viewport.scrollTop <= upperThreshold,
+      bottom: scrollY && viewport.scrollTop >= bottom,
+      left: scrollX && viewport.scrollLeft <= upperThreshold,
+      right: scrollX && viewport.scrollLeft >= right,
+    }
+    const entered = {
+      top: current.top && !(this.#boundaries.top && previous.scrollTop <= upperThreshold),
+      bottom: current.bottom && !(this.#boundaries.bottom && previous.scrollTop >= bottom),
+      left: current.left && !(this.#boundaries.left && previous.scrollLeft <= upperThreshold),
+      right: current.right && !(this.#boundaries.right && previous.scrollLeft >= right),
+    }
+    // 先提交所有轴的状态，业务 scroll/边界回调重新滚动时不会重复派发同一边界。
+    this.#boundaries = current
+    const events: Array<[string, string]> = []
+    if (entered.bottom || entered.right) {
+      events.push(['scrolltolower', entered.right ? 'right' : 'bottom'])
+    }
+    if (entered.top || entered.left) {
+      events.push(['scrolltoupper', entered.left ? 'left' : 'top'])
+    }
+    return events
   }
 
   #syncAttributes(changedName?: string, initializePosition = false) {

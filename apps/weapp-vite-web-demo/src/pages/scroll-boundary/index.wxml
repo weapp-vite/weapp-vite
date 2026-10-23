@@ -1,0 +1,21 @@
+<view class="boundary-page" bindscrolltolower="handleOuterLower">
+  <text class="heading">滚动边界与连续分页</text>
+  <text>前两次触底各追加 100px 内容，继续滚动可加载下一页。</text>
+  <text id="lower-count">{{lowerCount}}</text>
+  <text id="lower-direction">{{lowerDirection}}</text>
+  <text id="upper-count">{{upperCount}}</text>
+  <text id="upper-direction">{{upperDirection}}</text>
+  <text id="vertical-position">{{verticalPosition}}</text>
+  <scroll-view id="vertical-feed" class="feed" scroll-y bindscroll="handleVerticalScroll" bindscrolltolower="handleLower" bindscrolltoupper="handleUpper">
+    <view id="vertical-content" class="content" style="height: {{contentHeight}}px">向下滚动加载下一页</view>
+  </scroll-view>
+  <text id="right-count">{{rightCount}}</text>
+  <text id="right-direction">{{rightDirection}}</text>
+  <text id="left-count">{{leftCount}}</text>
+  <text id="left-direction">{{leftDirection}}</text>
+  <text id="horizontal-position">{{horizontalPosition}}</text>
+  <scroll-view id="horizontal-feed" class="feed horizontal" scroll-x bindscroll="handleHorizontalScroll" bindscrolltolower="handleRight" bindscrolltoupper="handleLeft">
+    <view id="horizontal-content" class="content" style="width: {{contentWidth}}px">向右滚动加载下一页</view>
+  </scroll-view>
+  <text id="outer-count">{{outerCount}}</text>
+</view>

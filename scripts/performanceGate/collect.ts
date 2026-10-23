@@ -35,6 +35,10 @@ export interface AuditSample {
   rssSampling?: PeakRssSamplingStats
   profile?: Record<string, number>
   profileStatus?: string
+  requestedRuntime?: string
+  runtimeBefore?: 'standard' | 'stateful'
+  runtimeAfter?: 'standard' | 'stateful'
+  profilePipeline?: 'standard' | 'stateful'
   output?: OutputEvidence
 }
 

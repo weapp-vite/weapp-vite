@@ -1,6 +1,16 @@
 import type { AuditSample, HmrProfileCapability } from './collect'
 
-interface HmrSample { wallMs: number, phase: string, rssBytes?: number, heapUsedBytes?: number, timingSource?: string, profileStatus?: string }
+interface HmrSample {
+  wallMs: number
+  phase: string
+  rssBytes?: number
+  heapUsedBytes?: number
+  timingSource?: string
+  profileStatus?: string
+  runtimeBefore?: 'standard' | 'stateful'
+  runtimeAfter?: 'standard' | 'stateful'
+  pipeline?: 'standard' | 'stateful'
+}
 export interface HmrReport {
   templates: Array<{ id: string, error?: string, scenarios: Array<{ id: string, error?: string, samples: HmrSample[], cycles?: Array<{ edit: HmrSample, restore: HmrSample }> }> }>
 }
@@ -43,7 +53,7 @@ export function readHmrSamples(report: HmrReport, runtime: string, capability?: 
             failures.push(`${template.id}/${scenario.id}: HMR profile capability differs from collection evidence`)
             continue
           }
-          samples.push({ id: `hmr:${runtime}:${template.id}:${scenario.id}:${phase}:${action}`, template: template.id, phase: `${phase}:${action}`, ms: sample.wallMs, rssBytes: sample.rssBytes, heapBytes: sample.heapUsedBytes, profile, profileStatus: unavailable ? 'unavailable' : sample.profileStatus })
+          samples.push({ id: `hmr:${runtime}:${template.id}:${scenario.id}:${phase}:${action}`, template: template.id, phase: `${phase}:${action}`, ms: sample.wallMs, rssBytes: sample.rssBytes, heapBytes: sample.heapUsedBytes, profile, profileStatus: unavailable ? 'unavailable' : sample.profileStatus, requestedRuntime: runtime, runtimeBefore: sample.runtimeBefore, runtimeAfter: sample.runtimeAfter, profilePipeline: sample.pipeline })
         }
       }
     }

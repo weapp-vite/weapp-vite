@@ -425,16 +425,89 @@ describe('dev process cleanup ownership', () => {
     await expect(cleanupTrackedDevProcesses(100)).resolves.toBeUndefined()
   })
 
-  it('finishes a fully drained native exit without waiting for a control handshake that never arrived', async () => {
+  it('rejects a zero exit when its native cleanup receipt never arrives', async () => {
+    vi.useFakeTimers()
     const owned = createChild()
     execaMock.mockReturnValue(owned.child)
     const request = vi.fn(() => new Promise<void>(() => {}))
     const dispose = vi.fn(async () => undefined)
     const dev = startDevProcess('node', ['native-vite-cli.js'], { gracefulShutdown: request, disposeShutdown: dispose })
     owned.exit()
-    await dev.stop(0)
+    const result = await settleCleanup(dev.stop(0, { gracefulTimeoutMs: 100 }))
+    expect(result).toMatchObject({ status: 'rejected', reason: { name: 'DevProcessGracefulShutdownError' } })
     expect(request).toHaveBeenCalledOnce()
     expect(dispose).toHaveBeenCalledOnce()
+  })
+
+  it('preserves a native receipt rejection that arrives after zero exit and output drain', async () => {
+    vi.useFakeTimers()
+    const owned = createChild()
+    execaMock.mockReturnValue(owned.child)
+    const receipt = Promise.withResolvers<void>()
+    const failure = new Error('late native cleanup receipt failed')
+    const dev = startDevProcess('node', ['native-vite-cli.js'], { gracefulShutdown: () => receipt.promise })
+    owned.exit()
+    setTimeout(() => receipt.reject(failure), 10)
+    const stopping = dev.stop(0, { gracefulTimeoutMs: 100 })
+    expect(await settleCleanup(stopping)).toMatchObject({
+      status: 'rejected',
+      reason: { cause: failure, evidence: { requestError: failure } },
+    })
+    expect(dev.stop()).toBe(stopping)
+  })
+
+  it.each([1, 0])('reports an unsuccessful startup with exitCode=%s before the receipt deadline without replacing its error', async (exitCode) => {
+    vi.useFakeTimers()
+    const owned = createChild()
+    const failure = Object.assign(new Error('native startup failed'), { exitCode, stderr: 'original startup diagnostic' })
+    const child = Object.assign(owned.child.then(() => {
+      throw failure
+    }), {
+      pid: owned.child.pid,
+      all: owned.child.all,
+      nodeChildProcess: owned.child.nodeChildProcess,
+    })
+    execaMock.mockReturnValue(child)
+    const dev = startDevProcess('node', ['native-vite-cli.js'], { gracefulShutdown: () => new Promise<void>(() => {}) })
+    owned.exit()
+    let result: unknown
+    void dev.stop(0).catch(error => result = error)
+    await vi.advanceTimersByTimeAsync(0)
+    expect(result).toMatchObject({ name: 'Error', cause: failure, message: expect.stringContaining('original startup diagnostic') })
+    expect(result).not.toBeInstanceOf(DevProcessGracefulShutdownError)
+  })
+
+  it('rejects a disconnected explicit IPC channel even when fallback termination exits zero', async () => {
+    vi.useFakeTimers()
+    const fixture = mockProcessTree()
+    const dev = startDevProcess('node', ['wv.js'], { ipc: true })
+    const result = await settleCleanup(dev.stop(0))
+    expect(result).toMatchObject({
+      status: 'rejected',
+      reason: { evidence: { requestError: expect.objectContaining({ message: expect.stringContaining('IPC channel is disconnected') }) } },
+    })
+    expect(fixture.owned.child.nodeChildProcess.exitCode).toBe(0)
+    expect([...fixture.processes.keys()]).toEqual([71, 72])
+  })
+
+  it.each([1, 0])('retains an already-failed explicit IPC process with exitCode=%s before stop', async (exitCode) => {
+    const owned = createChild()
+    const failure = Object.assign(new Error('IPC process failed before stop'), { exitCode, stderr: 'original IPC exit diagnostic' })
+    const child = Object.assign(owned.child.then(() => {
+      throw failure
+    }), {
+      pid: owned.child.pid,
+      all: owned.child.all,
+      nodeChildProcess: owned.child.nodeChildProcess,
+    })
+    execaMock.mockReturnValue(child)
+    const dev = startDevProcess('node', ['wv.js'], { ipc: true })
+    owned.exit()
+    await expect(dev.stop(0)).rejects.toMatchObject({
+      cause: failure,
+      message: expect.stringContaining('original IPC exit diagnostic'),
+    })
+    await expect(cleanupTrackedDevProcesses(0)).resolves.toBeUndefined()
   })
 
   it('reports incomplete Windows IPC cleanup after force killing only its held child', async () => {
