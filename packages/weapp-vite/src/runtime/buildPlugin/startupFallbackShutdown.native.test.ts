@@ -6,7 +6,7 @@ import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
 import { finished } from 'node:stream/promises'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { expect, it } from 'vitest'
 
 const cli = fileURLToPath(new URL('../../cli.ts', import.meta.url))
@@ -127,7 +127,7 @@ it.each(['auto', 'stateful-experimental'] as const)('naturally exits after %s st
     for (const key of ['CI', 'TEST', 'VITEST', 'VITEST_MODE', 'VITEST_POOL_ID', 'VITEST_WORKER_ID', 'NODE_OPTIONS']) {
       delete env[key]
     }
-    child = spawn(process.execPath, ['--import', 'tsx', '--import', preload, cli, 'dev', root, '--platform', 'weapp', '--skipNpm'], {
+    child = spawn(process.execPath, ['--import', 'tsx', '--import', pathToFileURL(preload).href, cli, 'dev', root, '--platform', 'weapp', '--skipNpm'], {
       cwd: root,
       env,
       stdio: ['ignore', 'pipe', 'pipe', 'ipc'],

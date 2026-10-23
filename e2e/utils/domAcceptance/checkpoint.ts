@@ -2,6 +2,7 @@ import type { DomAcceptance, DomCheckpoint, DomCheckpointEvidence, DomPage, DomS
 import { setTimeout as delay } from 'node:timers/promises'
 import { isDeepStrictEqual } from 'node:util'
 import { queryDomElements } from './query'
+import { createDomScopeTrace } from './scopeTrace'
 import { assertResponsiveCalcStyle, assertResponsiveStyle } from './styles'
 import { DomCheckpointTrace } from './trace'
 import { readDomVisibility } from './visibility'
@@ -84,16 +85,22 @@ export async function captureDomCheckpoint(
   timeout = 15_000,
 ): Promise<DomCheckpointEvidence> {
   const deadline = Date.now() + timeout
+  const phaseTrace = createDomScopeTrace(checkpoint.id, provider, deadline)
   const trace = new DomCheckpointTrace(deadline, timeout)
+  let attempt = 0
   let lastError: unknown
   let windowWidth: number | undefined
   do {
+    attempt++
     trace.beginAttempt()
+    const attemptTrace = phaseTrace?.start('attempt', { attempt })
     try {
+      const routeTrace = phaseTrace?.start('route', { attempt })
       trace.beginQuery('session', 'currentPage')
       const currentPage = await assertRoute(session, page, checkpoint)
       trace.endQuery()
       const pageId = readPageIdentity(currentPage)
+      routeTrace?.end()
       const evidence: DomCheckpointEvidence = {
         id: checkpoint.id,
         route: normalizeDomRoute(checkpoint.route),
@@ -101,7 +108,7 @@ export async function captureDomCheckpoint(
         capturedAt: new Date().toISOString(),
         nodes: [],
       }
-      for (const expected of checkpoint.nodes) {
+      for (const [nodeIndex, expected] of checkpoint.nodes.entries()) {
         const queryMode = expected.query ?? 'css'
         if (queryMode === 'xpath' && (expected.scope?.length || expected.has)) {
           throw new Error('DOM XPath queries must express scope and descendants in the XPath selector')
@@ -117,25 +124,31 @@ export async function captureDomCheckpoint(
           ? currentPage.getElementsByXpath!(selector, { fallback: false, timeout: Math.max(1, deadline - Date.now()) })
           : currentPage.$$(selector, { fallback: false, timeout: Math.max(1, deadline - Date.now()) })
         let queryTarget: 'page' | 'scope' = 'page'
-        for (const scope of expected.scope ?? []) {
+        for (const [scopeIndex, scope] of (expected.scope ?? []).entries()) {
+          const scopeTrace = phaseTrace?.start('scope-query', { attempt, nodeIndex, scopeIndex, scope })
           trace.beginQuery(queryTarget, typeof scope === 'string' ? scope : 'component', queryMode)
           let parents = await queryDomElements(query, typeof scope === 'string' ? scope : 'component', provider, queryMode)
           trace.endQuery(parents.length)
           const candidateCount = parents.length
+          scopeTrace?.end({ count: parents.length })
           if (typeof scope !== 'string') {
+            const filterTrace = phaseTrace?.start('scope-filter', { attempt, nodeIndex, scopeIndex, scope, candidateCount: parents.length })
             const matches = []
-            for (const component of parents) {
+            for (const [candidateIndex, component] of parents.entries()) {
               if (!component.$$) {
                 throw new Error('DOM provider cannot query component scope')
               }
+              const candidateTrace = phaseTrace?.start('scope-candidate', { attempt, nodeIndex, scopeIndex, scope, candidateIndex, candidateCount: parents.length })
               trace.beginQuery('scope-descendant', scope.has, queryMode)
               const descendants = await component.$$(scope.has, { timeout: Math.max(1, deadline - Date.now()) })
               trace.endQuery(descendants.length)
+              candidateTrace?.end({ count: descendants.length })
               if (descendants.length > 0) {
                 matches.push(component)
               }
             }
             parents = matches
+            filterTrace?.end({ count: parents.length })
           }
           trace.scope(scope, candidateCount, parents.length)
           assertEqual(parents.length, 1, `DOM component scope ${JSON.stringify(scope)}`)
@@ -147,9 +160,12 @@ export async function captureDomCheckpoint(
           query = selector => queryChildren(selector, { timeout: Math.max(1, deadline - Date.now()) })
           queryTarget = 'scope'
         }
+        const nodeQueryTrace = phaseTrace?.start('node-query', { attempt, nodeIndex, selector: expected.selector })
         trace.beginQuery(queryTarget, expected.selector, queryMode)
         let elements = await queryDomElements(query, expected.selector, provider, queryMode)
         trace.endQuery(elements.length)
+        nodeQueryTrace?.end({ count: elements.length })
+        const nodeAssertionsTrace = phaseTrace?.start('node-assertions', { attempt, nodeIndex, selector: expected.selector })
         if (expected.has) {
           const matches = []
           for (const element of elements) {
@@ -224,17 +240,22 @@ export async function captureDomCheckpoint(
           nodes.push(node)
         }
         evidence.nodes.push({ selector: expected.selector, query: queryMode, has: expected.has, scope: expected.scope, count: elements.length, nodes })
+        nodeAssertionsTrace?.end({ count: elements.length })
       }
+      const finalRouteTrace = phaseTrace?.start('final-route', { attempt })
       trace.beginQuery('session', 'currentPage')
       const finalPage = await assertRoute(session, page, checkpoint)
       trace.endQuery()
       assertEqual(readPageIdentity(finalPage), pageId, 'DOM active page identity changed during capture')
+      finalRouteTrace?.end()
+      attemptTrace?.end({ status: 'passed' })
       return evidence
     }
     catch (error) {
       const failedAt = Date.now()
       const usedAsLastError = failedAt < deadline || !lastError
       trace.fail(error, failedAt, usedAsLastError)
+      attemptTrace?.end({ status: 'failed', error: error instanceof Error ? error.message : String(error) })
       if (usedAsLastError) {
         lastError = error
       }

@@ -21,6 +21,7 @@ import {
   registerPageDefinition,
 } from '../host'
 import { resolveMiniProgramModule } from '../runtime/moduleResolution'
+import { transformMiniProgramModule } from '../runtime/moduleSyntax'
 import { reloadPageModuleDefinition } from '../runtime/pageDefinitionReload'
 import { createMiniProgramRuntimeGlobals } from '../runtime/runtimeGlobals'
 import { createWorkerHost } from '../runtime/workerHost'
@@ -182,7 +183,7 @@ export function createBrowserModuleLoader(
       const runtime = new Function(`
         with (this) {
           return function(exports, module, require, __filename, __dirname) {
-            ${source}
+            ${transformMiniProgramModule(source)}
           };
         }
       `).call(executionContext)

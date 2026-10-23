@@ -251,7 +251,7 @@ export function createOutputPublicationPlugin(ctx: CompilerContext, subPackageMe
           await scope?.publicAssets?.emit([...outputNames, ...independentOutputNames], partial, asset => publicOutputs.push(asset))
           assertActive()
           if (!preserveCompleteBundle && shouldPublishClassicGeneration(ctx) && getHmrRuntimeSession(ctx).fallback) {
-            protectClassicHandoffEntries(outputBundle)
+            protectClassicHandoffEntries(outputBundle, options.format)
           }
           const generation = isWrite && nativeWrite && !preserveCompleteBundle && !subPackageMeta && root
             && shouldPublishClassicGeneration(ctx)

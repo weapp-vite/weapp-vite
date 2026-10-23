@@ -151,11 +151,13 @@ jobs:
       consume_aux_artifact: miniapp-plan-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-${{ inputs.mode }}
       aux_artifact_path: .tmp/verification-plan
       main_command: |
-        pnpm vitest run -c e2e/vitest.e2e.utils.config.ts e2e/utils/devProcessCleanup/windowsKernelQuery.test.ts e2e/utils/devProcessCleanup/processes.test.ts e2e/utils/dev-process.cleanup.test.ts e2e/utils/devProcessCleanup/windowsProcessTree.test.ts e2e/utils/devProcessCleanup/windowsProcessRows.test.ts e2e/utils/devProcessCleanup/windowsQueryTrace.test.ts
-        pnpm exec cross-env WEAPP_VITE_E2E_CLEANUP_TRACE=1 node --import tsx e2e/scripts/run-e2e-suite.ts ide-dom-headless --plan=.tmp/verification-plan/ide-dom-headless.json --shard-index=${{ matrix.shard }}
+        node -e "require('node:fs').mkdirSync('docs/reports/ide-dom-headless-preflight', { recursive: true })"
+        pnpm exec cross-env WEAPP_VITE_E2E_CLEANUP_TRACE=1 pnpm vitest run -c e2e/vitest.e2e.utils.config.ts e2e/utils/devProcessCleanup/windowsKernelQuery.test.ts e2e/utils/devProcessCleanup/processes.test.ts e2e/utils/dev-process.cleanup.test.ts e2e/utils/devProcessCleanup/windowsProcessTree.test.ts e2e/utils/devProcessCleanup/windowsProcessRows.test.ts e2e/utils/devProcessCleanup/windowsQueryTrace.test.ts 2>&1 | tee docs/reports/ide-dom-headless-preflight/cleanup.log
+        pnpm exec cross-env WEAPP_VITE_E2E_CLEANUP_TRACE=1 WEAPP_VITE_E2E_DEV_PROCESS_TRACE=1 WEAPP_VITE_E2E_DEV_SHUTDOWN_TRACE=1 WEAPP_VITE_E2E_DOM_SCOPE_TRACE_CHECKPOINTS=home-ready node --import tsx e2e/scripts/run-e2e-suite.ts ide-dom-headless --plan=.tmp/verification-plan/ide-dom-headless.json --shard-index=${{ matrix.shard }}
       artifact_name: ide-dom-headless-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-shard-${{ matrix.shard }}
       artifact_path: |
         docs/reports/dom-acceptance/**
+        docs/reports/ide-dom-headless-preflight/**
         docs/reports/*-e2e-ide-dom-headless-*-suite-report/**
       build_artifact_scope: packages/weapp-vite,mpcore/packages/simulator
       timing_artifact_name: timing-ide-dom-headless-${{ inputs.runs_on }}-${{ inputs.node_version }}-${{ inputs.mode }}-${{ matrix.shard }}
