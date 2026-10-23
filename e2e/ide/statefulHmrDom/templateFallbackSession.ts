@@ -145,7 +145,7 @@ export function createTemplateFallbackSession(external: boolean) {
         env: { ...createDevProcessEnv(), WEAPP_VITE_HMR_PROFILE_JSON: profilePath },
         reject: false,
       })
-      publication = createNativeHmrPublication(project, dev, 'stateful-experimental', ['native-registration'], profilePath)
+      publication = createNativeHmrPublication(project, dev, external ? 'stateful-experimental' : 'auto', ['native-registration'], profilePath)
       await dev.waitFor(waitForStatefulHmrControl(path.join(project, 'dist/__weapp_vite_hmr/control.js')), 'initial compiled template stateful control')
       for (const extension of ['js', 'json', 'wxml']) {
         expect(await fs.pathExists(path.join(project, `dist/pages/wevu/index.${extension}`))).toBe(true)

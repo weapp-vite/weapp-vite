@@ -114,7 +114,7 @@ export function createJsxHmrSession() {
       })
       await dev.waitForInitialBuild()
       await dev.waitFor(waitForStatefulHmrControl(path.join(project, 'dist/__weapp_vite_hmr/control.js')), 'JSX initial stateful control')
-      publication = createNativeHmrPublication(project, dev, 'stateful-experimental', ['native-registration'], profilePath)
+      publication = createNativeHmrPublication(project, dev, 'auto', ['native-registration'], profilePath)
       const app = await fs.readJson(path.join(project, 'src/app.json')) as { pages: string[] }
       compiledTemplatePaths = [...app.pages.map(route => `${route}.wxml`), 'components/info-card/index.wxml']
       for (const route of app.pages) {
