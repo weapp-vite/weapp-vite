@@ -2758,8 +2758,10 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     setPluginProjectBuildOptions(ctx as CompilerContext, options ?? {})
     await prepareClassicIdeConfig(ctx)
     // 宿主替换仍属于同一开发命令；成功发布过的根必须保留旧字节，直到新代原生 write 完成交接。
+    const runtime = getHmrRuntimeSession(ctx)
     const resumesPublishedDevOutput = configService.isDev
-      && getHmrRuntimeSession(ctx).outputOwnership.has(path.resolve(configService.outDir))
+      && (runtime.outputOwnership.has(path.resolve(configService.outDir))
+        || runtime.classicIdeConfig.preservesPendingOutput(configService.outDir))
     if (!resumesPublishedDevOutput && shouldCleanOutputs(configService, 'startup')) {
       await cleanOutputs(configService)
       resetEmittedOutputCaches(ctx.runtimeState)

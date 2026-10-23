@@ -152,7 +152,8 @@ function rewriteChunkNpmImportsToLocalRootWithCandidates(
 
   try {
     const ast = parseJsLike(chunk.code)
-    if (candidateCheck && !mayNeedScopedLocalRootRewrite(ast, candidateCheck.mayNeedLiteralRewrite)) {
+    if (candidateCheck && options?.collectPlatformApiAccess === false
+      && !mayNeedScopedLocalRootRewrite(ast, candidateCheck.mayNeedLiteralRewrite)) {
       return
     }
     const platformApiAccess = options?.collectPlatformApiAccess === false
@@ -289,9 +290,8 @@ export function rewriteChunkNpmImportsToLocalRoot(
     astEngine?: 'babel' | 'oxc'
   },
 ) {
-  const candidateCheck = options?.collectPlatformApiAccess === false
-    ? createLocalRootNpmCandidateCheck(dependencyPatterns, dependencies)
-    : undefined
+  // npm 的负判定不消费平台 API 事实；后续 API 阶段仍持有原有保守分析。
+  const candidateCheck = createLocalRootNpmCandidateCheck(dependencyPatterns, dependencies)
   rewriteChunkNpmImportsToLocalRootWithCandidates(chunk, root, dependencyPatterns, dependencies, options, candidateCheck)
 }
 
@@ -434,9 +434,7 @@ export function rewriteBundleNpmImportsToLocalRoots(
   options?: LocalRootNpmRewriteOptions,
 ) {
   const resolveLocalRootRewriteTarget = createLocalRootRewriteTargetResolver(localSubPackages)
-  const candidateChecks = options?.collectPlatformApiAccess === false
-    ? new Map<LocalRootNpmRewriteSubPackageMeta | undefined, ReturnType<typeof createLocalRootNpmCandidateCheck>>()
-    : undefined
+  const candidateChecks = new Map<LocalRootNpmRewriteSubPackageMeta | undefined, ReturnType<typeof createLocalRootNpmCandidateCheck>>()
   for (const output of Object.values(bundle)) {
     if (output?.type !== 'chunk') {
       continue
@@ -444,8 +442,8 @@ export function rewriteBundleNpmImportsToLocalRoots(
 
     const chunk = output as OutputChunk
     const subPackageTarget = resolveLocalRootRewriteTarget(chunk.fileName)
-    let candidateCheck = candidateChecks?.get(subPackageTarget)
-    if (candidateChecks && !candidateCheck) {
+    let candidateCheck = candidateChecks.get(subPackageTarget)
+    if (!candidateCheck) {
       candidateCheck = createLocalRootNpmCandidateCheck(subPackageTarget?.dependencies, dependencies)
       candidateChecks.set(subPackageTarget, candidateCheck)
     }

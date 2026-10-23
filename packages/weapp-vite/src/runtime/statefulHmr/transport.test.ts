@@ -66,8 +66,11 @@ describe('stateful hmr transport', () => {
   it.each([
     { reason: 'bridge-not-ready', code: undefined, capability: 'runtime-contract' },
     { reason: 'patch-failed', code: WEAPP_VITE_STATEFUL_HMR_UNSUPPORTED_REGISTRATION_CODE, capability: 'native-registration' },
-  ])('retires the old transport after an explicit $capability failure', async ({ reason, code, capability }) => {
+  ].flatMap(scenario => [false, true].map(suspended => ({ ...scenario, suspended }))))('retires the old transport after an explicit $capability failure (suspended=$suspended)', async ({ reason, code, capability, suspended }) => {
     const fixture = createTransport()
+    if (suspended) {
+      fixture.transport.cancelPendingDeliveries()
+    }
     expect(await fixture.post({ action: 'rebuild', failure: { reason, code, message: 'unsupported capability' } })).toEqual({ status: 410, value: { type: 'retired' } })
     expect(fixture.classic).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ code: capability }))
     expect(fixture.fullBuild).not.toHaveBeenCalled()
@@ -101,7 +104,21 @@ describe('stateful hmr transport', () => {
     const fixture = createTransport()
     expect(await fixture.post({ action: 'rebuild' })).toEqual({ status: 202, value: { type: 'rebuilding' } })
     expect(fixture.fullBuild).toHaveBeenCalledOnce()
+    fixture.transport.cancelPendingDeliveries()
+    expect(await fixture.post({ action: 'rebuild' })).toEqual({ status: 202, value: { type: 'rebuilding' } })
+    expect(fixture.fullBuild).toHaveBeenCalledOnce()
     expect(fixture.classic).not.toHaveBeenCalled()
+    fixture.transport.close()
+  })
+
+  it('keeps a client business error visible during full synchronization', async () => {
+    const fixture = createTransport()
+    fixture.transport.cancelPendingDeliveries()
+    const message = 'business callback failed during synchronization'
+    expect(await fixture.post({ action: 'rebuild', failure: { reason: 'patch-failed', message } })).toEqual({ status: 422, value: { type: 'error' } })
+    expect(fixture.error).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ message }))
+    expect(fixture.classic).not.toHaveBeenCalled()
+    expect(fixture.fullBuild).not.toHaveBeenCalled()
     fixture.transport.close()
   })
 })

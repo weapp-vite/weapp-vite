@@ -28,7 +28,7 @@ function createControl(endpoint) {
     }
     socket.once('connect', () => socket.write(`${JSON.stringify({ type: 'ready', token: endpoint.token })}\n`))
     const input = createInterface({ input: socket })
-    // 输入流和 readline 的错误共用一次资源收尾，保留原始连接失败。
+    // 不允许 readline 将同一控制通道错误变成未捕获异常并打断原生资源收尾。
     input.on('error', failChannel)
     input.on('line', (line) => {
       let request

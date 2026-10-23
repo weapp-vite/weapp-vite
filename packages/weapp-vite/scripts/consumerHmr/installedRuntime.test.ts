@@ -95,6 +95,80 @@ describe('classic emitted stateful installation inspection', () => {
     expect(() => assertNoStatefulInstallations('vendor/runtime.js', source)).not.toThrow()
   })
 
+  describe('retired realm entry guard', () => {
+    const client = JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY)
+    const guard = `if (globalThis[${client}]) return;`
+    const wrapper = (body: string) => `(() => { 'use strict'; ${body} })();`
+
+    it('allows only the entry guard read independently of the emitted filename', () => {
+      for (const source of [
+        wrapper(`${guard} App({});`),
+        `/* classic entry */\n(() => {\n"use strict";\n${guard}\nmodule.exports = require('./classic.js');\n})();`,
+        wrapper(`if (globalThis[${client.replaceAll('_', '\\u005f')}]) return; Page({});`),
+      ]) {
+        for (const filename of ['app.js', 'pages/counter/index.js', 'arbitrary-entry.js']) {
+          expect(() => assertNoStatefulInstallations(filename, source), source).not.toThrow()
+        }
+      }
+    })
+
+    it.each([
+      wrapper(`${guard} const globalThis = {};`),
+      `${wrapper(guard)} const globalThis = {};`,
+      `((globalThis) => { 'use strict'; ${guard} })({});`,
+      `before(); ${wrapper(guard)}`,
+      wrapper(`before(); ${guard}`),
+      wrapper(`; ${guard}`),
+      `(() => { ${guard} })();`,
+      `(() => { 'another directive'; 'use strict'; ${guard} })();`,
+      `(function () { 'use strict'; ${guard} })();`,
+      `(async () => { 'use strict'; ${guard} })();`,
+      `(() => { 'use strict'; ${guard} })(extra());`,
+      `const run = () => { 'use strict'; ${guard} }; run();`,
+      `function outer() { ${wrapper(guard)} } outer();`,
+      wrapper(`if (ordinary) { ${guard} }`),
+      `({ run() { 'use strict'; ${guard} } }).run();`,
+      `({ get run() { 'use strict'; ${guard} } }).run;`,
+      wrapper(`if (globalThis[${client}]) { return; }`),
+      wrapper(`if (globalThis[${client}]) { poll(); return; }`),
+      wrapper(`if (globalThis[${client}]) return poll();`),
+      wrapper(`if (globalThis[${client}]) return undefined;`),
+      wrapper(`if (globalThis[${client}]) return; else continueClassic();`),
+      wrapper(`if (globalThis[${client}] || poll()) return;`),
+      wrapper(`if ((poll(), globalThis[${client}])) return;`),
+      wrapper(`if (!globalThis[${client}]) return;`),
+      wrapper(`if (globalThis[${client}] = {}) return;`),
+      wrapper(`if (globalThis[${client}]()) return;`),
+      wrapper(`if (globalThis[${client}].poll) return;`),
+      wrapper(`if (globalThis?.[${client}]) return;`),
+      wrapper(`if (globalThis[${client}]?.poll) return;`),
+      wrapper(`if (globalThis[${client}]?.()) return;`),
+      wrapper(`if (globalThis.globalThis[${client}]) return;`),
+      wrapper(`if (globalThis.${WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY}) return;`),
+      wrapper(`if (globalThis[\`${WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY}\`]) return;`),
+      `const key = ${client}; ${wrapper('if (globalThis[key]) return;')}`,
+    ])('rejects lookalikes outside the exact entry prelude: %s', (source) => {
+      expect(() => assertNoStatefulInstallations('arbitrary-entry.js', source)).toThrow(`must remove ${WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY}`)
+    })
+
+    it.each([
+      `globalThis[${client}] = {};`,
+      `delete globalThis[${client}];`,
+      `globalThis[${client}].poll();`,
+      `globalThis[${client}]?.poll();`,
+      `setInterval(() => globalThis[${client}].poll(), 1);`,
+      `const client = globalThis[${client}]; client.poll();`,
+      `globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY)}] = {};`,
+      `require('./${WEAPP_VITE_STATEFUL_HMR_DIRECTORY}/control.js');`,
+    ])('continues inspecting all other runtime uses after the guard: %s', (use) => {
+      expect(() => assertNoStatefulInstallations('arbitrary-entry.js', wrapper(`${guard} ${use}`))).toThrow('must remove')
+    })
+
+    it.each([WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY, WEAPP_VITE_STATEFUL_HMR_DIRECTORY])('does not exempt other contracts in the same prelude: %s', (key) => {
+      expect(() => assertNoStatefulInstallations('arbitrary-entry.js', wrapper(`if (globalThis[${JSON.stringify(key)}]) return;`))).toThrow(`must remove ${key}`)
+    })
+  })
+
   it.each([
     `require('./${WEAPP_VITE_STATEFUL_HMR_DIRECTORY}/control.js');`,
     `import './${WEAPP_VITE_STATEFUL_HMR_DIRECTORY}/control.js';`,

@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { parseJsLike } from '../../../../../../utils/babel'
 import { createPlatformApiAccessCollector } from '../../../platformApiRewrite'
 import { rewriteBundleNpmImportsToLocalRoots } from '../localRoot'
-import { getChunkScriptAnalysis, rewriteBundlePlatformApi } from '../platform'
+import { getChunkScriptAnalysis, rememberChunkScriptAnalysis, rewriteBundlePlatformApi } from '../platform'
 
 vi.mock('../../../../../../utils/babel', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../../../../utils/babel')>()
@@ -90,7 +90,7 @@ describe('local root negative candidates', () => {
     expect(parseJsLike).not.toHaveBeenCalled()
   })
 
-  it('precomputes a fallback dependency scope once for several chunks', () => {
+  it('leaves dynamic dependency enumeration to the matcher for each require', () => {
     const ownKeys = vi.fn(Reflect.ownKeys)
     const dependencies = new Proxy({ 'ui-lib': '1.0.0' }, { ownKeys })
     const first = createChunk(`const dep = require('./first')`)
@@ -100,8 +100,8 @@ describe('local root negative candidates', () => {
       collectPlatformApiAccess: false,
     })
 
-    expect(ownKeys).toHaveBeenCalledTimes(1)
-    expect(parseJsLike).not.toHaveBeenCalled()
+    expect(ownKeys).toHaveBeenCalledTimes(2)
+    expect(parseJsLike).toHaveBeenCalledTimes(2)
   })
 
   it('uses the most specific root scope independently of the main dependency scope', () => {
@@ -144,7 +144,7 @@ describe('local root negative candidates', () => {
     expect(parseJsLike).not.toHaveBeenCalled()
   })
 
-  it.each([undefined, true])('retains the precise platform collector when collectPlatformApiAccess is %s', (collectPlatformApiAccess) => {
+  it.each([undefined, true])('leaves platform facts conservative until the API phase when collectPlatformApiAccess is %s', (collectPlatformApiAccess) => {
     const chunk = createChunk(`const dep = require('./relative'); function run(wx) { return wx.getStorageSync('key') }`)
     const analysisCache: ChunkScriptAnalysisCache = new WeakMap()
     rewriteBundleNpmImportsToLocalRoots({ [chunk.fileName]: chunk }, { 'ui-lib': '1.0.0' }, [], {
@@ -152,16 +152,20 @@ describe('local root negative candidates', () => {
       analysisCache,
     })
 
+    expect(parseJsLike).not.toHaveBeenCalled()
+    expect(createPlatformApiAccessCollector).not.toHaveBeenCalled()
+    expect(getChunkScriptAnalysis(chunk, { cache: analysisCache }).hasPlatformApiAccess).toBe(true)
+    const originalCode = chunk.code
+    rewriteBundlePlatformApi({ [chunk.fileName]: chunk }, 'wpi', { analysisCache })
     expect(parseJsLike).toHaveBeenCalledTimes(1)
-    expect(createPlatformApiAccessCollector).toHaveBeenCalledTimes(1)
-    expect(getChunkScriptAnalysis(chunk, { cache: analysisCache }).hasPlatformApiAccess).toBe(false)
+    expect(chunk.code).toBe(originalCode)
   })
 
   it('leaves an existing precise cache entry intact when skipping the npm traversal', () => {
     const chunk = createChunk(`const dep = require('./relative')`)
     const analysisCache: ChunkScriptAnalysisCache = new WeakMap()
     const bundle = { [chunk.fileName]: chunk }
-    rewriteBundleNpmImportsToLocalRoots(bundle, { 'ui-lib': '1.0.0' }, [], { analysisCache })
+    rememberChunkScriptAnalysis(chunk, { hasPlatformApiAccess: false, hasStaticRequireLiteral: true }, { cache: analysisCache })
     const cached = analysisCache.get(chunk)
     vi.mocked(parseJsLike).mockClear()
 

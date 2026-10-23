@@ -55,17 +55,15 @@ describe.each(Object.entries(npmRewriters))('%s npm rewrite analysis', (_name, r
     ['string and comment', `const dep = require('./dep'); const text = 'wx.getStorageSync()'; /* my.alert() */`],
     ['local binding', `const dep = require('./dep'); function run(wx) { return wx.getStorageSync('key') }`],
     ['escaped local binding', String.raw`const dep = require('./dep'); function run(\u0077x) { return \u0077x.getStorageSync('key') }`],
-  ])('skips a second Babel parse for %s without free platform access', (_case, code) => {
+  ])('uses one Babel parse for %s without free platform access', (_case, code) => {
     const chunk = createChunk(code)
     const bundle = { [chunk.fileName]: chunk }
     const cache: ChunkScriptAnalysisCache = new WeakMap()
 
     rewriteNpm(bundle, cache)
-    const analysis = getChunkScriptAnalysis(chunk, { cache })
     rewriteBundlePlatformApi(bundle, 'wpi', { analysisCache: cache })
 
     expect(parseJsLike).toHaveBeenCalledTimes(1)
-    expect(analysis.hasPlatformApiAccess).toBe(false)
     expect(chunk.code).not.toContain(WEAPP_VITE_INJECTED_API_IDENTIFIER)
   })
 
@@ -140,7 +138,7 @@ describe.each(Object.entries(npmRewriters))('%s npm rewrite analysis', (_name, r
   })
 
   it('invalidates precise facts after a later code change', () => {
-    const chunk = createChunk(`const dep = require('./dep')`)
+    const chunk = createChunk(`const dep = require('ui-lib/button')`)
     const bundle = { [chunk.fileName]: chunk }
     const cache: ChunkScriptAnalysisCache = new WeakMap()
     rewriteNpm(bundle, cache)

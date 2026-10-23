@@ -190,7 +190,7 @@ export class StatefulHmrTransport {
       respond(response, 403, { type: 'forbidden' })
       return
     }
-    if (this.suspended) {
+    if (this.suspended && body.action !== 'rebuild') {
       respond(response, 202, { type: 'rebuilding' })
       return
     }
@@ -224,7 +224,7 @@ export class StatefulHmrTransport {
           reportedFailure = true
         }
       }
-      if (!reportedFailure) {
+      if (!reportedFailure && !this.suspended) {
         this.requestFullBuild()
       }
       respond(response, this.retired ? 410 : 202, { type: this.retired ? 'retired' : 'rebuilding' })

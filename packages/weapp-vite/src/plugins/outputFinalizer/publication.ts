@@ -6,11 +6,14 @@ import type { WxmlDependencyCommit } from '../../wxml/processing/dependencies'
 import type { NativeOutputPublicationApi, OutputPublicationScope } from './publicationObservation'
 import { WEAPP_VITE_OUTPUT_PUBLICATION_PLUGIN_NAME } from '@weapp-core/constants'
 import path from 'pathe'
+import { resolveIdePrivateConfigPath } from '../../runtime/classicIdeConfig'
+import { getHmrRuntimeSession, isBorrowedHmrRuntimeSession } from '../../runtime/hmrRuntimeSession'
 import { createHmrProfileCheckpoint } from '../../utils/hmrProfile'
 import { syncOutputChunkSourceMapAssets } from '../../utils/outputChunk'
 import { commitWxmlDependencies, failWxmlDependencies } from '../../wxml/processing/dependencies'
 import { validateWxmlBundle } from '../../wxml/validate'
 import { createPublicAssetPublication } from '../asset/publication'
+import { protectClassicHandoffEntries } from './classicEntryContract'
 import { prepareClassicOutputGeneration, shouldPublishClassicGeneration } from './classicGeneration'
 import { pruneUnchangedDevHmrOutputs } from './hmrPrune'
 import { captureIndependentOutputAssets, captureIndependentOutputFileNames, flushIndependentOutputs } from './independent'
@@ -32,7 +35,7 @@ export function createOutputPublicationPlugin(ctx: CompilerContext, subPackageMe
   let building = false
   let epoch = 0
   let closing = false
-  const writes = new Set<Promise<void>>()
+  const writes = new Set<Promise<unknown>>()
 
   function releasePendingOwnership() {
     epoch++
@@ -208,6 +211,10 @@ export function createOutputPublicationPlugin(ctx: CompilerContext, subPackageMe
         const independentSnapshot = captureIndependentOutputAssets(ctx)
         let commitValidation: WxmlDependencyCommit | undefined
         try {
+          if (isWrite && nativeWrite && partial && root
+            && getHmrRuntimeSession(ctx).classicIdeConfig.preservesPendingOutput(root)) {
+            throw new Error('[weapp-vite] classic 资产交接需要完整主应用发布，拒绝增量写出。')
+          }
           commitValidation = await validateWxmlBundle(ctx, outputBundle, {
             warn: message => this.warn(message),
             addWatchFile: file => this.addWatchFile?.(file),
@@ -243,6 +250,9 @@ export function createOutputPublicationPlugin(ctx: CompilerContext, subPackageMe
           const publicOutputs: EmittedAsset[] = []
           await scope?.publicAssets?.emit([...outputNames, ...independentOutputNames], partial, asset => publicOutputs.push(asset))
           assertActive()
+          if (!preserveCompleteBundle && shouldPublishClassicGeneration(ctx) && getHmrRuntimeSession(ctx).fallback) {
+            protectClassicHandoffEntries(outputBundle)
+          }
           const generation = isWrite && nativeWrite && !preserveCompleteBundle && !subPackageMeta && root
             && shouldPublishClassicGeneration(ctx)
             ? prepareClassicOutputGeneration(ctx, root, outputBundle, {
@@ -286,6 +296,31 @@ export function createOutputPublicationPlugin(ctx: CompilerContext, subPackageMe
             })
             scope.pending = { epoch: publicationEpoch, ownership, generation, sources, outputNames, partial, observedAssets: [...independentSnapshot, ...independentAssets, ...publicOutputs] }
           }
+          if (isWrite && nativeWrite && !preserveCompleteBundle && !partial && !subPackageMeta
+            && root && root === outDir && !isBorrowedHmrRuntimeSession(ctx) && shouldPublishClassicGeneration(ctx)) {
+            const owner = getHmrRuntimeSession(ctx).classicIdeConfig
+            if (owner.preservesPendingOutput(root)) {
+              const configPath = resolveIdePrivateConfigPath(ctx.configService)
+              if (!configPath || !owner.hasPendingAssetHandoff(configPath, root)) {
+                throw new Error('[weapp-vite] classic 原生发布与待交接 IDE 配置路径不匹配，停止输出。')
+              }
+              // 编译、校验和资产准备全部结束后切换；首个 classic JS 写出前必须禁用局部热载。
+              assertActive()
+              const activation = owner.activatePendingAssetHandoff(configPath, root, () => !closing && publicationEpoch === epoch)
+              writes.add(activation)
+              try {
+                const activated = await activation
+                assertActive()
+                if (!activated) {
+                  throw new Error('[weapp-vite] classic 原生发布交接已取消，停止输出。')
+                }
+              }
+              finally {
+                writes.delete(activation)
+              }
+            }
+          }
+          assertActive()
           commitWxmlDependencies(ctx)
           commitValidation?.()
           checkpoint('publicationPruneMs')

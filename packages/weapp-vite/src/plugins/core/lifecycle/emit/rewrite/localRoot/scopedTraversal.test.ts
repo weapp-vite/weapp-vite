@@ -1,11 +1,12 @@
 /* eslint-disable no-extend-native -- 临时修改并恢复原型，验证配置执行后的原有匹配契约。 */
 import type { OutputChunk } from 'rolldown'
 import type { ChunkScriptAnalysisCache } from '../platform'
+import { WEAPP_VITE_INJECTED_API_IDENTIFIER } from '@weapp-core/constants'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { getVisitorKeys, parseJsLike, traverse } from '../../../../../../utils/babel'
 import { createPlatformApiAccessCollector } from '../../../platformApiRewrite'
 import { rewriteBundleNpmImportsToLocalRoots, rewriteChunkNpmImportsToLocalRoot } from '../localRoot'
-import { getChunkScriptAnalysis } from '../platform'
+import { getChunkScriptAnalysis, rewriteBundlePlatformApi } from '../platform'
 
 vi.mock('../../../../../../utils/babel', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../../../../utils/babel')>()
@@ -28,7 +29,7 @@ function rewrite(code: string, collectPlatformApiAccess: boolean, patterns?: (st
     collectPlatformApiAccess,
     analysisCache: cache,
   })
-  return { chunk, analysis: getChunkScriptAnalysis(chunk, { cache }) }
+  return { chunk, cache, analysis: getChunkScriptAnalysis(chunk, { cache }) }
 }
 
 describe('local root scoped traversal candidates', () => {
@@ -115,7 +116,7 @@ describe('local root scoped traversal candidates', () => {
     const chunk = createChunk(code)
     rewriteBundleNpmImportsToLocalRoots({ [chunk.fileName]: chunk }, dependencies, [], { collectPlatformApiAccess: false })
     expect(chunk.code).toBe(code)
-    expect(ownKeys).toHaveBeenCalledTimes(2)
+    expect(ownKeys).toHaveBeenCalledTimes(1)
     expect(traverse).toHaveBeenCalledTimes(1)
   })
 
@@ -127,13 +128,13 @@ describe('local root scoped traversal candidates', () => {
     expect(traverse).not.toHaveBeenCalled()
   })
 
-  it('preserves pattern getters that change between candidate collection and matching', () => {
+  it('preserves pattern getters that change between original require matches', () => {
     let reads = 0
     const patterns = ['ui-lib']
     Object.defineProperty(patterns, 0, {
       get: () => ++reads === 1 ? 'ui-lib' : 'other-lib',
     })
-    const chunk = createChunk(String.raw`const matcher = /\B/; const dep = require('other-lib/button')`)
+    const chunk = createChunk(String.raw`const matcher = /\B/; const unmatched = require('./relative'); const dep = require('other-lib/button')`)
     rewriteChunkNpmImportsToLocalRoot(chunk, '', patterns, {}, { collectPlatformApiAccess: false })
 
     expect(chunk.code).toContain('require("../miniprogram_npm/other-lib/button")')
@@ -155,7 +156,7 @@ describe('local root scoped traversal candidates', () => {
     rewriteChunkNpmImportsToLocalRoot(chunk, '', patterns, {}, { collectPlatformApiAccess: false })
 
     expect(chunk.code).toContain('require("../miniprogram_npm/other-lib/button")')
-    expect(iterator).toHaveBeenCalledTimes(1)
+    expect(iterator).not.toHaveBeenCalled()
     expect(traverse).toHaveBeenCalledTimes(1)
   })
 
@@ -198,7 +199,7 @@ describe('local root scoped traversal candidates', () => {
     }
 
     expect(chunk.code).toContain('require("../miniprogram_npm/other-lib/button")')
-    expect(calls).toBe(explicitPatterns ? 1 : 2)
+    expect(calls).toBe(1)
     expect(traverse).toHaveBeenCalledTimes(1)
   })
 
@@ -225,7 +226,7 @@ describe('local root scoped traversal candidates', () => {
     }
 
     expect(chunk.code).toContain('require("../miniprogram_npm/other-lib/button")')
-    expect(calls).toBe(1)
+    expect(calls).toBe(0)
     expect(traverse).toHaveBeenCalledTimes(1)
   })
 
@@ -234,10 +235,13 @@ describe('local root scoped traversal candidates', () => {
     ['optional', `wx?.getStorageSync('key')`],
     ['escaped', String.raw`\u0077x.getStorageSync('key')`],
     ['shadowed', `function local(wx) { return wx.getStorageSync('key') }`],
-  ])('retains precise scope collection for %s platform access', (_name, access) => {
-    const { analysis } = rewrite(`const dep = require('./relative'); ${access}`, true)
-    expect(traverse).toHaveBeenCalledTimes(1)
-    expect(analysis.hasPlatformApiAccess).toBe(_name !== 'shadowed')
+  ])('retains the final rewrite for %s platform access after an npm negative candidate', (_name, access) => {
+    const { chunk, cache } = rewrite(`const dep = require('./relative'); ${access}`, true)
+    const npmTraversals = _name === 'escaped' ? 1 : 0
+    expect(traverse).toHaveBeenCalledTimes(npmTraversals)
+    rewriteBundlePlatformApi({ [chunk.fileName]: chunk }, 'wpi', { analysisCache: cache })
+    expect(traverse).toHaveBeenCalledTimes(npmTraversals + 1)
+    expect(chunk.code.includes(`var ${WEAPP_VITE_INJECTED_API_IDENTIFIER} =`)).toBe(_name !== 'shadowed')
   })
 
   it.each([{ patterns: [/^ui-lib$/] }, { patterns: ['./ui-lib'] }])('keeps unknown dependency rules on the scoped path: $patterns', ({ patterns }) => {

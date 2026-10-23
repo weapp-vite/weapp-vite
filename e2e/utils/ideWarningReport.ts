@@ -1,8 +1,10 @@
+import type { RuntimeLogDiagnostics } from './runtimeLogDiagnostics.ts'
 import { randomUUID } from 'node:crypto'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
+import { sanitizeRuntimeLogDiagnostics } from './runtimeLogDiagnostics.ts'
 
 const ROOT_DIR = path.resolve(import.meta.dirname, '../..')
 const REPORTS_ROOT_DIR = path.join(ROOT_DIR, 'docs/reports')
@@ -39,6 +41,7 @@ export interface IdeWarningReportPaths {
 
 export interface IdeReportEvent {
   recordedAt?: string
+  runtimeLogDiagnostics?: RuntimeLogDiagnostics
   startupProtocol?: { id: string, method: 'App.getCurrentPage', state: 'retrying' | 'recovered' | 'unresolved', attempts: number, firstFailureAt: string, lastFailureAt: string }
   acceptanceScope?: { id: string, caseId: string, checkpointId: string, boundary: 'start' | 'end' }
   source: IdeReportSource
@@ -295,6 +298,7 @@ function readReportEvents(paths: IdeWarningReportPaths) {
           readyText: typeof parsed.readyText === 'string' ? sanitizeReportText(parsed.readyText) : parsed.readyText,
           currentPage: typeof parsed.currentPage === 'string' ? sanitizeReportText(parsed.currentPage) : parsed.currentPage,
           text: typeof parsed.text === 'string' ? sanitizeReportText(parsed.text) : parsed.text,
+          ...(parsed.runtimeLogDiagnostics ? { runtimeLogDiagnostics: sanitizeRuntimeLogDiagnostics(parsed.runtimeLogDiagnostics, sanitizeReportText) } : {}),
         })
       }
     }
@@ -544,6 +548,7 @@ export function appendIdeReportEvent(event: IdeReportEvent) {
     readyText: typeof event.readyText === 'string' ? sanitizeReportText(event.readyText) : event.readyText,
     currentPage: typeof event.currentPage === 'string' ? sanitizeReportText(event.currentPage) : event.currentPage,
     text: typeof event.text === 'string' ? sanitizeReportText(event.text) : event.text,
+    ...(event.runtimeLogDiagnostics ? { runtimeLogDiagnostics: sanitizeRuntimeLogDiagnostics(event.runtimeLogDiagnostics, sanitizeReportText) } : {}),
   }
 
   ensureParentDir(paths.eventLogPath)
