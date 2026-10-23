@@ -219,6 +219,39 @@ describe('transformVueLikeFile cache reuse', () => {
     expect(options.compilationCache.get('/project/src/components/card.vue').refreshToken).toBe(0)
   })
 
+  it('replays cached scoped-slot chunks into every native build generation', async () => {
+    const result = {
+      template: '<slot />',
+      script: 'Component({ cached: true })',
+      scopedSlotComponents: [{ id: 'default-0', script: 'Component({ slot: true })' }],
+      meta: { styleBlocks: [] },
+    }
+    const options = createBaseOptions({
+      compilationCache: new Map([
+        ['/project/src/components/card.vue', {
+          result,
+          source: '<template><view /></template>',
+          isPage: false,
+        }],
+      ]),
+    })
+    for (let generation = 0; generation < 3; generation++) {
+      options.scopedSlotModules.clear()
+      options.emittedScopedSlotChunks.clear()
+      emitScopedSlotChunksMock.mockClear()
+      await transformVueLikeFile(options)
+      expect(emitScopedSlotChunksMock).toHaveBeenCalledExactlyOnceWith(
+        options.pluginCtx,
+        'components/card',
+        result,
+        options.scopedSlotModules,
+        options.emittedScopedSlotChunks,
+        options.ctx.configService.outputExtensions,
+      )
+    }
+    expect(compileVueFileMock).not.toHaveBeenCalled()
+  })
+
   it('reuses dirty vue entries when transformed source is unchanged', async () => {
     const dirtyVueEntryIds = new Set(['/project/src/components/card.vue'])
     const options = createBaseOptions({

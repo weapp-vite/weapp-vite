@@ -4,6 +4,7 @@ import { mkdtemp, readdir, readFile, rm } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { createContext, runInContext } from 'node:vm'
+import { parse } from '@babel/parser'
 import { originalPositionFor, TraceMap } from '@jridgewell/trace-mapping'
 import { WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY } from '@weapp-core/constants'
 import MagicString from 'magic-string'
@@ -14,7 +15,7 @@ import { createRuntimeState } from '../../runtime/runtimeState'
 import { protectClassicHandoffEntries } from './classicEntryContract'
 import { createOutputPublicationPlugin } from './publication'
 
-async function buildClassicEntries(fallback: boolean) {
+async function buildClassicEntries(fallback: boolean, format: 'cjs' | 'es' = 'cjs') {
   const root = await mkdtemp(path.join(os.tmpdir(), 'weapp-classic-entry-contract-'))
   const ctx = {
     runtimeState: createRuntimeState(),
@@ -24,7 +25,8 @@ async function buildClassicEntries(fallback: boolean) {
       isDev: true,
       platform: 'weapp',
       multiPlatform: { enabled: false },
-      weappViteConfig: { hmr: { runtime: fallback ? 'auto' : 'classic' } },
+      // 与实际 output 格式不同，验证最终发布以本轮 bundler 输出为准。
+      weappViteConfig: { jsFormat: 'cjs', hmr: { runtime: fallback ? 'auto' : 'classic' } },
     },
   } as unknown as CompilerContext
   if (fallback) {
@@ -33,8 +35,9 @@ async function buildClassicEntries(fallback: boolean) {
   try {
     const sources = new Map([
       ['virtual:app', 'import { installWebRuntimeGlobals } from "virtual:runtime"; installWebRuntimeGlobals(); App({ marker: "classic-app" });'],
-      ['virtual:page', 'import { installWebRuntimeGlobals } from "virtual:runtime"; installWebRuntimeGlobals(); if (globalThis.businessFailure) throw globalThis.businessFailure; Page({ data: { marker: "classic-page" } });'],
+      ['virtual:page', 'import { installWebRuntimeGlobals } from "virtual:runtime"; installWebRuntimeGlobals(); if (globalThis.businessFailure) throw globalThis.businessFailure; Page({ data: { marker: "classic-page" } }); export const contractMarker = "classic-export"; export const loadLazy = () => import("virtual:lazy");'],
       ['virtual:runtime', 'export function installWebRuntimeGlobals() { globalThis.installations++; }'],
+      ['virtual:lazy', 'export const marker = "classic-lazy";'],
     ])
     const result = await build({
       root,
@@ -50,7 +53,7 @@ async function buildClassicEntries(fallback: boolean) {
         rolldownOptions: {
           input: { app: 'virtual:app', page: 'virtual:page', runtime: 'virtual:runtime' },
           preserveEntrySignatures: 'strict',
-          output: { format: 'cjs', entryFileNames: '[name].js' },
+          output: { format, entryFileNames: '[name].js', chunkFileNames: '[name].js' },
         },
       },
     })
@@ -104,12 +107,39 @@ function createHost(files: Map<string, string>, oldClient?: object, staleRuntime
 }
 
 describe('classic handoff entry boundary in native output', () => {
+  it.each([false, true])('keeps native ESM declarations, dynamic imports and sourcemaps valid with fallback: %s', async (fallback) => {
+    const { files, chunks } = await buildClassicEntries(fallback, 'es')
+    for (const chunk of chunks) {
+      expect(files.has(chunk.fileName)).toBe(true)
+      expect(files.has(chunk.sourcemapFileName ?? `${chunk.fileName}.map`)).toBe(true)
+      for (const dependency of [...chunk.imports, ...chunk.dynamicImports]) {
+        expect(files.has(dependency)).toBe(true)
+      }
+      expect(() => parse(files.get(chunk.fileName)!, { sourceType: 'module' })).not.toThrow()
+    }
+    const page = chunks.find(chunk => chunk.fileName === 'page.js')!
+    const source = files.get(page.fileName)!
+    const ast = parse(source, { sourceType: 'module' })
+    expect(ast.program.body.some(node => node.type === 'ImportDeclaration')).toBe(true)
+    expect(ast.program.body.some(node => node.type === 'ExportNamedDeclaration')).toBe(true)
+    expect(page.imports).toContain('runtime.js')
+    expect(page.exports).toEqual(expect.arrayContaining(['contractMarker', 'loadLazy']))
+    expect(page.dynamicImports).toHaveLength(1)
+    expect(files.get(page.dynamicImports[0]!)).toContain('classic-lazy')
+    expect(source).toMatch(/\bimport\s*\(/)
+    const lines = source.split('\n')
+    const line = lines.findIndex(value => value.includes('"classic-page"'))
+    const map = JSON.parse(files.get('page.js.map')!) as { version: 3, names: string[], sources: string[], sourcesContent: string[], mappings: string }
+    expect(originalPositionFor(new TraceMap(map), { line: line + 1, column: lines[line]!.indexOf('"classic-page"') }).line).toBe(1)
+    expect(map.sourcesContent.some(value => value.includes('"classic-page"'))).toBe(true)
+  })
+
   it('is idempotent, preserves CommonJS lexical bindings and leaves shared modules alone', () => {
     const entry = { type: 'chunk', fileName: 'app.js', isEntry: true, code: 'exports.thisValue = this; exports.argumentValue = arguments[2]; exports.strictThis = (function () { return this; })(); module.exports.result = "classic-exports";' } as OutputChunk
     const shared = { type: 'chunk', fileName: 'shared.js', isEntry: false, code: 'exports.shared = true;' } as OutputChunk
-    protectClassicHandoffEntries({ 'app.js': entry, 'shared.js': shared })
+    protectClassicHandoffEntries({ 'app.js': entry, 'shared.js': shared }, 'cjs')
     const first = entry.code
-    protectClassicHandoffEntries({ 'app.js': entry })
+    protectClassicHandoffEntries({ 'app.js': entry }, 'cjs')
     expect(entry.code).toBe(first)
     expect(shared.code).toBe('exports.shared = true;')
     const exports: Record<string, unknown> = {}
@@ -120,10 +150,19 @@ describe('classic handoff entry boundary in native output', () => {
     expect(exports.result).toBe('classic-exports')
   })
 
+  it('preserves ESM output and its map even when the entry has no module declarations', () => {
+    const source = 'globalThis.classicEntryRuns++;'
+    const map = new MagicString(source).generateMap({ source: 'original-app.ts', includeContent: true, hires: true })
+    const entry = { type: 'chunk', fileName: 'app.js', isEntry: true, code: source, map } as unknown as OutputChunk
+    protectClassicHandoffEntries({ 'app.js': entry }, 'es')
+    expect(entry.code).toBe(source)
+    expect(entry.map).toBe(map)
+  })
+
   it('composes the final guard with existing source mappings', () => {
     const source = 'exports.marker = "mapped-classic";'
     const entry = { type: 'chunk', fileName: 'page.js', isEntry: true, code: source, map: new MagicString(source).generateMap({ source: 'original-page.ts', includeContent: true, hires: true }) } as unknown as OutputChunk
-    protectClassicHandoffEntries({ 'page.js': entry })
+    protectClassicHandoffEntries({ 'page.js': entry }, 'cjs')
     const lines = entry.code.split('\n')
     const line = lines.findIndex(value => value.includes('exports.marker'))
     expect(originalPositionFor(new TraceMap(entry.map as any), { line: line + 1, column: lines[line]!.indexOf('exports.marker') }))

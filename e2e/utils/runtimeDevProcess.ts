@@ -1,11 +1,12 @@
 import process from 'node:process'
 import { createNativeHostControl } from '../../packages/weapp-vite/scripts/consumerHmr/hostControl/index.mjs'
 import { startDevProcess } from './dev-process'
+import { withDevProcessShutdownTrace } from './devProcessShutdownTrace'
 
 /** WV 明确使用 IPC；原生 Vite/Vite+ 通过实际叶宿主的 close 入口收尾。 */
 export async function startRuntimeDevProcess(host: string, args: readonly string[], options: NonNullable<Parameters<typeof startDevProcess>[2]> & { cwd: string }) {
   if (host === 'wv') {
-    return startDevProcess(process.execPath, args, { ...options, ipc: true })
+    return startDevProcess(process.execPath, args, { ...options, env: withDevProcessShutdownTrace(options.env), ipc: true })
   }
   if (host !== 'vite' && host !== 'vite-plus') {
     throw new Error(`Unsupported runtime development host: ${host}`)

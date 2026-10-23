@@ -138,7 +138,7 @@ export async function createStatefulNativeEntryReplayFiles(): Promise<Array<[str
       code: classicPageSource,
     },
   } as unknown as Parameters<typeof protectClassicHandoffEntries>[0]
-  protectClassicHandoffEntries(classicBundle)
+  protectClassicHandoffEntries(classicBundle, 'cjs')
   for (const [file, item] of Object.entries(classicBundle)) {
     if (item.type !== 'chunk') {
       throw new Error('Classic replay fixture requires a final production CJS entry')
