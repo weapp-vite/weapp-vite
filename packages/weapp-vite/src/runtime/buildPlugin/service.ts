@@ -12,6 +12,7 @@ import type { ChangeEvent, SubPackageMetaValue } from '../../types'
 import type { HmrProfileRecordMetadata, HmrProfileSourceEvent } from '../../utils/hmrProfile/provenance'
 import type { HmrRuntimeDecision } from '../hmrRuntime'
 import type { StatefulHmrProfileHandoff } from '../statefulHmr/profile'
+import type { SidecarWatcher } from '../watcher/types'
 import type { AppShellSnapshot } from './appShellSnapshot'
 import type { ClassicConfigWatcher } from './classicConfigWatcher'
 import type { DevBuildWatcherController } from './devBuildWatcher'
@@ -1199,13 +1200,13 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     registeredWatcher: RolldownWatcher
     watcherRoot: string
     sidecarRoot: string
+    ownedSidecarWatcher: SidecarWatcher
     waitForPendingSnapshotBuilds: () => Promise<unknown>
     markClosed: () => void
     releaseResources?: () => Promise<void>
   }) {
-    const { watcher, watcherRoot, sidecarRoot, waitForPendingSnapshotBuilds, markClosed } = options
+    const { watcher, watcherRoot, sidecarRoot, ownedSidecarWatcher, waitForPendingSnapshotBuilds, markClosed } = options
     const originalClose = watcher.close.bind(watcher)
-    const ownedSidecarWatcher = watcherService.sidecarWatcherMap.get(sidecarRoot)
     let closePromise: Promise<void> | undefined
 
     watcher.close = () => {
@@ -1225,7 +1226,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           if (watcherService.sidecarWatcherMap.get(sidecarRoot) === ownedSidecarWatcher) {
             watcherService.sidecarWatcherMap.delete(sidecarRoot)
           }
-          await release(async () => await ownedSidecarWatcher?.close())
+          await release(async () => await ownedSidecarWatcher.close())
           if (watcherService.rollupWatcherMap.get(watcherRoot) === options.registeredWatcher) {
             watcherService.rollupWatcherMap.delete(watcherRoot)
           }
@@ -2756,6 +2757,8 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         registeredWatcher,
         watcherRoot,
         sidecarRoot: snapshotWatcherRoot,
+        // 完整 drain 可以在 native 发布期间清空 map，本代仍须保留自己的关闭归属。
+        ownedSidecarWatcher: snapshotSidecar.resource,
         waitForPendingSnapshotBuilds: () => snapshotBuildChain,
         markClosed: markSnapshotClosed,
         releaseResources: releaseWatcherResources?.releaseResources,

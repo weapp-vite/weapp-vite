@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { terminateUploadProcess } from './processTree'
+import { terminateUploadDescendants, terminateUploadProcess } from './processTree'
+import { describeUploadProcessTreeError } from './processTreeDiagnostics'
 
 const state = vi.hoisted(() => ({ platform: 'linux', execFileSync: vi.fn(), kill: vi.fn() }))
 vi.mock('node:child_process', () => ({ execFileSync: state.execFileSync }))
@@ -47,6 +48,36 @@ describe('upload process ownership', () => {
     expect(state.kill).not.toHaveBeenCalled()
   })
 
+  it('keeps the Windows ownership query, command options and lifetime filters while adding stderr stages', () => {
+    state.platform = 'win32'
+    state.execFileSync.mockImplementation((command: string) => command === 'powershell.exe' ? '202\r\n' : '')
+    terminateUploadProcess(101, { exited: true, lifetime: { start: 1000, end: 2000 } })
+    const [command, args, options] = state.execFileSync.mock.calls[0] as [string, string[], object]
+    expect(command).toBe('powershell.exe')
+    expect(args.slice(0, 3)).toEqual(['-NoProfile', '-NonInteractive', '-Command'])
+    expect(options).toEqual({ encoding: 'utf8', windowsHide: true, timeout: 30000, stdio: ['ignore', 'pipe', 'pipe'] })
+    expect(args[3]).toContain('$since = [DateTimeOffset]::FromUnixTimeMilliseconds(1000).UtcDateTime; ')
+    expect(args[3]).toContain('$until = [DateTimeOffset]::FromUnixTimeMilliseconds(2000).UtcDateTime; ')
+    expect(args[3]).toContain('Write-WvTreeStage \'children-query-start\'; Get-CimInstance Win32_Process -Filter \'ParentProcessId = 101\' '
+      + '| Where-Object { $_.CreationDate.ToUniversalTime() -ge $since -and $_.CreationDate.ToUniversalTime() -le $until } '
+      + '| Select-Object -ExpandProperty ProcessId; Write-WvTreeStage \'children-query-end\'; ')
+    expect(args[3]).toContain('[Console]::Error.WriteLine(')
+    expect(args[3]).not.toContain('Write-WvTreeStage \'parent-query-start\'')
+    expect(state.execFileSync.mock.calls.filter(([childCommand]) => childCommand === 'taskkill')).toHaveLength(1)
+  })
+
+  it('materializes the parent creation-time query between its diagnostic stages', () => {
+    state.platform = 'win32'
+    state.execFileSync.mockReturnValue('')
+    terminateUploadDescendants(101)
+    const [, args] = state.execFileSync.mock.calls[0] as [string, string[]]
+    expect(args[3]).toContain('Write-WvTreeStage \'parent-query-start\'; '
+      + '$since = (Get-CimInstance Win32_Process -Filter \'ProcessId = 101\').CreationDate.ToUniversalTime(); '
+      + 'Write-WvTreeStage \'parent-query-end\'; $until = [DateTime]::UtcNow; ')
+    expect(state.execFileSync).toHaveBeenCalledOnce()
+    expect(state.kill).not.toHaveBeenCalled()
+  })
+
   it('recovers the surviving Windows subtree when the root disappears during cancellation', () => {
     state.platform = 'win32'
     state.kill.mockImplementation(() => {
@@ -75,12 +106,22 @@ describe('upload process ownership', () => {
 
   it('does not claim cleanup succeeded when Windows ownership discovery times out', () => {
     state.platform = 'win32'
-    const timeout = Object.assign(new Error('ownership discovery timed out'), { code: 'ETIMEDOUT' })
+    const timeout = Object.assign(new Error('ownership discovery timed out'), { code: 'ETIMEDOUT', stderr: 'private query stderr' })
     state.execFileSync.mockImplementation(() => {
       throw timeout
     })
-    expect(() => terminateUploadProcess(101, { exited: true, lifetime: { start: 1000, end: 2000 } }))
-      .toThrow(timeout)
+    let caught: unknown
+    try {
+      terminateUploadProcess(101, { exited: true, lifetime: { start: 1000, end: 2000 } })
+    }
+    catch (error) {
+      caught = error
+    }
+    expect(caught).toBe(timeout)
+    expect(timeout.code).toBe('ETIMEDOUT')
+    expect(describeUploadProcessTreeError(caught)).toContain('before-script-entry-or-unobserved')
+    expect(describeUploadProcessTreeError(caught)).not.toContain('private query stderr')
+    expect(state.execFileSync).toHaveBeenCalledOnce()
     expect(state.kill).not.toHaveBeenCalled()
   })
 

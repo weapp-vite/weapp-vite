@@ -67,7 +67,7 @@ import { createStatefulHmrSnapshotDiagnostics } from './snapshotDiagnostics'
 import { offerStatefulHmrSnapshot } from './snapshotHandoff'
 import { withStatefulHmrSnapshotPreparation } from './snapshotPreparation'
 import { StatefulHmrSnapshotScheduler } from './snapshotScheduler'
-import { resolveTemplateRegistrationFallback } from './templateRegistration'
+import { NativeVueTemplateBaselines, resolveTemplateRegistrationFallback } from './templateRegistration'
 import { StatefulHmrTransport } from './transport'
 import { StatefulHmrViteAdapter } from './viteAdapter'
 
@@ -273,7 +273,7 @@ class StatefulHmrSession {
   private templateRegistrationSignatures?: StatefulHmrSnapshot['templateRegistrationSignatures']
   private initialSnapshot?: StatefulHmrSnapshot
   private readonly emittedSourceIds: Set<string>
-  private readonly nativeVueBaselines = new Set<string>()
+  private readonly nativeVueBaselines = new NativeVueTemplateBaselines()
   private readonly directoryUpdates: StatefulHmrDirectoryUpdates
   private entryGraphRevision = 0
   private rebuiltEntryGraphRevision = 0
@@ -765,7 +765,7 @@ class StatefulHmrSession {
           const sourceId = compilerSourceId(file)
           const captured = nativeVueInputs?.get(sourceId)
           if (typeof captured === 'string' && compilerHmrHost.readSource(sourceId) === captured) {
-            this.nativeVueBaselines.add(sourceId)
+            this.nativeVueBaselines.commit(sourceId, captured)
           }
         }
         if (snapshotBatch) {
@@ -863,6 +863,23 @@ class StatefulHmrSession {
     }))
     const input = getCompilerHmrHost(this.ctx).freeze(files)
     this.diagnostics?.input(input)
+    const nativeVueFiles = files.filter(isCompilerNativeVue).map(compilerSourceId)
+    const templateFallback = this.nativeVueBaselines.resolveFallback(
+      nativeVueFiles.filter(file => Boolean(this.templateRegistrationSignatures?.get(file))),
+      input.sources,
+    )
+    if (templateFallback) {
+      this.requestClassic(templateFallback)
+      return false
+    }
+    const commitNativeVueBaselines = () => {
+      for (const file of nativeVueFiles) {
+        const source = input.sources.get(file)
+        if (this.nativeVueBaselines.has(file) && typeof source === 'string') {
+          this.nativeVueBaselines.commit(file, source)
+        }
+      }
+    }
     // Patch/Noop 只描述脚本交付；冻结源码中的视觉变化仍须编译并校验注册。
     const needsNativeVueSnapshot = files.some(file => isCompilerNativeVue(file) && compilerHmrHost.hasVisualChanges([file], input))
 
@@ -984,6 +1001,7 @@ class StatefulHmrSession {
               this.diagnostics?.delivery('publish', input.revision, files)
               if (!filenames.length) {
                 this.clearRestoredNativeScripts(nativeScriptChanges, input.sources)
+                commitNativeVueBaselines()
                 this.buildEvents.emitEvent({ code: 'END' })
                 profile?.finish('complete')
                 return
@@ -1004,6 +1022,7 @@ class StatefulHmrSession {
                 refreshGlassEaselNativeScripts(this.ctx, scriptFacts)
               }
               this.clearRestoredNativeScripts(nativeScriptChanges, input.sources)
+              commitNativeVueBaselines()
               this.buildEvents.emitEvent({ code: 'END' })
               profile?.finish('complete')
             },

@@ -1,3 +1,4 @@
+import { platformApiIdentifiers } from '../../../../../../ast'
 import { getVisitorKeys } from '../../../../../../utils/babel'
 import { getRequireImportLiteral } from '../literals'
 
@@ -5,6 +6,7 @@ import { getRequireImportLiteral } from '../literals'
 export function mayNeedScopedLocalRootRewrite(
   ast: unknown,
   mayNeedLiteralRewrite: (importee: string) => boolean,
+  collectPlatformApiAccess = false,
 ) {
   try {
     const visitorKeys = getVisitorKeys()
@@ -12,6 +14,11 @@ export function mayNeedScopedLocalRootRewrite(
     while (pending.length > 0) {
       const node = pending.pop()
       if (!node || typeof node.type !== 'string') {
+        return true
+      }
+      if (collectPlatformApiAccess
+        && (node.type === 'MemberExpression' || node.type === 'OptionalMemberExpression')
+        && node.object?.type === 'Identifier' && platformApiIdentifiers.has(node.object.name)) {
         return true
       }
       if (node.type === 'CallExpression' && node.callee?.type === 'Identifier' && node.callee.name === 'require') {

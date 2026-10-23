@@ -152,13 +152,18 @@ function rewriteChunkNpmImportsToLocalRootWithCandidates(
 
   try {
     const ast = parseJsLike(chunk.code)
-    if (candidateCheck && options?.collectPlatformApiAccess === false
-      && !mayNeedScopedLocalRootRewrite(ast, candidateCheck.mayNeedLiteralRewrite)) {
+    const collectPlatformApiAccess = options?.collectPlatformApiAccess !== false
+    if (candidateCheck
+      && !mayNeedScopedLocalRootRewrite(ast, candidateCheck.mayNeedLiteralRewrite, collectPlatformApiAccess)) {
+      if (collectPlatformApiAccess) {
+        rememberChunkScriptAnalysis(chunk, {
+          ...analysis,
+          hasPlatformApiAccess: false,
+        }, { cache: options?.analysisCache })
+      }
       return
     }
-    const platformApiAccess = options?.collectPlatformApiAccess === false
-      ? undefined
-      : createPlatformApiAccessCollector()
+    const platformApiAccess = collectPlatformApiAccess ? createPlatformApiAccessCollector() : undefined
     const magicString = new MagicString(chunk.code)
     let mutated = false
     const localizedRequireBindings = new Set<string>()
@@ -290,7 +295,7 @@ export function rewriteChunkNpmImportsToLocalRoot(
     astEngine?: 'babel' | 'oxc'
   },
 ) {
-  // npm 的负判定不消费平台 API 事实；后续 API 阶段仍持有原有保守分析。
+  // 文本负判定不消费平台 API 事实；AST 双重负判定才记录无需 API 改写。
   const candidateCheck = createLocalRootNpmCandidateCheck(dependencyPatterns, dependencies)
   rewriteChunkNpmImportsToLocalRootWithCandidates(chunk, root, dependencyPatterns, dependencies, options, candidateCheck)
 }

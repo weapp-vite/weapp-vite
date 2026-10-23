@@ -45,7 +45,7 @@ describe('local root scoped traversal candidates', () => {
     vi.unstubAllEnvs()
   })
 
-  it.each([false, true])('limits scope construction to the requested collector for unrelated vendor requires (collector=%s)', (collectPlatformApiAccess) => {
+  it.each([false, true])('skips scope construction for unrelated vendor requires without platform members (collector=%s)', (collectPlatformApiAccess) => {
     const code = [
       `const dep = require('./vendor')`,
       String.raw`const matcher = /\B/`,
@@ -56,8 +56,8 @@ describe('local root scoped traversal candidates', () => {
 
     expect(chunk.code).toBe(code)
     expect(parseJsLike).toHaveBeenCalledTimes(1)
-    expect(traverse).toHaveBeenCalledTimes(collectPlatformApiAccess ? 1 : 0)
-    expect(createPlatformApiAccessCollector).toHaveBeenCalledTimes(collectPlatformApiAccess ? 1 : 0)
+    expect(traverse).not.toHaveBeenCalled()
+    expect(createPlatformApiAccessCollector).not.toHaveBeenCalled()
     expect(analysis.hasPlatformApiAccess).toBe(!collectPlatformApiAccess)
   })
 

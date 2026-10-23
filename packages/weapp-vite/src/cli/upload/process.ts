@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url'
 import logger from '../../logger'
 import { UploadExecutionError } from './executionError'
 import { terminateUploadDescendants, terminateUploadProcess } from './processTree'
+import { describeUploadProcessTreeError } from './processTreeDiagnostics'
 import { validatePreviewResult } from './result'
 import { redactUploadSecrets } from './tools'
 
@@ -95,7 +96,7 @@ export async function executeUpload(platform: string, context: UploadContext, se
       }
       catch (error) {
         failure ??= { reason: 'failed', detail: '无法清理本地子进程' }
-        failure.detail += `；${String(error)}`
+        failure.detail += `；${describeUploadProcessTreeError(error)}`
       }
       try {
         terminateUploadProcess(child.pid, {
@@ -106,7 +107,7 @@ export async function executeUpload(platform: string, context: UploadContext, se
       }
       catch (error) {
         failure ??= { reason: 'failed', detail: '无法终止本地 worker' }
-        failure.detail += `；${String(error)}`
+        failure.detail += `；${describeUploadProcessTreeError(error)}`
         if (!exited) {
           child.kill('SIGKILL')
         }

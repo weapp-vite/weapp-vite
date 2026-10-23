@@ -2507,7 +2507,7 @@ describe('stateful snapshot output transactions', () => {
     expect(session.runtime.fallback).toMatchObject({ code: 'native-registration', files: [component] })
   })
 
-  it('keeps native registration admission before publishing a compiled template Noop', async () => {
+  it.each(['Noop', 'Patch'] as const)('rejects a known native template text %s before provider preparation or snapshot compilation', async (type) => {
     const component = path.join(root, 'src/native.vue')
     const previous = '<script setup>const count = 1</script><template><view>before</view></template>'
     const session = await start({
@@ -2518,6 +2518,13 @@ describe('stateful snapshot output transactions', () => {
     const host = getCompilerHmrHost(session.ctx)
     const prepare = vi.fn(async (_input: WeappCompilerHmrRequest) => ({}))
     const delta = vi.spyOn(StatefulHmrTransport.prototype, 'addDelta')
+    const freeze = host.freeze.bind(host)
+    const capture = vi.spyOn(host, 'freeze').mockImplementation((files) => {
+      const input = freeze(files)
+      // 快速恢复发生在封存后；准入只能检查封存的修改，不能改读活动输入。
+      host.captureNative(component, previous)
+      return input
+    })
     host.seed(component, previous)
     host.captureNative(component, previous.replace('<view>before</view>', '<view>after</view>'))
     host.register('source-provider', prepare)
@@ -2528,19 +2535,59 @@ describe('stateful snapshot output transactions', () => {
     })
     harness.writeOutput.mockClear()
     session.sourceChange(component, 'update', ['entry-local-asset:1'])
-    expect(harness.callbacks!.onPatch([component], { type: 'Noop' })).toBe(true)
+    expect(harness.callbacks!.onPatch([component], type === 'Noop'
+      ? { type }
+      : { type, code: 'void 0', filename: 'update.js', changedIds: [component] })).toBe(false)
     await vi.advanceTimersByTimeAsync(40)
     expect(session.classic).toHaveBeenCalledOnce()
     session.runtime.markClassic()
     await session.runtime.whenSettled()
 
-    expect(prepare).toHaveBeenCalledOnce()
-    expect(session.rebuild).toHaveBeenCalledOnce()
+    expect(capture).toHaveBeenCalledExactlyOnceWith([component])
+    expect(prepare).not.toHaveBeenCalled()
+    expect(session.rebuild).not.toHaveBeenCalled()
     expect(session.classic).toHaveBeenCalledOnce()
     expect(session.runtime.fallback?.code).toBe('native-registration')
     expect(harness.writeOutput).not.toHaveBeenCalled()
     expect(harness.fullBuild).not.toHaveBeenCalled()
     expect(delta).not.toHaveBeenCalled()
+  })
+
+  it.each([false, true])('advances native template text baselines only after a successful full publication (success=%s)', async (success) => {
+    const component = path.join(root, 'src/native.vue')
+    const previous = '<script setup>const count = 1</script><template><view>before</view></template>'
+    const changed = previous.replace('before', 'after')
+    harness.nativeOutput = [{ type: 'chunk', fileName: `${route}.js`, code: 'Page({});', modules: { [component]: {} } }]
+    const session = await start({
+      ...snapshot('red'),
+      entryIds: [component],
+      templateRegistrationSignatures: new Map([[component, 'registered-template']]),
+    }, [component], {}, new Map([[component, previous]]))
+    const host = getCompilerHmrHost(session.ctx)
+    const prepare = vi.fn(async (_input: WeappCompilerHmrRequest) => ({}))
+    host.seed(component, previous)
+    host.register('source-provider', prepare)
+    host.captureNative(component, changed)
+    const failure = new Error('native full output write failed')
+    if (!success) {
+      harness.writeOutput.mockRejectedValueOnce(failure)
+    }
+    const publication = harness.callbacks!.onOutput(appOutput(), 'full')
+    if (success) {
+      await publication
+    }
+    else {
+      await expect(publication).rejects.toBe(failure)
+    }
+    session.sourceChange(component, 'update', ['entry-local-asset:1'])
+    expect(harness.callbacks!.onPatch([component], { type: 'Noop' })).toBe(false)
+    await vi.advanceTimersByTimeAsync(40)
+    expect(prepare).not.toHaveBeenCalled()
+    expect(session.rebuild).not.toHaveBeenCalled()
+    expect(session.classic).toHaveBeenCalledTimes(success ? 0 : 1)
+    if (!success) {
+      expect(session.runtime.fallback?.code).toBe('native-registration')
+    }
   })
 
   it('does not trust a live Vue input captured during a full output write', async () => {
