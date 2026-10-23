@@ -32,13 +32,20 @@ export function createProjectConfigDirectoryPlugin(ctx: CompilerContext): Plugin
         if (!dirs?.shouldSync || !Object.hasOwn(bundle, 'app.json')) {
           return
         }
-        const assets = await collectProjectConfigAssets(dirs.sourceDir, dirs.outputRoot, service.outDir, file => this.addWatchFile(file))
         const privateConfigPath = service.isDev && service.platform === 'weapp' ? resolveIdePrivateConfigPath(service) : undefined
+        if (privateConfigPath && getHmrRuntimeSession(ctx).classicIdeConfig.hasPendingAssetHandoff(privateConfigPath)) {
+          return
+        }
+        const assets = await collectProjectConfigAssets(dirs.sourceDir, dirs.outputRoot, service.outDir, file => this.addWatchFile(file))
         const privateConfig = assets.find(asset => path.resolve(dirs.outputRoot, asset.fileName) === privateConfigPath)
         let commitPrivateConfig: (() => Promise<void>) | undefined
         if (privateConfigPath && privateConfig) {
           const source = typeof privateConfig.source === 'string' ? privateConfig.source : Buffer.from(privateConfig.source).toString('utf8')
           const publication = await getHmrRuntimeSession(ctx).classicIdeConfig.preparePublication(privateConfigPath, source)
+          // 未完成完整主应用交接的批次不能覆盖或裁剪仍由资产租约持有的项目配置。
+          if (publication.deferred) {
+            return
+          }
           privateConfig.source = publication.source
           commitPrivateConfig = publication.commit
         }

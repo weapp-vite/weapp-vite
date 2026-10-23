@@ -3,6 +3,7 @@ import {
   WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY,
   WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY,
   WEAPP_VITE_STATEFUL_HMR_REGISTRATION_CONTRACT_VERSION,
+  WEAPP_VITE_STATEFUL_HMR_RUNTIME_CONTRACT_METHOD,
   WEAPP_VITE_STATEFUL_HMR_UNSUPPORTED_REGISTRATION_CODE,
   WEVU_NATIVE_DECLARATION_METHOD,
 } from '@weapp-core/constants'
@@ -487,6 +488,7 @@ globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY)}] = ${JSON.stri
   let initialReady = false;
   let phase = 'registering';
   let pendingBatch;
+  let classicFallbackRequested = false;
   let requestGeneration = 0;
   let activeRequest;
   let lastRequestError;
@@ -501,6 +503,7 @@ globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY)}] = ${JSON.stri
   };
   const schedule = (delay) => {
     cancelScheduledRequest();
+    if (classicFallbackRequested || phase === 'stopped') return;
     const expectedPhase = phase;
     const expectedVersion = version;
     timer = setTimeout(() => {
@@ -510,7 +513,7 @@ globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY)}] = ${JSON.stri
     }, delay);
   };
   const send = (action, failure) => {
-    if (phase === 'stopped') return;
+    if (phase === 'stopped' || (classicFallbackRequested && action !== 'rebuild')) return;
     const generation = ++requestGeneration;
     activeRequest?.abort?.();
     activeRequest = wx.request({
@@ -524,6 +527,21 @@ globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY)}] = ${JSON.stri
         lastRequestError = undefined;
         const type = result?.data?.type;
         lastResponse = { action, statusCode: result?.statusCode, type };
+        if (classicFallbackRequested) {
+          const accepted = result?.statusCode === 410
+            || (result?.statusCode >= 200 && result?.statusCode < 300 && (type === 'retired' || type === 'rebuilding'));
+          if (!accepted) {
+            lastRequestError = {
+              action,
+              errMsg: 'request:fail classic fallback rejected (HTTP ' + String(result?.statusCode) + ', type ' + String(type) + ')',
+              statusCode: result?.statusCode,
+              type,
+            };
+            console.error('[weapp-vite] stateful HMR classic fallback request failed', lastRequestError);
+          }
+          globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY)}].stop();
+          return;
+        }
         if (type === 'error') console.error('[weapp-vite] stateful HMR stopped after a patch error');
         if (type === 'retired' || type === 'error' || result?.statusCode === 410) {
           globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY)}].stop();
@@ -558,9 +576,22 @@ globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY)}] = ${JSON.stri
           errMsg: String(error?.errMsg || ''),
           errno: error?.errno,
         };
+        if (classicFallbackRequested) {
+          console.error('[weapp-vite] stateful HMR classic fallback request failed', lastRequestError);
+          globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY)}].stop();
+          return;
+        }
         schedule(500);
       }
     });
+  };
+  const requestClassicFallback = (failure) => {
+    if (classicFallbackRequested || phase === 'stopped') return;
+    classicFallbackRequested = true;
+    pendingBatch = undefined;
+    cancelScheduledRequest();
+    phase = 'polling';
+    send('rebuild', failure);
   };
   const relaunch = () => {
     const pages = typeof getCurrentPages === 'function' ? getCurrentPages() : [];
@@ -576,11 +607,22 @@ globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY)}] = ${JSON.stri
   globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY)}] = {
     lastApply: undefined,
     payloadDelivered(filename) {
+      if (classicFallbackRequested || phase === 'stopped') return;
       if (payloads.indexOf(filename) < 0) { payloads.push(filename); schedule(0); }
     },
     getVersion() { return version; },
     getLastApply() { return this.lastApply; },
     getTransportState() { return { phase, version, initialReady, lastRequestError, lastResponse }; },
+    [${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_RUNTIME_CONTRACT_METHOD)}](nativeEntry = false) {
+      if (classicFallbackRequested || phase === 'stopped') return false;
+      const bridge = globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY)}];
+      const runtime = globalThis.__rolldown_runtime__;
+      if (bridge?.ready && typeof runtime?.prepareUpdate === 'function' && typeof runtime?.applyPreparedUpdate === 'function'
+        && (!nativeEntry || ['installNative', 'takeNativeDefinitions', 'App', 'Page', 'Component'].every(name => typeof bridge[name] === 'function'))) return true;
+      console.warn('[weapp-vite] stateful HMR bridge is not ready; rebuilding in classic mode');
+      requestClassicFallback({ reason: 'bridge-not-ready' });
+      return false;
+    },
     stop() {
       phase = 'stopped';
       requestGeneration++;
@@ -595,6 +637,7 @@ globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY)}] = ${JSON.stri
       this.lastApply = runtime.applyPreparedUpdate(preparedUpdate ?? runtime.prepareUpdate(changedIds));
     },
     receiveBatch(meta, apply) {
+      if (classicFallbackRequested || phase === 'stopped') return;
       if (phase === 'registering') {
         pendingBatch = { meta, apply };
         return;
@@ -604,12 +647,8 @@ globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY)}] = ${JSON.stri
       // 已接受的批次接管交付；后续 poll 或 rebuild 自己负责失败恢复。
       cancelScheduledRequest();
       phase = 'applying';
+      if (!this[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_RUNTIME_CONTRACT_METHOD)}]()) return;
       const bridge = globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY)}];
-      if (!bridge?.ready) {
-        console.warn('[weapp-vite] stateful HMR bridge is not ready; rebuilding in classic mode');
-        phase = 'polling';
-        return send('rebuild', { reason: 'bridge-not-ready' });
-      }
       bridge.beginUpdate?.();
       try {
         const preparedUpdate = globalThis.__rolldown_runtime__.prepareUpdate(meta.changedIds);
@@ -621,9 +660,11 @@ globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY)}] = ${JSON.stri
         const unsupportedRegistration = error?.code === ${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_UNSUPPORTED_REGISTRATION_CODE)};
         if (unsupportedRegistration) console.warn('[weapp-vite] stateful HMR registration requires a classic rebuild', error);
         else console.error('[weapp-vite] stateful HMR patch failed', error);
-        phase = 'polling';
         // 诊断按最坏 JSON 转义预留预算，避免超过服务端请求上限而丢失重建指令。
-        return send('rebuild', { reason: 'patch-failed', code: unsupportedRegistration ? error.code : undefined, message: String(error?.message || error).slice(0, 4096), stack: typeof error?.stack === 'string' ? error.stack.slice(0, 4096) : undefined });
+        const failure = { reason: 'patch-failed', code: unsupportedRegistration ? error.code : undefined, message: String(error?.message || error).slice(0, 4096), stack: typeof error?.stack === 'string' ? error.stack.slice(0, 4096) : undefined };
+        if (unsupportedRegistration) return requestClassicFallback(failure);
+        phase = 'polling';
+        return send('rebuild', failure);
       } finally {
         bridge.endUpdate?.();
       }

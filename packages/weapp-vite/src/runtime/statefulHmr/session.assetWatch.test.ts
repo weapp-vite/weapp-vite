@@ -81,14 +81,23 @@ it.each([false, true])('hands the asset lease to classic only after every old re
     await release.promise
   })
   const activate = vi.spyOn(runtime.classicIdeConfig, 'activate')
+  const handoff = vi.spyOn(runtime.classicIdeConfig, 'addPendingAssetHandoff')
   prepareStatefulClassicHandoff(ctx)
   const task = watcher.close()
   await closing.promise
   expect(activate).not.toHaveBeenCalled()
+  expect(handoff).not.toHaveBeenCalled()
   expect((await fs.readJSON(configPath) as { setting: { compileHotReLoad: boolean } }).setting.compileHotReLoad).toBe(true)
   release.resolve()
   await task
-  expect(activate).toHaveBeenCalledOnce()
+  expect(activate).not.toHaveBeenCalled()
+  expect(handoff).toHaveBeenCalledExactlyOnceWith(configPath, { assetOwner: expect.any(String), outDir: ctx.configService!.outDir })
+  expect(runtime.classicIdeConfig.hasPendingAssetHandoff(configPath, ctx.configService!.outDir)).toBe(true)
+  expect((await fs.readJSON(configPath) as { setting: { compileHotReLoad: boolean } }).setting.compileHotReLoad).toBe(true)
+  expect(await runtime.classicIdeConfig.readRequested(configPath)).toBe(original)
+  // 完整 classic 原生发布才激活交接；关闭旧 adapter 本身不能提前改变 IDE 重载模式。
+  expect(await runtime.classicIdeConfig.activatePendingAssetHandoff(configPath, ctx.configService!.outDir)).toBe(true)
+  expect(runtime.classicIdeConfig.hasPendingAssetHandoff(configPath)).toBe(false)
   expect(await fs.readJSON(configPath)).toEqual({ setting: { compileHotReLoad: false } })
   expect(await runtime.classicIdeConfig.readRequested(configPath)).toBe(original)
   await runtime.classicIdeConfig.close()
@@ -119,6 +128,7 @@ it.each(['failed-resource', 'terminal-started', 'different-project'] as const)('
   }, createDevBuildWatcher())
   const runtime = getHmrRuntimeSession(ctx)
   const activate = vi.spyOn(runtime.classicIdeConfig, 'activate')
+  const handoff = vi.spyOn(runtime.classicIdeConfig, 'addPendingAssetHandoff')
   const failure = new Error('old adapter close failed')
   const entered = Promise.withResolvers<void>()
   const release = Promise.withResolvers<void>()
@@ -150,6 +160,8 @@ it.each(['failed-resource', 'terminal-started', 'different-project'] as const)('
     await task
   }
   expect(activate).not.toHaveBeenCalled()
+  expect(handoff).not.toHaveBeenCalled()
+  expect(runtime.classicIdeConfig.hasPendingAssetHandoff(configPath)).toBe(false)
   expect(await fs.readFile(configPath, 'utf8')).toBe(original)
   await runtime.classicIdeConfig.close()
 })

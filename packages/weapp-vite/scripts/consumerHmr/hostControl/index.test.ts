@@ -48,6 +48,13 @@ async function fixture(configFile = 'original.config.mjs') {
   return { root, original, originalConfig, control, loadConfig: configModule.default }
 }
 
+async function controlEndpoint(control: Awaited<ReturnType<typeof createNativeHostControl>>) {
+  const source = await readFile(control.configFile, 'utf8')
+  const serialized = source.match(/createNativeHostControlPlugin\((\{[^{}\r\n]*\})\)/)?.[1]
+  expect(serialized).toBeDefined()
+  return JSON.parse(serialized!) as { port: number, token: string }
+}
+
 it('keeps the original config factory and closes the latest native server wrapper once', async () => {
   const current = await fixture()
   expect(path.dirname(current.control.configFile)).toBe(path.dirname(current.originalConfig))
@@ -182,10 +189,7 @@ it('retries owned resource removal after the sibling wrapper has already been re
 
 it('discards malformed unauthenticated messages without affecting the native peer', async () => {
   const current = await fixture()
-  const source = await readFile(current.control.configFile, 'utf8')
-  const serialized = source.match(/createNativeHostControlPlugin\((\{[^{}\r\n]*\})\)/)?.[1]
-  expect(serialized).toBeDefined()
-  const endpoint = JSON.parse(serialized!) as { port: number }
+  const endpoint = await controlEndpoint(current.control)
   const socket = connect({ host: '127.0.0.1', port: endpoint.port })
   await new Promise<void>((resolve, reject) => {
     socket.once('error', reject)
@@ -198,22 +202,35 @@ it('discards malformed unauthenticated messages without affecting the native pee
   expect(close).toHaveBeenCalledOnce()
 })
 
-it('preserves a native peer TCP reset as the shutdown failure without an unhandled readline error', async () => {
+it('keeps an unauthenticated reset isolated from the later native peer', async () => {
   const current = await fixture()
-  const source = await readFile(current.control.configFile, 'utf8')
-  const serialized = source.match(/createNativeHostControlPlugin\((\{[^{}\r\n]*\})\)/)?.[1]
-  expect(serialized).toBeDefined()
-  const endpoint = JSON.parse(serialized!) as { port: number, token: string }
+  const endpoint = await controlEndpoint(current.control)
   const socket = connect({ host: '127.0.0.1', port: endpoint.port })
+  await new Promise<void>((resolve, reject) => {
+    socket.once('error', reject)
+    socket.once('close', () => resolve())
+    socket.once('connect', () => socket.resetAndDestroy())
+  })
+  const close = vi.fn()
+  await (await current.loadConfig({ mode: 'valid-peer-after-reset' })).plugins[0].configureServer.handler({ close })
+  await current.control.requestClose()
+  expect(close).toHaveBeenCalledOnce()
+})
+
+it('rejects an authenticated reset before the cleanup receipt without an unhandled readline error', async () => {
+  const current = await fixture()
+  const endpoint = await controlEndpoint(current.control)
+  const socket = connect({ host: '127.0.0.1', port: endpoint.port })
+  const disconnected = new Promise<void>((resolve, reject) => {
+    socket.once('error', reject)
+    socket.once('close', () => resolve())
+    socket.once('connect', () => socket.write(`${JSON.stringify({ type: 'ready', token: endpoint.token })}\n`))
+    socket.once('data', () => socket.resetAndDestroy())
+  })
   const stopping = current.control.requestClose()
-  const rejected = expect(stopping).rejects.toMatchObject({ code: 'ECONNRESET' })
-  socket.once('connect', () => socket.write(`${JSON.stringify({ type: 'ready', token: endpoint.token })}\n`))
-  socket.once('data', () => socket.resetAndDestroy())
-  try {
-    await rejected
-    expect(current.control.requestClose()).toBe(stopping)
-  }
-  finally {
-    socket.destroy()
-  }
+  await Promise.all([
+    expect(stopping).rejects.toThrow(/ECONNRESET|disconnected before its cleanup receipt/),
+    disconnected,
+  ])
+  expect(current.control.requestClose()).toBe(stopping)
 })
