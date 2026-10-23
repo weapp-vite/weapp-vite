@@ -76,14 +76,14 @@ export const HMR_ACCEPTANCE_CAPABILITY_COVERAGE: HmrCapabilityCoverage[] = [
   {
     capabilityId: 'native-registration',
     unit: [`${RUNTIME}/statefulHmr/patchModule.test.ts`, `${RUNTIME}/statefulHmr/viteAdapter.test.ts`, `${RUNTIME}/statefulHmr/templateRegistration.test.ts`, 'packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/templateRegistration.test.ts', 'packages-runtime/wevu-compiler/src/plugins/jsx/templateRegistration.test.ts'],
-    build: [],
+    build: ['e2e/ci/stateful-app-shell-hmr.test.ts'],
     runtimeScenarios: ['unsupported-capability-classic-transition', 'compiled-template-registration-fallback', 'jsx-and-sibling-script-updates'],
     runtime: 'planned',
   },
   {
     capabilityId: 'patch-shape',
     unit: [`${RUNTIME}/statefulHmr/patchModule.test.ts`],
-    build: ['e2e/ci/stateful-app-shell-hmr.test.ts'],
+    build: [],
     runtimeScenarios: ['additional-wechat-capability-boundaries'],
     runtime: 'planned',
   },

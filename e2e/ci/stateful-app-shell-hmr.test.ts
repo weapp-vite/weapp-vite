@@ -52,7 +52,8 @@ it('hands app shell registration changes to classic and publishes removal and re
   ctx.onTestFailed(() => {
     process.stdout.write(dev.getOutput())
   })
-  const publication = createNativeHmrPublication(appRoot, dev, 'auto', ['patch-shape'], profileFile)
+  // 首次只修改模板文字，应由已发布的原生模板注册能力判断交接到 classic。
+  const publication = createNativeHmrPublication(appRoot, dev, 'auto', ['native-registration'], profileFile)
   try {
     await dev.waitFor(waitForStatefulHmrControl(path.join(dist, '__weapp_vite_hmr/control.js')), 'stateful initial output')
     await buildId()

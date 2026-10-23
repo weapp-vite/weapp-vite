@@ -226,9 +226,10 @@ describe('HMR semantic acceptance inventory', () => {
     for (const capabilityId of ['engine-full-reload', 'skyline']) {
       expect(HMR_ACCEPTANCE_CAPABILITY_COVERAGE.find(item => item.capabilityId === capabilityId)).toMatchObject({ runtime: 'planned', runtimeScenarios: ['additional-wechat-capability-boundaries'] })
     }
+    expect(HMR_ACCEPTANCE_CAPABILITY_COVERAGE.find(item => item.capabilityId === 'native-registration')!.build).toEqual(['e2e/ci/stateful-app-shell-hmr.test.ts'])
     expect(HMR_ACCEPTANCE_CAPABILITY_COVERAGE.find(item => item.capabilityId === 'patch-shape')).toMatchObject({
       runtime: 'planned',
-      build: ['e2e/ci/stateful-app-shell-hmr.test.ts'],
+      build: [],
       runtimeScenarios: ['additional-wechat-capability-boundaries'],
     })
     expect(HMR_ACCEPTANCE_CAPABILITY_COVERAGE.find(item => item.capabilityId === 'platform')).toMatchObject({ runtime: 'pending', runtimeScenarios: [], runtimeApplicability: { target: 'non-wechat', requiredBuildTests: ['e2e/ci/hmr-platform-fallback.test.ts'] } })
