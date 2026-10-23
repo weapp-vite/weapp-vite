@@ -197,9 +197,12 @@ it('closes every native watch publication before watcher shutdown, including con
     expect(receipt.boundary).toBe('native-byte-write')
     expect(receipt.outputs).toEqual({ 'pages/native/index.js': nativePublicationHash(source) })
   }
+  // 原生 watcher 可以合并或重复底层文件事件；关闭后逐轮核对发布，不能把保存次数当成构建次数。
+  await watcher.close()
+  watcher = undefined
   expect(builds).toBeGreaterThanOrEqual(3)
   const emitted = output.split('\n').filter(line => line.startsWith(NATIVE_PUBLICATION_PREFIX)).map(line => JSON.parse(line.slice(NATIVE_PUBLICATION_PREFIX.length)))
-  expect(emitted, JSON.stringify({ builds, emitted })).toHaveLength(3)
+  expect(emitted, JSON.stringify({ builds, emitted })).toHaveLength(builds)
 }, 30_000)
 
 it('rejects a newly logged receipt from an earlier source generation', async () => {
