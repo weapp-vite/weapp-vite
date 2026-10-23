@@ -40,6 +40,9 @@ export function mergeSmokeReports(reports) {
     artifact: report.artifact ?? 'registry',
     cacheMode: report.cacheMode ?? 'unknown',
     ...row,
+    source: report.source ?? (report.artifact && report.artifact !== 'registry' ? 'workspace' : 'published'),
+    sourceCommit: report.sourceCommit ?? null,
+    tarballSha256: report.tarballSha256 ?? null,
     dependencySource: report.dependencySource ?? 'registry',
     dependencyArtifacts: (report.dependencyArtifacts ?? []).map(({ name, filename }) => ({ name, filename: path.posix.basename(filename.replaceAll('\\', '/')) })),
   })
@@ -47,7 +50,7 @@ export function mergeSmokeReports(reports) {
   const failures = reports.flatMap(report => (report.failures ?? []).map(failure => attach(report, failure)))
   const registries = reports.flatMap(report => (report.registries ?? []).map(registry => attach(report, registry)))
   const summaries = reports.map(report => attach(report, report.summary ?? {}))
-  rows.sort((a, b) => ['os', 'nodeVersion', 'registryProfile', 'scenario', 'template'].reduce((order, key) => order || String(a[key] ?? '').localeCompare(String(b[key] ?? '')), 0))
+  rows.sort((a, b) => ['source', 'sourceCommit', 'os', 'nodeVersion', 'registryProfile', 'scenario', 'template'].reduce((order, key) => order || String(a[key] ?? '').localeCompare(String(b[key] ?? '')), 0))
   return { rows, failures, registries, summaries }
 }
 
@@ -60,19 +63,23 @@ export function renderSmokeReport({ rows, failures, registries, summaries }) {
     `Network/environment failures: ${failures.filter(failure => failure.kind === 'network').length}`,
     `Registry package/version unavailable: ${failures.filter(failure => failure.kind === 'registry-unavailable').length}`,
     '',
+    '| Scaffold source | Checkout commit | Scaffold tarball SHA256 | OS | Node | Status |',
+    '| --- | --- | --- | --- | --- | --- |',
+    ...summaries.map(summary => `| ${cell(summary.source)} | ${cell(summary.sourceCommit)} | ${cell(summary.tarballSha256)} | ${cell(summary.os)} | ${cell(summary.nodeVersion)} | ${cell(summary.status ?? 'legacy report')} |`),
+    '',
     ...summaries.map(summary => `- ${cell(summary.os)} / Node ${cell(summary.nodeVersion)} / Cache ${cell(summary.cacheMode)} / Dependencies ${cell(dependencies(summary))}: ${cell(summary.status ?? 'legacy report')}`),
     '',
-    '| OS | Node | Cache | Dependencies | Registry | Registry version | Actual scaffold versions | Official expected | Synchronization |',
-    '| --- | --- | --- | --- | --- | --- | --- | --- | --- |',
-    ...registries.map(registry => `| ${cell(registry.os)} | ${cell(registry.nodeVersion)} | ${cell(registry.cacheMode)} | ${cell(dependencies(registry))} | ${cell(registry.name)} | ${cell(registry.resolvedVersion)} | ${cell(registry.actualVersions?.join(', '))} | ${cell(registry.expectedOfficialVersion)} | ${cell(registry.lag)} |`),
+    '| Source | OS | Node | Cache | Dependencies | Registry | Registry version | Actual scaffold versions | Official expected | Synchronization |',
+    '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+    ...registries.map(registry => `| ${cell(registry.source)} | ${cell(registry.os)} | ${cell(registry.nodeVersion)} | ${cell(registry.cacheMode)} | ${cell(dependencies(registry))} | ${cell(registry.name)} | ${cell(registry.resolvedVersion)} | ${cell(registry.actualVersions?.join(', '))} | ${cell(registry.expectedOfficialVersion)} | ${cell(registry.lag)} |`),
     '',
-    '| OS | Node | Cache | Dependencies | Registry | Manager | Template | Actual scaffold | Official expected | Lag | Install | Build | Dev ready | Dev update |',
-    '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
-    ...rows.map(row => `| ${cell(row.os)} | ${cell(row.nodeVersion)} | ${cell(row.cacheMode)} | ${cell(dependencies(row))} | ${cell(row.registryProfile)} | ${cell(row.scenario)} | ${cell(row.template)} | ${cell(row.actualCreateVersion)} | ${cell(row.expectedOfficialVersion)} | ${cell(row.lag)} | ${formatMs(row.installMs)} | ${formatMs(row.buildMs)} | ${formatMs(row.devReadyMs)} | ${formatMs(row.devUpdateMs)} |`),
+    '| Source | OS | Node | Cache | Dependencies | Registry | Manager | Template | Actual scaffold | Official expected | Lag | Install | Build | Dev ready | Dev update |',
+    '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+    ...rows.map(row => `| ${cell(row.source)} | ${cell(row.os)} | ${cell(row.nodeVersion)} | ${cell(row.cacheMode)} | ${cell(dependencies(row))} | ${cell(row.registryProfile)} | ${cell(row.scenario)} | ${cell(row.template)} | ${cell(row.actualCreateVersion)} | ${cell(row.expectedOfficialVersion)} | ${cell(row.lag)} | ${formatMs(row.installMs)} | ${formatMs(row.buildMs)} | ${formatMs(row.devReadyMs)} | ${formatMs(row.devUpdateMs)} |`),
   ]
   if (failures.length) {
-    markdown.push('', '## Failures', '', '| OS | Node | Cache | Dependencies | Registry | Manager | Template | Stage | Kind | Actual scaffold | Error |', '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |')
-    markdown.push(...failures.map(failure => `| ${cell(failure.os)} | ${cell(failure.nodeVersion)} | ${cell(failure.cacheMode)} | ${cell(dependencies(failure))} | ${cell(failure.registryProfile)} | ${cell(failure.scenario)} | ${cell(failure.template)} | ${cell(failure.stage)} | ${cell(failure.kind ?? 'product')} | ${cell(failure.actualCreateVersion)} | ${cell(failure.error)} |`))
+    markdown.push('', '## Failures', '', '| Source | OS | Node | Cache | Dependencies | Registry | Manager | Template | Stage | Kind | Actual scaffold | Error |', '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |')
+    markdown.push(...failures.map(failure => `| ${cell(failure.source)} | ${cell(failure.os)} | ${cell(failure.nodeVersion)} | ${cell(failure.cacheMode)} | ${cell(dependencies(failure))} | ${cell(failure.registryProfile)} | ${cell(failure.scenario)} | ${cell(failure.template)} | ${cell(failure.stage)} | ${cell(failure.kind ?? 'product')} | ${cell(failure.actualCreateVersion)} | ${cell(failure.error)} |`))
   }
   if (!rows.length && !failures.length) {
     markdown.push('', 'No smoke report artifacts were found.')

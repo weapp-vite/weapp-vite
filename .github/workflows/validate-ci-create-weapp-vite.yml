@@ -9,6 +9,10 @@ on:
         type: string
         required: false
         default: latest
+      source:
+        type: string
+        required: false
+        default: published
       full-matrix:
         type: boolean
         required: false
@@ -79,6 +83,7 @@ jobs:
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
       package_spec: ${{ steps.inputs.outputs.package_spec }}
+      source: ${{ steps.inputs.outputs.source }}
       templates: ${{ steps.inputs.outputs.templates }}
       scenarios: ${{ steps.inputs.outputs.scenarios }}
       registries: ${{ steps.inputs.outputs.registries }}
@@ -95,16 +100,22 @@ jobs:
         env:
           EVENT_NAME: ${{ github.event_name }}
           INPUT_PACKAGE_SPEC: ${{ github.event.inputs['package-spec'] || '' }}
+          INPUT_SOURCE: ${{ inputs.source || 'published' }}
           INPUT_TEMPLATES: ${{ github.event.inputs.templates || '' }}
           INPUT_SCENARIOS: ${{ github.event.inputs.scenarios || '' }}
           INPUT_REGISTRIES: ${{ github.event.inputs.registries || '' }}
         run: |
           package_spec="${INPUT_PACKAGE_SPEC:-latest}"
+          case "${INPUT_SOURCE}" in
+            published|workspace) ;;
+            *) echo 'Unsupported scaffold smoke source' >&2; exit 1 ;;
+          esac
           templates="${INPUT_TEMPLATES:-default,wevu,tailwindcss}"
           scenarios="${INPUT_SCENARIOS:-pnpm}"
           registries="${INPUT_REGISTRIES:-npmjs,npmmirror}"
           {
             echo "package_spec=${package_spec}"
+            echo "source=${INPUT_SOURCE}"
             echo "templates=${templates}"
             echo "scenarios=${scenarios}"
             echo "registries=${registries}"
@@ -156,7 +167,7 @@ jobs:
   smoke:
     if: needs.pr-context.outputs.should_run == 'true'
     needs: [pr-context, prepare]
-    name: Create Smoke (${{ matrix.os }} / Node ${{ matrix.node-version }} / ${{ matrix.scope }})
+    name: Create Smoke (${{ needs.prepare.outputs.source }} / ${{ matrix.os }} / Node ${{ matrix.node-version }} / ${{ matrix.scope }})
     timeout-minutes: 90
     runs-on: ${{ matrix.os }}
     strategy:
@@ -189,6 +200,21 @@ jobs:
           corepack enable
           corepack prepare yarn@1.22.22 --activate
 
+      - name: Install workspace dependencies
+        if: needs.prepare.outputs.source == 'workspace'
+        run: pnpm install --frozen-lockfile
+
+      - name: Build workspace scaffold
+        if: needs.prepare.outputs.source == 'workspace'
+        run: pnpm exec turbo run build --filter=create-weapp-vite...
+
+      - name: Pack frozen workspace scaffold
+        id: workspace
+        if: needs.prepare.outputs.source == 'workspace'
+        env:
+          CREATE_WEAPP_VITE_SOURCE_COMMIT: ${{ needs.pr-context.outputs.checkout_sha }}
+        run: node scripts/createWeappViteSmoke/workspace.mjs
+
       - name: Print package manager versions
         shell: bash
         working-directory: ${{ runner.temp }}
@@ -213,6 +239,10 @@ jobs:
       - name: Run create-weapp-vite smoke matrix
         env:
           CREATE_WEAPP_VITE_SPEC: ${{ needs.prepare.outputs.package_spec }}
+          CREATE_WEAPP_VITE_SOURCE: ${{ needs.prepare.outputs.source }}
+          CREATE_WEAPP_VITE_SOURCE_COMMIT: ${{ needs.pr-context.outputs.checkout_sha }}
+          CREATE_WEAPP_VITE_TARBALL: ${{ steps.workspace.outputs.tarball }}
+          CREATE_WEAPP_VITE_TARBALL_SHA256: ${{ steps.workspace.outputs.tarball_sha256 }}
           CREATE_WEAPP_VITE_TEMPLATES: ${{ matrix.templates || needs.prepare.outputs.templates }}
           CREATE_WEAPP_VITE_SCENARIOS: ${{ needs.prepare.outputs.scenarios }}
           CREATE_WEAPP_VITE_REGISTRIES: ${{ needs.prepare.outputs.registries }}
@@ -225,14 +255,14 @@ jobs:
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: create-weapp-vite-smoke-report-${{ matrix.os }}-node${{ matrix.node-version }}-${{ matrix.scope }}
+          name: create-weapp-vite-smoke-report-${{ needs.prepare.outputs.source }}-${{ matrix.os }}-node${{ matrix.node-version }}-${{ matrix.scope }}
           path: ${{ runner.temp }}/create-weapp-vite-smoke-report/report.json
           if-no-files-found: warn
 
   report:
     name: Smoke Report
     if: needs.pr-context.outputs.should_run == 'true' && (!cancelled() && needs.pr-context.outputs.is_pr != 'true')
-    needs: [pr-context, smoke]
+    needs: [pr-context, prepare, smoke]
     runs-on: ubuntu-latest
 
     steps:
@@ -245,7 +275,7 @@ jobs:
       - name: Download smoke report artifacts
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          pattern: create-weapp-vite-smoke-report-*
+          pattern: create-weapp-vite-smoke-report-${{ needs.prepare.outputs.source }}-*
           path: artifacts/create-weapp-vite-smoke-report
           merge-multiple: false
 
@@ -258,5 +288,5 @@ jobs:
       - name: Upload merged smoke report
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: create-weapp-vite-smoke-report-summary
+          name: create-weapp-vite-smoke-report-summary-${{ needs.prepare.outputs.source }}
           path: artifacts/create-weapp-vite-smoke-report-summary

@@ -9,6 +9,7 @@ import { applyDependencyTarballs, describeDependencyTarballs, resolveDependencyT
 import { timedRunCommand } from './createWeappViteSmoke/process.mjs'
 import { classifyFailure, createPnpmProfileConfig, createRegistryEnvironment, REGISTRY_PROFILES, reportError, resolveRegistryProfiles, resolveRegistryVersion, versionLag } from './createWeappViteSmoke/registry.mjs'
 import { runDevSmoke } from './createWeappViteSmoke/runtime.mjs'
+import { resolveSmokeSource } from './createWeappViteSmoke/source.mjs'
 import { assertPreparedProject, DEFAULT_TEMPLATE_NAMES, validateCreatedProjectStructure } from './createWeappViteSmoke/templates.mjs'
 
 const INSTALL_TIMEOUT_MS = Number(process.env.CREATE_WEAPP_VITE_INSTALL_TIMEOUT_MS || 10 * 60 * 1000)
@@ -115,6 +116,12 @@ async function main() {
       throw new Error('CREATE_WEAPP_VITE_TARBALL must point to a packed .tgz file')
     }
   }
+  const source = await resolveSmokeSource({
+    source: process.env.CREATE_WEAPP_VITE_SOURCE,
+    sourceCommit: process.env.CREATE_WEAPP_VITE_SOURCE_COMMIT,
+    tarball,
+    expectedTarballSha256: process.env.CREATE_WEAPP_VITE_TARBALL_SHA256,
+  })
   const tmpRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'create-weapp-vite-smoke-'))
   const { cacheRoot, cacheMode } = resolveSmokeCache(tmpRoot, process.env.CREATE_WEAPP_VITE_CACHE_ROOT)
   const privateRoots = [...dependencyTarballs.flatMap(({ tarball }) => [tarball, tarball.replaceAll('\\', '/')]), cacheRoot, tmpRoot, os.homedir()]
@@ -124,6 +131,7 @@ async function main() {
     runId: process.env.GITHUB_RUN_ID || '',
     runAttempt: process.env.GITHUB_RUN_ATTEMPT || '',
     packageSpec,
+    ...source,
     artifact: tarball ? path.basename(tarball) : 'registry',
     ...describeDependencyTarballs(dependencyTarballs),
     cacheMode,

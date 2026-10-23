@@ -13,6 +13,14 @@ on:
         required: false
         default: latest
         type: string
+      source:
+        description: scaffold source; workspace packs the frozen checkout
+        required: false
+        default: published
+        type: choice
+        options:
+          - published
+          - workspace
       full-matrix:
         description: run the full OS / Node matrix
         required: false
@@ -54,7 +62,7 @@ on:
     - cron: '0 3 * * *'
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event_name }}-${{ inputs.pr-number || github.ref || github.run_id }}
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ inputs.source || 'published' }}-${{ inputs.pr-number || github.ref || github.run_id }}
   cancel-in-progress: true
 
 permissions:
@@ -79,6 +87,7 @@ jobs:
     with:
       pr_context: ${{ needs.pr-context.outputs.pr_context }}
       package-spec: ${{ inputs.package-spec || 'latest' }}
+      source: ${{ inputs.source || 'published' }}
       full-matrix: ${{ inputs.full-matrix || false }}
       os: ${{ inputs.os || 'ubuntu-latest' }}
       node-version: ${{ inputs.node-version || '24' }}
