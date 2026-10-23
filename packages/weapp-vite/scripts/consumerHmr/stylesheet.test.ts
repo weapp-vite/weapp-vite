@@ -14,8 +14,8 @@ import { assertRetiredStatefulTransport, assertStylesheetClassic } from './style
 
 const endpointPath = '/__weapp_vite_stateful_hmr__'
 const endpoint = new URL(endpointPath, 'http://localhost').href
-const fallback = '[weapp-vite] HMR fallback {"from":"stateful-experimental","to":"classic","reason":"stylesheet-output","message":"compiled stylesheet changed"}\n'
-const ready = '[weapp-vite] HMR classic ready {"reason":"stylesheet-output"}\n'
+const fallback = '[weapp-vite] HMR fallback {"from":"stateful-experimental","to":"classic","reason":"stylesheet-output","message":"compiled stylesheet changed","requested":"stateful-experimental","actual":"classic","phase":"switching"}\n'
+const ready = '[weapp-vite] HMR classic ready {"reason":"stylesheet-output","requested":"stateful-experimental","actual":"classic","phase":"classic"}\n'
 const cleanups: (() => Promise<unknown>)[] = []
 
 afterEach(async () => {
@@ -93,6 +93,14 @@ describe('packed consumer stylesheet classic evidence', () => {
     ['repeated readiness', fallback + ready + ready],
     ['wrong capability', (fallback + ready).replaceAll('stylesheet-output', 'config-json')],
     ['wrong effective mode', (fallback + ready).replace('"to":"classic"', '"to":"stateful-experimental"')],
+    ['missing configured request', (fallback + ready).replaceAll(',"requested":"stateful-experimental"', '')],
+    ['different configured request', (fallback + ready).replaceAll('"requested":"stateful-experimental"', '"requested":"auto"')],
+    ['missing actual mode', (fallback + ready).replaceAll(',"actual":"classic"', '')],
+    ['stateful actual mode', (fallback + ready).replaceAll('"actual":"classic"', '"actual":"stateful-experimental"')],
+    ['missing phase', (fallback + ready).replace(/,"phase":"[^"]+"/g, '')],
+    ['decision already ready', (fallback + ready).replace('"phase":"switching"', '"phase":"classic"')],
+    ['readiness still switching', (fallback + ready).replaceAll('"phase":"classic"', '"phase":"switching"')],
+    ['readiness with another request', fallback + ready.replace('"requested":"stateful-experimental"', '"requested":"auto"')],
     ['readiness before decision', ready + fallback],
     ['ordinary build error', `${fallback}${ready}Build failed\n`],
   ])('rejects two config evaluations with %s', async (_label, output) => {

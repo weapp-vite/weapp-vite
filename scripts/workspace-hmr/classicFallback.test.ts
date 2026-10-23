@@ -21,8 +21,8 @@ vi.mock('node:timers/promises', async (importOriginal) => {
   }
 })
 
-const requested = '[weapp-vite] HMR fallback {"from":"stateful-experimental","to":"classic","reason":"native-registration"}'
-const ready = '[weapp-vite] HMR classic ready {"reason":"native-registration"}'
+const requested = '[weapp-vite] HMR fallback {"from":"stateful-experimental","to":"classic","reason":"native-registration","message":"native registration changed","requested":"auto","actual":"classic","phase":"switching"}'
+const ready = '[weapp-vite] HMR classic ready {"reason":"native-registration","requested":"auto","actual":"classic","phase":"classic"}'
 
 describe('classic bridge registration aliases', () => {
   it.each([
@@ -84,8 +84,31 @@ describe('workspace HMR classic fallback evidence', () => {
   })
 
   it('rejects a readiness reason from another transition', async () => {
-    output = `${requested}\n[weapp-vite] HMR classic ready {"reason":"entry-topology"}`
+    output = `${requested}\n${ready.replace('native-registration', 'entry-topology')}`
     await expect(fallback.settle({ deadline: Date.now() + 100 })).rejects.toThrow('does not match')
+  })
+
+  it.each(['auto', 'stateful-experimental'])('requires consistent %s request, actual mode and phases before accepting classic', async (configured) => {
+    output = `${requested}\n${ready}`.replaceAll('"requested":"auto"', `"requested":"${configured}"`)
+    await expect(fallback.settle({ deadline: Date.now() + 100 })).resolves.toBe(true)
+    expect(fallback.actualMode).toBe('classic')
+  })
+
+  it.each([
+    ['missing request', requested.replace(',"requested":"auto"', ''), ready],
+    ['classic request', requested.replace('"requested":"auto"', '"requested":"classic"'), ready],
+    ['wrong decision actual', requested.replace('"actual":"classic"', '"actual":"stateful-experimental"'), ready],
+    ['wrong decision phase', requested.replace('"phase":"switching"', '"phase":"classic"'), ready],
+    ['missing ready request', requested, ready.replace(',"requested":"auto"', '')],
+    ['different ready request', requested, ready.replace('"requested":"auto"', '"requested":"stateful-experimental"')],
+    ['missing ready actual', requested, ready.replace(',"actual":"classic"', '')],
+    ['wrong ready actual', requested, ready.replace('"actual":"classic"', '"actual":"stateful-experimental"')],
+    ['missing ready phase', requested, ready.replace(',"phase":"classic"', '')],
+    ['wrong ready phase', requested, ready.replace('"phase":"classic"', '"phase":"switching"')],
+  ])('rejects invalid log mode evidence: %s', async (_label, transition, completion) => {
+    output = `${transition}\n${completion}`
+    await expect(fallback.settle({ deadline: Date.now() + 100 })).rejects.toThrow(/Invalid classic fallback|does not match/)
+    expect(fallback.actualMode).toBeUndefined()
   })
 
   it.each(['', `\n${ready}`])('rejects a repeated transition even if its earlier readiness matches: %s', async (completion) => {
