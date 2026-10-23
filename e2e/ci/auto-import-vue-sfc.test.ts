@@ -538,6 +538,7 @@ describeAutoImportSuite('auto import local components (e2e)', { concurrent: fals
       )
 
       try {
+        await devProcess.waitForInitialBuild()
         const pageJsonPath = path.join(DIST_ROOT, 'pages/index/index.json')
         const autoCardKey = resolveVueComponentKey('AutoCard')
         await devProcess.waitFor(
@@ -661,6 +662,7 @@ describeAutoImportSuite('auto import local components (e2e)', { concurrent: fals
       )
 
       try {
+        await devProcess.waitForInitialBuild()
         const pageJsonPath = path.join(DIST_ROOT, 'pages/index/index.json')
         const autoCardKey = resolveVueComponentKey('AutoCard')
         await devProcess.waitFor(
@@ -771,6 +773,7 @@ describeAutoImportSuite('auto import local components (e2e)', { concurrent: fals
       )
 
       try {
+        await devProcess.waitForInitialBuild()
         const pageJsonPath = path.join(DIST_ROOT, 'pages/index/index.json')
         const hotCardKey = resolveVueComponentKey('HotCard')
         await devProcess.waitFor(

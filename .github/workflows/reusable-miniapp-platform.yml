@@ -158,6 +158,7 @@ jobs:
       artifact_path: |
         docs/reports/dom-acceptance/**
         .tmp/ide-dom-headless-preflight/**
+        docs/reports/*-ide-warning-report/dev-process/**
         docs/reports/*-e2e-ide-dom-headless-*-suite-report/**
       build_artifact_scope: packages/weapp-vite,mpcore/packages/simulator
       timing_artifact_name: timing-ide-dom-headless-${{ inputs.runs_on }}-${{ inputs.node_version }}-${{ inputs.mode }}-${{ matrix.shard }}

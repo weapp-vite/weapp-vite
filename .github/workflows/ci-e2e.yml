@@ -29,6 +29,7 @@ on:
           - workspace-hmr
           - windows-process-narrow
           - windows-native-runtime-cleanup
+          - windows-startup-fallback
           - windows-dev-cleanup
           - native-compiler-batch
           - bun-cli

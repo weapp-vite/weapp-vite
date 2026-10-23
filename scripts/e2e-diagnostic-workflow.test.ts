@@ -58,7 +58,7 @@ describe('bounded HMR workflow diagnosis', () => {
 
   it('requires an explicit manual selection and uses a separate concurrency group', async () => {
     const config = await workflow()
-    expect(config.on.workflow_dispatch.inputs['hmr-diagnostic']).toMatchObject({ default: 'full', options: ['full', 'shared-layout-windows', 'lifecycle', 'runtime-publication', 'plugin-watch-readiness', 'workspace-hmr', 'windows-process-narrow', 'windows-native-runtime-cleanup', 'windows-dev-cleanup', 'native-compiler-batch', 'bun-cli'] })
+    expect(config.on.workflow_dispatch.inputs['hmr-diagnostic']).toMatchObject({ default: 'full', options: ['full', 'shared-layout-windows', 'lifecycle', 'runtime-publication', 'plugin-watch-readiness', 'workspace-hmr', 'windows-process-narrow', 'windows-native-runtime-cleanup', 'windows-startup-fallback', 'windows-dev-cleanup', 'native-compiler-batch', 'bun-cli'] })
     expect(config.concurrency.group).toContain('inputs.hmr-diagnostic || \'full\'')
     const job = config.jobs['shared-layout-windows-diagnostic']!
     expect(job.if).toBe(diagnosticCondition('shared-layout-windows'))
@@ -147,6 +147,23 @@ describe('bounded HMR workflow diagnosis', () => {
       artifact_name: `windows-native-runtime-cleanup-node-\${{ matrix.node-version }}-\${{ needs.pr-context.outputs.checkout_sha }}`,
       artifact_path: '.tmp/windows-native-runtime-cleanup/**',
     })
+  })
+
+  it('retains startup fallback output and IPC resource traces in both focused and full Windows validation', async () => {
+    const { jobs } = await workflow()
+    const job = jobs['windows-startup-fallback-diagnostic']!
+    expect(job.if).toBe(diagnosticCondition('windows-startup-fallback'))
+    expect(job.strategy?.matrix).toEqual({ 'node-version': [22, 24] })
+    expect(job.with?.main_command).toContain('WEAPP_VITE_E2E_RUNTIME_PROVIDER=headless WEAPP_VITE_E2E_DOM_ACCEPTANCE=1')
+    expect(job.with?.main_command).toContain('WEAPP_VITE_E2E_DEV_SHUTDOWN_TRACE=1 WEAPP_VITE_E2E_DEV_PROCESS_TRACE_DIR=.tmp/windows-startup-fallback/dev-process')
+    expect(job.with?.main_command).toContain('-c e2e/vitest.e2e.headless.config.ts e2e/ide/hmr-startup-fallback.runtime.test.ts')
+    expect(job.with?.artifact_path).toContain('.tmp/windows-startup-fallback/**')
+    expect(job.with?.artifact_path).toContain('docs/reports/dom-acceptance/**')
+    const child = readWorkflowFixture('reusable-miniapp-platform.yml')
+    const full = child.jobs['ide-dom-headless'].with
+    expect(full.main_command).toContain('WEAPP_VITE_E2E_DEV_SHUTDOWN_TRACE=1')
+    expect(full.artifact_path).toContain('docs/reports/*-ide-warning-report/dev-process/**')
+    expect(full.artifact_path).toContain('docs/reports/dom-acceptance/**')
   })
 
   it('compares complete Windows shards while retaining the original shard and query budget', async () => {
@@ -238,7 +255,7 @@ describe('bounded HMR workflow diagnosis', () => {
       expect(jobs[name]?.strategy?.matrix.include?.map(row => `${row.os}/${row['node-version']}`).sort()).toEqual(expected)
     }
     for (const [name, job] of Object.entries(jobs)) {
-      if (['pr-context', 'shared-layout-windows-diagnostic', 'lifecycle-diagnostic', 'runtime-publication-diagnostic', 'plugin-watch-readiness-diagnostic', 'windows-process-narrow-diagnostic', 'windows-native-runtime-cleanup-diagnostic', 'windows-dev-cleanup-diagnostic', 'native-compiler-batch-diagnostic', 'bun-build-diagnostic'].includes(name)) {
+      if (['pr-context', 'shared-layout-windows-diagnostic', 'lifecycle-diagnostic', 'runtime-publication-diagnostic', 'plugin-watch-readiness-diagnostic', 'windows-process-narrow-diagnostic', 'windows-native-runtime-cleanup-diagnostic', 'windows-startup-fallback-diagnostic', 'windows-dev-cleanup-diagnostic', 'native-compiler-batch-diagnostic', 'bun-build-diagnostic'].includes(name)) {
         continue
       }
       expect(job.if, `${name} must stay outside a bounded diagnostic run`).toSatisfy((condition: string) =>
