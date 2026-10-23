@@ -1,5 +1,6 @@
 /* eslint-disable ts/no-use-before-define */
 import type { DevHeapUsage } from '../../../e2e/utils/dev-memory'
+import type { AutoImportHmrRuntimeObservation } from './utils/hmrFallback'
 import { Buffer } from 'node:buffer'
 import { createHash } from 'node:crypto'
 import { cp, lstat, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
@@ -22,6 +23,7 @@ import { linkBenchmarkDependencies } from './utils/benchmarkDependencies'
 import { benchmarkModeSelected, benchmarkReportResults } from './utils/benchmarkSelection'
 import { createBenchmarkPath, resolveBenchmarkTarget } from './utils/benchmarkTarget'
 import { patchProjectConfigFile } from './utils/config-file'
+import { prepareAutoImportHmrBaselines } from './utils/hmrBaseline'
 import {
   AUTO_IMPORT_HMR_DIAGNOSTIC_OWNER_ENV,
   AUTO_IMPORT_HMR_DIAGNOSTIC_PHASE_ENV,
@@ -31,6 +33,7 @@ import {
   isAutoImportHmrDiagnosticProfileEnabled,
 } from './utils/hmrDiagnostic'
 import { readDiagnosticProfile, snapshotOutputCheckpoint, snapshotPublishedOutputs } from './utils/hmrDiagnosticEvidence'
+import { createAutoImportHmrFallback } from './utils/hmrFallback'
 import { HMR_OUTPUT_POLL_INTERVAL_MS, measureFileMarkerUpdate } from './utils/hmrOutput'
 import { formatMemoryMiB, summarizeOptionalMemory } from './utils/process-memory'
 
@@ -209,10 +212,11 @@ async function measureHmr(options: {
   const profilePath = path.join(project.tempDir, '.diagnostics/hmr-profile.jsonl')
   let measured: {
     startupMs: number
-    cycles: Array<{ editMs: number, restoreMs: number }>
+    cycles: Array<{ editMs: number, restoreMs: number, editRuntime: AutoImportHmrRuntimeObservation, restoreRuntime: AutoImportHmrRuntimeObservation }>
     startupMemory?: DevHeapUsage
     updateMs: number
     updateMemory?: DevHeapUsage
+    restoreBaselines: Awaited<ReturnType<typeof prepareAutoImportHmrBaselines>>['evidence']
     diagnostic?: Record<string, unknown>
     pairEvidence?: Record<string, unknown>
   } | undefined
@@ -251,6 +255,7 @@ async function measureHmr(options: {
       const originalOutput = await readFile(outputPath, 'utf8')
       const originalOutputSha256 = diagnosticEnabled ? hashWxmlOutput(originalOutput) : undefined
       const controlPath = path.join(distDir, WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE)
+      const classicFallback = createAutoImportHmrFallback(distDir, () => dev.getOutput(), diagnosticEnabled || diagnosticPairEnabled || diagnosticProfileEnabled)
       const controlSource = await readFile(controlPath, 'utf8').catch((error: NodeJS.ErrnoException) => {
         if (error.code === 'ENOENT') {
           return undefined
@@ -258,23 +263,36 @@ async function measureHmr(options: {
         throw error
       })
       const client = controlSource === undefined ? undefined : new StatefulHmrAuditClient()
+      const initialRuntime = controlSource === undefined ? 'classic' : 'stateful-experimental'
       if (client && controlSource !== undefined) {
         await client.ensureRegistered(parseStatefulHmrControlSource(controlSource), DEV_TIMEOUT_MS)
       }
+      const restoreBaselines = await prepareAutoImportHmrBaselines({
+        workspaceRoot: workspaceRootDir,
+        weappViteDir: workspaceWeappViteDir,
+        source: seededSource,
+        filename: pagePath,
+        initialOutput: originalOutput,
+        initialRuntime,
+      })
       const initialOutputSnapshot = diagnosticPairEnabled
         ? await snapshotOutputCheckpoint(distDir, { type: 'initial-build-ready' }, controlSource)
         : undefined
       const measureArtifact = async (marker: string, source: string, signal: AbortSignal, absent = false) => {
+        classicFallback.assertDiagnosticRuntime()
+        const runtimeBefore = classicFallback.actualMode ?? initialRuntime
+        const expectedOutput = runtimeBefore === 'classic' ? restoreBaselines.classic : restoreBaselines.initial
         let observation: { sourceWriteStartedAt: number, wxmlObservedAt: number, elapsedMs: number, output: string } | undefined
         const acknowledgementOffset = acknowledgementObservations.length
         const publishSignals: Array<{ type: string, targetVersion?: number, observedAt: number, clock: string }> = []
         const helperResult = await measureStatefulTemplateArtifact({
           client,
+          isClassicFallback: classicFallback.isClassicFallback,
           readControl: async signal => parseStatefulHmrControlSource(await readFile(controlPath, { encoding: 'utf8', signal })),
           isCurrentUpdate: async (signal) => {
             const output = await readFile(outputPath, { encoding: 'utf8', signal })
             signal?.throwIfAborted()
-            return absent ? output === originalOutput : output.includes(marker)
+            return absent ? output === expectedOutput : output.includes(marker)
           },
           timeoutMs: DEV_TIMEOUT_MS,
           signal,
@@ -297,18 +315,24 @@ async function measureHmr(options: {
           measure: signal => dev.waitFor(measureFileMarkerUpdate({
             outputPath,
             marker,
-            expectedOutput: absent ? originalOutput : undefined,
+            expectedOutput: absent ? expectedOutput : undefined,
             update: () => writeFile(pagePath, source, 'utf8'),
             timeoutMs: DEV_TIMEOUT_MS,
             signal,
             onObserved: diagnosticEnabled ? (value) => { observation = value } : undefined,
           }), `${mode} ${absent ? 'restored hmr output' : 'emitted hmr marker'}`),
         })
+        classicFallback.assertDiagnosticRuntime()
+        const runtime: AutoImportHmrRuntimeObservation = {
+          runtimeBefore,
+          runtimeAfter: classicFallback.actualMode ?? initialRuntime,
+          ...classicFallback.evidence,
+        }
         if (!diagnosticEnabled) {
           if (!diagnosticPairEnabled) {
-            return { ms: helperResult, diagnostic: undefined, pairEvidence: undefined }
+            return { ms: helperResult, runtime, diagnostic: undefined, pairEvidence: undefined }
           }
-          return { ms: helperResult, diagnostic: undefined, pairEvidence: await snapshotPublishedOutputs(distDir, publishSignals, client?.supportsExplicitAcknowledgement ?? false, controlSource) }
+          return { ms: helperResult, runtime, diagnostic: undefined, pairEvidence: await snapshotPublishedOutputs(distDir, publishSignals, client?.supportsExplicitAcknowledgement ?? false, controlSource) }
         }
         const helperCompletedAt = performance.now()
         if (!observation) {
@@ -342,11 +366,12 @@ async function measureHmr(options: {
           : undefined
         return {
           ms: helperResult,
+          runtime,
           diagnostic,
           pairEvidence,
         }
       }
-      const cycles: Array<{ editMs: number, restoreMs: number }> = []
+      const cycles: NonNullable<typeof measured>['cycles'] = []
       const diagnosticCycles: Array<{ cycle: number, edit: Record<string, unknown>, restore: Record<string, unknown> }> = []
       for (let cycle = 0; cycle < (process.env.AUTO_IMPORT_BENCH_PAIRED === '1' ? 2 : 1); cycle++) {
         const marker = `auto-import-hmr-${mode}-${usedTags.length}-${iteration}-${cycle}`
@@ -355,7 +380,7 @@ async function measureHmr(options: {
         try {
           const edit = await measureArtifact(marker, updatedSource, measurementAbort.signal)
           const restore = await measureArtifact(marker, seededSource, measurementAbort.signal, true)
-          cycles.push({ editMs: edit.ms, restoreMs: restore.ms })
+          cycles.push({ editMs: edit.ms, restoreMs: restore.ms, editRuntime: edit.runtime, restoreRuntime: restore.runtime })
           if (diagnosticEnabled) {
             diagnosticCycles.push({ cycle, edit: edit.diagnostic!, restore: restore.diagnostic! })
           }
@@ -376,6 +401,7 @@ async function measureHmr(options: {
         startupMemory,
         updateMs,
         updateMemory,
+        restoreBaselines: restoreBaselines.evidence,
       }
       if (diagnosticEnabled) {
         measured.diagnostic = {

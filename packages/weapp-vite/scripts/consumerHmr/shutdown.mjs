@@ -125,7 +125,16 @@ export async function stopConsumerProcess({ child, done, operation, toolchain, t
     const result = await within((async () => {
       if (requestShutdown) {
         // 父 CLI 可先退出；完全排空前仍通过本任务 token 关闭叶宿主。
-        await Promise.race([Promise.resolve().then(requestShutdown), completion])
+        await Promise.race([
+          Promise.resolve().then(requestShutdown),
+          completion.then((result) => {
+            // 非零启动失败直接保留原始退出错误；退出成功不能代替资源关闭回执。
+            if (result.error || result.code !== 0 || result.signal) {
+              return
+            }
+            return new Promise(() => {})
+          }),
+        ])
       }
       else if (operation === 'build-watch') {
         await requestWatchStop(child, toolchain)

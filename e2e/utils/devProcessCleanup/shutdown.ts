@@ -20,6 +20,19 @@ export interface DevProcessExitInfo {
 export const DEV_PROCESS_GRACEFUL_TIMEOUT_MS = 90_000
 export const DEV_PROCESS_GRACEFUL_SHUTDOWN_ERROR_NAME = 'DevProcessGracefulShutdownError'
 
+/** 成功退出仍须等待关闭回执；启动失败则让调用方立即报告原始进程错误。 */
+export function requestDevProcessShutdown(request: () => Promise<void>, settledExit: Promise<DevProcessExitInfo>): Promise<void> {
+  return Promise.race([
+    Promise.resolve().then(request),
+    settledExit.then((info) => {
+      if (info.exitCode !== 0 || info.signal || info.error) {
+        return
+      }
+      return new Promise<void>(() => {})
+    }),
+  ])
+}
+
 /** 进程终结不代表开发会话已经恢复配置和释放资源，保留为不可改写的验收失败。 */
 export class DevProcessGracefulShutdownError extends Error {
   readonly name = DEV_PROCESS_GRACEFUL_SHUTDOWN_ERROR_NAME
@@ -36,7 +49,7 @@ export function createDevProcessShutdownFailure(info: DevProcessExitInfo, summar
       `Dev process graceful session cleanup did not complete before its deadline, cancellation, or forced termination: ${summary}; gracefulTimeoutMs=${forced.gracefulTimeoutMs}; cancelled=${Boolean(forced.cancelled)}`,
     ), forced, { cause: forced.requestError ?? forced.cancelled?.reason ?? info.error })
   }
-  if (info.exitCode !== 0 || info.signal) {
+  if (info.exitCode !== 0 || info.signal || info.error) {
     return new Error(formatMessage(`Dev process failed during graceful shutdown: ${summary}`), { cause: info.error })
   }
 }

@@ -4,7 +4,7 @@ import type { SidecarWatcher, WatcherInstance } from './watcher/types'
 import { AsyncLocalStorage } from 'node:async_hooks'
 import { clearWxmlDependencies } from '../wxml/processing/dependencies'
 import { clearIndependentWatchFiles } from './buildPlugin/independentWatch'
-import { closeWatcherControllerResources } from './watcher/controllerClose'
+import { closeWatcherControllerResources, hasWatcherControllerOwners, takeWatcherControllerOwners } from './watcher/controllerClose'
 
 export type { WatcherInstance } from './watcher/types'
 
@@ -132,7 +132,7 @@ function createWatcherService(ctx: MutableCompilerContext): WatcherService {
       }
       // 配置重启的新代可以只登记独立依赖；空 watcher 图不代表旧 drain 已释放这些资源。
       const independent = ctx.runtimeState.build.independent
-      if (closeAllTask && !rollupWatcherMap.size && !sidecarWatcherMap.size && !independent.watchFiles.size && !independent.watchListeners.size) {
+      if (closeAllTask && !rollupWatcherMap.size && !sidecarWatcherMap.size && !independent.watchFiles.size && !independent.watchListeners.size && !hasWatcherControllerOwners(service)) {
         return closeAllTask
       }
       const previous = closeAllTask
@@ -142,10 +142,11 @@ function createWatcherService(ctx: MutableCompilerContext): WatcherService {
       closeAllTask = drain.task
       serviceDrains.set(service, drain)
       const closeWatchers = () => {
-        const controllers = [...rollupWatcherMap.values()]
+        const owners = takeWatcherControllerOwners(service)
+        const controllers = [...owners, ...rollupWatcherMap.values()]
         const sidecars = [...sidecarWatcherMap.values()]
         // 常驻 classic 控制器的在途快照仍可能消费自动导入等共享 sidecar。
-        // 先启动完整 drain，但保留这批资源直到控制器完成本代释放；无 lease 的普通资源仍可并行关闭。
+        // 先启动完整 drain；拥有跨代会话或 lease 时，等控制器结束后再回收共享 sidecar。
         const retainsBuildResources = resourceOwners.has(service)
         rollupWatcherMap.clear()
         sidecarWatcherMap.clear()
@@ -164,7 +165,7 @@ function createWatcherService(ctx: MutableCompilerContext): WatcherService {
           })
         }
         const controllerTasks = controllers.map(watcher => close(watcher))
-        const controllersFinished = retainsBuildResources && controllerTasks.length
+        const controllersFinished = (retainsBuildResources || owners.length > 0) && controllerTasks.length
           ? Promise.allSettled(controllerTasks).then(() => {})
           : undefined
         return [...controllerTasks, ...sidecars.map(watcher => close(watcher, controllersFinished))]
@@ -179,17 +180,22 @@ function createWatcherService(ctx: MutableCompilerContext): WatcherService {
       // 一个关闭失败不能中断其余资源回收；快照退出需等全部监听器停止。
       void (async () => {
         try {
-          const errors: unknown[] = []
+          const failures = new Set<unknown>()
           let pending = tasks
           do {
             const results = await Promise.allSettled(pending)
-            errors.push(...results.flatMap(result => result.status === 'rejected' ? [result.reason] : []))
+            for (const result of results) {
+              if (result.status === 'rejected') {
+                failures.add(result.reason)
+              }
+            }
             // 关闭期间接管的新 watcher 也由当前 drain 释放，公共调用共用同一完整结果。
             pending = closeWatchers()
           } while (pending.length)
           clearWxmlDependencies(ctx)
           clearIndependentWatchFiles(ctx.runtimeState.build.independent.watchFiles)
           ctx.runtimeState.build.independent.watchListeners.clear()
+          const errors = [...failures]
           if (errors.length) {
             throw errors.length === 1 ? errors[0] : new AggregateError(errors, 'Watcher service cleanup failed', { cause: errors[0] })
           }

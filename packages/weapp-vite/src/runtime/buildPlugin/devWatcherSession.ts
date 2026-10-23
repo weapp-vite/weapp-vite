@@ -1,6 +1,6 @@
 import type { RolldownWatcher } from 'rolldown'
 import type { WatcherService } from '../watcherPlugin'
-import { bindWatcherServiceController } from '../watcher/controllerClose'
+import { bindWatcherServiceController, registerWatcherControllerOwner } from '../watcher/controllerClose'
 
 interface DevWatcherGeneration {
   stop: () => Promise<void>
@@ -10,6 +10,7 @@ interface DevWatcherGeneration {
 export function createDevWatcherSession(service?: WatcherService) {
   const generations = new Set<DevWatcherGeneration>()
   const watcherGenerations = new WeakMap<RolldownWatcher, DevWatcherGeneration>()
+  const generationFailures = new Set<unknown>()
   const restarts = new Set<Promise<void>>()
   let closed = false
   let hasOwnership = false
@@ -24,13 +25,17 @@ export function createDevWatcherSession(service?: WatcherService) {
         ...Array.from(generations, generation => generation.stop()),
         ...restarts,
       ])
-      const errors = results.flatMap(result => result.status === 'rejected' ? [result.reason] : [])
+      const failures = new Set([
+        ...generationFailures,
+        ...results.flatMap(result => result.status === 'rejected' ? [result.reason] : []),
+      ])
       try {
         cleanup?.()
       }
       catch (error) {
-        errors.push(error)
+        failures.add(error)
       }
+      const errors = [...failures]
       if (errors.length) {
         throw errors.length === 1 ? errors[0] : new AggregateError(errors, 'Development watcher shutdown failed')
       }
@@ -49,12 +54,19 @@ export function createDevWatcherSession(service?: WatcherService) {
       cleanup = value
     },
     async own(watcher: RolldownWatcher) {
+      if (!hasOwnership && service) {
+        registerWatcherControllerOwner(service, { close })
+      }
       hasOwnership = true
       if (!watcherGenerations.has(watcher)) {
         const stop = watcher.close.bind(watcher)
         let stopping: Promise<void> | undefined
         const generation: DevWatcherGeneration = {
-          stop: () => stopping ??= Promise.resolve().then(stop).finally(() => generations.delete(generation)),
+          stop: () => stopping ??= Promise.resolve().then(stop).catch((error) => {
+            // 失败代退出集合后仍由公共关闭报告；普通配置或编译失败不进入资源错误记录。
+            generationFailures.add(error)
+            throw error
+          }).finally(() => generations.delete(generation)),
         }
         generations.add(generation)
         watcherGenerations.set(watcher, generation)

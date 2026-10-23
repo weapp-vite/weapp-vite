@@ -67,6 +67,14 @@ vi.mock('./workspace-hmr/statefulAuditClient', () => ({ StatefulHmrAuditClient: 
 vi.mock('../packages/weapp-vite/scripts/utils/benchmarkDependencies', () => ({ linkBenchmarkDependencies: vi.fn() }))
 vi.mock('../packages/weapp-vite/scripts/utils/config-file', () => ({ patchProjectConfigFile: vi.fn() }))
 vi.mock('../packages/weapp-vite/scripts/utils/benchmark-tsconfig', () => ({ writeBenchmarkResolverFile: vi.fn() }))
+// 清理契约只模拟已冻结基线；真实编译器解析与模式对齐由 hmrBaseline.test.ts 覆盖。
+vi.mock('../packages/weapp-vite/scripts/utils/hmrBaseline', () => ({
+  prepareAutoImportHmrBaselines: async ({ initialOutput }: { initialOutput: string }) => ({
+    initial: initialOutput,
+    classic: initialOutput,
+    evidence: {},
+  }),
+}))
 vi.mock('../packages/weapp-vite/scripts/utils/benchmarkTarget', () => ({
   createBenchmarkPath: () => '',
   resolveBenchmarkTarget: () => ({
