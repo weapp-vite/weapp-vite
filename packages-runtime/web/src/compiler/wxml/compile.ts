@@ -7,6 +7,7 @@ import { buildNavigationBarAttrs } from './navigation'
 import { prepareWxml } from './prepare'
 import { renderer } from './renderer'
 import { normalizeTemplatePath, shouldMarkWxsImport, toRelativeImport } from './specialNodes'
+import { collectUnknownTags, formatUnknownTagWarning } from './unknownTags'
 
 const WEB_TEMPLATE_QUERY = 'weapp-web-template'
 
@@ -176,6 +177,10 @@ export function compileWxml(options: WxmlCompileOptions): WxmlCompileResult {
   }
 
   const code = [...importLines, '', ...bodyLines].join('\n')
+  const unknownTags = collectUnknownTags(renderNodesList, options.componentTags, templates.flatMap(template => template.nodes))
+  if (unknownTags.length > 0) {
+    warnings.push(formatUnknownTagWarning(unknownTags, options.id))
+  }
   const dependencies = expandDependencies ? dependencyContext.dependencies : directDependencies
   return {
     code,
