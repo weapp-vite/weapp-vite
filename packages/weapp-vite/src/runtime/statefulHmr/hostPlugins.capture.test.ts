@@ -2,6 +2,7 @@ import type { CompilerContext } from '../../context'
 import { readFileSync } from 'node:fs'
 import { mkdir, mkdtemp, realpath, rm, symlink, unlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
+import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { afterEach, expect, it, vi } from 'vitest'
 import { compilerSourceId, getCompilerHmrHost, getCompilerRawSnapshot } from '../../plugins/compilerPlugin/hmr'
@@ -55,13 +56,54 @@ it.each(['native-style', 'captured-style', 'compiler-dependency'] as const)('cap
   await writeFile(file, changed)
 
   // pre hook 先完成，本轮通知随后才允许消费者封存；后续 load 不参与本次准入。
-  await watch(file, 'update')
+  expect(watch(file, 'update')).toBeUndefined()
   const captured = host.freeze([])
   await writeFile(file, '.probe { color: green; }')
 
   expect(captured.sources.get(compilerSourceId(file))).toBe(changed)
   expect(host.readSource(file)).toBe(changed)
   expect(host.hasVisualChanges([file], captured)).toBe(true)
+})
+
+it('captures a recreated atomic-save source before the delete hook returns', async () => {
+  const { file, host, watch } = await fixture()
+  const changed = '.probe { color: blue; }'
+  await rm(file)
+  const checked = Promise.withResolvers<void>()
+  const release = Promise.withResolvers<void>()
+  const pathExists = fs.pathExists.bind(fs)
+  const probe = vi.spyOn(fs, 'pathExists').mockImplementationOnce(async (id) => {
+    const exists = await pathExists(id)
+    checked.resolve()
+    await release.promise
+    return exists
+  })
+  try {
+    const watching = watch(file, 'delete')
+    await checked.promise
+    await writeFile(file, changed)
+    release.resolve()
+    await watching
+    expect(host.readSource(file)).toBe(changed)
+    expect(host.freeze([]).sources.get(compilerSourceId(file))).toBe(changed)
+  }
+  finally {
+    release.resolve()
+    probe.mockRestore()
+  }
+})
+
+it('leaves a recreated module-owned source with its loader after a delete event', async () => {
+  const { root, host, plugin, watch } = await fixture()
+  const file = path.join(root, 'src/logo.svg')
+  await writeFile(file, '<svg />')
+  const hook = plugin.transform!
+  const transform = typeof hook === 'function' ? hook : hook.handler
+  const loaded = 'export default "/assets/logo.svg"'
+  await transform.call({} as never, loaded, file)
+  await watch(file, 'delete')
+  expect(host.readSource(file)).toBe(loaded)
+  expect(host.ownsRawSource(file)).toBe(false)
 })
 
 it('runs before default watch consumers and preserves registered tombstones through file recreation', async () => {

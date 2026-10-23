@@ -291,11 +291,5 @@ export function resolveInitialProperties(
     }
   }
 
-  for (const [key, value] of Object.entries(properties)) {
-    if (!(key in resolved)) {
-      resolved[key] = value
-    }
-  }
-
   return resolved
 }

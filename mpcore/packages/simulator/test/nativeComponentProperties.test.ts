@@ -20,13 +20,13 @@ describe('native component property data boundary', () => {
   const directories: string[] = []
   afterEach(() => cleanupTempDirs(directories))
 
-  it('keeps undeclared input available as raw properties without promoting it into data', () => {
+  it('keeps undeclared host attributes outside the shared native data and properties object', () => {
     const instance = createComponentInstance({
       definition: { properties: { declared: String }, data: { title: 'local title' } },
       properties: { declared: 'declared value', title: 'attribute title', subtitle: 'undeclared' },
     })
     expect(instance.data).toEqual({ declared: 'declared value', title: 'local title' })
-    expect(instance.properties).toEqual({ declared: 'declared value', title: 'attribute title', subtitle: 'undeclared' })
+    expect(instance.properties).toBe(instance.data)
   })
 
   for (const provider of ['node', 'browser'] as const) {
@@ -48,7 +48,8 @@ describe('native component property data boundary', () => {
         const undeclared = page.selectComponent!('#undeclared')
         const declared = page.selectComponent!('#declared')
         expect(undeclared.data).toEqual({ local: 'component data' })
-        expect(undeclared.properties.title).toBe('attribute title')
+        expect(undeclared.properties).toBe(undeclared.data)
+        expect(undeclared.properties.title).toBeUndefined()
         expect(declared.data.style).toBe('')
         expect(renderedText(initial, '#declared-style')).toBe('')
         expect(renderedText(initial, '#undeclared-title')).toBe('')
@@ -60,7 +61,7 @@ describe('native component property data boundary', () => {
         page.setData({ __wv_style_0: 'color:blue;', passedTitle: 'updated attribute', title: 'updated parent' })
         const updated = session.renderCurrentPage().wxml
         expect(undeclared.data).toEqual({ local: 'component data' })
-        expect(undeclared.properties.title).toBe('updated attribute')
+        expect(undeclared.properties.title).toBeUndefined()
         expect(declared.data.title).toBe('updated attribute')
         expect(declared.data.style).toBe('color:blue;')
         expect(renderedText(updated, '#declared-style')).toBe('color:blue;')
@@ -73,7 +74,7 @@ describe('native component property data boundary', () => {
         page.setData({ passedTitle: 'later attribute' })
         expect(renderedText(session.renderCurrentPage().wxml, '#undeclared-title')).toBe('explicit local title')
         expect(undeclared.data.title).toBe('explicit local title')
-        expect(undeclared.properties.title).toBe('later attribute')
+        expect(undeclared.properties.title).toBe('explicit local title')
       }
       finally {
         session.close()
