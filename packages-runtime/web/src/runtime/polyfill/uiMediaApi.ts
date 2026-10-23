@@ -40,6 +40,7 @@ import type {
   TabBarIndexOptions,
   TabBarOptions,
 } from './types'
+import { callMiniProgramAsyncSuccess } from './async'
 import {
   getClipboardDataBridge,
   openCustomerServiceChatBridge,
@@ -72,6 +73,7 @@ import {
   saveVideoToPhotosAlbumBridge,
 } from './mediaApi'
 import {
+  hideShareMenuBridge,
   hideTabBarBridge,
   hideTabBarRedDotBridge,
   removeTabBarBadgeBridge,
@@ -89,12 +91,17 @@ import {
 } from './menuApi'
 import {
   hideLoadingBridge,
+  hideToastBridge,
   showLoadingBridge,
   showToastBridge,
 } from './uiFeedback'
 
 export function showToast(options?: ShowToastOptions) {
   return showToastBridge(options)
+}
+
+export function hideToast(options?: MiniProgramAsyncOptions<MiniProgramBaseResult>) {
+  return hideToastBridge(options)
 }
 
 export function showLoading(options?: ShowLoadingOptions) {
@@ -111,6 +118,17 @@ export function showShareMenu(options?: ShareMenuOptions) {
 
 export function updateShareMenu(options?: ShareMenuOptions) {
   return updateShareMenuBridge(options)
+}
+
+export function hideShareMenu(options?: ShareMenuOptions) {
+  return hideShareMenuBridge(options)
+}
+
+/**
+ * 小程序仅在「首页」显示返回按钮，web 端没有这个系统按钮，保留为 no-op 避免调用即抛错。
+ */
+export function hideHomeButton(options?: MiniProgramAsyncOptions<MiniProgramBaseResult>) {
+  return Promise.resolve(callMiniProgramAsyncSuccess(options, { errMsg: 'hideHomeButton:ok' }))
 }
 
 export function openCustomerServiceChat(options?: OpenCustomerServiceChatOptions) {

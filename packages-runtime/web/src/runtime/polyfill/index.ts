@@ -29,6 +29,7 @@ import * as deviceAuthSystemApi from './deviceAuthSystemApi'
 import * as eventBusApi from './eventBus'
 import { WEB_USER_DATA_PATH } from './files'
 import { loadFontFace } from './font'
+import * as lifecycleEventApi from './lifecycleEvents'
 import { getLocale } from './locale'
 import { createNavigationBarRuntimeBridge } from './navigationBarRuntime'
 import {
@@ -205,6 +206,7 @@ export function reportAnalytics(eventName: string, data?: Record<string, unknown
 
 /** 由公开运行时入口显式安装，确保拆分发布后的子模块不被摇树优化移除。 */
 export function installMiniProgramGlobals(): void {
+  lifecycleEventApi.installErrorBridges()
   const miniProgramBridge = (globalTarget[DEFAULT_MINI_PROGRAM_GLOBAL_KEY] as Record<string, unknown> | undefined) ?? {}
   Object.assign(miniProgramBridge, {
     navigateTo,
@@ -239,6 +241,13 @@ export function installMiniProgramGlobals(): void {
     ...uiMediaApi,
     ...deviceAuthSystemApi,
     ...eventBusApi,
+    onError: lifecycleEventApi.onError,
+    offError: lifecycleEventApi.offError,
+    onUnhandledRejection: lifecycleEventApi.onUnhandledRejection,
+    offUnhandledRejection: lifecycleEventApi.offUnhandledRejection,
+    onThemeChange: lifecycleEventApi.onThemeChange,
+    offThemeChange: lifecycleEventApi.offThemeChange,
+    reportEvent: lifecycleEventApi.reportEvent,
     loadFontFace,
     getLocale,
     createAnimation,

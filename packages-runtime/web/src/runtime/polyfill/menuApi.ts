@@ -140,3 +140,7 @@ export function showShareMenuBridge(options?: any): Promise<any> {
 export function updateShareMenuBridge(options?: any): Promise<any> {
   return Promise.resolve(callMiniProgramAsyncSuccess(options, { errMsg: 'updateShareMenu:ok' }))
 }
+
+export function hideShareMenuBridge(options?: any): Promise<any> {
+  return Promise.resolve(callMiniProgramAsyncSuccess(options, { errMsg: 'hideShareMenu:ok' }))
+}
