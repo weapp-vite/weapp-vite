@@ -1,7 +1,62 @@
 import { describe, expect, it, vi } from 'vitest'
+import { logger } from '../context/shared'
+import { resolveHmrRuntimeDecision } from './hmrRuntime'
 import { attachHmrRuntimeSession, createHmrRuntimeSession, getHmrRuntimeSession } from './hmrRuntimeSession'
 
 describe('HMR runtime command session', () => {
+  it.each([
+    ['auto', 'startup'],
+    ['stateful-experimental', 'startup'],
+    ['auto', 'runtime'],
+    ['stateful-experimental', 'runtime'],
+  ] as const)('records requested %s, actual mode and reason for %s capability fallback', async (configured, stage) => {
+    const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {})
+    const info = vi.spyOn(logger, 'info').mockImplementation(() => {})
+    try {
+      const session = createHmrRuntimeSession()
+      session.resolve(resolveHmrRuntimeDecision({ platform: 'weapp', configured, compileHotReLoad: true }))
+      const restart = vi.fn(async () => session.markClassic())
+      if (stage === 'runtime') {
+        session.bindRequest(restart)
+      }
+      const reason = { code: 'compiler-provider', message: 'provider has no prepare' } as const
+      session.requestClassic(reason)
+      expect(warn).toHaveBeenCalledOnce()
+      const fallbackPrefix = '[weapp-vite] HMR fallback '
+      expect(warn.mock.calls[0]?.[0]).toEqual(expect.stringContaining(fallbackPrefix))
+      const fallbackLog: unknown = JSON.parse(String(warn.mock.calls[0]?.[0]).slice(fallbackPrefix.length))
+      expect(fallbackLog).toEqual({
+        from: 'stateful-experimental',
+        to: 'classic',
+        reason: reason.code,
+        message: reason.message,
+        requested: configured,
+        actual: 'classic',
+        phase: 'switching',
+      })
+      expect(info).not.toHaveBeenCalled()
+      expect(restart).not.toHaveBeenCalled()
+      // 配置重载和后续不支持的更新不能覆写首次降级的请求模式与原因。
+      session.resolve({ configured: 'classic', runtime: 'classic', reason: 'explicit' })
+      session.requestClassic({ code: 'config-json', message: 'later update' })
+      if (stage === 'startup') {
+        session.bindRequest(restart)
+      }
+      await session.whenSettled()
+      expect(warn).toHaveBeenCalledOnce()
+      expect(restart).toHaveBeenCalledOnce()
+      expect(info).toHaveBeenCalledOnce()
+      const readyPrefix = '[weapp-vite] HMR classic ready '
+      expect(info.mock.calls[0]?.[0]).toEqual(expect.stringContaining(readyPrefix))
+      const readyLog: unknown = JSON.parse(String(info.mock.calls[0]?.[0]).slice(readyPrefix.length))
+      expect(readyLog).toEqual({ reason: reason.code, requested: configured, actual: 'classic', phase: 'classic' })
+    }
+    finally {
+      warn.mockRestore()
+      info.mockRestore()
+    }
+  })
+
   it.each(['auto', 'stateful-experimental'] as const)('keeps %s classic after a single capability fallback across configuration restarts', async (configured) => {
     const session = createHmrRuntimeSession()
     const restart = vi.fn(async () => session.markClassic())

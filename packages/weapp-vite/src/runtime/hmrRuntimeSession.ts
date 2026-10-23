@@ -29,6 +29,7 @@ const sessions = new WeakMap<object, { session: HmrRuntimeSession, borrowed?: bo
 
 export function createHmrRuntimeSession(): HmrRuntimeSession {
   let phase: HmrRuntimePhase = 'stateful'
+  let requested: HmrRuntimeDecision['configured'] = 'auto'
   let fallback: HmrRuntimeFallbackReason | undefined
   let binding: { handler: ClassicRequestHandler } | undefined
   let dispatched = false
@@ -72,7 +73,13 @@ export function createHmrRuntimeSession(): HmrRuntimeSession {
     outputGenerations: new Map(),
     get phase() { return phase },
     get fallback() { return fallback },
-    resolve: decision => fallback ? { ...decision, runtime: 'classic', reason: 'capability-fallback' } : decision,
+    resolve(decision) {
+      // 降级后即使重读配置，也保留触发本次切换时的用户请求模式。
+      if (!fallback) {
+        requested = decision.configured
+      }
+      return fallback ? { ...decision, runtime: 'classic', reason: 'capability-fallback' } : decision
+    },
     requestClassic(reason) {
       if (fallback) {
         return
@@ -82,7 +89,8 @@ export function createHmrRuntimeSession(): HmrRuntimeSession {
       settled = Promise.withResolvers<void>()
       // 宿主会在自己的错误通道报告失败；提前订阅避免未观察的拒绝。
       void settled.promise.catch(() => {})
-      logger.warn(`[weapp-vite] HMR fallback ${JSON.stringify({ from: 'stateful-experimental', to: 'classic', reason: reason.code, message: reason.message })}`)
+      // actual 记录已选择的交付模式；phase 区分切换决策与 classic 产物就绪。
+      logger.warn(`[weapp-vite] HMR fallback ${JSON.stringify({ from: 'stateful-experimental', to: 'classic', reason: reason.code, message: reason.message, requested, actual: 'classic', phase })}`)
       scheduleRequest()
     },
     bindRequest(handler) {
@@ -100,7 +108,7 @@ export function createHmrRuntimeSession(): HmrRuntimeSession {
         return
       }
       phase = 'classic'
-      logger.info(`[weapp-vite] HMR classic ready ${JSON.stringify({ reason: fallback.code })}`)
+      logger.info(`[weapp-vite] HMR classic ready ${JSON.stringify({ reason: fallback.code, requested, actual: 'classic', phase })}`)
       if (!dispatched || handlerSucceeded) {
         settled?.resolve()
       }
