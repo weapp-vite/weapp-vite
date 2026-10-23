@@ -66,6 +66,10 @@ export function createDevWatcherSession(service?: WatcherService) {
       if (closed) {
         await resource.stop()
       }
+      // 启动等待交接给完整代际后，解除短期取消资源，避免跨重启保留已完成的观察。
+      return () => {
+        generations.delete(resource)
+      }
     },
     async own(watcher: RolldownWatcher) {
       hasOwnership = true

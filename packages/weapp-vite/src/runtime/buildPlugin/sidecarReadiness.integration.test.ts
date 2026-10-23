@@ -9,8 +9,9 @@ import { createTestCompilerContext } from '../../../test/utils'
 const harness = vi.hoisted(() => ({
   build: vi.fn(),
   change: undefined as ((change: { event: 'update' | 'create', file: string }) => void) | undefined,
-  sidecars: [] as Array<EventEmitter & { closed: boolean, close: ReturnType<typeof vi.fn> }>,
+  sidecars: [] as Array<EventEmitter & { asset: boolean, closed: boolean, close: ReturnType<typeof vi.fn> }>,
   holdReadiness: false,
+  holdAssetReadiness: false,
 }))
 
 vi.mock('vite', async importOriginal => ({ ...await importOriginal<typeof import('vite')>(), build: harness.build }))
@@ -22,8 +23,10 @@ vi.mock('../../moduleGraph/devProvider', () => ({
 }))
 vi.mock('chokidar', () => ({
   default: {
-    watch: vi.fn(() => {
+    watch: vi.fn((_roots, options?: { ignoreInitial?: boolean }) => {
+      const asset = options?.ignoreInitial === false
       const watcher = Object.assign(new EventEmitter(), {
+        asset,
         closed: false,
         add: vi.fn(),
         unwatch: vi.fn(),
@@ -35,7 +38,7 @@ vi.mock('chokidar', () => ({
       })
       harness.sidecars.push(watcher)
       setImmediate(() => {
-        if (!watcher.closed && !harness.holdReadiness) {
+        if (!watcher.closed && !(asset ? harness.holdAssetReadiness : harness.holdReadiness)) {
           watcher.emit('ready')
         }
       })
@@ -103,6 +106,7 @@ beforeEach(() => {
   harness.change = undefined
   harness.sidecars = []
   harness.holdReadiness = false
+  harness.holdAssetReadiness = false
   expectedCleanupErrors.clear()
 })
 
@@ -242,5 +246,54 @@ it('closes a classic config restart before its replacement sidecar is ready thro
     expect(watcher.close).toHaveBeenCalledOnce()
     expect(watcher.listenerCount('ready')).toBe(0)
     expect(watcher.listenerCount('error')).toBe(0)
+  }
+})
+
+it('closes a classic config restart before its replacement asset scan is ready through the original handle', async () => {
+  const fixture = await createSnapshotTemplateFixture(harness, cleanups)
+  const original = fixture.ctx.watcherService.getRollupWatcher()!
+  const register = vi.spyOn(fixture.ctx.watcherService, 'setRollupWatcher')
+  const initialSidecars = harness.sidecars.length
+  const initialBuilds = harness.build.mock.calls.length
+  harness.holdAssetReadiness = true
+  fixture.ctx.buildService.requestConfigRestart()
+  await fixture.save('shared/card.wxml', '<template name="card"><view>restart before asset scan</view></template>')
+  fixture.update('shared/card.wxml')
+  await vi.waitFor(() => expect(harness.sidecars.slice(initialSidecars).some(watcher => watcher.asset && watcher.listenerCount('ready') > 0)).toBe(true))
+  const replacementAsset = harness.sidecars.slice(initialSidecars).find(watcher => watcher.asset && watcher.listenerCount('ready') > 0)!
+  let settled: Promise<unknown> | undefined
+  try {
+    // 新代首构已写出，但资产初始扫描尚未就绪，不能提前登记可继续运行的 controller。
+    expect(await fixture.readOutput('shared/card.wxml')).toContain('restart before asset scan')
+    expect(harness.build).toHaveBeenCalledTimes(initialBuilds + 2)
+    expect(register).not.toHaveBeenCalled()
+    expect(replacementAsset.closed).toBe(false)
+    const closing = original.close()
+    settled = closing.then(() => undefined, (error: unknown) => error)
+    expect(original.close()).toBe(closing)
+    // 不补发 ready：原 handle 必须主动释放仍在等待扫描的资产 owner。
+    await vi.waitFor(() => expect(replacementAsset.closed).toBe(true))
+    await expect(closing).resolves.toBeUndefined()
+    const onEvent = vi.fn()
+    original.on('event', onEvent)
+    expect(onEvent).not.toHaveBeenCalled()
+    expect(register).not.toHaveBeenCalled()
+    expect(harness.build).toHaveBeenCalledTimes(initialBuilds + 2)
+    expect(fixture.ctx.watcherService.sidecarWatcherMap.size).toBe(0)
+    expect(fixture.ctx.watcherService.rollupWatcherMap.size).toBe(0)
+    await original.close()
+    await fixture.ctx.watcherService.closeAll()
+    for (const watcher of harness.sidecars) {
+      expect(watcher.closed).toBe(true)
+      expect(watcher.close).toHaveBeenCalledOnce()
+      expect(watcher.eventNames()).toEqual([])
+    }
+  }
+  finally {
+    // 红测只解除本例故意挂起的扫描，接住原 close，避免清理阶段永久等待。
+    if (!replacementAsset.closed) {
+      replacementAsset.emit('ready')
+    }
+    await settled
   }
 })

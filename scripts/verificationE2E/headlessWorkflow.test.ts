@@ -80,6 +80,7 @@ describe('complete headless DOM workflow sharding', () => {
     expect(String(job.with!.artifact_path).trim().split('\n')).toEqual([
       'docs/reports/dom-acceptance/**',
       '.tmp/ide-dom-headless-preflight/**',
+      'docs/reports/*-ide-warning-report/dev-process/**',
       'docs/reports/*-e2e-ide-dom-headless-*-suite-report/**',
     ])
     expect(job.with!.verification_telemetry).toBeUndefined()

@@ -2358,7 +2358,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         })(),
       }
       watcherService.sidecarWatcherMap.set(snapshotWatcherRoot, resource)
-      return { resource, ready: sidecarReadiness.ready }
+      return { resource, ready: sidecarReadiness.ready, cancelReadiness: sidecarReadiness.close }
     }
 
     let snapshotSidecar: ReturnType<typeof createSnapshotSidecarScope> | undefined
@@ -2372,8 +2372,17 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       }
       if (target === 'app' && !watcherService.sidecarWatcherMap.has(snapshotWatcherRoot)) {
         snapshotSidecar = createSnapshotSidecarScope()
-        const readiness = await snapshotSidecar.ready
-        if (readiness === 'closed') {
+        const pendingSidecar = snapshotSidecar
+        // 新代尚未就绪，完整 controller 还不能接管；会话关闭先取消扫描，再由原路径释放本代。
+        const releaseReadiness = await classicOwner.ownResource(async () => pendingSidecar.cancelReadiness())
+        let readiness: Awaited<typeof pendingSidecar.ready>
+        try {
+          readiness = await pendingSidecar.ready
+        }
+        finally {
+          releaseReadiness()
+        }
+        if (readiness === 'closed' || classicOwner.isClosing) {
           await snapshotSidecar.resource.close()
           await releaseWatcherResources?.releaseResources()
           await devBuildWatcher?.watcher.close()
@@ -2751,16 +2760,19 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         markClosed: markSnapshotClosed,
         releaseResources: releaseWatcherResources?.releaseResources,
       })
+      // 首构已完成，但资产扫描尚未就绪；冻结本代关闭入口，避免等待尚未交接的 restart。
+      const stopPendingWatcher = watcher.close.bind(watcher)
+      const releaseReadiness = await classicOwner.ownResource(stopPendingWatcher)
       try {
         await assetWatcher.ready
-        if (devWatcherClosed) {
-          await watcher.close()
+        if (devWatcherClosed || classicOwner.isClosing) {
+          await stopPendingWatcher()
           return publicBuildEvents?.watcher ?? watcher
         }
       }
       catch (error) {
         try {
-          await watcher.close()
+          await stopPendingWatcher()
         }
         catch (cleanupError) {
           if (!containsFailure(error, cleanupError)) {
@@ -2768,6 +2780,9 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           }
         }
         throw error
+      }
+      finally {
+        releaseReadiness()
       }
     }
     if (classicSession) {

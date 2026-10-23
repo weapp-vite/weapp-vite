@@ -10,6 +10,48 @@ function generation() {
 }
 
 describe('classic development watcher session', () => {
+  it('releases completed startup cancellation without closing the handed-off resource', async () => {
+    const owner = createDevWatcherSession()
+    const cancelReadiness = vi.fn(async () => {})
+    const releaseReadiness = await owner.ownResource(cancelReadiness)
+    releaseReadiness()
+    releaseReadiness()
+    const current = generation()
+    await owner.own(current.watcher)
+    await owner.close()
+    expect(cancelReadiness).not.toHaveBeenCalled()
+    expect(current.stopped).toHaveBeenCalledOnce()
+  })
+
+  it('cancels pending startup before joining its in-flight restart', async () => {
+    const owner = createDevWatcherSession()
+    const first = generation()
+    const entered = Promise.withResolvers<void>()
+    const readiness = Promise.withResolvers<void>()
+    const trace: string[] = []
+    await owner.own(first.watcher)
+    const restarting = owner.restart(async () => {
+      await owner.stopGeneration(first.watcher)
+      const releaseReadiness = await owner.ownResource(async () => {
+        trace.push('cancel-readiness')
+        readiness.resolve()
+      })
+      entered.resolve()
+      try {
+        await readiness.promise
+        trace.push('startup-released')
+      }
+      finally {
+        releaseReadiness()
+      }
+    })
+    await entered.promise
+    await first.watcher.close()
+    await restarting
+    expect(trace).toEqual(['cancel-readiness', 'startup-released'])
+    expect(first.stopped).toHaveBeenCalledOnce()
+  })
+
   it('retains session resources across generation stops and joins their final shutdown', async () => {
     const owner = createDevWatcherSession()
     const first = generation()
