@@ -1,17 +1,47 @@
 import type { Plugin, ViteDevServer } from 'vite'
 import type { CompilerContext } from '../../context'
+import type { CompilerHmrHost } from '../../plugins/compilerPlugin/hmr'
 import { statSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import { WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY } from '@weapp-core/constants'
 import MagicString from 'magic-string'
 import { CompilerHmrResyncError, getCompilerHmrHost } from '../../plugins/compilerPlugin/hmr'
 import { readCompilerRawInput } from '../../plugins/compilerPlugin/rawInputs'
+import { normalizeAtomicDeleteEvent } from '../../utils/atomicWatchEvent'
 import { parseJsLike, traverse } from '../../utils/babel'
 import { isPathInside } from '../../utils/path'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { isStatefulHmrBoundary } from './boundaries'
 import { createStatefulHmrHostFormatPlugin } from './hostFormat'
 import { createStatefulHmrSidecarPlugin } from './sidecarPlugin'
+
+function captureKnownRawInput(host: CompilerHmrHost, id: string): void {
+  // raw 身份由真实文件读取与编译器依赖登记；module loader 产物不能用文件字节覆盖。
+  if (!host.ownsRawSource(id)) {
+    return
+  }
+  try {
+    const read = readCompilerRawInput(id)
+    host.captureRaw(id, read?.source ?? null, false, read ?? undefined)
+  }
+  catch (error) {
+    const code = error instanceof Error && 'code' in error ? error.code : undefined
+    if (code === 'ENOENT' || code === 'ENOTDIR') {
+      host.captureRaw(id, null, false)
+      return
+    }
+    // Windows 读取目录可报 EPERM；只在读取失败后检查，普通文件不增加 stat 热路径。
+    try {
+      if (statSync(id).isDirectory()) {
+        return
+      }
+    }
+    catch {
+      // 核验失败仍保留最初的读取错误，不能覆盖输入捕获失败。
+    }
+    throw error
+  }
+}
 
 export function redirectNativeComponentRegistration(code: string): string {
   if (!code.includes('Component')) {
@@ -87,44 +117,20 @@ export function createStatefulHmrHostPlugins(ctx: CompilerContext) {
         }
         const host = getCompilerHmrHost(ctx)
         if (change.event === 'delete') {
-          if (host.ownsRawSource(id)) {
-            host.captureRaw(id, null, false)
-          }
-          else {
-            host.capture(id, null)
-          }
-          return
-        }
-        // raw 身份由真实文件读取与编译器依赖登记；module loader 产物不能用文件字节覆盖。
-        if (!host.ownsRawSource(id)) {
-          return
-        }
-        try {
-          const read = readCompilerRawInput(id)
-          if (read) {
-            host.captureRaw(id, read.source, false, read)
-          }
-          else {
-            host.captureRaw(id, null, false)
-          }
-        }
-        catch (error) {
-          const code = error instanceof Error && 'code' in error ? error.code : undefined
-          if (code === 'ENOENT' || code === 'ENOTDIR') {
-            host.captureRaw(id, null, false)
-            return
-          }
-          // Windows 读取目录可报 EPERM；只在读取失败后检查，普通文件不增加 stat 热路径。
-          try {
-            if (statSync(id).isDirectory()) {
-              return
+          return normalizeAtomicDeleteEvent(id).then((event) => {
+            if (event === 'update') {
+              captureKnownRawInput(host, id)
             }
-          }
-          catch {
-            // 核验失败仍保留最初的读取错误，不能覆盖输入捕获失败。
-          }
-          throw error
+            else if (host.ownsRawSource(id)) {
+              host.captureRaw(id, null, false)
+            }
+            else {
+              host.capture(id, null)
+            }
+          })
         }
+        // 普通 update/create 保持同步捕获，不能让后续消费者先冻结旧输入。
+        captureKnownRawInput(host, id)
       },
     },
   }, createStatefulHmrSidecarPlugin(async (file) => {

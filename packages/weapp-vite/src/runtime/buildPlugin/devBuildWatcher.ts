@@ -21,9 +21,13 @@ export function createDevBuildWatcher(): DevBuildWatcherController {
   const listeners = new Map<WatcherEventName, Set<(...args: any[]) => void | Promise<void>>>()
   const pendingEvents: RolldownWatcherEvent[] = []
   let closed = false
+  let closing: Promise<void> | undefined
 
   const watcher: RolldownWatcher = {
     on(event, listener) {
+      if (closed) {
+        return watcher
+      }
       let eventListeners = listeners.get(event)
       if (!eventListeners) {
         eventListeners = new Set()
@@ -45,14 +49,18 @@ export function createDevBuildWatcher(): DevBuildWatcherController {
     clear(event) {
       listeners.delete(event)
     },
-    async close() {
-      if (closed) {
-        return
+    close() {
+      if (!closing) {
+        const completion = Promise.withResolvers<void>()
+        closing = completion.promise
+        closed = true
+        const closeListeners = Array.from(listeners.get('close') ?? [])
+        listeners.clear()
+        pendingEvents.length = 0
+        void Promise.all(closeListeners.map(async listener => await listener()))
+          .then(() => completion.resolve(), completion.reject)
       }
-      closed = true
-      const closeListeners = Array.from(listeners.get('close') ?? [])
-      listeners.clear()
-      await Promise.all(closeListeners.map(listener => listener()))
+      return closing
     },
   }
 
@@ -71,6 +79,9 @@ export function createDevBuildWatcher(): DevBuildWatcherController {
   return {
     watcher,
     emitEvent(event) {
+      if (closed) {
+        return
+      }
       if (!listeners.get('event')?.size) {
         pendingEvents.push(event)
         return

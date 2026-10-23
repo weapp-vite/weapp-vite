@@ -34,7 +34,26 @@ export class CompilerHmrHost extends HmrCompilerHost {
   private readonly seededInputs = new Set<string>()
   private readonly rawReads = new Map<string, CompilerRawRead>()
   private readonly rawBindings = new Map<string, CompilerRawBinding>()
+  private readonly sourceRevisions = new Map<string, number>()
   private nativeInputIds = new Set<string>()
+
+  sourceRevision(id: string): number {
+    return this.sourceRevisions.get(compilerSourceId(id)) ?? 0
+  }
+
+  /** 所有输入 owner 共用单一内容版本，异步读取只比较自己的 physical 文件。 */
+  override capture(id: string, code: string | null): void {
+    if (!id.includes('?') && !id.startsWith('\0')) {
+      withRealpathScope(() => {
+        const sourceId = compilerSourceId(id)
+        const changed = super.readSource(sourceId) !== code
+        super.capture(sourceId, code)
+        if (changed) {
+          this.sourceRevisions.set(sourceId, (this.sourceRevisions.get(sourceId) ?? 0) + 1)
+        }
+      })
+    }
+  }
 
   private rememberRawBinding(id: string, sourceId: string): void {
     const lexical = normalizeFsResolvedId(id)
@@ -64,7 +83,7 @@ export class CompilerHmrHost extends HmrCompilerHost {
           super.captureNative(id, code)
         }
         else {
-          super.capture(id, code)
+          this.capture(id, code)
         }
         this.rememberRawBinding(id, sourceId)
         if (read?.source === code) {

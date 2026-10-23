@@ -112,3 +112,62 @@ describe('external compiled template registration classic fallback', { concurren
     await check('original-clicked')
   }, 300_000)
 })
+
+describe('cached scoped-slot classic publication', { concurrent: false }, () => {
+  const session = createTemplateFallbackSession(false, { scopedSlots: true })
+  beforeAll(() => session.start(), 180_000)
+  afterAll(() => session.close(), 120_000)
+
+  it('keeps scoped-slot scripts, rendered bindings and interactions across classic edit and restore generations', async (ctx) => {
+    const stages = [
+      ['initial', 0, null],
+      ['prepared', 2, null],
+      ['edit-0', 0, 'SLOT-CYCLE-0'],
+      ['clicked-0', 1, 'SLOT-CYCLE-0'],
+      ['restore-0', 0, null],
+      ['edit-1', 0, 'SLOT-CYCLE-1'],
+      ['clicked-1', 1, 'SLOT-CYCLE-1'],
+      ['restore-1', 0, null],
+    ] as const
+    const dom = createDomAcceptance(ctx, 'e2e-apps/stateful-hmr', stages.map(([id, count, templateCycle]) => ({
+      id,
+      route: '/pages/wevu/index',
+      action: `检查 ${id} 的 scoped-slot 依赖、真实节点与父页面状态`,
+      nodes: [
+        { selector: '.count', text: String(count) },
+        { selector: '.scoped-value', scope: ['#scoped-host', { has: '.scoped-value' }], text: `SLOT-READY:${count}` },
+        templateCycle === null
+          ? { selector: '.template-cycle', count: 0 }
+          : { selector: '.template-cycle', text: templateCycle },
+      ],
+    })))
+    const check = async (id: string) => {
+      try {
+        await dom.check(id, session.miniProgram, await session.miniProgram.currentPage())
+      }
+      catch (error) {
+        await session.diagnoseScopedSlot(`failed-${id}`)
+        throw error
+      }
+    }
+    await session.begin()
+    await check('initial')
+    await session.prepare()
+    await check('prepared')
+    for (const cycle of [0, 1]) {
+      await session.save(session.original.replace('<input', `<view class="template-cycle">SLOT-CYCLE-${cycle}</view>\n    <input`))
+      await check(`edit-${cycle}`)
+      await session.tap()
+      try {
+        await expect.poll(session.state).toMatchObject({ count: 1, storeCount: 1 })
+      }
+      catch (error) {
+        await session.diagnoseScopedSlot(`failed-click-${cycle}`)
+        throw error
+      }
+      await check(`clicked-${cycle}`)
+      await session.save(session.original)
+      await check(`restore-${cycle}`)
+    }
+  }, 400_000)
+})

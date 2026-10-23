@@ -4,6 +4,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { CAPABILITY_FALLBACK_TASKS } from '../ide/statefulHmrDom/capabilityFallbackCases'
 import { createAutomatorProjectTrust } from '../utils/automatorProjectTrust'
 import { E2E_TARGET_FILE_ENV } from '../utils/vitestTargetFile'
 import { readTaskCases } from './domAcceptanceReport/inventory'
@@ -119,10 +120,10 @@ describe('suiteRunner', () => {
     for (const hook of ['load', 'show', 'ready']) {
       expect(selected.some(name => name.includes(`commits navigation requested in ${hook}`))).toBe(true)
     }
-    const styles = tasks.find(task => task.label === 'ide/hmr-capability-fallback.runtime.test.ts')!
-    expect(styles).toBeDefined()
-    const styleCases = readTaskCases(path.resolve(import.meta.dirname, '../..'), styles.label, styles.acceptanceTemplates)
-    expect(styleCases.filter(item => item.name.includes('stylesheet-output'))).toHaveLength(6)
+    const styles = CAPABILITY_FALLBACK_TASKS.map(label => tasks.find(task => task.label === label)!)
+    expect(styles.every(Boolean)).toBe(true)
+    const styleCases = styles.flatMap(task => readTaskCases(path.resolve(import.meta.dirname, '../..'), task.label, task.acceptanceTemplates))
+    expect(styleCases.filter(item => item.name.includes('stylesheet-output'))).toHaveLength(7)
     expect(selected.some(name => name.includes('preserves Wevu local and store state'))).toBe(true)
   })
 

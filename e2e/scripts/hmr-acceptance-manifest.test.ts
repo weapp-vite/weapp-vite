@@ -4,6 +4,8 @@ import path from 'node:path'
 import fg from 'fast-glob'
 import { describe, expect, it } from 'vitest'
 import { isExcludedE2EProject } from '../../scripts/e2eProjectScope'
+import { CAPABILITY_FALLBACK_TASKS } from '../ide/statefulHmrDom/capabilityFallbackCases'
+import { readTaskCases } from './domAcceptanceReport/inventory'
 import { readPlannedTaskCases } from './domAcceptanceReport/taskCases'
 import { getIdeExhaustiveTasks, getSuiteTasks } from './e2e-suite-manifest'
 import { HMR_ACCEPTANCE_BUILD_TESTS, HMR_ACCEPTANCE_CAPABILITIES, HMR_ACCEPTANCE_SCENARIOS, HMR_ACCEPTANCE_STAGES, hmrAcceptanceRuntimeFiles, uniqueHmrBuildTests } from './hmr-acceptance-manifest'
@@ -17,9 +19,12 @@ const ROOT = path.resolve(import.meta.dirname, '../..')
 
 describe('HMR semantic acceptance inventory', () => {
   it('preserves every IDE HMR scenario and its exhaustive entry after deduplicating execution', async () => {
-    const hmrFiles = fg.sync('ide/**/*hmr*.test.ts', { cwd: path.join(ROOT, 'e2e') }).sort()
+    const compatibilityEntry = 'ide/hmr-capability-fallback.runtime.test.ts'
+    const hmrFiles = fg.sync('ide/**/*hmr*.test.ts', { cwd: path.join(ROOT, 'e2e') }).filter(file => file !== compatibilityEntry).sort()
     const planned = hmrAcceptanceRuntimeFiles('ide')
     expect(planned).toEqual(expect.arrayContaining(hmrFiles))
+    expect(fs.existsSync(path.join(ROOT, 'e2e', compatibilityEntry))).toBe(true)
+    expect(planned).not.toContain(compatibilityEntry)
     expect(new Set(HMR_ACCEPTANCE_SCENARIOS.map(item => item.id)).size).toBe(HMR_ACCEPTANCE_SCENARIOS.length)
     const exhaustive = new Set(getIdeExhaustiveTasks().map(task => task.label))
     expect(planned.every(file => exhaustive.has(file))).toBe(true)
@@ -60,7 +65,7 @@ describe('HMR semantic acceptance inventory', () => {
     }
     expect(HMR_ACCEPTANCE_SCENARIOS.find(item => item.id === 'native-dependency-and-route-topology')?.capabilityIds)
       .toEqual(['config-json', 'entry-topology', 'stylesheet-output'])
-    for (const [id, configured] of [['wxml-watch-dependency-recovery', 'auto'], ['automatic-route-watch-topology-recovery', 'classic']]) {
+    for (const [id, configured] of [['wxml-watch-dependency-recovery', 'auto'], ['automatic-route-watch-topology-recovery', 'classic'], ['snapshot-wrapper-ownership', 'classic']]) {
       expect(HMR_ACCEPTANCE_SCENARIOS.find(item => item.id === id)).toMatchObject({
         observation: 'watch-output-and-runtime',
         configuredModes: [configured],
@@ -109,7 +114,7 @@ describe('HMR semantic acceptance inventory', () => {
       expect(task.env?.WEAPP_VITE_E2E_RUNTIME_PROVIDER).toBe('headless')
       expect(task.args).not.toContain('-t')
     }
-    expect(tasks.some(task => task.label === 'ide/hmr-capability-fallback.runtime.test.ts')).toBe(true)
+    expect(CAPABILITY_FALLBACK_TASKS.every(label => tasks.some(task => task.label === label))).toBe(true)
     expect(tasks.some(task => task.label === 'ide/hmr-startup-fallback.runtime.test.ts')).toBe(true)
     expect(HMR_ACCEPTANCE_SCENARIOS.some(item => item.expectations.includes('stateful'))).toBe(true)
     expect(HMR_ACCEPTANCE_SCENARIOS.some(item => item.expectations.includes('classic-fallback'))).toBe(true)
@@ -131,15 +136,27 @@ describe('HMR semantic acceptance inventory', () => {
     }
   })
 
-  it.each([['ide-hmr', 'devtools'], ['ide-hmr-headless', 'headless']] as const)('freezes all twenty-seven fallback cases in %s without unresolved matrix parameters', async (suite, provider) => {
+  it.each([['ide-hmr', 'devtools'], ['ide-hmr-headless', 'headless']] as const)('freezes the original fallback matrix and ESM companion in %s without unresolved parameters', async (suite, provider) => {
     const tasks = await getSuiteTasks(suite)
-    const transition = tasks.find(task => task.label === 'ide/hmr-capability-fallback.runtime.test.ts')!
+    const transitions = CAPABILITY_FALLBACK_TASKS.map(label => tasks.find(task => task.label === label)!)
     const startup = tasks.find(task => task.label === 'ide/hmr-startup-fallback.runtime.test.ts')!
-    const transitionCases = await readPlannedTaskCases(transition, provider)
+    const transitionCases = (await Promise.all(transitions.map(task => readPlannedTaskCases(task, provider)))).flat()
     const startupCases = await readPlannedTaskCases(startup, provider)
-    expect(transitionCases).toHaveLength(21)
+    expect(transitionCases).toHaveLength(22)
     expect(startupCases).toHaveLength(6)
-    expect(new Set([...transitionCases, ...startupCases].map(item => `${item.file}#${item.name}`)).size).toBe(27)
+    expect(new Set(transitionCases.map(item => item.name)).size).toBe(22)
+    expect(new Set([...transitionCases, ...startupCases].map(item => `${item.file}#${item.name}`)).size).toBe(28)
+    expect(tasks.some(task => task.label === 'ide/hmr-capability-fallback.runtime.test.ts')).toBe(false)
+    for (const [index, task] of transitions.entries()) {
+      const cases = readTaskCases(ROOT, task.label)
+      expect(cases).toHaveLength(index === 0 ? 8 : 7)
+      expect(cases.every(item => item.plans.length > 0 && !item.notes.some(note => note.startsWith('Dynamic')))).toBe(true)
+      expect(cases.every(item => item.source.startsWith('e2e/ide/statefulHmrDom/capabilityFallback.ts:'))).toBe(true)
+      expect(task.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('900000')
+    }
+    expect(transitionCases.filter(item => item.name.includes(' esm capability fallback > '))).toEqual([
+      expect.objectContaining({ file: 'e2e/ide/hmr-capability-fallback.wv.runtime.test.ts', name: expect.stringMatching(/^wv auto stylesheet-output esm capability fallback > /) }),
+    ])
     for (const host of ['wv', 'vite', 'vite-plus']) {
       for (const [requested, reason] of [
         ['auto', 'config-json'],
@@ -232,9 +249,11 @@ describe('HMR semantic acceptance inventory', () => {
     }
   })
 
-  it.each([['ide-hmr', 'devtools'], ['ide-hmr-headless', 'headless']] as const)('preserves all four compiled template boundaries in %s', async (suite, provider) => {
+  it.each([['ide-hmr', 'devtools'], ['ide-hmr-headless', 'headless']] as const)('preserves all five compiled template boundaries in %s', async (suite, provider) => {
     const task = (await getSuiteTasks(suite)).find(task => task.label === 'ide/hmr-compiled-template-fallback.runtime.test.ts')!
-    expect(await readPlannedTaskCases(task, provider)).toHaveLength(4)
+    const cases = await readPlannedTaskCases(task, provider)
+    expect(cases).toHaveLength(5)
+    expect(cases.map(item => item.name)).toContain('cached scoped-slot classic publication > keeps scoped-slot scripts, rendered bindings and interactions across classic edit and restore generations')
     expect(HMR_ACCEPTANCE_SCENARIOS.find(item => item.id === 'compiled-template-registration-fallback')!.configuredModes).toEqual(['auto', 'stateful-experimental'])
     expect(HMR_ACCEPTANCE_CAPABILITY_COVERAGE.find(item => item.capabilityId === 'native-registration')!.runtimeScenarios).toContain('compiled-template-registration-fallback')
   })
@@ -286,6 +305,13 @@ describe('HMR semantic acceptance inventory', () => {
     const hmrFilters = scripts['test:hmr']!.split(/\s+/)
     expect(hmrFilters).toContain('packages/tailwindcss/src')
     for (const file of [
+      'packages/weapp-vite/src/plugins/vue/transform/plugin/transformFile.test.ts',
+      'packages/weapp-vite/src/plugins/vue/transform/scopedSlot.test.ts',
+      'e2e/utils/devProcessShutdownTrace.test.ts',
+      'e2e/utils/domAcceptance/scopeTrace.test.ts',
+      'mpcore/packages/simulator/test/esmModuleSyntax.test.ts',
+      'mpcore/packages/simulator/test/componentPropertyDelivery.test.ts',
+      'mpcore/packages/simulator/test/nativeComponentProperties.test.ts',
       'e2e/utils/automator.reconnect-logs.test.ts',
       'e2e/utils/runtimeLogSubscription.test.ts',
       'e2e/utils/runtimeLogDiagnostics.test.ts',

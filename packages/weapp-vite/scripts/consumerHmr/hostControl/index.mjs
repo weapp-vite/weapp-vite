@@ -1,9 +1,10 @@
 import { randomUUID } from 'node:crypto'
-import { copyFile, mkdir, mkdtemp, open, rm } from 'node:fs/promises'
+import { copyFile, mkdir, mkdtemp, rm } from 'node:fs/promises'
 import { createServer } from 'node:net'
 import path from 'node:path'
 import { createInterface } from 'node:readline'
 import { pathToFileURL } from 'node:url'
+import { createSiblingPluginConfig } from '../configWrapper.mjs'
 
 /** 控制通道只连接本次启动的叶宿主，不依赖 Vite+ 是否转发父 IPC 或信号。 */
 export async function createNativeHostControl(root, configFile) {
@@ -64,7 +65,7 @@ export async function createNativeHostControl(root, configFile) {
   void ready.promise.catch(() => {})
   void completed.promise.catch(() => {})
   let directory
-  let controlledConfig
+  let configuration
   const dispose = () => {
     if (!disposing) {
       disposing = (async () => {
@@ -77,8 +78,8 @@ export async function createNativeHostControl(root, configFile) {
         if (server.listening) {
           await new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve()))
         }
-        if (controlledConfig) {
-          await rm(controlledConfig, { force: true })
+        if (configuration) {
+          await configuration.dispose()
         }
         if (directory) {
           await rm(directory, { recursive: true, force: true })
@@ -104,24 +105,15 @@ export async function createNativeHostControl(root, configFile) {
       await copyFile(new URL(file, import.meta.url), path.join(directory, file))
     }
     const originalConfig = path.resolve(root, configFile)
-    const wrapper = path.join(path.dirname(originalConfig), `.weapp-vite-e2e-${token}.config.mjs`)
-    const handle = await open(wrapper, 'wx')
-    controlledConfig = wrapper
-    try {
-      // 配置必须与原文件同目录，保留宿主按 configFile 解析支持文件和相对路径的语义。
-      await handle.writeFile(`import original from ${JSON.stringify(pathToFileURL(originalConfig).href)}
-import { createNativeHostControlPlugin } from ${JSON.stringify(pathToFileURL(path.join(directory, 'plugin.mjs')).href)}
-export default async env => {
-  const config = await (typeof original === 'function' ? original(env) : original)
-  return { ...config, plugins: [createNativeHostControlPlugin(${JSON.stringify(endpoint)}), ...(config.plugins ?? [])] }
-}
-`)
-    }
-    finally {
-      await handle.close()
-    }
+    configuration = await createSiblingPluginConfig({
+      directory: path.dirname(originalConfig),
+      configFiles: [originalConfig],
+      pluginUrl: pathToFileURL(path.join(directory, 'plugin.mjs')).href,
+      pluginExport: 'createNativeHostControlPlugin',
+      pluginOptions: endpoint,
+    })
     return {
-      configFile: controlledConfig,
+      configFile: configuration.configFile,
       requestClose() {
         return stopping ??= (async () => {
           const socket = await ready.promise

@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { fs } from '@weapp-core/shared/fs'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
-import { compilerSourceId, getCompilerHmrHostByConfig, getCompilerRawSnapshot } from '../compilerPlugin/hmr'
+import { CompilerHmrResyncError, compilerSourceId, getCompilerHmrHostByConfig, getCompilerRawSnapshot } from '../compilerPlugin/hmr'
 import { getCompilerSourceSnapshot, getCompilerSourceSnapshotView, replaceCompilerSourceSnapshotView } from './sourceSnapshot/registry'
 
 export { getCompilerSourceResolutions, getCompilerSourceSnapshot } from './sourceSnapshot/registry'
@@ -148,9 +148,24 @@ export async function readCompilerInput(owner: object, id: string, read?: (file:
   if (pinned !== undefined) {
     return observe(pinned)
   }
-  const source = await (read ? read(id) : fs.readFile(id, 'utf8'))
   const host = getCompilerHmrHostByConfig(owner)
-  if (host?.onDependencyChange) {
+  const binding = host?.onDependencyChange
+  const sourceId = binding ? compilerSourceId(id) : undefined
+  const revision = sourceId === undefined ? undefined : host?.sourceRevision(sourceId)
+  const source = await (read ? read(id) : fs.readFile(id, 'utf8'))
+  const currentHost = getCompilerHmrHostByConfig(owner)
+  if (binding || currentHost?.onDependencyChange) {
+    // 异步读取只归属启动时的会话及 physical 身份，不能写入替换后的 owner。
+    if (!host || sourceId === undefined || currentHost !== host || currentHost?.onDependencyChange !== binding || compilerSourceId(id) !== sourceId) {
+      throw new CompilerHmrResyncError([id], 'Compiler input ownership changed during its read')
+    }
+    const current = host.readSource(sourceId)
+    // 相同字节的重复捕获及 ABA 不产生冲突；较新的不同输入不能被旧读取倒退。
+    if (host.sourceRevision(sourceId) !== revision && current !== source) {
+      throw new CompilerHmrResyncError([id], 'Compiler input changed during its read')
+    }
+  }
+  if (host && binding) {
     host.captureRaw(id, source)
   }
   return observe(source)

@@ -207,13 +207,6 @@ export function createBrowserComponentInstance(
   renderTemplate?: (instance: HeadlessComponentInstance, phase: 'defaults' | 'properties') => void,
   bindEventsBeforeProperties = false,
 ) {
-  const isWevuNativeDefinition = Object.keys(componentEntry.definition.methods ?? {}).some(key => key.startsWith('__weapp_vite_'))
-    || Object.hasOwn(componentEntry.definition.properties ?? {}, '__wvSlotOwnerId')
-  const componentProperties = isWevuNativeDefinition
-    ? Object.fromEntries(Object.keys(componentEntry.definition.properties ?? {})
-        .filter(key => Object.hasOwn(nextProperties, key))
-        .map(key => [key, nextProperties[key]]))
-    : nextProperties
   const instanceOptions: CreateComponentInstanceOptions = {
     definition: componentEntry.definition,
     requestRender: callback => context.session.requestRender(callback),
@@ -242,7 +235,7 @@ export function createBrowserComponentInstance(
     componentInstance.__propertySnapshots = Object.fromEntries(
       Object.entries(componentInstance.properties).map(([key, propertyValue]) => [key, cloneValue(propertyValue)]),
     )
-    syncComponentProperties(componentInstance, componentInstance.__definition__ ?? componentEntry.definition, componentProperties, {}, [], renderTemplate)
+    syncComponentProperties(componentInstance, componentInstance.__definition__ ?? componentEntry.definition, nextProperties, {}, [], renderTemplate)
     if (!bindEventsBeforeProperties) {
       instanceOptions.triggerEvent = buildComponentTrigger(componentScopeId, context)
     }
