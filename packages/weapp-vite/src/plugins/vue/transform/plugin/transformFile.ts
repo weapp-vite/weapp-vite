@@ -13,6 +13,8 @@ import { getSourceFromVirtualId } from '../../resolver'
 import { createCompilerAppShellSignature } from '../appShell'
 import { createCompileVueFileOptions, isVueTransformSourceMapEnabled } from '../compileOptions'
 import { createCompilerPageLayoutPlanSignature } from '../pageLayout'
+import { emitScopedSlotChunks } from '../scopedSlot'
+import { resolveVueOutputBase } from '../shared'
 import { compileTransformEntryResult, createTransformStageMeasurer, handleTransformEntryPageLayoutFlow, isVueCssImporterDirtyReasonSummary, isVueStyleOnlyDirtyReasonSummary, loadTransformSource, logTransformFileError, normalizeVueTransformResult, resolveDirtyVueEntryId, resolveTransformAutoRoutesSource, resolveTransformEntryFlags, resolveTransformFilename } from './shared'
 import { createSfcStyleBlocksSignature } from './styleOnlyRefresh'
 import { finalizeVueTransform } from './transformFile/finalize'
@@ -194,6 +196,11 @@ export async function transformVueLikeFile(options: {
       reportTiming,
     })
     if (reuseResult.returnedCode) {
+      // 编译结果可跨轮复用，emitFile 的入口声明仍属于当前原生构建代次。
+      const relativeBase = resolveVueOutputBase(configService, filename)
+      if (relativeBase && cachedCompilation) {
+        emitScopedSlotChunks(pluginCtx, relativeBase, cachedCompilation.result, scopedSlotModules, emittedScopedSlotChunks, configService.outputExtensions)
+      }
       return {
         code: reuseResult.returnedCode.code,
         map: reuseResult.returnedCode.map,

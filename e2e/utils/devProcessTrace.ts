@@ -16,18 +16,23 @@ interface DevProcessTraceExit {
   reason: 'process-exited' | 'spawn-failed'
 }
 
+/** 退出资源与原始输出沿用同一个报告目录，避免诊断产物脱离既有 CI 收集范围。 */
+export function resolveDevProcessTraceDirectory(feature = TRACE_ENV) {
+  const configuredDirectory = process.env[TRACE_DIR_ENV]?.trim()
+  const reportPaths = configuredDirectory ? undefined : resolveIdeWarningReportPathsFromEnv()
+  const directory = configuredDirectory || (reportPaths && path.join(reportPaths.reportDir, 'dev-process'))
+  if (!directory) {
+    throw new Error(`${feature}=1 requires an active IDE report or ${TRACE_DIR_ENV}.`)
+  }
+  return directory
+}
+
 /** 可选保留观测分块；序号不表示流间因果，最后一条 end 才是采集终态。 */
 export function createDevProcessTrace(project: string) {
   if (process.env[TRACE_ENV] !== '1') {
     return undefined
   }
-  const configuredDirectory = process.env[TRACE_DIR_ENV]?.trim()
-  const reportPaths = configuredDirectory ? undefined : resolveIdeWarningReportPathsFromEnv()
-  const directory = configuredDirectory || (reportPaths && path.join(reportPaths.reportDir, 'dev-process'))
-  if (!directory) {
-    throw new Error(`${TRACE_ENV}=1 requires an active IDE report or ${TRACE_DIR_ENV}.`)
-  }
-
+  const directory = resolveDevProcessTraceDirectory()
   fs.mkdirSync(directory, { recursive: true })
   const tracePath = path.join(directory, `${randomUUID()}.jsonl`)
   const descriptor = fs.openSync(tracePath, 'wx')
