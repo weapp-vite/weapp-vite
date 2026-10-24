@@ -4,6 +4,7 @@ import { beforeEach, expect, it, vi } from 'vitest'
 import { verifyRemoveCooldown } from './removeCooldown.mjs'
 
 const io = vi.hoisted(() => ({
+  rename: vi.fn(),
   rm: vi.fn(),
   writeFile: vi.fn(),
 }))
@@ -22,6 +23,7 @@ function fixture() {
     _throttled: new Map(),
   })
   const owner = { watcher, events: [], errors: [], event: vi.fn() }
+  const open = vi.fn(() => owner)
   const ready = vi.fn().mockResolvedValue(undefined)
   const instrumentation = { settleDirectoryRegistration: vi.fn(() => barrier.promise) }
   const run = () => verifyRemoveCooldown({
@@ -30,12 +32,12 @@ function fixture() {
     root,
     watched: path.join(root, 'src'),
     timeoutMs: 1000,
-    open: () => owner,
+    open,
     ready,
     instrumentation,
     evidence: [],
   }).catch((error: unknown) => error)
-  return { barrier, owner, ready, instrumentation, run }
+  return { root, barrier, owner, open, ready, instrumentation, run }
 }
 
 beforeEach(() => {
@@ -70,4 +72,28 @@ it('preserves a failed native registration barrier and leaves the source intact'
   expect(await result).toBe(original)
   expect(io.rm).not.toHaveBeenCalled()
   expect(ctx.owner.events).toEqual([])
+})
+
+it('publishes a fully written replacement from outside the watch root after holding the exact unlink', async () => {
+  const ctx = fixture()
+  const file = path.join(ctx.root, 'src/cooldown-atomic.txt')
+  const replacement = path.join(ctx.root, 'cooldown-atomic-replacement.txt')
+  const original = new Error('stop at the replacement rename')
+  io.rm.mockImplementation(async (removed) => {
+    const entry = { timeoutObject: setTimeout(() => {}, 100), clear: vi.fn() }
+    ctx.owner.watcher._throttled.set('remove', new Map([[removed, entry]]))
+    ctx.owner.watcher._pendingUnlinks.set(removed, ['unlink', removed])
+    setTimeout(() => {}, 100)
+  })
+  io.rename.mockRejectedValue(original)
+  const result = ctx.run()
+  ctx.barrier.resolve()
+  expect(await result).toBe(original)
+  expect(io.writeFile).toHaveBeenCalledTimes(2)
+  expect(io.writeFile).toHaveBeenNthCalledWith(1, file, 'first atomic generation')
+  expect(io.writeFile).toHaveBeenNthCalledWith(2, replacement, 'replacement atomic generation remains a single public change')
+  expect(ctx.open).toHaveBeenCalledExactlyOnceWith({}, path.join(ctx.root, 'src'), { atomic: 100 })
+  expect(io.writeFile.mock.invocationCallOrder[1]).toBeLessThan(ctx.open.mock.invocationCallOrder[0]!)
+  expect(io.rename).toHaveBeenCalledExactlyOnceWith(replacement, file)
+  expect(io.rm.mock.invocationCallOrder[0]).toBeLessThan(io.rename.mock.invocationCallOrder[0]!)
 })

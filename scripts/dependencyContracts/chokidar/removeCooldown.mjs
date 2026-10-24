@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { bounded, deferred, turn } from './support.mjs'
 
@@ -184,7 +184,10 @@ function holdAtomicFlush(owner, file, removeGate) {
 
 async function verifyAtomic({ chokidar, root, watched, timeoutMs, open, ready, instrumentation, evidence }) {
   const file = path.join(watched, 'cooldown-atomic.txt')
+  const replacement = path.join(root, 'cooldown-atomic-replacement.txt')
+  const contents = 'replacement atomic generation remains a single public change'
   await writeFile(file, 'first atomic generation')
+  await writeFile(replacement, contents)
   const owner = open(chokidar, watched, { atomic: 100 })
   await ready(owner)
   await instrumentation.settleDirectoryRegistration(timeoutMs)
@@ -200,8 +203,9 @@ async function verifyAtomic({ chokidar, root, watched, timeoutMs, open, ready, i
     atomicGate.assertCaptured()
     removeGate.assertCaptured()
     const change = owner.event('change', file, timeoutMs)
-    await writeFile(file, 'replacement atomic generation remains a single public change')
+    await rename(replacement, file)
     await change
+    assert.equal(await readFile(file, 'utf8'), contents)
     assert.equal(owner.watcher._pendingUnlinks.has(file), false, 'native re-add consumes the original atomic unlink buffer')
     afterChange = removeGate.snapshot('after-atomic-change-before-original-flush-release')
     atomicGate.release()

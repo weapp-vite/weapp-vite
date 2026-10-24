@@ -14,6 +14,8 @@ macOS 上 `fs.watch` 返回和 Chokidar 初次扫描的 `ready` 不保证 CF 线
 
 atomic 冷却契约在初次公开 `ready` 后、第一次删除前执行相同门禁；重建目录的契约在新文件 `add` 后再次执行门禁，再开始后续修改和删除。父目录先前完成的门禁不能代替新取得的子目录订阅就绪。门禁失败保留原始错误，不进行后续修改；atomic unlink 缓冲、旧 remove 冷却及最终单次 change 断言保持原有时序。
 
+atomic 替换文件在订阅前于同一 fixture 文件系统、watched 目录之外完整写好；精确 unlink 缓冲和旧 remove 冷却均被持有后，才将它 rename 到原路径，并核验最终文本。这样只测试已完成文件的 unlink/add 合并，不把新路径 `writeFile` 的创建与后续写入两个阶段误当成一次原子发布；最终仍严格要求一个 change，不能出现额外 add、unlink 或 change。
+
 所有权、重绑和恢复后的独立后续写入先经过同一个 observed-drain 检查点：在 owner 的首次 `add` 前观察精确文件 listener，保留原调用、返回 Promise 和 Error 身份；等待已观察 listener 全部结束、该文件原有 watch/change 节流自然退出，并确认一个事件循环 turn 内 epoch 不变。观察不清除计时器、不补发事件、不固定 sleep，也不改现有 stat 门禁；`cwd` 下分别按原 watch key 与相对 change key 匹配同一文件。超时、关闭或 listener 拒绝均失败，旁路观察到的拒绝独立记录为 `listenerFailures`，不伪装为 public `error`；worker 在用例完成和最终清理后均核验，不能因未调用检查点而漏报。公开 close 和读取门禁释放后，同一 observer 还须在预算内等待已登记 listener 全部结束，再生成最终失败清单；未完成时保留临时目录并报告 cleanup 失败，不能用 native close 代替异步 listener 完成证据。
 
 该检查点只用于 `atomic: false` 且未开启 `awaitWriteFinish` 的独立事件阶段，不覆盖额外的 pending-unlink/pending-write 队列，不声称操作系统未来不会再交付旧通知，也不构成高频每次 write 必发 change 的保证。专门验证旧错误、atomic 和 remove 冷却的门禁时序保持原样。恢复和共享 owner 的后续写入使用已存在文件的 `r+` 更新并核验文本严格变长，避免引入额外的 truncate 中间阶段；change 同时要求目标新内容的文件大小，随后核验最终内容，旧 stat 不能冒充目标写入通过。这不增加文件写满稳定性或截断通知重放的契约；未通过的历史运行仍保持失败。
