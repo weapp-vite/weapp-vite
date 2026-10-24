@@ -136,6 +136,8 @@ const projects = [
       testTimeout: 60_000,
       hookTimeout: 30_000,
       include: [
+        'e2e/utils/capabilityFallbackDiagnostics.test.ts',
+        'e2e/utils/capabilityFallbackRuntime.test.ts',
         'e2e/scripts/e2e-suite-manifest.test.ts',
         'e2e/scripts/devtoolsMatrix.test.ts',
         'e2e/utils/devtoolsSelection.test.ts',

@@ -19,6 +19,7 @@ import { startRuntimeDevProcess } from '../../utils/runtimeDevProcess'
 import { resolveRuntimeProviderName } from '../../utils/runtimeProvider'
 import { createStatefulHmrProject } from '../../utils/statefulHmrProject'
 import { capabilityFallbackScenarios } from './capabilityFallbackCases'
+import { captureCapabilityFallbackFailure } from './capabilityFallbackDiagnostics'
 import { assertEsmClassicOutput, prepareEsmCapabilitySource } from './esmFallback'
 import { stylesheetFallbackCheckpoints, verifyStylesheetFallback } from './stylesheetFallback'
 import { installStatefulHmrTransport } from './transport'
@@ -51,6 +52,7 @@ export function createHmrCapabilityFallbackSuite(
       let profilePath = ''
       let runtimeReleased = true
       let devReleased = true
+      let caseDeadlineAtMonotonicMs = 0
 
       async function connect(stateful: boolean) {
         runtimeReleased = false
@@ -129,6 +131,16 @@ export function createHmrCapabilityFallbackSuite(
           })
         }
         catch (error) {
+          await captureCapabilityFallbackFailure({
+            projectRoot: fixture!.projectRoot,
+            miniProgram,
+            provider,
+            scenario: { host, requested, reason, format, marker, count },
+            failure: error,
+            lastObservation: { actual, observationError },
+            getDevOutput: () => dev!.getOutput(),
+            caseDeadlineAtMonotonicMs,
+          })
           throw new Error(`Classic runtime state did not settle: ${JSON.stringify({ host, requested, reason, format, marker, count, actual, observationError })}`, { cause: error })
         }
       }
@@ -267,6 +279,7 @@ export function createHmrCapabilityFallbackSuite(
       }, 240_000)
 
       it('hands unsupported updates and rapid saves to classic, then keeps classic across restore and config reload', async (ctx) => {
+        caseDeadlineAtMonotonicMs = performance.now() + 600_000
         if (reason === 'stylesheet-output') {
           const dom = createDomAcceptance(ctx, 'e2e-apps/stateful-hmr', stylesheetFallbackCheckpoints(provider))
           await verifyStylesheetFallback({
