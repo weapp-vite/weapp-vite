@@ -37,6 +37,14 @@
   dir: mpcore/packages/core
   intents:
     - workspace-dependency-upgrade
+"@mpcore/core@0.0.8":
+  dir: mpcore/packages/core
+  intents:
+    - catalog-upgrade-20261018-000425
+    - dependency-upgrade-20261011-021439
+    - dependency-upgrade-20261015-101137
+    - dependency-upgrade-20261015-225048
+    - dependency-upgrade-20261018-000424
 "@mpcore/simulator@0.3.3":
   dir: mpcore/packages/simulator
   intents:
@@ -147,6 +155,23 @@
     - vite-entrypoints
     - web-runtime-parity
     - workspace-dependency-upgrade
+"@mpcore/simulator@1.1.0":
+  dir: mpcore/packages/simulator
+  intents:
+    - automator-upstream-013-parity
+    - catalog-upgrade-20261018-000425
+    - dependency-upgrade-20261011-021439
+    - dependency-upgrade-20261015-101137
+    - dependency-upgrade-20261015-225048
+    - dependency-upgrade-20261018-000424
+    - jsx-template-registration-capability
+    - mpcore-component-testing
+    - native-form-rich-text-headless
+    - route-done-renderer-contract
+    - simulator-artifact-existence-probes
+    - simulator-include-page-definition-reload
+    - simulator-native-property-data-parity
+    - simulator-static-module-syntax
 "@mpcore/test@0.1.10":
   dir: mpcore/packages/test
   intents:
@@ -191,6 +216,15 @@
   intents:
     - node-support-dependency-closure
     - workspace-dependency-upgrade
+"@mpcore/test@1.1.0":
+  dir: mpcore/packages/test
+  intents:
+    - catalog-upgrade-20261018-000425
+    - dependency-upgrade-20261011-021439
+    - dependency-upgrade-20261015-101137
+    - dependency-upgrade-20261015-225048
+    - dependency-upgrade-20261018-000424
+    - mpcore-component-testing
 "@mpcore/vitest@0.1.3":
   dir: mpcore/packages/vitest
   intents:
@@ -241,6 +275,15 @@
     - mpcore-test-entrypoints
     - node-support-dependency-closure
     - workspace-dependency-upgrade
+"@mpcore/vitest@1.1.0":
+  dir: mpcore/packages/vitest
+  intents:
+    - catalog-upgrade-20261018-000425
+    - dependency-upgrade-20261011-021439
+    - dependency-upgrade-20261015-101137
+    - dependency-upgrade-20261015-225048
+    - dependency-upgrade-20261018-000424
+    - mpcore-component-testing
 "@mpcore/weapp-vite@0.1.10":
   dir: mpcore/packages/weapp-vite
   intents:
@@ -286,11 +329,27 @@
     - acceptance-and-profile-fixes
     - node-support-dependency-closure
     - workspace-dependency-upgrade
+"@mpcore/weapp-vite@1.0.1":
+  dir: mpcore/packages/weapp-vite
+  intents:
+    - catalog-upgrade-20261018-000425
+    - dependency-upgrade-20261011-021439
+    - dependency-upgrade-20261015-101137
+    - dependency-upgrade-20261015-225048
+    - dependency-upgrade-20261018-000424
 "@weapp-agent/cli@0.1.0":
   dir: packages/agent-cli
   intents:
     - scaffold-agent-workflows
     - workspace-dependency-upgrade
+"@weapp-agent/cli@0.1.1":
+  dir: packages/agent-cli
+  intents:
+    - catalog-upgrade-20261018-000425
+    - dependency-upgrade-20261011-021439
+    - dependency-upgrade-20261015-101137
+    - dependency-upgrade-20261015-225048
+    - dependency-upgrade-20261018-000424
 "@weapp-core/api@0.2.0":
   dir: "@weapp-core/api"
   intents:
@@ -343,6 +402,15 @@
   dir: "@weapp-core/api"
   intents:
     - workspace-dependency-upgrade
+"@weapp-core/api@0.3.9":
+  dir: "@weapp-core/api"
+  intents:
+    - catalog-upgrade-20261018-000425
+    - config-type-leaves
+    - dependency-upgrade-20261011-021439
+    - dependency-upgrade-20261015-101137
+    - dependency-upgrade-20261015-225048
+    - dependency-upgrade-20261018-000424
 "@weapp-core/constants@0.2.0":
   dir: "@weapp-core/constants"
   intents:
@@ -406,6 +474,20 @@
     - web-runtime-parity
     - wevu-component-contracts
     - workspace-dependency-upgrade
+"@weapp-core/constants@0.4.0":
+  dir: "@weapp-core/constants"
+  intents:
+    - automator-upstream-013-parity
+    - catalog-upgrade-20261018-000425
+    - dependency-upgrade-20261011-021439
+    - dependency-upgrade-20261015-101137
+    - dependency-upgrade-20261015-225048
+    - dependency-upgrade-20261018-000424
+    - fresh-pages-scan
+    - hmr-classic-capability-boundaries
+    - jsx-template-registration-capability
+    - native-publication-noop-observation
+    - stateful-native-entry-contract
 "@weapp-core/init@6.0.16":
   dir: "@weapp-core/init"
   intents:
@@ -453,6 +535,22 @@
   dir: "@weapp-core/init"
   intents:
     - workspace-dependency-upgrade
+"@weapp-core/init@6.0.26":
+  dir: "@weapp-core/init"
+  intents:
+    - catalog-upgrade-20261018-000425
+    - dependency-upgrade-20261011-021439
+    - dependency-upgrade-20261015-101137
+    - dependency-upgrade-20261015-225048
+    - dependency-upgrade-20261018-000424
+"@weapp-core/logger@3.1.10":
+  dir: "@weapp-core/logger"
+  intents:
+    - catalog-upgrade-20261018-000425
+    - dependency-upgrade-20261011-021439
+    - dependency-upgrade-20261015-101137
+    - dependency-upgrade-20261015-225048
+    - dependency-upgrade-20261018-000424
 "@weapp-core/logger@3.1.2":
   dir: "@weapp-core/logger"
   intents:
@@ -506,6 +604,14 @@
   dir: "@weapp-core/schematics"
   intents:
     - calm-docs-domain
+"@weapp-core/schematics@6.2.10":
+  dir: "@weapp-core/schematics"
+  intents:
+    - catalog-upgrade-20261018-000425
+    - dependency-upgrade-20261011-021439
+    - dependency-upgrade-20261015-101137
+    - dependency-upgrade-20261015-225048
+    - dependency-upgrade-20261018-000424
 "@weapp-core/schematics@6.2.2":
   dir: "@weapp-core/schematics"
   intents:
@@ -598,6 +704,17 @@
   dir: "@weapp-core/shared"
   intents:
     - workspace-dependency-upgrade
+"@weapp-core/shared@3.3.0":
+  dir: "@weapp-core/shared"
+  intents:
+    - catalog-upgrade-20261018-000425
+    - config-type-leaves
+    - dependency-upgrade-20261011-021439
+    - dependency-upgrade-20261015-101137
+    - dependency-upgrade-20261015-225048
+    - dependency-upgrade-20261018-000424
+    - native-form-rich-text-headless
+    - shared-get-value-types
 "@weapp-core/types@1.1.0":
   dir: "@weapp-core/types"
   intents:
@@ -638,6 +755,14 @@
   dir: "@weapp-core/types"
   intents:
     - workspace-dependency-upgrade
+"@weapp-core/types@1.1.7":
+  dir: "@weapp-core/types"
+  intents:
+    - catalog-upgrade-20261018-000425
+    - dependency-upgrade-20261011-021439
+    - dependency-upgrade-20261015-101137
+    - dependency-upgrade-20261015-225048
+    - dependency-upgrade-20261018-000424
 "@weapp-vite/acceptance@0.1.0":
   dir: packages/acceptance
   intents:
@@ -645,6 +770,14 @@
     - acceptance-and-profile-fixes
     - upload-environment-contracts
     - workspace-dependency-upgrade
+"@weapp-vite/acceptance@0.1.1":
+  dir: packages/acceptance
+  intents:
+    - catalog-upgrade-20261018-000425
+    - dependency-upgrade-20261011-021439
+    - dependency-upgrade-20261015-101137
+    - dependency-upgrade-20261015-225048
+    - dependency-upgrade-20261018-000424
 "@weapp-vite/ast-native@0.0.6":
   dir: packages/ast-native
   intents:
@@ -665,6 +798,14 @@
   dir: packages/ast-native
   intents:
     - structured-compiler-diagnostics
+"@weapp-vite/ast-native@0.1.10":
+  dir: packages/ast-native
+  intents:
+    - catalog-upgrade-20261018-000425
+    - dependency-upgrade-20261011-021439
+    - dependency-upgrade-20261015-101137
+    - dependency-upgrade-20261015-225048
+    - dependency-upgrade-20261018-000424
 "@weapp-vite/ast-native@0.1.2":
   dir: packages/ast-native
   intents:
@@ -764,6 +905,15 @@
   intents:
     - node-support-dependency-closure
     - workspace-dependency-upgrade
+"@weapp-vite/ast@7.6.0":
+  dir: packages/ast
+  intents:
+    - catalog-upgrade-20261018-000425
+    - dependency-upgrade-20261011-021439
+    - dependency-upgrade-20261015-101137
+    - dependency-upgrade-20261015-225048
+    - dependency-upgrade-20261018-000424
+    - quiet-babel-backend-loading
 "@weapp-vite/dashboard@6.20.5":
   dir: packages/dashboard
   intents:
@@ -821,6 +971,15 @@
     - dashboard-evidence-workbench
     - dashboard-graph-interaction-fixes
     - workspace-dependency-upgrade
+"@weapp-vite/dashboard@7.6.0":
+  dir: packages/dashboard
+  intents:
+    - catalog-upgrade-20261018-000425
+    - dashboard-transport-ownership
+    - dependency-upgrade-20261011-021439
+    - dependency-upgrade-20261015-101137
+    - dependency-upgrade-20261015-225048
+    - dependency-upgrade-20261018-000424
 "@weapp-vite/devtools-runtime@0.4.19":
   dir: packages/devtools-runtime
   intents:
@@ -862,6 +1021,15 @@
     - acceptance-and-profile-evidence
     - managed-devtools-ownership
     - workspace-dependency-upgrade
+"@weapp-vite/devtools-runtime@0.6.0":
+  dir: packages/devtools-runtime
+  intents:
+    - automator-upstream-013-parity
+    - catalog-upgrade-20261018-000425
+    - dependency-upgrade-20261011-021439
+    - dependency-upgrade-20261015-101137
+    - dependency-upgrade-20261015-225048
+    - dependency-upgrade-20261018-000424
 "@weapp-vite/eslint@0.2.0":
   dir: packages/eslint
   intents:
@@ -875,6 +1043,14 @@
   intents:
     - acceptance-and-profile-evidence
     - workspace-dependency-upgrade
+"@weapp-vite/eslint@0.2.11":
+  dir: packages/eslint
+  intents:
+    - catalog-upgrade-20261018-000425
+    - dependency-upgrade-20261011-021439
+    - dependency-upgrade-20261015-101137
+    - dependency-upgrade-20261015-225048
+    - dependency-upgrade-20261018-000424
 "@weapp-vite/eslint@0.2.2":
   dir: packages/eslint
   intents:
@@ -956,6 +1132,14 @@
   dir: packages-runtime/glass-easel-web-adapter
   intents:
     - workspace-dependency-upgrade
+"@weapp-vite/glass-easel-web-adapter@0.1.7":
+  dir: packages-runtime/glass-easel-web-adapter
+  intents:
+    - catalog-upgrade-20261018-000425
+    - dependency-upgrade-20261011-021439
+    - dependency-upgrade-20261015-101137
+    - dependency-upgrade-20261015-225048
+    - dependency-upgrade-20261018-000424
 "@weapp-vite/hmr@0.2.0":
   dir: packages/hmr
   intents:
@@ -967,10 +1151,30 @@
   intents:
     - stateful-hmr-publication
     - workspace-dependency-upgrade
+"@weapp-vite/hmr@0.2.2":
+  dir: packages/hmr
+  intents:
+    - catalog-upgrade-20261018-000425
+    - dependency-upgrade-20261011-021439
+    - dependency-upgrade-20261015-101137
+    - dependency-upgrade-20261015-225048
+    - dependency-upgrade-20261018-000424
+    - fixed-hmr-disposal-errors
+    - fixed-refresh-input-owner
 "@weapp-vite/i18n@0.2.0":
   dir: packages-runtime/i18n
   intents:
     - first-party-i18n
+"@weapp-vite/i18n@0.2.10":
+  dir: packages-runtime/i18n
+  intents:
+    - catalog-upgrade-20261018-000425
+    - config-type-leaves
+    - dependency-upgrade-20261011-021439
+    - dependency-upgrade-20261015-101137
+    - dependency-upgrade-20261015-225048
+    - dependency-upgrade-20261018-000424
+    - jsx-template-registration-capability
 "@weapp-vite/i18n@0.2.2":
   dir: packages-runtime/i18n
   intents:
@@ -1069,6 +1273,17 @@
     - optional-runtime-loading-performance
     - upload-environment-contracts
     - workspace-dependency-upgrade
+"@weapp-vite/mcp@2.1.0":
+  dir: packages/mcp
+  intents:
+    - automator-upstream-013-parity
+    - catalog-upgrade-20261018-000425
+    - dependency-upgrade-20261011-021439
+    - dependency-upgrade-20261015-101137
+    - dependency-upgrade-20261015-225048
+    - dependency-upgrade-20261018-000424
+    - jsx-template-registration-capability
+    - wild-socks-serve
 "@weapp-vite/miniprogram-automator@1.2.14":
   dir: packages/miniprogram-automator
   intents:
@@ -1142,6 +1357,26 @@
     - mpcore-runtime-parity
     - optional-runtime-loading-performance
     - workspace-dependency-upgrade
+"@weapp-vite/miniprogram-automator@1.4.0":
+  dir: packages/miniprogram-automator
+  intents:
+    - automator-dispatch-event-detail
+    - automator-upstream-013-parity
+    - catalog-upgrade-20261018-000425
+    - dependency-upgrade-20261011-021439
+    - dependency-upgrade-20261015-101137
+    - dependency-upgrade-20261015-225048
+    - dependency-upgrade-20261018-000424
+    - exact-component-caller
+    - native-form-rich-text-headless
+"@weapp-vite/qr@1.1.10":
+  dir: packages/qr
+  intents:
+    - catalog-upgrade-20261018-000425
+    - dependency-upgrade-20261011-021439
+    - dependency-upgrade-20261015-101137
+    - dependency-upgrade-20261015-225048
+    - dependency-upgrade-20261018-000424
 "@weapp-vite/qr@1.1.2":
   dir: packages/qr
   intents:
@@ -1205,6 +1440,15 @@
   dir: packages-runtime/react
   intents:
     - workspace-dependency-upgrade
+"@weapp-vite/react@0.2.13":
+  dir: packages-runtime/react
+  intents:
+    - catalog-upgrade-20261018-000425
+    - dependency-upgrade-20261011-021439
+    - dependency-upgrade-20261015-101137
+    - dependency-upgrade-20261015-225048
+    - dependency-upgrade-20261018-000424
+    - jsx-template-registration-capability
 "@weapp-vite/react@0.2.2":
   dir: packages-runtime/react
   intents:
@@ -1257,6 +1501,20 @@
     - node-support-dependency-closure
     - optional-runtime-loading-performance
     - workspace-dependency-upgrade
+"@weapp-vite/tailwindcss@1.0.1":
+  dir: packages/tailwindcss
+  intents:
+    - calm-imported-tailwind-hmr
+    - catalog-upgrade-20261018-000425
+    - dependency-upgrade-20261011-021439
+    - dependency-upgrade-20261015-101137
+    - dependency-upgrade-20261015-225048
+    - dependency-upgrade-20261018-000424
+    - exact-tailwind-hmr-source-scope
+    - fresh-file-tailwind-matching
+    - tailwind-hmr-source-scope
+    - tailwind-source-match-compaction
+    - tidy-rpx-hmr-candidates
 "@weapp-vite/volar@2.1.10":
   dir: packages/volar
   intents:
@@ -1281,6 +1539,15 @@
   dir: packages/volar
   intents:
     - workspace-dependency-upgrade
+"@weapp-vite/volar@2.1.14":
+  dir: packages/volar
+  intents:
+    - catalog-upgrade-20261018-000425
+    - dependency-upgrade-20261011-021439
+    - dependency-upgrade-20261015-101137
+    - dependency-upgrade-20261015-225048
+    - dependency-upgrade-20261018-000424
+    - local-template-ref-elements
 "@weapp-vite/volar@2.1.5":
   dir: packages/volar
   intents:
@@ -1397,6 +1664,20 @@
     - web-vite-plugin-types
     - wevu-component-contracts
     - workspace-dependency-upgrade
+"@weapp-vite/web@2.0.1":
+  dir: packages-runtime/web
+  intents:
+    - catalog-upgrade-20261018-000425
+    - dependency-upgrade-20261011-021439
+    - dependency-upgrade-20261015-101137
+    - dependency-upgrade-20261015-225048
+    - dependency-upgrade-20261018-000424
+    - fresh-pages-scan
+    - jsx-template-registration-capability
+    - native-form-rich-text-headless
+    - neat-peaches-scan
+    - quiet-routes-refresh
+    - web-hmr-scan-generation
 "@wevu/api@0.2.17":
   dir: packages-runtime/weapi
   intents:
@@ -1453,6 +1734,14 @@
   dir: packages-runtime/weapi
   intents:
     - workspace-dependency-upgrade
+"@wevu/api@0.3.9":
+  dir: packages-runtime/weapi
+  intents:
+    - catalog-upgrade-20261018-000425
+    - dependency-upgrade-20261011-021439
+    - dependency-upgrade-20261015-101137
+    - dependency-upgrade-20261015-225048
+    - dependency-upgrade-20261018-000424
 "@wevu/compiler@6.20.5":
   dir: packages-runtime/wevu-compiler
   intents:
@@ -1569,6 +1858,20 @@
     - wevu-component-contracts
     - wevu-initial-binding-fixes
     - workspace-dependency-upgrade
+"@wevu/compiler@7.6.0":
+  dir: packages-runtime/wevu-compiler
+  intents:
+    - catalog-upgrade-20261018-000425
+    - classic-initial-route-publication
+    - dependency-upgrade-20261011-021439
+    - dependency-upgrade-20261015-101137
+    - dependency-upgrade-20261015-225048
+    - dependency-upgrade-20261018-000424
+    - hmr-classic-capability-boundaries
+    - jsx-template-registration-capability
+    - lazy-vue-jsx-transform
+    - native-slot-context-opt-in
+    - published-plugin-host-ownership
 "@wevu/json-render-components@0.1.0":
   dir: packages-runtime/json-render-components
   intents:
@@ -1579,6 +1882,14 @@
   dir: packages-runtime/json-render-components
   intents:
     - workspace-dependency-upgrade
+"@wevu/json-render-components@0.1.2":
+  dir: packages-runtime/json-render-components
+  intents:
+    - catalog-upgrade-20261018-000425
+    - dependency-upgrade-20261011-021439
+    - dependency-upgrade-20261015-101137
+    - dependency-upgrade-20261015-225048
+    - dependency-upgrade-20261018-000424
 "@wevu/json-render@0.1.0":
   dir: packages-runtime/json-render
   intents:
@@ -1589,6 +1900,14 @@
   dir: packages-runtime/json-render
   intents:
     - workspace-dependency-upgrade
+"@wevu/json-render@0.1.2":
+  dir: packages-runtime/json-render
+  intents:
+    - catalog-upgrade-20261018-000425
+    - dependency-upgrade-20261011-021439
+    - dependency-upgrade-20261015-101137
+    - dependency-upgrade-20261015-225048
+    - dependency-upgrade-20261018-000424
 "@wevu/query@0.0.0":
   dir: packages-runtime/wevu-query
   intents:
@@ -1632,6 +1951,14 @@
   dir: packages-runtime/wevu-query
   intents:
     - workspace-dependency-upgrade
+"@wevu/query@0.0.9":
+  dir: packages-runtime/wevu-query
+  intents:
+    - catalog-upgrade-20261018-000425
+    - dependency-upgrade-20261011-021439
+    - dependency-upgrade-20261015-101137
+    - dependency-upgrade-20261015-225048
+    - dependency-upgrade-20261018-000424
 "@wevu/test-utils@0.2.0":
   dir: packages-runtime/wevu-test-utils
   intents:
@@ -1692,6 +2019,15 @@
   intents:
     - node-support-dependency-closure
     - workspace-dependency-upgrade
+"@wevu/test-utils@1.0.1":
+  dir: packages-runtime/wevu-test-utils
+  intents:
+    - catalog-upgrade-20261018-000425
+    - dependency-upgrade-20261011-021439
+    - dependency-upgrade-20261015-101137
+    - dependency-upgrade-20261015-225048
+    - dependency-upgrade-20261018-000424
+    - jsx-template-registration-capability
 "@wevu/web-apis@1.2.35":
   dir: packages-runtime/web-apis
   intents:
@@ -1750,6 +2086,17 @@
   dir: packages-runtime/web-apis
   intents:
     - workspace-dependency-upgrade
+"@wevu/web-apis@1.3.6":
+  dir: packages-runtime/web-apis
+  intents:
+    - catalog-upgrade-20261018-000425
+    - config-type-leaves
+    - dependency-upgrade-20261011-021439
+    - dependency-upgrade-20261015-101137
+    - dependency-upgrade-20261015-225048
+    - dependency-upgrade-20261018-000424
+    - fair-eagles-sniff
+    - jsx-template-registration-capability
 create-weapp-vite@2.8.0:
   dir: packages/create-weapp-vite
   intents:
@@ -2079,6 +2426,155 @@ create-weapp-vite@3.1.0:
     - wevu-initial-binding-fixes
     - wevu-setdata-phase-observation
     - workspace-dependency-upgrade
+create-weapp-vite@3.2.0:
+  dir: packages/create-weapp-vite
+  intents:
+    - align-devtools-peer-types
+    - analyze-production-environment
+    - app-shell-page-cache
+    - atomic-tailwind-input-owner
+    - auto-routes-source-watcher-readiness
+    - automator-upstream-013-parity
+    - avoid-duplicate-npm-metadata
+    - bounded-page-import-discovery
+    - bright-native-publication-paths
+    - cached-scoped-slot-publication
+    - calm-ide-classic-startup
+    - calm-imported-tailwind-hmr
+    - calm-shared-publication-order
+    - calm-watchers-close
+    - catalog-upgrade-20261018-000425
+    - chokidar-empty-directory-removal
+    - chokidar-registration-lifecycle
+    - classic-compiler-content-snapshot
+    - classic-generation-sidecar-owner
+    - classic-handoff-output-format
+    - classic-handoff-style-input-owner
+    - classic-initial-route-publication
+    - classic-pending-readiness-cancellation
+    - classic-restart-independent-cleanup
+    - classic-restart-session-shutdown-owner
+    - classic-sidecar-readiness-close
+    - classic-watch-output-recovery
+    - cli-action-boundaries
+    - close-output-style-preprocessor-pools
+    - compiler-input-hmr-ownership
+    - compiler-native-visual-noop
+    - complete-classic-registration-graph
+    - component-directory-entry-output
+    - config-type-leaves
+    - dashboard-public-types-boundary
+    - dashboard-transport-ownership
+    - dependency-upgrade-20261011-021439
+    - dependency-upgrade-20261015-101137
+    - dependency-upgrade-20261015-225048
+    - dependency-upgrade-20261018-000424
+    - dev-dependency-miniprogram-components
+    - drain-classic-restart-generations
+    - early-native-template-admission
+    - early-routes-publish
+    - exact-tailwind-hmr-source-scope
+    - external-css-bindings-classic
+    - fix-bun-dev-ipc
+    - fix-classic-app-shell-snapshot
+    - fix-cli-subpackage-npm-targets
+    - fix-initial-app-shell-snapshot
+    - fix-issue-1134-style-enoent
+    - fix-sibling-vue-entry
+    - fix-style-sidecar-snapshot
+    - fix-watch-root-registration
+    - fixed-hmr-disposal-errors
+    - fixed-refresh-input-owner
+    - fresh-app-shell-hmr
+    - fresh-file-tailwind-matching
+    - fresh-logical-entry-delete-guard
+    - fresh-pages-scan
+    - fresh-sass-engine-shutdown
+    - frozen-native-sidecar-input
+    - hmr-classic-capability-boundaries
+    - hmr-styles-before-patches
+    - hmr-stylesheet-classic-fallback
+    - independent-fallback-page-owner
+    - independent-preparation-stage-owner
+    - isolate-vue-entry-source-config
+    - jsx-template-registration-capability
+    - layout-sidecar-ownership
+    - lazy-build-transform-dependencies
+    - lazy-cli-command-dependencies
+    - lazy-library-declaration-compiler
+    - lazy-transform-consumers
+    - linear-page-output-paths
+    - local-template-ref-elements
+    - logical-input-sync-paths
+    - merge-tailwind-hmr-reasons
+    - native-directory-snapshot
+    - native-hmr-lifecycle-ownership
+    - native-json-sidecar-capability
+    - native-publication-noop-observation
+    - native-slot-context-opt-in
+    - native-snapshot-entry-ownership
+    - native-vue-hmr-capability-admission
+    - npm-local-root-scoped-traversal
+    - page-style-watch
+    - pending-route-publication
+    - preserve-app-shell-template-owner
+    - preserve-direct-vite-handoff-shutdown
+    - preserve-native-sidecar-publication
+    - publish-current-vue-template-config
+    - published-plugin-host-ownership
+    - quick-entry-identity-paths
+    - quick-local-npm-candidates
+    - quiet-babel-backend-loading
+    - quiet-classic-hmr-ownership
+    - quiet-snapshot-delegation
+    - quiet-tailwind-dependency-owner
+    - raw-compiler-input-ordering
+    - refresh-auto-import-aggregate
+    - register-lib-dts-volar
+    - reuse-tailwind-content-scan-plan
+    - scaffold-lint-node-contract
+    - self-contained-wevu-host-types
+    - serialize-stateful-restarts
+    - shallow-wxml-input-owners
+    - shared-native-layout-discovery
+    - shared-style-classic-dependencies
+    - sidecar-chokidar-directory
+    - snapshot-input-scheduling
+    - snapshot-sidecar-owner
+    - soft-crabs-carry
+    - stable-classic-prelude-discovery
+    - stable-stateful-logical-entry
+    - stateful-disabled-patch-maps
+    - stateful-host-restart-generation
+    - stateful-native-entry-contract
+    - stateful-native-snapshot-input
+    - stateful-sidecar-input-handoff
+    - stateful-snapshot-input-visits
+    - stateful-source-provenance
+    - stateful-topology-restart-guard
+    - tailwind-batch-generation-handoff
+    - tailwind-content-invalidation
+    - tailwind-dependency-file-identity
+    - tailwind-generation-completion
+    - tailwind-generation-input-validation
+    - tailwind-generation-lifetime
+    - tailwind-hmr-content-invalidation
+    - tailwind-hmr-source-scope
+    - tailwind-single-template-transform
+    - tailwind-source-match-compaction
+    - tidy-artifact-publication
+    - tidy-hmr-execution-boundaries
+    - tidy-managed-console
+    - tidy-rpx-hmr-candidates
+    - valid-native-demo-routes
+    - vue-config-snapshot-generation
+    - vue-entry-canonical-components
+    - vue-sidecar-source-locations
+    - web-hmr-scan-generation
+    - web-support-component-scan-output
+    - wild-socks-serve
+    - windows-artifact-paths
+    - windows-upload-cleanup-diagnostics
 rolldown-require@2.0.26:
   dir: packages/rolldown-require
   intents:
@@ -2132,6 +2628,14 @@ rolldown-require@2.0.35:
   intents:
     - vite-host-build-fixes
     - workspace-dependency-upgrade
+rolldown-require@2.0.36:
+  dir: packages/rolldown-require
+  intents:
+    - catalog-upgrade-20261018-000425
+    - dependency-upgrade-20261011-021439
+    - dependency-upgrade-20261015-101137
+    - dependency-upgrade-20261015-225048
+    - dependency-upgrade-20261018-000424
 vite-plugin-performance@2.0.2:
   dir: packages/vite-plugin-performance
   intents:
@@ -2171,6 +2675,14 @@ vite-plugin-performance@2.0.8:
   dir: packages/vite-plugin-performance
   intents:
     - workspace-dependency-upgrade
+vite-plugin-performance@2.0.9:
+  dir: packages/vite-plugin-performance
+  intents:
+    - catalog-upgrade-20261018-000425
+    - dependency-upgrade-20261011-021439
+    - dependency-upgrade-20261015-101137
+    - dependency-upgrade-20261015-225048
+    - dependency-upgrade-20261018-000424
 weapp-ide-cli@6.0.8:
   dir: packages/weapp-ide-cli
   intents:
@@ -2236,6 +2748,23 @@ weapp-ide-cli@6.2.0:
     - mpcore-runtime-parity
     - optional-runtime-loading-performance
     - workspace-dependency-upgrade
+weapp-ide-cli@6.3.0:
+  dir: packages/weapp-ide-cli
+  intents:
+    - automator-upstream-013-parity
+    - catalog-upgrade-20261018-000425
+    - dependency-upgrade-20261011-021439
+    - dependency-upgrade-20261015-101137
+    - dependency-upgrade-20261015-225048
+    - dependency-upgrade-20261018-000424
+    - devtools-kernel-image-paths
+    - fix-devtools-login-classification
+    - fix-ide-local-ownership
+    - managed-plugin-snapshot-ownership
+    - protected-devtools-image-inventory
+    - quiet-darwin-identity
+    - wild-socks-serve
+    - windows-cold-process-inspection
 weapp-vite-plugin-template@1.0.0:
   dir: templates/weapp-vite-plugin-template
   intents:
@@ -2521,6 +3050,151 @@ weapp-vite@7.5.0:
     - wevu-component-contracts
     - wevu-initial-binding-fixes
     - workspace-dependency-upgrade
+weapp-vite@7.6.0:
+  dir: packages/weapp-vite
+  intents:
+    - align-devtools-peer-types
+    - analyze-production-environment
+    - app-shell-page-cache
+    - atomic-tailwind-input-owner
+    - auto-routes-source-watcher-readiness
+    - automator-upstream-013-parity
+    - avoid-duplicate-npm-metadata
+    - bounded-page-import-discovery
+    - bright-native-publication-paths
+    - cached-scoped-slot-publication
+    - calm-ide-classic-startup
+    - calm-imported-tailwind-hmr
+    - calm-shared-publication-order
+    - calm-watchers-close
+    - catalog-upgrade-20261018-000425
+    - chokidar-empty-directory-removal
+    - chokidar-registration-lifecycle
+    - classic-compiler-content-snapshot
+    - classic-generation-sidecar-owner
+    - classic-handoff-output-format
+    - classic-handoff-style-input-owner
+    - classic-initial-route-publication
+    - classic-pending-readiness-cancellation
+    - classic-restart-independent-cleanup
+    - classic-restart-session-shutdown-owner
+    - classic-sidecar-readiness-close
+    - classic-watch-output-recovery
+    - cli-action-boundaries
+    - close-output-style-preprocessor-pools
+    - compiler-input-hmr-ownership
+    - compiler-native-visual-noop
+    - complete-classic-registration-graph
+    - component-directory-entry-output
+    - config-type-leaves
+    - dashboard-public-types-boundary
+    - dashboard-transport-ownership
+    - dependency-upgrade-20261011-021439
+    - dependency-upgrade-20261015-101137
+    - dependency-upgrade-20261015-225048
+    - dependency-upgrade-20261018-000424
+    - dev-dependency-miniprogram-components
+    - drain-classic-restart-generations
+    - early-native-template-admission
+    - early-routes-publish
+    - exact-tailwind-hmr-source-scope
+    - external-css-bindings-classic
+    - fix-bun-dev-ipc
+    - fix-classic-app-shell-snapshot
+    - fix-cli-subpackage-npm-targets
+    - fix-initial-app-shell-snapshot
+    - fix-issue-1134-style-enoent
+    - fix-sibling-vue-entry
+    - fix-style-sidecar-snapshot
+    - fix-watch-root-registration
+    - fixed-hmr-disposal-errors
+    - fixed-refresh-input-owner
+    - fresh-app-shell-hmr
+    - fresh-file-tailwind-matching
+    - fresh-logical-entry-delete-guard
+    - fresh-pages-scan
+    - fresh-sass-engine-shutdown
+    - frozen-native-sidecar-input
+    - hmr-classic-capability-boundaries
+    - hmr-styles-before-patches
+    - hmr-stylesheet-classic-fallback
+    - independent-fallback-page-owner
+    - independent-preparation-stage-owner
+    - isolate-vue-entry-source-config
+    - jsx-template-registration-capability
+    - layout-sidecar-ownership
+    - lazy-build-transform-dependencies
+    - lazy-cli-command-dependencies
+    - lazy-library-declaration-compiler
+    - lazy-transform-consumers
+    - linear-page-output-paths
+    - logical-input-sync-paths
+    - merge-tailwind-hmr-reasons
+    - native-directory-snapshot
+    - native-hmr-lifecycle-ownership
+    - native-json-sidecar-capability
+    - native-publication-noop-observation
+    - native-slot-context-opt-in
+    - native-snapshot-entry-ownership
+    - native-vue-hmr-capability-admission
+    - npm-local-root-scoped-traversal
+    - page-style-watch
+    - pending-route-publication
+    - preserve-app-shell-template-owner
+    - preserve-direct-vite-handoff-shutdown
+    - preserve-native-sidecar-publication
+    - publish-current-vue-template-config
+    - published-plugin-host-ownership
+    - quick-entry-identity-paths
+    - quick-local-npm-candidates
+    - quiet-babel-backend-loading
+    - quiet-classic-hmr-ownership
+    - quiet-snapshot-delegation
+    - quiet-tailwind-dependency-owner
+    - raw-compiler-input-ordering
+    - refresh-auto-import-aggregate
+    - register-lib-dts-volar
+    - reuse-tailwind-content-scan-plan
+    - serialize-stateful-restarts
+    - shallow-wxml-input-owners
+    - shared-native-layout-discovery
+    - shared-style-classic-dependencies
+    - sidecar-chokidar-directory
+    - snapshot-input-scheduling
+    - snapshot-sidecar-owner
+    - soft-crabs-carry
+    - stable-classic-prelude-discovery
+    - stable-stateful-logical-entry
+    - stateful-disabled-patch-maps
+    - stateful-host-restart-generation
+    - stateful-native-entry-contract
+    - stateful-native-snapshot-input
+    - stateful-sidecar-input-handoff
+    - stateful-snapshot-input-visits
+    - stateful-source-provenance
+    - stateful-topology-restart-guard
+    - tailwind-batch-generation-handoff
+    - tailwind-content-invalidation
+    - tailwind-dependency-file-identity
+    - tailwind-generation-completion
+    - tailwind-generation-input-validation
+    - tailwind-generation-lifetime
+    - tailwind-hmr-content-invalidation
+    - tailwind-hmr-source-scope
+    - tailwind-single-template-transform
+    - tailwind-source-match-compaction
+    - tidy-artifact-publication
+    - tidy-hmr-execution-boundaries
+    - tidy-managed-console
+    - tidy-rpx-hmr-candidates
+    - valid-native-demo-routes
+    - vue-config-snapshot-generation
+    - vue-entry-canonical-components
+    - vue-sidecar-source-locations
+    - web-support-component-scan-output
+    - wild-socks-serve
+    - windows-artifact-paths
+    - windows-upload-cleanup-diagnostics
 wevu@6.20.5:
   dir: packages-runtime/wevu
   intents:
@@ -2659,3 +3333,17 @@ wevu@7.5.0:
     - wevu-initial-binding-fixes
     - wevu-setdata-phase-observation
     - workspace-dependency-upgrade
+wevu@7.6.0:
+  dir: packages-runtime/wevu
+  intents:
+    - catalog-upgrade-20261018-000425
+    - config-type-leaves
+    - dependency-upgrade-20261011-021439
+    - dependency-upgrade-20261015-101137
+    - dependency-upgrade-20261015-225048
+    - dependency-upgrade-20261018-000424
+    - hmr-classic-capability-boundaries
+    - jsx-template-registration-capability
+    - local-template-ref-elements
+    - native-slot-context-opt-in
+    - self-contained-wevu-host-types

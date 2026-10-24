@@ -1,5 +1,49 @@
 # @weapp-vite/tailwindcss
 
+## 1.0.1
+
+### Patch Changes
+
+- fix(weapp-vite): 修复导入 Tailwind 入口的普通 CSS 和 Vue 样式在状态化 HMR 中触发完整重载的问题，保留页面状态，并继续通过原生构建管线处理 scoped 样式、PostCSS 和资源 URL。快照输入、依赖或样式入口在编译期间变化时，仍会安全执行完整重同步。
+
+- chore(deps): 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@vitejs/devtools, @vitejs/devtools-kit, eslint, happy-dom, sass, sass-embedded。命名 catalog 变更键：无。
+
+- chore(deps): 升级兼容的 AI SDK、Vue 类型工具及构建依赖，同步脚手架依赖目录和应用模板。TypeScript 保持 6.0.3，截图比较算法及既有 Vite、Rolldown 兼容补丁保持原有契约。
+
+  升级 pnpm、Bun 和 Rust JSON 序列化依赖，并迁移 repoctl 发布说明分类补丁；沿用上游已有的发布 PR 去重修复。
+
+- chore(deps): 升级 Vue、React、Vitest、Rolldown、Oxc 与 AI SDK 等兼容依赖，同步应用、模板和脚手架 catalog。
+
+  迁移 Rolldown 1.2.14 兼容补丁，并对齐 Rust Oxc 0.154.0；保留 Vite 8.3.4、DevTools/Kit 0.7.6、TypeScript 6.0.3 和截图比较语义，p-queue 更新至兼容的 9.3.5。
+
+  默认 catalog 变更键：@icebreakers/eslint-config, @vue/compiler-core, @vue/compiler-dom, devframe, happy-dom, oxc-parser, postcss, react, rolldown, vue, weapp-tailwindcss, zod。命名 catalog 变更键：weapp-tailwindcss-fixed(weapp-tailwindcss)。
+
+- chore(deps): 刷新兼容范围内的运行时与构建依赖。
+
+  升级 AI SDK、TanStack Vue Query、Rollup、weapp-tailwindcss 及其 engine；VS Code 扩展的打包检查脚本改用 adm-zip 自带类型的运行时包。p-queue 与 pixelmatch 保持兼容版本，TypeScript 不在本轮升级范围内。默认 catalog 变更键为 weapp-tailwindcss，命名 catalog 变更键为 weapp-tailwindcss-fixed（均升级至 5.6.3）。
+
+- chore(deps): 自动补充依赖升级发布记录。
+  涉及包：
+  - @mpcore/vitest：devDependencies.vitest
+  - @weapp-vite/glass-easel-web-adapter：devDependencies.vitest
+  - @weapp-agent/cli：dependencies.@ai-sdk/anthropic、dependencies.@ai-sdk/openai、dependencies.@ai-sdk/openai-compatible、dependencies.ai
+  - @weapp-vite/ast-native：devDependencies.vitest
+  - @weapp-vite/eslint：devDependencies.vitest
+
+- fix(hmr): 保持 Tailwind 热更新与首次构建的扫描范围一致，避免纯脚本保存时扫描配置范围外的文件、额外生成样式并误触发 classic 回退。
+
+- fix(weapp-vite): 修复 Tailwind HMR 来源匹配在同一文件判断中反复解析相同目录并重复编译 glob 的开销。每个文件重新读取条目字段和真实路径，仅在本次判断内复用目录解析，并在批次内延迟复用纯 glob 编译结果；保留上游候选范围、隐藏文件、错误短路和回调后符号链接变化的行为。
+
+- fix(weapp-vite): 修复 Tailwind HMR 将自动扫描范围扩大到项目根目录的问题。初始来源登记、新增文件发现与内存批次编译统一沿用编译器解析出的样式来源范围，避免依赖目录使用符号链接时扫描大量无关文件，并保留显式来源配置。
+
+- fix(weapp-vite): 合并连续且语义等价的 Tailwind 来源负规则，减少首次 HMR 准备中重复的目录解析，保留上游匹配、复杂模式、输入封存和依赖验证。
+
+- fix(hmr): 统一热更新内存编译与首次构建的 Tailwind 候选处理，避免纯脚本修改导致 rpx 字号规则换序并误触发 classic 回退；编译器产生的实际样式变化统一参与回退判断，不再依赖 watcher 回调顺序。
+
+- Updated dependencies:
+  - @weapp-vite/hmr@0.2.2
+
 ## 1.0.0
 
 ### Major Changes

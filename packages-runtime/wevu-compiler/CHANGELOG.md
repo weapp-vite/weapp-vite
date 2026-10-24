@@ -1,5 +1,84 @@
 # @wevu/compiler
 
+## 7.6.0
+
+### Patch Changes
+
+- chore(deps): 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@vitejs/devtools, @vitejs/devtools-kit, eslint, happy-dom, sass, sass-embedded。命名 catalog 变更键：无。
+
+- fix(hmr): 统一 classic 首构的输入观察和侧车文件交付，避免已消费的启动通知、页面通知和样式删除重复触发完整发布。配置保存直接切换到新的构建代次，持续观察加载期间的再次保存，避免先按旧配置发布后再重载。状态保持热更新回退时先释放旧监听，再建立 classic 的输入观察；关闭和重启失败时完整释放本会话资源并保留原始错误，继续支持后续页面、源码和外部依赖更新。
+
+  SFC 外部模板、脚本及原生样式读取复用统一输入版本及会话归属校验，拒绝迟到的旧内容覆盖较新的监听输入，同时保留快照、原始读取异常和真实输入漂移的完整重同步行为。编译器原样传出自定义 SFC 读取器的异常，保留重试及重新同步所需的错误身份；默认文件读取失败继续提供中文文件上下文，并保留原始原因。
+
+- chore(deps): 升级兼容的 AI SDK、Vue 类型工具及构建依赖，同步脚手架依赖目录和应用模板。TypeScript 保持 6.0.3，截图比较算法及既有 Vite、Rolldown 兼容补丁保持原有契约。
+
+  升级 pnpm、Bun 和 Rust JSON 序列化依赖，并迁移 repoctl 发布说明分类补丁；沿用上游已有的发布 PR 去重修复。
+
+- chore(deps): 升级 Vue、React、Vitest、Rolldown、Oxc 与 AI SDK 等兼容依赖，同步应用、模板和脚手架 catalog。
+
+  迁移 Rolldown 1.2.14 兼容补丁，并对齐 Rust Oxc 0.154.0；保留 Vite 8.3.4、DevTools/Kit 0.7.6、TypeScript 6.0.3 和截图比较语义，p-queue 更新至兼容的 9.3.5。
+
+  默认 catalog 变更键：@icebreakers/eslint-config, @vue/compiler-core, @vue/compiler-dom, devframe, happy-dom, oxc-parser, postcss, react, rolldown, vue, weapp-tailwindcss, zod。命名 catalog 变更键：weapp-tailwindcss-fixed(weapp-tailwindcss)。
+
+- chore(deps): 刷新兼容范围内的运行时与构建依赖。
+
+  升级 AI SDK、TanStack Vue Query、Rollup、weapp-tailwindcss 及其 engine；VS Code 扩展的打包检查脚本改用 adm-zip 自带类型的运行时包。p-queue 与 pixelmatch 保持兼容版本，TypeScript 不在本轮升级范围内。默认 catalog 变更键为 weapp-tailwindcss，命名 catalog 变更键为 weapp-tailwindcss-fixed（均升级至 5.6.3）。
+
+- chore(deps): 自动补充依赖升级发布记录。
+  涉及包：
+  - @mpcore/vitest：devDependencies.vitest
+  - @weapp-vite/glass-easel-web-adapter：devDependencies.vitest
+  - @weapp-agent/cli：dependencies.@ai-sdk/anthropic、dependencies.@ai-sdk/openai、dependencies.@ai-sdk/openai-compatible、dependencies.ai
+  - @weapp-vite/ast-native：devDependencies.vitest
+  - @weapp-vite/eslint：devDependencies.vitest
+
+- fix(weapp-vite): 明确状态保持 HMR 的支持边界，将不支持的配置、入口及运行时变更交回 classic 更新，并通过原始 Wevu 注册契约区分框架包装器与不可替换的用户闭包；由编译器提供冻结输入对应的模板注册签名，模板及外部模板的注册变化转交 classic，保留纯脚本与样式更新；新增独立 HMR 构建、headless 和真实微信 IDE 验收入口，并按同一提交核对完整场景与资源收尾。
+
+  修复 classic 外部模板修改和恢复时脚本依赖未同步失效的问题，避免新模板调用旧事件处理器；转换后的首次 classic 发布失败时停止开发会话并保留错误。
+
+  修复原生开发命令回退 classic 后的配置重载，保留对外事件通道并分别释放每代构建资源，让后续保存、恢复与关闭继续生效。
+
+  修复 Vite+ 在原生 TypeScript 转换前执行异步依赖分析时的解析错误，按宿主模块语言保留异步加载及分包路径改写。
+
+- fix: 修复 JSX/TSX 模板热更新绕过注册能力检查、导致页面数据与实际渲染不一致的问题。共享模板、内联事件、计算绑定和动态岛注册语义变化时切换为完整重载，纯方法脚本更新继续保留状态；跨文件静态展开同时沿用当前构建的冻结源码，避免读取后续保存的内容。模拟器增加显式编译模板注册与提交能力，避免仅修改磁盘文件就被误判为宿主模板已更新。
+
+  修复 Wevu、Tailwind CSS 与 TDesign 模板的 npm 文件筛选，保留组件入口实际引用的 `type.js`、配置状态管理和语言包等完整传递依赖，避免 classic 完整发布存在悬空模块依赖；零售模板与示例使用显式媒体组件入口，并检查产物路径完整；脚手架同步提供修正后的模板。
+
+  React 静态模板和 dynamic 模板更新目前均缺少经真实微信宿主验证的状态保留能力，统一按编译结果明确切换为 classic；解析错误与编译错误继续报告。请求的 HMR 模式配置保持原值，后续修改沿用本次开发会话的 classic 决策。
+
+  React 自动渲染选择仅对编译器明确声明不支持的合法结构退回 dynamic；语法、内部编译和原生 bridge 错误保持失败并保留上一份完整模板，不再被包装成成功回退。
+
+  原生 Vue 的 Patch 与 Noop 交付统一根据冻结源码判断模板和样式变化，避免 Tailwind 内容通知覆盖样式分类后继续发布旧 CSS；纯脚本修改仍保留无需视觉快照编译的路径。
+
+  classic 开发发布以完整产物内容更新 App 入口，让微信开发者工具自动完整重载，避免后续 TSX 混合模板和脚本保存出现新事件逻辑配旧模板；保持用户原有热重载开关，stateful 支持的更新继续保留状态。
+
+- perf(compiler): 普通 JS、TS 和 Vue SFC 编译按需加载 Vue JSX 转换器，减少无 JSX 构建的提前初始化开销，并保留 JSX、TSX 转换结果、错误传播和 sourcemap 行为。
+
+- fix(wevu): 将原生插槽上下文协议改为默认关闭的显式选项
+
+  新增 `weapp.vue.template.nativeSlotContext`，默认 `false`，与保留原生插槽的 `scopedSlotsRequireProps` 独立。未开启时不再生成原生上下文标记、声明属性及插槽事件，也不向普通组件注册对应方法、observer 或清理回调，避免未使用该能力的组件承担协议开销。
+
+  需要继续使用 7.5.0 引入的微信原生插槽最近 Provider 上下文能力时，同时设置 `nativeSlotContext: true` 和 `scopedSlotsRequireProps: true`。开启后仅为可能参与上下文传递的组件保留协议，纯展示、仅使用 `ref` 的组件及其纯容器不再注入；保留 Provider、Consumer、组合函数、插槽转发及必要的中间组件链，并在相关源码变化后重新计算。普通 `provide/inject`、增强插槽及其他平台行为保持不变。
+
+  完善开启后的静态分析：保留可能通过 getter、属性解构或不透明调用读取上下文的组件；正确识别 Options API、双脚本作用域、普通响应式辅助函数和 HTML 标签映射中的纯用法。符号链接目标删除、重建以及 barrel 重导出改指后，重新计算引用方，编译冻结快照与实时解析不会混用。
+
+  对跨模块及普通脚本中跨实例共享的可变值保持保守，避免通过其他模块或公开组件实例安装 getter 后丢失最近 Provider。循环解构按完整默认值和计算键分析，异步函数和生成器不再被误当作普通同步返回值。每实例新建的纯值继续裁剪；复用同轮已完成的数据证明，避免共享数据图导致重复展开。
+
+  组件注册原子选择最终路径、类型和静态元数据，明确 `<script setup>` 优先于 Options API、显式注册优先于自动导入，不再因异步解析完成顺序改变原生/Wevu 身份。
+
+  组件的协议参与状态在开发期间变化时，stateful HMR 会请求完整重建，避免新 `setup` 沿用缺少协议方法和属性的旧原生实例。
+
+  修复 Options API `provide()` 和 watch 过早读取未安装的 setup 状态、方法或 inject 绑定，以及 setup 返回值重复安装导致 computed 对象和方法身份分离的问题。现在只安装一次绑定，再执行 `provide()` 和注册 watch；字符串 watch handler 可引用 setup 方法，首次回调读取完整状态。setup 与 Options API 提供同名 key 时以后者为准。该修复同时覆盖开关关闭、显式开启和增强插槽路径。
+
+- fix(weapp-vite): 补齐构建插件所属包的 Babel core 与 MCP server 宿主依赖，修复关闭自动 peer 安装和依赖提升时的严格消费者安装失败，并以真实发布包验证 TypeScript/CommonJS、Vue JSX 转换及 MCP Node adapter 加载。
+
+- Updated dependencies:
+  - @weapp-core/constants@0.4.0
+  - @weapp-core/shared@3.3.0
+  - @weapp-vite/ast@7.6.0
+  - rolldown-require@2.0.36
+
 ## 7.5.0
 
 ### Minor Changes
