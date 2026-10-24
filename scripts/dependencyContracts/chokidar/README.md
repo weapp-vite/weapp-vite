@@ -12,9 +12,11 @@ node --import tsx scripts/dependencyContracts/chokidar/run.mjs --report .tmp/dep
 
 macOS 上 `fs.watch` 返回和 Chokidar 初次扫描的 `ready` 不保证 CF 线程已启动目录事件流。重建目录的契约在首次修改前，用 fixture 根目录的独立原生 watcher 完成一次公开关闭，并等待它的精确原生关闭回调；当前 libuv 的 Darwin 实现会在关闭时同步重建其余目录订阅的事件流。辅助句柄与产品句柄分别登记和核验，不改 Chokidar 自身订阅、不补发回调、不重试写入，也不把这项实现边界声称为 Node 的通用公开 readiness API。原生错误仍使契约失败；后续实际 add/change/unlink 断言继续验证产品回调。报告独立记录辅助关闭证据与产品句柄的原始通知，通知超过 128 条时明确记录省略数量。空目录根 ENOENT 单测也经过同一准备步骤，并只接受本次 `queued.txt` 写入的精确原始通知，排除目录创建时的迟到事件。
 
-atomic 冷却契约在初次公开 `ready` 后、第一次删除前执行相同门禁；重建目录的契约在新文件 `add` 后再次执行门禁，再开始后续修改和删除。父目录先前完成的门禁不能代替新取得的子目录订阅就绪。门禁失败保留原始错误，不进行后续修改；atomic unlink 缓冲、旧 remove 冷却及最终单次 change 断言保持原有时序。
+atomic 冷却契约在初次公开 `ready` 后、第一次删除前执行相同门禁；重建目录的契约在新文件 `add` 后再次执行门禁，再开始后续修改和删除。父目录先前完成的门禁不能代替新取得的子目录订阅就绪。门禁失败保留原始错误，不进行后续修改；atomic unlink 缓冲和旧 remove 冷却保持原有时序。
 
-atomic 替换文件在订阅前于同一 fixture 文件系统、watched 目录之外完整写好；精确 unlink 缓冲和旧 remove 冷却均被持有后，才将它 rename 到原路径，并核验最终文本。这样只测试已完成文件的 unlink/add 合并，不把新路径 `writeFile` 的创建与后续写入两个阶段误当成一次原子发布；最终仍严格要求一个 change，不能出现额外 add、unlink 或 change。
+atomic 替换文件在订阅前于同一 fixture 文件系统、watched 目录之外完整写好；精确 unlink 缓冲和旧 remove 冷却均被持有后，才将它 rename 到原路径，并核验最终文本及替换前后的 dev/ino/size/mtime。局部旁路 observer 用异步调用上下文关联真实 `fs.watch` 通知、精确文件 listener 及其注册代、原始 `_emit` 和全部公开 `all` 事件；不补发、不丢弃或过滤事件，不改变原调用的 receiver、参数、Promise 和 Error。严格要求一次原始 unlink 进入缓冲、一次 ADD 消费同一 pending entry 并且只输出一个 change，独立释放原 held flush 后包括异步在内没有公开输出。
+
+父目录广播和文件自身的独立原生通知可能在节流退出后各自产生 change；这不是第二次 atomic ADD 转换。额外 change 仅在来源是目标文件或父目录的精确目标文件名、属于替换代文件 listener、stat 与最终替换文件一致且一个原始 `_emit` 至多输出一次时成立；同一原生通知或 listener 不能重复解释公开输出，也不能复用 unlink/ADD 的通知。无来源、旧代、其他文件通知或 held flush 输出均失败，全部原始事件仍进入报告。公开关闭 owner 并等待已观察 listener settlement 后才作最终核验。该契约仅证明 atomic 转换边界，不承诺保存事件全局 exactly-once；历史失败保持失败，不以新归因追认通过。
 
 所有权、重绑和恢复后的独立后续写入先经过同一个 observed-drain 检查点：在 owner 的首次 `add` 前观察精确文件 listener，保留原调用、返回 Promise 和 Error 身份；等待已观察 listener 全部结束、该文件原有 watch/change 节流自然退出，并确认一个事件循环 turn 内 epoch 不变。观察不清除计时器、不补发事件、不固定 sleep，也不改现有 stat 门禁；`cwd` 下分别按原 watch key 与相对 change key 匹配同一文件。超时、关闭或 listener 拒绝均失败，旁路观察到的拒绝独立记录为 `listenerFailures`，不伪装为 public `error`；worker 在用例完成和最终清理后均核验，不能因未调用检查点而漏报。公开 close 和读取门禁释放后，同一 observer 还须在预算内等待已登记 listener 全部结束，再生成最终失败清单；未完成时保留临时目录并报告 cleanup 失败，不能用 native close 代替异步 listener 完成证据。
 
@@ -26,7 +28,7 @@ atomic 替换文件在订阅前于同一 fixture 文件系统、watched 目录�
 - 原生平台、非 Windows、现存路径、错误 syscall、错误 path、仅大小写不同的错误 path、EACCES 和 presence probe 失败；应透传时保留同一原始 Error 对象。大小写负控是分类输入仿真，不声称本机存在两个仅大小写不同的真实条目。
 - root readdir 或 child stat 暂停期间关闭；父目录删除、替换目录先于旧 listing 返回；不发布旧代子节点、不保留已销毁 stream。
 - 两个 public owner 共享原生 watcher，兄弟注册失败或关闭一个 owner 后，另一个仍收到真实变更。
-- 文件与目录在旧 remove 冷却未释放时重新创建并再次删除；atomic unlink/add 保持一个 change。
+- 文件与目录在旧 remove 冷却未释放时重新创建并再次删除；atomic unlink/add 的原始 ADD 恰好转换为一个 change，独立文件通知按上述因果契约核验。
 - 旧文件监听回调的真实 ENOENT 延迟返回，不得移除同路径的新代文件。
 - 真实 inode 更替后的原生重新绑定：同一 fixture 文件系统内、watched 目录外预先准备替换文件，订阅后先排空已观察的旧事件，再登记匹配替换文件 dev/ino/size 的 change waiter 并执行 rename；原 inode 的迟到事件不能代替重绑证据。第二次写入使用更长的 `r+` 内容并核验新大小与最终文本。
 - polling 的 change/unlink/add/change 和实际 stop 事件，以及同步 ADD/ready 回调中的 close/unwatch。

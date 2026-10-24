@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
-import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises'
 import path from 'node:path'
+import { createAtomicDeliveryObserver } from './atomicDelivery.mjs'
 import { bounded, deferred, turn } from './support.mjs'
 
 export function holdRemoveEntries(owner, root, expected) {
@@ -161,7 +162,7 @@ function holdAtomicFlush(owner, file, removeGate) {
   const release = () => {
     if (captured && !released) {
       released = true
-      captured.callback.apply(captured.timer, captured.args)
+      return captured.callback.apply(captured.timer, captured.args)
     }
   }
   return {
@@ -182,22 +183,42 @@ function holdAtomicFlush(owner, file, removeGate) {
   }
 }
 
+function closeAtomicObservation(cleanups, operationFailures) {
+  const cleanupFailures = []
+  for (const cleanup of cleanups) {
+    try {
+      cleanup()
+    }
+    catch (error) { cleanupFailures.push(error) }
+  }
+  if (cleanupFailures.length) {
+    throw new AggregateError([...operationFailures, ...cleanupFailures], 'atomic verification cleanup failed')
+  }
+}
+
 async function verifyAtomic({ chokidar, root, watched, timeoutMs, open, ready, instrumentation, evidence }) {
   const file = path.join(watched, 'cooldown-atomic.txt')
   const replacement = path.join(root, 'cooldown-atomic-replacement.txt')
   const contents = 'replacement atomic generation remains a single public change'
   await writeFile(file, 'first atomic generation')
   await writeFile(replacement, contents)
-  const owner = open(chokidar, watched, { atomic: 100 })
-  await ready(owner)
-  await instrumentation.settleDirectoryRegistration(timeoutMs)
-  assert.deepEqual(owner.errors, [], 'native registration errors cannot count as a completed atomic preparation barrier')
-  const boundary = owner.events.length
-  const removeGate = holdRemoveEntries(owner, root, new Map([[file, 'unlink']]))
-  const atomicGate = holdAtomicFlush(owner, file, removeGate)
+  const replacementStats = await stat(replacement)
+  const observer = createAtomicDeliveryObserver({ root, file })
+  let removeGate
+  let atomicGate
   let afterChange
   let coalescingPassed = false
+  const operationFailures = []
   try {
+    const owner = open(chokidar, watched, { atomic: 100 })
+    observer.attach(owner)
+    await ready(owner)
+    await instrumentation.settleDirectoryRegistration(timeoutMs)
+    assert.deepEqual(owner.errors, [], 'native registration errors cannot count as a completed atomic preparation barrier')
+    const boundary = owner.events.length
+    observer.start()
+    removeGate = holdRemoveEntries(owner, root, new Map([[file, 'unlink']]))
+    atomicGate = holdAtomicFlush(owner, file, removeGate)
     await rm(file)
     await bounded(atomicGate.buffered, 'the real file removal enters its atomic unlink buffer', timeoutMs)
     atomicGate.assertCaptured()
@@ -208,18 +229,24 @@ async function verifyAtomic({ chokidar, root, watched, timeoutMs, open, ready, i
     assert.equal(await readFile(file, 'utf8'), contents)
     assert.equal(owner.watcher._pendingUnlinks.has(file), false, 'native re-add consumes the original atomic unlink buffer')
     afterChange = removeGate.snapshot('after-atomic-change-before-original-flush-release')
-    atomicGate.release()
+    await observer.flush(() => atomicGate.release())
     await turn()
+    await bounded(owner.watcher.close(), 'atomic owner close before final causal verification', timeoutMs)
+    await owner.eventPhases.settle(timeoutMs)
     const relative = path.relative(root, file).replaceAll('\\', '/')
     const events = owner.events.slice(boundary).filter(event => event.path === relative)
-    assert.deepEqual(events.map(event => event.event), ['change'], 'atomic unlink+add still emits one change and no delayed unlink or extra add')
+    observer.assert(replacementStats, await stat(file), events.map(event => event.event))
     assert.deepEqual(owner.errors, [])
     coalescingPassed = true
   }
+  catch (error) {
+    operationFailures.push(error)
+    throw error
+  }
   finally {
-    evidence.push({ checkpoint: 'atomic-buffer-survives-remove-generation-reset', coalescingPassed, afterChange })
-    atomicGate.close()
-    removeGate.close()
+    closeAtomicObservation([() => atomicGate?.close(), () => removeGate?.close(), () => {
+      evidence.push({ checkpoint: 'atomic-buffer-survives-remove-generation-reset', coalescingPassed, afterChange, delivery: observer.snapshot() })
+    }, () => observer.close()], operationFailures)
   }
 }
 

@@ -6,7 +6,12 @@ import { verifyRemoveCooldown } from './removeCooldown.mjs'
 const io = vi.hoisted(() => ({
   rename: vi.fn(),
   rm: vi.fn(),
+  stat: vi.fn(),
   writeFile: vi.fn(),
+}))
+
+vi.mock('./atomicDelivery.mjs', () => ({
+  createAtomicDeliveryObserver: () => ({ attach() {}, start() {}, snapshot() {}, close() {} }),
 }))
 
 vi.mock('node:fs/promises', async importOriginal => ({
@@ -43,6 +48,7 @@ function fixture() {
 beforeEach(() => {
   vi.resetAllMocks()
   io.writeFile.mockResolvedValue(undefined)
+  io.stat.mockResolvedValue({})
 })
 
 it('awaits exact directory registration after public ready and before removing the atomic source', async () => {
