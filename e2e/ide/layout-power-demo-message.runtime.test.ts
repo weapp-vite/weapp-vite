@@ -12,7 +12,7 @@ describe('layout-power-demo message feedback in real WeChat DevTools', { concurr
   beforeAll(prepareLayoutPowerSession, 60_000)
   afterAll(async () => {
     await session?.close()
-  }, 60_000)
+  })
 
   it('keeps repeated message taps stable after layout switches', async (ctx) => {
     const acceptance = createDomAcceptance(ctx, LAYOUT_POWER_FIXTURE, [

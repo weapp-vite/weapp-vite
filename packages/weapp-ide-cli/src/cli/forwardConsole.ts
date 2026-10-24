@@ -345,13 +345,12 @@ export async function startForwardConsole(options: ForwardConsoleOptions): Promi
       }
       if (usesSharedSession) {
         try {
-          if (sharedReleased) {
-            await closeOwnedSharedMiniProgram(options, miniProgram)
-          }
-          else {
+          if (!sharedReleased) {
             sharedReleased = true
             await releaseSharedMiniProgram(options.projectPath, options.sessionId || options.port, options)
           }
+          // 日志消费者归零后也要退役自己的缓存连接；其他借用者仍由引用计数保护。
+          await closeOwnedSharedMiniProgram(options, miniProgram)
         }
         catch (error) {
           errors.push(error)

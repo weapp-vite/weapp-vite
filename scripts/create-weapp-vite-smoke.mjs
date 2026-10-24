@@ -8,6 +8,7 @@ import { createScenario, createTarballCommand, installTarballRunner } from './cr
 import { applyDependencyTarballs, describeDependencyTarballs, resolveDependencyTarballs, validateDependencyTarballScenarios } from './createWeappViteSmoke/dependencyTarballs.mjs'
 import { timedRunCommand } from './createWeappViteSmoke/process.mjs'
 import { classifyFailure, createPnpmProfileConfig, createRegistryEnvironment, REGISTRY_PROFILES, reportError, resolveRegistryProfiles, resolveRegistryVersion, versionLag } from './createWeappViteSmoke/registry.mjs'
+import { cleanupSmokeDirectory, recordSmokeFailure, writeSmokeReport } from './createWeappViteSmoke/reporting.mjs'
 import { runDevSmoke } from './createWeappViteSmoke/runtime.mjs'
 import { resolveSmokeSource } from './createWeappViteSmoke/source.mjs'
 import { assertPreparedProject, DEFAULT_TEMPLATE_NAMES, validateCreatedProjectStructure } from './createWeappViteSmoke/templates.mjs'
@@ -76,24 +77,6 @@ async function runScenario({ scenario, templateName, packageSpec, scenarioRoot, 
   return { createMs, installMs, buildMs, devReadyMs: dev.readyMs, devUpdateMs: dev.updateMs }
 }
 
-export function summarizeReport(report) {
-  const productFailures = report.failures.filter(failure => failure.kind === 'product').length
-  const networkFailures = report.failures.filter(failure => failure.kind === 'network').length
-  const registryFailures = report.failures.filter(failure => failure.kind === 'registry-unavailable').length
-  const laggingRegistries = [...new Set([
-    ...report.registries.filter(registry => registry.lag === 'behind').map(registry => registry.name),
-    ...[...(report.results ?? []), ...report.failures].filter(row => row.lag === 'behind').map(row => row.registryProfile),
-  ])]
-  const status = productFailures
-    ? 'product-failure'
-    : networkFailures
-      ? 'environment-limited'
-      : registryFailures
-        ? 'registry-incomplete'
-        : laggingRegistries.length ? 'passed-with-registry-lag' : 'passed'
-  return { status, productFailures, networkFailures, registryFailures, laggingRegistries }
-}
-
 async function main() {
   const packageSpec = process.env.CREATE_WEAPP_VITE_SPEC?.trim() || 'latest'
   const templateNames = parseList(process.env.CREATE_WEAPP_VITE_TEMPLATES, DEFAULT_TEMPLATE_NAMES)
@@ -142,6 +125,7 @@ async function main() {
     results: [],
     failures: [],
   }
+  const reportFile = process.env.CREATE_WEAPP_VITE_REPORT_FILE
   const official = { name: 'npmjs', registry: REGISTRY_PROFILES.npmjs }
   const officialEnv = createRegistryEnvironment(official, path.join(tmpRoot, 'official-cache'))
   let officialError
@@ -151,10 +135,12 @@ async function main() {
   catch (error) {
     officialError = error
     if (!profiles.some(profile => profile.name === 'npmjs')) {
-      report.failures.push({ registryProfile: 'npmjs', stage: 'registry', kind: classifyFailure(error, { registryProfile: 'npmjs', stage: 'registry' }), error: reportError(error, privateRoots) })
+      recordSmokeFailure(report, { registryProfile: 'npmjs', stage: 'registry', kind: classifyFailure(error, { registryProfile: 'npmjs', stage: 'registry' }), error: reportError(error, privateRoots) })
+      await writeSmokeReport(report, reportFile)
     }
   }
   console.log(`Smoke ${packageSpec}; cache: ${cacheMode}; expected official version: ${report.expectedOfficialVersion ?? 'unavailable'}`)
+  let complete = false
   try {
     for (const profile of profiles) {
       const profileRoot = path.join(tmpRoot, profile.name)
@@ -177,7 +163,8 @@ async function main() {
         registryReport.lag = versionLag(registryReport.resolvedVersion, report.expectedOfficialVersion)
       }
       catch (error) {
-        report.failures.push({ registryProfile: profile.name, stage: 'registry', kind: classifyFailure(error, { registryProfile: profile.name, stage: 'registry' }), error: reportError(error, privateRoots) })
+        recordSmokeFailure(report, { registryProfile: profile.name, stage: 'registry', kind: classifyFailure(error, { registryProfile: profile.name, stage: 'registry' }), error: reportError(error, privateRoots) })
+        await writeSmokeReport(report, reportFile)
         if (!tarball) {
           continue
         }
@@ -188,7 +175,8 @@ async function main() {
           tarballPackageRoot = await installTarballRunner(tarball, path.join(profileRoot, 'runner'), env, INSTALL_TIMEOUT_MS)
         }
         catch (error) {
-          report.failures.push({ registryProfile: profile.name, stage: 'install', kind: classifyFailure(error, { registryProfile: profile.name, stage: 'install' }), error: reportError(error, privateRoots) })
+          recordSmokeFailure(report, { registryProfile: profile.name, stage: 'install', kind: classifyFailure(error, { registryProfile: profile.name, stage: 'install' }), error: reportError(error, privateRoots) })
+          await writeSmokeReport(report, reportFile)
           continue
         }
       }
@@ -206,28 +194,25 @@ async function main() {
             const receiptFile = path.join(profileRoot, `${scenario.name}-${templateName}`, 'scaffold-receipt.json')
             const receipt = await readReceipt(receiptFile).catch(() => null)
             context.actualCreateVersion = receipt?.version ?? context.actualCreateVersion
-            report.failures.push({ ...metadata, ...context, lag: versionLag(context.actualCreateVersion, report.expectedOfficialVersion, Boolean(tarball)), kind: classifyFailure(error, { registryProfile: profile.name, stage: context.stage }), error: reportError(error, privateRoots) })
-            console.error(`[${profile.name}/${scenario.name}/${templateName}] ${context.stage} failed`)
+            recordSmokeFailure(report, { ...metadata, ...context, lag: versionLag(context.actualCreateVersion, report.expectedOfficialVersion, Boolean(tarball)), kind: classifyFailure(error, { registryProfile: profile.name, stage: context.stage }), error: reportError(error, privateRoots) })
           }
           if (context.actualCreateVersion && !registryReport.actualVersions.includes(context.actualCreateVersion)) {
             registryReport.actualVersions.push(context.actualCreateVersion)
           }
+          await writeSmokeReport(report, reportFile)
         }
       }
     }
+    complete = true
   }
   finally {
-    report.summary = summarizeReport(report)
-    const reportFile = process.env.CREATE_WEAPP_VITE_REPORT_FILE
-    if (reportFile) {
-      await fs.mkdir(path.dirname(reportFile), { recursive: true })
-      await fs.writeFile(reportFile, `${JSON.stringify(report, null, 2)}\n`)
+    try {
+      await writeSmokeReport(report, reportFile, { complete })
+      console.log(JSON.stringify(report.summary, null, 2))
     }
-    await fs.rm(tmpRoot, { recursive: true, force: true })
-  }
-  console.log(JSON.stringify(report.summary, null, 2))
-  for (const failure of report.failures) {
-    console.error(`[${failure.registryProfile}/${failure.stage}/${failure.kind}] ${failure.error}`)
+    finally {
+      await cleanupSmokeDirectory(tmpRoot)
+    }
   }
   process.exitCode = report.summary.productFailures ? 1 : report.summary.networkFailures ? 2 : report.summary.registryFailures ? 3 : 0
 }
@@ -237,6 +222,7 @@ if (process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === imp
 }
 
 export { createPnpmCommand, createPnpmInstallCommand } from './createWeappViteSmoke/commands.mjs'
+export { summarizeReport } from './createWeappViteSmoke/reporting.mjs'
 export { changeAppTitle, waitForAppTitle } from './createWeappViteSmoke/runtime.mjs'
 export { shouldSkipTemplateFile } from './createWeappViteSmoke/templates.mjs'
 export { cleanupChildProcessHandles, waitForChildClose } from './project-lifecycle.mjs'

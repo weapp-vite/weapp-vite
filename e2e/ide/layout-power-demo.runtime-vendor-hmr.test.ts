@@ -77,7 +77,7 @@ describe('layout-power-demo runtime vendor HMR in real WeChat DevTools', { concu
         ],
       },
     ])
-    session = await startLayoutPowerSession()
+    session = await startLayoutPowerSession({ requireStatefulHmr: true })
     const { miniProgram, devProcess, collector } = session
     let page = await miniProgram.reLaunch(INDEX_ROUTE)
     await acceptance.check('initial', miniProgram, page)

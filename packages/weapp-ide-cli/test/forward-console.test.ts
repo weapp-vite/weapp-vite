@@ -266,6 +266,7 @@ describe('forwardConsole', () => {
 
     expect(miniProgram.off).toHaveBeenCalledTimes(2)
     expect(releaseSharedMiniProgramMock).toHaveBeenCalledWith('/tmp/demo', undefined, expect.objectContaining({ projectPath: '/tmp/demo' }))
+    expect(closeOwnedSharedMiniProgramMock).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ projectPath: '/tmp/demo' }), miniProgram)
     expect(miniProgram.close).not.toHaveBeenCalled()
   })
 

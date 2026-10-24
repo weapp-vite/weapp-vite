@@ -191,6 +191,7 @@ const projects = [
         'e2e/utils/domAcceptance/coreHmrSession.test.ts',
         'e2e/utils/domAcceptance/scopeTrace.test.ts',
         'e2e/utils/hmr-helpers.test.ts',
+        'e2e/utils/layoutPowerSession.test.ts',
         'e2e/utils/hmrRuntimeDiagnostics.test.ts',
         'e2e/utils/hmrOutputDiagnostics.test.ts',
         'e2e/utils/classicAssetScriptContract.test.ts',
