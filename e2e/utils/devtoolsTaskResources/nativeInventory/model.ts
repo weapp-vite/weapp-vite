@@ -35,6 +35,16 @@ export function sameNativeIdentity(first: DarwinProcessIdentity | null, second: 
     && first.zombie === second.zombie
 }
 
+/** PID 枚举后已退出必须由全部相邻查询共同证明，权限失败或部分成功不能冒充退出。 */
+export function hasNativeExitEvidence(row: NativeRow) {
+  const { before, after, pathBefore, pathAfter, task } = row.entry
+  const absentIdentity = (read: typeof before) => read.identity === null
+    && ((read.result === 0 && read.length === 0 && read.errno === 0) || (read.result === -1 && read.errno === 3))
+  return absentIdentity(before) && absentIdentity(after)
+    && [pathBefore, pathAfter].every(read => read.count === 0 && read.errno === 3 && read.executable === null)
+    && task.count === 0 && task.errno === 3 && task.identity === null && task.rssBytes === null
+}
+
 export function validNativeImage(image: string | null): image is string {
   return typeof image === 'string' && path.isAbsolute(image) && !/[\r\n\0]/.test(image)
 }

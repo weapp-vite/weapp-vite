@@ -32,14 +32,17 @@ it('runs metadata and post-publish hooks once after recovered versions become vi
 }))
 
 it('does not run metadata or post-publish hooks when visibility confirmation times out', ({ signal }) => withReleaseFixture(signal, async (fixture) => {
+  const visibilityTimeoutMs = 2_000
   vi.spyOn(performance, 'now').mockReturnValue(0)
   fixture.setPublish(() => {
     fixture.summary()
     return { status: 0, stdout: '', stderr: '' }
   })
 
-  await expect(fixture.runCi()).rejects.toThrow(/visibility confirmation timed out/)
+  await expect(fixture.runCi({ registry: { visibilityTimeoutMs } })).rejects.toThrow(/visibility confirmation timed out/)
   expect(fixture.publishes).toHaveLength(1)
+  expect(fixture.registryQueries).toEqual(expect.arrayContaining(packages))
+  expect(fixture.sleep.mock.calls.reduce((total, [milliseconds]) => total + milliseconds, 0)).toBe(visibilityTimeoutMs)
   expect(fixture.github.ensureTag).not.toHaveBeenCalled()
   expect(fixture.github.ensureRelease).not.toHaveBeenCalled()
   expect(fixture.hooks).toEqual(['quality', 'before'])

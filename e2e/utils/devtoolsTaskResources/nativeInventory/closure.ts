@@ -1,6 +1,6 @@
 import type { ProcessIdentityChangeObservation, ProcessIdentityGapCause, ProcessIdentityGapObservation } from '../types'
 import type { NativeFrame, NativePhase, NativeRow } from './model'
-import { insideInstallation, metadata, nativeLocation, sameNativeIdentity, validNativeImage } from './model'
+import { hasNativeExitEvidence, insideInstallation, metadata, nativeLocation, sameNativeIdentity, validNativeImage } from './model'
 
 export type NativeRelation = 'installation-image' | 'descendant' | 'foreign' | 'unknown'
 
@@ -9,6 +9,7 @@ export interface TrackedNativeProcess {
   firstPhase: NativePhase
   absent: boolean
   changed: boolean
+  closureIdentityUnverifiable: boolean
   classification: NativeRelation
   classifiedAt?: NativePhase
   imageSource: NativeRow['imageSource']
@@ -161,24 +162,39 @@ export function createNativeInventory(installationRoot: string) {
     if ((frame.phase === 'prepare' && frames.length) || (frame.phase === 'anchor' && anchor)) {
       throw new Error('Resource sampling cannot replace its preparation or fixed RSS anchor.')
     }
+    const exitedForeignRows = new Set<number>()
     for (const [pid, entry] of tracked) {
       const row = frame.rows.get(pid)
-      if (!row) {
+      const anchored = anchor?.rows.get(pid)
+      // 完整锚点已排除所选安装的身份，闭合时的明确退出与未被枚举到等价；原始行仍保留。
+      const foreignExit = row && anchored && (frame.phase === 'closure1' || frame.phase === 'closure2')
+        && !entry.changed && !selectedSeen.has(pid) && sameNativeIdentity(entry.row.identity, anchored.identity)
+        && nativeRelation(anchor!, anchored, installationRoot) === 'foreign' && hasNativeExitEvidence(row)
+      if (!row || foreignExit) {
         entry.absent = true
         cause(entry, 'process-absent', frame.phase)
+        if (foreignExit) {
+          exitedForeignRows.add(pid)
+        }
       }
       else if (entry.absent || !sameNativeIdentity(entry.row.identity, row.identity) || row.identityChanged) {
         markChanged(entry, row.changedIdentity ? { ...row, identity: row.changedIdentity } : row, frame.phase, entry.absent)
       }
     }
     for (const row of frame.rows.values()) {
+      if (exitedForeignRows.has(row.pid)) {
+        continue
+      }
       let entry = tracked.get(row.pid)
       if (!entry) {
-        entry = { row, firstPhase: frame.phase, absent: false, changed: false, classification: 'unknown', imageSource: 'not-verified', causes: [] }
+        entry = { row, firstPhase: frame.phase, absent: false, changed: false, closureIdentityUnverifiable: false, classification: 'unknown', imageSource: 'not-verified', causes: [] }
         tracked.set(row.pid, entry)
       }
-      if (!row.identity || !row.finalIdentity) {
+      if (!row.entry.before.identity || !row.finalIdentity) {
         cause(entry, 'kernel-identity-unverifiable', frame.phase)
+        if (frame.phase === 'closure1' || frame.phase === 'closure2') {
+          entry.closureIdentityUnverifiable = true
+        }
       }
       if (row.identityChanged) {
         markChanged(entry, { ...row, identity: row.changedIdentity }, frame.phase, false)

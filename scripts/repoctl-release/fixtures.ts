@@ -165,7 +165,12 @@ async function initializeReleaseFixture(fixture: ReleaseFixtureRecord) {
       stage,
     })),
     run: () => lifecycle.run(() => publishStable(options)),
-    runCi: () => lifecycle.run(() => releaseCi({ ...options, mode: 'publish', github })),
+    runCi: (config: ReleaseCiOptions['config'] = {}) => lifecycle.run(() => releaseCi({
+      ...options,
+      config: { ...options.config, ...config },
+      mode: 'publish',
+      github,
+    })),
   }
 }
 

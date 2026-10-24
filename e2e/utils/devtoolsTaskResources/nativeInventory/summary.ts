@@ -31,7 +31,7 @@ export function summarizeNativeInventory(options: SummaryOptions): InstallationP
   }
   const unclassifiedProcesses = [...anchor.rows.values()].filter((row) => {
     const tracked = inventory.tracked.get(row.pid)!
-    return !row.identity?.zombie && (!row.images || tracked.changed || nativeRelation(anchor, row, installationRoot) === 'unknown')
+    return !row.identity?.zombie && (!row.images || tracked.changed || tracked.closureIdentityUnverifiable || nativeRelation(anchor, row, installationRoot) === 'unknown')
   }).map(row => inventory.gap(inventory.tracked.get(row.pid)!, !row.images ? 'kernel-path-unverifiable' : undefined))
 
   const processes: InstallationProcessSample['processes'] = []
