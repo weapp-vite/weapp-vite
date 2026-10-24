@@ -221,6 +221,7 @@ it('keeps worker output separate even when its real write uses the app output di
 
 it('closes every native watch publication before watcher shutdown, including consecutive partial writes', async () => {
   let builds = 0
+  const baseline = await readFile(path.join(project, 'src/app.js'), 'utf8')
   const lifecycle = createNativeWriteLifecycle(() => output)
   const first = captureNativePublication(dev(), project)
   const result = await nativeBuild({
@@ -234,10 +235,12 @@ it('closes every native watch publication before watcher shutdown, including con
       generateBundle: {
         order: 'post',
         async handler(_options, bundle) {
-          if (builds > 1) {
+          const source = await readFile(path.join(project, 'src/app.js'), 'utf8')
+          // 同一冷源码可被重复通知消费；只有实际编辑后的代次才模拟局部写出。
+          if (source !== baseline) {
             delete bundle['app.js']
             delete bundle['app.json']
-            this.emitFile({ type: 'asset', fileName: 'pages/native/index.js', source: await readFile(path.join(project, 'src/app.js'), 'utf8') })
+            this.emitFile({ type: 'asset', fileName: 'pages/native/index.js', source })
           }
         },
       },

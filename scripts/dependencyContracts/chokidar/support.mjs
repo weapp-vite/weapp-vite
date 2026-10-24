@@ -6,7 +6,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { observeFileListeners } from './eventPhase.mjs'
-import { assertNativeWatcherClosed, observeNativeWatcher } from './nativeWatcher.mjs'
+import { assertNativeWatcherClosed, closeDarwinRegistrationBarrier, observeNativeWatcher } from './nativeWatcher.mjs'
 
 export { waitForObservedEventPhase } from './eventPhase.mjs'
 
@@ -45,6 +45,9 @@ export function installNativeInstrumentation({ root, platform, beforeWatch, prom
   const originalUnwatchFile = fs.unwatchFile
   const originalPromises = new Map()
   const handles = []
+  const registrationBarriers = []
+  const nativeEvents = []
+  let omittedNativeEvents = 0
   const pollingHandles = []
   const pollingReleases = []
   const attempts = []
@@ -63,6 +66,12 @@ export function installNativeInstrumentation({ root, platform, beforeWatch, prom
       const native = originalWatch.call(this, filename, ...args)
       const record = observeNativeWatcher(native, { path: relative(file), afterPublicClose: publicCloseStarted })
       handles.push(record)
+      native.prependListener('change', (eventType, filename) => {
+        if (nativeEvents.length < 128) {
+          nativeEvents.push({ path: relative(file), eventType, filename: filename == null ? null : String(filename).replaceAll('\\', '/'), afterPublicClose: publicCloseStarted })
+        }
+        else { omittedNativeEvents++ }
+      })
       attempt.result = 'acquired'
       return native
     }
@@ -104,16 +113,31 @@ export function installNativeInstrumentation({ root, platform, beforeWatch, prom
     pollingHandles,
     attempts,
     markPublicClose() { publicCloseStarted = true },
+    async settleDirectoryRegistration(timeoutMs) {
+      const barrier = closeDarwinRegistrationBarrier({
+        actualPlatform,
+        directory: root,
+        watch: directory => originalWatch.call(fs, directory),
+        register: record => registrationBarriers.push(record),
+      })
+      if (barrier) {
+        await bounded(barrier.closePromise, 'exact Darwin registration barrier native close', timeoutMs)
+        assertNativeWatcherClosed(barrier, true)
+      }
+    },
     async assertAllClosed(timeoutMs, exactlyOnce = false) {
-      await bounded(Promise.all(handles.map(record => record.closePromise)), 'all exact native fs.watch close completions', timeoutMs)
+      await bounded(Promise.all([...handles, ...registrationBarriers].map(record => record.closePromise)), 'all exact native fs.watch close completions', timeoutMs)
       for (const record of handles) {
         assertNativeWatcherClosed(record, exactlyOnce)
+      }
+      for (const record of registrationBarriers) {
+        assertNativeWatcherClosed(record, true)
       }
       await bounded(Promise.all(pollingHandles.map(record => record.stopPromise)), 'all exact native fs.watchFile stop events', timeoutMs)
       assert.equal(pollingHandles.filter(record => !record.stopped).length, 0, 'public close must stop every acquired polling watcher')
     },
     async emergencyClose(timeoutMs) {
-      const outstanding = handles.filter(record => !record.closed)
+      const outstanding = [...handles, ...registrationBarriers].filter(record => !record.closed)
       const pollingOutstanding = pollingHandles.filter(record => !record.stopped)
       for (const record of outstanding) {
         record.native.close()
@@ -144,6 +168,9 @@ export function installNativeInstrumentation({ root, platform, beforeWatch, prom
         actualPlatform,
         selectedPlatform: platform === 'native' ? actualPlatform : platform,
         attempts,
+        nativeEvents,
+        omittedNativeEvents,
+        registrationBarriers: registrationBarriers.map(({ purpose, closed, closeCalls, closeEvents, nativeCloseRequests, nativeCloseCompletions, termination, errorEvents }) => ({ purpose, closed, closeCalls, closeEvents, nativeCloseRequests, nativeCloseCompletions, termination, errorEvents })),
         handles: handles.map(({ path: watchedPath, closed, closeCalls, closeEvents, nativeCloseRequests, nativeCloseCompletions, nativeCloseOrigin, errorEvents, termination, observationErrors, afterPublicClose, lastError }) => ({
           path: watchedPath,
           closed,
@@ -199,7 +226,8 @@ export function observeWatcher(chokidar, root, watchedPaths, options = {}) {
     event(eventName, absolute, timeoutMs, predicate = () => true) {
       const expected = path.relative(root, absolute).replaceAll('\\', '/') || '.'
       let listener
-      const event = new Promise((resolve) => {
+      let failure
+      const event = new Promise((resolve, reject) => {
         listener = (actualEvent, file, stats) => {
           const actual = path.resolve(options.cwd || process.cwd(), String(file))
           if (actualEvent === eventName && actual === absolute && predicate(stats)) {
@@ -207,8 +235,13 @@ export function observeWatcher(chokidar, root, watchedPaths, options = {}) {
           }
         }
         watcher.on('all', listener)
+        failure = reject
+        watcher.on('error', failure)
       })
-      const awaited = bounded(event, `${eventName} ${expected}`, timeoutMs).finally(() => watcher.off('all', listener))
+      const awaited = bounded(event, `${eventName} ${expected}`, timeoutMs).finally(() => {
+        watcher.off('all', listener)
+        watcher.off('error', failure)
+      })
       awaited.catch(() => {})
       return awaited
     },

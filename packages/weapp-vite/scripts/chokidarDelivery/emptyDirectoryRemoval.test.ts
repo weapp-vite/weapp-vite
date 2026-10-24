@@ -7,10 +7,11 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { syncBuiltinESMExports } from 'node:module'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
+import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { FSWatcher } from 'chokidar'
 import { expect, it, vi } from 'vitest'
-import { assertNativeWatcherClosed, observeNativeWatcher } from '../../../../scripts/dependencyContracts/chokidar/nativeWatcher.mjs'
+import { assertNativeWatcherClosed, closeDarwinRegistrationBarrier, observeNativeWatcher } from '../../../../scripts/dependencyContracts/chokidar/nativeWatcher.mjs'
 
 interface InternalWatcher {
   _nodeFsHandler: {
@@ -39,6 +40,12 @@ function bounded<T>(promise: Promise<T>, label: string) {
   ]).finally(() => clearTimeout(timer))
 }
 
+function assertCleanupCompleted(bodyFailure: unknown, cleanupFailures: unknown[]) {
+  if (cleanupFailures.length) {
+    throw new AggregateError(bodyFailure === undefined ? cleanupFailures : [bodyFailure, ...cleanupFailures], 'Empty-directory native cleanup failed')
+  }
+}
+
 /**
  * 从真实已登记的空目录出发，排队同一原生 callback 后删除目录，再只交付该 callback。
  * 父目录通知保留在队列，避免靠另一条扫描路径掩盖根目录 ENOENT 未释放自身的缺口。
@@ -50,13 +57,29 @@ it('真实根 ENOENT 会释放空目录自身的 tracking、closer 和原生句�
   const parent = path.join(watched, 'extra')
   const directory = path.join(parent, 'deep')
   const controlled = new Set([watched, parent, directory])
-  const pending: Array<{ file: string, deliver: () => unknown }> = []
+  const pending: Array<{ file: string, filename: string | undefined, deliver: () => unknown }> = []
   const queuedDirectory = deferred<void>()
   const native: Array<{ file: string, observation: ReturnType<typeof observeNativeWatcher> }> = []
-  const errors: Error[] = []
+  const registrationBarriers: Array<ReturnType<typeof observeNativeWatcher>> = []
+  const errors: unknown[] = []
+  const watcherFailure = Promise.withResolvers<never>()
+  void watcherFailure.promise.catch(() => {})
   const removed = deferred<void>()
   const warnings: NodeJS.ErrnoException[] = []
   const reads: Promise<unknown>[] = []
+  const startedAt = performance.now()
+  const trace: Array<{ phase: string, file: string, values?: string[], elapsedMs: number }> = []
+  let phase = 'subscribing'
+  const record = (file: string, values?: unknown[]) => {
+    if (trace.length < 64) {
+      trace.push({
+        phase,
+        file: path.relative(root, file).replaceAll('\\', '/'),
+        values: values?.map(value => String(value)),
+        elapsedMs: performance.now() - startedAt,
+      })
+    }
+  }
   let hold = false
   const originalWatch = fs.watch
   const absolute = (value: PathLike) => path.resolve(value instanceof URL ? fileURLToPath(value) : String(value))
@@ -67,11 +90,13 @@ it('真实根 ENOENT 会释放空目录自身的 tracking、closer 和原生句�
       assert.ok(callbackIndex >= 0, 'The real Chokidar subscription supplies its native callback')
       const callback = args[callbackIndex] as (...values: unknown[]) => unknown
       args[callbackIndex] = function (this: unknown, ...values: unknown[]) {
+        record(file, values)
         if (!hold) {
           return Reflect.apply(callback, this, values)
         }
-        pending.push({ file, deliver: callback.bind(this, ...values) })
-        if (file === directory) {
+        const filename = values[1] == null ? undefined : String(values[1])
+        pending.push({ file, filename, deliver: callback.bind(this, ...values) })
+        if (file === directory && filename === 'queued.txt') {
           queuedDirectory.resolve()
         }
       }
@@ -88,22 +113,43 @@ it('真实根 ENOENT 会释放空目录自身的 tracking、closer 和原生句�
   const internal = watcher as unknown as InternalWatcher
   const originalRead = internal._nodeFsHandler._handleRead
   const originalReaddirp = internal._readdirp
-  watcher.on('error', error => errors.push(error))
+  watcher.on('error', (error) => {
+    errors.push(error)
+    watcherFailure.reject(error)
+  })
   watcher.on('unlinkDir', (file) => {
     if (path.resolve(file) === directory) {
       removed.resolve()
     }
   })
   let cleanupConfirmed = false
+  let bodyFailure: unknown
   try {
     await mkdir(directory, { recursive: true })
     const ready = once(watcher, 'ready')
     watcher.add(watched)
     await bounded(ready, 'initial public ready')
+    phase = 'ready'
+    record(directory)
     expect(internal._watched.get(directory)?.getChildren()).toEqual([])
     expect(internal._closers.has(directory)).toBe(true)
     const ownedNative = native.find(record => record.file === directory)
     assert.ok(ownedNative, 'The empty directory owns a real native handle before removal')
+    phase = 'settling-native-registration'
+    const barrier = closeDarwinRegistrationBarrier({
+      actualPlatform: process.platform,
+      directory: root,
+      watch: (file: string) => Reflect.apply(originalWatch, fs, [file]) as NativeWatcher,
+      register: (observation: ReturnType<typeof observeNativeWatcher>) => {
+        registrationBarriers.push(observation)
+        native.push({ file: root, observation })
+      },
+    })
+    if (barrier) {
+      await bounded(Promise.race([barrier.closePromise, watcherFailure.promise]), 'exact Darwin registration barrier native close')
+      assertNativeWatcherClosed(barrier, true)
+    }
+    expect(errors).toEqual([])
 
     // 透明观察当前实例的真实读取，不替换 readdirp，也不增加 data listener。
     internal._readdirp = function (file, options) {
@@ -121,11 +167,29 @@ it('真实根 ENOENT 会释放空目录自身的 tracking、closer 和原生句�
       return result
     }
     hold = true
+    phase = 'writing'
+    record(directory)
     await writeFile(path.join(directory, 'queued.txt'), 'a real notification held before directory removal')
-    await bounded(queuedDirectory.promise, 'real exact-directory native callback')
+    phase = 'written'
+    record(directory)
+    try {
+      await bounded(Promise.race([queuedDirectory.promise, watcherFailure.promise]), 'real exact-directory native callback')
+    }
+    catch (error) {
+      const nativeState = native.map(({ file, observation }) => ({
+        file: path.relative(root, file).replaceAll('\\', '/'),
+        closed: observation.closed,
+        closeCalls: observation.closeCalls,
+        errorEvents: observation.errorEvents,
+        lastError: observation.lastError,
+        observationErrors: observation.observationErrors.map((failure: Error) => failure.message),
+      }))
+      throw new Error(`Native callback evidence: ${JSON.stringify({ trace, errors: errors.map(error => error instanceof Error ? error.message : String(error)), nativeState })}`, { cause: error })
+    }
+    phase = 'removing'
     expect(internal._watched.get(directory)?.getChildren()).toEqual([])
     await rm(parent, { recursive: true })
-    const notification = pending.find(item => item.file === directory)
+    const notification = pending.find(item => item.file === directory && item.filename === 'queued.txt')
     assert.ok(notification)
     notification.deliver()
     assert.ok(reads[0], 'The queued original native callback entered the real directory reader')
@@ -141,24 +205,54 @@ it('真实根 ENOENT 会释放空目录自身的 tracking、closer 和原生句�
     expect(() => assertNativeWatcherClosed(ownedNative.observation)).not.toThrow()
     expect(errors).toEqual([])
   }
+  catch (error) {
+    bodyFailure = error
+    throw error
+  }
   finally {
+    const cleanupFailures: unknown[] = []
     try {
-      await bounded(watcher.close(), 'public owner close')
-      await bounded(Promise.all(native.map(record => record.observation.closePromise)), 'all exact native close events')
-      for (const record of native) {
-        assertNativeWatcherClosed(record.observation)
+      try {
+        await bounded(watcher.close(), 'public owner close')
       }
-      cleanupConfirmed = true
+      catch (error) { cleanupFailures.push(error) }
+      for (const observation of registrationBarriers) {
+        if (observation.native._handle) {
+          try {
+            observation.native.close()
+          }
+          catch (error) { cleanupFailures.push(error) }
+        }
+      }
+      try {
+        const closures = await bounded(Promise.allSettled(native.map(record => record.observation.closePromise)), 'all exact native close events')
+        cleanupFailures.push(...closures.filter(result => result.status === 'rejected').map(result => result.reason))
+      }
+      catch (error) { cleanupFailures.push(error) }
+      for (const record of native) {
+        try {
+          assertNativeWatcherClosed(record.observation)
+        }
+        catch (error) { cleanupFailures.push(error) }
+      }
+      cleanupConfirmed = cleanupFailures.length === 0
     }
     finally {
       pending.length = 0
       internal._nodeFsHandler._handleRead = originalRead
       internal._readdirp = originalReaddirp
-      interception.mockRestore()
-      syncBuiltinESMExports()
-      if (cleanupConfirmed) {
-        await rm(root, { recursive: true, force: true })
+      try {
+        interception.mockRestore()
+        syncBuiltinESMExports()
       }
+      catch (error) { cleanupFailures.push(error) }
+      if (cleanupConfirmed) {
+        try {
+          await rm(root, { recursive: true, force: true })
+        }
+        catch (error) { cleanupFailures.push(error) }
+      }
+      assertCleanupCompleted(bodyFailure, cleanupFailures)
     }
   }
 }, 20_000)

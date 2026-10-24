@@ -6,6 +6,8 @@ import { turn, waitForObservedEventPhase } from './support.mjs'
 
 export async function recreateAndExercise(owner, ctx, directory = ctx.target, file = ctx.image) {
   const { timeoutMs, scenarioEvidence } = ctx
+  await ctx.instrumentation.settleDirectoryRegistration(timeoutMs)
+  assert.deepEqual(owner.errors, [], 'native registration errors cannot count as a completed preparation barrier')
   const add = owner.event('add', file, timeoutMs)
   await mkdir(directory, { recursive: true })
   await writeFile(file, 'recreated image')

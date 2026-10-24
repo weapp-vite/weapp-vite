@@ -153,3 +153,19 @@ export function assertNativeWatcherClosed(record, exactlyOnce = false) {
     assert.equal(record.closeEvents, 1, 'Shared inode native handles retain their one public close event contract')
   }
 }
+
+/**
+ * Darwin 的目录 watch 返回时，CF 线程可能尚未启动事件流。
+ * libuv 关闭一个同 loop 的辅助目录句柄时，会同步重建其余订阅的流后才完成原生关闭。
+ * 这里只登记并关闭 fixture 自己的辅助句柄；调用方仍须验证真实通知并保留其余订阅的错误。
+ */
+export function closeDarwinRegistrationBarrier({ actualPlatform, directory, watch, register }) {
+  if (actualPlatform !== 'darwin') {
+    return undefined
+  }
+  const native = watch(directory)
+  const observation = observeNativeWatcher(native, { path: '.', purpose: 'directory-registration-barrier' })
+  register(observation)
+  native.close()
+  return observation
+}
