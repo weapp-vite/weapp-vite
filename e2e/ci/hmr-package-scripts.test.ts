@@ -1,10 +1,10 @@
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
-import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { createHmrMarker, replaceFileByRename, waitForFileContains } from '../utils/hmr-helpers'
+import { startPackageScriptDevProcess } from '../utils/packageScriptDevProcess'
 import { waitForFile } from '../wevu-runtime.utils'
 
 interface PackageScriptHmrCase {
@@ -95,7 +95,9 @@ describe('HMR package scripts — apps and e2e-apps dev entrypoints', { concurre
       await fs.writeFile(projectPrivateConfigPath, `${JSON.stringify(projectPrivateConfig, null, 2)}\n`, 'utf8')
     }
 
-    const dev = startDevProcess('pnpm', [
+    const configurationBeforeStart = await fs.readFile(projectPrivateConfigPath)
+    const classicJournal = path.join(fixture.appRoot, '.weapp-vite/ide-classic-project.private.config.json')
+    const dev = startPackageScriptDevProcess('pnpm', [
       '--dir',
       fixture.appRoot,
       'run',
@@ -125,10 +127,16 @@ describe('HMR package scripts — apps and e2e-apps dev entrypoints', { concurre
       expect(content).toContain(marker)
     }
     finally {
-      await dev.stop(5_000)
-      await fs.writeFile(fixture.sourcePath, originalSource, 'utf8')
-      if (originalProjectPrivateConfig) {
-        await fs.writeFile(projectPrivateConfigPath, originalProjectPrivateConfig, 'utf8')
+      try {
+        await dev.stop(5_000)
+        expect(await fs.readFile(projectPrivateConfigPath)).toEqual(configurationBeforeStart)
+        await expect(fs.access(classicJournal)).rejects.toMatchObject({ code: 'ENOENT' })
+      }
+      finally {
+        await fs.writeFile(fixture.sourcePath, originalSource, 'utf8')
+        if (originalProjectPrivateConfig) {
+          await fs.writeFile(projectPrivateConfigPath, originalProjectPrivateConfig, 'utf8')
+        }
       }
     }
   })

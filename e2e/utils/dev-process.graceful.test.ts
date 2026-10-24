@@ -1,27 +1,50 @@
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { existsSync } from 'node:fs'
+import { mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
+import { fileURLToPath } from 'node:url'
 import { expect, it } from 'vitest'
 import { cleanupTrackedDevProcesses, startDevProcess } from './dev-process'
 import { DevProcessGracefulShutdownError } from './devProcessCleanup/shutdown'
+import { startPackageScriptDevProcess } from './packageScriptDevProcess'
 
 const shutdownModule = new URL('../../packages/weapp-vite/src/devLifecycle/shutdown.ts', import.meta.url).href
 const ownerModule = new URL('../../packages/weapp-vite/src/runtime/classicIdeConfig/index.ts', import.meta.url).href
+const transports = ['node-ipc', 'package-script-eof'] as const
+type Transport = typeof transports[number]
 
-it('fails forced teardown after an IPC stop when the classic session has not released its lease', async () => {
+async function startFixture(project: string, source: string, transport: Transport) {
+  if (transport === 'node-ipc') {
+    return startDevProcess(process.execPath, ['--import', 'tsx', '--input-type=module', '-e', source])
+  }
+  if (!existsSync(path.join(project, 'node_modules'))) {
+    await symlink(fileURLToPath(new URL('../../node_modules', import.meta.url)), path.join(project, 'node_modules'), 'junction')
+  }
+  await writeFile(path.join(project, 'package.json'), JSON.stringify({
+    name: 'package-script-shutdown-regression',
+    private: true,
+    type: 'module',
+    scripts: { dev: 'node --import=tsx fixture.mjs' },
+  }))
+  await writeFile(path.join(project, 'fixture.mjs'), source)
+  return startPackageScriptDevProcess('pnpm', ['run', 'dev'], { cwd: project, all: true })
+}
+
+it.each(transports)('fails forced teardown after %s when the classic session has not released its lease', async (transport) => {
   const project = await mkdtemp(path.join(os.tmpdir(), 'dev-process-classic-incomplete-'))
   const config = path.join(project, 'project.private.config.json')
   const journal = path.join(project, '.weapp-vite/ide-classic-project.private.config.json')
   const original = '{\r\n\t"setting": { "compileHotReLoad": true }\r\n}\r\n'
   await writeFile(config, original)
-  const dev = startDevProcess(process.execPath, ['--import', 'tsx', '--input-type=module', '-e', `
+  const dev = await startFixture(project, `
     import { DevShutdownScope } from ${JSON.stringify(shutdownModule)};
     import { ClassicIdeConfigOwner } from ${JSON.stringify(ownerModule)};
     const owner = new ClassicIdeConfigOwner();
     const scope = new DevShutdownScope();
     const hold = setInterval(() => {}, 30_000);
     process.once('disconnect', () => console.log('fixture IPC stop received'));
+    process.stdin.once('end', () => console.log('fixture EOF stop received'));
     scope.own(async () => {
       console.log('fixture session close started');
       // 模拟尚未结算的构建关闭；强杀不能冒充后端关闭和配置租约恢复完成。
@@ -33,7 +56,7 @@ it('fails forced teardown after an IPC stop when the classic session has not rel
     await scope.run('startup', () => owner.activate(${JSON.stringify(config)}));
     console.log('fixture classic owner ready');
     await scope.done;
-  `])
+  `, transport)
   try {
     await dev.waitForOutput('fixture classic owner ready', 'classic config acquisition', 10_000)
     const installed = await readFile(config, 'utf8')
@@ -41,7 +64,7 @@ it('fails forced teardown after an IPC stop when the classic session has not rel
     const failure: unknown = await dev.stop(500, { gracefulTimeoutMs: 500 }).catch(error => error)
     const repeated: unknown = await dev.stop(500).catch(error => error)
     const output = dev.getOutput()
-    expect(output).toContain('fixture IPC stop received')
+    expect(output).toContain(transport === 'node-ipc' ? 'fixture IPC stop received' : 'fixture EOF stop received')
     expect(output).toContain('fixture session close started')
     expect(output).not.toContain('fixture classic lease released')
     expect(await readFile(journal, 'utf8')).toBe(savedJournal)
@@ -66,10 +89,10 @@ it('fails forced teardown after an IPC stop when the classic session has not rel
   }
 })
 
-it.each([
+it.each(transports.flatMap(transport => [
   undefined,
   '{\r\n\t"setting": { "compileHotReLoad": true, "urlCheck": false }\r\n}\r\n',
-])('normally closes a direct Node development session and permits a second owner (original=%s)', async (original) => {
+].map(original => ({ transport, original }))))('normally closes $transport and permits a second owner (original=$original)', async ({ transport, original }) => {
   const project = await mkdtemp(path.join(os.tmpdir(), 'dev-process-classic-close-'))
   const config = path.join(project, 'project.private.config.json')
   const journal = path.join(project, '.weapp-vite/ide-classic-project.private.config.json')
@@ -78,7 +101,7 @@ it.each([
   }
   try {
     for (let generation = 0; generation < 2; generation++) {
-      const dev = startDevProcess(process.execPath, ['--import', 'tsx', '--input-type=module', '-e', `
+      const dev = await startFixture(project, `
         import { DevShutdownScope } from ${JSON.stringify(shutdownModule)};
         import { ClassicIdeConfigOwner } from ${JSON.stringify(ownerModule)};
         process.once('exit', code => console.log('normal development exit=' + code));
@@ -89,13 +112,16 @@ it.each([
         await scope.run('startup', () => owner.activate(${JSON.stringify(config)}));
         console.log('classic owner ready');
         await scope.done;
-      `])
+      `, transport)
       try {
         await dev.waitForOutput('classic owner ready', 'classic config acquisition', 10_000)
         expect((JSON.parse(await readFile(config, 'utf8')) as { setting: { compileHotReLoad: boolean } }).setting.compileHotReLoad).toBe(false)
         expect(JSON.parse(await readFile(journal, 'utf8'))).toHaveProperty('owner')
       }
       finally {
+        const stopping = dev.stop(10_000)
+        expect(dev.stop(10_000)).toBe(stopping)
+        await stopping
         await dev.stop(10_000)
       }
       // SIGTERM 与强杀都不能冒充跨平台的正常退出证据。
@@ -114,13 +140,13 @@ it.each([
   }
 })
 
-it('reports a real shutdown cleanup failure after restoring resources without retaining global tracking', async () => {
+it.each(transports)('reports a real %s cleanup failure after restoring resources without retaining global tracking', async (transport) => {
   const project = await mkdtemp(path.join(os.tmpdir(), 'dev-process-classic-close-failure-'))
   const config = path.join(project, 'project.private.config.json')
   const journal = path.join(project, '.weapp-vite/ide-classic-project.private.config.json')
   const original = '{\r\n\t"setting": { "compileHotReLoad": true }\r\n}\r\n'
   await writeFile(config, original)
-  const dev = startDevProcess(process.execPath, ['--import', 'tsx', '--input-type=module', '-e', `
+  const dev = await startFixture(project, `
     import { DevShutdownScope } from ${JSON.stringify(shutdownModule)};
     import { ClassicIdeConfigOwner } from ${JSON.stringify(ownerModule)};
     process.once('exit', code => console.log('failed development exit=' + code));
@@ -136,7 +162,7 @@ it('reports a real shutdown cleanup failure after restoring resources without re
     await scope.run('startup', () => owner.activate(${JSON.stringify(config)}));
     console.log('classic owner ready');
     await scope.done;
-  `])
+  `, transport)
   try {
     await dev.waitForOutput('classic owner ready', 'classic config acquisition', 10_000)
     const stopping = dev.stop(10_000)

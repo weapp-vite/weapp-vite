@@ -220,23 +220,36 @@ it('preserves credentials across concurrently nested scopes and exposes explicit
   await withMachineE2ELease(async (owner) => {
     const firstReady = Promise.withResolvers<void>()
     const secondReady = Promise.withResolvers<void>()
-    const firstDone = Promise.withResolvers<void>()
     const first = withMachineE2ELease(async (borrowed) => {
       expect(borrowed.borrowed).toBe(true)
       firstReady.resolve()
       await secondReady.promise
-    }, options).then(() => firstDone.resolve())
-    const second = withMachineE2ELease(async (borrowed) => {
-      await firstReady.promise
-      secondReady.resolve()
-      await firstDone.promise
-      expect(env.WEAPP_VITE_E2E_MACHINE_LEASE).toBe(owner.environment.WEAPP_VITE_E2E_MACHINE_LEASE)
-      const child = await start(root, 'worktree-b', borrowed.environment)
-      expect(child.message.borrowed).toBe(true)
-      await stop(child.child)
     }, options)
-    await Promise.all([first, second])
-    expect(env.WEAPP_VITE_E2E_MACHINE_LEASE).toBe(owner.environment.WEAPP_VITE_E2E_MACHINE_LEASE)
+    const scopes = [first]
+    try {
+      // 依次完成注册后重叠作用域寿命；临界区争用由受控 mutation 测试覆盖。
+      await Promise.race([firstReady.promise, first])
+      const second = withMachineE2ELease(async (borrowed) => {
+        secondReady.resolve()
+        await first
+        expect(env.WEAPP_VITE_E2E_MACHINE_LEASE).toBe(owner.environment.WEAPP_VITE_E2E_MACHINE_LEASE)
+        const child = await start(root, 'worktree-b', borrowed.environment)
+        try {
+          expect(child.message.borrowed).toBe(true)
+        }
+        finally {
+          await stop(child.child)
+        }
+      }, options)
+      scopes.push(second)
+      await Promise.all(scopes)
+      expect(env.WEAPP_VITE_E2E_MACHINE_LEASE).toBe(owner.environment.WEAPP_VITE_E2E_MACHINE_LEASE)
+    }
+    finally {
+      // 首错仍由 race/Promise.all 抛出；先解除屏障并结算子作用域，再释放父租约。
+      secondReady.resolve()
+      await Promise.allSettled(scopes)
+    }
   }, options)
   expect(env.WEAPP_VITE_E2E_MACHINE_LEASE).toBeUndefined()
 })
