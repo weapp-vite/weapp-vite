@@ -1,19 +1,32 @@
 import type { PlannedTaskCaseReader } from '../domAcceptanceReport/taskCases'
 import type { SuiteTask } from '../suiteRunner'
 import type { DurationHistory, VerificationPlan, VerificationProfile } from './types'
+import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
 import { excludedE2EProjects, isExcludedE2EProject } from '../../../scripts/e2eProjectScope'
 import { assertVerificationTopology, resolveVerificationTopology } from '../../../scripts/verification/topology.ts'
-import { ACCEPTANCE_DIRTY_ENV, ACCEPTANCE_ROOT, createAcceptanceIdentity, isStrictDomAcceptanceSuite } from '../domAcceptanceReport/helpers'
+import { ACCEPTANCE_DIRTY_ENV, ACCEPTANCE_ROOT, createAcceptanceIdentity, isStrictDomAcceptanceSuite, sanitizeAcceptanceValue } from '../domAcceptanceReport/helpers'
 import { collectInventorySources } from '../domAcceptanceReport/inventorySources'
 import { createPlannedTaskCaseReader, isValidProviderCaseScope } from '../domAcceptanceReport/taskCases'
 import { getSuiteTasks } from '../e2e-suite-manifest'
 import { HMR_ACCEPTANCE_CAPABILITIES } from '../hmr-acceptance-manifest'
 import { assertVerificationProfile } from './profile'
 import { VERIFICATION_TOOL_VERSION } from './types'
+
+interface VerificationGitDiagnostics {
+  trackedStatus?: { count: number, entries: string[] }
+  untrackedFiles?: { count: number, entries: string[] }
+  failedOperations: string[]
+}
+
+const identityGitDiagnostics = new WeakMap<ReturnType<typeof createAcceptanceIdentity>, VerificationGitDiagnostics>()
+
+function summarizeGitEntries(entries: string[]) {
+  return { count: entries.length, entries: entries.slice(0, 50) }
+}
 
 export function verificationHash(value: unknown): string {
   const canonical = (entry: unknown): unknown => Array.isArray(entry)
@@ -26,7 +39,27 @@ export function verificationHash(value: unknown): string {
 
 /** 冻结与执行时重新读取 Git 状态，不信任父进程传入的 clean 标记。 */
 export function createVerificationIdentity(env = process.env, readGit?: Parameters<typeof createAcceptanceIdentity>[1]) {
-  return createAcceptanceIdentity({ ...env, [ACCEPTANCE_DIRTY_ENV]: undefined }, readGit)
+  const diagnostics: VerificationGitDiagnostics = { failedOperations: [] }
+  const identity = createAcceptanceIdentity({ ...env, [ACCEPTANCE_DIRTY_ENV]: undefined }, (args) => {
+    try {
+      const output = readGit
+        ? readGit(args)
+        : execFileSync('git', ['-c', 'core.fsmonitor=false', ...args], { cwd: ACCEPTANCE_ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })
+      if (args[0] === 'status') {
+        diagnostics.trackedStatus = summarizeGitEntries(output.replaceAll('\r\n', '\n').split('\n').filter(Boolean))
+      }
+      if (args[0] === 'ls-files') {
+        diagnostics.untrackedFiles = summarizeGitEntries(output.split('\0').filter(Boolean))
+      }
+      return output
+    }
+    catch (error) {
+      diagnostics.failedOperations.push(args[0]!)
+      throw error
+    }
+  })
+  identityGitDiagnostics.set(identity, diagnostics)
+  return identity
 }
 
 function normalizeTaskValue(value: string) {
@@ -99,10 +132,44 @@ export function assertVerificationPlan(plan: VerificationPlan, options?: { suite
   if (verificationHash(plan.executionTopology) !== verificationHash(resolveVerificationTopology(options.topology))) {
     throw new Error('Frozen verification plan topology mismatch')
   }
-  if (options.identity.workingTreeDirty !== false || plan.suite !== options.suite || plan.commitSha !== options.identity.commitSha || plan.workingTreeDirty !== options.identity.workingTreeDirty
-    || plan.sourceDigest !== verificationSourceDigest(options.tasks)
-    || verificationHash(plan.tasks.map(task => [task.label, task.definitionHash])) !== verificationHash(options.tasks.map(task => [task.label, taskDefinitionHash(task)]))) {
-    throw new Error('Frozen verification plan does not match the current checkout, suite or task inventory')
+  const definitions = options.tasks.map(task => [task.label, taskDefinitionHash(task)] as const)
+  const expected = {
+    suite: plan.suite,
+    commitSha: plan.commitSha,
+    workingTreeDirty: plan.workingTreeDirty,
+    sourceDigest: plan.sourceDigest,
+    taskInventoryHash: verificationHash(plan.tasks.map(task => [task.label, task.definitionHash])),
+  }
+  let sourceDigest: string | null = null
+  let sourceDigestErrorCode: string | undefined
+  try {
+    sourceDigest = verificationSourceDigest(options.tasks)
+  }
+  catch (error) {
+    sourceDigestErrorCode = (error as NodeJS.ErrnoException).code ?? 'unavailable'
+  }
+  const actual = {
+    suite: options.suite,
+    commitSha: options.identity.commitSha,
+    workingTreeDirty: options.identity.workingTreeDirty,
+    sourceDigest,
+    taskInventoryHash: verificationHash(definitions),
+  }
+  const mismatches = (Object.keys(expected) as (keyof typeof expected)[]).filter(key => expected[key] !== actual[key])
+  if (options.identity.workingTreeDirty !== false || mismatches.length) {
+    const expectedDefinitions = new Map(plan.tasks.map(task => [task.label, task.definitionHash]))
+    const actualDefinitions = new Map(definitions)
+    const taskDefinitionChanges = [...new Set([...expectedDefinitions.keys(), ...actualDefinitions.keys()])]
+      .filter(label => expectedDefinitions.get(label) !== actualDefinitions.get(label))
+      .map(label => ({ label, expected: expectedDefinitions.get(label) ?? null, actual: actualDefinitions.get(label) ?? null }))
+    throw new Error(`Frozen verification plan does not match the current checkout, suite or task inventory: ${JSON.stringify(sanitizeAcceptanceValue({
+      mismatches,
+      expected,
+      actual,
+      taskDefinitionChanges,
+      sourceDigestErrorCode,
+      git: identityGitDiagnostics.get(options.identity),
+    }))}`)
   }
 }
 

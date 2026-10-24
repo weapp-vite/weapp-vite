@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMockBridgeSnapshotCleanup } from './snapshotCleanup'
 
 let directory: string
@@ -70,5 +70,34 @@ describe('mock bridge snapshot cleanup', () => {
 
     expect(() => cleanup([call(unknown)])).toThrow('root identity changed')
     expect(fs.existsSync(unknown)).toBe(true)
+  })
+
+  it('preserves replaced roots whose exact inode IDs collide as numbers', () => {
+    const root = path.join(directory, 'snapshots')
+    const initialInode = BigInt(Number.MAX_SAFE_INTEGER) + 1n
+    const replacementInode = initialInode + 1n
+    expect(Number(initialInode)).toBe(Number(replacementInode))
+    let inode = initialInode
+    const originalLstat = fs.lstatSync
+    const lstat = vi.spyOn(fs, 'lstatSync').mockImplementation(((file: fs.PathLike, options?: fs.StatOptions) => {
+      const stat = originalLstat(file, options)
+      if (file === root && stat) {
+        stat.ino = typeof stat.ino === 'bigint' ? inode : Number(inode)
+      }
+      return stat
+    }) as typeof fs.lstatSync)
+    try {
+      const cleanup = createMockBridgeSnapshotCleanup(root, bridgePath)
+      fs.renameSync(root, path.join(directory, 'original-snapshots'))
+      const unknown = path.join(root, '9999999999999999')
+      fs.mkdirSync(unknown, { recursive: true })
+      inode = replacementInode
+
+      expect(() => cleanup([call(unknown)])).toThrow('root identity changed')
+      expect(fs.existsSync(unknown)).toBe(true)
+    }
+    finally {
+      lstat.mockRestore()
+    }
   })
 })

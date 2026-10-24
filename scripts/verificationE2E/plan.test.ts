@@ -7,6 +7,20 @@ import { freeze, identity, now, profile, rehash, tasks } from './fixtures'
 
 useIsolatedTopologyTestEnvironment()
 
+function mismatchDiagnostics(callback: () => void) {
+  try {
+    callback()
+  }
+  catch (error) {
+    expect(error).toBeInstanceOf(Error)
+    const prefix = 'Frozen verification plan does not match the current checkout, suite or task inventory: '
+    const message = (error as Error).message
+    expect(message.startsWith(prefix)).toBe(true)
+    return { message, details: JSON.parse(message.slice(prefix.length)) as unknown }
+  }
+  throw new Error('Expected frozen verification plan rejection')
+}
+
 describe('frozen E2E verification plans', () => {
   it('uses deterministic LPT weights in milliseconds without losing task order or coverage', async () => {
     const history = { schemaVersion: 1 as const, toolVersion: 1, generatedAt: now.toISOString(), profile, tasks: Object.fromEntries([80, 70, 60, 50].map((weight, index) => [tasks[index]!.label, { durationMs: weight * 1000, samples: 1, sources: ['trusted'] }])) }
@@ -48,6 +62,65 @@ describe('frozen E2E verification plans', () => {
     const readGit = (args: string[]) => args[0] === 'rev-parse' ? identity.commitSha : args[0] === 'status' ? ' M packages/runtime/src/index.ts' : ''
     expect(createVerificationIdentity(environment, readGit).workingTreeDirty).toBe(true)
     expect(createVerificationIdentity(environment, args => args[0] === 'rev-parse' ? identity.commitSha : args[0] === 'ls-files' ? 'e2e-apps/example/src/index.ts\0' : '').workingTreeDirty).toBe(true)
+  })
+
+  it('reports dirty repository paths from the original identity reads without changing the frozen plan', async () => {
+    const plan = await freeze({ sourceDigest: undefined })
+    const frozen = JSON.stringify(plan)
+    const operations: string[][] = []
+    const current = createVerificationIdentity({}, (args) => {
+      operations.push(args)
+      return args[0] === 'rev-parse'
+        ? identity.commitSha
+        : args[0] === 'status' ? ' M e2e-apps/example/src/index.vue\r\n' : 'e2e-apps/example/src/added.ts\0'
+    })
+    const { details } = mismatchDiagnostics(() => assertVerificationPlan(plan, { suite: 'ci-full', profile, tasks, identity: current }))
+    expect(details).toMatchObject({
+      mismatches: ['workingTreeDirty'],
+      expected: { commitSha: identity.commitSha, workingTreeDirty: false, sourceDigest: plan.sourceDigest },
+      actual: { commitSha: identity.commitSha, workingTreeDirty: true, sourceDigest: plan.sourceDigest },
+      taskDefinitionChanges: [],
+      git: {
+        trackedStatus: { count: 1, entries: [' M e2e-apps/example/src/index.vue'] },
+        untrackedFiles: { count: 1, entries: ['e2e-apps/example/src/added.ts'] },
+        failedOperations: [],
+      },
+    })
+    expect(operations).toEqual([['rev-parse', 'HEAD'], ['status', '--porcelain', '--untracked-files=no'], ['ls-files', '--others', '--exclude-standard', '-z']])
+    expect(JSON.stringify(plan)).toBe(frozen)
+  })
+
+  it('identifies commit, suite, source and added, removed or changed tasks without printing task arguments or environment', async () => {
+    const plan = await freeze()
+    const currentTasks = [{ ...tasks[0]!, args: ['private-argument'], env: { PRIVATE_TOKEN: 'private-value' } }, ...tasks.slice(1, 3), { ...tasks[3]!, label: 'added' }]
+    const { message, details } = mismatchDiagnostics(() => assertVerificationPlan(plan, { suite: 'ci-pr', profile, tasks: currentTasks, identity: { ...identity, commitSha: 'c'.repeat(40) } }))
+    expect(details).toMatchObject({
+      mismatches: ['suite', 'commitSha', 'sourceDigest', 'taskInventoryHash'],
+      expected: { suite: 'ci-full', commitSha: identity.commitSha, sourceDigest: plan.sourceDigest },
+      actual: { suite: 'ci-pr', commitSha: 'c'.repeat(40), sourceDigest: expect.stringMatching(/^[a-f0-9]{64}$/) },
+      taskDefinitionChanges: [
+        { label: 'a', expected: expect.any(String), actual: expect.any(String) },
+        { label: 'd', expected: expect.any(String), actual: null },
+        { label: 'added', expected: null, actual: expect.any(String) },
+      ],
+    })
+    expect(message).not.toContain('private-argument')
+    expect(message).not.toContain('PRIVATE_TOKEN')
+    expect(message).not.toContain('private-value')
+  })
+
+  it('reports a failed identity operation without copying its stderr into diagnostics', async () => {
+    const plan = await freeze({ sourceDigest: undefined })
+    const current = createVerificationIdentity({}, (args) => {
+      if (args[0] === 'rev-parse') {
+        return identity.commitSha
+      }
+      throw new Error('private stderr with a private credential')
+    })
+    const { message, details } = mismatchDiagnostics(() => assertVerificationPlan(plan, { suite: 'ci-full', profile, tasks, identity: current }))
+    expect(details).toMatchObject({ mismatches: ['workingTreeDirty'], actual: { workingTreeDirty: null }, git: { failedOperations: ['status'] } })
+    expect(message).not.toContain('private stderr')
+    expect(message).not.toContain('private credential')
   })
 
   it.each(['os', 'nodeMajor', 'provider', 'platform', 'runnerClass', 'arch'] as const)('isolates history by %s', async (key) => {

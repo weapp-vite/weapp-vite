@@ -5,7 +5,7 @@ import path from 'node:path'
 export function createMockBridgeSnapshotCleanup(wrapperRoot: string, bridgePath: string) {
   const root = path.resolve(wrapperRoot)
   fs.mkdirSync(root, { recursive: true })
-  const initialRoot = fs.lstatSync(root)
+  const initialRoot = fs.lstatSync(root, { bigint: true })
   if (!initialRoot.isDirectory() || initialRoot.isSymbolicLink()) {
     throw new Error('Mock bridge snapshot root must be a non-symlink directory')
   }
@@ -41,7 +41,7 @@ export function createMockBridgeSnapshotCleanup(wrapperRoot: string, bridgePath:
 
     const removed: string[] = []
     for (const projectPath of candidates) {
-      const currentRoot = fs.lstatSync(root, { throwIfNoEntry: false })
+      const currentRoot = fs.lstatSync(root, { throwIfNoEntry: false, bigint: true })
       if (!currentRoot?.isDirectory() || currentRoot.isSymbolicLink()
         || currentRoot.dev !== initialRoot.dev || currentRoot.ino !== initialRoot.ino
         || fs.realpathSync(root) !== canonicalRoot) {
