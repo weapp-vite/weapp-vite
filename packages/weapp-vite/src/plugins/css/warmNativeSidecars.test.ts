@@ -18,6 +18,17 @@ interface PublicationReceipt {
   plan?: { full: boolean, styles: string[], importers: string[], compiler: string[] }
 }
 
+interface SnapshotTrace {
+  call: number
+  phase: string
+  startedAtMs: number
+  completedAtMs?: number
+  entries: string[]
+  changed: string[]
+  sources: Array<{ file?: string, event?: string, receivedAtMs: number }>
+  error?: string
+}
+
 it('preserves untouched native component CSS and its import closure across consecutive classic edits', async () => {
   const root = await realpath(await mkdtemp(path.join(os.tmpdir(), 'weapp-warm-native-sidecars-')))
   const outDir = path.join(root, 'dist')
@@ -32,19 +43,38 @@ it('preserves untouched native component CSS and its import closure across conse
   const receipts: PublicationReceipt[] = []
   const observations: Promise<void>[] = []
   const errors: unknown[] = []
-  const originalSnapshot = vueStyleSnapshot.withVueStyleDependencySnapshot
-  const snapshotBuilds = vi.spyOn(vueStyleSnapshot, 'withVueStyleDependencySnapshot')
-    .mockImplementation((...args) => originalSnapshot(...args))
-  let drainedSnapshots = 0
-  let initialized = false
+  const failures: unknown[] = []
+  const snapshots: SnapshotTrace[] = []
   let phase = 'initial'
   const label = (file: string) => path.relative(root, file).replaceAll('\\', '/')
+  const originalSnapshot = vueStyleSnapshot.withVueStyleDependencySnapshot
+  const snapshotBuilds = vi.spyOn(vueStyleSnapshot, 'withVueStyleDependencySnapshot')
+    .mockImplementation((...args) => {
+      const trace: SnapshotTrace = {
+        call: snapshots.length + 1,
+        phase,
+        startedAtMs: performance.now(),
+        entries: Array.from(args[1], label),
+        changed: Array.from(args[2], label),
+        sources: (args[0].runtimeState.build.hmr.profile.sourceEvents ?? []).map(event => ({ ...event, file: event.file ? label(event.file) : undefined })),
+      }
+      snapshots.push(trace)
+      const completion = originalSnapshot(...args)
+      void completion.then(() => {
+        trace.completedAtMs = performance.now()
+      }, (error: unknown) => {
+        trace.error = error instanceof Error ? error.stack : String(error)
+        trace.completedAtMs = performance.now()
+      })
+      return completion
+    })
+  let drainedSnapshots = 0
+  let initialized = false
   const pending = new WeakMap<object, { api: NativeOutputPublicationApi, epoch: number }>()
   const observer: Plugin = {
     name: 'warm-native-sidecar-publication-observer',
     generateBundle: {
       order: 'post',
-      sequential: true,
       handler() {
         const api = this.environment.config.plugins.find(plugin => plugin.name === WEAPP_VITE_OUTPUT_PUBLICATION_PLUGIN_NAME)?.api as NativeOutputPublicationApi | undefined
         if (!api) {
@@ -117,6 +147,7 @@ it('preserves untouched native component CSS and its import closure across conse
   onTestFailed(() => {
     process.stderr.write(`[warm-native-sidecars] ${JSON.stringify({
       errors: errors.map(String),
+      snapshots,
       receipts: receipts.slice(-3).map(receipt => ({
         ...receipt,
         snapshot: receipt.snapshot ? Object.fromEntries(['app.wxss', changedStyle, untouchedStyle].map(file => [file, String(receipt.snapshot!.outputs.get(file)).slice(0, 350)])) : undefined,
@@ -263,6 +294,9 @@ it('preserves untouched native component CSS and its import closure across conse
     await expectStylesheetClosure(deleted)
     expect(errors).toEqual([])
   }
+  catch (error) {
+    failures.push(error)
+  }
   finally {
     try {
       await session.close()
@@ -275,9 +309,23 @@ it('preserves untouched native component CSS and its import closure across conse
       }
       expect(errors).toEqual([])
     }
+    catch (error) {
+      failures.push(error)
+    }
     finally {
       snapshotBuilds.mockRestore()
-      await rm(root, { recursive: true, force: true })
+      try {
+        await rm(root, { recursive: true, force: true })
+      }
+      catch (error) {
+        failures.push(error)
+      }
     }
+  }
+  if (failures.length === 1) {
+    throw failures[0]
+  }
+  if (failures.length > 1) {
+    throw new AggregateError(failures, 'Native sidecar regression and cleanup failed', { cause: failures[0] })
   }
 }, 60_000)

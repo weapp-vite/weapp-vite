@@ -4,6 +4,7 @@ import type { LogicalEntryType, SidecarModuleKind } from '../../../moduleGraph/p
 import type { Entry } from '../../../types'
 import type { CorePluginState } from '../helpers'
 import { removeExtensionDeep } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { createLogicalEntryModuleCode, createSidecarModuleCode } from '../../../moduleGraph/logicalEntry'
 import {
@@ -240,12 +241,15 @@ export function createLogicalEntryLoadHook(state: CorePluginState) {
       // 入口图交接期间旧 DevEngine 可能在源文件删除后仍重载旧逻辑入口。
       // 这时保留一个空模块，避免再次生成指向已删除源码的 unresolved import；新宿主
       // 会在完整快照交付后重新注册实际入口。
-      if (state.ctx.configService.isDev
-        && !logicalEntry.sourceId.startsWith('\0')
-        && !await pathExistsCached(logicalEntry.sourceId)) {
-        return {
-          code: '',
-          moduleSideEffects: 'no-treeshake',
+      if (state.ctx.configService.isDev && !logicalEntry.sourceId.startsWith('\0')) {
+        const sources = getCompilerSourceSnapshot(state.ctx.configService)
+        const source = sources?.get(compilerSnapshotSourceId(sources, logicalEntry.sourceId))
+        // 冻结源码由本代快照拥有；未捕获的磁盘入口不能沿用尚未失效的存在性缓存。
+        if (source === null || (source === undefined && !await fs.pathExists(logicalEntry.sourceId))) {
+          return {
+            code: '',
+            moduleSideEffects: 'no-treeshake',
+          }
         }
       }
       if (state.ctx.configService.isDev) {

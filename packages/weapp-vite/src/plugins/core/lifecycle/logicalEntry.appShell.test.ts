@@ -10,6 +10,11 @@ import { isSafeJavaScriptPatch } from '../../../runtime/statefulHmr/session'
 import { createStatefulHmrSidecarModuleCode } from '../../../runtime/statefulHmr/sidecarPlugin'
 import { createLogicalEntryLoadHook } from './logicalEntry'
 
+vi.mock('@weapp-core/shared/fs', async (importOriginal) => {
+  const original = await importOriginal<typeof import('@weapp-core/shared/fs')>()
+  return { ...original, fs: { ...original.fs, pathExists: vi.fn(async () => true) } }
+})
+
 vi.mock('../../../utils', () => ({
   findCssEntry: vi.fn(async () => ({ path: undefined })),
   findJsEntry: vi.fn(async () => ({ path: undefined })),
@@ -20,7 +25,7 @@ vi.mock('../../../utils', () => ({
 }))
 vi.mock('../../utils/cache', () => ({ pathExists: vi.fn(async () => true) }))
 
-function fixture(type: 'app' | 'page' | 'component' | 'layout', externalTemplate = false) {
+function fixture(type: 'app' | 'page' | 'component' | 'layout', externalTemplate = false, runtime?: 'auto' | 'stateful-experimental') {
   const srcRoot = path.join(tmpdir(), 'logical-app-shell-fixture', 'src')
   const sourceId = path.join(srcRoot, `${type}.vue`)
   const templatePath = externalTemplate ? path.join(srcRoot, `${type}.wxml`) : undefined
@@ -39,6 +44,8 @@ function fixture(type: 'app' | 'page' | 'component' | 'layout', externalTemplate
         absoluteSrcRoot: srcRoot,
         isDev: true,
         platform: 'weapp',
+        weappViteConfig: runtime ? { hmr: { runtime } } : {},
+        projectPrivateConfig: runtime ? { setting: { compileHotReLoad: true } } : {},
         relativeAbsoluteSrcRoot: (id: string) => path.relative(srcRoot, id),
       },
       moduleGraphService: graph,
@@ -53,9 +60,7 @@ function fixture(type: 'app' | 'page' | 'component' | 'layout', externalTemplate
 
 describe('app shell logical template ownership', () => {
   it.each(['auto', 'stateful-experimental'] as const)('retires logical HMR accept after %s falls back while preserving requested configuration', async (runtime) => {
-    const { state, sourceId, load } = fixture('page')
-    state.ctx.configService.weappViteConfig = { hmr: { runtime } } as any
-    state.ctx.configService.projectPrivateConfig = { setting: { compileHotReLoad: true } } as any
+    const { state, sourceId, load } = fixture('page', false, runtime)
     const entry = createLogicalEntryId(sourceId, 'page')
     expect((await load(entry))?.code).toContain('import.meta.hot.accept()')
     const session = getHmrRuntimeSession(state.ctx)

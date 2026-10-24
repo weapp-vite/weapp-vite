@@ -5,6 +5,12 @@ import { createLogicalEntryLoadHook, createLogicalEntryResolveHook } from './log
 
 const findCssEntryMock = vi.hoisted(() => vi.fn())
 const pathExistsMock = vi.hoisted(() => vi.fn(async () => true))
+const freshPathExistsMock = vi.hoisted(() => vi.fn(async () => true))
+
+vi.mock('@weapp-core/shared/fs', async (importOriginal) => {
+  const original = await importOriginal<typeof import('@weapp-core/shared/fs')>()
+  return { ...original, fs: { ...original.fs, pathExists: freshPathExistsMock } }
+})
 
 vi.mock('../../../utils', () => ({
   findCssEntry: findCssEntryMock,
@@ -20,7 +26,7 @@ vi.mock('../../utils/cache', () => ({ pathExists: pathExistsMock }))
 describe('core logical entry lifecycle', () => {
   it('returns an empty module when a deleted entry is reloaded by the old dev engine', async () => {
     const sourceId = '/project/src/pages/deleted/index.ts'
-    pathExistsMock.mockResolvedValueOnce(false)
+    freshPathExistsMock.mockResolvedValueOnce(false)
     const state = {
       resolvedEntryMap: new Map(),
       loadEntry: vi.fn(),
