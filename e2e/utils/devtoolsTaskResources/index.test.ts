@@ -86,6 +86,8 @@ beforeEach(async () => {
     verifiedNewForeignProcessCount: 0,
     newSelectedProcessCount: 0,
     identityChangedProcessCount: 0,
+    verifiedForeignImageTransitionCount: 0,
+    verifiedForeignImageTransitions: [],
     newProcesses: [],
     unclassifiedProcesses: [],
     missingIdentities: [],

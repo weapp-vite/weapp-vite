@@ -3,6 +3,7 @@ import type { NativeInventory } from './closure'
 import type { NativeTextImageRead, resolveAnchoredTextImages } from './fallback'
 import { nativeRelation } from './closure'
 import { nativeFrameEvidence, textReadEvidence } from './evidence'
+import { verifiedForeignImageTransitions } from './foreignImageTransitions'
 import { insideInstallation, metadata, sameNativeIdentity } from './model'
 
 interface SummaryOptions {
@@ -22,6 +23,8 @@ export function summarizeNativeInventory(options: SummaryOptions): InstallationP
   if (!anchor || !final || final.phase !== 'closure2') {
     throw new Error('Resource sampling did not complete its fixed native anchor and closure boundaries.')
   }
+  const foreignTransitions = verifiedForeignImageTransitions(inventory, installationRoot)
+  const verifiedForeignProcesses = new Set(foreignTransitions.map(transition => transition.process.pid))
   const preAnchorExited = new Set<number>()
   for (const entry of inventory.tracked.values()) {
     if (entry.firstPhase === 'prepare' && !anchor.rows.has(entry.row.pid) && !entry.changed && !inventory.selectedSeen.has(entry.row.pid)) {
@@ -31,7 +34,7 @@ export function summarizeNativeInventory(options: SummaryOptions): InstallationP
   }
   const unclassifiedProcesses = [...anchor.rows.values()].filter((row) => {
     const tracked = inventory.tracked.get(row.pid)!
-    return !row.identity?.zombie && (!row.images || tracked.changed || tracked.closureIdentityUnverifiable || nativeRelation(anchor, row, installationRoot) === 'unknown')
+    return !row.identity?.zombie && (!row.images || (tracked.changed && !verifiedForeignProcesses.has(row.pid)) || tracked.closureIdentityUnverifiable || nativeRelation(anchor, row, installationRoot) === 'unknown')
   }).map(row => inventory.gap(inventory.tracked.get(row.pid)!, !row.images ? 'kernel-path-unverifiable' : undefined))
 
   const processes: InstallationProcessSample['processes'] = []
@@ -68,7 +71,7 @@ export function summarizeNativeInventory(options: SummaryOptions): InstallationP
   }))
   const uninspectedNewProcessCount = newProcesses.filter(row => row.classification === 'unclassified').length
   const newSelectedProcessCount = newProcesses.filter(row => row.classification === 'installation-image' || row.classification === 'descendant').length
-  const changedCount = [...inventory.tracked.values()].filter(entry => entry.changed).length
+  const changedCount = [...inventory.tracked.values()].filter(entry => entry.changed && !verifiedForeignProcesses.has(entry.row.pid)).length
   const inventoryBudgetExhausted = Date.now() >= options.deadline
   const verifiedMemberRssBytes = processes.reduce((sum, row) => sum + row.rssBytes, 0)
   if (!Number.isSafeInteger(verifiedMemberRssBytes)) {
@@ -96,6 +99,8 @@ export function summarizeNativeInventory(options: SummaryOptions): InstallationP
     verifiedNewForeignProcessCount: newProcesses.filter(row => row.classification === 'verified-foreign').length,
     newSelectedProcessCount,
     identityChangedProcessCount: inventory.changes.size,
+    verifiedForeignImageTransitionCount: foreignTransitions.length,
+    verifiedForeignImageTransitions: foreignTransitions,
     newProcesses,
     inventoryRoundCount: 3,
     inventoryBudgetExhausted,

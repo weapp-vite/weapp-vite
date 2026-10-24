@@ -9,6 +9,7 @@ export interface TrackedNativeProcess {
   firstPhase: NativePhase
   absent: boolean
   changed: boolean
+  imageEvidenceConflict: boolean
   closureIdentityUnverifiable: boolean
   classification: NativeRelation
   classifiedAt?: NativePhase
@@ -121,8 +122,10 @@ export function createNativeInventory(installationRoot: string) {
           const previous = directPaths.get(row.pid)
           const text = textImages.get(row.pid)
           const observedText = textObservations.get(row.pid)
-          if ((previous && previous !== image) || (text && !text.includes(image)) || (observedText && !observedText.includes(image))) {
+          const textConflict = (text && !text.includes(image)) || (observedText && !observedText.includes(image))
+          if ((previous && previous !== image) || textConflict) {
             entry.changed = true
+            entry.imageEvidenceConflict ||= Boolean(textConflict)
             cause(entry, 'image-changed', frame.phase)
           }
           directPaths.set(row.pid, image)
@@ -132,6 +135,7 @@ export function createNativeInventory(installationRoot: string) {
           const direct = directPaths.get(row.pid)
           if ((previous && JSON.stringify(previous) !== JSON.stringify(row.images)) || (direct && !row.images.includes(direct))) {
             entry.changed = true
+            entry.imageEvidenceConflict = true
             cause(entry, 'image-changed', frame.phase)
           }
           textImages.set(row.pid, row.images)
@@ -149,6 +153,7 @@ export function createNativeInventory(installationRoot: string) {
     })
     if ((previous && JSON.stringify(previous) !== JSON.stringify(images)) || directPaths.some(image => !images.includes(image))) {
       entry.changed = true
+      entry.imageEvidenceConflict = true
       cause(entry, 'image-changed', phase)
     }
     textObservations.set(pid, images)
@@ -187,7 +192,7 @@ export function createNativeInventory(installationRoot: string) {
       }
       let entry = tracked.get(row.pid)
       if (!entry) {
-        entry = { row, firstPhase: frame.phase, absent: false, changed: false, closureIdentityUnverifiable: false, classification: 'unknown', imageSource: 'not-verified', causes: [] }
+        entry = { row, firstPhase: frame.phase, absent: false, changed: false, imageEvidenceConflict: false, closureIdentityUnverifiable: false, classification: 'unknown', imageSource: 'not-verified', causes: [] }
         tracked.set(row.pid, entry)
       }
       if (!row.entry.before.identity || !row.finalIdentity) {
@@ -201,6 +206,7 @@ export function createNativeInventory(installationRoot: string) {
       }
       if (row.imageChanged) {
         entry.changed = true
+        entry.imageEvidenceConflict = true
         cause(entry, 'image-changed', frame.phase)
       }
       if (row.identity?.zombie) {

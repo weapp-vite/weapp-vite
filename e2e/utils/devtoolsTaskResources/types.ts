@@ -66,6 +66,14 @@ export interface NativeImageEvidence {
   installationRelativePath?: string
 }
 
+export interface VerifiedForeignImageTransition {
+  process: ProcessIdentityGapObservation
+  from: { phase: ProcessInventoryLocation['phase'], image: NativeImageEvidence }
+  to: { phase: ProcessInventoryLocation['phase'], image: NativeImageEvidence }
+  ancestry: ProcessIdentityMetadata[]
+  proof: 'four-complete-native-foreign-frames'
+}
+
 export interface NativeProcessFrameEvidence {
   phase: 'prepare' | 'anchor' | 'closure1' | 'closure2'
   requestId: number
@@ -115,6 +123,8 @@ export interface InstallationProcessSample {
   verifiedNewForeignProcessCount: number
   newSelectedProcessCount: number
   identityChangedProcessCount: number
+  verifiedForeignImageTransitionCount: number
+  verifiedForeignImageTransitions: VerifiedForeignImageTransition[]
   newProcesses: NewProcessObservation[]
   unclassifiedProcesses: ProcessIdentityGapObservation[]
   missingIdentities: ProcessIdentityGapObservation[]

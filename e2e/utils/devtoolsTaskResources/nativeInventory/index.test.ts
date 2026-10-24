@@ -118,10 +118,14 @@ describe('native resource inventory boundaries', () => {
     expect(report.nativeFrames?.map(frame => frame.rows.find(row => row.pid === 11)?.before?.status)).toEqual([2, 3, 2, 3])
   })
 
-  it('keeps an observed image change blocked even if the original image returns', async () => {
+  it('records complete foreign cross-frame image changes when the original image returns', async () => {
     const baseline = [entry(11), entry(22)]
     frames(baseline, [entry(11), entry(22, { executable: '/System/Library/OtherForeign' })], baseline, baseline)
-    expect(await sample()).toMatchObject({ installationRssBytes: { status: 'unavailable' }, unclassifiedProcesses: [{ pid: 22, causes: [{ reason: 'image-changed' }] }] })
+    // 所选安装的 RSS 不要求其他应用冻结映像；同帧或归属证明缺口仍由独立回归保持阻塞。
+    expect(await sample()).toMatchObject({ installationRssBytes: { status: 'observed', value: 1000 }, verifiedForeignImageTransitionCount: 2, verifiedForeignImageTransitions: [
+      { process: { pid: 22, causes: [{ reason: 'image-changed' }] } },
+      { process: { pid: 22, causes: [{ reason: 'image-changed' }] } },
+    ] })
   })
 
   it('requires selected members at the final closure boundary', async () => {

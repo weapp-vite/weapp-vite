@@ -6,7 +6,7 @@ import path from 'node:path'
 import { insideInstallation } from './model'
 
 /** 报告保留映像等价性和安装内相对路径，不扩大披露其他应用或临时目录。 */
-function imageEvidence(image: string, installationRoot: string): NativeImageEvidence {
+export function imageEvidence(image: string, installationRoot: string): NativeImageEvidence {
   const sha256 = createHash('sha256').update(image).digest('hex')
   return insideInstallation(installationRoot, image)
     ? { sha256, scope: 'installation', installationRelativePath: path.relative(installationRoot, image).replaceAll('\\', '/') }
