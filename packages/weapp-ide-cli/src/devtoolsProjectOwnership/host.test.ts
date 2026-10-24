@@ -6,9 +6,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { assertManagedInstallation, inspectManagedProjectHost, isManagedPortClosed, readManagedProcessIdentity, sameManagedProcess, waitForManagedPortClosed } from './host'
 
 const inspect = vi.hoisted(() => vi.fn())
-const targetChecks = vi.hoisted(() => ({ port: vi.fn(), resolve: vi.fn() }))
+const targetChecks = vi.hoisted(() => ({ port: vi.fn(), installation: vi.fn() }))
 vi.mock('execa', () => ({ execa: inspect }))
-vi.mock('../devtoolsTarget', () => ({ assertWechatDevtoolsPort: targetChecks.port, resolveWechatDevtoolsTarget: targetChecks.resolve }))
+vi.mock('../devtoolsTarget', () => ({ assertWechatDevtoolsPort: targetChecks.port }))
+vi.mock('../devtoolsTarget/installation', () => ({ inspectWechatDevtoolsInstallation: targetChecks.installation }))
 const servers = new Set<Server>()
 
 beforeEach(() => vi.resetAllMocks())
@@ -120,11 +121,12 @@ describe('managed host startup identities', () => {
 
   it('rejects a replaced installation even when its path and PID could remain the same', async () => {
     const target = { cliPath: path.resolve('cli'), appPath: path.resolve('app'), profileDir: path.resolve('profile'), installationId: 'selected', version: '1.0.0' }
-    targetChecks.resolve.mockResolvedValueOnce({ ...target })
+    targetChecks.installation.mockResolvedValueOnce({ ...target })
     await expect(assertManagedInstallation(target)).resolves.toBeUndefined()
-    targetChecks.resolve.mockResolvedValueOnce({ ...target, version: '2.0.0' })
+    expect(targetChecks.installation).toHaveBeenCalledExactlyOnceWith(target.cliPath)
+    targetChecks.installation.mockResolvedValueOnce({ ...target, version: '2.0.0' })
     await expect(assertManagedInstallation(target)).rejects.toThrow('installation changed')
-    targetChecks.resolve.mockResolvedValueOnce({ ...target, profileDir: path.resolve('another-profile') })
+    targetChecks.installation.mockResolvedValueOnce({ ...target, profileDir: path.resolve('another-profile') })
     await expect(assertManagedInstallation(target)).rejects.toThrow('installation changed')
   })
 })

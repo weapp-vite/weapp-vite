@@ -4,8 +4,9 @@ import process from 'node:process'
 import { setTimeout } from 'node:timers/promises'
 // eslint-disable-next-line e18e/ban-dependencies -- 项目关闭与身份检查复用跨平台子进程封装。
 import { execa } from 'execa'
-import { assertWechatDevtoolsPort, resolveWechatDevtoolsTarget } from '../devtoolsTarget'
+import { assertWechatDevtoolsPort } from '../devtoolsTarget'
 import { resolveWechatInspectionTimeout } from '../devtoolsTarget/inspection'
+import { inspectWechatDevtoolsInstallation } from '../devtoolsTarget/installation'
 import { withPowerShellUtf8Output } from '../utils/powershell'
 import { readManagedProcessIdentity } from './processIdentity'
 
@@ -50,7 +51,8 @@ export async function inspectManagedProjectHost(target: ResolvedWechatDevtoolsTa
 }
 
 export async function assertManagedInstallation(target: ResolvedWechatDevtoolsTarget) {
-  const current = await resolveWechatDevtoolsTarget({ cliPath: target.cliPath })
+  // 官方选版在入口完成；本地所有权复核必须重读磁盘，不能依赖网络或活动选择缓存。
+  const current = await inspectWechatDevtoolsInstallation(target.cliPath)
   if (current.installationId !== target.installationId || current.appPath !== target.appPath
     || current.cliPath !== target.cliPath || current.profileDir !== target.profileDir
     || current.version !== target.version || current.channel !== target.channel) {

@@ -108,14 +108,12 @@ export function createContext(scenario, root) {
       }
     }
     if (scenario.probeError) {
-      for (const method of ['lstat', 'stat']) {
-        hooks[method] = async ({ file, original }) => {
-          if (injected && file === target) {
-            probeErrorCount++
-            throw Object.assign(new Error('presence probe denied'), { code: 'EACCES', syscall: method, path: target })
-          }
-          return original()
+      hooks.lstat = async ({ file, original }) => {
+        if (injected && file === target && probeErrorCount === 0) {
+          probeErrorCount++
+          throw Object.assign(new Error('presence probe denied'), { code: 'EACCES', syscall: 'lstat', path: target })
         }
+        return original()
       }
     }
     instrumentation = installNativeInstrumentation({
