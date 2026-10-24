@@ -18,6 +18,7 @@ interface PublicationReceipt {
   files: string[]
   epoch: number
   snapshotCall: number
+  writtenStyles: string
   capturedHandler?: number
   emittedHandler?: number
   profile: { eventId?: string, batchId?: string, event?: string, file?: string }
@@ -148,6 +149,7 @@ function increment() { count.value += ${handler}; return { handlerStep: ${handle
           files: Object.keys(bundle),
           epoch: publication.epoch,
           snapshotCall: snapshotBuilds.mock.calls.length,
+          writtenStyles: readFileSync(path.join(outDir, 'app.wxss'), 'utf8'),
           capturedHandler: handlerStep(getCompilerSourceSnapshot(session.context.configService)?.get(pageId)),
           emittedHandler: handlerStep(pageScript?.type === 'chunk' ? pageScript.code : undefined),
           profile: { eventId: profile.eventId, batchId: profile.batchId, event: profile.event, file: profile.file },
@@ -162,6 +164,8 @@ function increment() { count.value += ${handler}; return { handlerStep: ${handle
         // 观察原生发布完成；不能在 write hook 等待后置提交，或自行写出样式。
         observations.push(publication.api.whenCommitted(outDir, publication.epoch).then((snapshot) => {
           receipt.snapshot = snapshot
+          expect(snapshot?.epoch).toBe(receipt.epoch)
+          expect(receipt.writtenStyles).toBe(snapshot?.outputs.get('app.wxss'))
         }).catch((error: unknown) => { errors.push(error) }))
       },
     },
@@ -187,7 +191,7 @@ function increment() { count.value += ${handler}; return { handlerStep: ${handle
     expect(styles).toContain(color)
     expect(styles).toContain('author-app')
     expect(styles).toMatch(/width:\s*37px/)
-    expect(await readFile(path.join(outDir, 'app.wxss'), 'utf8')).toBe(styles)
+    expect(receipt.writtenStyles).toBe(styles)
     for (const file of ['app.js', 'app.json', 'pages/index/index.js', 'pages/index/index.json', 'pages/index/index.wxml']) {
       expect(receipt.snapshot!.outputs.has(file)).toBe(true)
       expect((await readFile(path.join(outDir, file))).length).toBeGreaterThan(0)
@@ -316,7 +320,7 @@ function increment() { count.value += ${handler}; return { handlerStep: ${handle
     const retriedStyles = retry.snapshot!.outputs.get('app.wxss')
     expect(retriedStyles).toContain('#fef3c7')
     expect(retriedStyles).toBe(retryHandler.snapshot!.outputs.get('app.wxss'))
-    expect(await readFile(path.join(outDir, 'app.wxss'), 'utf8')).toBe(retriedStyles)
+    expect(retry.writtenStyles).toBe(retriedStyles)
     if (retry !== retryHandler) {
       expect(retryHandler.files).not.toContain('app.wxss')
       expect(retryHandler.plan?.compilerContentOwners).toEqual([])
@@ -367,6 +371,27 @@ function increment() { count.value += ${handler}; return { handlerStep: ${handle
     expect(markdownRestore.snapshot!.outputs.get('app.wxss')).not.toMatch(/max-width:\s*61px/)
     expect(buildErrors).toHaveLength(1)
     expect(ctx.watcherService.rollupWatcherMap.size).toBeGreaterThan(0)
+    await session.close()
+    await drainSnapshotBuilds()
+    await Promise.all(observations)
+    const finalReceipt = receipts.at(-1)!
+    expect(finalReceipt.snapshot).toBeDefined()
+    const finalSnapshot = finalReceipt.snapshot!
+    const finalStyles = finalSnapshot.outputs.get('app.wxss')
+    expect(finalStyles).toBeTypeOf('string')
+    expect(finalStyles).toContain('#fef3c7')
+    expect(finalStyles).toContain('author-app')
+    expect(finalStyles).toMatch(/width:\s*37px/)
+    expect(finalStyles).toMatch(/height:\s*19px/)
+    expect(finalStyles).toMatch(/min-height:\s*47px/)
+    expect(finalStyles).toMatch(/max-width:\s*43px/)
+    expect(finalStyles).not.toMatch(/max-width:\s*61px/)
+    expect(handlerStep(finalSnapshot.outputs.get('pages/index/index.js'))).toBe(17004)
+    expect(finalSnapshot.outputs.get('app.json')).toBe(initialAppJson)
+    for (const file of ['app.wxss', 'app.js', 'app.json', 'pages/index/index.js', 'pages/index/index.json', 'pages/index/index.wxml']) {
+      expect(finalSnapshot.outputs.has(file)).toBe(true)
+      expect(await readFile(path.join(outDir, file), 'utf8')).toBe(finalSnapshot.outputs.get(file))
+    }
     expect(errors).toEqual([])
   }
   finally {
