@@ -3,8 +3,8 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import YAML from 'yaml'
 import { readHostDependencyOverrides } from './hostDependencies.mjs'
+import { parseLockDocuments } from './test/parseLock'
 
 async function createInstalledPackage(root: string, name: string, version: string, dependencies: Record<string, string> = {}, exportManifest = false) {
   await mkdir(path.join(root, 'dist'), { recursive: true })
@@ -62,7 +62,7 @@ describe('shared Tailwind host dependency identity', () => {
   })
 
   it('pins PostCSS plugins to the versions verified by the root consumer lock', async () => {
-    const documents = YAML.parseAllDocuments(await readFile(new URL('../../pnpm-lock.yaml', import.meta.url), 'utf8'))
+    const documents = parseLockDocuments(await readFile(new URL('../../pnpm-lock.yaml', import.meta.url), 'utf8'))
     expect(documents.flatMap(document => document.errors)).toEqual([])
     const packages = documents.flatMap((document) => {
       const lock = document.toJS() as { packages?: Record<string, unknown> }

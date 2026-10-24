@@ -214,13 +214,24 @@ export function createTemplateFallbackSession(external: boolean, options: { scop
         ;(pages[pages.length - 1] as any).__compiledTemplateIdentity = identity
       }, `before-template-save-${++saveGeneration}`)
       const stateful = publication!.stateful
+      if (options.scopedSlots) {
+        await captureScopedSlotDiagnostics(fixture!.projectRoot, miniProgram, `before-publication-${saveGeneration}`)
+      }
       const pending = publication!.capture(source)
       await replaceFileByRename(source, content)
       await pending.wait()
       if (stateful) {
         expect(publication!.stateful, 'compiled template registration must complete the classic handoff').toBe(false)
       }
-      await observeReload(marker)
+      try {
+        await observeReload(marker)
+      }
+      catch (error) {
+        if (options.scopedSlots) {
+          await captureScopedSlotDiagnostics(fixture!.projectRoot, miniProgram, `failed-reload-${saveGeneration}`)
+        }
+        throw error
+      }
       expect(dev!.getBuildErrors()).toEqual([])
     },
     async close() {

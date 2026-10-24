@@ -38,6 +38,7 @@ import { takeImportedTailwindGeneration } from './tailwindcss/importedPreparatio
 import { TailwindImportedRoots } from './tailwindcss/importedRoots'
 import { findManagedStyleImports } from './tailwindcss/imports'
 import { resolveTailwindInvalidationIds } from './tailwindcss/invalidation'
+import { TailwindScanPlanSession } from './tailwindcss/scanPlan'
 import { resolveTailwindContentSourceRules } from './tailwindcss/sourceRules'
 import { resolveVueStyleSource } from './tailwindcss/vueStyle'
 import {
@@ -219,6 +220,7 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
   }
   const resolved: ResolvedManagedTailwindcssOptions = managedOptions
   const contentSources = createCompilerContentSourceOwner(ctx.configService)
+  const scanPlans = new TailwindScanPlanSession(compilerSourceId)
 
   registerManagedTailwindcssEntries(ctx, resolved.cssEntries)
   const entryIndex = new Map(resolved.cssEntries.map((entry, index) => [normalizeManagedTailwindcssEntryPath(entry), index]))
@@ -358,9 +360,9 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
     const source = request.source ?? await resolveTailwindV4Source(sourceOptions)
     const input: CompilerGenerateRequest = { ...requestFields, source }
     checkpoint('tailwindSourceResolveMs')
-    const generated = await (generation
-      ? hmr.generateDiskRoot(compiler, input, index, generation)
-      : hmr.generateDisk(compiler, input))
+    const generated = await scanPlans.generate(input, effective => generation
+      ? hmr.generateDiskRoot(compiler, effective, index, generation)
+      : hmr.generateDisk(compiler, effective))
     checkpoint('tailwindDiskGenerateMs')
     const rules = resolveTailwindContentSourceRules(generated, ctx.configService.outDir)
     return { ...generated, sourceRules: freezeTailwindSourceRules(rules) }
@@ -395,6 +397,7 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
 
   function disposeCompiler() {
     if (!compilerDisposal) {
+      scanPlans.close()
       contentSources.dispose()
       hmr.dispose()
       importedRoots.clear()
@@ -411,9 +414,10 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
   }
 
   async function invalidateCompilerForFile(id: string, event: 'create' | 'update' | 'delete') {
+    const normalizedId = normalizeFsResolvedId(id.split('?')[0], { stripLeadingNullByte: true })
+    scanPlans.invalidate(normalizedId)
     // 失效已有状态不应创建编译器；尚未生成的样式仍维护下面的脏标记。
     const compiler = compilerPromise ? await compilerPromise : undefined
-    const normalizedId = normalizeFsResolvedId(id.split('?')[0], { stripLeadingNullByte: true })
     const indexes = resolved.cssEntries.flatMap((entry, index) =>
       normalizeManagedTailwindcssEntryPath(entry) === normalizeManagedTailwindcssEntryPath(normalizedId) ? [index] : [],
     )
@@ -424,6 +428,7 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
         hmr.removeRoot(index)
         const rootId = compilerRootIds.get(index)
         if (rootId) {
+          scanPlans.remove(rootId)
           contentSources.remove(rootId)
           await compiler?.remove(rootId)
         }
@@ -436,6 +441,7 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
     }
     if (event === 'delete') {
       for (const key of importedRoots.keysForFile(compilerSourceId(normalizedId))) {
+        scanPlans.remove(`${MANAGED_PLUGIN_NAME}:import:${key}`)
         hmr.removeRoot(key)
         contentSources.remove(`${MANAGED_PLUGIN_NAME}:import:${key}`)
         if (compiler && await importedRoots.remove(compiler, key)) {
@@ -674,6 +680,7 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
     const key = importedSourceKey(id)
     if (!imports.managed) {
       if (importedRoots.has(key)) {
+        scanPlans.remove(`${MANAGED_PLUGIN_NAME}:import:${key}`)
         hmr.removeRoot(key)
         contentSources.remove(`${MANAGED_PLUGIN_NAME}:import:${key}`)
         if (await importedRoots.remove(await getCompiler(), key)) {
@@ -898,6 +905,7 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
         ...(Array.isArray(previousSources) ? previousSources.filter((source): source is string => typeof source === 'string') : []),
       ]
       hmr.rememberDependencies(index, [...dependencies, ...style ? [style.filename] : []])
+      scanPlans.rememberDependencies(compilerRootIds.get(index) ?? createCompilerRootId(index, resolved.cssEntries[index]!), [...dependencies, ...style ? [style.filename] : []])
       return {
         code: createManagedTailwindcssEntryMarker(index),
         map: null,

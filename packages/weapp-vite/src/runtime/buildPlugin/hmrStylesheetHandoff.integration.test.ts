@@ -2,12 +2,13 @@ import type { Plugin } from 'vite'
 import type { CompilerContext } from '../../context'
 import type { HmrRuntimeSession } from '../hmrRuntimeSession'
 import { readFileSync } from 'node:fs'
-import { mkdir, mkdtemp, readFile, realpath, rename, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import process from 'node:process'
 import { WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE, WEAPP_VITE_STATEFUL_HMR_PRELOAD_FILE, WEAPP_VITE_STATEFUL_HMR_UPDATE_FILE } from '@weapp-core/constants'
 import path from 'pathe'
 import { expect, it, onTestFailed } from 'vitest'
+import { saveSource } from '../../../test/helpers/saveSource'
 import { ensureWorkspacePackageLink } from '../../../test/utils'
 import { CompilerSession } from '../compilerSession'
 import { getHmrRuntimeSession } from '../hmrRuntimeSession'
@@ -106,11 +107,7 @@ it('publishes an imported native stylesheet saved after the first classic write 
       }
     },
   }
-  const save = async (color: string) => {
-    const temporary = `${source}.save.tmp`
-    await writeFile(temporary, initial.replace('#123', color))
-    await rename(temporary, source)
-  }
+  const save = (color: string) => saveSource(source, initial.replace('#123', color))
   onTestFailed(() => {
     process.stderr.write(`[native-style-handoff] ${JSON.stringify({ phase, runtimePhase: runtime?.phase, fallback: runtime?.fallback?.code, publicationBlocked, publications, graphObservations, buildErrors })}\n`)
   })

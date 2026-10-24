@@ -1,7 +1,7 @@
 import { glob, readFile } from 'node:fs/promises'
 import path from 'node:path'
 
-export const ROOT_REPOSITORY_TEST_GLOBS = ['scripts/**/*.test.ts', 'integrations/shared-hmr-tailwind/hostDependencies.test.ts']
+export const ROOT_REPOSITORY_TEST_GLOBS = ['scripts/**/*.test.ts', 'integrations/shared-hmr-tailwind/**/*.test.ts']
 export const SCRIPT_TEST_GLOBS = ['scripts/**/*.test.mjs', 'scripts/**/*.test.ts']
 
 /** 根入口与独立工具入口共用发现规则，补集和并集都按真实文件去重。 */
