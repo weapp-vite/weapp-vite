@@ -105,7 +105,6 @@ describe.each(['classic', 'stateful-experimental'] as const)('issue #1134 native
     ])
     const style = await read('src/styles/theme.wxss')
     for (const [index, color] of colors.entries()) {
-      await miniProgram!.reLaunch(styleRoute)
       if (index) {
         const marker = await captureAppReloadMarker(miniProgram!)
         const stylePublication = publication.capture(path.join(project, 'src/styles/theme.wxss'))
@@ -114,7 +113,8 @@ describe.each(['classic', 'stateful-experimental'] as const)('issue #1134 native
         await stylePublication.wait()
         await reconnect(marker)
       }
-      const page = await miniProgram!.currentPage()
+      // classic 自动重载回到首屏；确认重载后按既有次数进入样式页。
+      const page = await miniProgram!.reLaunch(styleRoute)
       await dom.check(`style-${index}`, miniProgram!, page)
     }
     const pageConfig = await read('src/pages/plain/index.json')
