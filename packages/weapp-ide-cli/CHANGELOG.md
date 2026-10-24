@@ -1,5 +1,68 @@
 # weapp-ide-cli
 
+## 6.3.0
+
+### Minor Changes
+
+- feat(weapp-ide-cli): 支持微信开发者工具 Stable、RC 与 nightly 多安装发现、登记和统一选择，默认使用本机最新 Stable，并提供串行多版本 E2E 矩阵与实际运行版本报告。矩阵采用非交互模式，将登录失效记录为需要重新登录并继续其他版本，允许单账号按需切换和补测。
+
+### Patch Changes
+
+- feat(automator): 完整吸收官方 miniprogram-automator 0.13.0 的公开协议、CDP、触摸字段和诊断能力。新增 `MiniProgram.send()`、共享连接的 `CDP()` 及可取消事件订阅；`changedTouches` 优先于保留的弃用别名 `changeTouches`，启动失败附带脱敏、有界的 CLI 输出。
+
+  `Transport.close()`、`Connection.dispose()`、`MiniProgram.disconnect()` 与共享会话释放方法的返回值改为 `Promise<void>`，调用方应使用 `await` 确认关闭完成。断开立即拒绝未决 RPC，避免上游清理回归；并发清理共享结果，超时或释放失败保留资源归属及重试机会，同时保留业务错误与清理错误。
+
+  headless 同步触摸传递、异步断开和已有真实语义的五个公开协议，CDP 与其他协议明确报告 `HEADLESS_PROTOCOL_UNSUPPORTED`。同步 IDE CLI、MCP、日志、doctor 与重连的等待边界及迁移文档。
+
+- chore(deps): 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@vitejs/devtools, @vitejs/devtools-kit, eslint, happy-dom, sass, sass-embedded。命名 catalog 变更键：无。
+
+- chore(deps): 升级兼容的 AI SDK、Vue 类型工具及构建依赖，同步脚手架依赖目录和应用模板。TypeScript 保持 6.0.3，截图比较算法及既有 Vite、Rolldown 兼容补丁保持原有契约。
+
+  升级 pnpm、Bun 和 Rust JSON 序列化依赖，并迁移 repoctl 发布说明分类补丁；沿用上游已有的发布 PR 去重修复。
+
+- chore(deps): 升级 Vue、React、Vitest、Rolldown、Oxc 与 AI SDK 等兼容依赖，同步应用、模板和脚手架 catalog。
+
+  迁移 Rolldown 1.2.14 兼容补丁，并对齐 Rust Oxc 0.154.0；保留 Vite 8.3.4、DevTools/Kit 0.7.6、TypeScript 6.0.3 和截图比较语义，p-queue 更新至兼容的 9.3.5。
+
+  默认 catalog 变更键：@icebreakers/eslint-config, @vue/compiler-core, @vue/compiler-dom, devframe, happy-dom, oxc-parser, postcss, react, rolldown, vue, weapp-tailwindcss, zod。命名 catalog 变更键：weapp-tailwindcss-fixed(weapp-tailwindcss)。
+
+- chore(deps): 刷新兼容范围内的运行时与构建依赖。
+
+  升级 AI SDK、TanStack Vue Query、Rollup、weapp-tailwindcss 及其 engine；VS Code 扩展的打包检查脚本改用 adm-zip 自带类型的运行时包。p-queue 与 pixelmatch 保持兼容版本，TypeScript 不在本轮升级范围内。默认 catalog 变更键为 weapp-tailwindcss，命名 catalog 变更键为 weapp-tailwindcss-fixed（均升级至 5.6.3）。
+
+- chore(deps): 自动补充依赖升级发布记录。
+  涉及包：
+  - @mpcore/vitest：devDependencies.vitest
+  - @weapp-vite/glass-easel-web-adapter：devDependencies.vitest
+  - @weapp-agent/cli：dependencies.@ai-sdk/anthropic、dependencies.@ai-sdk/openai、dependencies.@ai-sdk/openai-compatible、dependencies.ai
+  - @weapp-vite/ast-native：devDependencies.vitest
+  - @weapp-vite/eslint：devDependencies.vitest
+
+- fix(weapp-ide-cli): 修复 macOS 安装退出核验重复解析进程映像路径导致无关受保护目录阻塞清理的问题，并避免已删除映像的路径被替换后误判归属。保留进程身份、端口和任务资源登记的校验。
+
+  在 `lsof` 解析边界还原中文和字面反斜杠路径，拒绝歧义控制表示、无效编码及截断清单；Unix 安装根不再把字面反斜杠改成目录分隔符。保留采样失败后独立确认进程消失及 PID 复用的检查，移除按当前磁盘文件集合重新判定运行中映像归属的分支。
+
+- fix: 修复官方 CLI 通用 code 10（例如项目路径不存在）被误判为登录失效的问题，统一 CLI 与 automator 的登录分类，并保留明确登录错误的重试与退出行为。
+
+- fix(ide): 重连和释放受管项目时直接重读已固定安装的本地身份，避免官网版本查询的网络故障阻断本地校验和资源清理；严格选版入口继续核验官方版本，并拒绝活动会话中的安装元数据漂移。
+
+- fix(weapp-ide-cli): 修复受管 automator 插件快照在窗口预算前覆盖共享目录、断开后失去清理归属的问题。快照改为绑定当前任务 journal 的独立目录，原生窗口与端口确认释放后才精确回收；未知启动回执、借用窗口和删除失败保留证据并阻止下一任务。
+
+- fix(weapp-ide-cli): 修复 macOS 开发者工具退出核验被其他应用的受保护映射文件阻断的问题。使用系统提供的运行中映像路径区分所选安装与其他文件，不重复访问每个映像的当前磁盘路径；继续拒绝身份不明、输出不完整及仍在运行的安装映像。
+
+  映像采样失败时独立复核进程是否已退出，避免短命进程在核验期间消失导致误报；PID 被复用或清单不可读取时仍拒绝推断退出。
+
+- fix: 修复 macOS 进程标题变更被误判为可执行文件身份漂移的问题，批量读取内核路径并核对前后启动时间，在原有总时限内保留严格的进程归属检查。
+
+- fix(weapp-ide-cli): 将 Windows 进程身份查询的默认总预算调整为 30 秒，涵盖 PowerShell 冷启动和内核或 CIM 初始化，避免在查询脚本尚未开始执行时误报失败。调用方指定的更短预算和取消信号继续优先，查询超时或身份不完整时仍拒绝清理资源。
+
+- Updated dependencies:
+  - @weapp-core/logger@3.1.10
+  - @weapp-core/shared@3.3.0
+  - @weapp-vite/devtools-runtime@0.6.0
+  - @weapp-vite/miniprogram-automator@1.4.0
+
 ## 6.2.0
 
 ### Minor Changes
