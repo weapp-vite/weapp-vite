@@ -13,6 +13,8 @@ export async function recreateAndExercise(owner, ctx, directory = ctx.target, fi
   await writeFile(file, 'recreated image')
   await add
   assert.equal(await readFile(file, 'utf8'), 'recreated image')
+  await ctx.instrumentation.settleDirectoryRegistration(timeoutMs)
+  assert.deepEqual(owner.errors, [], 'a new directory subscription needs its own completed native preparation barrier')
   await waitForObservedEventPhase(owner, file, scenarioEvidence, timeoutMs)
   const changed = 'changed recreated image with a different size'
   assert.ok(Buffer.byteLength(changed) > Buffer.byteLength('recreated image'), 'the existing file receives a longer in-place value without a truncate phase')

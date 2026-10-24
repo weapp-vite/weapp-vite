@@ -2071,13 +2071,13 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
                 && compilerSourceId(reason.file) === compilerSourceId(change.file))
               if (queued.length) {
                 for (const reason of queued) {
-                  reason.forceFullRescan = true
                   reason.event = change.event
                 }
                 continue
               }
+              // 漂移交回下一代重新分析；保留既有结构性全量原因，不能把纯脚本保存升级为全量发布。
               // eslint-disable-next-line ts/no-use-before-define -- 漂移回调执行时批次调度函数已完成初始化。
-              scheduleSnapshotBuild({ ...change, forceFullRescan: true }, performance.now())
+              scheduleSnapshotBuild(change, performance.now())
             }
           },
           snapshotAppShell || compilerContentInputs.length

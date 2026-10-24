@@ -14,6 +14,7 @@ import { createHmrOutputDiagnostics } from '../utils/hmrOutputDiagnostics'
 import { createHmrRuntimeDiagnostics } from '../utils/hmrRuntimeDiagnostics'
 import { createIssue1015HmrDiagnostics } from '../utils/issue1015HmrDiagnostics'
 import { createIssue1015Project, ISSUE_1015_CLI } from '../utils/issue1015Project'
+import { checkIssue1015SharedStyleHmr, issue1015SharedStyleCheckpoints } from '../utils/issue1015SharedStyle'
 import { createNativeHmrPublication } from '../utils/nativeHmrPublication'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import { installStatefulHmrTransport } from '../utils/statefulHmrTransport'
@@ -115,7 +116,7 @@ for (const runtime of ['classic', 'stateful-experimental'] as const) {
         { id: 'restore-variable', color: 'rgb(255, 0, 0)', background: undefined },
         { id: 'reactive', color: 'rgb(0, 0, 255)', background: undefined },
       ]
-      const dom = createDomAcceptance(context, 'e2e-apps/github-issues/fixtures/issue-1015', checkpoints.map(checkpoint => ({
+      const dom = createDomAcceptance(context, 'e2e-apps/github-issues/fixtures/issue-1015', [...checkpoints.map(checkpoint => ({
         id: checkpoint.id,
         route: ROUTE,
         action: `检查 ${checkpoint.id} 外部 CSS 变量更新`,
@@ -127,7 +128,7 @@ for (const runtime of ['classic', 'stateful-experimental'] as const) {
           },
           { selector: '#issue-1015-state', text: `external css vars ${checkpoint.id === 'reactive' ? 'updated' : 'initial'}` },
         ],
-      })))
+      })), ...(runtime === 'classic' ? issue1015SharedStyleCheckpoints(computedStyles) : [])])
       let host = miniProgram!
       let diagnostics = createHmrRuntimeDiagnostics(host as any, 'e2e-apps/github-issues/fixtures/issue-1015')
       const sourceDir = path.join(project, 'src/pages/issue-1015')
@@ -303,6 +304,22 @@ for (const runtime of ['classic', 'stateful-experimental'] as const) {
       const nativePage = await host.currentPage({ appFunctionFallback: false })
       await nativePage!.callMethodWithOptions('_runE2E', { fallback: false }, 'mutate')
       await check('reactive')
+      if (runtime === 'classic') {
+        await checkIssue1015SharedStyleHmr({
+          project,
+          computedStyles,
+          dom,
+          publication,
+          getHost: () => host,
+          replaceHost: (next) => {
+            host = observeRuntime(next)
+            diagnostics = createHmrRuntimeDiagnostics(host as any, 'e2e-apps/github-issues/fixtures/issue-1015')
+          },
+          syncHeadlessFullBuild,
+          captureRuntime: id => diagnostics.capture(id),
+          captureOutput: id => outputDiagnostics.capture(id, loadedScript),
+        })
+      }
       if (runtimeErrors.length) {
         process.stdout.write(`[issue-1015-build] ${dev!.getOutput()}\n`)
       }

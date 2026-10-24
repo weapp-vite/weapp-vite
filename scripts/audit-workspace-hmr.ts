@@ -26,9 +26,9 @@ import { assertBenchmarkPrepareCompleted, assertBenchmarkTypeScriptPrepared, cre
 import { createEmittedScriptReader } from './benchmarkTemplatesHmr/emittedOutput'
 import { isExcludedE2EProject } from './e2eProjectScope'
 import { assertHmrAuditBudget } from './workspace-hmr/auditDeadline'
+import { evaluateWorkspaceHmrAudit, readWorkspaceHmrFunctionalOnly, workspaceHmrAuditExitCode, workspaceHmrFailedProjects } from './workspace-hmr/auditPolicy'
 import {
   createWorkspaceHmrBaseline,
-  evaluateWorkspaceHmrThresholds,
   parseThresholdOverrides,
   renderThresholdMarkdown,
 } from './workspace-hmr/baseline'
@@ -197,6 +197,7 @@ const baselinePath = path.resolve(process.env.WORKSPACE_HMR_BASELINE_PATH ?? pat
 const projectFilter = process.env.WORKSPACE_HMR_FILTER?.trim()
 const failOnError = process.env.WORKSPACE_HMR_FAIL_ON_ERROR === '1'
 const writeBaseline = process.env.WORKSPACE_HMR_WRITE_BASELINE === '1'
+const functionalOnly = readWorkspaceHmrFunctionalOnly(process.env.WEAPP_VITE_HMR_AUDIT_FUNCTIONAL_ONLY, writeBaseline)
 const runMode = readRunMode(process.env.WORKSPACE_HMR_MODE)
 const workspaceHmrScope = readWorkspaceHmrScope(process.env.WORKSPACE_HMR_SCOPE ?? (runMode === 'smoke' ? 'templates' : 'workspace'))
 const startupTimeoutMs = readPositiveIntegerEnv('WORKSPACE_HMR_STARTUP_TIMEOUT_MS', 90_000)
@@ -266,7 +267,7 @@ async function main() {
   }
 
   const generatedAt = new Date().toISOString()
-  let baseline = await readWorkspaceHmrBaseline(baselinePath)
+  let baseline = functionalOnly ? undefined : await readWorkspaceHmrBaseline(baselinePath)
   if (writeBaseline && projects.length) {
     baseline = createWorkspaceHmrBaseline(results, {
       generatedAt,
@@ -278,15 +279,17 @@ async function main() {
     await writeFile(baselinePath, `${JSON.stringify(baseline, null, 2)}\n`, 'utf8')
     process.stdout.write(`[workspace-hmr] baseline -> ${formatReportPath(baselinePath)}\n`)
   }
-  const thresholdEvaluation = evaluateWorkspaceHmrThresholds(results, {
+  const thresholdEvaluation = evaluateWorkspaceHmrAudit(results, {
+    functionalOnly,
     baseline,
-    overrides: parseThresholdOverrides(process.env),
+    overrides: functionalOnly ? undefined : parseThresholdOverrides(process.env),
   })
   const summary = summarizeProjectResults(results)
   const thresholdMarkdown = renderThresholdMarkdown(thresholdEvaluation, summary)
   const report = {
     generatedAt,
     mode: runMode,
+    audit: functionalOnly ? 'functional-only' : 'full',
     scope: workspaceHmrScope,
     selection: {
       filter: projectFilter,
@@ -311,7 +314,7 @@ async function main() {
   await writeFile(reportMdPath, renderMarkdown(results, summary, thresholdMarkdown, selectionStatus), 'utf8')
   await writeGitHubStepSummary(results, summary, thresholdMarkdown, selectionStatus)
 
-  const failedProjects = results.filter(project => project.error || project.scenarios.some(scenario => scenario.error))
+  const failedProjects = workspaceHmrFailedProjects(results)
   process.stdout.write(`\n[workspace-hmr] report.json -> ${formatReportPath(reportJsonPath)}\n`)
   process.stdout.write(`[workspace-hmr] report.md -> ${formatReportPath(reportMdPath)}\n`)
   process.stdout.write(`[workspace-hmr] thresholds.md -> ${formatReportPath(thresholdMdPath)}\n`)
@@ -326,9 +329,7 @@ async function main() {
     process.stdout.write('[workspace-hmr] no projects selected; this report contains no acceptance results.\n')
   }
   assertWorkspaceHmrSelection(projects.length, failOnError, selectionStatus)
-  if (failOnError && (failedProjects.length || thresholdEvaluation.issues.length)) {
-    process.exitCode = 1
-  }
+  process.exitCode = workspaceHmrAuditExitCode(results, thresholdEvaluation, failOnError)
 }
 
 async function prepareReferencedWorkspaceTsconfigs() {
@@ -1805,8 +1806,7 @@ function summarizeProjectResults(results: ProjectResult[]): WorkspaceHmrReportSu
   const measuredScenarioMs = results
     .flatMap(project => project.scenarios.map(scenario => scenario.totalMs))
     .filter((value): value is number => typeof value === 'number')
-  const failedProjects = results
-    .filter(project => project.error || project.scenarios.some(scenario => scenario.error))
+  const failedProjects = workspaceHmrFailedProjects(results)
     .map(project => project.id)
 
   return {
@@ -1999,17 +1999,18 @@ async function writeGitHubStepSummary(results: ProjectResult[], summary: Workspa
   if (!summaryPath) {
     return
   }
-  const failedProjects = results.filter(project => project.error || project.scenarios.some(scenario => scenario.error))
+  const failedProjects = workspaceHmrFailedProjects(results)
   const slowScenarios = collectWorkspaceHmrTopSlowScenarios(results, 5)
   const lines = [
     '## Workspace HMR Audit',
     '',
     `- mode: ${runMode}`,
     `- scope: ${workspaceHmrScope}`,
+    ...(functionalOnly ? ['- performance comparison: not-evaluated', '- performance scope: out-of-scope'] : []),
     `- selection: ${selectionStatus}${results.length ? '' : ' (no acceptance results)'}`,
     `- projects: ${summary.projectCount}`,
     ...renderWorkspaceHmrExecution(summary, summary.scenarioCount),
-    `- timing threshold samples: ${summary.measuredScenarioCount}/${summary.scenarioCount}`,
+    `- ${functionalOnly ? 'observed timing samples' : 'timing threshold samples'}: ${summary.measuredScenarioCount}/${summary.scenarioCount}`,
     `- scenario P95: ${formatDuration(summary.scenarioP95Ms)}`,
     `- scenario max: ${formatDuration(summary.scenarioMaxMs)}`,
     `- failures: ${failedProjects.length}`,
@@ -2046,15 +2047,16 @@ function renderMarkdown(results: ProjectResult[], summary: WorkspaceHmrReportSum
     '',
     `- mode: ${runMode}`,
     `- scope: ${workspaceHmrScope}`,
+    ...(functionalOnly ? ['- performance comparison: not-evaluated', '- performance scope: out-of-scope'] : []),
     `- selection: ${selectionStatus}${results.length ? '' : ' (no acceptance results)'}`,
     `- generated projects: ${summary.projectCount}`,
     ...renderWorkspaceHmrExecution(summary, summary.scenarioCount),
-    `- timing threshold samples: ${summary.measuredScenarioCount}/${summary.scenarioCount}`,
+    `- ${functionalOnly ? 'observed timing samples' : 'timing threshold samples'}: ${summary.measuredScenarioCount}/${summary.scenarioCount}`,
     `- scenario P50: ${formatDuration(summary.scenarioP50Ms)}`,
     `- scenario P95: ${formatDuration(summary.scenarioP95Ms)}`,
     `- scenario max: ${formatDuration(summary.scenarioMaxMs)}`,
     `- failed projects: ${summary.failedProjects.length ? summary.failedProjects.join(', ') : '-'}`,
-    `- baseline: ${pathExistsSyncLike(baselinePath) ? formatReportPath(baselinePath) : '-'}`,
+    `- baseline: ${!functionalOnly && pathExistsSyncLike(baselinePath) ? formatReportPath(baselinePath) : '-'}`,
     `- startup timeout: ${startupTimeoutMs}ms`,
     `- startup dist stable: ${startupDistStableMs}ms`,
     `- scenario timeout: ${scenarioTimeoutMs}ms`,

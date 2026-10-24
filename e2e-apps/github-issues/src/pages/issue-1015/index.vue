@@ -36,6 +36,9 @@ defineExpose({
     <text id="issue-1015-state">
       external css vars {{ state }}
     </text>
+    <view id="issue-892-shared-style" class="issue-892-shared-style">
+      shared Sass asset
+    </view>
   </view>
 </template>
 

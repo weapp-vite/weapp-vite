@@ -54,6 +54,7 @@ export interface ScenarioResult extends WorkspaceHmrDeliveryContract, WorkspaceH
   profile?: HmrProfileSample
   impact?: ImpactFile[]
   error?: string
+  cleanupErrors?: string[]
   cleanupRestoreDelivery?: { delivery: string }
 }
 
@@ -124,6 +125,8 @@ export interface ThresholdIssue {
 }
 
 export interface ThresholdEvaluation {
+  comparison?: 'evaluated' | 'not-evaluated'
+  scope?: 'in-scope' | 'out-of-scope'
   scenarioCount: number
   measuredScenarioCount: number
   scenarioP95Ms?: number

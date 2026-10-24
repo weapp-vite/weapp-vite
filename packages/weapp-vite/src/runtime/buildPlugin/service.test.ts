@@ -2373,7 +2373,12 @@ describe('runtime buildPlugin service', () => {
     }
   })
 
-  it('upgrades an already chained watcher batch for source drift without another publication', async () => {
+  it.each([
+    { event: 'update', full: false, chained: true },
+    { event: 'delete', full: true, chained: true },
+    { event: 'update', full: false, chained: false },
+    { event: 'delete', full: true, chained: false },
+  ] as const)('preserves source $event drift scope with full=$full and chained=$chained', async ({ event, full, chained }) => {
     const { ctx, watcher, onChange } = await startClassicSnapshotContext()
     const file = '/project/src/pages/logs/external.css'
     const started = Promise.withResolvers<void>()
@@ -2382,7 +2387,7 @@ describe('runtime buildPlugin service', () => {
     const publications: Array<{ full: boolean, events: unknown }> = []
     vueStyleSnapshotMock.mockImplementationOnce(async (_ctx, _entries, _files, run, onDrift) => {
       const result = await run()
-      onDrift([{ file, event: 'delete' }])
+      onDrift([{ file, event }])
       return result
     })
     buildMock.mockImplementation(async () => {
@@ -2404,21 +2409,27 @@ describe('runtime buildPlugin service', () => {
       onChange({ file, event: 'update' })
       await vi.runOnlyPendingTimersAsync()
       await started.promise
-      onChange({ file, event: 'update' })
-      // 定时器先把后继批次放入串行链，旧构建此时仍被显式屏障阻塞。
-      await vi.runOnlyPendingTimersAsync()
+      if (chained) {
+        onChange({ file, event: 'update' })
+        // 定时器先把后继批次放入串行链，旧构建此时仍被显式屏障阻塞。
+        await vi.runOnlyPendingTimersAsync()
+      }
       expect(publications).toHaveLength(1)
       release.resolve()
+      if (!chained) {
+        await flushAsyncTasks()
+        await vi.runOnlyPendingTimersAsync()
+      }
       await successor.promise
       await vi.runOnlyPendingTimersAsync()
       await flushAsyncTasks()
       expect(loggerErrorMock).not.toHaveBeenCalled()
       expect(publications).toEqual([
         { full: false, events: [expect.objectContaining({ file, event: 'update' })] },
-        { full: true, events: [expect.objectContaining({ file, event: 'update' })] },
+        { full, events: [expect.objectContaining({ file, event: chained ? 'update' : event })] },
       ])
       expect(buildMock).toHaveBeenCalledTimes(3)
-      expect(ctx.moduleGraphService.recordChangedFile).toHaveBeenLastCalledWith(file, 'delete')
+      expect(ctx.moduleGraphService.recordChangedFile).toHaveBeenLastCalledWith(file, event)
     }
     finally {
       release.resolve()

@@ -1,9 +1,46 @@
 import { expect, it } from 'vitest'
 
 import { nextTick } from 'vue'
-import { createIssue779StyleOutputFiles, pageStyleGlobal, pageStylePage, pageStyleTemplate } from '../test/helpers/pageStyleImports'
+import { createIssue779StyleOutputFiles, createIssue892SharedStyleOutputFiles, issue892SharedStyleOutput, pageStyleGlobal, pageStylePage, pageStyleTemplate } from '../test/helpers/pageStyleImports'
 
 import { mountPageStyleWorkbench } from './helpers/pageStyleWorkbench'
+
+it('renders issue #892 shared Sass color updates and restoration through the real preview', async () => {
+  const preview = mountPageStyleWorkbench('imported', createIssue892SharedStyleOutputFiles())
+  try {
+    await nextTick()
+    const session = preview.workbench.session.value!
+    const page = session.getCurrentPages()[0]
+    const app = session.getApp()
+    for (const [index, [color, computedColor]] of ([
+      ['#2468ac', 'rgb(36, 104, 172)'],
+      ['#ac6824', 'rgb(172, 104, 36)'],
+      ['#2468ac', 'rgb(36, 104, 172)'],
+    ] as const).entries()) {
+      if (index > 0) {
+        preview.workbench.run(() => session.files.set('styles/issue-892-shared.wxss', issue892SharedStyleOutput(color)))
+        await nextTick()
+      }
+      const probe = preview.element('#issue-892-shared-style')
+      expect((probe.getRootNode() as ShadowRoot).querySelectorAll('#issue-892-shared-style')).toHaveLength(1)
+      expect(probe.className).toBe('issue-892-shared-style')
+      expect(probe.textContent).toBe('shared Sass asset')
+      expect(getComputedStyle(probe).color).toBe(computedColor)
+      expect(session.renderCurrentPage().styles.dependencies).toEqual([
+        'app.wxss',
+        'styles/issue-892-shared.wxss',
+        'pages/shared/index.wxss',
+      ])
+      expect(session.getCurrentPages()[0]).toBe(page)
+      expect(session.getApp()).toBe(app)
+      expect(session.getDiagnostics()).toEqual([])
+      expect(preview.workbench.errorMessage.value).toBe('')
+    }
+  }
+  finally {
+    preview.close()
+  }
+})
 
 it('applies issue #998 minified ordinary CSS and utility updates without losing local priority or click state', async () => {
   const preview = mountPageStyleWorkbench('imported', [

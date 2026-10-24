@@ -40,18 +40,23 @@ export function formatNumber(value: number) {
 }
 
 export function renderThresholdMarkdown(evaluation: ThresholdEvaluation, execution?: WorkspaceHmrExecutionSummary) {
+  const functionalOnly = evaluation.comparison === 'not-evaluated'
   const lines = [
-    '## Threshold Summary',
+    functionalOnly ? '## Functional Delivery Summary' : '## Threshold Summary',
     '',
     ...(execution ? renderWorkspaceHmrExecution(execution, evaluation.scenarioCount) : []),
-    `- timing threshold samples: ${evaluation.measuredScenarioCount}/${evaluation.scenarioCount}`,
-    `- scenario P95: ${evaluation.scenarioP95Ms == null ? '-' : `${formatNumber(evaluation.scenarioP95Ms)}ms`}`,
-    `- threshold issues: ${evaluation.issues.length}`,
+    ...(functionalOnly
+      ? ['- performance comparison: not-evaluated', '- performance scope: out-of-scope', `- functional delivery issues: ${evaluation.issues.length}`]
+      : [
+          `- timing threshold samples: ${evaluation.measuredScenarioCount}/${evaluation.scenarioCount}`,
+          `- scenario P95: ${evaluation.scenarioP95Ms == null ? '-' : `${formatNumber(evaluation.scenarioP95Ms)}ms`}`,
+          `- threshold issues: ${evaluation.issues.length}`,
+        ]),
     '',
   ]
 
   if (!evaluation.issues.length) {
-    lines.push('No threshold regressions detected.', '')
+    lines.push(functionalOnly ? 'Historical performance comparison was not evaluated.' : 'No threshold regressions detected.', '')
     return lines.join('\n')
   }
 

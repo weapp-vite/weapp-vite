@@ -1,8 +1,39 @@
 import { describe, expect, it } from 'vitest'
 import { createBrowserHeadlessSession, createBrowserVirtualFiles, resolveBrowserPageStyles } from '../src/browser'
-import { createIssue779StyleOutputFiles, createPageStyleImportFiles, pageStyleGlobal, pageStylePage, pageStyleTemplate } from './helpers/pageStyleImports'
+import { createIssue779StyleOutputFiles, createIssue892SharedStyleOutputFiles, createPageStyleImportFiles, issue892SharedStyleOutput, pageStyleGlobal, pageStylePage, pageStyleTemplate } from './helpers/pageStyleImports'
 
 describe('browser page WXSS dependencies', () => {
+  it('updates and restores issue #892 compiled shared Sass styles without replacing app or page', () => {
+    const files = createBrowserVirtualFiles(createIssue892SharedStyleOutputFiles())
+    const session = createBrowserHeadlessSession({ files })
+    try {
+      const page = session.reLaunch('/pages/shared/index')
+      const app = session.getApp()
+      for (const [index, color] of ['#2468ac', '#ac6824', '#2468ac'].entries()) {
+        if (index > 0) {
+          files.set('styles/issue-892-shared.wxss', issue892SharedStyleOutput(color))
+        }
+        const rendered = session.renderCurrentPage()
+        expect(rendered.wxml).toContain('id="issue-892-shared-style"')
+        expect(rendered.wxml).toContain('class="issue-892-shared-style"')
+        expect(rendered.wxml).toContain('shared Sass asset')
+        expect(rendered.styles.appWxssEnabled).toBe(true)
+        expect(rendered.styles.dependencies).toEqual([
+          'app.wxss',
+          'styles/issue-892-shared.wxss',
+          'pages/shared/index.wxss',
+        ])
+        expect(rendered.styles.cssText.trim()).toBe(`.issue-892-shared-style { color: ${color}; }`)
+        expect(session.getCurrentPages()[0]).toBe(page)
+        expect(session.getApp()).toBe(app)
+        expect(session.getDiagnostics()).toEqual([])
+      }
+    }
+    finally {
+      session.close()
+    }
+  })
+
   it('resolves issue #779 compiled styles and refreshes their emitted dependency without replacing the page', () => {
     const files = createBrowserVirtualFiles(createIssue779StyleOutputFiles())
     const session = createBrowserHeadlessSession({ files })

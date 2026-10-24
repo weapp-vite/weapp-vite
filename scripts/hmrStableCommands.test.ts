@@ -39,7 +39,15 @@ it('keeps legacy inventories reachable through visibly separate diagnostic comma
 })
 
 it('includes the host startup admission contract in the formal unit inventory', () => {
-  expect(scripts['test:hmr']?.split(/\s+/)).toContain('packages/weapp-vite/src/runtime/hmrRuntimeHostCapabilities.test.ts')
+  expect(scripts['test:hmr']?.split(/\s+/)).toEqual(expect.arrayContaining([
+    'packages/weapp-vite/src/runtime/hmrRuntimeHostCapabilities.test.ts',
+    'packages/weapp-vite/src/cli/commands/serve/shutdown.integration.test.ts',
+    'packages/weapp-vite/src/plugins/css/shared/sourceDependencies.test.ts',
+    'packages/weapp-vite/src/plugins/css/shared/sourceDependencies.integration.test.ts',
+    'scripts/dependencyContracts/chokidar/removeCooldown.test.ts',
+    'scripts/dependencyContracts/chokidar/registration.test.ts',
+    'scripts/workspace-hmr',
+  ]))
 })
 
 it('routes the standalone CI HMR job through supported build acceptance and keeps legacy diagnostics', () => {

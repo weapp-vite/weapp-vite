@@ -17,6 +17,10 @@ on:
         type: string
         required: false
         default: ''
+      workspace-hmr-audit:
+        type: string
+        required: false
+        default: full
 permissions:
   contents: read
   pull-requests: read
@@ -492,7 +496,7 @@ jobs:
   workspace-hmr-nightly:
     needs: pr-context
     if: needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr != 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full' || inputs.hmr-diagnostic == 'workspace-hmr'))
-    name: Workspace HMR Nightly Full (Node 24)
+    name: ${{ inputs.workspace-hmr-audit == 'functional-only' && 'Workspace HMR Functional (Node 24)' || 'Workspace HMR Nightly Full (Node 24)' }}
     uses: ./.github/workflows/reusable-node-command.yml
     with:
       verification_topology: ${{ inputs.verification_topology }}
@@ -508,7 +512,7 @@ jobs:
       timeout_minutes: 120
       fetch_depth: 0
       build_command: pnpm build:pkgs:ci
-      main_command: pnpm audit:hmr:nightly
+      main_command: ${{ inputs.workspace-hmr-audit == 'functional-only' && 'pnpm exec cross-env WEAPP_VITE_HMR_AUDIT_FUNCTIONAL_ONLY=1 pnpm audit:hmr:nightly' || 'pnpm audit:hmr:nightly' }}
       increase_ulimit: true
       artifact_name: workspace-hmr-nightly
       artifact_path: .tmp/workspace-hmr/**

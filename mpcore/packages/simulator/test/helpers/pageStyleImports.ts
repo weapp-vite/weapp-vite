@@ -40,3 +40,20 @@ export function createIssue779StyleOutputFiles(): Array<[string, string]> {
     ['styles/issue-779-preprocessed.wxss', '.issue-779-pre-marker { padding: 13px; color: rgb(1, 2, 3); }'],
   ]
 }
+
+export function issue892SharedStyleOutput(color: string) {
+  return `.issue-892-shared-style { color: ${color}; }`
+}
+
+export function createIssue892SharedStyleOutputFiles(): Array<[string, string]> {
+  // Sass 原子保存及编译依赖归属由 weapp-vite 的 integration 与 IDE case 验证；这里只接收最终样式产物。
+  return [
+    ['app.json', '{"pages":["pages/shared/index"]}'],
+    ['app.js', 'App({})'],
+    ['app.wxss', '@import "./styles/issue-892-shared.wxss";'],
+    ['styles/issue-892-shared.wxss', issue892SharedStyleOutput('#2468ac')],
+    ['pages/shared/index.js', 'Page({})'],
+    ['pages/shared/index.wxml', '<view id="issue-892-shared-style" class="issue-892-shared-style">shared Sass asset</view>'],
+    ['pages/shared/index.wxss', ''],
+  ]
+}

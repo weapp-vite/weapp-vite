@@ -72,6 +72,15 @@ describe('template benchmark emitted ownership', () => {
     await expect(createEmittedScriptReader(entry, root)()).resolves.toContain('directory-marker')
   })
 
+  it.each([
+    ['message.interface', 'message.interface.js'],
+    ['theme.v2', 'theme.v2/index.js'],
+  ])('resolves dotted local module stems: %s', async (request, emittedFile) => {
+    const entry = await write('pages/index.js', `require("./${request}");`)
+    await write(`pages/${emittedFile}`, 'console.log("dotted-dependency-marker")')
+    await expect(createEmittedScriptReader(entry, root)()).resolves.toContain('dotted-dependency-marker')
+  })
+
   it('re-reads changed import edges and payloads instead of accepting an old graph', async () => {
     const entry = await write('index.js', 'require("./before.js");')
     await write('before.js', 'console.log("old-marker")')
@@ -83,12 +92,12 @@ describe('template benchmark emitted ownership', () => {
     await expect(waitForBenchmarkOutput(read, 'old-marker', { absent: true, timeoutMs: 100 })).resolves.not.toContain('old-marker')
   })
 
-  it('does not accept a missing dependency as successful restoration', async () => {
-    const entry = await write('index.js', 'require("./missing.js");')
+  it.each(['missing.js', 'missing.interface'])('does not accept missing %s as successful restoration', async (request) => {
+    const entry = await write('index.js', `require("./${request}");`)
     const read = createEmittedScriptReader(entry, root)
     await expect(waitForBenchmarkOutput(read, 'old-marker', { absent: true, timeoutMs: 30, intervalMs: 1 }))
       .rejects
-      .toThrow('Missing emitted script: missing.js')
+      .toThrow(`Missing emitted script: ${request}`)
   })
 
   it('waits through truncated and partial restores until the entire original output is visible', async () => {

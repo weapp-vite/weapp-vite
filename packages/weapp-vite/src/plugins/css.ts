@@ -41,6 +41,7 @@ import {
   resolveSharedStyleImportStatements,
   toPosixPath,
 } from './css/shared/sharedStyles'
+import { replaceSharedStyleDependencies } from './css/shared/sourceDependencies'
 import { collectRenderedStyleSources } from './css/styleOwnership'
 import {
   findManagedTailwindcssEntryMarker,
@@ -1120,6 +1121,17 @@ export function css(ctx: CompilerContext): Plugin[] {
               }
             }
             await prepareStylePreprocessing(ctx, this, resolvedConfig, files, file => shouldPreprocessWithVite(file) || sharedFiles.has(file))
+            assertStylePreprocessing(ctx, this)
+            // 共享来源按完整图阶段登记；局部输出已由其他分支发射时，产物去重不能退休依赖归属。
+            replaceSharedStyleDependencies(ctx.moduleGraphService, [...sharedFiles].flatMap((file) => {
+              const source = findPreparedStyleSource(ctx, this, file)
+              return source === undefined
+                ? []
+                : [{
+                    source: file,
+                    dependencies: syncCssImportDependencies(ctx, file, source, findPreparedStyleDependencies(ctx, this, file)),
+                  }]
+            }))
           }
           catch (error) {
             recordStylePreprocessingError(ctx, this, error)

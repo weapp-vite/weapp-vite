@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
+import { WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE, WEAPP_VITE_STATEFUL_HMR_PRELOAD_FILE, WEAPP_VITE_STATEFUL_HMR_UPDATE_FILE } from '@weapp-core/constants'
 import { describe, expect, it } from 'vitest'
 
 const packageRoot = fileURLToPath(new URL('../../../../', import.meta.url))
@@ -12,6 +13,8 @@ const cliEntry = path.join(packageRoot, 'dist/cli.mjs')
 const privateConfig = '{\r\n\t"setting" : { "compileHotReLoad": true },\r\n\t"watchOptions": { "ignore": ["scratch/**"] }\r\n}\r\n'
 const phases = ['initial', 'ready'] as const
 const requests = ['SIGINT', 'SIGTERM', 'disconnect'] as const
+const classicLeaseFile = '.weapp-vite/ide-classic-project.private.config.json'
+const statefulFiles = ['.weapp-vite/ide-asset-watch.json', ...[WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE, WEAPP_VITE_STATEFUL_HMR_PRELOAD_FILE, WEAPP_VITE_STATEFUL_HMR_UPDATE_FILE].map(file => `dist/${file}`)]
 type Phase = typeof phases[number]
 type Request = typeof requests[number]
 
@@ -32,7 +35,7 @@ import { appendFile } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
 import { setTimeout as delay } from 'node:timers/promises';
-const lease = path.join(process.cwd(), '.weapp-vite', 'ide-asset-watch.json');
+const lease = path.join(process.cwd(), ${JSON.stringify(classicLeaseFile)});
 const journal = path.join(process.cwd(), 'shutdown-events.txt');
 let paused = false;
 // Windows 的 kill 不派发可捕获的 POSIX 信号，用 IPC 进入同一个信号处理边界。
@@ -109,7 +112,7 @@ function requestShutdown(child: ChildProcess, request: Request) {
 }
 
 describe('built serve CLI shutdown', () => {
-  it.each(phases.flatMap(phase => requests.map(request => ({ phase, request }))))('restores the stateful lease after $request during $phase', async ({ phase, request }: { phase: Phase, request: Request }) => {
+  it.each(phases.flatMap(phase => requests.map(request => ({ phase, request }))))('restores startup classic ownership after $request during $phase', async ({ phase, request }: { phase: Phase, request: Request }) => {
     // CLI 回归必须消费新构建的包，不能用 source import 替代下游入口。
     await access(cliEntry)
     const root = await createProject()
@@ -148,9 +151,36 @@ describe('built serve CLI shutdown', () => {
           throw new Error(`CLI exited before ${phase}: ${JSON.stringify(result)}\n${output}`)
         }),
       ]), () => output)
-      const lease = path.join(root, '.weapp-vite/ide-asset-watch.json')
+      const fallback = output.match(/\[weapp-vite\] HMR fallback (\{[^\r\n]*\})/g)
+      expect(fallback, output).toHaveLength(1)
+      expect(JSON.parse(fallback![0]!.slice('[weapp-vite] HMR fallback '.length)) as unknown).toEqual({
+        from: 'stateful-experimental',
+        to: 'classic',
+        reason: 'ide-classic-handoff',
+        message: expect.any(String),
+        requested: 'stateful-experimental',
+        actual: 'classic',
+        phase: 'switching',
+      })
+      const ready = output.match(/\[weapp-vite\] HMR classic ready (\{[^\r\n]*\})/g) ?? []
+      expect(ready, output).toHaveLength(phase === 'ready' ? 1 : 0)
+      if (phase === 'ready') {
+        expect(JSON.parse(ready[0]!.slice('[weapp-vite] HMR classic ready '.length)) as unknown).toEqual({
+          reason: 'ide-classic-handoff',
+          requested: 'stateful-experimental',
+          actual: 'classic',
+          phase: 'classic',
+        })
+      }
+      const lease = path.join(root, classicLeaseFile)
       await expect(access(lease)).resolves.toBeUndefined()
-      expect(await readFile(path.join(root, 'project.private.config.json'), 'utf8')).not.toBe(privateConfig)
+      const activeConfig = await readFile(path.join(root, 'project.private.config.json'), 'utf8')
+      const journal = JSON.parse(await readFile(lease, 'utf8')) as { owner?: unknown, original?: unknown, installed?: unknown }
+      expect(journal).toEqual({ owner: expect.any(String), original: privateConfig, installed: activeConfig })
+      expect(JSON.parse(activeConfig) as unknown).toEqual({ setting: { compileHotReLoad: false }, watchOptions: { ignore: ['scratch/**'] } })
+      for (const file of statefulFiles) {
+        await expect(access(path.join(root, file))).rejects.toMatchObject({ code: 'ENOENT' })
+      }
       requestShutdown(child, request)
       if (phase === 'ready' && request === 'SIGINT') {
         await withTimeout(cleanupStarted.promise, () => output)
@@ -163,6 +193,9 @@ describe('built serve CLI shutdown', () => {
       expect(result, output).toEqual({ code: request === 'SIGINT' ? 130 : request === 'SIGTERM' ? 143 : 0, signal: null })
       expect(await readFile(path.join(root, 'shutdown-events.txt'), 'utf8')).toBe('cleanup-start\ncleanup-finished\n')
       await expect(access(lease)).rejects.toMatchObject({ code: 'ENOENT' })
+      for (const file of statefulFiles) {
+        await expect(access(path.join(root, file))).rejects.toMatchObject({ code: 'ENOENT' })
+      }
       expect(await readFile(path.join(root, 'project.private.config.json'), 'utf8')).toBe(privateConfig)
       for (const file of ['app.js', 'pages/index/index.js', 'pages/index/index.json', 'pages/index/index.wxml']) {
         await expect(access(path.join(root, 'dist', file))).resolves.toBeUndefined()

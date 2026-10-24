@@ -80,7 +80,6 @@ it('真实根 ENOENT 会释放空目录自身的 tracking、closer 和原生句�
       })
     }
   }
-  let hold = false
   const originalWatch = fs.watch
   const absolute = (value: PathLike) => path.resolve(value instanceof URL ? fileURLToPath(value) : String(value))
   const interception = vi.spyOn(fs, 'watch').mockImplementation(function (this: unknown, filename: PathLike, ...args: unknown[]) {
@@ -91,9 +90,8 @@ it('真实根 ENOENT 会释放空目录自身的 tracking、closer 和原生句�
       const callback = args[callbackIndex] as (...values: unknown[]) => unknown
       args[callbackIndex] = function (this: unknown, ...values: unknown[]) {
         record(file, values)
-        if (!hold) {
-          return Reflect.apply(callback, this, values)
-        }
+        // 从订阅开始就保留原生通知；ready/barrier 期间放行的扫描可能跨越后续写入并登记 queued.txt。
+        // 初始枚举仍走真实 Chokidar，public ready 后仅交付删除后的指定通知。
         const filename = values[1] == null ? undefined : String(values[1])
         pending.push({ file, filename, deliver: callback.bind(this, ...values) })
         if (file === directory && filename === 'queued.txt') {
@@ -166,7 +164,6 @@ it('真实根 ENOENT 会释放空目录自身的 tracking、closer 和原生句�
       }
       return result
     }
-    hold = true
     phase = 'writing'
     record(directory)
     await writeFile(path.join(directory, 'queued.txt'), 'a real notification held before directory removal')

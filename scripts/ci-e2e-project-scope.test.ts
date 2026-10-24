@@ -7,6 +7,8 @@ import { readVerificationTopologyVariant } from './workflowFixture.mjs'
 interface Workflow {
   on: Record<string, { inputs: Record<string, unknown> }>
   jobs: Record<string, {
+    if?: string
+    name?: string
     uses?: string
     with?: Record<string, unknown>
     env?: Record<string, unknown>
@@ -19,6 +21,32 @@ async function readWorkflow(name: string) {
 }
 
 describe('manual CI E2E project scope', () => {
+  it('defaults workspace HMR to full while forwarding an explicit functional-only selection', async () => {
+    const wrapper = await readWorkflow('ci-e2e.yml')
+    const shared = await readWorkflow('validate-ci-e2e.yml')
+    expect(wrapper.on.workflow_dispatch?.inputs['workspace-hmr-audit']).toMatchObject({ type: 'choice', required: false, default: 'full', options: ['full', 'functional-only'] })
+    expect(shared.on.workflow_call?.inputs['workspace-hmr-audit']).toEqual({ type: 'string', required: false, default: 'full' })
+    expect(wrapper.jobs.validation?.with?.['workspace-hmr-audit']).toBe('${{ inputs.workspace-hmr-audit || \'full\' }}')
+    const native = await readWorkflow('ci-pr.yml')
+    expect(native.jobs['ci-e2e']?.with).not.toHaveProperty('workspace-hmr-audit')
+  })
+
+  it('keeps every job enabled and changes only the explicit nightly audit scope and label', async () => {
+    const shared = await readWorkflow('validate-ci-e2e.yml')
+    const nightly = shared.jobs['workspace-hmr-nightly']!
+    expect(nightly.if).toBe('needs.pr-context.outputs.should_run == \'true\' && (needs.pr-context.outputs.is_pr != \'true\' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == \'full\' || inputs.hmr-diagnostic == \'workspace-hmr\'))')
+    expect(nightly.name).toBe('${{ inputs.workspace-hmr-audit == \'functional-only\' && \'Workspace HMR Functional (Node 24)\' || \'Workspace HMR Nightly Full (Node 24)\' }}')
+    expect(nightly.with?.main_command).toBe('${{ inputs.workspace-hmr-audit == \'functional-only\' && \'pnpm exec cross-env WEAPP_VITE_HMR_AUDIT_FUNCTIONAL_ONLY=1 pnpm audit:hmr:nightly\' || \'pnpm audit:hmr:nightly\' }}')
+    for (const [name, job] of Object.entries(shared.jobs)) {
+      expect(job.if ?? '', name).not.toContain('workspace-hmr-audit')
+      if (name !== 'workspace-hmr-nightly') {
+        expect(JSON.stringify(job), name).not.toContain('workspace-hmr-audit')
+      }
+    }
+    const manifest = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8')) as { scripts: Record<string, string> }
+    expect(manifest.scripts['audit:hmr:nightly']).toContain('WORKSPACE_HMR_FAIL_ON_ERROR=1')
+  })
+
   it('keeps exclusions optional and forwards the manual value without changing native PR defaults', async () => {
     const wrapper = await readWorkflow('ci-e2e.yml')
     const shared = await readWorkflow('validate-ci-e2e.yml')

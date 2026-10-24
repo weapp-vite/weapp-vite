@@ -72,7 +72,7 @@ describe('bounded HMR workflow diagnosis', () => {
     const workspaceHmr = config.jobs['workspace-hmr-nightly']!
     expect(workspaceHmr.if).toContain('inputs.hmr-diagnostic == \'workspace-hmr\'')
     expect(workspaceHmr.with).toMatchObject({
-      main_command: 'pnpm audit:hmr:nightly',
+      main_command: expect.stringContaining('|| \'pnpm audit:hmr:nightly\''),
       artifact_name: 'workspace-hmr-nightly',
       timeout_minutes: 120,
     })

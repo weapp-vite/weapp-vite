@@ -15,6 +15,14 @@ on:
         required: false
         default: ''
         type: string
+      workspace-hmr-audit:
+        description: Workspace HMR 验收范围；功能模式保留全部场景但不比较性能基线
+        required: false
+        default: full
+        type: choice
+        options:
+          - full
+          - functional-only
       hmr-diagnostic:
         description: 选择 HMR 定向回归；默认保留完整矩阵
         type: choice
@@ -62,4 +70,5 @@ jobs:
       pr_context: ${{ needs.pr-context.outputs.pr_context }}
       hmr-diagnostic: ${{ inputs.hmr-diagnostic || 'full' }}
       exclude-e2e-projects: ${{ inputs.exclude-e2e-projects || '' }}
+      workspace-hmr-audit: ${{ inputs.workspace-hmr-audit || 'full' }}
     secrets: inherit

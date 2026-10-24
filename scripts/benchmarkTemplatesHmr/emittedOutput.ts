@@ -24,7 +24,7 @@ export function createEmittedScriptReader(entryFile: string, outputRoot: string,
 
   async function readScript(filename: string) {
     assertWithinOutput(filename)
-    const candidates = path.extname(filename) ? [filename] : [filename, `${filename}.js`, path.join(filename, 'index.js')]
+    const candidates = [filename, `${filename}.js`, path.join(filename, 'index.js')]
     for (const candidate of candidates) {
       try {
         return { filename: candidate, source: await readFile(candidate, 'utf8') }

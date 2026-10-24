@@ -182,11 +182,13 @@ function holdAtomicFlush(owner, file, removeGate) {
   }
 }
 
-async function verifyAtomic({ chokidar, root, watched, timeoutMs, open, ready, evidence }) {
+async function verifyAtomic({ chokidar, root, watched, timeoutMs, open, ready, instrumentation, evidence }) {
   const file = path.join(watched, 'cooldown-atomic.txt')
   await writeFile(file, 'first atomic generation')
   const owner = open(chokidar, watched, { atomic: 100 })
   await ready(owner)
+  await instrumentation.settleDirectoryRegistration(timeoutMs)
+  assert.deepEqual(owner.errors, [], 'native registration errors cannot count as a completed atomic preparation barrier')
   const boundary = owner.events.length
   const removeGate = holdRemoveEntries(owner, root, new Map([[file, 'unlink']]))
   const atomicGate = holdAtomicFlush(owner, file, removeGate)
