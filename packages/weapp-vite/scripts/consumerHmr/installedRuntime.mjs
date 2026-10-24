@@ -95,7 +95,7 @@ function staticString(node, scope, seen = new Set()) {
   }
 }
 
-/** 仅证明字面量与不可变本地别名组成的字符串纯度，不推断成员或导入值。 */
+/** 仅证明字面量与不可变本地别名组成的字符串纯度，逗号表达式必须逐项纯净。 */
 function inertString(node, scope, seen = new Set()) {
   if (!node || seen.has(node)) {
     return undefined
@@ -124,6 +124,16 @@ function inertString(node, scope, seen = new Set()) {
     const right = inertString(node.right, scope, seen)
     return left === undefined || right === undefined ? undefined : left + right
   }
+  if (node.type === 'SequenceExpression') {
+    let result
+    for (const expression of node.expressions) {
+      result = inertString(expression, scope, seen)
+      if (result === undefined) {
+        return undefined
+      }
+    }
+    return result
+  }
   if (node.type !== 'Identifier') {
     return undefined
   }
@@ -135,7 +145,7 @@ function inertString(node, scope, seen = new Set()) {
 
 function isDiscardedInertString(nodePath) {
   let expression = nodePath
-  while (expression.parentPath.isTemplateLiteral() || expression.parentPath.isBinaryExpression({ operator: '+' })) {
+  while (expression.parentPath.isTemplateLiteral() || expression.parentPath.isBinaryExpression({ operator: '+' }) || expression.parentPath.isSequenceExpression()) {
     expression = expression.parentPath
   }
   return expression.parentPath.isExpressionStatement()
