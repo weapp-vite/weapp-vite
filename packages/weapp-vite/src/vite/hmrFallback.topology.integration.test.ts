@@ -16,6 +16,11 @@ import { expect, it, onTestFailed, vi } from 'vitest'
 import { getHmrRuntimeSession } from '../runtime/hmrRuntimeSession'
 import { weapp } from './index'
 
+// 模拟具有增量能力的底层宿主，保留 stateful 交接覆盖；真实微信启动准入另测。
+vi.mock('../runtime/hmrRuntimeHostCapabilities', () => ({
+  resolveStatefulHmrStartupFallback: () => undefined,
+}))
+
 const addedRoute = 'pages/added/index'
 const homeScript = 'src/pages/home/index.js'
 const deliveryFiles = [

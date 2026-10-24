@@ -9,6 +9,7 @@ import { runCleanupSteps } from '../utils/cleanupSteps'
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { createDomAcceptance } from '../utils/domAcceptance'
 import { replaceFileByRename, waitForFileContains, waitForFileRemoved } from '../utils/hmr-helpers'
+import { createNativeHmrPublication } from '../utils/nativeHmrPublication'
 import { startRuntimeDevProcess } from '../utils/runtimeDevProcess'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import { createStatefulHmrProject } from '../utils/statefulHmrProject'
@@ -17,12 +18,14 @@ const ROOT = path.resolve(import.meta.dirname, '../..')
 const ROUTE = '/pages/native/index?source=startup-fallback'
 const hosts = ['wv', 'vite', 'vite-plus'] as const
 const provider = resolveRuntimeProviderName()
+const externalProject = process.env.WEAPP_VITE_E2E_STARTUP_CLASSIC_PROJECT
 
 for (const host of hosts) {
   for (const requested of ['auto', 'stateful-experimental'] as const) {
     describe(`${host} ${requested} compiler capability startup fallback`, { concurrent: false }, () => {
       let fixture: Awaited<ReturnType<typeof createStatefulHmrProject>> | undefined
       let dev: ReturnType<typeof startDevProcess> | undefined
+      let publication: ReturnType<typeof createNativeHmrPublication> | undefined
       let miniProgram: any
       let initialSource = ''
       let configSource = ''
@@ -33,6 +36,7 @@ for (const host of hosts) {
       let outputFile = ''
       let runtimeReleased = true
       let devReleased = true
+      const externalOriginals = new Map<string, string>()
 
       async function connect() {
         runtimeReleased = false
@@ -67,6 +71,7 @@ for (const host of hosts) {
       async function assertClassicArtifacts() {
         await waitForFileRemoved(controlFile)
         expect(await fs.pathExists(updateFile)).toBe(false)
+        await publication!.assertClassicOutput()
       }
 
       async function waitState(marker: string, count = 0, input = '', identity = '') {
@@ -80,6 +85,7 @@ for (const host of hosts) {
           bridge: false,
         })
         await assertClassicArtifacts()
+        await publication!.assertClassicRuntime(miniProgram)
       }
 
       async function observeClassic(marker: string) {
@@ -97,35 +103,58 @@ for (const host of hosts) {
       }
 
       beforeAll(async () => {
-        fixture = await createStatefulHmrProject(ROOT, { compilerHost: host })
+        if (externalProject) {
+          expect(requested).toBe('stateful-experimental')
+          expect(host).toBe(process.env.WEAPP_VITE_E2E_COMPILER_HOST)
+          const projectRoot = path.resolve(externalProject)
+          for (const file of ['src/pages/native/index.ts', 'vite.config.mts', 'project.config.json', 'project.private.config.json']) {
+            externalOriginals.set(file, await fs.readFile(path.join(projectRoot, file), 'utf8'))
+          }
+          fixture = { projectRoot, cleanup: async () => {
+            for (const [file, content] of externalOriginals) {
+              await fs.writeFile(path.join(projectRoot, file), content, 'utf8')
+            }
+          } }
+        }
+        else {
+          fixture = await createStatefulHmrProject(ROOT, { compilerHost: host })
+        }
         const app = fixture.projectRoot
         source = path.join(app, 'src/pages/native/index.ts')
-        configFile = path.join(app, 'weapp-vite.config.ts')
+        configFile = path.join(app, externalProject ? 'vite.config.mts' : 'weapp-vite.config.ts')
         controlFile = path.join(app, 'dist/__weapp_vite_hmr/control.js')
         updateFile = path.join(app, 'dist/__weapp_vite_hmr/update.js')
         outputFile = path.join(app, 'dist/pages/native/index.js')
         initialSource = await fs.readFile(source, 'utf8')
+        if (externalProject) {
+          expect(await fs.readFile(configFile, 'utf8')).toContain('runtime: \'stateful-experimental\'')
+        }
         configSource = (await fs.readFile(configFile, 'utf8'))
           .replace('export default defineConfig({', 'export default defineConfig({\n  define: { __HMR_STARTUP_CONFIG_MARKER__: JSON.stringify(\'CONFIG-A\') },')
           .replace('srcRoot: \'src\',', 'srcRoot: \'src\',\n    compilerPlugins: [{ name: \'legacy-compiler\', capabilities: { content: true }, create() { return {} } }],')
-          .replace('logLevel: \'verbose\',', `runtime: '${requested}', logLevel: 'verbose',`)
+        if (!externalProject) {
+          configSource = configSource.replace('logLevel: \'verbose\',', `runtime: '${requested}', logLevel: 'verbose',`)
+        }
         await fs.writeFile(configFile, configSource, 'utf8')
         const viteFile = path.join(app, 'vite.stateful.config.mts')
-        await fs.writeFile(viteFile, (await fs.readFile(viteFile, 'utf8'))
-          .replace('hmr: { runtime: \'stateful-experimental\', logLevel: \'verbose\' },', 'hmr: config.weapp.hmr,'), 'utf8')
-        const cli = resolveRuntimeCompilerCli(host!, app, { repositoryRoot: ROOT })
+        if (!externalProject) {
+          await fs.writeFile(viteFile, (await fs.readFile(viteFile, 'utf8'))
+            .replace('hmr: { runtime: \'stateful-experimental\', logLevel: \'verbose\' },', 'hmr: config.weapp.hmr,'), 'utf8')
+        }
+        const cli = resolveRuntimeCompilerCli(host!, app, { repositoryRoot: ROOT, isolated: Boolean(externalProject) })
         devReleased = false
         dev = await startRuntimeDevProcess(host, host === 'wv'
-          ? [cli, 'dev', app, '--platform', 'weapp', '--skipNpm']
-          : [cli, 'dev', '--config', 'vite.stateful.config.mts', '--host', '127.0.0.1', '--port', '0'], {
+          ? [cli, 'dev', app, '--platform', 'weapp', '--skipNpm', ...externalProject ? ['--config', 'vite.config.mts'] : []]
+          : [cli, 'dev', '--config', externalProject ? 'vite.config.mts' : 'vite.stateful.config.mts', '--host', '127.0.0.1', '--port', '0'], {
           cwd: app,
           all: true,
           env: createDevProcessEnv(),
           reject: false,
         })
+        publication = createNativeHmrPublication(app, dev, requested, ['ide-classic-handoff'])
         await dev.waitForOutput('[weapp-vite] HMR classic ready ', 'startup classic fallback completion')
         await dev.waitFor(waitForFileContains(outputFile, 'STATEFUL-NATIVE-BASE'), 'initial classic native output')
-        expect(dev.getOutput()).toContain('"reason":"compiler-provider"')
+        expect(dev.getOutput()).toContain('"reason":"ide-classic-handoff"')
         await assertClassicArtifacts()
         for (const extension of ['js', 'json', 'wxml']) {
           expect(await fs.pathExists(path.join(app, `dist/pages/native/index.${extension}`))).toBe(true)
@@ -217,7 +246,7 @@ for (const host of hosts) {
         await observeClassic('CONFIG-B')
         await dom.check('config-after', miniProgram, await miniProgram.currentPage())
         expect(dev!.getOutput().match(/\[weapp-vite\] HMR fallback /g)).toHaveLength(1)
-        expect(dev!.getOutput()).toContain('"reason":"compiler-provider"')
+        expect(dev!.getOutput()).toContain('"reason":"ide-classic-handoff"')
       }, 600_000)
     })
   }

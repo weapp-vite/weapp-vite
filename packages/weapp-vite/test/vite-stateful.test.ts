@@ -4,8 +4,11 @@ import os from 'node:os'
 import path from 'node:path'
 import { WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE } from '@weapp-core/constants'
 import { createLogger, createServer } from 'vite'
-import { expect, it, onTestFailed } from 'vitest'
+import { expect, it, onTestFailed, vi } from 'vitest'
 import { weapp } from '../src/vite'
+
+// 仅验证模拟宿主的 stateful 机制；真实 IDE 未证明在线交接，不计入稳定 IDE 验收。
+vi.mock('../src/runtime/hmrRuntimeHostCapabilities', () => ({ resolveStatefulHmrStartupFallback: () => undefined }))
 
 interface TestDevEngine {
   close: () => Promise<void>

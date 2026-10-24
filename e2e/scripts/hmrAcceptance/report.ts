@@ -9,6 +9,8 @@ import { verificationHash } from '../verification/plan'
 import { assertVerificationProfile } from '../verification/profile'
 import { HMR_ACCEPTANCE_CAPABILITY_COVERAGE } from './capabilities'
 import { HMR_HISTORICAL_IDE_BASELINE, HMR_HISTORICAL_IDE_FAILURES } from './history'
+import { assertStableHmrPlanScope } from './stableEvidence'
+import { isStableHmrSuite } from './stableScope'
 import { assertHmrUnitReceipt } from './unit'
 
 export interface HmrStageEvidence {
@@ -34,6 +36,22 @@ export function evaluateHmrCapabilityCoverage(evidence: HmrStageEvidence[], capa
         && !scenario.observation && scenario.expectations.length > 0
         && scenario.ide.length > 0 && scenario.headless.length > 0
         && scenario.ide.every(file => passed(file, 'devtools')) && scenario.headless.every(file => passed(file, 'headless'))))
+  }
+  const stable = evidence.length > 0 && evidence.every(item => isStableHmrSuite(item.plan.suite))
+  if (stable) {
+    const known = new Set(HMR_ACCEPTANCE_CAPABILITIES.map(item => item.id as string))
+    const startupPassed = hasRuntime('ide-classic-handoff')
+    return {
+      missingRuntimeCoverage: capabilities.filter(item => item.id !== 'ide-classic-handoff' || !startupPassed).map(item => item.id),
+      missingRequiredCoverage: capabilities.filter(item => !known.has(item.id) || (item.id === 'ide-classic-handoff' && !startupPassed)).map(item => item.id),
+      scopeBoundaries: capabilities.filter(item => known.has(item.id) && item.id !== 'ide-classic-handoff').map(item => ({
+        capabilityId: item.id,
+        target: 'wechat-stateful-experimental',
+        reason: '微信目标仅验收启动即 classic；状态保持及在线交接保留独立实验诊断。',
+        buildCoverage: 'not-evaluated',
+        runtimeCoverage: 'out-of-scope',
+      })),
+    }
   }
   const missingRuntimeCoverage = capabilities.filter(capability => !hasRuntime(capability.id)).map(capability => capability.id)
   const scopeBoundaries = HMR_ACCEPTANCE_CAPABILITY_COVERAGE.flatMap((coverage) => {
@@ -61,6 +79,9 @@ export function createHmrAcceptanceSummary(expected: readonly HmrAcceptanceStage
     assertHmrUnitReceipt(unit, identity)
   }
   for (const { stage, plan, report, runtime } of evidence) {
+    const stable = assertStableHmrPlanScope(plan)
+    const supported = plan.tasks.filter(task => !task.outOfScopeReason)
+    const excluded = plan.tasks.length - supported.length
     const reportTopology = report.execution?.executionTopology
     assertVerificationTopology(plan.executionTopology)
     assertVerificationTopology(reportTopology)
@@ -83,20 +104,23 @@ export function createHmrAcceptanceSummary(expected: readonly HmrAcceptanceStage
       || report.coverage !== 'complete' || report.acceptance !== 'passed'
       || report.execution?.scope !== 'full' || report.execution.status !== 'passed'
       || report.execution.planHash !== plan.planHash
-      || report.summary.plannedCount === 0 || report.summary.plannedCount !== plan.tasks.length || report.summary.plannedCount !== report.summary.executedCount
+      || report.summary.plannedCount === 0 || report.summary.plannedCount !== supported.length || report.summary.plannedCount !== report.summary.executedCount
       || report.summary.passedCount !== report.summary.plannedCount
-      || report.summary.failedCount || report.summary.blockedCount || report.summary.skippedCount || report.summary.notExecutedCount || report.summary.outOfScopeCount
-      || plan.tasks.some(task => task.outOfScopeReason) || report.tasks.some(task => task.status === 'out-of-scope')) {
+      || report.summary.failedCount || report.summary.blockedCount || report.summary.skippedCount || report.summary.notExecutedCount
+      || report.summary.outOfScopeCount !== excluded || (!stable && excluded > 0)) {
       throw new Error('HMR acceptance requires complete passing stages from the same clean commit and frozen plans')
     }
     if (report.tasks.length !== plan.tasks.length || new Set(report.tasks.map(task => task.label)).size !== report.tasks.length
-      || plan.tasks.some(planned => !report.tasks.some(task => task.label === planned.label && task.definitionHash === planned.definitionHash && task.status === 'passed' && task.exitCode === 0))) {
+      || plan.tasks.some(planned => !report.tasks.some(task => task.label === planned.label
+        && (planned.outOfScopeReason
+          ? stable && task.status === 'out-of-scope' && task.reason === planned.outOfScopeReason && task.exitCode === 0 && task.artifacts.length === 0
+          : task.definitionHash === planned.definitionHash && task.status === 'passed' && task.exitCode === 0)))) {
       throw new Error('HMR acceptance requires every task to pass its frozen definition exactly once')
     }
     if (stage.provider !== 'none') {
-      const plannedCases = plan.tasks.flatMap(task => task.cases ?? []).filter(item => item.providerScope?.scope !== 'out-of-scope').length
+      const plannedCases = supported.flatMap(task => task.cases ?? []).filter(item => item.providerScope?.scope !== 'out-of-scope').length
       if (!runtime || runtime.runId !== identity.runId || runtime.commitSha !== identity.commitSha || runtime.provider !== stage.provider
-        || JSON.stringify(runtime.tasks) !== JSON.stringify(plan.tasks.map(task => task.label).sort())
+        || JSON.stringify(runtime.tasks) !== JSON.stringify(supported.map(task => task.label).sort())
         || !plannedCases || !Number.isSafeInteger(runtime.cases) || !Number.isSafeInteger(runtime.checkpoints)
         || runtime.cases !== plannedCases || runtime.checkpoints < plannedCases) {
         throw new Error('HMR acceptance requires matching completed runtime cases and checkpoints')
@@ -115,7 +139,7 @@ export function createHmrAcceptanceSummary(expected: readonly HmrAcceptanceStage
     commitSha: identity.commitSha,
     workingTreeDirty: false,
     executionTopology: identity.executionTopology,
-    acceptanceScope: 'wechat-runtime-and-cross-platform-build',
+    acceptanceScope: evidence.every(item => isStableHmrSuite(item.plan.suite)) ? 'wechat-classic-runtime-and-cross-platform-build' : 'wechat-runtime-and-cross-platform-build',
     coverage: incomplete ? 'partial' : 'complete',
     acceptance: incomplete ? 'incomplete' : 'passed',
     ...(scope === 'full' ? { unit } : {}),
@@ -142,6 +166,7 @@ export function createHmrAcceptanceSummary(expected: readonly HmrAcceptanceStage
       executionTopology: plan.executionTopology,
       profile: plan.profile,
       summary: report.summary,
+      outOfScopeTasks: plan.tasks.filter(task => task.outOfScopeReason).map(task => ({ label: task.label, reason: task.outOfScopeReason })),
       ...(runtime ? { runtime } : {}),
     })),
   }

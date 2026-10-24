@@ -7,12 +7,15 @@ import os from 'node:os'
 import process from 'node:process'
 import { WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE, WEAPP_VITE_STATEFUL_HMR_PRELOAD_FILE, WEAPP_VITE_STATEFUL_HMR_UPDATE_FILE } from '@weapp-core/constants'
 import path from 'pathe'
-import { expect, it, onTestFailed } from 'vitest'
+import { expect, it, onTestFailed, vi } from 'vitest'
 import { saveSource } from '../../../test/helpers/saveSource'
 import { ensureWorkspacePackageLink } from '../../../test/utils'
 import { CompilerSession } from '../compilerSession'
 import { getHmrRuntimeSession } from '../hmrRuntimeSession'
 import { ownsSidecarDelivery } from '../watch/sidecarDelivery'
+
+// 仅验证模拟宿主的 stateful 机制；真实 IDE 未证明在线交接，不计入稳定 IDE 验收。
+vi.mock('../hmrRuntimeHostCapabilities', () => ({ resolveStatefulHmrStartupFallback: () => undefined }))
 
 async function within<T>(promise: Promise<T>, label: string): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined

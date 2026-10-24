@@ -5,23 +5,29 @@ import path from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { evaluateAcceptanceCase, summarizeAcceptanceCases } from '../../e2e/scripts/domAcceptanceReport/helpers'
 import { freezeProviderCaseScope } from '../../e2e/scripts/domAcceptanceReport/taskCases'
+import { CLASSIC_IDE_CASES } from '../../e2e/scripts/hmrAcceptance/stableScopeCases'
 import { aggregateVerificationReports } from '../../e2e/scripts/verification/aggregate'
 import { freeze, now, profile, rehash, shardReports } from './fixtures'
 
 const roots: string[] = []
+const MIXED_LABEL = 'ide/issue-1015-css-hmr.runtime.test.ts'
 afterEach(async () => {
   await Promise.all(roots.splice(0).map(root => fs.rm(root, { recursive: true, force: true })))
 })
 
-async function setup(provider: AcceptanceReport['provider'] = 'headless') {
+async function setup(provider: AcceptanceReport['provider'] = 'headless', mixed = false) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'verification-evidence-'))
   roots.push(root)
   const plan = rehash({
     ...await freeze(),
-    suite: 'ide-full',
+    suite: mixed ? 'ide-hmr-headless:classic' : 'ide-full',
     strict: true,
     profile: { ...profile, provider },
-    tasks: (await freeze()).tasks.map(task => ({ ...task, cases: [{ file: `e2e/${task.label}`, name: 'mounts' }] })),
+    tasks: (await freeze()).tasks.map((task, index) => {
+      const label = mixed && index === 0 ? MIXED_LABEL : task.label
+      const name = mixed && index === 0 ? CLASSIC_IDE_CASES[MIXED_LABEL]!.find(item => item.supported)!.name : 'mounts'
+      return { ...task, label, cases: [{ file: `e2e/${label}`, name }] }
+    }),
   })
   const reports = shardReports(plan)
   const files: string[] = []
@@ -32,7 +38,7 @@ async function setup(provider: AcceptanceReport['provider'] = 'headless') {
       const cases = [evaluateAcceptanceCase({
         id: task.label,
         file: `e2e/${task.label}`,
-        name: 'mounts',
+        name: plan.tasks.find(planned => planned.label === task.label)!.cases![0]!.name,
         state: 'passed',
         startedAt: Date.parse('2026-10-19T00:00:00.000Z'),
         finishedAt: Date.parse('2026-10-19T00:00:02.000Z'),
@@ -44,6 +50,15 @@ async function setup(provider: AcceptanceReport['provider'] = 'headless') {
           evidence: [{ id: 'mounted', route: 'pages/index/index', source: provider === 'headless' ? 'headless-logical-tree' : 'devtools-page-frame', capturedAt: checkpointTime, nodes: [{ selector: '.title', query: 'css', count: 1, nodes: [{ text: 'Ready' }] }] }],
         },
       })]
+      const selectedCases = mixed && task.label === MIXED_LABEL ? plan.tasks.find(planned => planned.label === task.label)!.cases : undefined
+      if (selectedCases) {
+        cases.push(evaluateAcceptanceCase({
+          id: `${task.label}-experimental`,
+          file: `e2e/${task.label}`,
+          name: CLASSIC_IDE_CASES[MIXED_LABEL]!.find(item => !item.supported)!.name,
+          state: 'skipped',
+        }))
+      }
       const report: AcceptanceReport = {
         schemaVersion: 1,
         runId: plan.runId,
@@ -60,6 +75,7 @@ async function setup(provider: AcceptanceReport['provider'] = 'headless') {
         status: 'passed',
         errors: [],
         cases,
+        ...(selectedCases ? { selectedCases } : {}),
         summary: summarizeAcceptanceCases(cases),
       }
       const relative = `dom-acceptance/${plan.runId}/${task.label}.json`
@@ -79,6 +95,58 @@ describe('strict frozen shard aggregation', () => {
   it('revalidates the original case and checkpoint evidence after artifact download', async () => {
     const { plan, reports, files, root } = await setup()
     expect(await aggregateVerificationReports(plan, reports, { files, reportsRoot: root, now })).toMatchObject({ coverage: 'complete', acceptance: 'passed' })
+  })
+
+  it('restores mixed selection only from the canonical frozen cases after checking the task definition', async () => {
+    const { plan, reports, files, root } = await setup('headless', true)
+    expect(await aggregateVerificationReports(plan, reports, { files, reportsRoot: root, now })).toMatchObject({ coverage: 'complete', acceptance: 'passed' })
+  })
+
+  it.each(['missing-selection', 'changed-selection', 'executed-excluded', 'missing-case', 'missing-checkpoint', 'definition', 'case-hash'])(
+    'rejects %s in a frozen mixed selection',
+    async (fault) => {
+      const { plan, reports, files, root, evidence } = await setup('headless', true)
+      const index = evidence.findIndex(report => report.taskLabel === MIXED_LABEL)
+      const report = evidence[index]!
+      let frozen = plan
+      if (fault === 'missing-selection') {
+        delete report.selectedCases
+      }
+      if (fault === 'changed-selection') {
+        report.selectedCases = [{ file: report.cases[1]!.file, name: report.cases[1]!.name }]
+      }
+      if (fault === 'executed-excluded') {
+        report.cases[1] = { ...structuredClone(report.cases[0]!), id: report.cases[1]!.id, name: report.cases[1]!.name }
+      }
+      if (fault === 'missing-case') {
+        report.cases.shift()
+      }
+      if (fault === 'missing-checkpoint') {
+        report.cases[0]!.acceptance!.evidence = []
+      }
+      if (fault === 'definition') {
+        reports.flatMap(shard => shard.tasks).find(task => task.label === MIXED_LABEL)!.definitionHash = 'c'.repeat(64)
+      }
+      if (fault === 'case-hash') {
+        frozen = rehash({ ...plan, tasks: plan.tasks.map(task => task.label === MIXED_LABEL ? { ...task, cases: [{ file: report.cases[1]!.file, name: report.cases[1]!.name }] } : task) })
+        for (const shard of reports) {
+          shard.execution.planHash = frozen.planHash
+        }
+      }
+      report.summary = summarizeAcceptanceCases(report.cases)
+      await fs.writeFile(files[index]!, JSON.stringify(report))
+      await expect(aggregateVerificationReports(frozen, reports, { files, reportsRoot: root, now })).rejects.toThrow()
+    },
+  )
+
+  it('rejects a report that declares its own selected scope for an unregistered task', async () => {
+    const { plan, reports, files, root, evidence } = await setup()
+    const report = evidence[0]!
+    report.selectedCases = [{ file: report.cases[0]!.file, name: report.cases[0]!.name }]
+    report.cases.push(evaluateAcceptanceCase({ id: 'unapproved-scope', file: report.cases[0]!.file, name: 'unapproved case', state: 'skipped' }))
+    report.summary = summarizeAcceptanceCases(report.cases)
+    await fs.writeFile(files[0]!, JSON.stringify(report))
+    await expect(aggregateVerificationReports(plan, reports, { files, reportsRoot: root, now })).rejects.toThrow('DOM case inventory mismatch')
   })
 
   it('rejects a frozen case skipped without a DOM plan even when its task report otherwise passed', async () => {

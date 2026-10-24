@@ -178,6 +178,7 @@ export default defineConfig({
       }
     }
     else {
+      // 保留显式实验请求；发布包验收由同一 startup suite 证明实际 classic 与配置重载。
       const config = createConsumerHmrConfig(toolchain, classicRuntime ? 'classic' : 'stateful-experimental')
       await writeFile(path.join(consumerRoot, classicRuntime ? 'vite.plugin.config.mts' : 'vite.stateful.config.mts'), config)
       await writeFile(path.join(consumerRoot, 'vite.config.mts'), config)

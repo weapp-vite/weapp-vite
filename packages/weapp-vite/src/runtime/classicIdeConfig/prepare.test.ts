@@ -100,12 +100,13 @@ it.each(['changed', 'missing'] as const)('rejects %s private config paths while 
 })
 
 it.each([
-  { mode: 'classic', requested: true, fallback: false, classic: true },
-  { mode: 'auto', requested: false, fallback: false, classic: true },
-  { mode: 'auto', requested: true, fallback: false, classic: false },
-  { mode: 'stateful-experimental', requested: true, fallback: false, classic: false },
-  { mode: 'stateful-experimental', requested: true, fallback: true, classic: true },
-] as const)('only disables native partial reload for effective classic: $mode / $requested / fallback $fallback', async ({ mode, requested, fallback, classic }) => {
+  { mode: 'classic', requested: true, fallback: false, reason: undefined },
+  { mode: 'auto', requested: false, fallback: false, reason: undefined },
+  { mode: 'auto', requested: true, fallback: false, reason: 'ide-classic-handoff' },
+  { mode: 'stateful-experimental', requested: true, fallback: false, reason: 'ide-classic-handoff' },
+  { mode: 'stateful-experimental', requested: false, fallback: false, reason: 'ide-classic-handoff' },
+  { mode: 'stateful-experimental', requested: true, fallback: true, reason: 'runtime-contract' },
+] as const)('prepares classic before startup while preserving the $mode request ($requested / existing fallback $fallback)', async ({ mode, requested, fallback, reason }) => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'prepare-classic-ide-'))
   cleanup.push(() => fs.remove(root))
   const file = path.join(root, 'project.private.config.json')
@@ -129,7 +130,12 @@ it.each([
     runtime.requestClassic({ code: 'runtime-contract', message: 'test unsupported update' })
   }
   await prepareClassicIdeConfig(ctx)
-  expect((await fs.readJSON(file) as { setting: { compileHotReLoad: boolean } }).setting.compileHotReLoad).toBe(classic ? false : requested)
+  expect((await fs.readJSON(file) as { setting: { compileHotReLoad: boolean } }).setting.compileHotReLoad).toBe(false)
+  expect(runtime.fallback?.code).toBe(reason)
+  if (reason) {
+    expect(runtime.phase).toBe('switching')
+    expect(runtime.resolve({ configured: mode, runtime: 'stateful-experimental', reason: 'explicit' })).toEqual({ configured: mode, runtime: 'classic', reason: 'capability-fallback' })
+  }
   expect(await runtime.classicIdeConfig.readRequested(file)).toBe(original)
   await prepareClassicIdeConfig(ctx)
   await runtime.classicIdeConfig.close()

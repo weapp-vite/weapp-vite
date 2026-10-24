@@ -7,6 +7,7 @@ export const HMR_RUNTIME_CAPABILITIES = [
   { id: 'engine-full-reload', mode: 'classic', description: 'DevEngine 明确要求完整重载' },
   { id: 'compiler-provider', mode: 'classic', description: '编译 provider 缺少事务式 HMR 能力' },
   { id: 'runtime-contract', mode: 'classic', description: 'Vite、Rolldown 或小程序运行时能力缺失' },
+  { id: 'ide-classic-handoff', mode: 'classic', description: 'IDE 缺少可确认的 classic 完整重载交接能力' },
   { id: 'native-registration', mode: 'classic', description: '原生组件注册契约发生不兼容变化' },
   { id: 'patch-shape', mode: 'classic', description: '无法安全交付的增量模块结构' },
   { id: 'platform', mode: 'classic', description: '不支持状态保持 HMR 的小程序平台' },

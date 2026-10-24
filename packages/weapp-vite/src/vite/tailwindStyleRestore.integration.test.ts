@@ -22,6 +22,11 @@ import { StatefulHmrSnapshotScheduler } from '../runtime/statefulHmr/snapshotSch
 import { weapp } from './index'
 import { createStyleRestoreDiagnostics } from './tailwindStyleRestore/diagnostics'
 
+// 模拟具有增量能力的底层宿主，保留 stateful 交接覆盖；真实微信启动准入另测。
+vi.mock('../runtime/hmrRuntimeHostCapabilities', () => ({
+  resolveStatefulHmrStartupFallback: () => undefined,
+}))
+
 const harness = vi.hoisted(() => ({
   afterWrite: undefined as undefined | ((outDir: string, output: StatefulHmrOutputFile[]) => Promise<void>),
   sourceHook: undefined as undefined | ((file: string, phase: 'entered' | 'completed' | 'failed') => void),

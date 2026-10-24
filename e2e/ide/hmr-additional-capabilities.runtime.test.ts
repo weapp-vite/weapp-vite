@@ -134,13 +134,13 @@ for (const reason of ['engine-full-reload', 'patch-shape', 'skyline'] as const) 
         env: { ...createDevProcessEnv(), WEAPP_VITE_HMR_PROFILE_JSON: profilePath },
         reject: false,
       })
-      publication = createNativeHmrPublication(project, dev, 'stateful-experimental', [reason], profilePath)
+      publication = createNativeHmrPublication(project, dev, 'stateful-experimental', [reason === 'skyline' ? 'ide-classic-handoff' : reason], profilePath)
       if (reason !== 'skyline') {
         await dev.waitFor(waitForStatefulHmrControl(controlFile), 'initial stateful control')
       }
       else {
         await dev.waitForOutput('[weapp-vite] HMR classic ready ', 'Skyline startup classic handoff')
-        expect(dev.getOutput()).toContain('"reason":"skyline"')
+        expect(dev.getOutput()).toContain('"reason":"ide-classic-handoff"')
         await assertClassicArtifacts()
       }
       await dev.waitFor(waitForFileContains(outputFile, 'STATEFUL-NATIVE-BASE'), 'boundary initial page output')
@@ -229,7 +229,7 @@ for (const reason of ['engine-full-reload', 'patch-shape', 'skyline'] as const) 
         await replaceFileByRename(fixture!.source, patched)
       }
       await firstPublication.wait()
-      expect(dev!.getOutput()).toContain(`"reason":"${reason}"`)
+      expect(dev!.getOutput()).toContain(`"reason":"${reason === 'skyline' ? 'ide-classic-handoff' : reason}"`)
       await dev!.waitFor(waitForFileContains(outputFile, fallbackMarker), 'first boundary classic output')
       await observeClassic(fallbackMarker)
       page = await app().currentPage()

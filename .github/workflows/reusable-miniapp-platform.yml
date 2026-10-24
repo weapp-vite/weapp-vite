@@ -87,9 +87,9 @@ jobs:
         shell: bash
         run: |-
           node --import tsx e2e/scripts/verification/cli.ts history --input=.tmp/verification-history --profile=.tmp/verification-plan/profile.json --repository="${{ github.repository }}" --workflow=.github/workflows/ci-e2e.yml --output=.tmp/verification-plan/history.json
-          node --import tsx e2e/scripts/verification/cli.ts plan --suite=ci-${{ inputs.mode }} --shards=4 --profile=.tmp/verification-plan/profile.json --history=.tmp/verification-plan/history.json --output=.tmp/verification-plan/plan.json
+          node --import tsx e2e/scripts/verification/cli.ts plan --suite=ci-${{ inputs.mode }}:classic --shards=4 --profile=.tmp/verification-plan/profile.json --history=.tmp/verification-plan/history.json --output=.tmp/verification-plan/plan.json
           node --import tsx e2e/scripts/verification/cli.ts history --input=.tmp/verification-history --profile=.tmp/verification-plan/headless-profile.json --repository="${{ github.repository }}" --workflow=.github/workflows/ci-e2e.yml --output=.tmp/verification-plan/headless-history.json
-          node --import tsx e2e/scripts/verification/cli.ts plan --suite=ide-dom-headless --shards=2 --profile=.tmp/verification-plan/headless-profile.json --history=.tmp/verification-plan/headless-history.json --output=.tmp/verification-plan/ide-dom-headless.json
+          node --import tsx e2e/scripts/verification/cli.ts plan --suite=ide-dom-headless:classic --shards=2 --profile=.tmp/verification-plan/headless-profile.json --history=.tmp/verification-plan/headless-history.json --output=.tmp/verification-plan/ide-dom-headless.json
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         if: ${{ !cancelled() }}
         with:
@@ -153,7 +153,7 @@ jobs:
       main_command: |
         node -e "require('node:fs').mkdirSync('.tmp/ide-dom-headless-preflight', { recursive: true })"
         pnpm exec cross-env WEAPP_VITE_E2E_CLEANUP_TRACE=1 pnpm vitest run -c e2e/vitest.e2e.utils.config.ts e2e/utils/devProcessCleanup/windowsKernelQuery.test.ts e2e/utils/devProcessCleanup/processes.test.ts e2e/utils/dev-process.cleanup.test.ts e2e/utils/devProcessCleanup/windowsProcessTree.test.ts e2e/utils/devProcessCleanup/windowsProcessRows.test.ts e2e/utils/devProcessCleanup/windowsQueryTrace.test.ts 2>&1 | tee .tmp/ide-dom-headless-preflight/cleanup.log
-        pnpm exec cross-env WEAPP_VITE_E2E_CLEANUP_TRACE=1 WEAPP_VITE_E2E_DEV_PROCESS_TRACE=1 WEAPP_VITE_E2E_DEV_SHUTDOWN_TRACE=1 WEAPP_VITE_E2E_DOM_SCOPE_TRACE_CHECKPOINTS=home-ready node --import tsx e2e/scripts/run-e2e-suite.ts ide-dom-headless --plan=.tmp/verification-plan/ide-dom-headless.json --shard-index=${{ matrix.shard }}
+        pnpm exec cross-env WEAPP_VITE_E2E_CLEANUP_TRACE=1 WEAPP_VITE_E2E_DEV_PROCESS_TRACE=1 WEAPP_VITE_E2E_DEV_SHUTDOWN_TRACE=1 WEAPP_VITE_E2E_DOM_SCOPE_TRACE_CHECKPOINTS=home-ready node --import tsx e2e/scripts/run-e2e-suite.ts ide-dom-headless:classic --plan=.tmp/verification-plan/ide-dom-headless.json --shard-index=${{ matrix.shard }}
       artifact_name: ide-dom-headless-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-shard-${{ matrix.shard }}
       artifact_path: |
         docs/reports/dom-acceptance/**
@@ -266,7 +266,7 @@ jobs:
       aux_artifact_path: .tmp/verification-plan
       e2e_platform: weapp
       increase_ulimit: true
-      main_command: node --import tsx e2e/scripts/run-e2e-suite.ts ci-${{ inputs.mode }} --plan=.tmp/verification-plan/plan.json --shard-index=${{ matrix.shard }}
+      main_command: node --import tsx e2e/scripts/run-e2e-suite.ts ci-${{ inputs.mode }}:classic --plan=.tmp/verification-plan/plan.json --shard-index=${{ matrix.shard }}
       artifact_name: miniapp-e2e-ci-${{ inputs.mode }}-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-shard-${{ matrix.shard }}
       artifact_path: docs/reports/*-e2e-ci-${{ inputs.mode }}-*-suite-report/**
       timing_artifact_name: timing-miniapp-${{ inputs.runs_on }}-${{ inputs.node_version }}-${{ inputs.mode }}-${{ matrix.shard }}

@@ -2711,6 +2711,9 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           reportDevModuleGraphBuild(ctx, true)
           resetHmrProfile()
           settleHmrStyleUpdatePlan(configService, completedStylePlan, true)
+          if (target === 'app' && devHmrDecision?.runtime === 'classic') {
+            hmrRuntimeSession.markClassic()
+          }
           resolveWatcher(e)
         })().catch(async (error) => {
           if (shouldRestart) {

@@ -10,6 +10,9 @@ import logger from '../../src/logger'
 import { getHmrRuntimeSession } from '../../src/runtime/hmrRuntimeSession'
 import { saveSource } from '../helpers/saveSource'
 
+// 仅验证模拟宿主的 stateful 机制；真实 IDE 未证明在线交接，不计入稳定 IDE 验收。
+vi.mock('../../src/runtime/hmrRuntimeHostCapabilities', () => ({ resolveStatefulHmrStartupFallback: () => undefined }))
+
 function createBundleRuntime(root: string) {
   const rebuilds: unknown[] = []
   const requests: Array<{ action: string, version?: number, payloads?: string[] }> = []

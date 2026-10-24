@@ -13,6 +13,7 @@ it.each([false, true])('naturally exits after Sass updates hand the stateful eng
   const dependencies = fileURLToPath(new URL('../../../../../node_modules', import.meta.url))
   const host = new URL('../../vite/index.ts', import.meta.url).href
   const runtime = new URL('../hmrRuntimeSession.ts', import.meta.url).href
+  const hostCapabilities = new URL('../hmrRuntimeHostCapabilities.ts', import.meta.url).href
   let child: ReturnType<typeof spawn> | undefined
   let timeout: ReturnType<typeof setTimeout> | undefined
   try {
@@ -26,11 +27,20 @@ it.each([false, true])('naturally exits after Sass updates hand the stateful eng
     await writeFile(script, `
       import assert from 'node:assert/strict'
       import { mkdir, readFile, realpath, writeFile } from 'node:fs/promises'
+      import { registerHooks } from 'node:module'
       import path from 'node:path'
       import { setTimeout as delay } from 'node:timers/promises'
       import { createServer, preprocessCSS } from ${JSON.stringify(import.meta.resolve('vite'))}
-      import { weapp } from ${JSON.stringify(host)}
-      import { getHmrRuntimeSession } from ${JSON.stringify(runtime)}
+      // 仅测试子进程模拟增量宿主；生产微信启动准入不受影响。
+      let capabilityMockLoads = 0
+      registerHooks({ resolve(specifier, context, next) {
+        const resolved = next(specifier, context)
+        if (resolved.url !== ${JSON.stringify(hostCapabilities)}) return resolved
+        capabilityMockLoads++
+        return { url: 'data:text/javascript,export function resolveStatefulHmrStartupFallback(){return undefined}', shortCircuit: true }
+      } })
+      const { weapp } = await import(${JSON.stringify(host)})
+      const { getHmrRuntimeSession } = await import(${JSON.stringify(runtime)})
       const root = ${JSON.stringify(root)}
       for (const [file, source] of Object.entries({
         'package.json': '{"name":"stateful-sass-shutdown","private":true,"type":"module"}',
@@ -83,6 +93,7 @@ it.each([false, true])('naturally exits after Sass updates hand the stateful eng
         build: { minify: false, cssMinify: false },
       })
       try {
+        assert.ok(capabilityMockLoads > 0, 'test host capability mock was not loaded')
         const context = server.config.plugins.find(plugin => plugin.name === 'weapp-vite:context')?.api?.ctx
         assert.ok(context, 'missing compiler context')
         const session = getHmrRuntimeSession(context)

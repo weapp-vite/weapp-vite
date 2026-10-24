@@ -6,6 +6,11 @@ import { createServer } from 'vite'
 import { expect, it, vi } from 'vitest'
 import { weapp } from './index'
 
+// 模拟具有增量能力的底层宿主，保留 stateful 交接覆盖；真实微信启动准入另测。
+vi.mock('../runtime/hmrRuntimeHostCapabilities', () => ({
+  resolveStatefulHmrStartupFallback: () => undefined,
+}))
+
 it('waits for the first classic publication during capability fallback before closing each host once', async () => {
   const root = await realpath(await mkdtemp(path.join(os.tmpdir(), 'weapp-vite-classic-close-')))
   const releasePublication = Promise.withResolvers<void>()

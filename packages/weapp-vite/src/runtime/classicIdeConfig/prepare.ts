@@ -1,21 +1,27 @@
 import type { MutableCompilerContext } from '../../context'
 import path from 'pathe'
 import { resolveHmrRuntimeDecision } from '../hmrRuntime'
+import { resolveStatefulHmrStartupFallback } from '../hmrRuntimeHostCapabilities'
 import { getHmrRuntimeSession, isBorrowedHmrRuntimeSession } from '../hmrRuntimeSession'
 import { resolveIdePrivateConfigPath } from './index'
 
-/** 首构先于清空输出；已有 stateful 产物保留到完整发布前再交接 IDE 设置。 */
+/** 启动先核验宿主能力并准备 classic 设置；存量 stateful 交接仍保护已发布产物。 */
 export async function prepareClassicIdeConfig(ctx: MutableCompilerContext): Promise<void> {
   const config = ctx.configService
   if (!config?.isDev || config.platform !== 'weapp' || isBorrowedHmrRuntimeSession(ctx)) {
     return
   }
   const runtime = getHmrRuntimeSession(ctx)
-  const decision = runtime.resolve(resolveHmrRuntimeDecision({
+  let decision = runtime.resolve(resolveHmrRuntimeDecision({
     platform: config.platform,
     configured: config.weappViteConfig.hmr?.runtime,
     compileHotReLoad: config.projectPrivateConfig.setting?.compileHotReLoad,
   }))
+  const fallback = resolveStatefulHmrStartupFallback({ platform: config.platform, runtime: decision.runtime })
+  if (fallback) {
+    runtime.requestClassic(fallback)
+    decision = runtime.resolve(decision)
+  }
   const configPath = resolveIdePrivateConfigPath(config)
   if (decision.runtime === 'classic') {
     if (runtime.classicIdeConfig.preservesPendingOutput(config.outDir)

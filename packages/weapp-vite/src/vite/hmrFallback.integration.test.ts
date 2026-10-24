@@ -11,10 +11,15 @@ import {
   WEAPP_VITE_STATEFUL_HMR_UPDATE_FILE,
 } from '@weapp-core/constants'
 import { createServer } from 'vite'
-import { expect, it } from 'vitest'
+import { expect, it, vi } from 'vitest'
 import { assertNoStatefulInstallations } from '../../scripts/consumerHmr/installedRuntime.mjs'
 import { observeClassicFallback } from './hmrFallback/settlementProbe'
 import { weapp } from './index'
+
+// 模拟具有增量能力的底层宿主，保留 stateful 交接覆盖；真实微信启动准入另测。
+vi.mock('../runtime/hmrRuntimeHostCapabilities', () => ({
+  resolveStatefulHmrStartupFallback: () => undefined,
+}))
 
 const deliveryFiles = [
   WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE,

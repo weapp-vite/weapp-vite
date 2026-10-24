@@ -8,6 +8,7 @@ import { setTimeout as delay } from 'node:timers/promises'
 import { readEmittedStylesheet } from '../../../e2e/utils/emittedStylesheet.ts'
 import { createNativeHostControl } from './consumerHmr/hostControl/index.mjs'
 import { assertConsumerPrivateConfigRestored, consumerProcessEnvironment, readConsumerPrivateConfig, stopConsumerProcess } from './consumerHmr/shutdown.mjs'
+import { assertConsumerStartupClassic, classicReadyPrefix } from './consumerHmr/startupClassic.mjs'
 import { verifyStylesheetHmr } from './consumerHmr/stylesheet.mjs'
 
 const root = path.resolve(process.argv[2])
@@ -97,13 +98,14 @@ async function waitForDevReady() {
     return
   }
   const deadline = Date.now() + 20_000
-  while (!/开发服务已就绪|小程序开发产物已就绪/.test(logs) && Date.now() < deadline) {
+  const ready = () => /开发服务已就绪|小程序开发产物已就绪/.test(logs) && (operation !== 'stateful-dev' || logs.includes(classicReadyPrefix))
+  while (!ready() && Date.now() < deadline) {
     if (exited) {
       break
     }
     await delay(50)
   }
-  assert(/开发服务已就绪|小程序开发产物已就绪/.test(logs), `Native ${toolchain} dev did not become ready: ${logs}`)
+  assert(ready(), `Native ${toolchain} dev did not become ready: ${logs}`)
 }
 
 const errors = []
@@ -136,6 +138,9 @@ try {
   }
   await waitForWatchRound(1)
   await waitForDevReady()
+  if (operation === 'stateful-dev') {
+    await assertConsumerStartupClassic({ root, operation, output: logs })
+  }
   if (profile === 'tailwind') {
     await verifyStylesheetHmr({
       root,
@@ -143,9 +148,8 @@ try {
       originalTemplate: originals.get('src/pages/native/index.wxml'),
       waitForOutput,
       readOutput: () => logs,
-      isExited: () => exited,
     })
-    console.log(`${toolchain}: native ${operation} stylesheet updates and restorations passed with ${operation === 'stateful-dev' ? 'one classic handoff' : 'one config evaluation'}`)
+    console.log(`${toolchain}: native ${operation} stylesheet updates and restorations passed with one config evaluation`)
   }
   else if (profile === 'platform') {
     const file = 'src/pages/index/index.vue'
@@ -199,10 +203,7 @@ try {
     await writeFile(source, originals.get('src/pages/static/view.tsx').replace('weapp-vite React static bindings', 'React host updated template'))
     await waitForOutput('pages/static/index.wxml', 'React host updated template')
     await waitForWatchRound(2)
-    // 静态 TSX 的 stateful 更新会按既有语义重启；classic/watch 不重载配置。
-    if (operation !== 'stateful-dev') {
-      assert.equal(await readFile(path.join(root, 'config-calls.txt'), 'utf8'), 'loaded\n')
-    }
+    assert.equal(await readFile(path.join(root, 'config-calls.txt'), 'utf8'), 'loaded\n')
     console.log(`${toolchain}: native React ${operation} initial template and TSX update passed`)
   }
   else if (profile === 'worker') {
@@ -227,18 +228,23 @@ try {
     console.log(`${toolchain}: native independent ${operation} template update and restore passed with one config evaluation`)
   }
   else if (operation === 'stateful-dev') {
-    const control = await waitForOutput('__weapp_vite_hmr/control.js', /http:\/\/localhost:[1-9]\d*\//)
-    const endpoint = control.match(/http:\/\/localhost:\d+\/__weapp_vite_stateful_hmr__/)?.[0]
-    assert(endpoint, 'Stateful host must publish its HTTP transport endpoint')
-    const response = await fetch(endpoint, { method: 'POST', body: '{}' })
-    assert.equal(response.status, 403, 'Transport must be served by the listening host')
     const template = path.join(root, 'src/pages/native/index.wxml')
     await writeFile(template, '<view>stateful-template {{message}}</view>')
     await waitForOutput('pages/native/index.wxml', 'stateful-template')
     await writeFile(template, originals.get('src/pages/native/index.wxml'))
     await waitForOutput('pages/native/index.wxml', '<view>{{message}}</view>')
+    const script = path.join(root, 'src/pages/native/index.ts')
+    await writeFile(script, originals.get('src/pages/native/index.ts').replace('native-host', 'native-startup-classic-update'))
+    await waitForOutput('pages/native/index.js', 'native-startup-classic-update')
+    await writeFile(script, originals.get('src/pages/native/index.ts'))
+    await waitForOutput('pages/native/index.js', 'native-host')
+    const vue = path.join(root, 'src/pages/vue/index.vue')
+    await writeFile(vue, originals.get('src/pages/vue/index.vue').replace('vue-host', 'vue-startup-classic-update'))
+    await waitForOutput('pages/vue/index.js', 'vue-startup-classic-update')
+    await writeFile(vue, originals.get('src/pages/vue/index.vue'))
+    await waitForOutput('pages/vue/index.js', 'vue-host')
     assert.equal(await readFile(path.join(root, 'config-calls.txt'), 'utf8'), 'loaded\n')
-    console.log(`${toolchain}: native stateful dev engine, host transport and template restoration passed`)
+    console.log(`${toolchain}: explicit stateful request starts in classic and retains native/Vue edits and restoration`)
   }
   else {
     const script = path.join(root, 'src/pages/native/index.ts')
@@ -252,6 +258,9 @@ try {
     await waitForWatchRound(3)
     assert.equal(await readFile(path.join(root, 'config-calls.txt'), 'utf8'), 'loaded\n')
     console.log(`${toolchain}: native ${operation} initial output and TS/Vue updates passed with one config evaluation`)
+  }
+  if (operation === 'stateful-dev') {
+    await assertConsumerStartupClassic({ root, operation, output: logs })
   }
 }
 catch (error) {

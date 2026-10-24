@@ -101,7 +101,14 @@ docs/reports/*-ide-warning-report/
 docs/reports/*-ide-type-uncompatible-warning-report.md
 docs/reports/*-ide-type-uncompatible-warning-report.json
 docs/reports/*-e2e-ci-suite-report/
+docs/reports/*-e2e-ci-classic-suite-report/
+docs/reports/*-e2e-ci-full-classic-suite-report/
+docs/reports/*-e2e-ci-non-hmr-classic-suite-report/
+docs/reports/*-e2e-ci-pr-classic-suite-report/
 docs/reports/*-e2e-ide-full-suite-report/
+docs/reports/*-e2e-ide-full-classic-suite-report/
+docs/reports/*-e2e-ide-headless-full-classic-suite-report/
+docs/reports/*-e2e-ide-dom-headless-classic-suite-report/
 docs/reports/*-e2e-hmr-build-*-suite-report/
 docs/reports/*-e2e-ide-hmr-*-suite-report/
 docs/reports/*-e2e-ide-full-exhaustive-*-suite-report/

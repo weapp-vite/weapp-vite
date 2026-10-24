@@ -14,6 +14,11 @@ import { getHmrRuntimeSession } from '../hmrRuntimeSession'
 import { StatefulHmrOutputCapabilities } from './outputCapabilities'
 import { StatefulHmrViteAdapter } from './viteAdapter'
 
+// 模拟具有增量能力的底层宿主，保留 stateful 交接覆盖；真实微信启动准入另测。
+vi.mock('../hmrRuntimeHostCapabilities', () => ({
+  resolveStatefulHmrStartupFallback: () => undefined,
+}))
+
 interface AdapterObservation {
   handleHmrUpdates: (batch: { changedFiles: string[] } | Error) => void
 }

@@ -120,7 +120,7 @@ export function findSkylineRendererFiles(output: Iterable<HmrRuntimeOutputFile>)
 export function formatHmrRuntimeStartupMessages(decision: HmrRuntimeDecision): [string, string] {
   if (decision.reason === 'capability-fallback') {
     return [
-      'HMR 模式：classic（自动降级：当前更新超出状态保持 HMR 的安全能力）',
+      'HMR 模式：classic（自动降级：当前宿主或更新未满足状态保持 HMR 所需能力）',
       'HMR 切换：本次 dev 会话将持续使用 classic；退出并重新启动 dev 后重新检测。',
     ]
   }

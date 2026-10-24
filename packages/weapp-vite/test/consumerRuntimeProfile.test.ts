@@ -21,15 +21,26 @@ describe('consumer runtime selection declared before execution', () => {
         const pattern = new RegExp(selected.testNamePattern)
         expect(runtimeInventory.filter(item => pattern.test(item.name))).toEqual(expect.arrayContaining(selected.cases))
         expect(runtimeInventory.filter(item => pattern.test(item.name))).toHaveLength(selected.cases.length)
-        expect(selected.cases.every(item => pattern.test(item.name.replaceAll(' > ', ' ')))).toBe(true)
+        expect(selected.cases.every(item => pattern.test(item.name.replaceAll(' > ', ' ')))).toBe(false)
         expect(selected.cases.every(item => item.file === selected.file)).toBe(true)
       }
     }
   })
 
-  it('keeps headless stateful scope and disabled plugin mode explicit', () => {
-    expect(createConsumerRuntimeProfile('stateful', 'vite-plus', 'headless').cases).toHaveLength(3)
-    expect(createConsumerRuntimeProfile('stateful', 'vite-plus', 'devtools').cases).toHaveLength(4)
+  it('keeps the explicit stateful request on the installed startup-classic scenario for both providers', () => {
+    for (const provider of ['headless', 'devtools']) {
+      const profile = createConsumerRuntimeProfile('stateful', 'vite-plus', provider)
+      expect(profile.projectVariable).toBe('WEAPP_VITE_E2E_STARTUP_CLASSIC_PROJECT')
+      expect(profile.cases).toEqual([{
+        file: 'e2e/ide/hmr-startup-fallback.runtime.test.ts',
+        name: 'vite-plus stateful-experimental compiler capability startup fallback > starts in classic and keeps functional edits, source restoration and config reload in classic',
+      }])
+      expect(new RegExp(profile.testNamePattern).test(profile.cases[0]!.name.replace('stateful-experimental', 'auto'))).toBe(false)
+      expect(new RegExp(profile.testNamePattern).test(profile.cases[0]!.name.replace('vite-plus', 'vite'))).toBe(false)
+    }
+  })
+
+  it('keeps disabled plugin mode explicit', () => {
     const plugin = createConsumerRuntimeProfile('plugin', 'vite-plus', 'devtools')
     expect(plugin.cases).toHaveLength(2)
     expect(plugin.cases.every(item => item.name.includes('ES6: disabled'))).toBe(true)
@@ -41,5 +52,12 @@ describe('consumer runtime selection declared before execution', () => {
     expect(() => createConsumerRuntimeProfile('classic-watch', 'wv', 'headless')).toThrow('Standalone classic consumer')
     expect(() => createConsumerRuntimeProfile('stateful', 'other', 'headless')).toThrow('Unsupported runtime compiler host')
     expect(() => createConsumerRuntimeProfile('stateful', 'wv', 'other')).toThrow('Unsupported runtime provider')
+  })
+})
+
+describe('vite-plus stateful-experimental compiler capability startup fallback', () => {
+  it('starts in classic and keeps functional edits, source restoration and config reload in classic', () => {
+    const selected = createConsumerRuntimeProfile('stateful', 'vite-plus', 'headless')
+    expect(new RegExp(selected.testNamePattern).test(expect.getState().currentTestName!)).toBe(true)
   })
 })

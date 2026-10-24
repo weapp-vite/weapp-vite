@@ -189,7 +189,7 @@ describe('HMR semantic acceptance inventory', () => {
     })
     expect(HMR_ACCEPTANCE_SCENARIOS.find(item => item.id === 'unsupported-compiler-startup-classic')).toMatchObject({
       expectations: ['classic-fallback'],
-      capabilityIds: ['compiler-provider'],
+      capabilityIds: ['compiler-provider', 'ide-classic-handoff'],
       ide: ['ide/hmr-startup-fallback.runtime.test.ts'],
       headless: ['ide/hmr-startup-fallback.runtime.test.ts'],
     })

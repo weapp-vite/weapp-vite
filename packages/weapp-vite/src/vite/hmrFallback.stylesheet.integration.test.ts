@@ -8,9 +8,14 @@ import os from 'node:os'
 import { WEAPP_VITE_OUTPUT_PUBLICATION_PLUGIN_NAME, WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE, WEAPP_VITE_STATEFUL_HMR_PRELOAD_FILE, WEAPP_VITE_STATEFUL_HMR_UPDATE_FILE } from '@weapp-core/constants'
 import path from 'pathe'
 import { createServer } from 'vite'
-import { expect, it } from 'vitest'
+import { expect, it, vi } from 'vitest'
 import { getHmrRuntimeSession } from '../runtime/hmrRuntimeSession'
 import { weapp } from './index'
+
+// 模拟具有增量能力的底层宿主，保留 stateful 交接覆盖；真实微信启动准入另测。
+vi.mock('../runtime/hmrRuntimeHostCapabilities', () => ({
+  resolveStatefulHmrStartupFallback: () => undefined,
+}))
 
 interface BuildReceipt {
   generated: boolean

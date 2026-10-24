@@ -6,9 +6,10 @@ import { pathToFileURL } from 'node:url'
 import { withMachineE2ELease } from '../../packages/devtools-runtime/src/lease/machine'
 import { ACCEPTANCE_ROOT, DOM_ACCEPTANCE_ENV, sanitizeAcceptanceValue } from './domAcceptanceReport/helpers'
 import { createPlannedTaskCaseReader } from './domAcceptanceReport/taskCases'
-import { HMR_ACCEPTANCE_STAGES } from './hmr-acceptance-manifest'
+import { HMR_CLASSIC_ACCEPTANCE_STAGES } from './hmr-acceptance-manifest'
 import { assertHmrAcceptanceComplete, createHmrAcceptanceSummary } from './hmrAcceptance/report'
 import { readHmrRuntimeReceipt } from './hmrAcceptance/runtimeEvidence'
+import { isStableHmrOutOfScopeReason, isStableHmrSuite } from './hmrAcceptance/stableScope'
 import { runHmrUnitValidation } from './hmrAcceptance/unit'
 import { runE2ESuiteCli } from './run-e2e-suite'
 import { aggregateVerificationReports } from './verification/aggregate'
@@ -21,7 +22,7 @@ export function selectHmrAcceptanceStages(name: string, args: string[], env = pr
   if (args.length || selectionKeys.some(key => env[`WEAPP_VITE_E2E_${key}`])) {
     throw new Error('HMR acceptance does not accept ad-hoc filters, shards, templates or allow-failures')
   }
-  const stages = name === 'all' ? HMR_ACCEPTANCE_STAGES : HMR_ACCEPTANCE_STAGES.filter(stage => stage.name === name)
+  const stages = name === 'all' ? HMR_CLASSIC_ACCEPTANCE_STAGES : HMR_CLASSIC_ACCEPTANCE_STAGES.filter(stage => stage.name === name)
   if (!stages.length) {
     throw new Error(`Unknown HMR acceptance stage: ${name}`)
   }
@@ -56,7 +57,8 @@ export async function runHmrAcceptanceCli(args = process.argv.slice(2)) {
   try {
     const requiredStages = await Promise.all(stages.map(async (stage) => {
       const tasks = await resolveVerificationTasks(stage.suite)
-      const excluded = tasks.filter(task => task.outOfScopeReason)
+      const excluded = tasks.filter(task => task.outOfScopeReason
+        && (!isStableHmrSuite(stage.suite) || !isStableHmrOutOfScopeReason(task.outOfScopeReason)))
       if (excluded.length) {
         throw new Error(`HMR acceptance cannot exclude required manifest tasks: ${excluded.map(task => task.label).join(', ')}`)
       }

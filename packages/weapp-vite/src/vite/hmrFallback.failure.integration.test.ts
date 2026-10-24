@@ -10,6 +10,11 @@ import { logger as buildLogger } from '../context/shared'
 import { getHmrRuntimeSession } from '../runtime/hmrRuntimeSession'
 import { weapp } from './index'
 
+// 模拟具有增量能力的底层宿主，保留 stateful 交接覆盖；真实微信启动准入另测。
+vi.mock('../runtime/hmrRuntimeHostCapabilities', () => ({
+  resolveStatefulHmrStartupFallback: () => undefined,
+}))
+
 async function fixture() {
   const root = await realpath(await mkdtemp(path.join(os.tmpdir(), 'weapp-vite-classic-failure-')))
   const failure = new Error('classic-first-publication-failed')

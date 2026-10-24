@@ -2,6 +2,8 @@ import type { VerificationPlan } from '../verification/types'
 import fs from 'node:fs/promises'
 import { assertAcceptanceReportPassed } from '../domAcceptanceReport/helpers'
 import { assertTaskCaseCoverage } from '../domAcceptanceReport/taskCases'
+import { assertStableHmrPlanScope } from './stableEvidence'
+import { CLASSIC_IDE_CASES } from './stableScopeCases'
 
 export interface HmrRuntimeReceipt {
   runId: string
@@ -17,10 +19,12 @@ export async function readHmrRuntimeReceipt(plan: VerificationPlan, files: strin
   if (!plan.strict || (plan.profile.provider !== 'devtools' && plan.profile.provider !== 'headless')) {
     throw new Error('HMR runtime receipt requires a strict runtime plan')
   }
+  const stable = assertStableHmrPlanScope(plan)
+  const supported = plan.tasks.filter(task => !task.outOfScopeReason)
   const reports = await Promise.all(files.map(async (file) => {
     const value: unknown = JSON.parse(await fs.readFile(file, 'utf8'))
     assertAcceptanceReportPassed(value, plan)
-    if (value.provider !== plan.profile.provider || !plan.tasks.some(task => task.label === value.taskLabel)) {
+    if (value.provider !== plan.profile.provider || !supported.some(task => task.label === value.taskLabel)) {
       throw new Error('HMR runtime receipt includes another provider or an unplanned task')
     }
     return value
@@ -29,10 +33,18 @@ export async function readHmrRuntimeReceipt(plan: VerificationPlan, files: strin
     throw new Error('HMR runtime receipt contains duplicate invocations')
   }
   for (const task of plan.tasks) {
+    if (stable && task.outOfScopeReason) {
+      continue
+    }
     if (!task.cases?.length || task.outOfScopeReason) {
       throw new Error('HMR runtime receipt requires every planned task and case')
     }
-    assertTaskCaseCoverage(task.cases, reports.filter(report => report.taskLabel === task.label), false, plan.profile.provider)
+    const taskReports = reports.filter(report => report.taskLabel === task.label)
+    const selected = stable && Boolean(CLASSIC_IDE_CASES[task.label])
+    if (selected && taskReports.some(report => JSON.stringify(report.selectedCases) !== JSON.stringify(task.cases))) {
+      throw new Error('HMR runtime receipt does not match its frozen selected cases')
+    }
+    assertTaskCaseCoverage(task.cases, taskReports, selected, plan.profile.provider)
   }
   const cases = reports.flatMap(report => report.cases).filter(item => item.state === 'passed')
   const checkpoints = cases.reduce((sum, item) => sum + (item.acceptance?.evidence.length ?? 0), 0)
@@ -43,7 +55,7 @@ export async function readHmrRuntimeReceipt(plan: VerificationPlan, files: strin
     runId: plan.runId,
     commitSha: plan.commitSha,
     provider: plan.profile.provider,
-    tasks: plan.tasks.map(task => task.label).sort(),
+    tasks: supported.map(task => task.label).sort(),
     cases: cases.length,
     checkpoints,
   }

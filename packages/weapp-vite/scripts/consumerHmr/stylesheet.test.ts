@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { createServer } from 'node:http'
 import os from 'node:os'
 import path from 'node:path'
@@ -10,12 +10,12 @@ import {
   WEAPP_VITE_STATEFUL_HMR_UPDATE_FILE,
 } from '@weapp-core/constants'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { assertRetiredStatefulTransport, assertStylesheetClassic } from './stylesheet.mjs'
+import { assertRetiredStatefulTransport, assertStylesheetClassic, verifyStylesheetHmr } from './stylesheet.mjs'
 
 const endpointPath = '/__weapp_vite_stateful_hmr__'
 const endpoint = new URL(endpointPath, 'http://localhost').href
-const fallback = '[weapp-vite] HMR fallback {"from":"stateful-experimental","to":"classic","reason":"stylesheet-output","message":"compiled stylesheet changed","requested":"stateful-experimental","actual":"classic","phase":"switching"}\n'
-const ready = '[weapp-vite] HMR classic ready {"reason":"stylesheet-output","requested":"stateful-experimental","actual":"classic","phase":"classic"}\n'
+const fallback = '[weapp-vite] HMR fallback {"from":"stateful-experimental","to":"classic","reason":"ide-classic-handoff","message":"startup host capability","requested":"stateful-experimental","actual":"classic","phase":"switching"}\n'
+const ready = '[weapp-vite] HMR classic ready {"reason":"ide-classic-handoff","requested":"stateful-experimental","actual":"classic","phase":"classic"}\n'
 const cleanups: (() => Promise<unknown>)[] = []
 
 afterEach(async () => {
@@ -30,7 +30,7 @@ async function fixture(operation = 'stateful-dev') {
   cleanups.push(() => rm(root, { recursive: true, force: true }))
   await mkdir(path.join(root, 'dist'), { recursive: true })
   await writeFile(path.join(root, 'dist/app.js'), 'App({})')
-  await writeFile(path.join(root, 'config-calls.txt'), 'loaded\n'.repeat(operation === 'stateful-dev' ? 2 : 1))
+  await writeFile(path.join(root, 'config-calls.txt'), 'loaded\n')
   await writeFile(path.join(root, 'project.private.config.json'), '{"setting":{"compileHotReLoad":false}}')
   return { root, operation, output: operation === 'stateful-dev' ? fallback + ready : '', endpoint }
 }
@@ -60,14 +60,36 @@ async function transport(status: number, body: string, location?: string) {
 }
 
 describe('packed consumer stylesheet classic evidence', () => {
-  it('requires one classic handoff and keeps the same two config evaluations across later publications', async () => {
+  it('checks startup classic before stylesheet edits and restores both repeated edit cycles without requesting control output', async () => {
+    const evidence = await fixture()
+    const template = '<view class="w-[37px]">{{message}}</view>'
+    await mkdir(path.join(evidence.root, 'src/pages/native'), { recursive: true })
+    const fetch = vi.spyOn(globalThis, 'fetch')
+    const publications: string[] = []
+    const waitForOutput = vi.fn(async (file: string, expected: string | RegExp) => {
+      if (file === 'app.wxss') {
+        expect(expected).toBeInstanceOf(RegExp)
+        return
+      }
+      expect(file).toBe('pages/native/index.wxml')
+      const source = await readFile(path.join(evidence.root, 'src', file), 'utf8')
+      expect(source).toContain(expected)
+      publications.push(source)
+    })
+    await verifyStylesheetHmr({ ...evidence, originalTemplate: template, waitForOutput, readOutput: () => evidence.output })
+    expect(publications).toEqual([53, 37, 61, 37].map(width => template.replace('37px', `${width}px`)))
+    expect(waitForOutput).toHaveBeenCalledTimes(9)
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it('requires startup classic with one config evaluation across later publications', async () => {
     const evidence = await fixture()
     const fetch = retiredResponse()
     for (const source of ['App({})', 'App({ changed: true })', 'App({})']) {
       await writeFile(path.join(evidence.root, 'dist/app.js'), source)
       await assertStylesheetClassic(evidence)
     }
-    expect(fetch).toHaveBeenCalledTimes(3)
+    expect(fetch).not.toHaveBeenCalled()
   })
 
   it('keeps classic dev at one config evaluation without a fallback', async () => {
@@ -79,7 +101,7 @@ describe('packed consumer stylesheet classic evidence', () => {
     await expect(assertStylesheetClassic(evidence)).rejects.toThrow()
   })
 
-  it.each([1, 3])('rejects %s config evaluations for a completed stateful handoff', async (count) => {
+  it.each([0, 2, 3])('rejects %s config evaluations for startup classic', async (count) => {
     const evidence = await fixture()
     retiredResponse()
     await writeFile(path.join(evidence.root, 'config-calls.txt'), 'loaded\n'.repeat(count))
@@ -91,7 +113,7 @@ describe('packed consumer stylesheet classic evidence', () => {
     ['missing readiness', fallback],
     ['repeated decision', fallback + fallback + ready],
     ['repeated readiness', fallback + ready + ready],
-    ['wrong capability', (fallback + ready).replaceAll('stylesheet-output', 'config-json')],
+    ['wrong capability', (fallback + ready).replaceAll('ide-classic-handoff', 'config-json')],
     ['wrong effective mode', (fallback + ready).replace('"to":"classic"', '"to":"stateful-experimental"')],
     ['missing configured request', (fallback + ready).replaceAll(',"requested":"stateful-experimental"', '')],
     ['different configured request', (fallback + ready).replaceAll('"requested":"stateful-experimental"', '"requested":"auto"')],
@@ -103,7 +125,7 @@ describe('packed consumer stylesheet classic evidence', () => {
     ['readiness with another request', fallback + ready.replace('"requested":"stateful-experimental"', '"requested":"auto"')],
     ['readiness before decision', ready + fallback],
     ['ordinary build error', `${fallback}${ready}Build failed\n`],
-  ])('rejects two config evaluations with %s', async (_label, output) => {
+  ])('rejects startup classic with %s', async (_label, output) => {
     const evidence = await fixture()
     retiredResponse()
     await expect(assertStylesheetClassic({ ...evidence, output })).rejects.toThrow()

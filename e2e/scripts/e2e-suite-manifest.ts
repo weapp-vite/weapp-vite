@@ -11,6 +11,7 @@ import { TEMPLATE_DEV_OPEN_CASES } from '../ide/template-dev-open-cases'
 import { E2E_TARGET_FILE_ENV } from '../utils/vitestTargetFile'
 import { HMR_ACCEPTANCE_BUILD_TESTS, hmrAcceptanceRuntimeFiles } from './hmr-acceptance-manifest'
 import { HMR_GUARD_ALL_TESTS, HMR_GUARD_SPECIAL_CASES, HMR_GUARD_UTILITIES_ALREADY_RUN_OPTION, HMR_GUARD_UTILITY_TESTS } from './hmr-guard-manifest'
+import { applyClassicSupportScope } from './hmrAcceptance/stableScope'
 
 const ROOT = path.resolve(import.meta.dirname, '..')
 const CI_CONFIG_PATH = path.resolve(ROOT, 'vitest.e2e.ci.config.ts')
@@ -764,6 +765,36 @@ export function getHmrHeadlessTasks() {
   return getHeadlessPatternTasks(hmrAcceptanceRuntimeFiles('headless'))
 }
 
+export function getHmrClassicBuildTasks() {
+  return getHmrBuildTasks().map(applyClassicSupportScope)
+}
+
+export function getHmrClassicIdeTasks() {
+  return getHmrIdeTasks().map(applyClassicSupportScope)
+}
+
+export function getHmrClassicHeadlessTasks() {
+  return getHmrHeadlessTasks().map(applyClassicSupportScope)
+}
+
+export function getIdeClassicExhaustiveTasks(options: SuiteTaskFactoryOptions = {}) {
+  return getIdeExhaustiveTasks(options).map(applyClassicSupportScope)
+}
+
+export async function getCiClassicTasks(options: SuiteTaskFactoryOptions = {}) {
+  const tasks = [...await getCiFullTasks(options), ...getHmrBuildTasks()]
+  return [...new Map(tasks.map(task => [task.label, task])).values()].map(applyClassicSupportScope)
+}
+
+export async function getCiNonHmrClassicTasks(options: SuiteTaskFactoryOptions = {}) {
+  const hmrLabels = new Set(getHmrBuildTasks().map(task => task.label))
+  return (await getCiFullTasks(options)).filter(task => !hmrLabels.has(task.label)).map(applyClassicSupportScope)
+}
+
+export async function getCiPrClassicTasks(options: SuiteTaskFactoryOptions = {}) {
+  return (await getCiPrTasks(options)).map(applyClassicSupportScope)
+}
+
 export function getHmrRegressionTasks() {
   return [...getHmrBuildTasks(), ...getHmrIdeTasks()]
 }
@@ -833,6 +864,26 @@ export const E2E_SUITES: Record<string, E2ESuiteDefinition> = {
     description: 'Miniapp CI e2e baseline with aggregated failure summary',
     tasks: getCiTasks,
   },
+  'ci:classic': {
+    name: 'ci:classic',
+    description: 'Complete CI regression with the supported WeChat startup classic watch contracts',
+    tasks: getCiClassicTasks,
+  },
+  'ci-full:classic': {
+    name: 'ci-full:classic',
+    description: 'Complete CI regression with explicit experimental HMR exclusions',
+    tasks: getCiNonHmrClassicTasks,
+  },
+  'ci-non-hmr:classic': {
+    name: 'ci-non-hmr:classic',
+    description: 'CI build baseline without duplicated HMR guard execution',
+    tasks: getCiNonHmrClassicTasks,
+  },
+  'ci-pr:classic': {
+    name: 'ci-pr:classic',
+    description: 'PR build baseline with supported classic HMR cases',
+    tasks: getCiPrClassicTasks,
+  },
   'ci-pr': {
     name: 'ci-pr',
     description: 'PR miniapp CI smoke suite with core build and runtime coverage',
@@ -883,20 +934,40 @@ export const E2E_SUITES: Record<string, E2ESuiteDefinition> = {
     description: 'Largest provider-compatible IDE suite backed by the headless runtime',
     tasks: getIdeHeadlessTasks,
   },
+  'ide-headless-full:classic': {
+    name: 'ide-headless-full:classic',
+    description: 'Full provider-compatible regression with the supported classic HMR scope',
+    tasks: () => getIdeHeadlessTasks().map(applyClassicSupportScope),
+  },
   'ide-dom-headless': {
     name: 'ide-dom-headless',
     description: 'Strict rendered checkpoint gate for provider-compatible IDE scenarios',
     tasks: getIdeDomHeadlessTasks,
+  },
+  'ide-dom-headless:classic': {
+    name: 'ide-dom-headless:classic',
+    description: 'Strict DOM checkpoints with explicit experimental HMR exclusions',
+    tasks: () => getIdeDomHeadlessTasks().map(applyClassicSupportScope),
   },
   'ide-full': {
     name: 'ide-full',
     description: 'PR-oriented full IDE gate with core devtools runtime coverage',
     tasks: getIdeTasks,
   },
+  'ide-full:classic': {
+    name: 'ide-full:classic',
+    description: 'Full IDE gate with the supported startup classic HMR scope',
+    tasks: () => getIdeTasks().map(applyClassicSupportScope),
+  },
   'ide-full:exhaustive': {
     name: 'ide-full:exhaustive',
     description: 'Nightly exhaustive IDE regression suite across all devtools runtime tests',
     tasks: getIdeExhaustiveTasks,
+  },
+  'ide-full:exhaustive:classic': {
+    name: 'ide-full:exhaustive:classic',
+    description: 'Exhaustive IDE inventory with explicit experimental HMR diagnostic exclusions',
+    tasks: getIdeClassicExhaustiveTasks,
   },
   'ide-full:github-issues': {
     name: 'ide-full:github-issues',
@@ -948,15 +1019,30 @@ export const E2E_SUITES: Record<string, E2ESuiteDefinition> = {
     description: 'Complete HMR build and watch contracts, including automatic routes and classic fallback',
     tasks: getHmrBuildTasks,
   },
+  'hmr-build:classic': {
+    name: 'hmr-build:classic',
+    description: 'Supported classic build and watch contracts with the complete diagnostic inventory retained',
+    tasks: getHmrClassicBuildTasks,
+  },
   'ide-hmr-headless': {
     name: 'ide-hmr-headless',
     description: 'Strict provider-compatible HMR support and classic fallback checkpoints',
     tasks: getHmrHeadlessTasks,
   },
+  'ide-hmr-headless:classic': {
+    name: 'ide-hmr-headless:classic',
+    description: 'Strict provider-compatible startup classic HMR acceptance',
+    tasks: getHmrClassicHeadlessTasks,
+  },
   'ide-hmr': {
     name: 'ide-hmr',
     description: 'Strict real WeChat IDE HMR support and automatic classic reload acceptance',
     tasks: getHmrIdeTasks,
+  },
+  'ide-hmr:classic': {
+    name: 'ide-hmr:classic',
+    description: 'Strict real WeChat IDE startup classic reload acceptance',
+    tasks: getHmrClassicIdeTasks,
   },
   'full': {
     name: 'full',

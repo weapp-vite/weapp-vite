@@ -1223,6 +1223,70 @@ describe('runtime buildPlugin service', () => {
     expect(loggerInfoMock).toHaveBeenCalledWith(expect.stringContaining('HMR 切换：修改 weapp.hmr.runtime 为 auto 或 stateful-experimental'))
   })
 
+  it.each([
+    { configured: 'auto', failed: false },
+    { configured: 'stateful-experimental', failed: false },
+    { configured: 'auto', failed: true },
+  ] as const)('settles startup admission only after a successful classic native publication ($configured / failed=$failed)', async ({ configured, failed }) => {
+    const { prepareClassicIdeConfig } = await vi.importActual<typeof import('../classicIdeConfig/prepare')>('../classicIdeConfig/prepare')
+    const { createDevBuildWatcher } = await vi.importActual<typeof import('./devBuildWatcher')>('./devBuildWatcher')
+    const controller = createDevBuildWatcher()
+    devBuildWatcherQueue.push({ watcher: controller.watcher, emitEvent: vi.fn(controller.emitEvent) })
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'classic-startup-admission-'))
+    const file = path.join(root, 'project.private.config.json')
+    const original = '{"setting":{"compileHotReLoad":true}}'
+    await fs.writeFile(file, original)
+    const ctx = createMockContext()
+    Object.assign(ctx.configService, { cwd: root, outDir: path.join(root, 'dist'), projectPrivateConfigPath: file })
+    ctx.configService.weappViteConfig.hmr = { runtime: configured }
+    ctx.configService.projectPrivateConfig = { setting: { compileHotReLoad: true } }
+    const runtime = getHmrRuntimeSession(ctx)
+    const entered = Promise.withResolvers<void>()
+    const release = Promise.withResolvers<void>()
+    const failure = new Error('initial classic publication failed')
+    prepareClassicIdeConfigMock.mockImplementation(prepareClassicIdeConfig)
+    buildMock.mockImplementationOnce(async () => {
+      entered.resolve()
+      await release.promise
+      if (failed) {
+        throw failure
+      }
+      return { output: [] }
+    })
+    const building = createBuildService(ctx).build({ skipNpm: true })
+    const result = building.catch((error: unknown) => error)
+    let watcher: RolldownWatcher | undefined
+    try {
+      await entered.promise
+      expect(runtime.phase).toBe('switching')
+      expect(runtime.fallback?.code).toBe('ide-classic-handoff')
+      expect(await runtime.classicIdeConfig.readRequested(file)).toBe(original)
+      expect(await fs.readJSON(file)).toEqual({ setting: { compileHotReLoad: false } })
+      expect(runStatefulHmrDevMock).not.toHaveBeenCalled()
+      expect(createStatefulHmrSnapshotOptionsMock).not.toHaveBeenCalled()
+      release.resolve()
+      if (failed) {
+        expect(await result).toBe(failure)
+        expect(runtime.phase).toBe('switching')
+      }
+      else {
+        watcher = await building as RolldownWatcher
+        expect(runtime.phase).toBe('classic')
+        await runtime.whenSettled()
+      }
+      expect(ctx.configService.weappViteConfig.hmr.runtime).toBe(configured)
+    }
+    finally {
+      release.resolve()
+      await result
+      await watcher?.close()
+      prepareClassicIdeConfigMock.mockImplementation(async () => {})
+      await runtime.classicIdeConfig.close()
+      await fs.remove(root)
+    }
+    expect(await fs.pathExists(root)).toBe(false)
+  })
+
   it.each(['auto', 'stateful-experimental'] as const)('falls back to classic when %s stateful runtime compatibility fails', async (configured) => {
     const watcher = createManualWatcher()
     buildMock.mockResolvedValueOnce({ output: [] })

@@ -5,6 +5,9 @@ import path from 'pathe'
 import { describe, expect, it, vi } from 'vitest'
 import { createTempFixtureProject, createTestCompilerContext } from './utils'
 
+// 仅验证模拟宿主的 stateful 机制；真实 IDE 未证明在线交接，不计入稳定 IDE 验收。
+vi.mock('../src/runtime/hmrRuntimeHostCapabilities', () => ({ resolveStatefulHmrStartupFallback: () => undefined }))
+
 vi.mock('@weapp-vite/web', () => ({
   weappWebPlugin: () => [],
 }), { virtual: true })

@@ -25,19 +25,26 @@ export function createHmrUnitReceipt(overrides: Partial<HmrUnitReceipt> = {}): H
 async function freezeHmrStageEvidence(stage: HmrAcceptanceStage, readCases: PlannedTaskCaseReader): Promise<HmrStageEvidence> {
   const plan = await freeze({ suite: stage.suite, tasks: await getSuiteTasks(stage.suite), shards: 1, profile: { ...profile, provider: stage.provider }, readCases })
   const shard = shardReports(plan)[0]!
-  const cases = plan.tasks.flatMap(task => task.cases ?? []).filter(item => item.providerScope?.scope !== 'out-of-scope').length
+  const supported = plan.tasks.filter(task => !task.outOfScopeReason)
+  const cases = supported.flatMap(task => task.cases ?? []).filter(item => item.providerScope?.scope !== 'out-of-scope').length
   return {
     stage,
     plan,
     ...(stage.provider === 'none'
       ? {}
       : {
-          runtime: { runId: plan.runId, commitSha: plan.commitSha, provider: stage.provider, tasks: plan.tasks.map(task => task.label).sort(), cases, checkpoints: cases },
+          runtime: { runId: plan.runId, commitSha: plan.commitSha, provider: stage.provider, tasks: supported.map(task => task.label).sort(), cases, checkpoints: cases },
         }),
     report: {
       ...shard,
       schemaVersion: 2,
-      tasks: shard.tasks.map(task => ({ ...task, status: 'passed' })),
+      tasks: plan.tasks.map((task) => {
+        const result = { label: task.label, definitionHash: task.definitionHash, durationMs: task.estimatedDurationMs, exitCode: 0, artifacts: [] }
+        return task.outOfScopeReason
+          ? { ...result, status: 'out-of-scope' as const, reason: task.outOfScopeReason }
+          : { ...result, status: 'passed' as const }
+      }),
+      summary: { ...shard.summary, taskCount: plan.tasks.length, plannedCount: supported.length, executedCount: supported.length, passedCount: supported.length, outOfScopeCount: plan.tasks.length - supported.length },
       strict: plan.strict,
       suiteName: `e2e:${stage.suite}`,
       coverage: 'complete',

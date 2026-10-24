@@ -18,6 +18,13 @@ const RUNTIME = 'packages/weapp-vite/src/runtime'
 /** 这是分层覆盖计划；pending 能力不能靠其他 classic 场景推断为已完成真实回退验收。 */
 export const HMR_ACCEPTANCE_CAPABILITY_COVERAGE: HmrCapabilityCoverage[] = [
   {
+    capabilityId: 'ide-classic-handoff',
+    unit: [`${RUNTIME}/hmrRuntimeHostCapabilities.test.ts`],
+    build: ['e2e/ci/skyline-hmr-fallback.test.ts'],
+    runtimeScenarios: ['unsupported-compiler-startup-classic'],
+    runtime: 'planned',
+  },
+  {
     capabilityId: 'script-patch',
     unit: [`${RUNTIME}/statefulHmr/session.test.ts`, `${RUNTIME}/statefulHmr/patchModule.test.ts`],
     build: ['e2e/ci/stateful-hmr-root-outdir.test.ts'],

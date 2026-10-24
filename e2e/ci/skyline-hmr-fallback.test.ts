@@ -84,7 +84,7 @@ describe('Skyline HMR compatibility fallback', { concurrent: false }, () => {
       reject: false,
     })
     const initialPublication = captureNativePublication(dev, APP_ROOT, { sourceRoot: 'pages' })
-    const publication = createNativeHmrPublication(APP_ROOT, dev, 'auto', ['skyline'], PROFILE_PATH)
+    const publication = createNativeHmrPublication(APP_ROOT, dev, 'auto', ['ide-classic-handoff'], PROFILE_PATH)
 
     async function assertClassic() {
       await publication.assertClassicOutput()

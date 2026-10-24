@@ -4,8 +4,11 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import { isDeepStrictEqual } from 'node:util'
 import { assertVerificationTopology } from '../../../scripts/verification/topology.ts'
+import { SELECTED_CASES_ENV } from '../domAcceptanceReport/selectedCases'
 import { validateTaskAcceptance } from '../domAcceptanceReport/task'
 import { providerOutOfScopeCases } from '../domAcceptanceReport/taskCases'
+import { isStableHmrSuite } from '../hmrAcceptance/stableScope'
+import { CLASSIC_IDE_CASES } from '../hmrAcceptance/stableScopeCases'
 import { assertVerificationPlan, verificationHash } from './plan'
 import { assertVerificationProfile } from './profile'
 import { assertE2ETimings } from './timing'
@@ -128,7 +131,24 @@ export async function aggregateVerificationReports(plan: VerificationPlan, value
           }
           seenInvocations.add(invocationId)
         }
-        await validateTaskAcceptance({ label: task.label, command: 'pnpm', args: [], artifacts, acceptanceTemplates: planned.acceptanceTemplates, env: { WEAPP_VITE_E2E_RUNTIME_PROVIDER: plan.profile.provider === 'headless' ? 'headless' : 'devtools' } }, plan, planned.cases)
+        // 任务定义已与冻结摘要相符；所选清单只能来自版本化范围和计划，不能由下载的报告声明。
+        const selected = isStableHmrSuite(plan.suite)
+          ? CLASSIC_IDE_CASES[task.label]?.filter(item => item.supported).map(({ name }) => ({ file: `e2e/${task.label}`, name }))
+          : undefined
+        if (selected && verificationHash(selected) !== verificationHash(planned.cases)) {
+          throw new Error('Frozen selected DOM case inventory differs from the supported scope')
+        }
+        await validateTaskAcceptance({
+          label: task.label,
+          command: 'pnpm',
+          args: [],
+          artifacts,
+          acceptanceTemplates: planned.acceptanceTemplates,
+          env: {
+            WEAPP_VITE_E2E_RUNTIME_PROVIDER: plan.profile.provider === 'headless' ? 'headless' : 'devtools',
+            ...(selected ? { [SELECTED_CASES_ENV]: JSON.stringify(planned.cases) } : {}),
+          },
+        }, plan, planned.cases)
       }
       results.push({ ...task, providerOutOfScopeCases: providerCases })
     }

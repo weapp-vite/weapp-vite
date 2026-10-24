@@ -132,7 +132,7 @@ it.each(['auto', 'stateful-experimental'] as const)('naturally exits after %s st
     const completed = Promise.all([exited, finished(child.stdout!), finished(child.stderr!)])
     const readTarget = () => readFile(target, 'utf8').catch(() => '')
     await waitFor(() => stdout.includes('[weapp-vite] HMR classic ready '), exited, 'startup classic readiness', output)
-    expect(output()).toContain('"reason":"compiler-provider"')
+    expect(output()).toContain('"reason":"ide-classic-handoff"')
     await writeFile(source, original.replace('WV-STARTUP-BASE', 'WV-STARTUP-EDITED'))
     await waitFor(async () => (await readTarget()).includes('WV-STARTUP-EDITED'), exited, 'script edit publication', output)
     await writeFile(source, original.replace('"WV-STARTUP-BASE"', '__STARTUP_CONFIG_MARKER__'))

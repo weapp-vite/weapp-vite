@@ -4,7 +4,7 @@ import process from 'node:process'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { withMachineE2ELease } from '../../packages/devtools-runtime/src/lease/machine'
 import { tasks as fixtureTasks, identity, now, profile } from '../../scripts/verificationE2E/fixtures'
-import { HMR_ACCEPTANCE_STAGES } from './hmr-acceptance-manifest'
+import { HMR_CLASSIC_ACCEPTANCE_STAGES as HMR_ACCEPTANCE_STAGES } from './hmr-acceptance-manifest'
 import { createHmrAcceptanceSummary } from './hmrAcceptance/report'
 import { readHmrRuntimeReceipt } from './hmrAcceptance/runtimeEvidence'
 import { createHmrStageEvidenceSet, createHmrUnitReceipt } from './hmrAcceptance/testFixtures'
@@ -125,7 +125,7 @@ describe('independent HMR acceptance entry', () => {
     vi.stubEnv('WEAPP_VITE_E2E_RUNTIME_PROVIDER', 'headless')
     vi.mocked(createVerificationIdentity).mockReturnValue(identity)
     const actual = await vi.importActual<typeof import('./verification/plan')>('./verification/plan')
-    vi.mocked(createVerificationPlan).mockResolvedValue(await actual.createVerificationPlan({ suite: 'hmr-build', shards: 1, profile, tasks, identity, sourceDigest: 'b'.repeat(64), now }))
+    vi.mocked(createVerificationPlan).mockResolvedValue(await actual.createVerificationPlan({ suite: 'hmr-build:classic', shards: 1, profile, tasks, identity, sourceDigest: 'b'.repeat(64), now }))
     await expect(runHmrAcceptanceCli(['build'])).rejects.toThrow('did not produce a verification report')
     expect(runE2ESuiteCli).toHaveBeenCalledOnce()
     expect(runHmrUnitValidation).not.toHaveBeenCalled()

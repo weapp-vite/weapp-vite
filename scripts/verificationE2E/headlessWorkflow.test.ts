@@ -38,9 +38,10 @@ describe('complete headless DOM workflow sharding', () => {
     expect(profiles).toContain('platform: \'weapp\'')
     expect(profiles).toContain('fs.writeFileSync(\'.tmp/verification-plan/headless-profile.json\', JSON.stringify({ ...profile, provider: \'headless\' }))')
     const commands = plan.steps!.find(step => step.name === 'Freeze complete task inventory and shard assignment')!.run!
-    expect(commands).toContain('plan --suite=ci-${{ inputs.mode }} --shards=4 --profile=.tmp/verification-plan/profile.json')
+    expect(commands).toContain('plan --suite=ci-${{ inputs.mode }}:classic --shards=4 --profile=.tmp/verification-plan/profile.json')
     expect(commands).toContain('history --input=.tmp/verification-history --profile=.tmp/verification-plan/headless-profile.json')
-    expect(commands).toContain('plan --suite=ide-dom-headless --shards=2 --profile=.tmp/verification-plan/headless-profile.json --history=.tmp/verification-plan/headless-history.json --output=.tmp/verification-plan/ide-dom-headless.json')
+    expect(commands).toContain('plan --suite=ide-dom-headless:classic --shards=2 --profile=.tmp/verification-plan/headless-profile.json --history=.tmp/verification-plan/headless-history.json --output=.tmp/verification-plan/ide-dom-headless.json')
+    expect(jobs.miniapp!.with!.main_command).toBe('node --import tsx e2e/scripts/run-e2e-suite.ts ci-${{ inputs.mode }}:classic --plan=.tmp/verification-plan/plan.json --shard-index=${{ matrix.shard }}')
   })
 
   it('keeps the original job budget and Windows cleanup checks while consuming every frozen shard', () => {
@@ -73,7 +74,7 @@ describe('complete headless DOM workflow sharding', () => {
     expect(cleanupCommand).toContain('WEAPP_VITE_E2E_CLEANUP_TRACE=1')
     expect(cleanupCommand).toContain('e2e/utils/dev-process.cleanup.test.ts')
     expect(cleanupCommand).toContain('2>&1 | tee .tmp/ide-dom-headless-preflight/cleanup.log')
-    expect(runtimeCommand).toContain('node --import tsx e2e/scripts/run-e2e-suite.ts ide-dom-headless --plan=.tmp/verification-plan/ide-dom-headless.json --shard-index=${{ matrix.shard }}')
+    expect(runtimeCommand).toContain('node --import tsx e2e/scripts/run-e2e-suite.ts ide-dom-headless:classic --plan=.tmp/verification-plan/ide-dom-headless.json --shard-index=${{ matrix.shard }}')
     for (const setting of ['WEAPP_VITE_E2E_CLEANUP_TRACE=1', 'WEAPP_VITE_E2E_DEV_PROCESS_TRACE=1', 'WEAPP_VITE_E2E_DEV_SHUTDOWN_TRACE=1', 'WEAPP_VITE_E2E_DOM_SCOPE_TRACE_CHECKPOINTS=home-ready']) {
       expect(runtimeCommand).toContain(setting)
     }

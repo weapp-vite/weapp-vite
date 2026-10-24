@@ -50,7 +50,7 @@ export const HMR_ACCEPTANCE_SCENARIOS: HmrAcceptanceScenario[] = [
   {
     id: 'unsupported-compiler-startup-classic',
     expectations: ['classic-fallback'],
-    capabilityIds: ['compiler-provider'],
+    capabilityIds: ['compiler-provider', 'ide-classic-handoff'],
     ide: ['ide/hmr-startup-fallback.runtime.test.ts'],
     headless: ['ide/hmr-startup-fallback.runtime.test.ts'],
   },
@@ -207,4 +207,11 @@ export const HMR_ACCEPTANCE_STAGES = [
   { name: 'ide', suite: 'ide-hmr', provider: 'devtools' },
 ] as const
 
-export type HmrAcceptanceStage = typeof HMR_ACCEPTANCE_STAGES[number]
+/** 正式支持范围独立命名，旧 stateful 套件继续保留诊断与历史失败语义。 */
+export const HMR_CLASSIC_ACCEPTANCE_STAGES = [
+  { name: 'build', suite: 'hmr-build:classic', provider: 'none' },
+  { name: 'headless', suite: 'ide-hmr-headless:classic', provider: 'headless' },
+  { name: 'ide', suite: 'ide-hmr:classic', provider: 'devtools' },
+] as const
+
+export type HmrAcceptanceStage = typeof HMR_ACCEPTANCE_STAGES[number] | typeof HMR_CLASSIC_ACCEPTANCE_STAGES[number]
