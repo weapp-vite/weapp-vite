@@ -95,10 +95,10 @@ beforeEach(async () => {
     inventoryBudgetExhausted: false,
     fallbackBudgetExhausted: false,
     samplingBudgetMs: 10_000,
-    rssAnchor: 'single-post-preparation-ps-inventory; preparation-and-later-rows-never-contribute-rss',
+    rssAnchor: 'single-native-anchor-frame; preparation-and-closure-rss-never-contribute',
     semantics: 'point-in-time-rss-not-peak',
     coverage: 'selected-installation-inventory-and-descendants',
-    atomicity: 'non-atomic-ps-and-kernel-path-samples; seconds-resolution-start-time-is-not-ownership-proof',
+    atomicity: 'non-atomic-sysctl-identity-and-image-brackets; observed-continuity-does-not-prove-no-unobserved-exec',
   } satisfies InstallationProcessSample })
 })
 afterEach(async () => {

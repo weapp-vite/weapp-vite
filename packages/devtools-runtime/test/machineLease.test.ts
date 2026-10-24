@@ -181,11 +181,22 @@ it('supports nested operations and restores inheritance after failure', async ()
 it('allows concurrent registered children inside one suite and keeps ownership after child cancellation', async () => {
   const root = await fixture()
   const owner = await acquireMachineE2ELease({ stateDirectory: root, env: {} })
-  const borrowers = await Promise.all(Array.from({ length: 3 }, () => start(root, 'worktree-b', owner.environment)))
-  expect(borrowers.every(result => result.message.borrowed)).toBe(true)
+  const borrowers: Array<Awaited<ReturnType<typeof start>>> = []
+  // 依次完成注册后同时持有租约；临界区争用由受控 mutation 测试覆盖。
+  for (let index = 0; index < 3; index++) {
+    const borrower = await start(root, 'worktree-b', owner.environment)
+    borrowers.push(borrower)
+    expect({
+      ready: borrower.message.ready,
+      borrowed: borrower.message.borrowed,
+      error: borrower.message.error,
+    }).toEqual({ ready: true, borrowed: true, error: undefined })
+  }
+  await expect(owner.release()).rejects.toThrow('child operation')
   await Promise.all(borrowers.map(result => stop(result.child, 'SIGTERM')))
   await expect(acquireMachineE2ELease({ stateDirectory: root, env: {} })).rejects.toThrow('Runtime busy')
   await owner.release()
+  expect(owner.released).toBe(true)
 })
 
 it('keeps an unknown recovery guard and rejects malformed inheritance', async () => {

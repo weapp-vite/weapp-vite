@@ -2,7 +2,7 @@ import type { Buffer } from 'node:buffer'
 import type { Readable } from 'node:stream'
 
 /** stdout 一次只接收当前请求的一行；空闲阶段的任何输出都属于协议错误。 */
-export function inspectorLines(stdout: Readable | null, terminal: Promise<unknown>) {
+export function darwinInspectorLines(stdout: Readable | null, terminal: Promise<unknown>) {
   let buffer = ''
   const decoder = new TextDecoder('utf-8', { fatal: true })
   let failure: Error | undefined
@@ -25,7 +25,7 @@ export function inspectorLines(stdout: Readable | null, terminal: Promise<unknow
       fail(new Error('Resource sampling received invalid UTF-8 inspector output.'))
       return
     }
-    if (buffer.length > 1024 * 1024) {
+    if (buffer.length > 16 * 1024 * 1024) {
       fail(new Error('Resource sampling received oversized inspector output.'))
       return
     }

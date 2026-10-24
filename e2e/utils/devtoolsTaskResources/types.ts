@@ -34,15 +34,18 @@ export interface ProcessIdentityMetadata {
   parentPid: number
   started: string
   zombie: boolean
+  startedSeconds?: string | null
+  startedMicroseconds?: string | null
+  status?: number | null
 }
 
 export interface ProcessInventoryLocation {
   round: number
-  phase: 'initial' | 'after-kernel' | 'fallback' | 'after-fallback' | 'rss-anchor' | 'after-anchor'
+  phase: 'prepare' | 'anchor' | 'closure1' | 'closure2'
 }
 
 export interface ProcessIdentityGapCause {
-  reason: 'process-absent' | 'identity-changed' | 'zombie' | 'kernel-path-unverifiable' | 'text-images-query-failed' | 'text-images-empty' | 'text-images-invalid' | 'fallback-budget-exhausted' | 'pre-anchor-exited'
+  reason: 'process-absent' | 'identity-changed' | 'zombie' | 'kernel-path-unverifiable' | 'text-images-query-failed' | 'text-images-empty' | 'text-images-invalid' | 'fallback-budget-exhausted' | 'pre-anchor-exited' | 'kernel-identity-unverifiable' | 'image-changed' | 'rss-unavailable'
   firstObserved: ProcessInventoryLocation
 }
 
@@ -57,13 +60,55 @@ export interface ProcessIdentityChangeObservation extends ProcessIdentityMetadat
   firstObserved: ProcessInventoryLocation
 }
 
+export interface NativeImageEvidence {
+  sha256: string
+  scope: 'installation' | 'outside-installation'
+  installationRelativePath?: string
+}
+
+export interface NativeProcessFrameEvidence {
+  phase: 'prepare' | 'anchor' | 'closure1' | 'closure2'
+  requestId: number
+  startedAtNanoseconds: string
+  endedAtNanoseconds: string
+  enumeratedPidCount: number
+  ownedHelper: { identity: ProcessIdentityMetadata, image: NativeImageEvidence }
+  rows: Array<{
+    pid: number
+    before: ProcessIdentityMetadata | null
+    after: ProcessIdentityMetadata | null
+    interval: { startedAtNanoseconds: string, endedAtNanoseconds: string }
+    pathBefore: { count: number, errno: number, image: NativeImageEvidence | null }
+    pathAfter: { count: number, errno: number, image: NativeImageEvidence | null }
+    rss: { count: number, errno: number, identity: ProcessIdentityMetadata | null, bytes: string | null }
+    gaps: string[]
+  }>
+}
+
+export interface NativeTextImageProofEvidence {
+  pid: number
+  kind: 'rss-anchor-bracket' | 'closure-identity-bracket'
+  identity: ProcessIdentityMetadata
+  before: { images: NativeImageEvidence[] | null, startedAtNanoseconds: string, endedAtNanoseconds: string, failure?: string }
+  after: { images: NativeImageEvidence[] | null, startedAtNanoseconds: string, endedAtNanoseconds: string, failure?: string }
+  accepted: boolean
+  imageChanged: boolean
+}
+
+export type NativeTextImageObservationEvidence = NativeTextImageProofEvidence['before'] & {
+  pid: number
+  identity: ProcessIdentityMetadata
+  phase: 'prepare' | 'anchor' | 'closure1'
+  position: 'before-anchor' | 'after-anchor' | 'closure-before' | 'closure-after'
+}
+
 export interface InstallationProcessSample {
   samplingStartedAt: string
   samplingCompletedAt: string
   installationRoot: string
   verifiedMemberRssBytes: number
   installationRssBytes: ResourceObservation<number>
-  processes: Array<{ pid: number, parentPid: number, started: string, executable: string | null, installationImages: string[], rssBytes: number, membership: 'installation-image' | 'descendant' }>
+  processes: Array<{ pid: number, parentPid: number, started: string, startedSeconds?: string | null, startedMicroseconds?: string | null, executable: string | null, installationImages: string[], rssBytes: number, membership: 'installation-image' | 'descendant' }>
   unclassifiedProcessCount: number
   missingIdentityCount: number
   uninspectedNewProcessCount: number
@@ -79,11 +124,14 @@ export interface InstallationProcessSample {
   inventoryBudgetExhausted: boolean
   inventoryInspectionError?: string
   samplingBudgetMs: 10000
-  rssAnchor: 'single-post-preparation-ps-inventory; preparation-and-later-rows-never-contribute-rss'
+  rssAnchor: 'single-native-anchor-frame; preparation-and-closure-rss-never-contribute'
   fallbackBudgetExhausted: boolean
   semantics: 'point-in-time-rss-not-peak'
   coverage: 'selected-installation-inventory-and-descendants'
-  atomicity: 'non-atomic-ps-and-kernel-path-samples; seconds-resolution-start-time-is-not-ownership-proof'
+  atomicity: 'non-atomic-sysctl-identity-and-image-brackets; observed-continuity-does-not-prove-no-unobserved-exec'
+  nativeFrames?: NativeProcessFrameEvidence[]
+  textImageProofs?: NativeTextImageProofEvidence[]
+  textImageObservations?: NativeTextImageObservationEvidence[]
 }
 
 export interface TaskResourceSnapshot {

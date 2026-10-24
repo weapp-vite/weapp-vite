@@ -1,7 +1,7 @@
 import { Buffer } from 'node:buffer'
 import { PassThrough } from 'node:stream'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { inspectorLines } from './inspectorProtocol'
+import { darwinInspectorLines } from './lines'
 
 afterEach(() => vi.useRealTimers())
 
@@ -11,7 +11,7 @@ function fixture() {
   const terminal = new Promise<void>((resolve) => {
     finish = resolve
   })
-  return { stdout, finish, lines: inspectorLines(stdout, terminal) }
+  return { stdout, finish, lines: darwinInspectorLines(stdout, terminal) }
 }
 
 describe('single request inspector line protocol', () => {
@@ -55,7 +55,7 @@ describe('single request inspector line protocol', () => {
     incomplete.lines.dispose()
   })
 
-  it.each(['{}\n{}\n', '{}\npartial', 'x'.repeat(1024 * 1024 + 1)])('rejects extra or oversized output', async (output) => {
+  it.each(['{}\n{}\n', '{}\npartial', 'x'.repeat(16 * 1024 * 1024 + 1)])('rejects extra or oversized output', async (output) => {
     const { stdout, lines } = fixture()
     const response = lines.next(1_000).catch(error => error)
     stdout.write(output)
