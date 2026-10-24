@@ -74,13 +74,51 @@ describe('managed host startup identities', () => {
     expect(sameManagedProcess({ pid: 123, executable, started: 'boot-token:987654' }, { pid: 123, executable, started: 'next-boot:987654' })).toBe(false)
   })
 
-  it('does not treat unavailable Linux boot identity as proof the host exited', async () => {
+  it.each([
+    ['readlink', 'ENOENT'],
+    ['readlink', 'ESRCH'],
+    ['stat', 'ENOENT'],
+    ['stat', 'ESRCH'],
+  ])('recognizes an exited Linux process when %s fails with %s', async (operation, code) => {
+    const error = Object.assign(new Error('process exited during inspection'), { code })
+    const readlink = vi.spyOn(fs, 'readlink').mockResolvedValue(path.resolve('host'))
+    const readFile = vi.spyOn(fs, 'readFile').mockResolvedValue('unused process metadata')
+    if (operation === 'readlink') {
+      readlink.mockRejectedValue(error)
+    }
+    else {
+      readFile.mockRejectedValue(error)
+    }
+    expect(await readManagedProcessIdentity(123, 'linux')).toBeUndefined()
+  })
+
+  it.each([
+    ['readlink', 'EACCES'],
+    ['readlink', 'EPERM'],
+    ['readlink', 'EIO'],
+    ['stat', 'EACCES'],
+    ['stat', 'EPERM'],
+    ['stat', 'EIO'],
+  ])('preserves a Linux inspection failure when %s fails with %s', async (operation, code) => {
+    const error = Object.assign(new Error('process identity cannot be read'), { code })
+    const readlink = vi.spyOn(fs, 'readlink').mockResolvedValue(path.resolve('host'))
+    const readFile = vi.spyOn(fs, 'readFile').mockResolvedValue('unused process metadata')
+    if (operation === 'readlink') {
+      readlink.mockRejectedValue(error)
+    }
+    else {
+      readFile.mockRejectedValue(error)
+    }
+    await expect(readManagedProcessIdentity(123, 'linux')).rejects.toBe(error)
+  })
+
+  it.each(['ENOENT', 'ESRCH'])('does not treat unavailable Linux boot identity (%s) as proof the host exited', async (code) => {
     vi.spyOn(fs, 'readlink').mockResolvedValue(path.resolve('host'))
     vi.spyOn(fs, 'readFile').mockImplementation(async (file) => {
       if (String(file).endsWith('/stat')) {
         return `123 (host) ${Array.from({ length: 20 }).fill('1').join(' ')}`
       }
-      throw Object.assign(new Error('missing boot identity'), { code: 'ENOENT' })
+      throw Object.assign(new Error('missing boot identity'), { code })
     })
     await expect(readManagedProcessIdentity(123, 'linux')).rejects.toThrow('could not be verified')
   })

@@ -57,7 +57,8 @@ export async function readManagedProcessIdentity(pid: number, platform = process
       return { pid, executable, started: `${boot.trim()}:${started}` }
     }
     catch (error) {
-      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      const code = (error as NodeJS.ErrnoException).code
+      if (code === 'ENOENT' || code === 'ESRCH') {
         return undefined
       }
       throw error
