@@ -87,9 +87,9 @@ impl<'a> Visit<'a> for CompilerDiagnosticVisitor {
     }
 
     fn visit_string_literal(&mut self, literal: &oxc_ast::ast::StringLiteral<'a>) {
-        // Oxc 对孤立代理项使用内部编码，不能通过 Rust String 无损返回 JS。
+        // Oxc JSStr 保留孤立代理项，不能通过 Rust String 无损返回 JS。
         // 校验解析后的值，覆盖模块名、导入名、属性键及宏字符串。
-        self.has_lone_surrogate_literal |= literal.lone_surrogates;
+        self.has_lone_surrogate_literal |= !literal.is_string_well_formed_unicode();
     }
 
     fn visit_call_expression(&mut self, call: &oxc_ast::ast::CallExpression<'a>) {
@@ -102,17 +102,17 @@ fn module_export_name(name: &ModuleExportName<'_>) -> Option<String> {
     match name {
         ModuleExportName::IdentifierName(value) => Some(value.name.to_string()),
         ModuleExportName::IdentifierReference(value) => Some(value.name.to_string()),
-        ModuleExportName::StringLiteral(value) => Some(value.value.to_string()),
+        ModuleExportName::StringLiteral(value) => value.value.as_str().map(str::to_owned),
     }
 }
 
-fn collect_imports(program: &Program<'_>) -> Vec<NativeCompilerScriptImport> {
+fn collect_imports(program: &Program<'_>) -> Option<Vec<NativeCompilerScriptImport>> {
     let mut imports = Vec::new();
     for statement in &program.body {
         let Statement::ImportDeclaration(import) = statement else {
             continue;
         };
-        let source = import.source.value.to_string();
+        let source = import.source.value.as_str()?.to_owned();
         for specifier in import.specifiers.iter().flatten() {
             let (local, imported, kind, type_only) = match specifier {
                 ImportDeclarationSpecifier::ImportDefaultSpecifier(specifier) => (
@@ -144,7 +144,7 @@ fn collect_imports(program: &Program<'_>) -> Vec<NativeCompilerScriptImport> {
             });
         }
     }
-    imports
+    Some(imports)
 }
 
 fn analyze_compiler_script_program(
@@ -157,7 +157,7 @@ fn analyze_compiler_script_program(
         return None;
     }
     Some(NativeCompilerScriptAnalysis {
-        imports: collect_imports(program),
+        imports: collect_imports(program)?,
         has_default_export: diagnostics.has_default_export,
         define_options_statements: collect_define_options_statements(program, code),
         registered_components: collect_registered_components(program),

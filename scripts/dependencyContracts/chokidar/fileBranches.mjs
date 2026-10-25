@@ -4,7 +4,7 @@ import { readFile, rename, rm, stat, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { bounded, deferred, turn, waitForObservedEventPhase } from './support.mjs'
 
-async function verifyInode({ chokidar, root, watched, timeoutMs, open, ready, instrumentation, evidence }) {
+async function verifyInode({ chokidar, root, watched, timeoutMs, open, ready, instrumentation, evidence, backend }) {
   assert.ok(['darwin', 'linux', 'freebsd'].includes(instrumentation.actualPlatform), 'native inode branch requires darwin/linux/freebsd; another native host is a diagnostic limitation')
   const file = path.join(watched, 'inode-file.txt')
   const replacement = path.join(root, 'inode-replacement.tmp')
@@ -13,11 +13,11 @@ async function verifyInode({ chokidar, root, watched, timeoutMs, open, ready, in
   await writeFile(replacement, 'replacement inode with a distinct size')
   const originalStats = await stat(file)
   const replacementStats = await stat(replacement)
-  const owner = open(chokidar, watched, { atomic: false })
+  const owner = open(chokidar, watched, { atomic: false, ...(backend ? { backend } : {}) })
   await ready(owner)
-  const relative = path.relative(root, file).replaceAll('\\', '/')
+  const relative = path.relative(root, watched).replaceAll('\\', '/')
   const originalHandle = instrumentation.handles.find(record => record.path === relative)
-  assert.ok(originalHandle, 'original file has a real native handle')
+  assert.ok(originalHandle, 'the file is covered by its real native directory handle')
   await waitForObservedEventPhase(owner, file, evidence, timeoutMs)
   const firstChange = owner.event('change', file, timeoutMs, stats => stats?.dev === replacementStats.dev && stats?.ino === replacementStats.ino && stats?.size === replacementStats.size)
   await rename(replacement, file)
@@ -26,11 +26,10 @@ async function verifyInode({ chokidar, root, watched, timeoutMs, open, ready, in
   assert.equal(renamedStats.dev, replacementStats.dev, 'real rename preserves the prepared replacement device')
   assert.equal(renamedStats.ino, replacementStats.ino, 'real rename installs the prepared replacement inode')
   assert.notEqual(renamedStats.ino, originalStats.ino, 'real rename replaced the actual inode')
-  await bounded(originalHandle.closePromise, 'inode replacement closes the old native file handle', timeoutMs)
   const live = instrumentation.handles.filter(record => record.path === relative && !record.closed)
-  assert.equal(live.length, 1, 'inode replacement acquired exactly one live native file handle')
-  assert.notEqual(live[0], originalHandle)
-  evidence.push({ checkpoint: 'real-inode-rebind', passed: true, actualPlatform: instrumentation.actualPlatform })
+  assert.equal(live.length, 1, 'inode replacement preserves one live native directory handle')
+  assert.equal(live[0], originalHandle, 'v6 directory coverage survives a file inode replacement')
+  evidence.push({ checkpoint: 'real-inode-replacement-with-directory-coverage', passed: true, actualPlatform: instrumentation.actualPlatform })
   await waitForObservedEventPhase(owner, file, evidence, timeoutMs)
   const changed = 'the rebound native file watcher observes this second change'
   assert.ok(Buffer.byteLength(changed) > replacementStats.size, 'the rebound file receives a longer in-place value without a truncate phase')
@@ -45,9 +44,10 @@ async function verifyInode({ chokidar, root, watched, timeoutMs, open, ready, in
 async function verifyPolling({ chokidar, watched, timeoutMs, open, ready, instrumentation, evidence }) {
   const file = path.join(watched, 'polling-file.txt')
   await writeFile(file, 'initial polling generation')
-  const owner = open(chokidar, watched, { usePolling: true, interval: 10, binaryInterval: 10, atomic: false })
+  const owner = open(chokidar, watched, { backend: 'polling', pollingInterval: 10, pollingBinaryInterval: 10, atomic: false })
   await ready(owner)
-  assert.ok(instrumentation.pollingHandles.length > 0, 'polling uses real native StatWatcher subscriptions')
+  await instrumentation.polling.pendingPoll(file, 10, timeoutMs)
+  assert.equal(instrumentation.pollingHandles.length, 0, 'Chokidar polling owns stat timers without borrowing native StatWatchers')
   assert.equal(instrumentation.handles.length, 0, 'the polling case did not fall back to fs.watch')
   await waitForObservedEventPhase(owner, file, evidence, timeoutMs)
   const firstChange = owner.event('change', file, timeoutMs)
@@ -69,8 +69,8 @@ async function verifyPolling({ chokidar, watched, timeoutMs, open, ready, instru
   await bounded(owner.watcher.close(), 'public polling close', timeoutMs)
   await bounded(owner.watcher.close(), 'repeated public polling close', timeoutMs)
   await instrumentation.assertAllClosed(timeoutMs)
-  assert.equal(instrumentation.pollingHandles.some(record => !record.stopped), false)
-  evidence.push({ checkpoint: 'polling-events-and-real-statwatcher-stop', passed: true, stoppedSubscriptions: instrumentation.pollingHandles.length })
+  await instrumentation.polling.assertPathClosed(file, timeoutMs)
+  evidence.push({ checkpoint: 'polling-events-and-owned-timer-stat-cleanup', passed: true, observedStatReads: instrumentation.polling.reads.length })
 }
 
 async function verifySynchronousAddCancel({ chokidar, root, watched, timeoutMs, open, ready, instrumentation, evidence }) {
@@ -89,8 +89,8 @@ async function verifySynchronousAddCancel({ chokidar, root, watched, timeoutMs, 
   const transients = []
   for (const { phase, mode, file } of variants) {
     const relative = path.relative(root, file).replaceAll('\\', '/')
-    const nativeHandle = instrumentation.handles.find(record => record.path === relative)
-    assert.ok(nativeHandle, 'shared owner already holds the real file native handle')
+    const nativeHandle = instrumentation.handles.find(record => record.path === path.relative(root, watched).replaceAll('\\', '/'))
+    assert.ok(nativeHandle, 'shared owner already holds the real native directory handle')
     const transient = open(chokidar, file, { atomic: false })
     transient.readyRequired = phase === 'ready'
     transients.push(transient)

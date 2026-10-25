@@ -14,7 +14,7 @@ defineComponentLibraryWebSuite({
   progressLabel: 'wot-ui-web',
   scenarios: componentScenarios,
   serverPortEnv: 'WOT_UI_WEB_PORT',
-  suiteName: 'Wot UI 2.3.2 Web 全组件兼容',
+  suiteName: 'Wot UI 2.4.0 Web 全组件兼容',
   updateBaselinesEnv: 'WOT_UI_UPDATE_BASELINES',
   async verifyRendered(page, scenario) {
     if (scenario.component !== 'wd-qr-code') {

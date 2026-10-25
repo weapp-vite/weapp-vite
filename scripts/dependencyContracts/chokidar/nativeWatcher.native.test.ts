@@ -5,6 +5,7 @@ import { constants, tmpdir } from 'node:os'
 import path from 'node:path'
 import { expect, it } from 'vitest'
 import { assertNativeWatcherClosed, observeNativeWatcher } from './nativeWatcher.mjs'
+import { installNativeInstrumentation } from './support.mjs'
 
 function bounded<T>(promise: Promise<T>) {
   let timer: ReturnType<typeof setTimeout>
@@ -48,6 +49,25 @@ it.each(['public-close', 'injected-node-error'] as const)('observes actual FSEve
       native.close()
       await bounded(record!.closePromise)
     }
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+it('observes every native child of a real recursive watcher before confirming cleanup', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'recursive-watcher-unit-'))
+  const instrumentation = installNativeInstrumentation({ root, platform: 'native' })
+  let native: FSWatcher | undefined
+  try {
+    await writeFile(path.join(root, 'owned.txt'), 'recursive ownership fixture')
+    native = watch(root, { persistent: false, recursive: true }, () => {})
+    native.close()
+    await bounded(instrumentation.assertAllClosed(1000))
+    expect(instrumentation.handles.length).toBeGreaterThan(0)
+    expect(instrumentation.handles.every(record => record.closed)).toBe(true)
+  }
+  finally {
+    native?.close()
+    instrumentation.restore()
     await rm(root, { recursive: true, force: true })
   }
 })

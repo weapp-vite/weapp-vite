@@ -93,7 +93,7 @@ export function contractError(error) {
 }
 
 export const inputKeys = ['input', 'cwd', 'platform', 'shimMissingExports', 'context', 'plugins']
-export const outputKeys = ['dir', 'entryFileNames', 'chunkFileNames', 'assetFileNames', 'format', 'exports', 'sourcemap', 'sourcemapFileNames', 'sourcemapBaseUrl', 'shimMissingExports', 'name', 'file', 'codeSplitting', 'inlineDynamicImports', 'dynamicImportInCjs', 'externalLiveBindings', 'banner', 'footer', 'postBanner', 'postFooter', 'intro', 'outro', 'esModule', 'extend', 'globals', 'paths', 'hashCharacters', 'sourcemapDebugIds', 'sourcemapExcludeSources', 'sourcemapIgnoreList', 'sourcemapPathTransform', 'minify', 'legalComments', 'comments', 'polyfillRequire', 'plugins', 'preserveModules', 'preserveModulesRoot', 'virtualDirname', 'topLevelVar', 'minifyInternalExports']
+export const outputKeys = ['dir', 'charset', 'entryFileNames', 'chunkFileNames', 'assetFileNames', 'format', 'exports', 'sourcemap', 'sourcemapFileNames', 'sourcemapBaseUrl', 'shimMissingExports', 'name', 'file', 'codeSplitting', 'inlineDynamicImports', 'dynamicImportInCjs', 'externalLiveBindings', 'banner', 'footer', 'postBanner', 'postFooter', 'intro', 'outro', 'esModule', 'extend', 'globals', 'paths', 'hashCharacters', 'sourcemapDebugIds', 'sourcemapExcludeSources', 'sourcemapIgnoreList', 'sourcemapPathTransform', 'minify', 'legalComments', 'comments', 'polyfillRequire', 'plugins', 'preserveModules', 'preserveModulesRoot', 'virtualDirname', 'topLevelVar', 'minifyInternalExports']
 
 export function describeOptions(input, output) {
   const describe = (object, keys) => Object.fromEntries(keys.map(key => [key, key === 'plugins' ? object[key].map(plugin => plugin.name) : stableValue(object[key])]))

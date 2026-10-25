@@ -46,7 +46,14 @@ fn preserves_local_root_enter_order_and_member_interop_facts() {
 
 #[test]
 fn rejects_parser_errors_and_lone_surrogate_values_per_item() {
-    for code in ["const =", "require('\\uD800')", "require(`\\uD800`)"] {
+    for code in [
+        "const =",
+        "require('\\uD800')",
+        "require('\\uDC00')",
+        "require(`\\uD800`)",
+        "wx['\\uD800']()",
+        "const props = { '\\uDC00': true }; require('pkg')",
+    ] {
         assert!(analyze(code, None).is_none());
     }
 }

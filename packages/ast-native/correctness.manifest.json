@@ -30,11 +30,15 @@
     },
     {
       "file": "test/npmChunksParity.test.ts",
-      "minimumAssertions": 13
+      "minimumAssertions": 17
     },
     {
       "file": "test/onPageScroll.test.ts",
       "minimumAssertions": 11
+    },
+    {
+      "file": "test/scriptAnalysisParity.test.ts",
+      "minimumAssertions": 25
     },
     {
       "file": "test/vueSfcSignature.fuzz.test.ts",

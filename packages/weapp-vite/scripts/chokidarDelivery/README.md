@@ -14,6 +14,8 @@ node --import tsx e2e/scripts/run-e2e-commands.ts node --import tsx packages/wea
 
 每个运行场景使用独立 Node worker、独立非 IDE child scope 和全新 fixture。子进程显式去除继承的真实 IDE journal、`NODE_OPTIONS` 和 `NODE_PATH`，原机器能力票据与祖先 scope 保留。监督器记录精确 child PID，仅在其退出、公开 owner 幂等关闭、所有已观测原生句柄收到一次 close 调用和实际 close 事件（polling 则确认精确 StatWatcher 的 stop 事件）、fixture 删除及 borrower 释放全部确认后完成 scope。诊断性强制关闭不能产生通过结果；不明清理保留 scope、临时消费者与报告，停止后续场景。不操作微信 IDE、登录、全局缓存或其他进程。
 
+直接消费 Chokidar 6 的共享目录和注册错误场景通过公开 `build.watch.chokidar.backend='native'` 固定为逐目录监听，保留精确目录的注册注入和共享句柄语义。默认 `auto` / recursive 后端由正式依赖合同独立覆盖。Vite 内置监听器仍按其原有 `fs.watchFile` 资源观察，不将它误记为 Chokidar 6 的 polling scheduler。
+
 公开运行契约包括：
 
 - `weapp-vite/test` 的 `watchTestArtifact` 接收存在目录的 EPERM 时保留原始 Error 身份。

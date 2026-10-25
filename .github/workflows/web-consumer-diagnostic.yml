@@ -16,7 +16,7 @@ jobs:
     uses: ./.github/workflows/reusable-node-command.yml
     with:
       runs_on: ubuntu-latest
-      node_version: 24.18.0
+      node_version: 24.22.1
       timeout_minutes: 30
       build_command: pnpm build:pkgs:ci
       install_playwright: true

@@ -58,7 +58,7 @@ async function exercise(ctx) {
     await verifyStaleFileRead({ ...options, gate: ctx.staleFileReadGate })
   }
   else if (scenario.kind === 'file-branches') {
-    await verifyFileBranches({ ...options, branch: scenario.branch })
+    await verifyFileBranches({ ...options, branch: scenario.branch, backend: scenario.backend })
   }
   else if (scenario.kind === 'polling-owners') {
     await verifyPollingOwners({ ...options, closeUpgrader: scenario.closeUpgrader })

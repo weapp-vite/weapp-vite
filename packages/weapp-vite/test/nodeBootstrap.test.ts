@@ -13,13 +13,13 @@ describe('Node compatibility before loading the CLI dependency graph', () => {
     expect(importer).not.toHaveBeenCalled()
   })
 
-  it.each(['22.18.0', '24.11.0', '26.0.0'])('loads the CLI on supported Node %s', async (nodeVersion) => {
+  it.each(['22.23.4', '24.22.1', '26.12.1'])('loads the CLI on supported Node %s', async (nodeVersion) => {
     const importer = vi.fn()
     await expect(runWeappViteCLI({ argv: ['build'], nodeVersion, importer })).resolves.toBe(true)
     expect(importer).toHaveBeenCalledOnce()
   })
 
-  it.each(['22.17.1', '23.11.0', '24.10.0', '25.9.0'])('rejects Node %s with its actual version and required range', async (nodeVersion) => {
+  it.each(['22.23.3', '23.11.0', '24.22.0', '25.9.0', '26.12.0'])('rejects Node %s with its actual version and required range', async (nodeVersion) => {
     const importer = vi.fn()
     await expect(runWeappViteCLI({ argv: ['build'], nodeVersion, importer })).rejects.toThrow(nodeVersion)
     expect(importer).not.toHaveBeenCalled()

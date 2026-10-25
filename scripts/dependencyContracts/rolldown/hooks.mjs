@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import path from 'node:path'
-import { assertChunk, assertLazyDescriptor, describeOptions, diagnosticGc, fixture, outputCode, runtimeResult, writtenOutput } from './helpers.mjs'
+import { assertChunk, assertLazyDescriptor, describeOptions, diagnosticGc, fixture, outputCode, outputKeys, runtimeResult, writtenOutput } from './helpers.mjs'
 
 export async function hooks(rolldown, root) {
   const files = await fixture(root, 'hooks')
@@ -35,18 +35,21 @@ export async function hooks(rolldown, root) {
       state.outputSnapshots.push({
         generation: state.generation,
         format: output.format,
+        charset: output.charset,
         dir: output.dir,
         entryFileNames: output.entryFileNames,
         exports: output.exports,
         sourcemap: output.sourcemap,
       })
       assert.equal(output.format, state.generation === 1 || state.generation === 3 ? 'es' : 'cjs')
+      assert.equal(output.charset, state.generation === 1 ? 'ascii' : 'utf8')
       events.push(`renderStart:${state.generation}`)
     },
     renderChunk(code, chunk, output) {
       assert.equal(output, state.outputRef.deref())
       assert.equal(output[marker], state.generation)
       assert.equal(output.plugins, state.outputPlugins)
+      assert.equal(output.charset, state.outputSnapshots.at(-1).charset)
       events.push(`renderChunk:${state.generation}`)
       return code
     },
@@ -55,14 +58,16 @@ export async function hooks(rolldown, root) {
       assert.equal(output[marker], state.generation)
       assert.equal(output.format, state.outputSnapshots.at(-1).format)
       assert.equal(output.dir, state.outputSnapshots.at(-1).dir)
-      state.hookSnapshots.push({ generation: state.generation, hook: 'generateBundle', format: output.format, dir: output.dir, entryFileNames: output.entryFileNames, exports: output.exports, sourcemap: output.sourcemap })
+      assert.equal(output.charset, state.outputSnapshots.at(-1).charset)
+      state.hookSnapshots.push({ generation: state.generation, hook: 'generateBundle', format: output.format, charset: output.charset, dir: output.dir, entryFileNames: output.entryFileNames, exports: output.exports, sourcemap: output.sourcemap })
       events.push(`generateBundle:${state.generation}`)
     },
     writeBundle(output) {
       assert.equal(output, state.outputRef.deref())
       assert.equal(output.format, state.outputSnapshots.at(-1).format)
       assert.equal(output.dir, state.outputSnapshots.at(-1).dir)
-      state.hookSnapshots.push({ generation: state.generation, hook: 'writeBundle', format: output.format, dir: output.dir, entryFileNames: output.entryFileNames, exports: output.exports, sourcemap: output.sourcemap })
+      assert.equal(output.charset, state.outputSnapshots.at(-1).charset)
+      state.hookSnapshots.push({ generation: state.generation, hook: 'writeBundle', format: output.format, charset: output.charset, dir: output.dir, entryFileNames: output.entryFileNames, exports: output.exports, sourcemap: output.sourcemap })
       events.push(`writeBundle:${state.generation}`)
     },
     closeBundle() { events.push('closeBundle') },
@@ -75,6 +80,7 @@ export async function hooks(rolldown, root) {
       const result = await bundle[method]({
         dir: path.join(files.cwd, `out-${index}`),
         format,
+        ...(index < 3 ? { charset: index === 1 ? 'ascii' : 'utf8' } : {}),
         entryFileNames,
         exports: 'named',
         sourcemap: false,
@@ -117,6 +123,7 @@ export async function hooks(rolldown, root) {
     { format: 'es', dir: path.join(files.cwd, 'out-3'), entryFileNames: 'entry-3.mjs' },
   ])
   assert.deepEqual(state.outputSnapshots.map(({ exports, sourcemap }) => ({ exports, sourcemap })), Array.from({ length: 3 }, () => ({ exports: 'named', sourcemap: false })))
+  assert.deepEqual(state.outputSnapshots.map(({ charset }) => charset), ['ascii', 'utf8', 'utf8'])
   assert.deepEqual(state.hookSnapshots.map(({ hook, ...snapshot }) => snapshot), [state.outputSnapshots[0], state.outputSnapshots[1], state.outputSnapshots[1], state.outputSnapshots[2]])
   return { events, outputs, inputSnapshots: state.inputSnapshots, outputSnapshots: state.outputSnapshots, hookSnapshots: state.hookSnapshots }
 }
@@ -172,6 +179,11 @@ export async function escaped(rolldown, root) {
   assert.equal(savedOutput.plugins, outputPlugins)
   assert.equal(savedInput.context, 'snapshotContext')
   assert.equal(savedInput.platform, 'neutral')
+  assert.equal(savedOutput.charset, 'utf8')
+  const outputAccessors = Object.entries(Object.getOwnPropertyDescriptors(savedOutput))
+    .filter(([, descriptor]) => descriptor.enumerable && typeof descriptor.get === 'function')
+    .map(([key]) => key)
+  assert.deepEqual(outputAccessors.sort(), [...outputKeys].sort(), 'Every public output option participates in the contract')
   assert.deepEqual(savedInput.input, { entry: files.entry })
   for (const [key, callback] of Object.entries(callbacks)) {
     assert.equal(savedOutput[key], callback, key)
@@ -207,6 +219,7 @@ export async function escaped(rolldown, root) {
   })
   assert.deepEqual(observations.output, {
     dir: undefined,
+    charset: 'utf8',
     entryFileNames: '[function]',
     chunkFileNames: '[function]',
     assetFileNames: '[function]',

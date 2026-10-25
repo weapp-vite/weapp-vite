@@ -3,7 +3,7 @@ import { readFile, rename, stat, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { turn, waitForObservedEventPhase } from './support.mjs'
 
-/** 两个 owner 直接 watch 同一个真实文件，避免父目录广播掩盖失效句柄。 */
+/** 两个 owner 直接 watch 同一个真实文件，共享 v6 的父目录资源。 */
 export async function verifySharedInode({ chokidar, root, timeoutMs, open, ready, instrumentation, evidence }) {
   assert.ok(['darwin', 'linux', 'freebsd'].includes(instrumentation.actualPlatform), 'native inode contract requires POSIX inode-watch semantics')
   const file = path.join(root, 'shared-inode.txt')
@@ -13,10 +13,9 @@ export async function verifySharedInode({ chokidar, root, timeoutMs, open, ready
   await ready(first)
   const second = open(chokidar, file)
   await ready(second)
-  const fileLabel = path.relative(root, file).replaceAll('\\', '/')
-  const original = instrumentation.handles.filter(handle => handle.path === fileLabel)
-  assert.equal(original.length, 1, 'two direct-file owners initially share exactly one native handle')
-  assert.equal(instrumentation.handles.length, 1, 'no parent-directory watcher can mask native file rebinding')
+  const parentLabel = path.relative(root, path.dirname(file)).replaceAll('\\', '/') || '.'
+  const original = instrumentation.handles.filter(handle => handle.path === parentLabel)
+  assert.equal(original.length, 1, 'two direct-file owners initially share exactly one native parent handle')
   const oldHandle = original[0]
   const before = await stat(file)
   await writeFile(replacement, 'replacement inode has a different size')
@@ -28,9 +27,8 @@ export async function verifySharedInode({ chokidar, root, timeoutMs, open, ready
   // 两个 change listener 的后续同步重绑语句在微任务后完成，不等待固定时间或重试变更。
   await turn()
   evidence.push({ checkpoint: 'real-shared-inode-replacement', oldInode: String(before.ino), newInode: String(after.ino), native: instrumentation.snapshot() })
-  const nativeRebound = oldHandle.closeCalls === 1 && oldHandle.closeEvents === 1
-    && instrumentation.handles.filter(handle => handle.path === fileLabel && !handle.closed).length === 1
-    && instrumentation.handles.some(handle => handle.path === fileLabel && handle !== oldHandle && !handle.closed)
+  const nativeRebound = oldHandle.closeCalls === 0 && !oldHandle.closed
+    && instrumentation.handles.filter(handle => handle.path === parentLabel && !handle.closed).length === 1
   const secondBoundary = instrumentation.handles.length
   for (const owner of [first, second]) {
     await waitForObservedEventPhase(owner, file, evidence, timeoutMs)
@@ -46,10 +44,10 @@ export async function verifySharedInode({ chokidar, root, timeoutMs, open, ready
     nativeRebound,
     nativeAtSecondWrite: secondBoundary,
   })
-  assert.ok(nativeRebound, 'both owners must move from the old inode to one shared replacement native handle')
+  assert.ok(nativeRebound, 'one shared parent resource must cover both logical file generations')
   assert.ok(outcomes.every(outcome => outcome.status === 'fulfilled'), 'both owners must receive the next real change after inode replacement')
   assert.equal(await readFile(file, 'utf8'), 'the new inode must report a subsequent real change to both direct owners')
-  assert.equal(instrumentation.handles.some(handle => handle.path !== fileLabel), false, 'no parent-directory watcher may mask a failed rebind at any phase')
+  assert.equal(instrumentation.handles.filter(handle => handle.path === parentLabel).length, 1, 'inode replacement does not duplicate the shared parent resource')
   for (const owner of [first, second]) {
     assert.deepEqual(owner.errors, [])
   }

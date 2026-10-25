@@ -29,7 +29,7 @@
     "skills"
   ],
   "engines": {
-    "node": ">=24.15.0"
+    "node": "^22.23.4 || ^24.22.1 || >=26.12.1"
   },
   "scripts": {
     "build": "tsdown",
@@ -41,17 +41,17 @@
     "test:pack": "node ../../scripts/weapp-agent/smoke-pack.mjs"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "4.0.82",
-    "@ai-sdk/openai": "4.0.96",
-    "@ai-sdk/openai-compatible": "3.0.71",
-    "@modelcontextprotocol/client": "^2.3.1",
-    "@modelcontextprotocol/server": "^2.3.1",
+    "@ai-sdk/anthropic": "4.0.88",
+    "@ai-sdk/openai": "4.0.102",
+    "@ai-sdk/openai-compatible": "3.0.78",
+    "@modelcontextprotocol/client": "^2.4.0",
+    "@modelcontextprotocol/server": "^2.4.0",
     "@weapp-vite/acceptance": "workspace:*",
     "@weapp-vite/mcp": "workspace:*",
-    "ai": "7.0.143",
+    "ai": "7.0.153",
     "commander": "15.0.0",
     "diff": "9.0.0",
-    "execa": "10.1.1",
+    "execa": "10.2.1",
     "ink": "8.0.0",
     "ink-text-input": "6.0.0",
     "react": "19.3.1",
@@ -63,7 +63,7 @@
     "@weapp-agent/core": "workspace:*",
     "@weapp-agent/mini-program": "workspace:*",
     "@weapp-agent/providers": "workspace:*",
-    "tsdown": "0.23.1"
+    "tsdown": "0.23.2"
   },
   "publishConfig": {
     "access": "public",

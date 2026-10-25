@@ -1,8 +1,8 @@
 import type { FSWatcher } from 'chokidar'
-import type { ViteDevServer } from 'vite'
+import type { InlineConfig, ViteDevServer } from 'vite'
 import type { CompilerContext } from '../../context'
 import { EventEmitter } from 'node:events'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRuntimeState } from '../../runtime/runtimeState'
 import { beginWxmlDependencies } from './dependencies'
 import { bindWxmlDependencyWatch, ownsExternalWxmlWatch } from './watch'
@@ -10,9 +10,19 @@ import { bindWxmlDependencyWatch, ownsExternalWxmlWatch } from './watch'
 const { watchMock } = vi.hoisted(() => ({ watchMock: vi.fn() }))
 vi.mock('chokidar', () => ({ watch: watchMock }))
 
-beforeEach(() => watchMock.mockReset())
+beforeEach(() => {
+  watchMock.mockReset()
+  vi.stubEnv('CHOKIDAR_USEPOLLING', undefined)
+  vi.stubEnv('CHOKIDAR_INTERVAL', undefined)
+  vi.stubEnv('CHOKIDAR_BINARY_INTERVAL', undefined)
+})
+afterEach(() => vi.unstubAllEnvs())
 
-function fixture(disabled = false) {
+function fixture(disabled = false, options: {
+  watch?: Record<string, unknown>
+  inlineConfig?: InlineConfig
+  withoutConfigService?: boolean
+} = {}) {
   const watcher = Object.assign(new EventEmitter(), {
     add: vi.fn(() => { queueMicrotask(() => watcher.emit('ready')) }),
     close: vi.fn(async () => {}),
@@ -20,10 +30,13 @@ function fixture(disabled = false) {
   watchMock.mockReturnValue(watcher as unknown as FSWatcher)
   const userIgnored = vi.fn(() => false)
   const server = {
-    config: { root: '/project', server: { watch: disabled ? null : { usePolling: true, interval: 30, ignored: userIgnored } }, logger: { error: vi.fn() } },
+    config: { root: '/project', server: { watch: disabled ? null : { usePolling: true, interval: 30, ignored: userIgnored, ...options.watch } }, logger: { error: vi.fn() } },
     watcher: { add: vi.fn() },
   }
-  const ctx = { runtimeState: createRuntimeState(), configService: { cwd: '/project', outDir: '/project/dist' } } as unknown as CompilerContext
+  const ctx = {
+    runtimeState: createRuntimeState(),
+    configService: { cwd: '/project', outDir: '/project/dist', inlineConfig: options.inlineConfig },
+  } as unknown as CompilerContext
   const internal = '/project/rules.json'
   const external = '/inputs/rules.json'
   const initial = beginWxmlDependencies(ctx, 'main', false)
@@ -32,7 +45,11 @@ function fixture(disabled = false) {
   register(external)
   initial.commit()
   const onChange = vi.fn()
-  const close = bindWxmlDependencyWatch(ctx, server as unknown as ViteDevServer, onChange)
+  const close = bindWxmlDependencyWatch(
+    options.withoutConfigService ? { runtimeState: ctx.runtimeState } : ctx,
+    server as unknown as ViteDevServer,
+    onChange,
+  )
   return { watcher, userIgnored, server, ctx, internal, external, onChange, close }
 }
 
@@ -61,7 +78,7 @@ describe('WXML dependency watcher ownership', () => {
     expect(server.watcher.add).not.toHaveBeenCalled()
     expect(watcher.add).toHaveBeenCalledExactlyOnceWith('/inputs')
     const options = watchMock.mock.calls[0]![1]
-    expect(options).toMatchObject({ depth: 0, ignoreInitial: true, usePolling: true, interval: 30 })
+    expect(options).toMatchObject({ depth: 0, ignoreInitial: true, backend: 'polling', pollingInterval: 30 })
     expect(options.ignored[0]).toBe(userIgnored)
     const ignored = options.ignored[1]
     expect(ignored('/inputs')).toBe(false)
@@ -136,5 +153,52 @@ describe('WXML dependency watcher ownership', () => {
     await close.ready
     expect(watchMock).not.toHaveBeenCalled()
     await close()
+  })
+
+  it.each([
+    {
+      name: 'build backend and intervals before host polling options',
+      inlineConfig: { build: { watch: { chokidar: { backend: 'native', pollingInterval: 25, pollingBinaryInterval: 50 } } } },
+      watch: { usePolling: true, interval: 80, binaryInterval: 160 },
+      expected: { backend: 'native', pollingInterval: 25, pollingBinaryInterval: 50 },
+    },
+    {
+      name: 'explicit automatic backend before a legacy polling flag',
+      watch: { backend: 'auto', usePolling: true, pollingInterval: 25, interval: 80, atomic: false, persistent: false },
+      expected: { backend: 'auto', pollingInterval: 25, atomic: false, persistent: false },
+    },
+    {
+      name: 'host polling options without a compiler config service',
+      withoutConfigService: true,
+      watch: { usePolling: true, interval: 40, binaryInterval: 80 },
+      expected: { backend: 'polling', pollingInterval: 40, pollingBinaryInterval: 80 },
+    },
+    {
+      name: 'host native selection without a compiler config service',
+      withoutConfigService: true,
+      watch: { usePolling: false },
+      expected: { backend: 'native', pollingInterval: 30 },
+    },
+  ])('normalizes $name for Chokidar', async ({ expected, ...input }) => {
+    const { close } = fixture(false, input)
+    try {
+      await close.ready
+      const options = watchMock.mock.calls[0]![1]
+      expect(options).toMatchObject({ ...expected, depth: 0, ignoreInitial: true })
+      for (const alias of ['usePolling', 'interval', 'binaryInterval']) {
+        expect(options).not.toHaveProperty(alias)
+      }
+      const { FSWatcher } = await vi.importActual<typeof import('chokidar')>('chokidar')
+      const actual = new FSWatcher(options)
+      try {
+        expect(actual.options).toMatchObject(expected)
+      }
+      finally {
+        await actual.close()
+      }
+    }
+    finally {
+      await close()
+    }
   })
 })

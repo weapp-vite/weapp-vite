@@ -5,6 +5,7 @@ import type { DevModuleGraphChange } from '../../moduleGraph/devProvider'
 import { once } from 'node:events'
 import { watch } from 'chokidar'
 import path from 'pathe'
+import { createSidecarWatchOptions } from '../../runtime/watch/options'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { isWxmlDependency, observeWxmlDependencies } from './dependencies'
 
@@ -39,8 +40,16 @@ export function bindWxmlDependencyWatch(ctx: WatchContext, server: ViteDevServer
     }
     const options = server.config?.server.watch ?? {}
     if (!watcher) {
+      // 旧 polling 标志会覆盖 Chokidar 的显式 backend，先移除再统一转换。
+      const { usePolling: _usePolling, interval: _interval, binaryInterval: _binaryInterval, ...hostOptions } = options
       watcher = watch([], {
-        ...options,
+        ...hostOptions,
+        ...createSidecarWatchOptions({
+          inlineConfig: {
+            build: ctx.configService?.inlineConfig?.build,
+            server: { watch: options },
+          },
+        }, {}),
         ignoreInitial: true,
         depth: 0,
         // 提前安装同层文件监听，避免后登记的现存兄弟文件在首次保存前仍未被订阅。

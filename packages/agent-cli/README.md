@@ -2,7 +2,7 @@
 
 Model-free acceptance and MCP tools for weapp-vite native and Wevu WeChat projects, with an optional independent AI coding mode.
 
-Requires Node.js 24.15+. Install the preview package from npm:
+Requires Node.js `^22.23.4 || ^24.22.1 || >=26.12.1`. Install the preview package from npm:
 
 ```sh
 npm install --global @weapp-agent/cli@preview

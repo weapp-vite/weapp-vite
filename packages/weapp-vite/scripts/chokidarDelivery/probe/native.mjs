@@ -28,7 +28,17 @@ export function instrumentNative(root, injection, trace) {
   const restoreEvents = []
   let injected = 0
   let pollingSequence = 0
-  const absolute = file => path.resolve(file instanceof URL ? fileURLToPath(file) : String(file))
+  const absolute = (file) => {
+    let value = file instanceof URL ? fileURLToPath(file) : String(file)
+    // 只统一观察路径；原生调用参数与注入的原始 Error 均保持原样。
+    if (value.startsWith('\\\\?\\UNC\\')) {
+      value = `\\\\${value.slice(8)}`
+    }
+    else if (/^\\\\\?\\[A-Z]:\\/i.test(value)) {
+      value = value.slice(4)
+    }
+    return path.resolve(value)
+  }
   const relative = file => path.relative(root, file).replaceAll('\\', '/')
   fs.watch = function (filename, ...args) {
     const file = absolute(filename)

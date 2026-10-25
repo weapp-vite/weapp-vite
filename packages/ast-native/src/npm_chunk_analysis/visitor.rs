@@ -273,10 +273,14 @@ impl<'a> Visit<'a> for NpmChunkVisitor<'_> {
     }
 
     fn visit_string_literal(&mut self, literal: &StringLiteral<'a>) {
-        self.unsupported |= literal.lone_surrogates;
+        self.unsupported |= !literal.is_string_well_formed_unicode();
     }
 
     fn visit_template_element(&mut self, element: &TemplateElement<'a>) {
-        self.unsupported |= element.lone_surrogates;
+        self.unsupported |= element
+            .value
+            .cooked
+            .as_ref()
+            .is_some_and(|value| value.as_str().is_none());
     }
 }

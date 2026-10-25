@@ -1,10 +1,10 @@
 # 发布重试与恢复
 
-仓库固定使用 `repoctl@5.10.0`，发布重试、工作区根包识别和发布说明过滤均由上游正式实现负责。
-`@icebreakers/monorepo@5.10.0` 的受管补丁修正发布说明分类：明确的 Conventional 摘要类型
+仓库固定使用 `repoctl@6.1.0`，发布重试、工作区根包识别和发布说明过滤均由上游正式实现负责。
+`@icebreakers/monorepo@6.1.0` 的上游实现包含发布说明分类修正：明确的 Conventional 摘要类型
 优先于整理提交类型及正文关键词，并保留正文中的依赖版本描述；原生 Dependencies 条目仍归维护。
 同一分类规则用于 Release PR、正式发布和发布说明修复，避免合并 intent 后功能、修复和性能被改归维护。
-补丁同时修正 Release PR 更新：查询已限定 head/base，现有 PR 只更新变化的标题和正文，
+上游同时修正 Release PR 更新：查询已限定 head/base，现有 PR 只更新变化的标题和正文，
 不重复提交相同 base；内容未变时不发送 PATCH，避免无意义的 PR 更新。
 升级 repoctl 时须核对上游是否已覆盖这两类规则，并运行
 `scripts/repoctl-release-classification.test.ts` 和 `scripts/repoctl-github-pull-request.test.ts`。
@@ -53,48 +53,33 @@ Release 无论成功或失败均尝试保存 `npm-publish-summary-<run_attempt>`
 上述发布工具升级仅影响仓库发布维护，不改变对外包行为，不添加 changeset，也不联动
 `create-weapp-vite` 版本。
 
-## Chokidar 5 监听生命周期
+## Chokidar 6 监听生命周期
 
-`chokidar@5.0.0.patch` 修正目录删除重建期间的注册、扫描和文件订阅归属：
+`chokidar@6.0.0.patch` 对发行版的异步提交边界作局部修正：
 
-- 目录先取得原生 watcher 并登记 closer，再提交 tracking 和扫描；Windows 的同步
-  `watch EPERM` 仅在报错路径严格匹配且 `lstat` 确认路径已消失时，进入既有缺失路径处理。
-- 异步目录扫描与文件 stat 绑定各自的订阅身份；旧订阅的迟到结果不能移除或重绑同路径的新文件。
-- 关闭时只取消本 owner 持有的扫描、节流与文件订阅，回收已销毁的 readdirp stream；
-  新条目成功登记后只解除捕获的旧删除节流，避免第二次删除永久漏报。
-- 文件 ADD 回调同步关闭或取消监听时，回收尚未登记的本订阅；inode 重绑复用同一个
-  文件 owner closer，在同一共享容器内更换原生句柄，保留其他 owner 的订阅与 closer。
-- 公开监听路径在初始化期间消失时，先登记父目录 fallback 的就绪槽，再结算原路径；
-  `ready` 只有在父目录原生监听器生效后发布，递归扫描子项仍由其扫描完成就绪结算。
-- polling 间隔或持久性升级保留同一共享容器，只精确替换本库的原生 listener；旧代通知、
-  重复关闭和任一 owner 退出不能取消幸存 owner、独立原生 listener 或另一项目的监听。升级取得失败时，
-  先恢复既有 owner 的原订阅并抛出原错误；恢复也失败时同时保留两项错误。
+- 同步目录注册的 Windows `EPERM/watch` 仅在路径严格等价、大小写一致，且 `lstat` 确认已消失时进入缺失路径恢复。Windows extended namespace 与普通路径可等价匹配；其他错误保留原 Error。
+- native reconciliation、目录扫描和异步子项添加捕获原 `TreeState.DirEntry` 身份，原目录已删除或重建后不再提交旧结果。unwatch/add 的 root 代同样约束成功及失败读取。
+- 延迟返回的缺失结果在提交删除前再次确认目标仍然缺失；目标已重建时复用成功 stat 继续正常协调，避免旧 ENOENT 移除另一个 owner 已观察的新 inode。
+- `readdirp` 的扫描根 `warn(ENOENT)` 复用本轮目录缺失确认，并在异步确认后复核原目录身份；子项 warning、权限错误、缺少路径以及仍存在的根目录不能触发根清理，原 warning 仍供监听者读取。
+- 目录自身注册失败时，释放先前为它取得的 root-parent closer；不泄漏半完成的订阅。
 
-`weapp-vite` 将修补后的 Chokidar 与 `readdirp@5.1.1` 打包到 JavaScript 产物，
-使消费发布包时也使用该实现；类型声明继续引用依赖的公开类型。完整 MIT 许可证随包保存在
-`packages/weapp-vite/THIRD_PARTY_NOTICES.md`。
+Chokidar 6 的原生文件由父目录资源协调，删除使用 tree membership，polling 使用共享 scheduler 与异步 stat。这些流程由上游负责，不沿用 v5 的文件句柄重绑、remove throttle 或 StatWatcher 修补。新旧版的共同公开契约继续由仓库 29 场景验证，观测机制说明见[依赖契约](../scripts/dependencyContracts/chokidar/README.md)。
 
-更新或移除补丁前运行依赖合同，并在目标 Windows、macOS、Linux 环境分别保留报告：
+`weapp-vite` 将修补后的 Chokidar 与 `readdirp@5.1.1` 打包到 JavaScript 产物，消费发布包时使用相同实现；类型声明继续引用公开依赖类型。完整 MIT 许可证随包保存在 `packages/weapp-vite/THIRD_PARTY_NOTICES.md`。
+
+更新或移除补丁前，在目标 Windows、macOS、Linux 环境保留依赖契约报告：
 
 ```sh
 node --import tsx scripts/dependencyContracts/chokidar/run.mjs --report .tmp/dependency-contracts/chokidar.json
 ```
 
-合同覆盖真实文件事件、注册失败、删除重建、迟到 stat、共享 watcher、polling、POSIX inode 重绑
-和同步 teardown；Windows 的 inode 项明确记为不适用。macOS 上模拟 Windows 错误分类的结果
-只证明分类分支，不代表真实 Windows 已通过；跨平台通过情况以对应环境的报告为准。
-发布前还须验证打包产物实际包含补丁实现，并通过下游 dev/HMR 回归。
-
-发布消费合同通过普通 npm 安装实际 tarball，从 `weapp-vite/test` 与 `weapp-vite/vite`
-两个公开入口验证同路径的原生 acquisition、幸存 owner 的输出和末个 owner 的真实 close。
-执行方式及独立原始 tarball 反例见[发布消费合同说明](../packages/weapp-vite/scripts/chokidarDelivery/README.md)：
+macOS 上模拟 Windows 分类只证明该分支，不能代替真实 Windows。发布前还须确认打包产物包含修补实现，并通过下游 dev/HMR 回归。发布消费合同通过普通 npm 安装实际 tarball，从 `weapp-vite/test` 与 `weapp-vite/vite` 两个公开入口验证监听、幸存 owner 和精确关闭：
 
 ```sh
 node --import tsx e2e/scripts/run-e2e-commands.ts node --import tsx packages/weapp-vite/scripts/chokidarDelivery/index.mjs --report .tmp/chokidar-delivery.json
 ```
 
-Windows 正恢复及原始 tarball 变红必须由真实 Windows 验证；其他宿主不伪装平台，
-不适用项及未传原始归档而未执行的反例分别保留状态，不能计为通过。
+执行细节见[发布消费合同说明](../packages/weapp-vite/scripts/chokidarDelivery/README.md)。Windows 正恢复及原始 tarball 反例必须由真实 Windows 执行；不适用或未运行的反例保留各自状态。
 
 只有上游发布版本覆盖上述生命周期合同，且移除补丁后的跨平台合同和发布产物回归均通过时，
 才可移除补丁与配套打包策略，并同步检查第三方软件声明。补丁涉及的上游发行文件原本超过
@@ -103,10 +88,17 @@ Windows 正恢复及原始 tarball 变红必须由真实 Windows 验证；其他
 
 ## Vite 内置 polling 副本
 
-`vite@8.3.4.patch` 同步修正其发行文件内置 Chokidar 的 polling listener 归属与升级失败恢复。
+`vite@8.3.5.patch` 同步修正其发行文件内置 Chokidar 的 polling listener 归属与升级失败恢复。
 `scripts/dependencyContracts/vite/polling.mjs` 通过真实 Vite server 验证两个 owner、独立原生 listener、
 两种关闭顺序及精确释放，不依赖内置 helper 的局部名称。
 
 这份仓库补丁不会自动进入普通 npm 消费者的外部 Vite。产品宿主重启先等待旧编译会话和精确旧 watcher
 完整关闭，再进入 Vite 的新配置准备；发布消费合同使用未打补丁的 npm Vite 独立验证这一交接约束。
 不能把本机依赖合同通过视为用户已安装补丁。
+
+## Vitest 模块缓存的文本读取
+
+`vitest@5.0.5.patch` 让 ServerModuleRunner 以 UTF-8 读取磁盘缓存代码。上游默认读取返回 Buffer，
+错误格式化路径随后把它当作字符串调用 `charCodeAt`，掩盖 global setup 的原始错误。
+补丁只补充文本编码，保留缓存行为；`e2e/scripts/domAcceptanceReport/reporter.startup.test.ts`
+继续通过缓存路径验证原始失败和验收报告，不以关闭缓存绕过问题。

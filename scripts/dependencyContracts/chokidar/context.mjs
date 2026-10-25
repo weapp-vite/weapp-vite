@@ -2,6 +2,8 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
+import process from 'node:process'
+import { prepareInitialFile } from './fixturePreparation.mjs'
 import { createSharedStatGate } from './sharedStatGate.mjs'
 import { createStaleFileReadGate } from './staleFileRead.mjs'
 import { bounded, deferred, installNativeInstrumentation, observeWatcher } from './support.mjs'
@@ -23,6 +25,8 @@ export function createContext(scenario, root) {
   let injected = 0
   let injectedError
   let probeErrorCount = 0
+  let preparationEvidence
+  const recordPreparation = entry => preparationEvidence.events.push({ order: preparationEvidence.events.length + 1, ...entry })
 
   const gate = () => {
     const entered = deferred()
@@ -48,7 +52,9 @@ export function createContext(scenario, root) {
     else { await writeFile(image, 'initial image') }
     if (scenario.kind === 'close' || scenario.kind === 'remove-during-stat') {
       await mkdir(path.dirname(statChild), { recursive: true })
-      await writeFile(statChild, 'stat captured before close or parent deletion')
+      if (scenario.kind === 'close') {
+        await writeFile(statChild, 'stat captured before close')
+      }
     }
     if (scenario.kind.startsWith('shared')) {
       await mkdir(stable, { recursive: true })
@@ -57,7 +63,22 @@ export function createContext(scenario, root) {
     if (scenario.depth != null) {
       await mkdir(path.join(target, 'beyond-depth'), { recursive: true })
       await writeFile(path.join(target, 'beyond-depth', 'not-observed.txt'), 'too deep')
-      await writeFile(path.join(watched, 'preexisting.txt'), 'initial file is ignored')
+      const file = path.join(watched, 'preexisting.txt')
+      if (scenario.ignoreInitial && process.platform === 'darwin') {
+        preparationEvidence = { checkpoint: 'initial-file-native-preparation', actualPlatform: process.platform, events: [] }
+        scenarioEvidence.push(preparationEvidence)
+        instrumentation = installNativeInstrumentation({ root, platform: 'native' })
+        try {
+          await prepareInitialFile({ file, value: 'initial file is ignored', timeoutMs, instrumentation, record: recordPreparation })
+        }
+        finally {
+          preparationEvidence.native = instrumentation.snapshot()
+          instrumentation.restore()
+        }
+      }
+      else {
+        await writeFile(file, 'initial file is ignored')
+      }
     }
   }
 
@@ -65,10 +86,10 @@ export function createContext(scenario, root) {
     const isInjected = ['recover', 'classify', 'shared-failure'].includes(scenario.kind)
     const hooks = {}
     if (scenario.kind === 'shared-inode-late-error') {
-      hooks.stat = sharedStatGate.hook
+      hooks.lstat = sharedStatGate.hook
     }
     if (scenario.kind === 'stale-file-read') {
-      hooks.stat = staleFileReadGate.hook
+      hooks.lstat = staleFileReadGate.hook
     }
     if (scenario.kind === 'replacement-read') {
       hooks.readdir = async ({ file, original }) => {
@@ -96,7 +117,7 @@ export function createContext(scenario, root) {
       }
     }
     if ((scenario.kind === 'close' && scenario.block === 'stat') || scenario.kind === 'remove-during-stat') {
-      hooks.stat = async ({ file, original }) => {
+      hooks.lstat = hooks.stat = async ({ file, original }) => {
         const result = await original()
         if (file === statChild && !heldStat.used) {
           heldStat.used = true
@@ -141,7 +162,10 @@ export function createContext(scenario, root) {
   }
 
   function open(chokidar, paths = watched, options) {
-    const owner = observeWatcher(chokidar, root, paths, options)
+    if (preparationEvidence) {
+      recordPreparation({ phase: 'formal-watcher-started' })
+    }
+    const owner = observeWatcher(chokidar, root, paths, options, instrumentation)
     observations.push(owner)
     return owner
   }
@@ -149,6 +173,9 @@ export function createContext(scenario, root) {
   async function ready(owner) {
     await bounded(owner.ready, 'public ready', timeoutMs)
     assert.equal(owner.readyCount, 1, 'initialization must publish ready exactly once')
+    if (preparationEvidence) {
+      recordPreparation({ phase: 'formal-watcher-ready' })
+    }
   }
 
   return {

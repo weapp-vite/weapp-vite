@@ -107,7 +107,7 @@
     "dist"
   ],
   "engines": {
-    "node": "^22.18.0 || ^24.11.0 || >=26.0.0"
+    "node": "^22.23.4 || ^24.22.1 || >=26.12.1"
   },
   "scripts": {
     "dev": "tsdown -w",
@@ -128,7 +128,7 @@
     "@babel/parser": "catalog:",
     "@babel/traverse": "catalog:",
     "@babel/types": "catalog:",
-    "@oxc-project/types": "^0.154.0",
+    "@oxc-project/types": "^0.155.0",
     "@weapp-core/shared": "workspace:*",
     "oxc-parser": "catalog:",
     "oxc-walker": "catalog:"

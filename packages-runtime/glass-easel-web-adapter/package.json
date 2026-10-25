@@ -51,7 +51,7 @@
   "devDependencies": {
     "playwright": "1.64.1",
     "tsd": "0.33.0",
-    "tsdown": "0.23.1",
+    "tsdown": "0.23.2",
     "tsx": "4.23.15",
     "typescript": "catalog:",
     "vite": "catalog:",

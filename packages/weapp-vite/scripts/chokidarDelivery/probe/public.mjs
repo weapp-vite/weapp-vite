@@ -53,7 +53,7 @@ export async function openPublicOwner(kind, root, owners, errors) {
         },
       },
     }],
-    build: { minify: false, outDir },
+    build: { minify: false, outDir, watch: { chokidar: { backend: 'native' } } },
     server: { watch: null, hmr: false, middlewareMode: true },
   }), 'public Vite host initialization', 60_000)
   const owner = { kind, outDir, trace, close: () => server.close() }

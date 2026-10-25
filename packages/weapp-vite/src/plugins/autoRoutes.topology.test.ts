@@ -27,13 +27,18 @@ const appEntry = '/project/src/app.vue'
 const newPage = '/project/src/pages/added/index.vue'
 
 function setup() {
+  const runtimeState = createRuntimeState()
   let signature = 0
+  runtimeState.autoRoutes.signature = String(signature)
+  const changeSignature = () => {
+    runtimeState.autoRoutes.signature = String(++signature)
+  }
   const handleFileChange = vi.fn(async () => {
-    signature += 1
+    changeSignature()
     return true
   })
   const ctx = {
-    runtimeState: createRuntimeState(),
+    runtimeState,
     configService: {
       cwd: '/project',
       absoluteSrcRoot: '/project/src',
@@ -48,8 +53,9 @@ function setup() {
       getWatchDirectories: () => ['/project/src/pages'],
       isPageDeclarationSource: () => false,
       getPageDeclarationOwners: () => [],
-      getSignature: () => String(signature),
-      getSourceFingerprint: vi.fn(() => undefined as string | undefined),
+      getSignature: () => runtimeState.autoRoutes.signature,
+      getWatchFiles: vi.fn(() => [newPage]),
+      getSourceFingerprint: vi.fn((file: string) => runtimeState.autoRoutes.pageDeclarationFingerprints.get(file)),
       handleFileChange,
     },
   } as unknown as MutableCompilerContext
@@ -79,9 +85,7 @@ function setup() {
     handleFileChange,
     start,
     event,
-    changeSignature: () => {
-      signature += 1
-    },
+    changeSignature,
   }
 }
 
@@ -396,7 +400,7 @@ describe('auto routes topology delivery', () => {
     vi.useFakeTimers()
     const { ctx, start, event, handleFileChange } = setup()
     handleFileChange.mockResolvedValue(true)
-    vi.mocked(ctx.autoRoutesService!.getSourceFingerprint).mockReturnValue('same-source')
+    ctx.runtimeState.autoRoutes.pageDeclarationFingerprints.set(newPage, 'same-source')
     const failure = new Error('reload delivery failed')
     const send = vi.fn().mockImplementationOnce(() => {
       throw failure
@@ -429,14 +433,90 @@ describe('auto routes topology delivery', () => {
     vi.useFakeTimers()
     const { ctx, start, event, handleFileChange } = setup()
     handleFileChange.mockResolvedValue(true)
-    const fingerprint = vi.mocked(ctx.autoRoutesService!.getSourceFingerprint).mockReturnValue('first-source')
+    const fingerprints = ctx.runtimeState.autoRoutes.pageDeclarationFingerprints
+    fingerprints.set(newPage, 'first-source')
     const send = vi.fn()
     start('web', vi.fn(), { send })
     try {
       event('add')(newPage)
       await vi.advanceTimersByTimeAsync(80)
       expect(send).toHaveBeenCalledExactlyOnceWith({ type: 'full-reload' })
-      fingerprint.mockReturnValue('changed-source')
+      fingerprints.set(newPage, 'changed-source')
+      event('add')(newPage)
+      await vi.advanceTimersByTimeAsync(80)
+      expect(send.mock.calls).toEqual([[{ type: 'full-reload' }], [{ type: 'full-reload' }]])
+    }
+    finally {
+      await ctx.runtimeState.watcher.sidecarWatcherMap.get('__auto-routes-source-watcher__')?.close()
+      vi.useRealTimers()
+    }
+  })
+
+  it('publishes a complete renamed scan once when add arrives after unlink publication', async () => {
+    vi.useFakeTimers()
+    const { ctx, start, event, handleFileChange, changeSignature } = setup()
+    const previous = '/project/src/pages/previous/index.vue'
+    const declaration = '/project/src/pageScripts/profile.mjs'
+    const sources = ctx.runtimeState.autoRoutes.pageDeclarationFingerprints
+    sources.set(previous, 'page-source')
+    sources.set(declaration, 'declaration-source')
+    vi.mocked(ctx.autoRoutesService!.getWatchFiles).mockImplementation(() => sources.keys())
+    vi.mocked(ctx.autoRoutesService!.getSourceFingerprint).mockImplementation(file => sources.get(file))
+    handleFileChange.mockResolvedValue(true).mockImplementationOnce(async () => {
+      sources.delete(previous)
+      sources.set(newPage, 'page-source')
+      changeSignature()
+      return true
+    })
+    const watchChange = vi.fn().mockResolvedValue(undefined)
+    const send = vi.fn()
+    start('web', vi.fn(), { watchChange, send })
+    try {
+      // 物理重命名已经完成；首个 unlink 的完整扫描已发现移动后的全部源码。
+      event('unlink')(previous)
+      await vi.advanceTimersByTimeAsync(80)
+      expect(send).toHaveBeenCalledExactlyOnceWith({ type: 'full-reload' })
+      expect(watchChange).toHaveBeenCalledExactlyOnceWith(previous, { event: 'delete' })
+      expect(ctx.autoRoutesService!.getSourceFingerprint(previous)).toBeUndefined()
+      expect(ctx.autoRoutesService!.getSourceFingerprint(newPage)).toBe('page-source')
+
+      // 第二批在第一次发布完成后才送达，不能靠事件批次合并消除重复刷新。
+      event('add')(newPage)
+      await vi.advanceTimersByTimeAsync(80)
+      expect(handleFileChange.mock.calls).toEqual([[previous, 'rename'], [newPage, 'rename']])
+      expect(watchChange.mock.calls).toEqual([[previous, { event: 'delete' }], [newPage, { event: 'create' }]])
+      expect(send).toHaveBeenCalledExactlyOnceWith({ type: 'full-reload' })
+    }
+    finally {
+      await ctx.runtimeState.watcher.sidecarWatcherMap.get('__auto-routes-source-watcher__')?.close()
+      vi.useRealTimers()
+    }
+  })
+
+  it('publishes the last page deletion once and reloads its restored source', async () => {
+    vi.useFakeTimers()
+    const { ctx, start, event, handleFileChange, changeSignature } = setup()
+    const sources = ctx.runtimeState.autoRoutes.pageDeclarationFingerprints
+    sources.set(newPage, 'page-source')
+    vi.mocked(ctx.autoRoutesService!.getWatchFiles).mockImplementation(() => sources.keys())
+    vi.mocked(ctx.autoRoutesService!.getSourceFingerprint).mockImplementation(file => sources.get(file))
+    handleFileChange.mockResolvedValue(true).mockImplementationOnce(async () => {
+      sources.clear()
+      changeSignature()
+      return true
+    })
+    const send = vi.fn()
+    start('web', vi.fn(), { send })
+    try {
+      event('unlink')(newPage)
+      await vi.advanceTimersByTimeAsync(80)
+      expect(send).toHaveBeenCalledExactlyOnceWith({ type: 'full-reload' })
+      event('unlink')(newPage)
+      await vi.advanceTimersByTimeAsync(80)
+      expect(send).toHaveBeenCalledExactlyOnceWith({ type: 'full-reload' })
+
+      sources.set(newPage, 'restored-source')
+      changeSignature()
       event('add')(newPage)
       await vi.advanceTimersByTimeAsync(80)
       expect(send.mock.calls).toEqual([[{ type: 'full-reload' }], [{ type: 'full-reload' }]])
@@ -451,7 +531,7 @@ describe('auto routes topology delivery', () => {
     vi.useFakeTimers()
     const { ctx, start, event, handleFileChange } = setup()
     handleFileChange.mockResolvedValue(true)
-    vi.mocked(ctx.autoRoutesService!.getSourceFingerprint).mockReturnValue('same-source')
+    ctx.runtimeState.autoRoutes.pageDeclarationFingerprints.set(newPage, 'same-source')
     const previousSend = vi.fn()
     const plugin = start('web', vi.fn(), { send: previousSend })
     const currentSend = vi.fn()

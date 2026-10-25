@@ -7,6 +7,7 @@ import path from 'pathe'
 import { createServer } from 'vite'
 import { expect, it, vi } from 'vitest'
 import { weappWebPlugin } from '../../../../packages-runtime/web/src/plugin'
+import { createRuntimeState } from '../runtime/runtimeState'
 import { autoRoutes } from './autoRoutes'
 
 const sidecarHandlers = vi.hoisted(() => new Map<string, (filePath: string) => void>())
@@ -55,6 +56,8 @@ it('publishes the refreshed Web entry before reloading a restored route source',
   let server: ViteDevServer | undefined
   const entriesAtReload: Array<ReturnType<ViteDevServer['transformRequest']>> = []
   const pages = () => ['pages/home/index', ...(includeRestored ? ['pages/restored/index'] : [])]
+  const runtimeState = createRuntimeState()
+  runtimeState.autoRoutes.signature = JSON.stringify(pages())
   const scanService = {
     appEntry: { path: app },
     markDirty() { cachedConfig = undefined },
@@ -64,7 +67,7 @@ it('publishes the refreshed Web entry before reloading a restored route source',
     ensureFresh: async () => {},
     getWatchFiles: () => [],
     getWatchDirectories: () => [srcRoot],
-    getSignature: () => JSON.stringify(pages()),
+    getSignature: () => runtimeState.autoRoutes.signature,
     getSourceFingerprint: () => undefined,
     getModuleCode: () => `export const pages = ${JSON.stringify(pages())}`,
     getNamedModuleCode: () => `export const routes = ${JSON.stringify(pages())}`,
@@ -75,16 +78,14 @@ it('publishes the refreshed Web entry before reloading a restored route source',
       coreStarted.release()
       await coreRelease.promise
       includeRestored = true
+      runtimeState.autoRoutes.signature = JSON.stringify(pages())
       return true
     },
   }
   const ctx = {
     autoRoutesService: service,
     scanService,
-    runtimeState: {
-      watcher: { sidecarWatcherMap: new Map() },
-      build: { hmr: { resolvedEntryMap: new Map(), profile: {} } },
-    },
+    runtimeState,
     configService: {
       cwd: root,
       absoluteSrcRoot: srcRoot,

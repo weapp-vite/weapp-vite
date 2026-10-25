@@ -1,11 +1,16 @@
 import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
-import { access } from 'node:fs/promises'
+import { access, mkdtemp, realpath } from 'node:fs/promises'
 import path from 'node:path'
 import { performance } from 'node:perf_hooks'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { MANAGED_PROJECT_JOURNAL_ENV } from '../../../packages/weapp-ide-cli/src/index.ts'
+
+/** 原生后端可能解析真实路径，监督者与 worker 共用同一个物理 fixture 根。 */
+export async function createContractFixtureRoot(directory) {
+  return realpath(await mkdtemp(path.join(directory, 'chokidar-contracts-')))
+}
 
 export function workerEnvironment(scopeEnvironment, inheritedEnvironment = process.env) {
   assert.ok(typeof MANAGED_PROJECT_JOURNAL_ENV === 'string' && MANAGED_PROJECT_JOURNAL_ENV)

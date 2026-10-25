@@ -19,6 +19,11 @@ const packageData = {
       '#custom': { custom: './custom.js', default: './default.js' },
       '#bare': 'some-package/feature',
       '#wild/*': './lib/*.js',
+      '#literal?query': './literal-query.js',
+      '#literal#fragment': './literal-fragment.js',
+      '#wild#literal/*': './fragment/*.js',
+      '#blocked': './fallback.js',
+      '#blocked?query': { custom: './blocked-custom.js' },
     },
   },
 }
@@ -100,6 +105,13 @@ async function behavior(api) {
   delete overrides.isRequire
   assert.equal(callback('#mode?raw#anchor', importer, false), relativeResult('import.js', '?raw#anchor'))
   assert.equal(callback('#wild/part?raw', importer, false), relativeResult('lib/part.js', '?raw'))
+  assert.equal(callback('#wild/part?raw#anchor', importer, false), relativeResult('lib/part.js', '?raw#anchor'))
+  assert.equal(callback('#literal?query', importer, false), relativeResult('literal-query.js'))
+  assert.equal(callback('#literal?query?raw#anchor', importer, false), relativeResult('literal-query.js', '?raw#anchor'))
+  assert.equal(callback('#literal#fragment', importer, false), relativeResult('literal-fragment.js'))
+  assert.equal(callback('#literal#fragment?raw#anchor', importer, false), relativeResult('literal-fragment.js', '?raw#anchor'))
+  assert.equal(callback('#wild#literal/part?raw#anchor', importer, false), relativeResult('fragment/part.js', '?raw#anchor'))
+  assert.throws(() => callback('#blocked?query', importer, false), 'An explicit unmapped condition cannot fall back to a shorter exact key')
   assert.equal(callback('#bare', importer, false), 'some-package/feature')
   assert.equal(callback('#env', importer, false), relativeResult('development.js'))
   options.isProduction = true

@@ -7,8 +7,23 @@ import { bounded, deferred, turn } from './support.mjs'
 export function holdRemoveEntries(owner, root, expected) {
   const captured = new Map()
   const failures = []
+  const initialFacts = owner.watcher.tree
+    ? new Map([...expected.keys()].map(file => [file, {
+        fact: owner.watcher.tree.observed.get(file),
+        tracked: owner.watcher.tree.peekDirectory(path.dirname(file))?.has(path.basename(file)),
+      }]))
+    : undefined
   const capture = (file) => {
     if (captured.has(file)) {
+      return
+    }
+    if (initialFacts) {
+      // v6 删除由 tree membership 幂等提交，不再持有 remove 冷却计时器。
+      const initial = initialFacts.get(file)
+      if (!initial?.tracked || owner.watcher.tree.peekDirectory(path.dirname(file))?.has(path.basename(file))) {
+        failures.push(`The removed tree fact is still current for ${path.relative(root, file)}`)
+      }
+      captured.set(file, initial)
       return
     }
     const entry = owner.watcher._throttled?.get('remove')?.get(file)
@@ -36,17 +51,21 @@ export function holdRemoveEntries(owner, root, expected) {
       return {
         stage,
         failures: failures.slice(),
+        mechanism: initialFacts ? 'tree-membership' : 'remove-cooldown',
         entries: [...captured].map(([file, entry], index) => ({
           identity: `old-remove-${index + 1}`,
           path: path.relative(root, file).replaceAll('\\', '/'),
           oldTimerExplicitlyReleased: false,
-          oldEntryStillCurrent: owner.watcher._throttled?.get('remove')?.get(file) === entry,
-          duplicateCount: entry.count,
+          oldEntryStillCurrent: initialFacts ? Boolean(entry.fact && owner.watcher.tree.observed.get(file) === entry.fact) : owner.watcher._throttled?.get('remove')?.get(file) === entry,
+          duplicateCount: entry?.count,
         })),
       }
     },
     close() {
       owner.watcher.off('all', listener)
+      if (initialFacts) {
+        return
+      }
       for (const [file, entry] of captured) {
         if (owner.watcher._throttled?.get('remove')?.get(file) === entry) {
           entry.clear()
@@ -128,17 +147,20 @@ async function verifyDirectory({ chokidar, root, watched, timeoutMs, open, ready
 }
 
 function holdAtomicFlush(owner, file, removeGate) {
-  const pending = owner.watcher._pendingUnlinks
+  const pending = owner.watcher.events?.pendingUnlinks ?? owner.watcher._pendingUnlinks
   assert.ok(pending instanceof Map, 'diagnostic atomic pending buffer is available')
   const setDescriptor = Object.getOwnPropertyDescriptor(pending, 'set')
   const originalSet = pending.set
-  const originalSetTimeout = globalThis.setTimeout
+  const scheduler = owner.watcher.scheduler ?? globalThis
+  const originalSetTimeout = scheduler.setTimeout
+  const created = new Map()
   const buffered = deferred()
   let armed = false
   let captured
   let released = false
-  globalThis.setTimeout = function (callback, delay, ...args) {
-    const timer = originalSetTimeout(callback, delay, ...args)
+  scheduler.setTimeout = function (callback, delay, ...args) {
+    const timer = originalSetTimeout.call(this, callback, delay, ...args)
+    created.set(timer, { timer, callback, args })
     if (armed && delay === 100) {
       armed = false
       clearTimeout(timer)
@@ -153,7 +175,12 @@ function holdAtomicFlush(owner, file, removeGate) {
       const result = originalSet.call(this, key, value)
       if (key === file && !captured && !armed) {
         removeGate.capture(file)
-        armed = true
+        if (value.timer) {
+          captured = created.get(value.timer)
+          assert.ok(captured, 'the exact v6 unlink timer was created by its original scheduler')
+          scheduler.clearTimeout(value.timer)
+        }
+        else { armed = true }
         buffered.resolve()
       }
       return result
@@ -170,7 +197,7 @@ function holdAtomicFlush(owner, file, removeGate) {
     assertCaptured() { assert.ok(captured, 'the exact buffered unlink owns a held original atomic timeout callback') },
     release,
     close() {
-      globalThis.setTimeout = originalSetTimeout
+      scheduler.setTimeout = originalSetTimeout
       if (setDescriptor) {
         Object.defineProperty(pending, 'set', setDescriptor)
       }
@@ -227,7 +254,7 @@ async function verifyAtomic({ chokidar, root, watched, timeoutMs, open, ready, i
     await rename(replacement, file)
     await change
     assert.equal(await readFile(file, 'utf8'), contents)
-    assert.equal(owner.watcher._pendingUnlinks.has(file), false, 'native re-add consumes the original atomic unlink buffer')
+    assert.equal((owner.watcher.events?.pendingUnlinks ?? owner.watcher._pendingUnlinks).has(file), false, 'native re-add consumes the original atomic unlink buffer')
     afterChange = removeGate.snapshot('after-atomic-change-before-original-flush-release')
     await observer.flush(() => atomicGate.release())
     await turn()

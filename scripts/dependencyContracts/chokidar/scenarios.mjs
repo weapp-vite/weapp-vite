@@ -1,6 +1,6 @@
 export const scenarios = [
   { id: 'recover-recursive-win32', kind: 'recover', platform: 'win32', scope: 'recursive' },
-  { id: 'recover-root-win32', kind: 'recover', platform: 'win32', scope: 'root' },
+  { id: 'recover-root-win32', kind: 'recover', platform: 'win32', scope: 'root', backend: 'auto' },
   { id: 'recover-cwd-depth-ignore-initial-win32', kind: 'recover', platform: 'win32', scope: 'recursive', cwd: true, depth: 1, ignoreInitial: true },
   { id: 'removed-exact-native-classification', kind: 'classify', platform: 'native', remove: true },
   { id: 'removed-exact-nonwindows-propagates', kind: 'classify', platform: 'linux', remove: true },
@@ -20,7 +20,7 @@ export const scenarios = [
   { id: 'directory-generation-before-remove-cooldown', kind: 'remove-cooldown', platform: 'win32', entryType: 'directory' },
   { id: 'atomic-readd-coalesces-with-held-remove-cooldown', kind: 'remove-cooldown', platform: 'win32', entryType: 'atomic' },
   { id: 'old-file-listener-enoent-after-replacement', kind: 'stale-file-read', platform: 'win32' },
-  { id: 'native-inode-rebind-observes-next-change', kind: 'file-branches', platform: 'native', branch: 'inode' },
+  { id: 'native-inode-rebind-observes-next-change', kind: 'file-branches', platform: 'native', branch: 'inode', backend: 'auto' },
   { id: 'shared-native-inode-direct-file', kind: 'shared-inode', platform: 'native', branch: 'inode' },
   { id: 'polling-file-events-and-exact-stop', kind: 'file-branches', platform: 'native', branch: 'polling' },
   { id: 'polling-upgrade-old-owner-close', kind: 'polling-owners', platform: 'native', closeUpgrader: false },

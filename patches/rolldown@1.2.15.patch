@@ -1,11 +1,11 @@
-diff --git a/dist/shared/bindingify-input-options-UCGox0BH.mjs b/dist/shared/bindingify-input-options-UCGox0BH.mjs
-index ecc6c6390..f684b33ba 100644
---- a/dist/shared/bindingify-input-options-UCGox0BH.mjs
-+++ b/dist/shared/bindingify-input-options-UCGox0BH.mjs
-@@ -770,6 +770,135 @@ function collectChangedBundle(changed, bundle) {
+diff --git a/dist/shared/bindingify-input-options-BMZwyvQ7.mjs b/dist/shared/bindingify-input-options-BMZwyvQ7.mjs
+index ce53a171a..0a300701e 100644
+--- a/dist/shared/bindingify-input-options-BMZwyvQ7.mjs
++++ b/dist/shared/bindingify-input-options-BMZwyvQ7.mjs
+@@ -755,6 +755,137 @@ function collectChangedBundle(changed, bundle) {
  	};
  }
- //#endregion
+ // src/options/normalized-input-options.ts
 +/** 复制 native getter 返回的数据，保留 RegExp、undefined 与独立对象身份。 */
 +function cloneOptionData(value) {
 +  if (Array.isArray(value)) {
@@ -58,6 +58,7 @@ index ecc6c6390..f684b33ba 100644
 +  get dir() { return this.#values.dir; }
 +  get file() { return this.#values.file; }
 +  get format() { return this.#values.format; }
++  get charset() { return this.#values.charset; }
 +  get exports() { return this.#values.exports; }
 +  get esModule() { return this.#values.esModule; }
 +  get codeSplitting() { return this.#values.codeSplitting; }
@@ -103,6 +104,7 @@ index ecc6c6390..f684b33ba 100644
 +    dir: binding.dir,
 +    file: binding.file,
 +    format: binding.format,
++    charset: binding.charset,
 +    exports: binding.exports,
 +    esModule: binding.esModule,
 +    codeSplitting: binding.codeSplitting,
@@ -135,10 +137,10 @@ index ecc6c6390..f684b33ba 100644
 +  return new NormalizedOptionsSnapshot(values);
 +}
 +
- //#region src/options/normalized-input-options.ts
  var NormalizedInputOptionsImpl = class extends PlainObjectLike {
  	onLog;
-@@ -1034,6 +1163,7 @@ var PluginContextData = class {
+ 	inputPlugins;
+@@ -1019,6 +1150,7 @@ var PluginContextData = class {
  	renderedChunkMeta = null;
  	normalizedInputOptions = null;
  	normalizedOutputOptions = null;
@@ -146,7 +148,7 @@ index ecc6c6390..f684b33ba 100644
  	constructor(onLog, outputOptions, normalizedInputPlugins, normalizedOutputPlugins) {
  		this.onLog = onLog;
  		this.outputOptions = outputOptions;
-@@ -1110,13 +1240,17 @@ var PluginContextData = class {
+@@ -1095,13 +1227,17 @@ var PluginContextData = class {
  		return this.renderedChunkMeta;
  	}
  	getInputOptions(opts) {

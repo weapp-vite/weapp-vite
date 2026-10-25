@@ -1,9 +1,11 @@
 import path from 'node:path'
+import chokidar from 'chokidar'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const state = vi.hoisted(() => ({
   contents: new Map<string, string>(),
   dependencies: [] as string[],
+  inlineConfig: {} as Record<string, unknown>,
   handlers: new Map<string, () => void>(),
   build: vi.fn(async () => undefined),
   add: vi.fn(),
@@ -28,6 +30,7 @@ vi.mock('../runtime/compilerSession', () => ({
         configService: {
           absoluteSrcRoot: path.join(options.cwd, 'src'),
           configFileDependencies: [...state.dependencies],
+          inlineConfig: state.inlineConfig,
           outDir: options.outputRoot,
         },
       }
@@ -70,14 +73,20 @@ beforeEach(() => {
   state.contents.clear()
   state.contents.set(source, 'one')
   state.dependencies = []
+  state.inlineConfig = {}
   state.handlers.clear()
   state.build.mockReset().mockResolvedValue(undefined)
   state.add.mockClear()
   state.close.mockClear()
+  vi.mocked(chokidar.watch).mockClear()
+  vi.stubEnv('CHOKIDAR_USEPOLLING', undefined)
+  vi.stubEnv('CHOKIDAR_INTERVAL', undefined)
+  vi.stubEnv('CHOKIDAR_BINARY_INTERVAL', undefined)
 })
 
 afterEach(async () => {
   await Promise.all(watchers.splice(0).map(watcher => watcher.close()))
+  vi.unstubAllEnvs()
   vi.useRealTimers()
 })
 
@@ -87,6 +96,62 @@ async function emit(event = 'change') {
 }
 
 describe('test artifact watch invalidation', () => {
+  it.each([
+    { label: 'unconfigured backend', config: {}, expected: {} },
+    {
+      label: 'build native backend over server polling',
+      config: {
+        build: { watch: { chokidar: { backend: 'native' } } },
+        server: { watch: { backend: 'polling' } },
+      },
+      expected: { backend: 'native' },
+    },
+    {
+      label: 'explicit automatic backend',
+      config: { build: { watch: { chokidar: { backend: 'auto', usePolling: true } } } },
+      expected: { backend: 'auto' },
+    },
+    {
+      label: 'legacy server native backend',
+      config: { server: { watch: { usePolling: false } } },
+      expected: { backend: 'native' },
+    },
+    {
+      label: 'canonical polling intervals',
+      config: { build: { watch: { chokidar: { backend: 'polling', pollingInterval: 25, pollingBinaryInterval: 50 } } } },
+      expected: { backend: 'polling', pollingInterval: 25, pollingBinaryInterval: 50 },
+    },
+    {
+      label: 'legacy polling intervals',
+      config: { server: { watch: { usePolling: true, interval: 30, binaryInterval: 60 } } },
+      expected: { backend: 'polling', pollingInterval: 30, pollingBinaryInterval: 60 },
+    },
+  ])('inherits $label from the initialized compiler configuration', async ({ config, expected }) => {
+    state.inlineConfig = config
+    const { watchTestArtifact } = await import('../testArtifact')
+    const watcher = await watchTestArtifact({ cwd })
+    watchers.push(watcher)
+
+    expect(chokidar.watch).toHaveBeenCalledWith(expect.any(Array), {
+      ...expected,
+      ignoreInitial: true,
+      ignored: expect.any(Function),
+    })
+  })
+
+  it('retains a plain startup snapshot when later compiler work changes its configuration', async () => {
+    const config = { build: { watch: { chokidar: { backend: 'native' } } } }
+    state.inlineConfig = config
+    state.build.mockImplementationOnce(async () => {
+      config.build.watch.chokidar.backend = 'polling'
+    })
+    const { watchTestArtifact } = await import('../testArtifact')
+    const watcher = await watchTestArtifact({ cwd })
+    watchers.push(watcher)
+
+    expect(chokidar.watch).toHaveBeenCalledWith(expect.any(Array), expect.objectContaining({ backend: 'native' }))
+  })
+
   it('ignores late duplicate notifications after publishing the same inputs', async () => {
     const { watchTestArtifact } = await import('../testArtifact')
     const onRebuilt = vi.fn()

@@ -14,7 +14,7 @@
     "postinstall": "wv prepare"
   },
   "devDependencies": {
-    "vite-plus": "1.0.0",
+    "vite-plus": "1.4.0",
     "weapp-vite": "workspace:*",
     "wevu": "workspace:*"
   }

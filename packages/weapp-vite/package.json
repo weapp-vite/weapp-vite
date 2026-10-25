@@ -143,7 +143,7 @@
     "volar.cjs"
   ],
   "engines": {
-    "node": "^22.18.0 || ^24.11.0 || >=26.0.0"
+    "node": "^22.23.4 || ^24.22.1 || >=26.12.1"
   },
   "scripts": {
     "dev": "tsdown -w --sourcemap",
@@ -181,14 +181,14 @@
     "@babel/preset-env": "^8.0.7",
     "@babel/preset-typescript": "^8.0.7",
     "@jridgewell/remapping": "^2.3.5",
-    "@modelcontextprotocol/node": "^2.1.1",
-    "@modelcontextprotocol/server": "^2.3.1",
+    "@modelcontextprotocol/node": "^2.1.2",
+    "@modelcontextprotocol/server": "^2.4.0",
     "@types/picomatch": "^4.0.3",
     "@types/set-value": "^4.0.3",
-    "@typescript-eslint/parser": "^8.71.2",
+    "@typescript-eslint/parser": "^8.72.0",
     "@vercel/detect-agent": "^1.2.7",
-    "@volar/language-service": "^2.4.28",
-    "@volar/typescript": "^2.4.28",
+    "@volar/language-service": "^2.4.30",
+    "@volar/typescript": "^2.4.30",
     "@vue/language-core": "catalog:",
     "@weapp-core/constants": "workspace:*",
     "@weapp-core/init": "workspace:*",
@@ -209,10 +209,10 @@
     "@wevu/api": "workspace:*",
     "@wevu/web-apis": "workspace:*",
     "cac": "^7.1.0",
-    "chokidar": "^5.0.0",
+    "chokidar": "^6.0.0",
     "comment-json": "catalog:",
     "devframe": "catalog:",
-    "dotenv": "^18.0.8",
+    "dotenv": "^18.0.9",
     "dotenv-expand": "^1000.0.0",
     "eslint": "catalog:",
     "fdir": "catalog:",
@@ -223,7 +223,7 @@
     "magic-string": "catalog:",
     "merge": "catalog:",
     "obug": "catalog:",
-    "p-queue": "^9.3.5",
+    "p-queue": "^10.0.0",
     "package-manager-detector": "^1.9.0",
     "pathe": "catalog:",
     "picomatch": "^4.0.7",
@@ -248,13 +248,13 @@
     "zod": "catalog:"
   },
   "optionalDependencies": {
-    "@swc/core": "^1.16.18"
+    "@swc/core": "^1.16.20"
   },
   "devDependencies": {
-    "@devframes/agentic": "1.2.5",
-    "@devframes/hub": "1.2.5",
-    "@devframes/hub-ui": "1.2.5",
-    "@modelcontextprotocol/client": "^2.3.1",
+    "@devframes/agentic": "1.2.6",
+    "@devframes/hub": "1.2.6",
+    "@devframes/hub-ui": "1.2.6",
+    "@modelcontextprotocol/client": "^2.4.0",
     "@vitejs/devtools": "catalog:",
     "@vitejs/devtools-kit": "catalog:",
     "oxc-parser": "catalog:",

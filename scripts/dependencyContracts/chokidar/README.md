@@ -6,39 +6,44 @@
 node --import tsx scripts/dependencyContracts/chokidar/run.mjs --report .tmp/dependency-contracts/chokidar.json
 ```
 
-`pnpm test:dependency-contracts` 通过现有 `run-e2e-commands` 串行入口运行本契约；直接执行也必须取得同一机器租约。每个场景使用独立 Node 进程，显式借用父入口派生的非 IDE scope。普通 worker 环境剥离正式 IDE journal，父环境保持原样，不能把依赖测试资源登记到真实 IDE journal。
+`pnpm test:dependency-contracts` 通过现有 `run-e2e-commands` 串行入口运行本契约；直接执行也取得同一机器租约。临时根在创建后解析一次真实路径，避免系统临时目录别名与 native 后端的物理路径产生不同归属。每个场景使用独立 Node 进程，借用父入口派生的非 IDE scope。普通 worker 环境剥离正式 IDE journal，不能把依赖测试资源登记到真实 IDE journal。报告记录实际宿主、模拟平台、安装版本和发行文件哈希；模拟 `process.platform` 的结果不能代替真实 Windows CI。
 
-这些契约使用真实宿主文件系统和原生 `FSWatcher` / `StatWatcher`，按确定的事件门禁暂停异步读取及旧代移除冷却。`process.platform` 覆盖只用于验证平台分支，报告保留实际平台和模拟声明，不能代替真实 Windows CI。原生 inode 更替场景仅适用于 macOS、Linux 和 FreeBSD；Windows 明确记录 `non-applicable`，不计入通过数量。
+## Chokidar 6 的观测边界
 
-macOS 上 `fs.watch` 返回和 Chokidar 初次扫描的 `ready` 不保证 CF 线程已启动目录事件流。重建目录的契约在首次修改前，用 fixture 根目录的独立原生 watcher 完成一次公开关闭，并等待它的精确原生关闭回调；当前 libuv 的 Darwin 实现会在关闭时同步重建其余目录订阅的事件流。辅助句柄与产品句柄分别登记和核验，不改 Chokidar 自身订阅、不补发回调、不重试写入，也不把这项实现边界声称为 Node 的通用公开 readiness API。原生错误仍使契约失败；后续实际 add/change/unlink 断言继续验证产品回调。报告独立记录辅助关闭证据与产品句柄的原始通知，通知超过 128 条时明确记录省略数量。空目录根 ENOENT 单测也经过同一准备步骤，并只接受本次 `queued.txt` 写入的精确原始通知，排除目录创建时的迟到事件。
+场景 ID 延续原有 29 项，以便比较历史报告。Chokidar 6 重写了后端和协调流程，因此私有资源断言随实现迁移，公开的删除、重建、下一次写入、共享所有权和关闭要求保持有效：
 
-atomic 冷却契约在初次公开 `ready` 后、第一次删除前执行相同门禁；重建目录的契约在新文件 `add` 后再次执行门禁，再开始后续修改和删除。父目录先前完成的门禁不能代替新取得的子目录订阅就绪。门禁失败保留原始错误，不进行后续修改；atomic unlink 缓冲和旧 remove 冷却保持原有时序。
+- 原生文件由父目录资源及精确 candidate 协调观察；直接监听同一文件的两个 owner 共享父目录资源。macOS 还可能取得一次性的精确文件 fallback。inode 替换后要求两个 owner 都能继续收到真实写入，并验证一个 owner 退出不会关闭幸存 owner 的资源；不要求创建替换文件句柄。
+- 删除通过目录成员关系和 tree entry 身份提交，不再存在 `remove` 冷却计时器。文件、目录和子项仍须完整产生 unlink/add/unlink，旧扫描和旧 stat 不得提交到新的 tree entry。
+- polling 使用 Chokidar 自己的异步 stat 和 scheduler timer，不使用本库的 `fs.watchFile`。observer 注入一个共享 scheduler，保留真实计时器、原 stat Promise 和 Error，并记录 timer、pending read、interval 和 persistence。关闭必须取消本库拥有的 timer 并排空已执行的读取，独立 `fs.watchFile` 和另一项目不受影响。
+- root 恢复和单 owner inode 场景显式覆盖 `backend: 'auto'`；其他原生场景显式使用 `native`，轮询场景使用 `polling`。recursive 后端的原生关闭还由资源单测覆盖。
 
-atomic 替换文件在订阅前于同一 fixture 文件系统、watched 目录之外完整写好；精确 unlink 缓冲和旧 remove 冷却均被持有后，才将它 rename 到原路径，并核验最终文本及替换前后的 dev/ino/size/mtime。局部旁路 observer 用异步调用上下文关联真实 `fs.watch` 通知、精确文件 listener 及其注册代、原始 `_emit` 和全部公开 `all` 事件；不补发、不丢弃或过滤事件，不改变原调用的 receiver、参数、Promise 和 Error。严格要求一次原始 unlink 进入缓冲、一次 ADD 消费同一 pending entry 并且只输出一个 change，独立释放原 held flush 后包括异步在内没有公开输出。
+原生 observer 保留真实 `fs.watch` 的 receiver、参数和返回值，只旁路观察回调、公开关闭和捕获的底层关闭完成。Darwin/Windows 的 FSEvent handle 同时要求精确的原生完成证据；Linux recursive wrapper 则要求它实际取得的全部子句柄终结。未知原生形状、丢失回调、重复关闭、强制收尾和观察异常均失败。Windows namespace 只在观测路径归属中归一化，原调用参数和原 Error 保持不变，分类不折叠大小写。
 
-父目录广播和文件自身的独立原生通知可能在节流退出后各自产生 change；这不是第二次 atomic ADD 转换。额外 change 仅在来源是目标文件或父目录的精确目标文件名、属于替换代文件 listener、stat 与最终替换文件一致且一个原始 `_emit` 至多输出一次时成立；同一原生通知或 listener 不能重复解释公开输出，也不能复用 unlink/ADD 的通知。无来源、旧代、其他文件通知或 held flush 输出均失败，全部原始事件仍进入报告。公开关闭 owner 并等待已观察 listener settlement 后才作最终核验。该契约仅证明 atomic 转换边界，不承诺保存事件全局 exactly-once；历史失败保持失败，不以新归因追认通过。
+macOS 上 `fs.watch` 返回和公开 `ready` 不保证目录事件流已准备好。需要首次目录通知的场景使用 fixture 根目录独立原生 watcher 的精确关闭完成作为当前 libuv 的准备门禁，辅助资源单独登记；不补发回调、不重试写入，也不把该实现边界称作通用 Node readiness API。重建的子目录需要自己的准备门禁。
 
-所有权、重绑和恢复后的独立后续写入先经过同一个 observed-drain 检查点：在 owner 的首次 `add` 前观察精确文件 listener，保留原调用、返回 Promise 和 Error 身份；等待已观察 listener 全部结束、该文件原有 watch/change 节流自然退出，并确认一个事件循环 turn 内 epoch 不变。观察不清除计时器、不补发事件、不固定 sleep，也不改现有 stat 门禁；`cwd` 下分别按原 watch key 与相对 change key 匹配同一文件。超时、关闭或 listener 拒绝均失败，旁路观察到的拒绝独立记录为 `listenerFailures`，不伪装为 public `error`；worker 在用例完成和最终清理后均核验，不能因未调用检查点而漏报。公开 close 和读取门禁释放后，同一 observer 还须在预算内等待已登记 listener 全部结束，再生成最终失败清单；未完成时保留临时目录并报告 cleanup 失败，不能用 native close 代替异步 listener 完成证据。
+## 异步阶段与 atomic
 
-该检查点只用于 `atomic: false` 且未开启 `awaitWriteFinish` 的独立事件阶段，不覆盖额外的 pending-unlink/pending-write 队列，不声称操作系统未来不会再交付旧通知，也不构成高频每次 write 必发 change 的保证。专门验证旧错误、atomic 和 remove 冷却的门禁时序保持原样。恢复和共享 owner 的后续写入使用已存在文件的 `r+` 更新并核验文本严格变长，避免引入额外的 truncate 中间阶段；change 同时要求目标新内容的文件大小，随后核验最终内容，旧 stat 不能冒充目标写入通过。这不增加文件写满稳定性或截断通知重放的契约；未通过的历史运行仍保持失败。
+首次 `add` 前安装事件阶段 observer。v6 观察原目录 reconciliation 回调的 Promise、拒绝和 epoch，并等待目标的 watch/change 节流自然结束；原回调的 receiver、参数、返回 Promise 和 Error 身份均不改变。owner 范围的协调工作全部排空且一个 turn 内 epoch 不变后，才开始独立的下一次写入。关闭后同样等待已观察任务结束，旁路拒绝单列为 `listenerFailures`。不清除原节流、不固定 sleep，不承诺操作系统未来不会再交付旧通知。
 
-场景覆盖：
+该门禁仅用于 `atomic: false` 且未开启 `awaitWriteFinish` 的阶段。atomic 使用单独的因果 observer，关联真实原生通知、目录 reconciliation、文件 stat 代、原始 `emitEvent` 和全部公开事件。替换文件在 watched 目录外预先写完，再以真实 rename 放到原路径。
 
-- 消失目录的精确 Windows `EPERM/watch` 分类，以及 root、递归、cwd、depth、ignoreInitial 行为。
-- 原生平台、非 Windows、现存路径、错误 syscall、错误 path、仅大小写不同的错误 path、EACCES 和 presence probe 失败；应透传时保留同一原始 Error 对象。大小写负控是分类输入仿真，不声称本机存在两个仅大小写不同的真实条目。
-- root readdir 或 child stat 暂停期间关闭；父目录删除、替换目录先于旧 listing 返回；不发布旧代子节点、不保留已销毁 stream。
-- 两个 public owner 共享原生 watcher，兄弟注册失败或关闭一个 owner 后，另一个仍收到真实变更。
-- 文件与目录在旧 remove 冷却未释放时重新创建并再次删除；atomic unlink/add 的原始 ADD 恰好转换为一个 change，独立文件通知按上述因果契约核验。
-- 旧文件监听回调的真实 ENOENT 延迟返回，不得移除同路径的新代文件。
-- 真实 inode 更替后的原生重新绑定：同一 fixture 文件系统内、watched 目录外预先准备替换文件，订阅后先排空已观察的旧事件，再登记匹配替换文件 dev/ino/size 的 change waiter 并执行 rename；原 inode 的迟到事件不能代替重绑证据。第二次写入使用更长的 `r+` 内容并核验新大小与最终文本。
-- polling 的 change/unlink/add/change 和实际 stop 事件，以及同步 ADD/ready 回调中的 close/unwatch。
-- polling 的 120ms 非持久订阅升级为 100ms 持久订阅，保留已有 owner 的 raw/change；分别重复关闭旧 owner 或升级 owner，随后关闭所有 public owner，同路径独立原生 listener 和另一项目仍观察真实写入，最后精确释放并确认每个 StatWatcher 的 stop。
-- 两个 owner 直接监听同一真实文件，在真实 rename 替换 inode 后共享一个新原生 handle，双方收到随后真实 write 的 change；全程禁止父目录 watcher，旧 handle 与最终新 handle 均只关闭一次。该项和单 owner inode 项在 Windows 均明确记录 `non-applicable`。
-- 同一个共享原生代的两个 stat 同步派发后，先冻结一个 sibling 的真实 ENOENT，另一 sibling 取得新 inode 并完成 rebind；释放原 Error 后，两者均不能发布 unlink/add，且继续收到随后真实 write。门禁只控制原生读取及交还，不人工调用 watcher 回调。
-- 共享 inode rebind 后关闭并重复关闭一个 owner，新 handle 由幸存 owner 保持；后续真实 write 仍发布 change，末个 owner 关闭时每个 native handle 只 close 一次。新增两个 inode 边界在 Windows 同样明确记录 `non-applicable`。
+atomic 场景持有精确 pending entry 的原始 scheduler timeout：一次 unlink 进入缓冲，一次 ADD 消费同一 entry 并恰好转换为一次 change，独立释放原 flush 后不得再产生公开输出。独立 change 必须有目标文件通知、正确文件代和最终 stat 的证据，一个原始 emit 或同一通知不能解释重复输出。observer 不过滤事件；公开 close 和异步 settlement 完成后才作最终核验。
 
-通过要求 public close 幂等完成，并分别核验公开 `close` 事件和每个实际取得的 FSEvent 原生关闭完成。观察器捕获 `fs.watch` 返回时的同一个 `_handle`，保留其原生 close 的 receiver、参数、返回与原回调，只旁路记录真实 native close callback；不补发任何事件。正常路径仍同时要求一个公开 `close` 事件和一次原生关闭完成。Node 在底层 watch 错误后直接关闭 FSEvent、释放 `_handle`，明确不发公开 `close`；该路径必须同时具有同一捕获 handle 的实际关闭完成、原生错误和 wrapper 释放证据，不能单凭 error 或 `_handle === null` 通过。共享 inode 场景仍要求每个 native wrapper 的公开 close 调用和事件均恰好一次。报告分开记录公开调用/事件、原生请求/完成、终结路径和观察错误；重复、错误 receiver、替换 handle、原回调失败、未完成或未知/recursive native shape 均失败。未知形状也保留已取得的 wrapper 登记及精确 close 途径，不丢失资源、不自动视为已终结。
+## 场景覆盖
 
-此外，所有 polling watcher 必须发出 `stop`，worker 删除自己的临时目录，并恢复所有 fs、platform 和局部门禁 mock 后释放借用登记。报告包含安装版本及 `index.js`、`handler.js`、`package.json` 哈希，worker 必须与 supervisor 一致。
+- 精确 Windows `EPERM/watch` 注册失败且路径已消失时恢复；覆盖 root、递归子项、cwd、depth、ignoreInitial 和 auto 后端。
+- 原生平台、非 Windows、现存路径、错误 syscall/path、仅大小写不同的 path、EACCES、presence probe 失败的负控，均核验同一原始 Error 透传。
+- root readdir 或 child stat 暂停时关闭；父目录已 unlinkDir 后释放旧子项读取；替换目录先于旧 listing 返回。v6 原生事件直接协调 candidate，旧 listing 场景用 polling 目录扫描触发同一个读取边界。
+- 两个 owner 共享资源，兄弟注册失败或关闭一个 owner 后，另一个继续观察真实写入。
+- 文件、目录和子项删除、重建、再次删除；atomic unlink/add 合并与旧 flush 的独立释放。
+- 同一 owner unwatch/add 新 root 后，原 root 的真实 ENOENT 延迟返回不能移除新文件；两 owner 的独立读取中，另一个已看到替换 inode 后，迟到 ENOENT 也不能发布 unlink/add。
+- POSIX 同文件系统真实 inode 替换与后续写入，直接文件共享资源、一个 owner 退出后的幸存者和精确最终关闭。Windows 的 inode 场景明确记为不适用，不计入通过数。
+- polling 的 change/unlink/add/change，120ms 非持久订阅升级为 100ms 持久订阅，分别关闭旧 owner 或升级 owner；同步 add/ready 内 close/unwatch 保留其他 owner。
 
-超时、中断、强制收尾、缺失资源证据或删除失败均不得计为通过。supervisor 不修补 worker 临时目录；清理无法确认时停止后续场景，封存独立 scope 并保留报告和现场，交由按精确所有权的恢复流程处理。
+后续写入使用更长的 `r+` 内容并匹配目标新文件大小，再核验最终文本，避免旧 stat 冒充目标写入。读取门禁只控制真实读取及原对象交还，不人工调用产品 listener。
+
+## 清理和证据
+
+worker 先释放本场景门禁、幂等关闭全部 public owner、等待已观察异步任务和原生资源终结，再恢复 mock 并删除自己的 fixture。supervisor 不修补 worker 临时目录。清理无法确认时立即停止后续场景，封存独立 scope 并保留现场，交由核对精确 cleanupKey 的恢复流程处理。
+
+报告包含 `index.js`、`backend.js`、`policy.js`、`reconcile.js`、`runtime.js`、`tree.js` 和 `package.json` 哈希，worker 与 supervisor 必须一致。超时、中断、强制关闭、资源证据缺失或删除失败均不能计为通过。

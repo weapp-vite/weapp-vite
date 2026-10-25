@@ -40,7 +40,7 @@ function fixture(staleIdentity: 'ino' | 'dev' = 'ino') {
   let fileListener: (() => unknown) | undefined
   let owner: ReturnType<typeof observeWatcher> | undefined
   const waiters: { settled: boolean, promise: Promise<unknown>, predicate: ReturnType<typeof vi.fn> }[] = []
-  const originalHandle = { path: 'src/inode-file.txt', closed: false, closePromise: originalClosed.promise }
+  const originalHandle = { path: 'src', closed: false, closePromise: originalClosed.promise }
   const handles = [originalHandle]
   const evidence: { checkpoint: string }[] = []
 
@@ -130,9 +130,6 @@ function fixture(staleIdentity: 'ino' | 'dev' = 'ino') {
     owner!.watcher.emit('all', 'change', file, currentStats)
     await waiters[0].promise
     expect(waiters[0].settled).toBe(true)
-    originalHandle.closed = true
-    originalClosed.resolve()
-    handles.push({ path: originalHandle.path, closed: false, closePromise: Promise.resolve() })
   })
 
   const run = () => {
@@ -187,7 +184,7 @@ it('prepares outside the watched directory and drains an old listener plus its n
   expect(ctx.waiters.map(waiter => waiter.settled)).toEqual([true, true])
   expect(ctx.evidence.map(item => item.checkpoint)).toEqual([
     'observed-event-phase-drained',
-    'real-inode-rebind',
+    'real-inode-replacement-with-directory-coverage',
     'observed-event-phase-drained',
     'second-change-after-real-inode-rebind',
   ])

@@ -57,7 +57,7 @@
     "dist"
   ],
   "engines": {
-    "node": ">=22"
+    "node": "^22.23.4 || ^24.22.1 || >=26.12.1"
   },
   "scripts": {
     "dev": "tsdown -w --sourcemap",
@@ -91,15 +91,15 @@
     }
   },
   "dependencies": {
-    "@modelcontextprotocol/server": "^2.3.1",
+    "@modelcontextprotocol/server": "^2.4.0",
     "@weapp-core/logger": "workspace:*",
     "@weapp-core/shared": "workspace:*",
     "@weapp-vite/devtools-runtime": "workspace:*",
     "@weapp-vite/miniprogram-automator": "workspace:*",
     "cac": "^7.1.0",
-    "execa": "10.1.1",
+    "execa": "10.2.1",
     "pathe": "catalog:",
-    "pixelmatch": "^7.2.0",
+    "pixelmatch": "^8.0.0",
     "pngjs": "^7.0.0",
     "zod": "catalog:"
   },

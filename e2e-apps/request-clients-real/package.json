@@ -13,7 +13,7 @@
     "postinstall": "wv prepare"
   },
   "devDependencies": {
-    "@tanstack/vue-query": "^5.104.3",
+    "@tanstack/vue-query": "^5.104.5",
     "@weapp-vite/dashboard": "workspace:*",
     "axios": "catalog:",
     "graphql-request": "catalog:",

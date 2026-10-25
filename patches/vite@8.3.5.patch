@@ -1,8 +1,8 @@
 diff --git a/dist/node/chunks/node.js b/dist/node/chunks/node.js
-index 121ef458164ab3687690f0e6d14c23ffe4c5d4a3..b7457f77a3ecbfdd45631da0ec354be7b1d9ba86 100644
+index 797794fd9..8cd759be6 100644
 --- a/dist/node/chunks/node.js
 +++ b/dist/node/chunks/node.js
-@@ -11181,50 +11181,72 @@ var require_nodefs_handler = /* @__PURE__ */ __commonJSMin(((exports, module) =>
+@@ -11076,50 +11076,72 @@ var require_nodefs_handler = /* @__PURE__ */ __commonJSMin(((exports, module) =>
  		};
  	};
  	const FsWatchFileInstances = /* @__PURE__ */ new Map();
@@ -21,11 +21,11 @@ index 121ef458164ab3687690f0e6d14c23ffe4c5d4a3..b7457f77a3ecbfdd45631da0ec354be7
 +				if (FsWatchFileInstances.get(fullPath) === cont && cont.listeners.has(listener)) listener(path, curr);
 +			});
 +		};
-+		binding.watcher = fs$5.watchFile(fullPath, options, listener);
++		binding.watcher = fs.watchFile(fullPath, options, listener);
 +		binding.close = () => {
 +			if (binding.closed) return;
 +			binding.closed = true;
-+			fs$5.unwatchFile(fullPath, listener);
++			fs.unwatchFile(fullPath, listener);
 +		};
 +		return binding;
 +	};
@@ -44,7 +44,7 @@ index 121ef458164ab3687690f0e6d14c23ffe4c5d4a3..b7457f77a3ecbfdd45631da0ec354be7
  		let cont = FsWatchFileInstances.get(fullPath);
  		const copts = cont && cont.options;
  		if (copts && (copts.persistent < options.persistent || copts.interval > options.interval)) {
--			fs$5.unwatchFile(fullPath);
+-			fs.unwatchFile(fullPath);
 -			cont = void 0;
 +			const merged = { ...options, persistent: copts.persistent || options.persistent, interval: Math.min(copts.interval, options.interval) };
 +			cont.binding.close();
@@ -70,7 +70,7 @@ index 121ef458164ab3687690f0e6d14c23ffe4c5d4a3..b7457f77a3ecbfdd45631da0ec354be7
 -				listeners: listener,
 -				rawEmitters: rawEmitter,
 -				options,
--				watcher: fs$5.watchFile(fullPath, options, (curr, prev) => {
+-				watcher: fs.watchFile(fullPath, options, (curr, prev) => {
 -					foreach(cont.rawEmitters, (rawEmitter) => {
 -						rawEmitter(EV_CHANGE, fullPath, {
 -							curr,
@@ -94,14 +94,14 @@ index 121ef458164ab3687690f0e6d14c23ffe4c5d4a3..b7457f77a3ecbfdd45631da0ec354be7
  			delFromSet(cont, KEY_RAW, rawEmitter);
  			if (isEmptySet(cont.listeners)) {
 -				FsWatchFileInstances.delete(fullPath);
--				fs$5.unwatchFile(fullPath);
+-				fs.unwatchFile(fullPath);
 +				if (FsWatchFileInstances.get(fullPath) === cont) FsWatchFileInstances.delete(fullPath);
 +				cont.binding.close();
 +				cont.binding = void 0;
  				cont.options = cont.watcher = void 0;
  				Object.freeze(cont);
  			}
-@@ -11444,6 +11466,14 @@
+@@ -11339,6 +11361,14 @@ var require_nodefs_handler = /* @__PURE__ */ __commonJSMin(((exports, module) =>
  		*/
  		async _addToNodeFs(path, initialAdd, priorWh, depth, target) {
  			const ready = this.fsw._emitReady;
@@ -116,7 +116,7 @@ index 121ef458164ab3687690f0e6d14c23ffe4c5d4a3..b7457f77a3ecbfdd45631da0ec354be7
  			if (this.fsw._isIgnored(path) || this.fsw.closed) {
  				ready();
  				return false;
-@@ -11485,10 +11515,8 @@
+@@ -11380,10 +11410,8 @@ var require_nodefs_handler = /* @__PURE__ */ __commonJSMin(((exports, module) =>
  				this.fsw._addPathCloser(path, closer);
  				return false;
  			} catch (error) {
@@ -129,7 +129,7 @@ index 121ef458164ab3687690f0e6d14c23ffe4c5d4a3..b7457f77a3ecbfdd45631da0ec354be7
  			}
  		}
  	};
-@@ -12123,13 +12151,13 @@
+@@ -12018,13 +12046,13 @@ var require_chokidar = /* @__PURE__ */ __commonJSMin(((exports) => {
  				if (!this._readyCount) this._readyCount = 0;
  				this._readyCount += paths.length;
  				Promise.all(paths.map(async (path) => {
@@ -146,7 +146,7 @@ index 121ef458164ab3687690f0e6d14c23ffe4c5d4a3..b7457f77a3ecbfdd45631da0ec354be7
  					});
  				});
  			}
-@@ -28668,7 +28696,8 @@ function runOptimizeDeps(environment, depsInfo) {
+@@ -28753,7 +28781,8 @@ function runOptimizeDeps(environment, depsInfo) {
  		async cancel() {
  			optimizerContext.cancelled = true;
  			const { context } = await preparedRun;
@@ -156,7 +156,7 @@ index 121ef458164ab3687690f0e6d14c23ffe4c5d4a3..b7457f77a3ecbfdd45631da0ec354be7
  			cleanUp();
  		},
  		result: runResult
-@@ -29161,6 +29190,23 @@ const perEnvironmentOrWorkerPlugin = (name, overrideEnvConfig, f) => {
+@@ -29250,6 +29279,23 @@ const perEnvironmentOrWorkerPlugin = (name, overrideEnvConfig, f) => {
  		}
  	}];
  };
@@ -180,7 +180,7 @@ index 121ef458164ab3687690f0e6d14c23ffe4c5d4a3..b7457f77a3ecbfdd45631da0ec354be7
  function oxcResolvePlugin(resolveOptions, overrideEnvConfig, isJsPluginContainer = false) {
  	return [...resolveOptions.optimizeDeps && !resolveOptions.isBuild ? [optimizerResolvePlugin(resolveOptions)] : [], ...perEnvironmentOrWorkerPlugin("vite:resolve-builtin", overrideEnvConfig, (partialEnv, getEnv) => {
  		const depsOptimizerEnabled = resolveOptions.optimizeDeps && !resolveOptions.isBuild && !partialEnv.config.isBundled && !isDepOptimizationDisabled(partialEnv.config.optimizeDeps);
-@@ -29224,21 +29270,9 @@ function oxcResolvePlugin(resolveOptions, overrideEnvConfig, isJsPluginContainer
+@@ -29313,21 +29359,9 @@ function oxcResolvePlugin(resolveOptions, overrideEnvConfig, isJsPluginContainer
  				const newResolvedId = ensureVersionQuery(resolvedId, rawId, options, depsOptimizer);
  				return newResolvedId === resolvedId ? void 0 : newResolvedId;
  			},
@@ -205,7 +205,23 @@ index 121ef458164ab3687690f0e6d14c23ffe4c5d4a3..b7457f77a3ecbfdd45631da0ec354be7
  		});
  		plugin.perEnvironmentWatchChangeDuringDev = true;
  		return plugin;
-@@ -34906,31 +34940,78 @@ function injectEnvironmentToHooks(environment, chunkMetadataMap, plugin) {
+@@ -29390,10 +29424,12 @@ function resolveSubpathImports(id, importer, options) {
+ 	for (let postfixIndex = id.length; postfixIndex > 0; postfixIndex = Math.max(id.lastIndexOf("?", postfixIndex - 1), id.lastIndexOf("#", postfixIndex - 1))) {
+ 		const key = id.slice(0, postfixIndex);
+ 		try {
+-			importsPath = resolveExportsOrImports(pkgData.data, key, options, "imports");
+-			if (importsPath !== void 0) {
++			const resolved = resolveExportsOrImports(pkgData.data, key, options, "imports");
++			if (resolved !== void 0) {
++				importsPath = resolved;
+ 				postfix = id.slice(postfixIndex);
+-				break;
++				// 精确别名优先；通配匹配继续剥离 postfix，避免把 query/hash 写进文件名。
++				if (Object.hasOwn(pkgData.data.imports, key)) break;
+ 			}
+ 		} catch (e) {
+ 			if (Object.hasOwn(pkgData.data.imports, key)) throw e;
+@@ -35039,31 +35075,78 @@ function injectEnvironmentToHooks(environment, chunkMetadataMap, plugin) {
  	return clone;
  }
  const wrappedHookMap = /* @__PURE__ */ new WeakMap();
@@ -307,7 +323,7 @@ index 121ef458164ab3687690f0e6d14c23ffe4c5d4a3..b7457f77a3ecbfdd45631da0ec354be7
  	return newHook;
  }
  function wrapEnvironmentResolveId(environment, hook, pluginName) {
-@@ -35793,22 +35874,38 @@ function createDepsOptimizer(environment) {
+@@ -35926,22 +36009,38 @@ function createDepsOptimizer(environment) {
  	let waitingForCrawlEnd = false;
  	let optimizationResult;
  	let discover;
@@ -354,7 +370,7 @@ index 121ef458164ab3687690f0e6d14c23ffe4c5d4a3..b7457f77a3ecbfdd45631da0ec354be7
  		firstRunCalled = !!cachedMetadata;
  		metadata = depsOptimizer.metadata = cachedMetadata || initDepsOptimizerMetadata(environment, sessionTimestamp);
  		if (!cachedMetadata) {
-@@ -35816,6 +35913,7 @@ function createDepsOptimizer(environment) {
+@@ -35949,6 +36048,7 @@ function createDepsOptimizer(environment) {
  			currentlyProcessing = true;
  			const manuallyIncludedDeps = {};
  			await addManuallyIncludedOptimizeDeps(environment, manuallyIncludedDeps);
@@ -362,7 +378,7 @@ index 121ef458164ab3687690f0e6d14c23ffe4c5d4a3..b7457f77a3ecbfdd45631da0ec354be7
  			const manuallyIncludedDepsInfo = toDiscoveredDependencies(environment, manuallyIncludedDeps, sessionTimestamp);
  			for (const depInfo of Object.values(manuallyIncludedDepsInfo)) {
  				addOptimizedDepInfo(metadata, "discovered", {
-@@ -35844,6 +35942,7 @@ function createDepsOptimizer(environment) {
+@@ -35977,6 +36077,7 @@ function createDepsOptimizer(environment) {
  						} finally {
  							clearTimeout(scanTimer);
  						}
@@ -370,7 +386,7 @@ index 121ef458164ab3687690f0e6d14c23ffe4c5d4a3..b7457f77a3ecbfdd45631da0ec354be7
  						const manuallyIncluded = Object.keys(manuallyIncludedDepsInfo);
  						discoveredDepsWhileScanning.push(...Object.keys(metadata.discovered).filter((dep) => !deps[dep] && !manuallyIncluded.includes(dep)));
  						for (const id of Object.keys(deps)) if (!metadata.discovered[id]) addMissingDep(id, deps[id]);
-@@ -35881,7 +35980,10 @@ function createDepsOptimizer(environment) {
+@@ -36014,7 +36115,10 @@ function createDepsOptimizer(environment) {
  		}
  		return knownDeps;
  	}
@@ -382,7 +398,7 @@ index 121ef458164ab3687690f0e6d14c23ffe4c5d4a3..b7457f77a3ecbfdd45631da0ec354be7
  		const isRerun = firstRunCalled;
  		firstRunCalled = true;
  		enqueuedRerun = void 0;
-@@ -35935,6 +36037,10 @@ function createDepsOptimizer(environment) {
+@@ -36068,6 +36172,10 @@ function createDepsOptimizer(environment) {
  			};
  			if (!needsReload) {
  				await commitProcessing();
@@ -393,7 +409,7 @@ index 121ef458164ab3687690f0e6d14c23ffe4c5d4a3..b7457f77a3ecbfdd45631da0ec354be7
  				if (!debug$2) {
  					if (newDepsToLogHandle) clearTimeout(newDepsToLogHandle);
  					newDepsToLogHandle = setTimeout(() => {
-@@ -35951,6 +36057,10 @@ function createDepsOptimizer(environment) {
+@@ -36084,6 +36192,10 @@ function createDepsOptimizer(environment) {
  				debug$2?.(import_picocolors.default.green(`delaying reload as new dependencies have been found...`));
  			} else {
  				await commitProcessing();
@@ -404,7 +420,7 @@ index 121ef458164ab3687690f0e6d14c23ffe4c5d4a3..b7457f77a3ecbfdd45631da0ec354be7
  				if (!debug$2) {
  					if (newDepsToLogHandle) clearTimeout(newDepsToLogHandle);
  					newDepsToLogHandle = void 0;
-@@ -36013,6 +36123,7 @@ function createDepsOptimizer(environment) {
+@@ -36146,6 +36258,7 @@ function createDepsOptimizer(environment) {
  		});
  	}
  	function debouncedProcessing(timeout = debounceMs) {
@@ -412,7 +428,7 @@ index 121ef458164ab3687690f0e6d14c23ffe4c5d4a3..b7457f77a3ecbfdd45631da0ec354be7
  		enqueuedRerun = void 0;
  		if (debounceProcessingHandle) clearTimeout(debounceProcessingHandle);
  		if (newDepsToLogHandle) clearTimeout(newDepsToLogHandle);
-@@ -36023,15 +36134,23 @@ function createDepsOptimizer(environment) {
+@@ -36156,15 +36269,23 @@ function createDepsOptimizer(environment) {
  			if (!currentlyProcessing) enqueuedRerun();
  		}, timeout);
  	}

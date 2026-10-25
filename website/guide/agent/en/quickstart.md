@@ -24,7 +24,7 @@ weapp-agent --version
 
 ## Build from source
 
-Weapp Agent is an early source preview. Use Node.js 24.15 or newer and pnpm.
+Weapp Agent is an early source preview. Use Node.js `^22.23.4 || ^24.22.1 || >=26.12.1` and pnpm.
 
 ```bash
 git clone https://github.com/weapp-vite/weapp-vite.git

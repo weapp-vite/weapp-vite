@@ -36,6 +36,6 @@ MCP 提供 `weapp_project_inspect`、`weapp_acceptance_start`、`weapp_acceptanc
 
 运行前安装项目依赖，配置真实测试 AppID，登录微信开发者工具并开启服务端口。使用 `$weapp-acceptance` 指导宿主维护场景、执行检查和读取证据。当前支持微信的 weapp-vite 原生与 Wevu 项目。
 
-独立模型模式继续使用 [`weapp-agent`](./agent/getting-started)，需要 Node 24.15+；无模型入口沿用 weapp-vite 的 Node 支持范围。旧会话和报告目录继续可读。
+独立模型模式继续使用 [`weapp-agent`](./agent/getting-started)，Node 支持范围为 `^22.23.4 || ^24.22.1 || >=26.12.1`；无模型入口使用相同范围。旧会话和报告目录继续可读。
 
 如需使用自定义状态目录，在启动 CLI 时设置 `WEAPP_AGENT_STATE_DIR`，并在宿主 MCP 服务器的 `env` 中显式传入同一值。部分宿主不会继承终端的全部环境变量；目录不一致时服务会要求重新审阅信任记录。

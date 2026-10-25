@@ -26,10 +26,14 @@ export async function closeDuringScan(chokidar, ctx) {
 export async function removeDuringStat(chokidar, ctx) {
   const { root, watched, target, statChild, heldStat, instrumentation, open, ready, timeoutMs } = ctx
   const owner = open(chokidar)
+  await ready(owner)
+  await instrumentation.settleDirectoryRegistration(timeoutMs)
+  await writeFile(statChild, 'late child discovery before its parent disappears')
   await bounded(heldStat.entered.promise, 'child stat captures pre-deletion result', timeoutMs)
   const removed = owner.event('unlinkDir', target, timeoutMs)
   await rm(target, { recursive: true })
   await removed
+  ctx.scenarioEvidence.push({ checkpoint: 'parent-removed-before-child-read-release', passed: true })
   const eventBoundary = owner.events.length
   heldStat.release.resolve()
   await bounded(heldStat.returned.promise, 'old child stat result returns', timeoutMs)

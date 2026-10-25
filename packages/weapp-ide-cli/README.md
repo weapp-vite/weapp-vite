@@ -187,6 +187,8 @@ weapp cache --clean all
 
 `weapp-ide-cli` 内置 automator 子命令：
 
+`weapp compare` 使用 pixelmatch 8 的 OKLab/HyAB 感知色差算法，默认 `threshold` 为 `0.1`，抗锯齿像素不计入差异。新版的 `diffPixels`、`diffRatio` 可能与旧算法不同；升级时应使用同一张当前截图重新审核既有容差，保留基准图片和原有门限。
+
 | 命令                             | 说明                           |
 | -------------------------------- | ------------------------------ |
 | `weapp screenshot`               | 截图（支持 base64 / 文件输出） |
