@@ -196,7 +196,10 @@ function createCompilerRootId(index: number, entry: string) {
 }
 
 function assertRuntimeRequirements(resolved: ResolvedManagedTailwindcssOptions) {
-  if (!satisfies(process.versions.node, engines.node)) {
+  // Bun 的 Node 版本仅用于兼容标识；真实 Node 仍须满足发布声明。
+  const bunVersion = process.versions.bun
+  const isBun = typeof bunVersion === 'string' && bunVersion.length > 0
+  if (!isBun && !satisfies(process.versions.node, engines.node)) {
     throw new Error(
       `weapp.tailwindcss requires Node ${engines.node}; current version is ${process.versions.node}.`,
     )

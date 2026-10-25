@@ -4,7 +4,9 @@
 
 ## 开发环境与兼容范围
 
-根开发环境使用 Node.js 24.22.1 LTS、pnpm 12.15.0。受影响发布包及生成项目要求 `^22.23.4 || ^24.22.1 || >=26.12.1`；启动检查、普通消费者 CI 最低版本和当前文档同步。Vite+ 仍仅支持 Node 24/26，因此其范围为 `^24.22.1 || >=26.12.1`。固定性能工作流及历史报告保留原有版本，不重新采样冻结性能证据。
+根开发环境使用 Node.js 24.22.1 LTS、pnpm 12.15.0。受影响发布包及生成项目要求 `^22.23.4 || ^24.22.1 || >=26.12.1`；启动检查、普通消费者 CI 最低版本和当前文档同步。Vite+ 仍仅支持 Node 24/26，因此其范围为 `^24.22.1 || >=26.12.1`。显式固定的性能目标及历史报告保留原有版本，不重新采样冻结性能证据。
+
+Bun 按 `process.versions.bun` 识别为独立运行时。Bun 1.4.2 和 1.4.4 的 `process.versions.node` 均为兼容标识 26.3.0，不能据此套用真实 Node.js 的最低版本检查。CLI 与 Tailwind 插件只对真实 Node 应用上述 engines 范围，仍在依赖导入前拒绝不支持的 Node；prepare 容错和其他命令的原始错误传播不变。本轮没有新增 Bun 最低版本承诺。
 
 TypeScript 编译器保持 catalog 6.0.3，历史 TypeScript fixture 保持原版；Vue、Volar、ESLint 等相关工具照常升级并通过现有编译器验证。第三方 Dimina upstream 快照、历史 benchmark、专用旧版复现 fixture 不改。现有预发布依赖不降级，弃用的类型 stub 不视为升级目标；`fixtures/ts-base` 的 `miniprogram-api-typings ^2.8.3-1` 保留历史基线。
 
@@ -184,13 +186,16 @@ JS/Rust Oxc 对齐 0.155.0，napi 3.15.0、napi-derive 3.6.13、Rust 1.99.1，�
 | 其他浏览器与实际消费者 | Firefox/WebKit 2 项、Simulator Chromium 89 文件 201 项、glass-easel DOM 流程通过；网站重建及 Playwright 7 项通过，包含真实 Mermaid |
 | autoRoutes 发布回执 | 定向 6 文件 81 项、ESLint、owning typecheck/build 通过；完整 WebB 中 issue #1029 的三个浏览器用例通过，严格 reload 次数断言保持 |
 | 最低 Node 22.23.4 与本地 Node 24.22.1 | built CLI、AcceptanceService 和 model-free baseline 均通过；不等同于两个版本的完整消费者矩阵 |
+| Bun 启动与 Node guard 契约 | CLI 两文件 39 项、Tailwind 两文件 45 项单测通过；包级 typecheck、路径 ESLint、重建通过。macOS 真实 Bun 1.4.2、1.4.4 各两文件四项 CLI/IPC 通过，源码和安装 guards 无漂移 |
 | Agent CLI 实际发行消费者 | 最终实际 tarball 安装、session、legacy verify、model-free acceptance、stdio MCP 生命周期、持久化报告及显式 Skill 安装通过；不访问真实模型或发布端点 |
-| Windows/macOS/Linux GitHub CI | 原生 [PR #1259](https://github.com/weapp-vite/weapp-vite/pull/1259) 按当前 head 执行，完整 job 结果与提交身份见 Checks |
+| Windows/macOS/Linux GitHub CI | 原生 [PR #1259](https://github.com/weapp-vite/weapp-vite/pull/1259) 尚未完成全部适用矩阵；最终以修复后 head 对应的完整 Checks 为准 |
 | 合并后干净 main 的正式全量 IDE | 待合并后执行 |
 
 上述 HMR 两阶段只证明各自冻结范围，完整 capability acceptance 仍为 `not-evaluated`。headless 报告的 6 个 skipped entry 均在冻结 selectedCases 之外，不计为所选 case 跳过。
 
-首轮原生 CI 的安装和发行消费者暴露了 Node 选择遗漏：`22`、`24` 简写会使用 runner 缓存中的 22.23.3、24.21.0，低于新下限。共享 setup 及直接入口现在将 major 简写约束为同 major 的兼容范围，并查询最新发行版；最低精确版本及消费者五个独立 lane 保持。活跃 Nightly/candidate workflow 的 major 24 入口同步修正，未重新采样旧性能证据；显式固定 24.18.0 的性能目标保持原样。原生 CI 每轮均核验 PR、head/base、合并候选和运行身份后独立批准，原始失败日志保留。
+首轮原生 CI 的安装和发行消费者暴露了 Node 选择遗漏：`22`、`24` 简写会使用 runner 缓存中的 22.23.3、24.21.0，低于新下限。共享 setup 及直接入口现在将 `22`、`24`、`26` 分别映射为 `^22.23.4`、`^24.22.1`、`^26.12.1`，仅为这些 major selector 开启 `check-latest`；完整 patch 原样透传。消费者仍独立验证三个精确最低版本及最新 Node 22、24，共五个 lane；Node 26 的 CI lane 保持在本 major 内，产品 `>=26.12.1` 范围不变。选择契约及相关工作流共六文件、45 项通过。活跃 Nightly/candidate workflow 的 major 24 入口同步修正，未重新采样旧性能证据；显式固定 24.18.0 的性能目标保持原样。原生 CI 每轮均核验 PR、head/base、合并候选和运行身份后独立批准，原始失败日志保留。
+
+Windows 的 Bun CI 随后在 CLI importer 前暴露了运行时识别问题：Bun 的 Node 兼容标识被当作真实 Node 版本拒绝。修复通过独立 Bun 身份处理，保留 Node engines 与错误语义；旧实现的负向单测和原始 CI 失败日志继续保留。首轮真实 Bun 1.4.2 已通过两个 IPC case，两个 CLI case 暴露 Tailwind 插件的第二处同类检查；继续按独立身份修正，并保留 CSS 文件检查。旧 Tailwind 实现的三个负向用例失败、修后 45 项通过。重建发行入口后，macOS 上精确 Bun 1.4.2、1.4.4 各自执行完整两文件四项 CLI/IPC，全部通过；源码和安装 guards 无漂移，未留下本任务 E2E/watcher。此结果不替代原生 CI 的三 OS Bun 矩阵。既有大型 Tailwind 模块和相邻测试保留局部边界，新增逻辑仅修正运行时识别。
 
 局部真实 IDE 首轮固定 Stable 2.02.2608080，官方查询于 2026-10-25 21:51:14 UTC 确认与 latest Stable 一致。classic 项目导入返回 `APPID_ERROR`、要求重新登录；stateful 启动返回当前能力契约规定的 `ide-classic-handoff`，旧用例只接受 `stylesheet-output`，在调用 launch 前失败。两个 case 均未执行，DOM case 与 checkpoint 均为 0，不能记为 runtime 通过。外层登记的 scope、宿主及端口清理成功，保留首错和 fixture 保留诊断；Computer Use 已确认当前仅有项目列表窗口、界面仍显示退出登录，等待正常重新登录后继续。测试同时按当前启动能力契约精确接受 `ide-classic-handoff`，连接前确认 classic 产物；初始 App/Page 标记应保持，编辑后仍要求实例替换，七个 CSS checkpoint 及 DOM/计算样式断言保留。新增 test-only helper 承载这部分契约，避免继续扩大既有超过 300 行的 E2E 文件；普通契约单测 14 项通过；同一 E2E 文件随后在 headless 下完整执行 classic 与 stateful 两个 case，17/17 个 strict DOM checkpoint 通过，无跳过，源码与安装状态不变，两份隔离 fixture 均完成清理。该定向复验不能替代真实 IDE 结果。
 

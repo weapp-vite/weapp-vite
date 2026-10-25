@@ -47,6 +47,8 @@ chore(deps)!: 升级构建、运行与发布工具链，并提高 Node.js 最低
 
 Node.js 支持范围调整为 `^22.23.4 || ^24.22.1 || >=26.12.1`；生成项目同步使用此范围。Vite+ 保持仅支持 Node 24/26 的原有边界。
 
+Bun 使用独立运行时身份，CLI 与 Tailwind 插件不再将其 Node 兼容标识误判为不支持的真实 Node 版本；真实 Node 最低版本检查保持。
+
 公开构建队列升级至 p-queue 10：监听改用 EventTarget 的 `addEventListener` / `removeEventListener`，事件值通过 `event.detail` 获取；清空队列会以 AbortError 拒绝尚未执行的任务。
 
 截图比较升级至 pixelmatch 8 的 OKLab/HyAB 算法，同一阈值可能产生不同的差异结果；保留现有阈值并重新复核基线。
