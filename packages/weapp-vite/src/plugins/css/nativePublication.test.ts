@@ -65,6 +65,14 @@ it('retains native styles until publication records ownership and compares final
     // 全图重发但内容相同：可省略物理写入，不能撤销文件所有权。
     await render()
     expect(await readFile(path.join(root, 'dist', output), 'utf8')).toContain('blue')
+    // 文件删除事件可能先于入口重扫到达；图阶段确认缺失后不能再发射会话内旧登记。
+    await rm(style)
+    await render()
+    expect(runtimeState.css.sidecarImports.has(style)).toBe(true)
+    await expect(readFile(path.join(root, 'dist', output), 'utf8')).rejects.toMatchObject({ code: 'ENOENT' })
+    await writeFile(style, '.batch { color: green; }')
+    await render()
+    expect(await readFile(path.join(root, 'dist', output), 'utf8')).toContain('green')
     runtimeState.css.sidecarImports.clear()
     plugins.splice(plugins.indexOf(nativeSidecar), 1)
     await render()

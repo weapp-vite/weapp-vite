@@ -20,7 +20,7 @@ interface StyleInput {
 }
 interface StyleGeneration {
   phase: 'graph' | 'preparing' | 'output' | 'failed' | 'closed'
-  files: Map<string, StyleInput>
+  files: Map<string, StyleInput | null>
   hasError: boolean
   error?: unknown
   compiled: Map<string, { code: string, diskSource: string }>
@@ -145,6 +145,7 @@ export async function prepareStylePreprocessing(
       }
       catch (error) {
         if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+          current.files.set(normalized, null)
           return
         }
         throw error
@@ -212,6 +213,13 @@ function preparedInput(ctx: CompilerContext, hook: StylePreprocessorHookContext,
 export function getPreparedStyleSource(ctx: CompilerContext, hook: StylePreprocessorHookContext, file: string, disk = false) {
   const input = preparedInput(ctx, hook, file)
   return disk ? input?.diskSource : input?.source
+}
+
+/** 可选 sidecar 只跳过本轮图阶段已确认消失的来源；未登记输入仍须严格校验。 */
+export function isPreparedStyleMissing(ctx: CompilerContext, hook: StylePreprocessorHookContext, file: string) {
+  const current = generation(ctx, hook)
+  assertStylePreprocessing(ctx, hook)
+  return current?.phase === 'output' && current.files.get(normalizeFsResolvedId(file, { stripLeadingNullByte: true })) === null
 }
 
 export function findPreparedStyleSource(ctx: CompilerContext, hook: StylePreprocessorHookContext, file: string) {
