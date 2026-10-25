@@ -6,7 +6,7 @@ import { queryRetailPageRoot } from '../../../../e2e/utils/templateAcceptance/re
 import { createHeadlessSession } from '../src/runtime'
 import { HeadlessTestingPageHandle } from '../src/testing'
 import { cleanupTempDirs } from './helpers'
-import { createDocumentRootGoodsList, documentRootFiles } from './helpers/documentRoots'
+import { createDocumentRootGoodsList, documentRootFiles, documentRootGoodsTitleXpath } from './helpers/documentRoots'
 
 const directories: string[] = []
 afterEach(() => cleanupTempDirs(directories))
@@ -39,7 +39,10 @@ it('keeps every sibling view, nested component and independent tabbar through pu
       { id: 'natural-first', title: 'naturally loaded first' },
       { id: 'natural-last', title: 'naturally loaded last' },
     ])
-    const initialCards = await handle.$$('.goods-card__title')
+    // 页面 CSS 查询仅能访问组件宿主；XPath 可显式检查各组件内的真实标题。
+    expect(await handle.$$('goods-card.goods-card')).toHaveLength(2)
+    expect(await handle.$$('.goods-card__title')).toHaveLength(0)
+    const initialCards = await handle.getElementsByXpath(documentRootGoodsTitleXpath)
     expect(initialCards).toHaveLength(2)
     expect(await Promise.all(initialCards.map(card => card.text()))).toEqual([
       'naturally loaded first',
@@ -50,7 +53,9 @@ it('keeps every sibling view, nested component and independent tabbar through pu
     await handle.setData({ title: 'updated title', price: 20, goodsList })
     goodsList[0]!.title = 'caller mutation after protocol delivery'
     expect(await handle.data('goodsList')).toEqual(createDocumentRootGoodsList())
-    const updatedCards = await handle.$$('.goods-card__title')
+    expect(await handle.$$('goods-card.goods-card')).toHaveLength(4)
+    expect(await handle.$$('.goods-card__title')).toHaveLength(0)
+    const updatedCards = await handle.getElementsByXpath(documentRootGoodsTitleXpath)
     expect(updatedCards).toHaveLength(4)
     expect(await Promise.all(updatedCards.map(card => card.text()))).toEqual([
       'prepared goods 1',

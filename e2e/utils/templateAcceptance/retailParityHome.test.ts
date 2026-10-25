@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { createRetailParityHomeGoods, prepareRetailParityHome } from './retailParityHome'
 
-function createPage(render: 'updated' | 'stale' | 'wrong-title' = 'updated') {
+function createPage(render: 'updated' | 'stale' | 'wrong-title' | 'wrong-middle-title' = 'updated') {
   const natural = Array.from({ length: 20 }, (_, index) => ({ title: `自然商品${index}` }))
   const state: Record<string, unknown> = { goodsList: natural, goodsListLoadStatus: 0, pageLoading: false }
   let rendered = natural.map(item => item.title)
@@ -15,8 +15,12 @@ function createPage(render: 'updated' | 'stale' | 'wrong-title' = 'updated') {
       if (render === 'wrong-title') {
         rendered[rendered.length - 1] = '旧末项'
       }
+      if (render === 'wrong-middle-title') {
+        rendered[1] = '旧中间项'
+      }
     }),
-    $$: vi.fn(async () => rendered.map(title => ({ text: async () => title }))),
+    $$: vi.fn(async () => []),
+    getElementsByXpath: vi.fn(async () => rendered.map(title => ({ text: async () => title }))),
     waitFor: vi.fn(async () => {}),
   }
   return { page, state, natural }
@@ -57,7 +61,8 @@ describe('retail parity common home input', () => {
     })
     expect(result.renderedCount).toBe(4)
     expect(result.titles).toEqual(createRetailParityHomeGoods().map(item => item.title))
-    expect(page.$$).toHaveBeenCalledExactlyOnceWith('.goods-card__title', { fallback: false, timeout: 1000 })
+    expect(page.getElementsByXpath).toHaveBeenCalledExactlyOnceWith('//*[contains(concat(" ", @class, " "), " goods-card__title ")]', { fallback: false, timeout: 1000 })
+    expect(page.$$).not.toHaveBeenCalled()
     expect(page.setData).toHaveBeenCalledTimes(1)
   })
 
@@ -76,7 +81,7 @@ describe('retail parity common home input', () => {
     expect(recordNatural).not.toHaveBeenCalled()
   })
 
-  it.each(['stale', 'wrong-title'] as const)('rejects %s rendered nodes even when page data was updated', async (render) => {
+  it.each(['stale', 'wrong-title', 'wrong-middle-title'] as const)('rejects %s rendered nodes even when page data was updated', async (render) => {
     const { page } = createPage(render)
     await expect(prepareRetailParityHome({ page, captureNatural: async () => ({}), recordNatural: async () => {}, timeoutMs: 0 })).rejects.toThrow('did not render')
     expect(page.setData).toHaveBeenCalledTimes(1)
@@ -98,7 +103,7 @@ describe('retail parity common home input', () => {
   it('preserves protocol query failures as failures rather than accepting page data alone', async () => {
     const { page } = createPage()
     const error = new Error('rendered node query failed')
-    page.$$.mockRejectedValue(error)
+    page.getElementsByXpath.mockRejectedValue(error)
     await expect(prepareRetailParityHome({ page, captureNatural: async () => ({}), recordNatural: async () => {}, timeoutMs: 0 })).rejects.toBe(error)
   })
 })

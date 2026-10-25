@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { queryRetailPageRoot } from '../../../../e2e/utils/templateAcceptance/retailPageRoot'
 import { createBrowserHeadlessSession, createBrowserVirtualFiles } from '../src/browser'
 import { HeadlessTestingPageHandle } from '../src/testing/pageHandle'
-import { createDocumentRootGoodsList, documentRootFiles } from '../test/helpers/documentRoots'
+import { createDocumentRootGoodsList, documentRootFiles, documentRootGoodsTitleXpath } from '../test/helpers/documentRoots'
 
 describe('complete page and tabbar document roots in the browser', () => {
   it('reads all sibling roots before and after a nested component update', async () => {
@@ -30,6 +30,15 @@ describe('complete page and tabbar document roots in the browser', () => {
         { id: 'natural-first', title: 'naturally loaded first' },
         { id: 'natural-last', title: 'naturally loaded last' },
       ])
+      // 页面 CSS 查询保留组件边界，XPath 负责验证边界内全部真实标题。
+      expect(await handle.$$('goods-card.goods-card')).toHaveLength(2)
+      expect(await handle.$$('.goods-card__title')).toHaveLength(0)
+      const initialCards = await handle.getElementsByXpath(documentRootGoodsTitleXpath)
+      expect(initialCards).toHaveLength(2)
+      expect(await Promise.all(initialCards.map(card => card.text()))).toEqual([
+        'naturally loaded first',
+        'naturally loaded last',
+      ])
       expect(preview.querySelectorAll('.goods-card__title')).toHaveLength(2)
       expect(Array.from(preview.querySelectorAll('.goods-card__title'), card => card.textContent)).toEqual([
         'naturally loaded first',
@@ -40,7 +49,9 @@ describe('complete page and tabbar document roots in the browser', () => {
       await handle.setData({ title: 'updated title', price: 20, goodsList })
       goodsList[0]!.title = 'caller mutation after protocol delivery'
       expect(await handle.data('goodsList')).toEqual(createDocumentRootGoodsList())
-      const updatedCards = await handle.$$('.goods-card__title')
+      expect(await handle.$$('goods-card.goods-card')).toHaveLength(4)
+      expect(await handle.$$('.goods-card__title')).toHaveLength(0)
+      const updatedCards = await handle.getElementsByXpath(documentRootGoodsTitleXpath)
       expect(updatedCards).toHaveLength(4)
       expect(await Promise.all(updatedCards.map(card => card.text()))).toEqual([
         'prepared goods 1',

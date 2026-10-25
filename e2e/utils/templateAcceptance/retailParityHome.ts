@@ -10,7 +10,7 @@ interface RetailHomeGoods {
 interface RetailHomePage {
   data: (key: string) => Promise<unknown>
   setData: (data: Record<string, unknown>) => Promise<void>
-  $$: (selector: string, options: { fallback: false, timeout: number }) => Promise<Array<{ text: () => Promise<string> }>>
+  getElementsByXpath: (selector: string, options: { fallback: false, timeout: number }) => Promise<Array<{ text: () => Promise<string> }>>
   waitFor: (time: number) => Promise<void>
 }
 
@@ -47,7 +47,7 @@ function matchesInput(actual: unknown, expected: RetailHomeGoods[]) {
     })
 }
 
-/** 先封存自然加载证据，再用共同输入验证真实渲染数量及首尾文字。 */
+/** 先封存自然加载证据，再用共同输入验证真实渲染数量及全部卡片文字。 */
 export async function prepareRetailParityHome(options: {
   page: RetailHomePage
   captureNatural: () => Promise<unknown>
@@ -76,12 +76,13 @@ export async function prepareRetailParityHome(options: {
   let lastObservation: unknown
   do {
     const actual = await page.data('goodsList')
-    const nodes = await page.$$('.goods-card__title', { fallback: false, timeout: 1000 })
+    // 商品标题位于自定义组件内部，页面 CSS 查询不会穿过组件边界。
+    const nodes = await page.getElementsByXpath('//*[contains(concat(" ", @class, " "), " goods-card__title ")]', { fallback: false, timeout: 1000 })
     const rawTitles = await Promise.all(nodes.map(node => node.text()))
     const titles = rawTitles.map(title => title.trim())
     lastObservation = { actual, count: nodes.length, rawTitles, titles }
     if (matchesInput(actual, goods) && nodes.length === goods.length
-      && titles[0] === goods[0]!.title && titles.at(-1) === goods.at(-1)!.title) {
+      && titles.every((title, index) => title === goods[index]!.title)) {
       return { goodsList: actual, renderedCount: nodes.length, rawTitles, titles }
     }
     if (Date.now() - startedAt >= (options.timeoutMs ?? 10_000)) {
