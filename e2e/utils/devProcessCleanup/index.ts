@@ -10,7 +10,7 @@ interface DevProcessCleanupOptions {
   pid?: number
   isRootHeld: () => boolean
   disconnectRoot: () => boolean
-  requestRootShutdown?: () => Promise<void>
+  requestRootShutdown?: () => Promise<unknown>
   settledExit: Promise<unknown>
   /** 完整快照仅缺失根身份时，用原始 ChildProcess 退出事件收敛内核与 JS 通知时序。 */
   confirmRootExit?: (timeoutMs: number) => Promise<boolean>
@@ -214,10 +214,7 @@ export function createDevProcessCleanup(options: DevProcessCleanupOptions) {
       const gracefulTimeoutMs = stopOptions.gracefulTimeoutMs ?? forceKillDelayMs
       let requestFailure: { error: unknown } | undefined
       const gracefulExit = options.requestRootShutdown
-        ? Promise.race([
-            options.settledExit,
-            Promise.resolve().then(options.requestRootShutdown).then(() => options.settledExit),
-          ]).catch((error: unknown) => {
+        ? Promise.resolve().then(options.requestRootShutdown).then(() => options.settledExit).catch((error: unknown) => {
             // 协议失败先保存，随后仍按登记身份释放进程，不能跳过资源收尾。
             requestFailure = { error }
           })

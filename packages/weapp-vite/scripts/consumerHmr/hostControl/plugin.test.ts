@@ -6,7 +6,7 @@ import process from 'node:process'
 import { createInterface } from 'node:readline'
 import { expect, it } from 'vitest'
 
-it.each(['disconnect', 'reset', 'close-failure', 'normal'] as const)('drains native resources and reports %s through its real process exit', async (outcome) => {
+it.each(['disconnect', 'reset', 'close-failure', 'normal', 'listen', 'watch'] as const)('drains native resources and reports %s through its real process exit', async (outcome) => {
   const token = randomUUID()
   const sockets = new Set<import('node:net').Socket>()
   const messages: Array<{ type: string, token: string, error?: string }> = []
@@ -17,7 +17,7 @@ it.each(['disconnect', 'reset', 'close-failure', 'normal'] as const)('drains nat
     input.on('line', (line) => {
       const message = JSON.parse(line) as { type: string, token: string, error?: string }
       messages.push(message)
-      if (message.type !== 'ready') {
+      if (message.type !== (outcome === 'listen' || outcome === 'watch' ? 'initial-started' : 'ready')) {
         return
       }
       if (outcome === 'disconnect') {
@@ -46,13 +46,29 @@ import { setTimeout as delay } from 'node:timers/promises'
 import { createNativeHostControlPlugin } from ${JSON.stringify(new URL('./plugin.mjs', import.meta.url).href)}
 const active = setInterval(() => {}, 1000)
 const plugin = createNativeHostControlPlugin(${JSON.stringify(endpoint)})
-plugin.configureServer.handler({ close: async () => {
+const close = async () => {
   clearInterval(active)
   await delay(20)
   console.log('owned-native-resource-closed')
   console.error('native-final-output')
   ${outcome === 'close-failure' ? 'throw new Error("original-native-close-failure")' : ''}
-} })
+}
+if (${JSON.stringify(outcome)} === 'listen') {
+  const server = { close, listen: async () => undefined }
+  await plugin.configureServer.handler(server)
+  await server.listen()
+  await server.listen()
+}
+else if (${JSON.stringify(outcome)} === 'watch') {
+  const watcher = { close }
+  const builder = { build: async () => watcher }
+  plugin.buildApp.handler(builder)
+  await builder.build({ config: { build: { watch: true } } })
+  await builder.build({ config: { build: { watch: true } } })
+}
+else {
+  await plugin.configureServer.handler({ close })
+}
 process.once('exit', code => console.log('native-process-exit=' + code))
 `], { stdio: ['ignore', 'pipe', 'pipe'] })
   let stdout = ''
@@ -62,11 +78,14 @@ process.once('exit', code => console.log('native-process-exit=' + code))
   try {
     const [code, signal] = await once(child, 'close', { signal: AbortSignal.timeout(5_000) })
     expect(signal).toBeNull()
-    expect(code).toBe(outcome === 'normal' ? 0 : 1)
+    expect(code).toBe(['normal', 'listen', 'watch'].includes(outcome) ? 0 : 1)
     expect(stdout).toContain('owned-native-resource-closed')
     expect(stdout).toContain(`native-process-exit=${code}`)
     expect(stderr).toContain('native-final-output')
     expect(messages.filter(message => message.type === 'ready')).toHaveLength(1)
+    if (outcome === 'listen' || outcome === 'watch') {
+      expect(messages.filter(message => message.type === 'initial-started')).toHaveLength(1)
+    }
     if (outcome === 'disconnect' || outcome === 'reset') {
       expect(stderr).toContain('Control connection failed:')
       if (outcome === 'disconnect') {

@@ -425,15 +425,49 @@ describe('dev process cleanup ownership', () => {
     await expect(cleanupTrackedDevProcesses(100)).resolves.toBeUndefined()
   })
 
-  it('finishes a fully drained native exit without waiting for a control handshake that never arrived', async () => {
+  it('lets an explicit controller confirm a fully drained native exit', async () => {
     const owned = createChild()
     execaMock.mockReturnValue(owned.child)
-    const request = vi.fn(() => new Promise<void>(() => {}))
+    const request = vi.fn((settledExit: Promise<unknown>) => settledExit)
     const dispose = vi.fn(async () => undefined)
     const dev = startDevProcess('node', ['native-vite-cli.js'], { gracefulShutdown: request, disposeShutdown: dispose })
     owned.exit()
     await dev.stop(0)
     expect(request).toHaveBeenCalledOnce()
+    expect(dispose).toHaveBeenCalledOnce()
+  })
+
+  it.each([0, 1])('retains a deferred control failure after a fully drained native exit=%s', async (exitCode) => {
+    vi.useFakeTimers()
+    const owned = createChild()
+    const drained = Promise.withResolvers<{ exitCode: number, signal: undefined }>()
+    const child = Object.assign(drained.promise, { pid: owned.child.pid, all: owned.child.all, nodeChildProcess: owned.child.nodeChildProcess })
+    execaMock.mockReturnValue(child)
+    const receipt = Promise.withResolvers<void>()
+    const request = vi.fn((settledExit: Promise<unknown>) => {
+      expect(settledExit).toBeInstanceOf(Promise)
+      return receipt.promise
+    })
+    const dispose = vi.fn(async () => undefined)
+    const failure = new Error('native host cleanup receipt failed after process exit')
+    const dev = startDevProcess('node', ['native-vite-cli.js'], { gracefulShutdown: request, disposeShutdown: dispose })
+    owned.exitNative()
+    if (exitCode === 0) {
+      drained.resolve({ exitCode, signal: undefined })
+    }
+    else {
+      drained.reject(Object.assign(new Error('native process failed'), { exitCode, stderr: 'native process failed' }))
+    }
+    const result = Promise.allSettled([dev.stop(0, { gracefulTimeoutMs: 1_000 })])
+    await vi.advanceTimersByTimeAsync(0)
+    expect(request).toHaveBeenCalledOnce()
+    expect(dispose, 'a raw drained exit must not bypass the authoritative control result').not.toHaveBeenCalled()
+    receipt.reject(failure)
+    await vi.runAllTimersAsync()
+    expect((await result)[0]).toMatchObject({
+      status: 'rejected',
+      reason: { name: 'DevProcessGracefulShutdownError', cause: failure, evidence: { requestError: failure } },
+    })
     expect(dispose).toHaveBeenCalledOnce()
   })
 

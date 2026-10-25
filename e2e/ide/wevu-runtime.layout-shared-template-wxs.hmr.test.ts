@@ -12,7 +12,8 @@ import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { createNativeHmrPublication } from '../utils/nativeHmrPublication'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import { APP_ROOT, CLI_PATH, DIST_ROOT, waitForFile, waitForVendorFileContains } from '../wevu-runtime.utils'
-import { CLASSIC_WXS_RELOAD_CHECKPOINT, waitForClassicWxsReload } from './wevuRuntimeDom/classicWxs'
+import { createClassicReloadObserver } from './wevuRuntimeDom/classicReload'
+import { CLASSIC_WXS_RELOAD_CHECKPOINT } from './wevuRuntimeDom/classicWxs'
 import { observeHeadlessCurrentTemplate } from './wevuRuntimeDom/headlessTemplateObservation'
 
 const DEFAULT_LAYOUT_WXML = path.join(APP_ROOT, 'src/layouts/default/index.wxml')
@@ -205,10 +206,6 @@ async function waitForFileContainsWithRetry(
   }
 }
 
-async function waitForIdeRecompileSettled(delayMs = 1200) {
-  await new Promise(resolve => setTimeout(resolve, delayMs))
-}
-
 async function waitForInitialAppserviceReady() {
   await waitForFileContains(COMMON_JS_OUTPUT_PATH, 'useSetupStore', 90_000)
   await waitForVendorFileContains(DIST_ROOT, WEVU_RUNTIME_READY_MARKER, 90_000)
@@ -233,6 +230,17 @@ async function relaunchIdeSession(route: string) {
   }
   await waitForLayoutPageReady(page)
   return page
+}
+
+function classicLayoutReloadCheckpoint(id: string): DomCheckpoint {
+  return {
+    id,
+    route: '/pages/reactivity/index',
+    action: resolveRuntimeProviderName() === 'headless'
+      ? 'headless companion：从 classic 共享布局模板新产物冷启并验收启动页'
+      : 'classic 共享布局模板资产更新自动重载应用，先验收启动页再重新进入 layouts 页面',
+    nodes: [{ selector: '.title', text: 'Reactivity' }],
+  }
 }
 
 beforeAll(() => {
@@ -294,7 +302,7 @@ describe('wevu runtime layout shared template/wxs hmr (ide)', { concurrent: fals
         ? 'classic WXS 全量刷新后重新进入 layouts 页面，验收默认布局及新的 WXS 文本'
         : index === 5
           ? '刷新后显式重新切换 admin 布局，验收新的 WXS 文本'
-          : `共享布局阶段 ${index}：模板、include、WXS 结果与当前布局，模板更新不重新导航`,
+          : `共享布局阶段 ${index}：验收模板、include、WXS 结果与当前布局，更新阶段先观察 classic 刷新再导航`,
       nodes: [
         { selector: '#layout-current', text: `current: ${stage.layout}` },
         { selector: '.layout-shared-template', scope: [{ has: `.layout-${stage.layout}` }], text: `${stage.template}: ${stage.wxs}` },
@@ -303,6 +311,8 @@ describe('wevu runtime layout shared template/wxs hmr (ide)', { concurrent: fals
       ],
     }))
     checkpoints.splice(4, 0, CLASSIC_WXS_RELOAD_CHECKPOINT)
+    checkpoints.splice(2, 0, classicLayoutReloadCheckpoint('layout-shared:include-reloaded'))
+    checkpoints.splice(1, 0, classicLayoutReloadCheckpoint('layout-shared:template-reloaded'))
     const dom = createDomAcceptance(context, 'e2e-apps/wevu-runtime-e2e', checkpoints)
 
     await fs.ensureDir(SHARED_DIR)
@@ -329,6 +339,17 @@ describe('wevu runtime layout shared template/wxs hmr (ide)', { concurrent: fals
       await waitForInitialAppserviceReady()
 
       let miniProgram = await getSharedMiniProgram()
+      const publication = createNativeHmrPublication(APP_ROOT, sharedDev, 'classic')
+      const classicReload = createClassicReloadObserver({
+        getSession: () => sharedMiniProgram,
+        reopenHeadless: async () => {
+          await sharedMiniProgram.close()
+          sharedMiniProgram = null
+          await getSharedMiniProgram()
+        },
+        assertClassic: session => publication.assertClassicRuntime(session),
+        project: 'e2e-apps/wevu-runtime-e2e',
+      })
       await resetLayoutStorageProbes(miniProgram)
       let page = await relaunchIdeSession('/pages/layouts/index')
       if (!page) {
@@ -343,19 +364,27 @@ describe('wevu runtime layout shared template/wxs hmr (ide)', { concurrent: fals
       })
       await dom.check('layout-shared:0', miniProgram, page)
 
+      const confirmTemplateReload = await classicReload.prepare('layout-shared-template-emitted')
       const updatedTemplate = buildSharedImportTemplate(updatedTemplateMarker)
       await replaceFileByRename(SHARED_IMPORT_TEMPLATE, updatedTemplate)
       await waitForFileContainsWithRetry(sharedImportOutput, updatedTemplateMarker, SHARED_IMPORT_TEMPLATE, updatedTemplate)
-      await waitForIdeRecompileSettled()
+      const templateReloadPage = await confirmTemplateReload()
+      miniProgram = await getSharedMiniProgram()
+      await dom.check('layout-shared:template-reloaded', miniProgram, templateReloadPage)
+      page = await relaunchIdeSession('/pages/layouts/index')
       await waitForLayoutSharedMarkers(miniProgram, {
         template: updatedTemplateMarker,
       })
       await dom.check('layout-shared:1', miniProgram, page)
 
+      const confirmIncludeReload = await classicReload.prepare('layout-shared-include-emitted')
       const updatedInclude = buildSharedIncludeTemplate(updatedIncludeMarker)
       await replaceFileByRename(SHARED_INCLUDE_TEMPLATE, updatedInclude)
       await waitForFileContainsWithRetry(sharedIncludeOutput, updatedIncludeMarker, SHARED_INCLUDE_TEMPLATE, updatedInclude)
-      await waitForIdeRecompileSettled()
+      const includeReloadPage = await confirmIncludeReload()
+      miniProgram = await getSharedMiniProgram()
+      await dom.check('layout-shared:include-reloaded', miniProgram, includeReloadPage)
+      page = await relaunchIdeSession('/pages/layouts/index')
       await waitForLayoutSharedMarkers(miniProgram, {
         include: updatedIncludeMarker,
       })
@@ -369,20 +398,13 @@ describe('wevu runtime layout shared template/wxs hmr (ide)', { concurrent: fals
       })
       await dom.check('layout-shared:3', miniProgram, page)
 
+      const confirmWxsReload = await classicReload.prepare('layout-shared-wxs-emitted')
       const updatedWxs = buildSharedWxs(updatedWxsMarker)
       await replaceFileByRename(SHARED_WXS, updatedWxs)
       await waitForFileContainsWithRetry(sharedWxsOutput, updatedWxsMarker, SHARED_WXS, updatedWxs)
-      if (resolveRuntimeProviderName() === 'headless') {
-        // companion 只证明 classic 新产物重新求值；真实 IDE 分支独立等待自动 AppService 刷新。
-        const publication = createNativeHmrPublication(APP_ROOT, sharedDev, 'classic')
-        await publication.assertClassicRuntime(miniProgram)
-        await miniProgram.close()
-        sharedMiniProgram = null
-        miniProgram = await getSharedMiniProgram()
-        await publication.assertClassicRuntime(miniProgram)
-      }
-      // classic 的全量刷新会丢弃 admin 选择；先验收新页面的默认状态，再进行新的交互。
-      await dom.check(CLASSIC_WXS_RELOAD_CHECKPOINT.id, miniProgram, await waitForClassicWxsReload(miniProgram))
+      const wxsReloadPage = await confirmWxsReload()
+      miniProgram = await getSharedMiniProgram()
+      await dom.check(CLASSIC_WXS_RELOAD_CHECKPOINT.id, miniProgram, wxsReloadPage)
       page = await miniProgram.reLaunch('/pages/layouts/index')
       if (!page) {
         throw new Error('Failed to re-enter /pages/layouts/index after classic WXS reload')

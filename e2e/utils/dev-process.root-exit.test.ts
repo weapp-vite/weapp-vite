@@ -58,7 +58,7 @@ async function fixture({ rootPresent = true, descendant = false, inspectionFailu
     return path.resolve('fixture-node')
   })
   const kill = vi.spyOn(process, 'kill').mockReturnValue(true)
-  const request = vi.fn(() => new Promise<void>(() => {}))
+  const request = vi.fn((settledExit: Promise<unknown>) => settledExit)
   const dispose = vi.fn(async () => undefined)
   const { startDevProcess, cleanupTrackedDevProcesses } = await import('./dev-process')
   const dev = startDevProcess('node', ['native-vite-cli.js'], { ipc: false, gracefulShutdown: request, disposeShutdown: dispose })

@@ -37,12 +37,12 @@ export function verifiedForeignImageTransitions(inventory: NativeInventory, inst
     const first = rows[0]
     if (visiting.has(pid) || !entry || !first || entry.absent || entry.imageEvidenceConflict || entry.closureIdentityUnverifiable
       || selectedSeen.has(pid) || inventory.changes.has(pid) || entry.causes.some(cause => cause.reason !== 'image-changed')
-      || rows.some(row => !row || !completeForeignRow(row, installationRoot) || !sameNativeIdentity(first.identity, row.identity)
-        || first.identity?.uid !== row.identity?.uid)) {
+      || rows.some(row => !row || !completeForeignRow(row, installationRoot) || !sameNativeIdentity(first.identity, row.identity))) {
       proofs.set(pid, null)
       return null
     }
     visiting.add(pid)
+    // 跨帧 exec 可切换凭据；四帧均已独立证明外来映像，每帧内部 UID 仍须一致。
     const parentPid = first.identity!.parentPid
     const ancestors = parentPid <= 1 ? [] : proveAncestry(parentPid, visiting)
     const proof = ancestors === null ? null : [metadata(first), ...ancestors]

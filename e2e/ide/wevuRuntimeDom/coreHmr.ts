@@ -21,7 +21,7 @@ function checkpoint(id: string, route: string, nodes: DomNodeExpectation[]): Dom
 
 export function coreHmrPlan(markers: CoreHmrMarkers, provider: DomProvider = resolveRuntimeProviderName()): DomCheckpoint[] {
   const realLayout = provider === 'devtools'
-  const hmr = (title: string, script: string, count = 1): DomNodeExpectation[] => [
+  const hmr = (title: string, script: string, count = 0): DomNodeExpectation[] => [
     { selector: '.title', text: title },
     { selector: '#hmr-script', text: `script: ${script}` },
     { selector: '#hmr-count', text: `count: ${count}` },
@@ -41,9 +41,9 @@ export function coreHmrPlan(markers: CoreHmrMarkers, provider: DomProvider = res
   ]
   return [
     checkpoint('page:initial', 'hmr', hmr('HMR', 'hmr', 0)),
-    checkpoint('page:interacted', 'hmr', hmr('HMR', 'hmr')),
+    checkpoint('page:interacted', 'hmr', hmr('HMR', 'hmr', 1)),
     checkpoint('page:template', 'hmr', hmr(markers.pageTemplateMarker, 'hmr')),
-    // 微信重载变更的页面脚本，但未变更的共享模块仍被缓存；新页面继续读取共享 store 的交互值。
+    // classic 全量刷新重建应用和共享 Store；状态保持属于实验范围外。
     checkpoint('page:script', 'hmr', hmr(markers.pageTemplateMarker, markers.pageScriptMarker)),
     checkpoint('page:style', 'hmr', [
       ...hmr(markers.pageTemplateMarker, markers.pageScriptMarker),
@@ -58,11 +58,11 @@ export function coreHmrPlan(markers: CoreHmrMarkers, provider: DomProvider = res
     ]),
     checkpoint('layout:initial', 'layouts', layout('LAYOUTS-PAGE-TEMPLATE-BASE', 'LAYOUTS-PAGE-SCRIPT-BASE', 'default')),
     checkpoint('layout:admin', 'layouts', layout('LAYOUTS-PAGE-TEMPLATE-BASE', 'LAYOUTS-PAGE-SCRIPT-BASE')),
-    checkpoint('layout:template', 'layouts', layout(markers.layoutPageTemplateMarker, 'LAYOUTS-PAGE-SCRIPT-BASE')),
+    checkpoint('layout:template', 'layouts', layout(markers.layoutPageTemplateMarker, 'LAYOUTS-PAGE-SCRIPT-BASE', 'default')),
     checkpoint('layout:script', 'layouts', layout(markers.layoutPageTemplateMarker, markers.layoutPageScriptMarker, 'default')),
     checkpoint('layout:script-admin', 'layouts', layout(markers.layoutPageTemplateMarker, markers.layoutPageScriptMarker)),
     checkpoint('layout:style', 'layouts', [
-      ...layout(markers.layoutPageTemplateMarker, markers.layoutPageScriptMarker),
+      ...layout(markers.layoutPageTemplateMarker, markers.layoutPageScriptMarker, 'default'),
       ...(realLayout ? [{ selector: '.page', styles: { 'background-color': 'rgb(224, 242, 254)' }, visible: true }] : []),
     ]),
     checkpoint('store:initial', 'store', [...store, { selector: '#store-initial-name', text: 'initial name: init' }]),

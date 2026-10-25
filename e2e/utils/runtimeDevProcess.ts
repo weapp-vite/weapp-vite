@@ -23,7 +23,7 @@ export async function startRuntimeDevProcess(host: string, args: readonly string
     return startDevProcess(process.execPath, controlledArgs, {
       ...options,
       ipc: false,
-      gracefulShutdown: () => control.requestClose(),
+      gracefulShutdown: settledExit => control.requestClose(settledExit),
       disposeShutdown: () => control.dispose(),
     })
   }

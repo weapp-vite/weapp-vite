@@ -13,9 +13,7 @@ import {
   waitForFileContains,
 } from '../utils/hmr-helpers'
 import { captureHmrProbeFailure } from '../utils/hmrProbeFailureDiagnostics'
-import { createHmrRuntimeDiagnostics } from '../utils/hmrRuntimeDiagnostics'
 import {
-  cleanupResidualDevtoolsProcesses,
   cleanupResidualIdeProcesses,
 } from '../utils/ide-devtools-cleanup'
 import { appendIdeReportEvent } from '../utils/ideWarningReport'
@@ -23,6 +21,7 @@ import { createNativeHmrPublication } from '../utils/nativeHmrPublication'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import { waitForWevuRuntimeChunkContaining } from '../utils/wevu-vendor'
 import { APP_ROOT, CLI_PATH, DIST_ROOT, waitForFile } from '../wevu-runtime.utils'
+import { createClassicReloadObserver } from './wevuRuntimeDom/classicReload'
 import { coreHmrPlan } from './wevuRuntimeDom/coreHmr'
 import { enterCoreHmrRoute } from './wevuRuntimeDom/coreHmrSession'
 import { observeHeadlessCurrentTemplate } from './wevuRuntimeDom/headlessTemplateObservation'
@@ -340,7 +339,7 @@ function replaceHmrPageTemplateMarker(source: string, marker: string) {
   return updatedProbe
 }
 
-async function waitForIdeRecompileSettled(delayMs = 1_200) {
+async function waitForIdeRecompileSettled(delayMs: number) {
   await new Promise(resolve => setTimeout(resolve, delayMs))
 }
 
@@ -599,15 +598,16 @@ describe('wevu runtime core hmr matrix (ide)', { concurrent: false }, () => {
       env: createDevProcessEnv(),
       stdio: 'inherit',
     })
-    const reloadHeadlessPageDefinition = async (route: string) => {
-      if (resolveRuntimeProviderName() !== 'headless') {
-        return
-      }
-      // companion 显式更新 classic 页面入口，保留共享 Store；真实 IDE 仍观察自动刷新。
-      await createNativeHmrPublication(APP_ROOT, dev, 'classic').assertClassicRuntime(sharedMiniProgram)
-      expect(await sharedMiniProgram.reloadPageDefinition(route)).toBe(true)
-      await sharedMiniProgram.reLaunch(route)
-    }
+    const classicPublication = createNativeHmrPublication(APP_ROOT, dev, 'classic')
+    const classicReload = createClassicReloadObserver({
+      getSession: () => sharedMiniProgram,
+      reopenHeadless: async () => {
+        await closeMiniProgram()
+        await ensureMiniProgram(ctx)
+      },
+      assertClassic: session => classicPublication.assertClassicRuntime(session),
+      project: 'e2e-apps/wevu-runtime-e2e',
+    })
 
     let primaryFailure: { error: unknown } | undefined
     try {
@@ -618,6 +618,7 @@ describe('wevu runtime core hmr matrix (ide)', { concurrent: false }, () => {
       await (await sharedMiniProgram.currentPage({ appFunctionFallback: false })).callMethodWithOptions('increment', { fallback: false })
       await check('page:interacted')
 
+      const confirmPageTemplateReload = await classicReload.prepare('classic-page-template-auto-reloaded')
       const updatedPageWxml = replaceHmrPageTemplateMarker(testSources.get(HMR_PAGE_WXML)!, pageTemplateMarker)
       await dev.waitFor(
         updateSourceAndWait({
@@ -628,10 +629,11 @@ describe('wevu runtime core hmr matrix (ide)', { concurrent: false }, () => {
         }),
         'page template hmr marker emitted',
       )
-      await waitForIdeRecompileSettled()
+      await confirmPageTemplateReload()
       await relaunchIdeRoute('/pages/hmr/index', pageTemplateMarker, ctx)
       await check('page:template')
 
+      const confirmPageScriptReload = await classicReload.prepare('classic-page-script-auto-reloaded')
       const updatedPageScript = testSources
         .get(HMR_PAGE_SCRIPT)!
         .replace(`const hmrScriptName = 'hmr'`, `const hmrScriptName = '${pageScriptMarker}'`)
@@ -644,8 +646,7 @@ describe('wevu runtime core hmr matrix (ide)', { concurrent: false }, () => {
         }),
         'page script hmr marker emitted',
       )
-      await waitForIdeRecompileSettled()
-      await reloadHeadlessPageDefinition('/pages/hmr/index')
+      await confirmPageScriptReload()
       await relaunchIdeRoute('/pages/hmr/index', undefined, ctx, {
         storageReady: {
           expected: pageScriptMarker,
@@ -655,6 +656,7 @@ describe('wevu runtime core hmr matrix (ide)', { concurrent: false }, () => {
       })
 
       await check('page:script')
+      const confirmPageStyleReload = await classicReload.prepare('classic-page-style-auto-reloaded')
       const updatedPageStyle = testSources
         .get(HMR_PAGE_STYLE)!
         .replace('.page {', `.page {\n  background-color: #dcfce7;\n  --hmr-marker: '${pageStyleMarker}';`)
@@ -669,7 +671,7 @@ describe('wevu runtime core hmr matrix (ide)', { concurrent: false }, () => {
       )
       expect(pageStyleOutput).toContain(pageStyleMarker)
       expect(pageStyleOutput).toMatch(/background-color\s*:\s*#dcfce7\b/i)
-      await waitForIdeRecompileSettled()
+      await confirmPageStyleReload()
       await relaunchIdeRoute('/pages/hmr/index', undefined, ctx, {
         storageReady: {
           expected: pageScriptMarker,
@@ -679,8 +681,12 @@ describe('wevu runtime core hmr matrix (ide)', { concurrent: false }, () => {
       })
 
       await check('page:style')
+      const updatedHmrPage = await sharedMiniProgram.currentPage({ appFunctionFallback: false })
+      await updatedHmrPage.callMethodWithOptions('increment', { fallback: false })
+      expect(await (await updatedHmrPage.$('#hmr-count')).text()).toBe('count: 1')
       await relaunchIdeRoute('/pages/hmr-sfc/index', 'HMR-SFC', ctx)
       await check('sfc:initial')
+      const confirmSfcTemplateReload = await classicReload.prepare('classic-sfc-template-auto-reloaded')
       const updatedSfcTemplate = replaceHmrSfcTitle(
         testSources.get(HMR_SFC_PATH)!,
         sfcTemplateMarker,
@@ -694,11 +700,12 @@ describe('wevu runtime core hmr matrix (ide)', { concurrent: false }, () => {
         }),
         'sfc template hmr marker emitted',
       )
-      await waitForIdeRecompileSettled()
+      await confirmSfcTemplateReload()
       await relaunchIdeRoute('/pages/hmr-sfc/index', sfcTemplateMarker, ctx)
       await check('sfc:template')
       expectSfcKeepImportResolved(await fs.readFile(HMR_SFC_WXSS_DIST, 'utf8'))
 
+      const confirmSfcScriptReload = await classicReload.prepare('classic-sfc-script-auto-reloaded')
       const updatedSfcScript = replaceHmrSfcScriptMarker(updatedSfcTemplate, sfcScriptMarker)
       await dev.waitFor(
         updateSourceAndWait({
@@ -709,8 +716,7 @@ describe('wevu runtime core hmr matrix (ide)', { concurrent: false }, () => {
         }),
         'sfc script hmr marker emitted',
       )
-      await waitForIdeRecompileSettled()
-      await reloadHeadlessPageDefinition('/pages/hmr-sfc/index')
+      await confirmSfcScriptReload()
       await relaunchIdeRoute('/pages/hmr-sfc/index', undefined, ctx, {
         storageReady: {
           expected: sfcScriptMarker,
@@ -721,6 +727,7 @@ describe('wevu runtime core hmr matrix (ide)', { concurrent: false }, () => {
       expectSfcKeepImportResolved(await fs.readFile(HMR_SFC_WXSS_DIST, 'utf8'))
 
       await check('sfc:script')
+      const confirmSfcStyleReload = await classicReload.prepare('classic-sfc-style-auto-reloaded')
       const updatedSfcStyle = updatedSfcScript
         .replace('.marker {', `.marker {\n  color: #be123c;\n  --hmr-marker: '${sfcStyleMarker}';`)
       const sfcStyleOutput = await dev.waitFor(
@@ -735,7 +742,7 @@ describe('wevu runtime core hmr matrix (ide)', { concurrent: false }, () => {
       expect(sfcStyleOutput).toContain(sfcStyleMarker)
       expect(sfcStyleOutput).toMatch(/\bcolor\s*:\s*#be123c\b/i)
       expectSfcKeepImportResolved(sfcStyleOutput)
-      await waitForIdeRecompileSettled()
+      await confirmSfcStyleReload()
       await relaunchIdeRoute('/pages/hmr-sfc/index', undefined, ctx, {
         storageReady: {
           expected: sfcScriptMarker,
@@ -746,11 +753,10 @@ describe('wevu runtime core hmr matrix (ide)', { concurrent: false }, () => {
 
       await check('sfc:style')
       const layoutPage = await relaunchIdeRoute('/pages/layouts/index', 'LAYOUTS-PAGE-TEMPLATE-BASE', ctx)
-      const layoutDiagnostics = createHmrRuntimeDiagnostics(sharedMiniProgram, 'e2e-apps/wevu-runtime-e2e')
-      await layoutDiagnostics.initialize()
       await check('layout:initial')
       await layoutPage.callMethodWithOptions('applyAdminLayout', { fallback: false })
       await check('layout:admin')
+      const confirmLayoutTemplateReload = await classicReload.prepare('classic-layout-template-auto-reloaded')
       const updatedLayoutPageWxml = testSources
         .get(LAYOUT_PAGE_WXML)!
         .replaceAll('LAYOUTS-PAGE-TEMPLATE-BASE', layoutPageTemplateMarker)
@@ -763,10 +769,11 @@ describe('wevu runtime core hmr matrix (ide)', { concurrent: false }, () => {
         }),
         'layout page template hmr marker emitted',
       )
-      await waitForIdeRecompileSettled()
+      await confirmLayoutTemplateReload()
       await relaunchIdeRoute('/pages/layouts/index', layoutPageTemplateMarker, ctx)
       await check('layout:template')
 
+      const confirmLayoutScriptReload = await classicReload.prepare('classic-layout-script-auto-reloaded')
       const updatedLayoutPageScript = testSources
         .get(LAYOUT_PAGE_SCRIPT)!
         .replace(`const layoutPageScriptMarker = 'LAYOUTS-PAGE-SCRIPT-BASE'`, `const layoutPageScriptMarker = '${layoutPageScriptMarker}'`)
@@ -779,44 +786,34 @@ describe('wevu runtime core hmr matrix (ide)', { concurrent: false }, () => {
         }),
         'layout page script hmr marker emitted',
       )
-      await waitForIdeRecompileSettled()
-      await reloadHeadlessPageDefinition('/pages/layouts/index')
+      await confirmLayoutScriptReload()
       let refreshedLayoutPage: Awaited<ReturnType<typeof relaunchIdeRoute>>
-      try {
-        await layoutDiagnostics.capture('layout-script-emitted')
-        refreshedLayoutPage = await relaunchIdeRoute('/pages/layouts/index', undefined, ctx, {
-          storageReady: {
-            expected: layoutPageScriptMarker,
-            field: 'marker',
-            key: LAYOUT_SCRIPT_PROBE_STORAGE_KEY,
-          },
-        })
-        // IDE 热更新后 AppService 路由对象可能保留旧方法，操作必须绑定原生页面身份。
-        const markerState = await refreshedLayoutPage.callMethodWithOptions('syncScriptMarker', {
-          fallback: false,
-          timeout: 2_500,
-        })
-        appendIdeReportEvent({
-          source: 'runtime',
-          kind: 'message',
-          level: 'info',
-          channel: 'hmr-diagnostics',
-          project: 'e2e-apps/wevu-runtime-e2e',
-          text: JSON.stringify({ label: 'layout-script-method-result', methodSource: 'Page.callMethod', markerState }),
-        })
-        expect(markerState?.definitionMarker).toBe(layoutPageScriptMarker)
-      }
-      finally {
-        await layoutDiagnostics.capture('layout-script-after-readiness')
-      }
+      refreshedLayoutPage = await relaunchIdeRoute('/pages/layouts/index', undefined, ctx, {
+        storageReady: {
+          expected: layoutPageScriptMarker,
+          field: 'marker',
+          key: LAYOUT_SCRIPT_PROBE_STORAGE_KEY,
+        },
+      })
+      // IDE 热更新后 AppService 路由对象可能保留旧方法，操作必须绑定原生页面身份。
+      const markerState = await refreshedLayoutPage.callMethodWithOptions('syncScriptMarker', {
+        fallback: false,
+        timeout: 2_500,
+      })
+      appendIdeReportEvent({
+        source: 'runtime',
+        kind: 'message',
+        level: 'info',
+        channel: 'hmr-diagnostics',
+        project: 'e2e-apps/wevu-runtime-e2e',
+        text: JSON.stringify({ label: 'layout-script-method-result', methodSource: 'Page.callMethod', markerState }),
+      })
+      expect(markerState?.definitionMarker).toBe(layoutPageScriptMarker)
       await check('layout:script')
       await refreshedLayoutPage.callMethodWithOptions('applyAdminLayout', { fallback: false })
       await check('layout:script-admin')
-      const layoutStyleDiagnostics = createHmrRuntimeDiagnostics(sharedMiniProgram, 'e2e-apps/wevu-runtime-e2e')
-      const layoutStyleIdentity = await layoutStyleDiagnostics.initialize()
-      expect(layoutStyleIdentity.errors).toEqual([])
-      expect(layoutStyleIdentity.pageId).toEqual(expect.any(Number))
-      expect(layoutStyleIdentity.runtime).toMatchObject({ pageMarkerRetained: true, appMarkerRetained: true })
+
+      const confirmLayoutStyleReload = await classicReload.prepare('classic-layout-style-auto-reloaded')
       const updatedLayoutPageStyle = testSources
         .get(LAYOUT_PAGE_STYLE)!
         .replace(`'LAYOUTS-PAGE-STYLE-BASE'`, `'${layoutPageStyleMarker}'`)
@@ -832,20 +829,16 @@ describe('wevu runtime core hmr matrix (ide)', { concurrent: false }, () => {
       )
       expect(layoutPageStyleOutput).toContain(layoutPageStyleMarker)
       expect(layoutPageStyleOutput).toMatch(/background-color\s*:\s*#e0f2fe\b/i)
-      await waitForIdeRecompileSettled()
-      // 样式更新必须保留已交互的页面；DOM 轮询只等待当前路由，禁止导航恢复重置状态。
-      let renderedIdentity: Awaited<ReturnType<typeof layoutStyleDiagnostics.capture>>
-      try {
-        await dom.check('layout:style', sharedMiniProgram, refreshedLayoutPage)
-      }
-      finally {
-        renderedIdentity = await layoutStyleDiagnostics.capture('layout-style-rendered')
-      }
-      expect(renderedIdentity.errors).toEqual([])
-      expect(renderedIdentity.pageId).toBe(layoutStyleIdentity.pageId)
-      expect(renderedIdentity.runtime).toMatchObject({ pageMarkerRetained: true, appMarkerRetained: true })
+      await confirmLayoutStyleReload()
+      refreshedLayoutPage = await relaunchIdeRoute('/pages/layouts/index', undefined, ctx, {
+        storageReady: { expected: layoutPageScriptMarker, field: 'marker', key: LAYOUT_SCRIPT_PROBE_STORAGE_KEY },
+      })
+      await dom.check('layout:style', sharedMiniProgram, refreshedLayoutPage)
+      await refreshedLayoutPage.callMethodWithOptions('applyAdminLayout', { fallback: false })
+      expect(await (await refreshedLayoutPage.$('#layout-current'))?.text()).toBe('current: admin')
       await relaunchIdeRoute('/pages/store/index', undefined, ctx)
       await check('store:initial')
+      const confirmSharedStoreReload = await classicReload.prepare('classic-shared-store-auto-reloaded')
       const updatedSharedStore = replaceSharedStoreName(
         testSources.get(SHARED_STORE_PATH)!,
         sharedStoreMarker,
@@ -858,11 +851,8 @@ describe('wevu runtime core hmr matrix (ide)', { concurrent: false }, () => {
       expect(sharedRuntime.code).toContain(sharedStoreMarker)
       expect(sharedRuntime.code).toContain('setupCounter')
       expect(sharedRuntime.code).toContain('optionsCounter')
-      await waitForIdeRecompileSettled()
-      // Store 文档不支持 Pinia HMR；定义变化须重启 App，不能复用旧 Pinia 的实例与插件闭包。
-      // 前面的页面、SFC、layout 检查仍共享会话；这里只为验证新 Store 定义建立冷启动会话。
-      await closeMiniProgram()
-      await cleanupResidualDevtoolsProcesses()
+      // Store 定义随 classic 自动重载重新建立；真实 IDE 复用原窗口与 automator。
+      await confirmSharedStoreReload()
       await relaunchIdeRoute('/pages/store/index', undefined, ctx, {
         storageReady: {
           expected: 'store',

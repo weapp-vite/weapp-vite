@@ -11,23 +11,30 @@ export async function createNativeHostControl(root, configFile) {
   const token = randomUUID()
   const ready = Promise.withResolvers()
   const completed = Promise.withResolvers()
+  const peerClosed = Promise.withResolvers()
   const sockets = new Set()
   let peer
   let stopping
   let disposing
   let received = false
+  let initialStarted = false
+  let channelError
   const server = createServer((socket) => {
     sockets.add(socket)
     const failChannel = (error) => {
       if (socket === peer) {
-        completed.reject(error)
+        channelError ??= error
+        completed.reject(channelError)
       }
     }
     socket.on('error', failChannel)
     socket.on('close', () => {
       sockets.delete(socket)
-      if (socket === peer && !received) {
-        completed.reject(new Error('Native host control disconnected before its cleanup receipt'))
+      if (socket === peer) {
+        if (!received) {
+          failChannel(new Error('Native host control disconnected before its cleanup receipt'))
+        }
+        peerClosed.resolve()
       }
     })
     const input = createInterface({ input: socket })
@@ -49,6 +56,9 @@ export async function createNativeHostControl(root, configFile) {
       if (message.type === 'ready') {
         peer = socket
         ready.resolve(socket)
+      }
+      else if (message.type === 'initial-started' && peer === socket) {
+        initialStarted = true
       }
       else if (message.type === 'closed' && peer === socket) {
         received = true
@@ -114,11 +124,31 @@ export async function createNativeHostControl(root, configFile) {
     })
     return {
       configFile: configuration.configFile,
-      requestClose() {
+      requestClose(settledExit) {
         return stopping ??= (async () => {
-          const socket = await ready.promise
-          socket.write(`${JSON.stringify({ type: 'close', token })}\n`)
-          await completed.promise
+          try {
+            const socket = await ready.promise
+            if (!socket.destroyed) {
+              socket.write(`${JSON.stringify({ type: 'close', token })}\n`)
+            }
+            await completed.promise
+            return { type: 'closed' }
+          }
+          catch (error) {
+            if (error !== channelError || !settledExit) {
+              throw error
+            }
+            // 同一连接的消息先于 EOF；等全部消息与输出排空后才能确认首构尚未完成。
+            await peerClosed.promise
+            if (initialStarted) {
+              throw error
+            }
+            const exit = await settledExit
+            if (typeof exit.exitCode === 'number' && exit.exitCode !== 0 && !exit.signal) {
+              return { type: 'startup-exited' }
+            }
+            throw error
+          }
         })()
       },
       dispose,

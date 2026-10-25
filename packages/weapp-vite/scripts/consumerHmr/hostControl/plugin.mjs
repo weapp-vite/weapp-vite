@@ -8,6 +8,19 @@ const controlsKey = Symbol.for('weapp-vite:e2e-native-host-controls')
 function createControl(endpoint) {
   const resources = createHostResources()
   let activated = false
+  let initialStarted = false
+  let connectedSocket
+  const announceStarted = () => {
+    if (initialStarted && connectedSocket) {
+      connectedSocket.write(`${JSON.stringify({ type: 'initial-started', token: endpoint.token })}\n`)
+    }
+  }
+  const markStarted = () => {
+    if (!initialStarted) {
+      initialStarted = true
+      announceStarted()
+    }
+  }
   function activate() {
     if (activated) {
       return
@@ -26,7 +39,11 @@ function createControl(endpoint) {
       console.error('[native-host-control] Control connection failed:', error)
       void resources.close().catch(cleanupError => console.error('[native-host-control] Native host cleanup failed:', cleanupError))
     }
-    socket.once('connect', () => socket.write(`${JSON.stringify({ type: 'ready', token: endpoint.token })}\n`))
+    socket.once('connect', () => {
+      connectedSocket = socket
+      socket.write(`${JSON.stringify({ type: 'ready', token: endpoint.token })}\n`)
+      announceStarted()
+    })
     const input = createInterface({ input: socket })
     // 不允许 readline 将同一控制通道错误变成未捕获异常并打断原生资源收尾。
     input.on('error', failChannel)
@@ -60,7 +77,7 @@ function createControl(endpoint) {
       }
     })
   }
-  return { ...resources, activate, hasServer: false }
+  return { ...resources, activate, markStarted, hasServer: false }
 }
 
 function ownServer(control, server) {
@@ -75,6 +92,7 @@ function ownServer(control, server) {
       process.once('exit', onExit)
       server.listen = (...args) => Promise.resolve().then(() => listen(...args)).then((result) => {
         process.off('exit', onExit)
+        control.markStarted()
         startup.resolve()
         return result
       }, (error) => {
@@ -82,6 +100,9 @@ function ownServer(control, server) {
         startup.reject(error)
         throw error
       })
+    }
+    else {
+      control.markStarted()
     }
   }
   if (typeof server.restart === 'function') {
@@ -124,6 +145,7 @@ export function createNativeHostControlPlugin(endpoint) {
             if (environment.config.build.watch && result && typeof result.close === 'function') {
               await control.own(result, () => result.close())
             }
+            control.markStarted()
             return result
           })
           control.activate()

@@ -31,7 +31,7 @@ interface DevProcessSpawnInfo {
 
 type DevProcessOptions = Options & {
   /** 原生宿主通过明确控制协议关闭，不能按 Node 可执行文件推定其支持 IPC。 */
-  gracefulShutdown?: () => Promise<void>
+  gracefulShutdown?: (settledExit: Promise<DevProcessExitInfo>) => Promise<unknown>
   /** 仅在登记进程与输出均已排空后释放测试控制通道和临时配置。 */
   disposeShutdown?: () => Promise<void>
 }
@@ -229,7 +229,7 @@ export function startDevProcess(
   const cleanup = createDevProcessCleanup({
     pid: child.pid,
     settledExit,
-    requestRootShutdown: gracefulShutdown,
+    requestRootShutdown: gracefulShutdown ? () => gracefulShutdown(settledExit) : undefined,
     onIpcExit: () => {
       exitedAfterIpc = true
     },
