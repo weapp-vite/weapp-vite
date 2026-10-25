@@ -1,4 +1,6 @@
+import type { DomNodeExpectation } from '../domAcceptance/types'
 import { DomUtils, parseDocument } from 'htmlparser2'
+import { xpathClass } from '../../ide/tdesignDom'
 
 type MarkupNode = ReturnType<typeof parseDocument>['children'][number]
 type MarkupElement = Extract<MarkupNode, { attribs: Record<string, string> }>
@@ -144,17 +146,18 @@ export function projectRetailTemplateWxml(source: string, contract: RetailNaviga
 }
 
 /** 将导航可见性与动作语义附加到原首屏检查点，不减少业务检查点。 */
-export function retailNavigationNodes(contract: RetailNavigationContract) {
+export function retailNavigationNodes(contract: RetailNavigationContract): DomNodeExpectation[] {
   return [
-    { selector: '.layout-navigation', count: 1, visible: true },
+    { selector: xpathClass('layout-navigation'), query: 'xpath', count: 1, visible: true },
     {
-      selector: '.layout-navigation__title',
+      selector: xpathClass('layout-navigation__title'),
+      query: 'xpath',
       count: 1,
       visible: true,
       ...(contract.configuredTitle ? { text: contract.configuredTitle } : {}),
     },
-    { selector: '.layout-navigation__button', count: contract.isTabRoute ? 0 : 1, visible: true },
-    { selector: '.layout-navigation__button .t-icon-home', count: contract.isTabRoute ? 0 : 1 },
+    { selector: xpathClass('layout-navigation__button'), query: 'xpath', count: contract.isTabRoute ? 0 : 1, visible: true },
+    { selector: `${xpathClass('layout-navigation__button')}${xpathClass('t-icon-home')}`, query: 'xpath', count: contract.isTabRoute ? 0 : 1 },
   ]
 }
 

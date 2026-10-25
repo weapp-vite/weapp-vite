@@ -94,8 +94,14 @@ describe('retail parity navigation projection', () => {
     expect(() => projectRetailTemplateWxml(document(`<slot/>${feedback}`), contract)).toThrow('empty business document')
   })
 
-  it('adds visible navigation nodes to the existing checkpoint and preserves exact title expectations', () => {
-    expect(retailNavigationNodes(contract)).toContainEqual({ selector: '.layout-navigation__title', count: 1, visible: true, text: '昵称' })
+  it('queries navigation across component boundaries while preserving visibility, exact title and button-scoped home icons', () => {
+    expect(retailNavigationNodes(contract)).toEqual([
+      { selector: '//*[contains(concat(" ", @class, " "), " layout-navigation ")]', query: 'xpath', count: 1, visible: true },
+      { selector: '//*[contains(concat(" ", @class, " "), " layout-navigation__title ")]', query: 'xpath', count: 1, visible: true, text: '昵称' },
+      { selector: '//*[contains(concat(" ", @class, " "), " layout-navigation__button ")]', query: 'xpath', count: 1, visible: true },
+      { selector: '//*[contains(concat(" ", @class, " "), " layout-navigation__button ")]//*[contains(concat(" ", @class, " "), " t-icon-home ")]', query: 'xpath', count: 1 },
+    ])
+    expect(retailNavigationNodes({ ...contract, isTabRoute: true }).slice(2).map(node => node.count)).toEqual([0, 0])
     expect(retailNavigationNodes({ ...contract, configuredTitle: '' })[1]).not.toHaveProperty('text')
   })
 })
