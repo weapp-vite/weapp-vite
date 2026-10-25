@@ -13,6 +13,7 @@ import { createDomAcceptance } from '../utils/domAcceptance'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import { assertTemplateRouteCoverage, resolveTemplateDomPlan, tapTemplateNode } from '../utils/templateAcceptance'
 import { RETAIL_TEMPLATE_DOM } from '../utils/templateAcceptance/retail'
+import { isRetailCartReady, readRetailCartSnapshot } from '../utils/templateAcceptance/retailCartState'
 import { RETAIL_CHECKOUT_GOODS } from '../utils/templateAcceptance/retailCheckout'
 import { queryRetailPageRoot } from '../utils/templateAcceptance/retailPageRoot'
 import { prepareRetailParityHome } from '../utils/templateAcceptance/retailParityHome'
@@ -424,20 +425,13 @@ async function waitForRouteReady(options: {
   } = options
 
   if (pagePath === 'pages/cart/index') {
-    let lastState: {
-      isNotEmpty: unknown
-      storeCount: number | null
-      invalidCount: number | null
-      hasCartGroup: boolean
-      hasCartEmpty: boolean
-      dataError?: string
-      wxmlError?: string
-    } = {
-      isNotEmpty: undefined,
-      storeCount: null,
-      invalidCount: null,
+    let lastState = {
+      ...readRetailCartSnapshot(undefined),
       hasCartGroup: false,
       hasCartEmpty: false,
+      titles: [] as string[],
+      dataError: undefined as string | undefined,
+      wxmlError: undefined as string | undefined,
     }
 
     const start = Date.now()
@@ -450,21 +444,17 @@ async function waitForRouteReady(options: {
       })
 
       let dataError: string | undefined
-      let nextCartGroupData: any = null
+      let snapshot = readRetailCartSnapshot(undefined)
       try {
-        nextCartGroupData = await page.data('cartGroupData')
+        snapshot = readRetailCartSnapshot(await page.data())
       }
       catch (error) {
         dataError = getErrorMessage(error)
       }
 
-      const storeCount = Array.isArray(nextCartGroupData?.storeGoods) ? nextCartGroupData.storeGoods.length : null
-      const invalidCount = Array.isArray(nextCartGroupData?.invalidGoodItems)
-        ? nextCartGroupData.invalidGoodItems.length
-        : null
-      const isNotEmpty = nextCartGroupData?.isNotEmpty
       let hasCartGroup = false
       let hasCartEmpty = false
+      let titles: string[] = []
       let wxmlError: string | undefined
       const pageRoot = await waitForPageRoot(page, 1000)
       if (pageRoot) {
@@ -472,22 +462,16 @@ async function waitForRouteReady(options: {
           const rawWxml = await pageRoot.wxml()
           hasCartGroup = rawWxml.includes('<cart-group') || rawWxml.includes('cart-group')
           hasCartEmpty = rawWxml.includes('<cart-empty') || rawWxml.includes('cart-empty')
+          const goods = await page.getElementsByXpath('//*[contains(concat(" ", @class, " "), " wr-goods-card__title ")]', { fallback: false, timeout: 1000 })
+          titles = await Promise.all(goods.map((good: { text: () => Promise<string> }) => good.text()))
         }
         catch (error) {
           wxmlError = getErrorMessage(error)
         }
       }
-      lastState = {
-        isNotEmpty,
-        storeCount,
-        invalidCount,
-        hasCartGroup,
-        hasCartEmpty,
-        dataError,
-        wxmlError,
-      }
+      lastState = { ...snapshot, hasCartGroup, hasCartEmpty, titles, dataError, wxmlError }
 
-      if (((storeCount !== null && storeCount > 0) || (invalidCount !== null && invalidCount > 0)) && hasCartGroup) {
+      if (isRetailCartReady(snapshot, { hasCartGroup, titles, dataError, wxmlError })) {
         return
       }
 
