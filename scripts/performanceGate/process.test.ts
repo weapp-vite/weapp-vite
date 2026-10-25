@@ -114,7 +114,7 @@ it('bounds a silent child and only releases reverified registered identities', a
   await waitForLaunch()
   await vi.advanceTimersByTimeAsync(500)
   expect(await failed).toMatchObject({ message: expect.stringContaining('deadline exceeded (500 ms)') })
-  expect(fixtures.capture).toHaveBeenCalledWith(61, expect.any(Function))
+  expect(fixtures.capture).toHaveBeenCalledWith(61, expect.any(Function), undefined)
   expect(fixtures.identities).toHaveBeenCalledWith([62, 61])
   expect(fixtures.kill).toHaveBeenCalledTimes(1)
   expect(fixtures.execute).toHaveBeenCalledTimes(1)
