@@ -30,6 +30,7 @@ import { isNativeBenchmarkScriptEntry } from './benchmarkTemplatesHmr/nativeEntr
 import { compareBenchmarkOutputs, snapshotBenchmarkOutputs } from './benchmarkTemplatesHmr/outputScope'
 import { collectBenchmarkHmrProfile, matchesHmrProfileSource } from './benchmarkTemplatesHmr/profile'
 import { restoreBenchmarkSource } from './benchmarkTemplatesHmr/sourceRestore'
+import { normalizeBenchmarkStylesheet } from './benchmarkTemplatesHmr/styleOutput'
 import { injectVueStyleRule, parseStatefulHmrControlSource } from './workspace-hmr/scenarios'
 import { measureStatefulTemplateArtifact } from './workspace-hmr/statefulArtifactMeasurement'
 import { StatefulHmrAuditClient } from './workspace-hmr/statefulAuditClient'
@@ -648,15 +649,20 @@ async function benchmarkScenario(
   let expectedMarker = ''
   let failure: ScenarioResult | undefined
   const isScript = scenario.group === 'native-script' || scenario.group === 'vue-script'
-  const readOutput = scenario.readOutput ?? (isScript
+  const isStyle = scenario.group.endsWith('style')
+  const readOutputSource = scenario.readOutput ?? (isScript
     ? createEmittedScriptReader(scenario.outputFile, path.join(template.workspaceRoot, 'dist'))
-    : scenario.group.endsWith('style')
+    : isStyle
       ? () => readEmittedStylesheet(scenario.outputFile)
       : () => readFile(scenario.outputFile, 'utf8'))
+  const readOutput = isStyle
+    ? async () => normalizeBenchmarkStylesheet(await readOutputSource())
+    : readOutputSource
   const controlPath = path.join(template.workspaceRoot, 'dist', WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE)
   const runtime = await pathExists(controlPath) ? 'stateful' : 'standard'
   const usesStatefulScript = isScript && runtime === 'stateful'
-  // 脚本含随 HMR 变化的版本/载荷；模板、样式和 JSON 则必须完整恢复原产物，
+  // 脚本含随 HMR 变化的版本/载荷；模板和 JSON 必须逐字恢复，样式保留完整语义与顺序，
+  // 仅排除前一内容更新留下的受管 nonce 与 CSS 格式差异，
   // 不能把 bundler 截断文件后暂时没有标记的空窗口当作更新完成。
   const originalOutput = isScript ? undefined : await readOutput()
   const readControl = async (signal?: AbortSignal) => parseStatefulHmrControlSource(await readFile(controlPath, { encoding: 'utf8', signal }))
@@ -761,7 +767,7 @@ async function benchmarkScenario(
       const artifact = `failures/${template.id}/${scenario.id}.json`
       const evidence = await captureBenchmarkFailureEvidence({
         readSource: () => readFile(scenario.sourceFile, 'utf8'),
-        readOutput,
+        readOutput: readOutputSource,
         marker: expectedMarker,
         repoRoot,
         artifactFile: path.join(reportRoot, artifact),
