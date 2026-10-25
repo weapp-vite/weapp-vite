@@ -178,13 +178,19 @@ JS/Rust Oxc 对齐 0.155.0，napi 3.15.0、napi-derive 3.6.13、Rust 1.99.1，�
 | Native 构建、correctness、fallback、profile | Rust 20/20、debug/release 构建、9 导出 smoke、fallback 143 项；正式新绑定 9 套 183/183、无跳过，新增 25 项真实 addon/AST 对齐；实际 SFC profile 480 样本保持输出一致。门禁新增套件清单同步后 32 项通过，其余 57 项复用未受影响证据 |
 | 全单测、包测试与全公开类型 | 全公开类型 51 条命令通过，queue 目录单独通过；watcher/autoRoutes 修复后的最终完整根单测 2,173 文件、20,388 项通过，另 13 文件、20 项既有跳过，耗时 487.98 秒；源码、未跟踪文件、Git 状态及安装元数据均无漂移 |
 | 根入口遗漏的 61 份 MJS 测试 | 定向 5 文件 188 项通过；完整 61 文件 943 项通过、1 项既有跳过；源码及安装状态无漂移 |
-| 六平台、headless、HMR、Web 与组件库 | 六平台 7 文件、38 项通过；headless gate 6/6 任务通过；完整 Web 首轮 121 通过、2 失败，修复与单张基线迁移后的 WebB 为 17 文件、123 项全部通过；正式 HMR 待最终验证 |
+| 六平台、headless、Web 与组件库 | 六平台 7 文件、38 项通过；headless gate 6/6 任务通过；完整 Web 首轮 121 通过、2 失败，修复与单张基线迁移后的 WebB 为 17 文件、123 项全部通过 |
+| 干净提交的正式 HMR build | 提交 `6197a323`，45 个计划任务中 42 个执行通过、3 个按版本化范围记为 OOS；210 项测试通过、无失败或跳过，42 个任务清理通过，安装状态无漂移 |
+| 干净提交的正式 HMR headless | 同一提交，28 个计划任务中 14 个执行通过、14 个按版本化范围记为 OOS；23 个 strict DOM case、155 个 checkpoint 完整通过，14 个任务清理通过，安装状态无漂移 |
 | 其他浏览器与实际消费者 | Firefox/WebKit 2 项、Simulator Chromium 89 文件 201 项、glass-easel DOM 流程通过；网站重建及 Playwright 7 项通过，包含真实 Mermaid |
 | autoRoutes 发布回执 | 定向 6 文件 81 项、ESLint、owning typecheck/build 通过；完整 WebB 中 issue #1029 的三个浏览器用例通过，严格 reload 次数断言保持 |
 | 最低 Node 22.23.4 与本地 Node 24.22.1 | built CLI、AcceptanceService 和 model-free baseline 均通过；不等同于两个版本的完整消费者矩阵 |
 | Agent CLI 实际发行消费者 | 最终实际 tarball 安装、session、legacy verify、model-free acceptance、stdio MCP 生命周期、持久化报告及显式 Skill 安装通过；不访问真实模型或发布端点 |
 | Windows/macOS/Linux GitHub CI | 未执行 |
 | 合并后干净 main 的正式全量 IDE | 待合并后执行 |
+
+上述 HMR 两阶段只证明各自冻结范围，完整 capability acceptance 仍为 `not-evaluated`。headless 报告的 6 个 skipped entry 均在冻结 selectedCases 之外，不计为所选 case 跳过。
+
+局部真实 IDE 首轮固定 Stable 2.02.2608080，官方查询于 2026-10-25 21:51:14 UTC 确认与 latest Stable 一致。classic 项目导入返回 `APPID_ERROR`、要求重新登录；stateful 启动返回当前能力契约规定的 `ide-classic-handoff`，旧用例只接受 `stylesheet-output`，在调用 launch 前失败。两个 case 均未执行，DOM case 与 checkpoint 均为 0，不能记为 runtime 通过。外层登记的 scope、宿主及端口清理成功，保留首错和 fixture 保留诊断；Computer Use 已确认当前仅有项目列表窗口、界面仍显示退出登录，等待正常重新登录后继续。测试同时按当前启动能力契约精确接受 `ide-classic-handoff`，连接前确认 classic 产物；初始 App/Page 标记应保持，编辑后仍要求实例替换，七个 CSS checkpoint 及 DOM/计算样式断言保留。新增 test-only helper 承载这部分契约，避免继续扩大既有超过 300 行的 E2E 文件；普通契约单测 14 项通过；同一 E2E 文件随后在 headless 下完整执行 classic 与 stateful 两个 case，17/17 个 strict DOM checkpoint 通过，无跳过，源码与安装状态不变，两份隔离 fixture 均完成清理。该定向复验不能替代真实 IDE 结果。
 
 初次发布回归因 Vitest 选中 node_modules 内 TypeScript 源文件失败，调整测试解析条件后通过。首次 queue tsd 命令误用不受支持的 cwd 参数，改为在 owning fixture 目录执行后通过。首次 oxc CLI 命令猜错发行入口；按 package.json 的 bin 改用 dist/index.js 后版本查询及注册加载通过。这些执行错误保留原始日志，不作为产品缺陷。
 
