@@ -7,6 +7,7 @@ type CleanupTraceStage
     | 'stateful-residual-ide'
     | 'stateful-fixture-remove'
     | 'dev-capture'
+    | 'dev-native-root-exit'
     | 'dev-reconcile'
     | 'dev-recheck-unconfirmed'
     | 'dev-kernel-compile'

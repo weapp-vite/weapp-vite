@@ -146,12 +146,17 @@ export function createAtomicDeliveryObserver({ root, file }, { watchApi = fs, sy
         assert.ok(call.native && call.listener, 'independent change requires a real native notification and exact file listener')
         const listener = listeners[call.listener - 1]
         assert.equal(listener.native, call.native)
-        assert.equal(listener.registration, 2, 'old file listeners cannot account for replacement changes')
+        const beforeUnlink = call.id < unlinks[0].id
+        assert.equal(listener.registration, beforeUnlink ? 1 : 2, beforeUnlink ? 'pre-unlink changes require the initial file listener' : 'old file listeners cannot account for replacement changes')
         const notification = native[call.native - 1]
         assert.ok(notification, 'native notification token must be owned by this observer')
         assert.ok(notification.path === relative(file)
           || (notification.path === relative(path.dirname(file)) && path.resolve(path.dirname(file), notification.filename) === file), 'the real notification must address the exact target')
-        assert.deepEqual(generation(call.stats), generation(finalStats), 'independent change observes the exact replacement generation')
+        assert.deepEqual(generation(call.stats), generation(beforeUnlink ? registrations[0].stats : finalStats), beforeUnlink ? 'pre-unlink change observes the exact initial generation' : 'independent change observes the exact replacement generation')
+        if (beforeUnlink) {
+          assert.equal(call.before, null, 'pre-unlink change cannot enter an atomic pending generation')
+          assert.equal(call.after, null, 'pre-unlink change cannot leave an atomic pending generation')
+        }
         assert.ok(call.outputs.length <= 1 && call.outputs.every(event => event === 'change'), 'one original _emit may publish at most one change')
         if (call.outputs.length) {
           assert.ok(!usedNotifications.has(call.native) && !usedListeners.has(call.listener), 'one real notification/listener cannot justify duplicate public changes')

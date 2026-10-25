@@ -6,6 +6,7 @@ import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { execa } from 'execa'
 import { createDevProcessCleanup } from './devProcessCleanup'
+import { waitForNativeDevProcessExit } from './devProcessCleanup/rootExit'
 import { createDevProcessShutdownFailure, DEV_PROCESS_GRACEFUL_TIMEOUT_MS } from './devProcessCleanup/shutdown'
 import { createDevProcessDiagnostics } from './devProcessDiagnostics'
 import { captureDevProcessOutput } from './devProcessStdio'
@@ -236,6 +237,7 @@ export function startDevProcess(
       forcedShutdown ??= evidence
     },
     isRootHeld: () => !exited && child.nodeChildProcess?.exitCode == null && child.nodeChildProcess?.signalCode == null,
+    confirmRootExit: timeoutMs => waitForNativeDevProcessExit(child.nodeChildProcess, timeoutMs),
     disconnectRoot: () => {
       if (!child.nodeChildProcess?.connected) {
         return false

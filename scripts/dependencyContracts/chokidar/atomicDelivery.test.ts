@@ -16,7 +16,7 @@ function fixture() {
   const all: string[] = []
   const receiver = {}
   const result = Promise.resolve('original emit result')
-  const settings = { duplicate: false }
+  const settings = { duplicate: false, initialStats: first }
   const closer = () => {}
   const watchApi = { watch: vi.fn((_watched: string, ...args: unknown[]) => {
     callbacks.push(args.at(-1) as Listener)
@@ -66,10 +66,11 @@ function fixture() {
     const callback = callbacks.at(-1)!
     return (...args: unknown[]) => callback.apply(receiver, args.length ? args : ['rename', path.basename(file)])
   }
-  const initialListener = register(first)
+  const initialListener = register(first, () => watcher._emit('change', file, settings.initialStats))
   observer.start()
-  const atomic = (listener?: Listener, afterAdd?: () => void) => {
+  const atomic = (listener?: Listener, afterAdd?: () => void, afterUnlink?: () => void) => {
     expect(notify(() => watcher._emit('unlink', file))()).toBe(result)
+    afterUnlink?.()
     register(replacement, listener)
     return notify(() => {
       const returned = watcher._emit('add', file, replacement)
@@ -119,20 +120,57 @@ it('keeps both public changes and proves one atomic conversion plus an independe
   finally { ctx.observer.close() }
 })
 
+it('retains an exact initial-generation native change before the first unlink without attributing it to the replacement', () => {
+  const ctx = fixture()
+  try {
+    expect(ctx.notify(() => ctx.initialListener.apply(ctx.receiver, []))()).toBe(ctx.result)
+    expect(ctx.atomic()).toBe(ctx.result)
+    ctx.finish()
+    expect(ctx.all).toEqual(['change', 'change'])
+    expect(ctx.observer.snapshot().events).toHaveLength(ctx.all.length)
+  }
+  finally { ctx.observer.close() }
+})
+
 it.each([
   ['unknown', 'no public event may lack'],
   ['duplicate-emit', 'one original _emit may publish at most one change'],
   ['same-notification', 'one real notification/listener cannot justify duplicate'],
   ['atomic-notification', 'one real notification/listener cannot justify duplicate'],
   ['old-generation', 'old file listeners cannot account'],
+  ['old-generation-pending', 'old file listeners cannot account'],
+  ['duplicate-before-unlink', 'one original _emit may publish at most one change'],
+  ['same-notification-before-unlink', 'one real notification/listener cannot justify duplicate'],
+  ['wrong-state-before-unlink', 'pre-unlink change observes the exact initial generation'],
+  ['pending-before-unlink', 'pre-unlink change cannot enter an atomic pending generation'],
   ['wrong-state', 'independent change observes the exact replacement generation'],
   ['wrong-filename', 'the real notification must address the exact target'],
   ['flush', 'the original held atomic flush emits nothing'],
 ] as const)('rejects %s without filtering original all-events', async (kind, message) => {
   const ctx = fixture()
   try {
+    if (kind === 'wrong-state-before-unlink') {
+      ctx.settings.initialStats = { ...first, mtimeMs: first.mtimeMs + 1 }
+      ctx.notify(() => ctx.initialListener.apply(ctx.receiver, []))()
+    }
+    if (kind === 'pending-before-unlink') {
+      ctx.watcher._pendingUnlinks.set(file, ['unlink', file])
+      ctx.notify(() => ctx.initialListener.apply(ctx.receiver, []))()
+      ctx.watcher._pendingUnlinks.delete(file)
+    }
+    if (kind === 'duplicate-before-unlink') {
+      ctx.settings.duplicate = true
+      ctx.notify(() => ctx.initialListener.apply(ctx.receiver, []))()
+      ctx.settings.duplicate = false
+    }
+    if (kind === 'same-notification-before-unlink') {
+      ctx.notify(() => {
+        ctx.initialListener.apply(ctx.receiver, [])
+        ctx.initialListener.apply(ctx.receiver, [])
+      })()
+    }
     const listener = kind === 'wrong-state' ? () => ctx.watcher._emit('change', file, { ...replacement, size: 99 }) : undefined
-    ctx.atomic(listener, kind === 'atomic-notification' ? () => ctx.invokeFile() : undefined)
+    ctx.atomic(listener, kind === 'atomic-notification' ? () => ctx.invokeFile() : undefined, kind === 'old-generation-pending' ? () => ctx.notify(() => ctx.initialListener.apply(ctx.receiver, []))() : undefined)
     if (kind === 'unknown') {
       ctx.watcher.emit('all', 'change', file)
     }

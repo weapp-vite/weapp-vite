@@ -12,6 +12,8 @@ interface DevProcessCleanupOptions {
   disconnectRoot: () => boolean
   requestRootShutdown?: () => Promise<void>
   settledExit: Promise<unknown>
+  /** 完整快照仅缺失根身份时，用原始 ChildProcess 退出事件收敛内核与 JS 通知时序。 */
+  confirmRootExit?: (timeoutMs: number) => Promise<boolean>
   /** 根未收到强制信号且全部资源排空后，通知调用方核验 IPC 退出状态。 */
   onIpcExit?: () => void
   /** 正常关闭等待已取消、超时或根已收到强制信号；全部登记进程终结后仍须报告验收失败。 */
@@ -172,7 +174,12 @@ export function createDevProcessCleanup(options: DevProcessCleanupOptions) {
       let identities: DevProcessIdentity[]
       try {
         const rootPid = options.pid
-        identities = await traceCleanupStage('dev-capture', () => captureDevProcessTree(rootPid, options.isRootHeld))
+        const timeoutMs = forceKillDelayMs + 1_000
+        const confirmRootExit = options.confirmRootExit
+        const observeRootExit = confirmRootExit
+          ? () => traceCleanupStage('dev-native-root-exit', () => confirmRootExit(timeoutMs), { timeoutMs })
+          : undefined
+        identities = await traceCleanupStage('dev-capture', () => captureDevProcessTree(rootPid, options.isRootHeld, observeRootExit))
       }
       catch (error) {
         if (error instanceof UnconfirmedDevProcessTreeError) {

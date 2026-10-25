@@ -11,6 +11,7 @@ import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import { assertTemplateRouteCoverage, resolveTemplateDomPlan, tapTemplateNode } from '../utils/templateAcceptance'
 import { RETAIL_TEMPLATE_DOM } from '../utils/templateAcceptance/retail'
 import { RETAIL_CHECKOUT_GOODS } from '../utils/templateAcceptance/retailCheckout'
+import { queryRetailPageRoot } from '../utils/templateAcceptance/retailPageRoot'
 import { attachRuntimeErrorCollector } from './runtimeErrors'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
@@ -206,7 +207,7 @@ function getErrorMessage(error: unknown) {
 async function waitForPageRoot(page: any, timeoutMs = 10_000) {
   const start = Date.now()
   while (Date.now() - start <= timeoutMs) {
-    const element = await page.$('page')
+    const element = await queryRetailPageRoot(page)
     if (element) {
       return element
     }
@@ -250,38 +251,11 @@ async function prepareRouteContext(miniProgram: any, pagePath: string) {
 }
 
 async function readNormalizedPageWxml(page: any) {
-  const rawCandidates: string[] = []
-
-  if (typeof page.$$ === 'function') {
-    try {
-      const pageRoots = await page.$$('page')
-      for (const root of pageRoots || []) {
-        try {
-          const rawWxml = await root.wxml()
-          if (rawWxml) {
-            rawCandidates.push(rawWxml)
-          }
-        }
-        catch {
-          // ignore single root read errors, fallback to other roots
-        }
-      }
-    }
-    catch {
-      // ignore query errors and fallback to legacy single-root logic
-    }
+  const pageRoot = await waitForPageRoot(page)
+  if (!pageRoot) {
+    throw new Error('Failed to find page root')
   }
-
-  if (rawCandidates.length === 0) {
-    const pageRoot = await waitForPageRoot(page)
-    if (!pageRoot) {
-      throw new Error('Failed to find page root')
-    }
-    rawCandidates.push(await pageRoot.wxml())
-  }
-
-  const selected = rawCandidates.sort((left, right) => right.length - left.length)[0]
-  const wxml = normalizeWxmlForSnapshot(selected)
+  const wxml = normalizeWxmlForSnapshot(await pageRoot.wxml())
   return await formatWxml(wxml)
 }
 

@@ -138,7 +138,7 @@ function collectProcessTree(rootPid: number, entries: ProcessEntry[]) {
 }
 
 /** 只在直接子进程句柄仍存活时登记后代；根退出后不能从相同 PID 重新发现树。 */
-export async function captureDevProcessTree(rootPid: number, isRootHeld: () => boolean): Promise<DevProcessIdentity[]> {
+export async function captureDevProcessTree(rootPid: number, isRootHeld: () => boolean, confirmRootExit?: () => Promise<boolean>): Promise<DevProcessIdentity[]> {
   const windows = process.platform === 'win32'
   const entries = windows ? await readWindowsProcesses() : process.platform === 'linux' ? await readLinuxProcesses() : await readMacProcesses()
   const tree = windows ? await collectWindowsProcessTree(rootPid, entries, readWindowsProcesses) : collectProcessTree(rootPid, entries)
@@ -188,6 +188,10 @@ export async function captureDevProcessTree(rootPid: number, isRootHeld: () => b
     const error = inspectionError()
     if (descendants.length) {
       throw new UnconfirmedDevProcessTreeError(descendants, { cause: error })
+    }
+    // /proc 可以先于 ChildProcess 的 exit 回调消失；只在完整检查无后代时等待原始退出事实。
+    if (confirmRootExit && await confirmRootExit() && !isRootHeld()) {
+      return []
     }
     throw error
   }

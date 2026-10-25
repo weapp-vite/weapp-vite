@@ -214,6 +214,7 @@ const projects = [
         'e2e/utils/statefulHmrTransport.test.ts',
         'e2e/utils/recoverableSession.test.ts',
         'e2e/utils/shared-hmr-fixture.test.ts',
+        'e2e/utils/templateAcceptance/**/*.test.ts',
         'e2e/utils/vitestTargetFile.test.ts',
         'e2e/utils/wevu-root-hmr-exports.test.ts',
       ],
