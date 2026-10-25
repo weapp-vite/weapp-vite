@@ -229,17 +229,32 @@ describe('suiteRunner real process and machine lease integration', () => {
     const args = ['space separated', 'parentheses (kept)', 'quote "kept"', 'ampersand & pipe | redirect >', '', 'backslash\\']
     const previousExitCode = process.exitCode
     process.exitCode = undefined
-    fs.writeFileSync(scriptPath, 'require("node:fs").writeFileSync(process.argv[2], JSON.stringify(process.argv.slice(3)))')
+    fs.writeFileSync(scriptPath, 'require("node:fs").writeFileSync(process.argv[2], JSON.stringify({ args: process.argv.slice(3), cwd: process.cwd() }))')
 
     try {
-      const exitCode = await runTaskSuite('e2e:test', [{
+      const setupTasks = []
+      if (command === 'pnpm') {
+        // pnpm 12 会校验整个工作区；使用无依赖 fixture，防止测试隐式重装运行中的仓库。
+        fs.writeFileSync(path.join(tempRoot, 'package.json'), JSON.stringify({ name: 'suite-runner-arguments-fixture', private: true }))
+        fs.writeFileSync(path.join(tempRoot, 'pnpm-workspace.yaml'), 'packages: []\nverifyDepsBeforeRun: error\n')
+        setupTasks.push({
+          label: 'install-arguments-fixture',
+          command,
+          args: ['--dir', tempRoot, 'install', '--frozen-lockfile', '--offline', '--ignore-scripts'],
+        })
+      }
+      const exitCode = await runTaskSuite('e2e:test', [...setupTasks, {
         label: `${command}-arguments`,
         command: command === 'node' ? process.execPath : command,
-        args: [...(command === 'pnpm' ? ['exec', 'node'] : []), scriptPath, resultPath, ...args],
+        args: [...(command === 'pnpm' ? ['--dir', tempRoot, 'exec', 'node'] : []), scriptPath, resultPath, ...args],
       }], { writeReport: false })
 
       expect(exitCode).toBe(0)
-      expect(JSON.parse(fs.readFileSync(resultPath, 'utf8'))).toEqual(args)
+      const result = JSON.parse(fs.readFileSync(resultPath, 'utf8')) as { args: string[], cwd: string }
+      expect(result.args).toEqual(args)
+      if (command === 'pnpm') {
+        expect(result.cwd).toBe(fs.realpathSync(tempRoot))
+      }
     }
     finally {
       fs.rmSync(tempRoot, { recursive: true, force: true })

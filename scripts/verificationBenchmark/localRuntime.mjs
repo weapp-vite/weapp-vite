@@ -129,7 +129,7 @@ export async function localIdeEvidence(root, suite, frozen, identity, receipt, r
       documents.push(document)
       taskDocuments.push(document.value)
     }
-    assertRuntimeCaseInventory(frozen['ide-full'].find(item => item.label === task.label), taskDocuments)
+    assertRuntimeCaseInventory(frozen['ide-full'].find(item => item.label === task.label), taskDocuments, 'devtools')
   }
   const scope = runtimeScope(suite.report, documents.map(document => document.value))
   const ideVersions = new Set()

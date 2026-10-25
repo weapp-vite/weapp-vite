@@ -1,9 +1,11 @@
 import { existsSync } from 'node:fs'
-import { mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises'
+import { mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises'
+import { createRequire } from 'node:module'
 import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
-import { fileURLToPath } from 'node:url'
+// eslint-disable-next-line e18e/ban-dependencies -- 使用真实 pnpm 创建独立 fixture 安装，保留 package-script EOF 传输契约。
+import { execa } from 'execa'
 import { expect, it } from 'vitest'
 import { cleanupTrackedDevProcesses, startDevProcess } from './dev-process'
 import { DevProcessGracefulShutdownError } from './devProcessCleanup/shutdown'
@@ -18,15 +20,22 @@ async function startFixture(project: string, source: string, transport: Transpor
   if (transport === 'node-ipc') {
     return startDevProcess(process.execPath, ['--import', 'tsx', '--input-type=module', '-e', source])
   }
+  project = await realpath(project)
   if (!existsSync(path.join(project, 'node_modules'))) {
-    await symlink(fileURLToPath(new URL('../../node_modules', import.meta.url)), path.join(project, 'node_modules'), 'junction')
+    const tsx = path.dirname(createRequire(import.meta.url).resolve('tsx/package.json'))
+    await writeFile(path.join(project, 'package.json'), JSON.stringify({
+      name: 'package-script-shutdown-regression',
+      private: true,
+      type: 'module',
+      devDependencies: { tsx: `link:${path.relative(project, tsx).replaceAll('\\', '/')}` },
+      scripts: { dev: 'node --import=tsx fixture.mjs' },
+    }))
+    // pnpm 12 的自动安装会穿过整目录链接改写共享元数据；fixture 只链接所需包。
+    await writeFile(path.join(project, 'pnpm-workspace.yaml'), 'packages: []\nverifyDepsBeforeRun: error\n')
+    const install = ['install', '--offline', '--ignore-scripts']
+    await execa('pnpm', [...install, '--lockfile-only'], { cwd: project })
+    await execa('pnpm', [...install, '--frozen-lockfile'], { cwd: project })
   }
-  await writeFile(path.join(project, 'package.json'), JSON.stringify({
-    name: 'package-script-shutdown-regression',
-    private: true,
-    type: 'module',
-    scripts: { dev: 'node --import=tsx fixture.mjs' },
-  }))
   await writeFile(path.join(project, 'fixture.mjs'), source)
   return startPackageScriptDevProcess('pnpm', ['run', 'dev'], { cwd: project, all: true })
 }

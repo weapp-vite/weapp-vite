@@ -1,7 +1,24 @@
 import { expect, it } from 'vitest'
+import { evaluateAcceptanceCase } from '../../e2e/scripts/domAcceptanceReport/helpers.ts'
+import { freezeProviderCaseScope } from '../../e2e/scripts/domAcceptanceReport/taskCases.ts'
 import { getSuiteTasks } from '../../e2e/scripts/e2e-suite-manifest.ts'
 import { taskDefinitionHash } from '../../e2e/scripts/verification/plan.ts'
 import { assertRuntimeCaseInventory, assertRuntimeTaskInventory } from './runtimeInventory.mjs'
+
+function acceptedCase(item) {
+  return evaluateAcceptanceCase({
+    ...item,
+    id: item.name,
+    state: 'passed',
+    acceptance: {
+      fixture: 'e2e-apps/fixture',
+      provider: 'devtools',
+      runtime: { ideVersion: 'stable-fixture', baseLibraryVersion: 'sdk-fixture' },
+      checkpoints: [{ id: 'mount', route: '/pages/index/index', action: 'launch', nodes: [{ selector: '.title', text: 'Ready' }] }],
+      evidence: [{ id: 'mount', route: 'pages/index/index', source: 'devtools-page-frame', capturedAt: '2026-10-19T00:00:01.000Z', nodes: [{ selector: '.title', query: 'css', count: 1, nodes: [{ text: 'Ready' }] }] }],
+    },
+  })
+}
 
 async function formalReport() {
   const inventory = await getSuiteTasks('ide-full:exhaustive')
@@ -64,11 +81,45 @@ it('requires all formal cases and templates and rejects DOM evidence for a non-a
   const first = { file: 'e2e/task.test.ts', name: 'first' }
   const second = { file: 'e2e/task.test.ts', name: 'second' }
   const planned = { cases: [first, second], acceptanceTemplates: ['one', 'two'] }
-  const reports = [{ template: 'one', cases: [first] }, { template: 'two', cases: [second] }]
-  expect(() => assertRuntimeCaseInventory(planned, reports)).not.toThrow()
-  expect(() => assertRuntimeCaseInventory(planned, [{ ...reports[0], cases: [first, first] }, reports[1]])).toThrow(/case inventory/)
-  expect(() => assertRuntimeCaseInventory(planned, [{ ...reports[0], template: 'two' }, reports[1]])).toThrow(/template set/)
-  expect(() => assertRuntimeCaseInventory({ outOfScopeReason: 'non-applicable' }, reports)).toThrow(/cannot contain/)
+  const reports = [{ provider: 'devtools', template: 'one', cases: [acceptedCase(first)] }, { provider: 'devtools', template: 'two', cases: [acceptedCase(second)] }]
+  expect(() => assertRuntimeCaseInventory(planned, reports, 'devtools')).not.toThrow()
+  expect(() => assertRuntimeCaseInventory(planned, [{ ...reports[0], cases: [acceptedCase(first), acceptedCase(first)] }, reports[1]], 'devtools')).toThrow(/case inventory/)
+  expect(() => assertRuntimeCaseInventory(planned, [{ ...reports[0], template: 'two' }, reports[1]], 'devtools')).toThrow(/template set/)
+  expect(() => assertRuntimeCaseInventory({ outOfScopeReason: 'non-applicable' }, reports, 'devtools')).toThrow(/cannot contain/)
+})
+
+it.each(['missing-state', 'missing-status', 'missing-acceptance', 'skipped', 'failed', 'pending'])(
+  'rejects %s despite an exact runtime case inventory',
+  (fault) => {
+    const item = { file: 'e2e/task.test.ts', name: 'renders' }
+    const actual = acceptedCase(item)
+    if (fault.startsWith('missing-')) {
+      delete actual[fault.slice('missing-'.length)]
+    }
+    else {
+      actual.state = fault
+    }
+    expect(() => assertRuntimeCaseInventory({ cases: [item] }, [{ provider: 'devtools', cases: [actual] }], 'devtools')).toThrow('Planned DOM case did not pass with acceptance evidence')
+  },
+)
+
+it('accepts only provider-scoped skips and rejects missing or inconsistent provider identity', () => {
+  const item = { file: 'e2e/task.test.ts', name: 'headless only' }
+  const applicability = { providers: ['headless'], conditions: [{ modifier: 'runIf', expression: 'runtimeProvider === \'headless\'', source: 'e2e/task.test.ts:1' }] }
+  const scoped = { ...item, providerScope: freezeProviderCaseScope(applicability, 'devtools') }
+  const planned = { cases: [scoped] }
+  const skipped = evaluateAcceptanceCase({ ...item, id: 'headless', state: 'skipped' })
+  const reports = [{ provider: 'devtools', cases: [skipped] }]
+  expect(() => assertRuntimeCaseInventory(planned, reports, 'devtools')).not.toThrow()
+  expect(() => assertRuntimeCaseInventory(planned, reports)).toThrow('actual provider is missing or invalid')
+  expect(() => assertRuntimeCaseInventory(planned, reports, 'unknown')).toThrow('actual provider is missing or invalid')
+  expect(() => assertRuntimeCaseInventory(planned, reports, 'headless')).toThrow('DOM provider differs')
+  expect(() => assertRuntimeCaseInventory(planned, [{ cases: [skipped] }], 'devtools')).toThrow('DOM provider differs')
+  expect(() => assertRuntimeCaseInventory({ cases: [item] }, reports, 'devtools')).toThrow('Planned DOM case did not pass')
+  expect(() => assertRuntimeCaseInventory(planned, [{ provider: 'devtools', cases: [acceptedCase(item)] }], 'devtools')).toThrow('Planned DOM case did not pass')
+  const inScope = { ...item, providerScope: freezeProviderCaseScope(applicability, 'headless') }
+  expect(() => assertRuntimeCaseInventory({ cases: [inScope] }, [{ provider: 'headless', cases: [skipped] }], 'headless')).toThrow('Planned DOM case did not pass')
+  expect(() => assertRuntimeCaseInventory({ cases: [inScope] }, reports, 'devtools')).toThrow('Invalid frozen DOM provider')
 })
 
 it.each(['missing-actual', 'invalid-frozen', 'missing-frozen', 'changed-non-applicable'])(

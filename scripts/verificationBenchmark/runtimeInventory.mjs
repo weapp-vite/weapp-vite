@@ -48,16 +48,18 @@ export function assertRuntimeTaskInventory(report, inventory) {
   }
 }
 
-/** 同一任务的全部 invocation 必须覆盖冻结的用例及模板集合。 */
-export function assertRuntimeCaseInventory(planned, reports) {
+/** 同一任务的全部 invocation 必须覆盖冻结的用例及模板集合，并绑定显式传入的实际 provider。 */
+export function assertRuntimeCaseInventory(planned, reports, provider) {
+  assert(provider === 'devtools' || provider === 'headless', 'Runtime benchmark actual provider is missing or invalid')
   if (planned.outOfScopeReason) {
     assert(reports.length === 0, 'Non-applicable runtime task cannot contain DOM evidence')
     return
   }
+  assert(reports.every(report => report.provider === provider), 'Runtime benchmark DOM provider differs from the actual provider')
   if (planned.acceptanceTemplates) {
     assert.deepEqual(reports.map(report => report.template).sort(), [...planned.acceptanceTemplates].sort(), 'Runtime benchmark template set differs from the formal manifest')
   }
-  assertTaskCaseCoverage(planned.cases, reports)
+  assertTaskCaseCoverage(planned.cases, reports, false, provider)
 }
 
 /** 比较完整任务集合时只展开已审阅的 TDesign 四合一，不忽略其他任务。 */

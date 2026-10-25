@@ -3,6 +3,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { afterEach, expect, it } from 'vitest'
 import { evaluateAcceptanceCase, summarizeAcceptanceCases } from '../../e2e/scripts/domAcceptanceReport/helpers.ts'
+import { freezeProviderCaseScope } from '../../e2e/scripts/domAcceptanceReport/taskCases.ts'
 import { HMR_GUARD_SPECIAL_CASES, HMR_GUARD_STABLE_TESTS, HMR_GUARD_UTILITY_TESTS } from '../../e2e/scripts/hmr-guard-manifest.ts'
 import { collectLocalEvidence, validateLocalFull } from './localEvidence.mjs'
 import { localEvidenceFixture } from './localEvidenceFixture.mjs'
@@ -129,7 +130,13 @@ it('does not substitute a direct CI utility invocation for an unexecuted nested 
 it('retains source-declared provider skips without reading runtime versions from absent DOM plans', async () => {
   const value = await fixture()
   const skipped = { file: 'e2e/ide/scene.test.ts', name: 'headless only' }
-  value.inventories['ide-full'][0].cases.push(skipped)
+  value.inventories['ide-full'][0].cases.push({
+    ...skipped,
+    providerScope: freezeProviderCaseScope({
+      providers: ['headless'],
+      conditions: [{ modifier: 'runIf', expression: 'runtimeProvider === \'headless\'', source: 'e2e/ide/scene.test.ts:1' }],
+    }, 'devtools'),
+  })
   await mutate(value, 'docs/reports/dom-acceptance/fixture-run/ide.json', (document) => {
     document.cases.push(evaluateAcceptanceCase({ id: 'headless', ...skipped, state: 'skipped' }))
     document.summary = summarizeAcceptanceCases(document.cases)

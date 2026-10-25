@@ -9,6 +9,7 @@ const repositoryRoot = path.resolve(import.meta.dirname, '..')
 const temporaryRoots: string[] = []
 const setupFilename = 'vitest.globalSetup.mjs'
 const markerFilename = 'fixture-cleanup-marker'
+const fixturePackages = ['vite', 'vitest', 'yaml']
 const configFiles = [
   'vitest.config.mts',
   'vitest.coverage.ts',
@@ -44,7 +45,13 @@ async function createCheckoutPair() {
     await fs.writeFile(path.join(root, 'package.json'), '{"type":"module"}\n')
     await fs.writeFile(path.join(root, setupFilename), setupProbe)
     await fs.writeFile(path.join(root, markerFilename), 'preserve another checkout\n')
-    await fs.symlink(path.join(repositoryRoot, 'node_modules'), path.join(root, 'node_modules'), 'junction')
+    const nodeModules = path.join(root, 'node_modules')
+    await fs.mkdir(nodeModules, { recursive: true })
+    // 每个 checkout 独占 Vite/Vitest 缓存，只共享所需依赖包的只读入口。
+    for (const name of fixturePackages) {
+      const packageRoot = await fs.realpath(path.join(repositoryRoot, 'node_modules', name))
+      await fs.symlink(packageRoot, path.join(nodeModules, name), 'junction')
+    }
   }
 
   for (const file of configFiles) {

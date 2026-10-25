@@ -123,7 +123,7 @@ async function executionEvidence(root, config, stdout, identity, previousReports
       acceptance.push(document)
       taskReports.push(document.value)
     }
-    assertRuntimeCaseInventory(inventory.find(planned => planned.label === task.label), taskReports)
+    assertRuntimeCaseInventory(inventory.find(planned => planned.label === task.label), taskReports, 'devtools')
   }
   const files = []
   for await (const file of glob('**/*.json', { cwd: path.join(root, prefix) })) {

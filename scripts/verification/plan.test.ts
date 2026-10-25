@@ -21,7 +21,8 @@ const changes = (files: string[]): ChangeSet => ({ base: 'base', head: 'head', f
 
 async function createPlanRoot() {
   const root = await mkdtemp(path.join(os.tmpdir(), 'verify-plan-'))
-  await writeFile(path.join(root, 'package.json'), JSON.stringify({ packageManager: 'pnpm@12.11.2', scripts: { 'test:types': 'turbo run test:types:check --filter=library' } }))
+  const { packageManager } = JSON.parse(await readFile(new URL('../../package.json', import.meta.url), 'utf8')) as { packageManager: string }
+  await writeFile(path.join(root, 'package.json'), JSON.stringify({ packageManager, scripts: { 'test:types': 'turbo run test:types:check --filter=library' } }))
   await writeFile(path.join(root, 'pnpm-workspace.yaml'), 'packages:\n  - packages/*\n  - apps/*\n')
   await writeFile(path.join(root, 'pnpm-lock.yaml'), 'lockfileVersion: "9.0"\nimporters:\n  .: {}\n')
   await writeFile(path.join(root, 'turbo.json'), JSON.stringify({ tasks: { 'build': { dependsOn: ['^build'] }, 'test:types:check': { dependsOn: ['build', '^test:types:check'], cache: false } } }))
