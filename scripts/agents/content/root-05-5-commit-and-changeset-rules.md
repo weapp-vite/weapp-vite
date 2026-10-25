@@ -21,3 +21,17 @@
 - `.changeset/*.md` summary paragraph must be in Chinese.
 - Default delivery action is commit-only: after checks pass, commit the changes directly, and do not push unless the user explicitly requests push.
 - Exception for GitHub bug-fix workflow: when the task is a GitHub issue fix, complete the work through a PR to the mainline branch and treat post-merge worktree cleanup as part of the task.
+
+### 5.1 CI 证据与完成判据
+
+- 每轮绑定 PR、head/base、实际 checkout/merge SHA、run ID 和 attempt；以本轮冻结的路径选择及工作流条件确定适用检查，不沿用旧提交的通过数。若用本地 head 的结果解释 CI merge，先核对二者内容是否一致。
+- 完成时核对全部适用 jobs/checks、后置聚合、commit statuses 和相关 workflow 的终态；既定 skip 逐项对应条件，缺失、取消、未完成及新增 skip 不算通过。不能只看 required checks、总数或一个汇总绿色图标。
+- 复用审批授权前确认其对象及范围；某个 PR 的本轮及后续提交授权不覆盖其他 PR。在授权范围内，每次新提交仍独立核验并批准对应 environment，不绕过准入另开诊断矩阵，也不为内部文档维护新增用户未要求的审批或全量验收。
+
+### 5.2 发布准备与失败恢复
+
+- 修改版本 PR 或恢复发布前，核对 `pnpm change status`、目标版本、准备来源提交、对应 changelog、`.changeset/ledger.yaml`、发布进度/checkpoint 和 registry 精确版本状态。区分待消费 intent、已准备版本、registry 已接受但尚未确认，以及已完成发布；状态未知不能按未发布处理。
+- 先读取发布器对来源、版本及说明的冻结约束。尚未上传或 registry 返回 404，不代表已提交的准备元数据可以修改；不得手改账本冒充 intent 已消费，或改写清单/changelog 制造新的准备来源。
+- 版本 PR 的迟到修复先核对代码是否已经包含在冻结来源中。已包含的补充维护记录与冻结 release notes 分开保存，注明原 intent 及来源，不冒充发布器已重新消费；未包含的代码按工具支持的重新准备或后续版本流程交付。保留用户可见的说明，不机械地向冻结批次追加 intent，不为通过保护检查删掉说明或放宽断言。
+- 失败先保存原始日志及发布进度，再确认是否已上传或被 registry 接受。部分发布按原来源和 checkpoint 恢复，仅重试仍需上传的内容；不得覆盖已发布版本、换源码重传同版本或用无关 bump 掩盖失败。执行恢复命令前核对实际版本的参数与 guard，错误消息中的建议不等于当前状态一定满足前提。
+- PR CI 全绿只证明候选验证通过。发布完成须核对本轮 `plan → verify → prepare → upload → confirm → finalize`、目标 registry 的精确版本、预期 dist-tag、tarball 及完整性元数据和内部依赖可见性；保留来源与原始证据，未完成项明确记录，不能把上传命令退出成功代替完整发布确认。

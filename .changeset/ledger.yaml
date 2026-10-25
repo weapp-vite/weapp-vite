@@ -1283,7 +1283,6 @@
     - dependency-upgrade-20261015-225048
     - dependency-upgrade-20261018-000424
     - jsx-template-registration-capability
-    - mcp-release-version
     - wild-socks-serve
 "@weapp-vite/miniprogram-automator@1.2.14":
   dir: packages/miniprogram-automator

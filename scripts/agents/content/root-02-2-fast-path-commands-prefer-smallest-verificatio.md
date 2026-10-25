@@ -83,3 +83,12 @@ Do not default to full monorepo test runs when a targeted test can prove the cha
   - when the original failure came from GitHub Actions, rerun the smallest affected workflow or job after the fix instead of waiting for unrelated matrix jobs
 - Required assistant note in analysis when diagnosing an OS-only failure:
   - `cross-platform suspect: checking command launch, path normalization, line endings, and filesystem assumptions before product logic`
+
+### 2.4 任务续行与验证效率
+
+- 长任务在本任务的 `.tmp/current-run/<task>/` 保存简短状态索引：目标与范围、用户授权及适用对象、base/head、工作树、验证命令与退出结果、证据位置和待办。续行先读索引，再回读远端身份；不要把历史快照当成当前状态。
+- 用户的新消息通常是在补充当前任务；保留尚未完成的目标及已接受的范围调整，只有用户明确取消或替换时才停止原任务。已有授权在原对象和范围内继续有效，不因上下文压缩重复请求。
+- 先选择能覆盖变更的最小验证。源码、相关输入或环境改变、出现新失败证据或发现漏跑既定门禁时再补跑；已经通过且未受影响的检查复用原证据。用户要求的完整验收及既定 CI 门禁仍须完成。
+- 并行任务先划分文件、验证资源和证据目录；独立搜索与读取批量执行，依赖操作和共享资源变更串行。委派只读日志分析或独立审计时，明确禁止重复启动已有测试、发布或清理资源。
+- 同一 CI 或发布运行只指定一个监控者，完整分页读取 jobs/checks 并共享状态索引；其他代理使用共享快照。普通轮询至少间隔 60 秒，状态不变时适当降低频率；新失败立即分析，避免多个代理同时轮询或重跑。
+- 进度说明聚焦阶段变化、新证据、失败及下一项完成条件。长阶段未变化时简短说明仍在执行的阶段，不重复播报旧比例，也不把运行时长本身当成卡死或成功的证据；必要时对照同类历史运行耗时。

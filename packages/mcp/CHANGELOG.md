@@ -8,8 +8,6 @@
 
 ### Patch Changes
 
-- fix(mcp): 从包清单读取服务版本，避免发布升级后协议返回的版本仍停留在旧版本。
-
 - feat(automator): 完整吸收官方 miniprogram-automator 0.13.0 的公开协议、CDP、触摸字段和诊断能力。新增 `MiniProgram.send()`、共享连接的 `CDP()` 及可取消事件订阅；`changedTouches` 优先于保留的弃用别名 `changeTouches`，启动失败附带脱敏、有界的 CLI 输出。
 
   `Transport.close()`、`Connection.dispose()`、`MiniProgram.disconnect()` 与共享会话释放方法的返回值改为 `Promise<void>`，调用方应使用 `await` 确认关闭完成。断开立即拒绝未决 RPC，避免上游清理回归；并发清理共享结果，超时或释放失败保留资源归属及重试机会，同时保留业务错误与清理错误。
