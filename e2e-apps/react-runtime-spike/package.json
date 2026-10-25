@@ -1,6 +1,6 @@
 {
   "name": "e2e-app-react-runtime-spike",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "private": true,
   "weappVite": {
     "web": false

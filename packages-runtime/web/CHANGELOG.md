@@ -1,5 +1,71 @@
 # @weapp-vite/web
 
+## 2.0.1
+
+### Patch Changes
+
+- chore(deps): 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@vitejs/devtools, @vitejs/devtools-kit, eslint, happy-dom, sass, sass-embedded。命名 catalog 变更键：无。
+
+- chore(deps): 升级兼容的 AI SDK、Vue 类型工具及构建依赖，同步脚手架依赖目录和应用模板。TypeScript 保持 6.0.3，截图比较算法及既有 Vite、Rolldown 兼容补丁保持原有契约。
+
+  升级 pnpm、Bun 和 Rust JSON 序列化依赖，并迁移 repoctl 发布说明分类补丁；沿用上游已有的发布 PR 去重修复。
+
+- chore(deps): 升级 Vue、React、Vitest、Rolldown、Oxc 与 AI SDK 等兼容依赖，同步应用、模板和脚手架 catalog。
+
+  迁移 Rolldown 1.2.14 兼容补丁，并对齐 Rust Oxc 0.154.0；保留 Vite 8.3.4、DevTools/Kit 0.7.6、TypeScript 6.0.3 和截图比较语义，p-queue 更新至兼容的 9.3.5。
+
+  默认 catalog 变更键：@icebreakers/eslint-config, @vue/compiler-core, @vue/compiler-dom, devframe, happy-dom, oxc-parser, postcss, react, rolldown, vue, weapp-tailwindcss, zod。命名 catalog 变更键：weapp-tailwindcss-fixed(weapp-tailwindcss)。
+
+- chore(deps): 刷新兼容范围内的运行时与构建依赖。
+
+  升级 AI SDK、TanStack Vue Query、Rollup、weapp-tailwindcss 及其 engine；VS Code 扩展的打包检查脚本改用 adm-zip 自带类型的运行时包。p-queue 与 pixelmatch 保持兼容版本，TypeScript 不在本轮升级范围内。默认 catalog 变更键为 weapp-tailwindcss，命名 catalog 变更键为 weapp-tailwindcss-fixed（均升级至 5.6.3）。
+
+- chore(deps): 自动补充依赖升级发布记录。
+  涉及包：
+  - @mpcore/vitest：devDependencies.vitest
+  - @weapp-vite/glass-easel-web-adapter：devDependencies.vitest
+  - @weapp-agent/cli：dependencies.@ai-sdk/anthropic、dependencies.@ai-sdk/openai、dependencies.@ai-sdk/openai-compatible、dependencies.ai
+  - @weapp-vite/ast-native：devDependencies.vitest
+  - @weapp-vite/eslint：devDependencies.vitest
+
+- fix(web): 修复 Web 开发模式增删或恢复页面时入口缓存与路由扫描不同步的问题，确保浏览器重载后使用完整的新页面表，避免命名路由已更新却仍提示页面不存在。结构事件共用串行扫描与完整来源记录，避免重命名期间发布中间拓扑或遗漏同批小程序页面变更。原生 HMR 与路由 watcher 依据路由签名及源码指纹共享发布回执，避免同一次页面恢复重复重载，同时保留源码变化、发送失败及宿主替换后的正常通知。
+
+- fix: 修复 JSX/TSX 模板热更新绕过注册能力检查、导致页面数据与实际渲染不一致的问题。共享模板、内联事件、计算绑定和动态岛注册语义变化时切换为完整重载，纯方法脚本更新继续保留状态；跨文件静态展开同时沿用当前构建的冻结源码，避免读取后续保存的内容。模拟器增加显式编译模板注册与提交能力，避免仅修改磁盘文件就被误判为宿主模板已更新。
+
+  修复 Wevu、Tailwind CSS 与 TDesign 模板的 npm 文件筛选，保留组件入口实际引用的 `type.js`、配置状态管理和语言包等完整传递依赖，避免 classic 完整发布存在悬空模块依赖；零售模板与示例使用显式媒体组件入口，并检查产物路径完整；脚手架同步提供修正后的模板。
+
+  React 静态模板和 dynamic 模板更新目前均缺少经真实微信宿主验证的状态保留能力，统一按编译结果明确切换为 classic；解析错误与编译错误继续报告。请求的 HMR 模式配置保持原值，后续修改沿用本次开发会话的 classic 决策。
+
+  React 自动渲染选择仅对编译器明确声明不支持的合法结构退回 dynamic；语法、内部编译和原生 bridge 错误保持失败并保留上一份完整模板，不再被包装成成功回退。
+
+  原生 Vue 的 Patch 与 Noop 交付统一根据冻结源码判断模板和样式变化，避免 Tailwind 内容通知覆盖样式分类后继续发布旧 CSS；纯脚本修改仍保留无需视觉快照编译的路径。
+
+  classic 开发发布以完整产物内容更新 App 入口，让微信开发者工具自动完整重载，避免后续 TSX 混合模板和脚本保存出现新事件逻辑配旧模板；保持用户原有热重载开关，stateful 支持的更新继续保留状态。
+
+- fix(simulator): 修复 headless 原生控件的渲染与默认提交能力
+
+  - Node/browser 共用原生 form submit 默认动作，保留按钮禁用、catch 路径、组件/插槽归属、折叠宿主事件与异步结果边界；具名原生字段从当前渲染绑定收集，picker 数组不再依赖字符串反推。
+  - 后续原生监听器同步失败时仍收尾已启动的异步处理；多个失败通过带原始 cause 的 AggregateError 保留，不遗留未处理的 Promise 拒绝。
+  - WXML 保留 XML 节点结构，避免 HTML 解析规则丢弃嵌套表单。
+  - rich-text 的结构化节点和 HTML 字符串生成可观察的惰性渲染内容，支持替换与清空，不执行 WXML、事件或伪造的模拟器元数据。
+  - 浏览器预览阻止富文本链接和 HTML 表单的额外默认导航，保留模拟器自己的 tap/submit 分发；冷启动浏览器验证提前发现依赖，避免测试中途重新优化和重载。
+  - 新增独立的 `@weapp-core/shared/rich-text` 安全树子入口，迁移 Web 现有规则供模拟器共同使用，根入口不加载 HTML 解析器。
+
+  此变更不补齐未绑定输入状态、自定义 form-field 值导出、reset 或真实 formId 上报；headless 与浏览器验证不替代微信 IDE、真机验收。
+
+- perf(web): Web WXML 递归依赖扫描复用模板分析阶段，避免为不会输出的依赖重复生成渲染代码，同时保持依赖顺序、特殊节点处理和诊断语义。
+
+- fix(web): 修复 Web 开发模式删除并恢复 Vue 页面时，已脱离注册模块的旧模板和样式节点导致重复整页刷新的问题，保留仍然有效的共享外部块热更新。
+
+- fix(web): 修复 Web 开发模式恢复 Vue 页面时，应用与页面通知交错导致旧扫描快照保留失效模板节点并重复整页刷新的问题；热更新统一使用实际提交扫描的前后快照，保留删除组件、外部块和样式语言变化的传播。
+
+- Updated dependencies:
+  - @weapp-core/constants@0.4.0
+  - @weapp-core/shared@3.3.0
+  - rolldown-require@2.0.36
+  - wevu@7.6.0
+
 ## 2.0.0
 
 ### Major Changes
