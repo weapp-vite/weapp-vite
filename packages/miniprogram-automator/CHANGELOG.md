@@ -1,5 +1,60 @@
 # @weapp-vite/miniprogram-automator
 
+## 1.4.0
+
+### Minor Changes
+
+- feat(automator): 完整吸收官方 miniprogram-automator 0.13.0 的公开协议、CDP、触摸字段和诊断能力。新增 `MiniProgram.send()`、共享连接的 `CDP()` 及可取消事件订阅；`changedTouches` 优先于保留的弃用别名 `changeTouches`，启动失败附带脱敏、有界的 CLI 输出。
+
+  `Transport.close()`、`Connection.dispose()`、`MiniProgram.disconnect()` 与共享会话释放方法的返回值改为 `Promise<void>`，调用方应使用 `await` 确认关闭完成。断开立即拒绝未决 RPC，避免上游清理回归；并发清理共享结果，超时或释放失败保留资源归属及重试机会，同时保留业务错误与清理错误。
+
+  headless 同步触摸传递、异步断开和已有真实语义的五个公开协议，CDP 与其他协议明确报告 `HEADLESS_PROTOCOL_UNSUPPORTED`。同步 IDE CLI、MCP、日志、doctor 与重连的等待边界及迁移文档。
+
+### Patch Changes
+
+- fix(automator): 修复 `Element.dispatchEvent()` 未将公开的 `detail` 参数映射为微信开发者工具协议 `eventData` 的问题，确保输入等通用事件能收到完整数据，并保留现有触摸事件旁路。
+
+- chore(deps): 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@vitejs/devtools, @vitejs/devtools-kit, eslint, happy-dom, sass, sass-embedded。命名 catalog 变更键：无。
+
+- chore(deps): 升级兼容的 AI SDK、Vue 类型工具及构建依赖，同步脚手架依赖目录和应用模板。TypeScript 保持 6.0.3，截图比较算法及既有 Vite、Rolldown 兼容补丁保持原有契约。
+
+  升级 pnpm、Bun 和 Rust JSON 序列化依赖，并迁移 repoctl 发布说明分类补丁；沿用上游已有的发布 PR 去重修复。
+
+- chore(deps): 升级 Vue、React、Vitest、Rolldown、Oxc 与 AI SDK 等兼容依赖，同步应用、模板和脚手架 catalog。
+
+  迁移 Rolldown 1.2.14 兼容补丁，并对齐 Rust Oxc 0.154.0；保留 Vite 8.3.4、DevTools/Kit 0.7.6、TypeScript 6.0.3 和截图比较语义，p-queue 更新至兼容的 9.3.5。
+
+  默认 catalog 变更键：@icebreakers/eslint-config, @vue/compiler-core, @vue/compiler-dom, devframe, happy-dom, oxc-parser, postcss, react, rolldown, vue, weapp-tailwindcss, zod。命名 catalog 变更键：weapp-tailwindcss-fixed(weapp-tailwindcss)。
+
+- chore(deps): 刷新兼容范围内的运行时与构建依赖。
+
+  升级 AI SDK、TanStack Vue Query、Rollup、weapp-tailwindcss 及其 engine；VS Code 扩展的打包检查脚本改用 adm-zip 自带类型的运行时包。p-queue 与 pixelmatch 保持兼容版本，TypeScript 不在本轮升级范围内。默认 catalog 变更键为 weapp-tailwindcss，命名 catalog 变更键为 weapp-tailwindcss-fixed（均升级至 5.6.3）。
+
+- chore(deps): 自动补充依赖升级发布记录。
+  涉及包：
+  - @mpcore/vitest：devDependencies.vitest
+  - @weapp-vite/glass-easel-web-adapter：devDependencies.vitest
+  - @weapp-agent/cli：dependencies.@ai-sdk/anthropic、dependencies.@ai-sdk/openai、dependencies.@ai-sdk/openai-compatible、dependencies.ai
+  - @weapp-vite/ast-native：devDependencies.vitest
+  - @weapp-vite/eslint：devDependencies.vitest
+
+- fix(miniprogram-automator): 修复微信开发者工具 Stable 2.02.2608080 配合基础库 3.17.5 调用自定义组件方法时的上下文错绑，精确解析真实组件实例并只派发一次业务调用，保留原返回值与异常语义。
+
+- fix(simulator): 修复 headless 原生控件的渲染与默认提交能力
+
+  - Node/browser 共用原生 form submit 默认动作，保留按钮禁用、catch 路径、组件/插槽归属、折叠宿主事件与异步结果边界；具名原生字段从当前渲染绑定收集，picker 数组不再依赖字符串反推。
+  - 后续原生监听器同步失败时仍收尾已启动的异步处理；多个失败通过带原始 cause 的 AggregateError 保留，不遗留未处理的 Promise 拒绝。
+  - WXML 保留 XML 节点结构，避免 HTML 解析规则丢弃嵌套表单。
+  - rich-text 的结构化节点和 HTML 字符串生成可观察的惰性渲染内容，支持替换与清空，不执行 WXML、事件或伪造的模拟器元数据。
+  - 浏览器预览阻止富文本链接和 HTML 表单的额外默认导航，保留模拟器自己的 tap/submit 分发；冷启动浏览器验证提前发现依赖，避免测试中途重新优化和重载。
+  - 新增独立的 `@weapp-core/shared/rich-text` 安全树子入口，迁移 Web 现有规则供模拟器共同使用，根入口不加载 HTML 解析器。
+
+  此变更不补齐未绑定输入状态、自定义 form-field 值导出、reset 或真实 formId 上报；headless 与浏览器验证不替代微信 IDE、真机验收。
+
+- Updated dependencies:
+  - @weapp-vite/qr@1.1.10
+
 ## 1.3.0
 
 ### Minor Changes

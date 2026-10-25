@@ -1,7 +1,8 @@
 import path from 'node:path'
+import packageJson from '../package.json'
 
 export const MCP_SERVER_NAME = '@weapp-vite/mcp'
-export const MCP_SERVER_VERSION = '2.0.0'
+export const MCP_SERVER_VERSION = packageJson.version
 
 export const EXPOSED_PACKAGES = {
   'weapp-vite': {

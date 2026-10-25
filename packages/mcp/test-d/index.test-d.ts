@@ -5,6 +5,7 @@ import {
   DEFAULT_MCP_HOST,
   DEFAULT_MCP_PORT,
   DEFAULT_RUNTIME_REST_ENDPOINT,
+  MCP_SERVER_VERSION,
   startStdioServer,
   startWeappViteMcpServer,
 } from '@weapp-vite/mcp'
@@ -14,6 +15,7 @@ expectType<'/mcp'>(DEFAULT_MCP_ENDPOINT)
 expectType<'127.0.0.1'>(DEFAULT_MCP_HOST)
 expectType<3088>(DEFAULT_MCP_PORT)
 expectType<'/api/weapp/devtools'>(DEFAULT_RUNTIME_REST_ENDPOINT)
+expectType<string>(MCP_SERVER_VERSION)
 
 const options: StartMcpServerOptions = {
   endpoint: '/mcp',

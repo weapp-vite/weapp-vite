@@ -1,5 +1,83 @@
 # @mpcore/simulator
 
+## 1.1.0
+
+### Minor Changes
+
+- feat(automator): 完整吸收官方 miniprogram-automator 0.13.0 的公开协议、CDP、触摸字段和诊断能力。新增 `MiniProgram.send()`、共享连接的 `CDP()` 及可取消事件订阅；`changedTouches` 优先于保留的弃用别名 `changeTouches`，启动失败附带脱敏、有界的 CLI 输出。
+
+  `Transport.close()`、`Connection.dispose()`、`MiniProgram.disconnect()` 与共享会话释放方法的返回值改为 `Promise<void>`，调用方应使用 `await` 确认关闭完成。断开立即拒绝未决 RPC，避免上游清理回归；并发清理共享结果，超时或释放失败保留资源归属及重试机会，同时保留业务错误与清理错误。
+
+  headless 同步触摸传递、异步断开和已有真实语义的五个公开协议，CDP 与其他协议明确报告 `HEADLESS_PROTOCOL_UNSUPPORTED`。同步 IDE CLI、MCP、日志、doctor 与重连的等待边界及迁移文档。
+
+### Patch Changes
+
+- chore(deps): 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@vitejs/devtools, @vitejs/devtools-kit, eslint, happy-dom, sass, sass-embedded。命名 catalog 变更键：无。
+
+- chore(deps): 升级兼容的 AI SDK、Vue 类型工具及构建依赖，同步脚手架依赖目录和应用模板。TypeScript 保持 6.0.3，截图比较算法及既有 Vite、Rolldown 兼容补丁保持原有契约。
+
+  升级 pnpm、Bun 和 Rust JSON 序列化依赖，并迁移 repoctl 发布说明分类补丁；沿用上游已有的发布 PR 去重修复。
+
+- chore(deps): 升级 Vue、React、Vitest、Rolldown、Oxc 与 AI SDK 等兼容依赖，同步应用、模板和脚手架 catalog。
+
+  迁移 Rolldown 1.2.14 兼容补丁，并对齐 Rust Oxc 0.154.0；保留 Vite 8.3.4、DevTools/Kit 0.7.6、TypeScript 6.0.3 和截图比较语义，p-queue 更新至兼容的 9.3.5。
+
+  默认 catalog 变更键：@icebreakers/eslint-config, @vue/compiler-core, @vue/compiler-dom, devframe, happy-dom, oxc-parser, postcss, react, rolldown, vue, weapp-tailwindcss, zod。命名 catalog 变更键：weapp-tailwindcss-fixed(weapp-tailwindcss)。
+
+- chore(deps): 刷新兼容范围内的运行时与构建依赖。
+
+  升级 AI SDK、TanStack Vue Query、Rollup、weapp-tailwindcss 及其 engine；VS Code 扩展的打包检查脚本改用 adm-zip 自带类型的运行时包。p-queue 与 pixelmatch 保持兼容版本，TypeScript 不在本轮升级范围内。默认 catalog 变更键为 weapp-tailwindcss，命名 catalog 变更键为 weapp-tailwindcss-fixed（均升级至 5.6.3）。
+
+- chore(deps): 自动补充依赖升级发布记录。
+  涉及包：
+  - @mpcore/vitest：devDependencies.vitest
+  - @weapp-vite/glass-easel-web-adapter：devDependencies.vitest
+  - @weapp-agent/cli：dependencies.@ai-sdk/anthropic、dependencies.@ai-sdk/openai、dependencies.@ai-sdk/openai-compatible、dependencies.ai
+  - @weapp-vite/ast-native：devDependencies.vitest
+  - @weapp-vite/eslint：devDependencies.vitest
+
+- fix: 修复 JSX/TSX 模板热更新绕过注册能力检查、导致页面数据与实际渲染不一致的问题。共享模板、内联事件、计算绑定和动态岛注册语义变化时切换为完整重载，纯方法脚本更新继续保留状态；跨文件静态展开同时沿用当前构建的冻结源码，避免读取后续保存的内容。模拟器增加显式编译模板注册与提交能力，避免仅修改磁盘文件就被误判为宿主模板已更新。
+
+  修复 Wevu、Tailwind CSS 与 TDesign 模板的 npm 文件筛选，保留组件入口实际引用的 `type.js`、配置状态管理和语言包等完整传递依赖，避免 classic 完整发布存在悬空模块依赖；零售模板与示例使用显式媒体组件入口，并检查产物路径完整；脚手架同步提供修正后的模板。
+
+  React 静态模板和 dynamic 模板更新目前均缺少经真实微信宿主验证的状态保留能力，统一按编译结果明确切换为 classic；解析错误与编译错误继续报告。请求的 HMR 模式配置保持原值，后续修改沿用本次开发会话的 classic 决策。
+
+  React 自动渲染选择仅对编译器明确声明不支持的合法结构退回 dynamic；语法、内部编译和原生 bridge 错误保持失败并保留上一份完整模板，不再被包装成成功回退。
+
+  原生 Vue 的 Patch 与 Noop 交付统一根据冻结源码判断模板和样式变化，避免 Tailwind 内容通知覆盖样式分类后继续发布旧 CSS；纯脚本修改仍保留无需视觉快照编译的路径。
+
+  classic 开发发布以完整产物内容更新 App 入口，让微信开发者工具自动完整重载，避免后续 TSX 混合模板和脚本保存出现新事件逻辑配旧模板；保持用户原有热重载开关，stateful 支持的更新继续保留状态。
+
+- feat(test): 完善组件测试与稳定语义快照
+
+  支持递归子组件替身、保留实例状态的属性和数据更新、独立卸载与显式事件订阅；修复 `within()` 查询快照过期，并提供稳定语义树快照及 Vitest 自动注册。修复渲染或卸载异常导致更新完成回调丢失、测试操作一直等待的问题，并确保异常清理仍释放测试订阅。
+
+- fix(simulator): 修复 headless 原生控件的渲染与默认提交能力
+
+  - Node/browser 共用原生 form submit 默认动作，保留按钮禁用、catch 路径、组件/插槽归属、折叠宿主事件与异步结果边界；具名原生字段从当前渲染绑定收集，picker 数组不再依赖字符串反推。
+  - 后续原生监听器同步失败时仍收尾已启动的异步处理；多个失败通过带原始 cause 的 AggregateError 保留，不遗留未处理的 Promise 拒绝。
+  - WXML 保留 XML 节点结构，避免 HTML 解析规则丢弃嵌套表单。
+  - rich-text 的结构化节点和 HTML 字符串生成可观察的惰性渲染内容，支持替换与清空，不执行 WXML、事件或伪造的模拟器元数据。
+  - 浏览器预览阻止富文本链接和 HTML 表单的额外默认导航，保留模拟器自己的 tap/submit 分发；冷启动浏览器验证提前发现依赖，避免测试中途重新优化和重载。
+  - 新增独立的 `@weapp-core/shared/rich-text` 安全树子入口，迁移 Web 现有规则供模拟器共同使用，根入口不加载 HTML 解析器。
+
+  此变更不补齐未绑定输入状态、自定义 form-field 值导出、reset 或真实 formId 上报；headless 与浏览器验证不替代微信 IDE、真机验收。
+
+- fix(simulator): 修正路由动画完成事件的载荷和公开类型，不再提供真实微信运行时未包含的 `renderer` 字段。渲染引擎继续通过路由接受事件观测，使 headless 与浏览器测试能发现误用路由完成事件读取渲染引擎的问题。
+
+- perf(simulator): 组件渲染按当前节点需要的别名解析路径，避免反复探测全部组件声明；组件及模块候选改用产物来源的存在性接口，避免重复读取 JavaScript 全文。文件系统存在性判断跟随符号链接并排除目录，保留相对目录和 npm 目录模块的 index 入口解析；配置和实际模块执行继续读取当前源码，保留组件状态与模块加载行为。
+
+- fix(simulator): 修复 WXML include 内容未参与渲染的问题，支持相对路径、嵌套引用、组件绑定和修改恢复，并检查循环引用。新增显式 reloadPageDefinition 接口，按页面入口的源码字节更新已加载定义，保留 App 和共享依赖缓存，失败时恢复模块缓存与注册表；普通导航继续使用原有缓存。
+
+- fix(simulator): 对齐微信原生组件的属性和数据共享语义，未声明的宿主属性不再进入组件实例，同值的自身属性写入只通知数据监听器，避免 scoped-slot 挂载期间重复进入属性监听器导致绑定丢失。
+
+- fix(simulator): 修复模拟器无法加载压缩、多行及同一行多个声明的 ESM 产物问题。Node 与浏览器共用 AST 模块转换，保留导入及再导出的动态绑定、局部作用域和默认函数提升；CommonJS 产物保持原样执行，不支持的异步模块语法明确报错。
+
+- Updated dependencies:
+  - @weapp-core/constants@0.4.0
+  - @weapp-core/shared@3.3.0
+
 ## 1.0.0
 
 ### Major Changes
