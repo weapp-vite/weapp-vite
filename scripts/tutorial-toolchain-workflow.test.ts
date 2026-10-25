@@ -19,7 +19,7 @@ describe('tutorial CI toolchain', () => {
     expect(setup).toHaveLength(1)
     expect(setup[0]?.uses).toMatch(/^actions\/setup-node@[a-f\d]{40}$/)
     expect(setup[0]?.with).toMatchObject({
-      'node-version': 22,
+      'node-version': '^22.23.4',
       'check-latest': true,
       'cache': 'pnpm',
     })

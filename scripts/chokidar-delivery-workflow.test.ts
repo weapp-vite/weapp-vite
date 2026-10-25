@@ -150,7 +150,10 @@ describe('Windows ordinary npm watcher delivery workflow', () => {
     expect(nodeSupport.strategy.matrix).toEqual({ node: ['22.23.4', '24.22.1', '26.12.1', '22', '24'] })
     expect(nodeSupport['runs-on']).toBe('${{ inputs.runs_on }}')
     expect(nodeSupport.env).toMatchObject({ BUILD_ARTIFACT_EXPECTED_COMMIT: '${{ needs.pr-context.outputs.checkout_sha }}', BUILD_ARTIFACT_EXPECTED_NODE_MAJOR: '24', WEAPP_VITE_CONSUMER_TARBALLS: '.cache/node-support-tarballs' })
-    expect(nodeSupport.steps.find((item: Step) => item.uses?.startsWith('actions/setup-node@'))?.with).toEqual({ 'node-version': '${{ matrix.node }}' })
+    expect(nodeSupport.steps.find((item: Step) => item.uses?.startsWith('actions/setup-node@'))?.with).toEqual({
+      'node-version': '${{ matrix.node == \'22\' && \'^22.23.4\' || matrix.node == \'24\' && \'^24.22.1\' || matrix.node == \'26\' && \'^26.12.1\' || matrix.node }}',
+      'check-latest': '${{ matrix.node == \'22\' || matrix.node == \'24\' || matrix.node == \'26\' }}',
+    })
     expect(nodeSupport.steps.find((item: Step) => item.uses?.startsWith('actions/checkout@'))?.with).toMatchObject({ 'ref': '${{ needs.pr-context.outputs.checkout_sha }}', 'persist-credentials': false })
     expect(nodeSupport.steps.filter((item: Step) => item.uses?.startsWith('actions/download-artifact@')).map((item: Step) => item.with?.name)).toEqual([build, archives])
     expect(nodeSupport.steps.find((item: Step) => item.name === 'Verify immutable candidate archives')?.run).toBe('node scripts/consumerArtifacts/manifest.mjs verify .cache/node-support-tarballs')

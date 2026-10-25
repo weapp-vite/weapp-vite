@@ -185,10 +185,12 @@ JS/Rust Oxc 对齐 0.155.0，napi 3.15.0、napi-derive 3.6.13、Rust 1.99.1，�
 | autoRoutes 发布回执 | 定向 6 文件 81 项、ESLint、owning typecheck/build 通过；完整 WebB 中 issue #1029 的三个浏览器用例通过，严格 reload 次数断言保持 |
 | 最低 Node 22.23.4 与本地 Node 24.22.1 | built CLI、AcceptanceService 和 model-free baseline 均通过；不等同于两个版本的完整消费者矩阵 |
 | Agent CLI 实际发行消费者 | 最终实际 tarball 安装、session、legacy verify、model-free acceptance、stdio MCP 生命周期、持久化报告及显式 Skill 安装通过；不访问真实模型或发布端点 |
-| Windows/macOS/Linux GitHub CI | 未执行 |
+| Windows/macOS/Linux GitHub CI | 原生 [PR #1259](https://github.com/weapp-vite/weapp-vite/pull/1259) 按当前 head 执行，完整 job 结果与提交身份见 Checks |
 | 合并后干净 main 的正式全量 IDE | 待合并后执行 |
 
 上述 HMR 两阶段只证明各自冻结范围，完整 capability acceptance 仍为 `not-evaluated`。headless 报告的 6 个 skipped entry 均在冻结 selectedCases 之外，不计为所选 case 跳过。
+
+首轮原生 CI 的安装和发行消费者暴露了 Node 选择遗漏：`22`、`24` 简写会使用 runner 缓存中的 22.23.3、24.21.0，低于新下限。共享 setup 及直接入口现在将 major 简写约束为同 major 的兼容范围，并查询最新发行版；最低精确版本及消费者五个独立 lane 保持。活跃 Nightly/candidate workflow 的 major 24 入口同步修正，未重新采样旧性能证据；显式固定 24.18.0 的性能目标保持原样。原生 CI 每轮均核验 PR、head/base、合并候选和运行身份后独立批准，原始失败日志保留。
 
 局部真实 IDE 首轮固定 Stable 2.02.2608080，官方查询于 2026-10-25 21:51:14 UTC 确认与 latest Stable 一致。classic 项目导入返回 `APPID_ERROR`、要求重新登录；stateful 启动返回当前能力契约规定的 `ide-classic-handoff`，旧用例只接受 `stylesheet-output`，在调用 launch 前失败。两个 case 均未执行，DOM case 与 checkpoint 均为 0，不能记为 runtime 通过。外层登记的 scope、宿主及端口清理成功，保留首错和 fixture 保留诊断；Computer Use 已确认当前仅有项目列表窗口、界面仍显示退出登录，等待正常重新登录后继续。测试同时按当前启动能力契约精确接受 `ide-classic-handoff`，连接前确认 classic 产物；初始 App/Page 标记应保持，编辑后仍要求实例替换，七个 CSS checkpoint 及 DOM/计算样式断言保留。新增 test-only helper 承载这部分契约，避免继续扩大既有超过 300 行的 E2E 文件；普通契约单测 14 项通过；同一 E2E 文件随后在 headless 下完整执行 classic 与 stateful 两个 case，17/17 个 strict DOM checkpoint 通过，无跳过，源码与安装状态不变，两份隔离 fixture 均完成清理。该定向复验不能替代真实 IDE 结果。
 
@@ -224,4 +226,4 @@ Chokidar 6 的组件文件删除事件可能先于页面引用更新。CSS 图�
 
 依赖与 catalog 的重复 intent 合并为一份 changeset；Node 下限及公开行为变化使用 major，其余依赖升级使用 patch。CSS 运行时修复独立记录为 patch，发布时按最高 bump 合并。fixed 组可能按仓库既有规则联动版本。本任务不执行版本发布。
 
-正式全量真实 IDE 验收遵循 `AGENTS.local.md`：变更合并后，从干净且与 origin/main 一致的 main 工作树运行。升级分支上的 headless、局部 IDE 和构建结果分别记录，不能代替该门禁。跨平台 GitHub CI 仍需针对最终提交执行并等待 pr-ci-approval。
+正式全量真实 IDE 验收遵循 `AGENTS.local.md`：变更合并后，从干净且与 origin/main 一致的 main 工作树运行。升级分支上的 headless、局部 IDE 和构建结果分别记录，不能代替该门禁。跨平台 GitHub CI 以 PR #1259 最终提交对应的原生 Checks 为准，每个修复提交重新通过 pr-ci-approval。
