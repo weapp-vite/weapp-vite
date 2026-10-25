@@ -1,15 +1,5 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`build import-umd > dist > app.js 1`] = `
-"//#region test/fixture-projects/weapp-vite/import-umd/src/app.ts
-App({
-	globalData: {},
-	onLaunch() {}
-});
-//#endregion
-"
-`;
-
 exports[`build import-umd > dist > app.json 1`] = `
 "{
   "pages": [
@@ -28,13 +18,6 @@ exports[`build import-umd > dist > app.wxss 1`] = `
 ".app {
   color: red;
 }"
-`;
-
-exports[`build import-umd > dist > components/Navbar/Navbar.js 1`] = `
-"//#region test/fixture-projects/weapp-vite/import-umd/src/components/Navbar/Navbar.ts
-Component({});
-//#endregion
-"
 `;
 
 exports[`build import-umd > dist > components/Navbar/Navbar.json 1`] = `
@@ -119,150 +102,6 @@ exports[`build import-umd > dist > components/chart/index.wxss 1`] = `
 "
 `;
 
-exports[`build import-umd > dist > pages/index/index.js 1`] = `
-"//#region test/fixture-projects/weapp-vite/import-umd/src/pages/index/index.ts
-Page({
-	data: {
-		spec: {},
-		events: [],
-		options: {}
-	},
-	chartType: "",
-	stage: void 0,
-	onLoad(options) {
-		this.chartType = options.name || "";
-		this.setData({ spec: {
-			type: "bar",
-			data: [{
-				id: "barData",
-				values: [
-					{
-						type: "Autocracies",
-						year: "1930",
-						value: 129
-					},
-					{
-						type: "Autocracies",
-						year: "1940",
-						value: 133
-					},
-					{
-						type: "Autocracies",
-						year: "1950",
-						value: 130
-					},
-					{
-						type: "Autocracies",
-						year: "1960",
-						value: 126
-					},
-					{
-						type: "Autocracies",
-						year: "1970",
-						value: 117
-					},
-					{
-						type: "Autocracies",
-						year: "1980",
-						value: 114
-					},
-					{
-						type: "Autocracies",
-						year: "1990",
-						value: 111
-					},
-					{
-						type: "Autocracies",
-						year: "2000",
-						value: 89
-					},
-					{
-						type: "Autocracies",
-						year: "2010",
-						value: 80
-					},
-					{
-						type: "Autocracies",
-						year: "2018",
-						value: 80
-					},
-					{
-						type: "Democracies",
-						year: "1930",
-						value: 22
-					},
-					{
-						type: "Democracies",
-						year: "1940",
-						value: 13
-					},
-					{
-						type: "Democracies",
-						year: "1950",
-						value: 25
-					},
-					{
-						type: "Democracies",
-						year: "1960",
-						value: 29
-					},
-					{
-						type: "Democracies",
-						year: "1970",
-						value: 38
-					},
-					{
-						type: "Democracies",
-						year: "1980",
-						value: 41
-					},
-					{
-						type: "Democracies",
-						year: "1990",
-						value: 57
-					},
-					{
-						type: "Democracies",
-						year: "2000",
-						value: 87
-					},
-					{
-						type: "Democracies",
-						year: "2010",
-						value: 98
-					},
-					{
-						type: "Democracies",
-						year: "2018",
-						value: 99
-					}
-				]
-			}],
-			xField: ["year", "type"],
-			yField: "value",
-			seriesField: "type",
-			legends: {
-				visible: true,
-				orient: "top",
-				position: "start"
-			},
-			axes: [{
-				orient: "left",
-				label: { formatMethod: (text) => \`$\${text}\` }
-			}]
-		} });
-	},
-	onChartInit(event) {
-		console.log("chart 实例初始化完成", event);
-	},
-	onChartReady(event) {
-		console.log("chart 实例渲染完成", event);
-	}
-});
-//#endregion
-"
-`;
-
 exports[`build import-umd > dist > pages/index/index.json 1`] = `
 "{
   "usingComponents": {
@@ -307,18 +146,14 @@ exports[`build import-umd > dist > theme.json 1`] = `
 
 exports[`build import-umd > dist 1`] = `
 [
-  "app.js",
   "app.json",
   "app.wxss",
-  "components/Navbar/Navbar.js",
   "components/Navbar/Navbar.json",
   "components/Navbar/Navbar.wxml",
   "components/Navbar/Navbar.wxss",
-  "components/chart/index.js",
   "components/chart/index.json",
   "components/chart/index.wxml",
   "components/chart/index.wxss",
-  "pages/index/index.js",
   "pages/index/index.json",
   "pages/index/index.wxml",
   "pages/index/index.wxss",

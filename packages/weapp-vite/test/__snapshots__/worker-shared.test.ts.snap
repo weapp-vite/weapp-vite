@@ -1,15 +1,5 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`worker-shared > dist > app.js 1`] = `
-"//#region test/fixture-projects/weapp-vite/worker-shared/src/app.ts
-App({
-	globalData: {},
-	onLaunch() {}
-});
-//#endregion
-"
-`;
-
 exports[`worker-shared > dist > app.json 1`] = `
 "{
   "pages": [
@@ -32,13 +22,6 @@ exports[`worker-shared > dist > app.wxss 1`] = `
 ".app {
   color: red;
 }"
-`;
-
-exports[`worker-shared > dist > components/Navbar/Navbar.js 1`] = `
-"//#region test/fixture-projects/weapp-vite/worker-shared/src/components/Navbar/Navbar.ts
-Component({});
-//#endregion
-"
 `;
 
 exports[`worker-shared > dist > components/Navbar/Navbar.json 1`] = `
@@ -93,13 +76,6 @@ require(z);
 function tapName(event, ownerInstance) {
   console.log('tap 撒的撒打算', JSON.stringify(event));
 }"
-`;
-
-exports[`worker-shared > dist > pages/index/index.js 1`] = `
-"//#region test/fixture-projects/weapp-vite/worker-shared/src/pages/index/index.ts
-Page({});
-//#endregion
-"
 `;
 
 exports[`worker-shared > dist > pages/index/index.json 1`] = `
@@ -161,10 +137,8 @@ exports[`worker-shared > dist > theme.json 1`] = `
 
 exports[`worker-shared > dist 1`] = `
 [
-  "app.js",
   "app.json",
   "app.wxss",
-  "components/Navbar/Navbar.js",
   "components/Navbar/Navbar.json",
   "components/Navbar/Navbar.wxml",
   "components/Navbar/Navbar.wxss",
@@ -174,7 +148,6 @@ exports[`worker-shared > dist 1`] = `
   "pages/index/dep1.wxs",
   "pages/index/dep2.wxs",
   "pages/index/esm.wxs",
-  "pages/index/index.js",
   "pages/index/index.json",
   "pages/index/index.wxml",
   "pages/index/index.wxs",
