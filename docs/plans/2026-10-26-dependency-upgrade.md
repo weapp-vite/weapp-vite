@@ -189,6 +189,8 @@ JS/Rust Oxc 对齐 0.155.0，napi 3.15.0、napi-derive 3.6.13、Rust 1.99.1，�
 | Bun 启动与 Node guard 契约 | CLI 两文件 39 项、Tailwind 两文件 45 项单测通过；包级 typecheck、路径 ESLint、重建通过。macOS 真实 Bun 1.4.2、1.4.4 各两文件四项 CLI/IPC 通过，源码和安装 guards 无漂移 |
 | Agent CLI 实际发行消费者 | 最终实际 tarball 安装、session、legacy verify、model-free acceptance、stdio MCP 生命周期、持久化报告及显式 Skill 安装通过；不访问真实模型或发布端点 |
 | Windows/macOS/Linux GitHub CI | 原生 [PR #1259](https://github.com/weapp-vite/weapp-vite/pull/1259) 尚未完成全部适用矩阵；最终以修复后 head 对应的完整 Checks 为准 |
+| CI 跟进的局部 runtime | 两文件 8 个 headless case、65/65 strict checkpoint 通过，无跳过；重建 weapp-vite 后验证，源码与安装 guards 不变。Chokidar 完整真实 Darwin 29 场景再验通过、清理确认；不能替代 Windows CI 或真实 IDE |
+| CI 工具与发布观察跟进 | pnpm fixture 与原四分片/telemetry 8 项、原生配置发布工具 14 项、工作流完整拓扑 16 项及改动路径 ESLint 通过；当前 candidate 补齐已有消费者 Node selector，保留历史 baseline |
 | 合并后干净 main 的正式全量 IDE | 待合并后执行 |
 
 上述 HMR 两阶段只证明各自冻结范围，完整 capability acceptance 仍为 `not-evaluated`。headless 报告的 6 个 skipped entry 均在冻结 selectedCases 之外，不计为所选 case 跳过。
@@ -197,11 +199,19 @@ JS/Rust Oxc 对齐 0.155.0，napi 3.15.0、napi-derive 3.6.13、Rust 1.99.1，�
 
 Windows 的 Bun CI 随后在 CLI importer 前暴露了运行时识别问题：Bun 的 Node 兼容标识被当作真实 Node 版本拒绝。修复通过独立 Bun 身份处理，保留 Node engines 与错误语义；旧实现的负向单测和原始 CI 失败日志继续保留。首轮真实 Bun 1.4.2 已通过两个 IPC case，两个 CLI case 暴露 Tailwind 插件的第二处同类检查；继续按独立身份修正，并保留 CSS 文件检查。旧 Tailwind 实现的三个负向用例失败、修后 45 项通过。重建发行入口后，macOS 上精确 Bun 1.4.2、1.4.4 各自执行完整两文件四项 CLI/IPC，全部通过；源码和安装 guards 无漂移，未留下本任务 E2E/watcher。此结果不替代原生 CI 的三 OS Bun 矩阵。既有大型 Tailwind 模块和相邻测试保留局部边界，新增逻辑仅修正运行时识别。
 
+后续跨平台 CI 还暴露了测试观察方式与新版工具链的差异。issue #475 原来检查 Rolldown 的 region 注释，现检查实际 sourceMappingURL、原 Vue source、marker 的原始行号及对应 sourcesContent 行；env 预处理已有的文本替换不作为原 SFC 全文相等契约。Windows 的 pnpm 进程 cwd 使用系统原生 realpath 比较双方，保留 argv 与退出码断言，兼容短路径别名。对应局部验证分别通过 1 项 sourcemap E2E（其余 98 项按筛选未执行）和 11 项进程契约。
+
+macOS alias watcher 的单次 CI 失败在本地原始用例、完整文件及同组 43 项中未复现，Windows/Linux 同组通过。目前只增加失败时的 Chokidar 6 与 Vite watcher 事件时间线，保留原始编辑、ready、超时和产物断言，未据此修改产品 backend 或路径策略；最终结果仍需新一轮 CI 核验。Windows atomic 场景的原始 artifact 则确认观察器用原生反斜杠读取 v6 已规范化的内部 Map 键，导致没有持有真实 atomic timer；修订仅同步内部观察键，不折叠大小写，旧版表示、显式 atomic 配置与事件断言保持。
+
+Windows CSS-only 失败的写出回执证明，页面 JS 的 mtime 变化来自首次构建前入队、首屏期间完成的共享 SCSS 启动批次；实际 CSS 编辑只发布 app.js 与 WXSS，与 Linux 一致。CSS 基线移到首屏可观察检查之后、首次 CSS 编辑之前，继续严格比较完整 JS 集合、内容与 mtime。该修订不声明已消除启动重复发布。macOS startup fallback 的配置重载失败发生于完整 classic ready 之前：测试已读到 CONFIG-B 页面文件便启动新的 headless VM，其他 bundle 尚在写出；现复用已有配置发布观察器，等待该次 native 回执和其后的正式 ready，再连接 runtime，保留八阶段 DOM 与回退断言。
+
 局部真实 IDE 首轮固定 Stable 2.02.2608080，官方查询于 2026-10-25 21:51:14 UTC 确认与 latest Stable 一致。classic 项目导入返回 `APPID_ERROR`、要求重新登录；stateful 启动返回当前能力契约规定的 `ide-classic-handoff`，旧用例只接受 `stylesheet-output`，在调用 launch 前失败。两个 case 均未执行，DOM case 与 checkpoint 均为 0，不能记为 runtime 通过。外层登记的 scope、宿主及端口清理成功，保留首错和 fixture 保留诊断；Computer Use 已确认当前仅有项目列表窗口、界面仍显示退出登录，等待正常重新登录后继续。测试同时按当前启动能力契约精确接受 `ide-classic-handoff`，连接前确认 classic 产物；初始 App/Page 标记应保持，编辑后仍要求实例替换，七个 CSS checkpoint 及 DOM/计算样式断言保留。新增 test-only helper 承载这部分契约，避免继续扩大既有超过 300 行的 E2E 文件；普通契约单测 14 项通过；同一 E2E 文件随后在 headless 下完整执行 classic 与 stateful 两个 case，17/17 个 strict DOM checkpoint 通过，无跳过，源码与安装状态不变，两份隔离 fixture 均完成清理。该定向复验不能替代真实 IDE 结果。
 
 初次发布回归因 Vitest 选中 node_modules 内 TypeScript 源文件失败，调整测试解析条件后通过。首次 queue tsd 命令误用不受支持的 cwd 参数，改为在 owning fixture 目录执行后通过。首次 oxc CLI 命令猜错发行入口；按 package.json 的 bin 改用 dist/index.js 后版本查询及注册加载通过。这些执行错误保留原始日志，不作为产品缺陷。
 
 pnpm 12 会在 `run` / `exec` 前核验工作区安装状态。旧测试把整个 `node_modules` 链到临时项目，真实 pnpm 自动安装会穿透链接，改写根目录 `.modules.yaml` 并删除 `.pnpm/lock.yaml`；独立临时 owner/borrower 最小复现确认了该链路。现改为自有 workspace、安装元数据、缓存与 bin，仅链接已安装的公共包入口，并显式 offline/frozen 安装。保留真实 pnpm 参数、退出、coverage 分片和阈值断言，没有全仓关闭依赖验证。完整回归用源码摘要及安装元数据 SHA/inode/mtime 监测确认无漂移；旧失败、中断和重试日志保留。
+
+Ubuntu Node 24 CI 的全新缓存进一步暴露 pnpm 12 的环境锁：精确 packageManager 也要有冻结的解析记录，否则离线安装会查询缺失的 pnpm metadata。fixture 现在复用主锁首文档的包管理器解析及 integrity，移除所有根配置依赖与项目 importer，仍由真实 pnpm 生成独立项目锁并执行原始 offline、frozen、exec。`pmOnFail: error` 保留精确版本门禁；不使用 ignore 或补造 registry metadata。`CI=true`、空 cache/store/state 的实际执行、错误版本负控、frozen 依赖漂移拒绝和配置隔离均通过；连同原始四分片覆盖率与 telemetry 回归共 3 文件、8 项通过，根安装四项哨兵不变。新增回归纳入原 Ubuntu 24 contracts 命令，只同步当前 candidate 命令清单，历史 baseline 与性能数据不变。
 
 监听诊断脚本同样隔离临时安装，改用正式 Node/CLI 入口。旧时间戳修改会被既有首构内容去重过滤，现以合法换行编辑全部 20 个文件；20/20 重建及文件名冲突检查通过，未修改产品去重逻辑。
 
@@ -228,6 +238,8 @@ Volar 升级后，Vue language-core 固定的旧 core 与当前 TypeScript 宿�
 Chokidar 6 的组件文件删除事件可能先于页面引用更新。CSS 图阶段现在区分“本轮确认缺失的可选 sidecar”与“未登记/未预处理的必需输入”，输出阶段只消费冻结状态；同路径恢复在下一轮重新预处理。11 项定向回归及 owning typecheck 已通过，原有默认 auto watcher 的删除断言保持。该修复另用 `fix(css)` patch intent 记录，避免归入工具维护说明。
 
 新改动较少的既有大型 Rust、CSS 和 patch 发行文件保留原有模块边界，避免将 API 迁移混入结构调整；新增 native watcher 测试支撑已独立拆到 fixture 模块。autoRoutes 装配文件原已超过 300 行，本轮减少内联回执代码，将快照与比较逻辑集中到既有 publication 目录，保留监听生命周期边界。
+
+CI 跟进中的 legacy 构建场景、CSS runtime 与进程集成测试原已超过 300 行。本轮仅在原场景内替换映射断言、移动基线或修正目录身份比较，保留既有 suite 生命周期，未混入文件拆分；新 watcher 键转换单独收敛，配置重载复用现有发布工具。
 
 依赖与 catalog 的重复 intent 合并为一份 changeset；Node 下限及公开行为变化使用 major，其余依赖升级使用 patch。CSS 运行时修复独立记录为 patch，发布时按最高 bump 合并。fixed 组可能按仓库既有规则联动版本。本任务不执行版本发布。
 

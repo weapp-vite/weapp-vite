@@ -1303,14 +1303,31 @@ export function registerGithubIssuesBuildLegacyCases() {
     expect(pageWxml).toContain('{{pageTraceLabel}}')
     expect(pageWxml).toContain('{{pageEnvLabel}}')
     expect(pageWxml).toContain('<source-map-probe />')
-    expect(pageJs).toContain('//#region src/pages/issue-475/index.vue')
     expect(pageJs).toContain('issue-475 page marker')
     expect(pageJs).toMatch(createCachedEnvLinePattern('pageEnv'))
     expect(pageJs).not.toContain('const pageEnv = {\n')
-    expect(componentJs).toContain('//#region src/components/issue-475/SourceMapProbe/index.vue')
     expect(componentJs).toContain('issue-475 component marker')
     expect(componentJs).toMatch(createCachedEnvLinePattern('componentEnv'))
     expect(componentJs).not.toContain('const componentEnv = {\n')
+
+    for (const [outputPath, code, sourceFile, marker] of [
+      [pageJsPath, pageJs, 'src/pages/issue-475/index.vue', 'issue-475 page marker'],
+      [componentJsPath, componentJs, 'src/components/issue-475/SourceMapProbe/index.vue', 'issue-475 component marker'],
+    ] as const) {
+      const source = await fs.readFile(path.join(APP_ROOT, sourceFile), 'utf8')
+      const sourceLine = source.split('\n').findIndex(line => line.includes(marker)) + 1
+      const sourceMap = new TraceMap(await fs.readFile(`${outputPath}.map`, 'utf8'))
+      const mapped = originalPositionFor(sourceMap, findGeneratedPosition(code, marker))
+      const sourceIndex = sourceMap.resolvedSources.findIndex(file => file.replaceAll('\\', '/').includes(sourceFile))
+
+      expect(code).toContain('//# sourceMappingURL=index.js.map')
+      expect(sourceLine).toBeGreaterThan(0)
+      expect(sourceIndex).toBeGreaterThanOrEqual(0)
+      // env 预处理会更新 sourcesContent，但原始标记行仍须保留并映射到同一 SFC 坐标。
+      expect(sourceMap.sourcesContent?.[sourceIndex]?.split('\n')[sourceLine - 1]).toBe(source.split('\n')[sourceLine - 1])
+      expect(mapped.source?.replaceAll('\\', '/')).toContain(sourceFile)
+      expect(mapped.line).toBe(sourceLine)
+    }
   })
 
   it('issue #769: keeps native ts sourcemaps aligned after local npm rewrite', async () => {

@@ -10,6 +10,8 @@ import { createDevProcessEnv } from '../utils/dev-process-env'
 import { createDomAcceptance } from '../utils/domAcceptance'
 import { replaceFileByRename, waitForFileContains, waitForFileRemoved } from '../utils/hmr-helpers'
 import { createNativeHmrPublication } from '../utils/nativeHmrPublication'
+import { captureNativeConfigReload } from '../utils/nativePublication/configReload'
+import { addNativePublicationPlugin } from '../utils/nativePublication/fixture'
 import { startRuntimeDevProcess } from '../utils/runtimeDevProcess'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import { createStatefulHmrProject } from '../utils/statefulHmrProject'
@@ -141,6 +143,11 @@ for (const host of hosts) {
           await fs.writeFile(viteFile, (await fs.readFile(viteFile, 'utf8'))
             .replace('hmr: { runtime: \'stateful-experimental\', logLevel: \'verbose\' },', 'hmr: config.weapp.hmr,'), 'utf8')
         }
+        const runtimeConfigFile = host === 'wv' || externalProject ? configFile : viteFile
+        await addNativePublicationPlugin(runtimeConfigFile)
+        if (runtimeConfigFile === configFile) {
+          configSource = await fs.readFile(configFile, 'utf8')
+        }
         const cli = resolveRuntimeCompilerCli(host!, app, { repositoryRoot: ROOT, isolated: Boolean(externalProject) })
         devReleased = false
         dev = await startRuntimeDevProcess(host, host === 'wv'
@@ -241,7 +248,9 @@ for (const host of hosts) {
         await dev!.waitFor(waitForFileContains(outputFile, 'CONFIG-A'), 'config-defined classic output')
         await observeClassic('CONFIG-A')
         await dom.check('config-before', miniProgram, await miniProgram.currentPage())
+        const configPublication = captureNativeConfigReload(dev!, fixture!.projectRoot, host)
         await replaceFileByRename(configFile, configSource.replace('CONFIG-A', 'CONFIG-B'))
+        await configPublication.wait(90_000)
         await dev!.waitFor(waitForFileContains(outputFile, 'CONFIG-B'), 'classic output after config reload')
         await observeClassic('CONFIG-B')
         await dom.check('config-after', miniProgram, await miniProgram.currentPage())

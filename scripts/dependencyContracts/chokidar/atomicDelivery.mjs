@@ -3,6 +3,7 @@ import { AsyncLocalStorage } from 'node:async_hooks'
 import fs from 'node:fs'
 import { syncBuiltinESMExports } from 'node:module'
 import path from 'node:path'
+import { watcherPathKey } from './watcherPathKey.mjs'
 
 const valueOf = value => typeof value === 'bigint' ? Number(value) : value
 function statValue(stats, key) {
@@ -118,19 +119,20 @@ export function createAtomicDeliveryObserver({ root, file }, { watchApi = fs, sy
       }
       const emitMethod = watcher.handler ? 'emitEvent' : '_emit'
       const pending = watcher.events?.pendingUnlinks ?? watcher._pendingUnlinks
+      const pendingKey = watcherPathKey(watcher, file)
       originalEmit = watcher[emitMethod]
       watcher[emitMethod] = function (event, emitted, stats, ...rest) {
         if (path.resolve(String(emitted)) !== file) {
           return originalEmit.call(this, event, emitted, stats, ...rest)
         }
         const source = context.getStore() || {}
-        const call = { id: calls.length + 1, event, native: source.native, listener: source.listener, flush: source.flush, stats: fileState(stats), before: pendingId(pending.get(file)), outputs: [] }
+        const call = { id: calls.length + 1, event, native: source.native, listener: source.listener, flush: source.flush, stats: fileState(stats), before: pendingId(pending.get(pendingKey)), outputs: [] }
         calls.push(call)
         return context.run({ ...source, call: call.id }, () => {
           try {
             return originalEmit.call(this, event, emitted, stats, ...rest)
           }
-          finally { call.after = pendingId(pending.get(file)) }
+          finally { call.after = pendingId(pending.get(pendingKey)) }
         })
       }
       watcher.prependListener('all', publicEvent)

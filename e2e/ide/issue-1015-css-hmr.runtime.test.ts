@@ -149,7 +149,7 @@ for (const runtime of ['classic', 'stateful-experimental'] as const) {
       const initialAppScript = await readFile(emittedAppScript, 'utf8')
       let loadedAppScript = initialAppScript
       let loadedScript = await readFile(emittedScript, 'utf8')
-      const classicScripts = runtime === 'classic' ? await createClassicAssetScriptContract(path.join(project, 'dist'), 'weapp') : undefined
+      let classicScripts: Awaited<ReturnType<typeof createClassicAssetScriptContract>> | undefined
       const outputDiagnostics = createHmrOutputDiagnostics(path.join(project, 'dist'), 'e2e-apps/github-issues/fixtures/issue-1015')
       const failureDiagnostics = createIssue1015HmrDiagnostics({
         stylesheetPath: emittedCss,
@@ -288,6 +288,8 @@ for (const runtime of ['classic', 'stateful-experimental'] as const) {
       }
 
       await check('initial')
+      // 首屏检查结束后再固定 CSS 编辑基线，避免纳入启动期间已排队的原生发布。
+      classicScripts = runtime === 'classic' ? await createClassicAssetScriptContract(path.join(project, 'dist'), 'weapp') : undefined
       await updateCss(cssPath, `${css}\n.issue1015-page { background-color: yellow; }`, 'style-only')
       const switchedReloadMarker = computedStyles ? await captureAppReloadMarker(host) : undefined
       const switched = publication.capture(sourcePath)

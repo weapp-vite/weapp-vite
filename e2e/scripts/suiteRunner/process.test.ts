@@ -253,7 +253,8 @@ describe('suiteRunner real process and machine lease integration', () => {
       const result = JSON.parse(fs.readFileSync(resultPath, 'utf8')) as { args: string[], cwd: string }
       expect(result.args).toEqual(args)
       if (command === 'pnpm') {
-        expect(result.cwd).toBe(fs.realpathSync(tempRoot))
+        // Windows 的临时目录可能使用短路径别名；两侧交给系统解析后再核对同一目录。
+        expect(fs.realpathSync.native(result.cwd)).toBe(fs.realpathSync.native(tempRoot))
       }
     }
     finally {

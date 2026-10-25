@@ -3,13 +3,14 @@ import { mkdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { createAtomicDeliveryObserver } from './atomicDelivery.mjs'
 import { bounded, deferred, turn } from './support.mjs'
+import { watcherPathKey } from './watcherPathKey.mjs'
 
 export function holdRemoveEntries(owner, root, expected) {
   const captured = new Map()
   const failures = []
   const initialFacts = owner.watcher.tree
     ? new Map([...expected.keys()].map(file => [file, {
-        fact: owner.watcher.tree.observed.get(file),
+        fact: owner.watcher.tree.observed.get(watcherPathKey(owner.watcher, file)),
         tracked: owner.watcher.tree.peekDirectory(path.dirname(file))?.has(path.basename(file)),
       }]))
     : undefined
@@ -56,7 +57,7 @@ export function holdRemoveEntries(owner, root, expected) {
           identity: `old-remove-${index + 1}`,
           path: path.relative(root, file).replaceAll('\\', '/'),
           oldTimerExplicitlyReleased: false,
-          oldEntryStillCurrent: initialFacts ? Boolean(entry.fact && owner.watcher.tree.observed.get(file) === entry.fact) : owner.watcher._throttled?.get('remove')?.get(file) === entry,
+          oldEntryStillCurrent: initialFacts ? Boolean(entry.fact && owner.watcher.tree.observed.get(watcherPathKey(owner.watcher, file)) === entry.fact) : owner.watcher._throttled?.get('remove')?.get(file) === entry,
           duplicateCount: entry?.count,
         })),
       }
@@ -148,6 +149,7 @@ async function verifyDirectory({ chokidar, root, watched, timeoutMs, open, ready
 
 function holdAtomicFlush(owner, file, removeGate) {
   const pending = owner.watcher.events?.pendingUnlinks ?? owner.watcher._pendingUnlinks
+  const pendingKey = watcherPathKey(owner.watcher, file)
   assert.ok(pending instanceof Map, 'diagnostic atomic pending buffer is available')
   const setDescriptor = Object.getOwnPropertyDescriptor(pending, 'set')
   const originalSet = pending.set
@@ -173,7 +175,7 @@ function holdAtomicFlush(owner, file, removeGate) {
     writable: true,
     value(key, value) {
       const result = originalSet.call(this, key, value)
-      if (key === file && !captured && !armed) {
+      if (key === pendingKey && !captured && !armed) {
         removeGate.capture(file)
         if (value.timer) {
           captured = created.get(value.timer)
@@ -254,7 +256,7 @@ async function verifyAtomic({ chokidar, root, watched, timeoutMs, open, ready, i
     await rename(replacement, file)
     await change
     assert.equal(await readFile(file, 'utf8'), contents)
-    assert.equal((owner.watcher.events?.pendingUnlinks ?? owner.watcher._pendingUnlinks).has(file), false, 'native re-add consumes the original atomic unlink buffer')
+    assert.equal((owner.watcher.events?.pendingUnlinks ?? owner.watcher._pendingUnlinks).has(watcherPathKey(owner.watcher, file)), false, 'native re-add consumes the original atomic unlink buffer')
     afterChange = removeGate.snapshot('after-atomic-change-before-original-flush-release')
     await observer.flush(() => atomicGate.release())
     await turn()

@@ -71,6 +71,9 @@ describe('independent CI preparation with unchanged validation scope', () => {
       }
     }
     const child = read('reusable-quality-platform.yml')
+    if (!baseline) {
+      expect(child.jobs.contracts.with.main_command).toContain('scripts/coverageShards scripts/testFixtures scripts/consumerArtifacts')
+    }
     expect(child.jobs.lint.needs).toBe('pr-context')
     expect(child.jobs.coverage.strategy.matrix.shard).toEqual([1, 2, 3, 4])
     for (const name of ['contracts', 'types', 'coverage']) {

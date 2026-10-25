@@ -102,7 +102,7 @@ jobs:
       main_command: |-
         pnpm test:dependency-contracts
         if [[ '${{ inputs.runs_on }}' == 'ubuntu-latest' && '${{ inputs.node_version }}' == '24' ]]; then
-          pnpm exec vitest run --config scripts/vitest.config.mjs scripts/coverageShards scripts/consumerArtifacts scripts/ci-timing.test.mjs scripts/ci-topology.test.mjs scripts/verification-history.test.mjs scripts/verificationBenchmark/ci/archive.test.mjs scripts/ci-types.test.mjs
+          pnpm exec vitest run --config scripts/vitest.config.mjs scripts/coverageShards scripts/testFixtures scripts/consumerArtifacts scripts/ci-timing.test.mjs scripts/ci-topology.test.mjs scripts/verification-history.test.mjs scripts/verificationBenchmark/ci/archive.test.mjs scripts/ci-types.test.mjs
         fi
       artifact_name: dependency-contracts-${{ inputs.runs_on }}-node-${{ inputs.node_version }}
       artifact_path: .tmp/dependency-contracts
