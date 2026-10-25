@@ -14,21 +14,25 @@ export async function queryRetailPageRoot(page: RetailPageRootQuery) {
   if (roots.length === 0) {
     return null
   }
-  return {
-    async wxml() {
-      const fragments: string[] = []
-      for (const root of roots) {
-        // 真实 IDE 的文档根是 #shadow-root，其 inner 包含全部并列子节点。
-        // headless 的 wxml 本身返回完整 outer；真实普通元素须保留自身标签。
-        const fragment = root.tagName === '#shadow-root' || !root.outerWxml
-          ? await root.wxml()
-          : await root.outerWxml()
-        if (typeof fragment !== 'string') {
-          throw new TypeError('Retail page root did not return complete WXML')
-        }
-        fragments.push(fragment)
+  async function capture() {
+    const fragments: string[] = []
+    for (const root of roots) {
+      // 真实 IDE 的文档根是 #shadow-root，其 inner 包含全部并列子节点。
+      // headless 的 wxml 本身返回完整 outer；真实普通元素须保留自身标签。
+      const fragment = root.tagName === '#shadow-root' || !root.outerWxml
+        ? await root.wxml()
+        : await root.outerWxml()
+      if (typeof fragment !== 'string') {
+        throw new TypeError('Retail page root did not return complete WXML')
       }
-      return fragments.join('')
+      fragments.push(fragment)
+    }
+    return { roots: fragments, rawWxml: fragments.join('') }
+  }
+  return {
+    capture,
+    async wxml() {
+      return (await capture()).rawWxml
     },
   }
 }

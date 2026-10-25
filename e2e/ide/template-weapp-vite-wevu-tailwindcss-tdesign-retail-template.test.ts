@@ -1,8 +1,11 @@
+import type { RetailNavigationContract } from '../utils/templateAcceptance/retailParityMarkup'
 import type { RuntimeErrorCollector } from './runtimeErrors'
+import { randomUUID } from 'node:crypto'
 import { access, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
 import { extractConfigFromVue } from '../../packages/weapp-vite/src/utils/file'
+import { navigationTitleMap, tabRoutes } from '../../templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/config/navigation'
 import { formatWxml, normalizeWxmlForSnapshot } from '../template-e2e.utils'
 import { launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
@@ -12,6 +15,8 @@ import { assertTemplateRouteCoverage, resolveTemplateDomPlan, tapTemplateNode } 
 import { RETAIL_TEMPLATE_DOM } from '../utils/templateAcceptance/retail'
 import { RETAIL_CHECKOUT_GOODS } from '../utils/templateAcceptance/retailCheckout'
 import { queryRetailPageRoot } from '../utils/templateAcceptance/retailPageRoot'
+import { prepareRetailParityHome } from '../utils/templateAcceptance/retailParityHome'
+import { projectRetailParityWxml, retailNavigationNodes } from '../utils/templateAcceptance/retailParityMarkup'
 import { attachRuntimeErrorCollector } from './runtimeErrors'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
@@ -47,6 +52,7 @@ const AUTOMATOR_LAUNCH_RETRY_COUNT = 3
 const AUTOMATOR_LAUNCH_RETRY_DELAY_MS = 400
 const DUMP_WXML = process.env.RETAIL_PARITY_DUMP_WXML === '1'
 const DEBUG_ROOT = path.resolve(import.meta.dirname, '../.tmp/retail-parity')
+const CAPTURE_ROOT = path.resolve(import.meta.dirname, '../../docs/reports/retail-parity', randomUUID())
 const ROUTE_RENDER_WAIT_MS = Number.parseInt(process.env.RETAIL_PARITY_ROUTE_WAIT_MS || '1200', 10)
 const ROUTE_READY_TIMEOUT_MS = Number.parseInt(process.env.RETAIL_PARITY_ROUTE_READY_TIMEOUT_MS || '10000', 10)
 const DEBUG_ROUTE = process.env.RETAIL_PARITY_DEBUG_ROUTE?.trim()
@@ -250,13 +256,89 @@ async function prepareRouteContext(miniProgram: any, pagePath: string) {
   }
 }
 
-async function readNormalizedPageWxml(page: any) {
+interface RetailCaptureEvidence {
+  projectName: string
+  pagePath: string
+  stage: string
+  attempt?: number
+  navigationContract?: RetailNavigationContract
+}
+
+function captureEvidenceDirectory(evidence: RetailCaptureEvidence) {
+  return path.join(CAPTURE_ROOT, evidence.projectName, evidence.pagePath, `attempt-${evidence.attempt ?? 1}`)
+}
+
+async function writeCaptureEvidence(evidence: RetailCaptureEvidence, value: unknown) {
+  const directory = captureEvidenceDirectory(evidence)
+  await mkdir(directory, { recursive: true })
+  await writeFile(path.join(directory, `${evidence.stage}.json`), `${JSON.stringify(value, null, 2)}\n`, 'utf8')
+}
+
+async function readNormalizedPageWxml(page: any, evidence?: RetailCaptureEvidence) {
   const pageRoot = await waitForPageRoot(page)
   if (!pageRoot) {
     throw new Error('Failed to find page root')
   }
-  const wxml = normalizeWxmlForSnapshot(await pageRoot.wxml())
-  return await formatWxml(wxml)
+  const captured = await pageRoot.capture()
+  if (evidence) {
+    const directory = captureEvidenceDirectory(evidence)
+    await mkdir(directory, { recursive: true })
+    await Promise.all([
+      ...captured.roots.map((root, index) => writeFile(path.join(directory, `${evidence.stage}.root-${index}.wxml`), root, 'utf8')),
+      writeFile(path.join(directory, `${evidence.stage}.raw.wxml`), captured.rawWxml, 'utf8'),
+      writeCaptureEvidence(evidence, captured),
+    ])
+  }
+  let normalizedWxml: string | undefined
+  try {
+    normalizedWxml = await formatWxml(normalizeWxmlForSnapshot(captured.rawWxml))
+    const projection = projectRetailParityWxml(normalizedWxml, evidence?.navigationContract)
+    const comparisonWxml = await formatWxml(projection.comparisonWxml)
+    if (evidence) {
+      const directory = captureEvidenceDirectory(evidence)
+      await Promise.all([
+        writeFile(path.join(directory, `${evidence.stage}.normalized.wxml`), normalizedWxml, 'utf8'),
+        writeFile(path.join(directory, `${evidence.stage}.comparison.wxml`), comparisonWxml, 'utf8'),
+        writeCaptureEvidence(evidence, { ...captured, normalizedWxml, comparisonWxml, navigation: projection.navigation }),
+      ])
+    }
+    return comparisonWxml
+  }
+  catch (error) {
+    if (evidence) {
+      try {
+        await writeCaptureEvidence(evidence, { ...captured, normalizedWxml, projectionError: getErrorMessage(error) })
+      }
+      catch (recordError) {
+        throw new AggregateError([error, recordError], 'Retail parity capture and diagnostic persistence failed')
+      }
+    }
+    throw error
+  }
+}
+
+async function loadRetailNavigationContracts(pages: string[]) {
+  const contracts = new Map<string, RetailNavigationContract>()
+  for (const pagePath of pages) {
+    const configs = await Promise.all([APP_ROOT, TEMPLATE_ROOT].map(async (projectRoot) => {
+      const config = JSON.parse(await readFile(path.join(projectRoot, 'dist', `${pagePath}.json`), 'utf8')) as Record<string, unknown>
+      const title = config.navigationBarTitleText ?? ''
+      if (typeof title !== 'string') {
+        throw new TypeError(`Retail parity requires a string navigation title for ${pagePath}`)
+      }
+      return title
+    }))
+    expect(configs[1], `built navigation title for ${pagePath}`).toBe(configs[0])
+    const customTitle = navigationTitleMap[pagePath]
+    if (!customTitle) {
+      throw new Error(`Retail parity has no declared custom navigation title for ${pagePath}`)
+    }
+    if (configs[0]) {
+      expect(customTitle, `custom navigation title for ${pagePath}`).toBe(configs[0])
+    }
+    contracts.set(pagePath, { configuredTitle: configs[0]!, customTitle, isTabRoute: tabRoutes.has(pagePath) })
+  }
+  return contracts
 }
 
 async function wait(ms: number) {
@@ -425,6 +507,7 @@ async function waitForRouteReady(options: {
   let lastState: {
     listLength: number | null
     status: unknown
+    pageLoading: unknown
     hasGoodsCard: boolean
     hasPageRoot: boolean
     dataError?: string
@@ -432,6 +515,7 @@ async function waitForRouteReady(options: {
   } = {
     listLength: null,
     status: undefined,
+    pageLoading: undefined,
     hasGoodsCard: false,
     hasPageRoot: false,
   }
@@ -447,10 +531,12 @@ async function waitForRouteReady(options: {
 
     let list: unknown
     let status: unknown
+    let pageLoading: unknown
     let dataError: string | undefined
     try {
       list = await page.data('goodsList')
       status = await page.data('goodsListLoadStatus')
+      pageLoading = await page.data('pageLoading')
     }
     catch (error) {
       dataError = getErrorMessage(error)
@@ -471,18 +557,18 @@ async function waitForRouteReady(options: {
       }
     }
 
-    const normalizedStatus = Number(status)
     const listLength = Array.isArray(list) ? list.length : null
     lastState = {
       listLength,
       status,
+      pageLoading,
       hasGoodsCard,
       hasPageRoot,
       dataError,
       wxmlError,
     }
 
-    if (listLength !== null && listLength > 0 && normalizedStatus === 0 && hasGoodsCard) {
+    if (listLength !== null && listLength > 0 && status === 0 && pageLoading === false && hasGoodsCard) {
       return
     }
 
@@ -600,6 +686,7 @@ async function captureRouteWxml(options: {
   warningCollector: RuntimeWarningCollector
   accept?: (miniProgram: any, page: any) => Promise<string | undefined>
   captureWxml?: boolean
+  navigationContract?: RetailNavigationContract
 }) {
   let { miniProgram, errorCollector, warningCollector } = options
   const { projectName, reloadSession, route, pagePath } = options
@@ -639,20 +726,18 @@ async function captureRouteWxml(options: {
         route,
         stage: 'after-route-wait',
       })
-      let initialWxml: string | undefined
-      if (options.accept) {
-        initialWxml = await options.accept(miniProgram, page)
-      }
-      else {
-        await waitForRouteReady({
+      await waitForRouteReady({ page, pagePath, route, errorCollector, marker, projectName })
+      const captureEvidence = { projectName, pagePath, stage: 'initial', attempt, navigationContract: options.navigationContract }
+      if (options.captureWxml !== false && pagePath === 'pages/home/home') {
+        const prepared = await prepareRetailParityHome({
           page,
-          pagePath,
-          route,
-          errorCollector,
-          marker,
-          projectName,
+          captureNatural: async () => await readNormalizedPageWxml(page, { ...captureEvidence, stage: 'natural' }),
+          recordNatural: async evidence => await writeCaptureEvidence({ ...captureEvidence, stage: 'natural-loaded' }, evidence),
+          timeoutMs: ROUTE_READY_TIMEOUT_MS,
         })
+        await writeCaptureEvidence({ ...captureEvidence, stage: 'common-home-input' }, prepared)
       }
+      const initialWxml = options.accept ? await options.accept(miniProgram, page) : undefined
       ensureNoRuntimeErrors({
         errorCollector,
         marker,
@@ -690,7 +775,7 @@ async function captureRouteWxml(options: {
         route,
         stage: 'before-wxml-read',
       })
-      return options.captureWxml === false ? '' : initialWxml ?? await readNormalizedPageWxml(page)
+      return options.captureWxml === false ? '' : initialWxml ?? await readNormalizedPageWxml(page, captureEvidence)
     }
     catch (error) {
       if (options.accept) {
@@ -725,6 +810,7 @@ async function captureProjectPagesWxml(options: {
   launchQueryMap: Map<string, string>
   accept?: (miniProgram: any, page: any, pagePath: string) => Promise<string | undefined>
   captureWxml?: boolean
+  navigationContracts?: Map<string, RetailNavigationContract>
 }) {
   const { projectRoot, projectName, pages, launchQueryMap } = options
   let session = await getSharedProjectSession(projectRoot)
@@ -744,6 +830,7 @@ async function captureProjectPagesWxml(options: {
       warningCollector: session.warningCollector,
       accept: options.accept ? (miniProgram, page) => options.accept!(miniProgram, page, pagePath) : undefined,
       captureWxml: options.captureWxml,
+      navigationContract: options.navigationContracts?.get(pagePath),
     })
     pageWxmlMap.set(pagePath, wxml)
   }
@@ -790,8 +877,7 @@ describe('template e2e: weapp-vite-wevu-tailwindcss-tdesign-retail-template pari
     if (onlyPage && process.env.WEAPP_VITE_E2E_DOM_ACCEPTANCE === '1') {
       throw new Error('RETAIL_PARITY_ONLY_PAGE cannot satisfy full DOM acceptance')
     }
-    const routes = onlyPage ? allRoutes.filter(route => normalizeSegment(route.route) === onlyPage) : allRoutes
-    const dom = createDomAcceptance(context, 'templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template', routes.flatMap(route => route.steps))
+    const selectedRoutes = onlyPage ? allRoutes.filter(route => normalizeSegment(route.route) === onlyPage) : allRoutes
     const [appConfig, templateAppConfig, projectConfig] = await Promise.all([
       readFile(APP_JSON_PATH, 'utf8').then(JSON.parse),
       loadTemplateAppConfig(),
@@ -816,6 +902,19 @@ describe('template e2e: weapp-vite-wevu-tailwindcss-tdesign-retail-template pari
       runBuild(TEMPLATE_ROOT),
     ])
 
+    const navigationContracts = await loadRetailNavigationContracts(pagesToCompare)
+    const routes = resolveTemplateDomPlan(selectedRoutes.map(route => ({
+      ...route,
+      steps: route.steps.map((step, index) => index === 0
+        ? {
+            ...step,
+            nodes: [...step.nodes, ...retailNavigationNodes(navigationContracts.get(normalizeSegment(route.route))!)],
+          }
+        : step),
+    })), resolveRuntimeProviderName())
+    const dom = createDomAcceptance(context, 'templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template', routes.flatMap(route => route.steps))
+    // eslint-disable-next-line no-console
+    console.info(`[retail-parity] complete capture evidence=${path.relative(process.cwd(), CAPTURE_ROOT)}`)
     const useRuntimeParity = process.env.RETAIL_PARITY_RUNTIME === '1'
     const structureSimilarityThreshold = useRuntimeParity
       ? STRUCTURE_SIMILARITY_THRESHOLD
@@ -838,6 +937,7 @@ describe('template e2e: weapp-vite-wevu-tailwindcss-tdesign-retail-template pari
       pages: routes.map(route => normalizeSegment(route.route)).filter(route => !onlyPage || route === onlyPage),
       launchQueryMap,
       captureWxml: useRuntimeParity,
+      navigationContracts,
       async accept(miniProgram, page, pagePath) {
         const route = routes.find(item => normalizeSegment(item.route) === pagePath)!
         let initialWxml: string | undefined
@@ -850,7 +950,12 @@ describe('template e2e: weapp-vite-wevu-tailwindcss-tdesign-retail-template pari
           }
           await dom.check(step.id, miniProgram, page)
           if (useRuntimeParity && step === route.steps[0]) {
-            initialWxml = await readNormalizedPageWxml(page)
+            initialWxml = await readNormalizedPageWxml(page, {
+              projectName: 'template',
+              pagePath,
+              stage: 'initial',
+              navigationContract: navigationContracts.get(pagePath),
+            })
           }
         }
         return initialWxml

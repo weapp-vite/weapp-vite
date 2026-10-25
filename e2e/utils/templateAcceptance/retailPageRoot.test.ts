@@ -2,6 +2,17 @@ import { describe, expect, it, vi } from 'vitest'
 import { queryRetailPageRoot } from './retailPageRoot'
 
 describe('retail complete document roots', () => {
+  it('captures every original root and their joined bytes in one protocol read per root', async () => {
+    const fragments = ['<view id="header">header</view>', '<view id="body">body</view>', '<custom-tab-bar>cart</custom-tab-bar>']
+    const roots = fragments.map(wxml => ({ wxml: vi.fn(async () => wxml) }))
+    const root = await queryRetailPageRoot({ getElementsByXpath: async () => roots })
+
+    expect(await root!.capture()).toEqual({ roots: fragments, rawWxml: fragments.join('') })
+    for (const item of roots) {
+      expect(item.wxml).toHaveBeenCalledTimes(1)
+    }
+  })
+
   it('preserves all sibling page views and the independent tabbar in document order', async () => {
     const home = '<view class="home-page-header">header</view><view class="home-page-container"><goods-card>goods</goods-card></view>'
     const tabbar = '<custom-tab-bar><button>cart</button></custom-tab-bar>'

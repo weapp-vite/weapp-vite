@@ -6,7 +6,7 @@ import { queryRetailPageRoot } from '../../../../e2e/utils/templateAcceptance/re
 import { createHeadlessSession } from '../src/runtime'
 import { HeadlessTestingPageHandle } from '../src/testing'
 import { cleanupTempDirs } from './helpers'
-import { documentRootFiles } from './helpers/documentRoots'
+import { createDocumentRootGoodsList, documentRootFiles } from './helpers/documentRoots'
 
 const directories: string[] = []
 afterEach(() => cleanupTempDirs(directories))
@@ -34,7 +34,31 @@ it('keeps every sibling view, nested component and independent tabbar through pu
     expect(initial.indexOf('id="header"')).toBeLessThan(initial.indexOf('id="footer"'))
     expect(initial.indexOf('id="footer"')).toBeLessThan(initial.indexOf('id="independent-tabbar"'))
 
-    await handle.setData({ title: 'updated title', price: 20 })
+    const naturalGoodsList = await handle.data('goodsList')
+    expect(naturalGoodsList).toEqual([
+      { id: 'natural-first', title: 'naturally loaded first' },
+      { id: 'natural-last', title: 'naturally loaded last' },
+    ])
+    const initialCards = await handle.$$('.goods-card__title')
+    expect(initialCards).toHaveLength(2)
+    expect(await Promise.all(initialCards.map(card => card.text()))).toEqual([
+      'naturally loaded first',
+      'naturally loaded last',
+    ])
+
+    const goodsList = createDocumentRootGoodsList()
+    await handle.setData({ title: 'updated title', price: 20, goodsList })
+    goodsList[0]!.title = 'caller mutation after protocol delivery'
+    expect(await handle.data('goodsList')).toEqual(createDocumentRootGoodsList())
+    const updatedCards = await handle.$$('.goods-card__title')
+    expect(updatedCards).toHaveLength(4)
+    expect(await Promise.all(updatedCards.map(card => card.text()))).toEqual([
+      'prepared goods 1',
+      'prepared goods 2',
+      'prepared goods 3',
+      'prepared goods 4',
+    ])
+    expect(await handle.getElementsByXpath('/*')).toHaveLength(2)
     const updated = await (await queryRetailPageRoot(handle))!.wxml()
     expect(updated).toContain('updated title')
     expect(updated).toContain('price:20')
