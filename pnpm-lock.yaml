@@ -245,6 +245,9 @@ catalogs:
     '@vue/reactivity':
       specifier: ^3.5.44
       version: 3.5.44
+    '@vue/shared':
+      specifier: ^3.5.44
+      version: 3.5.44
     '@wot-ui/ui':
       specifier: 2.4.0
       version: 2.4.0
@@ -2775,6 +2778,9 @@ importers:
       '@babel/types':
         specifier: 'catalog:'
         version: 8.0.8
+      '@vue/shared':
+        specifier: 'catalog:'
+        version: 3.5.44
       '@weapp-core/constants':
         specifier: workspace:*
         version: link:../../@weapp-core/constants
@@ -24333,19 +24339,6 @@ snapshots:
       '@rolldown/pluginutils': 1.0.1
       vite: 8.3.5(patch_hash=284776f1b99423b4fe3bcdab1e42a498b1c56c8ddad3d6cef66f7a0209a777b9)(@types/node@26.6.5)(@vitejs/devtools@0.8.0)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
       vue: 3.5.44(typescript@6.0.3)
-
-  '@vitest/browser-playwright@5.0.5(@voidzero-dev/vite-plus-core@1.4.0)(bufferutil@4.1.0)(playwright@1.64.1)(vitest@5.0.5)':
-    dependencies:
-      '@vitest/browser': 5.0.5(@voidzero-dev/vite-plus-core@1.4.0)(bufferutil@4.1.0)(vitest@5.0.5)
-      '@vitest/mocker': 5.0.5(@voidzero-dev/vite-plus-core@1.4.0)
-      playwright: 1.64.1
-      tinyrainbow: 3.2.0
-      vitest: 5.0.5(patch_hash=abc79ba5cbb797c526f2930277b2073b4d2f23370f70d4312ddedf9d90f64e9d)(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/browser-preview@5.0.5)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.5)(@voidzero-dev/vite-plus-core@1.4.0)(happy-dom@21.0.4(bufferutil@4.1.0))
-    transitivePeerDependencies:
-      - bufferutil
-      - msw
-      - utf-8-validate
-      - vite
 
   '@vitest/browser-playwright@5.0.5(bufferutil@4.1.0)(playwright@1.64.1)(vite@8.3.5)(vitest@5.0.5)':
     dependencies:

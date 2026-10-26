@@ -10,6 +10,7 @@ import { getPathExistsTtlMs } from '../../utils/cachePolicy'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { toAbsoluteId } from '../../utils/toAbsoluteId'
 import { pathExists as pathExistsCached, readFile as readFileCached } from '../utils/cache'
+import { readCompilerInput } from '../utils/sourceSnapshot'
 import { VUE_PLUGIN_NAME } from './index'
 import { isVueLikeFile, VUE_LIKE_EXTENSIONS } from './transform/shared'
 import { parseWeappVueStyleRequest, WEAPP_VUE_STYLE_VIRTUAL_PREFIX } from './transform/styleRequest'
@@ -155,10 +156,10 @@ export function createVueResolverPlugin(ctx: CompilerContext, options: { react?:
         return null
       }
 
-      const code = await readFileCached(absoluteId, {
+      const code = await readCompilerInput(ctx.configService, absoluteId, file => readFileCached(file, {
         checkMtime: ctx.configService?.isDev ?? false,
         encoding: 'utf-8',
-      })
+      }))
       const hmr = ctx.runtimeState?.build?.hmr
       if (ctx.configService?.isDev && hmr && absoluteId.endsWith('.vue')) {
         // 基线必须来自交给后续 transform 的同一份原始内容，不能在 transform 时重读磁盘。

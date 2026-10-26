@@ -135,21 +135,25 @@ async function listComments({ apiUrl, token, repository, prNumber, request = git
   }
 }
 
-export async function upsertComment({ apiUrl, token, repository, prNumber, body, request = githubRequest }) {
+export async function upsertComment({ apiUrl, token, repository, prNumber, body, request = githubRequest, verifyTarget }) {
   const comments = await listComments({ apiUrl, token, repository, prNumber, request })
   const existing = findExistingComment(comments)
+  if (verifyTarget && !(await verifyTarget())) {
+    return false
+  }
   const requestBody = JSON.stringify({ body })
   if (existing) {
     await request(apiUrl, token, `/repos/${repository}/issues/comments/${existing.id}`, {
       method: 'PATCH',
       body: requestBody,
     })
-    return
+    return true
   }
   await request(apiUrl, token, `/repos/${repository}/issues/${prNumber}/comments`, {
     method: 'POST',
     body: requestBody,
   })
+  return true
 }
 
 async function main() {
