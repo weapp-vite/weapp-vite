@@ -133,13 +133,24 @@ describe('compiled scroll-view capabilities in Chromium', { concurrent: false },
   })
 
   it('keeps default scrollbars and requires enhanced for an explicit hide override', async () => {
-    const hidden = () => control('position-feed').evaluate(element => element.shadowRoot!.querySelector('.viewport')!.classList.contains('no-scrollbar'))
-    expect(await hidden()).toBe(false)
+    const scrollbar = (id: string) => control(id).evaluate((element) => {
+      const viewport = element.shadowRoot!.querySelector('.viewport')!
+      const style = getComputedStyle(viewport)
+      return {
+        hidden: viewport.classList.contains('no-scrollbar'),
+        width: style.getPropertyValue('scrollbar-width'),
+      }
+    })
+    // :vertical 方向伪类没有可靠的 getComputedStyle 查询入口；验证纵向单轴的标准计算值，避免依赖系统 overlay 滚动条尺寸。
+    const visible = { hidden: false, width: 'auto' }
+    expect(await scrollbar('position-feed')).toEqual(visible)
+    expect(await scrollbar('flex-feed')).toEqual(visible)
     await control('hide-scrollbar').click()
-    await expect.poll(hidden).toBe(true)
-    expect(await control('flex-feed').evaluate(element => element.shadowRoot!.querySelector('.viewport')!.classList.contains('no-scrollbar'))).toBe(false)
+    await expect.poll(() => scrollbar('position-feed')).toEqual({ hidden: true, width: 'none' })
+    expect(await scrollbar('flex-feed')).toEqual(visible)
     await control('restore-scrollbar').click()
-    await expect.poll(hidden).toBe(false)
+    await expect.poll(() => scrollbar('position-feed')).toEqual(visible)
+    expect(await scrollbar('flex-feed')).toEqual(visible)
   })
 
   it('delivers one start and end per real browser scroll session through WXML handlers', async () => {
