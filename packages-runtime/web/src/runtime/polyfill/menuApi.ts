@@ -1,3 +1,4 @@
+import type { MiniProgramBaseResult, ShareMenuOptions } from './types'
 import {
   setTabBarBadgeState,
   setTabBarRedDotState,
@@ -139,4 +140,8 @@ export function showShareMenuBridge(options?: any): Promise<any> {
 
 export function updateShareMenuBridge(options?: any): Promise<any> {
   return Promise.resolve(callMiniProgramAsyncSuccess(options, { errMsg: 'updateShareMenu:ok' }))
+}
+
+export function hideShareMenuBridge(options?: ShareMenuOptions): Promise<MiniProgramBaseResult> {
+  return Promise.resolve(callMiniProgramAsyncSuccess(options, { errMsg: 'hideShareMenu:ok' }))
 }
