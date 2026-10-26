@@ -142,7 +142,7 @@ allowBuilds:
   cos-wx-sdk-v5: false
   esbuild: false
   gridstack: false
-  lefthook: true
+  lefthook: false
   minidev: false
   msgpackr-extract: false
   oxc-resolver: true

@@ -1,71 +1,44 @@
+import { readFile } from 'node:fs/promises'
+import { createAutoChangesetPlan } from 'repoctl'
 import { describe, expect, it } from 'vitest'
-import { affectedPackages, hasManualChangeset, isUnmodifiedGenerated, releaseLevel, renderChangeset, workspaceManifestPaths } from '../../.github/auto-changeset/policy.mjs'
+import { changesetFixture } from './fixture.mjs'
 
-const pkg = (dir, name, manifest = {}) => ({ dir, name, manifest })
-const changed = filename => ({ filename, status: 'modified' })
+const policy = JSON.parse(await readFile(new URL('../../.github/repoctl-auto-changeset.json', import.meta.url), 'utf8'))
+const plan = options => createAutoChangesetPlan(changesetFixture(policy, options))
+const names = report => report.packages.map(pkg => pkg.name)
 
-describe('automatic release intent policy', () => {
-  it('discovers all workspace roots and honors exclusions without executing candidate code', () => {
-    const manifest = 'packages:\n  - packages/*\n  - packages-runtime/*\n  - mpcore/packages/*\n  - "@weapp-core/*"\n  - "!packages/private"\n'
-    expect(workspaceManifestPaths([
-      'packages/core/package.json',
-      'packages/private/package.json',
-      'packages/core/test/fixture/package.json',
-      'packages-runtime/wevu/package.json',
-      'mpcore/packages/test/package.json',
-      '@weapp-core/constants/package.json',
-    ], manifest)).toEqual(['packages/core/package.json', 'packages-runtime/wevu/package.json', 'mpcore/packages/test/package.json', '@weapp-core/constants/package.json'])
+describe('weapp-vite policy through the public repoctl engine', () => {
+  it('links runtime and template changes to the scaffolder across workspace roots', async () => {
+    expect(names(await plan({ files: ['packages-runtime/wevu/src/index.ts'] }))).toEqual(['create-weapp-vite', 'wevu'])
+    expect(names(await plan({ files: ['templates/vue/src/index.ts'] }))).toEqual(['create-weapp-vite'])
+    expect(names(await plan({ files: ['mpcore/packages/simulator/src/index.ts'] }))).toEqual(['@mpcore/simulator'])
+    expect(names(await plan({ files: ['mpcore/packages/test/src/index.ts'] }))).toEqual(['@mpcore/test'])
   })
 
-  it('links wevu, templates and constants changes to the required public packages', () => {
-    const workspaces = [pkg('packages-runtime/wevu', 'wevu'), pkg('packages/core', 'core', { dependencies: { '@weapp-core/constants': 'workspace:*' } }), pkg('@weapp-core/constants', '@weapp-core/constants')]
-    expect(affectedPackages([changed('packages-runtime/wevu/src/index.ts')], workspaces)).toEqual(['create-weapp-vite', 'wevu'])
-    expect(affectedPackages([changed('templates/vue/package.json')], workspaces)).toEqual(['create-weapp-vite'])
-    expect(affectedPackages([changed('@weapp-core/constants/src/index.ts')], workspaces)).toEqual(['@weapp-core/constants', 'core'])
-  })
-
-  it('includes constants consumers through npm and workspace aliases', () => {
-    const workspaces = [
-      pkg('@weapp-core/constants', '@weapp-core/constants'),
-      pkg('packages/direct', 'direct', { dependencies: { '@weapp-core/constants': 'workspace:^1.0.0' } }),
-      pkg('packages/aliased', 'aliased', { dependencies: { shared: 'workspace:@weapp-core/constants@*' } }),
-      pkg('packages/npm-alias', 'npm-alias', { optionalDependencies: { shared: 'npm:@weapp-core/constants@1.0.0' } }),
-      pkg('packages/relative', 'relative', { devDependencies: { shared: 'workspace:../../@weapp-core/constants' } }),
-      pkg('packages/unrelated', 'unrelated', { dependencies: { '@weapp-core/constants': 'npm:unrelated@1.0.0' } }),
-    ]
-    expect(affectedPackages([changed('@weapp-core/constants/src/index.ts')], workspaces)).toEqual([
+  it('links constants dependents through workspace and npm aliases, including dev dependencies', async () => {
+    expect(names(await plan({ files: ['@weapp-core/constants/src/index.ts'] }))).toEqual([
       '@weapp-core/constants',
       'aliased',
-      'direct',
-      'npm-alias',
+      'create-weapp-vite',
       'relative',
+      'wevu',
     ])
   })
 
-  it('does not release tests, docs or emitted artifacts', () => {
-    const files = ['src/index.test.ts', 'test/index.ts', 'README.md', 'docs/api.md', 'dist/index.js'].map(file => changed(`packages/core/${file}`))
-    expect(affectedPackages(files, [pkg('packages/core', 'core')])).toEqual([])
+  it('keeps docs, tests, generated artifacts and package tooling out of release plans', async () => {
+    const files = ['README.md', 'docs/api.md', 'src/index.test.ts', 'src/__tests__/helper.ts', 'dist/index.js', 'tsconfig.json'].map(file => `packages-runtime/wevu/${file}`)
+    expect(names(await plan({ files }))).toEqual([])
+    expect(names(await plan({ files: ['mpcore/packages/test/test/index.ts'] }))).toEqual([])
   })
 
-  it('preserves hand-written intents, excluding README and deleted files', () => {
-    expect(hasManualChangeset([changed('.changeset/deps.md')], 1)).toBe(true)
-    expect(hasManualChangeset([changed('.changeset/README.md'), changed('.changeset/auto-pr-1.md'), { filename: '.changeset/removed.md', status: 'removed' }], 1)).toBe(false)
+  it('uses patch for dependency maintenance, minor for features and requires an explicit breaking level', async () => {
+    expect((await plan({ title: 'chore(deps): update upstream major' })).packages.every(pkg => pkg.level === 'patch')).toBe(true)
+    expect((await plan({ title: 'feat: 新增能力' })).packages.every(pkg => pkg.level === 'minor')).toBe(true)
+    await expect(plan({ title: 'chore(deps)!: 收紧环境要求' })).rejects.toThrow('explicit release level')
+    expect((await plan({ title: 'chore(deps)!: 收紧环境要求', labels: ['release:minor'] })).packages.every(pkg => pkg.level === 'minor')).toBe(true)
   })
 
-  it('uses consumer impact, requiring an explicit choice for breaking titles', () => {
-    expect(releaseLevel('chore(deps): 更新上游 major 依赖')).toBe('patch')
-    expect(releaseLevel('feat: 增加新能力')).toBe('minor')
-    expect(() => releaseLevel('chore(deps)!: 收紧环境要求')).toThrow('显式')
-    expect(releaseLevel('chore(deps)!: 收紧环境要求', ['release:minor'])).toBe('minor')
-    expect(() => releaseLevel('fix: 修复问题', ['release:minor', 'release:major'])).toThrow('一个')
-  })
-
-  it('requires a Chinese conventional summary and detects manual changes', () => {
-    const input = { packages: ['wevu', 'create-weapp-vite'], number: 1, title: 'fix: 修复生命周期', level: 'patch' }
-    const content = renderChangeset(input)
-    expect(content).toContain('"create-weapp-vite": patch')
-    expect(isUnmodifiedGenerated(content)).toBe(true)
-    expect(isUnmodifiedGenerated(content.replace('修复生命周期', '人工迁移说明'))).toBe(false)
-    expect(() => renderChangeset({ ...input, title: 'fix: lifecycle' })).toThrow('中文')
+  it('produces a Chinese conventional summary even for an English PR title', async () => {
+    expect((await plan({ title: 'fix: lifecycle' })).change.content).toContain('fix: 修复问题，fix: lifecycle（#1）')
   })
 })

@@ -1,95 +1,68 @@
+import { execFileSync } from 'node:child_process'
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
+// eslint-disable-next-line e18e/ban-dependencies -- 测试使用跨平台 pnpm.cmd 解析。
+import { execa } from 'execa'
 import { describe, expect, it } from 'vitest'
-import { collectPublishableWorkspaceChangesetIssues, isReleaseWorthyWorkspaceFile } from '../check-publishable-workspace-changeset'
+import { collectPreparedReleasePackages } from '../check-publishable-workspace-changeset'
 import { readWorkflowFixture } from '../workflowFixture.mjs'
-import { collectPreparedReleasePackages } from './prepared'
 
-const pkg = { dir: 'packages/demo', name: 'demo', localWorkspaceDependencies: [] }
-
-function fixture() {
-  const before = new Map([
-    ['.changeset/ledger.yaml', '{}'],
-    ['.changeset/change.md', '---\ndemo: minor\n---\n\nfeat: 新能力\n'],
-    ['packages/demo/package.json', '{"name":"demo","version":"1.0.0"}'],
-    ['packages/demo/CHANGELOG.md', '# demo\n\n## 1.0.0\n\n旧记录\n'],
-  ])
-  const after = new Map(before)
-  after.delete('.changeset/change.md')
-  after.set('.changeset/ledger.yaml', 'demo@1.1.0:\n  dir: packages/demo\n  intents: [change]\n')
-  after.set('packages/demo/package.json', '{"name":"demo","version":"1.1.0"}')
-  after.set('packages/demo/CHANGELOG.md', '# demo\n\n## 1.1.0\n\n新记录\n\n## 1.0.0\n\n旧记录\n')
-  const options = {
-    headRef: 'release/pnpm-version',
-    packages: [pkg],
-    changedFiles: ['packages/demo/package.json', 'packages/demo/CHANGELOG.md'],
-    isReleaseWorthy: isReleaseWorthyWorkspaceFile,
-    project: async () => ({
-      versions: [{ name: 'demo', currentVersion: '1.0.0', newVersion: '1.1.0' }],
-      manifests: new Map([['packages/demo/package.json', { name: 'demo', version: '1.1.0' }]]),
-      ledger: { 'demo@1.1.0': { dir: 'packages/demo', intents: ['change'] } },
-      consumed: ['.changeset/change.md'],
-    }),
-    readBase: async (file: string) => before.get(file),
-    readHead: async (file: string) => after.get(file),
-  }
-  return { before, after, options }
-}
-
-describe('release intent completeness', () => {
-  it('requires intent for public source changes but excludes colocated tests and emitted files', () => {
-    expect(collectPublishableWorkspaceChangesetIssues({
-      packages: [pkg],
-      changesetPackages: new Set(),
-      changedFiles: ['packages/demo/src/index.ts'],
-    })).toHaveLength(1)
-    expect(collectPublishableWorkspaceChangesetIssues({
-      packages: [pkg],
-      changesetPackages: new Set(),
-      changedFiles: ['packages/demo/src/index.test.ts', 'packages/demo/src/__tests__/helper.ts', 'packages/demo/dist/index.js'],
-    })).toEqual([])
-    expect(collectPublishableWorkspaceChangesetIssues({
-      packages: [pkg],
-      changesetPackages: new Set(['demo']),
-      changedFiles: ['packages/demo/src/index.ts'],
-    })).toEqual([])
-  })
-
-  it('recognizes prepared versions through consumed intents, new ledger and append-only changelog', async () => {
-    const { options } = fixture()
-    const covered = await collectPreparedReleasePackages(options)
-    expect([...covered]).toEqual(['demo'])
-    expect(collectPublishableWorkspaceChangesetIssues({
-      packages: [pkg],
-      changesetPackages: covered,
-      changedFiles: options.changedFiles,
-    })).toEqual([])
-  })
-
-  it.each(['feature', 'release/pnpm-version-pretend'])('does not exempt arbitrary branch %s', async (headRef) => {
-    const { options } = fixture()
-    expect(await collectPreparedReleasePackages({ ...options, headRef })).toEqual(new Set())
-  })
-
-  it.each(['source', 'scripts', 'ledger', 'history', 'unconsumed'])('rejects a release-looking branch with invalid %s evidence', async (kind) => {
-    const { after, options } = fixture()
-    if (kind === 'source') {
-      options.changedFiles.push('packages/demo/src/index.ts')
+describe('repoctl release preparation integration', () => {
+  it('accepts native fixed/dependent preparation and rejects source edits on the release branch', async () => {
+    const cwd = await mkdtemp(path.join(tmpdir(), 'weapp-release-validation-'))
+    const git = (...args: string[]) => execFileSync('git', args, { cwd, encoding: 'utf8' }).trim()
+    const write = async (file: string, text: string) => {
+      await mkdir(path.dirname(path.join(cwd, file)), { recursive: true })
+      await writeFile(path.join(cwd, file), text)
     }
-    if (kind === 'scripts') {
-      after.set('packages/demo/package.json', '{"name":"demo","version":"1.1.0","scripts":{"postinstall":"arbitrary"}}')
+    try {
+      const root = JSON.parse(await readFile(new URL('../../package.json', import.meta.url), 'utf8')) as { packageManager: string }
+      await write('package.json', JSON.stringify({ name: 'fixture', private: true, packageManager: root.packageManager }))
+      await write('pnpm-workspace.yaml', 'packages: [packages/*]\nverifyDepsBeforeRun: false\nversioning:\n  fixed: [[core, fixed]]\n  changelog: {storage: repository}\n')
+      await write('.changeset/change.md', '---\ncore: major\n---\n\nfeat!: 调整接口\n')
+      for (const name of ['core', 'fixed', 'consumer']) {
+        await write(`packages/${name}/package.json`, JSON.stringify({
+          name,
+          version: '1.0.0',
+          scripts: { preversion: 'node -e "throw new Error(\'must not execute candidate hooks\')"' },
+          ...(name === 'consumer' ? { dependencies: { core: 'workspace:*' } } : {}),
+        }))
+      }
+      git('init', '--quiet')
+      git('config', 'user.name', 'Fixture')
+      git('config', 'user.email', 'fixture@example.invalid')
+      git('config', 'core.hooksPath', '.git/disabled-hooks')
+      git('add', '.')
+      git('commit', '--quiet', '-m', 'fixture')
+      const base = git('rev-parse', 'HEAD')
+      await execa('pnpm', [
+        '--config.verify-deps-before-run=false',
+        '--config.manage-package-manager-versions=false',
+        '--config.pm-on-fail=ignore',
+        '--config.runtime-on-fail=ignore',
+        '--ignore-scripts',
+        'version',
+        '-r',
+        '--json',
+        '--no-git-checks',
+      ], { cwd, timeout: 60_000 })
+      git('add', '.')
+      git('commit', '--quiet', '-m', 'prepare')
+      const options = { cwd, base, head: git('rev-parse', 'HEAD'), headRef: 'release/pnpm-version' }
+      expect(await collectPreparedReleasePackages(options)).toEqual(new Set(['consumer', 'core', 'fixed']))
+      await write('packages/core/src/index.ts', 'export const feature = true\n')
+      git('add', '.')
+      git('commit', '--quiet', '-m', 'unexpected source')
+      await expect(collectPreparedReleasePackages({ ...options, head: git('rev-parse', 'HEAD') })).rejects.toThrow('packages/core/src/index.ts')
+      expect(await collectPreparedReleasePackages({ ...options, headRef: 'feature' })).toEqual(new Set())
     }
-    if (kind === 'ledger') {
-      after.set('.changeset/ledger.yaml', '{}')
+    finally {
+      await rm(cwd, { recursive: true, force: true })
     }
-    if (kind === 'history') {
-      after.set('packages/demo/CHANGELOG.md', '# demo\n\n## 1.1.0\n\n新记录\n\n## 1.0.0\n\n被篡改的历史\n')
-    }
-    if (kind === 'unconsumed') {
-      after.set('.changeset/change.md', '---\ndemo: minor\n---\n\nfeat: 新能力\n')
-    }
-    expect(await collectPreparedReleasePackages(options)).toEqual(new Set())
-  })
+  }, 60_000)
 
-  it('runs completeness checks inside both existing gated policy jobs', () => {
+  it('keeps the package completeness check inside the existing gated policy jobs', () => {
     const workflow = readWorkflowFixture('validate-ci-policy.yml') as { jobs: Record<string, { with?: { main_command?: string } }> }
     for (const job of ['policy-pr', 'policy-full']) {
       expect(workflow.jobs[job]!.with?.main_command).toContain('pnpm check:publishable-workspace-changeset')

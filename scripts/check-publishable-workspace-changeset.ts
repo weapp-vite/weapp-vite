@@ -5,9 +5,8 @@ import process from 'node:process'
 import { pathToFileURL } from 'node:url'
 /* eslint-disable e18e/ban-dependencies -- release guard scans workspace package manifests with fast-glob, consistent with existing repository checks. */
 import fg from 'fast-glob'
+import { validateReleasePreparation } from 'repoctl'
 import { collectChangesetPackages } from './changeset-utils'
-import { projectNativeRelease } from './releaseIntent/nativeProjection'
-import { collectPreparedReleasePackages } from './releaseIntent/prepared'
 
 const CONSTANTS_PACKAGE_NAME = '@weapp-core/constants'
 
@@ -336,6 +335,28 @@ export function collectPublishableWorkspaceChangesetIssues(options: {
   return issues
 }
 
+/** 分支名只选择原生验证入口，只有冻结版本准备完整通过才豁免新增 changeset。 */
+export async function collectPreparedReleasePackages(options: { cwd: string, base: string, head: string, headRef: string }) {
+  const branch = /^(?:release\/pnpm-version(?:-(alpha|beta|rc|next))?|pnpm-release\/(main|alpha|beta|rc|next))$/u.exec(options.headRef)
+  if (!branch) {
+    return new Set<string>()
+  }
+  const report = await validateReleasePreparation({
+    cwd: options.cwd,
+    base: options.base,
+    head: options.head,
+    policy: { branch: branch[1] ?? branch[2] ?? 'main' },
+  })
+  if (report.status !== 'valid') {
+    throw new Error([
+      'Release PR does not match native version preparation.',
+      ...report.errors.map(error => error.detail),
+      ...report.files.filter(file => file.status !== 'expected' && file.status !== 'custom-verified').map(file => `${file.path}: ${file.reason}`),
+    ].join('\n'))
+  }
+  return new Set(report.packages.map(pkg => pkg.name))
+}
+
 async function main() {
   const baseRef = resolveBaseRef()
   const changedWorkspaceFiles = getDiffFiles(baseRef)
@@ -349,30 +370,11 @@ async function main() {
 
   const changesetPackages = await collectChangesetPackages(changedChangesetFiles.map(file => path.resolve(file)))
 
-  const readBase = async (file: string) => {
-    const result = spawnSync('git', ['show', `${baseRef}:${file}`], { encoding: 'utf8' })
-    return result.status === 0 ? result.stdout : undefined
-  }
   const prepared = await collectPreparedReleasePackages({
+    cwd: process.cwd(),
+    base: runGit(['rev-parse', `${baseRef}^{commit}`]),
+    head: runGit(['rev-parse', 'HEAD']),
     headRef: process.env.GITHUB_HEAD_REF ?? '',
-    packages,
-    changedFiles: changedWorkspaceFiles,
-    isReleaseWorthy: isReleaseWorthyWorkspaceFile,
-    readBase,
-    project: async () => {
-      const files = spawnSync('git', ['ls-tree', '-rz', '--name-only', baseRef], { encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 })
-      if (files.status !== 0) {
-        throw new Error('Cannot read frozen base metadata')
-      }
-      const branch = /^(?:release\/pnpm-version-|pnpm-release\/)(alpha|beta|rc|next)$/u.exec(process.env.GITHUB_HEAD_REF ?? '')?.[1] ?? 'main'
-      return projectNativeRelease({ files: files.stdout.split('\0').filter(Boolean), readBase, branch })
-    },
-    readHead: async file => fs.readFile(file, 'utf8').catch((error: NodeJS.ErrnoException) => {
-      if (error.code === 'ENOENT') {
-        return undefined
-      }
-      throw error
-    }),
   })
   for (const name of prepared) {
     changesetPackages.add(name)

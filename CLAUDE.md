@@ -244,7 +244,7 @@ The system uses a **service-oriented architecture** centered around `CompilerCon
 
 - 使用 Conventional Commits，如：`feat(weapp-vite): add css preprocess support`
 - 每次提交前必须先跑与 staged 改动范围匹配的最小 lint 校验，不能把 eslint/stylelint 问题留给 CI 兜底
-- `lefthook.yml` 与 `scripts/gitHooks/*` 属于强制校验层；调整提交流程时保持索引语义、ESLint/Stylelint、package typecheck 和 commitlint 对齐，包括 linked `git worktree`。部分暂存由 Lefthook 原生隐藏和恢复；后续门禁失败时已完成的修复可能保留在索引，重试前先审阅。
+- `lefthook.yml` 属于强制校验层；hooks 安装、暂存文件 typecheck 和 commitlint 使用 repoctl 原生入口，仓库保留索引语义、ESLint/Stylelint 和领域检查，包括 linked `git worktree`。部分暂存由 Lefthook 原生隐藏和恢复；后续门禁失败时已完成的修复可能保留在索引，重试前先审阅。
 - 推送前或提 PR 前，必须按改动范围补跑最小必要的 `lint` / `test` / `build` 校验，不能把 `pre-commit` 当成完整验证
 - 对于用户可见或影响行为的变更，必须通过 `pnpm change` 添加 change intent
 - 对于源码 bug 修复（包括带有单元/e2e 更新的 GitHub issue 修复），必须添加 change intent

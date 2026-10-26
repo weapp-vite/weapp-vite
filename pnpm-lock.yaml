@@ -690,8 +690,8 @@ importers:
         specifier: ^3.9.10
         version: 3.9.10
       repoctl:
-        specifier: 6.1.0
-        version: 6.1.0(e5f54f0c85c6e3e55a74d5e1fbfd9e06)
+        specifier: 6.2.0
+        version: 6.2.0(e5f54f0c85c6e3e55a74d5e1fbfd9e06)
       rolldown:
         specifier: 1.2.15
         version: 1.2.15(patch_hash=7e1e0adcb64e85d1f8c9681c4aeccce12fe5739ff8c510e12dc43bfd132f5e44)
@@ -6911,16 +6911,16 @@ packages:
       tailwindcss:
         optional: true
 
-  '@icebreakers/monorepo-templates@3.1.0':
-    resolution: {integrity: sha512-wboEDk8koYphyN/kSSFAhGzPCO86vm+C1RUBaLbOz0IsMPzOGHtM7FZKcMehyxizHmb/ULJwKj019ShnycmThg==}
+  '@icebreakers/monorepo-templates@3.1.1':
+    resolution: {integrity: sha512-IWi9aNPjfxW26+wRUEiDCLYn8v3S4m7qRCiIb5Fhqt2xpTQRjyF5tkrUFMIleb7CpL298CYrJgCE+fTi+zkT5Q==}
     engines: {node: ^22.23.4 || ^24.22.1 || >=26.12.1}
 
-  '@icebreakers/monorepo@6.1.0':
-    resolution: {integrity: sha512-vd4xur/zcEWFIF8rNRKiUMtCdkCLjZP2pB1xctVjiJ5mzGfvdpbajYedfIuczAlPs8JavWCBbnFbQKtjhnTLHQ==}
+  '@icebreakers/monorepo@6.2.0':
+    resolution: {integrity: sha512-c6x/OjIpXz3LiaY61JTj8neo2ywQeN0klGnZZXNsNX7CeJbccYbAXb8N5dyBtpygTITbSTp/6jG/2bGC8fsmhQ==}
     engines: {node: ^22.23.4 || ^24.22.1 || >=26.12.1}
     hasBin: true
     peerDependencies:
-      '@commitlint/cli': ^21.2.3
+      '@commitlint/cli': ^21.2.4
       eslint: ^9.0.0 || ^10.0.0
       stylelint: ^17.16.0
       typescript: ^5.0.0 || ^6.0.0
@@ -16437,12 +16437,12 @@ packages:
   remove-accents@0.5.0:
     resolution: {integrity: sha512-8g3/Otx1eJaVD12e31UbJj1YzdtVvzH85HV7t+9MJYk/u3XmkOUJ5Ys9wQrf9PCPK8+xn4ymzqYCiZl6QWKn+A==}
 
-  repoctl@6.1.0:
-    resolution: {integrity: sha512-9i2rBINd+kmZgOe3GfgIa3sgJy1BQP7EuYUpFrrE24Dte2GmYOm85V5h11n/HOKhfNH34orYhdrdGLp4R2UWKg==}
+  repoctl@6.2.0:
+    resolution: {integrity: sha512-g4B4CF971qBEjZQZM3C7fi96Z4epQ+X05QMetSOtgeiAIJ/AgEIN8EHDLoF9TwDXCS4tLSsrUEdP9Ew5BEe7BQ==}
     engines: {node: ^22.23.4 || ^24.22.1 || >=26.12.1}
     hasBin: true
     peerDependencies:
-      '@commitlint/cli': ^21.2.3
+      '@commitlint/cli': ^21.2.4
       eslint: ^9.0.0 || ^10.0.0
       stylelint: ^17.16.0
       typescript: ^5.0.0 || ^6.0.0
@@ -18542,6 +18542,10 @@ packages:
 
   yauzl@2.10.0:
     resolution: {integrity: sha512-p4a9I6X6nu6IhoGmBqAcbJy1mlC4j27vEPZX9F4L4/vZT3Lyq1VkFHw/V/PUcB9Buo+DG3iHkT0x3Qya58zc3g==}
+
+  yauzl@3.4.0:
+    resolution: {integrity: sha512-jIH9yLR9wqr0wOS0TpBvo/g/2UgZH5qePVbjgRliiF0BYvOZyaBknKsF+x9Iht0O6sqgnB93rCICdOZFecJuDw==}
+    engines: {node: '>=12'}
 
   yazl@2.5.1:
     resolution: {integrity: sha512-phENi2PLiHnHb6QBVot+dJnaAZ0xosj7p3fWl+znIjBDlnMI2PsZCJZ306BPTFOaHf5qdDEI8x5qFrSOBN5vrw==}
@@ -20760,7 +20764,7 @@ snapshots:
       - typescript
       - vitest
 
-  '@icebreakers/monorepo-templates@3.1.0(@types/node@22.20.5)':
+  '@icebreakers/monorepo-templates@3.1.1(@types/node@22.20.5)':
     dependencies:
       '@inquirer/checkbox': 5.2.7(@types/node@22.20.5)
       '@inquirer/input': 5.1.8(@types/node@22.20.5)
@@ -20772,13 +20776,13 @@ snapshots:
     transitivePeerDependencies:
       - '@types/node'
 
-  '@icebreakers/monorepo@6.1.0(f931300ba086ad23f31c4b25f9b16bee)':
+  '@icebreakers/monorepo@6.2.0(f931300ba086ad23f31c4b25f9b16bee)':
     dependencies:
       '@arethetypeswrong/core': 0.18.5
       '@babel/parser': 7.29.9
       '@icebreakers/commitlint-config': 4.1.4(conventional-changelog-conventionalcommits@10.4.1)
       '@icebreakers/eslint-config': 8.0.11(eslint-plugin-pnpm@1.9.1(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.89.0(oxlint-tsgolint@7.0.2004)(vite-plus@1.4.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.5)(@vitejs/devtools@0.8.0)(@vitest/browser-playwright@5.0.5)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.5)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.13)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.64.1)(publint@0.3.25)(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.13(typescript@6.0.3))(yaml@2.9.1)))(postcss@8.5.31)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.31))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(supports-color@10.2.2)(tailwindcss@4.3.3)(typescript@6.0.3)(vitest@5.0.5)
-      '@icebreakers/monorepo-templates': 3.1.0(@types/node@22.20.5)
+      '@icebreakers/monorepo-templates': 3.1.1(@types/node@22.20.5)
       '@icebreakers/stylelint-config': 5.1.5(postcss@8.5.31)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.31))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(tailwindcss@4.3.3)
       '@npmcli/config': 10.14.0
       '@pnpm/find-workspace-dir': 1000.1.5
@@ -20811,6 +20815,7 @@ snapshots:
       validate-npm-package-name: 7.0.2
       vitest: 5.0.5(patch_hash=abc79ba5cbb797c526f2930277b2073b4d2f23370f70d4312ddedf9d90f64e9d)(@types/node@22.20.5)(@vitest/browser-playwright@5.0.5)(@vitest/browser-preview@5.0.5)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.5)(happy-dom@21.0.4(bufferutil@4.1.0))(vite@8.3.5)
       yaml: 2.9.1
+      yauzl: 3.4.0
     optionalDependencies:
       '@commitlint/cli': 21.2.4(conventional-commits-parser@7.1.3)(typescript@6.0.3)
       eslint: 10.13.0(jiti@2.7.0)(supports-color@10.2.2)
@@ -30911,9 +30916,9 @@ snapshots:
 
   remove-accents@0.5.0: {}
 
-  repoctl@6.1.0(e5f54f0c85c6e3e55a74d5e1fbfd9e06):
+  repoctl@6.2.0(e5f54f0c85c6e3e55a74d5e1fbfd9e06):
     dependencies:
-      '@icebreakers/monorepo': 6.1.0(f931300ba086ad23f31c4b25f9b16bee)
+      '@icebreakers/monorepo': 6.2.0(f931300ba086ad23f31c4b25f9b16bee)
     optionalDependencies:
       '@commitlint/cli': 21.2.4(conventional-commits-parser@7.1.3)(typescript@6.0.3)
       eslint: 10.13.0(jiti@2.7.0)(supports-color@10.2.2)
@@ -33446,6 +33451,10 @@ snapshots:
     dependencies:
       buffer-crc32: 0.2.13
       fd-slicer: 1.1.0
+
+  yauzl@3.4.0:
+    dependencies:
+      pend: 1.2.0
 
   yazl@2.5.1:
     dependencies:

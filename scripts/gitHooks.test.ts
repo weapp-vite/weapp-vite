@@ -1,43 +1,53 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import process from 'node:process'
 import { describe, expect, it } from 'vitest'
+import { parse } from 'yaml'
 import { createGitFixture, invalid, valid } from './changesetFrontmatter/test/fixture'
-import { selectStagedFiles } from './gitHooks/files.mjs'
-import { groupTypecheckFiles } from './gitHooks/typecheck.mjs'
 
-it('keeps source, Vue style, project config and public skill gates distinct', () => {
-  const selected = selectStagedFiles([
-    'packages/sample/space\'s 中文.vue',
-    'apps/demo/index.vue',
-    'e2e-apps/__temp__/generated.vue',
-    'e2e-apps/demo space\'s 中文/project.config.json',
-    '.changeset/example.md',
-    'scripts/helper.cts',
-    'e2e/ide/example.test.ts',
-    'skills/example/catalog.yaml',
-  ])
-  expect(selected.styles).toEqual(['packages/sample/space\'s 中文.vue'])
-  expect(selected.projectConfigs).toEqual(['e2e-apps/demo space\'s 中文/project.config.json'])
-  expect(selected.changesets).toEqual(['.changeset/example.md'])
-  expect(selected.eslint).toContain('scripts/helper.cts')
-  expect(selected.eslint).not.toContain('.changeset/example.md')
-  expect(selected.eslint).not.toContain('apps/demo/index.vue')
-  expect(selected.e2e && selected.skillsSync && selected.skillsYaml).toBe(true)
-})
-
-it('keeps root tooling and package typechecks when both are staged', () => {
-  const f = createGitFixture()
+it('native Git pathspecs preserve application exclusions, mini-program styles and dedicated formatters', () => {
+  const f = createGitFixture(true)
   try {
-    f.write('packages/known/package.json', JSON.stringify({ name: '@scope/known', scripts: { typecheck: 'tsc --noEmit' } }))
-    const groups = groupTypecheckFiles(['repoctl.config.ts', 'packages/known/src/index.ts', 'packages/known/package.json', 'docs/example.md'], f.root)
-    expect([...groups.entries()]).toEqual([
-      [f.root, ['repoctl.config.ts']],
-      [path.join(f.root, 'packages/known'), ['packages/known/src/index.ts', 'packages/known/package.json']],
-    ])
+    f.assertResult(f.commit(), 0)
+    const files = [
+      'packages/sample/space\'s 中文.vue',
+      'packages/sample/index.wxss',
+      'apps/demo/index.vue',
+      'e2e-apps/__temp__/generated.vue',
+      'e2e-apps/demo space\'s 中文/project.config.json',
+      'project.private.config.json',
+      '.changeset/example.md',
+      'scripts/helper.cts',
+    ]
+    files.forEach(file => f.write(file, 'fixture\n'))
+    f.git(['add', '.'])
+    const hooks = parse(fs.readFileSync(path.join(f.root, 'lefthook.yml'), 'utf8')) as { 'pre-commit': { jobs: { name: string, run: string }[] } }
+    const selected = (name: string) => {
+      const command = hooks['pre-commit'].jobs.find(job => job.name === name)!.run
+      const pathspecs = [...command.split('|')[0]!.matchAll(/'([^']+)'/g)].map(match => match[1]!)
+      return f.git(['diff', '--cached', '--name-only', '--diff-filter=ACMR', '-z', '--', ...pathspecs]).split('\0').filter(Boolean)
+    }
+    expect(selected('stylelint')).toEqual(['packages/sample/index.wxss', 'packages/sample/space\'s 中文.vue'])
+    expect(selected('project-configs')).toEqual(['e2e-apps/demo space\'s 中文/project.config.json', 'project.private.config.json'])
+    expect(selected('changeset-eslint')).toEqual(['.changeset/example.md'])
+    expect(selected('eslint')).toEqual(['e2e-apps/__temp__/generated.vue', 'packages/sample/space\'s 中文.vue', 'scripts/helper.cts'])
   }
   finally { f.cleanup() }
 })
+
+it('native repoctl keeps root tooling and package typechecks when both are staged', () => {
+  const f = createGitFixture(true)
+  try {
+    f.write('packages/known/package.json', JSON.stringify({ name: '@scope/known', scripts: { typecheck: 'node --version' } }))
+    f.write('tooling.ts', 'export {}\n')
+    f.write('packages/known/src/index.ts', 'export {}\n')
+    f.git(['add', '.'])
+    const result = f.repo(['verify', 'staged-typecheck'])
+    f.assertResult(result, 0)
+    expect(result.stdout).toContain('[staged:typecheck] .')
+    expect(result.stdout.replaceAll('\\', '/')).toContain('[staged:typecheck] packages/known')
+  }
+  finally { f.cleanup() }
+}, 30_000)
 
 describe('hook installation ownership', () => {
   it.each(['.husky', '.husky/_'])('migrates only repository-owned legacy path %s', (legacy) => {
@@ -46,7 +56,7 @@ describe('hook installation ownership', () => {
       delete f.env.CI
       delete f.env.LEFTHOOK
       f.git(['config', '--local', 'core.hooksPath', legacy])
-      f.assertResult(f.run(process.execPath, ['scripts/gitHooks/install.mjs']), 0)
+      f.assertResult(f.repo(['tooling', 'hooks', 'install']), 0)
       expect(f.run('git', ['config', '--get', 'core.hooksPath']).status).toBe(1)
       expect(fs.readFileSync(path.join(f.root, '.git/hooks/pre-commit'), 'utf8')).toContain('lefthook')
     }
@@ -65,7 +75,7 @@ describe('hook installation ownership', () => {
       if (global) {
         f.git(['config', '--local', 'core.hooksPath', '.husky/_'])
       }
-      f.assertResult(f.run(process.execPath, ['scripts/gitHooks/install.mjs']), 0)
+      f.assertResult(f.repo(['tooling', 'hooks', 'install']), 0)
       expect(f.git(['config', '--get', 'core.hooksPath']).trim()).toBe(custom)
       expect(fs.readFileSync(path.join(custom, 'pre-commit'), 'utf8')).toBe('owned by user\n')
     }

@@ -25,7 +25,7 @@ const expression = value => `$${'{{'} ${value} }}`
 const readWorkflow = async name => parse(await readFile(path.join(workflowRoot, name), 'utf8'))
 
 describe('manual PR workflow entry points', () => {
-  it('has one native validation entry and trusted target automation', async () => {
+  it('has one native validation entry and separately approved intent generation', async () => {
     for (const name of await readdir(workflowRoot)) {
       if (!name.endsWith('.yml')) {
         continue
@@ -36,8 +36,12 @@ describe('manual PR workflow entry points', () => {
         expect(workflow.on.pull_request_target).toEqual({ types: ['closed'] })
       }
       else if (name === 'release-intent-auto.yml') {
-        expect(workflow.jobs.generate.environment).toBe('pr-ci-approval')
-        expect(workflow.jobs.generate.steps[0].with.ref).toBe(expression('github.event.repository.default_branch'))
+        expect(workflow.on).not.toHaveProperty('pull_request_target')
+        expect(workflow.on.workflow_dispatch.inputs.pullRequest).toMatchObject({ required: true, type: 'number' })
+        for (const job of Object.values(workflow.jobs)) {
+          expect(job.environment).toBe('pr-ci-approval')
+          expect(job.steps.every(step => !step.uses?.startsWith('actions/checkout@'))).toBe(true)
+        }
       }
       else {
         expect(workflow.on, name).not.toHaveProperty('pull_request_target')

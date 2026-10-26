@@ -1,11 +1,9 @@
 {
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "types": ["node"],
-    "checkJs": true
+    "types": ["node"]
   },
   "include": [
-    "repoctl.config.ts",
-    "scripts/gitHooks/*.mjs"
+    "repoctl.config.ts"
   ]
 }

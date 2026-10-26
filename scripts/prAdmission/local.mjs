@@ -67,7 +67,7 @@ export function checkLocalAdmission({ policy, profiles, workflows }) {
   const triggers = Object.fromEntries(Object.entries(workflows).map(([name, workflow]) => [name, events(workflow?.on)]))
   const listeners = event => sorted(Object.keys(triggers).filter(name => Object.hasOwn(triggers[name], event)))
   add('唯一 PR 入口', ['ci-pr.yml'], listeners('pull_request'))
-  add('可信 pull_request_target 入口', ['ci-pr.yml', 'release-intent-auto.yml'], listeners('pull_request_target'))
+  add('可信 pull_request_target 入口', ['ci-pr.yml'], listeners('pull_request_target'))
   checkReleaseIntentAdmission(workflows['release-intent-auto.yml'], policy, add, expression)
   for (const event of ['pull_request_review', 'pull_request_review_comment']) {
     add(`${event} 不另行启动检查`, [], listeners(event))

@@ -10,11 +10,6 @@ const repoRoot = fileURLToPath(new URL('../../../', import.meta.url))
 const checker = path.join(repoRoot, 'scripts/check-changeset-frontmatter.mjs')
 const copiedFiles = [
   'lefthook.yml',
-  'scripts/gitHooks/staged.mjs',
-  'scripts/gitHooks/files.mjs',
-  'scripts/gitHooks/typecheck.mjs',
-  'scripts/gitHooks/commitMsg.mjs',
-  'scripts/gitHooks/install.mjs',
   'scripts/fix-wechat-devtools-project-config-eof.mjs',
   'scripts/check-changeset-frontmatter.mjs',
   'scripts/changesetFrontmatter/input.mjs',
@@ -51,7 +46,7 @@ export function createGitFixture(hooks = false) {
     // 每个 fixture 拥有独立 node_modules/.bin；不链接根目录或共享安装状态。
     const modules = path.join(cwd, 'node_modules')
     fs.mkdirSync(path.join(modules, '.bin'), { recursive: true })
-    for (const name of ['execa', 'repoctl', 'yaml', 'lefthook', 'eslint', '@commitlint/cli']) {
+    for (const name of ['repoctl', 'yaml', 'lefthook', 'eslint', '@commitlint/cli']) {
       const source = fs.realpathSync(path.join(repoRoot, 'node_modules', name))
       const target = path.join(modules, name)
       fs.mkdirSync(path.dirname(target), { recursive: true })
@@ -71,6 +66,7 @@ export function createGitFixture(hooks = false) {
     }
   }
   const lefthook = (args: string[], cwd = root) => run(process.execPath, [path.join(repoRoot, 'node_modules/lefthook/bin/index.js'), ...args], cwd)
+  const repo = (args: string[], cwd = root) => run(process.execPath, [path.join(repoRoot, 'node_modules/repoctl/bin/repo.js'), ...args], cwd)
   const enableHooks = () => {
     const result = lefthook(['install'])
     assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`)
@@ -112,6 +108,7 @@ export function createGitFixture(hooks = false) {
     installDependencies,
     enableHooks,
     lefthook,
+    repo,
     cleanup: () => fs.rmSync(directory, { recursive: true, force: true }),
     assertResult: (result: ReturnType<typeof run>, status: number) => assert.equal(result.status, status, `${result.error ?? ''}\n${result.stdout}\n${result.stderr}`),
   }

@@ -1,0 +1,180 @@
+name: "repoctl PR snapshot publish"
+
+on:
+  workflow_run:
+    workflows: ["repoctl PR snapshot build"]
+    types: [completed]
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  SNAPSHOT_BUILDER_SHA256: 7ac29d1dfc0550fe6809e439140b90c27a31f93eeb84d478439cd1cb16ed6c90
+  SNAPSHOT_BUILDER_WORKFLOW: ".github/workflows/repoctl-snapshot-build.yml"
+  SNAPSHOT_PUBLISHER_WORKFLOW: ".github/workflows/repoctl-snapshot-publish.yml"
+  SNAPSHOT_BUILD_ENVIRONMENT: "pr-ci-approval"
+
+jobs:
+  verify:
+    name: Verify approved snapshot artifact
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+    outputs:
+      pull_request: ${{ steps.verify.outputs.pull_request }}
+      artifact_id: ${{ steps.verify.outputs.artifact_id }}
+    steps:
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24.22.1
+      - name: Install the pinned verifier without candidate code
+        working-directory: ${{ runner.temp }}
+        run: npm install --prefix "$RUNNER_TEMP/repoctl-tools" --ignore-scripts --no-audit --no-fund --package-lock=false repoctl@6.2.0 pnpm@12.15.0
+      - name: Verify GitHub approval, frozen plan, current revision and artifact bytes
+        id: verify
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
+          SOURCE_RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+        working-directory: ${{ runner.temp }}
+        run: |
+          "$RUNNER_TEMP/repoctl-tools/node_modules/.bin/repo" release snapshot verify --run-id "$SOURCE_RUN_ID" --run-attempt "$SOURCE_RUN_ATTEMPT" --builder-workflow "$SNAPSHOT_BUILDER_WORKFLOW" --builder-sha256 "$SNAPSHOT_BUILDER_SHA256" --environment "$SNAPSHOT_BUILD_ENVIRONMENT" --out "$RUNNER_TEMP/snapshot-verified.json" --json
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const result = JSON.parse(fs.readFileSync(`${process.env.RUNNER_TEMP}/snapshot-verified.json`, 'utf8'));
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `pull_request=${result.plan.source.pullRequest}\nartifact_id=${result.evidence.buildArtifact.id}\n`);
+          NODE
+
+  publish:
+    name: Publish the verified prepared tarballs
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    concurrency:
+      group: repoctl-snapshot-${{ github.repository }}-pr-${{ needs.verify.outputs.pull_request }}
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+      id-token: write
+    outputs:
+      report_artifact: ${{ steps.report.outputs.artifact-id }}
+    steps:
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24.22.1
+      - name: Install only the pinned trusted publisher
+        working-directory: ${{ runner.temp }}
+        run: |
+          npm install --prefix "$RUNNER_TEMP/repoctl-tools" --ignore-scripts --no-audit --no-fund --package-lock=false repoctl@6.2.0 pnpm@12.15.0
+          echo "$RUNNER_TEMP/repoctl-tools/node_modules/.bin" >> "$GITHUB_PATH"
+      - name: Recheck all evidence, audit npm OIDC and publish without package scripts
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
+          SOURCE_RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+          SOURCE_ARTIFACT_ID: ${{ needs.verify.outputs.artifact_id }}
+        working-directory: ${{ runner.temp }}
+        run: |
+          "$RUNNER_TEMP/repoctl-tools/node_modules/.bin/repo" release snapshot publish-prepared --run-id "$SOURCE_RUN_ID" --run-attempt "$SOURCE_RUN_ATTEMPT" --artifact-id "$SOURCE_ARTIFACT_ID" --builder-workflow "$SNAPSHOT_BUILDER_WORKFLOW" --builder-sha256 "$SNAPSHOT_BUILDER_SHA256" --environment "$SNAPSHOT_BUILD_ENVIRONMENT" --publisher-workflow "$SNAPSHOT_PUBLISHER_WORKFLOW" --output "$RUNNER_TEMP/snapshot-publication" --out "$RUNNER_TEMP/snapshot-publication.json" --json
+      - name: Retain the trusted publication report
+        id: report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: snapshot-publication-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/snapshot-publication.json
+          if-no-files-found: error
+          retention-days: 14
+
+  consumer:
+    name: Verify the exact published packages in isolation
+    needs: publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    outputs:
+      report_artifact: ${{ steps.report.outputs.artifact-id }}
+    steps:
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24.22.1
+      - name: Install the pinned consumer verifier
+        working-directory: ${{ runner.temp }}
+        run: |
+          npm install --prefix "$RUNNER_TEMP/repoctl-tools" --ignore-scripts --no-audit --no-fund --package-lock=false repoctl@6.2.0 pnpm@12.15.0
+          echo "$RUNNER_TEMP/repoctl-tools/node_modules/.bin" >> "$GITHUB_PATH"
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          artifact-ids: ${{ needs.publish.outputs.report_artifact }}
+          path: ${{ runner.temp }}/publication
+          merge-multiple: true
+      - name: Install exact versions and exercise their consumer entrypoints without publishing permissions
+        working-directory: ${{ runner.temp }}
+        run: |
+          "$RUNNER_TEMP/repoctl-tools/node_modules/.bin/repo" release snapshot verify-consumer --report "$RUNNER_TEMP/publication/snapshot-publication.json" --output "$RUNNER_TEMP/snapshot-consumer" --out "$RUNNER_TEMP/snapshot-consumer.json" --json
+      - name: Retain consumer evidence
+        id: report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: snapshot-consumer-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/snapshot-consumer.json
+          if-no-files-found: error
+          retention-days: 14
+
+  report:
+    name: Report the confirmed snapshot installation
+    needs: [verify, publish, consumer]
+    if: ${{ !cancelled() && needs.publish.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    concurrency:
+      group: repoctl-snapshot-report-${{ github.repository }}-pr-${{ needs.verify.outputs.pull_request }}
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          artifact-ids: ${{ needs.publish.outputs.report_artifact }}
+          path: ${{ runner.temp }}/publication
+          merge-multiple: true
+      - name: Update the PR with exact versions and consumer status
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          PR_NUMBER: ${{ needs.verify.outputs.pull_request }}
+          CONSUMER_RESULT: ${{ needs.consumer.result }}
+        with:
+          script: |
+            const fs = require('node:fs');
+            const report = JSON.parse(fs.readFileSync(`${process.env.RUNNER_TEMP}/publication/snapshot-publication.json`, 'utf8'));
+            const number = Number(process.env.PR_NUMBER);
+            const source = report.manifest.plan.source;
+            if (report.status !== 'published' || source.pullRequest !== number || source.repository !== `${context.repo.owner}/${context.repo.repo}`) throw new Error('Publication report identity mismatch');
+            const { data: pr } = await github.rest.pulls.get({ ...context.repo, pull_number: number });
+            if (pr.state !== 'open' || pr.head.sha !== source.headSha || pr.base.sha !== source.baseSha || pr.merge_commit_sha !== source.mergeSha) throw new Error('PR revision changed after publication');
+            const marker = '<!-- repoctl-pr-snapshot -->';
+            const comments = await github.paginate(github.rest.issues.listComments, { ...context.repo, issue_number: number });
+            const existing = comments.find(comment => comment.user?.login === 'github-actions[bot]' && comment.body?.startsWith(marker));
+            const previous = existing?.body?.match(/<!-- repoctl-pr-snapshot-build:(\d+):(\d+) -->/);
+            if (previous && (Number(previous[1]) > source.runId || (Number(previous[1]) === source.runId && Number(previous[2]) > source.runAttempt))) {
+              await core.summary.addRaw('A newer snapshot already owns the PR installation comment.').write();
+              return;
+            }
+            const body = [marker, `<!-- repoctl-pr-snapshot-build:${source.runId}:${source.runAttempt} -->`, `Snapshot for ${source.headSha}`, '', `\`\`\`sh\n${report.installCommand}\n\`\`\``, '', `Consumer verification: ${process.env.CONSUMER_RESULT}.`, '', `Build: ${source.runId}/${source.runAttempt}; publisher: ${context.runId}.`].join('\n');
+            if (existing) await github.rest.issues.updateComment({ ...context.repo, comment_id: existing.id, body });
+            else await github.rest.issues.createComment({ ...context.repo, issue_number: number, body });
+            await core.summary.addRaw(body).write();
