@@ -127,6 +127,15 @@ export default defineConfig({
 - 读取 `app.json.tabBar` 并在设备容器内渲染标准 App Shell；`switchTab` 缓存 tab 页面、关闭非 tab 页面并保持正确的 `onLoad` / `onShow` 语义
 - `showTabBar` / `hideTabBar`、`setTabBarItem`、`setTabBarStyle`、badge 与 red-dot API 会真实更新布局和视觉状态
 
+页面滚动回调的兼容范围如下：
+
+| 能力 | Web Runtime |
+| --- | --- |
+| `onPageScroll` | 用户滚动和 `pageScrollTo` 均派发，先于本次 `onReachBottom` |
+| `onReachBottom` 默认距离 | 距底部 50px 时派发一次；内容追加后可再次触发 |
+| 页面位置恢复、内容不足一屏 | 不派发 `onReachBottom` |
+| `page.json.onReachBottomDistance` 自定义距离 | 暂不支持，仍使用默认 50px |
+
 需要保留旧的浏览器全宽行为时，将 `runtime.viewport.mode` 设置为 `responsive`。
 
 ## 浏览器路由
