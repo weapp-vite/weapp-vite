@@ -113,7 +113,7 @@ it.runIf(process.platform === 'win32')('preserves a compiler failure without poi
       assert.equal(rows[0].ExecutablePath, process.execPath);
       assert.deepEqual(await readdir(tmpdir()), []);
     `
-    // 异步 exit/close 事件可能早于 Windows 原生进程句柄释放；同步启动会在返回前排空关闭回调，随后才能删除复制的 exe。
+    // 同步等待测试进程结束；Windows 映像或扫描器的短暂文件占用仍由目录清理的有界重试处理。
     execaSync(executable, ['--import', 'tsx', '--input-type=module', '-e', source], {
       stdin: 'ignore',
       timeout: 20_000,
@@ -126,5 +126,5 @@ it.runIf(process.platform === 'win32')('preserves a compiler failure without poi
       },
     })
     expect(await readdir(queryDirectory)).toEqual([])
-  }, async () => rm(directory, { recursive: true, force: true }))
+  }, async () => rm(directory, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }))
 }, 30_000)
