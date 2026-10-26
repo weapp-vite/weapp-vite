@@ -115,6 +115,7 @@ catalog:
   vue-tsc: ^3.3.13
   weapp-tailwindcss: ^5.6.3
   zod: ^4.6.7
+  '@vue/shared': ^3.5.44
 
 catalogs:
   latest:

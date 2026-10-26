@@ -77,6 +77,7 @@
     "@babel/traverse": "catalog:",
     "@babel/types": "catalog:",
     "@csstools/css-tokenizer": "4.0.2",
+    "@vue/shared": "catalog:",
     "@weapp-core/constants": "workspace:*",
     "@weapp-core/shared": "workspace:*",
     "domhandler": "^6.0.1",
