@@ -1,0 +1,41 @@
+# repoctl-managed: hooks/v1
+# 本仓库的索引语义、DOM 清单与公开 skills 门禁不能被通用模板覆盖。
+glob_matcher: doublestar
+min_version: 2.2.2
+
+pre-commit:
+  piped: true
+  jobs:
+    - name: staged-semantics
+      run: node scripts/gitHooks/staged.mjs semantic
+    - name: contracts
+      run: node scripts/gitHooks/staged.mjs contracts
+    - name: eslint
+      glob: '**/*.{js,jsx,mjs,cjs,ts,tsx,mts,cts,vue,json,md,mdx,html,yml,yaml}'
+      run: node scripts/gitHooks/staged.mjs eslint
+      stage_fixed: true
+    - name: stylelint
+      glob: '**/*.{vue,css,scss,sass,less,wxss,acss,ttss,qss,jxss}'
+      run: node scripts/gitHooks/staged.mjs stylelint
+      stage_fixed: true
+    - name: project-configs
+      glob: '**/project{,.private}.config.json'
+      run: node scripts/gitHooks/staged.mjs project-configs
+      stage_fixed: true
+    - name: typecheck
+      run: node scripts/gitHooks/typecheck.mjs
+
+# stage_fixed 在 pre-commit 全部 job 结束后才写索引；最终语义校验放在下一 Git hook。
+commit-msg:
+  piped: true
+  jobs:
+    - name: final-staged-semantics
+      run: node scripts/gitHooks/staged.mjs semantic
+    - name: commitlint
+      run: node scripts/gitHooks/commitMsg.mjs "{1}"
+
+pre-push:
+  piped: true
+  jobs:
+    - name: affected-verification
+      run: pnpm verify --mode quick --selection affected --base origin/main

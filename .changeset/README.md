@@ -42,4 +42,4 @@ pnpm check:changeset:frontmatter
 node scripts/check-changeset-frontmatter.mjs --staged
 ```
 
-Husky `pre-commit` 和 `lint-staged` 均校验 Git 索引中的实际暂存快照，包名也以该快照为准。部分暂存时，工作区中的修正不会自动修复索引：先审阅并重新暂存需要提交的内容，再运行 staged 检查；不要跳过 hooks。此 README 不作为待发布的 changeset 校验。
+Lefthook 在 `pre-commit` 修复前和 `commit-msg` 修复入索引后均校验 Git 索引中的实际暂存快照，包名也以该快照为准。部分暂存由 Lefthook 原生隐藏和恢复；后续检查失败可能保留已经成功的修复，重试前应审阅索引。部分暂存时，工作区中的修正不会自动修复索引：先审阅并重新暂存需要提交的内容，再运行 staged 检查；不要跳过 hooks。此 README 不作为待发布的 changeset 校验。

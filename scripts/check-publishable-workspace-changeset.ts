@@ -6,6 +6,8 @@ import { pathToFileURL } from 'node:url'
 /* eslint-disable e18e/ban-dependencies -- release guard scans workspace package manifests with fast-glob, consistent with existing repository checks. */
 import fg from 'fast-glob'
 import { collectChangesetPackages } from './changeset-utils'
+import { projectNativeRelease } from './releaseIntent/nativeProjection'
+import { collectPreparedReleasePackages } from './releaseIntent/prepared'
 
 const CONSTANTS_PACKAGE_NAME = '@weapp-core/constants'
 
@@ -240,6 +242,9 @@ export function isReleaseWorthyWorkspaceFile(file: string, packageDir: string) {
   }
 
   const lowerRelativePath = relativePath.toLowerCase()
+  if (/(?:^|\/)(?:dist|__tests__|__snapshots__)(?:\/|$)|\.(?:test|spec)\.[cm]?[jt]sx?$/u.test(lowerRelativePath)) {
+    return false
+  }
   if (NON_RELEASE_PREFIXES.some(prefix => lowerRelativePath.startsWith(prefix))) {
     return false
   }
@@ -343,6 +348,35 @@ async function main() {
     .filter(file => file.endsWith('.md') && path.basename(file) !== 'README.md')
 
   const changesetPackages = await collectChangesetPackages(changedChangesetFiles.map(file => path.resolve(file)))
+
+  const readBase = async (file: string) => {
+    const result = spawnSync('git', ['show', `${baseRef}:${file}`], { encoding: 'utf8' })
+    return result.status === 0 ? result.stdout : undefined
+  }
+  const prepared = await collectPreparedReleasePackages({
+    headRef: process.env.GITHUB_HEAD_REF ?? '',
+    packages,
+    changedFiles: changedWorkspaceFiles,
+    isReleaseWorthy: isReleaseWorthyWorkspaceFile,
+    readBase,
+    project: async () => {
+      const files = spawnSync('git', ['ls-tree', '-rz', '--name-only', baseRef], { encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 })
+      if (files.status !== 0) {
+        throw new Error('Cannot read frozen base metadata')
+      }
+      const branch = /^(?:release\/pnpm-version-|pnpm-release\/)(alpha|beta|rc|next)$/u.exec(process.env.GITHUB_HEAD_REF ?? '')?.[1] ?? 'main'
+      return projectNativeRelease({ files: files.stdout.split('\0').filter(Boolean), readBase, branch })
+    },
+    readHead: async file => fs.readFile(file, 'utf8').catch((error: NodeJS.ErrnoException) => {
+      if (error.code === 'ENOENT') {
+        return undefined
+      }
+      throw error
+    }),
+  })
+  for (const name of prepared) {
+    changesetPackages.add(name)
+  }
 
   const issues = collectPublishableWorkspaceChangesetIssues({
     packages,

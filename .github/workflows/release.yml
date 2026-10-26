@@ -9,6 +9,9 @@ on:
       - beta
       - rc
       - next
+  # 每天 06:17（Asia/Shanghai），与完整性能采样错峰。
+  schedule:
+    - cron: '17 22 * * *'
   workflow_dispatch:
     inputs:
       mode:
@@ -21,6 +24,9 @@ on:
           - prepare
           - publish
           - publish-unpublished
+          - reconcile
+          - oidc-audit
+          - nightly
       package:
         description: Package used for unpublished-version recovery
         required: false
@@ -29,9 +35,18 @@ on:
         description: Version used for unpublished-version recovery
         required: false
         type: string
+      dry-run:
+        description: Preview reconciliation or nightly publication without changes
+        required: false
+        default: false
+        type: boolean
+      source-sha:
+        description: Original main commit to recover (publish modes only)
+        required: false
+        type: string
 
 env:
-  HUSKY: 0
+  LEFTHOOK: 0
   NPM_CONFIG_PROVENANCE: true
   npm_config_registry: https://registry.npmjs.org
 
@@ -46,6 +61,10 @@ concurrency:
 
 jobs:
   release:
+    if: ${{ github.event_name != 'schedule' && inputs.mode != 'nightly' && inputs.mode != 'oidc-audit' }}
+    outputs:
+      release-record: ${{ steps.release-finalize.outputs.release-record }}
+      docs-sites: ${{ steps.release-finalize.outputs.docs-sites }}
     name: Release
     runs-on: ubuntu-latest
     # 六个发布阶段共享 50 分钟，为安装、缓存、归档和清理保留其余预算。
@@ -54,6 +73,8 @@ jobs:
       REPO_RELEASE_MODE: ${{ inputs.mode || 'auto' }}
       REPO_RELEASE_PACKAGE: ${{ inputs.package }}
       REPO_RELEASE_VERSION: ${{ inputs.version }}
+      REPO_RELEASE_DRY_RUN: ${{ inputs.dry-run }}
+      REPO_RELEASE_RECOVERY_SOURCE_SHA: ${{ inputs.source-sha }}
       REPOCTL_RELEASE_BUDGET_SECONDS: 3000
       TURBO_CACHE: local:rw
     steps:
@@ -61,8 +82,8 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-          # 版本分支可能包含 workflow 更新；Git 与发布 API 必须使用相同发布凭据。
-          token: ${{ secrets.REPOCTL_RELEASE_TOKEN || secrets.CHANGESETS_RELEASE_TOKEN || github.token }}
+          # Git 与发布 API 统一复用内置令牌；自动 PR 的运行仍需要 GitHub 原生审批。
+          token: ${{ github.token }}
 
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
 
@@ -74,15 +95,20 @@ jobs:
           cache: pnpm
           registry-url: https://registry.npmjs.org
 
+      - name: Install npm with trusted publishing support
+        run: npm install --global npm@11.16.0 --registry=https://registry.npmjs.org
+
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Record release cache toolchain
         run: |
-          echo "REPOCTL_RELEASE_PLATFORM=$(node --print process.platform)" >> "$GITHUB_ENV"
-          echo "REPOCTL_RELEASE_ARCH=$(node --print process.arch)" >> "$GITHUB_ENV"
-          echo "REPOCTL_RELEASE_NODE_VERSION=$(node --version)" >> "$GITHUB_ENV"
-          echo "REPOCTL_RELEASE_PNPM_VERSION=$(pnpm --version)" >> "$GITHUB_ENV"
+          {
+            echo "REPOCTL_RELEASE_PLATFORM=$(node --print process.platform)"
+            echo "REPOCTL_RELEASE_ARCH=$(node --print process.arch)"
+            echo "REPOCTL_RELEASE_NODE_VERSION=$(node --version)"
+            echo "REPOCTL_RELEASE_PNPM_VERSION=$(pnpm --version)"
+          } >> "$GITHUB_ENV"
 
       - name: Restore release build and lint cache
         id: release-cache
@@ -102,7 +128,7 @@ jobs:
       - name: Release plan
         id: release-plan
         env:
-          GITHUB_TOKEN: ${{ secrets.REPOCTL_RELEASE_TOKEN || secrets.CHANGESETS_RELEASE_TOKEN || github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
         run: bash .github/scripts/release-stage.sh plan
 
@@ -110,7 +136,7 @@ jobs:
         id: release-verify
         if: ${{ steps.release-plan.outputs.run == 'true' }}
         env:
-          GITHUB_TOKEN: ${{ secrets.REPOCTL_RELEASE_TOKEN || secrets.CHANGESETS_RELEASE_TOKEN || github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
         run: bash .github/scripts/release-stage.sh verify
 
@@ -118,7 +144,7 @@ jobs:
         id: release-prepare
         if: ${{ steps.release-plan.outputs.run == 'true' }}
         env:
-          GITHUB_TOKEN: ${{ secrets.REPOCTL_RELEASE_TOKEN || secrets.CHANGESETS_RELEASE_TOKEN || github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
         run: bash .github/scripts/release-stage.sh prepare
 
@@ -126,7 +152,7 @@ jobs:
         id: release-upload
         if: ${{ steps.release-prepare.outputs.publish == 'true' }}
         env:
-          GITHUB_TOKEN: ${{ secrets.REPOCTL_RELEASE_TOKEN || secrets.CHANGESETS_RELEASE_TOKEN || github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
         run: bash .github/scripts/release-stage.sh upload
 
@@ -134,7 +160,7 @@ jobs:
         id: release-confirm
         if: ${{ steps.release-prepare.outputs.publish == 'true' }}
         env:
-          GITHUB_TOKEN: ${{ secrets.REPOCTL_RELEASE_TOKEN || secrets.CHANGESETS_RELEASE_TOKEN || github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
         run: bash .github/scripts/release-stage.sh confirm
 
@@ -142,7 +168,7 @@ jobs:
         id: release-finalize
         if: ${{ steps.release-prepare.outputs.publish == 'true' }}
         env:
-          GITHUB_TOKEN: ${{ secrets.REPOCTL_RELEASE_TOKEN || secrets.CHANGESETS_RELEASE_TOKEN || github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
         run: bash .github/scripts/release-stage.sh finalize
 
@@ -167,3 +193,135 @@ jobs:
             repoctl-ci-progress.json
           if-no-files-found: ignore
           retention-days: 14
+
+  docs:
+    needs: release
+    if: ${{ !cancelled() && github.ref == 'refs/heads/main' && needs.release.outputs.release-record != '' && needs.release.outputs.docs-sites != '' && needs.release.outputs.docs-sites != '[]' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        site: ${{ fromJSON(needs.release.outputs.docs-sites) }}
+    uses: ./.github/workflows/repoctl-docs-deploy.yml
+    with:
+      site: ${{ matrix.site }}
+      channel: stable
+      release: ${{ needs.release.outputs.release-record }}
+    secrets: inherit
+
+  nightly:
+    name: Publish nightly
+    if: ${{ (github.event_name == 'schedule' && github.event.schedule == '17 22 * * *') || (github.event_name == 'workflow_dispatch' && inputs.mode == 'nightly') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      REPOCTL_NIGHTLY_PROVIDER: npm
+      REPOCTL_NIGHTLY_SCHEDULE: '17 22 * * *'
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Validate nightly source
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          if [ -z "$DEFAULT_BRANCH" ] || [ "$GITHUB_REF" != "refs/heads/$DEFAULT_BRANCH" ]; then
+            echo '::error::Nightly publication requires the repository default branch.'
+            exit 1
+          fi
+
+      - name: Checkout nightly source
+        id: nightly-checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24.22.1
+          cache: pnpm
+
+      - name: Install npm with trusted publishing support
+        id: nightly-npm
+        run: npm install --global npm@11.16.0 --registry=https://registry.npmjs.org
+
+      - name: Install Dependencies without lifecycle scripts
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Publish nightly packages
+        id: nightly-publish
+        env:
+          REPOCTL_SNAPSHOT_PUBLISH: '1'
+          REPO_RELEASE_PACKAGE: ${{ inputs.package }}
+          REPO_RELEASE_VERSION: ${{ inputs.version }}
+          REPO_RELEASE_DRY_RUN: ${{ inputs.dry-run }}
+          REPO_RELEASE_RECOVERY_SOURCE_SHA: ${{ inputs.source-sha }}
+        run: |
+          if [ -n "$REPO_RELEASE_PACKAGE$REPO_RELEASE_VERSION$REPO_RELEASE_RECOVERY_SOURCE_SHA" ]; then
+            echo '::error::Nightly always publishes all public packages at the current default-branch commit; recovery inputs are not supported.'
+            exit 1
+          fi
+          args=(--publish --output "$RUNNER_TEMP/repoctl-nightly" --json)
+          if [ "$REPO_RELEASE_DRY_RUN" = 'true' ]; then
+            args+=(--dry-run)
+          fi
+          pnpm exec repo release nightly "${args[@]}"
+
+      - name: Preserve nightly diagnostics
+        if: ${{ always() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: nightly-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/repoctl-nightly/*.json
+            ${{ runner.temp }}/repoctl-nightly/**/nightly-report.json
+            ${{ runner.temp }}/repoctl-nightly/**/consumer-report.json
+            ${{ runner.temp }}/repoctl-nightly/**/snapshot-report.json
+            ${{ runner.temp }}/repoctl-nightly/**/tarballs/**/*.tgz
+          if-no-files-found: ignore
+          retention-days: 14
+
+  oidc-audit:
+    name: Audit npm OIDC
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'oidc-audit' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Validate audit source
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          if [ -z "$DEFAULT_BRANCH" ] || [ "$GITHUB_REF" != "refs/heads/$DEFAULT_BRANCH" ]; then
+            echo '::error::npm OIDC audit requires the repository default branch.'
+            exit 1
+          fi
+
+      - name: Checkout Repo
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24.22.1
+          cache: pnpm
+
+      - name: Install Dependencies without lifecycle scripts
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Audit every publishable package
+        env:
+          REPO_RELEASE_PACKAGE: ${{ inputs.package }}
+          REPO_RELEASE_VERSION: ${{ inputs.version }}
+          REPO_RELEASE_DRY_RUN: ${{ inputs.dry-run }}
+          REPO_RELEASE_RECOVERY_SOURCE_SHA: ${{ inputs.source-sha }}
+        run: pnpm exec repo release ci --mode oidc-audit
