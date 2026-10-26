@@ -1,0 +1,4 @@
+{
+  "extends": "./.weapp-vite/tsconfig.app.json",
+  "exclude": ["src/pages/typecheck-errors/index.vue"]
+}

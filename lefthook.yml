@@ -1,0 +1,78 @@
+# repoctl-managed: hooks/v1
+# 本仓库的索引语义、DOM 清单与公开 skills 门禁不能被通用模板覆盖。
+glob_matcher: doublestar
+min_version: 2.2.2
+
+pre-commit:
+  piped: true
+  jobs:
+    - name: dom-inventory-policy
+      run: node scripts/dom-inventory-policy.mjs
+    - name: staged-semantics
+      run: node scripts/check-changeset-frontmatter.mjs --staged
+    - name: dom-inventory
+      glob: 'e2e/**/*.{ts,tsx,mts}'
+      run: pnpm e2e:dom-acceptance:check
+    - name: skills-yaml
+      glob: 'skills/**/*.{yaml,yml}'
+      run: node skills/scripts/validate-skills-yaml.mjs
+    - name: skills-sync
+      glob: '{AGENTS.md,CLAUDE.md,skills/**,website/guide/{ai,ai-workflows,skills}.md,website/packages/create-weapp-vite.md,website/.vitepress/components/AiLearningPage.vue,packages/create-weapp-vite/src/agents.ts}'
+      run: node skills/scripts/check-public-skill-sync.mjs
+    - name: changeset-eslint
+      glob: '.changeset/*.md'
+      run: >-
+        git -c core.fsmonitor=false diff --cached --name-only --diff-filter=ACMR -z --
+        ':(top,glob).changeset/*.md'
+        | xargs -0 -r pnpm exec eslint --fix --no-ignore --max-warnings=0 --no-warn-ignored --
+      stage_fixed: true
+    - name: eslint
+      glob: '**/*.{js,jsx,mjs,cjs,ts,tsx,mts,cts,vue,json,md,mdx,html,yml,yaml}'
+      exclude:
+        - apps/**
+        - '**/project{,.private}.config.json'
+        - .changeset/*.md
+      # 沿用 repoctl 原生模板的 NUL 管道，避免 Windows shell 转义暂存路径中的引号。
+      run: >-
+        git -c core.fsmonitor=false diff --cached --name-only --diff-filter=ACMR -z --
+        '*.js' '*.jsx' '*.mjs' '*.cjs' '*.ts' '*.tsx' '*.mts' '*.cts' '*.vue'
+        '*.json' '*.md' '*.mdx' '*.html' '*.yml' '*.yaml'
+        ':(top,exclude)apps/**' ':(top,glob,exclude).changeset/*.md'
+        ':(glob,exclude)**/project.config.json' ':(glob,exclude)**/project.private.config.json'
+        | xargs -0 -r pnpm exec eslint --fix --max-warnings=0 --no-warn-ignored --
+      stage_fixed: true
+    - name: stylelint
+      glob: '**/*.{vue,css,scss,sass,less,wxss,acss,ttss,qss,jxss}'
+      exclude:
+        - apps/**
+        - e2e-apps/__temp__/**
+      run: >-
+        git -c core.fsmonitor=false diff --cached --name-only --diff-filter=ACMR -z --
+        '*.vue' '*.css' '*.scss' '*.sass' '*.less' '*.wxss' '*.acss' '*.ttss' '*.qss' '*.jxss'
+        ':(top,exclude)apps/**' ':(top,exclude)e2e-apps/__temp__/**'
+        | xargs -0 -r pnpm exec stylelint --fix --allow-empty-input --
+      stage_fixed: true
+    - name: project-configs
+      glob: '**/project{,.private}.config.json'
+      run: >-
+        git -c core.fsmonitor=false diff --cached --name-only --diff-filter=ACMR -z --
+        ':(glob)**/project.config.json' ':(glob)**/project.private.config.json'
+        | xargs -0 -r node scripts/fix-wechat-devtools-project-config-eof.mjs
+      stage_fixed: true
+    - name: typecheck
+      run: pnpm exec repo verify staged-typecheck
+
+# stage_fixed 在 pre-commit 全部 job 结束后才写索引；最终语义校验放在下一 Git hook。
+commit-msg:
+  piped: true
+  jobs:
+    - name: final-staged-semantics
+      run: node scripts/check-changeset-frontmatter.mjs --staged
+    - name: commitlint
+      run: pnpm exec repo verify commit-msg "{1}"
+
+pre-push:
+  piped: true
+  jobs:
+    - name: affected-verification
+      run: pnpm verify --mode quick --selection affected --base origin/main

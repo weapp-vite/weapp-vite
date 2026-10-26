@@ -131,7 +131,7 @@ Do not default to full monorepo test runs when a targeted test can prove the cha
 ## 3. Coding Rules
 
 - TypeScript + ESM + 2-space indentation.
-- 所有场景都不要使用 Prettier 做格式化；代码与文档格式修正统一走 ESLint（包含 `eslint --fix` 与仓库现有 lint-staged / husky 流程）。
+- 所有场景都不要使用 Prettier 做格式化；代码与文档格式修正统一走 ESLint（包含 `eslint --fix` 与仓库现有 Lefthook 流程）。
 - Package names: kebab-case.
 - Variables/files: camelCase.
 - Classes/types: PascalCase.
@@ -284,7 +284,7 @@ Do not default to full monorepo test runs when a targeted test can prove the cha
   - `feat(weapp-vite): add css preprocess support`
 - Before every commit, run the smallest lint checks that match the staged changes, not just build/test checks.
 - Never use Prettier in this repository, including ad-hoc formatting, editor save hooks, scripts, or pre-commit steps; use the smallest applicable ESLint-based fix command instead.
-- `lint-staged` and `.husky/pre-commit` are mandatory enforcement layers, not optional convenience tooling; when adjusting lint scope, keep both aligned so staged files fail locally before CI, including in `git worktree` directories.
+- `lefthook.yml` is the mandatory enforcement layer; use repoctl's native hook installer, staged typecheck and commitlint entrypoints, while keeping repository staged semantics and ESLint/Stylelint aligned, including in linked `git worktree` directories. Lefthook owns partial-staging hide/restore and stages successful fixes; a later failure can retain those fixes in the index, so review before retrying.
 - Run needed local checks before review (`build`, `test`, `lint` scope depends on touched area).
 - Before pushing or opening a PR, run the smallest package- or path-scoped `lint` / `test` / `build` checks that cover the changed area; do not rely on `pre-commit` as a substitute for review-time verification.
 - PR 创建、更新提交和重新打开时，由 `PR CI` 原生 workflow 创建检查；所有验证必须等待 `pr-ci-approval` Environment 批准。维护者可从检查详情进入 `Review deployments` 批准，也可明确授权 AI 通过 GitHub 原生界面或 API 代为批准指定 PR。批准后启动本轮所有适用检查；每次新提交重新审批，旧运行取消，不得沿用旧批准改测新提交。不同 PR 可以同时验证。
@@ -293,6 +293,7 @@ Do not default to full monorepo test runs when a targeted test can prove the cha
 - 关闭 PR 仅通过可信默认分支的 `pull_request_target: closed` 取消同一 PR 并发组，全部 job 跳过，不执行候选代码、不占 runner；重新打开后重新审批。常规运行取消后只执行必要清理，不再启动后续验证、报告或 artifact 上传；普通失败继续保留证据，完整 Nightly Performance 的证据策略保持原样。
 - 普通 PR 验证直接使用原生 job checks 展示矩阵进度和结果，不再依赖从 main 调度后的汇总状态回写。共用验证主体通过 `workflow_call` 消费统一冻结的 PR head/base/merge 上下文；候选代码只获得只读权限，评论等写入由可信主线完成报告处理。
 - 原生 PR 自动评论仅处理整体成功运行；失败、取消、拒绝及审批过期直接查看 Checks，不启动自动报告 runner。需要失败报告时，从默认分支显式运行 `gh workflow run ci-performance-comment.yml --ref main -f run-id=<运行ID>`；报告只接受已完成的原生 PR CI，下载前核验审批与冻结阶段，发布前拒绝过期提交及旧结果覆盖。
+- `Automatic Release Intent` 使用 repoctl 原生按需工作流：从默认分支选择 PR，plan 和 apply 分别通过 `pr-ci-approval`，只用固定版本工具和默认分支 JSON 策略读取冻结的 PR 数据；保留手写 changeset，fork 只读。自动提交创建新 revision 后重新审批原生 PR CI，不用额外 App/PAT 或手动诊断调度绕过准入。
 - 现有 `workflow_dispatch` 与 `pr-number` 参数保留为独立手动诊断入口；留空维持原有独立或全量模式。完整性能验收通过 `Nightly Performance` 显式选择 PR，不随普通审批自动采样；主线定时检查及合并后的发布、部署保留。
 - Add a changeset only for user-visible or behavior-impacting changes, such as `feat`, functional `fix`, or other changes that alter runtime/build behavior, public APIs, generated outputs, or template/app observable results.
 - Do not add a changeset for changes that are purely tests, docs, comments, refactors, internal tooling, or other non-user-visible maintenance work, unless they also include a user-visible or behavior-impacting change.
