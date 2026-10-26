@@ -1,4 +1,3 @@
-import type { startDevProcess } from '../../utils/dev-process'
 import path from 'node:path'
 import process from 'node:process'
 import { WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY, WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY, WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY } from '@weapp-core/constants'
@@ -7,10 +6,10 @@ import { expect, vi } from 'vitest'
 import { resolveRuntimeCompilerCli } from '../../../packages/weapp-vite/scripts/consumerRuntimeHost.mjs'
 import { launchAutomator, reconnectAutomator } from '../../utils/automator'
 import { runCleanupSteps } from '../../utils/cleanupSteps'
+import { startDevProcess } from '../../utils/dev-process'
 import { createDevProcessEnv } from '../../utils/dev-process-env'
 import { replaceFileByRename, waitForStatefulHmrControl } from '../../utils/hmr-helpers'
 import { createNativeHmrPublication } from '../../utils/nativeHmrPublication'
-import { startRuntimeDevProcess } from '../../utils/runtimeDevProcess'
 import { resolveRuntimeProviderName } from '../../utils/runtimeProvider'
 import { createStatefulHmrProject } from '../../utils/statefulHmrProject'
 import { captureScopedSlotDiagnostics } from './scopedSlotDiagnostic'
@@ -165,7 +164,7 @@ export function createTemplateFallbackSession(external: boolean, options: { scop
       profilePath = path.join(project, '.tmp/hmr-profile.jsonl')
       const cli = resolveRuntimeCompilerCli(host, project, { repositoryRoot: ROOT })
       devReleased = false
-      dev = await startRuntimeDevProcess(host, host === 'wv'
+      dev = startDevProcess(process.execPath, host === 'wv'
         ? [cli, 'dev', project, '--platform', 'weapp', '--skipNpm']
         : [cli, 'dev', '--config', 'vite.stateful.config.mts', '--host', '127.0.0.1', '--port', '0'], {
         cwd: project,
