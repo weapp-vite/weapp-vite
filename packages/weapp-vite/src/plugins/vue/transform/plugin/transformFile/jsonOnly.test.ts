@@ -81,6 +81,7 @@ definePageJson({ navigationBarTitleText: '旧标题' })
           jsonMacroHash: 'old-hash',
           styleBlocks: [],
           nativeSlotContextDeps: ['/project/src/components/child.vue'],
+          propsAnalysisDeps: ['/project/src/props.ts'],
         },
       },
       source: previousSource,
@@ -153,11 +154,15 @@ describe('transformVueLikeFile json-only reuse', () => {
         config: JSON.stringify({ navigationBarTitleText: '新标题' }, null, 2),
         script: 'Component({ cached: true })',
         template: '<view />',
-        meta: { nativeSlotContextDeps: ['/project/src/components/child.vue'] },
+        meta: {
+          nativeSlotContextDeps: ['/project/src/components/child.vue'],
+          propsAnalysisDeps: ['/project/src/props.ts'],
+        },
       },
     })
     expect(dirtyVueEntryIds.size).toBe(0)
     expect(options.ctx.moduleGraphService.collectAffectedEntries('/project/src/components/child.vue')).toEqual(new Set([filename]))
+    expect(options.ctx.moduleGraphService.collectAffectedEntries('/project/src/props.ts')).toEqual(new Set([filename]))
   })
 })
 

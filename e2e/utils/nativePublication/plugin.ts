@@ -26,6 +26,7 @@ export function nativePublicationPlugin(options: NativePublicationOptions = {}):
   const observations = new Set<Promise<void>>()
   const pendingCommits = new Set<() => void>()
   const errors: unknown[] = []
+  let previousObservation = Promise.resolve()
   const awaitCommit = (committed: Promise<NativeOutputPublicationSnapshot | undefined>) => {
     const observation = Promise.withResolvers<NativeOutputPublicationSnapshot | undefined>()
     const cancel = () => {
@@ -89,7 +90,7 @@ export function nativePublicationPlugin(options: NativePublicationOptions = {}):
         }
         const byteWrite = Object.keys(bundle).length > 0
         const root = path.resolve(current.project, outputOptions.dir ?? this.environment.config.build.outDir)
-        const committed = !byteWrite && current.publication
+        const committed = current.publication
           ? current.publication.api.whenCommitted(root, current.publication.epoch)
           : undefined
         if (!byteWrite && !committed) {
@@ -115,12 +116,12 @@ export function nativePublicationPlugin(options: NativePublicationOptions = {}):
             })
           : undefined
         const observe = async (snapshot?: NativeOutputPublicationSnapshot) => {
-          if (!byteWrite && (!snapshot || snapshot.root !== root || snapshot.epoch !== current.publication?.epoch)) {
+          if (committed && (!snapshot || snapshot.root !== root || snapshot.epoch !== current.publication?.epoch)) {
             return
           }
-          const files = Object.fromEntries((byteWrite
-            ? Object.entries(bundle).map(([file, output]) => [file, output.type === 'chunk' ? output.code : output.source] as const)
-            : [...snapshot!.outputs])
+          const files = Object.fromEntries((snapshot
+            ? [...snapshot.outputs]
+            : Object.entries(bundle).map(([file, output]) => [file, output.type === 'chunk' ? output.code : output.source] as const))
             .sort(([left], [right]) => left.localeCompare(right))
             .map(([file, source]) => [file.replaceAll('\\', '/'), nativePublicationHash(source)]))
           if (!byteWrite) {
@@ -149,20 +150,29 @@ export function nativePublicationPlugin(options: NativePublicationOptions = {}):
             generation: nativePublicationGeneration(files),
             inputs: current.inputs,
             outputs: files,
-            ...(!byteWrite ? { publicationEpoch: snapshot!.epoch } : {}),
+            ...(snapshot ? { publicationEpoch: snapshot.epoch, outputScope: 'committed' } : {}),
             ...(profile === undefined ? {} : { profileCursor: { offset: profile.length, prefixHash: nativePublicationHash(profile), ...(identity ? { identity } : {}) } }),
           })}\n`)
         }
-        if (byteWrite) {
+        if (!committed) {
           await observe()
         }
         else {
-          // 若观察插件排在发布者之前，等待必须脱离本 hook，避免阻塞后续 sequential 提交。
-          const observation = awaitCommit(committed!).then(observe).catch((error) => {
+          // 当轮立即订阅提交，异步读取与日志按写出顺序排队，避免晚收据覆盖新完整归属。
+          // 队列不阻塞本 hook，也不以新 epoch 的磁盘否定较早字节收据的来源证据。
+          const snapshot = awaitCommit(committed).then(value => ({ value }), (error: unknown) => ({ error }))
+          const observation = previousObservation.then(async () => {
+            const result = await snapshot
+            if ('error' in result) {
+              throw result.error
+            }
+            await observe(result.value)
+          }).catch((error) => {
             errors.push(error)
           }).finally(() => {
             observations.delete(observation)
           })
+          previousObservation = observation
           observations.add(observation)
         }
       },

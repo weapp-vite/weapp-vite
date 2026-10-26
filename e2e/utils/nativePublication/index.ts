@@ -1,6 +1,6 @@
 import type { startDevProcess } from '../dev-process'
 import type { NativePublicationOptions, NativePublicationReceipt, NativePublicationSourceEvidence } from './files'
-import { readFile } from 'node:fs/promises'
+import { access, readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { normalizedSource } from '../devBuildCompletion/nativeIdentity'
 import {
@@ -41,9 +41,12 @@ function receipts(output: string): NativePublicationObservation[] {
       || value.generation !== nativePublicationGeneration(value.outputs)) {
       throw new Error('Invalid native publication receipt')
     }
-    if (value.boundary === 'native-noop'
+    if ('outputScope' in value && value.outputScope !== 'committed') {
+      throw new Error('Invalid native publication output scope')
+    }
+    if ((value.boundary === 'native-noop' || ('outputScope' in value && value.outputScope === 'committed'))
       && (!('publicationEpoch' in value) || !Number.isSafeInteger(value.publicationEpoch) || Number(value.publicationEpoch) < 0)) {
-      throw new Error('Invalid native no-op publication epoch')
+      throw new Error('Invalid committed native publication epoch')
     }
     if ('profileCursor' in value) {
       const cursor = value.profileCursor
@@ -92,8 +95,23 @@ export function captureNativePublication(
           const observedSources = new Set<string>()
           const publications = receipts(output).reverse()
           const matching = publications.filter(receipt => nativePublicationGeneration(receipt.inputs) === generation)
-          // 同一最终输入可分批重写共享产物；按文件保留最后一次原生写出，而来源仍逐身份验 END。
-          const finalOutputs = Object.fromEntries([...matching].reverse().flatMap(receipt => Object.entries(receipt.outputs)))
+          // 增量收据按文件累积；正式提交的完整归属才能撤销旧文件，来源仍逐身份验 END。
+          const finalOutputs: Record<string, string> = {}
+          const retiredOutputs = new Set<string>()
+          for (const receipt of [...matching].reverse()) {
+            if (receipt.outputScope === 'committed') {
+              for (const file of Object.keys(finalOutputs)) {
+                if (!(file in receipt.outputs)) {
+                  retiredOutputs.add(file)
+                }
+                delete finalOutputs[file]
+              }
+            }
+            for (const [file, hash] of Object.entries(receipt.outputs)) {
+              retiredOutputs.delete(file)
+              finalOutputs[file] = hash
+            }
+          }
           const files = await Promise.all(Object.entries(matching.length ? finalOutputs : publications[0]?.outputs ?? {}).map(async ([file, expected]) => {
             try {
               return { file, expected, actual: nativePublicationHash(await readFile(path.join(outputRoot, file), { signal: reads.signal })) }
@@ -106,6 +124,15 @@ export function captureNativePublication(
               return { file, expected, error: code }
             }
           }))
+          const retired = await Promise.all([...retiredOutputs].map(async (file) => {
+            const absent = await access(path.join(outputRoot, file)).then(() => false, (error: NodeJS.ErrnoException) => {
+              if (error.code === 'ENOENT') {
+                return true
+              }
+              throw error
+            })
+            return { file, absent }
+          }))
           const latest = publications[0]
           if (latest) {
             diagnostics = {
@@ -113,9 +140,10 @@ export function captureNativePublication(
               receipt: { boundary: latest.boundary, generation: latest.generation, inputGeneration: nativePublicationGeneration(latest.inputs), identity: latest.profileCursor?.identity },
               inputDifferences: [...new Set([...Object.keys(inputs), ...Object.keys(latest.inputs)])].sort().filter(file => inputs[file] !== latest.inputs[file]).map(file => ({ file, expected: inputs[file], actual: latest.inputs[file] })),
               outputs: files,
+              retiredOutputs: retired,
             }
           }
-          if (!matching.length || !files.every(file => 'actual' in file && file.actual === file.expected)) {
+          if (!matching.length || !files.every(file => 'actual' in file && file.actual === file.expected) || retired.some(file => !file.absent)) {
             return
           }
           for (const receipt of matching) {
