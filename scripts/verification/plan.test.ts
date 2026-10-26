@@ -2,10 +2,12 @@ import type { ChangeSet, WorkspacePackage } from './types.ts'
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
+import { setImmediate } from 'node:timers/promises'
 import { expect, it } from 'vitest'
 import { createVerificationPlan } from './plan.ts'
 import { DEFAULT_SELECTION } from './policy.ts'
 import { getResourceBudget } from './resources.ts'
+import { runVerification } from './run.ts'
 import { scriptTestInventory } from './toolTests.ts'
 import { useIsolatedTopologyTestEnvironment } from './topologyTestFixture.ts'
 import { readWorkspace } from './workspace.ts'
@@ -50,6 +52,39 @@ it('runs neighboring tests first and expands consumers and type contracts only f
     expect(review.tasks.filter(task => task.id === 'build')).toHaveLength(1)
     expect(review.tasks.find(task => task.id === 'types')?.args).toContain('test:types:check')
     expect(review.tasks.find(task => task.id === 'types')?.args).not.toContain('test:types')
+  }
+  finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+it.each(['pretest', 'posttest'])('isolates the complete pnpm test command when %s can replace shared artifacts', async (lifecycle) => {
+  const root = await createPlanRoot()
+  try {
+    const manifestFile = path.join(root, 'packages/library/package.json')
+    const manifest = JSON.parse(await readFile(manifestFile, 'utf8')) as { scripts: Record<string, string> }
+    manifest.scripts[lifecycle] = lifecycle === 'pretest' ? 'pnpm build' : 'node cleanup.mjs'
+    await writeFile(manifestFile, JSON.stringify(manifest))
+    const plan = await createVerificationPlan({ root, changes: changes(['package.json']), packages: await readWorkspace(root), resources, mode: 'quick', selection: 'affected' })
+    expect(plan.tasks.find(task => task.id === 'test:library')).toMatchObject({
+      resource: 'workspace-write',
+      args: ['--filter', 'library', 'run', 'test', '--maxWorkers=1'],
+    })
+    expect(plan.tasks.find(task => task.id === 'test:consumer')).toMatchObject({ resource: 'cpu', exclusive: false })
+    const active = new Set<string>()
+    const report = await runVerification(plan, async (task) => {
+      if (task.id === 'test:library') {
+        expect(active.size).toBe(0)
+      }
+      else {
+        expect(active.has('test:library')).toBe(false)
+      }
+      active.add(task.id)
+      await setImmediate()
+      active.delete(task.id)
+      return { exitCode: 0, execution: 'actual' }
+    })
+    expect(report.results.every(result => result.status === 'passed')).toBe(true)
   }
   finally {
     await rm(root, { recursive: true, force: true })

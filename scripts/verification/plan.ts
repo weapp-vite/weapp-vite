@@ -150,6 +150,8 @@ export async function createVerificationPlan(options: PlanOptions): Promise<Veri
       tasks.push({
         ...task(`test:${item.name}`, 'test', args, related.length ? '首轮只运行相邻回归；review 仍执行完整包测试' : '无法证明更小范围，保留完整包测试', prepared),
         exclusive: ordinary.length === 1,
+        // pnpm 生命周期与测试同属一个命令，可能清理共享 dist，必须与消费者互斥。
+        resource: ['pretest', 'posttest'].some(name => item.scripts[name]?.trim()) ? 'workspace-write' : undefined,
       })
     }
     for (const item of selected.filter(item => item.scripts.typecheck && (sharedScope.has(item.name) || direct.has(item.name)))) {
@@ -236,7 +238,7 @@ export async function createVerificationPlan(options: PlanOptions): Promise<Veri
     }
   }
   for (const item of tasks) {
-    item.resource = item.kind === 'runtime' ? 'machine-exclusive' : item.kind === 'build' || item.kind === 'types' ? 'workspace-write' : 'cpu'
+    item.resource ??= item.kind === 'runtime' ? 'machine-exclusive' : item.kind === 'build' || item.kind === 'types' ? 'workspace-write' : 'cpu'
     if (item.args.includes('turbo') || (['build', 'types'].includes(item.id) && mode === 'full')) {
       item.args.push('--summarize')
       item.evidence = 'turbo-summary'
