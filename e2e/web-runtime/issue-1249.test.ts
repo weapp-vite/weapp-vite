@@ -1,6 +1,6 @@
 import type { Browser, Page } from 'playwright'
 import type { PreviewServer } from 'vite'
-import { copyFile, rm } from 'node:fs/promises'
+import { access, copyFile, readFile, rm } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import { chromium } from 'playwright'
@@ -56,6 +56,21 @@ describe('issue #1249: dataset values across Web templates', { concurrent: false
     }).toMatchObject(expected)
   }
 
+  it('emits the native page and component files required by DevTools', async () => {
+    const project = await createIssueRegressionProject(1249)
+    projects.push(project)
+    await buildIssueRegressionProject(project, 'weapp')
+    const config = JSON.parse(await readFile(path.join(project, 'project.config.json'), 'utf8')) as { miniprogramRoot: string }
+    const output = path.resolve(project, config.miniprogramRoot)
+    const app = JSON.parse(await readFile(path.join(output, 'app.json'), 'utf8')) as { pages: string[] }
+    expect(app.pages).toContain('pages/index/index')
+    for (const base of [...app.pages, 'components/datasetProbe/index']) {
+      for (const extension of ['js', 'json', 'wxml']) {
+        await access(path.join(output, `${base}.${extension}`))
+      }
+    }
+  })
+
   it.each(['compiled', 'legacy'])('%s preserves event, component, selector and observer dataset values', async (mode) => {
     await page.goto(servers[mode === 'compiled' ? 0 : 1].resolvedUrls!.local[0])
     const root = mode === 'compiled' ? '[data-weapp-page-active="true"]' : 'dataset-legacy-fixture'
@@ -84,5 +99,24 @@ describe('issue #1249: dataset values across Web templates', { concurrent: false
     await dataset(`${root} #snapshot`, { item: { value: 'complete', nested: { count: 2 } }, index: 0 })
     await page.locator(`${root} #query`).click()
     await dataset(`${root} #selector`, { item: { value: 'complete', nested: { count: 2 } }, enabled: false })
+    const retainedRow = await page.locator(row).elementHandle()
+    if (!retainedRow) {
+      throw new Error('Missing dataset row before reconnect')
+    }
+    try {
+      await page.locator(root).evaluate(async (element) => {
+        const parent = element.parentNode!
+        const next = element.nextSibling
+        element.remove()
+        parent.insertBefore(element, next)
+        await Reflect.get(element, 'updateComplete')
+      })
+      expect(await page.locator(row).evaluate((element, previous) => element === previous, retainedRow)).toBe(true)
+      await page.locator(row).click()
+      await dataset(`${root} #snapshot`, { item: { value: 'complete', nested: { count: 2 } }, enabled: false })
+    }
+    finally {
+      await retainedRow.dispose()
+    }
   })
 })
