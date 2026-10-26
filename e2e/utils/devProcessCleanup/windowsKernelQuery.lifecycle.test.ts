@@ -67,9 +67,9 @@ it.runIf(process.platform === 'win32')('removes concurrent cold-query executable
 
 it.runIf(process.platform === 'win32')('preserves a compiler failure without poisoning a later explicit inspection', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'kernel-query-recovery-'))
+  const executable = join(directory, '节点 with space.exe')
   await runWithCleanup(async () => {
     const queryDirectory = join(directory, 'query-temp')
-    const executable = join(directory, '节点 with space.exe')
     await mkdir(queryDirectory)
     await copyFile(process.execPath, executable)
     const source = `
@@ -113,7 +113,7 @@ it.runIf(process.platform === 'win32')('preserves a compiler failure without poi
       assert.equal(rows[0].ExecutablePath, process.execPath);
       assert.deepEqual(await readdir(tmpdir()), []);
     `
-    // 同步等待测试进程结束；Windows 映像或扫描器的短暂文件占用仍由目录清理的有界重试处理。
+    // 同步等待测试进程结束；Windows 映像或扫描器的短暂文件占用仍由文件清理的有界重试处理。
     execaSync(executable, ['--import', 'tsx', '--input-type=module', '-e', source], {
       stdin: 'ignore',
       timeout: 20_000,
@@ -126,5 +126,9 @@ it.runIf(process.platform === 'win32')('preserves a compiler failure without poi
       },
     })
     expect(await readdir(queryDirectory)).toEqual([])
-  }, async () => rm(directory, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }))
+  }, async () => {
+    // 只重试可执行文件，避免递归目录与子文件分别重试而超出测试预算。
+    await rm(executable, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
+    await rm(directory, { recursive: true, force: true })
+  })
 }, 30_000)
