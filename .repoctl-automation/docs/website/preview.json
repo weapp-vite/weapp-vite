@@ -1,1 +1,1 @@
-{"schemaVersion":1,"repository":"weapp-vite/weapp-vite","site":"website","channel":"preview","pending":{"deploymentId":"ab0af2bc4e449bcc101857da590e3a3de729ac09187fbc2b51a451c4cb04c6dd","runId":"40406085405","phase":"deploying"}}
+{"schemaVersion":1,"repository":"weapp-vite/weapp-vite","site":"website","channel":"preview","pending":{"deploymentId":"ab0af2bc4e449bcc101857da590e3a3de729ac09187fbc2b51a451c4cb04c6dd","runId":"40406085405","phase":"verifying","receipt":{"versionId":"3a382dbf-b760-4054-9500-dc2064f456f7","url":"https://preview.vite.weapp.dev"}}}
