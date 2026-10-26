@@ -101,7 +101,7 @@ function expectClassicHost(server: ViteDevServer) {
       expect(plugin[hook]).toBeUndefined()
     }
   }
-  expect(Object.values(server.config.define).join('\n')).not.toContain(WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY)
+  expect(Object.values(server.config.define ?? {}).join('\n')).not.toContain(WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY)
 }
 
 it('keeps classic across source restoration, config reload and fresh plugin factories, resetting only for a new command', async () => {
@@ -236,23 +236,36 @@ it('captures saves before classic watchers attach and while its first publicatio
   const publishing = Promise.withResolvers<void>()
   const sourceObserved = Promise.withResolvers<void>()
   const releasePublication = Promise.withResolvers<void>()
+  const hostPrepared = Promise.withResolvers<ViteDevServer>()
+  const releaseHost = Promise.withResolvers<void>()
   const sourceFile = path.join(project.root, 'src/pages/home/index.js')
-  let blockNextPublication = false
+  let classicRequested = false
+  let blockClassicPublication = false
   let publicationBlocked = false
+  const blockedBuilds: Array<{ mode: string, write: boolean }> = []
   const gate: Plugin = {
     name: 'classic-transition-publication-gate',
     async configResolved(config) {
-      if (blockNextPublication && config.command === 'serve' && config.experimental.bundledDev === false) {
+      if (classicRequested && config.command === 'serve' && config.experimental.bundledDev === false) {
+        blockClassicPublication = true
         // 编译会话已准备，但 Vite 尚未创建下一代 watcher，仍须以最新配置开始 classic 首构。
         await writeFile(path.join(project.root, 'src/app.json'), '{"pages":["pages/home/index"],"window":{"navigationBarTitleText":"saved-before-classic-watcher"}}')
       }
     },
+    async configureServer(nextServer) {
+      if (classicRequested && nextServer.config.experimental.bundledDev === false) {
+        // weapp 的前置 configureServer 已完成首构，原宿主尚未被 Vite 替换。
+        hostPrepared.resolve(nextServer)
+        await releaseHost.promise
+      }
+    },
     async generateBundle() {
-      if (!blockNextPublication) {
+      if (!blockClassicPublication || this.environment.mode !== 'build' || this.environment.config.build.write === false) {
         return
       }
-      blockNextPublication = false
+      blockClassicPublication = false
       publicationBlocked = true
+      blockedBuilds.push({ mode: this.environment.mode, write: this.environment.config.build.write })
       publishing.resolve()
       await releasePublication.promise
     },
@@ -265,25 +278,37 @@ it('captures saves before classic watchers attach and while its first publicatio
   let server: ViteDevServer | undefined
   try {
     server = await project.start([gate])
-    blockNextPublication = true
-    const runtime = await observeClassicFallback(server, async () => {
+    classicRequested = true
+    const initialServer = server
+    const runtime = await observeClassicFallback(initialServer, async (command) => {
       await writeFile(path.join(project.root, 'src/pages/home/index.json'), '{"navigationBarTitleText":"classic-transition"}')
       await publishing.promise
+      expect(command.phase).toBe('switching')
+      expect(command.fallback?.code).toBe('config-json')
+      expect(blockedBuilds).toEqual([{ mode: 'build', write: true }])
       // 首次 classic 写出被门闩阻挡，确保保存发生在 switching 中，而非已经就绪后。
       await writeFile(sourceFile, 'Page({ data: { message: "saved-during-classic-transition" } })')
       await sourceObserved.promise
       releasePublication.resolve()
+      const nextServer = await hostPrepared.promise
+      expect(nextServer).not.toBe(initialServer)
+      expectClassicHost(nextServer)
+      expect(await project.read('pages/home/index.js')).toContain('saved-during-classic-transition')
+      // 磁盘与新宿主已就绪，旧入口仍未替换；输出可见不能替代命令级交接完成。
+      expect(initialServer.config.experimental.bundledDev).toBe(true)
+      releaseHost.resolve()
     })
-    // 最新文件写出仍可能早于宿主重启完成；以命令级交接完成作为宿主断言的边界。
-    expect(runtime.fallback?.code).toBe('config-json')
     expect(runtime.phase).toBe('classic')
+    expect(runtime.fallback?.code).toBe('config-json')
     await expect.poll(() => project.read('pages/home/index.js')).toContain('saved-during-classic-transition')
     expectClassicHost(server)
     await expect.poll(() => project.read('pages/home/index.json')).toContain('classic-transition')
     await expect.poll(() => project.read('app.json')).toContain('saved-before-classic-watcher')
+    await expectClassicOutput(project.root)
   }
   finally {
     releasePublication.resolve()
+    releaseHost.resolve()
     await server?.close()
     await project.cleanup()
   }

@@ -88,8 +88,8 @@ it('preserves both source END identities and commit order when a later epoch ove
       ],
     } }
     const context = { environment }
-    const bundle = { 'app.js': { type: 'asset', fileName: 'app.js', source: 'Page({})' } } as OutputBundle
-    const write = async () => {
+    const write = async (source: string) => {
+      const bundle = { 'app.js': { type: 'asset', fileName: 'app.js', source } } as unknown as OutputBundle
       await handler(observer.buildStart).call(context as never, {} as never)
       await handler(observer.generateBundle).call(context as never, { dir: outDir } as never, bundle, true)
       await handler(observer.writeBundle).call(context as never, { dir: outDir } as never, bundle)
@@ -97,7 +97,7 @@ it('preserves both source END identities and commit order when a later epoch ove
     const dev = { getOutput: () => output, waitFor: async <T>(task: Promise<T>) => task }
     const publication = captureNativePublication(dev, project, { expectedSourceFiles: [style, script] })
     const completion = createDevBuildCompletion(dev, { source: { files: [style, script], profilePath } })
-    await write()
+    await write('Page({ intermediate: true })')
     reads.block = async () => {
       entered.resolve()
       await release.promise
@@ -108,7 +108,7 @@ it('preserves both source END identities and commit order when a later epoch ove
     await writeFile(profilePath, firstEnd)
     epoch = 2
     Object.assign(profile, second)
-    await write()
+    await write('Page({ final: true })')
     await writeFile(path.join(outDir, 'app.js'), 'Page({ final: true })')
     commits[1]!.resolve({ epoch: 2, root: outDir, outputs: new Map([['app.js', 'Page({ final: true })']]) })
     await writeFile(profilePath, firstEnd + sourceEnd(second))

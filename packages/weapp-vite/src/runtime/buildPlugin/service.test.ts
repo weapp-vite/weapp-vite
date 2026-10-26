@@ -22,6 +22,7 @@ import { createGenerateBundleHook } from '../../plugins/core/lifecycle/emit/gene
 import { captureIndependentOutputFileNames } from '../../plugins/outputFinalizer/independent'
 import { registerManagedTailwindcssEntries } from '../../plugins/tailwindcssMarker'
 import { readCompilerInput, withCompilerSourceSnapshot } from '../../plugins/utils/sourceSnapshot'
+import { createVueResolverPlugin } from '../../plugins/vue/resolver'
 
 import { publishAutoRoutesTopology, registerAutoRoutesTopologySource } from '../autoRoutesPlugin/topology'
 import { HmrRuntimeCapabilityError } from '../hmrRuntimeCapabilities'
@@ -4846,9 +4847,14 @@ describe('runtime buildPlugin service', () => {
     }
   })
 
-  it.each(['building', 'published'] as const)('drains a consumed startup topology create without a second publication (%s)', async (arrival) => {
+  it.each([
+    { arrival: 'building', extension: 'ts' },
+    { arrival: 'published', extension: 'ts' },
+    { arrival: 'building', extension: 'vue' },
+    { arrival: 'published', extension: 'vue' },
+  ] as const)('drains a consumed startup topology create without a second publication ($arrival/$extension)', async ({ arrival, extension }) => {
     const root = path.normalize(realpathSync.native(await fs.mkdtemp(path.join(os.tmpdir(), 'classic-initial-topology-'))))
-    const file = path.join(root, 'pages/added/index.ts')
+    const file = path.join(root, `pages/added/index.${extension}`)
     const ctx = createMockContext()
     const release = startInitialBuildInputObservation(ctx.configService)
     const observation = getInitialBuildInputObservation(ctx.configService)!
@@ -4861,8 +4867,12 @@ describe('runtime buildPlugin service', () => {
     })
     let watcher: RolldownWatcher | undefined
     try {
-      await fs.outputFile(file, 'Page({ data: { marker: "already-published" } })')
+      await fs.outputFile(file, extension === 'vue'
+        ? '<script setup>const marker = "already-published"</script><template><view>{{ marker }}</view></template>'
+        : 'Page({ data: { marker: "already-published" } })')
       Object.assign(ctx.configService, { cwd: root, absoluteSrcRoot: root, outDir: path.join(root, 'dist') })
+      const resolver = createVueResolverPlugin(ctx)
+      const load = typeof resolver.load === 'function' ? resolver.load : resolver.load!.handler
       ctx.configService.weappViteConfig.autoRoutes = true
       ctx.autoRoutesService = {
         ensureFresh: vi.fn(async () => {}),
@@ -4876,7 +4886,12 @@ describe('runtime buildPlugin service', () => {
       chokidarWatchMock.mockReturnValueOnce(createManualSidecarWatcher())
       buildMock.mockImplementation(async () => {
         // 首构真实消费新增入口；迟到目录通知不能再次发布相同的输入代次。
-        await readCompilerInput(ctx.configService, file)
+        if (extension === 'vue') {
+          await load.call({} as any, file)
+        }
+        else {
+          await readCompilerInput(ctx.configService, file)
+        }
         if (arrival === 'building' && buildMock.mock.calls.length === 1) {
           publishAutoRoutesTopology(ctx, { event: 'create', file, topologyChanged: true })
         }
@@ -4968,6 +4983,134 @@ describe('runtime buildPlugin service', () => {
     finally {
       await watcher?.close()
       release()
+      await fs.remove(root)
+    }
+  })
+
+  it.each(['consumed', 'unconsumed', 'changed', 'unowned', 'foreign-owner', 'independent-owner', 'worker-owner', 'wxml-owner', 'config-owner', 'replaced-graph', 'retargeted-source', 'post-publication', 'delete-recreate', 'route-topology'] as const)('checks the initial physical sidecar creation boundary: %s', async (boundary) => {
+    const root = path.normalize(realpathSync.native(await fs.mkdtemp(path.join(os.tmpdir(), 'classic-initial-sidecar-'))))
+    const file = path.join(root, 'pages/home/index.css')
+    const route = path.join(root, 'pages/added/index.ts')
+    const physicalRoots = ['first', 'second'].map(name => path.join(root, name))
+    const source = '.title { color: red; }'
+    const ctx = createMockContext()
+    const foreignOwner = {}
+    const release = startInitialBuildInputObservation(ctx.configService)
+    const releaseForeign = startInitialBuildInputObservation(foreignOwner)
+    const observation = getInitialBuildInputObservation(ctx.configService)!
+    const filter = observation.filter.bind(observation)
+    const handled = Promise.withResolvers<{ received: unknown[], retained: unknown[] }>()
+    const filtered = vi.spyOn(observation, 'filter').mockImplementation(async (changes) => {
+      const retained = await filter(changes)
+      handled.resolve({ received: changes, retained })
+      return retained
+    })
+    const secondBuildStarted = Promise.withResolvers<void>()
+    const sidecar = createManualSidecarWatcher()
+    let routeSignature = 'initial-routes'
+    let watcher: RolldownWatcher | undefined
+    try {
+      if (boundary === 'retargeted-source') {
+        for (const target of physicalRoots) {
+          await fs.outputFile(path.join(target, 'index.css'), source)
+        }
+        await fs.ensureDir(path.dirname(path.dirname(file)))
+        await fs.symlink(physicalRoots[0]!, path.dirname(file), 'junction')
+      }
+      else {
+        await fs.outputFile(file, source)
+      }
+      Object.assign(ctx.configService, {
+        cwd: root,
+        absoluteSrcRoot: root,
+        outDir: path.join(root, 'dist'),
+        relativeAbsoluteSrcRoot: (id: string) => path.relative(root, id),
+      })
+      ctx.configService.weappViteConfig.autoRoutes = true
+      ctx.autoRoutesService = {
+        ensureFresh: vi.fn(async () => {}),
+        getSignature: () => routeSignature,
+        handleFileChange: vi.fn(async () => false),
+      }
+      ctx.runtimeState.build.hmr.resolvedEntryMap.set(HMR_PAGE_ID, { id: HMR_PAGE_ID })
+      ctx.moduleGraphService.hasModule.mockImplementation((id: string) => id === file && boundary !== 'unowned')
+      ctx.moduleGraphService.collectAffectedEntries.mockReturnValue(new Set([HMR_PAGE_ID]))
+      ctx.moduleGraphService.invalidate = vi.fn(() => new Set())
+      createManualWatcher()
+      chokidarWatchMock.mockReturnValueOnce(sidecar)
+      buildMock.mockImplementation(async () => {
+        if (buildMock.mock.calls.length > 1) {
+          secondBuildStarted.resolve()
+          return { output: [] }
+        }
+        if (boundary !== 'unconsumed') {
+          expect(await readCompilerInput(boundary === 'foreign-owner' ? foreignOwner : ctx.configService, file)).toBe(source)
+        }
+        if (boundary === 'changed') {
+          await fs.writeFile(file, source.replace('red', 'blue'))
+        }
+        if (boundary === 'delete-recreate') {
+          sidecar.emit('unlink', file)
+        }
+        if (boundary === 'retargeted-source') {
+          await readCompilerInput(ctx.configService, path.join(physicalRoots[1]!, 'index.css'))
+        }
+        if (boundary !== 'post-publication') {
+          sidecar.emit('add', file)
+        }
+        if (boundary === 'retargeted-source') {
+          await fs.remove(path.dirname(file))
+          await fs.symlink(physicalRoots[1]!, path.dirname(file), 'junction')
+        }
+        if (boundary === 'independent-owner') {
+          ctx.runtimeState.build.independent.watchFiles.set('child', new Set([file]))
+        }
+        if (boundary === 'worker-owner') {
+          ctx.scanService.workersDir = 'pages'
+        }
+        if (boundary === 'wxml-owner') {
+          ctx.runtimeState.wxmlProcessing.references.set(file, 1)
+        }
+        if (boundary === 'config-owner') {
+          ctx.configService.configFileDependencies.push(file)
+        }
+        if (boundary === 'replaced-graph') {
+          ctx.moduleGraphService = { ...ctx.moduleGraphService }
+        }
+        if (boundary === 'route-topology') {
+          await fs.outputFile(route, 'Page({ data: { marker: "new-route" } })')
+          routeSignature = 'next-routes'
+          publishAutoRoutesTopology(ctx, { event: 'create', file: route, topologyChanged: true })
+        }
+        return { output: [] }
+      })
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+      watcher = await createBuildService(ctx).build({ skipNpm: true }) as RolldownWatcher
+      // 启动就绪已排空未被首构消费的通知；返回后才收到的事件仍由下一批次处理。
+      expect(buildMock).toHaveBeenCalledTimes(boundary === 'consumed' || boundary === 'post-publication' ? 1 : 2)
+      if (boundary === 'post-publication') {
+        sidecar.emit('add', file)
+      }
+      await vi.advanceTimersByTimeAsync(8)
+      const result = await handled.promise
+      expect(result.received).toContainEqual(expect.objectContaining({ event: 'create', file, forceFullRescan: true }))
+      if (result.retained.length) {
+        await secondBuildStarted.promise
+      }
+      await flushAsyncTasks()
+      expect(buildMock).toHaveBeenCalledTimes(boundary === 'consumed' ? 1 : 2)
+      if (boundary === 'route-topology') {
+        expect(result.retained).toContainEqual(expect.objectContaining({ file: route, event: 'create', initialRoute: { signature: 'next-routes' } }))
+        expect(ctx.scanService.markDirty).toHaveBeenCalled()
+      }
+      expect(result.retained).toHaveLength(boundary === 'consumed' ? 0 : boundary === 'delete-recreate' ? 2 : 1)
+    }
+    finally {
+      filtered.mockRestore()
+      await watcher?.close()
+      release()
+      releaseForeign()
+      vi.useRealTimers()
       await fs.remove(root)
     }
   })
