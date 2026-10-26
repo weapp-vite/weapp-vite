@@ -1,4 +1,7 @@
 import { spawnSync } from 'node:child_process'
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
 import { createJiti } from 'jiti'
 import { describe, expect, it } from 'vitest'
 import { readWorkflowFixture } from './workflowFixture.mjs'
@@ -40,6 +43,22 @@ const workflow = readWorkflowFixture('release.yml') as Workflow
 
 function expression(value: string) {
   return `$` + `{{ ${value} }}`
+}
+
+function runNightlyInputRejection(name: string, parentEnv = process.env) {
+  const publish = workflow.jobs.nightly!.steps!.find(step => step.id === 'nightly-publish')!
+  // 与 Actions 一样禁用启动文件，并仅传递测试所需环境，隔离 BASH_ENV 等父环境注入。
+  return spawnSync('bash', ['--noprofile', '--norc', '-eu', '-c', `PATH=''\n${publish.run!}`], {
+    encoding: 'utf8',
+    env: {
+      PATH: parentEnv.PATH,
+      RUNNER_TEMP: '',
+      REPO_RELEASE_PACKAGE: '',
+      REPO_RELEASE_VERSION: '',
+      REPO_RELEASE_RECOVERY_SOURCE_SHA: '',
+      [name]: 'unexpected-selection',
+    },
+  })
 }
 
 describe('repoctl nightly workflow', () => {
@@ -126,21 +145,34 @@ describe('repoctl nightly workflow', () => {
     'REPO_RELEASE_VERSION',
     'REPO_RELEASE_RECOVERY_SOURCE_SHA',
   ])('rejects nightly input %s before invoking the publisher', (name) => {
-    const publish = workflow.jobs.nightly!.steps!.find(step => step.id === 'nightly-publish')!
-    const result = spawnSync('bash', ['-eu', '-c', `PATH=''\n${publish.run!}`], {
-      encoding: 'utf8',
-      env: {
-        PATH: process.env.PATH,
-        RUNNER_TEMP: '',
-        REPO_RELEASE_PACKAGE: '',
-        REPO_RELEASE_VERSION: '',
-        REPO_RELEASE_RECOVERY_SOURCE_SHA: '',
-        [name]: 'unexpected-selection',
-      },
-    })
+    const result = runNightlyInputRejection(name)
     expect(result.status).toBe(1)
     expect(result.stdout).toContain('recovery inputs are not supported')
     expect(result.stderr).toBe('')
+  })
+
+  it.runIf(process.platform !== 'win32')('ignores parent Bash startup files before rejecting nightly recovery input', () => {
+    const directory = mkdtempSync(path.join(tmpdir(), 'nightly-bash-startup-'))
+    try {
+      const startup = path.join(directory, 'startup.bash')
+      writeFileSync(startup, 'printf \'unexpected Bash startup\\n\' >&2\nexit 97\n')
+      const parentEnv = { PATH: process.env.PATH, BASH_ENV: startup, ENV: startup }
+      // 先证明启动文件会被 Bash 执行；--norc 本身不会屏蔽 BASH_ENV。
+      const control = spawnSync('bash', ['--noprofile', '--norc', '-eu', '-c', 'exit 0'], {
+        encoding: 'utf8',
+        env: parentEnv,
+      })
+      expect(control.status).toBe(97)
+      expect(control.stderr).toContain('unexpected Bash startup')
+
+      const result = runNightlyInputRejection('REPO_RELEASE_PACKAGE', parentEnv)
+      expect(result.status).toBe(1)
+      expect(result.stdout).toContain('recovery inputs are not supported')
+      expect(result.stderr).toBe('')
+    }
+    finally {
+      rmSync(directory, { recursive: true, force: true })
+    }
   })
 })
 
