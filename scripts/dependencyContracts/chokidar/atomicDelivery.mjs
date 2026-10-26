@@ -46,7 +46,8 @@ export function createAtomicDeliveryObserver({ root, file }, { watchApi = fs, sy
   watchApi.watch = function (watched, ...args) {
     const absolute = path.resolve(String(watched))
     const index = args.findLastIndex(value => typeof value === 'function')
-    if ([file, path.dirname(file)].includes(absolute) && index >= 0) {
+    // Windows 的 root-parent 资源会通过本 fixture 根目录通知触发目标目录重扫。
+    if ([file, path.dirname(file), root].includes(absolute) && index >= 0) {
       const callback = args[index]
       args[index] = function (...values) {
         const notification = { id: native.length + 1, path: relative(absolute), event: values[0], filename: String(values[1]) }
@@ -91,9 +92,10 @@ export function createAtomicDeliveryObserver({ root, file }, { watchApi = fs, sy
         }
         originalReconcile = handler.reconcileBackendTrigger
         handler.reconcileBackendTrigger = function (scope, mapRelative, trigger, reconcile, ...rest) {
+          // 协调队列可能在其他通知的异步上下文中回放，来源必须绑定原入队回调。
+          const source = context.getStore() || {}
           const observed = function (...args) {
-            const source = context.getStore() || {}
-            const invocation = { id: listeners.length + 1, registration: registrations.at(-1)?.id, native: source.native }
+            const invocation = { id: listeners.length + 1, registration: registrations.at(-1)?.id, native: source.native, scope: relative(scope), mapRelative, trigger: { kind: trigger.kind, event: trigger.rawEvent, path: trigger.relativePath }, candidate: typeof args[0] === 'string' ? relative(args[0]) : undefined }
             listeners.push(invocation)
             return context.run({ ...source, listener: invocation.id }, () => reconcile.apply(this, args))
           }

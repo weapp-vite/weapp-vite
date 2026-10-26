@@ -11,6 +11,7 @@ const replacement = { ...first, ino: 20, size: 23, mtimeMs: 200, ctimeMs: 200 }
 
 function fixture(duplicate: boolean, initial = first, target = file) {
   const callbacks: Array<(...args: unknown[]) => unknown> = []
+  const scheduling = { run: (work: () => unknown) => work() }
   const watchApi = { watch: vi.fn((_watched: string, ...args: unknown[]) => {
     callbacks.push(args.at(-1) as (...args: unknown[]) => unknown)
     return {}
@@ -23,7 +24,7 @@ function fixture(duplicate: boolean, initial = first, target = file) {
     tree: { recordObserved: vi.fn() },
     handler: {
       reconcileBackendTrigger(_scope: string, _relative: boolean, _trigger: unknown, reconcile: () => unknown) {
-        return reconcile()
+        return scheduling.run(reconcile)
       },
     },
     emitEvent(event: string, emitted: string, _stats?: unknown) {
@@ -52,11 +53,11 @@ function fixture(duplicate: boolean, initial = first, target = file) {
   }
   watcher.tree.recordObserved(target, bigintStats)
   observer.start()
-  const notify = (run: () => unknown) => {
-    watchApi.watch(path.dirname(target), {}, () => watcher.handler.reconcileBackendTrigger(root, true, {}, run))
-    return callbacks.at(-1)!('rename', path.basename(target))
+  const notify = (run: () => unknown, { watched = path.dirname(target), filename = path.basename(target), mapRelative = true } = {}) => {
+    watchApi.watch(watched, {}, () => watcher.handler.reconcileBackendTrigger(path.dirname(target), mapRelative, { kind: 'native', relativePath: filename }, run))
+    return callbacks.at(-1)!('rename', filename)
   }
-  return { watcher, all, observer, notify }
+  return { watcher, all, observer, notify, scheduling }
 }
 
 it.each([false, true])('attributes v6 atomic conversion through directory reconciliation (duplicate=%s)', (duplicate) => {
@@ -108,6 +109,75 @@ it('observes the exact v6 atomic entry when the native path and logical key have
     ctx.observer.flush(() => {})
     ctx.watcher.closed = true
     expect(() => ctx.observer.assert(replacement, replacement, ctx.all)).not.toThrow()
+    expect(ctx.all).toEqual(['change'])
+  }
+  finally { ctx.observer.close() }
+})
+
+it.each([false, true])('attributes a Windows root-parent rescan to its original native callback (duplicate=%s)', (duplicate) => {
+  const target = path.join(root, 'src', 'entry.txt')
+  const ctx = fixture(duplicate, first, target)
+  try {
+    ctx.notify(() => ctx.watcher.emitEvent('unlink', target))
+    ctx.notify(() => {
+      ctx.watcher.tree.recordObserved(target, replacement)
+      ctx.watcher.emitEvent('add', target, replacement)
+    }, { watched: root, filename: 'src', mapRelative: false })
+    ctx.observer.flush(() => {})
+    ctx.watcher.closed = true
+    const verify = () => ctx.observer.assert(replacement, replacement, ctx.all)
+    if (duplicate) {
+      expect(verify).toThrow('the original atomic ADD produces exactly one public change')
+    }
+    else {
+      expect(verify).not.toThrow()
+      expect(ctx.observer.snapshot().native).toContainEqual({ id: 2, path: '', event: 'rename', filename: 'src' })
+      expect(ctx.observer.snapshot().calls.at(-1).native).toBe(2)
+    }
+  }
+  finally { ctx.observer.close() }
+})
+
+it('retains the enqueueing notification when a coalesced reconciliation runs outside that callback context', async () => {
+  const ctx = fixture(false)
+  try {
+    ctx.notify(() => ctx.watcher.emitEvent('unlink', file))
+    let queued: (() => unknown) | undefined
+    const originalResult = Promise.resolve('original reconciliation result')
+    ctx.scheduling.run = (work) => {
+      queued = work
+      return originalResult
+    }
+    expect(ctx.notify(() => {
+      ctx.watcher.tree.recordObserved(file, replacement)
+      ctx.watcher.emitEvent('add', file, replacement)
+    })).toBe(originalResult)
+    await Promise.resolve()
+    queued!()
+    ctx.observer.flush(() => {})
+    ctx.watcher.closed = true
+    expect(() => ctx.observer.assert(replacement, replacement, ctx.all)).not.toThrow()
+    expect(ctx.observer.snapshot().calls.at(-1).native).toBe(2)
+    expect(ctx.all).toEqual(['change'])
+  }
+  finally { ctx.observer.close() }
+})
+
+it.each(['missing', 'outside-fixture'])('rejects an ADD without an owned original native callback (%s)', (kind) => {
+  const ctx = fixture(false)
+  try {
+    ctx.notify(() => ctx.watcher.emitEvent('unlink', file))
+    const add = () => {
+      ctx.watcher.tree.recordObserved(file, replacement)
+      ctx.watcher.emitEvent('add', file, replacement)
+    }
+    if (kind === 'missing') {
+      ctx.watcher.handler.reconcileBackendTrigger(root, false, { kind: 'native' }, add)
+    }
+    else { ctx.notify(add, { watched: path.dirname(root) }) }
+    ctx.observer.flush(() => {})
+    ctx.watcher.closed = true
+    expect(() => ctx.observer.assert(replacement, replacement, ctx.all)).toThrow('the replacement ADD must originate from a real native notification')
     expect(ctx.all).toEqual(['change'])
   }
   finally { ctx.observer.close() }
