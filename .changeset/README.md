@@ -4,6 +4,10 @@
 
 每个 changeset 使用 `.changeset/*.md` 文件，文件开头直接写成对的 `---` 分隔线。frontmatter 中使用 workspace 内对应 `package.json` 的真实 `name`，例如 `weapp-vite`、`create-weapp-vite`、`wevu` 或 `@weapp-vite/web`；不要使用目录路径或自行缩写。版本变更填写 `patch`、`minor` 或 `major`。
 
+版本级别按当前包对用户的影响选择：兼容修复和兼容依赖更新使用 `patch`，向后兼容的新增能力使用 `minor`，破坏性变更通常使用 `major`。依赖自身升级 major 不自动意味着当前包也要 major；应检查公开 API、运行环境和可观察行为是否受影响。
+
+2026-10-26 的依赖升级按维护者确认的例外策略，将涉及 Node 支持范围收紧和公开行为迁移的 40 个包统一以 `minor` 发布，原有两个 `patch` 保留。该例外仅适用于本轮升级，必须保留 `chore(deps)!`、Node 下限、构建队列和截图比较算法的迁移说明，不宣称完全向后兼容。既有 fixed 组继续按最高版本级别联动。
+
 ```md
 ---
 "weapp-vite": patch
