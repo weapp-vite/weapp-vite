@@ -18,3 +18,5 @@ fix(web): 修复完整表达式的 `data-*` 值被字符串化的问题。编译
 HTML 属性名按 DOM 的 ASCII 大小写规则归一，避免 `data-itemName` 与 `data-item-name` 串值；SVG/XML 保留大小写敏感的属性语义。
 
 同步发布共享常量的直接依赖包及生成器，确保发布后的依赖范围包含旧模板 dataset 提交标记。
+
+补齐 simulator 交叉观察器回调的 typed dataset，与事件和选择器读取使用同一来源；新增可在 DevTools 与 headless 复用的原生对象 dataset 回归场景。

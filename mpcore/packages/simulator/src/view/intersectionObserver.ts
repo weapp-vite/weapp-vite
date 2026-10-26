@@ -6,11 +6,13 @@ import type {
   HeadlessWxSelectorQueryBoundingClientRectResult,
   HeadlessWxWindowInfoResult,
 } from '../host'
+import { collectNodeDataset } from './nodeDataset'
 import { resolveSelectorQueryScopeRoot } from './selectorQuery'
 import { querySelectorAll } from './selectors'
 
 interface DomNodeLike {
   attribs?: Record<string, string>
+  dataset?: Record<string, unknown>
   children?: DomNodeLike[]
   data?: string
   name?: string
@@ -205,6 +207,7 @@ export function createHeadlessIntersectionObserver(
       const intersectionArea = intersectionRect.width * intersectionRect.height
       const result: HeadlessWxIntersectionObserverObserveAllResult = {
         boundingClientRect,
+        dataset: collectNodeDataset(targetNode),
         id: targetNode.attribs?.id ?? '',
         intersectionRatio: targetArea > 0 ? intersectionArea / targetArea : 0,
         intersectionRect,
