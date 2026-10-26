@@ -15,12 +15,15 @@ function appendTemplateQuery(pathname: string) {
   return `${pathname}${pathname.includes('?') ? '&' : '?'}${WEB_TEMPLATE_QUERY}`
 }
 
-export function compileWxml(options: WxmlCompileOptions): WxmlCompileResult {
+function compileTemplate(options: WxmlCompileOptions, diagnoseUnknownTags: boolean): WxmlCompileResult {
   const dependencyContext = options.dependencyContext ?? createDependencyContext()
   const expandDependencies = options.expandDependencies ?? !options.dependencyContext
   const warnings = dependencyContext.warnings
 
   const warnUnknownTags = (prepared: ReturnType<typeof prepareWxml>, id: string) => {
+    if (!diagnoseUnknownTags) {
+      return
+    }
     const tags = collectUnknownTags(prepared.renderNodes, options.componentTags, prepared.templates.flatMap(template => template.nodes))
     if (tags.length > 0) {
       warnings.push(formatUnknownTagWarning(tags, id))
@@ -55,7 +58,8 @@ export function compileWxml(options: WxmlCompileOptions): WxmlCompileResult {
           resolveWxsPath: options.resolveWxsPath,
         }, dependencyContext)
         warnUnknownTags(result, target)
-        expandDependencyTree(collectDependencies(result, dependencyContext), target)
+        collectDependencies(result, dependencyContext)
+        expandDependencyTree([...result.imports, ...result.includes].map(entry => entry.id), target)
       }
       catch (error) {
         if (error instanceof Error && error.message) {
@@ -182,7 +186,7 @@ export function compileWxml(options: WxmlCompileOptions): WxmlCompileResult {
   if (expandDependencies) {
     dependencyContext.visited.add(options.id)
     dependencyContext.active.add(options.id)
-    expandDependencyTree(directDependencies, options.id)
+    expandDependencyTree([...imports, ...includes].map(entry => entry.id), options.id)
     dependencyContext.active.delete(options.id)
   }
 
@@ -193,4 +197,13 @@ export function compileWxml(options: WxmlCompileOptions): WxmlCompileResult {
     dependencies,
     warnings: warnings.length > 0 ? warnings : undefined,
   }
+}
+
+export function compileWxml(options: WxmlCompileOptions): WxmlCompileResult {
+  return compileTemplate(options, true)
+}
+
+/** 依赖模块的标签诊断由入口模板按其组件注册作用域统一收集。 */
+export function compileWxmlDependency(options: WxmlCompileOptions): WxmlCompileResult {
+  return compileTemplate(options, false)
 }

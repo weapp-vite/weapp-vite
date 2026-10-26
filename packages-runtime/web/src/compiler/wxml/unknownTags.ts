@@ -7,7 +7,11 @@ const CONTROL_TAGS = new Set(['wxs'])
 
 function isKnownTag(name: string, componentTags?: Record<string, string>) {
   const normalized = name.toLowerCase()
-  if (!normalized || componentTags?.[name] || componentTags?.[normalized]) {
+  const isRegistered = (tag: string) => componentTags
+    && Object.hasOwn(componentTags, tag)
+    && typeof componentTags[tag] === 'string'
+    && Boolean(componentTags[tag])
+  if (!normalized || isRegistered(name) || isRegistered(normalized)) {
     return true
   }
   return CONTROL_TAGS.has(normalized)

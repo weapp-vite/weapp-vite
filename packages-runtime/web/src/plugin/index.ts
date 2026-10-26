@@ -6,6 +6,7 @@ import process from 'node:process'
 import { dirname, extname, resolve } from 'pathe'
 import { isUniAppCompatibilityFile, transformUniAppSource } from 'wevu/compiler'
 import { compileWxml } from '../compiler/wxml'
+import { compileWxmlDependency } from '../compiler/wxml/compile'
 import { transformWxsToEsm } from '../compiler/wxs'
 import { createWxssPostcssPlugin, transformWxssToCss } from '../css/wxss'
 import { createWebAssetMiddleware, emitWebAssets } from './assets'
@@ -361,7 +362,8 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
         }
         const navigationConfig = state.pageNavigationMap.get(normalizePath(filename))
         const componentTags = state.templateComponentMap.get(normalizePath(filename))
-        const compiled = compileWxml({
+        const compileTemplate = pageMeta ? compileWxml : compileWxmlDependency
+        const compiled = compileTemplate({
           id: filename,
           source,
           resolveTemplatePath,

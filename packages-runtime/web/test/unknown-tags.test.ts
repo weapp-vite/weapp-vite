@@ -48,6 +48,10 @@ describe('collectUnknownTags', () => {
     expect(tagsOf('<my-card />', { 'my-card': 'my-card' })).toEqual([])
   })
 
+  it('requires an own registration rather than an inherited property', () => {
+    expect(tagsOf('<constructor /><toString />', {})).toEqual(['constructor', 'toString'])
+  })
+
   it('flags a misspelled builtin tag', () => {
     expect(tagsOf('<buton>提交</buton>')).toEqual(['buton'])
   })
@@ -120,5 +124,24 @@ describe('unknown tag warnings', () => {
     expect(message).toContain('<buton>')
     expect(message).toContain('<order-card>')
     expect(message).toContain('usingComponents')
+  })
+
+  it('tracks WXS without parsing script strings as template tags', () => {
+    const root = mkdtempSync(join(tmpdir(), 'web-script-tags-'))
+    try {
+      const script = join(root, 'helpers.wxs')
+      writeFileSync(script, 'module.exports = { markup: \'<phantom-card />\' }')
+      const compiled = compileWxml({
+        id: join(root, 'index.wxml'),
+        source: '<wxs module="helpers" src="./helpers.wxs" /><view>{{helpers.markup}}</view>',
+        resolveTemplatePath: () => undefined,
+        resolveWxsPath: raw => resolve(root, raw),
+      })
+      expect(compiled.dependencies).toContain(script)
+      expect(compiled.warnings ?? []).toEqual([])
+    }
+    finally {
+      rmSync(root, { recursive: true, force: true })
+    }
   })
 })
