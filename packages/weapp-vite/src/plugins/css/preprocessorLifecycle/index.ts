@@ -1,10 +1,10 @@
 import type { ResolvedConfig } from 'vite'
 import type { CompilerContext } from '../../../context'
-import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { preprocessCSS } from 'vite'
 import { normalizeFsResolvedId } from '../../../utils/resolvedId'
 import { syncCssImportDependencies } from '../../utils/invalidateEntry'
+import { compilerSnapshotSourceId, getCompilerSourceSnapshot, readCompilerInput } from '../../utils/sourceSnapshot'
 import { restoreCompiledPublicAssetUrls } from '../publicAssetUrls'
 
 export interface StylePreprocessorHookContext {
@@ -139,9 +139,14 @@ export async function prepareStylePreprocessing(
       if (!path.isAbsolute(normalized)) {
         return
       }
+      const snapshot = getCompilerSourceSnapshot(ctx.configService)
+      if (snapshot?.get(compilerSnapshotSourceId(snapshot, normalized)) === null) {
+        current.files.set(normalized, null)
+        return
+      }
       let diskSource: string
       try {
-        diskSource = await fs.readFile(normalized, 'utf8')
+        diskSource = await readCompilerInput(ctx.configService, normalized)
       }
       catch (error) {
         if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
