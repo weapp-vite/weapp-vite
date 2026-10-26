@@ -160,7 +160,7 @@ describe('e2e app: github-issues / issue #705', { concurrent: false }, () => {
 
   afterAll(async () => {
     await closeSharedMiniProgram()
-  }, 30_000)
+  })
 
   it('keeps route state and hook origins synchronized across router and native tab navigation', async (ctx) => {
     const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', ISSUE705_TABS)

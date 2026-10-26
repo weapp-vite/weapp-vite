@@ -726,10 +726,8 @@ async function closeMiniProgramSafely(miniProgram: any) {
     return
   }
   try {
-    await runAutomatorOp('close mini program', () => miniProgram.close(), {
-      timeoutMs: 6_000,
-      retries: 1,
-    })
+    // 受管关闭包含窗口销毁、端口和快照回收，必须等待完整结果后才能推进清理。
+    await miniProgram.close()
   }
   catch (error) {
     try {
