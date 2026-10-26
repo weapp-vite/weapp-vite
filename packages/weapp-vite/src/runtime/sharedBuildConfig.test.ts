@@ -157,6 +157,15 @@ describe('sharedBuildConfig', () => {
     expect(output.minifyInternalExports).toBe(false)
   })
 
+  it.each([false, true])('labels function-named shared groups in development=%s', (isDev) => {
+    const output = createSharedBuildOutput(createTestConfigService({}, { isDev }), () => [])
+
+    expect(output.codeSplitting.groups.map(group => 'debugName' in group ? group.debugName : undefined)).toEqual([
+      ...(isDev ? ['weapp-vite:stable-hashed-dist-chunk'] : []),
+      'weapp-vite:advanced-chunk',
+    ])
+  })
+
   it('relaxes entry signatures when preserved modules are configured', () => {
     expect(createSharedBuildConfig(createConfigService({
       preserveModules: ['utils/**'],
