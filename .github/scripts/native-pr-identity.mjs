@@ -2,6 +2,24 @@ import { matchesMergeParents, samePullIdentity } from './pr-target-identity.mjs'
 
 const positive = value => Number.isSafeInteger(value) && value > 0
 
+/** 服务端冻结的 reusable workflow 引用将 PR 号与合并 SHA 绑定到触发本轮的候选。 */
+function validateInvocationProof(context, run, repository) {
+  const prefix = `${repository}/`
+  const references = run.referenced_workflows
+  const owned = Array.isArray(references)
+    ? run.referenced_workflows.filter(item => typeof item?.path === 'string' && item.path.toLowerCase().startsWith(prefix.toLowerCase()))
+    : []
+  const workflowPrefix = `${prefix}.github/workflows/`
+  if (!positive(context.prNumber) || !/^[a-f\d]{40}$/u.test(context.driverSha ?? '') || !owned.length
+    || references.some(item => typeof item?.path !== 'string' || !item.path)
+    || owned.some(item => !item.path.startsWith(workflowPrefix)
+      || !/^[a-z\d][\w.-]*\.ya?ml@[a-f\d]{40}$/iu.test(item.path.slice(workflowPrefix.length))
+      || !item.path.endsWith(`@${context.driverSha}`) || item.sha !== context.driverSha
+      || item.ref !== `refs/pull/${context.prNumber}/merge`)) {
+    throw new Error('Untrusted native PR invocation proof')
+  }
+}
+
 /** 运行本身的仓库、源仓库与分支不可由 artifact 补造，空 PR 关联另需完整 API 证明。 */
 export function validateNativeRunIdentity(context, run, repository, allowUnassociated = false) {
   const pull = run.pull_requests?.find(pull => pull.number === context.prNumber)
@@ -20,6 +38,9 @@ export function validateNativeRunIdentity(context, run, repository, allowUnassoc
       || (pull.head.repo?.id !== undefined && pull.head.repo.id !== run.head_repository.id)
       || (pull.base.repo?.id !== undefined && pull.base.repo.id !== run.repository.id)))) {
     throw new Error('Untrusted native PR run identity')
+  }
+  if (allowUnassociated) {
+    validateInvocationProof(context, run, repository)
   }
 }
 

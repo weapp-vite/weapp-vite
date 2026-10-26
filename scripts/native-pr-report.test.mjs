@@ -35,6 +35,7 @@ function sizeReport() {
 
 function fixture() {
   const run = { id: 123, run_attempt: 1, head_branch: pull.head.ref, head_repository: pull.head.repo, name: 'PR CI', event: 'pull_request', path: '.github/workflows/ci-pr.yml', status: 'completed', conclusion: 'failure', head_sha: headSha, pull_requests: [pull], repository: { id: 1, full_name: repository } }
+  run.referenced_workflows = [{ path: `${repository}/.github/workflows/validate-ci.yml@${driverSha}`, sha: driverSha, ref: 'refs/pull/42/merge' }]
   const context = { schemaVersion: 1, event: 'pull_request', repository, runId: '123', runAttempt: 1, driverSha, isPr: true, shouldRun: true, prNumber: 42, headSha, baseSha, headRef: 'feature', baseRef: 'main', headRepository: 'contributor/project', checkoutMode: 'merge', checkoutSha: driverSha, selections: { 'ci-performance': true, 'wevu-runtime-size': true } }
   const jobs = [
     { name: 'CI / Build and Test (windows-latest / Node 22)', conclusion: 'failure', steps: [] },

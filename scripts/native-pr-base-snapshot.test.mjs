@@ -29,6 +29,7 @@ const run = {
   repository: pull.base.repo,
   head_repository: pull.head.repo,
   pull_requests: [],
+  referenced_workflows: [{ path: `${repository}/.github/workflows/validate-ci.yml@${mergeSha}`, sha: mergeSha, ref: 'refs/pull/42/merge' }],
 }
 const context = {
   schemaVersion: 1,
@@ -204,5 +205,75 @@ describe('native PR base snapshot regression', () => {
     const result = await publishNativePrReport(report).catch(error => ({ error }))
     expect(result.published).not.toBe(true)
     expect(report.readArtifact).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ['missing', value => delete value.referenced_workflows],
+    ['empty', value => value.referenced_workflows = []],
+    ['missing-ref', value => delete value.referenced_workflows[0].ref],
+    ['missing-sha', value => delete value.referenced_workflows[0].sha],
+    ['missing-path', value => delete value.referenced_workflows[0].path],
+    ['wrong-ref', value => value.referenced_workflows[0].ref = 'refs/pull/43/merge'],
+    ['wrong-sha', value => value.referenced_workflows[0].sha = staleSha],
+    ['wrong-path-sha', value => value.referenced_workflows[0].path = `${repository}/.github/workflows/validate-ci.yml@${staleSha}`],
+    ['wrong-path-directory', value => value.referenced_workflows[0].path = `${repository}/.github/actions/validate-ci.yml@${mergeSha}`],
+    ['external-only', value => value.referenced_workflows[0].path = `another/project/.github/workflows/validate-ci.yml@${mergeSha}`],
+    ['conflicting-owned-ref', value => value.referenced_workflows.push({ ...value.referenced_workflows[0], ref: 'refs/pull/43/merge' })],
+    ['conflicting-owned-sha', value => value.referenced_workflows.push({ ...value.referenced_workflows[0], sha: staleSha })],
+    ['conflicting-owned-path', value => value.referenced_workflows.push({ ...value.referenced_workflows[0], path: `${repository}/.github/workflows/other.yml@${staleSha}` })],
+    ['unclassifiable-path', value => value.referenced_workflows.push({ sha: staleSha, ref: 'refs/pull/43/merge' })],
+  ])('rejects %s invocation proof before planner or reporter reads live PR evidence', async (_, mutate) => {
+    const { state, get, options, report } = fixture()
+    mutate(state.run)
+    await expect(resolveNativePrContext(options, get)).rejects.toThrow('invocation proof')
+    expect(get.mock.calls).toEqual([['/actions/runs/123']])
+    get.mockClear()
+    await expect(publishNativePrReport(report)).rejects.toThrow('invocation proof')
+    expect(get).not.toHaveBeenCalled()
+    expect(report.readArtifact).not.toHaveBeenCalled()
+  })
+
+  it('accepts matching repository workflows alongside unrelated external references', async () => {
+    const { state, report, options, get } = fixture()
+    state.run.referenced_workflows.push(
+      { ...state.run.referenced_workflows[0], path: `${repository}/.github/workflows/other.yml@${mergeSha}` },
+      { path: `another/project/.github/workflows/external.yml@${staleSha}`, sha: staleSha, ref: 'refs/heads/main' },
+    )
+    await expect(resolveNativePrContext(options, get)).resolves.toMatchObject(context)
+    await expect(publishNativePrReport(report)).resolves.toEqual({ published: true })
+  })
+
+  it.each(['another-pr-and-base', 'new-merge-after-base-update'])('rejects a same-head retarget even when all live evidence matches: %s', async (scenario) => {
+    const { options, report, get } = fixture()
+    const number = scenario === 'another-pr-and-base' ? 43 : 42
+    const baseRef = number === 43 ? 'next' : 'main'
+    const newMergeSha = 'e'.repeat(40)
+    const fakePull = { ...pull, number, merge_commit_sha: newMergeSha, base: { ...pull.base, ref: baseRef, sha: staleSha } }
+    const live = vi.fn(async (endpoint) => {
+      if (endpoint === `/pulls/${number}`) {
+        return fakePull
+      }
+      if (endpoint === `/git/ref/heads/${baseRef}`) {
+        return { object: { sha: staleSha } }
+      }
+      if (endpoint === `/git/ref/pull/${number}/merge`) {
+        return { ref: `refs/pull/${number}/merge`, object: { sha: newMergeSha } }
+      }
+      if (endpoint === `/git/commits/${newMergeSha}`) {
+        return { sha: newMergeSha, parents: [{ sha: staleSha }, { sha: headSha }] }
+      }
+      if (endpoint.startsWith(`/pulls/${number}/files?`)) {
+        return []
+      }
+      return get(endpoint)
+    })
+    Object.assign(report.context, { prNumber: number, baseRef, baseSha: staleSha, driverSha: newMergeSha, checkoutSha: newMergeSha })
+    report.request = live
+    await expect(publishNativePrReport(report)).rejects.toThrow('invocation proof')
+    expect(live).not.toHaveBeenCalled()
+    options.driverSha = newMergeSha
+    options.event = { number, pull_request: fakePull }
+    await expect(resolveNativePrContext(options, live)).rejects.toThrow('invocation proof')
+    expect(live.mock.calls).toEqual([['/actions/runs/123']])
   })
 })

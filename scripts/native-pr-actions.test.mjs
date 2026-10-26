@@ -27,6 +27,7 @@ function workloadBlob(value) {
 
 function fixture() {
   const run = { id: 123, run_attempt: 1, event: 'pull_request', path: '.github/workflows/ci-pr.yml', head_sha: headSha, head_branch: pull.head.ref, repository: pull.base.repo, head_repository: pull.head.repo, pull_requests: [pull] }
+  run.referenced_workflows = [{ path: `${repository}/.github/workflows/validate-ci.yml@${driverSha}`, sha: driverSha, ref: 'refs/pull/42/merge' }]
   const state = { run, pull, files: [{ filename: 'docs/renamed.md', previous_filename: 'packages/old.ts' }], baseSha, workload }
   const get = vi.fn(async (pathname) => {
     if (pathname === '/actions/runs/123') {
