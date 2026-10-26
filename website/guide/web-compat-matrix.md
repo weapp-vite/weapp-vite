@@ -36,6 +36,7 @@ keywords:
 | `<template name>` + `<template is>` | `✅` | 支持模板注册与调用。                                              |
 | `<import>` / `<wx-import>`          | `✅` | 支持模板导入，缺失时告警。                                        |
 | `<include>` / `<wx-include>`        | `✅` | 支持模板包含，缺失时告警。                                        |
+| 未知标签诊断                       | `✅` | 开发和构建时提示可能拼写错误或未注册的标签；include/import 按入口组件注册作用域检查，合法 HTML/SVG/MathML 与官方原生组件不误报。 |
 | `<wxs>`（内联与 src）               | `🟡` | 支持基础执行与 `require`，仅允许相对/绝对路径。                   |
 | `<slot>`                            | `🟡` | 保留为原生 `slot` 标签；高级插槽语义不保证与小程序完全一致。      |
 | 事件前缀 `bind/catch/capture`       | `🟡` | 采用表驱动映射并支持 `catch/capture` 标记；事件别名仍是高频子集。 |

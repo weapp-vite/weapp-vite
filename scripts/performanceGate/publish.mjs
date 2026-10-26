@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
-import { validateNativePrContext } from '../../.github/scripts/native-pr-context.mjs'
+import { verifyNativePrContext } from '../../.github/scripts/native-pr-identity.mjs'
 import { downloadPrContext, validatePerformancePrContext } from '../../.github/scripts/resolve-performance-runs.mjs'
 import { aggregatePlan } from './aggregate.mjs'
 import { assertSha, createMatrix, frozenManifest, isReportSamplingContract, needsSmoke, policy, statusContext, targetKey } from './contract.mjs'
@@ -45,19 +45,22 @@ export function validatePlan(plan, run, repository, { candidate = false } = {}) 
   }
 }
 
-export async function publishComment(target, body, get = request, smokeDescription = '') {
+export async function publishComment(target, body, get = request, smokeDescription = '', { verifyTarget } = {}) {
   if (!target.prNumber) {
     return false
   }
-  const pull = await get(`/pulls/${target.prNumber}`)
-  if (pull.state !== 'open' || pull.head.sha !== target.headSha || (target.baseSha && pull.base?.sha !== target.baseSha)) {
+  // 原生 PR 由调用方完整核验 canonical ref 与 merge 身份；其他路径保留原严格快照契约。
+  const isCurrentTarget = verifyTarget ?? (async () => {
+    const pull = await get(`/pulls/${target.prNumber}`)
+    return pull.state === 'open' && pull.head.sha === target.headSha && (!target.baseSha || pull.base?.sha === target.baseSha)
+  })
+  if (!(await isCurrentTarget())) {
     return false
   }
   const comments = await pages(`/issues/${target.prNumber}/comments`, get)
   const previous = comments.find(c => c.user?.type === 'Bot' && c.body?.includes(marker))
   // 在真正写入前再次读取 HEAD，避免异步报告覆盖新提交。
-  const fresh = await get(`/pulls/${target.prNumber}`)
-  if (fresh.head.sha !== target.headSha || fresh.state !== 'open' || (target.baseSha && fresh.base?.sha !== target.baseSha)) {
+  if (!(await isCurrentTarget())) {
     return false
   }
   // 晚到的 smoke 只更新冒烟状态，保留同一 HEAD 已发布的完整明细。
@@ -94,7 +97,10 @@ export async function smokeStatus(target, { get = request, readContext = downloa
     }
     try {
       const input = await readContext({ apiUrl: process.env.GITHUB_API_URL ?? 'https://api.github.com', token: process.env.GITHUB_TOKEN, repository, run })
-      const context = isNative ? validateNativePrContext(input, run, repository) : validatePerformancePrContext(input, run, repository)
+      if (isNative && !(await verifyNativePrContext(input, run, repository, get)).valid) {
+        continue
+      }
+      const context = isNative ? input : validatePerformancePrContext(input, run, repository)
       if (!context.shouldRun || context.headSha !== target.headSha || context.prNumber !== target.prNumber || (target.baseSha && context.baseSha !== target.baseSha)) {
         continue
       }
