@@ -7,6 +7,7 @@ import { buildNavigationBarAttrs } from './navigation'
 import { prepareWxml } from './prepare'
 import { renderer } from './renderer'
 import { normalizeTemplatePath, shouldMarkWxsImport, toRelativeImport } from './specialNodes'
+import { collectUnknownTags, formatUnknownTagWarning } from './unknownTags'
 
 const WEB_TEMPLATE_QUERY = 'weapp-web-template'
 
@@ -18,6 +19,13 @@ export function compileWxml(options: WxmlCompileOptions): WxmlCompileResult {
   const dependencyContext = options.dependencyContext ?? createDependencyContext()
   const expandDependencies = options.expandDependencies ?? !options.dependencyContext
   const warnings = dependencyContext.warnings
+
+  const warnUnknownTags = (prepared: ReturnType<typeof prepareWxml>, id: string) => {
+    const tags = collectUnknownTags(prepared.renderNodes, options.componentTags, prepared.templates.flatMap(template => template.nodes))
+    if (tags.length > 0) {
+      warnings.push(formatUnknownTagWarning(tags, id))
+    }
+  }
 
   const expandDependencyTree = (dependencies: string[], importer: string) => {
     for (const target of dependencies) {
@@ -46,6 +54,7 @@ export function compileWxml(options: WxmlCompileOptions): WxmlCompileResult {
           resolveTemplatePath: options.resolveTemplatePath,
           resolveWxsPath: options.resolveWxsPath,
         }, dependencyContext)
+        warnUnknownTags(result, target)
         expandDependencyTree(collectDependencies(result, dependencyContext), target)
       }
       catch (error) {
@@ -57,6 +66,8 @@ export function compileWxml(options: WxmlCompileOptions): WxmlCompileResult {
     }
   }
 
+  const prepared = prepareWxml(options, dependencyContext)
+  warnUnknownTags(prepared, options.id)
   const {
     renderNodes: renderNodesList,
     navigationBarAttrs,
@@ -64,7 +75,7 @@ export function compileWxml(options: WxmlCompileOptions): WxmlCompileResult {
     includes,
     imports,
     wxs,
-  } = prepareWxml(options, dependencyContext)
+  } = prepared
 
   if (options.navigationBar && options.navigationBar.config.navigationStyle !== 'custom') {
     const attrs = buildNavigationBarAttrs(options.navigationBar.config, navigationBarAttrs)
