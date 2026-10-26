@@ -1,7 +1,8 @@
-import { mkdtemp, realpath, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, realpath, rm, symlink, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'pathe'
 import { afterEach, expect, it } from 'vitest'
+import { compilerSourceId } from '../../plugins/compilerPlugin/hmr'
 import { readCompilerInput } from '../../plugins/utils/sourceSnapshot'
 import { ClassicIdeConfigOwner } from '../classicIdeConfig'
 import { bindRequestedIdeConfigReader, readRequestedIdeConfig } from '../classicIdeConfig/reader'
@@ -79,6 +80,71 @@ it('deduplicates a route creation only after publishing the consumed input and r
   const change = { file, event: 'create', verifyInitialInput: true, initialRoute: { signature: 'initial-routes' } }
   expect(await observation.filter([change])).toEqual([])
   expect(await observation.filter([change])).toEqual([])
+})
+
+it.each(['update', 'delete'] as const)('deduplicates an explicitly verified startup sidecar creation and retires its baseline after a real %s', async (event) => {
+  const { owner, file, observation } = await fixture()
+  await readCompilerInput(owner, file)
+  observation.begin()
+  observation.commit()
+  const create = { file, event: 'create', verifyInitialInput: true, verifyInitialSidecarCreation: () => true }
+  expect(await observation.filter([create])).toEqual([])
+  if (event === 'delete') {
+    await rm(file)
+  }
+  else {
+    await writeFile(file, '{"pages":["changed"]}')
+  }
+  const change = { file, event, verifyInitialInput: true }
+  expect(await observation.filter([change])).toEqual([change])
+  await writeFile(file, '{"pages":[]}')
+  expect(await observation.filter([create])).toEqual([create])
+})
+
+it.each(['source', 'owner'] as const)('retains a sidecar creation when its %s changes during the byte comparison', async (boundary) => {
+  const { owner, file, observation } = await fixture()
+  const root = path.dirname(file)
+  const targets = ['first', 'second'].map(name => path.join(root, name))
+  const alias = path.join(root, 'current')
+  for (const target of targets) {
+    await mkdir(target)
+    await writeFile(path.join(target, 'index.css'), '.title { color: red; }')
+    await readCompilerInput(owner, path.join(target, 'index.css'))
+  }
+  await symlink(targets[0]!, alias, 'junction')
+  const input = path.join(alias, 'index.css')
+  const initialSource = compilerSourceId(input)
+  let currentOwner = owner
+  observation.begin()
+  observation.commit()
+  const reading = Promise.withResolvers<void>()
+  const release = Promise.withResolvers<void>()
+  bindRequestedIdeConfigReader(owner, async (_file, read) => {
+    reading.resolve()
+    await release.promise
+    return await read()
+  })
+  const change = {
+    file: input,
+    event: 'create',
+    verifyInitialInput: true,
+    verifyInitialSidecarCreation: () => currentOwner === owner && initialSource === compilerSourceId(input),
+  }
+  const filtered = observation.filter([change])
+  await reading.promise
+  try {
+    if (boundary === 'source') {
+      await rm(alias, { recursive: true, force: true })
+      await symlink(targets[1]!, alias, 'junction')
+    }
+    else {
+      currentOwner = {}
+    }
+  }
+  finally {
+    release.resolve()
+  }
+  expect(await filtered).toEqual([change])
 })
 
 it.each(['changed-signature', 'missing-signature', 'missing-published-signature'] as const)('retains an auto-routes update without matching publication evidence: %s', async (boundary) => {
