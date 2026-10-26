@@ -444,6 +444,7 @@ export function createSharedBuildOutput(
         ...configService.isDev
           ? [
               {
+                debugName: 'weapp-vite:stable-hashed-dist-chunk',
                 test: isStableHashedDistChunkModule,
                 minShareCount: 1,
                 minSize: 0,
@@ -455,6 +456,7 @@ export function createSharedBuildOutput(
             ]
           : [],
         {
+          debugName: 'weapp-vite:advanced-chunk',
           name: (
             id: string,
             ctx: Parameters<typeof resolveAdvancedChunkName>[1],
