@@ -91,4 +91,30 @@ describe('issue #1248: inline style computed dimensions', { concurrent: false },
     await expect.poll(async () => (await size(probe)).height).toBeCloseTo(100 * ratio, 1)
     expect((await size(probe)).width).toBeCloseTo(viewportWidth / 4, 1)
   })
+
+  it.each(['compiled', 'legacy'])('%s uses legacy public rpx options, explicit precedence and default reset', async (mode) => {
+    const index = cases.findIndex(item => item.variant.name === 'variable' && item.mode === mode)
+    await page.goto(servers[index].resolvedUrls!.local[0])
+    const root = mode === 'compiled' ? '[data-weapp-page-active="true"]' : 'inline-style-legacy-fixture'
+    const probe = `${root} #probe`
+    const array = `${root} #array`
+    const stages = [
+      { action: 'legacy-units', variable: '--public-legacy-rpx', designWidth: 375, height: 120 },
+      { action: 'explicit-units', variable: '--public-selected-rpx', designWidth: 320, height: 160 },
+      { action: 'reset-units', variable: '--rpx', designWidth: 750, height: 200 },
+    ]
+    for (const stage of stages) {
+      await page.locator(`${root} #${stage.action}`).click()
+      const ratio = 400 / stage.designWidth
+      await expect.poll(async () => (await size(probe)).height).toBeCloseTo(stage.height * ratio, 1)
+      expect((await size(array)).width).toBeCloseTo(stage.height / 2 * ratio, 1)
+      expect((await size(array)).height).toBeCloseTo(stage.height * ratio, 1)
+      const units = await page.locator(probe).evaluate((element, variable) => ({
+        inline: element.getAttribute('style'),
+        rootVariable: Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue(variable)),
+      }), stage.variable)
+      expect(units.inline).toContain(`var(${stage.variable})`)
+      expect(units.rootVariable).toBeCloseTo(ratio, 5)
+    }
+  })
 })

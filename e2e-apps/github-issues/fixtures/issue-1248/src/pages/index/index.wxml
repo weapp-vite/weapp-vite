@@ -4,3 +4,6 @@
 <button id="replace" bindtap="replace">Replace styles</button>
 <button id="clear" bindtap="clear">Clear styles</button>
 <button id="restore" bindtap="restore">Restore styles</button>
+<button id="legacy-units" bindtap="legacyUnits">Use legacy rpx options</button>
+<button id="explicit-units" bindtap="explicitUnits">Use explicit style units</button>
+<button id="reset-units" bindtap="resetUnits">Reset style units</button>
