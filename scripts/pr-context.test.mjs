@@ -59,7 +59,7 @@ describe('manual PR target resolution', () => {
   it('keeps head-only performance validation available without a merge candidate', async () => {
     const get = vi.fn(async endpoint => endpoint.startsWith('/git/ref/') ? respond(endpoint) : { ...pull, merge_commit_sha: null })
     expect(await resolvePrContext({ ...input, checkoutMode: 'head' }, get)).toMatchObject({ checkoutSha: headSha, checkoutMode: 'head' })
-    expect(get).toHaveBeenCalledTimes(3)
+    expect(get).toHaveBeenCalledTimes(4)
   })
 
   it('rejects unavailable or stale merge candidates instead of falling back to head', async () => {
@@ -85,12 +85,12 @@ describe('manual PR target resolution', () => {
     expect(unidentified.prContext).toBeUndefined()
   })
 
-  it('rejects a stale PR base snapshot before launching heavy checks or reading a merge candidate', async () => {
+  it('rejects a merge based on an old branch tip even when REST metadata agrees with it', async () => {
     const get = vi.fn(async endpoint => endpoint.startsWith('/git/ref/') ? { object: { sha: driverSha } } : respond(endpoint))
     const error = await resolvePrContext(input, get).catch(error => error)
-    expect(error.message).toContain('base snapshot is stale')
-    expect(error.prContext).toMatchObject({ headSha, baseSha, resolutionError: expect.stringContaining('refresh the PR branch') })
-    expect(get.mock.calls.some(([endpoint]) => endpoint.startsWith('/git/commits/'))).toBe(false)
+    expect(error.message).toContain('merge candidate does not match')
+    expect(error.prContext).toMatchObject({ headSha, baseSha: driverSha, resolutionError: expect.stringContaining('does not match') })
+    expect(get.mock.calls.some(([endpoint]) => endpoint.startsWith('/git/commits/'))).toBe(true)
   })
 
   it.each(['0', '-1', '1;echo unsafe', '1\n2', '1.5', '9007199254740992'])('rejects invalid PR input %s before querying', async (prNumber) => {
@@ -132,6 +132,7 @@ describe('manual PR target resolution', () => {
 
   it.each(['head', 'base'])('rejects %s movement while resolving the file scope', async (changed) => {
     let reads = 0
+    let baseReads = 0
     const get = async (endpoint) => {
       if (endpoint.includes('/files?')) {
         return [{ filename: 'packages/feature/index.ts' }]
@@ -140,7 +141,7 @@ describe('manual PR target resolution', () => {
         return merge
       }
       if (endpoint.startsWith('/git/ref/')) {
-        return respond(endpoint)
+        return changed === 'base' && ++baseReads > 1 ? { object: { sha: 'd'.repeat(40) } } : respond(endpoint)
       }
       reads++
       return reads === 1 ? pull : { ...pull, [changed]: { ...pull[changed], sha: 'd'.repeat(40) } }
