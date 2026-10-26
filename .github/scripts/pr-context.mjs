@@ -2,6 +2,7 @@ import { appendFile, mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
+import { matchesMergeParents, samePullIdentity } from './pr-target-identity.mjs'
 
 function sha(value) {
   if (typeof value !== 'string' || !/^[a-f\d]{40}$/u.test(value)) {
@@ -82,6 +83,11 @@ export async function resolvePrContext({ repository, runId, runAttempt = 1, driv
   })
   try {
     context.shouldRun = matchesFilters([context.baseRef], patterns(baseBranches))
+    const freezeBase = context.shouldRun
+    if (freezeBase) {
+      const base = await get(`/git/ref/heads/${encodeURIComponent(context.baseRef)}`)
+      context.baseSha = sha(base.object?.sha)
+    }
     const pathFilters = patterns(paths)
     if (context.shouldRun && pathFilters.length) {
       const files = []
@@ -98,26 +104,22 @@ export async function resolvePrContext({ repository, runId, runAttempt = 1, driv
       // API 超过三千条时可能截断；宁可保留验证，不把未知变更当作无关路径。
       context.shouldRun = files.length >= 3000 || matchesFilters(files.flatMap(file => [file.filename, file.previous_filename].filter(Boolean)), pathFilters)
     }
-    if (context.shouldRun) {
-      const base = await get(`/git/ref/heads/${encodeURIComponent(context.baseRef)}`)
-      if (sha(base.object?.sha) !== context.baseSha) {
-        throw new Error('PR base snapshot is stale; refresh the PR branch or wait for GitHub merge refs, then dispatch again')
-      }
-    }
     if (context.shouldRun && checkoutMode === 'merge') {
       if (!pull.merge_commit_sha) {
         throw new Error('PR has no merge candidate; resolve conflicts or wait for GitHub to calculate it, then dispatch again')
       }
       const mergeSha = sha(pull.merge_commit_sha)
       const merge = await get(`/git/commits/${mergeSha}`)
-      if (merge.sha !== mergeSha || merge.parents?.length !== 2
-        || merge.parents[0].sha !== context.baseSha || merge.parents[1].sha !== context.headSha) {
+      if (!matchesMergeParents(merge, mergeSha, context.baseSha, context.headSha)) {
         throw new Error('PR merge candidate does not match the frozen head/base; dispatch again')
       }
       context.checkoutSha = mergeSha
     }
     const current = await get(`/pulls/${number}`)
-    if (current.state !== 'open' || current.head.sha !== context.headSha || current.base.sha !== context.baseSha) {
+    const base = freezeBase ? await get(`/git/ref/heads/${encodeURIComponent(context.baseRef)}`) : undefined
+    if (!samePullIdentity(current, context, { baseRepositoryId: pull.base.repo.id, headRepositoryId: pull.head.repo.id })
+      || (freezeBase && base.object?.sha !== context.baseSha)
+      || (context.shouldRun && checkoutMode === 'merge' && current.merge_commit_sha !== context.checkoutSha)) {
       throw new Error('PR changed while resolving its validation target; dispatch again')
     }
     return context

@@ -251,6 +251,8 @@ interface HmrPhaseRegressionCandidate {
 
 interface SnapshotBuildReason {
   verifyInitialInput?: boolean
+  verifyInitialSidecarCreation?: () => boolean
+  initialSidecarSource?: string
   verifyInitialModuleOwner?: boolean
   initialRoute?: InitialBuildRouteEvidence
   sourceEvent?: HmrProfileSourceEvent
@@ -1683,6 +1685,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       : classicBuildEvents
     const classicSession = target === 'app' ? classicOwner : undefined
     const initialBuildInputs = target === 'app' ? getInitialBuildInputObservation(configService) : undefined
+    const initialModuleGraphOwner = ctx.moduleGraphService
     initialBuildInputs?.begin()
 
     function markSnapshotEntriesFullDirty() {
@@ -1782,6 +1785,18 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             || ownsCompilerContentSource(configService, batchReason.file)
             || initialBuildFailed
         })
+        if (batchReasons.some(item => item.verifyInitialSidecarCreation)) {
+          const deletedSources = new Set(batchReasons.filter(item => item.event === 'delete' && item.file)
+            .flatMap(item => [normalizeFsResolvedId(item.file!), compilerSourceId(item.file!)]))
+          for (const batchReason of batchReasons) {
+            if (batchReason.verifyInitialSidecarCreation && batchReason.file) {
+              const file = batchReason.file
+              if ([normalizeFsResolvedId(file), compilerSourceId(file), batchReason.initialSidecarSource].some(source => source !== undefined && deletedSources.has(source))) {
+                batchReason.verifyInitialSidecarCreation = undefined
+              }
+            }
+          }
+        }
         batchReasons = await initialBuildInputs?.filter(batchReasons) ?? batchReasons
         if (devWatcherClosed || snapshotConfigRestartRequested || (receivedReasons.length && !batchReasons.length)) {
           return
@@ -2341,9 +2356,25 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           : event.startsWith('add')
             ? 'create'
             : 'update'
+        const initialSidecarSource = normalizedEvent === 'create' && !emittedEntryTopology && ownsSnapshotPhysicalSidecar(id)
+          ? compilerSourceId(id)
+          : undefined
         scheduleSnapshotBuild({
           event: normalizedEvent,
           file: id,
+          ...(initialSidecarSource
+            ? {
+                verifyInitialInput: true,
+                initialSidecarSource,
+                // 字节读取前后均核验本代来源与主图归属，排队或读取期间换 owner 不能借用旧摘要。
+                verifyInitialSidecarCreation: () => !devWatcherClosed && !snapshotConfigRestartRequested
+                  && initialBuildInputs === getInitialBuildInputObservation(configService)
+                  && ctx.moduleGraphService === initialModuleGraphOwner
+                  && initialSidecarSource === compilerSourceId(id)
+                  && ownsSnapshotPhysicalSidecar(id)
+                  && (ctx.moduleGraphService.hasModule(id) || ownsCompilerContentSource(configService, id)),
+              }
+            : {}),
           independentOutput: independentRoots.size > 0,
           independentRoots: [...independentRoots],
           independentMetadata: independentConfigDependency,

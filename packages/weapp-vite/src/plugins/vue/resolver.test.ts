@@ -2,8 +2,12 @@ import type { CompilerContext } from '../../context'
 import path from 'node:path'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { resolveVueSfcHmrSignatures } from 'wevu/compiler'
+import { getInitialBuildInputObservation, startInitialBuildInputObservation } from '../../runtime/buildPlugin/initialBuildChanges'
+import { bindRequestedIdeConfigReader } from '../../runtime/classicIdeConfig/reader'
 import { createRuntimeState } from '../../runtime/runtimeState'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
+import { compilerSourceId } from '../compilerPlugin/hmr'
+import { withCompilerSourceSnapshot } from '../utils/sourceSnapshot'
 import { createVueResolverPlugin, getVirtualModuleId } from './resolver'
 import { buildWeappVueStyleRequest } from './transform/styleRequest'
 
@@ -66,6 +70,40 @@ describe('Vue resolver raw source ownership', () => {
 
     await load(id)
     expect(ctx.runtimeState.build.hmr.vueEntrySfcSignatures.get(filename)).toEqual(resolveVueSfcHmrSignatures(sourceB, filename).blockSignatures)
+  })
+
+  it.each(['update', 'create'] as const)('deduplicates a consumed SFC startup %s and retains later content changes', async (event) => {
+    const { ctx, filename, load } = createFixture()
+    const source = '<script setup>const count = 1</script><template><view>A</view></template>'
+    let current = source
+    readFileMock.mockImplementation(async () => current)
+    bindRequestedIdeConfigReader(ctx.configService, async () => current)
+    const release = startInitialBuildInputObservation(ctx.configService)
+    const observation = getInitialBuildInputObservation(ctx.configService)!
+    try {
+      observation.begin()
+      expect(await load(filename)).toMatchObject({ code: source })
+      observation.commit('initial-routes')
+      const change = { file: filename, event, verifyInitialInput: true, initialRoute: { signature: 'initial-routes' } }
+      expect(await observation.filter([change])).toEqual([])
+      current = source.replace('count = 1', 'count = 2')
+      expect(await observation.filter([change])).toEqual([change])
+      current = source
+      expect(await observation.filter([change])).toEqual([change])
+    }
+    finally {
+      release()
+    }
+  })
+
+  it.each([false, true])('uses the compiler generation raw input for SFC loads, legacy virtual=%s', async (legacy) => {
+    const { ctx, filename, load } = createFixture()
+    const pinned = '<template><view>published generation</view></template>'
+    readFileMock.mockResolvedValue('<template><view>new disk input</view></template>')
+    await withCompilerSourceSnapshot(ctx.configService, new Map([[compilerSourceId(filename), pinned]]), async () => {
+      expect(await load(legacy ? getVirtualModuleId(filename) : filename)).toMatchObject({ code: pinned })
+    })
+    expect(readFileMock).not.toHaveBeenCalled()
   })
 
   it('leaves custom virtual SFC and style subrequests to their source owners', async () => {
