@@ -198,7 +198,7 @@ for (const runtime of ['classic', 'stateful-experimental'] as const) {
         await outputDiagnostics.capture(`${id}-before-runtime`, loadedScript)
         if (id === 'style-only') {
           if (classicScripts) {
-            await classicScripts.assertUpdated()
+            await classicScripts.assertUpdated().catch(error => failureDiagnostics.rethrowFailure(`${id}-scripts-failed`, host, error))
           }
           else {
             expect(publication.stateful).toBe(false)
@@ -238,15 +238,7 @@ for (const runtime of ['classic', 'stateful-experimental'] as const) {
         }, { timeout: 45_000 }).toEqual({
           ...(computedStyles ? { color: expected.color, ...(expected.background ? { background: expected.background } : {}) } : {}),
           variable: true,
-        }).catch(async (error) => {
-          try {
-            await failureDiagnostics.captureFailure(`${id}-failed`, host)
-          }
-          catch {
-            // 诊断自身的意外异常不能替换原验收失败。
-          }
-          throw error
-        })
+        }).catch(error => failureDiagnostics.rethrowFailure(`${id}-failed`, host, error))
         await dom.check(id, host, await host.currentPage())
         const runtimeState = await diagnostics.capture(id)
         expect(runtimeState.errors).toEqual([])

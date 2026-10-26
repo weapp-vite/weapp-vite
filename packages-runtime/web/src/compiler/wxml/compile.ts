@@ -7,6 +7,7 @@ import { buildNavigationBarAttrs } from './navigation'
 import { prepareWxml } from './prepare'
 import { renderer } from './renderer'
 import { normalizeTemplatePath, shouldMarkWxsImport, toRelativeImport } from './specialNodes'
+import { collectUnknownTags, formatUnknownTagWarning } from './unknownTags'
 
 const WEB_TEMPLATE_QUERY = 'weapp-web-template'
 
@@ -14,10 +15,20 @@ function appendTemplateQuery(pathname: string) {
   return `${pathname}${pathname.includes('?') ? '&' : '?'}${WEB_TEMPLATE_QUERY}`
 }
 
-export function compileWxml(options: WxmlCompileOptions): WxmlCompileResult {
+function compileTemplate(options: WxmlCompileOptions, diagnoseUnknownTags: boolean): WxmlCompileResult {
   const dependencyContext = options.dependencyContext ?? createDependencyContext()
   const expandDependencies = options.expandDependencies ?? !options.dependencyContext
   const warnings = dependencyContext.warnings
+
+  const warnUnknownTags = (prepared: ReturnType<typeof prepareWxml>, id: string) => {
+    if (!diagnoseUnknownTags) {
+      return
+    }
+    const tags = collectUnknownTags(prepared.renderNodes, options.componentTags, prepared.templates.flatMap(template => template.nodes))
+    if (tags.length > 0) {
+      warnings.push(formatUnknownTagWarning(tags, id))
+    }
+  }
 
   const expandDependencyTree = (dependencies: string[], importer: string) => {
     for (const target of dependencies) {
@@ -46,7 +57,9 @@ export function compileWxml(options: WxmlCompileOptions): WxmlCompileResult {
           resolveTemplatePath: options.resolveTemplatePath,
           resolveWxsPath: options.resolveWxsPath,
         }, dependencyContext)
-        expandDependencyTree(collectDependencies(result, dependencyContext), target)
+        warnUnknownTags(result, target)
+        collectDependencies(result, dependencyContext)
+        expandDependencyTree([...result.imports, ...result.includes].map(entry => entry.id), target)
       }
       catch (error) {
         if (error instanceof Error && error.message) {
@@ -57,6 +70,8 @@ export function compileWxml(options: WxmlCompileOptions): WxmlCompileResult {
     }
   }
 
+  const prepared = prepareWxml(options, dependencyContext)
+  warnUnknownTags(prepared, options.id)
   const {
     renderNodes: renderNodesList,
     navigationBarAttrs,
@@ -64,7 +79,7 @@ export function compileWxml(options: WxmlCompileOptions): WxmlCompileResult {
     includes,
     imports,
     wxs,
-  } = prepareWxml(options, dependencyContext)
+  } = prepared
 
   if (options.navigationBar && options.navigationBar.config.navigationStyle !== 'custom') {
     const attrs = buildNavigationBarAttrs(options.navigationBar.config, navigationBarAttrs)
@@ -171,7 +186,7 @@ export function compileWxml(options: WxmlCompileOptions): WxmlCompileResult {
   if (expandDependencies) {
     dependencyContext.visited.add(options.id)
     dependencyContext.active.add(options.id)
-    expandDependencyTree(directDependencies, options.id)
+    expandDependencyTree([...imports, ...includes].map(entry => entry.id), options.id)
     dependencyContext.active.delete(options.id)
   }
 
@@ -182,4 +197,13 @@ export function compileWxml(options: WxmlCompileOptions): WxmlCompileResult {
     dependencies,
     warnings: warnings.length > 0 ? warnings : undefined,
   }
+}
+
+export function compileWxml(options: WxmlCompileOptions): WxmlCompileResult {
+  return compileTemplate(options, true)
+}
+
+/** 依赖模块的标签诊断由入口模板按其组件注册作用域统一收集。 */
+export function compileWxmlDependency(options: WxmlCompileOptions): WxmlCompileResult {
+  return compileTemplate(options, false)
 }
