@@ -123,6 +123,7 @@ export function createPreserveModulesGroup(
   }
 
   return {
+    debugName: 'weapp-vite:preserve-modules',
     name: (id, ctx) => resolvePreservedModuleName({
       configService,
       ctx,

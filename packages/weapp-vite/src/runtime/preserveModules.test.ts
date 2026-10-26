@@ -36,6 +36,7 @@ describe('preserveModules', () => {
     const group = createPreserveModulesGroup(createConfigService(), () => [])
 
     expect(group).toMatchObject({
+      debugName: 'weapp-vite:preserve-modules',
       priority: 100,
       minShareCount: 1,
       minSize: 0,
