@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
-import { validateNativePrContext } from '../../.github/scripts/native-pr-context.mjs'
+import { verifyNativePrContext } from '../../.github/scripts/native-pr-identity.mjs'
 import { downloadPrContext, validatePerformancePrContext } from '../../.github/scripts/resolve-performance-runs.mjs'
 import { aggregatePlan } from './aggregate.mjs'
 import { assertSha, createMatrix, frozenManifest, isReportSamplingContract, needsSmoke, policy, statusContext, targetKey } from './contract.mjs'
@@ -94,7 +94,10 @@ export async function smokeStatus(target, { get = request, readContext = downloa
     }
     try {
       const input = await readContext({ apiUrl: process.env.GITHUB_API_URL ?? 'https://api.github.com', token: process.env.GITHUB_TOKEN, repository, run })
-      const context = isNative ? validateNativePrContext(input, run, repository) : validatePerformancePrContext(input, run, repository)
+      if (isNative && !(await verifyNativePrContext(input, run, repository, get)).valid) {
+        continue
+      }
+      const context = isNative ? input : validatePerformancePrContext(input, run, repository)
       if (!context.shouldRun || context.headSha !== target.headSha || context.prNumber !== target.prNumber || (target.baseSha && context.baseSha !== target.baseSha)) {
         continue
       }

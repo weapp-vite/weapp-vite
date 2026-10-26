@@ -8,7 +8,7 @@ const repository = 'example/project'
 const headSha = 'a'.repeat(40)
 const baseSha = 'b'.repeat(40)
 const driverSha = 'c'.repeat(40)
-const pull = { number: 42, state: 'open', head: { sha: headSha, ref: 'feature', repo: { full_name: 'contributor/project' } }, base: { sha: baseSha, ref: 'main' } }
+const pull = { number: 42, state: 'open', merge_commit_sha: driverSha, head: { sha: headSha, ref: 'feature', repo: { id: 2, full_name: 'contributor/project' } }, base: { sha: baseSha, ref: 'main', repo: { id: 1, full_name: repository } } }
 
 function smokeReport() {
   return {
@@ -34,8 +34,8 @@ function sizeReport() {
 }
 
 function fixture() {
-  const run = { id: 123, name: 'PR CI', event: 'pull_request', path: '.github/workflows/ci-pr.yml', status: 'completed', conclusion: 'failure', head_sha: headSha, pull_requests: [pull], repository: { full_name: repository } }
-  const context = { schemaVersion: 1, event: 'pull_request', repository, runId: '123', driverSha, isPr: true, shouldRun: true, prNumber: 42, headSha, baseSha, headRef: 'feature', baseRef: 'main', headRepository: 'contributor/project', checkoutMode: 'merge', checkoutSha: driverSha, selections: { 'ci-performance': true, 'wevu-runtime-size': true } }
+  const run = { id: 123, run_attempt: 1, head_branch: pull.head.ref, head_repository: pull.head.repo, name: 'PR CI', event: 'pull_request', path: '.github/workflows/ci-pr.yml', status: 'completed', conclusion: 'failure', head_sha: headSha, pull_requests: [pull], repository: { id: 1, full_name: repository } }
+  const context = { schemaVersion: 1, event: 'pull_request', repository, runId: '123', runAttempt: 1, driverSha, isPr: true, shouldRun: true, prNumber: 42, headSha, baseSha, headRef: 'feature', baseRef: 'main', headRepository: 'contributor/project', checkoutMode: 'merge', checkoutSha: driverSha, selections: { 'ci-performance': true, 'wevu-runtime-size': true } }
   const jobs = [
     { name: 'CI / Build and Test (windows-latest / Node 22)', conclusion: 'failure', steps: [] },
     { name: 'Performance Smoke / Performance Smoke', conclusion: 'success', html_url: 'https://example.test/smoke', steps: [{ name: 'Run correctness smoke', conclusion: 'success' }] },
@@ -48,6 +48,12 @@ function fixture() {
     if (body) {
       state.writes.push({ endpoint, body })
       return {}
+    }
+    if (endpoint === '/git/ref/pull/42/merge') {
+      return { ref: 'refs/pull/42/merge', object: { sha: driverSha } }
+    }
+    if (endpoint === `/git/commits/${driverSha}`) {
+      return { sha: driverSha, parents: [{ sha: baseSha }, { sha: headSha }] }
     }
     if (endpoint === '/pulls/42') {
       return state.pull
@@ -124,6 +130,7 @@ describe('native PR completion reporting', () => {
       state.pull = { ...pull, head: { ...pull.head, sha: 'd'.repeat(40) } }
     }
     if (scenario === 'base') {
+      state.baseSha = 'd'.repeat(40)
       state.pull = { ...pull, base: { ...pull.base, sha: 'd'.repeat(40) } }
     }
     if (scenario === 'branch-tip') {
@@ -151,6 +158,18 @@ describe('native PR completion reporting', () => {
     await expect(publishNativePrReport(third.options)).rejects.toThrow('Missing report')
   })
 
+  it('rechecks the canonical base after reading evidence and before writing a comment', async () => {
+    const { state, options } = fixture()
+    const readArtifact = options.readArtifact
+    options.readArtifact = async (name) => {
+      const report = await readArtifact(name)
+      state.baseSha = 'd'.repeat(40)
+      return report
+    }
+    expect(await publishNativePrReport(options)).toEqual({ published: false, reason: 'stale-base' })
+    expect(state.writes).toHaveLength(0)
+  })
+
   it('does not confuse same-named steps in another check with the performance jobs', () => {
     const jobs = [{ name: 'Other / Build', conclusion: 'success', steps: [{ name: 'Run correctness smoke' }] }]
     expect(nativeReportJobs(jobs)).toEqual({ smoke: undefined, runtime: undefined })
@@ -176,7 +195,7 @@ describe('Nightly feedback for native PR smoke', () => {
         const page = Number(new URL(endpoint, 'https://api.example.test').searchParams.get('page'))
         return { jobs: lateJobs.slice((page - 1) * 100, page * 100) }
       }
-      throw new Error(`Unexpected API: ${endpoint}`)
+      return options.request(endpoint)
     })
     const readContext = vi.fn(async ({ run }) => {
       if (run.event === 'workflow_dispatch') {

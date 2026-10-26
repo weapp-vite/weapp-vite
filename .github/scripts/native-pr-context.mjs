@@ -1,25 +1,18 @@
 import { appendFile, mkdir, readFile, writeFile } from 'node:fs/promises'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
+import { validateNativeContextShape, validateNativeRunIdentity } from './native-pr-identity.mjs'
 import { readNativePrWorkload, selectNativePrWorkload } from './native-pr-workload.mjs'
 import { matchesFilters, resolvePrContext } from './pr-context.mjs'
+import { samePullIdentity } from './pr-target-identity.mjs'
 
 /** 原生 PR 运行绑定触发事件中的提交，审批等待不能把旧运行改测新提交。 */
 export function validateNativePrContext(context, run, repository) {
-  const pull = run.pull_requests?.find(pull => pull.number === context?.prNumber)
-  if (run.event !== 'pull_request' || context?.event !== 'pull_request' || context.schemaVersion !== 1
-    || context.repository !== repository || String(context.runId) !== String(run.id)
-    || context.headSha !== run.head_sha || context.isPr !== true
-    || !Number.isSafeInteger(context.prNumber) || context.prNumber <= 0
-    || !pull || pull.head?.sha !== context.headSha || pull.base?.sha !== context.baseSha
-    || pull.head?.ref !== context.headRef || pull.base?.ref !== context.baseRef
-    || !/^[a-f\d]{40}$/u.test(context.headSha) || !/^[a-f\d]{40}$/u.test(context.baseSha)
-    || !/^[a-f\d]{40}$/u.test(context.checkoutSha)
-    || context.checkoutMode !== 'merge' || context.checkoutSha !== context.driverSha
-    || typeof context.headRepository !== 'string' || !context.headRepository
-    || typeof context.selections !== 'object' || !context.selections) {
+  validateNativeContextShape(context)
+  if (context.repository !== repository) {
     throw new Error('Untrusted native PR context')
   }
+  validateNativeRunIdentity(context, run, repository)
   return context
 }
 
@@ -27,12 +20,19 @@ export function validateNativePrContext(context, run, repository) {
 export async function resolveNativePrContext({ repository, runId, runAttempt = 1, driverSha, event, profiles }, get) {
   const pull = event.pull_request
   if (!pull || pull.base?.repo?.full_name !== repository || !pull.head?.repo?.full_name
-    || !Number.isSafeInteger(event.number) || event.number !== pull.number) {
+    || !Number.isSafeInteger(event.number) || event.number !== pull.number
+    || !Number.isSafeInteger(pull.head.repo.id) || !Number.isSafeInteger(pull.base.repo.id)
+    || pull.head.repo.id <= 0 || pull.base.repo.id <= 0) {
     throw new Error('Expected a pull_request event for this repository')
   }
+  if (pull.merge_commit_sha !== driverSha) {
+    throw new Error('PR merge candidate changed while waiting for approval; approve the new run')
+  }
+  const run = await get(`/actions/runs/${runId}`)
+  validateNativeRunIdentity({ runId, runAttempt, prNumber: event.number, headSha: pull.head.sha, headRef: pull.head.ref, baseRef: pull.base.ref, headRepository: pull.head.repo.full_name }, run, repository, true)
   const context = await resolvePrContext({ repository, runId, runAttempt, driverSha, refName: pull.head.ref, prNumber: event.number }, get)
-  if (context.headSha !== pull.head.sha || context.baseSha !== pull.base.sha
-    || context.headRepository !== pull.head.repo.full_name || context.checkoutSha !== driverSha) {
+  const identities = { baseRepositoryId: run.repository.id, headRepositoryId: run.head_repository.id }
+  if (!samePullIdentity(pull, context, identities) || context.checkoutSha !== driverSha) {
     throw new Error('PR changed while waiting for approval; approve the new run')
   }
   const workload = await readNativePrWorkload(context.checkoutSha, profiles, get)
@@ -53,7 +53,9 @@ export async function resolveNativePrContext({ repository, runId, runAttempt = 1
   const selection = selectNativePrWorkload(context, profiles, pathSelections, workload)
   const current = await get(`/pulls/${event.number}`)
   const base = await get(`/git/ref/heads/${encodeURIComponent(context.baseRef)}`)
-  if (current.state !== 'open' || current.head.sha !== context.headSha || current.base.sha !== context.baseSha || base.object?.sha !== context.baseSha) {
+  const mergeRef = await get(`/git/ref/pull/${event.number}/merge`)
+  if (!samePullIdentity(current, context, identities) || base.object?.sha !== context.baseSha
+    || current.merge_commit_sha !== driverSha || mergeRef.ref !== `refs/pull/${event.number}/merge` || mergeRef.object?.sha !== driverSha) {
     throw new Error('PR changed while selecting checks; approve the new run')
   }
   return { ...context, event: 'pull_request', ...selection }

@@ -12,7 +12,7 @@ const headSha = 'a'.repeat(40)
 const baseSha = 'b'.repeat(40)
 const driverSha = 'c'.repeat(40)
 const admissionPolicy = JSON.parse(await readFile(new URL('../.github/pr-admission.json', import.meta.url), 'utf8'))
-const pull = { number: 42, state: 'open', merge_commit_sha: driverSha, head: { sha: headSha, ref: 'feature', repo: { full_name: 'contributor/project' } }, base: { sha: baseSha, ref: 'main', repo: { full_name: repository } } }
+const pull = { number: 42, state: 'open', merge_commit_sha: driverSha, head: { sha: headSha, ref: 'feature', repo: { id: 2, full_name: 'contributor/project' } }, base: { sha: baseSha, ref: 'main', repo: { id: 1, full_name: repository } } }
 const profiles = {
   ci: { paths: [], baseBranches: [], checkoutMode: 'merge' },
   smoke: { paths: ['packages/**'], baseBranches: ['main'], checkoutMode: 'head' },
@@ -26,8 +26,15 @@ function workloadBlob(value) {
 }
 
 function fixture() {
-  const state = { pull, files: [{ filename: 'docs/renamed.md', previous_filename: 'packages/old.ts' }], baseSha, workload }
+  const run = { id: 123, run_attempt: 1, event: 'pull_request', path: '.github/workflows/ci-pr.yml', head_sha: headSha, head_branch: pull.head.ref, repository: pull.base.repo, head_repository: pull.head.repo, pull_requests: [pull] }
+  const state = { run, pull, files: [{ filename: 'docs/renamed.md', previous_filename: 'packages/old.ts' }], baseSha, workload }
   const get = vi.fn(async (pathname) => {
+    if (pathname === '/actions/runs/123') {
+      return state.run
+    }
+    if (pathname === '/git/ref/pull/42/merge') {
+      return { ref: 'refs/pull/42/merge', object: { sha: driverSha } }
+    }
     if (pathname === '/pulls/42') {
       return state.pull
     }
@@ -46,7 +53,7 @@ function fixture() {
     }
     throw new Error(`Unexpected request: ${pathname}`)
   })
-  return { state, get, options: { repository, runId: 123, runAttempt: 1, driverSha, event: { number: 42, pull_request: pull }, profiles } }
+  return { state, get, run, options: { repository, runId: 123, runAttempt: 1, driverSha, event: { number: 42, pull_request: pull }, profiles } }
 }
 
 describe('native PR approval context', () => {
@@ -64,16 +71,16 @@ describe('native PR approval context', () => {
   it('refuses to retarget a waiting run after a new commit', async () => {
     const { options, get } = fixture()
     options.event = { number: 42, pull_request: { ...pull, head: { ...pull.head, sha: 'd'.repeat(40) } } }
-    await expect(resolveNativePrContext(options, get)).rejects.toThrow('waiting for approval')
+    await expect(resolveNativePrContext(options, get)).rejects.toThrow(/waiting for approval|run identity/u)
   })
 
   it('refuses a changed base and mismatched merge instead of running the wrong revision', async () => {
     const first = fixture()
     first.state.baseSha = 'd'.repeat(40)
-    await expect(resolveNativePrContext(first.options, first.get)).rejects.toThrow('base snapshot is stale')
+    await expect(resolveNativePrContext(first.options, first.get)).rejects.toThrow('merge candidate does not match')
     const second = fixture()
     second.options.driverSha = 'd'.repeat(40)
-    await expect(resolveNativePrContext(second.options, second.get)).rejects.toThrow('waiting for approval')
+    await expect(resolveNativePrContext(second.options, second.get)).rejects.toThrow(/waiting for approval|run identity/u)
   })
 
   it('refuses movement while listing changed files before publishing shared selections', async () => {
@@ -102,12 +109,11 @@ describe('native PR approval context', () => {
   })
 
   it('authenticates native artifact identity separately from manual dispatch', async () => {
-    const { options, get } = fixture()
+    const { options, get, run } = fixture()
     const context = await resolveNativePrContext(options, get)
-    const run = { id: 123, event: 'pull_request', head_sha: headSha, pull_requests: [pull] }
     expect(validateNativePrContext(context, run, repository)).toBe(context)
     for (const change of [{ event: 'workflow_dispatch' }, { head_sha: driverSha }, { pull_requests: [] }]) {
-      expect(() => validateNativePrContext(context, { ...run, ...change }, repository)).toThrow('Untrusted native PR context')
+      expect(() => validateNativePrContext(context, { ...run, ...change }, repository)).toThrow(/Untrusted native PR/u)
     }
   })
 
