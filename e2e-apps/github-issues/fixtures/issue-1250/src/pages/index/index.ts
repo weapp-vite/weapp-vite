@@ -1,4 +1,5 @@
-import { installMiniProgramGlobals } from '@weapp-vite/web/runtime'
+// 安装幂等性直接验证构建产物的内部入口；业务 API 仍通过正式 wx facade 调用。
+import { installMiniProgramGlobals } from '../../../node_modules/@weapp-vite/web/dist/runtime/polyfill/index.mjs'
 
 const trace = {
   errors: [] as string[],
