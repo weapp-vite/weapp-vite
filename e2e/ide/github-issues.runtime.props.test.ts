@@ -55,7 +55,7 @@ describe('e2e app: github-issues / props', { concurrent: false }, () => {
 
   afterAll(async () => {
     await closeSharedMiniProgram()
-  }, 30_000)
+  })
 
   it('issue #322: keeps static class and hidden v-show state on first render before errors object exists', async (ctx) => {
     const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', propsCheckpoints(resolveRuntimeProviderName()).issue322)

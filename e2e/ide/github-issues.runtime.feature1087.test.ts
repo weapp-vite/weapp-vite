@@ -71,7 +71,7 @@ describe('e2e app: github-issues / feature #1087 scroll restoration', { concurre
 
   afterAll(async () => {
     await closeSharedMiniProgram()
-  }, 30_000)
+  })
 
   it('reports native route capabilities and restores WebView page coordinates after native destruction', async (ctx) => {
     await miniProgram.navigateTo(DOCUMENT)

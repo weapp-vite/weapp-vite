@@ -54,7 +54,7 @@ describe('e2e app: github-issues / issue #1015', { concurrent: false }, () => {
 
   afterAll(async () => {
     await closeSharedMiniProgram()
-  }, 30_000)
+  })
 
   it('updates rendered styles backed by CSS v-bind from an external style block', async (ctx) => {
     const provider = resolveRuntimeProviderName()
