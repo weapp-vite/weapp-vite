@@ -12,6 +12,7 @@ interface StartupChange {
   file?: string
   event?: string
   verifyInitialInput?: boolean
+  verifyInitialSidecarCreation?: () => boolean
   initialRoute?: InitialBuildRouteEvidence
 }
 
@@ -67,7 +68,8 @@ function observeInitialBuildInputs(owner: object) {
           && change.initialRoute?.signature === publishedRouteSignature
         const consumedSourceUpdate = change.event === 'update' && (!change.initialRoute || samePublishedRoutes)
         const consumedRouteCreation = change.event === 'create' && samePublishedRoutes
-        const version = change.verifyInitialInput && (consumedSourceUpdate || consumedRouteCreation) && change.file
+        const consumedSidecarCreation = change.event === 'create' && !change.initialRoute && change.verifyInitialSidecarCreation?.()
+        const version = change.verifyInitialInput && (consumedSourceUpdate || consumedRouteCreation || consumedSidecarCreation) && change.file
           ? baseline.get(compilerSourceId(change.file))
           : undefined
         let current: string | undefined
@@ -81,7 +83,7 @@ function observeInitialBuildInputs(owner: object) {
             }
           }
         }
-        if (!version || version !== current) {
+        if (!version || version !== current || (consumedSidecarCreation && !change.verifyInitialSidecarCreation?.())) {
           retained.push(change)
         }
       }
