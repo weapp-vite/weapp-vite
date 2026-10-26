@@ -3,9 +3,9 @@ import type { NativeOutputPublicationSnapshot } from '../../../packages/weapp-vi
 import type { NativePublicationProfileIdentity, NativePublicationReceipt } from './files'
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import path from 'node:path'
 import process from 'node:process'
 import { WEAPP_VITE_OUTPUT_PUBLICATION_PLUGIN_NAME } from '@weapp-core/constants'
+import path from 'pathe'
 import { expect, it, vi } from 'vitest'
 import { captureNativePublication } from '.'
 import { createDevBuildCompletion } from '../devBuildCompletion'
@@ -80,7 +80,10 @@ it('preserves both source END identities and commit order when a later epoch ove
         { name: 'weapp-vite:context', api: { ctx: { runtimeState: { build: { hmr: { profile } } } } } },
         { name: WEAPP_VITE_OUTPUT_PUBLICATION_PLUGIN_NAME, api: {
           getEpoch: () => epoch,
-          whenCommitted: (_root: string, capturedEpoch: number) => commits[capturedEpoch - 1]!.promise,
+          whenCommitted: (root: string, capturedEpoch: number) => {
+            expect(root).toBe(outDir)
+            return commits[capturedEpoch - 1]!.promise
+          },
         } },
       ],
     } }
