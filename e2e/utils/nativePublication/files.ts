@@ -35,6 +35,8 @@ export interface NativePublicationReceipt {
   generation: string
   inputs: Record<string, string>
   outputs: Record<string, string>
+  /** 编译器在精确代次提交后的完整根输出视图，包含保留的增量产物。 */
+  outputScope?: 'committed-root'
   profileCursor?: NativePublicationProfileCursor
   publicationEpoch?: number
 }

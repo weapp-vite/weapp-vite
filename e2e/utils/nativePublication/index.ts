@@ -41,7 +41,10 @@ function receipts(output: string): NativePublicationObservation[] {
       || value.generation !== nativePublicationGeneration(value.outputs)) {
       throw new Error('Invalid native publication receipt')
     }
-    if (value.boundary === 'native-noop'
+    if ('outputScope' in value && value.outputScope !== 'committed-root') {
+      throw new Error('Invalid native publication output scope')
+    }
+    if ((value.boundary === 'native-noop' || 'outputScope' in value)
       && (!('publicationEpoch' in value) || !Number.isSafeInteger(value.publicationEpoch) || Number(value.publicationEpoch) < 0)) {
       throw new Error('Invalid native no-op publication epoch')
     }
@@ -92,8 +95,18 @@ export function captureNativePublication(
           const observedSources = new Set<string>()
           const publications = receipts(output).reverse()
           const matching = publications.filter(receipt => nativePublicationGeneration(receipt.inputs) === generation)
-          // 同一最终输入可分批重写共享产物；按文件保留最后一次原生写出，而来源仍逐身份验 END。
-          const finalOutputs = Object.fromEntries([...matching].reverse().flatMap(receipt => Object.entries(receipt.outputs)))
+          // 增量收据保留未覆盖产物；完整提交视图明确退役旧文件，仍要求磁盘证明删除。
+          const finalOutputs: Record<string, string | null> = {}
+          for (const receipt of [...matching].reverse()) {
+            if (receipt.outputScope === 'committed-root') {
+              for (const file of Object.keys(finalOutputs)) {
+                if (!(file in receipt.outputs)) {
+                  finalOutputs[file] = null
+                }
+              }
+            }
+            Object.assign(finalOutputs, receipt.outputs)
+          }
           const files = await Promise.all(Object.entries(matching.length ? finalOutputs : publications[0]?.outputs ?? {}).map(async ([file, expected]) => {
             try {
               return { file, expected, actual: nativePublicationHash(await readFile(path.join(outputRoot, file), { signal: reads.signal })) }
@@ -115,7 +128,7 @@ export function captureNativePublication(
               outputs: files,
             }
           }
-          if (!matching.length || !files.every(file => 'actual' in file && file.actual === file.expected)) {
+          if (!matching.length || !files.every(file => file.expected === null ? 'error' in file && file.error === 'ENOENT' : 'actual' in file && file.actual === file.expected)) {
             return
           }
           for (const receipt of matching) {

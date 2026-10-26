@@ -1,10 +1,37 @@
-import { readFile, writeFile } from 'node:fs/promises'
+import { access, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { expect, it, onTestFailed } from 'vitest'
 import { captureNativePublication } from '.'
 import { createDevBuildCompletion } from '../devBuildCompletion'
 import { NATIVE_PUBLICATION_PREFIX, nativePublicationHash } from './files'
 import { createGenerationFixture } from './generationFixture'
+
+it.each(['before', 'after'] as const)('observes native retirement with an unchanged retained template when the observer is %s the publisher', async (order) => {
+  const fixture = await createGenerationFixture(order)
+  onTestFailed(() => fixture.diagnostics())
+  try {
+    const publication = captureNativePublication(fixture.dev, fixture.project)
+    await fixture.render({ betweenPlugins: [{
+      name: 'fixture:optional-output',
+      generateBundle() { this.emitFile({ type: 'asset', fileName: 'optional.wxss', source: '.optional { color: red; }' }) },
+    }] })
+    expect(await readFile(path.join(fixture.project, 'dist/optional.wxss'), 'utf8')).toContain('.optional')
+    fixture.rebuild()
+    await fixture.render({ betweenPlugins: [{
+      name: 'fixture:final-output',
+      generateBundle() { this.emitFile({ type: 'asset', fileName: 'final.txt', source: 'restored' }) },
+    }] })
+    expect(fixture.nativeWrites[1]).toEqual(['app.js', 'final.txt'])
+    expect(await access(path.join(fixture.project, 'dist/optional.wxss')).then(() => true, () => false)).toBe(false)
+    const receipt = await publication.wait(500)
+    expect(receipt).toMatchObject({ boundary: 'native-byte-write', outputScope: 'committed-root', publicationEpoch: expect.any(Number) })
+    expect(Object.keys(receipt.outputs).sort()).toEqual(['app.js', 'final.txt', 'pages/index/index.wxml'])
+    expect(receipt.outputs['app.js']).toBe(nativePublicationHash(await readFile(path.join(fixture.project, 'dist/app.js'))))
+  }
+  finally {
+    await fixture.close()
+  }
+})
 
 it.each(['before', 'after'] as const)('observes a final source generation with a fully pruned follow-up build when the observer is %s the publisher', async (order) => {
   const fixture = await createGenerationFixture(order)

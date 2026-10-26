@@ -26,6 +26,7 @@ export function nativePublicationPlugin(options: NativePublicationOptions = {}):
   const observations = new Set<Promise<void>>()
   const pendingCommits = new Set<() => void>()
   const errors: unknown[] = []
+  let previousObservation = Promise.resolve()
   const awaitCommit = (committed: Promise<NativeOutputPublicationSnapshot | undefined>) => {
     const observation = Promise.withResolvers<NativeOutputPublicationSnapshot | undefined>()
     const cancel = () => {
@@ -89,7 +90,11 @@ export function nativePublicationPlugin(options: NativePublicationOptions = {}):
         }
         const byteWrite = Object.keys(bundle).length > 0
         const root = path.resolve(current.project, outputOptions.dir ?? this.environment.config.build.outDir)
-        const committed = !byteWrite && current.publication
+        // 与等待方固定相同根，其他 output.dir 的完整视图不能退役所选根的文件。
+        if (root !== path.resolve(current.project, options.outputRoot ?? 'dist')) {
+          return
+        }
+        const committed = current.publication
           ? current.publication.api.whenCommitted(root, current.publication.epoch)
           : undefined
         if (!byteWrite && !committed) {
@@ -115,14 +120,20 @@ export function nativePublicationPlugin(options: NativePublicationOptions = {}):
             })
           : undefined
         const observe = async (snapshot?: NativeOutputPublicationSnapshot) => {
-          if (!byteWrite && (!snapshot || snapshot.root !== root || snapshot.epoch !== current.publication?.epoch)) {
+          if (committed && (!snapshot || snapshot.root !== root || snapshot.epoch !== current.publication?.epoch)) {
             return
           }
-          const files = Object.fromEntries((byteWrite
-            ? Object.entries(bundle).map(([file, output]) => [file, output.type === 'chunk' ? output.code : output.source] as const)
-            : [...snapshot!.outputs])
+          const files = Object.fromEntries((snapshot
+            ? [...snapshot.outputs]
+            : Object.entries(bundle).map(([file, output]) => [file, output.type === 'chunk' ? output.code : output.source] as const))
             .sort(([left], [right]) => left.localeCompare(right))
             .map(([file, source]) => [file.replaceAll('\\', '/'), nativePublicationHash(source)]))
+          if (snapshot) {
+            // 完整视图不能省略本轮实际写出的文件，也不能用错误字节证明删除。
+            if (Object.entries(bundle).some(([file, output]) => files[file.replaceAll('\\', '/')] !== nativePublicationHash(output.type === 'chunk' ? output.code : output.source))) {
+              return
+            }
+          }
           if (!byteWrite) {
             const matches = await Promise.all(Object.entries(files).map(async ([file, hash]) => {
               try {
@@ -149,20 +160,28 @@ export function nativePublicationPlugin(options: NativePublicationOptions = {}):
             generation: nativePublicationGeneration(files),
             inputs: current.inputs,
             outputs: files,
-            ...(!byteWrite ? { publicationEpoch: snapshot!.epoch } : {}),
+            ...(snapshot ? { outputScope: 'committed-root', publicationEpoch: snapshot.epoch } : {}),
             ...(profile === undefined ? {} : { profileCursor: { offset: profile.length, prefixHash: nativePublicationHash(profile), ...(identity ? { identity } : {}) } }),
           })}\n`)
         }
-        if (byteWrite) {
+        if (!committed) {
           await observe()
         }
         else {
           // 若观察插件排在发布者之前，等待必须脱离本 hook，避免阻塞后续 sequential 提交。
-          const observation = awaitCommit(committed!).then(observe).catch((error) => {
+          // 按 hook 顺序发布，避免旧代异步读取较慢时在新完整视图后复活已退役文件。
+          // 同时认领后代拒绝，不能等前代结束后才安装错误处理器。
+          const observation = Promise.allSettled([previousObservation, awaitCommit(committed)]).then(([, snapshot]) => {
+            if (snapshot.status === 'rejected') {
+              throw snapshot.reason
+            }
+            return observe(snapshot.value)
+          }).catch((error) => {
             errors.push(error)
           }).finally(() => {
             observations.delete(observation)
           })
+          previousObservation = observation
           observations.add(observation)
         }
       },
