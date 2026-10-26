@@ -90,6 +90,10 @@ export function nativePublicationPlugin(options: NativePublicationOptions = {}):
         }
         const byteWrite = Object.keys(bundle).length > 0
         const root = path.resolve(current.project, outputOptions.dir ?? this.environment.config.build.outDir)
+        // 与等待方固定相同根，其他 output.dir 的完整视图不能退役所选根的文件。
+        if (root !== path.resolve(current.project, options.outputRoot ?? 'dist')) {
+          return
+        }
         const committed = current.publication
           ? current.publication.api.whenCommitted(root, current.publication.epoch)
           : undefined
@@ -124,6 +128,12 @@ export function nativePublicationPlugin(options: NativePublicationOptions = {}):
             : Object.entries(bundle).map(([file, output]) => [file, output.type === 'chunk' ? output.code : output.source] as const))
             .sort(([left], [right]) => left.localeCompare(right))
             .map(([file, source]) => [file.replaceAll('\\', '/'), nativePublicationHash(source)]))
+          if (snapshot) {
+            // 完整视图不能省略本轮实际写出的文件，也不能用错误字节证明删除。
+            if (Object.entries(bundle).some(([file, output]) => files[file.replaceAll('\\', '/')] !== nativePublicationHash(output.type === 'chunk' ? output.code : output.source))) {
+              return
+            }
+          }
           if (!byteWrite) {
             const matches = await Promise.all(Object.entries(files).map(async ([file, hash]) => {
               try {
@@ -158,15 +168,14 @@ export function nativePublicationPlugin(options: NativePublicationOptions = {}):
           await observe()
         }
         else {
-          // 当轮立即订阅提交，异步读取与日志按写出顺序排队，避免晚收据覆盖新完整归属。
-          // 队列不阻塞本 hook，也不以新 epoch 的磁盘否定较早字节收据的来源证据。
-          const snapshot = awaitCommit(committed).then(value => ({ value }), (error: unknown) => ({ error }))
-          const observation = previousObservation.then(async () => {
-            const result = await snapshot
-            if ('error' in result) {
-              throw result.error
+          // 若观察插件排在发布者之前，等待必须脱离本 hook，避免阻塞后续 sequential 提交。
+          // 按 hook 顺序发布，避免旧代异步读取较慢时在新完整视图后复活已退役文件。
+          // 同时认领后代拒绝，不能等前代结束后才安装错误处理器。
+          const observation = Promise.allSettled([previousObservation, awaitCommit(committed)]).then(([, snapshot]) => {
+            if (snapshot.status === 'rejected') {
+              throw snapshot.reason
             }
-            await observe(result.value)
+            return observe(snapshot.value)
           }).catch((error) => {
             errors.push(error)
           }).finally(() => {
