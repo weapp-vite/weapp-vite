@@ -5,6 +5,9 @@ import postcss from 'postcss'
 import { expectAssignable, expectError, expectType } from 'tsd'
 
 const plugin = weappWebPlugin()
+expectAssignable<Plugin>(weappWebPlugin({ wxss: { pxPerRpx: 0.25, designWidth: 375, rpxVar: '--custom-rpx' } }))
+expectError(weappWebPlugin({ wxss: { pxPerRpx: '0.25' } }))
+expectError(weappWebPlugin({ wxss: { rpxVar: 1 } }))
 const processor = postcss([])
 function transform(root: Root) {
   root.walkDecls(() => {})

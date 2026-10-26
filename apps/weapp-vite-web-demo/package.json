@@ -15,6 +15,7 @@
   },
   "devDependencies": {
     "@weapp-vite/dashboard": "workspace:*",
+    "@weapp-vite/web": "workspace:*",
     "miniprogram-api-typings": "catalog:",
     "sass": "catalog:",
     "typescript": "catalog:",
