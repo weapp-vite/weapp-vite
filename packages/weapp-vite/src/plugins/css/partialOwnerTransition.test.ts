@@ -13,7 +13,11 @@ import { createRuntimeState } from '../../runtime/runtimeState'
 import { css } from '../css'
 import { createOutputFinalizerPlugin, createOutputPublicationPlugin } from '../outputFinalizer'
 
-it.each([false, true])('publishes the remaining native sidecar when a script retires its last CSS import in another style batch (shared imports: %s)', async (sharedImports) => {
+it.each([
+  { sharedImports: false, scriptOnly: false },
+  { sharedImports: true, scriptOnly: false },
+  { sharedImports: false, scriptOnly: true },
+])('publishes the remaining native sidecar when a script retires its last CSS import (shared imports: $sharedImports, script only: $scriptOnly)', async ({ sharedImports, scriptOnly }) => {
   const root = await realpath(await mkdtemp(path.join(os.tmpdir(), 'weapp-partial-style-owner-')))
   const src = path.join(root, 'src')
   const outDir = path.join(root, 'dist')
@@ -123,7 +127,7 @@ it.each([false, true])('publishes the remaining native sidecar when a script ret
       await writeFile(path.join(publicDir, `components/${component}/index.wxml`), '<view/>')
     }
     await writeFile(path.join(publicDir, 'project.config.json'), JSON.stringify({ appid: 'wxb3d842a4a7e3440d' }))
-    await writeFile(first, 'import "./index.css"; Component({ data: { count: 1 } })')
+    await writeFile(first, `${scriptOnly ? '' : 'import "./index.css"; '}Component({ data: { count: 1 } })`)
     await writeFile(firstStyle, '.changing-a { color: red; }\n')
     await writeFile(second, 'import "./index.css"; Component({ data: { count: 2 } })')
     await writeFile(secondStyle, '.imported-b { color: green; }\n')
@@ -136,17 +140,34 @@ it.each([false, true])('publishes the remaining native sidecar when a script ret
 
     runtimeState.build.hmr.isRebuild = true
     runtimeState.build.hmr.didEmitAllEntries = false
-    await writeFile(firstStyle, '.changing-a { color: blue; }\n')
+    if (!scriptOnly) {
+      await writeFile(firstStyle, '.changing-a { color: blue; }\n')
+    }
     await writeFile(second, 'import "./index.css"; Component({ data: { count: 3 } })')
-    const retained = await withHmrStyleUpdatePlan(ctx.configService, createHmrStyleUpdatePlan([firstStyle, second]), render)
+    const changedFiles = scriptOnly ? [second] : [firstStyle, second]
+    const retained = await withHmrStyleUpdatePlan(ctx.configService, createHmrStyleUpdatePlan(changedFiles), render)
     expect(style(retained, 'components/b/index.wxss')).toBe(initial)
 
-    await writeFile(firstStyle, '.changing-a { color: purple; }\n')
+    if (!scriptOnly) {
+      await writeFile(firstStyle, '.changing-a { color: purple; }\n')
+    }
     await writeFile(second, 'Component({ data: { count: 4 } })')
-    const updated = await withHmrStyleUpdatePlan(ctx.configService, createHmrStyleUpdatePlan([firstStyle, second]), render)
-    expect(style(updated, 'components/a/index.wxss')).toContain('purple')
+    const updated = await withHmrStyleUpdatePlan(ctx.configService, createHmrStyleUpdatePlan(changedFiles), render)
+    if (!scriptOnly) {
+      expect(style(updated, 'components/a/index.wxss')).toContain('purple')
+    }
     expect(style(updated, 'components/b/index.wxss')).toBe(remaining)
     expect(runtimeState.css.emittedSource.get('components/b/index.wxss')).toBe(remaining)
+
+    if (scriptOnly) {
+      // 尚未交给本代的 sidecar 修改不能被无关脚本更新提前发布。
+      await writeFile(nativeStyle, '.deferred-b { display: none; }\n')
+      await writeFile(first, 'Component({ data: { count: 9 } })')
+      const unrelated = await withHmrStyleUpdatePlan(ctx.configService, createHmrStyleUpdatePlan([first]), render)
+      expect(style(unrelated, 'components/b/index.wxss')).toBe(remaining)
+      expect(runtimeState.css.emittedSource.get('components/b/index.wxss')).toBe(remaining)
+      await writeFile(nativeStyle, '.native-b { display: block; }\n')
+    }
 
     await writeFile(second, 'import "./index.css"; Component({ data: { count: 5 } })')
     const restored = await withHmrStyleUpdatePlan(ctx.configService, createHmrStyleUpdatePlan([second]), render)

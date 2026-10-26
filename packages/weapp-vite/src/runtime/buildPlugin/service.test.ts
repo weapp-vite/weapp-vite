@@ -3924,7 +3924,7 @@ describe('runtime buildPlugin service', () => {
       const collectFailures = (error: unknown): unknown[] => error instanceof AggregateError ? error.errors.flatMap(collectFailures) : [error]
       const failure = await closing.catch(error => error as unknown)
       expect(failure).toBeInstanceOf(AggregateError)
-      expect(collectFailures(failure)).toEqual([sidecarFailure, nativeFailure, resourceFailure])
+      expect(collectFailures(failure)).toEqual([resourceFailure, sidecarFailure, nativeFailure])
     }
     else {
       await expect(closing).rejects.toBe(sidecarFailure)

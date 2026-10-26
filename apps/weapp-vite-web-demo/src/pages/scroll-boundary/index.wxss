@@ -1,0 +1,27 @@
+.boundary-page {
+  padding: 16px;
+}
+
+.heading {
+  display: block;
+  margin-bottom: 12px;
+  font-size: 20px;
+}
+
+.feed {
+  width: 300px;
+  height: 180px;
+  margin: 12px 0;
+  background: #eef6f3;
+}
+
+.content {
+  box-sizing: border-box;
+  padding: 12px;
+  background: linear-gradient(#eef6f3, #a8cdbd);
+}
+
+.horizontal {
+  height: 100px;
+  white-space: nowrap;
+}

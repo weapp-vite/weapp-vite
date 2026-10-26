@@ -98,7 +98,6 @@ interface BundleStyleAnalysis {
 type SharedStyleImportCache = Map<string, string[]>
 
 const LEADING_BLANK_LINES_RE = /^(?:[ \t]*\r?\n)+/
-const COMPILER_CONTENT_HMR_NONCE_RE = /\n\/\* weapp-vite (?:compiler-content|tailwind-content) [^*\n]+ \*\/$/
 const VITE_PREPROCESS_STYLE_RE = /\.(?:acss|css|less|sass|scss|styl|stylus|pcss|postcss|sss)$/
 const TAILWIND_GENERATOR_PLACEHOLDER = '/*! weapp-tailwindcss generator-placeholder */'
 const VITE_STYLE_ASSET_PLACEHOLDER_RE = /__VITE_ASSET__([\w$]+)__(?:\$_(.*?)__)?/g
@@ -172,25 +171,6 @@ function isSourceStyleAsset(fileName: string) {
     || /\.(?:stylus|pcss|postcss|sss)$/.test(fileName)
 }
 
-function hasCompilerContentDirtyReason(ctx: CompilerContext) {
-  return Boolean(getHmrStyleUpdatePlan(ctx.configService)?.compilerContentOwners.size)
-}
-
-function appendCompilerContentHmrNonce(ctx: CompilerContext, source: string) {
-  const plan = getHmrStyleUpdatePlan(ctx.configService)
-  if (!plan?.compilerContentOwners.size) {
-    return source
-  }
-  const marker = [...plan.compilerContentOwners.values()].includes('compiler-content')
-    ? 'compiler-content'
-    : 'tailwind-content'
-  return `${source}\n/* weapp-vite ${marker} ${plan.id} */`
-}
-
-function stripCompilerContentHmrNonce(source: string) {
-  return source.replace(COMPILER_CONTENT_HMR_NONCE_RE, '')
-}
-
 function isStyleBundleAsset(output: OutputBundle[string], bundleKey: string): output is OutputAsset {
   if (output.type !== 'asset') {
     return false
@@ -208,11 +188,21 @@ function hasStyleBundleAsset(bundle: OutputBundle) {
   return false
 }
 
+function isPartialStylePublication(ctx: CompilerContext, resolvedConfig?: ResolvedConfig) {
+  const hmr = ctx.runtimeState?.build?.hmr
+  return ctx.configService.isDev
+    && resolvedConfig?.experimental?.bundledDev !== true
+    && hmr?.isRebuild === true
+    && hmr.didEmitAllEntries !== true
+}
+
 function shouldSkipUnchangedStyleHmrBundle(
   ctx: CompilerContext,
   bundle: OutputBundle,
+  updatingSidecarOwners: ReadonlySet<string> | undefined,
+  resolvedConfig?: ResolvedConfig,
 ) {
-  if (!ctx.configService?.isDev) {
+  if (!isPartialStylePublication(ctx, resolvedConfig)) {
     return false
   }
 
@@ -221,7 +211,8 @@ function shouldSkipUnchangedStyleHmrBundle(
     return false
   }
 
-  return !plan.styleFiles.size && !plan.compilerContentOwners.size && !hasStyleBundleAsset(bundle)
+  return !plan.styleFiles.size && !plan.compilerContentOwners.size
+    && !updatingSidecarOwners?.size && !hasStyleBundleAsset(bundle)
 }
 
 function shouldPreprocessWithVite(fileName: string) {
@@ -334,13 +325,10 @@ function emitPreparedCssAsset(
   const cache = ctx.runtimeState?.css?.emittedSource
   const existing = bundle[fileName]
   const resolvedSource = resolveViteStyleAssetPlaceholders(source, fileName, pluginCtx)
-  const emittedSource = hasManagedCompilerOutputMarker(resolvedSource)
-    ? resolvedSource
-    : appendCompilerContentHmrNonce(ctx, resolvedSource)
   if (existing?.type === 'asset') {
     const current = existing.source?.toString?.() ?? ''
-    if (current !== emittedSource) {
-      existing.source = emittedSource
+    if (current !== resolvedSource) {
+      existing.source = resolvedSource
     }
     cache?.set(normalizedFileName, resolvedSource)
     return true
@@ -350,7 +338,7 @@ function emitPreparedCssAsset(
     type: 'asset',
     fileName,
     ...(options?.originalFileName ? { originalFileName: options.originalFileName } : {}),
-    source: emittedSource,
+    source: resolvedSource,
   })
   cache?.set(normalizedFileName, resolvedSource)
   return true
@@ -633,20 +621,17 @@ async function handleBundleEntry(
 
     if (fileName) {
       const source = asset.source.toString()
-      const canonicalSource = hasCompilerContentDirtyReason(ctx)
-        ? source
-        : stripCompilerContentHmrNonce(source)
       const normalizedFileName = toPosixPath(fileName)
       const freshHmrStyleSourcePath = resolveFreshHmrStyleSourcePath(ctx, normalizedFileName)
       const preprocessId = freshHmrStyleSourcePath ?? absOriginal
       const shouldPreprocess = shouldPreprocessWithVite(preprocessId)
-        && (Boolean(freshHmrStyleSourcePath) || hasViteStyleAssetPlaceholder(canonicalSource) || !hasStylePreprocessing(ctx, this))
-      const graphSource = await readStyleGraphSource(ctx, this, preprocessId, canonicalSource, shouldPreprocess)
+        && (Boolean(freshHmrStyleSourcePath) || hasViteStyleAssetPlaceholder(source) || !hasStylePreprocessing(ctx, this))
+      const graphSource = await readStyleGraphSource(ctx, this, preprocessId, source, shouldPreprocess)
       const preprocessInput = freshHmrStyleSourcePath
         ? await resolveMemoryStyleSource(ctx, freshHmrStyleSourcePath, this) ?? graphSource
-        : shouldPreprocess && hasViteStyleAssetPlaceholder(canonicalSource)
+        : shouldPreprocess && hasViteStyleAssetPlaceholder(source)
           ? graphSource
-          : canonicalSource
+          : source
       const { css, dependencies } = await preprocessStyleSource(ctx, this, preprocessInput, preprocessId, resolvedConfig, {
         enabled: shouldPreprocess,
       })
@@ -895,48 +880,63 @@ async function emitSharedStyleImportsForChunks(
   }
 }
 
+function collectUpdatingSidecarOwners(
+  ctx: CompilerContext,
+  pluginCtx: CssEmitPluginContext,
+  bundle: OutputBundle,
+  resolvedConfig?: ResolvedConfig,
+): Set<string> | undefined {
+  const plan = ctx.configService.isDev ? getHmrStyleUpdatePlan(ctx.configService) : undefined
+  // 完整发布会替换归属清单，即使样式计划只涉及一个 owner，也必须登记全部独立 sidecar。
+  if (!plan || plan.full || !isPartialStylePublication(ctx, resolvedConfig)) {
+    return
+  }
+  const outputOwners = (sources: Iterable<string>) => Array.from(sources).flatMap((source) => {
+    const output = resolveOutputStyleFileName(ctx.configService, source)
+    return output ? [toPosixPath(output)] : []
+  })
+  const registeredOwners = new Set(outputOwners(ctx.runtimeState?.css?.sidecarImports ?? []))
+  if (!registeredOwners.size) {
+    return registeredOwners
+  }
+  const updatingOwners = new Set(outputOwners([
+    ...plan.styleFiles,
+    ...plan.cssImporterOwners,
+    ...plan.compilerContentOwners.keys(),
+  ]).filter(owner => registeredOwners.has(owner)))
+  for (const output of Object.values(bundle)) {
+    if (output.type !== 'chunk' || !output.facadeModuleId) {
+      continue
+    }
+    const source = resolveStyleOwnerId(output.facadeModuleId)
+    if (!plan.sourceFiles.has(normalizeFsResolvedId(source))) {
+      continue
+    }
+    const owner = outputOwners([source])[0]
+    if (!owner || !registeredOwners.has(owner) || updatingOwners.has(owner)
+      || !pluginCtx.getModuleInfo?.(output.facadeModuleId)) {
+      continue
+    }
+    // 本轮真实入口撤销最后一个 CSS 导入时，只让剩余独立 sidecar 接管。
+    // 此归属同时阻止提前跳过，仍有真实样式来源的入口继续使用 Vite 产物。
+    if (!collectRenderedStyleSources(pluginCtx, output.facadeModuleId).size) {
+      updatingOwners.add(owner)
+    }
+  }
+  return updatingOwners
+}
+
 async function emitCollectedStyleSidecars(
   this: any,
   ctx: CompilerContext,
   bundle: OutputBundle,
   emittedOwners: Set<string>,
+  updatingOwners: ReadonlySet<string> | undefined,
   resolvedConfig?: ResolvedConfig,
 ) {
   const sidecarImports = ctx.runtimeState?.css?.sidecarImports
   if (!sidecarImports?.size) {
     return
-  }
-
-  const plan = ctx.configService.isDev ? getHmrStyleUpdatePlan(ctx.configService) : undefined
-  const updatingOwners = plan && !plan.full
-    ? new Set([
-        ...plan.styleFiles,
-        ...plan.cssImporterOwners,
-        ...plan.compilerContentOwners.keys(),
-      ].flatMap((source) => {
-        const output = resolveOutputStyleFileName(ctx.configService, source)
-        return output ? [toPosixPath(output)] : []
-      }))
-    : undefined
-  if (plan && updatingOwners) {
-    for (const output of Object.values(bundle)) {
-      if (output.type !== 'chunk' || !output.facadeModuleId) {
-        continue
-      }
-      const source = resolveStyleOwnerId(output.facadeModuleId)
-      if (!plan.sourceFiles.has(normalizeFsResolvedId(source)) || !this.getModuleInfo?.(output.facadeModuleId)) {
-        continue
-      }
-      // 本轮真实入口撤销最后一个 CSS 导入时，只让剩余独立 sidecar 接管。
-      // 仍有真实样式来源或本轮没有参与构建的入口不能被原始内容覆盖。
-      if (collectRenderedStyleSources(this, output.facadeModuleId).size) {
-        continue
-      }
-      const fileName = resolveOutputStyleFileName(ctx.configService, source)
-      if (fileName) {
-        updatingOwners.add(toPosixPath(fileName))
-      }
-    }
   }
   const ownerSidecars = new Map<string, {
     fileName: string
@@ -985,6 +985,7 @@ async function generateBundleSharedCss(
   configService: CompilerContext['configService'],
   bundle: OutputBundle,
   analysis: BundleStyleAnalysis,
+  updatingSidecarOwners: ReadonlySet<string> | undefined,
   resolvedConfig?: ResolvedConfig,
 ) {
   pendingOwnerStyleSources.delete(ctx)
@@ -1065,7 +1066,7 @@ async function generateBundleSharedCss(
     emitted.add(normalizedFileName)
   }
   // 最终资产、真实 CSS 和独立 sidecar 共用本轮输出归属；共享导入只补尚未生成的 owner。
-  await emitCollectedStyleSidecars.call(this, ctx, bundle, emitted, resolvedConfig)
+  await emitCollectedStyleSidecars.call(this, ctx, bundle, emitted, updatingSidecarOwners, resolvedConfig)
   await emitSharedStyleEntries.call(this, ctx, sharedStyles, emitted, configService, bundle, resolvedConfig)
   await emitSharedStyleImportsForChunks.call(this, ctx, sharedStyles, emitted, configService, bundle, facadeChunks, sharedStyleImportCache)
 }
@@ -1154,9 +1155,10 @@ export function css(ctx: CompilerContext): Plugin[] {
         async handler(_opts, bundle) {
           assertStylePreprocessing(ctx, this)
           const rolldownBundle = bundle as unknown as OutputBundle
-          if (!shouldSkipUnchangedStyleHmrBundle(ctx, rolldownBundle)) {
+          const updatingSidecarOwners = collectUpdatingSidecarOwners(ctx, this, rolldownBundle, resolvedConfig)
+          if (!shouldSkipUnchangedStyleHmrBundle(ctx, rolldownBundle, updatingSidecarOwners, resolvedConfig)) {
             const styleAnalysis = analyzeBundleStyles(rolldownBundle)
-            await generateBundleSharedCss.call(this, ctx, configService, bundle, styleAnalysis, resolvedConfig)
+            await generateBundleSharedCss.call(this, ctx, configService, bundle, styleAnalysis, updatingSidecarOwners, resolvedConfig)
           }
           emitMissingManagedStyleAssets(ctx, this, rolldownBundle)
         },

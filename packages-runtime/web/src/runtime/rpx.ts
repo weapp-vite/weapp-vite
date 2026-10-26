@@ -13,17 +13,17 @@ let activeConfig = {
   varName: DEFAULT_VAR_NAME,
 }
 
-function computeRpx(designWidth: number) {
+export function getRuntimeRpxSize() {
   if (typeof window === 'undefined') {
     return 0
   }
   const width = getWebViewportWidth()
-  return width / designWidth
+  return width / activeConfig.designWidth
 }
 
 function applyRpx() {
   const root = document.documentElement
-  const value = computeRpx(activeConfig.designWidth)
+  const value = getRuntimeRpxSize()
   root.style.setProperty(activeConfig.varName, `${value}px`)
 }
 

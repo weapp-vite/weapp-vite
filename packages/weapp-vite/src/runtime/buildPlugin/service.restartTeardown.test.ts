@@ -262,7 +262,61 @@ describe('classic config restart teardown ownership', () => {
     }
   })
 
-  it.each(['config-load', 'initial-publication'] as const)('does not leave a new generation after shutdown during %s', async (checkpoint) => {
+  it.each(['controller', 'service'] as const)('retains a completed provider cleanup failure when the %s closes later', async (entry) => {
+    vi.stubEnv('WEAPP_VITE_HMR_PROFILE_JSON', '')
+    const ctx = createContext()
+    const failure = new Error('provider resource close failed')
+    const controllers: ReturnType<typeof createDevBuildWatcher>[] = []
+    const providerClose = vi.fn().mockRejectedValue(failure)
+    mocks.provider.mockResolvedValue({ close: providerClose })
+    mocks.watch.mockImplementation(() => ({ add: vi.fn(), on: vi.fn(), close: vi.fn(async () => {}) }))
+    mocks.assets.mockImplementation(() => ({ ready: Promise.resolve(), close: vi.fn(async () => {}) }))
+    mocks.build.mockResolvedValue({ output: [] })
+    const { createDevBuildWatcher: realController } = await vi.importActual<typeof import('./devBuildWatcher')>('./devBuildWatcher')
+    const controllerSpy = vi.spyOn(await import('./devBuildWatcher'), 'createDevBuildWatcher').mockImplementation(() => {
+      const controller = realController()
+      controllers.push(controller)
+      return controller
+    })
+    try {
+      const service = createBuildService(ctx as unknown as MutableCompilerContext)
+      const first = await service.build({ skipNpm: true }) as RolldownWatcher
+      service.requestConfigRestart('app')
+      controllers[0]!.emitEvent({ code: 'START' })
+      controllers[0]!.emitEvent({ code: 'END' })
+      await vi.waitFor(() => expect(mocks.restarts).toHaveLength(1))
+      expect(await Promise.allSettled(mocks.restarts)).toEqual([{ status: 'rejected', reason: failure }])
+      await vi.waitFor(() => expect(mocks.logger.error).toHaveBeenCalledWith(failure))
+      expect(ctx.configService.load).not.toHaveBeenCalled()
+      expect(mocks.build).toHaveBeenCalledOnce()
+      expect(mocks.provider).toHaveBeenCalledOnce()
+      expect(controllers).toHaveLength(1)
+      expect(ctx.watcherService.rollupWatcherMap.size).toBe(0)
+      expect(ctx.watcherService.sidecarWatcherMap.size).toBe(0)
+
+      const closing = entry === 'service' ? ctx.watcherService.closeAll() : first.close()
+      await expect(closing).rejects.toBe(failure)
+      const publicClose = first.close()
+      expect(first.close()).toBe(publicClose)
+      await expect(publicClose).rejects.toBe(failure)
+      await expect(ctx.watcherService.closeAll()).rejects.toBe(failure)
+      expect(providerClose).toHaveBeenCalledOnce()
+      expect(mocks.forbiddenIo).not.toHaveBeenCalled()
+    }
+    finally {
+      await Promise.allSettled(mocks.restarts)
+      await Promise.allSettled(controllers.map(controller => controller.watcher.close()))
+      await Promise.allSettled([ctx.watcherService.closeAll()])
+      controllerSpy.mockRestore()
+    }
+  })
+
+  it.each([
+    { checkpoint: 'config-load', entry: 'controller' },
+    { checkpoint: 'config-load', entry: 'service' },
+    { checkpoint: 'initial-publication', entry: 'controller' },
+    { checkpoint: 'initial-publication', entry: 'service' },
+  ] as const)('does not leave a new generation after $entry shutdown during $checkpoint', async ({ checkpoint, entry }) => {
     vi.stubEnv('WEAPP_VITE_HMR_PROFILE_JSON', '')
     const entered = Promise.withResolvers<void>()
     const release = Promise.withResolvers<void>()
@@ -313,7 +367,7 @@ describe('classic config restart teardown ownership', () => {
       await waitForRestartCheckpoint(entered.promise, `${checkpoint} checkpoint`)
       trace.push('shutdown-started')
       const shutdown = (async () => {
-        await watcher!.close()
+        await (entry === 'service' ? ctx.watcherService.closeAll() : watcher!.close())
         await ctx.watcherService.closeAll()
         trace.push('shutdown-complete')
       })()

@@ -1,5 +1,6 @@
 /* eslint-disable ts/no-use-before-define */
 import type { HmrProfileJsonSample } from '../packages/weapp-vite/src/analyze/hmr'
+import type { BenchmarkHmrRuntime } from './benchmarkTemplatesHmr/profile'
 import type { SequenceErrorEvidence } from './editSequence/errorEvidence'
 import type { StatefulHmrAuditEvent } from './workspace-hmr/statefulAuditUpdate'
 import { createHash } from 'node:crypto'
@@ -28,7 +29,7 @@ import { waitForBenchmarkInitialOutputs } from './benchmarkTemplatesHmr/initialO
 import { mutateJsonMarker } from './benchmarkTemplatesHmr/jsonMutation'
 import { isNativeBenchmarkScriptEntry } from './benchmarkTemplatesHmr/nativeEntry'
 import { compareBenchmarkOutputs, snapshotBenchmarkOutputs } from './benchmarkTemplatesHmr/outputScope'
-import { collectBenchmarkHmrProfile, matchesHmrProfileSource } from './benchmarkTemplatesHmr/profile'
+import { collectBenchmarkHmrPhaseProfile, matchesHmrProfileSource } from './benchmarkTemplatesHmr/profile'
 import { restoreBenchmarkSource } from './benchmarkTemplatesHmr/sourceRestore'
 import { normalizeBenchmarkStylesheet } from './benchmarkTemplatesHmr/styleOutput'
 import { injectVueStyleRule, parseStatefulHmrControlSource } from './workspace-hmr/scenarios'
@@ -72,7 +73,9 @@ interface ScenarioSample extends HmrProfileJsonSample {
   attribution: ReturnType<typeof attributeHmrProfile>
   outputChanges?: ReturnType<typeof compareBenchmarkOutputs>
   inputSha256?: string
-  profileStatus: Awaited<ReturnType<typeof collectBenchmarkHmrProfile>>['status']
+  profileStatus: Awaited<ReturnType<typeof collectBenchmarkHmrPhaseProfile>>['status']
+  runtimeBefore: BenchmarkHmrRuntime
+  runtimeAfter: BenchmarkHmrRuntime
   timingSource: 'compiler-profile' | 'output-observation'
   phase?: SamplePhase
   heapUsedBytes?: number
@@ -126,6 +129,7 @@ interface BenchmarkReport {
   budgetMs: number
   budgetMetric: 'wallMs'
   generatedAt: string
+  requestedRuntime: string | null
   iterations: number
   summary: {
     maxMs?: number
@@ -659,15 +663,16 @@ async function benchmarkScenario(
     ? async () => normalizeBenchmarkStylesheet(await readOutputSource())
     : readOutputSource
   const controlPath = path.join(template.workspaceRoot, 'dist', WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE)
-  const runtime = await pathExists(controlPath) ? 'stateful' : 'standard'
-  const usesStatefulScript = isScript && runtime === 'stateful'
-  // 脚本含随 HMR 变化的版本/载荷；模板和 JSON 必须逐字恢复，样式保留完整语义与顺序，
-  // 仅排除前一内容更新留下的受管 nonce 与 CSS 格式差异，
+  const readRuntime = async (): Promise<BenchmarkHmrRuntime> => await pathExists(controlPath) ? 'stateful' : 'standard'
+  let runtime = await readRuntime()
+  const usesStatefulScript = () => isScript && runtime === 'stateful'
+  // 脚本含随 HMR 变化的版本/载荷；模板和 JSON 逐字恢复，样式比较保留完整语义及顺序，
+  // 仅排除历史受管 nonce 与格式差异，
   // 不能把 bundler 截断文件后暂时没有标记的空窗口当作更新完成。
   const originalOutput = isScript ? undefined : await readOutput()
   const readControl = async (signal?: AbortSignal) => parseStatefulHmrControlSource(await readFile(controlPath, { encoding: 'utf8', signal }))
   const waitForOutput = async (marker: string, absent = false, signal?: AbortSignal) => {
-    if (usesStatefulScript) {
+    if (usesStatefulScript()) {
       // 与真实宿主相同地注册和消费更新；服务端只有在 poll 后才发布载荷。
       await waitForStatefulHmrAuditUpdate({
         client: statefulClient,
@@ -686,7 +691,7 @@ async function benchmarkScenario(
   }
 
   const acknowledgeArtifact = async () => {
-    if (usesStatefulScript) {
+    if (usesStatefulScript()) {
       await statefulClient.acknowledgePublished(timeoutMs)
     }
   }
@@ -713,6 +718,7 @@ async function benchmarkScenario(
 
   try {
     for (let index = 0; index < iterations; index += 1) {
+      runtime = await readRuntime()
       const marker = createMarker(template.id, scenario.id, index)
       expectedMarker = scenario.outputMarker?.(marker) ?? marker
       const updated = scenario.mutate(original, marker)
@@ -722,7 +728,7 @@ async function benchmarkScenario(
       if ((await readOutput()).includes(expectedMarker)) {
         throw new Error(`Scenario ${scenario.id} already contains the new output marker.`)
       }
-      if (usesStatefulScript || (runtime === 'stateful' && scenario.group === 'vue-template')) {
+      if (usesStatefulScript() || (runtime === 'stateful' && scenario.group === 'vue-template')) {
         await statefulClient.ensureRegistered(await readControl(), timeoutMs)
       }
 
@@ -732,7 +738,8 @@ async function benchmarkScenario(
       const startedAt = performance.now()
       const wallMs = await measureArtifact(expectedMarker, false, () => replaceFileByRename(scenario.sourceFile, updated), startedAt)
       await acknowledgeArtifact()
-      const profileSample = await collectBenchmarkHmrProfile(runtime, () => waitForHmrProfileSample(template, profilePath, scenario.sourceFile, lineCount, profileTimeoutMs, runtime), profileEnabled)
+      const profileSample = await collectBenchmarkHmrPhaseProfile(runtime, readRuntime, actualRuntime => waitForHmrProfileSample(template, profilePath, scenario.sourceFile, lineCount, profileTimeoutMs, actualRuntime), profileEnabled)
+      runtime = profileSample.runtimeAfter
       const editMemorySample = await sampleHeapAfterGc(inspectorUrl).catch(() => undefined)
       const editSample = createScenarioSample(scenario, profileSample, wallMs, 'edit', editMemorySample, performance.timeOrigin + startedAt)
       editSample.inputSha256 = createHash('sha256').update(updated).digest('hex')
@@ -742,11 +749,13 @@ async function benchmarkScenario(
       }
 
       const restoreLineCount = await countJsonlLines(profilePath)
+      runtime = await readRuntime()
       phase = 'restore'
       const restoreStartedAt = performance.now()
       const restoreWallMs = await measureArtifact(expectedMarker, true, () => replaceFileByRename(scenario.sourceFile, original), restoreStartedAt)
       await acknowledgeArtifact()
-      const restoreProfileSample = await collectBenchmarkHmrProfile(runtime, () => waitForHmrProfileSample(template, profilePath, scenario.sourceFile, restoreLineCount, profileTimeoutMs, runtime), profileEnabled)
+      const restoreProfileSample = await collectBenchmarkHmrPhaseProfile(runtime, readRuntime, actualRuntime => waitForHmrProfileSample(template, profilePath, scenario.sourceFile, restoreLineCount, profileTimeoutMs, actualRuntime), profileEnabled)
+      runtime = restoreProfileSample.runtimeAfter
       const restoreMemorySample = await sampleHeapAfterGc(inspectorUrl).catch(() => undefined)
       const restoreSample = createScenarioSample(scenario, restoreProfileSample, restoreWallMs, 'restore', restoreMemorySample, performance.timeOrigin + restoreStartedAt)
       restoreSample.inputSha256 = createHash('sha256').update(original).digest('hex')
@@ -830,7 +839,7 @@ async function benchmarkScenario(
 
 function createScenarioSample(
   scenario: ScenarioCase,
-  profileResult: { profile: HmrProfileJsonSample, status: ScenarioSample['profileStatus'] },
+  profileResult: { profile: HmrProfileJsonSample, status: ScenarioSample['profileStatus'], runtimeBefore: BenchmarkHmrRuntime, runtimeAfter: BenchmarkHmrRuntime },
   wallMs: number,
   phase: SamplePhase,
   memorySample?: { heapUsed: number, rss: number },
@@ -848,6 +857,8 @@ function createScenarioSample(
     sourceRootFile: profileSample.sourceRootFile,
     phase,
     profileStatus: profileResult.status,
+    runtimeBefore: profileResult.runtimeBefore,
+    runtimeAfter: profileResult.runtimeAfter,
     timingSource: typeof profileSample.totalMs === 'number' ? 'compiler-profile' : 'output-observation',
     wallMs,
   }
@@ -866,6 +877,7 @@ function createReport(templates: TemplateResult[]): BenchmarkReport {
     budgetMs,
     budgetMetric: 'wallMs',
     generatedAt: new Date().toISOString(),
+    requestedRuntime: process.env.TEMPLATES_HMR_RUNTIME ?? null,
     iterations,
     profileTimeoutMs,
     profileEnabled,

@@ -10,8 +10,10 @@ interface DevWatcherGeneration {
 export function createDevWatcherSession(service?: WatcherService) {
   const generations = new Set<DevWatcherGeneration>()
   const watcherGenerations = new WeakMap<RolldownWatcher, DevWatcherGeneration>()
+  const generationFailures = new Set<unknown>()
   const restarts = new Set<Promise<void>>()
   const restartFailures = new Set<unknown>()
+  let generationRevision = 0
   let closed = false
   let hasOwnership = false
   let closing: Promise<void> | undefined
@@ -26,17 +28,19 @@ export function createDevWatcherSession(service?: WatcherService) {
         ...Array.from(generations, generation => generation.stop()),
         ...restarts,
       ])
-      const errors = [...new Set([
+      const failures = new Set([
+        ...generationFailures,
         ...results.flatMap(result => result.status === 'rejected' ? [result.reason] : []),
         ...restartFailures,
-      ])]
+      ])
       try {
         cleanup?.()
       }
       catch (error) {
-        errors.push(error)
+        failures.add(error)
       }
       unregisterController?.()
+      const errors = [...failures]
       if (errors.length) {
         throw errors.length === 1 ? errors[0] : new AggregateError(errors, 'Development watcher shutdown failed')
       }
@@ -60,7 +64,10 @@ export function createDevWatcherSession(service?: WatcherService) {
     async ownResource(closeResource: () => Promise<void>) {
       let stopping: Promise<void> | undefined
       const resource: DevWatcherGeneration = {
-        stop: () => stopping ??= Promise.resolve().then(closeResource).finally(() => generations.delete(resource)),
+        stop: () => stopping ??= Promise.resolve().then(closeResource).catch((error) => {
+          generationFailures.add(error)
+          throw error
+        }).finally(() => generations.delete(resource)),
       }
       generations.add(resource)
       if (closed) {
@@ -74,10 +81,15 @@ export function createDevWatcherSession(service?: WatcherService) {
     async own(watcher: RolldownWatcher) {
       hasOwnership = true
       if (!watcherGenerations.has(watcher)) {
+        generationRevision += 1
         const stop = watcher.close.bind(watcher)
         let stopping: Promise<void> | undefined
         const generation: DevWatcherGeneration = {
-          stop: () => stopping ??= Promise.resolve().then(stop).finally(() => generations.delete(generation)),
+          stop: () => stopping ??= Promise.resolve().then(stop).catch((error) => {
+            // 失败代退出集合后仍由公共关闭报告；普通配置或编译失败不进入资源错误记录。
+            generationFailures.add(error)
+            throw error
+          }).finally(() => generations.delete(generation)),
         }
         generations.add(generation)
         watcherGenerations.set(watcher, generation)
@@ -100,7 +112,16 @@ export function createDevWatcherSession(service?: WatcherService) {
       // 先登记再调用，关闭时不会漏掉同步进入异步边界的重启。
       const task = Promise.resolve().then(async () => {
         if (!closed) {
+          const previousFailures = [...restartFailures]
+          const previousRevision = generationRevision
           await run()
+          // 捕获异常不等于恢复；只有本次成功接管了新代，才解决此前的普通启动失败。
+          // 资源关闭失败另行持有，不能被后续成功编译抹除。
+          if (!closed && generationRevision > previousRevision) {
+            for (const failure of previousFailures) {
+              restartFailures.delete(failure)
+            }
+          }
         }
       })
       restarts.add(task)

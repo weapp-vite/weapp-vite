@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { FULL_REQUEST_GLOBAL_TARGETS } from '../../../runtime/config/internal/injectRequestGlobals'
 import { createRuntimeState } from '../../../runtime/runtimeState'
 import { pruneUnchangedDevHmrOutputs } from '../../outputFinalizer/hmrPrune'
+import { collectAffectedSharedChunkEntriesAndChunks } from '../helpers'
 import { createGenerateBundleHook } from './emit/generate'
 
 function fixture() {
@@ -136,6 +137,59 @@ describe('classic native root publication during incremental generation', () => 
     expectInjectedApi(output['app.js'] as OutputChunk)
     expectInjectedApi(output['pages/active/index.js'] as OutputChunk)
     expect(output['pages/inactive/index.js']).toBeUndefined()
+  })
+
+  it.each([false, true])('refreshes compiled shared dependencies independently of logical HMR owners (peer compiled=%s)', async (peerCompiled) => {
+    const state = fixture()
+    const sourceRoot = path.join(state.resolvedConfig!.root, 'src')
+    const active = path.join(sourceRoot, 'pages/active/index.ts')
+    const peer = path.join(sourceRoot, 'pages/inactive/index.ts')
+    const dependency = path.join(sourceRoot, 'shared/current.ts')
+    const previous = 'weapp-vendors/previous.js'
+    const current = 'weapp-vendors/current.js'
+    const compiled = new Set(peerCompiled ? [active, peer] : [active])
+    state.ctx.configService.absoluteSrcRoot = sourceRoot
+    state.ctx.configService.weappViteConfig.injectWeapi = false
+    state.resolvedEntryMap = new Map([active, peer].map(id => [id, { id }]))
+    state.hmrSourceSharedChunks = new Set()
+    state.hmrState.skipSharedChunkRefresh = false
+    state.hmrState.lastHmrEntryIds = new Set([active])
+    state.hmrState.lastEmittedEntryIds = compiled
+    state.hmrSharedChunkImporters.set(previous, new Set([active, peer]))
+    for (const id of [active, peer]) {
+      state.hmrSharedChunksByEntry.set(id, new Set([previous]))
+    }
+    const output = bundle()
+    for (const [fileName, entryId] of [['pages/active/index.js', active], ['pages/inactive/index.js', peer]]) {
+      if (!compiled.has(entryId!)) {
+        delete output[fileName!]
+        continue
+      }
+      Object.assign(output[fileName!], {
+        facadeModuleId: entryId,
+        code: 'exports.value = require("../../weapp-vendors/current.js").value;',
+        imports: [current],
+      })
+      state.ctx.runtimeState.build.hmr.lastEmittedChunkFileNames.add(fileName!)
+    }
+    output[current] = {
+      ...output['app.js'],
+      fileName: current,
+      facadeModuleId: null,
+      isEntry: false,
+      code: 'exports.value = "current dependency";',
+      moduleIds: [dependency],
+      modules: { [dependency]: {} },
+    } as OutputChunk
+
+    await createGenerateBundleHook(state, false).call({}, {}, output)
+
+    expect(state.hmrSharedChunkImporters.get(current)).toEqual(compiled)
+    expect(state.hmrSharedChunksByEntry.get(peer)).toEqual(new Set([peerCompiled ? current : previous]))
+    expect(state.hmrSharedChunkImporters.get(previous)).toEqual(peerCompiled ? undefined : new Set([peer]))
+    expect(collectAffectedSharedChunkEntriesAndChunks(state, dependency).affectedEntries).toEqual(compiled)
+    expect(state.hmrState.lastHmrEntryIds).toEqual(new Set([active]))
+    expect(state.hmrState.lastEmittedEntryIds).toEqual(compiled)
   })
 
   it.each(['partial-script', 'metadata-template'] as const)('publishes an executable prelude when a native generation retains its installer through the app input (%s)', async (trigger) => {

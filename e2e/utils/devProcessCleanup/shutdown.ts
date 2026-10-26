@@ -36,7 +36,7 @@ export function createDevProcessShutdownFailure(info: DevProcessExitInfo, summar
       `Dev process graceful session cleanup did not complete before its deadline, cancellation, or forced termination: ${summary}; gracefulTimeoutMs=${forced.gracefulTimeoutMs}; cancelled=${Boolean(forced.cancelled)}`,
     ), forced, { cause: forced.requestError ?? forced.cancelled?.reason ?? info.error })
   }
-  if (info.exitCode !== 0 || info.signal) {
+  if (info.exitCode !== 0 || info.signal || info.error) {
     return new Error(formatMessage(`Dev process failed during graceful shutdown: ${summary}`), { cause: info.error })
   }
 }
