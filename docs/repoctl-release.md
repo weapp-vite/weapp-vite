@@ -1,6 +1,6 @@
 # repoctl 发布流程
 
-仓库使用 repoctl 6.2.0。正式版、预发布版、npm nightly 和 OIDC 审计共用 `Release`（`release.yml`），继续使用现有 npm Trusted Publisher 绑定。PR snapshot 使用官方独立构建与发布工作流，只需要内置 GitHub token 和 npm OIDC，无须 GitHub App 或发布 PAT。
+仓库使用 repoctl 6.2.1。正式版、预发布版、npm nightly 和 OIDC 审计共用 `Release`（`release.yml`），继续使用现有 npm Trusted Publisher 绑定。PR snapshot 使用官方独立构建与发布工作流，只需要内置 GitHub token 和 npm OIDC，无须 GitHub App 或发布 PAT。
 
 ## 正式版与预发布版
 
@@ -66,7 +66,7 @@ pnpm add wevu@snapshot-nightly
 
 ## PR snapshot
 
-repoctl 6.2.0 已通过 [#1114](https://github.com/icelib/repoctl/pull/1114) 和 [#1116](https://github.com/icelib/repoctl/pull/1116) 提供 prepared snapshot、自动 changeset、正式 Release PR 校验和 hooks 公共入口。本仓库使用官方成对工作流 `.github/workflows/repoctl-snapshot-build.yml` 与 `.github/workflows/repoctl-snapshot-publish.yml`，固定 repoctl 6.2.0、pnpm 12.15.0，并复用 `pr-ci-approval`。
+repoctl 6.2.0 已通过 [#1114](https://github.com/icelib/repoctl/pull/1114) 和 [#1116](https://github.com/icelib/repoctl/pull/1116) 提供 prepared snapshot、自动 changeset、正式 Release PR 校验和 hooks 公共入口。本仓库使用官方成对工作流 `.github/workflows/repoctl-snapshot-build.yml` 与 `.github/workflows/repoctl-snapshot-publish.yml`，固定 repoctl 6.2.1、pnpm 12.15.0，并复用 `pr-ci-approval`。
 
 启用前，将工作流合入默认分支，并为所有公开包新增允许仓库 `weapp-vite/weapp-vite`、工作流 `repoctl-snapshot-publish.yml` 的 npm Trusted Publisher，保留 `release.yml` 的现有连接。publisher job 没有 Environment，npm 对应字段应留空；`pr-ci-approval` 保护的是 builder freeze。npm 当前允许每包最多 10 个 trusted publisher；新增配置的首次成功发布时限以 npm 页面为准。当前迁移只准备仓库配置，没有修改远端 npm 设置或执行真实发布。
 
