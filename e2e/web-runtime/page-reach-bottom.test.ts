@@ -3,6 +3,7 @@ import type { PreviewServer } from 'vite'
 import { cp, mkdir, mkdtemp, rm, symlink } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
+import { pathToFileURL } from 'node:url'
 import { chromium } from 'playwright'
 import { build, preview } from 'vite'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
@@ -51,7 +52,8 @@ async function finishScrollFrame(page: Page) {
   }))
 }
 
-// 消费独立复制的发布产物，原生与 wevu hook 均由 Chromium 的真实滚动派发。
+// 从独立发布包的公开 plugin 入口编译 WXML，再将真实 render 产物打包给 Chromium。
+// 原生与 wevu hook 共用这份编译结果，由浏览器真实滚动派发，不手写 Lit 渲染函数。
 // 无需启动微信 IDE；整个 suite 仍经 Web E2E 配置取得机器串行租约。
 describe('page reach-bottom pagination in the published Web runtime', { concurrent: false }, () => {
   let project: string
@@ -72,22 +74,30 @@ describe('page reach-bottom pagination in the published Web runtime', { concurre
     await symlink(path.join(WEB_ROOT, 'node_modules'), path.join(installedPackage, 'node_modules'), 'junction')
     await symlink(path.join(ROOT, 'packages-runtime/wevu'), path.join(project, 'node_modules/wevu'), 'junction')
     await symlink(path.join(WEB_ROOT, 'node_modules/lit'), path.join(project, 'node_modules/lit'), 'junction')
+    const { weappWebPlugin } = await import(pathToFileURL(path.join(installedPackage, 'dist/plugin.mjs')).href) as typeof import('@weapp-vite/web/plugin')
     const modules: string[] = []
+    const templates = new Map<string, string[]>()
     await build({
       root: project,
       configFile: false,
       mode: 'production',
       define: { 'process.env.NODE_ENV': JSON.stringify('production') },
-      plugins: [{
+      plugins: [weappWebPlugin({ srcDir: 'templates' }), {
         name: 'verify-published-reach-bottom-runtime',
         moduleParsed(module) {
           modules.push(module.id.replaceAll('\\', '/'))
+          if (module.id.includes('.wxml?weapp-web-template')) {
+            templates.set(path.basename(module.id.split('?')[0]!), module.exports)
+          }
         },
       }],
       build: { minify: true },
     })
     expect(modules.some(id => id.endsWith('/node_modules/@weapp-vite/web/dist/runtime/index.mjs'))).toBe(true)
     expect(modules.some(id => id.includes('/packages-runtime/web/src/'))).toBe(false)
+    expect(templates.size).toBe(2)
+    expect(templates.get('page.wxml')).toContain('render')
+    expect(templates.get('peer.wxml')).toContain('render')
     server = await preview({ root: project, configFile: false, preview: { host: '127.0.0.1', port: 0, open: false } })
     browser = await chromium.launch({ channel: process.env.WEAPP_VITE_WEB_E2E_CHANNEL })
   })

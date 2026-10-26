@@ -1,17 +1,10 @@
 import { initializePageRoutes, registerApp, registerPage, registerWebWevuComponent, setupWebViewport } from '@weapp-vite/web/runtime'
-import { html } from 'lit'
 import { nextTick, onPageScroll, onReachBottom, ref } from 'wevu'
+import { render as template } from './templates/page.wxml?weapp-web-template'
+import { render as peerTemplate } from './templates/peer.wxml?weapp-web-template'
 
 setupWebViewport()
 registerApp({})
-function template(state) {
-  return html`
-  <div id="content" style="height:${state.height}px">
-    <span id="count">${state.count}</span>
-    <span id="events">${state.events.join(',')}</span>
-  </div>
-`
-}
 
 registerPage({
   data: { count: 0, height: 1200, events: [] },
@@ -57,5 +50,5 @@ registerWebWevuComponent({
   },
 }, { kind: 'page', id: 'pages/wevu/index', template })
 
-registerPage({}, { id: 'pages/peer/index', template: () => html`<div id="peer">Peer</div>` })
+registerPage({}, { id: 'pages/peer/index', template: peerTemplate })
 initializePageRoutes(['pages/native/index', 'pages/wevu/index', 'pages/peer/index'])
