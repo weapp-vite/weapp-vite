@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { collectBenchmarkHmrPhaseProfile, collectBenchmarkHmrProfile, matchesHmrProfileSource } from './profile'
+import { collectBenchmarkHmrPhaseProfile, collectBenchmarkHmrProfile, findBenchmarkHmrProfileSample, matchesHmrProfileSource } from './profile'
 
 describe('benchmark compiler profile capability', () => {
   it('does not read a disabled profile during overhead comparisons', async () => {
@@ -28,6 +28,16 @@ describe('benchmark compiler profile capability', () => {
     expect(restore).toEqual({ profile, status: 'available', runtimeBefore: 'standard', runtimeAfter: 'standard' })
     expect(reader.mock.calls).toEqual([['standard'], ['standard']])
     expect(readRuntime).toHaveBeenCalledTimes(2)
+  })
+
+  it('rejects complete stateful timing after the published runtime falls back to standard', async () => {
+    const profile = { schemaVersion: 1, status: 'complete', pipeline: 'stateful', totalMs: 18 }
+    expect(await collectBenchmarkHmrPhaseProfile('stateful', async () => 'standard', async () => profile)).toEqual({
+      profile: {},
+      status: 'incompatible',
+      runtimeBefore: 'stateful',
+      runtimeAfter: 'standard',
+    })
   })
 
   it('does not relabel a failed stateful fallback profile or accept standard timing before fallback', async () => {
@@ -64,6 +74,19 @@ describe('benchmark compiler profile capability', () => {
     expect(matchesHmrProfileSource({ file: 'other/src/pages/home/index.vue' }, expected)).toBe(false)
     expect(matchesHmrProfileSource({ sourceEvents: [{ eventId: 'edit', file: expected[0], receivedAtMs: 10 }] }, expected)).toBe(true)
     expect(matchesHmrProfileSource({ file: 'src\\pages\\home\\index.vue' }, expected)).toBe(true)
+  })
+
+  it('selects the latest profile from the actual runtime and exact source amid interleaved records', () => {
+    const source = 'src/pages/home/index.vue'
+    const standard = { pipeline: 'standard', file: source, totalMs: 18 } as const
+    const stateful = { pipeline: 'stateful', file: source, totalMs: 8 } as const
+    const unrelated = { pipeline: 'standard', file: `other/${source}`, totalMs: 2 } as const
+    const legacy = { file: 'src\\pages\\home\\index.vue', totalMs: 20 }
+    expect(findBenchmarkHmrProfileSample([legacy, standard, stateful, unrelated], 'standard', [source])).toBe(standard)
+    expect(findBenchmarkHmrProfileSample([legacy, stateful, standard, unrelated], 'stateful', [source])).toBe(stateful)
+    expect(findBenchmarkHmrProfileSample([standard, legacy, stateful], 'standard', [source])).toBe(legacy)
+    expect(findBenchmarkHmrProfileSample([legacy, standard], 'stateful', [source])).toBeUndefined()
+    expect(findBenchmarkHmrProfileSample([stateful, unrelated], 'standard', [source])).toBeUndefined()
   })
 
   it('distinguishes an absent profile from a query failure', async () => {

@@ -29,7 +29,7 @@ import { waitForBenchmarkInitialOutputs } from './benchmarkTemplatesHmr/initialO
 import { mutateJsonMarker } from './benchmarkTemplatesHmr/jsonMutation'
 import { isNativeBenchmarkScriptEntry } from './benchmarkTemplatesHmr/nativeEntry'
 import { compareBenchmarkOutputs, snapshotBenchmarkOutputs } from './benchmarkTemplatesHmr/outputScope'
-import { collectBenchmarkHmrPhaseProfile, matchesHmrProfileSource } from './benchmarkTemplatesHmr/profile'
+import { collectBenchmarkHmrPhaseProfile, findBenchmarkHmrProfileSample } from './benchmarkTemplatesHmr/profile'
 import { restoreBenchmarkSource } from './benchmarkTemplatesHmr/sourceRestore'
 import { normalizeBenchmarkStylesheet } from './benchmarkTemplatesHmr/styleOutput'
 import { injectVueStyleRule, parseStatefulHmrControlSource } from './workspace-hmr/scenarios'
@@ -919,32 +919,22 @@ async function waitForHmrProfileSample(
   waitMs: number,
   runtime: 'standard' | 'stateful',
 ) {
+  const expectedPaths = [
+    normalizePath(sourceFile),
+    formatReportPath(sourceFile),
+    normalizePath(path.relative(template.workspaceRoot, sourceFile)),
+    normalizePath(path.relative(template.sourceRoot, sourceFile)),
+  ]
   const startedAt = Date.now()
   while (Date.now() - startedAt < waitMs) {
     const samples = await readJsonlSamplesSince(profilePath, startLineCount)
-    let matched: HmrProfileJsonSample | undefined
-    for (let index = samples.length - 1; index >= 0; index -= 1) {
-      const sample = samples[index]
-      if ((runtime !== 'stateful' || sample?.pipeline === 'stateful') && isProfileSampleForSource(template, sample, sourceFile)) {
-        matched = sample
-        break
-      }
-    }
+    const matched = findBenchmarkHmrProfileSample(samples, runtime, expectedPaths)
     if (matched) {
       return matched
     }
     await sleep(100)
   }
   return {} satisfies HmrProfileJsonSample
-}
-
-function isProfileSampleForSource(template: TemplateCase, sample: HmrProfileJsonSample, sourceFile: string) {
-  return matchesHmrProfileSource(sample, [
-    normalizePath(sourceFile),
-    formatReportPath(sourceFile),
-    normalizePath(path.relative(template.workspaceRoot, sourceFile)),
-    normalizePath(path.relative(template.sourceRoot, sourceFile)),
-  ])
 }
 
 async function countJsonlLines(filePath: string) {
