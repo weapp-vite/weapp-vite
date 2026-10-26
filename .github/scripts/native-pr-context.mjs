@@ -25,9 +25,6 @@ export async function resolveNativePrContext({ repository, runId, runAttempt = 1
     || pull.head.repo.id <= 0 || pull.base.repo.id <= 0) {
     throw new Error('Expected a pull_request event for this repository')
   }
-  if (pull.merge_commit_sha !== driverSha) {
-    throw new Error('PR merge candidate changed while waiting for approval; approve the new run')
-  }
   const run = await get(`/actions/runs/${runId}`)
   validateNativeRunIdentity({ runId, runAttempt, driverSha, prNumber: event.number, headSha: pull.head.sha, headRef: pull.head.ref, baseRef: pull.base.ref, headRepository: pull.head.repo.full_name }, run, repository, true)
   const context = await resolvePrContext({ repository, runId, runAttempt, driverSha, refName: pull.head.ref, prNumber: event.number }, get)

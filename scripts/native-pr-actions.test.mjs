@@ -81,7 +81,7 @@ describe('native PR approval context', () => {
     await expect(resolveNativePrContext(first.options, first.get)).rejects.toThrow('merge candidate does not match')
     const second = fixture()
     second.options.driverSha = 'd'.repeat(40)
-    await expect(resolveNativePrContext(second.options, second.get)).rejects.toThrow(/waiting for approval|run identity/u)
+    await expect(resolveNativePrContext(second.options, second.get)).rejects.toThrow('invocation proof')
   })
 
   it('refuses movement while listing changed files before publishing shared selections', async () => {

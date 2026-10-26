@@ -2,7 +2,7 @@ import { matchesMergeParents, samePullIdentity } from './pr-target-identity.mjs'
 
 const positive = value => Number.isSafeInteger(value) && value > 0
 
-/** 服务端冻结的 reusable workflow 引用将 PR 号与合并 SHA 绑定到触发本轮的候选。 */
+/** 核对服务端记录的 reusable workflow 引用；该引用不能替代原始 PR 关联。 */
 function validateInvocationProof(context, run, repository) {
   const prefix = `${repository}/`
   const references = run.referenced_workflows
@@ -20,7 +20,7 @@ function validateInvocationProof(context, run, repository) {
   }
 }
 
-/** 运行本身的仓库、源仓库与分支不可由 artifact 补造，空 PR 关联另需完整 API 证明。 */
+/** 运行本身的仓库、源仓库与分支不可由 artifact 补造，事件驱动规划器另核对引用。 */
 export function validateNativeRunIdentity(context, run, repository, allowUnassociated = false) {
   const pull = run.pull_requests?.find(pull => pull.number === context.prNumber)
   if (run.event !== 'pull_request' || run.path !== '.github/workflows/ci-pr.yml'
@@ -55,13 +55,16 @@ export function validateNativeContextShape(context) {
   }
 }
 
-/** 独立核验 fork 运行的 PR、仓库、ref 与合并父节点；不能仅凭空关联跳过身份检查。 */
+/** 可信 artifact 消费者要求原始 PR 关联，再独立核验仓库、ref 与合并父节点。 */
 export async function verifyNativePrContext(context, run, repository, get) {
   validateNativeContextShape(context)
   if (context.repository !== repository) {
     throw new Error('Untrusted native PR context repository')
   }
   validateNativeRunIdentity(context, run, repository, true)
+  if (!run.pull_requests.length) {
+    return { valid: false, reason: 'unassociated-pr' }
+  }
   const pull = await get(`/pulls/${context.prNumber}`)
   const identities = { baseRepositoryId: run.repository.id, headRepositoryId: run.head_repository.id }
   if (!samePullIdentity(pull, context, identities)) {

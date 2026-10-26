@@ -52,7 +52,7 @@ const context = {
 }
 
 function fixture() {
-  const state = { pull: structuredClone(pull), run: structuredClone(run), baseSha, mergeSha, parents: [{ sha: baseSha }, { sha: headSha }] }
+  const state = { pull: structuredClone(pull), run: { ...structuredClone(run), pull_requests: [structuredClone(pull)] }, baseSha, mergeSha, parents: [{ sha: baseSha }, { sha: headSha }] }
   const get = vi.fn(async (endpoint) => {
     if (endpoint === '/pulls/42') {
       return structuredClone(state.pull)
@@ -88,24 +88,43 @@ function fixture() {
 
 describe('native PR base snapshot regression', () => {
   it('freezes the live base and actual merge despite stale REST and event base metadata', async () => {
-    const { get, options } = fixture()
-    await expect(resolveNativePrContext(options, get))
-      .resolves
-      .toMatchObject(context)
+    const { state, get, options } = fixture()
+    state.run.pull_requests = []
+    await expect(resolveNativePrContext(options, get)).resolves.toMatchObject(context)
   })
 
-  it('independently verifies an unassociated fork run before trusting its context', async () => {
-    const { get, report } = fixture()
-    await expect(publishNativePrReport(report))
-      .resolves
-      .toEqual({ published: true })
-    expect(get).toHaveBeenCalledWith(`/git/commits/${mergeSha}`)
-    expect(get).toHaveBeenCalledWith('/git/ref/pull/42/merge')
+  it.each([staleSha, null])('ignores a stale event merge snapshot %s while freezing the actual driver', async (eventMerge) => {
+    const { get, options } = fixture()
+    options.event = { number: 42, pull_request: { ...pull, merge_commit_sha: eventMerge } }
+    await expect(resolveNativePrContext(options, get)).resolves.toMatchObject(context)
+  })
+
+  it('rejects a live merge candidate whose driver is stale even if event and invocation match', async () => {
+    const { state, get, options } = fixture()
+    state.pull.merge_commit_sha = staleSha
+    await expect(resolveNativePrContext(options, get)).rejects.toThrow()
+  })
+
+  it('does not accept an unassociated fork artifact on matching live evidence alone', async () => {
+    const { state, get, report } = fixture()
+    state.run.pull_requests = []
+    await expect(publishNativePrReport(report)).resolves.toEqual({ published: false, reason: 'unassociated-pr' })
+    expect(get).not.toHaveBeenCalled()
+    expect(report.readArtifact).not.toHaveBeenCalled()
+  })
+
+  it('rejects another PR selected by forged workflow references on an unassociated run', async () => {
+    const { state, get, report } = fixture()
+    state.run.pull_requests = []
+    state.run.referenced_workflows[0].ref = 'refs/pull/43/merge'
+    report.context.prNumber = 43
+    await expect(publishNativePrReport(report)).resolves.toEqual({ published: false, reason: 'unassociated-pr' })
+    expect(get).not.toHaveBeenCalled()
+    expect(report.readArtifact).not.toHaveBeenCalled()
   })
 
   it('accepts stale associated base metadata only with independent live merge proof', async () => {
-    const { state, report } = fixture()
-    state.run.pull_requests = [pull]
+    const { report } = fixture()
     await expect(publishNativePrReport(report)).resolves.toEqual({ published: true })
   })
 
@@ -161,14 +180,15 @@ describe('native PR base snapshot regression', () => {
     await expect(resolveNativePrContext(options, moving)).rejects.toThrow('while selecting checks')
   })
 
-  it('rejects an old event driver instead of changing the run to the current merge', async () => {
+  it('rejects an invocation driver mismatch instead of changing the run to the current merge', async () => {
     const { get, options } = fixture()
     options.driverSha = staleSha
-    await expect(resolveNativePrContext(options, get)).rejects.toThrow('waiting for approval')
+    await expect(resolveNativePrContext(options, get)).rejects.toThrow('invocation proof')
   })
 
   it.each(['head_branch', 'head_repository', 'repository', 'head_sha', 'run_attempt'])('requires immutable run field %s even for an empty fork association', async (field) => {
     const { state, report, get, options } = fixture()
+    state.run.pull_requests = []
     delete state.run[field]
     await expect(resolveNativePrContext(options, get)).rejects.toThrow('run identity')
     await expect(publishNativePrReport(report)).rejects.toThrow(/run identity|completed PR CI run/u)
@@ -244,7 +264,8 @@ describe('native PR base snapshot regression', () => {
   })
 
   it.each(['another-pr-and-base', 'new-merge-after-base-update'])('rejects a same-head retarget even when all live evidence matches: %s', async (scenario) => {
-    const { options, report, get } = fixture()
+    const { state, options, report, get } = fixture()
+    state.run.pull_requests = []
     const number = scenario === 'another-pr-and-base' ? 43 : 42
     const baseRef = number === 43 ? 'next' : 'main'
     const newMergeSha = 'e'.repeat(40)

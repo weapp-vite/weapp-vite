@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { nativeReportJobs, publishNativePrReport } from '../.github/scripts/publish-native-pr-report.mjs'
 import { runtimeSizeSchema } from '../.github/scripts/runtime-size-schema.mjs'
 import { policy, shards, smokeMetrics } from './performanceGate/contract.mjs'
-import { smokeStatus } from './performanceGate/publish.mjs'
+import { publishComment, smokeStatus } from './performanceGate/publish.mjs'
 
 const repository = 'example/project'
 const headSha = 'a'.repeat(40)
@@ -104,6 +104,59 @@ describe('native PR completion reporting', () => {
     expect(state.writes.every(write => write.endpoint === '/issues/42/comments')).toBe(true)
   })
 
+  it('publishes smoke with a verified canonical base despite a stale REST snapshot', async () => {
+    const { state, options } = fixture()
+    state.pull = { ...pull, base: { ...pull.base, sha: 'd'.repeat(40) } }
+    options.run.pull_requests = [state.pull]
+    options.context.selections['wevu-runtime-size'] = false
+    expect(await publishNativePrReport(options)).toEqual({ published: true })
+    expect(state.writes).toHaveLength(1)
+    expect(state.writes[0].body.body).toContain('正确性冒烟通过')
+  })
+
+  it('keeps the strict base snapshot contract for callers without native verification', async () => {
+    const { state, options } = fixture()
+    state.pull = { ...pull, base: { ...pull.base, sha: 'd'.repeat(40) } }
+    expect(await publishComment({ prNumber: 42, headSha, baseSha }, 'historical report', options.request)).toBe(false)
+    expect(state.writes).toHaveLength(0)
+    expect(options.request.mock.calls).toEqual([['/pulls/42']])
+  })
+
+  it.each(['smoke', 'size'].flatMap(kind => ['base', 'merge', 'head', 'base-ref'].map(changed => ({ kind, changed }))))('rechecks native $changed after listing existing $kind comments', async ({ kind, changed }) => {
+    const { state, options } = fixture()
+    options.context.selections[kind === 'smoke' ? 'wevu-runtime-size' : 'ci-performance'] = false
+    const request = options.request
+    options.request = async (endpoint, ...args) => {
+      const result = await request(endpoint, ...args)
+      if (endpoint.startsWith('/issues/42/comments') && args[0] === undefined) {
+        if (changed === 'base') {
+          state.baseSha = 'd'.repeat(40)
+        }
+        if (changed === 'merge') {
+          state.pull = { ...pull, merge_commit_sha: 'd'.repeat(40) }
+        }
+        if (changed === 'head') {
+          state.pull = { ...pull, head: { ...pull.head, sha: 'd'.repeat(40) } }
+        }
+        if (changed === 'base-ref') {
+          state.pull = { ...pull, base: { ...pull.base, ref: 'next' } }
+        }
+      }
+      return result
+    }
+    expect((await publishNativePrReport(options)).published).toBe(false)
+    expect(state.writes).toHaveLength(0)
+  })
+
+  it('does not publish an unassociated fork artifact even when all live evidence matches', async () => {
+    const { state, options } = fixture()
+    options.run.pull_requests = []
+    expect(await publishNativePrReport(options)).toEqual({ published: false, reason: 'unassociated-pr' })
+    expect(state.writes).toHaveLength(0)
+    expect(options.request).not.toHaveBeenCalled()
+    expect(options.readArtifact).not.toHaveBeenCalled()
+  })
+
   it('uses each actual job conclusion for failure and cancellation', async () => {
     const { state, options } = fixture()
     options.run.conclusion = 'success'
@@ -178,8 +231,11 @@ describe('native PR completion reporting', () => {
 })
 
 describe('Nightly feedback for native PR smoke', () => {
-  it.each(['native-newer', 'manual-newer', 'missing-context', 'stale-context'])('selects the latest trusted run across both entries: %s', async (scenario) => {
+  it.each(['native-newer', 'manual-newer', 'missing-context', 'stale-context', 'unassociated-context'])('selects the latest trusted run across both entries: %s', async (scenario) => {
     const { options } = fixture()
+    if (scenario === 'unassociated-context') {
+      options.run.pull_requests = []
+    }
     const manual = { id: scenario === 'manual-newer' ? 124 : 122, name: 'Performance Smoke', path: '.github/workflows/ci-performance.yml', event: 'workflow_dispatch', head_sha: driverSha, head_branch: 'main', head_repository: { full_name: repository }, status: 'completed', conclusion: 'failure' }
     const lateJobs = [...Array.from({ length: 100 }).fill(options.jobs[0]), { ...options.jobs[1], status: 'completed' }]
     const get = vi.fn(async (endpoint) => {

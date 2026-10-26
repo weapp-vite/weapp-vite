@@ -95,24 +95,38 @@ export async function publishNativePrReport({ repository, run, context, jobs, re
     const statuses = await pages(`/commits/${context.headSha}/statuses`, request)
     const full = statuses.find(status => status.context === statusContext(target) && status.creator?.type === 'Bot')
     const complete = full ? `[已有完整验收记录](${full.target_url})（${full.state}）` : '未运行，需手动启动 Nightly Performance'
-    const current = await verifyNativePrContext(context, run, repository, request)
-    if (!current.valid) {
-      return { published: false, reason: current.reason }
+    let current
+    const published = await publishComment(target, `## 性能检查\n\nHEAD: \`${context.headSha}\`\n\nPR 正确性冒烟：${description}。\n\n完整性能：${complete}。冒烟不代表完整性能验收通过。\n\n[冒烟任务](${smoke.html_url})`, request, description, {
+      verifyTarget: async () => {
+        current = await verifyNativePrContext(context, run, repository, request)
+        return current.valid
+      },
+    })
+    if (!published) {
+      return { published: false, reason: current?.reason ?? 'stale-pr' }
     }
-    await publishComment(target, `## 性能检查\n\nHEAD: \`${context.headSha}\`\n\nPR 正确性冒烟：${description}。\n\n完整性能：${complete}。冒烟不代表完整性能验收通过。\n\n[冒烟任务](${smoke.html_url})`, request, description)
   }
   if (context.selections['wevu-runtime-size'] && runtime && runtime.conclusion !== 'skipped') {
     const artifact = runtime.conclusion === 'success'
       ? validateArtifact(await readArtifact('wevu-runtime-size-report/report-full.json'), { repository, prNumber: context.prNumber, headSha: context.headSha, baseSha: context.baseSha })
       : null
     const body = artifact ? renderSuccessComment(artifact) : renderFailureComment(runtime.html_url, `任务状态为 \`${runtime.conclusion || '未完成'}\`。`)
-    if ((await verifyNativePrContext(context, run, repository, request)).valid) {
-      await upsertComment({
-        repository,
-        prNumber: context.prNumber,
-        body,
-        request: (_api, _token, pathname, options = {}) => request(pathname.replace(`/repos/${repository}`, ''), options.body ? JSON.parse(options.body) : undefined, options.method),
-      })
+    let current = await verifyNativePrContext(context, run, repository, request)
+    if (!current.valid) {
+      return { published: false, reason: current.reason }
+    }
+    const published = await upsertComment({
+      repository,
+      prNumber: context.prNumber,
+      body,
+      request: (_api, _token, pathname, options = {}) => request(pathname.replace(`/repos/${repository}`, ''), options.body ? JSON.parse(options.body) : undefined, options.method),
+      verifyTarget: async () => {
+        current = await verifyNativePrContext(context, run, repository, request)
+        return current.valid
+      },
+    })
+    if (!published) {
+      return { published: false, reason: current.reason }
     }
   }
   return { published: true }
