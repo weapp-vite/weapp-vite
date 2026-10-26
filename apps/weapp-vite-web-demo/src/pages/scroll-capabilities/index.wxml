@@ -1,0 +1,31 @@
+<view class="capabilities-page">
+  <text class="heading">滚动定位与布局</text>
+  <view class="controls">
+    <button id="align-start" data-alignment="start" bindtap="align">start</button>
+    <button id="align-center" data-alignment="center" bindtap="align">center</button>
+    <button id="align-end" data-alignment="end" bindtap="align">end</button>
+    <button id="align-nearest" data-alignment="nearest" bindtap="align">nearest</button>
+    <button id="apply-offset" bindtap="applyOffset">偏移 20px</button>
+    <button id="choose-late" bindtap="chooseLate">选择待插入目标</button>
+    <button id="insert-late" bindtap="insertLate">插入目标</button>
+    <button id="toggle-flex" bindtap="toggleFlex">切换 flex</button>
+    <button id="hide-scrollbar" bindtap="hideScrollbar">隐藏滚动条</button>
+    <button id="restore-scrollbar" bindtap="restoreScrollbar">恢复滚动条</button>
+  </view>
+  <scroll-view id="position-feed" class="position-feed" scroll-y scroll-into-view="{{target}}" scroll-into-view-alignment="{{alignment}}" scroll-into-view-offset="{{offset}}" enhanced="{{enhanced}}" show-scrollbar="{{showScrollbar}}" bind:scrollstart="handleStart" bindscroll="handleScroll" bind:scrollend="handleEnd">
+    <view class="spacer">滚动内容</view>
+    <view id="position-target" class="target">定位目标</view>
+    <view class="late-spacer"></view>
+    <view wx:if="{{lateVisible}}" id="late-target" class="target">异步目标</view>
+    <view class="tail"></view>
+  </scroll-view>
+  <scroll-view id="flex-feed" class="flex-feed" scroll-x enable-flex="{{flexEnabled}}" enhanced="{{enhanced}}" show-scrollbar="{{showScrollbar}}">
+    <view id="flex-first" class="flex-item">第一项</view>
+    <view id="flex-second" class="flex-item">第二项</view>
+  </scroll-view>
+  <text id="start-count">{{startCount}}</text>
+  <text id="scroll-count">{{scrollCount}}</text>
+  <text id="end-count">{{endCount}}</text>
+  <text id="scroll-position">{{scrollTop}}</text>
+  <text id="end-position">{{endTop}}</text>
+</view>

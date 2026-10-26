@@ -62,7 +62,7 @@ keywords:
 | `view` / `text` / `image`                    | `✅` | 保留组件标签与默认样式；`image.mode` 映射到 object fit / position。                  |
 | `button` / `input` / `textarea`              | `✅` | 支持常用属性、表单协议与微信形状事件。                                               |
 | `form` / `label` / checkbox / radio / switch | `✅` | 支持提交、重置、label 关联、组选值与禁用状态。                                       |
-| `scroll-view`                                | `✅` | 支持横纵轴、初始位置和带 delta 的 scroll 事件。                                      |
+| `scroll-view`                                | `🟡` | 支持横纵轴、初始位置、动态 `scroll-into-view`、start / center / end / nearest 对齐与偏移、`enable-flex`，默认显示滚动条，`enhanced` 下可显式隐藏纵向滚动条（双轴时依赖浏览器逐轴样式能力）。scroll 带 delta，scrollstart / scrollend 以 150ms 静默窗口模拟；refresher 下拉刷新仍未实现。 |
 | `picker`                                     | `🟡` | 支持 selector、multiSelector、date、time、region；region 不内置行政区 code 数据。    |
 | `picker-view` / `picker-view-column`         | `✅` | 支持受控 value、滚动吸附、mask / indicator 样式、change / pickstart / pickend。      |
 | `slider`                                     | `✅` | 支持范围、步长、颜色、block-size、show-value、disabled、表单值及 changing / change。 |

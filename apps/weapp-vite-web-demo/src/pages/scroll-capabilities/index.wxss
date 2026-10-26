@@ -1,0 +1,59 @@
+.capabilities-page {
+  padding: 16px;
+}
+
+.heading {
+  display: block;
+  font-size: 20px;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 12px 0;
+}
+
+.controls button {
+  margin: 0;
+  font-size: 12px;
+}
+
+.position-feed {
+  width: 300px;
+  height: 180px;
+  background: #eef6f3;
+}
+
+.spacer {
+  height: 600px;
+}
+
+.target {
+  height: 40px;
+  background: #a8cdbd;
+}
+
+.late-spacer {
+  height: 200px;
+}
+
+.tail {
+  height: 600px;
+}
+
+.flex-feed {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  width: 300px;
+  height: 120px;
+  margin-top: 12px;
+}
+
+.flex-item {
+  flex: none;
+  width: 80px;
+  height: 40px;
+  background: #dcebe5;
+}

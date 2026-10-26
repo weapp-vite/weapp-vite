@@ -9,6 +9,7 @@
     "pages/form-parity/index",
     "pages/selection-parity/index",
     "pages/scroll-boundary/index",
+    "pages/scroll-capabilities/index",
     "pages/display-parity/index",
     "pages/navigation-parity/index",
     "pages/media-parity/index",
