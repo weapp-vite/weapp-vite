@@ -7,13 +7,16 @@ import { emitRuntimeWarning } from '../warning'
 
 export type { MiniProgramErrorCallback, ThemeChangeCallback, ThemeChangeEvent, UnhandledRejectionCallback, UnhandledRejectionEvent } from './types/lifecycle'
 
-function createSubscription<Payload>(
+function createSubscription<NativeEvent extends Event, Payload>(
   name: string,
-  bind: (emit: (payload: Payload) => void) => (() => void) | undefined,
+  eventName: string,
+  readPayload: (event: NativeEvent) => Payload,
+  resolveTarget: (owner: Window) => EventTarget | MediaQueryList | undefined = owner => owner,
 ) {
   const listeners = new Set<(payload: Payload) => void>()
   let dispose: (() => void) | undefined
-  const emit = (payload: Payload) => {
+  const emit = (event: Event) => {
+    const payload = readPayload(event as NativeEvent)
     for (const listener of [...listeners]) {
       try {
         listener(payload)
@@ -33,7 +36,21 @@ function createSubscription<Payload>(
         return
       }
       listeners.add(listener)
-      dispose ??= bind(emit)
+      if (dispose || typeof window === 'undefined') {
+        return
+      }
+      const target = resolveTarget(window)
+      if (!target) {
+        return
+      }
+      if (typeof target.addEventListener === 'function') {
+        target.addEventListener(eventName, emit)
+        dispose = () => target.removeEventListener(eventName, emit)
+      }
+      else if ('addListener' in target && typeof target.addListener === 'function') {
+        target.addListener(emit)
+        dispose = () => target.removeListener(emit)
+      }
     },
     off(listener?: (payload: Payload) => void): void {
       if (listener === undefined) {
@@ -50,45 +67,24 @@ function createSubscription<Payload>(
   }
 }
 
-const errors = createSubscription<string>('onError', (emit) => {
-  if (typeof window === 'undefined') {
-    return
-  }
-  const target = window
-  const listener = (event: ErrorEvent) => {
-    const error: unknown = event.error
-    const stack = error && typeof error === 'object' && 'stack' in error ? error.stack : undefined
-    emit(typeof stack === 'string' && stack ? stack : event.message)
-  }
-  target.addEventListener('error', listener)
-  return () => target.removeEventListener('error', listener)
+const errors = createSubscription('onError', 'error', (event: ErrorEvent) => {
+  const error: unknown = event.error
+  const stack = error && typeof error === 'object' && 'stack' in error ? error.stack : undefined
+  return typeof stack === 'string' && stack ? stack : event.message
 })
 
-const rejections = createSubscription<UnhandledRejectionEvent>('onUnhandledRejection', (emit) => {
-  if (typeof window === 'undefined') {
-    return
-  }
-  const target = window
-  const listener = (event: PromiseRejectionEvent) => emit({ promise: event.promise, reason: event.reason })
-  target.addEventListener('unhandledrejection', listener)
-  return () => target.removeEventListener('unhandledrejection', listener)
-})
+const rejections = createSubscription(
+  'onUnhandledRejection',
+  'unhandledrejection',
+  (event: PromiseRejectionEvent): UnhandledRejectionEvent => ({ promise: event.promise, reason: event.reason }),
+)
 
-const themes = createSubscription<ThemeChangeEvent>('onThemeChange', (emit) => {
-  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
-    return
-  }
-  const media = window.matchMedia('(prefers-color-scheme: dark)')
-  const listener = (event: MediaQueryListEvent) => emit({ theme: event.matches ? 'dark' : 'light' })
-  if (typeof media.addEventListener === 'function') {
-    media.addEventListener('change', listener)
-    return () => media.removeEventListener('change', listener)
-  }
-  if (typeof media.addListener === 'function') {
-    media.addListener(listener)
-    return () => media.removeListener(listener)
-  }
-})
+const themes = createSubscription(
+  'onThemeChange',
+  'change',
+  (event: MediaQueryListEvent): ThemeChangeEvent => ({ theme: event.matches ? 'dark' : 'light' }),
+  owner => typeof owner.matchMedia === 'function' ? owner.matchMedia('(prefers-color-scheme: dark)') : undefined,
+)
 
 /** 监听脚本错误，错误字符串优先保留浏览器提供的堆栈。 */
 export const onError: (handler: MiniProgramErrorCallback) => void = errors.on

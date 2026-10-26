@@ -130,8 +130,11 @@ describe('browser lifecycle subscriptions', () => {
     const listener = media.addListener.mock.calls[0]?.[0] as (event: { matches: boolean }) => void
     listener({ matches: true })
     expect(handler).toHaveBeenCalledExactlyOnceWith({ theme: 'dark' })
+    const modernRemove = vi.fn()
+    Object.assign(media, { addEventListener: vi.fn(), removeEventListener: modernRemove })
     offThemeChange(handler)
     expect(media.removeListener.mock.calls).toEqual(media.addListener.mock.calls)
+    expect(modernRemove).not.toHaveBeenCalled()
   })
 
   it('can bind theme changes after subscribing without a supported browser host', () => {
@@ -163,6 +166,26 @@ describe('browser lifecycle subscriptions', () => {
     host.target.dispatchEvent(new ErrorEvent('error', { message: 'removed' }))
     expect(first).not.toHaveBeenCalled()
     expect(second).not.toHaveBeenCalled()
+  })
+
+  it('dispatches the callback snapshot when listeners change during an event', () => {
+    const calls: string[] = []
+    const second = () => calls.push('second')
+    const added = () => calls.push('added')
+    onError(() => {
+      calls.push('first')
+      offError(second)
+      onError(added)
+    })
+    onError(second)
+    const event = new ErrorEvent('error', { message: 'snapshot' })
+    host.target.dispatchEvent(event)
+    expect(calls).toEqual(['first', 'second'])
+    host.target.dispatchEvent(event)
+    expect(calls).toEqual(['first', 'second', 'first', 'added'])
+    expect(host.add).toHaveBeenCalledTimes(1)
+    offError()
+    expect(host.remove.mock.calls).toEqual(host.add.mock.calls)
   })
 
   it('isolates failing callbacks and obeys the existing warning policy', () => {
