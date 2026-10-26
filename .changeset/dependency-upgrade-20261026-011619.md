@@ -1,46 +1,46 @@
 ---
 '@mpcore/core': patch
-'@mpcore/simulator': major
-'@mpcore/test': major
-'@mpcore/vitest': major
-'@mpcore/weapp-vite': major
-'@weapp-agent/cli': major
-'@weapp-core/api': major
-'@weapp-core/constants': major
-'@weapp-core/init': major
-'@weapp-core/logger': major
-'@weapp-core/schematics': major
-'@weapp-core/shared': major
-'@weapp-core/types': major
-'@weapp-vite/acceptance': major
-'@weapp-vite/ast': major
-'@weapp-vite/ast-native': major
-'@weapp-vite/dashboard': major
-'@weapp-vite/devtools-runtime': major
-'@weapp-vite/eslint': major
+'@mpcore/simulator': minor
+'@mpcore/test': minor
+'@mpcore/vitest': minor
+'@mpcore/weapp-vite': minor
+'@weapp-agent/cli': minor
+'@weapp-core/api': minor
+'@weapp-core/constants': minor
+'@weapp-core/init': minor
+'@weapp-core/logger': minor
+'@weapp-core/schematics': minor
+'@weapp-core/shared': minor
+'@weapp-core/types': minor
+'@weapp-vite/acceptance': minor
+'@weapp-vite/ast': minor
+'@weapp-vite/ast-native': minor
+'@weapp-vite/dashboard': minor
+'@weapp-vite/devtools-runtime': minor
+'@weapp-vite/eslint': minor
 '@weapp-vite/glass-easel-web-adapter': patch
-'@weapp-vite/hmr': major
-'@weapp-vite/i18n': major
-'@weapp-vite/mcp': major
-'@weapp-vite/miniprogram-automator': major
-'@weapp-vite/qr': major
-'@weapp-vite/react': major
-'@weapp-vite/tailwindcss': major
-'@weapp-vite/volar': major
-'@weapp-vite/web': major
-'@wevu/api': major
-'@wevu/compiler': major
-'@wevu/json-render': major
-'@wevu/json-render-components': major
-'@wevu/query': major
-'@wevu/test-utils': major
-'@wevu/web-apis': major
-'create-weapp-vite': major
-'rolldown-require': major
-'vite-plugin-performance': major
-'weapp-ide-cli': major
-'weapp-vite': major
-'wevu': major
+'@weapp-vite/hmr': minor
+'@weapp-vite/i18n': minor
+'@weapp-vite/mcp': minor
+'@weapp-vite/miniprogram-automator': minor
+'@weapp-vite/qr': minor
+'@weapp-vite/react': minor
+'@weapp-vite/tailwindcss': minor
+'@weapp-vite/volar': minor
+'@weapp-vite/web': minor
+'@wevu/api': minor
+'@wevu/compiler': minor
+'@wevu/json-render': minor
+'@wevu/json-render-components': minor
+'@wevu/query': minor
+'@wevu/test-utils': minor
+'@wevu/web-apis': minor
+'create-weapp-vite': minor
+'rolldown-require': minor
+'vite-plugin-performance': minor
+'weapp-ide-cli': minor
+'weapp-vite': minor
+'wevu': minor
 ---
 
 chore(deps)!: 升级构建、运行与发布工具链，并提高 Node.js 最低版本。
@@ -57,4 +57,4 @@ Chokidar 6 自有监听器通过 `build.watch.chokidar` 配置 `backend`、`poll
 
 Web 路由发布按完整扫描快照登记回执，避免目录重命名分批通知导致重复 reload；旧宿主在途加载与 HMR 不会消费新宿主回执。Wot UI 2.4.0 的宽屏裁剪器白屏修复已复核并定向迁移桌面视觉基线。
 
-合并 catalog、模板及各发布包依赖升级 intent，TypeScript 编译器版本保持不变。Node 下限及公开行为变化记录 major，其余包记录 patch。具体版本和迁移步骤见 `docs/plans/2026-10-26-dependency-upgrade.md`。
+合并 catalog、模板及各发布包依赖升级 intent，TypeScript 编译器版本保持不变。本轮按维护者确认的发布策略，将 Node 下限及公开行为变化涉及的 40 个包统一记录为 minor，其余两个包保留 patch。这是接受上述迁移要求的发布例外，不代表完全向后兼容；保留破坏性变更标记及迁移说明。具体版本和迁移步骤见 `docs/plans/2026-10-26-dependency-upgrade.md`。

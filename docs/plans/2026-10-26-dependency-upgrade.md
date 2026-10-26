@@ -243,6 +243,8 @@ Chokidar 6 的组件文件删除事件可能先于页面引用更新。CSS 图�
 
 CI 跟进中的 legacy 构建场景、CSS runtime 与进程集成测试原已超过 300 行。本轮仅在原场景内替换映射断言、移动基线或修正目录身份比较，保留既有 suite 生命周期，未混入文件拆分；新 watcher 键转换单独收敛，配置重载复用现有发布工具。
 
-依赖与 catalog 的重复 intent 合并为一份 changeset；Node 下限及公开行为变化使用 major，其余依赖升级使用 patch。CSS 运行时修复独立记录为 patch，发布时按最高 bump 合并。fixed 组可能按仓库既有规则联动版本。本任务不执行版本发布。
+依赖与 catalog 的重复 intent 合并为一份 changeset。本轮按维护者确认的发布策略，将 Node 下限及公开行为变化涉及的 40 个包统一使用 minor，`@mpcore/core` 与 `@weapp-vite/glass-easel-web-adapter` 保留 patch。此决定接受本轮已有的迁移要求，属于发布策略例外，不代表完全向后兼容；`chore(deps)!`、Node 下限、构建队列及截图比较算法的迁移说明保持完整。
+
+CSS 运行时修复独立记录为 patch，发布时按最高 bump 合并。既有 fixed 组继续联动，预期 weapp-vite、wevu、编译器、AST 和 dashboard 从 7.6.0 升至 7.7.0，create-weapp-vite 从 3.2.0 升至 3.3.0，最终以发布 dry-run 为准。本次仅调整待消费 intent，不改已准备版本的 changelog 或发布账本，不执行版本发布。
 
 正式全量真实 IDE 验收遵循 `AGENTS.local.md`：变更合并后，从干净且与 origin/main 一致的 main 工作树运行。升级分支上的 headless、局部 IDE 和构建结果分别记录，不能代替该门禁。跨平台 GitHub CI 以 PR #1259 最终提交对应的原生 Checks 为准，每个修复提交重新通过 pr-ci-approval。
