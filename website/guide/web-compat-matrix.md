@@ -44,6 +44,8 @@ keywords:
 
 内联 `style` 与 WXSS 使用相同的 `wxss.pxPerRpx`、`designWidth` 和 `rpxVar`。默认变量模式按小程序设备视口换算 `rpx`、`vw`、`vh`、`vmin` 和 `vmax`；显式 `pxPerRpx` 静态模式保留浏览器的视口单位。有限 `designWidth` 优先启用变量模式。配置由生成入口传给运行时，不依赖 CSS 变量探测。样式数组按 CSS 声明拼接，自定义属性名、URL、引号字符串和注释保留；安全区表达式保留 fallback。
 
+手动调用 `initializePageRoutes` 时，显式 `styleUnits` 优先；未提供时沿用 `rpx.designWidth` 与 `rpx.varName`。省略单位配置会恢复默认转换及根 CSS 变量，空路由也会完成初始化。
+
 ## 组件选项矩阵
 
 | 能力                                             | 状态 | 说明                                                             |

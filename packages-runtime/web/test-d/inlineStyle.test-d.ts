@@ -16,6 +16,10 @@ expectType<typeof nothing>(transformInlineStyleValue(nothing))
 
 const options: ResolvedStyleUnitOptions = { useVariable: false, ratio: 0.25, rpxVar: '--unit', designWidth: 750 }
 expectType<void>(initializePageRoutes([], { styleUnits: options }))
+expectType<void>(initializePageRoutes([], { rpx: { designWidth: 375, varName: '--legacy-unit' } }))
+expectType<void>(initializePageRoutes([], { rpx: { designWidth: 375, varName: '--legacy-unit' }, styleUnits: options }))
+expectType<void>(initializePageRoutes([]))
+expectError(initializePageRoutes([], { rpx: { varName: 1 } }))
 expectError(initializePageRoutes([], { styleUnits: { ...options, ratio: '0.25' } }))
 expectError(initializePageRoutes([], { styleUnits: { ratio: 0.25 } }))
 expectError(transformInlineStyleValue('width:20rpx', options))

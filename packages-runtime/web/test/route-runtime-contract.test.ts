@@ -179,6 +179,22 @@ vi.mock('../src/runtime/polyfill/routeRuntime/url', () => ({
 }))
 
 describe('web route runtime orchestration', () => {
+  it('derives legacy rpx settings, prefers explicit style units and resets both initializers', async () => {
+    const routes = await import('../src/runtime/polyfill/routeRuntime')
+    const rpx = { designWidth: 375, varName: '--legacy-rpx' }
+    routes.initializePageRoutes([], { rpx })
+    expect(transformInlineStyleValue('width:40rpx')).toBe('width:calc(var(--legacy-rpx) * 40)')
+    expect(runtime.rpx).toHaveBeenLastCalledWith(rpx)
+    routes.initializePageRoutes([], { rpx, styleUnits: { useVariable: true, ratio: 1, rpxVar: '--selected-rpx', designWidth: 320 } })
+    expect(transformInlineStyleValue('width:40rpx')).toBe('width:calc(var(--selected-rpx) * 40)')
+    expect(runtime.rpx).toHaveBeenLastCalledWith({ designWidth: 320, varName: '--selected-rpx' })
+    routes.initializePageRoutes([], { rpx, styleUnits: { useVariable: false, ratio: 0.25, rpxVar: '--unused-rpx', designWidth: 750 } })
+    expect(transformInlineStyleValue('width:40rpx')).toBe('width:10px')
+    routes.initializePageRoutes([])
+    expect(transformInlineStyleValue('width:40rpx')).toBe('width:calc(var(--rpx) * 40)')
+    expect(runtime.rpx).toHaveBeenLastCalledWith(undefined)
+  })
+
   it('configures inline units before page creation and resets an omitted configuration', async () => {
     const routes = await import('../src/runtime/polyfill/routeRuntime')
     routes.initializePageRoutes([], { styleUnits: { useVariable: false, ratio: 0.25, rpxVar: '--unit', designWidth: 750 } })
