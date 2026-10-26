@@ -162,6 +162,15 @@ describe('Windows ordinary npm watcher delivery workflow', () => {
       run: 'node packages/weapp-vite/scripts/verify-vite-host-install.mjs wv',
       env: { WEAPP_VITE_CONSUMER_WEB: '1', WEAPP_VITE_CONSUMER_DEPENDENCIES: '1', WEAPP_VITE_CONSUMER_TARBALLS: '.cache/node-support-tarballs' },
     })
+    expect(nodeSupport['timeout-minutes']).toBe(40)
+    const browserInstalls = (nodeSupport.steps as Step[]).filter(item => item.run?.includes('playwright install'))
+    expect(browserInstalls).toHaveLength(2)
+    const linuxBrowser = browserInstalls.find(item => item.if === 'runner.os == \'Linux\'')
+    const otherBrowser = browserInstalls.find(item => item.if === 'runner.os != \'Linux\'')
+    expect(linuxBrowser?.run?.trim().split('\n').at(-1)).toBe('pnpm exec playwright install --with-deps chromium')
+    expect(otherBrowser?.run).toBe('pnpm exec playwright install chromium')
+    expect(browserInstalls.every(item => item['continue-on-error'] !== true)).toBe(true)
+    expect(Object.keys(nodeSupport.env)).not.toContain('PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS')
     expect(child.jobs['dependency-compatibility'].strategy.matrix).toEqual({ manager: ['pnpm', 'npm'] })
     expect(child.jobs['dependency-compatibility'].with.main_command).toBe('pnpm exec cross-env WEAPP_VITE_DEPENDENCY_EVIDENCE=.cache/dependency-compatibility.json node packages/weapp-vite/scripts/verify-dependency-install.mjs ${{ matrix.manager }}')
     expect(child.jobs.contracts.with.main_command).toBe('node scripts/consumerArtifacts/contracts.mjs')
