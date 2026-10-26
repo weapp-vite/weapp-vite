@@ -1,5 +1,6 @@
 import type {
   HeadlessWxAccessFileOption,
+  HeadlessWxAccountInfo,
   HeadlessWxAppendFileOption,
   HeadlessWxChooseMediaResult,
   HeadlessWxChooseMessageFileOption,
@@ -52,8 +53,11 @@ import type {
   HeadlessWxWriteFileOption,
 } from '../host'
 import type { RuntimeScheduler } from '../kernel'
+import { createHeadlessAccountState } from './accountState'
 import { createChunkedMockRequest } from './request/mock'
 import { createRequestTask } from './request/task'
+
+export type { HeadlessWxLoginMockDefinition } from './accountState'
 
 export interface HeadlessWxLoadingSnapshot {
   mask: boolean
@@ -888,6 +892,7 @@ const nativeScheduler: Pick<RuntimeScheduler, 'clearTimeout' | 'setTimeout'> = {
 }
 
 export interface HeadlessWxStateOptions {
+  accountInfo?: HeadlessWxAccountInfo
   strictMocks?: boolean
   readPackageFile?: (filePath: string) => string | undefined
 }
@@ -896,6 +901,7 @@ export function createHeadlessWxState(
   scheduler: Pick<RuntimeScheduler, 'clearTimeout' | 'setTimeout'> = nativeScheduler,
   options: HeadlessWxStateOptions = {},
 ) {
+  const accountState = createHeadlessAccountState(scheduler, options)
   const actionSheetLogs: HeadlessWxActionSheetLogEntry[] = []
   const actionSheetMocks: HeadlessWxActionSheetMockDefinition[] = []
   const downloadFileLogs: HeadlessWxDownloadFileLogEntry[] = []
@@ -1443,7 +1449,12 @@ export function createHeadlessWxState(
   }
 
   return {
+    getAccountInfoSync: accountState.getAccountInfoSync,
+    login: accountState.login,
+    mockLogin: accountState.mockLogin,
+    setAccountInfo: accountState.setAccountInfo,
     close() {
+      accountState.close()
       networkStatusChangeCallbacks.clear()
     },
     clearStorageSync() {

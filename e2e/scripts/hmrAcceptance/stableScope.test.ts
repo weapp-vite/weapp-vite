@@ -27,9 +27,9 @@ describe('supported WeChat startup classic inventory', () => {
     ['hmr-build', 45, 3],
     ['ide-hmr-headless', 28, 14],
     ['ide-hmr', 34, 19],
-    ['ide-full:exhaustive', 152, 22],
-    ['ide-dom-headless', 85, 14],
-    ['ide-headless-full', 96, 14],
+    ['ide-full:exhaustive', 154, 22],
+    ['ide-dom-headless', 87, 14],
+    ['ide-headless-full', 98, 14],
   ] as const)('preserves the complete %s task inventory and explicit experimental exclusions', async (suite, total, excluded) => {
     const original = await getSuiteTasks(suite, { topology: 'optimized-v1' })
     const supported = await getSuiteTasks(`${suite}:classic`, { topology: 'optimized-v1' })
@@ -42,6 +42,17 @@ describe('supported WeChat startup classic inventory', () => {
       if (!CLASSIC_HMR_OUT_OF_SCOPE_TASKS[task.label] && !CLASSIC_IDE_CASES[task.label] && !CLASSIC_BUILD_CASES[task.label]) {
         expect(supported[index]).toEqual(task)
       }
+    }
+  })
+
+  it.each(['ide-full:exhaustive', 'ide-dom-headless', 'ide-headless-full'])('retains issue 1263 and 1264 runtime tasks without classic exclusions in %s', async (suite) => {
+    const original = await getSuiteTasks(suite, { topology: 'optimized-v1' })
+    const supported = await getSuiteTasks(`${suite}:classic`, { topology: 'optimized-v1' })
+    for (const label of ['ide/issue-1263-chunk-debug-name.runtime.test.ts', 'ide/issue-1264-basic-wx-apis.runtime.test.ts']) {
+      const tasks = supported.filter(task => task.label === label)
+      expect(tasks).toHaveLength(1)
+      expect(tasks[0]?.outOfScopeReason).toBeUndefined()
+      expect(tasks[0]).toEqual(original.find(task => task.label === label))
     }
   })
 
@@ -158,13 +169,19 @@ describe('supported WeChat startup classic inventory', () => {
     const hmr = await getSuiteTasks('hmr-build:classic')
     const hmrLabels = new Set(hmr.map(task => task.label))
     const originalNonHmr = await getSuiteTasks('ci-full')
-    expect(full).toHaveLength(129)
+    expect(full).toHaveLength(130)
     expect(new Set(full.map(task => task.label)).size).toBe(full.length)
     expect(full.every(task => !task.label.startsWith('hmr-guard:'))).toBe(true)
     expect(nonHmr).toEqual(originalNonHmr.filter(task => !hmrLabels.has(task.label)).map(applyClassicSupportScope))
     expect(nonHmr.every(task => !hmrLabels.has(task.label))).toBe(true)
     expect(await getSuiteTasks('ci-full:classic')).toEqual(nonHmr)
-    expect(await getSuiteTasks('ci-pr:classic')).toEqual((await getSuiteTasks('ci-pr')).map(applyClassicSupportScope))
+    const pr = await getSuiteTasks('ci-pr:classic')
+    expect(pr).toEqual((await getSuiteTasks('ci-pr')).map(applyClassicSupportScope))
+    for (const tasks of [full, nonHmr, pr]) {
+      const issueTasks = tasks.filter(task => task.label === 'ci/issue-1263-chunk-debug-name.test.ts')
+      expect(issueTasks).toHaveLength(1)
+      expect(issueTasks[0]?.outOfScopeReason).toBeUndefined()
+    }
     expect(new Set([...nonHmr, ...hmr].map(task => task.label))).toEqual(new Set(full.map(task => task.label)))
     for (const task of [...nonHmr, ...hmr]) {
       expect(full.filter(candidate => candidate.label === task.label)).toEqual([task])

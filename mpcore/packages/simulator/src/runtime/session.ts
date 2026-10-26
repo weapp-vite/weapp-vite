@@ -1,6 +1,7 @@
 import type {
   HeadlessAppDefinition,
   HeadlessHostRegistries,
+  HeadlessWxAccountInfo,
   HeadlessWxAppHideOptions,
   HeadlessWxLaunchOptions,
   HeadlessWxNetworkType,
@@ -17,6 +18,7 @@ import type {
   HeadlessWxActionSheetMockDefinition,
   HeadlessWxClipboardSnapshot,
   HeadlessWxDownloadFileMockDefinition,
+  HeadlessWxLoginMockDefinition,
   HeadlessWxModalMockDefinition,
   HeadlessWxOpenDocumentSnapshot,
   HeadlessWxRequestMockDefinition,
@@ -30,6 +32,7 @@ import { bindStartupNavigation, StartupNavigationQueue } from '../host/wx/startu
 import { RuntimeKernel } from '../kernel'
 import { RuntimeRenderQueue } from '../kernel/renderQueue'
 import { loadProject } from '../project'
+import { createDefaultAccountInfo } from '../project/accountInfo'
 import { createMiniProgramHostConfig } from '../project/hostConfig'
 import { cloneBackgroundSnapshot, cloneNavigationBarSnapshot, resolveBackgroundSnapshot, resolveNavigationBarSnapshot } from '../project/pageConfig'
 import { resolvePluginRequest } from '../project/plugins'
@@ -270,6 +273,7 @@ export class HeadlessSession {
     this.project = options.project ?? loadProject(options.projectPath!)
     this.templateRegistration = createTemplateRegistration(this.project.artifactSource, this.project.miniprogramRootPath, options.compiledTemplatePaths)
     this.wxState = createHeadlessWxState(this.kernel.scheduler, {
+      accountInfo: createDefaultAccountInfo(this.project),
       strictMocks: options.strictHostMocks,
       readPackageFile: createPackageAssetReader(relative => this.project.artifactSource.readText(path.join(this.project.miniprogramRootPath, relative))),
     })
@@ -325,12 +329,14 @@ export class HeadlessSession {
         getSavedFileList: () => this.wxState.getSavedFileList(),
         getEnterOptionsSync: () => this.getEnterOptions(),
         getAppBaseInfoSync: () => deriveAppBaseInfo(this.systemInfo),
+        getAccountInfoSync: () => this.wxState.getAccountInfoSync(),
         getDeviceInfo: () => deriveDeviceInfo(this.systemInfo),
         getLaunchOptionsSync: () => this.getLaunchOptions(),
         getClipboardData: () => this.wxState.getClipboardData(),
         getLocation: () => createDefaultLocationResult(),
         getMenuButtonBoundingClientRect: () => deriveMenuButtonBoundingClientRect(this.systemInfo),
         getNetworkType: () => this.wxState.getNetworkType(),
+        login: option => this.wxState.login(option),
         navigateBack: option => this.navigateBack(option?.delta),
         navigateTo: option => this.routeEvents.navigateTo(() => this.navigateTo(option.url), option),
         pageScrollTo: option => this.pageScrollTo(option),
@@ -896,6 +902,14 @@ export class HeadlessSession {
 
   mockModal(definition: HeadlessWxModalMockDefinition = {}) {
     this.wxState.mockModal(definition)
+  }
+
+  mockLogin(definition: HeadlessWxLoginMockDefinition = {}) {
+    this.wxState.mockLogin(definition)
+  }
+
+  setAccountInfo(info: HeadlessWxAccountInfo) {
+    this.wxState.setAccountInfo(info)
   }
 
   mockActionSheet(definition: HeadlessWxActionSheetMockDefinition = {}) {

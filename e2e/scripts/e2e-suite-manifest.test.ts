@@ -159,6 +159,7 @@ describe('e2e suite manifest', () => {
     'ide/issue-1235-component-reentry.runtime.test.ts',
     'ide/issue-1261-props-projection.runtime.test.ts',
     'ide/issue-1263-chunk-debug-name.runtime.test.ts',
+    'ide/issue-1264-basic-wx-apis.runtime.test.ts',
     'ide/issue-997-rebuild.runtime.test.ts',
     'ide/issue-1029-auto-routes.runtime.test.ts',
     'ide/issue-1082-confirmation.runtime.test.ts',
