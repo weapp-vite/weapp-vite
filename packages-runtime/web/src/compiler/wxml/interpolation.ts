@@ -48,6 +48,23 @@ export function buildExpression(parts: InterpolationPart[], scopeVar: string, wx
   return `(${segments.join(' + ')})`
 }
 
+/** 完整表达式保留原值，混合插值逐段转为字符串，避免相邻数字执行加法。 */
+export function buildDatasetExpression(value: string, scopeVar: string, wxsVar: string) {
+  const trimmedParts = parseInterpolations(value.trim())
+  if (trimmedParts.length === 1 && trimmedParts[0]?.type === 'expr') {
+    return buildExpression(trimmedParts, scopeVar, wxsVar)
+  }
+  const parts = parseInterpolations(value)
+  if (parts.length <= 1) {
+    return buildExpression(parts, scopeVar, wxsVar)
+  }
+  const segments = parts.map((part) => {
+    const expression = buildExpression([part], scopeVar, wxsVar)
+    return part.type === 'text' ? expression : `String(${expression} ?? '')`
+  })
+  return `(${segments.join(' + ')})`
+}
+
 function hasTopLevelColon(expression: string) {
   let depth = 0
   let inSingleQuote = false

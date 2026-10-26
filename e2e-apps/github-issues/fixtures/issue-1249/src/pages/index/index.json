@@ -1,0 +1,5 @@
+{
+  "usingComponents": {
+    "dataset-probe": "../../components/datasetProbe/index"
+  }
+}
