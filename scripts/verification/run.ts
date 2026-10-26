@@ -8,10 +8,27 @@ import { readTurboEvidence } from './evidence.ts'
 
 export type TaskExecutor = (task: VerificationTask, signal?: AbortSignal) => Promise<{ exitCode: number } & Partial<Pick<TaskResult, 'execution' | 'subtasks'>>>
 
+/** 子任务可能创建其他 Git 仓库，不能继承 hook 导出的当前仓库定位与配置。 */
+async function clearedGitEnvironment(root: string): Promise<Record<string, undefined>> {
+  const { stdout } = await execa('git', ['rev-parse', '--local-env-vars'], { cwd: root })
+  const names = stdout.split(/\r?\n/).filter(Boolean)
+  if (!names.length || names.some(name => !/^GIT_[A-Z0-9_]+$/.test(name))) {
+    throw new Error('Git 仓库本地环境变量清单无效，拒绝启动验证子任务')
+  }
+  // undefined 在子进程环境中屏蔽继承值；保留父进程及非仓库本地配置。
+  return Object.fromEntries(names.map(name => [name, undefined]))
+}
+
 export function createTaskExecutor(root: string, jsonOutput = false): TaskExecutor {
-  return async (task, signal) => {
+  let cleared: Promise<Record<string, undefined>> | undefined
+  return async (input, signal) => {
+    signal?.throwIfAborted()
+    cleared ??= clearedGitEnvironment(root)
+    const task = { ...input, env: { ...input.env, ...await cleared } }
+    signal?.throwIfAborted()
     if (process.env.WEAPP_VITE_VERIFICATION_LOCAL_DIR) {
       const { executeLocalTask } = await import('../verificationBenchmark/localTask.mjs')
+      signal?.throwIfAborted()
       return await executeLocalTask(root, task, signal, jsonOutput)
     }
     let output = ''
