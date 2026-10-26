@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { transformInlineStyleValue } from '../src/runtime/inlineStyle'
 
 const runtime = vi.hoisted(() => ({
   addEventListener: vi.fn(),
@@ -178,6 +179,16 @@ vi.mock('../src/runtime/polyfill/routeRuntime/url', () => ({
 }))
 
 describe('web route runtime orchestration', () => {
+  it('configures inline units before page creation and resets an omitted configuration', async () => {
+    const routes = await import('../src/runtime/polyfill/routeRuntime')
+    routes.initializePageRoutes([], { styleUnits: { useVariable: false, ratio: 0.25, rpxVar: '--unit', designWidth: 750 } })
+    expect(transformInlineStyleValue('width:40rpx')).toBe('width:10px')
+    routes.initializePageRoutes([], { styleUnits: { useVariable: true, ratio: 1, rpxVar: '--custom-unit', designWidth: 375 } })
+    expect(transformInlineStyleValue('width:40rpx')).toBe('width:calc(var(--custom-unit) * 40)')
+    routes.initializePageRoutes([])
+    expect(transformInlineStyleValue('width:40rpx')).toBe('width:calc(var(--rpx) * 40)')
+  })
+
   afterEach(() => {
     vi.unstubAllGlobals()
   })

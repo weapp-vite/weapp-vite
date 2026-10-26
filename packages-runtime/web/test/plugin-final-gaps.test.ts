@@ -30,7 +30,8 @@ describe('web plugin final boundary contracts', () => {
       pxPerRpx: 1,
       designWidth: Number.NaN,
     }, { __runtimeProvider: { moduleId: 'virtual:runtime' } })
-    expect(noRuntimeOptions).toContain('initializePageRoutes([])')
+    expect(noRuntimeOptions).toContain('"styleUnits":{"useVariable":false')
+    expect(noRuntimeOptions).not.toContain('"rpx":')
   })
 
   it('handles malformed SFC configs and script-only page candidates', async () => {

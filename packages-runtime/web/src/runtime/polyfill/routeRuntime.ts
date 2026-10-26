@@ -1,3 +1,4 @@
+import type { ResolvedStyleUnitOptions } from '../../shared/styleUnits/options'
 import type { WebTabBarConfig } from '../../shared/tabBar'
 import type { ButtonFormConfig } from '../button'
 import type { ComponentPublicInstance } from '../component'
@@ -16,6 +17,7 @@ import { setAppStyle } from '../appStyle'
 import { setButtonFormConfig } from '../button'
 import { defineComponent } from '../component'
 import { setRuntimeExecutionMode } from '../execution'
+import { configureInlineStyleUnits } from '../inlineStyle'
 import { ensureNativeComponentsDefined } from '../nativeComponents'
 import { ensureNavigationBarDefined, setNavigationBarMetrics } from '../navigationBar'
 import { setupRpx } from '../rpx'
@@ -164,6 +166,7 @@ export function initializePageRoutes(
   ids: string[],
   options?: {
     rpx?: { designWidth?: number, varName?: string }
+    styleUnits?: ResolvedStyleUnitOptions
     navigationBar?: NavigationBarMetrics
     form?: ButtonFormConfig
     tabBar?: WebTabBarConfig
@@ -180,6 +183,7 @@ export function initializePageRoutes(
     }
   },
 ) {
+  configureInlineStyleUnits(options?.styleUnits)
   setRuntimeExecutionMode(options?.runtime?.executionMode)
   setRuntimeWarningOptions(options?.runtime?.warnings)
   setupWebViewport(options?.runtime?.viewport)

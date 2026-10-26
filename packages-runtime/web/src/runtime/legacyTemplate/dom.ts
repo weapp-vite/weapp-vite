@@ -12,7 +12,8 @@ import {
   MINI_PROGRAM_EVENT_ATTRIBUTE_PREFIX,
   MINI_PROGRAM_EVENT_FLAG_ATTRIBUTE_PREFIX,
 } from '../component/constants'
-import { escapeAttribute, resolveAttributeValue } from './expression'
+import { transformInlineStyleValue } from '../inlineStyle'
+import { escapeAttribute, evaluateExpression, resolveAttributeValue } from './expression'
 
 const EVENT_PREFIX_RE = /^(bind|catch|mut-bind|capture-bind|capture-catch)([\w-]+)$/
 const EVENT_PREFIX_FLAGS: Record<string, { catch?: boolean, capture?: boolean }> = {
@@ -97,11 +98,22 @@ export function buildAttributeString(
       continue
     }
 
+    const normalizedName = normalizeAttributeName(name)
+    if (normalizedName === 'style') {
+      const expression = /^\{\{((?:(?!\}\})[\s\S])*)\}\}$/.exec(rawValue.trim())
+      const rawStyle: unknown = expression
+        ? evaluateExpression(expression[1]!, scope)
+        : resolveAttributeValue(rawValue, scope)
+      const style = transformInlineStyleValue(rawStyle)
+      if (style != null && style !== '') {
+        result += ` style="${escapeAttribute(String(style))}"`
+      }
+      continue
+    }
     const value = resolveAttributeValue(rawValue, scope)
     if (value === '') {
       continue
     }
-    const normalizedName = normalizeAttributeName(name)
     result += ` ${normalizedName}="${escapeAttribute(value)}"`
   }
   return result

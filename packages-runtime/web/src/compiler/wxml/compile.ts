@@ -79,6 +79,7 @@ export function compileWxml(options: WxmlCompileOptions): WxmlCompileResult {
     `import { html } from 'lit'`,
     `import { repeat } from 'lit/directives/repeat.js'`,
     `import { bindRuntimeEvent } from '${RUNTIME_ID}'`,
+    `import { transformInlineStyleValue as __weappInlineStyle } from '${RUNTIME_ID}'`,
   ]
   const bodyLines: string[] = []
   const directDependencies: string[] = []

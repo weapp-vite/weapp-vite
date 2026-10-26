@@ -114,7 +114,10 @@ export function renderAttributes(
     const useProperty = shouldBindAsProperty(rawName)
       && (options?.preferProperty || options?.propertyAttributes?.includes(rawName))
     const name = useProperty ? normalizePropertyName(rawName) : normalizeAttributeName(rawName)
-    const expr = buildExpression(parseInterpolations(rawValue ?? ''), scopeVar, wxsVar)
+    const rawExpr = buildExpression(parseInterpolations(rawValue ?? ''), scopeVar, wxsVar)
+    // WXML 内联 style 不经过 postcss 链路，rpx / vw / vh 需要在运行时换算，
+    // 否则浏览器会丢弃整条声明（详见 inlineStyle.ts）。
+    const expr = name === 'style' ? `__weappInlineStyle(${rawExpr})` : rawExpr
     buffer += ` ${useProperty ? '.' : ''}${name}=\${${expr}}`
   }
   return buffer

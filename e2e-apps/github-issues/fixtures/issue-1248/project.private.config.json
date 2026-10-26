@@ -1,0 +1,12 @@
+{
+  "projectname": "issue-1248-inline-style",
+  "libVersion": "3.17.2",
+  "setting": { "urlCheck": false },
+  "condition": {
+    "miniprogram": {
+      "list": [
+        { "name": "Inline style unit conversion", "pathName": "pages/index/index", "query": "", "launchMode": "default" }
+      ]
+    }
+  }
+}

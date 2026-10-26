@@ -1,0 +1,6 @@
+<view id="reference" class="reference">WXSS reference</view>
+<view id="probe" style="{{styleValue}}">Inline string</view>
+<view id="array" style="{{arrayValue}}">Inline array</view>
+<button id="replace" bindtap="replace">Replace styles</button>
+<button id="clear" bindtap="clear">Clear styles</button>
+<button id="restore" bindtap="restore">Restore styles</button>
