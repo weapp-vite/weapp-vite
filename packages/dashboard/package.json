@@ -33,7 +33,7 @@
     "dist"
   ],
   "engines": {
-    "node": "^20.19.0 || >=22.12.0"
+    "node": "^22.23.4 || ^24.22.1 || >=26.12.1"
   },
   "scripts": {
     "dev": "vite",
@@ -45,9 +45,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@devframes/agentic": "1.2.5",
-    "@devframes/hub": "1.2.5",
-    "@devframes/hub-ui": "1.2.5",
+    "@devframes/agentic": "1.2.6",
+    "@devframes/hub": "1.2.6",
+    "@devframes/hub-ui": "1.2.6",
     "devframe": "catalog:",
     "echarts": "catalog:",
     "monaco-editor": "^0.57.0",

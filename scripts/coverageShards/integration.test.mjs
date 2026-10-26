@@ -1,21 +1,19 @@
-import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
-import { fileURLToPath } from 'node:url'
 import { build } from 'vite'
 import { expect, it } from 'vitest'
 import { createBuildArtifactManifest, verifyBuildArtifactManifest } from '../buildArtifact/index.mjs'
+import { preparePnpmVitestFixture } from '../testFixtures/pnpmVitestWorkspace.mjs'
 import { createCoveragePlan, mergeCoverageShards, runCoverageShard } from './index.mjs'
 
 it.each([true, false])('merges four real Vitest shards without re-executing tests and keeps original thresholds: covered=%s', async (fullyCovered) => {
-  const root = await mkdtemp(path.join(os.tmpdir(), 'coverage-shards-'))
+  const root = await realpath(await mkdtemp(path.join(os.tmpdir(), 'coverage-shards-')))
   const previousCommit = process.env.BUILD_ARTIFACT_EXPECTED_COMMIT
   process.env.BUILD_ARTIFACT_EXPECTED_COMMIT = 'a'.repeat(40)
   try {
-    await symlink(fileURLToPath(new URL('../../node_modules', import.meta.url)), path.join(root, 'node_modules'), 'junction')
-    await writeFile(path.join(root, 'package.json'), JSON.stringify({ type: 'module', packageManager: JSON.parse(await readFile(new URL('../../package.json', import.meta.url), 'utf8')).packageManager }))
-    await writeFile(path.join(root, 'pnpm-lock.yaml'), 'lockfileVersion: 9.0\n')
+    await preparePnpmVitestFixture(root, { private: true, type: 'module' })
     await writeFile(path.join(root, 'vitest.coverage.ts'), 'export {}\n')
     await writeFile(path.join(root, 'vitest.config.mts'), `export default { test: { include: ['*.test.mjs'], maxWorkers: 1, coverage: { provider: 'v8', include: ['source.mjs'], thresholds: { lines: 100, statements: 100, branches: 100, functions: 100 } } } }\n`)
     await writeFile(path.join(root, 'source.mjs'), 'export const choose = value => value ? 1 : 2\n')

@@ -19,7 +19,7 @@
 
 ## 启动
 
-直接使用 `@weapp-vite/mcp` 或 `@weapp-vite/acceptance` 需要 **Node.js >=22.12.0**。这两个包不再支持 Node 20；通过 `weapp-vite` 命令使用时，还须满足 `weapp-vite` 自身的 Node 范围 `^22.18.0 || ^24.11.0 || >=26.0.0`。
+直接使用 `@weapp-vite/mcp`、`@weapp-vite/acceptance` 或通过 `weapp-vite` 命令使用时，均需满足 Node.js 范围 `^22.23.4 || ^24.22.1 || >=26.12.1`。
 
 ```bash
 pnpm --filter @weapp-vite/mcp start

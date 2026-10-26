@@ -60,7 +60,7 @@ describe('DeepWiki monitor and explicit refresh workflow', () => {
     const refresh = steps.find(step => step.run === 'node .github/scripts/refresh-deepwiki.mjs --mode=refresh')
     const installation = steps.find(step => step.run === 'pnpm install --frozen-lockfile --ignore-scripts')
     const browsers = steps.filter(step => /playwright\s+install/.test(step.run ?? ''))
-    expect(setup?.with).toEqual({ 'node-version': 22, 'cache': 'pnpm', 'cache-dependency-path': 'pnpm-lock.yaml' })
+    expect(setup?.with).toEqual({ 'node-version': '^22.23.4', 'check-latest': true, 'cache': 'pnpm', 'cache-dependency-path': 'pnpm-lock.yaml' })
     expect(installation?.run).toBe('pnpm install --frozen-lockfile --ignore-scripts')
     expect(installation?.if).toBeUndefined()
     expect(installation?.run).not.toMatch(/playwright|chromium|browser/i)

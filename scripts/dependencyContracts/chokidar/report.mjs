@@ -22,7 +22,7 @@ export async function installedChokidar() {
   const metadata = JSON.parse(await readFile(path.join(directory, 'package.json'), 'utf8'))
   assert.equal(metadata.name, 'chokidar', 'Resolve the installed formal dependency only')
   const hashes = {}
-  for (const name of ['index.js', 'handler.js', 'package.json']) {
+  for (const name of ['index.js', 'backend.js', 'policy.js', 'reconcile.js', 'runtime.js', 'tree.js', 'package.json']) {
     hashes[name] = hashText(await readFile(path.join(directory, name)))
   }
   return { entry, directory, version: metadata.version, hashes }

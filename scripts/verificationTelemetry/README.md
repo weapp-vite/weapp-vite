@@ -4,6 +4,10 @@
 
 拓扑回归从实际 `validate-ci.yml` 的三个质量入口判别变体：原 `reusable-node-command.yml` 使用基线快照，优化后的 `reusable-quality-platform.yml` 使用 `candidate-topology.json`，未知或混合入口直接失败。基线快照保持原样；候选快照另行冻结外层入口及 quality、miniapp、consumer 子流程的完整 job，包括原生步骤、环境、失败策略、matrix 和依赖。两侧分别检查原覆盖率成功后才生成 verdict、四分片原生合并阈值成功后才上传 Codecov 的顺序，不能把基线拓扑断言跳过后当作候选校验通过。
 
+`candidate-topology.json` 是当前候选 workflow 的预期测试契约。变更已审阅的 workflow 后，从其既有七个文件读取完整 `jobs` 同步该契约，继续检查每个步骤、环境、失败策略及依赖；测试运行时不会自动重写预期值。2026-10-26 依赖迁移同步了候选固定 Node 版本及支持矩阵，并补齐此前已合入的两个 Windows 诊断 job、HMR functional-only 表达式，以及 miniapp classic suite、headless 预检日志和诊断工件路径。`baseline-topology.json` 保留原字节，历史 benchmark 配置、运行工件及性能报告也保持原样。
+
+候选测试契约不包含采样耗时、运行身份或验收工件，更新它不会补齐或重写历史性能证据。正式 CI 采集从该轮不可变 revision 的真实 YAML 与实际 GitHub jobs 建立拓扑，再核对已提交的 benchmark 合约和本轮工件；新的候选契约不能用于宣称旧样本采用了新工具链或新拓扑。
+
 启用方式是现有 reusable job 的 `verification_telemetry: true`。没有启用时，root Vitest 配置与 suite 入口不加载证据 reporter 或计划。候选优化流程共享逻辑范围、显式分类、资源核验、基线证据发现和合约生成 helper，其原生四分片 reporter 直接记录真实 case，不使用基线调度入口。
 
 覆盖率仍执行原样的 `pnpm test:coverage`。附加 reporter 在真实 `onTestRunStart` 冻结项目/文件清单，在真实 `onTestRunEnd` 记录每个 case 的完整名称和状态，同时保留原默认 console reporter，并启用 Vitest 原生 blob。测试结束本身不会生成通过判定；只有原 `Run command` 成功后，独立 finalizer 才核对实际清单、完整工具链、配置摘要和 blob，写出原阈值的成功 verdict。阈值失败、取消、缺失或重复执行不能产生完整证据。

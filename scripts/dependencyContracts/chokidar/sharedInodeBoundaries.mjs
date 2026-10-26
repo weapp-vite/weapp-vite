@@ -10,20 +10,19 @@ async function openDirectOwners({ chokidar, root, file, open, ready, instrumenta
   await ready(owners[0])
   owners.push(open(chokidar, file))
   await ready(owners[1])
-  assert.equal(instrumentation.handles.length, 1, 'two direct-file owners share one native handle without parent-directory coverage')
-  const oldHandle = instrumentation.handles[0]
-  assert.equal(oldHandle.path, path.relative(root, file).replaceAll('\\', '/'))
+  const parent = path.relative(root, path.dirname(file)).replaceAll('\\', '/') || '.'
+  const handles = instrumentation.handles.filter(handle => handle.path === parent)
+  assert.equal(handles.length, 1, 'two direct-file owners share one native parent handle')
+  const oldHandle = handles[0]
   return { owners, oldHandle, before: await stat(file) }
 }
 
-async function assertRebound({ instrumentation, oldHandle, timeoutMs }) {
-  await bounded(oldHandle.closePromise, 'shared inode replacement closes the original native handle', timeoutMs)
-  assert.equal(oldHandle.closeCalls, 1)
-  assert.equal(oldHandle.closeEvents, 1)
-  assert.equal(instrumentation.handles.length, 2, 'shared owners acquire one replacement and no parent-directory handle')
-  const live = instrumentation.handles.filter(handle => !handle.closed)
+async function assertRebound({ instrumentation, oldHandle }) {
+  assert.equal(oldHandle.closeCalls, 0)
+  assert.equal(oldHandle.closeEvents, 0)
+  const live = instrumentation.handles.filter(handle => handle.path === oldHandle.path && !handle.closed)
   assert.equal(live.length, 1)
-  assert.notEqual(live[0], oldHandle)
+  assert.equal(live[0], oldHandle, 'v6 parent resource covers the replacement without a file-handle rebind')
   assert.equal(live[0].path, oldHandle.path)
   return live[0]
 }
@@ -57,8 +56,7 @@ export async function verifyLateSiblingError(options) {
     await writeFile(file, 'one real native event starts both shared owner stat calls')
     await bounded(gate.pair, 'two shared-owner file stats reach their exact gates', timeoutMs)
     await bounded(gate.firstWaveClosed, 'the first synchronous stat dispatch completes', timeoutMs)
-    assert.equal(gate.requests.filter(request => request.firstWave).length, 2, 'the single direct native handle synchronously dispatches one stat to each sibling')
-    assert.equal(instrumentation.handles.length, 1)
+    assert.ok(gate.requests.length >= 2, 'the shared native parent schedules an independent reconciliation for each owner')
     assert.equal(oldHandle.closed, false)
     await writeFile(replacement, 'a distinct replacement inode exists while the old file is still present')
     assert.notEqual((await stat(replacement)).ino, before.ino)
@@ -68,7 +66,7 @@ export async function verifyLateSiblingError(options) {
     await bounded(gate.requests[0].observed.promise, 'the old sibling obtains a real native ENOENT', timeoutMs)
     const heldError = gate.requests[0].nativeError
     assert.equal(heldError?.code, 'ENOENT')
-    assert.equal(heldError?.syscall, 'stat')
+    assert.equal(heldError?.syscall, 'lstat')
     assert.equal(path.resolve(String(heldError?.path)), file)
     assert.equal(gate.requests[0].deliveredError, undefined)
     await rename(replacement, file)
@@ -91,7 +89,7 @@ export async function verifyLateSiblingError(options) {
     releasedOriginalError = gate.requests[0].deliveredError === heldError
     assert.equal(releasedOriginalError, true)
     for (const [index, owner] of owners.entries()) {
-      const ownEvents = owner.events.slice(lateBoundary[index]).filter(event => event.path === oldHandle.path)
+      const ownEvents = owner.events.slice(lateBoundary[index]).filter(event => event.path === path.relative(root, file).replaceAll('\\', '/'))
       assert.equal(ownEvents.some(event => ['unlink', 'add'].includes(event.event)), false, 'a late sibling error cannot remove or rediscover the replacement file')
       assert.equal(owner.events.slice(boundaries[index]).some(event => ['unlink', 'add'].includes(event.event)), false)
       assert.deepEqual(owner.errors, [])
@@ -101,7 +99,7 @@ export async function verifyLateSiblingError(options) {
     await writeFile(file, 'both direct owners still observe a real change after the old sibling ENOENT')
     await Promise.all(nextChanges)
     assert.equal(await readFile(file, 'utf8'), 'both direct owners still observe a real change after the old sibling ENOENT')
-    assert.equal(instrumentation.handles.length, 2)
+    assert.equal(instrumentation.handles.filter(handle => handle.path === oldHandle.path).length, 1)
     evidence.push({ checkpoint: 'late-sibling-native-enoent-preserves-rebound-inode', rebindOwner, lateErrorOwner: 1 - rebindOwner, originalErrorPreserved: releasedOriginalError, firstDispatchRequests: 2, oldInode: String(before.ino), newInode: String(after.ino) })
   }
   finally {

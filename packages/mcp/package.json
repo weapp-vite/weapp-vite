@@ -37,7 +37,7 @@
     "dist"
   ],
   "engines": {
-    "node": ">=22.12.0"
+    "node": "^22.23.4 || ^24.22.1 || >=26.12.1"
   },
   "scripts": {
     "dev": "tsdown -w --sourcemap",
@@ -59,8 +59,8 @@
     "registry": "https://registry.npmjs.org"
   },
   "dependencies": {
-    "@modelcontextprotocol/node": "^2.1.1",
-    "@modelcontextprotocol/server": "^2.3.1",
+    "@modelcontextprotocol/node": "^2.1.2",
+    "@modelcontextprotocol/server": "^2.4.0",
     "@weapp-core/constants": "workspace:*",
     "@weapp-vite/acceptance": "workspace:*",
     "@weapp-vite/devtools-runtime": "workspace:*",
@@ -74,6 +74,6 @@
     }
   },
   "devDependencies": {
-    "@modelcontextprotocol/client": "^2.3.1"
+    "@modelcontextprotocol/client": "^2.4.0"
   }
 }

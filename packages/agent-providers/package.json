@@ -33,7 +33,7 @@
   ],
   "publishConfig": {},
   "engines": {
-    "node": ">=24.15.0"
+    "node": "^22.23.4 || ^24.22.1 || >=26.12.1"
   },
   "scripts": {
     "build": "tsdown",
@@ -42,10 +42,10 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "4.0.82",
-    "@ai-sdk/openai": "4.0.96",
-    "@ai-sdk/openai-compatible": "3.0.71",
+    "@ai-sdk/anthropic": "4.0.88",
+    "@ai-sdk/openai": "4.0.102",
+    "@ai-sdk/openai-compatible": "3.0.78",
     "@weapp-agent/core": "workspace:*",
-    "ai": "7.0.143"
+    "ai": "7.0.153"
   }
 }

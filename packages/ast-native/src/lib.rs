@@ -23,6 +23,8 @@ pub use vue_sfc_signature::get_vue_sfc_signature_payload_native;
 
 mod compiler_analysis;
 mod npm_chunk_analysis;
+#[cfg(test)]
+mod script_analysis_tests;
 
 #[cfg(test)]
 thread_local! {
@@ -655,7 +657,7 @@ fn collect_wevu_scroll_imports(program: &Program) -> (HashSet<String>, HashSet<S
         let Statement::ImportDeclaration(import_decl) = statement else {
             continue;
         };
-        if import_decl.source.value.as_str() != "wevu" {
+        if import_decl.source.value.as_str() != Some("wevu") {
             continue;
         }
         let Some(specifiers) = &import_decl.specifiers else {
@@ -691,7 +693,7 @@ fn collect_feature_flag_imports(
         let Statement::ImportDeclaration(import_decl) = statement else {
             continue;
         };
-        if import_decl.source.value.as_str() != module_id {
+        if import_decl.source.value.as_str() != Some(module_id) {
             continue;
         }
         let Some(specifiers) = &import_decl.specifiers else {
@@ -726,31 +728,32 @@ fn module_export_name<'a>(name: &'a ModuleExportName<'a>) -> Option<&'a str> {
     match name {
         ModuleExportName::IdentifierName(identifier) => Some(identifier.name.as_str()),
         ModuleExportName::IdentifierReference(identifier) => Some(identifier.name.as_str()),
-        ModuleExportName::StringLiteral(literal) => Some(literal.value.as_str()),
+        ModuleExportName::StringLiteral(literal) => literal.value.as_str(),
     }
 }
 
 fn static_string_literal_value<'a>(expression: &'a Expression<'a>) -> Option<&'a str> {
     match expression {
-        Expression::StringLiteral(literal) => Some(literal.value.as_str()),
+        Expression::StringLiteral(literal) => literal.value.as_str(),
         Expression::TemplateLiteral(template)
             if template.expressions.is_empty() && template.quasis.len() == 1 =>
         {
-            Some(template.quasis[0].value.cooked.as_ref()?.as_str())
+            template.quasis[0].value.cooked.as_ref()?.as_str()
         }
         _ => None,
     }
 }
 
-fn argument_static_string_literal_value<'a>(argument: &'a Argument<'a>) -> Option<&'a str> {
-    match argument {
-        Argument::StringLiteral(literal) => Some(literal.value.as_str()),
-        Argument::TemplateLiteral(template)
-            if template.expressions.is_empty() && template.quasis.len() == 1 =>
-        {
-            Some(template.quasis[0].value.cooked.as_ref()?.as_str())
+// 布尔预判只检查语法形状，不要求 JS 字符串能无损转换为 Rust UTF-8。
+fn is_static_string_literal(expression: &Expression<'_>) -> bool {
+    match expression {
+        Expression::StringLiteral(_) => true,
+        Expression::TemplateLiteral(template) => {
+            template.expressions.is_empty()
+                && template.quasis.len() == 1
+                && template.quasis[0].value.cooked.is_some()
         }
-        _ => None,
+        _ => false,
     }
 }
 
@@ -759,8 +762,8 @@ fn is_static_require_call(call: &CallExpression) -> bool {
         && call
             .arguments
             .first()
-            .and_then(argument_static_string_literal_value)
-            .is_some()
+            .and_then(Argument::as_expression)
+            .is_some_and(is_static_string_literal)
 }
 
 fn may_contain_platform_api_text(code: &str) -> bool {
@@ -780,7 +783,7 @@ fn has_platform_api_member_expression(expression: &Expression) -> bool {
         }
         Expression::ComputedMemberExpression(member) => {
             matches!(&member.object, Expression::Identifier(identifier) if is_platform_api_identifier(identifier.name.as_str()))
-                && static_string_literal_value(&member.expression).is_some()
+                && is_static_string_literal(&member.expression)
         }
         _ => false,
     }
@@ -789,7 +792,7 @@ fn has_platform_api_member_expression(expression: &Expression) -> bool {
 fn static_property_name<'a>(key: &'a PropertyKey<'a>) -> Option<&'a str> {
     match key {
         PropertyKey::StaticIdentifier(identifier) => Some(identifier.name.as_str()),
-        PropertyKey::StringLiteral(literal) => Some(literal.value.as_str()),
+        PropertyKey::StringLiteral(literal) => literal.value.as_str(),
         _ => None,
     }
 }

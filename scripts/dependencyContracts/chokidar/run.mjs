@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { writeFileSync } from 'node:fs'
-import { mkdir, mkdtemp, readdir, rm, writeFile } from 'node:fs/promises'
+import { mkdir, readdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url'
 import { withMachineE2ELease } from '../../../packages/devtools-runtime/src/lease/machine.ts'
 import { completeContractReport, createContractCleanupKey, hashText, installedChokidar, normalizeReport, parseContractArguments } from './report.mjs'
 import { nonApplicableReason, scenarios } from './scenarios.mjs'
-import { runScenario, workerEnvironment } from './supervisor.mjs'
+import { createContractFixtureRoot, runScenario, workerEnvironment } from './supervisor.mjs'
 
 const { reportFile } = parseContractArguments(process.argv.slice(2))
 const repositoryRoot = fileURLToPath(new URL('../../../', import.meta.url))
@@ -35,7 +35,7 @@ try {
     const installed = await installedChokidar()
     roots.push([installed.directory, '<chokidar>'])
     report.installed = { version: installed.version, hashes: installed.hashes }
-    const fixtureRoot = await mkdtemp(path.join(tmpdir(), 'chokidar-contracts-'))
+    const fixtureRoot = await createContractFixtureRoot(tmpdir())
     roots.push([fixtureRoot, '<fixture>'])
     const cleanupKey = createContractCleanupKey(reportFile, fixtureRoot, process.pid)
     const scope = await lease.createChildScope({ cleanupKey })

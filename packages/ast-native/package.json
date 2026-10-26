@@ -43,7 +43,7 @@
     "index.js"
   ],
   "engines": {
-    "node": ">=22.13.0"
+    "node": "^22.23.4 || ^24.22.1 || >=26.12.1"
   },
   "scripts": {
     "native:build": "napi build --esm --platform --release --no-js --dts target/index.d.ts",
@@ -52,7 +52,7 @@
     "native:lint": "eslint package.json index.js index.d.ts native.vitest.config.ts test/**/*.test.ts"
   },
   "devDependencies": {
-    "@napi-rs/cli": "^3.10.8",
+    "@napi-rs/cli": "^3.10.9",
     "@types/node": "catalog:",
     "eslint": "catalog:",
     "vitest": "5.0.5"

@@ -43,7 +43,7 @@ import {
   shouldStartAutoRoutesWatcher,
   WEVU_AUTO_ROUTES_RESOLVED_MODULE_ID,
 } from './autoRoutes.shared'
-import { createAutoRoutesWebPublication } from './autoRoutes/publication'
+import { createAutoRoutesWebPublication, createAutoRoutesWebSourceSnapshot } from './autoRoutes/publication'
 import { markAppEntryForAutoRoutesTopology } from './core/lifecycle/autoRoutesTopology'
 import { parseRequest } from './utils/parse'
 
@@ -353,18 +353,14 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
       if (controller.servingSubscribers.get('web') !== webSubscriber || webSubscriber?.devServer !== server) {
         continue
       }
-      const signature = service.getSignature()
-      const sources = current.map(result => ({
-        file: result.changedSource,
-        fingerprint: service.getSourceFingerprint(result.changedSource),
-      }))
-      if (!webSubscriber.webPublication.matches(signature, sources)) {
+      const sourceSnapshot = createAutoRoutesWebSourceSnapshot(ctx.runtimeState.autoRoutes)
+      if (!webSubscriber.webPublication.matches(sourceSnapshot)) {
         server.ws.send({ type: 'full-reload' })
         // 发送失败或宿主替换不能消费该快照；后续结构通知仍保留自己的发布权。
         if (isCurrentRouteWatcher(controller)
           && controller.servingSubscribers.get('web') === webSubscriber
           && webSubscriber.devServer === server) {
-          webSubscriber.webPublication.commit(signature, sources)
+          webSubscriber.webPublication.commit(sourceSnapshot)
         }
       }
     }
@@ -612,6 +608,7 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
     },
 
     async load(id) {
+      const publicationServer = devServer
       const resolvedId = resolveAutoRoutesVirtualId(id, autoRoutesAliasTargets)
       if (!resolvedId) {
         return null
@@ -632,8 +629,8 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
         })
       }
       await startRouteFileWatcher()
-      if (resolvedConfig?.weappVite?.runtime === 'web') {
-        webPublication.initialize(service.getSignature())
+      if (resolvedConfig?.weappVite?.runtime === 'web' && devServer === publicationServer) {
+        webPublication.initialize(createAutoRoutesWebSourceSnapshot(ctx.runtimeState.autoRoutes))
       }
 
       return {
@@ -709,6 +706,7 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
           return
         }
         const webRuntime = resolvedConfig?.weappVite?.runtime === 'web'
+        const publicationServer = devServer
         if (context.type !== 'update') {
           const watcher = ctx.runtimeState.watcher.sidecarWatcherMap.get(ROUTE_WATCHER_KEY)
           // 路由 watcher 扫描完成后统一通知 App，避免 Vite 提前刷新后再次重置页面。
@@ -753,9 +751,9 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
           return
         }
 
-        const signature = webRuntime ? service.getSignature() : undefined
+        const sourceSnapshot = webRuntime ? createAutoRoutesWebSourceSnapshot(ctx.runtimeState.autoRoutes) : undefined
         const reloadRoutes = webRuntime
-          && (webPublication.signature === undefined ? topologyChanged : signature !== webPublication.signature)
+          && (webPublication.signature === undefined ? topologyChanged : sourceSnapshot!.signature !== webPublication.signature)
         const modules = new Set<EnvironmentModuleNode>(!webRuntime || reloadRoutes
           ? AUTO_ROUTES_RESOLVED_IDS
               .map(id => moduleGraph.getModuleById(id))
@@ -781,10 +779,10 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
         }
         if (modules.size > 0) {
           if (reloadRoutes) {
-            webPublication.commit(signature!, [{
-              file: changedSource,
-              fingerprint: service.getSourceFingerprint(changedSource),
-            }])
+            // 旧环境返回的模块只由旧宿主消费，不能替换新宿主的发布回执。
+            if (devServer === publicationServer) {
+              webPublication.commit(sourceSnapshot!)
+            }
             return collectAutoRoutesReloadModules(modules)
           }
           return [...modules]

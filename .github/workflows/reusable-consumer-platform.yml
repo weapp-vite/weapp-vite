@@ -52,9 +52,9 @@ jobs:
       fail-fast: false
       matrix:
         node:
-          - 22.18.0
-          - 24.11.0
-          - 26.0.0
+          - 22.23.4
+          - 24.22.1
+          - 26.12.1
           - '22'
           - '24'
     runs-on: ${{ inputs.runs_on }}
@@ -86,7 +86,8 @@ jobs:
         run: pnpm exec playwright install --with-deps chromium
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
-          node-version: ${{ matrix.node }}
+          node-version: ${{ matrix.node == '22' && '^22.23.4' || matrix.node == '24' && '^24.22.1' || matrix.node == '26' && '^26.12.1' || matrix.node }}
+          check-latest: ${{ matrix.node == '22' || matrix.node == '24' || matrix.node == '26' }}
       - name: Record actual consumer Node version
         shell: bash
         run: node -e "process.stdout.write('REPOCTL_RELEASE_NODE_VERSION=' + process.version + '\n')" >> "$GITHUB_ENV"

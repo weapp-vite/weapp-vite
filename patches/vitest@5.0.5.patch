@@ -1,0 +1,12 @@
+diff --git a/dist/chunks/index.1TqnEahn.js b/dist/chunks/index.1TqnEahn.js
+--- a/dist/chunks/index.1TqnEahn.js
++++ b/dist/chunks/index.1TqnEahn.js
+@@ -3579,7 +3579,7 @@
+ 				try {
+ 					const result = await transformService.fetch(data[0], data[1], environment, false, data[2]);
+ 					if ("tmp" in result) {
+-						const code = await readFile(result.tmp);
++						const code = await readFile(result.tmp, "utf8");
+ 						return { result: {
+ 							...result,
+ 							code

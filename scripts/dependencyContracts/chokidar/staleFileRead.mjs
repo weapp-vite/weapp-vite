@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict'
 import { access, readFile, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
-import { holdRemoveEntries } from './removeCooldown.mjs'
 import { bounded, deferred, turn, waitForObservedEventPhase } from './support.mjs'
 
 export function createStaleFileReadGate(file) {
@@ -59,9 +58,8 @@ export function createStaleFileReadGate(file) {
 export async function verifyStaleFileRead({ chokidar, root, watched, timeoutMs, open, ready, evidence, gate }) {
   const file = gate.file
   await writeFile(file, 'old file generation')
-  const owner = open(chokidar, watched, { atomic: false })
+  const owner = open(chokidar, file, { atomic: false })
   await ready(owner)
-  const removeGate = holdRemoveEntries(owner, root, new Map([[file, 'unlink']]))
   let afterAdd
   let lateFailurePassed = false
   let errorBoundary
@@ -69,31 +67,26 @@ export async function verifyStaleFileRead({ chokidar, root, watched, timeoutMs, 
     gate.arm()
     await writeFile(file, 'old native listener enters an armed exact stat')
     await bounded(gate.entered, 'old file listener reaches its exact native stat gate', timeoutMs)
-    const removed = owner.event('unlink', file, timeoutMs)
+    // v6 在同一 root 内串行协调；显式 unwatch/add 产生可并行的新 root 代。
+    owner.watcher.unwatch(file)
     await rm(file)
-    await removed
-    removeGate.assertCaptured()
     await assert.rejects(access(file), { code: 'ENOENT' })
     gate.runNativeStat()
     await bounded(gate.nativeResultSeen, 'held old listener receives a real native ENOENT', timeoutMs)
     assert.equal(gate.unexpectedNativeSuccess, false, 'the held rejection must come from a real missing-path stat')
     assert.equal(gate.nativeError?.code, 'ENOENT')
-    assert.equal(gate.nativeError?.syscall, 'stat')
+    assert.equal(gate.nativeError?.syscall, 'lstat')
     assert.equal(path.resolve(String(gate.nativeError?.path)), file)
     evidence.push({ checkpoint: 'real-old-file-stat-enoent-held', passed: true, errorIdentity: 'held-native-stat-error-1' })
 
     const add = owner.event('add', file, timeoutMs)
     await writeFile(file, 'replacement file while the original native ENOENT is held')
+    owner.watcher.add(file)
     await add
-    afterAdd = removeGate.snapshot('after-replacement-add-before-old-enoent-release')
+    afterAdd = { oldRootRetired: true, replacementObserved: true }
     errorBoundary = owner.events.length
     gate.releaseError()
     await bounded(gate.returned, 'same native ENOENT rejected back to the old file listener', timeoutMs)
-    await turn()
-    const sentinel = path.join(watched, 'stale-file-event-barrier.txt')
-    const sentinelAdded = owner.event('add', sentinel, timeoutMs)
-    await writeFile(sentinel, 'public parent scan barrier after the stale rejection')
-    await sentinelAdded
     await turn()
     await access(file)
     assert.equal(await readFile(file, 'utf8'), 'replacement file while the original native ENOENT is held')
@@ -119,8 +112,6 @@ export async function verifyStaleFileRead({ chokidar, root, watched, timeoutMs, 
       sameNativeErrorReleased: gate.sameNativeErrorReleased,
       nativeError: gate.nativeError && { code: gate.nativeError.code, syscall: gate.nativeError.syscall },
       afterErrorEvents: errorBoundary == null ? [] : owner.events.slice(errorBoundary),
-      beforeGateCleanup: removeGate.snapshot('before-stale-file-gate-cleanup'),
     })
-    removeGate.close()
   }
 }

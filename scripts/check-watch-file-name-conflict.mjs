@@ -2,18 +2,18 @@
 
 import { spawn } from 'node:child_process'
 import fs from 'node:fs/promises'
+import { createRequire } from 'node:module'
 import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
-import { pathToFileURL } from 'node:url'
 
 const READY_MARKER = '开发服务已就绪'
 const REBUILD_MARKER = '小程序已重新构建'
 const CONFLICT_MARKER = '[FILE_NAME_CONFLICT]'
 const DEV_READY_TIMEOUT_MS = 60_000
 const REBUILD_TIMEOUT_MS = 30_000
-const CONFIG_IMPORT_RE = /from ['"]weapp-vite(?:\/config)?['"]/g
 const NODE_MODULES_RE = /[\\/]node_modules(?:[\\/]|$)/
+const cliPath = path.join(path.dirname(createRequire(import.meta.url).resolve('weapp-vite/package.json')), 'bin', 'weapp-vite.js')
 
 function wait(ms) {
   return new Promise(resolve => setTimeout(resolve, ms))
@@ -37,16 +37,10 @@ async function waitForCondition(check, timeoutMs, message) {
   throw new Error(message)
 }
 
-async function patchTemplateConfigSource(root) {
-  const configPath = path.join(root, 'vite.config.ts')
+async function configureTemplateWatch(root) {
+  const configPath = path.join(root, 'weapp-vite.config.ts')
   const configContent = await fs.readFile(configPath, 'utf8')
-  const workspaceRoot = path.resolve(import.meta.dirname, '..')
-  const configEntry = pathToFileURL(path.join(workspaceRoot, 'packages/weapp-vite/src/config.ts')).href
-  const sourcePatched = configContent.replace(CONFIG_IMPORT_RE, `from '${configEntry}'`)
-  if (sourcePatched === configContent) {
-    throw new Error('Expected weapp-vite/config import not found in template config')
-  }
-  const injected = sourcePatched.replace(
+  const injected = configContent.replace(
     '      plugins: [',
     [
       '      build: {',
@@ -60,41 +54,36 @@ async function patchTemplateConfigSource(root) {
       '      plugins: [',
     ].join('\n'),
   )
+  if (injected === configContent) {
+    throw new Error('Expected plugin list not found in template config')
+  }
   await fs.writeFile(configPath, injected, 'utf8')
-}
-
-async function ensureWorkspacePackageNodeModules() {
-  const workspaceRoot = path.resolve(import.meta.dirname, '..')
-  const rootNodeModules = path.join(workspaceRoot, 'node_modules')
-  const packageNodeModules = path.join(workspaceRoot, 'packages/weapp-vite/node_modules')
-  const rootWeappCore = path.join(rootNodeModules, '@weapp-core')
-  const packageScopedNodeModules = path.join(packageNodeModules, '@weapp-core')
-  const loggerEntry = path.join(packageScopedNodeModules, 'logger')
-
-  try {
-    await fs.access(loggerEntry)
-    return
-  }
-  catch {
-  }
-
-  await fs.mkdir(packageNodeModules, { recursive: true })
-  await fs.rm(packageScopedNodeModules, { recursive: true, force: true })
-  await fs.symlink(rootWeappCore, packageScopedNodeModules, 'dir')
 }
 
 async function createTempProject() {
   const workspaceRoot = path.resolve(import.meta.dirname, '..')
   const fixtureSource = path.join(workspaceRoot, 'templates/weapp-vite-template')
-  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-watch-conflict-'))
-  await fs.cp(fixtureSource, tempRoot, {
-    recursive: true,
-    dereference: true,
-    filter: src => !NODE_MODULES_RE.test(src),
-  })
-  await fs.symlink(path.join(workspaceRoot, 'node_modules'), path.join(tempRoot, 'node_modules'), 'dir')
-  await patchTemplateConfigSource(tempRoot)
-  return tempRoot
+  const tempRoot = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-watch-conflict-')))
+  try {
+    await fs.cp(fixtureSource, tempRoot, {
+      recursive: true,
+      dereference: true,
+      filter: src => !NODE_MODULES_RE.test(src),
+    })
+    const manifest = JSON.parse(await fs.readFile(path.join(fixtureSource, 'package.json'), 'utf8'))
+    // fixture 独占缓存与安装状态，只共享模板已安装依赖的公共入口。
+    for (const name of Object.keys({ ...manifest.dependencies, ...manifest.devDependencies, ...manifest.optionalDependencies })) {
+      const target = path.join(tempRoot, 'node_modules', name)
+      await fs.mkdir(path.dirname(target), { recursive: true })
+      await fs.symlink(await fs.realpath(path.join(fixtureSource, 'node_modules', name)), target, process.platform === 'win32' ? 'junction' : 'dir')
+    }
+    await configureTemplateWatch(tempRoot)
+    return tempRoot
+  }
+  catch (error) {
+    await fs.rm(tempRoot, { recursive: true, force: true })
+    throw error
+  }
 }
 
 async function runCommand(cwd, command, args, options = {}) {
@@ -136,27 +125,19 @@ async function runCommand(cwd, command, args, options = {}) {
   })
 }
 
-async function updateFile(root, relativeFile, mode) {
-  const filePath = path.join(root, relativeFile)
-  if (mode === 'touch-existing') {
-    const stat = await fs.stat(filePath)
-    const nextTime = new Date(Math.max(Date.now(), stat.mtimeMs + 1000))
-    await fs.utimes(filePath, nextTime, nextTime)
-    return
-  }
-
-  await fs.writeFile(filePath, '', 'utf8')
+async function updateFile(root, relativeFile) {
+  // 首构已消费的相同内容通知会被去重；使用合法内容编辑触发真实后续构建。
+  await fs.appendFile(path.join(root, relativeFile), '\n', 'utf8')
 }
 
 async function main() {
-  await ensureWorkspacePackageNodeModules()
   const tempRoot = await createTempProject()
   const output = []
   let rebuildCount = 0
   let ready = false
   let exiting = false
 
-  const child = spawn('pnpm', ['dev'], {
+  const child = spawn(process.execPath, [cliPath, 'dev'], {
     cwd: tempRoot,
     env: {
       ...process.env,
@@ -189,7 +170,7 @@ async function main() {
   })
 
   try {
-    await runCommand(tempRoot, 'pnpm', ['exec', 'wv', 'prepare'])
+    await runCommand(tempRoot, process.execPath, [cliPath, 'prepare'])
 
     await Promise.race([
       waitForCondition(
@@ -201,31 +182,31 @@ async function main() {
     ])
 
     const changePlan = [
-      { relativeFile: 'src/app.json', mode: 'touch-existing' },
-      { relativeFile: 'src/theme.json', mode: 'touch-existing' },
-      { relativeFile: 'src/sitemap.json', mode: 'touch-existing' },
-      { relativeFile: 'src/pages/index/index.wxml', mode: 'touch-existing' },
-      { relativeFile: 'src/pages/index/index.json', mode: 'touch-existing' },
-      { relativeFile: 'src/pages/index/index.ts', mode: 'touch-existing' },
-      { relativeFile: 'src/pages/index/index.scss', mode: 'touch-existing' },
-      { relativeFile: 'src/layouts/default/index.wxml', mode: 'touch-existing' },
-      { relativeFile: 'src/layouts/default/index.json', mode: 'touch-existing' },
-      { relativeFile: 'src/layouts/default/index.ts', mode: 'touch-existing' },
-      { relativeFile: 'src/layouts/default/index.scss', mode: 'touch-existing' },
-      { relativeFile: 'src/layouts/admin/index.wxml', mode: 'touch-existing' },
-      { relativeFile: 'src/layouts/admin/index.json', mode: 'touch-existing' },
-      { relativeFile: 'src/layouts/admin/index.ts', mode: 'touch-existing' },
-      { relativeFile: 'src/layouts/admin/index.scss', mode: 'touch-existing' },
-      { relativeFile: 'src/components/HelloWorld/HelloWorld.wxml', mode: 'touch-existing' },
-      { relativeFile: 'src/components/HelloWorld/HelloWorld.json', mode: 'touch-existing' },
-      { relativeFile: 'src/components/HelloWorld/HelloWorld.ts', mode: 'touch-existing' },
-      { relativeFile: 'src/components/HelloWorld/HelloWorld.scss', mode: 'touch-existing' },
-      { relativeFile: 'src/app.scss', mode: 'touch-existing' },
+      { relativeFile: 'src/app.json' },
+      { relativeFile: 'src/theme.json' },
+      { relativeFile: 'src/sitemap.json' },
+      { relativeFile: 'src/pages/index/index.wxml' },
+      { relativeFile: 'src/pages/index/index.json' },
+      { relativeFile: 'src/pages/index/index.ts' },
+      { relativeFile: 'src/pages/index/index.scss' },
+      { relativeFile: 'src/layouts/default/index.wxml' },
+      { relativeFile: 'src/layouts/default/index.json' },
+      { relativeFile: 'src/layouts/default/index.ts' },
+      { relativeFile: 'src/layouts/default/index.scss' },
+      { relativeFile: 'src/layouts/admin/index.wxml' },
+      { relativeFile: 'src/layouts/admin/index.json' },
+      { relativeFile: 'src/layouts/admin/index.ts' },
+      { relativeFile: 'src/layouts/admin/index.scss' },
+      { relativeFile: 'src/components/HelloWorld/HelloWorld.wxml' },
+      { relativeFile: 'src/components/HelloWorld/HelloWorld.json' },
+      { relativeFile: 'src/components/HelloWorld/HelloWorld.ts' },
+      { relativeFile: 'src/components/HelloWorld/HelloWorld.scss' },
+      { relativeFile: 'src/app.scss' },
     ]
 
     for (const step of changePlan) {
       const previousRebuildCount = rebuildCount
-      await updateFile(tempRoot, step.relativeFile, step.mode)
+      await updateFile(tempRoot, step.relativeFile)
       await Promise.race([
         waitForCondition(
           () => rebuildCount > previousRebuildCount,
@@ -234,12 +215,14 @@ async function main() {
         ),
         closePromise,
       ])
+      console.log(`[watch-conflict] rebuilt ${step.relativeFile}`)
     }
 
     const text = output.join('')
     if (text.includes(CONFLICT_MARKER)) {
       throw new Error(`detected ${CONFLICT_MARKER} in watch output`)
     }
+    console.log(`[watch-conflict] passed ${changePlan.length} content edits without ${CONFLICT_MARKER}`)
   }
   finally {
     exiting = true

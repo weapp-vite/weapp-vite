@@ -13,7 +13,7 @@
     "build:ui": "wv build --ui"
   },
   "devDependencies": {
-    "@tanstack/vue-query": "^5.104.3",
+    "@tanstack/vue-query": "^5.104.5",
     "@weapp-vite/dashboard": "workspace:*",
     "axios": "catalog:",
     "graphql-request": "catalog:",
@@ -21,6 +21,6 @@
     "typescript": "catalog:latest",
     "weapp-vite": "workspace:*",
     "wevu": "workspace:*",
-    "zustand": "^5.0.15"
+    "zustand": "^5.0.16"
   }
 }

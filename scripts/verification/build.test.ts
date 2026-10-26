@@ -1,4 +1,6 @@
 import type { VerificationTask } from './types.ts'
+import { createRequire } from 'node:module'
+import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { expect, it } from 'vitest'
 import { createTurboFixture } from '../turboCacheContract/fixture.ts'
@@ -36,7 +38,18 @@ it('uses the real Turbo graph and builds the CLI exactly once between its depend
     const split = await splitCliBuild(fixture.root, original)
     expect(split.tasks.map(task => task.id)).toEqual(['build:layer:0:build', 'dist-sync:weapp-vite', 'build:layer:2:build'])
     expect(split.tasks.filter(task => task.args.includes('weapp-vite'))).toHaveLength(1)
-    const execute = createTaskExecutor(fixture.root, true)
+    const executeTask = createTaskExecutor(fixture.root, true)
+    const turboEntry = createRequire(import.meta.url).resolve('turbo/bin/turbo')
+    // 临时工作区没有安装工具依赖；直接启动仓库已安装的 Turbo，避免 pnpm exec 自动安装改变 fixture。
+    const execute = (task: VerificationTask) => {
+      expect(task.command).toBe('pnpm')
+      if (task.args[0] === 'exec' && task.args[1] === 'turbo') {
+        return executeTask({ ...task, command: process.execPath, args: [turboEntry, ...task.args.slice(2)] })
+      }
+      expect(task.id).toBe('dist-sync:weapp-vite')
+      expect(task.args).toEqual(['--filter', 'weapp-vite', 'build'])
+      return executeTask({ ...task, command: process.execPath, directory: 'packages/weapp-vite', args: ['build.mjs'] })
+    }
     for (const task of split.tasks) {
       if (task.args.includes('turbo')) {
         task.args.push('--summarize')

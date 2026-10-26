@@ -8,18 +8,19 @@ import { syncBuiltinESMExports } from 'node:module'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
-import { fileURLToPath } from 'node:url'
 import { FSWatcher } from 'chokidar'
 import { expect, it, vi } from 'vitest'
 import { assertNativeWatcherClosed, closeDarwinRegistrationBarrier, observeNativeWatcher } from '../../../../scripts/dependencyContracts/chokidar/nativeWatcher.mjs'
+import { absolutePath } from '../../../../scripts/dependencyContracts/chokidar/support.mjs'
 
 interface InternalWatcher {
-  _nodeFsHandler: {
-    _handleRead: (...args: unknown[]) => Promise<unknown> | undefined
+  handler: {
+    readDirectory: (...args: unknown[]) => Promise<unknown> | undefined
+    reconcileNativeTrigger: (...args: unknown[]) => Promise<unknown>
   }
-  _readdirp: (directory: string, options: unknown) => Readable | undefined
-  _watched: Map<string, { getChildren: () => string[] }>
-  _closers: Map<string, unknown>
+  createScanStream: (directory: string, options: unknown) => Readable | undefined
+  tree: { watched: Map<string, { getChildren: () => string[] }> }
+  lifecycle: { closers: Map<string, unknown> }
 }
 
 function deferred<T>() {
@@ -28,6 +29,10 @@ function deferred<T>() {
     resolve = accept
   })
   return { promise, resolve }
+}
+
+function key(directory: string) {
+  return path.resolve(directory).replaceAll('\\', '/')
 }
 
 function bounded<T>(promise: Promise<T>, label: string) {
@@ -47,11 +52,11 @@ function assertCleanupCompleted(bodyFailure: unknown, cleanupFailures: unknown[]
 }
 
 /**
- * 从真实已登记的空目录出发，排队同一原生 callback 后删除目录，再只交付该 callback。
- * 父目录通知保留在队列，避免靠另一条扫描路径掩盖根目录 ENOENT 未释放自身的缺口。
+ * 从真实已登记的空目录出发，保留原生通知后删除目录，分别验证协调队列和真实扫描。
+ * 扫描沿用初始登记的原始参数，父目录通知仍保留在队列，不能用另一条通知掩盖根目录清理。
  * 不伪造 fs 结果、stream 事件或 native callback；旧 child stat 主路径仍由正式依赖契约覆盖。
  */
-it('真实根 ENOENT 会释放空目录自身的 tracking、closer 和原生句柄', async () => {
+it.each(['native', 'scan'] as const)('%s 真实根 ENOENT 会释放空目录自身的 tracking、closer 和原生句柄', async (mode) => {
   const root = await mkdtemp(path.join(tmpdir(), 'chokidar-empty-directory-'))
   const watched = path.join(root, 'src')
   const parent = path.join(watched, 'extra')
@@ -65,8 +70,10 @@ it('真实根 ENOENT 会释放空目录自身的 tracking、closer 和原生句�
   const watcherFailure = Promise.withResolvers<never>()
   void watcherFailure.promise.catch(() => {})
   const removed = deferred<void>()
-  const warnings: NodeJS.ErrnoException[] = []
-  const reads: Promise<unknown>[] = []
+  const scanErrors: NodeJS.ErrnoException[] = []
+  const reconciliations: Promise<unknown>[] = []
+  const reconciliationEntered = deferred<void>()
+  let initialArguments: unknown[] | undefined
   const startedAt = performance.now()
   const trace: Array<{ phase: string, file: string, values?: string[], elapsedMs: number }> = []
   let phase = 'subscribing'
@@ -81,7 +88,7 @@ it('真实根 ENOENT 会释放空目录自身的 tracking、closer 和原生句�
     }
   }
   const originalWatch = fs.watch
-  const absolute = (value: PathLike) => path.resolve(value instanceof URL ? fileURLToPath(value) : String(value))
+  const absolute = (value: PathLike) => absolutePath(value)
   const interception = vi.spyOn(fs, 'watch').mockImplementation(function (this: unknown, filename: PathLike, ...args: unknown[]) {
     const file = absolute(filename)
     if (controlled.has(file)) {
@@ -107,10 +114,17 @@ it('真实根 ENOENT 会释放空目录自身的 tracking、closer 和原生句�
     return handle
   } as typeof fs.watch)
   syncBuiltinESMExports()
-  const watcher = new FSWatcher({ persistent: true, usePolling: false, atomic: false })
+  const watcher = new FSWatcher({ persistent: true, backend: 'native', atomic: false })
   const internal = watcher as unknown as InternalWatcher
-  const originalRead = internal._nodeFsHandler._handleRead
-  const originalReaddirp = internal._readdirp
+  const originalRead = internal.handler.readDirectory
+  const originalReconcile = internal.handler.reconcileNativeTrigger
+  const originalReaddirp = internal.createScanStream
+  internal.handler.readDirectory = function (...args) {
+    if (absolutePath(args[0]) === directory && !initialArguments) {
+      initialArguments = args
+    }
+    return Reflect.apply(originalRead, this, args) as Promise<unknown> | undefined
+  }
   watcher.on('error', (error) => {
     errors.push(error)
     watcherFailure.reject(error)
@@ -129,8 +143,8 @@ it('真实根 ENOENT 会释放空目录自身的 tracking、closer 和原生句�
     await bounded(ready, 'initial public ready')
     phase = 'ready'
     record(directory)
-    expect(internal._watched.get(directory)?.getChildren()).toEqual([])
-    expect(internal._closers.has(directory)).toBe(true)
+    expect(internal.tree.watched.get(key(directory))?.getChildren()).toEqual([])
+    expect(internal.lifecycle.closers.has(key(directory))).toBe(true)
     const ownedNative = native.find(record => record.file === directory)
     assert.ok(ownedNative, 'The empty directory owns a real native handle before removal')
     phase = 'settling-native-registration'
@@ -150,17 +164,18 @@ it('真实根 ENOENT 会释放空目录自身的 tracking、closer 和原生句�
     expect(errors).toEqual([])
 
     // 透明观察当前实例的真实读取，不替换 readdirp，也不增加 data listener。
-    internal._readdirp = function (file, options) {
+    internal.createScanStream = function (file, options) {
       const stream = Reflect.apply(originalReaddirp, this, [file, options]) as Readable | undefined
-      if (file === directory) {
-        stream?.on('warn', error => warnings.push(error as NodeJS.ErrnoException))
+      if (path.resolve(file) === directory) {
+        stream?.on('warn', error => scanErrors.push(error as NodeJS.ErrnoException))
       }
       return stream
     }
-    internal._nodeFsHandler._handleRead = function (...args) {
-      const result = Reflect.apply(originalRead, this, args) as Promise<unknown> | undefined
-      if (args[0] === directory && result) {
-        reads.push(result)
+    internal.handler.reconcileNativeTrigger = function (...args) {
+      const result = Reflect.apply(originalReconcile, this, args) as Promise<unknown>
+      if (absolutePath(args[0]) === directory && result) {
+        reconciliations.push(result)
+        reconciliationEntered.resolve()
       }
       return result
     }
@@ -184,20 +199,28 @@ it('真实根 ENOENT 会释放空目录自身的 tracking、closer 和原生句�
       throw new Error(`Native callback evidence: ${JSON.stringify({ trace, errors: errors.map(error => error instanceof Error ? error.message : String(error)), nativeState })}`, { cause: error })
     }
     phase = 'removing'
-    expect(internal._watched.get(directory)?.getChildren()).toEqual([])
+    expect(internal.tree.watched.get(key(directory))?.getChildren()).toEqual([])
     await rm(parent, { recursive: true })
     const notification = pending.find(item => item.file === directory && item.filename === 'queued.txt')
     assert.ok(notification)
-    notification.deliver()
-    assert.ok(reads[0], 'The queued original native callback entered the real directory reader')
-    await bounded(reads[0], 'real missing-directory readdirp completion')
-    expect(warnings.some(error => error.code === 'ENOENT' && error.path === directory)).toBe(true)
+    if (mode === 'native') {
+      notification.deliver()
+      await bounded(reconciliationEntered.promise, 'queued original native callback entering reconciliation')
+      await bounded(Promise.all(reconciliations), 'real missing-directory reconciliation completion')
+    }
+    else {
+      assert.ok(initialArguments, 'The real initial directory scan supplies the ownership predicates')
+      const scan = Reflect.apply(originalRead, internal.handler, initialArguments) as Promise<unknown> | undefined
+      assert.ok(scan, 'The original directory reader creates a real missing-directory scan')
+      await bounded(scan, 'real missing-directory scan completion')
+      expect(scanErrors.some(error => error.code === 'ENOENT' && absolutePath(error.path) === directory)).toBe(true)
+    }
 
     await bounded(removed.promise, 'public unlinkDir for the missing empty directory')
     expect(Object.hasOwn(watcher.getWatched(), directory)).toBe(false)
-    expect(internal._watched.has(directory)).toBe(false)
-    expect(internal._watched.get(parent)?.getChildren() ?? []).not.toContain('deep')
-    expect(internal._closers.has(directory)).toBe(false)
+    expect(internal.tree.watched.has(key(directory))).toBe(false)
+    expect(internal.tree.watched.get(key(parent))?.getChildren() ?? []).not.toContain('deep')
+    expect(internal.lifecycle.closers.has(key(directory))).toBe(false)
     await bounded(ownedNative.observation.closePromise, 'exact removed-directory native close')
     expect(() => assertNativeWatcherClosed(ownedNative.observation)).not.toThrow()
     expect(errors).toEqual([])
@@ -236,8 +259,9 @@ it('真实根 ENOENT 会释放空目录自身的 tracking、closer 和原生句�
     }
     finally {
       pending.length = 0
-      internal._nodeFsHandler._handleRead = originalRead
-      internal._readdirp = originalReaddirp
+      internal.handler.readDirectory = originalRead
+      internal.handler.reconcileNativeTrigger = originalReconcile
+      internal.createScanStream = originalReaddirp
       try {
         interception.mockRestore()
         syncBuiltinESMExports()

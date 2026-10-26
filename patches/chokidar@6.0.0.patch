@@ -1,0 +1,321 @@
+diff --git a/reconcile.js b/reconcile.js
+--- a/reconcile.js
++++ b/reconcile.js
+@@ -93,7 +93,7 @@
+      * @param listener on fs change
+      * @returns closer for the watcher instance
+      */
+-    subscribePath(path, listener, initialStats, mapRelative = false, queueScope = path) {
++    subscribePath(path, listener, initialStats, mapRelative = false, queueScope = path, throwRegistrationError = false) {
+         const opts = this.fsw.options;
+         const basename = sp.basename(path);
+         const absolutePath = sp.resolve(path);
+@@ -114,12 +114,17 @@
+         };
+         let subscription;
+         let resubscribes = 0;
++        let registering = true;
+         const subscribeNative = () => setFsWatchListener(path, absolutePath, options, {
+             publish: (trigger) => {
+                 resubscribes = 0;
+                 publish(trigger);
+             },
+-            errHandler: this.reportError,
++            errHandler: (error) => {
++                if (registering && throwRegistrationError)
++                    throw error;
++                this.reportError(error);
++            },
+             rawEmitter: (...args) => this.fsw.emitRaw(...args),
+             failure: () => {
+                 if (!active || !this.fsw.lifecycle.isActive(generation))
+@@ -140,6 +145,7 @@
+         else {
+             subscription = subscribeNative();
+         }
++        registering = false;
+         if (!subscription)
+             return;
+         return () => {
+@@ -464,6 +470,7 @@
+         directory = sp.join(directory, '');
+         const directoryKey = logicalPathKey(directory);
+         const previous = this.fsw.tree.getDirectory(wh.watchPath);
++        const isActive = (path) => this.isHelperActive(wh, path) && this.fsw.tree.peekDirectory(wh.watchPath) === previous;
+         const current = new Set();
+         const stream = this.fsw.createScanStream(directory, {
+             fileFilter: (entry) => wh.filterPath(entry),
+@@ -471,15 +478,23 @@
+         });
+         if (!stream)
+             return;
++        let rootWarning;
++        const onWarning = (error) => {
++            if (error?.code === 'ENOENT' && typeof error.path === 'string' &&
++                logicalPathKey(sp.resolve(error.path)) === directoryKey) {
++                rootWarning = error;
++            }
++        };
++        stream.on('warn', onWarning);
+         const scan = consumeDirectoryStream(stream, (entry) => {
+-            if (!this.isHelperActive(wh, directory))
++            if (!isActive(directory))
+                 return;
+             const stats = entry.stats;
+             if (!stats)
+                 return;
+             const item = entry.path;
+             let path = sp.join(directory, item);
+-            if (!this.isHelperActive(wh, path))
++            if (!isActive(path))
+                 return;
+             current.add(item);
+             const shouldAdd = item === target || (!target && !previous.has(item));
+@@ -497,7 +512,7 @@
+                     (await this.handleSymlink(entry, directory, path, item, initialAdd, wh))) {
+                     return;
+                 }
+-                if (!this.isHelperActive(wh, path))
++                if (!isActive(path))
+                     return;
+                 // Files that present in current directory snapshot
+                 // but absent in previous are added to watch list and
+@@ -510,9 +525,11 @@
+             })();
+         });
+         return scan.then(async ({ complete, error, failures }) => {
++            stream.off('warn', onWarning);
++            error ??= rootWarning;
+             failures.forEach(this.reportError);
+             if (error) {
+-                if (isMissingError(error) && this.isHelperActive(wh, directory)) {
++                if (isMissingError(error) && isActive(directory)) {
+                     const affectedPath = target ? sp.join(directory, target) : directory;
+                     let disappeared = false;
+                     let becameNonDirectory = false;
+@@ -526,6 +543,8 @@
+                         else
+                             this.reportError(stateError);
+                     }
++                    if (!isActive(affectedPath))
++                        return;
+                     if (target) {
+                         if (disappeared && previous.has(target))
+                             this.fsw.removePath(directory, target);
+@@ -542,7 +561,7 @@
+                     this.reportError(error);
+                 }
+             }
+-            if (!complete || !this.isHelperActive(wh, directory)) {
++            if (!complete || !isActive(directory)) {
+                 return;
+             }
+             // Entries tracked but absent from this listing are removed only once
+@@ -556,7 +575,8 @@
+     }
+     async removeIfMissing(wh, directory, item, entry) {
+         const path = sp.join(directory, item);
+-        if (!this.isHelperActive(wh, path))
++        const isActive = (path) => this.isHelperActive(wh, path) && this.fsw.tree.peekDirectory(wh.watchPath) === entry;
++        if (!isActive(path))
+             return;
+         try {
+             await lstat(path);
+@@ -566,7 +586,7 @@
+             if (!isMissingError(error))
+                 return;
+         }
+-        if (this.isHelperActive(wh, path) && entry.has(item))
++        if (isActive(path) && entry.has(item))
+             this.fsw.removePath(directory, item);
+     }
+     /**
+@@ -717,7 +737,10 @@
+         // An exact subscription observes one path inside `root`; an untracked or
+         // unreadable candidate never justifies scanning its siblings.
+         const fsw = this.fsw;
+-        if (!this.isHelperActive(rootHelper, root))
++        const rootEntry = fsw.tree.peekDirectory(root);
++        // 同一目录条目的所有权结束后，旧协调结果不能提交到重建后的目录树。
++        const isActive = (path) => this.isHelperActive(rootHelper, path) && fsw.tree.peekDirectory(root) === rootEntry;
++        if (!isActive(root))
+             return;
+         let localHelper;
+         const helper = () => (localHelper ??= rootHelper.withObservation(trigger));
+@@ -749,27 +772,40 @@
+                 await this.readDirectory(ancestor, false, helper().fork(ancestor), undefined, ancestor, ancestorDepth);
+                 return;
+             }
+-            if (fsw.closed)
++            // 缺失读取也必须服从 root 代；旧 root 不得提交到重新订阅的路径。
++            if (!isActive(candidate))
+                 return;
+-            const missingPath = candidate === root ? root : await this.highestMissingPath(root, candidate);
+-            if (fsw.closed)
+-                return;
+-            if (missingPath === root) {
+-                fsw.removePath(sp.dirname(root), sp.basename(root), true);
+-                exact?.onRootMissing?.();
+-                return;
++            // 共享 owner 的异步读取可迟到；提交删除前确认目标仍然缺失。
++            try {
++                stats = await lstat(candidate);
+             }
+-            const parentPath = sp.dirname(missingPath);
+-            const item = sp.basename(missingPath);
+-            if (fsw.tree.getDirectory(parentPath).has(item)) {
+-                fsw.removePath(parentPath, item);
+-            }
+-            else if (!exact) {
+-                await this.readDirectory(parentPath, false, helper().fork(parentPath), undefined, parentPath, Math.max(0, baseDepth + this.candidateDepth(root, parentPath)));
+-            }
+-            return;
++            catch (confirmationError) {
++                if (!isMissingError(confirmationError)) {
++                    this.reportError(confirmationError);
++                    return;
++                }
++                if (!isActive(candidate))
++                    return;
++                const missingPath = candidate === root ? root : await this.highestMissingPath(root, candidate);
++                if (!isActive(candidate))
++                    return;
++                if (missingPath === root) {
++                    fsw.removePath(sp.dirname(root), sp.basename(root), true);
++                    exact?.onRootMissing?.();
++                    return;
++                }
++                const parentPath = sp.dirname(missingPath);
++                const item = sp.basename(missingPath);
++                if (fsw.tree.getDirectory(parentPath).has(item)) {
++                    fsw.removePath(parentPath, item);
++                }
++                else if (!exact) {
++                    await this.readDirectory(parentPath, false, helper().fork(parentPath), undefined, parentPath, Math.max(0, baseDepth + this.candidateDepth(root, parentPath)));
++                }
++                return;
++            }
+         }
+-        if (!this.isHelperActive(rootHelper, candidate) ||
++        if (!isActive(candidate) ||
+             this.candidateIgnored(root, candidate, stats)) {
+             return;
+         }
+@@ -833,7 +869,7 @@
+             if (targetChanged) {
+                 const previousKind = fsw.tree.observed.get(logicalKey)?.kind;
+                 fsw.removePath(parentPath, item, previousKind === 'directory');
+-                if (!currentTarget || !this.isHelperActive(rootHelper, candidate))
++                if (!currentTarget || !isActive(candidate))
+                     return;
+                 const linkHelper = helper().fork(candidate);
+                 linkHelper.recursiveRoot = undefined;
+@@ -1273,7 +1309,14 @@
+                 return observeDirectory(dir, currentStats, trigger);
+             };
+             const rootParentCloser = depth === 0 && !target ? this.watchRootParent(dir, wh) : undefined;
+-            closer = this.subscribePath(dir, reconcile, stats.isDirectory() ? stats : undefined, true, target ? sp.join(dir, target) : dir);
++            try {
++                closer = this.subscribePath(dir, reconcile, stats.isDirectory() ? stats : undefined, true, target ? sp.join(dir, target) : dir, true);
++            }
++            catch (error) {
++                if (rootParentCloser)
++                    await rootParentCloser();
++                throw error;
++            }
+             if (target && targetPath && closer) {
+                 // The target may have appeared after the caller's failed lstat and
+                 // before this subscription existed; nothing would report it.
+@@ -1368,15 +1411,17 @@
+             return 'complete';
+         }
+         const wh = priorWh ? priorWh.fork(path) : this.fsw.createHelper(path);
++        const parentEntry = priorWh ? this.fsw.tree.peekDirectory(sp.dirname(path)) : undefined;
++        const isActive = () => this.isHelperActive(wh) && (!priorWh || this.fsw.tree.peekDirectory(sp.dirname(path)) === parentEntry);
+         if (!priorWh && pathGeneration !== undefined)
+             wh.pathGeneration = pathGeneration;
+-        if (!this.isHelperActive(wh)) {
++        if (!isActive()) {
+             return 'complete';
+         }
+         // evaluate what is at the path we're being asked to watch
+         try {
+             const linkStats = await lstat(wh.watchPath);
+-            if (!this.isHelperActive(wh)) {
++            if (!isActive()) {
+                 return 'complete';
+             }
+             if (this.fsw.isIgnored(wh.watchPath, linkStats)) {
+@@ -1392,7 +1437,7 @@
+                 const ancestryPath = follow ? await fsrealpath(path) : path;
+                 const targetPath = followedTarget ?? path;
+                 const targetKey = logicalPathKey(ancestryPath);
+-                if (!this.isHelperActive(wh)) {
++                if (!isActive()) {
+                     return 'complete';
+                 }
+                 if (isSymbolicLink && wh.realpathAncestry.has(targetKey)) {
+@@ -1413,7 +1458,7 @@
+                 if (isSymbolicLink)
+                     wh.recursiveDisabled = true;
+                 closer = await this.handleDirectory(wh.watchPath, stats, initialAdd, depth, target, wh);
+-                if (!this.isHelperActive(wh)) {
++                if (!isActive()) {
+                     if (closer)
+                         await closer();
+                     return 'complete';
+@@ -1440,7 +1485,7 @@
+                 parentHelper.pathGeneration = wh.pathGeneration;
+                 const parentCloser = await this.handleDirectory(parent, parentStats, initialAdd, depth, sp.basename(wh.watchPath), parentHelper);
+                 const deletionCloser = this.watchSymlinkDeletion(wh.watchPath);
+-                if (!this.isHelperActive(wh)) {
++                if (!isActive()) {
+                     if (fileCloser)
+                         await fileCloser();
+                     if (parentCloser)
+@@ -1484,7 +1529,7 @@
+                             await Promise.allSettled(fileClosers.map((fileCloser) => fileCloser()));
+                         };
+             }
+-            if (!this.isHelperActive(wh)) {
++            if (!isActive()) {
+                 if (closer)
+                     await closer();
+                 return 'complete';
+@@ -1496,9 +1541,23 @@
+             return 'complete';
+         }
+         catch (error) {
+-            if (!this.isHelperActive(wh)) {
++            if (!isActive()) {
+                 return 'complete';
+             }
++            // 只将精确 Windows watch 注册失败且已消失的路径视为待恢复条目。
++            if (isWindows && error?.code === 'EPERM' && error.syscall === 'watch' &&
++                typeof error.path === 'string' && sp.toNamespacedPath(sp.resolve(error.path)) === sp.toNamespacedPath(sp.resolve(wh.watchPath))) {
++                try {
++                    await lstat(wh.watchPath);
++                }
++                catch (presenceError) {
++                    if (isMissingError(presenceError)) {
++                        if (isActive())
++                            this.fsw.removePath(sp.dirname(wh.watchPath), sp.basename(wh.watchPath), true);
++                        return 'watch-parent';
++                    }
++                }
++            }
+             this.fsw.handleError(error);
+             return 'watch-parent';
+         }
+diff --git a/reconcile.d.ts b/reconcile.d.ts
+--- a/reconcile.d.ts
++++ b/reconcile.d.ts
+@@ -25,7 +25,7 @@
+      * @param listener on fs change
+      * @returns closer for the watcher instance
+      */
+-    subscribePath(path: string, listener: (path: string, newStats: Stats | undefined, trigger: BackendTrigger) => void | Promise<void>, initialStats?: Stats, mapRelative?: boolean, queueScope?: string): (() => void | Promise<void>) | undefined;
++    subscribePath(path: string, listener: (path: string, newStats: Stats | undefined, trigger: BackendTrigger) => void | Promise<void>, initialStats?: Stats, mapRelative?: boolean, queueScope?: string, throwRegistrationError?: boolean): (() => void | Promise<void>) | undefined;
+     /**
+      * Watch a followed file symlink through the target's parent directory.
+      * macOS also starts a one-shot exact-target fallback: FSEvents can omit the

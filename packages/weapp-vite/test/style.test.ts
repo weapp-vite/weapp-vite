@@ -2,6 +2,7 @@ import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { createCompilerContext } from '@/createContext'
 import logger from '@/logger'
+import { createBundleRuntime, readBundleOutputs } from './bundleRuntime'
 import { getFixture, normalizeFixtureRegionPaths, scanFiles } from './utils'
 
 vi.mock('@/logger', () => ({
@@ -36,16 +37,23 @@ describe('build style', {
   it('dist', async () => {
     expect(await fs.exists(path.resolve(distDir))).toBe(true)
     const files = await scanFiles(distDir)
-    expect(files).toMatchSnapshot()
+    const outputs = await readBundleOutputs(distDir, files)
+    const nonJsOutputs = outputs.filter(({ file }) => !file.endsWith('.js'))
+    expect(nonJsOutputs.map(({ file }) => file)).toMatchSnapshot()
     expect(files.filter(file => SOURCE_STYLE_RE.test(file))).toEqual([])
     expect(files).toContain('pages/index/index.wxss')
-    for (const file of files) {
+    for (const { file, content } of nonJsOutputs) {
       if (file.endsWith('.wxss')) {
         continue
       }
-      const content = await fs.readFile(path.resolve(distDir, file), 'utf-8')
       expect(normalizeFixtureRegionPaths(content)).toMatchSnapshot(file)
     }
+    const runtime = createBundleRuntime(outputs)
+    runtime.assertDependencyGraph()
+    runtime.assertAppAndNavbar()
+    runtime.load('pages/index/index.js')
+    expect(runtime.page).toHaveBeenCalledExactlyOnceWith({})
+    runtime.assertAllScriptsReachable()
   })
 
   it('compiles raw scss through Sass and PostCSS into wxss', async () => {

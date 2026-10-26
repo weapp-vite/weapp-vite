@@ -12,10 +12,10 @@ import { createDevProcessEnv } from '../utils/dev-process-env'
 import { createDomAcceptance } from '../utils/domAcceptance'
 import { createHmrOutputDiagnostics } from '../utils/hmrOutputDiagnostics'
 import { createHmrRuntimeDiagnostics } from '../utils/hmrRuntimeDiagnostics'
+import { createIssue1015HmrPublication, issue1015ExpectedMarkerMatches } from '../utils/issue1015HmrContract'
 import { createIssue1015HmrDiagnostics } from '../utils/issue1015HmrDiagnostics'
 import { createIssue1015Project, ISSUE_1015_CLI } from '../utils/issue1015Project'
 import { checkIssue1015SharedStyleHmr, issue1015SharedStyleCheckpoints } from '../utils/issue1015SharedStyle'
-import { createNativeHmrPublication } from '../utils/nativeHmrPublication'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import { installStatefulHmrTransport } from '../utils/statefulHmrTransport'
 
@@ -27,7 +27,7 @@ for (const runtime of ['classic', 'stateful-experimental'] as const) {
     let dev: ReturnType<typeof startDevProcess> | undefined
     let miniProgram: Awaited<ReturnType<typeof launchAutomator>> | undefined
     let disposeTransport: (() => void) | undefined
-    let publication: ReturnType<typeof createNativeHmrPublication>
+    let publication: ReturnType<typeof createIssue1015HmrPublication>
     let runtimeReleased = true
     let devReleased = true
     const runtimeErrors: unknown[] = []
@@ -70,8 +70,14 @@ for (const runtime of ['classic', 'stateful-experimental'] as const) {
         env: { ...createDevProcessEnv(), WEAPP_GITHUB_ISSUE_1015_HMR_RUNTIME: runtime, WEAPP_VITE_HMR_PROFILE_JSON: profilePath },
         reject: false,
       })
-      publication = createNativeHmrPublication(project, dev, runtime, ['stylesheet-output'], profilePath)
+      publication = createIssue1015HmrPublication(project, dev, runtime, profilePath)
       await dev.waitForInitialBuild()
+      if (runtime === 'stateful-experimental') {
+        // 微信启动时先完成能力交接；CSS 编辑继续验收实际 classic 发布和宿主自动重载。
+        await dev.waitForOutput('[weapp-vite] HMR classic ready ', 'startup classic fallback completion')
+      }
+      expect(publication.stateful).toBe(false)
+      await publication.assertClassicOutput()
       for (const extension of ['js', 'json', 'wxml', 'wxss']) {
         expect(await readFile(path.join(project, `dist/pages/issue-1015/index.${extension}`), 'utf8')).not.toBe('')
       }
@@ -143,7 +149,7 @@ for (const runtime of ['classic', 'stateful-experimental'] as const) {
       const initialAppScript = await readFile(emittedAppScript, 'utf8')
       let loadedAppScript = initialAppScript
       let loadedScript = await readFile(emittedScript, 'utf8')
-      const classicScripts = runtime === 'classic' ? await createClassicAssetScriptContract(path.join(project, 'dist'), 'weapp') : undefined
+      let classicScripts: Awaited<ReturnType<typeof createClassicAssetScriptContract>> | undefined
       const outputDiagnostics = createHmrOutputDiagnostics(path.join(project, 'dist'), 'e2e-apps/github-issues/fixtures/issue-1015')
       const failureDiagnostics = createIssue1015HmrDiagnostics({
         stylesheetPath: emittedCss,
@@ -246,11 +252,12 @@ for (const runtime of ['classic', 'stateful-experimental'] as const) {
         expect(runtimeState.errors).toEqual([])
         if (!publication.stateful) {
           await publication.assertClassicRuntime(host)
-          if (runtime === 'stateful-experimental' || id === 'style-only') {
+          const expectedMarkerMatches = issue1015ExpectedMarkerMatches(runtime, id)
+          if (expectedMarkerMatches) {
             await expect.poll(() => host.evaluate((markers: { app: string, page: string }) => {
               const pages = getCurrentPages()
               return { app: (getApp() as any).__e2eHmrInstanceMarker === markers.app, page: (pages[pages.length - 1] as any).__e2eHmrInstanceMarker === markers.page }
-            }, originalMarkers), { timeout: 45_000 }).toEqual({ app: false, page: false })
+            }, originalMarkers), { timeout: 45_000 }).toEqual(expectedMarkerMatches)
           }
         }
         await outputDiagnostics.capture(`${id}-passed`, loadedScript)
@@ -281,6 +288,8 @@ for (const runtime of ['classic', 'stateful-experimental'] as const) {
       }
 
       await check('initial')
+      // 首屏检查结束后再固定 CSS 编辑基线，避免纳入启动期间已排队的原生发布。
+      classicScripts = runtime === 'classic' ? await createClassicAssetScriptContract(path.join(project, 'dist'), 'weapp') : undefined
       await updateCss(cssPath, `${css}\n.issue1015-page { background-color: yellow; }`, 'style-only')
       const switchedReloadMarker = computedStyles ? await captureAppReloadMarker(host) : undefined
       const switched = publication.capture(sourcePath)

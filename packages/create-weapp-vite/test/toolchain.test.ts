@@ -34,6 +34,7 @@ describe('scaffold toolchain selection', () => {
     expect(pkg.scripts?.lint).toBe('eslint .')
     expect(pkg.scripts?.stylelint).toContain('stylelint')
     expect(pkg.devDependencies?.vite).toBeTruthy()
+    expect(pkg.engines?.node).toBe('^22.23.4 || ^24.22.1 || >=26.12.1')
     expect(await fs.readFile(path.join(root, 'vite.config.ts'), 'utf8')).toContain('from \'./weapp-vite.config\'')
   })
 
@@ -51,12 +52,15 @@ describe('scaffold toolchain selection', () => {
     expect(pkg.overrides?.vitest).toBe('5.0.1')
     expect(workspace.peerDependencyRules.allowedVersions).toEqual({ vite: '1.0.0' })
     expect(workspace.allowBuilds.rolldown).toBe(true)
-    expect(pkg.engines?.node).toBe('^24.15.0 || >=26.0.0')
+    expect(pkg.engines?.node).toBe('^24.22.1 || >=26.12.1')
     expect(await fs.readFile(path.join(root, 'vite.config.ts'), 'utf8')).toContain('from \'vite-plus\'')
   })
 
   it.each(['wv', 'vite', 'vite-plus'] as const)('generates platform scripts and explicit native host targets for %s', async (toolchain) => {
     const { root, pkg } = await generate(TemplateName.multiPlatform, toolchain)
+    expect(pkg.engines?.node).toBe(toolchain === 'vite-plus'
+      ? '^24.22.1 || >=26.12.1'
+      : '^22.23.4 || ^24.22.1 || >=26.12.1')
     for (const platform of ['weapp', 'alipay', 'tt', 'swan', 'jd', 'xhs', 'web']) {
       const host = toolchain === 'vite-plus' ? 'vp' : toolchain
       for (const action of ['dev', 'build']) {

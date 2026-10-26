@@ -1,3 +1,4 @@
+import type { Plugin } from 'vite'
 import fs from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
@@ -119,6 +120,19 @@ const projects = [
     extends: false,
     // 脚本项目只剥离类型，不加载 workspace 的应用 solution references。
     oxc: { tsconfig: false },
+    plugins: [{
+      name: 'repo-scripts:published-node-conditions',
+      config: {
+        order: 'post',
+        handler(config) {
+          // 工具脚本沿用原生 Node 的发布入口，避免 development 条件选择依赖包中的未编译源码。
+          config.environments ??= {}
+          config.environments.ssr ??= {}
+          config.environments.ssr.resolve ??= {}
+          config.environments.ssr.resolve.conditions = ['node']
+        },
+      },
+    } satisfies Plugin],
     // 只限制测试发现范围；保留 Vite 默认转换，让跨目录导入的 TypeScript 依赖同样完成类型剥离。
     test: {
       name: 'repo-scripts',

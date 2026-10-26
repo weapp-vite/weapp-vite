@@ -4,6 +4,7 @@ import path from 'pathe'
 // eslint-disable-next-line e18e/ban-dependencies -- 复用脚手架现有 semver，保持 pnpm peer 范围的 caret、并集和预发布语义。
 import { satisfies } from 'semver'
 import { parseDocument } from 'yaml'
+import { engines } from '../package.json'
 import { TEMPLATE_CATALOG } from './generated/catalog'
 import { findPnpmWorkspaceRoot } from './pnpmBuildPolicy'
 import vitePlusVersions from './vitePlusVersions.json'
@@ -67,6 +68,7 @@ export default defineConfig(async (env) => {
 
 /** 从共享业务模板派生宿主入口，仅改写普通 build/dev，保留小程序专属命令。 */
 export async function applyToolchain(root: string, pkg: PackageJson, toolchain: Toolchain) {
+  pkg.engines = { ...pkg.engines, node: engines.node }
   if (toolchain === 'wv') {
     return
   }
@@ -97,7 +99,6 @@ export async function applyToolchain(root: string, pkg: PackageJson, toolchain: 
     await fs.writeFile(path.join(root, fileName), renderConfig(toolchain, config.source, config.platform))
   }
   pkg.devDependencies ??= {}
-  pkg.engines = { ...pkg.engines, node: '^22.22.2 || ^24.15.0 || >=26.0.0' }
   if (toolchain === 'vite') {
     pkg.devDependencies.vite = TEMPLATE_CATALOG.vite
     return
@@ -105,7 +106,7 @@ export async function applyToolchain(root: string, pkg: PackageJson, toolchain: 
   pkg.devDependencies['vite-plus'] = VITE_PLUS_VERSION
   pkg.devDependencies.vite = VITE_PLUS_CORE
   pkg.overrides = { ...pkg.overrides, vite: VITE_PLUS_CORE, vitest: VITE_PLUS_VITEST_VERSION }
-  pkg.engines.node = '^24.15.0 || >=26.0.0'
+  pkg.engines.node = '^24.22.1 || >=26.12.1'
   const workspace = await findPnpmWorkspaceRoot(root)
   if (workspace && path.resolve(workspace) === path.resolve(root)) {
     const fileName = path.join(workspace, 'pnpm-workspace.yaml')

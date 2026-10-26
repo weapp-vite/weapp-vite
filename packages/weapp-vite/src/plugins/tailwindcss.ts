@@ -17,6 +17,9 @@ import fs from 'node:fs'
 import process from 'node:process'
 import { createTailwindController } from '@weapp-vite/tailwindcss'
 import path from 'pathe'
+// eslint-disable-next-line e18e/ban-dependencies -- Node 支持范围沿用发布声明与 CLI 的 semver 校验。
+import satisfies from 'semver/functions/satisfies.js'
+import { engines } from '../../package.json'
 import { parseSidecarSourceMetadata, parseSidecarSourceRequest } from '../moduleGraph/protocol'
 import { resolveBuildScope } from '../runtime/buildScope'
 import { safeGetPackageInfoSync } from '../runtime/localPkg'
@@ -52,7 +55,6 @@ import {
 import { getCompilerSourceSnapshot } from './utils/sourceSnapshot'
 import { parseWeappVueStyleRequest } from './vue/transform/styleRequest'
 
-const CORE_NODE_RANGE = '^22.18.0 || ^24.11.0 || >=26.0.0'
 const MANAGED_PLUGIN_NAME = 'weapp-vite:tailwindcss'
 const TAILWIND_IMPORT_RE = /@import\s+(?:url\(\s*)?['"]tailwindcss['"]\s*\)?(?:\s|;|$)/
 const TAILWIND_SOURCE_DIRECTIVE_RE = /@(?:config|custom-variant|layer|plugin|reference|source|tailwind|theme|utility|variant)\b/
@@ -194,11 +196,12 @@ function createCompilerRootId(index: number, entry: string) {
 }
 
 function assertRuntimeRequirements(resolved: ResolvedManagedTailwindcssOptions) {
-  const [major = 0, minor = 0] = process.versions.node.split('.').map(Number)
-  const supported = (major === 22 && minor >= 18) || (major >= 24 && (major > 24 || minor >= 11))
-  if (!supported) {
+  // Bun 的 Node 版本仅用于兼容标识；真实 Node 仍须满足发布声明。
+  const bunVersion = process.versions.bun
+  const isBun = typeof bunVersion === 'string' && bunVersion.length > 0
+  if (!isBun && !satisfies(process.versions.node, engines.node)) {
     throw new Error(
-      `weapp.tailwindcss requires Node ${CORE_NODE_RANGE}; current version is ${process.versions.node}.`,
+      `weapp.tailwindcss requires Node ${engines.node}; current version is ${process.versions.node}.`,
     )
   }
   for (const entry of resolved.cssEntries) {

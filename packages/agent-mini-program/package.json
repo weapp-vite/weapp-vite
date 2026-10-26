@@ -33,7 +33,7 @@
   ],
   "publishConfig": {},
   "engines": {
-    "node": ">=24.15.0"
+    "node": "^22.23.4 || ^24.22.1 || >=26.12.1"
   },
   "scripts": {
     "build": "tsdown",
@@ -42,16 +42,16 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@modelcontextprotocol/client": "^2.3.1",
-    "@modelcontextprotocol/server": "^2.3.1",
+    "@modelcontextprotocol/client": "^2.4.0",
+    "@modelcontextprotocol/server": "^2.4.0",
     "@weapp-agent/core": "workspace:*",
     "@weapp-vite/acceptance": "workspace:*",
     "@weapp-vite/mcp": "workspace:*",
-    "execa": "10.1.1",
+    "execa": "10.2.1",
     "weapp-ide-cli": "workspace:*",
     "zod": "4.6.7"
   },
   "devDependencies": {
-    "@modelcontextprotocol/node": "^2.1.1"
+    "@modelcontextprotocol/node": "^2.1.2"
   }
 }

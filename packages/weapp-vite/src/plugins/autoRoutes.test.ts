@@ -3,6 +3,7 @@ import { EventEmitter } from 'node:events'
 import chokidar from 'chokidar'
 import path from 'pathe'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createRuntimeState } from '../runtime/runtimeState'
 import { autoRoutes } from './autoRoutes'
 
 const chokidarWatchMock = vi.hoisted(() => vi.fn(() => {
@@ -35,6 +36,8 @@ vi.mock('chokidar', () => ({
 }))
 
 function createPlugin(overrides: Record<string, unknown> = {}) {
+  const autoRoutesState = createRuntimeState().autoRoutes
+  autoRoutesState.signature = 'routes'
   const ensureFresh = vi.fn(async (_resolver?: (source: string, importer?: string) => Promise<string | undefined>) => {})
   const getModuleCode = vi.fn(() => 'export const pages = ["pages/home/index"]')
   const getNamedModuleCode = vi.fn(() => 'export const routes = [{"name":"home","path":"/pages/home/index","meta":{}}]')
@@ -63,10 +66,11 @@ function createPlugin(overrides: Record<string, unknown> = {}) {
       isEnabled,
       handleFileChange,
       setPageDeclarationSourceResolver,
-      getSignature: vi.fn(() => 'routes'),
+      getSignature: vi.fn(() => autoRoutesState.signature),
       getSourceFingerprint: vi.fn(() => undefined),
     },
     runtimeState: {
+      autoRoutes: autoRoutesState,
       watcher: {
         sidecarWatcherMap: new Map(),
       },
@@ -164,6 +168,92 @@ describe('auto-routes plugin alias fallback', () => {
       map: { mappings: '' },
     })
     expect(chokidar.watch).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not initialize a replacement Web host from an in-flight previous virtual module load', async () => {
+    vi.useFakeTimers()
+    const { plugin, ctx, ensureFresh } = createPlugin()
+    const refresh = Promise.withResolvers<void>()
+    ensureFresh.mockImplementationOnce(() => refresh.promise)
+    const source = '/virtual/project/src/pages/new/index.vue'
+    ctx.runtimeState.autoRoutes.pageDeclarationFingerprints.set(source, 'page-source')
+    const send = vi.fn()
+    const server = (send: ReturnType<typeof vi.fn>) => ({
+      moduleGraph: { getModuleById: vi.fn(), invalidateModule: vi.fn() },
+      pluginContainer: { watchChange: vi.fn().mockResolvedValue(undefined) },
+      watcher: { add: vi.fn(), emit: vi.fn() },
+      ws: { send },
+    }) as unknown as ViteDevServer
+    plugin.configResolved?.({ command: 'serve', weappVite: { runtime: 'web' } } as any)
+    plugin.configureServer?.(server(vi.fn()))
+    const loading = plugin.load?.call({ addWatchFile: vi.fn() } as any, '\0wevu:auto-routes')
+    try {
+      expect(ensureFresh).toHaveBeenCalledOnce()
+      plugin.configureServer?.(server(send))
+      refresh.resolve()
+      await loading
+      const watcher = chokidarWatchMock.mock.results.at(-1)!.value
+      const add = watcher.on.mock.calls.find(([event]: [string]) => event === 'add')![1]
+      add(source)
+      await vi.advanceTimersByTimeAsync(80)
+      expect(send).toHaveBeenCalledExactlyOnceWith({ type: 'full-reload' })
+    }
+    finally {
+      refresh.resolve()
+      await loading
+      await plugin.closeBundle?.()
+      vi.useRealTimers()
+    }
+  })
+
+  it('does not publish a previous Web environment HMR receipt to a replacement host', async () => {
+    vi.useFakeTimers()
+    const { plugin, ctx, handleFileChange, isRouteFile } = createPlugin()
+    const source = '/virtual/project/src/pages/new/index.vue'
+    const refresh = Promise.withResolvers<void>()
+    ctx.runtimeState.autoRoutes.pageDeclarationFingerprints.set(source, 'initial-source')
+    isRouteFile.mockImplementation((file: string) => file === source)
+    handleFileChange.mockImplementationOnce(async () => {
+      await refresh.promise
+      ctx.runtimeState.autoRoutes.signature = 'next-routes'
+      ctx.runtimeState.autoRoutes.pageDeclarationFingerprints.set(source, 'next-source')
+      return true
+    })
+    const routeModule = { id: '\0wevu:auto-routes', importers: new Set() }
+    const send = vi.fn()
+    const server = (send: ReturnType<typeof vi.fn>) => ({
+      moduleGraph: {
+        getModuleById: vi.fn(id => id === routeModule.id ? routeModule : undefined),
+        invalidateModule: vi.fn(),
+      },
+      pluginContainer: { watchChange: vi.fn().mockResolvedValue(undefined) },
+      watcher: { add: vi.fn(), emit: vi.fn() },
+      ws: { send },
+    }) as unknown as ViteDevServer
+    const previous = server(vi.fn())
+    plugin.configResolved?.({ command: 'serve', weappVite: { runtime: 'web' } } as any)
+    plugin.configureServer?.(previous)
+    const load = () => plugin.load?.call({ addWatchFile: vi.fn() } as any, routeModule.id)
+    await load()
+    const update = runHotUpdate(plugin, { file: source, modules: [], server: previous })
+    try {
+      expect(handleFileChange).toHaveBeenCalledOnce()
+      plugin.configureServer?.(server(send))
+      await load()
+      refresh.resolve()
+      await update
+      const watcher = chokidarWatchMock.mock.results.at(-1)!.value
+      const add = watcher.on.mock.calls.find(([event]: [string]) => event === 'add')![1]
+      add(source)
+      await vi.advanceTimersByTimeAsync(80)
+      expect(send).toHaveBeenCalledExactlyOnceWith({ type: 'full-reload' })
+    }
+    finally {
+      refresh.resolve()
+      await update
+      await plugin.closeBundle?.()
+      vi.useRealTimers()
+    }
   })
 
   it('does not register watch targets in normal build mode', async () => {
@@ -958,7 +1048,12 @@ describe('auto-routes plugin alias fallback', () => {
 
   it('awaits Web scans before reloading undiscovered routes without virtual imports across repeated publications', async () => {
     const appEntry = '/virtual/project/src/app.vue'
-    const { plugin, isRouteFile, handleFileChange } = createPlugin({ scanService: { appEntry: { path: appEntry } } })
+    const { plugin, ctx, isRouteFile, handleFileChange } = createPlugin({ scanService: { appEntry: { path: appEntry } } })
+    let generation = 0
+    handleFileChange.mockImplementation(async () => {
+      ctx.runtimeState.autoRoutes.signature = `routes-${++generation}`
+      return true
+    })
     const createdPage = '/virtual/project/src/pages/new/index.vue'
     isRouteFile.mockReturnValue(false)
     const emit = vi.fn()

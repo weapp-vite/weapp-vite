@@ -54,6 +54,23 @@ describe('native final npm chunk facts', () => {
     expect(results[3]).toEqual(results[0])
   })
 
+  it.each([
+    'require(\'\\uD800\')',
+    'require(\'\\uDC00\')',
+    'wx[\'\\uD800\']()',
+    'const props = { \'\\uDC00\': true }; require(\'pkg\')',
+  ])('keeps decoded surrogate names on the per-item fallback: %j', (code) => {
+    const results = analyzeNpmChunksNative([
+      { code },
+      { code: 'require(\'中文-😀\'); wx[\'request\']()' },
+      { code },
+    ])
+    expect(results[0]).toBeNull()
+    expect(results[2]).toBeNull()
+    expect(results[1]?.requires[0]?.importee).toBe('中文-😀')
+    expect(results[1]?.platformApiRanges).toHaveLength(1)
+  })
+
   it('preserves enter order for aliases, direct bindings, and nested relative interop', () => {
     const code = `const dep = require('pkg'); const wrapped = __toESM(dep, 1); const alias = dep; helper.__toESM(alias, 1); __toESM(require('./miniprogram_npm/pkg/index'), 1);`
     const [analysis] = analyzeNpmChunksNative([{ code }])

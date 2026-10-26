@@ -4,6 +4,7 @@ import CI from 'ci-info'
 import path from 'pathe'
 import { createCompilerContext } from '@/createContext'
 import logger from '@/logger'
+import { createBundleRuntime, readBundleOutputs } from './bundleRuntime'
 import { getFixture, normalizeBuildOutputContent, scanFiles } from './utils'
 
 vi.mock('@/logger', () => ({
@@ -82,17 +83,24 @@ describe.skipIf(CI.isCI)('worker-shared', () => {
 
     const files = await scanFiles(distDir)
     const isWorkerScript = (file: string) => file.startsWith('workers/') && file.endsWith('.js')
-    expect(files.filter(file => !isWorkerScript(file))).toMatchSnapshot()
+    expect(files.filter(file => !file.endsWith('.js'))).toMatchSnapshot()
+    const outputs = await readBundleOutputs(distDir, files)
     const workerSources = new Map<string, string>()
-    for (const file of files) {
-      const content = await fs.readFile(path.resolve(distDir, file), 'utf-8')
+    for (const { file, content } of outputs) {
       if (isWorkerScript(file)) {
         workerSources.set(file, content)
       }
-      else {
+      else if (!file.endsWith('.js')) {
         expect(normalizeBuildOutputContent(content)).toMatchSnapshot(file)
       }
     }
+
+    const runtime = createBundleRuntime(outputs.filter(({ file }) => !isWorkerScript(file)))
+    runtime.assertDependencyGraph()
+    runtime.assertAppAndNavbar()
+    runtime.load('pages/index/index.js')
+    expect(runtime.page).toHaveBeenCalledExactlyOnceWith({})
+    runtime.assertAllScriptsReachable()
 
     const index = executeWorker('workers/index.js', workerSources)
     const hello = executeWorker('workers/hello.js', workerSources)

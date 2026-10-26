@@ -3,9 +3,18 @@ import { AsyncLocalStorage } from 'node:async_hooks'
 import fs from 'node:fs'
 import { syncBuiltinESMExports } from 'node:module'
 import path from 'node:path'
+import { watcherPathKey } from './watcherPathKey.mjs'
 
-const fileState = stats => stats && Object.fromEntries(['dev', 'ino', 'size', 'mtimeMs', 'ctimeMs', 'atimeMs'].map(key => [key, stats[key]]))
-const generation = stats => stats && Object.fromEntries(['dev', 'ino', 'size', 'mtimeMs', 'ctimeMs'].map(key => [key, stats[key]]))
+const valueOf = value => typeof value === 'bigint' ? Number(value) : value
+function statValue(stats, key) {
+  const nanoseconds = stats[`${key.slice(0, -2)}Ns`]
+  if (key.endsWith('Ms') && typeof stats[key] === 'bigint' && typeof nanoseconds === 'bigint') {
+    return Number(nanoseconds / 1000000000n) * 1e3 + Number(nanoseconds % 1000000000n) / 1e6
+  }
+  return valueOf(stats[key])
+}
+const fileState = stats => stats && Object.fromEntries(['dev', 'ino', 'size', 'mtimeMs', 'ctimeMs', 'atimeMs'].map(key => [key, statValue(stats, key)]))
+const generation = stats => stats && Object.fromEntries(['dev', 'ino', 'size', 'mtimeMs', 'ctimeMs'].map(key => [key, statValue(stats, key)]))
 
 /** 只为 atomic 场景关联真实通知、文件 listener、原始 _emit 与公开事件，不接管或过滤交付。 */
 export function createAtomicDeliveryObserver({ root, file }, { watchApi = fs, synchronize = syncBuiltinESMExports } = {}) {
@@ -21,6 +30,7 @@ export function createAtomicDeliveryObserver({ root, file }, { watchApi = fs, sy
   let boundary
   let owner
   let originalRegistration
+  let originalReconcile
   let originalEmit
   const originalWatch = watchApi.watch
   const relative = value => path.relative(root, value).replaceAll('\\', '/')
@@ -36,7 +46,8 @@ export function createAtomicDeliveryObserver({ root, file }, { watchApi = fs, sy
   watchApi.watch = function (watched, ...args) {
     const absolute = path.resolve(String(watched))
     const index = args.findLastIndex(value => typeof value === 'function')
-    if ([file, path.dirname(file)].includes(absolute) && index >= 0) {
+    // Windows 的 root-parent 资源会通过本 fixture 根目录通知触发目标目录重扫。
+    if ([file, path.dirname(file), root].includes(absolute) && index >= 0) {
       const callback = args[index]
       args[index] = function (...values) {
         const notification = { id: native.length + 1, path: relative(absolute), event: values[0], filename: String(values[1]) }
@@ -67,35 +78,63 @@ export function createAtomicDeliveryObserver({ root, file }, { watchApi = fs, sy
       owner = value
       const watcher = owner.watcher
       assert.ok(!watcher.options?.alwaysStat && !watcher.options?.awaitWriteFinish && !watcher.options?.cwd)
-      const handler = watcher._nodeFsHandler
-      originalRegistration = handler._watchWithNodeFs
-      handler._watchWithNodeFs = function (watched, listener, directory, ...rest) {
-        if (directory || path.resolve(String(watched)) !== file) {
-          return originalRegistration.call(this, watched, listener, directory, ...rest)
+      const handler = watcher.handler ?? watcher._nodeFsHandler
+      if (watcher.handler) {
+        originalRegistration = watcher.tree.recordObserved
+        watcher.tree.recordObserved = function (watched, stats, ...rest) {
+          if (path.resolve(String(watched)) === file) {
+            const prior = registrations.at(-1)?.stats
+            if (!prior || prior.dev !== valueOf(stats.dev) || prior.ino !== valueOf(stats.ino)) {
+              registrations.push({ id: registrations.length + 1, stats: fileState(stats) })
+            }
+          }
+          return originalRegistration.call(this, watched, stats, ...rest)
         }
-        const registration = { id: registrations.length + 1, stats: fileState(rest[0]) }
-        registrations.push(registration)
-        const observed = function (...args) {
+        originalReconcile = handler.reconcileBackendTrigger
+        handler.reconcileBackendTrigger = function (scope, mapRelative, trigger, reconcile, ...rest) {
+          // 协调队列可能在其他通知的异步上下文中回放，来源必须绑定原入队回调。
           const source = context.getStore() || {}
-          const invocation = { id: listeners.length + 1, registration: registration.id, native: source.native }
-          listeners.push(invocation)
-          return context.run({ ...source, listener: invocation.id }, () => listener.apply(this, args))
+          const observed = function (...args) {
+            const invocation = { id: listeners.length + 1, registration: registrations.at(-1)?.id, native: source.native, scope: relative(scope), mapRelative, trigger: { kind: trigger.kind, event: trigger.rawEvent, path: trigger.relativePath }, candidate: typeof args[0] === 'string' ? relative(args[0]) : undefined }
+            listeners.push(invocation)
+            return context.run({ ...source, listener: invocation.id }, () => reconcile.apply(this, args))
+          }
+          return originalReconcile.call(this, scope, mapRelative, trigger, observed, ...rest)
         }
-        return originalRegistration.call(this, watched, observed, directory, ...rest)
       }
-      originalEmit = watcher._emit
-      watcher._emit = function (event, emitted, stats, ...rest) {
+      else {
+        originalRegistration = handler._watchWithNodeFs
+        handler._watchWithNodeFs = function (watched, listener, directory, ...rest) {
+          if (directory || path.resolve(String(watched)) !== file) {
+            return originalRegistration.call(this, watched, listener, directory, ...rest)
+          }
+          const registration = { id: registrations.length + 1, stats: fileState(rest[0]) }
+          registrations.push(registration)
+          const observed = function (...args) {
+            const source = context.getStore() || {}
+            const invocation = { id: listeners.length + 1, registration: registration.id, native: source.native }
+            listeners.push(invocation)
+            return context.run({ ...source, listener: invocation.id }, () => listener.apply(this, args))
+          }
+          return originalRegistration.call(this, watched, observed, directory, ...rest)
+        }
+      }
+      const emitMethod = watcher.handler ? 'emitEvent' : '_emit'
+      const pending = watcher.events?.pendingUnlinks ?? watcher._pendingUnlinks
+      const pendingKey = watcherPathKey(watcher, file)
+      originalEmit = watcher[emitMethod]
+      watcher[emitMethod] = function (event, emitted, stats, ...rest) {
         if (path.resolve(String(emitted)) !== file) {
           return originalEmit.call(this, event, emitted, stats, ...rest)
         }
         const source = context.getStore() || {}
-        const call = { id: calls.length + 1, event, native: source.native, listener: source.listener, flush: source.flush, stats: fileState(stats), before: pendingId(this._pendingUnlinks.get(file)), outputs: [] }
+        const call = { id: calls.length + 1, event, native: source.native, listener: source.listener, flush: source.flush, stats: fileState(stats), before: pendingId(pending.get(pendingKey)), outputs: [] }
         calls.push(call)
         return context.run({ ...source, call: call.id }, () => {
           try {
             return originalEmit.call(this, event, emitted, stats, ...rest)
           }
-          finally { call.after = pendingId(this._pendingUnlinks.get(file)) }
+          finally { call.after = pendingId(pending.get(pendingKey)) }
         })
       }
       watcher.prependListener('all', publicEvent)
@@ -169,8 +208,15 @@ export function createAtomicDeliveryObserver({ root, file }, { watchApi = fs, sy
     close() {
       if (owner) {
         owner.watcher.off('all', publicEvent)
-        owner.watcher._emit = originalEmit
-        owner.watcher._nodeFsHandler._watchWithNodeFs = originalRegistration
+        if (owner.watcher.handler) {
+          owner.watcher.emitEvent = originalEmit
+          owner.watcher.tree.recordObserved = originalRegistration
+          owner.watcher.handler.reconcileBackendTrigger = originalReconcile
+        }
+        else {
+          owner.watcher._emit = originalEmit
+          owner.watcher._nodeFsHandler._watchWithNodeFs = originalRegistration
+        }
       }
       watchApi.watch = originalWatch
       synchronize()

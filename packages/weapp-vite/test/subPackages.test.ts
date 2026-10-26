@@ -3,7 +3,9 @@ import CI from 'ci-info'
 import path from 'pathe'
 import { cssCodeCache } from '@/plugins/css'
 import { wxsCodeCache } from '@/plugins/wxs'
-import { createTestCompilerContext, getFixture, normalizeFixtureRegionPaths, scanFiles } from './utils'
+import { ROLLDOWN_RUNTIME_FILE_NAME } from '@/runtime/chunkStrategy/apply/shared/runtime'
+import { createBundleRuntime, readBundleOutputs } from './bundleRuntime'
+import { createTestCompilerContext, getFixture, scanFiles } from './utils'
 
 async function waitForPathExists(
   targetPath: string,
@@ -62,7 +64,18 @@ describe.skipIf(CI.isCI)('subPackages', { concurrent: false }, () => {
       await waitForPathExists(path.resolve(distDir, 'packageB/pages/banana.wxml'))
 
       const files = await scanFiles(distDir)
-      expect(files).toMatchSnapshot()
+      expect(files.filter(file => !file.endsWith('.js'))).toMatchSnapshot()
+      const publicEntries = [
+        'app.js',
+        'components/Navbar/Navbar.js',
+        'pages/index/index.js',
+        'packageA/index.js',
+        'packageA/pages/cat.js',
+        'packageA/pages/dog.js',
+        'packageB/index.js',
+        'packageB/pages/apple.js',
+        'packageB/pages/banana.js',
+      ]
       expect(wxsCodeCache.size).toBe(0)
       expect(cssCodeCache.size).toBeGreaterThanOrEqual(1)
 
@@ -75,8 +88,25 @@ describe.skipIf(CI.isCI)('subPackages', { concurrent: false }, () => {
       expect(await fs.exists(path.resolve(distDir, 'packageB/miniprogram_npm/gm-crypto'))).toBe(false)
       expect(await fs.exists(path.resolve(distDir, 'packageB/pages/banana.js'))).toBe(true)
       expect(await fs.exists(path.resolve(distDir, 'packageB/pages/banana.wxml'))).toBe(true)
-      const bananaJs = await fs.readFile(path.resolve(distDir, 'packageB/pages/banana.js'), 'utf8')
-      expect(normalizeFixtureRegionPaths(bananaJs)).toMatchSnapshot()
+      const formatTime = vi.fn((date: Date) => date.toISOString())
+      const runtime = createBundleRuntime(await readBundleOutputs(distDir, files), (exports) => {
+        if (typeof exports.formatTime !== 'function') {
+          return exports
+        }
+        expect(exports.formatTime(new Date())).toBeUndefined()
+        return { ...exports, formatTime }
+      })
+      // 编译器显式保留主包 runtime，即使本例只有分包消费者；其文件名由源码常量约定。
+      runtime.assertDependencyGraph([...publicEntries, ROLLDOWN_RUNTIME_FILE_NAME])
+      runtime.load('packageB/pages/banana.js')
+      expect(runtime.component).toHaveBeenCalledTimes(1)
+      expect(formatTime).toHaveBeenCalledTimes(1)
+      expect(Number.isNaN(formatTime.mock.calls[0]![0].getTime())).toBe(false)
+      expect(runtime.component).toHaveBeenCalledWith({ data: {
+        now: formatTime.mock.results[0]!.value,
+        name: 'sub-package-b',
+      } })
+      expect(runtime.log).toHaveBeenCalledExactlyOnceWith('banana')
     }
     finally {
       await dispose()

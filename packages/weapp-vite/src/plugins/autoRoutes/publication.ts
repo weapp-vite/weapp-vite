@@ -1,33 +1,50 @@
-interface PublicationSource {
-  file: string
-  fingerprint: string | undefined
+import type { RuntimeState } from '../../runtime/runtimeState'
+
+interface AutoRoutesWebSourceSnapshot {
+  readonly signature: string
+  readonly fingerprints: ReadonlyMap<string, string>
 }
 
-/** 将路由签名和本轮源码快照一起登记，供原生 HMR 与 sidecar 消费同一发布回执。 */
+/** 同步复制服务已接受的完整扫描结果，避免监听文件子集遗漏外部模板、样式或跨批次移动后的源码。 */
+export function createAutoRoutesWebSourceSnapshot(
+  state: Pick<RuntimeState['autoRoutes'], 'signature' | 'pageDeclarationFingerprints'>,
+): AutoRoutesWebSourceSnapshot {
+  return {
+    signature: state.signature,
+    fingerprints: new Map(state.pageDeclarationFingerprints),
+  }
+}
+
+/** 将完整扫描快照登记为发布回执，供原生 HMR 与 sidecar 消费同一代源码。 */
 export function createAutoRoutesWebPublication() {
-  let signature: string | undefined
-  let fingerprints = new Map<string, string>()
+  let published: AutoRoutesWebSourceSnapshot | undefined
+  const commit = (snapshot: AutoRoutesWebSourceSnapshot) => {
+    published = {
+      signature: snapshot.signature,
+      fingerprints: new Map(snapshot.fingerprints),
+    }
+  }
   return {
     get signature() {
-      return signature
+      return published?.signature
     },
     reset() {
-      signature = undefined
-      fingerprints.clear()
+      published = undefined
     },
-    initialize(initialSignature: string) {
-      signature ??= initialSignature
+    initialize(snapshot: AutoRoutesWebSourceSnapshot) {
+      if (!published) {
+        commit(snapshot)
+      }
     },
-    matches(nextSignature: string, sources: PublicationSource[]) {
-      return signature === nextSignature && sources.length > 0 && sources.every(source => (
-        source.fingerprint !== undefined && fingerprints.get(source.file) === source.fingerprint
+    matches(snapshot: AutoRoutesWebSourceSnapshot) {
+      const previous = published
+      if (!previous || previous.signature !== snapshot.signature || previous.fingerprints.size !== snapshot.fingerprints.size) {
+        return false
+      }
+      return [...snapshot.fingerprints].every(([file, fingerprint]) => (
+        previous.fingerprints.get(file) === fingerprint
       ))
     },
-    commit(nextSignature: string, sources: PublicationSource[]) {
-      signature = nextSignature
-      fingerprints = new Map(sources.flatMap(source => (
-        source.fingerprint === undefined ? [] : [[source.file, source.fingerprint] as const]
-      )))
-    },
+    commit,
   }
 }

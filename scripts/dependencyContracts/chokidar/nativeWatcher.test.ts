@@ -1,52 +1,7 @@
 import { EventEmitter } from 'node:events'
 import { expect, it, vi } from 'vitest'
 import { assertNativeWatcherClosed, observeNativeWatcher } from './nativeWatcher.mjs'
-
-type Callback = (this: FSEvent, ...args: unknown[]) => unknown
-
-class FSEvent {
-  initialized = true
-  callback?: Callback
-  result = Symbol('original native return')
-  close = vi.fn(function (this: FSEvent, callback?: Callback, ..._args: unknown[]) {
-    this.callback = callback
-    return this.result
-  })
-
-  complete(...args: unknown[]) {
-    return this.callback!.apply(this, args)
-  }
-}
-
-function fixture({ emitClose = true } = {}) {
-  const handle = new FSEvent()
-  const result = Symbol('original public return')
-  class Watcher extends EventEmitter {
-    _handle: FSEvent | null = handle
-    close = vi.fn(function (this: Watcher, ..._args: unknown[]) {
-      if (this._handle === null) {
-        return
-      }
-      this._handle.close()
-      this._handle = null
-      if (emitClose) {
-        this.emit('close')
-      }
-      return result
-    })
-  }
-  const native = new Watcher()
-  const publicClose = native.close
-  const nativeClose = handle.close
-  const record = observeNativeWatcher(native, { path: 'src/owned.txt', afterPublicClose: false })
-  const error = Object.assign(new Error('the exact native watch failure'), { code: 'EPERM' })
-  function errorClose() {
-    handle.close()
-    native._handle = null
-    native.emit('error', error)
-  }
-  return { native, handle, record, result, publicClose, nativeClose, error, errorClose }
-}
+import { createNativeWatcherFixture as fixture, FSEvent } from './nativeWatcher/fixture'
 
 it('requires actual native completion and preserves public close receiver, arguments and return', async () => {
   const ctx = fixture()
@@ -282,4 +237,59 @@ it.each(['recursive', 'uninitialized', 'unknown-constructor'] as const)('registe
   expect(publicClose).toHaveBeenCalledOnce()
   expect(records[0]!.closed).toBe(false)
   expect(() => assertNativeWatcherClosed(records[0])).toThrow()
+})
+
+it('confirms a recursive JS wrapper only after every captured child completes its exact native close', async () => {
+  const first = fixture()
+  const second = fixture()
+  const children = [first.record, second.record]
+  const scope = { children, closing: false, lateAcquisitions: [] as string[] }
+  class RecursiveWatcher extends EventEmitter {
+    close(..._args: unknown[]) {
+      first.native.close()
+      second.native.close()
+      this.emit('close')
+      return 'original recursive return'
+    }
+  }
+  const native = new RecursiveWatcher()
+  const record = observeNativeWatcher(native, { path: 'owned', recursiveScope: scope })
+  expect(native.close('original argument')).toBe('original recursive return')
+  expect(record.closed).toBe(false)
+  first.handle.complete()
+  await Promise.resolve()
+  expect(record.closed).toBe(false)
+  second.handle.complete()
+  await record.closePromise
+  expect(record.termination).toBe('recursive-public-close')
+  expect(() => assertNativeWatcherClosed(record, true)).not.toThrow()
+  scope.lateAcquisitions.push('owned/late.txt')
+  expect(() => assertNativeWatcherClosed(record)).toThrow()
+})
+
+it('rejects a recursive public close event when no exact native child was captured', async () => {
+  const native = new EventEmitter() as EventEmitter & { close: () => void }
+  native.close = () => {
+    native.emit('close')
+  }
+  const record = observeNativeWatcher(native, { path: 'owned', recursiveScope: { children: [], closing: false, lateAcquisitions: [] } })
+  native.close()
+  await expect(record.closePromise).rejects.toThrow('captured native children')
+  expect(() => assertNativeWatcherClosed(record)).toThrow()
+})
+
+it('preserves a failed child closure as the recursive wrapper failure', async () => {
+  const child = fixture()
+  const original = new Error('exact child close failure')
+  child.nativeClose.mockImplementation(() => {
+    throw original
+  })
+  const native = new EventEmitter() as EventEmitter & { close: () => void }
+  native.close = () => {
+    child.native.close()
+  }
+  const record = observeNativeWatcher(native, { path: 'owned', recursiveScope: { children: [child.record], closing: false, lateAcquisitions: [] } })
+  expect(() => native.close()).toThrow(original)
+  await expect(record.closePromise).rejects.toBe(original)
+  expect(record.closed).toBe(false)
 })

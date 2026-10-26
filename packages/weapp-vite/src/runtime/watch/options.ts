@@ -21,31 +21,53 @@ interface SidecarWatchOptionsInput {
 /**
  * 解析主 watcher 与 sidecar watcher 共享的轮询配置。
  */
-export function resolvePollingWatchOptions(configService: Pick<ConfigService, 'inlineConfig'>) {
+function resolveWatchBackend(configService: Pick<ConfigService, 'inlineConfig'>) {
   const buildWatch = configService.inlineConfig?.build?.watch
   const chokidar = buildWatch && typeof buildWatch === 'object' && 'chokidar' in buildWatch
     ? (buildWatch as { chokidar?: Record<string, unknown> }).chokidar
     : undefined
-  const serverWatch = configService.inlineConfig?.server?.watch
+  const serverWatch = configService.inlineConfig?.server?.watch as Record<string, unknown> | undefined
 
   const envUsePolling = process.env.CHOKIDAR_USEPOLLING
   const envInterval = process.env.CHOKIDAR_INTERVAL
   const envBinaryInterval = process.env.CHOKIDAR_BINARY_INTERVAL
 
-  const usePollingCandidate = chokidar?.usePolling
-    ?? serverWatch?.usePolling
+  const backendFrom = (source?: Record<string, unknown>) => {
+    const backend = source?.backend
+    if (backend === 'auto' || backend === 'native' || backend === 'native-recursive' || backend === 'polling') {
+      return backend
+    }
+    return typeof source?.usePolling === 'boolean' ? (source.usePolling ? 'polling' : 'native') : undefined
+  }
+  const backend = backendFrom(chokidar) ?? backendFrom(serverWatch)
     ?? (envUsePolling === '1' || envUsePolling === 'true'
-      ? true
+      ? 'polling'
       : envUsePolling === '0' || envUsePolling === 'false'
-        ? false
+        ? 'native'
         : undefined)
-  const intervalCandidate = chokidar?.interval ?? serverWatch?.interval ?? (envInterval ? Number(envInterval) : undefined)
-  const binaryIntervalCandidate = chokidar?.binaryInterval ?? serverWatch?.binaryInterval ?? (envBinaryInterval ? Number(envBinaryInterval) : undefined)
+  const intervalCandidate = chokidar?.pollingInterval ?? chokidar?.interval
+    ?? serverWatch?.pollingInterval ?? serverWatch?.interval ?? (envInterval ? Number(envInterval) : undefined)
+  const binaryIntervalCandidate = chokidar?.pollingBinaryInterval ?? chokidar?.binaryInterval
+    ?? serverWatch?.pollingBinaryInterval ?? serverWatch?.binaryInterval ?? (envBinaryInterval ? Number(envBinaryInterval) : undefined)
 
   return {
-    usePolling: typeof usePollingCandidate === 'boolean' ? usePollingCandidate : undefined,
+    backend,
     interval: typeof intervalCandidate === 'number' && Number.isFinite(intervalCandidate) ? intervalCandidate : undefined,
     binaryInterval: typeof binaryIntervalCandidate === 'number' && Number.isFinite(binaryIntervalCandidate) ? binaryIntervalCandidate : undefined,
+  }
+}
+
+/** 为 Vite 内置监听器保留兼容选项。 */
+export function resolvePollingWatchOptions(configService: Pick<ConfigService, 'inlineConfig'>) {
+  const { backend, interval, binaryInterval } = resolveWatchBackend(configService)
+  return {
+    usePolling: backend === 'polling'
+      ? true
+      : backend !== undefined
+        ? false
+        : undefined,
+    interval,
+    binaryInterval,
   }
 }
 
@@ -53,13 +75,13 @@ export function createSidecarWatchOptions(
   configService: Pick<ConfigService, 'inlineConfig'>,
   input: SidecarWatchOptionsInput,
 ) {
-  const polling = resolvePollingWatchOptions(configService)
+  const polling = resolveWatchBackend(configService)
 
   return {
     ...input,
-    ...(polling.usePolling !== undefined ? { usePolling: polling.usePolling } : {}),
-    ...(typeof polling.interval === 'number' ? { interval: polling.interval } : {}),
-    ...(typeof polling.binaryInterval === 'number' ? { binaryInterval: polling.binaryInterval } : {}),
+    ...(polling.backend !== undefined ? { backend: polling.backend } : {}),
+    ...(typeof polling.interval === 'number' ? { pollingInterval: polling.interval } : {}),
+    ...(typeof polling.binaryInterval === 'number' ? { pollingBinaryInterval: polling.binaryInterval } : {}),
   } as ChokidarWatchOptions
 }
 

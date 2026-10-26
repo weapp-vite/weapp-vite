@@ -110,7 +110,7 @@ describe('Windows ordinary npm watcher delivery workflow', () => {
           expect(expanded.with.main_command).toContain(file.replace('packages/weapp-vite/', ''))
         }
       }
-      expect(reusable.jobs['node-support'].strategy.matrix.node).toEqual(['22.18.0', '24.11.0', '26.0.0', '22', '24'])
+      expect(reusable.jobs['node-support'].strategy.matrix.node).toEqual(['22.23.4', '24.22.1', '26.12.1', '22', '24'])
       expect(reusable.jobs['node-support'].steps.find((item: Step) => item.name === 'Verify immutable locally built consumer archives').run).toBe('node scripts/consumerArtifacts/manifest.mjs verify .cache/node-support-tarballs')
       for (const name of runtimeJobs) {
         const expanded = reusable.jobs[name]
@@ -147,10 +147,13 @@ describe('Windows ordinary npm watcher delivery workflow', () => {
       artifact_path: '.cache/node-support-tarballs',
     })
     const nodeSupport = child.jobs['node-support']
-    expect(nodeSupport.strategy.matrix).toEqual({ node: ['22.18.0', '24.11.0', '26.0.0', '22', '24'] })
+    expect(nodeSupport.strategy.matrix).toEqual({ node: ['22.23.4', '24.22.1', '26.12.1', '22', '24'] })
     expect(nodeSupport['runs-on']).toBe('${{ inputs.runs_on }}')
     expect(nodeSupport.env).toMatchObject({ BUILD_ARTIFACT_EXPECTED_COMMIT: '${{ needs.pr-context.outputs.checkout_sha }}', BUILD_ARTIFACT_EXPECTED_NODE_MAJOR: '24', WEAPP_VITE_CONSUMER_TARBALLS: '.cache/node-support-tarballs' })
-    expect(nodeSupport.steps.find((item: Step) => item.uses?.startsWith('actions/setup-node@'))?.with).toEqual({ 'node-version': '${{ matrix.node }}' })
+    expect(nodeSupport.steps.find((item: Step) => item.uses?.startsWith('actions/setup-node@'))?.with).toEqual({
+      'node-version': '${{ matrix.node == \'22\' && \'^22.23.4\' || matrix.node == \'24\' && \'^24.22.1\' || matrix.node == \'26\' && \'^26.12.1\' || matrix.node }}',
+      'check-latest': '${{ matrix.node == \'22\' || matrix.node == \'24\' || matrix.node == \'26\' }}',
+    })
     expect(nodeSupport.steps.find((item: Step) => item.uses?.startsWith('actions/checkout@'))?.with).toMatchObject({ 'ref': '${{ needs.pr-context.outputs.checkout_sha }}', 'persist-credentials': false })
     expect(nodeSupport.steps.filter((item: Step) => item.uses?.startsWith('actions/download-artifact@')).map((item: Step) => item.with?.name)).toEqual([build, archives])
     expect(nodeSupport.steps.find((item: Step) => item.name === 'Verify immutable candidate archives')?.run).toBe('node scripts/consumerArtifacts/manifest.mjs verify .cache/node-support-tarballs')
@@ -216,7 +219,7 @@ describe('Windows ordinary npm watcher delivery workflow', () => {
     expect(job.env.CHOKIDAR_ORIGINAL_BASELINE_SHA).toBe('80d58727ec11fccfc71f1f06edfc993e9ba264aa')
     expect(step('Check out frozen candidate').with).toEqual({ 'ref': '${{ needs.pr-context.outputs.checkout_sha }}', 'persist-credentials': false })
     expect(step('Check out original unmodified source').with).toEqual({ 'ref': '${{ env.CHOKIDAR_ORIGINAL_BASELINE_SHA }}', 'path': source, 'persist-credentials': false })
-    expect(job.steps.find(item => item.uses === './.github/actions/setup-node-pnpm')?.with).toEqual({ 'node-version': '24.18.0' })
+    expect(job.steps.find(item => item.uses === './.github/actions/setup-node-pnpm')?.with).toEqual({ 'node-version': '24.22.1' })
   })
 
   it('builds and packs the original checkout using its own lockfile, links and output', () => {

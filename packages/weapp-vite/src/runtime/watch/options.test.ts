@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { createSidecarWatchOptions, createViteWatchIgnored } from './options'
+import { createSidecarWatchOptions, createViteWatchIgnored, resolvePollingWatchOptions } from './options'
 
 describe('runtime sidecar watch options', () => {
   afterEach(() => {
@@ -33,10 +33,35 @@ describe('runtime sidecar watch options', () => {
       persistent: true,
     })).toEqual({
       persistent: true,
-      usePolling: true,
-      interval: 100,
-      binaryInterval: 200,
+      backend: 'polling',
+      pollingInterval: 100,
+      pollingBinaryInterval: 200,
     })
+  })
+
+  it('prefers canonical backend options within each source and build options over server options', () => {
+    const config = {
+      inlineConfig: {
+        build: { watch: { chokidar: { backend: 'native-recursive', usePolling: true, pollingInterval: 25, interval: 50 } } },
+        server: { watch: { backend: 'polling', pollingInterval: 100, pollingBinaryInterval: 200 } },
+      },
+    } as any
+    expect(createSidecarWatchOptions(config, {})).toEqual({
+      backend: 'native-recursive',
+      pollingInterval: 25,
+      pollingBinaryInterval: 200,
+    })
+    expect(resolvePollingWatchOptions(config)).toEqual({ usePolling: false, interval: 25, binaryInterval: 200 })
+  })
+
+  it('maps explicit legacy native options and preserves canonical auto', () => {
+    vi.stubEnv('CHOKIDAR_USEPOLLING', '1')
+    expect(createSidecarWatchOptions({ inlineConfig: { server: { watch: { usePolling: false } } } } as any, {}))
+      .toEqual({ backend: 'native' })
+    const automatic = { inlineConfig: { server: { watch: { backend: 'auto', usePolling: true } } } } as any
+    expect(createSidecarWatchOptions(automatic, {}))
+      .toEqual({ backend: 'auto' })
+    expect(resolvePollingWatchOptions(automatic)).toMatchObject({ usePolling: false })
   })
 
   it('inherits polling options from chokidar environment variables', () => {
@@ -48,9 +73,9 @@ describe('runtime sidecar watch options', () => {
       persistent: true,
     })).toEqual({
       persistent: true,
-      usePolling: true,
-      interval: 120,
-      binaryInterval: 240,
+      backend: 'polling',
+      pollingInterval: 120,
+      pollingBinaryInterval: 240,
     })
   })
 })

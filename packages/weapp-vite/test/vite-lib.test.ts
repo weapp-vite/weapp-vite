@@ -1,11 +1,12 @@
 import type { RolldownWatcher } from 'rolldown'
-import type { InlineConfig } from 'vite'
+import type { InlineConfig, ViteDevServer } from 'vite'
 import { cp, mkdtemp, readFile, realpath, rm, symlink, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
+import chokidar from 'chokidar'
 import { build, createServer, resolveConfig } from 'vite'
-import { afterEach, expect, it } from 'vitest'
+import { afterEach, expect, it, vi } from 'vitest'
 import { weapp } from '../src/vite'
 import { WeappBuildSession } from '../src/vite/session'
 
@@ -178,13 +179,52 @@ it.each([false, true])('updates library templates through an aliased root with p
   config.root = alias
   config.resolve = { preserveSymlinks }
   config.weapp!.lib = { entry: { button: 'components/button/index.ts' }, root: 'src', dts: false }
-  const server = await createServer(config)
+  const started = performance.now()
+  const timeline: { phase: string, event?: string, file?: string, watchedPath?: string, elapsed: number }[] = []
+  const record = (phase: string, file?: string, event?: string, watchedPath?: string) => {
+    timeline.push({ phase, file, event, watchedPath, elapsed: Math.round(performance.now() - started) })
+  }
+  config.plugins!.push({
+    name: 'test:lib-alias-watch-timeline',
+    hotUpdate({ type, file }) { record('hotUpdate', file, type) },
+  })
+  const originalWatch = chokidar.watch
+  let sidecarSequence = 0
+  const watchObserver = vi.spyOn(chokidar, 'watch').mockImplementation(function (this: typeof chokidar, ...args) {
+    const watcher = originalWatch.apply(this, args)
+    const owner = `chokidar6:${++sidecarSequence}`
+    const targets = Array.isArray(args[0]) ? args[0] : [args[0]]
+    for (const target of targets) {
+      record(`${owner}:watch`, target, watcher.options.backend)
+    }
+    watcher.on('ready', () => record(`${owner}:ready`))
+    watcher.on('raw', (event, file, details) => record(`${owner}:raw`, String(file), event, details?.watchedPath))
+    watcher.on('all', (event, file) => record(`${owner}:all`, file, event))
+    return watcher
+  })
+  let server: ViteDevServer | undefined
   try {
+    server = await createServer(config)
+    server.watcher.on('all', (event, file) => record('hostWatch', file, event))
+    server.watcher.on('raw', (event, file, details) => record('hostRaw', String(file), event, details?.watchedPath))
     expect(await read('button.wxml')).toContain('{{label}}')
+    record('first edit')
     await writeFile(path.join(alias, 'src/components/button/index.wxml'), '<view>updated through alias</view>')
     await expect.poll(() => read('button.wxml'), { timeout: 15_000 }).toContain('updated through alias')
   }
-  finally { await server.close() }
+  catch (error) {
+    const physicalRoot = await realpath(root)
+    const sanitize = (value?: string) => value?.replaceAll(alias, '<alias>').replaceAll(root, '<fixture>').replaceAll(physicalRoot, '<fixture>').replaceAll(path.resolve('.'), '<workspace>')
+    const safeTimeline = timeline.map(item => ({ ...item, file: sanitize(item.file), watchedPath: sanitize(item.watchedPath) }))
+    const watched = Object.fromEntries(Object.entries(server?.watcher.getWatched() ?? {}).map(([directory, files]) => [sanitize(directory), files]))
+    // 保留原始编辑和断言，仅在失败时区分缺少原生通知与收到通知后的路径归属。
+    process.stderr.write(`[lib-alias-watch-timeline] ${JSON.stringify({ preserveSymlinks, timeline: safeTimeline, watched })}\n`)
+    throw error
+  }
+  finally {
+    watchObserver.mockRestore()
+    await server?.close()
+  }
 }, 30_000)
 
 it.each([false, true])('shares the host root identity with compiler sidecars for preserveSymlinks=%s', async (preserveSymlinks) => {

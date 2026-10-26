@@ -39,7 +39,7 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup-node-pnpm
         with:
-          node-version: 24.18.0
+          node-version: 24.22.1
       - name: Rebuild candidate dependency closure
         uses: ./.github/actions/refresh-workspace-deps
         with:

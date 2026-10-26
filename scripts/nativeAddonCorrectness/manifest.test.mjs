@@ -21,10 +21,12 @@ describe('candidate native correctness manifest', () => {
       'test/npmChunkRewriteParity.test.ts',
       'test/npmChunksParity.test.ts',
       'test/onPageScroll.test.ts',
+      'test/scriptAnalysisParity.test.ts',
       'test/vueSfcSignature.fuzz.test.ts',
       'test/reservedPropsParity.test.ts',
       'test/defaultExportParity.test.ts',
     ]))
+    expect(before.suites.find(suite => suite.file === 'test/scriptAnalysisParity.test.ts')?.minimumAssertions).toBe(25)
     expect(before.requiredExports).toContain('analyzeNpmChunksNative')
     expect(validateManifest(extendedManifest())).toEqual(before)
     expect(baselineManifest).toEqual(before)

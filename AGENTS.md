@@ -318,7 +318,7 @@ Do not default to full monorepo test runs when a targeted test can prove the cha
 
 ## 6. Security and Environment
 
-- Node.js `^22.18.0 || ^24.11.0 || >=26.0.0` with compatible pnpm; scaffolding requires Node 22.22.2, 24.15.0, or 26+.
+- Node.js `^22.23.4 || ^24.22.1 || >=26.12.1` with compatible pnpm; scaffolding uses the same range, and Vite+ templates require `^24.22.1 || >=26.12.1`.
 - For `weapp-ide-cli` operations (`open`, `preview`, `upload`), ensure WeChat DevTools service port is enabled.
 - Never commit secrets; use `.env.local` or environment variables.
 - 对小程序运行时代码、会进入小程序产物的兼容层代码、以及依赖微信/支付宝/抖音等宿主执行的 bundle 代码，一律不要依赖 `eval`、`new Function`、`Function("return this")()`、字符串定时代码，或任何需要动态求值的能力。

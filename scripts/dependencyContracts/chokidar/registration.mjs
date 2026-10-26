@@ -30,6 +30,9 @@ export async function recreateAndExercise(owner, ctx, directory = ctx.target, fi
 export async function recover(chokidar, ctx) {
   const { scenario, root, target, watched, instrumentation, open, ready, timeoutMs } = ctx
   const options = { ignoreInitial: !!scenario.ignoreInitial }
+  if (scenario.backend) {
+    options.backend = scenario.backend
+  }
   if (scenario.depth != null) {
     options.depth = scenario.depth
   }

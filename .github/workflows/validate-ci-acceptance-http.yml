@@ -33,7 +33,7 @@ jobs:
       head_ref: ${{ needs.pr-context.outputs.head_ref }}
       base_ref: ${{ needs.pr-context.outputs.base_ref }}
       runs_on: ${{ matrix.os }}
-      node_version: 24.18.0
+      node_version: 24.22.1
       timeout_minutes: 20
       build_command: pnpm exec turbo run build --filter=@weapp-vite/mcp...
       main_command: >-

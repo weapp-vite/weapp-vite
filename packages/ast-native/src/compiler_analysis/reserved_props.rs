@@ -26,7 +26,7 @@ fn runtime_props_contain_reserved(argument: &Expression<'_>) -> bool {
         }),
         Expression::ArrayExpression(array) => array.elements.iter().any(|element| {
             element.as_expression().is_some_and(|expression| {
-                matches!(expression.without_parentheses(), Expression::StringLiteral(value) if is_reserved(value.value.as_str()))
+                matches!(expression.without_parentheses(), Expression::StringLiteral(value) if value.value.as_str().is_some_and(is_reserved))
             })
         }),
         _ => false,

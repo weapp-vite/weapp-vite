@@ -117,8 +117,10 @@ export async function runWeappViteCLI(options = {}) {
       : import('../dist/cli.mjs'),
     write = message => getGlobalProcess().stderr.write(`\n WARN  ${message}\n\n`),
   } = options
-  // 在加载 Babel 等依赖前校验同一份发布声明；prepare 的容错不能吞掉不受支持的运行时。
-  if (!satisfies(nodeVersion, engines.node)) {
+  // Bun 的 versions.node 只是兼容标识；真实 Node 仍在加载依赖前校验发布声明，prepare 不能吞掉该检查。
+  const bunVersion = getGlobalProcess().versions.bun
+  const isBun = typeof bunVersion === 'string' && bunVersion.length > 0
+  if (!isBun && !satisfies(nodeVersion, engines.node)) {
     throw new Error(`weapp-vite requires Node.js ${engines.node}; current version is ${nodeVersion}. Please upgrade Node.js before running this command.`)
   }
   const restorePrepareGuard = guardPrepareProcessExit(argv)

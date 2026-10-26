@@ -17,7 +17,8 @@ export async function verifyReplacementRead({
   arm,
   evidence,
 }) {
-  const owner = open(chokidar)
+  // v6 原生事件直接协调精确 candidate；轮询目录读取保留旧 listing 交还边界。
+  const owner = open(chokidar, watched, { backend: 'polling', pollingInterval: 10, atomic: false })
   await ready(owner)
   arm()
   const trigger = path.join(target, 'trigger.txt')
@@ -45,9 +46,9 @@ export async function verifyReplacementRead({
   await writeFile(barrier, 'public event barrier after the old result returned')
   await barrierAdded
   await turn()
-  assert.ok(owner.watcher._streams instanceof Set, 'diagnostic stream ownership registry is available')
-  const registeredStreams = owner.watcher._streams.size
-  const destroyedRegisteredStreams = [...owner.watcher._streams].filter(stream => stream.destroyed).length
+  assert.ok((owner.watcher.streams ?? owner.watcher._streams) instanceof Set, 'diagnostic stream ownership registry is available')
+  const registeredStreams = (owner.watcher.streams ?? owner.watcher._streams).size
+  const destroyedRegisteredStreams = [...(owner.watcher.streams ?? owner.watcher._streams)].filter(stream => stream.destroyed).length
   evidence.push({ checkpoint: 'live-owner-read-resource-release', registeredStreams, destroyedRegisteredStreams })
   assert.equal(destroyedRegisteredStreams, 0, 'a live FSWatcher must not retain destroyed directory streams after the old read is canceled and released')
   const relative = file => path.relative(root, file).replaceAll('\\', '/')

@@ -180,7 +180,7 @@ weapp compare --baseline .screenshots/baseline/home.png --max-diff-pixels 100 --
 | `--current-output <path>`   | 保存当前截图                     |
 | `--diff-output <path>`      | 保存 diff 图                     |
 | `--page <path>`             | 对比前先跳转页面                 |
-| `--threshold <number>`      | pixelmatch threshold，默认 `0.1` |
+| `--threshold <number>`      | OKLab/HyAB 感知色差阈值，默认 `0.1` |
 | `--max-diff-pixels <count>` | 最大允许差异像素数               |
 | `--max-diff-ratio <number>` | 最大允许差异占比，范围 `0-1`     |
 | `-t, --timeout <ms>`        | 连接超时，默认 `30000`           |
@@ -193,6 +193,8 @@ weapp compare --baseline .screenshots/baseline/home.png --max-diff-pixels 100 --
 - 至少提供 `--max-diff-pixels` 或 `--max-diff-ratio` 之一
 - baseline 与当前截图尺寸不一致时直接失败
 - 对比失败时命令退出码会变为非 `0`
+
+截图比较采用 pixelmatch 8 的 OKLab/HyAB 算法。`threshold` 表示感知色差容差，`0` 最敏感，`1` 对应黑白色差；抗锯齿像素默认不计入差异。升级前后的 `diffPixels`、`diffRatio` 可能不同，已有基准应使用同一张当前截图复核；不要直接沿用旧算法的容差结论或批量重录基准图。
 
 ### 3) config 子命令
 

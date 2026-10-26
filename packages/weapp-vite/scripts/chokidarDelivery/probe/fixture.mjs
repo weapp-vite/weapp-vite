@@ -24,7 +24,7 @@ export async function createFixture(root) {
     'package.json': JSON.stringify({ name: 'weapp-vite-host-watcher-delivery', private: true, type: 'module' }),
     'project.config.json': JSON.stringify({ miniprogramRoot: '.weapp-vite/delivery-host' }),
     'vite.config.mjs': `import { defineConfig } from 'weapp-vite'
-${traceSource}export default defineConfig({ ${tracePlugins}weapp: ${JSON.stringify(weappOptions)}, build: { minify: false } })
+${traceSource}export default defineConfig({ ${tracePlugins}weapp: ${JSON.stringify(weappOptions)}, build: { minify: false, watch: { chokidar: { backend: 'native' } } } })
 `,
     'src/app.js': 'App({})',
     'src/app.json': JSON.stringify({ pages: ['pages/index/index'] }),

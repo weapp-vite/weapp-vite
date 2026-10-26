@@ -4,6 +4,7 @@ import process from 'node:process'
 import chokidar from 'chokidar'
 import { parseLogicalEntryId, parseSidecarModuleId } from './moduleGraph/protocol'
 import { CompilerSession } from './runtime/compilerSession'
+import { createSidecarWatchOptions } from './runtime/watch/options'
 import { fingerprintPaths, projectInputFiles, resolveArtifactOutDir } from './testArtifact/inputs'
 import { isPathInside, normalizePath } from './utils/path'
 import { captureWatchDependencies } from './utils/watchDependencies'
@@ -39,6 +40,7 @@ let pendingBuild: Promise<unknown> = Promise.resolve()
 const artifactInputs = new WeakMap<WeappViteTestArtifact, {
   fingerprint: string
   paths: string[]
+  watchOptions: ReturnType<typeof createSidecarWatchOptions>
 }>()
 
 function enqueueBuild<T>(task: () => Promise<T>) {
@@ -100,6 +102,7 @@ export async function buildTestArtifact(options: BuildTestArtifactOptions = {}) 
         preloadAppEntry: false,
         syncSupportFiles: false,
       })
+      const watchOptions = createSidecarWatchOptions(ctx.configService, {})
       for (const file of ctx.configService.configFileDependencies ?? []) {
         dependencies.add(file)
       }
@@ -122,7 +125,7 @@ export async function buildTestArtifact(options: BuildTestArtifactOptions = {}) 
       const discoveredStable = await Promise.all([...discoveredInputs].map(async ([file, fingerprint]) =>
         await fingerprint === await fingerprintPaths([file])))
       const stable = discoveredStable.every(Boolean) && before === await fingerprintPaths(initialInputs, [outDir])
-      artifactInputs.set(artifact, { paths, fingerprint: stable ? fingerprint : '' })
+      artifactInputs.set(artifact, { paths, fingerprint: stable ? fingerprint : '', watchOptions })
       return artifact
     }
     finally {
@@ -144,6 +147,7 @@ export async function watchTestArtifact(options: WatchTestArtifactOptions = {}):
       && (normalizePath(file) === normalizePath(artifact.sourceRootPath) || !isPathInside(artifact.sourceRootPath, file)))
   let watched = watchedInputs()
   const watcher = chokidar.watch(watched, {
+    ...artifactInputs.get(artifact)!.watchOptions,
     ignoreInitial: true,
     ignored(file) {
       if (watched.some(input => isPathInside(file, input))) {

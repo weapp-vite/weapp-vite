@@ -1,5 +1,6 @@
 // 参考：https://github.com/vitest-dev/vitest/blob/main/packages/vitest/src/node/types/vite.ts
 // 参考：https://github.com/vitest-dev/vitest/blob/main/packages/vitest/src/public/config.ts
+import type { ChokidarOptions } from 'chokidar'
 import type { ConfigEnv, UserConfig as ViteUserConfig } from 'vite'
 import type { WeappI18nConfig, WeappViteConfig, WxmlRemoveAttrRule, WxmlRemoveOptions } from './types'
 
@@ -29,6 +30,17 @@ export type UserConfigExport<T extends UserConfig = UserConfig>
     | UserConfigFnObject<T>
     | UserConfigFnPromise<T>
     | UserConfigFn<T>
+
+// 兼容入口仅配置 weapp-vite 自有 sidecar watcher；Rolldown 原生 watcher 使用 watcher。
+declare module 'rolldown' {
+  interface WatcherOptions {
+    /** weapp-vite 自有 sidecar watcher 的 backend 与轮询选项。 */
+    chokidar?: Pick<
+      ChokidarOptions,
+      'backend' | 'pollingInterval' | 'pollingBinaryInterval' | 'usePolling' | 'interval' | 'binaryInterval'
+    >
+  }
+}
 
 // 扩展 vite 的 UserConfig
 declare module 'vite' {

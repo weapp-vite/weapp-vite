@@ -1,7 +1,7 @@
 import { EventEmitter } from 'node:events'
 import path from 'node:path'
 import { beforeEach, expect, it, vi } from 'vitest'
-import { verifyRemoveCooldown } from './removeCooldown.mjs'
+import { holdRemoveEntries, verifyRemoveCooldown } from './removeCooldown.mjs'
 
 const io = vi.hoisted(() => ({
   rename: vi.fn(),
@@ -19,8 +19,7 @@ vi.mock('node:fs/promises', async importOriginal => ({
   ...io,
 }))
 
-function fixture() {
-  const root = path.resolve('atomic-registration-fixture')
+function fixture(root = path.resolve('atomic-registration-fixture')) {
   const barrier = Promise.withResolvers<void>()
   void barrier.promise.catch(() => {})
   const watcher = Object.assign(new EventEmitter(), {
@@ -102,4 +101,57 @@ it('publishes a fully written replacement from outside the watch root after hold
   expect(io.writeFile.mock.invocationCallOrder[1]).toBeLessThan(ctx.open.mock.invocationCallOrder[0]!)
   expect(io.rename).toHaveBeenCalledExactlyOnceWith(replacement, file)
   expect(io.rm.mock.invocationCallOrder[0]).toBeLessThan(io.rename.mock.invocationCallOrder[0]!)
+})
+
+it('captures the v6 original atomic timer when its logical key uses different separators', async () => {
+  // 仅模拟私有映射键与原生路径的差异，不取得任何真实文件系统 watcher。
+  const ctx = fixture(path.join(path.resolve('atomic-registration-fixture'), 'native\\directory'))
+  const file = path.join(ctx.root, 'src/cooldown-atomic.txt')
+  const logicalKey = file.replaceAll('\\', '/')
+  let tracked = true
+  const watcher = Object.assign(ctx.owner.watcher, {
+    scheduler: { setTimeout, clearTimeout },
+    events: { pendingUnlinks: new Map() },
+    tree: {
+      observed: new Map([[logicalKey, {}]]),
+      peekDirectory: () => ({ has: () => tracked }),
+    },
+  })
+  const original = new Error('stop after the exact v6 pending unlink was held')
+  io.rm.mockImplementation(async () => {
+    tracked = false
+    watcher.tree.observed.delete(logicalKey)
+    const timer = watcher.scheduler.setTimeout(() => {}, 100)
+    watcher.events.pendingUnlinks.set(logicalKey, { event: ['unlink', file], timer })
+  })
+  io.rename.mockRejectedValue(original)
+  const result = ctx.run()
+  ctx.barrier.resolve()
+  expect(await result).toBe(original)
+  expect(io.rename).toHaveBeenCalledExactlyOnceWith(path.join(ctx.root, 'cooldown-atomic-replacement.txt'), file)
+})
+
+it('keeps the exact original v6 tree fact identity across logical path separators', () => {
+  const root = path.resolve('remove-tree-fact-fixture')
+  const file = path.join(root, 'native\\directory/entry.txt')
+  const logicalKey = file.replaceAll('\\', '/')
+  const original = {}
+  let tracked = true
+  const watcher = Object.assign(new EventEmitter(), {
+    events: { pendingUnlinks: new Map() },
+    tree: {
+      observed: new Map([[logicalKey, original]]),
+      peekDirectory: () => ({ has: () => tracked }),
+    },
+  })
+  const gate = holdRemoveEntries({ watcher }, root, new Map([[file, 'unlink']]))
+  try {
+    tracked = false
+    gate.capture(file)
+    gate.assertCaptured()
+    expect(gate.snapshot('original').entries[0].oldEntryStillCurrent).toBe(true)
+    watcher.tree.observed.set(logicalKey, {})
+    expect(gate.snapshot('replacement').entries[0].oldEntryStillCurrent).toBe(false)
+  }
+  finally { gate.close() }
 })

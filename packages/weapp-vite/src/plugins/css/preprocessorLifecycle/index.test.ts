@@ -3,6 +3,7 @@ import type { CompilerContext } from '../../../context'
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
+import { fs } from '@weapp-core/shared/fs'
 import { afterEach, expect, it, vi } from 'vitest'
 import {
   assertStylePreprocessing,
@@ -14,6 +15,7 @@ import {
   findPreparedStyleDependencies,
   getPreparedSharedStyle,
   getPreparedStyleSource,
+  isPreparedStyleMissing,
   prepareStylePreprocessing,
 } from './index'
 
@@ -142,6 +144,51 @@ it('isolates environments and rejects missing or retired output inputs without l
   closeStylePreprocessing(ctx, hook)
   await expect(consumeStylePreprocessing(ctx, hook, config, file, source)).rejects.toThrow('没有本轮图阶段的预处理结果')
   expect(preprocess).toHaveBeenCalledTimes(1)
+})
+
+it('freezes an absent optional source only for its generation and prepares a same-path replacement next time', async () => {
+  const { ctx, hook, config, file, source } = await fixture()
+  const other = { environment: {} }
+  const unregistered = path.join(path.dirname(file), 'unregistered.less')
+  await rm(file)
+  beginStylePreprocessing(ctx, hook)
+  await prepareStylePreprocessing(ctx, hook, config, [file])
+  expect(isPreparedStyleMissing(ctx, hook, file)).toBe(true)
+  expect(isPreparedStyleMissing(ctx, other, file)).toBe(false)
+  expect(isPreparedStyleMissing(ctx, hook, unregistered)).toBe(false)
+  // 缺失只供可选 sidecar 消费；必需输入和未登记输入仍不能在输出阶段补编译。
+  expect(() => getPreparedStyleSource(ctx, hook, file)).toThrow('没有本轮图阶段的预处理结果')
+  await expect(consumeStylePreprocessing(ctx, hook, config, unregistered, source)).rejects.toThrow('没有本轮图阶段的预处理结果')
+  await writeFile(file, source.replace('red', 'blue'))
+  expect(isPreparedStyleMissing(ctx, hook, file)).toBe(true)
+  expect(preprocess).not.toHaveBeenCalled()
+
+  preprocess.mockImplementation(async (code: string) => ({ code, deps: [] }))
+  beginStylePreprocessing(ctx, hook)
+  await prepareStylePreprocessing(ctx, hook, config, [file])
+  expect(isPreparedStyleMissing(ctx, hook, file)).toBe(false)
+  const restored = getPreparedStyleSource(ctx, hook, file)!
+  expect(restored).toContain('blue')
+  expect((await consumeStylePreprocessing(ctx, hook, config, file, restored)).code).toBe(restored)
+  expect(preprocess).toHaveBeenCalledTimes(1)
+  closeStylePreprocessing(ctx, hook)
+  expect(isPreparedStyleMissing(ctx, hook, file)).toBe(false)
+})
+
+it('preserves non-ENOENT read failures instead of treating an optional style as absent', async () => {
+  const { ctx, hook, config, file } = await fixture()
+  const original = Object.assign(new Error('Style source is not readable'), { code: 'EACCES' })
+  const read = vi.spyOn(fs, 'readFile').mockRejectedValueOnce(original)
+  try {
+    beginStylePreprocessing(ctx, hook)
+    await prepareStylePreprocessing(ctx, hook, config, [file])
+    expect(() => assertStylePreprocessing(ctx, hook)).toThrow(original)
+    expect(() => isPreparedStyleMissing(ctx, hook, file)).toThrow(original)
+    expect(preprocess).not.toHaveBeenCalled()
+  }
+  finally {
+    read.mockRestore()
+  }
 })
 
 it('waits for all pending preparation and preserves its original failure until output after Vite cleanup', async () => {

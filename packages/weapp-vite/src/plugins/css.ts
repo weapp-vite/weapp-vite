@@ -29,6 +29,7 @@ import {
   getPreparedSharedStyle,
   getPreparedStyleSource,
   hasStylePreprocessing,
+  isPreparedStyleMissing,
   markCompiledStyleSource,
   prepareStylePreprocessing,
   recordStylePreprocessingError,
@@ -465,6 +466,9 @@ async function prepareStyleSidecarAsset(
     return false
   }
   if (isManagedCompilerEntry(ctx, stylePath)) {
+    return false
+  }
+  if (isPreparedStyleMissing(ctx, pluginCtx, stylePath)) {
     return false
   }
 

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { AsyncLocalStorage } from 'node:async_hooks'
 import fs from 'node:fs'
 import promises from 'node:fs/promises'
 import { syncBuiltinESMExports } from 'node:module'
@@ -7,6 +8,7 @@ import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { observeFileListeners } from './eventPhase.mjs'
 import { assertNativeWatcherClosed, closeDarwinRegistrationBarrier, observeNativeWatcher } from './nativeWatcher.mjs'
+import { createPollingScheduler } from './pollingScheduler.mjs'
 
 export { waitForObservedEventPhase } from './eventPhase.mjs'
 
@@ -32,9 +34,17 @@ export function bounded(promise, label, timeoutMs) {
 
 export const turn = () => new Promise(resolve => setImmediate(resolve))
 
-export function absolutePath(value) {
+/** 仅把 Windows 原生 namespace 拼写还原为同一逻辑路径；调用参数与原错误保持原样。 */
+export function normalizeNativeWatchPath(value) {
   const file = value instanceof URL ? fileURLToPath(value) : String(value)
-  return path.resolve(file)
+  if (file.startsWith('\\\\?\\UNC\\')) {
+    return `\\\\${file.slice(8)}`
+  }
+  return file.startsWith('\\\\?\\') ? file.slice(4) : file
+}
+
+export function absolutePath(value) {
+  return path.resolve(normalizeNativeWatchPath(value))
 }
 
 export function installNativeInstrumentation({ root, platform, beforeWatch, promiseHooks = {} }) {
@@ -50,6 +60,8 @@ export function installNativeInstrumentation({ root, platform, beforeWatch, prom
   let omittedNativeEvents = 0
   const pollingHandles = []
   const pollingReleases = []
+  const polling = createPollingScheduler()
+  const recursiveScopes = new AsyncLocalStorage()
   const attempts = []
   let publicCloseStarted = false
   let restored = false
@@ -63,9 +75,17 @@ export function installNativeInstrumentation({ root, platform, beforeWatch, prom
     attempts.push(attempt)
     try {
       beforeWatch?.(file, attempt)
-      const native = originalWatch.call(this, filename, ...args)
-      const record = observeNativeWatcher(native, { path: relative(file), afterPublicClose: publicCloseStarted })
+      const recursive = args.some(value => value && typeof value === 'object' && value.recursive === true)
+      const parent = recursiveScopes.getStore()
+      const childScope = recursive ? { children: [], lateAcquisitions: [], closing: false } : undefined
+      const acquire = () => originalWatch.call(this, filename, ...args)
+      const native = childScope ? recursiveScopes.run(childScope, acquire) : acquire()
+      const record = observeNativeWatcher(native, { path: relative(file), afterPublicClose: publicCloseStarted, recursiveScope: childScope })
       handles.push(record)
+      parent?.children.push(record)
+      if (parent?.closing) {
+        parent.lateAcquisitions.push(record.path)
+      }
       native.prependListener('change', (eventType, filename) => {
         if (nativeEvents.length < 128) {
           nativeEvents.push({ path: relative(file), eventType, filename: filename == null ? null : String(filename).replaceAll('\\', '/'), afterPublicClose: publicCloseStarted })
@@ -98,11 +118,16 @@ export function installNativeInstrumentation({ root, platform, beforeWatch, prom
     pollingReleases.push({ path: relative(absolutePath(filename)), exactListener: typeof args[0] === 'function' })
     return originalUnwatchFile.call(this, filename, ...args)
   }
-  for (const [method, hook] of Object.entries(promiseHooks)) {
+  for (const method of new Set(['stat', ...Object.keys(promiseHooks)])) {
+    const hook = promiseHooks[method]
     const original = promises[method]
     originalPromises.set(method, original)
     promises[method] = function (...args) {
-      return hook({ file: absolutePath(args[0]), args, original: (...override) => original.apply(this, override.length ? override : args) })
+      const file = absolutePath(args[0])
+      const invoke = () => hook
+        ? hook({ file, args, original: (...override) => original.apply(this, override.length ? override : args) })
+        : original.apply(this, args)
+      return method === 'stat' ? polling.observeStat(file, invoke) : invoke()
     }
   }
   syncBuiltinESMExports()
@@ -111,6 +136,7 @@ export function installNativeInstrumentation({ root, platform, beforeWatch, prom
     selectedPlatform: process.platform,
     handles,
     pollingHandles,
+    polling,
     attempts,
     markPublicClose() { publicCloseStarted = true },
     async settleDirectoryRegistration(timeoutMs) {
@@ -135,6 +161,7 @@ export function installNativeInstrumentation({ root, platform, beforeWatch, prom
       }
       await bounded(Promise.all(pollingHandles.map(record => record.stopPromise)), 'all exact native fs.watchFile stop events', timeoutMs)
       assert.equal(pollingHandles.filter(record => !record.stopped).length, 0, 'public close must stop every acquired polling watcher')
+      await polling.assertAllClosed(timeoutMs)
     },
     async emergencyClose(timeoutMs) {
       const outstanding = [...handles, ...registrationBarriers].filter(record => !record.closed)
@@ -147,7 +174,8 @@ export function installNativeInstrumentation({ root, platform, beforeWatch, prom
       }
       await bounded(Promise.all(outstanding.map(record => record.closePromise)), 'exact diagnostic handle cleanup', timeoutMs)
       await bounded(Promise.all(pollingOutstanding.map(record => record.stopPromise)), 'exact diagnostic polling cleanup', timeoutMs)
-      return [...outstanding.map(record => record.path), ...pollingOutstanding.map(record => `polling:${record.path}`)]
+      const schedulerOutstanding = await polling.emergencyClose(timeoutMs)
+      return [...outstanding.map(record => record.path), ...pollingOutstanding.map(record => `polling:${record.path}`), ...schedulerOutstanding]
     },
     restore() {
       if (restored) {
@@ -171,8 +199,11 @@ export function installNativeInstrumentation({ root, platform, beforeWatch, prom
         nativeEvents,
         omittedNativeEvents,
         registrationBarriers: registrationBarriers.map(({ purpose, closed, closeCalls, closeEvents, nativeCloseRequests, nativeCloseCompletions, termination, errorEvents }) => ({ purpose, closed, closeCalls, closeEvents, nativeCloseRequests, nativeCloseCompletions, termination, errorEvents })),
-        handles: handles.map(({ path: watchedPath, closed, closeCalls, closeEvents, nativeCloseRequests, nativeCloseCompletions, nativeCloseOrigin, errorEvents, termination, observationErrors, afterPublicClose, lastError }) => ({
+        handles: handles.map(({ path: watchedPath, kind, recursiveScope, closed, closeCalls, closeEvents, nativeCloseRequests, nativeCloseCompletions, nativeCloseOrigin, errorEvents, termination, observationErrors, afterPublicClose, lastError }) => ({
           path: watchedPath,
+          kind: kind || 'native-handle',
+          recursiveChildren: recursiveScope?.children.map(child => ({ path: child.path, closed: child.closed, nativeCloseRequests: child.nativeCloseRequests, nativeCloseCompletions: child.nativeCloseCompletions })),
+          lateAcquisitions: recursiveScope?.lateAcquisitions,
           closed,
           closeCalls,
           closeEvents,
@@ -187,13 +218,14 @@ export function installNativeInstrumentation({ root, platform, beforeWatch, prom
         })),
         pollingHandles: pollingHandles.map(({ path: watchedPath, stopped, afterPublicClose }) => ({ path: watchedPath, stopped, afterPublicClose })),
         pollingReleases,
+        scheduler: polling.snapshot(root),
       }
     },
   }
 }
 
-export function observeWatcher(chokidar, root, watchedPaths, options = {}) {
-  const watcher = new chokidar.FSWatcher({ persistent: true, usePolling: false, atomic: false, ...options })
+export function observeWatcher(chokidar, root, watchedPaths, options = {}, instrumentation) {
+  const watcher = new chokidar.FSWatcher({ persistent: true, backend: 'native', atomic: false, ...options }, instrumentation?.polling.scheduler)
   const eventPhases = observeFileListeners(watcher)
   const events = []
   const errors = []
@@ -208,7 +240,11 @@ export function observeWatcher(chokidar, root, watchedPaths, options = {}) {
     readyCount++
     ready.resolve()
   })
-  watcher.add(watchedPaths)
+  if (instrumentation) {
+    const paths = (Array.isArray(watchedPaths) ? watchedPaths : [watchedPaths]).map(file => path.resolve(options.cwd || process.cwd(), file))
+    instrumentation.polling.withPaths(paths, () => watcher.add(watchedPaths))
+  }
+  else { watcher.add(watchedPaths) }
   return {
     watcher,
     eventPhases,

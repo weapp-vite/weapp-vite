@@ -3,6 +3,7 @@ import CI from 'ci-info'
 import path from 'pathe'
 import { createCompilerContext } from '@/createContext'
 import logger from '@/logger'
+import { createBundleRuntime, readBundleOutputs } from './bundleRuntime'
 import { getFixture, normalizeBuildOutputContent, scanFiles } from './utils'
 
 vi.mock('@/logger', () => ({
@@ -35,10 +36,22 @@ describe.skipIf(CI.isCI)('build basic', {
   it('dist', async () => {
     expect(await fs.exists(path.resolve(distDir))).toBe(true)
     const files = await scanFiles(distDir)
-    expect(files).toMatchSnapshot()
-    for (const file of files) {
-      const content = await fs.readFile(path.resolve(distDir, file), 'utf-8')
+    const outputs = await readBundleOutputs(distDir, files)
+    const nonJsOutputs = outputs.filter(({ file }) => !file.endsWith('.js'))
+    expect(nonJsOutputs.map(({ file }) => file)).toMatchSnapshot()
+    for (const { file, content } of nonJsOutputs) {
       expect(normalizeBuildOutputContent(content)).toMatchSnapshot(file)
     }
+    const runtime = createBundleRuntime(outputs)
+    runtime.assertDependencyGraph()
+    runtime.assertAppAndNavbar()
+    runtime.load('pages/index/index.js')
+    expect(runtime.page).toHaveBeenCalledTimes(1)
+    const definition = runtime.page.mock.calls[0]![0]
+    expect(Object.keys(definition)).toEqual(['data'])
+    const data = definition.data as { Test: new () => { x: string } }
+    expect(Object.keys(data)).toEqual(['Test'])
+    expect(new data.Test()).toEqual({ x: '1' })
+    runtime.assertAllScriptsReachable()
   })
 })

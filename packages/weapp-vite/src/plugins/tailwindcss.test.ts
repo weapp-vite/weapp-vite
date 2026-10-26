@@ -4,8 +4,10 @@ import fs from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import os from 'node:os'
 import path from 'node:path'
+import process from 'node:process'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { compileVueStyleToWxss, readAndParseSfc } from 'wevu/compiler'
+import { engines } from '../../package.json'
 import { createTailwindGenerateResult } from '../../test/helpers/tailwindCompiler'
 import { createSidecarSourceSpecifier } from '../moduleGraph/protocol'
 import { createTailwindcssPlugin, resolveManagedTailwindcssOptions } from './tailwindcss'
@@ -62,6 +64,20 @@ function getPlugins(tailwindcss: any, cwd = '/project') {
   return createTailwindcssPlugin(createContext(tailwindcss, cwd))
 }
 
+async function withRuntimeVersions(node: string, bun: unknown, run: () => Promise<void>) {
+  const descriptor = Object.getOwnPropertyDescriptor(process, 'versions')!
+  Object.defineProperty(process, 'versions', {
+    ...descriptor,
+    value: { ...process.versions, node, bun },
+  })
+  try {
+    await run()
+  }
+  finally {
+    Object.defineProperty(process, 'versions', descriptor)
+  }
+}
+
 describe('managed Tailwind integration', () => {
   const temporaryRoots: string[] = []
 
@@ -80,6 +96,96 @@ describe('managed Tailwind integration', () => {
     expect(resolveManagedTailwindcssOptions(createContext(false))).toBeUndefined()
     mocks.packageInfo = { version: '3.4.19' }
     expect(createTailwindcssPlugin(createContext(undefined))).toEqual([])
+  })
+
+  it.each([
+    ['22.23.4', true],
+    ['24.22.1', true],
+    ['26.12.1', true],
+    ['22.23.3', false],
+    ['23.11.0', false],
+    ['24.22.0', false],
+    ['25.9.0', false],
+    ['26.3.0', false],
+    ['26.12.0', false],
+  ] as const)('checks the published Node range before preparing Tailwind on %s', async (nodeVersion, supported) => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'tailwind-node-requirements-'))
+    temporaryRoots.push(root)
+    const entry = path.join(root, 'app.css')
+    await fs.writeFile(entry, '@import "tailwindcss";')
+    const plugin = getPlugins({ cssEntries: [entry] }, root)[0]!
+    const descriptor = Object.getOwnPropertyDescriptor(process.versions, 'node')!
+    Object.defineProperty(process.versions, 'node', { ...descriptor, value: nodeVersion })
+    try {
+      const starting = getHookHandler(plugin.buildStart)!.call({ addWatchFile: vi.fn() } as any, {} as any)
+      if (supported) {
+        await expect(starting).resolves.toBeUndefined()
+      }
+      else {
+        await expect(starting).rejects.toThrow(`requires Node ${engines.node}; current version is ${nodeVersion}`)
+      }
+      expect(mocks.createCompiler).not.toHaveBeenCalled()
+    }
+    finally {
+      Object.defineProperty(process.versions, 'node', descriptor)
+    }
+  })
+
+  it.each(['1.4.2', '1.4.4'])('prepares Tailwind under Bun %s independently of its Node compatibility version', async (bun) => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'tailwind-bun-requirements-'))
+    temporaryRoots.push(root)
+    const entry = path.join(root, 'app.css')
+    await fs.writeFile(entry, '@import "tailwindcss";')
+    const plugin = getPlugins({ cssEntries: [entry] }, root)[0]!
+    const addWatchFile = vi.fn()
+    await withRuntimeVersions('26.3.0', bun, async () => {
+      await expect(getHookHandler(plugin.buildStart)!.call({ addWatchFile } as any, {} as any)).resolves.toBeUndefined()
+    })
+    expect(addWatchFile).toHaveBeenCalledExactlyOnceWith(entry)
+    expect(mocks.createCompiler).not.toHaveBeenCalled()
+  })
+
+  it.each([undefined, '', true, {}])('retains Node requirements when the Bun marker is invalid: %j', async (bun) => {
+    const plugin = getPlugins(true)[0]!
+    const addWatchFile = vi.fn()
+    await withRuntimeVersions('26.3.0', bun, async () => {
+      await expect(getHookHandler(plugin.buildStart)!.call({ addWatchFile } as any, {} as any))
+        .rejects
+        .toThrow(`requires Node ${engines.node}; current version is 26.3.0`)
+    })
+    expect(addWatchFile).not.toHaveBeenCalled()
+    expect(mocks.createCompiler).not.toHaveBeenCalled()
+  })
+
+  it('does not treat a global Bun polyfill as the actual Tailwind runtime identity', async () => {
+    const plugin = getPlugins(true)[0]!
+    vi.stubGlobal('Bun', { version: '1.4.4' })
+    try {
+      await withRuntimeVersions('26.3.0', undefined, async () => {
+        await expect(getHookHandler(plugin.buildStart)!.call({ addWatchFile: vi.fn() } as any, {} as any))
+          .rejects
+          .toThrow(`requires Node ${engines.node}; current version is 26.3.0`)
+      })
+      expect(mocks.createCompiler).not.toHaveBeenCalled()
+    }
+    finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it('retains CSS entry validation under Bun', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'tailwind-bun-entry-'))
+    temporaryRoots.push(root)
+    const entry = path.join(root, 'missing.css')
+    const plugin = getPlugins({ cssEntries: [entry] }, root)[0]!
+    const addWatchFile = vi.fn()
+    await withRuntimeVersions('26.3.0', '1.4.4', async () => {
+      await expect(getHookHandler(plugin.buildStart)!.call({ addWatchFile } as any, {} as any))
+        .rejects
+        .toThrow(`weapp.tailwindcss CSS entry does not exist: ${entry}`)
+    })
+    expect(addWatchFile).not.toHaveBeenCalled()
+    expect(mocks.createCompiler).not.toHaveBeenCalled()
   })
 
   it('clears managed output ownership when configuration disables the integration', () => {

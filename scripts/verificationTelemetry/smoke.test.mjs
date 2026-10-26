@@ -1,12 +1,12 @@
 import fs from 'node:fs/promises'
+import os from 'node:os'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
 // eslint-disable-next-line e18e/ban-dependencies -- 验证真实原命令与 reporter 生命周期，不启动任何 E2E 或浏览器。
 import { execa } from 'execa'
 import { afterEach, expect, it } from 'vitest'
+import { preparePnpmVitestFixture } from '../testFixtures/pnpmVitestWorkspace.mjs'
 import { finalizeBaselineCoverage, readJson } from './coverage.mjs'
 
-const root = fileURLToPath(new URL('../..', import.meta.url))
 const roots = []
 const env = { WEAPP_VITE_VERIFICATION_TELEMETRY: '1', BUILD_ARTIFACT_EXPECTED_COMMIT: 'a'.repeat(40) }
 
@@ -15,11 +15,9 @@ afterEach(async () => {
 })
 
 async function fixture(extraSource = '') {
-  await fs.mkdir(path.join(root, '.tmp'), { recursive: true })
-  const directory = await fs.mkdtemp(path.join(root, '.tmp/coverage-telemetry-smoke-'))
+  const directory = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'coverage-telemetry-smoke-')))
   roots.push(directory)
-  await fs.writeFile(path.join(directory, 'package.json'), JSON.stringify({ private: true, type: 'module', scripts: { 'test:coverage': 'vitest run --configLoader bundle --coverage.enabled --exclude \'**/.codex-tmp/**\'' } }))
-  await fs.writeFile(path.join(directory, 'pnpm-lock.yaml'), 'lockfileVersion: 9\n')
+  await preparePnpmVitestFixture(directory, { private: true, type: 'module', scripts: { 'test:coverage': 'vitest run --configLoader bundle --coverage.enabled --exclude \'**/.codex-tmp/**\'' } })
   await fs.writeFile(path.join(directory, 'vitest.coverage.ts'), 'export const originalThreshold = 100\n')
   const helper = new URL('./vitest.mjs', import.meta.url).href
   await fs.writeFile(path.join(directory, 'vitest.config.mts'), `import { baselineVitestTelemetry } from ${JSON.stringify(helper)}\nexport default { test: { ...baselineVitestTelemetry(${JSON.stringify(directory)}), include: ['math.test.js'], coverage: { include: ['math.js'], thresholds: { functions: 100 } } } }\n`)

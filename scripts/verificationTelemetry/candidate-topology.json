@@ -349,6 +349,73 @@
       },
       "secrets": "inherit"
     },
+    "windows-native-runtime-cleanup-diagnostic": {
+      "needs": "pr-context",
+      "if": "needs.pr-context.outputs.should_run == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'windows-native-runtime-cleanup')",
+      "name": "Native Runtime Cleanup Diagnostic (Windows / Node ${{ matrix.node-version }})",
+      "strategy": {
+        "fail-fast": false,
+        "matrix": {
+          "node-version": [
+            22,
+            24
+          ]
+        }
+      },
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "verification_topology": "${{ inputs.verification_topology }}",
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
+        "runs_on": "windows-latest",
+        "node_version": "${{ format('{0}', matrix.node-version) }}",
+        "timeout_minutes": 15,
+        "build_command": "pnpm exec turbo run build --filter=weapp-vite...",
+        "main_command": "pnpm exec cross-env WEAPP_VITE_E2E_CLEANUP_TRACE=1 WEAPP_VITE_E2E_DEV_PROCESS_TRACE=1 WEAPP_VITE_E2E_DEV_SHUTDOWN_TRACE=1 WEAPP_VITE_E2E_DEV_PROCESS_TRACE_DIR=.tmp/windows-native-runtime-cleanup/dev-process pnpm vitest run -c e2e/vitest.e2e.internal.config.ts e2e/utils/runtimeDevProcess.integration.test.ts --maxWorkers=1 --no-file-parallelism --reporter=default --reporter=json --outputFile=.tmp/windows-native-runtime-cleanup/report.json",
+        "artifact_name": "windows-native-runtime-cleanup-node-${{ matrix.node-version }}-${{ needs.pr-context.outputs.checkout_sha }}",
+        "artifact_path": ".tmp/windows-native-runtime-cleanup/**"
+      },
+      "secrets": "inherit"
+    },
+    "windows-startup-fallback-diagnostic": {
+      "needs": "pr-context",
+      "if": "needs.pr-context.outputs.should_run == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'windows-startup-fallback')",
+      "name": "Startup Fallback Cleanup Diagnostic (Windows / Node ${{ matrix.node-version }})",
+      "strategy": {
+        "fail-fast": false,
+        "matrix": {
+          "node-version": [
+            22,
+            24
+          ]
+        }
+      },
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "verification_topology": "${{ inputs.verification_topology }}",
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
+        "runs_on": "windows-latest",
+        "node_version": "${{ format('{0}', matrix.node-version) }}",
+        "timeout_minutes": 20,
+        "build_command": "pnpm exec turbo run build --filter=weapp-vite... --filter=@mpcore/simulator...",
+        "main_command": "pnpm exec cross-env WEAPP_VITE_E2E_RUNTIME_PROVIDER=headless WEAPP_VITE_E2E_DOM_ACCEPTANCE=1 WEAPP_VITE_E2E_CLEANUP_TRACE=1 WEAPP_VITE_E2E_DEV_PROCESS_TRACE=1 WEAPP_VITE_E2E_DEV_SHUTDOWN_TRACE=1 WEAPP_VITE_E2E_DEV_PROCESS_TRACE_DIR=.tmp/windows-startup-fallback/dev-process pnpm vitest run -c e2e/vitest.e2e.headless.config.ts e2e/ide/hmr-startup-fallback.runtime.test.ts --reporter=default --reporter=json --reporter=./e2e/scripts/domAcceptanceReport/reporter.ts --outputFile=.tmp/windows-startup-fallback/report.json",
+        "e2e_platform": "weapp",
+        "artifact_name": "windows-startup-fallback-node-${{ matrix.node-version }}-${{ needs.pr-context.outputs.checkout_sha }}",
+        "artifact_path": ".tmp/windows-startup-fallback/**\ndocs/reports/dom-acceptance/**\n"
+      },
+      "secrets": "inherit"
+    },
     "plugin-watch-readiness-diagnostic": {
       "needs": "pr-context",
       "if": "needs.pr-context.outputs.should_run == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'plugin-watch-readiness')",
@@ -698,7 +765,7 @@
     "workspace-hmr-nightly": {
       "needs": "pr-context",
       "if": "needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr != 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full' || inputs.hmr-diagnostic == 'workspace-hmr'))",
-      "name": "Workspace HMR Nightly Full (Node 24)",
+      "name": "${{ inputs.workspace-hmr-audit == 'functional-only' && 'Workspace HMR Functional (Node 24)' || 'Workspace HMR Nightly Full (Node 24)' }}",
       "uses": "./.github/workflows/reusable-node-command.yml",
       "with": {
         "verification_topology": "${{ inputs.verification_topology }}",
@@ -714,7 +781,7 @@
         "timeout_minutes": 120,
         "fetch_depth": 0,
         "build_command": "pnpm build:pkgs:ci",
-        "main_command": "pnpm audit:hmr:nightly",
+        "main_command": "${{ inputs.workspace-hmr-audit == 'functional-only' && 'pnpm exec cross-env WEAPP_VITE_HMR_AUDIT_FUNCTIONAL_ONLY=1 pnpm audit:hmr:nightly' || 'pnpm audit:hmr:nightly' }}",
         "increase_ulimit": true,
         "artifact_name": "workspace-hmr-nightly",
         "artifact_path": ".tmp/workspace-hmr/**"
@@ -929,7 +996,7 @@
         {
           "uses": "./.github/actions/setup-node-pnpm",
           "with": {
-            "node-version": "24.18.0"
+            "node-version": "24.22.1"
           }
         },
         {
@@ -1045,6 +1112,9 @@
     "run": {
       "runs-on": "${{ inputs.runs_on }}",
       "timeout-minutes": "${{ inputs.timeout_minutes }}",
+      "outputs": {
+        "node_version": "${{ steps.toolchain.outputs.node-version }}"
+      },
       "env": {
         "WEAPP_VITE_VERIFICATION_TOPOLOGY": "${{ inputs.verification_topology }}",
         "TURBO_TOKEN": "${{ inputs.pr_number == '' && secrets.TURBO_TOKEN || '' }}",
@@ -1085,10 +1155,10 @@
         },
         {
           "uses": "./.github/actions/setup-node-pnpm",
+          "id": "toolchain",
           "with": {
             "node-version": "${{ inputs.node_version }}"
-          },
-          "id": "toolchain"
+          }
         },
         {
           "name": "Restore trusted workspace task cache",
@@ -1307,10 +1377,7 @@
             "key": "turbo-${{ runner.os }}-${{ runner.arch }}-${{ env.REPOCTL_RELEASE_NODE_VERSION }}-${{ env.REPOCTL_RELEASE_PNPM_VERSION }}-${{ hashFiles('package.json', 'pnpm-lock.yaml') }}-${{ inputs.checkout_ref || github.sha }}"
           }
         }
-      ],
-      "outputs": {
-        "node_version": "${{ steps.toolchain.outputs.node-version }}"
-      }
+      ]
     }
   },
   ".github/workflows/reusable-quality-platform.yml": {
@@ -1386,7 +1453,7 @@
         "node_version": "${{ inputs.node_version }}",
         "timeout_minutes": 40,
         "consume_build_artifact": "quality-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-build",
-        "main_command": "pnpm test:dependency-contracts\nif [[ '${{ inputs.runs_on }}' == 'ubuntu-latest' && '${{ inputs.node_version }}' == '24' ]]; then\n  pnpm exec vitest run --config scripts/vitest.config.mjs scripts/coverageShards scripts/consumerArtifacts scripts/ci-timing.test.mjs scripts/ci-topology.test.mjs scripts/verification-history.test.mjs scripts/verificationBenchmark/ci/archive.test.mjs scripts/ci-types.test.mjs\nfi",
+        "main_command": "pnpm test:dependency-contracts\nif [[ '${{ inputs.runs_on }}' == 'ubuntu-latest' && '${{ inputs.node_version }}' == '24' ]]; then\n  pnpm exec vitest run --config scripts/vitest.config.mjs scripts/coverageShards scripts/testFixtures scripts/consumerArtifacts scripts/ci-timing.test.mjs scripts/ci-topology.test.mjs scripts/verification-history.test.mjs scripts/verificationBenchmark/ci/archive.test.mjs scripts/ci-types.test.mjs\nfi",
         "artifact_name": "dependency-contracts-${{ inputs.runs_on }}-node-${{ inputs.node_version }}",
         "artifact_path": ".tmp/dependency-contracts",
         "timing_artifact_name": "timing-contracts-${{ inputs.runs_on }}-${{ inputs.node_version }}"
@@ -1618,7 +1685,7 @@
         {
           "name": "Freeze complete task inventory and shard assignment",
           "shell": "bash",
-          "run": "node --import tsx e2e/scripts/verification/cli.ts history --input=.tmp/verification-history --profile=.tmp/verification-plan/profile.json --repository=\"${{ github.repository }}\" --workflow=.github/workflows/ci-e2e.yml --output=.tmp/verification-plan/history.json\nnode --import tsx e2e/scripts/verification/cli.ts plan --suite=ci-${{ inputs.mode }} --shards=4 --profile=.tmp/verification-plan/profile.json --history=.tmp/verification-plan/history.json --output=.tmp/verification-plan/plan.json\nnode --import tsx e2e/scripts/verification/cli.ts history --input=.tmp/verification-history --profile=.tmp/verification-plan/headless-profile.json --repository=\"${{ github.repository }}\" --workflow=.github/workflows/ci-e2e.yml --output=.tmp/verification-plan/headless-history.json\nnode --import tsx e2e/scripts/verification/cli.ts plan --suite=ide-dom-headless --shards=2 --profile=.tmp/verification-plan/headless-profile.json --history=.tmp/verification-plan/headless-history.json --output=.tmp/verification-plan/ide-dom-headless.json"
+          "run": "node --import tsx e2e/scripts/verification/cli.ts history --input=.tmp/verification-history --profile=.tmp/verification-plan/profile.json --repository=\"${{ github.repository }}\" --workflow=.github/workflows/ci-e2e.yml --output=.tmp/verification-plan/history.json\nnode --import tsx e2e/scripts/verification/cli.ts plan --suite=ci-${{ inputs.mode }}:classic --shards=4 --profile=.tmp/verification-plan/profile.json --history=.tmp/verification-plan/history.json --output=.tmp/verification-plan/plan.json\nnode --import tsx e2e/scripts/verification/cli.ts history --input=.tmp/verification-history --profile=.tmp/verification-plan/headless-profile.json --repository=\"${{ github.repository }}\" --workflow=.github/workflows/ci-e2e.yml --output=.tmp/verification-plan/headless-history.json\nnode --import tsx e2e/scripts/verification/cli.ts plan --suite=ide-dom-headless:classic --shards=2 --profile=.tmp/verification-plan/headless-profile.json --history=.tmp/verification-plan/headless-history.json --output=.tmp/verification-plan/ide-dom-headless.json"
         },
         {
           "uses": "actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9",
@@ -1692,9 +1759,9 @@
         "consume_build_artifact": "miniapp-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-weapp-build",
         "consume_aux_artifact": "miniapp-plan-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-${{ inputs.mode }}",
         "aux_artifact_path": ".tmp/verification-plan",
-        "main_command": "pnpm vitest run -c e2e/vitest.e2e.utils.config.ts e2e/utils/devProcessCleanup/windowsKernelQuery.test.ts e2e/utils/devProcessCleanup/processes.test.ts e2e/utils/dev-process.cleanup.test.ts e2e/utils/devProcessCleanup/windowsProcessTree.test.ts e2e/utils/devProcessCleanup/windowsProcessRows.test.ts e2e/utils/devProcessCleanup/windowsQueryTrace.test.ts\npnpm exec cross-env WEAPP_VITE_E2E_CLEANUP_TRACE=1 node --import tsx e2e/scripts/run-e2e-suite.ts ide-dom-headless --plan=.tmp/verification-plan/ide-dom-headless.json --shard-index=${{ matrix.shard }}\n",
+        "main_command": "node -e \"require('node:fs').mkdirSync('.tmp/ide-dom-headless-preflight', { recursive: true })\"\npnpm exec cross-env WEAPP_VITE_E2E_CLEANUP_TRACE=1 pnpm vitest run -c e2e/vitest.e2e.utils.config.ts e2e/utils/devProcessCleanup/windowsKernelQuery.test.ts e2e/utils/devProcessCleanup/processes.test.ts e2e/utils/dev-process.cleanup.test.ts e2e/utils/devProcessCleanup/windowsProcessTree.test.ts e2e/utils/devProcessCleanup/windowsProcessRows.test.ts e2e/utils/devProcessCleanup/windowsQueryTrace.test.ts 2>&1 | tee .tmp/ide-dom-headless-preflight/cleanup.log\npnpm exec cross-env WEAPP_VITE_E2E_CLEANUP_TRACE=1 WEAPP_VITE_E2E_DEV_PROCESS_TRACE=1 WEAPP_VITE_E2E_DEV_SHUTDOWN_TRACE=1 WEAPP_VITE_E2E_DOM_SCOPE_TRACE_CHECKPOINTS=home-ready node --import tsx e2e/scripts/run-e2e-suite.ts ide-dom-headless:classic --plan=.tmp/verification-plan/ide-dom-headless.json --shard-index=${{ matrix.shard }}\n",
         "artifact_name": "ide-dom-headless-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-shard-${{ matrix.shard }}",
-        "artifact_path": "docs/reports/dom-acceptance/**\ndocs/reports/*-e2e-ide-dom-headless-*-suite-report/**\n",
+        "artifact_path": "docs/reports/dom-acceptance/**\n.tmp/ide-dom-headless-preflight/**\ndocs/reports/*-ide-warning-report/dev-process/**\ndocs/reports/*-e2e-ide-dom-headless-*-suite-report/**\n",
         "build_artifact_scope": "packages/weapp-vite,mpcore/packages/simulator",
         "timing_artifact_name": "timing-ide-dom-headless-${{ inputs.runs_on }}-${{ inputs.node_version }}-${{ inputs.mode }}-${{ matrix.shard }}"
       },
@@ -1824,7 +1891,7 @@
         "aux_artifact_path": ".tmp/verification-plan",
         "e2e_platform": "weapp",
         "increase_ulimit": true,
-        "main_command": "node --import tsx e2e/scripts/run-e2e-suite.ts ci-${{ inputs.mode }} --plan=.tmp/verification-plan/plan.json --shard-index=${{ matrix.shard }}",
+        "main_command": "node --import tsx e2e/scripts/run-e2e-suite.ts ci-${{ inputs.mode }}:classic --plan=.tmp/verification-plan/plan.json --shard-index=${{ matrix.shard }}",
         "artifact_name": "miniapp-e2e-ci-${{ inputs.mode }}-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-shard-${{ matrix.shard }}",
         "artifact_path": "docs/reports/*-e2e-ci-${{ inputs.mode }}-*-suite-report/**",
         "timing_artifact_name": "timing-miniapp-${{ inputs.runs_on }}-${{ inputs.node_version }}-${{ inputs.mode }}-${{ matrix.shard }}"
@@ -2001,9 +2068,9 @@
         "fail-fast": false,
         "matrix": {
           "node": [
-            "22.18.0",
-            "24.11.0",
-            "26.0.0",
+            "22.23.4",
+            "24.22.1",
+            "26.12.1",
             "22",
             "24"
           ]
@@ -2055,7 +2122,8 @@
         {
           "uses": "actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1",
           "with": {
-            "node-version": "${{ matrix.node }}"
+            "node-version": "${{ matrix.node == '22' && '^22.23.4' || matrix.node == '24' && '^24.22.1' || matrix.node == '26' && '^26.12.1' || matrix.node }}",
+            "check-latest": "${{ matrix.node == '22' || matrix.node == '24' || matrix.node == '26' }}"
           }
         },
         {

@@ -135,7 +135,7 @@ describe('actual-addon CI execution contract', () => {
     // eslint-disable-next-line no-template-curly-in-string -- 验证 GitHub Actions 的表达式原文。
     expect(job['runs-on']).toBe('${{ matrix.os }}')
     const node = job.steps.find(step => step.uses?.startsWith('actions/setup-node@'))
-    expect(node.with['node-version']).toBe('24.18.0')
+    expect(node.with['node-version']).toBe('24.22.1')
     const rust = job.steps.find(step => step.run?.startsWith('rustup '))
     expect(rust['working-directory']).toBe('packages/ast-native')
     expect(rust.run).toBe('rustup show active-toolchain')

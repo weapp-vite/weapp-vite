@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict'
+import { assertRecursiveWatcherClosed, observeRecursiveWatcher } from './recursiveWatcher.mjs'
 
 /** 分别观察公开关闭事件与同一个 FSEvent 的原生关闭完成，不补发任何事件。 */
 export function observeNativeWatcher(native, details) {
+  if (!Object.hasOwn(native, '_handle') && details.recursiveScope) {
+    return observeRecursiveWatcher(native, details)
+  }
   const completion = Promise.withResolvers()
   // 观察期间可能先拒绝，最终统一由契约收尾读取同一个原始失败。
   completion.promise.catch(() => {})
@@ -132,6 +136,10 @@ export function observeNativeWatcher(native, details) {
 
 /** 原生完成、公开事件和错误路径各自核验；共享 inode 仍保留原先一次公开关闭的契约。 */
 export function assertNativeWatcherClosed(record, exactlyOnce = false) {
+  if (record.kind === 'recursive-wrapper') {
+    assertRecursiveWatcherClosed(record, exactlyOnce)
+    return
+  }
   assert.deepEqual(record.observationErrors, [], 'Native watcher observation must remain valid')
   assert.equal(record.closed, true, 'Every captured FSEvent must have confirmed terminal evidence')
   assert.equal(record.nativeCloseRequests, 1, 'Every captured FSEvent closes once')

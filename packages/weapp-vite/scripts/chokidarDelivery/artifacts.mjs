@@ -84,7 +84,7 @@ export async function readLicenseRequirements() {
   const require = createRequire(import.meta.url)
   const chokidar = require.resolve('chokidar')
   const readdirp = createRequire(chokidar).resolve('readdirp')
-  return await Promise.all([[chokidar, 'chokidar', '5.0.0'], [readdirp, 'readdirp', '5.1.1']].map(async ([entry, name, version]) => {
+  return await Promise.all([[chokidar, 'chokidar', '6.0.0'], [readdirp, 'readdirp', '5.1.1']].map(async ([entry, name, version]) => {
     const directory = path.dirname(entry)
     const manifest = JSON.parse(await readFile(path.join(directory, 'package.json'), 'utf8'))
     assert.equal(manifest.name, name)

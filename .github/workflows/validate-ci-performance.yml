@@ -48,7 +48,8 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         if: steps.scope.outputs.needed == 'true'
         with:
-          node-version: '24'
+          node-version: ^24.22.1
+          check-latest: true
           cache: pnpm
       - name: Install dependencies
         if: steps.scope.outputs.needed == 'true'
