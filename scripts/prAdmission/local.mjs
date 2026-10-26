@@ -2,6 +2,7 @@
 import { readdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { parse } from 'yaml'
+import { checkReleaseIntentAdmission } from './releaseIntent.mjs'
 import { check } from './report.mjs'
 
 const list = value => value === undefined ? [] : Array.isArray(value) ? value : [value]
@@ -66,7 +67,8 @@ export function checkLocalAdmission({ policy, profiles, workflows }) {
   const triggers = Object.fromEntries(Object.entries(workflows).map(([name, workflow]) => [name, events(workflow?.on)]))
   const listeners = event => sorted(Object.keys(triggers).filter(name => Object.hasOwn(triggers[name], event)))
   add('唯一 PR 入口', ['ci-pr.yml'], listeners('pull_request'))
-  add('唯一关闭事件入口', ['ci-pr.yml'], listeners('pull_request_target'))
+  add('可信 pull_request_target 入口', ['ci-pr.yml'], listeners('pull_request_target'))
+  checkReleaseIntentAdmission(workflows['release-intent-auto.yml'], policy, add, expression)
   for (const event of ['pull_request_review', 'pull_request_review_comment']) {
     add(`${event} 不另行启动检查`, [], listeners(event))
   }

@@ -1,8 +1,6 @@
 name: Deploy Website
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
     inputs:
       pr-number:
@@ -12,7 +10,7 @@ on:
         type: string
 
 concurrency:
-  group: website-${{ inputs.pr-number != '' && format('pr-{0}', inputs.pr-number) || (github.ref == 'refs/heads/main' && 'production' || github.ref) }}
+  group: website-validation-${{ inputs.pr-number != '' && format('pr-{0}', inputs.pr-number) || github.ref }}
   cancel-in-progress: ${{ inputs.pr-number != '' }}
 
 permissions:
@@ -36,4 +34,3 @@ jobs:
     uses: ./.github/workflows/validate-deploy-website.yml
     with:
       pr_context: ${{ needs.pr-context.outputs.pr_context }}
-    secrets: inherit
