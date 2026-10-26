@@ -266,12 +266,17 @@ it('captures saves before classic watchers attach and while its first publicatio
   try {
     server = await project.start([gate])
     blockNextPublication = true
-    await writeFile(path.join(project.root, 'src/pages/home/index.json'), '{"navigationBarTitleText":"classic-transition"}')
-    await publishing.promise
-    // 首次 classic 写出被门闩阻挡，确保保存发生在 switching 中，而非已经就绪后。
-    await writeFile(sourceFile, 'Page({ data: { message: "saved-during-classic-transition" } })')
-    await sourceObserved.promise
-    releasePublication.resolve()
+    const runtime = await observeClassicFallback(server, async () => {
+      await writeFile(path.join(project.root, 'src/pages/home/index.json'), '{"navigationBarTitleText":"classic-transition"}')
+      await publishing.promise
+      // 首次 classic 写出被门闩阻挡，确保保存发生在 switching 中，而非已经就绪后。
+      await writeFile(sourceFile, 'Page({ data: { message: "saved-during-classic-transition" } })')
+      await sourceObserved.promise
+      releasePublication.resolve()
+    })
+    // 最新文件写出仍可能早于宿主重启完成；以命令级交接完成作为宿主断言的边界。
+    expect(runtime.fallback?.code).toBe('config-json')
+    expect(runtime.phase).toBe('classic')
     await expect.poll(() => project.read('pages/home/index.js')).toContain('saved-during-classic-transition')
     expectClassicHost(server)
     await expect.poll(() => project.read('pages/home/index.json')).toContain('classic-transition')
