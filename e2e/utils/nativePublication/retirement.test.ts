@@ -77,7 +77,7 @@ it.each([
     inputs: variant === 'foreign-inputs' ? { ...inputs, 'src/app.json': nativePublicationHash('foreign config') } : inputs,
     outputs: finalOutputs,
     generation: nativePublicationGeneration(finalOutputs),
-    ...(variant === 'missing-scope' ? {} : { outputScope: variant === 'invalid-scope' ? 'unknown' : 'committed-root' }),
+    ...(variant === 'missing-scope' ? {} : { outputScope: variant === 'invalid-scope' ? 'unknown' : 'committed' }),
     ...(variant === 'missing-epoch' ? {} : { publicationEpoch: 8 }),
     profileCursor: { offset: variant === 'missing-first-end' ? 0 : firstEnd.length, prefixHash: nativePublicationHash(variant === 'missing-first-end' ? '' : firstEnd), identity: lastIdentity },
   }
@@ -97,7 +97,7 @@ it.each([
   }
   await writeFile(profilePath, (variant === 'missing-first-end' ? '' : firstEnd) + sourceEnd(lastIdentity))
   if (variant === 'missing-epoch' || variant === 'invalid-scope') {
-    await expect(publication.wait(100)).rejects.toThrow('Invalid native')
+    await expect(publication.wait(100)).rejects.toThrow(variant === 'missing-epoch' ? 'Invalid committed native publication epoch' : 'Invalid native publication output scope')
   }
   else if (variant === 'complete' || variant === 'partial-restores-file' || variant === 'missing-first-end') {
     const receipt = await publication.wait(1_000)

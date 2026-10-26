@@ -26,7 +26,7 @@ it.each(['before', 'after'] as const)('observes native retirement with an unchan
     expect(fixture.nativeWrites[1]).not.toContain('optional.wxss')
     expect(await access(path.join(fixture.project, 'dist/optional.wxss')).then(() => true, () => false)).toBe(false)
     const receipt = await publication.wait(500)
-    expect(receipt).toMatchObject({ boundary: 'native-byte-write', outputScope: 'committed-root', publicationEpoch: expect.any(Number) })
+    expect(receipt).toMatchObject({ boundary: 'native-byte-write', outputScope: 'committed', publicationEpoch: expect.any(Number) })
     expect(Object.keys(receipt.outputs).sort()).toEqual(['app.js', 'final.txt', 'pages/index/index.wxml'])
     expect(receipt.outputs['app.js']).toBe(nativePublicationHash(await readFile(path.join(fixture.project, 'dist/app.js'))))
   }

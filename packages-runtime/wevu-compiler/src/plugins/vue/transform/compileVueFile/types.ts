@@ -54,6 +54,8 @@ export interface VueTransformResult {
     sfcSrcCompilationDeps?: string[]
     /** 原生插槽上下文分析读取的源码依赖，变化时必须重新编译引用方。@internal */
     nativeSlotContextDeps?: string[]
+    /** props 键集合分析读取的源码依赖，变化时必须重新编译引用方。@internal */
+    propsAnalysisDeps?: string[]
     /** 已解析样式中的 CSS 变量表达式快照。@internal */
     cssVars?: string[]
     styleBlocks?: SFCStyleBlock[]

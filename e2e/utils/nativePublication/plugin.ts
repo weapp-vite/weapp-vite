@@ -160,7 +160,7 @@ export function nativePublicationPlugin(options: NativePublicationOptions = {}):
             generation: nativePublicationGeneration(files),
             inputs: current.inputs,
             outputs: files,
-            ...(snapshot ? { outputScope: 'committed-root', publicationEpoch: snapshot.epoch } : {}),
+            ...(snapshot ? { publicationEpoch: snapshot.epoch, outputScope: 'committed' } : {}),
             ...(profile === undefined ? {} : { profileCursor: { offset: profile.length, prefixHash: nativePublicationHash(profile), ...(identity ? { identity } : {}) } }),
           })}\n`)
         }

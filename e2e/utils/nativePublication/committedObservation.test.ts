@@ -77,7 +77,7 @@ it('publishes committed views in hook order even when a later commit resolves fi
   await run.requests.get(1)!.promise
   await run.close()
   expect(run.receipts().map(receipt => receipt.publicationEpoch)).toEqual([1, 2])
-  expect(run.receipts().map(receipt => receipt.outputScope)).toEqual(['committed-root', 'committed-root'])
+  expect(run.receipts().map(receipt => receipt.outputScope)).toEqual(['committed', 'committed'])
 })
 
 it.each(['wrong-root', 'wrong-epoch', 'missing-output', 'wrong-bytes', 'uncommitted'] as const)('rejects a byte-write complete view with %s', async (variant) => {
