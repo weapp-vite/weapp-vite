@@ -38,6 +38,21 @@ afterEach(() => {
 })
 
 describe.each<Mode>(['compiled', 'legacy'])('%s dataset consumers', (mode) => {
+  it('uses canonical HTML attribute casing without colliding with hyphenated dataset names', async () => {
+    const capture = vi.fn()
+    const item = { id: 'typed' }
+    const host = await mount('<view id="probe" data-itemName="{{item}}" data-Foo="{{count}}" data-item-name="{{label}}" bindtap="capture" />', mode, { item, count: 0, label: 'hyphenated' }, capture)
+    const element = host.shadowRoot!.querySelector('#probe')!
+    expect(element.getAttributeNames()).toEqual(expect.arrayContaining(['data-itemname', 'data-foo', 'data-item-name']))
+    element.dispatchEvent(new MouseEvent('click'))
+    expect(capture.mock.calls[0]![0].currentTarget.dataset).toMatchObject({ itemname: item, foo: 0, itemName: 'hyphenated' })
+    expect(capture.mock.calls[0]![0].currentTarget.dataset).not.toHaveProperty('Foo')
+    const selected = vi.fn()
+    await host.createSelectorQuery().select('#probe').fields({ dataset: true }, selected).exec()
+    expect(selected.mock.calls[0]![0].dataset).toMatchObject({ itemname: item, foo: 0, itemName: 'hyphenated' })
+    expect(selected.mock.calls[0]![0].dataset).not.toHaveProperty('Foo')
+  })
+
   it('preserves raw complete expressions and stringifies every mixed interpolation segment', async () => {
     const host = await mount('<view id="probe" data-value="{{value}}" data-spaced=" {{value}} " data-mixed="value={{value}}" data-adjacent="{{first}}{{second}}" data-literal="0" />', mode, {
       value: 0,

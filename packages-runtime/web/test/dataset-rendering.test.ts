@@ -66,4 +66,21 @@ describe('compiled dataset rendering', () => {
     render(nothing, container)
     expect(readRuntimeDataset(element).next).toBe('[object Object]')
   })
+
+  it('cleans canonical names when a dynamic binding changes attribute case and spelling', () => {
+    const container = document.createElement('div')
+    const template = (name: string, value: unknown) => html`<div ${bindRuntimeDataset(name, value)}></div>`
+    const part = render(template('data-itemName', { id: 'first' }), container)
+    const element = container.querySelector('div')!
+    expect(readRuntimeDataset(element)).toEqual({ itemname: { id: 'first' } })
+    render(template('data-ITEM-NAME', { id: 'next' }), container)
+    expect(element.hasAttribute('data-itemname')).toBe(false)
+    expect(readRuntimeDataset(element)).toEqual({ itemName: { id: 'next' } })
+    part.setConnected(false)
+    expect(readRuntimeDataset(element)).toEqual({ itemName: '[object Object]' })
+    part.setConnected(true)
+    expect(readRuntimeDataset(element)).toEqual({ itemName: { id: 'next' } })
+    render(nothing, container)
+    expect(readRuntimeDataset(element)).toEqual({ itemName: '[object Object]' })
+  })
 })

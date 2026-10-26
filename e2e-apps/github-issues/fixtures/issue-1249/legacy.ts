@@ -7,7 +7,7 @@ defineComponent('dataset-probe', {
 })
 defineComponent('dataset-legacy-fixture', {
   template: createTemplate(`
-    <view wx:for="{{rows}}" wx:key="id" id="row-{{index}}" data-item="{{item}}" data-index="{{index}}" data-enabled="{{false}}" data-literal="0" data-item-name="{{item.value}}" bindtap="capture">Select {{index}}</view>
+    <view wx:for="{{rows}}" wx:key="id" id="row-{{index}}" data-item="{{item}}" data-itemName="{{item}}" data-Foo="{{0}}" data-index="{{index}}" data-enabled="{{false}}" data-literal="0" data-item-name="{{item.value}}" bindtap="capture">Select {{index}}</view>
     <dataset-probe id="component-probe" data-item="{{rows[0]}}" data-index="{{rows.length}}" bind:select="capture" />
     <button id="replace" bindtap="replace">Replace object</button>
     <button id="query" bindtap="query">Query dataset</button>

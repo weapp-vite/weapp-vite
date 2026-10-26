@@ -40,6 +40,35 @@ describe('runtime dataset snapshots', () => {
     expect(readRuntimeDataset(element)).not.toHaveProperty('second')
   })
 
+  it('stores and releases HTML attribute aliases through their canonical ASCII names', () => {
+    const element = document.createElement('div')
+    const item = { id: 'typed' }
+    store(element, 'data-itemName', item)
+    store(element, 'data-Foo', 0)
+    expect(readRuntimeDataset(element)).toEqual({ itemname: item, foo: 0 })
+    clearRuntimeDataset(element, 'data-ITEMNAME')
+    expect(readRuntimeDataset(element)).toEqual({ itemname: '[object Object]', foo: 0 })
+    element.setAttribute('DATA-FOO', 'manual')
+    expect(readRuntimeDataset(element).foo).toBe('manual')
+    store(element, 'data-FOO', false)
+    element.removeAttribute('data-foo')
+    expect(readRuntimeDataset(element)).not.toHaveProperty('foo')
+  })
+
+  it('preserves case-sensitive SVG attributes without inventing typed uppercase dataset keys', () => {
+    const element = document.createElementNS('http://www.w3.org/2000/svg', 'g')
+    const item = { id: 'svg' }
+    store(element, 'data-Foo', 0)
+    store(element, 'data-item-name', item)
+    expect(element.getAttribute('data-Foo')).toBe('0')
+    expect(element.getAttribute('data-foo')).toBeNull()
+    const native = { ...element.dataset }
+    expect(readRuntimeDataset(element)).toEqual({ ...native, itemName: item })
+    clearRuntimeDataset(element, 'data-item-name')
+    expect(readRuntimeDataset(element)).toEqual(native)
+    expect(toDatasetKey('data-Ä-name')).toBe('ÄName')
+  })
+
   it('does not mutate the result prototype or share values across elements', () => {
     const first = document.createElement('div')
     const second = document.createElement('div')

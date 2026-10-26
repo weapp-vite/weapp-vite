@@ -78,15 +78,20 @@ describe('issue #1249: dataset values across Web templates', { concurrent: false
     await expect.poll(() => page.locator(row).count()).toBe(1)
     expect(await page.locator(row).getAttribute('data-index')).toBe('0')
     expect(await page.locator(row).getAttribute('data-literal')).toBe('0')
+    expect(await page.locator(row).getAttribute('data-foo')).toBe('0')
     await page.locator(row).click()
     const expected = {
       item: { id: 'same', value: 'pending', nested: { count: 1 } },
+      itemname: { id: 'same', value: 'pending', nested: { count: 1 } },
+      foo: 0,
       index: 0,
       enabled: false,
       literal: '0',
       itemName: 'pending',
     }
     await dataset(`${root} #snapshot`, expected)
+    const snapshot = JSON.parse((await page.locator(`${root} #snapshot`).textContent())!) as Record<string, unknown>
+    expect(snapshot).not.toHaveProperty('Foo')
     await page.locator(`${root} #query`).click()
     await dataset(`${root} #selector`, expected)
     await page.locator(`${root} #observe`).click()
@@ -96,9 +101,9 @@ describe('issue #1249: dataset values across Web templates', { concurrent: false
     await page.locator(`${root} #replace`).click()
     await expect.poll(() => page.locator(row).getAttribute('data-item-name')).toBe('complete')
     await page.locator(row).click()
-    await dataset(`${root} #snapshot`, { item: { value: 'complete', nested: { count: 2 } }, index: 0 })
+    await dataset(`${root} #snapshot`, { item: { value: 'complete', nested: { count: 2 } }, itemname: { value: 'complete', nested: { count: 2 } }, foo: 0, index: 0 })
     await page.locator(`${root} #query`).click()
-    await dataset(`${root} #selector`, { item: { value: 'complete', nested: { count: 2 } }, enabled: false })
+    await dataset(`${root} #selector`, { item: { value: 'complete', nested: { count: 2 } }, itemname: { value: 'complete', nested: { count: 2 } }, foo: 0, enabled: false })
     const retainedRow = await page.locator(row).elementHandle()
     if (!retainedRow) {
       throw new Error('Missing dataset row before reconnect')
@@ -113,7 +118,7 @@ describe('issue #1249: dataset values across Web templates', { concurrent: false
       })
       expect(await page.locator(row).evaluate((element, previous) => element === previous, retainedRow)).toBe(true)
       await page.locator(row).click()
-      await dataset(`${root} #snapshot`, { item: { value: 'complete', nested: { count: 2 } }, enabled: false })
+      await dataset(`${root} #snapshot`, { item: { value: 'complete', nested: { count: 2 } }, itemname: { value: 'complete', nested: { count: 2 } }, foo: 0, enabled: false })
     }
     finally {
       await retainedRow.dispose()

@@ -1,5 +1,15 @@
 /** DOM 属性用于字符串查询，运行时 dataset 保留完整绑定表达式的值类型。 */
 const runtimeDatasetValues = new WeakMap<Element, Map<string, unknown>>()
+const HTML_NAMESPACE = 'http://www.w3.org/1999/xhtml'
+const ASCII_UPPERCASE_RE = /[A-Z]/g
+const DATASET_ATTRIBUTE_RE = /^data-[^A-Z]*$/
+
+/** 与 setAttribute 保持一致，仅折叠 HTML 文档中 HTML 元素的 ASCII 大写。 */
+function normalizeDatasetAttributeName(element: Element, attributeName: string) {
+  return element.namespaceURI === HTML_NAMESPACE && element.ownerDocument.contentType === 'text/html'
+    ? attributeName.replace(ASCII_UPPERCASE_RE, character => character.toLowerCase())
+    : attributeName
+}
 
 /** 只转换连字符后的 ASCII 小写字母，与 DOMStringMap 和小程序命名规则一致。 */
 export function toDatasetKey(attributeName: string) {
@@ -8,15 +18,20 @@ export function toDatasetKey(attributeName: string) {
 
 /** 保存本次绑定值，包括数字、布尔值及 null / undefined。 */
 export function storeRuntimeDataset(element: Element, attributeName: string, value: unknown) {
+  const name = normalizeDatasetAttributeName(element, attributeName)
+  // SVG/XML 保留属性大小写；含 ASCII 大写的 data-* 不属于 DOMStringMap。
+  if (!DATASET_ATTRIBUTE_RE.test(name)) {
+    return
+  }
   const values = runtimeDatasetValues.get(element) ?? new Map<string, unknown>()
-  values.set(attributeName, value)
+  values.set(name, value)
   runtimeDatasetValues.set(element, values)
 }
 
 /** 释放指定绑定，不影响同一元素上其他拥有者的值。 */
 export function clearRuntimeDataset(element: Element, attributeName: string) {
   const values = runtimeDatasetValues.get(element)
-  values?.delete(attributeName)
+  values?.delete(normalizeDatasetAttributeName(element, attributeName))
   if (values?.size === 0) {
     runtimeDatasetValues.delete(element)
   }
