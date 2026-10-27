@@ -7,6 +7,7 @@ import fg from 'fast-glob'
 // @weapp-vite/devtools-runtime，而该包由 build job 产出，计划 job 不应依赖它。
 import { MANAGED_PROJECT_MAX_WINDOWS_ENV } from '../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/journal/constants'
 import { resolveVerificationTopology, TDESIGN_AGGREGATE_LABEL, TDESIGN_SOURCE_LABELS, topologyEnvironment } from '../../scripts/verification/topology.ts'
+import { GITHUB_ISSUES_BUILD_BASELINE_LABEL, GITHUB_ISSUES_BUILD_TASK_LABELS, includesGithubIssuesBuildTask } from '../ci/githubIssuesBuild/groups'
 import { TEMPLATE_DEV_OPEN_CASES } from '../ide/template-dev-open-cases'
 import { E2E_TARGET_FILE_ENV } from '../utils/vitestTargetFile'
 import { HMR_ACCEPTANCE_BUILD_TESTS, hmrAcceptanceRuntimeFiles } from './hmr-acceptance-manifest'
@@ -154,6 +155,9 @@ const IDE_GITHUB_ISSUES_PATTERNS = [
   'ide/issue-1182-production-mount.runtime.test.ts',
   'ide/issue-1185-sibling-entry.runtime.test.ts',
   'ide/issue-1235-component-reentry.runtime.test.ts',
+  'ide/issue-1261-props-projection.runtime.test.ts',
+  'ide/issue-1263-chunk-debug-name.runtime.test.ts',
+  'ide/issue-1264-basic-wx-apis.runtime.test.ts',
   'ide/issue-1029-auto-routes.runtime.test.ts',
   'ide/issue-1034-auto-routes.runtime.test.ts',
   'ide/issue-1034-auto-routes-hmr.runtime.test.ts',
@@ -325,6 +329,9 @@ const IDE_DOM_HEADLESS_PATTERNS = [...new Set([
   'ide/issue-1182-production-mount.runtime.test.ts',
   'ide/issue-1185-sibling-entry.runtime.test.ts',
   'ide/issue-1235-component-reentry.runtime.test.ts',
+  'ide/issue-1261-props-projection.runtime.test.ts',
+  'ide/issue-1263-chunk-debug-name.runtime.test.ts',
+  'ide/issue-1264-basic-wx-apis.runtime.test.ts',
   'ide/issue-1029-auto-routes.runtime.test.ts',
   'ide/issue-1034-auto-routes.runtime.test.ts',
   'ide/issue-1034-auto-routes-hmr.runtime.test.ts',
@@ -384,6 +391,7 @@ const CI_PR_PATTERNS = [
   'ci/issue-1029-auto-routes.test.ts',
   'ci/issue-1034-auto-routes.test.ts',
   'ci/issue-1185-sibling-entry.test.ts',
+  'ci/issue-1263-chunk-debug-name.test.ts',
   'ci/issue-1072-json-context.test.ts',
   'ci/headless-automator-provider.test.ts',
   'ci/platform-build.test.ts',
@@ -590,7 +598,8 @@ export function getWebTasks() {
   }] satisfies SuiteTask[]
 }
 
-export async function getCiTasks(_options: SuiteTaskFactoryOptions = {}) {
+export async function getCiTasks(options: SuiteTaskFactoryOptions = {}) {
+  const topology = resolveVerificationTopology(options.topology)
   const buildOnlyFiles = fg.sync('ci/**/*.test.ts', {
     cwd: ROOT,
     absolute: true,
@@ -598,6 +607,7 @@ export async function getCiTasks(_options: SuiteTaskFactoryOptions = {}) {
   })
     .map(toPosixPath)
     .filter(filePath => !HMR_GUARD_CI_TESTS.has(filePath))
+    .filter(filePath => includesGithubIssuesBuildTask(toRelativeLabel(filePath), topology.id))
     .sort()
 
   if (process.env[SKIP_CI_HMR_GUARD_ENV] === '1') {
@@ -617,9 +627,15 @@ export async function getCiTasks(_options: SuiteTaskFactoryOptions = {}) {
 }
 
 export async function getCiPrTasks(options: SuiteTaskFactoryOptions = {}) {
+  const topology = resolveVerificationTopology(options.topology)
   const fullTasks = await getCiTasks({ ...options })
   const taskByLabel = new Map(fullTasks.map(task => [task.label, task]))
-  return CI_PR_PATTERNS.map(label => taskByLabel.get(label)).filter((task): task is SuiteTask => task != null)
+  const labels = CI_PR_PATTERNS.flatMap(label => (
+    label === GITHUB_ISSUES_BUILD_BASELINE_LABEL && topology.id === 'optimized-v2'
+      ? GITHUB_ISSUES_BUILD_TASK_LABELS
+      : [label]
+  ))
+  return labels.map(label => taskByLabel.get(label)).filter((task): task is SuiteTask => task != null)
 }
 
 export async function getCiFullTasks(options: SuiteTaskFactoryOptions = {}) {

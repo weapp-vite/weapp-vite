@@ -1,4 +1,5 @@
 // 安装幂等性直接验证构建产物的内部入口；业务 API 仍通过正式 wx facade 调用。
+// eslint-disable-next-line antfu/no-import-dist, antfu/no-import-node-modules-by-path -- 仅测试产物安装器的幂等性，避免为测试新增公共 API。
 import { installMiniProgramGlobals } from '../../../node_modules/@weapp-vite/web/dist/runtime/polyfill/index.mjs'
 
 const trace = {

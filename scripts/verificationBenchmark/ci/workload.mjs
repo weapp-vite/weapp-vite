@@ -21,6 +21,7 @@ export async function readCiWorkload(context, get) {
     && Object.values(context.pathSelections).every(value => typeof value === 'boolean'), 'Missing or invalid frozen workload path selections')
   const selected = selectNativePrWorkload(context, profiles, context.pathSelections, workload)
   assert(selected.benchmarkWorkload, 'PR is not explicitly selected by the immutable benchmark workload')
+  assert.equal(context.verificationTopology ?? 'optimized-v1', selected.verificationTopology, 'Frozen benchmark workload topology differs from its immutable attempt selection')
   for (const key of ['benchmarkWorkload', 'pathSelections', 'selections', 'selectionSources']) {
     assert.deepEqual(context[key], selected[key], `Frozen benchmark workload ${key} differs from its immutable manifest`)
   }

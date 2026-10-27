@@ -30,7 +30,7 @@ export function parseChangedNames(output: string): string[] {
   return [...new Set(files)].sort()
 }
 
-export async function readChanges(root: string, options: { base?: string, files?: string[], signal?: AbortSignal } = {}): Promise<ChangeSet> {
+export async function readChanges(root: string, options: { base?: string, head?: string, files?: string[], signal?: AbortSignal } = {}): Promise<ChangeSet> {
   const git = async (args: string[]) => {
     options.signal?.throwIfAborted()
     const result = await execa('git', args, { cwd: root, cancelSignal: options.signal })
@@ -38,6 +38,28 @@ export async function readChanges(root: string, options: { base?: string, files?
     return result.stdout
   }
   const head = (await git(['rev-parse', 'HEAD'])).trim()
+  if (options.head) {
+    if (options.files?.length) {
+      throw new Error('固定提交验证不能同时筛选局部文件')
+    }
+    const candidate = (await git(['rev-parse', '--verify', `${options.head}^{commit}`])).trim()
+    if (candidate !== head || await git(['status', '--porcelain', '--untracked-files=normal'])) {
+      throw new Error('固定提交验证必须在对应提交的干净快照中执行')
+    }
+    const base = options.base ? (await git(['rev-parse', '--verify', `${options.base}^{commit}`])).trim() : null
+    const files = base
+      ? parseChangedNames(await git(['diff', '--name-status', '-z', '--find-renames', base, head, '--']))
+      : (await git(['ls-tree', '-r', '--name-only', '-z', head])).split('\0').filter(Boolean).map(normalizeChangedPath).sort()
+    const tree = (await git(['rev-parse', `${head}^{tree}`])).trim()
+    return {
+      base,
+      head,
+      files,
+      fingerprint: createHash('sha256').update(JSON.stringify({ base, head, tree, files })).digest('hex'),
+      fallback: !base,
+      warnings: base ? [] : ['待推提交缺少可信比较基线，已保守选择全部验证范围'],
+    }
+  }
   const warnings: string[] = []
   let base: string | null = null
   if (options.base) {

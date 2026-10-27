@@ -1,11 +1,13 @@
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { verifyCoverageShards } from '../../coverageShards/contracts.mjs'
+import { TOPOLOGY_V2_COMPARISON_PROTOCOL } from '../../verification/topology.ts'
 import { classifyCoverageScope, coverageScopePolicy } from '../../verificationTelemetry/coveragePolicy.mjs'
 import { coverageLogicalScope } from '../../verificationTelemetry/logicalCoverage.mjs'
 import { runtimeOs, verificationResource } from '../../verificationTelemetry/os.mjs'
 import { evidenceDigest, runtimeScope } from '../evidence.mjs'
 import { readArtifactDocuments } from './artifacts.mjs'
+import { assertCiExecutionTopology } from './executionTopology.mjs'
 import { readTaskSuite } from './taskSuite.mjs'
 
 async function coverageScope(descriptor, context, read) {
@@ -45,15 +47,21 @@ async function coverageScope(descriptor, context, read) {
   }
 }
 
-async function suiteScope(descriptor, context, read) {
+async function suiteScope(descriptor, context, read, contract) {
   const report = await read(descriptor.suite)
   assert(report.commitSha === context.checkoutSha, 'Runtime evidence checkout mismatch')
+  const formalV2 = contract.comparisonProtocol === TOPOLOGY_V2_COMPARISON_PROTOCOL
+  if (formalV2) {
+    assertCiExecutionTopology(report.execution?.executionTopology, context)
+    assert.equal(report.execution.profile?.provider, contract.profile.provider, 'Actual runtime provider differs from the frozen benchmark contract')
+  }
   assert(Array.isArray(descriptor.acceptance), 'Missing runtime acceptance references')
   const acceptance = (await Promise.all(descriptor.acceptance.map(reference => read(reference, true, true)))).flat()
   const toolchain = await read(descriptor.toolchain)
   assert(toolchain.schemaVersion === 2 && toolchain.commit === context.checkoutSha, 'Runtime toolchain checkout mismatch')
   assert(acceptance.every(value => value.environment?.nodeVersion === toolchain.toolchain?.nodeVersion), 'Runtime evidence Node version mismatch')
-  return { scope: runtimeScope(report, acceptance), resource: verificationResource(toolchain, report.execution?.profile) }
+  const scope = runtimeScope(report, acceptance)
+  return { scope, ...(formalV2 ? { comparisonScope: { provider: report.execution.profile.provider, cases: scope } } : {}), resource: verificationResource(toolchain, report.execution?.profile) }
 }
 
 /** 版本化预期必须与实际完整执行证据相等，否则只保留原始时间，不产生成功样本。 */
@@ -79,7 +87,7 @@ export async function readExecutionEvidence(contract, context, download, configu
       ids.add(descriptor.id)
       const readers = { 'coverage': coverageScope, 'runtime': suiteScope, 'task-suite': readTaskSuite }
       assert(Object.hasOwn(readers, descriptor.kind), 'Unsupported execution evidence kind')
-      const observed = await readers[descriptor.kind](descriptor, context, read)
+      const observed = await readers[descriptor.kind](descriptor, context, read, contract)
       assert.deepEqual(observed.scope, descriptor.scope, 'Actual execution scope differs from the immutable contract')
       assert(Object.values(observed.resource).every(value => typeof value === 'string' && value), 'Missing actual execution resource identity')
       resources.push(observed.resource)

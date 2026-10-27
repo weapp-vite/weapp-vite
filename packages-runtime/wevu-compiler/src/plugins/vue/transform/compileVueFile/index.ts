@@ -108,9 +108,19 @@ export async function compileVueFile(
   const propsDerivedKeys = scriptCompiled
     ? resolveEffectivePropsDerivedKeys(scriptCompiled.bindings as Record<string, any> | undefined, scriptCompiled.content, getCompiledScriptAst)
     : undefined
-  const scriptSetupPropConflicts = scriptCompiled
-    ? resolveSetupPropConflicts(scriptCompiled.content, scriptCompiled.bindings, getCompiledScriptAst)
+  const propsAnalysis = scriptCompiled
+    ? await resolveSetupPropConflicts({
+        script: scriptCompiled.content,
+        bindings: scriptCompiled.bindings,
+        getScriptAst: getCompiledScriptAst,
+        filename,
+        source: options?.sfcSrc,
+      })
     : undefined
+  const scriptSetupPropConflicts = propsAnalysis?.conflicts
+  if (propsAnalysis?.dependencies.length) {
+    result.meta!.propsAnalysisDeps = propsAnalysis.dependencies
+  }
 
   const styleCompiled = await compileStylePhase(parsed.descriptor, filename, result, options?.style)
   const hasCssVarsRuntime = parsed.descriptor.cssVars.length > 0 || options?.stabilizeCssVarsRuntime === true

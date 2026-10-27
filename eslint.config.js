@@ -325,6 +325,13 @@ export default await defineEslintConfig({
         'yaml/plain-scalar': 'off',
       },
     }, {
+      // 原样保留 repoctl 生成的工作流：publisher 核验 builder 完整字节的 SHA256。
+      files: ['.github/workflows/repoctl-snapshot-build.yml', '.github/workflows/repoctl-snapshot-publish.yml'],
+      rules: {
+        'yaml/plain-scalar': 'off',
+        'yaml/quotes': 'off',
+      },
+    }, {
       files: ['**/*.json'],
       rules: {
         'style/eol-last': 'off',

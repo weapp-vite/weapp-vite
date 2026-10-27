@@ -4,7 +4,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterEach, describe, expect, it } from 'vitest'
-import { readLinuxProcessState } from './repoctlReleaseDeadline/processState'
+import { readLinuxProcessState, waitForProcessExit } from './repoctlReleaseDeadline/processState'
 
 const temporaryDirectories: string[] = []
 const helper = fileURLToPath(new URL('../.github/scripts/release-stage.sh', import.meta.url))
@@ -94,19 +94,9 @@ async function processState(pid: number, ownerToken: string) {
   return result.stdout.includes(`FIXTURE_OWNER_TOKEN=${ownerToken}`) ? 'running' : 'foreign'
 }
 
-async function waitForProcessExit(pid: number, ownerToken: string) {
-  const deadline = Date.now() + 2000
-  let state = await processState(pid, ownerToken)
-  while (state === 'running' && Date.now() < deadline) {
-    await new Promise(resolve => setTimeout(resolve, 25))
-    state = await processState(pid, ownerToken)
-  }
-  return state
-}
-
 async function cleanupFixtureProcesses(evidence: string, ownerToken: string) {
   for (const { pid } of await readProcessRecords(evidence)) {
-    if (await processState(pid, ownerToken) !== 'running') {
+    if (await waitForProcessExit(() => processState(pid, ownerToken)) !== 'running') {
       continue
     }
     try {
@@ -117,7 +107,7 @@ async function cleanupFixtureProcesses(evidence: string, ownerToken: string) {
         throw error
       }
     }
-    await waitForProcessExit(pid, ownerToken)
+    await waitForProcessExit(() => processState(pid, ownerToken))
   }
 }
 
@@ -247,7 +237,7 @@ setInterval(() => {}, 1000)
       const records = await readProcessRecords(evidence)
       expect(records.map(record => record.role)).toEqual(['supervisor', 'command', 'descendant'])
       for (const { pid } of records) {
-        expect(['gone', 'zombie']).toContain(await waitForProcessExit(pid, ownerToken))
+        expect(['gone', 'zombie']).toContain(await waitForProcessExit(() => processState(pid, ownerToken)))
       }
     }
     finally {

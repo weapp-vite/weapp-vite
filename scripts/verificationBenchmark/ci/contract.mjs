@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
+import { comparisonTopology, resolveVerificationTopology } from '../../verification/topology.ts'
 import { frameworkInputs } from './inputs.mjs'
 import { immutableTree, relativeFile } from './tree.mjs'
 
@@ -7,8 +8,19 @@ export { relativeFile } from './tree.mjs'
 
 const digest = value => createHash('sha256').update(value).digest('hex')
 
+function comparisonIdentity(value, context, configuration) {
+  const protocol = value.comparisonProtocol
+  assert.equal(protocol, configuration.comparisonProtocol, 'Immutable benchmark comparison protocol mismatch')
+  if (protocol === undefined) {
+    return {}
+  }
+  const expected = comparisonTopology(protocol, configuration.cohort?.variant)
+  assert.equal(context.verificationTopology, expected, 'Frozen benchmark cohort has the wrong reviewed topology')
+  return { comparisonProtocol: protocol, executionTopology: resolveVerificationTopology(context.verificationTopology, {}) }
+}
+
 /** 配置与输入字节均读取冻结 merge tree，外部摘要不能自行声明已验证。 */
-export async function readCiContract(filename, context, get) {
+export async function readCiContract(filename, context, get, configuration = {}) {
   relativeFile(filename)
   const { entries, read } = await immutableTree(context, get)
   const source = await read(filename)
@@ -20,13 +32,14 @@ export async function readCiContract(filename, context, get) {
     throw new Error('Invalid immutable benchmark contract')
   }
   assert.deepEqual(value.workload, context.benchmarkWorkload, 'Immutable benchmark contract workload mismatch')
+  const comparison = comparisonIdentity(value, context, configuration)
   if (value.inputPolicy) {
     const inputs = await frameworkInputs(entries, read, value.inputPolicy)
-    return { value, inputDigest: inputs.inputDigest, receipt: { path: filename, blobSha: source.sha, checkoutSha: context.checkoutSha, ...inputs.receipt } }
+    return { value, comparison, inputDigest: inputs.inputDigest, receipt: { path: filename, blobSha: source.sha, checkoutSha: context.checkoutSha, ...inputs.receipt } }
   }
   const inputs = []
   for (const file of [...value.inputFiles].sort()) {
     inputs.push([file, digest((await read(file)).bytes)])
   }
-  return { value, inputDigest: digest(JSON.stringify(inputs)), receipt: { path: filename, blobSha: source.sha, checkoutSha: context.checkoutSha, inputFiles: value.inputFiles } }
+  return { value, comparison, inputDigest: digest(JSON.stringify(inputs)), receipt: { path: filename, blobSha: source.sha, checkoutSha: context.checkoutSha, inputFiles: value.inputFiles } }
 }

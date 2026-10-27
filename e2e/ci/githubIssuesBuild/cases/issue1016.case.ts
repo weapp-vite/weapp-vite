@@ -5,16 +5,23 @@ import path from 'pathe'
 import { expect, it } from 'vitest'
 import { runWeappViteBuildWithLogCapture } from '../../../utils/buildLog'
 
+export const group = 'sourcemap'
+
 export function registerGithubIssuesBuildCase(context: GithubIssuesBuildCaseContext) {
   it('issue #1016: keeps emitted script coordinates mapped to the original SFC', async () => {
-    await runWeappViteBuildWithLogCapture({
-      cliPath: context.cliPath,
-      projectRoot: context.appRoot,
-      platform: 'weapp',
-      cwd: context.appRoot,
-      label: 'ci:issue-1016-sourcemap',
-      sourcemap: true,
-    })
+    if (context.runSourcemapBuild) {
+      await context.runSourcemapBuild()
+    }
+    else {
+      await runWeappViteBuildWithLogCapture({
+        cliPath: context.cliPath,
+        projectRoot: context.appRoot,
+        platform: 'weapp',
+        cwd: context.appRoot,
+        label: 'ci:issue-1016-sourcemap',
+        sourcemap: true,
+      })
+    }
 
     const sourceFile = 'src/pages/issue-1016/index.vue'
     const pagePath = path.join(context.distRoot, 'pages/issue-1016/index.js')

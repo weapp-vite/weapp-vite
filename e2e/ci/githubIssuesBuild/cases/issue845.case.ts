@@ -3,6 +3,8 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import { expect, it } from 'vitest'
 
+export const group = 'standard'
+
 export function registerGithubIssuesBuildCase(context: GithubIssuesBuildCaseContext) {
   it('issue #845: enables the i18n runtime for the complete fixture gallery', async () => {
     await context.runStandardBuild()

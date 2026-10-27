@@ -1655,6 +1655,9 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     const initialSnapshot = Promise.withResolvers<undefined>()
     let snapshotBuildChain: Promise<'snapshot' | 'closed' | undefined> = target === 'app' ? initialSnapshot.promise : Promise.resolve(undefined)
     let watcherEventCompletion = Promise.resolve()
+    const canRecoverStartupFailure = hasDevModuleGraphHost(ctx) && getHmrRuntimeSession(ctx).phase !== 'switching'
+    let startupSnapshotsSettled = false
+    let startupSnapshotFailure: { error: unknown } | undefined
     let devWatcherClosed = false
     let snapshotConfigRestartRequested = false
     let generationReadyForRestart = false
@@ -2125,11 +2128,32 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             : undefined,
         )
       })
-      snapshotBuildChain = currentSnapshotBuild.catch(() => {
+      snapshotBuildChain = currentSnapshotBuild.catch((error) => {
         failedSnapshotReasons.push(...batchReasons)
+        // 恢复链必须继续可用，但首构 readiness 不能丢失排队发布的原始失败。
+        if (!startupSnapshotsSettled) {
+          startupSnapshotFailure ??= { error }
+        }
         return undefined
       })
       return currentSnapshotBuild
+    }
+
+    function flushPendingSnapshotBuild() {
+      if (snapshotBatchTimer) {
+        clearTimeout(snapshotBatchTimer)
+        snapshotBatchTimer = undefined
+      }
+      const batch = pendingSnapshotBatch
+      pendingSnapshotBatch = undefined
+      if (!batch || devWatcherClosed || snapshotConfigRestartRequested) {
+        return
+      }
+      const batchReason = resolveSnapshotBatchReason(batch)
+      void runSnapshotBuild(batchReason, batch.reasons, batch.startedAt).catch((error) => {
+        resetHmrProfile()
+        logger.error(error)
+      })
     }
 
     function scheduleSnapshotBuild(reason: SnapshotBuildReason, startedAt: number) {
@@ -2151,19 +2175,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       if (snapshotBatchTimer) {
         return
       }
-      snapshotBatchTimer = setTimeout(() => {
-        snapshotBatchTimer = undefined
-        const batch = pendingSnapshotBatch
-        pendingSnapshotBatch = undefined
-        if (!batch || devWatcherClosed) {
-          return
-        }
-        const batchReason = resolveSnapshotBatchReason(batch)
-        void runSnapshotBuild(batchReason, batch.reasons, batch.startedAt).catch((error) => {
-          resetHmrProfile()
-          logger.error(error)
-        })
-      }, SNAPSHOT_BUILD_BATCH_DELAY_MS)
+      snapshotBatchTimer = setTimeout(flushPendingSnapshotBuild, SNAPSHOT_BUILD_BATCH_DELAY_MS)
     }
 
     function onModuleGraphChange({ event, file: id }: DevModuleGraphChange, receivedAtMs = performance.now(), initialRoute?: InitialBuildRouteEvidence) {
@@ -2544,7 +2556,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
               result: undefined as never,
             })
             // 转换的首个 classic 发布必须成功；失败由宿主停止交接，不能保留纠错 watcher。
-            if (!hasDevModuleGraphHost(ctx) || getHmrRuntimeSession(ctx).phase === 'switching') {
+            if (!canRecoverStartupFailure) {
               devWatcherClosed = true
               throw error
             }
@@ -2585,6 +2597,10 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       resolveWatcher = res
       rejectWatcher = rej
     })
+    if (target === 'app') {
+      // app 发布由 watcherEventCompletion / snapshotBuildChain 传播失败，不消费原生 watcher 的首个事件桥。
+      void promise.catch(() => {})
+    }
     const { styleExtension } = resolveCompilerOutputExtensions(configService.outputExtensions)
     const appWxssPath = target === 'app'
       ? path.join(configService.outDir, `app.${styleExtension}`)
@@ -2852,19 +2868,54 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       watcherService.setRollupWatcher(registeredWatcher, watcherRoot)
     }
     try {
-      await watcherEventCompletion
+      try {
+        await watcherEventCompletion
+      }
+      finally {
+        initialSnapshot.resolve(undefined)
+      }
+      // 配置通知必须能在 drain 期间启动新代；旧代只等 native 队列，不把 readiness 加入队列。
+      generationReadyForRestart = true
+      while (true) {
+        if (devWatcherClosed || snapshotConfigRestartRequested) {
+          break
+        }
+        flushPendingSnapshotBuild()
+        const pendingBuilds = snapshotBuildChain
+        await pendingBuilds
+        if (pendingBuilds === snapshotBuildChain && !pendingSnapshotBatch) {
+          break
+        }
+      }
+      if (snapshotConfigRestartRequested) {
+        requestSnapshotConfigRestart()
+        await configRestartTask
+      }
+      else if (startupSnapshotFailure && !canRecoverStartupFailure) {
+        throw startupSnapshotFailure.error
+      }
+    }
+    catch (error) {
+      try {
+        if (classicSession) {
+          await classicSession.stopGeneration(watcher)
+        }
+        else {
+          await watcher.close()
+        }
+      }
+      catch (cleanupError) {
+        if (!containsFailure(error, cleanupError)) {
+          throw new AggregateError([error, cleanupError], 'Development watcher startup and cleanup failed', { cause: error })
+        }
+      }
+      throw error
     }
     finally {
-      initialSnapshot.resolve(undefined)
+      startupSnapshotsSettled = true
+      startupSnapshotFailure = undefined
     }
-    generationReadyForRestart = true
-    if (snapshotConfigRestartRequested) {
-      requestSnapshotConfigRestart()
-    }
-    if (skippedInitialConfigPublication) {
-      await configRestartTask
-    }
-    if (target === 'app' && statefulBuildEvents && !skippedInitialConfigPublication) {
+    if (target === 'app' && statefulBuildEvents && !snapshotConfigRestartRequested) {
       if (statefulWatcherClosed) {
         // 公共关闭可能正在等待本次重启；这里只释放新代，不能反向等待整个会话。
         await classicSession!.stopGeneration(watcher)

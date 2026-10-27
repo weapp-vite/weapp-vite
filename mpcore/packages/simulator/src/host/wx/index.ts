@@ -7,10 +7,12 @@ import type {
 } from './core'
 import type { HeadlessWorkerApis } from './workers'
 import { WEVU_PAGE_SCROLL_EVENT_CONTRACT_KEY, WEVU_ROUTE_EVENT_CONTRACT_KEY } from '@weapp-core/constants'
+import { arrayBufferToBase64, base64ToArrayBuffer } from './base64'
 import { createHeadlessUniEventBus } from './eventBus'
 import { createHeadlessLogManager } from './logManager'
 import { runNavigationApi } from './startupNavigation'
 
+export * from './account'
 export * from './api'
 export * from './core'
 export * from './eventBus'
@@ -59,6 +61,8 @@ export function createHeadlessWx(driver: HeadlessWxDriver, runtimeConsole: Pick<
     return Number.isFinite(value) && width > 0 ? value * width / 750 : 0
   }
   const capabilityTree = {
+    arrayBufferToBase64: true,
+    base64ToArrayBuffer: true,
     canIUse: true,
     ...(workers ? { createWorker: true, preDownloadSubpackage: true } : {}),
     canvasToTempFilePath: true,
@@ -86,6 +90,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver, runtimeConsole: Pick<
     getSavedFileList: true,
     getAppBaseInfo: { return: { SDKVersion: true, enableDebug: true, host: { env: true }, language: true, platform: true, version: true } },
     getAppBaseInfoSync: { return: { SDKVersion: true, enableDebug: true, host: { env: true }, language: true, platform: true, version: true } },
+    getAccountInfoSync: { return: { miniProgram: { appId: true, envVersion: true, version: true } } },
     getDeviceInfo: { return: { abi: true, benchmarkLevel: true, brand: true, cpuType: true, deviceAbi: true, memorySize: true, model: true, platform: true, system: true } },
     getEnterOptionsSync: { return: { path: true, query: true, referrerInfo: { appId: true, extraData: true }, scene: true } },
     getLaunchOptionsSync: { return: { path: true, query: true, referrerInfo: { appId: true, extraData: true }, scene: true } },
@@ -101,6 +106,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver, runtimeConsole: Pick<
     getWindowInfo: { return: { pixelRatio: true, screenHeight: true, screenWidth: true, statusBarHeight: true, windowHeight: true, windowWidth: true } },
     getWindowInfoSync: { return: { pixelRatio: true, screenHeight: true, screenWidth: true, statusBarHeight: true, windowHeight: true, windowWidth: true } },
     loadFontFace: { return: { errMsg: true } },
+    login: { return: { code: true, errMsg: true } },
     hideLoading: true,
     hideToast: true,
     downloadFile: true,
@@ -165,6 +171,8 @@ export function createHeadlessWx(driver: HeadlessWxDriver, runtimeConsole: Pick<
     ...eventBus,
     [WEVU_ROUTE_EVENT_CONTRACT_KEY]: 1,
     [WEVU_PAGE_SCROLL_EVENT_CONTRACT_KEY]: 1,
+    arrayBufferToBase64,
+    base64ToArrayBuffer,
     createWorker: (script) => {
       if (!workers) {
         throw new Error('Worker host is unavailable')
@@ -268,6 +276,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver, runtimeConsole: Pick<
     getSavedFileList: option => invokeWxApi(() => driver.getSavedFileList(option), option),
     getAppBaseInfo: option => invokeWxApi(() => driver.getAppBaseInfoSync(), option),
     getAppBaseInfoSync: () => driver.getAppBaseInfoSync(),
+    getAccountInfoSync: () => driver.getAccountInfoSync(),
     getDeviceInfo: () => driver.getDeviceInfo(),
     getLaunchOptionsSync: () => driver.getLaunchOptionsSync(),
     getClipboardData: option => invokeWxApi(() => driver.getClipboardData(), option),
@@ -287,6 +296,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver, runtimeConsole: Pick<
       }
       return { errMsg: 'loadFontFace:ok' }
     }, option),
+    login: option => driver.login(option),
     hideLoading: option => invokeWxApi(() => driver.hideLoading(), option),
     hideToast: () => driver.hideToast(),
     downloadFile: option => driver.downloadFile(option),

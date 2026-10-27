@@ -3,6 +3,7 @@ import { useToggleTheme } from 'theme-transition'
 import { useData } from 'vitepress'
 import DefaultTheme from 'vitepress/theme'
 import { nextTick, onBeforeUnmount, onMounted, provide } from 'vue'
+import PreviewBanner from './PreviewBanner.vue'
 import SponsorAd from './SponsorAd.vue'
 
 const { isDark } = useData()
@@ -35,6 +36,9 @@ onBeforeUnmount(() => {
 
 <template>
   <DefaultTheme.Layout>
+    <template #layout-top>
+      <PreviewBanner />
+    </template>
     <template #aside-ads-after>
       <SponsorAd />
     </template>

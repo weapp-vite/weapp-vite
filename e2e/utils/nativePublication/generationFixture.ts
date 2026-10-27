@@ -39,6 +39,7 @@ export async function createGenerationFixture(observerOrder: 'before' | 'after')
   await writeFile(path.join(src, 'app.js'), 'App({})')
   await writeFile(template, '<view>BASE</view>')
   let saveDuringBuild = false
+  let emitTemplate = true
   let output = ''
   const nativeWrites: string[][] = []
   const nativeOutput = process.stdout.write.bind(process.stdout)
@@ -58,7 +59,9 @@ export async function createGenerationFixture(observerOrder: 'before' | 'after')
       }
     },
     async generateBundle() {
-      this.emitFile({ type: 'asset', fileName: 'pages/index/index.wxml', source: await readFile(template, 'utf8') })
+      if (emitTemplate) {
+        this.emitFile({ type: 'asset', fileName: 'pages/index/index.wxml', source: await readFile(template, 'utf8') })
+      }
     },
   }
   const publication = createOutputPublicationPlugin(ctx)
@@ -103,6 +106,7 @@ export async function createGenerationFixture(observerOrder: 'before' | 'after')
       runtimeState.build.hmr.didEmitAllEntries = true
     },
     saveDuringBuild() { saveDuringBuild = true },
+    retireTemplateOutput() { emitTemplate = false },
     diagnostics() { nativeOutput(`[native-publication-race] ${JSON.stringify({ nativeWrites, receipts: output.split('\n').filter(Boolean) })}\n`) },
     async close() {
       capture.mockRestore()

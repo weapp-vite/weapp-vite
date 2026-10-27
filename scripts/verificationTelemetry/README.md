@@ -46,3 +46,29 @@ pnpm exec eslint scripts/verificationTelemetry vitest.config.mts e2e/scripts/run
 微型 smoke 使用真实 Vitest 命令、原生 blob 与真实阈值失败验证时序，不是框架 E2E，也不计入性能样本。候选四分片集成另核验四个真实 shard、native merge、不重跑 case、原 100% 阈值及 Vite 原生 emit 后的 schema2 产物。
 
 本地完整验证采样由外部 `verificationBenchmark` 采集器运行此基线工作树。基线只保留同字节的任务执行观察依赖和 Vitest reporter；只有明确设置专用采样环境时才启用，原任务图、命令、测试发现、覆盖率阈值和 DOM reporter 均保留。采集器实现与 CLI 留在候选侧，不能将观察输出本身当作完整通过证明。
+
+`optimized-v2` 通过审批后读取的 `.github/verification-workload.json` 显式选择：可选字段 `verificationTopology` 只接受 `optimized-v1`、`optimized-v2`，仅对 `pullRequests` 点名的 PR 生效；默认继续使用 v1。拓扑进入冻结上下文，入口和实际任务核对同一字段，不能在下游换成另一种拓扑。已有 PR 审批、只读权限与原始覆盖率阈值保留。
+
+v2 将 Ubuntu 的 32 个独立消费者场景调度为四个确定性批次，每个场景仍各自安装和运行原消费者入口，保留原 DOM/Web 证据。权重是 `static-relative-v1` 静态相对值，报告另存真实耗时；失败或取消后剩余场景明确记录为未执行，完整汇总拒绝缺失、重复、篡改、跨 attempt 或非成功退出的证据。Node 支持保留五个逻辑角色，当最低版与当轮解析的最新版完整版本一致时共享实际执行，汇总逐角色核对原始 consumer 与 Dashboard 字节。
+
+v2 的产物消费者先恢复 dist 后执行一次完整安装，生产者保留原生构建后的链接刷新；miniapp/headless 汇总从 plan job 生成的固定 bundle 执行，不安装 workspace。bundle、plan、源码 SHA 及完整原始 case/checkpoint 证据继续核对。Playwright 缓存按 OS、架构、包版本和 browser revision 精确匹配，PR 只读，可信默认分支可写；Linux 的系统依赖安装始终保留。浅 checkout 是默认，HMR 审计等明确依赖历史的 job 保留完整历史。
+
+候选完整快照随本次 v2 分支同步，另以 `optimized-v1-inventory.json` 保留变更前已审查的默认 job、命令、matrix、依赖和产物输入，验证 v1 的执行语义没有被新增分支替换。长 workflow 继续维持原平台职责，独立的安装、冻结身份和浏览器缓存收敛到 composite action，场景清单与汇总实现拆为脚本；避免为了文件行数把安全依赖藏入多层调用。
+
+正式同 revision 的 v1/v2 CI 比较可以在一次提交前审阅固定 attempt 映射；以下字段追加到现有 workload 清单，不改变点名 PR、base branch 和 profiles：
+
+```json
+{
+  "verificationTopology": "optimized-v1",
+  "verificationTopologyByAttempt": {
+    "1": "optimized-v1",
+    "2": "optimized-v2",
+    "3": "optimized-v1",
+    "4": "optimized-v2",
+    "5": "optimized-v1",
+    "6": "optimized-v2"
+  }
+}
+```
+
+每次使用 GitHub `Re-run all jobs`，由新 attempt 重新经过 `pr-ci-approval`，再从同一不可变清单按实际 attempt 冻结 topology。映射的 key 必须是正整数，值仅限 v1/v2；未列出的 attempt 使用 `verificationTopology`，再缺省为 v1。未被清单点名的 PR 始终使用 v1。采集器必须从同一原始 blob 按实际 attempt 复算并校验该选择；不能修改清单来凑同 revision，也不能沿用上一轮审批。冷/热缓存状态和审批后耗时均采集真实运行证据，不补造清缓存操作或声称每轮冷启动。
