@@ -2,6 +2,8 @@
 import { readdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { parse } from 'yaml'
+import { checkDocumentationAdmission } from './documentation.mjs'
+import { checkReleaseIntentAdmission } from './releaseIntent.mjs'
 import { check } from './report.mjs'
 
 const list = value => value === undefined ? [] : Array.isArray(value) ? value : [value]
@@ -66,7 +68,8 @@ export function checkLocalAdmission({ policy, profiles, workflows }) {
   const triggers = Object.fromEntries(Object.entries(workflows).map(([name, workflow]) => [name, events(workflow?.on)]))
   const listeners = event => sorted(Object.keys(triggers).filter(name => Object.hasOwn(triggers[name], event)))
   add('唯一 PR 入口', ['ci-pr.yml'], listeners('pull_request'))
-  add('唯一关闭事件入口', ['ci-pr.yml'], listeners('pull_request_target'))
+  add('可信 pull_request_target 入口', ['ci-pr.yml'], listeners('pull_request_target'))
+  checkReleaseIntentAdmission(workflows['release-intent-auto.yml'], policy, add, expression)
   for (const event of ['pull_request_review', 'pull_request_review_comment']) {
     add(`${event} 不另行启动检查`, [], listeners(event))
   }
@@ -82,7 +85,7 @@ export function checkLocalAdmission({ policy, profiles, workflows }) {
   }, pr.concurrency)
   const jobs = pr.jobs ?? {}
   const { approval = {}, plan = {}, ...validations } = jobs
-  add('单一审批后的任务清单', sorted(Object.keys(profiles)), sorted(Object.keys(validations)))
+  add('单一审批后的任务清单', sorted([...Object.keys(profiles), 'documentation']), sorted(Object.keys(validations)))
   add('审批 Environment', policy.environment, typeof approval.environment === 'object' ? approval.environment?.name : approval.environment)
   add('关闭事件跳过审批', expression('github.event_name == \'pull_request\''), expression(approval.if))
   add('审批为唯一根任务', [], list(approval.needs))
@@ -95,6 +98,10 @@ export function checkLocalAdmission({ policy, profiles, workflows }) {
       continue
     }
     add(`${name} 等待冻结目标`, ['plan'], list(job.needs))
+    if (name === 'documentation') {
+      checkDocumentationAdmission(pr, job, add, expression)
+      continue
+    }
     add(`${name} 使用登记的验证流程`, `./.github/workflows/validate-${name}.yml`, job.uses)
     add(`${name} 使用冻结的检查选择`, expression(`fromJSON(needs.plan.outputs.pr_context).selections['${name}']`), expression(job.if))
     add(`${name} 验证流程存在`, true, Boolean(workflows[`validate-${name}.yml`]?.on?.workflow_call))

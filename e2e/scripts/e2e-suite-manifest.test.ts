@@ -157,6 +157,10 @@ describe('e2e suite manifest', () => {
     'ide/issue-1182-production-mount.runtime.test.ts',
     'ide/issue-1185-sibling-entry.runtime.test.ts',
     'ide/issue-1235-component-reentry.runtime.test.ts',
+    'ide/issue-1249-dataset.runtime.test.ts',
+    'ide/issue-1261-props-projection.runtime.test.ts',
+    'ide/issue-1263-chunk-debug-name.runtime.test.ts',
+    'ide/issue-1264-basic-wx-apis.runtime.test.ts',
     'ide/issue-997-rebuild.runtime.test.ts',
     'ide/issue-1029-auto-routes.runtime.test.ts',
     'ide/issue-1082-confirmation.runtime.test.ts',
@@ -258,6 +262,7 @@ describe('e2e suite manifest', () => {
     expect(prTasks.some(task => task.label.startsWith('hmr-guard:'))).toBe(false)
     expect(prTasks.some(task => task.label === 'ci/issue-862-output-watch.test.ts')).toBe(true)
     expect(prTasks.some(task => task.label === 'ci/github-issues.issue1035.build.test.ts')).toBe(true)
+    expect(prTasks.filter(task => task.label === 'ci/issue-1263-chunk-debug-name.test.ts')).toHaveLength(1)
     expect(prTasks.filter(task => task.label === 'ci/template-multi-platform-sfc.hmr.test.ts')).toHaveLength(1)
     expect(prTasks.filter(task => task.label === 'ci/wevu-runtime.npm-platforms.test.ts')).toHaveLength(1)
     expect(await getSuiteTasks('ci-pr')).toEqual(withFrozenTopology(await getCiPrTasks()))

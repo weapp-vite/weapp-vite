@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 // 仅列出验证基础设施自身的回归；未知文件默认属于产品范围，不能自动排除。
 export const coverageScopePolicy = {
   version: 'verification-case-classification-v1',
-  validationDirectories: ['scripts/verification/', 'scripts/verificationE2E/', 'scripts/verificationTelemetry/', 'scripts/verificationBenchmark/', 'scripts/coverageShards/'],
+  validationDirectories: ['scripts/verification/', 'scripts/verificationE2E/', 'scripts/verificationTelemetry/', 'scripts/verificationBenchmark/', 'scripts/coverageShards/', 'scripts/consumerBatches/', 'scripts/nodeSupport/'],
   validationFiles: [
     // 逐文件审计 root 新发现的 MJS：只覆盖验证、证据、安装诊断和仓库维护工具。
     'scripts/build-artifact-manifest.test.mjs',
@@ -37,6 +37,9 @@ export const coverageScopePolicy = {
     'scripts/verification-benchmark-evidence.test.mjs',
     'scripts/verification-benchmark.test.mjs',
     'scripts/verification-history.test.mjs',
+    'scripts/playwrightCache.test.mjs',
+    'scripts/frozen-job-context.test.mjs',
+    'scripts/github-issues-build-inventory.test.ts',
     'scripts/verify-native-addon-correctness.test.mjs',
     'scripts/bun-ci.test.ts',
     'scripts/ci-artifact-coverage.test.ts',

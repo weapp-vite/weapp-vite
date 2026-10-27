@@ -176,7 +176,7 @@ describe('github-issues runtime issue-466', { concurrent: false }, () => {
 
   afterAll(async () => {
     await closeSharedMiniProgram()
-  }, 30_000)
+  })
 
   it('issue #466: keeps main-package tdesign Dialog.confirm callable through a user-facing page flow', async (ctx) => {
     const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', dialogCheckpoints('/pages/issue-466/index', '#issue466-main-dialog', MAIN_DIALOG_STEPS, resolveRuntimeProviderName()))

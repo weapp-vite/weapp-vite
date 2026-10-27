@@ -490,11 +490,13 @@ function setupTestDom() {
       return new BaseHTMLElement(tagName)
     }
 
-    createTreeWalker(root: VirtualElement) {
+    createTreeWalker(root: VirtualElement, whatToShow = 1) {
       const elements: VirtualElement[] = []
       const visit = (node: VirtualElement | VirtualTextNode) => {
         if (node instanceof VirtualElement) {
-          elements.push(node)
+          if (whatToShow & 1) {
+            elements.push(node)
+          }
           for (const child of node.childNodes) {
             visit(child)
           }
@@ -551,7 +553,7 @@ function setupTestDom() {
   ;(globalThis as any).HTMLElement = BaseHTMLElement as unknown as typeof HTMLElement
   ;(globalThis as any).document = new VirtualDocument()
   ;(globalThis as any).customElements = customElements
-  ;(globalThis as any).NodeFilter = { SHOW_ELEMENT: 1 }
+  ;(globalThis as any).NodeFilter = { SHOW_ELEMENT: 1, SHOW_COMMENT: 128 }
 }
 
 beforeAll(() => {

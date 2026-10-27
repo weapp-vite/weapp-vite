@@ -9,8 +9,11 @@ import { evaluateAcceptanceCase, summarizeAcceptanceCases } from '../../e2e/scri
 import { getSuiteTasks } from '../../e2e/scripts/e2e-suite-manifest.ts'
 import { createBuildArtifactManifest } from '../buildArtifact/index.mjs'
 import { resolveVerificationTopology } from '../verification/topology.ts'
+import { useIsolatedTopologyTestEnvironment } from '../verification/topologyTestFixture.ts'
 import { main } from './cli.mjs'
 import { captureRuntimeSample } from './runtimeCapture.mjs'
+
+useIsolatedTopologyTestEnvironment()
 
 const mocks = vi.hoisted(() => ({ run: vi.fn() }))
 vi.mock('execa', () => ({ execa: mocks.run }))

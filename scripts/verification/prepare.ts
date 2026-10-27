@@ -6,6 +6,7 @@ import { readWorkspace } from './workspace.ts'
 
 export interface PreparationOptions {
   base?: string
+  head?: string
   files?: string[]
   mode: VerificationMode
   selection?: SelectionMode
@@ -35,5 +36,16 @@ export async function assertCurrentPlan(root: string, plan: VerificationPlan, op
   const current = await prepareVerificationPlan(root, options)
   if (current.fingerprint !== plan.fingerprint) {
     throw new Error('源码、workspace、配置、工具链或资源预算已变化，请重新执行验证')
+  }
+}
+
+/** 完成后只核对不可变提交与工作树，不因运行中的资源余量变化重建任务图。 */
+export async function assertCommittedSnapshot(root: string, plan: VerificationPlan, options: PreparationOptions): Promise<void> {
+  if (!options.head) {
+    throw new Error('提交快照校验缺少 head')
+  }
+  const current = await readChanges(root, { head: options.head, base: options.base })
+  if (current.fingerprint !== plan.changes.fingerprint) {
+    throw new Error('候选提交快照已变化，不能记录成功回执')
   }
 }

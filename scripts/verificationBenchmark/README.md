@@ -184,3 +184,23 @@ await writeFile('.tmp/runtime-toolchain.json', `${JSON.stringify(manifest, null,
 本轮 TDesign 会话聚合只在 `ide-full:exhaustive` 正式清单内，IDE 提速验收两侧均使用此完整 suite；原 `ide-full` 与 `verify --mode full` 继续各自原范围，不能据此宣称已测到 TDesign 的会话收益。
 
 每轮使用唯一 run ID，读取本轮标记对应的 suite 报告及其全部 DOM invocation，保留原始报告路径和摘要。资源身份取自实际工具链及 case 证据，包含完整 Node/pnpm、OS/arch、真实 IDE 和各 fixture 基础库版本；基线与候选必须一致。失败、取消及缺失证据只生成非成功样本，不能进入成功中位数。两侧至少各三轮完整成功采样后，使用前述比较命令验收；单个聚合任务的局部加速不代表完整 suite 已达到目标。
+
+
+## PR 验证第二轮拓扑
+
+`optimized-v1` 继续是默认值。`optimized-v2` 是待验收候选，不能凭离线估算、单台机器的构建 smoke 或本地成功回执切换默认。两侧都运行最终相同源码，使用 `comparisonProtocol: "same-main-topology-v2"`，baseline 显式选择 `optimized-v1`，candidate 显式选择 `optimized-v2`。策略摘要各自冻结；比较身份按 baseline/candidate 固定顺序绑定两侧摘要。普通测试保持隔离，类型、覆盖率和 runtime 检查实际执行。
+
+候选 PR 通过受审查的 `.github/verification-workload.json` 中可选 `verificationTopology` 选择，只作用于清单明确列出的 PR；缺省仍为 `optimized-v1`。每轮必须通过原生 `pr-ci-approval` 审批，并绑定当前 PR head/base/merge 和 run attempt。不要用手动调度绕过准入。源码 PR 的逻辑测试、平台和 Node 合同不缩减。
+
+- 构建覆盖保留 99 个 case；v2 将它们分为 24 个真实任务，其中 74 个标准产物只读 case 共用一次构建，3 个 sourcemap case 共用一次对应构建。四个 runner 内仍串行执行，真实报告保留实际文件名。
+- Ubuntu 的 32 个短消费者场景进入四个独立批次；每个场景继续使用自己的安装目录和原验证入口。每个完整 Node 版本物理运行一次，报告记录其覆盖的 minimum/latest 全部逻辑角色。
+- miniapp/headless 的计划生产者通过 Rolldown 生成 `aggregate.mjs`，manifest 绑定代码摘要、计划、checkout、工具版本和运行平台。聚合 job 仅需固定 Node 与下载的执行包；与 workspace 入口共用严格验收实现。覆盖率合并仍安装 Vitest 并执行原阈值检查。
+- 普通和 headless 耗时历史分别匹配 provider；任何一个 provider 的损坏、缺失、过期报告都不能作为权重来源，也不能让另一个有效 provider 的报告丢失。
+
+CI non-strict task-suite 对照合同可显式声明 `scopeLevel: "logical-tasks-v2"` 和 `comparisonProtocol: "same-main-topology-v2"`，scope 使用 `taskSuiteScope(plan, 'logical-tasks-v2')` 生成。它仅归一化登记的物理任务，要求全部 24 个构建分组完整且元数据一致。每一侧仍先核验所有物理 task 的 definitionHash、分片分配和实际结果，再比较逻辑 scope；不能把 task 覆盖写成 DOM/case 验收。discovery 默认生成旧 `tasks` 草稿，正式使用此接口须审查并冻结完整合同。
+
+正式 CI 采集配置和冻结合同的顶层还须同时设置 `comparisonProtocol: "same-main-topology-v2"`。采集器从原始 workload 清单复算当前 attempt 的拓扑，再核对 baseline/candidate 角色及实际 suite 拓扑；样本自动标记 `measurement: "ci"`。同一最终提交可在已审阅清单中设置 `verificationTopologyByAttempt`，例如 `{"1":"optimized-v1","2":"optimized-v2","3":"optimized-v1","4":"optimized-v2","5":"optimized-v1","6":"optimized-v2"}`；使用完整的 Re-run all，每轮仍独立审批。冷、热缓存分别使用各自真实策略和轮次，不能把重复运行自动称为冷缓存。
+
+CI 报告同时保留 `executionMs`（纯执行关键路径）和 `approvalToCompletionMs`（本轮审批 queued 到最后适用 job 完成，包含排队）。正式 v2 CI 比较的 `reductionMetric` 必须是 `approvalToCompletionMs`；本地样本继续比较 `executionMs`。原始 job/step 时间及安装、构建和链接刷新计时保留在证据中，供分解工具链、安装、恢复、执行和尾部聚合耗时。
+
+验收分别收集冷、热缓存的 baseline/candidate 各三轮完整成功样本。分别保存审批等待、排队、工具链/安装/恢复准备、实际执行和聚合阶段；同一轮只指定一个监控者，完整分页读取全部 jobs/checks。保留失败、取消和 partial 样本，但不纳入成功中位数。候选审批后完成耗时中位数至少下降 30%，同时累计 job 时长不得增加；比较器会同时检查 runner 时长增长。根文档热缓存本地快检目标约一分钟，本地推送回执仅证明同一提交和工具链的 quick 重试，不进入 CI 完整验收样本。

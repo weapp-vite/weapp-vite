@@ -31,22 +31,27 @@ permissions:
   actions: read
 jobs:
   pr-context:
+    if: inputs.verification_topology != 'optimized-v2'
     uses: ./.github/workflows/reusable-frozen-pr-context.yml
     with:
+      verification_topology: ${{ inputs.verification_topology }}
       pr_context: ${{ inputs.pr_context }}
       profile: ci-e2e
   build:
+    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') }}
     name: Build and freeze suite plan
     needs: pr-context
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      pr_context: ${{ inputs.pr_context }}
+      pr_profile: ci-e2e
       verification_topology: ${{ inputs.verification_topology }}
-      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
-      base_sha: ${{ needs.pr-context.outputs.base_sha }}
-      head_sha: ${{ needs.pr-context.outputs.head_sha }}
-      pr_number: ${{ needs.pr-context.outputs.pr_number }}
-      head_ref: ${{ needs.pr-context.outputs.head_ref }}
-      base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      checkout_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}
+      base_sha: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}
+      head_sha: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}
+      pr_number: ${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}
+      head_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}
+      base_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}
       e2e_exclude_projects: ${{ inputs.exclude_projects }}
       runs_on: ${{ inputs.runs_on }}
       node_version: ${{ inputs.node_version }}
@@ -57,19 +62,26 @@ jobs:
       timing_artifact_name: timing-miniapp-build-${{ inputs.runs_on }}-${{ inputs.node_version }}-${{ inputs.mode }}
     secrets: inherit
   plan:
+    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') }}
     name: Freeze complete suite plan
     needs: pr-context
     runs-on: ${{ inputs.runs_on }}
     timeout-minutes: 15
     env:
       WEAPP_VITE_VERIFICATION_TOPOLOGY: ${{ inputs.verification_topology }}
-      BUILD_ARTIFACT_EXPECTED_COMMIT: ${{ needs.pr-context.outputs.checkout_sha }}
+      BUILD_ARTIFACT_EXPECTED_COMMIT: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}
       WEAPP_VITE_E2E_EXCLUDE_PROJECTS: ${{ inputs.exclude_projects }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: ${{ needs.pr-context.outputs.checkout_sha }}
+          ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}
           persist-credentials: false
+      - name: Validate frozen identity in the executing job
+        if: inputs.verification_topology == 'optimized-v2'
+        uses: ./.github/actions/verify-frozen-job-context
+        with:
+          context: ${{ inputs.pr_context }}
+          profile: ci-e2e
       - uses: ./.github/actions/setup-node-pnpm
         with:
           node-version: ${{ inputs.node_version }}
@@ -90,6 +102,12 @@ jobs:
           node --import tsx e2e/scripts/verification/cli.ts plan --suite=ci-${{ inputs.mode }}:classic --shards=4 --profile=.tmp/verification-plan/profile.json --history=.tmp/verification-plan/history.json --output=.tmp/verification-plan/plan.json
           node --import tsx e2e/scripts/verification/cli.ts history --input=.tmp/verification-history --profile=.tmp/verification-plan/headless-profile.json --repository="${{ github.repository }}" --workflow=.github/workflows/ci-e2e.yml --output=.tmp/verification-plan/headless-history.json
           node --import tsx e2e/scripts/verification/cli.ts plan --suite=ide-dom-headless:classic --shards=2 --profile=.tmp/verification-plan/headless-profile.json --history=.tmp/verification-plan/headless-history.json --output=.tmp/verification-plan/ide-dom-headless.json
+      - name: Freeze dependency-free aggregate runners tied to each plan
+        if: inputs.verification_topology == 'optimized-v2'
+        shell: bash
+        run: |
+          node --import tsx e2e/scripts/verification/aggregateBundle.ts --plan=.tmp/verification-plan/plan.json --output=.tmp/verification-plan/miniapp-runner
+          node --import tsx e2e/scripts/verification/aggregateBundle.ts --plan=.tmp/verification-plan/ide-dom-headless.json --output=.tmp/verification-plan/headless-runner
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         if: ${{ !cancelled() }}
         with:
@@ -97,19 +115,22 @@ jobs:
           path: .tmp/verification-plan
           if-no-files-found: error
   simulator-browser:
+    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.build.result == 'success' }}
     needs:
       - pr-context
       - build
     name: Simulator Browser E2E (${{ inputs.runs_on }} / Node ${{ inputs.node_version }})
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      pr_context: ${{ inputs.pr_context }}
+      pr_profile: ci-e2e
       verification_topology: ${{ inputs.verification_topology }}
-      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
-      base_sha: ${{ needs.pr-context.outputs.base_sha }}
-      head_sha: ${{ needs.pr-context.outputs.head_sha }}
-      pr_number: ${{ needs.pr-context.outputs.pr_number }}
-      head_ref: ${{ needs.pr-context.outputs.head_ref }}
-      base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      checkout_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}
+      base_sha: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}
+      head_sha: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}
+      pr_number: ${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}
+      head_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}
+      base_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}
       e2e_exclude_projects: ${{ inputs.exclude_projects }}
       runs_on: ${{ inputs.runs_on }}
       node_version: ${{ inputs.node_version }}
@@ -123,6 +144,7 @@ jobs:
       timing_artifact_name: timing-simulator-browser-${{ inputs.runs_on }}-${{ inputs.node_version }}-${{ inputs.mode }}
     secrets: inherit
   ide-dom-headless:
+    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.build.result == 'success' && needs.plan.result == 'success' }}
     needs:
       - pr-context
       - build
@@ -136,13 +158,15 @@ jobs:
           - 2
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      pr_context: ${{ inputs.pr_context }}
+      pr_profile: ci-e2e
       verification_topology: ${{ inputs.verification_topology }}
-      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
-      base_sha: ${{ needs.pr-context.outputs.base_sha }}
-      head_sha: ${{ needs.pr-context.outputs.head_sha }}
-      pr_number: ${{ needs.pr-context.outputs.pr_number }}
-      head_ref: ${{ needs.pr-context.outputs.head_ref }}
-      base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      checkout_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}
+      base_sha: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}
+      head_sha: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}
+      pr_number: ${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}
+      head_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}
+      base_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}
       e2e_exclude_projects: ${{ inputs.exclude_projects }}
       runs_on: ${{ inputs.runs_on }}
       node_version: ${{ inputs.node_version }}
@@ -175,15 +199,22 @@ jobs:
     timeout-minutes: 15
     env:
       WEAPP_VITE_VERIFICATION_TOPOLOGY: ${{ inputs.verification_topology }}
-      BUILD_ARTIFACT_EXPECTED_COMMIT: ${{ needs.pr-context.outputs.checkout_sha }}
+      BUILD_ARTIFACT_EXPECTED_COMMIT: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: ${{ needs.pr-context.outputs.checkout_sha }}
+          ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}
           persist-credentials: false
+      - name: Validate frozen identity in the executing job
+        if: inputs.verification_topology == 'optimized-v2'
+        uses: ./.github/actions/verify-frozen-job-context
+        with:
+          context: ${{ inputs.pr_context }}
+          profile: ci-e2e
       - uses: ./.github/actions/setup-node-pnpm
         with:
           node-version: ${{ inputs.node_version }}
+          install-dependencies: ${{ inputs.verification_topology != 'optimized-v2' }}
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
           name: miniapp-plan-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-${{ inputs.mode }}
@@ -193,7 +224,12 @@ jobs:
           pattern: ide-dom-headless-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-shard-*
           path: .tmp/ide-dom-headless-reports
       - name: Validate complete headless DOM inventory and evidence
+        if: inputs.verification_topology != 'optimized-v2'
         run: node --import tsx e2e/scripts/verification/cli.ts aggregate --plan=.tmp/verification-plan/ide-dom-headless.json --reports=.tmp/ide-dom-headless-reports --output=.tmp/ide-dom-headless-aggregate/report.json
+      - name: Verify frozen aggregate bundle and complete original evidence
+        if: inputs.verification_topology == 'optimized-v2'
+        shell: bash
+        run: node .github/scripts/run-verification-aggregate.mjs --bundle=.tmp/verification-plan/headless-runner --plan=.tmp/verification-plan/ide-dom-headless.json --reports=.tmp/ide-dom-headless-reports --output=.tmp/ide-dom-headless-aggregate/report.json --sha="$BUILD_ARTIFACT_EXPECTED_COMMIT"
       - name: Upload complete headless DOM verdict
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
@@ -202,19 +238,22 @@ jobs:
           path: .tmp/ide-dom-headless-aggregate
           if-no-files-found: error
   ide-dom-acceptance-internal:
+    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.build.result == 'success' }}
     needs:
       - pr-context
       - build
     name: IDE DOM Acceptance Contracts (${{ inputs.runs_on }} / Node ${{ inputs.node_version }})
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      pr_context: ${{ inputs.pr_context }}
+      pr_profile: ci-e2e
       verification_topology: ${{ inputs.verification_topology }}
-      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
-      base_sha: ${{ needs.pr-context.outputs.base_sha }}
-      head_sha: ${{ needs.pr-context.outputs.head_sha }}
-      pr_number: ${{ needs.pr-context.outputs.pr_number }}
-      head_ref: ${{ needs.pr-context.outputs.head_ref }}
-      base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      checkout_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}
+      base_sha: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}
+      head_sha: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}
+      pr_number: ${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}
+      head_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}
+      base_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}
       e2e_exclude_projects: ${{ inputs.exclude_projects }}
       runs_on: ${{ inputs.runs_on }}
       node_version: ${{ inputs.node_version }}
@@ -226,7 +265,7 @@ jobs:
         node --import tsx scripts/check-e2e-ide-shared-launch.ts
         node --import tsx e2e/scripts/domAcceptanceReport/inventory.ts --write --check
         pnpm vitest run -c e2e/vitest.e2e.internal.config.ts --maxWorkers=1 --no-file-parallelism
-      artifact_name: dom-acceptance-inventory-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-${{ needs.pr-context.outputs.checkout_sha }}
+      artifact_name: dom-acceptance-inventory-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}
       artifact_path: |
         e2e/dom-acceptance-inventory.json
         e2e/dom-acceptance-inventory.md
@@ -234,6 +273,7 @@ jobs:
       timing_artifact_name: timing-ide-dom-acceptance-internal-${{ inputs.runs_on }}-${{ inputs.node_version }}-${{ inputs.mode }}
     secrets: inherit
   miniapp:
+    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.build.result == 'success' && needs.plan.result == 'success' }}
     name: Miniapp suite shard ${{ matrix.shard }}
     needs:
       - pr-context
@@ -249,13 +289,15 @@ jobs:
           - 4
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      pr_context: ${{ inputs.pr_context }}
+      pr_profile: ci-e2e
       verification_topology: ${{ inputs.verification_topology }}
-      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
-      base_sha: ${{ needs.pr-context.outputs.base_sha }}
-      head_sha: ${{ needs.pr-context.outputs.head_sha }}
-      pr_number: ${{ needs.pr-context.outputs.pr_number }}
-      head_ref: ${{ needs.pr-context.outputs.head_ref }}
-      base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      checkout_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}
+      base_sha: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}
+      head_sha: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}
+      pr_number: ${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}
+      head_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}
+      base_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}
       e2e_exclude_projects: ${{ inputs.exclude_projects }}
       runs_on: ${{ inputs.runs_on }}
       node_version: ${{ inputs.node_version }}
@@ -276,16 +318,18 @@ jobs:
     needs:
       - pr-context
       - build
-    if: inputs.mode == 'full' || inputs.runs_on == 'ubuntu-latest'
+    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.build.result == 'success' && (inputs.mode == 'full' || inputs.runs_on == 'ubuntu-latest') }}
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      pr_context: ${{ inputs.pr_context }}
+      pr_profile: ci-e2e
       verification_topology: ${{ inputs.verification_topology }}
-      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
-      base_sha: ${{ needs.pr-context.outputs.base_sha }}
-      head_sha: ${{ needs.pr-context.outputs.head_sha }}
-      pr_number: ${{ needs.pr-context.outputs.pr_number }}
-      head_ref: ${{ needs.pr-context.outputs.head_ref }}
-      base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      checkout_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}
+      base_sha: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}
+      head_sha: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}
+      pr_number: ${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}
+      head_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}
+      base_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}
       e2e_exclude_projects: ${{ inputs.exclude_projects }}
       runs_on: ${{ inputs.runs_on }}
       node_version: ${{ inputs.node_version }}
@@ -298,7 +342,7 @@ jobs:
       timing_artifact_name: timing-hmr-${{ inputs.runs_on }}-${{ inputs.node_version }}-${{ inputs.mode }}
     secrets: inherit
   bun-cli:
-    if: inputs.node_version == '22'
+    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.build.result == 'success' && (inputs.node_version == '22') }}
     needs:
       - pr-context
       - build
@@ -311,13 +355,15 @@ jobs:
           - latest
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      pr_context: ${{ inputs.pr_context }}
+      pr_profile: ci-e2e
       verification_topology: ${{ inputs.verification_topology }}
-      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
-      base_sha: ${{ needs.pr-context.outputs.base_sha }}
-      head_sha: ${{ needs.pr-context.outputs.head_sha }}
-      pr_number: ${{ needs.pr-context.outputs.pr_number }}
-      head_ref: ${{ needs.pr-context.outputs.head_ref }}
-      base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      checkout_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}
+      base_sha: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}
+      head_sha: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}
+      pr_number: ${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}
+      head_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}
+      base_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}
       e2e_exclude_projects: ${{ inputs.exclude_projects }}
       runs_on: ${{ inputs.runs_on }}
       node_version: ${{ inputs.node_version }}
@@ -327,7 +373,7 @@ jobs:
       main_command: |
         bun --version
         pnpm e2e:bun
-      artifact_name: bun-cli-${{ inputs.runs_on }}-${{ matrix.bun-version }}-${{ needs.pr-context.outputs.checkout_sha }}
+      artifact_name: bun-cli-${{ inputs.runs_on }}-${{ matrix.bun-version }}-${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}
       artifact_path: |
         .tmp/bun-cli/**
         docs/reports/*-e2e-bun-*-suite-report/**
@@ -346,15 +392,22 @@ jobs:
     timeout-minutes: 15
     env:
       WEAPP_VITE_VERIFICATION_TOPOLOGY: ${{ inputs.verification_topology }}
-      BUILD_ARTIFACT_EXPECTED_COMMIT: ${{ needs.pr-context.outputs.checkout_sha }}
+      BUILD_ARTIFACT_EXPECTED_COMMIT: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: ${{ needs.pr-context.outputs.checkout_sha }}
+          ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}
           persist-credentials: false
+      - name: Validate frozen identity in the executing job
+        if: inputs.verification_topology == 'optimized-v2'
+        uses: ./.github/actions/verify-frozen-job-context
+        with:
+          context: ${{ inputs.pr_context }}
+          profile: ci-e2e
       - uses: ./.github/actions/setup-node-pnpm
         with:
           node-version: ${{ inputs.node_version }}
+          install-dependencies: ${{ inputs.verification_topology != 'optimized-v2' }}
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
           name: miniapp-plan-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-${{ inputs.mode }}
@@ -364,7 +417,12 @@ jobs:
           pattern: miniapp-e2e-ci-${{ inputs.mode }}-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-shard-*
           path: .tmp/verification-reports
       - name: Validate complete suite inventory
+        if: inputs.verification_topology != 'optimized-v2'
         run: node --import tsx e2e/scripts/verification/cli.ts aggregate --plan=.tmp/verification-plan/plan.json --reports=.tmp/verification-reports --output=.tmp/verification-aggregate/report.json
+      - name: Verify frozen aggregate bundle and complete original evidence
+        if: inputs.verification_topology == 'optimized-v2'
+        shell: bash
+        run: node .github/scripts/run-verification-aggregate.mjs --bundle=.tmp/verification-plan/miniapp-runner --plan=.tmp/verification-plan/plan.json --reports=.tmp/verification-reports --output=.tmp/verification-aggregate/report.json --sha="$BUILD_ARTIFACT_EXPECTED_COMMIT"
       - name: Upload complete suite verdict
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9

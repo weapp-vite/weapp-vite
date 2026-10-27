@@ -66,7 +66,7 @@ export function summarizeNativeInventory(options: SummaryOptions): InstallationP
   const newProcesses: NewProcessObservation[] = [...inventory.tracked.values()].filter(entry => entry.firstPhase !== 'prepare').map(entry => ({
     ...inventory.gap(entry),
     firstSeenRound: entry.firstPhase === 'closure2' ? 3 : entry.firstPhase === 'closure1' ? 2 : 1,
-    classification: entry.changed ? 'identity-changed' : entry.classification === 'foreign' ? 'verified-foreign' : entry.classification === 'unknown' ? 'unclassified' : entry.classification,
+    classification: verifiedForeignProcesses.has(entry.row.pid) ? 'verified-foreign' : entry.changed ? 'identity-changed' : entry.classification === 'foreign' ? 'verified-foreign' : entry.classification === 'unknown' ? 'unclassified' : entry.classification,
     imageSource: entry.imageSource,
   }))
   const uninspectedNewProcessCount = newProcesses.filter(row => row.classification === 'unclassified').length

@@ -40,6 +40,7 @@ keywords:
 | `<wxs>`（内联与 src）               | `🟡` | 支持基础执行与 `require`，仅允许相对/绝对路径。                   |
 | `<slot>`                            | `🟡` | 保留为原生 `slot` 标签；高级插槽语义不保证与小程序完全一致。      |
 | 事件前缀 `bind/catch/capture`       | `🟡` | 采用表驱动映射并支持 `catch/capture` 标记；事件别名仍是高频子集。 |
+| `data-*` / `dataset`               | `✅` | 完整表达式保留对象、数字、布尔等原类型；静态值与混合插值保持字符串。事件、组件事件、selector 与 observer 读取同一绑定，更新及节点断连重连后继续生效；DOM 属性仍按字符串反射。 |
 | 复杂模板能力（如 `wx:model` 等）    | `⛔` | 当前未进入 Web 编译主路径。                                       |
 
 ## 组件选项矩阵
@@ -108,6 +109,12 @@ keywords:
 | `wx.showModal`                                                                                           | `🟡` | 基于浏览器 `confirm/alert`，`confirmText/cancelText` 不生效。                                                               |
 | `wx.showActionSheet`                                                                                     | `🟡` | 通过浏览器 `prompt` 或预设索引桥接选择结果，交互样式与真机 ActionSheet 不一致。                                             |
 | `wx.showToast`                                                                                           | `🟡` | 提供轻量 DOM toast，样式与真机不完全一致。                                                                                  |
+| `wx.hideToast`                                                                                           | `🟡` | 立即隐藏当前 toast 并清理自动关闭定时器。                                                                                   |
+| `wx.showShareMenu` / `wx.updateShareMenu` / `wx.hideShareMenu`                                           | `🟡` | 成功桥接为 no-op，web 端没有系统分享菜单。                                                                                  |
+| `wx.hideHomeButton`                                                                                      | `🟡` | no-op 成功桥接，Web 端没有小程序的返回首页按钮。                                                                            |
+| `wx.onError` / `wx.offError` / `wx.onUnhandledRejection` / `wx.offUnhandledRejection`                    | `🟡` | 桥接浏览器事件；错误回调接收含可用堆栈的字符串，拒绝事件保留原始 `promise/reason`。首次订阅绑定、最后退订释放。             |
+| `wx.onThemeChange` / `wx.offThemeChange`                                                                 | `🟡` | 基于 `prefers-color-scheme` 媒体查询；首次订阅绑定、最后退订释放。                                                           |
+| `wx.reportEvent`                                                                                         | `🟡` | 不上报微信平台；按 `runtime.warnings` 配置输出告警，默认去重，可关闭。                                                       |
 | `wx.startPullDownRefresh` / `wx.stopPullDownRefresh`                                                     | `🟡` | Web 侧均作为 no-op 成功桥接，便于兼容下拉刷新调用链。                                                                       |
 | `wx.hideKeyboard`                                                                                        | `🟡` | 通过 `blur` 当前聚焦输入元素近似桥接收起键盘能力，行为受浏览器焦点模型限制。                                                |
 | `wx.pageScrollTo`                                                                                        | `🟡` | 支持 `scrollTop/duration` 的基础滚动，`selector` 等高级能力未覆盖。                                                         |
@@ -138,7 +145,6 @@ keywords:
 | `wx.saveFileToDisk`                                                                                      | `🟡` | 通过浏览器下载行为近似桥接保存文件流程，不具备小程序容器内的系统文件管理语义。                                              |
 | `wx.login` / `wx.checkSession` / `wx.getAccountInfoSync`                                                 | `🟡` | 提供 Web 环境下的登录态占位桥接与会话校验，不等价真实小程序登录会话。                                                       |
 | `wx.getUserInfo` / `wx.getUserProfile`                                                                   | `🟡` | 提供用户信息读取与授权确认占位桥接，可通过预设结果注入用户资料，不触发系统级授权弹窗。                                      |
-| `wx.showShareMenu` / `wx.updateShareMenu`                                                                | `🟡` | 提供 API 级成功回调桥接，不覆盖平台级分享能力差异。                                                                         |
 | `wx.getExtConfigSync` / `wx.getExtConfig`                                                                | `🟡` | 返回 Web runtime 注入的扩展配置快照（默认空对象）。                                                                         |
 | `wx.getUpdateManager` / `wx.getLogManager`                                                               | `🟡` | 返回 Web 侧更新/日志桥接对象：更新流程可通过预设状态驱动，日志输出映射到浏览器 console。                                    |
 | `wx.cloud.init` / `wx.cloud.callFunction`                                                                | `🟡` | 提供云能力初始化与云函数调用占位桥接，返回 mock 结果用于流程调试，不连接真实云环境。                                        |

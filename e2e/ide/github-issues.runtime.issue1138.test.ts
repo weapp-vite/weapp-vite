@@ -15,7 +15,7 @@ describe('e2e app: github-issues / issue #1138', { concurrent: false }, () => {
       }
     }
   }, PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT)
-  afterAll(() => closeSharedMiniProgram(), 30_000)
+  afterAll(() => closeSharedMiniProgram())
 
   it('correlates real native callback phases and separately checks visible updates', async (ctx) => {
     const route = '/pages/issue-1138/index'

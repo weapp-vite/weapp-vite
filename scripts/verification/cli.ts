@@ -3,7 +3,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { parseArgs } from 'node:util'
-import { assertCurrentPlan, prepareVerificationPlan } from './prepare.ts'
+import { assertCommittedSnapshot, assertCurrentPlan, prepareVerificationPlan } from './prepare.ts'
 import { formatPlan, formatReport, saveReport } from './report.ts'
 import { createTaskExecutor, runVerification } from './run.ts'
 
@@ -15,6 +15,7 @@ export async function main(args = process.argv.slice(2), root = ROOT): Promise<n
     allowPositionals: true,
     options: {
       base: { type: 'string' },
+      head: { type: 'string' },
       mode: { type: 'string', default: 'quick' },
       selection: { type: 'string' },
       topology: { type: 'string' },
@@ -26,7 +27,7 @@ export async function main(args = process.argv.slice(2), root = ROOT): Promise<n
     },
   })
   if (values.help) {
-    process.stdout.write('verify <plan|run> [--base REF] [--mode quick|review|full] [--selection shadow|affected] [--topology legacy-v1|optimized-v1] [--file PATH] [--jobs N] [--output DIR] [--json]\n')
+    process.stdout.write('verify <plan|run> [--base REF] [--head COMMIT] [--mode quick|review|full] [--selection shadow|affected] [--topology legacy-v1|optimized-v1|optimized-v2] [--file PATH] [--jobs N] [--output DIR] [--json]\n')
     return 0
   }
   const command = positionals[0] ?? 'plan'
@@ -44,6 +45,7 @@ export async function main(args = process.argv.slice(2), root = ROOT): Promise<n
   }
   const options = {
     base: values.base,
+    head: values.head,
     files: values.file,
     jobs: values.jobs,
     mode: values.mode as VerificationMode,
@@ -69,6 +71,9 @@ export async function main(args = process.argv.slice(2), root = ROOT): Promise<n
   try {
     await assertCurrentPlan(root, plan, options)
     const report = await runVerification(plan, createTaskExecutor(root, values.json), { signal: controller.signal })
+    if (values.head) {
+      await assertCommittedSnapshot(root, plan, options)
+    }
     await saveReport(root, directory, plan, report)
     process.stdout.write(`${values.json ? JSON.stringify(report, null, 2) : formatReport(report)}\n`)
     return controller.signal.aborted ? 130 : ['failed', 'blocked'].includes(report.status) ? 1 : 0

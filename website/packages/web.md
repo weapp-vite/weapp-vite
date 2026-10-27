@@ -47,6 +47,12 @@ pnpm add -D @weapp-vite/web
 
 Wevu 会根据 `web` 目标[自动裁剪平台适配与未使用能力](/wevu/runtime#按平台与使用能力裁剪)。Web 仍保留 App/Component、页面栈和宿主桥接；其体积不能直接作为 Vue DOM runtime 或原生 App 渲染器的体积基线。
 
+## glass-easel 组件后端实验
+
+仓库中的 `@weapp-vite/glass-easel-web-adapter` 提供独立的官方组件树实验：支持显式注册父子组件、默认与命名 slot、属性和 observer、数据更新、事件及递归卸载。示例与限制见 [adapter README](https://github.com/weapp-vite/weapp-vite/tree/main/packages-runtime/glass-easel-web-adapter)。
+
+该入口需要业务宿主显式创建 adapter，尚未接入上述 CLI 的默认 runtime，也没有新增 renderer 配置。模板编译仍在浏览器注册阶段执行，`ready`、原生组件、样式、路由与 API 需要后续宿主集成；文档级官方事件委托由共享 backend 持有。本阶段用于组件语义验证，不能据此认定真机或多平台兼容已完成。
+
 ## Vite 插件接入
 
 ```ts

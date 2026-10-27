@@ -1,0 +1,4 @@
+{
+  "pages": ["pages/index/index", "pages/second/index"],
+  "subPackages": []
+}

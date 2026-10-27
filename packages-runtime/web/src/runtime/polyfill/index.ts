@@ -29,6 +29,7 @@ import * as deviceAuthSystemApi from './deviceAuthSystemApi'
 import * as eventBusApi from './eventBus'
 import { WEB_USER_DATA_PATH } from './files'
 import { loadFontFace } from './font'
+import * as lifecycleEventApi from './lifecycleEvents'
 import { getLocale } from './locale'
 import { createNavigationBarRuntimeBridge } from './navigationBarRuntime'
 import {
@@ -76,6 +77,8 @@ export { createAnimation } from './animation'
 export * from './deviceAuthSystemApi'
 export * from './eventBus'
 export { loadFontFace } from './font'
+export { offError, offThemeChange, offUnhandledRejection, onError, onThemeChange, onUnhandledRejection, reportEvent } from './lifecycleEvents'
+export type { MiniProgramErrorCallback, ThemeChangeCallback, ThemeChangeEvent, UnhandledRejectionCallback, UnhandledRejectionEvent } from './lifecycleEvents'
 export { getLocale } from './locale'
 
 export {
@@ -239,6 +242,13 @@ export function installMiniProgramGlobals(): void {
     ...uiMediaApi,
     ...deviceAuthSystemApi,
     ...eventBusApi,
+    onError: lifecycleEventApi.onError,
+    offError: lifecycleEventApi.offError,
+    onUnhandledRejection: lifecycleEventApi.onUnhandledRejection,
+    offUnhandledRejection: lifecycleEventApi.offUnhandledRejection,
+    onThemeChange: lifecycleEventApi.onThemeChange,
+    offThemeChange: lifecycleEventApi.offThemeChange,
+    reportEvent: lifecycleEventApi.reportEvent,
     loadFontFace,
     getLocale,
     createAnimation,
