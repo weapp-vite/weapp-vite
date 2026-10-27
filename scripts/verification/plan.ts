@@ -5,6 +5,7 @@ import path from 'node:path'
 import { sharedBuildPackages, splitCliBuild, usePreparedTypeChecks } from './build.ts'
 import { DOCUMENT_CONTRACTS, isRootPolicyDocument, requiredDocumentContracts } from './classification.ts'
 import { DEFAULT_SELECTION } from './policy.ts'
+import { isLibraryPackage, needsConsumerPrepare, quickBuildRoots, quickCheckPackages } from './quickScope.ts'
 import { fullRuntimeBlock } from './runtime.ts'
 import { fingerprintConfiguration } from './snapshot.ts'
 import { toolchainEnvironment } from './toolchain.ts'
@@ -67,6 +68,7 @@ export async function createVerificationPlan(options: PlanOptions): Promise<Veri
   const { direct, affected } = impact
   const suggested = mode === 'quick' && !global && !unknown.length && !impact.fallback ? direct : affected
   const selected = packages.filter(item => selection === 'shadow' || suggested.has(item.name))
+  const owned = new Set(changes.files.flatMap(file => ownerOf(file, packages)?.name ?? []))
   const tasks: VerificationTask[] = []
   const warnings = [...changes.warnings]
   const remaining: string[] = []
@@ -103,11 +105,13 @@ export async function createVerificationPlan(options: PlanOptions): Promise<Veri
     tasks.push({ ...task('typecheck', 'typecheck', ['exec', 'turbo', 'run', 'typecheck', '--filter=./packages/*', '--filter=./packages-runtime/*', '--filter=./mpcore/packages/*', '--filter=./@weapp-core/*', `--concurrency=${resources.jobs}`], '完整库源码类型检查', ['build']), exclusive: true })
   }
   else if (selected.length) {
-    const [sharedScope, consumerScope] = await Promise.all([
-      sharedBuildPackages(root, selected.map(item => item.name)),
-      sharedBuildPackages(root, selected.filter(item => /^(?:apps|templates)\//.test(item.directory)).map(item => item.name), 'build:apps'),
-    ])
-    const needed = new Set(selected.map(item => item.name))
+    const checked = mode === 'quick' ? quickCheckPackages(selected, owned) : selected
+    const relatedTests = new Map(mode === 'quick'
+      ? await Promise.all(checked.filter(item => owned.has(item.name) && (item.scripts.test || item.scripts['test:pure']))
+          .map(async item => [item.name, await nearbyTests(root, changes.files.filter(file => ownerOf(file, packages)?.name === item.name))] as const))
+      : [])
+    const roots = mode === 'quick' ? quickBuildRoots(selected, owned, new Set([...relatedTests].filter(([, files]) => files.length).map(([name]) => name))) : selected
+    const needed = new Set(roots.map(item => item.name))
     let expanded = true
     while (expanded) {
       expanded = false
@@ -120,9 +124,14 @@ export async function createVerificationPlan(options: PlanOptions): Promise<Veri
         }
       }
     }
+    const [sharedScope, consumerScope] = await Promise.all([
+      sharedBuildPackages(root, mode === 'quick' ? [...needed] : selected.map(item => item.name)),
+      mode === 'review' ? sharedBuildPackages(root, selected.filter(item => /^(?:apps|templates)\//.test(item.directory)).map(item => item.name), 'build:apps') : Promise.resolve(new Set<string>()),
+    ])
     const built = packages.filter(item => needed.has(item.name) && item.scripts.build
-      && (sharedScope.has(item.name) || (selected.includes(item) && consumerScope.has(item.name) && /^(?:apps|templates)\//.test(item.directory)))
-      && (mode === 'review' || item.scripts.typecheck || direct.has(item.name)))
+      && (mode === 'quick'
+        ? isLibraryPackage(item) && sharedScope.has(item.name)
+        : sharedScope.has(item.name) || (selected.includes(item) && consumerScope.has(item.name) && /^(?:apps|templates)\//.test(item.directory))))
     const delegated = selected.filter(item => item.scripts.build && !built.includes(item) && /^(?:test|e2e-apps)\//.test(item.directory))
     if (delegated.length) {
       warnings.push(`fixture 与正负例产物由原测试/runtime owner 构建，不作为成功 build 目标: ${delegated.map(item => item.name).join(', ')}`)
@@ -134,6 +143,21 @@ export async function createVerificationPlan(options: PlanOptions): Promise<Veri
       })
     }
     const prepared = tasks.some(item => item.id === 'build') ? ['build'] : []
+    const consumerPreparation = new Map<string, string>()
+    if (mode === 'quick') {
+      const cli = packages.find(item => item.name === 'weapp-vite')
+      for (const item of roots.filter(needsConsumerPrepare)) {
+        const id = `prepare:${item.name}`
+        tasks.push({
+          ...task(id, 'typecheck', ['exec', 'node', '--import', 'tsx', 'scripts/verification/consumerPrepare.ts', '--directory', item.directory, '--cli', `${cli?.directory ?? 'packages/weapp-vite'}/bin/weapp-vite.js`], '真实变更消费者在 CLI dist 就绪后严格生成类型支持文件', prepared),
+          resource: 'workspace-write',
+          exclusive: true,
+          blockedReason: !cli || !item.dependencies.includes(cli.name) || !built.includes(cli) ? `${item.name} 缺少已声明且可构建的 weapp-vite workspace 依赖，不能准备消费者类型检查` : undefined,
+        })
+        consumerPreparation.set(item.name, id)
+      }
+    }
+    const dependenciesFor = (item: WorkspacePackage) => consumerPreparation.has(item.name) ? [consumerPreparation.get(item.name)!] : prepared
     const pure = mode === 'review' ? selected.filter(item => item.scripts['test:pure']) : []
     if (pure.length) {
       tasks.push({
@@ -141,9 +165,9 @@ export async function createVerificationPlan(options: PlanOptions): Promise<Veri
         exclusive: true,
       })
     }
-    const ordinary = selected.filter(item => (item.scripts.test || item.scripts['test:pure']) && (mode === 'quick' || !item.scripts['test:pure']))
+    const ordinary = checked.filter(item => (item.scripts.test || item.scripts['test:pure']) && (mode === 'quick' || !item.scripts['test:pure']))
     for (const item of ordinary) {
-      const related = mode === 'quick' ? await nearbyTests(root, changes.files.filter(file => ownerOf(file, packages)?.name === item.name)) : []
+      const related = relatedTests.get(item.name) ?? []
       if (mode === 'quick' && !related.length) {
         remaining.push(`${item.name} 没有可证明直接相关的存续单测，完整包测试由 review / CI 承担`)
         continue
@@ -158,15 +182,15 @@ export async function createVerificationPlan(options: PlanOptions): Promise<Veri
         }
       }
       tasks.push({
-        ...task(`test:${item.name}`, 'test', args, related.length ? 'quick 只运行直接变更与相邻回归；完整包测试由 review / CI 承担' : 'review 执行完整包测试', prepared),
+        ...task(`test:${item.name}`, 'test', args, related.length ? 'quick 只运行直接变更与相邻回归；完整包测试由 review / CI 承担' : 'review 执行完整包测试', dependenciesFor(item)),
         blockedReason: mode === 'quick' && !filterable ? `无法向 ${item.name} 的 ${script} 安全传入直接回归范围，请补充专用过滤契约` : undefined,
         exclusive: ordinary.length === 1,
         // pnpm 生命周期与测试同属一个命令，可能清理共享 dist，必须与消费者互斥。
         resource: [`pre${script}`, `post${script}`].some(name => item.scripts[name]?.trim()) ? 'workspace-write' : undefined,
       })
     }
-    for (const item of selected.filter(item => item.scripts.typecheck && (sharedScope.has(item.name) || direct.has(item.name)))) {
-      tasks.push(task(`typecheck:${item.name}`, 'typecheck', ['--filter', item.name, 'run', 'typecheck'], '验证拥有源码的包级类型边界', prepared))
+    for (const item of checked.filter(item => item.scripts.typecheck && (mode === 'quick' || sharedScope.has(item.name) || direct.has(item.name)))) {
+      tasks.push(task(`typecheck:${item.name}`, 'typecheck', ['--filter', item.name, 'run', 'typecheck'], '验证拥有源码的包级类型边界', dependenciesFor(item)))
     }
     const types = selected.filter(item => item.scripts['test:types:check'])
     if (mode === 'review' && types.length) {
