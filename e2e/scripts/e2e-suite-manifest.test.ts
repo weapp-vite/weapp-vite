@@ -157,6 +157,7 @@ describe('e2e suite manifest', () => {
     'ide/issue-1182-production-mount.runtime.test.ts',
     'ide/issue-1185-sibling-entry.runtime.test.ts',
     'ide/issue-1235-component-reentry.runtime.test.ts',
+    'ide/issue-1249-dataset.runtime.test.ts',
     'ide/issue-1261-props-projection.runtime.test.ts',
     'ide/issue-1263-chunk-debug-name.runtime.test.ts',
     'ide/issue-1264-basic-wx-apis.runtime.test.ts',

@@ -1,0 +1,7 @@
+<view wx:for="{{rows}}" wx:key="id" id="row-{{index}}" style="height:40px;width:200px" data-item="{{item}}" data-itemName="{{item}}" data-Foo="{{0}}" data-index="{{index}}" data-enabled="{{false}}" data-literal="0" data-mixed="row-{{index}}" data-item-name="{{item.value}}" bindtap="capture">Select {{index}}</view>
+<dataset-probe id="component-probe" data-item="{{rows[0]}}" data-index="{{rows.length}}" data-enabled="{{false}}" data-literal="0" data-mixed="component-{{rows.length}}" bind:select="capture" />
+<button id="replace" bindtap="replace">Replace object</button>
+<button id="query" bindtap="query">Query dataset</button>
+<button id="observe" bindtap="observe">Observe dataset</button>
+<text id="snapshot">{{snapshot}}</text><text id="selector">{{selector}}</text><text id="observer">{{observer}}</text>
+<text id="dataset-summary">{{summary}}</text>

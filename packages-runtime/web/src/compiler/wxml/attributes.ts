@@ -7,7 +7,7 @@ import {
   normalizeAttributeName,
   resolveControlAttributeValue,
 } from '../../shared/wxml'
-import { buildExpression, parseInterpolations } from './interpolation'
+import { buildDatasetExpression, buildExpression, parseInterpolations } from './interpolation'
 
 export function extractFor(attribs: Record<string, string>) {
   const expr = resolveControlAttributeValue(attribs, 'for')
@@ -114,6 +114,12 @@ export function renderAttributes(
     const useProperty = shouldBindAsProperty(rawName)
       && (options?.preferProperty || options?.propertyAttributes?.includes(rawName))
     const name = useProperty ? normalizePropertyName(rawName) : normalizeAttributeName(rawName)
+    // DOM 属性保留字符串，完整表达式的值类型由运行时单独保存。
+    if (!useProperty && name.startsWith('data-')) {
+      const expr = buildDatasetExpression(rawValue ?? '', scopeVar, wxsVar)
+      buffer += ` \${bindRuntimeDataset(${JSON.stringify(name)}, ${expr})}`
+      continue
+    }
     const expr = buildExpression(parseInterpolations(rawValue ?? ''), scopeVar, wxsVar)
     buffer += ` ${useProperty ? '.' : ''}${name}=\${${expr}}`
   }
