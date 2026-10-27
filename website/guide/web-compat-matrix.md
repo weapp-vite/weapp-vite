@@ -31,6 +31,7 @@ keywords:
 | 能力                                | 状态 | 说明                                                              |
 | ----------------------------------- | ---- | ----------------------------------------------------------------- |
 | `{{}}` 插值表达式                   | `✅` | 支持文本与属性表达式。                                            |
+| `style` 内联单位                     | `✅` | 编译模板与旧字符串模板共用 WXSS 单位配置，支持动态字符串、对象与数组。 |
 | `wx:if / wx:elif / wx:else`         | `✅` | 支持条件分支链路。                                                |
 | `wx:for / wx:key`                   | `✅` | 支持列表渲染与 key 生成。                                         |
 | `<template name>` + `<template is>` | `✅` | 支持模板注册与调用。                                              |
@@ -42,6 +43,10 @@ keywords:
 | 事件前缀 `bind/catch/capture`       | `🟡` | 采用表驱动映射并支持 `catch/capture` 标记；事件别名仍是高频子集。 |
 | `data-*` / `dataset`               | `✅` | 完整表达式保留对象、数字、布尔等原类型；静态值与混合插值保持字符串。事件、组件事件、selector 与 observer 读取同一绑定，更新及节点断连重连后继续生效；DOM 属性仍按字符串反射。 |
 | 复杂模板能力（如 `wx:model` 等）    | `⛔` | 当前未进入 Web 编译主路径。                                       |
+
+内联 `style` 与 WXSS 使用相同的 `wxss.pxPerRpx`、`designWidth` 和 `rpxVar`。默认变量模式按小程序设备视口换算 `rpx`、`vw`、`vh`、`vmin` 和 `vmax`；显式 `pxPerRpx` 静态模式保留浏览器的视口单位。有限 `designWidth` 优先启用变量模式。配置由生成入口传给运行时，不依赖 CSS 变量探测。样式数组按 CSS 声明拼接，自定义属性名、URL、引号字符串和注释保留；安全区表达式保留 fallback。
+
+手动调用 `initializePageRoutes` 时，显式 `styleUnits` 优先；未提供时沿用 `rpx.designWidth` 与 `rpx.varName`。省略单位配置会恢复默认转换及根 CSS 变量，空路由也会完成初始化。
 
 ## 组件选项矩阵
 

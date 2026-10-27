@@ -1,0 +1,4 @@
+.reference {
+  width: 50vw;
+  height: 200rpx;
+}

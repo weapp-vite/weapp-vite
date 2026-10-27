@@ -23,6 +23,9 @@ export function getRuntimeRpxSize() {
 
 function applyRpx() {
   const root = document.documentElement
+  if (!root) {
+    return
+  }
   const value = getRuntimeRpxSize()
   root.style.setProperty(activeConfig.varName, `${value}px`)
 }

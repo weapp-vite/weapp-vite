@@ -1,0 +1,8 @@
+{
+  "name": "issue-1248-fixture",
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "@weapp-vite/web": "workspace:*"
+  }
+}

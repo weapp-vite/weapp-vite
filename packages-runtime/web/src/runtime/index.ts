@@ -4,6 +4,7 @@ import { installMiniProgramGlobals } from './polyfill'
 installWebHostGlobals()
 installMiniProgramGlobals()
 
+export type { ResolvedStyleUnitOptions } from '../shared/styleUnits/options'
 export type { WebTabBarConfig, WebTabBarItem } from './appShell/tabBar'
 export { ensureButtonDefined, setButtonFormConfig } from './button'
 export type { ButtonFormConfig } from './button'
@@ -23,6 +24,7 @@ export {
 } from './host'
 export type { WebRuntimeClipboard, WebRuntimeDialogs, WebRuntimeHost, WebRuntimeStorage } from './host'
 export { installWebHostGlobals } from './hostGlobals'
+export { transformInlineStyleValue } from './inlineStyle'
 export {
   createInputEventDetail,
   createScrollEventDetail,

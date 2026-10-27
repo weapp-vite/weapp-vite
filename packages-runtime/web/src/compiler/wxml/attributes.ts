@@ -120,7 +120,13 @@ export function renderAttributes(
       buffer += ` \${bindRuntimeDataset(${JSON.stringify(name)}, ${expr})}`
       continue
     }
-    const expr = buildExpression(parseInterpolations(rawValue ?? ''), scopeVar, wxsVar)
+    const parts = parseInterpolations(rawValue ?? '')
+    const trimmedParts = name === 'style' ? parseInterpolations((rawValue ?? '').trim()) : parts
+    const valueParts = trimmedParts.length === 1 && trimmedParts[0]?.type === 'expr' ? trimmedParts : parts
+    const rawExpr = buildExpression(valueParts, scopeVar, wxsVar)
+    // WXML 内联 style 不经过 postcss 链路，rpx / vw / vh 需要在运行时换算，
+    // 否则浏览器会丢弃整条声明（详见 inlineStyle.ts）。
+    const expr = name === 'style' ? `__weappInlineStyle(${rawExpr})` : rawExpr
     buffer += ` ${useProperty ? '.' : ''}${name}=\${${expr}}`
   }
   return buffer

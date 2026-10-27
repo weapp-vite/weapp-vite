@@ -6,6 +6,7 @@ import { compileWxml } from '../../src/compiler/wxml'
 import { RUNTIME_ID } from '../../src/plugin/constants'
 import { bindRuntimeDataset } from '../../src/runtime/datasetBinding'
 import { bindRuntimeEvent } from '../../src/runtime/eventBinding'
+import { transformInlineStyleValue } from '../../src/runtime/inlineStyle'
 
 export function compileDatasetTemplate(source: string): TemplateRenderer {
   const { code } = compileWxml({
@@ -18,7 +19,7 @@ export function compileDatasetTemplate(source: string): TemplateRenderer {
   const imports: Record<string, unknown> = {
     'lit': { html },
     'lit/directives/repeat.js': { repeat },
-    [RUNTIME_ID]: { bindRuntimeDataset, bindRuntimeEvent },
+    [RUNTIME_ID]: { bindRuntimeDataset, bindRuntimeEvent, transformInlineStyleValue },
   }
   // eslint-disable-next-line no-new-func -- 执行真实编译产物，验证 Lit 提交后的 DOM 与事件。
   new Function('require', 'module', 'exports', transformSync(code, { format: 'cjs' }).code)(

@@ -103,6 +103,32 @@ describe('web runtime foundation helpers', () => {
     expect(setProperty).toHaveBeenCalledWith('--unit', '0px')
   })
 
+  it('retains rpx configuration until a document root becomes available', async () => {
+    vi.resetModules()
+    const { setupRpx } = await import('../src/runtime/rpx')
+    const setProperty = vi.fn()
+    const addEventListener = vi.fn()
+    let root: { clientWidth: number, style: { setProperty: typeof setProperty } } | undefined
+    ;(globalThis as any).document = {
+      get documentElement() { return root },
+      querySelector: () => null,
+    }
+    ;(globalThis as any).window = { innerWidth: 375, addEventListener }
+
+    expect(() => setupRpx({ designWidth: 750, varName: '--early-unit' })).not.toThrow()
+    setupRpx({ designWidth: 375, varName: '--selected-unit' })
+    expect(setProperty).not.toHaveBeenCalled()
+    expect(addEventListener).toHaveBeenCalledTimes(1)
+    expect(addEventListener).toHaveBeenCalledWith('resize', expect.any(Function))
+
+    root = { clientWidth: 375, style: { setProperty } }
+    addEventListener.mock.calls[0]![1]()
+    expect(setProperty).toHaveBeenLastCalledWith('--selected-unit', '1px')
+    setupRpx()
+    expect(setProperty).toHaveBeenLastCalledWith('--rpx', '0.5px')
+    expect(addEventListener).toHaveBeenCalledTimes(1)
+  })
+
   it('normalizes shared ids, tags, attributes and control directives', () => {
     expect(slugify('---', 'page')).toBe('page-index')
     expect(normalizeTagName('view')).toBe('weapp-view')

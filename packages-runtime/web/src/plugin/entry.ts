@@ -75,6 +75,7 @@ export function generateEntryModule(
     : undefined
 
   const initOptions: Record<string, any> = {}
+  initOptions.styleUnits = unitOptions
   if (result.tabBar) {
     initOptions.tabBar = result.tabBar
   }
