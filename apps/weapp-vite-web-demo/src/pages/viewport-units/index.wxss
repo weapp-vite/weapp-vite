@@ -1,0 +1,94 @@
+.viewport-demo {
+  --size-100vw: 23px;
+  /* stylelint-disable-next-line scss/operator-no-unspaced -- 保留自定义属性中的无空格乘法回归输入。 */
+  --raw-product: 100vw*1;
+  --escaped-url: u\72 l(100vw);
+
+  padding-bottom: 32px;
+  font-size: 12px;
+}
+
+.probe {
+  box-sizing: border-box;
+  height: 24px;
+  margin-bottom: 4px;
+  background: #e6f2ef;
+}
+
+.viewport-width {
+  width: 100vw;
+}
+
+.viewport-height {
+  height: 50vh;
+}
+
+.viewport-min {
+  width: 10vmin;
+}
+
+.viewport-max {
+  width: 10vmax;
+}
+
+.viewport-calc {
+  width: calc(100vw - 20px);
+}
+
+.viewport-fallback {
+  width: var(--missing-100vw, 25vw);
+}
+
+.viewport-variable {
+  width: var(--size-100vw);
+}
+
+.viewport-exponent {
+  width: 1e2vw;
+}
+
+/* stylelint-disable scss/operator-no-unspaced -- 回归场景需要保留 CSS 数学函数中的合法无空格乘法。 */
+.viewport-min-product {
+  width: min(100vw*1, 800px);
+}
+
+.viewport-clamp-product {
+  width: clamp(0px, 100vw*1, 800px);
+}
+
+.viewport-uppercase-product {
+  width: CALC(1e-2*100vw);
+}
+
+.viewport-grouped-product {
+  width: calc((100vw*1) - 0px);
+}
+
+.viewport-variable-product {
+  width: min(100vw*var(--viewport-scale, 1), 800px);
+}
+/* stylelint-enable scss/operator-no-unspaced */
+
+.viewport-custom-product {
+  width: calc(var(--raw-product));
+}
+
+.viewport-string::before {
+  content: "100vw";
+}
+
+.viewport-image {
+  width: 16px;
+  height: 16px;
+  background-image: url("/viewport-100vw.svg");
+}
+
+.viewport-fixed {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100vw;
+  height: 24px;
+  color: #fff;
+  background: #087f5b;
+}

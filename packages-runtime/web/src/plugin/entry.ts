@@ -1,6 +1,7 @@
 import type { WxssTransformOptions } from '../css/wxss'
-
 import type { ScanResult, WeappWebPluginOptions } from './types'
+
+import { resolveStyleUnitOptions } from '../shared/styleUnits/options'
 import { WEB_COMPONENT_PREFIX } from './constants'
 import { relativeModuleId, resolveRuntimePolyfillPath, toViteFsImport } from './path'
 
@@ -68,10 +69,9 @@ export function generateEntryModule(
   }
 
   const pageOrder = result.pages.map(page => page.id)
-  const useRuntimeRpx = wxssOptions?.pxPerRpx === undefined
-    || (typeof wxssOptions.designWidth === 'number' && Number.isFinite(wxssOptions.designWidth))
-  const rpxConfig = useRuntimeRpx
-    ? { designWidth: wxssOptions?.designWidth ?? 750, varName: wxssOptions?.rpxVar }
+  const unitOptions = resolveStyleUnitOptions(wxssOptions)
+  const rpxConfig = unitOptions.useVariable
+    ? { designWidth: unitOptions.designWidth, varName: wxssOptions?.rpxVar }
     : undefined
 
   const initOptions: Record<string, any> = {}

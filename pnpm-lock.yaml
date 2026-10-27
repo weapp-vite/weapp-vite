@@ -1497,6 +1497,9 @@ importers:
       '@weapp-vite/dashboard':
         specifier: workspace:*
         version: link:../../packages/dashboard
+      '@weapp-vite/web':
+        specifier: workspace:*
+        version: link:../../packages-runtime/web
       miniprogram-api-typings:
         specifier: 'catalog:'
         version: 5.2.3
@@ -2775,6 +2778,9 @@ importers:
       '@babel/types':
         specifier: 'catalog:'
         version: 8.0.8
+      '@csstools/css-tokenizer':
+        specifier: 4.0.2
+        version: 4.0.2
       '@vue/shared':
         specifier: 'catalog:'
         version: 3.5.44

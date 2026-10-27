@@ -1,6 +1,7 @@
 # 本地工程约束
 
 - 所有 PR（包括发布和依赖升级 PR）统一使用 Squash merge，在目标分支形成一个提交；通过 GitHub CLI 合并时必须显式使用 `gh pr merge <编号> --squash`。合并提交信息沿用仓库当前默认设置，已有合并历史不改写。
+- PR 合并后的自动 Release 工作流（包括 `Release verify`）无需等待，不作为推进后续 PR、启动主线统一 E2E 或本批交付的门槛。记录实际合并提交、workflow/run 和已观察状态；未完成的运行不得记为成功。合入前当前候选的全部适用原生 CI/CD 与审查门槛保持不变，无需为此取消或禁用远端 Release 工作流。
 - 本地 `verify` 检查真实工作区；`pre-push` 必须使用 Git 原生 stdin 的待推 refs/SHA，按对应提交快照执行 quick 检查。dirty 或非当前提交须使用独立工作树与冻结依赖，不以提交文件清单配合 dirty 工作树执行，也不得 stash/reset 用户工作或共享指回原工作区的依赖链接。未知输入、真实提交的锁文件和全局配置继续保守扩大范围，删除及 rename 两端保持归属。
 - quick 只承担静态与适用配置/生成契约、直接变更和相邻单测、包级源码类型；`test:pure` 同样只运行直接相关范围。完整包测试、消费者、公开类型和 E2E 工具/runtime 通过 review / CI 的既有入口完成，不由 pre-push 扩大启动。生成 `AGENTS.md`、public skill 合约及其规则输入仍须执行对应 `agents:check` / `skills:check`，包含删除和 rename 旧端点。
 - 推送重试仅复用候选 SHA、基线、工具链、环境、拓扑和策略均一致且全部适用 quick 任务成功的本地回执；失败、取消、未执行或缺少适用 quick 任务结果的回执不可复用为成功。该回执不替代原生 CI 审批、完整消费者/公开类型检查及目标 runtime 验收；保留全部适用 CI 与后置汇总，不以 `--no-verify`、通用 skip 或本地 `partial` 宣称充分验证。
