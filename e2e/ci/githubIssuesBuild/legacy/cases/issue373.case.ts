@@ -2,7 +2,7 @@ import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { expect, it } from 'vitest'
 import { findWevuVendorChunkContaining } from '../../../../utils/wevu-vendor'
-import { runBuild } from '../build/standard'
+import { runBuild } from '../builders/standard'
 import { DIST_ROOT } from '../constants'
 
 export const group = 'standard'

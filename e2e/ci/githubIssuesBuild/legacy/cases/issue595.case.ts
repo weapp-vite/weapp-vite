@@ -2,7 +2,7 @@ import type { AppJsonWithSubPackages } from '../types'
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { expect, it } from 'vitest'
-import { runIssue595ScopedBuild } from '../build/issue595ScopedBuild'
+import { runIssue595ScopedBuild } from '../builders/issue595ScopedBuild'
 import { ISSUE_595_DIST_ROOT } from '../constants'
 import { scanFiles } from '../helpers'
 

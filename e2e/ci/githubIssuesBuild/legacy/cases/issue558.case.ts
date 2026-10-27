@@ -3,7 +3,7 @@ import path from 'pathe'
 import { expect, it } from 'vitest'
 import { findWevuRuntimeChunk } from '../../../../utils/wevu-vendor'
 import { findMarkupElements } from '../../markup'
-import { runIssue558AugmentedBuild } from '../build/issue558AugmentedBuild'
+import { runIssue558AugmentedBuild } from '../builders/issue558AugmentedBuild'
 import { DIST_ROOT } from '../constants'
 import { scanFiles, stripGeneratedScopeAttrs } from '../helpers'
 

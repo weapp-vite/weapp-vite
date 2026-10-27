@@ -2,7 +2,7 @@ import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { expect, it } from 'vitest'
 import { findMarkupElements } from '../../markup'
-import { runIssue564AugmentedBuild } from '../build/issue564AugmentedBuild'
+import { runIssue564AugmentedBuild } from '../builders/issue564AugmentedBuild'
 import { DIST_ROOT } from '../constants'
 
 export const group = 'issue564'

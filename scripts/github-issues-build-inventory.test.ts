@@ -11,7 +11,7 @@ import {
 import { createGithubIssuesBuildCaseContext } from '../e2e/ci/githubIssuesBuild/legacy/context'
 
 const builds = vi.hoisted(() => ({ standard: vi.fn(async () => {}), sourcemap: vi.fn(async () => {}) }))
-vi.mock('../e2e/ci/githubIssuesBuild/legacy/build/standard', () => ({
+vi.mock('../e2e/ci/githubIssuesBuild/legacy/builders/standard', () => ({
   runBuild: builds.standard,
   runBuildWithSourcemap: builds.sourcemap,
 }))

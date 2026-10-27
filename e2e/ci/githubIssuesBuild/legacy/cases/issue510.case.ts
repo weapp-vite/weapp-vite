@@ -1,7 +1,7 @@
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { expect, it } from 'vitest'
-import { runIssue510AugmentedBuild } from '../build/issue510AugmentedBuild'
+import { runIssue510AugmentedBuild } from '../builders/issue510AugmentedBuild'
 import { ISSUE_510_DIST_ROOT, SLOT_OWNER_ATTR } from '../constants'
 import { stripGeneratedScopeAttrs } from '../helpers'
 

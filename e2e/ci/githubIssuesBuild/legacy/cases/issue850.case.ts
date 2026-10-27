@@ -1,7 +1,7 @@
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { expect, it } from 'vitest'
-import { runIssue850Build } from '../build/issue850Build'
+import { runIssue850Build } from '../builders/issue850Build'
 import { ISSUE_850_DIST_ROOT } from '../constants'
 
 export const group = 'issue850'

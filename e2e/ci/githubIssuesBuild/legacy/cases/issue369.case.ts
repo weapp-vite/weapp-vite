@@ -1,7 +1,7 @@
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { expect, it } from 'vitest'
-import { runBuild } from '../build/standard'
+import { runBuild } from '../builders/standard'
 import { APP_ROOT } from '../constants'
 
 export const group = 'standard'

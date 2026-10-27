@@ -2,7 +2,7 @@ import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { expect, it } from 'vitest'
 import { findMarkupElements } from '../../markup'
-import { runSlotFallbackCompilerOffBuild } from '../build/slotFallbackCompilerOffBuild'
+import { runSlotFallbackCompilerOffBuild } from '../builders/slotFallbackCompilerOffBuild'
 import { SLOT_FALLBACK_COMPILER_OFF_DIST_ROOT } from '../constants'
 
 export const group = 'slotCompilerOff'

@@ -2,7 +2,7 @@ import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { expect, it } from 'vitest'
 import { findMarkupElements } from '../../markup'
-import { runIssue547AugmentedBuild } from '../build/issue547AugmentedBuild'
+import { runIssue547AugmentedBuild } from '../builders/issue547AugmentedBuild'
 import { DIST_ROOT } from '../constants'
 import { stripGeneratedScopeAttrs } from '../helpers'
 
