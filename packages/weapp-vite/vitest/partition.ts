@@ -12,7 +12,7 @@ export const parallelFixtureTests: readonly string[] = AUDITED_PARALLEL_FIXTURE_
 
 export function fixturePartition(topology?: VerificationTopologyId) {
   const selected = resolveVerificationTopology(topology)
-  return { parallel: selected.id === 'optimized-v1' ? [...parallelFixtureTests] : [] }
+  return { parallel: selected.id !== 'legacy-v1' ? [...parallelFixtureTests] : [] }
 }
 
 /** 从完整发现范围推导并行分区，新增发现目录无需维护第二份目录白名单。 */

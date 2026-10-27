@@ -28,7 +28,7 @@ describe('e2e app: github-issues / issue #941', { concurrent: false }, () => {
 
   afterAll(async () => {
     await closeSharedMiniProgram()
-  }, 30_000)
+  })
 
   it('keeps every wx direct-return API out of the Promise bridge', async (ctx) => {
     const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', [{

@@ -42,7 +42,7 @@ export interface VerificationTask {
   dependencies: string[]
   reason: string
   exclusive?: boolean
-  env?: Record<string, string>
+  env?: Record<string, string | undefined>
   blockedReason?: string
   evidence?: 'turbo-summary'
   resource?: 'cpu' | 'workspace-write' | 'machine-exclusive'

@@ -84,6 +84,26 @@ Node/browser 的原生 tap 到达未禁用的 `button form-type="submit"` 时，
 
 上述能力属于模拟器模型，不代表真实微信 IDE 或设备验收。
 
+## 登录与账号信息
+
+Node 和浏览器 simulator 提供 `wx.login`、`wx.getAccountInfoSync`、`wx.arrayBufferToBase64` 与 `wx.base64ToArrayBuffer`。两项 Base64 API 同步转换二进制数据，支持空缓冲区。
+
+`wx.login()` 同步返回 `undefined`，随后异步派发 `success → complete` 或 `fail → complete`，不提供 Promise 调用方式。默认生成会话内递增的 `mpcore-login-1` 等模拟 code，不请求微信登录服务；模拟 code 不能用于真实的 `code2Session`。
+
+Node/browser session 共用以下配置方法，可在导航前调用；使用测试入口时可放在 `launch({ configureSession })` 中：
+
+```ts
+session.setAccountInfo({
+  miniProgram: { appId: 'wx-local-app', envVersion: 'trial', version: '' },
+})
+session.mockLogin({ code: 'local-login-code', delay: 10 })
+session.mockLogin({ error: 'denied' })
+```
+
+`mockLogin()` 按调用顺序各消费一次，即使不同调用的 delay 使回调顺序不同。省略 code 时生成默认模拟 code，error 表示失败原因；`wx.login({ timeout })` 的正数 timeout 小于 mock delay 时触发 `login:fail timeout`。启用 `strictHostMocks` 后，每次登录都需要显式 mock，否则异步触发 `login:fail no mock matched in headless runtime`。关闭会话会取消待派发结果。
+
+账号信息默认读取项目配置中的 appid，`project.private.config.json` 的非空值优先于 `project.config.json`；浏览器读取同名虚拟文件。缺少 appid 时返回空字符串，默认 envVersion 为 `develop`、version 为空字符串，不生成插件账号信息。`setAccountInfo()` 整体替换账号信息，传入与返回的对象均复制，修改对象不会影响会话内状态。
+
 ## 分块请求 mock
 
 `session.mockRequest()` 支持为 `enableChunked: true` 的请求声明分块，默认仍不访问网络：

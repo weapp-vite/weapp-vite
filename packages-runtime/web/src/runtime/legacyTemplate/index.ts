@@ -1,4 +1,5 @@
 import type { ChildNode, DataNode, Element, Node } from 'domhandler'
+import type { LegacyDatasetValues } from './dataset'
 import type {
   LegacyTemplateRenderer,
   LegacyTemplateScope,
@@ -11,6 +12,7 @@ import {
   resolveControlAttributeValue,
   SELF_CLOSING_TAGS,
 } from '../../shared/wxml'
+import { createLegacyDatasetAnchor, recordLegacyDatasetRender } from './dataset'
 import {
   buildAttributeString,
   extractFor,
@@ -57,6 +59,7 @@ function renderConditionalSequence(
   startIndex: number,
   scope: LegacyTemplateScope,
   renderChildren: (input: ChildNode[] | ChildNode | undefined, scope: LegacyTemplateScope) => string,
+  datasets?: LegacyDatasetValues,
 ) {
   const branches: Array<{ node: Element, attribs: Record<string, string> }> = []
   let cursor = startIndex
@@ -98,6 +101,7 @@ function renderConditionalSequence(
           scope,
           renderChildren,
           { overrideAttribs: stripControlAttributes(attribs) },
+          datasets,
         ),
         endIndex: startIndex + branches.length - 1,
       }
@@ -116,6 +120,7 @@ function renderConditionalSequence(
           scope,
           renderChildren,
           { overrideAttribs: stripControlAttributes(attribs) },
+          datasets,
         ),
         endIndex: startIndex + branches.length - 1,
       }
@@ -133,6 +138,7 @@ function renderElement(
   scope: LegacyTemplateScope,
   renderChildren: (nodes: ChildNode[] | undefined, scope: LegacyTemplateScope) => string,
   options: RenderOptions = {},
+  datasets?: LegacyDatasetValues,
 ) {
   const attribs = node.attribs
   if (!options.skipFor) {
@@ -151,7 +157,7 @@ function renderElement(
         buffer += renderElement(node, childScope, renderChildren, {
           skipFor: true,
           overrideAttribs: forExtract.restAttribs,
-        })
+        }, datasets)
       }
       return buffer
     }
@@ -163,14 +169,16 @@ function renderElement(
     return renderChildren(node.children, scope)
   }
 
-  const attrs = buildAttributeString(effectiveAttribs, scope)
+  const dataset = datasets ? new Map<string, unknown>() : undefined
+  const attrs = buildAttributeString(effectiveAttribs, scope, dataset)
+  const anchor = dataset?.size && datasets ? createLegacyDatasetAnchor(datasets, dataset) : ''
   const children = renderChildren(node.children, scope)
 
   if (SELF_CLOSING_TAGS.has(normalizedTag) && !children) {
-    return `<${normalizedTag}${attrs} />`
+    return `${anchor}<${normalizedTag}${attrs} />`
   }
 
-  return `<${normalizedTag}${attrs}>${children}</${normalizedTag}>`
+  return `${anchor}<${normalizedTag}${attrs}>${children}</${normalizedTag}>`
 }
 
 function renderTextNode(node: DataNode, scope: LegacyTemplateScope) {
@@ -184,6 +192,7 @@ function renderTextNode(node: DataNode, scope: LegacyTemplateScope) {
 function renderTree(
   input: ChildNode[] | ChildNode | undefined,
   scope: LegacyTemplateScope,
+  datasets?: LegacyDatasetValues,
 ): string {
   if (!input) {
     return ''
@@ -194,12 +203,12 @@ function renderTree(
     for (let index = 0; index < input.length; index++) {
       const node = input[index]
       if (isConditionalElement(node)) {
-        const { rendered, endIndex } = renderConditionalSequence(input, index, scope, renderTree)
+        const { rendered, endIndex } = renderConditionalSequence(input, index, scope, (nodes, childScope) => renderTree(nodes, childScope, datasets), datasets)
         buffer += rendered
         index = endIndex
         continue
       }
-      buffer += renderTree(node, scope)
+      buffer += renderTree(node, scope, datasets)
     }
     return buffer
   }
@@ -209,10 +218,10 @@ function renderTree(
     return renderTextNode(node as DataNode, scope)
   }
   if (node.type === 'tag' || node.type === 'script' || node.type === 'style') {
-    return renderElement(node as Element, scope, renderTree)
+    return renderElement(node as Element, scope, (nodes, childScope) => renderTree(nodes, childScope, datasets), {}, datasets)
   }
   if ('children' in node && node.children?.length) {
-    return renderTree(node.children, scope)
+    return renderTree(node.children, scope, datasets)
   }
   return ''
 }
@@ -224,7 +233,14 @@ export function renderTemplate(nodes: ChildNode[], scope?: LegacyTemplateScope) 
 
 export function createTemplate(source: string): LegacyTemplateRenderer {
   const nodes = getOrParseTemplate(source)
-  return (scope?: LegacyTemplateScope) => renderTemplate(nodes, scope)
+  return (scope?: LegacyTemplateScope, context?: object) => {
+    const datasets: LegacyDatasetValues | undefined = context ? [] : undefined
+    const result = renderTree(nodes, createScope(scope), datasets)
+    if (context && datasets) {
+      recordLegacyDatasetRender(context, datasets)
+    }
+    return result
+  }
 }
 
 export type { LegacyTemplateRenderer, LegacyTemplateScope } from './types'

@@ -69,6 +69,7 @@ export function extractFor(attribs: Record<string, string>): ExtractForResult {
 export function buildAttributeString(
   attribs: Record<string, string>,
   scope: LegacyTemplateScope,
+  dataset?: Map<string, unknown>,
 ) {
   let result = ''
   for (const [name, rawValue] of Object.entries(attribs)) {
@@ -99,6 +100,16 @@ export function buildAttributeString(
     }
 
     const normalizedName = normalizeAttributeName(name)
+    if (normalizedName.startsWith('data-')) {
+      const trimmed = rawValue.trim()
+      const expression = /^\{\{((?:(?!\}\})[\s\S])*)\}\}$/.exec(trimmed)
+      const value: unknown = expression
+        ? evaluateExpression(expression[1]!, scope)
+        : rawValue.replace(/\{\{([\s\S]*?)\}\}/g, (_, source: string) => String(evaluateExpression(source, scope) ?? ''))
+      dataset?.set(normalizedName, value)
+      result += ` ${normalizedName}="${escapeAttribute(String(value ?? ''))}"`
+      continue
+    }
     if (normalizedName === 'style') {
       const expression = /^\{\{((?:(?!\}\})[\s\S])*)\}\}$/.exec(rawValue.trim())
       const rawStyle: unknown = expression

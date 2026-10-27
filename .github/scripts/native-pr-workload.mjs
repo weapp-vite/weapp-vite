@@ -17,8 +17,13 @@ export async function readNativePrWorkload(checkoutSha, profiles, get) {
   assert(bytes.toString('base64') === encoded && file.sha === blobSha, 'Benchmark workload blob identity mismatch')
   const value = JSON.parse(bytes.toString('utf8'))
   const keys = ['schemaVersion', 'draft', 'id', 'pullRequests', 'baseBranch', 'profiles']
-  assert(value && Object.keys(value).length === keys.length && keys.every(key => Object.hasOwn(value, key))
+  assert(value && Object.keys(value).every(key => [...keys, 'verificationTopology', 'verificationTopologyByAttempt'].includes(key)) && keys.every(key => Object.hasOwn(value, key))
     && value.schemaVersion === 1 && value.draft === false
+    && (value.verificationTopology === undefined || ['optimized-v1', 'optimized-v2'].includes(value.verificationTopology))
+    && (value.verificationTopologyByAttempt === undefined || (value.verificationTopologyByAttempt !== null
+      && typeof value.verificationTopologyByAttempt === 'object' && !Array.isArray(value.verificationTopologyByAttempt)
+      && Object.keys(value.verificationTopologyByAttempt).length > 0
+      && Object.entries(value.verificationTopologyByAttempt).every(([attempt, topology]) => /^[1-9]\d*$/u.test(attempt) && Number.isSafeInteger(Number(attempt)) && ['optimized-v1', 'optimized-v2'].includes(topology))))
     && typeof value.id === 'string' && /^[a-z\d]+(?:-[a-z\d]+)*$/u.test(value.id)
     && typeof value.baseBranch === 'string' && /^[\w./-]+$/u.test(value.baseBranch)
     && Array.isArray(value.pullRequests) && value.pullRequests.length > 0
@@ -31,6 +36,14 @@ export async function readNativePrWorkload(checkoutSha, profiles, get) {
     value,
     manifest: { path: NATIVE_PR_WORKLOAD_PATH, blobSha, sha256: createHash('sha256').update(bytes).digest('hex') },
   }
+}
+
+/** 同一不可变清单可以按正式 rerun attempt 选择对照拓扑，每次仍须原生审批。 */
+export function verificationTopologyForAttempt(workload, attempt) {
+  assert(/^[1-9]\d*$/u.test(String(attempt)) && Number.isSafeInteger(Number(attempt)), 'Invalid verification run attempt')
+  const topology = workload.verificationTopologyByAttempt?.[String(attempt)] ?? workload.verificationTopology ?? 'optimized-v1'
+  assert(['optimized-v1', 'optimized-v2'].includes(topology), 'Invalid verification attempt topology')
+  return topology
 }
 
 /** 普通路径检查始终保留，只有清单点名的 PR 可以在审批后追加固定检查。 */
@@ -47,6 +60,7 @@ export function selectNativePrWorkload(context, profiles, pathSelections, worklo
     return [name, selected ? (added ? 'path+workload' : 'path') : (added ? 'workload' : 'skipped')]
   }))
   return {
+    verificationTopology: active ? verificationTopologyForAttempt(workload.value, context.runAttempt) : 'optimized-v1',
     pathSelections,
     selectionSources: sources,
     selections: Object.fromEntries(Object.entries(sources).map(([name, source]) => [name, source !== 'skipped'])),

@@ -40,6 +40,7 @@ import type {
   TabBarIndexOptions,
   TabBarOptions,
 } from './types'
+import { callMiniProgramAsyncSuccess } from './async'
 import {
   getClipboardDataBridge,
   openCustomerServiceChatBridge,
@@ -72,6 +73,7 @@ import {
   saveVideoToPhotosAlbumBridge,
 } from './mediaApi'
 import {
+  hideShareMenuBridge,
   hideTabBarBridge,
   hideTabBarRedDotBridge,
   removeTabBarBadgeBridge,
@@ -89,12 +91,17 @@ import {
 } from './menuApi'
 import {
   hideLoadingBridge,
+  hideToastBridge,
   showLoadingBridge,
   showToastBridge,
 } from './uiFeedback'
 
 export function showToast(options?: ShowToastOptions) {
   return showToastBridge(options)
+}
+
+export function hideToast(options?: MiniProgramAsyncOptions<MiniProgramBaseResult>) {
+  return hideToastBridge(options)
 }
 
 export function showLoading(options?: ShowLoadingOptions) {
@@ -111,6 +118,17 @@ export function showShareMenu(options?: ShareMenuOptions) {
 
 export function updateShareMenu(options?: ShareMenuOptions) {
   return updateShareMenuBridge(options)
+}
+
+export function hideShareMenu(options?: ShareMenuOptions) {
+  return hideShareMenuBridge(options)
+}
+
+/**
+ * Web 没有小程序的返回首页按钮，保留成功回调兼容调用。
+ */
+export function hideHomeButton(options?: MiniProgramAsyncOptions<MiniProgramBaseResult>) {
+  return Promise.resolve(callMiniProgramAsyncSuccess(options, { errMsg: 'hideHomeButton:ok' }))
 }
 
 export function openCustomerServiceChat(options?: OpenCustomerServiceChatOptions) {

@@ -2,6 +2,10 @@ name: Validate Create Weapp Vite Smoke
 on:
   workflow_call:
     inputs:
+      verification_topology:
+        required: false
+        type: string
+        default: optimized-v1
       pr_context:
         required: true
         type: string
@@ -43,13 +47,15 @@ permissions:
 
 jobs:
   pr-context:
+    if: inputs.verification_topology != 'optimized-v2'
     uses: ./.github/workflows/reusable-frozen-pr-context.yml
     with:
+      verification_topology: ${{ inputs.verification_topology }}
       pr_context: ${{ inputs.pr_context }}
       profile: ci-create-weapp-vite
 
   source-network-regression:
-    if: needs.pr-context.outputs.should_run == 'true'
+    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-create-weapp-vite'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true') }}
     needs: pr-context
     name: Scaffold Network Regression (${{ matrix.os }} / Node 22)
     strategy:
@@ -59,12 +65,15 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
     uses: ./.github/workflows/reusable-node-command.yml
     with:
-      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
-      base_sha: ${{ needs.pr-context.outputs.base_sha }}
-      head_sha: ${{ needs.pr-context.outputs.head_sha }}
-      pr_number: ${{ needs.pr-context.outputs.pr_number }}
-      head_ref: ${{ needs.pr-context.outputs.head_ref }}
-      base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      verification_topology: ${{ inputs.verification_topology }}
+      pr_context: ${{ inputs.pr_context }}
+      pr_profile: ci-create-weapp-vite
+      checkout_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}
+      base_sha: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}
+      head_sha: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}
+      pr_number: ${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}
+      head_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}
+      base_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}
       runs_on: ${{ matrix.os }}
       node_version: '22'
       timeout_minutes: 45
@@ -77,7 +86,7 @@ jobs:
 
   prepare:
     needs: pr-context
-    if: needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr != 'true')
+    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-create-weapp-vite'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && ((inputs.verification_topology == 'optimized-v2' && (fromJSON(inputs.pr_context).isPr && 'true' || 'false') || needs.pr-context.outputs.is_pr) != 'true')) }}
     name: Prepare Smoke Matrix
     runs-on: ubuntu-latest
     outputs:
@@ -88,6 +97,8 @@ jobs:
       scenarios: ${{ steps.inputs.outputs.scenarios }}
       registries: ${{ steps.inputs.outputs.registries }}
 
+    env:
+      WEAPP_VITE_VERIFICATION_TOPOLOGY: ${{ inputs.verification_topology }}
     steps:
       - name: Setup Node.js environment
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -166,7 +177,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
   smoke:
-    if: needs.pr-context.outputs.should_run == 'true'
+    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.prepare.result == 'success' && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-create-weapp-vite'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true') }}
     needs: [pr-context, prepare]
     name: Create Smoke (${{ needs.prepare.outputs.source }} / ${{ matrix.os }} / Node ${{ matrix.node-version }} / ${{ matrix.scope }})
     timeout-minutes: 90
@@ -176,6 +187,8 @@ jobs:
       max-parallel: 3
       matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
 
+    env:
+      WEAPP_VITE_VERIFICATION_TOPOLOGY: ${{ inputs.verification_topology }}
     steps:
       - name: Enable Git long paths on Windows
         if: runner.os == 'Windows'
@@ -185,9 +198,15 @@ jobs:
       - name: Check out code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ needs.pr-context.outputs.checkout_sha }}
+          ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}
           persist-credentials: false
 
+      - name: Validate frozen identity in the executing job
+        if: inputs.verification_topology == 'optimized-v2'
+        uses: ./.github/actions/verify-frozen-job-context
+        with:
+          context: ${{ inputs.pr_context }}
+          profile: ci-create-weapp-vite
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
 
       - name: Setup Node.js environment
@@ -214,7 +233,7 @@ jobs:
         id: workspace
         if: needs.prepare.outputs.source == 'workspace'
         env:
-          CREATE_WEAPP_VITE_SOURCE_COMMIT: ${{ needs.pr-context.outputs.checkout_sha }}
+          CREATE_WEAPP_VITE_SOURCE_COMMIT: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}
         run: node scripts/createWeappViteSmoke/workspace.mjs
 
       - name: Print package manager versions
@@ -242,7 +261,7 @@ jobs:
         env:
           CREATE_WEAPP_VITE_SPEC: ${{ needs.prepare.outputs.package_spec }}
           CREATE_WEAPP_VITE_SOURCE: ${{ needs.prepare.outputs.source }}
-          CREATE_WEAPP_VITE_SOURCE_COMMIT: ${{ needs.pr-context.outputs.checkout_sha }}
+          CREATE_WEAPP_VITE_SOURCE_COMMIT: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}
           CREATE_WEAPP_VITE_TARBALL: ${{ steps.workspace.outputs.tarball }}
           CREATE_WEAPP_VITE_TARBALL_SHA256: ${{ steps.workspace.outputs.tarball_sha256 }}
           CREATE_WEAPP_VITE_TEMPLATES: ${{ matrix.templates || needs.prepare.outputs.templates }}
@@ -263,17 +282,25 @@ jobs:
 
   report:
     name: Smoke Report
-    if: needs.pr-context.outputs.should_run == 'true' && (!cancelled() && needs.pr-context.outputs.is_pr != 'true')
+    if: (inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-create-weapp-vite'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && (!cancelled() && (inputs.verification_topology == 'optimized-v2' && (fromJSON(inputs.pr_context).isPr && 'true' || 'false') || needs.pr-context.outputs.is_pr) != 'true')
     needs: [pr-context, prepare, smoke]
     runs-on: ubuntu-latest
 
+    env:
+      WEAPP_VITE_VERIFICATION_TOPOLOGY: ${{ inputs.verification_topology }}
     steps:
       - name: Check out code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ needs.pr-context.outputs.checkout_sha }}
+          ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}
           persist-credentials: false
 
+      - name: Validate frozen identity in the executing job
+        if: inputs.verification_topology == 'optimized-v2'
+        uses: ./.github/actions/verify-frozen-job-context
+        with:
+          context: ${{ inputs.pr_context }}
+          profile: ci-create-weapp-vite
       - name: Download smoke report artifacts
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:

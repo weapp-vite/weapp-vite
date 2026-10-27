@@ -1,0 +1,85 @@
+# repoctl-managed: docs/v1
+name: Documentation
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      site:
+        description: Configured documentation site
+        required: true
+        type: string
+      channel:
+        description: Deployment channel
+        required: true
+        default: stable
+        type: choice
+        options: [stable, preview]
+      source-sha:
+        description: Exact main commit for preview
+        required: false
+        type: string
+      release:
+        description: Completed stable release ID, for deployment or retry
+        required: false
+        type: string
+      commits:
+        description: Space-separated single-parent main commits containing documentation corrections
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+env:
+  LEFTHOOK: '0'
+
+jobs:
+  sites:
+    if: ${{ github.ref == 'refs/heads/main' && github.event.repository.default_branch == 'main' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    outputs:
+      sites: ${{ steps.sites.outputs.sites }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24.22.1
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - id: sites
+        env:
+          REQUESTED_SITE: ${{ inputs.site }}
+        run: |
+          node --input-type=module <<'NODE'
+          import { appendFile } from 'node:fs/promises'
+          import { loadMonorepoConfig } from 'repoctl'
+          const config = await loadMonorepoConfig(process.cwd())
+          const sites = Object.keys(config.commands?.docs?.sites ?? {}).sort()
+          const requested = process.env.REQUESTED_SITE
+          if (requested && !sites.includes(requested)) throw new Error('Unknown documentation site')
+          await appendFile(process.env.GITHUB_OUTPUT, `sites=${JSON.stringify(requested ? [requested] : sites)}\n`)
+          NODE
+
+  deploy:
+    needs: sites
+    if: ${{ needs.sites.outputs.sites != '[]' && needs.sites.outputs.sites != '' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        site: ${{ fromJSON(needs.sites.outputs.sites) }}
+    uses: ./.github/workflows/repoctl-docs-deploy.yml
+    with:
+      site: ${{ matrix.site }}
+      channel: ${{ github.event_name == 'push' && 'preview' || inputs.channel }}
+      source-sha: ${{ github.event_name == 'push' && github.sha || inputs.source-sha }}
+      release: ${{ inputs.release }}
+      commits: ${{ inputs.commits }}
+    secrets: inherit

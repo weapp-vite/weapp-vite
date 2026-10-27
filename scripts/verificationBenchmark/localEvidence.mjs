@@ -4,7 +4,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { createBuildArtifactManifest, verifyBuildArtifactManifest } from '../buildArtifact/index.mjs'
 import { redactReport } from '../verification/report.ts'
-import { assertVerificationTopology, topologyEnvironment } from '../verification/topology.ts'
+import { assertVerificationTopology, logicalTopologyCaseFile, topologyEnvironment } from '../verification/topology.ts'
 import { classifyCoverageScope } from '../verificationTelemetry/coveragePolicy.mjs'
 import { localDocument, localRelative, localText, localWithin } from './localIo.mjs'
 import { validateLocalVitest } from './localReporter.mjs'
@@ -119,7 +119,7 @@ export async function collectLocalEvidence(root, directory, frozen, inventories,
       seenVitest.add(report.path)
       const scope = validateLocalVitest(value)
       const group = task.kind === 'test' ? 'unit' : task.id
-      caseScope.push(...scope.cases.map(([source, , name, mode, state, note]) => [source, group, name, mode, state, note]))
+      caseScope.push(...scope.cases.map(([source, , name, mode, state, note]) => [logicalTopologyCaseFile(source), group, name, mode, state, note]))
       if (task.id === 'runtime:headless') {
         runtimeCases.push(...scope.cases.map(([, , name, mode, state, note]) => [group, value.template, name, mode, state, note]))
       }

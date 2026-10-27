@@ -1,6 +1,6 @@
 /* eslint-disable no-template-curly-in-string -- GitHub Actions 表达式必须按字面量核验。 */
 import { expect, it } from 'vitest'
-import { readWorkflowFixture } from './workflowFixture.mjs'
+import { frozenJobCondition, frozenWorkflowText, readWorkflowFixture } from './workflowFixture.mjs'
 
 interface Workflow {
   on: { workflow_dispatch: { inputs: { scope: { default: string, options: string[] } } } }
@@ -21,8 +21,8 @@ it('isolates manual Windows acceptance diagnostics from the complete compatibili
     options: ['full', 'windows-runtime-diagnostic'],
   })
   expect(workflow.concurrency.group).toBe('acceptance-${{ inputs.scope || \'full\' }}-${{ inputs.pr-number || github.ref }}')
-  expect(workflow.jobs.compatibility?.if).toBe('needs.pr-context.outputs.should_run == \'true\' && (github.event_name != \'workflow_dispatch\' || inputs.scope == \'full\')')
-  expect(workflow.jobs['windows-runtime-diagnostic']?.if).toBe('needs.pr-context.outputs.should_run == \'true\' && (github.event_name == \'workflow_dispatch\' && inputs.scope == \'windows-runtime-diagnostic\')')
+  expect(workflow.jobs.compatibility?.if).toBe(frozenJobCondition('needs.pr-context.outputs.should_run == \'true\' && (github.event_name != \'workflow_dispatch\' || inputs.scope == \'full\')', 'ci-acceptance'))
+  expect(workflow.jobs['windows-runtime-diagnostic']?.if).toBe(frozenJobCondition('needs.pr-context.outputs.should_run == \'true\' && (github.event_name == \'workflow_dispatch\' && inputs.scope == \'windows-runtime-diagnostic\')', 'ci-acceptance'))
 })
 
 it('rebuilds dependencies and retains coverage and the original test timeout on both Windows Node versions', () => {
@@ -33,8 +33,8 @@ it('rebuilds dependencies and retains coverage and the original test timeout on 
     runs_on: 'windows-latest',
     node_version: '${{ matrix.node-version }}',
     build_command: 'pnpm exec turbo run build --filter=@weapp-agent/mini-program...',
-    checkout_ref: '${{ needs.pr-context.outputs.checkout_sha }}',
-    artifact_name: 'acceptance-runtime-windows-node-${{ matrix.node-version }}-${{ needs.pr-context.outputs.checkout_sha }}',
+    checkout_ref: frozenWorkflowText('${{ needs.pr-context.outputs.checkout_sha }}', 'ci-acceptance'),
+    artifact_name: frozenWorkflowText('acceptance-runtime-windows-node-${{ matrix.node-version }}-${{ needs.pr-context.outputs.checkout_sha }}', 'ci-acceptance'),
     artifact_path: '.tmp/acceptance-runtime-report.json',
   })
   expect(String(job.with.main_command).trim().split('\n')).toEqual([

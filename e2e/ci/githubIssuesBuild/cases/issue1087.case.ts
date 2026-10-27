@@ -3,6 +3,8 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import { expect, it } from 'vitest'
 
+export const group = 'standard'
+
 export function registerGithubIssuesBuildCase(context: GithubIssuesBuildCaseContext) {
   it('feature #1087: enables required-component loading whenever the full gallery includes Skyline', async () => {
     await context.runStandardBuild()

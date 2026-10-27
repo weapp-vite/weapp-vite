@@ -1,5 +1,6 @@
 import type { ComponentPublicInstance } from './types'
 import { listenRuntimeEvent, nameRuntimeEventHandler } from '../componentEvents'
+import { readRuntimeDataset } from '../dataset'
 import { invokeMiniProgramEventHandler } from '../inputHandlerResult'
 import {
   decodeEventAttributeName,
@@ -95,13 +96,13 @@ export function bindRuntimeEvents(
         if (flags.catch) {
           nativeEvent.stopPropagation()
         }
-        const dataset = { ...element.dataset }
+        const dataset = { ...readRuntimeDataset(element) }
         const syntheticEvent = {
           type: eventName,
           timeStamp: nativeEvent.timeStamp,
           detail: (nativeEvent as CustomEvent).detail ?? (nativeEvent as InputEvent).data ?? undefined,
           target: {
-            dataset,
+            dataset: readRuntimeDataset(nativeEvent.target as Element | null),
           },
           currentTarget: {
             dataset,

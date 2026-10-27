@@ -15,6 +15,7 @@ const configFiles = [
   'vitest.coverage.ts',
   'scripts/verification/toolTests.ts',
   'scripts/verification/topology.ts',
+  'e2e/ci/githubIssuesBuild/groups.ts',
   'scripts/verificationBenchmark/localReporterConfig.mjs',
   'scripts/verificationTelemetry/vitest.mjs',
   'scripts/verificationTelemetry/reporter.mjs',

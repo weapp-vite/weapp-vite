@@ -15,6 +15,41 @@ it('preserves every job, command, matrix and dependency of the actual verificati
   }
 })
 
+function originalV1Context(value) {
+  return value.replace(/\(inputs\.verification_topology == 'optimized-v2' && .*?\|\| needs\.pr-context\.outputs\.([a-z_]+)\)/gu, 'needs.pr-context.outputs.$1')
+}
+
+it('keeps the reviewed v1 logical jobs, commands, matrices and artifact contracts executable by default', async () => {
+  const inventory = JSON.parse(await fs.readFile(new URL('./optimized-v1-inventory.json', import.meta.url), 'utf8'))
+  const ignoredInputs = new Set(['verification_topology', 'pr_context', 'pr_profile', 'resolve_node_support', 'prepare_consumer_batches', 'plan_artifact_name'])
+  for (const [file, jobs] of Object.entries(inventory)) {
+    const current = (await readWorkflow(file)).jobs
+    for (const [id, expected] of Object.entries(jobs)) {
+      const job = current[id]
+      expect(job, `${file}:${id}`).toBeDefined()
+      for (const key of ['uses', 'runs-on', 'needs', 'strategy']) {
+        expect(job[key], `${file}:${id}:${key}`).toEqual(expected[key])
+      }
+      if (expected.with) {
+        const actualInputs = Object.fromEntries(Object.entries(job.with).filter(([name]) => !ignoredInputs.has(name) || Object.hasOwn(expected.with, name)).map(([name, value]) => [name, typeof value === 'string' ? originalV1Context(value) : value]))
+        expect(actualInputs, `${file}:${id}:v1 inputs`).toEqual(expected.with)
+      }
+      if (expected.if) {
+        expect(originalV1Context(job.if), `${file}:${id}:v1 selection`).toContain(expected.if.replace(/^\$\{\{ | \}\}$/gu, ''))
+      }
+      if (expected.commands) {
+        const commands = (job.steps ?? []).filter(step => step.run && !/inputs\.(?:resolve_node_support|prepare_consumer_batches)|inputs\.verification_topology == 'optimized-v2'/u.test(step.if ?? '')).map(step => originalV1Context(step.run))
+        expect(commands, `${file}:${id}:v1 commands`).toEqual(expected.commands)
+      }
+    }
+    for (const [id, job] of Object.entries(current)) {
+      if (!Object.hasOwn(jobs, id)) {
+        expect(job.if, `${file}:${id}:new jobs must remain opt in`).toContain('inputs.verification_topology == \'optimized-v2\'')
+      }
+    }
+  }
+})
+
 it('keeps the original coverage command and gates publication on the variant threshold verdict', async () => {
   const manifest = JSON.parse(await fs.readFile(new URL('package.json', root), 'utf8'))
   expect(manifest.scripts['test:coverage']).toBe('vitest run --configLoader bundle --coverage.enabled --exclude \'**/.codex-tmp/**\'')

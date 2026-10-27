@@ -7,6 +7,7 @@ import type {
   SelectorTargetDescriptor,
 } from './selectorQueryTypes'
 import { resolveComponentPublicInstanceTarget } from '../component/publicInstance'
+import { readRuntimeDataset } from '../dataset'
 
 function isQueryRoot(value: unknown): value is ParentNode {
   if (!value || typeof value !== 'object') {
@@ -244,7 +245,7 @@ function readNodeFields(node: unknown, fields: SelectorQueryNodeFields) {
     result.id = elementWithId.id ?? elementWithId.getAttribute?.('id') ?? ''
   }
   if (fields.dataset) {
-    result.dataset = { ...(element.dataset ?? {}) }
+    result.dataset = readRuntimeDataset(element)
   }
   if (fields.rect || fields.size) {
     const rect = readNodeRect(node)

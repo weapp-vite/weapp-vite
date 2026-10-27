@@ -1,7 +1,11 @@
+import type { HeadConfig } from 'vitepress'
 import type { DefaultTheme } from 'vitepress/theme'
+import type { DocsThemeConfig } from './deployment/index.ts'
 import { readFileSync } from 'node:fs'
+import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import tailwindcss from '@tailwindcss/vite'
+import { docsPreviewRobots } from 'repoctl/docs-context'
 import AutoImport from 'unplugin-auto-import/vite'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 import Components from 'unplugin-vue-components/vite'
@@ -16,9 +20,13 @@ import llmstxt, {
 import { withMermaid } from 'vitepress-plugin-mermaid'
 import { createVueOxcTsconfigGuard } from '../../scripts/vite/vueOxcTsconfigGuard'
 import { wevuApiSidebarItems } from './data/wevuApiSidebar'
-import { transformPageDataForSeo } from './seo'
+import { docsDeploymentAssets } from './deployment/assets.ts'
+import { getDocsDeployment } from './deployment/index.ts'
+import { createSeoHead, transformPageDataForSeo } from './seo'
 import { WEAPI_CAPABILITY_GROUPS } from './shared/weapiCapabilities'
 import { siteBaseUrl } from './site'
+
+const deployment = getDocsDeployment(process.env.REPO_DOCS_CHANNEL, process.env.REPO_DOCS_URL)
 
 const vueSharedEsmPath = fileURLToPath(
   new URL(
@@ -653,7 +661,7 @@ const configSidebarItems: DefaultTheme.SidebarItem[] = [
 // https://vitepress.dev/reference/site-config
 // https://github.com/emersonbottero/vitepress-plugin-mermaid/issues/47
 export default withMermaid(
-  defineConfig({
+  defineConfig<DocsThemeConfig>({
     lang: 'zh-CN',
     title: 'Weapp-vite',
     description:
@@ -663,6 +671,7 @@ export default withMermaid(
     // CI 环境不包含 gitignore 的 typedoc 产物，仅放行该目录的死链检查。
     ignoreDeadLinks: [/^\/wevu\/api(?:\/|$)/],
     themeConfig: {
+      docsDeployment: { preview: deployment.preview, stableOrigin: deployment.stableOrigin },
       // https://vitepress.dev/reference/default-theme-config
       nav: [
         { text: '指引', link: '/guide/' },
@@ -794,9 +803,15 @@ export default withMermaid(
       theme: 'default',
     },
     transformPageData(pageData) {
-      transformPageDataForSeo(pageData)
+      transformPageDataForSeo(pageData, deployment.preview)
+    },
+    transformHead({ pageData }) {
+      // VitePress 内建 404 不经过 Markdown 页面转换，单独补齐静态爬虫策略。
+      return pageData.relativePath === '404.md' ? createSeoHead(pageData, deployment.preview) : []
     },
     head: [
+      // 全站策略也覆盖运行时生成的未知路由与 404 页面。
+      ...(deployment.preview ? [['meta', { name: 'robots', content: docsPreviewRobots }] as HeadConfig] : []),
       ['meta', { name: 'theme-color', content: '#95ec69' }],
       ['link', { rel: 'icon', type: 'image/svg+xml', href: '/logo.svg' }],
       ['link', { rel: 'icon', type: 'image/png', href: '/logo.png' }],
@@ -829,12 +844,14 @@ export default withMermaid(
 })();`,
       ],
     ],
-    sitemap: {
-      hostname: siteBaseUrl,
-      transformItems: items => items.filter((item) => {
-        return !String(item.url).includes('/react')
-      }),
-    },
+    sitemap: deployment.preview
+      ? undefined
+      : {
+          hostname: siteBaseUrl,
+          transformItems: items => items.filter((item) => {
+            return !String(item.url).includes('/react')
+          }),
+        },
     lastUpdated: true,
     vite: {
       server: {
@@ -859,6 +876,7 @@ export default withMermaid(
       //   noExternal: ['element-plus', 'gridstack', 'vue-echarts', 'echarts'],
       // },
       plugins: [
+        docsDeploymentAssets(deployment),
         createVueOxcTsconfigGuard(),
         tailwindcss(),
         llmstxt({

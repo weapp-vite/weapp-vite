@@ -1,0 +1,19 @@
+{
+  "projectname": "issue-1250-lifecycle",
+  "libVersion": "3.17.2",
+  "setting": {
+    "urlCheck": false
+  },
+  "condition": {
+    "miniprogram": {
+      "list": [
+        {
+          "name": "Web lifecycle API compatibility",
+          "pathName": "pages/index/index",
+          "query": "",
+          "launchMode": "default"
+        }
+      ]
+    }
+  }
+}

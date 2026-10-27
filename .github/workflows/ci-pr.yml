@@ -56,6 +56,7 @@ jobs:
     uses: ./.github/workflows/validate-ci.yml
     with:
       pr_context: ${{ needs.plan.outputs.pr_context }}
+      verification_topology: ${{ fromJSON(needs.plan.outputs.pr_context).verificationTopology }}
   ci-policy:
     name: CI Policy
     needs: plan
@@ -63,6 +64,7 @@ jobs:
     uses: ./.github/workflows/validate-ci-policy.yml
     with:
       pr_context: ${{ needs.plan.outputs.pr_context }}
+      verification_topology: ${{ fromJSON(needs.plan.outputs.pr_context).verificationTopology }}
   ci-e2e:
     name: CI E2E
     needs: plan
@@ -70,6 +72,7 @@ jobs:
     uses: ./.github/workflows/validate-ci-e2e.yml
     with:
       pr_context: ${{ needs.plan.outputs.pr_context }}
+      verification_topology: ${{ fromJSON(needs.plan.outputs.pr_context).verificationTopology }}
   ci-create-weapp-vite:
     name: Create Weapp Vite Smoke
     needs: plan
@@ -77,6 +80,7 @@ jobs:
     uses: ./.github/workflows/validate-ci-create-weapp-vite.yml
     with:
       pr_context: ${{ needs.plan.outputs.pr_context }}
+      verification_topology: ${{ fromJSON(needs.plan.outputs.pr_context).verificationTopology }}
   ci-acceptance-http:
     name: Acceptance HTTP
     needs: plan
@@ -84,6 +88,7 @@ jobs:
     uses: ./.github/workflows/validate-ci-acceptance-http.yml
     with:
       pr_context: ${{ needs.plan.outputs.pr_context }}
+      verification_topology: ${{ fromJSON(needs.plan.outputs.pr_context).verificationTopology }}
   ci-acceptance:
     name: Acceptance and Agent
     needs: plan
@@ -91,6 +96,7 @@ jobs:
     uses: ./.github/workflows/validate-ci-acceptance.yml
     with:
       pr_context: ${{ needs.plan.outputs.pr_context }}
+      verification_topology: ${{ fromJSON(needs.plan.outputs.pr_context).verificationTopology }}
   ci-dimina:
     name: Dimina Web Experiment
     needs: plan
@@ -98,6 +104,7 @@ jobs:
     uses: ./.github/workflows/validate-ci-dimina.yml
     with:
       pr_context: ${{ needs.plan.outputs.pr_context }}
+      verification_topology: ${{ fromJSON(needs.plan.outputs.pr_context).verificationTopology }}
   ci-vite-host-consumer:
     name: Vite Host Consumer
     needs: plan
@@ -105,6 +112,7 @@ jobs:
     uses: ./.github/workflows/validate-ci-vite-host-consumer.yml
     with:
       pr_context: ${{ needs.plan.outputs.pr_context }}
+      verification_topology: ${{ fromJSON(needs.plan.outputs.pr_context).verificationTopology }}
   ci-vscode-extension:
     name: VSCode Extension CI
     needs: plan
@@ -112,6 +120,7 @@ jobs:
     uses: ./.github/workflows/validate-ci-vscode-extension.yml
     with:
       pr_context: ${{ needs.plan.outputs.pr_context }}
+      verification_topology: ${{ fromJSON(needs.plan.outputs.pr_context).verificationTopology }}
   ci-tutorial-e2e:
     name: Tutorial E2E
     needs: plan
@@ -119,6 +128,7 @@ jobs:
     uses: ./.github/workflows/validate-ci-tutorial-e2e.yml
     with:
       pr_context: ${{ needs.plan.outputs.pr_context }}
+      verification_topology: ${{ fromJSON(needs.plan.outputs.pr_context).verificationTopology }}
   deploy-website:
     name: Deploy Website
     needs: plan
@@ -126,6 +136,7 @@ jobs:
     uses: ./.github/workflows/validate-deploy-website.yml
     with:
       pr_context: ${{ needs.plan.outputs.pr_context }}
+      verification_topology: ${{ fromJSON(needs.plan.outputs.pr_context).verificationTopology }}
   native-addon-correctness:
     name: Native Addon Correctness
     needs: plan
@@ -133,6 +144,7 @@ jobs:
     uses: ./.github/workflows/validate-native-addon-correctness.yml
     with:
       pr_context: ${{ needs.plan.outputs.pr_context }}
+      verification_topology: ${{ fromJSON(needs.plan.outputs.pr_context).verificationTopology }}
   ci-performance:
     name: Performance Smoke
     needs: plan
@@ -140,6 +152,7 @@ jobs:
     uses: ./.github/workflows/validate-ci-performance.yml
     with:
       pr_context: ${{ needs.plan.outputs.pr_context }}
+      verification_topology: ${{ fromJSON(needs.plan.outputs.pr_context).verificationTopology }}
   wevu-runtime-size:
     name: Wevu Runtime Size
     needs: plan
@@ -147,3 +160,36 @@ jobs:
     uses: ./.github/workflows/validate-wevu-runtime-size.yml
     with:
       pr_context: ${{ needs.plan.outputs.pr_context }}
+      verification_topology: ${{ fromJSON(needs.plan.outputs.pr_context).verificationTopology }}
+  documentation:
+    name: Root documentation policy
+    needs: plan
+    if: ${{ fromJSON(needs.plan.outputs.pr_context).documentationOnly }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      WEAPP_VITE_VERIFICATION_TOPOLOGY: ${{ fromJSON(needs.plan.outputs.pr_context).verificationTopology }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ fromJSON(needs.plan.outputs.pr_context).checkoutSha }}
+          persist-credentials: false
+      - uses: ./.github/actions/verify-frozen-job-context
+        with:
+          context: ${{ needs.plan.outputs.pr_context }}
+          profile: documentation
+          verification-topology: ${{ fromJSON(needs.plan.outputs.pr_context).verificationTopology }}
+      - uses: ./.github/actions/setup-node-pnpm
+        if: fromJSON(needs.plan.outputs.pr_context).documentationPaths[0] != null || fromJSON(needs.plan.outputs.pr_context).documentationChecks[0] != null
+        with:
+          node-version: '24'
+          install-dependencies: 'false'
+      - uses: ./.github/actions/install-workspace-deps
+        if: fromJSON(needs.plan.outputs.pr_context).documentationPaths[0] != null || fromJSON(needs.plan.outputs.pr_context).documentationChecks[0] != null
+        with:
+          ignore-scripts: 'true'
+      - name: Lint exactly the frozen surviving documentation paths
+        env:
+          PR_DOCUMENTATION_CHECKS: ${{ toJSON(fromJSON(needs.plan.outputs.pr_context).documentationChecks) }}
+          PR_DOCUMENTATION_PATHS: ${{ toJSON(fromJSON(needs.plan.outputs.pr_context).documentationPaths) }}
+        run: node .github/scripts/lint-frozen-documentation.mjs

@@ -6,11 +6,49 @@ on:
       node_version:
         description: Actual full Node.js version used by this command
         value: ${{ jobs.run.outputs.node_version }}
+      node_support_matrix:
+        description: Unique exact Node versions with every logical support role
+        value: ${{ jobs.run.outputs.node_support_matrix }}
+      consumer_batch_matrix:
+        description: Four batches and their exact browser requirements
+        value: ${{ jobs.run.outputs.consumer_batch_matrix }}
     inputs:
       verification_topology:
         required: false
         type: string
         default: optimized-v1
+      pr_context:
+        required: false
+        type: string
+        default: ''
+      pr_profile:
+        required: false
+        type: string
+        default: ''
+      require_history:
+        required: false
+        type: boolean
+        default: false
+      fetch_base:
+        required: false
+        type: boolean
+        default: false
+      resolve_node_support:
+        required: false
+        type: boolean
+        default: false
+      prepare_consumer_batches:
+        required: false
+        type: boolean
+        default: false
+      plan_artifact_name:
+        required: false
+        type: string
+        default: ''
+      consume_plan_artifact:
+        required: false
+        type: string
+        default: ''
       runs_on:
         required: true
         type: string
@@ -149,6 +187,8 @@ jobs:
     timeout-minutes: ${{ inputs.timeout_minutes }}
     outputs:
       node_version: ${{ steps.toolchain.outputs.node-version }}
+      node_support_matrix: ${{ steps.node-support-plan.outputs.matrix }}
+      consumer_batch_matrix: ${{ steps.consumer-batch-plan.outputs.matrix }}
     env:
       WEAPP_VITE_VERIFICATION_TOPOLOGY: ${{ inputs.verification_topology }}
       TURBO_TOKEN: ${{ inputs.pr_number == '' && secrets.TURBO_TOKEN || '' }}
@@ -171,10 +211,16 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.checkout_ref || github.sha }}
-          fetch-depth: ${{ inputs.pr_number != '' && '0' || inputs.fetch_depth }}
+          fetch-depth: ${{ inputs.verification_topology != 'optimized-v2' && inputs.pr_number != '' && '0' || inputs.require_history && '0' || inputs.fetch_depth }}
           persist-credentials: false
+      - name: Validate frozen identity in the executing job
+        if: inputs.verification_topology == 'optimized-v2'
+        uses: ./.github/actions/verify-frozen-job-context
+        with:
+          context: ${{ inputs.pr_context }}
+          profile: ${{ inputs.pr_profile }}
       - name: Fetch frozen PR base
-        if: inputs.base_sha != ''
+        if: inputs.base_sha != '' && (inputs.verification_topology != 'optimized-v2' || inputs.fetch_base)
         shell: bash
         env:
           PR_BASE_SHA: ${{ inputs.base_sha }}
@@ -183,7 +229,9 @@ jobs:
         id: toolchain
         with:
           node-version: ${{ inputs.node_version }}
+          install-dependencies: ${{ inputs.verification_topology != 'optimized-v2' || inputs.consume_build_artifact == '' }}
       - name: Restore trusted workspace task cache
+        if: inputs.verification_topology != 'optimized-v2' || inputs.build_command != '' || inputs.lint_command != ''
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .turbo
@@ -205,17 +253,29 @@ jobs:
           name: ${{ inputs.consume_build_artifact }}
           path: .
       - name: Refresh workspace links after artifact restore
-        if: inputs.consume_build_artifact != ''
+        if: inputs.consume_build_artifact != '' && inputs.verification_topology != 'optimized-v2'
         shell: bash
         run: |
           pnpm install --frozen-lockfile --ignore-scripts
           node scripts/verify-build-artifact-manifest.mjs
+      - name: Install once after restoring immutable workspace artifacts
+        if: inputs.consume_build_artifact != '' && inputs.verification_topology == 'optimized-v2'
+        uses: ./.github/actions/install-workspace-deps
+      - name: Verify restored workspace artifact identity
+        if: inputs.consume_build_artifact != '' && inputs.verification_topology == 'optimized-v2'
+        run: node scripts/verify-build-artifact-manifest.mjs
       - name: Download auxiliary verification artifact
         if: inputs.consume_aux_artifact != ''
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: ${{ inputs.consume_aux_artifact }}
           path: ${{ inputs.aux_artifact_path }}
+      - name: Download frozen consumer verification plans
+        if: inputs.consume_plan_artifact != ''
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: ${{ inputs.consume_plan_artifact }}
+          path: .tmp/consumer-plan
       - name: Pack local consumer archives with common immutable provenance
         if: inputs.consumer_tarballs != '' && inputs.consume_aux_artifact == ''
         run: node scripts/consumerArtifacts/manifest.mjs pack "${{ inputs.consumer_tarballs }}"
@@ -231,6 +291,19 @@ jobs:
       - name: Freeze baseline verification evidence plans
         if: inputs.verification_telemetry && inputs.build_artifact_name != ''
         run: node --import tsx scripts/verificationTelemetry/cli.mjs prepare-suites --mode=${{ inputs.pr_number != '' && 'pr' || 'full' }}
+      - name: Freeze installed Playwright browser revisions
+        if: inputs.install_playwright && (inputs.verification_topology == 'optimized-v2' || github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
+        id: playwright-cache
+        shell: bash
+        env:
+          PLAYWRIGHT_REQUESTED_BROWSERS: ${{ inputs.playwright_browsers }}
+        run: node scripts/playwrightCache.mjs "$PLAYWRIGHT_REQUESTED_BROWSERS"
+      - name: Restore trusted Playwright browser revisions
+        if: inputs.verification_topology == 'optimized-v2' && inputs.install_playwright
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: ${{ steps.playwright-cache.outputs.path }}
+          key: ${{ steps.playwright-cache.outputs.key }}
       - name: Install Playwright browsers and system dependencies
         if: inputs.install_playwright && runner.os == 'Linux'
         run: |
@@ -285,6 +358,37 @@ jobs:
             export GITHUB_HEAD_REF="$PR_HEAD_REF"
           fi
           ${{ inputs.main_command }}
+      - name: Resolve floating Node 22 support version
+        if: inputs.resolve_node_support
+        id: support-latest-22
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: ^22.23.4
+          check-latest: true
+      - name: Resolve floating Node 24 support version
+        if: inputs.resolve_node_support
+        id: support-latest-24
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: ^24.22.1
+          check-latest: true
+      - name: Restore the immutable artifact builder Node
+        if: inputs.resolve_node_support
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: ${{ steps.toolchain.outputs.node-version }}
+      - name: Freeze complete Node support roles and unique executions
+        if: inputs.resolve_node_support
+        id: node-support-plan
+        shell: bash
+        env:
+          SUPPORT_LATEST_22: ${{ steps.support-latest-22.outputs.node-version }}
+          SUPPORT_LATEST_24: ${{ steps.support-latest-24.outputs.node-version }}
+        run: node scripts/nodeSupport/index.mjs plan .cache/node-support-tarballs/ci-provenance.json .tmp/consumer-plan/node-support.json "$SUPPORT_LATEST_22" "$SUPPORT_LATEST_24"
+      - name: Freeze all consumer scenarios into four deterministic batches
+        if: inputs.prepare_consumer_batches
+        id: consumer-batch-plan
+        run: node scripts/consumerBatches/plan.mjs .cache/node-support-tarballs/ci-provenance.json .tmp/consumer-plan/scenarios.json
       - name: Finalize original coverage threshold verdict
         if: success() && inputs.verification_telemetry
         run: node scripts/verificationTelemetry/cli.mjs finalize-coverage --if-present --command-succeeded
@@ -325,6 +429,13 @@ jobs:
             mpcore/packages/*/bin/**
             .tmp/build-artifact-manifest.json
             .tmp/verification-telemetry/plans/**
+          if-no-files-found: error
+      - name: Upload frozen consumer verification plans
+        if: ${{ success() && inputs.plan_artifact_name != '' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: ${{ inputs.plan_artifact_name }}
+          path: .tmp/consumer-plan
           if-no-files-found: error
       - name: Upload CI stage timings
         if: ${{ !cancelled() && inputs.timing_artifact_name != '' }}
@@ -375,3 +486,9 @@ jobs:
         with:
           path: .turbo
           key: turbo-${{ runner.os }}-${{ runner.arch }}-${{ env.REPOCTL_RELEASE_NODE_VERSION }}-${{ env.REPOCTL_RELEASE_PNPM_VERSION }}-${{ hashFiles('package.json', 'pnpm-lock.yaml') }}-${{ inputs.checkout_ref || github.sha }}
+      - name: Save trusted Playwright browser revisions
+        if: ${{ success() && inputs.install_playwright && github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: ${{ steps.playwright-cache.outputs.path }}
+          key: ${{ steps.playwright-cache.outputs.key }}

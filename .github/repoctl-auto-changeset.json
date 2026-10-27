@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "ignorePaths": [
+    "{packages,packages-runtime,@weapp-core,benchmarks,extensions,templates}/*/{test,tests,test-d,e2e,coverage,docs,references}/**",
+    "mpcore/packages/*/{test,tests,test-d,e2e,coverage,docs,references}/**",
+    "**/{__tests__,__snapshots__}/**",
+    "**/*.{test,spec}.{js,mjs,cjs,jsx,ts,mts,cts,tsx}",
+    "**/{README.md,CHANGELOG.md,LICENSE,LICENSE.md,tsconfig.json,vitest.config.*,vitest.setup.ts}"
+  ],
+  "paths": [
+    { "patterns": ["templates/**"], "packages": ["create-weapp-vite"] }
+  ],
+  "links": [
+    { "from": ["weapp-vite", "wevu"], "to": ["create-weapp-vite"], "level": "same" },
+    {
+      "from": ["@weapp-core/constants"],
+      "dependents": true,
+      "dependencyFields": ["dependencies", "optionalDependencies", "peerDependencies", "devDependencies"],
+      "level": "same"
+    }
+  ],
+  "defaultLevel": "patch",
+  "titleTypes": { "feat": "minor" },
+  "breakingRequiresLabel": true,
+  "summary": {
+    "language": "zh-CN",
+    "template": "chore: 更新相关能力，{title}（#{number}）",
+    "byType": {
+      "feat": "feat: 新增能力，{title}（#{number}）",
+      "fix": "fix: 修复问题，{title}（#{number}）",
+      "perf": "perf: 优化性能，{title}（#{number}）"
+    }
+  }
+}

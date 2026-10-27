@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { expect, it, vi } from 'vitest'
 import { parse } from 'yaml'
-import { readVerificationTopologyVariant, readWorkflowFixture } from './workflowFixture.mjs'
+import { frozenJobCondition, frozenWorkflowText, readVerificationTopologyVariant, readWorkflowFixture } from './workflowFixture.mjs'
 
 const ROOT = path.resolve(import.meta.dirname, '..')
 const expression = (value: string) => `$${'{{'} ${value} }}`
@@ -31,7 +31,7 @@ it('runs Bun CLI on all three systems against frozen workspace artifacts', async
   })
   const baseline = readVerificationTopologyVariant() === 'baseline'
   expect(job.needs).toEqual(baseline ? ['pr-context', 'miniapp-e2e-build-pr', 'miniapp-e2e-build-full', 'bun-build-diagnostic'] : ['pr-context', 'bun-build-diagnostic'])
-  expect(job.if).toContain('needs.pr-context.outputs.should_run == \'true\'')
+  expect(job.if).toContain(frozenWorkflowText('needs.pr-context.outputs.should_run == \'true\'', 'ci-e2e'))
   expect(job.if).toContain('needs.bun-build-diagnostic.result == \'success\'')
   const diagnostic = workflow.jobs['bun-build-diagnostic']
   expect(diagnostic.if).toContain('inputs.hmr-diagnostic == \'bun-cli\'')
@@ -39,14 +39,14 @@ it('runs Bun CLI on all three systems against frozen workspace artifacts', async
   expect(diagnostic.with.build_artifact_name).toBe(job.with.consume_build_artifact)
   expect(job).not.toHaveProperty('continue-on-error')
   expect(job.with.consume_build_artifact).toBe(`miniapp-${expression('matrix.os')}-node-22-weapp-build`)
-  expect(job.with.checkout_ref).toBe(expression('needs.pr-context.outputs.checkout_sha'))
+  expect(job.with.checkout_ref).toBe(frozenWorkflowText(expression('needs.pr-context.outputs.checkout_sha'), 'ci-e2e'))
   expect(job.with.bun_version).toBe(expression('matrix.bun-version'))
   expect(job.with.main_command).toContain('pnpm e2e:bun')
   expect(job.with.artifact_name).toContain('needs.pr-context.outputs.checkout_sha')
   expect(job.with.artifact_path).toContain('.tmp/bun-cli/**')
   const platform = readWorkflowFixture('reusable-miniapp-platform.yml')
   const standard = platform.jobs['bun-cli']
-  expect(standard.if).toBe('inputs.node_version == \'22\'')
+  expect(standard.if).toBe(frozenJobCondition('inputs.node_version == \'22\'', 'ci-e2e', ['pr-context', 'build']))
   expect(standard.needs).toEqual(['pr-context', 'build'])
   expect(standard.strategy.matrix).toEqual({ 'bun-version': ['1.4.2', 'latest'] })
   expect(standard.with.consume_build_artifact).toBe(platform.jobs.build.with.build_artifact_name)
