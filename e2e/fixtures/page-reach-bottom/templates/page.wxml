@@ -1,0 +1,4 @@
+<view id="content" style="height:{{height}}px">
+  <text id="count">{{count}}</text>
+  <text id="events">{{events.join(',')}}</text>
+</view>
