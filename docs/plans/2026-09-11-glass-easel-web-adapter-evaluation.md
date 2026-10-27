@@ -141,7 +141,7 @@ glass-easel 不接管完整 Web runtime，也不改变微信端现有的 `compon
 - parity 测试：同一场景分别运行现有 Web renderer 与 glass-easel adapter。
 - 构建检查：确认模板、样式、页面入口和组件产物存在。
 - 性能基线：首屏挂载时间、批量 `setData`、列表更新耗时和卸载后的内存/监听器清理。
-- 微信端继续使用 `wv analyze --glass-easel-check)，并在基础库 3.8.12+ 的 DevTools/真机环境验证 `glassEaselWebview`。
+- 微信端继续使用 `wv analyze --glass-easel-check`，并在基础库 3.8.12+ 的 DevTools/真机环境验证 `glassEaselWebview`。
 
 ## 风险、成本和退出条件
 
@@ -156,3 +156,24 @@ glass-easel 不接管完整 Web runtime，也不改变微信端现有的 `compon
 当前最合理的选型是：**保留现有 Web runtime 作为默认实现，把 glass-easel 引入为可选的组件语义后端实验**。
 
 这样可以获得 glass-easel 在组件模型、模板语义和兼容测试方面的价值，同时避免重复实现原生组件、路由、API 和浏览器宿主。完成阶段 0～2 的真实数据后，再决定是否进入可选后端阶段。
+
+## 2026-10-27：组件树实验推进
+
+本轮在独立的 `@weapp-vite/glass-easel-web-adapter` 中推进官方组件树闭环，默认 Web runtime 和 CLI 入口仍沿用原实现。阶段 1 中的组件树部分已形成以下实现与回归入口：
+
+- 每个 adapter 使用独立 `ComponentSpace`，通过 `usingComponents` 连接父子组件，并交给官方处理 `data`、属性、observer、方法和组件选项。
+- 默认与命名 slot 使用官方投影机制，随父数据更新并保留父级事件作用域。旧 `slots` 参数通过真实父组件兼容，不再挂载后修改 slot DOM。
+- 组件创建阶段记录生命周期，卸载递归通知子树并释放 backend 节点；重复或重入清理保持幂等。实例由所属 adapter 校验，同容器多个根与已有内容分别保留所有权。
+- 数据更新直接调用官方 `setData`，快照来自实际组件数据，回归覆盖路径更新及 keyed 列表的节点复用。
+- 公开类型测试约束实例句柄与新增注册字段；浏览器回归消费构建后的包，覆盖真实点击、子组件事件、slot 更新、多根与卸载。
+
+官方 DOM backend 的事件委托绑定在文档上，当前 `destroy()` 不移除这些监听。因此本实现按文档共享一个 backend，避免每次挂载增加重复派发；这不代表每个 adapter 卸载时已回收文档级监听。后续需要上游提供事件根与释放契约，或以有对照测试的专用 backend 接管该边界。
+
+进入阶段 2～3 前仍需完成：
+
+1. 拆分构建期模板编译与浏览器执行入口，避免生产页面携带模板编译器与动态编译路径。
+2. 接入 Web host 的原生组件、样式、路由、提交完成和 `ready` 生命周期；当前 core 的挂载/卸载仅自动驱动 `created`、`attached` 和 `detached`。
+3. 使用同一批场景对照现有 Web runtime、mpcore 和真实微信运行时，覆盖组件关系、slot、observer、事件、错误处理与 HMR；单独记录其他平台的差异。
+4. 取得首屏、批量与路径更新、列表、包体及资源释放的实测结果，再决定实验 renderer 配置和扩大集成范围。
+
+本轮不是完整 Web renderer 切换，也不构成微信 DevTools、真机或六平台兼容证明。示例和当前验证命令见 [adapter README](../../packages-runtime/glass-easel-web-adapter/README.md)。
