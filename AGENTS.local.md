@@ -1,5 +1,6 @@
 # 本地工程约束
 
+- 所有 PR（包括发布和依赖升级 PR）统一使用 Squash merge，在目标分支形成一个提交；通过 GitHub CLI 合并时必须显式使用 `gh pr merge <编号> --squash`。合并提交信息沿用仓库当前默认设置，已有合并历史不改写。
 - GitHub issue 或 runtime 回归优先在 `.codex-tmp/<issue>` 隔离 worktree 中处理；先建立最小复现，再定位根因，最后修改源码。
 - 全面真实 IDE E2E（包括 `pnpm e2e:ide:gate`、`pnpm e2e:ide:full`、`pnpm e2e:ide:full:exhaustive` 及直接调用 DevTools 的完整 Vitest suite）必须从仓库根目录的 `main` 工作树启动：运行前先 `git fetch origin main`、`git switch main`、`git pull --ff-only origin main`，确认 `HEAD == origin/main` 且工作树干净；运行期间不得切换分支或修改源码。`.codex-tmp` 和其他分支只用于修复、最小复现、headless 或局部诊断，修复合并到 `main`、重建产物后才做正式 IDE 验收。主工作树要求不会放宽全机同用户串行、机器租约、宿主身份、端口归属和项目清理门禁。
 - 修改 `packages/*/src/**` 或 `packages-runtime/*/src/**` 后，运行下游 app、headless 或 IDE 验证前必须先重建受影响 package 的 `dist`。

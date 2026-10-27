@@ -5,6 +5,16 @@
 仓库源码构建使用 `tsdown@0.23.2`，需要 Node.js `^22.23.4 || ^24.22.1 || >=26.12.1`。
 本地开发使用 `.node-version` 固定的 Node.js 24.22.1 LTS 和 `packageManager` 固定的 pnpm 12.15.0。
 
+## PR 合并
+
+所有 PR（包括发布和依赖升级 PR）统一使用 Squash merge，在目标分支形成一个提交。仓库仅允许 Squash merge；PR 内可保留开发过程中的多个提交，合并提交信息沿用仓库当前默认设置。
+
+通过 GitHub CLI 合并时显式指定 `--squash`：
+
+```bash
+gh pr merge <编号> --squash
+```
+
 ## 依赖升级
 
 工作区依赖升级统一使用：
