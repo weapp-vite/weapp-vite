@@ -91,11 +91,14 @@ export {
   getUserProfile,
   getVideoInfo,
   getWindowInfo,
+  hideHomeButton,
   hideKeyboard,
   hideLoading,
   hideNavigationBarLoading,
+  hideShareMenu,
   hideTabBar,
   hideTabBarRedDot,
+  hideToast,
   initializePageRoutes,
   loadSubPackage,
   login,
@@ -110,7 +113,10 @@ export {
   offAppShow,
   offBeforeAppRoute,
   offBeforePageUnload,
+  offError,
   offNetworkStatusChange,
+  offThemeChange,
+  offUnhandledRejection,
   offWindowResize,
   onAppHide,
   onAppRoute,
@@ -118,7 +124,10 @@ export {
   onAppShow,
   onBeforeAppRoute,
   onBeforePageUnload,
+  onError,
   onNetworkStatusChange,
+  onThemeChange,
+  onUnhandledRejection,
   onWindowResize,
   openAppAuthorizeSetting,
   openCustomerServiceChat,
@@ -139,6 +148,7 @@ export {
   removeStorageSync,
   removeTabBarBadge,
   reportAnalytics,
+  reportEvent,
   request,
   requestPayment,
   requestSubscribeMessage,
@@ -173,6 +183,7 @@ export {
   vibrateShort,
 } from './polyfill'
 export type { AppHideCallback, AppHideOptions, AppLaunchOptions, AppShowCallback } from './polyfill'
+export type { MiniProgramErrorCallback, ThemeChangeCallback, ThemeChangeEvent, UnhandledRejectionCallback, UnhandledRejectionEvent } from './polyfill'
 export type { AppRouteCallback, AppRouteEvent, AppRouteOpenType, BeforePageUnloadCallback, BeforePageUnloadEvent } from './polyfill'
 export {
   disposeWebRouting,

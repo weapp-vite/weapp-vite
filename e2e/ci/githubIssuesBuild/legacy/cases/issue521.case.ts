@@ -4,7 +4,7 @@ import path from 'pathe'
 import { expect, it } from 'vitest'
 import { findWevuRuntimeChunk } from '../../../../utils/wevu-vendor'
 import { findMarkupElements } from '../../markup'
-import { runBuild } from '../build/standard'
+import { runBuild } from '../builders/standard'
 import { DIST_ROOT, SLOT_OWNER_ATTR } from '../constants'
 import { stripGeneratedScopeAttrs } from '../helpers'
 

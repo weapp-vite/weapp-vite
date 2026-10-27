@@ -1,0 +1,8 @@
+<text id="ready">{{ready}}</text>
+<button id="subscribe" bindtap="subscribe">Subscribe</button>
+<button id="unsubscribe" bindtap="unsubscribe">Unsubscribe</button>
+<button id="dispatch" bindtap="dispatch">Dispatch Window events</button>
+<button id="reinstall" bindtap="reinstall">Install globals again</button>
+<button id="toast-sequence" bindtap="toastSequence">Replace Toast</button>
+<button id="hide-toast" bindtap="hideToast">Hide Toast</button>
+<text id="snapshot">{{snapshot}}</text>

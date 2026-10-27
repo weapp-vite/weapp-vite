@@ -1,7 +1,7 @@
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { expect, it } from 'vitest'
-import { runIssue845Build } from '../build/issue845Build'
+import { runIssue845Build } from '../builders/issue845Build'
 import { ISSUE_845_DIST_ROOT } from '../constants'
 import { resolveSharedRuntimeImport } from '../helpers'
 

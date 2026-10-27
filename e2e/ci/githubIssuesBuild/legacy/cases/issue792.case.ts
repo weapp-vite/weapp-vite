@@ -1,7 +1,7 @@
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { it } from 'vitest'
-import { runBuildWithNodeEnv } from '../build/buildWithNodeEnv'
+import { runBuildWithNodeEnv } from '../builders/buildWithNodeEnv'
 import { DIST_ROOT } from '../constants'
 import { expectProductionEnvironment } from '../helpers'
 

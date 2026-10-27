@@ -2,7 +2,7 @@
 import { readFile } from 'node:fs/promises'
 import { describe, expect, it } from 'vitest'
 import { parse } from 'yaml'
-import { readVerificationTopologyVariant } from './workflowFixture.mjs'
+import { frozenJobCondition, readVerificationTopologyVariant } from './workflowFixture.mjs'
 
 interface Workflow {
   on: Record<string, { inputs: Record<string, unknown> }>
@@ -34,7 +34,7 @@ describe('manual CI E2E project scope', () => {
   it('keeps every job enabled and changes only the explicit nightly audit scope and label', async () => {
     const shared = await readWorkflow('validate-ci-e2e.yml')
     const nightly = shared.jobs['workspace-hmr-nightly']!
-    expect(nightly.if).toBe('needs.pr-context.outputs.should_run == \'true\' && (needs.pr-context.outputs.is_pr != \'true\' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == \'full\' || inputs.hmr-diagnostic == \'workspace-hmr\'))')
+    expect(nightly.if).toBe(frozenJobCondition('needs.pr-context.outputs.should_run == \'true\' && (needs.pr-context.outputs.is_pr != \'true\' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == \'full\' || inputs.hmr-diagnostic == \'workspace-hmr\'))', 'ci-e2e'))
     expect(nightly.name).toBe('${{ inputs.workspace-hmr-audit == \'functional-only\' && \'Workspace HMR Functional (Node 24)\' || \'Workspace HMR Nightly Full (Node 24)\' }}')
     expect(nightly.with?.main_command).toBe('${{ inputs.workspace-hmr-audit == \'functional-only\' && \'pnpm exec cross-env WEAPP_VITE_HMR_AUDIT_FUNCTIONAL_ONLY=1 pnpm audit:hmr:nightly\' || \'pnpm audit:hmr:nightly\' }}')
     for (const [name, job] of Object.entries(shared.jobs)) {

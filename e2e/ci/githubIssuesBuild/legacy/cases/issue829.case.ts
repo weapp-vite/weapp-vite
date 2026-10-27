@@ -1,7 +1,7 @@
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { expect, it } from 'vitest'
-import { runAggregateBuild } from '../build/aggregateBuild'
+import { runAggregateBuild } from '../builders/aggregateBuild'
 import { DIST_ROOT } from '../constants'
 import { scanFiles } from '../helpers'
 

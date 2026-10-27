@@ -1,7 +1,7 @@
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { expect, it } from 'vitest'
-import { runIssue642Build } from '../build/issue642Build'
+import { runIssue642Build } from '../builders/issue642Build'
 import { ISSUE_642_DIST_ROOT } from '../constants'
 import { expectSetDataPickKeys } from '../helpers'
 

@@ -3,7 +3,7 @@ import { originalPositionFor, TraceMap } from '@jridgewell/trace-mapping'
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { expect, it } from 'vitest'
-import { runBuildWithSourcemap } from '../build/standard'
+import { runBuildWithSourcemap } from '../builders/standard'
 import { APP_ROOT, DIST_ROOT } from '../constants'
 import { createCachedEnvLinePattern, findGeneratedPosition, stripGeneratedScopeAttrs } from '../helpers'
 

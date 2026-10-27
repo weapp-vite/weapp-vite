@@ -1,7 +1,7 @@
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { expect, it } from 'vitest'
-import { runBuild } from '../build/standard'
+import { runBuild } from '../builders/standard'
 import { DIST_ROOT } from '../constants'
 import { createObjectPropertyPattern, expectProductionEnvironment } from '../helpers'
 
