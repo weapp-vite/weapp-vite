@@ -75,4 +75,5 @@ pre-push:
   piped: true
   jobs:
     - name: affected-verification
-      run: pnpm verify --mode quick --selection affected --base origin/main
+      use_stdin: true
+      run: pnpm verify:push -- "{1}" "{2}"

@@ -35,11 +35,13 @@ async function createPlanRoot() {
   return root
 }
 
-it('runs neighboring tests first and expands consumers and type contracts only for review', async () => {
+it.each(['modified', 'deleted'])('runs neighboring tests for %s sources and expands consumers and type contracts only for review', async (status) => {
   const root = await createPlanRoot()
   try {
     await mkdir(path.join(root, 'packages/library/src'), { recursive: true })
-    await writeFile(path.join(root, 'packages/library/src/value.ts'), '')
+    if (status === 'modified') {
+      await writeFile(path.join(root, 'packages/library/src/value.ts'), '')
+    }
     await writeFile(path.join(root, 'packages/library/src/value.test.ts'), '')
     const input = { root, changes: changes(['packages/library/src/value.ts']), packages, resources, selection: 'affected' as const }
     const quick = await createVerificationPlan({ ...input, mode: 'quick' })
@@ -58,6 +60,44 @@ it('runs neighboring tests first and expands consumers and type contracts only f
   }
 })
 
+it('filters pure package tests in quick and keeps their full package entry in review', async () => {
+  const root = await createPlanRoot()
+  try {
+    await mkdir(path.join(root, 'packages/library/src'), { recursive: true })
+    await writeFile(path.join(root, 'packages/library/src/value.test.ts'), '')
+    const scoped = packages.map(item => item.name === 'library'
+      ? { ...item, scripts: { ...item.scripts, 'test:pure': 'vitest run --coverage.enabled=false' } }
+      : item)
+    const input = { root, packages: scoped, resources, selection: 'affected' as const, changes: changes(['packages/library/src/value.test.ts']) }
+    const quick = await createVerificationPlan({ ...input, mode: 'quick' })
+    expect(quick.tasks.find(task => task.id === 'test:library')?.args).toEqual(['--filter', 'library', 'run', 'test:pure', '--maxWorkers=2', 'src/value.test.ts'])
+    expect(quick.tasks.some(task => task.id === 'pure')).toBe(false)
+    const missing = await createVerificationPlan({ ...input, changes: changes(['packages/library/src/no-neighbor.ts']), mode: 'quick' })
+    expect(missing.tasks.some(task => task.id === 'pure' || task.id === 'test:library')).toBe(false)
+    expect(missing.tasks.some(task => task.id === 'typecheck:library')).toBe(true)
+    const review = await createVerificationPlan({ ...input, mode: 'review' })
+    expect(review.tasks.find(task => task.id === 'pure')?.args).toContain('test:pure')
+    expect(review.tasks.some(task => task.id === 'test:library')).toBe(false)
+  }
+  finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+it('does not silently drop direct tests when a package script cannot accept filters', async () => {
+  const root = await createPlanRoot()
+  try {
+    await mkdir(path.join(root, 'packages/library/src'), { recursive: true })
+    await writeFile(path.join(root, 'packages/library/src/value.test.ts'), '')
+    const scoped = packages.map(item => item.name === 'library' ? { ...item, scripts: { ...item.scripts, test: 'node test-runner.mjs' } } : item)
+    const plan = await createVerificationPlan({ root, packages: scoped, resources, selection: 'affected', changes: changes(['packages/library/src/value.test.ts']), mode: 'quick' })
+    expect(plan.tasks.find(task => task.id === 'test:library')?.blockedReason).toContain('安全传入直接回归范围')
+  }
+  finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
 it.each(['pretest', 'posttest'])('isolates the complete pnpm test command when %s can replace shared artifacts', async (lifecycle) => {
   const root = await createPlanRoot()
   try {
@@ -65,7 +105,7 @@ it.each(['pretest', 'posttest'])('isolates the complete pnpm test command when %
     const manifest = JSON.parse(await readFile(manifestFile, 'utf8')) as { scripts: Record<string, string> }
     manifest.scripts[lifecycle] = lifecycle === 'pretest' ? 'pnpm build' : 'node cleanup.mjs'
     await writeFile(manifestFile, JSON.stringify(manifest))
-    const plan = await createVerificationPlan({ root, changes: changes(['package.json']), packages: await readWorkspace(root), resources, mode: 'quick', selection: 'affected' })
+    const plan = await createVerificationPlan({ root, changes: changes(['package.json']), packages: await readWorkspace(root), resources, mode: 'review', selection: 'affected' })
     expect(plan.tasks.find(task => task.id === 'test:library')).toMatchObject({
       resource: 'workspace-write',
       args: ['--filter', 'library', 'run', 'test', '--maxWorkers=1'],
@@ -106,7 +146,44 @@ it('falls back conservatively for unclassified files and delegates full tests wi
   }
 })
 
-it('keeps the full quick scope when cross-directory inputs have no trusted owner mapping', async () => {
+it('keeps root contribution and local agent documents within applicable static checks', async () => {
+  const root = await createPlanRoot()
+  try {
+    await writeFile(path.join(root, 'CONTRIBUTING.md'), '# Contributing\n')
+    await writeFile(path.join(root, 'AGENTS.local.md'), '# Local rules\n')
+    const input = { root, changes: changes(['CONTRIBUTING.md', 'AGENTS.local.md']), packages, resources, mode: 'quick' as const }
+    const docs = await createVerificationPlan(input)
+    expect(docs.selected).toEqual([])
+    expect(docs.tasks.map(item => item.id)).toEqual(['lint'])
+    expect(docs.warnings.some(warning => warning.includes('未分类'))).toBe(false)
+    const mapped = packages.map(item => item.name === 'library' ? { ...item, extraInputs: ['CONTRIBUTING.md'] } : item)
+    expect((await createVerificationPlan({ ...input, packages: mapped })).selected).toEqual(['library'])
+    expect((await createVerificationPlan({ ...input, changes: changes(['pnpm-lock.yaml']) })).selected).toEqual(['consumer', 'library'])
+  }
+  finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+it('preserves generated agent and public skill checks in local quick for modified or deleted rule inputs', async () => {
+  const root = await createPlanRoot()
+  try {
+    const input = { root, packages, resources, mode: 'quick' as const }
+    for (const file of ['AGENTS.md', 'scripts/agents/content/root-intro.md', 'skills/example/SKILL.md']) {
+      const plan = await createVerificationPlan({ ...input, changes: changes([file]) })
+      const policies = plan.tasks.filter(task => task.id.startsWith('policy:'))
+      expect(policies.map(task => task.args)).toEqual(file === 'AGENTS.md'
+        ? [['run', 'agents:check'], ['run', 'skills:check']]
+        : file.startsWith('skills/') ? [['run', 'skills:check']] : [['run', 'agents:check']])
+      expect(plan.tasks.some(task => task.kind === 'runtime' || task.id.startsWith('test:'))).toBe(false)
+    }
+  }
+  finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+it('keeps conservative static ownership without escalating unmapped quick inputs to full package tests', async () => {
   const root = await createPlanRoot()
   try {
     for (const file of ['scripts/unmapped.ts', 'e2e/new-kind/input.json', 'test/fixture-projects/unmapped/input.wxml', 'skills/unmapped/SKILL.md']) {
@@ -114,7 +191,8 @@ it('keeps the full quick scope when cross-directory inputs have no trusted owner
       expect(plan.affected).toEqual(['consumer', 'library'])
       expect(plan.suggested).toEqual(plan.affected)
       expect(plan.selected).toEqual(plan.affected)
-      expect(plan.tasks.map(item => item.id)).toEqual(expect.arrayContaining(['test:library', 'test:consumer']))
+      expect(plan.tasks.some(item => item.kind === 'test' && item.id.startsWith('test:'))).toBe(false)
+      expect(plan.tasks.map(item => item.id)).toContain('typecheck:library')
       expect(plan.warnings).toContain(`未映射的跨目录输入触发保守全范围: ${file}`)
       expect(plan.remaining.length).toBeGreaterThan(0)
     }
@@ -136,7 +214,8 @@ it('narrows mapped Turbo cross-directory inputs in quick and expands their consu
     expect(quick.affected).toEqual(['consumer', 'library'])
     expect(quick.suggested).toEqual(['library'])
     expect(quick.selected).toEqual(['library'])
-    expect(quick.tasks.some(item => item.id === 'test:library')).toBe(true)
+    expect(quick.tasks.some(item => item.id === 'test:library')).toBe(false)
+    expect(quick.tasks.some(item => item.id === 'typecheck:library')).toBe(true)
     expect(quick.tasks.some(item => item.id === 'test:consumer')).toBe(false)
     expect(quick.warnings.some(warning => warning.includes('未映射'))).toBe(false)
     const review = await createVerificationPlan({ ...input, mode: 'review' })
@@ -157,7 +236,8 @@ it('honors the rollout policy and preserves explicit shadow and affected selecti
     const affected = await createVerificationPlan({ ...input, selection: 'affected' })
     expect(shadow.selection).toBe('shadow')
     expect(shadow.suggested).toEqual(['library'])
-    expect(shadow.tasks.some(task => task.id === 'test:consumer')).toBe(true)
+    expect(shadow.selected).toContain('consumer')
+    expect(shadow.tasks.some(task => task.id === 'test:consumer')).toBe(false)
     expect(affected.tasks.some(task => task.id === 'test:consumer')).toBe(false)
     expect(shadow.fingerprint).not.toBe(affected.fingerprint)
   }
@@ -166,15 +246,20 @@ it('honors the rollout policy and preserves explicit shadow and affected selecti
   }
 })
 
-it('routes E2E helper and runtime changes through their managed verification entries', async () => {
+it('delegates E2E helper and runtime cases from quick to managed review entries', async () => {
   const root = await createPlanRoot()
   try {
     await mkdir(path.join(root, 'e2e/utils'), { recursive: true })
     await writeFile(path.join(root, 'e2e/utils/helper.test.ts'), '')
-    const plan = await createVerificationPlan({ root, changes: changes(['e2e/utils/helper.test.ts', 'e2e/ci/case.test.ts', 'e2e/web-runtime/case.test.ts']), packages, resources, mode: 'quick', selection: 'affected' })
+    const input = { root, changes: changes(['e2e/utils/helper.test.ts', 'e2e/ci/case.test.ts', 'e2e/web-runtime/case.test.ts']), packages, resources, selection: 'affected' as const }
+    const quick = await createVerificationPlan({ ...input, mode: 'quick' })
+    expect(quick.tasks.some(task => task.kind === 'runtime')).toBe(false)
+    expect(quick.tasks.some(task => task.id.startsWith('test:'))).toBe(false)
+    expect(quick.remaining.some(item => item.includes('E2E 用例及工具单测'))).toBe(true)
+    const plan = await createVerificationPlan({ ...input, mode: 'review' })
     expect(plan.tasks.find(task => task.id === 'runtime:internal-contracts')).toMatchObject({
       resource: 'machine-exclusive',
-      args: expect.arrayContaining(['e2e/vitest.e2e.internal.config.ts', 'e2e/utils/helper.test.ts']),
+      args: expect.arrayContaining(['e2e/vitest.e2e.internal.config.ts']),
     })
     expect(plan.tasks.find(task => task.id === 'runtime:ci')?.args).toContain('e2e:ci')
     expect(plan.tasks.find(task => task.id === 'runtime:web')?.args).toContain('e2e:web')
@@ -185,7 +270,7 @@ it('routes E2E helper and runtime changes through their managed verification ent
   }
 })
 
-it('retains internal contracts for deleted E2E inputs and filters only surviving neighboring tests', async () => {
+it('retains managed review internal contracts for deleted E2E inputs without a quick runtime fallback', async () => {
   const root = await createPlanRoot()
   try {
     await mkdir(path.join(root, 'e2e/utils'), { recursive: true })
@@ -195,13 +280,18 @@ it('retains internal contracts for deleted E2E inputs and filters only surviving
       for (const mode of ['quick', 'review'] as const) {
         const plan = await createVerificationPlan({ ...input, mode, changes: changes([file]) })
         const task = plan.tasks.find(item => item.id === 'runtime:internal-contracts')
+        if (mode === 'quick') {
+          expect(task).toBeUndefined()
+          expect(plan.tasks.some(item => item.kind === 'runtime')).toBe(false)
+          continue
+        }
         expect(task).toMatchObject({
           resource: 'machine-exclusive',
           args: expect.arrayContaining(['e2e/vitest.e2e.internal.config.ts']),
         })
         expect(task?.args).not.toContain(file)
         const filters = task!.args.slice(5).filter(arg => !arg.startsWith('-'))
-        expect(filters).toEqual(mode === 'quick' && file === 'e2e/utils/helper.ts' ? ['e2e/utils/helper.test.ts'] : [])
+        expect(filters).toEqual([])
       }
     }
   }
@@ -265,12 +355,13 @@ it('unions script and workflow contracts once, and gives full the exact compleme
   }
 })
 
-it('keeps deleted scripts in scope and combines neighboring mjs tests with every workflow contract', async () => {
+it('delegates unfilterable deleted scripts and retains neighboring and workflow contracts in quick', async () => {
   const { root, files } = await createToolPlanRoot()
   try {
     const input = { root, packages, resources, selection: 'affected' as const }
     const deleted = await createVerificationPlan({ ...input, mode: 'quick', changes: changes(['scripts/deleted.mjs']) })
-    expect(plannedToolFiles(deleted, files)).toEqual([...files].sort())
+    expect(plannedToolFiles(deleted, files)).toEqual([])
+    expect(deleted.remaining.some(item => item.includes('完整工具测试'))).toBe(true)
     const quick = await createVerificationPlan({ ...input, mode: 'quick', changes: changes(['scripts/helper.mjs', '.github/workflows/ci.yml']) })
     expect(plannedToolFiles(quick, files)).toEqual([...files].sort())
     const workflow = await createVerificationPlan({ ...input, mode: 'review', changes: changes(['.github/workflows/deleted.yml']) })
