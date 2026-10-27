@@ -3,6 +3,8 @@ import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { expect, it } from 'vitest'
 
+export const group = 'standard'
+
 export function registerGithubIssuesBuildCase(context: GithubIssuesBuildCaseContext) {
   it('issue #987: falls back parenthesized member access to runtime bindings', async () => {
     await context.runStandardBuild()

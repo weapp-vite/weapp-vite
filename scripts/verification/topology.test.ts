@@ -1,8 +1,9 @@
 import { afterEach, expect, it, vi } from 'vitest'
+import { GITHUB_ISSUES_BUILD_TASK_LABELS } from '../../e2e/ci/githubIssuesBuild/groups.ts'
 import { getSuiteTasks } from '../../e2e/scripts/e2e-suite-manifest.ts'
 import { fixturePartition } from '../../packages/weapp-vite/vitest/partition.ts'
 import { logicalRuntimeTaskInventory } from '../verificationBenchmark/runtimeInventory.mjs'
-import { assertVerificationTopology, AUDITED_PARALLEL_FIXTURE_TESTS, formalVerificationTopology, resolveVerificationTopology, TDESIGN_AGGREGATE_LABEL, TDESIGN_SOURCE_LABELS, TOPOLOGY_COMPARISON_PROTOCOL, TOPOLOGY_ENV, TOPOLOGY_POLICY_ENV, topologyEnvironment } from './topology.ts'
+import { assertVerificationTopology, AUDITED_PARALLEL_FIXTURE_TESTS, comparisonTopology, formalVerificationTopology, logicalTopologyCaseFile, resolveVerificationTopology, TDESIGN_AGGREGATE_LABEL, TDESIGN_SOURCE_LABELS, TOPOLOGY_COMPARISON_PROTOCOL, TOPOLOGY_ENV, TOPOLOGY_POLICY_ENV, TOPOLOGY_V2_COMPARISON_PROTOCOL, topologyEnvironment } from './topology.ts'
 import { isolateTopologyTestEnvironment, useIsolatedTopologyTestEnvironment } from './topologyTestFixture.ts'
 
 useIsolatedTopologyTestEnvironment()
@@ -70,4 +71,28 @@ it('preserves the entire exhaustive workload, non-applicable tasks and child res
     expect(tasks.every(task => Object.entries(environment).every(([key, value]) => task.env?.[key] === value))).toBe(true)
   }
   expect(() => logicalRuntimeTaskInventory([{ label: TDESIGN_AGGREGATE_LABEL }, { label: TDESIGN_SOURCE_LABELS[0] }])).toThrow('duplicated')
+})
+
+it('freezes v2 separately while retaining the reviewed default and v1 comparison', () => {
+  const baseline = resolveVerificationTopology('optimized-v1')
+  const candidate = resolveVerificationTopology('optimized-v2')
+  expect(resolveVerificationTopology(undefined, {}).id).toBe('optimized-v1')
+  expect(candidate.policyDigest).not.toBe(baseline.policyDigest)
+  expect(fixturePartition('optimized-v2')).toEqual(fixturePartition('optimized-v1'))
+  expect(comparisonTopology(TOPOLOGY_V2_COMPARISON_PROTOCOL, 'baseline')).toBe('optimized-v1')
+  expect(formalVerificationTopology({ comparisonProtocol: TOPOLOGY_V2_COMPARISON_PROTOCOL, variant: 'candidate', topology: 'optimized-v2' })).toEqual(candidate)
+  expect(() => assertVerificationTopology({ ...candidate, policyDigest: baseline.policyDigest })).toThrow('invalid')
+})
+
+it('maps every real v2 build group to the original logical task and case file', async () => {
+  const baseline = await getSuiteTasks('ci-full', { topology: 'optimized-v1' })
+  const candidate = await getSuiteTasks('ci-full', { topology: 'optimized-v2' })
+  expect(logicalRuntimeTaskInventory(candidate)).toEqual(logicalRuntimeTaskInventory(baseline))
+  expect(candidate.filter(task => GITHUB_ISSUES_BUILD_TASK_LABELS.includes(task.label))).toHaveLength(24)
+  for (const label of GITHUB_ISSUES_BUILD_TASK_LABELS) {
+    expect(logicalTopologyCaseFile(`e2e/${label}`)).toBe('e2e/ci/github-issues.build.test.ts')
+  }
+  expect(logicalTopologyCaseFile('e2e/ci/unknown.test.ts')).toBe('e2e/ci/unknown.test.ts')
+  expect(() => logicalRuntimeTaskInventory(candidate.filter(task => task.label !== GITHUB_ISSUES_BUILD_TASK_LABELS[0]))).toThrow('incomplete')
+  expect(() => logicalRuntimeTaskInventory([...candidate, { label: 'ci/github-issues.build.test.ts' }])).toThrow('duplicated')
 })
