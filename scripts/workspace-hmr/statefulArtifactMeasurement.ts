@@ -68,6 +68,9 @@ export async function measureStatefulTemplateArtifact<T>(options: StatefulArtifa
   }
 
   async function waitForRetiredFallback() {
+    if (!options.isClassicFallback) {
+      throw new Error('Stateful HMR transport retired without a classic fallback verifier.')
+    }
     while (true) {
       consumerSignal.throwIfAborted()
       const classic = await consumeUntilCancelled(Promise.resolve(options.isClassicFallback?.(consumerSignal, deadlineAt)))

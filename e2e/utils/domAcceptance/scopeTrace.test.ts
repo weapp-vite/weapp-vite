@@ -143,6 +143,34 @@ describe('DOM scope query diagnostics', () => {
     expect(output.filter(record => record.stage === 'scope-candidate')).toHaveLength(1)
   })
 
+  it('chooses the latest in-budget failure before diagnostic output advances time', async () => {
+    vi.stubEnv(traceEnv, 'home-ready')
+    let now = 0
+    vi.spyOn(Date, 'now').mockImplementation(() => now)
+    vi.spyOn(process.stdout, 'write').mockImplementation((value) => {
+      const record = JSON.parse(String(value).replace(/^\[dom-scope-trace\] /, '')) as Record<string, unknown>
+      if (record.stage === 'attempt' && record.status === 'failed' && record.attempt === 2) {
+        now = 20
+      }
+      return true
+    })
+    const { page, session } = createScopePage()
+    const earlier = new Error('earlier query failure')
+    const latest = new Error('latest in-budget query failure')
+    page.$$ = vi.fn()
+      .mockImplementationOnce(async () => {
+        now = 5
+        throw earlier
+      })
+      .mockImplementationOnce(async () => {
+        now = 8
+        throw latest
+      })
+    await expect(captureDomCheckpoint(session, page, checkpoint, 'headless', 10)).rejects.toMatchObject({ cause: latest })
+    expect(page.$$).toHaveBeenCalledTimes(2)
+    expect(now).toBe(20)
+  })
+
   it('does not replace the original query result when diagnostic output fails', async () => {
     vi.stubEnv(traceEnv, 'home-ready')
     vi.spyOn(process.stdout, 'write').mockImplementation(() => {

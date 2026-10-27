@@ -154,7 +154,7 @@ it('delivers replacement readiness and cleanup errors through the original close
   })
 })
 
-it('closes a classic config restart before its replacement sidecar is ready through the original handle', async () => {
+it.each(['original handle', 'service drain'])('closes a classic config restart before its replacement sidecar is ready through the %s', async (closeVia) => {
   const fixture = await createSnapshotTemplateFixture(harness, cleanups)
   const original = fixture.ctx.watcherService.getRollupWatcher()!
   const initialBuilds = harness.build.mock.calls.length
@@ -168,9 +168,12 @@ it('closes a classic config restart before its replacement sidecar is ready thro
     // 触发重启的旧代已发布；第二代仍待扫描，不能在就绪前启动自己的首次构建。
     expect(await fixture.readOutput('shared/card.wxml')).toContain('restart publication')
     expect(harness.build).toHaveBeenCalledTimes(initialBuilds + 1)
-    const closing = original.close()
-    expect(original.close()).toBe(closing)
+    const closing = closeVia === 'service drain' ? fixture.ctx.watcherService.closeAll() : original.close()
+    if (closeVia === 'original handle') {
+      expect(original.close()).toBe(closing)
+    }
     await expect(closing).resolves.toBeUndefined()
+    await original.close()
     expect(fixture.ctx.watcherService.sidecarWatcherMap.size).toBe(0)
     expect(fixture.ctx.watcherService.rollupWatcherMap.size).toBe(0)
     for (const watcher of harness.sidecars) {

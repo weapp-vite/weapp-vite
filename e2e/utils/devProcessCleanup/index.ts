@@ -209,19 +209,24 @@ export function createDevProcessCleanup(options: DevProcessCleanupOptions) {
       captured = true
     }
     assertCaptureComplete()
-    if (!disconnected && (options.requestRootShutdown || (options.isRootHeld() && options.disconnectRoot()))) {
-      disconnected = true
+    if (!disconnected && (options.requestRootShutdown || options.isRootHeld())) {
       const gracefulTimeoutMs = stopOptions.gracefulTimeoutMs ?? forceKillDelayMs
-      let requestFailure: { error: unknown } | undefined
-      const gracefulExit = options.requestRootShutdown
-        ? Promise.resolve().then(options.requestRootShutdown).then(() => options.settledExit).catch((error: unknown) => {
-            // 协议失败先保存，随后仍按登记身份释放进程，不能跳过资源收尾。
-            requestFailure = { error }
-          })
-        : options.settledExit
-      const outcome = await traceCleanupStage('dev-ipc-exit', () => waitForGracefulExit(gracefulExit, { ...stopOptions, gracefulTimeoutMs }), { timeoutMs: gracefulTimeoutMs })
-      if (outcome !== 'exited' || requestFailure) {
-        forcedShutdown = { gracefulTimeoutMs, ...requestFailure ? { requestError: requestFailure.error } : {}, ...(outcome === 'cancelled' ? { cancelled: { reason: stopOptions.signal?.reason } } : {}) }
+      try {
+        if (options.requestRootShutdown || options.disconnectRoot()) {
+          disconnected = true
+          const gracefulExit = options.requestRootShutdown
+            ? Promise.all([options.settledExit, Promise.resolve().then(options.requestRootShutdown)])
+            : options.settledExit
+          const outcome = await traceCleanupStage('dev-ipc-exit', () => waitForGracefulExit(gracefulExit, { ...stopOptions, gracefulTimeoutMs }), { timeoutMs: gracefulTimeoutMs })
+          if (outcome !== 'exited') {
+            forcedShutdown = { gracefulTimeoutMs, ...(outcome === 'cancelled' ? { cancelled: { reason: stopOptions.signal?.reason } } : {}) }
+          }
+        }
+      }
+      catch (requestError) {
+        // 同步 IPC 错误与晚到的控制回执错误同样不能跳过登记资源收尾。
+        disconnected = true
+        forcedShutdown = { gracefulTimeoutMs, requestError }
       }
     }
     forgetExitedRoot()

@@ -471,6 +471,39 @@ describe('dev process cleanup ownership', () => {
     expect(dispose).toHaveBeenCalledOnce()
   })
 
+  it('rejects a disconnected explicit IPC channel even when fallback termination exits zero', async () => {
+    vi.useFakeTimers()
+    const fixture = mockProcessTree()
+    const dev = startDevProcess('node', ['wv.js'], { ipc: true })
+    const result = await settleCleanup(dev.stop(0))
+    expect(result).toMatchObject({
+      status: 'rejected',
+      reason: { evidence: { requestError: expect.objectContaining({ message: expect.stringContaining('IPC channel is disconnected') }) } },
+    })
+    expect(fixture.owned.child.nodeChildProcess.exitCode).toBe(0)
+    expect([...fixture.processes.keys()]).toEqual([71, 72])
+  })
+
+  it.each([1, 0])('retains an already-failed explicit IPC process with exitCode=%s before stop', async (exitCode) => {
+    const owned = createChild()
+    const failure = Object.assign(new Error('IPC process failed before stop'), { exitCode, stderr: 'original IPC exit diagnostic' })
+    const child = Object.assign(owned.child.then(() => {
+      throw failure
+    }), {
+      pid: owned.child.pid,
+      all: owned.child.all,
+      nodeChildProcess: owned.child.nodeChildProcess,
+    })
+    execaMock.mockReturnValue(child)
+    const dev = startDevProcess('node', ['wv.js'], { ipc: true })
+    owned.exit()
+    await expect(dev.stop(0)).rejects.toMatchObject({
+      cause: failure,
+      message: expect.stringContaining('original IPC exit diagnostic'),
+    })
+    await expect(cleanupTrackedDevProcesses(0)).resolves.toBeUndefined()
+  })
+
   it('reports incomplete Windows IPC cleanup after force killing only its held child', async () => {
     vi.useFakeTimers()
     vi.spyOn(process, 'platform', 'get').mockReturnValue('win32')

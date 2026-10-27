@@ -133,7 +133,7 @@ export const NATIVE_COMPONENT_DESCRIPTORS = Object.freeze([
   {
     name: 'scroll-view',
     webTag: 'weapp-scroll-view',
-    attributes: ['scroll-x', 'scroll-y', 'scroll-top', 'scroll-left'],
+    attributes: ['scroll-x', 'scroll-y', 'scroll-top', 'scroll-left', 'upper-threshold', 'lower-threshold'],
     defaultStyle: 'display: block; box-sizing: border-box;',
   },
   {

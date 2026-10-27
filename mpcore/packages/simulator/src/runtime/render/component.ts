@@ -5,7 +5,6 @@ import type { CreateComponentInstanceOptions, HeadlessComponentInstance } from '
 import type { DomNodeLike, RuntimeComponentRegistryEntry, RuntimeRendererContext, RuntimeRenderScope, RuntimeSlotContent } from './types'
 import path from 'node:path'
 import { bindAttachmentBindingScope } from '../../host/attachmentBindingUpdates'
-import { resolvePluginRequest } from '../../project/plugins'
 import { bindComponentEventHost, buildComponentTrigger } from '../../view/componentEvent'
 import { setSelectorQueryScopeId } from '../../view/selectorQueryScope'
 import { wxsScopeData } from '../../view/wxs'
@@ -17,8 +16,8 @@ import {
 import { beginComponentConstruction, discardComponentConstruction, finishComponentConstruction } from '../componentInstance/construction'
 import { syncComponentProperties } from '../componentInstance/propertyBindings'
 import { resolveNativeComponentSelection } from '../componentInstance/selection'
-import { resolveMiniProgramComponent } from '../componentResolution'
 import { getRuntimeWxsLoader } from '../wxs'
+import { readComponentConfig, resolveUsingComponent } from './registry'
 import {
   CLASS_SPLIT_RE,
   collectDataset,
@@ -38,7 +37,6 @@ export function resolveComponentRegistryEntry(
   alias: string,
   genericComponentBasePath?: string,
 ) {
-  // eslint-disable-next-line ts/no-use-before-define
   const componentBasePath = genericComponentBasePath ?? resolveUsingComponent(context, ownerJsonPath, ownerFilePath, alias)
   if (!componentBasePath) {
     return null
@@ -57,47 +55,6 @@ export function resolveComponentRegistryEntry(
   } satisfies RuntimeComponentRegistryEntry & { absoluteTemplatePath: string }
 }
 
-function readComponentConfig(artifactSource: RuntimeRendererContext['artifactSource'], jsonPath: string) {
-  try {
-    const source = artifactSource.readText(jsonPath)
-    return source ? JSON.parse(source) as Record<string, any> : {}
-  }
-  catch {
-    return {}
-  }
-}
-
-function resolveUsingComponent(
-  context: RuntimeRendererContext,
-  ownerJsonPath: string,
-  ownerFilePath: string,
-  alias: string,
-) {
-  try {
-    const parsed = readComponentConfig(context.artifactSource, ownerJsonPath)
-    const usingComponents = parsed.usingComponents
-    if (!usingComponents || typeof usingComponents !== 'object' || Array.isArray(usingComponents)) {
-      return undefined
-    }
-
-    const rawPath = usingComponents[alias]
-    if (typeof rawPath !== 'string') {
-      return undefined
-    }
-    const pluginRequest = resolvePluginRequest(context.project.plugins, rawPath, 'publicComponent')
-    const basePath = pluginRequest?.resourcePath ?? resolveMiniProgramComponent(
-      ownerFilePath,
-      rawPath,
-      context.project.miniprogramRootPath,
-      candidate => context.artifactSource.has(candidate),
-    )
-    return basePath.replace(LEADING_SLASH_RE, '')
-  }
-  catch {
-    return undefined
-  }
-}
-
 export function resolveComponentGenerics(
   context: RuntimeRendererContext,
   hostNode: DomNodeLike,
@@ -110,7 +67,7 @@ export function resolveComponentGenerics(
     context.project.miniprogramRootPath,
     `${componentFilePath.replace(JS_FILE_RE, '')}.json`,
   )
-  const componentGenerics = readComponentConfig(context.artifactSource, componentJsonPath).componentGenerics
+  const componentGenerics = readComponentConfig(context, componentJsonPath).componentGenerics
   if (!componentGenerics || typeof componentGenerics !== 'object' || Array.isArray(componentGenerics)) {
     return undefined
   }

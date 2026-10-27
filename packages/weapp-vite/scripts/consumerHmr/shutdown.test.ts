@@ -268,6 +268,40 @@ it('requires a zero native watch exit even when host-control acknowledges succes
   expect(fixture.output().stderr).toBe('native watch cleanup failure')
 })
 
+it.each(['missing', 'late-rejection'])('rejects a zero native exit with a %s cleanup receipt', async (outcome) => {
+  const fixture = controlledProcess()
+  const receipt = Promise.withResolvers<void>()
+  const original = new Error('late consumer cleanup receipt failed')
+  const requestShutdown = vi.fn(() => receipt.promise)
+  fixture.child.exitCode = 0
+  fixture.resolve({ code: 0, signal: null })
+  fixture.child.stdout.end('completed output')
+  fixture.child.stderr.end()
+  const stopping = stopConsumerProcess({ ...fixture, operation: 'build-watch', toolchain: 'vite', requestShutdown, timeoutMs: 100 })
+  const result = stopping.catch(error => error)
+  await setImmediate()
+  if (outcome === 'late-rejection') {
+    receipt.reject(original)
+  }
+  const failure: unknown = await result
+  expect(failure).toBeInstanceOf(AggregateError)
+  expect(failure).toMatchObject({
+    cause: outcome === 'late-rejection' ? original : expect.objectContaining({ message: 'Consumer process exit or output drain timed out' }),
+  })
+})
+
+it('reports a failed consumer startup without waiting for a missing native receipt', async () => {
+  const fixture = controlledProcess()
+  fixture.child.exitCode = 1
+  fixture.resolve({ code: 1, signal: null })
+  fixture.child.stdout.end()
+  fixture.child.stderr.end('startup failed before control connected')
+  const requestShutdown = vi.fn(() => new Promise<void>(() => {}))
+  await expect(stopConsumerProcess({ ...fixture, operation: 'dev', toolchain: 'vite', requestShutdown, timeoutMs: 100 }))
+    .rejects
+    .toMatchObject({ cause: { message: expect.stringContaining('finish successfully') } })
+})
+
 it('requests token-owned leaf shutdown after its parent CLI has already exited', async () => {
   const fixture = controlledProcess()
   fixture.child.exitCode = 0

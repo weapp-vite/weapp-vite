@@ -34,14 +34,14 @@ export function metricsForShard(shard) {
   return template.scenarios.flatMap(s => ['first', 'repeat'].flatMap(p => ['edit', 'restore'].map(a => `${shard}:${s}:${p}:${a}`)))
 }
 
-/** 旧 v3 仅用于完成已登记运行的报告；场景、基线与原始证据仍须完整核验。 */
+/** 旧 v3 / v4 仅用于完成已登记运行的报告；场景、基线与原始证据仍须完整核验。 */
 export function isReportSamplingContract(contract) {
-  return contract === policy.samplingContract || contract === 'paired-v3-profile-capability'
+  return contract === policy.samplingContract || contract === 'paired-v4-template-consumption' || contract === 'paired-v3-profile-capability'
 }
 
 /**
  * 冒烟报告只记录单次提交的正确性证据，可以消费已经启动的历史契约。
- * 完整性能汇总仍只接受当前契约及已登记的 v3，避免把旧样本混入统计门禁。
+ * 完整性能汇总按冻结计划接受当前契约或已登记的 v3 / v4，禁止不同契约混采。
  */
 export function isSmokeSamplingContract(contract) {
   return isReportSamplingContract(contract) || contract === 'paired-v2-template-shards'

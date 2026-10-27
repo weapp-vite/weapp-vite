@@ -254,13 +254,13 @@ describe('css plugin shared style injection', () => {
       expect.objectContaining({
         type: 'asset',
         fileName: 'app.wxss',
-        source: `${placeholder}\n/* weapp-vite tailwind-content ${plan.id} */`,
+        source: placeholder,
       }),
     ])
     expect(runtimeState.css.emittedSource.get('app.wxss')).toBe(placeholder)
   })
 
-  it('keeps Tailwind content hmr nonce out of the canonical emitted cache', async () => {
+  it('keeps the same pending Tailwind source across content and script updates', async () => {
     const appCssPath = resolve(absoluteSrcRoot, 'app.css')
     const placeholder = '/*! weapp-tailwindcss generator-placeholder */\n@source "./**/*.{wxml,js,ts,vue}";'
     readFileMock.mockResolvedValue('@import "tailwindcss";\n@source "./**/*.{wxml,js,ts,vue}";')
@@ -301,7 +301,7 @@ describe('css plugin shared style injection', () => {
     await withHmrStyleUpdatePlan(devConfig, contentPlan, async () => invokeHook(plugin.generateBundle, pluginContext, {} as any, {}, true))
 
     expect(emitted).toHaveLength(1)
-    expect(emitted[0]?.source).toBe(`${placeholder}\n/* weapp-vite tailwind-content ${contentPlan.id} */`)
+    expect(emitted[0]?.source).toBe(placeholder)
     expect(runtimeState.css.emittedSource.get('app.wxss')).toBe(placeholder)
 
     emitted = []
@@ -314,7 +314,7 @@ describe('css plugin shared style injection', () => {
       'app.wxss': {
         type: 'asset',
         fileName: 'app.wxss',
-        source: `${placeholder}\n/* weapp-vite tailwind-content ${contentPlan.id} */`,
+        source: placeholder,
       },
     }
 
@@ -553,6 +553,8 @@ describe('css plugin shared style injection', () => {
       runtimeState: {
         build: {
           hmr: {
+            isRebuild: true,
+            didEmitAllEntries: false,
             profile: {
               dirtyReasonSummary: ['tailwind-content:1', 'css-importer:1'],
             },

@@ -227,8 +227,10 @@ it('rejects an authenticated reset before the cleanup receipt without an unhandl
     socket.once('connect', () => socket.write(`${JSON.stringify({ type: 'ready', token: endpoint.token })}\n`))
     socket.once('data', () => socket.resetAndDestroy())
   })
+  const stopping = current.control.requestClose()
   await Promise.all([
-    expect(current.control.requestClose()).rejects.toThrow(/ECONNRESET|disconnected before its cleanup receipt/),
+    expect(stopping).rejects.toThrow(/ECONNRESET|disconnected before its cleanup receipt/),
     disconnected,
   ])
+  expect(current.control.requestClose()).toBe(stopping)
 })

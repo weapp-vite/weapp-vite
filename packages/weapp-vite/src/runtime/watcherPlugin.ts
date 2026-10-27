@@ -157,11 +157,12 @@ function createWatcherService(ctx: MutableCompilerContext): WatcherService {
       closeAllTask = drain.task
       serviceDrains.set(service, drain)
       const closeWatchers = () => {
-        const controllers = [...new Set([...rollupWatcherMap.values(), ...getRegisteredWatcherServiceControllers(service)])]
+        const registered = getRegisteredWatcherServiceControllers(service)
+        const controllers = [...new Set([...rollupWatcherMap.values(), ...registered])]
         const sidecars = [...sidecarWatcherMap.values()]
         // 常驻 classic 控制器的在途快照仍可能消费自动导入等共享 sidecar。
         // 先启动完整 drain，但保留这批资源直到控制器完成本代释放；无 lease 的普通资源仍可并行关闭。
-        const retainsBuildResources = resourceOwners.has(service)
+        const retainsBuildResources = resourceOwners.has(service) || registered.length > 0
         rollupWatcherMap.clear()
         sidecarWatcherMap.clear()
         const close = (watcher: WatcherInstance, ready?: Promise<void>) => {

@@ -95,9 +95,11 @@ export function bindWatcherServiceController(service: WatcherService, watcher: W
       const completed = Promise.withResolvers<void>()
       closing = completed.promise
       void (async () => {
+        // 先登记完整 drain；其中同步进入的资源释放继承本次归属，不会反向等待自身。
+        const drain = (async () => await service.closeAll())()
         const results = await Promise.allSettled([
+          drain,
           Promise.resolve().then(() => closeResources(owned)),
-          Promise.resolve().then(() => service.closeAll()),
         ])
         const errors = [...new Set(results.flatMap(result => result.status === 'rejected' ? [result.reason] : []))]
         if (errors.length) {

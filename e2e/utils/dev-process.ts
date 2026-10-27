@@ -240,6 +240,9 @@ export function startDevProcess(
     confirmRootExit: timeoutMs => waitForNativeDevProcessExit(child.nodeChildProcess, timeoutMs),
     disconnectRoot: () => {
       if (!child.nodeChildProcess?.connected) {
+        if (options?.ipc === true) {
+          throw new Error('IPC channel is disconnected before graceful shutdown.')
+        }
         return false
       }
       child.nodeChildProcess.disconnect()
@@ -258,7 +261,7 @@ export function startDevProcess(
       // 并发调用共享同一次清理；只有核验退出和输出排空后才撤销登记。
       let shutdownFailure: unknown
       const cleanupTask = cleanup(forceKillDelayMs, { ...options, gracefulTimeoutMs: options.gracefulTimeoutMs ?? DEV_PROCESS_GRACEFUL_TIMEOUT_MS }).then(async () => {
-        if (forcedShutdown || exitedAfterIpc || gracefulShutdown) {
+        if (forcedShutdown || exitedAfterIpc || gracefulShutdown || spawnOptions.ipc === true) {
           const info = await settledExit
           shutdownFailure = createDevProcessShutdownFailure(info, formatExitInfo(info), message => appendRecentOutput(message, outputChunks, spawnInfo), forcedShutdown)
         }
