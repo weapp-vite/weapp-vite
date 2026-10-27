@@ -4,12 +4,15 @@ import { expect, it } from 'vitest'
 import { GITHUB_ISSUES_BUILD_BASELINE_LABEL, GITHUB_ISSUES_BUILD_TASK_LABELS } from '../../../e2e/ci/githubIssuesBuild/groups.ts'
 import { aggregateVerificationReports } from '../../../e2e/scripts/verification/aggregate.ts'
 import { TOPOLOGY_V2_COMPARISON_PROTOCOL } from '../../verification/topology.ts'
+import { useIsolatedTopologyTestEnvironment } from '../../verification/topologyTestFixture.ts'
 import { freeze, profile, shardReports } from '../../verificationE2E/fixtures.ts'
 import { collectCiEvidence } from '../ci.mjs'
 import { fixture } from './fixture.mjs'
 import { withCiRun } from './github.mjs'
 import { discoverTaskSuites } from './prepareTaskSuites.mjs'
 import { readTaskSuite, taskSuiteScope } from './taskSuite.mjs'
+
+useIsolatedTopologyTestEnvironment()
 
 async function taskFixture(options = {}) {
   const value = fixture()

@@ -1,6 +1,9 @@
 import { expect, it } from 'vitest'
 import { comparisonTopology, resolveVerificationTopology, TOPOLOGY_COMPARISON_PROTOCOL, TOPOLOGY_V2_COMPARISON_PROTOCOL } from '../verification/topology.ts'
+import { useIsolatedTopologyTestEnvironment } from '../verification/topologyTestFixture.ts'
 import { compareSamples, validateSample } from './compare.mjs'
+
+useIsolatedTopologyTestEnvironment()
 
 function samples() {
   return ['baseline', 'candidate'].flatMap(variant => Array.from({ length: 3 }, (_, index) => ({
