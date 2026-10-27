@@ -221,7 +221,9 @@ const runtimeSizeProductionBaselines: Readonly<Record<RuntimeSizePlatform, Reado
     'complex-component': 445_350,
     'public-app': 256_062,
     'public-page': 472_400,
-    'full-provider': 594_473,
+    // #1254 内联样式单位转换相对 211b4b5783ef 的 production 净增 14,585 B，模块差分完整归因。
+    // 只计入新增能力成本，保留主线原有增长占用及统一 5% 余量。
+    'full-provider': 609_058,
   },
 }
 
