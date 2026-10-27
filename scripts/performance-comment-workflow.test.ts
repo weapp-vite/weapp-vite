@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { parse } from 'yaml'
-import { readWorkflowFixture } from './workflowFixture.mjs'
+import { frozenWorkflowText, readWorkflowFixture } from './workflowFixture.mjs'
 
 const root = path.resolve(import.meta.dirname, '..')
 
@@ -13,13 +13,18 @@ describe('performance reporting workflows', () => {
     expect(workflow.on.workflow_dispatch.inputs['pr-number']).toMatchObject({ type: 'string', required: false })
     expect(Object.keys(workflow.jobs)).toEqual(['pr-context', 'smoke'])
     expect(workflow.jobs.smoke.needs).toBe('pr-context')
-    expect(workflow.jobs.smoke.if).toContain('needs.pr-context.outputs.is_pr == \'true\'')
+    expect(workflow.jobs.smoke.if).toContain(frozenWorkflowText('needs.pr-context.outputs.is_pr == \'true\'', 'ci-performance'))
     expect(workflow.jobs.smoke.steps[0].with.ref).toContain('needs.pr-context.outputs.head_sha')
     expect(workflow.jobs.smoke.steps[0].with.repository).toContain('needs.pr-context.outputs.head_repository')
     const driver = workflow.jobs.smoke.steps.find((step: { name?: string }) => step.name === 'Check out trusted scope driver')
     expect(driver.with.path).toBe('.tmp/pr-driver')
     expect(driver.with.ref).toContain('github.sha')
     expect(driver.with['persist-credentials']).toBe(false)
+    expect(driver.with['sparse-checkout']).toContain('.github')
+    const validate = workflow.jobs.smoke.steps.find((step: { name?: string }) => step.name === 'Validate frozen head using the approved merge driver')
+    expect(validate.uses).toBe('./.tmp/pr-driver/.github/actions/verify-frozen-job-context')
+    expect(validate.with.profile).toBe('ci-performance')
+    expect(workflow.jobs.smoke.steps.indexOf(validate)).toBeGreaterThan(workflow.jobs.smoke.steps.indexOf(driver))
     expect(workflow.jobs.smoke.steps.find((step: { id?: string }) => step.id === 'scope').run).toBe('node .tmp/pr-driver/scripts/performanceGate/smokeScope.mjs')
     expect(workflow.jobs.smoke['runs-on']).toBe('ubuntu-latest')
     expect(workflow.jobs.smoke['timeout-minutes']).toBe(15)
@@ -135,9 +140,16 @@ describe('performance reporting workflows', () => {
     const workflow = readWorkflowFixture('wevu-runtime-size.yml')
     expect(Object.keys(workflow.on)).toEqual(['workflow_dispatch'])
     expect(workflow.jobs.measure.needs).toBe('pr-context')
-    expect(workflow.jobs.measure.if).toContain('needs.pr-context.outputs.is_pr == \'true\'')
+    expect(workflow.jobs.measure.if).toContain(frozenWorkflowText('needs.pr-context.outputs.is_pr == \'true\'', 'wevu-runtime-size'))
     expect(workflow.jobs.measure.steps[0].with.ref).toContain('needs.pr-context.outputs.head_sha')
     expect(workflow.jobs.measure.steps[1].with.ref).toContain('needs.pr-context.outputs.base_sha')
+    const driver = workflow.jobs.measure.steps.find((step: { name?: string }) => step.name === 'Check out frozen validation driver independently of the PR head')
+    expect(driver.with.ref).toContain('github.sha')
+    expect(driver.with['persist-credentials']).toBe(false)
+    const validate = workflow.jobs.measure.steps.find((step: { name?: string }) => step.name === 'Validate frozen head using the approved merge driver')
+    expect(validate.uses).toBe('./.tmp/pr-validation-driver/.github/actions/verify-frozen-job-context')
+    expect(validate.with).toMatchObject({ 'profile': 'wevu-runtime-size', 'working-directory': 'head' })
+    expect(workflow.jobs.measure.steps.indexOf(validate)).toBeGreaterThan(workflow.jobs.measure.steps.indexOf(driver))
     const measure = workflow.jobs.measure.steps.find((step: { name?: string }) => step.name === 'Measure head and baseline')
     expect(measure.run).toContain('--root=../baseline')
     expect(measure.run).toContain('--artifact-json=../runtime-size-artifact/report-full.json')

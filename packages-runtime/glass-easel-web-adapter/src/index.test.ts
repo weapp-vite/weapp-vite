@@ -1,5 +1,20 @@
-import { describe, expect, it, vi } from 'vitest'
-import { createGlassEaselComponentDefinition, createGlassEaselWebAdapter, getGlassEaselRuntimeInfo } from './index'
+import type { GlassEaselWebAdapter, GlassEaselWebAdapterOptions } from './index'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { createGlassEaselWebAdapter as createAdapter, createGlassEaselComponentDefinition, getGlassEaselRuntimeInfo } from './index'
+
+const adapters: GlassEaselWebAdapter[] = []
+
+function createGlassEaselWebAdapter(options?: GlassEaselWebAdapterOptions) {
+  const adapter = createAdapter(options)
+  adapters.push(adapter)
+  return adapter
+}
+
+afterEach(() => {
+  for (const adapter of adapters.splice(0)) {
+    adapter.dispose()
+  }
+})
 
 describe('glass-easel web adapter PoC', () => {
   it('exposes the official glass-easel runtime and compiler probe', () => {

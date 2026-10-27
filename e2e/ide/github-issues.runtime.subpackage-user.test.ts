@@ -20,7 +20,7 @@ describe('e2e app: github-issues / user subpackage', { concurrent: false }, () =
 
   afterAll(async () => {
     await closeSharedMiniProgram()
-  }, 30_000)
+  })
 
   it('issue #317: loads duplicated shared chunks with localized runtime', async (ctx) => {
     const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', [{

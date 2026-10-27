@@ -2,6 +2,10 @@ name: Validate Acceptance and Agent
 on:
   workflow_call:
     inputs:
+      verification_topology:
+        required: false
+        type: string
+        default: optimized-v1
       pr_context:
         required: true
         type: string
@@ -15,25 +19,35 @@ permissions:
 
 jobs:
   pr-context:
+    if: inputs.verification_topology != 'optimized-v2'
     uses: ./.github/workflows/reusable-frozen-pr-context.yml
     with:
+      verification_topology: ${{ inputs.verification_topology }}
       pr_context: ${{ inputs.pr_context }}
       profile: ci-acceptance
 
   compatibility:
     needs: pr-context
-    if: needs.pr-context.outputs.should_run == 'true' && (github.event_name != 'workflow_dispatch' || inputs.scope == 'full')
+    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-acceptance'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && (github.event_name != 'workflow_dispatch' || inputs.scope == 'full')) }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
+    env:
+      WEAPP_VITE_VERIFICATION_TOPOLOGY: ${{ inputs.verification_topology }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: ${{ needs.pr-context.outputs.checkout_sha }}
+          ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}
           persist-credentials: false
+      - name: Validate frozen identity in the executing job
+        if: inputs.verification_topology == 'optimized-v2'
+        uses: ./.github/actions/verify-frozen-job-context
+        with:
+          context: ${{ inputs.pr_context }}
+          profile: ci-acceptance
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
@@ -61,7 +75,7 @@ jobs:
 
   windows-runtime-diagnostic:
     needs: pr-context
-    if: needs.pr-context.outputs.should_run == 'true' && (github.event_name == 'workflow_dispatch' && inputs.scope == 'windows-runtime-diagnostic')
+    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-acceptance'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && (github.event_name == 'workflow_dispatch' && inputs.scope == 'windows-runtime-diagnostic')) }}
     name: Windows acceptance runtime (Node ${{ matrix.node-version }})
     strategy:
       fail-fast: false
@@ -69,12 +83,15 @@ jobs:
         node-version: [22, 24]
     uses: ./.github/workflows/reusable-node-command.yml
     with:
-      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
-      base_sha: ${{ needs.pr-context.outputs.base_sha }}
-      head_sha: ${{ needs.pr-context.outputs.head_sha }}
-      pr_number: ${{ needs.pr-context.outputs.pr_number }}
-      head_ref: ${{ needs.pr-context.outputs.head_ref }}
-      base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      verification_topology: ${{ inputs.verification_topology }}
+      pr_context: ${{ inputs.pr_context }}
+      pr_profile: ci-acceptance
+      checkout_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}
+      base_sha: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}
+      head_sha: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}
+      pr_number: ${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}
+      head_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}
+      base_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}
       runs_on: windows-latest
       node_version: '${{ matrix.node-version }}'
       timeout_minutes: 25
@@ -82,6 +99,6 @@ jobs:
       main_command: |
         pnpm --filter @weapp-agent/mini-program typecheck
         pnpm --filter @weapp-agent/mini-program exec vitest run --configLoader bundle --coverage.enabled --maxWorkers=50% test/acceptance.test.ts --reporter=default --reporter=json --outputFile=../../.tmp/acceptance-runtime-report.json
-      artifact_name: acceptance-runtime-windows-node-${{ matrix.node-version }}-${{ needs.pr-context.outputs.checkout_sha }}
+      artifact_name: acceptance-runtime-windows-node-${{ matrix.node-version }}-${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}
       artifact_path: .tmp/acceptance-runtime-report.json
     secrets: inherit

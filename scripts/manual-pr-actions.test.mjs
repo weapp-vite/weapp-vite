@@ -2,7 +2,7 @@ import { readdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { parse } from 'yaml'
-import { readWorkflowFixture } from './workflowFixture.mjs'
+import { frozenWorkflowText, readWorkflowFixture } from './workflowFixture.mjs'
 
 const workflows = [
   'ci.yml',
@@ -25,7 +25,7 @@ const expression = value => `$${'{{'} ${value} }}`
 const readWorkflow = async name => parse(await readFile(path.join(workflowRoot, name), 'utf8'))
 
 describe('manual PR workflow entry points', () => {
-  it('has one native PR entry and only a close-event target entry', async () => {
+  it('has one native validation entry and separately approved intent generation', async () => {
     for (const name of await readdir(workflowRoot)) {
       if (!name.endsWith('.yml')) {
         continue
@@ -34,6 +34,14 @@ describe('manual PR workflow entry points', () => {
       expect(Boolean(workflow.on.pull_request), name).toBe(name === 'ci-pr.yml')
       if (name === 'ci-pr.yml') {
         expect(workflow.on.pull_request_target).toEqual({ types: ['closed'] })
+      }
+      else if (name === 'release-intent-auto.yml') {
+        expect(workflow.on).not.toHaveProperty('pull_request_target')
+        expect(workflow.on.workflow_dispatch.inputs.pullRequest).toMatchObject({ required: true, type: 'number' })
+        for (const job of Object.values(workflow.jobs)) {
+          expect(job.environment).toBe('pr-ci-approval')
+          expect(job.steps.every(step => !step.uses?.startsWith('actions/checkout@'))).toBe(true)
+        }
       }
       else {
         expect(workflow.on, name).not.toHaveProperty('pull_request_target')
@@ -105,28 +113,30 @@ describe('manual PR workflow entry points', () => {
     for (const name of ['ci.yml', 'ci-policy.yml', 'ci-e2e.yml', 'ci-tutorial-e2e.yml', 'ci-create-weapp-vite.yml', 'nightly-performance.yml']) {
       expect((await readWorkflow(name)).on.schedule, name).toHaveLength(1)
     }
-    expect((await readWorkflow('deploy-website.yml')).on.push.branches).toEqual(['main'])
+    expect((await readWorkflow('deploy-website.yml')).on).not.toHaveProperty('push')
+    expect((await readWorkflow('repoctl-docs.yml')).on.push.branches).toEqual(['main'])
     expect((await readWorkflow('release.yml')).on.push.branches).toContain('main')
     expect((await readWorkflow('ci-dimina.yml')).on.push.branches).toEqual(['main'])
   })
 
   it('preserves PR profiles while standalone checks keep their existing matrices', async () => {
     const ci = readWorkflowFixture('ci.yml')
-    expect(ci.jobs['build-pr'].if).toContain('needs.pr-context.outputs.is_pr == \'true\'')
+    expect(ci.jobs['build-pr'].if).toContain(frozenWorkflowText('needs.pr-context.outputs.is_pr == \'true\'', 'ci'))
     expect(ci.jobs['build-pr'].strategy.matrix.include).toHaveLength(4)
     expect(ci.jobs['build-release-pr'].strategy.matrix.include).toHaveLength(2)
-    expect(ci.jobs['build-full'].if).toContain('needs.pr-context.outputs.is_pr != \'true\'')
+    expect(ci.jobs['build-full'].if).toContain(frozenWorkflowText('needs.pr-context.outputs.is_pr != \'true\'', 'ci'))
     expect(ci.jobs['build-full'].strategy.matrix.include).toHaveLength(6)
     const tutorial = readWorkflowFixture('ci-tutorial-e2e.yml')
-    expect(tutorial.jobs['tutorial-e2e'].strategy.matrix.source).toContain('needs.pr-context.outputs.is_pr == \'true\' && \'["workspace"]\'')
+    expect(tutorial.jobs['tutorial-e2e'].strategy.matrix.source).toContain(frozenWorkflowText(`needs.pr-context.outputs.is_pr == 'true' && '["workspace"]'`, 'ci-tutorial-e2e'))
   })
 
-  it('excludes manually validated PRs from production website deployment', async () => {
+  it('keeps manual and PR website validation free of deployment credentials', async () => {
     const workflow = readWorkflowFixture('deploy-website.yml')
     const steps = workflow.jobs.website.steps
-    for (const name of ['Check production revision', 'Deploy website to Cloudflare']) {
-      expect(steps.find(step => step.name === name).if).toContain('needs.pr-context.outputs.is_pr != \'true\'')
-    }
+    expect(steps.some(step => step.name === 'Deploy website to Cloudflare')).toBe(false)
+    expect(JSON.stringify(steps)).not.toContain('secrets.CLOUDFLARE')
+    expect(steps.find(step => step.name === 'Validate Cloudflare deployment without credentials').run)
+      .toBe('pnpm --filter website-weapp-vite deploy:preview:dry-run')
   })
 
   it('uses candidate artifact identity and exports frozen base after runner environment setup', async () => {
@@ -137,7 +147,12 @@ describe('manual PR workflow entry points', () => {
     expect(job.env.TURBO_TOKEN).toBe(expression('inputs.pr_number == \'\' && secrets.TURBO_TOKEN || \'\''))
     const checkout = job.steps.find(step => step.uses?.startsWith('actions/checkout@'))
     expect(checkout.with.ref).toBe(expression('inputs.checkout_ref || github.sha'))
-    expect(checkout.with['fetch-depth']).toBe(expression('inputs.pr_number != \'\' && \'0\' || inputs.fetch_depth'))
+    expect(checkout.with['fetch-depth']).toBe(expression('inputs.verification_topology != \'optimized-v2\' && inputs.pr_number != \'\' && \'0\' || inputs.require_history && \'0\' || inputs.fetch_depth'))
+    const base = job.steps.find(step => step.name === 'Fetch frozen PR base')
+    expect(base.if).toBe('inputs.base_sha != \'\' && (inputs.verification_topology != \'optimized-v2\' || inputs.fetch_base)')
+    const validate = job.steps.find(step => step.name === 'Validate frozen identity in the executing job')
+    expect(validate.if).toBe('inputs.verification_topology == \'optimized-v2\'')
+    expect(validate.with).toEqual({ context: expression('inputs.pr_context'), profile: expression('inputs.pr_profile') })
     const command = job.steps.find(step => step.name === 'Run command').run
     expect(command).toContain('export GITHUB_BASE_REF="$PR_BASE_SHA"')
     expect(command.indexOf('export GITHUB_BASE_REF')).toBeLessThan(command.indexOf(expression('inputs.main_command')))

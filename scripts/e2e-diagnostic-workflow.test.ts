@@ -1,7 +1,8 @@
+/* eslint-disable no-template-curly-in-string -- GitHub Actions 表达式必须按字面量核验。 */
 import { readFile } from 'node:fs/promises'
 import { describe, expect, it } from 'vitest'
 import { parse } from 'yaml'
-import { readVerificationTopologyVariant, readWorkflowFixture } from './workflowFixture.mjs'
+import { frozenJobCondition, frozenWorkflowText, readVerificationTopologyVariant, readWorkflowFixture } from './workflowFixture.mjs'
 
 interface WorkflowJob {
   if?: string
@@ -20,7 +21,7 @@ async function workflow() {
 }
 
 function diagnosticCondition(diagnostic: string) {
-  return `needs.pr-context.outputs.should_run == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == '${diagnostic}')`
+  return frozenJobCondition(`needs.pr-context.outputs.should_run == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == '${diagnostic}')`, 'ci-e2e')
 }
 
 describe('bounded HMR workflow diagnosis', () => {
@@ -87,13 +88,15 @@ describe('bounded HMR workflow diagnosis', () => {
     expect(job.strategy?.['fail-fast']).toBe(false)
     expect(job.strategy?.matrix).toEqual({ os: ['ubuntu-latest', 'windows-latest', 'macos-latest'] })
     expect(job.with).toEqual({
+      pr_context: '${{ inputs.pr_context }}',
+      pr_profile: 'ci-e2e',
       verification_topology: `\${{ inputs.verification_topology }}`,
-      checkout_ref: `\${{ needs.pr-context.outputs.checkout_sha }}`,
-      base_sha: `\${{ needs.pr-context.outputs.base_sha }}`,
-      head_sha: `\${{ needs.pr-context.outputs.head_sha }}`,
-      pr_number: `\${{ needs.pr-context.outputs.pr_number }}`,
-      head_ref: `\${{ needs.pr-context.outputs.head_ref }}`,
-      base_ref: `\${{ needs.pr-context.outputs.base_ref }}`,
+      checkout_ref: frozenWorkflowText(`\${{ needs.pr-context.outputs.checkout_sha }}`, 'ci-e2e'),
+      base_sha: frozenWorkflowText(`\${{ needs.pr-context.outputs.base_sha }}`, 'ci-e2e'),
+      head_sha: frozenWorkflowText(`\${{ needs.pr-context.outputs.head_sha }}`, 'ci-e2e'),
+      pr_number: frozenWorkflowText(`\${{ needs.pr-context.outputs.pr_number }}`, 'ci-e2e'),
+      head_ref: frozenWorkflowText(`\${{ needs.pr-context.outputs.head_ref }}`, 'ci-e2e'),
+      base_ref: frozenWorkflowText(`\${{ needs.pr-context.outputs.base_ref }}`, 'ci-e2e'),
       runs_on: `\${{ matrix.os }}`,
       node_version: '24',
       e2e_exclude_projects: `\${{ inputs.exclude-e2e-projects }}`,
@@ -131,20 +134,22 @@ describe('bounded HMR workflow diagnosis', () => {
     expect(job.strategy?.['fail-fast']).toBe(false)
     expect(job.strategy?.matrix).toEqual({ 'node-version': [22, 24] })
     expect(job.with).toEqual({
+      pr_context: '${{ inputs.pr_context }}',
+      pr_profile: 'ci-e2e',
       verification_topology: `\${{ inputs.verification_topology }}`,
-      checkout_ref: `\${{ needs.pr-context.outputs.checkout_sha }}`,
-      base_sha: `\${{ needs.pr-context.outputs.base_sha }}`,
-      head_sha: `\${{ needs.pr-context.outputs.head_sha }}`,
-      pr_number: `\${{ needs.pr-context.outputs.pr_number }}`,
-      head_ref: `\${{ needs.pr-context.outputs.head_ref }}`,
-      base_ref: `\${{ needs.pr-context.outputs.base_ref }}`,
+      checkout_ref: frozenWorkflowText(`\${{ needs.pr-context.outputs.checkout_sha }}`, 'ci-e2e'),
+      base_sha: frozenWorkflowText(`\${{ needs.pr-context.outputs.base_sha }}`, 'ci-e2e'),
+      head_sha: frozenWorkflowText(`\${{ needs.pr-context.outputs.head_sha }}`, 'ci-e2e'),
+      pr_number: frozenWorkflowText(`\${{ needs.pr-context.outputs.pr_number }}`, 'ci-e2e'),
+      head_ref: frozenWorkflowText(`\${{ needs.pr-context.outputs.head_ref }}`, 'ci-e2e'),
+      base_ref: frozenWorkflowText(`\${{ needs.pr-context.outputs.base_ref }}`, 'ci-e2e'),
       e2e_exclude_projects: `\${{ inputs.exclude-e2e-projects }}`,
       runs_on: 'windows-latest',
       node_version: `\${{ format('{0}', matrix.node-version) }}`,
       timeout_minutes: 15,
       build_command: 'pnpm exec turbo run build --filter=weapp-vite...',
       main_command: 'pnpm exec cross-env WEAPP_VITE_E2E_CLEANUP_TRACE=1 WEAPP_VITE_E2E_DEV_PROCESS_TRACE=1 WEAPP_VITE_E2E_DEV_SHUTDOWN_TRACE=1 WEAPP_VITE_E2E_DEV_PROCESS_TRACE_DIR=.tmp/windows-native-runtime-cleanup/dev-process pnpm vitest run -c e2e/vitest.e2e.internal.config.ts e2e/utils/runtimeDevProcess.integration.test.ts --maxWorkers=1 --no-file-parallelism --reporter=default --reporter=json --outputFile=.tmp/windows-native-runtime-cleanup/report.json',
-      artifact_name: `windows-native-runtime-cleanup-node-\${{ matrix.node-version }}-\${{ needs.pr-context.outputs.checkout_sha }}`,
+      artifact_name: frozenWorkflowText(`windows-native-runtime-cleanup-node-\${{ matrix.node-version }}-\${{ needs.pr-context.outputs.checkout_sha }}`, 'ci-e2e'),
       artifact_path: '.tmp/windows-native-runtime-cleanup/**',
     })
   })
@@ -261,7 +266,7 @@ describe('bounded HMR workflow diagnosis', () => {
       }
       expect(job.if, `${name} must stay outside a bounded diagnostic run`).toSatisfy((condition: string) =>
         condition.includes('!inputs.hmr-diagnostic || inputs.hmr-diagnostic == \'full\'')
-        || condition.includes('needs.pr-context.outputs.is_pr == \'true\'')
+        || condition.includes(frozenWorkflowText('needs.pr-context.outputs.is_pr == \'true\'', 'ci-e2e'))
         || condition.includes('needs.bun-build-diagnostic.result == \'success\'')
         || (baseline && condition.includes('needs.miniapp-e2e-build-pr.result == \'success\'') && condition.includes('needs.miniapp-e2e-build-full.result == \'success\'')),
       )

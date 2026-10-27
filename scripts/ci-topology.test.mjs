@@ -117,7 +117,8 @@ describe('independent CI preparation with unchanged validation scope', () => {
       expect(child.jobs[name].with.consume_build_artifact).toBe(child.jobs.build.with.build_artifact_name)
     }
     expect(child.jobs['ide-dom-headless'].with.main_command).toContain('run-e2e-suite.ts ide-dom-headless')
-    expect(child.jobs['ide-dom-headless'].with.checkout_ref).toBe(`\${{ needs.pr-context.outputs.checkout_sha }}`)
+    expect(child.jobs['ide-dom-headless'].with.checkout_ref).toContain('inputs.verification_topology == \'optimized-v2\' && fromJSON(inputs.pr_context).checkoutSha')
+    expect(child.jobs['ide-dom-headless'].with.checkout_ref).toContain('needs.pr-context.outputs.checkout_sha')
     expect(child.jobs['ide-dom-headless'].with.e2e_exclude_projects).toBe(`\${{ inputs.exclude_projects }}`)
     expect(child.jobs.aggregate.needs).toEqual(['pr-context', 'build', 'plan', 'miniapp'])
     expect(child.jobs.aggregate.if).toContain('!cancelled()')
@@ -155,7 +156,8 @@ describe('independent CI preparation with unchanged validation scope', () => {
     for (const profile of ['stateful', 'classic', 'react', 'independent', 'worker', 'plugin', 'lib', 'platform', 'web']) {
       const job = child.jobs[`${profile}-runtime`]
       expect(job.strategy.matrix.host).toEqual(['wv', 'vite', 'vite-plus'])
-      expect(job.if).toBe('inputs.runs_on == \'ubuntu-latest\'')
+      expect(job.if).toContain('inputs.runs_on == \'ubuntu-latest\'')
+      expect(job.if).toContain('inputs.verification_topology != \'optimized-v2\'')
       expect(job.with.consume_build_artifact).toBe(child.jobs.prepare.with.build_artifact_name)
       expect(job.with.consumer_tarballs).toBe('.cache/node-support-tarballs')
     }
@@ -163,6 +165,33 @@ describe('independent CI preparation with unchanged validation scope', () => {
     expect(child.jobs['classic-runtime'].strategy.matrix.exclude).toEqual([{ host: 'wv', profile: 'classic-watch' }])
     expect(Object.keys(consumerContractGroups)).toEqual(['react-host-paths', 'watch-validation', 'route-topology', 'host-paths', 'native-path-controls'])
     expect(Object.values(consumerContractGroups).flat()).toHaveLength(17)
+  })
+
+  it('keeps v2 opt in and validates actual jobs, single installs and strict aggregate evidence', () => {
+    const consumer = read('reusable-consumer-platform.yml')
+    expect(consumer.on.workflow_call.inputs.verification_topology.default).toBe('optimized-v1')
+    expect(consumer.jobs['pr-context'].if).toBe('inputs.verification_topology != \'optimized-v2\'')
+    expect(consumer.jobs.prepare.with.resolve_node_support).toBe(`\${{ inputs.verification_topology == 'optimized-v2' }}`)
+    expect(consumer.jobs['consumer-batches-v2'].strategy.matrix.include).toBe(`\${{ fromJSON(needs.prepare.outputs.consumer_batch_matrix) }}`)
+    expect(consumer.jobs['node-support-v2'].strategy.matrix.include).toBe(`\${{ fromJSON(needs.prepare.outputs.node_support_matrix) }}`)
+    expect(consumer.jobs['node-support-v2'].steps.find(step => step.name?.startsWith('Require consumer')).run).toContain('nodeSupport/index.mjs record')
+    for (const name of ['node-support-aggregate-v2', 'consumer-aggregate-v2']) {
+      const job = consumer.jobs[name]
+      expect(job.if).toContain('!cancelled()')
+      expect(job.steps.some(step => step.uses === './.github/actions/setup-node-pnpm' || step.run?.includes('pnpm install'))).toBe(false)
+      expect(job.steps.some(step => step.uses === './.github/actions/verify-frozen-job-context')).toBe(true)
+      expect(job.steps.find(step => step.name?.startsWith('Aggregate immutable')).run).toContain('/aggregate.mjs')
+    }
+    const miniapp = read('reusable-miniapp-platform.yml')
+    expect(miniapp.jobs.plan.steps.find(step => step.name === 'Freeze dependency-free aggregate runners tied to each plan').run.match(/aggregateBundle\.ts/gu)).toHaveLength(2)
+    for (const name of ['aggregate', 'ide-dom-headless-aggregate']) {
+      const steps = miniapp.jobs[name].steps
+      expect(steps.find(step => step.uses === './.github/actions/setup-node-pnpm').with['install-dependencies']).toBe(`\${{ inputs.verification_topology != 'optimized-v2' }}`)
+      const aggregate = steps.find(step => step.name === 'Verify frozen aggregate bundle and complete original evidence')
+      expect(aggregate.if).toBe('inputs.verification_topology == \'optimized-v2\'')
+      expect(aggregate.run).toContain('run-verification-aggregate.mjs')
+      expect(aggregate.run).toContain('--sha="$BUILD_ARTIFACT_EXPECTED_COMMIT"')
+    }
   })
 
   it('verifies identical consumer provenance after either local packing or artifact restore', () => {

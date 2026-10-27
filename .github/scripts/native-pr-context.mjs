@@ -1,6 +1,8 @@
+import assert from 'node:assert/strict'
 import { appendFile, mkdir, readFile, writeFile } from 'node:fs/promises'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
+import { requiredDocumentContracts, rootDocumentationChanges } from '../../scripts/verification/documentPolicy.mjs'
 import { validateNativeContextShape, validateNativeRunIdentity } from './native-pr-identity.mjs'
 import { readNativePrWorkload, selectNativePrWorkload } from './native-pr-workload.mjs'
 import { matchesFilters, resolvePrContext } from './pr-context.mjs'
@@ -45,8 +47,10 @@ export async function resolveNativePrContext({ repository, runId, runAttempt = 1
     }
   }
   const paths = files.flatMap(file => [file.filename, file.previous_filename].filter(Boolean))
+  const documentationPaths = workload.value.pullRequests.includes(context.prNumber) ? null : rootDocumentationChanges(files)
+  const documentationOnly = documentationPaths !== null
   const pathSelections = Object.fromEntries(Object.entries(profiles).map(([name, profile]) => [name, matchesFilters([context.baseRef], profile.baseBranches)
-    && (files.length >= 3000 || matchesFilters(paths, profile.paths))]))
+    && !documentationOnly && (files.length >= 3000 || matchesFilters(paths, profile.paths))]))
   const selection = selectNativePrWorkload(context, profiles, pathSelections, workload)
   const current = await get(`/pulls/${event.number}`)
   const base = await get(`/git/ref/heads/${encodeURIComponent(context.baseRef)}`)
@@ -55,7 +59,15 @@ export async function resolveNativePrContext({ repository, runId, runAttempt = 1
     || current.merge_commit_sha !== driverSha || mergeRef.ref !== `refs/pull/${event.number}/merge` || mergeRef.object?.sha !== driverSha) {
     throw new Error('PR changed while selecting checks; approve the new run')
   }
-  return { ...context, event: 'pull_request', ...selection }
+  return { ...context, event: 'pull_request', ...selection, documentationOnly, documentationPaths: documentationPaths ?? [], documentationChecks: documentationOnly ? requiredDocumentContracts(paths) : [] }
+}
+
+/** 拓扑选择与审批后冻结上下文一致，调用层不能把候选偷偷改回默认。 */
+export function assertPrTopology(context, topology) {
+  assert(['legacy-v1', 'optimized-v1', 'optimized-v2'].includes(topology), 'Unsupported verification topology')
+  if (context.event === 'pull_request') {
+    assert.equal(topology, context.verificationTopology ?? 'optimized-v1', 'Frozen verification topology mismatch')
+  }
 }
 
 /** 子流程只投影固定上下文，不重新请求 PR，也不重复发布 artifact 或提交状态。 */
@@ -96,7 +108,9 @@ async function outputs(context) {
 async function main() {
   const profiles = JSON.parse(await readFile(new URL('../pr-checks.json', import.meta.url), 'utf8'))
   if (process.env.PR_FROZEN_CONTEXT) {
-    await outputs(projectPrContext(JSON.parse(process.env.PR_FROZEN_CONTEXT), profiles[process.env.PR_PROFILE], process.env.PR_PROFILE))
+    const context = JSON.parse(process.env.PR_FROZEN_CONTEXT)
+    assertPrTopology(context, process.env.PR_VERIFICATION_TOPOLOGY ?? 'optimized-v1')
+    await outputs(projectPrContext(context, profiles[process.env.PR_PROFILE], process.env.PR_PROFILE))
     return
   }
   if (process.env.GITHUB_EVENT_NAME !== 'pull_request') {
@@ -121,7 +135,7 @@ async function main() {
   const rows = Object.entries(profiles).map(([name, profile]) => `| ${profile.name} | ${context.selections[name] ? 'Selected' : 'Skipped by path/branch filters'} | ${context.selectionSources[name]} |`)
   const benchmark = context.benchmarkWorkload
   const receipt = benchmark ? `\n\nBenchmark workload: \`${benchmark.id}\`\n\nManifest SHA-256: \`${benchmark.manifest.sha256}\`` : ''
-  await appendFile(process.env.GITHUB_STEP_SUMMARY, `## Approved PR #${context.prNumber}\n\nHEAD: \`${context.headSha}\`\n\nBASE: \`${context.baseSha}\`\n\nMERGE: \`${context.checkoutSha}\`${receipt}\n\n| Check | Selection | Source |\n| --- | --- | --- |\n${rows.join('\n')}\n`)
+  await appendFile(process.env.GITHUB_STEP_SUMMARY, `## Approved PR #${context.prNumber}\n\nTopology: \`${context.verificationTopology}\`\n\nHEAD: \`${context.headSha}\`\n\nBASE: \`${context.baseSha}\`\n\nMERGE: \`${context.checkoutSha}\`${receipt}\n\n| Check | Selection | Source |\n| --- | --- | --- |\n${rows.join('\n')}\n`)
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

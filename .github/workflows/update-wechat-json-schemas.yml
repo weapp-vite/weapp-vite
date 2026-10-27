@@ -14,7 +14,7 @@ permissions:
   pull-requests: write
 
 env:
-  HUSKY: 0
+  LEFTHOOK: '0'
 
 jobs:
   update:

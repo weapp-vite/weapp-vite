@@ -3,6 +3,9 @@ import { glob } from 'tinyglobby'
 import { loadConfigFromFile, mergeConfig } from 'vite'
 import { describe, expect, it, vi } from 'vitest'
 import { createFastTestIncludes, parallelFixtureTests, serialFixtureTestIncludes } from '../packages/weapp-vite/vitest/partition'
+import { useIsolatedTopologyTestEnvironment } from './verification/topologyTestFixture.ts'
+
+useIsolatedTopologyTestEnvironment()
 
 describe('compiler test project partition', () => {
   it('keeps newly declared discovery roots in the fast partition without moving unaudited fixtures', () => {
@@ -56,12 +59,12 @@ describe('compiler test project partition', () => {
   })
 })
 
-it('keeps the complete discovered fixture union and final setup placement in both topologies', async () => {
+it('keeps the complete discovered fixture union and final setup placement in every topology', async () => {
   const cwd = path.resolve(import.meta.dirname, '../packages/weapp-vite')
   const inventories = []
   const setups = []
   try {
-    for (const topology of ['legacy-v1', 'optimized-v1']) {
+    for (const topology of ['legacy-v1', 'optimized-v1', 'optimized-v2']) {
       vi.stubEnv('WEAPP_VITE_VERIFICATION_TOPOLOGY', topology)
       const loaded = await loadConfigFromFile({ command: 'serve', mode: 'test' }, path.join(cwd, 'vitest.config.ts'))
       const config = loaded!.config as { test: { projects: Array<{ test: { name: string, include: string[], exclude: string[], globalSetup?: string[], fileParallelism?: boolean } }> } }
@@ -79,7 +82,9 @@ it('keeps the complete discovered fixture union and final setup placement in bot
       setups.push(projects.map(project => project.globalSetup ?? []))
     }
     expect(inventories[0]).toEqual(inventories[1])
+    expect(inventories[0]).toEqual(inventories[2])
     expect(setups[0]).toEqual(setups[1])
+    expect(setups[0]).toEqual(setups[2])
     expect(setups[0]?.[0]).toEqual([])
     expect(setups[0]?.[1]).toEqual([path.resolve(cwd, '../../vitest.globalSetup.mjs')])
   }

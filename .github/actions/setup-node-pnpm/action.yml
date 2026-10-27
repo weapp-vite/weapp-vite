@@ -5,6 +5,10 @@ inputs:
   node-version:
     description: Node.js version to use
     required: true
+  install-dependencies:
+    description: Install now; artifact consumers can install once after restoring their dist
+    required: false
+    default: 'true'
 
 outputs:
   node-version:
@@ -35,6 +39,7 @@ runs:
         task_pnpm_version="$(pnpm --version)"
         printf 'REPOCTL_RELEASE_PNPM_VERSION=pnpm@%s\nBUILD_ARTIFACT_PACKAGE_MANAGER=pnpm@%s\n' "$task_pnpm_version" "$task_pnpm_version" >> "$GITHUB_ENV"
     - name: Install dependencies
+      if: inputs.install-dependencies == 'true'
       shell: bash
       run: |-
         node .github/scripts/ci-timing.mjs start install

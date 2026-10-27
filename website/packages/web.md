@@ -47,6 +47,12 @@ pnpm add -D @weapp-vite/web
 
 Wevu 会根据 `web` 目标[自动裁剪平台适配与未使用能力](/wevu/runtime#按平台与使用能力裁剪)。Web 仍保留 App/Component、页面栈和宿主桥接；其体积不能直接作为 Vue DOM runtime 或原生 App 渲染器的体积基线。
 
+## glass-easel 组件后端实验
+
+仓库中的 `@weapp-vite/glass-easel-web-adapter` 提供独立的官方组件树实验：支持显式注册父子组件、默认与命名 slot、属性和 observer、数据更新、事件及递归卸载。示例与限制见 [adapter README](https://github.com/weapp-vite/weapp-vite/tree/main/packages-runtime/glass-easel-web-adapter)。
+
+该入口需要业务宿主显式创建 adapter，尚未接入上述 CLI 的默认 runtime，也没有新增 renderer 配置。模板编译仍在浏览器注册阶段执行，`ready`、原生组件、样式、路由与 API 需要后续宿主集成；文档级官方事件委托由共享 backend 持有。本阶段用于组件语义验证，不能据此认定真机或多平台兼容已完成。
+
 ## Vite 插件接入
 
 ```ts
@@ -126,6 +132,15 @@ export default defineConfig({
 - `getCurrentPages()` 返回当前活动路由栈，其他保活 tab 页面不会混入当前 tab 栈；路由 API 同时支持 Promise 与 `success` / `fail` / `complete` 回调
 - 读取 `app.json.tabBar` 并在设备容器内渲染标准 App Shell；`switchTab` 缓存 tab 页面、关闭非 tab 页面并保持正确的 `onLoad` / `onShow` 语义
 - `showTabBar` / `hideTabBar`、`setTabBarItem`、`setTabBarStyle`、badge 与 red-dot API 会真实更新布局和视觉状态
+
+页面滚动回调的兼容范围如下：
+
+| 能力 | Web Runtime |
+| --- | --- |
+| `onPageScroll` | 用户滚动和 `pageScrollTo` 均派发，先于本次 `onReachBottom` |
+| `onReachBottom` 默认距离 | 距底部 50px 时派发一次；内容追加后可再次触发 |
+| 页面位置恢复、内容不足一屏 | 不派发 `onReachBottom` |
+| `page.json.onReachBottomDistance` 自定义距离 | 暂不支持，仍使用默认 50px |
 
 需要保留旧的浏览器全宽行为时，将 `runtime.viewport.mode` 设置为 `responsive`。
 

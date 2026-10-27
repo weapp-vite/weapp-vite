@@ -1,14 +1,102 @@
 <!doctype html>
 <html>
   <body>
-    <div id="app"></div>
+    <div id="app"><aside id="sentinel">Existing content</aside></div>
     <script type="module">
-      import { createGlassEaselWebAdapter } from '../src/index.ts'
-      const adapter = createGlassEaselWebAdapter()
-      adapter.registerComponent({ name: 'browser-card', template: '<div>{{count}}</div>' })
-      const instance = adapter.mountComponent('browser-card', document.querySelector('#app'), { count: 1 })
-      adapter.updateComponent(instance, { count: 2 })
-      document.body.dataset.snapshot = JSON.stringify(adapter.getSnapshot(instance))
+      import { createGlassEaselWebAdapter } from '../dist/index.mjs'
+
+      const lifecycle = []
+      const adapter = createGlassEaselWebAdapter({ strict: true })
+      adapter.registerComponent({
+        name: 'browser-parent',
+        usingComponents: { 'slot-panel': '/slot-panel' },
+        data: () => ({
+          title: 'Initial title',
+          clicks: 0,
+          childChanges: 0,
+          lastChild: '',
+          items: [{ id: 'a', label: 'Alpha' }, { id: 'b', label: 'Beta' }],
+        }),
+        template: `
+          <section>
+            <slot-panel label="{{title}}" bind:change="onChildChange">
+              <span slot="heading" id="heading">{{title}}</span>
+              <button id="slot-action" bind:click="increment">Clicks: {{clicks}}</button>
+            </slot-panel>
+            <ol><li wx:for="{{items}}" wx:key="id" data-id="{{item.id}}">{{item.label}}</li></ol>
+          </section>
+        `,
+        methods: {
+          increment() {
+            this.setData({ clicks: this.data.clicks + 1 })
+          },
+          onChildChange(event) {
+            this.setData({ childChanges: this.data.childChanges + 1, lastChild: event.detail.label })
+          },
+        },
+        lifetimes: {
+          created() { lifecycle.push('parent:created') },
+          attached() { lifecycle.push('parent:attached') },
+          detached() { lifecycle.push('parent:detached') },
+        },
+      })
+      adapter.registerComponent({
+        name: 'slot-panel',
+        properties: { label: String },
+        options: { multipleSlots: true },
+        template: `
+          <article>
+            <header><slot name="heading" /></header>
+            <main><slot /></main>
+            <button id="child-action" bind:click="notify">{{label}}</button>
+          </article>
+        `,
+        methods: {
+          notify() { this.triggerEvent('change', { label: this.data.label }) },
+        },
+        lifetimes: {
+          created() { lifecycle.push('child:created') },
+          attached() { lifecycle.push('child:attached') },
+          detached() { lifecycle.push('child:detached') },
+        },
+      })
+
+      const container = document.querySelector('#app')
+      const sentinel = document.querySelector('#sentinel')
+      const first = adapter.mountComponent('browser-parent', container)
+      const second = adapter.mountComponent('browser-parent', container)
+      first.root.id = 'first-root'
+      second.root.id = 'second-root'
+      const rows = new Map(Array.from(first.root.querySelectorAll('[data-id]'), node => [node.dataset.id, node]))
+
+      window.glassEaselFixture = {
+        snapshot() {
+          return {
+            first: adapter.getSnapshot(first),
+            second: adapter.getSnapshot(second),
+            lifecycle: [...lifecycle],
+            sentinelPreserved: sentinel.parentElement === container,
+            firstMounted: first.root.parentElement === container,
+            secondMounted: second.root.parentElement === container,
+            rowOrder: Array.from(first.root.querySelectorAll('[data-id]'), node => node.dataset.id),
+          }
+        },
+        update() {
+          adapter.updateComponent(first, { title: 'Updated title' })
+        },
+        reorder() {
+          adapter.updateComponent(first, { items: [{ id: 'b', label: 'Beta updated' }, { id: 'a', label: 'Alpha updated' }] })
+          return Array.from(first.root.querySelectorAll('[data-id]')).every(node => rows.get(node.dataset.id) === node)
+        },
+        unmountFirst() {
+          adapter.unmountComponent(first)
+          adapter.unmountComponent(first)
+        },
+        dispose() {
+          adapter.dispose()
+          adapter.dispose()
+        },
+      }
       document.body.dataset.ready = 'true'
     </script>
   </body>

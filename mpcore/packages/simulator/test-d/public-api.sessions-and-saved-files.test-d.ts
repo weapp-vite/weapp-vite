@@ -208,6 +208,7 @@ expectType<{
   disconnect: () => void
   observe: (selector: string, callback: (result: {
     boundingClientRect: { bottom: number, height: number, left: number, right: number, top: number, width: number }
+    dataset: Record<string, unknown>
     id: string
     intersectionRatio: number
     intersectionRect: { bottom: number, height: number, left: number, right: number, top: number, width: number }
@@ -593,6 +594,7 @@ expectType<{
   disconnect: () => void
   observe: (selector: string, callback: (result: {
     boundingClientRect: { bottom: number, height: number, left: number, right: number, top: number, width: number }
+    dataset: Record<string, unknown>
     id: string
     intersectionRatio: number
     intersectionRect: { bottom: number, height: number, left: number, right: number, top: number, width: number }

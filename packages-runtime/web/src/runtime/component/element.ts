@@ -15,6 +15,7 @@ import { html } from 'lit'
 import { unsafeHTML } from 'lit/directives/unsafe-html.js'
 import { getAppStyle, trackAppStyle } from '../appStyle'
 import { markComponentEvent, registerComponentEventTarget } from '../componentEvents'
+import { commitLegacyDatasetBindings, releaseLegacyDatasetBindings, resetLegacyDatasetRender } from '../legacyTemplate/dataset'
 import { createIntersectionObserverBridge } from '../polyfill/intersectionObserver'
 import { createRenderContext } from '../renderContext'
 import { hasOwn } from '../utils/object'
@@ -252,6 +253,7 @@ export function createComponentElementClass({
       }
       runtimeState.lifetimes.attached?.call(this.#publicInstance)
       this.#isMounted = true
+      commitLegacyDatasetBindings(resolveRenderRoot(this), this.#renderContext)
       trackAppStyle(this, runtimeState.inheritAppStyle)
       this.requestUpdate()
     }
@@ -262,6 +264,7 @@ export function createComponentElementClass({
         superDisconnected.call(this)
       }
       this.#isMounted = false
+      releaseLegacyDatasetBindings(this.#renderContext)
       trackAppStyle(this, false)
       instances.delete(this)
       runtimeState.lifetimes.detached?.call(this.#publicInstance)
@@ -289,12 +292,14 @@ export function createComponentElementClass({
 
     updated() {
       this.#syncVirtualHostClasses()
+      commitLegacyDatasetBindings(resolveRenderRoot(this), this.#renderContext)
       if (this.#usesLegacyTemplate) {
         bindRuntimeEvents(resolveRenderRoot(this), this.#methods, this)
       }
     }
 
     render() {
+      resetLegacyDatasetRender(this.#renderContext)
       const result = runtimeState.templateRef(this.#state, this.#renderContext)
       const appStyle = runtimeState.inheritAppStyle ? getAppStyle() : ''
       this.#usesLegacyTemplate = typeof result === 'string'
@@ -446,6 +451,7 @@ export function createComponentElementClass({
         })
         this.#exposedMethodNames.add(key)
       }
+      releaseLegacyDatasetBindings(this.#renderContext)
       this.#renderContext = createRenderContext(this, this.#methods)
     }
 
@@ -463,6 +469,7 @@ export function createComponentElementClass({
     }
 
     #renderLegacy() {
+      resetLegacyDatasetRender(this.#renderContext)
       const result = runtimeState.templateRef(this.#state, this.#renderContext)
       const root = resolveRenderRoot(this)
       const appStyle = runtimeState.inheritAppStyle ? getAppStyle() : ''
@@ -477,6 +484,7 @@ export function createComponentElementClass({
       else {
         root.innerHTML = `${styleMarkup}${String(result)}`
       }
+      commitLegacyDatasetBindings(root, this.#renderContext)
       this.#syncVirtualHostClasses()
       if (!this.#readyFired) {
         runtimeState.lifetimes.ready?.call(this.#publicInstance)

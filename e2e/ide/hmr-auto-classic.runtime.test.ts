@@ -250,6 +250,11 @@ for (const host of hosts) {
 
       if (resolveRuntimeProviderName() === 'headless') {
         await disconnectAutomatorSession()
+        // headless 需要重新读取原生产物；文件局部写出不证明后续通知已停止改写目录。
+        // 正常关闭并排空写出后复核新代码，再装载最终产物；真实 IDE 保持原自动重载路径。
+        await devProcess!.stop(5_000)
+        expect(devProcess!.getBuildErrors()).toEqual([])
+        expect(await fs.readFile(DIST_NATIVE_JS, 'utf8')).toContain('this.data.count + 2')
         miniProgram = await connectAutomatorSession()
       }
       else {
