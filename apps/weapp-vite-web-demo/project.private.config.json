@@ -36,6 +36,12 @@
           "scene": null
         },
         {
+          "name": "滚动定位与布局",
+          "pathName": "pages/scroll-capabilities/index",
+          "query": "",
+          "scene": null
+        },
+        {
           "name": "展示组件语义矩阵",
           "pathName": "pages/display-parity/index",
           "query": "",
