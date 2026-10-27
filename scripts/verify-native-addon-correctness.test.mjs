@@ -2,7 +2,7 @@ import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { baselineManifest } from './nativeAddonCorrectness/manifest.mjs'
 import { verifyNativeExports, verifyNativeReport } from './verify-native-addon-correctness.mjs'
-import { readWorkflowFixture } from './workflowFixture.mjs'
+import { frozenWorkflowText, readWorkflowFixture } from './workflowFixture.mjs'
 
 const packageRoot = path.resolve('fixture-native-package')
 
@@ -178,7 +178,7 @@ describe('actual-addon CI execution contract', () => {
     expect(driver.with.ref).toBe('${{ github.sha }}')
     expect(driver.with['persist-credentials']).toBe(false)
     // eslint-disable-next-line no-template-curly-in-string -- 验证 GitHub Actions 的表达式原文。
-    expect(job.env.NATIVE_CORRECTNESS_EXPECTED_COMMIT).toBe('${{ needs.pr-context.outputs.checkout_sha }}')
+    expect(job.env.NATIVE_CORRECTNESS_EXPECTED_COMMIT).toBe(frozenWorkflowText('${{ needs.pr-context.outputs.checkout_sha }}', 'native-addon-correctness'))
     // eslint-disable-next-line no-template-curly-in-string -- 验证 GitHub Actions 的表达式原文。
     expect(job.env.NATIVE_CORRECTNESS_DRIVER_COMMIT).toBe('${{ github.sha }}')
     const planIndex = job.steps.findIndex(step => step.run?.includes('verify-native-addon-correctness.mjs plan '))

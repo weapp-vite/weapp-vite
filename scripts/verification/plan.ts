@@ -3,7 +3,9 @@ import { createHash } from 'node:crypto'
 import { access } from 'node:fs/promises'
 import path from 'node:path'
 import { sharedBuildPackages, splitCliBuild, usePreparedTypeChecks } from './build.ts'
+import { DOCUMENT_CONTRACTS, isRootPolicyDocument, requiredDocumentContracts } from './classification.ts'
 import { DEFAULT_SELECTION } from './policy.ts'
+import { isLibraryPackage, needsConsumerPrepare, quickBuildRoots, quickCheckPackages } from './quickScope.ts'
 import { fullRuntimeBlock } from './runtime.ts'
 import { fingerprintConfiguration } from './snapshot.ts'
 import { toolchainEnvironment } from './toolchain.ts'
@@ -60,12 +62,13 @@ export async function createVerificationPlan(options: PlanOptions): Promise<Veri
   const global = changes.fallback || mode === 'full' || changes.files.some(file => GLOBAL_INPUTS.includes(file) || GLOBAL_PREFIXES.some(prefix => file.startsWith(prefix)))
   const unknown = changes.files.filter(file => !ownerOf(file, packages)
     && !/^(?:scripts|docs|website|skills|\.changeset|\.github|e2e|test)\//.test(file)
-    && !/^(?:AGENTS(?:\.local)?\.md|README.*|LICENSE.*|\.gitignore)$/.test(file)
+    && !isRootPolicyDocument(file) && file !== '.gitignore'
     && !GLOBAL_INPUTS.includes(file))
   const impact = analyzePackageImpact(changes.files, packages, global || unknown.length > 0)
   const { direct, affected } = impact
   const suggested = mode === 'quick' && !global && !unknown.length && !impact.fallback ? direct : affected
   const selected = packages.filter(item => selection === 'shadow' || suggested.has(item.name))
+  const owned = new Set(changes.files.flatMap(file => ownerOf(file, packages)?.name ?? []))
   const tasks: VerificationTask[] = []
   const warnings = [...changes.warnings]
   const remaining: string[] = []
@@ -91,6 +94,9 @@ export async function createVerificationPlan(options: PlanOptions): Promise<Veri
   if (styles.length) {
     tasks.push(task('stylelint', 'stylelint', ['exec', 'stylelint', ...styles], '独立样式及 Vue style block'))
   }
+  for (const check of requiredDocumentContracts(changes.files)) {
+    tasks.push(task(`policy:${check}`, 'test', ['run', DOCUMENT_CONTRACTS[check]], '生成目标或规则输入保留对应最小同步契约'))
+  }
 
   if (mode === 'full') {
     tasks.push({ ...task('build', 'build', ['run', 'build:pkgs', `--concurrency=${resources.buildConcurrency}`], '完整包构建由现有 Turbo 图负责'), exclusive: true })
@@ -98,12 +104,14 @@ export async function createVerificationPlan(options: PlanOptions): Promise<Veri
     tasks.push({ ...task('types', 'types', ['run', 'test:types', `--concurrency=${resources.jobs}`], '全部公开类型契约；复用已经构建的 Turbo 缓存', ['build']), exclusive: true })
     tasks.push({ ...task('typecheck', 'typecheck', ['exec', 'turbo', 'run', 'typecheck', '--filter=./packages/*', '--filter=./packages-runtime/*', '--filter=./mpcore/packages/*', '--filter=./@weapp-core/*', `--concurrency=${resources.jobs}`], '完整库源码类型检查', ['build']), exclusive: true })
   }
-  else {
-    const [sharedScope, consumerScope] = await Promise.all([
-      sharedBuildPackages(root, selected.map(item => item.name)),
-      sharedBuildPackages(root, selected.filter(item => /^(?:apps|templates)\//.test(item.directory)).map(item => item.name), 'build:apps'),
-    ])
-    const needed = new Set(selected.map(item => item.name))
+  else if (selected.length) {
+    const checked = mode === 'quick' ? quickCheckPackages(selected, owned) : selected
+    const relatedTests = new Map(mode === 'quick'
+      ? await Promise.all(checked.filter(item => owned.has(item.name) && (item.scripts.test || item.scripts['test:pure']))
+          .map(async item => [item.name, await nearbyTests(root, changes.files.filter(file => ownerOf(file, packages)?.name === item.name))] as const))
+      : [])
+    const roots = mode === 'quick' ? quickBuildRoots(selected, owned, new Set([...relatedTests].filter(([, files]) => files.length).map(([name]) => name))) : selected
+    const needed = new Set(roots.map(item => item.name))
     let expanded = true
     while (expanded) {
       expanded = false
@@ -116,9 +124,14 @@ export async function createVerificationPlan(options: PlanOptions): Promise<Veri
         }
       }
     }
+    const [sharedScope, consumerScope] = await Promise.all([
+      sharedBuildPackages(root, mode === 'quick' ? [...needed] : selected.map(item => item.name)),
+      mode === 'review' ? sharedBuildPackages(root, selected.filter(item => /^(?:apps|templates)\//.test(item.directory)).map(item => item.name), 'build:apps') : Promise.resolve(new Set<string>()),
+    ])
     const built = packages.filter(item => needed.has(item.name) && item.scripts.build
-      && (sharedScope.has(item.name) || (selected.includes(item) && consumerScope.has(item.name) && /^(?:apps|templates)\//.test(item.directory)))
-      && (mode === 'review' || item.scripts.typecheck || direct.has(item.name)))
+      && (mode === 'quick'
+        ? isLibraryPackage(item) && sharedScope.has(item.name)
+        : sharedScope.has(item.name) || (selected.includes(item) && consumerScope.has(item.name) && /^(?:apps|templates)\//.test(item.directory))))
     const delegated = selected.filter(item => item.scripts.build && !built.includes(item) && /^(?:test|e2e-apps)\//.test(item.directory))
     if (delegated.length) {
       warnings.push(`fixture 与正负例产物由原测试/runtime owner 构建，不作为成功 build 目标: ${delegated.map(item => item.name).join(', ')}`)
@@ -130,30 +143,54 @@ export async function createVerificationPlan(options: PlanOptions): Promise<Veri
       })
     }
     const prepared = tasks.some(item => item.id === 'build') ? ['build'] : []
-    const pure = selected.filter(item => item.scripts['test:pure'])
+    const consumerPreparation = new Map<string, string>()
+    if (mode === 'quick') {
+      const cli = packages.find(item => item.name === 'weapp-vite')
+      for (const item of roots.filter(needsConsumerPrepare)) {
+        const id = `prepare:${item.name}`
+        tasks.push({
+          ...task(id, 'typecheck', ['exec', 'node', '--import', 'tsx', 'scripts/verification/consumerPrepare.ts', '--directory', item.directory, '--cli', `${cli?.directory ?? 'packages/weapp-vite'}/bin/weapp-vite.js`], '真实变更消费者在 CLI dist 就绪后严格生成类型支持文件', prepared),
+          resource: 'workspace-write',
+          exclusive: true,
+          blockedReason: !cli || !item.dependencies.includes(cli.name) || !built.includes(cli) ? `${item.name} 缺少已声明且可构建的 weapp-vite workspace 依赖，不能准备消费者类型检查` : undefined,
+        })
+        consumerPreparation.set(item.name, id)
+      }
+    }
+    const dependenciesFor = (item: WorkspacePackage) => consumerPreparation.has(item.name) ? [consumerPreparation.get(item.name)!] : prepared
+    const pure = mode === 'review' ? selected.filter(item => item.scripts['test:pure']) : []
     if (pure.length) {
       tasks.push({
         ...task('pure', 'test', ['exec', 'turbo', 'run', 'test:pure', ...pure.map(item => `--filter=${item.name}`), `--concurrency=${resources.jobs}`], '只缓存经过审计的纯测试项目'),
         exclusive: true,
       })
     }
-    const ordinary = selected.filter(item => item.scripts.test && !item.scripts['test:pure'])
+    const ordinary = checked.filter(item => (item.scripts.test || item.scripts['test:pure']) && (mode === 'quick' || !item.scripts['test:pure']))
     for (const item of ordinary) {
-      const related = mode === 'quick' ? await nearbyTests(root, files.filter(file => ownerOf(file, packages)?.name === item.name)) : []
-      const args = ['--filter', item.name, 'run', 'test']
-      if (/\bvitest\b/.test(item.scripts.test!)) {
+      const related = relatedTests.get(item.name) ?? []
+      if (mode === 'quick' && !related.length) {
+        remaining.push(`${item.name} 没有可证明直接相关的存续单测，完整包测试由 review / CI 承担`)
+        continue
+      }
+      const script = mode === 'quick' && item.scripts['test:pure'] ? 'test:pure' : 'test'
+      const filterable = /^vitest\s+run(?:\s|$)/.test(item.scripts[script]!) && !/[;&|]/.test(item.scripts[script]!)
+      const args = ['--filter', item.name, 'run', script]
+      if (filterable) {
         args.push(`--maxWorkers=${ordinary.length === 1 ? resources.jobs : 1}`)
         if (related.length) {
           args.push(...related.map(file => path.posix.relative(item.directory, file)))
         }
       }
       tasks.push({
-        ...task(`test:${item.name}`, 'test', args, related.length ? '首轮只运行相邻回归；review 仍执行完整包测试' : '无法证明更小范围，保留完整包测试', prepared),
+        ...task(`test:${item.name}`, 'test', args, related.length ? 'quick 只运行直接变更与相邻回归；完整包测试由 review / CI 承担' : 'review 执行完整包测试', dependenciesFor(item)),
+        blockedReason: mode === 'quick' && !filterable ? `无法向 ${item.name} 的 ${script} 安全传入直接回归范围，请补充专用过滤契约` : undefined,
         exclusive: ordinary.length === 1,
+        // pnpm 生命周期与测试同属一个命令，可能清理共享 dist，必须与消费者互斥。
+        resource: [`pre${script}`, `post${script}`].some(name => item.scripts[name]?.trim()) ? 'workspace-write' : undefined,
       })
     }
-    for (const item of selected.filter(item => item.scripts.typecheck && (sharedScope.has(item.name) || direct.has(item.name)))) {
-      tasks.push(task(`typecheck:${item.name}`, 'typecheck', ['--filter', item.name, 'run', 'typecheck'], '验证拥有源码的包级类型边界', prepared))
+    for (const item of checked.filter(item => item.scripts.typecheck && (mode === 'quick' || sharedScope.has(item.name) || direct.has(item.name)))) {
+      tasks.push(task(`typecheck:${item.name}`, 'typecheck', ['--filter', item.name, 'run', 'typecheck'], '验证拥有源码的包级类型边界', dependenciesFor(item)))
     }
     const types = selected.filter(item => item.scripts['test:types:check'])
     if (mode === 'review' && types.length) {
@@ -169,7 +206,10 @@ export async function createVerificationPlan(options: PlanOptions): Promise<Veri
   if (mode === 'full' || scripts.length || workflowChanged) {
     const inventory = await scriptTestInventory(root)
     const scriptTests = mode === 'quick' ? await nearbyTests(root, scripts) : []
-    const selectedTests = new Set(mode === 'full' || (scripts.length && (mode === 'review' || !scriptTests.length)) ? inventory.all : scriptTests)
+    const selectedTests = new Set(mode === 'full' || (scripts.length && mode === 'review') ? inventory.all : scriptTests)
+    if (mode === 'quick' && scripts.length && !scriptTests.length) {
+      remaining.push('工具输入没有可证明直接相关的存续单测，完整工具测试由 review / CI 承担')
+    }
     if (mode === 'full' || workflowChanged) {
       for (const file of await workflowContractInventory(root, inventory.all)) {
         selectedTests.add(file)
@@ -185,18 +225,20 @@ export async function createVerificationPlan(options: PlanOptions): Promise<Veri
     }
   }
   const internal = changes.files.filter(file => /^e2e\/(?:scripts|utils)\//.test(file))
-  if (internal.length || mode === 'full') {
-    const related = mode === 'quick' ? await nearbyTests(root, internal) : []
-    tasks.push({ ...task('runtime:internal-contracts', 'runtime', ['exec', 'vitest', 'run', '-c', 'e2e/vitest.e2e.internal.config.ts', ...related, `--maxWorkers=${resources.jobs}`], 'E2E 工具变更运行受机器租约保护的内部契约；headless gate 不能替代', tasks.map(item => item.id)), exclusive: true })
+  if ((mode === 'review' && internal.length) || mode === 'full') {
+    tasks.push({ ...task('runtime:internal-contracts', 'runtime', ['exec', 'vitest', 'run', '-c', 'e2e/vitest.e2e.internal.config.ts', `--maxWorkers=${resources.jobs}`], 'E2E 工具变更运行受机器租约保护的内部契约；headless gate 不能替代', tasks.map(item => item.id)), exclusive: true })
   }
-  if (mode !== 'full' && changes.files.some(file => file.startsWith('e2e/ci/'))) {
+  if (mode === 'review' && changes.files.some(file => file.startsWith('e2e/ci/'))) {
     tasks.push({ ...task('runtime:ci', 'runtime', ['run', 'e2e:ci'], 'CI runtime 用例变更必须保留受管 CI suite', tasks.map(item => item.id)), exclusive: true })
   }
-  if (mode !== 'full' && changes.files.some(file => file.startsWith('e2e/web-runtime/'))) {
+  if (mode === 'review' && changes.files.some(file => file.startsWith('e2e/web-runtime/'))) {
     tasks.push({ ...task('runtime:web', 'runtime', ['run', 'e2e:web'], 'Web runtime 用例变更运行原受管 Web suite', tasks.map(item => item.id)), exclusive: true })
   }
   if (mode === 'quick') {
-    remaining.push('quick 仅提供首轮反馈；仍需 review 的消费者、公开类型和 runtime 验证')
+    remaining.push('quick 仅提供本地静态、适用配置/生成契约、直接相关单测与包级类型检查；完整包测试、消费者、公开类型和 runtime 仍由 review / CI 验证')
+    if (changes.files.some(file => file.startsWith('e2e/'))) {
+      remaining.push('E2E 用例及工具单测保留在 review / CI 的受管串行入口，quick 不启动机器租约或 runtime suite')
+    }
   }
   if (options.partial) {
     remaining.push('显式文件筛选属于局部诊断，未覆盖完整变更集')
@@ -236,7 +278,7 @@ export async function createVerificationPlan(options: PlanOptions): Promise<Veri
     }
   }
   for (const item of tasks) {
-    item.resource = item.kind === 'runtime' ? 'machine-exclusive' : item.kind === 'build' || item.kind === 'types' ? 'workspace-write' : 'cpu'
+    item.resource ??= item.kind === 'runtime' ? 'machine-exclusive' : item.kind === 'build' || item.kind === 'types' ? 'workspace-write' : 'cpu'
     if (item.args.includes('turbo') || (['build', 'types'].includes(item.id) && mode === 'full')) {
       item.args.push('--summarize')
       item.evidence = 'turbo-summary'

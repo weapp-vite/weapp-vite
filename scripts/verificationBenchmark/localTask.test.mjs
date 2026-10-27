@@ -5,9 +5,12 @@ import path from 'node:path'
 import process from 'node:process'
 import { afterEach, expect, it, vi } from 'vitest'
 import { resolveVerificationTopology, topologyEnvironment } from '../verification/topology.ts'
+import { useIsolatedTopologyTestEnvironment } from '../verification/topologyTestFixture.ts'
 import { main } from './cli.mjs'
 import { captureVerificationSample } from './localCapture.mjs'
 import { executeLocalTask } from './localTask.mjs'
+
+useIsolatedTopologyTestEnvironment()
 
 const roots = []
 afterEach(async () => {

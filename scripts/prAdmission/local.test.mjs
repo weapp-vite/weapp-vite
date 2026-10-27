@@ -37,7 +37,29 @@ describe('offline PR admission contract', () => {
     })).toContainEqual(expect.objectContaining({ name: '审批 Environment' }))
   })
 
-  it.each(['approval', 'plan', 'ci'])('detects a broken dependency boundary at %s', (job) => {
+  it.each(['environment', 'checkout', 'permissions', 'command', 'plan'])('rejects weakened automatic changeset %s boundaries', (field) => {
+    const checks = failures(({ workflows }) => {
+      const job = workflows['release-intent-auto.yml'].jobs.apply
+      if (field === 'environment') {
+        job.environment = 'unprotected'
+      }
+      if (field === 'checkout') {
+        job.steps.push({ uses: 'actions/checkout@head', with: { ref: '${{ github.event.pull_request.head.sha }}' } })
+      }
+      if (field === 'permissions') {
+        job.permissions['id-token'] = 'write'
+      }
+      if (field === 'command') {
+        job.steps.at(-1).run += '\npnpm exec repo release snapshot --publish'
+      }
+      if (field === 'plan') {
+        delete workflows['release-intent-auto.yml'].jobs.plan.environment
+      }
+    })
+    expect(checks.some(row => row.name.startsWith('自动 changeset'))).toBe(true)
+  })
+
+  it.each(['approval', 'plan', 'ci', 'documentation'])('detects a broken dependency boundary at %s', (job) => {
     expect(failures(({ workflows }) => {
       const target = workflows['ci-pr.yml'].jobs[job]
       if (job === 'approval') {
@@ -46,7 +68,7 @@ describe('offline PR admission contract', () => {
       else {
         delete target.needs
       }
-    })).toContainEqual(expect.objectContaining({ name: job === 'approval' ? '审批为唯一根任务' : job === 'plan' ? '冻结目标等待审批' : 'ci 等待冻结目标' }))
+    })).toContainEqual(expect.objectContaining({ name: job === 'approval' ? '审批为唯一根任务' : job === 'plan' ? '冻结目标等待审批' : `${job} 等待冻结目标` }))
   })
 
   it('rejects an independent root job even if it is not registered as a validation', () => {
@@ -55,10 +77,69 @@ describe('offline PR admission contract', () => {
     })).toContainEqual(expect.objectContaining({ name: '单一审批后的任务清单' }))
   })
 
-  it.each(['approval', 'plan', 'ci'])('rejects status functions that can run %s after a skipped or cancelled dependency', (job) => {
+  it.each(['approval', 'plan', 'ci', 'documentation'])('rejects status functions that can run %s after a skipped or cancelled dependency', (job) => {
     expect(failures(({ workflows }) => {
       workflows['ci-pr.yml'].jobs[job].if = '!cancelled()'
     })).toContainEqual(expect.objectContaining({ name: `${job} 不绕过跳过或取消的依赖` }))
+  })
+
+  it.each([
+    ['selection', 'documentation 使用冻结的文档选择'],
+    ['checkout', 'documentation 使用冻结的 merge checkout'],
+    ['identity', 'documentation 校验冻结身份及拓扑'],
+    ['permissions', 'documentation 仅使用只读权限'],
+    ['extra-step', 'documentation 验证步骤及顺序'],
+    ['skip-identity', 'documentation identity 不跳过必需验证'],
+    ['setup-delete', 'documentation setup 覆盖删除生成目标'],
+    ['install-delete', 'documentation install 覆盖删除生成目标'],
+    ['lifecycle', 'documentation 冻结安装不执行生命周期'],
+    ['paths', 'documentation 仅传入冻结的文档和生成契约'],
+    ['contracts', 'documentation 仅传入冻结的文档和生成契约'],
+    ['continue-on-error', 'documentation 不放过验证失败'],
+  ])('rejects weakened native documentation %s boundaries', (field, expected) => {
+    const checks = failures(({ workflows }) => {
+      const job = workflows['ci-pr.yml'].jobs.documentation
+      const checkout = job.steps.find(step => step.uses?.startsWith('actions/checkout@'))
+      const identity = job.steps.find(step => step.uses === './.github/actions/verify-frozen-job-context')
+      const setup = job.steps.find(step => step.uses === './.github/actions/setup-node-pnpm')
+      const install = job.steps.find(step => step.uses === './.github/actions/install-workspace-deps')
+      const verify = job.steps.at(-1)
+      if (field === 'selection') {
+        job.if = 'true'
+      }
+      if (field === 'checkout') {
+        checkout.with.ref = '${{ github.event.pull_request.head.sha }}'
+      }
+      if (field === 'identity') {
+        identity.with.profile = 'ci'
+      }
+      if (field === 'permissions') {
+        job.permissions = { contents: 'write' }
+      }
+      if (field === 'extra-step') {
+        job.steps.push({ run: 'pnpm build:pkgs' })
+      }
+      if (field === 'skip-identity') {
+        identity.if = 'false'
+      }
+      if (field === 'setup-delete' || field === 'install-delete') {
+        const step = field === 'setup-delete' ? setup : install
+        step.if = 'fromJSON(needs.plan.outputs.pr_context).documentationPaths[0] != null'
+      }
+      if (field === 'lifecycle') {
+        install.with['ignore-scripts'] = 'false'
+      }
+      if (field === 'paths') {
+        verify.env.PR_DOCUMENTATION_PATHS = '["README.md"]'
+      }
+      if (field === 'contracts') {
+        delete verify.env.PR_DOCUMENTATION_CHECKS
+      }
+      if (field === 'continue-on-error') {
+        verify['continue-on-error'] = true
+      }
+    })
+    expect(checks).toContainEqual(expect.objectContaining({ name: expected }))
   })
 
   it('keeps closing a PR as a cancellation event with no independent work', () => {

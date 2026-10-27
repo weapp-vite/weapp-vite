@@ -1,0 +1,34 @@
+name: Install exact Playwright browsers
+description: Restore exact browser revisions; only trusted default-branch jobs may write caches.
+inputs:
+  browsers:
+    required: false
+    default: chromium
+    description: Space separated browser names
+runs:
+  using: composite
+  steps:
+    - id: identity
+      shell: bash
+      env:
+        PLAYWRIGHT_REQUESTED_BROWSERS: ${{ inputs.browsers }}
+      run: node scripts/playwrightCache.mjs "$PLAYWRIGHT_REQUESTED_BROWSERS"
+    - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      with:
+        key: ${{ steps.identity.outputs.key }}
+        path: ${{ steps.identity.outputs.path }}
+    - shell: bash
+      env:
+        PLAYWRIGHT_REQUESTED_BROWSERS: ${{ inputs.browsers }}
+      run: |
+        read -r -a browsers <<< "$PLAYWRIGHT_REQUESTED_BROWSERS"
+        if [[ "$RUNNER_OS" == 'Linux' ]]; then
+          pnpm exec playwright install --with-deps "${browsers[@]}"
+        else
+          pnpm exec playwright install "${browsers[@]}"
+        fi
+    - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      if: github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+      with:
+        key: ${{ steps.identity.outputs.key }}
+        path: ${{ steps.identity.outputs.path }}

@@ -21,30 +21,36 @@ function completeForeignRow(row: NativeRow, installationRoot: string) {
     && row.entry.gaps.every(gap => gap === 'rss-unavailable' && taskPermissionDenied)
 }
 
-/** 只区分完整四帧排除所选安装的映像转换，不修改任何已记录的 changed、缺口或原始帧。 */
+/** 从首次枚举到最终闭合连续证明外来映像，不修改已记录的 changed、缺口或原始帧。 */
 export function verifiedForeignImageTransitions(inventory: NativeInventory, installationRoot: string): VerifiedForeignImageTransition[] {
   const { frames, tracked, selectedSeen } = inventory
   if (frames.length !== DARWIN_INSPECTOR_PHASES.length || frames.some((frame, index) => frame.phase !== DARWIN_INSPECTOR_PHASES[index])) {
     return []
   }
   const proofs = new Map<number, ProcessIdentityMetadata[] | null>()
-  const proveAncestry = (pid: number, visiting = new Set<number>()): ProcessIdentityMetadata[] | null => {
+  const proveAncestry = (pid: number, requiredFrom = frames.length - 1, visiting = new Set<number>()): ProcessIdentityMetadata[] | null => {
+    const entry = tracked.get(pid)
+    const firstIndex = frames.findIndex(frame => frame.phase === entry?.firstPhase)
+    // 祖先不能晚于子进程出现；新进程仍须至少两帧，且覆盖其全部已观察生命期。
+    if (firstIndex < 0 || firstIndex > requiredFrom || firstIndex >= frames.length - 1) {
+      return null
+    }
     if (proofs.has(pid)) {
       return proofs.get(pid)!
     }
-    const entry = tracked.get(pid)
-    const rows = frames.map(frame => frame.rows.get(pid))
+    const rows = frames.slice(firstIndex).map(frame => frame.rows.get(pid))
     const first = rows[0]
     if (visiting.has(pid) || !entry || !first || entry.absent || entry.imageEvidenceConflict || entry.closureIdentityUnverifiable
       || selectedSeen.has(pid) || inventory.changes.has(pid) || entry.causes.some(cause => cause.reason !== 'image-changed')
+      || frames.slice(0, firstIndex).some(frame => frame.rows.has(pid))
       || rows.some(row => !row || !completeForeignRow(row, installationRoot) || !sameNativeIdentity(first.identity, row.identity))) {
       proofs.set(pid, null)
       return null
     }
     visiting.add(pid)
-    // 跨帧 exec 可切换凭据；四帧均已独立证明外来映像，每帧内部 UID 仍须一致。
+    // 跨帧 exec 可切换凭据；连续帧均独立证明外来映像，每帧内部 UID 仍须一致。
     const parentPid = first.identity!.parentPid
-    const ancestors = parentPid <= 1 ? [] : proveAncestry(parentPid, visiting)
+    const ancestors = parentPid <= 1 ? [] : proveAncestry(parentPid, firstIndex, visiting)
     const proof = ancestors === null ? null : [metadata(first), ...ancestors]
     proofs.set(pid, proof)
     return proof
@@ -58,7 +64,8 @@ export function verifiedForeignImageTransitions(inventory: NativeInventory, inst
     if (!proof) {
       continue
     }
-    for (let index = 1; index < frames.length; index++) {
+    const firstIndex = frames.findIndex(frame => frame.phase === entry.firstPhase)
+    for (let index = firstIndex + 1; index < frames.length; index++) {
       const from = frames[index - 1]!
       const to = frames[index]!
       const previous = from.rows.get(pid)!.images![0]!
@@ -69,7 +76,8 @@ export function verifiedForeignImageTransitions(inventory: NativeInventory, inst
           from: { phase: from.phase, image: imageEvidence(previous, installationRoot) },
           to: { phase: to.phase, image: imageEvidence(current, installationRoot) },
           ancestry: proof.slice(1),
-          proof: 'four-complete-native-foreign-frames',
+          proof: firstIndex === 0 ? 'four-complete-native-foreign-frames' : 'complete-native-foreign-frames-since-first-observation',
+          phases: frames.slice(firstIndex).map(frame => frame.phase),
         })
       }
     }

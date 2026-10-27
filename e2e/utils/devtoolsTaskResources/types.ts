@@ -71,7 +71,8 @@ export interface VerifiedForeignImageTransition {
   from: { phase: ProcessInventoryLocation['phase'], image: NativeImageEvidence }
   to: { phase: ProcessInventoryLocation['phase'], image: NativeImageEvidence }
   ancestry: ProcessIdentityMetadata[]
-  proof: 'four-complete-native-foreign-frames'
+  proof: 'four-complete-native-foreign-frames' | 'complete-native-foreign-frames-since-first-observation'
+  phases: ProcessInventoryLocation['phase'][]
 }
 
 export interface NativeProcessFrameEvidence {

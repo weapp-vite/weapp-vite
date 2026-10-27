@@ -1,0 +1,18 @@
+{
+  "libVersion": "3.17.3",
+  "setting": {
+    "urlCheck": false
+  },
+  "condition": {
+    "miniprogram": {
+      "list": [
+        {
+          "name": "issue-1264-basic-wx-apis",
+          "pathName": "pages/index/index",
+          "query": "",
+          "launchMode": "default"
+        }
+      ]
+    }
+  }
+}

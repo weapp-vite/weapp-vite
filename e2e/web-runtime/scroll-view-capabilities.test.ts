@@ -81,6 +81,26 @@ describe('compiled scroll-view capabilities in Chromium', { concurrent: false },
     }, target)
   }
 
+  function bothAxesGeometry() {
+    return control('both-axes-feed').evaluate((element) => {
+      const viewport = element.shadowRoot!.querySelector('.viewport') as HTMLDivElement
+      const viewportRect = viewport.getBoundingClientRect()
+      const targetRect = element.querySelector('#both-axes-target')!.getBoundingClientRect()
+      return {
+        left: viewport.scrollLeft,
+        top: viewport.scrollTop,
+        relativeLeft: targetRect.left - viewportRect.left - viewport.clientLeft,
+        relativeTop: targetRect.top - viewportRect.top - viewport.clientTop,
+        relativeRight: targetRect.right - viewportRect.left - viewport.clientLeft,
+        relativeBottom: targetRect.bottom - viewportRect.top - viewport.clientTop,
+        width: viewport.clientWidth,
+        height: viewport.clientHeight,
+        targetWidth: targetRect.width,
+        targetHeight: targetRect.height,
+      }
+    })
+  }
+
   it('uses start, center, end, nearest and offset through compiled WXML attributes', async () => {
     await control('align-start').click()
     await expect.poll(async () => (await geometry()).relativeTop).toBeCloseTo(0, 0)
@@ -100,6 +120,46 @@ describe('compiled scroll-view capabilities in Chromium', { concurrent: false },
     await expect.poll(async () => (await geometry()).top).toBe(visibleTop)
     await control('apply-offset').click()
     await expect.poll(async () => (await geometry()).relativeTop).toBeCloseTo(20, 0)
+  })
+
+  it('aligns both axes in one viewport for start, center, end, nearest and offset', async () => {
+    await control('align-start').click()
+    await expect.poll(async () => {
+      const value = await bothAxesGeometry()
+      return Math.max(Math.abs(value.relativeLeft), Math.abs(value.relativeTop))
+    }).toBeLessThan(0.5)
+    const start = await bothAxesGeometry()
+    expect(start.left).toBeGreaterThan(0)
+    expect(start.top).toBeGreaterThan(0)
+
+    await control('align-center').click()
+    await expect.poll(async () => {
+      const value = await bothAxesGeometry()
+      return Math.max(
+        Math.abs(value.relativeLeft - (value.width - value.targetWidth) / 2),
+        Math.abs(value.relativeTop - (value.height - value.targetHeight) / 2),
+      )
+    }).toBeLessThan(0.5)
+
+    await control('align-end').click()
+    await expect.poll(async () => {
+      const value = await bothAxesGeometry()
+      return Math.max(Math.abs(value.relativeRight - value.width), Math.abs(value.relativeBottom - value.height))
+    }).toBeLessThan(0.5)
+
+    const visible = await bothAxesGeometry()
+    await control('align-nearest').click()
+    await expect.poll(() => control('both-axes-feed').getAttribute('scroll-into-view-alignment')).toBe('nearest')
+    await expect.poll(async () => {
+      const value = await bothAxesGeometry()
+      return { left: value.left, top: value.top }
+    }).toEqual({ left: visible.left, top: visible.top })
+
+    await control('apply-offset').click()
+    await expect.poll(async () => {
+      const value = await bothAxesGeometry()
+      return Math.max(Math.abs(value.relativeLeft - 20), Math.abs(value.relativeTop - 20))
+    }).toBeLessThan(0.5)
   })
 
   it('resolves a target inserted after selection and keeps later user scrolling', async () => {

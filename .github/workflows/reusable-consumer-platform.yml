@@ -17,33 +17,42 @@ permissions:
   pull-requests: read
 jobs:
   pr-context:
+    if: inputs.verification_topology != 'optimized-v2'
     uses: ./.github/workflows/reusable-frozen-pr-context.yml
     with:
+      verification_topology: ${{ inputs.verification_topology }}
       pr_context: ${{ inputs.pr_context }}
       profile: ci-vite-host-consumer
   prepare:
+    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') }}
     name: Build and pack consumer candidates
     needs: pr-context
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      pr_context: ${{ inputs.pr_context }}
+      pr_profile: ci-vite-host-consumer
       verification_topology: ${{ inputs.verification_topology }}
-      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
-      base_sha: ${{ needs.pr-context.outputs.base_sha }}
-      head_sha: ${{ needs.pr-context.outputs.head_sha }}
-      pr_number: ${{ needs.pr-context.outputs.pr_number }}
-      head_ref: ${{ needs.pr-context.outputs.head_ref }}
-      base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      checkout_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}
+      base_sha: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}
+      head_sha: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}
+      pr_number: ${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}
+      head_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}
+      base_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}
       runs_on: ${{ inputs.runs_on }}
       node_version: '24'
       timeout_minutes: 30
       build_command: pnpm exec turbo run build --filter=weapp-vite... --filter=@weapp-vite/react... --filter=rolldown-require... --filter=@mpcore/simulator...
       main_command: node scripts/consumerArtifacts/manifest.mjs pack .cache/node-support-tarballs
+      resolve_node_support: ${{ inputs.verification_topology == 'optimized-v2' }}
+      prepare_consumer_batches: ${{ inputs.verification_topology == 'optimized-v2' && inputs.runs_on == 'ubuntu-latest' }}
+      plan_artifact_name: ${{ inputs.verification_topology == 'optimized-v2' && format('consumer-plans-{0}', inputs.runs_on) || '' }}
       build_artifact_name: consumer-${{ inputs.runs_on }}-node-24-build
       artifact_name: consumer-tarballs-${{ inputs.runs_on }}
       artifact_path: .cache/node-support-tarballs
       timing_artifact_name: timing-consumer-prepare-${{ inputs.runs_on }}
     secrets: inherit
   node-support:
+    if: ${{ inputs.verification_topology != 'optimized-v2' && !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.prepare.result == 'success' }}
     needs:
       - pr-context
       - prepare
@@ -62,8 +71,14 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: ${{ needs.pr-context.outputs.checkout_sha }}
+          ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}
           persist-credentials: false
+      - name: Validate frozen identity in the executing job
+        if: inputs.verification_topology == 'optimized-v2'
+        uses: ./.github/actions/verify-frozen-job-context
+        with:
+          context: ${{ inputs.pr_context }}
+          profile: ci-vite-host-consumer
       - uses: ./.github/actions/setup-node-pnpm
         with:
           node-version: '24'
@@ -122,24 +137,27 @@ jobs:
             .cache/web-consumer-diagnostic/wv.json
     env:
       WEAPP_VITE_VERIFICATION_TOPOLOGY: ${{ inputs.verification_topology }}
-      BUILD_ARTIFACT_EXPECTED_COMMIT: ${{ needs.pr-context.outputs.checkout_sha }}
+      BUILD_ARTIFACT_EXPECTED_COMMIT: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}
       BUILD_ARTIFACT_EXPECTED_NODE_MAJOR: '24'
       BUILD_ARTIFACT_EXPECTED_SCOPE: packages/weapp-vite,packages-runtime/wevu
       WEAPP_VITE_CONSUMER_TARBALLS: .cache/node-support-tarballs
   contracts:
+    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.prepare.result == 'success' }}
     name: Host contracts
     needs:
       - pr-context
       - prepare
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      pr_context: ${{ inputs.pr_context }}
+      pr_profile: ci-vite-host-consumer
       verification_topology: ${{ inputs.verification_topology }}
-      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
-      base_sha: ${{ needs.pr-context.outputs.base_sha }}
-      head_sha: ${{ needs.pr-context.outputs.head_sha }}
-      pr_number: ${{ needs.pr-context.outputs.pr_number }}
-      head_ref: ${{ needs.pr-context.outputs.head_ref }}
-      base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      checkout_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}
+      base_sha: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}
+      head_sha: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}
+      pr_number: ${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}
+      head_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}
+      base_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}
       runs_on: ${{ inputs.runs_on }}
       node_version: '24'
       timeout_minutes: 30
@@ -153,6 +171,7 @@ jobs:
       timing_artifact_name: timing-consumer-contracts-${{ inputs.runs_on }}
     secrets: inherit
   dependency-compatibility:
+    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.prepare.result == 'success' }}
     needs:
       - pr-context
       - prepare
@@ -165,13 +184,15 @@ jobs:
           - npm
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      pr_context: ${{ inputs.pr_context }}
+      pr_profile: ci-vite-host-consumer
       verification_topology: ${{ inputs.verification_topology }}
-      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
-      base_sha: ${{ needs.pr-context.outputs.base_sha }}
-      head_sha: ${{ needs.pr-context.outputs.head_sha }}
-      pr_number: ${{ needs.pr-context.outputs.pr_number }}
-      head_ref: ${{ needs.pr-context.outputs.head_ref }}
-      base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      checkout_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}
+      base_sha: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}
+      head_sha: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}
+      pr_number: ${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}
+      head_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}
+      base_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}
       runs_on: ${{ inputs.runs_on }}
       node_version: '24'
       timeout_minutes: 30
@@ -188,7 +209,7 @@ jobs:
       timing_artifact_name: timing-dependency-${{ inputs.runs_on }}-${{ matrix.manager }}
     secrets: inherit
   consumer:
-    if: inputs.runs_on == 'ubuntu-latest'
+    if: ${{ inputs.verification_topology != 'optimized-v2' && !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.prepare.result == 'success' && (inputs.runs_on == 'ubuntu-latest') }}
     needs:
       - pr-context
       - prepare
@@ -202,13 +223,15 @@ jobs:
           - vite-plus
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      pr_context: ${{ inputs.pr_context }}
+      pr_profile: ci-vite-host-consumer
       verification_topology: ${{ inputs.verification_topology }}
-      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
-      base_sha: ${{ needs.pr-context.outputs.base_sha }}
-      head_sha: ${{ needs.pr-context.outputs.head_sha }}
-      pr_number: ${{ needs.pr-context.outputs.pr_number }}
-      head_ref: ${{ needs.pr-context.outputs.head_ref }}
-      base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      checkout_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}
+      base_sha: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}
+      head_sha: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}
+      pr_number: ${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}
+      head_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}
+      base_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}
       runs_on: ${{ inputs.runs_on }}
       node_version: '24'
       timeout_minutes: 30
@@ -223,7 +246,7 @@ jobs:
       timing_artifact_name: timing-consumer-consumer-${{ inputs.runs_on }}-${{ matrix.toolchain }}
     secrets: inherit
   stateful-runtime:
-    if: inputs.runs_on == 'ubuntu-latest'
+    if: ${{ inputs.verification_topology != 'optimized-v2' && !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.prepare.result == 'success' && (inputs.runs_on == 'ubuntu-latest') }}
     needs:
       - pr-context
       - prepare
@@ -237,13 +260,15 @@ jobs:
           - vite-plus
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      pr_context: ${{ inputs.pr_context }}
+      pr_profile: ci-vite-host-consumer
       verification_topology: ${{ inputs.verification_topology }}
-      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
-      base_sha: ${{ needs.pr-context.outputs.base_sha }}
-      head_sha: ${{ needs.pr-context.outputs.head_sha }}
-      pr_number: ${{ needs.pr-context.outputs.pr_number }}
-      head_ref: ${{ needs.pr-context.outputs.head_ref }}
-      base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      checkout_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}
+      base_sha: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}
+      head_sha: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}
+      pr_number: ${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}
+      head_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}
+      base_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}
       runs_on: ${{ inputs.runs_on }}
       node_version: '24'
       timeout_minutes: 30
@@ -260,7 +285,7 @@ jobs:
       timing_artifact_name: timing-consumer-stateful-runtime-${{ inputs.runs_on }}-${{ matrix.host }}
     secrets: inherit
   classic-runtime:
-    if: inputs.runs_on == 'ubuntu-latest'
+    if: ${{ inputs.verification_topology != 'optimized-v2' && !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.prepare.result == 'success' && (inputs.runs_on == 'ubuntu-latest') }}
     needs:
       - pr-context
       - prepare
@@ -280,13 +305,15 @@ jobs:
             profile: classic-watch
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      pr_context: ${{ inputs.pr_context }}
+      pr_profile: ci-vite-host-consumer
       verification_topology: ${{ inputs.verification_topology }}
-      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
-      base_sha: ${{ needs.pr-context.outputs.base_sha }}
-      head_sha: ${{ needs.pr-context.outputs.head_sha }}
-      pr_number: ${{ needs.pr-context.outputs.pr_number }}
-      head_ref: ${{ needs.pr-context.outputs.head_ref }}
-      base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      checkout_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}
+      base_sha: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}
+      head_sha: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}
+      pr_number: ${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}
+      head_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}
+      base_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}
       runs_on: ${{ inputs.runs_on }}
       node_version: '24'
       timeout_minutes: 30
@@ -303,7 +330,7 @@ jobs:
       timing_artifact_name: timing-consumer-classic-runtime-${{ inputs.runs_on }}-${{ matrix.host }}-${{ matrix.profile }}
     secrets: inherit
   react-runtime:
-    if: inputs.runs_on == 'ubuntu-latest'
+    if: ${{ inputs.verification_topology != 'optimized-v2' && !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.prepare.result == 'success' && (inputs.runs_on == 'ubuntu-latest') }}
     needs:
       - pr-context
       - prepare
@@ -317,13 +344,15 @@ jobs:
           - vite-plus
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      pr_context: ${{ inputs.pr_context }}
+      pr_profile: ci-vite-host-consumer
       verification_topology: ${{ inputs.verification_topology }}
-      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
-      base_sha: ${{ needs.pr-context.outputs.base_sha }}
-      head_sha: ${{ needs.pr-context.outputs.head_sha }}
-      pr_number: ${{ needs.pr-context.outputs.pr_number }}
-      head_ref: ${{ needs.pr-context.outputs.head_ref }}
-      base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      checkout_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}
+      base_sha: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}
+      head_sha: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}
+      pr_number: ${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}
+      head_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}
+      base_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}
       runs_on: ${{ inputs.runs_on }}
       node_version: '24'
       timeout_minutes: 30
@@ -340,7 +369,7 @@ jobs:
       timing_artifact_name: timing-consumer-react-runtime-${{ inputs.runs_on }}-${{ matrix.host }}
     secrets: inherit
   independent-runtime:
-    if: inputs.runs_on == 'ubuntu-latest'
+    if: ${{ inputs.verification_topology != 'optimized-v2' && !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.prepare.result == 'success' && (inputs.runs_on == 'ubuntu-latest') }}
     needs:
       - pr-context
       - prepare
@@ -354,13 +383,15 @@ jobs:
           - vite-plus
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      pr_context: ${{ inputs.pr_context }}
+      pr_profile: ci-vite-host-consumer
       verification_topology: ${{ inputs.verification_topology }}
-      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
-      base_sha: ${{ needs.pr-context.outputs.base_sha }}
-      head_sha: ${{ needs.pr-context.outputs.head_sha }}
-      pr_number: ${{ needs.pr-context.outputs.pr_number }}
-      head_ref: ${{ needs.pr-context.outputs.head_ref }}
-      base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      checkout_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}
+      base_sha: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}
+      head_sha: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}
+      pr_number: ${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}
+      head_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}
+      base_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}
       runs_on: ${{ inputs.runs_on }}
       node_version: '24'
       timeout_minutes: 30
@@ -377,7 +408,7 @@ jobs:
       timing_artifact_name: timing-consumer-independent-runtime-${{ inputs.runs_on }}-${{ matrix.host }}
     secrets: inherit
   worker-runtime:
-    if: inputs.runs_on == 'ubuntu-latest'
+    if: ${{ inputs.verification_topology != 'optimized-v2' && !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.prepare.result == 'success' && (inputs.runs_on == 'ubuntu-latest') }}
     needs:
       - pr-context
       - prepare
@@ -391,13 +422,15 @@ jobs:
           - vite-plus
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      pr_context: ${{ inputs.pr_context }}
+      pr_profile: ci-vite-host-consumer
       verification_topology: ${{ inputs.verification_topology }}
-      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
-      base_sha: ${{ needs.pr-context.outputs.base_sha }}
-      head_sha: ${{ needs.pr-context.outputs.head_sha }}
-      pr_number: ${{ needs.pr-context.outputs.pr_number }}
-      head_ref: ${{ needs.pr-context.outputs.head_ref }}
-      base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      checkout_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}
+      base_sha: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}
+      head_sha: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}
+      pr_number: ${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}
+      head_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}
+      base_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}
       runs_on: ${{ inputs.runs_on }}
       node_version: '24'
       timeout_minutes: 30
@@ -414,7 +447,7 @@ jobs:
       timing_artifact_name: timing-consumer-worker-runtime-${{ inputs.runs_on }}-${{ matrix.host }}
     secrets: inherit
   plugin-runtime:
-    if: inputs.runs_on == 'ubuntu-latest'
+    if: ${{ inputs.verification_topology != 'optimized-v2' && !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.prepare.result == 'success' && (inputs.runs_on == 'ubuntu-latest') }}
     needs:
       - pr-context
       - prepare
@@ -428,13 +461,15 @@ jobs:
           - vite-plus
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      pr_context: ${{ inputs.pr_context }}
+      pr_profile: ci-vite-host-consumer
       verification_topology: ${{ inputs.verification_topology }}
-      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
-      base_sha: ${{ needs.pr-context.outputs.base_sha }}
-      head_sha: ${{ needs.pr-context.outputs.head_sha }}
-      pr_number: ${{ needs.pr-context.outputs.pr_number }}
-      head_ref: ${{ needs.pr-context.outputs.head_ref }}
-      base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      checkout_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}
+      base_sha: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}
+      head_sha: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}
+      pr_number: ${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}
+      head_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}
+      base_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}
       runs_on: ${{ inputs.runs_on }}
       node_version: '24'
       timeout_minutes: 30
@@ -451,7 +486,7 @@ jobs:
       timing_artifact_name: timing-consumer-plugin-runtime-${{ inputs.runs_on }}-${{ matrix.host }}
     secrets: inherit
   lib-runtime:
-    if: inputs.runs_on == 'ubuntu-latest'
+    if: ${{ inputs.verification_topology != 'optimized-v2' && !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.prepare.result == 'success' && (inputs.runs_on == 'ubuntu-latest') }}
     needs:
       - pr-context
       - prepare
@@ -465,13 +500,15 @@ jobs:
           - vite-plus
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      pr_context: ${{ inputs.pr_context }}
+      pr_profile: ci-vite-host-consumer
       verification_topology: ${{ inputs.verification_topology }}
-      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
-      base_sha: ${{ needs.pr-context.outputs.base_sha }}
-      head_sha: ${{ needs.pr-context.outputs.head_sha }}
-      pr_number: ${{ needs.pr-context.outputs.pr_number }}
-      head_ref: ${{ needs.pr-context.outputs.head_ref }}
-      base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      checkout_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}
+      base_sha: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}
+      head_sha: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}
+      pr_number: ${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}
+      head_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}
+      base_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}
       runs_on: ${{ inputs.runs_on }}
       node_version: '24'
       timeout_minutes: 30
@@ -488,7 +525,7 @@ jobs:
       timing_artifact_name: timing-consumer-lib-runtime-${{ inputs.runs_on }}-${{ matrix.host }}
     secrets: inherit
   platform-runtime:
-    if: inputs.runs_on == 'ubuntu-latest'
+    if: ${{ inputs.verification_topology != 'optimized-v2' && !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.prepare.result == 'success' && (inputs.runs_on == 'ubuntu-latest') }}
     needs:
       - pr-context
       - prepare
@@ -502,13 +539,15 @@ jobs:
           - vite-plus
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      pr_context: ${{ inputs.pr_context }}
+      pr_profile: ci-vite-host-consumer
       verification_topology: ${{ inputs.verification_topology }}
-      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
-      base_sha: ${{ needs.pr-context.outputs.base_sha }}
-      head_sha: ${{ needs.pr-context.outputs.head_sha }}
-      pr_number: ${{ needs.pr-context.outputs.pr_number }}
-      head_ref: ${{ needs.pr-context.outputs.head_ref }}
-      base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      checkout_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}
+      base_sha: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}
+      head_sha: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}
+      pr_number: ${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}
+      head_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}
+      base_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}
       runs_on: ${{ inputs.runs_on }}
       node_version: '24'
       timeout_minutes: 30
@@ -525,7 +564,7 @@ jobs:
       timing_artifact_name: timing-consumer-platform-runtime-${{ inputs.runs_on }}-${{ matrix.host }}
     secrets: inherit
   web-runtime:
-    if: inputs.runs_on == 'ubuntu-latest'
+    if: ${{ inputs.verification_topology != 'optimized-v2' && !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.prepare.result == 'success' && (inputs.runs_on == 'ubuntu-latest') }}
     needs:
       - pr-context
       - prepare
@@ -539,13 +578,15 @@ jobs:
           - vite-plus
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      pr_context: ${{ inputs.pr_context }}
+      pr_profile: ci-vite-host-consumer
       verification_topology: ${{ inputs.verification_topology }}
-      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
-      base_sha: ${{ needs.pr-context.outputs.base_sha }}
-      head_sha: ${{ needs.pr-context.outputs.head_sha }}
-      pr_number: ${{ needs.pr-context.outputs.pr_number }}
-      head_ref: ${{ needs.pr-context.outputs.head_ref }}
-      base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      checkout_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}
+      base_sha: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}
+      head_sha: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}
+      pr_number: ${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}
+      head_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}
+      base_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}
       runs_on: ${{ inputs.runs_on }}
       node_version: '24'
       timeout_minutes: 30
@@ -555,7 +596,7 @@ jobs:
       main_command: |
         pnpm exec vitest run --config scripts/vitest.config.mjs scripts/hostCapabilityDiagnostic.test.mjs
         pnpm exec cross-env WEAPP_VITE_CONSUMER_HOST_DIAGNOSTICS=1 node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.host }} headless web
-      artifact_name: web-host-capability-${{ matrix.host }}-${{ needs.pr-context.outputs.checkout_sha }}
+      artifact_name: web-host-capability-${{ matrix.host }}-${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}
       artifact_path: .cache/web-consumer-diagnostic/host-capability-*.json
       consume_build_artifact: consumer-${{ inputs.runs_on }}-node-24-build
       build_artifact_node_major: '24'
@@ -565,3 +606,205 @@ jobs:
       consumer_tarballs: .cache/node-support-tarballs
       timing_artifact_name: timing-consumer-web-runtime-${{ inputs.runs_on }}-${{ matrix.host }}
     secrets: inherit
+  node-support-v2:
+    if: ${{ inputs.verification_topology == 'optimized-v2' && !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.prepare.result == 'success' }}
+    needs:
+      - pr-context
+      - prepare
+    name: Published Node support (${{ matrix.node }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.prepare.outputs.node_support_matrix) }}
+    runs-on: ${{ inputs.runs_on }}
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}
+          persist-credentials: false
+      - name: Validate frozen identity in the executing job
+        if: inputs.verification_topology == 'optimized-v2'
+        uses: ./.github/actions/verify-frozen-job-context
+        with:
+          context: ${{ inputs.pr_context }}
+          profile: ci-vite-host-consumer
+      - uses: ./.github/actions/setup-node-pnpm
+        with:
+          node-version: ${{ needs.prepare.outputs.node_version }}
+          install-dependencies: 'false'
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: consumer-${{ inputs.runs_on }}-node-24-build
+          path: .
+      - uses: ./.github/actions/install-workspace-deps
+      - name: Verify immutable builder identity after the single complete install
+        shell: bash
+        run: |-
+          node scripts/verify-build-artifact-manifest.mjs
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: consumer-tarballs-${{ inputs.runs_on }}
+          path: .cache/node-support-tarballs
+      - name: Verify immutable candidate archives
+        run: node scripts/consumerArtifacts/manifest.mjs verify .cache/node-support-tarballs
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: consumer-plans-${{ inputs.runs_on }}
+          path: .tmp/consumer-plan
+      - uses: ./.github/actions/setup-playwright-browsers
+        with:
+          browsers: chromium
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Record actual consumer Node version
+        shell: bash
+        run: node -e "process.stdout.write('REPOCTL_RELEASE_NODE_VERSION=' + process.version + '\n')" >> "$GITHUB_ENV"
+      - name: Verify packed Dashboard public types without mini-program ambient globals
+        run: node packages/weapp-vite/scripts/verify-dashboard-public-types.mjs
+        env:
+          WEAPP_VITE_CONSUMER_TARBALLS: .cache/node-support-tarballs
+          WEAPP_VITE_DASHBOARD_TYPES_EVIDENCE: .cache/dashboard-public-types.json
+      - name: Install and verify published native, SFC, Tailwind and Web consumers
+        run: node packages/weapp-vite/scripts/verify-vite-host-install.mjs wv
+        env:
+          WEAPP_VITE_CONSUMER_TARBALLS: .cache/node-support-tarballs
+          WEAPP_VITE_CONSUMER_WEB: '1'
+          WEAPP_VITE_CONSUMER_WEB_DIAGNOSTICS: '1'
+          WEAPP_VITE_CONSUMER_EVIDENCE: .cache/consumer-evidence.json
+          WEAPP_VITE_CONSUMER_DEPENDENCIES: '1'
+      - name: Require consumer and public type evidence for every resolved Node role
+        shell: bash
+        env:
+          SUPPORT_NODE: ${{ matrix.node }}
+        run: node scripts/nodeSupport/index.mjs record .tmp/consumer-plan/node-support.json "$SUPPORT_NODE" .cache/consumer-evidence.json .cache/dashboard-public-types.json .cache/node-support.json
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: ${{ !cancelled() }}
+        with:
+          name: node-support-v2-${{ inputs.runs_on }}-${{ matrix.node }}
+          path: |
+            .cache/consumer-evidence.json
+            .cache/node-support.json
+            .cache/dashboard-public-types.json
+            .cache/web-consumer-diagnostic/wv.json
+    env:
+      WEAPP_VITE_VERIFICATION_TOPOLOGY: ${{ inputs.verification_topology }}
+      BUILD_ARTIFACT_EXPECTED_COMMIT: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}
+      BUILD_ARTIFACT_EXPECTED_NODE_MAJOR: '24'
+      BUILD_ARTIFACT_EXPECTED_SCOPE: packages/weapp-vite,packages-runtime/wevu
+      WEAPP_VITE_CONSUMER_TARBALLS: .cache/node-support-tarballs
+  consumer-batches-v2:
+    name: Complete consumer batch ${{ matrix.shard }}
+    if: ${{ !cancelled() && inputs.verification_topology == 'optimized-v2' && inputs.runs_on == 'ubuntu-latest' && needs.prepare.result == 'success' }}
+    needs: [pr-context, prepare]
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.prepare.outputs.consumer_batch_matrix) }}
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      verification_topology: ${{ inputs.verification_topology }}
+      pr_context: ${{ inputs.pr_context }}
+      pr_profile: ci-vite-host-consumer
+      pr_number: ${{ format('{0}', fromJSON(inputs.pr_context).prNumber || '') }}
+      base_sha: ${{ fromJSON(inputs.pr_context).baseSha }}
+      head_sha: ${{ fromJSON(inputs.pr_context).headSha }}
+      head_ref: ${{ fromJSON(inputs.pr_context).headRef }}
+      base_ref: ${{ fromJSON(inputs.pr_context).baseRef }}
+      checkout_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}
+      runs_on: ${{ inputs.runs_on }}
+      node_version: ${{ needs.prepare.outputs.node_version }}
+      timeout_minutes: 75
+      consume_build_artifact: consumer-${{ inputs.runs_on }}-node-24-build
+      build_artifact_node_major: '24'
+      build_artifact_scope: packages/weapp-vite,packages-runtime/wevu,mpcore/packages/simulator
+      consume_aux_artifact: consumer-tarballs-${{ inputs.runs_on }}
+      aux_artifact_path: .cache/node-support-tarballs
+      consumer_tarballs: .cache/node-support-tarballs
+      consume_plan_artifact: consumer-plans-${{ inputs.runs_on }}
+      install_playwright: ${{ matrix.install_playwright }}
+      main_command: node scripts/consumerBatches/run.mjs .tmp/consumer-plan/scenarios.json ${{ matrix.shard }} .tmp/consumer-batches/shard-${{ matrix.shard }}
+      artifact_name: consumer-batch-v2-${{ inputs.runs_on }}-${{ matrix.shard }}
+      artifact_path: |
+        .tmp/consumer-batches/shard-${{ matrix.shard }}/**
+        docs/reports/dom-acceptance/**
+        .cache/web-consumer-diagnostic/**
+      timing_artifact_name: timing-consumer-batch-v2-${{ inputs.runs_on }}-${{ matrix.shard }}
+    secrets: inherit
+  node-support-aggregate-v2:
+    name: Require every node-support logical scenario
+    if: ${{ !cancelled() && inputs.verification_topology == 'optimized-v2' && needs.prepare.result == 'success' }}
+    needs: [pr-context, prepare, node-support-v2]
+    runs-on: ${{ inputs.runs_on }}
+    timeout-minutes: 5
+    env:
+      WEAPP_VITE_VERIFICATION_TOPOLOGY: ${{ inputs.verification_topology }}
+      FROZEN_CHECKOUT_SHA: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}
+          persist-credentials: false
+      - uses: ./.github/actions/verify-frozen-job-context
+        with:
+          context: ${{ inputs.pr_context }}
+          profile: ci-vite-host-consumer
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: ${{ needs.prepare.outputs.node_version }}
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: consumer-plans-${{ inputs.runs_on }}
+          path: .tmp/consumer-plan
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          pattern: node-support-v2-${{ inputs.runs_on }}-*
+          path: .tmp/node-support-aggregate-v2/reports
+      - name: Aggregate immutable complete logical inventory without workspace installation
+        shell: bash
+        run: node scripts/nodeSupport/aggregate.mjs .tmp/consumer-plan/node-support.json .tmp/node-support-aggregate-v2/reports .tmp/node-support-aggregate-v2/report.json "$FROZEN_CHECKOUT_SHA"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: ${{ !cancelled() }}
+        with:
+          name: node-support-aggregate-v2-${{ inputs.runs_on }}
+          path: .tmp/node-support-aggregate-v2/report.json
+          if-no-files-found: error
+  consumer-aggregate-v2:
+    name: Require every scenarios logical scenario
+    if: ${{ !cancelled() && inputs.verification_topology == 'optimized-v2' && needs.prepare.result == 'success' && inputs.runs_on == 'ubuntu-latest' }}
+    needs: [pr-context, prepare, consumer-batches-v2]
+    runs-on: ${{ inputs.runs_on }}
+    timeout-minutes: 5
+    env:
+      WEAPP_VITE_VERIFICATION_TOPOLOGY: ${{ inputs.verification_topology }}
+      FROZEN_CHECKOUT_SHA: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}
+          persist-credentials: false
+      - uses: ./.github/actions/verify-frozen-job-context
+        with:
+          context: ${{ inputs.pr_context }}
+          profile: ci-vite-host-consumer
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: ${{ needs.prepare.outputs.node_version }}
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: consumer-plans-${{ inputs.runs_on }}
+          path: .tmp/consumer-plan
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          pattern: consumer-batch-v2-${{ inputs.runs_on }}-*
+          path: .tmp/consumer-aggregate-v2/reports
+      - name: Aggregate immutable complete logical inventory without workspace installation
+        shell: bash
+        run: node scripts/consumerBatches/aggregate.mjs .tmp/consumer-plan/scenarios.json .tmp/consumer-aggregate-v2/reports .tmp/consumer-aggregate-v2/report.json "$FROZEN_CHECKOUT_SHA"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: ${{ !cancelled() }}
+        with:
+          name: consumer-aggregate-v2-${{ inputs.runs_on }}
+          path: .tmp/consumer-aggregate-v2/report.json
+          if-no-files-found: error

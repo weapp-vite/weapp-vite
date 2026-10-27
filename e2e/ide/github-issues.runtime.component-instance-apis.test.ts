@@ -20,7 +20,7 @@ describe('github issues: native component instance APIs', { concurrent: false },
   }, PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT)
   afterAll(async () => {
     await closeSharedMiniProgram()
-  }, 30_000)
+  })
 
   it('keeps native relation lifecycle order and component selector scopes across removal and restoration', async (ctx) => {
     const stages = [

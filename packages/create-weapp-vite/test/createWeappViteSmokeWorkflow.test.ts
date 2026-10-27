@@ -1,7 +1,7 @@
 /* eslint-disable no-template-curly-in-string -- GitHub Actions 表达式必须按字面量核验。 */
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_TEMPLATE_NAMES } from '../../../scripts/createWeappViteSmoke/templates.mjs'
-import { readWorkflowGraph } from '../../../scripts/workflowFixture.mjs'
+import { frozenWorkflowText, readWorkflowGraph } from '../../../scripts/workflowFixture.mjs'
 
 interface Step {
   name?: string
@@ -27,6 +27,7 @@ interface Workflow {
 const graph = readWorkflowGraph('ci-create-weapp-vite.yml')
 const entry = graph.get('ci-create-weapp-vite.yml') as Workflow
 const shared = graph.get('validate-ci-create-weapp-vite.yml') as Workflow
+const frozenCheckout = frozenWorkflowText('${{ needs.pr-context.outputs.checkout_sha }}', 'ci-create-weapp-vite')
 
 function step(job: string, name: string) {
   const found = shared.jobs[job]!.steps?.find(candidate => candidate.name === name)
@@ -59,7 +60,7 @@ describe('scaffold source workflow contract', () => {
   })
 
   it('builds and packs only workspace mode from the frozen checkout', () => {
-    expect(step('smoke', 'Check out code').with?.ref).toBe('${{ needs.pr-context.outputs.checkout_sha }}')
+    expect(step('smoke', 'Check out code').with?.ref).toBe(frozenCheckout)
     for (const name of ['Install workspace dependencies', 'Build workspace scaffold', 'Pack frozen workspace scaffold']) {
       expect(step('smoke', name).if).toBe('needs.prepare.outputs.source == \'workspace\'')
     }
@@ -67,7 +68,7 @@ describe('scaffold source workflow contract', () => {
     expect(step('smoke', 'Build workspace scaffold').run).toBe('pnpm exec turbo run build --filter=create-weapp-vite...')
     expect(step('smoke', 'Pack frozen workspace scaffold')).toMatchObject({
       id: 'workspace',
-      env: { CREATE_WEAPP_VITE_SOURCE_COMMIT: '${{ needs.pr-context.outputs.checkout_sha }}' },
+      env: { CREATE_WEAPP_VITE_SOURCE_COMMIT: frozenCheckout },
       run: 'node scripts/createWeappViteSmoke/workspace.mjs',
     })
   })
@@ -77,7 +78,7 @@ describe('scaffold source workflow contract', () => {
     expect(smoke.env).toMatchObject({
       CREATE_WEAPP_VITE_SPEC: '${{ needs.prepare.outputs.package_spec }}',
       CREATE_WEAPP_VITE_SOURCE: '${{ needs.prepare.outputs.source }}',
-      CREATE_WEAPP_VITE_SOURCE_COMMIT: '${{ needs.pr-context.outputs.checkout_sha }}',
+      CREATE_WEAPP_VITE_SOURCE_COMMIT: frozenCheckout,
       CREATE_WEAPP_VITE_TARBALL: '${{ steps.workspace.outputs.tarball }}',
       CREATE_WEAPP_VITE_TARBALL_SHA256: '${{ steps.workspace.outputs.tarball_sha256 }}',
       CREATE_WEAPP_VITE_SCENARIOS: '${{ needs.prepare.outputs.scenarios }}',

@@ -1,7 +1,7 @@
 ## 3. Coding Rules
 
 - TypeScript + ESM + 2-space indentation.
-- 所有场景都不要使用 Prettier 做格式化；代码与文档格式修正统一走 ESLint（包含 `eslint --fix` 与仓库现有 lint-staged / husky 流程）。
+- 所有场景都不要使用 Prettier 做格式化；代码与文档格式修正统一走 ESLint（包含 `eslint --fix` 与仓库现有 Lefthook 流程）。
 - Package names: kebab-case.
 - Variables/files: camelCase.
 - Classes/types: PascalCase.

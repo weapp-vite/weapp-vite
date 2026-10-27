@@ -47,7 +47,7 @@ describe('e2e app: github-issues / issue #1011', { concurrent: false }, () => {
 
   afterAll(async () => {
     await closeSharedMiniProgram()
-  }, 30_000)
+  })
 
   it('keeps destructuring semantics equal between rendered and event values', async (ctx) => {
     const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', [{

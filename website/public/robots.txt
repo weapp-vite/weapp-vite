@@ -1,4 +1,0 @@
-User-agent: *
-Allow: /
-
-Sitemap: https://vite.weapp.dev/sitemap.xml

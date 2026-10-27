@@ -4,6 +4,8 @@ import path from 'pathe'
 import { expect, it } from 'vitest'
 import { runWeappViteBuildWithLogCapture } from '../../../utils/buildLog'
 
+export const group = 'issue838'
+
 export function registerGithubIssuesBuildCase(context: GithubIssuesBuildCaseContext) {
   it('PR #838: injects explicitly included shared styles into app.vue', async () => {
     const issueDistRoot = path.join(context.appRoot, 'dist-issue-838')

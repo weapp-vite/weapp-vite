@@ -1,3 +1,4 @@
+import type { ResolvedStyleUnitOptions } from '../../shared/styleUnits/options'
 import type { WebTabBarConfig } from '../../shared/tabBar'
 import type { ButtonFormConfig } from '../button'
 import type { ComponentPublicInstance } from '../component'
@@ -7,6 +8,7 @@ import type { WebViewportConfig } from '../viewport'
 import type { WebRouteHistoryState, WebRouteTarget, WebRoutingConfig } from './routeRuntime/history'
 import type { AppHideCallback, AppRuntime, AppShowCallback, ComponentRawOptions, ComponentRecord, NavigateBackOptions, PageRawOptions, PageRecord, RegisterMeta, RouteOptions } from './routeRuntime/options'
 import { slugify } from '../../shared/slugify'
+import { resolveStyleUnitOptions } from '../../shared/styleUnits/options'
 import {
   configureTabBar,
   getTabBarPagePaths,
@@ -16,6 +18,7 @@ import { setAppStyle } from '../appStyle'
 import { setButtonFormConfig } from '../button'
 import { defineComponent } from '../component'
 import { setRuntimeExecutionMode } from '../execution'
+import { configureInlineStyleUnits } from '../inlineStyle'
 import { ensureNativeComponentsDefined } from '../nativeComponents'
 import { ensureNavigationBarDefined, setNavigationBarMetrics } from '../navigationBar'
 import { setupRpx } from '../rpx'
@@ -164,6 +167,7 @@ export function initializePageRoutes(
   ids: string[],
   options?: {
     rpx?: { designWidth?: number, varName?: string }
+    styleUnits?: ResolvedStyleUnitOptions
     navigationBar?: NavigationBarMetrics
     form?: ButtonFormConfig
     tabBar?: WebTabBarConfig
@@ -180,9 +184,18 @@ export function initializePageRoutes(
     }
   },
 ) {
+  const styleUnits = options?.styleUnits ?? resolveStyleUnitOptions({
+    designWidth: options?.rpx?.designWidth,
+    rpxVar: options?.rpx?.varName,
+  })
+  configureInlineStyleUnits(styleUnits)
   setRuntimeExecutionMode(options?.runtime?.executionMode)
   setRuntimeWarningOptions(options?.runtime?.warnings)
   setupWebViewport(options?.runtime?.viewport)
+  // 空路由也可供旧模板初始化；变量写入与内联转换共享同一优先级和重置语义。
+  setupRpx(options?.styleUnits?.useVariable
+    ? { designWidth: styleUnits.designWidth, varName: styleUnits.rpxVar }
+    : options?.rpx)
   configureWebSeo(options?.runtime?.seo)
   setupWebResourceHints(options?.runtime?.resourceHints)
   configureWebRouting(options?.runtime?.routing, ids, reconcileWebRoute)
@@ -195,9 +208,6 @@ export function initializePageRoutes(
     return
   }
   bindPageResizeBridge()
-  if (options?.rpx) {
-    setupRpx(options.rpx)
-  }
   if (options?.navigationBar) {
     setNavigationBarMetrics(options.navigationBar)
   }

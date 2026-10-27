@@ -35,6 +35,8 @@ export interface NativePublicationReceipt {
   generation: string
   inputs: Record<string, string>
   outputs: Record<string, string>
+  /** 正式发布提交后的完整根目录归属视图，可撤销此前分批输出。 */
+  outputScope?: 'committed'
   profileCursor?: NativePublicationProfileCursor
   publicationEpoch?: number
 }

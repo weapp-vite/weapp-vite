@@ -14,13 +14,15 @@ permissions:
   pull-requests: read
 jobs:
   pr-context:
+    if: inputs.verification_topology != 'optimized-v2'
     uses: ./.github/workflows/reusable-frozen-pr-context.yml
     with:
+      verification_topology: ${{ inputs.verification_topology }}
       pr_context: ${{ inputs.pr_context }}
       profile: ci
   build-pr:
     needs: pr-context
-    if: needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr == 'true' && !startsWith(needs.pr-context.outputs.head_ref, 'release/pnpm-version'))
+    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && ((inputs.verification_topology == 'optimized-v2' && (fromJSON(inputs.pr_context).isPr && 'true' || 'false') || needs.pr-context.outputs.is_pr) == 'true' && !startsWith((inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref), 'release/pnpm-version'))) }}
     name: Build and Test (${{ matrix.os }} / Node ${{ matrix.node-version }})
     strategy:
       fail-fast: false
@@ -64,7 +66,7 @@ jobs:
     secrets: inherit
   build-release-pr:
     needs: pr-context
-    if: needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr == 'true' && startsWith(needs.pr-context.outputs.head_ref, 'release/pnpm-version'))
+    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && ((inputs.verification_topology == 'optimized-v2' && (fromJSON(inputs.pr_context).isPr && 'true' || 'false') || needs.pr-context.outputs.is_pr) == 'true' && startsWith((inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref), 'release/pnpm-version'))) }}
     name: Build and Test (${{ matrix.os }} / Node ${{ matrix.node-version }})
     strategy:
       fail-fast: false
@@ -96,7 +98,7 @@ jobs:
     secrets: inherit
   build-full:
     needs: pr-context
-    if: needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr != 'true')
+    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && ((inputs.verification_topology == 'optimized-v2' && (fromJSON(inputs.pr_context).isPr && 'true' || 'false') || needs.pr-context.outputs.is_pr) != 'true')) }}
     name: Build and Test (${{ matrix.os }} / Node ${{ matrix.node-version }})
     strategy:
       fail-fast: false
@@ -152,17 +154,19 @@ jobs:
     secrets: inherit
   weapi-compat-pr:
     needs: pr-context
-    if: needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr == 'true')
+    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && ((inputs.verification_topology == 'optimized-v2' && (fromJSON(inputs.pr_context).isPr && 'true' || 'false') || needs.pr-context.outputs.is_pr) == 'true')) }}
     name: Weapi Compatibility Guard (Node 24)
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      pr_context: ${{ inputs.pr_context }}
+      pr_profile: ci
       verification_topology: ${{ inputs.verification_topology }}
-      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
-      base_sha: ${{ needs.pr-context.outputs.base_sha }}
-      head_sha: ${{ needs.pr-context.outputs.head_sha }}
-      pr_number: ${{ needs.pr-context.outputs.pr_number }}
-      head_ref: ${{ needs.pr-context.outputs.head_ref }}
-      base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      checkout_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}
+      base_sha: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}
+      head_sha: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}
+      pr_number: ${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}
+      head_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}
+      base_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}
       runs_on: ubuntu-latest
       node_version: '24'
       timeout_minutes: 15
@@ -194,7 +198,7 @@ jobs:
     secrets: inherit
   weapi-compat-full:
     needs: pr-context
-    if: needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr != 'true')
+    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && ((inputs.verification_topology == 'optimized-v2' && (fromJSON(inputs.pr_context).isPr && 'true' || 'false') || needs.pr-context.outputs.is_pr) != 'true')) }}
     name: Weapi Compatibility Guard (Node ${{ matrix.node-version }})
     strategy:
       fail-fast: false
@@ -205,13 +209,15 @@ jobs:
           - 24
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      pr_context: ${{ inputs.pr_context }}
+      pr_profile: ci
       verification_topology: ${{ inputs.verification_topology }}
-      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
-      base_sha: ${{ needs.pr-context.outputs.base_sha }}
-      head_sha: ${{ needs.pr-context.outputs.head_sha }}
-      pr_number: ${{ needs.pr-context.outputs.pr_number }}
-      head_ref: ${{ needs.pr-context.outputs.head_ref }}
-      base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      checkout_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}
+      base_sha: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}
+      head_sha: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}
+      pr_number: ${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}
+      head_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}
+      base_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}
       runs_on: ubuntu-latest
       node_version: ${{ matrix.node-version }}
       timeout_minutes: 15

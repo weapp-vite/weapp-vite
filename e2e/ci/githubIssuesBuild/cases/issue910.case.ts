@@ -4,6 +4,8 @@ import path from 'pathe'
 import { expect, it } from 'vitest'
 import { runWeappViteBuildWithLogCapture } from '../../../utils/buildLog'
 
+export const group = 'issue910'
+
 export function registerGithubIssuesBuildCase(context: GithubIssuesBuildCaseContext) {
   it('issue #910: resolves native async imports from the final hoisted chunk path', async () => {
     const issueDistRoot = path.join(context.appRoot, 'dist-issue-910')

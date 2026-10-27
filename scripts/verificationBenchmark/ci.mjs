@@ -79,7 +79,7 @@ export function ciCriticalPath(jobs, needs) {
   return [...paths.values()].reduce((best, value) => value.durationMs > best.durationMs ? value : best, { durationMs: 0, jobs: [] })
 }
 
-/** waiting→queued 是审批等待；created→started 是各 job 的 runner 调度等待。 */
+/** 审批后墙钟覆盖排队与执行，另保留审批等待、累计调度等待和纯执行关键路径。 */
 export function ciRunMetrics(run, jobs, deploymentStatuses, needs) {
   if (run.status !== 'completed' || run.conclusion !== 'success') {
     throw new Error('CI benchmark run is not successful and complete')
@@ -100,6 +100,10 @@ export function ciRunMetrics(run, jobs, deploymentStatuses, needs) {
   }
   const criticalPath = ciCriticalPath(jobs, needs)
   const executed = jobs.filter(job => job.conclusion !== 'skipped')
+  const approvalToCompletionMs = Math.max(...executed.map(job => timestamp(job.completed_at))) - timestamp(queued[0].created_at)
+  if (approvalToCompletionMs <= 0) {
+    throw new Error('CI approval-to-completion interval must be positive')
+  }
   const durations = executed.map(job => timestamp(job.completed_at) - timestamp(job.started_at))
   const queues = executed.map(job => timestamp(job.started_at) - Math.max(timestamp(job.created_at), job.id === gate[0].id ? timestamp(queued[0].created_at) : 0))
   if ([...durations, ...queues].some(value => value < 0)) {
@@ -107,6 +111,7 @@ export function ciRunMetrics(run, jobs, deploymentStatuses, needs) {
   }
   return {
     approvalWaitMs,
+    approvalToCompletionMs,
     schedulingWaitMs: queues.reduce((sum, value) => sum + value, 0),
     executionMs: criticalPath.durationMs,
     runnerMs: durations.reduce((sum, value) => sum + value, 0),
@@ -126,7 +131,7 @@ export async function collectCiEvidence(repository, runId, configuration, execut
     const contextArtifact = await download('pr-context')
     const { context, sourceFingerprint } = await validateCiContext(contextArtifact.directory, run, configuration.identity, get)
     const workload = await readCiWorkload(context, get)
-    const contract = configuration.contract ? await readCiContract(configuration.contract, context, get) : null
+    const contract = configuration.contract ? await readCiContract(configuration.contract, context, get, configuration) : null
     const execution = contract ? await readExecutionEvidence(contract.value, context, download, configuration) : { complete: false, reason: 'Missing immutable benchmark contract' }
     const evidence = { run, jobs, deploymentStatuses, context, workload, artifactInventory: allArtifacts, artifacts: [...downloads.values()].map(value => value.artifact), contract: contract?.receipt ?? null, execution }
     const sample = execution.complete
@@ -134,6 +139,8 @@ export async function collectCiEvidence(repository, runId, configuration, execut
           schemaVersion: 1,
           id: configuration.cohort.id,
           variant: configuration.cohort.variant,
+          measurement: 'ci',
+          ...contract.comparison,
           revision: context.checkoutSha,
           sourceFingerprint,
           inputDigest: contract.inputDigest,

@@ -162,6 +162,7 @@ export interface HeadlessWxIntersectionObserverMargins {
 
 export interface HeadlessWxIntersectionObserverObserveAllResult {
   boundingClientRect: HeadlessWxSelectorQueryBoundingClientRectResult
+  dataset: Record<string, unknown>
   id: string
   intersectionRatio: number
   intersectionRect: HeadlessWxSelectorQueryBoundingClientRectResult

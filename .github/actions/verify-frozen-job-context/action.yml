@@ -1,0 +1,28 @@
+name: Verify frozen job context
+description: Validate the approved immutable PR identity inside the job that executes checks.
+inputs:
+  context:
+    required: true
+    description: Frozen PR context from the approved plan
+  profile:
+    required: true
+    description: Selected check profile
+  verification-topology:
+    required: false
+    default: optimized-v2
+    description: Exact selected execution topology
+  working-directory:
+    required: false
+    default: .
+    description: Directory containing the validated checkout
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        PR_FROZEN_CONTEXT: ${{ inputs.context }}
+        PR_VALIDATOR_ROOT: ${{ github.action_path }}/../../..
+        PR_TOPOLOGY: ${{ inputs.verification-topology }}
+        PR_PROFILE: ${{ inputs.profile }}
+      run: node "$PR_VALIDATOR_ROOT/.github/scripts/validate-job-pr-context.mjs"

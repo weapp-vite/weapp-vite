@@ -57,3 +57,25 @@
   height: 40px;
   background: #dcebe5;
 }
+
+.both-axes-feed {
+  width: 300px;
+  height: 180px;
+  margin-top: 12px;
+  background: #eef3f6;
+}
+
+.both-axes-content {
+  position: relative;
+  width: 900px;
+  height: 900px;
+}
+
+.both-axes-target {
+  position: absolute;
+  top: 400px;
+  left: 450px;
+  width: 40px;
+  height: 40px;
+  background: #bdd3e0;
+}

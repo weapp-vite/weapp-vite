@@ -7,7 +7,7 @@ import {
   normalizeAttributeName,
   resolveControlAttributeValue,
 } from '../../shared/wxml'
-import { buildExpression, parseInterpolations } from './interpolation'
+import { buildDatasetExpression, buildExpression, parseInterpolations } from './interpolation'
 
 export function extractFor(attribs: Record<string, string>) {
   const expr = resolveControlAttributeValue(attribs, 'for')
@@ -114,7 +114,19 @@ export function renderAttributes(
     const useProperty = shouldBindAsProperty(rawName)
       && (options?.preferProperty || options?.propertyAttributes?.includes(rawName))
     const name = useProperty ? normalizePropertyName(rawName) : normalizeAttributeName(rawName)
-    const expr = buildExpression(parseInterpolations(rawValue ?? ''), scopeVar, wxsVar)
+    // DOM 属性保留字符串，完整表达式的值类型由运行时单独保存。
+    if (!useProperty && name.startsWith('data-')) {
+      const expr = buildDatasetExpression(rawValue ?? '', scopeVar, wxsVar)
+      buffer += ` \${bindRuntimeDataset(${JSON.stringify(name)}, ${expr})}`
+      continue
+    }
+    const parts = parseInterpolations(rawValue ?? '')
+    const trimmedParts = name === 'style' ? parseInterpolations((rawValue ?? '').trim()) : parts
+    const valueParts = trimmedParts.length === 1 && trimmedParts[0]?.type === 'expr' ? trimmedParts : parts
+    const rawExpr = buildExpression(valueParts, scopeVar, wxsVar)
+    // WXML 内联 style 不经过 postcss 链路，rpx / vw / vh 需要在运行时换算，
+    // 否则浏览器会丢弃整条声明（详见 inlineStyle.ts）。
+    const expr = name === 'style' ? `__weappInlineStyle(${rawExpr})` : rawExpr
     buffer += ` ${useProperty ? '.' : ''}${name}=\${${expr}}`
   }
   return buffer

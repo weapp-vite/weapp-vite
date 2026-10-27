@@ -4,6 +4,8 @@ import path from 'pathe'
 import { expect, it } from 'vitest'
 import { runWeappViteBuildWithLogCapture } from '../../../utils/buildLog'
 
+export const group = 'issue999'
+
 export function registerGithubIssuesBuildCase(context: GithubIssuesBuildCaseContext) {
   it('issue #999: restores native async paths after minification', async () => {
     const issueDistRoot = path.join(context.appRoot, 'dist-issue-999')

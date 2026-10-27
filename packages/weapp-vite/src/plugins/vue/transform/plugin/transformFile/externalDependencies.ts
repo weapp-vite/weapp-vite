@@ -4,7 +4,7 @@ import { normalizeSourceId } from '../../../../../moduleGraph/traversal'
 import { withRealpathScope } from '../../../../../utils/realpathScope'
 import { getVueCompilationDependencies } from '../../componentResolutionDependencies'
 
-/** 外部编译输入或原生插槽分析依赖变化时撤销编译副本；仅样式依赖仍交给原有刷新路径。 */
+/** 外部编译输入或静态分析依赖变化时撤销编译副本；仅样式依赖仍交给原有刷新路径。 */
 export function invalidateExternalSfcCompilation(file: string, compilationCache: VueCompilationCache, graph: ModuleGraphService) {
   return withRealpathScope(() => {
     const affected = graph.collectAffectedEntries(file, 'script')

@@ -4,10 +4,12 @@ import { installMiniProgramGlobals } from './polyfill'
 installWebHostGlobals()
 installMiniProgramGlobals()
 
+export type { ResolvedStyleUnitOptions } from '../shared/styleUnits/options'
 export type { WebTabBarConfig, WebTabBarItem } from './appShell/tabBar'
 export { ensureButtonDefined, setButtonFormConfig } from './button'
 export type { ButtonFormConfig } from './button'
 export { defineComponent } from './component'
+export { bindRuntimeDataset } from './datasetBinding'
 export { bindRuntimeEvent } from './eventBinding'
 export { getRuntimeExecutionMode, setRuntimeExecutionMode } from './execution'
 export {
@@ -22,6 +24,7 @@ export {
 } from './host'
 export type { WebRuntimeClipboard, WebRuntimeDialogs, WebRuntimeHost, WebRuntimeStorage } from './host'
 export { installWebHostGlobals } from './hostGlobals'
+export { transformInlineStyleValue } from './inlineStyle'
 export {
   createInputEventDetail,
   createScrollEventDetail,
@@ -91,11 +94,14 @@ export {
   getUserProfile,
   getVideoInfo,
   getWindowInfo,
+  hideHomeButton,
   hideKeyboard,
   hideLoading,
   hideNavigationBarLoading,
+  hideShareMenu,
   hideTabBar,
   hideTabBarRedDot,
+  hideToast,
   initializePageRoutes,
   loadSubPackage,
   login,
@@ -110,7 +116,10 @@ export {
   offAppShow,
   offBeforeAppRoute,
   offBeforePageUnload,
+  offError,
   offNetworkStatusChange,
+  offThemeChange,
+  offUnhandledRejection,
   offWindowResize,
   onAppHide,
   onAppRoute,
@@ -118,7 +127,10 @@ export {
   onAppShow,
   onBeforeAppRoute,
   onBeforePageUnload,
+  onError,
   onNetworkStatusChange,
+  onThemeChange,
+  onUnhandledRejection,
   onWindowResize,
   openAppAuthorizeSetting,
   openCustomerServiceChat,
@@ -139,6 +151,7 @@ export {
   removeStorageSync,
   removeTabBarBadge,
   reportAnalytics,
+  reportEvent,
   request,
   requestPayment,
   requestSubscribeMessage,
@@ -173,6 +186,7 @@ export {
   vibrateShort,
 } from './polyfill'
 export type { AppHideCallback, AppHideOptions, AppLaunchOptions, AppShowCallback } from './polyfill'
+export type { MiniProgramErrorCallback, ThemeChangeCallback, ThemeChangeEvent, UnhandledRejectionCallback, UnhandledRejectionEvent } from './polyfill'
 export type { AppRouteCallback, AppRouteEvent, AppRouteOpenType, BeforePageUnloadCallback, BeforePageUnloadEvent } from './polyfill'
 export {
   disposeWebRouting,

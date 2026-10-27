@@ -61,7 +61,9 @@
     },
     "test:pure": {
       "cache": true,
-      "dependsOn": ["^test:pure"],
+      "dependsOn": [
+        "^test:pure"
+      ],
       "inputs": [
         "$TURBO_DEFAULT$",
         "$TURBO_ROOT$/vitest.coverage.ts"
@@ -104,6 +106,22 @@
     },
     "sync": {
       "cache": false
+    },
+    "website-weapp-vite#build": {
+      "dependsOn": [
+        "^build"
+      ],
+      "env": [
+        "REPO_DOCS_CHANNEL",
+        "REPO_DOCS_URL"
+      ],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/website/**/*.md"
+      ],
+      "outputs": [
+        "dist/**"
+      ]
     }
   }
 }

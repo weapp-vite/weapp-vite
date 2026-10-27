@@ -140,11 +140,13 @@ function boolCapability(enabled: boolean, detail: string): SiteCapability {
 async function inspectSiteCapabilities() {
   const configPath = path.resolve(websiteRoot, '.vitepress', 'config.ts')
   const seoPath = path.resolve(websiteRoot, '.vitepress', 'seo.ts')
+  const deploymentAssetsPath = path.resolve(websiteRoot, '.vitepress', 'deployment', 'assets.ts')
   const configSource = await fs.readFile(configPath, 'utf8')
   const seoSource = await fs.readFile(seoPath, 'utf8').catch(() => '')
+  const deploymentAssetsSource = await fs.readFile(deploymentAssetsPath, 'utf8').catch(() => '')
   const combinedSource = `${configSource}\n${seoSource}`
 
-  const hasSitemap = /\bsitemap\s*:\s*\{/.test(configSource)
+  const hasSitemap = /\bsitemap\s*:/.test(configSource) && /\bhostname\s*:/.test(configSource)
   const hasCanonical = /canonical/.test(combinedSource)
   const hasOg = /og:/.test(combinedSource)
   const hasTwitter = /twitter:/.test(combinedSource)
@@ -154,10 +156,11 @@ async function inspectSiteCapabilities() {
 
   const robotsPath = path.resolve(websiteRoot, 'public', 'robots.txt')
   const robotsExists = await fs.access(robotsPath).then(() => true).catch(() => false)
+  const generatesRobots = /docsDeploymentAssets\(deployment\)/.test(configSource) && /\bdocsRobots\(/.test(deploymentAssetsSource)
 
   return {
-    sitemap: boolCapability(hasSitemap, hasSitemap ? 'vitepress sitemap 已配置。' : '未检测到 sitemap 配置。'),
-    robots: boolCapability(robotsExists, robotsExists ? 'public/robots.txt 已存在。' : '未发现 public/robots.txt。'),
+    sitemap: boolCapability(hasSitemap, hasSitemap ? 'VitePress sitemap 已配置，发布渠道决定是否生成。' : '未检测到 sitemap 配置。'),
+    robots: boolCapability(robotsExists || generatesRobots, generatesRobots ? '构建器按发布渠道生成 robots.txt。' : robotsExists ? 'public/robots.txt 已存在。' : '未检测到 robots.txt 策略。'),
     canonical: boolCapability(hasCanonical, hasCanonical ? '检测到 canonical 策略。' : '未检测到 canonical 策略。'),
     og: boolCapability(hasOg, hasOg ? '检测到 Open Graph 元信息。' : '未检测到 Open Graph 元信息。'),
     twitter: boolCapability(hasTwitter, hasTwitter ? '检测到 Twitter Card 元信息。' : '未检测到 Twitter Card 元信息。'),

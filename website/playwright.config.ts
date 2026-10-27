@@ -10,6 +10,7 @@ export default defineConfig({
   outputDir: fileURLToPath(new URL('../.playwright-cli/website-tests/', import.meta.url)),
   workers: 1,
   use: {
+    headless: true,
     baseURL,
     channel: process.env.PLAYWRIGHT_CHANNEL,
     viewport: { width: 1440, height: 1000 },

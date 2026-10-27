@@ -1,4 +1,4 @@
-import type { HeadlessProjectDescriptor } from '../project/createProjectDescriptor'
+import type { HeadlessProjectConfigFile, HeadlessProjectDescriptor } from '../project/createProjectDescriptor'
 import type { HeadlessPluginDescriptor } from '../project/plugins'
 import type { BrowserVirtualFiles } from './virtualFiles'
 import {
@@ -80,6 +80,13 @@ export function createBrowserProject(
   }
 
   const plugins = options.plugins ?? resolveBrowserPlugins(files, appConfig)
+  const projectConfigFiles: HeadlessProjectConfigFile[] = []
+  for (const filePath of ['project.config.json', 'project.private.config.json']) {
+    const value = readJsonObject(files, filePath)
+    if (value) {
+      projectConfigFiles.push({ filePath, value })
+    }
+  }
   return createProjectDescriptor({
     appConfig,
     appConfigPath,
@@ -91,6 +98,6 @@ export function createBrowserProject(
     miniprogramRootPath: options.miniprogramRootPath ?? '/',
     plugins,
     projectPath: options.projectPath ?? 'browser://simulator',
-    projectConfigFiles: [],
+    projectConfigFiles,
   })
 }

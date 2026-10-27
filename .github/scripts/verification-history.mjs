@@ -47,6 +47,7 @@ export async function downloadVerificationHistory({ repository, defaultBranch, o
     return rows
   }
   const runIds = []
+  let artifactCount = 0
   const seen = new Set()
   const endpoint = `/actions/workflows/ci-e2e.yml/runs?branch=${encodeURIComponent(defaultBranch)}&status=success&created=${encodeURIComponent(`>=${new Date(oldest).toISOString()}`)}`
   for (let index = 1; runIds.length < 10; index++) {
@@ -69,21 +70,37 @@ export async function downloadVerificationHistory({ repository, defaultBranch, o
           paged(`/actions/runs/${run.id}/attempts/${run.run_attempt}/jobs`, 'jobs'),
         ])
         validateCurrentAttemptJobs(jobs, run)
-        const artifacts = currentAttemptArtifacts(allArtifacts, run)
-        const name = `miniapp-aggregate-${os}-node-${nodeMajor}-full`
-        const artifact = artifacts.find(value => value.name === name)
-        if (!artifact) {
-          continue
-        }
+        const names = [`miniapp-aggregate-${os}-node-${nodeMajor}-full`, `ide-dom-headless-aggregate-${os}-node-${nodeMajor}-full`]
         await mkdir(directory)
-        const archive = path.join(directory, `${artifact.id}.zip`)
-        await execute('gh', ['api', `repos/${repository}/actions/artifacts/${artifact.id}/zip`], { env: { GH_TOKEN: token }, stdout: { file: archive }, buffer: false })
-        await extractArtifactArchive(archive, path.join(directory, artifact.name), artifact)
-        await rm(archive)
+        let downloaded = 0
+        for (const name of names) {
+          const target = path.join(directory, name)
+          let archive
+          try {
+            // 两种 provider 独立核验；一个缺失或损坏不能丢弃另一个可信样本。
+            const matches = currentAttemptArtifacts(allArtifacts.filter(value => value.name === name), run)
+            assert(matches.length === 1, 'Missing history provider artifact')
+            const artifact = matches[0]
+            archive = path.join(directory, `${artifact.id}.zip`)
+            await execute('gh', ['api', `repos/${repository}/actions/artifacts/${artifact.id}/zip`], { env: { GH_TOKEN: token }, stdout: { file: archive }, buffer: false })
+            await extractArtifactArchive(archive, target, artifact)
+            downloaded++
+          }
+          catch {
+            await rm(target, { recursive: true, force: true })
+          }
+          finally {
+            if (archive) {
+              await rm(archive, { force: true })
+            }
+          }
+        }
+        assert(downloaded > 0, 'No trusted provider history artifacts')
         const latest = await get(`/actions/runs/${run.id}`)
         assert(['id', 'run_attempt', 'head_sha', 'run_started_at', 'updated_at', 'status', 'conclusion'].every(key => latest[key] === run[key]), 'History run changed during download')
         await writeFile(path.join(directory, 'receipt.json'), `${JSON.stringify({ repository, workflow: run.path, runId: run.id, runAttempt: run.run_attempt, headSha: run.head_sha, headBranch: run.head_branch, defaultBranch, event: run.event, conclusion: run.conclusion, verified: true }, null, 2)}\n`)
         runIds.push(run.id)
+        artifactCount += downloaded
       }
       catch {
         // 单轮缺失、旧 attempt 或损坏不能污染历史，也不妨碍其它可信轮次。
@@ -97,7 +114,7 @@ export async function downloadVerificationHistory({ repository, defaultBranch, o
       break
     }
   }
-  return { runIds, artifacts: runIds.length }
+  return { runIds, artifacts: artifactCount }
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
