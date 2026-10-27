@@ -63,7 +63,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      HUSKY: 0
+      LEFTHOOK: '0'
       WEAPP_CI_APPID: ${{ secrets.WEAPP_CI_APPID }}
       WEAPP_CI_PRIVATE_KEY: ${{ secrets.WEAPP_CI_PRIVATE_KEY }}
     steps:

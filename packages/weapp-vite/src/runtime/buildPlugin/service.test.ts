@@ -579,6 +579,18 @@ async function startClassicSnapshotContext() {
   return { ctx, watcher, onChange: createSourceChangeEmitter(), onProviderChange: onChange }
 }
 
+async function createStartupSnapshotContext() {
+  const { createDevBuildWatcher } = await vi.importActual<typeof import('./devBuildWatcher')>('./devBuildWatcher')
+  const controller = createDevBuildWatcher()
+  devBuildWatcherQueue.push(controller as any)
+  const sidecar = createManualSidecarWatcher()
+  chokidarWatchMock.mockReturnValueOnce(sidecar)
+  const ctx = createMockContext()
+  ctx.runtimeState.build.hmr.resolvedEntryMap.set(HMR_PAGE_ID, { id: HMR_PAGE_ID })
+  ctx.moduleGraphService.collectAffectedEntries.mockReturnValue(new Set([HMR_PAGE_ID]))
+  return { ctx, controller, sidecar }
+}
+
 async function flushAsyncTasks() {
   for (let index = 0; index < 6; index += 1) {
     await Promise.resolve()
@@ -2163,7 +2175,7 @@ describe('runtime buildPlugin service', () => {
     expect(sequence).toEqual(['initial-start', 'initial-write-complete', 'snapshot-write'])
   })
 
-  it('keeps queued source attribution behind the initial watcher replay and asset readiness', async () => {
+  it.each(['pending', 'queued'] as const)('settles %s startup work after watcher replay and asset readiness', async (dispatch) => {
     const { createDevBuildWatcher } = await vi.importActual<typeof import('./devBuildWatcher')>('./devBuildWatcher')
     const controller = createDevBuildWatcher()
     devBuildWatcherQueue.push(controller as any)
@@ -2191,21 +2203,31 @@ describe('runtime buildPlugin service', () => {
       await snapshotRelease.promise
       return { output: [] }
     })
-    const firstBuild = createBuildService(ctx).build({ skipNpm: true })
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    let startupSettled = false
+    const firstBuild = createBuildService(ctx).build({ skipNpm: true }).then((result) => {
+      startupSettled = true
+      return result
+    })
     try {
       await initialStarted.promise
       emitSourceChange({ event: 'update', file: HMR_PAGE_ID })
-      await waitForTimers(25)
+      if (dispatch === 'queued') {
+        await vi.runOnlyPendingTimersAsync()
+      }
       initialRelease.resolve()
       await assetCreated.promise
-      await waitForTimers(25)
+      await flushAsyncTasks()
       // 真实控制器会同步回放首构 END；回放前不能把共享 profile 交给后续批次。
       expect(buildMock).toHaveBeenCalledTimes(1)
       assetReady.resolve()
-      await firstBuild
+      // 让当前事件循环的所有微任务结束；首构 readiness 必须仍被 native 发布 barrier 阻塞。
+      await new Promise<void>(resolve => setImmediate(resolve))
+      expect(startupSettled).toBe(false)
+      expect(buildMock).toHaveBeenCalledTimes(2)
       await snapshotStarted.promise
       snapshotRelease.resolve()
-      await waitForMockCalls(appendFileMock, 1)
+      await firstBuild
       expect(appendFileMock).toHaveBeenCalledOnce()
       const sample = JSON.parse(appendFileMock.mock.calls[0][1]) as HmrProfileJsonSample
       expect(sample).toMatchObject({
@@ -2222,6 +2244,231 @@ describe('runtime buildPlugin service', () => {
       snapshotRelease.resolve()
       await firstBuild
       await controller.watcher.close()
+      vi.useRealTimers()
+    }
+  })
+
+  it.each(['pending', 'queued'] as const)('drains a %s source batch received during startup draining', async (dispatch) => {
+    const { ctx, controller } = await createStartupSnapshotContext()
+    const secondStarted = Promise.withResolvers<void>()
+    const secondRelease = Promise.withResolvers<void>()
+    const thirdStarted = Promise.withResolvers<void>()
+    const thirdRelease = Promise.withResolvers<void>()
+    buildMock.mockImplementationOnce(async () => {
+      emitSourceChange({ event: 'update', file: HMR_PAGE_ID })
+      return { output: [] }
+    }).mockImplementationOnce(async () => {
+      secondStarted.resolve()
+      await secondRelease.promise
+      return { output: [] }
+    }).mockImplementationOnce(async () => {
+      thirdStarted.resolve()
+      await thirdRelease.promise
+      return { output: [] }
+    })
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    let startupSettled = false
+    const firstBuild = createBuildService(ctx).build({ skipNpm: true }).then(() => {
+      startupSettled = true
+    })
+    try {
+      await secondStarted.promise
+      emitSourceChange({ event: 'update', file: '/project/src/pages/logs/late.ts' })
+      if (dispatch === 'queued') {
+        await vi.runOnlyPendingTimersAsync()
+      }
+      secondRelease.resolve()
+      await thirdStarted.promise
+      await new Promise<void>(resolve => setImmediate(resolve))
+      expect(startupSettled).toBe(false)
+      thirdRelease.resolve()
+      await firstBuild
+      expect(buildMock).toHaveBeenCalledTimes(3)
+      expect(vi.getTimerCount()).toBe(0)
+    }
+    finally {
+      secondRelease.resolve()
+      thirdRelease.resolve()
+      await firstBuild
+      await controller.watcher.close()
+      vi.useRealTimers()
+    }
+  })
+
+  it.each([
+    { borrowedHost: false, stage: 'native', switching: false },
+    { borrowedHost: false, stage: 'end', switching: false },
+    { borrowedHost: true, stage: 'native', switching: false },
+    { borrowedHost: true, stage: 'end', switching: false },
+    { borrowedHost: true, stage: 'native', switching: true },
+    { borrowedHost: true, stage: 'end', switching: true },
+  ] as const)('preserves startup queued $stage failure and host recovery (borrowed=$borrowedHost, switching=$switching)', async ({ borrowedHost, stage, switching }) => {
+    const { ctx, controller } = await createStartupSnapshotContext()
+    const failure = new Error(`queued startup ${stage} failed`)
+    const detachHost = borrowedHost ? attachDevModuleGraphHost(ctx, {} as ViteDevServer) : undefined
+    const runtime = getHmrRuntimeSession(ctx)
+    if (switching) {
+      runtime.requestClassic({ code: 'config-json', message: 'app configuration changed' })
+    }
+    buildMock.mockImplementationOnce(async () => {
+      if (switching) {
+        expect(runtime.phase).toBe('switching')
+      }
+      emitSourceChange({ event: 'update', file: HMR_PAGE_ID })
+      return { output: [] }
+    }).mockImplementationOnce(async () => {
+      if (switching) {
+        // 首个 END 已更新会话状态；排队发布仍必须沿用本代启动时的不可恢复策略。
+        expect(runtime.phase).toBe('classic')
+      }
+      if (stage === 'native') {
+        throw failure
+      }
+      ctx.runtimeState.build.hmr.lastEmittedChunkFileNames.add('pages/logs/index.wxss')
+      return { output: [] }
+    }).mockResolvedValue({ output: [] })
+    if (stage === 'end') {
+      touchOutputStylesMock.mockRejectedValueOnce(failure)
+    }
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    try {
+      const firstBuild = createBuildService(ctx).build({ skipNpm: true })
+      if (borrowedHost && !switching) {
+        await expect(firstBuild).resolves.toBe(controller.watcher)
+        expect(ctx.watcherService.rollupWatcherMap.get('/')).toBe(controller.watcher)
+        emitSourceChange({ event: 'update', file: HMR_PAGE_ID })
+        await vi.runOnlyPendingTimersAsync()
+        await flushAsyncTasks()
+        expect(buildMock).toHaveBeenCalledTimes(3)
+      }
+      else {
+        await expect(firstBuild).rejects.toBe(failure)
+        expect(ctx.watcherService.rollupWatcherMap.size).toBe(0)
+        expect(ctx.watcherService.sidecarWatcherMap.size).toBe(0)
+        expect(buildMock).toHaveBeenCalledTimes(2)
+      }
+      expect(loggerErrorMock).toHaveBeenCalledWith(failure)
+      expect(vi.getTimerCount()).toBe(0)
+    }
+    finally {
+      await controller.watcher.close()
+      detachHost?.()
+      vi.useRealTimers()
+    }
+  })
+
+  it('closes during startup draining only after the current native write and cancels queued work', async () => {
+    const { ctx, controller, sidecar } = await createStartupSnapshotContext()
+    const snapshotStarted = Promise.withResolvers<void>()
+    const snapshotRelease = Promise.withResolvers<void>()
+    buildMock.mockImplementationOnce(async () => {
+      emitSourceChange({ event: 'update', file: HMR_PAGE_ID })
+      return { output: [] }
+    }).mockImplementationOnce(async () => {
+      snapshotStarted.resolve()
+      await snapshotRelease.promise
+      return { output: [] }
+    })
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    let startupSettled = false
+    let closed = false
+    const firstBuild = createBuildService(ctx).build({ skipNpm: true }).then(() => {
+      startupSettled = true
+    })
+    let closing: Promise<void> | undefined
+    try {
+      await snapshotStarted.promise
+      emitSourceChange({ event: 'update', file: '/project/src/pages/logs/cancelled.ts' })
+      closing = controller.watcher.close().then(() => {
+        closed = true
+      })
+      await new Promise<void>(resolve => setImmediate(resolve))
+      expect(startupSettled).toBe(false)
+      expect(closed).toBe(false)
+      expect(sidecar.close).not.toHaveBeenCalled()
+      snapshotRelease.resolve()
+      await Promise.all([firstBuild, closing])
+      expect(buildMock).toHaveBeenCalledTimes(2)
+      expect(sidecar.close).toHaveBeenCalledOnce()
+      expect(ctx.watcherService.rollupWatcherMap.size).toBe(0)
+      expect(ctx.watcherService.sidecarWatcherMap.size).toBe(0)
+      expect(vi.getTimerCount()).toBe(0)
+    }
+    finally {
+      snapshotRelease.resolve()
+      await firstBuild
+      await closing
+      await controller.watcher.close()
+      vi.useRealTimers()
+    }
+  })
+
+  it.each(['initial', 'snapshot', 'snapshot-end'] as const)('awaits the replacement generation when config changes during %s startup work', async (arrival) => {
+    const { ctx, controller, sidecar } = await createStartupSnapshotContext()
+    const replacement = await createStartupSnapshotContext()
+    ctx.configService.load.mockImplementation(async () => {
+      ctx.configService.configFileDependencies = []
+    })
+    const snapshotStarted = Promise.withResolvers<void>()
+    const snapshotRelease = Promise.withResolvers<void>()
+    const replacementStarted = Promise.withResolvers<void>()
+    const replacementRelease = Promise.withResolvers<void>()
+    const service = createBuildService(ctx)
+    buildMock.mockImplementationOnce(async () => {
+      emitSourceChange({ event: 'update', file: HMR_PAGE_ID })
+      // 侧车的配置通知直接测试 generation 尚未允许 restart 的路径。
+      ctx.configService.configFileDependencies = ['/project/vite.config.ts']
+      if (arrival === 'initial') {
+        sidecar.emit('change', '/project/vite.config.ts')
+      }
+      return { output: [] }
+    })
+    if (arrival !== 'initial') {
+      buildMock.mockImplementationOnce(async () => {
+        snapshotStarted.resolve()
+        await snapshotRelease.promise
+        return { output: [] }
+      })
+    }
+    buildMock.mockImplementationOnce(async () => {
+      replacementStarted.resolve()
+      await replacementRelease.promise
+      return { output: [] }
+    })
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    let startupSettled = false
+    const firstBuild = service.build({ skipNpm: true }).then(() => {
+      startupSettled = true
+    })
+    try {
+      if (arrival !== 'initial') {
+        await snapshotStarted.promise
+        if (arrival === 'snapshot-end') {
+          service.requestConfigRestart('app')
+        }
+        else {
+          sidecar.emit('change', '/project/vite.config.ts')
+        }
+        snapshotRelease.resolve()
+      }
+      await replacementStarted.promise
+      await new Promise<void>(resolve => setImmediate(resolve))
+      expect(startupSettled).toBe(false)
+      expect(sidecar.close).toHaveBeenCalledOnce()
+      replacementRelease.resolve()
+      await firstBuild
+      expect(ctx.configService.load).toHaveBeenCalledOnce()
+      expect(buildMock).toHaveBeenCalledTimes(arrival === 'initial' ? 2 : 3)
+      expect(ctx.watcherService.rollupWatcherMap.get('/')).toBe(replacement.controller.watcher)
+      expect(vi.getTimerCount()).toBe(0)
+    }
+    finally {
+      snapshotRelease.resolve()
+      replacementRelease.resolve()
+      await firstBuild
+      await controller.watcher.close()
+      await replacement.controller.watcher.close()
+      vi.useRealTimers()
     }
   })
 
@@ -4839,7 +5086,8 @@ describe('runtime buildPlugin service', () => {
       })
       vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
       watcher = await createBuildService(ctx).build({ skipNpm: true }) as RolldownWatcher
-      expect(buildMock).toHaveBeenCalledOnce()
+      // 启动就绪已排空未被首构消费的通知；返回后才收到的事件仍由下一批次处理。
+      expect(buildMock).toHaveBeenCalledTimes(boundary === 'consumed' || boundary === 'post-publication' ? 1 : 2)
       if (boundary === 'post-publication') {
         sidecar.emit('add', file)
       }

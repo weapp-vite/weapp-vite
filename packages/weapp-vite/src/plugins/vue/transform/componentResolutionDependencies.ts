@@ -44,6 +44,7 @@ export function getVueCompilationDependencies(result: VueTransformResult): strin
   return [...new Set([
     ...(meta?.sfcSrcCompilationDeps ?? []),
     ...(meta?.nativeSlotContextDeps ?? []),
+    ...(meta?.propsAnalysisDeps ?? []),
     ...(meta?.componentResolutionDeps ?? []),
   ].map(id => normalizeFsResolvedId(id)))]
 }

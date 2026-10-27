@@ -5,6 +5,8 @@ import { expect, it } from 'vitest'
 import { runWeappViteBuildWithLogCapture } from '../../../utils/buildLog'
 import { createIssue892ProjectConfig } from './issue892Project'
 
+export const group = 'issue892'
+
 export function registerGithubIssuesBuildCase(context: GithubIssuesBuildCaseContext) {
   it('issue #892: preserves Sass asset URLs in production output', async () => {
     const project = await createIssue892ProjectConfig(context.appRoot, 'build')

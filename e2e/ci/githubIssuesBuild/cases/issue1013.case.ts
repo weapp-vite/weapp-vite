@@ -5,6 +5,8 @@ import path from 'pathe'
 import { expect, it, vi } from 'vitest'
 import { runWeappViteBuildWithLogCapture } from '../../../utils/buildLog'
 
+export const group = 'issue1013'
+
 export function registerGithubIssuesBuildCase(context: GithubIssuesBuildCaseContext) {
   it('issue #1013: reports unsupported dynamic directive names through the build logger', async () => {
     const issueDistRoot = path.join(context.appRoot, 'dist-issue-1013')

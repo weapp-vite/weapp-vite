@@ -6,10 +6,12 @@ import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
+import ts from 'typescript'
 import { describe, expect, it } from 'vitest'
 import { useIsolatedTopologyTestEnvironment } from '../../../scripts/verification/topologyTestFixture'
 import { isStrictDomAcceptanceSuite } from '../domAcceptanceReport/helpers'
 import { readTaskCases } from '../domAcceptanceReport/inventory'
+import { createInventorySourceReader } from '../domAcceptanceReport/inventorySourceReader'
 import { readSelectedAcceptanceCases } from '../domAcceptanceReport/selectedCases'
 import { readPlannedTaskCases } from '../domAcceptanceReport/taskCases'
 import { getSuiteTasks } from '../e2e-suite-manifest'
@@ -27,13 +29,15 @@ describe('supported WeChat startup classic inventory', () => {
     ['hmr-build', 45, 3],
     ['ide-hmr-headless', 28, 14],
     ['ide-hmr', 34, 19],
-    ['ide-full:exhaustive', 151, 22],
-    ['ide-dom-headless', 84, 14],
-    ['ide-headless-full', 95, 14],
+    ['ide-full:exhaustive', 155, 22],
+    ['ide-dom-headless', 88, 14],
+    ['ide-headless-full', 99, 14],
   ] as const)('preserves the complete %s task inventory and explicit experimental exclusions', async (suite, total, excluded) => {
     const original = await getSuiteTasks(suite, { topology: 'optimized-v1' })
     const supported = await getSuiteTasks(`${suite}:classic`, { topology: 'optimized-v1' })
     expect(supported).toHaveLength(total)
+    expect(new Set(original.map(task => task.label)).size).toBe(total)
+    expect(new Set(supported.map(task => task.label)).size).toBe(total)
     expect(supported.map(task => task.label)).toEqual(original.map(task => task.label))
     expect(supported.filter(task => task.outOfScopeReason)).toHaveLength(excluded)
     expect(supported).toEqual(original.map(applyClassicSupportScope))
@@ -41,6 +45,62 @@ describe('supported WeChat startup classic inventory', () => {
     for (const [index, task] of original.entries()) {
       if (!CLASSIC_HMR_OUT_OF_SCOPE_TASKS[task.label] && !CLASSIC_IDE_CASES[task.label] && !CLASSIC_BUILD_CASES[task.label]) {
         expect(supported[index]).toEqual(task)
+      }
+    }
+  })
+
+  it.each(['ide-full:exhaustive', 'ide-dom-headless', 'ide-headless-full'])('retains issue 1249, 1263 and 1264 runtime tasks without classic exclusions in %s', async (suite) => {
+    const original = await getSuiteTasks(suite, { topology: 'optimized-v1' })
+    const supported = await getSuiteTasks(`${suite}:classic`, { topology: 'optimized-v1' })
+    for (const label of ['ide/issue-1249-dataset.runtime.test.ts', 'ide/issue-1263-chunk-debug-name.runtime.test.ts', 'ide/issue-1264-basic-wx-apis.runtime.test.ts']) {
+      const tasks = supported.filter(task => task.label === label)
+      expect(tasks).toHaveLength(1)
+      expect(tasks[0]?.outOfScopeReason).toBeUndefined()
+      expect(tasks[0]).toEqual(original.find(task => task.label === label))
+    }
+  })
+
+  it('freezes the complete dataset consumer case and nine checkpoints for both runtime providers', async () => {
+    const label = 'ide/issue-1249-dataset.runtime.test.ts'
+    const file = `e2e/${label}`
+    const inventory = readTaskCases(ROOT, label)
+    const expected = [{ file, name: 'issue #1249: native dataset object consumers > preserves object, zero, false and static or mixed strings across replacement and every consumer' }]
+    expect(inventory.map(({ name }) => ({ file, name }))).toEqual(expected)
+    expect(inventory[0]?.notes).toEqual([])
+    expect(inventory[0]?.plans).toEqual([expect.objectContaining({ registration: 'createDomAcceptance', fixture: 'e2e-apps/github-issues/fixtures/issue-1249' })])
+    const checkpoints: Array<Array<string | undefined>> = []
+    const readCheckpoints = (node: ts.Node) => {
+      if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === 'createDomAcceptance') {
+        const plan = node.arguments[2]
+        expect(plan && ts.isArrayLiteralExpression(plan)).toBe(true)
+        if (plan && ts.isArrayLiteralExpression(plan)) {
+          checkpoints.push(plan.elements.map((checkpoint) => {
+            expect(ts.isObjectLiteralExpression(checkpoint)).toBe(true)
+            const id = ts.isObjectLiteralExpression(checkpoint)
+              ? checkpoint.properties.find(property => ts.isPropertyAssignment(property) && property.name.getText() === 'id')
+              : undefined
+            return id && ts.isPropertyAssignment(id) && ts.isStringLiteral(id.initializer) ? id.initializer.text : undefined
+          }))
+        }
+      }
+      ts.forEachChild(node, readCheckpoints)
+    }
+    readCheckpoints(createInventorySourceReader(ROOT)(file))
+    expect(checkpoints).toEqual([['initial', 'event-initial', 'selector-initial', 'observer-initial', 'component-initial', 'event-replaced', 'selector-replaced', 'observer-replaced', 'component-replaced']])
+    expect(CLASSIC_HMR_OUT_OF_SCOPE_TASKS[label]).toBeUndefined()
+    expect(CLASSIC_IDE_CASES[label]).toBeUndefined()
+    expect(CLASSIC_BUILD_CASES[label]).toBeUndefined()
+    for (const [suite, provider] of [['ide-full:exhaustive', 'devtools'], ['ide-dom-headless', 'headless'], ['ide-headless-full', 'headless']] as const) {
+      for (const scope of [suite, `${suite}:classic`]) {
+        const tasks = (await getSuiteTasks(scope, { topology: 'optimized-v1' })).filter(task => task.label === label)
+        expect(tasks).toHaveLength(1)
+        const task = tasks[0]!
+        expect(task.outOfScopeReason).toBeUndefined()
+        expect(task.acceptanceTemplates).toBeUndefined()
+        expect(task.args).not.toContain('--testNamePattern')
+        expect(task.env?.[CLASSIC_HMR_EXCLUDED_CASES_ENV]).toBeUndefined()
+        expect(readSelectedAcceptanceCases(task.env)).toBeUndefined()
+        expect(await readPlannedTaskCases(task, provider)).toEqual(expected)
       }
     }
   })
@@ -158,13 +218,19 @@ describe('supported WeChat startup classic inventory', () => {
     const hmr = await getSuiteTasks('hmr-build:classic')
     const hmrLabels = new Set(hmr.map(task => task.label))
     const originalNonHmr = await getSuiteTasks('ci-full')
-    expect(full).toHaveLength(129)
+    expect(full).toHaveLength(130)
     expect(new Set(full.map(task => task.label)).size).toBe(full.length)
     expect(full.every(task => !task.label.startsWith('hmr-guard:'))).toBe(true)
     expect(nonHmr).toEqual(originalNonHmr.filter(task => !hmrLabels.has(task.label)).map(applyClassicSupportScope))
     expect(nonHmr.every(task => !hmrLabels.has(task.label))).toBe(true)
     expect(await getSuiteTasks('ci-full:classic')).toEqual(nonHmr)
-    expect(await getSuiteTasks('ci-pr:classic')).toEqual((await getSuiteTasks('ci-pr')).map(applyClassicSupportScope))
+    const pr = await getSuiteTasks('ci-pr:classic')
+    expect(pr).toEqual((await getSuiteTasks('ci-pr')).map(applyClassicSupportScope))
+    for (const tasks of [full, nonHmr, pr]) {
+      const issueTasks = tasks.filter(task => task.label === 'ci/issue-1263-chunk-debug-name.test.ts')
+      expect(issueTasks).toHaveLength(1)
+      expect(issueTasks[0]?.outOfScopeReason).toBeUndefined()
+    }
     expect(new Set([...nonHmr, ...hmr].map(task => task.label))).toEqual(new Set(full.map(task => task.label)))
     for (const task of [...nonHmr, ...hmr]) {
       expect(full.filter(candidate => candidate.label === task.label)).toEqual([task])

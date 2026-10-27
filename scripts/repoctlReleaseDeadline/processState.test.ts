@@ -1,5 +1,7 @@
-import { describe, expect, it, vi } from 'vitest'
-import { readLinuxProcessState } from './processState'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { readLinuxProcessState, waitForProcessExit } from './processState'
+
+afterEach(() => vi.useRealTimers())
 
 const pid = process.pid
 const ownerToken = 'release-fixture-owner'
@@ -86,5 +88,55 @@ describe('Linux release fixture process observation', () => {
     const error = procError('EIO')
     const readFile = createProcessReader(['R', 'Z'], error)
     await expect(readLinuxProcessState(pid, ownerToken, readFile)).rejects.toBe(error)
+  })
+})
+
+describe('release process terminal observation', () => {
+  it.each(['EACCES', 'EPERM'])('keeps observing %s during exit until stat proves a terminal state', async (code) => {
+    vi.useFakeTimers()
+    let statReads = 0
+    const readFile = async (file: string) => {
+      if (file.endsWith('/stat')) {
+        statReads += 1
+        return `17 (fixture) ${statReads < 3 ? 'R' : 'Z'} 1 17`
+      }
+      throw Object.assign(new Error('environment temporarily unreadable'), { code })
+    }
+    const assertion = expect(waitForProcessExit(() => readLinuxProcessState(17, 'owned', readFile))).resolves.toBe('zombie')
+    await vi.runAllTimersAsync()
+    await assertion
+    expect(statReads).toBe(3)
+  })
+
+  it.each(['EACCES', 'EPERM'])('fails on persistent %s within the original budget, including after a running sample', async (code) => {
+    vi.useFakeTimers()
+    const error = Object.assign(new Error('live process unreadable'), { code })
+    const readState = vi.fn<() => ReturnType<typeof readLinuxProcessState>>()
+      .mockResolvedValueOnce('running')
+      .mockRejectedValue(error)
+    const startedAt = Date.now()
+    const assertion = expect(waitForProcessExit(readState, 50)).rejects.toBe(error)
+    await vi.runAllTimersAsync()
+    await assertion
+    expect(Date.now() - startedAt).toBe(50)
+    expect(readState).toHaveBeenCalledTimes(3)
+  })
+
+  it.each(['gone', 'zombie', 'foreign', 'running'] as const)('uses fresh %s after a permission transition', async (state) => {
+    vi.useFakeTimers()
+    const readState = vi.fn<() => ReturnType<typeof readLinuxProcessState>>()
+      .mockRejectedValueOnce(Object.assign(new Error('exit transition'), { code: 'EACCES' }))
+      .mockResolvedValue(state)
+    const assertion = expect(waitForProcessExit(readState, 50)).resolves.toBe(state)
+    await vi.runAllTimersAsync()
+    await assertion
+    expect(readState).toHaveBeenCalledTimes(state === 'running' ? 3 : 2)
+  })
+
+  it('does not retry unrelated observation failures', async () => {
+    const error = Object.assign(new Error('unexpected read failure'), { code: 'EIO' })
+    const readState = vi.fn<() => ReturnType<typeof readLinuxProcessState>>().mockRejectedValue(error)
+    await expect(waitForProcessExit(readState)).rejects.toBe(error)
+    expect(readState).toHaveBeenCalledTimes(1)
   })
 })

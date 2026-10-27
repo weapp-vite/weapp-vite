@@ -1,6 +1,7 @@
 import type {
   HeadlessAppDefinition,
   HeadlessHostRegistries,
+  HeadlessWxAccountInfo,
   HeadlessWxAppHideOptions,
   HeadlessWxLaunchOptions,
   HeadlessWxNetworkType,
@@ -16,6 +17,7 @@ import type {
   HeadlessWxActionSheetMockDefinition,
   HeadlessWxClipboardSnapshot,
   HeadlessWxDownloadFileMockDefinition,
+  HeadlessWxLoginMockDefinition,
   HeadlessWxModalMockDefinition,
   HeadlessWxOpenDocumentSnapshot,
   HeadlessWxRequestMockDefinition,
@@ -30,6 +32,7 @@ import { invokePreparedNavigationApi } from '../host/wx/navigation'
 import { bindStartupNavigation, StartupNavigationQueue } from '../host/wx/startupNavigation'
 import { RuntimeKernel } from '../kernel'
 import { RuntimeRenderQueue } from '../kernel/renderQueue'
+import { createDefaultAccountInfo } from '../project/accountInfo'
 import { createMiniProgramHostConfig } from '../project/hostConfig'
 import { cloneBackgroundSnapshot, cloneNavigationBarSnapshot, resolveBackgroundSnapshot, resolveNavigationBarSnapshot } from '../project/pageConfig'
 import { resolvePluginRequest } from '../project/plugins'
@@ -275,12 +278,13 @@ export class BrowserHeadlessSession {
 
   constructor(options: BrowserHeadlessSessionOptions) {
     this.files = options.files
+    this.project = options.project ?? createBrowserProject(options.files)
     this.wxState = createHeadlessWxState(this.kernel.scheduler, {
+      accountInfo: createDefaultAccountInfo(this.project),
       strictMocks: options.strictHostMocks,
       readPackageFile: createPackageAssetReader(relative => readBrowserVirtualFile(this.files, join(this.project.miniprogramRootPath, relative))),
     })
     this.onRender = options.onRender
-    this.project = options.project ?? createBrowserProject(options.files)
     this.templateRegistration = createTemplateRegistration(this.project.artifactSource, this.project.miniprogramRootPath, options.compiledTemplatePaths)
     this.registries = createHostRegistries()
     const rawTabBarList = Array.isArray(this.project.appConfig.tabBar?.list)
@@ -335,12 +339,14 @@ export class BrowserHeadlessSession {
         getSavedFileList: () => this.wxState.getSavedFileList(),
         getEnterOptionsSync: () => this.getEnterOptions(),
         getAppBaseInfoSync: () => deriveAppBaseInfo(this.systemInfo),
+        getAccountInfoSync: () => this.wxState.getAccountInfoSync(),
         getDeviceInfo: () => deriveDeviceInfo(this.systemInfo),
         getLaunchOptionsSync: () => this.getLaunchOptions(),
         getClipboardData: () => this.wxState.getClipboardData(),
         getLocation: () => createDefaultLocationResult(),
         getMenuButtonBoundingClientRect: () => deriveMenuButtonBoundingClientRect(this.systemInfo),
         getNetworkType: () => this.wxState.getNetworkType(),
+        login: option => this.wxState.login(option),
         navigateBack: option => this.navigateBack(option?.delta),
         navigateTo: option => this.routeEvents.navigateTo(() => this.navigateTo(option.url), option),
         pageScrollTo: option => this.pageScrollTo(option),
@@ -625,6 +631,14 @@ export class BrowserHeadlessSession {
 
   mockModal(definition: HeadlessWxModalMockDefinition = {}) {
     this.wxState.mockModal(definition)
+  }
+
+  mockLogin(definition: HeadlessWxLoginMockDefinition = {}) {
+    this.wxState.mockLogin(definition)
+  }
+
+  setAccountInfo(info: HeadlessWxAccountInfo) {
+    this.wxState.setAccountInfo(info)
   }
 
   mockActionSheet(definition: HeadlessWxActionSheetMockDefinition = {}) {

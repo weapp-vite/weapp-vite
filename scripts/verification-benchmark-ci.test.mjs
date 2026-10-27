@@ -34,6 +34,7 @@ it('compares real logical coverage cases while independently verifying each proj
 it('separates approval, queue, execution critical path and total runner time', () => {
   expect(ciRunMetrics({ status: 'completed', conclusion: 'success' }, jobs, statuses, needs)).toMatchObject({
     approvalWaitMs: 7000,
+    approvalToCompletionMs: 16000,
     schedulingWaitMs: 7000,
     executionMs: 11000,
     runnerMs: 18000,
@@ -68,7 +69,7 @@ it('only excludes skipped conditional jobs when the frozen topology explains the
 it('binds actual frozen identity and verified execution evidence into comparison-compatible samples', async () => {
   const value = fixture()
   const result = await collectCiEvidence(value.repository, '123', value.configuration, value.execute)
-  expect(result.sample).toMatchObject({ id: 'baseline-1', variant: 'baseline', complete: true, outcome: 'passed', revision: value.context.checkoutSha })
+  expect(result.sample).toMatchObject({ id: 'baseline-1', variant: 'baseline', measurement: 'ci', complete: true, outcome: 'passed', revision: value.context.checkoutSha })
   expect(result.sample.inputDigest).toMatch(/^[a-f\d]{64}$/u)
   expect(result.sample.scopeDigest).toMatch(/^[a-f\d]{64}$/u)
   expect(result.sample.profile.node).toContain('v24.18.0')

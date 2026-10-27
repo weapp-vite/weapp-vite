@@ -4,7 +4,7 @@ import path from 'node:path'
 // eslint-disable-next-line e18e/ban-dependencies -- 在临时仓库验证执行前冻结检查，不启动任何真实验证任务。
 import { execa } from 'execa'
 import { expect, it } from 'vitest'
-import { assertCurrentPlan, prepareVerificationPlan } from './prepare.ts'
+import { assertCommittedSnapshot, assertCurrentPlan, prepareVerificationPlan } from './prepare.ts'
 import { fullRuntimeBlock } from './runtime.ts'
 
 it('rederives workspace, Turbo and runtime assumptions before any task executes', async () => {
@@ -35,6 +35,12 @@ it('rederives workspace, Turbo and runtime assumptions before any task executes'
     expect(await fullRuntimeBlock(root)).toBeUndefined()
     await git(['switch', '--quiet', '-c', 'feature'])
     expect(await fullRuntimeBlock(root)).toContain('干净 main')
+    const head = (await git(['rev-parse', 'HEAD'])).stdout.trim()
+    const committedOptions = { base: head, head, mode: 'quick' as const, jobs: 1 }
+    const committed = await prepareVerificationPlan(root, committedOptions)
+    await expect(assertCommittedSnapshot(root, committed, committedOptions)).resolves.toBeUndefined()
+    await writeFile(path.join(root, 'packages/library/src/index.ts'), 'export const changedDuringVerification = true\n')
+    await expect(assertCommittedSnapshot(root, committed, committedOptions)).rejects.toThrow('干净快照')
   }
   finally {
     await rm(root, { recursive: true, force: true })

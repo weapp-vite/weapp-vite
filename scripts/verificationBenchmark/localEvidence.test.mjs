@@ -5,11 +5,14 @@ import { afterEach, expect, it } from 'vitest'
 import { evaluateAcceptanceCase, summarizeAcceptanceCases } from '../../e2e/scripts/domAcceptanceReport/helpers.ts'
 import { freezeProviderCaseScope } from '../../e2e/scripts/domAcceptanceReport/taskCases.ts'
 import { HMR_GUARD_SPECIAL_CASES, HMR_GUARD_STABLE_TESTS, HMR_GUARD_UTILITY_TESTS } from '../../e2e/scripts/hmr-guard-manifest.ts'
+import { useIsolatedTopologyTestEnvironment } from '../verification/topologyTestFixture.ts'
 import { collectLocalEvidence, validateLocalFull } from './localEvidence.mjs'
 import { localEvidenceFixture } from './localEvidenceFixture.mjs'
 import { localDigest, localSave } from './localIo.mjs'
 import { freezeLocalSuites } from './localRuntime.mjs'
 import { validateLocalTurbo } from './localTurbo.mjs'
+
+useIsolatedTopologyTestEnvironment()
 
 const roots = []
 afterEach(async () => {

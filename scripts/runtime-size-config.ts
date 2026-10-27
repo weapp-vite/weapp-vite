@@ -214,7 +214,9 @@ const runtimeSizeProductionBaselines: Readonly<Record<RuntimeSizePlatform, Reado
   },
   web: {
     'reactivity-core': 6_560,
-    'minimal-app': 177_495,
+    // #1256 新增生命周期、主题和 Toast API，相对 ed62c5e65b74 的 production 净增 1,851 B。
+    // 仅将已归因的能力成本加入 #1064 原锚点，保留原有增长占用及统一 5% 余量。
+    'minimal-app': 179_346,
     'typical-page': 435_156,
     'complex-component': 445_350,
     'public-app': 256_062,

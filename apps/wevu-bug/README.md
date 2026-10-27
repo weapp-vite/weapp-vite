@@ -19,6 +19,12 @@
 
 `pnpm build`
 
+### 类型检查
+
+`pnpm typecheck` 检查正常页面，通过 `tsconfig.typecheck.json` 仅排除故意演示类型错误的 `src/pages/typecheck-errors/index.vue`。
+
+`pnpm test` 使用已构建的 `weapp-vite` CLI 执行 `prepare`，再检查完整的受管应用配置，要求该页面保留四处预期诊断且没有其他类型错误。根 `tsconfig.json` 和页面源码保持完整，IDE 中仍可查看这些错误。
+
 ### 打开微信开发者工具
 
 `pnpm open`

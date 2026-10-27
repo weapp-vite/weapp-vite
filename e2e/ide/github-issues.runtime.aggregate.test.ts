@@ -26,4 +26,4 @@ import './github-issues.runtime.slot-fallback.test'
 
 afterAll(async () => {
   await closeSharedMiniProgram({ force: true })
-}, 30_000)
+})

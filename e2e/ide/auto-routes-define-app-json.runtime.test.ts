@@ -99,6 +99,18 @@ describe('classic automatic route topology output runtime', { concurrent: false 
     await dev.waitForInitialBuild()
 
     const marker = 'automatic-route-app-script-updated'
+    const readTopologyOutputs = async () => {
+      const config = JSON.parse(await readFile(path.join(project, 'dist/app.json'), 'utf8')) as { pages: string[] }
+      const outputs = await Promise.all([route, vueRoute].flatMap(pageRoute => ['js', 'json', 'wxml'].map(extension => access(path.join(project, `dist/${pageRoute}.${extension}`))
+        .then(() => true, (error) => {
+          if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+            throw error
+          }
+          return false
+        }))))
+      const app = await readFile(path.join(project, 'dist/app.js'), 'utf8')
+      return { registered: [route, vueRoute].map(pageRoute => config.pages.includes(pageRoute)), outputs, appUpdated: app.includes(marker) }
+    }
     const appPublication = createDevBuildCompletion(dev, { completed: '小程序已重新构建', source: { file: appSource, profilePath } })
     await writeFile(appSource, (await readFile(appSource, 'utf8')).replace('</script>', `console.log('${marker}')\n</script>`))
     await appPublication.wait()
@@ -129,19 +141,8 @@ describe('classic automatic route topology output runtime', { concurrent: false 
         // 不触碰 App 触发补偿构建；只靠本轮页面源文件变化发布路由和完整页面。
         await publication.wait()
         diagnostics.record(stage, 'publication-complete')
-        await expect.poll(async () => {
-          const config = JSON.parse(await readFile(path.join(project, 'dist/app.json'), 'utf8')) as { pages: string[] }
-          const outputs = await Promise.all([route, vueRoute].flatMap(pageRoute => ['js', 'json', 'wxml'].map(extension => access(path.join(project, `dist/${pageRoute}.${extension}`))
-            .then(() => true, (error) => {
-              if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-                throw error
-              }
-              return false
-            }))))
-          // emptyOutDir 的中间态不能算删除完成，App 脚本也必须随完整产物恢复。
-          const app = await readFile(path.join(project, 'dist/app.js'), 'utf8')
-          return { registered: [route, vueRoute].map(pageRoute => config.pages.includes(pageRoute)), outputs, appUpdated: app.includes(marker) }
-        }, { timeout: 30_000 }).toEqual({ registered: [present, present], outputs: Array.from({ length: 6 }).fill(present), appUpdated: true })
+        // emptyOutDir 的中间态不能算删除完成，App 脚本也必须随完整产物恢复。
+        await expect.poll(readTopologyOutputs, { timeout: 30_000 }).toEqual({ registered: [present, present], outputs: Array.from({ length: 6 }).fill(present), appUpdated: true })
         diagnostics.record(stage, 'complete')
       }
       catch (error) {
@@ -150,8 +151,20 @@ describe('classic automatic route topology output runtime', { concurrent: false 
         throw error
       }
     }
-    // 路由拓扑改变需要完整 AppService 装载；两种 provider 共用最终恢复产物，不重复启动 IDE。
-    host = await launchAutoRoutesProject(project, `/${route}`, ['#topology-result'], true)
+    try {
+      // 三轮动态发布已经逐轮验证；新 AppService 只读取停止写出后的最终恢复产物。
+      // stop 会等待在途构建，但可能取消未开始的重复通知，不能视为消费全部通知的证明。
+      await dev.stop()
+      expect(dev.getBuildErrors()).toEqual([])
+      expect(await readTopologyOutputs()).toEqual({ registered: [true, true], outputs: Array.from({ length: 6 }).fill(true), appUpdated: true })
+      diagnostics.record('restored', 'outputs-frozen')
+      // 路由拓扑改变需要完整 AppService 装载；两种 provider 共用最终恢复产物，不重复启动 IDE。
+      host = await launchAutoRoutesProject(project, `/${route}`, ['#topology-result'], true)
+    }
+    catch (error) {
+      await diagnostics.captureFailure('runtime-launch', error)
+      throw error
+    }
   }
 
   afterAll(async () => {
@@ -165,8 +178,14 @@ describe('classic automatic route topology output runtime', { concurrent: false 
       { id: 'topology-original', route: '/pages/issue-1015/index', action: '返回原有页面验证路由共存', nodes: [{ selector: '#issue-1015-state', text: 'external css vars initial' }] },
     ])
     await prepareTopologyProject()
-    await acceptance.check('topology-restored', host!, await host!.reLaunch(`/${route}`))
-    await acceptance.check('topology-vue-restored', host!, await host!.reLaunch(`/${vueRoute}`))
-    await acceptance.check('topology-original', host!, await host!.reLaunch('/pages/issue-1015/index'))
+    try {
+      await acceptance.check('topology-restored', host!, await host!.reLaunch(`/${route}`))
+      await acceptance.check('topology-vue-restored', host!, await host!.reLaunch(`/${vueRoute}`))
+      await acceptance.check('topology-original', host!, await host!.reLaunch('/pages/issue-1015/index'))
+    }
+    catch (error) {
+      await diagnostics!.captureFailure('runtime-restored', error)
+      throw error
+    }
   }, 180_000)
 })

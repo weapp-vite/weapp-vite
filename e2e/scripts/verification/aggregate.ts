@@ -4,12 +4,12 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import { isDeepStrictEqual } from 'node:util'
 import { assertVerificationTopology } from '../../../scripts/verification/topology.ts'
+import { providerOutOfScopeCases } from '../domAcceptanceReport/caseCoverage'
 import { SELECTED_CASES_ENV } from '../domAcceptanceReport/selectedCases'
-import { validateTaskAcceptance } from '../domAcceptanceReport/task'
-import { providerOutOfScopeCases } from '../domAcceptanceReport/taskCases'
+import { validateTaskEvidence } from '../domAcceptanceReport/taskEvidence'
 import { isStableHmrSuite } from '../hmrAcceptance/stableScope'
 import { CLASSIC_IDE_CASES } from '../hmrAcceptance/stableScopeCases'
-import { assertVerificationPlan, verificationHash } from './plan'
+import { assertVerificationPlanContract, verificationHash } from './planContract'
 import { assertVerificationProfile } from './profile'
 import { assertE2ETimings } from './timing'
 import { VERIFICATION_TOOL_VERSION } from './types'
@@ -56,7 +56,7 @@ export async function aggregateVerificationReports(plan: VerificationPlan, value
   files?: string[]
   now?: Date
 } = {}): Promise<SuiteReportPayload> {
-  assertVerificationPlan(plan)
+  assertVerificationPlanContract(plan)
   if (plan.workingTreeDirty !== false) {
     throw new Error('Full distributed acceptance requires a clean, known checkout')
   }
@@ -138,7 +138,7 @@ export async function aggregateVerificationReports(plan: VerificationPlan, value
         if (selected && verificationHash(selected) !== verificationHash(planned.cases)) {
           throw new Error('Frozen selected DOM case inventory differs from the supported scope')
         }
-        await validateTaskAcceptance({
+        await validateTaskEvidence({
           label: task.label,
           command: 'pnpm',
           args: [],

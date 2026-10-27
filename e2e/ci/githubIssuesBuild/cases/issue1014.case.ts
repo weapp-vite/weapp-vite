@@ -7,6 +7,8 @@ import { runWeappViteBuildWithLogCapture } from '../../../utils/buildLog'
 
 const runtimeTarget = 'e2e/ide/github-issues.runtime.issue1014.test.ts'
 
+export const group = 'issue1014'
+
 export function registerGithubIssuesBuildCase(context: GithubIssuesBuildCaseContext) {
   it('issue #1014: exposes unsupported object directives as build warnings', async () => {
     const issueDistRoot = path.join(context.appRoot, 'dist-issue-1014')

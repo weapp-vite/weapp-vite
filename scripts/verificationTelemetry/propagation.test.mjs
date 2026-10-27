@@ -32,7 +32,7 @@ function assertTopologyGraph(workflows, selection, fixedEntry = false) {
     for (const [id, job] of Object.entries(workflow.jobs)) {
       const label = `${file}:${id}`
       if (job.uses === './.github/workflows/reusable-frozen-pr-context.yml') {
-        assert.equal(job.with?.verification_topology, undefined, `Frozen context schema: ${label}`)
+        assert.equal(job.with?.verification_topology, fixedEntry ? undefined : inherited, `Frozen context schema: ${label}`)
       }
       else if (job.uses) {
         const target = job.uses.replace(/^\.\//, '')
@@ -69,6 +69,9 @@ function assertTopologyGraph(workflows, selection, fixedEntry = false) {
 it('transports the ordinary optimized default through every nested workflow and native execution job', () => {
   expect(assertTopologyGraph(actual, 'optimized-v1')).toEqual([
     'reusable-consumer-platform:node-support',
+    'reusable-consumer-platform:node-support-v2',
+    'reusable-consumer-platform:node-support-aggregate-v2',
+    'reusable-consumer-platform:consumer-aggregate-v2',
     'reusable-miniapp-platform:aggregate',
     'reusable-miniapp-platform:ide-dom-headless-aggregate',
     'reusable-miniapp-platform:plan',
@@ -78,13 +81,13 @@ it('transports the ordinary optimized default through every nested workflow and 
   ].map(label => label.replace(':', '.yml:')).map(label => `.github/workflows/${label}`).sort())
 })
 
-it.each(['optimized-v1', 'legacy-v1'])('keeps an explicit %s identity through the common wrappers', (selection) => {
+it.each(['optimized-v1', 'optimized-v2', 'legacy-v1'])('keeps an explicit %s identity through the common wrappers', (selection) => {
   assertTopologyGraph(actual, selection)
 })
 
 it('freezes the derived baseline as explicit legacy while the candidate inherits the optimized default', () => {
   expect(assertTopologyGraph(graphWithJobs(snapshots.baseline), 'legacy-v1', true)).toHaveLength(7)
-  expect(assertTopologyGraph(graphWithJobs(snapshots.candidate), 'optimized-v1')).toHaveLength(7)
+  expect(assertTopologyGraph(graphWithJobs(snapshots.candidate), 'optimized-v1')).toHaveLength(10)
 })
 
 const transports = files.flatMap(file => Object.entries(actual[file].jobs).flatMap(([id, job]) => {
@@ -106,7 +109,8 @@ it.each(transports)('rejects a missing $kind transport at $file:$id', ({ file, i
   else {
     delete job.env[topologyEnv]
   }
-  expect(() => assertTopologyGraph(graph, 'optimized-v1')).toThrow(/Topology (call|environment):/)
+  const frozenContext = actual[file].jobs[id].uses === './.github/workflows/reusable-frozen-pr-context.yml'
+  expect(() => assertTopologyGraph(graph, 'optimized-v1')).toThrow(frozenContext ? 'Frozen context schema:' : /Topology (call|environment):/)
 })
 
 it.each(['call', 'environment', 'default', 'frozen context', 'unknown workflow'])('rejects an opposite or unsupported %s boundary', (change) => {
@@ -121,7 +125,7 @@ it.each(['call', 'environment', 'default', 'frozen context', 'unknown workflow']
     graph[workflowPath('reusable-miniapp-platform')].on.workflow_call.inputs.verification_topology.default = 'legacy-v1'
   }
   else if (change === 'frozen context') {
-    graph[workflowPath('validate-ci')].jobs['pr-context'].with.verification_topology = inherited
+    graph[workflowPath('validate-ci')].jobs['pr-context'].with.verification_topology = 'legacy-v1'
   }
   else {
     graph[workflowPath('validate-ci')].jobs['build-pr'].uses = './.github/workflows/unknown.yml'

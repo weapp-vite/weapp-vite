@@ -76,3 +76,21 @@ it('rejects an invalid explicit base and conservatively handles a missing automa
   expect(result.fallback).toBe(true)
   expect(result.warnings).toHaveLength(1)
 }))
+
+it('reads committed rename and deletion endpoints without including unrelated workspace changes', ({ signal }) => withRepository(signal, async ({ root, git, signal }) => {
+  const base = (await git(['rev-parse', 'HEAD'])).stdout.trim()
+  await git(['mv', 'tracked.ts', 'renamed.ts'])
+  await git(['rm', 'deleted.ts'])
+  await git(['-c', 'commit.gpgsign=false', '-c', 'user.name=Verification Test', '-c', 'user.email=verification@example.invalid', 'commit', '--quiet', '-m', 'candidate'])
+  const head = (await git(['rev-parse', 'HEAD'])).stdout.trim()
+  expect((await readChanges(root, { base, head, signal })).files).toEqual(['deleted.ts', 'renamed.ts', 'tracked.ts'])
+  await writeFile(path.join(root, 'unrelated.ts'), 'export {}\n')
+  await expect(readChanges(root, { base, head, signal })).rejects.toThrow('干净快照')
+  expect((await readChanges(root, { base, signal })).files).toContain('unrelated.ts')
+}))
+
+it('falls back to every committed input when the push has no trustworthy base', ({ signal }) => withRepository(signal, async ({ root, git, signal }) => {
+  const head = (await git(['rev-parse', 'HEAD'])).stdout.trim()
+  const result = await readChanges(root, { head, signal })
+  expect(result).toMatchObject({ base: null, fallback: true, files: ['deleted.ts', 'tracked.ts'] })
+}))

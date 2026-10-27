@@ -1,5 +1,6 @@
 import type { WEVU_PAGE_SCROLL_EVENT_CONTRACT_KEY, WEVU_ROUTE_EVENT_CONTRACT_KEY } from '@weapp-core/constants'
 import type { HeadlessPageInstance } from '../../runtime/pageInstance'
+import type { HeadlessWxAccountInfo, HeadlessWxLoginOption } from './account'
 import type {
   HeadlessWxAnimation,
   HeadlessWxAnimationStepOption,
@@ -139,6 +140,8 @@ export interface HeadlessWxRouteListeners {
 }
 
 export interface HeadlessWxDriver extends HeadlessWxDriverCapabilities, HeadlessWxRouteListeners {
+  getAccountInfoSync: () => HeadlessWxAccountInfo
+  login: (option?: HeadlessWxLoginOption) => void
   chooseImage: (option: HeadlessWxChooseImageOption) => HeadlessWxChooseImageResult
   chooseMessageFile: (option: HeadlessWxChooseMessageFileOption) => HeadlessWxChooseMessageFileResult
   chooseMedia: (option: HeadlessWxChooseMediaOption) => HeadlessWxChooseMediaResult
@@ -166,6 +169,8 @@ export interface HeadlessWxDriver extends HeadlessWxDriverCapabilities, Headless
 export interface HeadlessWx extends HeadlessUniEventBus, HeadlessWxRouteListeners, HeadlessWorkerApis {
   [WEVU_ROUTE_EVENT_CONTRACT_KEY]: 1
   [WEVU_PAGE_SCROLL_EVENT_CONTRACT_KEY]: 1
+  arrayBufferToBase64: (buffer: ArrayBuffer) => string
+  base64ToArrayBuffer: (base64: string) => ArrayBuffer
   canIUse: (schema: string) => boolean
   chooseImage: (option?: HeadlessWxChooseImageOption) => HeadlessWxChooseImageResult | undefined
   chooseMessageFile: (option?: HeadlessWxChooseMessageFileOption) => HeadlessWxChooseMessageFileResult | undefined
@@ -191,6 +196,7 @@ export interface HeadlessWx extends HeadlessUniEventBus, HeadlessWxRouteListener
   getSavedFileInfo: (option: HeadlessWxGetSavedFileInfoOption) => HeadlessWxGetSavedFileInfoSuccessResult | undefined
   getSavedFileList: (option?: HeadlessWxGetSavedFileListOption) => HeadlessWxGetSavedFileListSuccessResult | undefined
   getEnterOptionsSync: () => HeadlessWxLaunchOptions
+  getAccountInfoSync: () => HeadlessWxAccountInfo
   getAppBaseInfo: (option?: HeadlessWxGetAppBaseInfoOption) => HeadlessWxAppBaseInfoResult | undefined
   getAppBaseInfoSync: () => HeadlessWxAppBaseInfoResult
   getDeviceInfo: () => HeadlessWxDeviceInfoResult
@@ -209,6 +215,7 @@ export interface HeadlessWx extends HeadlessUniEventBus, HeadlessWxRouteListener
   getWindowInfo: (option?: HeadlessWxGetWindowInfoOption) => HeadlessWxWindowInfoResult | undefined
   getWindowInfoSync: () => HeadlessWxWindowInfoResult
   loadFontFace: (option: HeadlessWxLoadFontFaceOption) => HeadlessWxLoadFontFaceResult | undefined
+  login: (option?: HeadlessWxLoginOption) => void
   hideLoading: (option?: HeadlessWxHideLoadingOption) => { errMsg: string } | undefined
   hideToast: () => { errMsg: string }
   downloadFile: (option: HeadlessWxDownloadFileOption) => HeadlessWxRequestTask

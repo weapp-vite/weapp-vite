@@ -55,12 +55,15 @@ it('keeps the repoctl-managed release workflow aligned with the current contract
     `${githubExpression('github.workflow')}-${githubExpression('github.ref')}`,
   )
   assert.equal(workflow.concurrency?.['cancel-in-progress'], false)
-  assert.equal(job?.if, undefined)
+  assert.equal(job?.if, githubExpression('github.event_name != \'schedule\' && inputs.mode != \'nightly\' && inputs.mode != \'oidc-audit\''))
   assert.equal(job?.['runs-on'], 'ubuntu-latest')
   assert.equal(workflow.env?.npm_config_registry, 'https://registry.npmjs.org')
   assert.equal(workflow.env?.pnpm_config_registry, undefined)
   assert.match(pnpmSetupStep?.uses ?? '', /^pnpm\/action-setup@[\da-f]{40}$/)
-  const githubToken = githubExpression('secrets.REPOCTL_RELEASE_TOKEN || secrets.CHANGESETS_RELEASE_TOKEN || github.token')
+  const githubToken = githubExpression('github.token')
+  assert.equal(workflow.env?.LEFTHOOK, 0)
+  assert.equal(workflow.env?.HUSKY, undefined)
+  assert.doesNotMatch(content, /REPOCTL_APP_|REPOCTL_RELEASE_TOKEN|CHANGESETS_RELEASE_TOKEN|create-github-app-token/)
   assert.equal(job?.env?.GITHUB_TOKEN, undefined)
   assert.equal(workflow.env?.GITHUB_TOKEN, undefined)
   // Git 推送使用 checkout 持久化的凭据，必须与发布 API 使用同一令牌来源。
@@ -71,6 +74,8 @@ it('keeps the repoctl-managed release workflow aligned with the current contract
   assert.equal(job?.env?.REPO_RELEASE_MODE, githubExpression('inputs.mode || \'auto\''))
   assert.equal(job?.env?.REPO_RELEASE_PACKAGE, githubExpression('inputs.package'))
   assert.equal(job?.env?.REPO_RELEASE_VERSION, githubExpression('inputs.version'))
+  assert.equal(job?.env?.REPO_RELEASE_DRY_RUN, githubExpression('inputs.dry-run'))
+  assert.equal(job?.env?.REPO_RELEASE_RECOVERY_SOURCE_SHA, githubExpression('inputs.source-sha'))
 
   const stages = ['plan', 'verify', 'prepare', 'upload', 'confirm', 'finalize']
   const releaseSteps = steps.filter(step => step.id?.startsWith('release-') && stages.some(stage => step.id === `release-${stage}`))

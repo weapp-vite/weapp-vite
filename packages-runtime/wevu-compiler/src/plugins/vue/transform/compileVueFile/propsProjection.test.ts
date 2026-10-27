@@ -65,10 +65,11 @@ const canvasId = ref(props.canvasId || 'shared-props-analysis')
   })
 
   it.each([
-    ['inline', '', '{ canvasId: { type: String, default: "" } }'],
-    ['imported', 'import { declaredProps } from "./props"', 'declaredProps'],
-    ['spread', 'import { declaredProps } from "./props"', '{ ...declaredProps }'],
-  ])('projects a same-name setup ref without writing the %s prop', async (_kind, imports, props) => {
+    ['inline', '', '{ canvasId: { type: String, default: "" } }', undefined],
+    ['imported', 'import { declaredProps } from "./props"', 'declaredProps', undefined],
+    ['spread', 'import { declaredProps } from "./props"', '{ ...declaredProps }', undefined],
+    ['frozen-imported', 'import { declaredProps } from "./props"', 'declaredProps', 'export const declaredProps = Object.freeze({ canvasId: { type: String, default: "" } })'],
+  ])('projects a same-name setup ref without writing the %s prop', async (_kind, imports, props, declaration) => {
     const result = await compileVueFile(`<script setup>
 import { ref } from 'wevu'
 ${imports}
@@ -79,7 +80,9 @@ const canvasId = ref(props.canvasId || 'generated-canvas')
   <canvas :canvas-id="canvasId" />
   <text>{{ props.canvasId }}</text>
   <view v-for="canvasId in ['local-item']" :key="canvasId">{{ canvasId }}</view>
-</template>`, 'src/components/projected-canvas.vue')
+</template>`, 'src/components/projected-canvas.vue', declaration
+      ? { sfcSrc: { resolveId: async () => 'src/components/props.ts', readFile: async () => declaration } }
+      : undefined)
     const binding = result.bindingManifest?.bindings.find(item => item.sourceRoots.includes('canvasId') && item.kind === 'attribute')
     expect(binding?.outputPath).toMatch(/^__wv_bind_/)
     expect(result.template).toContain(`canvas-id="{{${binding!.outputPath}}}"`)
@@ -127,6 +130,71 @@ defineProps({ title: String })
 const canvasId = ref('generated-canvas')
 </script><template><canvas :canvas-id="canvasId" /></template>`, 'src/components/unrelated-canvas.vue')
     expect(result.template).toContain('canvas-id="{{canvasId}}"')
+  })
+
+  it('keeps unrelated navigation bindings direct for a safe local props spread', async () => {
+    const result = await compileVueFile(`<script>
+const navigationProps = { max: Number }
+</script>
+<script setup>
+import { computed } from 'wevu'
+const props = defineProps({ ...navigationProps })
+const haveNext = computed(() => props.max > 1)
+const havePrev = computed(() => false)
+</script>
+<template><button :disabled="!haveNext" /><button :disabled="!havePrev" /></template>`, 'src/components/local-navigation.vue')
+
+    expect(result.template).toContain('disabled="{{!haveNext}}"')
+    expect(result.template).toContain('disabled="{{!havePrev}}"')
+    expect(result.bindingManifest?.bindings.map(binding => binding.outputPath)).toEqual(['haveNext', 'havePrev'])
+    expect(result.meta?.propsAnalysisDeps).toBeUndefined()
+  })
+
+  it('keeps unrelated navigation bindings direct for an imported frozen props object', async () => {
+    const propsModule = 'src/components/navigation-props.ts'
+    const result = await compileVueFile(`<script setup>
+import { computed } from 'wevu'
+import { navigationProps } from './navigation-props'
+const props = defineProps(navigationProps)
+const haveNext = computed(() => props.max > 1)
+const havePrev = computed(() => false)
+</script>
+<template><button :disabled="!haveNext" /><button :disabled="!havePrev" /></template>`, 'src/components/imported-navigation.vue', {
+      sfcSrc: {
+        resolveId: async source => source === './navigation-props' ? propsModule : undefined,
+        readFile: async (id) => {
+          if (id === propsModule) {
+            return 'export const navigationProps = Object.freeze({ max: Number })'
+          }
+          throw new Error(`Unexpected source: ${id}`)
+        },
+      },
+    })
+
+    expect(result.template).toContain('disabled="{{!haveNext}}"')
+    expect(result.template).toContain('disabled="{{!havePrev}}"')
+    expect(result.bindingManifest?.bindings.map(binding => binding.outputPath)).toEqual(['haveNext', 'havePrev'])
+    expect(result.meta?.propsAnalysisDeps).toContain(propsModule)
+  })
+
+  it('keeps projection when a normal-script options setter can alter generated props', async () => {
+    const result = await compileVueFile(`<script>
+export default {
+  set props(value) {
+    Object.defineProperty(this, 'props', {
+      value: { ...value, haveNext: Boolean },
+      enumerable: true,
+      configurable: true,
+    })
+  },
+}
+</script>
+<script setup>
+import { ref } from 'wevu'
+defineProps({ max: Number })
+const haveNext = ref(true)
+</script><template><button :disabled="!haveNext" /></template>`, 'src/components/setter-navigation.vue')
+    expect(result.bindingManifest?.bindings.find(binding => binding.sourceRoots.includes('haveNext'))?.outputPath).toMatch(/^__wv_bind_/)
   })
 
   it('keeps scoped slot names local instead of projecting the outer setup binding', async () => {

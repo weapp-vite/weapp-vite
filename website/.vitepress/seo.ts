@@ -1,4 +1,5 @@
 import type { HeadConfig, PageData } from 'vitepress'
+import { docsPreviewRobots } from 'repoctl/docs-context'
 import { siteBaseUrl } from './site'
 
 const siteName = 'weapp-vite'
@@ -170,7 +171,7 @@ function toArticleSchema(pageData: PageData, routePath: string, canonical: strin
   }
 }
 
-export function createSeoHead(pageData: PageData): HeadConfig[] {
+export function createSeoHead(pageData: PageData, preview = false): HeadConfig[] {
   const routePath = toRoutePath(pageData.relativePath)
   const title = inferTitle(pageData)
   const excerpt = typeof pageData.description === 'string' ? pageData.description : ''
@@ -190,9 +191,11 @@ export function createSeoHead(pageData: PageData): HeadConfig[] {
 
   const image = toAbsoluteUrl(frontmatterImage)
 
-  const robots = pageData.frontmatter.noindex === true || routePath === '/404.html'
-    ? 'noindex, nofollow'
-    : 'index, follow, max-image-preview:large'
+  const robots = preview
+    ? docsPreviewRobots
+    : pageData.frontmatter.noindex === true || routePath === '/404' || routePath === '/404.html'
+      ? 'noindex, nofollow'
+      : 'index, follow, max-image-preview:large'
 
   const articleSchema = toArticleSchema(pageData, routePath, canonical, title, description, effectiveKeywords)
   const breadcrumbSchema = toBreadcrumbSchema(routePath, title)
@@ -218,7 +221,7 @@ export function createSeoHead(pageData: PageData): HeadConfig[] {
   ]
 }
 
-export function transformPageDataForSeo(pageData: PageData) {
+export function transformPageDataForSeo(pageData: PageData, preview = false) {
   const routePath = toRoutePath(pageData.relativePath)
   const title = inferTitle(pageData)
   const excerpt = typeof pageData.description === 'string' ? pageData.description : ''
@@ -239,5 +242,9 @@ export function transformPageDataForSeo(pageData: PageData) {
 
   // 写入页面数据，让 VitePress 在 SSR 和客户端导航时共同管理页面 head。
   pageData.description = description
-  pageData.frontmatter.head = [...createSeoHead(pageData), ...pageData.frontmatter.head || []]
+  const customHead = (pageData.frontmatter.head || []) as HeadConfig[]
+  pageData.frontmatter.head = [
+    ...createSeoHead(pageData, preview),
+    ...customHead.filter(([tag, attrs]) => !(preview && tag === 'meta' && /^(?:robots|googlebot|bingbot)$/i.test(attrs?.name || ''))),
+  ]
 }

@@ -6,7 +6,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { parse } from 'yaml'
 import { collectContracts, readManifest } from './publicTypeTestCoverage/contracts'
 import { workspaceTypeTestPackages } from './turboCacheContract/fixture'
-import { readVerificationTopologyVariant, readWorkflowFixture } from './workflowFixture.mjs'
+import { frozenJobCondition, frozenWorkflowText, readVerificationTopologyVariant, readWorkflowFixture } from './workflowFixture.mjs'
 
 vi.mock('node:fs/promises', async (importOriginal) => {
   const actual = await importOriginal<typeof import('node:fs/promises')>()
@@ -246,7 +246,7 @@ describe('public type tests in CI', () => {
     expect(manifest.scripts['test:types']).toBe('turbo run test:types:check --filter=./packages/* --filter=./packages-runtime/* --filter=./mpcore/packages/* --filter=./@weapp-core/* --filter=weapp-vite-lib-mode-e2e --filter=!@weapp-vite/dashboard')
     const workflow = readWorkflowFixture('ci.yml') as Workflow
     const job = workflow.jobs['build-pr']
-    expect(job?.if).toContain('needs.pr-context.outputs.is_pr == \'true\'')
+    expect(job?.if).toContain(frozenWorkflowText('needs.pr-context.outputs.is_pr == \'true\'', 'ci'))
     if (readVerificationTopologyVariant() === 'baseline') {
       const roles = job?.strategy?.matrix?.include?.filter(entry => entry.main_command?.split('\n').includes('pnpm test:types'))
       expect(roles).toHaveLength(1)
@@ -260,7 +260,7 @@ describe('public type tests in CI', () => {
       expect(job?.with?.run_types).toBe('${{ matrix.run_types }}')
     }
     const platform = readWorkflowFixture('reusable-quality-platform.yml') as Workflow
-    expect(platform.jobs.types?.if).toBe('inputs.run_types')
+    expect(platform.jobs.types?.if).toBe(frozenJobCondition('inputs.run_types', 'ci', ['build']))
     expect(platform.jobs.types?.with?.main_command).toBe('node scripts/ciTypes.mjs')
     const reusable = parse(await readFile(path.join(root, '.github/workflows/reusable-node-command.yml'), 'utf8')) as Workflow
     const steps = Object.values(reusable.jobs).flatMap(entry => entry.steps ?? [])
