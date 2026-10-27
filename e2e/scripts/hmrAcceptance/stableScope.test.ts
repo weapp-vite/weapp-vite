@@ -60,7 +60,7 @@ describe('supported WeChat startup classic inventory', () => {
     }
   })
 
-  it('freezes the complete dataset consumer case and nine checkpoints for both runtime providers', async () => {
+  it('freezes the complete dataset consumer case and ten checkpoints for both runtime providers', async () => {
     const label = 'ide/issue-1249-dataset.runtime.test.ts'
     const file = `e2e/${label}`
     const inventory = readTaskCases(ROOT, label)
@@ -86,7 +86,7 @@ describe('supported WeChat startup classic inventory', () => {
       ts.forEachChild(node, readCheckpoints)
     }
     readCheckpoints(createInventorySourceReader(ROOT)(file))
-    expect(checkpoints).toEqual([['initial', 'event-initial', 'selector-initial', 'observer-initial', 'component-initial', 'event-replaced', 'selector-replaced', 'observer-replaced', 'component-replaced']])
+    expect(checkpoints).toEqual([['initial', 'event-initial', 'selector-initial', 'observer-initial', 'component-initial', 'replacement-ready', 'event-replaced', 'selector-replaced', 'observer-replaced', 'component-replaced']])
     expect(CLASSIC_HMR_OUT_OF_SCOPE_TASKS[label]).toBeUndefined()
     expect(CLASSIC_IDE_CASES[label]).toBeUndefined()
     expect(CLASSIC_BUILD_CASES[label]).toBeUndefined()
