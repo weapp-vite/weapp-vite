@@ -23,6 +23,8 @@ export function createGitFixture(hooks = false) {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'changeset staged '))
   const root = path.join(directory, 'repository with spaces')
   const env = { ...process.env }
+  // fixture 显式验证真实 hooks，不继承外层发布流程的禁用策略。
+  delete env.LEFTHOOK
   for (const key of ['GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE', 'GIT_COMMON_DIR', 'GIT_PREFIX']) {
     delete env[key]
   }

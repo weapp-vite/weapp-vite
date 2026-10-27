@@ -1,5 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import process from 'node:process'
 import { describe, expect, it } from 'vitest'
 import { parse } from 'yaml'
 import { createGitFixture, invalid, valid } from './changesetFrontmatter/test/fixture'
@@ -103,6 +104,34 @@ it('native hooks fix project config paths and reject invalid commit messages', (
     expect(f.lefthook(['run', 'commit-msg', '--', '.git/MERGE_MSG']).status).not.toBe(0)
   }
   finally { f.cleanup() }
+}, 30_000)
+
+it('fixture hooks reject invalid staged content when the parent disables Lefthook', () => {
+  const inherited = process.env.LEFTHOOK
+  let f: ReturnType<typeof createGitFixture> | undefined
+  try {
+    process.env.LEFTHOOK = '0'
+    f = createGitFixture(true)
+    f.assertResult(f.commit(), 0)
+    f.enableHooks()
+    f.write('.changeset/example.md', invalid)
+    f.git(['add', '.changeset/example.md'])
+    const before = f.git(['rev-parse', 'HEAD'])
+    const rejected = f.commit()
+    expect(rejected.status).not.toBe(0)
+    expect(`${rejected.stdout}${rejected.stderr}`).toContain('Conventional 类型或非空摘要')
+    expect(f.git(['rev-parse', 'HEAD'])).toBe(before)
+    expect(process.env.LEFTHOOK).toBe('0')
+  }
+  finally {
+    if (inherited === undefined) {
+      delete process.env.LEFTHOOK
+    }
+    else {
+      process.env.LEFTHOOK = inherited
+    }
+    f?.cleanup()
+  }
 }, 30_000)
 
 it('native hook honors an alternate index and keeps fixture installation state isolated', () => {
