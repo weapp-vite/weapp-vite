@@ -28,7 +28,7 @@ describe('e2e app: github-issues / issue #1049', { concurrent: false }, () => {
 
   afterAll(async () => {
     await closeSharedMiniProgram()
-  }, 30_000)
+  })
 
   it('preserves Store boundaries and batches subscription work for mini-programs', async (ctx) => {
     const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', [{

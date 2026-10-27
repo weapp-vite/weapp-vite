@@ -40,7 +40,7 @@ describe('e2e app: github-issues / require async subpackage modules', { concurre
 
   afterAll(async () => {
     await closeSharedMiniProgram()
-  }, 30_000)
+  })
 
   it('loads subpackage modules through callback, Promise, and native import APIs', async (ctx) => {
     const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', [

@@ -3,6 +3,8 @@ import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { expect, it } from 'vitest'
 
+export const group = 'standard'
+
 export function registerGithubIssuesBuildCase(context: GithubIssuesBuildCaseContext) {
   it('issue #852: normalizes JavaScript numeric literals in WXML expressions', async () => {
     await context.runStandardBuild()

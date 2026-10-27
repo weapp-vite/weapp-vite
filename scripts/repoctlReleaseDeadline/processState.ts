@@ -2,6 +2,28 @@ import fs from 'node:fs/promises'
 
 type ReadProcessFile = (file: string) => Promise<string>
 
+export async function waitForProcessExit(
+  readState: () => ReturnType<typeof readLinuxProcessState>,
+  timeoutMs = 2000,
+) {
+  const deadline = Date.now() + timeoutMs
+  while (true) {
+    try {
+      const state = await readState()
+      if (state !== 'running' || Date.now() >= deadline) {
+        return state
+      }
+    }
+    catch (error) {
+      // Linux 退出途中可能尚未进入 Z/X 就失去 environ 权限；等待预算内继续确认，不能将权限错误当作终态。
+      if (!['EACCES', 'EPERM'].includes((error as NodeJS.ErrnoException).code ?? '') || Date.now() >= deadline) {
+        throw error
+      }
+    }
+    await new Promise(resolve => setTimeout(resolve, Math.min(25, Math.max(0, deadline - Date.now()))))
+  }
+}
+
 export async function readLinuxProcessState(
   pid: number,
   ownerToken: string,

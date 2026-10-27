@@ -1,5 +1,9 @@
 # 本地工程约束
 
+- 所有 PR（包括发布和依赖升级 PR）统一使用 Squash merge，在目标分支形成一个提交；通过 GitHub CLI 合并时必须显式使用 `gh pr merge <编号> --squash`。合并提交信息沿用仓库当前默认设置，已有合并历史不改写。
+- 本地 `verify` 检查真实工作区；`pre-push` 必须使用 Git 原生 stdin 的待推 refs/SHA，按对应提交快照执行 quick 检查。dirty 或非当前提交须使用独立工作树与冻结依赖，不以提交文件清单配合 dirty 工作树执行，也不得 stash/reset 用户工作或共享指回原工作区的依赖链接。未知输入、真实提交的锁文件和全局配置继续保守扩大范围，删除及 rename 两端保持归属。
+- quick 只承担静态与适用配置/生成契约、直接变更和相邻单测、包级源码类型；`test:pure` 同样只运行直接相关范围。完整包测试、消费者、公开类型和 E2E 工具/runtime 通过 review / CI 的既有入口完成，不由 pre-push 扩大启动。生成 `AGENTS.md`、public skill 合约及其规则输入仍须执行对应 `agents:check` / `skills:check`，包含删除和 rename 旧端点。
+- 推送重试仅复用候选 SHA、基线、工具链、环境、拓扑和策略均一致且全部适用 quick 任务成功的本地回执；失败、取消、未执行或缺少适用 quick 任务结果的回执不可复用为成功。该回执不替代原生 CI 审批、完整消费者/公开类型检查及目标 runtime 验收；保留全部适用 CI 与后置汇总，不以 `--no-verify`、通用 skip 或本地 `partial` 宣称充分验证。
 - GitHub issue 或 runtime 回归优先在 `.codex-tmp/<issue>` 隔离 worktree 中处理；先建立最小复现，再定位根因，最后修改源码。
 - 全面真实 IDE E2E（包括 `pnpm e2e:ide:gate`、`pnpm e2e:ide:full`、`pnpm e2e:ide:full:exhaustive` 及直接调用 DevTools 的完整 Vitest suite）必须从仓库根目录的 `main` 工作树启动：运行前先 `git fetch origin main`、`git switch main`、`git pull --ff-only origin main`，确认 `HEAD == origin/main` 且工作树干净；运行期间不得切换分支或修改源码。`.codex-tmp` 和其他分支只用于修复、最小复现、headless 或局部诊断，修复合并到 `main`、重建产物后才做正式 IDE 验收。主工作树要求不会放宽全机同用户串行、机器租约、宿主身份、端口归属和项目清理门禁。
 - 修改 `packages/*/src/**` 或 `packages-runtime/*/src/**` 后，运行下游 app、headless 或 IDE 验证前必须先重建受影响 package 的 `dist`。

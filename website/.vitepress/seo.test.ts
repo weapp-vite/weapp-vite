@@ -1,6 +1,4 @@
 import type { HeadConfig, PageData } from 'vitepress'
-import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { createSeoHead, transformPageDataForSeo } from './seo'
 import { siteBaseUrl } from './site'
@@ -22,7 +20,7 @@ describe('website SEO domain', () => {
       headers: [],
       frontmatter: { head: [customHead] },
     }))
-    pages.forEach(transformPageDataForSeo)
+    pages.forEach(page => transformPageDataForSeo(page))
 
     expect(pages.map(page => findHead(page.frontmatter.head, 'link', 'rel', 'canonical')?.[1]?.href))
       .toEqual([`${siteBaseUrl}/guide/`, `${siteBaseUrl}/guide/subpackage`])
@@ -66,10 +64,23 @@ describe('website SEO domain', () => {
     ]))
   })
 
-  it('publishes the canonical sitemap in robots.txt', () => {
-    const robotsPath = fileURLToPath(new URL('../public/robots.txt', import.meta.url))
-    const robots = readFileSync(robotsPath, 'utf8')
-
-    expect(robots).toContain(`Sitemap: ${siteBaseUrl}/sitemap.xml`)
+  it.each(['index.md', 'guide/subpackage.md', '404.html'])('forces preview noindex on %s without changing production canonical', (relativePath) => {
+    const pageData: PageData = {
+      relativePath,
+      filePath: relativePath,
+      title: '预览文档',
+      description: '',
+      headers: [],
+      frontmatter: { head: [
+        ['meta', { name: 'robots', content: 'index, follow' }],
+        ['meta', { name: 'googlebot', content: 'index' }],
+      ] },
+    }
+    transformPageDataForSeo(pageData, true)
+    const head = pageData.frontmatter.head as HeadConfig[]
+    expect(head.filter(([tag, attrs]) => tag === 'meta' && attrs.name === 'robots'))
+      .toEqual([['meta', { name: 'robots', content: 'noindex, nofollow, noarchive' }]])
+    expect(head.some(([, attrs]) => attrs.name === 'googlebot')).toBe(false)
+    expect(findHead(head, 'link', 'rel', 'canonical')?.[1].href).toMatch(/^https:\/\/vite\.weapp\.dev\//)
   })
 })

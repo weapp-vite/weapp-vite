@@ -312,7 +312,7 @@ describe('e2e app: github-issues / lifecycle', { concurrent: false }, () => {
 
   afterAll(async () => {
     await closeSharedMiniProgram()
-  }, 30_000)
+  })
 
   it('issue #309: triggers onLoad without requiring onPullDownRefresh hook', async (ctx) => {
     const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', GITHUB_LIFECYCLE_PLANS.issue309)

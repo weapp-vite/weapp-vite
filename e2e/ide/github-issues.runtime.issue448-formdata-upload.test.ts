@@ -98,7 +98,7 @@ describe('github-issues runtime issue #448 FormData upload', { concurrent: false
     if (serverHandle) {
       await serverHandle.stop()
     }
-  }, 30_000)
+  })
 
   it('uploads wx.downloadFile data as Blob, File, and Request FormData bodies in real DevTools', async (ctx) => {
     const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', UPLOAD_CHECKPOINTS)

@@ -1,0 +1,9 @@
+<view id="issue1264-page">
+  <button id="run-contract" bindtap="_runContract">运行基础 API</button>
+  <text id="api-status">{{apiStatus}}</text>
+  <text id="login-status">{{loginStatus}}</text>
+  <text id="login-order">{{loginOrder}}</text>
+  <text id="account-status">{{accountStatus}}</text>
+  <text id="binary-status">{{binaryStatus}}</text>
+  <text id="empty-status">{{emptyStatus}}</text>
+</view>

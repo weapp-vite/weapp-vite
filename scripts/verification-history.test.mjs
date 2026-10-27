@@ -54,7 +54,7 @@ function fixture(runs = [structuredClone(run)], contents = { 'report.json': { pa
     const id = Number(/\/artifacts\/(\d+)\/zip$/u.exec(args[1])[1])
     await writeFile(options.stdout.file, archives.get(id))
   })
-  return { runs, artifacts, jobs, runPages, request, execute }
+  return { runs, artifacts, archives, jobs, runPages, request, execute }
 }
 
 async function collect(value, check) {
@@ -176,5 +176,54 @@ it('connects three independently downloaded complete runs to the task-duration m
     const history = collectDurationHistory(inputs, { profile, repository, workflow: run.path, now: new Date(now) })
     expect(history.tasks.a).toMatchObject({ durationMs: 300, samples: 3 })
     expect(history.tasks.a.sources).toHaveLength(3)
+  })
+})
+
+function addHeadless(value, contents = { 'index.json': { provider: 'headless' } }) {
+  const zip = new AdmZip()
+  for (const [filename, content] of Object.entries(contents)) {
+    zip.addFile(filename, Buffer.from(JSON.stringify(content)))
+  }
+  const bytes = zip.toBuffer()
+  const artifact = { ...structuredClone(value.artifacts.get(42)[0]), id: 422, name: name.replace('miniapp-', 'ide-dom-headless-'), size_in_bytes: bytes.length, digest: `sha256:${createHash('sha256').update(bytes).digest('hex')}` }
+  value.artifacts.get(42).push(artifact)
+  value.archives.set(artifact.id, bytes)
+  return artifact
+}
+
+it.each(['both', 'headless-only', 'ordinary-corrupt', 'headless-corrupt', 'headless-expired'])('retains independently verified provider history: %s', async (kind) => {
+  const value = fixture()
+  const headless = addHeadless(value)
+  if (kind === 'headless-only') {
+    value.artifacts.get(42).shift()
+  }
+  if (kind === 'ordinary-corrupt') {
+    value.archives.set(420, Buffer.from('corrupt'))
+  }
+  if (kind === 'headless-corrupt') {
+    value.archives.set(422, Buffer.from('corrupt'))
+  }
+  if (kind === 'headless-expired') {
+    headless.expired = true
+  }
+  await collect(value, async (result, output) => {
+    expect(result).toEqual({ runIds: [42], artifacts: kind === 'both' ? 2 : 1 })
+    const entries = await readdir(path.join(output, '42'))
+    expect(entries.includes(name)).toBe(!['headless-only', 'ordinary-corrupt'].includes(kind))
+    expect(entries.includes(headless.name)).toBe(!['headless-corrupt', 'headless-expired'].includes(kind))
+    expect(entries.filter(entry => entry.endsWith('.zip'))).toEqual([])
+  })
+})
+
+it('rejects both providers if the trusted run changes during download', async () => {
+  const value = fixture()
+  addHeadless(value)
+  const original = value.request
+  value.request = async (url, options) => /\/runs\/42$/u.test(new URL(url).pathname)
+    ? { ok: true, json: async () => ({ ...run, run_attempt: 3 }) }
+    : original(url, options)
+  await collect(value, async (result, output) => {
+    expect(result).toEqual({ runIds: [], artifacts: 0 })
+    expect(await readdir(output)).toEqual([])
   })
 })

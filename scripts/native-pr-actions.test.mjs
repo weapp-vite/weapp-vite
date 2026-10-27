@@ -4,8 +4,8 @@ import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import { describe, expect, it, vi } from 'vitest'
 import { parse } from 'yaml'
-import { projectPrContext, resolveNativePrContext, validateNativePrContext } from '../.github/scripts/native-pr-context.mjs'
-import { NATIVE_PR_WORKLOAD_PATH, readNativePrWorkload } from '../.github/scripts/native-pr-workload.mjs'
+import { assertPrTopology, projectPrContext, resolveNativePrContext, validateNativePrContext } from '../.github/scripts/native-pr-context.mjs'
+import { NATIVE_PR_WORKLOAD_PATH, readNativePrWorkload, verificationTopologyForAttempt } from '../.github/scripts/native-pr-workload.mjs'
 
 const repository = 'example/project'
 const headSha = 'a'.repeat(40)
@@ -67,6 +67,58 @@ describe('native PR approval context', () => {
     expect(projectPrContext(context, profiles.excluded, 'excluded').shouldRun).toBe(false)
     expect(projectPrContext(context, profiles.ci, 'ci').checkoutSha).toBe(driverSha)
     expect(context.checkoutSha).toBe(driverSha)
+  })
+
+  it('routes root policy documentation to the frozen lint paths without scheduling product checks', async () => {
+    const { options, get, state } = fixture()
+    state.files = [{ filename: 'CONTRIBUTING.md', status: 'modified' }]
+    const context = await resolveNativePrContext(options, get)
+    expect(context).toMatchObject({ documentationOnly: true, documentationPaths: ['CONTRIBUTING.md'], documentationChecks: [], verificationTopology: 'optimized-v1', selections: { ci: false, smoke: false, excluded: false } })
+    state.files = [{ filename: 'CONTRIBUTING.md', previous_filename: 'packages/source.ts', status: 'renamed' }]
+    expect((await resolveNativePrContext(options, get)).documentationOnly).toBe(false)
+    state.files = [{ filename: 'CONTRIBUTING.md', status: 'removed' }]
+    expect(await resolveNativePrContext(options, get)).toMatchObject({ documentationOnly: true, documentationPaths: [] })
+    state.files = [{ filename: 'AGENTS.md', status: 'removed' }]
+    expect(await resolveNativePrContext(options, get)).toMatchObject({ documentationOnly: true, documentationPaths: [], documentationChecks: ['agents', 'skills'] })
+    state.files = [{ filename: 'CONTRIBUTING.md', previous_filename: 'AGENTS.md', status: 'renamed' }]
+    expect(await resolveNativePrContext(options, get)).toMatchObject({ documentationOnly: true, documentationPaths: ['CONTRIBUTING.md'], documentationChecks: ['agents', 'skills'] })
+  })
+
+  it('freezes an explicitly reviewed v2 topology only for the listed workload PRs', async () => {
+    const { options, get, state } = fixture()
+    state.workload = { ...workload, verificationTopology: 'optimized-v2' }
+    expect((await resolveNativePrContext(options, get)).verificationTopology).toBe('optimized-v1')
+    state.workload.pullRequests = [42]
+    state.files = [{ filename: 'CONTRIBUTING.md', status: 'modified' }]
+    const context = await resolveNativePrContext(options, get)
+    expect(context).toMatchObject({ documentationOnly: false, verificationTopology: 'optimized-v2', selections: { ci: true, smoke: true, excluded: false } })
+    expect(context.benchmarkWorkload.manifest.sha256).toBe(createHash('sha256').update(JSON.stringify(state.workload)).digest('hex'))
+  })
+
+  it('chooses a reviewed topology by the actual rerun attempt without changing source or manifest bytes', async () => {
+    const { options, get, state } = fixture()
+    state.workload = { ...workload, pullRequests: [42], verificationTopology: 'optimized-v1', verificationTopologyByAttempt: { 1: 'optimized-v1', 2: 'optimized-v2', 4: 'optimized-v2' } }
+    const first = await resolveNativePrContext(options, get)
+    state.run.run_attempt = 2
+    const second = await resolveNativePrContext({ ...options, runAttempt: 2 }, get)
+    expect(first.verificationTopology).toBe('optimized-v1')
+    expect(second.verificationTopology).toBe('optimized-v2')
+    expect(first.driverSha).toBe(second.driverSha)
+    expect(first.benchmarkWorkload.manifest).toEqual(second.benchmarkWorkload.manifest)
+    expect(verificationTopologyForAttempt(state.workload, 3)).toBe('optimized-v1')
+    expect(() => verificationTopologyForAttempt(state.workload, 0)).toThrow('attempt')
+    expect(verificationTopologyForAttempt({ verificationTopologyByAttempt: { 2: 'optimized-v2' } }, 1)).toBe('optimized-v1')
+    state.workload.pullRequests = [99]
+    expect((await resolveNativePrContext({ ...options, runAttempt: 2 }, get)).verificationTopology).toBe('optimized-v1')
+  })
+
+  it('refuses a downstream topology that differs from the approved native context', async () => {
+    const { options, get, state } = fixture()
+    state.workload = { ...workload, verificationTopology: 'optimized-v2', pullRequests: [42] }
+    const context = await resolveNativePrContext(options, get)
+    expect(() => assertPrTopology(context, 'optimized-v1')).toThrow('topology mismatch')
+    expect(() => assertPrTopology(context, 'optimized-v2')).not.toThrow()
+    expect(() => assertPrTopology(context, 'unknown')).toThrow('Unsupported')
   })
 
   it('refuses to retarget a waiting run after a new commit', async () => {
@@ -159,6 +211,8 @@ describe('native PR approval context', () => {
 
   it.each([
     { draft: true },
+    { verificationTopology: 'unknown-v1' },
+    ...[{}, [], null, { 0: 'optimized-v2' }, { '01': 'optimized-v2' }, { 1: 'legacy-v1' }, { '-1': 'optimized-v2' }, { 1.5: 'optimized-v2' }, { 9007199254740992: 'optimized-v2' }].map(verificationTopologyByAttempt => ({ verificationTopologyByAttempt })),
     { id: '' },
     { unexpected: true },
     { baseBranch: '*' },
@@ -203,7 +257,7 @@ describe('native approval workflow graph', () => {
     expect(workflow.on).toEqual({ pull_request: { types: ['opened', 'synchronize', 'reopened'] }, pull_request_target: { types: ['closed'] } })
     expect(workflow.concurrency).toEqual({ 'group': 'pr-ci-${{ github.event.pull_request.number }}', 'cancel-in-progress': true })
     expect(workflow.permissions).toEqual({ 'contents': 'read', 'pull-requests': 'read', 'actions': 'read' })
-    const { approval, plan, ...checks } = workflow.jobs
+    const { approval, plan, documentation, ...checks } = workflow.jobs
     expect(approval.environment).toBe(admissionPolicy.environment)
     expect(approval.if).toBe('github.event_name == \'pull_request\'')
     expect(approval.needs).toBeUndefined()
@@ -216,7 +270,7 @@ describe('native approval workflow graph', () => {
     for (const [name, check] of Object.entries(checks)) {
       expect(check.needs).toBe('plan')
       expect(check.if).toContain(`selections['${name}']`)
-      expect(check.with).toEqual({ pr_context: '${{ needs.plan.outputs.pr_context }}' })
+      expect(check.with).toEqual({ pr_context: '${{ needs.plan.outputs.pr_context }}', verification_topology: '${{ fromJSON(needs.plan.outputs.pr_context).verificationTopology }}' })
       expect(check.secrets).toBeUndefined()
       const shared = await read(`validate-${name}.yml`)
       expect(shared.on.workflow_call.inputs.pr_context).toEqual({ type: 'string', required: true })
@@ -230,6 +284,12 @@ describe('native approval workflow graph', () => {
       }
     }
     expect(checks['nightly-performance']).toBeUndefined()
+    expect(documentation.needs).toBe('plan')
+    expect(documentation.if).toBe('${{ fromJSON(needs.plan.outputs.pr_context).documentationOnly }}')
+    const install = documentation.steps.find(step => step.uses === './.github/actions/install-workspace-deps')
+    expect(install.with['ignore-scripts']).toBe('true')
+    expect(documentation.steps.find(step => step.uses === './.github/actions/verify-frozen-job-context').with['verification-topology']).toBe('${{ fromJSON(needs.plan.outputs.pr_context).verificationTopology }}')
+    expect(documentation.steps.at(-1).run).toBe('node .github/scripts/lint-frozen-documentation.mjs')
   })
 
   it('projects frozen contexts without artifacts, status writes or API tokens', async () => {

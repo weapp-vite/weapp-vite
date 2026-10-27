@@ -1,3 +1,4 @@
+import type { MiniProgramAsyncOptions, MiniProgramBaseResult } from './types'
 import {
   callMiniProgramAsyncSuccess,
   normalizeDuration,
@@ -12,24 +13,41 @@ import {
 } from './ui'
 
 let toastHideTimer: ReturnType<typeof setTimeout> | undefined
+let toastGeneration = 0
+
+function cancelToastTimer() {
+  toastGeneration += 1
+  if (toastHideTimer !== undefined) {
+    clearTimeout(toastHideTimer)
+    toastHideTimer = undefined
+  }
+}
 
 export function showToastBridge(options?: any): Promise<any> {
+  cancelToastTimer()
   const toast = getToastElement()
   const content = `${resolveToastPrefix(options?.icon)}${options?.title ?? ''}`.trim()
   if (toast) {
     toast.textContent = content
     setToastVisible(toast, true)
-    if (toastHideTimer) {
-      clearTimeout(toastHideTimer)
-    }
+    const generation = toastGeneration
     const duration = normalizeDuration(options?.duration, 1500)
     toastHideTimer = setTimeout(() => {
-      hideToastElement()
+      if (generation !== toastGeneration) {
+        return
+      }
+      setToastVisible(toast, false)
       toastHideTimer = undefined
     }, duration)
   }
   const result = callMiniProgramAsyncSuccess(options, { errMsg: 'showToast:ok' })
   return Promise.resolve(result)
+}
+
+export function hideToastBridge(options?: MiniProgramAsyncOptions<MiniProgramBaseResult>): Promise<MiniProgramBaseResult> {
+  cancelToastTimer()
+  hideToastElement()
+  return Promise.resolve(callMiniProgramAsyncSuccess(options, { errMsg: 'hideToast:ok' }))
 }
 
 export function showLoadingBridge(options?: any): Promise<any> {

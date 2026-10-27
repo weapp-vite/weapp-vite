@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
-import process from 'node:process'
 import { it } from 'vitest'
 import { createGitFixture, invalid, valid } from './fixture'
 
@@ -104,15 +103,14 @@ export function registerStagedChangesetTests() {
     finally { f.cleanup() }
   })
 
-  it('actual lint-staged rejects a bad staged summary and restores the unstaged repair', () => {
+  it('actual Lefthook rejects a bad staged summary and restores the unstaged repair', () => {
     const f = createGitFixture(true)
     try {
       f.assertResult(f.commit(), 0)
       f.write('.changeset/example.md', invalid)
       f.git(['add', '.changeset/example.md'])
       f.write('.changeset/example.md', valid())
-      const cli = path.join(f.root, 'node_modules/lint-staged/bin/lint-staged.js')
-      const result = f.run(process.execPath, [cli, '--config', 'lint-staged.config.js', '--cwd', f.root])
+      const result = f.lefthook(['run', 'pre-commit'])
       assert.notEqual(result.status, 0)
       assert.match(`${result.stdout}${result.stderr}`, /Conventional 类型或非空摘要/)
       assert.equal(f.git(['show', ':.changeset/example.md']), invalid)
@@ -121,7 +119,7 @@ export function registerStagedChangesetTests() {
     finally { f.cleanup() }
   }, 60_000)
 
-  it('actual lint-staged validates the index when the changeset directory was deleted only in the worktree', () => {
+  it('actual Lefthook validates the index when the changeset directory was deleted only in the worktree', () => {
     const f = createGitFixture(true)
     try {
       f.assertResult(f.commit(), 0)
@@ -129,8 +127,7 @@ export function registerStagedChangesetTests() {
       f.git(['add', '.changeset/example.md'])
       fs.rmSync(path.join(f.root, '.changeset'), { recursive: true })
       const before = f.git(['status', '--porcelain'])
-      const cli = path.join(f.root, 'node_modules/lint-staged/bin/lint-staged.js')
-      f.assertResult(f.run(process.execPath, [cli, '--config', 'lint-staged.config.js', '--cwd', f.root]), 0)
+      f.assertResult(f.lefthook(['run', 'pre-commit']), 0)
       assert.equal(f.git(['show', ':.changeset/example.md']), valid())
       assert.equal(f.git(['status', '--porcelain']), before)
       assert.equal(fs.existsSync(path.join(f.root, '.changeset/example.md')), false)
@@ -144,20 +141,20 @@ export function registerStagedChangesetTests() {
       f.assertResult(f.commit(), 0)
       let cwd = f.root
       if (linked) {
-        cwd = path.join(f.directory, 'linked worktree with spaces')
+        cwd = path.join(f.directory, 'linked worktree with space\'s 中文')
         f.git(['worktree', 'add', '--quiet', '--detach', cwd, 'HEAD'])
         assert.equal(fs.statSync(path.join(cwd, '.git')).isFile(), true)
         f.installDependencies(cwd)
       }
       f.enableHooks()
       const before = f.git(['rev-parse', 'HEAD'], cwd)
-      const file = '.changeset/hook space.md'
+      const file = '.changeset/hook space\'s 中文.md'
       f.write(file, invalid, cwd)
       f.git(['add', file], cwd)
       f.write(file, valid(), cwd)
       const rejected = f.commit(cwd)
       assert.notEqual(rejected.status, 0)
-      assert.match(rejected.stderr, /Conventional 类型或非空摘要/)
+      assert.match(`${rejected.stdout}${rejected.stderr}`, /Conventional 类型或非空摘要/)
       assert.equal(f.git(['rev-parse', 'HEAD'], cwd), before)
       f.git(['add', file], cwd)
       f.write(file, invalid, cwd)
@@ -170,7 +167,7 @@ export function registerStagedChangesetTests() {
     finally { f.cleanup() }
   }, 60_000)
 
-  it('post-lint-staged hook rejects invalid final index content produced by autofix', () => {
+  it('post-format Lefthook gate rejects invalid final index content produced by autofix', () => {
     const f = createGitFixture(true)
     try {
       f.assertResult(f.commit(), 0)
@@ -187,7 +184,7 @@ export function registerStagedChangesetTests() {
       export default [{ files: ['**/*.md'], plugins: { fixture: { processors: { summary: processor } } }, processor: 'fixture/summary' }]
       `)
       f.write('.changeset/example.md', valid('fix: 自动修复检查'))
-      f.git(['add', '.changeset/example.md'])
+      f.git(['add', 'eslint.config.mjs', '.changeset/example.md'])
       const before = f.git(['rev-parse', 'HEAD'])
       const result = f.commit()
       assert.notEqual(result.status, 0)

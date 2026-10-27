@@ -1,0 +1,19 @@
+name: Install workspace dependencies
+description: Install the frozen workspace after the required artifacts are in place.
+inputs:
+  ignore-scripts:
+    required: false
+    default: 'false'
+    description: Skip lifecycle scripts only for explicit documentation or injected-link work
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        INSTALL_IGNORE_SCRIPTS: ${{ inputs.ignore-scripts }}
+      run: |-
+        node .github/scripts/ci-timing.mjs start install
+        trap 'phase_exit=$?; node .github/scripts/ci-timing.mjs finish install "$phase_exit"; exit "$phase_exit"' EXIT
+        args=(install --frozen-lockfile)
+        if [[ "$INSTALL_IGNORE_SCRIPTS" == 'true' ]]; then args+=(--ignore-scripts); fi
+        pnpm "${args[@]}"

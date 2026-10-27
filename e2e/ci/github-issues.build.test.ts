@@ -6,6 +6,7 @@ import {
 } from './githubIssuesBuild/legacy'
 
 describe('e2e app: github-issues (build)', { concurrent: false }, () => {
-  registerGithubIssuesBuildCases(createGithubIssuesBuildCaseContext())
-  registerGithubIssuesBuildLegacyCases()
+  const context = createGithubIssuesBuildCaseContext()
+  registerGithubIssuesBuildCases(context)
+  registerGithubIssuesBuildLegacyCases(context)
 })
