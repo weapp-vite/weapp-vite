@@ -2,6 +2,10 @@ name: Validate CI Policy
 on:
   workflow_call:
     inputs:
+      verification_topology:
+        required: false
+        type: string
+        default: optimized-v1
       pr_context:
         required: true
         type: string
@@ -11,23 +15,29 @@ permissions:
 
 jobs:
   pr-context:
+    if: inputs.verification_topology != 'optimized-v2'
     uses: ./.github/workflows/reusable-frozen-pr-context.yml
     with:
+      verification_topology: ${{ inputs.verification_topology }}
       pr_context: ${{ inputs.pr_context }}
       profile: ci-policy
 
   policy-pr:
     needs: pr-context
-    if: needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr == 'true')
+    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-policy'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && ((inputs.verification_topology == 'optimized-v2' && (fromJSON(inputs.pr_context).isPr && 'true' || 'false') || needs.pr-context.outputs.is_pr) == 'true')) }}
     name: Policy Checks (Node 24)
     uses: ./.github/workflows/reusable-node-command.yml
     with:
-      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
-      base_sha: ${{ needs.pr-context.outputs.base_sha }}
-      head_sha: ${{ needs.pr-context.outputs.head_sha }}
-      pr_number: ${{ needs.pr-context.outputs.pr_number }}
-      head_ref: ${{ needs.pr-context.outputs.head_ref }}
-      base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      verification_topology: ${{ inputs.verification_topology }}
+      pr_context: ${{ inputs.pr_context }}
+      pr_profile: ci-policy
+      fetch_base: true
+      checkout_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}
+      base_sha: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}
+      head_sha: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}
+      pr_number: ${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}
+      head_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}
+      base_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}
       runs_on: ubuntu-latest
       node_version: '24'
       timeout_minutes: 10
@@ -45,8 +55,8 @@ jobs:
         pnpm check:weapp-core-constants-dependency-range
         pnpm check:rolldown:single-version
         pnpm check:vscode-extension-changeset
-        if [[ "${{ needs.pr-context.outputs.is_pr }}" == "true" ]]; then
-          pnpm seo:quality:strict -- --git-diff-base "${{ needs.pr-context.outputs.base_sha }}"
+        if [[ "${{ (inputs.verification_topology == 'optimized-v2' && (fromJSON(inputs.pr_context).isPr && 'true' || 'false') || needs.pr-context.outputs.is_pr) }}" == "true" ]]; then
+          pnpm seo:quality:strict -- --git-diff-base "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}"
         elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
           pnpm seo:quality:strict -- --git-diff-base "HEAD~1"
         else
@@ -57,7 +67,7 @@ jobs:
 
   policy-full:
     needs: pr-context
-    if: needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr != 'true')
+    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-policy'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && ((inputs.verification_topology == 'optimized-v2' && (fromJSON(inputs.pr_context).isPr && 'true' || 'false') || needs.pr-context.outputs.is_pr) != 'true')) }}
     name: Policy Checks (Node ${{ matrix.node-version }})
     strategy:
       fail-fast: false
@@ -66,12 +76,16 @@ jobs:
         node-version: [22, 24]
     uses: ./.github/workflows/reusable-node-command.yml
     with:
-      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
-      base_sha: ${{ needs.pr-context.outputs.base_sha }}
-      head_sha: ${{ needs.pr-context.outputs.head_sha }}
-      pr_number: ${{ needs.pr-context.outputs.pr_number }}
-      head_ref: ${{ needs.pr-context.outputs.head_ref }}
-      base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      verification_topology: ${{ inputs.verification_topology }}
+      pr_context: ${{ inputs.pr_context }}
+      pr_profile: ci-policy
+      fetch_base: true
+      checkout_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}
+      base_sha: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}
+      head_sha: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}
+      pr_number: ${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}
+      head_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}
+      base_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}
       runs_on: ubuntu-latest
       node_version: '${{ matrix.node-version }}'
       timeout_minutes: 10
@@ -89,8 +103,8 @@ jobs:
         pnpm check:weapp-core-constants-dependency-range
         pnpm check:rolldown:single-version
         pnpm check:vscode-extension-changeset
-        if [[ "${{ needs.pr-context.outputs.is_pr }}" == "true" ]]; then
-          pnpm seo:quality:strict -- --git-diff-base "${{ needs.pr-context.outputs.base_sha }}"
+        if [[ "${{ (inputs.verification_topology == 'optimized-v2' && (fromJSON(inputs.pr_context).isPr && 'true' || 'false') || needs.pr-context.outputs.is_pr) }}" == "true" ]]; then
+          pnpm seo:quality:strict -- --git-diff-base "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}"
         elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
           pnpm seo:quality:strict -- --git-diff-base "HEAD~1"
         else

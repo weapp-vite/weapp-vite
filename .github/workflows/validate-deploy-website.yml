@@ -2,6 +2,10 @@ name: Validate Deploy Website
 on:
   workflow_call:
     inputs:
+      verification_topology:
+        required: false
+        type: string
+        default: optimized-v1
       pr_context:
         required: true
         type: string
@@ -14,27 +18,36 @@ env:
 
 jobs:
   pr-context:
+    if: inputs.verification_topology != 'optimized-v2'
     uses: ./.github/workflows/reusable-frozen-pr-context.yml
     with:
+      verification_topology: ${{ inputs.verification_topology }}
       pr_context: ${{ inputs.pr_context }}
       profile: deploy-website
 
   website:
-    if: needs.pr-context.outputs.should_run == 'true'
+    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['deploy-website'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true') }}
     needs: pr-context
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
-      CHECKOUT_SHA: ${{ needs.pr-context.outputs.checkout_sha }}
+      WEAPP_VITE_VERIFICATION_TOPOLOGY: ${{ inputs.verification_topology }}
+      CHECKOUT_SHA: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}
       REPO_DOCS_CHANNEL: preview
     steps:
       - name: Check out code with page history
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ needs.pr-context.outputs.checkout_sha }}
+          ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}
           persist-credentials: false
           fetch-depth: 0
 
+      - name: Validate frozen identity in the executing job
+        if: inputs.verification_topology == 'optimized-v2'
+        uses: ./.github/actions/verify-frozen-job-context
+        with:
+          context: ${{ inputs.pr_context }}
+          profile: deploy-website
       - uses: ./.github/actions/setup-node-pnpm
         with:
           node-version: '24'
@@ -48,7 +61,7 @@ jobs:
       - name: Upload website artifact
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: website-${{ needs.pr-context.outputs.checkout_sha }}-${{ github.run_attempt }}
+          name: website-${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}-${{ github.run_attempt }}
           path: website/dist
           retention-days: 7
           if-no-files-found: error

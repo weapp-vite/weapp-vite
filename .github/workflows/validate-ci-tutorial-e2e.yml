@@ -2,6 +2,10 @@ name: Validate Tutorial E2E
 on:
   workflow_call:
     inputs:
+      verification_topology:
+        required: false
+        type: string
+        default: optimized-v1
       pr_context:
         required: true
         type: string
@@ -19,13 +23,15 @@ permissions:
 
 jobs:
   pr-context:
+    if: inputs.verification_topology != 'optimized-v2'
     uses: ./.github/workflows/reusable-frozen-pr-context.yml
     with:
+      verification_topology: ${{ inputs.verification_topology }}
       pr_context: ${{ inputs.pr_context }}
       profile: ci-tutorial-e2e
 
   tutorial-e2e:
-    if: needs.pr-context.outputs.should_run == 'true'
+    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-tutorial-e2e'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true') }}
     needs: pr-context
     name: Tutorial E2E (${{ matrix.source }})
     runs-on: ubuntu-latest
@@ -34,15 +40,23 @@ jobs:
       fail-fast: false
       max-parallel: 1
       matrix:
-        source: ${{ fromJSON(needs.pr-context.outputs.is_pr == 'true' && '["workspace"]' || github.event_name == 'schedule' && '["workspace","npm"]' || github.event.inputs.source == 'both' && '["workspace","npm"]' || format('["{0}"]', github.event.inputs.source || 'workspace')) }}
+        source: ${{ fromJSON((inputs.verification_topology == 'optimized-v2' && (fromJSON(inputs.pr_context).isPr && 'true' || 'false') || needs.pr-context.outputs.is_pr) == 'true' && '["workspace"]' || github.event_name == 'schedule' && '["workspace","npm"]' || github.event.inputs.source == 'both' && '["workspace","npm"]' || format('["{0}"]', github.event.inputs.source || 'workspace')) }}
 
+    env:
+      WEAPP_VITE_VERIFICATION_TOPOLOGY: ${{ inputs.verification_topology }}
     steps:
       - name: Check out code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ needs.pr-context.outputs.checkout_sha }}
+          ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}
           persist-credentials: false
 
+      - name: Validate frozen identity in the executing job
+        if: inputs.verification_topology == 'optimized-v2'
+        uses: ./.github/actions/verify-frozen-job-context
+        with:
+          context: ${{ inputs.pr_context }}
+          profile: ci-tutorial-e2e
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
 
       - name: Set up Node.js

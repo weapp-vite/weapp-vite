@@ -2,7 +2,7 @@ import { readdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { parse } from 'yaml'
-import { readWorkflowFixture } from './workflowFixture.mjs'
+import { frozenWorkflowText, readWorkflowFixture } from './workflowFixture.mjs'
 
 const workflows = [
   'ci.yml',
@@ -121,13 +121,13 @@ describe('manual PR workflow entry points', () => {
 
   it('preserves PR profiles while standalone checks keep their existing matrices', async () => {
     const ci = readWorkflowFixture('ci.yml')
-    expect(ci.jobs['build-pr'].if).toContain('needs.pr-context.outputs.is_pr == \'true\'')
+    expect(ci.jobs['build-pr'].if).toContain(frozenWorkflowText('needs.pr-context.outputs.is_pr == \'true\'', 'ci'))
     expect(ci.jobs['build-pr'].strategy.matrix.include).toHaveLength(4)
     expect(ci.jobs['build-release-pr'].strategy.matrix.include).toHaveLength(2)
-    expect(ci.jobs['build-full'].if).toContain('needs.pr-context.outputs.is_pr != \'true\'')
+    expect(ci.jobs['build-full'].if).toContain(frozenWorkflowText('needs.pr-context.outputs.is_pr != \'true\'', 'ci'))
     expect(ci.jobs['build-full'].strategy.matrix.include).toHaveLength(6)
     const tutorial = readWorkflowFixture('ci-tutorial-e2e.yml')
-    expect(tutorial.jobs['tutorial-e2e'].strategy.matrix.source).toContain('needs.pr-context.outputs.is_pr == \'true\' && \'["workspace"]\'')
+    expect(tutorial.jobs['tutorial-e2e'].strategy.matrix.source).toContain(frozenWorkflowText(`needs.pr-context.outputs.is_pr == 'true' && '["workspace"]'`, 'ci-tutorial-e2e'))
   })
 
   it('keeps manual and PR website validation free of deployment credentials', async () => {
@@ -147,7 +147,12 @@ describe('manual PR workflow entry points', () => {
     expect(job.env.TURBO_TOKEN).toBe(expression('inputs.pr_number == \'\' && secrets.TURBO_TOKEN || \'\''))
     const checkout = job.steps.find(step => step.uses?.startsWith('actions/checkout@'))
     expect(checkout.with.ref).toBe(expression('inputs.checkout_ref || github.sha'))
-    expect(checkout.with['fetch-depth']).toBe(expression('inputs.pr_number != \'\' && \'0\' || inputs.fetch_depth'))
+    expect(checkout.with['fetch-depth']).toBe(expression('inputs.verification_topology != \'optimized-v2\' && inputs.pr_number != \'\' && \'0\' || inputs.require_history && \'0\' || inputs.fetch_depth'))
+    const base = job.steps.find(step => step.name === 'Fetch frozen PR base')
+    expect(base.if).toBe('inputs.base_sha != \'\' && (inputs.verification_topology != \'optimized-v2\' || inputs.fetch_base)')
+    const validate = job.steps.find(step => step.name === 'Validate frozen identity in the executing job')
+    expect(validate.if).toBe('inputs.verification_topology == \'optimized-v2\'')
+    expect(validate.with).toEqual({ context: expression('inputs.pr_context'), profile: expression('inputs.pr_profile') })
     const command = job.steps.find(step => step.name === 'Run command').run
     expect(command).toContain('export GITHUB_BASE_REF="$PR_BASE_SHA"')
     expect(command.indexOf('export GITHUB_BASE_REF')).toBeLessThan(command.indexOf(expression('inputs.main_command')))

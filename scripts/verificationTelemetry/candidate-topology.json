@@ -1,15 +1,17 @@
 {
   ".github/workflows/validate-ci.yml": {
     "pr-context": {
+      "if": "inputs.verification_topology != 'optimized-v2'",
       "uses": "./.github/workflows/reusable-frozen-pr-context.yml",
       "with": {
+        "verification_topology": "${{ inputs.verification_topology }}",
         "pr_context": "${{ inputs.pr_context }}",
         "profile": "ci"
       }
     },
     "build-pr": {
       "needs": "pr-context",
-      "if": "needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr == 'true' && !startsWith(needs.pr-context.outputs.head_ref, 'release/pnpm-version'))",
+      "if": "${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && ((inputs.verification_topology == 'optimized-v2' && (fromJSON(inputs.pr_context).isPr && 'true' || 'false') || needs.pr-context.outputs.is_pr) == 'true' && !startsWith((inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref), 'release/pnpm-version'))) }}",
       "name": "Build and Test (${{ matrix.os }} / Node ${{ matrix.node-version }})",
       "strategy": {
         "fail-fast": false,
@@ -66,7 +68,7 @@
     },
     "build-release-pr": {
       "needs": "pr-context",
-      "if": "needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr == 'true' && startsWith(needs.pr-context.outputs.head_ref, 'release/pnpm-version'))",
+      "if": "${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && ((inputs.verification_topology == 'optimized-v2' && (fromJSON(inputs.pr_context).isPr && 'true' || 'false') || needs.pr-context.outputs.is_pr) == 'true' && startsWith((inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref), 'release/pnpm-version'))) }}",
       "name": "Build and Test (${{ matrix.os }} / Node ${{ matrix.node-version }})",
       "strategy": {
         "fail-fast": false,
@@ -107,7 +109,7 @@
     },
     "build-full": {
       "needs": "pr-context",
-      "if": "needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr != 'true')",
+      "if": "${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && ((inputs.verification_topology == 'optimized-v2' && (fromJSON(inputs.pr_context).isPr && 'true' || 'false') || needs.pr-context.outputs.is_pr) != 'true')) }}",
       "name": "Build and Test (${{ matrix.os }} / Node ${{ matrix.node-version }})",
       "strategy": {
         "fail-fast": false,
@@ -180,17 +182,19 @@
     },
     "weapi-compat-pr": {
       "needs": "pr-context",
-      "if": "needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr == 'true')",
+      "if": "${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && ((inputs.verification_topology == 'optimized-v2' && (fromJSON(inputs.pr_context).isPr && 'true' || 'false') || needs.pr-context.outputs.is_pr) == 'true')) }}",
       "name": "Weapi Compatibility Guard (Node 24)",
       "uses": "./.github/workflows/reusable-node-command.yml",
       "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "pr_profile": "ci",
         "verification_topology": "${{ inputs.verification_topology }}",
-        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
-        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
-        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
-        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
-        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
-        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "checkout_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
+        "base_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}",
+        "head_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}",
+        "pr_number": "${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}",
+        "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
+        "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "runs_on": "ubuntu-latest",
         "node_version": "24",
         "timeout_minutes": 15,
@@ -200,7 +204,7 @@
     },
     "weapi-compat-full": {
       "needs": "pr-context",
-      "if": "needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr != 'true')",
+      "if": "${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && ((inputs.verification_topology == 'optimized-v2' && (fromJSON(inputs.pr_context).isPr && 'true' || 'false') || needs.pr-context.outputs.is_pr) != 'true')) }}",
       "name": "Weapi Compatibility Guard (Node ${{ matrix.node-version }})",
       "strategy": {
         "fail-fast": false,
@@ -214,13 +218,15 @@
       },
       "uses": "./.github/workflows/reusable-node-command.yml",
       "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "pr_profile": "ci",
         "verification_topology": "${{ inputs.verification_topology }}",
-        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
-        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
-        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
-        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
-        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
-        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "checkout_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
+        "base_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}",
+        "head_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}",
+        "pr_number": "${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}",
+        "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
+        "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "runs_on": "ubuntu-latest",
         "node_version": "${{ matrix.node-version }}",
         "timeout_minutes": 15,
@@ -231,15 +237,17 @@
   },
   ".github/workflows/validate-ci-e2e.yml": {
     "pr-context": {
+      "if": "inputs.verification_topology != 'optimized-v2'",
       "uses": "./.github/workflows/reusable-frozen-pr-context.yml",
       "with": {
+        "verification_topology": "${{ inputs.verification_topology }}",
         "pr_context": "${{ inputs.pr_context }}",
         "profile": "ci-e2e"
       }
     },
     "native-compiler-batch-diagnostic": {
       "needs": "pr-context",
-      "if": "needs.pr-context.outputs.should_run == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'native-compiler-batch')",
+      "if": "${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-e2e'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'native-compiler-batch')) }}",
       "name": "Native Compiler Batch Diagnostic (${{ matrix.os }} / Node 24)",
       "strategy": {
         "fail-fast": false,
@@ -254,27 +262,29 @@
       },
       "uses": "./.github/workflows/reusable-node-command.yml",
       "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "pr_profile": "ci-e2e",
         "verification_topology": "${{ inputs.verification_topology }}",
-        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
-        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
-        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
-        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
-        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
-        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "checkout_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
+        "base_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}",
+        "head_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}",
+        "pr_number": "${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}",
+        "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
+        "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
         "runs_on": "${{ matrix.os }}",
         "node_version": "24",
         "timeout_minutes": 20,
         "build_command": "pnpm exec turbo run build --filter=weapp-vite...",
         "main_command": "pnpm vitest run packages/weapp-vite/src/runtime/statefulHmr/compilerBatch.native.test.ts packages/weapp-vite/src/plugins/tailwindcss/contentInvalidation.test.ts packages/weapp-vite/src/plugins/tailwindcss/moduleDependencies.test.ts --maxWorkers=1 --no-file-parallelism --reporter=default --reporter=json --outputFile=.tmp/native-compiler-batch-report.json",
-        "artifact_name": "native-compiler-batch-${{ matrix.os }}-node-24-${{ needs.pr-context.outputs.checkout_sha }}",
+        "artifact_name": "native-compiler-batch-${{ matrix.os }}-node-24-${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
         "artifact_path": ".tmp/native-compiler-batch-report.json"
       },
       "secrets": "inherit"
     },
     "windows-dev-cleanup-diagnostic": {
       "needs": "pr-context",
-      "if": "needs.pr-context.outputs.should_run == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'windows-dev-cleanup')",
+      "if": "${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-e2e'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'windows-dev-cleanup')) }}",
       "name": "Dev Process Cleanup Shard Diagnostic (Windows / Node ${{ matrix.node-version }} / shard ${{ matrix.shard }})",
       "strategy": {
         "fail-fast": false,
@@ -297,13 +307,15 @@
       },
       "uses": "./.github/workflows/reusable-node-command.yml",
       "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "pr_profile": "ci-e2e",
         "verification_topology": "${{ inputs.verification_topology }}",
-        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
-        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
-        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
-        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
-        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
-        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "checkout_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
+        "base_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}",
+        "head_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}",
+        "pr_number": "${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}",
+        "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
+        "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
         "runs_on": "windows-latest",
         "node_version": "${{ format('{0}', matrix.node-version) }}",
@@ -311,14 +323,14 @@
         "build_command": "pnpm build:ci:windows",
         "main_command": "pnpm exec cross-env WEAPP_VITE_E2E_CLEANUP_TRACE=1 pnpm e2e:ci:full -- --shard-index=${{ matrix.shard }} --shard-total=4",
         "e2e_platform": "weapp",
-        "artifact_name": "windows-dev-cleanup-node-${{ matrix.node-version }}-shard-${{ matrix.shard }}-${{ needs.pr-context.outputs.checkout_sha }}",
+        "artifact_name": "windows-dev-cleanup-node-${{ matrix.node-version }}-shard-${{ matrix.shard }}-${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
         "artifact_path": "docs/reports/*-e2e-ci-full-*-suite-report/**"
       },
       "secrets": "inherit"
     },
     "windows-process-narrow-diagnostic": {
       "needs": "pr-context",
-      "if": "needs.pr-context.outputs.should_run == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'windows-process-narrow')",
+      "if": "${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-e2e'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'windows-process-narrow')) }}",
       "name": "Suite Runner Process Diagnostic (Windows / Node ${{ matrix.node-version }})",
       "strategy": {
         "fail-fast": false,
@@ -331,27 +343,29 @@
       },
       "uses": "./.github/workflows/reusable-node-command.yml",
       "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "pr_profile": "ci-e2e",
         "verification_topology": "${{ inputs.verification_topology }}",
-        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
-        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
-        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
-        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
-        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
-        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "checkout_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
+        "base_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}",
+        "head_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}",
+        "pr_number": "${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}",
+        "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
+        "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
         "runs_on": "windows-latest",
         "node_version": "${{ format('{0}', matrix.node-version) }}",
         "timeout_minutes": 15,
         "build_command": "pnpm exec turbo run build --filter=weapp-ide-cli...",
         "main_command": "pnpm exec cross-env NODE_DEBUG=weapp-ide-journal-writer pnpm vitest run -c e2e/vitest.e2e.internal.config.ts e2e/scripts/suiteRunner/process.test.ts --maxWorkers=1 --no-file-parallelism --reporter=default --reporter=json --outputFile=.tmp/windows-process-narrow-report.json",
-        "artifact_name": "windows-process-narrow-node-${{ matrix.node-version }}-${{ needs.pr-context.outputs.checkout_sha }}",
+        "artifact_name": "windows-process-narrow-node-${{ matrix.node-version }}-${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
         "artifact_path": ".tmp/windows-process-narrow-report.json"
       },
       "secrets": "inherit"
     },
     "windows-native-runtime-cleanup-diagnostic": {
       "needs": "pr-context",
-      "if": "needs.pr-context.outputs.should_run == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'windows-native-runtime-cleanup')",
+      "if": "${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-e2e'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'windows-native-runtime-cleanup')) }}",
       "name": "Native Runtime Cleanup Diagnostic (Windows / Node ${{ matrix.node-version }})",
       "strategy": {
         "fail-fast": false,
@@ -364,27 +378,29 @@
       },
       "uses": "./.github/workflows/reusable-node-command.yml",
       "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "pr_profile": "ci-e2e",
         "verification_topology": "${{ inputs.verification_topology }}",
-        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
-        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
-        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
-        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
-        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
-        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "checkout_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
+        "base_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}",
+        "head_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}",
+        "pr_number": "${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}",
+        "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
+        "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
         "runs_on": "windows-latest",
         "node_version": "${{ format('{0}', matrix.node-version) }}",
         "timeout_minutes": 15,
         "build_command": "pnpm exec turbo run build --filter=weapp-vite...",
         "main_command": "pnpm exec cross-env WEAPP_VITE_E2E_CLEANUP_TRACE=1 WEAPP_VITE_E2E_DEV_PROCESS_TRACE=1 WEAPP_VITE_E2E_DEV_SHUTDOWN_TRACE=1 WEAPP_VITE_E2E_DEV_PROCESS_TRACE_DIR=.tmp/windows-native-runtime-cleanup/dev-process pnpm vitest run -c e2e/vitest.e2e.internal.config.ts e2e/utils/runtimeDevProcess.integration.test.ts --maxWorkers=1 --no-file-parallelism --reporter=default --reporter=json --outputFile=.tmp/windows-native-runtime-cleanup/report.json",
-        "artifact_name": "windows-native-runtime-cleanup-node-${{ matrix.node-version }}-${{ needs.pr-context.outputs.checkout_sha }}",
+        "artifact_name": "windows-native-runtime-cleanup-node-${{ matrix.node-version }}-${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
         "artifact_path": ".tmp/windows-native-runtime-cleanup/**"
       },
       "secrets": "inherit"
     },
     "windows-startup-fallback-diagnostic": {
       "needs": "pr-context",
-      "if": "needs.pr-context.outputs.should_run == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'windows-startup-fallback')",
+      "if": "${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-e2e'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'windows-startup-fallback')) }}",
       "name": "Startup Fallback Cleanup Diagnostic (Windows / Node ${{ matrix.node-version }})",
       "strategy": {
         "fail-fast": false,
@@ -397,13 +413,15 @@
       },
       "uses": "./.github/workflows/reusable-node-command.yml",
       "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "pr_profile": "ci-e2e",
         "verification_topology": "${{ inputs.verification_topology }}",
-        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
-        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
-        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
-        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
-        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
-        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "checkout_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
+        "base_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}",
+        "head_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}",
+        "pr_number": "${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}",
+        "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
+        "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
         "runs_on": "windows-latest",
         "node_version": "${{ format('{0}', matrix.node-version) }}",
@@ -411,14 +429,14 @@
         "build_command": "pnpm exec turbo run build --filter=weapp-vite... --filter=@mpcore/simulator...",
         "main_command": "pnpm exec cross-env WEAPP_VITE_E2E_RUNTIME_PROVIDER=headless WEAPP_VITE_E2E_DOM_ACCEPTANCE=1 WEAPP_VITE_E2E_CLEANUP_TRACE=1 WEAPP_VITE_E2E_DEV_PROCESS_TRACE=1 WEAPP_VITE_E2E_DEV_SHUTDOWN_TRACE=1 WEAPP_VITE_E2E_DEV_PROCESS_TRACE_DIR=.tmp/windows-startup-fallback/dev-process pnpm vitest run -c e2e/vitest.e2e.headless.config.ts e2e/ide/hmr-startup-fallback.runtime.test.ts --reporter=default --reporter=json --reporter=./e2e/scripts/domAcceptanceReport/reporter.ts --outputFile=.tmp/windows-startup-fallback/report.json",
         "e2e_platform": "weapp",
-        "artifact_name": "windows-startup-fallback-node-${{ matrix.node-version }}-${{ needs.pr-context.outputs.checkout_sha }}",
+        "artifact_name": "windows-startup-fallback-node-${{ matrix.node-version }}-${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
         "artifact_path": ".tmp/windows-startup-fallback/**\ndocs/reports/dom-acceptance/**\n"
       },
       "secrets": "inherit"
     },
     "plugin-watch-readiness-diagnostic": {
       "needs": "pr-context",
-      "if": "needs.pr-context.outputs.should_run == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'plugin-watch-readiness')",
+      "if": "${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-e2e'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'plugin-watch-readiness')) }}",
       "name": "Plugin Watch Readiness (${{ matrix.os }} / Node ${{ matrix.node-version }})",
       "strategy": {
         "fail-fast": false,
@@ -437,27 +455,29 @@
       },
       "uses": "./.github/workflows/reusable-node-command.yml",
       "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "pr_profile": "ci-e2e",
         "verification_topology": "${{ inputs.verification_topology }}",
-        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
-        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
-        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
-        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
-        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
-        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "checkout_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
+        "base_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}",
+        "head_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}",
+        "pr_number": "${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}",
+        "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
+        "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
         "runs_on": "${{ matrix.os }}",
         "node_version": "${{ format('{0}', matrix.node-version) }}",
         "timeout_minutes": 20,
         "build_command": "pnpm exec turbo run build --filter=weapp-vite...",
         "main_command": "pnpm vitest run packages/weapp-vite/test/vite-plugin-project.test.ts --reporter=default --reporter=json --outputFile=.tmp/plugin-watch-readiness-report.json",
-        "artifact_name": "plugin-watch-readiness-${{ matrix.os }}-node-${{ matrix.node-version }}-${{ needs.pr-context.outputs.checkout_sha }}",
+        "artifact_name": "plugin-watch-readiness-${{ matrix.os }}-node-${{ matrix.node-version }}-${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
         "artifact_path": ".tmp/plugin-watch-readiness-report.json"
       },
       "secrets": "inherit"
     },
     "runtime-publication-diagnostic": {
       "needs": "pr-context",
-      "if": "needs.pr-context.outputs.should_run == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'runtime-publication')",
+      "if": "${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-e2e'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'runtime-publication')) }}",
       "name": "Runtime Publication Regression (${{ matrix.os }} / Node ${{ matrix.node-version }})",
       "strategy": {
         "fail-fast": false,
@@ -476,13 +496,15 @@
       },
       "uses": "./.github/workflows/reusable-node-command.yml",
       "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "pr_profile": "ci-e2e",
         "verification_topology": "${{ inputs.verification_topology }}",
-        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
-        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
-        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
-        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
-        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
-        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "checkout_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
+        "base_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}",
+        "head_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}",
+        "pr_number": "${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}",
+        "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
+        "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
         "runs_on": "${{ matrix.os }}",
         "node_version": "${{ format('{0}', matrix.node-version) }}",
@@ -490,14 +512,14 @@
         "build_command": "pnpm exec turbo run build --filter=weapp-vite... --filter=@mpcore/simulator...",
         "main_command": "pnpm vitest run e2e/utils/devBuildCompletion.test.ts e2e/utils/hmrOutputDiagnostics.test.ts e2e/scripts/e2e-suite-manifest.test.ts e2e/scripts/hmr-guard-manifest.test.ts\npnpm exec vitest run --config scripts/vitest.config.mjs scripts/workspace-hmr/statefulArtifactMeasurement.test.ts scripts/workspace-hmr/statefulArtifactMeasurement.deadline.test.ts scripts/workspace-hmr/statefulAuditClient.test.ts scripts/workspace-hmr/statefulAuditUpdate.test.ts scripts/e2e-diagnostic-workflow.test.ts scripts/repoctl-release-workflow.test.ts scripts/utils/atomicRename.test.ts scripts/editSequence/buildSources.test.ts scripts/editSequence/frameworkSources.test.ts\npnpm vitest run -c e2e/vitest.e2e.ci.config.ts e2e/ci/auto-import-vue-sfc.test.ts e2e/ci/external-linked-vue-component.hmr.test.ts\npnpm exec cross-env WEAPP_VITE_E2E_RUNTIME_PROVIDER=headless WEAPP_VITE_E2E_DOM_ACCEPTANCE=1 pnpm vitest run -c e2e/vitest.e2e.headless.config.ts e2e/ide/issue-1134-native-topology.runtime.test.ts e2e/ide/script-setup-external-src.runtime.test.ts e2e/ide/issue-1015-css-hmr.runtime.test.ts e2e/ide/issue-1140-mode-cache.runtime.test.ts e2e/ide/issue-1058-template-tags.runtime.test.ts\n",
         "e2e_platform": "weapp",
-        "artifact_name": "runtime-publication-${{ matrix.os }}-node-${{ matrix.node-version }}-${{ needs.pr-context.outputs.checkout_sha }}",
+        "artifact_name": "runtime-publication-${{ matrix.os }}-node-${{ matrix.node-version }}-${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
         "artifact_path": "docs/reports/dom-acceptance/**"
       },
       "secrets": "inherit"
     },
     "lifecycle-diagnostic": {
       "needs": "pr-context",
-      "if": "needs.pr-context.outputs.should_run == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'lifecycle')",
+      "if": "${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-e2e'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'lifecycle')) }}",
       "name": "HMR Lifecycle Regression (${{ matrix.os }} / Node ${{ matrix.node-version }})",
       "strategy": {
         "fail-fast": false,
@@ -516,13 +538,15 @@
       },
       "uses": "./.github/workflows/reusable-node-command.yml",
       "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "pr_profile": "ci-e2e",
         "verification_topology": "${{ inputs.verification_topology }}",
-        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
-        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
-        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
-        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
-        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
-        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "checkout_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
+        "base_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}",
+        "head_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}",
+        "pr_number": "${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}",
+        "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
+        "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
         "runs_on": "${{ matrix.os }}",
         "node_version": "${{ format('{0}', matrix.node-version) }}",
@@ -530,14 +554,14 @@
         "build_command": "pnpm exec turbo run build --filter=weapp-vite... --filter=@mpcore/simulator...",
         "main_command": "pnpm vitest run packages/weapp-vite/src/utils/watchDependencies.test.ts packages/weapp-vite/src/runtime/statefulHmr/snapshotInputs.test.ts packages/weapp-vite/src/runtime/statefulHmr/snapshotBuild.integration.test.ts scripts/editSequence/processTree.test.ts scripts/editSequence/processTree.windows.integration.test.ts scripts/editSequence/processObserver.test.ts scripts/editSequence/processObserverClose.test.ts scripts/editSequence/worker.test.ts scripts/utils/atomicRename.test.ts scripts/editSequence/buildSources.test.ts scripts/editSequence/frameworkSources.test.ts\npnpm vitest run -c e2e/vitest.e2e.ci.config.ts e2e/ci/edit-sequence.test.ts --reporter=default --reporter=json --outputFile=.tmp/hmr-lifecycle-report.json\n",
         "e2e_platform": "weapp",
-        "artifact_name": "hmr-lifecycle-${{ matrix.os }}-node-${{ matrix.node-version }}-${{ needs.pr-context.outputs.checkout_sha }}",
+        "artifact_name": "hmr-lifecycle-${{ matrix.os }}-node-${{ matrix.node-version }}-${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
         "artifact_path": ".tmp/hmr-lifecycle-report.json"
       },
       "secrets": "inherit"
     },
     "shared-layout-windows-diagnostic": {
       "needs": "pr-context",
-      "if": "needs.pr-context.outputs.should_run == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'shared-layout-windows')",
+      "if": "${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-e2e'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'shared-layout-windows')) }}",
       "name": "Shared Layout HMR Diagnostic (Windows / Node ${{ matrix.node-version }})",
       "strategy": {
         "fail-fast": false,
@@ -550,13 +574,15 @@
       },
       "uses": "./.github/workflows/reusable-node-command.yml",
       "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "pr_profile": "ci-e2e",
         "verification_topology": "${{ inputs.verification_topology }}",
-        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
-        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
-        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
-        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
-        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
-        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "checkout_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
+        "base_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}",
+        "head_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}",
+        "pr_number": "${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}",
+        "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
+        "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
         "runs_on": "windows-latest",
         "node_version": "${{ format('{0}', matrix.node-version) }}",
@@ -569,7 +595,7 @@
     },
     "shared-compiler-hosts": {
       "needs": "pr-context",
-      "if": "needs.pr-context.outputs.should_run == 'true' && ((needs.pr-context.outputs.is_pr == 'true' || github.event_name == 'workflow_dispatch') && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))",
+      "if": "${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-e2e'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && (((inputs.verification_topology == 'optimized-v2' && (fromJSON(inputs.pr_context).isPr && 'true' || 'false') || needs.pr-context.outputs.is_pr) == 'true' || github.event_name == 'workflow_dispatch') && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))) }}",
       "name": "Shared Compiler Hosts (${{ matrix.os }} / Node 24)",
       "strategy": {
         "fail-fast": false,
@@ -583,13 +609,15 @@
       },
       "uses": "./.github/workflows/reusable-node-command.yml",
       "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "pr_profile": "ci-e2e",
         "verification_topology": "${{ inputs.verification_topology }}",
-        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
-        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
-        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
-        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
-        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
-        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "checkout_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
+        "base_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}",
+        "head_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}",
+        "pr_number": "${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}",
+        "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
+        "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
         "runs_on": "${{ matrix.os }}",
         "node_version": "24",
@@ -603,17 +631,19 @@
     },
     "miniapp-platform-build-gate": {
       "needs": "pr-context",
-      "if": "needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr == 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))",
+      "if": "${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-e2e'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && ((inputs.verification_topology == 'optimized-v2' && (fromJSON(inputs.pr_context).isPr && 'true' || 'false') || needs.pr-context.outputs.is_pr) == 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))) }}",
       "name": "Miniapp Platform Build Gate (Ubuntu / Node 22)",
       "uses": "./.github/workflows/reusable-node-command.yml",
       "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "pr_profile": "ci-e2e",
         "verification_topology": "${{ inputs.verification_topology }}",
-        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
-        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
-        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
-        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
-        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
-        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "checkout_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
+        "base_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}",
+        "head_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}",
+        "pr_number": "${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}",
+        "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
+        "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
         "runs_on": "ubuntu-latest",
         "node_version": "22",
@@ -625,7 +655,7 @@
     },
     "bun-build-diagnostic": {
       "needs": "pr-context",
-      "if": "needs.pr-context.outputs.should_run == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'bun-cli')",
+      "if": "${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-e2e'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'bun-cli')) }}",
       "name": "Bun Build Artifact (${{ matrix.os }} / Node 22)",
       "strategy": {
         "fail-fast": false,
@@ -648,13 +678,15 @@
       },
       "uses": "./.github/workflows/reusable-node-command.yml",
       "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "pr_profile": "ci-e2e",
         "verification_topology": "${{ inputs.verification_topology }}",
-        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
-        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
-        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
-        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
-        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
-        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "checkout_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
+        "base_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}",
+        "head_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}",
+        "pr_number": "${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}",
+        "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
+        "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
         "runs_on": "${{ matrix.os }}",
         "node_version": "22",
@@ -667,17 +699,19 @@
     },
     "web-e2e-baseline-pr": {
       "needs": "pr-context",
-      "if": "needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr == 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))",
+      "if": "${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-e2e'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && ((inputs.verification_topology == 'optimized-v2' && (fromJSON(inputs.pr_context).isPr && 'true' || 'false') || needs.pr-context.outputs.is_pr) == 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))) }}",
       "name": "Web E2E Baseline (Node 24)",
       "uses": "./.github/workflows/reusable-node-command.yml",
       "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "pr_profile": "ci-e2e",
         "verification_topology": "${{ inputs.verification_topology }}",
-        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
-        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
-        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
-        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
-        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
-        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "checkout_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
+        "base_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}",
+        "head_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}",
+        "pr_number": "${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}",
+        "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
+        "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
         "runs_on": "macos-latest",
         "node_version": "24",
@@ -692,17 +726,19 @@
     },
     "web-project-builds": {
       "needs": "pr-context",
-      "if": "needs.pr-context.outputs.should_run == 'true' && ((!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))",
+      "if": "${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-e2e'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && ((!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))) }}",
       "name": "Web Project Builds (Node 24)",
       "uses": "./.github/workflows/reusable-node-command.yml",
       "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "pr_profile": "ci-e2e",
         "verification_topology": "${{ inputs.verification_topology }}",
-        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
-        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
-        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
-        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
-        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
-        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "checkout_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
+        "base_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}",
+        "head_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}",
+        "pr_number": "${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}",
+        "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
+        "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
         "runs_on": "ubuntu-latest",
         "node_version": "24",
@@ -714,17 +750,19 @@
     },
     "web-browser-smoke": {
       "needs": "pr-context",
-      "if": "needs.pr-context.outputs.should_run == 'true' && ((!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))",
+      "if": "${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-e2e'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && ((!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))) }}",
       "name": "Web Browser Smoke (Firefox / WebKit / Node 24)",
       "uses": "./.github/workflows/reusable-node-command.yml",
       "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "pr_profile": "ci-e2e",
         "verification_topology": "${{ inputs.verification_topology }}",
-        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
-        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
-        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
-        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
-        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
-        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "checkout_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
+        "base_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}",
+        "head_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}",
+        "pr_number": "${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}",
+        "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
+        "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
         "runs_on": "ubuntu-latest",
         "node_version": "24",
@@ -738,17 +776,19 @@
     },
     "workspace-hmr-pr": {
       "needs": "pr-context",
-      "if": "needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr == 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full' || inputs.hmr-diagnostic == 'workspace-hmr') && !startsWith(needs.pr-context.outputs.head_ref, 'release/pnpm-version'))",
+      "if": "${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-e2e'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && ((inputs.verification_topology == 'optimized-v2' && (fromJSON(inputs.pr_context).isPr && 'true' || 'false') || needs.pr-context.outputs.is_pr) == 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full' || inputs.hmr-diagnostic == 'workspace-hmr') && !startsWith((inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref), 'release/pnpm-version'))) }}",
       "name": "Workspace HMR Changed Projects (Node 24)",
       "uses": "./.github/workflows/reusable-node-command.yml",
       "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "pr_profile": "ci-e2e",
         "verification_topology": "${{ inputs.verification_topology }}",
-        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
-        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
-        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
-        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
-        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
-        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "checkout_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
+        "base_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}",
+        "head_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}",
+        "pr_number": "${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}",
+        "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
+        "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
         "runs_on": "ubuntu-latest",
         "node_version": "24",
@@ -764,17 +804,19 @@
     },
     "workspace-hmr-nightly": {
       "needs": "pr-context",
-      "if": "needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr != 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full' || inputs.hmr-diagnostic == 'workspace-hmr'))",
+      "if": "${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-e2e'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && ((inputs.verification_topology == 'optimized-v2' && (fromJSON(inputs.pr_context).isPr && 'true' || 'false') || needs.pr-context.outputs.is_pr) != 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full' || inputs.hmr-diagnostic == 'workspace-hmr'))) }}",
       "name": "${{ inputs.workspace-hmr-audit == 'functional-only' && 'Workspace HMR Functional (Node 24)' || 'Workspace HMR Nightly Full (Node 24)' }}",
       "uses": "./.github/workflows/reusable-node-command.yml",
       "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "pr_profile": "ci-e2e",
         "verification_topology": "${{ inputs.verification_topology }}",
-        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
-        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
-        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
-        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
-        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
-        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "checkout_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
+        "base_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}",
+        "head_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}",
+        "pr_number": "${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}",
+        "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
+        "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
         "runs_on": "ubuntu-latest",
         "node_version": "24",
@@ -790,7 +832,7 @@
     },
     "web-e2e-baseline-full": {
       "needs": "pr-context",
-      "if": "needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr != 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))",
+      "if": "${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-e2e'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && ((inputs.verification_topology == 'optimized-v2' && (fromJSON(inputs.pr_context).isPr && 'true' || 'false') || needs.pr-context.outputs.is_pr) != 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))) }}",
       "name": "Web E2E Baseline (Node ${{ matrix.node-version }})",
       "strategy": {
         "fail-fast": false,
@@ -804,13 +846,15 @@
       },
       "uses": "./.github/workflows/reusable-node-command.yml",
       "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "pr_profile": "ci-e2e",
         "verification_topology": "${{ inputs.verification_topology }}",
-        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
-        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
-        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
-        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
-        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
-        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "checkout_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
+        "base_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}",
+        "head_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}",
+        "pr_number": "${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}",
+        "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
+        "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
         "runs_on": "macos-latest",
         "node_version": "${{ format('{0}', matrix.node-version) }}",
@@ -826,7 +870,7 @@
     "miniapp-platform-pr": {
       "name": "Miniapp (${{ matrix.os }} / Node ${{ matrix.node-version }})",
       "needs": "pr-context",
-      "if": "needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr == 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))",
+      "if": "${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-e2e'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && ((inputs.verification_topology == 'optimized-v2' && (fromJSON(inputs.pr_context).isPr && 'true' || 'false') || needs.pr-context.outputs.is_pr) == 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))) }}",
       "strategy": {
         "fail-fast": false,
         "matrix": {
@@ -867,7 +911,7 @@
     "miniapp-platform-full": {
       "name": "Miniapp (${{ matrix.os }} / Node ${{ matrix.node-version }})",
       "needs": "pr-context",
-      "if": "needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr != 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))",
+      "if": "${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-e2e'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && ((inputs.verification_topology == 'optimized-v2' && (fromJSON(inputs.pr_context).isPr && 'true' || 'false') || needs.pr-context.outputs.is_pr) != 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))) }}",
       "strategy": {
         "fail-fast": false,
         "matrix": {
@@ -924,7 +968,7 @@
       "secrets": "inherit"
     },
     "bun-cli": {
-      "if": "${{ !cancelled() && needs.pr-context.outputs.should_run == 'true' && needs.bun-build-diagnostic.result == 'success' }}",
+      "if": "${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-e2e'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && needs.bun-build-diagnostic.result == 'success' }}",
       "needs": [
         "pr-context",
         "bun-build-diagnostic"
@@ -946,13 +990,15 @@
       },
       "uses": "./.github/workflows/reusable-node-command.yml",
       "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "pr_profile": "ci-e2e",
         "verification_topology": "${{ inputs.verification_topology }}",
-        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
-        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
-        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
-        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
-        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
-        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "checkout_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
+        "base_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}",
+        "head_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}",
+        "pr_number": "${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}",
+        "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
+        "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
         "runs_on": "${{ matrix.os }}",
         "node_version": "22",
@@ -960,7 +1006,7 @@
         "timeout_minutes": 15,
         "consume_build_artifact": "miniapp-${{ matrix.os }}-node-22-weapp-build",
         "main_command": "bun --version\npnpm e2e:bun\n",
-        "artifact_name": "bun-cli-${{ matrix.os }}-${{ matrix.bun-version }}-${{ needs.pr-context.outputs.checkout_sha }}",
+        "artifact_name": "bun-cli-${{ matrix.os }}-${{ matrix.bun-version }}-${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
         "artifact_path": ".tmp/bun-cli/**\ndocs/reports/*-e2e-bun-*-suite-report/**\n"
       },
       "secrets": "inherit"
@@ -968,14 +1014,16 @@
   },
   ".github/workflows/validate-ci-vite-host-consumer.yml": {
     "pr-context": {
+      "if": "inputs.verification_topology != 'optimized-v2'",
       "uses": "./.github/workflows/reusable-frozen-pr-context.yml",
       "with": {
+        "verification_topology": "${{ inputs.verification_topology }}",
         "pr_context": "${{ inputs.pr_context }}",
         "profile": "ci-vite-host-consumer"
       }
     },
     "chokidar-delivery-windows": {
-      "if": "needs.pr-context.outputs.should_run == 'true'",
+      "if": "${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-vite-host-consumer'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true') }}",
       "needs": "pr-context",
       "name": "Chokidar delivery (Windows / ordinary npm)",
       "runs-on": "windows-latest",
@@ -989,8 +1037,17 @@
           "name": "Check out frozen candidate",
           "uses": "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
           "with": {
-            "ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+            "ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
             "persist-credentials": false
+          }
+        },
+        {
+          "name": "Validate frozen identity in the executing job",
+          "if": "inputs.verification_topology == 'optimized-v2'",
+          "uses": "./.github/actions/verify-frozen-job-context",
+          "with": {
+            "context": "${{ inputs.pr_context }}",
+            "profile": "ci-vite-host-consumer"
           }
         },
         {
@@ -1014,7 +1071,7 @@
           "name": "Record candidate archive provenance",
           "run": "node scripts/chokidar-delivery-provenance.mjs candidate . .cache/chokidar-delivery/candidate-tarballs .cache/chokidar-delivery/candidate-provenance.json",
           "env": {
-            "WEAPP_VITE_DELIVERY_EXPECTED_SHA": "${{ needs.pr-context.outputs.checkout_sha }}"
+            "WEAPP_VITE_DELIVERY_EXPECTED_SHA": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}"
           }
         },
         {
@@ -1077,7 +1134,7 @@
           "if": "${{ !cancelled() }}",
           "uses": "actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9",
           "with": {
-            "name": "chokidar-delivery-windows-${{ needs.pr-context.outputs.checkout_sha }}",
+            "name": "chokidar-delivery-windows-${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
             "include-hidden-files": true,
             "path": ".cache/chokidar-delivery/report.json\n.cache/chokidar-delivery/*-provenance.json\n.cache/chokidar-delivery/candidate-tarballs/**\n.cache/chokidar-delivery/original-tarballs/**\n",
             "if-no-files-found": "warn"
@@ -1088,7 +1145,7 @@
     "consumer-platform": {
       "name": "Consumer (${{ matrix.os }})",
       "needs": "pr-context",
-      "if": "needs.pr-context.outputs.should_run == 'true' && !inputs.chokidar_delivery_diagnostic",
+      "if": "${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-vite-host-consumer'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && !inputs.chokidar_delivery_diagnostic) }}",
       "strategy": {
         "fail-fast": false,
         "matrix": {
@@ -1113,7 +1170,9 @@
       "runs-on": "${{ inputs.runs_on }}",
       "timeout-minutes": "${{ inputs.timeout_minutes }}",
       "outputs": {
-        "node_version": "${{ steps.toolchain.outputs.node-version }}"
+        "node_version": "${{ steps.toolchain.outputs.node-version }}",
+        "node_support_matrix": "${{ steps.node-support-plan.outputs.matrix }}",
+        "consumer_batch_matrix": "${{ steps.consumer-batch-plan.outputs.matrix }}"
       },
       "env": {
         "WEAPP_VITE_VERIFICATION_TOPOLOGY": "${{ inputs.verification_topology }}",
@@ -1140,13 +1199,22 @@
           "uses": "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
           "with": {
             "ref": "${{ inputs.checkout_ref || github.sha }}",
-            "fetch-depth": "${{ inputs.pr_number != '' && '0' || inputs.fetch_depth }}",
+            "fetch-depth": "${{ inputs.verification_topology != 'optimized-v2' && inputs.pr_number != '' && '0' || inputs.require_history && '0' || inputs.fetch_depth }}",
             "persist-credentials": false
           }
         },
         {
+          "name": "Validate frozen identity in the executing job",
+          "if": "inputs.verification_topology == 'optimized-v2'",
+          "uses": "./.github/actions/verify-frozen-job-context",
+          "with": {
+            "context": "${{ inputs.pr_context }}",
+            "profile": "${{ inputs.pr_profile }}"
+          }
+        },
+        {
           "name": "Fetch frozen PR base",
-          "if": "inputs.base_sha != ''",
+          "if": "inputs.base_sha != '' && (inputs.verification_topology != 'optimized-v2' || inputs.fetch_base)",
           "shell": "bash",
           "env": {
             "PR_BASE_SHA": "${{ inputs.base_sha }}"
@@ -1157,11 +1225,13 @@
           "uses": "./.github/actions/setup-node-pnpm",
           "id": "toolchain",
           "with": {
-            "node-version": "${{ inputs.node_version }}"
+            "node-version": "${{ inputs.node_version }}",
+            "install-dependencies": "${{ inputs.verification_topology != 'optimized-v2' || inputs.consume_build_artifact == '' }}"
           }
         },
         {
           "name": "Restore trusted workspace task cache",
+          "if": "inputs.verification_topology != 'optimized-v2' || inputs.build_command != '' || inputs.lint_command != ''",
           "uses": "actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9",
           "with": {
             "path": ".turbo",
@@ -1195,9 +1265,19 @@
         },
         {
           "name": "Refresh workspace links after artifact restore",
-          "if": "inputs.consume_build_artifact != ''",
+          "if": "inputs.consume_build_artifact != '' && inputs.verification_topology != 'optimized-v2'",
           "shell": "bash",
           "run": "pnpm install --frozen-lockfile --ignore-scripts\nnode scripts/verify-build-artifact-manifest.mjs\n"
+        },
+        {
+          "name": "Install once after restoring immutable workspace artifacts",
+          "if": "inputs.consume_build_artifact != '' && inputs.verification_topology == 'optimized-v2'",
+          "uses": "./.github/actions/install-workspace-deps"
+        },
+        {
+          "name": "Verify restored workspace artifact identity",
+          "if": "inputs.consume_build_artifact != '' && inputs.verification_topology == 'optimized-v2'",
+          "run": "node scripts/verify-build-artifact-manifest.mjs"
         },
         {
           "name": "Download auxiliary verification artifact",
@@ -1206,6 +1286,15 @@
           "with": {
             "name": "${{ inputs.consume_aux_artifact }}",
             "path": "${{ inputs.aux_artifact_path }}"
+          }
+        },
+        {
+          "name": "Download frozen consumer verification plans",
+          "if": "inputs.consume_plan_artifact != ''",
+          "uses": "actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333",
+          "with": {
+            "name": "${{ inputs.consume_plan_artifact }}",
+            "path": ".tmp/consumer-plan"
           }
         },
         {
@@ -1228,6 +1317,25 @@
           "name": "Freeze baseline verification evidence plans",
           "if": "inputs.verification_telemetry && inputs.build_artifact_name != ''",
           "run": "node --import tsx scripts/verificationTelemetry/cli.mjs prepare-suites --mode=${{ inputs.pr_number != '' && 'pr' || 'full' }}"
+        },
+        {
+          "name": "Freeze installed Playwright browser revisions",
+          "if": "inputs.install_playwright && (inputs.verification_topology == 'optimized-v2' || github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch))",
+          "id": "playwright-cache",
+          "shell": "bash",
+          "env": {
+            "PLAYWRIGHT_REQUESTED_BROWSERS": "${{ inputs.playwright_browsers }}"
+          },
+          "run": "node scripts/playwrightCache.mjs \"$PLAYWRIGHT_REQUESTED_BROWSERS\""
+        },
+        {
+          "name": "Restore trusted Playwright browser revisions",
+          "if": "inputs.verification_topology == 'optimized-v2' && inputs.install_playwright",
+          "uses": "actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9",
+          "with": {
+            "path": "${{ steps.playwright-cache.outputs.path }}",
+            "key": "${{ steps.playwright-cache.outputs.key }}"
+          }
         },
         {
           "name": "Install Playwright browsers and system dependencies",
@@ -1275,6 +1383,51 @@
           "run": "if [[ '${{ inputs.increase_ulimit && runner.os != 'Windows' }}' == 'true' ]]; then\n  ulimit -n 65536 || true\n  printf 'Effective file descriptor limit: '\n  ulimit -n || true\nfi\nnode .github/scripts/ci-timing.mjs start main\ntrap 'phase_exit=$?; node .github/scripts/ci-timing.mjs finish main \"$phase_exit\"; exit \"$phase_exit\"' EXIT\nif [[ -n \"$PR_BASE_SHA\" ]]; then\n  export GITHUB_BASE_REF=\"$PR_BASE_SHA\"\n  export GITHUB_HEAD_REF=\"$PR_HEAD_REF\"\nfi\n${{ inputs.main_command }}\n"
         },
         {
+          "name": "Resolve floating Node 22 support version",
+          "if": "inputs.resolve_node_support",
+          "id": "support-latest-22",
+          "uses": "actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1",
+          "with": {
+            "node-version": "^22.23.4",
+            "check-latest": true
+          }
+        },
+        {
+          "name": "Resolve floating Node 24 support version",
+          "if": "inputs.resolve_node_support",
+          "id": "support-latest-24",
+          "uses": "actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1",
+          "with": {
+            "node-version": "^24.22.1",
+            "check-latest": true
+          }
+        },
+        {
+          "name": "Restore the immutable artifact builder Node",
+          "if": "inputs.resolve_node_support",
+          "uses": "actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1",
+          "with": {
+            "node-version": "${{ steps.toolchain.outputs.node-version }}"
+          }
+        },
+        {
+          "name": "Freeze complete Node support roles and unique executions",
+          "if": "inputs.resolve_node_support",
+          "id": "node-support-plan",
+          "shell": "bash",
+          "env": {
+            "SUPPORT_LATEST_22": "${{ steps.support-latest-22.outputs.node-version }}",
+            "SUPPORT_LATEST_24": "${{ steps.support-latest-24.outputs.node-version }}"
+          },
+          "run": "node scripts/nodeSupport/index.mjs plan .cache/node-support-tarballs/ci-provenance.json .tmp/consumer-plan/node-support.json \"$SUPPORT_LATEST_22\" \"$SUPPORT_LATEST_24\""
+        },
+        {
+          "name": "Freeze all consumer scenarios into four deterministic batches",
+          "if": "inputs.prepare_consumer_batches",
+          "id": "consumer-batch-plan",
+          "run": "node scripts/consumerBatches/plan.mjs .cache/node-support-tarballs/ci-provenance.json .tmp/consumer-plan/scenarios.json"
+        },
+        {
           "name": "Finalize original coverage threshold verdict",
           "if": "success() && inputs.verification_telemetry",
           "run": "node scripts/verificationTelemetry/cli.mjs finalize-coverage --if-present --command-succeeded"
@@ -1311,6 +1464,16 @@
             "name": "${{ inputs.build_artifact_name }}",
             "include-hidden-files": true,
             "path": "packages/*/dist/**\npackages-runtime/*/dist/**\npackages-private/*/dist/**\n@weapp-core/*/dist/**\nbenchmarks/*/dist/**\nmpcore/packages/*/dist/**\npackages/*/bin/**\npackages-runtime/*/bin/**\npackages-private/*/bin/**\n@weapp-core/*/bin/**\nmpcore/packages/*/bin/**\n.tmp/build-artifact-manifest.json\n.tmp/verification-telemetry/plans/**\n",
+            "if-no-files-found": "error"
+          }
+        },
+        {
+          "name": "Upload frozen consumer verification plans",
+          "if": "${{ success() && inputs.plan_artifact_name != '' }}",
+          "uses": "actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9",
+          "with": {
+            "name": "${{ inputs.plan_artifact_name }}",
+            "path": ".tmp/consumer-plan",
             "if-no-files-found": "error"
           }
         },
@@ -1376,30 +1539,44 @@
             "path": ".turbo",
             "key": "turbo-${{ runner.os }}-${{ runner.arch }}-${{ env.REPOCTL_RELEASE_NODE_VERSION }}-${{ env.REPOCTL_RELEASE_PNPM_VERSION }}-${{ hashFiles('package.json', 'pnpm-lock.yaml') }}-${{ inputs.checkout_ref || github.sha }}"
           }
+        },
+        {
+          "name": "Save trusted Playwright browser revisions",
+          "if": "${{ success() && inputs.install_playwright && github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}",
+          "uses": "actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9",
+          "with": {
+            "path": "${{ steps.playwright-cache.outputs.path }}",
+            "key": "${{ steps.playwright-cache.outputs.key }}"
+          }
         }
       ]
     }
   },
   ".github/workflows/reusable-quality-platform.yml": {
     "pr-context": {
+      "if": "inputs.verification_topology != 'optimized-v2'",
       "uses": "./.github/workflows/reusable-frozen-pr-context.yml",
       "with": {
+        "verification_topology": "${{ inputs.verification_topology }}",
         "pr_context": "${{ inputs.pr_context }}",
         "profile": "ci"
       }
     },
     "build": {
+      "if": "${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') }}",
       "name": "Build packages and fixtures",
       "needs": "pr-context",
       "uses": "./.github/workflows/reusable-node-command.yml",
       "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "pr_profile": "ci",
         "verification_topology": "${{ inputs.verification_topology }}",
-        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
-        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
-        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
-        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
-        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
-        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "checkout_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
+        "base_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}",
+        "head_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}",
+        "pr_number": "${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}",
+        "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
+        "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "runs_on": "${{ inputs.runs_on }}",
         "node_version": "${{ inputs.node_version }}",
         "timeout_minutes": 40,
@@ -1415,16 +1592,18 @@
     "lint": {
       "name": "Lint",
       "needs": "pr-context",
-      "if": "inputs.lint_command != ''",
+      "if": "${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && (inputs.lint_command != '') }}",
       "uses": "./.github/workflows/reusable-node-command.yml",
       "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "pr_profile": "ci",
         "verification_topology": "${{ inputs.verification_topology }}",
-        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
-        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
-        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
-        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
-        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
-        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "checkout_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
+        "base_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}",
+        "head_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}",
+        "pr_number": "${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}",
+        "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
+        "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "runs_on": "${{ inputs.runs_on }}",
         "node_version": "${{ inputs.node_version }}",
         "timeout_minutes": 40,
@@ -1435,6 +1614,7 @@
       "secrets": "inherit"
     },
     "contracts": {
+      "if": "${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.build.result == 'success' }}",
       "name": "Dependency contracts",
       "needs": [
         "pr-context",
@@ -1442,13 +1622,15 @@
       ],
       "uses": "./.github/workflows/reusable-node-command.yml",
       "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "pr_profile": "ci",
         "verification_topology": "${{ inputs.verification_topology }}",
-        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
-        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
-        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
-        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
-        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
-        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "checkout_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
+        "base_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}",
+        "head_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}",
+        "pr_number": "${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}",
+        "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
+        "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "runs_on": "${{ inputs.runs_on }}",
         "node_version": "${{ inputs.node_version }}",
         "timeout_minutes": 40,
@@ -1466,16 +1648,18 @@
         "pr-context",
         "build"
       ],
-      "if": "inputs.run_types",
+      "if": "${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.build.result == 'success' && (inputs.run_types) }}",
       "uses": "./.github/workflows/reusable-node-command.yml",
       "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "pr_profile": "ci",
         "verification_topology": "${{ inputs.verification_topology }}",
-        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
-        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
-        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
-        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
-        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
-        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "checkout_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
+        "base_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}",
+        "head_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}",
+        "pr_number": "${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}",
+        "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
+        "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "runs_on": "${{ inputs.runs_on }}",
         "node_version": "${{ inputs.node_version }}",
         "timeout_minutes": 40,
@@ -1494,7 +1678,7 @@
         "pr-context",
         "build"
       ],
-      "if": "inputs.run_coverage",
+      "if": "${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.build.result == 'success' && (inputs.run_coverage) }}",
       "strategy": {
         "fail-fast": false,
         "matrix": {
@@ -1508,13 +1692,15 @@
       },
       "uses": "./.github/workflows/reusable-node-command.yml",
       "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "pr_profile": "ci",
         "verification_topology": "${{ inputs.verification_topology }}",
-        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
-        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
-        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
-        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
-        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
-        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "checkout_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
+        "base_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}",
+        "head_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}",
+        "pr_number": "${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}",
+        "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
+        "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "runs_on": "${{ inputs.runs_on }}",
         "node_version": "${{ needs.build.outputs.node_version }}",
         "timeout_minutes": 40,
@@ -1540,7 +1726,7 @@
       "timeout-minutes": 15,
       "env": {
         "WEAPP_VITE_VERIFICATION_TOPOLOGY": "${{ inputs.verification_topology }}",
-        "BUILD_ARTIFACT_EXPECTED_COMMIT": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "BUILD_ARTIFACT_EXPECTED_COMMIT": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
         "BUILD_ARTIFACT_EXPECTED_NODE_MAJOR": "${{ inputs.node_version }}",
         "BUILD_ARTIFACT_EXPECTED_SCOPE": "packages/weapp-vite,packages-runtime/wevu"
       },
@@ -1548,14 +1734,24 @@
         {
           "uses": "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
           "with": {
-            "ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+            "ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
             "persist-credentials": false
+          }
+        },
+        {
+          "name": "Validate frozen identity in the executing job",
+          "if": "inputs.verification_topology == 'optimized-v2'",
+          "uses": "./.github/actions/verify-frozen-job-context",
+          "with": {
+            "context": "${{ inputs.pr_context }}",
+            "profile": "ci"
           }
         },
         {
           "uses": "./.github/actions/setup-node-pnpm",
           "with": {
-            "node-version": "${{ needs.build.outputs.node_version }}"
+            "node-version": "${{ needs.build.outputs.node_version }}",
+            "install-dependencies": "${{ inputs.verification_topology != 'optimized-v2' }}"
           }
         },
         {
@@ -1567,8 +1763,18 @@
         },
         {
           "name": "Verify build identity and refresh workspace links",
+          "if": "inputs.verification_topology != 'optimized-v2'",
           "shell": "bash",
           "run": "pnpm install --frozen-lockfile --ignore-scripts\nnode scripts/verify-build-artifact-manifest.mjs\n"
+        },
+        {
+          "uses": "./.github/actions/install-workspace-deps",
+          "if": "inputs.verification_topology == 'optimized-v2'"
+        },
+        {
+          "name": "Verify restored workspace identity after the single complete install",
+          "if": "inputs.verification_topology == 'optimized-v2'",
+          "run": "node scripts/verify-build-artifact-manifest.mjs"
         },
         {
           "uses": "actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333",
@@ -1592,12 +1798,12 @@
           "name": "Upload coverage reports to Codecov",
           "uses": "codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5",
           "with": {
-            "override_commit": "${{ needs.pr-context.outputs.head_sha }}",
-            "override_pr": "${{ needs.pr-context.outputs.pr_number }}",
-            "override_branch": "${{ needs.pr-context.outputs.head_ref }}"
+            "override_commit": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}",
+            "override_pr": "${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}",
+            "override_branch": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}"
           },
           "env": {
-            "CODECOV_TOKEN": "${{ needs.pr-context.outputs.is_pr != 'true' && secrets.CODECOV_TOKEN || '' }}"
+            "CODECOV_TOKEN": "${{ (inputs.verification_topology == 'optimized-v2' && (fromJSON(inputs.pr_context).isPr && 'true' || 'false') || needs.pr-context.outputs.is_pr) != 'true' && secrets.CODECOV_TOKEN || '' }}"
           }
         },
         {
@@ -1615,24 +1821,29 @@
   },
   ".github/workflows/reusable-miniapp-platform.yml": {
     "pr-context": {
+      "if": "inputs.verification_topology != 'optimized-v2'",
       "uses": "./.github/workflows/reusable-frozen-pr-context.yml",
       "with": {
+        "verification_topology": "${{ inputs.verification_topology }}",
         "pr_context": "${{ inputs.pr_context }}",
         "profile": "ci-e2e"
       }
     },
     "build": {
+      "if": "${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') }}",
       "name": "Build and freeze suite plan",
       "needs": "pr-context",
       "uses": "./.github/workflows/reusable-node-command.yml",
       "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "pr_profile": "ci-e2e",
         "verification_topology": "${{ inputs.verification_topology }}",
-        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
-        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
-        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
-        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
-        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
-        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "checkout_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
+        "base_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}",
+        "head_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}",
+        "pr_number": "${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}",
+        "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
+        "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "e2e_exclude_projects": "${{ inputs.exclude_projects }}",
         "runs_on": "${{ inputs.runs_on }}",
         "node_version": "${{ inputs.node_version }}",
@@ -1645,21 +1856,31 @@
       "secrets": "inherit"
     },
     "plan": {
+      "if": "${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') }}",
       "name": "Freeze complete suite plan",
       "needs": "pr-context",
       "runs-on": "${{ inputs.runs_on }}",
       "timeout-minutes": 15,
       "env": {
         "WEAPP_VITE_VERIFICATION_TOPOLOGY": "${{ inputs.verification_topology }}",
-        "BUILD_ARTIFACT_EXPECTED_COMMIT": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "BUILD_ARTIFACT_EXPECTED_COMMIT": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
         "WEAPP_VITE_E2E_EXCLUDE_PROJECTS": "${{ inputs.exclude_projects }}"
       },
       "steps": [
         {
           "uses": "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
           "with": {
-            "ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+            "ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
             "persist-credentials": false
+          }
+        },
+        {
+          "name": "Validate frozen identity in the executing job",
+          "if": "inputs.verification_topology == 'optimized-v2'",
+          "uses": "./.github/actions/verify-frozen-job-context",
+          "with": {
+            "context": "${{ inputs.pr_context }}",
+            "profile": "ci-e2e"
           }
         },
         {
@@ -1688,6 +1909,12 @@
           "run": "node --import tsx e2e/scripts/verification/cli.ts history --input=.tmp/verification-history --profile=.tmp/verification-plan/profile.json --repository=\"${{ github.repository }}\" --workflow=.github/workflows/ci-e2e.yml --output=.tmp/verification-plan/history.json\nnode --import tsx e2e/scripts/verification/cli.ts plan --suite=ci-${{ inputs.mode }}:classic --shards=4 --profile=.tmp/verification-plan/profile.json --history=.tmp/verification-plan/history.json --output=.tmp/verification-plan/plan.json\nnode --import tsx e2e/scripts/verification/cli.ts history --input=.tmp/verification-history --profile=.tmp/verification-plan/headless-profile.json --repository=\"${{ github.repository }}\" --workflow=.github/workflows/ci-e2e.yml --output=.tmp/verification-plan/headless-history.json\nnode --import tsx e2e/scripts/verification/cli.ts plan --suite=ide-dom-headless:classic --shards=2 --profile=.tmp/verification-plan/headless-profile.json --history=.tmp/verification-plan/headless-history.json --output=.tmp/verification-plan/ide-dom-headless.json"
         },
         {
+          "name": "Freeze dependency-free aggregate runners tied to each plan",
+          "if": "inputs.verification_topology == 'optimized-v2'",
+          "shell": "bash",
+          "run": "node --import tsx e2e/scripts/verification/aggregateBundle.ts --plan=.tmp/verification-plan/plan.json --output=.tmp/verification-plan/miniapp-runner\nnode --import tsx e2e/scripts/verification/aggregateBundle.ts --plan=.tmp/verification-plan/ide-dom-headless.json --output=.tmp/verification-plan/headless-runner\n"
+        },
+        {
           "uses": "actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9",
           "if": "${{ !cancelled() }}",
           "with": {
@@ -1699,6 +1926,7 @@
       ]
     },
     "simulator-browser": {
+      "if": "${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.build.result == 'success' }}",
       "needs": [
         "pr-context",
         "build"
@@ -1706,13 +1934,15 @@
       "name": "Simulator Browser E2E (${{ inputs.runs_on }} / Node ${{ inputs.node_version }})",
       "uses": "./.github/workflows/reusable-node-command.yml",
       "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "pr_profile": "ci-e2e",
         "verification_topology": "${{ inputs.verification_topology }}",
-        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
-        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
-        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
-        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
-        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
-        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "checkout_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
+        "base_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}",
+        "head_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}",
+        "pr_number": "${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}",
+        "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
+        "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "e2e_exclude_projects": "${{ inputs.exclude_projects }}",
         "runs_on": "${{ inputs.runs_on }}",
         "node_version": "${{ inputs.node_version }}",
@@ -1728,6 +1958,7 @@
       "secrets": "inherit"
     },
     "ide-dom-headless": {
+      "if": "${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.build.result == 'success' && needs.plan.result == 'success' }}",
       "needs": [
         "pr-context",
         "build",
@@ -1745,13 +1976,15 @@
       },
       "uses": "./.github/workflows/reusable-node-command.yml",
       "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "pr_profile": "ci-e2e",
         "verification_topology": "${{ inputs.verification_topology }}",
-        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
-        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
-        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
-        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
-        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
-        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "checkout_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
+        "base_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}",
+        "head_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}",
+        "pr_number": "${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}",
+        "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
+        "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "e2e_exclude_projects": "${{ inputs.exclude_projects }}",
         "runs_on": "${{ inputs.runs_on }}",
         "node_version": "${{ inputs.node_version }}",
@@ -1780,20 +2013,30 @@
       "timeout-minutes": 15,
       "env": {
         "WEAPP_VITE_VERIFICATION_TOPOLOGY": "${{ inputs.verification_topology }}",
-        "BUILD_ARTIFACT_EXPECTED_COMMIT": "${{ needs.pr-context.outputs.checkout_sha }}"
+        "BUILD_ARTIFACT_EXPECTED_COMMIT": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}"
       },
       "steps": [
         {
           "uses": "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
           "with": {
-            "ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+            "ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
             "persist-credentials": false
+          }
+        },
+        {
+          "name": "Validate frozen identity in the executing job",
+          "if": "inputs.verification_topology == 'optimized-v2'",
+          "uses": "./.github/actions/verify-frozen-job-context",
+          "with": {
+            "context": "${{ inputs.pr_context }}",
+            "profile": "ci-e2e"
           }
         },
         {
           "uses": "./.github/actions/setup-node-pnpm",
           "with": {
-            "node-version": "${{ inputs.node_version }}"
+            "node-version": "${{ inputs.node_version }}",
+            "install-dependencies": "${{ inputs.verification_topology != 'optimized-v2' }}"
           }
         },
         {
@@ -1812,7 +2055,14 @@
         },
         {
           "name": "Validate complete headless DOM inventory and evidence",
+          "if": "inputs.verification_topology != 'optimized-v2'",
           "run": "node --import tsx e2e/scripts/verification/cli.ts aggregate --plan=.tmp/verification-plan/ide-dom-headless.json --reports=.tmp/ide-dom-headless-reports --output=.tmp/ide-dom-headless-aggregate/report.json"
+        },
+        {
+          "name": "Verify frozen aggregate bundle and complete original evidence",
+          "if": "inputs.verification_topology == 'optimized-v2'",
+          "shell": "bash",
+          "run": "node .github/scripts/run-verification-aggregate.mjs --bundle=.tmp/verification-plan/headless-runner --plan=.tmp/verification-plan/ide-dom-headless.json --reports=.tmp/ide-dom-headless-reports --output=.tmp/ide-dom-headless-aggregate/report.json --sha=\"$BUILD_ARTIFACT_EXPECTED_COMMIT\""
         },
         {
           "name": "Upload complete headless DOM verdict",
@@ -1827,6 +2077,7 @@
       ]
     },
     "ide-dom-acceptance-internal": {
+      "if": "${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.build.result == 'success' }}",
       "needs": [
         "pr-context",
         "build"
@@ -1834,20 +2085,22 @@
       "name": "IDE DOM Acceptance Contracts (${{ inputs.runs_on }} / Node ${{ inputs.node_version }})",
       "uses": "./.github/workflows/reusable-node-command.yml",
       "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "pr_profile": "ci-e2e",
         "verification_topology": "${{ inputs.verification_topology }}",
-        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
-        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
-        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
-        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
-        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
-        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "checkout_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
+        "base_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}",
+        "head_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}",
+        "pr_number": "${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}",
+        "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
+        "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "e2e_exclude_projects": "${{ inputs.exclude_projects }}",
         "runs_on": "${{ inputs.runs_on }}",
         "node_version": "${{ inputs.node_version }}",
         "timeout_minutes": 15,
         "consume_build_artifact": "miniapp-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-weapp-build",
         "main_command": "node packages/weapp-vite/bin/weapp-vite.js prepare e2e-apps/github-issues --platform weapp\nnode packages/weapp-vite/bin/weapp-vite.js prepare e2e-apps/template-wevu-regression --platform weapp\nnode --import tsx scripts/check-e2e-ide-shared-launch.ts\nnode --import tsx e2e/scripts/domAcceptanceReport/inventory.ts --write --check\npnpm vitest run -c e2e/vitest.e2e.internal.config.ts --maxWorkers=1 --no-file-parallelism\n",
-        "artifact_name": "dom-acceptance-inventory-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-${{ needs.pr-context.outputs.checkout_sha }}",
+        "artifact_name": "dom-acceptance-inventory-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
         "artifact_path": "e2e/dom-acceptance-inventory.json\ne2e/dom-acceptance-inventory.md\n",
         "build_artifact_scope": "packages/weapp-vite,mpcore/packages/simulator",
         "timing_artifact_name": "timing-ide-dom-acceptance-internal-${{ inputs.runs_on }}-${{ inputs.node_version }}-${{ inputs.mode }}"
@@ -1855,6 +2108,7 @@
       "secrets": "inherit"
     },
     "miniapp": {
+      "if": "${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.build.result == 'success' && needs.plan.result == 'success' }}",
       "name": "Miniapp suite shard ${{ matrix.shard }}",
       "needs": [
         "pr-context",
@@ -1874,13 +2128,15 @@
       },
       "uses": "./.github/workflows/reusable-node-command.yml",
       "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "pr_profile": "ci-e2e",
         "verification_topology": "${{ inputs.verification_topology }}",
-        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
-        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
-        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
-        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
-        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
-        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "checkout_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
+        "base_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}",
+        "head_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}",
+        "pr_number": "${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}",
+        "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
+        "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "e2e_exclude_projects": "${{ inputs.exclude_projects }}",
         "runs_on": "${{ inputs.runs_on }}",
         "node_version": "${{ inputs.node_version }}",
@@ -1904,16 +2160,18 @@
         "pr-context",
         "build"
       ],
-      "if": "inputs.mode == 'full' || inputs.runs_on == 'ubuntu-latest'",
+      "if": "${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.build.result == 'success' && (inputs.mode == 'full' || inputs.runs_on == 'ubuntu-latest') }}",
       "uses": "./.github/workflows/reusable-node-command.yml",
       "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "pr_profile": "ci-e2e",
         "verification_topology": "${{ inputs.verification_topology }}",
-        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
-        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
-        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
-        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
-        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
-        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "checkout_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
+        "base_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}",
+        "head_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}",
+        "pr_number": "${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}",
+        "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
+        "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "e2e_exclude_projects": "${{ inputs.exclude_projects }}",
         "runs_on": "${{ inputs.runs_on }}",
         "node_version": "${{ inputs.node_version }}",
@@ -1928,7 +2186,7 @@
       "secrets": "inherit"
     },
     "bun-cli": {
-      "if": "inputs.node_version == '22'",
+      "if": "${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.build.result == 'success' && (inputs.node_version == '22') }}",
       "needs": [
         "pr-context",
         "build"
@@ -1945,13 +2203,15 @@
       },
       "uses": "./.github/workflows/reusable-node-command.yml",
       "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "pr_profile": "ci-e2e",
         "verification_topology": "${{ inputs.verification_topology }}",
-        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
-        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
-        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
-        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
-        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
-        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "checkout_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
+        "base_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}",
+        "head_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}",
+        "pr_number": "${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}",
+        "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
+        "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "e2e_exclude_projects": "${{ inputs.exclude_projects }}",
         "runs_on": "${{ inputs.runs_on }}",
         "node_version": "${{ inputs.node_version }}",
@@ -1959,7 +2219,7 @@
         "timeout_minutes": 15,
         "consume_build_artifact": "miniapp-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-weapp-build",
         "main_command": "bun --version\npnpm e2e:bun\n",
-        "artifact_name": "bun-cli-${{ inputs.runs_on }}-${{ matrix.bun-version }}-${{ needs.pr-context.outputs.checkout_sha }}",
+        "artifact_name": "bun-cli-${{ inputs.runs_on }}-${{ matrix.bun-version }}-${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
         "artifact_path": ".tmp/bun-cli/**\ndocs/reports/*-e2e-bun-*-suite-report/**\n",
         "build_artifact_scope": "packages/weapp-vite,mpcore/packages/simulator",
         "timing_artifact_name": "timing-bun-${{ inputs.runs_on }}-${{ matrix.bun-version }}-${{ inputs.mode }}"
@@ -1979,20 +2239,30 @@
       "timeout-minutes": 15,
       "env": {
         "WEAPP_VITE_VERIFICATION_TOPOLOGY": "${{ inputs.verification_topology }}",
-        "BUILD_ARTIFACT_EXPECTED_COMMIT": "${{ needs.pr-context.outputs.checkout_sha }}"
+        "BUILD_ARTIFACT_EXPECTED_COMMIT": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}"
       },
       "steps": [
         {
           "uses": "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
           "with": {
-            "ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+            "ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
             "persist-credentials": false
+          }
+        },
+        {
+          "name": "Validate frozen identity in the executing job",
+          "if": "inputs.verification_topology == 'optimized-v2'",
+          "uses": "./.github/actions/verify-frozen-job-context",
+          "with": {
+            "context": "${{ inputs.pr_context }}",
+            "profile": "ci-e2e"
           }
         },
         {
           "uses": "./.github/actions/setup-node-pnpm",
           "with": {
-            "node-version": "${{ inputs.node_version }}"
+            "node-version": "${{ inputs.node_version }}",
+            "install-dependencies": "${{ inputs.verification_topology != 'optimized-v2' }}"
           }
         },
         {
@@ -2011,7 +2281,14 @@
         },
         {
           "name": "Validate complete suite inventory",
+          "if": "inputs.verification_topology != 'optimized-v2'",
           "run": "node --import tsx e2e/scripts/verification/cli.ts aggregate --plan=.tmp/verification-plan/plan.json --reports=.tmp/verification-reports --output=.tmp/verification-aggregate/report.json"
+        },
+        {
+          "name": "Verify frozen aggregate bundle and complete original evidence",
+          "if": "inputs.verification_topology == 'optimized-v2'",
+          "shell": "bash",
+          "run": "node .github/scripts/run-verification-aggregate.mjs --bundle=.tmp/verification-plan/miniapp-runner --plan=.tmp/verification-plan/plan.json --reports=.tmp/verification-reports --output=.tmp/verification-aggregate/report.json --sha=\"$BUILD_ARTIFACT_EXPECTED_COMMIT\""
         },
         {
           "name": "Upload complete suite verdict",
@@ -2028,29 +2305,37 @@
   },
   ".github/workflows/reusable-consumer-platform.yml": {
     "pr-context": {
+      "if": "inputs.verification_topology != 'optimized-v2'",
       "uses": "./.github/workflows/reusable-frozen-pr-context.yml",
       "with": {
+        "verification_topology": "${{ inputs.verification_topology }}",
         "pr_context": "${{ inputs.pr_context }}",
         "profile": "ci-vite-host-consumer"
       }
     },
     "prepare": {
+      "if": "${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') }}",
       "name": "Build and pack consumer candidates",
       "needs": "pr-context",
       "uses": "./.github/workflows/reusable-node-command.yml",
       "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "pr_profile": "ci-vite-host-consumer",
         "verification_topology": "${{ inputs.verification_topology }}",
-        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
-        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
-        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
-        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
-        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
-        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "checkout_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
+        "base_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}",
+        "head_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}",
+        "pr_number": "${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}",
+        "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
+        "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "runs_on": "${{ inputs.runs_on }}",
         "node_version": "24",
         "timeout_minutes": 30,
         "build_command": "pnpm exec turbo run build --filter=weapp-vite... --filter=@weapp-vite/react... --filter=rolldown-require... --filter=@mpcore/simulator...",
         "main_command": "node scripts/consumerArtifacts/manifest.mjs pack .cache/node-support-tarballs",
+        "resolve_node_support": "${{ inputs.verification_topology == 'optimized-v2' }}",
+        "prepare_consumer_batches": "${{ inputs.verification_topology == 'optimized-v2' && inputs.runs_on == 'ubuntu-latest' }}",
+        "plan_artifact_name": "${{ inputs.verification_topology == 'optimized-v2' && format('consumer-plans-{0}', inputs.runs_on) || '' }}",
         "build_artifact_name": "consumer-${{ inputs.runs_on }}-node-24-build",
         "artifact_name": "consumer-tarballs-${{ inputs.runs_on }}",
         "artifact_path": ".cache/node-support-tarballs",
@@ -2059,6 +2344,7 @@
       "secrets": "inherit"
     },
     "node-support": {
+      "if": "${{ inputs.verification_topology != 'optimized-v2' && !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.prepare.result == 'success' }}",
       "needs": [
         "pr-context",
         "prepare"
@@ -2082,8 +2368,17 @@
         {
           "uses": "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
           "with": {
-            "ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+            "ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
             "persist-credentials": false
+          }
+        },
+        {
+          "name": "Validate frozen identity in the executing job",
+          "if": "inputs.verification_topology == 'optimized-v2'",
+          "uses": "./.github/actions/verify-frozen-job-context",
+          "with": {
+            "context": "${{ inputs.pr_context }}",
+            "profile": "ci-vite-host-consumer"
           }
         },
         {
@@ -2161,13 +2456,14 @@
       ],
       "env": {
         "WEAPP_VITE_VERIFICATION_TOPOLOGY": "${{ inputs.verification_topology }}",
-        "BUILD_ARTIFACT_EXPECTED_COMMIT": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "BUILD_ARTIFACT_EXPECTED_COMMIT": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
         "BUILD_ARTIFACT_EXPECTED_NODE_MAJOR": "24",
         "BUILD_ARTIFACT_EXPECTED_SCOPE": "packages/weapp-vite,packages-runtime/wevu",
         "WEAPP_VITE_CONSUMER_TARBALLS": ".cache/node-support-tarballs"
       }
     },
     "contracts": {
+      "if": "${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.prepare.result == 'success' }}",
       "name": "Host contracts",
       "needs": [
         "pr-context",
@@ -2175,13 +2471,15 @@
       ],
       "uses": "./.github/workflows/reusable-node-command.yml",
       "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "pr_profile": "ci-vite-host-consumer",
         "verification_topology": "${{ inputs.verification_topology }}",
-        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
-        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
-        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
-        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
-        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
-        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "checkout_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
+        "base_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}",
+        "head_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}",
+        "pr_number": "${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}",
+        "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
+        "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "runs_on": "${{ inputs.runs_on }}",
         "node_version": "24",
         "timeout_minutes": 30,
@@ -2197,6 +2495,7 @@
       "secrets": "inherit"
     },
     "dependency-compatibility": {
+      "if": "${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.prepare.result == 'success' }}",
       "needs": [
         "pr-context",
         "prepare"
@@ -2213,13 +2512,15 @@
       },
       "uses": "./.github/workflows/reusable-node-command.yml",
       "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "pr_profile": "ci-vite-host-consumer",
         "verification_topology": "${{ inputs.verification_topology }}",
-        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
-        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
-        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
-        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
-        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
-        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "checkout_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
+        "base_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}",
+        "head_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}",
+        "pr_number": "${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}",
+        "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
+        "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "runs_on": "${{ inputs.runs_on }}",
         "node_version": "24",
         "timeout_minutes": 30,
@@ -2238,7 +2539,7 @@
       "secrets": "inherit"
     },
     "consumer": {
-      "if": "inputs.runs_on == 'ubuntu-latest'",
+      "if": "${{ inputs.verification_topology != 'optimized-v2' && !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.prepare.result == 'success' && (inputs.runs_on == 'ubuntu-latest') }}",
       "needs": [
         "pr-context",
         "prepare"
@@ -2256,13 +2557,15 @@
       },
       "uses": "./.github/workflows/reusable-node-command.yml",
       "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "pr_profile": "ci-vite-host-consumer",
         "verification_topology": "${{ inputs.verification_topology }}",
-        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
-        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
-        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
-        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
-        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
-        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "checkout_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
+        "base_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}",
+        "head_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}",
+        "pr_number": "${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}",
+        "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
+        "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "runs_on": "${{ inputs.runs_on }}",
         "node_version": "24",
         "timeout_minutes": 30,
@@ -2279,7 +2582,7 @@
       "secrets": "inherit"
     },
     "stateful-runtime": {
-      "if": "inputs.runs_on == 'ubuntu-latest'",
+      "if": "${{ inputs.verification_topology != 'optimized-v2' && !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.prepare.result == 'success' && (inputs.runs_on == 'ubuntu-latest') }}",
       "needs": [
         "pr-context",
         "prepare"
@@ -2297,13 +2600,15 @@
       },
       "uses": "./.github/workflows/reusable-node-command.yml",
       "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "pr_profile": "ci-vite-host-consumer",
         "verification_topology": "${{ inputs.verification_topology }}",
-        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
-        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
-        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
-        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
-        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
-        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "checkout_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
+        "base_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}",
+        "head_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}",
+        "pr_number": "${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}",
+        "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
+        "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "runs_on": "${{ inputs.runs_on }}",
         "node_version": "24",
         "timeout_minutes": 30,
@@ -2322,7 +2627,7 @@
       "secrets": "inherit"
     },
     "classic-runtime": {
-      "if": "inputs.runs_on == 'ubuntu-latest'",
+      "if": "${{ inputs.verification_topology != 'optimized-v2' && !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.prepare.result == 'success' && (inputs.runs_on == 'ubuntu-latest') }}",
       "needs": [
         "pr-context",
         "prepare"
@@ -2350,13 +2655,15 @@
       },
       "uses": "./.github/workflows/reusable-node-command.yml",
       "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "pr_profile": "ci-vite-host-consumer",
         "verification_topology": "${{ inputs.verification_topology }}",
-        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
-        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
-        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
-        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
-        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
-        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "checkout_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
+        "base_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}",
+        "head_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}",
+        "pr_number": "${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}",
+        "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
+        "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "runs_on": "${{ inputs.runs_on }}",
         "node_version": "24",
         "timeout_minutes": 30,
@@ -2375,7 +2682,7 @@
       "secrets": "inherit"
     },
     "react-runtime": {
-      "if": "inputs.runs_on == 'ubuntu-latest'",
+      "if": "${{ inputs.verification_topology != 'optimized-v2' && !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.prepare.result == 'success' && (inputs.runs_on == 'ubuntu-latest') }}",
       "needs": [
         "pr-context",
         "prepare"
@@ -2393,13 +2700,15 @@
       },
       "uses": "./.github/workflows/reusable-node-command.yml",
       "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "pr_profile": "ci-vite-host-consumer",
         "verification_topology": "${{ inputs.verification_topology }}",
-        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
-        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
-        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
-        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
-        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
-        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "checkout_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
+        "base_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}",
+        "head_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}",
+        "pr_number": "${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}",
+        "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
+        "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "runs_on": "${{ inputs.runs_on }}",
         "node_version": "24",
         "timeout_minutes": 30,
@@ -2418,7 +2727,7 @@
       "secrets": "inherit"
     },
     "independent-runtime": {
-      "if": "inputs.runs_on == 'ubuntu-latest'",
+      "if": "${{ inputs.verification_topology != 'optimized-v2' && !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.prepare.result == 'success' && (inputs.runs_on == 'ubuntu-latest') }}",
       "needs": [
         "pr-context",
         "prepare"
@@ -2436,13 +2745,15 @@
       },
       "uses": "./.github/workflows/reusable-node-command.yml",
       "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "pr_profile": "ci-vite-host-consumer",
         "verification_topology": "${{ inputs.verification_topology }}",
-        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
-        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
-        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
-        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
-        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
-        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "checkout_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
+        "base_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}",
+        "head_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}",
+        "pr_number": "${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}",
+        "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
+        "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "runs_on": "${{ inputs.runs_on }}",
         "node_version": "24",
         "timeout_minutes": 30,
@@ -2461,7 +2772,7 @@
       "secrets": "inherit"
     },
     "worker-runtime": {
-      "if": "inputs.runs_on == 'ubuntu-latest'",
+      "if": "${{ inputs.verification_topology != 'optimized-v2' && !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.prepare.result == 'success' && (inputs.runs_on == 'ubuntu-latest') }}",
       "needs": [
         "pr-context",
         "prepare"
@@ -2479,13 +2790,15 @@
       },
       "uses": "./.github/workflows/reusable-node-command.yml",
       "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "pr_profile": "ci-vite-host-consumer",
         "verification_topology": "${{ inputs.verification_topology }}",
-        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
-        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
-        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
-        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
-        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
-        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "checkout_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
+        "base_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}",
+        "head_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}",
+        "pr_number": "${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}",
+        "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
+        "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "runs_on": "${{ inputs.runs_on }}",
         "node_version": "24",
         "timeout_minutes": 30,
@@ -2504,7 +2817,7 @@
       "secrets": "inherit"
     },
     "plugin-runtime": {
-      "if": "inputs.runs_on == 'ubuntu-latest'",
+      "if": "${{ inputs.verification_topology != 'optimized-v2' && !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.prepare.result == 'success' && (inputs.runs_on == 'ubuntu-latest') }}",
       "needs": [
         "pr-context",
         "prepare"
@@ -2522,13 +2835,15 @@
       },
       "uses": "./.github/workflows/reusable-node-command.yml",
       "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "pr_profile": "ci-vite-host-consumer",
         "verification_topology": "${{ inputs.verification_topology }}",
-        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
-        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
-        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
-        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
-        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
-        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "checkout_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
+        "base_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}",
+        "head_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}",
+        "pr_number": "${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}",
+        "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
+        "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "runs_on": "${{ inputs.runs_on }}",
         "node_version": "24",
         "timeout_minutes": 30,
@@ -2547,7 +2862,7 @@
       "secrets": "inherit"
     },
     "lib-runtime": {
-      "if": "inputs.runs_on == 'ubuntu-latest'",
+      "if": "${{ inputs.verification_topology != 'optimized-v2' && !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.prepare.result == 'success' && (inputs.runs_on == 'ubuntu-latest') }}",
       "needs": [
         "pr-context",
         "prepare"
@@ -2565,13 +2880,15 @@
       },
       "uses": "./.github/workflows/reusable-node-command.yml",
       "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "pr_profile": "ci-vite-host-consumer",
         "verification_topology": "${{ inputs.verification_topology }}",
-        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
-        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
-        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
-        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
-        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
-        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "checkout_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
+        "base_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}",
+        "head_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}",
+        "pr_number": "${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}",
+        "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
+        "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "runs_on": "${{ inputs.runs_on }}",
         "node_version": "24",
         "timeout_minutes": 30,
@@ -2590,7 +2907,7 @@
       "secrets": "inherit"
     },
     "platform-runtime": {
-      "if": "inputs.runs_on == 'ubuntu-latest'",
+      "if": "${{ inputs.verification_topology != 'optimized-v2' && !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.prepare.result == 'success' && (inputs.runs_on == 'ubuntu-latest') }}",
       "needs": [
         "pr-context",
         "prepare"
@@ -2608,13 +2925,15 @@
       },
       "uses": "./.github/workflows/reusable-node-command.yml",
       "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "pr_profile": "ci-vite-host-consumer",
         "verification_topology": "${{ inputs.verification_topology }}",
-        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
-        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
-        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
-        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
-        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
-        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "checkout_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
+        "base_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}",
+        "head_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}",
+        "pr_number": "${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}",
+        "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
+        "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "runs_on": "${{ inputs.runs_on }}",
         "node_version": "24",
         "timeout_minutes": 30,
@@ -2633,7 +2952,7 @@
       "secrets": "inherit"
     },
     "web-runtime": {
-      "if": "inputs.runs_on == 'ubuntu-latest'",
+      "if": "${{ inputs.verification_topology != 'optimized-v2' && !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.prepare.result == 'success' && (inputs.runs_on == 'ubuntu-latest') }}",
       "needs": [
         "pr-context",
         "prepare"
@@ -2651,13 +2970,15 @@
       },
       "uses": "./.github/workflows/reusable-node-command.yml",
       "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "pr_profile": "ci-vite-host-consumer",
         "verification_topology": "${{ inputs.verification_topology }}",
-        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
-        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
-        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
-        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
-        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
-        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "checkout_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
+        "base_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}",
+        "head_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}",
+        "pr_number": "${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}",
+        "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
+        "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "runs_on": "${{ inputs.runs_on }}",
         "node_version": "24",
         "timeout_minutes": 30,
@@ -2665,7 +2986,7 @@
         "install_playwright": true,
         "playwright_browsers": "chromium",
         "main_command": "pnpm exec vitest run --config scripts/vitest.config.mjs scripts/hostCapabilityDiagnostic.test.mjs\npnpm exec cross-env WEAPP_VITE_CONSUMER_HOST_DIAGNOSTICS=1 node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.host }} headless web\n",
-        "artifact_name": "web-host-capability-${{ matrix.host }}-${{ needs.pr-context.outputs.checkout_sha }}",
+        "artifact_name": "web-host-capability-${{ matrix.host }}-${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
         "artifact_path": ".cache/web-consumer-diagnostic/host-capability-*.json",
         "consume_build_artifact": "consumer-${{ inputs.runs_on }}-node-24-build",
         "build_artifact_node_major": "24",
@@ -2676,6 +2997,311 @@
         "timing_artifact_name": "timing-consumer-web-runtime-${{ inputs.runs_on }}-${{ matrix.host }}"
       },
       "secrets": "inherit"
+    },
+    "node-support-v2": {
+      "if": "${{ inputs.verification_topology == 'optimized-v2' && !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.prepare.result == 'success' }}",
+      "needs": [
+        "pr-context",
+        "prepare"
+      ],
+      "name": "Published Node support (${{ matrix.node }})",
+      "strategy": {
+        "fail-fast": false,
+        "matrix": {
+          "include": "${{ fromJSON(needs.prepare.outputs.node_support_matrix) }}"
+        }
+      },
+      "runs-on": "${{ inputs.runs_on }}",
+      "timeout-minutes": 40,
+      "steps": [
+        {
+          "uses": "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "with": {
+            "ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
+            "persist-credentials": false
+          }
+        },
+        {
+          "name": "Validate frozen identity in the executing job",
+          "if": "inputs.verification_topology == 'optimized-v2'",
+          "uses": "./.github/actions/verify-frozen-job-context",
+          "with": {
+            "context": "${{ inputs.pr_context }}",
+            "profile": "ci-vite-host-consumer"
+          }
+        },
+        {
+          "uses": "./.github/actions/setup-node-pnpm",
+          "with": {
+            "node-version": "${{ needs.prepare.outputs.node_version }}",
+            "install-dependencies": "false"
+          }
+        },
+        {
+          "uses": "actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333",
+          "with": {
+            "name": "consumer-${{ inputs.runs_on }}-node-24-build",
+            "path": "."
+          }
+        },
+        {
+          "uses": "./.github/actions/install-workspace-deps"
+        },
+        {
+          "name": "Verify immutable builder identity after the single complete install",
+          "shell": "bash",
+          "run": "node scripts/verify-build-artifact-manifest.mjs"
+        },
+        {
+          "uses": "actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333",
+          "with": {
+            "name": "consumer-tarballs-${{ inputs.runs_on }}",
+            "path": ".cache/node-support-tarballs"
+          }
+        },
+        {
+          "name": "Verify immutable candidate archives",
+          "run": "node scripts/consumerArtifacts/manifest.mjs verify .cache/node-support-tarballs"
+        },
+        {
+          "uses": "actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333",
+          "with": {
+            "name": "consumer-plans-${{ inputs.runs_on }}",
+            "path": ".tmp/consumer-plan"
+          }
+        },
+        {
+          "uses": "./.github/actions/setup-playwright-browsers",
+          "with": {
+            "browsers": "chromium"
+          }
+        },
+        {
+          "uses": "actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1",
+          "with": {
+            "node-version": "${{ matrix.node }}"
+          }
+        },
+        {
+          "name": "Record actual consumer Node version",
+          "shell": "bash",
+          "run": "node -e \"process.stdout.write('REPOCTL_RELEASE_NODE_VERSION=' + process.version + '\\n')\" >> \"$GITHUB_ENV\""
+        },
+        {
+          "name": "Verify packed Dashboard public types without mini-program ambient globals",
+          "run": "node packages/weapp-vite/scripts/verify-dashboard-public-types.mjs",
+          "env": {
+            "WEAPP_VITE_CONSUMER_TARBALLS": ".cache/node-support-tarballs",
+            "WEAPP_VITE_DASHBOARD_TYPES_EVIDENCE": ".cache/dashboard-public-types.json"
+          }
+        },
+        {
+          "name": "Install and verify published native, SFC, Tailwind and Web consumers",
+          "run": "node packages/weapp-vite/scripts/verify-vite-host-install.mjs wv",
+          "env": {
+            "WEAPP_VITE_CONSUMER_TARBALLS": ".cache/node-support-tarballs",
+            "WEAPP_VITE_CONSUMER_WEB": "1",
+            "WEAPP_VITE_CONSUMER_WEB_DIAGNOSTICS": "1",
+            "WEAPP_VITE_CONSUMER_EVIDENCE": ".cache/consumer-evidence.json",
+            "WEAPP_VITE_CONSUMER_DEPENDENCIES": "1"
+          }
+        },
+        {
+          "name": "Require consumer and public type evidence for every resolved Node role",
+          "shell": "bash",
+          "env": {
+            "SUPPORT_NODE": "${{ matrix.node }}"
+          },
+          "run": "node scripts/nodeSupport/index.mjs record .tmp/consumer-plan/node-support.json \"$SUPPORT_NODE\" .cache/consumer-evidence.json .cache/dashboard-public-types.json .cache/node-support.json"
+        },
+        {
+          "uses": "actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9",
+          "if": "${{ !cancelled() }}",
+          "with": {
+            "name": "node-support-v2-${{ inputs.runs_on }}-${{ matrix.node }}",
+            "path": ".cache/consumer-evidence.json\n.cache/node-support.json\n.cache/dashboard-public-types.json\n.cache/web-consumer-diagnostic/wv.json\n"
+          }
+        }
+      ],
+      "env": {
+        "WEAPP_VITE_VERIFICATION_TOPOLOGY": "${{ inputs.verification_topology }}",
+        "BUILD_ARTIFACT_EXPECTED_COMMIT": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
+        "BUILD_ARTIFACT_EXPECTED_NODE_MAJOR": "24",
+        "BUILD_ARTIFACT_EXPECTED_SCOPE": "packages/weapp-vite,packages-runtime/wevu",
+        "WEAPP_VITE_CONSUMER_TARBALLS": ".cache/node-support-tarballs"
+      }
+    },
+    "consumer-batches-v2": {
+      "name": "Complete consumer batch ${{ matrix.shard }}",
+      "if": "${{ !cancelled() && inputs.verification_topology == 'optimized-v2' && inputs.runs_on == 'ubuntu-latest' && needs.prepare.result == 'success' }}",
+      "needs": [
+        "pr-context",
+        "prepare"
+      ],
+      "strategy": {
+        "fail-fast": false,
+        "matrix": {
+          "include": "${{ fromJSON(needs.prepare.outputs.consumer_batch_matrix) }}"
+        }
+      },
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "verification_topology": "${{ inputs.verification_topology }}",
+        "pr_context": "${{ inputs.pr_context }}",
+        "pr_profile": "ci-vite-host-consumer",
+        "pr_number": "${{ format('{0}', fromJSON(inputs.pr_context).prNumber || '') }}",
+        "base_sha": "${{ fromJSON(inputs.pr_context).baseSha }}",
+        "head_sha": "${{ fromJSON(inputs.pr_context).headSha }}",
+        "head_ref": "${{ fromJSON(inputs.pr_context).headRef }}",
+        "base_ref": "${{ fromJSON(inputs.pr_context).baseRef }}",
+        "checkout_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
+        "runs_on": "${{ inputs.runs_on }}",
+        "node_version": "${{ needs.prepare.outputs.node_version }}",
+        "timeout_minutes": 75,
+        "consume_build_artifact": "consumer-${{ inputs.runs_on }}-node-24-build",
+        "build_artifact_node_major": "24",
+        "build_artifact_scope": "packages/weapp-vite,packages-runtime/wevu,mpcore/packages/simulator",
+        "consume_aux_artifact": "consumer-tarballs-${{ inputs.runs_on }}",
+        "aux_artifact_path": ".cache/node-support-tarballs",
+        "consumer_tarballs": ".cache/node-support-tarballs",
+        "consume_plan_artifact": "consumer-plans-${{ inputs.runs_on }}",
+        "install_playwright": "${{ matrix.install_playwright }}",
+        "main_command": "node scripts/consumerBatches/run.mjs .tmp/consumer-plan/scenarios.json ${{ matrix.shard }} .tmp/consumer-batches/shard-${{ matrix.shard }}",
+        "artifact_name": "consumer-batch-v2-${{ inputs.runs_on }}-${{ matrix.shard }}",
+        "artifact_path": ".tmp/consumer-batches/shard-${{ matrix.shard }}/**\ndocs/reports/dom-acceptance/**\n.cache/web-consumer-diagnostic/**\n",
+        "timing_artifact_name": "timing-consumer-batch-v2-${{ inputs.runs_on }}-${{ matrix.shard }}"
+      },
+      "secrets": "inherit"
+    },
+    "node-support-aggregate-v2": {
+      "name": "Require every node-support logical scenario",
+      "if": "${{ !cancelled() && inputs.verification_topology == 'optimized-v2' && needs.prepare.result == 'success' }}",
+      "needs": [
+        "pr-context",
+        "prepare",
+        "node-support-v2"
+      ],
+      "runs-on": "${{ inputs.runs_on }}",
+      "timeout-minutes": 5,
+      "env": {
+        "WEAPP_VITE_VERIFICATION_TOPOLOGY": "${{ inputs.verification_topology }}",
+        "FROZEN_CHECKOUT_SHA": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}"
+      },
+      "steps": [
+        {
+          "uses": "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "with": {
+            "ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
+            "persist-credentials": false
+          }
+        },
+        {
+          "uses": "./.github/actions/verify-frozen-job-context",
+          "with": {
+            "context": "${{ inputs.pr_context }}",
+            "profile": "ci-vite-host-consumer"
+          }
+        },
+        {
+          "uses": "actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1",
+          "with": {
+            "node-version": "${{ needs.prepare.outputs.node_version }}"
+          }
+        },
+        {
+          "uses": "actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333",
+          "with": {
+            "name": "consumer-plans-${{ inputs.runs_on }}",
+            "path": ".tmp/consumer-plan"
+          }
+        },
+        {
+          "uses": "actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333",
+          "with": {
+            "pattern": "node-support-v2-${{ inputs.runs_on }}-*",
+            "path": ".tmp/node-support-aggregate-v2/reports"
+          }
+        },
+        {
+          "name": "Aggregate immutable complete logical inventory without workspace installation",
+          "shell": "bash",
+          "run": "node scripts/nodeSupport/aggregate.mjs .tmp/consumer-plan/node-support.json .tmp/node-support-aggregate-v2/reports .tmp/node-support-aggregate-v2/report.json \"$FROZEN_CHECKOUT_SHA\""
+        },
+        {
+          "uses": "actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9",
+          "if": "${{ !cancelled() }}",
+          "with": {
+            "name": "node-support-aggregate-v2-${{ inputs.runs_on }}",
+            "path": ".tmp/node-support-aggregate-v2/report.json",
+            "if-no-files-found": "error"
+          }
+        }
+      ]
+    },
+    "consumer-aggregate-v2": {
+      "name": "Require every scenarios logical scenario",
+      "if": "${{ !cancelled() && inputs.verification_topology == 'optimized-v2' && needs.prepare.result == 'success' && inputs.runs_on == 'ubuntu-latest' }}",
+      "needs": [
+        "pr-context",
+        "prepare",
+        "consumer-batches-v2"
+      ],
+      "runs-on": "${{ inputs.runs_on }}",
+      "timeout-minutes": 5,
+      "env": {
+        "WEAPP_VITE_VERIFICATION_TOPOLOGY": "${{ inputs.verification_topology }}",
+        "FROZEN_CHECKOUT_SHA": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}"
+      },
+      "steps": [
+        {
+          "uses": "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "with": {
+            "ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
+            "persist-credentials": false
+          }
+        },
+        {
+          "uses": "./.github/actions/verify-frozen-job-context",
+          "with": {
+            "context": "${{ inputs.pr_context }}",
+            "profile": "ci-vite-host-consumer"
+          }
+        },
+        {
+          "uses": "actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1",
+          "with": {
+            "node-version": "${{ needs.prepare.outputs.node_version }}"
+          }
+        },
+        {
+          "uses": "actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333",
+          "with": {
+            "name": "consumer-plans-${{ inputs.runs_on }}",
+            "path": ".tmp/consumer-plan"
+          }
+        },
+        {
+          "uses": "actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333",
+          "with": {
+            "pattern": "consumer-batch-v2-${{ inputs.runs_on }}-*",
+            "path": ".tmp/consumer-aggregate-v2/reports"
+          }
+        },
+        {
+          "name": "Aggregate immutable complete logical inventory without workspace installation",
+          "shell": "bash",
+          "run": "node scripts/consumerBatches/aggregate.mjs .tmp/consumer-plan/scenarios.json .tmp/consumer-aggregate-v2/reports .tmp/consumer-aggregate-v2/report.json \"$FROZEN_CHECKOUT_SHA\""
+        },
+        {
+          "uses": "actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9",
+          "if": "${{ !cancelled() }}",
+          "with": {
+            "name": "consumer-aggregate-v2-${{ inputs.runs_on }}",
+            "path": ".tmp/consumer-aggregate-v2/report.json",
+            "if-no-files-found": "error"
+          }
+        }
+      ]
     }
   }
 }

@@ -4,7 +4,7 @@ import { verificationProfileSchema } from './profile'
 import { SUITE_TASK_ARTIFACT_KINDS, VERIFICATION_TOOL_VERSION } from './types'
 
 const topologySchema = z.object({
-  id: z.enum(['legacy-v1', 'optimized-v1']),
+  id: z.enum(['legacy-v1', 'optimized-v1', 'optimized-v2']),
   policy: z.literal('verification-topology-v1'),
   policyDigest: z.string().regex(/^[a-f0-9]{64}$/),
 }).strict().refine((value) => {

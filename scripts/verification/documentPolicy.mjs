@@ -1,6 +1,6 @@
 /** 仅根贡献与代理约定属于独立文档；包文档和生成规则继续交给所属检查。 */
 export function isRootPolicyDocument(file) {
-  return typeof file === 'string' && /^(?:CONTRIBUTING\.md|AGENTS(?:\.local)?\.md|README(?:[.-][\w-]+)?\.md|LICENSE(?:\.md|\.txt)?)$/u.test(file)
+  return typeof file === 'string' && /^(?:CONTRIBUTING\.md|AGENTS(?:\.local)?\.md|CLAUDE\.md|README(?:[.-][\w-]+)?\.md|LICENSE(?:\.md|\.txt)?)$/u.test(file)
 }
 
 export const DOCUMENT_CONTRACTS = {

@@ -20,6 +20,8 @@ interface WorkflowJob {
   steps?: WorkflowStep[]
 }
 
+const frozenCheckout = '${{ (inputs.verification_topology == \'optimized-v2\' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}'
+
 function workflow() {
   return readWorkflowFixture('reusable-miniapp-platform.yml') as { jobs: Record<string, WorkflowJob> }
 }
@@ -29,7 +31,7 @@ describe('complete headless DOM workflow sharding', () => {
     const { jobs } = workflow()
     const plan = jobs.plan!
     expect(plan.env).toMatchObject({
-      BUILD_ARTIFACT_EXPECTED_COMMIT: '${{ needs.pr-context.outputs.checkout_sha }}',
+      BUILD_ARTIFACT_EXPECTED_COMMIT: frozenCheckout,
       WEAPP_VITE_E2E_EXCLUDE_PROJECTS: '${{ inputs.exclude_projects }}',
       WEAPP_VITE_VERIFICATION_TOPOLOGY: '${{ inputs.verification_topology }}',
     })
@@ -51,7 +53,7 @@ describe('complete headless DOM workflow sharding', () => {
     expect(job.strategy).toEqual({ 'fail-fast': false, 'matrix': { shard: [1, 2] } })
     expect(job.with).toMatchObject({
       timeout_minutes: 30,
-      checkout_ref: '${{ needs.pr-context.outputs.checkout_sha }}',
+      checkout_ref: frozenCheckout,
       e2e_exclude_projects: '${{ inputs.exclude_projects }}',
       consume_build_artifact: jobs.build!.with!.build_artifact_name,
       consume_aux_artifact: 'miniapp-plan-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-${{ inputs.mode }}',
@@ -93,7 +95,7 @@ describe('complete headless DOM workflow sharding', () => {
     expect(job.needs).toEqual(['pr-context', 'build', 'plan', 'ide-dom-headless'])
     expect(job.if).toBe('${{ !cancelled() && needs.build.result == \'success\' && needs.plan.result == \'success\' }}')
     expect(job.env).toMatchObject({
-      BUILD_ARTIFACT_EXPECTED_COMMIT: '${{ needs.pr-context.outputs.checkout_sha }}',
+      BUILD_ARTIFACT_EXPECTED_COMMIT: frozenCheckout,
       WEAPP_VITE_VERIFICATION_TOPOLOGY: '${{ inputs.verification_topology }}',
     })
     const downloads = job.steps!.filter(step => step.uses?.startsWith('actions/download-artifact@'))
@@ -102,6 +104,12 @@ describe('complete headless DOM workflow sharding', () => {
       { pattern: 'ide-dom-headless-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-shard-*', path: '.tmp/ide-dom-headless-reports' },
     ])
     expect(job.steps!.find(step => step.name === 'Validate complete headless DOM inventory and evidence')!.run).toBe('node --import tsx e2e/scripts/verification/cli.ts aggregate --plan=.tmp/verification-plan/ide-dom-headless.json --reports=.tmp/ide-dom-headless-reports --output=.tmp/ide-dom-headless-aggregate/report.json')
+    const original = job.steps!.find(step => step.name === 'Validate complete headless DOM inventory and evidence')!
+    expect(original.if).toBe('inputs.verification_topology != \'optimized-v2\'')
+    const bundled = job.steps!.find(step => step.name === 'Verify frozen aggregate bundle and complete original evidence')!
+    expect(bundled.if).toBe('inputs.verification_topology == \'optimized-v2\'')
+    expect(bundled.run).toBe('node .github/scripts/run-verification-aggregate.mjs --bundle=.tmp/verification-plan/headless-runner --plan=.tmp/verification-plan/ide-dom-headless.json --reports=.tmp/ide-dom-headless-reports --output=.tmp/ide-dom-headless-aggregate/report.json --sha="$BUILD_ARTIFACT_EXPECTED_COMMIT"')
+    expect(job.steps!.find(step => step.uses === './.github/actions/setup-node-pnpm')!.with!['install-dependencies']).toBe('${{ inputs.verification_topology != \'optimized-v2\' }}')
     const upload = job.steps!.find(step => step.name === 'Upload complete headless DOM verdict')!
     expect(upload.if).toBe('${{ !cancelled() }}')
     expect(upload.with).toMatchObject({ 'path': '.tmp/ide-dom-headless-aggregate', 'if-no-files-found': 'error' })

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
+import { GITHUB_ISSUES_BUILD_TASK_LABELS } from '../../e2e/ci/githubIssuesBuild/groups.ts'
 import { assertTaskCaseCoverage } from '../../e2e/scripts/domAcceptanceReport/taskCases.ts'
 import { assertVerificationTopology, logicalTopologyTaskLabels } from '../verification/topology.ts'
 
@@ -64,7 +65,21 @@ export function assertRuntimeCaseInventory(planned, reports, provider) {
 
 /** 比较完整任务集合时只展开已审阅的 TDesign 四合一，不忽略其他任务。 */
 export function logicalRuntimeTaskInventory(inventory) {
-  const tasks = inventory.flatMap(task => logicalTopologyTaskLabels(task.label).map(label => [label, task.outOfScopeReason ?? null, task.acceptanceTemplates ?? null]))
-  assert(new Set(tasks.map(([label]) => label)).size === tasks.length, 'Logical runtime task inventory is duplicated')
-  return tasks.sort(([left], [right]) => left.localeCompare(right))
+  assert(new Set(inventory.map(task => task.label)).size === inventory.length, 'Physical runtime task inventory is duplicated')
+  const groups = inventory.filter(task => GITHUB_ISSUES_BUILD_TASK_LABELS.includes(task.label))
+  assert(!groups.length || groups.length === GITHUB_ISSUES_BUILD_TASK_LABELS.length, 'Logical build group inventory is incomplete')
+  const tasks = new Map()
+  for (const task of inventory) {
+    for (const label of logicalTopologyTaskLabels(task.label)) {
+      const value = [label, task.outOfScopeReason ?? null, task.acceptanceTemplates ?? null]
+      const previous = tasks.get(label)
+      // 构建任务按真实变体拆开后映射回一个逻辑任务，其他重叠仍属于重复执行。
+      if (previous) {
+        assert(label === 'ci/github-issues.build.test.ts' && previous.physical !== label && task.label !== label, 'Logical runtime task inventory is duplicated')
+        assert.deepEqual(previous.value, value, 'Logical build group metadata differs')
+      }
+      tasks.set(label, { physical: task.label, value })
+    }
+  }
+  return [...tasks.values()].map(entry => entry.value).sort(([left], [right]) => left.localeCompare(right))
 }
