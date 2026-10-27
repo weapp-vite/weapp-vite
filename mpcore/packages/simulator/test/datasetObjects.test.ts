@@ -26,15 +26,15 @@ describe.each(['node', 'browser'] as const)('%s object dataset consumers', (prov
     return createHeadlessSession({ projectPath })
   }
 
-  it('keeps original values in observer callbacks before and after replacement', () => {
+  it('keeps original values in observer callbacks after replacing a row with the same key', () => {
     const session = createSession()
     try {
       const page = session.reLaunch('/pages/index/index')
-      session.renderCurrentPage()
+      expect(session.renderCurrentPage().wxml).toContain('data-item-name="pending"')
       page.observe()
       expect(page.data.observer).toEqual(expectedObjectDataset())
       page.replace()
-      session.renderCurrentPage()
+      expect(session.renderCurrentPage().wxml).toContain('data-item-name="complete"')
       page.observe()
       expect(page.data.observer).toEqual(expectedObjectDataset('complete', 2))
     }
@@ -43,29 +43,45 @@ describe.each(['node', 'browser'] as const)('%s object dataset consumers', (prov
     }
   })
 
-  it('shares typed values across native events, component events and selector queries', async () => {
+  it('updates same-key row datasets across events and selectors without changing prior events', async () => {
     const session = createSession()
-    const render = () => new HeadlessTestingNodeHandle(session.renderCurrentPage().root, {
-      callMethod: (scopeId, method, event) => session.callScopeMethod(scopeId, method, event),
-      createPageHandle: () => ({ data: async () => session.getCurrentPages().at(-1)?.data }),
-      createScopeHandle: () => null,
-      ownerScopeId: scopeId => scopeId ? session.getScopeIdForComponent(session.selectOwnerComponent(scopeId)) : null,
-    })
+    const render = () => {
+      const tree = session.renderCurrentPage()
+      return {
+        root: new HeadlessTestingNodeHandle(tree.root, {
+          callMethod: (scopeId, method, event) => session.callScopeMethod(scopeId, method, event),
+          createPageHandle: () => ({ data: async () => session.getCurrentPages().at(-1)?.data }),
+          createScopeHandle: () => null,
+          ownerScopeId: scopeId => scopeId ? session.getScopeIdForComponent(session.selectOwnerComponent(scopeId)) : null,
+        }),
+        wxml: tree.wxml,
+      }
+    }
     try {
       const page = session.reLaunch('/pages/index/index')
+      let initialEvent: unknown
       for (const [value, count] of [['pending', 1], ['complete', 2]] as const) {
-        const root = render()
+        if (value === 'complete') {
+          page.replace()
+        }
+        const { root, wxml } = render()
         const row = (await root.$('#row'))!
         expect(await row.dataset()).toEqual(expectedObjectDataset(value, count))
-        expect(session.renderCurrentPage().wxml).toContain('data-item="[object Object]"')
+        expect(wxml).toContain('data-item="[object Object]"')
+        expect(wxml).toContain(`data-item-name="${value}"`)
         await row.tap()
         expect(page.data.event).toEqual(expectedObjectDataset(value, count))
+        if (value === 'pending') {
+          initialEvent = page.data.event
+        }
+        else {
+          expect(initialEvent).toEqual(expectedObjectDataset())
+        }
         page.query()
         expect(page.data.selector).toEqual(expectedObjectDataset(value, count))
-        const component = (await render().$('dataset-probe'))!
+        const component = (await render().root.$('dataset-probe'))!
         await (await component.$('#emit'))!.tap()
         expect(page.data.componentEvent).toEqual(expectedObjectDataset(value, count, 'component-0'))
-        page.replace()
       }
     }
     finally {
