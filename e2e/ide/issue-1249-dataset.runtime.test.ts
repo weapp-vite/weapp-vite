@@ -56,6 +56,7 @@ describe('issue #1249: native dataset object consumers', { concurrent: false }, 
       { id: 'selector-initial', route: ROUTE, action: 'selector 读取初始表达式原值', nodes: nodes('selector', 'pending', 1) },
       { id: 'observer-initial', route: ROUTE, action: 'observer 读取初始表达式原值', nodes: nodes('observer', 'pending', 1) },
       { id: 'component-initial', route: ROUTE, action: '组件事件读取宿主表达式原值', nodes: nodes('component', 'pending', 1, true) },
+      { id: 'replacement-ready', route: ROUTE, action: '同 key 对象替换已渲染后再触发 consumer', nodes: [{ selector: '#row-0', text: 'Select 0', attributes: { 'data-item-name': 'complete' } }] },
       { id: 'event-replaced', route: ROUTE, action: '同 key 对象替换后 tap 读取新值', nodes: nodes('event', 'complete', 2) },
       { id: 'selector-replaced', route: ROUTE, action: 'selector 读取替换后的新值', nodes: nodes('selector', 'complete', 2) },
       { id: 'observer-replaced', route: ROUTE, action: 'observer 读取替换后的新值', nodes: nodes('observer', 'complete', 2) },
@@ -93,6 +94,8 @@ describe('issue #1249: native dataset object consumers', { concurrent: false }, 
     await dom.check('component-initial', host!, page)
     expect(await read('snapshot')).toMatchObject(expected('pending', 1, true))
     await tap('#replace')
+    // tap 回执不代表 setData 已完成视图更新，先观察绑定值再读取下一次事件。
+    await dom.check('replacement-ready', host!, page)
     await tap('#row-0')
     await dom.check('event-replaced', host!, page)
     expect(await read('snapshot')).toMatchObject(expected('complete', 2))
