@@ -2411,8 +2411,14 @@
           "run": "node scripts/consumerArtifacts/manifest.mjs verify .cache/node-support-tarballs"
         },
         {
+          "name": "Install browser and system dependencies for published Web consumption",
+          "if": "runner.os == 'Linux'",
+          "run": "if [ -f /etc/apt/apt-mirrors.txt ]; then\n  sudo sed -i '\\#azure.archive.ubuntu.com#d' /etc/apt/apt-mirrors.txt\nfi\npnpm exec playwright install --with-deps chromium\n"
+        },
+        {
           "name": "Install browser for published Web consumption",
-          "run": "pnpm exec playwright install --with-deps chromium"
+          "if": "runner.os != 'Linux'",
+          "run": "pnpm exec playwright install chromium"
         },
         {
           "uses": "actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1",

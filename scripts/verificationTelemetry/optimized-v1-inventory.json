@@ -1442,7 +1442,8 @@
       "commands": [
         "pnpm install --frozen-lockfile --ignore-scripts\nnode scripts/verify-build-artifact-manifest.mjs",
         "node scripts/consumerArtifacts/manifest.mjs verify .cache/node-support-tarballs",
-        "pnpm exec playwright install --with-deps chromium",
+        "if [ -f /etc/apt/apt-mirrors.txt ]; then\n  sudo sed -i '\\#azure.archive.ubuntu.com#d' /etc/apt/apt-mirrors.txt\nfi\npnpm exec playwright install --with-deps chromium\n",
+        "pnpm exec playwright install chromium",
         "node -e \"process.stdout.write('REPOCTL_RELEASE_NODE_VERSION=' + process.version + '\\n')\" >> \"$GITHUB_ENV\"",
         "node packages/weapp-vite/scripts/verify-dashboard-public-types.mjs",
         "node packages/weapp-vite/scripts/verify-vite-host-install.mjs wv"
