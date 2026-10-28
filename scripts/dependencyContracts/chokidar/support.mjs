@@ -76,16 +76,18 @@ export function installNativeInstrumentation({
   }
   fs.watch = function (filename, ...args) {
     const file = absolutePath(filename)
-    const attempt = { path: relative(file), afterPublicClose: publicCloseStarted, result: 'pending' }
+    const options = args.find(value => value && typeof value === 'object')
+    const persistent = options?.persistent !== false
+    const recursive = options?.recursive === true
+    const attempt = { path: relative(file), persistent, recursive, afterPublicClose: publicCloseStarted, result: 'pending' }
     attempts.push(attempt)
     try {
       beforeWatch?.(file, attempt)
-      const recursive = args.some(value => value && typeof value === 'object' && value.recursive === true)
       const parent = recursiveScopes.getStore()
       const childScope = recursive ? { children: [], lateAcquisitions: [], closing: false } : undefined
       const acquire = () => originalWatch.call(this, filename, ...args)
       const native = childScope ? recursiveScopes.run(childScope, acquire) : acquire()
-      const record = observeNativeWatcher(native, { path: relative(file), afterPublicClose: publicCloseStarted, recursiveScope: childScope })
+      const record = observeNativeWatcher(native, { path: relative(file), persistent, recursive, afterPublicClose: publicCloseStarted, recursiveScope: childScope })
       handles.push(record)
       parent?.children.push(record)
       if (parent?.closing) {
@@ -204,8 +206,10 @@ export function installNativeInstrumentation({
         nativeEvents,
         omittedNativeEvents,
         registrationBarriers: registrationBarriers.map(({ purpose, closed, closeCalls, closeEvents, nativeCloseRequests, nativeCloseCompletions, termination, errorEvents }) => ({ purpose, closed, closeCalls, closeEvents, nativeCloseRequests, nativeCloseCompletions, termination, errorEvents })),
-        handles: handles.map(({ path: watchedPath, kind, recursiveScope, closed, closeCalls, closeEvents, nativeCloseRequests, nativeCloseCompletions, nativeCloseOrigin, errorEvents, termination, observationErrors, afterPublicClose, lastError }) => ({
+        handles: handles.map(({ path: watchedPath, persistent, recursive, kind, recursiveScope, closed, closeCalls, closeEvents, nativeCloseRequests, nativeCloseCompletions, nativeCloseOrigin, errorEvents, termination, observationErrors, afterPublicClose, lastError }) => ({
           path: watchedPath,
+          persistent,
+          recursive,
           kind: kind || 'native-handle',
           recursiveChildren: recursiveScope?.children.map(child => ({ path: child.path, closed: child.closed, nativeCloseRequests: child.nativeCloseRequests, nativeCloseCompletions: child.nativeCloseCompletions })),
           lateAcquisitions: recursiveScope?.lateAcquisitions,

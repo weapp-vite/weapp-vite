@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict'
 import { access, readFile, rename, rm, stat, writeFile } from 'node:fs/promises'
 import path from 'node:path'
+import { assertSharedNativeParent } from './sharedInode.mjs'
 import { bounded, deferred, turn, waitForObservedEventPhase } from './support.mjs'
 
-async function openDirectOwners({ chokidar, root, file, open, ready, instrumentation }) {
+async function openDirectOwners({ chokidar, root, file, open, ready, instrumentation, timeoutMs }) {
   assert.ok(['darwin', 'linux', 'freebsd'].includes(instrumentation.actualPlatform))
   await writeFile(file, 'first shared boundary inode')
   const owners = [open(chokidar, file)]
@@ -11,20 +12,14 @@ async function openDirectOwners({ chokidar, root, file, open, ready, instrumenta
   owners.push(open(chokidar, file))
   await ready(owners[1])
   const parent = path.relative(root, path.dirname(file)).replaceAll('\\', '/') || '.'
-  const handles = instrumentation.handles.filter(handle => handle.path === parent)
-  assert.equal(handles.length, 1, 'two direct-file owners share one native parent handle')
-  const oldHandle = handles[0]
+  const oldHandle = await assertSharedNativeParent({ instrumentation, parentPath: parent, timeoutMs })
   return { owners, oldHandle, before: await stat(file) }
 }
 
-async function assertRebound({ instrumentation, oldHandle }) {
+async function assertRebound({ instrumentation, oldHandle, timeoutMs }) {
   assert.equal(oldHandle.closeCalls, 0)
   assert.equal(oldHandle.closeEvents, 0)
-  const live = instrumentation.handles.filter(handle => handle.path === oldHandle.path && !handle.closed)
-  assert.equal(live.length, 1)
-  assert.equal(live[0], oldHandle, 'v6 parent resource covers the replacement without a file-handle rebind')
-  assert.equal(live[0].path, oldHandle.path)
-  return live[0]
+  return assertSharedNativeParent({ instrumentation, parentPath: oldHandle.path, timeoutMs, expected: oldHandle })
 }
 
 function nextOwnerChange(owners, file, timeoutMs) {
@@ -99,7 +94,7 @@ export async function verifyLateSiblingError(options) {
     await writeFile(file, 'both direct owners still observe a real change after the old sibling ENOENT')
     await Promise.all(nextChanges)
     assert.equal(await readFile(file, 'utf8'), 'both direct owners still observe a real change after the old sibling ENOENT')
-    assert.equal(instrumentation.handles.filter(handle => handle.path === oldHandle.path).length, 1)
+    await assertSharedNativeParent({ instrumentation, parentPath: oldHandle.path, timeoutMs, expected: oldHandle })
     evidence.push({ checkpoint: 'late-sibling-native-enoent-preserves-rebound-inode', rebindOwner, lateErrorOwner: 1 - rebindOwner, originalErrorPreserved: releasedOriginalError, firstDispatchRequests: 2, oldInode: String(before.ino), newInode: String(after.ino) })
   }
   finally {

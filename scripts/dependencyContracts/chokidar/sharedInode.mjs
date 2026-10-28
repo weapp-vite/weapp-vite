@@ -1,7 +1,47 @@
 import assert from 'node:assert/strict'
 import { readFile, rename, stat, writeFile } from 'node:fs/promises'
 import path from 'node:path'
-import { turn, waitForObservedEventPhase } from './support.mjs'
+import { assertNativeWatcherClosed } from './nativeWatcher.mjs'
+import { bounded, turn, waitForObservedEventPhase } from './support.mjs'
+
+/** 共享父资源保持同一存活身份；额外目录 helper 必须各自公开关闭并完成原生终结。 */
+export async function assertSharedNativeParent({ instrumentation, parentPath, timeoutMs, expected }) {
+  const parentHandles = instrumentation.handles.filter(handle => handle.path === parentPath)
+  const persistent = parentHandles.filter(handle => handle.persistent === true)
+  assert.equal(persistent.length, 1, 'shared owners retain exactly one historical persistent parent resource')
+  const shared = persistent[0]
+  if (expected) {
+    assert.equal(shared, expected, 'inode replacement cannot rebind or replace the shared parent resource')
+  }
+  const helpers = instrumentation.handles.filter(handle => handle.persistent === false)
+  if (helpers.length) {
+    assert.equal(instrumentation.actualPlatform, 'darwin', 'extra directory helpers are only supported on actual Darwin')
+  }
+  for (const helper of helpers) {
+    assert.equal(helper.path, parentPath, 'a helper can only acquire this scenario\'s shared parent directory')
+    assert.equal(helper.recursive, false, 'a registration helper cannot acquire a recursive wrapper')
+    assert.equal(helper.closeCalls, 1, 'every helper must already have received one public close')
+    assert.equal(helper.nativeCloseRequests, 1, 'every helper must request its own native close once')
+  }
+  await bounded(Promise.all(helpers.map(helper => helper.closePromise)), 'all owned shared-parent helpers complete their exact native close', timeoutMs)
+  for (const helper of helpers) {
+    assertNativeWatcherClosed(helper, true)
+  }
+  const currentParentHandles = instrumentation.handles.filter(handle => handle.path === parentPath)
+  const currentPersistent = currentParentHandles.filter(handle => handle.persistent === true)
+  assert.equal(currentPersistent.length, 1, 'closed helpers cannot hide a historical persistent-parent rebind')
+  assert.equal(currentPersistent[0], shared, 'the persistent parent identity cannot change while helpers finish')
+  const live = currentParentHandles.filter(handle => !handle.closed)
+  assert.equal(live.length, 1, 'exactly the original shared parent remains live')
+  assert.equal(live[0], shared)
+  assert.deepEqual(shared.observationErrors, [])
+  assert.equal(shared.closed, false)
+  assert.equal(shared.closeCalls, 0)
+  assert.equal(shared.closeEvents, 0)
+  assert.equal(shared.nativeCloseRequests, 0)
+  assert.equal(shared.nativeCloseCompletions, 0)
+  return shared
+}
 
 /** 两个 owner 直接 watch 同一个真实文件，共享 v6 的父目录资源。 */
 export async function verifySharedInode({ chokidar, root, timeoutMs, open, ready, instrumentation, evidence }) {
@@ -14,9 +54,7 @@ export async function verifySharedInode({ chokidar, root, timeoutMs, open, ready
   const second = open(chokidar, file)
   await ready(second)
   const parentLabel = path.relative(root, path.dirname(file)).replaceAll('\\', '/') || '.'
-  const original = instrumentation.handles.filter(handle => handle.path === parentLabel)
-  assert.equal(original.length, 1, 'two direct-file owners initially share exactly one native parent handle')
-  const oldHandle = original[0]
+  const oldHandle = await assertSharedNativeParent({ instrumentation, parentPath: parentLabel, timeoutMs })
   const before = await stat(file)
   await writeFile(replacement, 'replacement inode has a different size')
   const firstChanges = [first.event('change', file, timeoutMs), second.event('change', file, timeoutMs)]
@@ -47,7 +85,7 @@ export async function verifySharedInode({ chokidar, root, timeoutMs, open, ready
   assert.ok(nativeRebound, 'one shared parent resource must cover both logical file generations')
   assert.ok(outcomes.every(outcome => outcome.status === 'fulfilled'), 'both owners must receive the next real change after inode replacement')
   assert.equal(await readFile(file, 'utf8'), 'the new inode must report a subsequent real change to both direct owners')
-  assert.equal(instrumentation.handles.filter(handle => handle.path === parentLabel).length, 1, 'inode replacement does not duplicate the shared parent resource')
+  await assertSharedNativeParent({ instrumentation, parentPath: parentLabel, timeoutMs, expected: oldHandle })
   for (const owner of [first, second]) {
     assert.deepEqual(owner.errors, [])
   }
