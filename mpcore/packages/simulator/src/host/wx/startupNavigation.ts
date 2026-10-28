@@ -33,18 +33,10 @@ export class StartupNavigationQueue {
       })
       return
     }
-    // 冷启动成功回调晚于目标页 ready；错误也必须在 App 启动栈退出后交付。
-    const defer = <T extends (...args: any[]) => void>(callback: T | undefined) => callback
-      ? (...args: Parameters<T>) => { this.scheduler.setTimeout(() => callback(...args), 0) }
-      : undefined
-    const deferred = option && {
-      ...option,
-      success: defer(option.success),
-      fail: defer(option.fail),
-      complete: defer(option.complete),
-    }
+    // 队列已保证退出 App 启动栈；提交导航时直接交付回调，先于目标页的 ready。
+    const submitted = option && { ...option }
     this.pending.push(() => {
-      operation(deferred)
+      operation(submitted)
     })
   }
 

@@ -45,6 +45,7 @@ import {
   resolveRuntimeProviderName,
 } from './runtimeProvider'
 import { createStartupProtocolDiagnostics } from './startupProtocolDiagnostics'
+import { classifyTerminalRuntimeFailure, TERMINAL_RUNTIME_FAILURE_MARKER } from './terminalRuntimeFailure'
 import { watchResolvedDirectory } from './watchResolvedDirectory'
 
 export { reconnectAutomator } from './automatorReconnect'
@@ -1584,7 +1585,7 @@ function createDevtoolsLoginRequiredError(error: unknown) {
 }
 
 export function isLikelyLaunchRetryableError(error: unknown) {
-  if (error instanceof ManagedEngineBuildGateError || error instanceof DevtoolsSimulatorBootLogError || isDevtoolsLoginRequiredError(error)) {
+  if (error instanceof ManagedEngineBuildGateError || classifyTerminalRuntimeFailure(error) || isDevtoolsLoginRequiredError(error)) {
     return false
   }
 
@@ -1600,6 +1601,11 @@ export function isLikelyLaunchRetryableError(error: unknown) {
 }
 
 function handleLaunchError(error: unknown, project: string): never {
+  const terminalFailure = classifyTerminalRuntimeFailure(error)
+  if (terminalFailure) {
+    // 只在最终失败出口通知外层 runner；待就绪日志与可恢复重试不发布终态标记。
+    process.stderr.write(`${TERMINAL_RUNTIME_FAILURE_MARKER}${JSON.stringify(terminalFailure)}\n`)
+  }
   const message = extractExecutionErrorText(error) || String(error)
   const isInfraError = isLikelyDevtoolsInfraErrorMessage(message)
   const isLoginRequiredError = isDevtoolsLoginRequiredError(error)
@@ -1789,7 +1795,7 @@ async function disconnectFailedLaunchSession(miniProgram: any, failure: unknown)
     await disconnectLaunchSession(miniProgram)
   }
   catch (error) {
-    throw new AggregateError([failure, error], 'Automator operation failed and socket closure remains unconfirmed')
+    throw new AggregateError([failure, error], 'Automator operation failed and socket closure remains unconfirmed', { cause: failure })
   }
 }
 
@@ -2920,7 +2926,7 @@ export async function launchAutomatorViaCliBridge(
       await cleanupAttempt?.()
     }
     catch (cleanupError) {
-      throw new AggregateError([error, cleanupError], 'IDE bridge failed and its project cleanup did not complete')
+      throw new AggregateError([error, cleanupError], 'IDE bridge failed and its project cleanup did not complete', { cause: error })
     }
     throw error
   }
@@ -3178,13 +3184,21 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
           ? lastLaunchFailure.error
           : runtimeLogSubscription?.normalizeError(caughtError) ?? caughtError
         const error = devtoolsLogMonitor.normalizeError(normalizedError)
-        await cleanupFailedBridgeLaunch({
-          error,
-          bridgeLaunch,
-          getCloseProject: () => closeAttemptProject,
-          snapshot: bridgeWrapperProject,
-          subscription: runtimeLogSubscription,
-        })
+        operation.recordFailure(error)
+        lastLaunchFailure = { error }
+        try {
+          await cleanupFailedBridgeLaunch({
+            error,
+            bridgeLaunch,
+            getCloseProject: () => closeAttemptProject,
+            snapshot: bridgeWrapperProject,
+            subscription: runtimeLogSubscription,
+          })
+        }
+        catch (cleanupError) {
+          // 已知启动首错沿 cause 保留；清理失败仍立即终止，不扫描任意聚合错误推断终态。
+          handleLaunchError(new AggregateError([error, cleanupError], 'IDE launch failed and its owned resources could not be released', { cause: error }), project)
+        }
         if (
           isWarmupRelaunchTimeoutError(error)
           || isWarmupPageRootTimeoutError(error)
@@ -3201,8 +3215,6 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
           handleLaunchError(error, project)
         }
 
-        operation.recordFailure(error)
-        lastLaunchFailure = { error }
         if (performance.now() >= operation.deadlineAt) {
           handleLaunchError(error, project)
         }

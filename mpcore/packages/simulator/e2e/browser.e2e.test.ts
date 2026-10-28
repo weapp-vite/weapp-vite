@@ -379,12 +379,26 @@ describe('simulator browser e2e', { concurrent: false }, () => {
       () => bridge.getState(),
       next => next.currentScenarioId === 'launch-redirect'
         && next.currentRoute === 'pages/login/index'
-        && next.previewMarkup.includes('id="launch-login"'),
+        && next.previewMarkup.includes('id="launch-login"')
+        && parseJsonString<{ events: string[] }>(next.appData).events.includes('login:ready'),
     )
     expect(state.pageStack).toEqual(['pages/login/index'])
     expect(state.previewMarkup).toContain('login: launch')
     expect(parseJsonString<{ loads: string[], launchCalls: number }>(state.appData))
       .toMatchObject({ loads: ['home', 'login'], launchCalls: 1 })
+    expect(parseJsonString<{ events: string[] }>(state.appData).events).toEqual([
+      'app:launch:start',
+      'app:launch:end',
+      'app:show',
+      'home:load',
+      'home:show',
+      'home:unload',
+      'login:load',
+      'login:show',
+      'redirect:success',
+      'redirect:complete',
+      'login:ready',
+    ])
     bridge.openRoute('pages/home/index')
     const home = await waitFor(
       () => bridge.getState(),

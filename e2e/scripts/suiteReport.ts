@@ -1,4 +1,5 @@
 import type { VerificationTopology } from '../../scripts/verification/topology.ts'
+import type { TerminalRuntimeFailureCode } from '../utils/terminalRuntimeFailure'
 import type { PlannedTaskCase } from './domAcceptanceReport/taskCases'
 import type { AcceptanceIdentity, AcceptanceStatus } from './domAcceptanceReport/types'
 import type { SuiteTaskArtifactKind, VerificationExecution, VerificationTiming } from './verification/types'
@@ -23,7 +24,7 @@ export interface SuiteTaskArtifact {
 }
 
 export interface SuiteRuntimeBlocker {
-  code: 'needs-login'
+  code: 'needs-login' | TerminalRuntimeFailureCode
   reason: string
 }
 

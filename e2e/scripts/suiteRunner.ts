@@ -21,6 +21,7 @@ import { cleanupDevtoolsCommandScope } from '../utils/devtoolsScopeCleanup'
 import { createTaskResourceRecorder } from '../utils/devtoolsTaskResources'
 import { TASK_RESOURCE_EVENT_ERROR_MARKER } from '../utils/devtoolsTaskResources/wrappers'
 import { E2E_RUNTIME_PROVIDER_ENV, resolveRuntimeProviderName } from '../utils/runtimeProvider'
+import { parseTerminalRuntimeFailureLine } from '../utils/terminalRuntimeFailure'
 import { ACCEPTANCE_DIRTY_ENV, ACCEPTANCE_REPORT_DIR_ENV, ACCEPTANCE_ROOT, ACCEPTANCE_RUN_ID_ENV, ACCEPTANCE_SHA_ENV, ACCEPTANCE_TASK_ENV, createAcceptanceIdentity, DOM_ACCEPTANCE_ENV, isStrictDomAcceptanceSuite } from './domAcceptanceReport/helpers'
 import { validateTaskAcceptance } from './domAcceptanceReport/task'
 import { assertOwnedCommandStopped, OwnedCommandShutdownError, stopOwnedCommand } from './ownedE2ECommand/shutdown'
@@ -149,6 +150,13 @@ function createTaskArtifactCollector() {
   function collectFromText(text: string) {
     const lines = text.split(NEWLINE_SPLIT_PATTERN)
     for (const line of lines) {
+      const terminalFailure = parseTerminalRuntimeFailureLine(line)
+      if (terminalFailure) {
+        if (!runtimeBlocker || runtimeBlocker.code === 'needs-login') {
+          runtimeBlocker = terminalFailure
+        }
+        unsafeRuntimeReason ??= terminalFailure.reason
+      }
       if (line.startsWith(TASK_RESOURCE_EVENT_ERROR_MARKER)) {
         resourceEvidenceErrors.push(line.slice(TASK_RESOURCE_EVENT_ERROR_MARKER.length).trim())
       }
@@ -848,6 +856,11 @@ async function runOwnedTaskSuite(
     if (signal.aborted) {
       exitCode = 1
       reason ??= signal.reason instanceof Error ? signal.reason.message : 'E2E suite cancelled'
+    }
+    if (task.runtimeBlocker && task.runtimeBlocker.code !== 'needs-login') {
+      // 终态启动故障不能被子进程意外返回的零退出码覆盖；先收尾，再阻断后续任务。
+      exitCode = 1
+      task.unsafeRuntimeReason ??= task.runtimeBlocker.reason
     }
     const durationMs = Date.now() - startedAt
     const runtimeBlocker = exitCode !== 0 ? task.runtimeBlocker : undefined

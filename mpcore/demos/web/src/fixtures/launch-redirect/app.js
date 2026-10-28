@@ -1,7 +1,14 @@
 App({
-  globalData: { loads: [], launchCalls: 0 },
+  globalData: { loads: [], events: [], launchCalls: 0 },
   onLaunch() {
     this.globalData.launchCalls++
-    wx.reLaunch({ url: '/pages/login/index?from=launch' })
+    this.globalData.events.push('app:launch:start')
+    wx.reLaunch({
+      url: '/pages/login/index?from=launch',
+      success: () => this.globalData.events.push('redirect:success'),
+      complete: () => this.globalData.events.push('redirect:complete'),
+    })
+    this.globalData.events.push('app:launch:end')
   },
+  onShow() { this.globalData.events.push('app:show') },
 })

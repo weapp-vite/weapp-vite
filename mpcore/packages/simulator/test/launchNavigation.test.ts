@@ -54,6 +54,37 @@ describe.each(['headless', 'browser'] as const)('%s launch navigation ownership'
     session.close()
   })
 
+  it('completes launch reLaunch after the App stack and before the first page ready', async () => {
+    const session = createSession()
+    try {
+      expect(session.reLaunch('/pages/home/index').route).toBe('pages/login/index')
+      const data = session.getApp()!.globalData
+      const committed = [
+        'app:launch:start',
+        'app:launch:end',
+        'app:show',
+        'home:load',
+        'home:show',
+        'home:unload',
+        'login:load',
+        'login:show',
+        'redirect:success',
+        'redirect:complete',
+      ]
+      expect(data.events).toEqual(committed)
+      await expect.poll(() => data.events).toEqual([...committed, 'login:ready'])
+      expect(data).toMatchObject({ loads: ['home', 'login'], launchCalls: 1 })
+      expect(session.getCurrentPages().map(page => page.route)).toEqual(['pages/login/index'])
+      expect(session.renderCurrentPage().wxml).toContain('id="launch-login"')
+      session.reLaunch('/pages/home/index')
+      await expect.poll(() => data.events.at(-1)).toBe('home:ready')
+      expect(data).toMatchObject({ loads: ['home', 'login', 'home'], launchCalls: 1 })
+    }
+    finally {
+      session.close()
+    }
+  })
+
   it('preserves the final onShow navigation after onLaunch has redirected', () => {
     const session = createSession(`App({
       globalData: { loads: [] },

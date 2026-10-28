@@ -5,6 +5,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { parseTerminalRuntimeFailureLine, TERMINAL_RUNTIME_FAILURE_MARKER } from '../utils/terminalRuntimeFailure'
 import { createMockBridgeSnapshotCleanup } from './automatorLaunchResilience/snapshotCleanup'
 
 vi.mock('../utils/devtoolsSelection', () => ({
@@ -125,6 +126,13 @@ interface MockMiniProgramRuntime {
 }
 
 const activeMockMiniPrograms = new Set<MockMiniProgramRuntime>()
+
+function readTerminalRuntimeFailures(chunks: unknown[]) {
+  return chunks.flatMap(chunk => String(chunk).split(/\r?\n/)).flatMap((line) => {
+    const failure = parseTerminalRuntimeFailureLine(line)
+    return failure ? [failure] : []
+  })
+}
 
 function createMockPage(pagePath = 'pages/index/index'): MockPage {
   return {
@@ -755,6 +763,7 @@ describe('automator launch resilience', { concurrent: false, timeout: 30_000 }, 
     const miniProgram = createMockMiniProgram()
     launchMock.mockResolvedValue(miniProgram)
     const { launchAutomator } = await import('../utils/automator')
+    const stderrWrite = vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date', 'performance'] })
     try {
       let notifySubscription!: () => void
@@ -788,9 +797,14 @@ describe('automator launch resilience', { concurrent: false, timeout: 30_000 }, 
       expect(miniProgram.__rawReLaunch).not.toHaveBeenCalled()
       expect(execaMock).not.toHaveBeenCalled()
       expect(cleanupResidualDevtoolsProcessesMock).not.toHaveBeenCalled()
+      expect(readTerminalRuntimeFailures(stderrWrite.mock.calls.map(([chunk]) => chunk))).toEqual([{
+        code: 'E2E_RUNTIME_LOG_SUBSCRIPTION_DEADLINE',
+        reason: 'Runtime log subscription did not complete before the launch deadline.',
+      }])
     }
     finally {
       vi.useRealTimers()
+      stderrWrite.mockRestore()
     }
   })
 
@@ -1159,14 +1173,75 @@ describe('automator launch resilience', { concurrent: false, timeout: 30_000 }, 
     launchMock.mockResolvedValue(miniProgram)
     scanRecentDevtoolsSimulatorBootDiagnosticsMock.mockReturnValue([{ file: 'devtools.log', line, state: 'fatal' }])
 
-    const { isLikelyLaunchRetryableError, launchAutomator } = await import('../utils/automator')
-    const error = await launchAutomator({ projectPath: sandboxRoot }).catch((error: unknown) => error)
-    expect(error).toMatchObject({ name: 'WechatIdeSimulatorBootLogError', firstIssue: { line } })
-    expect(isLikelyLaunchRetryableError(error)).toBe(false)
-    expect(launchMock).toHaveBeenCalledOnce()
-    expect(miniProgram.__rawDisconnect).toHaveBeenCalledOnce()
-    expect(miniProgram.__rawClose).not.toHaveBeenCalled()
-    expect(cleanupResidualDevtoolsProcessesMock).not.toHaveBeenCalled()
+    const stderrWrite = vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
+    try {
+      const { isLikelyLaunchRetryableError, launchAutomator } = await import('../utils/automator')
+      const error = await launchAutomator({ projectPath: sandboxRoot }).catch((error: unknown) => error)
+      expect(error).toMatchObject({ name: 'WechatIdeSimulatorBootLogError', code: 'E2E_DEVTOOLS_SIMULATOR_BOOT_FAILED', firstIssue: { line } })
+      expect(isLikelyLaunchRetryableError(error)).toBe(false)
+      expect(launchMock).toHaveBeenCalledOnce()
+      expect(miniProgram.__rawDisconnect).toHaveBeenCalledOnce()
+      expect(miniProgram.__rawClose).not.toHaveBeenCalled()
+      expect(cleanupResidualDevtoolsProcessesMock).not.toHaveBeenCalled()
+      expect(readTerminalRuntimeFailures(stderrWrite.mock.calls.map(([chunk]) => chunk))).toEqual([{
+        code: 'E2E_DEVTOOLS_SIMULATOR_BOOT_FAILED',
+        reason: 'WeChat DevTools simulator failed to start before webview page ready.',
+      }])
+      const markerIndex = stderrWrite.mock.calls.findIndex(([chunk]) => String(chunk).startsWith(TERMINAL_RUNTIME_FAILURE_MARKER))
+      expect(markerIndex).toBeGreaterThanOrEqual(0)
+      expect(miniProgram.__rawDisconnect.mock.invocationCallOrder[0]).toBeLessThan(stderrWrite.mock.invocationCallOrder[markerIndex]!)
+    }
+    finally {
+      stderrWrite.mockRestore()
+    }
+  })
+
+  it.each(['E2E_DEVTOOLS_SIMULATOR_BOOT_FAILED', 'E2E_RUNTIME_LOG_SUBSCRIPTION_DEADLINE'])('does not retry wrapped terminal launch failure %s', async (code) => {
+    const { isLikelyLaunchRetryableError } = await import('../utils/automator')
+    const cause = Object.assign(new Error('simulator launch failed'), { code })
+    expect(isLikelyLaunchRetryableError(new Error('launch failed', { cause }))).toBe(false)
+  })
+
+  it.each(['E2E_DEVTOOLS_SIMULATOR_BOOT_FAILED', 'E2E_RUNTIME_LOG_SUBSCRIPTION_DEADLINE'])('preserves terminal failure %s when owned bridge cleanup also fails', async (code) => {
+    vi.stubEnv('WEAPP_IDE_MANAGED_PROJECT_JOURNAL', path.join(sandboxRoot, 'managed-journal'))
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_PREBUILD = '0'
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER = '0'
+    createProjectFixture(sandboxRoot, { pages: ['pages/index/index'] })
+    const terminalFailure = Object.assign(new Error('startup failed'), { code })
+    const cleanupError = new Error('owned project cleanup failed')
+    execaMock.mockRejectedValue(terminalFailure)
+    cleanupManagedWechatProjectsMock.mockRejectedValue(cleanupError)
+    const stderrWrite = vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
+    try {
+      const { isLikelyLaunchRetryableError, launchAutomator } = await import('../utils/automator')
+      const result = await launchAutomator({ projectPath: sandboxRoot, timeout: 10_000, maxLaunchRetries: 2 }).catch((error: unknown) => error)
+      expect(result).toBeInstanceOf(AggregateError)
+      const error = result as AggregateError
+      const bridgeError = error.cause as AggregateError
+      expect(bridgeError).toBeInstanceOf(AggregateError)
+      expect(bridgeError.cause).toBe(terminalFailure)
+      expect(bridgeError.errors).toEqual([terminalFailure, cleanupError])
+      expect(error.errors[0]).toBe(bridgeError)
+      expect(error.errors[1]).toMatchObject({ errors: [bridgeError, cleanupError] })
+      expect(isLikelyLaunchRetryableError(error)).toBe(false)
+      expect(execaMock).toHaveBeenCalledOnce()
+      expect(cleanupManagedWechatProjectsMock).toHaveBeenCalledTimes(2)
+      expect(launchMock).not.toHaveBeenCalled()
+      expect(connectMock).not.toHaveBeenCalled()
+      expect(cleanupResidualDevtoolsProcessesMock).not.toHaveBeenCalled()
+      expect(readTerminalRuntimeFailures(stderrWrite.mock.calls.map(([chunk]) => chunk))).toEqual([{
+        code,
+        reason: code === 'E2E_DEVTOOLS_SIMULATOR_BOOT_FAILED'
+          ? 'WeChat DevTools simulator failed to start before webview page ready.'
+          : 'Runtime log subscription did not complete before the launch deadline.',
+      }])
+      const markerIndex = stderrWrite.mock.calls.findIndex(([chunk]) => String(chunk).startsWith(TERMINAL_RUNTIME_FAILURE_MARKER))
+      expect(markerIndex).toBeGreaterThanOrEqual(0)
+      expect(cleanupManagedWechatProjectsMock.mock.invocationCallOrder[1]).toBeLessThan(stderrWrite.mock.invocationCallOrder[markerIndex]!)
+    }
+    finally {
+      stderrWrite.mockRestore()
+    }
   })
 
   it('aborts a pending direct connect on a fatal boot log without opening another window', async () => {
@@ -1203,6 +1278,7 @@ describe('automator launch resilience', { concurrent: false, timeout: 30_000 }, 
     const { launchAutomator } = await import('../utils/automator')
     vi.useFakeTimers()
     const now = vi.spyOn(performance, 'now').mockImplementation(() => Date.now())
+    const stderrWrite = vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
     try {
       const miniProgram = createMockMiniProgram()
       launchMock.mockResolvedValue(miniProgram)
@@ -1228,8 +1304,15 @@ describe('automator launch resilience', { concurrent: false, timeout: 30_000 }, 
       expect(launchMock).toHaveBeenCalledOnce()
       expect(miniProgram.__rawReLaunch).not.toHaveBeenCalled()
       expect(cleanupResidualDevtoolsProcessesMock).not.toHaveBeenCalled()
+      expect(readTerminalRuntimeFailures(stderrWrite.mock.calls.map(([chunk]) => chunk))).toEqual(recovers
+        ? []
+        : [{
+            code: 'E2E_DEVTOOLS_SIMULATOR_BOOT_FAILED',
+            reason: 'WeChat DevTools simulator failed to start before webview page ready.',
+          }])
     }
     finally {
+      stderrWrite.mockRestore()
       now.mockRestore()
       vi.useRealTimers()
     }

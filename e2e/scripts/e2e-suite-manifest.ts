@@ -305,6 +305,7 @@ const IDE_DOM_HEADLESS_PATTERNS = [...new Set([
   'ide/github-issues.runtime.issue1035.test.ts',
   'ide/github-issues.runtime.feature1087.test.ts',
   'ide/issue-963-plugin-es6.runtime.test.ts',
+  'ide/issue-969-launch.runtime.test.ts',
   'ide/issue-997-rebuild.runtime.test.ts',
   'ide/issue-998-tailwind.runtime.test.ts',
   'ide/issue-1081-tailwind-batch.runtime.test.ts',
