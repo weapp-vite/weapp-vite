@@ -4,6 +4,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { setImmediate } from 'node:timers/promises'
 import { expect, it } from 'vitest'
+import { parseCLI } from 'vitest/node'
 import { createVerificationPlan } from './plan.ts'
 import { DEFAULT_SELECTION } from './policy.ts'
 import { getResourceBudget } from './resources.ts'
@@ -78,6 +79,33 @@ it('filters pure package tests in quick and keeps their full package entry in re
     const review = await createVerificationPlan({ ...input, mode: 'review' })
     expect(review.tasks.find(task => task.id === 'pure')?.args).toContain('test:pure')
     expect(review.tasks.some(task => task.id === 'test:library')).toBe(false)
+  }
+  finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+it.each([
+  ['quick', 'test'],
+  ['quick', 'test:pure'],
+  ['review', 'test'],
+] as const)('preserves package worker limits in %s %s commands without duplicating single-value options', async (mode, scriptName) => {
+  const root = await createPlanRoot()
+  try {
+    await mkdir(path.join(root, 'packages/library/src'), { recursive: true })
+    await writeFile(path.join(root, 'packages/library/src/value.test.ts'), '')
+    for (const option of ['--maxWorkers=1', '--maxWorkers 1', '--max-workers=1', '--max-workers 1']) {
+      const script = `vitest run --coverage.enabled=false ${option} --no-file-parallelism`
+      const scoped = packages.map(item => item.name === 'library'
+        ? { ...item, scripts: { ...item.scripts, [scriptName]: script } }
+        : item)
+      const plan = await createVerificationPlan({ root, packages: scoped, resources, selection: 'affected', changes: changes(['packages/library/src/value.test.ts']), mode })
+      const args = plan.tasks.find(task => task.id === 'test:library')!.args
+      expect(args).toEqual(['--filter', 'library', 'run', scriptName, ...mode === 'quick' ? ['src/value.test.ts'] : []])
+      const parsed = parseCLI([...script.split(/\s+/), ...args.slice(4)])
+      expect(parsed.options).toMatchObject({ maxWorkers: 1, fileParallelism: false, coverage: { enabled: false } })
+      expect(parsed.filter).toEqual(mode === 'quick' ? ['src/value.test.ts'] : [])
+    }
   }
   finally {
     await rm(root, { recursive: true, force: true })

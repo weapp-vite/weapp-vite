@@ -21,11 +21,16 @@ export async function startStreamProbeServer() {
     res.setHeader('content-type', 'application/octet-stream')
     res.setHeader('cache-control', 'no-store')
     res.setHeader('access-control-allow-origin', '*')
+    const status = Number(url.searchParams.get('status') ?? 200)
+    res.statusCode = [200, 204, 401, 429, 500].includes(status) ? status : 200
   })
   await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
   return {
     baseUrl: `http://127.0.0.1:${(server.address() as AddressInfo).port}`,
     requests,
+    headers(id: string) {
+      requests.get(id)!.response.flushHeaders()
+    },
     first(id: string) {
       requests.get(id)!.response.write(new Uint8Array(streamPayload.slice(0, 3)))
     },

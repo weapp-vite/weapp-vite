@@ -155,7 +155,11 @@ describe('per-task IDE resource attachment', () => {
       status: 'complete',
       cleanup: { host: { status: 'succeeded', evidence: { before: { state: 'cold' }, after: { state: 'cold' }, quitDispatched: false, installationInspection: hostExit.installationInspection } } },
     })
-    expect(mocks.inspectExited).toHaveBeenCalledExactlyOnceWith(coldLease.target)
+    expect(mocks.inspectExited).toHaveBeenCalledExactlyOnceWith(coldLease.target, 'darwin', { timeoutMs: expect.any(Number) })
+    const timeoutMs: unknown = mocks.inspectExited.mock.calls[0]![2].timeoutMs
+    expect(Number.isSafeInteger(timeoutMs)).toBe(true)
+    expect(timeoutMs).toBeGreaterThan(0)
+    expect(timeoutMs).toBeLessThanOrEqual(30_000)
     expect(mocks.quit).not.toHaveBeenCalled()
   })
 

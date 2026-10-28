@@ -67,6 +67,14 @@
     "./xhr": {
       "types": "./dist/xhr.d.mts",
       "import": "./dist/xhr.mjs"
+    },
+    "./streams": {
+      "types": "./dist/streams.d.mts",
+      "import": "./dist/streams.mjs"
+    },
+    "./eventsource": {
+      "types": "./dist/eventsource.d.mts",
+      "import": "./dist/eventsource.mjs"
     }
   },
   "main": "./dist/index.mjs",
@@ -93,7 +101,8 @@
   "dependencies": {
     "@weapp-core/api": "workspace:*",
     "@weapp-core/constants": "workspace:*",
-    "@wevu/api": "workspace:*"
+    "@wevu/api": "workspace:*",
+    "web-streams-polyfill": "4.3.0"
   },
   "publishConfig": {
     "access": "public",
@@ -105,5 +114,8 @@
       "moduleResolution": "NodeNext",
       "paths": {}
     }
+  },
+  "devDependencies": {
+    "eventsource-parser": "3.1.1"
   }
 }

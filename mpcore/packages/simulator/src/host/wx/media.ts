@@ -192,7 +192,8 @@ export interface HeadlessWxRequestTask {
 export interface HeadlessWxRequestHeadersResult {
   cookies: string[]
   header: Record<string, string>
-  statusCode: number
+  /** 部分微信宿主只在请求结束时提供状态码，headers 事件可能缺失此字段。 */
+  statusCode?: number
 }
 
 export interface HeadlessWxRequestChunkResult {

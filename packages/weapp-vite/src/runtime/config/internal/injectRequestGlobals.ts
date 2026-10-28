@@ -24,42 +24,15 @@ import { parse as parseSfc } from 'vue/compiler-sfc'
 import { parseJsLike, traverse } from '../../../utils/babel'
 import { hasOwn } from '../../utils/object'
 
-export const FULL_REQUEST_GLOBAL_TARGETS: WeappInjectWebRuntimeGlobalsTarget[] = [
-  'fetch',
-  'Headers',
-  'Request',
-  'Response',
-  'TextEncoder',
-  'TextDecoder',
-  'AbortController',
-  'AbortSignal',
-  'XMLHttpRequest',
-  'WebSocket',
-  'atob',
-  'btoa',
-  'queueMicrotask',
-  'performance',
-  'crypto',
-  'Event',
-  'CustomEvent',
-]
+import {
+  ABORT_REQUEST_GLOBAL_TARGETS,
+  FULL_REQUEST_GLOBAL_TARGETS,
+  REQUEST_RUNTIME_REQUEST_TARGETS,
+  resolveRequestGlobalsTargetDependencies,
+  STREAM_REQUEST_GLOBAL_TARGETS,
+} from './injectRequestGlobals/targets'
 
-export const ABORT_REQUEST_GLOBAL_TARGETS: WeappInjectWebRuntimeGlobalsTarget[] = [
-  'AbortController',
-  'AbortSignal',
-]
-
-export const REQUEST_RUNTIME_REQUEST_TARGETS: WeappInjectWebRuntimeGlobalsTarget[] = [
-  'fetch',
-  'Headers',
-  'Request',
-  'Response',
-  'TextEncoder',
-  'TextDecoder',
-  'AbortController',
-  'AbortSignal',
-  'XMLHttpRequest',
-]
+export { ABORT_REQUEST_GLOBAL_TARGETS, FULL_REQUEST_GLOBAL_TARGETS, REQUEST_RUNTIME_REQUEST_TARGETS } from './injectRequestGlobals/targets'
 
 const REQUEST_RUNTIME_CORE_USAGE_TARGETS = new Set<WeappInjectWebRuntimeGlobalsTarget>([
   'fetch',
@@ -70,6 +43,7 @@ const REQUEST_RUNTIME_CORE_USAGE_TARGETS = new Set<WeappInjectWebRuntimeGlobalsT
 ])
 
 const DEFAULT_REQUEST_GLOBAL_DEPENDENCIES = ['axios', 'graphql-request', 'socket.io-client', 'engine.io-client']
+const DEFAULT_STREAM_GLOBAL_DEPENDENCIES = ['eventsource-parser']
 const DEFAULT_ABORT_GLOBAL_DEPENDENCIES = ['@tanstack/query-core', '@tanstack/vue-query']
 const WEBSOCKET_USAGE_HINT_RE = /\bwebsocket\b/iu
 type WeappRequestGlobalFreeBindingTarget = WeappInjectRequestGlobalsTarget | 'URL' | 'URLSearchParams' | 'Blob' | 'File' | 'FormData'
@@ -103,6 +77,10 @@ export interface ResolveRequestRuntimeOptionsInput {
 }
 
 const CODE_USAGE_AUTO_RULES: InjectRequestGlobalsAutoRule[] = [
+  {
+    dependencyPatterns: [/^eventsource-parser(?:\/stream)?$/u],
+    targets: [...STREAM_REQUEST_GLOBAL_TARGETS],
+  },
   {
     dependencyPatterns: ['axios', 'graphql-request'],
     targets: [...REQUEST_RUNTIME_REQUEST_TARGETS],
@@ -231,6 +209,10 @@ function resolveAutoRules(config?: boolean | WeappInjectRequestGlobalsConfig): I
 
   return [
     {
+      dependencyPatterns: DEFAULT_STREAM_GLOBAL_DEPENDENCIES,
+      targets: [...FULL_REQUEST_GLOBAL_TARGETS],
+    },
+    {
       dependencyPatterns: DEFAULT_REQUEST_GLOBAL_DEPENDENCIES,
       targets: [...FULL_REQUEST_GLOBAL_TARGETS],
     },
@@ -334,8 +316,9 @@ function resolveRequestGlobalsRuntimeModuleId() {
 }
 
 export function resolveRequestGlobalsBindingTargets(targets: WeappInjectRequestGlobalsTarget[]) {
-  const bindingTargets: WeappRequestGlobalFreeBindingTarget[] = [...targets]
-  const needsRequestRuntimeBinarySupport = targets.some(target => (
+  const expandedTargets = resolveRequestGlobalsTargetDependencies(targets)
+  const bindingTargets: WeappRequestGlobalFreeBindingTarget[] = [...expandedTargets]
+  const needsRequestRuntimeBinarySupport = expandedTargets.some(target => (
     target === 'fetch'
     || target === 'Request'
     || target === 'Response'
@@ -440,6 +423,8 @@ const REQUEST_GLOBAL_KNOWN_DEPENDENCY_LITERALS = [
   'engine.io-client',
   '@tanstack/query-core',
   '@tanstack/vue-query',
+  'eventsource-parser/stream',
+  'eventsource-parser',
 ]
 
 function isIdentifierBoundary(char: string | undefined) {
@@ -737,7 +722,7 @@ export function resolveAutoRequestGlobalsTargets(
     resolvedTargets.add('WebSocket')
   }
 
-  return normalizeResolvedRequestGlobalTargets(resolvedTargets, allowedTargets)
+  return normalizeResolvedRequestGlobalTargets(resolveRequestGlobalsTargetDependencies([...resolvedTargets]), allowedTargets)
 }
 
 /**

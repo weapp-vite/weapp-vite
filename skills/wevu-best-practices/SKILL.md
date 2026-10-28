@@ -32,6 +32,7 @@ description: 面向小程序中 wevu 运行时的实践手册，覆盖生命周�
 
 1. 运行时 API 从 `wevu` 导入，页面和组件边界明确；选项式 `data` 若存在，保持函数形式。
 2. 生命周期和 hook 必须在同步 `setup()` 中注册，不要在 `await` 之后注册。
+   - Fetch SSE 与 EventSource 在同步 setup 注册 `onUnload`，回调执行 `controller.abort()` 或 `source.close()`；不要等请求返回后才注册，也不要把 `onHide` 当成卸载。Response 返回后的流错误仍需处理，reader 使用结束释放锁，异常路径中止请求；controller、reader 和 source 不进入模板状态。`wevu/fetch` 复用 `@wevu/web-apis`，项目级分块、GET/POST 分工及严格能力边界见 [Wevu Fetch SSE](https://vite.weapp.dev/wevu/fetch.html#sse-与响应流)。
 3. 响应式更新优先 `ref/reactive/computed`，避免大对象和不透明状态写入；模板状态要可序列化。
    - 同一轮多个 ref/reactive 变更必须由调度器完整合并，不能因先到的刷新任务吞掉后续数组或对象 patch。
 4. 事件和双向绑定遵循小程序语义：

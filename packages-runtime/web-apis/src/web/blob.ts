@@ -1,5 +1,6 @@
 import type { RequestGlobalsBlobLike } from '../shared'
-import { cloneArrayBuffer, cloneArrayBufferView, decodeText, encodeText, isArrayBufferLike, isBlobLike } from '../shared'
+import { cloneArrayBuffer, cloneArrayBufferView, encodeText, isArrayBufferLike, isBlobLike } from '../shared'
+import { TextDecoderPolyfill } from '../textCodec'
 
 export type BlobLikePart = RequestGlobalsBlobLike
 export type BlobPart = ArrayBuffer | ArrayBufferView | BlobLikePart | string
@@ -87,7 +88,7 @@ export class BlobPolyfill {
   }
 
   async text(): Promise<string> {
-    return decodeText(await this.arrayBuffer())
+    return new TextDecoderPolyfill().decode(await this.arrayBuffer())
   }
 
   slice(start = 0, end = this.size, contentType = ''): BlobPolyfill {

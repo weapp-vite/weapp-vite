@@ -1,9 +1,11 @@
+import type { WebRuntimeGlobalTarget } from '@weapp-core/constants'
 import type { MiniProgramNetworkDefaults } from './networkDefaults'
-import { REQUEST_GLOBAL_ACTUALS_KEY, REQUEST_GLOBAL_PLACEHOLDER_KEY } from '@weapp-core/constants'
+import { REQUEST_GLOBAL_ACTUALS_KEY, REQUEST_GLOBAL_INSTALLER_MARKER, REQUEST_GLOBAL_PLACEHOLDER_KEY, resolveWebRuntimeGlobalTargetDependencies, WEB_RUNTIME_GLOBAL_TARGETS } from '@weapp-core/constants'
 import { AbortControllerPolyfill, AbortSignalPolyfill } from './abort'
 import { atobPolyfill, btoaPolyfill } from './base64'
 import { cryptoPolyfill } from './crypto'
 import { CustomEventPolyfill, EventPolyfill } from './events'
+import { EventSourcePolyfill } from './eventsource'
 import { fetch as requestGlobalsFetch } from './fetch'
 import { HeadersPolyfill, RequestPolyfill, ResponsePolyfill } from './http'
 import {
@@ -18,31 +20,15 @@ import {
   resolveRequestGlobalsHost,
   resolveRequestGlobalsHosts,
 } from './shared'
+import { ReadableStream, ReadableStreamPolyfill, TextDecoderStreamPolyfill, TransformStream, TransformStreamPolyfill, WritableStream, WritableStreamPolyfill } from './streams'
 import { queueMicrotaskPolyfill } from './task'
-import { TextDecoderPolyfill, TextEncoderPolyfill } from './textCodec'
+import { hasUsableTextDecoderConstructor, TextDecoderPolyfill, TextEncoderPolyfill } from './textCodec'
 import { URLPolyfill, URLSearchParamsPolyfill } from './url'
 import { BlobPolyfill, FilePolyfill, FormDataPolyfill } from './web'
 import { WebSocketPolyfill } from './websocket'
 import { XMLHttpRequestPolyfill } from './xhr'
 
-export type WeappInjectWebRuntimeGlobalsTarget
-  = | 'fetch'
-    | 'Headers'
-    | 'Request'
-    | 'Response'
-    | 'TextEncoder'
-    | 'TextDecoder'
-    | 'AbortController'
-    | 'AbortSignal'
-    | 'XMLHttpRequest'
-    | 'WebSocket'
-    | 'atob'
-    | 'btoa'
-    | 'queueMicrotask'
-    | 'performance'
-    | 'crypto'
-    | 'Event'
-    | 'CustomEvent'
+export type WeappInjectWebRuntimeGlobalsTarget = WebRuntimeGlobalTarget
 
 export type WeappInjectRequestGlobalsTarget = WeappInjectWebRuntimeGlobalsTarget
 
@@ -68,17 +54,6 @@ function hasRequestRuntimeBinaryUsage(targets: WeappInjectWebRuntimeGlobalsTarge
     || target === 'XMLHttpRequest'
     || target === 'WebSocket'
   ))
-}
-
-function resolveInstallTargets(targets: WeappInjectWebRuntimeGlobalsTarget[]) {
-  const installTargets: WeappInjectWebRuntimeGlobalsTarget[] = [...targets]
-  if (hasRequestRuntimeBinaryUsage(targets)) {
-    installTargets.push('TextEncoder', 'TextDecoder')
-  }
-  if (targets.includes('CustomEvent')) {
-    installTargets.push('Event')
-  }
-  return [...new Set(installTargets)]
 }
 
 function resolveActualBindingTargets(targets: WeappInjectWebRuntimeGlobalsTarget[]): WeappRequestGlobalActualTarget[] {
@@ -282,6 +257,23 @@ function patchResponseConstructor(host: Record<string, any>) {
 }
 
 function installSingleTarget(host: Record<string, any>, target: WeappInjectWebRuntimeGlobalsTarget) {
+  const streamConstructors = { ReadableStream, WritableStream, TransformStream }
+  if (target === 'ReadableStream' || target === 'WritableStream' || target === 'TransformStream') {
+    assignHostGlobal(host, target, streamConstructors[target])
+    return
+  }
+  if (target === 'TextDecoderStream') {
+    if (ReadableStream === ReadableStreamPolyfill || !hasUsableConstructor(host.TextDecoderStream)) {
+      assignHostGlobal(host, target, TextDecoderStreamPolyfill)
+    }
+    return
+  }
+  if (target === 'EventSource') {
+    if (typeof host.EventSource !== 'function' || isPlaceholderRequestGlobal(host.EventSource)) {
+      assignHostGlobal(host, target, EventSourcePolyfill)
+    }
+    return
+  }
   if (target === 'fetch') {
     if (typeof host.fetch !== 'function' || isPlaceholderRequestGlobal(host.fetch)) {
       assignHostGlobal(host, 'fetch', requestGlobalsFetch)
@@ -318,7 +310,7 @@ function installSingleTarget(host: Record<string, any>, target: WeappInjectWebRu
   }
 
   if (target === 'TextDecoder') {
-    if (typeof host.TextDecoder !== 'function' || isPlaceholderRequestGlobal(host.TextDecoder)) {
+    if (!hasUsableTextDecoderConstructor(host.TextDecoder)) {
       assignHostGlobal(host, 'TextDecoder', TextDecoderPolyfill)
     }
     return
@@ -463,25 +455,7 @@ export function installWebRuntimeGlobals(options: InstallWebRuntimeGlobalsOption
     setMiniProgramNetworkDefaults(options.networkDefaults)
   }
 
-  const targets = resolveInstallTargets(options.targets ?? [
-    'fetch',
-    'Headers',
-    'Request',
-    'Response',
-    'TextEncoder',
-    'TextDecoder',
-    'AbortController',
-    'AbortSignal',
-    'XMLHttpRequest',
-    'WebSocket',
-    'atob',
-    'btoa',
-    'queueMicrotask',
-    'performance',
-    'crypto',
-    'Event',
-    'CustomEvent',
-  ])
+  const targets = resolveWebRuntimeGlobalTargetDependencies(options.targets ?? WEB_RUNTIME_GLOBAL_TARGETS)
   const hosts = resolveRequestGlobalsHosts()
   const primaryHost = resolveRequestGlobalsHost()
   const needsUrlGlobals = hasRequestRuntimeBinaryUsage(targets)
@@ -512,6 +486,8 @@ export function installWebRuntimeGlobals(options: InstallWebRuntimeGlobalsOption
   return hosts[0]
 }
 
+Object.defineProperty(installWebRuntimeGlobals, REQUEST_GLOBAL_INSTALLER_MARKER, { value: true })
+
 /**
  * @description 已废弃，请迁移到 `installWebRuntimeGlobals`。
  */
@@ -538,6 +514,7 @@ export {
   cryptoPolyfill,
   CustomEventPolyfill,
   EventPolyfill,
+  EventSourcePolyfill,
   requestGlobalsFetch as fetch,
   FilePolyfill,
   FormDataPolyfill,
@@ -545,15 +522,19 @@ export {
   HeadersPolyfill,
   performancePolyfill,
   queueMicrotaskPolyfill,
+  ReadableStreamPolyfill,
   RequestGlobalsEventTarget,
   RequestPolyfill,
   resetMiniProgramNetworkDefaults,
   ResponsePolyfill,
   setMiniProgramNetworkDefaults,
   TextDecoderPolyfill,
+  TextDecoderStreamPolyfill,
   TextEncoderPolyfill,
+  TransformStreamPolyfill,
   URLPolyfill,
   URLSearchParamsPolyfill,
   WebSocketPolyfill,
+  WritableStreamPolyfill,
   XMLHttpRequestPolyfill,
 }

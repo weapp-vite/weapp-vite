@@ -176,7 +176,10 @@ export async function createVerificationPlan(options: PlanOptions): Promise<Veri
       const filterable = /^vitest\s+run(?:\s|$)/.test(item.scripts[script]!) && !/[;&|]/.test(item.scripts[script]!)
       const args = ['--filter', item.name, 'run', script]
       if (filterable) {
-        args.push(`--maxWorkers=${ordinary.length === 1 ? resources.jobs : 1}`)
+        // 包脚本拥有显式 worker 配置；Vitest 的单值选项不能通过重复追加来覆盖。
+        if (!/(?:^|\s)--max(?:Workers|-workers)(?:=|\s|$)/.test(item.scripts[script]!)) {
+          args.push(`--maxWorkers=${ordinary.length === 1 ? resources.jobs : 1}`)
+        }
         if (related.length) {
           args.push(...related.map(file => path.posix.relative(item.directory, file)))
         }

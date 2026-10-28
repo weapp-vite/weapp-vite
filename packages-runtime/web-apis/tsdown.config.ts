@@ -5,6 +5,8 @@ export default defineConfig({
     index: './src/index.ts',
     abort: './src/abort.ts',
     fetch: './src/fetch.ts',
+    streams: './src/streams.ts',
+    eventsource: './src/eventsource.ts',
     http: './src/http.ts',
     networkDefaults: './src/networkDefaults.ts',
     shared: './src/shared.ts',

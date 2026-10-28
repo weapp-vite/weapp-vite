@@ -18,12 +18,11 @@ import path from 'pathe'
 import {
   createRequestGlobalsInstallerOptionsCode,
   createRequestGlobalsPassiveBindingsCode,
-  FULL_REQUEST_GLOBAL_TARGETS,
   resolveAutoRequestGlobalsTargets,
   resolveRequestGlobalsBindingTargets,
 } from '../../../../runtime/config/internal/injectRequestGlobals'
 import { toPosixPath } from '../../../../utils'
-import { generate, parseJsLike, traverse } from '../../../../utils/babel'
+import { parseJsLike, traverse } from '../../../../utils/babel'
 import {
   appendOutputChunkCode,
   editOutputChunkCode,
@@ -35,13 +34,13 @@ import {
   AXIOS_MODULE_ID_RE,
   REQUEST_GLOBAL_ENTRY_NAME_RE,
   REQUEST_GLOBAL_EXPORT_RE,
-  REQUEST_GLOBAL_INSTALLER_RE,
   REQUEST_GLOBAL_REQUIRE_CALL_RE,
   REQUEST_GLOBAL_REQUIRE_DECLARATOR_RE,
   REQUEST_GLOBAL_RUNTIME_CHUNK_FILE_BASENAME,
 } from './constants'
 import { collectTopLevelDeclaredIdentifiers } from './requestGlobals/bindings'
 import { wouldCollapseSupportCreateCycle } from './requestGlobals/chunkGraph'
+import { findRequestGlobalsInstaller } from './requestGlobals/installer'
 import { getStaticStringLiteral, normalizeRelativeChunkImport } from './rewrite'
 
 const REQUEST_GLOBAL_APP_MODULE_KEY_PREFIX = '__weappViteRequestGlobalsModule:'
@@ -67,54 +66,7 @@ function resolvePreludeRequestGlobalsTargets(
 }
 
 export function resolveRequestGlobalsInstallerName(code: string) {
-  const installerMatch = code.match(REQUEST_GLOBAL_INSTALLER_RE)
-  if (installerMatch?.[1]) {
-    return installerMatch[1]
-  }
-
-  try {
-    const ast = parseJsLike(code)
-    let installerName: string | null = null
-
-    const isInstallerFunctionNode = (node: any) => {
-      if (!node) {
-        return false
-      }
-      if (Array.isArray(node.params) && node.params.length > 1) {
-        return false
-      }
-      const functionCode = generate(node).code
-      return FULL_REQUEST_GLOBAL_TARGETS.every(target => functionCode.includes(target))
-    }
-
-    traverse(ast as any, {
-      FunctionDeclaration(path: any) {
-        if (installerName || !path.node?.id?.name) {
-          return
-        }
-        if (isInstallerFunctionNode(path.node)) {
-          installerName = path.node.id.name
-        }
-      },
-      VariableDeclarator(path: any) {
-        if (installerName || path.node?.id?.type !== 'Identifier') {
-          return
-        }
-        const init = path.node.init
-        if (!init || (init.type !== 'FunctionExpression' && init.type !== 'ArrowFunctionExpression')) {
-          return
-        }
-        if (isInstallerFunctionNode(init)) {
-          installerName = path.node.id.name
-        }
-      },
-    })
-
-    return installerName
-  }
-  catch {
-    return null
-  }
+  return findRequestGlobalsInstaller(code)
 }
 
 export function resolveRequestGlobalsExportName(code: string) {

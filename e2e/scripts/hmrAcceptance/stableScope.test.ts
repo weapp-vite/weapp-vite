@@ -29,9 +29,9 @@ describe('supported WeChat startup classic inventory', () => {
     ['hmr-build', 45, 3],
     ['ide-hmr-headless', 28, 14],
     ['ide-hmr', 34, 19],
-    ['ide-full:exhaustive', 155, 22],
-    ['ide-dom-headless', 88, 14],
-    ['ide-headless-full', 99, 14],
+    ['ide-full:exhaustive', 156, 22],
+    ['ide-dom-headless', 89, 14],
+    ['ide-headless-full', 100, 14],
   ] as const)('preserves the complete %s task inventory and explicit experimental exclusions', async (suite, total, excluded) => {
     const original = await getSuiteTasks(suite, { topology: 'optimized-v1' })
     const supported = await getSuiteTasks(`${suite}:classic`, { topology: 'optimized-v1' })
@@ -57,6 +57,26 @@ describe('supported WeChat startup classic inventory', () => {
       expect(tasks).toHaveLength(1)
       expect(tasks[0]?.outOfScopeReason).toBeUndefined()
       expect(tasks[0]).toEqual(original.find(task => task.label === label))
+    }
+  })
+
+  it.each(['ide-full', 'ide-full:exhaustive', 'ide-dom-headless', 'ide-headless-full'])('retains complete native stream capability and SSE runtime contracts in %s', async (suite) => {
+    const original = await getSuiteTasks(suite, { topology: 'optimized-v1' })
+    const supported = await getSuiteTasks(`${suite}:classic`, { topology: 'optimized-v1' })
+    // 原生传输探针和 SSE 验证独立于 HMR 模式，classic 范围必须保留完整运行时契约。
+    for (const label of ['ide/stream-capability.runtime.test.ts', 'ide/sse-stream.runtime.test.ts']) {
+      expect(CLASSIC_HMR_OUT_OF_SCOPE_TASKS[label]).toBeUndefined()
+      expect(CLASSIC_IDE_CASES[label]).toBeUndefined()
+      expect(CLASSIC_BUILD_CASES[label]).toBeUndefined()
+      const tasks = supported.filter(task => task.label === label)
+      expect(tasks).toHaveLength(1)
+      const task = tasks[0]!
+      expect(task).toEqual(original.find(task => task.label === label))
+      expect(task.outOfScopeReason).toBeUndefined()
+      expect(task.acceptanceTemplates).toBeUndefined()
+      expect(task.args).not.toContain('--testNamePattern')
+      expect(task.env?.[CLASSIC_HMR_EXCLUDED_CASES_ENV]).toBeUndefined()
+      expect(readSelectedAcceptanceCases(task.env)).toBeUndefined()
     }
   })
 

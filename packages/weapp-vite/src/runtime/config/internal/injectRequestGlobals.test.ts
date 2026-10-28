@@ -36,6 +36,11 @@ describe('injectRequestGlobals helpers', () => {
     'crypto',
     'Event',
     'CustomEvent',
+    'ReadableStream',
+    'WritableStream',
+    'TransformStream',
+    'TextDecoderStream',
+    'EventSource',
   ] as const
 
   it('enables auto injection when matching dependencies are present', () => {

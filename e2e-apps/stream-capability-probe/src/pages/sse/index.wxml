@@ -1,0 +1,8 @@
+<view id="sse-root">
+  <view id="sse-status">{{status}}</view>
+  <view id="sse-text">{{text}}</view>
+  <view id="sse-count">{{messages.length}}</view>
+  <view id="sse-http-status">{{httpStatus}}</view>
+  <view id="sse-error">{{errorName}}</view>
+  <view id="sse-source-state">{{sourceState}}</view>
+</view>
