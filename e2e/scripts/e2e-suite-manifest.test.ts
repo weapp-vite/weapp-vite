@@ -17,6 +17,25 @@ function withFrozenTopology<T extends SuiteTask>(tasks: T[]) {
 useIsolatedTopologyTestEnvironment()
 
 describe('e2e suite manifest', () => {
+  it('keeps the host-format dynamic import regression in both runtime providers with a complete DOM plan', async () => {
+    const label = 'ide/stateful-host-format.runtime.test.ts'
+    for (const suite of ['ide-full', 'ide-full:exhaustive', 'ide-dom-headless', 'ide-headless-full']) {
+      const tasks = (await getSuiteTasks(suite)).filter(task => task.label === label)
+      expect(tasks).toHaveLength(1)
+      expect(tasks[0]!.args.some(arg => arg === '-t' || arg.startsWith('--testNamePattern'))).toBe(false)
+    }
+    const cases = readTaskCases(path.resolve(import.meta.dirname, '../..'), label)
+    expect(cases).toHaveLength(1)
+    expect(cases[0]?.plans).toHaveLength(1)
+    expect(cases[0]?.notes).toEqual([])
+    expect(cases[0]?.operations.filter(operation => operation.startsWith('check('))).toEqual([
+      'check(initial)',
+      'check(lazy-loaded)',
+      'check(shared-state)',
+      'check(rejected)',
+    ])
+  })
+
   it.each(['legacy-v1', 'optimized-v1'] as const)('projects the complete %s identity onto the full factory definition', async (id) => {
     const restore = isolateTopologyTestEnvironment()
     try {

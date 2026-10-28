@@ -1,0 +1,8 @@
+{
+  "condition": {
+    "miniprogram": {
+      "list": [{ "name": "stateful host format", "pathName": "pages/index/index", "query": "", "scene": null, "launchMode": "default" }]
+    }
+  },
+  "setting": { "urlCheck": false }
+}
