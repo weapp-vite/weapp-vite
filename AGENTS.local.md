@@ -1,12 +1,13 @@
 # 本地工程约束
 
+- 用户已授权后续代码修改、测试与修复直接基于同步后的最新 `main` 执行，完成必要验证后直接提交并推送 `main`，不再新建 PR。提交前 lint、原生 hooks、源码变更后的包构建、相关类型与回归检查，以及全机 E2E 串行和正式完整验收继续适用；正式完整测试运行期间不得修改源码。
 - 所有 PR（包括发布和依赖升级 PR）统一使用 Squash merge，在目标分支形成一个提交；通过 GitHub CLI 合并时必须显式使用 `gh pr merge <编号> --squash`。合并提交信息沿用仓库当前默认设置，已有合并历史不改写。
 - PR 合并后的自动 Release 工作流（包括 `Release verify`）无需等待，不作为推进后续 PR、启动主线统一 E2E 或本批交付的门槛。记录实际合并提交、workflow/run 和已观察状态；未完成的运行不得记为成功。合入前当前候选的全部适用原生 CI/CD 与审查门槛保持不变，无需为此取消或禁用远端 Release 工作流。
 - 本地 `verify` 检查真实工作区；`pre-push` 必须使用 Git 原生 stdin 的待推 refs/SHA，按对应提交快照执行 quick 检查。dirty 或非当前提交须使用独立工作树与冻结依赖，不以提交文件清单配合 dirty 工作树执行，也不得 stash/reset 用户工作或共享指回原工作区的依赖链接。未知输入、真实提交的锁文件和全局配置继续保守扩大范围，删除及 rename 两端保持归属。
 - quick 只承担静态与适用配置/生成契约、直接变更和相邻单测、包级源码类型；`test:pure` 同样只运行直接相关范围。完整包测试、消费者、公开类型和 E2E 工具/runtime 通过 review / CI 的既有入口完成，不由 pre-push 扩大启动。生成 `AGENTS.md`、public skill 合约及其规则输入仍须执行对应 `agents:check` / `skills:check`，包含删除和 rename 旧端点。
 - 推送重试仅复用候选 SHA、基线、工具链、环境、拓扑和策略均一致且全部适用 quick 任务成功的本地回执；失败、取消、未执行或缺少适用 quick 任务结果的回执不可复用为成功。该回执不替代原生 CI 审批、完整消费者/公开类型检查及目标 runtime 验收；保留全部适用 CI 与后置汇总，不以 `--no-verify`、通用 skip 或本地 `partial` 宣称充分验证。
-- GitHub issue 或 runtime 回归优先在 `.codex-tmp/<issue>` 隔离 worktree 中处理；先建立最小复现，再定位根因，最后修改源码。
-- 全面真实 IDE E2E（包括 `pnpm e2e:ide:gate`、`pnpm e2e:ide:full`、`pnpm e2e:ide:full:exhaustive` 及直接调用 DevTools 的完整 Vitest suite）必须从仓库根目录的 `main` 工作树启动：运行前先 `git fetch origin main`、`git switch main`、`git pull --ff-only origin main`，确认 `HEAD == origin/main` 且工作树干净；运行期间不得切换分支或修改源码。`.codex-tmp` 和其他分支只用于修复、最小复现、headless 或局部诊断，修复合并到 `main`、重建产物后才做正式 IDE 验收。主工作树要求不会放宽全机同用户串行、机器租约、宿主身份、端口归属和项目清理门禁。
+- GitHub issue 或 runtime 回归默认在同步后的最新 `main` 先建立最小复现，再定位根因、修改源码并直接验证、提交和推送。确有需要时可使用临时 worktree 做隔离诊断，最终修改仍按用户授权的直接主线流程交付。
+- 全面真实 IDE E2E（包括 `pnpm e2e:ide:gate`、`pnpm e2e:ide:full`、`pnpm e2e:ide:full:exhaustive` 及直接调用 DevTools 的完整 Vitest suite）必须从仓库根目录的 `main` 工作树启动：运行前先 `git fetch origin main`、`git switch main`、`git pull --ff-only origin main`，确认 `HEAD == origin/main` 且工作树干净；运行期间不得切换分支或修改源码。`.codex-tmp` 和其他分支只用于修复、最小复现、headless 或局部诊断，修复进入 `main`、重建产物后才做正式 IDE 验收。主工作树要求不会放宽全机同用户串行、机器租约、宿主身份、端口归属和项目清理门禁。
 - 修改 `packages/*/src/**` 或 `packages-runtime/*/src/**` 后，运行下游 app、headless 或 IDE 验证前必须先重建受影响 package 的 `dist`。
 - 任何 E2E 入口都全机、同用户、跨 worktree 串行运行。启动前检查 DevTools、automator、dev-watch 和验证 server；只释放本任务明确登记且仍持有的资源。其他任务等待，手动项目和归属未知的实例保留；已核验的空闲共享宿主可按下述恢复条件正常重启。禁止按进程名、命令行子串或镜像名全局清理。发现问题时可先用 `--allow-failures`；最终验收保留每个正式 suite 的既定策略，要求全部计划内 task、case、checkpoint 完成，严格 suite 必须保持严格模式。局部筛选、partial 或未执行任务不能计为全量通过。
 - 真实 IDE E2E 默认使用本机已安装的最新 Stable，渠道和产品版本以实际应用元数据为准。启动前自动解析并固定具体 CLI，预检、启动、构建、连接和恢复共用同一安装；保留 `WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH`、公共路径环境变量及旧 `cliPath` 固定行为。显式渠道或版本参数可覆盖继承配置，同层路径、渠道、版本冲突必须停止。
@@ -35,7 +36,7 @@
 - AI Issue 修复验收总原则：必须以真实微信 DevTools runtime E2E 的可观察结果作为最终通过标准。headless/provider-compatible E2E、单元测试、typecheck、构建和静态检查只能用于定位问题与辅助验证，不能替代真实 E2E，也不能据此宣称 Issue 已修复完成。
 - 真实 DevTools E2E 未运行、未进入目标场景或因环境失败时，AI 必须明确报告“未完成最终验收”，不得将 Issue 标记为已修复或完成交付。
 - 每个 Issue 修复至少覆盖用户主路径及一个关键边界，并同步检查构建产物路径/文件存在性；若真实 IDE 可用，还必须运行对应 DevTools runtime 场景并记录与 headless 的一致性。
-- 若 E2E 因 IDE、端口或 automator 基础设施不可用而无法运行，必须在 PR 中明确记录环境限制、保留可运行的替代覆盖，并不得宣称“已完成 runtime 验收”。
+- 若 E2E 因 IDE、端口或 automator 基础设施不可用而无法运行，必须在任务记录中明确记录环境限制、保留可运行的替代覆盖，并不得宣称“已完成 runtime 验收”。
 - 当真实 DevTools/automator 因登录、服务端口、模拟器启动、`App.getCurrentPage`/`getPageMetaByWebviewId` 协议异常或日志订阅等基础设施问题失败时，必须优先使用 Computer Use 操作本机微信开发者工具：读取当前 AX 状态，确认登录、项目窗口、模拟器和服务端口状态，必要时重新打开本测试项目、恢复服务端口或完成正常登录流程。应用仍在运行时，每次 UI 操作后重新读取 AX 状态并记录结果；正常退出后改按下述非激活核验条款检查。
 - 用户已授权 IDE 测试、故障修复或环境恢复时，该授权包含符合以下全部条件的正常退出并重开；不因宿主曾由手动启动或多个测试复用而反复请求确认。操作前重新核对显式 CLI 对应的安装、版本、宿主 PID 与启动时间；跨 worktree 检查确认没有其他任务运行中的 E2E、automator、dev-watch、验证 server 或借用连接，旧运行的机器租约已释放，当前任务登记的项目窗口均已确认回收；Computer Use 确认该安装所有窗口仅剩项目列表，没有手动项目、调试窗口、对话框或未保存工作。正常退出与重开全过程须取得并持有本次恢复的机器串行租约，取得后再次检查上述条件，防止检查与操作之间出现并发。已正常退出后失败的恢复，适用下述精确续行条款。任一前提不能核实，保留宿主并说明具体缺失证据；需要影响其他任务或手动项目时才另行确认。
 - 空闲共享宿主恢复只使用已读取的正常退出菜单和同一安装的正常启动入口，不强制终止共享进程，不清除 session、租约、登录数据或用户缓存，不换版，不改用户设置。出现保存或其他会影响用户工作的提示时停止，不自动丢弃内容；操作前若出现新窗口、连接或活动租约，重新检查前提。正常退出未完成时不升级为全局 kill。
