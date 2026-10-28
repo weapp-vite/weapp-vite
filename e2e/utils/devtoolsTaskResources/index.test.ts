@@ -88,6 +88,8 @@ beforeEach(async () => {
     identityChangedProcessCount: 0,
     verifiedForeignImageTransitionCount: 0,
     verifiedForeignImageTransitions: [],
+    verifiedForeignNativeExecCount: 0,
+    verifiedForeignNativeExecs: [],
     newProcesses: [],
     unclassifiedProcesses: [],
     missingIdentities: [],

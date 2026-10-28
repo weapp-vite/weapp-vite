@@ -51,6 +51,7 @@ export async function sampleNativeInstallationProcesses(target: ResolvedWechatDe
         if (proof.imageChanged) {
           entry.changed = true
           entry.imageEvidenceConflict = true
+          entry.textImageEvidenceConflict = true
           inventory.cause(entry, 'image-changed', 'anchor')
         }
       }
@@ -73,6 +74,7 @@ export async function sampleNativeInstallationProcesses(target: ResolvedWechatDe
         if (proof.imageChanged) {
           entry.changed = true
           entry.imageEvidenceConflict = true
+          entry.textImageEvidenceConflict = true
           inventory.cause(entry, 'image-changed', 'closure1')
         }
       }
