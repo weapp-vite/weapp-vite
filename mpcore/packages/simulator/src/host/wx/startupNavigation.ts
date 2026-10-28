@@ -34,7 +34,26 @@ export class StartupNavigationQueue {
       return
     }
     // 队列已保证退出 App 启动栈；提交导航时直接交付回调，先于目标页的 ready。
-    const submitted = option && { ...option }
+    const scheduler = this.scheduler
+    const isolate = <T extends (...args: any[]) => void>(callback: T | undefined) => callback
+      ? function (this: unknown, ...args: Parameters<T>) {
+        try {
+          callback.apply(this, args)
+        }
+        catch (error) {
+          // 业务回调异常交给原有诊断通道，不能被宿主误判成导航失败。
+          scheduler.setTimeout(() => {
+            throw error
+          }, 0)
+        }
+      }
+      : undefined
+    const submitted = option && {
+      ...option,
+      success: isolate(option.success),
+      fail: isolate(option.fail),
+      complete: isolate(option.complete),
+    }
     this.pending.push(() => {
       operation(submitted)
     })
