@@ -257,15 +257,23 @@ describe('request globals runtime', () => {
 
   it('forwards whitelisted mini-program request options through fetch init extensions', async () => {
     wpiRequestMock.mockImplementation((options: Record<string, any>) => {
-      options.success?.({
-        data: '{"ok":true}',
-        statusCode: 200,
-        header: {
-          'content-type': 'application/json',
-        },
+      const headers = new Set<(value: unknown) => void>()
+      const chunks = new Set<(value: unknown) => void>()
+      queueMicrotask(() => {
+        for (const callback of headers) {
+          callback({ statusCode: 200, header: { 'content-type': 'application/json' } })
+        }
+        for (const callback of chunks) {
+          callback({ data: new TextEncoder().encode('{"ok":true}').buffer })
+        }
+        options.success?.({ data: '', statusCode: 200, header: { 'content-type': 'application/json' } })
       })
       return {
         abort: vi.fn(),
+        onHeadersReceived: (callback: (value: unknown) => void) => headers.add(callback),
+        offHeadersReceived: (callback: (value: unknown) => void) => headers.delete(callback),
+        onChunkReceived: (callback: (value: unknown) => void) => chunks.add(callback),
+        offChunkReceived: (callback: (value: unknown) => void) => chunks.delete(callback),
       }
     })
 
@@ -989,7 +997,7 @@ describe('request globals runtime', () => {
       },
     )
     expect(request.url).toBe('https://request-globals.invalid/polyfill')
-    expect(request.body).toBeNull()
+    expect(request.body?.getReader).toBeTypeOf('function')
     expect(Object.hasOwn(request, 'body')).toBe(false)
     expect(Object.hasOwn(request, 'bodyUsed')).toBe(false)
     expect(request.bodyUsed).toBe(false)
@@ -997,7 +1005,7 @@ describe('request globals runtime', () => {
     expect(request.bodyUsed).toBe(true)
 
     const response = new ResponsePolyfill('123')
-    expect(response.body).toBeNull()
+    expect(response.body?.getReader).toBeTypeOf('function')
     expect(Object.hasOwn(response, 'body')).toBe(false)
     expect(Object.hasOwn(response, 'bodyUsed')).toBe(false)
     expect(Object.keys(response)).not.toContain('body')

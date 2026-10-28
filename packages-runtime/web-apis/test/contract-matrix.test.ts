@@ -233,7 +233,7 @@ describe('web API contract matrix', () => {
     expect(() => atobPolyfill('%%%')).toThrow('correctly encoded')
     const encoded = new TextEncoderPolyfill().encode('中文')
     expect(new TextDecoderPolyfill().decode(encoded)).toBe('中文')
-    expect(new TextDecoderPolyfill().decode(new Uint8Array([0xFF]))).toBe('ÿ')
+    expect(new TextDecoderPolyfill().decode(new Uint8Array([0xFF]))).toBe('\uFFFD')
     expect(btoaPolyfill('A')).toBe('QQ==')
     expect(btoaPolyfill('AB')).toBe('QUI=')
     expect(atobPolyfill('QQ==')).toBe('A')
@@ -261,8 +261,8 @@ describe('web API contract matrix', () => {
     expect(isBlobLike({ arrayBuffer: async () => source })).toBe(false)
 
     expect(new TextDecoderPolyfill().decode()).toBe('')
-    expect(new TextDecoderPolyfill().decode(null)).toBe('')
-    expect(new TextDecoderPolyfill().decode({} as never)).toBe('')
+    expect(() => new TextDecoderPolyfill().decode(null as never)).toThrow(TypeError)
+    expect(() => new TextDecoderPolyfill().decode({} as never)).toThrow(TypeError)
     expect(new TextEncoderPolyfill().encode()).toEqual(new Uint8Array())
     expect(decodeTextFallback(encodeTextFallback('中文'))).toBe('中文')
     expect(decodeTextFallback(Uint8Array.from([0xFF]).buffer)).toBe('ÿ')
@@ -312,7 +312,7 @@ describe('web API contract matrix', () => {
 
     const stringRequest = new RequestPolyfill('https://example.test', { body: 'hello', method: 'post', headers: fromRecord })
     expect(stringRequest.method).toBe('POST')
-    expect(stringRequest.body).toBe(null)
+    expect(stringRequest.body?.getReader).toBeTypeOf('function')
     expect(stringRequest.bodyUsed).toBe(false)
     const clonedRequest = stringRequest.clone()
     expect(await stringRequest.text()).toBe('hello')
@@ -341,7 +341,7 @@ describe('web API contract matrix', () => {
   it('covers response, blob, file and form data contracts', async () => {
     const response = new ResponsePolyfill('hello', { status: 201, statusText: 'Created', url: '/created' })
     expect(response.ok).toBe(true)
-    expect(response.body).toBe(null)
+    expect(response.body?.getReader).toBeTypeOf('function')
     expect(response.bodyUsed).toBe(false)
     const clonedResponse = response.clone()
     expect(await response.text()).toBe('hello')

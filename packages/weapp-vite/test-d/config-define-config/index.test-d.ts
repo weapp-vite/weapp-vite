@@ -180,13 +180,13 @@ expectAssignable<boolean | {
   mode?: 'inline' | 'entry' | 'require'
   webRuntime?: boolean | {
     enabled?: boolean
-    targets?: ('fetch' | 'Headers' | 'Request' | 'Response' | 'TextEncoder' | 'TextDecoder' | 'AbortController' | 'AbortSignal' | 'XMLHttpRequest' | 'WebSocket' | 'atob' | 'btoa' | 'queueMicrotask' | 'performance' | 'crypto' | 'Event' | 'CustomEvent')[]
+    targets?: ('fetch' | 'Headers' | 'Request' | 'Response' | 'TextEncoder' | 'TextDecoder' | 'AbortController' | 'AbortSignal' | 'XMLHttpRequest' | 'WebSocket' | 'atob' | 'btoa' | 'queueMicrotask' | 'performance' | 'crypto' | 'Event' | 'CustomEvent' | 'ReadableStream' | 'WritableStream' | 'TransformStream' | 'TextDecoderStream' | 'EventSource')[]
     dependencies?: (string | RegExp)[]
   }
 } | undefined>(objectConfig.weapp?.appPrelude)
 expectAssignable<boolean | {
   enabled?: boolean
-  targets?: ('fetch' | 'Headers' | 'Request' | 'Response' | 'TextEncoder' | 'TextDecoder' | 'AbortController' | 'AbortSignal' | 'XMLHttpRequest' | 'WebSocket' | 'atob' | 'btoa' | 'queueMicrotask' | 'performance' | 'crypto' | 'Event' | 'CustomEvent')[]
+  targets?: ('fetch' | 'Headers' | 'Request' | 'Response' | 'TextEncoder' | 'TextDecoder' | 'AbortController' | 'AbortSignal' | 'XMLHttpRequest' | 'WebSocket' | 'atob' | 'btoa' | 'queueMicrotask' | 'performance' | 'crypto' | 'Event' | 'CustomEvent' | 'ReadableStream' | 'WritableStream' | 'TransformStream' | 'TextDecoderStream' | 'EventSource')[]
   dependencies?: (string | RegExp)[]
   prelude?: boolean
 } | undefined>(objectConfig.weapp?.injectWebRuntimeGlobals)

@@ -27,3 +27,13 @@
 - 微信 DevTools 视觉基线只通过 `pnpm e2e:web:update-baselines` 显式更新。普通 `pnpm e2e:web` 只消费 manifest 与已提交 PNG，并把 current/diff 写入 `.tmp/web-runtime-visual/`。DevTools 截图只包含页面 WebView，manifest 必须按 case 记录实际 viewport；宿主原生 tabBar 不进入 PNG，对应 Web shell 通过浏览器尺寸、边界、选中态和 API 行为断言验收。
 - URL、URLSearchParams、fetch/request globals 需要在目标 runtime 做最小验证；浏览器通过不代表宿主通过。
 - 第三方请求客户端若只在 DevTools 失败，先缩小到宿主构造器兼容问题，再决定 skip、polyfill 或业务修复。
+
+## 小程序 Web API 注入与 SSE
+
+- `weapp.appPrelude.webRuntime` 为小程序注入兼容对象，与浏览器预览的 `weapp.web` 分开。先读本地 `dist/docs/weapp-config.md`，完整配置见 [Web Runtime 全局对象注入配置](https://vite.weapp.dev/config/web-runtime-globals.html)。
+- Fetch 响应流通过 `webRuntime.networkDefaults.request.enableChunked: true` 开启；普通缓冲 Fetch 继续可用。使用标准 `Response.body`、`pipeThrough()`、`getReader()` 和 `AbortSignal`，业务不直接管理 `onChunkReceived`。
+- `ReadableStream`、`WritableStream`、`TransformStream` 作为一致的一组安装；`TextDecoderStream` 补齐 UTF-8 跨块状态。构建器识别 `eventsource-parser/stream`，其模块初始化会继承 `TransformStream`，必须核对最终 prelude 和 chunk 局部绑定在依赖求值前已就绪。
+- `EventSource` 自动开启分块，支持标准 GET、事件监听、`Last-Event-ID`、`retry` 和重连。POST、自定义鉴权头使用 Fetch，Fetch 不自动重试；`wevu/fetch` 复用 `@wevu/web-apis`，独立入口为 `@wevu/web-apis/streams` 和 `/eventsource`。
+- 微信流式请求要求 chunk 监听和响应结束前的真实状态码。缺失时 Fetch 以 `NotSupportedError` 失败，EventSource 触发 error 并关闭；不得假定 HTTP 200 或静默退回缓冲，也不能用最终 `success.statusCode` 冒充早期元数据。
+- 首版不模拟浏览器 Cookie/CORS，不支持 `EventSource` 的 `withCredentials: true`、流式请求上传或 `Blob.stream()`。JS 流消费不等于网络级反压；不静默丢块，慢消费者和 clone 分支可能增加内存。域名白名单、TLS、超时、后台限制仍属宿主边界。
+- 正路径必须证明服务端仍保持响应打开时页面已显示首条消息，并覆盖 POST 鉴权、断线重连和卸载清理。headless、真实 Stable 与真机结果分开记录；缺失状态码的拒绝路径通过不能写成 SSE 正路径通过。示例见 [复用 Web SSE 写法](https://vite.weapp.dev/guide/web-runtime-globals.html#复用-web-sse-写法)。

@@ -19,6 +19,11 @@ const GLOBAL_KEYS = [
   'XMLHttpRequest',
   'URL',
   'URLSearchParams',
+  'ReadableStream',
+  'WritableStream',
+  'TransformStream',
+  'TextDecoderStream',
+  'EventSource',
 ] as const
 
 const RUNTIME_RESET_KEYS = [
@@ -94,6 +99,23 @@ describe('request globals third-party integration', () => {
 
     wpiRequestMock.mockImplementation((options: Record<string, any>) => {
       const result = createMockResponse(String(options.url ?? ''), options.data)
+      if (options.enableChunked) {
+        let headers: ((value: unknown) => void) | undefined
+        let chunk: ((value: unknown) => void) | undefined
+        void Promise.resolve().then(() => {
+          headers?.({ statusCode: result.statusCode, header: result.header })
+          chunk?.({ data: new TextEncoder().encode(String(result.data)).buffer })
+          options.success?.({ ...result, data: '' })
+          options.complete?.()
+        })
+        return {
+          abort: vi.fn(),
+          onHeadersReceived: (listener: (value: unknown) => void) => { headers = listener },
+          offHeadersReceived: () => { headers = undefined },
+          onChunkReceived: (listener: (value: unknown) => void) => { chunk = listener },
+          offChunkReceived: () => { chunk = undefined },
+        }
+      }
       options.success?.(result)
       options.complete?.(result)
       return {

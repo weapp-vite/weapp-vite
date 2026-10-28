@@ -29,3 +29,14 @@
 ## 说明
 
 `wevu/fetch` 只负责 Fetch 风格请求入口；完整 Web API 兼容层请使用 `wevu/web-apis`。
+
+## SSE 响应流
+
+`wevu/fetch` 复用 `@wevu/web-apis` 的响应流：项目通过
+`weapp.appPrelude.webRuntime.networkDefaults.request.enableChunked: true` 开启网络增量交付。
+可以使用 `response.body.getReader()` 或 `pipeThrough(new TextDecoderStream())`，
+并接入 `eventsource-parser/stream`。底层必须提供早期真实 HTTP 状态码和 chunk 监听；
+缺少能力时以 `NotSupportedError` 失败。普通缓冲请求继续可用。
+GET 订阅也可以使用注入的 `EventSource`，页面卸载时调用 `close()`；
+POST、自定义 headers 走 Fetch，并通过 `AbortController` 管理取消。
+Wevu 页面需在同步 setup 阶段注册 `onUnload`，不能等请求返回后再注册清理。

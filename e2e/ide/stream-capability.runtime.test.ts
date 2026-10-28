@@ -21,6 +21,9 @@ describe('native streaming capability probe', { concurrent: false }, () => {
     const config = JSON.parse(await readFile(path.join(appRoot, 'project.config.json'), 'utf8')) as { appid: string }
     expect(config.appid).toMatch(/^wx[0-9a-f]{16}$/)
     await runWeappViteBuildWithLogCapture({ cliPath: path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js'), jsFormat: 'cjs', projectRoot: appRoot, platform: 'weapp', cwd: appRoot, label: 'ide:stream-probe' })
+    const app = JSON.parse(await readFile(path.join(appRoot, 'dist/app.json'), 'utf8')) as { pages: string[] }
+    expect(app.pages).toEqual(['pages/index/index'])
+    await expect(access(path.join(appRoot, 'dist/pages/sse/index.js'))).rejects.toMatchObject({ code: 'ENOENT' })
     for (const extension of ['js', 'json', 'wxml']) {
       await access(path.join(appRoot, `dist${route}.${extension}`))
     }
@@ -51,6 +54,32 @@ describe('native streaming capability probe', { concurrent: false }, () => {
     await expect.poll(() => page!.data('capabilitiesText')).not.toBe('')
     console.log('[stream-probe-capabilities]', JSON.stringify(await page!.data('capabilities')))
   })
+  for (const statusCode of [200, 204, 401, 429, 500]) {
+    it(`records the real early HTTP metadata for status ${statusCode}`, async (ctx) => {
+      const scenario = `status-${statusCode}`
+      const dom = createDomAcceptance(ctx, 'e2e-apps/stream-capability-probe', [
+        { id: 'initial', route, action: '状态码探针首屏', nodes: [{ selector: '#probe-status', text: 'idle' }] },
+        { id: 'headers', route, action: '服务端尚未结束时收到原生响应头', nodes: [{ selector: '#probe-scenario', text: scenario }] },
+        { id: 'terminal', route, action: '最终原生状态码', nodes: [{ selector: '#probe-status', text: 'completed' }] },
+      ])
+      const page = await miniProgram!.reLaunch(route)
+      await dom.check('initial', miniProgram!, page!)
+      await page!.callMethod('start', server.baseUrl, scenario, scenario, statusCode)
+      await expect.poll(() => server.requests.has(scenario)).toBe(true)
+      server.headers(scenario)
+      await expect.poll(() => page!.data('headerKeys')).not.toEqual([])
+      const observed = await page!.data('headerStatus') as number | null
+      expect(server.requests.get(scenario)!.ended).toBe(false)
+      // null 是宿主能力观测，不把最终 success.statusCode 冒充为提前收到的元数据。
+      expect(observed === null || observed === statusCode).toBe(true)
+      console.log('[stream-probe-http-status]', JSON.stringify({ requested: statusCode, early: observed }))
+      await dom.check('headers', miniProgram!, page!)
+      server.finish(scenario, true)
+      await expect.poll(() => page!.data('status')).toBe('completed')
+      expect(await page!.data('successStatus')).toBe(statusCode)
+      await dom.check('terminal', miniProgram!, page!)
+    })
+  }
   for (const scenario of STREAM_SCENARIOS) {
     it(`observes controlled network stages: ${scenario}`, { timeout: 30_000 }, async (ctx) => {
       const dom = createDomAcceptance(ctx, 'e2e-apps/stream-capability-probe', [

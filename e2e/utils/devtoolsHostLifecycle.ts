@@ -163,13 +163,17 @@ export async function claimDevtoolsHost(cliPath = process.env[DEVTOOLS_CLI_ENV]?
   return { target, initial, claimedAt: new Date().toISOString() } satisfies DevtoolsHostLease
 }
 
-async function assertClaimedHostGone(lease: DevtoolsHostLease, identities: ManagedWechatHostIdentity[]) {
+async function assertClaimedHostGone(lease: DevtoolsHostLease, identities: ManagedWechatHostIdentity[], remaining: () => number) {
+  remaining()
   const current = await inspectDevtoolsHost(lease.target)
+  remaining()
   if (current.state !== 'cold') {
     throw new Error(`WeChat DevTools quit returned but the host is still ${current.state}; preserve it and stop the IDE lane.`)
   }
   for (const identity of identities) {
+    remaining()
     const live = await readManagedProcessIdentity(identity.pid)
+    remaining()
     if (live && sameManagedProcess(live, identity)) {
       throw new Error('WeChat DevTools quit returned but a claimed host process is still alive.')
     }
@@ -177,10 +181,24 @@ async function assertClaimedHostGone(lease: DevtoolsHostLease, identities: Manag
   return current
 }
 
-async function inspectClaimedInstallationExit(lease: DevtoolsHostLease): Promise<DevtoolsHostExitEvidence['installationInspection']> {
+function createHostWaitBudget(timeoutMs: number) {
+  const deadline = performance.now() + timeoutMs
+  const remaining = () => {
+    const timeout = Math.floor(deadline - performance.now())
+    if (timeout <= 0) {
+      throw new Error('WeChat DevTools host exit verification deadline expired.')
+    }
+    return timeout
+  }
+  return { deadline, remaining }
+}
+
+async function inspectClaimedInstallationExit(lease: DevtoolsHostLease, remaining: () => number): Promise<DevtoolsHostExitEvidence['installationInspection']> {
   if (process.platform === 'darwin' && lease.target.appPath.includes('/Contents/')) {
     const { inspectExitedWechatInstallation } = await import('../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/installationExit/processes')
-    return inspectExitedWechatInstallation(lease.target)
+    const inspection = await inspectExitedWechatInstallation(lease.target, process.platform, { timeoutMs: remaining() })
+    remaining()
+    return inspection
   }
 }
 
@@ -188,11 +206,17 @@ async function inspectClaimedInstallationExit(lease: DevtoolsHostLease): Promise
 export async function quitClaimedDevtoolsHost(lease: DevtoolsHostLease, options: QuitClaimedDevtoolsHostOptions = {}): Promise<DevtoolsHostExitEvidence> {
   const timeoutMs = options.timeoutMs ?? HOST_WAIT_TIMEOUT_MS
   const pollIntervalMs = options.pollIntervalMs ?? HOST_POLL_INTERVAL_MS
+  if (!Number.isSafeInteger(timeoutMs) || timeoutMs <= 0 || !Number.isSafeInteger(pollIntervalMs) || pollIntervalMs <= 0) {
+    throw new Error('WeChat DevTools host exit verification requires positive timeout and polling interval values.')
+  }
   const before = await inspectDevtoolsHost(lease.target)
   if (before.state === 'cold') {
+    const { remaining } = createHostWaitBudget(timeoutMs)
     // 共享锁已经消失不证明安装 helper 退出；只读核验，不再拉起 CLI 或增加退出权限。
-    const installationInspection = await inspectClaimedInstallationExit(lease)
-    const after = await assertClaimedHostGone(lease, [])
+    const installationInspection = await inspectClaimedInstallationExit(lease, remaining)
+    remaining()
+    const after = await assertClaimedHostGone(lease, [], remaining)
+    remaining()
     return { checkedAt: new Date().toISOString(), before, after, quitDispatched: false, exitedHostIdentities: [], installationInspection }
   }
   if (before.state !== 'selected') {
@@ -203,17 +227,22 @@ export async function quitClaimedDevtoolsHost(lease: DevtoolsHostLease, options:
     ? ['quit', `--port=${detected.servicePort}`]
     : ['quit']
   await runWechatCliCommand(quitArgs, { target: lease.target, timeout: HOST_WAIT_TIMEOUT_MS })
-  const deadline = Date.now() + timeoutMs
+  const { deadline, remaining } = createHostWaitBudget(timeoutMs)
   let lastError: unknown
-  while (Date.now() < deadline) {
+  while (performance.now() < deadline) {
     try {
-      const after = await assertClaimedHostGone(lease, before.identities)
-      const installationInspection = await inspectClaimedInstallationExit(lease)
+      remaining()
+      const after = await assertClaimedHostGone(lease, before.identities, remaining)
+      const installationInspection = await inspectClaimedInstallationExit(lease, remaining)
+      remaining()
       return { checkedAt: new Date().toISOString(), before, after, quitDispatched: true, exitedHostIdentities: before.identities, installationInspection }
     }
     catch (error) {
       lastError = error
-      await sleep(pollIntervalMs)
+      const delay = Math.min(pollIntervalMs, Math.floor(deadline - performance.now()))
+      if (delay > 0) {
+        await sleep(delay)
+      }
     }
   }
   throw new Error(`WeChat DevTools host did not fully exit after quit: ${lastError instanceof Error ? lastError.message : String(lastError)}`)

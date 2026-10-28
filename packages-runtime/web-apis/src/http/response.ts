@@ -1,5 +1,5 @@
 import type { RequestBodyLike } from './body'
-import { assertBodyUnused, getBodyValue, HttpBody, initializeBody } from './body'
+import { cloneBodyValue, HttpBody, initializeBody } from './body'
 import { HeadersPolyfill } from './headers'
 
 export class ResponsePolyfill extends HttpBody {
@@ -12,7 +12,7 @@ export class ResponsePolyfill extends HttpBody {
   readonly type: ResponseType
   readonly [Symbol.toStringTag] = 'Response'
 
-  constructor(body?: RequestBodyLike, init: Record<string, any> = {}) {
+  constructor(body?: RequestBodyLike | ReadableStream, init: Record<string, any> = {}) {
     super()
     this.status = Number.isFinite(init.status) ? init.status : 200
     this.statusText = init.statusText ?? ''
@@ -48,8 +48,7 @@ export class ResponsePolyfill extends HttpBody {
   }
 
   clone() {
-    assertBodyUnused(this)
-    return new ResponsePolyfill(getBodyValue(this), {
+    return new ResponsePolyfill(cloneBodyValue(this), {
       status: this.status,
       statusText: this.statusText,
       headers: this.headers,

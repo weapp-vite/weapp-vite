@@ -49,11 +49,14 @@ function decodeTextImagePath(wire: string): string {
 }
 
 /** ps 仅用于 PID、启动时间和僵尸状态，不能用可修改的 comm 代替实际可执行文件。 */
-export async function readDarwinProcessStates(): Promise<DarwinProcessState[]> {
-  const inspection = execa('/bin/ps', ['-axo', 'pid=,stat=,lstart='], options)
+export async function readDarwinProcessStates(timeoutMs: number = options.timeout): Promise<DarwinProcessState[]> {
+  if (!Number.isSafeInteger(timeoutMs) || timeoutMs <= 0) {
+    throw new Error('Installation-exit recovery cannot inspect the process inventory without a positive timeout.')
+  }
+  const inspection = execa('/bin/ps', ['-axo', 'pid=,stat=,lstart='], { ...options, timeout: Math.min(options.timeout, timeoutMs) })
   const inspectorPid = inspection.pid
   const result = await inspection
-  if (result.exitCode !== 0 || result.stderr?.trim() || !result.stdout.trim()) {
+  if (result.exitCode !== 0 || result.timedOut || result.signal || result.stderr?.trim() || !result.stdout.trim()) {
     throw new Error('Installation-exit recovery could not read the complete process inventory.')
   }
   const records = result.stdout.trim().split(/\r?\n/).map((line) => {

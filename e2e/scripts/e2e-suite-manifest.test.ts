@@ -150,6 +150,7 @@ describe('e2e suite manifest', () => {
     'ide/issue-998-tailwind.runtime.test.ts',
     'ide/body-blob.runtime.test.ts',
     'ide/stream-capability.runtime.test.ts',
+    'ide/sse-stream.runtime.test.ts',
     'ide/app-lifecycle.test.ts',
     'ide/github-issues.runtime.issue1015.test.ts',
     'ide/issue-1126-1128.test.ts',
@@ -194,6 +195,18 @@ describe('e2e suite manifest', () => {
   it('keeps native property delivery parity in the ordinary full IDE suite', async () => {
     const tasks = await getSuiteTasks('ide-full')
     expect(tasks.filter(task => task.label === 'ide/native-property-delivery.runtime.test.ts')).toHaveLength(1)
+  })
+
+  it.each([
+    'ide/stream-capability.runtime.test.ts',
+    'ide/sse-stream.runtime.test.ts',
+  ])('keeps %s in the ordinary full IDE suites', async (label) => {
+    for (const suite of ['ide-full', 'ide-full:classic']) {
+      const tasks = (await getSuiteTasks(suite)).filter(task => task.label === label)
+      expect(tasks).toHaveLength(1)
+      expect(tasks[0]?.env?.WEAPP_VITE_E2E_TARGET_FILE).toBe(label)
+      expect(tasks[0]?.env?.WEAPP_VITE_E2E_RUNTIME_PROVIDER).toBeUndefined()
+    }
   })
 
   it('keeps ordinary full within WeChat scope and only three optional Baidu tasks outside exhaustive', () => {

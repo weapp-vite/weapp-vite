@@ -1,11 +1,27 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { REQUEST_GLOBAL_ACTUALS_KEY } from '@weapp-core/constants'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+const globalKeys = ['AbortController', 'AbortSignal', 'wx', 'global', 'self', 'window', REQUEST_GLOBAL_ACTUALS_KEY] as const
+let descriptors: Map<string, PropertyDescriptor | undefined>
 
 describe('runtime request globals', () => {
   beforeEach(() => {
     vi.resetModules()
-    delete (globalThis as Record<string, any>).AbortController
-    delete (globalThis as Record<string, any>).AbortSignal
-    delete (globalThis as Record<string, any>).wx
+    descriptors = new Map(globalKeys.map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)]))
+    for (const key of ['AbortController', 'AbortSignal', 'wx', REQUEST_GLOBAL_ACTUALS_KEY]) {
+      Reflect.deleteProperty(globalThis, key)
+    }
+  })
+
+  afterEach(() => {
+    for (const [key, descriptor] of descriptors) {
+      if (descriptor) {
+        Object.defineProperty(globalThis, key, descriptor)
+      }
+      else {
+        Reflect.deleteProperty(globalThis, key)
+      }
+    }
   })
 
   it('exports an explicit fallback installer for abort globals', async () => {

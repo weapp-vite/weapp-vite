@@ -232,6 +232,8 @@ const IDE_TEMPLATES_PATTERNS = [
 ]
 const IDE_FULL_CORE_PATTERNS = [
   'ide/native-property-delivery.runtime.test.ts',
+  'ide/stream-capability.runtime.test.ts',
+  'ide/sse-stream.runtime.test.ts',
   'ide/app-shell-presence.hmr.runtime.test.ts',
   'ide/vite-plugin.runtime.test.ts',
   'ide/vite-plugin-npm.runtime.test.ts',
@@ -319,6 +321,7 @@ const IDE_DOM_HEADLESS_PATTERNS = [...new Set([
   'ide/wevu-initial-style.runtime.test.ts',
   'ide/body-blob.runtime.test.ts',
   'ide/stream-capability.runtime.test.ts',
+  'ide/sse-stream.runtime.test.ts',
   'ide/app-lifecycle.test.ts',
   'ide/github-issues.runtime.component-instance-apis.test.ts',
   'ide/github-issues.runtime.issue1010.test.ts',
