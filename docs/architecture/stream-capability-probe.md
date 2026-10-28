@@ -92,9 +92,9 @@ SSE suite 复用实际 `eventsource-parser/stream` 的 `pipeThrough(...).getRead
 
 | 消费入口 | JS 字节 | gzip 字节 |
 | --- | ---: | ---: |
-| 普通缓冲 Fetch + `.text()` | 147,694 | 35,713 |
-| Fetch 流 + TextDecoderStream + 第三方 SSE parser | 152,088 | 37,356 |
-| EventSource + `onmessage` + `close()` | 154,396 | 38,040 |
+| 普通缓冲 Fetch + `.text()` | 147,713 | 35,718 |
+| Fetch 流 + TextDecoderStream + 第三方 SSE parser | 152,107 | 37,361 |
+| EventSource + `onmessage` + `close()` | 154,415 | 38,045 |
 | 原生 `wx.request` 调用参考 | 165 | 155 |
 
 以上是当前实现不同公开子入口的比较，未包含根安装器或应用 prelude，也不是旧版与新版的体积差。普通 Fetch 已包含 Streams、URL 与动态 API adapter 等共同成本，原生调用参考不具备 Web Body 或 SSE 语义，其差额不能解释为纯 SSE 成本。
