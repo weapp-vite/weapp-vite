@@ -44,6 +44,22 @@ function denyImageResolution(code: 'EACCES' | 'EPERM', ...files: string[]) {
   })
 }
 
+function useInspectionClock() {
+  const clock = { now: 0 }
+  vi.spyOn(performance, 'now').mockImplementation(() => clock.now)
+  return clock
+}
+
+function spawnGenerations(clock: { now: number }, lastGeneration: number) {
+  let reads = 0
+  mocks.states.mockImplementation(async () => {
+    clock.now += 10
+    const generation = Math.min(Math.floor(reads++ / 2), lastGeneration)
+    return Array.from({ length: generation + 1 }, (_, index) => ({ ...state, pid: state.pid + index }))
+  })
+  mocks.paths.mockImplementation(async (pids: number[]) => new Map(pids.map(pid => [pid, path.join(directory, 'other.app/host')])))
+}
+
 describe('installation-exit process inventory', () => {
   it('resolves app.asar to the bundle root and rejects a manual host in it', async () => {
     const file = await executable(path.join(directory, 'selected.app/Contents/MacOS/Electron'))
@@ -130,7 +146,7 @@ describe('installation-exit process inventory', () => {
   it('independently verifies disappearance when a process exits during text-image sampling', async () => {
     mocks.states.mockResolvedValueOnce([state]).mockResolvedValueOnce([state]).mockResolvedValue([])
     expect(await inspectExitedWechatInstallation(target, 'darwin')).toMatchObject({ inspectedProcessCount: 0, exitedProcessCount: 1 })
-    expect(mocks.images).toHaveBeenCalledWith(state.pid)
+    expect(mocks.images).toHaveBeenCalledWith(state.pid, expect.any(Number))
   })
 
   it('rejects a reused PID when text-image sampling fails', async () => {
@@ -181,7 +197,7 @@ describe('installation-exit process inventory', () => {
     mocks.paths.mockResolvedValueOnce(new Map([[22, path.join(directory, 'selected.app/Contents/MacOS/host')]]))
     mocks.states.mockResolvedValueOnce([state]).mockResolvedValueOnce([state]).mockResolvedValue([state, newProcess])
     await expect(inspectExitedWechatInstallation(target, 'darwin')).rejects.toThrow('still has a live process')
-    expect(mocks.paths).toHaveBeenNthCalledWith(2, [22])
+    expect(mocks.paths).toHaveBeenNthCalledWith(2, [22], expect.any(Number))
   })
 
   it('does not block on a transient new process that independently disappears', async () => {
@@ -191,10 +207,91 @@ describe('installation-exit process inventory', () => {
     expect(await inspectExitedWechatInstallation(target, 'darwin')).toMatchObject({ inspectedProcessCount: 1, exitedProcessCount: 1 })
   })
 
-  it('refuses continuing newly spawned processes instead of silently accepting an incomplete inventory', async () => {
-    let pid = 21
-    mocks.states.mockImplementation(async () => [{ ...state, pid: pid++ }])
-    await expect(inspectExitedWechatInstallation(target, 'darwin')).rejects.toThrow('continuing new process activity')
+  it('reconciles more than three process generations without omitting a newly observed PID', async () => {
+    const clock = useInspectionClock()
+    spawnGenerations(clock, 4)
+    expect(await inspectExitedWechatInstallation(target, 'darwin', { timeoutMs: 1_000 })).toMatchObject({ inspectedProcessCount: 5, kernelPathProcessCount: 5, selectedProcessCount: 0 })
+    expect(mocks.paths.mock.calls.map(([pids]) => pids)).toEqual([[21], [22], [23], [24], [25]])
+    expect(mocks.images).not.toHaveBeenCalled()
+  })
+
+  it('refuses continuing process activity at the original deadline without extending its budget', async () => {
+    const clock = useInspectionClock()
+    spawnGenerations(clock, Number.POSITIVE_INFINITY)
+    await expect(inspectExitedWechatInstallation(target, 'darwin', { timeoutMs: 100 })).rejects.toThrow('continuing new process activity')
+    expect(clock.now).toBe(100)
+    expect(mocks.paths).toHaveBeenCalledTimes(5)
+    expect(mocks.states.mock.calls.map(([timeout]) => timeout)).toEqual([100, 90, 80, 70, 60, 50, 40, 30, 20, 10])
+  })
+
+  it('rejects a selected process found after more than three generations before the deadline', async () => {
+    const clock = useInspectionClock()
+    spawnGenerations(clock, 4)
+    mocks.paths.mockImplementation(async (pids: number[]) => new Map(pids.map(pid => [pid, path.join(directory, pid === 25 ? 'selected.app/Contents/MacOS/host' : 'other.app/host')])))
+    await expect(inspectExitedWechatInstallation(target, 'darwin', { timeoutMs: 1_000 })).rejects.toThrow('still has a live process')
+    expect(mocks.paths).toHaveBeenCalledTimes(5)
+    expect(clock.now).toBeLessThan(1_000)
+  })
+
+  it('passes one diminishing budget through process, kernel and text-image sampling', async () => {
+    const clock = useInspectionClock()
+    mocks.states.mockImplementation(async () => {
+      clock.now += 10
+      return [state]
+    })
+    mocks.paths.mockImplementation(async () => {
+      clock.now += 10
+      return new Map([[21, null]])
+    })
+    mocks.images.mockImplementation(async () => {
+      clock.now += 10
+      return [path.join(directory, 'other.app/host')]
+    })
+    await inspectExitedWechatInstallation(target, 'darwin', { timeoutMs: 100 })
+    expect(mocks.states.mock.calls.map(([timeout]) => timeout)).toEqual([100, 80, 60])
+    expect(mocks.paths).toHaveBeenCalledWith([21], 90)
+    expect(mocks.images).toHaveBeenCalledWith(21, 70)
+  })
+
+  it.each(['states', 'paths', 'images'] as const)('rejects %s results arriving after the deadline and dispatches no later sampling', async (phase) => {
+    const clock = useInspectionClock()
+    mocks.images.mockResolvedValue([path.join(directory, 'other.app/host')])
+    mocks[phase].mockImplementationOnce(async () => {
+      clock.now = 100
+      return phase === 'states' ? [state] : phase === 'paths' ? new Map([[21, null]]) : [path.join(directory, 'other.app/host')]
+    })
+    await expect(inspectExitedWechatInstallation(target, 'darwin', { timeoutMs: 100 })).rejects.toThrow('deadline expired')
+    expect(mocks.states).toHaveBeenCalledTimes(phase === 'images' ? 2 : 1)
+    expect(mocks.paths).toHaveBeenCalledTimes(phase === 'states' ? 0 : 1)
+    expect(mocks.images).toHaveBeenCalledTimes(phase === 'images' ? 1 : 0)
+  })
+
+  it('does not dispatch an initial inventory after installation resolution consumes the budget', async () => {
+    const clock = useInspectionClock()
+    const realpath = fs.realpath
+    vi.spyOn(fs, 'realpath').mockImplementation(async (file) => {
+      const result = await realpath(file)
+      clock.now = 100
+      return result
+    })
+    await expect(inspectExitedWechatInstallation(target, 'darwin', { timeoutMs: 100 })).rejects.toThrow('deadline expired')
+    expect(mocks.states).not.toHaveBeenCalled()
+  })
+
+  it('retains the thirty-second inspection ceiling when a caller supplies a larger budget', async () => {
+    const clock = useInspectionClock()
+    mocks.states.mockImplementationOnce(async () => {
+      clock.now = 30_000
+      return [state]
+    })
+    await expect(inspectExitedWechatInstallation(target, 'darwin', { timeoutMs: 60_000 })).rejects.toThrow('deadline expired')
+    expect(mocks.states).toHaveBeenCalledWith(30_000)
+    expect(mocks.paths).not.toHaveBeenCalled()
+  })
+
+  it.each([0, -1, Number.NaN, 0.5, Number.POSITIVE_INFINITY])('rejects an invalid inspection budget before dispatch: %s', async (timeoutMs) => {
+    await expect(inspectExitedWechatInstallation(target, 'darwin', { timeoutMs })).rejects.toThrow('positive process inventory timeout')
+    expect(mocks.states).not.toHaveBeenCalled()
   })
 
   it.each(['linux', 'win32'] as const)('refuses unverified %s inspection rather than falling back to process names', async (platform) => {

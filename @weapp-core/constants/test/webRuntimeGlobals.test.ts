@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { resolveWebRuntimeGlobalTargetDependencies, WEB_RUNTIME_GLOBAL_TARGETS } from '../src/webRuntimeGlobals'
+import { resolveWebRuntimeGlobalTargetDependencies, WEB_RUNTIME_GLOBAL_TARGETS, WEB_RUNTIME_STREAM_TARGETS } from '../src/webRuntimeGlobals'
 
 describe('shared Web Runtime target dependencies', () => {
+  it('includes the complete stream family in the global target registry', () => {
+    expect(WEB_RUNTIME_GLOBAL_TARGETS).toEqual(expect.arrayContaining([...WEB_RUNTIME_STREAM_TARGETS]))
+    expect(new Set(WEB_RUNTIME_GLOBAL_TARGETS).size).toBe(WEB_RUNTIME_GLOBAL_TARGETS.length)
+  })
+
   it('gives EventSource the same request and stream prerequisites in every consumer', () => {
     const targets = resolveWebRuntimeGlobalTargetDependencies(['EventSource'])
     expect(targets).toEqual(expect.arrayContaining([

@@ -8,7 +8,7 @@
 
 本节仅描述当时的运行记录，不代表当前 Stable 的能力。历史环境为微信开发者工具 2.02.2609142、AppService 基础库 3.17.2、webview renderer。宿主返回 platform=devtools、version=8.0.5、system=iOS 10.0.1；这些是模拟器环境信息，不是真机系统证明。
 
-独立 fixture `e2e-apps/stream-capability-probe` 显式关闭 `appPrelude.webRuntime`；原生探针页 `/pages/index/index` 不导入 Web API ponyfill，直接调用 `wx.request`，结果与 headless 使用同一页面、同一 suite 对照。本轮新增的 SSE 页另行加载兼容层。headless 的宿主版本信息不作为微信版本证据。
+独立 fixture `e2e-apps/stream-capability-probe` 显式关闭 `appPrelude.webRuntime`；原生探针页 `/pages/index/index` 不导入 Web API ponyfill，直接调用 `wx.request`，结果与 headless 使用同一页面、同一 suite 对照。SSE suite 使用独立的 `weapp-vite.sse.config.ts`，通过正式 `appPrelude.webRuntime` 自动注入兼容层；两种配置分别构建，原生能力探针不受 SSE 安装器影响。headless 的宿主版本信息不作为微信版本证据。
 
 | 能力                           | 历史宿主观测                                    | 当时结论                                         |
 | ------------------------------ | ----------------------------------------------- | ------------------------------------------------ |
@@ -76,15 +76,24 @@ SSE suite 复用实际 `eventsource-parser/stream` 的 `pipeThrough(...).getRead
 
 | 验证对象 | 当前证据 | 适用范围 |
 | --- | --- | --- |
-| headless 原生探针 | 13/13 通过；200、204、401、429、500 均在服务端结束响应前提供了对应真实状态码 | 证明 simulator 回环宿主与原生 fixture 契约，不证明微信客户端能力 |
-| headless SSE | 5/5 通过；真实 parser 在响应未结束时收到中文和 emoji；POST 鉴权、重连 ID、卸载取消和缺少状态码均通过 | 证明完整兼容层的 headless 正路径及拒绝路径，不证明微信客户端能力 |
-| simulator 浏览器 | Chromium headless 3/3 通过；早期状态缺失和 429、增量字节及取消顺序均符合断言 | 验证浏览器中 simulator 的分块契约 |
-| 当前 Stable 开发者工具 | 官方查询为 2.02.2609240；本机已安装并经 UI 核对为 Stable 2.02.2608080。本轮启动被宿主所有权门禁拒绝，未执行目标断言 | 已存在其他任务项目窗口，保持原状；未完成最终验收，不沿用 9 月历史结果 |
+| headless 原生探针 | 隔离构建后 13/13 通过；200、204、401、429、500 均在响应结束前提供对应状态码 | simulator 回环宿主与原生 fixture 契约 |
+| headless SSE | 隔离构建后 5/5 通过；真实 parser 在响应未结束时收到中文和 emoji；POST 鉴权、重连 ID、卸载取消和缺少状态码均通过 | 完整兼容层的正路径及拒绝路径 |
+| simulator 浏览器 | Chromium headless 3/3 通过；早期状态缺失、429、增量字节和取消顺序符合断言 | 浏览器中 simulator 的分块契约 |
+| 当前 Stable SSE | 正式自动注入构建的 4 项真实客户端用例通过，无运行时错误；缺少状态码的第 5 项仅适用 headless | 实际首条消息在响应结束前显示，POST 鉴权、重连 ID 与卸载取消成立 |
+| 当前 Stable 原生探针 | 前轮 13 项断言通过，真实早期 200/204/401/429/500 均与请求一致；最终隔离构建复验因模拟器冷启动超时，13 项未执行 | 前轮存在另一个已注册 SSE 页面初始化错误，严格整组未通过；不能把本轮所有真实 IDE 验收记为成功 |
 | 微信真机及最低目标基础库 | 未测试 | 不声明与 DevTools 或 headless 等价 |
 
-首次 headless 执行的四项失败来自 fixture import 排序：parser 比手动安装器更早求值。修复使用独立 parser facade，先建立安装器依赖再导出第三方解析器；真实 fixture 的原生构建回归在压缩前后均通过。重建受影响包后，SSE suite 串行复验 5/5 通过；该原生探针页面仍不加载兼容层。
+真实连接宿主为本机已安装 Stable 2.02.2608080、基础库 3.17.5。官方元数据在本轮查询为 Stable 2.02.2609240；依本地安装选择策略使用前者，没有换版。两版并不相同，不能将已安装版本当作官方最新版本。
 
-`@wevu/web-apis` 完整单测 194/194 通过；包类型、公开类型、编译注入回归和网站构建通过。真实 IDE 命令在 global setup 报 `WECHAT_DEVTOOLS_HOST_IDENTITY_MISMATCH`（existing selected host），没有加载本轮 fixture、没有建立自动化连接，也没有关闭既有窗口。原生 UI 前后核对仍为同一其他任务窗口；因此本轮没有新增微信客户端能力结论。
+前期 headless 暴露了第三方 parser 在安装器之前求值的问题；真实 DevTools 进一步发现，仅手动安装全局对象仍会被微信模块包装器的局部 `fetch` 参数遮蔽。当前 SSE fixture 直接导入真实 parser，并使用正式编译注入配置，不再保留手动安装 facade。编译回归在压缩前后均用带 `fetch` 参数的模块包装器执行真实产物：手动安装负例保持失败，自动注入正例验证 POST 鉴权、跨字节中文和 emoji、响应结束前输出及卸载取消。
+
+微信还会在启动时执行已注册页面脚本。最初原生配置误包含 SSE 页面，在缺少 `TransformStream` 的环境触发初始化错误，严格 DOM 门禁正确拒绝该轮结果。当前默认配置关闭自动路由，只输出原生页；SSE 配置通过正式自动路由精确注册两页。6 项编译回归包含执行全部注册页的检查，两个 runtime suite 同时断言实际 `app.json` 和页面文件，保留严格 DOM 门禁。
+
+最终真实复验中，原生窗口仍报通用 `simulator launch failed`，在原启动预算内未就绪，日志订阅超时；没有追加导航、重开窗口重试或将未执行项计为通过。Computer Use 已读取真实项目窗口及模拟器错误。SSE 窗口的 4 项用例随后成功，单独不能抹去原生套件失败；最终命令整体失败，全面真实 IDE 验收未完成。
+
+官方 CLI `quit` 在一轮清理中出现 `initialize → IDE server has started → quit`，其后仍有同安装的新宿主，退出核验拒绝释放。最终由真实持有关闭权和机器租约的外层 runner 管理：先确认受管窗口、端口和 journal 释放，再通过原生应用正常退出，核验整份安装进程清单。退出过渡期残留也被保留为原始错误，随后通过精确租约恢复和领域核验完成清理，没有强杀、删除全局缓存或降低所有权门禁。此结果不代表官方 CLI 自动退出路径已通过。
+
+`@wevu/web-apis` 完整单测 197/197、公开类型与包类型检查通过；Wevu 原有宿主及全局安装回归 16/16、相关基础设施回归 94 项和三平台 vendor 构建 3 项通过。原生流探测和 Body 追踪共用一次安全构造器快照，覆盖没有 `globalThis`、缺少 `AbortSignal` 时原生惰性 getter 抛错，以及正常原生 Body 消费。
 
 ## 当前入口的体积比较
 
@@ -92,9 +101,9 @@ SSE suite 复用实际 `eventsource-parser/stream` 的 `pipeThrough(...).getRead
 
 | 消费入口 | JS 字节 | gzip 字节 |
 | --- | ---: | ---: |
-| 普通缓冲 Fetch + `.text()` | 147,713 | 35,718 |
-| Fetch 流 + TextDecoderStream + 第三方 SSE parser | 152,107 | 37,361 |
-| EventSource + `onmessage` + `close()` | 154,415 | 38,045 |
+| 普通缓冲 Fetch + `.text()` | 147,477 | 35,728 |
+| Fetch 流 + TextDecoderStream + 第三方 SSE parser | 151,873 | 37,370 |
+| EventSource + `onmessage` + `close()` | 154,179 | 38,052 |
 | 原生 `wx.request` 调用参考 | 165 | 155 |
 
 以上是当前实现不同公开子入口的比较，未包含根安装器或应用 prelude，也不是旧版与新版的体积差。普通 Fetch 已包含 Streams、URL 与动态 API adapter 等共同成本，原生调用参考不具备 Web Body 或 SSE 语义，其差额不能解释为纯 SSE 成本。

@@ -20,10 +20,22 @@ describe('standard Fetch and EventSource streaming', { concurrent: false }, () =
   let server: Awaited<ReturnType<typeof startSseServer>>
   let hasEarlyStatus = false
 
+  async function waitForRequest(id: string, page: { data: () => Promise<unknown> }) {
+    try {
+      await expect.poll(() => server.requests.has(id)).toBe(true)
+    }
+    catch (error) {
+      console.log('[sse-request-failure]', JSON.stringify({ id, page: await page.data() }))
+      throw error
+    }
+  }
+
   beforeAll(async () => {
     const config = JSON.parse(await readFile(path.join(appRoot, 'project.config.json'), 'utf8')) as { appid: string }
     expect(config.appid).toMatch(/^wx[0-9a-f]{16}$/)
-    await runWeappViteBuildWithLogCapture({ cliPath: path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js'), jsFormat: 'cjs', projectRoot: appRoot, platform: 'weapp', cwd: appRoot, label: 'ide:sse-stream' })
+    await runWeappViteBuildWithLogCapture({ cliPath: path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js'), configFile: 'weapp-vite.sse.config.ts', jsFormat: 'cjs', projectRoot: appRoot, platform: 'weapp', cwd: appRoot, label: 'ide:sse-stream' })
+    const app = JSON.parse(await readFile(path.join(appRoot, 'dist/app.json'), 'utf8')) as { pages: string[] }
+    expect(app.pages).toEqual(['pages/index/index', 'pages/sse/index'])
     for (const page of [route, nativeRoute]) {
       for (const extension of ['js', 'json', 'wxml']) {
         await access(path.join(appRoot, `dist${page}.${extension}`))
@@ -48,7 +60,7 @@ describe('standard Fetch and EventSource streaming', { concurrent: false }, () =
     }
   })
 
-  it('records early metadata before loading the Web API compatibility layer', async (ctx) => {
+  it('records early metadata from the native request callbacks', async (ctx) => {
     const dom = createDomAcceptance(ctx, 'e2e-apps/stream-capability-probe', [
       { id: 'initial', route: nativeRoute, action: '原生元数据探针首屏', nodes: [{ selector: '#probe-status', text: 'idle' }] },
       { id: 'headers', route: nativeRoute, action: '提前到达的原生响应头', nodes: [{ selector: '#probe-scenario', text: 'sse-metadata' }] },
@@ -61,6 +73,7 @@ describe('standard Fetch and EventSource streaming', { concurrent: false }, () =
     server.headers('sse-metadata')
     await expect.poll(() => page!.data('headerKeys')).not.toEqual([])
     const earlyStatus = await page!.data('headerStatus') as number | null
+    // SSE 配置已安装全局兼容层；这里只观察 wx.request 回调，不冒充未注入的宿主能力探针。
     hasEarlyStatus = earlyStatus === 200
     expect([null, 200]).toContain(earlyStatus)
     expect(server.requests.get('sse-metadata')![0]!.ended).toBe(false)
@@ -80,7 +93,7 @@ describe('standard Fetch and EventSource streaming', { concurrent: false }, () =
     const page = await miniProgram!.reLaunch(route)
     await dom.check('initial', miniProgram!, page!)
     await page!.callMethod('startFetch', server.baseUrl, 'fetch')
-    await expect.poll(() => server.requests.has('fetch')).toBe(true)
+    await waitForRequest('fetch', page!)
     const request = server.requests.get('fetch')![0]!
     expect(request.request.method).toBe('POST')
     expect(request.request.headers.authorization).toBe('Bearer fixture-auth')
@@ -153,7 +166,7 @@ describe('standard Fetch and EventSource streaming', { concurrent: false }, () =
     const page = await miniProgram!.reLaunch(route)
     await dom.check('initial', miniProgram!, page!)
     await page!.callMethod('startFetch', server.baseUrl, 'unload')
-    await expect.poll(() => server.requests.has('unload')).toBe(true)
+    await waitForRequest('unload', page!)
     if (hasEarlyStatus) {
       server.headers('unload')
       server.write('unload', 'data: 卸载前\n\n')

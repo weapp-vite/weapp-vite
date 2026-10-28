@@ -32,6 +32,7 @@ pnpm add @wevu/web-apis
 
 ```ts
 import { installWebRuntimeGlobals } from '@wevu/web-apis'
+import { fetch } from '@wevu/web-apis/fetch'
 
 installWebRuntimeGlobals()
 
@@ -39,14 +40,16 @@ const response = await fetch('https://request-globals.invalid/data')
 console.log(await response.json())
 ```
 
+在 `weapp-vite` 项目中，希望直接使用自由变量 `fetch`、`EventSource` 等 Web 写法时，应配置 `weapp.appPrelude.webRuntime`。编译器会在模块执行前安装构造器并生成局部绑定，避免微信模块包装器中的同名参数遮蔽全局对象；单独调用安装器不能提供这项编译能力。
+
 ### 4.2 仅安装 Abort 相关能力
 
 ```ts
 import { installAbortGlobals } from '@wevu/web-apis'
 
-installAbortGlobals()
+const runtime = installAbortGlobals()
 
-const controller = new AbortController()
+const controller = new runtime.AbortController()
 controller.abort()
 ```
 
@@ -65,7 +68,7 @@ installWebRuntimeGlobals({
 ```ts
 import { installWebRuntimeGlobals } from '@wevu/web-apis'
 
-installWebRuntimeGlobals({
+const { btoa, atob, performance, crypto, CustomEvent } = installWebRuntimeGlobals({
   targets: ['atob', 'btoa', 'queueMicrotask', 'performance', 'crypto', 'Event', 'CustomEvent'],
 })
 
@@ -81,7 +84,7 @@ const event = new CustomEvent('payload', { detail: { ok: true } })
 ```ts
 import { installWebRuntimeGlobals } from '@wevu/web-apis'
 
-installWebRuntimeGlobals({
+const { WebSocket } = installWebRuntimeGlobals({
   targets: ['WebSocket'],
 })
 

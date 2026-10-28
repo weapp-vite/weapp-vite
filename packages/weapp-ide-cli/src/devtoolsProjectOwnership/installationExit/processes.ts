@@ -10,26 +10,46 @@ import { readDarwinKernelPaths, readDarwinProcessStates, readDarwinTextImages } 
 export async function inspectExitedWechatInstallation(
   target: ResolvedWechatDevtoolsTarget,
   platform: NodeJS.Platform = process.platform,
+  options: { timeoutMs?: number } = {},
 ): Promise<ManagedWechatInstallationExitEvidence['processInspection']> {
   if (platform !== 'darwin') {
     throw new Error('Installation-exit recovery requires the verified macOS process inventory.')
+  }
+  const timeoutMs = options.timeoutMs ?? 30_000
+  if (!Number.isSafeInteger(timeoutMs) || timeoutMs <= 0) {
+    throw new Error('Installation-exit recovery requires a positive process inventory timeout.')
+  }
+  const deadline = performance.now() + Math.min(timeoutMs, 30_000)
+  const remaining = () => {
+    const timeout = Math.floor(deadline - performance.now())
+    if (timeout <= 0) {
+      throw new Error('Installation-exit recovery process inventory deadline expired; continuing new process activity or incomplete inspection prevents proving exit.')
+    }
+    return timeout
+  }
+  const readStates = async () => {
+    const states = await readDarwinProcessStates(remaining())
+    remaining()
+    return states
   }
   const selectedRoot = resolveWechatDevtoolsInstallationRoot(target, platform)
   if (!selectedRoot || !path.isAbsolute(selectedRoot) || !selectedRoot.endsWith('.app') || !target.appPath.includes('/Contents/')) {
     throw new Error('Installation-exit recovery cannot resolve the selected application bundle.')
   }
   const installationRoot = await fs.realpath(selectedRoot)
-  let pending = await readDarwinProcessStates()
+  let pending = await readStates()
   // ps 的秒级启动时间与后续映像采样不是原子快照，不能证明并发 exec 或同秒 PID 复用。
   const verified = new Map<number, { started: string, zombie: boolean }>()
   let kernelPathProcessCount = 0
   let textImageProcessCount = 0
   let exitedProcessCount = 0
   let zombieProcessCount = 0
-  for (let round = 0; round < 3; round++) {
-    const kernelPaths = await readDarwinKernelPaths(pending.map(entry => entry.pid))
-    const after = new Map((await readDarwinProcessStates()).map(entry => [entry.pid, entry]))
+  // 新进程只增加待核验项，不重置整次清单的单调预算。
+  while (true) {
+    const kernelPaths = await readDarwinKernelPaths(pending.map(entry => entry.pid), remaining())
+    const after = new Map((await readStates()).map(entry => [entry.pid, entry]))
     for (const entry of pending) {
+      remaining()
       const current = after.get(entry.pid)
       if (!current) {
         exitedProcessCount++
@@ -46,11 +66,11 @@ export async function inspectExitedWechatInstallation(
       const executable = kernelPaths.get(entry.pid)
       let images: string[]
       try {
-        images = executable ? [executable] : await readDarwinTextImages(entry.pid)
+        images = executable ? [executable] : await readDarwinTextImages(entry.pid, remaining())
       }
       catch (error) {
         // 采样器读取映像前目标可能已经退出；仅独立 PID 清单确认消失才能排除。
-        const latest = await readDarwinProcessStates().then(
+        const latest = await readStates().then(
           states => states.find(process => process.pid === entry.pid),
           (confirmationError: unknown) => { throw new AggregateError([error, confirmationError], 'Installation-exit recovery cannot independently confirm process exit after failed image inspection.') },
         )
@@ -63,6 +83,7 @@ export async function inspectExitedWechatInstallation(
         }
         throw error
       }
+      remaining()
       if (!images.length) {
         throw new Error('Installation-exit recovery received no verifiable executable text images.')
       }
@@ -84,7 +105,7 @@ export async function inspectExitedWechatInstallation(
       }
       verified.set(entry.pid, { started: entry.started, zombie: false })
     }
-    const final = await readDarwinProcessStates()
+    const final = await readStates()
     for (const entry of final) {
       const previous = verified.get(entry.pid)
       if (previous && (previous.started !== entry.started || (previous.zombie && !entry.zombie))) {
@@ -96,9 +117,7 @@ export async function inspectExitedWechatInstallation(
       break
     }
   }
-  if (pending.length) {
-    throw new Error('Installation-exit recovery found continuing new process activity; retry after it becomes idle.')
-  }
+  remaining()
   return {
     platform,
     installationRoot,

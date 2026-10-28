@@ -21,6 +21,9 @@ describe('native streaming capability probe', { concurrent: false }, () => {
     const config = JSON.parse(await readFile(path.join(appRoot, 'project.config.json'), 'utf8')) as { appid: string }
     expect(config.appid).toMatch(/^wx[0-9a-f]{16}$/)
     await runWeappViteBuildWithLogCapture({ cliPath: path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js'), jsFormat: 'cjs', projectRoot: appRoot, platform: 'weapp', cwd: appRoot, label: 'ide:stream-probe' })
+    const app = JSON.parse(await readFile(path.join(appRoot, 'dist/app.json'), 'utf8')) as { pages: string[] }
+    expect(app.pages).toEqual(['pages/index/index'])
+    await expect(access(path.join(appRoot, 'dist/pages/sse/index.js'))).rejects.toMatchObject({ code: 'ENOENT' })
     for (const extension of ['js', 'json', 'wxml']) {
       await access(path.join(appRoot, `dist${route}.${extension}`))
     }

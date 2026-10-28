@@ -4,6 +4,7 @@ export const WEB_RUNTIME_STREAM_TARGETS = [
   'TransformStream',
 ] as const
 
+// 保持纯字面量，避免发布为单文件后因展开迭代的潜在副作用影响下游 tree-shaking。
 export const WEB_RUNTIME_GLOBAL_TARGETS = [
   'fetch',
   'Headers',
@@ -22,7 +23,9 @@ export const WEB_RUNTIME_GLOBAL_TARGETS = [
   'crypto',
   'Event',
   'CustomEvent',
-  ...WEB_RUNTIME_STREAM_TARGETS,
+  'ReadableStream',
+  'WritableStream',
+  'TransformStream',
   'TextDecoderStream',
   'EventSource',
 ] as const

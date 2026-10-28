@@ -24,6 +24,23 @@ describe('macOS read-only kernel inventory primitives', () => {
     expect(await readDarwinProcessStates()).toEqual([{ pid: 21, started: 'Mon Oct 5 12:30:01 2026', zombie: false }])
   })
 
+  it('caps process-state inspection at the remaining budget and rejects an exhausted budget before dispatch', async () => {
+    command.mockResolvedValue(success('21 S Mon Oct 5 12:30:01 2026'))
+    await readDarwinProcessStates(750)
+    expect(command.mock.calls[0]![2]).toMatchObject({ timeout: 750 })
+    await readDarwinProcessStates(20_000)
+    expect(command.mock.calls[1]![2]).toMatchObject({ timeout: 10_000 })
+    for (const timeout of [0, -1, Number.NaN, 0.5]) {
+      await expect(readDarwinProcessStates(timeout)).rejects.toThrow('positive timeout')
+    }
+    expect(command).toHaveBeenCalledTimes(2)
+  })
+
+  it.each([{ timedOut: true }, { signal: 'SIGTERM' }])('rejects interrupted PID inspection despite a complete-looking result (%j)', async (interrupted) => {
+    command.mockResolvedValue({ ...success('21 S Mon Oct 5 12:30:01 2026'), ...interrupted })
+    await expect(readDarwinProcessStates(750)).rejects.toThrow('could not read the complete process inventory')
+  })
+
   it('reads one kernel path result per requested PID through system JXA without UI automation', async () => {
     command.mockResolvedValue(success(JSON.stringify([{ pid: 21, executable: '/kernel/path' }, { pid: 22, executable: null }])))
     expect(await readDarwinKernelPaths([21, 22])).toEqual(new Map([[21, '/kernel/path'], [22, null]]))

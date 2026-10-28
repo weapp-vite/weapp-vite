@@ -235,6 +235,7 @@ const projects = [
         'e2e/utils/templateAcceptance/**/*.test.ts',
         'e2e/utils/vitestTargetFile.test.ts',
         'e2e/utils/wevu-root-hmr-exports.test.ts',
+        'e2e/utils/wevu-vendor.test.ts',
       ],
       exclude: ['**/node_modules/**', '**/.git/**'],
     },

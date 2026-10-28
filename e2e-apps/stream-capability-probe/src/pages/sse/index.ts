@@ -1,6 +1,6 @@
-import { EventSourceParserStream } from './parser'
+import { EventSourceParserStream } from 'eventsource-parser/stream'
 import { appendMessage, startSession, stopSession } from './session'
-/* eslint-disable mini-program/no-implicit-runtime-polyfill -- runtime 副作用模块显式安装全局对象，验收与 Web 相同的调用方式。 */
+/* eslint-disable mini-program/no-implicit-runtime-polyfill -- SSE 配置自动注入 Web API，验收与 Web 相同的调用方式。 */
 
 Page({
   data: {
@@ -12,6 +12,7 @@ Page({
     errorName: '',
     errorMessage: '',
     sourceState: null as number | null,
+    fetchRuntime: {} as Record<string, unknown>,
   },
   startFetch(baseUrl: string, id: string, omitStatusCode = false) {
     const session = startSession()
@@ -20,6 +21,13 @@ Page({
     this.setData({ status: 'waiting', text: '', messages: [], httpStatus: null, errorName: '', errorMessage: '' })
     void (async () => {
       try {
+        this.setData({ fetchRuntime: {
+          lexicalType: typeof fetch,
+          globalType: typeof globalThis.fetch,
+          sameBinding: typeof fetch === 'function' && fetch === globalThis.fetch,
+          signalAborted: controller.signal.aborted,
+          signalListener: typeof controller.signal.addEventListener,
+        } })
         const response = await fetch(`${baseUrl}/sse/fetch?id=${encodeURIComponent(id)}${omitStatusCode ? '&omitStatusCode=1' : ''}`, {
           method: 'POST',
           headers: { 'Accept': 'text/event-stream', 'Content-Type': 'application/json', 'Authorization': 'Bearer fixture-auth' },
