@@ -17,11 +17,32 @@ describe('component caller protocol ownership', () => {
     vi.unstubAllGlobals()
   })
 
-  it('routes the affected CustomElement through one exact caller session', async () => {
+  it.each([
+    ['2.02.2608080', '3.17.5'],
+    ['2.02.2609231', '3.17.5'],
+    ['2.02.2609231', '3.17.6'],
+  ] as const)('routes configured CustomElement calls through one exact caller in %s / %s', async (version, SDKVersion) => {
     const harness = createConnectionHarness()
-    const element = new CustomElement(harness.connection, { elementId: '97', nodeId: '97', pageId: 3, tagName: 'component' }, new Map())
+    const transport = Object.assign(new EventEmitter(), { send: vi.fn(), close: vi.fn(async () => {}) })
+    const connection = new Connection(transport as any)
+    connection.send = harness.send
+    connection.configureToolInfo({ version, SDKVersion })
+    const state = { label: 'component-initial', calls: 0 }
+    harness.caller.data = state
+    harness.caller.setData = vi.fn(function (this: typeof harness.caller, patch: typeof state) {
+      Object.assign(this.data, patch)
+    })
+    harness.caller.mark.mockImplementation(function (this: typeof harness.caller, value: string) {
+      this.setData({ label: value, calls: this.data.calls + 1 })
+      return `component:${this.data.label}`
+    })
+    const element = new CustomElement(connection, { elementId: '97', nodeId: '97', pageId: 3, tagName: 'component' }, new Map())
     await expect(element.callMethod('mark', 'value')).resolves.toBe('component:value')
     expect(harness.caller.mark).toHaveBeenCalledExactlyOnceWith('value')
+    expect(harness.caller.mark.mock.contexts).toEqual([harness.caller])
+    expect(harness.caller.setData).toHaveBeenCalledExactlyOnceWith({ label: 'value', calls: 1 })
+    expect(harness.caller.setData.mock.contexts).toEqual([harness.caller])
+    expect(state).toEqual({ label: 'value', calls: 1 })
     const commands = harness.send.mock.calls.filter(([method]) => method === 'App.CDPCommand').map(([, payload]) => payload)
     const release = commands.filter(command => command.method === 'releaseObject')
     expect(release.map(command => command.params.objectId)).toEqual(['owned-1'])
@@ -29,16 +50,34 @@ describe('component caller protocol ownership', () => {
       expect.objectContaining({ params: expect.objectContaining({ objectId: 'owned-1', returnByValue: true }) }),
     ]))
     expect(commands.every(command => !command.params.silent && !command.params.awaitPromise)).toBe(true)
+    expect(harness.send.mock.calls.some(([method]) => method === 'Element.callMethod')).toBe(false)
+    expect(harness.bridge.removeSubscribeListener).toHaveBeenCalledOnce()
     expect(harness.listeners.size).toBe(0)
     expect(vi.getTimerCount()).toBe(0)
+    await connection.dispose()
+    await connection.dispose()
+    expect(transport.close).toHaveBeenCalledOnce()
+    expect(harness.send.mock.calls.filter(([, payload]) => payload.method === 'releaseObject')).toHaveLength(1)
+    expect(harness.bridge.removeSubscribeListener).toHaveBeenCalledOnce()
   })
 
-  it('keeps unaffected CustomElement calls on the original native protocol', async () => {
+  it.each([
+    ['2.02.2608080', '3.17.6'],
+    ['2.02.2609231', '3.17.7'],
+    ['2.02.2609231', undefined],
+    ['2.02.2610082', '3.17.6'],
+    ['unknown', '3.17.6'],
+  ] as const)('keeps configured CustomElement calls native in %s / %s', async (version, SDKVersion) => {
     const send = vi.fn(async () => ({ result: 'native' }))
-    const connection = { send, prefersComponentCallerBridge: false } as unknown as Connection
+    const transport = Object.assign(new EventEmitter(), { send: vi.fn(), close: vi.fn(async () => {}) })
+    const connection = new Connection(transport as any)
+    connection.send = send
+    connection.configureToolInfo({ version, SDKVersion })
     const element = new CustomElement(connection, { elementId: '97', nodeId: '97', pageId: 3, tagName: 'component' }, new Map())
     await expect(element.callMethod('mark', 'value')).resolves.toBe('native')
     expect(send).toHaveBeenCalledExactlyOnceWith('Element.callMethod', { elementId: '97', nodeId: '97', pageId: 3, method: 'mark', args: ['value'] })
+    await connection.dispose()
+    expect(transport.close).toHaveBeenCalledOnce()
   })
 
   it('preserves original undefined, RegExp, Function and circular argument serialization', async () => {

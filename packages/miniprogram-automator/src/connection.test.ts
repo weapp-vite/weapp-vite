@@ -91,17 +91,39 @@ describe('Connection', () => {
   it.each([
     ['2.02.2608080', '3.17.5', true],
     ['2.02.2608080', '3.17.4', false],
+    ['2.02.2608080', '3.17.6', false],
     ['2.02.2608080', undefined, false],
     ['2.02.2609231', '3.17.5', true],
+    ['2.02.2609231', '3.17.6', true],
     ['2.02.2609231', '3.17.3', false],
+    ['2.02.2609231', '3.17.7', false],
+    ['2.02.2609231', '', false],
     ['2.02.2609231', undefined, false],
     ['2.02.2610082', '3.17.5', false],
+    ['2.02.2610082', '3.17.6', false],
+    ['2.02.2610092', '3.17.6', false],
+    ['unknown', '3.17.6', false],
+    ['2.02.2609232', '3.17.6', false],
   ] as const)('selects the exact observed component caller defect for %s / %s', async (version, SDKVersion, enabled) => {
     const { default: Connection } = await import('./Connection')
     const connection = new Connection(new FakeTransport() as any)
     connection.configureToolInfo({ version, SDKVersion })
     expect(connection.prefersComponentCallerBridge).toBe(enabled)
     connection.configureToolInfo({ version: 'unknown' })
+    expect(connection.prefersComponentCallerBridge).toBe(false)
+    await connection.dispose()
+  })
+
+  it('recomputes the caller bridge when a connection reports a different exact SDK combination', async () => {
+    const { default: Connection } = await import('./Connection')
+    const connection = new Connection(new FakeTransport() as any)
+    connection.configureToolInfo({ version: '2.02.2609231', SDKVersion: '3.17.6' })
+    expect(connection.prefersComponentCallerBridge).toBe(true)
+    connection.configureToolInfo({ version: '2.02.2608080', SDKVersion: '3.17.6' })
+    expect(connection.prefersComponentCallerBridge).toBe(false)
+    connection.configureToolInfo({ version: '2.02.2609231', SDKVersion: '3.17.5' })
+    expect(connection.prefersComponentCallerBridge).toBe(true)
+    connection.configureToolInfo({ version: '2.02.2609231' })
     expect(connection.prefersComponentCallerBridge).toBe(false)
     await connection.dispose()
   })
