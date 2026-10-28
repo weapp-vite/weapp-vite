@@ -109,7 +109,7 @@ describe('independent preparation stage ownership', () => {
     await options.call(plugin, input)
     expect(buildIndependentBundle).not.toHaveBeenCalled()
     expect(ctx.runtimeState.build.independent.pendingOutputs).toEqual([])
-    expect(Object.keys(input.input!)).toEqual(['app', 'pages/first'])
+    expect(Object.keys(input.input!)).toEqual(['app'])
 
     await hooks.emitDirtyEntries.call(plugin as never)
     expect(buildIndependentBundle).toHaveBeenCalledTimes(1)
@@ -118,7 +118,10 @@ describe('independent preparation stage ownership', () => {
 
   it('rereads app.json and independent roots changed after options', async () => {
     const { ctx, hooks, plugin, options, source, manifest, observed, buildIndependentBundle } = await fixture()
-    await options.call(plugin, {})
+    const input: { input?: Record<string, string> } = {}
+    await options.call(plugin, input)
+    // 完整重扫由 buildStart 重新发现页面，options 不得把即将撤销的页面钉成静态根。
+    expect(Object.keys(input.input!)).toEqual(['app'])
     await source('pages/new-page.js', 'Page({})')
     await source('new-package/pages/detail.ts', 'export const label = "new-package-child"')
     await manifest(['pages/new-page'], ['new-package'])
@@ -197,6 +200,15 @@ describe('independent preparation stage ownership', () => {
       await task
     }
     expect(Object.keys(input.input!)).toEqual(['app', 'pages/first'])
+  })
+
+  it('retains independent package static inputs during a main topology scan', async () => {
+    const { ctx, state, plugin } = await fixture()
+    state.subPackageMeta = { entries: ['isolated/pages/detail'], subPackage: { root: 'isolated', independent: true } } as CorePluginState['subPackageMeta']
+    const input: { input?: Record<string, string> } = {}
+    await createOptionsHook(state).call(plugin, input)
+    expect(Object.keys(input.input!)).toEqual(['isolated/pages/detail'])
+    expect(ctx.runtimeState.build.hmr.fullEntryScan).toBe(true)
   })
 
   it('keeps production watch preparation in each buildStart round', async () => {
