@@ -1,7 +1,334 @@
+diff --git a/backend.d.ts b/backend.d.ts
+index ab80d1d4b1dac5c60843c75e086e807e5d186c26..c95e58663b3a34dc52a1e81a70576724d90eb76d 100644
+--- a/backend.d.ts
++++ b/backend.d.ts
+@@ -20,6 +20,21 @@ export type BackendCapabilities = Readonly<{
+     perDirectory: boolean;
+ }>;
+ export declare function selectBackend(options: Pick<ChokidarOptions, 'backend' | 'depth'>): BackendCapabilities;
++export type DarwinDirectoryRecoveryHandlers = {
++    isActive: () => boolean;
++    recover: (epoch: number) => Promise<boolean | void>;
++    reportError: (error: unknown) => void;
++};
++export type DarwinDirectoryRecovery = {
++    ready: () => void;
++    close: () => void;
++};
++/** 恢复只可在仍有效的目录拓扑代中提交观察结果。 */
++export declare function isDarwinDirectoryEpochCurrent(epoch: number): boolean;
++/** 初扫完成前只登记屏障，不把恢复排在初扫自身所等待的队列前面。 */
++export declare function registerDarwinDirectoryRecovery(handlers: DarwinDirectoryRecoveryHandlers): DarwinDirectoryRecovery | undefined;
++/** 等待当前批次；关闭的 owner 不反向等待其他仍存活 owner 的恢复。 */
++export declare function settleDarwinDirectoryTopology(signal: AbortSignal): Promise<boolean | undefined>;
+ type BackendHandlers = {
+     publish: (trigger: BackendTrigger) => void;
+     errHandler: WatchHandlers['errHandler'];
+@@ -36,6 +51,8 @@ type NativeSubscriber = BackendHandlers & {
+ export type FsWatchContainer = SharedResourceState<NativeSubscriber> & {
+     watcher: NativeFsWatcher;
+     sequence: number;
++    directory: boolean;
++    nativePath: string;
+ };
+ export type NativeWatchFactory = (path: string, options: {
+     persistent: boolean | undefined;
+@@ -69,7 +86,7 @@ export declare function subscribeRecursiveNative(path: string, persistent: boole
+  * @param options to be passed to fs_watch
+  * @param handlers container for event listener functions
+  */
+-export declare function setFsWatchListener(path: string, fullPath: string, options: Partial<FSWInstanceOptions>, handlers: BackendHandlers, signal: AbortSignal): BackendSubscription | undefined;
++export declare function setFsWatchListener(path: string, fullPath: string, options: Partial<FSWInstanceOptions> & { directory?: boolean }, handlers: BackendHandlers, signal: AbortSignal): BackendSubscription | undefined;
+ type PollSubscriber = {
+     watchedPath: Path;
+     interval: number;
+diff --git a/backend.js b/backend.js
+index 78f2fe1783103772884bece59d8c3f2cb3c05ba5..e47449339209c1d13505daee5010870eb3ccf87a 100644
+--- a/backend.js
++++ b/backend.js
+@@ -49,6 +49,8 @@ function invalidateWatcherResource(resource, registry) {
+     if (registry.get(resource.resource) === resource)
+         registry.delete(resource.resource);
+     resource.watcher.close();
++    if (resource.directory)
++        changeDarwinDirectoryTopology();
+     return subscribers;
+ }
+ function attachWatcherSubscriber(resource, subscriber) {
+@@ -59,6 +61,9 @@ function createWatcherSubscription(resource, subscriber, registry) {
+     let closed = false;
+     return {
+         resource: resource.resource,
++        get active() {
++            return !closed && !resource.closed;
++        },
+         close: () => {
+             if (closed)
+                 return;
+@@ -127,10 +132,140 @@ function systemRecursiveWatchFactory(path, options, listener) {
+     return fsWatch(path, options, listener);
+ }
+ let recursiveWatchFactory = systemRecursiveWatchFactory;
++let darwinDirectoryEpoch = 0;
++let darwinAttemptedEpoch = 0;
++let darwinStableEpoch = 0;
++let darwinFailedEpoch = -1;
++let darwinRecovery;
++const darwinDirectoryRecoveries = new Set();
++/** 两类目录句柄共用同一个 libuv FSEvents 流，物理拓扑变化必须恢复所有 owner。 */
++function changeDarwinDirectoryTopology() {
++    if (!isMacos)
++        return;
++    darwinDirectoryEpoch += 1;
++    scheduleDarwinDirectoryRecovery();
++}
++function scheduleDarwinDirectoryRecovery() {
++    if (!isMacos || darwinRecovery)
++        return darwinRecovery;
++    const task = Promise.resolve().then(recoverDarwinDirectoryTopology);
++    darwinRecovery = task;
++    void task.finally(() => {
++        if (darwinRecovery === task)
++            darwinRecovery = undefined;
++        if (darwinAttemptedEpoch !== darwinDirectoryEpoch)
++            scheduleDarwinDirectoryRecovery();
++    }).catch(() => {});
++    return task;
++}
++async function recoverDarwinDirectoryTopology() {
++    while (darwinAttemptedEpoch !== darwinDirectoryEpoch) {
++        const preparing = [...darwinDirectoryRecoveries];
++        await Promise.all(preparing.map((owner) => owner.prepared));
++        if ([...darwinDirectoryRecoveries].some((owner) => !owner.ready))
++            continue;
++        const epoch = darwinDirectoryEpoch;
++        const owners = [...darwinDirectoryRecoveries].filter((owner) => owner.isActive());
++        const directory = [...FsWatchInstances.values(), ...RecursiveWatchInstances.values()]
++            .find((resource) => resource.directory && !resource.closed);
++        let failed = darwinFailedEpoch === epoch;
++        const reportError = (error) => {
++            failed = true;
++            owners.forEach((owner) => owner.reportError(error));
++        };
++        if (directory && owners.length > 0) {
++            let helper;
++            try {
++                // 仅关闭本批次自建的非共享句柄；public close 同步等待 CF 重建完成。
++                helper = nativeWatchFactory(directory.nativePath, { persistent: false }, () => {});
++                helper.on(EV.ERROR, reportError);
++            }
++            catch (error) {
++                reportError(error);
++            }
++            finally {
++                try {
++                    helper?.close();
++                }
++                catch (error) {
++                    reportError(error);
++                }
++            }
++        }
++        // close 只证明重建握手结束；排队的原始启动错误仍由所属句柄广播。
++        await Promise.resolve();
++        if (epoch !== darwinDirectoryEpoch)
++            continue;
++        const results = await Promise.allSettled(owners.map((owner) => owner.recover(epoch)));
++        results.forEach((result, index) => {
++            if (result.status === 'rejected') {
++                failed = true;
++                owners[index].reportError(result.reason);
++            }
++            else if (result.value === false) {
++                failed = true;
++            }
++        });
++        if (epoch !== darwinDirectoryEpoch)
++            continue;
++        darwinAttemptedEpoch = epoch;
++        if (!failed)
++            darwinStableEpoch = epoch;
++    }
++}
++/** 恢复只可在仍有效的目录拓扑代中提交观察结果。 */
++export function isDarwinDirectoryEpochCurrent(epoch) {
++    return epoch === darwinDirectoryEpoch;
++}
++/** 初扫完成前只登记屏障，不把恢复排在初扫自身所等待的队列前面。 */
++export function registerDarwinDirectoryRecovery(handlers) {
++    if (!isMacos)
++        return;
++    let prepare;
++    const owner = {
++        ...handlers,
++        ready: false,
++        prepared: new Promise((resolve) => { prepare = resolve; }),
++    };
++    darwinDirectoryRecoveries.add(owner);
++    changeDarwinDirectoryTopology();
++    const ready = () => {
++        if (owner.ready)
++            return;
++        owner.ready = true;
++        prepare();
++    };
++    return {
++        ready,
++        close: () => {
++            darwinDirectoryRecoveries.delete(owner);
++            ready();
++        },
++    };
++}
++/** 等待当前批次；关闭的 owner 不反向等待其他仍存活 owner 的恢复。 */
++export async function settleDarwinDirectoryTopology(signal) {
++    if (!isMacos || signal.aborted)
++        return;
++    let aborted;
++    const cancellation = new Promise((resolve) => { aborted = resolve; });
++    signal.addEventListener('abort', aborted, { once: true });
++    try {
++        while (!signal.aborted && (darwinRecovery || darwinAttemptedEpoch !== darwinDirectoryEpoch)) {
++            await Promise.race([darwinRecovery ?? scheduleDarwinDirectoryRecovery(), cancellation]);
++        }
++    }
++    finally {
++        signal.removeEventListener('abort', aborted);
++    }
++    return !signal.aborted && darwinStableEpoch === darwinDirectoryEpoch;
++}
+ function failRecursiveResource(resource, error) {
+     const subscribers = invalidateWatcherResource(resource, RecursiveWatchInstances);
+     if (!subscribers)
+         return;
++    if (isMacos)
++        darwinFailedEpoch = darwinDirectoryEpoch;
+     subscribers.forEach((subscriber) => subscriber.failure(error));
+ }
+ export function subscribeRecursiveNative(path, persistent, handlers, signal) {
+@@ -183,9 +318,12 @@ export function subscribeRecursiveNative(path, persistent, handlers, signal) {
+             closed: false,
+             watcher,
+             sequence: 0,
++            directory: true,
++            nativePath,
+         };
+         RecursiveWatchInstances.set(resourceKey, resource);
+         watcher.on(EV.ERROR, (error) => failRecursiveResource(resource, error));
++        changeDarwinDirectoryTopology();
+     }
+     attachWatcherSubscriber(resource, subscriber);
+     const subscription = createWatcherSubscription(resource, subscriber, RecursiveWatchInstances);
+@@ -243,6 +381,8 @@ function closeFailedNativeResource(cont, error) {
+     // Subscribers that attached while the error was being classified are retired
+     // too, so every one of them learns that its subscription is gone.
+     const subscribers = invalidateWatcherResource(cont, FsWatchInstances);
++    if (subscribers && isMacos && cont.directory)
++        darwinFailedEpoch = darwinDirectoryEpoch;
+     subscribers?.forEach((subscriber) => subscriber.failure?.(error));
+ }
+ async function handleNativeError(path, cont, error) {
+@@ -313,11 +453,15 @@ function createNativeContainer(path, nativePath, resourceKey, options, subscribe
+         closed: false,
+         watcher,
+         sequence: 0,
++        directory: options.directory === true,
++        nativePath,
+     };
+     FsWatchInstances.set(resourceKey, cont);
+     watcher.on(EV.ERROR, (error) => {
+         void handleNativeError(path, cont, error);
+     });
++    if (cont.directory)
++        changeDarwinDirectoryTopology();
+     return cont;
+ }
+ /**
+diff --git a/index.js b/index.js
+index 0c179fb13c136dfa43e53c8a82177b9443dfa6ef..562e7bff39f8bbe490e0f948ce723ab9b293dcd1 100644
+--- a/index.js
++++ b/index.js
+@@ -4,7 +4,7 @@ import { realpathSync } from 'node:fs';
+ import { readdir } from 'node:fs/promises';
+ import * as sp from 'node:path';
+ import { readdirp, ReaddirpStream } from 'readdirp';
+-import { selectBackend } from './backend.js';
++import { selectBackend, settleDarwinDirectoryTopology } from './backend.js';
+ import { EventPolicy } from './policy.js';
+ import { ObservationEngine } from './reconcile.js';
+ import { cloneOwnedMatcher, compileMatchers, EVENTS as EV, isIBMi, isMatcherObject, isMissingError, isPermissionError, isSameOrInside, isStrictlyInside, isWindows, logicalPathKey, normalizeMatcher, normalizePath, systemScheduler, WatchHelper, } from './runtime.js';
+@@ -322,7 +322,7 @@ export class FSWatcher extends EventEmitter {
+                 if (this.#pendingAdds.get(key) === pendingToken)
+                     this.#pendingAdds.delete(key);
+             }
+-        }));
++        })).then(() => this.options.backendCapabilities.polling ? undefined : settleDarwinDirectoryTopology(this.lifecycle.abortController.signal));
+         this.lifecycle.track(addTask);
+         if (!this.readyEmitted)
+             this.queueReady();
+diff --git a/reconcile.d.ts b/reconcile.d.ts
+index 8411253df1c3ec9789a9b87daf14e93cb4ca03c7..89e92381ba9bf145583a5462dc473ff9101baf40 100644
+--- a/reconcile.d.ts
++++ b/reconcile.d.ts
+@@ -7,6 +7,10 @@ type AddPathOutcome = 'complete' | 'watch-parent';
+ /** Reconcile exactly one candidate path; its siblings are never scanned. */
+ type ExactCandidate = {
+     onRootMissing?: () => void;
++    onError?: (error: unknown) => void;
++};
++type PathSubscriptionCloser = (() => void | Promise<void>) & {
++    isSubscribed: () => boolean;
+ };
+ /** Collects what a recursive rescan saw so absent tracked entries can be removed. */
+ type RecursiveRescan = {
+@@ -25,7 +29,7 @@ export declare class ObservationEngine {
+      * @param listener on fs change
+      * @returns closer for the watcher instance
+      */
+-    subscribePath(path: string, listener: (path: string, newStats: Stats | undefined, trigger: BackendTrigger) => void | Promise<void>, initialStats?: Stats, mapRelative?: boolean, queueScope?: string): (() => void | Promise<void>) | undefined;
++    subscribePath(path: string, listener: (path: string, newStats: Stats | undefined, trigger: BackendTrigger) => void | Promise<void>, initialStats?: Stats, mapRelative?: boolean, queueScope?: string, throwRegistrationError?: boolean): PathSubscriptionCloser | undefined;
+     /**
+      * Watch a followed file symlink through the target's parent directory.
+      * macOS also starts a one-shot exact-target fallback: FSEvents can omit the
+@@ -58,7 +62,7 @@ export declare class ObservationEngine {
+      * @returns true if no more processing is needed for this entry.
+      */
+     handleSymlink(entry: EntryInfo, directory: string, path: Path, item: string, initialAdd: boolean, wh?: WatchHelper): Promise<boolean | undefined>;
+-    readDirectory(directory: string, initialAdd: boolean, wh: WatchHelper, target: Path | undefined, dir: Path, depth: number): Promise<void> | undefined;
++    readDirectory(directory: string, initialAdd: boolean, wh: WatchHelper, target: Path | undefined, dir: Path, depth: number): Promise<boolean | undefined> | undefined;
+     private removeIfMissing;
+     /**
+      * Populate the logical directory tree beneath one native recursive watcher.
+@@ -71,7 +75,7 @@ export declare class ObservationEngine {
+      * (a backend buffer overflow) or a replay buffer overflow. A shallow root
+      * listing would miss every change below the first level.
+      */
+-    rescanRecursiveTree(dir: string, wh: WatchHelper, baseDepth: number): Promise<void>;
++    rescanRecursiveTree(dir: string, wh: WatchHelper, baseDepth: number): Promise<boolean>;
+     isHelperActive(wh: WatchHelper, path?: string): boolean;
+     private candidateDepth;
+     private candidateIgnored;
 diff --git a/reconcile.js b/reconcile.js
+index 0eec5576abb9b7698976e69f5facd054046fa07e..89097120fad8de23923e04a143a8da7607be802a 100644
 --- a/reconcile.js
 +++ b/reconcile.js
-@@ -93,7 +93,7 @@
+@@ -1,6 +1,6 @@
+ import { realpath as fsrealpath, lstat, readlink, stat } from 'node:fs/promises';
+ import * as sp from 'node:path';
+-import { backendNow, isMissingObservation, setFsWatchListener, setPollingListener, subscribeRecursiveNative, } from './backend.js';
++import { backendNow, isDarwinDirectoryEpochCurrent, isMissingObservation, registerDarwinDirectoryRecovery, setFsWatchListener, setPollingListener, subscribeRecursiveNative, } from './backend.js';
+ import { EVENTS, isMacos, isMissingError, isStrictlyInside, isWindows, logicalPathKey, } from './runtime.js';
+ import { resolveRecursiveCandidate } from './tree.js';
+ const EV = EVENTS;
+@@ -12,6 +12,7 @@ const EXACT_CANDIDATE = Object.freeze({});
+ function recoveryTrigger(resource) {
+     return {
+         kind: 'native',
++        recovery: true,
+         resource: resource,
+         rawEvent: EV.CHANGE,
+         relativePath: null,
+@@ -93,12 +94,13 @@ export class ObservationEngine {
       * @param listener on fs change
       * @returns closer for the watcher instance
       */
@@ -10,7 +337,13 @@ diff --git a/reconcile.js b/reconcile.js
          const opts = this.fsw.options;
          const basename = sp.basename(path);
          const absolutePath = sp.resolve(path);
-@@ -114,12 +114,17 @@
+         const options = {
+             persistent: opts.persistent,
++            directory: initialStats?.isDirectory() === true,
+         };
+         const generation = this.fsw.lifecycle.generation;
+         let active = true;
+@@ -114,12 +116,17 @@ export class ObservationEngine {
          };
          let subscription;
          let resubscribes = 0;
@@ -29,15 +362,64 @@ diff --git a/reconcile.js b/reconcile.js
              rawEmitter: (...args) => this.fsw.emitRaw(...args),
              failure: () => {
                  if (!active || !this.fsw.lifecycle.isActive(generation))
-@@ -140,6 +145,7 @@
+@@ -140,14 +147,17 @@ export class ObservationEngine {
          else {
              subscription = subscribeNative();
          }
 +        registering = false;
          if (!subscription)
              return;
-         return () => {
-@@ -464,6 +470,7 @@
+-        return () => {
++        const close = () => {
+             if (!active)
+                 return;
+             active = false;
+             return subscription?.close();
+         };
++        close.isSubscribed = () => active && subscription !== undefined && subscription.active !== false;
++        return close;
+     }
+     /**
+      * Watch a followed file symlink through the target's parent directory.
+@@ -239,7 +249,7 @@ export class ObservationEngine {
+         });
+         const subscribe = (source) => {
+             const path = source === 'directory' ? targetDirectory : targetPath;
+-            return setFsWatchListener(path, sp.resolve(path), { persistent: this.fsw.options.persistent }, handlers(source), this.fsw.lifecycle.abortController.signal);
++            return setFsWatchListener(path, sp.resolve(path), { persistent: this.fsw.options.persistent, directory: source === 'directory' }, handlers(source), this.fsw.lifecycle.abortController.signal);
+         };
+         directorySubscription = subscribe('directory');
+         exactSubscription = useExactFallback ? subscribe('exact') : undefined;
+@@ -247,10 +257,28 @@ export class ObservationEngine {
+             exactActive = false;
+         if (!directorySubscription && !exactSubscription)
+             return;
++        const directoryRecovery = directorySubscription ? registerDarwinDirectoryRecovery({
++            isActive,
++            reportError: this.reportError,
++            recover: async (epoch) => {
++                let complete = true;
++                await this.fsw.reconciliation.enqueue(logicalPath, async () => {
++                    const currentHelper = helper.withNativeEpoch(epoch);
++                    if (!isActive() || !this.isHelperActive(currentHelper, logicalPath))
++                        return;
++                    await this.reconcileNativeTrigger(logicalParent, currentHelper, recoveryTrigger(sp.resolve(targetDirectory)), logicalPath, depth - 1, {
++                        onError: () => { complete = false; },
++                    });
++                }, false);
++                return !isActive() || (complete && directorySubscription !== undefined && directorySubscription.active !== false);
++            },
++        }) : undefined;
++        directoryRecovery?.ready();
+         return async () => {
+             if (!active)
+                 return;
+             active = false;
++            directoryRecovery?.close();
+             const subscriptions = [directorySubscription, exactSubscription].filter((subscription) => subscription !== undefined);
+             await Promise.allSettled(subscriptions.map((subscription) => subscription.close()));
+         };
+@@ -464,6 +492,7 @@ export class ObservationEngine {
          directory = sp.join(directory, '');
          const directoryKey = logicalPathKey(directory);
          const previous = this.fsw.tree.getDirectory(wh.watchPath);
@@ -45,12 +427,14 @@ diff --git a/reconcile.js b/reconcile.js
          const current = new Set();
          const stream = this.fsw.createScanStream(directory, {
              fileFilter: (entry) => wh.filterPath(entry),
-@@ -471,15 +478,23 @@
+@@ -471,23 +500,43 @@ export class ObservationEngine {
          });
          if (!stream)
              return;
 +        let rootWarning;
++        let hasWarnings = false;
 +        const onWarning = (error) => {
++            hasWarnings = true;
 +            if (error?.code === 'ENOENT' && typeof error.path === 'string' &&
 +                logicalPathKey(sp.resolve(error.path)) === directoryKey) {
 +                rootWarning = error;
@@ -71,7 +455,27 @@ diff --git a/reconcile.js b/reconcile.js
                  return;
              current.add(item);
              const shouldAdd = item === target || (!target && !previous.has(item));
-@@ -497,7 +512,7 @@
+             if (target === undefined && !stats.isSymbolicLink() && !stats.isDirectory()) {
+-                if (!shouldAdd)
++                const initialNativeFile = isMacos && !this.fsw.options.backendCapabilities.polling &&
++                    !wh.recursiveRoot && stats.isFile();
++                if (!shouldAdd) {
++                    if (initialNativeFile && this.fsw.tree.changedSinceObserved(path, stats)) {
++                        const observation = wh.observationTrigger
++                            ? { ...wh.observationTrigger, recovery: true }
++                            : recoveryTrigger(sp.resolve(directory));
++                        this.fsw.tree.recordObserved(path, stats, 'change', observation, false, true);
++                        this.fsw.emitEvent(EV.CHANGE, path, stats);
++                    }
+                     return;
++                }
+                 path = sp.join(dir, sp.relative(dir, path));
+-                const closer = this.handleFile(path, stats, initialAdd, !wh.recursiveRoot, wh.observationTrigger, initialAdd && Boolean(wh.recursiveRoot));
++                const closer = this.handleFile(path, stats, initialAdd, !wh.recursiveRoot, wh.observationTrigger, initialAdd && Boolean(wh.recursiveRoot), initialNativeFile);
+                 if (closer)
+                     this.fsw.addPathCloser(path, closer);
+                 return;
+@@ -497,7 +546,7 @@ export class ObservationEngine {
                      (await this.handleSymlink(entry, directory, path, item, initialAdd, wh))) {
                      return;
                  }
@@ -80,7 +484,7 @@ diff --git a/reconcile.js b/reconcile.js
                      return;
                  // Files that present in current directory snapshot
                  // but absent in previous are added to watch list and
-@@ -510,9 +525,11 @@
+@@ -510,9 +559,11 @@ export class ObservationEngine {
              })();
          });
          return scan.then(async ({ complete, error, failures }) => {
@@ -93,7 +497,7 @@ diff --git a/reconcile.js b/reconcile.js
                      const affectedPath = target ? sp.join(directory, target) : directory;
                      let disappeared = false;
                      let becameNonDirectory = false;
-@@ -526,6 +543,8 @@
+@@ -526,6 +577,8 @@ export class ObservationEngine {
                          else
                              this.reportError(stateError);
                      }
@@ -102,7 +506,7 @@ diff --git a/reconcile.js b/reconcile.js
                      if (target) {
                          if (disappeared && previous.has(target))
                              this.fsw.removePath(directory, target);
-@@ -542,7 +561,7 @@
+@@ -542,7 +595,7 @@ export class ObservationEngine {
                      this.reportError(error);
                  }
              }
@@ -111,7 +515,12 @@ diff --git a/reconcile.js b/reconcile.js
                  return;
              }
              // Entries tracked but absent from this listing are removed only once
-@@ -556,7 +575,8 @@
+@@ -552,11 +605,13 @@ export class ObservationEngine {
+                 .getChildren()
+                 .filter((item) => !current.has(item))
+                 .map((item) => this.removeIfMissing(wh, directory, item, previous)));
++            return isActive(directory) && !hasWarnings;
+         });
      }
      async removeIfMissing(wh, directory, item, entry) {
          const path = sp.join(directory, item);
@@ -121,7 +530,7 @@ diff --git a/reconcile.js b/reconcile.js
              return;
          try {
              await lstat(path);
-@@ -566,7 +586,7 @@
+@@ -566,7 +621,7 @@ export class ObservationEngine {
              if (!isMissingError(error))
                  return;
          }
@@ -130,11 +539,91 @@ diff --git a/reconcile.js b/reconcile.js
              this.fsw.removePath(directory, item);
      }
      /**
-@@ -717,7 +737,10 @@
+@@ -587,6 +642,9 @@ export class ObservationEngine {
+         });
+         if (!stream)
+             return;
++        let hasWarnings = false;
++        const onWarning = () => { hasWarnings = true; };
++        stream.on('warn', onWarning);
+         return consumeDirectoryStream(stream, (entry) => {
+             if (!this.isHelperActive(wh, dir))
+                 return;
+@@ -618,7 +676,10 @@ export class ObservationEngine {
+                 // A rescan stands in for invalidations the backend dropped, so it also
+                 // reports writes to files whose recorded stat fact no longer matches.
+                 if (rescan && stats.isFile() && fsw.tree.changedSinceObserved(path, stats)) {
+-                    fsw.tree.recordObserved(path, stats, 'change', undefined, false, true);
++                    const observation = wh.observationTrigger
++                        ? { ...wh.observationTrigger, recovery: true }
++                        : recoveryTrigger(sp.resolve(dir));
++                    fsw.tree.recordObserved(path, stats, 'change', observation, false, true);
+                     fsw.emitEvent(EV.CHANGE, path, stats);
+                 }
+                 return;
+@@ -632,11 +693,12 @@ export class ObservationEngine {
+                 fsw.emitEvent(isDirectory ? EV.ADD_DIR : EV.ADD, path, stats);
+             }
+         }).then((outcome) => {
++            stream.off('warn', onWarning);
+             if (outcome.error)
+                 this.reportError(outcome.error);
+             outcome.failures.forEach(this.reportError);
+             if (rescan)
+-                rescan.complete = outcome.complete;
++                rescan.complete = outcome.complete && !hasWarnings;
+         });
+     }
+     /**
+@@ -648,7 +710,7 @@ export class ObservationEngine {
+         const rescan = { seen: new Set(), directories: [dir], complete: false };
+         await this.scanRecursiveTree(dir, false, wh, baseDepth, rescan);
+         if (!rescan.complete || !this.isHelperActive(wh, dir))
+-            return;
++            return false;
+         // Only fully listed real directories can prove that a child is gone;
+         // symlinked and ignored subtrees are not descended into.
+         const missing = [];
+@@ -667,9 +729,11 @@ export class ObservationEngine {
+                 await this.removeIfMissing(wh, sp.dirname(path), sp.basename(path), entry);
+             }
+         }
++        return this.isHelperActive(wh, dir);
+     }
+     isHelperActive(wh, path = wh.watchPath) {
+-        return this.fsw.isPathGenerationActive(path, wh.pathGeneration);
++        return this.fsw.isPathGenerationActive(path, wh.pathGeneration) &&
++            (wh.nativeEpoch === undefined || isDarwinDirectoryEpochCurrent(wh.nativeEpoch));
+     }
+     candidateDepth(root, candidate) {
+         const relative = sp.relative(root, candidate);
+@@ -690,7 +754,7 @@ export class ObservationEngine {
+         }
+         return this.fsw.isIgnored(candidate, stats);
+     }
+-    async highestMissingPath(root, candidate) {
++    async highestMissingPath(root, candidate, reportError = this.reportError) {
+         let missing = candidate;
+         let ancestor = sp.dirname(candidate);
+         while (true) {
+@@ -700,7 +764,7 @@ export class ObservationEngine {
+             }
+             catch (error) {
+                 if (!isMissingError(error)) {
+-                    this.reportError(error);
++                    reportError(error);
+                     return missing;
+                 }
+             }
+@@ -717,7 +781,14 @@ export class ObservationEngine {
          // An exact subscription observes one path inside `root`; an untracked or
          // unreadable candidate never justifies scanning its siblings.
          const fsw = this.fsw;
 -        if (!this.isHelperActive(rootHelper, root))
++        const reportError = (error) => {
++            exact?.onError?.(error);
++            this.reportError(error);
++        };
 +        const rootEntry = fsw.tree.peekDirectory(root);
 +        // 同一目录条目的所有权结束后，旧协调结果不能提交到重建后的目录树。
 +        const isActive = (path) => this.isHelperActive(rootHelper, path) && fsw.tree.peekDirectory(root) === rootEntry;
@@ -142,7 +631,25 @@ diff --git a/reconcile.js b/reconcile.js
              return;
          let localHelper;
          const helper = () => (localHelper ??= rootHelper.withObservation(trigger));
-@@ -749,27 +772,40 @@
+@@ -726,7 +797,7 @@ export class ObservationEngine {
+                 ? root
+                 : resolveRecursiveCandidate(root, trigger.relativePath));
+         if (!candidate) {
+-            this.reportError(new Error(`Native watcher reported a path outside its root: ${trigger.relativePath}`));
++            reportError(new Error(`Native watcher reported a path outside its root: ${trigger.relativePath}`));
+             return;
+         }
+         const depth = baseDepth + this.candidateDepth(root, candidate);
+@@ -741,7 +812,7 @@ export class ObservationEngine {
+         }
+         catch (error) {
+             if (!isMissingError(error)) {
+-                this.reportError(error);
++                reportError(error);
+                 if (exact)
+                     return;
+                 const ancestor = candidate === root ? root : sp.dirname(candidate);
+@@ -749,27 +820,40 @@ export class ObservationEngine {
                  await this.readDirectory(ancestor, false, helper().fork(ancestor), undefined, ancestor, ancestorDepth);
                  return;
              }
@@ -157,27 +664,25 @@ diff --git a/reconcile.js b/reconcile.js
 -                fsw.removePath(sp.dirname(root), sp.basename(root), true);
 -                exact?.onRootMissing?.();
 -                return;
-+            // 共享 owner 的异步读取可迟到；提交删除前确认目标仍然缺失。
-+            try {
-+                stats = await lstat(candidate);
-             }
+-            }
 -            const parentPath = sp.dirname(missingPath);
 -            const item = sp.basename(missingPath);
 -            if (fsw.tree.getDirectory(parentPath).has(item)) {
 -                fsw.removePath(parentPath, item);
--            }
++            // 共享 owner 的异步读取可迟到；提交删除前确认目标仍然缺失。
++            try {
++                stats = await lstat(candidate);
+             }
 -            else if (!exact) {
 -                await this.readDirectory(parentPath, false, helper().fork(parentPath), undefined, parentPath, Math.max(0, baseDepth + this.candidateDepth(root, parentPath)));
--            }
--            return;
 +            catch (confirmationError) {
 +                if (!isMissingError(confirmationError)) {
-+                    this.reportError(confirmationError);
++                    reportError(confirmationError);
 +                    return;
 +                }
 +                if (!isActive(candidate))
 +                    return;
-+                const missingPath = candidate === root ? root : await this.highestMissingPath(root, candidate);
++                const missingPath = candidate === root ? root : await this.highestMissingPath(root, candidate, reportError);
 +                if (!isActive(candidate))
 +                    return;
 +                if (missingPath === root) {
@@ -194,14 +699,24 @@ diff --git a/reconcile.js b/reconcile.js
 +                    await this.readDirectory(parentPath, false, helper().fork(parentPath), undefined, parentPath, Math.max(0, baseDepth + this.candidateDepth(root, parentPath)));
 +                }
 +                return;
-+            }
+             }
+-            return;
          }
 -        if (!this.isHelperActive(rootHelper, candidate) ||
 +        if (!isActive(candidate) ||
              this.candidateIgnored(root, candidate, stats)) {
              return;
          }
-@@ -833,7 +869,7 @@
+@@ -822,7 +906,7 @@ export class ObservationEngine {
+             }
+             catch (error) {
+                 if (!isMissingError(error)) {
+-                    this.reportError(error);
++                    reportError(error);
+                     return;
+                 }
+             }
+@@ -833,7 +917,7 @@ export class ObservationEngine {
              if (targetChanged) {
                  const previousKind = fsw.tree.observed.get(logicalKey)?.kind;
                  fsw.removePath(parentPath, item, previousKind === 'directory');
@@ -210,23 +725,251 @@ diff --git a/reconcile.js b/reconcile.js
                      return;
                  const linkHelper = helper().fork(candidate);
                  linkHelper.recursiveRoot = undefined;
-@@ -1273,7 +1309,14 @@
+@@ -971,6 +1055,7 @@ export class ObservationEngine {
+         let hasPendingFailure = false;
+         let recovery;
+         let subscription;
++        let directoryRecovery;
+         const scopeActive = (path = dir) => fsw.lifecycle.isActive(generation) && fsw.isPathGenerationActive(path, wh.pathGeneration);
+         const acceptsTrigger = (path = dir) => phase !== 'recovering' && phase !== 'closed' && scopeActive(path);
+         const establishFallback = async (error) => {
+@@ -1006,6 +1091,7 @@ export class ObservationEngine {
+                 return;
+             const initializing = phase !== 'live';
+             phase = 'recovering';
++            directoryRecovery?.close();
+             fsw.tree.recursiveRoots.delete(rootKey);
+             pendingFailure = error;
+             hasPendingFailure = true;
+@@ -1037,10 +1123,25 @@ export class ObservationEngine {
+         subscription = result.subscription;
+         fsw.tree.recursiveRoots.add(rootKey);
+         wh.recursiveRoot = dir;
++        directoryRecovery = registerDarwinDirectoryRecovery({
++            isActive: () => acceptsTrigger(),
++            reportError: this.reportError,
++            recover: async (epoch) => {
++                let complete = true;
++                const helper = wh.withObservation(recoveryTrigger(sp.resolve(dir))).withNativeEpoch(epoch);
++                await fsw.reconciliation.enqueue(dir, async () => {
++                    if (!acceptsTrigger() || !this.isHelperActive(helper, dir))
++                        return;
++                    complete = await this.rescanRecursiveTree(dir, helper, depth);
++                }, false);
++                return !acceptsTrigger() || (complete && subscription !== undefined && subscription.active !== false);
++            },
++        });
+         const close = async () => {
+             if (phase === 'closed')
+                 return;
+             phase = 'closed';
++            directoryRecovery?.close();
+             fsw.tree.recursiveRoots.delete(rootKey);
+             buffered.clear();
+             await subscription?.close();
+@@ -1099,6 +1200,9 @@ export class ObservationEngine {
+             await close();
+             throw error;
+         }
++        finally {
++            directoryRecovery?.ready();
++        }
+         if (!scopeActive()) {
+             await close();
+             return;
+@@ -1208,8 +1312,8 @@ export class ObservationEngine {
+                 }
+                 this.fsw.removePath(sp.dirname(dirPath), sp.basename(dirPath), true);
+             };
+-            const observeDirectory = async (dirPath, currentStats, trigger) => {
+-                if (!active || !this.isHelperActive(wh, dirPath))
++            const observeDirectory = async (dirPath, currentStats, trigger, helper = wh) => {
++                if (!active || !this.isHelperActive(helper, dirPath))
+                     return;
+                 if (this.fsw.options.backendCapabilities.polling && !currentStats) {
+                     removeObserved(dirPath);
+@@ -1225,6 +1329,8 @@ export class ObservationEngine {
+                                 : linkStats;
+                     }
+                     catch (error) {
++                        if (!active || !this.isHelperActive(helper, dirPath))
++                            return;
+                         if (isMissingError(error)) {
+                             removeObserved(dirPath);
+                         }
+@@ -1233,14 +1339,16 @@ export class ObservationEngine {
+                         }
+                         return;
+                     }
++                    if (!active || !this.isHelperActive(helper, dirPath))
++                        return;
+                     if (!observedStats.isDirectory()) {
+                         removeObserved(dirPath);
+                         if (!target)
+-                            await this.addPathOnce(dirPath, false, wh, depth);
++                            await this.addPathOnce(dirPath, false, helper, depth);
+                         return;
+                     }
+                 }
+-                await this.readDirectory(dirPath, false, wh, target, dir, depth);
++                return this.readDirectory(dirPath, false, helper, target, dir, depth);
+             };
+             const reconcile = (candidate, currentStats, trigger) => {
+                 if (!active || !this.isHelperActive(wh, candidate))
+@@ -1251,10 +1359,11 @@ export class ObservationEngine {
+                 }
+                 if (trigger.kind === 'native' && !target) {
+                     if (rescanOnFirstCallback) {
+-                        rescanOnFirstCallback = false;
+                         return (async () => {
+                             await this.reconcileNativeTrigger(dir, wh, trigger, candidate, depth);
+-                            await observeDirectory(dir, undefined, trigger);
++                            if (await observeDirectory(dir, undefined, trigger)) {
++                                rescanOnFirstCallback = false;
++                            }
+                         })();
+                     }
+                     return this.reconcileNativeTrigger(dir, wh, trigger, candidate, depth);
+@@ -1273,53 +1382,89 @@ export class ObservationEngine {
                  return observeDirectory(dir, currentStats, trigger);
              };
              const rootParentCloser = depth === 0 && !target ? this.watchRootParent(dir, wh) : undefined;
 -            closer = this.subscribePath(dir, reconcile, stats.isDirectory() ? stats : undefined, true, target ? sp.join(dir, target) : dir);
+-            if (target && targetPath && closer) {
+-                // The target may have appeared after the caller's failed lstat and
+-                // before this subscription existed; nothing would report it.
+-                const check = recoveryTrigger(sp.resolve(dir));
+-                await this.fsw.reconciliation.enqueue(targetPath, async () => {
+-                    if (this.fsw.tree.getDirectory(dir).has(target))
+-                        return;
+-                    await reconcile(targetPath, undefined, check);
+-                }, targetPath);
 +            try {
 +                closer = this.subscribePath(dir, reconcile, stats.isDirectory() ? stats : undefined, true, target ? sp.join(dir, target) : dir, true);
-+            }
+             }
+-            if (!target) {
+-                await this.readDirectory(dir, initialAdd, wh, target, dir, depth);
+-                let index = 0;
+-                while (!this.fsw.closed) {
+-                    if (buffered.overflow) {
+-                        // Triggers arriving during the bulk rescan are buffered again and
+-                        // replayed after it instead of being discarded with this overflow.
+-                        const overflow = buffered.overflow;
+-                        buffered.clear();
+-                        index = 0;
+-                        await observeDirectory(dir, overflow.stats, overflow.trigger);
+-                        continue;
+-                    }
+-                    if (index >= buffered.entries.length)
+-                        break;
+-                    const event = buffered.entries[index++];
+-                    if (event.trigger.kind === 'native' &&
+-                        event.trigger.rawEvent === 'rename' &&
+-                        event.path !== dir &&
+-                        this.fsw.tree.getDirectory(sp.dirname(event.path)).has(sp.basename(event.path))) {
+-                        this.fsw.tree.markInitialCreate(event.path);
+-                        replayCreates.add(event.path);
+-                    }
+-                    await this.reconcileBackendTrigger(dir, true, event.trigger, () => {
+-                        if (event.trigger.kind === 'native' && !target) {
+-                            return this.reconcileNativeTrigger(dir, wh, event.trigger, event.path, depth);
 +            catch (error) {
 +                if (rootParentCloser)
 +                    await rootParentCloser();
 +                throw error;
 +            }
-             if (target && targetPath && closer) {
-                 // The target may have appeared after the caller's failed lstat and
-                 // before this subscription existed; nothing would report it.
-@@ -1368,15 +1411,17 @@
++            const directorySubscription = closer;
++            const directoryRecovery = directorySubscription && !this.fsw.options.backendCapabilities.polling ? registerDarwinDirectoryRecovery({
++                isActive: () => active && this.isHelperActive(wh, dir),
++                reportError: this.reportError,
++                recover: async (epoch) => {
++                    let complete = true;
++                    const helper = wh.withObservation(recoveryTrigger(sp.resolve(dir))).withNativeEpoch(epoch);
++                    await this.fsw.reconciliation.enqueue(targetPath ?? dir, async () => {
++                        if (!active || !this.isHelperActive(helper, dir))
++                            return;
++                        complete = await observeDirectory(dir, undefined, recoveryTrigger(sp.resolve(dir)), helper) === true;
++                    }, false);
++                    return !active || !this.isHelperActive(wh, dir) || (complete && directorySubscription.isSubscribed());
++                },
++            }) : undefined;
++            try {
++                if (target && targetPath && closer) {
++                    // The target may have appeared after the caller's failed lstat and
++                    // before this subscription existed; nothing would report it.
++                    const check = recoveryTrigger(sp.resolve(dir));
++                    await this.fsw.reconciliation.enqueue(targetPath, async () => {
++                        if (this.fsw.tree.getDirectory(dir).has(target))
++                            return;
++                        await reconcile(targetPath, undefined, check);
++                    }, targetPath);
++                }
++                if (!target) {
++                    await this.readDirectory(dir, initialAdd, wh, target, dir, depth);
++                    let index = 0;
++                    while (!this.fsw.closed) {
++                        if (buffered.overflow) {
++                            // Triggers arriving during the bulk rescan are buffered again and
++                            // replayed after it instead of being discarded with this overflow.
++                            const overflow = buffered.overflow;
++                            buffered.clear();
++                            index = 0;
++                            await observeDirectory(dir, overflow.stats, overflow.trigger);
++                            continue;
++                        }
++                        if (index >= buffered.entries.length)
++                            break;
++                        const event = buffered.entries[index++];
++                        if (event.trigger.kind === 'native' &&
++                            event.trigger.rawEvent === 'rename' &&
++                            event.path !== dir &&
++                            this.fsw.tree.getDirectory(sp.dirname(event.path)).has(sp.basename(event.path))) {
++                            this.fsw.tree.markInitialCreate(event.path);
++                            replayCreates.add(event.path);
+                         }
+-                        return observeDirectory(dir, event.stats, event.trigger);
+-                    }, () => active && this.isHelperActive(wh, event.path), false);
++                        await this.reconcileBackendTrigger(dir, true, event.trigger, () => {
++                            if (event.trigger.kind === 'native' && !target) {
++                                return this.reconcileNativeTrigger(dir, wh, event.trigger, event.path, depth);
++                            }
++                            return observeDirectory(dir, event.stats, event.trigger);
++                        }, () => active && this.isHelperActive(wh, event.path), false);
++                    }
++                    buffered.clear();
++                    replayCreates.forEach((path) => this.fsw.tree.clearInitialCreate(path));
++                    initializing = false;
+                 }
+-                buffered.clear();
+-                replayCreates.forEach((path) => this.fsw.tree.clearInitialCreate(path));
+-                initializing = false;
++            }
++            catch (error) {
++                directoryRecovery?.close();
++                if (closer)
++                    await closer();
++                if (rootParentCloser)
++                    await rootParentCloser();
++                throw error;
++            }
++            finally {
++                directoryRecovery?.ready();
+             }
+             if (!this.isHelperActive(wh, dir)) {
+                 active = false;
++                directoryRecovery?.close();
+                 if (closer)
+                     await closer();
+                 if (rootParentCloser)
+@@ -1332,6 +1477,7 @@ export class ObservationEngine {
+                     if (!active)
+                         return;
+                     active = false;
++                    directoryRecovery?.close();
+                     buffered.clear();
+                     await Promise.allSettled(backendClosers.map((backendCloser) => backendCloser()));
+                 };
+@@ -1368,15 +1514,17 @@ export class ObservationEngine {
              return 'complete';
          }
          const wh = priorWh ? priorWh.fork(path) : this.fsw.createHelper(path);
@@ -246,7 +989,7 @@ diff --git a/reconcile.js b/reconcile.js
                  return 'complete';
              }
              if (this.fsw.isIgnored(wh.watchPath, linkStats)) {
-@@ -1392,7 +1437,7 @@
+@@ -1392,7 +1540,7 @@ export class ObservationEngine {
                  const ancestryPath = follow ? await fsrealpath(path) : path;
                  const targetPath = followedTarget ?? path;
                  const targetKey = logicalPathKey(ancestryPath);
@@ -255,16 +998,19 @@ diff --git a/reconcile.js b/reconcile.js
                      return 'complete';
                  }
                  if (isSymbolicLink && wh.realpathAncestry.has(targetKey)) {
-@@ -1413,7 +1458,7 @@
+@@ -1412,8 +1560,10 @@ export class ObservationEngine {
+                 }
                  if (isSymbolicLink)
                      wh.recursiveDisabled = true;
++                // 新目录从有效快照移交给自己的 owner；其注册会开启下一轮拓扑恢复。
++                wh.nativeEpoch = undefined;
                  closer = await this.handleDirectory(wh.watchPath, stats, initialAdd, depth, target, wh);
 -                if (!this.isHelperActive(wh)) {
 +                if (!isActive()) {
                      if (closer)
                          await closer();
                      return 'complete';
-@@ -1440,7 +1485,7 @@
+@@ -1440,7 +1590,7 @@ export class ObservationEngine {
                  parentHelper.pathGeneration = wh.pathGeneration;
                  const parentCloser = await this.handleDirectory(parent, parentStats, initialAdd, depth, sp.basename(wh.watchPath), parentHelper);
                  const deletionCloser = this.watchSymlinkDeletion(wh.watchPath);
@@ -273,7 +1019,7 @@ diff --git a/reconcile.js b/reconcile.js
                      if (fileCloser)
                          await fileCloser();
                      if (parentCloser)
-@@ -1484,7 +1529,7 @@
+@@ -1484,7 +1634,7 @@ export class ObservationEngine {
                              await Promise.allSettled(fileClosers.map((fileCloser) => fileCloser()));
                          };
              }
@@ -282,7 +1028,7 @@ diff --git a/reconcile.js b/reconcile.js
                  if (closer)
                      await closer();
                  return 'complete';
-@@ -1496,9 +1541,23 @@
+@@ -1496,9 +1646,23 @@ export class ObservationEngine {
              return 'complete';
          }
          catch (error) {
@@ -307,15 +1053,116 @@ diff --git a/reconcile.js b/reconcile.js
              this.fsw.handleError(error);
              return 'watch-parent';
          }
-diff --git a/reconcile.d.ts b/reconcile.d.ts
---- a/reconcile.d.ts
-+++ b/reconcile.d.ts
-@@ -25,7 +25,7 @@
-      * @param listener on fs change
-      * @returns closer for the watcher instance
-      */
--    subscribePath(path: string, listener: (path: string, newStats: Stats | undefined, trigger: BackendTrigger) => void | Promise<void>, initialStats?: Stats, mapRelative?: boolean, queueScope?: string): (() => void | Promise<void>) | undefined;
-+    subscribePath(path: string, listener: (path: string, newStats: Stats | undefined, trigger: BackendTrigger) => void | Promise<void>, initialStats?: Stats, mapRelative?: boolean, queueScope?: string, throwRegistrationError?: boolean): (() => void | Promise<void>) | undefined;
-     /**
-      * Watch a followed file symlink through the target's parent directory.
-      * macOS also starts a one-shot exact-target fallback: FSEvents can omit the
+diff --git a/runtime.d.ts b/runtime.d.ts
+index f4a2732658e5604427d5d9c54e8c47c7dc772ca1..1a0aa48e220e0c6f97ba67690ed7e09b96de696f 100644
+--- a/runtime.d.ts
++++ b/runtime.d.ts
+@@ -42,6 +42,7 @@ export declare const EVENTS: {
+ export type EventName = (typeof EVENTS)[keyof typeof EVENTS];
+ export type NativeTrigger = {
+     kind: 'native';
++    recovery?: true;
+     resource: BackendResourceKey;
+     rawEvent: WatchEventType;
+     relativePath: string | null;
+@@ -63,6 +64,7 @@ export type PollTrigger = {
+ export type BackendTrigger = NativeTrigger | PollTrigger;
+ export interface BackendSubscription {
+     readonly resource: BackendResourceKey;
++    readonly active?: boolean;
+     close(): void | Promise<void>;
+ }
+ export interface WatchHandlers {
+@@ -148,12 +150,15 @@ export declare class WatchHelper {
+     recursiveRoot?: string;
+     recursiveDisabled?: boolean;
+     observationTrigger?: NativeTrigger;
++    nativeEpoch?: number;
+     realpathAncestry: Set<string>;
+     pathGeneration: number;
+     private readonly context;
+     constructor(path: string, follow: boolean, context: WatchHelperContext);
+     fork(path: string): WatchHelper;
+     withObservation(trigger: NativeTrigger): WatchHelper;
++    /** 目录流恢复只允许在捕获的拓扑代内提交。 */
++    withNativeEpoch(epoch: number): WatchHelper;
+     filterPath(entry: EntryInfo): boolean;
+     filterDir(entry: EntryInfo): boolean;
+ }
+diff --git a/runtime.js b/runtime.js
+index 7268f933dea13c014bbbd03efc3bab1a9cecfc8b..4862f46fd56690b0bd0d59d7286cb206bb0d59b5 100644
+--- a/runtime.js
++++ b/runtime.js
+@@ -146,6 +146,7 @@ export class WatchHelper {
+     recursiveRoot;
+     recursiveDisabled;
+     observationTrigger;
++    nativeEpoch;
+     realpathAncestry;
+     pathGeneration;
+     context;
+@@ -163,6 +164,7 @@ export class WatchHelper {
+         helper.recursiveRoot = this.recursiveRoot;
+         helper.recursiveDisabled = this.recursiveDisabled;
+         helper.observationTrigger = this.observationTrigger;
++        helper.nativeEpoch = this.nativeEpoch;
+         helper.realpathAncestry = new Set(this.realpathAncestry);
+         helper.pathGeneration = this.pathGeneration;
+         return helper;
+@@ -172,6 +174,12 @@ export class WatchHelper {
+         helper.observationTrigger = trigger;
+         return helper;
+     }
++    /** 目录流恢复只允许在捕获的拓扑代内提交。 */
++    withNativeEpoch(epoch) {
++        const helper = Object.create(this);
++        helper.nativeEpoch = epoch;
++        return helper;
++    }
+     filterPath(entry) {
+         return entry.stats?.isSymbolicLink()
+             ? this.filterDir(entry)
+diff --git a/tree.d.ts b/tree.d.ts
+index 18ab6a166660d7ace81df24fb20890a1f489931b..809a75fb7a6fcc6641029368c6c4c988efbaefa4 100644
+--- a/tree.d.ts
++++ b/tree.d.ts
+@@ -51,6 +51,7 @@ export type ObservedPathFact = {
+     rawEvent?: NativeTrigger['rawEvent'];
+     relativePath?: string | null;
+     observedAt?: number;
++    recovered?: boolean;
+     initialRecursive?: boolean;
+ };
+ /** A directory membership snapshot owned by one public watcher. */
+diff --git a/tree.js b/tree.js
+index 8630f0fd82737da99589152fbaf5f1d17d7318e0..da3a9ab0682f982e4c4f3f23f6bf2d56db9f312c 100644
+--- a/tree.js
++++ b/tree.js
+@@ -242,6 +242,7 @@ export class TreeState {
+             rawEvent: trigger?.rawEvent,
+             relativePath: trigger?.relativePath,
+             observedAt: trigger?.observedAt,
++            recovered: trigger?.recovery === true,
+             initialRecursive,
+         });
+     }
+@@ -303,7 +304,7 @@ export class TreeState {
+         const duplicateUnchanged = sameFact &&
+             stats.isFile() &&
+             !previous?.initialRecursive &&
+-            (previous?.transition === 'add' || trigger.relativePath === null);
++            (previous?.transition === 'add' || previous?.recovered || trigger.relativePath === null);
+         const duplicateWrite = sameFact &&
+             previous?.transition === 'change' &&
+             previous.relativePath === trigger.relativePath &&
+@@ -315,7 +316,9 @@ export class TreeState {
+             : duplicateUnchanged
+                 ? previous?.transition
+                 : 'change';
+-        this.recordObserved(path, stats, transition, trigger);
++        // 同一恢复事实的连续迟到回调不能清除去重标记；新文件状态会自然替换它。
++        const observation = duplicate && previous?.recovered ? { ...trigger, recovery: true } : trigger;
++        this.recordObserved(path, stats, transition, observation);
+         return duplicate;
+     }
+     dispose() {
