@@ -57,6 +57,8 @@ v2 的产物消费者先恢复 dist 后执行一次完整安装，生产者保�
 
 PR #1258 将 legacy Node support 的 Chromium 安装拆为 Linux 安装系统依赖、Windows/macOS 仅安装浏览器。候选快照与 v1 清单只同步这一已审阅的兼容修正，其余 job、消费命令、matrix、依赖和产物契约不变；`baseline-topology.json` 及历史 benchmark 证据保持原字节。
 
+PR #1277 将 DOM acceptance internal job 的总预算由 15 分钟提高到 30 分钟，以覆盖 macOS 的依赖缓存恢复和完整合同检查。候选快照与 v1 清单同步这一预算，执行命令、任务范围和验收断言保持原样；固定性能基线、采样规则、5% 门槛及历史 incomplete 证据不变。
+
 正式同 revision 的 v1/v2 CI 比较可以在一次提交前审阅固定 attempt 映射；以下字段追加到现有 workload 清单，不改变点名 PR、base branch 和 profiles：
 
 ```json

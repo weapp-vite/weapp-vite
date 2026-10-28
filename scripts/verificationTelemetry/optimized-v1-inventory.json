@@ -1262,7 +1262,7 @@
         "e2e_exclude_projects": "${{ inputs.exclude_projects }}",
         "runs_on": "${{ inputs.runs_on }}",
         "node_version": "${{ inputs.node_version }}",
-        "timeout_minutes": 15,
+        "timeout_minutes": 30,
         "consume_build_artifact": "miniapp-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-weapp-build",
         "main_command": "node packages/weapp-vite/bin/weapp-vite.js prepare e2e-apps/github-issues --platform weapp\nnode packages/weapp-vite/bin/weapp-vite.js prepare e2e-apps/template-wevu-regression --platform weapp\nnode --import tsx scripts/check-e2e-ide-shared-launch.ts\nnode --import tsx e2e/scripts/domAcceptanceReport/inventory.ts --write --check\npnpm vitest run -c e2e/vitest.e2e.internal.config.ts --maxWorkers=1 --no-file-parallelism\n",
         "artifact_name": "dom-acceptance-inventory-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-${{ needs.pr-context.outputs.checkout_sha }}",
