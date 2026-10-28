@@ -497,7 +497,7 @@ function renderConsoleSummary(report: ComparisonReport) {
 }
 
 function average(values: Array<number | undefined>) {
-  const filtered = values.filter(value => Number.isFinite(value))
+  const filtered = values.filter((value): value is number => typeof value === 'number' && Number.isFinite(value))
   if (filtered.length === 0) {
     return 0
   }

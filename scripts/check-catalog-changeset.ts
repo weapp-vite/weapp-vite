@@ -218,6 +218,7 @@ async function collectAffectedPackages(
       dependencies?: Record<string, string>
       devDependencies?: Record<string, string>
       optionalDependencies?: Record<string, string>
+      peerDependencies?: Record<string, string>
     }
 
     if (!json.name || json.private === true) {

@@ -60,7 +60,13 @@ export function reportStatus(data, { performanceConclusion = 'success', runtimeC
   return 'passed'
 }
 
-export function renderPerformanceComment({ data, metadata, runs = [], artifacts = [], conclusions = {} }) {
+export function renderPerformanceComment({
+  data,
+  metadata,
+  runs = /** @type {{name: string, url: string, durationMs?: number}[]} 运行链接。 */ ([]),
+  artifacts = /** @type {{name: string, url: string}[]} 报告附件链接。 */ ([]),
+  conclusions = {},
+}) {
   const status = reportStatus(data, conclusions)
   const lines = [
     COMMENT_MARKER,

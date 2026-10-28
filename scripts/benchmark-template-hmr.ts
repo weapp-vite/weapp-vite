@@ -281,13 +281,11 @@ async function benchmarkProject(project: ProjectCase): Promise<BenchmarkResult> 
     await dev.waitFor(
       waitForFileWithHeartbeat(project.appJsonTarget, startupTouchFile, startupTouchSource, 120_000),
       `${project.id} app.json generated`,
-      120_000,
     )
     debugLog(`${project.id}: waiting for startup marker ${project.startupMarker}`)
     await dev.waitFor(
       waitForFileContainsWithHeartbeat(project.startupTarget, project.startupMarker, startupTouchFile, startupTouchSource, 120_000),
       `${project.id} startup target generated`,
-      120_000,
     )
     const startupMs = performance.now() - startupStart
     debugLog(`${project.id}: initial build ready in ${startupMs.toFixed(2)}ms`)
@@ -348,8 +346,6 @@ async function benchmarkScenario(options: {
       const totalMs = performance.now() - startedAt
       const profileSample = await waitForHmrProfileSample(profilePath, scenario.sourceFile, profileLineCount, 1_500)
       samples.push({
-        file: formatReportPath(scenario.sourceFile),
-        totalMs,
         ...profileSample,
         file: formatReportPath(profileSample.file ?? scenario.sourceFile),
         totalMs: profileSample.totalMs ?? totalMs,

@@ -20,7 +20,14 @@ export function validatePerformancePrContext(context, run, repository) {
 }
 
 /** 只读取指定运行的固定上下文，不解压或执行候选提交中的脚本。 */
-export async function downloadPrContext({ apiUrl, token, repository, run, artifact, request = githubRequest }) {
+export async function downloadPrContext({
+  apiUrl,
+  token,
+  repository,
+  run,
+  artifact = /** @type {{id: number | string, name: string, expired?: boolean, digest?: string} | undefined} 可选的已解析附件；省略时按运行查询。 */ (undefined),
+  request = githubRequest,
+}) {
   if (!artifact) {
     const result = await request(apiUrl, token, `/repos/${repository}/actions/runs/${run.id}/artifacts?name=pr-context&per_page=100`)
     if (!Array.isArray(result.artifacts)) {

@@ -46,6 +46,10 @@ function diagnosticResult(result) {
   }
 }
 
+/**
+ * 创建每次调用独立的证据报告器，可按需追加工作流摘要。
+ * @param {{rootDirectory: string, summaryPath?: string, log?: (summary: string) => void}} options 证据根目录及可选摘要输出。
+ */
 export function createReporter({ rootDirectory, summaryPath, log = console.log }) {
   const invocationId = randomUUID()
   let reportAttempt = 0

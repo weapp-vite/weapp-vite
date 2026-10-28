@@ -102,7 +102,9 @@ export function analyzeCss(css: string, scenario: DashboardTailwindScenario): An
       const normalized = selector.replace(/\s+/g, ' ').trim()
       selectors.add(normalized)
       selectorParser((parsed) => {
-        parsed.walkClasses(node => classes.add(node.value))
+        parsed.walkClasses((node) => {
+          classes.add(node.value)
+        })
       }).processSync(normalized)
     }
   })

@@ -12,7 +12,7 @@ const externalLinkPattern = /^https?:\/\//u
 interface SidebarEntry {
   base: string
   link: string
-  text: string
+  text: string | undefined
 }
 
 function collectSidebarEntries(

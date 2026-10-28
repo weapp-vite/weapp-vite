@@ -29,9 +29,7 @@ const mpcoreRoot = path.resolve(simulatorRoot, '../..')
 
 export default defineConfig({
   root: demoWebRoot,
-  oxc: {
-    tsconfig: false,
-  },
+  tsconfig: path.resolve(demoWebRoot, 'tsconfig.json'),
   optimizeDeps: {
     include: [
       '@shikijs/engine-javascript',
@@ -47,7 +45,7 @@ export default defineConfig({
       'tailwind-variants',
     ],
     rolldownOptions: {
-      // Vite 的依赖扫描不继承 oxc 配置，避免扫描无关应用的 solution references。
+      // 依赖扫描使用 Rolldown 的独立配置，避免扫描无关应用的 solution references。
       tsconfig: false,
     },
   },

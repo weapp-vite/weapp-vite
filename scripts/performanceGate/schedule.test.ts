@@ -73,7 +73,7 @@ it.each([undefined, 'pending', 'failure', 'success'])('selects only immutable ma
     expect(result.targets).toMatchObject([{ ...main, key: targetKey(main) }])
     const matrix = createMatrix(result.targets)
     expect(matrix).toHaveLength(27)
-    expect(matrix.every(row => row.target === 'main' && row.headSha === mainSha && row.baselineSha === policy.baselineSha)).toBe(true)
+    expect(matrix.every((row: { target: string, headSha: string, baselineSha: string }) => row.target === 'main' && row.headSha === mainSha && row.baselineSha === policy.baselineSha)).toBe(true)
     expect(result.reused).toEqual([])
   }
   expect(get).toHaveBeenCalledTimes(3)

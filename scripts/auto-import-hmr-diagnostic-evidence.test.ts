@@ -53,7 +53,7 @@ describe('diagnostic control output evidence', () => {
     const root = await mkdtemp(path.join(os.tmpdir(), 'hmr-build-stamp-evidence-'))
     try {
       const snapshot = async (buildId: string, token: string, port: number, nonce: string, body: string) => {
-        const output = [{ type: 'chunk', fileName: 'app.js', code: body }] as unknown as StatefulHmrOutputFile[]
+        const output: Extract<StatefulHmrOutputFile, { type: 'chunk' }>[] = [{ type: 'chunk', fileName: 'app.js', code: body, modules: {} }]
         stampStatefulHmrFullBuild(output, buildId)
         const control = { buildId, token, url: `http://localhost:${port}/__weapp_vite_stateful_hmr__` }
         await writeFile(path.join(root, 'app.js'), output[0]!.code)

@@ -159,3 +159,4 @@ patchedDependencies:
   rolldown@1.2.15: patches/rolldown@1.2.15.patch
   chokidar@6.0.0: patches/chokidar@6.0.0.patch
   vitest@5.0.5: patches/vitest@5.0.5.patch
+  '@vitejs/plugin-vue@6.0.10': patches/@vitejs__plugin-vue@6.0.10.patch

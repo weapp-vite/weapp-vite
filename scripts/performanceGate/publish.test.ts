@@ -32,7 +32,7 @@ function smokeReport() {
     executionPlan: { headOnly: true, metrics: shards.flatMap(smokeMetrics), confirmation: [] },
     stages: shards.map(shard => ({
       shard,
-      values: smokeMetrics(shard).map(id => ({
+      values: smokeMetrics(shard).map((id: string) => ({
         id,
         ms: 1,
         output: { pageCount: 1, configDigest: 'b'.repeat(64), templateDigest: 'c'.repeat(64) },

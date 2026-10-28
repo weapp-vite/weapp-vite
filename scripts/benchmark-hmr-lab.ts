@@ -203,8 +203,8 @@ async function main() {
 
   try {
     const startupStart = performance.now()
-    await dev.waitFor(waitForFile(path.join(distRoot, 'app.json'), 120_000), 'hmr-lab app.json generated', 120_000)
-    await dev.waitFor(waitForInitialScenarioOutputs(selectedScenarios, 120_000), 'hmr-lab selected initial outputs generated', 120_000)
+    await dev.waitFor(waitForFile(path.join(distRoot, 'app.json'), 120_000), 'hmr-lab app.json generated')
+    await dev.waitFor(waitForInitialScenarioOutputs(selectedScenarios, 120_000), 'hmr-lab selected initial outputs generated')
     const startupMs = performance.now() - startupStart
 
     const results: ScenarioResult[] = []

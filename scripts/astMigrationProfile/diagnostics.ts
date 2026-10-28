@@ -1,7 +1,7 @@
 import type { Counters } from './types'
 import { Module } from 'node:module'
 import { PerformanceObserver } from 'node:perf_hooks'
-import { isNativeCompilerScriptAnalysis } from '../../packages/ast/src/native/compilerAnalysis'
+import { readNativeCompilerScriptAnalysis } from '../../packages/ast/src/native/compilerAnalysis'
 
 type Callable = (...args: unknown[]) => unknown
 interface GcEntry { startTime: number, duration: number }
@@ -99,7 +99,7 @@ export function installDiagnostics(binding: Record<string, unknown> | undefined)
             if (name === 'analyzeCompilerScriptsNative') {
               const length = (args[0] as unknown[]).length
               counters.compilerBatchRejectedInputs += Array.isArray(result) && result.length === length
-                ? result.filter((value, index) => !isNativeCompilerScriptAnalysis(value, (args[0] as Array<{ code: string }>)[index]!.code)).length
+                ? result.filter((value, index) => readNativeCompilerScriptAnalysis(value, (args[0] as Array<{ code: string }>)[index]!.code) === undefined).length
                 : length
             }
             return result

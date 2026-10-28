@@ -8,7 +8,7 @@ const now = Date.UTC(2026, 9, 21)
 const index = { text: 'Last indexed: 9 October 2026 (e85305)', href: 'https://github.com/weapp-vite/weapp-vite/commits/e85305ab' }
 const publicState = { httpStatus: 200, url: 'https://deepwiki.com/weapp-vite/weapp-vite', title: 'weapp-vite', bodyText: index.text, controls: ['Refresh'], headings: ['weapp-vite'] }
 
-function adapterFixture(states = [publicState]) {
+function adapterFixture(states: (Omit<typeof publicState, 'httpStatus'> & { httpStatus: number | null })[] = [publicState]) {
   let calls = 0
   return {
     navigate: vi.fn(async () => {}),
@@ -217,6 +217,9 @@ describe('DeepWiki browser ownership', () => {
     const browser = { newPage: vi.fn(async () => ({})), close: vi.fn(async () => {}) }
     const report = vi.fn(async () => {})
     const result = await runDeepWiki({ launch: async () => browser, createAdapter: () => adapterFixture([{ ...publicState, controls: ['Enter email to refresh'] }]), report, mainSha, now })
+    if (!result) {
+      throw new Error('Expected a reported DeepWiki result')
+    }
     expect(result.status).toBe('blocked')
     expect(report).toHaveBeenCalledTimes(1)
     expect(browser.close).toHaveBeenCalledTimes(1)
@@ -229,7 +232,7 @@ describe('DeepWiki public-page adapter', () => {
     const headings = [...Array.from({ length: 51 }, (_, i) => `Section ${i}`), 'Sign in to continue']
     const bodyText = `${'x'.repeat(12_001)} Verify you are human`
     const title = `${'x'.repeat(501)} CAPTCHA`
-    const collection = values => ({ filter: () => ({ allTextContents: async () => values }) })
+    const collection = (values: string[]) => ({ filter: () => ({ allTextContents: async () => values }) })
     const page = {
       locator: () => ({ innerText: async () => bodyText }),
       url: () => publicState.url,
@@ -257,7 +260,7 @@ describe('DeepWiki public-page adapter', () => {
   it.each(['button', 'link'])('clicks only the available visible official %s control', async (role) => {
     const click = vi.fn(async () => {})
     const page = { getByRole: vi.fn((candidate, { name }) => ({
-      filter: ({ visible }) => ({
+      filter: ({ visible }: { visible: boolean }) => ({
         count: async () => visible && candidate === role && name.test('Refresh this wiki') ? 1 : 0,
         first: () => ({ click, count: async () => candidate === role ? 1 : 0 }),
       }),
