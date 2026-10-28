@@ -1,6 +1,7 @@
 import type { DarwinProcessEntry, DarwinProcessFrame, DarwinProcessIdentity } from '../processInventory/darwinInspector/types'
 import type { ProcessIdentityMetadata, ProcessInventoryLocation } from '../types'
 import path from 'node:path'
+import { sameDarwinIdentity } from '../processInventory/darwinInspector/protocol'
 
 export type NativePhase = DarwinProcessFrame['phase']
 
@@ -33,6 +34,11 @@ export function sameNativeIdentity(first: DarwinProcessIdentity | null, second: 
   return first !== null && second !== null && first.pid === second.pid && first.parentPid === second.parentPid
     && first.startedSeconds === second.startedSeconds && first.startedMicroseconds === second.startedMicroseconds
     && first.zombie === second.zombie
+}
+
+/** 同帧相邻查询还必须保持凭据一致，不能沿用跨帧允许的凭据变化。 */
+function sameFrameIdentity(first: DarwinProcessIdentity | null, second: DarwinProcessIdentity | null) {
+  return first !== null && second !== null && sameDarwinIdentity(first, second)
 }
 
 /** PID 枚举后已退出必须由全部相邻查询共同证明，权限失败或部分成功不能冒充退出。 */
@@ -73,12 +79,12 @@ export function normalizeNativeFrame(wire: DarwinProcessFrame): NativeFrame {
     const before = entry.before.identity
     const after = entry.after.identity
     const canonical = before ?? after
-    const stable = sameNativeIdentity(before, after) && before?.zombie === false
+    const stable = sameFrameIdentity(before, after) && before?.zombie === false
     const firstPath = entry.pathBefore.executable
     const secondPath = entry.pathAfter.executable
     const imageChanged = validNativeImage(firstPath) && validNativeImage(secondPath) && firstPath !== secondPath
-    const taskStable = sameNativeIdentity(before, entry.task.identity)
-    const changedIdentity = canonical === null ? null : [entry.task.identity, before, after].find(identity => identity !== null && !sameNativeIdentity(canonical, identity)) ?? null
+    const taskStable = sameFrameIdentity(before, entry.task.identity)
+    const changedIdentity = canonical === null ? null : [entry.task.identity, before, after].find(identity => identity !== null && !sameFrameIdentity(canonical, identity)) ?? null
     const rss = entry.task.rssBytes === null ? null : Number(entry.task.rssBytes)
     rows.set(entry.pid, {
       pid: entry.pid,
@@ -94,8 +100,8 @@ export function normalizeNativeFrame(wire: DarwinProcessFrame): NativeFrame {
     })
   }
   const owned = rows.get(wire.ownedHelper.pid)
-  if (!owned || owned.identityChanged || owned.imageChanged || !sameNativeIdentity(owned.identity, wire.ownedHelper.identity)
-    || !sameNativeIdentity(owned.finalIdentity, wire.ownedHelper.identity) || !sameNativeIdentity(owned.entry.task.identity, wire.ownedHelper.identity)
+  if (!owned || owned.identityChanged || owned.imageChanged || !sameFrameIdentity(owned.identity, wire.ownedHelper.identity)
+    || !sameFrameIdentity(owned.finalIdentity, wire.ownedHelper.identity) || !sameFrameIdentity(owned.entry.task.identity, wire.ownedHelper.identity)
     || owned.entry.pathBefore.executable !== wire.ownedHelper.executable || owned.entry.pathAfter.executable !== wire.ownedHelper.executable) {
     throw new Error('Resource sampling cannot verify its exact owned native inspector.')
   }
