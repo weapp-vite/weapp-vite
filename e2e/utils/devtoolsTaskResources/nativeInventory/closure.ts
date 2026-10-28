@@ -10,6 +10,7 @@ export interface TrackedNativeProcess {
   absent: boolean
   changed: boolean
   imageEvidenceConflict: boolean
+  textImageEvidenceConflict: boolean
   closureIdentityUnverifiable: boolean
   classification: NativeRelation
   classifiedAt?: NativePhase
@@ -126,6 +127,7 @@ export function createNativeInventory(installationRoot: string) {
           if ((previous && previous !== image) || textConflict) {
             entry.changed = true
             entry.imageEvidenceConflict ||= Boolean(textConflict)
+            entry.textImageEvidenceConflict ||= Boolean(textConflict)
             cause(entry, 'image-changed', frame.phase)
           }
           directPaths.set(row.pid, image)
@@ -136,6 +138,7 @@ export function createNativeInventory(installationRoot: string) {
           if ((previous && JSON.stringify(previous) !== JSON.stringify(row.images)) || (direct && !row.images.includes(direct))) {
             entry.changed = true
             entry.imageEvidenceConflict = true
+            entry.textImageEvidenceConflict = true
             cause(entry, 'image-changed', frame.phase)
           }
           textImages.set(row.pid, row.images)
@@ -154,6 +157,7 @@ export function createNativeInventory(installationRoot: string) {
     if ((previous && JSON.stringify(previous) !== JSON.stringify(images)) || directPaths.some(image => !images.includes(image))) {
       entry.changed = true
       entry.imageEvidenceConflict = true
+      entry.textImageEvidenceConflict = true
       cause(entry, 'image-changed', phase)
     }
     textObservations.set(pid, images)
@@ -192,7 +196,7 @@ export function createNativeInventory(installationRoot: string) {
       }
       let entry = tracked.get(row.pid)
       if (!entry) {
-        entry = { row, firstPhase: frame.phase, absent: false, changed: false, imageEvidenceConflict: false, closureIdentityUnverifiable: false, classification: 'unknown', imageSource: 'not-verified', causes: [] }
+        entry = { row, firstPhase: frame.phase, absent: false, changed: false, imageEvidenceConflict: false, textImageEvidenceConflict: false, closureIdentityUnverifiable: false, classification: 'unknown', imageSource: 'not-verified', causes: [] }
         tracked.set(row.pid, entry)
       }
       if (!row.entry.before.identity || !row.finalIdentity) {

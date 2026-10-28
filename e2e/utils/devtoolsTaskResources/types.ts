@@ -75,6 +75,16 @@ export interface VerifiedForeignImageTransition {
   phases: ProcessInventoryLocation['phase'][]
 }
 
+export interface VerifiedForeignNativeExec {
+  process: ProcessIdentityGapObservation
+  from: { phase: 'closure1', position: 'path-before', image: NativeImageEvidence }
+  to: { phase: 'closure1', position: 'path-after', image: NativeImageEvidence }
+  confirmationPhase: 'closure2'
+  ancestry: ProcessIdentityMetadata[]
+  proof: 'complete-native-foreign-exec-brackets-since-first-observation'
+  phases: ['closure1', 'closure2']
+}
+
 export interface NativeProcessFrameEvidence {
   phase: 'prepare' | 'anchor' | 'closure1' | 'closure2'
   requestId: number
@@ -126,6 +136,8 @@ export interface InstallationProcessSample {
   identityChangedProcessCount: number
   verifiedForeignImageTransitionCount: number
   verifiedForeignImageTransitions: VerifiedForeignImageTransition[]
+  verifiedForeignNativeExecCount: number
+  verifiedForeignNativeExecs: VerifiedForeignNativeExec[]
   newProcesses: NewProcessObservation[]
   unclassifiedProcesses: ProcessIdentityGapObservation[]
   missingIdentities: ProcessIdentityGapObservation[]

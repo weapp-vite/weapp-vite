@@ -4,6 +4,7 @@ import type { NativeTextImageRead, resolveAnchoredTextImages } from './fallback'
 import { nativeRelation } from './closure'
 import { nativeFrameEvidence, textReadEvidence } from './evidence'
 import { verifiedForeignImageTransitions } from './foreignImageTransitions'
+import { verifiedForeignNativeExecs } from './foreignNativeExecs'
 import { insideInstallation, metadata, sameNativeIdentity } from './model'
 
 interface SummaryOptions {
@@ -24,7 +25,8 @@ export function summarizeNativeInventory(options: SummaryOptions): InstallationP
     throw new Error('Resource sampling did not complete its fixed native anchor and closure boundaries.')
   }
   const foreignTransitions = verifiedForeignImageTransitions(inventory, installationRoot)
-  const verifiedForeignProcesses = new Set(foreignTransitions.map(transition => transition.process.pid))
+  const foreignNativeExecs = verifiedForeignNativeExecs(inventory, installationRoot)
+  const verifiedForeignProcesses = new Set([...foreignTransitions, ...foreignNativeExecs].map(proof => proof.process.pid))
   const preAnchorExited = new Set<number>()
   for (const entry of inventory.tracked.values()) {
     if (entry.firstPhase === 'prepare' && !anchor.rows.has(entry.row.pid) && !entry.changed && !inventory.selectedSeen.has(entry.row.pid)) {
@@ -101,6 +103,8 @@ export function summarizeNativeInventory(options: SummaryOptions): InstallationP
     identityChangedProcessCount: inventory.changes.size,
     verifiedForeignImageTransitionCount: foreignTransitions.length,
     verifiedForeignImageTransitions: foreignTransitions,
+    verifiedForeignNativeExecCount: foreignNativeExecs.length,
+    verifiedForeignNativeExecs: foreignNativeExecs,
     newProcesses,
     inventoryRoundCount: 3,
     inventoryBudgetExhausted,
