@@ -28,6 +28,8 @@
 
 微信不同运行时版本不能统一假定存在 `queueMicrotask`。业务代码应通过共享 ESLint 配置统一接入 `@weapp-vite/eslint` 的 `miniProgramRuntimeRecommended`，模板不要单独增加 workspace 依赖；框架代码应使用显式兼容层，需要 request globals 时明确配置 `weapp.appPrelude.webRuntime`。
 
+SSE 任务先读 [本地 Web Runtime 配置](./weapp-config.md#apppreludewebruntime)，区分 Fetch 的项目级 `networkDefaults.request.enableChunked: true` 与 EventSource 自动分块。不要因存在 `onChunkReceived`、类型声明或 headless 通过就承诺微信流式兼容：还需真实宿主在响应结束前提供真实状态码，并验证服务端保持连接时页面已经显示首条消息。缺少能力时必须保留 `NotSupportedError`，不能假定 200 或静默退回缓冲。第三方解析器在模块初始化时读取 Streams 构造器的问题应检查最终 prelude 与 chunk 绑定；Wevu 清理应在同步 setup 中注册 `onUnload`。示例与边界见 [Web SSE 指南](https://vite.weapp.dev/guide/web-runtime-globals.html#复用-web-sse-写法)。
+
 ## Rust / Native 加速约束
 
 当任务涉及 `@weapp-vite/ast-native`、Rust 插件或 native AST 加速时，先把 JS 与 Rust 的通信次数当作主要性能约束之一。

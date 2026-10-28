@@ -71,4 +71,30 @@ describe('request globals preserve output bindings', () => {
   it('does not turn an explicitly empty passive selection into all targets', () => {
     expect(createRequestGlobalsPassiveBindingsCode(['fetch'], [])).toBe('')
   })
+
+  it('initializes streaming constructors before a dependency evaluates its superclass', () => {
+    class HostTransformStream {}
+    class HostEventSource {
+      constructor(readonly url: string) {}
+    }
+    const bundle = fixture(`const runtime = require('./runtime.js');
+      exports.Parser = class extends TransformStream {};
+      exports.source = new EventSource('https://sse.invalid/events');`)
+    injectRequestGlobalsLocalBindings(
+      bundle,
+      new Map([['runtime.js', 'install']]),
+      ['EventSource', 'TextDecoderStream'],
+      'explicit',
+      new Map([['support', { type: 'page' }]]),
+    )
+    const context = vm.createContext({
+      exports: {},
+      require: () => ({
+        install: () => ({ EventSource: HostEventSource, TransformStream: HostTransformStream }),
+      }),
+    })
+    vm.runInContext(`(function(exports, require) {${(bundle['support.js'] as OutputChunk).code}\n})(exports, require)`, context)
+    expect(context.exports.Parser.prototype).toBeInstanceOf(HostTransformStream)
+    expect(context.exports.source.url).toBe('https://sse.invalid/events')
+  })
 })

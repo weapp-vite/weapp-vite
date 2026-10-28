@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fetch } from '../src/fetch'
 import { RequestPolyfill } from '../src/http'
+import { ReadableStream } from '../src/streams'
 import { BlobPolyfill, FilePolyfill, FormDataPolyfill } from '../src/web'
 
 const request = vi.hoisted(() => vi.fn())
@@ -15,6 +16,17 @@ beforeEach(() => {
 })
 
 describe('fetch request body ownership', () => {
+  it('rejects unbounded external request streams before locking, consuming or starting transport', async () => {
+    const input = new RequestPolyfill('https://example.test', { method: 'POST', body: new ReadableStream<Uint8Array>() })
+    const clone = input.clone()
+    const transfer = new RequestPolyfill(clone)
+    await expect(fetch(input)).rejects.toThrow('Streaming request uploads are not supported')
+    await expect(fetch(transfer)).rejects.toThrow('Streaming request uploads are not supported')
+    expect(input.bodyUsed).toBe(false)
+    expect(input.body!.locked).toBe(false)
+    expect(request).not.toHaveBeenCalled()
+    await Promise.all([input.body!.cancel(), transfer.body!.cancel()])
+  })
   it('consumes Request once and keeps a pre-send clone independently readable', async () => {
     const input = new RequestPolyfill('https://example.test', { method: 'POST', body: 'hello' })
     const clone = input.clone()
@@ -24,7 +36,7 @@ describe('fetch request body ownership', () => {
     await expect((await first).text()).resolves.toBe('ok')
     await expect(clone.text()).resolves.toBe('hello')
     expect(request).toHaveBeenCalledOnce()
-    expect(request.mock.calls[0]![0].data).toBe('hello')
+    expect(new TextDecoder().decode(request.mock.calls[0]![0].data)).toBe('hello')
   })
 
   it('consumes native Request input without consuming when init overrides the body', async () => {
@@ -51,5 +63,25 @@ describe('fetch request body ownership', () => {
     expect(await new BlobPolyfill([options.data]).text()).toContain('filename="sample.bin"')
     expect((await response.blob()).type).toBe('text/plain')
     await expect(fetch(input)).rejects.toBeInstanceOf(TypeError)
+  })
+
+  it('keeps cloned multipart bytes and declared boundaries consistent and snapshots entries', async () => {
+    const form = new FormDataPolyfill()
+    form.append('message', 'original')
+    const input = new RequestPolyfill('https://example.test', {
+      method: 'POST',
+      body: form,
+      headers: { 'content-type': 'multipart/form-data; boundary="explicit-boundary"' },
+    })
+    const clone = input.clone()
+    form.set('message', 'changed')
+    await fetch(input)
+    const options = request.mock.calls[0]![0]
+    expect(options.header['content-type']).toBe('multipart/form-data; boundary="explicit-boundary"')
+    const payload = new TextDecoder().decode(options.data)
+    expect(payload).toContain('--explicit-boundary\r\n')
+    expect(payload).toContain('original')
+    expect(payload).not.toContain('changed')
+    await expect(clone.text()).resolves.toBe(payload)
   })
 })

@@ -41,6 +41,9 @@ keywords:
 - `AbortController`
 - `URL`
 - `URLSearchParams`
+- `ReadableStream`、`WritableStream`、`TransformStream`
+- `TextDecoderStream`
+- `EventSource`
 
 启用后，构建器会在前置时机安装 Web Runtime 提供的兼容对象，并在 chunk 作用域内保留局部绑定兜底。这个兜底很重要，因为部分第三方库会在模块初始化阶段直接执行 `typeof XMLHttpRequest`、`new URL()` 或缓存 `fetch` 引用。
 
@@ -81,6 +84,74 @@ export default defineConfig({
   },
 })
 ```
+
+## 复用 Web SSE 写法
+
+`EventSource` 可以直接用于 GET 事件流，并自动处理重连及 `Last-Event-ID`：
+
+```ts
+import { onUnload } from 'wevu'
+
+const source = new EventSource('https://example.com/events')
+source.onmessage = event => console.log(event.data)
+
+onUnload(() => {
+  source.close()
+})
+```
+
+需要 POST 或自定义鉴权头时，在 `webRuntime.networkDefaults.request` 中设置 `enableChunked: true`，随后使用 Fetch 响应流：
+
+```sh
+pnpm add eventsource-parser
+```
+
+```ts
+import { EventSourceParserStream } from 'eventsource-parser/stream'
+import { onUnload } from 'wevu'
+
+const controller = new AbortController()
+onUnload(() => {
+  controller.abort()
+})
+
+const response = await fetch('https://example.com/chat', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
+  body: JSON.stringify({ message: '你好' }),
+  signal: controller.signal,
+})
+
+if (!response.ok) {
+  controller.abort()
+  throw new Error(`HTTP ${response.status}`)
+}
+
+const reader = response.body!
+  .pipeThrough(new TextDecoderStream())
+  .pipeThrough(new EventSourceParserStream())
+  .getReader()
+
+try {
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) {
+      break
+    }
+    console.log(value.data)
+  }
+}
+finally {
+  controller.abort()
+  reader.releaseLock()
+}
+```
+
+`TextDecoderStream` 会保留跨数据块的 UTF-8 状态；SSE 解析器再处理跨块消息和多行 `data`。不要把一次网络 chunk 当成一个事件，也不要对每个 chunk 单独做无状态中文解码。
+
+Wevu 页面应在同步 setup 阶段注册 `onUnload`，由它调用 `source.close()` 或 `controller.abort()`，不能在请求 `await` 之后才注册生命周期。
+
+流式接口只在宿主能够提前提供真实状态码和分块数据时可用；缺失能力会明确报错。首版不模拟浏览器 Cookie/CORS，`EventSource` 不支持 `withCredentials: true`。安装配置与宿主边界见 [Web Runtime 全局对象注入配置](/config/web-runtime-globals#fetch-响应流与-sse)。
 
 ## 和浏览器 Web runtime 的关系
 

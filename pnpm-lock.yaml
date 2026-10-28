@@ -2147,6 +2147,12 @@ importers:
 
   e2e-apps/stream-capability-probe:
     devDependencies:
+      '@wevu/web-apis':
+        specifier: workspace:*
+        version: link:../../packages-runtime/web-apis
+      eventsource-parser:
+        specifier: 3.1.1
+        version: 3.1.1
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -2843,6 +2849,13 @@ importers:
       '@wevu/api':
         specifier: workspace:*
         version: link:../weapi
+      web-streams-polyfill:
+        specifier: 4.3.0
+        version: 4.3.0
+    devDependencies:
+      eventsource-parser:
+        specifier: 3.1.1
+        version: 3.1.1
 
   packages-runtime/wevu:
     dependencies:
@@ -18331,6 +18344,10 @@ packages:
       vite:
         optional: true
 
+  web-streams-polyfill@4.3.0:
+    resolution: {integrity: sha512-/Gnggvj9oSrEvJbDyyPtAnxBt5fGQM2iWOKQNu7ie1OxDgK40iZpyV3TKaRiEzVj1oA1UxKnEy9XPXh6PW3eVw==}
+    engines: {node: '>= 8'}
+
   web-worker@1.5.0:
     resolution: {integrity: sha512-RiMReJrTAiA+mBjGONMnjVDP2u3p9R1vkcGz6gDIrOMT3oGuYwX2WRMYI9ipkphSuE5XKEhydbhNEJh4NY9mlw==}
 
@@ -33256,6 +33273,8 @@ snapshots:
       - rolldown
       - supports-color
       - tsx
+
+  web-streams-polyfill@4.3.0: {}
 
   web-worker@1.5.0: {}
 

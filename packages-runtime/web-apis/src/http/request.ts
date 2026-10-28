@@ -1,6 +1,6 @@
 import type { URLPolyfill } from '../url'
 import { isUrlInstance } from '../constructors'
-import { assertBodyUnused, consumeBodyValue, getBodyValue, HttpBody, initializeBody } from './body'
+import { cloneBodyValue, getBodyValue, HttpBody, initializeBody, transferBodyValue } from './body'
 import { HeadersPolyfill } from './headers'
 
 export class RequestPolyfill extends HttpBody {
@@ -22,22 +22,15 @@ export class RequestPolyfill extends HttpBody {
     this.headers = new HeadersPolyfill(init.headers ?? request?.headers)
     this.signal = init.signal ?? request?.signal ?? null
     const inherited = init.body == null && request
-    if (inherited) {
-      assertBodyUnused(request)
-    }
-    initializeBody(this, init.body ?? (request ? getBodyValue(request) : undefined))
-    if (inherited) {
-      consumeBodyValue(request)
-    }
+    initializeBody(this, inherited ? transferBodyValue(request) : init.body)
   }
 
   clone() {
-    assertBodyUnused(this)
     return new RequestPolyfill(this.url, {
       method: this.method,
       headers: this.headers,
       signal: this.signal,
-      body: getBodyValue(this),
+      body: cloneBodyValue(this),
     })
   }
 }

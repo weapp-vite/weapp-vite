@@ -1,3 +1,4 @@
+import type { WebRuntimeGlobalTarget } from '@weapp-core/constants'
 import type { MiniProgramNetworkDefaults } from '@wevu/web-apis/network-defaults'
 import type { InlineConfig } from 'vite'
 import type { PageLayoutMeta, WevuConfigDefaults } from 'wevu/config'
@@ -214,24 +215,7 @@ export interface WeappInjectWeapiConfig {
   globalName?: string
 }
 
-export type WeappInjectWebRuntimeGlobalsTarget
-  = | 'fetch'
-    | 'Headers'
-    | 'Request'
-    | 'Response'
-    | 'TextEncoder'
-    | 'TextDecoder'
-    | 'AbortController'
-    | 'AbortSignal'
-    | 'XMLHttpRequest'
-    | 'WebSocket'
-    | 'atob'
-    | 'btoa'
-    | 'queueMicrotask'
-    | 'performance'
-    | 'crypto'
-    | 'Event'
-    | 'CustomEvent'
+export type WeappInjectWebRuntimeGlobalsTarget = WebRuntimeGlobalTarget
 
 export type WeappInjectRequestGlobalsTarget = WeappInjectWebRuntimeGlobalsTarget
 

@@ -363,6 +363,8 @@ describe('HMR semantic acceptance inventory', () => {
       'e2e/utils/runtimeLogSubscription.test.ts',
       'e2e/utils/runtimeLogDiagnostics.test.ts',
       'e2e/utils/nativePublication/hmrPublication.test.ts',
+      'e2e/utils/wevu-vendor.test.ts',
+      'e2e/utils/devtoolsTaskResources/index.test.ts',
       'e2e/utils/devBuildCompletion/snapshotCursor.test.ts',
       'e2e/scripts/hmr-acceptance-manifest.test.ts',
       'e2e/scripts/hmr-launch-mode.test.ts',

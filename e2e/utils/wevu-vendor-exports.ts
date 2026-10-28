@@ -1,13 +1,111 @@
+import type { Scope } from '@babel/traverse'
+import type * as t from '@babel/types'
+import { parse } from '@babel/parser'
+import traverseModule from '@babel/traverse'
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 
-const MEMBER_REQUIRE_RE = /require\(\s*["']([^"']+\.js)["']\)\.([A-Za-z_$][\w$]*)/g
-const VARIABLE_REQUIRE_RE = /\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*require\(\s*["']([^"']+\.js)["']\s*\)/g
-const DESTRUCTURE_REQUIRE_RE = /\b(?:const|let|var)\s+\{([^}]+)\}\s*=\s*require\(\s*["']([^"']+\.js)["']\s*\)/g
+const traverse = (traverseModule as unknown as { default?: typeof traverseModule }).default ?? traverseModule
 const VENDOR_EXPORT_RE = /Object\.defineProperty\(exports,\s*["']([^"']+)["']|\bexports\.([A-Za-z_$][\w$]*)\s*=/g
 
-function escapeRegExp(value: string) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+interface VendorMember {
+  request: string
+  member: string
+}
+
+function staticKey(node: t.Node | null | undefined, computed = true): string | undefined {
+  if (!node) {
+    return undefined
+  }
+  if (!computed && node.type === 'Identifier') {
+    return node.name
+  }
+  if (node.type === 'StringLiteral' || node.type === 'NumericLiteral') {
+    return String(node.value)
+  }
+  if (node.type === 'TemplateLiteral' && node.expressions.length === 0) {
+    return node.quasis[0]?.value.cooked ?? undefined
+  }
+}
+
+function requireRequest(node: t.Node | null | undefined, scope: Scope) {
+  if (node?.type !== 'CallExpression' || node.callee.type !== 'Identifier'
+    || node.callee.name !== 'require' || node.arguments.length !== 1 || scope.getBinding('require')) {
+    return undefined
+  }
+  const request = staticKey(node.arguments[0])
+  return request?.endsWith('.js') ? request : undefined
+}
+
+function collectBindingMembers(scope: Scope, name: string, request: string, usedMembers: VendorMember[]) {
+  const binding = scope.getBinding(name)
+  for (const reference of binding?.referencePaths ?? []) {
+    const parent = reference.parentPath
+    if ((!parent?.isMemberExpression() && !parent?.isOptionalMemberExpression()) || parent.node.object !== reference.node) {
+      continue
+    }
+    const member = staticKey(parent.node.property, parent.node.computed)
+    if (member) {
+      usedMembers.push({ request, member })
+    }
+  }
+}
+
+/** 按真实导入和绑定收集成员，避免将 installer 返回值或同名局部变量当作模块。 */
+function collectUsedVendorMembers(source: string) {
+  const usedMembers: VendorMember[] = []
+  traverse(parse(source, { sourceType: 'unambiguous' }), {
+    'MemberExpression|OptionalMemberExpression': function (memberPath) {
+      const node = memberPath.node as t.MemberExpression | t.OptionalMemberExpression
+      const request = requireRequest(node.object, memberPath.scope)
+      const member = staticKey(node.property, node.computed)
+      if (request && member) {
+        usedMembers.push({ request, member })
+      }
+    },
+    VariableDeclarator(declarationPath) {
+      // 只有完整 initializer 为 require(...) 时，变量才代表模块命名空间。
+      const request = requireRequest(declarationPath.node.init, declarationPath.scope)
+      if (!request) {
+        return
+      }
+      const id = declarationPath.node.id
+      if (id.type === 'Identifier') {
+        collectBindingMembers(declarationPath.scope, id.name, request, usedMembers)
+      }
+      if (id.type === 'ObjectPattern') {
+        for (const property of id.properties) {
+          if (property.type !== 'ObjectProperty') {
+            continue
+          }
+          const member = staticKey(property.key, property.computed)
+          if (member) {
+            usedMembers.push({ request, member })
+          }
+        }
+      }
+    },
+    ImportDeclaration(importPath) {
+      const request = importPath.node.source.value
+      if (!request.endsWith('.js')) {
+        return
+      }
+      for (const specifier of importPath.node.specifiers) {
+        if (specifier.type === 'ImportNamespaceSpecifier') {
+          collectBindingMembers(importPath.scope, specifier.local.name, request, usedMembers)
+        }
+        else {
+          const member = specifier.type === 'ImportDefaultSpecifier'
+            ? 'default'
+            : staticKey(specifier.imported, false)
+          if (member) {
+            usedMembers.push({ request, member })
+          }
+        }
+      }
+    },
+  })
+  return usedMembers
 }
 
 function isVendorPath(distRoot: string, filePath: string) {
@@ -47,47 +145,7 @@ export async function findMissingWevuVendorExports(distRoot: string) {
 
     const jsPath = path.join(distRoot, file)
     const source = await fs.readFile(jsPath, 'utf8')
-    const usedMembers: Array<{ request: string, member: string }> = []
-
-    for (const match of source.matchAll(MEMBER_REQUIRE_RE)) {
-      const request = match[1]
-      const member = match[2]
-      if (request && member) {
-        usedMembers.push({ request, member })
-      }
-    }
-
-    for (const match of source.matchAll(DESTRUCTURE_REQUIRE_RE)) {
-      const bindings = match[1]
-      const request = match[2]
-      if (!bindings || !request) {
-        continue
-      }
-      for (const rawBinding of bindings.split(',')) {
-        const member = rawBinding.trim().split(/\s*:\s*/)[0]
-        if (member) {
-          usedMembers.push({ request, member })
-        }
-      }
-    }
-
-    for (const match of source.matchAll(VARIABLE_REQUIRE_RE)) {
-      const variableName = match[1]
-      const request = match[2]
-      if (!variableName || !request) {
-        continue
-      }
-      const memberRe = new RegExp(`\\b${escapeRegExp(variableName)}\\.([A-Za-z_$][\\w$]*)`, 'g')
-      const declarationEnd = (match.index ?? 0) + match[0].length
-      for (const memberMatch of source.slice(declarationEnd).matchAll(memberRe)) {
-        const member = memberMatch[1]
-        if (member) {
-          usedMembers.push({ request, member })
-        }
-      }
-    }
-
-    for (const { request, member } of usedMembers) {
+    for (const { request, member } of collectUsedVendorMembers(source)) {
       const resolved = path.resolve(path.dirname(jsPath), request)
       if (!isVendorPath(distRoot, resolved) || !(await fs.pathExists(resolved))) {
         continue
