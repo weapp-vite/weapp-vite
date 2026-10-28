@@ -47,7 +47,12 @@ export function absolutePath(value) {
   return path.resolve(normalizeNativeWatchPath(value))
 }
 
-export function installNativeInstrumentation({ root, platform, beforeWatch, promiseHooks = {} }) {
+export function installNativeInstrumentation({
+  root,
+  platform,
+  beforeWatch = /** @type {((file: string, attempt: {path: string, afterPublicClose: boolean, result: string}) => void) | undefined} 可选的注册前观察钩子。 */ (undefined),
+  promiseHooks = {},
+}) {
   const actualPlatform = process.platform
   const platformDescriptor = Object.getOwnPropertyDescriptor(process, 'platform')
   const originalWatch = fs.watch

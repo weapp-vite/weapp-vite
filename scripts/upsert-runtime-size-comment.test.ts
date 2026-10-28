@@ -16,7 +16,7 @@ function createArtifact(version = 3) {
     'complex-component',
     'full-provider',
   ]
-  const createReport = (commit, offset = 0, includeRetainedModules = true) => ({
+  const createReport = (commit: string, offset = 0, includeRetainedModules = true) => ({
     version,
     generatedAt: '2026-07-30T00:00:00.000Z',
     commit,
@@ -130,7 +130,7 @@ describe('runtime size PR comment', () => {
     })).toThrow('repository')
 
     const artifact = createArtifact()
-    artifact.current.targets[0].tiers[0].production.gzipBytes = 10
+    Object.assign(artifact.current.targets[0].tiers[0].production, { gzipBytes: 10 })
     expect(() => validateArtifact(artifact, {
       repository: 'owner/repo',
       prNumber: 42,

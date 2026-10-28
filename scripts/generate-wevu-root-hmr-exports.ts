@@ -9,7 +9,7 @@ const WEVU_ENTRY_PATH = path.join(REPO_ROOT, 'packages-runtime/wevu/src/index.ts
 const OUTPUT_PATH = path.join(REPO_ROOT, 'e2e/generated/wevu-root-hmr-exports.ts')
 
 function hasDeclareModifier(declaration: ts.Declaration) {
-  if (declaration.modifiers?.some(modifier => modifier.kind === ts.SyntaxKind.DeclareKeyword)) {
+  if (ts.canHaveModifiers(declaration) && ts.getModifiers(declaration)?.some(modifier => modifier.kind === ts.SyntaxKind.DeclareKeyword)) {
     return true
   }
 

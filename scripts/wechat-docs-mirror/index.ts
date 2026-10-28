@@ -268,7 +268,11 @@ function buildPageMarkdown(params: {
 
   root.find('.header-anchor, script, style, noscript').remove()
 
-  return renderMarkdown(root.get(0), {
+  const content = root.get(0)
+  if (!content) {
+    throw new Error(`Failed to locate content root for ${pageUrl}`)
+  }
+  return renderMarkdown(content, {
     $,
     rewriteHref(href) {
       return toRelativeMarkdownHref({

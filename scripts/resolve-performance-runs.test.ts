@@ -55,6 +55,9 @@ describe('resolve manual performance runs', () => {
   it('maps a trusted default-branch dispatch to a fork PR head and base, not the driver SHA', async () => {
     const result = await resolvePerformanceRuns({ ...options, request: requestFor(), readContext: vi.fn().mockResolvedValue(context) })
     expect(result).toMatchObject({ context: { prNumber: 7, headSha, baseSha }, runtimeRun: { id: 10 } })
+    if (!result) {
+      throw new Error('Expected the current PR performance context')
+    }
     expect(result.context.headSha).not.toBe(run.head_sha)
   })
 
@@ -95,6 +98,9 @@ describe('resolve manual performance runs', () => {
       return { ...context, runId: String(candidate.id), ...(candidate.id === 13 ? { prNumber: 8 } : candidate.id === 12 ? { baseSha: 'd'.repeat(40) } : {}) }
     })
     const result = await resolvePerformanceRuns({ ...options, request: requestFor(pull, runs), readContext })
+    if (!result) {
+      throw new Error('Expected a matching runtime run')
+    }
     expect(result.runtimeRun.id).toBe(11)
     expect(readContext).toHaveBeenCalledTimes(5)
   })

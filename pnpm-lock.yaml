@@ -437,6 +437,7 @@ overrides:
   rolldown: 1.2.15
 
 patchedDependencies:
+  '@vitejs/plugin-vue@6.0.10': 3dcf2983828045bd0fe45880e571cb5605a71b599c074ad79a62636319f52777
   chokidar@6.0.0: d106ebf487e202ea68ad153ed166aed376b19ba3750945e82be79991bcb4be54
   rolldown@1.2.15: 7e1e0adcb64e85d1f8c9681c4aeccce12fe5739ff8c510e12dc43bfd132f5e44
   vite@8.3.5: 284776f1b99423b4fe3bcdab1e42a498b1c56c8ddad3d6cef66f7a0209a777b9
@@ -1261,7 +1262,7 @@ importers:
         version: 5.0.6
       '@vitejs/plugin-vue':
         specifier: 'catalog:'
-        version: 6.0.10(vite@8.3.5)(vue@3.5.44(typescript@6.0.3))
+        version: 6.0.10(patch_hash=3dcf2983828045bd0fe45880e571cb5605a71b599c074ad79a62636319f52777)(vite@8.3.5)(vue@3.5.44(typescript@6.0.3))
       miniprogram-api-typings:
         specifier: 'catalog:'
         version: 5.2.3
@@ -2498,7 +2499,7 @@ importers:
         version: 4.3.3(vite@8.3.5)
       '@vitejs/plugin-vue':
         specifier: 'catalog:'
-        version: 6.0.10(vite@8.3.5)(vue@3.5.44(typescript@6.0.3))
+        version: 6.0.10(patch_hash=3dcf2983828045bd0fe45880e571cb5605a71b599c074ad79a62636319f52777)(vite@8.3.5)(vue@3.5.44(typescript@6.0.3))
       shiki:
         specifier: ^4.5.0
         version: 4.5.0
@@ -2653,7 +2654,7 @@ importers:
     devDependencies:
       '@vitejs/plugin-vue':
         specifier: 'catalog:'
-        version: 6.0.10(vite@8.3.5)(vue@3.5.44(typescript@6.0.3))
+        version: 6.0.10(patch_hash=3dcf2983828045bd0fe45880e571cb5605a71b599c074ad79a62636319f52777)(vite@8.3.5)(vue@3.5.44(typescript@6.0.3))
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -3248,7 +3249,7 @@ importers:
         version: 7.4.3
       '@vitejs/plugin-vue':
         specifier: 'catalog:'
-        version: 6.0.10(vite@8.3.5)(vue@3.5.44(typescript@6.0.3))
+        version: 6.0.10(patch_hash=3dcf2983828045bd0fe45880e571cb5605a71b599c074ad79a62636319f52777)(vite@8.3.5)(vue@3.5.44(typescript@6.0.3))
       d3:
         specifier: 'catalog:'
         version: 7.9.0
@@ -24458,7 +24459,7 @@ snapshots:
       - ocache
       - srvx
 
-  '@vitejs/plugin-vue@6.0.10(vite@8.3.5)(vue@3.5.44(typescript@6.0.3))':
+  '@vitejs/plugin-vue@6.0.10(patch_hash=3dcf2983828045bd0fe45880e571cb5605a71b599c074ad79a62636319f52777)(vite@8.3.5)(vue@3.5.44(typescript@6.0.3))':
     dependencies:
       '@rolldown/pluginutils': 1.0.1
       vite: 8.3.5(patch_hash=284776f1b99423b4fe3bcdab1e42a498b1c56c8ddad3d6cef66f7a0209a777b9)(@types/node@26.6.5)(@vitejs/devtools@0.8.0)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
@@ -32927,7 +32928,7 @@ snapshots:
       '@iconify-json/simple-icons': 1.2.100
       '@shikijs/transformers': 4.5.0
       '@types/markdown-it': 14.2.0
-      '@vitejs/plugin-vue': 6.0.10(vite@8.3.5)(vue@3.5.44(typescript@6.0.3))
+      '@vitejs/plugin-vue': 6.0.10(patch_hash=3dcf2983828045bd0fe45880e571cb5605a71b599c074ad79a62636319f52777)(vite@8.3.5)(vue@3.5.44(typescript@6.0.3))
       '@vue/devtools-api': 8.2.1
       '@vue/shared': 3.5.44
       '@vueuse/core': 14.4.0(vue@3.5.44(typescript@6.0.3))

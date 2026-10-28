@@ -27,7 +27,7 @@ function fixture(duplicate: boolean, initial = first, target = file) {
         return scheduling.run(reconcile)
       },
     },
-    emitEvent(event: string, emitted: string, _stats?: unknown) {
+    emitEvent(this: EventEmitter, event: string, emitted: string, _stats?: unknown) {
       const key = emitted.replaceAll('\\', '/')
       if (event === 'unlink') {
         pending.set(key, { event: [event, emitted], timer: {} })

@@ -22,13 +22,13 @@ describe('createVueOxcTsconfigGuard', () => {
     const vuePlugin = vue({ include: /\.vue$/ })
     const guard = createVueOxcTsconfigGuard(vuePlugin)
     const config = { plugins: [vuePlugin, guard] } as unknown as ResolvedConfig
-    const include = vuePlugin.api!.options.include
+    const include = vuePlugin.api!.include
     ;(guard.configResolved as (config: ResolvedConfig) => void)(config)
     ;(guard.buildStart as () => void)()
-    expect(vuePlugin.api!.options.include).toBe(include)
+    expect(vuePlugin.api!.include).toBe(include)
     expect(vuePlugin.api!.options.devServer?.config.oxc).toMatchObject({ tsconfig: false })
     ;(guard.buildEnd as () => void)()
-    expect(vuePlugin.api!.options.include).toBe(include)
+    expect(vuePlugin.api!.include).toBe(include)
     expect(vuePlugin.api!.options.devServer).toBeUndefined()
   })
 

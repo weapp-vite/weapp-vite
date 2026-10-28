@@ -14,6 +14,14 @@ import path from 'pathe'
 import { snapshotBenchmarkOutputs } from '../../../../scripts/benchmarkTemplatesHmr/outputScope'
 import { parseStatefulHmrControlSource } from '../../../../scripts/workspace-hmr/scenarios'
 
+interface DiagnosticOutputFile {
+  sha256: string
+  bytes: number
+  canonicalBytes?: number
+  canonicalSha256?: string
+  normalized?: 'registered-stateful-hmr-batch-nonce-and-build-id' | 'registered-stateful-build-id-first-line'
+}
+
 export async function snapshotPublishedOutputs(
   outDir: string,
   events: Array<{ type: string, targetVersion?: number }>,
@@ -29,7 +37,7 @@ export async function snapshotPublishedOutputs(
 
 export async function snapshotOutputCheckpoint(outDir: string, completionSignal: { type: string, targetVersion?: number }, registeredControlSource?: string) {
   const snapshotStartedAt = performance.now()
-  const files = await snapshotBenchmarkOutputs(outDir)
+  const files: Record<string, DiagnosticOutputFile> = await snapshotBenchmarkOutputs(outDir)
   const snapshotCompletedAt = performance.now()
   const controlStartedAt = performance.now()
   const controlPath = path.join(outDir, WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE)

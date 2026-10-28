@@ -70,7 +70,7 @@ export function captureConsumerAttribution(root = process.cwd()): Plugin {
         graph.push({
           source: normalize(id),
           isEntry: info.isEntry,
-          isExternal: info.isExternal,
+          isExternal: 'isExternal' in info && typeof info.isExternal === 'boolean' ? info.isExternal : undefined,
           imports: [...new Set(info.importedIds.map(normalize))].sort(compareStrings),
           dynamicImports: [...new Set(info.dynamicallyImportedIds.map(normalize))].sort(compareStrings),
         })

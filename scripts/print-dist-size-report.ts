@@ -1,3 +1,4 @@
+import type { Dirent } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 import { readdir, readFile, stat } from 'node:fs/promises'
 import path from 'node:path'
@@ -166,7 +167,7 @@ async function collectWorkspacePackages(scope: ReportScope) {
 
   for (const dirName of workspaceDirs) {
     const baseDir = path.join(ROOT, dirName)
-    let children: Awaited<ReturnType<typeof readdir>>
+    let children: Dirent<string>[]
     try {
       children = await readdir(baseDir, { withFileTypes: true })
     }

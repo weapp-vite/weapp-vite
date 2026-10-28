@@ -135,6 +135,10 @@ async function listComments({ apiUrl, token, repository, prNumber, request = git
   }
 }
 
+/**
+ * 创建或更新报告评论，并在提供校验器时再次核对候选身份。
+ * @param {{apiUrl: string, token: string, repository: string, prNumber: number, body: string, request?: typeof githubRequest, verifyTarget?: () => boolean | Promise<boolean>}} options 评论目标及可选的身份校验。
+ */
 export async function upsertComment({ apiUrl, token, repository, prNumber, body, request = githubRequest, verifyTarget }) {
   const comments = await listComments({ apiUrl, token, repository, prNumber, request })
   const existing = findExistingComment(comments)

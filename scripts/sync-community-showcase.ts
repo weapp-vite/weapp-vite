@@ -43,7 +43,8 @@ interface ExtractedAssetCandidate {
   url: string
 }
 
-interface DownloadedAssetCandidate extends ExtractedAssetCandidate {
+interface DownloadedAssetCandidate extends Omit<ExtractedAssetCandidate, 'kind'> {
+  kind: ShowcaseAsset['kind']
   filePath: string
   originalUrl: string
   relativePath: string
@@ -575,7 +576,8 @@ export async function downloadImage(url: string, destinationWithoutExt: string, 
     maxRedirects: 5,
     timeout: 15_000,
   })
-  const ext = resolveFileExtension(url, response.headers['content-type'])
+  const contentType = response.headers['content-type']
+  const ext = resolveFileExtension(url, typeof contentType === 'string' ? contentType : undefined)
   const filePath = `${destinationWithoutExt}${ext}`
   const buffer = Buffer.from(response.data)
   await fs.outputFile(filePath, buffer)

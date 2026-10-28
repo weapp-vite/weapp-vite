@@ -45,6 +45,10 @@ export function readIndexStatus(html, now = Date.now()) {
   return indexes[0]
 }
 
+/**
+ * 只读检查公开索引，并将非法提交标识保留为可观察的失败结果。
+ * @param {{mainSha?: unknown, fetchImpl?: typeof fetch, now?: number, timeoutMs?: number}} options 目标提交及可注入的请求时钟。
+ */
 export async function monitorDeepWiki({ mainSha, fetchImpl = fetch, now = Date.now(), timeoutMs = 20_000 } = {}) {
   let normalizedSha
   try {

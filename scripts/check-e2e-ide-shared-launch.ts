@@ -1,3 +1,5 @@
+import type { NodePath } from '@babel/traverse'
+import type { CallExpression } from '@babel/types'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
@@ -57,7 +59,7 @@ async function checkFile(filePath: string) {
   const relativePath = normalizePath(filePath)
 
   traverse(ast, {
-    CallExpression(callPath) {
+    CallExpression(callPath: NodePath<CallExpression>) {
       if (callPath.node.callee.type !== 'Identifier' || callPath.node.callee.name !== 'launchAutomator') {
         return
       }

@@ -1,4 +1,4 @@
-import type { PluginOption, UserConfig } from 'vite'
+import type { Plugin, PluginOption, UserConfig } from 'vite'
 import type { DashboardTailwindScenario } from './scenarios'
 import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
@@ -34,11 +34,12 @@ function requireArg(name: string) {
   return value
 }
 
-function flattenPlugins(plugins: PluginOption): PluginOption[] {
-  if (Array.isArray(plugins)) {
-    return plugins.flatMap(flattenPlugins)
+async function flattenPlugins(plugins: PluginOption): Promise<Plugin[]> {
+  const resolved = await plugins
+  if (Array.isArray(resolved)) {
+    return (await Promise.all(resolved.map(flattenPlugins))).flat()
   }
-  return plugins ? [plugins] : []
+  return resolved ? [resolved] : []
 }
 
 async function createTailwindPlugins(scenario: DashboardTailwindScenario) {
@@ -97,7 +98,7 @@ async function createTailwindPlugins(scenario: DashboardTailwindScenario) {
 
   const createdAt = performance.now()
   const normalizedPlugins = scenario === 'weapp-full-no-source-candidates'
-    ? flattenPlugins(plugins).filter(plugin => plugin && plugin.name !== 'weapp-tailwindcss:adaptor:source-candidates')
+    ? (await flattenPlugins(plugins)).filter(plugin => plugin.name !== 'weapp-tailwindcss:adaptor:source-candidates')
     : plugins
 
   return {

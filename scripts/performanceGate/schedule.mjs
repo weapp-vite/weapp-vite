@@ -28,7 +28,7 @@ export async function previousAttempt(target, get = request) {
 
 /**
  * 根据固定提交记录选择待验收目标。
- * @param {{ prNumber?: number, mainOnly?: boolean, get?: typeof request }} options 调度输入与可替换的只读查询。
+ * @param {{ prNumber?: number, mainOnly?: boolean, prContext?: {prNumber: number, headSha: string, baseSha: string, headRepository: string}, get?: typeof request }} options 调度输入与可替换的只读查询。
  */
 export async function selectTargets({ prNumber = undefined, mainOnly = false, prContext, get = request }) {
   if (mainOnly && prNumber !== undefined) {

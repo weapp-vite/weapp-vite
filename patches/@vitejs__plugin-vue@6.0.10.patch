@@ -1,0 +1,13 @@
+diff --git a/dist/index.mjs b/dist/index.mjs
+index 2d180a68b8c909f207080161b807ff9d34e4283e..934620e049ac44bf38f0f2c9bc93d05cebb14852 100644
+--- a/dist/index.mjs
++++ b/dist/index.mjs
+@@ -1436,7 +1436,7 @@ async function transformMain(code, filename, options, pluginContext, ssr, custom
+ 				...options.devServer?.config.oxc,
+ 				lang: "ts",
+ 				sourcemap: options.sourceMap
+-			}, resolvedMap);
++			}, resolvedMap, options.devServer?.config, options.devServer?.watcher);
+ 			resolvedCode = code;
+ 			resolvedMap = resolvedMap ? map : resolvedMap;
+ 		} else {
