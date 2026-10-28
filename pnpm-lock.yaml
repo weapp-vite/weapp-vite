@@ -3462,6 +3462,9 @@ importers:
       '@babel/core':
         specifier: 'catalog:'
         version: 8.0.9
+      '@babel/plugin-transform-dynamic-import':
+        specifier: ^8.0.1
+        version: 8.0.1(@babel/core@8.0.9)
       '@babel/plugin-transform-modules-commonjs':
         specifier: ^8.0.1
         version: 8.0.1(@babel/core@8.0.9)
