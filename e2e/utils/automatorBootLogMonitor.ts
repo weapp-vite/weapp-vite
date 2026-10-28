@@ -7,6 +7,8 @@ import { appendIdeReportEvent } from './ideWarningReport'
 export const DEVTOOLS_LOG_SCAN_INTERVAL = 500
 
 export class DevtoolsSimulatorBootLogError extends Error {
+  readonly code = 'E2E_DEVTOOLS_SIMULATOR_BOOT_FAILED'
+
   constructor(label: string, readonly issue: DevtoolsSimulatorBootDiagnostic, readonly firstIssue = issue, cause?: unknown) {
     const detail = issue.line === firstIssue.line ? issue.line : `${firstIssue.line}; blocking error: ${issue.line}`
     super(`WeChat DevTools simulator boot error detected in IDE log during ${label}: ${detail}`, { cause })

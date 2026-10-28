@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { createBrowserHeadlessSession, createBrowserVirtualFiles } from '../src/browser'
 import { createHeadlessSession } from '../src/runtime'
 import { launch } from '../src/testing/launch'
+import { createLaunchCallbackErrorFixture, launchCallbackErrorCases } from './helpers/launchCallbackErrors'
 
 const fixtureRoot = path.resolve(import.meta.dirname, '../../../demos/web/src/fixtures/launch-redirect')
 const fixtureFiles = fs.readdirSync(fixtureRoot, { recursive: true, withFileTypes: true })
@@ -52,6 +53,76 @@ describe.each(['headless', 'browser'] as const)('%s launch navigation ownership'
     expect(session.getCurrentPages().map(item => item.route)).toEqual(['pages/home/index'])
     expect(session.getApp()?.globalData).toMatchObject({ loads: ['home', 'login', 'home'], launchCalls: 1 })
     session.close()
+  })
+
+  it('completes launch reLaunch after the App stack and before the first page ready', async () => {
+    const session = createSession()
+    try {
+      expect(session.reLaunch('/pages/home/index').route).toBe('pages/login/index')
+      const data = session.getApp()!.globalData
+      const committed = [
+        'app:launch:start',
+        'app:launch:end',
+        'app:show',
+        'home:load',
+        'home:show',
+        'home:unload',
+        'login:load',
+        'login:show',
+        'redirect:success',
+        'redirect:complete',
+      ]
+      expect(data.events).toEqual(committed)
+      await expect.poll(() => data.events).toEqual([...committed, 'login:ready'])
+      expect(data).toMatchObject({ loads: ['home', 'login'], launchCalls: 1 })
+      expect(session.getCurrentPages().map(page => page.route)).toEqual(['pages/login/index'])
+      expect(session.renderCurrentPage().wxml).toContain('id="launch-login"')
+      session.reLaunch('/pages/home/index')
+      await expect.poll(() => data.events.at(-1)).toBe('home:ready')
+      expect(data).toMatchObject({ loads: ['home', 'login', 'home'], launchCalls: 1 })
+    }
+    finally {
+      session.close()
+    }
+  })
+
+  it.each(launchCallbackErrorCases)('isolates $callback errors from launch $method callbacks', async ({ method, callback }) => {
+    const fixture = createLaunchCallbackErrorFixture(method, callback)
+    let session: ReturnType<typeof createHeadlessSession> | ReturnType<typeof createBrowserHeadlessSession>
+    if (provider === 'headless') {
+      const projectPath = fs.mkdtempSync(path.join(os.tmpdir(), 'launch-callback-errors-'))
+      tempDirs.push(projectPath)
+      for (const [file, source] of fixture.files) {
+        const target = path.join(projectPath, file)
+        fs.mkdirSync(path.dirname(target), { recursive: true })
+        fs.writeFileSync(target, source)
+      }
+      session = createHeadlessSession({ projectPath })
+    }
+    else {
+      session = createBrowserHeadlessSession({ files: createBrowserVirtualFiles(fixture.files) })
+    }
+    try {
+      expect(session.reLaunch('/pages/home/index').route).toBe(`pages/${fixture.targetPage}/index`)
+      const data = session.getApp()!.globalData
+      expect(data.callbacks).toEqual(fixture.expectedCallbacks)
+      expect(data.events).toEqual(fixture.committedEvents)
+      expect(data.launchCalls).toBe(1)
+      expect(data.loads).toEqual(callback === 'fail' ? ['home'] : ['home', 'login'])
+      expect(session.getCurrentPages().map(page => page.route)).toEqual([`pages/${fixture.targetPage}/index`])
+      if (callback !== 'fail') {
+        expect(data.navigationError).toBeUndefined()
+      }
+      await expect.poll(() => data.events).toEqual([...fixture.committedEvents, fixture.readyEvent])
+      await expect.poll(() => session.getDiagnostics()).toHaveLength(1)
+      expect(session.getDiagnostics()[0]).toMatchObject({ level: 'exception', args: [data.callbackError] })
+      expect(session.getDiagnostics()[0]!.args[0]).toBe(data.callbackError)
+      expect(data.callbackError.message).toBe(fixture.errorMessage)
+      expect(data.callbacks).toEqual(fixture.expectedCallbacks)
+    }
+    finally {
+      session.close()
+    }
   })
 
   it('preserves the final onShow navigation after onLaunch has redirected', () => {

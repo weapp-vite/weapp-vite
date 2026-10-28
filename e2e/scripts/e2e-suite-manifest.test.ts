@@ -163,6 +163,7 @@ describe('e2e suite manifest', () => {
     'ide/github-issues.runtime.issue1138.test.ts',
     'ide/github-issues.runtime.feature1087.test.ts',
     'ide/issue-963-plugin-es6.runtime.test.ts',
+    'ide/issue-969-launch.runtime.test.ts',
     'ide/issue-1074-doctor.runtime.test.ts',
     'ide/wevu-initial-style.runtime.test.ts',
     'ide/issue-998-tailwind.runtime.test.ts',

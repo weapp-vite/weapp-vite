@@ -9,6 +9,9 @@ import { preparationInputs, preparedRoot } from './preparation'
 import { recordPreparedAssets, requiredAssets } from './preparedAssets'
 import { prepareInstallation } from './prepareSource'
 
+// 真实 Git 集成用例包含多次进程启动和磁盘操作，为 Windows runner 保留完整执行预算。
+const gitIntegrationTimeout = 30_000
+
 const temporary: string[] = []
 afterEach(async () => {
   vi.unstubAllEnvs()
@@ -115,7 +118,7 @@ describe('SDK preparation boundary', () => {
     expect((await preparationInputs(root)).fingerprint).not.toBe(first.fingerprint)
   })
 
-  it('applies a CRLF patch with LF index/worktree semantics under Windows Git defaults', async () => {
+  it('applies a CRLF patch with LF index/worktree semantics under Windows Git defaults', { timeout: gitIntegrationTimeout }, async () => {
     const source = await directory()
     const cache = await directory()
     const git = (args: string[]) => execa('git', args, { cwd: source })
@@ -138,7 +141,7 @@ describe('SDK preparation boundary', () => {
     })
   })
 
-  it('prepares clean isolated builds repeatedly without changing local edits', async () => {
+  it('prepares clean isolated builds repeatedly without changing local edits', { timeout: gitIntegrationTimeout }, async () => {
     const { source, options, build, expectReady, setPhase } = await installationFixture()
     setPhase('prepare first isolated build')
     const first = await prepareInstallation(options, build)
@@ -151,7 +154,7 @@ describe('SDK preparation boundary', () => {
     await expectReady(second)
   })
 
-  it('clears a previous ready marker after a build failure and recovers', async () => {
+  it('clears a previous ready marker after a build failure and recovers', { timeout: gitIntegrationTimeout }, async () => {
     const { cache, options, build, expectReady, setPhase } = await installationFixture()
     setPhase('prepare successful build before build failure')
     const first = await prepareInstallation(options, build)
@@ -166,7 +169,7 @@ describe('SDK preparation boundary', () => {
     await expectReady(recovered)
   })
 
-  it('clears a previous ready marker after a patch failure and recovers', async () => {
+  it('clears a previous ready marker after a patch failure and recovers', { timeout: gitIntegrationTimeout }, async () => {
     const { cache, patch, options, build, expectReady, setPhase } = await installationFixture()
     setPhase('prepare successful build before patch failure')
     const first = await prepareInstallation(options, build)

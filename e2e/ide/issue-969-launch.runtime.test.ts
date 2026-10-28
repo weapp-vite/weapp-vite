@@ -33,8 +33,10 @@ describe('issue #969: native cold launch navigation', () => {
       { id: 'later', route: '/pages/home/index', action: '后续普通导航能回到首页', nodes: [{ selector: '#issue-969-home', text: 'home' }] },
     ])
     await expect.poll(() => miniProgram.evaluate(() => getApp().globalData.events)).toContain('redirect:complete')
+    const observed = await miniProgram.evaluate(() => getApp().globalData)
+    process.stdout.write(`[issue-969 lifecycle] ${JSON.stringify(observed)}\n`)
+    await expect.poll(() => miniProgram.evaluate(() => getApp().globalData.events)).toContain('login:ready')
     const data = await miniProgram.evaluate(() => getApp().globalData)
-    process.stdout.write(`[issue-969 lifecycle] ${JSON.stringify(data)}\n`)
     expect(data).toMatchObject({ loads: ['home', 'login'], launchCalls: 1, events: [
       'app:launch:start',
       'app:launch:end',
@@ -44,9 +46,9 @@ describe('issue #969: native cold launch navigation', () => {
       'home:unload',
       'login:load',
       'login:show',
-      'login:ready',
       'redirect:success',
       'redirect:complete',
+      'login:ready',
     ] })
     await dom.check('cold', miniProgram, await miniProgram.currentPage())
     const page = await miniProgram.reLaunch('/pages/home/index')

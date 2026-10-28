@@ -42,6 +42,8 @@ const APP_SERVICE_PAGE_PROTOCOL_VERSIONS = new Set([
 // Stable 2.02.2608080 / SDK 3.17.3 的 Page.callMethod 将 Promise 结果序列化为 {}。
 // Nightly 2.02.2610082/2.02.2610092 / SDK 3.17.4 的同一协议无法访问真实 Page 方法，沿用 AppService 调用。
 const APP_SERVICE_PAGE_METHOD_VERSIONS = new Set(['2.02.2608070', '2.02.2608080', '2.02.2609231', '2.02.2610082', '2.02.2610092'])
+/** 已确认 Exparser caller token 与 Runtime 对象表错绑的 IDE 版本，限定 SDK 3.17.5。 */
+const COMPONENT_CALLER_BRIDGE_VERSIONS = new Set(['2.02.2608080', '2.02.2609231'])
 /** Connection 的实现。 */
 export default class Connection extends EventEmitter {
   private disposed = false
@@ -149,7 +151,7 @@ export default class Connection extends EventEmitter {
     const version = String(info.version ?? '')
     this.useAppServicePageProtocol = APP_SERVICE_PAGE_PROTOCOL_VERSIONS.has(version)
     this.useAppServicePageMethod = this.useAppServicePageProtocol || APP_SERVICE_PAGE_METHOD_VERSIONS.has(version)
-    this.useComponentCallerBridge = version === '2.02.2608080' && info.SDKVersion === '3.17.5'
+    this.useComponentCallerBridge = COMPONENT_CALLER_BRIDGE_VERSIONS.has(version) && info.SDKVersion === '3.17.5'
   }
 
   get prefersAppServicePageProtocol() {

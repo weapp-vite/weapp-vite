@@ -92,7 +92,10 @@ describe('Connection', () => {
     ['2.02.2608080', '3.17.5', true],
     ['2.02.2608080', '3.17.4', false],
     ['2.02.2608080', undefined, false],
-    ['2.02.2609231', '3.17.5', false],
+    ['2.02.2609231', '3.17.5', true],
+    ['2.02.2609231', '3.17.3', false],
+    ['2.02.2609231', undefined, false],
+    ['2.02.2610082', '3.17.5', false],
   ] as const)('selects the exact observed component caller defect for %s / %s', async (version, SDKVersion, enabled) => {
     const { default: Connection } = await import('./Connection')
     const connection = new Connection(new FakeTransport() as any)
