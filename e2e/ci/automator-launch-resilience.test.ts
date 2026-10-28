@@ -1250,6 +1250,7 @@ describe('automator launch resilience', { concurrent: false, timeout: 30_000 }, 
     const { launchAutomator } = await import('../utils/automator')
     vi.useFakeTimers()
     const now = vi.spyOn(performance, 'now').mockImplementation(() => Date.now())
+    const stderrWrite = vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
     try {
       const miniProgram = createMockMiniProgram()
       launchMock.mockImplementation(async () => {
@@ -1265,8 +1266,13 @@ describe('automator launch resilience', { concurrent: false, timeout: 30_000 }, 
       expect(launchMock).toHaveBeenCalledOnce()
       expect(miniProgram.__rawDisconnect).toHaveBeenCalledOnce()
       expect(cleanupResidualDevtoolsProcessesMock).not.toHaveBeenCalled()
+      expect(readTerminalRuntimeFailures(stderrWrite.mock.calls.map(([chunk]) => chunk))).toEqual([{
+        code: 'E2E_DEVTOOLS_SIMULATOR_BOOT_FAILED',
+        reason: 'WeChat DevTools simulator failed to start before webview page ready.',
+      }])
     }
     finally {
+      stderrWrite.mockRestore()
       now.mockRestore()
       vi.useRealTimers()
     }
@@ -1324,6 +1330,7 @@ describe('automator launch resilience', { concurrent: false, timeout: 30_000 }, 
     const { launchAutomator } = await import('../utils/automator')
     vi.useFakeTimers()
     const now = vi.spyOn(performance, 'now').mockImplementation(() => Date.now())
+    const stderrWrite = vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
     let completion: Promise<void> | undefined
     try {
       const miniProgram = createMockMiniProgram()
@@ -1348,6 +1355,10 @@ describe('automator launch resilience', { concurrent: false, timeout: 30_000 }, 
       expect(miniProgram.__rawCurrentPage).toHaveBeenCalledOnce()
       expect(miniProgram.__rawReLaunch).not.toHaveBeenCalled()
       expect(cleanupResidualDevtoolsProcessesMock).not.toHaveBeenCalled()
+      expect(readTerminalRuntimeFailures(stderrWrite.mock.calls.map(([chunk]) => chunk))).toEqual([{
+        code: 'E2E_DEVTOOLS_SIMULATOR_BOOT_FAILED',
+        reason: 'WeChat DevTools simulator failed to start before webview page ready.',
+      }])
     }
     finally {
       try {
@@ -1356,6 +1367,7 @@ describe('automator launch resilience', { concurrent: false, timeout: 30_000 }, 
         await completion
       }
       finally {
+        stderrWrite.mockRestore()
         now.mockRestore()
         vi.useRealTimers()
       }
