@@ -128,6 +128,8 @@ export interface HeadlessWxRequestMockDefinition {
   chunks?: Array<{ data: ArrayBuffer, delay?: number }>
   /** 分块发送完成后触发的模拟错误。 */
   error?: string
+  /** headers 事件的状态码；null 模拟字段缺失，省略时使用最终响应状态码。 */
+  headersStatusCode?: number | null
   delay?: number
   header?: Record<string, string>
   method?: string

@@ -534,6 +534,35 @@ export default defineConfig({
 
 不要在 `srcRoot`、路由来源、分包边界都没确认前就先调 chunk 策略。
 
+### `appPrelude.webRuntime`
+
+小程序中的 Web API 兼容对象通过 `weapp.appPrelude.webRuntime` 注入；它与浏览器预览使用的 `weapp.web` 分别配置。`targets` 支持 Fetch、三个 Web Streams 构造器、`TextDecoderStream` 和 `EventSource` 等目标，并自动补齐相关依赖。Streams 构造器作为一组选择，保留可用的原生实现，否则使用 `web-streams-polyfill@4.3.0` ponyfill。
+
+Fetch 网络增量交付需要项目级启用分块；普通缓冲请求继续可用：
+
+```ts
+export default defineConfig({
+  weapp: {
+    appPrelude: {
+      webRuntime: {
+        enabled: true,
+        networkDefaults: { request: { enableChunked: true } },
+      },
+    },
+  },
+})
+```
+
+业务可使用 `response.body.pipeThrough(new TextDecoderStream()).getReader()`，也可单独安装 `eventsource-parser` 接入其 `/stream` 解析器。构建器识别该依赖，并在第三方模块求值前提供构造器及 chunk 内局部绑定；不能等依赖初始化后才安装 `TransformStream`。
+
+全局 `EventSource` 自动开启分块，使用标准 GET 接口、事件监听和重连；POST、自定义鉴权头通过 Fetch，Fetch 本身不自动重试。`wevu/fetch` 复用 `@wevu/web-apis` 的同一实现；独立消费可使用 `@wevu/web-apis/streams` 和 `@wevu/web-apis/eventsource` 子入口。
+
+微信流式传输要求宿主支持 chunk 监听，并在响应结束前提供真实 HTTP 状态码。缺少能力时以 `NotSupportedError` 明确失败，不推断 HTTP 200、不退回完整响应缓冲；EventSource 在此情况下触发 error 并关闭。Response 返回后仍需处理 body 读取失败，`AbortSignal` 和 reader 取消会传递到底层请求。
+
+首版不模拟浏览器 Cookie/CORS，`EventSource` 的 `withCredentials: true` 不受支持；不提供流式上传、`Blob.stream()` 或网络级反压保证。慢消费和不读取的 clone 分支可能增加内存；不通过静默丢块限制队列。开发者工具、真机和其他平台必须分别验证，小程序域名白名单、TLS、后台运行与超时仍由宿主管理。
+
+完整目标与配置见 [Web Runtime 全局对象注入配置](https://vite.weapp.dev/config/web-runtime-globals.html)，消费和卸载示例见 [复用 Web SSE 写法](https://vite.weapp.dev/guide/web-runtime-globals.html#复用-web-sse-写法)。
+
 ### `web`
 
 Web 重新扫描项目期间，已扫描 Vue SFC 的模板、样式与脚本继续使用上一次成功扫描的完整快照。扫描成功后才切换到新版本；扫描失败会保留旧快照并报告错误，修复后可继续更新。同一文件的正斜杠与反斜杠路径共用缓存，不会混入尚未发布的磁盘内容。

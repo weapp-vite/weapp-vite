@@ -37,6 +37,8 @@ else if (import.meta.env.PLATFORM === 'web') {
 
 这类写法通常会导致时序错误或生命周期不触发。
 
+Fetch SSE 与 EventSource 也由页面持有：在同步 `setup()` 中注册 `onUnload`，回调调用 `controller.abort()` 或 `source.close()`，不能等请求 `await` 后才注册。Response 返回后，body 流仍可能失败或被取消；reader 使用结束时释放锁，并在异常路径中止活动请求。不要将 controller、reader 或 EventSource 放进可序列化模板状态，也不要假定 `onHide` 等同于页面卸载。`wevu/fetch` 复用 `@wevu/web-apis`，项目配置和严格宿主边界见 [本地 Web Runtime 配置](./weapp-config.md#apppreludewebruntime)，完整示例见 [Wevu Fetch SSE](https://vite.weapp.dev/wevu/fetch.html#sse-与响应流)。
+
 ## performance 预设与 setData 诊断
 
 `weapp.wevu.preset: 'performance'` 为 app/component 注入 `setData.strategy: 'patch'`、`suspendWhenHidden: true`、`diagnostics: 'fallback'` 和开发态 `highFrequencyWarning`，并默认启用 `autoSetDataPick`。`weapp.wevu.defaults` 的同名字段覆盖预设；`autoSetDataPick` 的显式布尔值也优先。

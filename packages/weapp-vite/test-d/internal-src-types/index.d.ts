@@ -37,7 +37,7 @@ export declare function createSidecarWatchOptions(
   input: SidecarWatchOptionsInput,
 ): ChokidarWatchOptions
 
-export type WeappInjectRequestGlobalsTarget = 'fetch' | 'Headers' | 'Request' | 'Response' | 'TextEncoder' | 'TextDecoder' | 'AbortController' | 'AbortSignal' | 'XMLHttpRequest' | 'WebSocket' | 'atob' | 'btoa' | 'queueMicrotask' | 'performance' | 'crypto' | 'Event' | 'CustomEvent'
+export type WeappInjectRequestGlobalsTarget = 'fetch' | 'Headers' | 'Request' | 'Response' | 'TextEncoder' | 'TextDecoder' | 'AbortController' | 'AbortSignal' | 'XMLHttpRequest' | 'WebSocket' | 'atob' | 'btoa' | 'queueMicrotask' | 'performance' | 'crypto' | 'Event' | 'CustomEvent' | 'ReadableStream' | 'WritableStream' | 'TransformStream' | 'TextDecoderStream' | 'EventSource'
 
 export type RequestGlobalBindingTarget = WeappInjectRequestGlobalsTarget | 'URL' | 'URLSearchParams' | 'Blob' | 'File' | 'FormData'
 

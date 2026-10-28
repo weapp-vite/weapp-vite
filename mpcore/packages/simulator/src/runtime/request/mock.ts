@@ -41,7 +41,11 @@ export function createChunkedMockRequest(
     }
   }
   timer = scheduler.setTimeout(() => {
-    request.headers({ cookies: response.cookies, header: response.header, statusCode: response.statusCode })
+    request.headers({
+      cookies: response.cookies,
+      header: response.header,
+      ...(mock.headersStatusCode === null ? {} : { statusCode: mock.headersStatusCode ?? response.statusCode }),
+    })
     next()
   }, Math.max(0, mock.delay ?? 0))
   return request.task

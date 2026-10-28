@@ -13,6 +13,7 @@ Page({
     successDataType: '',
     successDataTag: '',
     successText: '',
+    successStatus: null as number | null,
     headerKeys: [] as string[],
     headerStatus: null as number | null,
     headerContentType: '',
@@ -24,21 +25,21 @@ Page({
     const capabilities = await probeCapabilities()
     this.setData({ capabilities, capabilitiesText: JSON.stringify(capabilities) })
   },
-  start(baseUrl: string, scenario: string, id: string) {
+  start(baseUrl: string, scenario: string, id: string, statusCode = 200) {
     const events: string[] = []
     const bytes: number[] = []
     const record = (event: string) => {
       events.push(event)
       this.setData({ events: events.slice() })
     }
-    this.setData({ scenario, status: 'waiting', terminal: '', events: [], bytes: [], successBytes: [], removedCalls: 0 })
+    this.setData({ scenario, status: 'waiting', terminal: '', events: [], bytes: [], successBytes: [], removedCalls: 0, headerStatus: null, successStatus: null, headerKeys: [] })
     const task = wx.request({
-      url: `${baseUrl}/stream?id=${encodeURIComponent(id)}`,
+      url: `${baseUrl}/stream?id=${encodeURIComponent(id)}&status=${statusCode}`,
       enableChunked: true,
       responseType: 'arraybuffer',
       success: (result) => {
         record('success')
-        this.setData({ terminal: 'success', successDataType: typeof result.data, successDataTag: Object.prototype.toString.call(result.data), successText: typeof result.data === 'string' ? result.data : '', successBytes: Array.from(new Uint8Array(result.data as ArrayBuffer)) })
+        this.setData({ terminal: 'success', successStatus: result.statusCode, successDataType: typeof result.data, successDataTag: Object.prototype.toString.call(result.data), successText: typeof result.data === 'string' ? result.data : '', successBytes: Array.from(new Uint8Array(result.data as ArrayBuffer)) })
       },
       fail: (error) => {
         record('fail')
@@ -86,6 +87,9 @@ Page({
   abort() {
     this.setData({ abortRequested: true })
     activeTask?.abort()
+  },
+  readSseUnload() {
+    return wx.getStorageSync('stream-sse-unload')
   },
   onUnload() {
     activeTask?.abort()

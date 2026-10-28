@@ -78,8 +78,8 @@ await request
 
 ## 与浏览器原生 Fetch 的差异
 
-- `FormData` 请求体当前不支持
-- fallback `Response` 下的 `formData()` 也不支持
+- 支持 `FormData` 请求体；兼容层负责生成 multipart 边界和二进制内容
+- 兼容 `Response` 暂不支持 `formData()` 响应解析
 - 请求最终还是映射到小程序的 `request` 语义，不是浏览器网络栈
 - `Headers` / `Response` 在低能力环境下会回退到内部兼容实现
 
@@ -95,3 +95,78 @@ await request
 
 - [wevu/api](/wevu/api-package)
 - [运行时与生命周期](/wevu/runtime)
+
+## SSE 与响应流
+
+项目级开启分块传输后，业务代码可以复用 Web 的 Fetch 流写法：
+
+```ts
+// vite.config.ts 中的 weapp 配置
+const weapp = {
+  appPrelude: {
+    webRuntime: {
+      networkDefaults: { request: { enableChunked: true } },
+    },
+  },
+}
+```
+
+下面的 SSE 解析器需单独安装：
+
+```sh
+pnpm add eventsource-parser
+```
+
+```ts
+import { EventSourceParserStream } from 'eventsource-parser/stream'
+import { fetch } from 'wevu/fetch'
+
+const controller = new AbortController()
+const response = await fetch('https://example.com/chat', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
+  body: JSON.stringify({ message: '你好' }),
+  signal: controller.signal,
+})
+if (!response.ok) {
+  controller.abort()
+  throw new Error(`HTTP ${response.status}`)
+}
+
+const reader = response.body!
+  .pipeThrough(new TextDecoderStream())
+  .pipeThrough(new EventSourceParserStream())
+  .getReader()
+
+try {
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) {
+      break
+    }
+    console.log(value.data)
+  }
+}
+finally {
+  controller.abort()
+  reader.releaseLock()
+}
+```
+
+GET 订阅可使用注入的标准 `EventSource`：
+
+```ts
+const source = new EventSource('https://example.com/events')
+source.onmessage = event => console.log(event.data)
+source.addEventListener('update', event => console.log(event))
+// 使用结束后：source.close()
+```
+
+EventSource 自动启用分块传输与断线重连，支持事件 ID 和服务端 retry；
+POST、自定义 headers 使用 Fetch，Fetch 本身不会自动重试。
+Wevu 页面应在同步 setup 阶段注册 `onUnload`，回调中执行 `controller.abort()` 或 `source.close()`。
+
+微信先行：宿主必须支持 chunk 监听，并在响应结束前给出真实状态码。
+缺少这些能力时会明确返回 `NotSupportedError`，不会假定成功或静默缓冲。
+EventSource 在此情况下触发 error 并关闭。`withCredentials: true` 暂不支持；
+其他平台、真机和开发者工具需分别验证。小程序后台运行、域名白名单和网络超时仍遵循宿主限制。

@@ -11,7 +11,9 @@ export function installStreamProbeTransport(session: HeadlessSession, baseUrl: s
   const pending = new Set<HeadlessWxNetworkRequestTask>()
   wx.request = (option) => {
     const url = new URL(option.url)
-    if (url.origin !== origin.origin || url.pathname !== '/stream' || (option.method ?? 'GET') !== 'GET') {
+    const method = option.method ?? 'GET'
+    const allowedPath = url.pathname === '/stream' || url.pathname.startsWith('/sse/')
+    if (url.origin !== origin.origin || !allowedPath || !['GET', 'POST'].includes(method)) {
       return original.call(wx, option)
     }
     const controller = new AbortController()
@@ -19,11 +21,19 @@ export function installStreamProbeTransport(session: HeadlessSession, baseUrl: s
     pending.add(request.task)
     void (async () => {
       try {
-        const response = await fetch(option.url, { signal: controller.signal, redirect: 'error' })
-        request.headers({ cookies: [], header: Object.fromEntries(response.headers), statusCode: response.status })
-        const reader = response.body!.getReader()
+        const body = option.data == null || method === 'GET'
+          ? undefined
+          : typeof option.data === 'string' || option.data instanceof ArrayBuffer
+            ? option.data
+            : JSON.stringify(option.data)
+        const response = await fetch(option.url, { signal: controller.signal, redirect: 'error', method, headers: option.header, body })
+        request.headers({ cookies: [], header: Object.fromEntries(response.headers), ...(url.searchParams.has('omitStatusCode') ? {} : { statusCode: response.status }) })
+        const reader = response.body?.getReader()
         try {
           while (!request.settled) {
+            if (!reader) {
+              break
+            }
             const chunk = await reader.read()
             if (chunk.done) {
               break
@@ -32,7 +42,7 @@ export function installStreamProbeTransport(session: HeadlessSession, baseUrl: s
           }
         }
         finally {
-          reader.releaseLock()
+          reader?.releaseLock()
         }
         request.succeed({ data: '', statusCode: response.status, header: Object.fromEntries(response.headers), cookies: [], errMsg: 'request:ok' })
       }

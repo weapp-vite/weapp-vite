@@ -1,3 +1,6 @@
+export { resolveWebRuntimeGlobalTargetDependencies, WEB_RUNTIME_GLOBAL_TARGETS, WEB_RUNTIME_STREAM_TARGETS } from './webRuntimeGlobals'
+export type { WebRuntimeGlobalTarget } from './webRuntimeGlobals'
+
 export const APP_PRELUDE_CHUNK_MARKER = '__wvAPR__'
 export const APP_PRELUDE_GUARD_KEY = '__ai'
 export const APP_PRELUDE_REQUIRE_MARKER = '__wvAPQ__'
@@ -9,6 +12,8 @@ export const REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER = '__wvRGC__'
 export const REQUEST_GLOBAL_BUNDLE_MARKER = '__wvRGB__'
 export const REQUEST_GLOBAL_ACTUALS_KEY = '__ra'
 export const REQUEST_GLOBAL_PLACEHOLDER_KEY = '__rp'
+/** 标记真实 Web Runtime installer，供编译器定位而不依赖压缩后的函数名或函数体。 */
+export const REQUEST_GLOBAL_INSTALLER_MARKER = '__wvRGM__'
 
 export const REQUEST_GLOBAL_MARK_PLACEHOLDER_HELPER = '__rM'
 export const REQUEST_GLOBAL_LAZY_FUNCTION_HELPER = '__rF'

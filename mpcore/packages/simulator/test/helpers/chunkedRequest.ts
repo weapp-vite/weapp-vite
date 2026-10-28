@@ -3,20 +3,23 @@ export const chunkedRequestFiles: Array<[string, string]> = [
   ['app.js', 'App({})'],
   ['pages/index.js', `
     Page({
-      data: { status: 'idle', bytes: [], events: [], removed: 0, result: null },
+      data: { status: 'idle', bytes: [], events: [], removed: 0, result: null, headerStatus: null, finalStatus: null },
       record(event) { this.setData({ events: this.data.events.concat(event) }) },
       start(mode) {
         this.setData({ status: 'waiting' })
         this.task = wx.request({
           url: 'https://stream-fixture.invalid/data', enableChunked: true, responseType: 'arraybuffer',
-          success: result => { this.record('success'); this.setData({ result: result.data }) },
+          success: result => { this.record('success'); this.setData({ result: result.data, finalStatus: result.statusCode }) },
           fail: error => { this.record('fail'); this.setData({ error: error.errMsg }) },
           complete: () => { this.record('complete'); this.setData({ status: 'completed' }) },
         })
         const removed = () => this.setData({ removed: this.data.removed + 1 })
         this.task.onHeadersReceived(removed)
         this.task.offHeadersReceived(removed)
-        this.task.onHeadersReceived(() => this.record('headers'))
+        this.task.onHeadersReceived(result => {
+          this.record('headers')
+          this.setData({ headerStatus: typeof result.statusCode === 'number' ? result.statusCode : null })
+        })
         this.task.onChunkReceived(removed)
         this.task.offChunkReceived(removed)
         this.task.onChunkReceived(({ data }) => {
@@ -29,7 +32,7 @@ export const chunkedRequestFiles: Array<[string, string]> = [
       abort() { this.task.abort() },
     })
   `],
-  ['pages/index.wxml', '<view id="status">{{status}}</view><view id="bytes">{{bytes.length}}</view><view id="events">{{events}}</view>'],
+  ['pages/index.wxml', '<view id="status">{{status}}</view><view id="bytes">{{bytes.length}}</view><view id="events">{{events}}</view><view id="header-status">{{headerStatus === null ? \'\' : headerStatus}}</view><view id="final-status">{{finalStatus === null ? \'\' : finalStatus}}</view>'],
 ]
 export function chunkedRequestMock() {
   return {

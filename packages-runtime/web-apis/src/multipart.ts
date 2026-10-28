@@ -15,7 +15,18 @@ type FormDataLike = Iterable<[string, MultipartFormDataEntryValue]>
 
 const CRLF = '\r\n'
 
-function createMultipartBoundary() {
+/** 复用调用者指定的边界，使请求头与编码后的字节保持一致。 */
+export function createMultipartBoundary(contentType?: string | null) {
+  if (contentType && /^multipart\/form-data\s*(?:;|$)/i.test(contentType)) {
+    const match = /(?:^|;)\s*boundary=(?:"([^"]+)"|([^;\s]+))/i.exec(contentType)
+    const boundary = match?.[1] ?? match?.[2]
+    if (boundary) {
+      if (!/^[\w'()+,\-./:=? ]{1,70}$/.test(boundary) || boundary.endsWith(' ')) {
+        throw new TypeError('Invalid multipart boundary')
+      }
+      return boundary
+    }
+  }
   return `----weapp-vite-formdata-${Math.random().toString(36).slice(2)}${Date.now().toString(36)}`
 }
 
@@ -67,8 +78,7 @@ async function createMultipartPart(name: string, value: MultipartFormDataEntryVa
   ]
 }
 
-export async function encodeMultipartFormData(formData: FormDataLike): Promise<MultipartFormDataPayload> {
-  const boundary = createMultipartBoundary()
+export async function encodeMultipartFormData(formData: FormDataLike, boundary = createMultipartBoundary()): Promise<MultipartFormDataPayload> {
   const buffers: ArrayBuffer[] = []
 
   for (const [name, value] of formData) {

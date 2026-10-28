@@ -13,6 +13,7 @@ import {
   REQUEST_GLOBAL_CHUNK_MODULE_REF,
   REQUEST_GLOBAL_EXPOSE_HELPER,
   REQUEST_GLOBAL_INSTALLER_HOST_REF,
+  REQUEST_GLOBAL_INSTALLER_MARKER,
   REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER,
   REQUEST_GLOBAL_PASSIVE_BINDINGS_MARKER,
   REQUEST_GLOBAL_PRELUDE_MARKER,
@@ -1810,6 +1811,7 @@ describe('core lifecycle emit hook extra branches', () => {
         code: [
           'const __keep__ = [XMLHttpRequest, WebSocket];',
           'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`TextEncoder`,`TextDecoder`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return t}',
+          `Object.defineProperty(vn,${JSON.stringify(REQUEST_GLOBAL_INSTALLER_MARKER)},{value:true});`,
           'Object.defineProperty(exports,`At`,{enumerable:!0,get:function(){return vn}})',
         ].join(';'),
         imports: [],
@@ -1832,13 +1834,13 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(bundle['common.js'].code).toContain(`var XMLHttpRequest = ${REQUEST_GLOBAL_EXPOSE_HELPER}("XMLHttpRequest",typeof ${REQUEST_GLOBAL_ACTUALS_KEY}["XMLHttpRequest"]==="function"`)
     expect(bundle['common.js'].code).toContain(`var WebSocket = ${REQUEST_GLOBAL_EXPOSE_HELPER}("WebSocket",typeof ${REQUEST_GLOBAL_ACTUALS_KEY}["WebSocket"]==="function"`)
     expect(bundle['common.js'].code).not.toContain(`${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(${REQUEST_GLOBAL_ACTUALS_KEY}["WebSocket"]`)
-    expect(bundle['common.js'].code).toContain(`const ${REQUEST_GLOBAL_BUNDLE_HOST_REF} = vn({ targets: ["fetch","Headers","Request","Response","TextEncoder","TextDecoder","AbortController","AbortSignal","XMLHttpRequest","WebSocket"] }) || globalThis`)
+    expect(bundle['common.js'].code).toContain(`const ${REQUEST_GLOBAL_BUNDLE_HOST_REF} = vn({ targets: ["fetch","Headers","Request","Response","TextEncoder","TextDecoder","AbortController","AbortSignal","XMLHttpRequest","WebSocket","ReadableStream","WritableStream","TransformStream"] }) || globalThis`)
     expect(bundle['common.js'].code).toContain(`${REQUEST_GLOBAL_ACTUALS_KEY}["WebSocket"] = ${REQUEST_GLOBAL_BUNDLE_HOST_REF}.WebSocket`)
     expect(bundle['common.js'].code).toContain(`try{globalThis["WebSocket"]=${REQUEST_GLOBAL_BUNDLE_HOST_REF}.WebSocket}catch{}`)
     expect(bundle['common.js'].code).not.toContain(`WebSocket = ${REQUEST_GLOBAL_BUNDLE_HOST_REF}.WebSocket`)
     expect(bundle['pages/request-globals/fetch.js'].code).toContain(REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER)
     expect(bundle['pages/request-globals/fetch.js'].code).toContain(`const ${REQUEST_GLOBAL_CHUNK_MODULE_REF} = require("../../common.js")`)
-    expect(bundle['pages/request-globals/fetch.js'].code).toContain(`const ${REQUEST_GLOBAL_CHUNK_HOST_REF} = ${REQUEST_GLOBAL_CHUNK_MODULE_REF}["At"]({ targets: ["fetch","Headers","Request","Response","TextEncoder","TextDecoder","AbortController","AbortSignal","XMLHttpRequest","WebSocket"] }) || globalThis`)
+    expect(bundle['pages/request-globals/fetch.js'].code).toContain(`const ${REQUEST_GLOBAL_CHUNK_HOST_REF} = ${REQUEST_GLOBAL_CHUNK_MODULE_REF}["At"]({ targets: ["fetch","Headers","Request","Response","TextEncoder","TextDecoder","AbortController","AbortSignal","XMLHttpRequest","WebSocket","ReadableStream","WritableStream","TransformStream"] }) || globalThis`)
     expect(bundle['pages/request-globals/fetch.js'].code).toContain(`var fetch = ${REQUEST_GLOBAL_CHUNK_HOST_REF}.fetch`)
     expect(bundle['pages/request-globals/fetch.js'].code).toContain(`var URL = ${REQUEST_GLOBAL_CHUNK_HOST_REF}.URL`)
     expect(bundle['pages/request-globals/fetch.js'].code).toContain(`var WebSocket = ${REQUEST_GLOBAL_CHUNK_HOST_REF}.WebSocket`)
@@ -1882,6 +1884,7 @@ describe('core lifecycle emit hook extra branches', () => {
         fileName: 'common.js',
         code: [
           'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`TextEncoder`,`TextDecoder`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return { fetch: Promise.resolve, Headers: Object, Request: Object, Response: Object, AbortController: Object, AbortSignal: Object, XMLHttpRequest: Object, WebSocket: Object, URL: Object, URLSearchParams: Object, Blob: Object, FormData: Object }}',
+          `Object.defineProperty(vn,${JSON.stringify(REQUEST_GLOBAL_INSTALLER_MARKER)},{value:true});`,
           'Object.defineProperty(exports,`At`,{enumerable:!0,get:function(){return vn}})',
         ].join(';'),
         imports: [],
@@ -1960,6 +1963,7 @@ describe('core lifecycle emit hook extra branches', () => {
         code: [
           'const __keep__ = [XMLHttpRequest, WebSocket];',
           'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`TextEncoder`,`TextDecoder`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return { URL: Date, URLSearchParams: Map, Blob: Array, FormData: Map, fetch: Promise.resolve, Headers: Object, Request: Object, Response: Object, AbortController: Object, AbortSignal: Object, XMLHttpRequest: Object, WebSocket: Object }}',
+          `Object.defineProperty(vn,${JSON.stringify(REQUEST_GLOBAL_INSTALLER_MARKER)},{value:true});`,
           'Object.defineProperty(exports,`noop`,{enumerable:!0,get:function(){return __keep__}})',
         ].join(';'),
         imports: [],
@@ -1980,7 +1984,7 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(bundle['common.js'].code).toContain(`Object.defineProperty(exports,${JSON.stringify(REQUEST_GLOBAL_SYNTHETIC_EXPORT_NAME)},{enumerable:false,get:function(){return vn}});`)
     expect(bundle['pages/request-globals/fetch.js'].code).toContain(REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER)
     expect(bundle['pages/request-globals/fetch.js'].code).toContain(`const ${REQUEST_GLOBAL_CHUNK_MODULE_REF} = require("../../common.js")`)
-    expect(bundle['pages/request-globals/fetch.js'].code).toContain(`const ${REQUEST_GLOBAL_CHUNK_HOST_REF} = ${REQUEST_GLOBAL_CHUNK_MODULE_REF}[${JSON.stringify(REQUEST_GLOBAL_SYNTHETIC_EXPORT_NAME)}]({ targets: ["fetch","Headers","Request","Response","TextEncoder","TextDecoder","AbortController","AbortSignal","XMLHttpRequest"] }) || globalThis`)
+    expect(bundle['pages/request-globals/fetch.js'].code).toContain(`const ${REQUEST_GLOBAL_CHUNK_HOST_REF} = ${REQUEST_GLOBAL_CHUNK_MODULE_REF}[${JSON.stringify(REQUEST_GLOBAL_SYNTHETIC_EXPORT_NAME)}]({ targets: ["fetch","Headers","Request","Response","TextEncoder","TextDecoder","AbortController","AbortSignal","XMLHttpRequest","ReadableStream","WritableStream","TransformStream"] }) || globalThis`)
     expect(bundle['pages/request-globals/fetch.js'].code).toContain(`var fetch = ${REQUEST_GLOBAL_CHUNK_HOST_REF}.fetch`)
     expect(bundle['pages/request-globals/fetch.js'].code).toContain(`var URL = ${REQUEST_GLOBAL_CHUNK_HOST_REF}.URL`)
   })
@@ -2007,6 +2011,7 @@ describe('core lifecycle emit hook extra branches', () => {
         code: [
           'function fetch(input){return input}',
           'function installSingleTarget(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`TextEncoder`,`TextDecoder`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return { fetch, Headers: Object, Request: Object, Response: Object, AbortController: Object, AbortSignal: Object, XMLHttpRequest: Object, WebSocket: Object, URL: Object, URLSearchParams: Object, Blob: Object, FormData: Object }}',
+          `Object.defineProperty(installSingleTarget,${JSON.stringify(REQUEST_GLOBAL_INSTALLER_MARKER)},{value:true});`,
           'Object.defineProperty(exports,`installSingleTarget`,{enumerable:!0,get:function(){return installSingleTarget}})',
         ].join(';'),
         imports: [],
@@ -2054,6 +2059,7 @@ describe('core lifecycle emit hook extra branches', () => {
         fileName: 'dist.js',
         code: [
           'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`TextEncoder`,`TextDecoder`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return t}',
+          `Object.defineProperty(vn,${JSON.stringify(REQUEST_GLOBAL_INSTALLER_MARKER)},{value:true});`,
           'Object.defineProperty(exports,`At`,{enumerable:!0,get:function(){return vn}})',
         ].join(';'),
         imports: [],
@@ -2079,7 +2085,7 @@ describe('core lifecycle emit hook extra branches', () => {
 
     expect(bundle['pages/request-globals/fetch.js'].code).toContain(REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER)
     expect(bundle['pages/request-globals/fetch.js'].code).toContain(`const ${REQUEST_GLOBAL_CHUNK_MODULE_REF} = require("../../dist.js")`)
-    expect(bundle['pages/request-globals/fetch.js'].code).toContain(`const ${REQUEST_GLOBAL_CHUNK_HOST_REF} = ${REQUEST_GLOBAL_CHUNK_MODULE_REF}["At"]({ targets: ["fetch","Headers","Request","Response","TextEncoder","TextDecoder","AbortController","AbortSignal","XMLHttpRequest"] }) || globalThis`)
+    expect(bundle['pages/request-globals/fetch.js'].code).toContain(`const ${REQUEST_GLOBAL_CHUNK_HOST_REF} = ${REQUEST_GLOBAL_CHUNK_MODULE_REF}["At"]({ targets: ["fetch","Headers","Request","Response","TextEncoder","TextDecoder","AbortController","AbortSignal","XMLHttpRequest","ReadableStream","WritableStream","TransformStream"] }) || globalThis`)
     expect(bundle['pages/request-globals/fetch.js'].code).toContain(`const ${REQUEST_GLOBAL_INSTALLER_HOST_REF} = t["At"]({ targets: ["fetch"] }) || globalThis;`)
     expect(bundle['pages/request-globals/fetch.js'].code).toContain(`var fetch = ${REQUEST_GLOBAL_CHUNK_HOST_REF}.fetch`)
   })
@@ -2109,6 +2115,7 @@ describe('core lifecycle emit hook extra branches', () => {
         code: [
           'const e=require("../../common.js");',
           'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`TextEncoder`,`TextDecoder`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return { URL: Date, fetch: Promise.resolve, Headers: Object, Request: Object, Response: Object, AbortController: Object, AbortSignal: Object, XMLHttpRequest: Object, WebSocket: Object, URLSearchParams: Object, Blob: Object, FormData: Object }}',
+          `Object.defineProperty(vn,${JSON.stringify(REQUEST_GLOBAL_INSTALLER_MARKER)},{value:true});`,
           'console.log(fetch, URL);',
           'Page({});',
         ].join(''),
@@ -2123,7 +2130,7 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(code).toContain(REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER)
     expect(code.indexOf('const e=require("../../common.js");')).toBeLessThan(code.indexOf(`const ${REQUEST_GLOBAL_CHUNK_HOST_REF} = vn(`))
     expect(code).toContain(REQUEST_GLOBAL_BUNDLE_MARKER)
-    expect(code).toContain(`const ${REQUEST_GLOBAL_CHUNK_HOST_REF} = vn({ targets: ["WebSocket"] }) || globalThis`)
+    expect(code).toContain(`const ${REQUEST_GLOBAL_CHUNK_HOST_REF} = vn({ targets: ["TextEncoder","TextDecoder","WebSocket"] }) || globalThis`)
     expect(code).toContain(`var WebSocket = ${REQUEST_GLOBAL_CHUNK_HOST_REF}.WebSocket`)
     expect(code).toContain('console.log(fetch, URL);')
   })
@@ -2152,6 +2159,7 @@ describe('core lifecycle emit hook extra branches', () => {
         fileName: 'dist.js',
         code: [
           'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`TextEncoder`,`TextDecoder`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return t}',
+          `Object.defineProperty(vn,${JSON.stringify(REQUEST_GLOBAL_INSTALLER_MARKER)},{value:true});`,
           'Object.defineProperty(exports,`At`,{enumerable:!0,get:function(){return vn}})',
         ].join(';'),
         imports: [],
@@ -2196,6 +2204,7 @@ describe('core lifecycle emit hook extra branches', () => {
         fileName: 'common.js',
         code: [
           'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`TextEncoder`,`TextDecoder`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return { URL: Date, fetch: Promise.resolve, Headers: Object, Request: Object, Response: Object, AbortController: Object, AbortSignal: Object, XMLHttpRequest: Object, WebSocket: Object, URLSearchParams: Object, Blob: Object, FormData: Object }}',
+          `Object.defineProperty(vn,${JSON.stringify(REQUEST_GLOBAL_INSTALLER_MARKER)},{value:true});`,
           'Object.defineProperty(exports,`At`,{enumerable:!0,get:function(){return vn}})',
         ].join(';'),
         imports: [],
@@ -2246,6 +2255,7 @@ describe('core lifecycle emit hook extra branches', () => {
         code: [
           'const __keep__ = [XMLHttpRequest, WebSocket];',
           'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`TextEncoder`,`TextDecoder`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return t}',
+          `Object.defineProperty(vn,${JSON.stringify(REQUEST_GLOBAL_INSTALLER_MARKER)},{value:true});`,
           'Object.defineProperty(exports,`At`,{enumerable:!0,get:function(){return vn}})',
         ].join(''),
         imports: [],
@@ -2524,6 +2534,7 @@ describe('core lifecycle emit hook extra branches', () => {
         fileName: 'weapp-vendors/request-globals-web-apis-shared.js',
         code: [
           `function installWebRuntimeGlobals(){return ${FULL_REQUEST_GLOBAL_TARGETS_LITERAL}&&globalThis}`,
+          `Object.defineProperty(installWebRuntimeGlobals,${JSON.stringify(REQUEST_GLOBAL_INSTALLER_MARKER)},{value:true});`,
           'Object.defineProperty(exports,`t`,{enumerable:true,get:function(){return installWebRuntimeGlobals}})',
           'export { installWebRuntimeGlobals as t }',
         ].join('\n'),
@@ -2616,6 +2627,7 @@ describe('core lifecycle emit hook extra branches', () => {
           'const __keep__ = [Request, WebSocket];',
           'const hosts = [globalThis];',
           'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`TextEncoder`,`TextDecoder`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return hosts[0] || { URL: Date, fetch: Promise.resolve, Headers: Object, Request: Object, Response: Object, AbortController: Object, AbortSignal: Object, XMLHttpRequest: Object, WebSocket: Object, URLSearchParams: Object, Blob: Object, FormData: Object }}',
+          `Object.defineProperty(vn,${JSON.stringify(REQUEST_GLOBAL_INSTALLER_MARKER)},{value:true});`,
           'Object.defineProperty(exports,`At`,{enumerable:!0,get:function(){return vn}})',
         ].join(''),
         imports: ['common.js'],
@@ -2627,7 +2639,7 @@ describe('core lifecycle emit hook extra branches', () => {
 
     const code = bundle['dist.js'].code
     expect(code).toContain(REQUEST_GLOBAL_BUNDLE_MARKER)
-    expect(code).toContain(`const ${REQUEST_GLOBAL_BUNDLE_HOST_REF} = vn({ targets: ["fetch","Headers","Request","Response","TextEncoder","TextDecoder","AbortController","AbortSignal","XMLHttpRequest","WebSocket"] }) || globalThis`)
+    expect(code).toContain(`const ${REQUEST_GLOBAL_BUNDLE_HOST_REF} = vn({ targets: ["fetch","Headers","Request","Response","TextEncoder","TextDecoder","AbortController","AbortSignal","XMLHttpRequest","WebSocket","ReadableStream","WritableStream","TransformStream"] }) || globalThis`)
     expect(code).not.toContain(`Request = ${REQUEST_GLOBAL_BUNDLE_HOST_REF}.Request`)
     expect(code.indexOf(`const ${REQUEST_GLOBAL_BUNDLE_HOST_REF} = vn`)).toBeGreaterThan(code.indexOf('const hosts = [globalThis]'))
     expect(code.indexOf(`const ${REQUEST_GLOBAL_BUNDLE_HOST_REF} = vn`)).toBeGreaterThan(code.indexOf('Object.defineProperty(exports,`At`'))
@@ -2658,6 +2670,7 @@ describe('core lifecycle emit hook extra branches', () => {
         code: [
           'import { helper } from "../rolldown-runtime.js";',
           'function installSingleTarget(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`TextEncoder`,`TextDecoder`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return { URL: Date, fetch: Promise.resolve, Headers: Object, Request: Object, Response: Object, AbortController: Object, AbortSignal: Object, XMLHttpRequest: Object, WebSocket: Object, URLSearchParams: Object, Blob: Object, FormData: Object }}',
+          `Object.defineProperty(installSingleTarget,${JSON.stringify(REQUEST_GLOBAL_INSTALLER_MARKER)},{value:true});`,
           'Object.defineProperty(exports,`At`,{enumerable:!0,get:function(){return installSingleTarget}});',
           'var Request = class Request { on() {} };',
           'function createPollingRequest(){ return new Request() }',
@@ -2716,6 +2729,7 @@ describe('core lifecycle emit hook extra branches', () => {
         fileName: 'common.js',
         code: [
           'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`TextEncoder`,`TextDecoder`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return { fetch: Promise.resolve, Headers: Object, Request: Object, Response: Object, AbortController: Object, AbortSignal: Object, XMLHttpRequest: Object, WebSocket: Object, URL: Object, URLSearchParams: Object, Blob: Object, FormData: Object }}',
+          `Object.defineProperty(vn,${JSON.stringify(REQUEST_GLOBAL_INSTALLER_MARKER)},{value:true});`,
           'Object.defineProperty(exports,`At`,{enumerable:!0,get:function(){return vn}})',
         ].join(''),
         imports: [],
@@ -2787,6 +2801,7 @@ describe('core lifecycle emit hook extra branches', () => {
         fileName: 'common.js',
         code: [
           'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`TextEncoder`,`TextDecoder`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return { fetch: Promise.resolve, Headers: Object, Request: Object, Response: Object, AbortController: Object, AbortSignal: Object, XMLHttpRequest: Object, WebSocket: Object, URL: Object, URLSearchParams: Object, Blob: Object, FormData: Object }}',
+          `Object.defineProperty(vn,${JSON.stringify(REQUEST_GLOBAL_INSTALLER_MARKER)},{value:true});`,
           'Object.defineProperty(exports,`At`,{enumerable:!0,get:function(){return vn}})',
         ].join(''),
         imports: [],
@@ -2845,6 +2860,7 @@ describe('core lifecycle emit hook extra branches', () => {
         fileName: 'common.js',
         code: [
           'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`TextEncoder`,`TextDecoder`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return { fetch: Promise.resolve, Headers: Object, Request: Object, Response: Object, AbortController: Object, AbortSignal: Object, XMLHttpRequest: Object, WebSocket: Object, URL: Object, URLSearchParams: Object, Blob: Object, FormData: Object }}',
+          `Object.defineProperty(vn,${JSON.stringify(REQUEST_GLOBAL_INSTALLER_MARKER)},{value:true});`,
           'Object.defineProperty(exports,`At`,{enumerable:!0,get:function(){return vn}})',
           'export { vn as t }',
         ].join('\n'),
@@ -2907,6 +2923,7 @@ describe('core lifecycle emit hook extra branches', () => {
         fileName: 'common.js',
         code: [
           'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`TextEncoder`,`TextDecoder`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return { fetch: Promise.resolve, Headers: Object, Request: Object, Response: Object, AbortController: Object, AbortSignal: Object, XMLHttpRequest: Object, WebSocket: Object, URL: Object, URLSearchParams: Object, Blob: Object, FormData: Object }}',
+          `Object.defineProperty(vn,${JSON.stringify(REQUEST_GLOBAL_INSTALLER_MARKER)},{value:true});`,
           'Object.defineProperty(exports,`At`,{enumerable:!0,get:function(){return vn}})',
         ].join(''),
         imports: [],
@@ -3046,6 +3063,7 @@ describe('core lifecycle emit hook extra branches', () => {
         fileName: 'common.js',
         code: [
           'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`TextEncoder`,`TextDecoder`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return { fetch: Promise.resolve, Headers: Object, Request: Object, Response: Object, AbortController: Object, AbortSignal: Object, XMLHttpRequest: Object, WebSocket: Object, URL: Object, URLSearchParams: Object, Blob: Object, FormData: Object }}',
+          `Object.defineProperty(vn,${JSON.stringify(REQUEST_GLOBAL_INSTALLER_MARKER)},{value:true});`,
           'Object.defineProperty(exports,`At`,{enumerable:!0,get:function(){return vn}})',
           'export { vn as t }',
         ].join('\n'),
@@ -3118,6 +3136,7 @@ describe('core lifecycle emit hook extra branches', () => {
         fileName: 'common.js',
         code: [
           'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`TextEncoder`,`TextDecoder`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return { fetch: Promise.resolve, Headers: Object, Request: Object, Response: Object, AbortController: Object, AbortSignal: Object, XMLHttpRequest: Object, WebSocket: Object, URL: Object, URLSearchParams: Object, Blob: Object, FormData: Object }}',
+          `Object.defineProperty(vn,${JSON.stringify(REQUEST_GLOBAL_INSTALLER_MARKER)},{value:true});`,
           'Object.defineProperty(exports,`At`,{enumerable:!0,get:function(){return vn}})',
         ].join(''),
         imports: [],
@@ -3178,6 +3197,7 @@ describe('core lifecycle emit hook extra branches', () => {
         fileName: 'common.js',
         code: [
           'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`TextEncoder`,`TextDecoder`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return { fetch: Promise.resolve, Headers: Object, Request: Object, Response: Object, AbortController: Object, AbortSignal: Object, XMLHttpRequest: Object, WebSocket: Object, URL: Object, URLSearchParams: Object, Blob: Object, FormData: Object }}',
+          `Object.defineProperty(vn,${JSON.stringify(REQUEST_GLOBAL_INSTALLER_MARKER)},{value:true});`,
           'Object.defineProperty(exports,`At`,{enumerable:!0,get:function(){return vn}})',
         ].join(''),
         imports: [],

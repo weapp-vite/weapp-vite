@@ -8,6 +8,8 @@
     "postinstall": "wv prepare"
   },
   "devDependencies": {
+    "@wevu/web-apis": "workspace:*",
+    "eventsource-parser": "3.1.1",
     "weapp-vite": "workspace:*"
   },
   "weappVite": {
