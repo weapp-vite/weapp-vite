@@ -69,13 +69,14 @@ describe('native initial module graph', () => {
         run((request: string) => load(request.startsWith('.') ? path.join(path.dirname(name), request) : request), module, module.exports)
         return module.exports
       }
-      load('app.js')
+      const app = load('app.js') as { lazy: () => Promise<{ lazyValue: number }> }
       load('other.js')
       const runtime = context.__rolldown_runtime__
       expect(context.value).toBe(7)
       expect(context.other).toBe(2)
       expect(runtime.getImporters('shared.js').sort()).toEqual(['app.js', 'other.js'])
       expect(runtime.dynamicImports.get('app.js').edges).toContain('lazy.js')
+      await expect(app.lazy()).resolves.toMatchObject({ lazyValue: 3 })
       // 外部模块由宿主 require 提供，不属于原生 HMR 图的可更新源码。
       expect(runtime.getImporters('external-runtime')).toEqual([])
       expect(runtime.hasFactory('external-runtime')).toBe(false)

@@ -3,6 +3,7 @@ import { createBabelBackendLoader } from '@weapp-vite/ast/babelLoader'
 
 const loadBabelBackends = createBabelBackendLoader(() => Promise.all([
   import('@weapp-vite/ast/babelCore'),
+  import('@babel/plugin-transform-dynamic-import'),
   import('@babel/plugin-transform-modules-commonjs'),
 ]))
 
@@ -13,7 +14,7 @@ export function createStatefulHmrHostFormatPlugin(): Pick<Plugin, 'name' | 'rend
     renderChunk: {
       order: 'post',
       async handler(code, chunk, options) {
-        const [{ transformAsync }, { default: transformModulesCommonjs }] = await loadBabelBackends()
+        const [{ transformAsync }, { default: transformDynamicImport }, { default: transformModulesCommonjs }] = await loadBabelBackends()
         const result = await transformAsync(code, {
           babelrc: false,
           configFile: false,
@@ -21,7 +22,7 @@ export function createStatefulHmrHostFormatPlugin(): Pick<Plugin, 'name' | 'rend
           sourceFileName: chunk.fileName,
           sourceType: 'module',
           sourceMaps: Boolean(options.sourcemap),
-          plugins: [transformModulesCommonjs],
+          plugins: [transformDynamicImport, transformModulesCommonjs],
         })
         if (!result?.code) {
           throw new Error('[weapp-vite] stateful 宿主模块格式转换未返回代码。')

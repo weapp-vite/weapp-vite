@@ -14,6 +14,7 @@ it('loads real Babel dependencies at renderChunk and preserves output options af
   const moduleUrl = new URL('./hostFormat.ts', import.meta.url).href
   const result = await runModuleLoadingProcess<HostFormatLoadingResult>(`
     const compilers = () => loadedModules().filter(url => url.includes('/node_modules/@babel/core/')
+      || url.includes('/node_modules/@babel/plugin-transform-dynamic-import/')
       || url.includes('/node_modules/@babel/plugin-transform-modules-commonjs/'))
     const { createStatefulHmrHostFormatPlugin } = await import(${JSON.stringify(moduleUrl)})
     const initial = compilers()
@@ -31,6 +32,7 @@ it('loads real Babel dependencies at renderChunk and preserves output options af
   expect(result.initial).toEqual([])
   expect(result.created).toEqual([])
   expect(result.loaded.some(url => url.includes('/node_modules/@babel/core/'))).toBe(true)
+  expect(result.loaded.some(url => url.includes('/node_modules/@babel/plugin-transform-dynamic-import/'))).toBe(true)
   expect(result.loaded.some(url => url.includes('/node_modules/@babel/plugin-transform-modules-commonjs/'))).toBe(true)
   expect(result.failureCode).toBe('BABEL_PARSE_ERROR')
   expect(result.withMap.code).toContain('exports.value')
