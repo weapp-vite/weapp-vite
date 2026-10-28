@@ -13,6 +13,7 @@ describe('stateful host format dynamic imports (issue #1275)', { concurrent: fal
     project = await createStatefulHostFormatProject()
     miniProgram = await launchAutomator({
       projectPath: project.projectRoot,
+      trustProject: true,
       bridgeProjectMode: 'direct',
       warmupRoute: route,
       warmupRootSelectors: ['.result'],
