@@ -191,6 +191,7 @@ const projects = [
         'e2e/utils/dev-process.watch-close.test.ts',
         'e2e/utils/runtimeDevProcess.integration.test.ts',
         'e2e/utils/nativeBatchSettlementPlugin.test.ts',
+        'e2e/utils/devtoolsTaskResources/index.test.ts',
         'e2e/utils/devtoolsTaskResources/nativeInventory/**/*.test.ts',
         'e2e/utils/devProcessCleanup/darwinProcesses.test.ts',
         'e2e/utils/devProcessCleanup/processes.test.ts',
