@@ -2301,20 +2301,36 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         ignoreInitial: true,
         ignored: snapshotSidecarIgnored,
       })
-      const canceled = Promise.withResolvers<'closed'>()
-      let watcherReady = false
-      void snapshotWatcher.ready.then((state) => {
-        watcherReady = state === 'ready'
-      }, () => {})
       const reportWatchError = (error: unknown) => {
         if (!devWatcherClosed) {
           logger.error(error)
           devBuildWatcher?.emitEvent({ code: 'ERROR', error: error instanceof Error ? error : new Error(String(error)), result: undefined as never })
         }
       }
+      let watcherPhase: 'pending' | 'ready' | 'closed' | 'failed' = 'pending'
+      const pendingWatchErrors = new Set<unknown>()
+      void snapshotWatcher.ready.then((state) => {
+        if (watcherPhase !== 'closed') {
+          watcherPhase = state
+          if (state === 'ready') {
+            for (const error of pendingWatchErrors) {
+              reportWatchError(error)
+            }
+          }
+        }
+        pendingWatchErrors.clear()
+      }, () => {
+        if (watcherPhase !== 'closed') {
+          watcherPhase = 'failed'
+        }
+        pendingWatchErrors.clear()
+      })
       snapshotWatcher.onError((error) => {
-        // 初始注册错误由 ready 的启动 owner 统一收尾并上报；事件入口只拥有运行期错误。
-        if (watcherReady) {
+        // ready 已发生而 Promise reaction 尚未执行时先保留通知；失败初扫仍只归启动 owner。
+        if (watcherPhase === 'pending') {
+          pendingWatchErrors.add(error)
+        }
+        else if (watcherPhase === 'ready') {
           reportWatchError(error)
         }
       })
@@ -2424,8 +2440,9 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       const resource = {
         close: () => closingSidecar ??= (async () => {
           // 先取消本代就绪等待，再排空实际订阅与业务资源。
+          watcherPhase = 'closed'
+          pendingWatchErrors.clear()
           markSnapshotClosed()
-          canceled.resolve('closed')
           // 完整 drain 与本代关闭可同时持有此记录，重复调用必须等待同一份资源结果。
           const results = await Promise.allSettled([
             async () => releaseAutoRoutesTopology?.(),
@@ -2447,7 +2464,14 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         })(),
       }
       watcherService.sidecarWatcherMap.set(snapshotWatcherRoot, resource)
-      return { resource, ready: Promise.race([snapshotWatcher.ready, canceled.promise]), cancelReadiness: () => canceled.resolve('closed') }
+      return {
+        resource,
+        ready: snapshotWatcher.ready,
+        cancelReadiness() {
+          // 真实关闭终结扫描；启动等待仍接收原始注册错误，关闭结果由 resource 的唯一 owner 收集。
+          void snapshotWatcher.close().catch(() => {})
+        },
+      }
     }
 
     let snapshotSidecar: ReturnType<typeof createSnapshotSidecarScope> | undefined

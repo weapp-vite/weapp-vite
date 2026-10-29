@@ -3,7 +3,7 @@ import type { FileWatchEngine, FileWatcher } from './fileWatcher'
 import { EventEmitter } from 'node:events'
 import { mkdir, mkdtemp, realpath, rm, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import path from 'node:path'
+import path from 'pathe'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createFileWatcher } from './fileWatcher'
 
