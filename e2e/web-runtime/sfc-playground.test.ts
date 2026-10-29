@@ -38,12 +38,27 @@ afterAll(async () => {
   })
 })
 
-it('compiles SFC source in the shipped browser bundle and reports syntax errors', async () => {
+it.each([
+  { preview: 'normal', stallPreview: false },
+  { preview: 'pending external resource', stallPreview: true },
+])('compiles SFC source in the shipped browser bundle and reports syntax errors ($preview)', async ({ stallPreview }) => {
   const page = await browser.newPage()
   const errors: string[] = []
+  let pendingPreviewResources = 0
+  let loaded = false
   page.on('pageerror', error => errors.push(error.stack ?? error.message))
+  page.on('load', () => {
+    loaded = true
+  })
   try {
-    await page.goto(server.resolvedUrls.local[0]!)
+    if (stallPreview) {
+      // 保持预览 iframe 的外部脚本挂起，验证本地编译不依赖 CDN 完成加载。
+      await page.route('https://cdn.jsdelivr.net/npm/es-module-shims@*/dist/es-module-shims.wasm.js', () => {
+        pendingPreviewResources++
+      })
+    }
+    // load 会等待预览 iframe；编译就绪由下面实际输出、报错与恢复断言证明。
+    await page.goto(server.resolvedUrls.local[0]!, { waitUntil: 'domcontentloaded' })
     await page.locator('[data-wevu-pane="script"]').click()
     await expect.poll(() => page.locator('.wevu-output-code').textContent()).toContain('visibleItems')
     expect(await page.locator('[data-status]').getAttribute('data-status')).toBe('ready')
@@ -61,6 +76,10 @@ it('compiles SFC source in the shipped browser bundle and reports syntax errors'
     await page.locator('[data-wevu-pane="script"]').click()
     await expect.poll(() => page.locator('.wevu-output-code').textContent()).toContain('browser-regression')
     expect(await page.locator('[data-status]').getAttribute('data-status')).toBe('ready')
+    if (stallPreview) {
+      await expect.poll(() => pendingPreviewResources).toBe(1)
+      expect(loaded).toBe(false)
+    }
   }
   catch (error) {
     throw new Error(`${String(error)}\nBrowser errors: ${errors.join('\n')}\nPage: ${await page.locator('body').textContent()}`, { cause: error })
