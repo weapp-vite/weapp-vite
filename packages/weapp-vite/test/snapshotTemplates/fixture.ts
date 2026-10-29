@@ -14,6 +14,9 @@ interface SnapshotHarness {
   sidecars: EventEmitter[]
 }
 
+// 等待真实 Vite 构建完成；默认的 1 秒轮询预算不足以覆盖跨平台原生发布。
+const nativeSnapshotWaitOptions = { timeout: 10_000 }
+
 /** 只替换外部文件事件；入口发射、发布清单和磁盘写出均由真实编译器与 Vite 执行。 */
 export async function createSnapshotTemplateFixture(harness: SnapshotHarness, cleanups: Array<() => Promise<void>>) {
   const root = path.normalize(await realpath(await mkdtemp(path.join(os.tmpdir(), 'classic-template-snapshot-'))))
@@ -168,12 +171,12 @@ export async function createSnapshotTemplateFixture(harness: SnapshotHarness, cl
     }
   }
   const nextBundle = async (previousCount: number) => {
-    await vi.waitFor(() => expect(bundles).toHaveLength(previousCount + 1))
+    await vi.waitFor(() => expect(bundles).toHaveLength(previousCount + 1), nativeSnapshotWaitOptions)
     expect(writes).toHaveLength(bundles.length)
     return bundles.at(-1)!
   }
   const nextFailure = async (previousCount: number) => {
-    await vi.waitFor(() => expect(failures).toHaveLength(previousCount + 1))
+    await vi.waitFor(() => expect(failures).toHaveLength(previousCount + 1), nativeSnapshotWaitOptions)
     return failures.at(-1)
   }
   const readOutput = (file: string) => readFile(path.join(compiler.ctx.configService.outDir, file), 'utf8')

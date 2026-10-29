@@ -101,11 +101,32 @@ it.each([false, true])('retains publication permission errors even with an exist
   }
 })
 
-it('retains a Windows EPERM publication error without evidence of a competing guard', async () => {
+it('retries when a Windows EPERM publication conflict outlives the competing guard', async () => {
+  const { file, guard } = await fixture()
+  const { leaf } = await installGuard(guard)
+  const rename = fsNative.rename.bind(fsNative)
+  const publish = vi.spyOn(fsNative, 'rename').mockImplementationOnce(async () => {
+    // 原生重命名返回冲突时，另一个持锁者可能已完成 token 和目录释放。
+    await fsNative.unlink(leaf)
+    await fsNative.rmdir(guard)
+    throw Object.assign(new Error('directory was occupied'), { code: 'EPERM' })
+  }).mockImplementation(rename)
+  const run = vi.fn(async () => 'acquired after release')
+  await expect(withClassicIdeConfigLock(file, run)).resolves.toBe('acquired after release')
+  expect(publish).toHaveBeenCalledTimes(2)
+  expect(run).toHaveBeenCalledOnce()
+  expect(await fs.readdir(path.dirname(guard))).toEqual([])
+})
+
+it('retains a persistent Windows EPERM publication error after the contention budget', async () => {
   const { file, guard } = await fixture()
   const failure = Object.assign(new Error('cannot publish candidate'), { code: 'EPERM' })
-  vi.spyOn(fsNative, 'rename').mockRejectedValue(failure)
-  await expect(withClassicIdeConfigLock(file, async () => {})).rejects.toBe(failure)
+  const publish = vi.spyOn(fsNative, 'rename').mockRejectedValue(failure)
+  vi.spyOn(Date, 'now').mockReturnValueOnce(0).mockReturnValueOnce(0).mockReturnValue(1000)
+  const run = vi.fn(async () => {})
+  await expect(withClassicIdeConfigLock(file, run)).rejects.toBe(failure)
+  expect(publish).toHaveBeenCalledTimes(2)
+  expect(run).not.toHaveBeenCalled()
   expect(await fs.readdir(path.dirname(guard))).toEqual([])
 })
 

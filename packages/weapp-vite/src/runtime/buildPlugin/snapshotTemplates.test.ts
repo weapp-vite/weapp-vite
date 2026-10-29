@@ -99,7 +99,7 @@ describe('classic template snapshot source freshness', () => {
     }
     await fixture.save('shared/card.wxml', '<template name="card"><view>card first batch</view></template>')
     fixture.update('shared/card.wxml')
-    await vi.waitFor(() => expect(fixture.bundles).toHaveLength(3))
+    await fixture.nextBundle(2)
     expect(fixture.bundles[1]?.['shared/card.wxml']).toMatchObject({ source: expect.stringContaining('card first batch') })
     expect(fixture.bundles[1]?.['shared/partial.wxml']).toBeUndefined()
     expect(fixture.bundles[2]?.['shared/partial.wxml']).toMatchObject({ source: '<view>partial queued</view>' })

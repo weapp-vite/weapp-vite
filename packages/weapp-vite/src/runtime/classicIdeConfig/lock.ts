@@ -93,15 +93,10 @@ async function acquireLock(guard: string, candidate: string) {
         throw error
       }
       const owner = await readLock(guard)
-      if (owner === undefined) {
-        if (errorCode(error) === 'EPERM') {
-          throw error
-        }
-      }
-      else if (owner === null) {
+      if (owner === null) {
         await removeEmptyLock(guard)
       }
-      else {
+      else if (owner !== undefined) {
         let dead = false
         try {
           process.kill(owner.pid, 0)
@@ -120,6 +115,10 @@ async function acquireLock(guard: string, candidate: string) {
         }
       }
       if (Date.now() >= deadline) {
+        // Windows 冲突回执可能晚于对方释放；预算耗尽仍无 owner 时保留原始权限错误。
+        if (owner === undefined && errorCode(error) === 'EPERM') {
+          throw error
+        }
         throw lockError(guard, reason, error)
       }
       await delay(20)
