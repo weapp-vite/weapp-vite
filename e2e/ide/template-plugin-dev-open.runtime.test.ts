@@ -9,14 +9,15 @@ import { populateAutomatorProjectSnapshot, readAutomatorProjectPlan } from '../.
 import { launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 import { runCleanupSteps } from '../utils/cleanupSteps'
-import { startDevProcess } from '../utils/dev-process'
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { readWechatE2ESelection } from '../utils/devtoolsCli'
 import { createDomAcceptance } from '../utils/domAcceptance'
 import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { waitForOpenedAutomator } from '../utils/opened-automator'
+import { startPackageScriptDevProcess } from '../utils/packageScriptDevProcess'
 import { assertPluginOpenEvidence, assertPluginOpenOwnerUnchanged, assertPluginOpenReleased, capturePluginOpenBaseline, readPluginOpenRecords } from '../utils/pluginOpenEvidence'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
+import { assertTemplateDevConfigReleased } from '../utils/templateDevConfigRelease'
 import { attachRuntimeErrorCollector, isUninspectableDevtoolsConsoleError } from './runtimeErrors'
 import { templateDevOpenCheckpoint } from './templateDevOpenDom'
 import { createTemplateDevOpenRunner } from './templateDevOpenSession'
@@ -32,7 +33,7 @@ async function executePluginCase(
   layout: PluginProjectLayout,
   dom: ReturnType<typeof createDomAcceptance>,
 ) {
-  let dev: ReturnType<typeof startDevProcess> | undefined
+  let dev: ReturnType<typeof startPackageScriptDevProcess> | undefined
   let miniProgram: any
   let opened: ManagedWechatProjectRecord | undefined
   let temporaryRoot: string | undefined
@@ -70,7 +71,7 @@ async function executePluginCase(
       const baseline = capturePluginOpenBaseline(await readPluginOpenRecords())
       const target = await resolveWechatDevtoolsTarget(readWechatE2ESelection())
       const expected = { sourceProjectPath: PLUGIN_TEMPLATE_ROOT, layout, target, port: resolveProjectAutomatorPort(PLUGIN_TEMPLATE_ROOT) }
-      dev = startDevProcess('pnpm', createPluginTemplateDevOpenArgs(layout), {
+      dev = startPackageScriptDevProcess('pnpm', createPluginTemplateDevOpenArgs(layout), {
         cwd: PLUGIN_TEMPLATE_ROOT,
         env: createDevProcessEnv({ usePolling: false }),
         reject: false,
@@ -104,7 +105,12 @@ async function executePluginCase(
     cleanup: async () => {
       await runCleanupSteps([
         { label: 'detach plugin runtime logs', run: () => errors?.dispose() },
-        { label: 'stop plugin dev and log consumer', run: async () => { await dev?.stop() } },
+        { label: 'stop plugin dev and log consumer', run: async () => {
+          if (dev) {
+            await dev.stop()
+            await assertTemplateDevConfigReleased(PLUGIN_TEMPLATE_ROOT)
+          }
+        } },
         { label: 'disconnect plugin borrowed socket', run: async () => { await miniProgram?.disconnect() } },
         { label: 'close exact plugin owner', run: async () => {
           if (opened) {

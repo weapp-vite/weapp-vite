@@ -10,12 +10,13 @@ import {
 import { runCleanupSteps } from '../utils/cleanupSteps'
 import {
   cleanupTrackedDevProcesses,
-  startDevProcess,
 } from '../utils/dev-process'
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { createDomAcceptance } from '../utils/domAcceptance'
 import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { waitForOpenedAutomator } from '../utils/opened-automator'
+import { startPackageScriptDevProcess } from '../utils/packageScriptDevProcess'
+import { assertTemplateDevConfigReleased } from '../utils/templateDevConfigRelease'
 import { waitForTemplatePageReady } from '../utils/templatePageReady'
 import {
   attachRuntimeErrorCollector,
@@ -44,7 +45,7 @@ const ACTIVE_TEMPLATE_CASES = TEMPLATE_DEV_OPEN_CASES.filter((templateCase) => {
 })
 
 type TemplateDevProcess = TemplateCase & {
-  dev: ReturnType<typeof startDevProcess>
+  dev: ReturnType<typeof startPackageScriptDevProcess>
 }
 
 function resolveTemplateProjectRoot(templateCase: TemplateCase) {
@@ -86,7 +87,7 @@ async function waitForTemplateDevOpenReady(process: TemplateDevProcess) {
 function startTemplateDevProcess(templateCase: TemplateCase): TemplateDevProcess {
   return {
     ...templateCase,
-    dev: startDevProcess('pnpm', createTemplateDevOpenArgs(templateCase), {
+    dev: startPackageScriptDevProcess('pnpm', createTemplateDevOpenArgs(templateCase), {
       cwd: templateCase.root,
       env: createDevProcessEnv({ usePolling: false }),
       reject: false,
@@ -170,7 +171,12 @@ describe('all templates dev:open IDE integration', { concurrent: false }, () => 
         await runCleanupSteps([
           { label: 'detach template runtime logs', run: () => runtimeErrors?.dispose() },
           { label: 'disconnect template automator', run: async () => { await miniProgram?.disconnect?.() } },
-          { label: 'stop template dev process', run: async () => { await devProcess?.dev.stop() } },
+          { label: 'stop template dev process', run: async () => {
+            if (devProcess) {
+              await devProcess.dev.stop()
+              await assertTemplateDevConfigReleased(projectRoot)
+            }
+          } },
           { label: 'close owned template window', run: async () => { await closeSharedMiniProgram(projectRoot, port) } },
           ...(!USE_PRESTARTED_TEMPLATE_DEV ? [{ label: 'release template IDE resources', run: cleanupResidualIdeProcesses }] : []),
         ])

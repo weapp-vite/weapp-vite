@@ -45,6 +45,26 @@ beforeEach(() => {
 afterEach(() => vi.restoreAllMocks())
 
 describe('native inventory durable and privacy-safe evidence', () => {
+  it.each([
+    { name: 'failed queries with nonzero record lengths', before: { result: -1, length: 648, errno: 13 }, after: { result: -1, length: 512, errno: 3 } },
+    { name: 'empty or absent kernel records', before: { result: 0, length: 0, errno: 0 }, after: { result: -1, length: 0, errno: 3 } },
+  ])('preserves query facts without an identity for $name', async ({ before, after }) => {
+    const unknown = entry(22, { executable: null, rssBytes: null })
+    unknown.before = { ...before, identity: null }
+    unknown.after = { ...after, identity: null }
+    frames(...phases.map(() => [entry(11), unknown]))
+    const report = await sample()
+    expect(report.installationRssBytes.status).toBe('unavailable')
+    for (const frame of report.nativeFrames!) {
+      expect(frame.rows.find(row => row.pid === 22)).toMatchObject({
+        before: null,
+        after: null,
+        beforeQuery: before,
+        afterQuery: after,
+      })
+    }
+  })
+
   it('retains the first query failure phase alongside a later observed absence', async () => {
     const unknown = [entry(11), entry(22, { executable: null })]
     frames(unknown, unknown, [entry(11)], [entry(11)])
@@ -131,6 +151,9 @@ describe('native inventory durable and privacy-safe evidence', () => {
     const rows = [entry(11), entry(22)]
     for (const row of rows) {
       Object.assign(row, { argv: [sentinel], command: sentinel, environment: { value: sentinel }, futureRowField: sentinel })
+      for (const query of [row.before, row.after]) {
+        Object.assign(query, { uid: 909, command: sentinel, path: fixtureForeign, futureQueryField: { value: sentinel } })
+      }
       for (const observation of [row.before, row.task, row.after]) {
         Object.assign(observation.identity!, { futureIdentityField: sentinel })
       }
@@ -138,10 +161,16 @@ describe('native inventory durable and privacy-safe evidence', () => {
     frames(...phases.map(() => rows))
     const report = await sample()
     const encoded = JSON.stringify(report)
-    for (const privateValue of [sentinel, '"uid"', '"argv"', '"command"', '"environment"', 'futureRowField', 'futureIdentityField', fixtureForeign, fixtureHelper]) {
+    for (const privateValue of [sentinel, '"uid"', '"argv"', '"command"', '"environment"', '"path"', 'futureRowField', 'futureQueryField', 'futureIdentityField', fixtureForeign, fixtureHelper]) {
       expect(encoded).not.toContain(privateValue)
     }
     const before = report.nativeFrames![0]!
+    for (const row of before.rows) {
+      expect(row.beforeQuery).toEqual({ result: 0, length: 648, errno: 0 })
+      expect(row.afterQuery).toEqual({ result: 0, length: 648, errno: 0 })
+      expect(row.before).toMatchObject({ pid: row.pid, started: '1792800000.123456' })
+      expect(row.after).toMatchObject({ pid: row.pid, started: '1792800000.123456' })
+    }
     expect(before.rows.find(row => row.pid === 22)?.pathBefore.image).toEqual({ scope: 'outside-installation', sha256: expect.stringMatching(/^[\da-f]{64}$/) })
     expect(before.ownedHelper.image).toEqual({ scope: 'outside-installation', sha256: expect.stringMatching(/^[\da-f]{64}$/) })
     expect(before.rows.find(row => row.pid === 11)?.pathBefore.image).toEqual({ scope: 'installation', installationRelativePath: 'Contents/MacOS/Selected', sha256: expect.stringMatching(/^[\da-f]{64}$/) })

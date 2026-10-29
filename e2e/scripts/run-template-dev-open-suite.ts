@@ -5,10 +5,13 @@ import { execa } from 'execa'
 import { withMachineE2ELease } from '../../packages/devtools-runtime/src/lease/machine'
 import { createTemplateDevOpenArgs, resolveTemplateDevOpenProjectRoot, TEMPLATE_DEV_OPEN_CASES } from '../ide/template-dev-open-cases'
 import { assertDevtoolsLoggedIn } from '../utils/automator'
-import { cleanupTrackedDevProcesses, startDevProcess } from '../utils/dev-process'
+import { runCleanupSteps } from '../utils/cleanupSteps'
+import { cleanupTrackedDevProcesses } from '../utils/dev-process'
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { waitForOpenedAutomator } from '../utils/opened-automator'
+import { startPackageScriptDevProcess } from '../utils/packageScriptDevProcess'
+import { assertTemplateDevConfigReleased } from '../utils/templateDevConfigRelease'
 import { E2E_TARGET_FILE_ENV } from '../utils/vitestTargetFile'
 
 const ROOT = path.resolve(import.meta.dirname, '../..')
@@ -46,11 +49,13 @@ async function runTemplateCase(
   previousTemplateCase?: (typeof TEMPLATE_DEV_OPEN_CASES)[number],
 ) {
   await cleanupResidualIdeProcesses()
-  const dev = startDevProcess('pnpm', createTemplateDevOpenArgs(templateCase), {
+  const dev = startPackageScriptDevProcess('pnpm', createTemplateDevOpenArgs(templateCase), {
     cwd: templateCase.root,
     env: createDevProcessEnv({ usePolling: false }),
     reject: false,
   })
+  let executionFailure: { error: unknown } | undefined
+  let exitCode = 1
   try {
     const projectRoot = resolveTemplateDevOpenProjectRoot(templateCase)
     const session = await dev.waitFor(
@@ -61,7 +66,7 @@ async function runTemplateCase(
       `${templateCase.name} automator ready`,
     )
     await session.miniProgram.disconnect()
-    return await runVitest({
+    exitCode = await runVitest({
       ...process.env,
       WEAPP_VITE_E2E_IDE_HMR_COMPANION: '0',
       WEAPP_VITE_E2E_PRESTARTED_TEMPLATE_DEV: '1',
@@ -73,11 +78,29 @@ async function runTemplateCase(
         : {}),
     })
   }
-  finally {
-    await dev.stop().catch(() => {})
-    await cleanupTrackedDevProcesses()
-    await cleanupResidualIdeProcesses()
+  catch (error) {
+    executionFailure = { error }
   }
+  try {
+    await runCleanupSteps([
+      { label: 'stop template dev process', run: async () => {
+        await dev.stop()
+        await assertTemplateDevConfigReleased(resolveTemplateDevOpenProjectRoot(templateCase))
+      } },
+      { label: 'retry tracked template dev cleanup', run: () => cleanupTrackedDevProcesses() },
+      { label: 'release template IDE projects', run: () => cleanupResidualIdeProcesses() },
+    ])
+  }
+  catch (error) {
+    if (executionFailure) {
+      throw new AggregateError([executionFailure.error, error], 'Template execution and cleanup failed')
+    }
+    throw error
+  }
+  if (executionFailure) {
+    throw executionFailure.error
+  }
+  return exitCode
 }
 
 async function main() {

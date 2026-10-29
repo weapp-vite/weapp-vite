@@ -7,11 +7,16 @@ import { waitForOpenedAutomator } from './opened-automator'
 
 const connectOpenedAutomatorMock = vi.hoisted(() => vi.fn())
 const resolveProjectAutomatorPortMock = vi.hoisted(() => vi.fn(() => 11074))
+const resolveTarget = vi.hoisted(() => vi.fn())
+const assertHost = vi.hoisted(() => vi.fn())
+const target = { cliPath: 'selected-cli', installationId: 'selected', appPath: 'selected-app', profileDir: 'selected-profile', version: '2.03.1234567', channel: 'stable' as const }
 
 vi.mock('weapp-ide-cli', async importOriginal => ({
   ...await importOriginal<typeof import('weapp-ide-cli')>(),
   connectOpenedAutomator: connectOpenedAutomatorMock,
   resolveProjectAutomatorPort: resolveProjectAutomatorPortMock,
+  resolveWechatDevtoolsTarget: resolveTarget,
+  assertWechatDevtoolsHost: assertHost,
 }))
 
 vi.mock('./ideWarningReport', () => ({ appendIdeReportEvent: vi.fn(), resolveReportProjectPath: () => 'apps/demo' }))
@@ -22,6 +27,7 @@ function createSession() {
     close: vi.fn(async () => {}),
     disconnect: vi.fn(),
     enableLog: vi.fn(async () => {}),
+    toolInfo: vi.fn(async () => ({ version: target.version, SDKVersion: '3.17.6' })),
   })
 }
 
@@ -38,12 +44,16 @@ describe('opened automator', () => {
     resolveProjectAutomatorPortMock.mockReset()
     resolveProjectAutomatorPortMock.mockReturnValue(11074)
     vi.mocked(appendIdeReportEvent).mockClear()
+    resolveTarget.mockReset().mockResolvedValue(target)
+    assertHost.mockReset().mockResolvedValue(undefined)
+    vi.spyOn(process.stdout, 'write').mockReturnValue(true)
   })
 
   afterEach(() => {
     vi.clearAllTimers()
     vi.useRealTimers()
     vi.unstubAllEnvs()
+    vi.restoreAllMocks()
   })
 
   it('uses the same explicit installation for the dev child and parent connector', async () => {
@@ -77,7 +87,33 @@ describe('opened automator', () => {
       port: 11074,
     }))
     expect(miniProgram.currentPage).not.toHaveBeenCalled()
+    expect(resolveTarget).toHaveBeenCalledWith(expect.objectContaining({ cliPath: 'selected-cli', devtoolsChannel: 'stable', devtoolsVersion: target.version }))
+    expect(assertHost).toHaveBeenCalledWith(target)
+    expect(miniProgram.toolInfo).toHaveBeenCalledOnce()
+    expect(process.stdout.write).toHaveBeenCalledWith(`[info] [devtools:runtime] ${JSON.stringify({ version: target.version, baseLibraryVersion: '3.17.6', installationId: target.installationId })}\n`)
     expect(process.env.WEAPP_IDE_CLI_PATH).toBe('inherited-other-cli')
+  })
+
+  it.each(['version', 'protocol', 'host'])('rejects %s verification and releases only the borrowed connection', async (failure) => {
+    const miniProgram = createSession()
+    const { close, disconnect } = miniProgram
+    if (failure === 'version') {
+      miniProgram.toolInfo.mockResolvedValue({ version: 'other-version', SDKVersion: '3.17.6' })
+    }
+    if (failure === 'protocol') {
+      miniProgram.toolInfo.mockRejectedValue(new Error('Tool unavailable'))
+    }
+    if (failure === 'host') {
+      assertHost.mockRejectedValue(new Error('Host mismatch'))
+    }
+    connectOpenedAutomatorMock.mockResolvedValueOnce(miniProgram)
+    await expect(advanceOpenedAutomatorTimers(waitForOpenedAutomator('fixture/project', { skipAppReady: true, timeoutMs: 50 })))
+      .rejects
+      .toThrow('runtime verification failed')
+    expect(disconnect).toHaveBeenCalledOnce()
+    expect(close).not.toHaveBeenCalled()
+    expect(connectOpenedAutomatorMock).toHaveBeenCalledOnce()
+    expect(process.stdout.write).not.toHaveBeenCalledWith(expect.stringContaining('[devtools:runtime]'))
   })
 
   it('waits for a readable current page before returning an opened session', async () => {

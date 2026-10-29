@@ -8,15 +8,14 @@ import {
 } from 'weapp-ide-cli'
 import { launchAutomator } from '../utils/automator'
 import { runCleanupSteps } from '../utils/cleanupSteps'
-import {
-  cleanupTrackedDevProcesses,
-  startDevProcess,
-} from '../utils/dev-process'
+import { cleanupTrackedDevProcesses } from '../utils/dev-process'
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { createDomAcceptance } from '../utils/domAcceptance'
 import { waitForFileContains } from '../utils/hmr-helpers'
 import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { appendIdeReportEvent } from '../utils/ideWarningReport'
+import { startPackageScriptDevProcess } from '../utils/packageScriptDevProcess'
+import { assertTemplateDevConfigReleased } from '../utils/templateDevConfigRelease'
 
 const WORKSPACE_ROOT = path.resolve(import.meta.dirname, '../..')
 const APP_ROOT = path.resolve(WORKSPACE_ROOT, 'apps/forward-console-demo')
@@ -29,6 +28,7 @@ const APP_AUTOMATOR_PORT = resolveProjectAutomatorPort(APP_ROOT)
 const INITIAL_DESCRIPTION = '点击按钮，日志同步回当前终端。'
 const INITIAL_LOG_MESSAGE = ['`[forward-console-demo] $', '{action.title} clicked`'].join('')
 const LOG_CLICKED_RE = /\[mini:log\s*\]\s+\[forward-console-demo\] Log clicked/
+const CLEANUP_TIMEOUT_MS = 240_000
 
 function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
@@ -153,9 +153,18 @@ async function waitForForwardedMessage(
 describe('forward-console-demo in real WeChat DevTools', { concurrent: false }, () => {
   let originalIndexTs = ''
   let originalIndexWxml = ''
-  let devProcess: ReturnType<typeof startDevProcess> | undefined
+  let devProcess: ReturnType<typeof startPackageScriptDevProcess> | undefined
   let forwardConsoleSession: Awaited<ReturnType<typeof startForwardConsole>> | undefined
   let miniProgram: Awaited<ReturnType<typeof launchAutomator>> | undefined
+
+  async function stopForwardConsoleDevProcess() {
+    if (!devProcess) {
+      return
+    }
+    await devProcess.stop()
+    await assertTemplateDevConfigReleased(APP_ROOT)
+    devProcess = undefined
+  }
 
   async function cleanupTestState() {
     await runCleanupSteps([
@@ -167,10 +176,7 @@ describe('forward-console-demo in real WeChat DevTools', { concurrent: false }, 
         await miniProgram?.disconnect?.()
         miniProgram = undefined
       } },
-      { label: 'stop forward-console dev process', run: async () => {
-        await devProcess?.stop()
-        devProcess = undefined
-      } },
+      { label: 'stop forward-console dev process and verify config release', run: stopForwardConsoleDevProcess },
       { label: 'release tracked dev processes', run: cleanupTrackedDevProcesses },
       { label: 'release owned IDE resources', run: cleanupResidualIdeProcesses },
       { label: 'restore forward-console script', run: async () => {
@@ -194,11 +200,10 @@ describe('forward-console-demo in real WeChat DevTools', { concurrent: false }, 
     originalIndexTs = indexTs
     originalIndexWxml = indexWxml
     await cleanupResidualIdeProcesses()
-    devProcess = startDevProcess('pnpm', ['exec', 'wv', 'dev'], {
+    devProcess = startPackageScriptDevProcess('pnpm', ['exec', 'wv', 'dev'], {
       cwd: APP_ROOT,
       env: createDevProcessEnv(),
       reject: false,
-      stdin: 'ignore',
     })
     await devProcess.waitFor(
       waitForFileContains(DIST_INDEX_JS, INITIAL_DESCRIPTION, 90_000),
@@ -215,22 +220,29 @@ describe('forward-console-demo in real WeChat DevTools', { concurrent: false }, 
   }, 240_000)
 
   afterEach(async () => {
-    await forwardConsoleSession?.close().catch(() => {})
-    forwardConsoleSession = undefined
-    await devProcess?.stop().catch(() => {})
-    devProcess = undefined
-    await cleanupTrackedDevProcesses()
-    if (originalIndexTs) {
-      await fs.writeFile(INDEX_TS, originalIndexTs, 'utf8').catch(() => {})
-    }
-    if (originalIndexWxml) {
-      await fs.writeFile(INDEX_WXML, originalIndexWxml, 'utf8').catch(() => {})
-    }
-  }, 60_000)
+    await runCleanupSteps([
+      { label: 'close forward-console subscription', run: async () => {
+        await forwardConsoleSession?.close()
+        forwardConsoleSession = undefined
+      } },
+      { label: 'stop forward-console dev process and verify config release', run: stopForwardConsoleDevProcess },
+      { label: 'release tracked dev processes', run: cleanupTrackedDevProcesses },
+      { label: 'restore forward-console script', run: async () => {
+        if (originalIndexTs) {
+          await fs.writeFile(INDEX_TS, originalIndexTs, 'utf8')
+        }
+      } },
+      { label: 'restore forward-console template', run: async () => {
+        if (originalIndexWxml) {
+          await fs.writeFile(INDEX_WXML, originalIndexWxml, 'utf8')
+        }
+      } },
+    ])
+  }, CLEANUP_TIMEOUT_MS)
 
   afterAll(async () => {
     await cleanupTestState()
-  }, 60_000)
+  }, CLEANUP_TIMEOUT_MS)
 
   it('keeps forwarding console output after dev HMR updates the current page', async (ctx) => {
     const hmrMessage = `HMR forwardConsole ${Date.now()}`
@@ -305,9 +317,32 @@ describe('forward-console-demo in real WeChat DevTools', { concurrent: false }, 
 
     await fs.writeFile(INDEX_TS, replaceSourceLogMessage(originalIndexTs, hmrMessage), 'utf8')
     // beforeAll 成功后才执行用例；afterEach 在用例结束后释放该控制器。
-    await (devProcess as ReturnType<typeof startDevProcess>).waitFor(
-      waitForFileContains(HMR_UPDATE_JS, hmrMessage, 90_000),
-      'forward-console demo stateful HMR delta update',
+    const runningDevProcess = devProcess as ReturnType<typeof startPackageScriptDevProcess>
+    await runningDevProcess.waitFor(
+      expect.poll(async () => {
+        const output = runningDevProcess.getOutput()
+        const fallbackOffset = output.lastIndexOf('[weapp-vite] HMR fallback ')
+        const classicReadyOffset = output.lastIndexOf('[weapp-vite] HMR classic ready ')
+        // 降级交接期间不再接受旧 stateful 产物，等待 classic 就绪后检查原生页面脚本。
+        if (fallbackOffset > classicReadyOffset) {
+          return false
+        }
+        const mode = classicReadyOffset >= 0
+          ? 'classic'
+          : [...output.matchAll(/HMR 模式：(classic|stateful-experimental)/g)].at(-1)?.[1]
+        const file = mode === 'classic' ? DIST_INDEX_JS : mode === 'stateful-experimental' ? HMR_UPDATE_JS : undefined
+        if (!file) {
+          return false
+        }
+        const source = await fs.readFile(file, 'utf8').catch((error: NodeJS.ErrnoException) => {
+          if (error.code === 'ENOENT') {
+            return ''
+          }
+          throw error
+        })
+        return source.includes(hmrMessage)
+      }, { timeout: 90_000, interval: 250 }).toBe(true),
+      'forward-console demo HMR output for the effective runtime',
     )
     await waitForForwardedMessage(
       miniProgram,

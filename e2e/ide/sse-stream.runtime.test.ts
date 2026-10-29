@@ -13,6 +13,7 @@ import { installStreamProbeTransport } from './streamProbe/transport'
 const appRoot = path.resolve(import.meta.dirname, '../../e2e-apps/stream-capability-probe')
 const route = '/pages/sse/index'
 const nativeRoute = '/pages/index/index'
+const runtimeProvider = resolveRuntimeProviderName()
 
 describe('standard Fetch and EventSource streaming', { concurrent: false }, () => {
   let miniProgram: Awaited<ReturnType<typeof launchAutomator>> | undefined
@@ -184,7 +185,7 @@ describe('standard Fetch and EventSource streaming', { concurrent: false }, () =
     expect(await nativePage!.callMethod('readSseUnload')).toMatchObject({ closed: true, abortRequested: true, lateCallbacks: 0, messages: hasEarlyStatus ? ['卸载前'] : [] })
   })
 
-  it.runIf(resolveRuntimeProviderName() === 'headless')('rejects a host response without early status instead of assuming HTTP 200', async (ctx) => {
+  it.runIf(runtimeProvider === 'headless')('rejects a host response without early status instead of assuming HTTP 200', async (ctx) => {
     const dom = createDomAcceptance(ctx, 'e2e-apps/stream-capability-probe', [
       { id: 'initial', route, action: '缺失状态码回归首屏', nodes: [{ selector: '#sse-status', text: 'idle' }] },
       { id: 'error', route, action: '缺失元数据明确失败', nodes: [{ selector: '#sse-error', text: 'NotSupportedError' }] },

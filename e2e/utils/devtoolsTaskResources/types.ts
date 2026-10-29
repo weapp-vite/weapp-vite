@@ -96,6 +96,8 @@ export interface NativeProcessFrameEvidence {
     pid: number
     before: ProcessIdentityMetadata | null
     after: ProcessIdentityMetadata | null
+    beforeQuery: { result: number, length: number, errno: number }
+    afterQuery: { result: number, length: number, errno: number }
     interval: { startedAtNanoseconds: string, endedAtNanoseconds: string }
     pathBefore: { count: number, errno: number, image: NativeImageEvidence | null }
     pathAfter: { count: number, errno: number, image: NativeImageEvidence | null }

@@ -1,8 +1,9 @@
 import type { MiniProgram } from '@weapp-vite/miniprogram-automator'
-import { connectOpenedAutomator, resolveProjectAutomatorPort } from 'weapp-ide-cli'
+import { connectOpenedAutomator, resolveProjectAutomatorPort, resolveWechatDevtoolsTarget } from 'weapp-ide-cli'
 import { measureE2EPhase } from '../scripts/verification/timing'
 import { enhanceMiniProgramWithRuntimeLogs } from './automator'
 import { readWechatE2ESelection } from './devtoolsCli'
+import { assertSelectedWechatDevtoolsRuntime } from './devtoolsSelection'
 import { resolveReportProjectPath } from './ideWarningReport'
 
 interface OpenedAutomatorSessionMetadata {
@@ -35,6 +36,7 @@ function formatOpenedAutomatorError(error: unknown) {
 }
 
 class OpenedAutomatorCleanupError extends AggregateError {}
+class OpenedAutomatorRuntimeError extends Error {}
 
 async function closeStaleMiniProgram(miniProgram: unknown, failure: unknown) {
   if (!miniProgram || typeof miniProgram !== 'object') {
@@ -91,6 +93,7 @@ async function waitForOpenedAutomatorWithoutTiming(
     timeoutMs = 120_000,
   } = options
   const selection = readWechatE2ESelection()
+  const target = await resolveWechatDevtoolsTarget(selection)
   const start = Date.now()
   let lastError: unknown
   const port = resolveProjectAutomatorPort(projectPath)
@@ -126,6 +129,13 @@ async function waitForOpenedAutomatorWithoutTiming(
           continue
         }
       }
+      try {
+        await assertSelectedWechatDevtoolsRuntime(target, miniProgram)
+      }
+      catch (error) {
+        await closeStaleMiniProgram(miniProgram, error)
+        throw new OpenedAutomatorRuntimeError(`Opened automator runtime verification failed: ${formatOpenedAutomatorError(error)}`, { cause: error })
+      }
       return {
         metadata: {
           projectPath,
@@ -136,7 +146,7 @@ async function waitForOpenedAutomatorWithoutTiming(
       }
     }
     catch (error) {
-      if (error instanceof OpenedAutomatorCleanupError) {
+      if (error instanceof OpenedAutomatorCleanupError || error instanceof OpenedAutomatorRuntimeError) {
         throw error
       }
       lastError = error

@@ -13,6 +13,9 @@ export interface RequestGlobalsDemoState {
 
 export const REQUEST_GLOBALS_STATE_STORAGE_KEY = '__weapp_vite_request_globals_state__'
 
+type MockHeadersListener = Parameters<WechatMiniprogram.RequestTask['onHeadersReceived']>[0]
+type MockChunkListener = Parameters<WechatMiniprogram.RequestTask['onChunkReceived']>[0]
+
 let originalRequest: typeof wx.request | undefined
 
 function formatRequestLog(options: WechatMiniprogram.RequestOption) {
@@ -113,27 +116,79 @@ export function installMockRequest(onLog: (entry: string) => void) {
   originalRequest = wx.request
   ;(wx as typeof wx & { request: typeof wx.request }).request = ((options: WechatMiniprogram.RequestOption) => {
     const url = String(options.url ?? '')
+    const headersListeners = new Set<MockHeadersListener>()
+    const chunkListeners = new Set<MockChunkListener>()
+    let finished = false
     onLog(formatRequestLog(options))
+
+    function clearListeners() {
+      headersListeners.clear()
+      chunkListeners.clear()
+    }
 
     const timer = setTimeout(() => {
       const result = createMockResponse(url, options.data)
+      if (options.enableChunked) {
+        for (const listener of headersListeners) {
+          listener({ statusCode: result.statusCode, header: result.header, cookies: [] })
+        }
+        if (finished) {
+          return
+        }
+        const data = new TextEncoder().encode(result.data).buffer
+        for (const listener of chunkListeners) {
+          listener({ data })
+        }
+      }
+      if (finished) {
+        return
+      }
+      finished = true
       options.success?.(result as unknown as WechatMiniprogram.RequestSuccessCallbackResult)
       options.complete?.(result as unknown as WechatMiniprogram.RequestSuccessCallbackResult)
+      clearListeners()
     }, 18)
 
     return {
       abort() {
+        if (finished) {
+          return
+        }
+        finished = true
         clearTimeout(timer)
+        clearListeners()
         const aborted = {
           errMsg: 'request:fail abort',
         }
         options.fail?.(aborted as unknown as WechatMiniprogram.RequestFailCallbackErr)
         options.complete?.(aborted as unknown as WechatMiniprogram.GeneralCallbackResult)
       },
-      offChunkReceived() {},
-      offHeadersReceived() {},
-      onChunkReceived() {},
-      onHeadersReceived() {},
+      offChunkReceived(listener?: MockChunkListener) {
+        if (listener) {
+          chunkListeners.delete(listener)
+        }
+        else {
+          chunkListeners.clear()
+        }
+      },
+      offHeadersReceived(listener?: MockHeadersListener) {
+        if (listener) {
+          headersListeners.delete(listener)
+        }
+        else {
+          headersListeners.clear()
+        }
+      },
+      onChunkReceived(listener: MockChunkListener) {
+        if (!finished) {
+          chunkListeners.add(listener)
+        }
+      },
+      onHeadersReceived(listener: MockHeadersListener) {
+        if (!finished) {
+          headersListeners.add(listener)
+        }
+      },
     } as unknown as WechatMiniprogram.RequestTask
   }) as typeof wx.request
 }

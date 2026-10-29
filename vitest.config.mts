@@ -229,6 +229,7 @@ const projects = [
         'e2e/utils/pluginOpenEvidence.test.ts',
         'e2e/utils/pluginTemplateDevOpen.test.ts',
         'e2e/utils/queryRequestTransport.test.ts',
+        'e2e/utils/requestGlobalsMock.test.ts',
         'e2e/utils/statefulHmrProject.test.ts',
         'e2e/utils/vendorPublication/**/*.test.ts',
         'e2e/utils/wevuTailwindHmrProject/**/*.test.ts',

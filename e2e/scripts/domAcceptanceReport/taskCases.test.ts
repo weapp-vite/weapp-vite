@@ -90,6 +90,27 @@ describe('planned DOM cases versus actual collection', () => {
     ])
   })
 
+  it('freezes the actual SSE missing-metadata case for its declared headless provider', async () => {
+    const task = { label: 'ide/sse-stream.runtime.test.ts', command: 'node', args: [] }
+    const devtools = await readPlannedTaskCases(task, 'devtools')
+    const headless = await readPlannedTaskCases(task, 'headless')
+    expect(devtools.map(item => item.name)).toEqual(headless.map(item => item.name))
+    expect(devtools).toHaveLength(5)
+    const name = 'standard Fetch and EventSource streaming > rejects a host response without early status instead of assuming HTTP 200'
+    expect(devtools.find(item => item.name === name)?.providerScope).toMatchObject({
+      providers: ['headless'],
+      provider: 'devtools',
+      scope: 'out-of-scope',
+    })
+    expect(headless.find(item => item.name === name)?.providerScope).toMatchObject({
+      providers: ['headless'],
+      provider: 'headless',
+      scope: 'in-scope',
+    })
+    expect(devtools.filter(item => item.name !== name).every(item => !item.providerScope)).toBe(true)
+    expect(headless.filter(item => item.name !== name).every(item => !item.providerScope)).toBe(true)
+  })
+
   it('enumerates native batch recovery only for its declared stateful mode', async () => {
     const cases = await readPlannedTaskCases({ label: 'ide/issue-1134-native-batch.runtime.test.ts', command: 'node', args: [] }, 'headless')
     expect(cases.map(item => item.name)).toEqual([

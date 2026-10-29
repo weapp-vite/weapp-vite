@@ -38,6 +38,8 @@ export function nativeFrameEvidence(frame: NativeFrame, installationRoot: string
       pid: entry.pid,
       before: identityEvidence(entry.before.identity),
       after: identityEvidence(entry.after.identity),
+      beforeQuery: { result: entry.before.result, length: entry.before.length, errno: entry.before.errno },
+      afterQuery: { result: entry.after.result, length: entry.after.length, errno: entry.after.errno },
       interval: { startedAtNanoseconds: entry.startedAtNanoseconds, endedAtNanoseconds: entry.endedAtNanoseconds },
       pathBefore: { count: entry.pathBefore.count, errno: entry.pathBefore.errno, image: entry.pathBefore.executable === null ? null : imageEvidence(entry.pathBefore.executable, installationRoot) },
       pathAfter: { count: entry.pathAfter.count, errno: entry.pathAfter.errno, image: entry.pathAfter.executable === null ? null : imageEvidence(entry.pathAfter.executable, installationRoot) },
