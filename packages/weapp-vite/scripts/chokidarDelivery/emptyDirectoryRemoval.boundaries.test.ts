@@ -3,7 +3,7 @@ import type { Readable } from 'node:stream'
 import assert from 'node:assert/strict'
 import { once } from 'node:events'
 import fs from 'node:fs'
-import { mkdir, mkdtemp, rm } from 'node:fs/promises'
+import { mkdir, mkdtemp, realpath, rm } from 'node:fs/promises'
 import { syncBuiltinESMExports } from 'node:module'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
@@ -56,7 +56,7 @@ function bounded<T>(promise: Promise<T>, label: string) {
 
 /** 真实 watcher 登记后仅替换本次扫描流，保留目录归属、closer 与原生句柄。 */
 async function withDirectoryRead(exercise: (read: DirectoryRead) => Promise<void>) {
-  const root = await mkdtemp(path.join(tmpdir(), 'chokidar-directory-boundary-'))
+  const root = await realpath(await mkdtemp(path.join(tmpdir(), 'chokidar-directory-boundary-')))
   const watched = path.join(root, 'src')
   const directory = path.join(watched, 'deep')
   const native: Array<ReturnType<typeof observeNativeWatcher>> = []
