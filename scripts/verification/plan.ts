@@ -207,7 +207,7 @@ export async function createVerificationPlan(options: PlanOptions): Promise<Veri
       })
     }
   }
-  const cliChanged = changes.files.some(file => file.startsWith('packages/weapp-vite/src/'))
+  const cliChanged = changes.files.some(file => file.startsWith('packages/weapp-vite/src/') && !TEST_FILE.test(file))
   const scripts = changes.files.filter(file => file.startsWith('scripts/'))
   const workflowChanged = changes.files.some(file => file.startsWith('.github/'))
   const rootToolingTests = rootToolingContractTests(changes.files)

@@ -113,6 +113,37 @@ it('inherits real shared and consumer build policies while delegating negative f
   expect(plan.warnings.some(warning => warning.includes('正负例'))).toBe(true)
 })
 
+it.each([false, true])('keeps cached quick preparation for test-only edits and explicit CLI sync for runtime edits: %s', async (runtimeChanged) => {
+  const root = fileURLToPath(new URL('../../', import.meta.url))
+  const test = 'packages/weapp-vite/src/runtime/buildPlugin/startupFallbackShutdown.native.test.ts'
+  const plan = await createVerificationPlan({
+    root,
+    packages: await readWorkspace(root),
+    resources: getResourceBudget({ cpus: 4, totalMemoryBytes: 16 * 1024 ** 3, freeMemoryBytes: 12 * 1024 ** 3, jobs: 2 }),
+    changes: { head: 'fixture', base: 'fixture', fingerprint: 'source', files: runtimeChanged ? [test, 'packages/weapp-vite/src/runtime/buildPlugin/service.ts'] : [test], fallback: false, warnings: [] },
+    mode: 'quick',
+    selection: 'affected',
+  })
+  const sync = plan.tasks.filter(task => task.id === 'dist-sync:weapp-vite')
+  expect(sync).toHaveLength(runtimeChanged ? 1 : 0)
+  if (runtimeChanged) {
+    expect(sync[0]?.args).toEqual(['--filter', 'weapp-vite', 'build'])
+  }
+  else {
+    expect(plan.tasks.find(task => task.id === 'build')?.args).toEqual(expect.arrayContaining(['exec', 'turbo', 'run', 'build', '--filter=weapp-vite']))
+  }
+  const builds = plan.tasks.filter(task => task.kind === 'build').map(task => task.id)
+  expect(builds.length).toBeGreaterThan(0)
+  for (const id of ['test:weapp-vite', 'typecheck:weapp-vite']) {
+    const task = plan.tasks.find(task => task.id === id)
+    expect(task?.blockedReason).toBeUndefined()
+    expect(task?.dependencies.length).toBeGreaterThan(0)
+    expect(task?.dependencies.every(dependency => builds.includes(dependency))).toBe(true)
+  }
+  expect(plan.tasks.find(task => task.id === 'test:weapp-vite')?.args).toContain('src/runtime/buildPlugin/startupFallbackShutdown.native.test.ts')
+  expect(plan.tasks.find(task => task.id === 'typecheck:weapp-vite')?.args).toEqual(['--filter', 'weapp-vite', 'run', 'typecheck'])
+})
+
 it('refuses to discard an additional type prerequisite when reusing prepared builds', async () => {
   const fixture = await createTurboFixture()
   try {
