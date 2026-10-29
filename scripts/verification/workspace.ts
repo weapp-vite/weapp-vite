@@ -2,6 +2,7 @@ import type { WorkspacePackage } from './types.ts'
 import { glob, readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { parse } from 'yaml'
+import { isRootToolingInput } from './rootTooling.ts'
 
 interface PackageManifest {
   name?: string
@@ -151,6 +152,7 @@ export interface PackageImpact {
 export function analyzePackageImpact(files: string[], packages: WorkspacePackage[], all = false): PackageImpact {
   // 跨目录 fixture 和工具输入不能仅凭其 workspace owner 推断测试 owner；缺映射时回到全范围。
   const unmapped = files.filter(file => CROSS_DIRECTORY_PREFIX.test(file)
+    && !isRootToolingInput(file)
     && !packages.some(item => item.extraInputs.some(pattern => path.posix.matchesGlob(file, pattern))))
   const fallback = unmapped.length ? { reason: 'unmapped-cross-directory' as const, files: unmapped } : undefined
   const direct = new Set(files.flatMap((file) => {
