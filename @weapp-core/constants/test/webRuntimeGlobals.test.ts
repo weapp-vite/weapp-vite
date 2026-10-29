@@ -38,6 +38,20 @@ describe('shared Web Runtime target dependencies', () => {
     ])
   })
 
+  it('includes Event as the only prerequisite for CustomEvent', () => {
+    expect(resolveWebRuntimeGlobalTargetDependencies(['CustomEvent'])).toEqual(['CustomEvent', 'Event'])
+  })
+
+  it('deduplicates explicit event prerequisites and keeps repeated expansion stable', () => {
+    const targets = resolveWebRuntimeGlobalTargetDependencies(['CustomEvent', 'Event', 'CustomEvent', 'Event'])
+    expect(targets).toEqual(['CustomEvent', 'Event'])
+    expect(resolveWebRuntimeGlobalTargetDependencies(targets)).toEqual(targets)
+  })
+
+  it('leaves Event-only installations small', () => {
+    expect(resolveWebRuntimeGlobalTargetDependencies(['Event'])).toEqual(['Event'])
+  })
+
   it('keeps repeated expansion stable and leaves abort-only installations small', () => {
     const targets = resolveWebRuntimeGlobalTargetDependencies(['EventSource', 'fetch'])
     expect(resolveWebRuntimeGlobalTargetDependencies(targets)).toEqual(targets)
