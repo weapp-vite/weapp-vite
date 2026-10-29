@@ -6,6 +6,7 @@ import { sharedBuildPackages, splitCliBuild, usePreparedTypeChecks } from './bui
 import { DOCUMENT_CONTRACTS, isRootPolicyDocument, requiredDocumentContracts } from './classification.ts'
 import { DEFAULT_SELECTION } from './policy.ts'
 import { isLibraryPackage, needsConsumerPrepare, quickBuildRoots, quickCheckPackages } from './quickScope.ts'
+import { isRootToolingInput, rootToolingContractTests } from './rootTooling.ts'
 import { fullRuntimeBlock } from './runtime.ts'
 import { fingerprintConfiguration } from './snapshot.ts'
 import { toolchainEnvironment } from './toolchain.ts'
@@ -65,6 +66,7 @@ export async function createVerificationPlan(options: PlanOptions): Promise<Veri
   const unknown = changes.files.filter(file => !ownerOf(file, packages)
     && !/^(?:scripts|docs|website|skills|\.changeset|\.github|e2e|test)\//.test(file)
     && !isRootPolicyDocument(file) && file !== '.gitignore'
+    && !isRootToolingInput(file)
     && !GLOBAL_INPUTS.includes(file))
   const impact = analyzePackageImpact(changes.files, packages, global || unknown.length > 0)
   const { direct, affected } = impact
@@ -208,11 +210,17 @@ export async function createVerificationPlan(options: PlanOptions): Promise<Veri
   const cliChanged = changes.files.some(file => file.startsWith('packages/weapp-vite/src/'))
   const scripts = changes.files.filter(file => file.startsWith('scripts/'))
   const workflowChanged = changes.files.some(file => file.startsWith('.github/'))
-  if (mode === 'full' || scripts.length || workflowChanged) {
+  const rootToolingTests = rootToolingContractTests(changes.files)
+  if (mode === 'full' || scripts.length || workflowChanged || rootToolingTests.length) {
     const inventory = await scriptTestInventory(root)
+    const missingContracts = rootToolingTests.filter(file => !inventory.all.includes(file))
+    if (missingContracts.length) {
+      throw new Error(`根工具输入缺少必需契约测试: ${missingContracts.join(', ')}`)
+    }
     const scriptTests = mode === 'quick' ? await nearbyTests(root, scripts) : []
     const selectedTests = new Set(mode === 'full' || (scripts.length && mode === 'review') ? inventory.all : scriptTests)
-    if (mode === 'quick' && scripts.length && !scriptTests.length) {
+    rootToolingTests.forEach(file => selectedTests.add(file))
+    if (mode === 'quick' && scripts.length && !scriptTests.length && !rootToolingTests.length) {
       remaining.push('工具输入没有可证明直接相关的存续单测，完整工具测试由 review / CI 承担')
     }
     if (mode === 'full' || workflowChanged) {
