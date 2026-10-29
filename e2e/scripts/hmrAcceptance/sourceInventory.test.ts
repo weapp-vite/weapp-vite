@@ -15,6 +15,18 @@ describe('HMR source inventory discovery', () => {
     expect(result.mutations).toEqual([{ method: 'writeFile', line: 5, target: 'source', cleanup: false }])
   })
 
+  it.each(['startPackageScriptDevProcess', 'packageDev'])('discovers source mutations through the package-script launcher %s', (localName) => {
+    const result = inspectHmrSource(`
+      import { startPackageScriptDevProcess as ${localName} } from '../utils/packageScriptDevProcess'
+      import { writeFile as save } from 'node:fs/promises'
+      beforeAll(() => { dev = ${localName}('pnpm', ['exec', 'wv', 'dev']) })
+      it('updates the source', async () => { await save(source, 'updated') })
+    `, FILE)
+    expect(result.startsDevProcess).toBe(true)
+    expect(result.candidate).toBe(true)
+    expect(result.mutations).toEqual([{ method: 'writeFile', line: 5, target: 'source', cleanup: false }])
+  })
+
   it('recognizes filesystem members and native source mutation helpers', () => {
     const result = inspectHmrSource(`
       import fs from 'node:fs/promises'
@@ -51,9 +63,9 @@ describe('HMR source inventory discovery', () => {
     expect(result).toEqual({ startsDevProcess: true, mutations: [], candidate: false })
   })
 
-  it('keeps cleanup callbacks visible so exceptions must identify the exact mutation', () => {
+  it.each(['startDevProcess', 'startPackageScriptDevProcess'])('keeps cleanup callbacks visible through %s so exceptions must identify the exact mutation', (launcher) => {
     const result = inspectHmrSource(`
-      startDevProcess('node', ['cli', 'dev'])
+      ${launcher}('node', ['cli', 'dev'])
       await runCase({ cleanup: async () => { await fs.rm(temporaryRoot, { recursive: true }) } })
     `, FILE)
     expect(result.candidate).toBe(true)

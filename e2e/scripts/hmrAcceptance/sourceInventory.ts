@@ -14,6 +14,11 @@ export interface HmrSourceInspection {
   candidate: boolean
 }
 
+const DEV_PROCESS_METHODS = new Set([
+  'startDevProcess',
+  'startPackageScriptDevProcess',
+])
+
 const MUTATION_METHODS = new Set([
   'writeFile',
   'appendFile',
@@ -74,7 +79,7 @@ export function inspectHmrSource(source: string, file: string): HmrSourceInspect
     if (t.isCallExpression(node) || t.isOptionalCallExpression(node)) {
       const method = callName(node.callee, bindings)
       teardown ||= method === 'afterAll' || method === 'afterEach'
-      if (!teardown && method === 'startDevProcess') {
+      if (!teardown && DEV_PROCESS_METHODS.has(method)) {
         startsDevProcess = true
       }
       if (!teardown && MUTATION_METHODS.has(method)) {
