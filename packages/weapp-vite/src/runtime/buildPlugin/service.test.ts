@@ -3,6 +3,7 @@ import type { InlineConfig, Plugin, ViteDevServer } from 'vite'
 import type { GlassEaselAnalysisFact } from '../../analyze/glassEasel/types'
 import type { HmrProfileJsonSample } from '../../analyze/hmr'
 import type { CompilerContext } from '../../context'
+import type { DevModuleGraphChange } from '../../moduleGraph/devProvider'
 import type { CorePluginState } from '../../plugins/core/helpers'
 import type { DevBuildWatcherController } from './devBuildWatcher'
 import { EventEmitter } from 'node:events'
@@ -118,7 +119,7 @@ const createDevBuildWatcherMock = vi.hoisted(() => vi.fn(() => {
   return { watcher, emitEvent: vi.fn() }
 }))
 const moduleGraphProviderChange = vi.hoisted(() => ({
-  handler: undefined as undefined | ((change: { event: 'create' | 'update' | 'delete', file: string }) => void),
+  handler: undefined as undefined | ((change: DevModuleGraphChange) => void),
 }))
 const createDevModuleGraphProviderMock = vi.hoisted(() => vi.fn(async (_ctx, _config, onChange) => {
   moduleGraphProviderChange.handler = onChange
@@ -4534,26 +4535,48 @@ describe('runtime buildPlugin service', () => {
   })
 
   it('freezes published samples before asynchronous I/O and keeps the next build isolated', async () => {
-    const { ctx, watcher } = await startClassicSnapshotContext()
+    const { ctx, watcher, onProviderChange } = await startClassicSnapshotContext()
     ctx.configService.weappViteConfig.hmr = { profileJson: true }
     const directory = Promise.withResolvers<void>()
+    const secondStarted = Promise.withResolvers<void>()
+    const secondRelease = Promise.withResolvers<void>()
     mkdirMock.mockImplementationOnce(() => directory.promise)
-    ctx.runtimeState.build.hmr.profile = { file: '/project/src/first.ts', eventId: 'first', event: 'update', dirtyReasonSummary: ['first:1'] }
-    watcher.emit('START')
-    watcher.emit('END')
-    ctx.runtimeState.build.hmr.profile = { file: '/project/src/second.ts', eventId: 'second', event: 'update' }
-    watcher.emit('START')
-    directory.resolve()
-    await vi.waitFor(() => expect(appendFileMock).toHaveBeenCalledTimes(1))
-    const first = JSON.parse(appendFileMock.mock.calls[0][1]) as HmrProfileJsonSample
-    expect(first).toMatchObject({ schemaVersion: 1, pipeline: 'standard', status: 'complete', eventId: 'first', dirtyReasonSummary: ['first:1'] })
-    expect(ctx.runtimeState.build.hmr.profile.eventId).toBe('second')
-    watcher.emit('END')
-    await vi.waitFor(() => expect(appendFileMock).toHaveBeenCalledTimes(2))
-    const second = JSON.parse(appendFileMock.mock.calls[1][1]) as HmrProfileJsonSample
-    expect(second.sessionId).toBe(first.sessionId)
-    expect(second.buildId).not.toBe(first.buildId)
-    await watcher.close()
+    buildMock.mockImplementationOnce(async () => {
+      ctx.runtimeState.build.hmr.profile.dirtyReasonSummary = ['first:1']
+      return { output: [] }
+    }).mockImplementationOnce(async () => {
+      secondStarted.resolve()
+      await secondRelease.promise
+      return { output: [] }
+    })
+    const change = (eventId: string, file: string) => onProviderChange({
+      event: 'update',
+      file,
+      sourceEvent: { eventId, event: 'update', file, receivedAtMs: performance.now() },
+    })
+    try {
+      change('first', '/project/src/first.ts')
+      await vi.waitFor(() => expect(mkdirMock).toHaveBeenCalledOnce())
+      change('second', '/project/src/second.ts')
+      await secondStarted.promise
+      directory.resolve()
+      await vi.waitFor(() => expect(appendFileMock).toHaveBeenCalledTimes(1))
+      const first = JSON.parse(appendFileMock.mock.calls[0][1]) as HmrProfileJsonSample
+      expect(first).toMatchObject({ schemaVersion: 1, pipeline: 'standard', status: 'complete', eventId: 'first', dirtyReasonSummary: ['first:1'], buildId: expect.any(String) })
+      expect(ctx.runtimeState.build.hmr.profile.eventId).toBe('second')
+      secondRelease.resolve()
+      await vi.waitFor(() => expect(appendFileMock).toHaveBeenCalledTimes(2))
+      const second = JSON.parse(appendFileMock.mock.calls[1][1]) as HmrProfileJsonSample
+      expect(second.eventId).toBe('second')
+      expect(second.buildId).toEqual(expect.any(String))
+      expect(second.sessionId).toBe(first.sessionId)
+      expect(second.buildId).not.toBe(first.buildId)
+    }
+    finally {
+      directory.resolve()
+      secondRelease.resolve()
+      await watcher.close()
+    }
   })
 
   it('finishes asynchronous output style handling before the next snapshot owns source attribution', async () => {
@@ -5175,36 +5198,11 @@ describe('runtime buildPlugin service', () => {
   })
 
   it('writes hmr profile jsonl with default output path when enabled', async () => {
-    const nowSpy = vi.spyOn(performance, 'now')
-    nowSpy
-      .mockReturnValueOnce(0)
-      .mockReturnValueOnce(1)
-      .mockReturnValueOnce(10)
-      .mockReturnValueOnce(100)
-    const watcher = createManualWatcher()
-    buildMock
-      .mockResolvedValueOnce(watcher)
-      .mockResolvedValueOnce({ output: [] })
-    const baseCtx = createMockContext()
-    const ctx = createMockContext({
-      configService: {
-        ...baseCtx.configService,
-        weappViteConfig: {
-          hmr: {
-            profileJson: true,
-          },
-        },
-      },
-    })
-    const service = createBuildService(ctx)
-
-    const firstBuild = service.build({ skipNpm: true })
-    await watcher.subscribed
-    watcher.emit('START')
-    watcher.emit('END')
-    await firstBuild
-
-    ctx.runtimeState.build.hmr.profile = {
+    let nowValue = 0
+    const nowSpy = vi.spyOn(performance, 'now').mockImplementation(() => nowValue)
+    const { ctx, watcher, onProviderChange } = await startClassicSnapshotContext()
+    ctx.configService.weappViteConfig.hmr = { profileJson: true }
+    const metrics = {
       eventId: 'hmr-event-1',
       finalizePrepareMs: 0.1,
       tailwindPrepareMs: 0,
@@ -5220,7 +5218,7 @@ describe('runtime buildPlugin service', () => {
       publicationValidateMs: 0.4,
       publicationIndependentMs: 0.5,
       publicationPruneMs: 0.6,
-      file: '/project/src/pages/logs/index.vue',
+      file: HMR_PAGE_ID,
       event: 'update',
       buildStartMs: 4,
       pluginResolveMs: 2,
@@ -5257,8 +5255,17 @@ describe('runtime buildPlugin service', () => {
       dirtyReasonSummary: ['entry-direct:1'],
       pendingReasonSummary: ['shared-chunk(common.js)+1:direct'],
     }
-    watcher.emit('START')
-    watcher.emit('END')
+    buildMock.mockImplementationOnce(async () => {
+      Object.assign(ctx.runtimeState.build.hmr.profile, metrics)
+      nowValue = 100
+      return { output: [] }
+    })
+    nowValue = 10
+    onProviderChange({
+      event: 'update',
+      file: HMR_PAGE_ID,
+      sourceEvent: { eventId: 'hmr-event-1', event: 'update', file: HMR_PAGE_ID, receivedAtMs: nowValue },
+    })
     await vi.waitFor(() => {
       expect(appendFileMock).toHaveBeenCalledTimes(1)
     })
@@ -5266,7 +5273,7 @@ describe('runtime buildPlugin service', () => {
     expect(mkdirMock).toHaveBeenCalledWith('/project/.weapp-vite', { recursive: true })
     expect(appendFileMock).toHaveBeenCalledWith(
       '/project/.weapp-vite/hmr-profile.jsonl',
-      expect.stringMatching(/"file":"\/project\/src\/pages\/logs\/index\.vue"/),
+      expect.stringMatching(/"file":"\/project\/src\/pages\/logs\/index\.ts"/),
       'utf8',
     )
     const [, payload] = appendFileMock.mock.calls[0]
@@ -5290,8 +5297,8 @@ describe('runtime buildPlugin service', () => {
     expect(payload).toContain('"publicationValidateMs":0.4')
     expect(payload).toContain('"publicationIndependentMs":0.5')
     expect(payload).toContain('"publicationPruneMs":0.6')
-    expect(payload).toContain('"relativeFile":"src/pages/logs/index.vue"')
-    expect(payload).toContain('"sourceRootFile":"pages/logs/index.vue"')
+    expect(payload).toContain('"relativeFile":"src/pages/logs/index.ts"')
+    expect(payload).toContain('"sourceRootFile":"pages/logs/index.ts"')
     expect(payload).toContain('"buildStartMs":4')
     expect(payload).toContain('"pluginResolveMs":2')
     expect(payload).toContain('"transformMs":9.5')
@@ -5322,6 +5329,7 @@ describe('runtime buildPlugin service', () => {
     expect(payload).toContain('"skippedLoadedCount":1')
     expect(payload).toContain('"dirtyReasonSummary":["entry-direct:1"]')
     expect(payload).toContain('"pendingReasonSummary":["shared-chunk(common.js)+1:direct"]')
+    await watcher.close()
     nowSpy.mockRestore()
   })
 
@@ -5427,52 +5435,61 @@ describe('runtime buildPlugin service', () => {
     )
   })
 
-  it('prints analyze hint when hmr profile is enabled and rebuild becomes much slower', async () => {
+  it.each(['app', 'plugin'] as const)('prints analyze hint when hmr profile is enabled and rebuild becomes much slower (%s)', async (target) => {
     let nowValue = 0
     const nowSpy = vi.spyOn(performance, 'now').mockImplementation(() => nowValue)
-    const watcher = createManualWatcher()
-    buildMock
-      .mockResolvedValueOnce(watcher)
-      .mockResolvedValueOnce({ output: [] })
-    const baseCtx = createMockContext()
-    const ctx = createMockContext({
-      configService: {
-        ...baseCtx.configService,
-        weappViteConfig: {
-          hmr: {
-            profileJson: true,
-          },
-        },
-      },
-    })
-    const service = createBuildService(ctx)
-
-    const firstBuild = service.build({ skipNpm: true })
-    await watcher.subscribed
-    nowValue = 0
-    watcher.emit('START')
-    nowValue = 10
-    watcher.emit('END')
-    await firstBuild
-
-    let cursor = 20
-    for (const totalMs of [100, 80, 90, 200]) {
-      ctx.runtimeState.build.hmr.profile = {
-        emitMs: totalMs / 2,
-      }
-      nowValue = cursor
-      watcher.emit('START')
-      nowValue = cursor + totalMs
-      watcher.emit('END')
-      await waitForMockCalls(loggerSuccessMock, cursor === 20 ? 1 : loggerSuccessMock.mock.calls.length + 1)
-      cursor += totalMs + 10
+    const snapshot = target === 'app' ? await startClassicSnapshotContext() : undefined
+    const ctx = snapshot?.ctx ?? createMockContext()
+    const watcher = snapshot?.watcher ?? createManualWatcher()
+    ctx.configService.weappViteConfig.hmr = { profileJson: true }
+    let onEvent: ((event: { code: string }) => void | Promise<void>) | undefined
+    if (target === 'plugin') {
+      ctx.configService.pluginOnly = true
+      ctx.configService.absolutePluginRoot = '/project/src/plugin'
+      buildMock.mockResolvedValueOnce(watcher)
+      const firstBuild = createBuildService(ctx).build({ skipNpm: true })
+      await watcher.subscribed
+      onEvent = watcher.on.mock.calls.find(([event]: [string]) => event === 'event')![1]
+      await onEvent!({ code: 'START' })
+      nowValue = 10
+      await onEvent!({ code: 'END' })
+      await firstBuild
     }
 
-    await waitForMockCalls(loggerInfoMock, 1)
-    expect(loggerInfoMock).toHaveBeenCalledWith(expect.stringContaining('weapp-vite analyze --hmr-profile'))
-    expect(loggerInfoMock).toHaveBeenCalledWith(expect.stringContaining('当前 200.00 ms'))
-    expect(loggerInfoMock).toHaveBeenCalledWith(expect.stringContaining('疑似慢段 emit 100.00 ms'))
-    nowSpy.mockRestore()
+    try {
+      let cursor = 20
+      for (const totalMs of [100, 80, 90, 200]) {
+        const completed = loggerSuccessMock.mock.calls.length + 1
+        nowValue = cursor
+        if (snapshot) {
+          buildMock.mockImplementationOnce(async () => {
+            ctx.runtimeState.build.hmr.profile.emitMs = totalMs / 2
+            nowValue = cursor + totalMs
+            return { output: [] }
+          })
+          snapshot.onProviderChange({ event: 'update', file: HMR_PAGE_ID })
+        }
+        else {
+          ctx.runtimeState.build.hmr.profile = { emitMs: totalMs / 2 }
+          await onEvent!({ code: 'START' })
+          nowValue = cursor + totalMs
+          await onEvent!({ code: 'END' })
+        }
+        await waitForMockCalls(loggerSuccessMock, completed)
+        cursor += totalMs + 10
+      }
+
+      await waitForMockCalls(loggerInfoMock, 1)
+      expect(loggerInfoMock).toHaveBeenCalledWith(expect.stringContaining('weapp-vite analyze --hmr-profile'))
+      expect(loggerInfoMock).toHaveBeenCalledWith(expect.stringContaining('当前 200.00 ms'))
+      expect(loggerInfoMock).toHaveBeenCalledWith(expect.stringContaining(target === 'app'
+        ? '疑似慢段 snapshot-build 200.00 ms'
+        : '疑似慢段 emit 100.00 ms'))
+    }
+    finally {
+      await watcher.close()
+      nowSpy.mockRestore()
+    }
   })
 
   it('does not print analyze hint when hmr profile output is disabled', async () => {
