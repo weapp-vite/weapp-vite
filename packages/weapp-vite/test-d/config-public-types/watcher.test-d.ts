@@ -117,3 +117,6 @@ defineConfig({ server: { watch: serverWatch } })
 expectError(({ usePolling: true, backend: 'polling' }) satisfies ServerWatchOptions)
 expectError(({ interval: 100, pollingInterval: 100 }) satisfies ServerWatchOptions)
 expectError(({ binaryInterval: 200, pollingBinaryInterval: 200 }) satisfies ServerWatchOptions)
+
+// 后端对照仅限仓库开发脚本，不提供正式配置入口。
+expectError(defineConfig({ weapp: { watch: { engine: 'parcel' } } }))

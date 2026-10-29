@@ -61,7 +61,7 @@ describe('classic direct configuration generation restart', () => {
     mocks.watch.mockImplementation((...args: unknown[]) => {
       const watcher = createWatcher(...args) as EventEmitter
       if (sidecars.length === 1) {
-        queueMicrotask(() => watcher.emit('all', 'change', configFile))
+        queueMicrotask(() => watcher.emit('change', configFile))
       }
       return watcher
     })
@@ -143,16 +143,16 @@ describe('classic direct configuration generation restart', () => {
       watcher = await createBuildService(ctx as unknown as MutableCompilerContext).build({ skipNpm: true }) as RolldownWatcher
       providers[0]!.change({ event: 'update', file: sourceFile })
       config = 'CONFIG-B'
-      sidecars[0]!.emit('all', 'change', configFile)
+      sidecars[0]!.emit('change', configFile)
       // 同一配置保存即便经过其他 watcher，也不能先发布旧的有效配置。
-      sidecars[1]!.emit('all', 'change', configFile)
+      sidecars[1]!.emit('change', configFile)
       providers[0]!.change({ event: 'update', file: configFile })
       await waitForConfigurationLoad(entered.promise)
       expect(publications).toEqual([{ config: 'CONFIG-A', source: 'SOURCE-A' }])
       expect(sidecars[0]!.close).not.toHaveBeenCalled()
       config = 'CONFIG-C'
       source = 'SOURCE-C'
-      sidecars[0]!.emit('all', 'change', configFile)
+      sidecars[0]!.emit('change', configFile)
       providers[0]!.change({ event: 'update', file: sourceFile })
       release.resolve()
       await vi.waitFor(() => expect(publications).toHaveLength(2))
@@ -167,7 +167,7 @@ describe('classic direct configuration generation restart', () => {
       expect(sidecars[1]!.close).toHaveBeenCalledOnce()
       expect(sidecars[0]!.close).not.toHaveBeenCalled()
       config = 'CONFIG-D'
-      sidecars[0]!.emit('all', 'change', configFile)
+      sidecars[0]!.emit('change', configFile)
       await vi.waitFor(() => expect(publications).toHaveLength(3))
       await Promise.all(mocks.restarts)
       expect(publications[2]).toEqual({ config: 'CONFIG-D', source: 'SOURCE-C' })
@@ -202,13 +202,13 @@ describe('classic direct configuration generation restart', () => {
     let watcher: RolldownWatcher | undefined
     try {
       watcher = await createBuildService(ctx as unknown as MutableCompilerContext).build({ skipNpm: true }) as RolldownWatcher
-      sidecars[0]!.emit('all', 'change', configFile)
+      sidecars[0]!.emit('change', configFile)
       await waitForConfigurationLoad(entered.promise)
       let closed = false
       const closing = watcher.close()
       expect(watcher.close()).toBe(closing)
       void closing.then(() => closed = true)
-      sidecars[0]!.emit('all', 'change', configFile)
+      sidecars[0]!.emit('change', configFile)
       await Promise.resolve()
       expect(closed).toBe(false)
       release.resolve()
@@ -253,7 +253,7 @@ describe('classic direct configuration generation restart', () => {
       watcher = await createBuildService(ctx as unknown as MutableCompilerContext).build({ skipNpm: true }) as RolldownWatcher
       providers[0]!.change({ event: 'update', file: sourceFile })
       await entered.promise
-      sidecars[0]!.emit('all', 'change', configFile)
+      sidecars[0]!.emit('change', configFile)
       await Promise.resolve()
       expect(ctx.configService.load).not.toHaveBeenCalled()
       expect(providers[0]!.close).not.toHaveBeenCalled()

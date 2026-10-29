@@ -1,4 +1,4 @@
-import type { Stats } from 'node:fs'
+import type { BigIntStats, Stats } from 'node:fs'
 import fs from 'node:fs'
 import promises from 'node:fs/promises'
 import { createRequire, syncBuiltinESMExports } from 'node:module'
@@ -19,7 +19,7 @@ interface Backend {
     options: { interval: number, persistent: boolean },
     scheduler: Scheduler,
     handlers: { publish: (value: unknown) => void, rawEmitter: (...args: unknown[]) => void, errHandler: (error: unknown) => void },
-    initialStats: Stats,
+    initialStats: Stats | BigIntStats,
     signal: AbortSignal,
   ) => Subscription | undefined
 }
@@ -38,11 +38,11 @@ function stats(size: number) {
   return { size, mtimeMs: size, ctimeMs: size, ino: 1, isDirectory } as Stats
 }
 
-function owner(interval: number, persistent = true, target = file) {
+function owner(interval: number, persistent = true, target = file, initialStats: Stats | BigIntStats = stats(2)) {
   const publish = vi.fn()
   const raw = vi.fn()
   const error = vi.fn()
-  const subscription = setPollingListener(target, target, { interval, persistent }, scheduler, { publish, rawEmitter: raw, errHandler: error }, stats(2), new AbortController().signal)!
+  const subscription = setPollingListener(target, target, { interval, persistent }, scheduler, { publish, rawEmitter: raw, errHandler: error }, initialStats, new AbortController().signal)!
   subscriptions.push(subscription)
   return { close: subscription.close, publish, raw, error }
 }
@@ -156,4 +156,63 @@ it('releases an already-aborted subscription without retaining its timer', async
   const subscription = setPollingListener(file, file, { interval: 100, persistent: true }, scheduler, { publish: vi.fn(), rawEmitter: vi.fn(), errHandler: vi.fn() }, stats(2), controller.signal)
   expect(subscription).toBeUndefined()
   expect(vi.getTimerCount()).toBe(0)
+})
+
+it.each([0, 2])('preserves mixed Stats identities across %i unchanged polls and subsequent real changes', async (unchangedPolls) => {
+  const initial = {
+    size: 6n,
+    mtimeMs: 1_793_280_000_123n,
+    mtimeNs: 1_793_280_000_123_456_789n,
+    ino: 1n,
+    isDirectory,
+  } as BigIntStats
+  const current = { ...stats(6), mtimeMs: 1_793_280_000_123.4568 }
+  // number Stats 保留纳秒折算的小数；只转换 bigint mtimeMs 仍会产生假事件。
+  expect(Number(initial.mtimeMs)).not.toBe(current.mtimeMs)
+  values.set(file, current)
+  const existing = owner(100, true, file, initial)
+  if (unchangedPolls) {
+    await vi.advanceTimersByTimeAsync(100 * unchangedPolls)
+    expect(existing.publish).not.toHaveBeenCalled()
+    expect(existing.raw).not.toHaveBeenCalled()
+    expect(existing.error).not.toHaveBeenCalled()
+  }
+
+  const resized = { ...current, size: 7 }
+  values.set(file, resized)
+  await vi.advanceTimersByTimeAsync(100)
+  expect(existing.publish).toHaveBeenCalledOnce()
+  expect(existing.raw).toHaveBeenCalledOnce()
+  const firstPrevious = unchangedPolls ? current : initial
+  const first = existing.publish.mock.calls[0]![0] as { current: Stats, previous: Stats | BigIntStats }
+  expect(first.current).toBe(resized)
+  expect(first.previous).toBe(firstPrevious)
+  expect(existing.raw.mock.calls[0]![2]).toEqual({ current: resized, previous: firstPrevious })
+  const rawFirst = existing.raw.mock.calls[0]![2] as { current: Stats, previous: Stats | BigIntStats }
+  expect(rawFirst.current).toBe(resized)
+  expect(rawFirst.previous).toBe(firstPrevious)
+
+  const touched = { ...resized, mtimeMs: current.mtimeMs + 1 }
+  values.set(file, touched)
+  await vi.advanceTimersByTimeAsync(100)
+  expect(existing.publish).toHaveBeenCalledTimes(2)
+  expect(existing.raw).toHaveBeenCalledTimes(2)
+  expect(existing.publish.mock.calls[1]![0]).toMatchObject({ current: touched, previous: resized })
+
+  vi.mocked(promises.stat).mockRejectedValueOnce(Object.assign(new Error('asset removed'), { code: 'ENOENT' }))
+  await vi.advanceTimersByTimeAsync(100)
+  expect(existing.publish).toHaveBeenCalledTimes(3)
+  expect(existing.raw).toHaveBeenCalledTimes(3)
+  expect(existing.publish.mock.calls[2]![0]).toMatchObject({ current: { missing: true }, previous: touched })
+
+  await vi.advanceTimersByTimeAsync(100)
+  expect(existing.publish).toHaveBeenCalledTimes(4)
+  expect(existing.raw).toHaveBeenCalledTimes(4)
+  expect(existing.publish.mock.calls[3]![0]).toMatchObject({ current: touched, previous: { missing: true } })
+  await vi.advanceTimersByTimeAsync(100)
+  expect(existing.publish).toHaveBeenCalledTimes(4)
+  expect(existing.raw).toHaveBeenCalledTimes(4)
+  expect(existing.error).not.toHaveBeenCalled()
+  expect(initial.size).toBe(6n)
+  expect(initial.mtimeMs).toBe(1_793_280_000_123n)
 })

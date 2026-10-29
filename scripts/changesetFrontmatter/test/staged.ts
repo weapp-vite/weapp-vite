@@ -163,6 +163,13 @@ export function registerStagedChangesetTests() {
       assert.equal(f.git(['show', `HEAD:${file}`], cwd), valid())
       assert.equal(fs.readFileSync(path.join(cwd, file), 'utf8'), invalid)
       assert.ok(`${accepted.stdout}${accepted.stderr}`.match(/check passed \(\.changeset staged index\)/g)!.length >= 2)
+      const committed = f.git(['rev-parse', 'HEAD'], cwd)
+      const invalidMessage = f.run('git', ['-c', 'core.fsmonitor=false', 'commit', '--quiet', '--allow-empty', '-m', 'unknown: 不支持的类型'], cwd)
+      assert.notEqual(invalidMessage.status, 0)
+      assert.match(`${invalidMessage.stdout}${invalidMessage.stderr}`, /type-enum/)
+      assert.equal(f.git(['rev-parse', 'HEAD'], cwd), committed)
+      assert.equal(f.git(['show', `HEAD:${file}`], cwd), valid())
+      assert.equal(fs.readFileSync(path.join(cwd, file), 'utf8'), invalid)
     }
     finally { f.cleanup() }
   }, 60_000)

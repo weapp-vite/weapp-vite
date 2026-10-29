@@ -92,7 +92,7 @@ process.once('exit', code => console.log('native-process-exit=' + code))
         expect(stderr).toContain('Control disconnected before native cleanup completed')
       }
       else {
-        expect(stderr).toMatch(/ECONNRESET|Control disconnected before native cleanup completed/)
+        expect(stderr).toMatch(/ECONNRESET|EPIPE|Control disconnected before native cleanup completed/)
       }
       expect(messages.some(message => message.type === 'closed')).toBe(false)
     }

@@ -124,22 +124,34 @@ export async function createSnapshotTemplateFixture(harness: SnapshotHarness, cl
     throw new Error('Expected the classic snapshot scheduler')
   }
   cleanups.push(async () => await watcher.close())
-  const snapshotSidecar = () => {
+  const emitPhysicalChange = (event: string, file: string) => {
     const watch = vi.mocked(chokidar.watch)
-    for (let index = watch.mock.calls.length - 1; index >= 0; index -= 1) {
+    let delivered = false
+    for (let index = 0; index < watch.mock.calls.length; index += 1) {
       const roots = watch.mock.calls[index]?.[0]
       const result = watch.mock.results[index]
-      if (!Array.isArray(roots) || !roots.includes(compiler.ctx.configService.absoluteSrcRoot) || result?.type !== 'return') {
+      const matchesRoot = (Array.isArray(roots) ? roots : [roots]).some((root) => {
+        if (typeof root !== 'string') {
+          return false
+        }
+        const relative = path.relative(root, file)
+        return relative === '' || (relative !== '..' && !relative.startsWith('../') && !path.isAbsolute(relative))
+      })
+      if (!matchesRoot || result?.type !== 'return') {
         continue
       }
-      const candidate = harness.sidecars.find(watcher => watcher === result.value && watcher.listenerCount('all') > 0)
+      const candidate = harness.sidecars.find(watcher => watcher === result.value && watcher.listenerCount(event) > 0)
       if (candidate) {
-        return candidate
+        candidate.emit(event, file)
+        candidate.emit('all', event, file)
+        delivered = true
       }
     }
-    throw new Error('Missing snapshot sidecar event source')
+    if (!delivered) {
+      throw new Error('Missing snapshot sidecar event source')
+    }
   }
-  const sidecar = snapshotSidecar()
+  const sidecar = { emit: emitPhysicalChange }
   const save = async (file: string, source: string) => {
     const temporary = `${absolute(file)}.save`
     await writeFile(temporary, source)
@@ -151,8 +163,8 @@ export async function createSnapshotTemplateFixture(harness: SnapshotHarness, cl
     }
     for (const file of files) {
       harness.change({ event: 'update', file: absolute(file) })
-      // 同一次保存通知真实监听范围内的物理 watcher；实现自行选择唯一交付方。
-      snapshotSidecar().emit('all', 'change', absolute(file))
+      // 保存会通知所有覆盖该路径的物理订阅，不能按事件监听器名称猜测业务 owner。
+      emitPhysicalChange('change', absolute(file))
     }
   }
   const nextBundle = async (previousCount: number) => {

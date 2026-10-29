@@ -14,7 +14,7 @@ const state = vi.hoisted(() => ({
   builds: 0,
   buildInputs: [] as string[],
   gate: undefined as PublicationGate | undefined,
-  handlers: new Map<string, () => void>(),
+  handlers: new Map<string, (file: string) => void>(),
   outputRoots: new Set<string>(),
 }))
 
@@ -78,7 +78,7 @@ vi.mock('chokidar', () => ({
         }
         return this
       },
-      on(event: string, callback: () => void) {
+      on(event: string, callback: (file: string) => void) {
         state.handlers.set(event, callback)
         return this
       },
@@ -158,13 +158,13 @@ describe('test artifact fingerprint publication', () => {
     const gate = pausePublication(2)
 
     await fs.writeFile(project.source, 'first-edit')
-    state.handlers.get('change')!()
+    state.handlers.get('change')!(project.source)
     await vi.advanceTimersByTimeAsync(20)
     await gate.entered.promise
     expect(await fs.readFile(project.output, 'utf8')).toBe('first-edit')
 
     await fs.writeFile(project.source, 'second-edit')
-    state.handlers.get('change')!()
+    state.handlers.get('change')!(project.source)
     // 发布仍被 barrier 阻塞时运行第二次防抖，确保 dirty 已在活动构建中登记。
     await vi.advanceTimersByTimeAsync(20)
     gate.released.resolve()

@@ -15,14 +15,17 @@ vi.mock('vite', async (importOriginal) => {
   const actual = await importOriginal<typeof import('vite')>()
   return { ...actual, createServer: createServerMock }
 })
-vi.mock('chokidar', () => ({ watch: watchMock }))
+vi.mock('chokidar', () => ({ default: { watch: watchMock } }))
 
 it('subscribes external WXML inputs to the provider and releases only its listener', async () => {
   const externalWatcher = Object.assign(new EventEmitter(), {
-    add: vi.fn(() => queueMicrotask(() => externalWatcher.emit('ready'))),
-    close: vi.fn(async () => {}),
+    add: vi.fn(),
+    close: vi.fn(async () => { externalWatcher.removeAllListeners() }),
   })
-  watchMock.mockReturnValue(externalWatcher)
+  watchMock.mockImplementation(() => {
+    queueMicrotask(() => externalWatcher.emit('ready'))
+    return externalWatcher
+  })
   const server = {
     config: { root: '/project', server: { watch: {} }, logger: { error: vi.fn() } },
     watcher: { add: vi.fn() },
@@ -46,9 +49,9 @@ it('subscribes external WXML inputs to the provider and releases only its listen
   initial.commit()
   const provider = await createDevModuleGraphProvider(ctx, {}, onChange)
   try {
-    expect(externalWatcher.add).toHaveBeenCalledExactlyOnceWith('/external')
+    expect(watchMock).toHaveBeenCalledExactlyOnceWith(['/external'], expect.any(Object))
     expect(runtimeState.wxmlProcessing.listeners.size).toBe(2)
-    externalWatcher.emit('all', 'change', dependency)
+    externalWatcher.emit('change', dependency)
     expect(onChange).toHaveBeenCalledExactlyOnceWith({ event: 'update', file: dependency })
     const plugin = createServerMock.mock.calls[0]![0].plugins[0] as Plugin
     const read = vi.fn(async () => '{}')
@@ -58,14 +61,14 @@ it('subscribes external WXML inputs to the provider and releases only its listen
     const replacement = beginWxmlDependencies(ctx, 'main', false)
     replacement.template('late.wxml')(lateDependency)
     replacement.commit()
-    externalWatcher.emit('all', 'change', dependency)
-    externalWatcher.emit('all', 'add', lateDependency)
+    externalWatcher.emit('change', dependency)
+    externalWatcher.emit('add', lateDependency)
     expect(onChange.mock.calls.map(([change]) => change)).toEqual([
       { event: 'update', file: dependency },
       { event: 'create', file: lateDependency },
     ])
     // 同一根外父目录只注册一次，根内文件和根外文件均不重复注册到 Vite。
-    expect(externalWatcher.add).toHaveBeenCalledOnce()
+    expect(externalWatcher.add).not.toHaveBeenCalled()
     expect(server.watcher.add).not.toHaveBeenCalled()
   }
   finally {
@@ -75,6 +78,6 @@ it('subscribes external WXML inputs to the provider and releases only its listen
   expect(runtimeState.wxmlProcessing.listeners).toEqual(new Set([unrelated]))
   expect(externalWatcher.close).toHaveBeenCalledOnce()
   expect(server.close).toHaveBeenCalledOnce()
-  externalWatcher.emit('all', 'change', lateDependency)
+  externalWatcher.emit('change', lateDependency)
   expect(onChange).toHaveBeenCalledTimes(2)
 })

@@ -1,3 +1,4 @@
+import { EventEmitter } from 'node:events'
 import fs from 'node:fs'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -42,22 +43,13 @@ vi.mock('./cssGraph', () => ({
 }))
 
 function createChokidarWatcher() {
-  const handlers = new Map<string, (...args: any[]) => void>()
-  const watcher: any = {
-    on: vi.fn((event: string, handler: (...args: any[]) => void) => {
-      handlers.set(event, handler)
-      return watcher
-    }),
-    close: vi.fn(async () => {}),
-    emit(event: string, ...args: any[]) {
-      handlers.get(event)?.(...args)
-    },
-  }
-  return watcher
+  return Object.assign(new EventEmitter(), { close: vi.fn(async () => {}) })
 }
 
+const contexts: Array<ReturnType<typeof createContext>> = []
+
 function createContext() {
-  return {
+  const context = {
     configService: {
       isDev: true,
       cwd: '/project',
@@ -82,6 +74,8 @@ function createContext() {
       },
     },
   } as any
+  contexts.push(context)
+  return context
 }
 
 describe('invalidateEntry sidecar watcher', () => {
@@ -91,7 +85,9 @@ describe('invalidateEntry sidecar watcher', () => {
     scanMock.mockResolvedValue(null)
   })
 
-  afterEach(() => {
+  afterEach(async () => {
+    await Promise.allSettled(contexts.splice(0).flatMap(context =>
+      [...context.runtimeState.watcher.sidecarWatcherMap.values()].map(async (resource: any) => await resource.close())))
     vi.useRealTimers()
     vi.unstubAllEnvs()
     vi.restoreAllMocks()
@@ -106,7 +102,7 @@ describe('invalidateEntry sidecar watcher', () => {
 
     ensureSidecarWatcher(createContext(), '/project/src')
 
-    expect(chokidarWatchMock.mock.calls[0]?.[0]).toBe('/project/src')
+    expect(chokidarWatchMock.mock.calls[0]?.[0]).toEqual(['/project/src'])
     const { ignored } = chokidarWatchMock.mock.calls[0]![1]
     const file = { isFile: () => true }
     expect(ignored('/project/src/page.axml', file)).toBe(false)
@@ -123,7 +119,7 @@ describe('invalidateEntry sidecar watcher', () => {
 
     ensureSidecarWatcher(createContext(), '/project/src')
 
-    expect(chokidarWatchMock.mock.calls[0]?.[0]).toBe('/project/src')
+    expect(chokidarWatchMock.mock.calls[0]?.[0]).toEqual(['/project/src'])
     const { ignored } = chokidarWatchMock.mock.calls[0]![1]
     const file = { isFile: () => true }
     expect(ignored('/project/src/page.ttml', file)).toBe(false)

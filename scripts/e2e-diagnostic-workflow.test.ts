@@ -59,7 +59,7 @@ describe('bounded HMR workflow diagnosis', () => {
 
   it('requires an explicit manual selection and uses a separate concurrency group', async () => {
     const config = await workflow()
-    expect(config.on.workflow_dispatch.inputs['hmr-diagnostic']).toMatchObject({ default: 'full', options: ['full', 'shared-layout-windows', 'lifecycle', 'runtime-publication', 'plugin-watch-readiness', 'workspace-hmr', 'windows-process-narrow', 'windows-native-runtime-cleanup', 'windows-startup-fallback', 'windows-dev-cleanup', 'native-compiler-batch', 'bun-cli'] })
+    expect(config.on.workflow_dispatch.inputs['hmr-diagnostic']).toMatchObject({ default: 'full', options: ['full', 'shared-layout-windows', 'lifecycle', 'runtime-publication', 'plugin-watch-readiness', 'workspace-hmr', 'windows-process-narrow', 'windows-native-runtime-cleanup', 'windows-startup-fallback', 'windows-dev-cleanup', 'native-compiler-batch', 'watcher-comparison', 'bun-cli'] })
     expect(config.concurrency.group).toContain('inputs.hmr-diagnostic || \'full\'')
     const job = config.jobs['shared-layout-windows-diagnostic']!
     expect(job.if).toBe(diagnosticCondition('shared-layout-windows'))
@@ -76,6 +76,24 @@ describe('bounded HMR workflow diagnosis', () => {
       main_command: expect.stringContaining('|| \'pnpm audit:hmr:nightly\''),
       artifact_name: 'workspace-hmr-nightly',
       timeout_minutes: 120,
+    })
+  })
+
+  it('retains independent watcher comparison reports on all three systems', async () => {
+    const { jobs } = await workflow()
+    const job = jobs['watcher-comparison-diagnostic']!
+    expect(job.if).toBe(diagnosticCondition('watcher-comparison'))
+    expect(job.needs).toBe('pr-context')
+    expect(job.uses).toBe('./.github/workflows/reusable-node-command.yml')
+    expect(job.strategy?.['fail-fast']).toBe(false)
+    expect(job.strategy?.matrix).toEqual({ os: ['ubuntu-latest', 'windows-latest', 'macos-latest'] })
+    expect(job.with).toMatchObject({
+      checkout_ref: frozenWorkflowText(`\${{ needs.pr-context.outputs.checkout_sha }}`, 'ci-e2e'),
+      node_version: '24',
+      test_command: 'pnpm test:watcher-comparison --report .tmp/watcher-comparison/report.json',
+      main_command: 'pnpm vitest run -c e2e/vitest.e2e.ci.config.ts e2e/ci/snapshot-sidecar.hmr.test.ts',
+      artifact_path: '.tmp/watcher-comparison/report.json',
+      artifact_name: expect.stringContaining('matrix.os'),
     })
   })
 
@@ -261,7 +279,7 @@ describe('bounded HMR workflow diagnosis', () => {
       expect(jobs[name]?.strategy?.matrix.include?.map(row => `${row.os}/${row['node-version']}`).sort()).toEqual(expected)
     }
     for (const [name, job] of Object.entries(jobs)) {
-      if (['pr-context', 'shared-layout-windows-diagnostic', 'lifecycle-diagnostic', 'runtime-publication-diagnostic', 'plugin-watch-readiness-diagnostic', 'windows-process-narrow-diagnostic', 'windows-native-runtime-cleanup-diagnostic', 'windows-startup-fallback-diagnostic', 'windows-dev-cleanup-diagnostic', 'native-compiler-batch-diagnostic', 'bun-build-diagnostic'].includes(name)) {
+      if (['pr-context', 'shared-layout-windows-diagnostic', 'lifecycle-diagnostic', 'runtime-publication-diagnostic', 'plugin-watch-readiness-diagnostic', 'windows-process-narrow-diagnostic', 'windows-native-runtime-cleanup-diagnostic', 'windows-startup-fallback-diagnostic', 'windows-dev-cleanup-diagnostic', 'native-compiler-batch-diagnostic', 'watcher-comparison-diagnostic', 'bun-build-diagnostic'].includes(name)) {
         continue
       }
       expect(job.if, `${name} must stay outside a bounded diagnostic run`).toSatisfy((condition: string) =>

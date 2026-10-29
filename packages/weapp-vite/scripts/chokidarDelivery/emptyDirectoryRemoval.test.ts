@@ -3,7 +3,7 @@ import type { Readable } from 'node:stream'
 import assert from 'node:assert/strict'
 import { once } from 'node:events'
 import fs from 'node:fs'
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, realpath, rm, writeFile } from 'node:fs/promises'
 import { syncBuiltinESMExports } from 'node:module'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
@@ -57,7 +57,7 @@ function assertCleanupCompleted(bodyFailure: unknown, cleanupFailures: unknown[]
  * 不伪造 fs 结果、stream 事件或 native callback；旧 child stat 主路径仍由正式依赖契约覆盖。
  */
 it.each(['native', 'scan'] as const)('%s 真实根 ENOENT 会释放空目录自身的 tracking、closer 和原生句柄', async (mode) => {
-  const root = await mkdtemp(path.join(tmpdir(), 'chokidar-empty-directory-'))
+  const root = await realpath(await mkdtemp(path.join(tmpdir(), 'chokidar-empty-directory-')))
   const watched = path.join(root, 'src')
   const parent = path.join(watched, 'extra')
   const directory = path.join(parent, 'deep')

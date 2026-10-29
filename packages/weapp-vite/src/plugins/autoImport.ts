@@ -1,16 +1,14 @@
-import type { FSWatcher } from 'chokidar'
 import type { Plugin, ResolvedConfig } from 'vite'
 import type { ComponentsMap } from '../types'
 import type { CompilerContext } from '@/context'
 import { removeExtensionDeep } from '@weapp-core/shared'
-import chokidar from 'chokidar'
 import { fdir as Fdir } from 'fdir'
 import path from 'pathe'
 import { configExtensions, scriptExtensions, templateExtensions, vueExtensions } from '../constants'
 import { logger, resolvedComponentName } from '../context/shared'
 import { defaultExcluded } from '../defaults'
 import { getAutoImportConfig } from '../runtime/autoImport/config'
-import { createSidecarWatchOptions } from '../runtime/watch/options'
+import { createFileWatcher } from '../runtime/watch/fileWatcher'
 import { findJsEntry, findVueEntry, toPosixPath, touch } from '../utils'
 import { toKebabCaseComponentName } from '../utils/json'
 import { createAutoImportSidecarPlan, resolveAutoImportWatchTargets } from './autoImport/watchTargets'
@@ -271,9 +269,9 @@ function findMatchingComponentName(components: ComponentsMap, componentName: str
   }
 }
 
-async function refreshAutoImportImporters(ctx: AutoImportState['ctx'], filePath: string) {
+async function refreshAutoImportImporters(ctx: AutoImportState['ctx'], filePath: string, isActive = () => true) {
   const { wxmlService, configService, autoImportService } = ctx
-  if (!wxmlService || !configService) {
+  if (!isActive() || !wxmlService || !configService) {
     return
   }
 
@@ -285,6 +283,9 @@ async function refreshAutoImportImporters(ctx: AutoImportState['ctx'], filePath:
   const touchedImporters = new Set<string>()
   const entries = Array.from(wxmlService.wxmlComponentsMap.entries()) as Array<[string, ComponentsMap]>
   for (const [baseName, components] of entries) {
+    if (!isActive()) {
+      return
+    }
     const matchingComponentName = findMatchingComponentName(components, componentName)
     if (!matchingComponentName) {
       continue
@@ -300,12 +301,18 @@ async function refreshAutoImportImporters(ctx: AutoImportState['ctx'], filePath:
     }
 
     const vueEntry = await findVueEntry(baseName)
+    if (!isActive()) {
+      return
+    }
     if (vueEntry) {
       touchedImporters.add(vueEntry)
       continue
     }
 
     const scriptEntry = await findJsEntry(baseName)
+    if (!isActive()) {
+      return
+    }
     if (scriptEntry.path) {
       touchedImporters.add(scriptEntry.path)
     }
@@ -316,34 +323,24 @@ async function refreshAutoImportImporters(ctx: AutoImportState['ctx'], filePath:
   }
 
   for (const importer of touchedImporters) {
+    if (!isActive()) {
+      return
+    }
     try {
       await touch(importer)
     }
     catch {}
   }
 
-  logger.info(`[auto-import:watch] 刷新组件引用方 ${Array.from(touchedImporters, importer => configService.relativeCwd(importer)).join(', ')}`)
+  if (isActive()) {
+    logger.info(`[auto-import:watch] 刷新组件引用方 ${Array.from(touchedImporters, importer => configService.relativeCwd(importer)).join(', ')}`)
+  }
 }
 
 function createAutoImportPlugin(state: AutoImportState): Plugin {
   const { ctx } = state
   const { configService, autoImportService } = ctx
   let fileWatcherStarted = false
-
-  function waitForSidecarWatcherReady(watcher: FSWatcher) {
-    const watchHandle = watcher as FSWatcher & {
-      getWatched?: () => Record<string, string[]>
-    }
-    if (typeof watchHandle.getWatched !== 'function') {
-      return Promise.resolve()
-    }
-
-    return new Promise<void>((resolve) => {
-      watcher.once('ready', () => {
-        resolve()
-      })
-    })
-  }
 
   async function startAutoImportFileWatcher(globs: string[] | undefined) {
     if (fileWatcherStarted || !configService?.isDev || !globs?.length) {
@@ -373,59 +370,93 @@ function createAutoImportPlugin(state: AutoImportState): Plugin {
       fileWatcherStarted = false
       throw error
     }
-    const watcher = chokidar.watch(sidecarPlan.roots, createSidecarWatchOptions(configService, {
+    let closed = false
+    let closing: Promise<void> | undefined
+    const pending = new Set<Promise<void>>()
+    const failures = new Set<unknown>()
+    const reportError = (error: unknown) => {
+      failures.add(error)
+      logger.error(error)
+    }
+    const observe = (task: Promise<void>) => {
+      pending.add(task)
+      void task.then(() => pending.delete(task), (error) => {
+        pending.delete(task)
+        reportError(error)
+      })
+    }
+    const watcher = createFileWatcher(configService, sidecarPlan.roots, {
       ignoreInitial: true,
       ignored: sidecarPlan.ignored,
       persistent: true,
-      awaitWriteFinish: {
-        stabilityThreshold: 80,
-        pollInterval: 20,
+      stability: {
+        threshold: 80,
+        interval: 20,
       },
-    }))
+    })
+    watcher.onError(reportError)
 
     const registerAndRefreshComponent = (rawFilePath: string, action: '新增' | '变更') => {
       const filePath = toPosixPath(rawFilePath)
-      if (!getAutoImportCandidateKind(filePath)) {
+      if (closed || !getAutoImportCandidateKind(filePath)) {
         return
       }
       if (!matchesAutoImportGlobs(ctx, filePath)) {
         return
       }
       logger.info(`[auto-import:watch] ${action}组件文件 ${configService.relativeCwd(filePath)}`)
-      void autoImportService.registerPotentialComponent(filePath)
-        .then(async () => {
-          // 已入图源码的内容更新由原生 watcher 负责；重新触碰引用方会制造第二轮 HMR。
-          if (action === '新增' || getAutoImportCandidateKind(filePath) === 'config' || !ctx.moduleGraphService?.hasModule(filePath)) {
-            await refreshAutoImportImporters(ctx, filePath)
-          }
-        })
+      observe((async () => {
+        await autoImportService.registerPotentialComponent(filePath)
+        // 已入图源码的内容更新由原生 watcher 负责；关闭后不再触碰引用方。
+        if (!closed && (action === '新增' || getAutoImportCandidateKind(filePath) === 'config' || !ctx.moduleGraphService?.hasModule(filePath))) {
+          await refreshAutoImportImporters(ctx, filePath, () => !closed)
+        }
+      })())
     }
 
-    watcher.on('add', (filePath) => {
-      registerAndRefreshComponent(filePath, '新增')
-    })
-
-    watcher.on('change', (filePath) => {
-      registerAndRefreshComponent(filePath, '变更')
-    })
-
-    watcher.on('unlink', (rawFilePath) => {
-      const filePath = toPosixPath(rawFilePath)
-      if (!getAutoImportCandidateKind(filePath)) {
-        return
+    watcher.onChange((changes) => {
+      for (const change of changes) {
+        if (closed || change.kind !== 'file') {
+          continue
+        }
+        if (change.event !== 'delete') {
+          registerAndRefreshComponent(change.file, change.event === 'create' ? '新增' : '变更')
+          continue
+        }
+        const filePath = toPosixPath(change.file)
+        if (!getAutoImportCandidateKind(filePath) || !matchesAutoImportGlobs(ctx, filePath)) {
+          continue
+        }
+        logger.info(`[auto-import:watch] 删除组件文件 ${configService.relativeCwd(filePath)}`)
+        autoImportService.removePotentialComponent(filePath)
+        observe(refreshAutoImportImporters(ctx, filePath, () => !closed))
       }
-      if (!matchesAutoImportGlobs(ctx, filePath)) {
-        return
-      }
-      logger.info(`[auto-import:watch] 删除组件文件 ${configService.relativeCwd(filePath)}`)
-      autoImportService.removePotentialComponent(filePath)
-      void refreshAutoImportImporters(ctx, filePath)
     })
 
     sidecarWatcherMap.set(AUTO_IMPORT_WATCHER_KEY, {
-      close: () => watcher.close(),
+      close() {
+        if (!closing) {
+          closed = true
+          closing = (async () => {
+            const results = await Promise.allSettled([
+              watcher.close(),
+              ...pending,
+            ])
+            for (const result of results) {
+              if (result.status === 'rejected') {
+                failures.add(result.reason)
+              }
+            }
+            if (failures.size) {
+              const errors = [...failures]
+              throw errors.length === 1 ? errors[0] : new AggregateError(errors, 'Auto-import watcher cleanup failed', { cause: errors[0] })
+            }
+          })()
+        }
+        return closing
+      },
     })
-    await waitForSidecarWatcherReady(watcher)
+    await watcher.ready
   }
 
   return {

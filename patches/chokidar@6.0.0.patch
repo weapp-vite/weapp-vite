@@ -43,9 +43,18 @@ index ab80d1d4b1dac5c60843c75e086e807e5d186c26..c95e58663b3a34dc52a1e81a70576724
      watchedPath: Path;
      interval: number;
 diff --git a/backend.js b/backend.js
-index 78f2fe1783103772884bece59d8c3f2cb3c05ba5..e47449339209c1d13505daee5010870eb3ccf87a 100644
+index 78f2fe1783103772884bece59d8c3f2cb3c05ba5..1850cbd905e3b61bd18a3cd71a15880f5902eb13 100644
 --- a/backend.js
 +++ b/backend.js
+@@ -1,7 +1,7 @@
+ import { watch as fsWatch, realpathSync } from 'node:fs';
+ import { lstat, open, stat } from 'node:fs/promises';
+ import * as sp from 'node:path';
+-import { EVENTS, isLinux, isMacos, isMissingError, isRecursiveWatchUnsupported, isSameOrInside, isWindows, } from './runtime.js';
++import { EVENTS, isLinux, isMacos, isMissingError, isRecursiveWatchUnsupported, isSameOrInside, isWindows, statIdentity, } from './runtime.js';
+ let nextGeneration = 0;
+ export function allocateSharedResourceGeneration() {
+     return ++nextGeneration;
 @@ -49,6 +49,8 @@ function invalidateWatcherResource(resource, registry) {
      if (registry.get(resource.resource) === resource)
          registry.delete(resource.resource);
@@ -244,6 +253,19 @@ index 78f2fe1783103772884bece59d8c3f2cb3c05ba5..e47449339209c1d13505daee5010870e
      return cont;
  }
  /**
+@@ -361,8 +505,10 @@ function observationsDiffer(previous, current) {
+     const currentMissing = isMissingObservation(current);
+     if (previousMissing || currentMissing)
+         return previousMissing !== currentMissing;
+-    const reliableInodeChanged = !isWindows && previous.ino !== 0 && current.ino !== 0 && previous.ino !== current.ino;
+-    return (previous.size !== current.size || previous.mtimeMs !== current.mtimeMs || reliableInodeChanged);
++    const previousIdentity = statIdentity(previous);
++    const currentIdentity = statIdentity(current);
++    const reliableInodeChanged = !isWindows && previousIdentity.ino !== 0 && currentIdentity.ino !== 0 && previousIdentity.ino !== currentIdentity.ino;
++    return (previousIdentity.size !== currentIdentity.size || previousIdentity.mtimeMs !== currentIdentity.mtimeMs || reliableInodeChanged);
+ }
+ function setTimerPersistence(resource) {
+     if (!resource.timer)
 diff --git a/index.js b/index.js
 index 0c179fb13c136dfa43e53c8a82177b9443dfa6ef..562e7bff39f8bbe490e0f948ce723ab9b293dcd1 100644
 --- a/index.js

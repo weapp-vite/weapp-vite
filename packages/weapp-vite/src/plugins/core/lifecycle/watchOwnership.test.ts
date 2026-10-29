@@ -146,7 +146,7 @@ describe('core sidecar watcher ownership', () => {
     const expected = target === 'app'
       ? [config.absoluteSrcRoot, pluginRoot]
       : [target === 'plugin' ? pluginRoot : path.join(config.absoluteSrcRoot, 'isolated')]
-    expect(watch.mock.calls.map(call => call[0])).toEqual(expected)
+    expect(watch.mock.calls.map(call => call[0])).toEqual(expected.map(root => [root]))
     await fixture.ctx.watcherService!.closeAll()
   })
 

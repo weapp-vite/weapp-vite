@@ -10,11 +10,24 @@ import { execa } from 'execa'
 interface PrepareResult { exitCode?: number, stdout?: string, stderr?: string }
 type PrepareExecutor = (command: string, args: string[], options: { cwd: string, reject: false }) => Promise<PrepareResult>
 
+async function consumerPrepareArgs(cwd: string): Promise<string[]> {
+  const manifest = JSON.parse(await readFile(path.join(cwd, 'package.json'), 'utf8')) as { scripts?: Record<string, unknown> }
+  const script = manifest.scripts?.postinstall
+  if (typeof script !== 'string' || !/^(?:wv|weapp-vite)[ \t]+prepare(?:[ \t]|$)/.test(script)) {
+    return []
+  }
+  // 只继承消费者已声明的目标，不执行安装脚本或覆盖配置中的默认平台。
+  const prepared = /^(?:wv|weapp-vite)[ \t]+prepare(?:[ \t]+(?:-p[ \t]+|--platform(?:[ \t]+|=))(weapp|alipay|tt|swan|jd|xhs|web))?[ \t]*$/.exec(script)
+  assert(prepared, '消费者 postinstall prepare 参数无法安全复用，请提供显式平台契约')
+  return prepared[1] ? ['--platform', prepared[1]] : []
+}
+
 /** 只调用正式 prepare 生成支持文件，拒绝 CLI 安装期容错返回的假成功。 */
 export async function prepareConsumerSupport(root: string, directory: string, cli: string, execute: PrepareExecutor = execa): Promise<void> {
   const cwd = path.resolve(root, directory)
   assert(cwd.startsWith(`${path.resolve(root)}${path.sep}`), '消费者目录必须位于候选工作区内')
-  const result = await execute(process.execPath, [path.resolve(root, cli), 'prepare'], { cwd, reject: false })
+  const args = await consumerPrepareArgs(cwd)
+  const result = await execute(process.execPath, [path.resolve(root, cli), 'prepare', ...args], { cwd, reject: false })
   if (result.stdout) {
     process.stdout.write(result.stdout)
   }

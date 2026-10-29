@@ -245,6 +245,44 @@
         "profile": "ci-e2e"
       }
     },
+    "watcher-comparison-diagnostic": {
+      "needs": "pr-context",
+      "if": "${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-e2e'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'watcher-comparison')) }}",
+      "name": "Watcher Backend Comparison (${{ matrix.os }} / Node 24)",
+      "strategy": {
+        "fail-fast": false,
+        "max-parallel": 3,
+        "matrix": {
+          "os": [
+            "ubuntu-latest",
+            "windows-latest",
+            "macos-latest"
+          ]
+        }
+      },
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "pr_profile": "ci-e2e",
+        "verification_topology": "${{ inputs.verification_topology }}",
+        "checkout_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
+        "base_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}",
+        "head_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}",
+        "pr_number": "${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}",
+        "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
+        "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
+        "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
+        "runs_on": "${{ matrix.os }}",
+        "node_version": "24",
+        "timeout_minutes": 20,
+        "build_command": "pnpm exec turbo run build --filter=weapp-vite...",
+        "test_command": "pnpm test:watcher-comparison --report .tmp/watcher-comparison/report.json",
+        "main_command": "pnpm vitest run -c e2e/vitest.e2e.ci.config.ts e2e/ci/snapshot-sidecar.hmr.test.ts",
+        "artifact_name": "watcher-comparison-${{ matrix.os }}-node-24-${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
+        "artifact_path": ".tmp/watcher-comparison/report.json"
+      },
+      "secrets": "inherit"
+    },
     "native-compiler-batch-diagnostic": {
       "needs": "pr-context",
       "if": "${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-e2e'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'native-compiler-batch')) }}",

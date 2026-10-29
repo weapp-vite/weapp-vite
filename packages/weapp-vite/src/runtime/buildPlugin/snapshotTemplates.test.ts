@@ -26,6 +26,7 @@ vi.mock('chokidar', () => ({
         unwatch: vi.fn(),
         close: async () => {
           closed = true
+          watcher.removeAllListeners()
         },
       })
       harness.sidecars.push(watcher)
@@ -163,7 +164,7 @@ describe('classic template snapshot source freshness', () => {
     await fixture.save('components/layout/index.wxml', '<include src="../../shared/wrapper.wxml"/>')
     await rm(card)
     fixture.update('components/layout/index.wxml')
-    fixture.sidecar.emit('all', 'unlink', card)
+    fixture.sidecar.emit('unlink', card)
     const removed = await fixture.nextBundle(1)
     expect(fixture.ctx.wxmlService.tokenMap.has(card)).toBe(false)
     expect(removed['shared/card.wxml']).toBeUndefined()
@@ -195,7 +196,7 @@ describe('classic template snapshot source freshness', () => {
     const card = fixture.absolute('shared/card.wxml')
     const owner = await fixture.readOutput('components/layout/index.wxml')
     await rm(card)
-    fixture.sidecar.emit('all', 'unlink', card)
+    fixture.sidecar.emit('unlink', card)
     const failure = await fixture.nextFailure(0)
     expect(String(failure)).toContain('ENOENT')
     expect(String(failure)).toMatch(/shared[/\\]card\.wxml/)
@@ -208,7 +209,7 @@ describe('classic template snapshot source freshness', () => {
     const restoredSource = `<template name="card"><view>card ${content}</view></template>`
     await fixture.save('shared/card.wxml', restoredSource)
     harness.change!({ event: 'create', file: card })
-    fixture.sidecar.emit('all', 'add', card)
+    fixture.sidecar.emit('add', card)
     const restored = await fixture.nextBundle(1)
     expect(restored['shared/card.wxml']).toMatchObject({ source: restoredSource })
     expect(fixture.ctx.wxmlService.tokenMap.get(card)?.code).toBe(restoredSource)

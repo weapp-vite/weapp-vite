@@ -63,7 +63,13 @@ export function observeWxmlDependencies(ctx: Pick<CompilerContext, 'runtimeState
     return () => {}
   }
   state.listeners.add(listener)
-  listener(getWxmlWatchFiles(ctx))
+  try {
+    listener(getWxmlWatchFiles(ctx))
+  }
+  catch (error) {
+    state.listeners.delete(listener)
+    throw error
+  }
   return () => {
     state.listeners.delete(listener)
   }

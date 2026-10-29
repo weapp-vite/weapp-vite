@@ -1,6 +1,6 @@
-import type { FSWatcher } from 'chokidar'
 import type { EnvironmentModuleNode, ModuleNode, ViteDevServer } from 'vite'
 import type { ConfigService } from '../runtime/config/types'
+import type { createFileWatcher } from '../runtime/watch/fileWatcher'
 import {
   WEVU_AUTO_ROUTES_MODULE_ID,
   WEVU_AUTO_ROUTES_RESOLVED_MODULE_ID,
@@ -90,39 +90,16 @@ export function shouldStartAutoRoutesWatcher(options: {
 }
 
 /**
- * 初扫完成前阻止路由构建发布；关闭时主动释放等待，不依赖物理 watcher 的 close 事件。
+ * 复用监听适配层的初扫状态；关闭保留 closed 结果，不伪造 ready。
  */
 export function createAutoRoutesSidecarWatcher(
-  watcher: Pick<FSWatcher, 'once' | 'off' | 'close'>,
+  watcher: Pick<ReturnType<typeof createFileWatcher>, 'ready' | 'close'>,
 ) {
-  let settleReady!: () => void
-  const ready = new Promise<void>((resolve, reject) => {
-    const listeners = {
-      cleanup() {
-        watcher.off('ready', listeners.ready)
-        watcher.off('error', listeners.error)
-      },
-      ready() {
-        listeners.cleanup()
-        resolve()
-      },
-      error(error: unknown) {
-        listeners.cleanup()
-        reject(error)
-      },
-    }
-    settleReady = listeners.ready
-    watcher.once('ready', listeners.ready)
-    watcher.once('error', listeners.error)
-  })
   let closing: Promise<void> | undefined
   return {
-    ready,
+    ready: watcher.ready,
     close() {
-      closing ??= (async () => {
-        settleReady()
-        await watcher.close()
-      })()
+      closing ??= watcher.close()
       return closing
     },
   }

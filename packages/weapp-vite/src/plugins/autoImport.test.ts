@@ -1,5 +1,6 @@
 import type { ResolvedConfig } from 'vite'
 import type { CompilerContext } from '../context'
+import { EventEmitter } from 'node:events'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -15,28 +16,21 @@ vi.mock('chokidar', () => ({
 
 describe('autoImport plugin', () => {
   function createMockSidecarWatcher(options: { nativeReady?: boolean } = {}) {
-    const listeners = new Map<string, (filePath?: string) => void>()
+    const events = new EventEmitter()
     const watcher = {
-      on: vi.fn((event: string, handler: (filePath?: string) => void) => {
-        listeners.set(event, handler)
-        return watcher
-      }),
+      on: vi.fn(events.on.bind(events)),
       once: vi.fn((event: string, handler: (filePath?: string) => void) => {
-        listeners.set(event, (filePath?: string) => {
-          listeners.delete(event)
-          handler(filePath)
-        })
+        events.once(event, handler)
+        if (event === 'ready' && !options.nativeReady) {
+          queueMicrotask(() => watcher.emit('ready'))
+        }
         return watcher
       }),
-      close: vi.fn(),
+      off: vi.fn(events.off.bind(events)),
+      close: vi.fn(async () => { events.removeAllListeners() }),
       emit(event: 'add' | 'change' | 'unlink' | 'ready', filePath?: string) {
-        listeners.get(event)?.(filePath)
+        events.emit(event, filePath)
       },
-      ...(options.nativeReady
-        ? {
-            getWatched: vi.fn(() => ({})),
-          }
-        : {}),
     }
 
     return watcher
@@ -542,12 +536,15 @@ describe('autoImport plugin', () => {
     first.configResolved?.({ build: { outDir: 'dist' } } as any)
     await first.buildStart?.call({ addWatchFile: vi.fn() } as any)
     let release!: () => void
+    const closingStarted = Promise.withResolvers<void>()
     previous.close.mockImplementation(() => new Promise<void>((resolve) => {
+      closingStarted.resolve()
       release = resolve
     }))
     const second = autoImport(ctx)[0]
     second.configResolved?.({ build: { outDir: 'dist' } } as any)
     const restarting = second.buildStart?.call({ addWatchFile: vi.fn() } as any)
+    await closingStarted.promise
     expect(previous.close).toHaveBeenCalledOnce()
     expect(chokidarWatchMock).toHaveBeenCalledOnce()
     release()
@@ -556,6 +553,67 @@ describe('autoImport plugin', () => {
     expect(sidecarWatcherMap.size).toBe(1)
     await [...sidecarWatcherMap.values()][0]!.close()
     expect(replacement.close).toHaveBeenCalledOnce()
+  })
+
+  it.each(['complete', 'fail'] as const)('drains a pending component registration on close without refreshing importers: %s', async (outcome) => {
+    const root = path.resolve('auto-import-drain-fixture')
+    const src = path.join(root, 'src')
+    const component = path.join(src, 'components/HotCard/index.vue')
+    const importer = path.join(src, 'pages/home/index')
+    const gate = Promise.withResolvers<void>()
+    const failure = new Error('component registration failed')
+    const sidecarWatcher = createMockSidecarWatcher()
+    chokidarWatchMock.mockReturnValue(sidecarWatcher)
+    const registerPotentialComponent = vi.fn(async () => {})
+    const resolve = vi.fn()
+    const sidecarWatcherMap = new Map<string, { close: () => void | Promise<void> }>()
+    const ctx = {
+      runtimeState: { watcher: { sidecarWatcherMap } },
+      configService: {
+        cwd: root,
+        absoluteSrcRoot: src,
+        relativeCwd: (file: string) => path.relative(root, file),
+        relativeAbsoluteSrcRoot: (file: string) => path.relative(src, file),
+        isDev: true,
+        weappViteConfig: { autoImportComponents: { globs: ['components/**/*.vue'] } },
+      },
+      wxmlService: { wxmlComponentsMap: new Map([[importer, { HotCard: {} }]]) },
+      autoImportService: {
+        reset: vi.fn(),
+        awaitManifestWrites: vi.fn(async () => {}),
+        filter: () => true,
+        registerPotentialComponent,
+        removePotentialComponent: vi.fn(),
+        resolve,
+        getRegisteredLocalComponents: vi.fn(),
+      },
+    } as unknown as CompilerContext
+    const plugin = autoImport(ctx)[0]!
+    plugin.configResolved?.({ build: { outDir: 'dist' } } as ResolvedConfig)
+    await plugin.buildStart?.()
+    registerPotentialComponent.mockClear().mockImplementationOnce(() => gate.promise)
+    sidecarWatcher.emit('add', component)
+    expect(registerPotentialComponent).toHaveBeenCalledExactlyOnceWith(component)
+    const resource = [...sidecarWatcherMap.values()][0]!
+    const closed = resource.close()
+    const settled = vi.fn()
+    const observed = Promise.resolve(closed).then(settled, settled)
+    expect(resource.close()).toBe(closed)
+    await Promise.resolve()
+    expect(settled).not.toHaveBeenCalled()
+    sidecarWatcher.emit('add', component)
+    expect(registerPotentialComponent).toHaveBeenCalledOnce()
+    if (outcome === 'fail') {
+      gate.reject(failure)
+      await expect(closed).rejects.toBe(failure)
+    }
+    else {
+      gate.resolve()
+      await closed
+    }
+    await observed
+    expect(resolve).not.toHaveBeenCalled()
+    expect(sidecarWatcher.close).toHaveBeenCalledOnce()
   })
 
   it('waits for sidecar watcher ready before finishing dev buildStart', async () => {

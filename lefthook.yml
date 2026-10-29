@@ -69,7 +69,7 @@ commit-msg:
     - name: final-staged-semantics
       run: node scripts/check-changeset-frontmatter.mjs --staged
     - name: commitlint
-      run: pnpm exec repo verify commit-msg "{1}"
+      run: node node_modules/repoctl/bin/repo.js verify commit-msg "{1}"
 
 pre-push:
   piped: true

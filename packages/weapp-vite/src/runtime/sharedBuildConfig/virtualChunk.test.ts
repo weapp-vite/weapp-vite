@@ -24,6 +24,23 @@ describe('virtual chunk output names', () => {
     expect(resolveVirtualChunkFileName({ moduleIds: ['/src/a.ts', '/src/b.ts'] }, '/src')).toBeUndefined()
   })
 
+  it('keeps one logical owner when its source and sidecars share the implementation chunk', () => {
+    const entry = createLogicalEntryId('/project/src/components/button.ts', 'component')
+    const sidecar = createSidecarModuleId('/project/src/components/button.ts', '/project/src/components/button.wxss', 'style')
+    expect(resolveVirtualChunkFileName({ moduleIds: ['/project/src/components/button.ts', sidecar, entry] }, '/project/src'))
+      .toBe(resolveVirtualChunkFileName({ facadeModuleId: entry }, '/project/src'))
+  })
+
+  it('distinguishes mixed logical owners without depending on module traversal order', () => {
+    const first = createLogicalEntryId('/project/src/components/first.ts', 'component')
+    const second = createLogicalEntryId('/project/src/components/second.ts', 'component')
+    const mixed = resolveVirtualChunkFileName({ moduleIds: [first, second] }, '/project/src')
+    expect(mixed).toBeDefined()
+    expect(mixed).toBe(resolveVirtualChunkFileName({ moduleIds: [second, first, first] }, '/project/src'))
+    expect(mixed).not.toBe(resolveVirtualChunkFileName({ moduleIds: [first] }, '/project/src'))
+    expect(mixed).not.toBe(resolveVirtualChunkFileName({ moduleIds: [second] }, '/project/src'))
+  })
+
   it('uses the same relative identity for Windows and POSIX paths', () => {
     const windowsRoot = 'C:\\workspace\\src'
     const windowsEntry = createLogicalEntryId(`${windowsRoot}\\pages\\index.vue`, 'page')

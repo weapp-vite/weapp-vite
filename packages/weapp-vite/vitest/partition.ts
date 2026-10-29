@@ -7,6 +7,11 @@ export const serialFixtureTestIncludes = [
   'test/**/*.spec.ts',
 ]
 
+/** 实验目录中的真实原生文件观察只由显式机器租约入口执行，不进入普通单测分区。 */
+export const nativeWatchContractTests = [
+  'scripts/watcherComparison/fileWatcher.contract.test.ts',
+]
+
 /** 已审核的 fixture 清单与正式拓扑使用同一个来源。 */
 export const parallelFixtureTests: readonly string[] = AUDITED_PARALLEL_FIXTURE_TESTS
 

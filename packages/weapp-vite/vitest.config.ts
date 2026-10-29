@@ -1,7 +1,7 @@
 import path from 'node:path'
 import { defineProject } from 'vitest/config'
 import { createProjectCoverage } from '../../vitest.coverage.ts'
-import { createFastTestIncludes, fixturePartition, serialFixtureTestIncludes } from './vitest/partition.ts'
+import { createFastTestIncludes, fixturePartition, nativeWatchContractTests, serialFixtureTestIncludes } from './vitest/partition.ts'
 
 const parallelFixtureTests = fixturePartition().parallel
 
@@ -19,6 +19,8 @@ const projectTestExcludes = [
   '**/dist-*/**',
   '**/.weapp-vite/**',
   '**/coverage/**',
+  // 实验适配器的真实原生契约保留独立机器租约入口，mock 测试继续由 scripts 发现。
+  ...nativeWatchContractTests,
 ]
 
 const serialTestFiles = [

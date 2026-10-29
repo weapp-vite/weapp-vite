@@ -1,9 +1,10 @@
 import type { InlineConfig } from 'vite'
+import type { ConfigService } from './runtime/config/types'
 import path from 'node:path'
 import process from 'node:process'
-import chokidar from 'chokidar'
 import { parseLogicalEntryId, parseSidecarModuleId } from './moduleGraph/protocol'
 import { CompilerSession } from './runtime/compilerSession'
+import { createFileWatcher } from './runtime/watch/fileWatcher'
 import { createSidecarWatchOptions } from './runtime/watch/options'
 import { fingerprintPaths, projectInputFiles, resolveArtifactOutDir } from './testArtifact/inputs'
 import { isPathInside, normalizePath } from './utils/path'
@@ -40,8 +41,34 @@ let pendingBuild: Promise<unknown> = Promise.resolve()
 const artifactInputs = new WeakMap<WeappViteTestArtifact, {
   fingerprint: string
   paths: string[]
-  watchOptions: ReturnType<typeof createSidecarWatchOptions>
+  watchConfig: Pick<ConfigService, 'inlineConfig'>
 }>()
+
+/** 监听策略属于产物启动快照，后续编译配置变动不能改写已登记策略。 */
+function captureArtifactWatchConfig(config: Pick<ConfigService, 'inlineConfig'>): Pick<ConfigService, 'inlineConfig'> {
+  const inline = config.inlineConfig
+  const buildWatch = inline?.build?.watch
+  const serverWatch = inline?.server?.watch
+  const watchOptions = createSidecarWatchOptions(config, {})
+  const buildChokidar = buildWatch && typeof buildWatch === 'object' && 'chokidar' in buildWatch ? buildWatch.chokidar : undefined
+  return {
+    inlineConfig: {
+      ...inline,
+      build: {
+        ...inline?.build,
+        watch: {
+          ...(buildWatch && typeof buildWatch === 'object' ? buildWatch : {}),
+          ...{
+            chokidar: { ...buildChokidar, ...watchOptions },
+          },
+        },
+      },
+      server: inline?.server
+        ? { ...inline.server, watch: serverWatch && typeof serverWatch === 'object' ? { ...serverWatch } : serverWatch }
+        : undefined,
+    },
+  }
+}
 
 function enqueueBuild<T>(task: () => Promise<T>) {
   const result = pendingBuild.then(task, task)
@@ -102,7 +129,7 @@ export async function buildTestArtifact(options: BuildTestArtifactOptions = {}) 
         preloadAppEntry: false,
         syncSupportFiles: false,
       })
-      const watchOptions = createSidecarWatchOptions(ctx.configService, {})
+      const watchConfig = captureArtifactWatchConfig(ctx.configService)
       for (const file of ctx.configService.configFileDependencies ?? []) {
         dependencies.add(file)
       }
@@ -125,7 +152,7 @@ export async function buildTestArtifact(options: BuildTestArtifactOptions = {}) 
       const discoveredStable = await Promise.all([...discoveredInputs].map(async ([file, fingerprint]) =>
         await fingerprint === await fingerprintPaths([file])))
       const stable = discoveredStable.every(Boolean) && before === await fingerprintPaths(initialInputs, [outDir])
-      artifactInputs.set(artifact, { paths, fingerprint: stable ? fingerprint : '', watchOptions })
+      artifactInputs.set(artifact, { paths, fingerprint: stable ? fingerprint : '', watchConfig })
       return artifact
     }
     finally {
@@ -146,8 +173,7 @@ export async function watchTestArtifact(options: WatchTestArtifactOptions = {}):
     .filter(file => !isPathInside(artifact.miniprogramRootPath, file)
       && (normalizePath(file) === normalizePath(artifact.sourceRootPath) || !isPathInside(artifact.sourceRootPath, file)))
   let watched = watchedInputs()
-  const watcher = chokidar.watch(watched, {
-    ...artifactInputs.get(artifact)!.watchOptions,
+  const watcher = createFileWatcher(artifactInputs.get(artifact)!.watchConfig, watched, {
     ignoreInitial: true,
     ignored(file) {
       if (watched.some(input => isPathInside(file, input))) {
@@ -157,6 +183,16 @@ export async function watchTestArtifact(options: WatchTestArtifactOptions = {}):
         || isPathInside(artifact.miniprogramRootPath, file)
     },
   })
+  const closeResources = async (priorFailures: unknown[] = []) => {
+    const results = await Promise.allSettled([watcher.close(), active])
+    const failures = [...new Set([
+      ...priorFailures,
+      ...results.filter((result): result is PromiseRejectedResult => result.status === 'rejected').map(result => result.reason),
+    ])]
+    if (failures.length) {
+      throw failures.length === 1 ? failures[0] : new AggregateError(failures, 'Test artifact watcher cleanup failed', { cause: failures[0] })
+    }
+  }
   const requestRebuild = (force: boolean): Promise<WeappViteTestArtifact> => {
     if (closed) {
       return Promise.reject(new Error('The weapp-vite test artifact watcher has already closed.'))
@@ -179,9 +215,8 @@ export async function watchTestArtifact(options: WatchTestArtifactOptions = {}):
           artifact = await buildTestArtifact(options)
           if (!closed) {
             const next = watchedInputs()
-            await watcher.unwatch(watched.filter(file => !next.includes(file)))
             watched = next
-            watcher.add(watched)
+            await watcher.updateTargets(watched)
             await options.onRebuilt?.(artifact)
           }
           if (closed) {
@@ -208,15 +243,14 @@ export async function watchTestArtifact(options: WatchTestArtifactOptions = {}):
       })
     }, 20)
   }
-  watcher.on('add', scheduleRebuild)
-  watcher.on('change', scheduleRebuild)
-  watcher.on('unlink', scheduleRebuild)
-  watcher.on('error', error => options.onError?.(error))
+  watcher.onChange((changes) => {
+    if (changes.some(change => change.kind === 'file')) {
+      scheduleRebuild()
+    }
+  })
+  watcher.onError(error => options.onError?.(error))
   try {
-    await new Promise<void>((resolve, reject) => {
-      watcher.once('ready', resolve)
-      watcher.once('error', reject)
-    })
+    await watcher.ready
     if (!await isTestArtifactCurrent(artifact)) {
       await requestRebuild(false)
     }
@@ -226,8 +260,8 @@ export async function watchTestArtifact(options: WatchTestArtifactOptions = {}):
     if (scheduled) {
       clearTimeout(scheduled)
     }
-    await watcher.close()
-    await active?.catch(() => undefined)
+    closing = closeResources([error])
+    await closing
     throw error
   }
 
@@ -243,10 +277,7 @@ export async function watchTestArtifact(options: WatchTestArtifactOptions = {}):
       if (scheduled) {
         clearTimeout(scheduled)
       }
-      closing = (async () => {
-        await watcher.close()
-        await active?.catch(() => undefined)
-      })()
+      closing = closeResources()
       return closing
     },
     rebuild: () => requestRebuild(true),

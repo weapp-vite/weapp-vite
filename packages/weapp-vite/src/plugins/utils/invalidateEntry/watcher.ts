@@ -2,11 +2,10 @@ import type { CompilerContext } from '../../../context'
 import type { ChangeEvent } from '../../../types'
 import fs from 'node:fs'
 import process from 'node:process'
-import chokidar from 'chokidar'
 import path from 'pathe'
 import { configExtensions } from '../../../constants'
 import logger from '../../../logger'
-import { createSidecarWatchOptions } from '../../../runtime/watch/options'
+import { createFileWatcher } from '../../../runtime/watch/fileWatcher'
 import { cleanupCssImporterGraph, extractCssImportDependencies } from './cssGraph'
 import { defaultIgnoredDirNames, isSidecarFile, isWatchLimitError, watchedCssExts, watchedScriptModuleSuffixes, watchedTemplateExts } from './shared'
 import { invalidateEntryForSidecar } from './sidecar'
@@ -35,10 +34,7 @@ export function ensureSidecarWatcher(ctx: CompilerContext, rootDir: string) {
 
   let isReady = false
   const knownSidecarFiles = new Set<string>()
-  const watchedDirectories = new Set<string>()
   const preReadyDeletedKnownFiles = new Set<string>()
-  const renameTimers = new Map<string, ReturnType<typeof setTimeout>>()
-  const RENAME_SETTLE_MS = 120
   let closed = false
   let closing: Promise<void> | undefined
   const pending = new Set<Promise<void>>()
@@ -99,27 +95,19 @@ export function ensureSidecarWatcher(ctx: CompilerContext, rootDir: string) {
   // eslint-disable-next-line ts/no-use-before-define -- 同文件内 helper，保持对外导出顺序稳定
   const ignoredMatcher = createSidecarIgnoredMatcher(ctx, absRoot)
 
-  // Chokidar 4+ 不再展开 glob；监听目录才能持续发现新建的侧车文件。
-  const watcher = chokidar.watch(absRoot, createSidecarWatchOptions(ctx.configService, {
+  const watcher = createFileWatcher(ctx.configService, absRoot, {
     ignoreInitial: false,
     persistent: true,
-    awaitWriteFinish: {
-      stabilityThreshold: 100,
-      pollInterval: 20,
-    },
+    stability: { threshold: 100, interval: 20 },
+    recoverRenames: true,
     ignored: (file, stat) => ignoredMatcher(file) || Boolean(stat?.isFile() && !isSidecarFile(file)),
-  }))
+  })
 
   const forwardChange = (event: ChangeEvent, input: string, options?: { silent?: boolean }) => {
     if (closed || !input) {
       return
     }
     const normalizedPath = path.normalize(input)
-    const pendingRename = renameTimers.get(normalizedPath)
-    if (pendingRename) {
-      clearTimeout(pendingRename)
-      renameTimers.delete(normalizedPath)
-    }
     const wasKnown = knownSidecarFiles.has(normalizedPath)
     const isPreReadyAtomicRestore = event === 'create' && preReadyDeletedKnownFiles.has(normalizedPath)
     if (event === 'create' || event === 'update') {
@@ -138,86 +126,28 @@ export function ensureSidecarWatcher(ctx: CompilerContext, rootDir: string) {
     handleSidecarChange(event, normalizedPath, isReady || isPreReadyAtomicRestore)
   }
 
-  watcher.on('add', path => forwardChange('create', path))
-  watcher.on('change', path => forwardChange('update', path))
-  watcher.on('unlink', path => forwardChange('delete', path))
-  watcher.on('addDir', directory => watchedDirectories.add(path.normalize(directory)))
-  watcher.on('unlinkDir', (directory) => {
-    const removed = path.normalize(directory)
-    for (const watched of watchedDirectories) {
-      if (watched === removed || watched.startsWith(`${removed}/`)) {
-        watchedDirectories.delete(watched)
+  watcher.onChange((changes) => {
+    for (const change of changes) {
+      if (change.initial === false) {
+        isReady = true
+      }
+      if (change.kind === 'file') {
+        if (change.source === 'rename') {
+          logger.info(`[watch:rename->${change.event}] ${ctx.configService.relativeCwd(change.file)}`)
+          if (change.event === 'update') {
+            handleSidecarChange('update', change.file, true)
+            continue
+          }
+        }
+        forwardChange(change.event, change.file, { silent: change.source === 'rename' })
       }
     }
   })
-  watcher.on('raw', (eventName, rawPath, details) => {
-    if (closed || eventName !== 'rename') {
-      return
-    }
-    const candidate = typeof rawPath === 'string'
-      ? rawPath
-      : rawPath && typeof (rawPath as { toString?: () => string }).toString === 'function'
-        ? (rawPath as { toString: () => string }).toString()
-        : ''
-    if (!candidate) {
-      return
-    }
-    const baseDir = typeof details === 'object' && details && 'watchedPath' in details
-      ? (details as { watchedPath?: string }).watchedPath ?? absRoot
-      : absRoot
-    const resolved = path.isAbsolute(candidate)
-      ? candidate
-      : path.resolve(baseDir, candidate)
+  void watcher.ready.then((readiness) => {
+    isReady = readiness === 'ready'
+  }).catch(error => logger.warn(`[监听] 侧车启动失败：${error instanceof Error ? error.message : String(error)}`))
 
-    // 已登记目录由 Chokidar 的原子保存和写入稳定门禁负责，不再抢先派发 raw 回退。
-    if (ignoredMatcher(resolved) || !isSidecarFile(resolved) || watchedDirectories.has(path.dirname(resolved))) {
-      return
-    }
-    const pending = renameTimers.get(resolved)
-    if (pending) {
-      clearTimeout(pending)
-    }
-
-    renameTimers.set(resolved, setTimeout(() => {
-      renameTimers.delete(resolved)
-      if (watchedDirectories.has(path.dirname(resolved))) {
-        return
-      }
-
-      const exists = fs.existsSync(resolved)
-      const wasKnown = knownSidecarFiles.has(resolved)
-      let derivedEvent: ChangeEvent | undefined
-
-      if (exists) {
-        derivedEvent = wasKnown || isReady ? 'update' : 'create'
-        knownSidecarFiles.add(resolved)
-      }
-      else if (wasKnown) {
-        derivedEvent = 'delete'
-        knownSidecarFiles.delete(resolved)
-      }
-
-      if (!derivedEvent) {
-        return
-      }
-
-      const relativeResolved = ctx.configService.relativeCwd(resolved)
-      logger.info(`[watch:rename->${derivedEvent}] ${relativeResolved}`)
-
-      if (derivedEvent === 'update') {
-        handleSidecarChange('update', resolved, true)
-        return
-      }
-
-      forwardChange(derivedEvent, resolved, { silent: true })
-    }, RENAME_SETTLE_MS))
-  })
-
-  watcher.on('ready', () => {
-    isReady = true
-  })
-
-  watcher.on('error', (error) => {
+  watcher.onError((error) => {
     if (!isWatchLimitError(error)) {
       return
     }
@@ -232,11 +162,6 @@ export function ensureSidecarWatcher(ctx: CompilerContext, rootDir: string) {
         closed = true
         const completion = Promise.withResolvers<void>()
         closing = completion.promise
-        for (const timer of renameTimers.values()) {
-          clearTimeout(timer)
-        }
-        renameTimers.clear()
-        watchedDirectories.clear()
         preReadyDeletedKnownFiles.clear()
         void (async () => {
           try {
