@@ -89,14 +89,15 @@ export async function writeManagedRecord(record: ManagedWechatProjectRecord) {
   }
 }
 
-/** 仅递归当前任务明确传递的 children；不扫描用户缓存，不跟随符号链接。 */
-export async function readManagedWechatProjectRecords(journalPath?: string): Promise<ManagedWechatProjectRecord[]> {
-  const directory = resolveManagedJournal(journalPath)
-  if (!directory) {
-    return []
+async function readManagedJournalDirectory(
+  directory: string,
+  parentScope?: Awaited<ReturnType<typeof resolveManagedJournalScope>>,
+): Promise<ManagedWechatProjectRecord[]> {
+  if (parentScope && !(await fs.lstat(directory)).isDirectory()) {
+    throw new Error('Managed DevTools journal scope must use regular directories.')
   }
   const entries = await fs.readdir(directory, { withFileTypes: true }).catch((error: NodeJS.ErrnoException) => {
-    if (error.code === 'ENOENT') {
+    if (error.code === 'ENOENT' && !parentScope) {
       return undefined
     }
     throw error
@@ -105,6 +106,10 @@ export async function readManagedWechatProjectRecords(journalPath?: string): Pro
     return []
   }
   const scope = await resolveManagedJournalScope(directory)
+  if (parentScope && (parentScope.scopeId !== undefined || scope.scopeId !== undefined)
+    && (parentScope.scopeId !== scope.scopeId || parentScope.rootPath !== scope.rootPath)) {
+    throw new Error('Managed DevTools journal scope changed inside its registered children; refusing another task tree.')
+  }
   const records: ManagedWechatProjectRecord[] = []
   for (const entry of entries) {
     if (entry.name.endsWith('.json')) {
@@ -120,16 +125,20 @@ export async function readManagedWechatProjectRecords(journalPath?: string): Pro
           throw new Error('Managed DevTools child journal is not a regular directory.')
         }
         const childPath = path.join(directory, 'children', child.name)
-        const childScope = await resolveManagedJournalScope(childPath)
-        if ((scope.scopeId !== undefined || childScope.scopeId !== undefined)
-          && (scope.scopeId !== childScope.scopeId || scope.rootPath !== childScope.rootPath)) {
-          throw new Error('Managed DevTools journal scope changed inside its registered children; refusing another task tree.')
-        }
-        records.push(...await readManagedWechatProjectRecords(childPath))
+        records.push(...await readManagedJournalDirectory(childPath, scope))
       }
     }
   }
   return records
+}
+
+/** 仅递归当前任务明确传递的 children；不扫描用户缓存，不跟随符号链接。 */
+export async function readManagedWechatProjectRecords(journalPath?: string): Promise<ManagedWechatProjectRecord[]> {
+  const directory = resolveManagedJournal(journalPath)
+  if (!directory) {
+    return []
+  }
+  return await readManagedJournalDirectory(directory)
 }
 
 const lockOwnerSchema = z.object({ token: idSchema, identity: hostSchema })
