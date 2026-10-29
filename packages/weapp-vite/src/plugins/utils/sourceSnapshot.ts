@@ -10,6 +10,11 @@ export { getCompilerSourceResolutions, getCompilerSourceSnapshot } from './sourc
 const nativeInputs = new WeakMap<object, { versions: Map<string, string>, accepts: (id: string) => boolean }>()
 const inputObservers = new WeakMap<object, Set<(id: string, source: string) => void>>()
 
+/** 没有来源订阅时跳过纯观察路径，避免常规构建承担额外模块处理。 */
+export function hasCompilerInputObservers(owner: object): boolean {
+  return inputObservers.has(owner)
+}
+
 /** 只观察本上下文实际返回的输入；释放回调不会移除其他代际的观察者。 */
 export function observeCompilerInputs(owner: object, observe: (id: string, source: string) => void): () => void {
   let observers = inputObservers.get(owner)
@@ -111,7 +116,7 @@ export async function withCompilerSourceSnapshot<T>(
   }
 }
 
-function createCompilerInputObserver(owner: object, id: string) {
+function createCompilerInputNotification(owner: object, id: string) {
   const observers = inputObservers.get(owner)
   const observed = [...(observers ?? [])]
   const observedId = observers ? compilerSnapshotSourceId(getCompilerSourceSnapshot(owner), id) : id
@@ -123,6 +128,20 @@ function createCompilerInputObserver(owner: object, id: string) {
         }
       }
     }
+  }
+}
+
+/** 通知打包器实际消费的输入，不把普通模块重新归类为原生入口。 */
+export function notifyCompilerInput(owner: object, id: string, source: string): void {
+  if (inputObservers.has(owner)) {
+    createCompilerInputNotification(owner, id)(source)
+  }
+}
+
+function createCompilerInputObserver(owner: object, id: string) {
+  const notify = createCompilerInputNotification(owner, id)
+  return (source: string) => {
+    notify(source)
     return observeNativeInput(owner, id, source)
   }
 }

@@ -13,13 +13,33 @@ const cli = fileURLToPath(new URL('../../cli.ts', import.meta.url))
 const shutdown = new URL('../../devLifecycle/shutdown.ts', import.meta.url).href
 const dependencies = fileURLToPath(new URL('../../../../../node_modules', import.meta.url))
 const privateConfig = '{"setting":{"compileHotReLoad":true},"condition":{"miniprogram":{"list":[{"name":"Startup fallback","pathName":"pages/home/index"}]}}}'
+const startupTimeout = 60_000
+const publicationTimeout = 20_000
 // 与真实 runtime DevProcess 的退出门禁一致；超时后的强杀只能使测试失败。
 const shutdownTimeout = 90_000
+const cleanupTimeout = 10_000
+// 首次启动 60s、三次发布各 20s、自然退出 90s，余下 30s 留给 fixture 与失败收尾。
+const testTimeout = 240_000
 
-async function waitFor(check: () => boolean | Promise<boolean>, exited: Promise<unknown>, label: string, output: () => string) {
-  const deadline = Date.now() + 20_000
+async function within<T>(pending: Promise<T>, timeoutMs: number, label: string, output: () => string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  try {
+    return await Promise.race([
+      pending,
+      new Promise<never>((_resolve, reject) => {
+        timer = setTimeout(() => reject(new Error(`Timed out waiting for ${label}\n${output()}`)), timeoutMs)
+      }),
+    ])
+  }
+  finally {
+    clearTimeout(timer)
+  }
+}
+
+async function waitFor(check: () => boolean | Promise<boolean>, exited: Promise<unknown>, label: string, output: () => string, timeoutMs = publicationTimeout) {
+  const deadline = performance.now() + timeoutMs
   while (!await check()) {
-    if (Date.now() >= deadline) {
+    if (performance.now() >= deadline) {
       throw new Error(`Timed out waiting for ${label}\n${output()}`)
     }
     const stopped = await Promise.race([
@@ -33,12 +53,22 @@ async function waitFor(check: () => boolean | Promise<boolean>, exited: Promise<
 }
 
 it.each(['auto', 'stateful-experimental'] as const)('naturally exits after %s startup fallback, edits and config reload', async (requested) => {
+  const startedAt = performance.now()
   const root = await realpath(await mkdtemp(path.join(os.tmpdir(), 'weapp-startup-fallback-shutdown-')))
   let child: ChildProcess | undefined
-  let timer: ReturnType<typeof setTimeout> | undefined
+  let completed: Promise<[number | null, NodeJS.Signals | null]> | undefined
+  let terminalConfirmed = false
+  let failure: Error | undefined
   let stdout = ''
   let stderr = ''
-  const output = () => `${stdout}\n${stderr}`
+  const lifecycle: Record<string, unknown>[] = []
+  const record = (event: string, details: Record<string, unknown> = {}) => {
+    lifecycle.push({ event, elapsedMs: Math.round(performance.now() - startedAt), ...details })
+  }
+  const output = () => {
+    const phase = [...stdout.matchAll(/^STARTUP_PHASE:([^\r\n]+)/gm)].at(-1)?.[1] ?? 'none'
+    return `PARENT_LIFECYCLE:${JSON.stringify(lifecycle)}\nLAST_CHILD_PHASE:${phase}\nSTDOUT:\n${stdout}\nSTDERR:\n${stderr}`
+  }
   try {
     await symlink(dependencies, path.join(root, 'node_modules'), process.platform === 'win32' ? 'junction' : 'dir')
     const configFile = path.join(root, 'weapp-vite.config.mjs')
@@ -77,10 +107,17 @@ it.each(['auto', 'stateful-experimental'] as const)('naturally exits after %s st
       await mkdir(path.dirname(file), { recursive: true })
       await writeFile(file, contents)
     }
+    const bootstrap = path.join(root, 'startup-bootstrap.mjs')
+    await writeFile(bootstrap, `
+      import { writeSync } from 'node:fs'
+      writeSync(1, 'STARTUP_PHASE:node-preload\\n')
+    `)
     const preload = path.join(root, 'shutdown-observer.mts')
     await writeFile(preload, `
       import { writeSync } from 'node:fs'
-      import { DevShutdownScope } from ${JSON.stringify(shutdown)}
+      writeSync(1, 'STARTUP_PHASE:observer-start\\n')
+      const { DevShutdownScope } = await import(${JSON.stringify(shutdown)})
+      writeSync(1, 'STARTUP_PHASE:shutdown-imported\\n')
       const own = DevShutdownScope.prototype.own
       const request = DevShutdownScope.prototype.request
       const run = DevShutdownScope.prototype.run
@@ -109,6 +146,7 @@ it.each(['auto', 'stateful-experimental'] as const)('naturally exits after %s st
       }
       process.once('disconnect', () => writeSync(1, 'CLI_DISCONNECT_RECEIVED\\n'))
       process.on('beforeExit', () => writeSync(1, 'CLI_NATURAL_EXIT\\n'))
+      writeSync(1, 'STARTUP_PHASE:observer-ready\\n')
     `)
     const env: NodeJS.ProcessEnv = {
       ...process.env,
@@ -121,17 +159,37 @@ it.each(['auto', 'stateful-experimental'] as const)('naturally exits after %s st
     for (const key of ['CI', 'TEST', 'VITEST', 'VITEST_MODE', 'VITEST_POOL_ID', 'VITEST_WORKER_ID', 'NODE_OPTIONS']) {
       delete env[key]
     }
-    child = spawn(process.execPath, ['--import', 'tsx', '--import', pathToFileURL(preload).href, cli, 'dev', root, '--platform', 'weapp', '--skipNpm'], {
+    record('spawn-requested', { node: process.version, platform: process.platform })
+    child = spawn(process.execPath, ['--import', pathToFileURL(bootstrap).href, '--import', 'tsx', '--import', pathToFileURL(preload).href, cli, 'dev', root, '--platform', 'weapp', '--skipNpm'], {
       cwd: root,
       env,
       stdio: ['ignore', 'pipe', 'pipe', 'ipc'],
     })
+    child.once('spawn', () => record('spawn', { pid: child!.pid }))
+    child.on('error', error => record('error', { message: error.message }))
+    child.once('exit', (code, signal) => record('exit', { code, signal }))
     child.stdout!.on('data', chunk => stdout += String(chunk))
     child.stderr!.on('data', chunk => stderr += String(chunk))
     const exited = once(child, 'exit')
-    const completed = Promise.all([exited, finished(child.stdout!), finished(child.stderr!)])
+    child.once('close', (code, signal) => record('close', { code, signal }))
+    const streams = Promise.allSettled([finished(child.stdout!), finished(child.stderr!)])
+    // 本机 Node 在父端断开 IPC 后未发出 child close；以真实退出与两条流结束共同确认终态。
+    completed = Promise.all([exited, streams]).then(([exit, results]) => {
+      const errors = results.flatMap(result => result.status === 'rejected' ? [result.reason] : [])
+      record('stdio-settled', { errors: errors.map(String) })
+      if (errors.length) {
+        throw new AggregateError(errors, 'CLI stdio failed to drain')
+      }
+      terminalConfirmed = true
+      return exit as [number | null, NodeJS.Signals | null]
+    })
+    // 后续发布断言失败时，收尾仍会等待同一份退出与流结束结果。
+    void exited.catch(() => {})
+    void completed.catch(() => {})
     const readTarget = () => readFile(target, 'utf8').catch(() => '')
-    await waitFor(() => stdout.includes('[weapp-vite] HMR classic ready '), exited, 'startup classic readiness', output)
+    await waitFor(() => stdout.includes('[weapp-vite] HMR classic ready '), exited, 'startup classic readiness', output, startupTimeout)
+    expect(stdout).toContain('STARTUP_PHASE:node-preload\n')
+    expect(stdout).toContain('STARTUP_PHASE:observer-ready\n')
     expect(output()).toContain('"reason":"ide-classic-handoff"')
     await writeFile(source, original.replace('WV-STARTUP-BASE', 'WV-STARTUP-EDITED'))
     await waitFor(async () => (await readTarget()).includes('WV-STARTUP-EDITED'), exited, 'script edit publication', output)
@@ -144,8 +202,8 @@ it.each(['auto', 'stateful-experimental'] as const)('naturally exits after %s st
 
     // 只通过 CLI 的 IPC 断连请求正常释放；强杀仅防止失败测试残留，不能作为通过依据。
     child.disconnect()
-    timer = setTimeout(() => child!.kill('SIGKILL'), shutdownTimeout)
-    const [[code, signal]] = await completed
+    record('disconnect-requested')
+    const [code, signal] = await within(completed, shutdownTimeout, 'natural CLI shutdown and stdio drain', output)
     expect(signal, output()).toBeNull()
     expect(code, output()).toBe(0)
     expect(stdout).toContain('CLI_DISCONNECT_RECEIVED\n')
@@ -159,13 +217,29 @@ it.each(['auto', 'stateful-experimental'] as const)('naturally exits after %s st
     }
     expect(await readFile(path.join(root, 'project.private.config.json'), 'utf8')).toBe(privateConfig)
   }
-  finally {
-    clearTimeout(timer)
-    if (child && child.exitCode === null && child.signalCode === null) {
-      const exited = once(child, 'exit')
-      child.kill('SIGKILL')
-      await exited
+  catch (error) {
+    failure = new Error(`Startup fallback ${requested} failed\n${output()}`, { cause: error })
+  }
+  try {
+    if (child && !terminalConfirmed && child.exitCode === null && child.signalCode === null) {
+      record('cleanup-kill', { signal: 'SIGKILL', sent: child.kill('SIGKILL') })
+    }
+    if (completed) {
+      await within(completed, cleanupTimeout, 'owned CLI termination and stdio drain', output)
+    }
+    if (child && !terminalConfirmed) {
+      throw new Error('Owned CLI termination was not confirmed')
     }
     await rm(root, { recursive: true, force: true })
   }
-}, 180_000)
+  catch (error) {
+    const cleanupError = new Error(`CLI cleanup incomplete; fixture at ${root}\n${output()}`, { cause: error })
+    throw failure
+      ? new AggregateError([failure, cleanupError], 'Startup fallback and cleanup failed', { cause: failure })
+      : cleanupError
+  }
+  if (failure) {
+    failure.message = `Startup fallback ${requested} failed\n${output()}`
+    throw failure
+  }
+}, testTimeout)

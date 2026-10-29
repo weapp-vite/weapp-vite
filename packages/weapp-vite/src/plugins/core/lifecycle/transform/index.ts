@@ -20,6 +20,7 @@ import { REQUEST_GLOBAL_PASSIVE_BINDINGS_MARKER } from '../emit/constants'
 import { replaceImportMetaAccess, replaceImportMetaAccessInSfc } from './importMeta'
 import { replacePlatformApiAccess } from './platform'
 import { resolveInjectWeapiOptions, shouldTransformId } from './shared'
+import { observeBundlerSourceInput } from './sourceInput'
 
 function mayContainManualRequestGlobalsInstall(code: string) {
   return code.includes('installRequestGlobals')
@@ -107,6 +108,7 @@ export function createTransformHook(state: CorePluginState) {
     if (parseSidecarSourceMetadata(id)) {
       return null
     }
+    observeBundlerSourceInput(state, code, id)
     if (!shouldTransformId(id, {
       absoluteSrcRoot: configService.absoluteSrcRoot,
       isEntry: sourceId => state.loadedEntrySet?.has(sourceId) === true
