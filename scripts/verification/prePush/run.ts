@@ -5,6 +5,7 @@ import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 // eslint-disable-next-line e18e/ban-dependencies -- 同一执行器负责快照 worker 和取消传播。
 import { execa } from 'execa'
+import { verificationGitArgs } from '../git.ts'
 import { getResourceBudget } from '../resources.ts'
 import { packageManagerEnvironment } from '../toolchain.ts'
 import { resolveVerificationTopology } from '../topology.ts'
@@ -27,7 +28,7 @@ export async function verifyPush(root: string, input: string, options: PushOptio
     return
   }
   const env = await clearedGitEnvironment(root)
-  const git = async (args: string[]) => (await execa('git', args, { cwd: root, env, cancelSignal: options.signal })).stdout
+  const git = async (args: string[]) => (await execa('git', verificationGitArgs(args), { cwd: root, env, cancelSignal: options.signal })).stdout
   const targets = await resolvePushTargets(refs, git, options.base)
   options.signal?.throwIfAborted()
   if (!targets.length) {

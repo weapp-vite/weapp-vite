@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 // eslint-disable-next-line e18e/ban-dependencies -- 验证入口需要跨平台命令解析和失败传播。
 import { execa } from 'execa'
+import { verificationGitArgs } from './git.ts'
 
 export function normalizeChangedPath(file: string): string {
   const normalized = file.replaceAll('\\', '/').replace(/^\.\//, '')
@@ -33,7 +34,7 @@ export function parseChangedNames(output: string): string[] {
 export async function readChanges(root: string, options: { base?: string, head?: string, files?: string[], signal?: AbortSignal } = {}): Promise<ChangeSet> {
   const git = async (args: string[]) => {
     options.signal?.throwIfAborted()
-    const result = await execa('git', args, { cwd: root, cancelSignal: options.signal })
+    const result = await execa('git', verificationGitArgs(args), { cwd: root, cancelSignal: options.signal })
     options.signal?.throwIfAborted()
     return result.stdout
   }

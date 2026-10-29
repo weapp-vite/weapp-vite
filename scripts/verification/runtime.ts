@@ -5,11 +5,12 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 // eslint-disable-next-line e18e/ban-dependencies -- 正式 IDE 验收复用现有受管 runner 和跨平台退出状态。
 import { execa } from 'execa'
 import { hasVerificationSourceChanges } from './generatedEvidence.ts'
+import { verificationGitArgs } from './git.ts'
 
 /** 全量真实 IDE 验收只允许同步且干净的主线工作树。 */
 export async function fullRuntimeBlock(root: string): Promise<string | undefined> {
   try {
-    const git = async (args: string[]) => (await execa('git', args, { cwd: root })).stdout
+    const git = async (args: string[]) => (await execa('git', verificationGitArgs(args), { cwd: root })).stdout
     const [branch, head, main, trackedChanges, untrackedFiles, commonGitDirectory] = await Promise.all([
       git(['branch', '--show-current']),
       git(['rev-parse', 'HEAD']),
@@ -34,7 +35,7 @@ export async function runFullRuntime(root: string): Promise<number> {
   if (beforeFetch) {
     throw new Error(beforeFetch)
   }
-  await execa('git', ['fetch', 'origin', 'main'], { cwd: root, stdio: 'inherit' })
+  await execa('git', verificationGitArgs(['fetch', 'origin', 'main']), { cwd: root, stdio: 'inherit' })
   const blocked = await fullRuntimeBlock(root)
   if (blocked) {
     throw new Error(blocked)
