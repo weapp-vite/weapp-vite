@@ -2,6 +2,7 @@
 # 本仓库的索引语义、DOM 清单与公开 skills 门禁不能被通用模板覆盖。
 glob_matcher: doublestar
 min_version: 2.2.2
+rc: scripts/gitHooks/rc.sh
 
 pre-commit:
   piped: true
@@ -69,7 +70,7 @@ commit-msg:
     - name: final-staged-semantics
       run: node scripts/check-changeset-frontmatter.mjs --staged
     - name: commitlint
-      run: node node_modules/repoctl/bin/repo.js verify commit-msg "{1}"
+      run: node scripts/gitHooks/commitMsg.mjs
 
 pre-push:
   piped: true

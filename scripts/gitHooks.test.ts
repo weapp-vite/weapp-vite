@@ -95,13 +95,33 @@ it('native hooks fix project config paths and reject invalid commit messages', (
     f.assertResult(f.lefthook(['run', 'pre-commit']), 0)
     expect(f.git(['show', `:${config}`])).toBe('{"appid":"real-fixture-appid"}')
     f.write('.git/COMMIT_EDITMSG', 'unknown: 不支持的类型\n')
-    const rejected = f.lefthook(['run', 'commit-msg', '--', '.git/COMMIT_EDITMSG'])
+    const rejected = f.run('git', ['hook', 'run', 'commit-msg', '--', '.git/COMMIT_EDITMSG'])
     expect(rejected.status).not.toBe(0)
     expect(`${rejected.stdout}${rejected.stderr}`).toContain('type-enum')
     f.write('.git/COMMIT_EDITMSG', 'fix: 合法提交\n')
-    f.assertResult(f.lefthook(['run', 'commit-msg', '--', '.git/COMMIT_EDITMSG']), 0)
+    f.assertResult(f.run('git', ['hook', 'run', 'commit-msg', '--', '.git/COMMIT_EDITMSG']), 0)
     f.write('.git/MERGE_MSG', 'unknown: 合并消息也须校验\n')
-    expect(f.lefthook(['run', 'commit-msg', '--', '.git/MERGE_MSG']).status).not.toBe(0)
+    expect(f.run('git', ['hook', 'run', 'commit-msg', '--', '.git/MERGE_MSG']).status).not.toBe(0)
+  }
+  finally { f.cleanup() }
+}, 30_000)
+
+it('native commit-msg preserves a custom message path and overrides inherited message environment', () => {
+  const f = createGitFixture(true)
+  try {
+    f.assertResult(f.commit(), 0)
+    f.enableHooks()
+    const message = path.join(f.root, 'message with space\'s 中文.txt')
+    const inherited = path.join(f.root, 'inherited valid message.txt')
+    fs.writeFileSync(inherited, 'fix: 继承的文件不能代替 Git 参数\n')
+    f.env.WEAPP_VITE_GIT_COMMIT_MESSAGE_FILE = inherited
+    fs.writeFileSync(message, 'unknown: 自定义文件也须校验\n')
+    const rejected = f.run('git', ['hook', 'run', 'commit-msg', '--', message])
+    expect(rejected.status).not.toBe(0)
+    expect(`${rejected.stdout}${rejected.stderr}`).toContain('type-enum')
+    fs.writeFileSync(message, 'fix: 自定义消息路径保持完整\n')
+    f.assertResult(f.run('git', ['hook', 'run', 'commit-msg', '--', message]), 0)
+    expect(f.env.WEAPP_VITE_GIT_COMMIT_MESSAGE_FILE).toBe(inherited)
   }
   finally { f.cleanup() }
 }, 30_000)
