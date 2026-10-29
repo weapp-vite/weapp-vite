@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, realpath, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { build, createLogger } from 'vite'
@@ -8,7 +8,7 @@ import { RUNTIME_ID } from '../src/plugin/constants'
 
 describe('unknown tag plugin diagnostics', () => {
   it.each(['serve', 'build'] as const)('reports user tags through the existing %s warning channel', async (command) => {
-    const root = await mkdtemp(join(tmpdir(), 'web-tag-plugin-'))
+    const root = await realpath(await mkdtemp(join(tmpdir(), 'web-tag-plugin-')))
     try {
       const pageDir = join(root, 'src/pages/home')
       await mkdir(pageDir, { recursive: true })
@@ -39,7 +39,7 @@ describe('unknown tag plugin diagnostics', () => {
   })
 
   it('retains generated template exports during a production build with diagnostics', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'web-tag-build-'))
+    const root = await realpath(await mkdtemp(join(tmpdir(), 'web-tag-build-')))
     try {
       const pageDir = join(root, 'src/pages/home')
       await mkdir(pageDir, { recursive: true })
@@ -78,7 +78,7 @@ describe('unknown tag plugin diagnostics', () => {
 
   it.each(['template', 'page', 'shared'] as const)('owns dependency diagnostics in each parent registration scope (%s)', async (mode) => {
     const shared = mode === 'shared'
-    const root = await mkdtemp(join(tmpdir(), 'web-tag-scope-'))
+    const root = await realpath(await mkdtemp(join(tmpdir(), 'web-tag-scope-')))
     try {
       const pageDir = join(root, 'src/pages/home')
       const componentDir = join(root, 'src/components/card')

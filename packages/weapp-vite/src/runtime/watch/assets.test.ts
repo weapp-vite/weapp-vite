@@ -36,6 +36,11 @@ it('owns copy updates and directory recovery without claiming editor files or im
   try {
     await watcher.ready
     expect(changed).not.toHaveBeenCalled()
+    for (const file of ['buffer.note', '.buffer', 'excluded.txt', 'imported.png']) {
+      await writeFile(path.join(src, file), 'ignored')
+    }
+    await delay(150)
+    expect(changed).not.toHaveBeenCalled()
     await writeFile(image, 'after')
     await vi.waitFor(() => expect(changed).toHaveBeenCalledWith(image, 'update'))
     await writeFile(dynamic, 'now included')
@@ -54,12 +59,6 @@ it('owns copy updates and directory recovery without claiming editor files or im
     await mkdir(path.dirname(nested))
     await writeFile(nested, 'restored')
     await vi.waitFor(() => expect(changed).toHaveBeenCalledWith(nested, 'create'))
-    changed.mockClear()
-    for (const file of ['buffer.note', '.buffer', 'excluded.txt', 'imported.png']) {
-      await writeFile(path.join(src, file), 'ignored')
-    }
-    await delay(150)
-    expect(changed).not.toHaveBeenCalled()
     expect(errors).not.toHaveBeenCalled()
     expect(await readFile(nested, 'utf8')).toBe('restored')
   }

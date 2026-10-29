@@ -129,6 +129,8 @@ yarn.lock         text -diff
 *.toml            text
 *.yaml            text
 *.yml             text
+# snapshot 发布策略按可信 Git 内容校验 workflow 的原始 SHA256，checkout 必须保留 LF。
+.github/workflows/repoctl-snapshot-*.yml text eol=lf
 browserslist      text
 Makefile          text
 makefile          text

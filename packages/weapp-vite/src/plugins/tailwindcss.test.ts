@@ -141,7 +141,7 @@ describe('managed Tailwind integration', () => {
     await withRuntimeVersions('26.3.0', bun, async () => {
       await expect(getHookHandler(plugin.buildStart)!.call({ addWatchFile } as any, {} as any)).resolves.toBeUndefined()
     })
-    expect(addWatchFile).toHaveBeenCalledExactlyOnceWith(entry)
+    expect(addWatchFile).toHaveBeenCalledExactlyOnceWith(entry.replaceAll('\\', '/'))
     expect(mocks.createCompiler).not.toHaveBeenCalled()
   })
 
@@ -182,7 +182,7 @@ describe('managed Tailwind integration', () => {
     await withRuntimeVersions('26.3.0', '1.4.4', async () => {
       await expect(getHookHandler(plugin.buildStart)!.call({ addWatchFile } as any, {} as any))
         .rejects
-        .toThrow(`weapp.tailwindcss CSS entry does not exist: ${entry}`)
+        .toThrow(`weapp.tailwindcss CSS entry does not exist: ${entry.replaceAll('\\', '/')}`)
     })
     expect(addWatchFile).not.toHaveBeenCalled()
     expect(mocks.createCompiler).not.toHaveBeenCalled()

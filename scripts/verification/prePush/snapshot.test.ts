@@ -22,6 +22,8 @@ async function repository() {
   const git = (args: string[]) => execa('git', args, { cwd: root, env })
   await git(['init', '--quiet', '--initial-branch=fixture', '--template='])
   await git(['config', 'core.hooksPath', path.join(root, '.git/fixture-hooks')])
+  // fixture 的源码与候选 worktree 均验证 LF 原始字节，不继承宿主的 checkout 换行策略。
+  await git(['config', '--local', 'core.autocrlf', 'false'])
   await writeFile(path.join(root, '.gitignore'), '.tmp/\nnode_modules/\n')
   await writeFile(path.join(root, 'source.ts'), 'export const value = 1\n')
   await writeFile(path.join(root, 'pnpm-lock.yaml'), 'lockfileVersion: 9\n')
