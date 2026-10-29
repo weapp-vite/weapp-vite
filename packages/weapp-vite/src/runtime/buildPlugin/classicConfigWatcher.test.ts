@@ -131,7 +131,7 @@ describe('classic session config watcher', () => {
     }
   })
 
-  it('retains ready and cleanup failures without leaking startup listeners', async () => {
+  it('separates ready and cleanup failures without leaking startup listeners', async () => {
     const config = { inlineConfig: {}, configFileDependencies: ['/project/vite.config.ts'] }
     const watcher = createWatcher(false)
     const onError = vi.fn()
@@ -147,12 +147,7 @@ describe('classic session config watcher', () => {
     expect(onError).not.toHaveBeenCalled()
     const closing = owner.close()
     expect(owner.close()).toBe(closing)
-    const failure = await closing.catch(error => error)
-    expect(failure).toBeInstanceOf(AggregateError)
-    expect(failure.errors).toHaveLength(2)
-    expect(failure.errors[0]).toBe(startupError)
-    expect(failure.errors[1]).toBe(cleanupError)
-    expect(failure.cause).toBe(startupError)
+    await expect(closing).rejects.toBe(cleanupError)
     expect(owner.close()).toBe(closing)
     expect(watcher.close).toHaveBeenCalledOnce()
     expect(watcher.listenerCount('ready')).toBe(0)

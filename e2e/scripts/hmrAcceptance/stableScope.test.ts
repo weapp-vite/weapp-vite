@@ -253,6 +253,13 @@ describe('supported WeChat startup classic inventory', () => {
     expect(full.every(task => !task.label.startsWith('hmr-guard:'))).toBe(true)
     expect(nonHmr).toEqual(originalNonHmr.filter(task => !hmrLabels.has(task.label)).map(applyClassicSupportScope))
     expect(nonHmr.every(task => !hmrLabels.has(task.label))).toBe(true)
+    for (const tasks of [full, nonHmr]) {
+      const sidecarTasks = tasks.filter(task => task.label === 'ci/snapshot-sidecar.hmr.test.ts')
+      expect(sidecarTasks).toHaveLength(1)
+      expect(sidecarTasks[0]?.outOfScopeReason).toBeUndefined()
+      expect(sidecarTasks[0]!.args.some(arg => arg === '-t' || arg.startsWith('--testNamePattern'))).toBe(false)
+      expect(sidecarTasks[0]?.env?.[E2E_TARGET_FILE_ENV]).toBe('ci/snapshot-sidecar.hmr.test.ts')
+    }
     expect(await getSuiteTasks('ci-full:classic', { topology })).toEqual(nonHmr)
     const pr = await getSuiteTasks('ci-pr:classic', { topology })
     expect(pr).toEqual((await getSuiteTasks('ci-pr', { topology })).map(applyClassicSupportScope))

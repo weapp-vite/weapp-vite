@@ -1,6 +1,7 @@
 import path from 'node:path'
 import chokidar from 'chokidar'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { normalizePath } from '../utils/path'
 
 const state = vi.hoisted(() => ({
   contents: new Map<string, string>(),
@@ -351,7 +352,7 @@ describe('test artifact watch invalidation', () => {
     state.contents.set(dependency, 'one')
     state.contents.set(source, 'two')
     await emit('add')
-    expect(chokidar.watch).toHaveBeenLastCalledWith(expect.arrayContaining([dependency]), expect.any(Object))
+    expect(chokidar.watch).toHaveBeenLastCalledWith(expect.arrayContaining([normalizePath(dependency)]), expect.any(Object))
 
     state.contents.set(dependency, 'two')
     await emit('change', dependency)

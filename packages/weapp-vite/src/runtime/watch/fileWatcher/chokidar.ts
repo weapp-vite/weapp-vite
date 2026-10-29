@@ -181,7 +181,7 @@ export function createChokidarFileWatcher(config: FileWatchConfig, targets: File
       closed = true
       events.close()
       // group 关闭直接终结底层扫描；先前已发生的注册错误不能被外层 closed 覆盖。
-      const released = Promise.allSettled([initial, ...[...groups].map(group => group.close())])
+      const released = Promise.allSettled([...groups].map(group => group.close()))
       closing = (async () => {
         const results = await released
         await pending

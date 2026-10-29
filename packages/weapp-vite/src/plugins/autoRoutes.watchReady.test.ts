@@ -118,16 +118,16 @@ it('propagates the original route watcher initialization error and removes readi
     expect(project.listenerCount('ready')).toBe(0)
     // 初始化失败会自动回收本次物理订阅，仅保留 fixture 自身的原始错误观察者。
     expect(project.listenerCount('error')).toBe(1)
-    // 关闭仍交付注册原错，重复释放不能隐藏失败或再次关闭物理订阅。
-    await expect(owner.close()).rejects.toBe(error)
-    await expect(owner.close()).rejects.toBe(error)
+    // ready 独占初始化原错；成功收尾可重复等待，但不能再次关闭物理订阅。
+    await expect(owner.close()).resolves.toBeUndefined()
+    await expect(owner.close()).resolves.toBeUndefined()
     expect(project.watcher.close).toHaveBeenCalledOnce()
     expect(project.ctx.runtimeState.watcher.sidecarWatcherMap.size).toBe(0)
   }
   finally {
     project.finishScan()
     await started.catch(() => {})
-    await project.cleanup().catch(failure => expect(failure).toBe(error))
+    await project.cleanup()
   }
 })
 

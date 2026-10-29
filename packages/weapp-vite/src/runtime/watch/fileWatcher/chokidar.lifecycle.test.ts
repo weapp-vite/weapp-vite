@@ -7,7 +7,7 @@ import { createFileWatcher } from './index'
 const mocks = vi.hoisted(() => ({ watch: vi.fn() }))
 vi.mock('chokidar', () => ({ default: { watch: mocks.watch } }))
 
-const config = { inlineConfig: { weapp: { watch: { engine: 'chokidar' as const } } } }
+const config = { inlineConfig: {} }
 const watchers = new Set<FileWatcher>()
 const releases = new Set<() => void>()
 const expectedFailures = new Set<unknown>()
@@ -66,7 +66,6 @@ describe('Chokidar readiness and shutdown ownership', () => {
     const entered = Promise.withResolvers<void>()
     const stopped = Promise.withResolvers<void>()
     releases.add(stopped.resolve)
-    expectedFailures.add(failure)
     if (failedCleanup) {
       expectedFailures.add(cleanupFailure)
     }
@@ -95,14 +94,15 @@ describe('Chokidar readiness and shutdown ownership', () => {
     const readyResult = await observedReady
     expect(readyResult.status).toBe('rejected')
     expect('reason' in readyResult ? readyResult.reason : undefined).toBe(failure)
-    const failures = leafErrors(closeFailure)
-    expect(failures).toHaveLength(failedCleanup ? 2 : 1)
-    expect(failures[0]).toBe(failure)
     if (failedCleanup) {
-      expect(failures[1]).toBe(cleanupFailure)
+      expect(closeFailure).toBe(cleanupFailure)
+      await expect(watcher.close()).rejects.toBe(cleanupFailure)
+    }
+    else {
+      expect(closeFailure).toBeUndefined()
+      await expect(watcher.close()).resolves.toBeUndefined()
     }
     expect(watcher.close()).toBe(closing)
-    await expect(watcher.close()).rejects.toBe(closeFailure)
     expect(raw.eventNames()).toEqual([])
   })
 
@@ -113,7 +113,6 @@ describe('Chokidar readiness and shutdown ownership', () => {
     const entered = Promise.withResolvers<void>()
     const stopped = Promise.withResolvers<void>()
     releases.add(stopped.resolve)
-    expectedFailures.add(failure)
     raw.close.mockImplementation(async () => {
       entered.resolve()
       await stopped.promise
@@ -137,7 +136,7 @@ describe('Chokidar readiness and shutdown ownership', () => {
     expect(onError.mock.calls[0]![0]).toBe(failure)
     const closing = watcher.close()
     expect(watcher.close()).toBe(closing)
-    await expect(closing).rejects.toBe(failure)
+    await expect(closing).resolves.toBeUndefined()
     expect(raw.close).toHaveBeenCalledOnce()
     expect(raw.eventNames()).toEqual([])
   })

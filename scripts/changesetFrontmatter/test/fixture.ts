@@ -10,6 +10,8 @@ const repoRoot = fileURLToPath(new URL('../../../', import.meta.url))
 const checker = path.join(repoRoot, 'scripts/check-changeset-frontmatter.mjs')
 const copiedFiles = [
   'lefthook.yml',
+  'scripts/gitHooks/rc.sh',
+  'scripts/gitHooks/commitMsg.mjs',
   'scripts/fix-wechat-devtools-project-config-eof.mjs',
   'scripts/check-changeset-frontmatter.mjs',
   'scripts/changesetFrontmatter/input.mjs',
