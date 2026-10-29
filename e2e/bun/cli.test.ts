@@ -86,7 +86,16 @@ describe('Bun CLI / issue #1222', () => {
       const activeConfig = await readFile(path.join(project, 'project.private.config.json'), 'utf8')
       expect(activeConfig).not.toBe(privateConfig)
       expect(JSON.parse(activeConfig) as unknown).toMatchObject({ setting: { compileHotReLoad: false } })
+      const runtimeLine = output.split(/\r?\n/).find(line => line.startsWith('BUN_RUNTIME '))
+      expect(runtimeLine, output).toBeDefined()
+      const runtime: unknown = JSON.parse(runtimeLine!.slice('BUN_RUNTIME '.length))
+      if (!runtime || typeof runtime !== 'object' || !('pid' in runtime)
+        || typeof runtime.pid !== 'number' || !Number.isSafeInteger(runtime.pid) || runtime.pid <= 0) {
+        throw new Error('Bun CLI published an invalid owned runtime PID')
+      }
       expect(JSON.parse(await readFile(lease, 'utf8')) as unknown).toEqual({
+        schemaVersion: 1,
+        pid: runtime.pid,
         owner: expect.any(String),
         original: privateConfig,
         installed: activeConfig,
