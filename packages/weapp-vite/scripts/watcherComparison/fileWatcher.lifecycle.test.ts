@@ -2,7 +2,7 @@ import type { AsyncSubscription, SubscribeCallback } from '@parcel/watcher'
 import type { FileWatchEngine, FileWatcher } from './fileWatcher'
 import { mkdir, mkdtemp, realpath, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import path from 'node:path'
+import path from 'pathe'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createFileWatcher } from './fileWatcher'
 
