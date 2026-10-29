@@ -74,7 +74,7 @@ export function nativePublicationPlugin(options: NativePublicationOptions = {}):
         && 'whenCommitted' in api && typeof api.whenCommitted === 'function') {
         // buildStart 可并行且先后顺序不固定；此时该阶段已全部结束，代次不会再被同轮启动钩子推进。
         const publication = api as NativeOutputPublicationApi
-        current.publication = { api: publication, epoch: publication.getEpoch() }
+        current.publication = { api: publication, epoch: typeof publication.captureEpoch === 'function' ? publication.captureEpoch() : publication.getEpoch() }
       }
     },
     // 已获提交的磁盘与源码核验仍须完成，不把关闭钩子视为构建成功。

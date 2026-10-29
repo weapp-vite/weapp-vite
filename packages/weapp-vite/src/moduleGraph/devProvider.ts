@@ -1,5 +1,6 @@
 import type { HotUpdateOptions, InlineConfig, Plugin, ResolvedConfig, ViteDevServer } from 'vite'
 import type { CompilerContext, MutableCompilerContext } from '../context'
+import type { HmrProfileSourceEvent } from '../utils/hmrProfile/provenance'
 import { createLogger, createServer, transformWithOxc } from 'vite'
 import { readAndParseSfc } from 'wevu/compiler'
 import {
@@ -25,6 +26,7 @@ import {
   parseSidecarSourceRequest,
   resolveVirtualModuleId,
 } from './protocol'
+import { getDevModuleGraphSourceObservation } from './sourceObservation'
 import { normalizeSourceId } from './traversal'
 
 const DEV_EXTERNAL_PREFIX = '\0weapp-vite:module-graph-external:'
@@ -40,7 +42,10 @@ export interface DevModuleGraphProvider {
 export interface DevModuleGraphChange {
   event: HotUpdateOptions['type']
   file: string
+  sourceEvent?: HmrProfileSourceEvent
 }
+
+export type DevModuleGraphObserver = (change: DevModuleGraphChange) => DevModuleGraphChange
 
 function isInternalPlugin(plugin: unknown): plugin is { name: string } {
   if (!plugin || typeof plugin !== 'object' || !('name' in plugin)) {
@@ -105,7 +110,10 @@ export function createDevModuleGraphPlugin(
   ctx: DevModuleGraphCompilerContext,
   config: InlineConfig,
   onChange: (change: DevModuleGraphChange) => void,
+  observe?: DevModuleGraphObserver,
 ): Plugin {
+  const sourceObservation = observe ? undefined : getDevModuleGraphSourceObservation(ctx)
+  const observeSource = observe ?? sourceObservation!.observe
   const isProfileOutput = createProfileOutputMatcher(ctx.configService)
   const npmExternalPackages = new Set(
     ctx.configService?.packageJson
@@ -212,8 +220,9 @@ export function createDevModuleGraphPlugin(
       if (this.environment.name !== 'client' || isProfileOutput(file) || ownsExternalWxmlWatch(ctx, file)) {
         return
       }
+      const change = observeSource({ event: type, file })
       if (type === 'delete') {
-        onChange({ event: type, file })
+        onChange(change)
         return
       }
       try {
@@ -225,7 +234,7 @@ export function createDevModuleGraphPlugin(
         }
         throw error
       }
-      onChange({ event: type, file })
+      onChange(change)
     },
   }
 }
@@ -234,8 +243,9 @@ export async function createDevModuleGraphProvider(
   ctx: DevModuleGraphCompilerContext,
   buildConfig: InlineConfig,
   onChange: (change: DevModuleGraphChange) => void,
+  observe?: DevModuleGraphObserver,
 ): Promise<DevModuleGraphProvider> {
-  const host = connectDevModuleGraphHost(ctx, onChange)
+  const host = connectDevModuleGraphHost(ctx, onChange, observe)
   if (host) {
     return host
   }
@@ -256,7 +266,7 @@ export async function createDevModuleGraphProvider(
     configFile: false,
     customLogger: createLogger('silent'),
     plugins: [
-      createDevModuleGraphPlugin(ctx, buildConfig, onChange),
+      createDevModuleGraphPlugin(ctx, buildConfig, onChange, observe),
       ...collectResolverPlugins(buildConfig),
     ],
     server: {

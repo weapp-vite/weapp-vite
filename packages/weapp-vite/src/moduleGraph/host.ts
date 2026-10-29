@@ -1,12 +1,15 @@
 import type { ViteDevServer } from 'vite'
 import type { CompilerContext } from '../context'
-import type { DevModuleGraphChange, DevModuleGraphProvider } from './devProvider'
+import type { DevModuleGraphChange, DevModuleGraphObserver, DevModuleGraphProvider } from './devProvider'
+import type { DevModuleGraphSourceObservation } from './sourceObservation'
+import { getDevModuleGraphSourceObservation, retireDevModuleGraphSourceObservation } from './sourceObservation'
 
 type HostContext = Pick<CompilerContext, 'moduleGraphService'>
 interface GraphHost {
   server: ViteDevServer
   onChange?: (change: DevModuleGraphChange) => void
   onBuild?: (successful: boolean) => void
+  sourceObservation: DevModuleGraphSourceObservation
   pending: DevModuleGraphChange[]
 }
 const hosts = new WeakMap<HostContext, GraphHost>()
@@ -16,11 +19,12 @@ export function attachDevModuleGraphHost(context: HostContext, server: ViteDevSe
   if (hosts.has(context)) {
     throw new Error('[weapp-vite] 编译上下文已经绑定开发宿主。')
   }
-  const host: GraphHost = { server, onBuild, pending: [] }
+  const host: GraphHost = { server, onBuild, pending: [], sourceObservation: getDevModuleGraphSourceObservation(context) }
   hosts.set(context, host)
   return () => {
     if (hosts.get(context) === host) {
       hosts.delete(context)
+      retireDevModuleGraphSourceObservation(context, host.sourceObservation)
     }
   }
 }
@@ -44,12 +48,13 @@ export function hasDevModuleGraphHost(context: HostContext) {
   return hosts.has(context)
 }
 
-export function connectDevModuleGraphHost(context: HostContext, onChange: NonNullable<GraphHost['onChange']>): DevModuleGraphProvider | undefined {
+export function connectDevModuleGraphHost(context: HostContext, onChange: NonNullable<GraphHost['onChange']>, observe?: DevModuleGraphObserver): DevModuleGraphProvider | undefined {
   const host = hosts.get(context)
   if (!host) {
     return
   }
   host.onChange = onChange
+  host.sourceObservation.bind(observe)
   const release = context.moduleGraphService.bindDevServer(host.server)
   for (const change of host.pending.splice(0)) {
     onChange(change)

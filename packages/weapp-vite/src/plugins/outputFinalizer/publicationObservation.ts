@@ -10,6 +10,8 @@ export interface NativeOutputPublicationSnapshot {
 
 export interface NativeOutputPublicationApi {
   getEpoch: () => number
+  /** 显式观察本代最终字节；不把只读代次查询变成缓存分配。 */
+  captureEpoch: () => number
   readCommitted: (root: string, epoch: number) => NativeOutputPublicationSnapshot | undefined
   whenCommitted: (root: string, epoch: number) => Promise<NativeOutputPublicationSnapshot | undefined>
 }
@@ -54,6 +56,7 @@ export function createNativePublicationObservation(root: string, cache: Map<stri
   let hasNativeWrite = false
   const binary = new Set<string>()
   let additional = new Map<string, string | Uint8Array>()
+  let observed: Map<string, string | Uint8Array> | undefined
   const waiting = new Map<number, ReturnType<typeof Promise.withResolvers<NativeOutputPublicationSnapshot | undefined>>>()
 
   function readCommitted(epoch: number): NativeOutputPublicationSnapshot | undefined {
@@ -61,19 +64,27 @@ export function createNativePublicationObservation(root: string, cache: Map<stri
       return undefined
     }
     const outputs = new Map<string, string | Uint8Array>()
-    for (const [file, source] of cache ?? []) {
-      if (typeof source === 'string') {
-        outputs.set(file, binary.has(file) ? Buffer.from(source, 'base64') : source)
+    if (observed) {
+      for (const [file, source] of observed) {
+        outputs.set(file, typeof source === 'string' ? source : Uint8Array.from(source))
       }
     }
-    for (const [file, source] of additional) {
-      outputs.set(file, typeof source === 'string' ? source : Uint8Array.from(source))
+    else {
+      for (const [file, source] of cache ?? []) {
+        if (typeof source === 'string') {
+          outputs.set(file, binary.has(file) ? Buffer.from(source, 'base64') : source)
+        }
+      }
+      for (const [file, source] of additional) {
+        outputs.set(file, typeof source === 'string' ? source : Uint8Array.from(source))
+      }
     }
     return outputs.size ? Object.freeze({ epoch, root, outputs: readonlyOutputs(outputs) }) : undefined
   }
 
   function invalidate() {
     completedEpoch = undefined
+    observed = undefined
     for (const request of waiting.values()) {
       request.resolve(undefined)
     }
@@ -93,7 +104,8 @@ export function createNativePublicationObservation(root: string, cache: Map<stri
       }
       return request.promise
     },
-    commit(epoch: number, bundle: OutputBundle, assets: Iterable<EmittedAsset>) {
+    commit(epoch: number, bundle: OutputBundle, assets: Iterable<EmittedAsset>, captureBytes = false) {
+      observed = undefined
       for (const file of binary) {
         if (!cache?.has(file)) {
           binary.delete(file)
@@ -119,6 +131,14 @@ export function createNativePublicationObservation(root: string, cache: Map<stri
       hasNativeWrite ||= Object.keys(bundle).length > 0
       completedEpoch = epoch
       const request = waiting.get(epoch)
+      if (request || captureBytes) {
+        // 生产模式没有开发裁剪缓存；仅有本轮观察请求时复制最终字节，不保留 chunk 或 AST。
+        observed = new Map(readCommitted(epoch)?.outputs)
+        for (const [file, output] of Object.entries(bundle)) {
+          const source = output.type === 'chunk' ? output.code : output.source
+          observed.set(file, typeof source === 'string' ? source : Uint8Array.from(source))
+        }
+      }
       if (request) {
         waiting.delete(epoch)
         request.resolve(readCommitted(epoch))

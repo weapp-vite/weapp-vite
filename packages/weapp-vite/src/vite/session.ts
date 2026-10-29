@@ -125,6 +125,7 @@ export class WeappBuildSession extends CompilerSession {
   async releaseClassicIdeConfig(): Promise<void> {
     await super.close()
     if (runtimeOwners.get(this.hmrRuntimeSession) === this) {
+      this.hmrRuntimeSession.sourcePublication.close()
       await this.hmrRuntimeSession.classicIdeConfig.close()
     }
   }
@@ -133,6 +134,7 @@ export class WeappBuildSession extends CompilerSession {
   async releaseHostClassicIdeConfig(): Promise<void> {
     const current = runtimeOwners.get(this.hmrRuntimeSession)
     await current?.closeHostGeneration('close')
+    this.hmrRuntimeSession.sourcePublication.close()
     await this.hmrRuntimeSession.classicIdeConfig.close()
   }
 

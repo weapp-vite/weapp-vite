@@ -91,6 +91,8 @@ import { cleanOutputs, isOutputRootInsideOutDir, resetEmittedOutputCaches, shoul
 import { assertPluginProjectOutput, createPluginProjectSession, isPluginProjectClosing, runPluginProjectRestart, setPluginProjectBuildOptions } from './pluginProject'
 import { createSnapshotBuildConfig } from './snapshotConfig'
 import { refreshSnapshotSources } from './snapshotSources'
+import { observeClassicSourceChange } from './sourceObservation'
+import { beginClassicSourcePublication } from './sourcePublication'
 import { resolveTouchAppWxssEnabled, touchExistingAppStyle, touchExistingOutputStyles } from './touchAppWxss'
 import { withVueStyleDependencySnapshot } from './vueStyleSnapshot'
 import { observeWorkerSources, ownsWorkerSource } from './workerPlan'
@@ -1655,6 +1657,9 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     const initialSnapshot = Promise.withResolvers<undefined>()
     let snapshotBuildChain: Promise<'snapshot' | 'closed' | undefined> = target === 'app' ? initialSnapshot.promise : Promise.resolve(undefined)
     let watcherEventCompletion = Promise.resolve()
+    let startTime: DOMHighResTimeStamp
+    let sourcePublication: ReturnType<typeof beginClassicSourcePublication> | undefined
+
     const canRecoverStartupFailure = hasDevModuleGraphHost(ctx) && getHmrRuntimeSession(ctx).phase !== 'switching'
     let startupSnapshotsSettled = false
     let startupSnapshotFailure: { error: unknown } | undefined
@@ -1686,6 +1691,22 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           },
         }
       : classicBuildEvents
+    function beginClassicBuild() {
+      sourcePublication?.finish(false)
+      const publication = beginClassicSourcePublication({
+        inputOwner: configService,
+        sourceOwner: hmrRuntimeSession.sourcePublication,
+        outputRoot: path.resolve(configService.outDir),
+        outputGenerations: hmrRuntimeSession.outputGenerations,
+        profile: () => ctx.runtimeState.build.hmr.profile,
+        buildId: `${profileSessionId}:${++profileBuildSequence}`,
+        batchId: createHmrProfileEventId,
+      })
+      sourcePublication = publication
+      startTime = publication.startedAt
+      devBuildWatcher?.emitEvent({ code: 'START' })
+      return publication
+    }
     const classicSession = target === 'app' ? classicOwner : undefined
     const initialBuildInputs = target === 'app' ? getInitialBuildInputObservation(configService) : undefined
     const initialModuleGraphOwner = ctx.moduleGraphService
@@ -2005,8 +2026,8 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
               )
               let endEventEmitted = false
               try {
-                devBuildWatcher?.emitEvent({ code: 'START' })
-                await build(createSnapshotBuildConfig(snapshotBuildOptions))
+                const publication = beginClassicBuild()
+                await publication.run(async () => await build(createSnapshotBuildConfig(snapshotBuildOptions)))
                 emittedAutoRoutesSignature = routeSignature
                 if (appShellInput && graphAffectedEntries.has(normalizeFsResolvedId(appShellInput))) {
                   emittedAppShellSnapshot = await captureAppShellSnapshot(ctx, emittedAppShellSnapshot?.appId)
@@ -2046,14 +2067,14 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             hmr.fullEntryScan = fullEntryScan
             let endEventEmitted = false
             try {
-              devBuildWatcher?.emitEvent({ code: 'START' })
-              await build(createSnapshotBuildConfig({
+              const publication = beginClassicBuild()
+              await publication.run(async () => await build(createSnapshotBuildConfig({
                 ...snapshotBuildOptions,
                 build: {
                   ...(snapshotBuildOptions.build ?? {}),
                   emptyOutDir: shouldCleanOutputs(configService, 'rebuild'),
                 },
-              }))
+              })))
               emittedAutoRoutesSignature = routeSignature
               emittedAppShellSnapshot = await captureAppShellSnapshot(ctx, emittedAppShellSnapshot?.appId)
               recordHmrProfileDuration(ctx.runtimeState.build.hmr.profile, 'snapshotBuildMs', performance.now() - snapshotBuildStartedAt)
@@ -2178,7 +2199,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       snapshotBatchTimer = setTimeout(flushPendingSnapshotBuild, SNAPSHOT_BUILD_BATCH_DELAY_MS)
     }
 
-    function onModuleGraphChange({ event, file: id }: DevModuleGraphChange, receivedAtMs = performance.now(), initialRoute?: InitialBuildRouteEvidence) {
+    function onModuleGraphChange({ event, file: id, sourceEvent }: DevModuleGraphChange, receivedAtMs = sourceEvent?.receivedAtMs ?? performance.now(), initialRoute?: InitialBuildRouteEvidence) {
       if (isDevOutputFile(id)) {
         return
       }
@@ -2189,6 +2210,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         scheduleSnapshotBuild({
           event,
           file: id,
+          sourceEvent,
           forceFullRescan: true,
           verifyInitialInput: true,
           verifyInitialModuleOwner: !initialRoute,
@@ -2201,6 +2223,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         scheduleSnapshotBuild({
           event,
           file: id,
+          sourceEvent,
           forceFullRescan: true,
           independentRoots: [...scanService.independentSubPackageMap.keys()],
         }, receivedAtMs)
@@ -2209,7 +2232,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       if (!hasModule && !ownsCompilerContentSource(configService, id) && !initialBuildFailed) {
         return
       }
-      scheduleSnapshotBuild({ event, file: id, verifyInitialInput: true, initialRoute }, receivedAtMs)
+      scheduleSnapshotBuild({ event, file: id, sourceEvent, verifyInitialInput: true, initialRoute }, receivedAtMs)
     }
 
     const releaseWatcherResources = devBuildWatcher ? retainWatcherService(watcherService) : undefined
@@ -2231,6 +2254,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
 
     function markSnapshotClosed() {
       devWatcherClosed = true
+      sourcePublication?.finish(false)
       initialSnapshot.resolve(undefined)
       releaseAutoRoutesTopology?.()
       releaseConfigNotifications?.()
@@ -2453,14 +2477,22 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         snapshotSidecarReady = true
       }
       // 附着宿主与独立 Vite provider 共用同一事件入口；路由结构由目录 watcher 完成解析后交回。
+      const ownsModuleGraphChange = (change: DevModuleGraphChange) => !isDevOutputFile(change.file)
+        && !ownsAutoRoutesTopologyChange(ctx, change) && !ownsSnapshotPhysicalSidecar(change.file)
+        && !(configService.configFileDependencies ?? []).some(dependency => normalizeFsResolvedId(dependency) === normalizeFsResolvedId(change.file))
       moduleGraphProvider = target === 'app'
         ? await createDevModuleGraphProvider(ctx, buildOptions, (change) => {
-            if (ownsAutoRoutesTopologyChange(ctx, change) || ownsSnapshotPhysicalSidecar(change.file)
-              || (configService.configFileDependencies ?? []).some(dependency => normalizeFsResolvedId(dependency) === normalizeFsResolvedId(change.file))) {
-              return
+            if (ownsModuleGraphChange(change)) {
+              onModuleGraphChange(change)
             }
-            onModuleGraphChange(change)
-          })
+          }, change => configService.platform === 'weapp' && devHmrDecision?.runtime === 'classic'
+            && ownsModuleGraphChange(change)
+            && (!emittedEntryTopology || change.event === 'delete'
+              // 旧宿主可能先清图再送达 hotUpdate；纯来源资格沿用命令内实际输入身份。
+              || hmrRuntimeSession.sourcePublication.knowsSource(path.resolve(configService.outDir), compilerSourceId(change.file))
+              || ctx.moduleGraphService.hasModule(change.file) || ownsCompilerContentSource(configService, change.file) || initialBuildFailed)
+            ? observeClassicSourceChange(hmrRuntimeSession.sourcePublication, path.resolve(configService.outDir), change)
+            : change)
         : undefined
       if (devWatcherClosed) {
         await moduleGraphProvider?.close()
@@ -2523,7 +2555,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             skippedInitialConfigPublication = true
             return devBuildWatcher!.watcher
           }
-          devBuildWatcher!.emitEvent({ code: 'START' })
+          const publication = beginClassicBuild()
           try {
             await ctx.autoRoutesService?.ensureFresh()
             const routeSignature = ctx.autoRoutesService?.getSignature()
@@ -2532,7 +2564,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
                 skippedInitialConfigPublication = true
                 return
               }
-              await build(createSnapshotBuildConfig(snapshotBuildOptions))
+              await publication.run(async () => await build(createSnapshotBuildConfig(snapshotBuildOptions)))
               emittedAutoRoutesSignature = routeSignature
               emittedEntryTopology = captureEntryTopology(ctx)
               emittedAppShellSnapshot = await captureAppShellSnapshot(ctx)
@@ -2589,7 +2621,6 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     debug?.('dev build watcher end')
     debug?.('dev watcher listen start')
 
-    let startTime: DOMHighResTimeStamp
     let firstBuildCompleted = false
     let resolveWatcher: (value: unknown) => void
     let rejectWatcher: (reason?: any) => void
@@ -2699,13 +2730,19 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         settleHmrStyleUpdatePlan(configService, completedStylePlan, false)
       }
       if (devWatcherClosed) {
+        sourcePublication?.finish(false)
         return
       }
       if (e.code === 'START') {
-        startTime = performance.now()
-        ctx.runtimeState.build.hmr.profile.buildId = `${profileSessionId}:${++profileBuildSequence}`
+        if (target !== 'app') {
+          startTime = performance.now()
+          ctx.runtimeState.build.hmr.profile.buildId = `${profileSessionId}:${++profileBuildSequence}`
+        }
       }
       else if (e.code === 'END') {
+        const completedSourcePublication = sourcePublication
+        const isRebuild = firstBuildCompleted
+        const hasInheritedSources = !isRebuild && Boolean(completedSourcePublication?.canComplete)
         initialBuildFailed = false
         const bundlerDurationMs = performance.now() - startTime
         const durationMs = bundlerDurationMs
@@ -2714,6 +2751,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         const shouldRestart = shouldRestartDevBuild(target)
         const completion = (async () => {
           if (shouldRestart) {
+            completedSourcePublication?.finish(false)
             reportDevModuleGraphBuild(ctx, true)
             settleHmrStyleUpdatePlan(configService, completedStylePlan, true)
             await restartConfigGeneration(false)
@@ -2721,7 +2759,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             return
           }
 
-          if (firstBuildCompleted) {
+          if (isRebuild) {
             const { styleExtension } = resolveCompilerOutputExtensions(configService.outputExtensions)
             const emittedStyleSuffix = `.${styleExtension.replace(/^\./, '')}`
             const emittedStyleFileNames = new Set(ctx.runtimeState.build.hmr.lastEmittedChunkFileNames)
@@ -2746,23 +2784,33 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             // 样式收尾属于本次发布；完成证据不能早于任何仍可能失败的宿主刷新。
             finalizeHmrProfile(bundlerDurationMs)
             recordHmrProfile(durationMs)
-            void writeHmrProfileJsonSample(durationMs).catch((error) => {
-              debug?.(`write hmr profile json failed: ${String(error)}`)
-            })
-            logger.success(formatHmrLogLine(durationMs))
-            shouldLogSlowHmrTip()
           }
           else {
             firstBuildCompleted = true
           }
           reportDevModuleGraphBuild(ctx, true)
-          resetHmrProfile()
           settleHmrStyleUpdatePlan(configService, completedStylePlan, true)
           if (target === 'app' && devHmrDecision?.runtime === 'classic') {
             hmrRuntimeSession.markClassic()
           }
+          if (isRebuild) {
+            logger.success(formatHmrLogLine(durationMs))
+            shouldLogSlowHmrTip()
+          }
+          completedSourcePublication?.finish(true)
+          if (isRebuild || hasInheritedSources) {
+            // 重启冷构只补来源完成证据，不进入普通 HMR 性能样本和慢构建基线。
+            if (hasInheritedSources) {
+              finalizeHmrProfile(bundlerDurationMs)
+            }
+            void writeHmrProfileJsonSample(durationMs).catch((error) => {
+              debug?.(`write hmr profile json failed: ${String(error)}`)
+            })
+          }
+          resetHmrProfile()
           resolveWatcher(e)
         })().catch(async (error) => {
+          completedSourcePublication?.finish(false)
           if (shouldRestart) {
             return await failConfigRestart(error, completedStylePlan)
           }
@@ -2789,6 +2837,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         }
       }
       else if (e.code === 'ERROR') {
+        sourcePublication?.finish(false)
         reportDevModuleGraphBuild(ctx, false)
         void writeHmrProfileJsonSample(Math.max(0, performance.now() - startTime), 'failed').catch((error) => {
           debug?.(`write failed hmr profile json: ${String(error)}`)

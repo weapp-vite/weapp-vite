@@ -2,6 +2,7 @@ import type { HmrRuntimeDecision } from './hmrRuntime'
 import type { HmrRuntimeFallbackReason } from './hmrRuntimeCapabilities'
 import { logger } from '../context/shared'
 import { ClassicIdeConfigOwner } from './classicIdeConfig'
+import { HmrSourcePublicationOwner } from './hmrRuntimeSession/sourcePublication'
 
 export type HmrRuntimePhase = 'stateful' | 'switching' | 'classic'
 type ClassicRequestHandler = (reason: HmrRuntimeFallbackReason) => void | Promise<void>
@@ -14,6 +15,7 @@ export interface HmrOutputGeneration {
 /** 一次 dev 命令共享的单向状态；Vite 配置重启只替换宿主绑定，不重置降级决定。 */
 export interface HmrRuntimeSession {
   readonly classicIdeConfig: ClassicIdeConfigOwner
+  readonly sourcePublication: HmrSourcePublicationOwner
   readonly outputOwnership: Map<string, Map<string, Set<string>>>
   readonly outputGenerations: Map<string, HmrOutputGeneration>
   readonly phase: HmrRuntimePhase
@@ -69,6 +71,7 @@ export function createHmrRuntimeSession(): HmrRuntimeSession {
 
   return {
     classicIdeConfig: new ClassicIdeConfigOwner(),
+    sourcePublication: new HmrSourcePublicationOwner(),
     outputOwnership: new Map(),
     outputGenerations: new Map(),
     get phase() { return phase },

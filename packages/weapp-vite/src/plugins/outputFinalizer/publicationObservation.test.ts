@@ -7,6 +7,56 @@ import { createNativePublicationObservation } from './publicationObservation'
 const app = { 'app.js': { type: 'chunk', fileName: 'app.js', code: 'App({})' } } as OutputBundle
 
 describe('committed native publication observation', () => {
+  it.each([undefined, new Map<string, string>()])('observes complete production bytes without a populated development cache (%s)', async (cache) => {
+    const root = path.resolve('native-production-observation')
+    const observation = createNativePublicationObservation(root, cache)
+    const bytes = Uint8Array.from([0, 255, 64])
+    const bundle = { ...app, 'icon.bin': { type: 'asset', fileName: 'icon.bin', source: bytes } } as OutputBundle
+    const pending = observation.whenCommitted(1)
+    observation.commit(1, bundle, [{ type: 'asset', fileName: 'public.txt', source: 'public' }])
+    const snapshot = (await pending)!
+    expect(snapshot?.root).toBe(root)
+    expect([...snapshot.outputs.keys()].sort()).toEqual(['app.js', 'icon.bin', 'public.txt'])
+    expect(snapshot.outputs.get('app.js')).toBe('App({})')
+    bytes[0] = 17
+    const observedBytes = snapshot.outputs.get('icon.bin') as Uint8Array
+    observedBytes[1] = 18
+    expect([...observation.readCommitted(1)!.outputs.get('icon.bin') as Uint8Array]).toEqual([0, 255, 64])
+    expect(cache?.size ?? 0).toBe(0)
+    observation.invalidate()
+    expect(observation.readCommitted(1)).toBeUndefined()
+    const next = observation.whenCommitted(1)
+    observation.commit(1, { 'other.js': { type: 'chunk', fileName: 'other.js', code: 'Page({})' } } as OutputBundle, [])
+    expect(Object.fromEntries((await next)!.outputs)).toEqual({ 'other.js': 'Page({})' })
+    observation.reset()
+    expect(observation.readCommitted(1)).toBeUndefined()
+  })
+
+  it('does not retain or copy production bundle code without a pending observer', () => {
+    let reads = 0
+    const observation = createNativePublicationObservation(path.resolve('unobserved-native-production'), new Map())
+    observation.commit(1, { 'app.js': {
+      type: 'chunk',
+      fileName: 'app.js',
+      get code() {
+        reads++
+        return 'App({})'
+      },
+    } } as OutputBundle, [])
+    expect(reads).toBe(0)
+    expect(observation.readCommitted(1)).toBeUndefined()
+  })
+
+  it('serves a post-write observer only when that production epoch was explicitly captured', async () => {
+    const observation = createNativePublicationObservation(path.resolve('late-production-observation'), new Map())
+    observation.commit(1, app, [], true)
+    expect(Object.fromEntries((await observation.whenCommitted(1))!.outputs)).toEqual({ 'app.js': 'App({})' })
+    observation.invalidate()
+    observation.commit(2, app, [])
+    expect(await observation.whenCommitted(2)).toBeUndefined()
+    expect(observation.readCommitted(1)).toBeUndefined()
+  })
+
   it('requires a prior successful native byte write before acknowledging an empty publication', async () => {
     const cache = new Map([['app.js', 'App({})']])
     const observation = createNativePublicationObservation(path.resolve('native-observation'), cache)

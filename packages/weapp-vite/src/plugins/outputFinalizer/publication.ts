@@ -34,11 +34,13 @@ export function createOutputPublicationPlugin(ctx: CompilerContext, subPackageMe
   let nativeWrite = false
   let building = false
   let epoch = 0
+  let observedEpoch: number | undefined
   let closing = false
   const writes = new Set<Promise<unknown>>()
 
   function releasePendingOwnership() {
     epoch++
+    observedEpoch = undefined
     for (const scope of scopes.values()) {
       scope.pending = undefined
       scope.observation.invalidate()
@@ -86,6 +88,12 @@ export function createOutputPublicationPlugin(ctx: CompilerContext, subPackageMe
     enforce: 'post',
     api: Object.freeze({
       getEpoch: () => epoch,
+      captureEpoch: () => {
+        if (!closing) {
+          observedEpoch = epoch
+        }
+        return epoch
+      },
       readCommitted: (root: string, expectedEpoch: number) => !closing && expectedEpoch === epoch ? scopes.get(path.resolve(root))?.observation.readCommitted(expectedEpoch) : undefined,
       whenCommitted: (root: string, expectedEpoch: number) => !closing && expectedEpoch === epoch
         ? scopes.get(path.resolve(root))?.observation.whenCommitted(expectedEpoch) ?? Promise.resolve(undefined)
@@ -170,7 +178,7 @@ export function createOutputPublicationPlugin(ctx: CompilerContext, subPackageMe
             scope?.cache?.set(file, source)
           }
           pending.generation?.()
-          scope?.observation.commit(pending.epoch, bundle as unknown as OutputBundle, pending.observedAssets)
+          scope?.observation.commit(pending.epoch, bundle as unknown as OutputBundle, pending.observedAssets, observedEpoch === pending.epoch)
         }
         const task = write()
         writes.add(task)
