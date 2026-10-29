@@ -6,6 +6,7 @@ import { parseLogicalEntryId, parseSidecarModuleId } from './moduleGraph/protoco
 import { CompilerSession } from './runtime/compilerSession'
 import { createFileWatcher } from './runtime/watch/fileWatcher'
 import { createSidecarWatchOptions } from './runtime/watch/options'
+import { deduplicateCleanupErrors } from './runtime/watcher/cleanupErrors'
 import { fingerprintPaths, projectInputFiles, resolveArtifactOutDir } from './testArtifact/inputs'
 import { isPathInside, normalizePath } from './utils/path'
 import { captureWatchDependencies } from './utils/watchDependencies'
@@ -185,10 +186,10 @@ export async function watchTestArtifact(options: WatchTestArtifactOptions = {}):
   })
   const closeResources = async (priorFailures: unknown[] = []) => {
     const results = await Promise.allSettled([watcher.close(), active])
-    const failures = [...new Set([
+    const failures = deduplicateCleanupErrors([
       ...priorFailures,
       ...results.filter((result): result is PromiseRejectedResult => result.status === 'rejected').map(result => result.reason),
-    ])]
+    ])
     if (failures.length) {
       throw failures.length === 1 ? failures[0] : new AggregateError(failures, 'Test artifact watcher cleanup failed', { cause: failures[0] })
     }

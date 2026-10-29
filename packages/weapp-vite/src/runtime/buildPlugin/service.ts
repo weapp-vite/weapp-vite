@@ -75,6 +75,7 @@ import { syncProjectSupportFiles } from '../supportFiles'
 import { watchAssetSources } from '../watch/assets'
 import { createFileWatcher } from '../watch/fileWatcher'
 import { claimSidecarDelivery } from '../watch/sidecarDelivery'
+import { deduplicateCleanupErrors } from '../watcher/cleanupErrors'
 import { bindWatcherServiceController, closeWatcherControllerResources, registerWatcherServiceController } from '../watcher/controllerClose'
 import { retainWatcherService } from '../watcherPlugin'
 import { captureAppShellSnapshot, resolveAppShellSnapshotChange, withInitialAppShellSnapshot } from './appShellSnapshot'
@@ -2545,9 +2546,12 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         async () => !snapshotSidecar && await moduleGraphProvider?.close(),
         async () => await releaseWatcherResources?.releaseResources(),
       ].map(async close => await close()))
-      const errors = [...new Set(cleanup.flatMap(result => result.status === 'rejected' && result.reason !== error ? [result.reason] : []))]
-      if (errors.length) {
-        throw new AggregateError([error, ...errors], 'Sidecar watcher startup and cleanup failed', { cause: error })
+      const errors = deduplicateCleanupErrors([
+        error,
+        ...cleanup.flatMap(result => result.status === 'rejected' ? [result.reason] : []),
+      ])
+      if (errors.length > 1) {
+        throw new AggregateError(errors, 'Sidecar watcher startup and cleanup failed', { cause: error })
       }
       throw error
     }
@@ -3027,8 +3031,9 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           await watcherService.closeAll()
         }
         catch (cleanupError) {
-          if (!containsFailure(error, cleanupError)) {
-            throw new AggregateError([error, cleanupError], 'Development watcher startup and cleanup failed', { cause: error })
+          const errors = deduplicateCleanupErrors([error, cleanupError])
+          if (errors.length > 1) {
+            throw new AggregateError(errors, 'Development watcher startup and cleanup failed', { cause: error })
           }
         }
       }

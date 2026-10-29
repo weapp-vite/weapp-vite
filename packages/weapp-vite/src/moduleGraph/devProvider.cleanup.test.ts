@@ -138,3 +138,34 @@ it('releases the Vite server and retains both failures when WXML binding throws 
   expect(ctx.moduleGraphService.hasModule(source)).toBe(false)
   expect(server.close).toHaveBeenCalledOnce()
 })
+
+it('retains distinct cleanup failures once when WXML close also contains the startup failure', async () => {
+  const { ctx, server, source } = fixture()
+  const initialFailure = new Error('external WXML watcher failed')
+  const wxmlFailure = new Error(initialFailure.message)
+  const serverFailure = new Error(initialFailure.message)
+  const wxmlCloseFailure = new AggregateError([initialFailure, wxmlFailure], 'External WXML watcher cleanup failed', { cause: initialFailure })
+  const wxmlClose = vi.fn(async () => {
+    throw wxmlCloseFailure
+  })
+  mocks.bindWxml.mockReturnValue(Object.assign(wxmlClose, { ready: Promise.reject(initialFailure) }))
+  server.close.mockRejectedValueOnce(serverFailure)
+
+  const failure = await createDevModuleGraphProvider(ctx, {}, vi.fn()).catch(error => error)
+
+  expect(failure).toBeInstanceOf(AggregateError)
+  expect(failure.cause).toBe(initialFailure)
+  expect(failure.errors).toHaveLength(3)
+  expect(failure.errors[0]).toBe(initialFailure)
+  expect(failure.errors[2]).toBe(serverFailure)
+  const retainedWxmlFailure = failure.errors[1] as AggregateError
+  expect(retainedWxmlFailure).toBeInstanceOf(AggregateError)
+  expect(retainedWxmlFailure.errors).toHaveLength(1)
+  expect(retainedWxmlFailure.errors[0]).toBe(wxmlFailure)
+  expect(retainedWxmlFailure.message).toBe(wxmlCloseFailure.message)
+  expect(retainedWxmlFailure.stack).toBe(wxmlCloseFailure.stack)
+  expect(retainedWxmlFailure.cause).toBe(initialFailure)
+  expect(ctx.moduleGraphService.hasModule(source)).toBe(false)
+  expect(wxmlClose).toHaveBeenCalledOnce()
+  expect(server.close).toHaveBeenCalledOnce()
+})
