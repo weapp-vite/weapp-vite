@@ -958,3 +958,21 @@ export default defineConfig({
 推荐 dev 输出到独立目录，Turbo 只缓存生产目录，dev 任务设置 `cache: false`、`persistent: true`。必须共用目录时，由缓存集成持久记录成功构建的 emitted 文件清单与内容摘要，恢复及清理仅针对该任务拥有的文件；用户改写或同名冲突必须保留并报告。不要把无条件清空输出目录加入 HMR 兜底逻辑。最终构建产物仍由 Vite/Rolldown emit/write 持久化。
 
 仓库组合回归入口为 `pnpm verify:edit-sequence --engine weapp-modes --require-clean --report .tmp/output-mode-sequence.json`，运行前重建 weapp-vite。它逐步比较模式切换、组件/页面/分包拓扑变化和旧缓存恢复后的完整生产文件，与独立进程基线按字节核对；共享目录额外检查用户文件保护。此项不是真实 IDE runtime 验收。
+
+## 自有文件监听后端
+
+`weapp.watch.engine` 可以显式选择实验性 `parcel` 后端，与默认 `chokidar` 对照：
+
+```ts
+export default defineConfig({
+  weapp: {
+    watch: { engine: 'parcel' },
+  },
+})
+```
+
+选择仅覆盖 weapp-vite 自己创建的文件监听，包括 sidecar、配置、路由、自动导入、资产、根外 WXML 依赖和测试产物。Vite 内嵌监听器与 Rolldown 原生主图监听仍由各自宿主管理。没有显式配置时，可通过 `WEAPP_VITE_WATCH_ENGINE=parcel` 在同一套验证命令上做对照；配置字段优先，缺省仍为 `chokidar`。
+
+Parcel 使用可选原生依赖 `@parcel/watcher`。无法加载、订阅失败或运行中报错会保留错误，不会自动切回 Chokidar。安装时须保留对应平台的 optional dependencies。Parcel 不提供订阅式 polling；已显式启用 polling 的环境应使用 Chokidar，不能把 `brute-force` 查询当作 polling 监听。
+
+`build.watch.chokidar` 保留现有 Chokidar 后端与轮询兼容配置，`server.watch` 仍按 Vite 的公开配置处理。Parcel 收集批量变化，以最终文件状态触发原有构建流程，不承诺与 Chokidar 逐条事件完全一致。当前保持实验状态，默认后端切换须以实际对照及跨平台 runtime 验证为依据。

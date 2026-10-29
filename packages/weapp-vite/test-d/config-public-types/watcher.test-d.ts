@@ -117,3 +117,8 @@ defineConfig({ server: { watch: serverWatch } })
 expectError(({ usePolling: true, backend: 'polling' }) satisfies ServerWatchOptions)
 expectError(({ interval: 100, pollingInterval: 100 }) satisfies ServerWatchOptions)
 expectError(({ binaryInterval: 200, pollingBinaryInterval: 200 }) satisfies ServerWatchOptions)
+
+// 自有监听后端选择不改变 Vite/Rolldown 的原生监听配置。
+defineConfig({ weapp: { watch: { engine: 'parcel' } } })
+defineConfig({ weapp: { watch: { engine: 'chokidar' } } })
+expectError(defineConfig({ weapp: { watch: { engine: 'watchpack' } } }))

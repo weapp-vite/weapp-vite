@@ -4,11 +4,12 @@ import type { CompilerContext } from '../../context'
 import { EventEmitter } from 'node:events'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRuntimeState } from '../../runtime/runtimeState'
+import * as fileWatchers from '../../runtime/watch/fileWatcher'
 import { beginWxmlDependencies } from './dependencies'
 import { bindWxmlDependencyWatch, ownsExternalWxmlWatch } from './watch'
 
 const { watchMock } = vi.hoisted(() => ({ watchMock: vi.fn() }))
-vi.mock('chokidar', () => ({ watch: watchMock }))
+vi.mock('chokidar', () => ({ default: { watch: watchMock } }))
 
 beforeEach(() => {
   watchMock.mockReset()
@@ -24,10 +25,13 @@ function fixture(disabled = false, options: {
   withoutConfigService?: boolean
 } = {}) {
   const watcher = Object.assign(new EventEmitter(), {
-    add: vi.fn(() => { queueMicrotask(() => watcher.emit('ready')) }),
+    add: vi.fn(),
     close: vi.fn(async () => {}),
   })
-  watchMock.mockReturnValue(watcher as unknown as FSWatcher)
+  watchMock.mockImplementation(() => {
+    queueMicrotask(() => watcher.emit('ready'))
+    return watcher as unknown as FSWatcher
+  })
   const userIgnored = vi.fn(() => false)
   const server = {
     config: { root: '/project', server: { watch: disabled ? null : { usePolling: true, interval: 30, ignored: userIgnored, ...options.watch } }, logger: { error: vi.fn() } },
@@ -54,6 +58,86 @@ function fixture(disabled = false, options: {
 }
 
 describe('WXML dependency watcher ownership', () => {
+  it('rolls back dependency observation and ownership when initial backend creation throws', async () => {
+    const ctx = {
+      runtimeState: createRuntimeState(),
+      configService: { cwd: '/project', outDir: '/project/dist', inlineConfig: { weapp: { watch: { engine: 'parcel' } } } },
+    } as unknown as CompilerContext
+    const external = '/inputs/rules.json'
+    const initial = beginWxmlDependencies(ctx, 'main', false)
+    initial.template('initial.wxml')(external)
+    initial.commit()
+    const unrelated = vi.fn()
+    ctx.runtimeState.wxmlProcessing.listeners.add(unrelated)
+    const server = {
+      config: { root: '/project', server: { watch: {} }, logger: { error: vi.fn() } },
+    } as unknown as ViteDevServer
+    const failure = new Error('backend creation failed')
+    const fileWatcher = {
+      ready: Promise.resolve('ready' as const),
+      add: vi.fn(async () => 'ready' as const),
+      updateTargets: vi.fn(async () => 'ready' as const),
+      onChange: vi.fn(() => () => {}),
+      onError: vi.fn(() => () => {}),
+      close: vi.fn(async () => {}),
+    }
+    const create = vi.spyOn(fileWatchers, 'createFileWatcher').mockImplementationOnce(() => {
+      throw failure
+    }).mockReturnValue(fileWatcher)
+    try {
+      expect(() => bindWxmlDependencyWatch(ctx, server, vi.fn())).toThrow(failure)
+      expect(ctx.runtimeState.wxmlProcessing.listeners).toEqual(new Set([unrelated]))
+      expect(ownsExternalWxmlWatch(ctx, external)).toBe(false)
+
+      const next = beginWxmlDependencies(ctx, 'main', true)
+      next.template('next.wxml')('/inputs/next.json')
+      next.commit()
+      expect(create).toHaveBeenCalledOnce()
+      expect(unrelated).toHaveBeenCalledOnce()
+
+      const close = bindWxmlDependencyWatch(ctx, server, vi.fn())
+      try {
+        await close.ready
+        expect(ownsExternalWxmlWatch(ctx, external)).toBe(true)
+        expect(create).toHaveBeenCalledTimes(2)
+      }
+      finally {
+        await close()
+      }
+      expect(ctx.runtimeState.wxmlProcessing.listeners).toEqual(new Set([unrelated]))
+      expect(ownsExternalWxmlWatch(ctx, external)).toBe(false)
+      expect(fileWatcher.close).toHaveBeenCalledOnce()
+    }
+    finally {
+      create.mockRestore()
+    }
+  })
+
+  it('keeps the compiler watch engine when inheriting host watch options', async () => {
+    const fileWatcher = {
+      ready: Promise.resolve('ready' as const),
+      add: vi.fn(async () => 'ready' as const),
+      updateTargets: vi.fn(async () => 'ready' as const),
+      onChange: vi.fn(() => () => {}),
+      onError: vi.fn(() => () => {}),
+      close: vi.fn(async () => {}),
+    }
+    const create = vi.spyOn(fileWatchers, 'createFileWatcher').mockReturnValue(fileWatcher)
+    const { close } = fixture(false, { inlineConfig: { weapp: { watch: { engine: 'parcel' } } } })
+    try {
+      await close.ready
+      expect(create).toHaveBeenCalledWith(expect.objectContaining({
+        inlineConfig: expect.objectContaining({ weapp: { watch: { engine: 'parcel' } } }),
+      }), ['/inputs'], expect.any(Object))
+      expect(watchMock).not.toHaveBeenCalled()
+    }
+    finally {
+      await close()
+      create.mockRestore()
+    }
+    expect(fileWatcher.close).toHaveBeenCalledOnce()
+  })
+
   it('leaves root dependencies with the host through publication, removal and teardown', async () => {
     const { close, ctx, internal, server } = fixture()
     await close.ready
@@ -76,7 +160,8 @@ describe('WXML dependency watcher ownership', () => {
     const { watcher, userIgnored, server, ctx, internal, external, onChange, close } = fixture()
     await close.ready
     expect(server.watcher.add).not.toHaveBeenCalled()
-    expect(watcher.add).toHaveBeenCalledExactlyOnceWith('/inputs')
+    expect(watchMock).toHaveBeenCalledWith(['/inputs'], expect.any(Object))
+    expect(watcher.add).not.toHaveBeenCalled()
     const options = watchMock.mock.calls[0]![1]
     expect(options).toMatchObject({ depth: 0, ignoreInitial: true, backend: 'polling', pollingInterval: 30 })
     expect(options.ignored[0]).toBe(userIgnored)
@@ -89,9 +174,9 @@ describe('WXML dependency watcher ownership', () => {
     expect(ownsExternalWxmlWatch(ctx, external)).toBe(true)
     expect(ownsExternalWxmlWatch(ctx, internal)).toBe(false)
     expect(ownsExternalWxmlWatch(ctx, '/inputs/unrelated.json')).toBe(false)
-    watcher.emit('all', 'unlink', external)
-    watcher.emit('all', 'add', external)
-    watcher.emit('all', 'change', '/inputs/unrelated.json')
+    watcher.emit('unlink', external)
+    watcher.emit('add', external)
+    watcher.emit('change', '/inputs/unrelated.json')
     expect(onChange.mock.calls.map(([event]) => event)).toEqual([
       { event: 'delete', file: external },
       { event: 'create', file: external },
@@ -107,15 +192,15 @@ describe('WXML dependency watcher ownership', () => {
     const replacement = beginWxmlDependencies(ctx, 'main', false)
     replacement.template('next.wxml')('/inputs/next.json')
     replacement.commit()
-    watcher.emit('all', 'change', external)
-    watcher.emit('all', 'change', '/inputs/next.json')
+    watcher.emit('change', external)
+    watcher.emit('change', '/inputs/next.json')
     expect(onChange).toHaveBeenCalledExactlyOnceWith({ event: 'update', file: '/inputs/next.json' })
     await close()
     await close()
     expect(watcher.close).toHaveBeenCalledOnce()
     expect(ctx.runtimeState.wxmlProcessing.listeners).toEqual(new Set([unrelated]))
     expect(ownsExternalWxmlWatch(ctx, '/inputs/next.json')).toBe(false)
-    watcher.emit('all', 'change', '/inputs/next.json')
+    watcher.emit('change', '/inputs/next.json')
     expect(onChange).toHaveBeenCalledOnce()
   })
 
@@ -129,8 +214,8 @@ describe('WXML dependency watcher ownership', () => {
       partial.commit()
       expect(ownsExternalWxmlWatch(ctx, external)).toBe(true)
       expect(ownsExternalWxmlWatch(ctx, next)).toBe(true)
-      watcher.emit('all', 'change', external)
-      watcher.emit('all', 'change', next)
+      watcher.emit('change', external)
+      watcher.emit('change', next)
       expect(onChange).toHaveBeenCalledTimes(2)
 
       const replacement = beginWxmlDependencies(ctx, 'main', true)
@@ -138,10 +223,11 @@ describe('WXML dependency watcher ownership', () => {
       replacement.commit()
       expect(ownsExternalWxmlWatch(ctx, external)).toBe(false)
       expect(ownsExternalWxmlWatch(ctx, next)).toBe(true)
-      watcher.emit('all', 'change', external)
-      watcher.emit('all', 'change', next)
+      watcher.emit('change', external)
+      watcher.emit('change', next)
       expect(onChange).toHaveBeenCalledTimes(3)
-      expect(watcher.add).toHaveBeenCalledExactlyOnceWith('/inputs')
+      expect(watchMock).toHaveBeenCalledOnce()
+      expect(watcher.add).not.toHaveBeenCalled()
     }
     finally {
       await close()
@@ -156,6 +242,16 @@ describe('WXML dependency watcher ownership', () => {
   })
 
   it.each([
+    {
+      name: 'host write stability',
+      watch: { awaitWriteFinish: { stabilityThreshold: 80, pollInterval: 10 } },
+      expected: { awaitWriteFinish: { stabilityThreshold: 80, pollInterval: 10 } },
+    },
+    {
+      name: 'host write stability defaults',
+      watch: { awaitWriteFinish: true },
+      expected: { awaitWriteFinish: { stabilityThreshold: 2000, pollInterval: 100 } },
+    },
     {
       name: 'build backend and intervals before host polling options',
       inlineConfig: { build: { watch: { chokidar: { backend: 'native', pollingInterval: 25, pollingBinaryInterval: 50 } } } },

@@ -11,7 +11,6 @@ import {
   WEVU_AUTO_ROUTES_VIRTUAL_MODULE_ID,
 } from '@weapp-core/constants'
 import { removeExtensionDeep } from '@weapp-core/shared'
-import chokidar from 'chokidar'
 import { mayContainPageDeclaration, stripPageDeclaration } from 'wevu/compiler'
 import { scriptExtensions, vueExtensions } from '../constants'
 import { logger } from '../context/shared'
@@ -24,7 +23,7 @@ import {
 } from '../runtime/autoRoutesPlugin/shared'
 import { publishAutoRoutesTopology, registerAutoRoutesTopologySource } from '../runtime/autoRoutesPlugin/topology'
 import { createAutoRoutesWatchDirectoryRegistry } from '../runtime/autoRoutesPlugin/watchDirectories'
-import { createSidecarWatchOptions } from '../runtime/watch/options'
+import { createFileWatcher } from '../runtime/watch/fileWatcher'
 import { recordHmrProfileDuration, recordHmrProfileOperation } from '../utils/hmrProfile'
 import { normalizeFsResolvedId } from '../utils/resolvedId'
 import { normalizeEncodedSourceMapLike } from '../utils/sourcemap'
@@ -67,7 +66,7 @@ interface AutoRoutesWatcherSubscriber {
 }
 
 interface AutoRoutesWatcherController {
-  readonly ready: Promise<void>
+  readonly ready: Promise<'ready' | 'closed'>
   addWatchTargets: (paths: string[]) => void
   readonly ownsFile: (filePath: string) => boolean
   readonly subscribers: Map<WeappViteRuntime, AutoRoutesWatcherSubscriber>
@@ -408,7 +407,7 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
     const receivedAtMs = performance.now()
     pendingRouteStructureChanges.push({ filePath, event, controller, receivedAtMs })
     clearTimeout(routeStructureChangeTimer)
-    // chokidar 不会为 unlink 应用 awaitWriteFinish；增删使用同一稳定窗口，
+    // 增删使用同一稳定窗口，
     // 让目录重命名、递归删除只发布一次完整拓扑。
     routeStructureChangeTimer = setTimeout(() => {
       routeStructureChangeTimer = undefined
@@ -420,12 +419,11 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
   }
 
   /**
-   * 启动 chokidar 监听页面路由源文件及其外部声明依赖所在目录的增删。
+   * 监听页面路由源文件及其外部声明依赖所在目录的增删。
    * Rolldown 的 watcher 不会为新建文件触发 watchChange，
    * 因此需要独立的文件监听来补偿。
    *
-   * 注意：chokidar v5 在 macOS 上使用 glob 模式时无法检测新建文件，
-   * 必须直接监听目录，然后在事件回调中按扩展名过滤。
+   * 直接监听目录，然后在事件回调中按扩展名过滤。
    *
    * 生命周期：watcher 注册到 sidecarWatcherMap，由 watcherService.closeAll()
    * 统一回收，不在 closeBundle 中销毁（build watch 模式下 closeBundle 每次
@@ -482,15 +480,16 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
 
     const watchDirectories = createAutoRoutesWatchDirectoryRegistry()
     // 源目录作为持久锚点，页面根目录整体删除后仍能观察其恢复。
-    const watcher = chokidar.watch(watchDirectories.add([...watchDirs, configService.absoluteSrcRoot]), createSidecarWatchOptions(configService, {
+    const watcher = createFileWatcher(configService, watchDirectories.add([...watchDirs, configService.absoluteSrcRoot]), {
       ignoreInitial: true,
       persistent: true,
-      awaitWriteFinish: {
-        stabilityThreshold: 80,
-        pollInterval: 20,
+      stability: {
+        threshold: 80,
+        interval: 20,
       },
-    }))
+    })
     const sidecarWatcher = createAutoRoutesSidecarWatcher(watcher)
+    watcher.onError(error => logger.error(error))
     const ownsTopologyFile = (filePath: string) => {
       const { autoRoutesConfig: currentConfig, matcher } = resolveAutoRoutesMatcherContext(ctx)
       const resolved = resolveAutoRoutesPath(filePath, configService)
@@ -510,7 +509,7 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
       addWatchTargets(paths) {
         const additions = watchDirectories.add(paths)
         if (additions.length > 0) {
-          watcher.add(additions)
+          void watcher.add(additions).catch(error => logger.error(error))
         }
       },
       subscribers,
@@ -533,20 +532,16 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
       },
     }
 
-    watcher.on('add', (filePath) => {
-      if (!isCurrentRouteWatcher(controller) || !ownsTopologyFile(filePath)) {
-        return
+    watcher.onChange((changes) => {
+      for (const change of changes) {
+        if (change.kind !== 'file' || change.event === 'update'
+          || !isCurrentRouteWatcher(controller) || !ownsTopologyFile(change.file)) {
+          continue
+        }
+        const action = change.event === 'create' ? '新增' : '删除'
+        logger.info(`[auto-routes:watch] ${action}路由文件 ${configService.relativeCwd(change.file)}`)
+        scheduleRouteStructureChange(change.file, change.event, controller)
       }
-      logger.info(`[auto-routes:watch] 新增路由文件 ${configService.relativeCwd(filePath)}`)
-      scheduleRouteStructureChange(filePath, 'create', controller)
-    })
-
-    watcher.on('unlink', (filePath) => {
-      if (!isCurrentRouteWatcher(controller) || !ownsTopologyFile(filePath)) {
-        return
-      }
-      logger.info(`[auto-routes:watch] 删除路由文件 ${configService.relativeCwd(filePath)}`)
-      scheduleRouteStructureChange(filePath, 'delete', controller)
     })
 
     // 注册到 sidecarWatcherMap，由 watcherService.closeAll() 统一回收
@@ -578,7 +573,7 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
       devServer = server
     },
 
-    buildStart() {
+    async buildStart() {
       refreshAutoRoutesAliasTargets()
       if (this.meta?.watchMode && service.isEnabled()) {
         return service.ensureFresh(createPageDeclarationSourceResolver(this)).then(async () => {
@@ -592,7 +587,7 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
           }
         })
       }
-      return startRouteFileWatcher()
+      await startRouteFileWatcher()
     },
 
     resolveId(id) {

@@ -596,3 +596,7 @@ const artifact = await buildTestArtifact({ cwd: process.cwd() })
 默认使用本机已安装的最新 Stable。用 `wv ide devtools list` 查看安装，`wv ide devtools add "<path-to-cli>"` 登记自定义位置；`wv open --devtools-channel=nightly` 或 `wv build --open --devtools-channel=rc --devtools-version=<version>` 明确选择测试版本。旧 `cliPath` 和路径环境变量继续固定安装，显式渠道/版本可覆盖继承配置。官方版本查询不阻塞默认选择，`--require-official-latest` 可启用严格检查。
 
 仓库包可用 `pnpm e2e:ide:matrix --targets=stable,rc,nightly --suite=ide-smoke` 串行测试已有安装。矩阵记录实际 IDE、基础库和资源清理结果；缺失、未登录、失败或未完成项返回非零。安装与登录由用户完成。同一账号切换安装后可能需要重新扫码；矩阵以非交互模式记录“需要重新登录”并继续其他版本，无需预备多个账号。完整 CLI、编程接口和 MCP 用法见 [weapp-ide-cli 文档](https://vite.weapp.dev/packages/weapp-ide-cli)。
+
+### 文件监听后端对照
+
+开发时可配置 `weapp.watch.engine: 'parcel'` 试用 `@parcel/watcher`，默认仍为 `chokidar`。该选项只覆盖 weapp-vite 自有监听，不替换 Vite/Rolldown 主图监听。Parcel 是可选原生依赖，不支持订阅式 polling；加载失败或运行错误不会自动切回。配置及验证边界见 [HMR 配置](https://vite.weapp.dev/config/hmr)。

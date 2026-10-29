@@ -286,33 +286,39 @@ export async function createDevModuleGraphProvider(
     },
   })
   const releaseServer = ctx.moduleGraphService.bindDevServer(server)
-  const unobserveWxml = bindWxmlDependencyWatch(ctx, server, onChange)
+  let unobserveWxml: ReturnType<typeof bindWxmlDependencyWatch> | undefined
+  const closeResources = async (priorFailures: unknown[] = []) => {
+    const results = await Promise.allSettled([
+      async () => await unobserveWxml?.(),
+      async () => await server.close(),
+    ].map(async close => await close()))
+    try {
+      releaseServer()
+    }
+    catch (error) {
+      priorFailures.push(error)
+    }
+    const failures = [...new Set([
+      ...priorFailures,
+      ...results.flatMap(result => result.status === 'rejected' ? [result.reason] : []),
+    ])]
+    if (failures.length) {
+      throw failures.length === 1 ? failures[0] : new AggregateError(failures, 'Development module graph provider cleanup failed', { cause: failures[0] })
+    }
+  }
   try {
+    unobserveWxml = bindWxmlDependencyWatch(ctx, server, onChange)
     await unobserveWxml.ready
   }
   catch (error) {
-    await unobserveWxml()
-    try {
-      await server.close()
-    }
-    finally {
-      releaseServer()
-    }
+    await closeResources([error])
     throw error
   }
   let closePromise: Promise<void> | undefined
 
   return {
     close() {
-      closePromise ??= (async () => {
-        await unobserveWxml()
-        try {
-          await server.close()
-        }
-        finally {
-          releaseServer()
-        }
-      })()
+      closePromise ??= closeResources()
       return closePromise
     },
   }

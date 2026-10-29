@@ -23,7 +23,6 @@ import { appendFile, mkdir } from 'node:fs/promises'
 import process from 'node:process'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import { fs } from '@weapp-core/shared/node'
-import chokidar from 'chokidar'
 import path from 'pathe'
 import picomatch from 'picomatch'
 import { build } from 'vite'
@@ -74,9 +73,8 @@ import { buildStatefulHmrSnapshot, prepareStatefulHmrSnapshot } from '../statefu
 import { clearStatefulHmrSnapshot, takeStatefulHmrSnapshot } from '../statefulHmr/snapshotHandoff'
 import { syncProjectSupportFiles } from '../supportFiles'
 import { watchAssetSources } from '../watch/assets'
-import { createSidecarWatchOptions } from '../watch/options'
+import { createFileWatcher } from '../watch/fileWatcher'
 import { claimSidecarDelivery } from '../watch/sidecarDelivery'
-import { createSidecarWatcherReadiness } from '../watch/sidecarReadiness'
 import { bindWatcherServiceController, closeWatcherControllerResources, registerWatcherServiceController } from '../watcher/controllerClose'
 import { retainWatcherService } from '../watcherPlugin'
 import { captureAppShellSnapshot, resolveAppShellSnapshotChange, withInitialAppShellSnapshot } from './appShellSnapshot'
@@ -2298,25 +2296,32 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     }
 
     function createSnapshotSidecarScope() {
-      const snapshotWatcher = chokidar.watch(
-        snapshotWatchPatterns,
-        createSidecarWatchOptions(configService, {
-          persistent: true,
-          ignoreInitial: true,
-          ignored: snapshotSidecarIgnored,
-        }),
-      )
-      const sidecarReadiness = createSidecarWatcherReadiness(snapshotWatcher)
-      const unobserveWorkers = observeWorkerSources(ctx, files => snapshotWatcher.add(files))
+      const snapshotWatcher = createFileWatcher(configService, snapshotWatchPatterns, {
+        persistent: true,
+        ignoreInitial: true,
+        ignored: snapshotSidecarIgnored,
+      })
+      const canceled = Promise.withResolvers<'closed'>()
+      const reportWatchError = (error: unknown) => {
+        if (!devWatcherClosed) {
+          logger.error(error)
+          devBuildWatcher?.emitEvent({ code: 'ERROR', error: error instanceof Error ? error : new Error(String(error)), result: undefined as never })
+        }
+      }
+      snapshotWatcher.onError(reportWatchError)
+      const addTargets = (files: string[]) => {
+        void snapshotWatcher.add(files).catch(reportWatchError)
+      }
+      const unobserveWorkers = observeWorkerSources(ctx, addTargets)
       const independentWatch = ctx.runtimeState.build.independent
       const observeIndependent = (files: string[]) => {
-        snapshotWatcher.add(files)
+        addTargets(files)
       }
       independentWatch.watchListeners.add(observeIndependent)
       for (const files of independentWatch.watchFiles.values()) {
-        snapshotWatcher.add([...files])
+        addTargets([...files])
       }
-      snapshotWatcher.on('all', (event, id) => {
+      const onSnapshotChange = ({ event, file: id }: { event: 'create' | 'update' | 'delete', file: string }) => {
         if (!id) {
           return
         }
@@ -2333,7 +2338,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         }
         const workerSource = ownsWorkerSource(ctx, normalizedId)
         if (workerSource) {
-          scheduleSnapshotBuild({ event: event === 'unlink' ? 'delete' : 'update', file: id, forceFullRescan: true }, performance.now())
+          scheduleSnapshotBuild({ event: event === 'delete' ? 'delete' : 'update', file: id, forceFullRescan: true }, performance.now())
           return
         }
         const independentRoots = new Set<string>()
@@ -2361,17 +2366,9 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         if (!independentSource && !shouldHandleSnapshotSidecarFile(id, ctx)) {
           return
         }
-        if (event === 'unlink' && independentSource) {
-          // Chokidar 删除单文件监听后不总是监听其父目录；关闭旧句柄后重新登记缺失文件，才能观察恢复。
-          queueMicrotask(() => {
-            if (!devWatcherClosed) {
-              snapshotWatcher.add(normalizedId)
-            }
-          })
-        }
         const isConfigDependency = (configService.configFileDependencies ?? [])
           .some(dependency => normalizeFsResolvedId(dependency) === normalizedId)
-        if (!event.startsWith('add') && !event.startsWith('unlink') && !isConfigDependency && !independentSource) {
+        if (event === 'update' && !isConfigDependency && !independentSource) {
           if (isSidecarFile(id) && ownsSnapshotSidecarUpdate(id)) {
             onModuleGraphChange({ event: 'update', file: id })
           }
@@ -2387,11 +2384,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         }
         const independentConfigDependency = independentSource && configSuffixes.some(suffix => normalizedId.endsWith(suffix))
         const sidecarStartedAt = performance.now()
-        const normalizedEvent = event.startsWith('unlink')
-          ? 'delete'
-          : event.startsWith('add')
-            ? 'create'
-            : 'update'
+        const normalizedEvent = event
         const initialSidecarSource = normalizedEvent === 'create' && !emittedEntryTopology && ownsSnapshotPhysicalSidecar(id)
           ? compilerSourceId(id)
           : undefined
@@ -2416,13 +2409,14 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           independentMetadata: independentConfigDependency,
           forceFullRescan: !independentSource || isConfigDependency,
         }, sidecarStartedAt)
-      })
+      }
+      snapshotWatcher.onChange(changes => changes.forEach(onSnapshotChange))
       let closingSidecar: Promise<void> | undefined
       const resource = {
         close: () => closingSidecar ??= (async () => {
-          // Chokidar.close 会移除 ready/error 监听器，须先终结本代仍在等待的扫描。
+          // 先取消本代就绪等待，再排空实际订阅与业务资源。
           markSnapshotClosed()
-          sidecarReadiness.close()
+          canceled.resolve('closed')
           // 完整 drain 与本代关闭可同时持有此记录，重复调用必须等待同一份资源结果。
           const results = await Promise.allSettled([
             async () => releaseAutoRoutesTopology?.(),
@@ -2444,7 +2438,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         })(),
       }
       watcherService.sidecarWatcherMap.set(snapshotWatcherRoot, resource)
-      return { resource, ready: sidecarReadiness.ready, cancelReadiness: sidecarReadiness.close }
+      return { resource, ready: Promise.race([snapshotWatcher.ready, canceled.promise]), cancelReadiness: () => canceled.resolve('closed') }
     }
 
     let snapshotSidecar: ReturnType<typeof createSnapshotSidecarScope> | undefined

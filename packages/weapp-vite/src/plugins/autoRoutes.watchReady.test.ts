@@ -27,7 +27,10 @@ function fixture() {
     once: events.once.bind(events),
     off: events.off.bind(events),
     add: vi.fn(),
-    close: vi.fn(async () => {}),
+    close: vi.fn(async () => {
+      events.removeAllListeners()
+      events.on('error', () => {})
+    }),
   }
   watches.mockImplementation((_paths, options: { ignoreInitial?: boolean }) => {
     ignoreInitial = options.ignoreInitial !== false
@@ -112,6 +115,7 @@ it('propagates the original route watcher initialization error and removes readi
     project.failScan(error)
     await failed
     expect(project.listenerCount('ready')).toBe(0)
+    // 初始化失败会自动回收本次物理订阅，仅保留 fixture 自身的原始错误观察者。
     expect(project.listenerCount('error')).toBe(1)
   }
   finally {

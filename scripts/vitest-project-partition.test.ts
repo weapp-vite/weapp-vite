@@ -2,7 +2,7 @@ import path from 'node:path'
 import { glob } from 'tinyglobby'
 import { loadConfigFromFile, mergeConfig } from 'vite'
 import { describe, expect, it, vi } from 'vitest'
-import { createFastTestIncludes, parallelFixtureTests, serialFixtureTestIncludes } from '../packages/weapp-vite/vitest/partition'
+import { createFastTestIncludes, nativeWatchContractTests, parallelFixtureTests, serialFixtureTestIncludes } from '../packages/weapp-vite/vitest/partition'
 import { useIsolatedTopologyTestEnvironment } from './verification/topologyTestFixture.ts'
 
 useIsolatedTopologyTestEnvironment()
@@ -26,7 +26,7 @@ describe('compiler test project partition', () => {
     }
   })
 
-  it('executes the complete file set once while preserving watch tests in the serial project', async () => {
+  it('assigns the complete file set once across unit projects and the explicit native watcher entry', async () => {
     const cwd = path.resolve(import.meta.dirname, '../packages/weapp-vite')
     const loaded = await loadConfigFromFile({ command: 'serve', mode: 'test' }, path.join(cwd, 'vitest.config.ts'))
     const config = loaded!.config as { test: { projects: Array<{ test: { name: string, include: string[], exclude: string[], fileParallelism?: boolean } }> } }
@@ -37,13 +37,20 @@ describe('compiler test project partition', () => {
     }
     const fast = discovered.get('weapp-vite-fast')!
     const serial = discovered.get('weapp-vite-serial')!
+    const nativeConfig = await loadConfigFromFile({ command: 'serve', mode: 'test' }, path.join(cwd, 'vitest.watch-native.config.ts'))
+    const nativeOptions = nativeConfig!.config.test as { include: string[], globalSetup: string[], pool: string, maxWorkers: number, fileParallelism: boolean, sequence: { concurrent: boolean, shuffle: boolean }, allowOnly: boolean }
+    const native = new Set(await glob(nativeOptions.include, { cwd }))
     expect([...fast].filter(file => serial.has(file))).toEqual([])
+    expect([...native].sort()).toEqual([...nativeWatchContractTests].sort())
+    expect([...native].filter(file => fast.has(file) || serial.has(file))).toEqual([])
+    expect(nativeOptions).toMatchObject({ pool: 'forks', maxWorkers: 1, fileParallelism: false, sequence: { concurrent: false, shuffle: false }, allowOnly: false })
+    expect(nativeOptions.globalSetup).toEqual([path.resolve(cwd, '../../e2e/vitest.e2e.machine-lease.global-setup.ts')])
 
     const expected = await glob(['src/**/*.{test,spec}.ts', 'test/**/*.{test,spec}.ts', 'scripts/**/*.{test,spec}.ts'], {
       cwd,
       ignore: ['**/node_modules/**', '**/dist/**', '**/dist-*/**', '**/.weapp-vite/**', '**/coverage/**'],
     })
-    expect([...new Set([...fast, ...serial])].sort()).toEqual(expected.sort())
+    expect([...new Set([...fast, ...serial, ...native])].sort()).toEqual(expected.sort())
     expect(config.test.projects.find(project => project.test.name === 'weapp-vite-serial')?.test.fileParallelism).toBe(false)
     for (const file of expected.filter(file => file.startsWith('test/'))) {
       if (parallelFixtureTests.includes(file)) {
@@ -54,6 +61,7 @@ describe('compiler test project partition', () => {
       }
     }
     expect(serial.has('src/plugins/core/lifecycle/watch.test.ts')).toBe(true)
+    expect(fast.has('src/runtime/watch/fileWatcher.lifecycle.test.ts')).toBe(true)
     expect(fast.has('scripts/chokidarDelivery/validation.test.ts')).toBe(true)
     expect(serial.has('scripts/chokidarDelivery/validation.test.ts')).toBe(false)
   })
@@ -77,6 +85,7 @@ it('keeps the complete discovered fixture union and final setup placement in eve
       expect(fast.files.filter(file => serial.files.includes(file))).toEqual([])
       expect(serial.fileParallelism).toBe(false)
       expect(serial.files).toContain('src/plugins/core/lifecycle/watch.test.ts')
+      expect(nativeWatchContractTests.every(file => !fast.files.includes(file) && !serial.files.includes(file))).toBe(true)
       expect(parallelFixtureTests.every(file => topology === 'legacy-v1' ? serial.files.includes(file) && !fast.files.includes(file) : fast.files.includes(file) && !serial.files.includes(file))).toBe(true)
       inventories.push([...fast.files, ...serial.files].sort())
       setups.push(projects.map(project => project.globalSetup ?? []))

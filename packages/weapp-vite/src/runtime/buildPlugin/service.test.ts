@@ -80,11 +80,7 @@ const watchAssetSourcesMock = vi.hoisted(() => vi.fn((_config: unknown, _options
   ready: Promise.resolve(),
   close: vi.fn(async () => {}),
 })))
-const chokidarWatchMock = vi.hoisted(() => vi.fn(() => ({
-  add: vi.fn(),
-  on: vi.fn(),
-  close: vi.fn(),
-})))
+const chokidarWatchMock = vi.hoisted(() => vi.fn())
 const syncProjectSupportFilesMock = vi.hoisted(() => vi.fn(async () => ({
   managedTsconfigChanged: false,
   managedTsconfigWarnings: [],
@@ -279,31 +275,34 @@ function createManualWatcher() {
   return watcher
 }
 
-function createManualSidecarWatcher() {
-  let allCallback: ((event: string, id?: string) => void) | undefined
+function createManualSidecarWatcher(manualReady = false) {
+  const events = new EventEmitter()
   const watcher: any = {
     add: vi.fn(),
     unwatch: vi.fn(async () => {}),
-    on: vi.fn((event: string, callback: (event: string, id?: string) => void) => {
-      if (event === 'all') {
-        allCallback = callback
+    on: vi.fn(events.on.bind(events)),
+    once: vi.fn((event: string, callback: (...args: unknown[]) => void) => {
+      events.once(event, callback)
+      if (event === 'ready' && !manualReady) {
+        void Promise.resolve().then(() => events.emit('ready'))
       }
       return watcher
     }),
+    off: vi.fn(events.off.bind(events)),
     emit(event: string, id?: string) {
-      allCallback?.(event, id)
+      events.emit(event, id)
+      if (event !== 'ready' && event !== 'error') {
+        events.emit('all', event, id)
+      }
     },
-    close: vi.fn(),
+    close: vi.fn(async () => { events.removeAllListeners() }),
   }
   return watcher
 }
 
 function createScanningSidecarWatcher() {
-  const watcher = createManualSidecarWatcher()
-  const readiness = new EventEmitter()
-  watcher.once = vi.fn(readiness.once.bind(readiness))
-  watcher.off = vi.fn(readiness.off.bind(readiness))
-  watcher.ready = () => readiness.emit('ready')
+  const watcher = createManualSidecarWatcher(true)
+  watcher.ready = () => watcher.emit('ready')
   return watcher
 }
 
@@ -680,7 +679,7 @@ describe('runtime buildPlugin service', () => {
       managedTsconfigChanged: false,
       managedTsconfigWarnings: [],
     })
-    chokidarWatchMock.mockClear()
+    chokidarWatchMock.mockReset().mockImplementation(() => createManualSidecarWatcher())
     delete process.env.WEAPP_VITE_HMR_PROFILE_JSON
   })
 
@@ -1448,7 +1447,7 @@ describe('runtime buildPlugin service', () => {
       expect(publicWatcher).toBe(controllers[0]!.watcher)
       expect(events.filter(event => event === 'END')).toHaveLength(1)
 
-      sidecars[0]!.emit('all', 'change', config)
+      sidecars[0]!.emit('change', config)
       let closing: ReturnType<RolldownWatcher['close']>
       if (closeStage !== 'after-reload') {
         await vi.waitFor(() => expect(reloadStarted).toBe(true))
@@ -2414,13 +2413,15 @@ describe('runtime buildPlugin service', () => {
     const snapshotRelease = Promise.withResolvers<void>()
     const replacementStarted = Promise.withResolvers<void>()
     const replacementRelease = Promise.withResolvers<void>()
+    const configDependency = '/project/src/build-config.json'
     const service = createBuildService(ctx)
     buildMock.mockImplementationOnce(async () => {
       emitSourceChange({ event: 'update', file: HMR_PAGE_ID })
       // 侧车的配置通知直接测试 generation 尚未允许 restart 的路径。
-      ctx.configService.configFileDependencies = ['/project/vite.config.ts']
+      // 配置可引用 JSON；首构期间才加入的依赖必须来自既有 src 侧车订阅范围。
+      ctx.configService.configFileDependencies = [configDependency]
       if (arrival === 'initial') {
-        sidecar.emit('change', '/project/vite.config.ts')
+        sidecar.emit('change', configDependency)
       }
       return { output: [] }
     })
@@ -2448,7 +2449,7 @@ describe('runtime buildPlugin service', () => {
           service.requestConfigRestart('app')
         }
         else {
-          sidecar.emit('change', '/project/vite.config.ts')
+          sidecar.emit('change', configDependency)
         }
         snapshotRelease.resolve()
       }

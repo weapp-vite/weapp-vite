@@ -29,16 +29,16 @@ describe('classic session config watcher', () => {
       await owner.updateDependencies()
       const first = vi.fn()
       const releaseFirst = owner.subscribe(first)
-      watcher.emit('all', 'change', config.configFileDependencies[0])
+      watcher.emit('change', config.configFileDependencies[0])
       expect(first).toHaveBeenCalledOnce()
       releaseFirst()
       // 停旧代、load 和启动新代期间没有通知丢失，也没有旧代回调继续交付。
-      watcher.emit('all', 'change', config.configFileDependencies[0])
+      watcher.emit('change', config.configFileDependencies[0])
       const second = vi.fn()
       const releaseSecond = owner.subscribe(second)
       expect(second).toHaveBeenCalledOnce()
       releaseFirst()
-      watcher.emit('all', 'change', config.configFileDependencies[0])
+      watcher.emit('change', config.configFileDependencies[0])
       expect(second).toHaveBeenCalledTimes(2)
       config.configFileDependencies = ['/project/config/mini.ts']
       const replacement = createWatcher()
@@ -47,9 +47,9 @@ describe('classic session config watcher', () => {
       expect(watcher.add).not.toHaveBeenCalled()
       expect(mocks.watch).toHaveBeenLastCalledWith(['/project/config/mini.ts'], expect.any(Object))
       expect(watcher.close).toHaveBeenCalledOnce()
-      watcher.emit('all', 'change', '/project/vite.config.ts')
+      watcher.emit('change', '/project/vite.config.ts')
       expect(second).toHaveBeenCalledTimes(2)
-      replacement.emit('all', 'change', '/project/config/mini.ts')
+      replacement.emit('change', '/project/config/mini.ts')
       expect(second).toHaveBeenCalledTimes(3)
       expect(mocks.watch).toHaveBeenCalledTimes(2)
       releaseSecond()
@@ -77,17 +77,17 @@ describe('classic session config watcher', () => {
     })
     try {
       await owner.updateDependencies()
-      watcher.emit('all', 'change', config.configFileDependencies[0])
+      watcher.emit('change', config.configFileDependencies[0])
       const reloading = owner.reload(load, () => false)
       await entered.promise
       source = 'CONFIG-B'
-      watcher.emit('all', 'change', config.configFileDependencies[0])
+      watcher.emit('change', config.configFileDependencies[0])
       release.resolve()
       await reloading
       expect(load).toHaveBeenCalledTimes(2)
       expect(effective).toBe('CONFIG-B')
       expect(owner.hasPendingChanges).toBe(false)
-      watcher.emit('all', 'change', config.configFileDependencies[0])
+      watcher.emit('change', config.configFileDependencies[0])
       expect(owner.hasPendingChanges).toBe(true)
     }
     finally {
@@ -116,13 +116,13 @@ describe('classic session config watcher', () => {
       await entered.promise
       const closing = owner.close()
       expect(owner.close()).toBe(closing)
-      watcher.emit('all', 'change', config.configFileDependencies[0])
+      watcher.emit('change', config.configFileDependencies[0])
       release.resolve()
       await Promise.all([closing, reloading])
       expect(load).toHaveBeenCalledOnce()
       expect(otherWatcher.close).not.toHaveBeenCalled()
       expect(otherRequest).not.toHaveBeenCalled()
-      otherWatcher.emit('all', 'change', config.configFileDependencies[0])
+      otherWatcher.emit('change', config.configFileDependencies[0])
       expect(otherRequest).toHaveBeenCalledOnce()
     }
     finally {
@@ -189,17 +189,17 @@ describe('classic session config watcher', () => {
       expect(first.close).not.toHaveBeenCalled()
       // 新文件监听尚未安装，保存不会产生事件；必须在 ready 之后重新读取它。
       source = 'CONFIG-B'
-      first.emit('all', 'change', entry)
+      first.emit('change', entry)
       expect(request).toHaveBeenCalledOnce()
       added.emit('ready')
       await reloading
       expect(load).toHaveBeenCalledTimes(2)
       expect(effective).toBe('CONFIG-B')
       expect(owner.hasPendingChanges).toBe(false)
-      first.emit('all', 'change', imported)
-      added.emit('all', 'change', entry)
+      first.emit('change', imported)
+      added.emit('change', entry)
       expect(request).toHaveBeenCalledOnce()
-      added.emit('all', 'change', imported)
+      added.emit('change', imported)
       expect(request).toHaveBeenCalledTimes(2)
       expect(first.add).not.toHaveBeenCalled()
       expect(added.add).not.toHaveBeenCalled()
@@ -226,11 +226,11 @@ describe('classic session config watcher', () => {
       expect(first.close).not.toHaveBeenCalled()
       const request = vi.fn()
       owner.subscribe(request)
-      first.emit('all', 'change', removed)
-      second.emit('all', 'change', retained)
+      first.emit('change', removed)
+      second.emit('change', retained)
       expect(request).not.toHaveBeenCalled()
-      first.emit('all', 'change', retained)
-      second.emit('all', 'change', added)
+      first.emit('change', retained)
+      second.emit('change', added)
       expect(request).toHaveBeenCalledTimes(2)
       config.configFileDependencies = []
       await owner.updateDependencies()

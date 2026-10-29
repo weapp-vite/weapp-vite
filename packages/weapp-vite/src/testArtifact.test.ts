@@ -13,7 +13,7 @@ const createCompilerContextMock = vi.hoisted(() => vi.fn(async (options: any) =>
   },
 })))
 const watcherMock = vi.hoisted(() => {
-  const handlers = new Map<string, () => void>()
+  const handlers = new Map<string, (file: string) => void>()
   const close = vi.fn(async () => undefined)
   const add = vi.fn()
   const unwatch = vi.fn(async () => undefined)
@@ -27,7 +27,7 @@ const watcherMock = vi.hoisted(() => {
       }
       return this
     },
-    on(event: string, handler: () => void) {
+    on(event: string, handler: (file: string) => void) {
       handlers.set(event, handler)
       return this
     },
@@ -126,7 +126,7 @@ describe('test artifact build API', () => {
       })
 
       await fs.writeFile(sourceFile, 'two')
-      watcherMock.handlers.get('change')?.()
+      watcherMock.handlers.get('change')?.(sourceFile)
       await vi.advanceTimersByTimeAsync(20)
       await rebuilt
       expect(buildMock).toHaveBeenCalledTimes(2)

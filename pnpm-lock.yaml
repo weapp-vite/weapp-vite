@@ -3704,6 +3704,9 @@ importers:
         specifier: 'catalog:'
         version: 28.0.0
     optionalDependencies:
+      '@parcel/watcher':
+        specifier: 2.6.0
+        version: 2.6.0
       '@swc/core':
         specifier: ^1.16.20
         version: 1.16.20

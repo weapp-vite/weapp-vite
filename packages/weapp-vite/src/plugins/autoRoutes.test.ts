@@ -772,15 +772,20 @@ describe('auto-routes plugin alias fallback', () => {
     } as unknown as ViteDevServer)
 
     const pluginContext = {} as unknown as PluginContext
-    nativePlugin.buildStart?.call(pluginContext)
+    await nativePlugin.buildStart?.call(pluginContext)
+    const [sharedWatcher] = ctx.runtimeState.watcher.sidecarWatcherMap.values()
     getWatchDirectories.mockReturnValue([externalDirectory])
-    webPlugin.buildStart?.call(pluginContext)
-    expect(chokidarWatchMock).toHaveBeenCalledTimes(1)
-    expect(ctx.runtimeState.watcher.sidecarWatcherMap.size).toBe(1)
+    await webPlugin.buildStart?.call(pluginContext)
+    await vi.waitFor(() => {
+      expect(chokidarWatchMock).toHaveBeenLastCalledWith(expect.arrayContaining([externalDirectory]), expect.any(Object))
+    })
+    expect(chokidarWatchMock).toHaveBeenCalledTimes(2)
+    expect([...ctx.runtimeState.watcher.sidecarWatcherMap.values()]).toEqual([sharedWatcher])
 
     const watcher = chokidarWatchMock.mock.results[0]?.value
-    const addHandler = watcher.on.mock.calls.find(([event]: [string]) => event === 'add')?.[1]
-    expect(watcher.add).toHaveBeenCalledWith(expect.arrayContaining([externalDirectory]))
+    // 未覆盖的新根由同一逻辑 watcher 构造新的物理订阅，事件必须从该订阅交付。
+    const externalWatcher = chokidarWatchMock.mock.results[1]?.value
+    const addHandler = externalWatcher.on.mock.calls.find(([event]: [string]) => event === 'add')?.[1]
     expect(addHandler).toBeTypeOf('function')
     addHandler(externalPageScript)
 
@@ -816,6 +821,7 @@ describe('auto-routes plugin alias fallback', () => {
 
       await webPlugin.closeBundle?.()
       expect(watcher.close).not.toHaveBeenCalled()
+      expect(externalWatcher.close).not.toHaveBeenCalled()
       expect(ctx.runtimeState.watcher.sidecarWatcherMap.size).toBe(1)
 
       const [registeredWatcher] = ctx.runtimeState.watcher.sidecarWatcherMap.values()
@@ -824,6 +830,7 @@ describe('auto-routes plugin alias fallback', () => {
       }
       await registeredWatcher.close()
       expect(watcher.close).toHaveBeenCalledTimes(1)
+      expect(externalWatcher.close).toHaveBeenCalledTimes(1)
       expect(ctx.runtimeState.watcher.sidecarWatcherMap.size).toBe(0)
     }
     finally {

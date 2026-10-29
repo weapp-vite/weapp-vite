@@ -278,3 +278,21 @@ pnpm verify:edit-sequence --engine weapp-modes --require-clean --report .tmp/out
 拓扑编辑只有在目标 JS/JSON/WXML 全部生成后才完成；恢复阶段也须确认这组产物已撤销。classic 刷新当前可达入口，stateful 的入口集合变化会回退 classic，不承诺保持旧实例状态。`emptyOutDir: false` 下仅移除当前构建持有且已不可达的文件，保留用户资产。
 
 启用 `TEMPLATES_HMR_OUTPUT_SCOPE=1` 后，报告在计时窗口外记录实际磁盘文件的新增、内容变化、删除及变更后字节数。它不代表底层 write 调用次数，不计相同字节的重复写入；也不能把它直接解释为模块转换成本。使用相同 marker seed 与输入摘要比较样本。完整重载、局部资源更新和脚本补丁分别解释，不混用其延迟或状态保持语义。
+
+## 自有文件监听后端
+
+`weapp.watch.engine` 可以显式选择实验性 `parcel` 后端，与默认 `chokidar` 对照：
+
+```ts
+export default defineConfig({
+  weapp: {
+    watch: { engine: 'parcel' },
+  },
+})
+```
+
+选择仅覆盖 weapp-vite 自己创建的文件监听，包括 sidecar、配置、路由、自动导入、资产、根外 WXML 依赖和测试产物。Vite 内嵌监听器与 Rolldown 原生主图监听仍由各自宿主管理。没有显式配置时，可通过 `WEAPP_VITE_WATCH_ENGINE=parcel` 在同一套验证命令上做对照；配置字段优先，缺省仍为 `chokidar`。
+
+Parcel 使用可选原生依赖 `@parcel/watcher`。无法加载、订阅失败或运行中报错会保留错误，不会自动切回 Chokidar。安装时须保留对应平台的 optional dependencies。Parcel 不提供订阅式 polling；已显式启用 polling 的环境应使用 Chokidar，不能把 `brute-force` 查询当作 polling 监听。
+
+`build.watch.chokidar` 保留现有 Chokidar 后端与轮询兼容配置，`server.watch` 仍按 Vite 的公开配置处理。Parcel 收集批量变化，以最终文件状态触发原有构建流程，不承诺与 Chokidar 逐条事件完全一致。当前保持实验状态，默认后端切换须以实际对照及跨平台 runtime 验证为依据。

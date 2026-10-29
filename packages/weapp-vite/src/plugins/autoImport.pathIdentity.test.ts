@@ -26,8 +26,13 @@ describe('auto import component path identity', () => {
   it.each(['sidecar', 'native'] as const)('keeps scan and %s events fresh across path separators and unchanged mtimes', async (owner) => {
     const root = path.normalize(await realpath(await mkdtemp(path.join(tmpdir(), 'auto-import-path-'))))
     const component = path.join(root, 'components/Card.vue')
-    const watcher = new EventEmitter()
-    chokidarWatchMock.mockReturnValue(watcher)
+    const watcher = Object.assign(new EventEmitter(), {
+      close: vi.fn(async () => watcher.removeAllListeners()),
+    })
+    chokidarWatchMock.mockImplementation(() => {
+      queueMicrotask(() => watcher.emit('ready'))
+      return watcher
+    })
     // 使用真实注册表，只补齐当前插件与服务访问的编译上下文字段。
     const ctx = {
       configService: {

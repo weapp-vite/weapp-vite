@@ -177,6 +177,8 @@ export interface WeappUploadConfig {
  * @description weapp-vite 主配置
  */
 export interface WeappViteConfig {
+  /** 自有文件监听后端；默认 Chokidar，Parcel 为显式启用的对照候选，不替换 Vite/Rolldown 监听。 */
+  watch?: { engine?: 'chokidar' | 'parcel' }
   /**
    * 开发态是否在启动构建前清空输出目录。
    * 开发态默认 `true`，设置为 `false` 可跳过每次 dev 启动前的全量输出目录清理。

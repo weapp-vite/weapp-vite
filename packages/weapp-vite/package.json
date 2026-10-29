@@ -249,6 +249,7 @@
     "zod": "catalog:"
   },
   "optionalDependencies": {
+    "@parcel/watcher": "2.6.0",
     "@swc/core": "^1.16.20"
   },
   "devDependencies": {

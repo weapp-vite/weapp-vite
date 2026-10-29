@@ -6,7 +6,8 @@ const state = vi.hoisted(() => ({
   contents: new Map<string, string>(),
   dependencies: [] as string[],
   inlineConfig: {} as Record<string, unknown>,
-  handlers: new Map<string, () => void>(),
+  handlers: new Map<string, (...args: unknown[]) => void>(),
+  readyFailure: undefined as Error | undefined,
   build: vi.fn(async () => undefined),
   add: vi.fn(),
   close: vi.fn(async () => undefined),
@@ -50,13 +51,17 @@ vi.mock('chokidar', () => ({
       add: state.add,
       close: state.close,
       unwatch: vi.fn(async () => undefined),
-      once(event: string, callback: () => void) {
-        if (event === 'ready') {
-          callback()
+      once(event: string, callback: (error?: unknown) => void) {
+        if (event === 'error' && state.readyFailure) {
+          queueMicrotask(() => callback(state.readyFailure))
+        }
+        else if (event === 'ready' && !state.readyFailure) {
+          queueMicrotask(callback)
         }
         return this
       },
-      on(event: string, callback: () => void) {
+      off: vi.fn(),
+      on(event: string, callback: (...args: unknown[]) => void) {
         state.handlers.set(event, callback)
         return this
       },
@@ -75,13 +80,15 @@ beforeEach(() => {
   state.dependencies = []
   state.inlineConfig = {}
   state.handlers.clear()
+  state.readyFailure = undefined
   state.build.mockReset().mockResolvedValue(undefined)
   state.add.mockClear()
-  state.close.mockClear()
+  state.close.mockReset().mockResolvedValue(undefined)
   vi.mocked(chokidar.watch).mockClear()
   vi.stubEnv('CHOKIDAR_USEPOLLING', undefined)
   vi.stubEnv('CHOKIDAR_INTERVAL', undefined)
   vi.stubEnv('CHOKIDAR_BINARY_INTERVAL', undefined)
+  vi.stubEnv('WEAPP_VITE_WATCH_ENGINE', undefined)
 })
 
 afterEach(async () => {
@@ -90,8 +97,8 @@ afterEach(async () => {
   vi.useRealTimers()
 })
 
-async function emit(event = 'change') {
-  state.handlers.get(event)!()
+async function emit(event = 'change', file = source) {
+  state.handlers.get(event)!(file)
   await vi.advanceTimersByTimeAsync(20)
 }
 
@@ -132,11 +139,11 @@ describe('test artifact watch invalidation', () => {
     const watcher = await watchTestArtifact({ cwd })
     watchers.push(watcher)
 
-    expect(chokidar.watch).toHaveBeenCalledWith(expect.any(Array), {
+    expect(chokidar.watch).toHaveBeenCalledWith(expect.any(Array), expect.objectContaining({
       ...expected,
       ignoreInitial: true,
       ignored: expect.any(Function),
-    })
+    }))
   })
 
   it('retains a plain startup snapshot when later compiler work changes its configuration', async () => {
@@ -150,6 +157,97 @@ describe('test artifact watch invalidation', () => {
     watchers.push(watcher)
 
     expect(chokidar.watch).toHaveBeenCalledWith(expect.any(Array), expect.objectContaining({ backend: 'native' }))
+  })
+
+  it('captures environment-selected engine and polling options before later compiler work changes them', async () => {
+    vi.stubEnv('WEAPP_VITE_WATCH_ENGINE', 'chokidar')
+    vi.stubEnv('CHOKIDAR_USEPOLLING', 'true')
+    vi.stubEnv('CHOKIDAR_INTERVAL', '25')
+    vi.stubEnv('CHOKIDAR_BINARY_INTERVAL', '50')
+    state.build.mockImplementationOnce(async () => {
+      vi.stubEnv('WEAPP_VITE_WATCH_ENGINE', 'unsupported-engine')
+      vi.stubEnv('CHOKIDAR_USEPOLLING', 'false')
+      vi.stubEnv('CHOKIDAR_INTERVAL', '100')
+      vi.stubEnv('CHOKIDAR_BINARY_INTERVAL', '200')
+    })
+    const { watchTestArtifact } = await import('../testArtifact')
+    const watcher = await watchTestArtifact({ cwd })
+    watchers.push(watcher)
+
+    expect(chokidar.watch).toHaveBeenCalledWith(expect.any(Array), expect.objectContaining({
+      backend: 'polling',
+      pollingInterval: 25,
+      pollingBinaryInterval: 50,
+    }))
+  })
+
+  it.each([false, true])('preserves the initial readiness failure when backend cleanup fails: %s', async (cleanupFails) => {
+    const initialFailure = new Error('watch readiness failed')
+    const closeFailure = new Error('watch close failed')
+    state.readyFailure = initialFailure
+    if (cleanupFails) {
+      state.close.mockRejectedValueOnce(closeFailure)
+    }
+    const { watchTestArtifact } = await import('../testArtifact')
+    const failure = await watchTestArtifact({ cwd }).catch(error => error)
+
+    if (cleanupFails) {
+      expect(failure).toBeInstanceOf(AggregateError)
+      expect(failure.errors).toEqual([initialFailure, closeFailure])
+      expect(failure.cause).toBe(initialFailure)
+    }
+    else {
+      expect(failure).toBe(initialFailure)
+    }
+    expect(state.close).toHaveBeenCalledOnce()
+  })
+
+  it.each(['complete', 'fail'] as const)('drains an active artifact build after backend close fails and the build will %s', async (outcome) => {
+    const { watchTestArtifact } = await import('../testArtifact')
+    const onRebuilt = vi.fn()
+    const watcher = await watchTestArtifact({ cwd, onRebuilt })
+    const buildFailure = new Error('artifact build failed')
+    const closeFailure = new Error('watch close failed')
+    const buildStarted = Promise.withResolvers<void>()
+    const build = Promise.withResolvers<void>()
+    const closeStarted = Promise.withResolvers<void>()
+    state.build.mockImplementationOnce(() => {
+      buildStarted.resolve()
+      return build.promise
+    })
+    const rebuilding = watcher.rebuild().catch(error => error)
+    await buildStarted.promise
+    state.close.mockImplementationOnce(async () => {
+      closeStarted.resolve()
+      throw closeFailure
+    })
+    const closing = watcher.close()
+    let settled = false
+    const result = closing.catch((error: unknown) => {
+      settled = true
+      return error
+    })
+    await closeStarted.promise
+    await vi.advanceTimersByTimeAsync(0)
+    expect(settled).toBe(false)
+    expect(watcher.close()).toBe(closing)
+    if (outcome === 'fail') {
+      build.reject(buildFailure)
+    }
+    else {
+      build.resolve()
+    }
+    const failure = await result
+    await rebuilding
+    if (outcome === 'fail') {
+      expect(failure).toBeInstanceOf(AggregateError)
+      expect((failure as AggregateError).errors).toEqual([closeFailure, buildFailure])
+    }
+    else {
+      expect(failure).toBe(closeFailure)
+    }
+    expect(onRebuilt).not.toHaveBeenCalled()
+    expect(state.close).toHaveBeenCalledOnce()
   })
 
   it('ignores late duplicate notifications after publishing the same inputs', async () => {
@@ -252,11 +350,11 @@ describe('test artifact watch invalidation', () => {
     state.contents.set(dependency, 'one')
     state.contents.set(source, 'two')
     await emit('add')
-    expect(state.add).toHaveBeenLastCalledWith(expect.arrayContaining([dependency]))
+    expect(chokidar.watch).toHaveBeenLastCalledWith(expect.arrayContaining([dependency]), expect.any(Object))
 
     state.contents.set(dependency, 'two')
-    await emit()
-    await emit()
+    await emit('change', dependency)
+    await emit('change', dependency)
     expect(state.build).toHaveBeenCalledTimes(3)
   })
 })
