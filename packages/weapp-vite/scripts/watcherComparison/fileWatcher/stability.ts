@@ -1,5 +1,5 @@
 import { stat } from 'node:fs/promises'
-import { isMissingWatchPath } from './scan'
+import { isMissingWatchPath } from '../../../src/runtime/watch/fileWatcher/errors'
 
 function waitInterval(interval: number, signal: AbortSignal) {
   return new Promise<void>((resolve) => {

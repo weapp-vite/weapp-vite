@@ -2,7 +2,6 @@ import type { Stats } from 'node:fs'
 import type { ConfigService } from '../../config/types'
 
 export type FileWatchReadiness = 'ready' | 'closed'
-export type FileWatchEngine = 'chokidar' | 'parcel'
 export type FileWatchTargets = string | string[]
 export type FileWatchConfig = Pick<ConfigService, 'inlineConfig'>
 export type FileWatchIgnore = string | RegExp | ((file: string, stats?: Stats) => boolean)

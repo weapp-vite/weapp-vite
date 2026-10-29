@@ -1,4 +1,4 @@
-import type { FileWatchEngine } from '../../src/runtime/watch/fileWatcher'
+import type { FileWatchEngine } from './fileWatcher'
 import type { WatcherScenarioReport } from './types'
 import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
@@ -92,7 +92,7 @@ async function main(signal: AbortSignal) {
         const childProcess = x(process.execPath, ['--import', 'tsx', import.meta.filename, '--child', engine], {
           nodeOptions: {
             cwd: path.resolve(import.meta.dirname, '../../../..'),
-            env: { ...process.env, WEAPP_VITE_WATCH_ENGINE: engine },
+            env: process.env,
             shell: false,
           },
           throwOnError: false,

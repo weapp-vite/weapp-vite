@@ -7,13 +7,13 @@ import { createDevProcessEnv } from '../utils/dev-process-env'
 import { renameAtomicFile } from '../utils/hmrAtomicRename'
 import { createNativeBatchProject, NATIVE_BATCH_CLI, NATIVE_BATCH_EXTENSIONS } from '../utils/nativeBatchProject'
 
-describe.each(['chokidar', 'parcel'] as const)('native watcher backend HMR (%s)', (engine) => {
+describe('production snapshot sidecar HMR', () => {
   it('publishes sidecar saves and recovers retained outputs after a referenced template disappears', async (context) => {
     const project = await createNativeBatchProject('classic')
     let dev: ReturnType<typeof startDevProcess> | undefined
     let stage = 'fixture'
     context.onTestFailed(() => {
-      process.stdout.write(`[watcher-backend-failure] ${JSON.stringify({ engine, stage })}\n`)
+      process.stdout.write(`[snapshot-sidecar-failure] ${JSON.stringify({ stage })}\n`)
       process.stdout.write(dev?.getOutput().slice(-16_000) ?? '')
     })
     const source = path.join(project, 'src/sitemap.json')
@@ -48,7 +48,7 @@ describe.each(['chokidar', 'parcel'] as const)('native watcher backend HMR (%s)'
       stage = 'initial-build'
       dev = startDevProcess(process.execPath, [NATIVE_BATCH_CLI, 'dev', '--non-interactive'], {
         cwd: project,
-        env: { ...createDevProcessEnv({ usePolling: false }), WEAPP_VITE_WATCH_ENGINE: engine },
+        env: createDevProcessEnv({ usePolling: false }),
         all: true,
       })
       await dev.waitForInitialBuild()

@@ -2,8 +2,9 @@ import type { FileWatchSnapshot, WatchPathMapping } from './scan'
 import type { FileWatchOptions } from './types'
 import { stat } from 'node:fs/promises'
 import path from 'pathe'
-import { containsWatchPath, createFileWatchIgnored } from './paths'
-import { isMissingWatchPath, scanFileWatchTargets } from './scan'
+import { isMissingWatchPath } from '../../../src/runtime/watch/fileWatcher/errors'
+import { containsWatchPath, createFileWatchIgnored } from '../../../src/runtime/watch/fileWatcher/paths'
+import { scanFileWatchTargets } from './scan'
 
 interface ScanScope {
   logical: string

@@ -19,6 +19,7 @@ const projectTestExcludes = [
   '**/dist-*/**',
   '**/.weapp-vite/**',
   '**/coverage/**',
+  // 实验适配器的真实原生契约保留独立机器租约入口，mock 测试继续由 scripts 发现。
   ...nativeWatchContractTests,
 ]
 

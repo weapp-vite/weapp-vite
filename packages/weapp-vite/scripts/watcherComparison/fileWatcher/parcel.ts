@@ -2,20 +2,20 @@ import type { Event } from '@parcel/watcher'
 import type { FileWatchRecord, FileWatchSnapshot, WatchPathMapping } from './scan'
 import type { FileWatchConfig, FileWatcher, FileWatchOptions, FileWatchReadiness, FileWatchTargets } from './types'
 import path from 'pathe'
-import { createSidecarWatchOptions } from '../options'
-import { createFileWatchEvents, throwFileWatchFailures } from './events'
+import { createFileWatchEvents, throwFileWatchFailures } from '../../../src/runtime/watch/fileWatcher/events'
+import { containsWatchPath, normalizeWatchTargets } from '../../../src/runtime/watch/fileWatcher/paths'
+import { createSidecarWatchOptions } from '../../../src/runtime/watch/options'
 import { createParcelSubscriptions } from './parcelSubscriptions'
-import { containsWatchPath, normalizeWatchTargets } from './paths'
 import { reconcileFileWatchBatch } from './reconcile'
 import { createWatchMappings, diffFileWatchSnapshots, scanFileWatchTargets, watchMappingMatches } from './scan'
 import { waitFileWatchStability } from './stability'
 
 export function createParcelFileWatcher(config: FileWatchConfig, input: FileWatchTargets, options: FileWatchOptions): FileWatcher {
   if (createSidecarWatchOptions(config, {}).backend === 'polling') {
-    throw new Error('Parcel watcher does not support polling. Select weapp.watch.engine: "chokidar" for polling environments.')
+    throw new Error('Parcel watcher does not support polling. Select the experimental chokidar engine for polling environments.')
   }
   if (options.persistent === false) {
-    throw new Error('Parcel watcher does not support persistent: false. Select weapp.watch.engine: "chokidar" for non-persistent subscriptions.')
+    throw new Error('Parcel watcher does not support persistent: false. Select the experimental chokidar engine for non-persistent subscriptions.')
   }
   const events = createFileWatchEvents()
   const reported = new Set<unknown>()

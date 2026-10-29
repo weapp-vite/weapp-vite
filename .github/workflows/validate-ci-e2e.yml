@@ -62,7 +62,7 @@ jobs:
       timeout_minutes: 20
       build_command: pnpm exec turbo run build --filter=weapp-vite...
       test_command: pnpm test:watcher-comparison --report .tmp/watcher-comparison/report.json
-      main_command: pnpm vitest run -c e2e/vitest.e2e.ci.config.ts e2e/ci/watcher-backends.hmr.test.ts
+      main_command: pnpm vitest run -c e2e/vitest.e2e.ci.config.ts e2e/ci/snapshot-sidecar.hmr.test.ts
       artifact_name: watcher-comparison-${{ matrix.os }}-node-24-${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}
       artifact_path: .tmp/watcher-comparison/report.json
     secrets: inherit

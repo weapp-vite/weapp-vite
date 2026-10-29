@@ -7,9 +7,9 @@ import path from 'pathe'
 import { createSidecarWatchOptions } from '../options'
 import { createSidecarWatcherReadiness } from '../sidecarReadiness'
 import { observeChokidarRenames } from './chokidarRenames'
+import { isMissingWatchPath } from './errors'
 import { createFileWatchEvents, throwFileWatchFailures } from './events'
 import { containsWatchPath, createFileWatchIgnored, normalizeWatchTargets } from './paths'
-import { isMissingWatchPath } from './scan'
 
 interface ChokidarGroup {
   targets: string[]

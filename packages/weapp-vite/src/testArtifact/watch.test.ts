@@ -88,7 +88,6 @@ beforeEach(() => {
   vi.stubEnv('CHOKIDAR_USEPOLLING', undefined)
   vi.stubEnv('CHOKIDAR_INTERVAL', undefined)
   vi.stubEnv('CHOKIDAR_BINARY_INTERVAL', undefined)
-  vi.stubEnv('WEAPP_VITE_WATCH_ENGINE', undefined)
 })
 
 afterEach(async () => {
@@ -159,13 +158,11 @@ describe('test artifact watch invalidation', () => {
     expect(chokidar.watch).toHaveBeenCalledWith(expect.any(Array), expect.objectContaining({ backend: 'native' }))
   })
 
-  it('captures environment-selected engine and polling options before later compiler work changes them', async () => {
-    vi.stubEnv('WEAPP_VITE_WATCH_ENGINE', 'chokidar')
+  it('captures polling options before later compiler work changes them', async () => {
     vi.stubEnv('CHOKIDAR_USEPOLLING', 'true')
     vi.stubEnv('CHOKIDAR_INTERVAL', '25')
     vi.stubEnv('CHOKIDAR_BINARY_INTERVAL', '50')
     state.build.mockImplementationOnce(async () => {
-      vi.stubEnv('WEAPP_VITE_WATCH_ENGINE', 'unsupported-engine')
       vi.stubEnv('CHOKIDAR_USEPOLLING', 'false')
       vi.stubEnv('CHOKIDAR_INTERVAL', '100')
       vi.stubEnv('CHOKIDAR_BINARY_INTERVAL', '200')

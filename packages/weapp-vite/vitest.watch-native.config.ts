@@ -15,6 +15,7 @@ export default defineConfig({
     ...localTestPolicy(),
     environment: 'node',
     dir: packageDir,
+    // 路径由分区清单统一维护，仅发现 scripts/watcherComparison 中的真实原生实验契约。
     include: [...nativeWatchContractTests],
     // 直接使用本配置也取得同一机器租约，不取得真实 IDE journal 或清理权。
     globalSetup: [path.resolve(packageDir, '../../e2e/vitest.e2e.machine-lease.global-setup.ts')],

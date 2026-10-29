@@ -38,7 +38,7 @@ const releases = new Set<() => void>()
 let root: string
 
 function own(engine: FileWatchEngine, target: string) {
-  const watcher = createFileWatcher({ inlineConfig: { weapp: { watch: { engine } } } }, target, { ignoreInitial: true })
+  const watcher = createFileWatcher(engine, target, { ignoreInitial: true })
   owners.add(watcher)
   return watcher
 }
@@ -89,7 +89,17 @@ afterEach(async () => {
   const results = await Promise.allSettled([...owners].map(watcher => watcher.close()))
   owners.clear()
   await rm(root, { recursive: true, force: true })
+  vi.unstubAllEnvs()
   expect(results.filter(result => result.status === 'rejected')).toEqual([])
+})
+
+it.each(['chokidar', 'parcel'] as const)('selects the explicit experimental %s engine independently of legacy overrides', async (engine) => {
+  vi.stubEnv('WEAPP_VITE_WATCH_ENGINE', 'unsupported')
+  const [original] = await inputs()
+  const watcher = own(engine, original)
+  await watcher.ready
+  expect(mocks.watch).toHaveBeenCalledTimes(engine === 'chokidar' ? 1 : 0)
+  expect(mocks.subscribe).toHaveBeenCalledTimes(engine === 'parcel' ? 1 : 0)
 })
 
 describe.each(['chokidar', 'parcel'] as const)('%s dynamic target transactions', (engine) => {
@@ -196,22 +206,21 @@ it('keeps host depth and filtering separate from explicit shared watcher options
   const [original] = await inputs()
   const config = {
     inlineConfig: {
-      weapp: { watch: { engine: 'chokidar' as const } },
       server: { watch: { usePolling: false, depth: 0, persistent: false, ignored: /host-only/, awaitWriteFinish: true } },
     },
   }
-  const inherited = createFileWatcher(config, original, {})
+  const inherited = createFileWatcher('chokidar', original, {}, config)
   owners.add(inherited)
   await inherited.ready
   expect(mocks.watch).toHaveBeenNthCalledWith(1, [original], { backend: 'native' })
   const ignored = /shared-explicit/
-  const explicit = createFileWatcher(config, original, {
+  const explicit = createFileWatcher('chokidar', original, {
     depth: 2,
     ignored,
     persistent: true,
     ignoreInitial: true,
     stability: { threshold: 30, interval: 5 },
-  })
+  }, config)
   owners.add(explicit)
   await explicit.ready
   expect(mocks.watch).toHaveBeenNthCalledWith(2, [original], {

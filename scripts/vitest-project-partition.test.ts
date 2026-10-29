@@ -61,7 +61,10 @@ describe('compiler test project partition', () => {
       }
     }
     expect(serial.has('src/plugins/core/lifecycle/watch.test.ts')).toBe(true)
-    expect(fast.has('src/runtime/watch/fileWatcher.lifecycle.test.ts')).toBe(true)
+    expect(fast.has('scripts/watcherComparison/fileWatcher.lifecycle.test.ts')).toBe(true)
+    expect(fast.has('scripts/watcherComparison/fileWatcher.targets.test.ts')).toBe(true)
+    expect(fast.has('scripts/watcherComparison/state.test.ts')).toBe(true)
+    expect(native.has('scripts/watcherComparison/fileWatcher.contract.test.ts')).toBe(true)
     expect(fast.has('scripts/chokidarDelivery/validation.test.ts')).toBe(true)
     expect(serial.has('scripts/chokidarDelivery/validation.test.ts')).toBe(false)
   })

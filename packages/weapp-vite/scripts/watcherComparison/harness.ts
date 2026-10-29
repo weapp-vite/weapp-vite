@@ -1,11 +1,11 @@
-import type { FileWatchEngine, FileWatchOptions, FileWatchTargets } from '../../src/runtime/watch/fileWatcher'
+import type { FileWatchEngine, FileWatchOptions, FileWatchTargets } from './fileWatcher'
 import type { WatcherObservation, WatcherSample, WatcherScenario, WatcherScenarioContext, WatcherScenarioReport } from './types'
 import { mkdtemp, realpath, rm } from 'node:fs/promises'
 import { homedir, tmpdir } from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
 import { setTimeout as delay } from 'node:timers/promises'
-import { createFileWatcher } from '../../src/runtime/watch/fileWatcher'
+import { createFileWatcher } from './fileWatcher'
 import { matchesWatcherChange, verifyWatcherStates } from './state'
 
 const timeoutMs = 5000
@@ -76,14 +76,13 @@ export async function runWatcherScenario(engine: FileWatchEngine, scenario: Watc
     void Promise.allSettled(observations.map(observation => observation.close()))
   }
   signal?.addEventListener('abort', cancel, { once: true })
-  const config = { inlineConfig: { weapp: { watch: { engine } } } }
   const context: WatcherScenarioContext = {
     root,
     assert,
     observe(targets: FileWatchTargets, options: FileWatchOptions = {}) {
       assert(!signal?.aborted, 'Watcher comparison cancelled')
       const started = performance.now()
-      const watcher = createFileWatcher(config, targets, { persistent: true, ignoreInitial: true, ...options })
+      const watcher = createFileWatcher(engine, targets, { persistent: true, ignoreInitial: true, ...options })
       const changes: WatcherObservation['changes'] = []
       watcher.onChange((batch) => {
         const receivedAtMs = performance.now() - startedAt
