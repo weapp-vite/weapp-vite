@@ -249,7 +249,6 @@
     "zod": "catalog:"
   },
   "optionalDependencies": {
-    "@parcel/watcher": "2.6.0",
     "@swc/core": "^1.16.20"
   },
   "devDependencies": {
@@ -257,6 +256,7 @@
     "@devframes/hub": "1.2.6",
     "@devframes/hub-ui": "1.2.6",
     "@modelcontextprotocol/client": "^2.4.0",
+    "@parcel/watcher": "2.6.0",
     "@vitejs/devtools": "catalog:",
     "@vitejs/devtools-kit": "catalog:",
     "oxc-parser": "catalog:",

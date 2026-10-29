@@ -1,4 +1,4 @@
-import type { FileWatchChange, FileWatchEngine, FileWatcher, FileWatchOptions, FileWatchTargets } from '../../src/runtime/watch/fileWatcher'
+import type { FileWatchChange, FileWatchEngine, FileWatcher, FileWatchOptions, FileWatchTargets } from './fileWatcher'
 
 export interface WatcherSample {
   rssBytes: number

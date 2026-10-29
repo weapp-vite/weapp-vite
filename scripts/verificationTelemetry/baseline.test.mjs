@@ -25,7 +25,7 @@ it('freezes the watcher comparison as an explicitly selected manual diagnostic f
   expect(job.strategy.matrix.os).toEqual(['ubuntu-latest', 'windows-latest', 'macos-latest'])
   expect(job.with).toMatchObject({
     test_command: 'pnpm test:watcher-comparison --report .tmp/watcher-comparison/report.json',
-    main_command: 'pnpm vitest run -c e2e/vitest.e2e.ci.config.ts e2e/ci/watcher-backends.hmr.test.ts',
+    main_command: 'pnpm vitest run -c e2e/vitest.e2e.ci.config.ts e2e/ci/snapshot-sidecar.hmr.test.ts',
     artifact_path: '.tmp/watcher-comparison/report.json',
   })
 })

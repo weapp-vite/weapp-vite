@@ -50,7 +50,6 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
    - `weapp.styles`：生成主包独立样式入口并按规则注入主包与普通分包；默认不修改 `app.wxss`，显式 `include: 'app.vue'` 时可注入，也不跨入独立分包
    - `weapp.buildScope` / `wv dev|build --scope`：限定页面或分包构建时保持 autoRoutes 的主包/分包归属
    - `weapp.typescript`
-   - `weapp.watch.engine`：默认 `chokidar`；显式 `parcel` 用于自有监听的稳定性对照，不替换 Vite/Rolldown 主图监听；Parcel 不支持订阅式 polling，报错不自动切回；当前存在 macOS 原生错误和 Linux 深层模板漏通知反例，尚未通过替换验收
    - `weapp.hmr.runtime`：显式配置优先；未配置时结合工作区 `compileHotReLoad` 选择 classic 或实验性 stateful 模式；实际 bundle 含 Skyline renderer 时强制关闭 DevTools 热重载并降级 classic
    - `weapp.vue.template.slotFallbackWrapperStrategy`：微信平台默认使用内部 `virtualHost` 组件承载转发 `<slot />` 的具名插槽 fallback；需要旧版真实节点行为时显式设为 `view`
    - `weapp.vue.template.slotFallbackWrapper`：普通具名插槽 fallback 的真实 wrapper，可用全局默认、按模板标签名 `component`、子组件静态 `defineOptions({ name })` 的 `componentName`、slot 规则和组件内 `slot-wrapper` / `slot-wrapper-footer` / `slot-wrapper-class` / `slot-wrapper-footer-class` 静态覆盖；显式配置后优先于默认策略；不要把 `block` 当作转发 `<slot />` 的 wrapper

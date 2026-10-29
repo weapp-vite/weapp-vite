@@ -1,6 +1,10 @@
-# 自有文件观察后端对照
+# 文件观察后端开发实验
 
-契约测试与此工具复用 `scenarios.ts` 中的 14 个真实文件保存场景。每轮每个后端在独立 Node 子进程执行，相邻轮次交换后端顺序；所有场景、创建的观察会话和目录均顺序收尾。
+生产共享契约与 Chokidar 实现位于 `src/runtime/watch/fileWatcher/`，生产工厂保持 `createFileWatcher(config, targets, options)`，当前仅创建 Chokidar。消费方通过规范化事件和异步生命周期对接，便于后续独立评估适配其他观察库。
+
+本目录的 `fileWatcher/` 保留 Parcel 实验实现和显式选择后端的实验工厂；Chokidar 分支直接调用生产工厂，Parcel 复用同一份生产契约、事件和路径辅助函数。生产模块只依赖生产目录，Parcel 与实验选择逻辑由开发入口使用，不构成生产切换能力。
+
+契约测试与此工具复用 `scenarios.ts` 中的 14 个真实文件保存场景。每轮每个后端在独立 Node 子进程执行，相邻轮次交换后端顺序；所有场景、创建的观察会话和目录均顺序收尾。实验工厂显式接收 `createFileWatcher(engine, targets, options, config?)`；可选配置仅复用生产侧 canonical polling 解析，实验后端由调用参数选择。
 
 从仓库根目录通过既有机器串行租约运行对照：
 
@@ -14,13 +18,13 @@ pnpm test:watcher-comparison --runs 3 --report .tmp/watcher-comparison/report.js
 pnpm test:watcher-contracts
 ```
 
-该入口覆盖 Chokidar/Parcel 的全部共享场景和引擎选择断言；`fileWatcher.contract.test.ts` 已从包的 fast/serial 普通单测分区排除。专用 `vitest.watch-native.config.ts` 固定单 worker、文件与用例串行，并复用机器租约 global setup；直接运行 `pnpm exec vitest run --config packages/weapp-vite/vitest.watch-native.config.ts` 也取得同一机器租约。使用 Parcel 的真实原生订阅，加载、注册、交付或关闭失败保留为失败，不以 mock、跳过或另一后端结果替代。`fileWatcher.lifecycle.test.ts` 只有 mock 订阅，继续进入普通 fast 单测。
+该入口覆盖 Chokidar/Parcel 的全部共享场景；本目录的 `fileWatcher.contract.test.ts` 已从包的 fast/serial 普通单测分区排除。专用 `vitest.watch-native.config.ts` 固定单 worker、文件与用例串行，并复用机器租约 global setup；直接运行 `pnpm exec vitest run --config packages/weapp-vite/vitest.watch-native.config.ts` 也取得同一机器租约。使用 Parcel 的真实原生订阅，加载、注册、交付或关闭失败保留为失败，不以 mock、跳过或另一后端结果替代。`fileWatcher.lifecycle.test.ts`、`fileWatcher.targets.test.ts` 的后端均使用 mock，继续进入普通 fast 单测；显式实验后端选择也在 mock 测试中验证。
 
 普通 `pnpm test`、包单测与 `pnpm test:hmr` 不执行这份原生契约。完整原生契约验收使用上述显式命令且不添加用例过滤；筛选运行只用于诊断。专用入口与 comparison、下游 HMR、headless 和真实 IDE 共享同机串行门禁，启动前仍须核对现有 E2E/dev-watch 的资源归属。
 
 `--engines chokidar,parcel` 为默认选择，`--runs` 默认为 3。内部 `--child` 仅由父进程调度，外层机器租约覆盖全部子进程；不要用内部入口绕过串行门禁。
 
-三系统对照复用 `CI E2E` 的 `watcher-comparison` 定向入口，在 Linux、Windows、macOS 的 Node 24 上先分别执行三轮原生对照并上传 JSON，再验证下游 HMR。原生对照失败时保留失败报告，后续 HMR 不执行。通过原有冻结上下文与 PR 准入；主线运行可在选定提交推送后执行：
+三系统实验复用 `CI E2E` 的 `watcher-comparison` 定向入口，在 Linux、Windows、macOS 的 Node 24 上执行原生对照并上传 JSON。实验失败保留原始失败报告；生产 HMR 验收另按生产观察路径解释，历史双后端 HMR 证据只适用于报告记录的旧提交。通过原有冻结上下文与 PR 准入；主线运行可在选定提交推送后执行：
 
 ```sh
 gh workflow run ci-e2e.yml --ref main -f hmr-diagnostic=watcher-comparison
@@ -34,7 +38,11 @@ gh workflow run ci-e2e.yml --ref main -f hmr-diagnostic=watcher-comparison
 
 JSON 包含每步遗漏、重复、通知延迟、磁盘状态核验时间，每个观察会话的启动与关闭时间，以及场景 CPU、RSS、活动句柄及资源类型。创建和更新文件必须匹配明确指定内容的 SHA-256；目录创建和删除必须匹配最终文件类型或缺失状态。`latencyMs` 测量操作开始到匹配通知，`verificationMs` 测量同时观察到匹配通知和所需磁盘状态的耗时。临时目录只在运行时创建，报告中的文件均为 fixture 相对路径。失败保留为失败，不以另一个后端成功覆盖。
 
-`identity` 从实际解析的安装文件记录包版本、包内入口及 SHA-256；Chokidar 额外记录发行文件集合、仓库 `6.0.0` patch 的摘要，锁文件也独立取摘要。源码基线包含 Git revision、dirty 状态，以及工具和适配器目录中排序后的文件摘要集合。父进程与每轮子进程均记录身份，依赖、锁文件或相关源码不一致时该轮失败；patch 文件摘要用于标识仓库基线，单独存在不等于补丁已应用。Parcel 没有公开查询所选 native binding 身份的接口，报告明确记为 `not-observed`，不把 JavaScript wrapper 身份解释为原生二进制身份。
+`identity` 从实际解析的安装文件记录包版本、包内入口及 SHA-256；Chokidar 额外记录发行文件集合、仓库 `6.0.0` patch 的摘要，锁文件也独立取摘要。源码基线包含 Git revision、dirty 状态和排序后的文件摘要集合。当前 `source.boundary.version` 为 3：`productionAdapter` 覆盖共享生产契约、Chokidar 与辅助实现，`experimentalAdapter` 覆盖本目录的 Parcel 实现和实验入口；`tool` 排除该实验适配器子目录以保持边界清晰。`productionSupport` 另行记录生产侧 options/readiness 及 options 直接复用的路径工具源码摘要，覆盖目录外复用输入。
+
+摘要输入包含仓库相对文件名，因此移动目录会改变集合摘要。旧报告保留当时 `src/runtime/watch/fileWatcher/` 的原始文件集合与摘要；全部适配器移入实验目录的中间布局标记为 v2。两者均不能与当前共享生产实现的 v3 边界直接视为同一基线；记录布局边界不代表已执行相应验证。
+
+父进程与每轮子进程均记录身份，依赖、锁文件或相关源码不一致时该轮失败；patch 文件摘要用于标识仓库基线，单独存在不等于补丁已应用。Parcel 没有公开查询所选 native binding 身份的接口，报告明确记为 `not-observed`，不把 JavaScript wrapper 身份解释为原生二进制身份。
 
 公有通知只包含路径、类型和事件，没有原生通知对应的字节版本。最终状态核验只能证明场景驱动已写入所需版本，不能证明当前通知由该次保存引起；迟到的旧通知仍可能匹配后续步骤。工具不拦截原生通知、stat 代或消费方读取，真实 HMR 产物验收才用于证明消费方使用了最新输入。
 
@@ -42,4 +50,4 @@ JSON 包含每步遗漏、重复、通知延迟、磁盘状态核验时间，每
 
 `cleanupConfirmed` 表示本场景登记的公有 `close()` 均已完成且 fixture 已删除，不是原生句柄终结回执。关闭或删除失败时保留 fixture，并停止后续场景、后端和轮次；子进程超时或没有完整报告时同样停止，未运行项记为 `notRun`。`retainedFixture` 仅记录解析后系统临时目录下的目录名，恢复时必须核对该次任务归属，不做全局清理。
 
-该工具衡量 weapp-vite 自有观察层，不改变 Vite/Rolldown 的原生监听，也不替代构建发布、headless 或真实 IDE 的 HMR 验收。它没有完整覆盖既有 Chokidar 依赖契约的 29 项场景；逐项映射和剩余缺口见 [coverage.md](./coverage.md)。本机结果不能作为真实 Windows/macOS/Linux 一致性的证明，也不能单独作为修改默认后端的依据。
+该工具衡量共享生产 Chokidar 和实验 Parcel 在同一契约下的公有行为，不替代构建发布、headless 或真实 IDE 的 HMR 验收，也不替换 Vite/Rolldown 的原生监听。它没有完整覆盖既有 Chokidar 依赖契约的 29 项场景；逐项映射和剩余缺口见 [coverage.md](./coverage.md)。历史结果只适用于当时记录的源码身份，不能作为当前结构完成真实 Windows/macOS/Linux 验收的证明，也不能单独作为将 Parcel 接入生产的依据。

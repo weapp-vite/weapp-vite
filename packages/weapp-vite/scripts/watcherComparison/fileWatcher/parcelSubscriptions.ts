@@ -2,9 +2,10 @@ import type { AsyncSubscription, Event, Options } from '@parcel/watcher'
 import type { WatchPathMapping } from './scan'
 import { stat } from 'node:fs/promises'
 import path from 'pathe'
-import { throwFileWatchFailures } from './events'
-import { containsWatchPath } from './paths'
-import { isMissingWatchPath, resolveWatchPhysicalPath } from './scan'
+import { isMissingWatchPath } from '../../../src/runtime/watch/fileWatcher/errors'
+import { throwFileWatchFailures } from '../../../src/runtime/watch/fileWatcher/events'
+import { containsWatchPath } from '../../../src/runtime/watch/fileWatcher/paths'
+import { resolveWatchPhysicalPath } from './scan'
 
 interface ParcelRootSubscription {
   signature: string

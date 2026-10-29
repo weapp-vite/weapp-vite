@@ -1,6 +1,6 @@
 ---
-"weapp-vite": minor
+"weapp-vite": patch
 "create-weapp-vite": patch
 ---
 
-feat(watch): 新增实验性的 Parcel 文件监听后端，可通过 `weapp.watch.engine` 与默认 Chokidar 对照验证自有监听的稳定性；保留原有构建发布和 Vite/Rolldown 主图监听边界。
+fix(watch): 自有文件监听统一经过内部接口，生产继续使用 Chokidar；保留 WXML 初始化及释放失败时的资源回收修复。Parcel 仅供仓库开发对照，不加入直接运行依赖或公开切换配置。

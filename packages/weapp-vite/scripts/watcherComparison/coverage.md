@@ -1,8 +1,8 @@
-# 与 Chokidar 依赖契约的覆盖关系
+# 开发实验与 Chokidar 依赖契约的覆盖关系
 
-既有权威清单为 `scripts/dependencyContracts/chokidar/scenarios.mjs`，其原生资源、读取阶段和错误分类断言见同目录 `README.md`。下面只说明新增适配层契约与这些要求的关系，不表示已执行或通过，也不表示 Parcel 与 Chokidar 的内部实现相同。
+既有权威清单为 `scripts/dependencyContracts/chokidar/scenarios.mjs`，其原生资源、读取阶段和错误分类断言见同目录 `README.md`。下面只说明共享契约与这些要求的关系，不表示已执行或通过，也不表示 Parcel 与 Chokidar 的内部实现相同。契约、辅助函数及生产 Chokidar 实现位于 `src/runtime/watch/fileWatcher/`，生产工厂仅创建 Chokidar；`scripts/watcherComparison/fileWatcher/` 保留实验 Parcel，Chokidar 实验直接复用生产工厂和同一份契约。
 
-共享真实文件场景来自 `scenarios.ts`，另有 `fileWatcher.lifecycle.test.ts` 使用 Parcel subscription mock 验证适配器的异步所有权。mock 用例没有打开原生订阅，不能提供真实原生行为证据。
+共享真实文件场景来自 `scenarios.ts`，由本目录 `fileWatcher.contract.test.ts` 的显式机器租约入口执行。另有同目录 `fileWatcher.lifecycle.test.ts` 和 `fileWatcher.targets.test.ts` 使用后端 mock 验证适配器的异步所有权、目标事务和显式实验后端选择；这些测试继续进入普通 fast 分区。mock 用例没有打开原生订阅，不能提供真实原生行为证据。
 
 | 既有场景 | 适配层已表达的公有行为 | 尚未覆盖的精确边界 |
 | --- | --- | --- |
@@ -36,8 +36,8 @@
 | `shared-native-inode-late-sibling-enoent` | 共享 owner 与替换分别有覆盖 | 兄弟 owner 已看到新代后迟到 ENOENT 的负控 |
 | `shared-native-inode-survivor-after-close` | 一个 owner 退出后幸存者能保存 | 共享 inode 替换、代际边界与最后原生关闭的组合 |
 
-适配层还覆盖外部及链式符号链接的逻辑路径、链接重定向、深度重新定基、动态依赖首保存、稳定写入和 1024 文件树中的连续单文件保存。这些用于统一 weapp-vite 自有观察层的消费语义，不扩展为对 Vite/Rolldown 全部监听的替换保证。
+共享场景还表达外部及链式符号链接的逻辑路径、链接重定向、深度重新定基、动态依赖首保存、稳定写入和 1024 文件树中的连续单文件保存。这些用于比较同一生产契约下的 Chokidar 与实验 Parcel，不构成 Parcel 生产支持或 Vite/Rolldown 全部监听的替换保证。两种同根不同范围注册顺序的真实文件反例及现有失败断言均保留。
 
 每个期望文件事件另行核验最终内容摘要、目录类型或删除状态，但没有原生通知到具体文件版本的因果证据。迟到旧通知仍可能解释下一步同路径事件；最新版本是否被消费必须由真实 HMR 产物验证。Node 句柄和 RSS 采样也不能替代既有依赖契约的原生资源回执。
 
-因此既有 29 项依赖契约仍需保留；平台模拟不能替代真实三系统执行，适配层本机结果也不能独立支持修改默认后端。
+因此既有 29 项依赖契约仍需保留；平台模拟不能替代真实三系统执行，实验适配层本机结果也不能独立支持接入生产。

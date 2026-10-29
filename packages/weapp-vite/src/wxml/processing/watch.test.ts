@@ -58,10 +58,10 @@ function fixture(disabled = false, options: {
 }
 
 describe('WXML dependency watcher ownership', () => {
-  it('rolls back dependency observation and ownership when initial backend creation throws', async () => {
+  it('rolls back dependency observation and ownership when initial watcher creation throws', async () => {
     const ctx = {
       runtimeState: createRuntimeState(),
-      configService: { cwd: '/project', outDir: '/project/dist', inlineConfig: { weapp: { watch: { engine: 'parcel' } } } },
+      configService: { cwd: '/project', outDir: '/project/dist', inlineConfig: {} },
     } as unknown as CompilerContext
     const external = '/inputs/rules.json'
     const initial = beginWxmlDependencies(ctx, 'main', false)
@@ -72,7 +72,7 @@ describe('WXML dependency watcher ownership', () => {
     const server = {
       config: { root: '/project', server: { watch: {} }, logger: { error: vi.fn() } },
     } as unknown as ViteDevServer
-    const failure = new Error('backend creation failed')
+    const failure = new Error('WXML watcher creation failed')
     const fileWatcher = {
       ready: Promise.resolve('ready' as const),
       add: vi.fn(async () => 'ready' as const),
@@ -111,31 +111,6 @@ describe('WXML dependency watcher ownership', () => {
     finally {
       create.mockRestore()
     }
-  })
-
-  it('keeps the compiler watch engine when inheriting host watch options', async () => {
-    const fileWatcher = {
-      ready: Promise.resolve('ready' as const),
-      add: vi.fn(async () => 'ready' as const),
-      updateTargets: vi.fn(async () => 'ready' as const),
-      onChange: vi.fn(() => () => {}),
-      onError: vi.fn(() => () => {}),
-      close: vi.fn(async () => {}),
-    }
-    const create = vi.spyOn(fileWatchers, 'createFileWatcher').mockReturnValue(fileWatcher)
-    const { close } = fixture(false, { inlineConfig: { weapp: { watch: { engine: 'parcel' } } } })
-    try {
-      await close.ready
-      expect(create).toHaveBeenCalledWith(expect.objectContaining({
-        inlineConfig: expect.objectContaining({ weapp: { watch: { engine: 'parcel' } } }),
-      }), ['/inputs'], expect.any(Object))
-      expect(watchMock).not.toHaveBeenCalled()
-    }
-    finally {
-      await close()
-      create.mockRestore()
-    }
-    expect(fileWatcher.close).toHaveBeenCalledOnce()
   })
 
   it('leaves root dependencies with the host through publication, removal and teardown', async () => {

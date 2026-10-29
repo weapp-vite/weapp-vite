@@ -4,7 +4,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { parseLogicalEntryId, parseSidecarModuleId } from './moduleGraph/protocol'
 import { CompilerSession } from './runtime/compilerSession'
-import { createFileWatcher, resolveFileWatchEngine } from './runtime/watch/fileWatcher'
+import { createFileWatcher } from './runtime/watch/fileWatcher'
 import { createSidecarWatchOptions } from './runtime/watch/options'
 import { fingerprintPaths, projectInputFiles, resolveArtifactOutDir } from './testArtifact/inputs'
 import { isPathInside, normalizePath } from './utils/path'
@@ -54,10 +54,6 @@ function captureArtifactWatchConfig(config: Pick<ConfigService, 'inlineConfig'>)
   return {
     inlineConfig: {
       ...inline,
-      weapp: {
-        ...inline?.weapp,
-        watch: { ...inline?.weapp?.watch, engine: resolveFileWatchEngine(config) },
-      },
       build: {
         ...inline?.build,
         watch: {

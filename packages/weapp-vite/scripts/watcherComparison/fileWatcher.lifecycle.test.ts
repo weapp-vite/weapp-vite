@@ -1,5 +1,5 @@
 import type { AsyncSubscription, SubscribeCallback } from '@parcel/watcher'
-import type { FileWatcher } from './fileWatcher'
+import type { FileWatchEngine, FileWatcher } from './fileWatcher'
 import { mkdir, mkdtemp, realpath, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
@@ -11,7 +11,6 @@ vi.mock('@parcel/watcher', () => ({ subscribe: mocks.subscribe }))
 
 const parcelConfig = {
   inlineConfig: {
-    weapp: { watch: { engine: 'parcel' as const } },
     server: { watch: { usePolling: false } },
   },
 }
@@ -29,7 +28,7 @@ function resource() {
 }
 
 function own(targets: string | string[]) {
-  const watcher = createFileWatcher(parcelConfig, targets, { ignoreInitial: true })
+  const watcher = createFileWatcher('parcel', targets, { ignoreInitial: true }, parcelConfig)
   watchers.add(watcher)
   return watcher
 }
@@ -169,13 +168,12 @@ describe('Parcel watcher lifecycle without native subscriptions', () => {
 
   it('rejects polling explicitly before opening a subscription', () => {
     const config = { inlineConfig: { ...parcelConfig.inlineConfig, server: { watch: { usePolling: true } } } }
-    expect(() => createFileWatcher(config, root, {})).toThrow('Parcel watcher does not support polling')
+    expect(() => createFileWatcher('parcel', root, {}, config)).toThrow('Parcel watcher does not support polling')
     expect(mocks.subscribe).not.toHaveBeenCalled()
   })
 
   it('rejects an invalid engine before opening a subscription', () => {
-    vi.stubEnv('WEAPP_VITE_WATCH_ENGINE', 'invalid')
-    expect(() => createFileWatcher({ inlineConfig: {} }, root, {})).toThrow('Unknown weapp.watch.engine')
+    expect(() => createFileWatcher('invalid' as FileWatchEngine, root, {})).toThrow('Unknown experimental watcher engine')
     expect(mocks.subscribe).not.toHaveBeenCalled()
   })
 })

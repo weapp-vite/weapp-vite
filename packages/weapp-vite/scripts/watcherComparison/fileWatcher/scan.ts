@@ -2,7 +2,8 @@ import type { Stats } from 'node:fs'
 import type { FileWatchChange, FileWatchOptions } from './types'
 import { lstat, readdir, readlink, realpath, stat } from 'node:fs/promises'
 import path from 'pathe'
-import { containsWatchPath, createFileWatchIgnored } from './paths'
+import { isMissingWatchPath } from '../../../src/runtime/watch/fileWatcher/errors'
+import { containsWatchPath, createFileWatchIgnored } from '../../../src/runtime/watch/fileWatcher/paths'
 
 export interface WatchPathMapping {
   physical: string
@@ -20,10 +21,6 @@ export interface FileWatchRecord {
 export interface FileWatchSnapshot {
   records: Map<string, FileWatchRecord>
   mappings: WatchPathMapping[]
-}
-
-export function isMissingWatchPath(error: unknown) {
-  return error !== null && typeof error === 'object' && 'code' in error && (error.code === 'ENOENT' || error.code === 'ENOTDIR')
 }
 
 /** 缺失目标沿现存祖先恢复真实路径，符号链接仍保留独立的逻辑入口映射。 */

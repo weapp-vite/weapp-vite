@@ -1,4 +1,4 @@
-import type { FileWatchChange } from '../../src/runtime/watch/fileWatcher'
+import type { FileWatchChange } from './fileWatcher'
 import type { WatcherExpectedChange, WatcherVerifiedState } from './types'
 import { createHash } from 'node:crypto'
 import { readFile, stat } from 'node:fs/promises'

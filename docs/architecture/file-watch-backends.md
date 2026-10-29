@@ -1,16 +1,50 @@
-# 自有文件监听后端抽象与 Parcel 评估
+# 文件监听后端开发实验与 Parcel 评估
 
 评估日期：2026-10-29。
 
-当前自有监听已经可以通过内部 `FileWatcher` 接口切换 Chokidar 与 `@parcel/watcher`，无需让业务层依赖两者的原始事件和资源句柄。默认继续使用 Chokidar，Parcel 保留为显式选择的实验后端。本机三轮对照中，Chokidar 通过 36/36 个场景，Parcel 通过 33/36 个场景；Parcel 三轮均报告 FSEvents 丢事件。三系统 CI 又观察到 Linux 下的 Parcel 静默漏通知。**本轮不建议默认替换**，双后端可切换不代表 Parcel 已通过可靠性验收。
+## 保留抽象后的实现范围
+
+生产自有监听保留内部 [`FileWatcher`](../../packages/weapp-vite/src/runtime/watch/fileWatcher/index.ts) 接口。路由、自动导入、资产、配置、snapshot sidecar、根外 WXML 和测试产物统一通过工厂创建观察会话，当前工厂只使用带既有补丁的 Chokidar。消费方按批量 `create` / `update` / `delete` 处理变化，继续负责依赖归属、失效、调度与发布；Chokidar 对象及其原始事件留在适配器内。
+
+生产工厂签名为 `createFileWatcher(config, targets, options)`，返回就绪、目标更新、变化/错误订阅和异步关闭能力，不开放用户后端配置。公开的 `weapp.watch.engine` 和 `WEAPP_VITE_WATCH_ENGINE` 入口已移除。未来更换库时，可在这一边界实现并验证新后端，消费方无需依赖新的监听库。
+
+[`scripts/watcherComparison/fileWatcher`](../../packages/weapp-vite/scripts/watcherComparison/fileWatcher/index.ts) 的实验工厂显式接收 engine：Chokidar 分支直接复用生产工厂，Parcel 分支只在开发目录实现，两者共用生产契约及通用辅助模块。`@parcel/watcher` 仅列在 `weapp-vite` 的 `devDependencies`，不属于发布包的 `dependencies`、`optionalDependencies` 或 peer 依赖；Parcel 实验源码不进入包的发布文件和构建入口。
+
+这里移除的是实验新增的直接运行依赖。现有 Sass 依赖链仍可能间接安装 `@parcel/watcher`；评估前的锁文件已经包含 `sass@1.106.1 → @parcel/watcher@2.6.0`，本轮不调整这条上游依赖。
+
+生产侧继续保留独立的资源回收修复：WXML 首次观察失败时撤销 listener 和 owner；关闭 WXML 失败时仍尝试关闭 Vite 并释放模块图绑定；多个失败保留原始错误。对应回归不需要 Parcel。各消费方沿用此前迁移已建立的批处理与关闭契约，不增加重复监听兜底。
+
+changeset 收窄为内部监听边界和资源回收修复的 patch，不发布 Parcel 切换功能。后续接入生产新后端前，应先通过同一契约及真实下游验证。
+
+## 本轮验证范围
+
+本轮保留已迁移的生产消费方及 Chokidar 适配器，移除生产 Parcel 分支与公开选择入口。以下结果针对本轮未提交版本，受影响路径已重新验证；上一轮撤回抽象时的结果另行保留，不能覆盖或改写后文历史候选的失败。
+
+| 验证 | 结果与范围 |
+| --- | --- |
+| 定向单测 | 24 文件、458 项通过；覆盖迁移消费方、资源回收、实验 mock 与测试分区/工作流契约 |
+| 类型与构建 | 包级 typecheck、完整公开类型、实验目录严格类型和包构建通过；website 输入未变，复用上一轮构建通过的证据 |
+| 格式与仓库合约 | 改动文件 ESLint、changeset 检查通过；公开 skill 输入未变，复用上一轮检查通过的证据 |
+| 生产 snapshot sidecar HMR | 1/1 通过；连续保存、原子替换、引用模板删除后的产物保留和恢复 |
+| 生产 WXML headless runtime | 2/2 通过；根内/根外依赖恢复后 native/Vue 页渲染和事件 |
+| 共享原生契约 | 生产 Chokidar 14/14 通过，Parcel 原子替换后继续保存 1/1 通过；Parcel 其余 13 项未执行，不代表 Parcel 完整契约通过 |
+| 发布边界 | 156 个发布文件中无 Parcel 实验源码；133 个代码/类型文件无 Parcel 导入或旧选择入口；包清单与锁文件中直接 Parcel 声明仅为开发依赖 |
+
+本轮不派发三系统 CI 或重试真实 IDE。真实 IDE 的历史宿主归属阻断仍保留，未完成最终 runtime 验收。证据位于本任务的 `.tmp/current-run/parcel-watcher/abstraction-*`，生产代码在下游验证前重建。
+
+## 历史候选与实测结论
+
+以下保留候选提交 `08d0a2465`、`cc564c226` 的范围、原始负结果及验证缺口，用于解释为何撤回 Parcel 生产接入。文件路径与公开配置描述均指对应历史候选，不表示当前正式支持。
+
+历史候选曾将自有监听接入内部 `FileWatcher` 接口以切换 Chokidar 与 `@parcel/watcher`。本机三轮对照中，Chokidar 通过 36/36 个场景，Parcel 通过 33/36 个场景；Parcel 三轮均报告 FSEvents 丢事件。三系统 CI 又观察到 Linux 下的 Parcel 静默漏通知。**实测不建议默认替换**，双后端可切换不代表 Parcel 已通过可靠性验收。
 
 Watchpack 尚未实现或验证。本次结果只能说明双后端的内部抽象已经落地，不能解释为 Chokidar、Parcel、Watchpack 三选一已经完成。
 
-## 抽象边界与已迁移范围
+## 历史候选的抽象边界与迁移范围
 
-实现位于 [`packages/weapp-vite/src/runtime/watch/fileWatcher`](../../packages/weapp-vite/src/runtime/watch/fileWatcher/index.ts)。该模块负责路径观察、动态订阅、事件归一化与资源关闭；依赖归属、重建调度、模块失效和构建产物发布仍由各消费层负责。
+历史候选将 Chokidar 与 Parcel 都放在 `packages/weapp-vite/src/runtime/watch/fileWatcher`。当前只保留共享契约和 Chokidar 在该生产目录，Parcel 移到开发实验目录。该模块负责路径观察、动态订阅、事件归一化与资源关闭；依赖归属、重建调度、模块失效和构建产物发布仍由各消费层负责。
 
-| 已迁移的自有入口 | 归属文件 | 保留在消费层的职责 |
+| 历史迁移的自有入口 | 归属文件 | 保留在消费层的职责 |
 | --- | --- | --- |
 | 开发构建快照 sidecar | `src/runtime/buildPlugin/service.ts` | 模板、worker 与独立构建输入的归属，失效及构建发布 |
 | 复制资产与 public 资产 | `src/runtime/watch/assets.ts` | 资产扫描、过滤和增删后的最终归属 |
@@ -161,7 +195,7 @@ Linux 的三个失败均为 `same-root-narrow-before-broad`：精确配置文件
 | polling 与同步取消 | interval/persistence 升级后分别关闭新旧 owner；同步 add/ready 内取消且兄弟 owner 存活 |
 | 跨平台实现 | 真实 Windows、macOS、Linux 的行为一致性；平台模拟不能替代真实系统运行 |
 
-## 下游验证状态与后续门槛
+## 历史候选的下游验证与替换门槛
 
 以下是本次报告编写时已经取得的定向结果，不代表完整仓库 E2E 已完成：
 
@@ -178,10 +212,10 @@ Linux 的三个失败均为 `same-root-narrow-before-broad`：精确配置文件
 
 表中日志位于本次任务的 `.tmp/current-run/parcel-watcher/`。后续验证应绑定最终源码、构建产物和具体运行身份；生产源码变化后，验证负责人需确认哪些旧证据仍适用、哪些需要重跑。
 
-在修改默认后端前，至少需要修复 Linux 静默漏通知、验证同 root 不同 scope 的交互，解释并修复或明确界定重复 FSEvents 溢出，补齐确定性的恢复与所有权证据，并完成修正后的三系统对照及真实 IDE 验收。当前继续维护内部抽象，Parcel 仅保留显式实验入口，默认保持 Chokidar。首轮评估已经取得阻碍替换的具体反例，不能宣称 Parcel 更稳定或已完成最终 runtime 验收。
+在修改默认后端前，至少需要修复 Linux 静默漏通知、验证同 root 不同 scope 的交互，解释并修复或明确界定重复 FSEvents 溢出，补齐确定性的恢复与所有权证据，并完成修正后的三系统对照及真实 IDE 验收。当前生产通过内部抽象使用 Chokidar，Parcel 仅保留开发实验。首轮评估已经取得阻碍替换的具体反例，不能宣称 Parcel 更稳定或已完成最终 runtime 验收。
 
-复跑入口和参数见 [`watcherComparison/README.md`](../../packages/weapp-vite/scripts/watcherComparison/README.md)。对照、下游 HMR、headless 和 IDE 验证均应复用仓库机器级串行租约，不能与其他 E2E/dev-watch 并行。
+复跑开发实验的入口和参数见 [`watcherComparison/README.md`](../../packages/weapp-vite/scripts/watcherComparison/README.md)。目录移动和显式 engine API 会改变源码摘要，历史报告不能当作收窄后新版本的执行回执。生产 sidecar 的回归保留为 `e2e/ci/snapshot-sidecar.hmr.test.ts`，仅验证恢复后的 Chokidar 路径；它不再通过环境变量切换后端。对照、下游 HMR、headless 和 IDE 验证均应复用仓库机器级串行租约，不能与其他 E2E/dev-watch 并行。
 
 ## 文件组织审查
 
-新增后端实现按订阅、扫描、归一化与路径映射拆分，每个模块均小于 300 行。既有 `service.ts`、`autoImport.ts` 与 `devProvider.ts` 已超过 300 行，本次保留其消费层边界，避免将无关构建阶段一起拆分；新增清理契约用独立测试文件覆盖。`testArtifact/watch.test.ts` 增长至 360 行，暂保留共用编译器 mock 和 fixture，避免拆分后出现两套生命周期测试设施。
+共享生产适配器及实验后端按订阅、扫描、归一化与路径映射拆分，每个模块均小于 300 行。既有 `service.ts`、`autoImport.ts` 和 `devProvider.ts` 已超过 300 行，本次保留其消费层职责，避免在后端边界调整时引入无关拆分。独立清理契约放在 `devProvider.cleanup.test.ts`；`testArtifact/watch.test.ts` 复用现有编译器 mock 和 fixture，不拆成重复的生命周期测试设施。

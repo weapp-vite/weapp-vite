@@ -51,7 +51,6 @@ export default defineConfig({
       alwaysBundle: ['vite-tsconfig-paths'],
     },
     neverBundle: [
-      '@parcel/watcher',
       '@vitejs/devtools-kit',
       '@vitejs/devtools-kit/node',
       '@swc/core',
