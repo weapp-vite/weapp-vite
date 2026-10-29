@@ -103,9 +103,25 @@ Events were dropped by the FSEvents client. File system must be re-scanned.
 | Windows `windows-latest` / x64 | 两后端 **2/2 通过** | Chokidar 33/36，Parcel 33/36 | 六个失败均来自对照工具的路径断言，不能作为后端失败或通过的最终结论 |
 | macOS `macos-latest` / arm64 | 两后端 **2/2 通过** | Chokidar **36/36**，Parcel **36/36** | 该 CI 机器未出现本机的 FSEvents 错误；不能覆盖本机负结果 |
 
-Windows 每轮的 `ready-during-save` 均失败于 `The initial file was not discovered`，但原始通知中已经包含初始文件，步骤记录 `missing: 0`、`stateVerified: true`。原因是该场景末尾直接比较原生反斜杠路径与适配器正斜杠路径，绕过了已有路径匹配函数。后续工具修正复用 `matchesWatcherChange`，保留大小写、事件和文件类型语义；现有路径匹配纯函数回归通过。历史六次失败原样保留，修正后的 Windows 三轮尚未执行，不能改记为 36/36。
+Windows 每轮的 `ready-during-save` 均失败于 `The initial file was not discovered`，但原始通知中已经包含初始文件，步骤记录 `missing: 0`、`stateVerified: true`。原因是该场景末尾直接比较原生反斜杠路径与适配器正斜杠路径，绕过了已有路径匹配函数。后续工具修正复用 `matchesWatcherChange`，保留大小写、事件和文件类型语义；现有路径匹配纯函数回归通过。历史六次失败原样保留，修正后的独立三轮结果见下一节，不将旧报告改记为 36/36。
 
 Windows 和 macOS 均完整执行 72/72 个计划场景、`notRun: 0`、`cleanupConfirmed: true`。原始 JSON 位于该运行的 `watcher-comparison-windows-latest-node-24-08d0a24658519c77692771a79bbe68439619e25d` 与 `watcher-comparison-macos-latest-node-24-08d0a24658519c77692771a79bbe68439619e25d` artifacts；本机保存了下载副本与三个 job 的日志。
+
+### 新增同根范围契约后的三系统复核
+
+随后在提交 `cc564c22658dc0d051f2207e7ad9f723da2ff8fd` 修正上述工具断言，并新增两个同 root 不同 scope 的场景，将清单扩为 14 项。[CI run 40869884770](https://github.com/weapp-vite/weapp-vite/actions/runs/40869884770) 先执行原生对照，再运行下游 HMR；任一阶段失败仍保留失败，不继续后续阶段。该提交没有修改生产适配器，适配器摘要保持上述值，工具摘要为 `ac2fff0e4fab8d4e2affab61c43966b2230bccbfcb8a6b980a0cb510cb43240d`。
+
+| 系统 | Chokidar 三轮 | Parcel 三轮 | 下游 HMR |
+| --- | --- | --- | --- |
+| Linux / x64 | **42/42** | **39/42** | 原生对照失败，未执行；前一轮 Linux HMR 失败仍保留 |
+| Windows / x64 | **42/42** | **42/42** | 两后端 **2/2 通过** |
+| macOS / arm64 | **42/42** | **42/42** | 两后端 **2/2 通过** |
+
+三个系统均为 Node `24.22.1`，完整执行各自 84/84 个计划场景，全部 `notRun: 0`、`cleanupConfirmed: true`。该轮合计 Chokidar **126/126**，Parcel **123/126**。原始 JSON 保存在该运行的三个 `watcher-comparison-<os>-node-24-cc564c22658dc0d051f2207e7ad9f723da2ff8fd` artifacts。
+
+Linux 的三个失败均为 `same-root-narrow-before-broad`：精确配置文件更新正常，随后深层文件 `deep-file-update` 缺失一个通知，而磁盘内容核验仍为 `stateVerified: true`。相反顺序 `same-root-broad-before-narrow` 三轮全部通过，Chokidar 的两种顺序也全部通过。失败场景在首次深层更新处停止，因此其中后续删除、重建和关闭后保存的断言未执行；整个场景计为失败。这个独立于构建器的真实文件反例，确认了当前 Parcel 适配器的同根订阅顺序问题，并加强了前述目录缓存候选原因，但仍没有直接观测所选 native backend 或原生缓存内部状态。
+
+修正后的 Windows 初始扫描场景三轮全部通过，原先工具问题已获得实际系统复核。macOS CI 再次通过，仍不能消除本机三轮 FSEvents 错误。当前已经有具体 Linux 漏通知反例，继续扩大迁移或更换默认后端的条件尚未满足。
 
 ### 性能观测与限制
 
@@ -157,7 +173,7 @@ Windows 和 macOS 均完整执行 72/72 个计划场景、`notRun: 0`、`cleanup
 | Parcel 定向 headless runtime | **2/2 通过** | `headless-parcel.log`；与 Chokidar 相同的 WXML 场景 |
 | 消费层独立清理回归 | **41/41 通过** | devProvider 三文件 17 项、WXML watch / dependencies 24 项；关闭独立排空并保留组合错误，同步初始化失败撤销观察者及 owner |
 | 真实微信 DevTools runtime | **环境阻断，未完成验收** | 机器租约内正常退出已核验空闲宿主、确认安装进程归零；随后出现本任务未认领的新宿主，启动门禁按 `WECHAT_DEVTOOLS_HOST_IDENTITY_MISMATCH` 拒绝认领。UI 复核仍为项目列表；保留该宿主，两个后端均未进入 runtime 场景 |
-| Linux / Windows / macOS 三系统矩阵 | **已执行，整体失败** | CI run `40866552342`；分层结果和未运行项见上表，Windows 工具修正待重跑 |
+| Linux / Windows / macOS 三系统矩阵 | **已执行，整体失败** | 两轮 CI 均保留；最终 14 项对照 Chokidar 126/126、Parcel 123/126，Windows 工具修正复核通过，Linux 同根订阅顺序反例三次复现 |
 | 既有 29 项依赖契约的完整三系统执行 | **待验证** | 当前适配层对照及 mock 均不替代该门槛 |
 
 表中日志位于本次任务的 `.tmp/current-run/parcel-watcher/`。后续验证应绑定最终源码、构建产物和具体运行身份；生产源码变化后，验证负责人需确认哪些旧证据仍适用、哪些需要重跑。
