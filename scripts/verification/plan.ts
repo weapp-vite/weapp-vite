@@ -18,6 +18,8 @@ const GLOBAL_PREFIXES = ['patches/', 'scripts/vite/']
 const TEST_FILE = /\.(?:test|spec)\.[cm]?[jt]sx?$/
 const STYLE_FILE = /\.(?:css|scss|sass|less|wxss|acss|ttss|qss|jxss|vue)$/
 const LINT_FILE = /\.(?:[cm]?[jt]sx?|vue|json|jsonc|ya?ml|md)$/
+const FILTERABLE_TEST_LAUNCHER = /^(?:pnpm(?:[ \t]+exec)?[ \t]+)?vitest[ \t]+run(?:[ \t]|$)/
+const SHELL_CONTROL = /[;&|<>$`\\#'"\r\n]/
 
 export interface PlanOptions {
   root: string
@@ -173,7 +175,7 @@ export async function createVerificationPlan(options: PlanOptions): Promise<Veri
         continue
       }
       const script = mode === 'quick' && item.scripts['test:pure'] ? 'test:pure' : 'test'
-      const filterable = /^vitest\s+run(?:\s|$)/.test(item.scripts[script]!) && !/[;&|]/.test(item.scripts[script]!)
+      const filterable = FILTERABLE_TEST_LAUNCHER.test(item.scripts[script]!) && !SHELL_CONTROL.test(item.scripts[script]!)
       const args = ['--filter', item.name, 'run', script]
       if (filterable) {
         // 包脚本拥有显式 worker 配置；Vitest 的单值选项不能通过重复追加来覆盖。

@@ -2302,13 +2302,22 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         ignored: snapshotSidecarIgnored,
       })
       const canceled = Promise.withResolvers<'closed'>()
+      let watcherReady = false
+      void snapshotWatcher.ready.then((state) => {
+        watcherReady = state === 'ready'
+      }, () => {})
       const reportWatchError = (error: unknown) => {
         if (!devWatcherClosed) {
           logger.error(error)
           devBuildWatcher?.emitEvent({ code: 'ERROR', error: error instanceof Error ? error : new Error(String(error)), result: undefined as never })
         }
       }
-      snapshotWatcher.onError(reportWatchError)
+      snapshotWatcher.onError((error) => {
+        // 初始注册错误由 ready 的启动 owner 统一收尾并上报；事件入口只拥有运行期错误。
+        if (watcherReady) {
+          reportWatchError(error)
+        }
+      })
       const addTargets = (files: string[]) => {
         void snapshotWatcher.add(files).catch(reportWatchError)
       }

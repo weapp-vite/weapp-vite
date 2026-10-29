@@ -112,12 +112,43 @@ it.each([
   }
 })
 
-it('does not silently drop direct tests when a package script cannot accept filters', async () => {
+it.each(['vitest run', 'pnpm vitest run', 'pnpm exec vitest run'])('filters direct tests through the explicit Vitest launcher: %s', async (launcher) => {
   const root = await createPlanRoot()
   try {
     await mkdir(path.join(root, 'packages/library/src'), { recursive: true })
     await writeFile(path.join(root, 'packages/library/src/value.test.ts'), '')
-    const scoped = packages.map(item => item.name === 'library' ? { ...item, scripts: { ...item.scripts, test: 'node test-runner.mjs' } } : item)
+    const scoped = packages.map(item => item.name === 'library' ? { ...item, scripts: { ...item.scripts, test: `${launcher} -c vitest.config.ts` } } : item)
+    const plan = await createVerificationPlan({ root, packages: scoped, resources, selection: 'affected', changes: changes(['packages/library/src/value.test.ts']), mode: 'quick' })
+    expect(plan.tasks.find(task => task.id === 'test:library')).toMatchObject({
+      args: ['--filter', 'library', 'run', 'test', '--maxWorkers=2', 'src/value.test.ts'],
+      blockedReason: undefined,
+    })
+  }
+  finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+it.each([
+  'node test-runner.mjs',
+  'pnpm run vitest run',
+  'pnpm dlx vitest run',
+  'pnpm vitest run && node another-test.mjs',
+  'pnpm vitest run; node another-test.mjs',
+  'pnpm vitest run | node another-test.mjs',
+  'pnpm vitest run > output.log',
+  'pnpm vitest run $(node config.mjs)',
+  'pnpm vitest run `node config.mjs`',
+  'pnpm vitest run # ignore appended filters',
+  'pnpm vitest run --config "unterminated',
+  'pnpm vitest run\nnode another-test.mjs',
+  'pnpm vitest run\\\nnode another-test.mjs',
+])('does not silently drop direct tests through an unfilterable package script: %s', async (script) => {
+  const root = await createPlanRoot()
+  try {
+    await mkdir(path.join(root, 'packages/library/src'), { recursive: true })
+    await writeFile(path.join(root, 'packages/library/src/value.test.ts'), '')
+    const scoped = packages.map(item => item.name === 'library' ? { ...item, scripts: { ...item.scripts, test: script } } : item)
     const plan = await createVerificationPlan({ root, packages: scoped, resources, selection: 'affected', changes: changes(['packages/library/src/value.test.ts']), mode: 'quick' })
     expect(plan.tasks.find(task => task.id === 'test:library')?.blockedReason).toContain('安全传入直接回归范围')
   }

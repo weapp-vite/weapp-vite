@@ -1,4 +1,5 @@
 import type { CompilerContext } from '@/context'
+import { EventEmitter } from 'node:events'
 import fs from 'node:fs'
 import os from 'node:os'
 import { fs as fsExtra } from '@weapp-core/shared/fs'
@@ -9,22 +10,7 @@ import logger from '@/logger'
 import * as invalidateEntryModule from '@/plugins/utils/invalidateEntry'
 import { createRuntimeState } from '@/runtime/runtimeState'
 
-const chokidarState = vi.hoisted(() => {
-  const handlers = new Map<string, (...args: any[]) => void>()
-  const watcher = {
-    on: vi.fn((event: string, handler: (...args: any[]) => void) => {
-      handlers.set(event, handler)
-      return watcher
-    }),
-    close: vi.fn(),
-  }
-  const watch = vi.fn(() => watcher)
-  return {
-    handlers,
-    watcher,
-    watch,
-  }
-})
+const chokidarState = vi.hoisted(() => ({ watch: vi.fn() }))
 
 vi.mock('chokidar', () => ({
   default: {
@@ -33,7 +19,8 @@ vi.mock('chokidar', () => ({
   watch: chokidarState.watch,
 }))
 
-const { handlers: chokidarHandlers, watcher: watcherMock, watch: chokidarWatchMock } = chokidarState
+const { watch: chokidarWatchMock } = chokidarState
+let watcherMock: EventEmitter & { close: ReturnType<typeof vi.fn> }
 
 const originalNodeEnv = process.env.NODE_ENV
 const originalVitest = process.env.VITEST
@@ -56,10 +43,12 @@ function createContext(rootDir: string): CompilerContext {
 describe('ensureSidecarWatcher logging', () => {
   beforeEach(() => {
     vi.useFakeTimers()
-    chokidarHandlers.clear()
-    watcherMock.on.mockClear()
-    watcherMock.close.mockClear()
-    chokidarWatchMock.mockClear()
+    watcherMock = Object.assign(new EventEmitter(), {
+      close: vi.fn(async () => {
+        watcherMock.removeAllListeners()
+      }),
+    })
+    chokidarWatchMock.mockReset().mockReturnValue(watcherMock)
     process.env.NODE_ENV = 'development'
     delete process.env.VITEST
   })
@@ -85,30 +74,26 @@ describe('ensureSidecarWatcher logging', () => {
       invalidateEntryModule.ensureSidecarWatcher(ctx, rootDir)
       expect(chokidarWatchMock).toHaveBeenCalledTimes(1)
 
-      const addHandler = chokidarHandlers.get('add')
-      const changeHandler = chokidarHandlers.get('change')
-      const unlinkHandler = chokidarHandlers.get('unlink')
-
-      expect(addHandler).toBeTypeOf('function')
-      expect(changeHandler).toBeTypeOf('function')
-      expect(unlinkHandler).toBeTypeOf('function')
+      for (const event of ['add', 'change', 'unlink']) {
+        expect(watcherMock.listenerCount(event)).toBeGreaterThan(0)
+      }
 
       const targetPath = path.join(rootDir, 'foo.wxss')
 
       infoSpy.mockClear()
-      addHandler?.(targetPath)
+      watcherMock.emit('add', targetPath)
       expect(infoSpy).toHaveBeenCalledWith('[watch:create] foo.wxss')
 
       infoSpy.mockClear()
-      changeHandler?.(targetPath)
+      watcherMock.emit('change', targetPath)
       expect(infoSpy).toHaveBeenCalledWith('[watch:update] foo.wxss')
 
       infoSpy.mockClear()
-      unlinkHandler?.(targetPath)
+      watcherMock.emit('unlink', targetPath)
       expect(infoSpy).toHaveBeenCalledWith('[watch:delete] foo.wxss')
     }
     finally {
-      ctx.runtimeState.watcher.sidecarWatcherMap.forEach(sidecar => sidecar.close())
+      await Promise.all([...ctx.runtimeState.watcher.sidecarWatcherMap.values()].map(sidecar => sidecar.close()))
       infoSpy.mockRestore()
       invalidateSpy.mockRestore()
       await fsExtra.remove(rootDir)
@@ -131,27 +116,24 @@ describe('ensureSidecarWatcher logging', () => {
 
     try {
       invalidateEntryModule.ensureSidecarWatcher(ctx, rootDir)
-      const rawHandler = chokidarHandlers.get('raw')
-      expect(rawHandler).toBeTypeOf('function')
+      expect(watcherMock.listenerCount('raw')).toBeGreaterThan(0)
 
       const relativeTarget = 'foo.wxss'
-      const addHandler = chokidarHandlers.get('add')
-
       infoSpy.mockClear()
       renameExists = true
-      rawHandler?.('rename', relativeTarget)
+      watcherMock.emit('raw', 'rename', relativeTarget)
       await vi.advanceTimersByTimeAsync(120)
       expect(infoSpy).toHaveBeenCalledWith('[watch:rename->create] foo.wxss')
 
       infoSpy.mockClear()
-      addHandler?.(renameAbsolute)
+      watcherMock.emit('add', renameAbsolute)
       renameExists = false
-      rawHandler?.('rename', relativeTarget)
+      watcherMock.emit('raw', 'rename', relativeTarget)
       await vi.advanceTimersByTimeAsync(120)
       expect(infoSpy).toHaveBeenCalledWith('[watch:rename->delete] foo.wxss')
     }
     finally {
-      ctx.runtimeState.watcher.sidecarWatcherMap.forEach(sidecar => sidecar.close())
+      await Promise.all([...ctx.runtimeState.watcher.sidecarWatcherMap.values()].map(sidecar => sidecar.close()))
       infoSpy.mockRestore()
       existsSpy.mockRestore()
       await fsExtra.remove(rootDir)

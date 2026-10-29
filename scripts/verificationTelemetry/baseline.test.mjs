@@ -15,6 +15,21 @@ it('preserves every job, command, matrix and dependency of the actual verificati
   }
 })
 
+it('freezes the watcher comparison as an explicitly selected manual diagnostic for both optimized topologies', async () => {
+  const frozen = JSON.parse(await fs.readFile(new URL('./candidate-topology.json', import.meta.url), 'utf8'))
+  const job = frozen['.github/workflows/validate-ci-e2e.yml']['watcher-comparison-diagnostic']
+  expect(job).toBeDefined()
+  expect(job.if).toContain('(github.event_name == \'workflow_dispatch\' && inputs.hmr-diagnostic == \'watcher-comparison\')')
+  expect(job.if).toContain('inputs.verification_topology == \'optimized-v2\'')
+  expect(job.if).toContain('needs.pr-context.result == \'success\'')
+  expect(job.strategy.matrix.os).toEqual(['ubuntu-latest', 'windows-latest', 'macos-latest'])
+  expect(job.with).toMatchObject({
+    test_command: 'pnpm test:watcher-comparison --report .tmp/watcher-comparison/report.json',
+    main_command: 'pnpm vitest run -c e2e/vitest.e2e.ci.config.ts e2e/ci/watcher-backends.hmr.test.ts',
+    artifact_path: '.tmp/watcher-comparison/report.json',
+  })
+})
+
 function originalV1Context(value) {
   return value.replace(/\(inputs\.verification_topology == 'optimized-v2' && .*?\|\| needs\.pr-context\.outputs\.([a-z_]+)\)/gu, 'needs.pr-context.outputs.$1')
 }

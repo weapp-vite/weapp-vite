@@ -8,7 +8,7 @@ import { createSidecarWatchOptions } from '../options'
 import { createSidecarWatcherReadiness } from '../sidecarReadiness'
 import { observeChokidarRenames } from './chokidarRenames'
 import { createFileWatchEvents, throwFileWatchFailures } from './events'
-import { containsWatchPath, createFileWatchIgnored, normalizeWatchTargets } from './paths'
+import { containsWatchPath, createFileWatchIgnored, normalizeWatchTargets, resolveWatchPath } from './paths'
 import { isMissingWatchPath } from './scan'
 
 interface ChokidarGroup {
@@ -99,7 +99,7 @@ export function createChokidarFileWatcher(config: FileWatchConfig, targets: File
       : undefined
     const listen = (name: 'add' | 'change' | 'unlink' | 'addDir' | 'unlinkDir', event: FileWatchChange['event'], kind: FileWatchChange['kind']) => {
       watcher.on(name, (input, stats) => {
-        const change: FileWatchChange = { event, file: path.resolve(input), kind, ...(event === 'create' && !ready ? { initial: true } : {}) }
+        const change: FileWatchChange = { event, file: resolveWatchPath(input), kind, ...(event === 'create' && !ready ? { initial: true } : {}) }
         rename?.observe(change)
         deliver(change, stats)
       })
@@ -176,35 +176,27 @@ export function createChokidarFileWatcher(config: FileWatchConfig, targets: File
     }
   }
   const initial = activeTargets.size ? start([...activeTargets]).ready : Promise.resolve<FileWatchReadiness>('ready')
-  pending = initial.then(completion.resolve, async (error) => {
-    report(error)
-    closed = true
-    events.close()
-    closing = Promise.allSettled([...groups].map(group => group.close())).then(throwFileWatchFailures)
-    try {
-      await closing
-    }
-    catch {
-      // 关闭错误保留在同一个 close Promise，ready 继续交付最初的注册错误。
-    }
-    completion.reject(error)
-  })
   const close = () => {
     if (!closing) {
       closed = true
-      completion.resolve('closed')
       events.close()
+      // group 关闭直接终结底层扫描；先前已发生的注册错误不能被外层 closed 覆盖。
+      const released = Promise.allSettled([initial, ...[...groups].map(group => group.close())])
       closing = (async () => {
-        const current = [...groups]
-        const results = await Promise.allSettled(current.map(group => group.close()))
+        const results = await released
         await pending
-        throwFileWatchFailures(results)
         activeTargets.clear()
         signatures.clear()
+        throwFileWatchFailures(results)
       })()
     }
     return closing
   }
+  pending = initial.then(completion.resolve, (error) => {
+    report(error)
+    // 初始化失败和显式关闭共用同一 owner；ready 交付注册原错，close 保留完整收尾结果。
+    void close().then(() => completion.reject(error), () => completion.reject(error))
+  })
   void completion.promise.catch(() => {})
   return {
     ready: completion.promise,

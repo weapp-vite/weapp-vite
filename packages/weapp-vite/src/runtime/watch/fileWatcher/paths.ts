@@ -2,9 +2,15 @@ import type { Stats } from 'node:fs'
 import type { FileWatchOptions, FileWatchTargets } from './types'
 import path from 'pathe'
 import picomatch from 'picomatch'
+import { normalizePath } from '../../../utils/path'
+
+export function resolveWatchPath(file: string) {
+  const normalized = normalizePath(file)
+  return path.isAbsolute(normalized) ? normalized : path.resolve(normalized)
+}
 
 export function normalizeWatchTargets(targets: FileWatchTargets) {
-  return [...new Set((Array.isArray(targets) ? targets : [targets]).map(file => path.resolve(file)))]
+  return [...new Set((Array.isArray(targets) ? targets : [targets]).map(resolveWatchPath))]
 }
 
 export function containsWatchPath(root: string, file: string) {
@@ -24,7 +30,7 @@ export function createFileWatchIgnored(ignored: FileWatchOptions['ignored']) {
       }
     }
     const match = picomatch(matcher, { dot: true })
-    const literal = path.resolve(matcher)
+    const literal = resolveWatchPath(matcher)
     return (file: string) => containsWatchPath(literal, file) || match(file)
   })
   return (file: string, stats?: Stats) => matchers.some(matcher => matcher(file, stats))
