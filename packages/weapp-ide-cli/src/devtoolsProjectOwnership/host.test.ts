@@ -24,11 +24,11 @@ afterEach(async () => {
 describe('managed host startup identities', () => {
   it('parses macOS identity with a spaced executable and stable locale', async () => {
     const executable = path.posix.join('/', 'fixture with spaces', 'host')
-    inspect.mockResolvedValueOnce({ exitCode: 0, stdout: '123 Mon Oct  5 12:30:01 2026\r\n' })
+    inspect.mockResolvedValueOnce({ exitCode: 0, stdout: '123 S Mon Oct  5 12:30:01 2026\r\n' })
       .mockResolvedValueOnce({ exitCode: 0, stdout: JSON.stringify([{ pid: 123, executable }]) })
-      .mockResolvedValueOnce({ exitCode: 0, stdout: '123 Mon Oct 5 12:30:01 2026\n' })
+      .mockResolvedValueOnce({ exitCode: 0, stdout: '123 S Mon Oct 5 12:30:01 2026\n' })
     expect(await readManagedProcessIdentity(123, 'darwin')).toEqual({ pid: 123, executable, started: 'Mon Oct 5 12:30:01 2026' })
-    expect(inspect).toHaveBeenCalledWith('/bin/ps', ['-p', '123', '-o', 'pid=,lstart='], expect.objectContaining({ env: { LC_ALL: 'C' }, reject: false }))
+    expect(inspect).toHaveBeenCalledWith('/bin/ps', ['-p', '123', '-o', 'pid=,stat=,lstart='], expect.objectContaining({ env: { LC_ALL: 'C' }, reject: false }))
     expect(inspect.mock.calls.filter(([command]) => command === '/usr/bin/osascript')).toHaveLength(1)
   })
 
@@ -136,9 +136,9 @@ describe('managed host startup identities', () => {
     const target = { cliPath: path.resolve('cli'), appPath: path.resolve('app'), profileDir: path.resolve('profile'), installationId: 'selected' }
     const executable = path.posix.join('/', 'fixture', 'host')
     inspect.mockResolvedValueOnce({ exitCode: 0, stdout: 'p123\r\np123\r\n' })
-    inspect.mockResolvedValueOnce({ exitCode: 0, stdout: '123 Mon Oct 5 12:30:01 2026\n' })
+    inspect.mockResolvedValueOnce({ exitCode: 0, stdout: '123 S Mon Oct 5 12:30:01 2026\n' })
       .mockResolvedValueOnce({ exitCode: 0, stdout: JSON.stringify([{ pid: 123, executable }]) })
-      .mockResolvedValueOnce({ exitCode: 0, stdout: '123 Mon Oct 5 12:30:01 2026\n' })
+      .mockResolvedValueOnce({ exitCode: 0, stdout: '123 S Mon Oct 5 12:30:01 2026\n' })
     expect(await inspectManagedProjectHost(target, 19001, 'darwin')).toEqual({ pid: 123, executable, started: 'Mon Oct 5 12:30:01 2026' })
     expect(targetChecks.port).toHaveBeenCalledExactlyOnceWith(target, 19001, { platform: 'darwin' })
     inspect.mockResolvedValueOnce({ exitCode: 0, stdout: 'p123\np124\n' })

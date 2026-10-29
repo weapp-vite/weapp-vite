@@ -10,6 +10,7 @@ import { expect, it } from 'vitest'
 import { cleanupTrackedDevProcesses, startDevProcess } from './dev-process'
 import { DevProcessGracefulShutdownError } from './devProcessCleanup/shutdown'
 import { startPackageScriptDevProcess } from './packageScriptDevProcess'
+import { assertTemplateDevConfigReleased } from './templateDevConfigRelease'
 
 const shutdownModule = new URL('../../packages/weapp-vite/src/devLifecycle/shutdown.ts', import.meta.url).href
 const ownerModule = new URL('../../packages/weapp-vite/src/runtime/classicIdeConfig/index.ts', import.meta.url).href
@@ -77,6 +78,7 @@ it.each(transports)('fails forced teardown after %s when the classic session has
     expect(output).toContain('fixture session close started')
     expect(output).not.toContain('fixture classic lease released')
     expect(await readFile(journal, 'utf8')).toBe(savedJournal)
+    await expect(assertTemplateDevConfigReleased(project)).rejects.toThrow('did not release its classic IDE configuration lease')
     expect(await readFile(config, 'utf8')).toBe(installed)
     const { ClassicIdeConfigOwner } = await import('../../packages/weapp-vite/src/runtime/classicIdeConfig')
     const next = new ClassicIdeConfigOwner()
@@ -136,6 +138,7 @@ it.each(transports.flatMap(transport => [
       // SIGTERM 与强杀都不能冒充跨平台的正常退出证据。
       expect(dev.getOutput()).toContain('normal development exit=0')
       await expect(readFile(journal)).rejects.toMatchObject({ code: 'ENOENT' })
+      await assertTemplateDevConfigReleased(project)
       if (original === undefined) {
         await expect(readFile(config)).rejects.toMatchObject({ code: 'ENOENT' })
       }

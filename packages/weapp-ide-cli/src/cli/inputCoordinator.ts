@@ -238,6 +238,10 @@ export async function waitForExclusiveKeypress<T>(
 }
 
 export async function runWithSuspendedSharedInput<T>(runner: () => Promise<T>): Promise<T> {
+  // 管道的消费和 EOF 属于调用方；交互协调器不能暂停开发命令的关闭通道。
+  if (!hasInteractiveStdin()) {
+    return runner()
+  }
   const previousStates = new Map<SharedSessionRecord, boolean>()
 
   for (const session of sharedSessions) {

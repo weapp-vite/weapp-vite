@@ -30,6 +30,7 @@ interface FixtureProcess {
   executable: string
   started: string
   title?: string
+  status?: string
 }
 
 export function createProcessTreeFixture(execaMock: Mock) {
@@ -136,7 +137,7 @@ export function createProcessTreeFixture(execaMock: Mock) {
       state.afterDiscovery?.()
       return Promise.resolve({ exitCode: 0, stdout })
     }
-    if (args.length === 4 && args[0] === '-p' && args.slice(2).join(' ') === '-o pid=,lstart=') {
+    if (args.length === 4 && args[0] === '-p' && args.slice(2).join(' ') === '-o pid=,stat=,lstart=') {
       const pids = args[1]!.split(',').map(Number)
       if (pids.some(pid => state.unknownIdentityPids.has(pid))) {
         return Promise.resolve({ exitCode: 2, stdout: '', stderr: 'Process inspection failed' })
@@ -145,7 +146,7 @@ export function createProcessTreeFixture(execaMock: Mock) {
       if (!entries.length) {
         return Promise.resolve({ exitCode: 1, stdout: '' })
       }
-      return Promise.resolve({ exitCode: 0, stdout: entries.map(entry => `${entry.pid} ${entry.started}`).join('\n') })
+      return Promise.resolve({ exitCode: 0, stdout: entries.map(entry => `${entry.pid} ${entry.status ?? 'S'} ${entry.started}`).join('\n') })
     }
     throw new Error(`Unexpected process fixture ps arguments: ${args.join(' ')}`)
   })

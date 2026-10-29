@@ -70,4 +70,48 @@ describe('macOS dev process kernel ownership', () => {
     expect(fixture.signals).toEqual([])
     expect(disconnect).not.toHaveBeenCalled()
   })
+
+  it('revokes a terminal descendant after TERM without signalling its PID again', async () => {
+    const fixture = createProcessTreeFixture(execute)
+    fixture.afterSignal = (pid, signal) => {
+      if (pid === 62 && signal === 'SIGTERM') {
+        Object.assign(fixture.processes.get(62)!, { status: 'Z', executable: '' })
+      }
+    }
+    const cleanup = createDevProcessCleanup({
+      pid: 61,
+      isRootHeld: () => fixture.owned.child.nodeChildProcess.exitCode === null,
+      disconnectRoot: () => false,
+      settledExit: fixture.owned.child,
+    })
+    await cleanup(0)
+    expect(fixture.signals).toEqual([{ pid: 62, signal: 'SIGTERM' }, { pid: 61, signal: 'SIGTERM' }])
+    expect(fixture.processes.get(62)?.status).toBe('Z')
+    await cleanup(0)
+    expect(fixture.signals).toHaveLength(2)
+  })
+
+  it('retains a live descendant with an unreadable image after TERM for safe cleanup retry', async () => {
+    const fixture = createProcessTreeFixture(execute)
+    const executable = fixture.processes.get(62)!.executable
+    fixture.afterSignal = (pid, signal) => {
+      if (pid === 62 && signal === 'SIGTERM') {
+        fixture.processes.get(62)!.executable = ''
+      }
+    }
+    const cleanup = createDevProcessCleanup({
+      pid: 61,
+      isRootHeld: () => fixture.owned.child.nodeChildProcess.exitCode === null,
+      disconnectRoot: () => false,
+      settledExit: fixture.owned.child,
+    })
+    await expect(cleanup(0)).rejects.toThrow('kernel-path-unavailable')
+    expect(fixture.signals).toEqual([{ pid: 62, signal: 'SIGTERM' }, { pid: 61, signal: 'SIGTERM' }])
+    fixture.afterSignal = undefined
+    fixture.processes.get(62)!.executable = executable
+    fixture.ignoreTermPids.delete(62)
+    await cleanup(0)
+    expect(fixture.signals.at(-1)).toEqual({ pid: 62, signal: 'SIGTERM' })
+    expect(fixture.processes.has(62)).toBe(false)
+  })
 })

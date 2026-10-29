@@ -12,6 +12,7 @@ interface FixtureProcess {
   started: string
   executable: string
   title: string
+  status?: string
 }
 
 const success = (stdout: string) => ({ stdout, exitCode: 0, stderr: '' })
@@ -33,10 +34,10 @@ function createFixture() {
     state.onCommand?.()
     if (command === '/bin/ps') {
       expect(args[0]).toBe('-p')
-      expect(args.slice(2)).toEqual(['-o', 'pid=,lstart='])
+      expect(args.slice(2)).toEqual(['-o', 'pid=,stat=,lstart='])
       const stdout = args[1]!.split(',').map(Number).flatMap((pid) => {
         const entry = entries.get(pid)
-        return entry ? [`${pid} ${entry.started}`] : []
+        return entry ? [`${pid} ${entry.status ?? 'S'} ${entry.started}`] : []
       }).join('\n')
       if (++psCount === 1) {
         state.afterFirstPs?.()
@@ -101,7 +102,7 @@ describe('macOS managed process kernel identity', () => {
     fixture.afterKernel = () => {
       fixture.entries.get(123)!.started = 'Mon Oct 5 12:30:09 2026'
     }
-    await expect(readDarwinManagedProcessIdentities([123, 124])).rejects.toThrow('could not be verified')
+    await expect(readDarwinManagedProcessIdentities([123, 124])).rejects.toThrow('"stage":"after","reason":"birth-changed","pid":123')
     expect(inspect).toHaveBeenCalledTimes(3)
   })
 
@@ -110,7 +111,7 @@ describe('macOS managed process kernel identity', () => {
     const child = fixture.entries.get(124)!
     fixture.entries.delete(124)
     fixture.afterKernel = () => fixture.entries.set(124, child)
-    await expect(readDarwinManagedProcessIdentities([123, 124])).rejects.toThrow('could not be verified')
+    await expect(readDarwinManagedProcessIdentities([123, 124])).rejects.toThrow('"stage":"after","reason":"birth-changed","pid":124')
     expect(inspect.mock.calls[1]![1].at(-1)).toBe('[123]')
   })
 
@@ -130,10 +131,33 @@ describe('macOS managed process kernel identity', () => {
 
   it.each([null, '', 'npm'])('rejects missing or non-absolute kernel paths for a live PID: %j', async (executable) => {
     createFixture()
-    inspect.mockResolvedValueOnce(success('123 Mon Oct 5 12:30:01 2026'))
+    inspect.mockResolvedValueOnce(success('123 S Mon Oct 5 12:30:01 2026'))
       .mockResolvedValueOnce(success(JSON.stringify([{ pid: 123, executable }])))
-    await expect(readDarwinManagedProcessIdentities([123])).rejects.toThrow('could not be verified')
+    await expect(readDarwinManagedProcessIdentities([123])).rejects.toThrow('"stage":"after","reason":"kernel-path-unavailable","pid":123')
     expect(inspect).toHaveBeenCalledTimes(3)
+  })
+
+  it.each(['Z', 'Z+', 'Zs'])('excludes a non-running process only after two matching terminal observations: %s', async (status) => {
+    const fixture = createFixture()
+    Object.assign(fixture.entries.get(123)!, { status, executable: '' })
+    expect(await readDarwinManagedProcessIdentities([123, 124])).toEqual(new Map([
+      [123, undefined],
+      [124, { pid: 124, executable: fixture.entries.get(124)!.executable, started: fixture.entries.get(124)!.started }],
+    ]))
+    expect(inspect).toHaveBeenCalledTimes(3)
+  })
+
+  it.each(['running-to-zombie', 'zombie-to-running', 'reused-zombie'])('rejects inconsistent terminal evidence: %s', async (change) => {
+    const fixture = createFixture()
+    fixture.entries.get(123)!.status = change === 'running-to-zombie' ? 'S' : 'Z'
+    fixture.afterKernel = () => {
+      const entry = fixture.entries.get(123)!
+      entry.status = change === 'zombie-to-running' ? 'S' : 'Z'
+      if (change === 'reused-zombie') {
+        entry.started = 'Mon Oct 5 12:30:09 2026'
+      }
+    }
+    await expect(readDarwinManagedProcessIdentities([123])).rejects.toThrow('could not be verified')
   })
 
   it.each([
@@ -143,8 +167,8 @@ describe('macOS managed process kernel identity', () => {
     { ...success(''), exitCode: 1, signal: 'SIGTERM' },
     { ...success(''), exitCode: 2 },
     success('123 unreadable'),
-    success('123 Mon Oct 5 12:30:01 2026\n123 Mon Oct 5 12:30:01 2026'),
-    success('999 Mon Oct 5 12:30:01 2026'),
+    success('123 S Mon Oct 5 12:30:01 2026\n123 S Mon Oct 5 12:30:01 2026'),
+    success('999 S Mon Oct 5 12:30:01 2026'),
   ])('rejects empty, partial, duplicate or foreign birth inventories: %j', async (response) => {
     createFixture()
     inspect.mockResolvedValueOnce(response)
@@ -162,7 +186,7 @@ describe('macOS managed process kernel identity', () => {
     { stdout: '', stderr: '', exitCode: undefined, timedOut: true, signal: 'SIGTERM' },
   ])('keeps failed kernel inspection separate from process exit: %j', async (response) => {
     createFixture()
-    inspect.mockResolvedValueOnce(success('123 Mon Oct 5 12:30:01 2026'))
+    inspect.mockResolvedValueOnce(success('123 S Mon Oct 5 12:30:01 2026'))
       .mockResolvedValueOnce(response)
     await expect(readDarwinManagedProcessIdentities([123])).rejects.toThrow()
     expect(inspect).toHaveBeenCalledTimes(2)
@@ -170,7 +194,7 @@ describe('macOS managed process kernel identity', () => {
 
   it.each([success(''), { ...success(''), exitCode: 1, stderr: 'Permission denied' }])('preserves a post-kernel inspection failure instead of accepting an exit: %j', async (response) => {
     createFixture()
-    inspect.mockResolvedValueOnce(success('123 Mon Oct 5 12:30:01 2026'))
+    inspect.mockResolvedValueOnce(success('123 S Mon Oct 5 12:30:01 2026'))
       .mockResolvedValueOnce(success('[{"pid":123,"executable":"/kernel/node"}]'))
       .mockResolvedValueOnce(response)
     await expect(readDarwinManagedProcessIdentities([123])).rejects.toThrow('could not be verified')
