@@ -2,6 +2,7 @@ import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { normalizePath } from './utils/path'
 
 const buildMock = vi.hoisted(() => vi.fn(async () => ({ output: [] })))
 const closeSessionMock = vi.hoisted(() => vi.fn(async () => undefined))
@@ -120,7 +121,7 @@ describe('test artifact build API', () => {
 
     try {
       expect(buildMock).toHaveBeenCalledTimes(1)
-      expect(watcherMock.watch).toHaveBeenCalledWith(expect.arrayContaining([sourceRoot, path.join(cwd, 'vite.config.ts')]), {
+      expect(watcherMock.watch).toHaveBeenCalledWith(expect.arrayContaining([sourceRoot, path.join(cwd, 'vite.config.ts')].map(normalizePath)), {
         ignoreInitial: true,
         ignored: expect.any(Function),
       })
