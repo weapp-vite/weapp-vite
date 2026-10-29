@@ -66,15 +66,29 @@ async function removeEmptyLock(guard: string) {
 }
 
 /** 只删除观察到的 token；迟到的回收者不能清空后来 owner 的非空目录。 */
-async function removeLock(guard: string, token: string, owned = false) {
-  try {
-    await fsNative.unlink(path.join(guard, token))
-  }
-  catch (error) {
-    if (errorCode(error) === 'ENOENT' && !owned) {
-      return
+async function removeLock(guard: string, token: string, staleDeadline?: number) {
+  while (true) {
+    try {
+      await fsNative.unlink(path.join(guard, token))
+      break
     }
-    throw error
+    catch (error) {
+      if (staleDeadline !== undefined) {
+        if (errorCode(error) === 'ENOENT') {
+          return
+        }
+        if (errorCode(error) === 'EPERM') {
+          const remaining = staleDeadline - Date.now()
+          if (remaining > 0) {
+            await delay(Math.min(20, remaining))
+            if (Date.now() < staleDeadline) {
+              continue
+            }
+          }
+        }
+      }
+      throw error
+    }
   }
   await removeEmptyLock(guard)
 }
@@ -108,7 +122,7 @@ async function acquireLock(guard: string, candidate: string) {
           dead = true
         }
         if (dead) {
-          await removeLock(guard, owner.token)
+          await removeLock(guard, owner.token, deadline)
         }
         else {
           reason = `已由其他开发命令持有（PID ${owner.pid}）`
@@ -136,7 +150,7 @@ export async function withClassicIdeConfigLock<T>(configPath: string, run: () =>
   let failure: { error: unknown } | undefined
   let result: { value: T } | undefined
   let releasing: Promise<void> | undefined
-  const release = () => releasing ??= removeLock(guard, owner.token, true)
+  const release = () => releasing ??= removeLock(guard, owner.token)
   try {
     await fs.writeFile(path.join(candidate, owner.token), JSON.stringify(owner), { flag: 'wx' })
     await acquireLock(guard, candidate)

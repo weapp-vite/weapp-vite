@@ -222,12 +222,16 @@ it('serializes two reapers of the same dead guard', async () => {
   const observed = Promise.withResolvers<void>()
   const unlink = fsNative.unlink.bind(fsNative)
   let reapers = 0
+  let unlinkAttempts = 0
   vi.spyOn(fsNative, 'unlink').mockImplementation(async (target) => {
     if (target === leaf) {
-      if (++reapers === 2) {
-        observed.resolve()
+      unlinkAttempts++
+      if (reapers < 2) {
+        if (++reapers === 2) {
+          observed.resolve()
+        }
+        await observed.promise
       }
-      await observed.promise
     }
     return unlink(target)
   })
@@ -238,8 +242,13 @@ it('serializes two reapers of the same dead guard', async () => {
     await new Promise<void>(resolve => setImmediate(resolve))
     active--
   }
-  await Promise.all([withClassicIdeConfigLock(file, run), withClassicIdeConfigLock(file, run)])
+  const settled = await Promise.allSettled([withClassicIdeConfigLock(file, run), withClassicIdeConfigLock(file, run)])
+  expect(settled).toEqual([
+    { status: 'fulfilled', value: undefined },
+    { status: 'fulfilled', value: undefined },
+  ])
   expect(reapers).toBe(2)
+  expect(unlinkAttempts).toBeGreaterThanOrEqual(reapers)
   expect(peak).toBe(1)
   expect(await fs.pathExists(guard)).toBe(false)
 })
