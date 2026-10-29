@@ -22,42 +22,53 @@ function lockError(guard: string, reason: string, cause?: unknown) {
   return Object.assign(new Error(`[weapp-vite] classic IDE 配置互斥记录${reason}：${guard}。请确认该项目的其他开发命令已退出；未知记录需先备份并按故障排查文档恢复，不要直接删除整个 .weapp-vite 目录。`, { cause }), { code: 'EEXIST' })
 }
 
-async function readLock(guard: string): Promise<LockOwner | null | undefined> {
-  try {
-    const entries = await fs.readdir(guard, { withFileTypes: true })
-    if (!entries.length) {
-      return null
+async function readLock(guard: string, deadline?: number): Promise<LockOwner | null | undefined> {
+  while (true) {
+    try {
+      const entries = await fs.readdir(guard, { withFileTypes: true })
+      if (!entries.length) {
+        return null
+      }
+      const entry = entries[0]!
+      if (entries.length !== 1 || !entry.isFile() || !tokenPattern.test(entry.name)) {
+        throw lockError(guard, '格式未知，拒绝接管')
+      }
+      const value: unknown = JSON.parse(await fs.readFile(path.join(guard, entry.name), 'utf8'))
+      if (!value || typeof value !== 'object' || !('pid' in value) || !('token' in value)
+        || !Number.isSafeInteger(value.pid) || typeof value.pid !== 'number' || value.pid <= 0
+        || value.token !== entry.name) {
+        throw lockError(guard, '进程身份无效，拒绝接管')
+      }
+      return { pid: value.pid, token: entry.name }
     }
-    const entry = entries[0]!
-    if (entries.length !== 1 || !entry.isFile() || !tokenPattern.test(entry.name)) {
-      throw lockError(guard, '格式未知，拒绝接管')
+    catch (error) {
+      if (errorCode(error) === 'ENOENT') {
+        return undefined
+      }
+      if (errorCode(error) === 'EEXIST') {
+        throw error
+      }
+      if (errorCode(error) === 'EPERM' && deadline !== undefined) {
+        const remaining = deadline - Date.now()
+        if (remaining > 0) {
+          await delay(Math.min(20, remaining))
+          if (Date.now() < deadline) {
+            continue
+          }
+        }
+      }
+      throw lockError(guard, '无法读取或内容损坏，拒绝接管', error)
     }
-    const value: unknown = JSON.parse(await fs.readFile(path.join(guard, entry.name), 'utf8'))
-    if (!value || typeof value !== 'object' || !('pid' in value) || !('token' in value)
-      || !Number.isSafeInteger(value.pid) || typeof value.pid !== 'number' || value.pid <= 0
-      || value.token !== entry.name) {
-      throw lockError(guard, '进程身份无效，拒绝接管')
-    }
-    return { pid: value.pid, token: entry.name }
-  }
-  catch (error) {
-    if (errorCode(error) === 'ENOENT') {
-      return undefined
-    }
-    if (errorCode(error) === 'EEXIST') {
-      throw error
-    }
-    throw lockError(guard, '无法读取或内容损坏，拒绝接管', error)
   }
 }
 
-async function removeEmptyLock(guard: string) {
+async function removeEmptyLock(guard: string, deadline?: number) {
   try {
     await fsNative.rmdir(guard)
   }
   catch (error) {
     if (errorCode(error) === 'ENOENT' || contentionCodes.has(errorCode(error) ?? '')) {
-      if (errorCode(error) !== 'EPERM' || await readLock(guard) !== null) {
+      if (errorCode(error) !== 'EPERM' || await readLock(guard, deadline) !== null) {
         return
       }
     }
@@ -90,7 +101,7 @@ async function removeLock(guard: string, token: string, staleDeadline?: number) 
       throw error
     }
   }
-  await removeEmptyLock(guard)
+  await removeEmptyLock(guard, staleDeadline)
 }
 
 async function acquireLock(guard: string, candidate: string) {
@@ -106,9 +117,9 @@ async function acquireLock(guard: string, candidate: string) {
       if (!contentionCodes.has(errorCode(error) ?? '')) {
         throw error
       }
-      const owner = await readLock(guard)
+      const owner = await readLock(guard, deadline)
       if (owner === null) {
-        await removeEmptyLock(guard)
+        await removeEmptyLock(guard, deadline)
       }
       else if (owner !== undefined) {
         let dead = false
