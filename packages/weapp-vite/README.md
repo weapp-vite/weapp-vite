@@ -600,3 +600,5 @@ const artifact = await buildTestArtifact({ cwd: process.cwd() })
 ### 文件监听后端对照
 
 开发时可配置 `weapp.watch.engine: 'parcel'` 试用 `@parcel/watcher`，默认仍为 `chokidar`。该选项只覆盖 weapp-vite 自有监听，不替换 Vite/Rolldown 主图监听。Parcel 是可选原生依赖，不支持订阅式 polling；加载失败或运行错误不会自动切回。配置及验证边界见 [HMR 配置](https://vite.weapp.dev/config/hmr)。
+
+当前对照发现 Parcel 在本机 macOS 的 FSEvents 错误，以及 Linux 深层模板删除漏通知，尚不建议替换默认后端。具体复现和验收边界见[评估报告](../../docs/architecture/file-watch-backends.md)。

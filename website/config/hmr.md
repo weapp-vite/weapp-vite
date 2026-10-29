@@ -296,3 +296,5 @@ export default defineConfig({
 Parcel 使用可选原生依赖 `@parcel/watcher`。无法加载、订阅失败或运行中报错会保留错误，不会自动切回 Chokidar。安装时须保留对应平台的 optional dependencies。Parcel 不提供订阅式 polling；已显式启用 polling 的环境应使用 Chokidar，不能把 `brute-force` 查询当作 polling 监听。
 
 `build.watch.chokidar` 保留现有 Chokidar 后端与轮询兼容配置，`server.watch` 仍按 Vite 的公开配置处理。Parcel 收集批量变化，以最终文件状态触发原有构建流程，不承诺与 Chokidar 逐条事件完全一致。当前保持实验状态，默认后端切换须以实际对照及跨平台 runtime 验证为依据。
+
+当前对照发现 Parcel 在本机 macOS 的 FSEvents 错误，以及 Linux 深层模板删除漏通知，尚不建议替换默认后端。具体复现和验收边界见[评估报告](https://github.com/weapp-vite/weapp-vite/blob/main/docs/architecture/file-watch-backends.md)。

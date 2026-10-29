@@ -2,8 +2,11 @@ import type { WatcherScenario } from './types'
 import { mkdir, readFile, rename, rm, symlink, unlink, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
+import { watcherScopeScenarios } from './scopeScenarios'
+import { matchesWatcherChange } from './state'
 
 export const watcherScenarios: WatcherScenario[] = [
+  ...watcherScopeScenarios,
   {
     id: 'large-tree-repeated-single-save',
     async run({ root, observe, expectChanges }) {
@@ -36,7 +39,7 @@ export const watcherScenarios: WatcherScenario[] = [
         assert(await observation.watcher.ready === 'ready', 'Initial registration did not become ready')
       }, [{ file: files[0]!, kind: 'file', contents: 'saved-during-registration' }])
       assert(await readFile(files[0]!, 'utf8') === 'saved-during-registration', 'The latest initial input was lost')
-      assert(observation.changes.some(change => change.file === files[0]!), 'The initial file was not discovered')
+      assert(observation.changes.some(change => matchesWatcherChange(change, { file: files[0]!, kind: 'file' })), 'The initial file was not discovered')
     },
   },
   {

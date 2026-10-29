@@ -2,7 +2,7 @@
 
 评估日期：2026-10-29。
 
-当前自有监听已经可以通过内部 `FileWatcher` 接口切换 Chokidar 与 `@parcel/watcher`，无需让业务层依赖两者的原始事件和资源句柄。默认继续使用 Chokidar，Parcel 保留为显式选择的候选后端。本机三轮对照中，Chokidar 通过 36/36 个场景，Parcel 通过 33/36 个场景；Parcel 三轮均报告 FSEvents 丢事件，现有证据不足以支持修改默认值。
+当前自有监听已经可以通过内部 `FileWatcher` 接口切换 Chokidar 与 `@parcel/watcher`，无需让业务层依赖两者的原始事件和资源句柄。默认继续使用 Chokidar，Parcel 保留为显式选择的实验后端。本机三轮对照中，Chokidar 通过 36/36 个场景，Parcel 通过 33/36 个场景；Parcel 三轮均报告 FSEvents 丢事件。三系统 CI 又观察到 Linux 下的 Parcel 静默漏通知。**本轮不建议默认替换**，双后端可切换不代表 Parcel 已通过可靠性验收。
 
 Watchpack 尚未实现或验证。本次结果只能说明双后端的内部抽象已经落地，不能解释为 Chokidar、Parcel、Watchpack 三选一已经完成。
 
@@ -83,6 +83,30 @@ Events were dropped by the FSEvents client. File system must be re-scanned.
 
 本轮也定位了 Chokidar 的旧 Stats 重复通知：回调携带截断时的零长度 Stats，而当前磁盘已经写完。适配层改为用当前磁盘 Stats 去重；读取发现文件缺失时等待既有删除契约，其他读取错误继续报告。本次最终三轮未观察到相关重复。
 
+### Linux 深层模板删除漏通知
+
+提交 `08d0a24658519c77692771a79bbe68439619e25d` 的 [CI run 40866552342](https://github.com/weapp-vite/weapp-vite/actions/runs/40866552342) 中，Linux / Node `24.22.1` 的 Chokidar HMR 场景通过；Parcel 完成四次 JSON 发布后，在 `referenced-template-deletion` 阶段删除 `src/shared/card.wxml`，随后 30 秒没有新增构建或错误输出。该轮保留为失败，模板恢复及后续保存尚未执行。前置 HMR 失败后，Linux 原生三轮对照被 workflow 跳过，没有 Linux 对照 JSON。
+
+静态追踪发现，classic config watcher 在 snapshot watcher 创建前完成注册。两者选择同一项目根作为原生订阅根，但前者的原生过滤范围较窄，后者随后允许整个 `src` 子树。Parcel `2.6.0` 的 `DirTree` 缓存只按 root 复用，`BruteForceBackend::getTree` 不为不同 ignore 范围重读已完成的树；`InotifyBackend::subscribe` 仅为缓存树已有的目录安装 watch。这与浅层 JSON 正常、深层模板删除静默的现象吻合，是当前高置信根因候选。
+
+该 CI 未记录 Parcel 实际选择的 native backend，尚未完成 Linux 显式 `inotify` 的独立最小复现，因此以上不能写作已经实测确认的因果关系。该问题涉及适配器的订阅范围与 Parcel 原生缓存之间的兼容边界，不能据此笼统推断 Parcel 在所有 Linux 用法下都会漏通知。
+
+普通 WXML import 的删除应由 snapshot 的物理 sidecar 交付；消费层收到后会安排完整扫描。Vite 与 legacy 路径避开已有物理 owner，以防重复交付。后续应在原生 root 与 scope 的所有权边界修正并验证，不能通过增加业务层重复 watcher 掩盖静默遗漏。直接移除原生 ignore 会扩大祖先目录的观察范围，也需要单独量化其资源成本。
+
+### 三系统 CI 的分层结果
+
+上述 CI 冻结在 `08d0a24658519c77692771a79bbe68439619e25d`，三个系统均为 Node `24.22.1`。原生对照使用与本机测量相同的适配器摘要 `d98b234c32f076aa29fac2341af79b2c765de87e5a39154c89b496fa2f600e6b`；工具为提交后的 Windows 路径匹配版本。
+
+| 系统 | 下游 HMR | 三轮原生对照 | 结论 |
+| --- | --- | --- | --- |
+| Linux `ubuntu-latest` | Chokidar 通过；Parcel 模板删除失败 | 未运行 | 保留静默漏通知反例 |
+| Windows `windows-latest` / x64 | 两后端 **2/2 通过** | Chokidar 33/36，Parcel 33/36 | 六个失败均来自对照工具的路径断言，不能作为后端失败或通过的最终结论 |
+| macOS `macos-latest` / arm64 | 两后端 **2/2 通过** | Chokidar **36/36**，Parcel **36/36** | 该 CI 机器未出现本机的 FSEvents 错误；不能覆盖本机负结果 |
+
+Windows 每轮的 `ready-during-save` 均失败于 `The initial file was not discovered`，但原始通知中已经包含初始文件，步骤记录 `missing: 0`、`stateVerified: true`。原因是该场景末尾直接比较原生反斜杠路径与适配器正斜杠路径，绕过了已有路径匹配函数。后续工具修正复用 `matchesWatcherChange`，保留大小写、事件和文件类型语义；现有路径匹配纯函数回归通过。历史六次失败原样保留，修正后的 Windows 三轮尚未执行，不能改记为 36/36。
+
+Windows 和 macOS 均完整执行 72/72 个计划场景、`notRun: 0`、`cleanupConfirmed: true`。原始 JSON 位于该运行的 `watcher-comparison-windows-latest-node-24-08d0a24658519c77692771a79bbe68439619e25d` 与 `watcher-comparison-macos-latest-node-24-08d0a24658519c77692771a79bbe68439619e25d` artifacts；本机保存了下载副本与三个 job 的日志。
+
 ### 性能观测与限制
 
 下表汇总三轮原始数据，分位数采用排序后的 nearest-rank。通知延迟包含 93 个有期望通知的步骤；启动、关闭分别包含 42 个观察会话。失败大树场景中已经取得的测量值也保留在统计内。
@@ -108,6 +132,8 @@ Events were dropped by the FSEvents client. File system must be re-scanned.
 
 共享的 12 个真实文件场景验证正常保存、首次扫描、动态目标、原子替换、目录和缺失路径恢复、符号链接、深度、独立 owner、关闭以及过滤/稳定写入。另有 mock 测试覆盖异步注册、释放、失败回滚和原始错误身份；mock 不打开 native 订阅，不能证明原生资源行为。
 
+首轮 12 项的独立 owner 场景未覆盖同一原生 root 上不同过滤范围的订阅交互。Linux 失败后新增 `same-root-narrow-before-broad` 与 `same-root-broad-before-narrow` 两个共享原生场景，将当前清单扩为 14 项，覆盖两种注册顺序、深层更新/删除/重建及窄 owner 关闭后宽 owner 继续工作。前述本机与首轮 CI 的 12 项历史结果保留原计数；新增场景的执行结果另行记录。
+
 既有权威清单 [`scripts/dependencyContracts/chokidar/scenarios.mjs`](../../scripts/dependencyContracts/chokidar/scenarios.mjs) 的 29 项要求没有被这 12 项取代。逐项映射见 [`coverage.md`](../../packages/weapp-vite/scripts/watcherComparison/coverage.md)，主要缺口包括：
 
 | 需要继续验证的边界 | 当前对照不能证明的内容 |
@@ -126,17 +152,17 @@ Events were dropped by the FSEvents client. File system must be re-scanned.
 | 验证层 | 当前状态 | 证据与范围 |
 | --- | --- | --- |
 | 本机共享文件契约对照 | 已执行；Chokidar 36/36，Parcel 33/36 | `comparison.json` / `comparison.log`；保留三次 Parcel FSEvents 失败 |
-| 两后端下游产物 HMR | **2/2 通过** | `hmr-backends.log`；`e2e/ci/watcher-backends.hmr.test.ts` 核验 sidecar 保存发布及引用模板消失后的产物保留、恢复 |
+| 本机 macOS 两后端下游产物 HMR | **2/2 通过** | `hmr-backends.log`；`e2e/ci/watcher-backends.hmr.test.ts` 核验 sidecar 保存发布及引用模板消失后的产物保留、恢复 |
 | Chokidar 定向 headless runtime | **2/2 通过** | `headless-chokidar.log`；项目内外 WXML transform 依赖的原子替换、删除保留、重建；native / Vue 页渲染及点击 |
 | Parcel 定向 headless runtime | **2/2 通过** | `headless-parcel.log`；与 Chokidar 相同的 WXML 场景 |
 | 消费层独立清理回归 | **41/41 通过** | devProvider 三文件 17 项、WXML watch / dependencies 24 项；关闭独立排空并保留组合错误，同步初始化失败撤销观察者及 owner |
 | 真实微信 DevTools runtime | **环境阻断，未完成验收** | 机器租约内正常退出已核验空闲宿主、确认安装进程归零；随后出现本任务未认领的新宿主，启动门禁按 `WECHAT_DEVTOOLS_HOST_IDENTITY_MISMATCH` 拒绝认领。UI 复核仍为项目列表；保留该宿主，两个后端均未进入 runtime 场景 |
-| Linux / Windows / macOS 三系统矩阵 | **待验证** | 已提供 `CI E2E` 的 `watcher-comparison` 定向入口，尚无本轮远端运行证据 |
+| Linux / Windows / macOS 三系统矩阵 | **已执行，整体失败** | CI run `40866552342`；分层结果和未运行项见上表，Windows 工具修正待重跑 |
 | 既有 29 项依赖契约的完整三系统执行 | **待验证** | 当前适配层对照及 mock 均不替代该门槛 |
 
 表中日志位于本次任务的 `.tmp/current-run/parcel-watcher/`。后续验证应绑定最终源码、构建产物和具体运行身份；生产源码变化后，验证负责人需确认哪些旧证据仍适用、哪些需要重跑。
 
-在修改默认后端前，至少需要解释并修复或明确界定重复 FSEvents 溢出，补齐确定性的恢复与所有权证据，完成三系统对照，以及两后端在真实构建和真实 IDE 中使用最新输入的验收。当前适合继续维护这个内部抽象并显式试用 Parcel；默认 Chokidar 的选择保持不变。
+在修改默认后端前，至少需要修复 Linux 静默漏通知、验证同 root 不同 scope 的交互，解释并修复或明确界定重复 FSEvents 溢出，补齐确定性的恢复与所有权证据，并完成修正后的三系统对照及真实 IDE 验收。当前继续维护内部抽象，Parcel 仅保留显式实验入口，默认保持 Chokidar。首轮评估已经取得阻碍替换的具体反例，不能宣称 Parcel 更稳定或已完成最终 runtime 验收。
 
 复跑入口和参数见 [`watcherComparison/README.md`](../../packages/weapp-vite/scripts/watcherComparison/README.md)。对照、下游 HMR、headless 和 IDE 验证均应复用仓库机器级串行租约，不能与其他 E2E/dev-watch 并行。
 

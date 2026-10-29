@@ -21,7 +21,7 @@
 | `close-during-child-stat` | 注册关闭、等待 subscribe/unsubscribe 完成 | 暂停真实 child stat 后关闭及旧读取排空 |
 | `remove-parent-during-child-stat` | 目录删除重建的公有结果 | 父目录删除后释放旧 child stat 的负控 |
 | `recreate-before-old-target-read-returns` | 目录恢复后再次保存 | 新目录先建立、旧 listing 后返回的确定性代际边界 |
-| `shared-native-owner-survives-close` | `shared-target-independent-owners` 覆盖两 owner 收到同次保存、一个退出、幸存者保存、最终静默 | 物理资源只获取一次及精确原生关闭回执 |
+| `shared-native-owner-survives-close` | `shared-target-independent-owners` 覆盖两 owner 收到同次保存、一个退出、幸存者保存、最终静默；`same-root-narrow-before-broad` / `same-root-broad-before-narrow` 表达同根不同范围的两种注册顺序及幸存者保存 | 物理资源只获取一次及精确原生关闭回执 |
 | `shared-owner-survives-failed-sibling-registration` | mock 覆盖单 owner 多根注册部分失败后的清理 | 独立兄弟 owner 注册失败与幸存 owner 继续保存的组合 |
 | `file-generation-before-remove-cooldown` | 文件删除、重建及后续保存 | 精确旧代边界受控期间再次删除，以及旧读取不能提交 |
 | `directory-generation-before-remove-cooldown` | 目录及子文件删除、重建、后续保存 | 目录和子项再次删除与旧代读取交错 |

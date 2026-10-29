@@ -1,6 +1,6 @@
 # 自有文件观察后端对照
 
-契约测试与此工具复用 `scenarios.ts` 中的 12 个真实文件保存场景。每轮每个后端在独立 Node 子进程执行，相邻轮次交换后端顺序；所有场景、创建的观察会话和目录均顺序收尾。
+契约测试与此工具复用 `scenarios.ts` 中的 14 个真实文件保存场景。每轮每个后端在独立 Node 子进程执行，相邻轮次交换后端顺序；所有场景、创建的观察会话和目录均顺序收尾。
 
 从仓库根目录通过既有机器串行租约运行对照：
 
@@ -20,7 +20,7 @@ pnpm test:watcher-contracts
 
 `--engines chokidar,parcel` 为默认选择，`--runs` 默认为 3。内部 `--child` 仅由父进程调度，外层机器租约覆盖全部子进程；不要用内部入口绕过串行门禁。
 
-三系统对照复用 `CI E2E` 的 `watcher-comparison` 定向入口，在 Linux、Windows、macOS 的 Node 24 上分别执行三轮并上传 JSON。通过原有冻结上下文与 PR 准入；主线运行可在选定提交推送后执行：
+三系统对照复用 `CI E2E` 的 `watcher-comparison` 定向入口，在 Linux、Windows、macOS 的 Node 24 上先分别执行三轮原生对照并上传 JSON，再验证下游 HMR。原生对照失败时保留失败报告，后续 HMR 不执行。通过原有冻结上下文与 PR 准入；主线运行可在选定提交推送后执行：
 
 ```sh
 gh workflow run ci-e2e.yml --ref main -f hmr-diagnostic=watcher-comparison
@@ -29,6 +29,8 @@ gh workflow run ci-e2e.yml --ref main -f hmr-diagnostic=watcher-comparison
 已配置入口不代表三系统已执行；报告必须记录具体运行和提交。
 
 覆盖 1024 文件目录树中的连续单文件保存、首次扫描期间保存、初始事件抑制、动态依赖首保存、目标移除、原子替换后再次保存、目录删除重建、缺失根目录及文件恢复、根外及链式符号链接的逻辑路径和目标切换、深度限制与新增根目录、共享物理目标的独立 owner 退出、注册期间关闭，以及过滤和稳定写入。
+
+`scopeScenarios.ts` 另行固定同一原生 root 上不同逻辑范围的两种注册顺序：先精确配置文件后递归源码，以及相反顺序。核验深层更新、删除和重建、窄 owner 关闭后宽 owner 继续工作及全部关闭后的静默。Linux 的原始 HMR 漏通知和 Windows 工具断言失败保存在 [评估报告](../../../../docs/architecture/file-watch-backends.md)，不能以新增场景或工具修正覆盖历史结果。
 
 JSON 包含每步遗漏、重复、通知延迟、磁盘状态核验时间，每个观察会话的启动与关闭时间，以及场景 CPU、RSS、活动句柄及资源类型。创建和更新文件必须匹配明确指定内容的 SHA-256；目录创建和删除必须匹配最终文件类型或缺失状态。`latencyMs` 测量操作开始到匹配通知，`verificationMs` 测量同时观察到匹配通知和所需磁盘状态的耗时。临时目录只在运行时创建，报告中的文件均为 fixture 相对路径。失败保留为失败，不以另一个后端成功覆盖。
 

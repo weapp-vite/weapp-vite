@@ -90,8 +90,8 @@ describe('bounded HMR workflow diagnosis', () => {
     expect(job.with).toMatchObject({
       checkout_ref: frozenWorkflowText(`\${{ needs.pr-context.outputs.checkout_sha }}`, 'ci-e2e'),
       node_version: '24',
-      main_command: 'pnpm test:watcher-comparison --report .tmp/watcher-comparison/report.json',
-      test_command: 'pnpm vitest run -c e2e/vitest.e2e.ci.config.ts e2e/ci/watcher-backends.hmr.test.ts',
+      test_command: 'pnpm test:watcher-comparison --report .tmp/watcher-comparison/report.json',
+      main_command: 'pnpm vitest run -c e2e/vitest.e2e.ci.config.ts e2e/ci/watcher-backends.hmr.test.ts',
       artifact_path: '.tmp/watcher-comparison/report.json',
       artifact_name: expect.stringContaining('matrix.os'),
     })
