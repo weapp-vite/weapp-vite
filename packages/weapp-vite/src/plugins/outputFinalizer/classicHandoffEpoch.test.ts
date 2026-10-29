@@ -8,6 +8,7 @@ import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { build } from 'vite'
 import { expect, it, vi } from 'vitest'
+import * as classicIdeConfigJournal from '../../runtime/classicIdeConfig/journal'
 import { classicIdeConfigLeasePath, ideAssetWatchLeasePath } from '../../runtime/classicIdeConfig/leases'
 import { getHmrRuntimeSession } from '../../runtime/hmrRuntimeSession'
 import { createRuntimeState } from '../../runtime/runtimeState'
@@ -149,13 +150,13 @@ it.each([
     }
     return value
   })
-  const write = fs.writeFile.bind(fs)
-  vi.spyOn(fs, 'writeFile').mockImplementation(async (file, ...args) => {
-    if (block === 'config-write' && file === project.configPath && String(args[0]).includes('false')) {
+  const write = classicIdeConfigJournal.writeClassicIdeConfig
+  vi.spyOn(classicIdeConfigJournal, 'writeClassicIdeConfig').mockImplementation(async (file, source) => {
+    if (block === 'config-write' && file === project.configPath && source.includes('false')) {
       entered.resolve()
       await release.promise
     }
-    return write(file, ...args)
+    return write(file, source)
   })
   const rendering = project.render()
   const outcome = rendering.then(() => undefined, (error: unknown) => error)
