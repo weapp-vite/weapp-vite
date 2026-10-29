@@ -41,7 +41,7 @@ async function startFixture(project: string, source: string, transport: Transpor
   return startPackageScriptDevProcess('pnpm', ['run', 'dev'], { cwd: project, all: true })
 }
 
-it.each(transports)('fails forced teardown after %s when the classic session has not released its lease', async (transport) => {
+it.each(transports)('keeps forced teardown failure after %s while a new owner recovers the dead classic lease', async (transport) => {
   const project = await mkdtemp(path.join(os.tmpdir(), 'dev-process-classic-incomplete-'))
   const config = path.join(project, 'project.private.config.json')
   const journal = path.join(project, '.weapp-vite/ide-classic-project.private.config.json')
@@ -82,11 +82,18 @@ it.each(transports)('fails forced teardown after %s when the classic session has
     expect(await readFile(config, 'utf8')).toBe(installed)
     const { ClassicIdeConfigOwner } = await import('../../packages/weapp-vite/src/runtime/classicIdeConfig')
     const next = new ClassicIdeConfigOwner()
-    const conflict: unknown = await next.activate(config).catch(error => error)
-    expect(conflict).toMatchObject({ code: 'EEXIST' })
-    await expect(next.close()).rejects.toBe(conflict)
-    expect(await readFile(journal, 'utf8')).toBe(savedJournal)
-    expect(await readFile(config, 'utf8')).toBe(installed)
+    try {
+      await next.activate(config)
+      expect(await next.readRequested(config)).toBe(original)
+      const previous = JSON.parse(savedJournal) as { owner: string }
+      expect(JSON.parse(await readFile(journal, 'utf8'))).not.toHaveProperty('owner', previous.owner)
+      expect(await readFile(config, 'utf8')).toBe(installed)
+    }
+    finally {
+      await next.close()
+    }
+    expect(await readFile(config, 'utf8')).toBe(original)
+    await expect(readFile(journal)).rejects.toMatchObject({ code: 'ENOENT' })
     await expect(cleanupTrackedDevProcesses(0)).resolves.toBeUndefined()
     // 进程已终结仍须报告未完成收尾，后续 stop 不能把首错改写为成功。
     expect(failure).toBeInstanceOf(DevProcessGracefulShutdownError)

@@ -7,6 +7,7 @@ import { getSupportedMiniProgramPlatforms } from '../../platform'
 import { observeCompilerInputs } from '../../plugins/utils/sourceSnapshot'
 import { createAdvancedChunkNameResolver } from '../advancedChunks'
 import { resetTakeImportRegistry } from '../chunkStrategy'
+import { writeClassicLease } from '../classicIdeConfig/journal'
 import { getHmrRuntimeSession } from '../hmrRuntimeSession'
 import { createConfigService } from './createConfigService'
 
@@ -216,6 +217,32 @@ describe('createConfigService', () => {
       expect(await read(file)).toBe(original)
       expect(observed).toEqual([original, original])
       expect(JSON.parse(fs.readFileSync(file, 'utf8'))).toEqual({ setting: { compileHotReLoad: false } })
+    }
+    finally {
+      release()
+      await runtime.classicIdeConfig.close()
+      fs.rmSync(root, { recursive: true, force: true })
+    }
+  })
+
+  it('reads the requested startup configuration from a disk journal without modifying either file', async () => {
+    const root = fs.mkdtempSync(path.join(tmpdir(), 'disk-requested-ide-config-'))
+    const file = path.join(root, 'project.private.config.json')
+    const original = '{"setting":{"compileHotReLoad":true},"description":"requested"}'
+    const installed = '{"setting":{"compileHotReLoad":false},"description":"requested"}'
+    fs.writeFileSync(file, installed)
+    const ctx = createCtx()
+    const service = createConfigService(ctx)
+    ctx.configService = service
+    const runtime = getHmrRuntimeSession(ctx)
+    const observed: string[] = []
+    const release = observeCompilerInputs(service, (_file, source) => observed.push(source))
+    const read = loadConfigFactoryOptionsMock.value.readProjectConfigFile as (file: string) => Promise<string>
+    try {
+      await writeClassicLease(file, { schemaVersion: 1, pid: process.pid, owner: 'other-command', original, installed }, true)
+      expect(await read(file)).toBe(original)
+      expect(observed).toEqual([original])
+      expect(fs.readFileSync(file, 'utf8')).toBe(installed)
     }
     finally {
       release()

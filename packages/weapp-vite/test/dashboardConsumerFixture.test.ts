@@ -25,8 +25,8 @@ it('preserves the candidate closure and build approvals while disabling both opt
     linkWorkspacePackages: false,
     enableGlobalVirtualStore: false,
     overrides: candidates,
-    allowBuilds: { '@swc/core': true, 'esbuild': true },
   })
+  expect(installed.allowBuilds).toEqual({ '@parcel/watcher': false, '@swc/core': true, 'esbuild': true })
   expect(workspace.overrides).not.toBe(candidates)
   expect(candidates).toEqual({ 'weapp-vite': 'file:core.tgz', '@weapp-vite/dashboard': 'file:dashboard.tgz' })
 })

@@ -18,7 +18,8 @@ export function createDashboardIsolationWorkspace(candidates, consumerRoot) {
     strictPeerDependencies: true,
     storeDir: path.join(consumerRoot, '.pnpm-store'),
     overrides: { ...candidates },
-    allowBuilds: { '@swc/core': true, 'esbuild': true },
+    // Parcel 使用平台预编译绑定，沿用仓库对源码安装脚本的显式拒绝。
+    allowBuilds: { '@parcel/watcher': false, '@swc/core': true, 'esbuild': true },
   }
 }
 

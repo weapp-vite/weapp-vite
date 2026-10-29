@@ -13,6 +13,7 @@ import {
 } from '../plugins/autoRoutes.shared'
 import { resolveNpmBuildCandidateDependenciesSync } from '../runtime/npmPlugin/service/dependencies'
 import { createViteWatchIgnored, resolvePollingWatchOptions } from '../runtime/watch/options'
+import { deduplicateCleanupErrors } from '../runtime/watcher/cleanupErrors'
 import { isCSSRequest } from '../utils/regexp'
 import { bindWxmlDependencyWatch, ownsExternalWxmlWatch } from '../wxml/processing/watch'
 import { connectDevModuleGraphHost } from './host'
@@ -298,10 +299,10 @@ export async function createDevModuleGraphProvider(
     catch (error) {
       priorFailures.push(error)
     }
-    const failures = [...new Set([
+    const failures = deduplicateCleanupErrors([
       ...priorFailures,
       ...results.flatMap(result => result.status === 'rejected' ? [result.reason] : []),
-    ])]
+    ])
     if (failures.length) {
       throw failures.length === 1 ? failures[0] : new AggregateError(failures, 'Development module graph provider cleanup failed', { cause: failures[0] })
     }

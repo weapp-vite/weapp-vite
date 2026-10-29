@@ -175,8 +175,8 @@ describe('built serve CLI shutdown', () => {
       const lease = path.join(root, classicLeaseFile)
       await expect(access(lease)).resolves.toBeUndefined()
       const activeConfig = await readFile(path.join(root, 'project.private.config.json'), 'utf8')
-      const journal = JSON.parse(await readFile(lease, 'utf8')) as { owner?: unknown, original?: unknown, installed?: unknown }
-      expect(journal).toEqual({ owner: expect.any(String), original: privateConfig, installed: activeConfig })
+      const journal: unknown = JSON.parse(await readFile(lease, 'utf8'))
+      expect(journal).toEqual({ schemaVersion: 1, pid: child.pid, owner: expect.any(String), original: privateConfig, installed: activeConfig })
       expect(JSON.parse(activeConfig) as unknown).toEqual({ setting: { compileHotReLoad: false }, watchOptions: { ignore: ['scratch/**'] } })
       for (const file of statefulFiles) {
         await expect(access(path.join(root, file))).rejects.toMatchObject({ code: 'ENOENT' })

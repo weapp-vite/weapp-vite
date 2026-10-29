@@ -1,3 +1,4 @@
+import fsNative from 'node:fs/promises'
 import os from 'node:os'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
@@ -151,12 +152,12 @@ it('does not restore a journal whose ownership changed and retains the cleanup f
 it('keeps a failed config write as the first error and never accepts another activation', async () => {
   const { file, owner } = await fixture('{}')
   const failure = new Error('configuration write failed')
-  const write = fs.writeFile.bind(fs)
-  const writeFile = vi.spyOn(fs, 'writeFile').mockImplementation((target, ...args) => {
+  const rename = fsNative.rename.bind(fs)
+  const writeFile = vi.spyOn(fsNative, 'rename').mockImplementation((source, target) => {
     if (target === file) {
       return Promise.reject(failure)
     }
-    return write(target, ...args)
+    return rename(source, target)
   })
   await expect(owner.activate(file)).rejects.toBe(failure)
   writeFile.mockRestore()
@@ -169,13 +170,13 @@ it('waits for an acquired write during terminal close and restores once', async 
   const { file, owner } = await fixture('{"setting":{"compileHotReLoad":true}}')
   const entered = Promise.withResolvers<void>()
   const release = Promise.withResolvers<void>()
-  const write = fs.writeFile.bind(fs)
-  vi.spyOn(fs, 'writeFile').mockImplementation(async (target, ...args) => {
-    if (target === file && String(args[0]).includes('false')) {
+  const rename = fsNative.rename.bind(fs)
+  vi.spyOn(fsNative, 'rename').mockImplementation(async (source, target) => {
+    if (target === file && (await fs.readFile(source, 'utf8')).includes('false')) {
       entered.resolve()
       await release.promise
     }
-    return write(target, ...args)
+    return rename(source, target)
   })
   const activation = owner.activate(file)
   await entered.promise

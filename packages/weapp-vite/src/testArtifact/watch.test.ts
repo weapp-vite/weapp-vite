@@ -181,7 +181,7 @@ describe('test artifact watch invalidation', () => {
 
   it.each([false, true])('preserves the initial readiness failure when backend cleanup fails: %s', async (cleanupFails) => {
     const initialFailure = new Error('watch readiness failed')
-    const closeFailure = new Error('watch close failed')
+    const closeFailure = new Error(initialFailure.message)
     state.readyFailure = initialFailure
     if (cleanupFails) {
       state.close.mockRejectedValueOnce(closeFailure)
@@ -191,7 +191,11 @@ describe('test artifact watch invalidation', () => {
 
     if (cleanupFails) {
       expect(failure).toBeInstanceOf(AggregateError)
-      expect(failure.errors).toEqual([initialFailure, closeFailure])
+      const leafErrors = (error: unknown): unknown[] => error instanceof AggregateError ? error.errors.flatMap(leafErrors) : [error]
+      const leaves = leafErrors(failure)
+      expect(leaves).toHaveLength(2)
+      expect(leaves[0]).toBe(initialFailure)
+      expect(leaves[1]).toBe(closeFailure)
       expect(failure.cause).toBe(initialFailure)
     }
     else {

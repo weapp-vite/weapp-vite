@@ -111,12 +111,18 @@ it('propagates the original route watcher initialization error and removes readi
   const error = new Error('route initial crawl failed')
   const started = Promise.resolve(project.start())
   const failed = expect(started).rejects.toBe(error)
+  const owner = [...project.ctx.runtimeState.watcher.sidecarWatcherMap.values()][0]!
   try {
     project.failScan(error)
     await failed
     expect(project.listenerCount('ready')).toBe(0)
     // 初始化失败会自动回收本次物理订阅，仅保留 fixture 自身的原始错误观察者。
     expect(project.listenerCount('error')).toBe(1)
+    // ready 独占初始化原错；成功收尾可重复等待，但不能再次关闭物理订阅。
+    await expect(owner.close()).resolves.toBeUndefined()
+    await expect(owner.close()).resolves.toBeUndefined()
+    expect(project.watcher.close).toHaveBeenCalledOnce()
+    expect(project.ctx.runtimeState.watcher.sidecarWatcherMap.size).toBe(0)
   }
   finally {
     project.finishScan()
