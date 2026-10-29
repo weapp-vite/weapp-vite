@@ -14,6 +14,14 @@
 weapp-vite prepare
 ```
 
+## classic IDE 配置租约阻塞 `dev`
+
+微信小程序的 classic 开发模式会暂时将 `project.private.config.json` 的 `setting.compileHotReLoad` 设为 `false`，并在其同级 `.weapp-vite/ide-classic-project.private.config.json` 保存租约和原始配置。正常退出会恢复该开关；进程被强杀或崩溃后，下次启动会在确认租约持有进程已退出时自动恢复并重新接管，同时保留用户对其他配置的修改。多平台项目以实际生成的 private 配置位置为准。
+
+另一个开发命令仍在运行时会报告占用信息。旧版无进程信息、内容损坏或无法确认进程状态的租约会保留并提示恢复，不会直接覆盖配置或删除记录。
+
+人工恢复前，先根据错误中的项目、进程和文件信息确认该项目的所有开发命令均已退出，并备份当前 private 配置和对应租约。参考租约中可读取的 `original` 恢复 `setting.compileHotReLoad` 的原值或原先不存在的状态，保留其他用户修改；原文缺失或损坏时，从自己的备份或版本记录确认原值。完成配置恢复后，仅将错误中指出的该项目 classic 租约及互斥记录移到备份位置，再运行 `weapp-vite dev`。无法确认进程状态或原配置时保留现场；不要删除整个 `.weapp-vite` 目录或其他项目、IDE 自动化会话的记录。
+
 ## AI 截图失败
 
 优先检查：

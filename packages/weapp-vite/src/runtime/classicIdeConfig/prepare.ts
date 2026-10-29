@@ -12,6 +12,10 @@ export async function prepareClassicIdeConfig(ctx: MutableCompilerContext): Prom
     return
   }
   const runtime = getHmrRuntimeSession(ctx)
+  const configPath = resolveIdePrivateConfigPath(config)
+  if (configPath) {
+    await runtime.classicIdeConfig.reconcileStale(configPath)
+  }
   let decision = runtime.resolve(resolveHmrRuntimeDecision({
     platform: config.platform,
     configured: config.weappViteConfig.hmr?.runtime,
@@ -22,7 +26,6 @@ export async function prepareClassicIdeConfig(ctx: MutableCompilerContext): Prom
     runtime.requestClassic(fallback)
     decision = runtime.resolve(decision)
   }
-  const configPath = resolveIdePrivateConfigPath(config)
   if (decision.runtime === 'classic') {
     if (runtime.classicIdeConfig.preservesPendingOutput(config.outDir)
       && (!configPath || !runtime.classicIdeConfig.hasPendingAssetHandoff(configPath, config.outDir))) {

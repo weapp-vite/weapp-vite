@@ -1,11 +1,15 @@
 import type { MutableCompilerContext } from '../../context'
+import { spawn } from 'node:child_process'
+import { once } from 'node:events'
 import os from 'node:os'
+import process from 'node:process'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { afterEach, expect, it } from 'vitest'
 import { getHmrRuntimeSession } from '../hmrRuntimeSession'
 import { createRuntimeState } from '../runtimeState'
 import { installIdeAssetWatch } from '../statefulHmr/assetWatch'
+import { writeClassicLease } from './journal'
 import { classicIdeConfigLeasePath, ideAssetWatchLeasePath } from './leases'
 import { prepareClassicIdeConfig } from './prepare'
 
@@ -14,6 +18,38 @@ afterEach(async () => {
   for (const close of cleanup.splice(0).reverse()) {
     await close()
   }
+})
+
+it.each(['classic', 'auto', 'stateful-experimental'] as const)('recovers a startup lease before deciding %s while preserving the existing capability fallback', async (mode) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'prepare-recovered-classic-'))
+  cleanup.push(() => fs.remove(root))
+  const file = path.join(root, 'project.private.config.json')
+  const original = '{"setting":{"compileHotReLoad":true}}'
+  const installed = '{"setting":{"compileHotReLoad":false}}'
+  const child = spawn(process.execPath, ['-e', ''], { stdio: 'ignore' })
+  await once(child, 'exit')
+  await fs.writeFile(file, installed)
+  await writeClassicLease(file, { schemaVersion: 1, pid: child.pid!, owner: 'dead-command', original, installed }, true)
+  const ctx = {
+    runtimeState: createRuntimeState(),
+    configService: {
+      isDev: true,
+      platform: 'weapp',
+      projectPrivateConfigPath: file,
+      multiPlatform: { enabled: false },
+      outDir: path.join(root, 'dist'),
+      weappViteConfig: { hmr: { runtime: mode } },
+      projectPrivateConfig: {},
+    },
+  } as unknown as MutableCompilerContext
+  const runtime = getHmrRuntimeSession(ctx)
+  cleanup.push(() => runtime.classicIdeConfig.close())
+  ctx.configService.projectPrivateConfig.setting = JSON.parse(await runtime.classicIdeConfig.readRequested(file)).setting
+  await prepareClassicIdeConfig(ctx)
+  expect(runtime.fallback?.code).toBe(mode === 'classic' ? undefined : 'ide-classic-handoff')
+  expect(await runtime.classicIdeConfig.readRequested(file)).toBe(original)
+  await runtime.classicIdeConfig.close()
+  expect(await fs.readFile(file, 'utf8')).toBe(original)
 })
 
 it.each([false, true])('defers a pending asset handoff only when the same output root has a published stateful baseline: %s', async (published) => {

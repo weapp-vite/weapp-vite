@@ -1,3 +1,4 @@
+import fsNative from 'node:fs/promises'
 import os from 'node:os'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
@@ -72,12 +73,12 @@ it('re-reads user edits at activation and restores the latest request with BOM a
 it('activates one project once while another project remains pending', async () => {
   const first = await fixture()
   const second = await fixture()
-  const write = vi.spyOn(fs, 'writeFile')
+  const write = vi.spyOn(fsNative, 'rename')
   await Promise.all([
     first.owner.activatePendingAssetHandoff(first.configPath, first.outDir),
     first.owner.activatePendingAssetHandoff(first.configPath, first.outDir),
   ])
-  expect(write.mock.calls.filter(([file]) => file === first.configPath)).toHaveLength(1)
+  expect(write.mock.calls.filter(([, file]) => file === first.configPath)).toHaveLength(1)
   expect(await fs.readFile(second.configPath, 'utf8')).toBe(second.installed)
   expect(await fs.readFile(second.assetJournal, 'utf8')).toBe(second.assetLease)
   await first.owner.close()

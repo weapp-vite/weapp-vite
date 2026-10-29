@@ -1,4 +1,6 @@
+import fsNative from 'node:fs/promises'
 import os from 'node:os'
+import process from 'node:process'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import picomatch from 'picomatch'
@@ -28,20 +30,20 @@ it('keeps the old config while handing its lease to classic and activates once b
   const restore = await installIdeAssetWatch(options)
   const installed = await fs.readFile(options.configPath, 'utf8')
   const classic = new ClassicIdeConfigOwner()
-  const write = vi.spyOn(fs, 'writeFile')
+  const publish = vi.spyOn(fsNative, 'rename')
   try {
     await restore(classic)
-    expect(write.mock.calls.filter(([file]) => file === options.configPath)).toHaveLength(0)
+    expect(publish.mock.calls.filter(([, file]) => file === options.configPath)).toHaveLength(0)
     expect(await fs.readFile(options.configPath, 'utf8')).toBe(installed)
     expect(classic.hasPendingAssetHandoff(options.configPath, options.outDir)).toBe(true)
     expect(await classic.readRequested(options.configPath)).toBe(original)
     await classic.activatePendingAssetHandoff(options.configPath, options.outDir)
-    expect(write.mock.calls.filter(([file]) => file === options.configPath)).toHaveLength(1)
+    expect(publish.mock.calls.filter(([, file]) => file === options.configPath)).toHaveLength(1)
     expect(await fs.readJSON(options.configPath)).toEqual({ setting: { compileHotReLoad: false }, watchOptions: { ignore: ['user/**'] } })
     expect(await classic.readRequested(options.configPath)).toBe(original)
     await restore(classic)
     await classic.activatePendingAssetHandoff(options.configPath, options.outDir)
-    expect(write.mock.calls.filter(([file]) => file === options.configPath)).toHaveLength(1)
+    expect(publish.mock.calls.filter(([, file]) => file === options.configPath)).toHaveLength(1)
   }
   finally {
     await classic.close()
@@ -69,15 +71,20 @@ it.each([false, true])('preserves BOM and CRLF through asset cleanup and classic
   expect(await fs.readFile(options.configPath, 'utf8')).toBe(original)
 })
 
-it('keeps the asset journal and first error when classic cannot acquire the config', async () => {
+it.each(['unknown', 'live'] as const)('keeps the asset journal and first error when classic encounters a conflicting %s journal', async (kind) => {
   const options = await fixture('{}')
   const restore = await installIdeAssetWatch(options)
   const classic = new ClassicIdeConfigOwner()
   const journal = path.join(path.dirname(options.configPath), '.weapp-vite/ide-classic-project.private.config.json')
-  await fs.outputJSON(journal, { owner: 'unrelated-owner' })
+  const competingLease = kind === 'live'
+    ? { schemaVersion: 1, pid: process.pid, owner: 'unrelated-owner', original: '{}', installed: '{"setting":{"compileHotReLoad":false}}' }
+    : { owner: 'unrelated-owner' }
+  await fs.outputJSON(journal, competingLease)
   const installed = await fs.readFile(options.configPath, 'utf8')
   const failure = await restore(classic).catch((error: unknown) => error)
   expect(failure).toMatchObject({ code: 'EEXIST' })
+  expect(failure).toMatchObject({ message: expect.stringMatching(kind === 'live' ? /另一个开发命令持有/ : /缺少可信进程身份或已损坏/) })
+  expect(await fs.readJSON(journal)).toEqual(competingLease)
   expect(await fs.readFile(options.configPath, 'utf8')).toBe(installed)
   expect(await fs.pathExists(path.join(path.dirname(options.configPath), '.weapp-vite/ide-asset-watch.json'))).toBe(true)
   await expect(classic.close()).rejects.toBe(failure)

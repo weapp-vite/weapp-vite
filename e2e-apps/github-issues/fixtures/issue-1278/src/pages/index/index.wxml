@@ -1,0 +1,5 @@
+<view id="issue1278-page">
+  <view id="lease-status">{{status}}</view>
+  <view id="lease-count">{{count}}</view>
+  <button id="lease-increment" bindtap="increment">增加计数</button>
+</view>

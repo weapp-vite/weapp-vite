@@ -1,3 +1,4 @@
+import fsNative from 'node:fs/promises'
 import os from 'node:os'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
@@ -118,19 +119,31 @@ it('rechecks both exclusive journals before concurrent owners can write the conf
     return observed
   })
   const write = fs.writeFile.bind(fs)
+  const journalAcquired = async () => {
+    if (++acquisitionCount === 2) {
+      acquired.resolve()
+    }
+    await acquired.promise
+  }
+  const link = fsNative.link.bind(fsNative)
+  vi.spyOn(fsNative, 'link').mockImplementation(async (source, target) => {
+    await link(source, target)
+    if (journals.has(String(target))) {
+      await journalAcquired()
+    }
+  })
+  const rename = vi.spyOn(fsNative, 'rename')
   const writes = vi.spyOn(fs, 'writeFile').mockImplementation(async (target, ...args) => {
     await write(target, ...args)
     if (journals.has(String(target))) {
-      if (++acquisitionCount === 2) {
-        acquired.resolve()
-      }
-      await acquired.promise
+      await journalAcquired()
     }
   })
   const [classicResult, assetResult] = await Promise.allSettled([classic.activate(options.configPath), installIdeAssetWatch(options)])
   expect(classicResult.status).toBe('rejected')
   expect(assetResult.status).toBe('rejected')
   expect(writes.mock.calls.filter(([file]) => file === options.configPath)).toEqual([])
+  expect(rename.mock.calls.filter(([, file]) => file === options.configPath)).toEqual([])
   expect(await fs.readFile(options.configPath, 'utf8')).toBe(original)
   if (classicResult.status === 'rejected') {
     await expect(classic.close()).rejects.toBe(classicResult.reason)

@@ -1,3 +1,4 @@
+import fsNative from 'node:fs/promises'
 import os from 'node:os'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
@@ -62,13 +63,13 @@ it('waits for activation before reading source and never reads a deleted asset l
   const project = await fixture()
   const entered = Promise.withResolvers<void>()
   const release = Promise.withResolvers<void>()
-  const write = fs.writeFile.bind(fs)
-  vi.spyOn(fs, 'writeFile').mockImplementation(async (target, ...args) => {
-    if (target === project.configPath && String(args[0]).includes('false')) {
+  const rename = fsNative.rename.bind(fs)
+  vi.spyOn(fsNative, 'rename').mockImplementation(async (source, target) => {
+    if (target === project.configPath && (await fs.readFile(source, 'utf8')).includes('false')) {
       entered.resolve()
       await release.promise
     }
-    return write(target, ...args)
+    return rename(source, target)
   })
   const activation = project.owner.activatePendingAssetHandoff(project.configPath, project.outDir)
   await entered.promise
@@ -104,13 +105,13 @@ it('waits for an acquired config write during close and restores exactly once', 
   const project = await fixture()
   const entered = Promise.withResolvers<void>()
   const release = Promise.withResolvers<void>()
-  const write = fs.writeFile.bind(fs)
-  vi.spyOn(fs, 'writeFile').mockImplementation(async (target, ...args) => {
-    if (target === project.configPath && String(args[0]).includes('false')) {
+  const rename = fsNative.rename.bind(fs)
+  vi.spyOn(fsNative, 'rename').mockImplementation(async (source, target) => {
+    if (target === project.configPath && (await fs.readFile(source, 'utf8')).includes('false')) {
       entered.resolve()
       await release.promise
     }
-    return write(target, ...args)
+    return rename(source, target)
   })
   const activation = project.owner.activatePendingAssetHandoff(project.configPath, project.outDir)
   await entered.promise
@@ -130,13 +131,13 @@ it.each(['config-write', 'asset-journal-remove'] as const)('keeps the first %s f
   const failure = new Error(`${stage} failed`)
   let failed = false
   if (stage === 'config-write') {
-    const write = fs.writeFile.bind(fs)
-    vi.spyOn(fs, 'writeFile').mockImplementation(async (target, ...args) => {
-      if (!failed && target === project.configPath && String(args[0]).includes('false')) {
+    const rename = fsNative.rename.bind(fs)
+    vi.spyOn(fsNative, 'rename').mockImplementation(async (source, target) => {
+      if (!failed && target === project.configPath && (await fs.readFile(source, 'utf8')).includes('false')) {
         failed = true
         throw failure
       }
-      return write(target, ...args)
+      return rename(source, target)
     })
   }
   else {
