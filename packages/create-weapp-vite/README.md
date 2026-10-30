@@ -17,9 +17,11 @@
 
 推荐直接使用包管理器的 create 命令：
 
-> 需要 Node.js 22（至少 `22.23.4`）、24（至少 `24.22.1`）或 26（至少 `26.12.1`）及以上版本，再执行 `pnpm create weapp-vite`、`yarn create weapp-vite` 或 `npm create weapp-vite@latest`。不再支持 Node.js 20。
+> 官方支持 Node.js 22（至少 `22.23.4`）、24（至少 `24.22.1`）或 26（至少 `26.12.1`）及以上版本。建议使用受支持 LTS 分支的最新安全补丁版本，再执行 `pnpm create weapp-vite`、`yarn create weapp-vite` 或 `npm create weapp-vite@latest`。
 
 框架包 `weapp-vite` 与脚手架采用相同的 Node 支持范围；Vite+ 模板要求 `^24.22.1 || >=26.12.1`。
+
+生成项目中的 `weapp-vite` CLI（含 `prepare`）与 Tailwind 集成遇到范围外的 Node 版本时，会提示升级并继续尝试执行。Node 缺少依赖所需的语法或 API 时仍可能失败；项目或团队启用严格 engines 校验时，包管理器也可能拒绝安装。
 
 ```bash
 pnpm create weapp-vite

@@ -17,7 +17,7 @@ import fs from 'node:fs'
 import process from 'node:process'
 import { createTailwindController } from '@weapp-vite/tailwindcss'
 import path from 'pathe'
-// eslint-disable-next-line e18e/ban-dependencies -- Node 支持范围沿用发布声明与 CLI 的 semver 校验。
+// eslint-disable-next-line e18e/ban-dependencies -- Node 推荐范围沿用发布声明与 CLI 的 semver 校验。
 import satisfies from 'semver/functions/satisfies.js'
 import { engines } from '../../package.json'
 import { parseSidecarSourceMetadata, parseSidecarSourceRequest } from '../moduleGraph/protocol'
@@ -195,13 +195,13 @@ function createCompilerRootId(index: number, entry: string) {
   return `weapp-vite:tailwindcss:${index}:${normalizeManagedTailwindcssEntryPath(entry)}`
 }
 
-function assertRuntimeRequirements(resolved: ResolvedManagedTailwindcssOptions) {
-  // Bun 的 Node 版本仅用于兼容标识；真实 Node 仍须满足发布声明。
+function checkRuntimeRequirements(resolved: ResolvedManagedTailwindcssOptions, warn: (message: string) => void) {
+  // Bun 的 Node 版本仅用于兼容标识；真实 Node 只提示升级，不阻断构建。
   const bunVersion = process.versions.bun
   const isBun = typeof bunVersion === 'string' && bunVersion.length > 0
   if (!isBun && !satisfies(process.versions.node, engines.node)) {
-    throw new Error(
-      `weapp.tailwindcss requires Node ${engines.node}; current version is ${process.versions.node}.`,
+    warn(
+      `weapp.tailwindcss recommends Node.js ${engines.node}; current version is ${process.versions.node}. Upgrade to the latest patch release of a supported Node.js LTS line for security fixes. Continuing with the current runtime.`,
     )
   }
   for (const entry of resolved.cssEntries) {
@@ -242,6 +242,7 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
   const compilerSourceOptions = new Map<number, TailwindV4SourceOptions>()
   const compilerSnapshots = new Map<number, CompilerSnapshot>()
   let generatedEntriesPromise: Promise<TailwindGenerationEntry[]> | undefined
+  let nodeRuntimeWarningReported = false
   let coreModulePromise: Promise<typeof import('weapp-tailwindcss/core')> | undefined
   let compilerPromise: Promise<Compiler> | undefined
   let resolvedConfig: ResolvedConfig | undefined
@@ -768,7 +769,12 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
     },
     async buildStart() {
       generatedEntriesPromise = undefined
-      assertRuntimeRequirements(resolved)
+      checkRuntimeRequirements(resolved, (message) => {
+        if (!nodeRuntimeWarningReported) {
+          nodeRuntimeWarningReported = true
+          this.warn(message)
+        }
+      })
       if (ctx.configService.isDev) {
         const pendingChanges = ctx.moduleGraphService?.getPendingChanges?.() ?? []
         if (pendingChanges.length > 0) {

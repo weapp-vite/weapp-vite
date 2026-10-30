@@ -102,33 +102,56 @@ describe('managed Tailwind integration', () => {
     ['22.23.4', true],
     ['24.22.1', true],
     ['26.12.1', true],
+    ['20.19.0', false],
     ['22.23.3', false],
     ['23.11.0', false],
     ['24.22.0', false],
     ['25.9.0', false],
     ['26.3.0', false],
     ['26.12.0', false],
-  ] as const)('checks the published Node range before preparing Tailwind on %s', async (nodeVersion, supported) => {
+  ] as const)('prepares Tailwind with an advisory Node range check on %s', async (nodeVersion, supported) => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'tailwind-node-requirements-'))
     temporaryRoots.push(root)
     const entry = path.join(root, 'app.css')
     await fs.writeFile(entry, '@import "tailwindcss";')
     const plugin = getPlugins({ cssEntries: [entry] }, root)[0]!
-    const descriptor = Object.getOwnPropertyDescriptor(process.versions, 'node')!
-    Object.defineProperty(process.versions, 'node', { ...descriptor, value: nodeVersion })
-    try {
-      const starting = getHookHandler(plugin.buildStart)!.call({ addWatchFile: vi.fn() } as any, {} as any)
-      if (supported) {
-        await expect(starting).resolves.toBeUndefined()
-      }
-      else {
-        await expect(starting).rejects.toThrow(`requires Node ${engines.node}; current version is ${nodeVersion}`)
-      }
-      expect(mocks.createCompiler).not.toHaveBeenCalled()
+    const addWatchFile = vi.fn()
+    const warn = vi.fn()
+    await withRuntimeVersions(nodeVersion, undefined, async () => {
+      await expect(getHookHandler(plugin.buildStart)!.call({ addWatchFile, warn } as any, {} as any)).resolves.toBeUndefined()
+    })
+    expect(addWatchFile).toHaveBeenCalledExactlyOnceWith(entry.replaceAll('\\', '/'))
+    if (supported) {
+      expect(warn).not.toHaveBeenCalled()
     }
-    finally {
-      Object.defineProperty(process.versions, 'node', descriptor)
+    else {
+      expect(warn).toHaveBeenCalledExactlyOnceWith(expect.stringContaining(`Node.js ${engines.node}; current version is ${nodeVersion}`))
+      expect(warn.mock.calls[0]?.[0]).toContain('Upgrade to the latest patch release of a supported Node.js LTS line for security fixes.')
+      expect(warn.mock.calls[0]?.[0]).toContain('Continuing with the current runtime.')
     }
+    expect(mocks.createCompiler).not.toHaveBeenCalled()
+  })
+
+  it('warns once across rebuilds while keeping warnings local to each plugin instance', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'tailwind-node-warning-'))
+    temporaryRoots.push(root)
+    const entry = path.join(root, 'app.css')
+    await fs.writeFile(entry, '@import "tailwindcss";')
+    const first = getPlugins({ cssEntries: [entry] }, root)[0]!
+    const second = getPlugins({ cssEntries: [entry] }, root)[0]!
+    const addWatchFile = vi.fn()
+    const firstWarning = vi.fn()
+    const secondWarning = vi.fn()
+    await withRuntimeVersions('24.22.0', undefined, async () => {
+      const buildStart = getHookHandler(first.buildStart)!
+      await buildStart.call({ addWatchFile, warn: firstWarning } as any, {} as any)
+      await buildStart.call({ addWatchFile, warn: firstWarning } as any, {} as any)
+      await getHookHandler(second.buildStart)!.call({ addWatchFile, warn: secondWarning } as any, {} as any)
+    })
+    expect(firstWarning).toHaveBeenCalledOnce()
+    expect(secondWarning).toHaveBeenCalledOnce()
+    expect(addWatchFile).toHaveBeenCalledTimes(3)
+    expect(mocks.createCompiler).not.toHaveBeenCalled()
   })
 
   it.each(['1.4.2', '1.4.4'])('prepares Tailwind under Bun %s independently of its Node compatibility version', async (bun) => {
@@ -138,34 +161,46 @@ describe('managed Tailwind integration', () => {
     await fs.writeFile(entry, '@import "tailwindcss";')
     const plugin = getPlugins({ cssEntries: [entry] }, root)[0]!
     const addWatchFile = vi.fn()
+    const warn = vi.fn()
     await withRuntimeVersions('26.3.0', bun, async () => {
-      await expect(getHookHandler(plugin.buildStart)!.call({ addWatchFile } as any, {} as any)).resolves.toBeUndefined()
+      await expect(getHookHandler(plugin.buildStart)!.call({ addWatchFile, warn } as any, {} as any)).resolves.toBeUndefined()
     })
+    expect(addWatchFile).toHaveBeenCalledExactlyOnceWith(entry.replaceAll('\\', '/'))
+    expect(warn).not.toHaveBeenCalled()
+    expect(mocks.createCompiler).not.toHaveBeenCalled()
+  })
+
+  it.each([undefined, '', true, {}])('warns about Node when the Bun marker is invalid: %j', async (bun) => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'tailwind-invalid-bun-'))
+    temporaryRoots.push(root)
+    const entry = path.join(root, 'app.css')
+    await fs.writeFile(entry, '@import "tailwindcss";')
+    const plugin = getPlugins({ cssEntries: [entry] }, root)[0]!
+    const addWatchFile = vi.fn()
+    const warn = vi.fn()
+    await withRuntimeVersions('26.3.0', bun, async () => {
+      await expect(getHookHandler(plugin.buildStart)!.call({ addWatchFile, warn } as any, {} as any)).resolves.toBeUndefined()
+    })
+    expect(warn).toHaveBeenCalledExactlyOnceWith(expect.stringContaining(`Node.js ${engines.node}; current version is 26.3.0`))
     expect(addWatchFile).toHaveBeenCalledExactlyOnceWith(entry.replaceAll('\\', '/'))
     expect(mocks.createCompiler).not.toHaveBeenCalled()
   })
 
-  it.each([undefined, '', true, {}])('retains Node requirements when the Bun marker is invalid: %j', async (bun) => {
-    const plugin = getPlugins(true)[0]!
-    const addWatchFile = vi.fn()
-    await withRuntimeVersions('26.3.0', bun, async () => {
-      await expect(getHookHandler(plugin.buildStart)!.call({ addWatchFile } as any, {} as any))
-        .rejects
-        .toThrow(`requires Node ${engines.node}; current version is 26.3.0`)
-    })
-    expect(addWatchFile).not.toHaveBeenCalled()
-    expect(mocks.createCompiler).not.toHaveBeenCalled()
-  })
-
   it('does not treat a global Bun polyfill as the actual Tailwind runtime identity', async () => {
-    const plugin = getPlugins(true)[0]!
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'tailwind-global-bun-'))
+    temporaryRoots.push(root)
+    const entry = path.join(root, 'app.css')
+    await fs.writeFile(entry, '@import "tailwindcss";')
+    const plugin = getPlugins({ cssEntries: [entry] }, root)[0]!
+    const addWatchFile = vi.fn()
+    const warn = vi.fn()
     vi.stubGlobal('Bun', { version: '1.4.4' })
     try {
       await withRuntimeVersions('26.3.0', undefined, async () => {
-        await expect(getHookHandler(plugin.buildStart)!.call({ addWatchFile: vi.fn() } as any, {} as any))
-          .rejects
-          .toThrow(`requires Node ${engines.node}; current version is 26.3.0`)
+        await expect(getHookHandler(plugin.buildStart)!.call({ addWatchFile, warn } as any, {} as any)).resolves.toBeUndefined()
       })
+      expect(warn).toHaveBeenCalledExactlyOnceWith(expect.stringContaining(`Node.js ${engines.node}; current version is 26.3.0`))
+      expect(addWatchFile).toHaveBeenCalledExactlyOnceWith(entry.replaceAll('\\', '/'))
       expect(mocks.createCompiler).not.toHaveBeenCalled()
     }
     finally {
@@ -173,17 +208,19 @@ describe('managed Tailwind integration', () => {
     }
   })
 
-  it('retains CSS entry validation under Bun', async () => {
+  it.each([undefined, '1.4.4'])('retains CSS entry validation with Bun marker %j', async (bun) => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'tailwind-bun-entry-'))
     temporaryRoots.push(root)
     const entry = path.join(root, 'missing.css')
     const plugin = getPlugins({ cssEntries: [entry] }, root)[0]!
     const addWatchFile = vi.fn()
-    await withRuntimeVersions('26.3.0', '1.4.4', async () => {
-      await expect(getHookHandler(plugin.buildStart)!.call({ addWatchFile } as any, {} as any))
+    const warn = vi.fn()
+    await withRuntimeVersions('26.3.0', bun, async () => {
+      await expect(getHookHandler(plugin.buildStart)!.call({ addWatchFile, warn } as any, {} as any))
         .rejects
         .toThrow(`weapp.tailwindcss CSS entry does not exist: ${entry.replaceAll('\\', '/')}`)
     })
+    expect(warn).toHaveBeenCalledTimes(bun ? 0 : 1)
     expect(addWatchFile).not.toHaveBeenCalled()
     expect(mocks.createCompiler).not.toHaveBeenCalled()
   })
