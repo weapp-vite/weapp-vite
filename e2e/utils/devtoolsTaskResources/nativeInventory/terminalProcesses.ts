@@ -4,7 +4,7 @@ import type { NativeInventory } from './closure'
 import type { NativeRow } from './model'
 import { DARWIN_INSPECTOR_PHASES } from '../processInventory/darwinInspector/types'
 import { nativeRelation } from './closure'
-import { hasNativeExitEvidence, metadata, sameNativeIdentity } from './model'
+import { completeNativeLiveRow, hasNativeExitEvidence, metadata, sameNativeIdentity } from './model'
 
 /** 终止只接受同帧双身份为 zombie，映像与任务查询均明确 ESRCH 的内核证据。 */
 function terminalRow(row: NativeRow) {
@@ -22,15 +22,6 @@ function terminalRow(row: NativeRow) {
 function sameInstance(first: DarwinProcessIdentity | null, next: DarwinProcessIdentity | null) {
   return first !== null && next !== null && sameNativeIdentity({ ...first, zombie: next.zombie }, next)
     && first.uid === next.uid
-}
-
-/** 活体来源必须来自完整原生调用，不能把只有路径文本的部分成功当作外部证明。 */
-function completeLiveRow(row: NativeRow) {
-  const { before, after, pathBefore, pathAfter, task } = row.entry
-  return [before, after].every(read => read.result === 0 && read.length > 0 && read.errno === 0)
-    && [pathBefore, pathAfter].every(read => read.count > 0 && read.errno === 0)
-    && task.count > 0 && task.errno === 0 && row.rssBytes !== null
-    && row.imageSource === 'kernel-path' && row.images?.length === 1 && row.entry.gaps.length === 0
 }
 
 /** 明确终止的任务不再持有映像或 RSS；此证明不授予窗口、安装或进程所有权。 */
@@ -69,7 +60,7 @@ export function verifiedTerminalProcesses(inventory: NativeInventory, installati
           const initial = frames[0]!.rows.get(row.pid)
           if (!initial || visited.has(row.pid) || selectedSeen.has(row.pid) || row.identityChanged || row.imageChanged
             || !sameNativeIdentity(initial.identity, row.identity) || !sameNativeIdentity(row.identity, row.finalIdentity)
-            || initial.identity?.uid !== row.identity?.uid || !completeLiveRow(row) || row.images?.[0] !== initial.images?.[0]
+            || initial.identity?.uid !== row.identity?.uid || !completeNativeLiveRow(row) || row.images?.[0] !== initial.images?.[0]
             || nativeRelation(frame, row, installationRoot) !== 'foreign') {
             valid = false
             break

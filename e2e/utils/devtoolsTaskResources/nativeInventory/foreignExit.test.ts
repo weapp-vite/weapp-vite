@@ -97,10 +97,19 @@ describe('anchor-proven foreign process exits during closure enumeration', () =>
     expect(await sample()).toMatchObject({ installationRssBytes: { status: 'unavailable' }, uninspectedNewProcessCount: 1 })
   })
 
-  it('requires the complete foreign proof in the anchor itself', async () => {
+  it('records a complete anchor exit separately from a foreign live anchor proof', async () => {
     const baseline = [entry(11), entry(22)]
     frames(baseline, [entry(11), exited(22)], [entry(11)], [entry(11)])
-    expect(await sample()).toMatchObject({ installationRssBytes: { status: 'unavailable' }, unclassifiedProcessCount: 1 })
+    const report = await sample()
+    expect(report).toMatchObject({
+      installationRssBytes: { status: 'observed', value: 1000 },
+      identityChangedProcessCount: 1,
+      unclassifiedProcessCount: 0,
+      verifiedTerminalProcessCount: 1,
+      verifiedTerminalProcesses: [{ process: { pid: 22 }, firstTerminalPhase: 'anchor', proof: 'prepare-proven-foreign-then-anchor-exit' }],
+    })
+    expect(report.identityChangedProcesses).toEqual([expect.objectContaining({ pid: 22 })])
+    expect(report.nativeFrames?.[1]?.rows.find(row => row.pid === 22)).toMatchObject({ before: null, after: null, rss: { bytes: null }, gaps: exited(22).gaps })
   })
 
   it.each(['before', 'after', 'pathBefore', 'pathAfter', 'task'] as const)('keeps a %s permission failure blocking', async (field) => {
