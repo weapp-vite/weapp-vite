@@ -13,11 +13,13 @@ import {
   runComponentLifecycle,
 } from '../../runtime/componentInstance'
 import { beginComponentConstruction, discardComponentConstruction, finishComponentConstruction } from '../../runtime/componentInstance/construction'
+import { resolveComponentPropertyDefinitions } from '../../runtime/componentInstance/properties'
 import { syncComponentProperties } from '../../runtime/componentInstance/propertyBindings'
 import { resolveNativeComponentSelection } from '../../runtime/componentInstance/selection'
 import { resolveMiniProgramComponent } from '../../runtime/componentResolution'
 import { bindComponentEventHost, buildComponentTrigger } from '../../view/componentEvent'
 import { setSelectorQueryScopeId } from '../../view/selectorQueryScope'
+import { isValuelessTemplateAttribute } from '../../view/templateAttributes'
 import { wxsScopeData } from '../../view/wxs'
 import { readBrowserVirtualFile } from '../virtualFiles'
 import { getBrowserWxsLoader } from '../wxs'
@@ -177,7 +179,7 @@ export function resolveComponentProperties(
 ) {
   const nextProperties: Record<string, any> = {}
   const bindingExpressions: Record<string, string | undefined> = {}
-  const declaredProperties = definition.properties ?? {}
+  const declaredProperties = resolveComponentPropertyDefinitions(definition)
   for (const [key, value] of Object.entries(clonedNode.attribs ?? {})) {
     if (key.startsWith('bind') || key.startsWith('generic:')) {
       continue
@@ -189,7 +191,9 @@ export function resolveComponentProperties(
     if (isMustacheOnly(String(value))) {
       bindingExpressions[propertyKey] = String(value).trim().slice(2, -2).trim()
     }
-    nextProperties[propertyKey] = resolveComponentAttributeValue(String(value), scope)
+    nextProperties[propertyKey] = Object.hasOwn(declaredProperties, propertyKey) && isValuelessTemplateAttribute(clonedNode, key)
+      ? true
+      : resolveComponentAttributeValue(String(value), scope)
   }
   return { nextProperties, bindingExpressions }
 }

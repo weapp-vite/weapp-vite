@@ -32,7 +32,7 @@ it('keeps numeric dataset values typed while rendering string attributes in the 
     })
 
     page.readSelectorDataset()
-    expect(page.data.selectorDataset).toEqual({ index: 0, literalIndex: '0' })
+    await expect.poll(() => page.data.selectorDataset).toEqual({ index: 0, literalIndex: '0' })
 
     page.playVideo()
     expect(page.data.videoCapture).toEqual({ index: 2, literalIndex: '0' })

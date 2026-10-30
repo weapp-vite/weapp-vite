@@ -282,7 +282,7 @@ describe('page event alignment', () => {
     expect(page.data.animationSecondSnapshot).toBe('{"actions":[]}')
   })
 
-  it('supports createCanvasContext in headless runtime', () => {
+  it('supports createCanvasContext in headless runtime', async () => {
     const projectPath = createCanvasContextFixture()
     tempDirs.push(projectPath)
     const session = createHeadlessSession({ projectPath })
@@ -542,6 +542,7 @@ describe('page event alignment', () => {
       'change:none:false',
       'change:4g:true',
     ])
+    await expect.poll(() => page.data.scopedComponentRect).not.toBe('')
     expect(JSON.parse(page.data.scopedComponentRect)).toEqual({
       bottom: 21,
       height: 14,

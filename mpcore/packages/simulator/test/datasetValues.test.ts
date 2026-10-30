@@ -49,7 +49,7 @@ describe.each(['node', 'browser'] as const)('%s rendered dataset values', (provi
       })
 
       page.readSelectorDataset()
-      expect(page.data.selectorDataset).toEqual({ index: 0, literalIndex: '0' })
+      await expect.poll(() => page.data.selectorDataset).toEqual({ index: 0, literalIndex: '0' })
 
       page.playVideo()
       expect(page.data.videoCapture).toEqual({ index: 2, literalIndex: '0' })

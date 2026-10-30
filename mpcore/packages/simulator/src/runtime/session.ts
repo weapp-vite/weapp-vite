@@ -36,7 +36,7 @@ import { createDefaultAccountInfo } from '../project/accountInfo'
 import { createMiniProgramHostConfig } from '../project/hostConfig'
 import { cloneBackgroundSnapshot, cloneNavigationBarSnapshot, resolveBackgroundSnapshot, resolveNavigationBarSnapshot } from '../project/pageConfig'
 import { resolvePluginRequest } from '../project/plugins'
-import { executeSelectorQueryRequests, resolveSelectorQueryScopeRoot } from '../view'
+import { executeSelectorQueryRequests } from '../view'
 import { createHeadlessAnimation } from '../view/animation'
 import { createHeadlessCanvasContext } from '../view/canvasContext'
 import { customTabBarScopeId } from '../view/customTabBar'
@@ -1439,14 +1439,15 @@ export class HeadlessSession {
                 type: 'unsupported-context',
               }
         },
-        root: resolveSelectorQueryScopeRoot(staleScope.snapshot.root, staleScope.snapshot.scopeId),
+        root: staleScope.snapshot.root,
+        scopeId: staleScope.snapshot.scopeId,
         windowInfo: this.getWindowInfo(),
       })
     }
-    const rendered = this.renderCurrentPage()
     const scopeId = nativeScope && nativeScope !== current
       ? this.getComponentScopeId(nativeScope as HeadlessComponentInstance)
       : null
+    const rendered = this.renderCurrentPage()
     return executeSelectorQueryRequests(requests, {
       page: current,
       resolveContext: (node) => {
@@ -1462,7 +1463,8 @@ export class HeadlessSession {
               type: 'unsupported-context',
             }
       },
-      root: resolveSelectorQueryScopeRoot(rendered.root, scopeId),
+      root: rendered.root,
+      scopeId,
       windowInfo: this.getWindowInfo(),
     })
   }

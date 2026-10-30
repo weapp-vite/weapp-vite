@@ -5,6 +5,7 @@ import path from 'node:path'
 import { setNativePickerValue } from '../../view/nativeForm'
 import { collectNodeDataset, isDatasetAttribute, toDatasetKey } from '../../view/nodeDataset'
 import { renderRichTextNodes } from '../../view/richText'
+import { copyTemplateAttributeMetadata } from '../../view/templateAttributes'
 import { resolveTemplateExpression } from '../../view/templateExpression'
 import { createImportedTemplateState } from '../../view/templateImports'
 import { isTemplateExpression } from '../../view/templateInterpolation'
@@ -52,12 +53,14 @@ function escapeAttribute(value: string) {
 }
 
 export function cloneNode(node: DomNodeLike): DomNodeLike {
-  return {
+  const clone: DomNodeLike = {
     ...node,
     attribs: node.attribs ? { ...node.attribs } : undefined,
     dataset: node.dataset ? { ...node.dataset } : undefined,
     children: node.children?.map(child => cloneNode(child)),
   }
+  copyTemplateAttributeMetadata(node, clone)
+  return clone
 }
 
 export function resolveValueByPath(source: Record<string, any>, expression: string) {

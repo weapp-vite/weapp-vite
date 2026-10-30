@@ -59,17 +59,18 @@ Page({
   inspectEventBindings() {
     this.selectComponent('#event-probe')?.emitCompatibilityEvents()
   },
-  inspectCompatibility() {
+  async inspectCompatibility() {
     const booleanTarget = this.selectComponent('#boolean-target')
     const target = this.selectComponent('#nested-target')
-    let queryId = ''
-    wx.createSelectorQuery()
-      .in({ $: target, $el: target })
-      .select('#inner-target')
-      .fields({ id: true }, (result) => {
-        queryId = result?.id || ''
-      })
-      .exec()
+    const queryId = await new Promise(resolve => {
+      wx.createSelectorQuery()
+        .in({ $: target, $el: target })
+        .select('#inner-target')
+        .fields({ id: true }, (result) => {
+          resolve(result?.id || '')
+        })
+        .exec()
+    })
     target?.emitChange()
     const slotHost = this.selectComponent('#slot-host')
     const projectedTarget = slotHost?.selectComponent('#projected-target')
@@ -89,7 +90,7 @@ Page({
       nestedFound: Boolean(target),
       ownerAvailableDuringAttached: Boolean(target?.data.ownerAvailable),
       queryId,
-      scopedOwnNode: booleanTarget?.inspectOwnNode?.() || '',
+      scopedOwnNode: await booleanTarget?.inspectOwnNode?.() || '',
       scopedSelection: selectorHost?.data.scopedSelection || '',
       slotFound: Boolean(projectedTarget),
     })
@@ -193,15 +194,15 @@ Component({
   },
   methods: {
     inspectOwnNode() {
-      let id = ''
-      wx.createSelectorQuery()
-        .in(this)
-        .select('#generic-own-node')
-        .fields({ id: true }, result => {
-          id = result?.id || ''
-        })
-        .exec()
-      return id
+      return new Promise(resolve => {
+        wx.createSelectorQuery()
+          .in(this)
+          .select('#generic-own-node')
+          .fields({ id: true }, result => {
+            resolve(result?.id || '')
+          })
+          .exec()
+      })
     },
   },
 })
@@ -437,9 +438,7 @@ describe('component compatibility', () => {
     expect(page.selectComponent?.('#boolean-target')?.properties.enabled).toBe(true)
     expectStructurallyStableObjectProperty(page)
     page.inspectEventBindings()
-    page.inspectCompatibility()
-    await Promise.resolve()
-    await Promise.resolve()
+    await page.inspectCompatibility()
 
     expectCompatibilityResult(page)
     expect(session.renderCurrentPage().wxml).toContain('footer-projected')
@@ -461,9 +460,7 @@ describe('component compatibility', () => {
     expect(page.selectComponent?.('#boolean-target')?.properties.enabled).toBe(true)
     expectStructurallyStableObjectProperty(page)
     page.inspectEventBindings()
-    page.inspectCompatibility()
-    await Promise.resolve()
-    await Promise.resolve()
+    await page.inspectCompatibility()
 
     expectCompatibilityResult(page)
     expect(session.renderCurrentPage().wxml).toContain('footer-projected')

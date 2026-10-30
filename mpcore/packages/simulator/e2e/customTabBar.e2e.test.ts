@@ -28,7 +28,7 @@ describe('custom tabbar browser DOM', () => {
     }
   })
 
-  it('renders the tabbar as a sibling and restores the owning tab state', () => {
+  it('renders the tabbar as a sibling and restores the owning tab state', async () => {
     const session = createBrowserHeadlessSession({ files: createBrowserVirtualFiles(customTabBarFiles) })
     const preview = document.createElement('div')
     document.body.append(preview)
@@ -41,6 +41,7 @@ describe('custom tabbar browser DOM', () => {
       expect(preview.querySelector('#layout .custom-tab-bar')).toBeNull()
       expect(preview.querySelector('.custom-tab-bar #tab-counter')?.textContent).toBe('tab:0')
       page.getTabBar?.()?.increment()
+      await expect.poll(() => page.getTabBar?.()?.data.layout).toBe('outside')
       render()
       expect(preview.querySelector('#tab-counter')?.textContent).toBe('tab:1')
       expect(preview.querySelector('#tab-ready')?.textContent).toBe('ready:1 outside')

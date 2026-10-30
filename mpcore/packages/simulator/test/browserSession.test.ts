@@ -439,7 +439,7 @@ exports.named = 'async-named'
     }
   })
 
-  it('supports uni event, font, and wevu proxy selector compatibility in browser runtime', () => {
+  it('supports uni event, font, and wevu proxy selector compatibility in browser runtime', async () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/lab/index'] })],
       ['app.js', 'App({})'],
@@ -528,7 +528,7 @@ Component({
         top: 20,
       },
     })
-    expect(page.data.scopedRect).toEqual({
+    await expect.poll(() => page.data.scopedRect).toEqual({
       bottom: 29,
       height: 20,
       left: 6,
@@ -536,7 +536,7 @@ Component({
       top: 9,
       width: 30,
     })
-    expect(page.selectComponent?.('#status-card')?.data.attachedRect).toEqual({
+    await expect.poll(() => page.selectComponent?.('#status-card')?.data.attachedRect).toEqual({
       bottom: 29,
       height: 20,
       left: 6,
@@ -5185,7 +5185,7 @@ Component({
     expect(rerendered.wxml).toContain('shell:leaf')
   })
 
-  it('supports createSelectorQuery in browser runtime', () => {
+  it('supports createSelectorQuery in browser runtime', async () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
       ['app.js', 'App({})'],
@@ -5247,7 +5247,7 @@ Page({
     const page = session.reLaunch('/pages/index/index')
 
     page.runSelectorQuery()
-    expect(page.data.selectorQueryResult).toEqual({
+    await expect.poll(() => page.data.selectorQueryResult).toEqual({
       bottom: 50,
       dataset: {
         kind: 'browser',
@@ -5261,7 +5261,7 @@ Page({
     })
 
     page.runCompoundSelectorQuery()
-    expect(page.data.compoundSelectorResult).toEqual({
+    await expect.poll(() => page.data.compoundSelectorResult).toEqual({
       class: 'item hero',
       dataset: {
         kind: 'browser',
@@ -5270,7 +5270,7 @@ Page({
     })
 
     page.runViewportQuery()
-    expect(page.data.viewportResult).toEqual({
+    await expect.poll(() => page.data.viewportResult).toEqual({
       scrollLeft: 0,
       scrollTop: 88,
     })
@@ -5320,7 +5320,7 @@ Page({
     expect(page.data.callbacks).toEqual(['success', 'complete'])
   })
 
-  it('supports createSelectorQuery.in(component) in browser runtime', () => {
+  it('supports createSelectorQuery.in(component) in browser runtime', async () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/lab/index'] })],
       ['app.js', 'App({})'],
@@ -5360,7 +5360,7 @@ Page({
 
     page.inspectScopedQuery()
 
-    expect(page.data.scopedRect).toEqual({
+    await expect.poll(() => page.data.scopedRect).toEqual({
       bottom: 29,
       height: 20,
       left: 6,
@@ -6595,7 +6595,7 @@ Page({
     expect(page.data.snapshot).toContain('"miterLimit":5')
   })
 
-  it('returns array results for selectAll(...).fields(...) in browser runtime', () => {
+  it('returns array results for selectAll(...).fields(...) in browser runtime', async () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
       ['app.js', 'App({})'],
@@ -6627,13 +6627,13 @@ Page({
 
     page.inspectAll()
 
-    expect(page.data.summary).toContain('"id":"item-a"')
+    await expect.poll(() => page.data.summary).toContain('"id":"item-a"')
     expect(page.data.summary).toContain('"kind":"alpha"')
     expect(page.data.summary).toContain('"id":"item-b"')
     expect(page.data.summary).toContain('"kind":"beta"')
   })
 
-  it('returns mark, context and node placeholders in browser runtime selector query', () => {
+  it('returns mark, context and node placeholders in browser runtime selector query', async () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
       ['app.js', 'App({})'],
@@ -6666,12 +6666,12 @@ Page({
 
     page.inspectMeta()
 
-    expect(page.data.summary).toContain('"source":"browser-meta"')
+    await expect.poll(() => page.data.summary).toContain('"source":"browser-meta"')
     expect(page.data.summary).toContain('"type":"unsupported-context"')
     expect(page.data.summary).toContain('"type":"view"')
   })
 
-  it('returns canvas context from selector query in browser runtime', () => {
+  it('returns canvas context from selector query in browser runtime', async () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
       ['app.js', 'App({})'],
@@ -6710,7 +6710,7 @@ Page({
 
     page.inspectCanvas()
 
-    expect(page.data.summary).toContain('"canvasId":"hero-canvas"')
+    await expect.poll(() => page.data.summary).toContain('"canvasId":"hero-canvas"')
     expect(page.data.summary).toContain('"type":"fillRect"')
     expect(page.data.summary).toContain('"type":"canvas"')
   })

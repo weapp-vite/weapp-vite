@@ -41,7 +41,7 @@ it('updates same-key row datasets in browser consumers while keeping prior event
         expect(initialEvent).toEqual(expectedObjectDataset())
       }
       page.query()
-      expect(page.data.selector).toEqual(expectedObjectDataset(value, count))
+      await expect.poll(() => page.data.selector).toEqual(expectedObjectDataset(value, count))
       page.observe()
       expect(page.data.observer).toEqual(expectedObjectDataset(value, count))
       const component = (await render().$('dataset-probe'))!

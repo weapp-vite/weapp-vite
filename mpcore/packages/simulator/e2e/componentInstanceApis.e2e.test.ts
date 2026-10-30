@@ -3,7 +3,7 @@ import { COMPONENT_INSTANCE_API_INITIAL_TRACE, COMPONENT_INSTANCE_API_REMOVED_TR
 import { createBrowserHeadlessSession, createBrowserVirtualFiles } from '../src/browser'
 import { componentInstanceApiFiles } from '../test/helpers/componentInstanceApis'
 
-it('renders each component selector scope and updates relations as projected children disappear', () => {
+it('renders each component selector scope and updates relations as projected children disappear', async () => {
   const session = createBrowserHeadlessSession({ files: createBrowserVirtualFiles(componentInstanceApiFiles) })
   const preview = document.createElement('div')
   document.body.append(preview)
@@ -12,12 +12,14 @@ it('renders each component selector scope and updates relations as projected chi
   }
   try {
     const page = session.reLaunch('/pages/index/index')
+    const parent = page.selectComponent?.('#parent')
+    await expect.poll(() => parent.data.queryResult).toBe('parent')
+    await expect.poll(() => parent.getRelationNodes('./child')[0]?.data.queryResult).toBe('child')
     expect(page.snapshot()).toEqual(COMPONENT_INSTANCE_API_INITIAL_TRACE)
     render()
     expect(preview.querySelector('#parent-query')?.textContent).toBe('parent')
     expect(preview.querySelector('#child-query')?.textContent).toBe('child')
     expect(preview.querySelector('#relation-trace')?.textContent).toBe(COMPONENT_INSTANCE_API_INITIAL_TRACE.join('\n'))
-    const parent = page.selectComponent?.('#parent')
     expect(parent.getRelationNodes('./child')).toHaveLength(1)
     page.removeChild()
     render()
@@ -30,6 +32,7 @@ it('renders each component selector scope and updates relations as projected chi
     page.restoreChild()
     render()
     expect(page.snapshot()).toEqual(COMPONENT_INSTANCE_API_RESTORED_TRACE)
+    await expect.poll(() => parent.getRelationNodes('./child')[0]?.data.queryResult).toBe('child')
     render()
     expect(preview.querySelector('#child-query')?.textContent).toBe('child')
     expect(parent.getRelationNodes('./child')).toHaveLength(1)

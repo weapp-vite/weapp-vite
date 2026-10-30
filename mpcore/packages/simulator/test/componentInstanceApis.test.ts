@@ -10,7 +10,7 @@ import { syncComponentRelations } from '../src/runtime/componentInstance/relatio
 import { createComponentInstanceApiFiles } from './helpers/componentInstanceApis'
 
 describe.each(['node', 'browser'] as const)('%s component instance APIs', (provider) => {
-  it.each([false, true])('links projected descendants, scopes queries, and unlinks removed instances (query during attached: %s)', (queryDuringAttached) => {
+  it.each([false, true])('links projected descendants, scopes queries, and unlinks removed instances (query during attached: %s)', async (queryDuringAttached) => {
     const componentInstanceApiFiles = createComponentInstanceApiFiles(queryDuringAttached)
     const projectPath = fs.mkdtempSync(path.join(os.tmpdir(), 'mpcore-component-instance-apis-'))
     fs.writeFileSync(path.join(projectPath, 'project.config.json'), '{"appid":"wx1234567890abcdef","miniprogramRoot":"."}')
@@ -28,8 +28,8 @@ describe.each(['node', 'browser'] as const)('%s component instance APIs', (provi
       const child = parent.getRelationNodes('./child')[0]
       expect(child?.is).toBe('components/child')
       expect(child.getRelationNodes('./parent')).toEqual([parent])
-      expect(parent.data.queryResult).toBe('parent')
-      expect(child.data.queryResult).toBe('child')
+      await expect.poll(() => parent.data.queryResult).toBe('parent')
+      await expect.poll(() => child.data.queryResult).toBe('child')
       expect(page.snapshot()).toEqual(expect.arrayContaining(['parent:linked:child', 'child:linked:parent']))
       expect(page.snapshot()).toEqual(expect.arrayContaining(['parent:ready:child', 'child:ready:parent']))
       const initial = page.snapshot()
@@ -55,6 +55,7 @@ describe.each(['node', 'browser'] as const)('%s component instance APIs', (provi
       const restored = parent.getRelationNodes('./child')[0]
       expect(restored).not.toBe(child)
       expect(restored.getRelationNodes('./parent')).toEqual([parent])
+      await expect.poll(() => restored.data.queryResult).toBe('child')
       session.reLaunch('/pages/empty/index')
       expect(parent.getRelationNodes('./child')).toEqual([])
       expect(restored.getRelationNodes('./parent')).toEqual([])

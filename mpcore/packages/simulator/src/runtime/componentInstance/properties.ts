@@ -32,6 +32,10 @@ function flattenBehaviors(definition: HeadlessComponentDefinition) {
   return flattened
 }
 
+export function resolveComponentPropertyDefinitions(definition: HeadlessComponentDefinition, behaviors = flattenBehaviors(definition)) {
+  return behaviors.length === 0 ? definition.properties ?? {} : mergeRecord(...behaviors.map(item => item.properties), definition.properties)
+}
+
 export function normalizeComponentDefinition(definition: HeadlessComponentDefinition): HeadlessComponentDefinition {
   const behaviors = flattenBehaviors(definition)
   if (behaviors.length === 0) {
@@ -47,7 +51,7 @@ export function normalizeComponentDefinition(definition: HeadlessComponentDefini
     methods: mergeRecord(...behaviors.map(item => item.methods), definition.methods),
     observers: mergeRecord(...behaviors.map(item => item.observers), definition.observers),
     pageLifetimes: mergeRecord(...behaviors.map(item => item.pageLifetimes), definition.pageLifetimes),
-    properties: mergeRecord(...behaviors.map(item => item.properties), definition.properties),
+    properties: resolveComponentPropertyDefinitions(definition, behaviors),
     relations: mergeRecord(...behaviors.map(item => item.relations), definition.relations),
     lifetimes: mergeComponentLifetimes(behaviors, definition),
   }

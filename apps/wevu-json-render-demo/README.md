@@ -63,7 +63,7 @@ pnpm exec cross-env WEAPP_VITE_E2E_RUNTIME_PROVIDER=devtools pnpm vitest run -c 
 
 当前固定场景 dist 总量为 509055 字节（约 497 KiB，包含配套原生组件）。应用测量范围内，headless 为 9 次 setData / 10866 字节，DevTools 为 8 次 / 10865 字节；两端卸载后写入和遗留任务均为 0，最终 runtime 日志无 warning/error/exception。
 
-真实 IDE 截图输出到 `docs/reports/json-render/after-sales.png`，生成证据不提交。尚未验证真机、其他小程序平台、真实网络分块或 AI 输出。
+真实 IDE 截图输出到本轮 DOM 报告目录中的 `json-render-after-sales-<uuid>.png`；独立运行默认使用 `docs/reports/dom-acceptance/`，生成证据不提交。尚未验证真机、其他小程序平台、真实网络分块或 AI 输出。
 
 ## 验证发现的宿主差异
 

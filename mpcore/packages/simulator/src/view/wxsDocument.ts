@@ -1,6 +1,5 @@
 import type { TemplateNodeLike } from './templateRuntime'
-import { parseDocument } from 'htmlparser2'
-import { maskTemplateAttributes } from './templateAttributes'
+import { maskTemplateAttributes, parseTemplateAttributeDocument } from './templateAttributes'
 
 const INLINE_WXS_RE = /<wxs\b([^>]*)(?<!\/)>([\s\S]*?)<\/wxs\s*>/g
 
@@ -12,14 +11,7 @@ export function parseWxsTemplateDocument(templateSource: string) {
     return `<wxs data-sim-wxs="${index}"${attributes}>wxs-source</wxs>`
   })
   const masked = maskTemplateAttributes(source)
-  const document = parseDocument(`<page>${masked.source}</page>`, {
-    // WXML 不是 HTML；不能按浏览器规则隐式闭合或丢弃嵌套的 form 等原生节点。
-    xmlMode: true,
-    decodeEntities: false,
-    lowerCaseAttributeNames: false,
-    lowerCaseTags: false,
-    recognizeSelfClosing: true,
-  })
+  const document = parseTemplateAttributeDocument(`<page>${masked.source}</page>`)
   if (!scripts.length && !masked.attributes.size && !/[\r\n]/.test(source)) {
     return document
   }

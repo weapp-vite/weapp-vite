@@ -9,6 +9,7 @@ import { navigationTitleMap, tabRoutes } from '../../templates/weapp-vite-wevu-t
 import { formatWxml, normalizeWxmlForSnapshot } from '../template-e2e.utils'
 import { launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
+import { runCleanupSteps } from '../utils/cleanupSteps'
 import { createDomAcceptance } from '../utils/domAcceptance'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import { assertTemplateRouteCoverage, resolveTemplateDomPlan, tapTemplateNode } from '../utils/templateAcceptance'
@@ -18,6 +19,7 @@ import { RETAIL_CHECKOUT_GOODS } from '../utils/templateAcceptance/retailCheckou
 import { queryRetailPageRoot } from '../utils/templateAcceptance/retailPageRoot'
 import { prepareRetailParityHome } from '../utils/templateAcceptance/retailParityHome'
 import { projectRetailParityWxml, retailNavigationNodes } from '../utils/templateAcceptance/retailParityMarkup'
+import { createRetailParityProject } from '../utils/templateAcceptance/retailParityProject'
 import { attachRuntimeErrorCollector } from './runtimeErrors'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
@@ -318,10 +320,10 @@ async function readNormalizedPageWxml(page: any, evidence?: RetailCaptureEvidenc
   }
 }
 
-async function loadRetailNavigationContracts(pages: string[]) {
+async function loadRetailNavigationContracts(pages: string[], projectRoots: readonly string[]) {
   const contracts = new Map<string, RetailNavigationContract>()
   for (const pagePath of pages) {
-    const configs = await Promise.all([APP_ROOT, TEMPLATE_ROOT].map(async (projectRoot) => {
+    const configs = await Promise.all(projectRoots.map(async (projectRoot) => {
       const config = JSON.parse(await readFile(path.join(projectRoot, 'dist', `${pagePath}.json`), 'utf8')) as Record<string, unknown>
       const title = config.navigationBarTitleText ?? ''
       if (typeof title !== 'string') {
@@ -617,9 +619,11 @@ interface SharedProjectSession {
   miniProgram: any
   errorCollector: RuntimeErrorCollector
   warningCollector: RuntimeWarningCollector
+  releaseRuntime: () => void
 }
 
 const sharedProjectSessions = new Map<string, SharedProjectSession>()
+const ownedProjects: Awaited<ReturnType<typeof createRetailParityProject>>[] = []
 
 async function getSharedProjectSession(projectRoot: string) {
   const existing = sharedProjectSessions.get(projectRoot)
@@ -627,6 +631,12 @@ async function getSharedProjectSession(projectRoot: string) {
     return existing
   }
 
+  const ownedProject = ownedProjects.find(project => project.projectRoot === projectRoot)
+  if (!ownedProject) {
+    throw new Error('Retail parity runtime requires an owned isolated project')
+  }
+  // 启动被拒绝不证明宿主撤回请求；只有成功关闭返回的会话才释放副本。
+  const releaseRuntime = ownedProject.retainRuntime()
   const miniProgram = await launchAutomatorWithRetry(projectRoot)
   const errorCollector = attachRuntimeErrorCollector(miniProgram)
   const warningCollector = attachConsoleWarningCollector(miniProgram)
@@ -634,6 +644,7 @@ async function getSharedProjectSession(projectRoot: string) {
     miniProgram,
     errorCollector,
     warningCollector,
+    releaseRuntime,
   }
   sharedProjectSessions.set(projectRoot, session)
   return session
@@ -642,22 +653,29 @@ async function getSharedProjectSession(projectRoot: string) {
 async function resetSharedProjectSession(projectRoot: string) {
   const existing = sharedProjectSessions.get(projectRoot)
   if (existing) {
-    sharedProjectSessions.delete(projectRoot)
     existing.errorCollector.dispose()
     existing.warningCollector.dispose()
-    await existing.miniProgram.close().catch(() => {})
+    await existing.miniProgram.close()
+    existing.releaseRuntime()
+    sharedProjectSessions.delete(projectRoot)
   }
   return await getSharedProjectSession(projectRoot)
 }
 
 async function closeSharedProjectSessions() {
   const sessions = Array.from(sharedProjectSessions.values())
-  sharedProjectSessions.clear()
   for (const session of sessions) {
     session.errorCollector.dispose()
     session.warningCollector.dispose()
   }
-  await Promise.allSettled(sessions.map(session => session.miniProgram.close()))
+  await runCleanupSteps(sessions.map(session => ({
+    label: 'retail parity runtime',
+    run: async () => {
+      await session.miniProgram.close()
+      session.releaseRuntime()
+    },
+  })))
+  sharedProjectSessions.clear()
 }
 
 async function captureRouteWxml(options: {
@@ -853,6 +871,10 @@ async function dumpCapturedWxml(
 describe('template e2e: weapp-vite-wevu-tailwindcss-tdesign-retail-template parity', { concurrent: false }, () => {
   afterAll(async () => {
     await closeSharedProjectSessions()
+    await runCleanupSteps(ownedProjects.map(project => ({
+      label: 'retail parity isolated fixture',
+      run: () => project.cleanup(),
+    })))
   })
 
   it('keeps WXML DOM structure aligned with tdesign-miniprogram-starter-retail', async (context) => {
@@ -881,12 +903,14 @@ describe('template e2e: weapp-vite-wevu-tailwindcss-tdesign-retail-template pari
       launchQueryMap.set(pagePath, query)
     }
 
-    await Promise.all([
-      runBuild(APP_ROOT),
-      runBuild(TEMPLATE_ROOT),
-    ])
+    const appProject = await createRetailParityProject(APP_ROOT)
+    ownedProjects.push(appProject)
+    const templateProject = await createRetailParityProject(TEMPLATE_ROOT)
+    ownedProjects.push(templateProject)
+    await runBuild(appProject.projectRoot)
+    await runBuild(templateProject.projectRoot)
 
-    const navigationContracts = await loadRetailNavigationContracts(pagesToCompare)
+    const navigationContracts = await loadRetailNavigationContracts(pagesToCompare, [appProject.projectRoot, templateProject.projectRoot])
     const routes = resolveTemplateDomPlan(selectedRoutes.map(route => ({
       ...route,
       steps: route.steps.map((step, index) => index === 0
@@ -905,18 +929,18 @@ describe('template e2e: weapp-vite-wevu-tailwindcss-tdesign-retail-template pari
       : STATIC_STRUCTURE_SIMILARITY_THRESHOLD
     const appWxmlMap = useRuntimeParity
       ? await captureProjectPagesWxml({
-          projectRoot: APP_ROOT,
+          projectRoot: appProject.projectRoot,
           projectName: 'app',
           pages: pagesToCompare,
           launchQueryMap,
         })
       : await captureBuiltProjectPagesWxml({
-          projectRoot: APP_ROOT,
+          projectRoot: appProject.projectRoot,
           pages: pagesToCompare,
         })
     await closeSharedProjectSessions()
     const runtimeTemplateWxml = await captureProjectPagesWxml({
-      projectRoot: TEMPLATE_ROOT,
+      projectRoot: templateProject.projectRoot,
       projectName: 'template',
       pages: routes.map(route => normalizeSegment(route.route)).filter(route => !onlyPage || route === onlyPage),
       launchQueryMap,
@@ -948,7 +972,7 @@ describe('template e2e: weapp-vite-wevu-tailwindcss-tdesign-retail-template pari
     const templateWxmlMap = useRuntimeParity
       ? runtimeTemplateWxml
       : await captureBuiltProjectPagesWxml({
-          projectRoot: TEMPLATE_ROOT,
+          projectRoot: templateProject.projectRoot,
           pages: pagesToCompare,
         })
 

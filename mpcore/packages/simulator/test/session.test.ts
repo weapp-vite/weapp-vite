@@ -3302,7 +3302,7 @@ Page({
     ])
   })
 
-  it('supports createSelectorQuery for node fields and viewport scroll offset', () => {
+  it('supports createSelectorQuery for node fields and viewport scroll offset', async () => {
     const projectPath = createSelectorQueryFixture()
     tempDirs.push(projectPath)
     const session = createHeadlessSession({ projectPath })
@@ -3310,7 +3310,7 @@ Page({
     const page = session.reLaunch('/pages/index/index')
     page.runSelectorQuery()
 
-    expect(page.data.selectorQueryResult).toEqual({
+    await expect.poll(() => page.data.selectorQueryResult).toEqual({
       class: 'panel primary',
       dataset: {
         phase: 'ready',
@@ -3327,7 +3327,7 @@ Page({
 
     page.runCompoundSelectorQuery()
 
-    expect(page.data.compoundSelectorResult).toEqual({
+    await expect.poll(() => page.data.compoundSelectorResult).toEqual({
       class: 'panel primary',
       dataset: {
         phase: 'ready',
@@ -3338,7 +3338,7 @@ Page({
 
     page.runViewportQuery()
 
-    expect(page.data.viewportResult).toEqual({
+    await expect.poll(() => page.data.viewportResult).toEqual({
       scrollLeft: 0,
       scrollTop: 64,
     })
@@ -3420,7 +3420,7 @@ Page({
     }])
   })
 
-  it('renders custom components and exposes selectComponent APIs in headless runtime', () => {
+  it('renders custom components and exposes selectComponent APIs in headless runtime', async () => {
     const projectPath = createComponentFixture()
     tempDirs.push(projectPath)
     const session = createHeadlessSession({ projectPath })
@@ -3445,7 +3445,7 @@ Page({
     expect(page.data.log).toEqual(['status-card'])
 
     page.inspectScopedQuery()
-    expect(page.data.scopedRect).toEqual({
+    await expect.poll(() => page.data.scopedRect).toEqual({
       bottom: 0,
       height: 0,
       left: 0,
@@ -3455,13 +3455,13 @@ Page({
     })
 
     page.inspectScopedSelectAll()
-    expect(page.data.multiRectSummary).toContain('"id":"multi-a"')
+    await expect.poll(() => page.data.multiRectSummary).toContain('"id":"multi-a"')
     expect(page.data.multiRectSummary).toContain('"kind":"alpha"')
     expect(page.data.multiRectSummary).toContain('"id":"multi-b"')
     expect(page.data.multiRectSummary).toContain('"kind":"beta"')
 
     page.inspectMetaQuery()
-    expect(page.data.metaSummary).toContain('"source":"component-card"')
+    await expect.poll(() => page.data.metaSummary).toContain('"source":"component-card"')
     expect(page.data.metaSummary).toContain('"type":"unsupported-context"')
     expect(page.data.metaSummary).toContain('"type":"view"')
   })
@@ -3536,7 +3536,7 @@ Page({
     expect(rendered.wxml).toContain('resize:375')
   })
 
-  it('returns canvas context from selector query in headless runtime', () => {
+  it('returns canvas context from selector query in headless runtime', async () => {
     const projectPath = createCanvasContextFixture()
     tempDirs.push(projectPath)
     const session = createHeadlessSession({ projectPath })
@@ -3544,7 +3544,7 @@ Page({
     const page = session.reLaunch('/pages/canvas/index')
     page.inspectCanvasQuery()
 
-    expect(page.data.canvasQuerySnapshot).toContain('"canvasId":"hero-canvas"')
+    await expect.poll(() => page.data.canvasQuerySnapshot).toContain('"canvasId":"hero-canvas"')
     expect(page.data.canvasQuerySnapshot).toContain('"type":"fillRect"')
     expect(page.data.canvasQuerySnapshot).toContain('"type":"canvas"')
   })

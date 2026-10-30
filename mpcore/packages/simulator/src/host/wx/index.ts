@@ -201,47 +201,43 @@ export function createHeadlessWx(driver: HeadlessWxDriver, runtimeConsole: Pick<
     createSelectorQuery: () => {
       const requests: HeadlessWxSelectorQueryRequest[] = []
       let scope: Record<string, any> | undefined
-      const callbacks: Array<(result: any) => void> = []
+      const callbacks: Array<((result: any) => void) | undefined> = []
       let query!: HeadlessWxSelectorQuery
 
       const createNode = (target: HeadlessWxSelectorQueryRequest['target'], selector?: string, single = true): HeadlessWxSelectorQueryNode => ({
         boundingClientRect: (callback) => {
           requests.push({ fields: { rect: true, size: true }, selector, single, target })
-          if (callback) {
-            callbacks.push(callback as (result: Record<string, any> | null) => void)
-          }
+          callbacks.push(callback)
           return query
         },
         fields: (fields, callback) => {
           requests.push({ fields: { ...fields }, selector, single, target })
-          if (callback) {
-            callbacks.push(callback)
-          }
+          callbacks.push(callback)
           return query
         },
         node: (callback) => {
           requests.push({ fields: { node: true }, selector, single, target })
-          if (callback) {
-            callbacks.push(callback)
-          }
+          callbacks.push(callback)
           return query
         },
         scrollOffset: (callback) => {
           requests.push({ fields: { scrollOffset: true }, selector, single, target })
-          if (callback) {
-            callbacks.push(callback as (result: Record<string, any> | null) => void)
-          }
+          callbacks.push(callback)
           return query
         },
       })
 
       query = {
         exec: (callback) => {
-          const result = driver.executeSelectorQuery(requests, scope)
-          for (const [index, item] of result.entries()) {
-            callbacks[index]?.(item)
-          }
-          callback?.(result)
+          const queuedRequests = [...requests]
+          const queuedCallbacks = [...callbacks]
+          const result = driver.executeSelectorQuery(queuedRequests, scope)
+          driver.nextTick(() => {
+            for (const [index, item] of result.entries()) {
+              queuedCallbacks[index]?.(item)
+            }
+            callback?.(result)
+          })
           return result
         },
         in: (component) => {

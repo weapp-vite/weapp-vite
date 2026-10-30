@@ -1,4 +1,61 @@
+import { DomHandler, Parser } from 'htmlparser2'
 import { templateInterpolations } from './templateInterpolation'
+
+const valuelessAttributes = new WeakMap<object, ReadonlySet<string>>()
+
+class TemplateAttributeHandler extends DomHandler {
+  private readonly attributeForms = new Map<string, boolean>()
+
+  onopentagname() {
+    this.attributeForms.clear()
+  }
+
+  onattribute(name: string, _value: string, quote?: string | null) {
+    // parser 对同名属性保留首值；词法信息必须使用同一归属规则。
+    if (!this.attributeForms.has(name)) {
+      this.attributeForms.set(name, quote === undefined)
+    }
+  }
+
+  onopentag(name: string, attributes: Record<string, string>) {
+    super.onopentag(name, attributes)
+    const names = new Set([...this.attributeForms]
+      .filter(([key, valueless]) => valueless && Object.hasOwn(attributes, key))
+      .map(([key]) => key))
+    if (names.size > 0) {
+      valuelessAttributes.set(this.tagStack[this.tagStack.length - 1]!, names)
+    }
+  }
+}
+
+/** 保留 parser 的无值属性信息，不把裸属性与显式空字符串混为一谈。 */
+export function parseTemplateAttributeDocument(source: string) {
+  const handler = new TemplateAttributeHandler(undefined, { xmlMode: true })
+  const parser = new Parser(handler, {
+    // WXML 不是 HTML；不能按浏览器规则隐式闭合或丢弃嵌套的 form 等原生节点。
+    xmlMode: true,
+    decodeEntities: false,
+    lowerCaseAttributeNames: false,
+    lowerCaseTags: false,
+    recognizeSelfClosing: true,
+  })
+  parser.end(source)
+  return handler.root
+}
+
+export function isValuelessTemplateAttribute(node: object, name: string) {
+  return valuelessAttributes.get(node)?.has(name) ?? false
+}
+
+export function copyTemplateAttributeMetadata(source: object, target: object) {
+  const attributes = valuelessAttributes.get(source)
+  if (attributes) {
+    valuelessAttributes.set(target, attributes)
+  }
+  else {
+    valuelessAttributes.delete(target)
+  }
+}
 
 function decodeAttribute(raw: string, quote: string) {
   const source = raw.replaceAll(`\\${quote}`, quote)

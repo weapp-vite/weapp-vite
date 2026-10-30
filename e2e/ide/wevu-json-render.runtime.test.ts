@@ -1,7 +1,9 @@
+import { randomUUID } from 'node:crypto'
 import { access, mkdir, readdir, readFile, stat } from 'node:fs/promises'
 import process from 'node:process'
 import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { ACCEPTANCE_REPORT_DIR_ENV, ACCEPTANCE_ROOT } from '../scripts/domAcceptanceReport/helpers'
 import { launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 import { createDomAcceptance } from '../utils/domAcceptance'
@@ -89,9 +91,9 @@ describe('Wevu json-render runtime', { concurrent: false }, () => {
     const page = await miniProgram.reLaunch(route)
     await dom.check('ready', miniProgram, page)
     if (resolveRuntimeProviderName() === 'devtools') {
-      const reportDir = path.resolve(APP_ROOT, '../../docs/reports/json-render')
+      const reportDir = process.env[ACCEPTANCE_REPORT_DIR_ENV] || path.join(ACCEPTANCE_ROOT, 'docs/reports/dom-acceptance')
       await mkdir(reportDir, { recursive: true })
-      await miniProgram.screenshot({ path: path.join(reportDir, 'after-sales.png') })
+      await miniProgram.screenshot({ path: path.join(reportDir, `json-render-after-sales-${randomUUID()}.png`) })
     }
     await (await element(page, 'button', 'inspect-order')).tap()
     await expect.poll(async () => (await element(page, 'text', 'status')).text()).toBe('演示订单：DEMO-2026-001，实付 ¥129.00')

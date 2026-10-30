@@ -250,7 +250,7 @@ describe.each(['node', 'browser'] as const)('%s native route listener contract',
       }).exec()
     })
     session.navigateTo('/pages/detail/index')
-    expect(captured).toEqual([320])
+    await expect.poll(() => captured).toEqual([320])
     expect(page.__scrollTop__).toBe(0)
   })
 

@@ -43,14 +43,14 @@ describe('custom tabbar sibling roots', () => {
       }
     })
 
-    it(`owns a tabbar outside the page layout and retains it with its tab in ${provider}`, () => {
+    it(`owns a tabbar outside the page layout and retains it with its tab in ${provider}`, async () => {
       const session = provider === 'node'
         ? createNodeSession()
         : createBrowserHeadlessSession({ files: createBrowserVirtualFiles(customTabBarFiles) })
       try {
         const pageA = session.reLaunch('/pages/a/index')
         const tabA = pageA.getTabBar?.()
-        expect(tabA?.data).toEqual({ count: 0, ready: 1, layout: 'outside' })
+        await expect.poll(() => tabA?.data).toEqual({ count: 0, ready: 1, layout: 'outside' })
         const tree = session.renderCurrentPage()
         expect(queryXPathElements(tree.root, '//*[contains(@class, "custom-tab-bar")]')).toHaveLength(1)
         expect(queryXPathElements(tree.root, '//*[@id="layout"][descendant::*[contains(@class, "custom-tab-bar")]]')).toHaveLength(0)

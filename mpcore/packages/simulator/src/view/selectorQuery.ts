@@ -4,6 +4,7 @@ import type {
   HeadlessWxWindowInfoResult,
 } from '../host'
 import type { HeadlessPageInstance } from '../runtime'
+import { getInspectionChildren } from './inspectionTree'
 import { getNativeScrollOffset } from './nativeNode'
 import { collectNodeDataset } from './nodeDataset'
 import { parseStyleDeclarations, resolveRect } from './nodeGeometry'
@@ -23,7 +24,12 @@ export interface HeadlessSelectorQueryResolverOptions {
   page: HeadlessPageInstance
   resolveContext?: (node: DomNodeLike) => unknown
   root: DomNodeLike
+  scopeId?: string | null
   windowInfo: HeadlessWxWindowInfoResult
+}
+
+interface ResolvedSelectorQueryOptions extends HeadlessSelectorQueryResolverOptions {
+  unprojected?: boolean
 }
 
 const LEADING_MARK_PREFIX_RE = /^mark[:\-]?/
@@ -53,13 +59,14 @@ function createScopedRoot(node: DomNodeLike): DomNodeLike {
   }
 }
 
-function findNodeByScopeId(root: DomNodeLike, scopeId: string): DomNodeLike | null {
+function findNodeByScopeId(root: DomNodeLike, scopeId: string, includeUnprojected = false): DomNodeLike | null {
   if (root.attribs?.['data-sim-scope'] === scopeId) {
     return root
   }
 
-  for (const child of root.children ?? []) {
-    const match = findNodeByScopeId(child, scopeId)
+  const children = includeUnprojected ? getInspectionChildren(root) : root.children ?? []
+  for (const child of children) {
+    const match = findNodeByScopeId(child, scopeId, includeUnprojected)
     if (match) {
       return match
     }
@@ -116,7 +123,7 @@ function pickComputedStyle(node: DomNodeLike, propertyNames: string[]) {
 function resolveFieldsResult(
   node: DomNodeLike,
   fields: HeadlessWxSelectorQueryFieldsOption,
-  options: HeadlessSelectorQueryResolverOptions,
+  options: ResolvedSelectorQueryOptions,
 ) {
   const result: Record<string, any> = {}
 
@@ -130,7 +137,9 @@ function resolveFieldsResult(
     result.mark = collectMark(node)
   }
   if (fields.rect || fields.size) {
-    const rect = resolveRect(node, options.root.name === 'page' ? options.windowInfo : undefined)
+    const rect = options.unprojected
+      ? { bottom: 0, height: 0, left: 0, right: 0, top: 0, width: 0 }
+      : resolveRect(node, options.root.name === 'page' ? options.windowInfo : undefined)
     if (fields.rect) {
       Object.assign(result, rect)
     }
@@ -202,7 +211,7 @@ function resolveViewportResult(
 
 function resolveRequestResult(
   request: HeadlessWxSelectorQueryRequest,
-  options: HeadlessSelectorQueryResolverOptions,
+  options: ResolvedSelectorQueryOptions,
 ) {
   if (request.target === 'viewport') {
     return resolveViewportResult(request.fields, options)
@@ -221,7 +230,17 @@ export function executeSelectorQueryRequests(
   requests: HeadlessWxSelectorQueryRequest[],
   options: HeadlessSelectorQueryResolverOptions,
 ) {
-  return requests.map(request => resolveRequestResult(request, options))
+  let resolved: ResolvedSelectorQueryOptions = options
+  if (options.scopeId) {
+    const projected = findNodeByScopeId(options.root, options.scopeId)
+    const declared = projected ?? findNodeByScopeId(options.root, options.scopeId, true)
+    resolved = {
+      ...options,
+      root: declared ? createScopedRoot(declared) : { type: 'root', children: [] },
+      unprojected: !projected,
+    }
+  }
+  return requests.map(request => resolveRequestResult(request, resolved))
 }
 
 export function resolveSelectorQueryScopeRoot(root: DomNodeLike, scopeId?: string | null) {

@@ -57,7 +57,7 @@ import {
   deriveWindowInfo,
 } from '../runtime/systemInfo'
 import { createHeadlessWxState } from '../runtime/wxState'
-import { executeSelectorQueryRequests, resolveSelectorQueryScopeRoot } from '../view'
+import { executeSelectorQueryRequests } from '../view'
 import { createHeadlessAnimation } from '../view/animation'
 import { createHeadlessCanvasContext } from '../view/canvasContext'
 import { customTabBarScopeId } from '../view/customTabBar'
@@ -1500,7 +1500,8 @@ export class BrowserHeadlessSession {
                 type: 'unsupported-context',
               }
         },
-        root: resolveSelectorQueryScopeRoot(staleScope.snapshot.root, staleScope.snapshot.scopeId),
+        root: staleScope.snapshot.root,
+        scopeId: staleScope.snapshot.scopeId,
         windowInfo: this.getWindowInfo(),
       })
     }
@@ -1539,7 +1540,8 @@ export class BrowserHeadlessSession {
               type: 'unsupported-context',
             }
       },
-      root: resolveSelectorQueryScopeRoot(rendered.root, scopeId),
+      root: rendered.root,
+      scopeId,
       windowInfo: this.getWindowInfo(),
     })
   }

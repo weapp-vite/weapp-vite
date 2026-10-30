@@ -78,7 +78,7 @@ describe.each(['node', 'browser'] as const)('%s object dataset consumers', (prov
           expect(initialEvent).toEqual(expectedObjectDataset())
         }
         page.query()
-        expect(page.data.selector).toEqual(expectedObjectDataset(value, count))
+        await expect.poll(() => page.data.selector).toEqual(expectedObjectDataset(value, count))
         const component = (await render().root.$('dataset-probe'))!
         await (await component.$('#emit'))!.tap()
         expect(page.data.componentEvent).toEqual(expectedObjectDataset(value, count, 'component-0'))
