@@ -5,6 +5,7 @@ import { createRequire } from 'node:module'
 import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
+import { stripVTControlCharacters } from 'node:util'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { compileVueStyleToWxss, readAndParseSfc } from 'wevu/compiler'
 import { engines } from '../../package.json'
@@ -78,6 +79,18 @@ async function withRuntimeVersions(node: string, bun: unknown, run: () => Promis
   }
 }
 
+function expectNodeVersionWarning(warn: ReturnType<typeof vi.fn>, nodeVersion: string) {
+  expect(warn).toHaveBeenCalledOnce()
+  const message = stripVTControlCharacters(String(warn.mock.calls[0]?.[0] ?? ''))
+  expect(message).toContain('weapp.tailwindcss')
+  expect(message).toContain('当前 Node.js 版本')
+  expect(message).toContain(nodeVersion)
+  expect(message).toContain('推荐版本：')
+  expect(message).toContain(engines.node)
+  expect(message).toContain('为获得安全修复，建议升级至受支持 LTS 分支的最新补丁版本。')
+  expect(message).toContain('本次将继续运行')
+}
+
 describe('managed Tailwind integration', () => {
   const temporaryRoots: string[] = []
 
@@ -125,9 +138,7 @@ describe('managed Tailwind integration', () => {
       expect(warn).not.toHaveBeenCalled()
     }
     else {
-      expect(warn).toHaveBeenCalledExactlyOnceWith(expect.stringContaining(`Node.js ${engines.node}; current version is ${nodeVersion}`))
-      expect(warn.mock.calls[0]?.[0]).toContain('Upgrade to the latest patch release of a supported Node.js LTS line for security fixes.')
-      expect(warn.mock.calls[0]?.[0]).toContain('Continuing with the current runtime.')
+      expectNodeVersionWarning(warn, nodeVersion)
     }
     expect(mocks.createCompiler).not.toHaveBeenCalled()
   })
@@ -148,8 +159,8 @@ describe('managed Tailwind integration', () => {
       await buildStart.call({ addWatchFile, warn: firstWarning } as any, {} as any)
       await getHookHandler(second.buildStart)!.call({ addWatchFile, warn: secondWarning } as any, {} as any)
     })
-    expect(firstWarning).toHaveBeenCalledOnce()
-    expect(secondWarning).toHaveBeenCalledOnce()
+    expectNodeVersionWarning(firstWarning, '24.22.0')
+    expectNodeVersionWarning(secondWarning, '24.22.0')
     expect(addWatchFile).toHaveBeenCalledTimes(3)
     expect(mocks.createCompiler).not.toHaveBeenCalled()
   })
@@ -181,7 +192,7 @@ describe('managed Tailwind integration', () => {
     await withRuntimeVersions('26.3.0', bun, async () => {
       await expect(getHookHandler(plugin.buildStart)!.call({ addWatchFile, warn } as any, {} as any)).resolves.toBeUndefined()
     })
-    expect(warn).toHaveBeenCalledExactlyOnceWith(expect.stringContaining(`Node.js ${engines.node}; current version is 26.3.0`))
+    expectNodeVersionWarning(warn, '26.3.0')
     expect(addWatchFile).toHaveBeenCalledExactlyOnceWith(entry.replaceAll('\\', '/'))
     expect(mocks.createCompiler).not.toHaveBeenCalled()
   })
@@ -199,7 +210,7 @@ describe('managed Tailwind integration', () => {
       await withRuntimeVersions('26.3.0', undefined, async () => {
         await expect(getHookHandler(plugin.buildStart)!.call({ addWatchFile, warn } as any, {} as any)).resolves.toBeUndefined()
       })
-      expect(warn).toHaveBeenCalledExactlyOnceWith(expect.stringContaining(`Node.js ${engines.node}; current version is 26.3.0`))
+      expectNodeVersionWarning(warn, '26.3.0')
       expect(addWatchFile).toHaveBeenCalledExactlyOnceWith(entry.replaceAll('\\', '/'))
       expect(mocks.createCompiler).not.toHaveBeenCalled()
     }

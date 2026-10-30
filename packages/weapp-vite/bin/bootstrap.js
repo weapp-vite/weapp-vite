@@ -1,6 +1,8 @@
 import { readFileSync } from 'node:fs'
+import { colors } from '@weapp-core/logger'
 // eslint-disable-next-line e18e/ban-dependencies -- 启动检查使用与发布 engines 完全相同的 npm semver 语义。
 import satisfies from 'semver/functions/satisfies.js'
+import { formatNodeVersionWarning } from './nodeVersionWarning.js'
 
 const { engines } = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
 
@@ -115,13 +117,13 @@ export async function runWeappViteCLI(options = {}) {
     importer = () => ['accept', 'mcp'].includes(argv[0])
       ? import('../dist/cli-acceptance.mjs')
       : import('../dist/cli.mjs'),
-    write = message => getGlobalProcess().stderr.write(`\n WARN  ${message}\n\n`),
+    write = message => getGlobalProcess().stderr.write(`\n ${colors.bold(colors.yellow('警告'))}  ${message}\n\n`),
   } = options
   // Bun 的 versions.node 只是兼容标识；真实 Node 在加载依赖前提示升级，不因版本号阻断命令。
   const bunVersion = getGlobalProcess().versions.bun
   const isBun = typeof bunVersion === 'string' && bunVersion.length > 0
   if (!isBun && !satisfies(nodeVersion, engines.node)) {
-    write(`weapp-vite recommends Node.js ${engines.node}; current version is ${nodeVersion}. Upgrade to the latest patch release of a supported Node.js LTS line for security fixes. Continuing with the current runtime.`)
+    write(formatNodeVersionWarning('weapp-vite', nodeVersion, engines.node))
   }
   const restorePrepareGuard = guardPrepareProcessExit(argv)
   const restoreKnownNoiseGuard = guardKnownLocalPkgResolveNoise()

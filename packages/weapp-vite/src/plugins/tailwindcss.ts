@@ -19,6 +19,7 @@ import { createTailwindController } from '@weapp-vite/tailwindcss'
 import path from 'pathe'
 // eslint-disable-next-line e18e/ban-dependencies -- Node 推荐范围沿用发布声明与 CLI 的 semver 校验。
 import satisfies from 'semver/functions/satisfies.js'
+import { formatNodeVersionWarning } from '../../bin/nodeVersionWarning.js'
 import { engines } from '../../package.json'
 import { parseSidecarSourceMetadata, parseSidecarSourceRequest } from '../moduleGraph/protocol'
 import { resolveBuildScope } from '../runtime/buildScope'
@@ -200,9 +201,7 @@ function checkRuntimeRequirements(resolved: ResolvedManagedTailwindcssOptions, w
   const bunVersion = process.versions.bun
   const isBun = typeof bunVersion === 'string' && bunVersion.length > 0
   if (!isBun && !satisfies(process.versions.node, engines.node)) {
-    warn(
-      `weapp.tailwindcss recommends Node.js ${engines.node}; current version is ${process.versions.node}. Upgrade to the latest patch release of a supported Node.js LTS line for security fixes. Continuing with the current runtime.`,
-    )
+    warn(formatNodeVersionWarning('weapp.tailwindcss', process.versions.node, engines.node))
   }
   for (const entry of resolved.cssEntries) {
     if (!fs.existsSync(entry)) {

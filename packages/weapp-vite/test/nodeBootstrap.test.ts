@@ -35,7 +35,10 @@ describe('Node compatibility before loading the CLI dependency graph', () => {
     expect(importer).toHaveBeenCalledOnce()
     expect(write).toHaveBeenCalledWith(expect.stringContaining('20.19.0'))
     expect(write).toHaveBeenCalledWith(expect.stringContaining(manifest.engines.node))
-    expect(write).toHaveBeenCalledWith(expect.stringContaining('latest patch release of a supported Node.js LTS line for security fixes'))
+    expect(write).toHaveBeenCalledWith(expect.stringContaining('当前 Node.js 版本'))
+    expect(write).toHaveBeenCalledWith(expect.stringContaining('推荐版本：'))
+    expect(write).toHaveBeenCalledWith(expect.stringContaining('为获得安全修复，建议升级至受支持 LTS 分支的最新补丁版本。'))
+    expect(write).toHaveBeenCalledWith(expect.stringContaining('本次将继续运行'))
   })
 
   it.each(['22.23.4', '24.22.1', '26.12.1'])('loads the CLI on supported Node %s', async (nodeVersion) => {
@@ -63,7 +66,7 @@ describe('Node compatibility before loading the CLI dependency graph', () => {
     const stdout = vi.spyOn(process.stdout, 'write').mockReturnValue(true)
     await expect(runWeappViteCLI({ argv: ['build'], importer: vi.fn() })).resolves.toBe(true)
     expect(stderr).toHaveBeenCalledOnce()
-    expect(stderr).toHaveBeenCalledWith(expect.stringContaining('WARN'))
+    expect(stderr).toHaveBeenCalledWith(expect.stringContaining('警告'))
     expect(stdout).not.toHaveBeenCalled()
     expect(runtime.exitCode).toBeUndefined()
     expect(runtime.exit).not.toHaveBeenCalled()
