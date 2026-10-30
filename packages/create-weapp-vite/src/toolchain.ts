@@ -7,6 +7,7 @@ import { parseDocument } from 'yaml'
 import { engines } from '../package.json'
 import { TEMPLATE_CATALOG } from './generated/catalog'
 import { findPnpmWorkspaceRoot } from './pnpmBuildPolicy'
+import { renderHostConfig } from './toolchain/config'
 import vitePlusVersions from './vitePlusVersions.json'
 
 export type Toolchain = 'wv' | 'vite' | 'vite-plus'
@@ -44,36 +45,14 @@ export async function validateToolchainWorkspace(root: string, toolchain: Toolch
   }
 }
 
-function renderConfig(toolchain: Toolchain, source: string, platform?: string) {
-  const host = toolchain === 'vite-plus' ? 'vite-plus' : 'vite'
-  const platformLine = platform ? `\n      platform: '${platform}',` : ''
-  const webEnabled = platform ? String(platform === 'web') : 'config.weapp?.platform === \'web\''
-  return `import { defineConfig } from '${host}'
-import { weapp } from 'weapp-vite/vite'
-import base from './${source.replace(/\.ts$/, '')}'
-
-export default defineConfig(async (env) => {
-  const config = await (typeof base === 'function' ? base(env) : base)
-  return {
-    ...config,
-    weapp: {
-      ...config.weapp,${platformLine}
-      web: { ...config.weapp?.web, enable: ${webEnabled} },
-    },
-    plugins: [weapp(), ...(config.plugins ?? [])],
-  }
-})
-`
-}
-
 /** 从共享业务模板派生宿主入口，仅改写普通 build/dev，保留小程序专属命令。 */
-export async function applyToolchain(root: string, pkg: PackageJson, toolchain: Toolchain) {
+export async function applyToolchain(root: string, pkg: PackageJson, toolchain: Toolchain, options: { prepared?: boolean, framework?: 'native' | 'wevu' | 'react' } = {}) {
   pkg.engines = { ...pkg.engines, node: engines.node }
   if (toolchain === 'wv') {
     return
   }
   const source = 'weapp-vite.config.ts'
-  if (!await fs.pathExists(path.join(root, source))) {
+  if (!options.prepared && !await fs.pathExists(path.join(root, source))) {
     await fs.move(path.join(root, 'vite.config.ts'), path.join(root, source))
   }
   const configurations = new Map<string, { source: string, platform?: string }>([
@@ -95,8 +74,10 @@ export async function applyToolchain(root: string, pkg: PackageJson, toolchain: 
     configurations.set(configFile, { source: explicitSource ?? source, platform })
     pkg.scripts![name] = `${command} ${action}${configFile === 'vite.config.ts' ? '' : ` --config ${configFile}`}${hostFlag}`
   }
-  for (const [fileName, config] of configurations) {
-    await fs.writeFile(path.join(root, fileName), renderConfig(toolchain, config.source, config.platform))
+  if (!options.prepared) {
+    for (const [fileName, config] of configurations) {
+      await fs.writeFile(path.join(root, fileName), renderHostConfig(toolchain, config.source, config.platform, options.framework))
+    }
   }
   pkg.devDependencies ??= {}
   if (toolchain === 'vite') {

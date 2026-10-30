@@ -1,19 +1,8 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
+import templateDefinitions from '../../packages/create-weapp-vite/src/templateDefinitions.json' with { type: 'json' }
 
-export const TEMPLATE_DIR_MAP = {
-  'default': 'weapp-vite-template',
-  'multi-platform': 'weapp-vite-multi-platform-template',
-  'multi-platform-sfc': 'weapp-vite-multi-platform-sfc-template',
-  'plugin': 'weapp-vite-plugin-template',
-  'lib': 'weapp-vite-lib-template',
-  'wevu': 'weapp-vite-wevu-template',
-  'react': 'weapp-vite-react-template',
-  'wevu-tdesign': 'weapp-vite-wevu-tailwindcss-tdesign-template',
-  'tailwindcss': 'weapp-vite-tailwindcss-template',
-  'tdesign': 'weapp-vite-tailwindcss-tdesign-template',
-  'vant': 'weapp-vite-tailwindcss-vant-template',
-}
+export const TEMPLATE_DIR_MAP = Object.fromEntries(templateDefinitions.map(template => [template.id, template.directory]))
 export const DEFAULT_TEMPLATE_NAMES = Object.keys(TEMPLATE_DIR_MAP)
 
 export function isFilePresent(file) {

@@ -7,34 +7,23 @@ import logger from '@weapp-core/logger'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { createAgentsGuidelines } from './agents'
+import { copyTemplateDir, ensureDotGitignore, mergeGitignoreSource, shouldSkipTemplateFile } from './createProject/files'
 import { resolveDependencyVersions, validateDependencyVersionStrategy } from './dependencyVersions'
 import { TemplateName } from './enums'
 import { installationCommand } from './installationCommand'
 import { displayRegistry, registryEnvironment, resolveRegistryOptions } from './npm'
-import { ensurePnpmBuildPolicy } from './pnpmBuildPolicy'
+import { ensurePnpmBuildPolicy, findPnpmWorkspaceRoot } from './pnpmBuildPolicy'
 import { installRecommendedSkills, RECOMMENDED_SKILLS_INSTALL_COMMAND } from './skills'
 import { ensureManagedTypeScriptDevDependencies, normalizeTemplateDependencySpecs } from './templateDependencies'
+import { getTemplateDefinition, TEMPLATE_DIR_MAP } from './templates'
+import { assertPreparedTemplate } from './templates/prepared'
 import { applyToolchain, validateToolchain, validateToolchainWorkspace } from './toolchain'
 import { updateGitIgnore } from './updateGitignore'
 import { writeJsonFile } from './utils/fs'
+import { updatePreparedJson } from './utils/updateJson'
 
-const CRLF_RE = /\r\n/g
-const WINDOWS_VERBATIM_PATH_RE = /^\\\\\?\\/
 const TOURIST_APP_ID = 'touristappid'
 const moduleDir = path.dirname(fileURLToPath(import.meta.url))
-const TEMPLATE_DIR_MAP: Record<TemplateName, string> = {
-  [TemplateName.default]: 'weapp-vite-template',
-  [TemplateName.multiPlatform]: 'weapp-vite-multi-platform-template',
-  [TemplateName.multiPlatformSfc]: 'weapp-vite-multi-platform-sfc-template',
-  [TemplateName.plugin]: 'weapp-vite-plugin-template',
-  [TemplateName.lib]: 'weapp-vite-lib-template',
-  [TemplateName.wevu]: 'weapp-vite-wevu-template',
-  [TemplateName.react]: 'weapp-vite-react-template',
-  [TemplateName.wevuTdesign]: 'weapp-vite-wevu-tailwindcss-tdesign-template',
-  [TemplateName.tailwindcss]: 'weapp-vite-tailwindcss-template',
-  [TemplateName.tdesign]: 'weapp-vite-tailwindcss-tdesign-template',
-  [TemplateName.vant]: 'weapp-vite-tailwindcss-vant-template',
-}
 function resolveWorkspaceTemplateDir(templateName: TemplateName) {
   const templateDirName = TEMPLATE_DIR_MAP[templateName]
   return templateDirName
@@ -42,29 +31,15 @@ function resolveWorkspaceTemplateDir(templateName: TemplateName) {
     : path.resolve(moduleDir, '../../../templates', templateName)
 }
 
-function normalizeTemplatePath(value: string) {
-  return value.replace(WINDOWS_VERBATIM_PATH_RE, '').split('\\').join('/')
-}
-
-function normalizeTemplateRelativePath(relativePath: string) {
-  if (!relativePath || relativePath === '.') {
-    return ''
-  }
-
-  return normalizeTemplatePath(relativePath)
-}
-
-function isGeneratedOutputSegment(segment: string) {
-  return segment === 'dist' || segment.startsWith('dist-')
-}
-
-function hasTemplatePathSegment(relativePath: string, predicate: (segment: string) => boolean) {
-  return relativePath.split('/').some(predicate)
-}
-
-async function resolveTemplateDirs(templateName: TemplateName) {
-  const packagedTemplateDir = path.resolve(moduleDir, '../templates', templateName)
+async function resolveTemplateDirs(templateName: TemplateName, toolchain: Toolchain = 'wv') {
+  const packagedTemplateDir = path.resolve(moduleDir, '../templates', ...(toolchain === 'vite-plus' ? ['vite-plus'] : []), templateName)
   const workspaceTemplateDir = resolveWorkspaceTemplateDir(templateName)
+  if (toolchain === 'vite-plus' && !await fs.pathExists(packagedTemplateDir)) {
+    throw new Error('Vite Plus 模板尚未准备，请先运行 pnpm --filter create-weapp-vite templates:prepare；发布包须包含派生模板。')
+  }
+  if (toolchain === 'vite-plus') {
+    await assertPreparedTemplate(packagedTemplateDir, templateName)
+  }
   const preferredTemplateDir = await fs.pathExists(packagedTemplateDir)
     ? packagedTemplateDir
     : workspaceTemplateDir
@@ -74,88 +49,6 @@ async function resolveTemplateDirs(templateName: TemplateName) {
     workspaceTemplateDir,
     preferredTemplateDir,
   }
-}
-
-function shouldSkipTemplateFile(filePath: string, templateRoot: string) {
-  const relativePath = normalizeTemplateRelativePath(
-    path.relative(normalizeTemplatePath(templateRoot), normalizeTemplatePath(filePath)),
-  )
-
-  if (!relativePath) {
-    return false
-  }
-
-  return (
-    hasTemplatePathSegment(relativePath, segment => segment === 'node_modules')
-    || hasTemplatePathSegment(relativePath, segment => segment === '.weapp-vite')
-    || hasTemplatePathSegment(relativePath, isGeneratedOutputSegment)
-    || hasTemplatePathSegment(relativePath, segment => segment === '.turbo')
-    || hasTemplatePathSegment(relativePath, segment => segment === '.npmrc')
-    || relativePath === 'vite.config.ts.timestamp'
-    || relativePath.endsWith('/vite.config.ts.timestamp')
-    || relativePath === 'CHANGELOG.md'
-    || relativePath.endsWith('/CHANGELOG.md')
-    || relativePath === '.DS_Store'
-    || relativePath.endsWith('/.DS_Store')
-  )
-}
-
-function normalizeLines(value: string) {
-  return value.replace(CRLF_RE, '\n').split('\n')
-}
-
-function mergeGitignoreSource(existing: string, template: string) {
-  const merged = normalizeLines(existing)
-  const seen = new Set(merged)
-
-  for (const line of normalizeLines(template)) {
-    if (seen.has(line)) {
-      continue
-    }
-    merged.push(line)
-    seen.add(line)
-  }
-
-  while (merged.length > 0 && merged[merged.length - 1] === '') {
-    merged.pop()
-  }
-
-  return `${merged.join('\n')}\n`
-}
-
-async function copyTemplateDir(sourceDir: string, fallbackDir: string, targetDir: string) {
-  const copyOptions = {
-    filter(src: string) {
-      return !shouldSkipTemplateFile(src, sourceDir)
-    },
-  }
-
-  try {
-    await fs.copy(sourceDir, targetDir, copyOptions)
-  }
-  catch (error) {
-    const errorCode = (error as NodeJS.ErrnoException | undefined)?.code
-    if (sourceDir === fallbackDir || errorCode !== 'ENOENT') {
-      throw error
-    }
-    await fs.copy(fallbackDir, targetDir, copyOptions)
-  }
-}
-
-async function ensureDotGitignore(root: string) {
-  const gitignorePath = path.resolve(root, 'gitignore')
-  const dotGitignorePath = path.resolve(root, '.gitignore')
-
-  if (!await fs.pathExists(gitignorePath)) {
-    return
-  }
-
-  if (await fs.pathExists(dotGitignorePath)) {
-    await fs.remove(gitignorePath)
-    return
-  }
-
-  await fs.move(gitignorePath, dotGitignorePath)
 }
 
 async function rewriteProjectConfigAppId(targetDir: string) {
@@ -221,7 +114,7 @@ export async function createProject(
   const {
     preferredTemplateDir,
     workspaceTemplateDir,
-  } = await resolveTemplateDirs(templateName)
+  } = await resolveTemplateDirs(templateName, toolchain)
   const dotGitignorePath = path.resolve(targetDir, '.gitignore')
   const existingGitignore = await fs.pathExists(dotGitignorePath)
     ? await fs.readFile(dotGitignorePath, 'utf8')
@@ -232,7 +125,7 @@ export async function createProject(
     return
   }
 
-  await copyTemplateDir(preferredTemplateDir, workspaceTemplateDir, targetDir)
+  await copyTemplateDir(preferredTemplateDir, toolchain === 'vite-plus' ? preferredTemplateDir : workspaceTemplateDir, targetDir)
   await rewriteProjectConfigAppId(targetDir)
 
   const templatePackagePath = path.resolve(preferredTemplateDir, 'package.json')
@@ -251,10 +144,15 @@ export async function createProject(
   const resolution = await resolveDependencyVersions(pkgJson, dependencyVersionStrategy, network)
 
   await ensurePnpmBuildPolicy(targetDir)
-  await applyToolchain(targetDir, pkgJson, toolchain)
-  await writeJsonFile(packageJsonPath, pkgJson)
+  await applyToolchain(targetDir, pkgJson, toolchain, { prepared: toolchain === 'vite-plus', framework: getTemplateDefinition(templateName)?.framework })
+  if (toolchain === 'vite-plus') {
+    await updatePreparedJson(packageJsonPath, pkgJson)
+  }
+  else {
+    await writeJsonFile(packageJsonPath, pkgJson)
+  }
   // eslint-disable-next-line ts/no-use-before-define
-  await writeAgentsGuidelines(targetDir, templateName, toolchain)
+  await writeAgentsGuidelines(targetDir, templateName, toolchain, toolchain === 'vite-plus' ? await fs.readFile(path.join(preferredTemplateDir, 'AGENTS.md'), 'utf8') : undefined)
   await updateGitIgnore({ root: targetDir, write: true })
 
   if (options.installSkills) {
@@ -272,6 +170,12 @@ export async function createProject(
     }
   }
 
+  if (toolchain === 'vite-plus') {
+    const workspace = await findPnpmWorkspaceRoot(targetDir)
+    if (workspace && path.resolve(workspace) !== path.resolve(targetDir)) {
+      logger.info('Vite Plus 的 vp check 优先继承工作区根 lint/fmt 配置；成员预设不能覆盖根策略，请按 README 在根配置接入。')
+    }
+  }
   logger.log('✨ 创建模板成功!')
   logger.info(`依赖版本策略：${resolution.strategy}；registry：${displayRegistry(network.registry)}`)
   logger.info('进入项目目录后安装依赖：')
@@ -282,7 +186,7 @@ export async function createProject(
   logger.info(installationCommand(temporaryRegistry !== undefined ? network.registry : undefined))
 }
 
-async function writeAgentsGuidelines(targetDir: string, templateName: TemplateName, toolchain: Toolchain = 'wv') {
+async function writeAgentsGuidelines(targetDir: string, templateName: TemplateName, toolchain: Toolchain = 'wv', prepared?: string) {
   const agentsPath = path.resolve(targetDir, 'AGENTS.md')
   if (await fs.pathExists(agentsPath)) {
     const current = await fs.readFile(agentsPath, 'utf8')
@@ -291,7 +195,7 @@ async function writeAgentsGuidelines(targetDir: string, templateName: TemplateNa
       return
     }
   }
-  await fs.writeFile(agentsPath, createAgentsGuidelines(templateName, toolchain))
+  await fs.writeFile(agentsPath, prepared ?? createAgentsGuidelines(templateName, toolchain))
 }
 
 export const __internal = {

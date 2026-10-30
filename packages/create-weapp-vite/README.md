@@ -7,7 +7,9 @@
 ## 特性
 
 - 交互式创建或非交互式参数创建
-- 内置多种模板（默认、原生多平台 + Web、Vue SFC 多平台 + Web、Wevu、Wevu + TDesign、Tailwindcss、TDesign、Vant、插件、组件库）
+- 默认展示原生、Wevu、Wevu + TDesign、TailwindCSS、TDesign、Vant 六个模板；React、多平台、插件、组件库收纳在“更多模板”
+- 模板选择后独立选择 `wv`、Vite 或 Vite+ 工具链，默认 `wv`
+- Vite+ 项目内置小程序 Oxlint 规则与 Oxfmt 格式预设
 - 默认不联网查询版本，使用随包依赖；可显式按用户 registry 查询兼容稳定版
 - 自动处理 `.gitignore` 写入
 - 可选安装推荐的 AI skills（`sonofmagic/skills`）
@@ -35,7 +37,7 @@ npx create-weapp-vite
 pnpm create weapp-vite
 ```
 
-交互流程询问是否安装推荐的 AI skills，默认选择“否”。显式安装时执行：
+交互流程依次选择模板、工具链，再询问是否安装推荐的 AI skills；工具链默认 `wv`，AI skills 默认选择“否”。显式安装时执行：
 
 ```bash
 npx --yes skills add sonofmagic/skills
@@ -71,11 +73,42 @@ import { createProject, TemplateName } from 'create-weapp-vite'
 
 await createProject('my-app', TemplateName.wevu)
 await createProject('my-app', TemplateName.wevu, { installSkills: true })
+await createProject('my-app', TemplateName.wevu, { toolchain: 'vite-plus' })
 await createProject('my-app', TemplateName.wevu, {
   dependencyVersionStrategy: 'compatible',
   registry: 'https://registry.npmmirror.com/',
 })
 ```
+
+## Vite+ 模板
+
+工具链与业务模板独立，已有模板名与非交互默认值保持兼容：
+
+```bash
+pnpm create weapp-vite my-app wevu --toolchain=vite-plus
+pnpm create weapp-vite my-native-app default --toolchain=vite-plus
+pnpm create weapp-vite my-vite-app wevu --toolchain=vite
+```
+
+Vite+ 生成项目的 `dev` / `build` 使用 `vp`，`vite.config.ts` 导入共享的 `weapp-vite.config.ts`，并接入 `@weapp-vite/oxlint` 与 `@weapp-vite/oxfmt`。原生项目使用 `miniProgramRecommended`，Wevu 项目使用 `wevuRecommended`，React 项目使用 `reactRecommended`；三者均包含小程序 runtime 规则，格式配置使用 `recommended`。
+
+| 脚本 | 用途 |
+| --- | --- |
+| `pnpm lint` / `pnpm lint:fix` | Oxlint 检查与自动修复 |
+| `pnpm format` / `pnpm format:check` | Oxfmt 与安全 WXML 适配器的格式化、只读检查 |
+| `pnpm check` | Vite+ 综合检查与 WXML 只读格式检查 |
+| `pnpm lint:vue` / `pnpm lint:vue:fix` | Wevu 项目的 Vue 模板专项 ESLint 检查与修复 |
+| `pnpm stylelint` | 样式与 Vue SFC style 检查 |
+
+`format`、`format:check`、`check` 脚本分别调用 `weapp-vite-format --write`、`--check`、`--check-all`，组合配套的 `vp fmt` / `vp check` 与 WXML 处理。标准 Oxfmt 预设保留 WXSS 的 CSS 关联，并忽略 WXML；单独执行 `vp fmt` 不包含 WXML 检查或写入。
+
+WXML 适配器按项目实际 `fmt` 配置及文件 `overrides` 调整标签与属性空白，逐字保留文本、插值、属性值和内联 WXS，并保持自闭合形式。保留预设中的 WXML 忽略项，不要将 `.wxml` 关联为 HTML。格式或结构检查失败时命令失败，不通过自动修复掩盖 WXML 语义变化。
+
+`wv prepare`、打开 IDE、Dashboard、上传与 MCP 命令继续由 `wv` 提供。Vue 模板专项检查、Stylelint 和项目类型检查仍按各自覆盖范围执行；Oxlint 检查通过不等于目标小程序 runtime 已验收。
+
+Vite+ 使用固定配对 `vite-plus@1.2.0`、`vite` → `@voidzero-dev/vite-plus-core@1.2.0` 与 `vitest@5.0.4`。独立项目同时生成 npm overrides 与 pnpm workspace 策略。已有 pnpm workspace 须先配置相同的 `overrides.vite`、`overrides.vitest`，以及包含 `1.2.0` 的 `peerDependencyRules.allowedVersions.vite`；脚手架会在生成前校验，保留父工作区文件。
+
+在已有 workspace 中，`pnpm check` 的标准检查与 WXML 适配器优先使用根 `vite.config.ts` 中的 `lint` / `fmt` 配置；成员预设不会覆盖根策略。团队应在根配置接入相应预设，并将文件匹配范围定位到成员目录。普通 `weapp-vite-format --write` / `--check` 使用最近的项目格式配置，支持显式 `--config` 和文件范围；`--check-all` 与 `vp check` 不提供该参数。详细配置见 [Oxlint 文档](https://vite.weapp.dev/packages/oxlint) 与 [Oxfmt 文档](https://vite.weapp.dev/packages/oxfmt)。
 
 ## 依赖版本策略
 
@@ -146,19 +179,18 @@ pnpm --config.registry=https://registry.npmmirror.com/ dlx create-weapp-vite@<ve
 
 ## 配置
 
-`TemplateName` 支持以下模板：
+默认模板列表展示以下六项，网站推荐与交互入口保持一致：
 
-- `default`
-- `multi-platform`
-- `multi-platform-sfc`
-- `wevu`
-- `react`
-- `wevu-tdesign`
-- `tailwindcss`
-- `tdesign`
-- `vant`
-- `plugin`
-- `lib`
+| 模板名 | 说明 |
+| --- | --- |
+| `default` | 原生小程序 |
+| `wevu` | Wevu + Vue SFC |
+| `wevu-tdesign` | Wevu + TDesign + TailwindCSS |
+| `tailwindcss` | 原生小程序 + TailwindCSS |
+| `tdesign` | TDesign + TailwindCSS |
+| `vant` | Vant + TailwindCSS |
+
+`react`、`multi-platform`、`multi-platform-sfc`、`plugin`、`lib` 收纳在“更多模板”。这些模板及其 `TemplateName` 枚举仍保留，既有命令、自动化脚本与可编程 API 可继续显式创建；收纳不会改变模板的编译能力。
 
 `multi-platform` 使用原生 Page/Component，覆盖微信、支付宝、抖音、百度、京东、小红书与 Web Runtime。它按命令构建单个目标，不会隐式生成全部平台产物；创建后请使用 `dev:<platform>` / `build:<platform>` 脚本。
 

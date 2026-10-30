@@ -1,0 +1,18 @@
+{
+  "condition": {
+    "miniprogram": {
+      "list": [
+        {
+          "name": "pages/raw/index",
+          "pathName": "pages/raw/index",
+          "query": "",
+          "launchMode": "default"
+        }
+      ]
+    }
+  },
+  "setting": {
+    "compileHotReLoad": false,
+    "urlCheck": false
+  }
+}

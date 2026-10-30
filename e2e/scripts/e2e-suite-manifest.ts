@@ -208,6 +208,7 @@ const IDE_WEVU_FEATURES_PATTERNS = [
   'ide/wevu-router-hmr.runtime.test.ts',
 ]
 const IDE_TEMPLATES_PATTERNS = [
+  'ide/template-formatting.runtime.test.ts',
   'ide/template-retail-checkout.runtime.test.ts',
   'ide/devtools-cli-workflow.runtime.test.ts',
   'ide/mcp-runtime-tools.runtime.test.ts',
@@ -295,6 +296,7 @@ const IDE_GATE_TESTS = [
 ].map(testPath => path.resolve(ROOT, testPath))
 // #779 的计算样式由真实 IDE 与 simulator 的 pageStyleImports browser companion 验收；逻辑树不提供颜色证据。
 const IDE_DOM_HEADLESS_PATTERNS = [...new Set([
+  'ide/template-formatting.runtime.test.ts',
   'ide/stateful-host-format.runtime.test.ts',
   'ide/native-property-delivery.runtime.test.ts',
   'ide/template-plugin-dev-open.runtime.test.ts',

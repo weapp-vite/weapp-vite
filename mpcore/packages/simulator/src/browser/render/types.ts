@@ -67,6 +67,8 @@ export interface BrowserRendererContext {
   templateSource?: Pick<ArtifactSource, 'readText'>
   moduleLoader: BrowserModuleLoader
   project: HeadlessProjectDescriptor
+  /** 小程序模拟设备的视口宽度；不使用宿主浏览器窗口尺寸。 */
+  viewportWidth?: number
   session: {
     createIntersectionObserver: (scope: any, options?: Record<string, any>) => any
     createMediaQueryObserver: (scope: any) => any

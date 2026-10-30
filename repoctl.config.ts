@@ -15,6 +15,8 @@ export default {
             '@weapp-vite/mcp',
             '@weapp-vite/volar',
             '@weapp-vite/eslint',
+            '@weapp-vite/oxlint',
+            '@weapp-vite/oxfmt',
             '@weapp-vite/tailwindcss',
             '@weapp-vite/react',
             '@weapp-vite/i18n',

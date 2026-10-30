@@ -1,0 +1,70 @@
+{
+  "name": "@weapp-vite/oxfmt",
+  "type": "module",
+  "version": "0.0.0",
+  "description": "Oxfmt formatting preset for weapp-vite mini-program projects",
+  "license": "MIT",
+  "homepage": "https://vite.weapp.dev/packages/oxfmt",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/weapp-vite/weapp-vite.git",
+    "directory": "packages/oxfmt"
+  },
+  "bugs": {
+    "url": "https://github.com/weapp-vite/weapp-vite/issues"
+  },
+  "keywords": ["weapp-vite", "miniprogram", "oxfmt", "formatter"],
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    },
+    "./wxml": {
+      "types": "./dist/wxml/index.d.mts",
+      "import": "./dist/wxml/index.mjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "bin": {
+    "weapp-vite-format": "./dist/cli.mjs"
+  },
+  "files": ["dist"],
+  "engines": {
+    "node": "^22.23.4 || ^24.22.1 || >=26.12.1"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "test": "vitest run --config ./vitest.config.ts",
+    "test:types": "pnpm run test:types:check",
+    "test:types:check": "tsd",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
+  },
+  "peerDependencies": {
+    "vite-plus": ">=1.2.0 <2"
+  },
+  "peerDependenciesMeta": {
+    "vite-plus": {
+      "optional": true
+    }
+  },
+  "dependencies": {
+    "execa": "^10.2.1",
+    "fast-glob": "^3.3.3",
+    "ignore": "^7.0.5"
+  },
+  "devDependencies": {
+    "typescript": "catalog:",
+    "vite-plus": "1.2.0",
+    "vitest": "^5.0.5"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  }
+}
