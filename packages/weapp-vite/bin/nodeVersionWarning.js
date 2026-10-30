@@ -1,3 +1,4 @@
+// 此格式器也用于尚无 workspace 构建产物的安装阶段，不能依赖日志包的 dist。
 import colors from 'picocolors'
 
 /**

@@ -1,9 +1,23 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import realProcess from 'node:process'
+import { stripVTControlCharacters } from 'node:util'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { runBootstrapFixture } from '../test/helpers/bootstrapFixture'
 import { formatPrepareSkipMessage, guardKnownLocalPkgResolveNoise, guardPrepareProcessExit, runWeappViteCLI } from './bootstrap.js'
 
 describe('bin bootstrap', () => {
+  beforeEach(() => {
+    vi.stubGlobal('process', {
+      ...realProcess,
+      exitCode: undefined,
+      exit: vi.fn(),
+      on: vi.fn(),
+      off: vi.fn(),
+    })
+  })
+
   afterEach(() => {
     vi.restoreAllMocks()
+    vi.unstubAllGlobals()
   })
 
   it('guards process exit state for prepare at bin level', () => {
@@ -88,5 +102,58 @@ describe('bin bootstrap', () => {
     expect(consoleErrorSpy).toHaveBeenCalledTimes(1)
     expect(consoleErrorSpy.mock.calls[0]?.[0]).toBeInstanceOf(Error)
     expect(consoleErrorSpy.mock.calls[0]?.[0]?.message).toBe('boom')
+  })
+})
+
+describe('cold CLI bootstrap without workspace dist', () => {
+  it('keeps prepare successful and reports the missing CLI artifact in Chinese on stderr', async () => {
+    const result = await runBootstrapFixture(['bin/weapp-vite.js', 'prepare'])
+
+    expect(result.exitCode).toBe(0)
+    expect(result.stdout).toBe('')
+    expect(result.stderr).toContain('警告')
+    expect(result.stderr).toContain('[prepare] 跳过 .weapp-vite 支持文件预生成：')
+    expect(result.stderr.replaceAll('\\', '/')).toContain('dist/cli.mjs')
+    expect(result.stderr).not.toContain('@weapp-core/logger')
+  })
+
+  it.each([
+    ['build', 'cli.mjs'],
+    ['dev', 'cli.mjs'],
+    ['accept', 'cli-acceptance.mjs'],
+    ['mcp', 'cli-acceptance.mjs'],
+  ])('preserves the missing artifact failure for %s', async (command, artifact) => {
+    const result = await runBootstrapFixture(['bin/weapp-vite.js', command])
+
+    expect(result.exitCode).not.toBe(0)
+    expect(result.stdout).toBe('')
+    expect(result.stderr).toContain('ERR_MODULE_NOT_FOUND')
+    expect(result.stderr.replaceAll('\\', '/')).toContain(`dist/${artifact}`)
+    expect(result.stderr).not.toContain('@weapp-core/logger')
+  })
+
+  it.each([
+    { name: 'forced colors', env: { FORCE_COLOR: '1' }, colored: true },
+    { name: 'disabled colors', env: { NO_COLOR: '1' }, colored: false },
+    { name: 'NO_COLOR precedence', env: { FORCE_COLOR: '1', NO_COLOR: '1' }, colored: false },
+  ])('keeps the Chinese Node warning on stderr with $name', async ({ env, colored }) => {
+    const result = await runBootstrapFixture([
+      '--input-type=module',
+      '--eval',
+      `
+        const { runWeappViteCLI } = await import('./bin/bootstrap.js')
+        await runWeappViteCLI({ argv: ['build'], nodeVersion: '20.19.0', importer: async () => {} })
+      `,
+    ], env)
+
+    expect(result.exitCode).toBe(0)
+    expect(result.stdout).toBe('')
+    expect(result.stderr).toContain('警告')
+    expect(result.stderr).toContain('当前 Node.js 版本')
+    expect(result.stderr).toContain('20.19.0')
+    expect(result.stderr).toContain('推荐版本：')
+    expect(result.stderr).toContain('为获得安全修复，建议升级至受支持 LTS 分支的最新补丁版本。')
+    expect(result.stderr).toContain('本次将继续运行；若遇到依赖兼容问题，请先升级 Node.js。')
+    expect(stripVTControlCharacters(result.stderr) !== result.stderr).toBe(colored)
   })
 })

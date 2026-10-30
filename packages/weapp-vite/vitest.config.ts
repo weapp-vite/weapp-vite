@@ -7,6 +7,8 @@ const parallelFixtureTests = fixturePartition().parallel
 
 const projectTestIncludes = [
   ...serialFixtureTestIncludes,
+  'bin/**/*.test.ts',
+  'bin/**/*.spec.ts',
   'src/**/*.test.ts',
   'src/**/*.spec.ts',
   'scripts/**/*.test.ts',

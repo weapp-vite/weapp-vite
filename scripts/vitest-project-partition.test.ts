@@ -11,10 +11,12 @@ describe('compiler test project partition', () => {
   it('keeps newly declared discovery roots in the fast partition without moving unaudited fixtures', () => {
     const includes = createFastTestIncludes([
       ...serialFixtureTestIncludes,
+      'bin/**/*.{test,spec}.ts',
       'src/**/*.{test,spec}.ts',
       'scripts/**/*.{test,spec}.ts',
       'tools/**/*.{test,spec}.ts',
     ])
+    expect(includes).toContain('bin/**/*.{test,spec}.ts')
     expect(includes).toContain('src/**/*.{test,spec}.ts')
     expect(includes).toContain('scripts/**/*.{test,spec}.ts')
     expect(includes).toContain('tools/**/*.{test,spec}.ts')
@@ -46,12 +48,16 @@ describe('compiler test project partition', () => {
     expect(nativeOptions).toMatchObject({ pool: 'forks', maxWorkers: 1, fileParallelism: false, sequence: { concurrent: false, shuffle: false }, allowOnly: false })
     expect(nativeOptions.globalSetup).toEqual([path.resolve(cwd, '../../e2e/vitest.e2e.machine-lease.global-setup.ts')])
 
-    const expected = await glob(['src/**/*.{test,spec}.ts', 'test/**/*.{test,spec}.ts', 'scripts/**/*.{test,spec}.ts'], {
+    const expected = await glob(['bin/**/*.{test,spec}.ts', 'src/**/*.{test,spec}.ts', 'test/**/*.{test,spec}.ts', 'scripts/**/*.{test,spec}.ts'], {
       cwd,
       ignore: ['**/node_modules/**', '**/dist/**', '**/dist-*/**', '**/.weapp-vite/**', '**/coverage/**'],
     })
     expect([...new Set([...fast, ...serial, ...native])].sort()).toEqual(expected.sort())
     expect(config.test.projects.find(project => project.test.name === 'weapp-vite-serial')?.test.fileParallelism).toBe(false)
+    for (const file of expected.filter(file => file.startsWith('bin/'))) {
+      expect(fast.has(file), `${file} must retain cold bootstrap coverage`).toBe(true)
+      expect(serial.has(file)).toBe(false)
+    }
     for (const file of expected.filter(file => file.startsWith('test/'))) {
       if (parallelFixtureTests.includes(file)) {
         expect(fast.has(file), `${file} has isolated inputs`).toBe(true)
@@ -88,6 +94,9 @@ it('keeps the complete discovered fixture union and final setup placement in eve
       expect(fast.files.filter(file => serial.files.includes(file))).toEqual([])
       expect(serial.fileParallelism).toBe(false)
       expect(serial.files).toContain('src/plugins/core/lifecycle/watch.test.ts')
+      expect(fast.files).toContain('bin/bootstrap.test.ts')
+      expect(fast.files).toContain('bin/nodeVersionWarning.test.ts')
+      expect(serial.files.some(file => file.startsWith('bin/'))).toBe(false)
       expect(nativeWatchContractTests.every(file => !fast.files.includes(file) && !serial.files.includes(file))).toBe(true)
       expect(parallelFixtureTests.every(file => topology === 'legacy-v1' ? serial.files.includes(file) && !fast.files.includes(file) : fast.files.includes(file) && !serial.files.includes(file))).toBe(true)
       inventories.push([...fast.files, ...serial.files].sort())

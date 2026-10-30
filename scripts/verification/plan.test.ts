@@ -61,6 +61,40 @@ it.each(['modified', 'deleted'])('runs neighboring tests for %s sources and expa
   }
 })
 
+it.each(['bootstrap', 'nodeVersionWarning'])('filters the adjacent bin regression for %s.js in quick', async (source) => {
+  const root = await createPlanRoot()
+  try {
+    const cli: WorkspacePackage = {
+      name: 'weapp-vite',
+      directory: 'packages/weapp-vite',
+      scripts: { test: 'vitest run' },
+      dependencies: [],
+      extraInputs: [],
+    }
+    await mkdir(path.join(root, cli.directory, 'bin'), { recursive: true })
+    await writeFile(path.join(root, cli.directory, 'package.json'), JSON.stringify({ name: cli.name, scripts: cli.scripts }))
+    for (const entry of ['bootstrap', 'nodeVersionWarning']) {
+      await writeFile(path.join(root, cli.directory, 'bin', `${entry}.js`), '')
+      await writeFile(path.join(root, cli.directory, 'bin', `${entry}.test.ts`), '')
+    }
+    const plan = await createVerificationPlan({
+      root,
+      packages: [cli],
+      resources,
+      selection: 'affected',
+      changes: changes([`${cli.directory}/bin/${source}.js`]),
+      mode: 'quick',
+    })
+    expect(plan.tasks.find(task => task.id === 'test:weapp-vite')).toMatchObject({
+      args: ['--filter', 'weapp-vite', 'run', 'test', '--maxWorkers=2', `bin/${source}.test.ts`],
+      blockedReason: undefined,
+    })
+  }
+  finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
 it('filters pure package tests in quick and keeps their full package entry in review', async () => {
   const root = await createPlanRoot()
   try {

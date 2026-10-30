@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs'
+// 安装生命周期早于 workspace 构建，启动阶段直接使用日志包同源的轻量染色实现。
 import colors from 'picocolors'
 // eslint-disable-next-line e18e/ban-dependencies -- 启动检查使用与发布 engines 完全相同的 npm semver 语义。
 import satisfies from 'semver/functions/satisfies.js'
