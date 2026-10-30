@@ -227,6 +227,7 @@
     "p-queue": "^10.0.0",
     "package-manager-detector": "^1.9.0",
     "pathe": "catalog:",
+    "picocolors": "catalog:",
     "picomatch": "^4.0.7",
     "postcss": "catalog:",
     "postcss-selector-parser": "catalog:",

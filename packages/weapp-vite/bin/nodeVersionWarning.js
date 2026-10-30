@@ -1,4 +1,4 @@
-import { colors } from '@weapp-core/logger'
+import colors from 'picocolors'
 
 /**
  * 格式化 Node.js 版本升级提示，供 CLI 与构建插件共用。

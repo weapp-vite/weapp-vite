@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs'
-import { colors } from '@weapp-core/logger'
+import colors from 'picocolors'
 // eslint-disable-next-line e18e/ban-dependencies -- 启动检查使用与发布 engines 完全相同的 npm semver 语义。
 import satisfies from 'semver/functions/satisfies.js'
 import { formatNodeVersionWarning } from './nodeVersionWarning.js'
