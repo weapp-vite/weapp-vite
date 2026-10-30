@@ -50,7 +50,7 @@ export async function runBootstrapFixture(args: string[], variables: NodeJS.Proc
     Object.assign(env, { TERM: 'dumb' }, variables)
     return await new Promise<BootstrapExecution>((resolve, reject) => {
       execFile(process.execPath, args, { cwd: root, env, encoding: 'utf8', timeout: 15_000 }, (error, stdout, stderr) => {
-        const exitCode = error?.code ?? 0
+        const exitCode = error ? error.code : 0
         if (typeof exitCode !== 'number') {
           reject(error)
           return

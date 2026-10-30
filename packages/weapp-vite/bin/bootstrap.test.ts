@@ -106,6 +106,20 @@ describe('bin bootstrap', () => {
 })
 
 describe('cold CLI bootstrap without workspace dist', () => {
+  it('never reports a child terminated by a signal as successful', async () => {
+    const outcome = await runBootstrapFixture(['--eval', 'process.kill(process.pid, "SIGTERM")']).then(
+      result => ({ kind: 'exit' as const, result }),
+      (error: unknown) => ({ kind: 'signal' as const, error }),
+    )
+    if (outcome.kind === 'exit') {
+      // Windows 可能将强制终止表示为非零退出码，Unix 则通过 signal 报告。
+      expect(outcome.result.exitCode).not.toBe(0)
+    }
+    else {
+      expect(outcome.error).toMatchObject({ signal: 'SIGTERM' })
+    }
+  })
+
   it('keeps prepare successful and reports the missing CLI artifact in Chinese on stderr', async () => {
     const result = await runBootstrapFixture(['bin/weapp-vite.js', 'prepare'])
 
