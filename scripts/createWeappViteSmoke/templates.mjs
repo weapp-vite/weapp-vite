@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
+import { getMiniProgramPlatformDescriptor } from '@weapp-core/shared/platforms'
 import templateDefinitions from '../../packages/create-weapp-vite/src/templateDefinitions.json' with { type: 'json' }
 
 export const TEMPLATE_DIR_MAP = Object.fromEntries(templateDefinitions.map(template => [template.id, template.directory]))
@@ -14,16 +15,18 @@ export function outputDirectory(templateName) {
 }
 
 /** 按 IDE 工程配置解析小程序产物根目录，避免将多平台工程目录误认为产物目录。 */
-export async function resolveMiniProgramDirectory(projectDir, templateName) {
+export async function resolveMiniProgramDirectory(projectDir, templateName, platform = 'weapp') {
+  const descriptor = getMiniProgramPlatformDescriptor(platform)
   const projectRoot = templateName === 'multi-platform' || templateName === 'multi-platform-sfc'
-    ? path.join(projectDir, outputDirectory(templateName))
+    ? path.join(projectDir, 'dist', descriptor.id)
     : projectDir
-  const configPath = path.join(projectRoot, 'project.config.json')
+  const configPath = path.join(projectRoot, descriptor.projectConfigFileName)
   if (!await isFilePresent(configPath)) {
     return null
   }
   const config = JSON.parse(await fs.readFile(configPath, 'utf8'))
-  return path.resolve(projectRoot, config.miniprogramRoot ?? '.')
+  const root = descriptor.projectConfigRootKeys.map(key => config[key]).find(value => typeof value === 'string' && value.trim())
+  return path.resolve(projectRoot, (root ?? '.').replaceAll('\\', '/'))
 }
 
 export function shouldSkipTemplateFile(filePath, templateRoot = '') {

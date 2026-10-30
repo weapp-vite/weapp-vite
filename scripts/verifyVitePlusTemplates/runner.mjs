@@ -5,7 +5,7 @@ import { createTarballCommand } from '../createWeappViteSmoke/commands.mjs'
 import { runCommand } from '../createWeappViteSmoke/process.mjs'
 import { reportError } from '../createWeappViteSmoke/registry.mjs'
 import { distHasRequiredOutputs } from '../createWeappViteSmoke/runtime.mjs'
-import { assertPreparedProject } from '../createWeappViteSmoke/templates.mjs'
+import { assertPreparedProject, resolveMiniProgramDirectory } from '../createWeappViteSmoke/templates.mjs'
 import { applyCandidateOverlay, inspectInstallation } from './artifacts.mjs'
 import { managerCommand, qualityScripts, strictEnvironment } from './contracts.mjs'
 import { nativeLanguagePublicApiDependencies, verifyNativeLanguages } from './languages.mjs'
@@ -114,7 +114,8 @@ export async function runCase(testCase, options) {
       result.platforms = []
       for (const platform of testCase.platforms) {
         await runScript(`build:${platform}`)
-        const output = path.join(project, 'dist', platform)
+        const output = await resolveMiniProgramDirectory(project, testCase.template, platform)
+        assert(output, `Missing ${platform} IDE project configuration`)
         for (const file of ['app.json', 'app.js']) {
           assert((await fs.stat(path.join(output, file))).isFile(), `Missing ${platform} ${file}`)
         }
