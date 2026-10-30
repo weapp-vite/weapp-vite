@@ -118,6 +118,21 @@ export function mergeWeb(options: MergeWebOptions, ...configs: Partial<InlineCon
   inline.root = web.root
   inline.configFile = false
 
+  if (isDev) {
+    const requestedWatch = [config, web.userConfig, ...configs].find(source => source?.server?.watch !== undefined)?.server?.watch
+    // 使用 Vite 原生写入稳定分支，避免内置 watcher 的前沿节流丢失快速恢复保存。
+    // 保留显式关闭和用户选项；复制配置，避免修改调用方持有的对象。
+    inline.server = {
+      ...inline.server,
+      watch: requestedWatch === null
+        ? null
+        : {
+            ...inline.server?.watch,
+            awaitWriteFinish: inline.server?.watch?.awaitWriteFinish ?? { stabilityThreshold: 50, pollInterval: 10 },
+          },
+    }
+  }
+
   const runtimeProvider = resolveRuntimeProvider('web', 'web')
   const runtimeProviderPlugin = createSelectedRuntimeProviderPlugin(runtimeProvider, isDev)
   const webPlugin = loadWebPlugin().then(({ weappWebPlugin }) => weappWebPlugin({

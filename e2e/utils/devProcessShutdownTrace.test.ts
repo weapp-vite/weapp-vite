@@ -47,6 +47,9 @@ describe('optional native CLI shutdown observation', () => {
     })
   }
 
+  // 真实进程保留内部 10 秒退出门限，外层预算还需容纳启动、断言和文件读取。
+  const nativeProcessTestTimeout = 15_000
+
   it('preserves the prepared environment and all launcher options while appending a native preload', async () => {
     const env = { NODE_OPTIONS: '--no-warnings', CHILD_ONLY: 'kept' }
     const options = { cwd: directory, env, all: true, reject: false, stdin: 'ignore' as const }
@@ -87,7 +90,7 @@ describe('optional native CLI shutdown observation', () => {
     const events = observations()
     expect(events.map(event => event.event)).toEqual(['OBSERVER_READY', 'BEFORE_EXIT_0', 'PROCESS_EXIT_0'])
     expect(JSON.stringify(events)).not.toContain('must-not-be-recorded')
-  })
+  }, nativeProcessTestTimeout)
 
   it('preserves event return values, thrown errors and listener removal while every diagnostic timer is unreferenced', async () => {
     const result = await child(`
@@ -130,7 +133,7 @@ describe('optional native CLI shutdown observation', () => {
     expect(events).toContainEqual(expect.objectContaining({ event: 'LISTENER_REMOVED', eventName: 'SIGTERM', listener: 'onSigterm' }))
     expect(events.filter(event => event.event === 'IPC_DISCONNECT_AFTER')).toHaveLength(2)
     expect(events.at(-1)?.event).toBe('PROCESS_EXIT_0')
-  })
+  }, nativeProcessTestTimeout)
 
   it('retains a diagnostic setup failure without changing natural exit', async () => {
     const invalidDirectory = path.join(directory, 'regular-file')
@@ -141,7 +144,7 @@ describe('optional native CLI shutdown observation', () => {
     expect(result.exitCode).toBe(0)
     expect(result.stdout).toBe('still-finished')
     expect(result.stderr).toContain('[dev-shutdown-trace-error]')
-  })
+  }, nativeProcessTestTimeout)
 
   it('restores exact method descriptors and timers idempotently without replacing subsequent caller changes', async () => {
     const preload = new URL('./devProcessShutdownTrace/preload.mjs', import.meta.url).href
@@ -180,5 +183,5 @@ describe('optional native CLI shutdown observation', () => {
     expect(result.exitCode).toBe(0)
     expect(result.stdout).toBe('restored-exactly')
     expect(observations().map(event => event.event)).toEqual(['OBSERVER_READY', 'IPC_DISCONNECT_BEFORE', 'IPC_DISCONNECT_AFTER'])
-  })
+  }, nativeProcessTestTimeout)
 })
