@@ -1,4 +1,5 @@
 import path from 'node:path'
+import { resolveTsconfig, TsconfigCache } from 'rolldown/experimental'
 import { glob } from 'tinyglobby'
 import { loadConfigFromFile, mergeConfig } from 'vite'
 import { describe, expect, it, vi } from 'vitest'
@@ -25,6 +26,20 @@ describe('compiler test project partition', () => {
     }
     for (const file of parallelFixtureTests) {
       expect(includes).toContain(file)
+    }
+  })
+
+  it('resolves every bin TypeScript file through its package test configuration', async () => {
+    const cwd = path.resolve(import.meta.dirname, '../packages/weapp-vite')
+    const files = await glob('bin/**/*.ts', { cwd })
+    const cache = new TsconfigCache()
+    const testConfig = path.join(cwd, 'tsconfig.test.json')
+    expect(files.length).toBeGreaterThan(0)
+    for (const file of files) {
+      // 未被包级配置接管的文件会回退根引用图，误读尚未 prepare 的消费者配置。
+      const resolved = resolveTsconfig(path.join(cwd, file), cache)
+      expect(resolved, file).not.toBeNull()
+      expect(resolved?.tsconfigFilePaths.map(config => path.resolve(config)), file).toContain(testConfig)
     }
   })
 
