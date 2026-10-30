@@ -61,6 +61,9 @@ const requiredFiles = [
   'syntaxes/weapp-vite-custom-blocks.tmLanguage.json',
   'syntaxes/wxml.tmLanguage.json',
   'syntaxes/miniprogram-template.tmLanguage.json',
+  'syntaxes/miniprogram-script.tmLanguage.json',
+  'syntaxes/miniprogram-script.language-configuration.json',
+  'scripts/language-tools-host.cjs',
 ]
 
 for (const relativePath of requiredFiles) {

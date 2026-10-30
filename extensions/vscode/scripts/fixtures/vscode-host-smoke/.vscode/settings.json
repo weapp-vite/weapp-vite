@@ -1,0 +1,15 @@
+{
+  "editor.formatOnSave": true,
+  "files.associations": {
+    "*.wxss": "css",
+    "*.acss": "css",
+    "*.ttss": "css",
+    "*.qss": "css",
+    "*.jxss": "css",
+    "*.tyss": "css"
+  },
+  "[wxml]": { "editor.defaultFormatter": "weapp-vite.weapp-vite" },
+  "[miniprogram-template]": { "editor.defaultFormatter": "weapp-vite.weapp-vite" },
+  "[miniprogram-script]": { "editor.defaultFormatter": "weapp-vite.weapp-vite" },
+  "[css]": { "editor.defaultFormatter": "weapp-vite.weapp-vite" }
+}

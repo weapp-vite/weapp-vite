@@ -1,6 +1,6 @@
 ---
 title: "@weapp-vite/oxfmt"
-description: "@weapp-vite/oxfmt 提供 Oxfmt 格式预设与安全 WXML 格式适配器。"
+description: "@weapp-vite/oxfmt 提供 Oxfmt 格式预设、多平台模板及脚本模块的安全格式化。"
 keywords:
   - Weapp-vite
   - Oxfmt
@@ -12,17 +12,7 @@ keywords:
 
 # @weapp-vite/oxfmt
 
-`@weapp-vite/oxfmt` 导出 `recommended` 格式预设，并提供 `weapp-vite-format` 命令。预设统一 TypeScript、Vue 与 WXSS 格式，并忽略 WXML；项目命令通过独立适配器处理 WXML 的标签与属性空白，保留小程序模板语义。
-
-## 安装与配置
-
-Vite+ 使用配套的 Oxfmt 执行器，仅需添加预设包：
-
-```bash
-pnpm add -D @weapp-vite/oxfmt
-```
-
-将 `fmt` 合并到现有 `vite.config.ts`，保留项目的构建配置：
+小程序共享格式预设与安全格式化入口。配套 Vite+ 1.2.0 / Oxfmt 0.73.0，CLI 与 VSCode 共用 `@weapp-vite/language-service`。
 
 ```ts
 import { recommended } from '@weapp-vite/oxfmt'
@@ -33,76 +23,64 @@ export default defineConfig({
 })
 ```
 
-```bash
-pnpm exec weapp-vite-format --check
+默认两空格、单引号、无分号、LF、末尾换行和多行尾逗号。不排序 import、`package.json` 字段或 Tailwind class。
+
+## 项目命令
+
+```sh
 pnpm exec weapp-vite-format --write
+pnpm exec weapp-vite-format --check
 pnpm exec weapp-vite-format --check-all
 ```
 
-普通 Oxfmt 项目可安装 `oxfmt`，将推荐配置保存为 `.oxfmtrc.json`：
+| 命令 | 处理范围 |
+| --- | --- |
+| `--write` | 在内存完成全部候选文件的格式与语义预检，通过后写入 |
+| `--check` | 使用相同格式入口只读检查，任何文件需要格式化时失败 |
+| `--check-all` | 一次 `vp check`、原生语言预检与格式检查，以及项目存在的 `lint:vue`、`stylelint` 脚本 |
 
-```bash
-node --input-type=module -e "import { recommended } from '@weapp-vite/oxfmt'; console.log(JSON.stringify(recommended, null, 2))" > .oxfmtrc.json
-pnpm exec oxfmt --check
+标准文件使用项目安装的 Oxfmt API，原生模板、脚本模块和样式进入对应适配器。`--check-all` 不替代项目独立的 TypeScript 类型检查。原生语言诊断也可通过 `weapp-vite-lint --native-only` 单独执行。
+
+## 语言范围与语义保护
+
+| 文件 | 处理方式 |
+| --- | --- |
+| `.wxml`、`.axml`、`.ttml`、`.swan`、`.jxml`、`.qml`、`.ksml`、`.xhsml`、`.tyml` | 共享 TS scanner 与源码片段编辑，仅调整标签和属性布局 |
+| `.wxss`、`.acss`、`.ttss`、`.qss`、`.jxss`、`.tyss` 和原生 `.css` | CSS 格式化，保留 `rpx`、Tailwind 指令、条件注释和声明顺序；Stylelint 负责样式语义 |
+| 独立/内联 WXS、SJS、KS、filter | 平台方言预检、词法兼容处理、Oxfmt、格式化后 AST 与方言复验 |
+| `.wxs.ts`、`.sjs.ts`、`.ks.ts`、`.filter.ts` 及 `lang="ts/js"` | 按待编译源码处理，不把合法源码提前限制为宿主原生语法 |
+
+模板逐字保留文本空白、实体、插值、属性值及引号、属性顺序、重复属性和显式闭合形式，不经过 DOM 序列化。内联脚本由模块适配器独立处理；`formatWxml` 兼容 API 仍保持内联脚本原文。
+
+脚本模块按实际平台检查模块系统和内建能力，不把所有 `.sjs` 解释成微信 WXS。百度原生 filter 使用相对 `.filter.js` 引用并通过默认导出暴露函数。方言、词法、结构或 AST 语义校验失败时拒绝写回；文件在预检期间被修改时拒绝覆盖。
+
+预设排除依赖、构建产物、`.weapp-vite`、受管生成目录与锁文件。供标准 `vp fmt` 跳过原生模板和模块的忽略项由组合 CLI 接管，不会因此跳过普通源码。不要把原生模板重新关联为 HTML；单独的 `vp fmt` 不包含完整原生语言检查。
+
+## 配置与 workspace
+
+`lint` / `fmt` 继续位于 `vite.config.ts`。平台选择放在 `weapp.language`，支持 `platform` 与 `overrides: [{ files: string[], platform }]`；配置影响 CLI 和 VSCode。存在歧义或互相冲突的模块引用时给出诊断，需显式配置归属。
+
+`--write` / `--check` 使用最近的项目配置，也可通过 `--config` 指定 Vite 配置或 `.oxfmtrc.json`。格式遵循实际 `fmt`、文件 `overrides`、忽略路径和 `.gitignore`；不通过忽略普通源码消除格式失败。
+
+```sh
+pnpm exec weapp-vite-format --write src/pages
+pnpm exec weapp-vite-format --check -c .oxfmtrc.json 'src/**/*.wxml'
 ```
 
-这个 JSON 文件是项目拥有的配置快照；升级预设后可重新生成并审阅差异，已有自定义配置应先合并再保存。
+`--check-all` 与 `vp check` 优先使用 workspace 根配置，不接受 `--config`；成员预设不覆盖父工作区的 `lint` / `fmt` 所有权。根配置的 glob 和忽略路径需相对根目录定位到成员项目。
 
-`weapp-vite-format` 使用当前项目安装的 Vite+，将标准文件检查与 WXML 适配器组合在同一条命令中：
-
-| 命令 | 覆盖范围 |
-| --- | --- |
-| `--write` | `vp fmt --write` 与 WXML 标签格式化 |
-| `--check` | `vp fmt --check` 与 WXML 只读格式检查 |
-| `--check-all` | `vp check` 与 WXML 只读格式检查 |
-
-任一检查失败，整条命令都会失败。写入模式会先验证全部待处理 WXML；无法保留文本或结构时直接报错，标准格式化失败时也不会写入 WXML。
-
-## 格式约定
-
-| 选项 | 默认值 |
-| --- | --- |
-| 缩进 | 2 空格 |
-| 行尾 | LF，并保留文件末尾换行 |
-| 字符串 | 单引号 |
-| 分号 | 不添加 |
-| 末尾逗号 | `all` |
-| HTML 空白敏感度 | `strict` |
-| import / Tailwind 类名排序 | 关闭 |
-
-预设将 `.wxss` 关联为 CSS，并忽略 `.wxml`；使用该预设直接运行 `vp fmt` 或普通 Oxfmt 不会处理 WXML。生成产物、依赖目录与 `.weapp-vite` 不参与格式化。保留预设中的 WXML 忽略项，不要将 `.wxml` 重新关联为 HTML。
-
-WXML 适配器只调整标签及属性之间的空白，逐字保留文本、插值、属性值与内联 WXS，并保持标签顺序和自闭合形式。上表的字符串、行尾等默认值不会用来重写这些受保护内容。独立 WXS 也不作为普通 JavaScript 自动改写。普通 Oxfmt 项目可以单独复用 `recommended` 的非 WXML 配置；需要上述完整命令时安装 Vite+。
-
-若项目需要覆盖个别格式选项，保留其他默认值：
+## 程序接口与编辑器
 
 ```ts
-import { recommended } from '@weapp-vite/oxfmt'
-import { defineConfig } from 'vite-plus'
+import { formatDocument } from '@weapp-vite/oxfmt/languages'
+import { formatWxml } from '@weapp-vite/oxfmt/wxml'
 
-export default defineConfig({
-  fmt: {
-    ...recommended,
-    printWidth: 100,
-  },
-})
+const template = await formatDocument(source, 'src/page.axml')
+const compatible = await formatWxml(source, 'src/page.wxml', { printWidth: 100 })
 ```
 
-适配器读取项目实际使用的 `fmt` 配置及文件 `overrides`；例如上述 `printWidth` 同样控制 WXML 标签换行。`--write` / `--check` 从当前项目查找最近的配置，也可用 `-c` / `--config` 指定 Vite 配置或 Oxfmt JSON 配置，并传入文件或目录范围：
+`formatDocument` 支持全部登记语言与内联模块。`@weapp-vite/oxfmt/project` 导出项目配置解析、文档归属解析和 `prepareProjectFormatting`，供 CLI 与编辑器适配层复用。显式传入格式选项时采用该配置；需要固定风格时提供完整所需选项。
 
-```bash
-pnpm exec weapp-vite-format --check src
-pnpm exec weapp-vite-format --write --config vite.config.ts src/pages
-```
+VSCode 扩展使用项目安装的工具，仅在受信任工作区加载项目配置与格式化器。模板及原生模块使用扩展的唯一格式化提供者，标准 JS/TS 使用 Oxc；错误输入显示诊断并返回零修改。此包不新增完整模板类型检查器，不替代 Vue 专项 ESLint、Stylelint 或平台编译器。本轮验收覆盖 TS、CLI、VSCode 和构建，不代表真实小程序 IDE runtime 验收。
 
-生成产物和用户的忽略规则会继续生效；预设中供标准 Oxfmt 跳过 WXML 的 `**/*.wxml` 由适配器接管，不会导致项目 WXML 检查被整体跳过。
-
-## 检查边界
-
-Oxfmt 与 WXML 适配器负责各自支持的格式，Oxlint 负责代码规则，Stylelint 继续检查样式与 Vue SFC style。Wevu 项目的模板兼容性由 Vue 专项 ESLint 检查。不要让多个格式工具同时改写同一文件；Vite+ 脚手架已同步编辑器设置与项目脚本。
-
-已有 workspace 中，`--check-all` 的标准检查与 WXML 适配器都优先使用根 `vite.config.ts` 的 `fmt` 块；成员预设不会覆盖根策略。团队应在根配置合并预设，将 `overrides` 与忽略路径写为相对根目录的成员路径，例如 `apps/mini/**/*.wxml`。根目录没有格式配置时，再查找成员配置。
-
-`weapp-vite-format --check-all` 与 `vp check` 都不接受 `--config`。日常使用脚手架的 `pnpm format` / `pnpm format:check` / `pnpm check`，才能包含 WXML；单独的 `vp fmt` 结果不代表 WXML 已检查。
-
-语义规则见 [@weapp-vite/oxlint](/packages/oxlint)，项目生成流程见 [create-weapp-vite](/packages/create-weapp-vite)。
+相关文档：[平台语言配置](/config/language)、[语言内核](/packages/language-service)、[创建项目](/packages/create-weapp-vite)。

@@ -11,17 +11,7 @@ keywords:
 
 # @weapp-vite/oxlint
 
-`@weapp-vite/oxlint` 提供小程序源码的 Oxlint 推荐配置，以及可单独接入的 JS 插件。Vite+ 脚手架默认接入；普通 Oxlint 项目也能使用相同规则。
-
-## 安装与配置
-
-Vite+ 项目安装规则包即可，执行器使用 Vite+ 配套的 Oxlint：
-
-```bash
-pnpm add -D @weapp-vite/oxlint
-```
-
-在现有 `vite.config.ts` 中合并 `lint` 配置，保留项目的构建插件与其他配置：
+为原生、Wevu 与 React 小程序提供 Oxlint 脚本规则预设及组合语言检查 CLI。规则复用 `@weapp-vite/eslint` 的运行时 API 与 Wevu 兼容清单；不会给小程序源码启用浏览器或 Node.js 环境。
 
 ```ts
 import { miniProgramRecommended } from '@weapp-vite/oxlint'
@@ -32,47 +22,39 @@ export default defineConfig({
 })
 ```
 
-Wevu 项目改用 `wevuRecommended`，其中已经包含小程序 runtime 规则：
+Wevu 项目使用 `wevuRecommended`，React 项目使用 `reactRecommended`。Vite Plus 模板使用 Vite+ 1.2.0，其内置 Oxlint 为 1.88.0。预设通过 `@weapp-vite/oxlint/plugin` 注册自己的 JS 插件，无须额外安装另一份 Oxlint。
 
-```ts
-import { wevuRecommended } from '@weapp-vite/oxlint'
-import { defineConfig } from 'vite-plus'
-
-export default defineConfig({
-  lint: wevuRecommended,
-})
-```
-
-```bash
-pnpm exec vp lint
-pnpm exec vp lint --fix
-```
-
-普通 Oxlint 项目可安装 `oxlint`，在 `oxlint.config.ts` 中默认导出同一预设，然后执行 `pnpm exec oxlint`。Vite+ 以脚手架固定配对的版本为兼容基线，避免额外安装另一套执行器。
-
-## 规则与检查范围
-
-| 规则 | 级别 | 检查内容 |
+| 规则 | 级别 | 适用预设 |
 | --- | --- | --- |
-| `weapp-vite/no-unsupported-runtime-api` | error | 小程序 AppService 不支持的 DOM、Node 全局与现代内建 |
-| `weapp-vite/no-implicit-runtime-polyfill` | warn | 需要 weapp-vite 注入或显式兼容层的宿主能力 |
-| `weapp-vite/no-unsupported-api` | error | Wevu 不支持的 Vue 生态 API，仅 Wevu 预设启用 |
-| `weapp-vite/no-risky-api` | warn | 参数、时序或宿主语义不同的 API，仅 Wevu 预设启用 |
+| `weapp-vite/no-unsupported-runtime-api` | error | 原生、React、Wevu |
+| `weapp-vite/no-implicit-runtime-polyfill` | warn | 原生、React、Wevu |
+| `weapp-vite/no-unsupported-api` | error | Wevu |
+| `weapp-vite/no-risky-api` | warn | Wevu |
+| `react/rules-of-hooks` | error | React |
+| `react/exhaustive-deps` | warn | React |
 
-默认只在 `src/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue}` 中启用小程序 runtime 规则；配置、脚本、测试、Node-only、Web-only 与生成产物不属于小程序 AppService。`dist`、`dist-*`、`.weapp-vite` 和依赖目录会被排除。
+运行时规则只检查 `src` 下的 JS、TS、JSX、TSX 和 Vue 脚本；忽略测试、脚本、Web-only 文件、`node.*`、受管支持文件及生成产物。局部变量、显式兼容实现导入、`typeof` 能力探针与类型引用不会被当成隐式宿主 API。
 
-`.vue` 中的 script 由 Oxlint 检查；模板指令及 `RouterLink` 等模板兼容性继续由 Vue 专项 ESLint 检查。脚手架生成的 Wevu Vite+ 项目提供 `lint:vue` / `lint:vue:fix`；样式仍使用 Stylelint。静态检查不能代替目标平台的真实 IDE runtime 验证。
+`no-debugger` 与 `eqeqeq` 默认报错，Oxlint correctness 类规则默认警告。React 预设额外启用内置 React 插件，检查 Hooks 调用顺序和依赖数组，仍保留小程序宿主的 API 边界。配置与构建脚本使用独立的 Node.js 环境。
 
-## 单独使用插件
+Wevu 预设启用 Oxlint 内置 Vue 规则。Oxlint 不提供 `vue-eslint-parser` 的完整模板访问接口，需要 parser services 的 Vue 模板检查继续使用 ESLint 的 `wevu/no-unsupported-template-feature`。WXSS、ACSS、TTSS、QSS、JXSS、TYSS、CSS、SCSS 和 Vue `<style>` 的语义检查继续使用 Stylelint，关闭与 Oxfmt 重复的格式规则。
 
-`@weapp-vite/oxlint/plugin` 默认导出 Oxlint JS 插件，可用于自定义 `jsPlugins` 与规则开关。推荐配置已包含插件注册，无需再次添加。
+```sh
+pnpm exec weapp-vite-lint
+pnpm exec weapp-vite-lint --fix
+pnpm exec weapp-vite-lint --native-only
+```
 
-通过插件入口接入时，规则只对执行它的 Oxlint 配置生效；文件范围应限制在小程序运行时代码，不要将 Node 构建脚本混入同一范围。
+组合 CLI 执行标准 `vp lint`，并使用 `@weapp-vite/language-service` 检查 WXML、AXML、TTML、SWAN、JXML、QML、KSML、XHSML、TYML，以及独立/内联 WXS、SJS、KS、filter 和对应编译源文件。`--fix` 只自动修复 Oxlint 负责的内容，原生语言错误需修改源码；`--native-only` 单独运行平台语言诊断。`--deny-warnings` 将语言警告一并计为失败。
+
+平台配置放在 `vite.config.ts` 的 `weapp.language` 中，支持按文件 glob 覆盖；SJS 等共享后缀存在歧义或引用冲突时需明确平台。原生模块按平台的模块系统和内建 API 校验，不能把 AppService 的 JS/TS 规则套在所有脚本模块上。配置、诊断偏移和作用域模型与 VSCode 共用。
+
+普通 `vp lint` / `oxlint` 仍可直接使用这些预设，但不会替代组合 CLI 的原生语言检查。此工具不新增完整模板类型检查器；静态检查、VSCode 与构建通过不代表真实小程序 IDE runtime 已验收。
+
+可直接展开预设再添加 `rules` 或 `overrides`；添加 override 时保留预设的 `overrides` 数组，避免取消运行时代码范围约束。
 
 ## 已有 workspace
 
-`vp check` 优先采用 workspace 根 `vite.config.ts` 中已有的 `lint` 块，成员配置不会覆盖根规则。根配置使用预设时，需要将 `overrides[].files` 与忽略路径改为相对于根目录的成员路径，例如 `apps/mini/src/**/*.ts`；保留团队其他成员的现有配置。
+`vp check` 优先采用 workspace 根配置；成员预设不覆盖根 `lint` 策略。根配置的 `overrides[].files` 和忽略路径需定位到成员目录。组合检查读取同一 `weapp.language`；不要为成员项目自动改写父配置。
 
-`vp lint --config <path>` 可显式选择配置，`vp check` 不支持该参数。先在根配置合并预设，再通过一段应报错的小程序代码确认实际规则来源，避免把成员文件中存在预设误认为根检查已经启用。
-
-格式配置见 [@weapp-vite/oxfmt](/packages/oxfmt)，项目生成流程见 [create-weapp-vite](/packages/create-weapp-vite)。
+相关文档：[平台语言配置](/config/language)、[语言内核](/packages/language-service)、[创建项目](/packages/create-weapp-vite)。

@@ -202,6 +202,7 @@
     "@weapp-vite/eslint": "workspace:*",
     "@weapp-vite/hmr": "workspace:*",
     "@weapp-vite/i18n": "workspace:*",
+    "@weapp-vite/language-service": "workspace:*",
     "@weapp-vite/mcp": "workspace:*",
     "@weapp-vite/miniprogram-automator": "workspace:*",
     "@weapp-vite/tailwindcss": "workspace:*",

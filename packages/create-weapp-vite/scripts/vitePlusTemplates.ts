@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto'
 import os from 'node:os'
 import { fs } from '@weapp-core/shared/fs'
 import { recommended } from '@weapp-vite/oxfmt'
-import { formatWxml } from '@weapp-vite/oxfmt/wxml'
+import { prepareProjectFormatting } from '@weapp-vite/oxfmt/project'
 // eslint-disable-next-line e18e/ban-dependencies -- 保持发布脚本的 Windows 命令解析与进程退出契约。
 import { execa } from 'execa'
 import path from 'pathe'
@@ -31,6 +31,8 @@ async function inputSignature() {
   }
   hash.update(await digestDirectory(path.join(packageRoot, 'src')))
   hash.update(await digestDirectory(path.join(packageRoot, '../oxfmt/dist')))
+  hash.update(await digestDirectory(path.join(packageRoot, '../language-service/dist')))
+  hash.update(await digestDirectory(path.join(packageRoot, '../../@weapp-core/shared/dist/platforms')))
   hash.update(await fs.readFile(path.join(import.meta.dirname, 'vitePlusTemplates.ts')))
   hash.update(await digestDirectory(path.join(import.meta.dirname, 'templatePreparation')))
   for (const manifest of ['../oxfmt/package.json', '../oxlint/package.json', '../eslint/package.json', 'node_modules/oxfmt/package.json']) {
@@ -95,17 +97,13 @@ export async function prepareVitePlusTemplates() {
         await __internal.rewriteProjectConfigAppId(root)
         await fs.writeFile(path.join(root, 'AGENTS.md'), createAgentsGuidelines(template.id, 'vite-plus'))
         const options = { cwd: root, preferLocal: true, localDir: packageRoot }
-        await execa('oxfmt', ['--config', configFile, '--write', '.'], options)
-        for (const file of await fs.readdir(root, { recursive: true })) {
-          if (!String(file).endsWith('.wxml')) {
-            continue
-          }
-          const fileName = path.join(root, String(file))
-          const formatted = await formatWxml(await fs.readFile(fileName, 'utf8'), fileName, recommended)
-          if (await formatWxml(formatted, fileName, recommended) !== formatted) {
-            throw new Error(`WXML 格式化不幂等：${template.id}/${String(file)}`)
-          }
-          await fs.writeFile(fileName, formatted)
+        const candidates = await prepareProjectFormatting(root, ['.'], recommended, { defaultPlatform: 'weapp' })
+        for (const candidate of candidates) {
+          await fs.writeFile(candidate.file, candidate.formatted)
+        }
+        const checked = await prepareProjectFormatting(root, ['.'], recommended, { defaultPlatform: 'weapp' })
+        if (checked.some(candidate => candidate.source !== candidate.formatted)) {
+          throw new Error(`模板格式化不幂等：${template.id}`)
         }
         await execa('oxfmt', ['--config', configFile, '--check', '.'], options)
         manifest.templates[template.id] = await digestDirectory(root)

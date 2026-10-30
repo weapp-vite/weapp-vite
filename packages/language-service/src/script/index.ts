@@ -1,0 +1,6 @@
+export { analyzeScript } from './analyze'
+export { formatScript } from './format'
+export { findScriptClosingTag, findTrailingScriptComment } from './scanner'
+export { getScriptTemplateExports } from './templateExports'
+export type { ScriptTemplateExport, ScriptTemplateExports } from './templateExports'
+export type { FormatScriptOptions, ScriptAnalysis, ScriptDialect, ScriptExportScope, ScriptExternalUse, ScriptFormatResult, ScriptFormatterOptions, ScriptFormatterResult, ScriptImportBinding, ScriptImportRename, ScriptInput, ScriptOptions, ScriptReference, ScriptSourceKind, ScriptSymbol } from './types'

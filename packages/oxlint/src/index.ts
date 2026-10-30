@@ -34,7 +34,7 @@ function createPreset(wevu: boolean) {
     overrides: [
       {
         files: [...MINI_PROGRAM_RUNTIME_DEFAULT_FILES],
-        excludeFiles: [...MINI_PROGRAM_RUNTIME_DEFAULT_IGNORES],
+        excludeFiles: [...MINI_PROGRAM_RUNTIME_DEFAULT_IGNORES, '**/*.{wxs,sjs,ks}.{js,ts}', '**/*.filter.{js,ts}'],
         globals: {
           App: 'readonly',
           Page: 'readonly',
@@ -59,7 +59,10 @@ function createPreset(wevu: boolean) {
 export const miniProgramRecommended = createPreset(false)
 
 /** 在小程序脚本检查基础上增加 Wevu 的上游 API 兼容诊断。 */
-export const wevuRecommended = createPreset(true)
+export const wevuRecommended = {
+  ...createPreset(true),
+  plugins: ['typescript', 'unicorn', 'oxc', 'vue'],
+} satisfies OxlintConfig
 
 /** React 小程序增加 Hooks 约束，仍沿用小程序宿主环境。 */
 export const reactRecommended = {

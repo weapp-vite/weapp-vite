@@ -155,7 +155,7 @@ describe('scanWxml', () => {
     expect(result.inlineWxsTokens).toEqual([
       {
         start: 15,
-        end: 33,
+        end: 34,
         value: 'console.log("test")',
       },
     ])
@@ -428,7 +428,7 @@ describe('scanWxml', () => {
     expect(result.inlineWxsTokens).toEqual([
       {
         start: 15,
-        end: 26,
+        end: 27,
         value: 'const a = 1;',
       },
     ])

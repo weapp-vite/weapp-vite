@@ -29,6 +29,9 @@
   "main": "./dist/index.mjs",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.mts",
+  "bin": {
+    "weapp-vite-lint": "./dist/cli.mjs"
+  },
   "files": ["dist"],
   "engines": {
     "node": "^22.23.4 || ^24.22.1 || >=26.12.1"
@@ -42,9 +45,17 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },
+  "peerDependencies": {
+    "vite-plus": ">=1.2.0 <2"
+  },
+  "peerDependenciesMeta": {
+    "vite-plus": { "optional": true }
+  },
   "dependencies": {
     "@types/eslint": "^9.6.1",
-    "@weapp-vite/eslint": "workspace:*"
+    "@weapp-vite/eslint": "workspace:*",
+    "@weapp-vite/language-service": "workspace:*",
+    "execa": "^10.2.1"
   },
   "devDependencies": {
     "eslint": "catalog:",

@@ -105,6 +105,7 @@ export interface ScanWxmlOptions {
  * @description WXML 处理阶段配置
  */
 export interface HandleWxmlOptions {
+  platform?: MpPlatform
   defineImportMetaEnv?: Record<string, any>
   importMetaDefineRegistry?: ImportMetaDefineRegistry
   importMetaRelativePath?: string

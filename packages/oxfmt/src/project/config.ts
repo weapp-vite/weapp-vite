@@ -1,51 +1,33 @@
 import type { FormatConfig, OxfmtConfig } from 'vite-plus/fmt'
-import { readFile } from 'node:fs/promises'
-import path from 'node:path'
-import { recommended } from '../index'
+import { STYLE_EXTENSIONS } from '@weapp-vite/language-service'
+import { isNativeDocument } from '@weapp-vite/language-service/project'
+import picomatch from 'picomatch'
 
-export async function loadFormatterConfig(cwd: string, configFile?: string, workspaceFirst = false): Promise<{ config: OxfmtConfig, root: string }> {
-  if (configFile?.endsWith('.json')) {
-    const value: unknown = JSON.parse(await readFile(path.resolve(cwd, configFile), 'utf8'))
-    if (!value || typeof value !== 'object' || Array.isArray(value)) {
-      throw new Error('Oxfmt 配置必须是对象')
-    }
-    return { config: value as OxfmtConfig, root: path.dirname(path.resolve(cwd, configFile)) }
-  }
-  const vite = await import('vite-plus').catch((cause: unknown) => {
-    throw new Error('weapp-vite-format 需要项目安装 Vite+ >=1.2.0。', { cause })
-  })
-  const workspace = vite.searchForWorkspaceRoot(cwd)
-  const directories: string[] = []
-  if (workspaceFirst) {
-    directories.push(workspace)
-  }
-  for (let current = cwd; !directories.includes(current); current = path.dirname(current)) {
-    directories.push(current)
-    if (current === workspace || current === path.dirname(current)) {
-      break
-    }
-  }
-  for (const directory of directories) {
-    const loaded = await vite.loadConfigFromFile({ command: 'build', mode: 'production' }, configFile ? path.resolve(cwd, configFile) : undefined, directory, 'silent')
-    if (loaded?.config.fmt) {
-      return { config: loaded.config.fmt, root: path.dirname(loaded.path) }
-    }
-    if (configFile) {
-      throw new Error(`${configFile} 没有导出 fmt 配置`)
-    }
-    try {
-      return await loadFormatterConfig(directory, '.oxfmtrc.json')
-    }
-    catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-        throw error
-      }
-    }
-  }
-  return { config: recommended, root: cwd }
-}
+const LANGUAGE_EXTENSION: Record<string, string> = { 'javascript': 'js', 'jsx': 'jsx', 'typescript': 'ts', 'tsx': 'tsx', 'json': 'json', 'jsonc': 'jsonc', 'json5': 'json5', 'css': 'css', 'scss': 'scss', 'less': 'less', 'graphql': 'graphql', 'yaml': 'yaml', 'markdown': 'md', 'toml': 'toml', 'html': 'html', 'angular-html': 'component.html', 'vue': 'vue', 'svelte': 'svelte', 'astro': 'astro', 'handlebars': 'hbs', 'mdx': 'mdx' }
 
+/** 文件收集和关联由项目层处理，格式化引擎只接收当前文件的选项。 */
 export function toFormatOptions(config: OxfmtConfig): FormatConfig {
   const { associations: _associations, ignorePatterns: _ignorePatterns, overrides: _overrides, ...options } = config
   return options
+}
+
+/** CLI 与编辑器对项目相对路径应用同一份文件覆盖及语言关联。 */
+export function resolveDocumentFormatOptions(fileName: string, config: OxfmtConfig): { fileName: string, options: FormatConfig } {
+  fileName = fileName.replaceAll('\\', '/').replace(/^\.\//, '')
+  const matches = (files: string[], excludeFiles: string[] = []) => picomatch(files, { dot: true })(fileName) && !picomatch(excludeFiles, { dot: true })(fileName)
+  let options = toFormatOptions(config)
+  for (const override of config.overrides ?? []) {
+    if (matches(override.files, override.excludeFiles)) {
+      options = { ...options, ...override.options }
+    }
+  }
+  let virtualFile = fileName
+  if (!isNativeDocument(fileName) && !STYLE_EXTENSIONS.some(extension => fileName.toLowerCase().endsWith(extension))) {
+    for (const association of config.associations ?? []) {
+      if (matches(association.files, association.excludeFiles)) {
+        virtualFile = `${fileName}.${LANGUAGE_EXTENSION[association.language]}`
+      }
+    }
+  }
+  return { fileName: virtualFile, options }
 }

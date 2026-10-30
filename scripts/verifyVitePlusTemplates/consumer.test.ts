@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { parse } from 'yaml'
 import { applyCandidateOverlay, inspectInstallation } from './artifacts.mjs'
 import { managerCommand, qualityScripts, requiredCandidates, selectCases, strictEnvironment } from './contracts.mjs'
+import { nativeLanguagePublicApiDependencies, verifyNativeLanguages } from './languages.mjs'
 import { runStep } from './runner.mjs'
 import { prepareParentWorkspace, verifyWorkspaceInheritance } from './workspace.mjs'
 
@@ -21,7 +22,7 @@ afterEach(async () => {
 })
 
 describe('Vite+ packed template consumer contracts', () => {
-  it('keeps seven pnpm templates, one npm template and one workspace case in the complete matrix', () => {
+  it('keeps seven pnpm templates, one npm template, six platforms and one workspace case in the complete matrix', () => {
     const { matrix, selected } = selectCases()
     expect(selected).toEqual(matrix)
     expect(matrix.map(item => item.id)).toEqual([
@@ -33,10 +34,11 @@ describe('Vite+ packed template consumer contracts', () => {
       'pnpm/vant',
       'pnpm/react',
       'npm/default',
+      'pnpm/platforms',
       'pnpm/workspace',
     ])
     expect(selectCases('npm/default').selected.map(item => item.id)).toEqual(['npm/default'])
-    expect(selectCases('npm/default').matrix).toHaveLength(9)
+    expect(selectCases('npm/default').matrix).toHaveLength(10)
     expect(() => selectCases('')).toThrow('cannot be empty')
     expect(() => selectCases('npm/react')).toThrow('Unknown')
   })
@@ -46,6 +48,26 @@ describe('Vite+ packed template consumer contracts', () => {
     expect(qualityScripts({ scripts })).toEqual(['lint', 'format:check', 'check', 'stylelint', 'build'])
     expect(qualityScripts({ scripts: { ...scripts, 'lint:vue': 'eslint' } })).toEqual(['lint', 'format:check', 'check', 'lint:vue', 'stylelint', 'build'])
     expect(() => qualityScripts({ scripts: { ...scripts, check: undefined } })).toThrow('Missing generated script: check')
+  })
+
+  it('checks installed public types through an isolated strict project compatible with TypeScript 6', async () => {
+    const root = await temporaryRoot()
+    await fs.writeFile(path.join(root, 'tsconfig.json'), '{"compilerOptions":{"strict":false,"skipLibCheck":true},"files":["unrelated.ts"]}\n')
+    const runTypes = vi.fn(async (args: string[]) => {
+      expect(args).toEqual(['exec', 'tsc', '--project', 'language-fixtures/tsconfig.public-types.json'])
+      const config = JSON.parse(await fs.readFile(path.join(root, args[3]!), 'utf8')) as {
+        compilerOptions: Record<string, unknown>
+        files: string[]
+        extends?: unknown
+      }
+      expect(config).not.toHaveProperty('extends')
+      expect(config.compilerOptions).toEqual({ noEmit: true, strict: true, skipLibCheck: false, module: 'NodeNext', moduleResolution: 'NodeNext', target: 'ES2022' })
+      expect(config.files).toEqual(['./public-types.mts'])
+      expect(await fs.readFile(path.join(root, 'language-fixtures', config.files[0]!), 'utf8')).toContain('from \'@weapp-vite/language-service\'')
+    })
+    await verifyNativeLanguages(root, vi.fn(), vi.fn(), runTypes)
+    expect(runTypes).toHaveBeenCalledOnce()
+    expect(await fs.readFile(path.join(root, 'tsconfig.json'), 'utf8')).toBe('{"compilerOptions":{"strict":false,"skipLibCheck":true},"files":["unrelated.ts"]}\n')
   })
 
   it('forces strict peers, engines and lifecycle scripts without inheriting repository preload hooks', async () => {
@@ -58,6 +80,7 @@ describe('Vite+ packed template consumer contracts', () => {
     expect(command.command).toBe('corepack')
     expect(command.args).toContain('--config.strict-peer-dependencies=true')
     expect(command.args).toContain('--config.enable-global-virtual-store=false')
+    expect(command.args).toContain('--config.verify-deps-before-run=false')
     expect(command.args.slice(-2)).toEqual(['run', 'format:check'])
   })
 
@@ -82,6 +105,37 @@ describe('Vite+ packed template consumer contracts', () => {
     }
     await restore()
     expect(await fs.readFile(filename, 'utf8')).toBe(original)
+  })
+
+  it.each(['npm', 'pnpm'])('declares public API fixture dependencies only in the %s install overlay and restores both metadata files', async (manager) => {
+    const root = await temporaryRoot()
+    const candidate = { name: '@weapp-vite/language-service', tarball: path.join(root, 'language candidate.tgz') }
+    expect(nativeLanguagePublicApiDependencies).toEqual([candidate.name])
+    const originalManifest = '{"name":"generated-template","devDependencies":{"@weapp-vite/oxfmt":"^0.1.0"}}\n'
+    const originalWorkspace = '# generated policy\npackages: []\n'
+    await fs.writeFile(path.join(root, 'package.json'), originalManifest)
+    await fs.writeFile(path.join(root, 'pnpm-workspace.yaml'), originalWorkspace)
+    const restore = await applyCandidateOverlay(root, manager, [candidate], { directDependencies: nativeLanguagePublicApiDependencies })
+    const manifest = JSON.parse(await fs.readFile(path.join(root, 'package.json'), 'utf8')) as { devDependencies: Record<string, string>, overrides?: Record<string, string> }
+    expect(manifest.devDependencies).toMatchObject({ '@weapp-vite/oxfmt': '^0.1.0', [candidate.name]: `file:${candidate.tarball.replaceAll('\\', '/')}` })
+    if (manager === 'npm') {
+      expect(manifest.overrides?.[candidate.name]).toBe(`$${candidate.name}`)
+    }
+    else {
+      const workspace = parse(await fs.readFile(path.join(root, 'pnpm-workspace.yaml'), 'utf8')) as { overrides: Record<string, string> }
+      expect(workspace.overrides[candidate.name]).toBe(manifest.devDependencies[candidate.name])
+    }
+    await restore()
+    expect(await fs.readFile(path.join(root, 'package.json'), 'utf8')).toBe(originalManifest)
+    expect(await fs.readFile(path.join(root, 'pnpm-workspace.yaml'), 'utf8')).toBe(originalWorkspace)
+  })
+
+  it('rejects a direct fixture dependency without a supplied candidate before changing generated metadata', async () => {
+    const root = await temporaryRoot()
+    const original = '# generated policy\npackages: []\n'
+    await fs.writeFile(path.join(root, 'pnpm-workspace.yaml'), original)
+    await expect(applyCandidateOverlay(root, 'pnpm', [], { directDependencies: nativeLanguagePublicApiDependencies })).rejects.toThrow('no candidate tarball')
+    expect(await fs.readFile(path.join(root, 'pnpm-workspace.yaml'), 'utf8')).toBe(original)
   })
 
   it('requires installed candidate identities and lockfile integrity while rejecting links outside the consumer', async () => {

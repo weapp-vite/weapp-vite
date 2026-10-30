@@ -24,31 +24,61 @@ export async function readCandidates(value) {
   }))
 }
 
-/** 候选覆盖只用于安装；恢复原始生成文件后才进行格式验收。 */
-export async function applyCandidateOverlay(root, manager, artifacts) {
+/** 候选覆盖和测试专属直接依赖只用于安装；恢复原始生成文件后才进行格式验收。 */
+export async function applyCandidateOverlay(root, manager, artifacts, { directDependencies = [] } = {}) {
+  const directArtifacts = directDependencies.map((name) => {
+    const artifact = artifacts.find(candidate => candidate.name === name)
+    assert(artifact, `Direct fixture dependency has no candidate tarball: ${name}`)
+    return artifact
+  })
   const filename = path.join(root, manager === 'pnpm' ? 'pnpm-workspace.yaml' : 'package.json')
   const original = await fs.readFile(filename)
-  if (manager === 'pnpm') {
-    await applyDependencyTarballs(root, artifacts)
+  const originals = new Map([[filename, original]])
+  const manifestFile = path.join(root, 'package.json')
+  if (directArtifacts.length && manager === 'pnpm') {
+    originals.set(manifestFile, await fs.readFile(manifestFile))
   }
-  else {
-    assert.equal(manager, 'npm')
-    const manifest = JSON.parse(original.toString())
-    manifest.overrides ??= {}
-    for (const { name, tarball } of artifacts) {
-      const specifier = `file:${tarball.replaceAll('\\', '/')}`
-      let direct = false
-      for (const field of ['dependencies', 'devDependencies', 'optionalDependencies']) {
-        if (Object.hasOwn(manifest[field] ?? {}, name)) {
-          manifest[field][name] = specifier
-          direct = true
+  const restore = async () => {
+    for (const [file, contents] of originals) {
+      await fs.writeFile(file, contents)
+    }
+  }
+  try {
+    if (directArtifacts.length || manager === 'npm') {
+      const manifest = JSON.parse(originals.get(manifestFile).toString())
+      for (const { name, tarball } of directArtifacts) {
+        const field = ['dependencies', 'devDependencies', 'optionalDependencies'].find(field => Object.hasOwn(manifest[field] ?? {}, name)) ?? 'devDependencies'
+        manifest[field] ??= {}
+        manifest[field][name] = `file:${tarball.replaceAll('\\', '/')}`
+      }
+      if (manager === 'npm') {
+        manifest.overrides ??= {}
+        for (const { name, tarball } of artifacts) {
+          const specifier = `file:${tarball.replaceAll('\\', '/')}`
+          let direct = false
+          for (const field of ['dependencies', 'devDependencies', 'optionalDependencies']) {
+            if (Object.hasOwn(manifest[field] ?? {}, name)) {
+              manifest[field][name] = specifier
+              direct = true
+            }
+          }
+          manifest.overrides[name] = direct ? `$${name}` : specifier
         }
       }
-      manifest.overrides[name] = direct ? `$${name}` : specifier
+      await fs.writeFile(manifestFile, `${JSON.stringify(manifest, null, 2)}\n`)
     }
-    await fs.writeFile(filename, `${JSON.stringify(manifest, null, 2)}\n`)
+    if (manager === 'pnpm') {
+      await applyDependencyTarballs(root, artifacts)
+    }
+    else {
+      assert.equal(manager, 'npm')
+    }
   }
-  return () => fs.writeFile(filename, original)
+  catch (error) {
+    await restore()
+    throw error
+  }
+  return restore
 }
 
 /** 不跟随目录链接；验证所有链接归属，记录实际安装包并核对 lockfile tarball 完整性。 */

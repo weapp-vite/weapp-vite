@@ -5,6 +5,9 @@
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "paths": {
+      "@weapp-vite/language-service": [
+        "../../packages/language-service/src/index.ts"
+      ],
       "weapp-vite": [
         "../../packages/weapp-vite/dist/index.d.mts"
       ],
@@ -12,7 +15,10 @@
         "../../packages/weapp-vite/dist/*"
       ],
       "@weapp-vite/ast/babel": [
-        "../../packages/ast/src/babel.ts"
+        "./extension/languages/ast.ts"
+      ],
+      "@weapp-vite/ast": [
+        "./extension/languages/ast.ts"
       ],
       "@weapp-vite/ast/babelTypes": [
         "../../packages/ast/src/babelTypes.ts"

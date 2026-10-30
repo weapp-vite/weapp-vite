@@ -13,7 +13,12 @@
   "bugs": {
     "url": "https://github.com/weapp-vite/weapp-vite/issues"
   },
-  "keywords": ["weapp-vite", "miniprogram", "oxfmt", "formatter"],
+  "keywords": [
+    "weapp-vite",
+    "miniprogram",
+    "oxfmt",
+    "formatter"
+  ],
   "sideEffects": false,
   "exports": {
     ".": {
@@ -24,6 +29,14 @@
       "types": "./dist/wxml/index.d.mts",
       "import": "./dist/wxml/index.mjs"
     },
+    "./languages": {
+      "types": "./dist/languages/index.d.mts",
+      "import": "./dist/languages/index.mjs"
+    },
+    "./project": {
+      "types": "./dist/project/public.d.mts",
+      "import": "./dist/project/public.mjs"
+    },
     "./package.json": "./package.json"
   },
   "main": "./dist/index.mjs",
@@ -32,7 +45,9 @@
   "bin": {
     "weapp-vite-format": "./dist/cli.mjs"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "engines": {
     "node": "^22.23.4 || ^24.22.1 || >=26.12.1"
   },
@@ -54,11 +69,14 @@
     }
   },
   "dependencies": {
+    "@weapp-vite/language-service": "workspace:*",
     "execa": "^10.2.1",
-    "fast-glob": "^3.3.3",
-    "ignore": "^7.0.5"
+    "picomatch": "^4.0.7"
   },
   "devDependencies": {
+    "@types/picomatch": "^4.0.3",
+    "postcss": "catalog:",
+    "postcss-value-parser": "4.2.0",
     "typescript": "catalog:",
     "vite-plus": "1.2.0",
     "vitest": "^5.0.5"

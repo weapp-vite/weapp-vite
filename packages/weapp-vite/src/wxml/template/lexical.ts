@@ -1,3 +1,5 @@
+import { findScriptClosingTag } from '@weapp-vite/language-service'
+
 export interface SourceRange {
   start: number
   end: number
@@ -122,13 +124,9 @@ export function skipDelimited(code: string, start: number, opening: string, clos
 }
 
 export function findScriptClose(code: string, start: number, tag: string, fileName: string) {
-  const closing = `</${tag}`
-  let i = code.indexOf(closing, start)
-  while (i >= 0) {
-    if (code[i + closing.length] === '>' || isSpace(code[i + closing.length])) {
-      return i
-    }
-    i = code.indexOf(closing, i + closing.length)
+  const closing = findScriptClosingTag(code, start, tag)
+  if (closing) {
+    return closing.start
   }
   return failAt(code, fileName, start, `Missing closing tag for <${tag}>.`)
 }

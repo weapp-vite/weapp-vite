@@ -1,0 +1,3414 @@
+{
+  "platform": "jd",
+  "availability": "snapshot",
+  "version": "sha256:c9f15f59a3f97059525b4dc22060f37748fbce9aaa3d196584b3e7eadb4e526c",
+  "source": "https://mp-docs.jd.com/doc/miniapp/dev/component/-1",
+  "snapshotDate": "2026-10-30",
+  "upstreamRetrievedAt": "2026-10-30",
+  "components": [
+    {
+      "name": "audio",
+      "docLink": "https://mp-docs.jd.com/doc/miniapp/dev/component/2715",
+      "attrs": [
+        {
+          "name": "src",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "要播放音频的资源地址"
+          ]
+        },
+        {
+          "name": "loop",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否循环播放"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "controls",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否显示默认控件"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "name",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "默认控件上的音频名字，如果 controls 属性值为 false 则设置 name 无效"
+          ],
+          "defaultValue": "未知音频"
+        },
+        {
+          "name": "author",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "默认控件上的作者名字，如果 controls 属性值为 false 则设置 author 无效"
+          ],
+          "defaultValue": "未知作者"
+        }
+      ]
+    },
+    {
+      "name": "button",
+      "docLink": "https://mp-docs.jd.com/doc/miniapp/dev/component/2707",
+      "attrs": [
+        {
+          "name": "size",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "按钮的大小"
+          ],
+          "defaultValue": "default"
+        },
+        {
+          "name": "type",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "按钮的样式类型"
+          ],
+          "defaultValue": "default"
+        },
+        {
+          "name": "plain",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "按钮是否镂空，背景色透明"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "disabled",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否禁用"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "loading",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "名称前是否带 loading 图标"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "form-type",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "用于 组件，点击分别会触发  组件的 submit/reset 事件"
+          ]
+        },
+        {
+          "name": "open-type",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "京东开放能力"
+          ]
+        },
+        {
+          "name": "hover-class",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "指定按钮按下去的样式类。当 hover-class=\"none\" 时，没有点击态效果"
+          ],
+          "defaultValue": "button-hover"
+        },
+        {
+          "name": "hover-stop-propagation",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "指定是否阻止本节点的祖先节点出现点击态"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "hover-start-time",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "按住后多久出现点击态，单位毫秒"
+          ],
+          "defaultValue": "20"
+        },
+        {
+          "name": "hover-stay-time",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "手指松开后点击态保留时间，单位毫秒"
+          ],
+          "defaultValue": "70"
+        },
+        {
+          "name": "lang",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "指定返回用户信息的语言，zh_CN 简体中文，zh_TW 繁体中文，en 英文。"
+          ],
+          "defaultValue": "en"
+        },
+        {
+          "name": "bindgetuserinfo",
+          "type": {
+            "name": "Handler"
+          },
+          "desc": [
+            "用户点击该按钮时，会返回获取到的用户信息，回调的detail数据与jd.getUserInfo返回的一致"
+          ]
+        },
+        {
+          "name": "bindgetphonenumber",
+          "type": {
+            "name": "Handler"
+          },
+          "desc": [
+            "获取用户手机号回调"
+          ]
+        },
+        {
+          "name": "app-parameter",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "打开 App 时，向 App 传递的参数"
+          ]
+        },
+        {
+          "name": "binderror",
+          "type": {
+            "name": "Handler"
+          },
+          "desc": [
+            "当使用开放能力时，发生错误的回调"
+          ]
+        },
+        {
+          "name": "bindopensetting",
+          "type": {
+            "name": "Handler"
+          },
+          "desc": [
+            "在打开授权设置页后回调"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "camera",
+      "docLink": "https://mp-docs.jd.com/doc/miniapp/dev/component/2716",
+      "attrs": [
+        {
+          "name": "mode",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "应用模式，只在初始化时有效，不能动态变更"
+          ],
+          "defaultValue": "normal"
+        },
+        {
+          "name": "device-position",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "摄像头朝向"
+          ],
+          "defaultValue": "back"
+        },
+        {
+          "name": "flash",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "闪光灯"
+          ],
+          "defaultValue": "auto"
+        },
+        {
+          "name": "bindstop",
+          "type": {
+            "name": "eventhandle"
+          },
+          "desc": [
+            "摄像头在非正常终止时触发，如退出后台等情况"
+          ]
+        },
+        {
+          "name": "binderror",
+          "type": {
+            "name": "eventhandle"
+          },
+          "desc": [
+            "用户不允许使用摄像头时触发"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "checkbox",
+      "docLink": "https://mp-docs.jd.com/doc/miniapp/dev/component/2708",
+      "attrs": [
+        {
+          "name": "value",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "标识，选中时触发  的 **change** 事件，并携带  的 **value**"
+          ]
+        },
+        {
+          "name": "disabled",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否禁用"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "checked",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "当前是否选中，可用来设置默认选中"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "color",
+          "type": {
+            "name": "Color"
+          },
+          "desc": [
+            "checkbox 的颜色，同 css 的 color"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "checkbox-group",
+      "docLink": "https://mp-docs.jd.com/doc/miniapp/dev/component/2709",
+      "attrs": [
+        {
+          "name": "bindchange",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "中选中项发生改变是触发 change 事件，detail = {value: [ 选中的 checkbox 的 value 的数组 ]}"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "cover-image",
+      "docLink": "https://mp-docs.jd.com/doc/miniapp/dev/component/2690",
+      "attrs": [
+        {
+          "name": "src",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "图标路径，支持临时路径、网络地址。暂不支持 base64 格式。"
+          ]
+        },
+        {
+          "name": "bindload",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "图片加载成功时触发"
+          ]
+        },
+        {
+          "name": "binderror",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "图片加载失败时触发"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "cover-view",
+      "docLink": "https://mp-docs.jd.com/doc/miniapp/dev/component/2691",
+      "attrs": [
+        {
+          "name": "scroll-top",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "设置顶部滚动偏移量，仅在设置了 overflow-y: scroll 成为滚动元素后生效"
+          ]
+        },
+        {
+          "name": "src",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "图标路径，支持临时路径、网络地址。暂不支持 base64 格式。"
+          ]
+        },
+        {
+          "name": "bindload",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "图片加载成功时触发"
+          ]
+        },
+        {
+          "name": "binderror",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "图片加载失败时触发"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "editor",
+      "docLink": "https://mp-docs.jd.com/doc/miniapp/dev/component/2710",
+      "attrs": [
+        {
+          "name": "read-only",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "设置编辑器为只读"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "placeholder",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "提示信息"
+          ]
+        },
+        {
+          "name": "show-img-size",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "点击图片时显示图片大小控件"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "show-img-toolbar",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "点击图片时显示工具栏控件"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "show-img-resize",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "点击图片时显示修改尺寸控件"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "bindready",
+          "type": {
+            "name": "eventhandle"
+          },
+          "desc": [
+            "编辑器初始化完成时触发"
+          ]
+        },
+        {
+          "name": "bindfocus",
+          "type": {
+            "name": "eventhandle"
+          },
+          "desc": [
+            "编辑器聚焦时触发，event.detail = {html, text, delta}"
+          ]
+        },
+        {
+          "name": "bindblur",
+          "type": {
+            "name": "eventhandle"
+          },
+          "desc": [
+            "编辑器失去焦点时触发，detail = {html, text, delta}"
+          ]
+        },
+        {
+          "name": "bindinput",
+          "type": {
+            "name": "eventhandle"
+          },
+          "desc": [
+            "编辑器内容改变时触发，detail = {html, text, delta}"
+          ]
+        },
+        {
+          "name": "bindstatuschange",
+          "type": {
+            "name": "eventhandle"
+          },
+          "desc": [
+            "通过 Context 方法改变编辑器内样式时触发，返回选区已设置的样式"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "form",
+      "docLink": "https://mp-docs.jd.com/doc/miniapp/dev/component/2711",
+      "attrs": [
+        {
+          "name": "report-submit",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否返回 formId 用于发送模板消息"
+          ]
+        },
+        {
+          "name": "bindsubmit",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "携带 form 中的数据触发 submit 事件，event.detail = {value : {'name': 'value'} , formId: ''}"
+          ]
+        },
+        {
+          "name": "bindreset",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "表单重置时会触发 reset 事件"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "icon",
+      "docLink": "https://mp-docs.jd.com/doc/miniapp/dev/component/2696",
+      "attrs": [
+        {
+          "name": "type",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "icon 的类型，有效值：success, success_no_circle, info, warn, waiting, cancel, download, search, clear"
+          ]
+        },
+        {
+          "name": "size",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "icon 的大小，单位 px"
+          ],
+          "defaultValue": "23"
+        },
+        {
+          "name": "color",
+          "type": {
+            "name": "Color"
+          },
+          "desc": [
+            "icon 的颜色，同 css 的 color"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "image",
+      "docLink": "https://mp-docs.jd.com/doc/miniapp/dev/component/2717",
+      "attrs": [
+        {
+          "name": "src",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "图片资源地址"
+          ]
+        },
+        {
+          "name": "mode",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "图片裁剪、缩放的模式"
+          ],
+          "defaultValue": "'scaleToFill'"
+        },
+        {
+          "name": "lazy-load",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "图片懒加载，京东APP 12.0.10 版本后开始支持"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "binderror",
+          "type": {
+            "name": "HandleEvent"
+          },
+          "desc": [
+            "当错误发生时，发布到 AppService 的事件名，事件对象 event.detail = {errMsg: 'something wrong'}"
+          ]
+        },
+        {
+          "name": "bindload",
+          "type": {
+            "name": "HandleEvent"
+          },
+          "desc": [
+            "当图片载入完毕时，发布到 AppService 的事件名，事件对象 event.detail = {height:'图片高度px', width:'图片宽度px'}"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "input",
+      "docLink": "https://mp-docs.jd.com/doc/miniapp/dev/component/2712",
+      "attrs": [
+        {
+          "name": "value",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "输入框的初始内容"
+          ]
+        },
+        {
+          "name": "type",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "input 的类型"
+          ],
+          "defaultValue": "\"text\""
+        },
+        {
+          "name": "password",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否是密码类型"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "placeholder",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "输入框为空时占位符"
+          ]
+        },
+        {
+          "name": "placeholder-style",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "指定 placeholder 的样式"
+          ]
+        },
+        {
+          "name": "placeholder-class",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "指定 placeholder 的样式类"
+          ],
+          "defaultValue": "\"input-placeholder\""
+        },
+        {
+          "name": "disabled",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否禁用"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "maxlength",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "最大输入长度，设置为 -1 的时候不限制最大长度"
+          ],
+          "defaultValue": "140"
+        },
+        {
+          "name": "cursor-spacing",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "指定光标与键盘的距离，单位 px 。取 input 距离底部的距离和 cursor-spacing 指定的距离的最小值作为光标与键盘的距离"
+          ],
+          "defaultValue": "0"
+        },
+        {
+          "name": "auto-focus",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "(即将废弃，请直接使用 focus 自动聚焦，拉起键盘"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "focus",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "获取焦点"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "confirm-type",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "设置键盘右下角按钮的文字，仅在type='text'时生效"
+          ],
+          "defaultValue": "\"done\""
+        },
+        {
+          "name": "confirm-hold",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "点击键盘右下角按钮时是否保持键盘不收起"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "cursor",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "指定 focus 时的光标位置"
+          ]
+        },
+        {
+          "name": "selection-start",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "光标起始位置，自动聚集时有效，需与selection-end搭配使用"
+          ],
+          "defaultValue": "-1"
+        },
+        {
+          "name": "selection-end",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "光标结束位置，自动聚集时有效，需与selection-start搭配使用"
+          ],
+          "defaultValue": "-1"
+        },
+        {
+          "name": "adjust-position",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "键盘弹起时，是否自动上推页面"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "bindinput",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "键盘输入时触发，event.detail = {value, cursor, keyCode}，keyCode 为键值，处理函数可以直接 return 一个字符串，将替换输入框的内容。"
+          ]
+        },
+        {
+          "name": "bindfocus",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "输入框聚焦时触发，event.detail = { value, height }，height 为键盘高度"
+          ]
+        },
+        {
+          "name": "bindblur",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "输入框失去焦点时触发，event.detail = {value: value}"
+          ]
+        },
+        {
+          "name": "bindconfirm",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "点击完成按钮时触发，event.detail = {value: value}"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "label",
+      "docLink": "https://mp-docs.jd.com/doc/miniapp/dev/component/2713",
+      "attrs": [
+        {
+          "name": "for",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "绑定控件的 id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "live-player",
+      "docLink": "https://mp-docs.jd.com/doc/miniapp/dev/component/2718",
+      "attrs": [
+        {
+          "name": "src",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "音视频地址。"
+          ]
+        },
+        {
+          "name": "mode",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "模式"
+          ],
+          "defaultValue": "live"
+        },
+        {
+          "name": "autoplay",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "自动播放"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "muted",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否静音"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "orientation",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "画面方向"
+          ],
+          "defaultValue": "vertical"
+        },
+        {
+          "name": "bindstatechange",
+          "type": {
+            "name": "eventhandle"
+          },
+          "desc": [
+            "播放状态变化事件，detail = \\{code\\}"
+          ]
+        },
+        {
+          "name": "bindfullscreenchange",
+          "type": {
+            "name": "eventhandle"
+          },
+          "desc": [
+            "全屏变化事件，detail = \\{direction, fullScreen\\}"
+          ]
+        },
+        {
+          "name": "bindenterpictureinpicture",
+          "type": {
+            "name": "eventHandle"
+          },
+          "desc": [
+            "播放器进入小窗"
+          ]
+        },
+        {
+          "name": "bindleavepictureinpicture",
+          "type": {
+            "name": "eventHandle"
+          },
+          "desc": [
+            "播放器退出小窗"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "map",
+      "docLink": "https://mp-docs.jd.com/doc/miniapp/dev/component/2720",
+      "attrs": [
+        {
+          "name": "longitude",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "经度"
+          ]
+        },
+        {
+          "name": "latitude",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "纬度"
+          ]
+        },
+        {
+          "name": "scale",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "缩放级别，取值范围3-20"
+          ],
+          "defaultValue": "16"
+        },
+        {
+          "name": "theme",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "主题（satellite 或 normal）只在初始化时有效，不能动态变更（仅Android支持）"
+          ],
+          "defaultValue": "normal"
+        },
+        {
+          "name": "showLocation",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "显示带有方向的当前定位点"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "includePoints",
+          "type": {
+            "name": "Array（point)"
+          },
+          "desc": [
+            "缩放视野以包含所有给定的坐标点,point为经纬度{\"longitude\":0,\"latitude\":0}"
+          ]
+        },
+        {
+          "name": "markers",
+          "type": {
+            "name": "Array(marker)"
+          },
+          "desc": [
+            "标记点"
+          ]
+        },
+        {
+          "name": "polyline",
+          "type": {
+            "name": "Array(polyline)"
+          },
+          "desc": [
+            "路线"
+          ]
+        },
+        {
+          "name": "circles",
+          "type": {
+            "name": "Array(circle)"
+          },
+          "desc": [
+            "圆"
+          ]
+        },
+        {
+          "name": "controls",
+          "type": {
+            "name": "Array(control)"
+          },
+          "desc": [
+            "控件"
+          ]
+        },
+        {
+          "name": "bindmarkertap",
+          "type": {
+            "name": "eventhandler"
+          },
+          "desc": [
+            "点击标记点时触发"
+          ]
+        },
+        {
+          "name": "bindcallouttap",
+          "type": {
+            "name": "eventhandler"
+          },
+          "desc": [
+            "点击标记点对应的气泡时触发"
+          ]
+        },
+        {
+          "name": "bindcontroltap",
+          "type": {
+            "name": "eventhandler"
+          },
+          "desc": [
+            "点击控件触发"
+          ]
+        },
+        {
+          "name": "bindregionchange",
+          "type": {
+            "name": "eventhandler"
+          },
+          "desc": [
+            "视野发生变化时触发"
+          ]
+        },
+        {
+          "name": "bindtap",
+          "type": {
+            "name": "eventhandler"
+          },
+          "desc": [
+            "点击地图时触发"
+          ]
+        },
+        {
+          "name": "id",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "控件id，在控件点击事件回调会返回此id"
+          ]
+        },
+        {
+          "name": "title",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "标注点名"
+          ]
+        },
+        {
+          "name": "iconPath",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "项目目录下的图片路径，仅支持代码包路径"
+          ]
+        },
+        {
+          "name": "rotate",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "旋转角度"
+          ]
+        },
+        {
+          "name": "alpha",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "标注透明度"
+          ]
+        },
+        {
+          "name": "width",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "线的宽度"
+          ]
+        },
+        {
+          "name": "height",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "高度"
+          ]
+        },
+        {
+          "name": "callout",
+          "type": {
+            "name": "Object"
+          },
+          "desc": [
+            "自定义标记点上方的气泡窗口"
+          ]
+        },
+        {
+          "name": "anchor",
+          "type": {
+            "name": "Object"
+          },
+          "desc": [
+            "经纬度在标注图标的锚点，默认底边中点"
+          ]
+        },
+        {
+          "name": "content",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "文本"
+          ]
+        },
+        {
+          "name": "color",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "描边的颜色"
+          ]
+        },
+        {
+          "name": "fontSize",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "文字大小"
+          ]
+        },
+        {
+          "name": "borderRadius",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "边框圆角"
+          ]
+        },
+        {
+          "name": "borderWidth",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "线的边框宽度"
+          ]
+        },
+        {
+          "name": "borderColor",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "线的边框颜色"
+          ]
+        },
+        {
+          "name": "bgColor",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "背景色"
+          ]
+        },
+        {
+          "name": "padding",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "文本边缘留白"
+          ]
+        },
+        {
+          "name": "display",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "'BYCLICK':点击显示; 'ALWAYS':常显,不传默认为 'BYCLICK'"
+          ]
+        },
+        {
+          "name": "textAlign",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "文本对齐方式。有效值: left, right, center"
+          ]
+        },
+        {
+          "name": "anchorX",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "横向偏移量，向右为正数"
+          ]
+        },
+        {
+          "name": "anchorY",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "纵向偏移量，向下为正数"
+          ]
+        },
+        {
+          "name": "points",
+          "type": {
+            "name": "Array(point)"
+          },
+          "desc": [
+            "经纬度数组"
+          ]
+        },
+        {
+          "name": "dottedLine",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否虚线，默认false"
+          ]
+        },
+        {
+          "name": "arrowLine",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "带箭头的线，默认false"
+          ]
+        },
+        {
+          "name": "arrowIconPath",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "箭头图标路径（在 arrowLine 为 true 时生效）"
+          ]
+        },
+        {
+          "name": "fillColor",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "填充颜色"
+          ]
+        },
+        {
+          "name": "radius",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "半径"
+          ]
+        },
+        {
+          "name": "strokeWidth",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "描边的宽度"
+          ]
+        },
+        {
+          "name": "position",
+          "type": {
+            "name": "Object"
+          },
+          "desc": [
+            "控件在地图的位置"
+          ]
+        },
+        {
+          "name": "clickable",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否可点击，默认false，不可点击"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "match-media",
+      "docLink": "https://mp-docs.jd.com/doc/miniapp/dev/component/2692",
+      "attrs": [
+        {
+          "name": "min-width",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "页面最小宽度（ px 为单位）"
+          ]
+        },
+        {
+          "name": "max-width",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "页面最大宽度（ px 为单位）"
+          ]
+        },
+        {
+          "name": "width",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "页面宽度（ px 为单位）"
+          ]
+        },
+        {
+          "name": "min-height",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "页面最小高度（ px 为单位）"
+          ]
+        },
+        {
+          "name": "max-height",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "页面最大高度（ px 为单位）"
+          ]
+        },
+        {
+          "name": "height",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "页面高度（ px 为单位）"
+          ]
+        },
+        {
+          "name": "orientation",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "屏幕方向（ landscape 或 portrait ）"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "movable-area",
+      "docLink": "https://mp-docs.jd.com/doc/miniapp/dev/component/2693",
+      "attrs": [
+        {
+          "name": "scale-area",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "当里面的movable-view设置为支持双指缩放时，设置此值可将缩放手势生效区域修改为整个movable-area"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "direction",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "movable-view的移动方向，属性值有all、vertical、horizontal、none"
+          ],
+          "defaultValue": "none"
+        },
+        {
+          "name": "inertia",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "movable-view是否带有惯性"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "out-of-bounds",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "超过可移动区域后，movable-view是否还可以移动"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "x",
+          "type": {
+            "name": "Number / String"
+          },
+          "desc": [
+            "定义x轴方向的偏移，如果x的值不在可移动范围内，会自动移动到可移动范围；改变x的值会触发动画"
+          ]
+        },
+        {
+          "name": "y",
+          "type": {
+            "name": "Number / String"
+          },
+          "desc": [
+            "定义y轴方向的偏移，如果y的值不在可移动范围内，会自动移动到可移动范围；改变y的值会触发动画"
+          ]
+        },
+        {
+          "name": "damping",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "阻尼系数，用于控制x或y改变时的动画和过界回弹的动画，值越大移动越快"
+          ],
+          "defaultValue": "20"
+        },
+        {
+          "name": "friction",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "摩擦系数，用于控制惯性滑动的动画，值越大摩擦力越大，滑动越快停止；必须大于0，否则会被设置成默认值"
+          ],
+          "defaultValue": "2"
+        },
+        {
+          "name": "disabled",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否禁用"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "scale",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否支持双指缩放，默认缩放手势生效区域是在movable-view内"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "scale-min",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "定义缩放倍数最小值"
+          ],
+          "defaultValue": "0.5"
+        },
+        {
+          "name": "scale-max",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "定义缩放倍数最大值"
+          ],
+          "defaultValue": "10"
+        },
+        {
+          "name": "scale-value",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "定义缩放倍数，取值范围为 0.5 - 10"
+          ],
+          "defaultValue": "1"
+        },
+        {
+          "name": "animation",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否使用动画"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "bindchange",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "拖动过程中触发的事件，event.detail = {x: x, y: y, source: source}，其中source表示产生移动的原因，值可为touch（拖动）、touch-out-of-bounds（超出移动范围）、out-of-bounds（超出移动范围后的回弹）、friction（惯性）和空字符串（setData）"
+          ]
+        },
+        {
+          "name": "bindscale",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "缩放过程中触发的事件，event.detail = {x: x, y: y, scale: scale}"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "navigator",
+      "docLink": "https://mp-docs.jd.com/doc/miniapp/dev/component/2714",
+      "attrs": [
+        {
+          "name": "url",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "当前小程序内的跳转链接"
+          ]
+        },
+        {
+          "name": "open-type",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "跳转方式"
+          ],
+          "defaultValue": "navigate"
+        },
+        {
+          "name": "delta",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "当 open-type 为 'navigateBack' 时有效，表示回退的层数"
+          ]
+        },
+        {
+          "name": "hover-class",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "指定点击时的样式类，当 hover-class=\"none\" 时，没有点击态效果"
+          ],
+          "defaultValue": "navigator-hover"
+        },
+        {
+          "name": "hover-stop-propagation",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "指定是否阻止本节点的祖先节点出现点击态"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "hover-start-time",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "按住后多久出现点击态，单位毫秒"
+          ],
+          "defaultValue": "50"
+        },
+        {
+          "name": "hover-stay-time",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "手指松开后点击态保留时间，单位毫秒"
+          ],
+          "defaultValue": "600"
+        }
+      ]
+    },
+    {
+      "name": "page-container",
+      "docLink": "https://mp-docs.jd.com/doc/miniapp/dev/component/3108",
+      "attrs": [
+        {
+          "name": "show",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否显示容器组件"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "duration",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "动画时长，单位毫秒"
+          ],
+          "defaultValue": "300"
+        },
+        {
+          "name": "z-index",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "z-index 层级"
+          ],
+          "defaultValue": "100"
+        },
+        {
+          "name": "overlay",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否显示遮罩层"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "position",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "弹出位置，可选值为 top bottom right center"
+          ],
+          "defaultValue": "bottom"
+        },
+        {
+          "name": "round",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否显示圆角"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "close-on-slide-down",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否在下滑一段距离后关闭"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "overlay-style",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "自定义遮罩层样式"
+          ]
+        },
+        {
+          "name": "custom-style",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "自定义弹出层样式"
+          ]
+        },
+        {
+          "name": "bind:beforeenter",
+          "type": {
+            "name": "eventhandle"
+          },
+          "desc": [
+            "进入前触发"
+          ]
+        },
+        {
+          "name": "bind:enter",
+          "type": {
+            "name": "eventhandle"
+          },
+          "desc": [
+            "进入中触发"
+          ]
+        },
+        {
+          "name": "bind:afterenter",
+          "type": {
+            "name": "eventhandle"
+          },
+          "desc": [
+            "进入后触发"
+          ]
+        },
+        {
+          "name": "bind:beforeleave",
+          "type": {
+            "name": "eventhandle"
+          },
+          "desc": [
+            "离开前触发"
+          ]
+        },
+        {
+          "name": "bind:leave",
+          "type": {
+            "name": "eventhandle"
+          },
+          "desc": [
+            "离开中触发"
+          ]
+        },
+        {
+          "name": "bind:afterleave",
+          "type": {
+            "name": "eventhandle"
+          },
+          "desc": [
+            "离开后触发"
+          ]
+        },
+        {
+          "name": "bind:clickoverlay",
+          "type": {
+            "name": "eventhandle"
+          },
+          "desc": [
+            "点击遮罩层时触发"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "picker",
+      "docLink": "https://mp-docs.jd.com/doc/miniapp/dev/component/2705",
+      "attrs": [
+        {
+          "name": "range",
+          "type": {
+            "name": "二维Array / 二维Object Array"
+          },
+          "desc": [
+            "mode为 selector 或 multiSelector 时，range 有效。二维数组，长度表示多少列，数组的每项表示每列的数据，如[[\"a\",\"b\"], [\"c\",\"d\"]]"
+          ],
+          "defaultValue": "[]"
+        },
+        {
+          "name": "range-key",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "当 range 是一个 二维Object Array 时，通过 range-key 来指定 Object 中 key 的值作为选择器显示内容"
+          ]
+        },
+        {
+          "name": "value",
+          "type": {
+            "name": "Array"
+          },
+          "desc": [
+            "表示选中的省市区，默认选中每一列的第一个值"
+          ],
+          "defaultValue": "[]"
+        },
+        {
+          "name": "bindchange",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "value 改变时触发 change 事件，event.detail = {value: value, code: code, postcode: postcode}，其中字段code是统计用区划代码，postcode 是邮政编码"
+          ]
+        },
+        {
+          "name": "disabled",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否禁用"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "bindcancel",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "取消选择时触发"
+          ]
+        },
+        {
+          "name": "bindcolumnchange",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "某一列的值改变时触发 columnchange 事件，event.detail = {column: column, value: value}，column 的值表示改变了第几列（下标从0开始），value 的值表示变更值的下标"
+          ]
+        },
+        {
+          "name": "start",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "表示有效日期范围的开始，字符串格式为 \"YYYY-MM-DD\""
+          ]
+        },
+        {
+          "name": "end",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "表示有效日期范围的结束，字符串格式为 \"YYYY-MM-DD\""
+          ]
+        },
+        {
+          "name": "fields",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "有效值 year , month , day，表示选择器的粒度"
+          ],
+          "defaultValue": "day"
+        },
+        {
+          "name": "custom-item",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "可为每一列的顶部添加一个自定义的项"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "picker-view",
+      "docLink": "https://mp-docs.jd.com/doc/miniapp/dev/component/2706",
+      "attrs": [
+        {
+          "name": "value",
+          "type": {
+            "name": "NumberArray"
+          },
+          "desc": [
+            "数组中的数字依次表示 picker-view 内的 picker-view-column 选择的第几项（下标从 0 开始），数字大于 picker-view-column 可选项长度时，选择最后一项。"
+          ]
+        },
+        {
+          "name": "indicator-style",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "设置选择器中间选中框的样式"
+          ]
+        },
+        {
+          "name": "indicator-class",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "设置选择器中间选中框的类名"
+          ]
+        },
+        {
+          "name": "mask-style",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "设置蒙层的样式"
+          ]
+        },
+        {
+          "name": "mask-class",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "设置蒙层的类名"
+          ]
+        },
+        {
+          "name": "bindchange",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "当滚动选择，value 改变时触发 change 事件，event.detail = {value: value}；value为数组，表示 picker-view 内的 picker-view-column 当前选择的是第几项（下标从 0 开始）"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "progress",
+      "docLink": "https://mp-docs.jd.com/doc/miniapp/dev/component/2697",
+      "attrs": [
+        {
+          "name": "percent",
+          "type": {
+            "name": "Float"
+          },
+          "desc": [
+            "百分比 0~100"
+          ],
+          "defaultValue": "无"
+        },
+        {
+          "name": "show-info",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "在进度条右侧显示百分比"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "stroke-width",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "进度条线的宽度，单位 px"
+          ],
+          "defaultValue": "6"
+        },
+        {
+          "name": "color",
+          "type": {
+            "name": "Color"
+          },
+          "desc": [
+            "进度条颜色 （请使用 activeColor）"
+          ],
+          "defaultValue": "#F0250F"
+        },
+        {
+          "name": "activeColor",
+          "type": {
+            "name": "Color"
+          },
+          "desc": [
+            "已选择的进度条的颜色"
+          ]
+        },
+        {
+          "name": "backgroundColor",
+          "type": {
+            "name": "Color"
+          },
+          "desc": [
+            "未选择的进度条的颜色"
+          ]
+        },
+        {
+          "name": "active",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "进度条从左往右的动画"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "active-mode",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "backwards: 动画从头播；forwards：动画从上次结束点接着播"
+          ],
+          "defaultValue": "backwards"
+        },
+        {
+          "name": "border-radius",
+          "type": {
+            "name": "number/string"
+          },
+          "desc": [
+            "圆角大小"
+          ],
+          "defaultValue": "0"
+        },
+        {
+          "name": "font-size",
+          "type": {
+            "name": "number/string"
+          },
+          "desc": [
+            "右侧百分比字体大小"
+          ],
+          "defaultValue": "16"
+        },
+        {
+          "name": "duration",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "进度增加1%所需毫秒数"
+          ],
+          "defaultValue": "30"
+        },
+        {
+          "name": "bindactiveend",
+          "type": {
+            "name": "eventhandle"
+          },
+          "desc": [
+            "动画完成事件"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "radio",
+      "docLink": "https://mp-docs.jd.com/doc/miniapp/dev/component/2704",
+      "attrs": [
+        {
+          "name": "value",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "标识。当该  选中时， 的 change 事件会携带  的 value"
+          ]
+        },
+        {
+          "name": "checked",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "当前是否选中"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "disabled",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否禁用"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "color",
+          "type": {
+            "name": "Color"
+          },
+          "desc": [
+            "radio 的颜色，同 css 的 color"
+          ],
+          "defaultValue": "#F0250F"
+        }
+      ]
+    },
+    {
+      "name": "radio-group",
+      "docLink": "https://mp-docs.jd.com/doc/miniapp/dev/component/2703",
+      "attrs": [
+        {
+          "name": "bindchange",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "中的选中项发生变化时触发 change 事件，event.detail = {value: 选中项radio的value}"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "recycle-view",
+      "docLink": "https://mp-docs.jd.com/doc/miniapp/dev/component/2723",
+      "attrs": []
+    },
+    {
+      "name": "rich-text",
+      "docLink": "https://mp-docs.jd.com/doc/miniapp/dev/component/2699",
+      "attrs": [
+        {
+          "name": "nodes",
+          "type": {
+            "name": "Array / String"
+          },
+          "desc": [
+            "节点列表 / HTML String"
+          ],
+          "defaultValue": "[]"
+        },
+        {
+          "name": "space",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "显示连续空格"
+          ]
+        },
+        {
+          "name": "name",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "标签名"
+          ]
+        },
+        {
+          "name": "attrs",
+          "type": {
+            "name": "Object"
+          },
+          "desc": [
+            "属性"
+          ]
+        },
+        {
+          "name": "children",
+          "type": {
+            "name": "Array"
+          },
+          "desc": [
+            "子节点列表"
+          ]
+        },
+        {
+          "name": "text",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "文本"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "root-portal",
+      "docLink": "https://mp-docs.jd.com/doc/miniapp/dev/component/3107",
+      "attrs": [
+        {
+          "name": "enable",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否从页面中脱离出来"
+          ],
+          "defaultValue": "true"
+        }
+      ]
+    },
+    {
+      "name": "scroll-view",
+      "docLink": "https://mp-docs.jd.com/doc/miniapp/dev/component/2694",
+      "attrs": [
+        {
+          "name": "scroll-x",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "允许横向滚动"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "scroll-y",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "允许纵向滚动"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "upper-threshold",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "距顶部/左边多远时（单位px），触发 scrolltoupper 事件"
+          ],
+          "defaultValue": "50"
+        },
+        {
+          "name": "lower-threshold",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "距底部/右边多远时（单位px），触发 scrolltolower 事件"
+          ],
+          "defaultValue": "50"
+        },
+        {
+          "name": "scroll-top",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "设置竖向滚动条位置"
+          ]
+        },
+        {
+          "name": "scroll-left",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "设置横向滚动条位置"
+          ]
+        },
+        {
+          "name": "scroll-into-view",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "值应为某子元素id（id不能以数字开头）。设置哪个方向可滚动，则在哪个方向滚动到该元素"
+          ]
+        },
+        {
+          "name": "scroll-with-animation",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "在设置滚动条位置时使用动画过渡"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "enable-back-to-top",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "iOS点击顶部状态栏、安卓双击标题栏时，滚动条返回顶部，只支持竖向"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "bindscrolltoupper",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "滚动到顶部/左边，会触发 scrolltoupper 事件"
+          ]
+        },
+        {
+          "name": "bindscrolltolower",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "滚动到底部/右边，会触发 scrolltolower 事件"
+          ]
+        },
+        {
+          "name": "bindscroll",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "滚动时触发，event.detail = {scrollLeft, scrollTop, scrollHeight, scrollWidth, deltaX, deltaY}"
+          ]
+        },
+        {
+          "name": "enable-flex",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "启用 flexbox 布局。开启后，当前节点声明了 display: flex 就会成为 flex container，并作用于其孩子节点。"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "enable-passive",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "开启 passive 特性，能优化一定的滚动性能"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "refresher-enabled",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "开启自定义下拉刷新"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "refresher-threshold",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "设置自定义下拉刷新阈值"
+          ],
+          "defaultValue": "45"
+        },
+        {
+          "name": "refresher-default-style",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "设置自定义下拉刷新默认样式，支持设置 black"
+          ],
+          "defaultValue": "\"black\""
+        },
+        {
+          "name": "refresher-background",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "设置自定义下拉刷新区域背景颜色"
+          ],
+          "defaultValue": "\"#FFF\""
+        },
+        {
+          "name": "refresher-triggered",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "设置当前下拉刷新状态，true 表示下拉刷新已经被触发，false 表示下拉刷新未被触发"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "bindrefresherpulling",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "自定义下拉刷新控件被下拉"
+          ]
+        },
+        {
+          "name": "bindrefresherrefresh",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "自定义下拉刷新被触发"
+          ]
+        },
+        {
+          "name": "bindrefresherrestore",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "自定义下拉刷新被复位"
+          ]
+        },
+        {
+          "name": "bindrefresherabort",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "自定义下拉刷新被中止"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "slider",
+      "docLink": "https://mp-docs.jd.com/doc/miniapp/dev/component/2702",
+      "attrs": [
+        {
+          "name": "min",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "最小值"
+          ],
+          "defaultValue": "0"
+        },
+        {
+          "name": "max",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "最大值"
+          ],
+          "defaultValue": "100"
+        },
+        {
+          "name": "step",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "步长，取值必须大于 0，并且可被 (max - min) 整除"
+          ],
+          "defaultValue": "1"
+        },
+        {
+          "name": "disabled",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否禁用"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "value",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "当前取值"
+          ],
+          "defaultValue": "0"
+        },
+        {
+          "name": "color",
+          "type": {
+            "name": "Color"
+          },
+          "desc": [
+            "背景条的颜色（请使用 backgroundColor）"
+          ],
+          "defaultValue": "#DADADA"
+        },
+        {
+          "name": "selected-color",
+          "type": {
+            "name": "Color"
+          },
+          "desc": [
+            "已选择的颜色（请使用 activeColor）"
+          ],
+          "defaultValue": "#F0250F"
+        },
+        {
+          "name": "activeColor",
+          "type": {
+            "name": "Color"
+          },
+          "desc": [
+            "已选择的颜色"
+          ],
+          "defaultValue": "#F0250F"
+        },
+        {
+          "name": "backgroundColor",
+          "type": {
+            "name": "Color"
+          },
+          "desc": [
+            "背景条的颜色"
+          ],
+          "defaultValue": "#DADADA"
+        },
+        {
+          "name": "block-size",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "滑块的大小，取值范围为 12 - 28"
+          ],
+          "defaultValue": "28"
+        },
+        {
+          "name": "block-color",
+          "type": {
+            "name": "Color"
+          },
+          "desc": [
+            "滑块的颜色"
+          ],
+          "defaultValue": "#FFFFFF"
+        },
+        {
+          "name": "show-value",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否显示当前 value"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "bindchange",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "完成一次拖动后触发的事件，event.detail = {value: value}"
+          ]
+        },
+        {
+          "name": "bindchanging",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "拖动过程中触发的事件，event.detail = {value: value}"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "swiper",
+      "docLink": "https://mp-docs.jd.com/doc/miniapp/dev/component/2689",
+      "attrs": [
+        {
+          "name": "indicator-dots",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否显示面板指示点"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "indicator-color",
+          "type": {
+            "name": "Color"
+          },
+          "desc": [
+            "指示点颜色"
+          ],
+          "defaultValue": "rgba(0, 0, 0, .3)"
+        },
+        {
+          "name": "indicator-active-color",
+          "type": {
+            "name": "Color"
+          },
+          "desc": [
+            "当前选中的指示点颜色"
+          ],
+          "defaultValue": "#000000"
+        },
+        {
+          "name": "autoplay",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否自动切换"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "current",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "当前所在滑块的 index"
+          ],
+          "defaultValue": "0"
+        },
+        {
+          "name": "current-item-id",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "当前所在滑块的 item-id ，不能与 current 被同时指定"
+          ],
+          "defaultValue": "\"\""
+        },
+        {
+          "name": "interval",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "自动切换时间间隔"
+          ],
+          "defaultValue": "5000"
+        },
+        {
+          "name": "duration",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "滑动动画时长"
+          ],
+          "defaultValue": "500"
+        },
+        {
+          "name": "circular",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否采用衔接滑动"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "vertical",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "滑动方向是否为纵向"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "previous-margin",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "前边距，可用于露出前一项的一小部分，接受 px 和 rpx 值"
+          ],
+          "defaultValue": "\"0px\""
+        },
+        {
+          "name": "next-margin",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "后边距，可用于露出后一项的一小部分，接受 px 和 rpx 值"
+          ],
+          "defaultValue": "\"0px\""
+        },
+        {
+          "name": "display-multiple-items",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "同时显示的滑块数量"
+          ],
+          "defaultValue": "1"
+        },
+        {
+          "name": "skip-hidden-item-layout",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否跳过未显示的滑块布局，设为 true 可优化复杂情况下的滑动性能，但会丢失隐藏状态滑块的布局信息"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "bindchange",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "current改变时会触发 change 事件，event.detail = {current: current, source: source}"
+          ]
+        },
+        {
+          "name": "bindanimationfinish",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "动画结束时会触发 animationfinish 事件，event.detail 同上"
+          ]
+        },
+        {
+          "name": "easing-function",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "指定 swiper 切换缓动动画类型"
+          ],
+          "defaultValue": "\"default\""
+        },
+        {
+          "name": "item-id",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "该 swiper-item 的标识符"
+          ],
+          "defaultValue": "\"\""
+        }
+      ]
+    },
+    {
+      "name": "swiper-item",
+      "docLink": "https://mp-docs.jd.com/doc/miniapp/dev/component/2695",
+      "attrs": [
+        {
+          "name": "item-id",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "该 swiper-item 的标识符"
+          ],
+          "defaultValue": "\"\""
+        }
+      ]
+    },
+    {
+      "name": "switch",
+      "docLink": "https://mp-docs.jd.com/doc/miniapp/dev/component/2701",
+      "attrs": [
+        {
+          "name": "checked",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否选中"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "type",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "样式，有效值：switch, checkbox"
+          ],
+          "defaultValue": "switch"
+        },
+        {
+          "name": "bindchange",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "checked 改变时触发 change 事件，event.detail={ value:checked}"
+          ]
+        },
+        {
+          "name": "color",
+          "type": {
+            "name": "Color"
+          },
+          "desc": [
+            "switch 的颜色，同 css 的 color"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "text",
+      "docLink": "https://mp-docs.jd.com/doc/miniapp/dev/component/2698",
+      "attrs": [
+        {
+          "name": "selectable",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "文本是否可选"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "space",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "显示连续空格"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "decode",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否解码"
+          ],
+          "defaultValue": "false"
+        }
+      ]
+    },
+    {
+      "name": "textarea",
+      "docLink": "https://mp-docs.jd.com/doc/miniapp/dev/component/2700",
+      "attrs": [
+        {
+          "name": "value",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "输入框的内容"
+          ]
+        },
+        {
+          "name": "placeholder",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "输入框为空时占位符"
+          ]
+        },
+        {
+          "name": "placeholder-style",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "指定 placeholder 的样式"
+          ]
+        },
+        {
+          "name": "placeholder-class",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "指定 placeholder 的样式类"
+          ],
+          "defaultValue": "textarea-placeholder"
+        },
+        {
+          "name": "disabled",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否禁用"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "maxlength",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "最大输入长度，设置为 -1 的时候不限制最大长度"
+          ],
+          "defaultValue": "140"
+        },
+        {
+          "name": "auto-focus",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "自动聚焦，拉起键盘。"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "focus",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "获取焦点"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "auto-height",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否自动增高，设置 auto-height 时，style.height 不生效"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "fixed",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "如果 textarea 是在一个 position:fixed 的区域，需要显示指定属性 fixed 为 true"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "cursor-spacing",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "指定光标与键盘的距离，单位 px 。取 textarea 距离底部的距离和 cursor-spacing 指定的距离的最小值作为光标与键盘的距离"
+          ],
+          "defaultValue": "0"
+        },
+        {
+          "name": "cursor",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "指定 focus 时的光标位置"
+          ]
+        },
+        {
+          "name": "show-confirm-bar",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否显示键盘上方带有\"完成\"按钮那一栏"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "selection-start",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "光标起始位置，自动聚集时有效，需与 selection-end 搭配使用"
+          ],
+          "defaultValue": "-1"
+        },
+        {
+          "name": "selection-end",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "光标结束位置，自动聚集时有效，需与 selection-start 搭配使用"
+          ],
+          "defaultValue": "-1"
+        },
+        {
+          "name": "adjust-position",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "键盘弹起时，是否自动上推页面"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "bindfocus",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "输入框聚焦时触发，event.detail = { value, height }，height 为键盘高度"
+          ]
+        },
+        {
+          "name": "bindblur",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "输入框失去焦点时触发，event.detail = {value, cursor}"
+          ]
+        },
+        {
+          "name": "bindlinechange",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "输入框行数变化时调用，event.detail = {height: 0, heightRpx: 0, lineCount: 0}"
+          ]
+        },
+        {
+          "name": "bindinput",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "当键盘输入时，触发 input 事件，event.detail = {value, cursor}，bindinput 处理函数的返回值并不会反映到 textarea 上"
+          ]
+        },
+        {
+          "name": "bindconfirm",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "点击完成时， 触发 confirm 事件，event.detail = {value: value}"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "video",
+      "docLink": "https://mp-docs.jd.com/doc/miniapp/dev/component/2719",
+      "attrs": [
+        {
+          "name": "src",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "要播放视频的资源地址"
+          ]
+        },
+        {
+          "name": "autoplay",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否自动播放，只在初始化时有效，不能动态变更"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "muted",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否静音播放"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "controls",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否显示默认播放控件（播放/暂停按钮、播放进度、时间）,仅安卓支持"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "loop",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否循环播放"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "bindplay",
+          "type": {
+            "name": "eventHandler"
+          },
+          "desc": [
+            "当开始/继续播放时触发play事件"
+          ]
+        },
+        {
+          "name": "bindpause",
+          "type": {
+            "name": "eventHandler"
+          },
+          "desc": [
+            "当暂停播放时触发 pause 事件"
+          ]
+        },
+        {
+          "name": "bindended",
+          "type": {
+            "name": "eventHandler"
+          },
+          "desc": [
+            "当播放到末尾时触发 ended 事件"
+          ]
+        },
+        {
+          "name": "bindtimeupdate",
+          "type": {
+            "name": "eventHandler"
+          },
+          "desc": [
+            "播放进度变化时触发"
+          ]
+        },
+        {
+          "name": "bindfullscreenchange",
+          "type": {
+            "name": "eventHandler"
+          },
+          "desc": [
+            "视频进入和退出全屏时触发，回调参数需要有direction。有效值为 vertical 或 horizontal"
+          ]
+        },
+        {
+          "name": "binderror",
+          "type": {
+            "name": "eventHandler"
+          },
+          "desc": [
+            "视频播放出错时触发"
+          ]
+        },
+        {
+          "name": "bindwaiting",
+          "type": {
+            "name": "eventHandler"
+          },
+          "desc": [
+            "视频出现缓冲时触发"
+          ]
+        },
+        {
+          "name": "bindloadeddata",
+          "type": {
+            "name": "eventHandler"
+          },
+          "desc": [
+            "视频资源开始加载时触发"
+          ]
+        },
+        {
+          "name": "bindloadstart",
+          "type": {
+            "name": "eventHandler"
+          },
+          "desc": [
+            "开始加载数据"
+          ]
+        },
+        {
+          "name": "bindseeked",
+          "type": {
+            "name": "eventHandler"
+          },
+          "desc": [
+            "拖动进度条结束"
+          ]
+        },
+        {
+          "name": "bindseeking",
+          "type": {
+            "name": "eventHandler"
+          },
+          "desc": [
+            "正在拖动进度条"
+          ]
+        },
+        {
+          "name": "objectFit",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "有效值contain fill ，只在初始化时有效，不能动态变更"
+          ],
+          "defaultValue": "contain"
+        },
+        {
+          "name": "initialTime",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "指定视频初始播放位置"
+          ],
+          "defaultValue": "0"
+        },
+        {
+          "name": "poster",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "视频封面图片网络资源地址 （基础库1.10.12开始支持）"
+          ]
+        },
+        {
+          "name": "mobilenet-hint-type",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "移动网络提醒样式：0是不提醒，1是提醒，默认值为1"
+          ],
+          "defaultValue": "1"
+        }
+      ]
+    },
+    {
+      "name": "view",
+      "docLink": "https://mp-docs.jd.com/doc/miniapp/dev/component/2688",
+      "attrs": [
+        {
+          "name": "hover-class",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "指定按下去的样式类。当 hover-class=\"none\" 时，没有点击态效果"
+          ],
+          "defaultValue": "none"
+        },
+        {
+          "name": "hover-stop-propagation",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "指定是否阻止本节点的祖先节点出现点击态"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "hover-start-time",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "按住后多久出现点击态，单位毫秒"
+          ],
+          "defaultValue": "50"
+        },
+        {
+          "name": "hover-stay-time",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "手指松开后点击态保留时间，单位毫秒"
+          ],
+          "defaultValue": "400"
+        }
+      ]
+    },
+    {
+      "name": "webview",
+      "docLink": "https://mp-docs.jd.com/doc/miniapp/dev/component/2722",
+      "attrs": [
+        {
+          "name": "type",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "开放数据类型"
+          ]
+        },
+        {
+          "name": "open-gid",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "当 type=\"groupName\" 时生效, 群 id"
+          ]
+        },
+        {
+          "name": "lang",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "当 type=\"user*\" 时生效，以哪种语言展示 userInfo，有效值有：en, zh_CN, zh_TW"
+          ],
+          "defaultValue": "en"
+        },
+        {
+          "name": "src",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "webview 指向网页的链接。"
+          ]
+        },
+        {
+          "name": "bindmessage",
+          "type": {
+            "name": "EventHandler"
+          },
+          "desc": [
+            "网页向小程序 postMessage 时，会在特定时机（小程序后退、组件销毁、分享）触发并收到消息。e.detail = { data }"
+          ]
+        }
+      ]
+    }
+  ]
+}

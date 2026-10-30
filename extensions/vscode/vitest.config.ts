@@ -7,8 +7,12 @@ export default defineConfig({
   resolve: {
     alias: [
       {
-        find: '@weapp-vite/ast/babel',
-        replacement: path.resolve(packageDir, '../../packages/ast/src/babel.ts'),
+        find: '@weapp-vite/language-service',
+        replacement: path.resolve(packageDir, '../../packages/language-service/src/index.ts'),
+      },
+      {
+        find: /^@weapp-vite\/ast(?:\/babel)?$/,
+        replacement: path.resolve(packageDir, 'extension/languages/ast.ts'),
       },
       {
         find: '@weapp-vite/ast/babelTypes',

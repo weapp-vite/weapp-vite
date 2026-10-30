@@ -2,6 +2,7 @@ import type { PackageJson } from 'pkg-types'
 import os from 'node:os'
 import { fs } from '@weapp-core/shared/fs'
 import { recommended } from '@weapp-vite/oxfmt'
+import { formatDocument } from '@weapp-vite/oxfmt/languages'
 import { formatWxml } from '@weapp-vite/oxfmt/wxml'
 // eslint-disable-next-line e18e/ban-dependencies -- 使用与发布准备一致的跨平台 CLI 启动方式。
 import { execa } from 'execa'
@@ -35,8 +36,8 @@ describe('prepared Vite Plus templates', () => {
     await createProject(root, template.id, { toolchain: 'vite-plus' })
     const pkg = await fs.readJSON(path.join(root, 'package.json')) as PackageJson
     expect(pkg.scripts).toMatchObject({
-      'lint': 'vp lint',
-      'lint:fix': 'vp lint --fix',
+      'lint': 'weapp-vite-lint',
+      'lint:fix': 'weapp-vite-lint --fix',
       'format': 'weapp-vite-format --write',
       'format:check': 'weapp-vite-format --check',
       'check': 'weapp-vite-format --check-all',
@@ -78,6 +79,18 @@ describe('prepared Vite Plus templates', () => {
     const config = await fs.readFile(path.join(root, 'eslint.config.js'), 'utf8')
     expect(config).toContain('wevu/no-unsupported-template-feature')
     expect(config).not.toContain('@icebreakers/eslint-config')
+  })
+
+  it('lets Oxfmt own style layout while retaining Stylelint semantic errors', async () => {
+    const { preferredTemplateDir } = await __internal.resolveTemplateDirs(TemplateName.default, 'vite-plus')
+    const config = path.join(preferredTemplateDir, 'stylelint.config.js')
+    const source = '@import url("./shared.wxss");page{width:120rpx;--spacing:4rpx}/* #ifdef MP-WEIXIN */\n@media (max-width:10rpx){view:before{content:"x"}}/* #endif */'
+    const formatted = await formatDocument(source, 'app.wxss')
+    const options = { preferLocal: true, localDir: packageRoot, cwd: packageRoot }
+    await expect(execa('stylelint', ['--config', config, '--stdin', '--stdin-filename', 'app.wxss'], { ...options, input: formatted })).resolves.toMatchObject({ exitCode: 0 })
+    const invalid = await execa('stylelint', ['--config', config, '--stdin', '--stdin-filename', 'app.wxss'], { ...options, input: 'page { color: #xyz; }', reject: false })
+    expect(invalid.exitCode).toBe(2)
+    expect(`${invalid.stdout}\n${invalid.stderr}`).toContain('color-no-invalid-hex')
   })
 
   it('does not fall back to raw source when a prepared template is missing', async () => {

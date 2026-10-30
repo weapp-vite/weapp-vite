@@ -60,6 +60,7 @@ export const MINI_PROGRAM_PLATFORM_DESCRIPTORS: readonly MiniProgramPlatformDesc
     scriptModuleTagByExtension: {
       sjs: 'import-sjs',
     },
+    scriptModule: { format: 'esm', sourceAttribute: 'from', moduleAttribute: 'name' },
     usesProjectRootNpmDir: true,
     ide: {
       requiresOpenPlatformArg: true,
@@ -110,6 +111,8 @@ export const MINI_PROGRAM_PLATFORM_DESCRIPTORS: readonly MiniProgramPlatformDesc
       wxss: 'css',
       wxs: 'sjs',
     },
+    scriptModuleTagByExtension: { sjs: 'import-sjs' },
+    scriptModule: { format: 'esm', sourceAttribute: 'src', moduleAttribute: 'module' },
     projectConfigFileName: 'project.swan.json',
     projectConfigRootKeys: ['smartProgramRoot', ...DEFAULT_PROJECT_CONFIG_ROOT_KEYS],
     ide: {},
@@ -143,7 +146,9 @@ export const MINI_PROGRAM_PLATFORM_DESCRIPTORS: readonly MiniProgramPlatformDesc
       json: 'json',
       wxml: 'ttml',
       wxss: 'ttss',
+      wxs: 'sjs',
     },
+    scriptModule: { format: 'commonjs', sourceAttribute: 'src', moduleAttribute: 'module' },
     projectConfigFileName: 'project.config.json',
     projectConfigRootKeys: DEFAULT_PROJECT_CONFIG_ROOT_KEYS,
     ide: {},

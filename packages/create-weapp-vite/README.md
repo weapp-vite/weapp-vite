@@ -94,21 +94,23 @@ Vite+ 生成项目的 `dev` / `build` 使用 `vp`，`vite.config.ts` 导入共�
 
 | 脚本 | 用途 |
 | --- | --- |
-| `pnpm lint` / `pnpm lint:fix` | Oxlint 检查与自动修复 |
-| `pnpm format` / `pnpm format:check` | Oxfmt 与安全 WXML 适配器的格式化、只读检查 |
-| `pnpm check` | Vite+ 综合检查与 WXML 只读格式检查 |
+| `pnpm lint` / `pnpm lint:fix` | Oxlint 脚本检查与修复，以及原生语言诊断 |
+| `pnpm format` / `pnpm format:check` | 标准文件、原生样式、模板与脚本模块的格式化、只读检查 |
+| `pnpm check` | 一次 Vite+ 标准检查、原生语言预检与格式检查，以及适用的 Vue / Stylelint 检查 |
 | `pnpm lint:vue` / `pnpm lint:vue:fix` | Wevu 项目的 Vue 模板专项 ESLint 检查与修复 |
 | `pnpm stylelint` | 样式与 Vue SFC style 检查 |
 
-`format`、`format:check`、`check` 脚本分别调用 `weapp-vite-format --write`、`--check`、`--check-all`，组合配套的 `vp fmt` / `vp check` 与 WXML 处理。标准 Oxfmt 预设保留 WXSS 的 CSS 关联，并忽略 WXML；单独执行 `vp fmt` 不包含 WXML 检查或写入。
+`lint` / `lint:fix` 调用 `weapp-vite-lint` / `weapp-vite-lint --fix`，组合 Oxlint 与共享平台语言诊断。`format`、`format:check`、`check` 分别调用 `weapp-vite-format --write`、`--check`、`--check-all`。格式化在写入前预检全部候选文件；`check` 通过 Node 编排一次 `vp check` 与适用的专项检查，不重复调用标准 lint/fmt。
 
-WXML 适配器按项目实际 `fmt` 配置及文件 `overrides` 调整标签与属性空白，逐字保留文本、插值、属性值和内联 WXS，并保持自闭合形式。保留预设中的 WXML 忽略项，不要将 `.wxml` 关联为 HTML。格式或结构检查失败时命令失败，不通过自动修复掩盖 WXML 语义变化。
+登记的 WXML、AXML、TTML、SWAN、JXML、QML、KSML、XHSML、TYML 使用同一源码片段格式化器，逐字保留文本、实体、属性值与引号、顺序、重复属性及显式闭合形式。独立/内联 WXS、SJS、KS、filter 和 `.wxs.ts` 等编译源码使用平台方言与 AST 语义复验；原生 WXSS、ACSS、TTSS、QSS、JXSS、TYSS 及 CSS 使用样式适配器。词法、结构或语义校验失败时拒绝写回。
 
-`wv prepare`、打开 IDE、Dashboard、上传与 MCP 命令继续由 `wv` 提供。Vue 模板专项检查、Stylelint 和项目类型检查仍按各自覆盖范围执行；Oxlint 检查通过不等于目标小程序 runtime 已验收。
+平台选择放在 `vite.config.ts` 的 `weapp.language`，支持按文件 glob 覆盖；共享脚本后缀存在歧义或引用冲突时需显式指定。标准 `lint` / `fmt` 配置仍各自管理检查和格式选项。生成的 VSCode 配置将模板及原生模块交给 weapp-vite 扩展，原生样式关联 CSS，标准 JS/TS 使用 Oxc。保留预设的原生语言忽略项，不把 WXML 关联为 HTML；单独 `vp fmt` 不覆盖全部原生语言。
+
+`wv prepare`、打开 IDE、Dashboard、上传与 MCP 命令继续由 `wv` 提供；`postinstall` 保持 `wv prepare`，格式化在模板准备阶段完成。Vue parser services 专项检查、Stylelint 和项目类型检查各自保留；语言工具不新增完整模板类型检查器。本轮验收覆盖 TS、CLI、VSCode 与构建，不代表真实小程序 IDE runtime 验收。
 
 Vite+ 使用固定配对 `vite-plus@1.2.0`、`vite` → `@voidzero-dev/vite-plus-core@1.2.0` 与 `vitest@5.0.4`。独立项目同时生成 npm overrides 与 pnpm workspace 策略。已有 pnpm workspace 须先配置相同的 `overrides.vite`、`overrides.vitest`，以及包含 `1.2.0` 的 `peerDependencyRules.allowedVersions.vite`；脚手架会在生成前校验，保留父工作区文件。
 
-在已有 workspace 中，`pnpm check` 的标准检查与 WXML 适配器优先使用根 `vite.config.ts` 中的 `lint` / `fmt` 配置；成员预设不会覆盖根策略。团队应在根配置接入相应预设，并将文件匹配范围定位到成员目录。普通 `weapp-vite-format --write` / `--check` 使用最近的项目格式配置，支持显式 `--config` 和文件范围；`--check-all` 与 `vp check` 不提供该参数。详细配置见 [Oxlint 文档](https://vite.weapp.dev/packages/oxlint) 与 [Oxfmt 文档](https://vite.weapp.dev/packages/oxfmt)。
+在已有 workspace 中，`pnpm check` 的标准检查与原生语言适配器优先使用根 `vite.config.ts` 的配置；成员预设不会覆盖根策略。团队应在根配置接入相应预设，并将文件匹配范围定位到成员目录。普通 `weapp-vite-format --write` / `--check` 使用最近的项目格式配置，支持显式 `--config` 和文件范围；`--check-all` 与 `vp check` 不提供该参数。详细配置见 [平台语言配置](https://vite.weapp.dev/config/language)、[Oxlint 文档](https://vite.weapp.dev/packages/oxlint) 与 [Oxfmt 文档](https://vite.weapp.dev/packages/oxfmt)。
 
 ## 依赖版本策略
 

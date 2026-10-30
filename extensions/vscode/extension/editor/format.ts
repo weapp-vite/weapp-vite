@@ -1,12 +1,11 @@
+import { formatTemplate } from '@weapp-vite/language-service'
 import * as vscode from 'vscode'
 
+import { formatProjectDocument, getLanguageDocumentState } from '../languages/project'
 import {
   isStandaloneWxmlEnhancementEnabled,
   isWxmlEnhancementEnabled,
 } from '../shared/config'
-import {
-  formatWxmlText,
-} from './wxmlFormatter'
 
 function getLineOffsets(text: string) {
   const lineOffsets = [0]
@@ -49,17 +48,34 @@ function getFormatIndent(options: vscode.FormattingOptions) {
 }
 
 export class WeappWxmlDocumentFormattingProvider implements vscode.DocumentFormattingEditProvider {
+  constructor(private readonly reportError?: (document: vscode.TextDocument, error: unknown) => void) {}
+
   async provideDocumentFormattingEdits(document: vscode.TextDocument, options: vscode.FormattingOptions) {
     if (!isWxmlEnhancementEnabled() || !isStandaloneWxmlEnhancementEnabled()) {
       return []
     }
 
     const sourceText = document.getText()
-    const formattedText = formatWxmlText(sourceText, {
-      indent: getFormatIndent(options),
-    })
+    const version = document.version
+    let formattedText: string
+    try {
+      const { configuration, input } = await getLanguageDocumentState(document)
+      formattedText = await formatProjectDocument(document, sourceText, true) ?? formatTemplate(sourceText, input.fileName, {
+        indent: configuration?.fmt ? undefined : getFormatIndent(options),
+        ...configuration?.fmt,
+        ...input.options,
+        ...(input.platform ? { platform: input.platform } : {}),
+      })
+    }
+    catch (error) {
+      // 不完整输入由共享语言诊断展示；保存格式化不尝试自动修复。
+      if (document.version === version) {
+        this.reportError?.(document, error)
+      }
+      return []
+    }
 
-    if (formattedText === sourceText) {
+    if (formattedText === sourceText || document.version !== version) {
       return []
     }
 
@@ -67,5 +83,29 @@ export class WeappWxmlDocumentFormattingProvider implements vscode.DocumentForma
       range: getFullDocumentRange(sourceText),
       newText: formattedText,
     }]
+  }
+}
+
+/** 原生脚本与样式共用项目格式入口，标准 JS/TS 仍使用 Oxc。 */
+export class WeappNativeDocumentFormattingProvider implements vscode.DocumentFormattingEditProvider {
+  constructor(private readonly reportError?: (document: vscode.TextDocument, error: unknown) => void) {}
+
+  async provideDocumentFormattingEdits(document: vscode.TextDocument) {
+    const sourceText = document.getText()
+    const version = document.version
+    let formattedText: string
+    try {
+      formattedText = await formatProjectDocument(document, sourceText)
+    }
+    catch (error) {
+      if (document.version === version) {
+        this.reportError?.(document, error)
+      }
+      return []
+    }
+    if (formattedText === sourceText || document.version !== version) {
+      return []
+    }
+    return [{ range: getFullDocumentRange(sourceText), newText: formattedText }]
   }
 }

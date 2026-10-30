@@ -8,6 +8,8 @@ import { distHasRequiredOutputs } from '../createWeappViteSmoke/runtime.mjs'
 import { assertPreparedProject } from '../createWeappViteSmoke/templates.mjs'
 import { applyCandidateOverlay, inspectInstallation } from './artifacts.mjs'
 import { managerCommand, qualityScripts, strictEnvironment } from './contracts.mjs'
+import { nativeLanguagePublicApiDependencies, verifyNativeLanguages } from './languages.mjs'
+import { verifyNativeBuilds } from './nativeBuilds.mjs'
 import { prepareParentWorkspace, verifyWorkspaceInheritance } from './workspace.mjs'
 
 /** 每阶段写独立日志；预期失败必须匹配指定规则诊断，不能把任意安装或执行错误当成通过。 */
@@ -69,14 +71,24 @@ export async function runCase(testCase, options) {
     }
     const manifest = JSON.parse(await fs.readFile(path.join(project, 'package.json'), 'utf8'))
     const scripts = qualityScripts(manifest)
-    assert.equal(manifest.scripts.dev, 'vp dev')
-    assert.equal(manifest.scripts.build, 'vp build')
+    if (testCase.platforms) {
+      assert.equal(manifest.scripts.dev, 'vp dev --config vite.weapp.config.ts')
+      assert.equal(manifest.scripts.build, 'vp build --config vite.weapp.config.ts')
+    }
+    else {
+      assert.equal(manifest.scripts.dev, 'vp dev')
+      assert.equal(manifest.scripts.build, 'vp build')
+    }
     const installRoot = testCase.workspace ? root : project
-    const restore = await applyCandidateOverlay(installRoot, testCase.manager, artifacts)
+    const fixtureDependencies = testCase.platforms ? nativeLanguagePublicApiDependencies : []
+    const restore = await applyCandidateOverlay(installRoot, testCase.manager, artifacts, { directDependencies: fixtureDependencies })
     try {
       const args = testCase.manager === 'npm' ? ['install', '--strict-peer-deps', '--no-audit', '--no-fund'] : ['install']
       await run('install', { ...managerCommand(testCase.manager, args, registry, cacheRoot), cwd: installRoot })
       result.installation = await inspectInstallation(installRoot, artifacts, testCase.manager)
+      if (fixtureDependencies.length) {
+        result.fixtureDependencies = fixtureDependencies
+      }
     }
     finally {
       await restore()
@@ -89,6 +101,25 @@ export async function runCase(testCase, options) {
     }, expectedFailure)
     for (const script of scripts) {
       await runScript(script)
+    }
+    if (testCase.platforms) {
+      const runTool = (stage, args) => run(stage, { ...managerCommand(testCase.manager, args, registry, cacheRoot), cwd: project })
+      result.nativeLanguages = await verifyNativeLanguages(
+        project,
+        runScript,
+        () => runTool('native-language-stylelint', ['exec', 'stylelint', 'language-fixtures/**/*.{css,wxss,acss,ttss,qss,jxss,tyss}']),
+        args => runTool('native-language-public-types', args),
+      )
+      result.nativeBuilds = await verifyNativeBuilds(project, runTool)
+      result.platforms = []
+      for (const platform of testCase.platforms) {
+        await runScript(`build:${platform}`)
+        const output = path.join(project, 'dist', platform)
+        for (const file of ['app.json', 'app.js']) {
+          assert((await fs.stat(path.join(output, file))).isFile(), `Missing ${platform} ${file}`)
+        }
+        result.platforms.push(platform)
+      }
     }
     assert(await distHasRequiredOutputs(project, testCase.template), 'Missing built app.json or app.js')
     result.builtOutputs = true

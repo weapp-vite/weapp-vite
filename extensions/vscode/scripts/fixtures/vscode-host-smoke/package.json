@@ -10,6 +10,10 @@
     "generate": "wv generate"
   },
   "dependencies": {
+    "@weapp-vite/oxfmt": "workspace:*",
     "weapp-vite": "workspace:*"
+  },
+  "devDependencies": {
+    "vite-plus": "1.2.0"
   }
 }

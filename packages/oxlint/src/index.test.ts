@@ -48,7 +48,7 @@ async function lint(files: Record<string, string>, framework: boolean | 'react' 
   expect(result.stdout.trim(), result.stderr).not.toBe('')
   const report = JSON.parse(result.stdout) as { diagnostics: Diagnostic[] }
   expect(Array.isArray(report.diagnostics), result.stderr).toBe(true)
-  return report.diagnostics.filter(item => item.code.startsWith('weapp-vite') || item.code.startsWith('react')).map(item => ({
+  return report.diagnostics.filter(item => item.code.startsWith('weapp-vite') || item.code.startsWith('react') || item.code.startsWith('vue')).map(item => ({
     ...item,
     filename: item.filename.replaceAll('\\', '/'),
   }))
@@ -114,6 +114,13 @@ describe('Oxlint mini-program rules through the Vite Plus CLI', () => {
     expect(diagnostics).toHaveLength(3)
     expect(diagnostics.filter(item => item.filename === 'src/page.vue')).toHaveLength(2)
     expect(diagnostics).toContainEqual(expect.objectContaining({ filename: 'src/view.tsx', severity: 'error', message: expect.stringContaining('document') }))
+  })
+
+  it('enables built-in Vue correctness rules for Wevu scripts', async () => {
+    const diagnostics = await lint({
+      'src/watch.vue': '<script>export default { watch: { value: () => { console.log(this.value) } } }</script><template><view /></template>',
+    }, true)
+    expect(diagnostics).toContainEqual(expect.objectContaining({ code: expect.stringContaining('vue') }))
   })
 
   it('adds Wevu API diagnostics without enabling them for native and React projects', async () => {

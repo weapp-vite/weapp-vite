@@ -73,13 +73,16 @@ else {
 /** 独立安装已打包的规则包，验证公开类型不依赖仓库或未声明的 ESLint/Vite+ 类型。 */
 export async function verifyOxlintPublicTypes(env = process.env, { execute = runCommand, readManifest = readPackedPackageJsonFromTarball } = {}) {
   const configured = await resolveDependencyTarballs(env.CREATE_WEAPP_VITE_DEPENDENCY_TARBALLS)
-  const artifacts = await Promise.all(requiredPackages.map(async (name) => {
-    const artifact = configured.find(item => item.name === name)
-    assert(artifact, `CREATE_WEAPP_VITE_DEPENDENCY_TARBALLS must include ${name}`)
+  const artifacts = await Promise.all(configured.map(async (artifact) => {
+    const { name } = artifact
     const manifest = readManifest(artifact.tarball)
     assert.equal(manifest.name, name, `Candidate tarball package name mismatch: ${name}`)
     return { ...artifact, version: manifest.version, sha256: createHash('sha256').update(await fs.readFile(artifact.tarball)).digest('hex') }
   }))
+  for (const name of requiredPackages) {
+    assert(artifacts.some(artifact => artifact.name === name), `CREATE_WEAPP_VITE_DEPENDENCY_TARBALLS must include ${name}`)
+  }
+  const language = artifacts.find(artifact => artifact.name === '@weapp-vite/language-service')
   const installedTypescript = JSON.parse(await fs.readFile(fileURLToPath(import.meta.resolve('typescript/package.json')), 'utf8'))
   const typescriptVersion = env.OXLINT_PUBLIC_TYPES_TYPESCRIPT_VERSION || installedTypescript.version
   const registry = env.VITE_PLUS_TEMPLATE_REGISTRY || 'https://registry.npmjs.org/'
@@ -115,14 +118,14 @@ export async function verifyOxlintPublicTypes(env = process.env, { execute = run
       name: 'oxlint-public-types-consumer',
       private: true,
       type: 'module',
-      dependencies: { '@weapp-vite/oxlint': artifacts[0].version, 'typescript': typescriptVersion },
+      dependencies: { '@weapp-vite/oxlint': artifacts.find(artifact => artifact.name === '@weapp-vite/oxlint').version, ...(language ? { '@weapp-vite/language-service': language.version } : {}), 'typescript': typescriptVersion },
     }, null, 2)}\n`)
     await applyDependencyTarballs(temporaryRoot, artifacts)
     await fs.writeFile(path.join(temporaryRoot, 'tsconfig.json'), `${JSON.stringify({
       compilerOptions: { target: 'ES2022', lib: ['ES2022'], module: 'NodeNext', moduleResolution: 'NodeNext', strict: true, noEmit: true, skipLibCheck: false, types: [] },
       files: ['consumer.mts'],
     }, null, 2)}\n`)
-    await fs.writeFile(path.join(temporaryRoot, 'consumer.mts'), consumerSource)
+    await fs.writeFile(path.join(temporaryRoot, 'consumer.mts'), consumerSource + (language ? `\nimport { analyzeDocument, formatTemplateResult, type SourceEdit } from '@weapp-vite/language-service'\nconst edits: SourceEdit[] = formatTemplateResult('<view/>', 'page.axml').edits\nconst valid: boolean = analyzeDocument({ source: '<view/>', fileName: 'page.axml' }).valid\nvoid [edits, valid]\n` : ''))
     await fs.writeFile(path.join(temporaryRoot, 'compile.mjs'), compilerSource)
     const cacheRoot = path.join(temporaryRoot, 'cache')
     const runnerEnv = strictEnvironment(registry, cacheRoot, env)

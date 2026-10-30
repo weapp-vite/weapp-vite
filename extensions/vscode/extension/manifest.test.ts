@@ -119,7 +119,7 @@ it('file icon theme keeps language fallbacks and covers standalone wxml files', 
 
 it('manifest exposes local verification scripts', () => {
   assert.equal(packageJson.scripts.build, 'pnpm exec tsdown --config tsdown.config.mts')
-  assert.equal(packageJson.scripts.lint, 'pnpm eslint extension.ts extension/**/*.ts scripts/**/*.ts tsdown.config.mts')
+  assert.equal(packageJson.scripts.lint, 'pnpm eslint extension.ts "extension/**/*.ts" "scripts/**/*.{ts,cjs}" tsdown.config.mts vitest.config.ts')
   assert.equal(packageJson.scripts.typecheck, 'pnpm exec tsc -p tsconfig.json --noEmit')
   assert.equal(packageJson.scripts.test, 'pnpm vitest run -c vitest.config.ts')
   assert.equal(packageJson.scripts['test:host:smoke'], 'node --import tsx scripts/vscode-host-smoke.ts')

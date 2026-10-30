@@ -11,6 +11,9 @@ describe('classStyleRuntime helpers', () => {
   it('builds wxs/sjs helper tags', () => {
     expect(buildClassStyleWxsTag('wxs')).toBe(`<wxs module="${CLASS_STYLE_WXS_MODULE}" src="./${CLASS_STYLE_WXS_FILE}.wxs"/>`)
     expect(buildClassStyleWxsTag('.sjs', '/pkg/helper.sjs')).toBe(`<sjs module="${CLASS_STYLE_WXS_MODULE}" src="/pkg/helper.sjs"/>`)
+    expect(buildClassStyleWxsTag('sjs', './helper.sjs', 'swan')).toBe(`<import-sjs module="${CLASS_STYLE_WXS_MODULE}" src="./helper.sjs"/>`)
+    expect(buildClassStyleWxsTag('sjs', './helper.sjs', 'alipay')).toBe(`<import-sjs name="${CLASS_STYLE_WXS_MODULE}" from="./helper.sjs"/>`)
+    expect(buildClassStyleWxsTag('sjs', './helper.sjs', 'tt')).toBe(`<sjs module="${CLASS_STYLE_WXS_MODULE}" src="./helper.sjs"/>`)
   })
 
   it('resolves class/style runtime file location', () => {
@@ -38,5 +41,8 @@ describe('classStyleRuntime helpers', () => {
     expect(wxs).toContain('module.exports')
     expect(sjs).toContain('function normalizeStyle')
     expect(sjs).toContain('export default')
+    const tt = getClassStyleWxsSource({ extension: 'sjs', moduleFormat: 'commonjs' })
+    expect(tt).toContain('module.exports')
+    expect(tt).not.toContain('export default')
   })
 })

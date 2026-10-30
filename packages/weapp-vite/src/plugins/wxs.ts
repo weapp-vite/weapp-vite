@@ -15,16 +15,17 @@ import { resolveRelativeOutputFileNameWithExtension } from './utils/outputFileNa
 export const wxsCodeCache = new LRUCache<string, string>({
   max: 512,
 })
-const WXS_FILE_SUFFIX_RE = /\.(?:wxs|sjs)(\.[jt]s)?$/
-const WXS_SCAN_RELEVANT_HMR_RE = /\.(?:vue|wxml|axml|swan|ttml|jxml|qml|ksml|xhsml|html|wxs|sjs)(?:\.[jt]s)?$/i
+const WXS_FILE_SUFFIX_RE = /\.(?:wxs|sjs)(\.[jt]s)?$|\.filter\.[jt]s$/
+const WXS_SCAN_RELEVANT_HMR_RE = /\.(?:vue|wxml|axml|swan|ttml|jxml|qml|ksml|xhsml|html|wxs|sjs|filter)(?:\.[jt]s)?$/i
 
 interface WxsPluginState {
   ctx: CompilerContext
   wxsMap: Map<string, { emittedFile: EmittedFile }>
+  visited: Set<string>
 }
 
-function createWxsCodeCacheKey(rawCode: string, scriptModuleExtension?: string) {
-  return `${scriptModuleExtension ?? 'wxs'}::${rawCode}`
+function createWxsCodeCacheKey(rawCode: string, scriptModuleExtension?: string, platform?: string, native = false) {
+  return `${platform ?? ''}::${scriptModuleExtension ?? 'wxs'}::${native}::${rawCode}`
 }
 
 function resolveWxsOutputFileName(
@@ -32,8 +33,7 @@ function resolveWxsOutputFileName(
   wxsPath: string,
   scriptModuleExtension: string | undefined,
 ) {
-  const suffixMatch = wxsPath.match(WXS_FILE_SUFFIX_RE)
-  const isRaw = suffixMatch ? !suffixMatch[1] : true
+  const isRaw = !/\.(?:wxs|sjs)\.[jt]s$/i.test(wxsPath)
   return resolveRelativeOutputFileNameWithExtension(
     ctx.configService,
     isRaw ? wxsPath : removeExtension(wxsPath),
@@ -45,10 +45,17 @@ async function transformWxsFile(
   this: PluginContext,
   state: WxsPluginState,
   wxsPath: string,
+  compile = false,
+  filter = false,
 ) {
+  const visitKey = `${filter}::${compile}::${wxsPath}`
+  if (state.visited.has(visitKey)) {
+    return
+  }
+  state.visited.add(visitKey)
   const { ctx } = state
   const { configService } = ctx
-  const { scriptModuleExtension } = resolveCompilerOutputExtensions(configService.outputExtensions)
+  const scriptModuleExtension = filter ? 'js' : resolveCompilerOutputExtensions(configService.outputExtensions).scriptModuleExtension
   let rawCode: string
   try {
     rawCode = await fs.readFile(wxsPath, 'utf8')
@@ -56,17 +63,29 @@ async function transformWxsFile(
   catch {
     return
   }
-  const { transformWxsCode } = await import('../wxs')
-  const { result, importees } = transformWxsCode(rawCode, {
+  const { prepareWxsSource } = await import('../wxs/source')
+  const { code: preparedCode, importees, native } = await prepareWxsSource(rawCode, {
     filename: wxsPath,
     extension: scriptModuleExtension,
+    platform: configService.platform,
+    compile,
+    filter,
   })
-  const cacheKey = createWxsCodeCacheKey(rawCode, scriptModuleExtension)
-  const code = wxsCodeCache.get(cacheKey) ?? result?.code
+  const cacheKey = createWxsCodeCacheKey(rawCode, scriptModuleExtension, configService.platform, native)
+  const code = wxsCodeCache.get(cacheKey) ?? preparedCode
   const dirname = path.dirname(wxsPath)
-  const importeePaths = importees.map(({ source }) => path.resolve(dirname, source))
+  const importeePaths = await Promise.all(importees.map(async ({ source }) => {
+    const target = path.resolve(dirname, source)
+    const candidates = [target, `${target}.ts`, `${target}.js`, target.replace(/\.js$/i, '.ts'), ...['wxs', 'sjs'].flatMap(extension => [`${target}.${extension}.ts`, `${target}.${extension}.js`, `${target}.${extension}`])]
+    for (const candidate of candidates) {
+      if (await fs.stat(candidate).then(stat => stat.isFile(), () => false)) {
+        return candidate
+      }
+    }
+    return target
+  }))
   await Promise.all(
-    importeePaths.map(importeePath => transformWxsFile.call(this, state, importeePath)),
+    importeePaths.map(importeePath => transformWxsFile.call(this, state, importeePath, false, filter)),
   )
 
   if (code == null) {
@@ -79,7 +98,7 @@ async function transformWxsFile(
     fileName: outputFileName,
     source: code,
   }
-  state.wxsMap.set(wxsPath, {
+  state.wxsMap.set(visitKey, {
     emittedFile,
   })
   wxsCodeCache.set(cacheKey, code)
@@ -101,7 +120,7 @@ async function handleWxsDeps(
         }
 
         const wxsPath = path.resolve(path.dirname(absPath), dep.value)
-        await transformWxsFile.call(this, state, wxsPath)
+        await transformWxsFile.call(this, state, wxsPath, jsExtensions.includes(dep.attrs.lang), dep.tagName === 'filter')
       }),
   )
 }
@@ -188,10 +207,12 @@ function createWxsPlugin(state: WxsPluginState): Plugin {
 
     buildStart() {
       state.wxsMap.clear()
+      state.visited.clear()
     },
 
     async generateBundle(_options, bundle) {
       state.wxsMap.clear()
+      state.visited.clear()
       const tokenEntries = resolveWxsTokenScanEntries(state)
       if (tokenEntries.length) {
         await Promise.all(
@@ -219,6 +240,7 @@ export function wxs(ctx: CompilerContext): Plugin[] {
   const state: WxsPluginState = {
     ctx,
     wxsMap: new Map(),
+    visited: new Set(),
   }
 
   return [createWxsPlugin(state)]

@@ -3,13 +3,14 @@ import { createPnpmCommand } from '../createWeappViteSmoke/commands.mjs'
 import { createPnpmProfileConfig, createRegistryEnvironment } from '../createWeappViteSmoke/registry.mjs'
 
 export const templateNames = ['default', 'wevu', 'tailwindcss', 'tdesign', 'wevu-tdesign', 'vant', 'react']
-export const requiredCandidates = ['@weapp-vite/oxlint', '@weapp-vite/oxfmt', '@weapp-vite/eslint']
+export const requiredCandidates = ['@weapp-vite/language-service', '@weapp-vite/oxlint', '@weapp-vite/oxfmt', '@weapp-vite/eslint']
 
 /** 固定完整验收矩阵；显式筛选仍在报告中保留完整计划和未运行项目。 */
 export function selectCases(value) {
   const matrix = [
     ...templateNames.map(template => ({ id: `pnpm/${template}`, manager: 'pnpm', template, workspace: false })),
     { id: 'npm/default', manager: 'npm', template: 'default', workspace: false },
+    { id: 'pnpm/platforms', manager: 'pnpm', template: 'multi-platform', workspace: false, platforms: ['weapp', 'alipay', 'tt', 'swan', 'jd', 'xhs'] },
     { id: 'pnpm/workspace', manager: 'pnpm', template: 'default', workspace: true },
   ]
   if (value === undefined) {
@@ -52,5 +53,6 @@ export function managerCommand(manager, args, registry, cacheRoot) {
     'engine-strict': true,
     'link-workspace-packages': false,
     'prefer-workspace-packages': false,
+    'verify-deps-before-run': false,
   })
 }

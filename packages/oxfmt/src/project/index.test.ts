@@ -77,4 +77,36 @@ describe('format CLI configuration ownership', () => {
       stderr: expect.stringContaining('WXML 需要格式化'),
     })
   })
+
+  it('formats platform-owned SJS, all templates and native styles in the same transaction', async () => {
+    const config = { fmt: recommended, weapp: { platform: 'weapp' } }
+    const fixture = await project({
+      'vite.config.mjs': `export default ${JSON.stringify(config)}\n`,
+      'src/page.axml': '<import-sjs name="tools" from="./tools.sjs" /><view   a:if="{{ready}}">  文本  </view>\n',
+      'src/tools.sjs': 'export default {value:1};\n',
+      'src/page.acss': 'page{width:120rpx}\n',
+      'src/page.ksml': '<view   ks:if="{{ready}}">  保留  </view>\n',
+    })
+    await fixture.run(['--write'])
+    expect(await fixture.read('src/page.axml')).toContain('<view a:if="{{ready}}">  文本  </view>')
+    expect(await fixture.read('src/tools.sjs')).toContain('value: 1')
+    expect(await fixture.read('src/page.acss')).toContain('120rpx')
+    await fixture.run(['--check'])
+  })
+
+  it('does not partially write when an ordinary source file fails parsing', async () => {
+    const valid = 'export const value={text:"unchanged"};\n'
+    const invalid = 'export const broken = {\n'
+    const fixture = await project({ 'src/a.ts': valid, 'src/z.ts': invalid })
+    await expect(fixture.run(['--write'])).rejects.toMatchObject({ code: 1 })
+    expect(await fixture.read('src/a.ts')).toBe(valid)
+    expect(await fixture.read('src/z.ts')).toBe(invalid)
+  })
+
+  it('fails explicitly when SJS has no platform owner', async () => {
+    const source = 'module.exports={value:1};\n'
+    const fixture = await project({ 'src/orphan.sjs': source })
+    await expect(fixture.run(['--write'])).rejects.toMatchObject({ code: 1, stderr: expect.stringContaining('SJS') })
+    expect(await fixture.read('src/orphan.sjs')).toBe(source)
+  })
 })

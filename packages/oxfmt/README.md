@@ -1,6 +1,6 @@
 # @weapp-vite/oxfmt
 
-小程序项目的共享 Oxfmt 格式预设和安全 WXML 格式化入口，适用于 Vite+ 1.2.0 内置的 Oxfmt 0.73.0 及其配置接口。
+小程序共享格式预设与安全格式化入口。配套 Vite+ 1.2.0 / Oxfmt 0.73.0，CLI 与 VSCode 共用 `@weapp-vite/language-service`。
 
 ```ts
 import { recommended } from '@weapp-vite/oxfmt'
@@ -11,39 +11,62 @@ export default defineConfig({
 })
 ```
 
-默认使用两空格、单引号、无分号、LF、末尾换行和多行尾逗号。关闭 import、`package.json` 字段与 Tailwind class 自动排序，保留代码和依赖声明的既有顺序。
+默认两空格、单引号、无分号、LF、末尾换行和多行尾逗号。不排序 import、`package.json` 字段或 Tailwind class。
 
-预设将 `*.wxss` 关联为 CSS。直接运行 `vp fmt` 时会跳过 WXML，因为 Oxfmt 的 HTML 格式化即使使用 `htmlWhitespaceSensitivity: 'strict'`，也可能合并文本中的连续空格。
-
-忽略 `dist`、`dist-*`、`.weapp-vite`、`node_modules`、`miniprogram_npm`、`generated` 目录及包管理器锁文件。WXSS 中的 `rpx`、选择器、属性和 Vue `<style>` 的语义仍由 Stylelint 检查。
+## 项目命令
 
 ```sh
-pnpm exec weapp-vite-format --check
 pnpm exec weapp-vite-format --write
+pnpm exec weapp-vite-format --check
 pnpm exec weapp-vite-format --check-all
 ```
 
-`weapp-vite-format` 使用项目中的同一套 Vite+：`--check` 和 `--write` 分别运行 `vp fmt --check` 和 `vp fmt --write`，再检查或写入安全格式化的 WXML；`--check-all` 运行 `vp check`，并检查 WXML。CLI 与 WXML API 需要项目安装 Vite+ `>=1.2.0 <2`；只使用预设时不会强制安装它。
+| 命令 | 处理范围 |
+| --- | --- |
+| `--write` | 在内存完成全部候选文件的格式与语义预检，通过后写入 |
+| `--check` | 使用相同格式入口只读检查，任何文件需要格式化时失败 |
+| `--check-all` | 一次 `vp check`、原生语言预检与格式检查，以及项目存在的 `lint:vue`、`stylelint` 脚本 |
 
-WXML 适配器只调整标签和属性之间的布局，逐字保留文本、标签之间的空白、插值、属性值、注释、CDATA 和 WXS 内容，不自动插入文本换行或调整文本缩进。它一次性把受保护的标签交给 Oxfmt，并校验恢复后的结构；遇到无法安全解析或校验的内容会报错。写入前会预检所有目标 WXML，文件在格式化期间发生变化时拒绝覆盖。
+标准文件使用项目安装的 Oxfmt API，原生模板、脚本模块和样式进入对应适配器。`--check-all` 不替代项目独立的 TypeScript 类型检查。原生语言诊断也可通过 `weapp-vite-lint --native-only` 单独执行。
 
-默认读取当前目录到工作区根目录之间最近的 `vite.config.*` 中的 `fmt`，或 `.oxfmtrc.json`。`--check-all` 与 Vite+ 一致，优先使用工作区根配置。WXML 适配器遵循配置中的 `printWidth`、`overrides`、生成目录忽略规则、`.gitignore` 和项目根 `.prettierignore`；预设用于阻止原生 Oxfmt 处理 WXML 的 `**/*.wxml` 忽略项由适配器单独接管。
+## 语言范围与语义保护
 
-可以指定文件、目录、glob 和 JSON 配置。路径相对命令执行目录解析；`--check-all` 不接受 `--config`。
+| 文件 | 处理方式 |
+| --- | --- |
+| `.wxml`、`.axml`、`.ttml`、`.swan`、`.jxml`、`.qml`、`.ksml`、`.xhsml`、`.tyml` | 共享 TS scanner 与源码片段编辑，仅调整标签和属性布局 |
+| `.wxss`、`.acss`、`.ttss`、`.qss`、`.jxss`、`.tyss` 和原生 `.css` | CSS 格式化，保留 `rpx`、Tailwind 指令、条件注释和声明顺序；Stylelint 负责样式语义 |
+| 独立/内联 WXS、SJS、KS、filter | 平台方言预检、词法兼容处理、Oxfmt、格式化后 AST 与方言复验 |
+| `.wxs.ts`、`.sjs.ts`、`.ks.ts`、`.filter.ts` 及 `lang="ts/js"` | 按待编译源码处理，不把合法源码提前限制为宿主原生语法 |
+
+模板逐字保留文本空白、实体、插值、属性值及引号、属性顺序、重复属性和显式闭合形式，不经过 DOM 序列化。内联脚本由模块适配器独立处理；`formatWxml` 兼容 API 仍保持内联脚本原文。
+
+脚本模块按实际平台检查模块系统和内建能力，不把所有 `.sjs` 解释成微信 WXS。百度原生 filter 使用相对 `.filter.js` 引用并通过默认导出暴露函数。方言、词法、结构或 AST 语义校验失败时拒绝写回；文件在预检期间被修改时拒绝覆盖。
+
+预设排除依赖、构建产物、`.weapp-vite`、受管生成目录与锁文件。供标准 `vp fmt` 跳过原生模板和模块的忽略项由组合 CLI 接管，不会因此跳过普通源码。不要把原生模板重新关联为 HTML；单独的 `vp fmt` 不包含完整原生语言检查。
+
+## 配置与 workspace
+
+`lint` / `fmt` 继续位于 `vite.config.ts`。平台选择放在 `weapp.language`，支持 `platform` 与 `overrides: [{ files: string[], platform }]`；配置影响 CLI 和 VSCode。存在歧义或互相冲突的模块引用时给出诊断，需显式配置归属。
+
+`--write` / `--check` 使用最近的项目配置，也可通过 `--config` 指定 Vite 配置或 `.oxfmtrc.json`。格式遵循实际 `fmt`、文件 `overrides`、忽略路径和 `.gitignore`；不通过忽略普通源码消除格式失败。
 
 ```sh
 pnpm exec weapp-vite-format --write src/pages
 pnpm exec weapp-vite-format --check -c .oxfmtrc.json 'src/**/*.wxml'
 ```
 
-程序调用入口同样保留 WXML 的文本语义：
+`--check-all` 与 `vp check` 优先使用 workspace 根配置，不接受 `--config`；成员预设不覆盖父工作区的 `lint` / `fmt` 所有权。根配置的 glob 和忽略路径需相对根目录定位到成员项目。
+
+## 程序接口与编辑器
 
 ```ts
+import { formatDocument } from '@weapp-vite/oxfmt/languages'
 import { formatWxml } from '@weapp-vite/oxfmt/wxml'
 
-const formatted = await formatWxml(source, 'src/pages/index/index.wxml', {
-  printWidth: 100,
-})
+const template = await formatDocument(source, 'src/page.axml')
+const compatible = await formatWxml(source, 'src/page.wxml', { printWidth: 100 })
 ```
 
-需要调整普通文件的格式时展开 `recommended`，覆盖 Oxfmt 的公开配置项即可。此包不替代 Oxlint、Stylelint 或小程序编译器的语义检查。
+`formatDocument` 支持全部登记语言与内联模块。`@weapp-vite/oxfmt/project` 导出项目配置解析、文档归属解析和 `prepareProjectFormatting`，供 CLI 与编辑器适配层复用。显式传入格式选项时采用该配置；需要固定风格时提供完整所需选项。
+
+VSCode 扩展使用项目安装的工具，仅在受信任工作区加载项目配置与格式化器。模板及原生模块使用扩展的唯一格式化提供者，标准 JS/TS 使用 Oxc；错误输入显示诊断并返回零修改。此包不新增完整模板类型检查器，不替代 Vue 专项 ESLint、Stylelint 或平台编译器。本轮验收覆盖 TS、CLI、VSCode 和构建，不代表真实小程序 IDE runtime 验收。

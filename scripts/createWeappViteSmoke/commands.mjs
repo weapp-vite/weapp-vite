@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
+import { resolveDependencyTarballs } from './dependencyTarballs.mjs'
 import { runCommand } from './process.mjs'
 
 const DEFAULT_PNPM_VERSION = process.env.CREATE_WEAPP_VITE_PNPM_VERSION?.trim() || '12'
@@ -51,7 +52,9 @@ export function createTarballInstallCommand(tarball, config = {}) {
 
 export async function installTarballRunner(tarball, runnerRoot, env, timeoutMs) {
   await fs.mkdir(runnerRoot, { recursive: true })
-  await fs.writeFile(path.join(runnerRoot, 'package.json'), JSON.stringify({ private: true }))
+  const artifacts = await resolveDependencyTarballs(env.CREATE_WEAPP_VITE_DEPENDENCY_TARBALLS)
+  const overrides = Object.fromEntries(artifacts.map(({ name, tarball }) => [name, `file:${tarball.replaceAll('\\', '/')}`]))
+  await fs.writeFile(path.join(runnerRoot, 'package.json'), JSON.stringify({ private: true, ...(artifacts.length ? { overrides } : {}) }))
   await runCommand({
     ...createTarballInstallCommand(tarball, {
       'registry': env.npm_config_registry,

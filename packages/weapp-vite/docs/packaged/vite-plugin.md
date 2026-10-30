@@ -51,6 +51,8 @@ pnpm 使用项目级 `pnpm-workspace.yaml` 的 `overrides` 完成同样的 alias
 
 使用 `create-weapp-vite ... --toolchain=vite-plus` 可以直接生成上述配对配置，并接入 `@weapp-vite/oxlint` 与 `@weapp-vite/oxfmt`。`vp check` 使用 workspace 根已有的 lint/fmt 配置；成员配置不会覆盖根策略。
 
+原生模板、样式与 WXS/SJS/KS/Filter 的平台归属配置见 [`weapp.language`](./weapp-config.md#language)。生成项目通过 `weapp-vite-lint` 和 `weapp-vite-format` 组合标准工具与语言适配器；直接运行 `vp lint` / `vp fmt` 不包含完整原生语言检查。QQ、快手和涂鸦的语言 profile 不会扩展插件的六个平台构建目标。
+
 ## 当前命令边界
 
 | 命令 | 当前行为 |
