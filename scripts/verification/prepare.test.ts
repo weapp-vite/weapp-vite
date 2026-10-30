@@ -7,6 +7,7 @@ import { expect, it } from 'vitest'
 import { assertCommittedSnapshot, assertCurrentPlan, prepareVerificationPlan } from './prepare.ts'
 import { fullRuntimeBlock } from './runtime.ts'
 
+// 此用例串行运行真实 Git 与 pnpm 工具链探针，沿用相邻集成测试的独立预算。
 it('rederives workspace, Turbo and runtime assumptions before any task executes', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'verify-freeze-'))
   const git = (args: string[]) => execa('git', args, { cwd: root })
@@ -45,4 +46,4 @@ it('rederives workspace, Turbo and runtime assumptions before any task executes'
   finally {
     await rm(root, { recursive: true, force: true })
   }
-})
+}, 30_000)
