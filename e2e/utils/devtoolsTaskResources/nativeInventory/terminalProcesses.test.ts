@@ -162,8 +162,27 @@ describe('strict native terminal process evidence', () => {
     expect(report).toMatchObject({ uninspectedNewProcessCount: 1, newProcesses: [{ pid: 33, classification: 'unclassified' }] })
   })
 
-  it('does not accept a live-to-zombie transition before the RSS anchor', async () => {
-    await rejected([entry(33, { parentPid: 22 })], [zombie()], [zombie()], [zombie()])
+  it('keeps a separate proof for complete foreign prepare history terminating at the RSS anchor', async () => {
+    const live = entry(33, { parentPid: 22, rssBytes: '9000000' })
+    frames([entry(11, { rssBytes: '7000' }), live], [zombie()], [zombie()], [zombie()])
+    const report = await sample()
+    expectSelectedRss(report)
+    expect(report.verifiedTerminalProcesses).toEqual([expect.objectContaining({
+      process: expect.objectContaining({ pid: 33, zombie: false }),
+      terminalIdentity: expect.objectContaining({ pid: 33, zombie: true }),
+      firstTerminalPhase: 'anchor',
+      proof: 'prepare-proven-foreign-then-anchor-kernel-terminal',
+      ancestry: [expect.objectContaining({ pid: 22 })],
+    })])
+    expect(report.identityChangedProcessCount).toBe(1)
+    expect(report.identityChangedProcesses).toEqual([expect.objectContaining({ pid: 33, reasons: ['zombie-changed'] })])
+    expect(report.nativeFrames?.[0]?.rows.find(row => row.pid === 33)?.rss.bytes).toBe('9000000')
+    expect(report.nativeFrames?.slice(1).map(value => value.rows.find(row => row.pid === 33))).toEqual([
+      expect.objectContaining({ before: expect.objectContaining({ zombie: true }), rss: { count: 0, errno: 3, identity: null, bytes: null }, gaps: zombie().gaps }),
+      expect.objectContaining({ before: expect.objectContaining({ zombie: true }), rss: { count: 0, errno: 3, identity: null, bytes: null }, gaps: zombie().gaps }),
+      expect.objectContaining({ before: expect.objectContaining({ zombie: true }), rss: { count: 0, errno: 3, identity: null, bytes: null }, gaps: zombie().gaps }),
+    ])
+    expect(mocks.images).not.toHaveBeenCalled()
   })
 
   it('rejects a prepared live task missing from the anchor before returning as the same terminal instance', async () => {

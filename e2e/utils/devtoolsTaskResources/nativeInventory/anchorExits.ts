@@ -5,7 +5,7 @@ import { DARWIN_INSPECTOR_PHASES } from '../processInventory/darwinInspector/typ
 import { completeNativeLiveRow, hasNativeExitEvidence, insideInstallation, metadata, sameNativeIdentity } from './model'
 
 /** 准备帧中的外部活体及祖先均须完整核验；此证明不能提供锚点的映像或 RSS。 */
-function preparedForeignAncestry(inventory: NativeInventory, frame: NativeFrame, pid: number, installationRoot: string) {
+export function preparedForeignAncestry(inventory: NativeInventory, frame: NativeFrame, pid: number, installationRoot: string) {
   const ancestry: ProcessIdentityMetadata[] = []
   const visiting = new Set<number>()
   let current = pid

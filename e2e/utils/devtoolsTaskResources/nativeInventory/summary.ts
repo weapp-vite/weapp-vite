@@ -2,6 +2,7 @@ import type { InstallationProcessSample, NativeTextImageObservationEvidence, New
 import type { NativeInventory } from './closure'
 import type { NativeTextImageRead, resolveAnchoredTextImages } from './fallback'
 import { verifiedAnchorExits } from './anchorExits'
+import { verifiedAnchorTerminals } from './anchorTerminals'
 import { nativeRelation } from './closure'
 import { nativeFrameEvidence, textReadEvidence } from './evidence'
 import { verifiedForeignImageTransitions } from './foreignImageTransitions'
@@ -29,7 +30,7 @@ export function summarizeNativeInventory(options: SummaryOptions): InstallationP
   const foreignTransitions = verifiedForeignImageTransitions(inventory, installationRoot)
   const foreignNativeExecs = verifiedForeignNativeExecs(inventory, installationRoot)
   const verifiedForeignProcesses = new Set([...foreignTransitions, ...foreignNativeExecs].map(proof => proof.process.pid))
-  const terminalProofs = [...verifiedTerminalProcesses(inventory, installationRoot), ...verifiedAnchorExits(inventory, installationRoot)]
+  const terminalProofs = [...verifiedTerminalProcesses(inventory, installationRoot), ...verifiedAnchorExits(inventory, installationRoot), ...verifiedAnchorTerminals(inventory, installationRoot)]
   const terminalProcesses = new Set(terminalProofs.map(proof => proof.process.pid))
   const preAnchorExited = new Set<number>()
   for (const entry of inventory.tracked.values()) {
