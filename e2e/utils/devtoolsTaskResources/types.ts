@@ -25,7 +25,7 @@ export interface WrapperResourceEvent {
 
 export interface NewProcessObservation extends ProcessIdentityGapObservation {
   firstSeenRound: number
-  classification: 'verified-foreign' | 'installation-image' | 'descendant' | 'identity-changed' | 'unclassified' | 'pre-anchor-exited'
+  classification: 'verified-foreign' | 'verified-terminal' | 'installation-image' | 'descendant' | 'identity-changed' | 'unclassified' | 'pre-anchor-exited'
   imageSource: 'kernel-path' | 'text-images' | 'not-verified'
 }
 
@@ -85,6 +85,16 @@ export interface VerifiedForeignNativeExec {
   phases: ['closure1', 'closure2']
 }
 
+export interface VerifiedTerminalProcess {
+  process: ProcessIdentityGapObservation
+  terminalIdentity: ProcessIdentityMetadata
+  firstTerminalPhase: ProcessInventoryLocation['phase']
+  proof: 'anchor-proven-foreign-then-kernel-terminal' | 'only-kernel-terminal-identities-observed'
+  phases: ProcessInventoryLocation['phase'][]
+  ancestry: ProcessIdentityMetadata[]
+  semantics: 'terminated-task-without-executable-or-rss; no-ownership-inference'
+}
+
 export interface NativeProcessFrameEvidence {
   phase: 'prepare' | 'anchor' | 'closure1' | 'closure2'
   requestId: number
@@ -140,6 +150,8 @@ export interface InstallationProcessSample {
   verifiedForeignImageTransitions: VerifiedForeignImageTransition[]
   verifiedForeignNativeExecCount: number
   verifiedForeignNativeExecs: VerifiedForeignNativeExec[]
+  verifiedTerminalProcessCount?: number
+  verifiedTerminalProcesses?: VerifiedTerminalProcess[]
   newProcesses: NewProcessObservation[]
   unclassifiedProcesses: ProcessIdentityGapObservation[]
   missingIdentities: ProcessIdentityGapObservation[]

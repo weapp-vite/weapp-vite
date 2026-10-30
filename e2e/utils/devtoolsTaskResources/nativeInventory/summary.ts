@@ -6,6 +6,7 @@ import { nativeFrameEvidence, textReadEvidence } from './evidence'
 import { verifiedForeignImageTransitions } from './foreignImageTransitions'
 import { verifiedForeignNativeExecs } from './foreignNativeExecs'
 import { insideInstallation, metadata, sameNativeIdentity } from './model'
+import { verifiedTerminalProcesses } from './terminalProcesses'
 
 interface SummaryOptions {
   inventory: NativeInventory
@@ -27,6 +28,8 @@ export function summarizeNativeInventory(options: SummaryOptions): InstallationP
   const foreignTransitions = verifiedForeignImageTransitions(inventory, installationRoot)
   const foreignNativeExecs = verifiedForeignNativeExecs(inventory, installationRoot)
   const verifiedForeignProcesses = new Set([...foreignTransitions, ...foreignNativeExecs].map(proof => proof.process.pid))
+  const terminalProofs = verifiedTerminalProcesses(inventory, installationRoot)
+  const terminalProcesses = new Set(terminalProofs.map(proof => proof.process.pid))
   const preAnchorExited = new Set<number>()
   for (const entry of inventory.tracked.values()) {
     if (entry.firstPhase === 'prepare' && !anchor.rows.has(entry.row.pid) && !entry.changed && !inventory.selectedSeen.has(entry.row.pid)) {
@@ -36,7 +39,8 @@ export function summarizeNativeInventory(options: SummaryOptions): InstallationP
   }
   const unclassifiedProcesses = [...anchor.rows.values()].filter((row) => {
     const tracked = inventory.tracked.get(row.pid)!
-    return !row.identity?.zombie && (!row.images || (tracked.changed && !verifiedForeignProcesses.has(row.pid)) || tracked.closureIdentityUnverifiable || nativeRelation(anchor, row, installationRoot) === 'unknown')
+    return !terminalProcesses.has(row.pid) && !(row.identity?.zombie && inventory.selectedSeen.has(row.pid))
+      && (!row.images || (tracked.changed && !verifiedForeignProcesses.has(row.pid)) || tracked.closureIdentityUnverifiable || nativeRelation(anchor, row, installationRoot) === 'unknown')
   }).map(row => inventory.gap(inventory.tracked.get(row.pid)!, !row.images ? 'kernel-path-unverifiable' : undefined))
 
   const processes: InstallationProcessSample['processes'] = []
@@ -68,12 +72,12 @@ export function summarizeNativeInventory(options: SummaryOptions): InstallationP
   const newProcesses: NewProcessObservation[] = [...inventory.tracked.values()].filter(entry => entry.firstPhase !== 'prepare').map(entry => ({
     ...inventory.gap(entry),
     firstSeenRound: entry.firstPhase === 'closure2' ? 3 : entry.firstPhase === 'closure1' ? 2 : 1,
-    classification: verifiedForeignProcesses.has(entry.row.pid) ? 'verified-foreign' : entry.changed ? 'identity-changed' : entry.classification === 'foreign' ? 'verified-foreign' : entry.classification === 'unknown' ? 'unclassified' : entry.classification,
+    classification: terminalProcesses.has(entry.row.pid) ? 'verified-terminal' : verifiedForeignProcesses.has(entry.row.pid) ? 'verified-foreign' : entry.changed ? 'identity-changed' : entry.classification === 'foreign' ? 'verified-foreign' : entry.classification === 'unknown' ? 'unclassified' : entry.classification,
     imageSource: entry.imageSource,
   }))
   const uninspectedNewProcessCount = newProcesses.filter(row => row.classification === 'unclassified').length
   const newSelectedProcessCount = newProcesses.filter(row => row.classification === 'installation-image' || row.classification === 'descendant').length
-  const changedCount = [...inventory.tracked.values()].filter(entry => entry.changed && !verifiedForeignProcesses.has(entry.row.pid)).length
+  const changedCount = [...inventory.tracked.values()].filter(entry => entry.changed && !verifiedForeignProcesses.has(entry.row.pid) && !terminalProcesses.has(entry.row.pid)).length
   const inventoryBudgetExhausted = Date.now() >= options.deadline
   const verifiedMemberRssBytes = processes.reduce((sum, row) => sum + row.rssBytes, 0)
   if (!Number.isSafeInteger(verifiedMemberRssBytes)) {
@@ -105,6 +109,8 @@ export function summarizeNativeInventory(options: SummaryOptions): InstallationP
     verifiedForeignImageTransitions: foreignTransitions,
     verifiedForeignNativeExecCount: foreignNativeExecs.length,
     verifiedForeignNativeExecs: foreignNativeExecs,
+    verifiedTerminalProcessCount: terminalProofs.length,
+    verifiedTerminalProcesses: terminalProofs,
     newProcesses,
     inventoryRoundCount: 3,
     inventoryBudgetExhausted,
