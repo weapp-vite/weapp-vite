@@ -215,7 +215,9 @@ jobs:
       group: npm-release-${{ github.ref }}
       cancel-in-progress: false
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    # 42 个包逐个打包、上传及消费检查；90 分钟曾在最后一个包上传时终止。
+    # 质量门禁仍共享 45 分钟，其余时间覆盖发布确认、消费检查与诊断。
+    timeout-minutes: 240
     env:
       REPOCTL_NIGHTLY_PROVIDER: npm
       REPOCTL_NIGHTLY_SCHEDULE: '17 22 * * *'

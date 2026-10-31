@@ -126,7 +126,7 @@ describe('repoctl nightly workflow', () => {
     const nightly = workflow.jobs.nightly!
     const steps = nightly.steps!
     const publish = steps.find(step => step.id === 'nightly-publish')!
-    expect(nightly['timeout-minutes']).toBe(90)
+    expect(nightly['timeout-minutes']).toBe(240)
     expect(steps.find(step => step.id === 'nightly-checkout')?.with?.ref).toBe(expression('github.sha'))
     expect(steps.find(step => step.id === 'nightly-npm')?.run).toBe('npm install --global npm@11.16.0 --registry=https://registry.npmjs.org')
     expect(publish.env?.REPOCTL_SNAPSHOT_PUBLISH).toBe('1')

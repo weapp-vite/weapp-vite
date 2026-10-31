@@ -53,7 +53,7 @@ CI Policy 在既有审批后检查公开包与 changeset 的完整对应，测�
 3. 发布到 `snapshot-nightly`，确认 registry 可见性与完整性。
 4. 使用独立 consumer 安装完整批次，验证内部依赖与消费结果。
 
-仓库通过 pnpm 补丁修正 repoctl 6.2.1 对每条 nightly 质量命令固定 10 分钟的限制。工作流设置 `REPOCTL_NIGHTLY_QUALITY_DEADLINE_EPOCH`，全部质量脚本共享 45 分钟，每次启动只使用剩余预算；预算耗尽或时间戳无效时停止。未设置时保留上游默认值。此预算仅用于质量阶段，后续构建、上传和 consumer 保持原生独立超时，整个 job 上限仍为 90 分钟。
+仓库通过 pnpm 补丁修正 repoctl 6.2.1 对每条 nightly 质量命令固定 10 分钟的限制。工作流设置 `REPOCTL_NIGHTLY_QUALITY_DEADLINE_EPOCH`，全部质量脚本共享 45 分钟，每次启动只使用剩余预算；预算耗尽或时间戳无效时停止。未设置时保留上游默认值。此预算仅用于质量阶段，后续构建、上传和 consumer 保持原生独立超时。42 个公开包按顺序打包、上传和消费验证，原 90 分钟 job 上限曾在最后一个包上传时终止；现将整个 job 上限设为 240 分钟，为发布确认、严格入口检查与诊断保留时间。该上限是作业容量预算，不代表覆盖所有网络故障的最坏耗时。
 
 Vitest setup 导出通过 `repoctl.packageCheck.runtimeContexts` 显式声明测试框架上下文。打包检查和发布后的 consumer 均使用隔离安装的真实 Vitest CLI 执行 setup。自动路由的占位入口声明 `expected-error` 契约，实际导入必须抛出精确的平台保护错误；意外成功或其他错误都会失败。其他导出继续直接验证 Node 导入，所有声明仍使用 `--strict --skipLibCheck false` 检查。
 
