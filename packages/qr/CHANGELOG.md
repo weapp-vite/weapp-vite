@@ -1,5 +1,27 @@
 # @weapp-vite/qr
 
+## 1.2.1
+
+### Patch Changes
+
+- chore(deps): 自动补充依赖升级发布记录。
+  涉及包：
+  - @weapp-core/types：devDependencies.tsdown
+  - @weapp-vite/glass-easel-web-adapter：devDependencies.tsdown
+  - @wevu/web-apis：devDependencies.eventsource-parser
+  - @weapp-agent/cli：dependencies.@ai-sdk/anthropic、dependencies.@ai-sdk/openai、dependencies.@ai-sdk/openai-compatible、dependencies.ai、devDependencies.tsdown
+  - @weapp-vite/ast：dependencies.@oxc-project/types
+  - create-weapp-vite：dependencies.@inquirer/prompts
+  - @weapp-vite/dashboard：dependencies.@devframes/agentic、dependencies.@devframes/hub、dependencies.@devframes/hub-ui
+  - @weapp-vite/eslint：devDependencies.@typescript-eslint/parser
+  - @weapp-vite/miniprogram-automator：dependencies.ws
+  - weapp-vite：dependencies.@typescript-eslint/parser、dependencies.rolldown-plugin-dts、devDependencies.@devframes/agentic、devDependencies.@devframes/hub、devDependencies.@devframes/hub-ui、optionalDependencies.@swc/core
+
+  chore(deps): 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@babel/core, @babel/generator, @babel/parser, @babel/traverse, @babel/types, @icebreakers/eslint-config, @types/node, @vue/language-core, autoprefixer, axios, devframe, eslint, magic-string, oxc-parser, postcss, rolldown, sass, sass-embedded, tailwind-variants, tslib, uview-plus, vue-tsc。命名 catalog 变更键：无。
+
+  迁移 rolldown-plugin-dts 0.29 的 tsc 配置命名空间，兼容旧顶层配置，保留项目引用、上下文隔离和 Vue 声明生成契约。Rust N-API 与 Oxc 配套升级，保留可选原生路径及 JavaScript fallback；SSE 与样式变体由回归覆盖。TypeScript 保留 6.0.3，Node 支持范围不变。
+
 ## 1.2.0
 
 ### Minor Changes
