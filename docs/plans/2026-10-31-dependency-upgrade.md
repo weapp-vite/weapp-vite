@@ -138,6 +138,12 @@ workspace 消除项涉及 markdown-it、body-parser、undici、fast-uri、serova
 
 SSE 原有测试文件及 DTS 集成测试已超过 300 行，本次继续复用既有传输和编译夹具以保留完整观察面；新增配置归一化实现与其上游解析器回归放入独立 `libDts/options` 文件。没有新增超过 300 行的源文件。
 
+## 验收入口修正
+
+真实 profile 准备步骤发现 wrapper 与 native:build 包脚本重复传入 Cargo --locked，导致 metadata 拒绝执行，尚未进入采样。现由包脚本统一负责锁定，组合参数合同验证恰好一次，4 项准备计划回归通过。
+
+首轮远端 Weapi Compatibility Guard 在 Node 22、24 都因干净安装后缺少 @weapp-core/types/alipay-api 构建产物而报 TS2307，随之出现派生的隐式 any。两个 guard 现通过既有 build_command 入口先构建类型包闭包、刷新 workspace 链接，再运行原有完整检查；未修改 API 类型或弱化断言。8 项工作流合同以及构建后的两个 API 源码／测试／公开类型检查通过，远端新提交复验待完成。
+
 ## 待完成验收与交付
 
 按既有 manifest 去重执行 non-HMR CI、平台能力补集、HMR build、headless full、正式 HMR headless、Web、Simulator browser 和网站浏览器。headless full 虽含 HMR 文件，正式 HMR 入口还有冻结计划、严格 DOM 和 receipt，保留有意重叠；正式 exhaustive IDE 已覆盖全部适用 HMR IDE 文件，不再另跑相同 gate。

@@ -88,6 +88,28 @@ describe('independent CI preparation with unchanged validation scope', () => {
     expect(child.jobs.types.with.build_artifact_scope).toContain('mpcore/packages/simulator')
   })
 
+  it('prepares platform type declarations before every standalone Weapi compatibility guard', () => {
+    const quality = read('validate-ci.yml')
+    for (const name of ['weapi-compat-pr', 'weapi-compat-full']) {
+      const guard = quality.jobs[name]
+      expect(guard.uses).toBe('./.github/workflows/reusable-node-command.yml')
+      expect(guard.with.build_command).toBe('pnpm exec turbo run build --filter=@weapp-core/types...')
+      expect(guard.with.consume_build_artifact ?? '').toBe('')
+      for (const packageName of ['@weapp-core/api', '@wevu/api']) {
+        expect(guard.with.main_command).toContain(`pnpm --filter ${packageName} typecheck`)
+        expect(guard.with.main_command).toContain(`pnpm --filter ${packageName} test:types`)
+      }
+    }
+
+    const steps = read('reusable-node-command.yml').jobs.run.steps
+    const prepare = steps.findIndex(step => step.uses === './.github/actions/refresh-workspace-deps')
+    const validate = steps.findIndex(step => step.run?.includes(`\${{ inputs.main_command }}`))
+    expect(prepare).toBeGreaterThanOrEqual(0)
+    expect(validate).toBeGreaterThan(prepare)
+    expect(steps[prepare].if).toBe('inputs.build_command != \'\' && inputs.consume_build_artifact == \'\'')
+    expect(steps[prepare].with['build-command']).toBe(`\${{ inputs.build_command }}`)
+  })
+
   it('lets each OS consume its own build immediately and requires every planned miniapp shard', () => {
     const outer = read('validate-ci-e2e.yml')
     if (baseline) {

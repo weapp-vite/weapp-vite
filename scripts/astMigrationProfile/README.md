@@ -12,7 +12,7 @@ pnpm exec tsx scripts/astMigrationProfile/prepare.ts
 pnpm exec tsx scripts/ast-migration-profile.ts
 ```
 
-prepare 串行执行 `@weapp-vite/ast-native native:build -- --locked`、相关包闭包的强制构建，再使用刚构建的 `dist/cli.mjs prepare` 为五个唯一工程各同步一次 `.weapp-vite` 支持文件，显式沿用各工程 config 和 weapp platform。CLI prepare 本身容错，工具还要求成功日志并拒绝跳过，不能只凭退出零接受结果。回执记录实际命令、仓库相对 cwd 和 Node 版本；只有全部成功且 fixture/源码未漂移才生成 ignored build receipt。采样前必须核对 receipt 与当前 commit、源码、项目输入、锁文件、built dist、全部生成支持文件和 addon hash 一致。支持文件、工具或产物发生变动后须重新 prepare。prepare 和 collection 使用仓库机器租约，并等待取消的当前子进程退出后再释放租约；执行者仍需确认没有归属不明的外部 watcher/E2E。
+prepare 串行执行 `pnpm --filter @weapp-vite/ast-native native:build`、相关包闭包的强制构建，再使用刚构建的 `dist/cli.mjs prepare` 为五个唯一工程各同步一次 `.weapp-vite` 支持文件，显式沿用各工程 config 和 weapp platform。Cargo 的 `--locked` 由 `native:build` 包脚本统一提供。CLI prepare 本身容错，工具还要求成功日志并拒绝跳过，不能只凭退出零接受结果。回执记录实际命令、仓库相对 cwd 和 Node 版本；只有全部成功且 fixture/源码未漂移才生成 ignored build receipt。采样前必须核对 receipt 与当前 commit、源码、项目输入、锁文件、built dist、全部生成支持文件和 addon hash 一致。支持文件、工具或产物发生变动后须重新 prepare。prepare 和 collection 使用仓库机器租约，并等待取消的当前子进程退出后再释放租约；执行者仍需确认没有归属不明的外部 watcher/E2E。
 
 无参命令固定 40 个 pair，支持 `--trials=N`（不得少于 40）、`--output=...`、`--addon=...` 和 `--build-receipt=...`。`--diagnostic` 为兼容参数；独立诊断 pass 始终执行，不能通过省略参数绕过 batch 消费验证。非默认 addon 也必须匹配准备回执。
 
