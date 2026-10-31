@@ -30,7 +30,7 @@ describe('issue #1127: component and native event channels', { concurrent: false
     projects.push(legacyProject)
     await copyFile(path.join(legacyProject, 'legacy.html'), path.join(legacyProject, 'index.html'))
     servers.push(await serveProject(legacyProject))
-    browser = await chromium.launch({ channel: process.env.WEAPP_VITE_WEB_E2E_CHANNEL })
+    browser = await chromium.launch({ headless: true, channel: process.env.WEAPP_VITE_WEB_E2E_CHANNEL })
   })
 
   beforeEach(async () => {
@@ -120,9 +120,20 @@ describe('issue #1127: component and native event channels', { concurrent: false
 
   it('1127.legacy-channels', async () => {
     await page.goto(servers[1].resolvedUrls!.local[0])
+    const source = page.locator('#source')
+    const originalSource = await source.elementHandle()
+    const nativeButton = page.locator('#source #emit-click button')
+    const originalButton = await nativeButton.elementHandle()
+    if (!originalSource || !originalButton) {
+      throw new Error('Missing legacy source or native button')
+    }
     await page.locator('#source #emit-click').click()
     await text('#legacy-count', '1')
     await text('#legacy-taps', '1')
+    expect(await source.evaluate((element, original) => element === original, originalSource)).toBe(true)
+    expect(await nativeButton.evaluate((element, original) => element === original, originalButton)).toBe(true)
+    await originalSource.dispose()
+    await originalButton.dispose()
     await page.locator('#source #native-only').click()
     await text('#legacy-count', '1')
     await text('#legacy-taps', '2')

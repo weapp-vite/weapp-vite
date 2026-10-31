@@ -12,11 +12,11 @@ import type {
 import type { ClassAttributeElement } from './virtualHost'
 import { WEVU_HOST_COMMIT_PROMISE_KEY, WEVU_HOST_INSTALL_METHOD_KEY } from '@weapp-core/constants'
 import { html } from 'lit'
-import { unsafeHTML } from 'lit/directives/unsafe-html.js'
 import { getAppStyle, trackAppStyle } from '../appStyle'
 import { markComponentEvent, registerComponentEventTarget } from '../componentEvents'
 import { recordControlledDataCommit, releaseLegacyControlledValues } from '../controlledAttributes'
 import { commitLegacyDatasetBindings, releaseLegacyDatasetBindings, resetLegacyDatasetRender } from '../legacyTemplate/dataset'
+import { legacyMarkup } from '../legacyTemplate/markup'
 import { createIntersectionObserverBridge } from '../polyfill/intersectionObserver'
 import { createRenderContext } from '../renderContext'
 import { hasOwn } from '../utils/object'
@@ -295,13 +295,13 @@ export function createComponentElementClass({
 
     updated() {
       this.#syncVirtualHostClasses()
-      commitLegacyDatasetBindings(resolveRenderRoot(this), this.#renderContext)
       if (this.#usesLegacyTemplate) {
         bindRuntimeEvents(resolveRenderRoot(this), this.#methods, this)
       }
       else {
         releaseRuntimeEvents(resolveRenderRoot(this))
       }
+      commitLegacyDatasetBindings(resolveRenderRoot(this), this.#renderContext)
     }
 
     render() {
@@ -309,7 +309,7 @@ export function createComponentElementClass({
       const result = runtimeState.templateRef(this.#state, this.#renderContext)
       const appStyle = runtimeState.inheritAppStyle ? getAppStyle() : ''
       this.#usesLegacyTemplate = typeof result === 'string'
-      return html`<style>${appStyle}</style><style>${runtimeState.styleRef}</style>${typeof result === 'string' ? unsafeHTML(result) : result}`
+      return html`<style>${appStyle}</style><style>${runtimeState.styleRef}</style>${typeof result === 'string' ? legacyMarkup(result, this.#renderContext) : result}`
     }
 
     requestUpdate(name?: PropertyKey, oldValue?: unknown, options?: unknown) {

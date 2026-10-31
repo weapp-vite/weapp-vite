@@ -6,7 +6,7 @@ import { ensureNativeComponentStyle } from '../style'
 import { createScrollBoundaryTracker } from './boundaries'
 import { createScrollEventDetail } from './helpers'
 import { findScrollTarget, scrollToTarget } from './position'
-import { ScrollViewRefresher } from './refresher'
+import { createScrollViewRefresher } from './refresher'
 import { REFRESHER_STYLE } from './refresher/appearance'
 import { scrollViewport } from './scroll'
 
@@ -30,7 +30,7 @@ export class WeappScrollView extends BaseElement {
   #childrenObserver?: MutationObserver
   #resizeObserver?: ResizeObserver
   #alignedTarget?: Element
-  #refresher?: ScrollViewRefresher
+  #refresher?: ReturnType<typeof createScrollViewRefresher>
   #disposeControlled?: () => void
 
   get scrollTop() {
@@ -60,7 +60,7 @@ export class WeappScrollView extends BaseElement {
     if (!this.#viewport || !this.shadowRoot) {
       return
     }
-    this.#refresher ??= new ScrollViewRefresher(this, this.#viewport!)
+    this.#refresher ??= createScrollViewRefresher(this, this.#viewport!)
     this.#disposeControlled ??= registerControlledAttributeCommit(this, 'refresher-triggered', () => this.#refresher?.commit(readBooleanAttribute(this, 'refresher-triggered')))
     if (!initializePosition) {
       this.#previous = { scrollLeft: this.scrollLeft, scrollTop: this.scrollTop }

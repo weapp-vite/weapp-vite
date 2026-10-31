@@ -94,13 +94,14 @@ export function renderAttributes(
   },
 ) {
   let buffer = ''
+  let controlled = ''
   for (const [rawName, rawValue] of Object.entries(attribs)) {
     if (options?.skipControl && CONTROL_ATTRS.has(rawName)) {
       continue
     }
     if (options?.controlledAttributes?.includes(rawName)) {
       const expression = buildExpression(parseInterpolations(rawValue ?? ''), '__controlledScope', wxsVar)
-      buffer += ` \${ctx.controlledAttribute(${JSON.stringify(rawName)}, __controlledScope => ${expression}, ${scopeVar})}`
+      controlled += ` \${ctx.controlledAttribute(${JSON.stringify(rawName)}, __controlledScope => ${expression}, ${scopeVar})}`
       continue
     }
     const eventInfo = parseEventAttribute(rawName)
@@ -135,5 +136,6 @@ export function renderAttributes(
     const expr = name === 'style' ? `__weappInlineStyle(${rawExpr})` : rawExpr
     buffer += ` ${useProperty ? '.' : ''}${name}=\${${expr}}`
   }
-  return buffer
+  // 受控属性提交可能同步发事件，须先更新本轮监听及 dataset。
+  return buffer + controlled
 }

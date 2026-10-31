@@ -29,6 +29,28 @@ defineComponentLibraryWebSuite({
   suiteName: 'uview-plus 3.8.130 Web 全组件兼容',
   updateBaselinesEnv: 'UVIEW_PLUS_UPDATE_BASELINES',
   async verifyRendered(page, scenario) {
+    if (scenario.component === 'up-barcode') {
+      // 横向扫描条码主体，确认真实画布中存在交替黑白条纹，避免空画布基线掩盖绘制失败。
+      await expect.poll(() => page.locator('#e2e-component canvas').first().evaluate((element) => {
+        const canvas = element as HTMLCanvasElement
+        const context = canvas.getContext('2d')
+        if (!context || !canvas.width || !canvas.height) {
+          return 0
+        }
+        const row = context.getImageData(0, Math.floor(canvas.height / 3), canvas.width, 1).data
+        let transitions = 0
+        let previous = false
+        for (let offset = 0; offset < row.length; offset += 4) {
+          const dark = row[offset + 3]! > 128
+            && row[offset]! < 128 && row[offset + 1]! < 128 && row[offset + 2]! < 128
+          if (offset > 0 && dark !== previous) {
+            transitions++
+          }
+          previous = dark
+        }
+        return transitions
+      })).toBeGreaterThan(40)
+    }
     if (scenario.component === 'up-icon') {
       expect(await page.evaluate(() => Array.from(document.fonts).some(
         font => font.family === 'uicon-iconfont' && font.status === 'loaded',

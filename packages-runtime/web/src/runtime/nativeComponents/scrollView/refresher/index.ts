@@ -1,3 +1,5 @@
+/* eslint ts/no-use-before-define: ["warn", { "functions": false }] -- 闭包回调相互调用时使用函数提升，变量仍遵循先定义后使用。 */
+
 import { registerRuntimeTouchTarget } from '../../../touchEvents'
 import { dispatchMiniProgramEvent, readBooleanAttribute } from '../../helpers'
 import { createRefresherAppearance } from './appearance'
@@ -8,144 +10,136 @@ const EVENT_OPTIONS = { bubbles: false, composed: false }
 const RESTORE_DURATION = 180
 
 /** 刷新只消费统一 touch 流；视觉位移与浏览器原生滚动会话相互独立。 */
-export class ScrollViewRefresher {
-  #phase: Phase = 'idle'
-  #dy = 0
-  #gesture?: Gesture
-  #timer?: ReturnType<typeof setTimeout>
-  #generation = 0
-  #active = true
-  #appearance: ReturnType<typeof createRefresherAppearance>
-  #disposeTouch?: () => void
+export function createScrollViewRefresher(host: HTMLElement, viewport: HTMLDivElement) {
+  let phase: Phase = 'idle'
+  let offset = 0
+  let currentGesture: Gesture | undefined
+  let timer: ReturnType<typeof setTimeout> | undefined
+  let transitionGeneration = 0
+  let active = true
+  let disposeTouch: (() => void) | undefined
+  const appearance = createRefresherAppearance(host.shadowRoot!, viewport)
 
-  constructor(private host: HTMLElement, private viewport: HTMLDivElement) {
-    this.#appearance = createRefresherAppearance(host.shadowRoot!, viewport)
-    host.addEventListener('touchstart', this.#start)
-    host.addEventListener('touchmove', this.#move, { passive: false })
-    host.addEventListener('touchend', this.#end)
-    host.addEventListener('touchcancel', this.#cancel)
-  }
-
-  sync(name?: string) {
-    this.#appearance.sync(this.host)
-    if (!this.#enabled()) {
-      this.#disposeTouch?.()
-      this.#disposeTouch = undefined
-      this.#reset()
+  function sync(name?: string) {
+    appearance.sync(host)
+    if (!enabled()) {
+      disposeTouch?.()
+      disposeTouch = undefined
+      reset()
       return
     }
-    this.#disposeTouch ??= registerRuntimeTouchTarget(this.host)
+    disposeTouch ??= registerRuntimeTouchTarget(host)
     if (!name || name === 'refresher-triggered') {
-      this.commit(readBooleanAttribute(this.host, 'refresher-triggered'))
+      commit(readBooleanAttribute(host, 'refresher-triggered'))
     }
   }
 
-  commit(value: unknown) {
-    if (!this.#active || !this.#enabled() || this.#phase === 'restoring') {
+  function commit(value: unknown) {
+    if (!active || !enabled() || phase === 'restoring') {
       return
     }
     const triggered = value !== false && value !== null && value !== undefined && value !== 'false'
     if (triggered) {
-      if (this.#phase !== 'refreshing') {
-        this.#refresh(true)
+      if (phase !== 'refreshing') {
+        refresh(true)
       }
     }
-    else if (this.#phase !== 'idle') {
-      this.#restore(this.#phase === 'refreshing' ? 'refresherrestore' : 'refresherabort')
+    else if (phase !== 'idle') {
+      restore(phase === 'refreshing' ? 'refresherrestore' : 'refresherabort')
     }
   }
 
-  destroy() {
-    this.#active = false
-    this.#reset()
-    this.#disposeTouch?.()
-    this.host.removeEventListener('touchstart', this.#start)
-    this.host.removeEventListener('touchmove', this.#move)
-    this.host.removeEventListener('touchend', this.#end)
-    this.host.removeEventListener('touchcancel', this.#cancel)
-    this.#appearance.remove()
+  function destroy() {
+    active = false
+    reset()
+    disposeTouch?.()
+    host.removeEventListener('touchstart', start)
+    host.removeEventListener('touchmove', move)
+    host.removeEventListener('touchend', end)
+    host.removeEventListener('touchcancel', cancel)
+    appearance.remove()
   }
 
-  #enabled() {
-    return readBooleanAttribute(this.host, 'refresher-enabled') && readBooleanAttribute(this.host, 'scroll-y')
+  function enabled() {
+    return readBooleanAttribute(host, 'refresher-enabled') && readBooleanAttribute(host, 'scroll-y')
   }
 
-  #threshold() {
-    const value = Number(this.host.getAttribute('refresher-threshold') ?? 45)
+  function threshold() {
+    const value = Number(host.getAttribute('refresher-threshold') ?? 45)
     return Number.isFinite(value) && value >= 0 ? value : 45
   }
 
-  #valid(generation: number) {
-    return this.#active && this.host.isConnected && generation === this.#generation
+  function valid(generation: number) {
+    return active && host.isConnected && generation === transitionGeneration
   }
 
-  #emit(name: string, dy = this.#dy) {
-    dispatchMiniProgramEvent(this.host, name, { dy }, EVENT_OPTIONS)
+  function emit(name: string, dy = offset) {
+    dispatchMiniProgramEvent(host, name, { dy }, EVENT_OPTIONS)
   }
 
-  #render() {
-    this.#appearance.update(this.#dy, this.#phase)
+  function render() {
+    appearance.update(offset, phase)
   }
 
-  #reset() {
-    ++this.#generation
-    clearTimeout(this.#timer)
-    this.#timer = undefined
-    this.#gesture = undefined
-    this.#phase = 'idle'
-    this.#dy = 0
-    this.#render()
+  function reset() {
+    ++transitionGeneration
+    clearTimeout(timer)
+    timer = undefined
+    currentGesture = undefined
+    phase = 'idle'
+    offset = 0
+    render()
   }
 
-  #refresh(programmatic: boolean) {
-    clearTimeout(this.#timer)
-    const generation = ++this.#generation
-    this.#gesture = undefined
-    this.#phase = 'refreshing'
-    const dy = programmatic ? this.#threshold() + 10 : this.#dy
-    this.#dy = this.#threshold() + 10
-    this.#render()
+  function refresh(programmatic: boolean) {
+    clearTimeout(timer)
+    const generation = ++transitionGeneration
+    currentGesture = undefined
+    phase = 'refreshing'
+    const dy = programmatic ? threshold() + 10 : offset
+    offset = threshold() + 10
+    render()
     if (programmatic) {
       // 原生程序触发也先发 pulling，再在展开后发 refresh。
-      this.#timer = setTimeout(() => {
-        if (this.#valid(generation)) {
-          this.#timer = undefined
-          this.#emit('refresherrefresh')
+      timer = setTimeout(() => {
+        if (valid(generation)) {
+          timer = undefined
+          emit('refresherrefresh')
         }
       }, RESTORE_DURATION)
-      this.#emit('refresherpulling')
+      emit('refresherpulling')
     }
     else {
-      this.#emit('refresherrefresh', dy)
+      emit('refresherrefresh', dy)
     }
   }
 
-  #restore(event: 'refresherrestore' | 'refresherabort') {
-    clearTimeout(this.#timer)
-    const generation = ++this.#generation
-    const dy = this.#dy
-    this.#phase = 'restoring'
-    this.#gesture = undefined
-    this.#dy = 0
-    this.#render()
-    this.#timer = setTimeout(() => {
-      if (this.#valid(generation)) {
-        this.#timer = undefined
-        this.#phase = 'idle'
-        this.#render()
+  function restore(event: 'refresherrestore' | 'refresherabort') {
+    clearTimeout(timer)
+    const generation = ++transitionGeneration
+    const dy = offset
+    phase = 'restoring'
+    currentGesture = undefined
+    offset = 0
+    render()
+    timer = setTimeout(() => {
+      if (valid(generation)) {
+        timer = undefined
+        phase = 'idle'
+        render()
       }
     }, RESTORE_DURATION)
-    this.#emit(event, dy)
+    emit(event, dy)
   }
 
-  #start = (event: Event) => {
+  function start(event: Event) {
     const touches = (event as TouchEvent).touches
-    if (!this.#enabled() || this.#phase !== 'idle' || !touches || touches.length !== 1 || this.viewport.scrollTop > 0) {
+    if (!enabled() || phase !== 'idle' || !touches || touches.length !== 1 || viewport.scrollTop > 0) {
       return
     }
     // 内层滚动容器和原生手势组件保留自己的输入所有权。
     for (const item of event.composedPath()) {
-      if (item === this.host) {
+      if (item === host) {
         break
       }
       if (item instanceof Element && /^(?:weapp-scroll-view|weapp-swiper|weapp-movable-view|weapp-picker-view|weapp-canvas)$/.test(item.localName)) {
@@ -153,18 +147,18 @@ export class ScrollViewRefresher {
       }
     }
     const touch = touches[0]!
-    this.#gesture = { id: touch.identifier, x: touch.clientX, y: touch.clientY, claimed: false }
+    currentGesture = { id: touch.identifier, x: touch.clientX, y: touch.clientY, claimed: false }
   }
 
-  #move = (event: Event) => {
-    const gesture = this.#gesture
+  function move(event: Event) {
+    const gesture = currentGesture
     if (!gesture) {
       return
     }
     const touches = (event as TouchEvent).touches
     const touch = touches && Array.from(touches).find(item => item.identifier === gesture.id)
-    if (!touch || touches.length !== 1 || !event.cancelable || event.defaultPrevented || this.viewport.scrollTop > 0) {
-      this.#cancel()
+    if (!touch || touches.length !== 1 || !event.cancelable || event.defaultPrevented || viewport.scrollTop > 0) {
+      cancel()
       return
     }
     const dy = touch.clientY - gesture.y
@@ -174,39 +168,45 @@ export class ScrollViewRefresher {
         return
       }
       if (dy <= dx) {
-        this.#gesture = undefined
+        currentGesture = undefined
         return
       }
       gesture.claimed = true
     }
     event.preventDefault()
-    this.#dy = Math.min(Math.max(0, dy / 2), Math.max(this.#threshold() * 2, this.viewport.clientHeight / 2))
-    this.#phase = this.#dy >= this.#threshold() ? 'armed' : 'pulling'
-    this.#render()
-    this.#emit('refresherpulling')
+    offset = Math.min(Math.max(0, dy / 2), Math.max(threshold() * 2, viewport.clientHeight / 2))
+    phase = offset >= threshold() ? 'armed' : 'pulling'
+    render()
+    emit('refresherpulling')
   }
 
-  #end = (event: Event) => {
-    const gesture = this.#gesture
+  function end(event: Event) {
+    const gesture = currentGesture
     if (!gesture || Array.from((event as TouchEvent).touches ?? []).some(item => item.identifier === gesture.id)) {
       return
     }
-    this.#gesture = undefined
+    currentGesture = undefined
     if (gesture.claimed) {
-      if (this.#phase === 'armed') {
-        this.#refresh(false)
+      if (phase === 'armed') {
+        refresh(false)
       }
       else {
-        this.#restore('refresherabort')
+        restore('refresherabort')
       }
     }
   }
 
-  #cancel = () => {
-    const claimed = this.#gesture?.claimed
-    this.#gesture = undefined
+  function cancel() {
+    const claimed = currentGesture?.claimed
+    currentGesture = undefined
     if (claimed) {
-      this.#restore('refresherabort')
+      restore('refresherabort')
     }
   }
+
+  host.addEventListener('touchstart', start)
+  host.addEventListener('touchmove', move, { passive: false })
+  host.addEventListener('touchend', end)
+  host.addEventListener('touchcancel', cancel)
+  return { sync, commit, destroy }
 }

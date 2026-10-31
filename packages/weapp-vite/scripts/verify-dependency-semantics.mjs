@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { mkdir, readFile, realpath, writeFile } from 'node:fs/promises'
-import { createRequire } from 'node:module'
+import { createRequire, findPackageJSON } from 'node:module'
 import path from 'node:path'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
@@ -29,8 +29,11 @@ async function verifyPluginHosts(root, coreRequire, load) {
   const nodeHandler = mcpNode.toNodeHandler({ fetch: async () => new Response('consumer-mcp-host') })
   assert.equal(typeof nodeHandler, 'function', 'Core MCP Node adapter must load its server host')
 
-  // compiler 仅导出 ESM 入口且未导出 package.json，使用消费者内的真实包根建立解析归属。
-  const compilerManifest = await realpath(path.join(root, 'node_modules/@wevu/compiler/package.json'))
+  // compiler 仅导出 ESM 入口；从公开 wevu 的真实依赖图定位，不能假设内部包被提升至消费根。
+  const wevuManifest = await realpath(path.join(root, 'node_modules/wevu/package.json'))
+  const compilerPackage = findPackageJSON('@wevu/compiler', pathToFileURL(wevuManifest))
+  assert(compilerPackage, 'Wevu must provide its compiler dependency')
+  const compilerManifest = await realpath(compilerPackage)
   assert(compilerManifest.startsWith(`${await realpath(root)}${path.sep}node_modules${path.sep}`), 'Compiler owner escaped consumer')
   const compilerRequire = createRequire(compilerManifest)
   const compilerBabel = await load(compilerRequire, '@babel/core')

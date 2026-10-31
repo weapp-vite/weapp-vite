@@ -1,6 +1,7 @@
 import { WEAPP_VITE_WEB_LEGACY_DATASET_COMMENT_PREFIX } from '@weapp-core/constants'
 import { commitLegacyControlledValues } from '../controlledAttributes'
 import { clearRuntimeDataset, storeRuntimeDataset } from '../dataset'
+import { resetLegacyMarkupKeys } from './markupKeys'
 
 export type LegacyDatasetValues = Array<Map<string, unknown>>
 
@@ -13,6 +14,7 @@ const commits = new WeakMap<object, LegacyDatasetCommit>()
 
 /** 每次渲染只收集当前组件的值，提交前仍由旧一轮绑定负责读取。 */
 export function resetLegacyDatasetRender(context: object) {
+  resetLegacyMarkupKeys(context)
   const commit = commits.get(context)
   if (commit) {
     commit.values = []

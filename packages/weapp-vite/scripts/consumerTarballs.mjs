@@ -65,12 +65,14 @@ export async function readConsumerTarballs(directory, entryPackages = ['weapp-vi
 }
 
 /** 校验完整安装闭包仍来自候选 tarball，禁止注册表旧包或源码链接混入验收。 */
-export async function verifyConsumerTarballProvenance(consumerRoot, candidates) {
+export async function verifyConsumerTarballProvenance(consumerRoot, candidates, entryPackages = Object.keys(candidates)) {
   const lock = JSON.parse(await readFile(path.join(consumerRoot, 'package-lock.json'), 'utf8'))
   assert(lock.packages, 'Missing installed package provenance')
-  for (const name of Object.keys(candidates)) {
+  for (const name of entryPackages) {
+    assert(candidates[name], `Missing packed entry: ${name}`)
     assert(lock.packages[`node_modules/${name}`], `Missing installed candidate: ${name}`)
   }
+  const missing = new Set(Object.keys(candidates))
   let verified = 0
   for (const [location, entry] of Object.entries(lock.packages)) {
     const name = location.split('node_modules/').at(-1)
@@ -80,8 +82,10 @@ export async function verifyConsumerTarballProvenance(consumerRoot, candidates) 
     }
     assert(!entry.link && entry.resolved?.startsWith('file:'), `Candidate did not resolve to a tarball: ${location}`)
     assert.equal(path.resolve(consumerRoot, entry.resolved.slice(5)), path.resolve(expected.slice(5)), `Candidate resolved to a different archive: ${location}`)
+    missing.delete(name)
     verified++
   }
+  assert.equal(missing.size, 0, `Missing installed candidates: ${[...missing].join(', ')}`)
   return verified
 }
 

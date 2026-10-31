@@ -5,6 +5,7 @@ import type {
   LegacyTemplateScope,
   RenderOptions,
 } from './types'
+import { WEAPP_VITE_WEB_LEGACY_FRAGMENT_END_COMMENT } from '@weapp-core/constants'
 import { parseDocument } from 'htmlparser2'
 import { resolveControlledNativeAttributes } from '../../shared/controlledAttributes'
 import {
@@ -29,6 +30,7 @@ import {
   interpolateText,
   normalizeList,
 } from './expression'
+import { hasLegacyElementKey, recordLegacyElementKey, recordLegacyLoopScope, recordLegacyMarkupKeys } from './markupKeys'
 
 const templateCache = new Map<string, ChildNode[]>()
 
@@ -158,6 +160,15 @@ function renderElement(
         childScope[forExtract.itemName] = item
         childScope[forExtract.indexName] = idx
         registerTemplateScopeSources(childScope, scope, [{ key: forExtract.itemName, read: tracked => evaluateExpression(forExtract.expr!, tracked), index: idx }])
+        const rawKey = resolveControlAttributeValue(attribs, 'key')?.trim()
+        const reconcileKey = rawKey === '*this'
+          ? item
+          : rawKey?.includes('{{')
+            ? evaluateExpression(rawKey, childScope)
+            : rawKey && item != null && typeof item === 'object'
+              ? evaluateExpression(rawKey, item as LegacyTemplateScope)
+              : undefined
+        recordLegacyLoopScope(childScope, scope, node, reconcileKey, idx)
         buffer += renderElement(node, childScope, renderChildren, {
           skipFor: true,
           overrideAttribs: forExtract.restAttribs,
@@ -170,12 +181,24 @@ function renderElement(
   const effectiveAttribs = options.overrideAttribs ?? attribs
   const normalizedTag = normalizeTagName(node.name)
   if (normalizedTag === '#fragment') {
-    return renderChildren(node.children, scope)
+    const children = renderChildren(node.children, scope)
+    if (datasets) {
+      const token = new Map<string, unknown>()
+      recordLegacyElementKey(token, node, scope, true)
+      if (hasLegacyElementKey(token)) {
+        return `${createLegacyDatasetAnchor(datasets, token)}${children}<!--${WEAPP_VITE_WEB_LEGACY_FRAGMENT_END_COMMENT}-->`
+      }
+    }
+    return children
   }
 
   const dataset = datasets ? new Map<string, unknown>() : undefined
-  const attrs = buildAttributeString(effectiveAttribs, scope, dataset, resolveControlledNativeAttributes(node.name))
-  const anchor = dataset && datasets && (dataset.size || hasLegacyControlledValues(dataset)) ? createLegacyDatasetAnchor(datasets, dataset) : ''
+  const sourceAttributes = dataset ? new Map<string, string>() : undefined
+  const attrs = buildAttributeString(effectiveAttribs, scope, dataset, resolveControlledNativeAttributes(node.name), sourceAttributes)
+  if (dataset) {
+    recordLegacyElementKey(dataset, node, scope, false, sourceAttributes)
+  }
+  const anchor = dataset && datasets && (dataset.size || hasLegacyControlledValues(dataset) || hasLegacyElementKey(dataset)) ? createLegacyDatasetAnchor(datasets, dataset) : ''
   const children = renderChildren(node.children, scope)
 
   if (SELF_CLOSING_TAGS.has(normalizedTag) && !children) {
@@ -242,6 +265,7 @@ export function createTemplate(source: string): LegacyTemplateRenderer {
     const result = renderTree(nodes, createScope(scope), datasets)
     if (context && datasets) {
       recordLegacyDatasetRender(context, datasets)
+      recordLegacyMarkupKeys(context, datasets)
     }
     return result
   }
