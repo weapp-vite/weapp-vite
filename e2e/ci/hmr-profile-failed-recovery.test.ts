@@ -14,7 +14,13 @@ const QUIET_WINDOW_MS = 5_000
 
 interface ProfileRecord {
   status: string
-  sourceEvents?: { file?: string }[]
+  sessionId?: string
+  buildId?: string
+  batchId?: string
+  eventId?: string
+  timestamp?: string
+  clock?: { timeOrigin?: number }
+  sourceEvents?: { file?: string, event?: string, eventId?: string, receivedAtMs?: number }[]
 }
 
 async function readProfiles(project: string): Promise<ProfileRecord[]> {
@@ -118,18 +124,61 @@ describe('profile output ownership after a failed borrowed-host build', () => {
       await dev.waitForOutput('小程序开发产物已就绪', 'borrowed host reports successful recovery')
       expect(await hasNativeProfileEntry(project, 'pages/plain/index')).toEqual([true, true, true])
 
-      // 首次成功发布沿用初次构建语义；再验证正常 HMR 及其 complete 记录仍然生效。
+      const pageCompletion = expect.objectContaining({
+        status: 'complete',
+        sessionId: expect.stringMatching(/\S/),
+        buildId: expect.stringMatching(/\S/),
+        sourceEvents: expect.arrayContaining([
+          expect.objectContaining({ file: pageFile, eventId: expect.stringMatching(/\S/) }),
+        ]),
+      })
+      // 首次恢复也会异步写出来源完成记录，先结算该轮再建立普通编辑的游标。
+      await dev.waitFor(expect.poll(async () => (await readProfiles(project)).slice(beforeRecovery.length), { timeout: 30_000 }).toEqual([pageCompletion]), 'successful recovery source profile')
+      const beforeNormalEdit = await readProfiles(project)
+      expect(beforeNormalEdit.slice(beforeRecovery.length)).toEqual([pageCompletion])
+      const recoveryProfile = beforeNormalEdit.at(-1)
+      const recoveryEventId = recoveryProfile?.sourceEvents?.find(event => event.file === pageFile)?.eventId
+
+      // 正常 HMR 必须产生同一会话内独立的构建和来源记录，不能复用恢复记录。
       await saveNativeProfileSource(project, PAGE, 'Page({ data: { value: \'profile-normal-edit\' } })\n')
       await dev.waitFor(expect.poll(() => readFile(path.join(project, 'dist', PAGE), 'utf8'), { timeout: 30_000 }).toContain('profile-normal-edit'), 'normal source edit after recovery')
-      await dev.waitFor(expect.poll(async () => (await readProfiles(project)).some(record => record.status === 'complete'), { timeout: 30_000 }).toBe(true), 'normal HMR profile after recovery')
+      await dev.waitFor(expect.poll(async () => (await readProfiles(project)).slice(beforeNormalEdit.length), { timeout: 30_000 }).toEqual([pageCompletion]), 'normal HMR profile after recovery')
       const recovered = await readProfiles(project)
-      expect(recovered.length).toBeGreaterThan(beforeRecovery.length)
+      expect(recovered.slice(beforeNormalEdit.length)).toEqual([pageCompletion])
+      const normalProfile = recovered.at(-1)
+      expect(normalProfile?.sessionId).toBe(recoveryProfile?.sessionId)
+      expect(normalProfile?.buildId).not.toBe(recoveryProfile?.buildId)
+      expect(normalProfile?.sourceEvents?.find(event => event.file === pageFile)?.eventId).not.toBe(recoveryEventId)
       await delay(QUIET_WINDOW_MS)
       const finalProfiles = await readProfiles(project)
       expect.soft(finalProfiles, 'recovered host stays quiet without source edits').toEqual(recovered)
       const unexpectedInputs = finalProfiles.flatMap(record => record.sourceEvents ?? []).filter(event => event.file === path.join(project, PROFILE).replaceAll('\\', '/'))
       expect.soft(unexpectedInputs, 'diagnostics must never become source events').toEqual([])
-      process.stdout.write(`${JSON.stringify({ scenario: 'profile-failed-recovery', quiet, beforeEdit: beforeEdit.length, failedCount, beforeRecovery: beforeRecovery.length, recovered: recovered.length, final: finalProfiles.length, profileSourceEvents: unexpectedInputs.length, records: finalProfiles.map(record => ({ status: record.status, inputs: (record.sourceEvents ?? []).map(event => event.file ? path.relative(project, event.file).replaceAll('\\', '/') : null) })) })}\n`)
+      process.stdout.write(`${JSON.stringify({
+        scenario: 'profile-failed-recovery',
+        quiet,
+        beforeEdit: beforeEdit.length,
+        failedCount,
+        beforeRecovery: beforeRecovery.length,
+        beforeNormalEdit: beforeNormalEdit.length,
+        recovered: recovered.length,
+        final: finalProfiles.length,
+        profileSourceEvents: unexpectedInputs.length,
+        records: finalProfiles.map(record => ({
+          status: record.status,
+          sessionId: record.sessionId,
+          buildId: record.buildId,
+          batchId: record.batchId,
+          eventId: record.eventId,
+          timestamp: record.timestamp,
+          clock: record.clock,
+          inputs: (record.sourceEvents ?? []).map(event => event.file ? path.relative(project, event.file).replaceAll('\\', '/') : null),
+          sourceEvents: record.sourceEvents?.map(event => ({
+            ...event,
+            file: event.file ? path.relative(project, event.file).replaceAll('\\', '/') : undefined,
+          })),
+        })),
+      })}\n`)
     }
     finally {
       await dev.stop(5_000)
