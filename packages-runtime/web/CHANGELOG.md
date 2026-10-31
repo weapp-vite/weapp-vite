@@ -1,5 +1,87 @@
 # @weapp-vite/web
 
+## 2.1.0
+
+### Minor Changes
+
+- chore(deps)!: 升级工具链依赖，更新 Node.js 支持范围与升级提醒。
+
+  Node.js 官方支持范围为 `^22.23.4 || ^24.22.1 || >=26.12.1`，发布包与生成项目的 `engines.node` 使用此范围。Vite+ 仍使用 `^24.22.1 || >=26.12.1`。
+
+  `weapp-vite` 的 `build`、`dev`、`prepare`、`accept`、`mcp` 和 Tailwind 集成在范围外提示升级并继续运行。提醒通过 stderr 输出中文，按终端颜色设置突出当前版本和推荐范围，并提示“建议升级到受支持 LTS 分支的最新补丁版本，以获得安全修复”；Tailwind 每个插件实例只提醒一次。
+
+  依赖加载、构建和 CSS 入口错误仍按原有方式处理，`prepare` 保留既有容错行为；允许尝试运行不代表承诺兼容所有旧版本。Bun 按独立运行时识别，不因其 Node 兼容版本触发提醒。入门与随包文档同步说明这一行为。
+
+  修复仓库首次安装时，`wv prepare` 因日志依赖尚未构建而提前退出的问题。中文与颜色提示在 workspace 包尚无构建产物时也能正常加载；CLI 尚未构建时仍提示跳过支持文件预生成，不阻断安装。
+
+  此次升级还修复了 Web 路由目录重命名时的重复 reload，以及 Wot UI 2.4.0 宽屏裁剪器白屏问题。TypeScript 编译器版本保持不变。
+
+  升级时请检查以下迁移要求：
+
+  公开构建队列升级至 p-queue 10：事件监听改用 `addEventListener` / `removeEventListener`，事件值从 `event.detail` 读取；清空队列会以 `AbortError` 拒绝尚未执行的任务。
+
+  截图比较升级至 pixelmatch 8 的 OKLab/HyAB 算法：相同阈值可能得到不同差异结果，请保留现有阈值并重新复核截图基线。
+
+  Chokidar 6 自有监听器通过 `build.watch.chokidar` 配置 `backend`、`pollingInterval`、`pollingBinaryInterval`，兼容旧 polling 别名。`server.watch` 仍由 Vite 管理，Rolldown 原生监听选项使用 `build.watch.watcher`。
+
+  本轮依赖升级沿用已确认的发布例外，该条目覆盖 40 个 minor 和 2 个 patch，不代表完全向后兼容。具体依赖版本和迁移步骤见 `docs/plans/2026-10-26-dependency-upgrade.md`。
+
+### Patch Changes
+
+- feat: 支持在微信小程序中使用 Fetch 响应流和 EventSource。
+
+  `@wevu/web-apis` 与 `wevu` 支持增量 UTF-8 解码、标准流消费和取消，以及 SSE 事件解析与重连，可复用 Web 的 Fetch 响应流和 `EventSource` 写法。
+
+  `weapp-vite` 在第三方模块执行前注入所需构造器，避免依赖在初始化时找不到相关 API。
+
+  宿主缺少早期真实 HTTP 状态码或分块 API 时，会明确报告能力限制；普通缓冲请求和现有 Wevu 入口继续可用。
+
+- fix(web): 补齐常用 wx 兼容接口，并提示未知模板标签。
+
+  增加 `hideToast`、`hideShareMenu`、`hideHomeButton`、`reportEvent`，以及 `onError` / `offError`、`onUnhandledRejection` / `offUnhandledRejection`、`onThemeChange` / `offThemeChange` 兼容入口。公开导出与各平台全局别名保持一致；分享菜单、返回首页按钮和埋点接口仅兼容调用，不提供微信平台能力。
+
+  `onError` 接收包含可用堆栈的错误字符串，未处理拒绝事件保留原始 `promise` 和 `reason`；最后一个订阅移除后释放浏览器监听器。
+
+  `hideToast` 取消当前关闭定时器，避免旧回调隐藏后来展示的 toast。
+
+  编译期提示可能拼写错误或未注册的 WXML 标签，覆盖 `include` / `import` 模板；合法 HTML、SVG、MathML、官方原生组件和编译器导航栏不产生此告警，渲染行为不变。
+
+- fix(web): 修复滚动分页，并完善 scroll-view 定位和边界事件。
+
+  页面滚动进入距底部 50px 的区间时，在 `onPageScroll` 后调用一次 `onReachBottom`。内容不足一屏、页面切换时恢复滚动位置，以及滚动回调内发生导航时不会误触发；`page.json.onReachBottomDistance` 自定义距离尚未支持。
+
+  `scroll-view` 支持 `scrolltolower` / `scrolltoupper`，`detail.direction` 对应 `bottom` / `right` / `top` / `left`。`lower-threshold` / `upper-threshold` 默认 50px，支持 px / rpx；内容不可滚动时不派发。
+
+  边界事件仅在进入阈值区间时派发，离开后可再次触发；追加内容或尺寸变化后也能继续分页，横纵轴分别判断。
+
+  支持 `scroll-into-view` 目标定位、`scroll-into-view-alignment` 对齐（默认 `start`，另支持 `center` / `end` / `nearest`）和 `scroll-into-view-offset` 偏移（默认 0）；修复动态目标、`enable-flex` 子项布局及默认滚动条行为。
+
+  `scrollstart` / `scrollend` 使用浏览器滚动事件与 150ms 静默窗口模拟；`refresher` 下拉刷新仍未实现。
+
+- fix(web): 统一 WXSS 与内联样式的设备视口和 rpx 换算。
+
+  运行时变量模式下，`vw` / `vh` / `vmin` / `vmax` 按设备视口换算，修复宽屏下默认 375px 设备视口中的弹层、遮罩和固定栏溢出。使用 `--weapp-viewport-width` / `--weapp-viewport-height`，后者默认值为 `100dvh`；`pxPerRpx` 静态换算模式保持原有行为。
+
+  编译模板与旧字符串模板的动态内联样式共用 WXSS 单位配置，正确处理数组声明、自定义 rpx 变量和静态比例，并保留空值与属性移除行为。
+
+  单位转换正确处理嵌套表达式与重复转换；字符串、资源 URL、变量名，以及安全区的显式 fallback 和注释不会被误改。
+
+  手动初始化兼容既有 rpx 设计宽度与变量名，显式 `styleUnits` 优先；省略配置时同步重置内联样式转换与根 CSS 变量，空路由也会完成初始化。
+
+- fix(web): 保留 data-* 完整表达式的原始值类型。
+
+  编译模板与旧字符串模板的事件、组件事件、选择器和交叉观察器保留数字、布尔值、对象及数组，修复这些值被字符串化的问题；DOM 属性仍可按字符串查询，更新、移除和重新连接时读取保持正确。
+
+  HTML 属性名按 DOM 的 ASCII 大小写规则归一，避免 `data-itemName` 与 `data-item-name` 串值；SVG/XML 保留大小写敏感语义。
+
+  模拟器的交叉观察器回调同样保留 dataset 原始值类型，与事件和选择器读取保持一致。
+
+- Updated dependencies:
+  - @weapp-core/constants@0.5.0
+  - @weapp-core/shared@3.4.0
+  - rolldown-require@2.1.0
+  - wevu@7.7.0
+
 ## 2.0.1
 
 ### Patch Changes
