@@ -437,6 +437,7 @@ overrides:
   rolldown: 1.2.15
 
 patchedDependencies:
+  '@icebreakers/monorepo@6.2.1': 590d4ff9185a4415600e80565f53ba5c330de24762bac29ef0cc82f508c73b50
   '@vitejs/plugin-vue@6.0.10': 3dcf2983828045bd0fe45880e571cb5605a71b599c074ad79a62636319f52777
   chokidar@6.0.0: 9d1b81d16fdee1940b4ba7ddc61f27143972b4890a890f7118b396f6125bbd1b
   rolldown@1.2.15: 7e1e0adcb64e85d1f8c9681c4aeccce12fe5739ff8c510e12dc43bfd132f5e44
@@ -20882,7 +20883,7 @@ snapshots:
     transitivePeerDependencies:
       - '@types/node'
 
-  '@icebreakers/monorepo@6.2.1(f931300ba086ad23f31c4b25f9b16bee)':
+  '@icebreakers/monorepo@6.2.1(patch_hash=590d4ff9185a4415600e80565f53ba5c330de24762bac29ef0cc82f508c73b50)(f931300ba086ad23f31c4b25f9b16bee)':
     dependencies:
       '@arethetypeswrong/core': 0.18.5
       '@babel/parser': 7.29.9
@@ -31022,7 +31023,7 @@ snapshots:
 
   repoctl@6.2.1(e5f54f0c85c6e3e55a74d5e1fbfd9e06):
     dependencies:
-      '@icebreakers/monorepo': 6.2.1(f931300ba086ad23f31c4b25f9b16bee)
+      '@icebreakers/monorepo': 6.2.1(patch_hash=590d4ff9185a4415600e80565f53ba5c330de24762bac29ef0cc82f508c73b50)(f931300ba086ad23f31c4b25f9b16bee)
     optionalDependencies:
       '@commitlint/cli': 21.2.4(conventional-commits-parser@7.1.3)(typescript@6.0.3)
       eslint: 10.13.0(jiti@2.7.0)(supports-color@10.2.2)

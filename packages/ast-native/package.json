@@ -46,7 +46,8 @@
     "node": "^22.23.4 || ^24.22.1 || >=26.12.1"
   },
   "scripts": {
-    "native:build": "napi build --esm --platform --release --no-js --dts target/index.d.ts",
+    "prepack": "pnpm native:build",
+    "native:build": "napi build --esm --platform --release --no-js --dts target/index.d.ts -- --locked",
     "native:build:debug": "napi build --esm --platform --no-js --dts target/index.d.ts",
     "native:test": "pnpm native:build:debug && vitest run --config ./native.vitest.config.ts",
     "native:lint": "eslint package.json index.js index.d.ts native.vitest.config.ts test/**/*.test.ts"

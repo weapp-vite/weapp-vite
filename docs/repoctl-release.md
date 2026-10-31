@@ -51,6 +51,10 @@ CI Policy 在既有审批后检查公开包与 changeset 的完整对应，测�
 3. 发布到 `snapshot-nightly`，确认 registry 可见性与完整性。
 4. 使用独立 consumer 安装完整批次，验证内部依赖与消费结果。
 
+仓库通过 pnpm 补丁修正 repoctl 6.2.1 对每条 nightly 质量命令固定 10 分钟的限制。工作流设置 `REPOCTL_NIGHTLY_QUALITY_DEADLINE_EPOCH`，全部质量脚本共享 45 分钟，每次启动只使用剩余预算；预算耗尽或时间戳无效时停止。未设置时保留上游默认值。此预算仅用于质量阶段，后续构建、上传和 consumer 保持原生独立超时，整个 job 上限仍为 90 分钟。
+
+`ast-native` 的 `prepack` 按锁定的 Rust 工具链和 `Cargo.lock` 构建发布宿主的二进制，确保隔离源码打包不依赖本地未跟踪产物。这仅提供当前宿主的 native 模块；其他平台继续使用既有 JS fallback。
+
 nightly 不消费 changeset，不改正式版本、changelog、发布账本或 `latest`。定时运行发现同一源码批次已经发布时会跳过。所有公开包都需要允许当前仓库 `release.yml` 的 npm Trusted Publisher；审计失败时不会开始上传，不改为长期 npm token。
 
 安装示例：

@@ -1,0 +1,29 @@
+diff --git a/dist/commands-CWJn-_PI.mjs b/dist/commands-CWJn-_PI.mjs
+index 433cdc4b0cd26102327e8ba01e81f7936cf89d7a..be1c5968f60b85dd87a4a1a841967e5a1cbe845a 100644
+--- a/dist/commands-CWJn-_PI.mjs
++++ b/dist/commands-CWJn-_PI.mjs
+@@ -15479,6 +15479,15 @@ async function nightlyContext(options, config) {
+ //#endregion
+ //#region src/commands/release/nightly/process.ts
+ function nightlyCommand(report, options, executable, args) {
++	const env = options.env ?? process.env;
++	const deadline = env["REPOCTL_NIGHTLY_QUALITY_DEADLINE_EPOCH"];
++	let timeout = 6e5;
++	if (deadline !== void 0) {
++		const epoch = Number(deadline);
++		if (!deadline || /\D/.test(deadline) || epoch <= 0 || !Number.isSafeInteger(epoch * 1e3)) throw new Error("Nightly quality deadline must be a positive safe integer epoch timestamp.");
++		timeout = Math.min(epoch * 1e3 - Date.now(), 2147483647);
++		if (timeout <= 0) throw new Error("Nightly shared quality budget exhausted before starting a command.");
++	}
+ 	const result = (options.spawn ?? crossSpawn.sync)(executable, args, {
+ 		cwd: options.cwd,
+ 		env: {
+@@ -15494,7 +15503,7 @@ function nightlyCommand(report, options, executable, args) {
+ 			"pipe",
+ 			"pipe"
+ 		],
+-		timeout: 6e5,
++		timeout,
+ 		maxBuffer: 16777216
+ 	});
+ 	const stdout = result.stdout?.toString() ?? "";

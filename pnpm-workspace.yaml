@@ -160,3 +160,4 @@ patchedDependencies:
   chokidar@6.0.0: patches/chokidar@6.0.0.patch
   vitest@5.0.5: patches/vitest@5.0.5.patch
   '@vitejs/plugin-vue@6.0.10': patches/@vitejs__plugin-vue@6.0.10.patch
+  '@icebreakers/monorepo@6.2.1': patches/@icebreakers__monorepo@6.2.1.patch

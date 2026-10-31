@@ -269,6 +269,8 @@ jobs:
           if [ "$REPO_RELEASE_DRY_RUN" = 'true' ]; then
             args+=(--dry-run)
           fi
+          # 质量检查共享 45 分钟，后续打包、上传、consumer 和诊断仍受 job 总预算约束。
+          export REPOCTL_NIGHTLY_QUALITY_DEADLINE_EPOCH="$(( $(date +%s) + 2700 ))"
           pnpm exec repo release nightly "${args[@]}"
 
       - name: Preserve nightly diagnostics

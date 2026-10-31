@@ -116,6 +116,7 @@ describe('repoctl nightly workflow', () => {
     expect(publish.env?.REPOCTL_SNAPSHOT_PUBLISH).toBe('1')
     expect(publish.run).toContain('args=(--publish --output "$RUNNER_TEMP/repoctl-nightly" --json)')
     expect(publish.run).toContain('args+=(--dry-run)')
+    expect(publish.run).toContain('export REPOCTL_NIGHTLY_QUALITY_DEADLINE_EPOCH="$(( $(date +%s) + 2700 ))"')
     expect(publish.run).toContain('pnpm exec repo release nightly "$' + '{args[@]}"')
     expect(publish.run).not.toMatch(/npm publish|--filter|--tag latest|version -r/)
     expect(steps.some(step => step.uses?.startsWith('actions/cache/'))).toBe(false)
