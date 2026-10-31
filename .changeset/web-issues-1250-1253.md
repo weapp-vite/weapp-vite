@@ -1,10 +1,16 @@
 ---
 "@weapp-core/constants": patch
 "@mpcore/simulator": minor
+"@weapp-vite/i18n": patch
+"@weapp-vite/mcp": patch
+"@weapp-vite/react": patch
 "@weapp-vite/web": minor
 "@wevu/compiler": patch
+"@wevu/test-utils": patch
+"@wevu/web-apis": patch
 "create-weapp-vite": patch
 "weapp-vite": patch
+"wevu": patch
 ---
 
 feat(web): 补齐平台 API、桌面触摸和下拉刷新预览，完善原始模板诊断。
@@ -15,3 +21,4 @@ feat(web): 补齐平台 API、桌面触摸和下拉刷新预览，完善原始�
 - legacy 模板更新保留未变化的节点与组件状态，避免父级数据更新在原生事件传播途中拆除后续监听，并保留原生组件自行维护的 DOM 和样式。
 - 开发服务区分未知标签和未适配官方组件，诊断定位到 WXML、layout、include/import 及内联/外部 SFC 原始模板，并按入口注册作用域检查依赖；复用告警级别与去重配置，生产构建保持静默，并修复 polling 模式的真实保存热更新。
 - 同步 simulator 的受控属性提交、原生刷新状态与测试桥接，保留编译器原始标签来源，并更新随包配置说明及脚手架版本联动。
+- 联动发布 constants 的全部公开直接依赖，确保新的共享运行时标记随依赖版本范围一起更新。
