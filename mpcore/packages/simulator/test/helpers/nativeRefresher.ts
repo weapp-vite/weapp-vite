@@ -6,7 +6,7 @@ export const nativeRefresherFiles: Array<[string, string]> = [
     data: { state: { triggered: false, sibling: 0 }, enabled: true, visible: true, noise: 0, events: [], reenter: false,
       states: [{ triggered: false }, { triggered: false }], active: 0, forced: false, items: [{ id: 'item', triggered: false }],
       flags: [false, false], flag: false, scalarState: { triggered: false, sibling: 0 },
-      scalarSources: [{ alias: false, sibling: 0 }, { alias: false, sibling: 0 }], optionalSource: {} },
+      scalarSources: [{ alias: false, sibling: 0 }, { alias: false, sibling: 0 }], optionalSource: {}, shadowedFlag: false },
     record(event) {
       const events = [...this.data.events, { type: event.type, triggered: this.data.state.triggered, id: event.currentTarget.id }]
       this.setData({ events, trace: JSON.stringify(events) })
@@ -17,6 +17,7 @@ export const nativeRefresherFiles: Array<[string, string]> = [
     measure() { return wx.createSelectorQuery().select('#primary').scrollOffset().exec()[0] },
   })`],
   ['pages/index/index.wxml', `
+<wxs module="shadowedFlag">module.exports = false</wxs>
 <scroll-view wx:if="{{visible}}" id="primary" scroll-y refresher-enabled="{{enabled}}" refresher-triggered="{{state.triggered}}" refresher-threshold="45" bindrefresherpulling="record" bindrefresherrefresh="record" bindrefresherabort="record" bindrefresherrestore="record" style="height:100px">
   <view id="content" style="height:500px">content</view>
 </scroll-view>
@@ -30,6 +31,7 @@ export const nativeRefresherFiles: Array<[string, string]> = [
 <template is="nested" data="{{config: active === 0 ? {value: scalarState.triggered, other: noise} : {value: forced}}}" />
 <template is="scalar" data="{{...scalarSources[active], aliasId: 'spread-scalar'}}" />
 <template is="scalar" data="{{alias: scalarState.triggered, ...optionalSource, aliasId: 'optional-scalar'}}" />
+<scroll-view id="wxs-shadow" scroll-y refresher-enabled refresher-triggered="{{shadowedFlag}}" bindrefresherpulling="record" bindrefresherrefresh="record" bindrefresherrestore="record" style="height:100px"><view style="height:500px">WXS</view></scroll-view>
 <scroll-view wx:for="{{[flags[0], flags[1]]}}" id="literal-{{index}}" scroll-y refresher-enabled refresher-triggered="{{item}}" bindrefresherpulling="record" bindrefresherrefresh="record" bindrefresherrestore="record" style="height:100px"><view style="height:500px">literal</view></scroll-view>
 <refresh-panel id="panel" external="{{state.triggered}}" />
 `],

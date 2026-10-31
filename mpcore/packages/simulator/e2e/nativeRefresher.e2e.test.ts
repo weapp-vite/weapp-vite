@@ -57,6 +57,14 @@ it('commits native refresh state through the browser touch bridge without replay
     expect(types()).toHaveLength(8)
     await new Promise<void>(resolve => page.setData({ 'scalarState.triggered': false }, resolve))
     await vi.waitFor(() => expect(types().slice(6)).toEqual(['refresherpulling', 'refresherrefresh', 'refresherrestore']))
+
+    await pull('#wxs-shadow')
+    await vi.waitFor(() => expect(types().slice(9)).toEqual(['refresherpulling', 'refresherrefresh']))
+    await new Promise<void>(resolve => page.setData({ shadowedFlag: false }, resolve))
+    expect(types()).toHaveLength(11)
+    await new Promise<void>(resolve => page.setData({ shadowedFlag: true }, resolve))
+    await new Promise<void>(resolve => page.setData({ shadowedFlag: false }, resolve))
+    expect(types()).toHaveLength(11)
   }
   finally {
     session.close()

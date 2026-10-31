@@ -163,6 +163,16 @@ describe.each(['node', 'browser'] as const)('%s native refresher contract', (pro
     expect(types()).toEqual(['refresherpulling', 'refresherrefresh', 'refresherrestore'])
   })
 
+  it('keeps equal WXS scalars independent of the page fields they shadow', async () => {
+    const { page, types, pull } = await setup()
+    await pull(110, '#wxs-shadow')
+    await commit(page, { shadowedFlag: false })
+    expect(types()).toEqual(['refresherpulling', 'refresherrefresh'])
+    await commit(page, { shadowedFlag: true })
+    await commit(page, { shadowedFlag: false })
+    expect(types()).toEqual(['refresherpulling', 'refresherrefresh'])
+  })
+
   it('preserves scalar template parameter origins for equal commits', async () => {
     const { page, types, pull } = await setup()
     await pull(110, '#scalar')
