@@ -1,5 +1,13 @@
 # @weapp-vite/dimina-playground
 
+## 0.0.4
+
+### Patch Changes
+
+- Updated dependencies:
+  - @weapp-vite/react@0.3.1
+  - wevu@7.7.1
+
 ## 0.0.3
 
 ### Patch Changes
