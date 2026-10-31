@@ -1,3 +1,4 @@
+import type { WechatMiniprogram } from '@weapp-core/types/wechat-api'
 import {
   onLaunch as rootOnLaunch,
   useNativeInstance as rootUseNativeInstance,
@@ -33,7 +34,7 @@ expectType<typeof useNativeRouter>(polyfillUseNativeRouter)
 expectType<typeof useSelectorQuery>(rootUseSelectorQuery)
 expectType<typeof useSelectorQuery>(polyfillUseSelectorQuery)
 
-// 通过公开 Web 与 internal-runtime 入口消费宿主 API，不预置环境类型。
+// 通过公开 Web 与 internal-runtime 入口消费宿主 API，显式引用模块类型，不预置宿主全局。
 onLaunch((options) => {
   expectType<WechatMiniprogram.App.LaunchShowOption>(options)
   expectType<string>(options.path)
