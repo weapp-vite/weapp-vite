@@ -26,8 +26,12 @@ it.each([
   const root = await mkdtemp(path.join(os.tmpdir(), 'hmr-capability-'))
   const checkout: Checkout = { id: side, cwd: root, commit, templates: [{ id: 'native', packageName: 'native', root }] }
   vi.stubEnv('TEMPLATES_HMR_PROFILE', enabled ? '0' : '1')
+  vi.stubEnv('WEAPP_VITE_PERF_SHUTDOWN_SIDE', 'baseline')
+  vi.stubEnv('WEAPP_VITE_PERF_SHUTDOWN_COMMIT', policy.baselineSha)
   try {
     vi.mocked(execa).mockImplementationOnce(((_command: string, _args: string[], options: { env: Record<string, string> }) => {
+      expect(options.env.WEAPP_VITE_PERF_SHUTDOWN_SIDE).toBe(side)
+      expect(options.env.WEAPP_VITE_PERF_SHUTDOWN_COMMIT).toBe(commit)
       expect(options.env.TEMPLATES_HMR_PROFILE).toBe(enabled ? '1' : '0')
       expect(options.env.TEMPLATES_HMR_ITERATIONS).toBe('2')
       expect(options.env.TEMPLATES_HMR_MAX_SCENARIOS_PER_TEMPLATE).toBe('4')

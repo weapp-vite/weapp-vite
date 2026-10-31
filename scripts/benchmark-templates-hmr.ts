@@ -14,7 +14,6 @@ import { WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE } from '@weapp-core/constants'
 /* eslint-disable-next-line e18e/ban-dependencies -- CI 性能脚本需要跨平台运行一次性 CLI prepare。 */
 import { execa } from 'execa'
 import { sampleHeapAfterGc, waitForInspectorUrl } from '../e2e/utils/dev-memory'
-import { startDevProcess } from '../e2e/utils/dev-process'
 import { readEmittedStylesheet } from '../e2e/utils/emittedStylesheet'
 import { replaceFileByRename } from '../e2e/utils/hmr-helpers'
 import { runWithCleanup } from '../e2e/utils/runWithCleanup'
@@ -32,6 +31,7 @@ import { compareBenchmarkOutputs, snapshotBenchmarkOutputs } from './benchmarkTe
 import { collectBenchmarkHmrPhaseProfile, findBenchmarkHmrProfileSample } from './benchmarkTemplatesHmr/profile'
 import { restoreBenchmarkSource } from './benchmarkTemplatesHmr/sourceRestore'
 import { normalizeBenchmarkStylesheet } from './benchmarkTemplatesHmr/styleOutput'
+import { startBenchmarkDevProcess } from './performanceGate/devShutdown'
 import { injectVueStyleRule, parseStatefulHmrControlSource } from './workspace-hmr/scenarios'
 import { measureStatefulTemplateArtifact } from './workspace-hmr/statefulArtifactMeasurement'
 import { StatefulHmrAuditClient } from './workspace-hmr/statefulAuditClient'
@@ -315,7 +315,7 @@ async function benchmarkTemplate(template: TemplateCase): Promise<TemplateResult
   if (cpuProfileDir) {
     await mkdir(cpuProfileDir, { recursive: true })
   }
-  const dev = startDevProcess(process.execPath, [
+  const dev = startBenchmarkDevProcess([
     ...(cpuProfileDir ? ['--cpu-prof', `--cpu-prof-dir=${cpuProfileDir}`] : []),
     cliPath,
     'dev',

@@ -10,6 +10,7 @@ import { execa } from 'execa'
 import { parseCliBuildMs } from '../benchmarkTemplatesPerformance/cliTiming'
 import { createPeakRssSampler } from '../benchmarkTemplatesPerformance/peakRssSampler'
 import { sampleProcessTreeRssBytes } from '../benchmarkTemplatesPerformance/processTreeRss'
+import { benchmarkShutdownEnvironment } from './devShutdown'
 import { readHmrSamples } from './hmrSamples'
 import { captureOutputEvidence } from './outputEvidence'
 import { hmrProfileCapability } from './profileCapability.mjs'
@@ -102,6 +103,7 @@ export async function collectHmr(checkout: Checkout, driverRoot: string, logDir:
     reject: false,
     all: true,
     env: {
+      ...benchmarkShutdownEnvironment(checkout.id, checkout.commit),
       TEMPLATES_HMR_REPO_ROOT: checkout.cwd,
       TEMPLATES_HMR_CLI_PATH: path.join(checkout.cwd, 'packages/weapp-vite/bin/weapp-vite.js'),
       TEMPLATES_HMR_REPORT_DIR: logDir,

@@ -10,10 +10,10 @@ import { pathToFileURL } from 'node:url'
 import { WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE } from '@weapp-core/constants'
 import path from 'pathe'
 import { sampleHeapAfterGc, waitForInspectorUrl } from '../../../e2e/utils/dev-memory'
-import { startDevProcess } from '../../../e2e/utils/dev-process'
 import { runWithCleanup } from '../../../e2e/utils/runWithCleanup'
 import { createBenchmarkDevEnv } from '../../../scripts/benchmarkTemplatesHmr/environment'
 import { serializeSequenceError } from '../../../scripts/editSequence/errorEvidence'
+import { startBenchmarkDevProcess } from '../../../scripts/performanceGate/devShutdown'
 import { parseStatefulHmrControlSource } from '../../../scripts/workspace-hmr/scenarios'
 import { measureStatefulTemplateArtifact } from '../../../scripts/workspace-hmr/statefulArtifactMeasurement'
 import { StatefulHmrAuditClient } from '../../../scripts/workspace-hmr/statefulAuditClient'
@@ -231,7 +231,7 @@ async function measureHmr(options: {
 
     const startupStart = performance.now()
     canRemoveFixture = false
-    const dev = startDevProcess(process.execPath, [CLI_PATH, 'dev', project.tempDir, '--platform', 'weapp', '--skipNpm'], {
+    const dev = startBenchmarkDevProcess([CLI_PATH, 'dev', project.tempDir, '--platform', 'weapp', '--skipNpm'], {
       cwd: workspaceRootDir,
       env: {
         ...createBenchmarkDevEnv(memoryNodeOptions),

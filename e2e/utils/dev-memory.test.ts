@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { sampleHeapAfterGc, waitForHeapUsageToSettle } from './dev-memory'
 
 class HangingWebSocket extends EventTarget {
@@ -29,6 +29,26 @@ class SilentCommandWebSocket extends EventTarget {
 }
 
 const originalWebSocket = globalThis.WebSocket
+
+function mockInspectorWebSocket(reply?: (socket: EventTarget) => void, opening: 'open' | 'close' = 'open') {
+  const instances: InspectorWebSocket[] = []
+  class InspectorWebSocket extends EventTarget {
+    close = vi.fn()
+    send = vi.fn(() => reply?.(this))
+
+    constructor() {
+      super()
+      instances.push(this)
+      setTimeout(() => this.dispatchEvent(new Event(opening)), 0)
+    }
+  }
+  vi.stubGlobal('WebSocket', InspectorWebSocket)
+  return instances
+}
+
+function replyToInspector(socket: EventTarget, response: unknown) {
+  socket.dispatchEvent(new MessageEvent('message', { data: JSON.stringify(response) }))
+}
 
 describe('dev-memory inspector sampling', () => {
   it('waits for transient retained heap usage to settle', async () => {
@@ -97,5 +117,29 @@ describe('dev-memory inspector sampling', () => {
     finally {
       globalThis.WebSocket = originalWebSocket
     }
+  })
+})
+
+describe('inspector connection lifecycle', () => {
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('rejects and closes a socket closed before opening', async () => {
+    const sockets = mockInspectorWebSocket(undefined, 'close')
+    await expect(sampleHeapAfterGc('ws://127.0.0.1:1/inspector')).rejects.toThrow('closed before opening')
+    expect(sockets[0]?.send).not.toHaveBeenCalled()
+    expect(sockets[0]?.close).toHaveBeenCalledTimes(1)
+  })
+
+  it('rejects and closes a socket closed before acknowledgement', async () => {
+    const sockets = mockInspectorWebSocket(socket => socket.dispatchEvent(new Event('close')))
+    await expect(sampleHeapAfterGc('ws://127.0.0.1:1/inspector')).rejects.toThrow('closed while running Runtime.evaluate')
+    expect(sockets[0]?.close).toHaveBeenCalledTimes(1)
+  })
+
+  it('preserves heap sampling through the shared inspector transport', async () => {
+    const usage = { heapUsed: 200, rss: 400 }
+    const sockets = mockInspectorWebSocket(socket => replyToInspector(socket, { id: 1, result: { result: { value: usage } } }))
+    await expect(sampleHeapAfterGc('ws://127.0.0.1:1/inspector')).resolves.toEqual(usage)
+    expect(sockets[0]?.close).toHaveBeenCalledTimes(1)
   })
 })
