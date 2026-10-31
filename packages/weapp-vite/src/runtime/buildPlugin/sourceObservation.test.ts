@@ -43,7 +43,7 @@ describe('classic source metadata observation', () => {
     expect(owner.capture('output')).toEqual([])
   })
 
-  it('freezes a real source digest before Vite read resolves and does not reread its late bytes', async () => {
+  it('keeps the arrival identity and settles its digest from Vite stable read without rereading late disk bytes', async () => {
     const actual = await vi.importActual<typeof import('../../plugins/compilerPlugin/rawInputs')>('../../plugins/compilerPlugin/rawInputs')
     rawRead.mockImplementation(actual.readCompilerRawInput)
     const directory = await mkdtemp(join(tmpdir(), 'weapp-source-publication-'))
@@ -59,11 +59,14 @@ describe('classic source metadata observation', () => {
       expect(captured).toHaveLength(1)
       expect(captured[0]?.version).toBe(compilerNativeScriptVersion('A'))
       expect(onChange).not.toHaveBeenCalled()
-      await writeFile(file, 'B')
+      await writeFile(file, 'late-disk-C')
       release.resolve('B')
       await updating
-      expect(owner.capture('output')).toEqual(captured)
-      expect(onChange.mock.calls[0]?.[0].sourceEvent).toBe(captured[0]?.event)
+      const settled = owner.capture('output')
+      expect(settled[0]?.version).toBe(compilerNativeScriptVersion('B'))
+      expect(settled[0]?.event).toEqual(captured[0]?.event)
+      expect(onChange.mock.calls[0]?.[0].sourceEvent).toBe(settled[0]?.event)
+      expect(onChange.mock.calls[0]?.[0]).not.toHaveProperty('settleSourceRead')
     }
     finally {
       release.resolve('A')

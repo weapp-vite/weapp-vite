@@ -7,9 +7,9 @@ import { fileURLToPath } from 'node:url'
 import { execa } from 'execa'
 import { parse, stringify } from 'yaml'
 import { parsePnpmLockfile } from '../../../scripts/pnpmLockfile/index.mjs'
+import { resolveConsumerPeers } from './consumerPeers.mjs'
 import { createConsumerTemporaryRoot, packConsumerTarballs, readConsumerTarballs, verifyConsumerTarballProvenance } from './consumerTarballs.mjs'
 import { assertDashboardIsolationWorkspace, createDashboardIsolationWorkspace } from './dashboardConsumerFixture.mjs'
-import { createDependencyConsumerManifest } from './dependencyConsumerFixture.mjs'
 import { verifyDependencySemantics } from './verify-dependency-semantics.mjs'
 
 const manager = process.argv[2] ?? 'pnpm'
@@ -24,8 +24,8 @@ try {
     ? await readConsumerTarballs(path.resolve(process.env.WEAPP_VITE_CONSUMER_TARBALLS))
     : await packConsumerTarballs(repoRoot, temporaryRoot)
   const repositoryWorkspace = parse(await readFile(path.join(repoRoot, 'pnpm-workspace.yaml'), 'utf8'))
-  // 显式提供由应用负责的公开 peer；内部插件宿主由公开入口自己的依赖图提供。
-  const consumerPeers = {
+  // 全部框架档案置顶时，显式提供由应用负责的公开 peer；内部插件宿主仍由包自身提供。
+  const suppliedPeers = {
     'miniprogram-api-typings': repositoryWorkspace.catalog['miniprogram-api-typings'],
     'rolldown': repositoryWorkspace.catalog.rolldown,
     'tailwindcss': repositoryWorkspace.catalogs.tailwind4.tailwindcss,
@@ -36,9 +36,10 @@ try {
         }
       : {}),
   }
-  assert(Object.values(consumerPeers).every(value => typeof value === 'string' && value.length > 0), 'Consumer peers must come from repository catalogs')
-  const manifest = createDependencyConsumerManifest(candidates, consumerPeers, manager)
-  await writeFile(path.join(root, 'package.json'), JSON.stringify(manifest, null, 2))
+  assert(Object.values(suppliedPeers).every(value => typeof value === 'string' && value.length > 0), 'Consumer peers must come from repository catalogs')
+  const dependencies = { ...candidates, typescript: '6.0.3' }
+  const consumerPeers = resolveConsumerPeers(candidates, suppliedPeers, { typescript: dependencies.typescript })
+  await writeFile(path.join(root, 'package.json'), JSON.stringify({ name: 'weapp-vite-host-dependency-compatibility', private: true, type: 'module', dependencies, devDependencies: consumerPeers }, null, 2))
   if (manager === 'pnpm') {
     // 只映射未发布的框架候选闭包；不覆盖注册表依赖版本、peer 声明或校验。
     const workspace = createDashboardIsolationWorkspace(candidates, root)
@@ -50,7 +51,7 @@ try {
   await execa(manager, manager === 'pnpm' ? ['install', '--strict-peer-dependencies', '--config.engine-strict=true', '--config.ignore-scripts=false'] : ['install', '--strict-peer-deps'], { cwd: root, env, stdio: 'inherit' })
   let packages
   if (manager === 'npm') {
-    await verifyConsumerTarballProvenance(root, candidates, Object.keys(manifest.dependencies).filter(name => name in candidates))
+    await verifyConsumerTarballProvenance(root, candidates)
     packages = JSON.parse(await readFile(path.join(root, 'package-lock.json'), 'utf8')).packages
   }
   else {

@@ -61,23 +61,6 @@ describe('prepacked consumer dependencies', () => {
     expect(await verifyConsumerTarballProvenance(root, candidates)).toBe(2)
   })
 
-  it('accepts an internal candidate only in the public entry dependency graph', async () => {
-    const root = await fixture({})
-    const candidates = {
-      'weapp-vite': `file:${path.join(root, 'framework.tgz').replaceAll('\\', '/')}`,
-      'internal-plugin': `file:${path.join(root, 'plugin.tgz').replaceAll('\\', '/')}`,
-    }
-    await writeFile(path.join(root, 'package-lock.json'), JSON.stringify({ packages: {
-      'node_modules/weapp-vite': { resolved: 'file:framework.tgz' },
-      'node_modules/weapp-vite/node_modules/internal-plugin': { resolved: 'file:plugin.tgz' },
-    } }))
-    expect(await verifyConsumerTarballProvenance(root, candidates, ['weapp-vite'])).toBe(2)
-    await expect(verifyConsumerTarballProvenance(root, {
-      ...candidates,
-      absent: `file:${path.join(root, 'absent.tgz')}`,
-    }, ['weapp-vite'])).rejects.toThrow('Missing installed candidates: absent')
-  })
-
   it.each([
     { resolved: 'https://registry.npmjs.org/weapp-vite/-/weapp-vite-1.0.0.tgz' },
     { resolved: 'file:other.tgz' },

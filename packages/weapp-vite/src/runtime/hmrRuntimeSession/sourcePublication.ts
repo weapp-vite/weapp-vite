@@ -85,12 +85,19 @@ export class HmrSourcePublicationOwner {
   private readonly published = new Map<string, Map<string, string>>()
   private readonly events = new WeakSet<object>()
   private readonly aliases = new Map<string, Map<string, string>>()
+  private readonly sourceReads = new Map<string, Map<string, object>>()
   private closed = false
 
   observe(input: HmrSourcePublicationInput): HmrSourcePublicationToken | undefined {
     if (this.closed) {
       return
     }
+    let reads = this.sourceReads.get(input.root)
+    if (!reads) {
+      reads = new Map()
+      this.sourceReads.set(input.root, reads)
+    }
+    reads.set(input.file, {})
     if (input.lexicalFile) {
       let aliases = this.aliases.get(input.root)
       if (input.lexicalFile === input.file) {
@@ -126,10 +133,26 @@ export class HmrSourcePublicationOwner {
     return token
   }
 
+  /** 先保留通知身份，再用同一次稳定读取结算版本；后续保存和删除会撤销旧读取的权限。 */
+  observeRead(input: HmrSourcePublicationInput) {
+    const token = this.observe(input)
+    const generation = this.sourceReads.get(input.root)?.get(input.file)
+    return {
+      token,
+      settle: (version: string) => {
+        if (this.closed || !generation || this.sourceReads.get(input.root)?.get(input.file) !== generation) {
+          return
+        }
+        return this.observe({ ...input, version })
+      },
+    }
+  }
+
   invalidate(root: string, file: string, lexicalFile = file): void {
     // 删除后的符号链接已无法 realpath，沿用通知时观察到的 physical 绑定。
     const aliases = this.aliases.get(root)
     const source = aliases?.get(lexicalFile) ?? file
+    this.sourceReads.get(root)?.delete(source)
     const pending = this.pending.get(root)
     pending?.delete(source)
     if (!pending?.size) {
@@ -192,5 +215,6 @@ export class HmrSourcePublicationOwner {
     this.pending.clear()
     this.published.clear()
     this.aliases.clear()
+    this.sourceReads.clear()
   }
 }

@@ -128,7 +128,9 @@ workspace 消除项涉及 markdown-it、body-parser、undici、fast-uri、serova
 | SSE 分块与样式变体回归 | 通过；包含分块 UTF-8、CRLF、多行事件、取消、错误及 slots/布尔变体 |
 | Vite / Rolldown / Chokidar 依赖 contracts | 18 / 8 / 29 项通过 |
 | Rust fmt、locked check/test、官方缓存离线复验 | 通过，20 项 Rust 测试通过 |
-| 真实 N-API release 构建与 correctness | 通过；9 个导出、9 个 suite、183 项真实 addon 对齐／fallback 测试通过，profile 待执行 |
+| 真实 N-API release 构建与 correctness | 通过；9 个导出、9 个 suite、183 项真实 addon 对齐／fallback 测试通过 |
+| 实际 native profile | 通过；40 trials、2,560 wall 与 64 diagnostic 样本，原始完整输出对齐，冻结身份终检通过 |
+| pnpm / npm 严格 tarball 安装 | 两者通过；54 项消费工具回归通过，保留 strict peers、engine 与生命周期检查 |
 | 非 HMR CI（含六平台构建） | 87 / 87 场景通过；平台补集 3 文件、11 项通过 |
 | headless、Web、HMR、真实 tarball、正式 IDE 与跨系统 CI | 待继续执行；未完成项不计通过 |
 
@@ -142,7 +144,23 @@ SSE 原有测试文件及 DTS 集成测试已超过 300 行，本次继续复用
 
 真实 profile 准备步骤发现 wrapper 与 native:build 包脚本重复传入 Cargo --locked，导致 metadata 拒绝执行，尚未进入采样。现由包脚本统一负责锁定，组合参数合同验证恰好一次，4 项准备计划回归通过。
 
-首轮远端 Weapi Compatibility Guard 在 Node 22、24 都因干净安装后缺少 @weapp-core/types/alipay-api 构建产物而报 TS2307，随之出现派生的隐式 any。两个 guard 现通过既有 build_command 入口先构建类型包闭包、刷新 workspace 链接，再运行原有完整检查；未修改 API 类型或弱化断言。8 项工作流合同以及构建后的两个 API 源码／测试／公开类型检查通过，远端新提交复验待完成。
+首轮远端 Weapi Compatibility Guard 在 Node 22、24 都因干净安装后缺少 @weapp-core/types/alipay-api 构建产物而报 TS2307，随之出现派生的隐式 any。两个 guard 现通过既有 build_command 入口先构建类型包闭包、刷新 workspace 链接，再运行原有完整检查；未修改 API 类型或弱化断言。8 项工作流合同以及构建后的两个 API 源码／测试／公开类型检查通过；后续远端 Node 22、24 两组完整 guard 均通过。
+
+实际 native profile 在 `f6561e7bd` 冻结输入上完成，8 份真实 SFC 夹具各做冷／热、sourcemap 开／关与 native 开／关成对采样，启用顺序交替。2,624 份样本均完成，完整 code、map、sourcesContent、诊断与元数据对齐。收益因场景而异，不能据此宣称整个构建链固定提速；addon 首次加载成本另计，native 继续保持可选且显式启用。该采样范围是公开 `compileVueFile`，不包含 CLI、HMR、最终 Tailwind CSS 或宿主 runtime。
+
+三系统严格 pnpm 消费者暴露同一夹具问题：全部发布档案被放在顶层，但未显式提供 vite-plugin-performance 的必需 Vite peer；兄弟包 weapp-vite 内部依赖不承担消费者顶层 peer。夹具现从实际 tarball 清单核对全部必需 peer，并使用 packed weapp-vite 声明补入 Vite；候选档案继续优先，缺失或冲突范围直接报错，optional peer 不自动补齐。54 项回归以及 pnpm、npm 两种真实 tarball 严格安装均通过，三系统 CI 复验仍待修复提交。
+
+本机首次消费安装因任务证据目录过深触发 pnpm store 索引文件名长度限制。将同一批档案复制到短临时目录，逐文件 hash 与正式 provenance 再核对后完成安装；没有重新打包、替换候选或放宽 peer 策略。
+
+后续 `f6561e7bd` 的 12 个正式主线 workflow 均已结束：10 成功、2 失败；335 个 job 中 269 成功、62 为既定条件跳过、4 失败。三系统 × Node 22／24 的主构建、lint、完整 coverage inventory 与汇总均通过，Rust addon 三系统 correctness 通过。失败分别是三系统 pnpm peer 夹具，以及单个 Workspace HMR 全量审计；未将跳过或失败写成成功。
+
+Workspace HMR 的 React 失败已定位到原始 TSX 与转换后 JS 摘要混淆：React pre 插件先于 core 执行。现由 React 在转换前记录普通 TSX，并与 core 共用原生入口 loaded／resolved 所有权；loader 已读取的入口继续由 raw reader 独占。另修复 Vite 稳定读取跨过文件 truncate 阶段的来源版本结算，使用同一次 `read()` 的返回值，保留到达身份与时间，以每源代次保护后续保存、删除、关闭和 alias 绑定。远端 artifact 没有保存 token 摘要，无法断言该次 native restore 具体读到了空字节，也无证据将其归责于 Rolldown。9 文件、73 项根因和竞态回归、精确 lint 与 owning typecheck 已通过；重建后复测 8 项目、25 场景，更新、恢复及 native 来源回执全部成功，没有功能失败或未执行项。
+
+原 `devProvider.ts` 已超过 300 行，本次只在两种 provider 共用的唯一 hotUpdate hook 增加稳定读取结算，保留在同一处可避免入口分叉；新增来源 helper 与回归文件分别独立，均少于 300 行。
+
+全量 HMR 审计还有 14 条成功场景耗时超限和 2 条重复 p95 汇总，分布在 comprehensive、runtime-demo、uview、wot 四组；另外 3 条未执行样式场景由前一个 restore 失败导致。独立计时失败将沿原 full 阈值复测，不因来源修复推定消除；现有旧报告缺少相同宿主和模式的可比基线，尚不能判断是否由本轮升级引起。
+
+同宿主对照使用升级前 `8963dcaf` 的独立干净工作树、原 pnpm 12.15.0 和原锁，以及相同 Node 24.22.1、四项目／14 场景、完整 warmup 和原审计阈值。基线同样功能 14／14 成功、同样 10 条计时超限；候选的 8 项目／25 场景功能及来源回执全部成功，同样仅有这 10 条计时失败。runtime-demo 场景中位数为基线 1735.1ms、候选 1748.7ms，wot 为 6809.2ms、6801.7ms。comprehensive 与 uview 在本机两轮都通过原阈值。单轮对照只能确认超限在升级前已存在，不能提供统计性的无退化或固定提速保证。保留计时门禁失败，不修改阈值、不刷新历史基线，也不把该审计标成完整通过。
 
 ## 待完成验收与交付
 

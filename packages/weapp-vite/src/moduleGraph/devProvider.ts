@@ -46,7 +46,11 @@ export interface DevModuleGraphChange {
   sourceEvent?: HmrProfileSourceEvent
 }
 
-export type DevModuleGraphObserver = (change: DevModuleGraphChange) => DevModuleGraphChange
+export interface DevModuleGraphObservedChange extends DevModuleGraphChange {
+  settleSourceRead?: (source: string) => DevModuleGraphChange
+}
+
+export type DevModuleGraphObserver = (change: DevModuleGraphChange) => DevModuleGraphObservedChange
 
 function isInternalPlugin(plugin: unknown): plugin is { name: string } {
   if (!plugin || typeof plugin !== 'object' || !('name' in plugin)) {
@@ -221,13 +225,15 @@ export function createDevModuleGraphPlugin(
       if (this.environment.name !== 'client' || isProfileOutput(file) || ownsExternalWxmlWatch(ctx, file)) {
         return
       }
-      const change = observeSource({ event: type, file })
+      const { settleSourceRead, ...change } = observeSource({ event: type, file })
       if (type === 'delete') {
         onChange(change)
         return
       }
+      let settledChange = change
       try {
-        await read()
+        const source = await read()
+        settledChange = settleSourceRead?.(source) ?? change
       }
       catch (error) {
         if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
@@ -235,7 +241,7 @@ export function createDevModuleGraphPlugin(
         }
         throw error
       }
-      onChange(change)
+      onChange(settledChange)
     },
   }
 }
