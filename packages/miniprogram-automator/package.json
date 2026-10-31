@@ -62,7 +62,7 @@
     "@types/ws": "^8.18.2",
     "@weapp-vite/qr": "workspace:*",
     "obug": "catalog:",
-    "ws": "^8.22.0"
+    "ws": "^8.22.1"
   },
   "publishConfig": {
     "access": "public",

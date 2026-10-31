@@ -41,14 +41,14 @@
     "test:pack": "node ../../scripts/weapp-agent/smoke-pack.mjs"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "4.0.88",
-    "@ai-sdk/openai": "4.0.102",
-    "@ai-sdk/openai-compatible": "3.0.78",
+    "@ai-sdk/anthropic": "4.0.94",
+    "@ai-sdk/openai": "4.0.106",
+    "@ai-sdk/openai-compatible": "3.0.82",
     "@modelcontextprotocol/client": "^2.4.0",
     "@modelcontextprotocol/server": "^2.4.0",
     "@weapp-vite/acceptance": "workspace:*",
     "@weapp-vite/mcp": "workspace:*",
-    "ai": "7.0.153",
+    "ai": "7.0.159",
     "commander": "15.0.0",
     "diff": "9.0.0",
     "execa": "10.2.1",
@@ -63,7 +63,7 @@
     "@weapp-agent/core": "workspace:*",
     "@weapp-agent/mini-program": "workspace:*",
     "@weapp-agent/providers": "workspace:*",
-    "tsdown": "0.23.2"
+    "tsdown": "0.23.4"
   },
   "publishConfig": {
     "access": "public",

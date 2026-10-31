@@ -10,6 +10,7 @@ const temporaryDirectories: string[] = []
 const deadlineVariable = 'REPOCTL_NIGHTLY_QUALITY_DEADLINE_EPOCH'
 const initialTime = Date.parse('2026-10-31T02:00:00Z')
 const commit = 'a'.repeat(40)
+const sourceTree = 'b'.repeat(40)
 const repository = 'nightly-fixture/repository'
 const workflow = `${repository}/.github/workflows/release.yml@refs/heads/main`
 
@@ -25,6 +26,7 @@ interface QualityCall {
 
 interface FixtureOptions {
   deadline?: string
+  qualityTimeoutMs?: number
   failScript?: string
   advanceAfterFirst?: number
 }
@@ -57,6 +59,14 @@ async function createNightlyFixture(options: FixtureOptions = {}) {
       }
       else if (args.join(' ') === 'rev-parse HEAD') {
         stdout = commit
+      }
+      else if (args.join(' ') === `rev-parse ${commit}^{tree}`) {
+        stdout = sourceTree
+      }
+      else if (args.join(' ') === `ls-tree -rz --full-tree ${commit}`) {
+        stdout = ['package.json', 'pnpm-workspace.yaml', 'packages/library/package.json']
+          .map(filename => `100644 blob ${'c'.repeat(40)}\t${filename}\0`)
+          .join('')
       }
       else if (args.join(' ') !== '--no-optional-locks status --porcelain --untracked-files=all') {
         unexpectedCommands.push([command, ...args])
@@ -118,7 +128,10 @@ async function createNightlyFixture(options: FixtureOptions = {}) {
       outputDirectory: path.join(directory, 'reports'),
       publish: true,
       config: {
-        nightly: { provider: 'npm' },
+        nightly: {
+          provider: 'npm',
+          ...(options.qualityTimeoutMs === undefined ? {} : { qualityTimeoutMs: options.qualityTimeoutMs }),
+        },
         qualityScripts: ['quality-first', 'quality-second'],
         hooks: { verify: ['quality-hook'] },
       },
@@ -145,13 +158,26 @@ async function createNightlyFixture(options: FixtureOptions = {}) {
 }
 
 describe('repoctl nightly quality deadline', () => {
-  it('keeps the ten minute command timeout when no shared deadline is configured', async () => {
+  it('keeps the official forty-five minute quality timeout without a shared deadline', async () => {
     const fixture = await createNightlyFixture()
     const report = await fixture.run()
     expect(report.error).toContain('fixture quality failure')
     expect(fixture.qualityCalls).toEqual([
-      { script: 'quality-first', timeout: 600_000 },
-      { script: 'quality-second', timeout: 600_000 },
+      { script: 'quality-first', timeout: 2_700_000 },
+      { script: 'quality-second', timeout: 2_700_000 },
+    ])
+    expect(fixture.unexpectedCommands).toEqual([])
+    expect(report.snapshot?.sourceTree).toBe(sourceTree)
+    expect(report.snapshot?.referenceGitlinks).toEqual([])
+  })
+
+  it('preserves an explicit quality timeout without a shared deadline', async () => {
+    const fixture = await createNightlyFixture({ qualityTimeoutMs: 120_000 })
+    const report = await fixture.run()
+    expect(report.error).toContain('fixture quality failure')
+    expect(fixture.qualityCalls).toEqual([
+      { script: 'quality-first', timeout: 120_000 },
+      { script: 'quality-second', timeout: 120_000 },
     ])
     expect(fixture.unexpectedCommands).toEqual([])
   })
@@ -159,6 +185,7 @@ describe('repoctl nightly quality deadline', () => {
   it('uses one decreasing budget across quality scripts and verify hooks', async () => {
     const fixture = await createNightlyFixture({
       deadline: String(initialTime / 1000 + 45 * 60),
+      qualityTimeoutMs: 60_000,
       advanceAfterFirst: 5 * 60_000,
       failScript: 'quality-hook',
     })

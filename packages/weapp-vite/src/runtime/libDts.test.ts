@@ -255,7 +255,13 @@ describe('runtime lib dts generation', () => {
     expect(dtsMock.mock.calls[0]?.[0]?.tsconfig).toBe(await realpath(path.join(project, 'tsconfig.json')))
   })
 
-  it('enables rolldown dts build mode when tsconfig uses project references', async () => {
+  it.each([
+    { name: 'automatic project references', rolldown: undefined, expectedBuild: true },
+    { name: 'legacy explicit false', rolldown: { build: false }, expectedBuild: false },
+    { name: 'namespaced explicit false', rolldown: { tsc: { build: false } }, expectedBuild: false },
+    { name: 'namespaced false over legacy true', rolldown: { build: true, tsc: { build: false } }, expectedBuild: false },
+    { name: 'namespaced true over legacy false', rolldown: { build: false, tsc: { build: true } }, expectedBuild: true },
+  ])('resolves rolldown dts build mode with $name', async ({ rolldown, expectedBuild }) => {
     const root = await createTempDir()
     const outDir = path.resolve(root, 'dist')
     const tsconfigPath = path.resolve(root, 'tsconfig.json')
@@ -282,6 +288,7 @@ describe('runtime lib dts generation', () => {
         root: path.resolve(root, 'src'),
         dts: {
           enabled: true,
+          rolldown,
         },
       },
     }))
@@ -289,7 +296,8 @@ describe('runtime lib dts generation', () => {
     expect(dtsMock).toHaveBeenCalledTimes(1)
     const options = dtsMock.mock.calls[0]?.[0] as any
     expect(options.tsconfig).toBe(await realpath(tsconfigPath))
-    expect(options.build).toBe(true)
+    expect(options.tsc.build).toBe(expectedBuild)
+    expect(options).not.toHaveProperty('build')
   })
 
   it('keeps non-stub expected dts when deconflicted file also exists', async () => {

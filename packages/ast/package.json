@@ -128,7 +128,7 @@
     "@babel/parser": "catalog:",
     "@babel/traverse": "catalog:",
     "@babel/types": "catalog:",
-    "@oxc-project/types": "^0.155.0",
+    "@oxc-project/types": "^0.156.0",
     "@types/convert-source-map": "^2.0.3",
     "@weapp-core/shared": "workspace:*",
     "oxc-parser": "catalog:",

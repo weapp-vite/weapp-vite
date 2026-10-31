@@ -61,18 +61,32 @@ describe('shared Tailwind host dependency identity', () => {
     }
   })
 
-  it('pins PostCSS plugins to the versions verified by the root consumer lock', async () => {
+  it('pins PostCSS plugins to the root consumer dependency graph in the lockfile', async () => {
     const documents = parseLockDocuments(await readFile(new URL('../../pnpm-lock.yaml', import.meta.url), 'utf8'))
     expect(documents.flatMap(document => document.errors)).toEqual([])
-    const packages = documents.flatMap((document) => {
-      const lock = document.toJS() as { packages?: Record<string, unknown> }
-      return Object.keys(lock.packages ?? {})
+    const locks = documents.map(document => document.toJS() as {
+      importers?: Record<string, { dependencies?: Record<string, { version: string }> }>
+      packages?: Record<string, unknown>
+      snapshots?: Record<string, { dependencies?: Record<string, string> }>
     })
+    const importers = new Map(locks.flatMap(lock => Object.entries(lock.importers ?? {})))
+    const packages = new Set(locks.flatMap(lock => Object.keys(lock.packages ?? {})))
+    const snapshots = new Map(locks.flatMap(lock => Object.entries(lock.snapshots ?? {})))
+    const chain = ['weapp-tailwindcss', '@weapp-tailwindcss/postcss', 'postcss-rule-unit-converter', 'postcss-plugin-shared'] as const
+    let reference = importers.get('packages/tailwindcss')?.dependencies?.['weapp-tailwindcss']?.version
     const overrides = await readHostDependencyOverrides({ dependencies: { rolldown: '1.2.9' } })
-    for (const name of ['postcss-rule-unit-converter', 'postcss-plugin-shared'] as const) {
-      const locked = packages.filter(key => key.startsWith(`${name}@`)).map(key => key.slice(name.length + 1))
-      expect(locked).toHaveLength(1)
-      expect(overrides[name]).toBe(locked[0])
+    // 沿消费边保留完整 peer snapshot 身份，不把其他插件的独立版本当作宿主依赖。
+    for (const [index, name] of chain.entries()) {
+      expect(reference, name).toBeTypeOf('string')
+      const version = reference!.split('(')[0]
+      const snapshot = snapshots.get(`${name}@${reference}`)
+      expect(snapshot, `${name}@${reference}`).toBeDefined()
+      expect(packages.has(`${name}@${version}`)).toBe(true)
+      if (name === 'postcss-rule-unit-converter' || name === 'postcss-plugin-shared') {
+        expect(overrides[name]).toBe(version)
+      }
+      const next = chain[index + 1]
+      reference = next ? snapshot?.dependencies?.[next] : undefined
     }
   })
 

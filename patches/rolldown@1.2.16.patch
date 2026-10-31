@@ -1,8 +1,7 @@
-diff --git a/dist/shared/bindingify-input-options-BMZwyvQ7.mjs b/dist/shared/bindingify-input-options-BMZwyvQ7.mjs
-index ce53a171a..0a300701e 100644
---- a/dist/shared/bindingify-input-options-BMZwyvQ7.mjs
-+++ b/dist/shared/bindingify-input-options-BMZwyvQ7.mjs
-@@ -755,6 +755,137 @@ function collectChangedBundle(changed, bundle) {
+diff --git a/dist/shared/bindingify-input-options-CM8bmcLg.mjs b/dist/shared/bindingify-input-options-CM8bmcLg.mjs
+--- a/dist/shared/bindingify-input-options-CM8bmcLg.mjs
++++ b/dist/shared/bindingify-input-options-CM8bmcLg.mjs
+@@ -767,6 +767,137 @@
  	};
  }
  // src/options/normalized-input-options.ts
@@ -140,15 +139,15 @@ index ce53a171a..0a300701e 100644
  var NormalizedInputOptionsImpl = class extends PlainObjectLike {
  	onLog;
  	inputPlugins;
-@@ -1019,6 +1150,7 @@ var PluginContextData = class {
+@@ -1036,6 +1167,7 @@
  	renderedChunkMeta = null;
  	normalizedInputOptions = null;
  	normalizedOutputOptions = null;
 +	normalizedOptionsSnapshot = null;
- 	constructor(onLog, outputOptions, normalizedInputPlugins, normalizedOutputPlugins) {
+ 	constructor(onLog, outputOptions, normalizedInputPlugins, normalizedOutputPlugins, cacheOutputCode = true) {
  		this.onLog = onLog;
  		this.outputOptions = outputOptions;
-@@ -1095,13 +1227,17 @@ var PluginContextData = class {
+@@ -1113,12 +1245,16 @@
  		return this.renderedChunkMeta;
  	}
  	getInputOptions(opts) {
@@ -160,11 +159,10 @@ index ce53a171a..0a300701e 100644
 -		this.normalizedOutputOptions ??= new NormalizedOutputOptionsImpl(opts, this.outputOptions, this.normalizedOutputPlugins);
 +		this.normalizedOutputOptions ??= new NormalizedOutputOptionsImpl(this.getNormalizedOptionsSnapshot(opts), this.outputOptions, this.normalizedOutputPlugins);
  		return this.normalizedOutputOptions;
- 	}
++	}
 +	getNormalizedOptionsSnapshot(opts) {
 +		this.normalizedOptionsSnapshot ??= createNormalizedOptionsSnapshot(opts);
 +		return this.normalizedOptionsSnapshot;
-+	}
+ 	}
  	clear() {
  		this.renderedChunkMeta = null;
- 		this.loadModulePromiseMap.clear();

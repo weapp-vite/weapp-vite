@@ -116,6 +116,6 @@
     }
   },
   "devDependencies": {
-    "eventsource-parser": "3.1.1"
+    "eventsource-parser": "4.1.3"
   }
 }

@@ -69,6 +69,38 @@ describe('fetch response streaming', () => {
     expect(transport.task.abort).not.toHaveBeenCalled()
   })
 
+  it('parses split CRLF after discarded fields and drops an unfinished final event', async () => {
+    const transport = createTransport()
+    const pending = fetch('https://stream.test/chat', { miniProgram: { enableChunked: true } })
+    await vi.waitFor(() => expect(transport.task.onHeadersReceived).toHaveBeenCalledOnce())
+    transport.headers()
+    const response = await pending
+    const reader = response.body!.pipeThrough(new TextDecoderStreamPolyfill()).pipeThrough(new EventSourceParserStream()).getReader()
+    const event = reader.read()
+
+    for (const text of [
+      ': heartbeat\r',
+      '\nunknown-',
+      'field: ignored\r',
+      '\nid: joined\r',
+      '\nevent: delta\r',
+      '\ndata: first\r',
+      '\ndata: 第二段🙂\r',
+      '\n\r',
+      '\ndata: unfinished',
+    ]) {
+      transport.chunk(new TextEncoder().encode(text))
+    }
+
+    await expect(event).resolves.toMatchObject({
+      done: false,
+      value: { id: 'joined', event: 'delta', data: 'first\n第二段🙂' },
+    })
+    transport.finish()
+    await expect(reader.read()).resolves.toMatchObject({ done: true })
+    expect(transport.task.abort).not.toHaveBeenCalled()
+  })
+
   it.each([204, 205, 304])('returns a null body for HTTP %s', async (status) => {
     const transport = createTransport()
     const pending = fetch('https://stream.test', { miniProgram: { enableChunked: true } })

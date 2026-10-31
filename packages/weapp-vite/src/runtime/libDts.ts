@@ -7,6 +7,7 @@ import { resolveRealpath } from '../utils/realpathScope'
 import { waitForBuildTasks } from './compilerSession/tasks'
 import { resolveWeappLibEntries } from './lib'
 import { generateVueDtsWithInternal, generateVueDtsWithVueTsc } from './libDts/generateVueDts'
+import { normalizeRolldownDtsOptions } from './libDts/options'
 import { getVueCompilerLibOrUndefined, rewriteVueComponentTypeToWevu, shouldRewriteWevuComponentType } from './libDts/rewriteWevuComponent'
 import { ensureStub, isBundledDtsEntry, normalizeRolldownDtsOutput, tsconfigHasProjectReferences } from './libDts/shared'
 import { hasOwn } from './utils/object'
@@ -44,9 +45,9 @@ export async function generateLibDts(configService: ConfigService, onWatchFile?:
   if (inputNames.length > 0) {
     const tsconfigPath = path.resolve(configService.cwd, 'tsconfig.json')
     const hasTsconfig = await fs.pathExists(tsconfigPath)
-    const userRolldownOptions: RolldownDtsOptions = dtsOptions?.rolldown ?? {}
+    const userRolldownOptions = normalizeRolldownDtsOptions(dtsOptions?.rolldown)
     const hasUserTsconfig = hasOwn(userRolldownOptions, 'tsconfig')
-    const hasUserBuild = hasOwn(userRolldownOptions, 'build')
+    const hasUserBuild = userRolldownOptions.tsc?.build !== undefined
     const userTsconfig = userRolldownOptions.tsconfig
     const resolvedTsconfig = hasUserTsconfig
       ? (typeof userTsconfig === 'string' || userTsconfig === false
@@ -72,14 +73,14 @@ export async function generateLibDts(configService: ConfigService, onWatchFile?:
       input,
       plugins: [dts({
         ...userRolldownOptions,
-        // 每轮声明编译使用独立上下文，避免跨项目或 watch 重建复用过期 TypeScript 缓存。
-        newContext: true,
         tsconfig: canonicalTsconfig,
-        build: shouldUseBuildMode ? true : userRolldownOptions.build,
+        tsc: {
+          ...userRolldownOptions.tsc,
+          build: shouldUseBuildMode ? true : userRolldownOptions.tsc?.build,
+        },
         compilerOptions,
         cwd: resolveRealpath(configService.cwd),
         emitDtsOnly: true,
-        vue: false,
       }), {
         name: 'weapp-vite:lib-dts-inputs',
         buildEnd() {

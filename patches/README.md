@@ -1,6 +1,6 @@
 # 发布重试与恢复
 
-仓库固定使用 `repoctl@6.2.1`，发布重试、工作区根包识别和发布说明过滤均由上游正式实现负责。
+仓库固定使用 `repoctl@6.3.1`，发布重试、工作区根包识别和发布说明过滤均由上游正式实现负责。
 `@icebreakers/monorepo@6.1.0` 的上游实现包含发布说明分类修正：明确的 Conventional 摘要类型
 优先于整理提交类型及正文关键词，并保留正文中的依赖版本描述；原生 Dependencies 条目仍归维护。
 同一分类规则用于 Release PR、正式发布和发布说明修复，避免合并 intent 后功能、修复和性能被改归维护。
@@ -9,6 +9,19 @@
 升级 repoctl 时须核对上游是否已覆盖这两类规则，并运行
 `scripts/repoctl-release-classification.test.ts` 和 `scripts/repoctl-github-pull-request.test.ts`。
 其他依赖补丁保持独立维护。
+
+`@icebreakers/monorepo@6.3.1` 已正式支持消费者 `runtimeContexts`、真实 Vitest setup、精确的平台保护错误
+和本批次必需 peer 的候选 locator；本仓库不再维护这些功能的重复补丁。上游还验证运行合同指向实际打包的
+ESM 文件，并在执行框架或导入 guard 前确认消费者解析结果。
+
+对应补丁保留 `REPOCTL_NIGHTLY_QUALITY_DEADLINE_EPOCH` 的共享剩余预算：每条命令启动前重新检查，
+预算失效时禁止派发；未设置时保留上游 `qualityTimeoutMs` 配置和默认 45 分钟的质量检查超时。
+非质量命令继续使用上游各自的超时。升级时同时运行 `scripts/repoctl-nightly-deadline.test.ts`
+和 `scripts/repoctl-consumer-context.test.ts`，不能以每命令的新超时配置替代共享截止时间。
+
+官方工作流生成器尚未开放 Actions 版本配置，补丁同步更新 snapshot build/publish 和自动 intent 模板的
+`upload-artifact@v7.0.2`、`download-artifact@v8.0.2` 固定 SHA。生成器继续计算完整 builder 的 SHA256，
+`scripts/repoctl-snapshot-workflow.test.ts` 保留生成模板与仓库工作流的全文精确比较。
 
 Vite 与 Rolldown 的构建引用生命周期补丁见[编译依赖内存说明](./compiler-memory.md)。
 

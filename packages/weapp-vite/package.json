@@ -192,7 +192,7 @@
     "@modelcontextprotocol/server": "^2.4.0",
     "@types/picomatch": "^4.0.3",
     "@types/set-value": "^4.0.3",
-    "@typescript-eslint/parser": "^8.72.0",
+    "@typescript-eslint/parser": "^8.72.1",
     "@vercel/detect-agent": "^1.2.7",
     "@volar/language-service": "^2.4.30",
     "@volar/typescript": "^2.4.30",
@@ -239,7 +239,7 @@
     "postcss-selector-parser": "catalog:",
     "postcss-value-parser": "4.2.0",
     "rolldown": "catalog:",
-    "rolldown-plugin-dts": "0.28.8",
+    "rolldown-plugin-dts": "0.29.0",
     "rolldown-require": "workspace:*",
     "semver": "^7.8.5",
     "tinyexec": "^1.3.1",
@@ -256,12 +256,12 @@
     "zod": "catalog:"
   },
   "optionalDependencies": {
-    "@swc/core": "^1.16.20"
+    "@swc/core": "^1.16.21"
   },
   "devDependencies": {
-    "@devframes/agentic": "1.2.6",
-    "@devframes/hub": "1.2.6",
-    "@devframes/hub-ui": "1.2.6",
+    "@devframes/agentic": "1.3.0",
+    "@devframes/hub": "1.3.0",
+    "@devframes/hub-ui": "1.3.0",
     "@modelcontextprotocol/client": "^2.4.0",
     "@parcel/watcher": "2.6.0",
     "@vitejs/devtools": "catalog:",
