@@ -11,6 +11,9 @@
       "@weapp-core/types": [
         "../../@weapp-core/types/src/index.ts"
       ],
+      "@weapp-core/types/wechat-api": [
+        "../../@weapp-core/types/types/wechat-api.d.ts"
+      ],
       "@weapp-core/types/*": [
         "../../@weapp-core/types/src/*"
       ],

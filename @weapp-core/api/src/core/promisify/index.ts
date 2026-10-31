@@ -1,3 +1,4 @@
+import type { WechatMiniprogram } from '@weapp-core/types/wechat-api'
 import type { WeapiMiniProgramWechatRawAdapter } from '../miniProgramTypes'
 import type { WeapiNonPromisifiedMethodName } from '../nonPromisifiedMethods'
 
@@ -166,7 +167,7 @@ type PromisifyMethod<TMethod, TAdapter> = TMethod extends (...args: infer Args) 
       : (...args: Args) => NormalizePromisifyReturn<Result, TAdapter>
   : TMethod
 
-type WechatCanvasComponent = WechatMiniprogram.Component.TrivialInstance | WechatMiniprogram.Page.TrivialInstance
+type WechatCanvasComponent = NonNullable<Parameters<WeapiMiniProgramWechatRawAdapter['canvasGetImageData']>[1]>
 interface PromisifyCanvasMethod<Option extends object, TAdapter> {
   <TOption extends PromisifyOption<Option, TAdapter>>(
     option: TOption,

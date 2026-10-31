@@ -1,4 +1,4 @@
-/// <reference types="miniprogram-api-typings" />
+import type { WechatMiniprogram } from '@weapp-core/types/wechat-api'
 import type {
   WeapiAlipayMiniProgramRawAdapterSource,
   WeapiDefaultMiniProgramRawAdapterSource,
@@ -117,7 +117,7 @@ export type WeapiMiniProgramVideoContext = WechatMiniprogram.VideoContext
 /**
  * @description 小程序选择器查询类型（宿主中立别名）
  */
-export type WeapiMiniProgramSelectorQuery = WechatMiniprogram.SelectorQuery
+export type WeapiMiniProgramSelectorQuery = ReturnType<WeapiWechatMiniProgramRawAdapterSource['createSelectorQuery']>
 
 /**
  * @description 小程序蓝牙错误类型（宿主中立别名）

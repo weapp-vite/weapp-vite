@@ -1,7 +1,3 @@
-/// <reference types="miniprogram-api-typings" />
-/// <reference types="@mini-types/alipay" />
-/// <reference types="@douyin-microapp/typings" />
-
 // eslint-disable-next-line antfu/no-import-dist
 import type {
   CreateWeapiOptions,

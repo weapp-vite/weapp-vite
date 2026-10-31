@@ -1,0 +1,13 @@
+{
+  "name": "volar-public-types-tsd",
+  "type": "module",
+  "private": true,
+  "types": "index.d.ts",
+  "tsd": {
+    "compilerOptions": {
+      "module": "NodeNext",
+      "moduleResolution": "NodeNext",
+      "strict": true
+    }
+  }
+}

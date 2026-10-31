@@ -17,6 +17,7 @@ const root = path.resolve(import.meta.dirname, '..')
 const standardContracts = 'tsd --files "test-d/**/*.test-d.ts"'
 const jsxContracts = 'tsd --files "test-d/**/*.test-d.{ts,tsx}"'
 const pureContracts = 'cd test-d-pure && tsd --files "**/*.test-d.ts"'
+const isolatedContracts = 'cd test-d-isolated && tsd --files "**/*.test-d.ts"'
 const hostContracts = 'tsd test-d-host --files root.test-d.ts && tsd test-d-host --files internal-runtime.test-d.ts'
 const wevuContracts = `${jsxContracts} && tsd --files "test-d/router-named-map.test-types.ts"`
 const weappViteFixtures = [
@@ -33,13 +34,17 @@ const weappViteFixtures = [
   'dashboard-public-types',
   'vite-public-types',
   'doctor-public-types',
+  'volar-public-types',
+  'client-public-types',
+  'i18n-isolated-types',
 ]
 const weappViteContracts = weappViteFixtures.map((fixture, index) =>
   `cd ${index === 0 ? 'test-d/' : '../'}${fixture} && tsd --files "**/*.test-d.ts"`,
 ).join(' && ')
-const packages: readonly (readonly [directory: string, build: string, check: string, prebuild?: boolean, pure?: boolean, host?: boolean])[] = [
-  ['@weapp-core/api', '', 'tsd', true, true],
+const packages: readonly (readonly [directory: string, build: string, check: string, prebuild?: boolean, pure?: boolean, host?: boolean, isolated?: boolean])[] = [
+  ['@weapp-core/api', '', 'tsd', true, true, false, true],
   ['@weapp-core/logger', '', 'tsd --typings dist/index.d.ts --files test/index.test-d.ts'],
+  ['@weapp-core/schematics', 'build', standardContracts],
   ['@weapp-core/shared', '', standardContracts],
   ['@weapp-core/types', 'build', 'tsd --typings dist/index.d.mts --files "test-d/**/*.test-d.ts"'],
   ['packages/acceptance', '', standardContracts],
@@ -53,10 +58,12 @@ const packages: readonly (readonly [directory: string, build: string, check: str
   ['packages/miniprogram-automator', 'build', standardContracts],
   ['packages/qr', '', standardContracts],
   ['packages/tailwindcss', '', standardContracts],
+  ['packages/vite-plugin-performance', '', standardContracts],
+  ['packages/volar', 'build', standardContracts],
   ['packages/weapp-ide-cli', 'build', standardContracts],
   ['packages/weapp-vite', '', weappViteContracts],
   ['packages-runtime/glass-easel-web-adapter', 'build', 'tsd --typings dist/index.d.mts --files test-d/public-api.test-d.ts'],
-  ['packages-runtime/i18n', 'build', standardContracts, false, true],
+  ['packages-runtime/i18n', 'build', standardContracts, false, true, false, true],
   ['packages-runtime/json-render', 'build', jsxContracts],
   ['packages-runtime/json-render-components', 'build', standardContracts],
   ['packages-runtime/react', '', standardContracts],
@@ -143,18 +150,19 @@ describe('public type tests in CI', () => {
     expect(actual.sort()).toEqual([...packages.map(([directory]) => directory), 'e2e-apps/lib-mode'].sort())
   })
 
-  it.each(packages.map(([directory, build, check, prebuild, pure, host]) => ({ directory, build, check, prebuild, pure, host })))('$directory preserves standalone freshness and checks every real contract', async ({ directory, build, check, prebuild, pure, host }) => {
+  it.each(packages.map(([directory, build, check, prebuild, pure, host, isolated]) => ({ directory, build, check, prebuild, pure, host, isolated })))('$directory preserves standalone freshness and checks every real contract', async ({ directory, build, check, prebuild, pure, host, isolated }) => {
     const packageRoot = path.join(root, directory)
     const manifest = await readManifest(packageRoot)
     expect(manifest.scripts['test:types']).toBe(`${build ? `pnpm ${build} && ` : ''}pnpm run test:types:check`)
     expect(manifest.scripts['pretest:types']).toBe(prebuild ? 'pnpm build' : undefined)
-    const expectedCheck = `${check}${host ? ' && pnpm run test:types:host' : ''}${pure ? ' && pnpm run test:types:pure' : ''}`
+    const expectedCheck = `${check}${host ? ' && pnpm run test:types:host' : ''}${pure ? ' && pnpm run test:types:pure' : ''}${isolated ? ' && pnpm run test:types:isolated' : ''}`
     expect(manifest.scripts['test:types:check']).toBe(expectedCheck)
     expect(manifest.scripts['test:types:pure']).toBe(pure ? pureContracts : undefined)
     expect(manifest.scripts['test:types:host']).toBe(host ? hostContracts : undefined)
+    expect(manifest.scripts['test:types:isolated']).toBe(isolated ? isolatedContracts : undefined)
     expect(manifest.scripts['pretest:types:check']).toBeUndefined()
     expect(manifest.scripts['posttest:types:check']).toBeUndefined()
-    const expectedRoots = [directory === '@weapp-core/logger' ? 'test' : 'test-d', ...(pure ? ['test-d-pure'] : []), ...(host ? ['test-d-host'] : [])]
+    const expectedRoots = [directory === '@weapp-core/logger' ? 'test' : 'test-d', ...(pure ? ['test-d-pure'] : []), ...(host ? ['test-d-host'] : []), ...(isolated ? ['test-d-isolated'] : [])]
     const contractRoots = directory === '@weapp-core/logger'
       ? ['test']
       : (await readdir(packageRoot, { withFileTypes: true }))
@@ -190,7 +198,7 @@ describe('public type tests in CI', () => {
       module: 'NodeNext',
       moduleResolution: 'NodeNext',
       lib: ['ES2022', 'DOM'],
-      types: [],
+      types: ['node'],
       strict: true,
       skipLibCheck: false,
       paths: {

@@ -1,5 +1,6 @@
 {
   "name": "@weapp-vite/volar",
+  "type": "commonjs",
   "version": "2.2.0",
   "description": "Volar plugin for weapp-vite - Provides IntelliSense and type checking for WeChat mini-program config blocks",
   "author": "ice breaker <1324318532@qq.com>",
@@ -29,14 +30,19 @@
   "sideEffects": false,
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.cjs"
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
     }
   },
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
-  "types": "./dist/index.d.ts",
+  "types": "./dist/index.d.cts",
   "files": [
     "dist"
   ],
@@ -46,19 +52,30 @@
   "scripts": {
     "benchmark": "node --import tsx benchmark/sfc.ts",
     "dev": "tsdown -w --sourcemap",
-    "build": "tsdown --no-dts && tsc -p tsconfig.build.json",
+    "build": "tsdown",
     "test": "vitest run",
     "test:dev": "vitest",
     "typecheck": "tsc --noEmit",
     "release": "pnpm publish",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix",
+    "test:types": "pnpm build && pnpm run test:types:check",
+    "test:types:check": "tsd --files \"test-d/**/*.test-d.ts\""
   },
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org"
   },
   "dependencies": {
-    "@weapp-core/schematics": "workspace:*"
+    "@vue/compiler-sfc": "^3.5.44",
+    "@vue/language-core": "catalog:",
+    "@weapp-core/schematics": "workspace:*",
+    "typescript": "catalog:"
+  },
+  "tsd": {
+    "compilerOptions": {
+      "module": "NodeNext",
+      "moduleResolution": "NodeNext"
+    }
   }
 }

@@ -1,5 +1,8 @@
+import type { my as AlipayApi } from '@weapp-core/types/alipay-api'
+
 export type MiniProgramGlobal = Record<string, any>
 
+declare const my: typeof AlipayApi | undefined
 declare const tt: MiniProgramGlobal | undefined
 declare const swan: MiniProgramGlobal | undefined
 declare const jd: MiniProgramGlobal | undefined

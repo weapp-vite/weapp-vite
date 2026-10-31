@@ -27,6 +27,13 @@
   "sideEffects": [
     "./dist/vitest/setup.mjs"
   ],
+  "repoctl": {
+    "packageCheck": {
+      "runtimeContexts": {
+        "./vitest/setup": "vitest"
+      }
+    }
+  },
   "weapp-vite-dev": {
     "exports": {
       ".": {
@@ -87,7 +94,7 @@
     "test:dev": "vitest",
     "pretest:types": "pnpm build",
     "test:types": "pnpm run test:types:check",
-    "test:types:check": "tsd && pnpm run test:types:pure",
+    "test:types:check": "tsd && pnpm run test:types:pure && pnpm run test:types:isolated",
     "release": "pnpm publish",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -107,7 +114,8 @@
     "postbuild": "pnpm run callback-types:check && pnpm run promise-types:check",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "typecheck:test": "tsc --noEmit -p tsconfig.test.json",
-    "test:types:pure": "cd test-d-pure && tsd --files \"**/*.test-d.ts\""
+    "test:types:pure": "cd test-d-pure && tsd --files \"**/*.test-d.ts\"",
+    "test:types:isolated": "cd test-d-isolated && tsd --files \"**/*.test-d.ts\""
   },
   "peerDependencies": {
     "vitest": ">=4.0.0"
@@ -120,6 +128,7 @@
   "dependencies": {
     "@douyin-microapp/typings": "catalog:",
     "@mini-types/alipay": "catalog:",
+    "@weapp-core/types": "workspace:*",
     "miniprogram-api-typings": "catalog:"
   },
   "tsd": {

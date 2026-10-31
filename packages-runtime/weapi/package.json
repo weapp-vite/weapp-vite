@@ -25,6 +25,13 @@
   "sideEffects": [
     "./dist/vitest/setup.mjs"
   ],
+  "repoctl": {
+    "packageCheck": {
+      "runtimeContexts": {
+        "./vitest/setup": "vitest"
+      }
+    }
+  },
   "exports": {
     ".": {
       "types": "./types/index.d.ts",

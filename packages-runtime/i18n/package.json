@@ -27,19 +27,34 @@
   "sideEffects": false,
   "exports": {
     ".": {
-      "types": "./dist/index.d.mts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/cjs/index.cjs"
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/cjs/index.d.cts",
+        "default": "./dist/cjs/index.cjs"
+      }
     },
     "./runtime": {
-      "types": "./dist/runtime.d.mts",
-      "import": "./dist/runtime.mjs",
-      "require": "./dist/cjs/runtime.cjs"
+      "import": {
+        "types": "./dist/runtime.d.mts",
+        "default": "./dist/runtime.mjs"
+      },
+      "require": {
+        "types": "./dist/cjs/runtime.d.cts",
+        "default": "./dist/cjs/runtime.cjs"
+      }
     },
     "./compiler": {
-      "types": "./dist/compiler.d.mts",
-      "import": "./dist/compiler.mjs",
-      "require": "./dist/cjs/compiler.cjs"
+      "import": {
+        "types": "./dist/compiler.d.mts",
+        "default": "./dist/compiler.mjs"
+      },
+      "require": {
+        "types": "./dist/cjs/compiler.d.cts",
+        "default": "./dist/cjs/compiler.cjs"
+      }
     },
     "./package.json": "./package.json",
     "./types": {
@@ -67,11 +82,12 @@
     "build": "tsdown",
     "test": "vitest run",
     "test:types": "pnpm build && pnpm run test:types:check",
-    "test:types:check": "tsd --files \"test-d/**/*.test-d.ts\" && pnpm run test:types:pure",
+    "test:types:check": "tsd --files \"test-d/**/*.test-d.ts\" && pnpm run test:types:pure && pnpm run test:types:isolated",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "test:types:pure": "cd test-d-pure && tsd --files \"**/*.test-d.ts\""
+    "test:types:pure": "cd test-d-pure && tsd --files \"**/*.test-d.ts\"",
+    "test:types:isolated": "cd test-d-isolated && tsd --files \"**/*.test-d.ts\""
   },
   "publishConfig": {
     "access": "public",
@@ -86,7 +102,8 @@
     }
   },
   "dependencies": {
-    "@weapp-core/constants": "workspace:*"
+    "@weapp-core/constants": "workspace:*",
+    "@weapp-core/types": "workspace:*"
   },
   "devDependencies": {
     "miniprogram-api-typings": "catalog:"

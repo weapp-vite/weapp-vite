@@ -437,7 +437,7 @@ overrides:
   rolldown: 1.2.15
 
 patchedDependencies:
-  '@icebreakers/monorepo@6.2.1': 590d4ff9185a4415600e80565f53ba5c330de24762bac29ef0cc82f508c73b50
+  '@icebreakers/monorepo@6.2.1': 70d3475d80ae6a7f3d7c152c61c8b9f1c0e572ec18c541829dfe86d537a307d2
   '@vitejs/plugin-vue@6.0.10': 3dcf2983828045bd0fe45880e571cb5605a71b599c074ad79a62636319f52777
   chokidar@6.0.0: 9d1b81d16fdee1940b4ba7ddc61f27143972b4890a890f7118b396f6125bbd1b
   rolldown@1.2.15: 7e1e0adcb64e85d1f8c9681c4aeccce12fe5739ff8c510e12dc43bfd132f5e44
@@ -793,6 +793,9 @@ importers:
       '@mini-types/alipay':
         specifier: 'catalog:'
         version: 3.0.14
+      '@weapp-core/types':
+        specifier: workspace:*
+        version: link:../types
       miniprogram-api-typings:
         specifier: 'catalog:'
         version: 5.2.3
@@ -847,6 +850,12 @@ importers:
 
   '@weapp-core/types':
     devDependencies:
+      '@mini-types/alipay':
+        specifier: 'catalog:'
+        version: 3.0.14
+      miniprogram-api-typings:
+        specifier: 'catalog:'
+        version: 5.2.3
       tsd:
         specifier: ^0.33.0
         version: 0.33.0
@@ -2708,6 +2717,9 @@ importers:
       '@weapp-core/constants':
         specifier: workspace:*
         version: link:../../@weapp-core/constants
+      '@weapp-core/types':
+        specifier: workspace:*
+        version: link:../../@weapp-core/types
     devDependencies:
       miniprogram-api-typings:
         specifier: 'catalog:'
@@ -2746,13 +2758,13 @@ importers:
 
   packages-runtime/react:
     dependencies:
+      '@types/react':
+        specifier: 'catalog:'
+        version: 19.3.0
       '@weapp-core/constants':
         specifier: workspace:*
         version: link:../../@weapp-core/constants
     devDependencies:
-      '@types/react':
-        specifier: 'catalog:'
-        version: 19.3.0
       '@types/react-reconciler':
         specifier: 'catalog:'
         version: 0.34.1(@types/react@19.3.0)
@@ -3142,6 +3154,9 @@ importers:
       '@oxc-project/types':
         specifier: ^0.155.0
         version: 0.155.0
+      '@types/convert-source-map':
+        specifier: ^2.0.3
+        version: 2.0.3
       '@weapp-core/shared':
         specifier: workspace:*
         version: link:../../@weapp-core/shared
@@ -3346,6 +3361,9 @@ importers:
 
   packages/miniprogram-automator:
     dependencies:
+      '@types/ws':
+        specifier: ^8.18.2
+        version: 8.18.2
       '@weapp-vite/qr':
         specifier: workspace:*
         version: link:../qr
@@ -3356,9 +3374,6 @@ importers:
         specifier: ^8.22.0
         version: 8.22.0(bufferutil@4.1.0)
     devDependencies:
-      '@types/ws':
-        specifier: ^8.18.2
-        version: 8.18.2
       sharp:
         specifier: 'catalog:'
         version: 0.35.5(@types/node@26.6.5)
@@ -3387,6 +3402,9 @@ importers:
 
   packages/tailwindcss:
     dependencies:
+      '@types/set-value':
+        specifier: ^4.0.3
+        version: 4.0.3
       '@weapp-tailwindcss/engine':
         specifier: 0.1.6
         version: 0.1.6(tailwindcss@4.3.3)
@@ -3410,13 +3428,26 @@ importers:
         specifier: 4.0.10
         version: 4.0.10
 
-  packages/vite-plugin-performance: {}
+  packages/vite-plugin-performance:
+    dependencies:
+      vite:
+        specifier: 'catalog:'
+        version: 8.3.5(patch_hash=284776f1b99423b4fe3bcdab1e42a498b1c56c8ddad3d6cef66f7a0209a777b9)(@types/node@26.6.5)(@vitejs/devtools@0.8.0)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
 
   packages/volar:
     dependencies:
+      '@vue/compiler-sfc':
+        specifier: ^3.5.44
+        version: 3.5.44
+      '@vue/language-core':
+        specifier: 'catalog:'
+        version: 3.3.13
       '@weapp-core/schematics':
         specifier: workspace:*
         version: link:../../@weapp-core/schematics
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
 
   packages/weapp-ide-cli:
     dependencies:
@@ -10239,6 +10270,9 @@ packages:
 
   '@types/connect@3.4.38':
     resolution: {integrity: sha512-K6uROf1LD88uDQqJCktA4yzL1YYAK6NgfsI0v/mTgyPKWsX1CnJ0XPSDhViejru1GcRkLWb8RlzFYJRqGUbaug==}
+
+  '@types/convert-source-map@2.0.3':
+    resolution: {integrity: sha512-ag0BfJLZf6CQz8VIuRIEYQ5Ggwk/82uvTQf27RcpyDNbY0Vw49LIPqAxk5tqYfrCs9xDaIMvl4aj7ZopnYL8bA==}
 
   '@types/cookiejar@2.1.5':
     resolution: {integrity: sha512-he+DHOWReW0nghN24E1WUqM0efK4kI9oTqDm6XmK8ZPe2djZ90BSNdGnIyCLzCPw7/pogPlGbzI2wHGGmi4O/Q==}
@@ -20883,7 +20917,7 @@ snapshots:
     transitivePeerDependencies:
       - '@types/node'
 
-  '@icebreakers/monorepo@6.2.1(patch_hash=590d4ff9185a4415600e80565f53ba5c330de24762bac29ef0cc82f508c73b50)(f931300ba086ad23f31c4b25f9b16bee)':
+  '@icebreakers/monorepo@6.2.1(patch_hash=70d3475d80ae6a7f3d7c152c61c8b9f1c0e572ec18c541829dfe86d537a307d2)(f931300ba086ad23f31c4b25f9b16bee)':
     dependencies:
       '@arethetypeswrong/core': 0.18.5
       '@babel/parser': 7.29.9
@@ -23827,6 +23861,8 @@ snapshots:
     dependencies:
       '@types/node': 26.6.5
 
+  '@types/convert-source-map@2.0.3': {}
+
   '@types/cookiejar@2.1.5': {}
 
   '@types/cors@2.8.19':
@@ -24490,6 +24526,19 @@ snapshots:
       '@rolldown/pluginutils': 1.0.1
       vite: 8.3.5(patch_hash=284776f1b99423b4fe3bcdab1e42a498b1c56c8ddad3d6cef66f7a0209a777b9)(@types/node@26.6.5)(@vitejs/devtools@0.8.0)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.106.1)(sass@1.106.1)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
       vue: 3.5.44(typescript@6.0.3)
+
+  '@vitest/browser-playwright@5.0.5(@voidzero-dev/vite-plus-core@1.4.0)(bufferutil@4.1.0)(playwright@1.64.1)(vitest@5.0.5)':
+    dependencies:
+      '@vitest/browser': 5.0.5(@voidzero-dev/vite-plus-core@1.4.0)(bufferutil@4.1.0)(vitest@5.0.5)
+      '@vitest/mocker': 5.0.5(@voidzero-dev/vite-plus-core@1.4.0)
+      playwright: 1.64.1
+      tinyrainbow: 3.2.0
+      vitest: 5.0.5(patch_hash=abc79ba5cbb797c526f2930277b2073b4d2f23370f70d4312ddedf9d90f64e9d)(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/browser-preview@5.0.5)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.5)(@voidzero-dev/vite-plus-core@1.4.0)(happy-dom@21.0.4(bufferutil@4.1.0))
+    transitivePeerDependencies:
+      - bufferutil
+      - msw
+      - utf-8-validate
+      - vite
 
   '@vitest/browser-playwright@5.0.5(bufferutil@4.1.0)(playwright@1.64.1)(vite@8.3.5)(vitest@5.0.5)':
     dependencies:
@@ -31023,7 +31072,7 @@ snapshots:
 
   repoctl@6.2.1(e5f54f0c85c6e3e55a74d5e1fbfd9e06):
     dependencies:
-      '@icebreakers/monorepo': 6.2.1(patch_hash=590d4ff9185a4415600e80565f53ba5c330de24762bac29ef0cc82f508c73b50)(f931300ba086ad23f31c4b25f9b16bee)
+      '@icebreakers/monorepo': 6.2.1(patch_hash=70d3475d80ae6a7f3d7c152c61c8b9f1c0e572ec18c541829dfe86d537a307d2)(f931300ba086ad23f31c4b25f9b16bee)
     optionalDependencies:
       '@commitlint/cli': 21.2.4(conventional-commits-parser@7.1.3)(typescript@6.0.3)
       eslint: 10.13.0(jiti@2.7.0)(supports-color@10.2.2)

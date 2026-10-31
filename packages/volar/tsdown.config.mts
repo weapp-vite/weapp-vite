@@ -5,7 +5,7 @@ export default defineConfig({
   shims: true,
   format: ['esm', 'cjs'],
   clean: true,
-  dts: false,
+  dts: true,
   deps: {
     resolveDepSubpath: true,
   },

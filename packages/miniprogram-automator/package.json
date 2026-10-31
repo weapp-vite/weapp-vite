@@ -59,6 +59,7 @@
     "lint:fix": "eslint . --fix"
   },
   "dependencies": {
+    "@types/ws": "^8.18.2",
     "@weapp-vite/qr": "workspace:*",
     "obug": "catalog:",
     "ws": "^8.22.0"
@@ -68,7 +69,6 @@
     "registry": "https://registry.npmjs.org"
   },
   "devDependencies": {
-    "@types/ws": "^8.18.2",
     "sharp": "catalog:"
   },
   "tsd": {

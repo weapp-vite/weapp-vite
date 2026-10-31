@@ -17,7 +17,7 @@ export const i18n = {
   page: unavailable,
 } as unknown as I18nInstance
 export const global = unavailable as unknown as I18nGlobal
-export const page = unavailable as unknown as typeof Page
+export const page: I18nInstance['page'] = unavailable as unknown as I18nInstance['page']
 
 export type { WeappI18nConfig } from './i18n/types'
 export type { I18nGlobal, I18nInstance, I18nLocaleChangeSubscription } from '@weapp-vite/i18n'

@@ -138,9 +138,30 @@ describe('repoctl nightly workflow', () => {
     expect(steps.some(step => step.uses?.startsWith('actions/cache/'))).toBe(false)
     const diagnostics = steps.find(step => step.name === 'Preserve nightly diagnostics')!
     expect(diagnostics.if).toBe(expression('always()'))
-    expect(diagnostics.with?.path).toContain('/**/consumer-report.json')
-    expect(diagnostics.with?.path).toContain('/**/tarballs/**/*.tgz')
     expect(diagnostics.with?.['retention-days']).toBe(14)
+  })
+
+  it('archives native reports and tarballs without recursively scanning isolated dependency trees', () => {
+    const diagnostics = workflow.jobs.nightly!.steps!.find(step => step.name === 'Preserve nightly diagnostics')!
+    const patterns = String(diagnostics.with?.path).trim().split('\n').map(pattern => pattern.replace(`${expression('runner.temp')}/`, ''))
+    expect(patterns.every(pattern => !pattern.includes('**'))).toBe(true)
+    const nightly = 'repoctl-nightly/repoctl-nightly-run'
+    const snapshot = `${nightly}/repoctl-snapshot-identity-run`
+    const reports = [
+      'repoctl-nightly/report.json',
+      `${nightly}/nightly-report.json`,
+      `${nightly}/consumer-report.json`,
+      `${snapshot}/snapshot-report.json`,
+      `${snapshot}/tarballs/0/package.tgz`,
+      `${snapshot}/tarballs/41/package.tgz`,
+    ]
+    const dependencies = [
+      `${snapshot}/source/node_modules/package/nightly-report.json`,
+      `${snapshot}/source/node_modules/package/tarballs/0/package.tgz`,
+      `${snapshot}/consumers/0/node_modules/package/snapshot-report.json`,
+      `${nightly}/consumer/node_modules/package/consumer-report.json`,
+    ]
+    expect([...reports, ...dependencies].filter(file => patterns.some(pattern => path.matchesGlob(file, pattern)))).toEqual(reports)
   })
 
   it('audits every public package and passes recovery inputs to their validation boundary', () => {

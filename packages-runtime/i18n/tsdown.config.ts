@@ -35,9 +35,9 @@ export default defineConfig([
     },
     outDir: './dist/cjs',
     format: ['cjs'],
-    hash: false,
+    hash: true,
     target: 'node20',
-    dts: false,
+    dts: true,
     clean: false,
     outExtensions() {
       return { js: '.cjs' }

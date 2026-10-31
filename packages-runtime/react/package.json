@@ -72,13 +72,19 @@
     "react-reconciler": "catalog:"
   },
   "dependencies": {
+    "@types/react": "catalog:",
     "@weapp-core/constants": "workspace:*"
   },
   "devDependencies": {
-    "@types/react": "catalog:",
     "@types/react-reconciler": "catalog:",
     "miniprogram-api-typings": "catalog:",
     "react": "catalog:",
     "react-reconciler": "catalog:"
+  },
+  "tsd": {
+    "compilerOptions": {
+      "module": "NodeNext",
+      "moduleResolution": "NodeNext"
+    }
   }
 }

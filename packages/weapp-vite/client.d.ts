@@ -58,14 +58,10 @@ declare global {
   function defineComponentJson(config: () => __WEAPP_COMPONENT_JSON__): () => __WEAPP_COMPONENT_JSON__
   function defineComponentJson(config: () => Promise<__WEAPP_COMPONENT_JSON__>): () => Promise<__WEAPP_COMPONENT_JSON__>
   function defineComponentJson(config: __WEAPP_COMPONENT_JSON__): __WEAPP_COMPONENT_JSON__
-}
 
-declare module 'process' {
-  global {
-    namespace NodeJS {
-      interface ProcessEnv extends Dict<string> {
-        PLATFORM: RUNTIME_PLATFORM
-      }
+  namespace NodeJS {
+    interface ProcessEnv {
+      PLATFORM?: RUNTIME_PLATFORM
     }
   }
 }

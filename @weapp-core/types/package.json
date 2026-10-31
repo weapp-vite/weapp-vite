@@ -41,6 +41,13 @@
     "./miniprogram": {
       "types": "./dist/miniprogramIntrinsicElements.d.mts",
       "import": "./dist/miniprogramIntrinsicElements.mjs"
+    },
+    "./wechat-api": {
+      "types": "./types/wechat-api.d.ts"
+    },
+    "./alipay-api": {
+      "types": "./dist/alipay-api.d.mts",
+      "import": "./dist/alipay-api.mjs"
     }
   },
   "typesVersions": {
@@ -56,11 +63,19 @@
       ],
       "miniprogram": [
         "dist/miniprogramIntrinsicElements.d.mts"
+      ],
+      "wechat-api": [
+        "types/wechat-api.d.ts"
+      ],
+      "alipay-api": [
+        "dist/alipay-api.d.mts"
       ]
     }
   },
   "files": [
-    "dist"
+    "THIRD_PARTY_NOTICES.md",
+    "dist",
+    "types"
   ],
   "engines": {
     "node": "^22.23.4 || ^24.22.1 || >=26.12.1"
@@ -71,12 +86,24 @@
     "test:types": "pnpm build && pnpm run test:types:check",
     "test:types:check": "tsd --typings dist/index.d.mts --files \"test-d/**/*.test-d.ts\"",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix",
+    "prebuild": "node ./scripts/generate-platform-types.mjs",
+    "predev": "node ./scripts/generate-platform-types.mjs",
+    "pretypecheck": "node ./scripts/generate-platform-types.mjs"
   },
   "devDependencies": {
+    "@mini-types/alipay": "catalog:",
+    "miniprogram-api-typings": "catalog:",
     "tsd": "^0.33.0",
     "tsdown": "0.23.2",
     "typescript": "catalog:"
+  },
+  "tsd": {
+    "compilerOptions": {
+      "module": "NodeNext",
+      "moduleResolution": "NodeNext",
+      "paths": {}
+    }
   },
   "publishConfig": {
     "access": "public",

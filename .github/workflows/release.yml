@@ -283,10 +283,9 @@ jobs:
           name: nightly-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             ${{ runner.temp }}/repoctl-nightly/*.json
-            ${{ runner.temp }}/repoctl-nightly/**/nightly-report.json
-            ${{ runner.temp }}/repoctl-nightly/**/consumer-report.json
-            ${{ runner.temp }}/repoctl-nightly/**/snapshot-report.json
-            ${{ runner.temp }}/repoctl-nightly/**/tarballs/**/*.tgz
+            ${{ runner.temp }}/repoctl-nightly/repoctl-nightly-*/*.json
+            ${{ runner.temp }}/repoctl-nightly/repoctl-nightly-*/repoctl-snapshot-*/*.json
+            ${{ runner.temp }}/repoctl-nightly/repoctl-nightly-*/repoctl-snapshot-*/tarballs/*/*.tgz
           if-no-files-found: ignore
           retention-days: 14
 

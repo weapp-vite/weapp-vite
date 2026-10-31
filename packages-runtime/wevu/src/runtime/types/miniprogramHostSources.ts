@@ -1,4 +1,6 @@
-/// <reference types="miniprogram-api-typings" preserve="true" />
+// namespace 别名包含官方 class 声明，须用普通导入；仅用于 declare namespace，运行时会被擦除。
+import { WechatMiniprogram } from '@weapp-core/types/wechat-api'
+
 /* eslint-disable ts/no-namespace -- 通过单点 namespace 兼容宿主类型源，避免纯类型 namespace 在多文件间转发时被 bundler 误判为运行时导出。 */
 export declare namespace WechatMiniProgramHostNamespace {
   export import App = WechatMiniprogram.App
