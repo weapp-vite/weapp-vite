@@ -156,6 +156,7 @@ const IDE_GITHUB_ISSUES_PATTERNS = [
   'ide/issue-1185-sibling-entry.runtime.test.ts',
   'ide/issue-1235-component-reentry.runtime.test.ts',
   'ide/issue-1249-dataset.runtime.test.ts',
+  'ide/issue-1252-refresher.runtime.test.ts',
   'ide/issue-1261-props-projection.runtime.test.ts',
   'ide/issue-1263-chunk-debug-name.runtime.test.ts',
   'ide/issue-1264-basic-wx-apis.runtime.test.ts',
@@ -234,6 +235,7 @@ const IDE_TEMPLATES_PATTERNS = [
 const IDE_FULL_CORE_PATTERNS = [
   'ide/stateful-host-format.runtime.test.ts',
   'ide/native-property-delivery.runtime.test.ts',
+  'ide/issue-1252-refresher.runtime.test.ts',
   'ide/stream-capability.runtime.test.ts',
   'ide/sse-stream.runtime.test.ts',
   'ide/app-shell-presence.hmr.runtime.test.ts',
@@ -338,6 +340,7 @@ const IDE_DOM_HEADLESS_PATTERNS = [...new Set([
   'ide/issue-1185-sibling-entry.runtime.test.ts',
   'ide/issue-1235-component-reentry.runtime.test.ts',
   'ide/issue-1249-dataset.runtime.test.ts',
+  'ide/issue-1252-refresher.runtime.test.ts',
   'ide/issue-1261-props-projection.runtime.test.ts',
   'ide/issue-1263-chunk-debug-name.runtime.test.ts',
   'ide/issue-1264-basic-wx-apis.runtime.test.ts',

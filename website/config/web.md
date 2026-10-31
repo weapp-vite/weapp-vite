@@ -41,7 +41,7 @@ wv build -p web
 
 - **类型**：
   ```ts
-  {
+  interface WeappWebConfig {
     enable?: boolean
     root?: string
     srcDir?: string
@@ -151,10 +151,11 @@ Web 产物输出目录，默认一般是 `dist/web`。
   - `safe`
   - `strict`
 - `runtime.warnings.level`
-  - `warn`
-  - `error`
-  - `off`
+  - `warn`：默认，以警告输出
+  - `error`：以错误日志输出，不把兼容提示变成编译失败
+  - `off`：关闭输出
 - `runtime.warnings.dedupe`
+  - 默认 `true`；运行时按告警 key 去重，开发期标签诊断按下述作用域去重
 - `runtime.viewport.mode`
   - `mini-program`：移动端铺满，宽屏下使用居中的设备容器（默认）
   - `responsive`：保留浏览器全宽布局
@@ -182,6 +183,12 @@ Web 产物输出目录，默认一般是 `dist/web`。
   - 去重注入的 `preconnect` / `dns-prefetch` / `prefetch` / `preload` 链接数组
 
 默认视口同时约束页面滚动、导航栏和 `fixed` 元素；`rpx` 也按设备容器宽度计算，而不是按桌面浏览器窗口计算。
+
+### 开发期标签诊断
+
+开发服务使用同一组 `runtime.warnings` 配置，区分未知/未注册标签与官方组件尚未实现 Web 语义。提示包含原始标签、文件、行列；WXML、layout、include/import 依赖和 Vue SFC 内联/外部模板保留真实来源。依赖模板按入口组件的注册作用域检查，合法 HTML/SVG/MathML、已注册组件、模板控制标签和已适配原生组件不告警。
+
+默认按入口注册作用域、源文件、标签和原因去重，同一源码未变的重新编译不会重复输出；源位置变化或修正后再次引入会重新提示。`dedupe: false` 允许每轮编译再次提示。`level: 'error'` 只提高日志级别，不中断编译；`off` 静默。这类模板诊断仅在开发服务输出，生产构建与生产页面保持静默；API 降级等运行时告警仍使用运行时策略。
 
 ## 原生组件与 WXSS
 
@@ -214,7 +221,9 @@ Web 页面栈会保留 `navigateTo` 隐藏页面的 DOM、实例、数据和滚�
 
 首次页面挂载前会触发 `App.onLaunch` / `App.onShow`，浏览器进入后台或回到前台时通过 `visibilitychange` 去重触发 `App.onHide` / `App.onShow`。`getLaunchOptionsSync()` 始终返回初始入口，`getEnterOptionsSync()` 会在重新进入前台时更新为当前页面。页面容器 `#app` 的滚动位置持续归属于当前栈项；history/hash 路由会关闭浏览器原生滚动恢复，避免窗口和设备容器重复恢复。
 
-尚未完整支持的已知小程序组件会保持可渲染降级并输出去重告警。Web 运行时仍不等价于微信 DevTools 或真机，视觉发布门禁应以 DevTools 基线为真值。
+`scroll-view` 的 `scroll-with-animation` 会将滚动属性、公开属性和 `scroll-into-view` 统一交给浏览器平滑定位；基础 refresher 覆盖受控触发、阈值、默认样式/背景、自定义 slot 及 pulling/refresh/abort/restore 事件。鼠标主键拖动可转换为 touch，真实触摸保留原生事件，滚轮不会触发触摸或刷新。事件顺序、刷新结束的数据提交方式与能力限制见 [Web 包说明](/packages/web#scroll-view-刷新与滚动动画)。
+
+尚未完整支持的已知小程序组件保持降级渲染，开发服务通过上述模板诊断提示。音频与平台 API 的降级能力见 [Web 兼容矩阵](/guide/web-compat-matrix)。Web 运行时仍不等价于微信 DevTools 或真机，视觉发布门禁应以 DevTools 基线为真值。
 
 ### `vite`
 

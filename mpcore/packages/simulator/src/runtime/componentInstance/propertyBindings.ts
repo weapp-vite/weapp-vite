@@ -1,4 +1,5 @@
 import type { HeadlessComponentDefinition, HeadlessComponentInstance } from './types'
+import { syncNativePropertyCommits } from '../../view/nativeBindings/properties'
 import { runComponentObservers } from './observers'
 import { normalizeComponentPropertyValue } from './properties'
 import { cloneValue, hasComponentPropertyValueChanged } from './shared'
@@ -13,6 +14,7 @@ export function syncComponentProperties(
   changedPageKeys: string[],
   beforeObservers?: (instance: HeadlessComponentInstance, phase: 'properties') => void,
 ) {
+  syncNativePropertyCommits(instance, nextProperties)
   const freshPageChanges = changedPageKeys.length > 0 && consumedPageChanges.get(instance) !== changedPageKeys
   if (freshPageChanges) {
     // 先消费父级本次写入，observer 重入时不能再次覆盖组件对属性的修正。

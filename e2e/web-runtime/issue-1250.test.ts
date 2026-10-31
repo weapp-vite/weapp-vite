@@ -2,18 +2,30 @@ import type { Browser, Page } from 'playwright'
 import type { PreviewServer } from 'vite'
 import { rm } from 'node:fs/promises'
 import process from 'node:process'
+import { getMiniProgramRuntimeGlobalKeys } from '@weapp-core/shared/platforms/runtime'
 import { chromium } from 'playwright'
 import { preview } from 'vite'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { buildIssueRegressionProject, createIssueRegressionProject } from '../utils/issueRegressionProject'
 
-type ListenerKey = 'error' | 'rejection' | 'theme'
+type ListenerKey = 'error' | 'rejection' | 'theme' | 'audio'
 type ListenerSnapshot = Record<ListenerKey, { active: number, added: number, removed: number }>
 
 interface LifecycleSnapshot {
   errors: string[]
   rejections: Array<{ reason: unknown, promiseMatches: boolean, reasonMatches: boolean }>
   themes: string[]
+}
+
+interface AudioSnapshot {
+  events: string[]
+  errors: Array<{ errCode: number, errMsg: string }>
+  currentTime: number
+  duration: number
+  buffered: number
+  paused: boolean
+  destroyed: boolean
+  srcEmpty: boolean
 }
 
 const ROOT = '[data-weapp-page-active="true"]'
@@ -29,7 +41,7 @@ describe('issue #1250: compiled Web lifecycle API consumers', { concurrent: fals
     project = await createIssueRegressionProject(1250)
     await buildIssueRegressionProject(project)
     server = await preview({ root: project, configFile: false, build: { outDir: 'dist/web' }, preview: { host: '127.0.0.1', port: 0, open: false } })
-    browser = await chromium.launch({ channel: process.env.WEAPP_VITE_WEB_E2E_CHANNEL })
+    browser = await chromium.launch({ headless: true, channel: process.env.WEAPP_VITE_WEB_E2E_CHANNEL })
   })
 
   beforeEach(async () => {
@@ -39,13 +51,18 @@ describe('issue #1250: compiled Web lifecycle API consumers', { concurrent: fals
     await page.addInitScript(() => {
       const add = EventTarget.prototype.addEventListener
       const remove = EventTarget.prototype.removeEventListener
+      let unhandledCount = 0
       // 这些是主动派发的真实 Window 事件，阻止浏览器将其作为未处理故障上报。
       add.call(window, 'error', event => event.preventDefault(), true)
-      add.call(window, 'unhandledrejection', event => event.preventDefault(), true)
+      add.call(window, 'unhandledrejection', (event) => {
+        unhandledCount += 1
+        event.preventDefault()
+      }, true)
       const counters = {
         error: { active: new Set<EventListenerOrEventListenerObject>(), added: 0, removed: 0 },
         rejection: { active: new Set<EventListenerOrEventListenerObject>(), added: 0, removed: 0 },
         theme: { active: new Set<EventListenerOrEventListenerObject>(), added: 0, removed: 0 },
+        audio: { active: new Set<EventListenerOrEventListenerObject>(), added: 0, removed: 0 },
       }
       function key(target: EventTarget, type: string): keyof typeof counters | undefined {
         if (target === window && type === 'error') {
@@ -56,6 +73,9 @@ describe('issue #1250: compiled Web lifecycle API consumers', { concurrent: fals
         }
         if (target instanceof MediaQueryList && type === 'change' && target.media === '(prefers-color-scheme: dark)') {
           return 'theme'
+        }
+        if (target instanceof HTMLAudioElement) {
+          return 'audio'
         }
       }
       EventTarget.prototype.addEventListener = function (type, listener, options) {
@@ -81,23 +101,36 @@ describe('issue #1250: compiled Web lifecycle API consumers', { concurrent: fals
           removed: counter.removed,
         }])),
       })
+      Object.defineProperty(window, '__issue1250UnhandledCount', { value: () => unhandledCount })
     })
     await page.goto(server!.resolvedUrls!.local[0])
     await expect.poll(() => page.locator(`${ROOT} #ready`).textContent()).toBe('ready')
   })
 
   afterEach(async () => {
-    await page?.close()
-    expect(errors).toEqual([])
+    try {
+      expect(errors).toEqual([])
+    }
+    finally {
+      await page?.close()
+    }
   })
 
   afterAll(async () => {
-    await browser?.close()
-    if (server) {
-      await new Promise<void>((resolve, reject) => server!.httpServer.close(error => error ? reject(error) : resolve()))
+    try {
+      await browser?.close()
     }
-    if (project) {
-      await rm(project, { recursive: true, force: true })
+    finally {
+      try {
+        if (server) {
+          await new Promise<void>((resolve, reject) => server!.httpServer.close(error => error ? reject(error) : resolve()))
+        }
+      }
+      finally {
+        if (project) {
+          await rm(project, { recursive: true, force: true })
+        }
+      }
     }
   })
 
@@ -107,6 +140,10 @@ describe('issue #1250: compiled Web lifecycle API consumers', { concurrent: fals
 
   async function listeners(): Promise<ListenerSnapshot> {
     return page.evaluate(() => Reflect.get(window, '__issue1250NativeListeners')())
+  }
+
+  async function audioSnapshot(): Promise<AudioSnapshot> {
+    return JSON.parse(await page.locator(`${ROOT} #audio-snapshot`).textContent() ?? '{}') as AudioSnapshot
   }
 
   it('delivers native error strings and original rejection values once, then releases subscriptions', async () => {
@@ -169,5 +206,73 @@ describe('issue #1250: compiled Web lifecycle API consumers', { concurrent: fals
     await page.locator(`${ROOT} #toast-sequence`).click()
     await page.locator(`${ROOT} #hide-toast`).click()
     expect(await toast.getAttribute('hidden')).not.toBeNull()
+  })
+
+  it('executes large byte conversions and complete compatibility objects through compiled business code', async () => {
+    await page.locator(`${ROOT} #exercise-apis`).click()
+    await expect.poll(async () => JSON.parse(await page.locator(`${ROOT} #api-snapshot`).textContent() || '{}')).toEqual({
+      bytes: 512 * 1024,
+      encodedLength: 4 * Math.ceil(512 * 1024 / 3),
+      matches: true,
+      entries: 0,
+      namedEntries: 0,
+      typedEntries: 0,
+      supported: 0,
+      observerCalls: 0,
+      hasNow: false,
+      publicFunctionsMatch: true,
+      monitorReturnsVoid: true,
+      logState: { logCount: 0, maxLogCount: 0, maxSize: 0, size: 0 },
+      calls: ['setKeepScreenOn:ok', 'setEnableDebug:ok'],
+      inertCalls: 0,
+    })
+    expect(await page.evaluate(keys => keys.every(key => Reflect.get(window, key) === Reflect.get(window, 'wx')), getMiniProgramRuntimeGlobalKeys())).toBe(true)
+    expect(await page.evaluate(() => Reflect.get(window, '__issue1250UnhandledCount')())).toBe(0)
+  })
+
+  it('plays a real generated WAV and preserves pause, seek, stop, unsubscribe and destroy semantics', async () => {
+    const baseline = await listeners()
+    const click = (name: string) => page.locator(`${ROOT} #audio-${name}`).click()
+    await click('play')
+    await expect.poll(async () => (await audioSnapshot()).events?.includes('Play')).toBe(true)
+    await expect.poll(async () => (await audioSnapshot()).duration).toBeCloseTo(6, 1)
+    expect((await audioSnapshot()).errors).toEqual([])
+    await click('pause')
+    await expect.poll(async () => (await audioSnapshot()).paused).toBe(true)
+    await expect.poll(async () => (await audioSnapshot()).events.filter(name => name === 'Pause').length).toBe(1)
+    const beforeSeek = (await audioSnapshot()).events.filter(name => name === 'Seeked').length
+    await click('seek')
+    await expect.poll(async () => (await audioSnapshot()).currentTime).toBeCloseTo(2, 1)
+    await expect.poll(async () => (await audioSnapshot()).events.filter(name => name === 'Seeked').length).toBeGreaterThan(beforeSeek)
+    await click('resume')
+    await expect.poll(async () => (await audioSnapshot()).events.filter(name => name === 'Play').length).toBe(2)
+    await click('stop')
+    await expect.poll(async () => (await audioSnapshot()).events.includes('Stop')).toBe(true)
+    expect((await audioSnapshot()).currentTime).toBe(0)
+    expect((await audioSnapshot()).paused).toBe(true)
+    expect((await audioSnapshot()).events.filter(name => name === 'Pause')).toHaveLength(1)
+    expect((await listeners()).audio.active).toBeGreaterThan(baseline.audio.active)
+    await click('unsubscribe')
+    const events = (await audioSnapshot()).events
+    await click('resume')
+    await click('pause')
+    expect((await audioSnapshot()).events).toEqual(events)
+    await click('destroy')
+    await expect.poll(async () => (await listeners()).audio.active).toBe(baseline.audio.active)
+    expect(await audioSnapshot()).toMatchObject({ destroyed: true, srcEmpty: true })
+    await click('resume')
+    expect((await audioSnapshot()).events).toEqual(events)
+    expect(await page.evaluate(() => Reflect.get(window, '__issue1250UnhandledCount')())).toBe(0)
+  })
+
+  it('receives real ended and decode errors without leaking playback rejections', async () => {
+    await page.locator(`${ROOT} #audio-end`).click()
+    await expect.poll(async () => (await audioSnapshot()).events?.includes('Ended')).toBe(true)
+    await page.locator(`${ROOT} #audio-error`).click()
+    await expect.poll(async () => (await audioSnapshot()).errors.length).toBe(1)
+    expect((await audioSnapshot()).errors[0]).toMatchObject({ errCode: 10004, errMsg: expect.stringContaining('fail') })
+    expect(await page.evaluate(() => Reflect.get(window, '__issue1250UnhandledCount')())).toBe(0)
+    await page.locator(`${ROOT} #audio-destroy`).click()
+    await expect.poll(async () => (await listeners()).audio.active).toBe(0)
   })
 })

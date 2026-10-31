@@ -1,0 +1,7 @@
+<view>
+  <text id="ready">{{ready}}</text>
+  <scope-card id="direct-card" />
+  <wx-include src="../../shared/card.wxml" />
+  <buton id="raw-unknown">Original typo</buton>
+  <web-view id="unsupported-native" />
+</view>

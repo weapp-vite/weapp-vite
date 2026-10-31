@@ -1,4 +1,5 @@
 import type { RenderElementNode, RenderNode } from './types'
+import { resolveControlledNativeAttributes } from '../../shared/controlledAttributes'
 import { resolveNativeComponentPropertyAttributes } from '../../shared/nativeComponents'
 import {
   hasControlAttribute,
@@ -14,6 +15,7 @@ import {
   stripControlAttributes,
 } from './attributes'
 import { buildExpression, buildTemplateDataExpression, parseInterpolations } from './interpolation'
+import { buildTemplateDataSources } from './templateDataSources'
 
 interface RenderElementOptions {
   skipFor?: boolean
@@ -132,7 +134,7 @@ export class Renderer {
       ? buildTemplateDataExpression(attribs.data, scopeVar, wxsVar)
       : undefined
     const scopeExpr = dataExpr
-      ? `ctx.mergeScope(${scopeVar}, ${dataExpr})`
+      ? `ctx.mergeScope(${scopeVar}, ${dataExpr}, ${buildTemplateDataSources(attribs.data!, wxsVar)})`
       : scopeVar
     return `ctx.renderTemplate(__templates, ${isExpr}, ${scopeExpr}, ctx)`
   }
@@ -155,7 +157,8 @@ export class Renderer {
         const nestedScopeVar = scopeVar === 'scope'
           ? '__scope'
           : `${scopeVar}_nested`
-        const scopeExpr = `ctx.createScope(${scopeVar}, { ${itemVar}: ${itemVar}, ${indexVar}: ${indexVar} })`
+        const sourceExpression = buildExpression(parseInterpolations(forInfo.expr), '__sourceScope', wxsVar)
+        const scopeExpr = `ctx.createScope(${scopeVar}, { ${itemVar}: ${itemVar}, ${indexVar}: ${indexVar} }, [{ key: ${JSON.stringify(itemVar)}, read: __sourceScope => ${sourceExpression}, index: ${indexVar} }])`
         const itemRender = this.renderElement(
           node,
           nestedScopeVar,
@@ -181,6 +184,7 @@ export class Renderer {
     const attrs = renderAttributes(attribs, scopeVar, wxsVar, {
       skipControl: true,
       preferProperty: Boolean(customTag),
+      controlledAttributes: customTag ? undefined : resolveControlledNativeAttributes(node.name ?? ''),
       propertyAttributes: customTag
         ? undefined
         : resolveNativeComponentPropertyAttributes(node.name ?? ''),

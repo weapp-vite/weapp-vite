@@ -11,6 +11,7 @@ import type {
 import type { RuntimeDiagnosticEntry } from '../kernel'
 import type { HeadlessProjectDescriptor, HeadlessRouteRecord } from '../project'
 import type { HeadlessNativeNode } from '../view/nativeNode'
+import type { HeadlessTestingNodeEventInit } from '../view/nodeEvents'
 import type { HeadlessAppInstance } from './appInstance'
 import type { HeadlessComponentInstance } from './componentInstance'
 import type { HeadlessPageInstance } from './pageInstance'
@@ -43,6 +44,7 @@ import { customTabBarScopeId } from '../view/customTabBar'
 import { createHeadlessIntersectionObserver } from '../view/intersectionObserver'
 import { createHeadlessMediaQueryObserver } from '../view/mediaQueryObserver'
 import { dispatchNativeNodeEvent, syncNativeScrollViews } from '../view/nativeNode'
+import { releaseNativeRefreshers, syncNativeRefreshers } from '../view/nativeRefresher'
 import { resolveSelectorScrollTop } from '../view/selectorQuery'
 import { resolveSelectorQueryNativeScope, resolveSelectorQueryScopeId, resolveSelectorQueryScopeSnapshot } from '../view/selectorQueryScope'
 import { createTemplateRegistration } from '../view/templateRegistration'
@@ -610,13 +612,15 @@ export class HeadlessSession {
         selectOwnerComponent: (scopeId: string) => this.selectOwnerComponent(scopeId),
       },
     }, current)
-    syncNativeScrollViews(current, rendered.root, (scopeId, method, event) => {
+    const emitNativeEvent = (scopeId: string | null, method: string, event: Record<string, unknown>) => {
       this.kernel.scheduler.queueMicrotask(() => {
         if (this.currentPageInstance === current) {
           this.callScopeMethod(scopeId, method, event)
         }
       })
-    })
+    }
+    syncNativeScrollViews(current, rendered.root, emitNativeEvent)
+    syncNativeRefreshers(current, rendered.root, { scheduler: this.kernel.scheduler, emit: emitNativeEvent })
     const componentScopePrefix = `page:${stripLeadingSlash(current.route)}`
     for (const [scopeId, instance] of this.componentCache.entries()) {
       if (scopeId.startsWith(componentScopePrefix)) {
@@ -630,7 +634,7 @@ export class HeadlessSession {
     return rendered
   }
 
-  dispatchNativeNodeEvent(node: HeadlessNativeNode, eventName: string, event: { detail?: unknown }, onHandlerResult?: (result: unknown) => void) {
+  dispatchNativeNodeEvent(node: HeadlessNativeNode, eventName: string, event: HeadlessTestingNodeEventInit, onHandlerResult?: (result: unknown) => void) {
     const current = this.requireCurrentPage('dispatchNativeNodeEvent()')
     if (eventName === 'tap') {
       this.renderCurrentPage()
@@ -1601,6 +1605,7 @@ export class HeadlessSession {
       failure = { error }
     }
     this.clearMediaQueryObservers(page)
+    releaseNativeRefreshers(page)
     try {
       this.detachPageComponents(page.route, closing)
     }

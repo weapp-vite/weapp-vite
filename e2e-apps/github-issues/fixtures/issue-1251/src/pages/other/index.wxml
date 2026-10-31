@@ -1,0 +1,4 @@
+<view>
+  <text id="ready">{{ready}}</text>
+  <include src="../../shared/card.wxml" />
+</view>

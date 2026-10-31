@@ -40,7 +40,7 @@ describe('web plugin helper contracts', () => {
       { name: 'default', tag: 'wv-layout-default', template: '{{pageTitle}}{{item}}{{index}}{{camelCase}}' },
       { name: 'empty', tag: 'wv-layout-empty' },
     ] as any)
-    expect(wrapped).toContain('wx:if="{{!__wv_page_layout_name')
+    expect(wrapped).toContain('typeof __wv_page_layout_name === \'undefined\' || !__wv_page_layout_name')
     expect(wrapped).toContain('wx:elif="{{__wv_page_layout_name === \'empty\'}}"')
     expect(wrapped).toContain('page-title="{{(__wv_page_layout_props&&__wv_page_layout_props.pageTitle)}}"')
     expect(wrapped).toContain('camel-case="{{(__wv_page_layout_props&&__wv_page_layout_props.camelCase)}}"')

@@ -4,7 +4,7 @@ import { mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { createServer } from 'vite'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { mergeWeb } from './web'
 
 function webConfig(config: InlineConfig = {}, userConfig?: InlineConfig, isDev = true) {
@@ -14,6 +14,7 @@ function webConfig(config: InlineConfig = {}, userConfig?: InlineConfig, isDev =
       enabled: true,
       root: config.root ?? path.resolve('web-watch-fixture'),
       outDir: path.resolve('web-watch-fixture/dist'),
+      srcDir: 'src',
       pluginOptions: { srcDir: 'src' },
       userConfig,
     },
@@ -26,6 +27,10 @@ function webConfig(config: InlineConfig = {}, userConfig?: InlineConfig, isDev =
 }
 
 describe('Web source write delivery', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
   it('uses the native Vite write-settlement policy for rapid saves', () => {
     expect(webConfig().server?.watch?.awaitWriteFinish).toEqual({ stabilityThreshold: 50, pollInterval: 10 })
   })
@@ -62,7 +67,36 @@ describe('Web source write delivery', () => {
     expect(webConfig({}, undefined, false).server?.watch?.awaitWriteFinish).toBeUndefined()
   })
 
-  it('delivers a restore saved immediately after the previous change through the same Vite watcher', async () => {
+  it.each(['1', 'true', '0', 'false'])('normalizes the %s polling environment before Vite selects its backend', (usePolling) => {
+    vi.stubEnv('CHOKIDAR_USEPOLLING', usePolling)
+    vi.stubEnv('CHOKIDAR_INTERVAL', '23')
+    vi.stubEnv('CHOKIDAR_BINARY_INTERVAL', '41')
+    expect(webConfig().server?.watch).toMatchObject({
+      usePolling: usePolling === '1' || usePolling === 'true',
+      interval: 23,
+      binaryInterval: 41,
+    })
+  })
+
+  it.each([false, true])('preserves explicit polling %s and intervals over environment defaults', (usePolling) => {
+    vi.stubEnv('CHOKIDAR_USEPOLLING', usePolling ? '0' : '1')
+    vi.stubEnv('CHOKIDAR_INTERVAL', '23')
+    vi.stubEnv('CHOKIDAR_BINARY_INTERVAL', '41')
+    const watch = { usePolling, interval: 17, binaryInterval: 29, useFsEvents: false }
+    expect(webConfig({ server: { watch } }).server?.watch).toMatchObject(watch)
+    expect(webConfig({}, { server: { watch } }).server?.watch).toMatchObject(watch)
+  })
+
+  it('keeps environment defaults out of disabled watching and production configuration', () => {
+    vi.stubEnv('CHOKIDAR_USEPOLLING', '1')
+    vi.stubEnv('CHOKIDAR_INTERVAL', '23')
+    expect(webConfig({ server: { watch: null } }).server?.watch).toBeNull()
+    expect(webConfig({}, { server: { watch: null } }).server?.watch).toBeNull()
+    expect(webConfig({}, undefined, false).server?.watch).toBeUndefined()
+    expect(webConfig({ server: { watch: { usePolling: false } } }, undefined, false).server?.watch).toEqual({ usePolling: false })
+  })
+
+  it.each(['options', 'environment'] as const)('delivers immediate saves through the selected Vite polling backend (%s)', async (selection) => {
     const root = await realpath(await mkdtemp(path.join(os.tmpdir(), 'web-save-delivery-')))
     const source = path.join(root, 'source.txt')
     let server: ViteDevServer | undefined
@@ -71,7 +105,11 @@ describe('Web source write delivery', () => {
     const timeout = setTimeout(() => abort.abort(new Error(`Vite watcher did not finish ${phase}`)), 10_000)
     try {
       await writeFile(source, 'original')
-      const config = webConfig({ root, server: { watch: { usePolling: true, interval: 5 } } })
+      if (selection === 'environment') {
+        vi.stubEnv('CHOKIDAR_USEPOLLING', '1')
+        vi.stubEnv('CHOKIDAR_INTERVAL', '5')
+      }
+      const config = webConfig({ root, server: selection === 'options' ? { watch: { usePolling: true, interval: 5 } } : undefined })
       server = await createServer({
         root,
         configFile: false,
@@ -80,6 +118,8 @@ describe('Web source write delivery', () => {
         server: { ...config.server, middlewareMode: true, hmr: false },
       })
       const watcher = server.watcher as ViteDevServer['watcher'] & { _readyEmitted?: boolean }
+      expect(watcher.options.usePolling).toBe(true)
+      expect(watcher.options.useFsEvents).toBe(false)
       if (!watcher._readyEmitted) {
         await once(watcher, 'ready', { signal: abort.signal })
       }

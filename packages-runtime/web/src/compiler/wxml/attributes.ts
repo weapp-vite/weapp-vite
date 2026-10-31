@@ -90,11 +90,17 @@ export function renderAttributes(
     skipControl?: boolean
     preferProperty?: boolean
     propertyAttributes?: readonly string[]
+    controlledAttributes?: readonly string[]
   },
 ) {
   let buffer = ''
   for (const [rawName, rawValue] of Object.entries(attribs)) {
     if (options?.skipControl && CONTROL_ATTRS.has(rawName)) {
+      continue
+    }
+    if (options?.controlledAttributes?.includes(rawName)) {
+      const expression = buildExpression(parseInterpolations(rawValue ?? ''), '__controlledScope', wxsVar)
+      buffer += ` \${ctx.controlledAttribute(${JSON.stringify(rawName)}, __controlledScope => ${expression}, ${scopeVar})}`
       continue
     }
     const eventInfo = parseEventAttribute(rawName)

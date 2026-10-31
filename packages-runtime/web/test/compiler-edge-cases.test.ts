@@ -178,7 +178,8 @@ describe('compiler and plugin edge cases', () => {
     expect(context.imports).toHaveLength(1)
     expect(context.includes).toHaveLength(1)
     expect(context.wxs.map(entry => entry.kind)).toEqual(['src', 'inline', 'inline', 'inline'])
-    expect(context.warnings.filter(message => message.includes('<editor>'))).toHaveLength(1)
+    // 标签诊断由原始模板分析持有，此阶段只报告依赖和 WXS 故障。
+    expect(context.warnings.some(message => message.includes('<editor>'))).toBe(false)
     expect(context.warnings.some(message => message.includes('无法解析模板依赖'))).toBe(true)
     expect(context.warnings.some(message => message.includes('WXS 模块名重复'))).toBe(true)
     expect(renderable.some(node => node.type === 'element' && node.name === 'view')).toBe(true)

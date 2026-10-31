@@ -6,6 +6,7 @@ import type { DomNodeLike, RuntimeComponentRegistryEntry, RuntimeRendererContext
 import path from 'node:path'
 import { bindAttachmentBindingScope } from '../../host/attachmentBindingUpdates'
 import { bindComponentEventHost, buildComponentTrigger } from '../../view/componentEvent'
+import { resolveNativePropertyValue } from '../../view/nativeBindings/properties'
 import { setSelectorQueryScopeId } from '../../view/selectorQueryScope'
 import { isValuelessTemplateAttribute } from '../../view/templateAttributes'
 import { wxsScopeData } from '../../view/wxs'
@@ -113,6 +114,7 @@ export function createComponentScope(
       .map(item => item.trim())
       .filter(Boolean),
     data: { ...componentInstance.data },
+    dataOwner: componentInstance,
     dataset: collectDataset(clonedNode, wxsScopeData(scope)),
     ...bindComponentEventHost(clonedNode),
     getMethod: (methodName: string) => {
@@ -151,7 +153,7 @@ export function resolveComponentProperties(
     }
     nextProperties[propertyKey] = Object.hasOwn(declaredProperties, propertyKey) && isValuelessTemplateAttribute(clonedNode, key)
       ? true
-      : resolveComponentAttributeValue(String(value), scope)
+      : resolveNativePropertyValue(nextProperties, propertyKey, scope, source => resolveComponentAttributeValue(String(value), scope, source))
   }
   return { nextProperties, bindingExpressions }
 }

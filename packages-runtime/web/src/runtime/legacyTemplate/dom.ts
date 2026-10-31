@@ -12,6 +12,7 @@ import {
   MINI_PROGRAM_EVENT_ATTRIBUTE_PREFIX,
   MINI_PROGRAM_EVENT_FLAG_ATTRIBUTE_PREFIX,
 } from '../component/constants'
+import { recordLegacyControlledValue } from '../controlledAttributes'
 import { transformInlineStyleValue } from '../inlineStyle'
 import { escapeAttribute, evaluateExpression, resolveAttributeValue } from './expression'
 
@@ -70,10 +71,18 @@ export function buildAttributeString(
   attribs: Record<string, string>,
   scope: LegacyTemplateScope,
   dataset?: Map<string, unknown>,
+  controlledAttributes: readonly string[] = [],
 ) {
   let result = ''
   for (const [name, rawValue] of Object.entries(attribs)) {
     if (CONTROL_ATTRS.has(name)) {
+      continue
+    }
+    if (dataset && controlledAttributes.includes(name)) {
+      const expression = /^\{\{([\s\S]*)\}\}$/.exec(rawValue.trim())
+      recordLegacyControlledValue(dataset, name, tracked => expression
+        ? evaluateExpression(expression[1]!, tracked)
+        : resolveAttributeValue(rawValue, tracked), scope)
       continue
     }
 

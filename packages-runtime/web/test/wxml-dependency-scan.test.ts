@@ -81,9 +81,11 @@ describe('WXML dependency analysis', () => {
         './external.wxs',
       ])
       expect(result.warnings).toEqual([
-        expect.stringContaining('小程序组件 <map>'),
         expect.stringContaining('无法解析模板依赖: ./unresolved.wxml'),
         expect.stringContaining('WXS 模块名重复: helpers'),
+      ])
+      expect(result.tagDiagnostics).toEqual([
+        expect.objectContaining({ tag: 'map', reason: 'unsupported', filename: part, line: 2 }),
       ])
     }
     finally {

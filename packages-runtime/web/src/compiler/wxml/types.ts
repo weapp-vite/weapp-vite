@@ -1,6 +1,10 @@
 export interface WxmlCompileOptions {
   id: string
   source: string
+  /** 标签诊断使用的原始模板；布局包装不得改变其文件位置。 */
+  diagnosticSource?: string
+  /** 原始 AST 已提供入口诊断时直接复用；依赖仍按各自源码采集。 */
+  sourceTagDiagnostics?: readonly WxmlTagDiagnostic[]
   resolveTemplatePath: (raw: string, importer: string) => string | undefined
   resolveWxsPath: (raw: string, importer: string) => string | undefined
   navigationBar?: NavigationBarCompileOptions
@@ -13,6 +17,15 @@ export interface WxmlCompileResult {
   code: string
   dependencies: string[]
   warnings?: string[]
+  tagDiagnostics?: WxmlTagDiagnostic[]
+}
+
+export interface WxmlTagDiagnostic {
+  tag: string
+  reason: 'unknown' | 'unsupported'
+  filename: string
+  line?: number
+  column?: number
 }
 
 export interface NavigationBarConfig {
@@ -38,6 +51,7 @@ export interface RenderElementNode {
   name: string
   attribs: Record<string, string>
   children?: RenderNode[]
+  startIndex?: number
 }
 
 export type RenderNode = RenderTextNode | RenderElementNode

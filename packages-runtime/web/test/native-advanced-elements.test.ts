@@ -34,6 +34,18 @@ function dispatchPointer(target: EventTarget, name: string, init: Partial<Pointe
   }))
 }
 
+function mockPointerCapture(element: Element) {
+  const captured = new Set<number>()
+  const setPointerCapture = vi.fn((id: number) => captured.add(id))
+  const releasePointerCapture = vi.fn((id: number) => captured.delete(id))
+  Object.defineProperties(element, {
+    setPointerCapture: { configurable: true, value: setPointerCapture },
+    releasePointerCapture: { configurable: true, value: releasePointerCapture },
+    hasPointerCapture: { configurable: true, value: (id: number) => captured.has(id) },
+  })
+  return { setPointerCapture, releasePointerCapture }
+}
+
 describe('advanced native custom elements', () => {
   beforeAll(() => ensureNativeComponentsDefined())
 
@@ -877,12 +889,7 @@ describe('advanced native custom elements', () => {
       configurable: true,
       value: () => ({ width: 200, height: 100 }),
     })
-    const setPointerCapture = vi.fn()
-    const releasePointerCapture = vi.fn()
-    Object.defineProperties(viewport, {
-      setPointerCapture: { configurable: true, value: setPointerCapture },
-      releasePointerCapture: { configurable: true, value: releasePointerCapture },
-    })
+    const { setPointerCapture, releasePointerCapture } = mockPointerCapture(viewport)
     resizeCallback?.([], {} as ResizeObserver)
     expect(observe).toHaveBeenCalledWith(viewport)
 
@@ -941,9 +948,7 @@ describe('advanced native custom elements', () => {
     expect(horizontal).toHaveBeenCalledTimes(1)
     expect(vertical).toHaveBeenCalledTimes(1)
 
-    const setPointerCapture = vi.fn()
-    const releasePointerCapture = vi.fn()
-    Object.assign(view, { setPointerCapture, releasePointerCapture })
+    const { setPointerCapture, releasePointerCapture } = mockPointerCapture(view)
     view.setAttribute('direction', 'horizontal')
     dispatchPointer(view, 'pointerdown', { clientX: 10, clientY: 10, pointerId: 3 })
     dispatchPointer(view, 'pointermove', { clientX: 20, clientY: 20, pointerId: 4 })

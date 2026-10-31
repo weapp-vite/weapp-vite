@@ -1,6 +1,8 @@
 // 安装幂等性直接验证构建产物的内部入口；业务 API 仍通过正式 wx facade 调用。
+import * as publicRuntime from '@weapp-vite/web/runtime'
 // eslint-disable-next-line antfu/no-import-dist, antfu/no-import-node-modules-by-path -- 仅测试产物安装器的幂等性，避免为测试新增公共 API。
 import { installMiniProgramGlobals } from '../../../node_modules/@weapp-vite/web/dist/runtime/polyfill/index.mjs'
+import { createAudioProbe } from '../../audio'
 
 const trace = {
   errors: [] as string[],
@@ -10,6 +12,7 @@ const trace = {
 let publishSnapshot: ((snapshot: string) => unknown) | undefined
 let expectedPromise: Promise<unknown> | undefined
 let expectedReason: unknown
+let audioProbe: ReturnType<typeof createAudioProbe> | undefined
 
 function publish() {
   publishSnapshot?.(JSON.stringify(trace))
@@ -35,15 +38,18 @@ function themeHandler(event: { theme: string }) {
 }
 
 Page({
-  data: { ready: '', snapshot: '' },
+  data: { ready: '', snapshot: '', apiSnapshot: '', audioSnapshot: '' },
   onLoad() {
     publishSnapshot = snapshot => this.setData({ snapshot })
     wx.hideHomeButton()
     wx.hideShareMenu()
+    audioProbe = createAudioProbe(audioSnapshot => this.setData({ audioSnapshot }))
     this.setData({ ready: 'ready' })
     publish()
   },
   onUnload() {
+    audioProbe?.destroy()
+    audioProbe = undefined
     wx.offError(errorHandler)
     wx.offUnhandledRejection(rejectionHandler)
     wx.offThemeChange(themeHandler)
@@ -84,4 +90,66 @@ Page({
   hideToast() {
     wx.hideToast()
   },
+  async exerciseApis() {
+    const bytes = Uint8Array.from({ length: 512 * 1024 }, (_, index) => index % 256)
+    const encoded = wx.arrayBufferToBase64(bytes.buffer)
+    const decoded = new Uint8Array(wx.base64ToArrayBuffer(encoded))
+    const observerCalls: unknown[] = []
+    const performance = wx.getPerformance()
+    const observer = performance.createObserver((...args) => observerCalls.push(args))
+    performance.setBufferSize(30)
+    observer.observe({ entryTypes: ['render', 'navigation'] })
+    observer.disconnect()
+    const logger = wx.getRealtimeLogManager()
+    logger.setFilterMsg('preview')
+    logger.addFilterMsg('ready')
+    logger.in(this)
+    logger.info('local only')
+    logger.tag('network').info('response', 200)
+    const calls: string[] = []
+    await wx.setKeepScreenOn({ keepScreenOn: true, success: result => calls.push(result.errMsg) })
+    await wx.setEnableDebug({ enableDebug: true, complete: result => calls.push(result.errMsg) })
+    let inertCalls = 0
+    wx.onKeyboardHeightChange(() => inertCalls++)
+    wx.offKeyboardHeightChange()
+    wx.onMemoryWarning(() => inertCalls++)
+    wx.offMemoryWarning()
+    const names = [
+      'arrayBufferToBase64',
+      'base64ToArrayBuffer',
+      'getPerformance',
+      'getRealtimeLogManager',
+      'createInnerAudioContext',
+      'reportMonitor',
+      'setKeepScreenOn',
+      'setEnableDebug',
+    ] as const
+    this.setData({
+      apiSnapshot: JSON.stringify({
+        bytes: decoded.byteLength,
+        encodedLength: encoded.length,
+        matches: decoded.length === bytes.length && decoded.every((value, index) => value === bytes[index]),
+        entries: performance.getEntries().length,
+        namedEntries: performance.getEntriesByName('appLaunch').length,
+        typedEntries: performance.getEntriesByType('render').length,
+        supported: observer.supportedEntryTypes.length,
+        observerCalls: observerCalls.length,
+        hasNow: typeof Reflect.get(performance, 'now') === 'function',
+        publicFunctionsMatch: names.every(name => Reflect.get(wx, name) === publicRuntime[name]),
+        monitorReturnsVoid: wx.reportMonitor('preview', 1) === undefined,
+        logState: logger.getCurrentState(),
+        calls,
+        inertCalls,
+      }),
+    })
+  },
+  audioPlay() { audioProbe?.start() },
+  audioPause() { audioProbe?.pause() },
+  audioResume() { audioProbe?.resume() },
+  audioSeek() { audioProbe?.seek() },
+  audioStop() { audioProbe?.stop() },
+  audioUnsubscribe() { audioProbe?.unsubscribe() },
+  audioDestroy() { audioProbe?.destroy() },
+  audioEnd() { audioProbe?.start(0.35) },
+  audioError() { audioProbe?.start(0, true) },
 })

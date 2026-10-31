@@ -1,0 +1,3 @@
+<template name="sfc-shared">
+  <sfc-imported-typo id="sfc-imported">Imported SFC source</sfc-imported-typo>
+</template>

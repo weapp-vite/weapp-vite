@@ -37,10 +37,11 @@ keywords:
 | `<template name>` + `<template is>` | `✅` | 支持模板注册与调用。                                              |
 | `<import>` / `<wx-import>`          | `✅` | 支持模板导入，缺失时告警。                                        |
 | `<include>` / `<wx-include>`        | `✅` | 支持模板包含，缺失时告警。                                        |
-| 未知标签诊断                       | `✅` | 开发和构建时提示可能拼写错误或未注册的标签；include/import 按入口组件注册作用域检查，合法 HTML/SVG/MathML 与官方原生组件不误报。 |
+| 模板标签诊断                       | `✅` | 仅开发服务提示未知/未注册标签与尚未适配的官方组件，包含原始源文件及行列；layout、include/import 和 SFC 外部模板按真实来源检查，共享模板按入口注册作用域判断。生产构建静默。 |
 | `<wxs>`（内联与 src）               | `🟡` | 支持基础执行与 `require`，仅允许相对/绝对路径。                   |
 | `<slot>`                            | `🟡` | 保留为原生 `slot` 标签；高级插槽语义不保证与小程序完全一致。      |
 | 事件前缀 `bind/catch/capture`       | `🟡` | 采用表驱动映射并支持 `catch/capture` 标记；事件别名仍是高频子集。 |
+| 鼠标拖动与原生触摸                  | `🟡` | 主键拖动转换为 touch 序列，真实触摸保持原生事件；逐次输入判断，不转换滚轮、右键和笔输入。普通节点提供 page/client 坐标及 force；现代 type=2d Canvas 另有相对 CSS 像素 x/y，保留 currentTarget 和冒泡，其他 Canvas 模式仍需分别验证。 |
 | `data-*` / `dataset`               | `✅` | 完整表达式保留对象、数字、布尔等原类型；静态值与混合插值保持字符串。事件、组件事件、selector 与 observer 读取同一绑定，更新及节点断连重连后继续生效；DOM 属性仍按字符串反射。 |
 | 复杂模板能力（如 `wx:model` 等）    | `⛔` | 当前未进入 Web 编译主路径。                                       |
 
@@ -69,7 +70,7 @@ keywords:
 | `view` / `text` / `image`                    | `✅` | 保留组件标签与默认样式；`image.mode` 映射到 object fit / position。                  |
 | `button` / `input` / `textarea`              | `✅` | 支持常用属性、表单协议与微信形状事件。                                               |
 | `form` / `label` / checkbox / radio / switch | `✅` | 支持提交、重置、label 关联、组选值与禁用状态。                                       |
-| `scroll-view`                                | `🟡` | 支持横纵轴、初始位置、动态 `scroll-into-view`、start / center / end / nearest 对齐与偏移、`enable-flex`，默认显示滚动条，`enhanced` 下可显式隐藏纵向滚动条（双轴时依赖浏览器逐轴样式能力）。scroll 带 delta，scrollstart / scrollend 以 150ms 静默窗口模拟；refresher 下拉刷新仍未实现。 |
+| `scroll-view`                                | `🟡` | 支持横纵轴、初始位置、动态 `scroll-into-view`、对齐/偏移、`scroll-with-animation` 和 `enable-flex`；基础 refresher 支持受控触发、阈值、默认样式/背景、自定义 slot 及四种刷新事件。scroll 带 delta，scrollstart / scrollend 以 150ms 静默窗口模拟；动画和阻尼仍为浏览器近似。 |
 | `picker`                                     | `🟡` | 支持 selector、multiSelector、date、time、region；region 不内置行政区 code 数据。    |
 | `picker-view` / `picker-view-column`         | `✅` | 支持受控 value、滚动吸附、mask / indicator 样式、change / pickstart / pickend。      |
 | `slider`                                     | `✅` | 支持范围、步长、颜色、block-size、show-value、disabled、表单值及 changing / change。 |
@@ -125,6 +126,14 @@ keywords:
 | `wx.pageScrollTo`                                                                                        | `🟡` | 支持 `scrollTop/duration` 的基础滚动，`selector` 等高级能力未覆盖。                                                         |
 | `wx.createCanvasContext`                                                                                 | `🟡` | 跨 Shadow DOM 定位真实 Canvas，支持常用路径、填充和变换；高级 API 未全量覆盖。                                              |
 | `wx.createVideoContext`                                                                                  | `🟡` | 跨 Shadow DOM 定位真实 video，并提供 play/pause/seek 等控制；不包含原生播放器完整语义。                                     |
+| `wx.createInnerAudioContext`                                                                             | `🟡` | 基于独立 HTMLAudioElement，支持常用属性、播放控制和 on/off 事件；自动播放、格式和资源访问受浏览器限制，不实现微信静音开关、来源策略和 WebAudio 后端选择。 |
+| `wx.arrayBufferToBase64` / `wx.base64ToArrayBuffer`                                                       | `✅` | 提供原始字节与 Base64 转换。 |
+| `wx.setKeepScreenOn` / `wx.setEnableDebug`                                                               | `🟡` | 成功回调与 Promise 仅兼容调用；不改变设备息屏策略或浏览器调试设置，输出降级告警。 |
+| `wx.onKeyboardHeightChange` / `wx.offKeyboardHeightChange`                                               | `🟡` | 仅兼容订阅/退订入口，无等价微信键盘高度事件，不触发回调，订阅时告警。 |
+| `wx.onMemoryWarning` / `wx.offMemoryWarning`                                                             | `🟡` | 仅兼容订阅/退订入口，无等价微信内存告警，不触发回调，订阅时告警。 |
+| `wx.getPerformance`                                                                                      | `🟡` | 返回可调用对象；指标列表与 observer 支持类型为空，不生成微信指标或观察回调，调用时告警。 |
+| `wx.getRealtimeLogManager`                                                                               | `🟡` | 输出到本地 console，支持 tag 和过滤文本标记；不缓存或上传微信日志，`in()` 仅兼容调用，创建时告警。 |
+| `wx.reportMonitor`                                                                                       | `🟡` | 仅兼容调用并告警，不向微信平台上报。 |
 | `wx.createWorker`                                                                                        | `🟡` | 基于浏览器 Worker 桥接消息收发与错误监听（`postMessage/onMessage/onError`），线程模型与真机不完全一致。                     |
 | `wx.createSelectorQuery`                                                                                 | `🟡` | 支持 `in/select/selectAll/selectViewport` 与 `boundingClientRect/scrollOffset/fields/node` 高频子集。                       |
 | `wx.setClipboardData` / `wx.getClipboardData`                                                            | `🟡` | 依赖浏览器剪贴板权限；失败时会回调 `fail`。                                                                                 |
@@ -181,7 +190,7 @@ keywords:
 | `wx.getAppBaseInfo`                                                                                      | `🟡` | 提供浏览器环境下的基础信息近似值（语言、主题、平台等）。                                                                    |
 | `wx.getMenuButtonBoundingClientRect`                                                                     | `🟡` | 返回基于窗口尺寸的启发式胶囊按钮区域，不保证与真机一致。                                                                    |
 | `wx.getLaunchOptionsSync` / `wx.getEnterOptionsSync`                                                     | `🟡` | launch 保留初始入口；重新进入前台时 enter 更新为当前页面，scene/referrerInfo 仍为 Web 近似值。                              |
-| `wx.canIUse`                                                                                             | `🟡` | 支持 API 级能力探测（`wx.xxx`）；复杂组件/样式规则探测未覆盖。                                                              |
+| `wx.canIUse`                                                                                             | `🟡` | 支持 API 级调用入口探测（`wx.xxx`）；返回 true 不表示降级 API 具有微信系统能力，复杂组件/样式规则探测未覆盖。 |
 | `getCurrentPages` / `getApp`                                                                             | `✅` | 提供基础桥接能力。                                                                                                          |
 | 其他常见 API（多媒体高级能力等）                                                                         | `⛔` | 尚未内置桥接，需业务层自行兼容。                                                                                            |
 
@@ -191,7 +200,7 @@ keywords:
    如需更保守或更严格的行为，可通过 `weapp.web.pluginOptions.runtime.executionMode` 调整为 `safe` 或 `strict`。
 2. 事件映射与组件标签映射优先覆盖高频场景，未承诺全量等价。
 3. `analyze --platform web` 目前仅支持 Web 静态配置分析（`weapp.web` 与 `executionMode`），不包含分包体积、源码映射和仪表盘能力。
-4. 运行时告警已支持 `runtime.warnings.level` 与 `runtime.warnings.dedupe`，但当前可观测信息仍以控制台输出为主。
+4. 运行时告警与开发期标签诊断共用 `runtime.warnings.level`（默认 `warn`，`off` 静默，`error` 仅输出错误日志）及 `dedupe`（默认 `true`）。标签诊断按入口注册作用域、源文件、标签和原因去重；位置变化或修正后再次引入会重新提示。标签诊断不进入生产构建，API 降级告警仍按运行时配置输出。
 5. 标准 `app.json.tabBar` 已由 Web App Shell 接管；`tabBar.custom: true` 只保留路由语义，自定义组件本身不会自动移植。
 6. DevTools automator 截图不包含宿主导航栏和 tabBar。视觉 manifest 按 case 记录实际 WebView 视口，tabBar 宿主区域使用浏览器结构、尺寸与交互断言验收。
 

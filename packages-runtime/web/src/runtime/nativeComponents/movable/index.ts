@@ -1,6 +1,7 @@
 import type { MovablePosition } from './helpers'
 import { getNativeComponentDescriptor } from '../../../shared/nativeComponents'
 import { dispatchMiniProgramEvent, readBooleanAttribute, resolveContainingShadowRoot } from '../helpers'
+import { watchNativePointerSession } from '../pointerSession'
 import { ensureNativeComponentStyle } from '../style'
 import {
   clampMovablePosition,
@@ -23,6 +24,7 @@ export class WeappMovableView extends BaseElement {
   #position: MovablePosition = { x: 0, y: 0 }
   #drag?: { pointerId: number, startX: number, startY: number, position: MovablePosition }
   #bound = false
+  #releasePointer?: () => void
 
   connectedCallback() {
     ensureNativeComponentStyle(resolveContainingShadowRoot(this))
@@ -37,7 +39,7 @@ export class WeappMovableView extends BaseElement {
   }
 
   disconnectedCallback() {
-    this.#drag = undefined
+    this.#cancelDrag()
   }
 
   attributeChangedCallback() {
@@ -71,10 +73,14 @@ export class WeappMovableView extends BaseElement {
   }
 
   #handlePointerDown = (event: Event) => {
-    if (readBooleanAttribute(this, 'disabled')) {
+    if (!this.isConnected || readBooleanAttribute(this, 'disabled')) {
       return
     }
     const pointer = event as PointerEvent
+    if (Number.isFinite(pointer.button) && pointer.button !== 0) {
+      return
+    }
+    this.#cancelDrag()
     const pointerId = Number.isFinite(pointer.pointerId) ? pointer.pointerId : 0
     this.#drag = {
       pointerId,
@@ -82,7 +88,7 @@ export class WeappMovableView extends BaseElement {
       startY: pointer.clientY,
       position: { ...this.#position },
     }
-    this.setPointerCapture?.(pointerId)
+    this.#releasePointer = watchNativePointerSession(this, pointer, this.#cancelDrag)
     event.preventDefault()
   }
 
@@ -133,13 +139,18 @@ export class WeappMovableView extends BaseElement {
     if (Number.isFinite(pointer.pointerId) && pointer.pointerId !== drag.pointerId) {
       return
     }
-    this.releasePointerCapture?.(drag.pointerId)
-    this.#drag = undefined
+    this.#cancelDrag()
     dispatchMiniProgramEvent(this, 'change', {
       x: this.#position.x,
       y: this.#position.y,
       source: 'touch',
     })
+  }
+
+  #cancelDrag = () => {
+    this.#drag = undefined
+    this.#releasePointer?.()
+    this.#releasePointer = undefined
   }
 }
 

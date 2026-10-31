@@ -1,6 +1,7 @@
 import { getNativeComponentDescriptor } from '../../../shared/nativeComponents'
 import { readBooleanAttribute, resolveContainingShadowRoot } from '../helpers'
 import { registerNativeMediaElement, unregisterNativeMediaElement } from '../mediaRegistry'
+import { registerNativeComponentNode } from '../nodeRegistry'
 import { ensureNativeComponentStyle } from '../style'
 
 const BaseElement = (globalThis.HTMLElement ?? class {}) as typeof HTMLElement
@@ -54,6 +55,7 @@ export class WeappCanvas extends BaseElement {
     const canvas = document.createElement('canvas')
     root.append(style, canvas)
     this.#canvas = canvas
+    registerNativeComponentNode(this, canvas)
     this.#syncSize()
   }
 

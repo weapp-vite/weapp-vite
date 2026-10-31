@@ -54,6 +54,12 @@ defineComponent('wv-hello-world', {
 document.body.innerHTML = '<wv-hello-world title="文档地址"></wv-hello-world>'
 ```
 
+## 开发期模板诊断
+
+Vite 开发服务会区分“未知或未注册标签”和“官方组件尚未实现 Web 语义”，提示标签、源文件及行列位置。检查使用原始 WXML、layout、include/import 依赖和 Vue SFC 模板的位置，外部 SFC 模板指向实际模板文件；共享模板按各入口的组件注册作用域分别判断。已注册组件、合法 HTML/SVG/MathML、已适配原生组件和模板控制标签不会误报。
+
+诊断复用 `weappWebPlugin({ runtime: { warnings: { level: 'warn', dedupe: true } } })`：默认警告并去重，`off` 关闭，`error` 只提升日志级别，不中断编译。相同入口作用域、源文件、标签与原因的未变诊断不会重复输出；位置变化或修正后再次出现会重新提示。`dedupe: false` 允许重新编译时重复提示。生产构建与生产页面不输出这类标签诊断；运行时 API 降级告警仍遵循自身的 `runtime.warnings` 策略。
+
 ## 应用样式与隔离
 
 `app.vue` 的内联 `<style>`、`<style src="...">`，以及原生 `App` 入口对应的样式文件，共用应用样式注册链路。样式进入页面的 Shadow Root，不依赖向 `document.head` 注入 CSS 来穿透 Shadow DOM。
@@ -75,6 +81,12 @@ document.body.innerHTML = '<wv-hello-world title="文档地址"></wv-hello-world
 - 父级 `setData` 的嵌套 Object / Array 路径更新只复制本批变更路径上的容器；显式提交整个对象或数组时，为该子树创建输入快照。原地修改后的同引用提交，以及新外层对象复用旧嵌套值的提交，都能更新子组件的深层投影和继续转发的输入。函数引用保持可调用，未提交的分支不复制，普通未变值不重复触发观察器；大对象增量更新优先使用具体路径，避免整棵已提交子树的复制成本。
 
 现有限制：`<script setup>` 的同节点同名事件捕获/冒泡处理器，以及 legacy 字符串模板中的同类组合，仍存在独立的处理器键冲突；该组合暂需使用不同层级的节点。这不属于上述原生事件与组件事件的来源隔离。
+
+## 桌面鼠标与触摸事件
+
+`touchstart` / `touchmove` / `touchend` / `touchcancel` 在真实触摸输入上保留原生事件；鼠标主键拖动会生成相应触摸序列。两种输入逐次判断，触屏桌面设备也可交替使用，不依赖设备级触摸能力探测。鼠标移出起始节点后仍向同一次拖动派发事件；取消、窗口失焦和节点卸载会终结会话。滚轮、右键和笔输入不会被转换为触摸事件。
+
+普通节点的 `touches` / `changedTouches` 包含 `identifier`、`pageX/pageY`、`clientX/clientY` 和 `force`；结束时 `touches` 为空，`changedTouches` 保留最后坐标。现代 `type="2d"` Canvas 同时提供这些字段和相对可见画布的 CSS 像素 `x/y`，保留 `currentTarget` 与事件冒泡；其他 Canvas 模式不能据此认定行为等价。`catchtouchmove` 会阻止本次可取消输入的默认滚动，普通绑定不会全局锁住滚动。这些规则同时适用于编译模板和 legacy 字符串模板。
 
 ## 设备视口
 
@@ -132,11 +144,27 @@ setWebRuntimeHost({
 
 注入对象只覆盖提供的能力，其余能力仍使用浏览器回退。测试结束或宿主卸载时调用 `resetWebRuntimeHost()`。
 
+## 音频与平台 API 降级
+
+`createInnerAudioContext()` 使用独立 `HTMLAudioElement`，提供 src、autoplay、loop、volume、playbackRate、startTime、currentTime、duration、buffered、paused，以及 `play/pause/stop/seek/destroy` 和对应的 `on*/off*` 事件。播放操作保持小程序的同步调用形态，浏览器播放失败通过 `onError` 通知；销毁会释放媒体和监听器。自动播放、编码格式及资源访问受浏览器策略约束；`useWebAudioImplement`、`obeyMuteSwitch`、`referrerPolicy` 不能复现微信能力，会输出降级告警。
+
+| API | Web 行为 |
+| --- | --- |
+| `arrayBufferToBase64` / `base64ToArrayBuffer` | 转换原始字节，支持空缓冲区和较大数据。 |
+| `setKeepScreenOn` / `setEnableDebug` | 兼容 Promise 与 `success/complete` 成功回调；不改变设备息屏策略或浏览器调试设置。 |
+| `onKeyboardHeightChange` / `offKeyboardHeightChange` | 可调用，浏览器没有等价的微信键盘高度事件，不触发回调。 |
+| `onMemoryWarning` / `offMemoryWarning` | 可调用，浏览器没有等价的微信内存告警，不触发回调。 |
+| `getPerformance` | 返回可调用的性能对象与 observer；指标列表及支持类型为空，不生成微信性能数据或观察回调。 |
+| `getRealtimeLogManager` | `info/warn/error` 写入本地 console；支持 tag 与过滤文本标记，不缓存或上传微信日志，`in()` 仅兼容调用。 |
+| `reportMonitor` | 仅兼容调用，不向微信平台上报。 |
+
+以上仅兼容调用的平台能力会输出可通过 `runtime.warnings` 关闭或去重的告警。`canIUse()` 的 API 级探测表示调用入口存在，不表示浏览器具有相应微信系统能力。
+
 ## 组件兼容
 
 - `image.mode` 会映射到浏览器的 `object-fit` / `object-position`。
 - `input` 同步 `name`、`value`、`placeholder`、`disabled`、`password`、`maxlength`、`focus`，并发送小程序形状的 `input` / `focus` / `blur` / `confirm` 事件。
-- `scroll-view` 支持横纵滚动、初始滚动位置及带 `scrollLeft`、`scrollTop`、`deltaX`、`deltaY` 的 `scroll` 事件。
+- `scroll-view` 支持横纵滚动、初始滚动位置、动态 `scroll-into-view` 及带 `scrollLeft`、`scrollTop`、`deltaX`、`deltaY` 的 `scroll` 事件；`scroll-with-animation` 使用浏览器平滑滚动，属性与公开属性赋值共用双轴定位入口。
 - `form` 统一收集带 `name` 的可用控件值，支持 `button form-type="submit|reset"`、`submit` / `reset` 事件及初始状态恢复。
 - `label` 支持通过 `for` 关联控件，也支持包裹 `input`、`textarea`、`checkbox`、`radio`、`switch` 触发聚焦或选择。
 - `textarea`、`checkbox-group` / `checkbox`、`radio-group` / `radio`、`switch` 支持常用属性、表单值和微信形状的交互事件；脚本同步属性不会误发 `change`。
@@ -153,7 +181,18 @@ setWebRuntimeHost({
 - `cover-view` / `cover-image` 在媒体或图片上方保留绝对定位与层级；`cover-image` 复用 image 的 mode、src 和 load/error 事件。
 - `movable-area` / `movable-view` 提供裁剪边界、初始 x/y、direction、disabled、out-of-bounds、animation 及 pointer 拖拽，并发送带 x/y/source 的 `change`、`htouchmove`、`vtouchmove` 事件。
 - `setWebRuntimeHost` / `resetWebRuntimeHost` 提供宿主注入边界；网络、存储、剪贴板、对话框和打开链接优先使用注入实现，未注入时回退到浏览器 API。
-- 其他已识别但尚未完整适配的原生组件会继续渲染，并输出去重兼容告警。
+- 其他已识别但尚未完整适配的原生组件保留降级渲染，开发服务通过模板诊断提示兼容边界。
+
+### `scroll-view` 下拉刷新
+
+同时启用 `scroll-y` 和 `refresher-enabled` 后，容器在顶部接收向下拖动。支持 `refresher-threshold`（默认 45px）、`refresher-triggered`、`refresher-default-style="black|white|none"`、`refresher-background` 和 `slot="refresher"` 自定义内容。滚轮不会触发刷新，横向、向上、未到顶部的拖动及内层滚动/手势组件保留自己的输入。
+
+- 未达到阈值时释放：`refresherpulling` → `refresherabort`。
+- 达到阈值时释放：`refresherpulling` → `refresherrefresh`；用户拖动不会自动把绑定数据改成 `true`。
+- 显式提交 `refresher-triggered: true`：展开后依次触发 `refresherpulling`、`refresherrefresh`。
+- 刷新完成后显式提交 `false`：触发 `refresherrestore` 并收回，即使绑定数据原本就是 `false` 也可结束手势刷新。无关数据更新不会结束刷新。
+
+四种刷新事件均不冒泡，`detail.dy` 表示当前或结束前的下拉距离。视觉回弹与滚动位置分别维护，禁用和卸载会取消待执行动画及回调。浏览器平滑滚动、拖动阻尼和动画节奏为基础近似，不承诺微信原生物理效果或增强模式的全部能力。
 
 ## 页面栈与生命周期
 

@@ -6,12 +6,15 @@ import type {
   RenderOptions,
 } from './types'
 import { parseDocument } from 'htmlparser2'
+import { resolveControlledNativeAttributes } from '../../shared/controlledAttributes'
 import {
   hasControlAttribute,
   normalizeTagName,
   resolveControlAttributeValue,
   SELF_CLOSING_TAGS,
 } from '../../shared/wxml'
+import { hasLegacyControlledValues } from '../controlledAttributes'
+import { registerTemplateScopeSources } from '../templateScopeSources'
 import { createLegacyDatasetAnchor, recordLegacyDatasetRender } from './dataset'
 import {
   buildAttributeString,
@@ -154,6 +157,7 @@ function renderElement(
         const childScope = createChildScope(scope)
         childScope[forExtract.itemName] = item
         childScope[forExtract.indexName] = idx
+        registerTemplateScopeSources(childScope, scope, [{ key: forExtract.itemName, read: tracked => evaluateExpression(forExtract.expr!, tracked), index: idx }])
         buffer += renderElement(node, childScope, renderChildren, {
           skipFor: true,
           overrideAttribs: forExtract.restAttribs,
@@ -170,8 +174,8 @@ function renderElement(
   }
 
   const dataset = datasets ? new Map<string, unknown>() : undefined
-  const attrs = buildAttributeString(effectiveAttribs, scope, dataset)
-  const anchor = dataset?.size && datasets ? createLegacyDatasetAnchor(datasets, dataset) : ''
+  const attrs = buildAttributeString(effectiveAttribs, scope, dataset, resolveControlledNativeAttributes(node.name))
+  const anchor = dataset && datasets && (dataset.size || hasLegacyControlledValues(dataset)) ? createLegacyDatasetAnchor(datasets, dataset) : ''
   const children = renderChildren(node.children, scope)
 
   if (SELF_CLOSING_TAGS.has(normalizedTag) && !children) {
