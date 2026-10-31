@@ -24,6 +24,7 @@ interface ReleaseWorkflow {
   env?: Record<string, unknown>
   jobs?: {
     release?: {
+      'concurrency'?: Record<string, unknown>
       'timeout-minutes'?: number
       'if'?: string
       'runs-on'?: string
@@ -50,11 +51,11 @@ it('keeps the repoctl-managed release workflow aligned with the current contract
   const pnpmSetupStep = steps.find(step => step.uses?.startsWith('pnpm/action-setup@'))
 
   assert.match(content, /^# repoctl-managed: release\/v2/)
-  assert.equal(
-    workflow.concurrency?.group,
-    `${githubExpression('github.workflow')}-${githubExpression('github.ref')}`,
-  )
-  assert.equal(workflow.concurrency?.['cancel-in-progress'], false)
+  assert.equal(workflow.concurrency, undefined)
+  assert.deepEqual(job?.concurrency, {
+    'group': `npm-release-${githubExpression('github.ref')}`,
+    'cancel-in-progress': false,
+  })
   assert.equal(job?.if, githubExpression('github.event_name != \'schedule\' && inputs.mode != \'nightly\' && inputs.mode != \'oidc-audit\''))
   assert.equal(job?.['runs-on'], 'ubuntu-latest')
   assert.equal(workflow.env?.npm_config_registry, 'https://registry.npmjs.org')

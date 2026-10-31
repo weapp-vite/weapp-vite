@@ -17,6 +17,7 @@ interface Step {
 }
 
 interface Job {
+  'concurrency'?: Record<string, unknown>
   'if'?: string
   'needs'?: string
   'uses'?: string
@@ -29,6 +30,7 @@ interface Job {
 }
 
 interface Workflow {
+  concurrency?: Record<string, unknown>
   on: {
     schedule: { cron: string }[]
     workflow_dispatch: { inputs: Record<string, { options?: string[] }> }
@@ -62,6 +64,20 @@ function runNightlyInputRejection(name: string, parentEnv = process.env) {
 }
 
 describe('repoctl nightly workflow', () => {
+  it('serializes npm publishers without holding their lock during documentation deployment', () => {
+    expect(workflow.concurrency).toBeUndefined()
+    const publishers = { 'group': `npm-release-${expression('github.ref')}`, 'cancel-in-progress': false }
+    expect(workflow.jobs.release?.concurrency).toEqual(publishers)
+    expect(workflow.jobs.nightly?.concurrency).toEqual(publishers)
+    expect(workflow.jobs.docs?.concurrency).toBeUndefined()
+    expect(workflow.jobs['oidc-audit']?.concurrency).toBeUndefined()
+    const docs = readWorkflowFixture('repoctl-docs-deploy.yml') as { concurrency: Record<string, unknown> }
+    expect(docs.concurrency).toEqual({
+      'group': `docs-${expression('inputs.site')}-${expression('inputs.channel')}`,
+      'cancel-in-progress': false,
+    })
+  })
+
   it('uses one existing publisher workflow with matching manual and scheduled routes', async () => {
     const config = await createJiti(import.meta.url).import<{
       commands: { release: { nightly: { provider: string, schedule: string } } }

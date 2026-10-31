@@ -55,13 +55,13 @@ permissions:
   pull-requests: write
   id-token: write
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: false
-
 jobs:
   release:
     if: ${{ github.event_name != 'schedule' && inputs.mode != 'nightly' && inputs.mode != 'oidc-audit' }}
+    # npm 发布完成即释放互斥，文档部署使用自己的队列。
+    concurrency:
+      group: npm-release-${{ github.ref }}
+      cancel-in-progress: false
     outputs:
       release-record: ${{ steps.release-finalize.outputs.release-record }}
       docs-sites: ${{ steps.release-finalize.outputs.docs-sites }}
@@ -211,6 +211,9 @@ jobs:
   nightly:
     name: Publish nightly
     if: ${{ (github.event_name == 'schedule' && github.event.schedule == '17 22 * * *') || (github.event_name == 'workflow_dispatch' && inputs.mode == 'nightly') }}
+    concurrency:
+      group: npm-release-${{ github.ref }}
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:

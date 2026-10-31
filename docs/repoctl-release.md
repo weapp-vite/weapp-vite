@@ -44,6 +44,8 @@ CI Policy 在既有审批后检查公开包与 changeset 的完整对应，测�
 
 每天北京时间 06:17（UTC 22:17）运行，也可以在默认分支手动选择 `mode=nightly`。它发布全部公开 workspace 包，不能用恢复参数筛选包或换成历史来源；`dry-run=true` 只检查来源、候选版本与 registry 状态，不构建、上传或验证 consumer。
 
+正式版和 nightly 的 npm job 共用按分支划分的 `npm-release` 队列，发布完成即释放互斥。后续文档部署使用自己的站点及渠道队列，不占用 npm 发布锁。
+
 正式执行由 repoctl 原生 nightly 管线完成：
 
 1. 冻结默认分支提交与运行身份，检查完整包计划的 OIDC 权限。
