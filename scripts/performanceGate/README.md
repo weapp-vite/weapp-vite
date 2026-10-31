@@ -12,7 +12,7 @@ PR 的 `Performance Smoke` 通过 Actions 手动填写 `pr-number`，或由 AI �
 
 批准基线在 [policy.json](./policy.json) 中维护，初始为 `e7862e61dd83e3b9e356ac1e176267b31ab298af`，main 与所有 PR（包括 #1076）均使用它。禁止自动滚动到 merge-base、修改基线源码或删除失败场景。更新比较对象必须显式提交策略配置变更。
 
-固定历史基线仅支持 SIGINT/SIGTERM，且样式输出阶段可能在 Vite 已关闭预处理池后重新创建 Sass 编译器。可信驱动只对 baseline 侧与该精确 SHA 启用关闭兼容：完成采样后通过既有 inspector 触发 SIGINT，并等待已加载 Sass 实例的官方 `dispose()`。实例查询、编译封锁和释放都发生在停止阶段，不预加载模块、不改写基线源码，也不计入耗时或内存样本。停止后再编译、释放异常、非零退出或残留进程仍使采集失败；候选及其他基线维持原 IPC 关闭验收。
+固定历史基线仅支持 SIGINT/SIGTERM，且样式输出阶段可能在 Vite 已关闭预处理池后重新创建 Sass 编译器。可信驱动只对 baseline 侧与该精确 SHA 启用关闭兼容：完成采样后通过既有 inspector 触发 SIGINT，并等待已加载 Sass 实例的官方 `dispose()`。实例查询扫描完整 JS 堆；URL 发现、连接、查询和 Sass 释放共用 85 秒工作预算，另留 1 秒释放调试保活、4 秒自然退出，总退出窗口仍为 90 秒。实例查询、编译封锁和释放都发生在停止阶段，不预加载模块、不改写基线源码，也不计入耗时或内存样本。停止后再编译、释放异常、非零退出或残留进程仍使采集失败；候选及其他基线维持原 IPC 关闭验收。
 
 可信 planner 一次性解析完整的 driver、baseline、HEAD SHA，按驱动版本中的固定场景清单生成 `performance-plan`。采集只 checkout 已冻结的 SHA，并核验实际 git HEAD 与 OS。驱动变更如果影响初始化方式、计时、样本或场景语义，必须更新 `samplingContract`，不能用版本号不变的驱动变更偷偷重新采样。
 

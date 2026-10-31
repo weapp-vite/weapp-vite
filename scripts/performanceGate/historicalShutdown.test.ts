@@ -1,133 +1,11 @@
-import { runInNewContext } from 'node:vm'
 import { afterEach, expect, it, vi } from 'vitest'
-import { requestHistoricalBaselineShutdown } from './historicalShutdown'
+import { HISTORICAL_SHUTDOWN_WORK_BUDGET_MS, requestHistoricalBaselineShutdown } from './historicalShutdown'
+import { inspectorFixture } from './historicalShutdown/inspectorFixture'
 
-interface RemoteObject { type?: string, objectId?: string, value?: unknown }
-interface Command { id: number, method: string, params: Record<string, any> }
-interface FixtureCompiler { throwIfDisposed: () => void, dispose: () => unknown }
-
-function inspectorFixture() {
-  const cache: Record<string, { exports: unknown }> = {}
-  const instances = new Map<object, object[]>()
-  const events: string[] = []
-  const commands: Command[] = []
-  const objects = new Map<string, any>()
-  let nextObject = 0
-  const require = Object.assign(vi.fn(() => {
-    throw new Error('Shutdown must not load modules')
-  }), { cache })
-  const createRequire = vi.fn(() => require)
-  const fakeProcess = {
-    exitCode: undefined as number | string | undefined,
-    getBuiltinModule: vi.fn((name: string) => {
-      expect(name).toBe('node:module')
-      return { createRequire }
-    }),
-    listenerCount: vi.fn(() => 1),
-    emit: vi.fn(() => {
-      events.push('SIGINT')
-      return true
-    }),
-  }
-  const keepAliveTimers = new Set<object>()
-  const context = {
-    process: fakeProcess,
-    setInterval: vi.fn(() => {
-      const timer = {}
-      keepAliveTimers.add(timer)
-      return timer
-    }),
-    clearInterval: vi.fn((timer: object) => keepAliveTimers.delete(timer)),
-  }
-  const remote = (value: unknown, byValue = false): RemoteObject => {
-    if (value !== null && (typeof value === 'object' || typeof value === 'function') && !byValue) {
-      const objectId = String(++nextObject)
-      objects.set(objectId, value)
-      return { type: typeof value, objectId }
-    }
-    return { type: typeof value, value }
-  }
-  const runtimeResult = async (run: () => unknown, byValue?: boolean) => {
-    try {
-      return { result: remote(await run(), byValue) }
-    }
-    catch (error) {
-      return { exceptionDetails: { exception: { description: String(error) } } }
-    }
-  }
-  const execute = async ({ method, params }: Command) => {
-    if (method === 'Runtime.evaluate') {
-      return runtimeResult(() => runInNewContext(params.expression, context), params.returnByValue)
-    }
-    if (method === 'Runtime.callFunctionOn') {
-      expect(params.awaitPromise).toBe(true)
-      const callable = runInNewContext(`(${params.functionDeclaration})`, context) as (...args: unknown[]) => unknown
-      const args = (params.arguments as RemoteObject[]).map(arg => arg.objectId ? objects.get(arg.objectId) : arg.value)
-      return runtimeResult(() => callable.apply(objects.get(params.objectId), args), params.returnByValue)
-    }
-    if (method === 'Runtime.getProperties') {
-      const value = objects.get(params.objectId)
-      return { result: Object.getOwnPropertyNames(value).map(name => ({ name, value: remote(value[name]) })) }
-    }
-    if (method === 'Runtime.queryObjects') {
-      return { objects: remote(instances.get(objects.get(params.prototypeObjectId)) ?? []) }
-    }
-    throw new Error(`Unexpected inspector method: ${method}`)
-  }
-  const sockets: InspectorSocket[] = []
-  let intercept: ((command: Command) => unknown) | undefined
-  class InspectorSocket extends EventTarget {
-    close = vi.fn()
-    send = vi.fn((text: string) => {
-      const request = JSON.parse(text) as Command
-      commands.push(request)
-      void Promise.resolve().then(async () => intercept ? await intercept(request) : await execute(request)).then((result) => {
-        this.dispatchEvent(new MessageEvent('message', { data: JSON.stringify({ id: request.id, result }) }))
-      }, (error: unknown) => {
-        this.dispatchEvent(new MessageEvent('message', { data: JSON.stringify({ id: request.id, error: { message: String(error) } }) }))
-      })
-    })
-
-    constructor() {
-      super()
-      sockets.push(this)
-      queueMicrotask(() => this.dispatchEvent(new Event('open')))
-    }
-  }
-  vi.stubGlobal('WebSocket', InspectorSocket)
-  function addSass(name: string, disposers: Array<() => unknown>) {
-    class Compiler implements FixtureCompiler {
-      throwIfDisposed() {}
-      compile() { this.throwIfDisposed() }
-      dispose() {
-        events.push(`dispose:${name}`)
-        return disposers[instances.get(Compiler.prototype)!.indexOf(this)]!()
-      }
-    }
-    const compilers = disposers.map(() => new Compiler())
-    instances.set(Compiler.prototype, compilers)
-    cache[name] = { exports: { info: `sass-embedded${String.fromCharCode(9)}1.105.0`, AsyncCompiler: Compiler } }
-    return { compilers, prototype: Compiler.prototype }
-  }
-  return {
-    cache,
-    instances,
-    events,
-    commands,
-    require,
-    createRequire,
-    process: fakeProcess,
-    sockets,
-    keepAliveTimers,
-    addSass,
-    execute,
-    intercept: (handler: typeof intercept) => {
-      intercept = handler
-    },
-  }
-}
-
-afterEach(() => vi.unstubAllGlobals())
+afterEach(() => {
+  vi.useRealTimers()
+  vi.unstubAllGlobals()
+})
 const inspectorUrl = 'ws://127.0.0.1:1/registered-inspector'
 const measuredCli = 'C:\\measured checkout\\packages\\weapp-vite\\bin\\weapp-vite.js'
 
@@ -271,12 +149,87 @@ it('keeps inspector transport failure and closes the single connection', async (
 })
 
 it('releases stop-only control after a disposer exhausts the operation deadline', async () => {
+  vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout'] })
   const fixture = inspectorFixture()
   fixture.addSass('pending', [() => new Promise(() => {})])
   fixture.addSass('healthy', [() => undefined])
-  const error = await requestHistoricalBaselineShutdown(inspectorUrl, measuredCli, 30).catch(error => error) as AggregateError
+  fixture.intercept(async command => command.params.functionDeclaration?.includes('clearInterval(this.keepAlive)')
+    ? await new Promise(resolve => setTimeout(() => resolve(fixture.execute(command)), 500))
+    : await fixture.execute(command))
+  const failure = requestHistoricalBaselineShutdown(inspectorUrl, measuredCli, 30).catch(error => error)
+  await vi.advanceTimersByTimeAsync(30)
+  expect(fixture.keepAliveTimers.size).toBe(1)
+  await vi.advanceTimersByTimeAsync(500)
+  const error = await failure as AggregateError
   expect(error.errors.map(String).join('\n')).toContain('Timed out waiting for inspector command Runtime.callFunctionOn')
+  expect(error.errors.map(String).join('\n')).not.toContain('control release')
   expect(fixture.events).toEqual(['SIGINT', 'dispose:pending', 'dispose:healthy'])
+  expect(fixture.keepAliveTimers.size).toBe(0)
+  expect(fixture.sockets[0]?.close).toHaveBeenCalledTimes(1)
+})
+
+it('strictly fails control release after its independent one-second budget', async () => {
+  vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout'] })
+  const fixture = inspectorFixture()
+  fixture.intercept(command => command.params.functionDeclaration?.includes('clearInterval(this.keepAlive)')
+    ? new Promise(() => {})
+    : fixture.execute(command))
+  let finished = false
+  const failure = requestHistoricalBaselineShutdown(inspectorUrl, measuredCli).catch((error: AggregateError) => {
+    finished = true
+    return error
+  })
+  await vi.advanceTimersByTimeAsync(999)
+  expect(finished).toBe(false)
+  await vi.advanceTimersByTimeAsync(1)
+  const error = await failure as AggregateError
+  expect(error.errors.map(String).join('\n')).toContain('Timed out waiting for inspector command Runtime.callFunctionOn after 1000ms')
+  expect(fixture.keepAliveTimers.size).toBe(1)
+  expect(fixture.sockets[0]?.close).toHaveBeenCalledTimes(1)
+})
+
+it('allows a fifteen-second inspector query within the existing graceful shutdown budget', async () => {
+  vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout'] })
+  const fixture = inspectorFixture()
+  fixture.addSass('active', [() => undefined])
+  fixture.intercept(async command => command.method === 'Runtime.queryObjects'
+    ? await new Promise(resolve => setTimeout(() => resolve(fixture.execute(command)), 15_000))
+    : await fixture.execute(command))
+  let finished = false
+  const shutdown = requestHistoricalBaselineShutdown(inspectorUrl, measuredCli).then(() => {
+    finished = true
+  })
+  await vi.advanceTimersByTimeAsync(14_999)
+  expect(finished).toBe(false)
+  expect(fixture.events).toEqual([])
+  await vi.advanceTimersByTimeAsync(1)
+  await shutdown
+  expect(finished).toBe(true)
+  expect(fixture.events).toEqual(['SIGINT', 'dispose:active'])
+  expect(fixture.commands.filter(command => command.method === 'Runtime.queryObjects')).toHaveLength(1)
+  expect(fixture.keepAliveTimers.size).toBe(0)
+})
+
+it('fails when cumulative queries exhaust the total budget and still releases control', async () => {
+  vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout'] })
+  const fixture = inspectorFixture()
+  fixture.addSass('first', [() => undefined])
+  fixture.addSass('second', [() => undefined])
+  fixture.intercept(async command => command.method === 'Runtime.queryObjects'
+    ? await new Promise(resolve => setTimeout(() => resolve(fixture.execute(command)), 45_000))
+    : await fixture.execute(command))
+  let finished = false
+  const failure = requestHistoricalBaselineShutdown(inspectorUrl, measuredCli).catch((error: AggregateError) => {
+    finished = true
+    return error
+  })
+  await vi.advanceTimersByTimeAsync(HISTORICAL_SHUTDOWN_WORK_BUDGET_MS - 1)
+  expect(finished).toBe(false)
+  await vi.advanceTimersByTimeAsync(1)
+  const error = await failure as AggregateError
+  expect(error.errors.map(String).join('\n')).toContain('Timed out waiting for inspector command Runtime.queryObjects')
+  expect(fixture.commands.filter(command => command.method === 'Runtime.queryObjects')).toHaveLength(2)
+  expect(fixture.events).toEqual([])
   expect(fixture.keepAliveTimers.size).toBe(0)
   expect(fixture.sockets[0]?.close).toHaveBeenCalledTimes(1)
 })

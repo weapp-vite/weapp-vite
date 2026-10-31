@@ -1,5 +1,10 @@
 import { randomUUID } from 'node:crypto'
 import { sendInspectorCommand, waitForWebSocketOpen } from '../../e2e/utils/dev-inspector'
+import { DEV_PROCESS_GRACEFUL_TIMEOUT_MS } from '../../e2e/utils/devProcessCleanup/shutdown'
+
+// 保留一秒独立控制清理和四秒自然退出空间，不扩大现有开发进程的完整收尾窗口。
+export const HISTORICAL_SHUTDOWN_WORK_BUDGET_MS = DEV_PROCESS_GRACEFUL_TIMEOUT_MS - 5_000
+const CONTROL_RELEASE_TIMEOUT_MS = 1_000
 
 interface RemoteObject {
   objectId?: string
@@ -75,7 +80,7 @@ function requireConfirmation(result: RuntimeResult, stage: string) {
 }
 
 /** 同一调试连接先封住迟到编译，再进入原 SIGINT 路径并等待原 Sass disposer。 */
-export async function requestHistoricalBaselineShutdown(inspectorUrl: string, measuredCliPath: string, timeoutMs = 10_000): Promise<void> {
+export async function requestHistoricalBaselineShutdown(inspectorUrl: string, measuredCliPath: string, timeoutMs = HISTORICAL_SHUTDOWN_WORK_BUDGET_MS): Promise<void> {
   const socket = new WebSocket(inspectorUrl)
   const objectGroup = `historical-shutdown-${randomUUID()}`
   const deadline = Date.now() + timeoutMs
@@ -177,7 +182,7 @@ export async function requestHistoricalBaselineShutdown(inspectorUrl: string, me
           arguments: [],
           awaitPromise: true,
           returnByValue: true,
-        }, Math.min(timeoutMs, 1000)), 'control release')
+        }, CONTROL_RELEASE_TIMEOUT_MS), 'control release')
       }
       catch (error) {
         errors.push(error)
