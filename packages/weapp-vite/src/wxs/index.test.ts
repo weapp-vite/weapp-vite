@@ -8,12 +8,12 @@ describe('transformWxsCode', () => {
       const helper = require('./helper.wxs.ts')
       const count: number = 2
       module.exports = { count, helper }
-    `, { extension })
+    `, { extension, platform: _platform })
     const output = result?.code ?? ''
     expect(output).not.toContain(': number')
     expect(output).toMatch(new RegExp(`require\\(['"]\\./helper\\.${extension}['"]\\)`))
     expect(importees).toEqual([{ source: './helper.wxs.ts' }])
-    if (extension === 'sjs') {
+    if (extension === 'sjs' && _platform !== 'tt') {
       expect(output).toContain('export default')
       expect(output).not.toContain('module.exports')
     }

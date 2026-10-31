@@ -1,4 +1,4 @@
 my-app
 dist-web
-templates
+/templates
 test/.test-output

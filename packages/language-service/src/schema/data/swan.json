@@ -1,0 +1,3465 @@
+{
+  "platform": "swan",
+  "availability": "snapshot",
+  "version": "sha256:9e1fda57a857ac589327f15a290472d30187e6c74703c0259be833ab927d2041",
+  "source": "https://smartprogram.baidu.com/docs/develop/component/component/",
+  "snapshotDate": "2026-10-30",
+  "upstreamRetrievedAt": "2026-10-30",
+  "components": [
+    {
+      "name": "ad",
+      "docLink": "https://smartprogram.baidu.com/docs/develop/component/ad/",
+      "attrs": []
+    },
+    {
+      "name": "animation-video",
+      "docLink": "https://smartprogram.baidu.com/docs/develop/component/animation-video/",
+      "attrs": [
+        {
+          "name": "resource-width",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "组件使用的 video 视频资源的宽度（单位：px）"
+          ],
+          "defaultValue": "800"
+        },
+        {
+          "name": "resource-height",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "组件使用的 video 视频资源的高度（单位：px）"
+          ],
+          "defaultValue": "400"
+        },
+        {
+          "name": "canvas-style",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "用于设置动画画布的 CSS 样式"
+          ],
+          "defaultValue": "width: 400px;height: 400px"
+        },
+        {
+          "name": "path",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "动画资源地址，支持相对路径以及远程地址。如果是远程路径，注意 response header 里需要设置 Access-Control-Allow-Origin 来防止跨域问题"
+          ]
+        },
+        {
+          "name": "loop",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "动画是否循环播放"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "autoplay",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "动画是否自动播放"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "alpha-direction",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "视频资源中 alpha 通道的方向，left 表示 alpha 通道在资源的左边，right 表示 alpha 通道在资源的右边。详情请参考[透明视频设计资源示例](https://smartprogram.baidu.com/docs/design/resource/animationVideo/#透明视频设计资源示例)"
+          ],
+          "defaultValue": "left"
+        },
+        {
+          "name": "bindstarted",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "动画开始播放的回调"
+          ]
+        },
+        {
+          "name": "bindended",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "当播放到末尾时触发 ended 事件（自然播放结束会触发回调，循环播放结束及暂停动画不会触发）"
+          ]
+        }
+      ],
+      "desc": [
+        "**解释**：animation-video 属于前端组件，为智能小程序提供了将特定视频资源渲染为透明背景动效的能力，可以帮助开发者低成本实现更为沉浸，丰富的动画效果。动画资源设计方法详见[透明视频 AFX](https://smartprogram.baidu.com/docs/design/resource/animationVideo/) 。animation-video 组件还提供丰富的 API 来控制动画的播放，暂停，跳到指定位置等，详见 [swan.createAnimationVideo](https://smartprogram.baidu.com/docs/develop/api/media/animationvideo_swan-createAnimationVideo/) 。"
+      ]
+    },
+    {
+      "name": "animation-view",
+      "docLink": "https://smartprogram.baidu.com/docs/develop/component/animation-view-Lottie/",
+      "attrs": [
+        {
+          "name": "path",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "动画资源地址，目前只支持绝对路径"
+          ]
+        },
+        {
+          "name": "loop",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "动画是否循环播放"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "autoplay",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "动画是否自动播放"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "hidden",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否隐藏动画"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "bindended",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "当播放到末尾时触发 ended 事件（自然播放结束会触发回调，循环播放结束及手动停止动画不会触发）"
+          ]
+        }
+      ],
+      "desc": [
+        "**解释**：仅支持 Lottie 动画的客户端[原生组件](https://smartprogram.baidu.com/docs/develop/component/native/)，使用时请注意相关限制，动画资源地址可到 [lottie 的官方库](https://github.com/airbnb/lottie-web)进行查询。Lottie 使用入门详见[官方介绍](https://airbnb.design/lottie/)；设计师精彩示例及动效文件详见[设计社区](https://lottiefiles.com/)。"
+      ]
+    },
+    {
+      "name": "ar-camera",
+      "docLink": "https://smartprogram.baidu.com/docs/develop/component/media_ar-camera/",
+      "attrs": [
+        {
+          "name": "key",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "AR 项目唯一标识，在 DuMixAR 内容开放平台上传生成 AR 项目后获取 AR Key"
+          ]
+        },
+        {
+          "name": "binderror",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "用户不允许使用摄像头或扫码失败时触发"
+          ]
+        },
+        {
+          "name": "bindload",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "AR 加载成功时触发"
+          ]
+        },
+        {
+          "name": "bindmessage",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "开发者制作 AR 项目时可自定义按键，用户点击时会收到事件和数据，用户自定义事件格式参见[代码示例 2：用户自定义事件](#示例)"
+          ]
+        },
+        {
+          "name": "bindscancode",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "扫描识图结束后触发"
+          ]
+        }
+      ],
+      "desc": [
+        "**解释**：AR 相机，在 [DuMixAR 内容开放平台](https://dumix.baidu.com/content#/)提交并上线 AR 项目后（选择“百度 App -> 相机”渠道）获取到 AR Key、AR Type ，可配置展现。ar-camera 组件还提供丰富的 API 来控制相机录像、拍照等，详见 [swan.createARCameraContext](https://smartprogram.baidu.com/docs/develop/api/media/arcameracontext_swan-createARCameraContext/) 。\n**Web 态说明**：Web 态暂不支持 ar-camera 组件。在 Web 态会做**打开百度 App 对应小程序页面**的降级处理。"
+      ]
+    },
+    {
+      "name": "audio",
+      "docLink": "https://smartprogram.baidu.com/docs/develop/component/media_audio/",
+      "attrs": [
+        {
+          "name": "id",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "audio 组件的唯一标识符"
+          ]
+        },
+        {
+          "name": "src",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "要播放音频的资源地址"
+          ]
+        },
+        {
+          "name": "loop",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否循环播放"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "controls",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否显示默认控件"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "poster",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "默认控件上的音频封面的图片资源地址，如果 controls 属性值为 false 则设置 poster 无效"
+          ]
+        },
+        {
+          "name": "name",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "默认控件上的音频名字，如果 controls 属性值为 false 则设置 name 无效"
+          ],
+          "defaultValue": "未知音频"
+        },
+        {
+          "name": "author",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "默认控件上的作者名字，如果 controls 属性值为 false 则设置 author 无效"
+          ],
+          "defaultValue": "未知作者"
+        },
+        {
+          "name": "binderror",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "当发生错误时触发 error 事件，`detail = {errMsg: MediaError.code}`返回错误码可参考 [MediaError.code](#errorcode)"
+          ]
+        },
+        {
+          "name": "bindplay",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "当开始/继续播放时触发 play 事件，`detail = {duration}`"
+          ]
+        },
+        {
+          "name": "bindpause",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "当暂停播放时触发 pause 事件，`detail = {duration}`"
+          ]
+        },
+        {
+          "name": "bindtimeupdate",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "当播放进度改变时触发 timeupdate 事件，`detail = {currentTime, duration}`"
+          ]
+        },
+        {
+          "name": "bindended",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "当播放到末尾时触发 ended 事件，`detail = {duration}`"
+          ]
+        }
+      ],
+      "desc": [
+        "**解释**：音频。"
+      ]
+    },
+    {
+      "name": "button",
+      "docLink": "https://smartprogram.baidu.com/docs/develop/component/formlist_button/",
+      "attrs": [
+        {
+          "name": "plain",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "按钮是否镂空，背景色透明"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "hover-class",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "点击态。指定按钮按下去的样式类。当`hover-class=\"none\"`时，没有点击态效果。button-hover 默认为`{background-color: rgba(0, 0, 0, 0.1); opacity: 0.7;}`"
+          ],
+          "defaultValue": "button-hover"
+        },
+        {
+          "name": "hover-stop-propagation",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "指定是否阻止本节点的祖先节点出现点击态"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "hover-start-time",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "按住后多久出现点击态（单位：毫秒）"
+          ],
+          "defaultValue": "20"
+        },
+        {
+          "name": "hover-stay-time",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "手指松开后点击态保留时间（单位：毫秒）"
+          ],
+          "defaultValue": "70"
+        },
+        {
+          "name": "disabled",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否禁用"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "loading",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "名称前是否带有 loading 图标"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "session-from",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "会话来源，`open-type=\"contact\"` 时有效"
+          ]
+        },
+        {
+          "name": "send-message-title",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "会话内消息卡片标题，`open-type=\"contact\"` 时有效"
+          ],
+          "defaultValue": "当前标题"
+        },
+        {
+          "name": "send-message-path",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "会话内消息卡片点击跳转小程序路径，`open-type=\"contact\"` 时有效"
+          ],
+          "defaultValue": "当前页面路径"
+        },
+        {
+          "name": "send-message-img",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "会话内消息卡片图片，`open-type=\"contact\"` 时有效"
+          ],
+          "defaultValue": "默认图片"
+        },
+        {
+          "name": "show-message-card",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否显示会话内消息卡片，设置此参数为 true，用户进入客服会话会在右下角显示\"可能要发送的小程序\"提示，用户点击后可以快速发送小程序消息，`open-type=\"contact\"` 时有效"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "bindgetphonenumber",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "获取用户手机号回调。和 open-type 搭配使用， 使用时机：`open-type=\"getPhoneNumber\"`。具体申请方法请见：[获取用户手机号权限申请](https://smartprogram.baidu.com/docs/develop/function/getphonenumber/)"
+          ]
+        },
+        {
+          "name": "bindgetuserinfo",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "用户点击该按钮时，会返回获取到的用户信息，可以从返回参数的 detail 中获取到的值。当 errMsg 为`getUserInfo:ok`时即为获取成功；其中 userInfo 字段中包含获取到的用户头像地址（avatarUrl）、性别（gender）、昵称（nickName）。和 open-type 搭配使用， 使用时机：`open-type=\"getUserInfo\"`"
+          ]
+        },
+        {
+          "name": "bindopensetting",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "在打开授权设置页后回调，使用时机：`open-type=\"openSetting\"`"
+          ]
+        },
+        {
+          "name": "bindcontact",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "客服消息回调，使用时机：`open-type=\"contact\"`"
+          ]
+        },
+        {
+          "name": "bindchooseaddress",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "用户点击该按钮时，调起用户编辑收货地址原生界面，并在编辑完成后返回用户选择的地址，从返回参数的 detail 中获取，和 [swan.chooseAddress](https://smartprogram.baidu.com/docs/develop/api/open/chooseaddress_swan-chooseAddress/) 一样的。和 open-type 搭配使用，使用时机：`open-type=\"chooseAddress\"`"
+          ]
+        },
+        {
+          "name": "bindchooseinvoicetitle",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "用户点击该按钮时，选择用户的发票抬头，和 [swan.chooseInvoiceTitle](https://smartprogram.baidu.com/docs/develop/api/open/swan-chooseInvoiceTitle/) 一样的。和 open-type 搭配使用，使用时机：`open-type=\"chooseInvoiceTitle\"`"
+          ]
+        },
+        {
+          "name": "bindlogin",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "登录回调，和 open-type 搭配使用，使用时机：`open-type=\"login\"`。可以通过返回参数的 detail 判断是否登录成功，当 errMsg 为`'login:ok'`时即为成功。如想获取登录凭证请使用 [swan.getLoginCode](/docs/develop/api/open/log_swan-getLoginCode/)"
+          ]
+        },
+        {
+          "name": "template-id",
+          "type": {
+            "name": "String/Array.<string\\>"
+          },
+          "desc": [
+            "发送订阅类模板消息所用的模板库标题 ID ，可通过 [getTemplateLibraryList](https://smartprogram.baidu.com/docs/develop/serverapi/getTemplateLibraryList/) 获取<br>当参数类型为 Array 时，可传递 1~3 个模板库标题 ID"
+          ]
+        },
+        {
+          "name": "subscribe-id",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "发送订阅类模板消息时所使用的唯一标识符，内容由开发者自定义，用来标识订阅场景<br>注意：同一用户在同一 subscribe-id 下的多次授权不累积下发权限，只能下发一条。若要订阅多条，需要不同 subscribe-id"
+          ]
+        },
+        {
+          "name": "bindsubscribe",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "订阅消息授权回调，和 open-type 搭配使用，使用时机：`open-type=\"subscribe\"`"
+          ]
+        }
+      ],
+      "desc": [
+        "**解释**：按钮，设计文档参考[按钮](https://smartprogram.baidu.com/docs/design/component/button/) 。\n**Web 态说明**：由于浏览器的限制，在 Web 态内不支持获取联系人、打开授权设置页等功能。具体支持情况详见属性说明。"
+      ]
+    },
+    {
+      "name": "camera",
+      "docLink": "https://smartprogram.baidu.com/docs/develop/component/media_camera/",
+      "attrs": [
+        {
+          "name": "bindstop",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "摄像头在非正常终止时触发，如退出后台等情况"
+          ],
+          "defaultValue": "-"
+        },
+        {
+          "name": "binderror",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "用户不允许使用摄像头时触发"
+          ],
+          "defaultValue": "-"
+        }
+      ],
+      "desc": [
+        "**解释**：系统相机，使用该组件需通过[获取用户授权设置](https://smartprogram.baidu.com/docs/develop/api/open/authorize_overview/)申请授权后方可对用户发起授权申请，可在 [swan.authorize](https://smartprogram.baidu.com/docs/develop/api/open/authorize_swan-authorize/#错误码) 中查看相关错误码信息。camera 组件还提供丰富的 API 来控制相机录像、拍照等，详见 [swan.createCameraContext](https://smartprogram.baidu.com/docs/develop/api/media/cameracontext_swan-createCameraContext/)。\n**Web 态说明**：Web 态暂不支持 camera 组件。在 Web 态会做**打开百度 App 对应小程序页面**的降级处理。"
+      ]
+    },
+    {
+      "name": "canvas",
+      "docLink": "https://smartprogram.baidu.com/docs/develop/component/canvas/",
+      "attrs": [
+        {
+          "name": "canvas-id",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "canvas 组件的唯一标识符"
+          ]
+        },
+        {
+          "name": "disable-scroll",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否禁止屏幕滚动以及下拉刷新。当在 canvas 中同时绑定下列手势事件时，该属性不起作用"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "bindtouchstart",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "手指触摸动作开始"
+          ]
+        },
+        {
+          "name": "bindtouchmove",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "手指触摸后移动"
+          ]
+        },
+        {
+          "name": "bindtouchend",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "手指触摸动作结束"
+          ]
+        },
+        {
+          "name": "bindtouchcancel",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "手指触摸动作被打断，如来电提醒，弹窗"
+          ]
+        },
+        {
+          "name": "bindlongtap",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "手指长按 350ms 之后触发，触发了长按事件后进行移动不会触发屏幕的滚动"
+          ]
+        },
+        {
+          "name": "binderror",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "当发生错误时触发 error 事件，detail = {errMsg: 'something wrong'}"
+          ]
+        }
+      ],
+      "desc": [
+        "**解释**：画布。画布是一个矩形区域（默认宽度 300px、高度 225px ），开发者可以在页面上绘制图形。canvas 拥有多种绘制路径、矩形、图形、字符以及添加图像的方法。相关 API：[swan.createCanvasContext](https://smartprogram.baidu.com/docs/develop/api/show/canvas/) 该组件是客户端创建的[原生组件](https://smartprogram.baidu.com/docs/develop/component/native/)，使用时请注意相关限制。"
+      ]
+    },
+    {
+      "name": "checkbox",
+      "docLink": "https://smartprogram.baidu.com/docs/develop/component/formlist_checkbox/",
+      "attrs": [
+        {
+          "name": "value",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "`<checkbox>`标识，选中时触发`<checkbox-group>`的 change 事件，并携带`<checkbox>`的 value"
+          ]
+        },
+        {
+          "name": "disabled",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否禁用"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "checked",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "当前是否选中，可用来设置默认选中"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "color",
+          "type": {
+            "name": "Color"
+          },
+          "desc": [
+            "checkbox 的颜色，同 CSS 的 color"
+          ],
+          "defaultValue": "#3c76ff"
+        }
+      ],
+      "desc": [
+        "**解释**：多项选择器。如需更多自定义多选样式，可使用 Smart UI 组件，详见 [checkbox-group 多选](https://smartprogram.baidu.com/docs/develop/extended/ui_component/smt-checkbox-group/)。"
+      ]
+    },
+    {
+      "name": "checkbox-group",
+      "docLink": "https://smartprogram.baidu.com/docs/develop/component/formlist_checkbox-group/",
+      "attrs": [
+        {
+          "name": "bindchange",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "checkbox-group 中选中项发生改变时触发 change 事件，`detail = {value:[选中的 checkbox 的 value 的数组]}`"
+          ]
+        }
+      ],
+      "desc": [
+        "**解释**：多项选择器组，内部由多个 [checkbox](http://localhost:4000/docs/develop/component/formlist_checkbox/) 组成。"
+      ]
+    },
+    {
+      "name": "cover-image",
+      "docLink": "https://smartprogram.baidu.com/docs/develop/component/view_cover-image/",
+      "attrs": [
+        {
+          "name": "src",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "图标路径，支持临时路径、网络地址。支持 JPG、PNG、BMP、GIF（基础库3.420.5开始支持） 格式"
+          ]
+        },
+        {
+          "name": "fixed-top",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "设置与容器顶部的固定距离，效果相当于在 CSS 中设置 position: fixed 和 top 值，该属性优先级高于 fixed-bottom，CSS 设置的 position、top、bottom 值"
+          ]
+        },
+        {
+          "name": "fixed-right",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "设置与容器右侧的固定距离，效果相当于在 CSS 中设置 position: fixed 和 right 值，该属性优先级高于 CSS 设置的 position、left、right 值"
+          ]
+        },
+        {
+          "name": "fixed-bottom",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "设置与容器底部的固定距离，效果相当于在 CSS 中设置 position: fixed 和 bottom 值，该属性优先级高于 CSS 设置的 position、top、bottom 值"
+          ]
+        },
+        {
+          "name": "fixed-left",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "设置与容器左侧的固定距离，效果相当于在 CSS 中设置 position: fixed 和 left 值，该属性优先级高于 fixed-right，CSS 设置的 position、left、right 值"
+          ]
+        },
+        {
+          "name": "bindload",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "图片加载成功时触发"
+          ]
+        },
+        {
+          "name": "binderror",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "图片加载失败时触发"
+          ]
+        }
+      ],
+      "desc": [
+        "**解释**：图片视图。可覆盖在[原生组件](https://smartprogram.baidu.com/docs/develop/component/native/)之上，可覆盖的原生组件同 [cover-view](https://smartprogram.baidu.com/docs/develop/component/view_cover-view/) ，支持嵌套在 cover-view 里。"
+      ]
+    },
+    {
+      "name": "cover-view",
+      "docLink": "https://smartprogram.baidu.com/docs/develop/component/view_cover-view/",
+      "attrs": [
+        {
+          "name": "scroll-top",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "设置顶部滚动偏移量，仅在设置了`overflow-y: scroll`成为滚动元素后生效"
+          ]
+        },
+        {
+          "name": "fixed-top",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "设置与容器顶部的固定距离，效果相当于在 CSS 中设置 position: fixed 和 top 值，该属性优先级高于 fixed-bottom，CSS 设置的 position、top、bottom 值"
+          ]
+        },
+        {
+          "name": "fixed-right",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "设置与容器右侧的固定距离，效果相当于在 CSS 中设置 position: fixed 和 right 值，该属性优先级高于 CSS 设置的 position、left、right 值"
+          ]
+        },
+        {
+          "name": "fixed-bottom",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "设置与容器底部的固定距离，效果相当于在 CSS 中设置 position: fixed 和 bottom 值，该属性优先级高于 CSS 设置的 position、top、bottom 值"
+          ]
+        },
+        {
+          "name": "fixed-left",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "设置与容器左侧的固定距离，效果相当于在 CSS 中设置 position: fixed 和 left 值，该属性优先级高于 fixed-right，CSS 设置的 position、left、right 值"
+          ]
+        }
+      ],
+      "desc": [
+        "**解释**：覆盖在[原生组件](https://smartprogram.baidu.com/docs/develop/component/native/)之上的文本视图。只支持嵌套 cover-view、cover-image 组件。客户端创建的[原生组件](https://smartprogram.baidu.com/docs/develop/component/native/)，不支持嵌套在其它组件中使用。"
+      ]
+    },
+    {
+      "name": "form",
+      "docLink": "https://smartprogram.baidu.com/docs/develop/component/formlist_form/",
+      "attrs": []
+    },
+    {
+      "name": "icon",
+      "docLink": "https://smartprogram.baidu.com/docs/develop/component/base_icon/",
+      "attrs": [
+        {
+          "name": "type",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "生效的值见下表 [type 有效值](#type)"
+          ]
+        },
+        {
+          "name": "size",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "icon 的大小（单位：px）"
+          ],
+          "defaultValue": "23"
+        },
+        {
+          "name": "color",
+          "type": {
+            "name": "Color"
+          },
+          "desc": [
+            "icon 的颜色"
+          ]
+        }
+      ],
+      "desc": [
+        "**解释**：图标[设计资源下载](https://smartprogram.baidu.com/docs/design/resource/uikit/)。如需更多图标样式，可使用 Smart UI 组件，详见 [icon 图标](https://smartprogram.baidu.com/docs/develop/extended/ui_component/smt-icon/)。"
+      ]
+    },
+    {
+      "name": "image",
+      "docLink": "https://smartprogram.baidu.com/docs/develop/component/media_image/",
+      "attrs": [
+        {
+          "name": "src",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "图片资源地址"
+          ]
+        },
+        {
+          "name": "webp",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "只针对 iOS 端；且 iOS 系统默认不解析 WEBP 格式，但该属性设为 true 时，只支持网络资源 WEBP 格式"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "lazy-load",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "图片懒加载，在图片即将进入一定范围（距离当前屏 50px）时才开始进行加载"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "image-menu-prevent",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "阻止长按图片时弹起默认菜单（即将该属性设置为`image-menu-prevent=\"true\"`或`image-menu-prevent`），只在初始化时有效，不能动态变更；若不想阻止弹起默认菜单，则不需要设置此属性。注：长按菜单后的操作暂不支持 svg 格式"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "preview",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "点击后是否预览图片。在不设置的情况下，若 image 未监听点击事件且宽度大于 1/4 屏宽，则默认开启"
+          ]
+        },
+        {
+          "name": "original-src",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "预览时显示的图片地址"
+          ]
+        },
+        {
+          "name": "binderror",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "当错误发生时，发布到 AppService 的事件名，事件对象`event.detail = {errMsg: 'something wrong'}`"
+          ]
+        },
+        {
+          "name": "bindload",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "当图片载入完毕时，发布到 AppService 的事件名，事件对象`event.detail = {height:'图片高度 px', width:'图片宽度 px'}`"
+          ]
+        }
+      ],
+      "desc": [
+        "**解释**：图片，支持 JPG、PNG、GIF、BMP、WEBP 等格式。image 组件默认宽度 300px 、高度 225px 。"
+      ]
+    },
+    {
+      "name": "inline-payment-panel",
+      "docLink": "https://smartprogram.baidu.com/docs/develop/component/inline_payment_panel/",
+      "attrs": [
+        {
+          "name": "total-amount",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "总金额，金额单位分，tip：仅支持整数型字符串"
+          ]
+        },
+        {
+          "name": "deal-id",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "百度收银台的财务结算凭证，详见[平台术语](https://smartprogram.baidu.com/docs/develop/function/parameter/#%E6%A0%B8%E5%BF%83%E5%8F%82%E6%95%B0%E8%8E%B7%E5%8F%96)"
+          ]
+        },
+        {
+          "name": "app-key",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "支付能力开通后分配的支付 appKey，详见[平台术语](https://smartprogram.baidu.com/docs/develop/function/parameter/#%E6%A0%B8%E5%BF%83%E5%8F%82%E6%95%B0%E8%8E%B7%E5%8F%96)"
+          ]
+        },
+        {
+          "name": "promotion-tag",
+          "type": {
+            "name": "String/Array.<string\\>"
+          },
+          "desc": [
+            "平台营销信息，此处传当前订单中可使用平台券的 spuid，同时需在 [支付能力](https://smartprogram.baidu.com/docs/develop/function/tune_up_2.0/)中搭配使用传入该参数；注：仅与百度合作平台类目券的开发者需要填写该参数"
+          ]
+        },
+        {
+          "name": "enable-page-back-modal",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否设置挽留弹窗"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "custom-style",
+          "type": {
+            "name": "Object"
+          },
+          "desc": [
+            "自定义样式设置"
+          ]
+        },
+        {
+          "name": "style-type",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "自定义样式档位配置，各档位配置项包括支付渠道/优惠券条高度、渠道图标大小、支付渠道文案字体大小、营销文案字体大小、选择器图标大小"
+          ],
+          "defaultValue": "default"
+        },
+        {
+          "name": "bindgetpaymentinfo",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "获取支付相关信息，具体信息在返回值的 detail 字段中"
+          ]
+        },
+        {
+          "name": "binderror",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "当发生错误时触发 error 事件，具体信息在返回值的 detail 字段中，例如 {detail: {errMsg: \"something is wrong\"}}"
+          ]
+        },
+        {
+          "name": "inlinePaySign",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "返回的支付信息加密 key，在 [swan.requestPolymerPayment](https://smartprogram.baidu.com/docs/develop/function/tune_up_2.0/) 中的请求参数 orderInfo 里加此字段则表示走内嵌组件支付渠道"
+          ]
+        },
+        {
+          "name": "userPayAmount",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "返回的用户实际支付金额，金额单位分，此值为在开发者传入的 totalAmount 基础上减免百度平台营销后（如有）的金额，可用于提单页最终金额展示"
+          ]
+        },
+        {
+          "name": "reduceAmount",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "返回的百度平台营销减免金额（如有），金额单位分"
+          ]
+        },
+        {
+          "name": "selectedChannelName",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "用户当前选中的支付渠道名称。最低支持基础库版本 3.480.5"
+          ]
+        },
+        {
+          "name": "selectedChannelIcon",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "用户当前选中的支付渠道图标。最低支持基础库版本 3.480.5"
+          ]
+        },
+        {
+          "name": "panel",
+          "type": {
+            "name": "Object"
+          },
+          "desc": [
+            "支付面板样式"
+          ]
+        },
+        {
+          "name": "checkedBase",
+          "type": {
+            "name": "Object"
+          },
+          "desc": [
+            "选中图标样式"
+          ]
+        },
+        {
+          "name": "background",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "支付面板背景颜色"
+          ],
+          "defaultValue": "#FFFFFF"
+        },
+        {
+          "name": "background",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "选中图标背景颜色"
+          ],
+          "defaultValue": "#4E6Ef2"
+        }
+      ],
+      "desc": [
+        "**解释**：收银台支付内嵌组件。可以将支付渠道内嵌在小程序提单页面内，缩短交易链路，提升支付转化率, 登录状态才可见。"
+      ]
+    },
+    {
+      "name": "input",
+      "docLink": "https://smartprogram.baidu.com/docs/develop/component/formlist_input/",
+      "attrs": [
+        {
+          "name": "value",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "输入框的初始内容。若要动态设置输入框内容，需设置`value=\"{= value =}\"`（注：若要取键盘输入后的 value 请通过 bindinput 获取）"
+          ]
+        },
+        {
+          "name": "password",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否是密码类型"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "placeholder",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "输入框为空时占位符。其样式暂时只支持设置 text-align、font-size、font-weight、color"
+          ]
+        },
+        {
+          "name": "placeholder-style",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "placeholder 的样式"
+          ]
+        },
+        {
+          "name": "placeholder-class",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "placeholder 的样式类"
+          ],
+          "defaultValue": "input-placeholder"
+        },
+        {
+          "name": "disabled",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否禁用"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "maxlength",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "最大输入长度，设置为 -1 的时候不限制最大长度"
+          ],
+          "defaultValue": "140"
+        },
+        {
+          "name": "cursor-spacing",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "指定光标与键盘的距离（单位：px）。当键盘弹出时， 如果需要页面上滑才能完整显示 input 组件, 那么此时光标与键盘的距离为设定的 cursor-spacing 值； 如果 input 组件处于屏幕上方，键盘弹出时不会挡住 input， 则忽略该属性"
+          ],
+          "defaultValue": "0"
+        },
+        {
+          "name": "focus",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "获取焦点，调起键盘<br> 开发者工具暂不支持自动获取焦点"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "confirm-hold",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "点击键盘右下角按钮时是否保持键盘不收起"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "cursor",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "指定 focus 时的光标位置，自动聚焦时才会生效<br>开发者工具暂不支持"
+          ]
+        },
+        {
+          "name": "selection-start",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "光标起始位置，自动聚焦时有效，需与 selection-end 搭配使用"
+          ],
+          "defaultValue": "-1"
+        },
+        {
+          "name": "selection-end",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "光标结束位置，自动聚焦时有效，需与 selection-start 搭配使用"
+          ],
+          "defaultValue": "-1"
+        },
+        {
+          "name": "adjust-position",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "键盘弹起时，是否自动上推页面"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "hold-keyboard",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "focus 时，点击页面的时候不收起键盘"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "bindinput",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "当键盘输入时，触发 input 事件，`event.detail = {value, cursor, keyCode}`，keyCode 为键值。暂不支持处理函数直接 return 一个字符串"
+          ]
+        },
+        {
+          "name": "bindfocus",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "输入框聚焦时触发，`event.detail = {value: value, height: height}`，height 为键盘高度"
+          ]
+        },
+        {
+          "name": "bindblur",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "输入框失去焦点时触发，`event.detail = {value: value}`"
+          ]
+        },
+        {
+          "name": "bindconfirm",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "点击完成按钮时触发，`event.detail = {value: value}`"
+          ]
+        }
+      ],
+      "desc": [
+        "**解释**：输入框。基础库 3.105.0 起支持[同层渲染](https://smartprogram.baidu.com/docs/develop/component/native/)。\n**Web 态说明**：在 Web 态中，受浏览器限制，部分浏览器不支持自动获取焦点。如：safari 浏览器、chrome 浏览器；受设备系统或输入法限制，[confirm-type](#confirm-type) 值无法修改键盘右下角按钮文字，右下角按钮内容由设备系统或输入法决定。"
+      ]
+    },
+    {
+      "name": "label",
+      "docLink": "https://smartprogram.baidu.com/docs/develop/component/formlist_label/",
+      "attrs": [
+        {
+          "name": "for",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "绑定控件的 ID"
+          ]
+        }
+      ],
+      "desc": [
+        "**解释**：表单组件标签，用来改进表单的可用性。使用 for 属性找到对应的 ID（必须写 for），当点击时，就会触发对应的控件。for 优先级高于内部控件，内部有多个控件的时候默认触发第一个控件。目前可以绑定的控件有：`<button>`、`<checkbox>`、`<radio>`、`<switch>`。"
+      ]
+    },
+    {
+      "name": "live-player",
+      "docLink": "https://smartprogram.baidu.com/docs/develop/component/media_live-player/",
+      "attrs": [
+        {
+          "name": "id",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "live-player 属性的唯一标志符"
+          ]
+        },
+        {
+          "name": "src",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "音视频地址，详见下方[主流格式支持](#主流格式支持)"
+          ]
+        },
+        {
+          "name": "autoplay",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "自动播放"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "muted",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否静音"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "background-mute",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "进入后台时是否静音（已废弃，默认退台静音）"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "min-cache",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "最小缓冲区（单位：s），mode = 'RTC' 时不支持设置"
+          ],
+          "defaultValue": "1"
+        },
+        {
+          "name": "max-cache",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "最大缓冲区（单位：s），mode = 'RTC' 时不支持设置"
+          ],
+          "defaultValue": "3"
+        },
+        {
+          "name": "mode",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "播放模式，有效值：live、RTC。live 表示直播模式，RTC 表示实时通话模式，该模式时延更低。默认 live"
+          ],
+          "defaultValue": "live"
+        },
+        {
+          "name": "picture-in-picture-mode",
+          "type": {
+            "name": "String / Array"
+          },
+          "desc": [
+            "设置小窗模式：push，pop，空字符串或通过数组形式设置多种模式（如 [\"push\", \"pop\"]）"
+          ],
+          "defaultValue": "-"
+        },
+        {
+          "name": "picture-in-picture-init-position",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "小窗模式下小窗的初始显示位置，格式为 (alignment, y)，其中 alignment 表示小窗吸附屏幕左侧还是右侧，可选值为 left、right，y 代表小窗最顶部所在的屏幕高度百分比"
+          ],
+          "defaultValue": "-"
+        },
+        {
+          "name": "bindstatechange",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "播放状态变化事件，参考下方[状态码](#状态码)，`detail = {code}`"
+          ]
+        },
+        {
+          "name": "bindnetstatus",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "网络状态变化通知，参考下方[网络状态数据](#网络状态数据)，`detail = {info}`"
+          ]
+        },
+        {
+          "name": "bindfullscreenchange",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "全屏变化事件，`detail = {direction, fullscreen}`"
+          ]
+        },
+        {
+          "name": "bindenterpictureinpicture",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "播放器进入小窗事件"
+          ],
+          "defaultValue": "-"
+        },
+        {
+          "name": "bindleavepictureinpicture",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "播放器退出小窗事件"
+          ],
+          "defaultValue": "-"
+        }
+      ],
+      "desc": [
+        "**解释**：实时视频播放器。live-player 组件默认宽度 300px 、高度 225px 。该组件还提供丰富的 API ，来控制实时视频的播放、暂停、全屏等，详见 [swan.createLivePlayerContext](https://smartprogram.baidu.com/docs/develop/api/media/liveplayercontext_swan-createLivePlayerContext/) 。只针对直播答题、直播服务类目开放，需要先通过类目审核，再在小程序管理后台，“开发管理 -> 功能管理”页面的“实时音视频播放”模块中自助开通该组件权限。\n\n**支持服务类目**\n|一级类目|二级类目|\n|:--|:--|\n|娱乐|直播、直播答题|"
+      ]
+    },
+    {
+      "name": "login",
+      "docLink": "https://smartprogram.baidu.com/docs/develop/component/login/",
+      "attrs": [
+        {
+          "name": "button-class",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "组件中用户授权按钮的类名，可用于自定义样式"
+          ]
+        },
+        {
+          "name": "checked-color",
+          "type": {
+            "name": "Color"
+          },
+          "desc": [
+            "组件中用户授权勾选框选中时的颜色，同 CSS 的 color"
+          ],
+          "defaultValue": "#3388FF"
+        },
+        {
+          "name": "theme-color",
+          "type": {
+            "name": "Color"
+          },
+          "desc": [
+            "主题颜色，设置后将应用于 “用户授权按钮背景色” 和 “用户授权勾选框选中时的颜色” <br>注：theme-color 的优先级低于 button-class 和 checked-color，且当 button-class 存在时，theme-color 不生效"
+          ],
+          "defaultValue": "#3388FF"
+        },
+        {
+          "name": "bindgetphonenumber",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "用户完成授权后，获取用户手机号：<br>detail.errMsg 值为`\"getPhoneNumber:ok\"` 时代表用户信息获取成功；<br>detail.errMsg 值为`\"getPhoneNumber:fail auth deny\"`时代表用户信息获取失败。<br>参考 [用户数据的签名验证和加解密](https://smartprogram.baidu.com/docs/develop/function/login_userdata/) 对用户数据进行处理获得用户手机号。<br>用户手机号信息解密后数据示例：`{\"mobile\":\"15000000000\"}`<br>1. 非个人开发者可申请；<br>2. 审核通过后，进入小程序首页,在左侧导航栏单击“设置 -> 开发设置”。下拉页面，在“获取用户手机号权限申请”中单击“申请开通”"
+          ]
+        },
+        {
+          "name": "bindloaderror",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "组件加载失败回调"
+          ]
+        }
+      ],
+      "desc": [
+        "**解释**：手机号授权内嵌组件，默认高度为 270px，支持不同场景下用户快速完成登录获取手机号信息。其功能与设置 button 组件 open-type 属性为 getPhoneNumber 时相同，可以降低授权的交互成本，推荐使用。"
+      ]
+    },
+    {
+      "name": "map",
+      "docLink": "https://smartprogram.baidu.com/docs/develop/component/map/",
+      "attrs": []
+    },
+    {
+      "name": "markdown",
+      "docLink": "https://smartprogram.baidu.com/docs/develop/component/base_markdown/",
+      "attrs": [
+        {
+          "name": "content",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "markdown 字符串"
+          ],
+          "defaultValue": "-"
+        },
+        {
+          "name": "selectable",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "markdown 文本是否可以长按选中，可用于复制，粘贴，长按搜索等场景"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "binderror",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "渲染失败时触发，返回错误信息"
+          ],
+          "defaultValue": "-"
+        }
+      ],
+      "desc": [
+        "**解释**：markdown 渲染组件。"
+      ]
+    },
+    {
+      "name": "movable-area",
+      "docLink": "https://smartprogram.baidu.com/docs/develop/component/view_movable-area/",
+      "attrs": []
+    },
+    {
+      "name": "movable-view",
+      "docLink": "https://smartprogram.baidu.com/docs/develop/component/view_movable-view/",
+      "attrs": [
+        {
+          "name": "inertia",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "movable-view 是否带有惯性"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "out-of-bounds",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "超过可移动区域后，movable-view 是否还可以移动"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "x",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "定义 x 轴方向的偏移，如果 x 的值不在可移动范围内，会自动移动到可移动范围；改变 x 的值会触发动画"
+          ]
+        },
+        {
+          "name": "y",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "定义 y 轴方向的偏移，如果 y 的值不在可移动范围内，会自动移动到可移动范围；改变 y 的值会触发动画"
+          ]
+        },
+        {
+          "name": "damping",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "阻尼系数，用于控制 x 或 y 改变时的动画和过界回弹的动画，值越大移动越快"
+          ],
+          "defaultValue": "20"
+        },
+        {
+          "name": "friction",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "摩擦系数，用于控制惯性滑动的动画，值越大摩擦力越大，滑动越快停止；必须大于 0，否则会被设置成默认值"
+          ],
+          "defaultValue": "2"
+        },
+        {
+          "name": "disabled",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否禁用"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "scale",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否支持双指缩放，默认缩放手势生效区域是在 movable-view 内"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "scale-min",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "定义缩放倍数最小值"
+          ],
+          "defaultValue": "0.5"
+        },
+        {
+          "name": "scale-max",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "定义缩放倍数最大值"
+          ],
+          "defaultValue": "10"
+        },
+        {
+          "name": "scale-value",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "定义缩放倍数，取值范围为 0.5-10"
+          ],
+          "defaultValue": "1"
+        },
+        {
+          "name": "animation",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否使用动画"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "bindchange",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "拖动过程中触发的事件，`event.detail = {x: x, y: y, source: source}`，其中 source 表示产生移动的原因，值可为 touch（拖动）"
+          ]
+        },
+        {
+          "name": "bindscale",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "缩放过程中触发的事件，`event.detail = {x: x, y: y, scale: scale}`"
+          ]
+        },
+        {
+          "name": "bindhtouchmove",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "手指初次触摸后发生横向移动，如果 catch 此事件，则意味着 touchmove 事件也被 catch"
+          ]
+        },
+        {
+          "name": "bindvtouchmove",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "手指初次触摸后发生纵向移动，如果 catch 此事件，则意味着 touchmove 事件也被 catch"
+          ]
+        }
+      ],
+      "desc": [
+        "**解释**：可移动的视图容器，在页面中可以拖拽滑动。movable-view 必须在 [movable-area](https://smartprogram.baidu.com/docs/develop/component/view_movable-area/) 组件中，并且必须是直接子节点，否则不能移动。"
+      ]
+    },
+    {
+      "name": "navigator",
+      "docLink": "https://smartprogram.baidu.com/docs/develop/component/nav/",
+      "attrs": [
+        {
+          "name": "url",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "应用内的跳转链接"
+          ]
+        },
+        {
+          "name": "delta",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "当 open-type 为`navigateBack`时有效，表示回退的层数"
+          ]
+        },
+        {
+          "name": "app-id",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "当`target=\"miniProgram\"`时有效，要打开的小程序 App Key (小程序后台设置-开发设置中)"
+          ]
+        },
+        {
+          "name": "path",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "当`target=\"miniProgram\"`时有效，打开的页面路径，如果为空则打开首页"
+          ]
+        },
+        {
+          "name": "extra-data",
+          "type": {
+            "name": "Object"
+          },
+          "desc": [
+            "当`target=\"miniProgram\"`时有效，需要传递给目标小程序的数据，目标小程序可在 [App.onLaunch](https://smartprogram.baidu.com/docs/develop/framework/app_service_register/#onlaunch)、[App.onShow](https://smartprogram.baidu.com/docs/develop/framework/app_service_register/#onshow) 中获取到这份数据"
+          ]
+        },
+        {
+          "name": "hover-class",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "指定点击时的样式类，当`hover-class=\"none\"`时，没有点击态效果"
+          ],
+          "defaultValue": "navigator-hover"
+        },
+        {
+          "name": "hover-stop-propagation",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "指定是否阻止本节点的祖先节点出现点击态"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "hover-start-time",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "按住后多久出现点击态（单位：毫秒）"
+          ],
+          "defaultValue": "50"
+        },
+        {
+          "name": "hover-stay-time",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "手指松开后点击态保留时间（单位：毫秒）"
+          ],
+          "defaultValue": "600"
+        },
+        {
+          "name": "bindsuccess",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "当`target=\"miniProgram\"`时有效，跳转小程序成功时触发 success 事件,`event.detail = {errMsg: errMsg}`"
+          ]
+        },
+        {
+          "name": "bindfail",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "当`target=\"miniProgram\"`时有效，跳转小程序失败时触发 fail 事件，event.detail 同上"
+          ]
+        },
+        {
+          "name": "bindcomplete",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "当`target=\"miniProgram\"`时有效，跳转小程序完成时触发 complete 事件，event.detail 同上"
+          ]
+        }
+      ],
+      "desc": [
+        "**解释**：页面链接，控制小程序的跳转，既可在当前小程序内部进行跳转，也可跳转至其他小程序。`navigator`的子节点背景色应为透明色。"
+      ]
+    },
+    {
+      "name": "picker",
+      "docLink": "https://smartprogram.baidu.com/docs/develop/component/formlist_picker/",
+      "attrs": []
+    },
+    {
+      "name": "picker-view",
+      "docLink": "https://smartprogram.baidu.com/docs/develop/component/formlist_picker-view/",
+      "attrs": []
+    },
+    {
+      "name": "picker-view-column",
+      "docLink": "https://smartprogram.baidu.com/docs/develop/component/formlist_picker-view-column/",
+      "attrs": []
+    },
+    {
+      "name": "progress",
+      "docLink": "https://smartprogram.baidu.com/docs/develop/component/base_progress/",
+      "attrs": [
+        {
+          "name": "percent",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "百分比 0~100%"
+          ],
+          "defaultValue": "0"
+        },
+        {
+          "name": "show-info",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "在进度条右侧显示百分比"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "stroke-width",
+          "type": {
+            "name": "Number/String"
+          },
+          "desc": [
+            "进度条的高度（单位：px）"
+          ],
+          "defaultValue": "2"
+        },
+        {
+          "name": "border-radius",
+          "type": {
+            "name": "Number/String"
+          },
+          "desc": [
+            "圆角大小（单位：px）"
+          ],
+          "defaultValue": "0"
+        },
+        {
+          "name": "font-size",
+          "type": {
+            "name": "Number/String"
+          },
+          "desc": [
+            "右侧百分比字体大小（单位：px）"
+          ],
+          "defaultValue": "16"
+        },
+        {
+          "name": "color",
+          "type": {
+            "name": "Color"
+          },
+          "desc": [
+            "进度条颜色（推荐使用 [active-color](#activecolor)）"
+          ],
+          "defaultValue": "#09BB07"
+        },
+        {
+          "name": "background-color",
+          "type": {
+            "name": "Color"
+          },
+          "desc": [
+            "未选择的进度条的颜色"
+          ],
+          "defaultValue": "#E6E6E6"
+        },
+        {
+          "name": "active",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "进度条从左往右的动画"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "active-mode",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "backwards：动画从头播；forwards：动画从上次结束点接着播"
+          ],
+          "defaultValue": "backwards"
+        },
+        {
+          "name": "duration",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "进度增加 1% 所需毫秒数"
+          ],
+          "defaultValue": "20"
+        }
+      ],
+      "desc": [
+        "**解释**：进度条。"
+      ]
+    },
+    {
+      "name": "radio",
+      "docLink": "https://smartprogram.baidu.com/docs/develop/component/formlist_radio/",
+      "attrs": [
+        {
+          "name": "value",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "&lt;radio&gt; 组件标识。当该 &lt;radio&gt; 选中时，&lt;radio-group&gt; 的 change 事件会携带 &lt;radio&gt; 的 value"
+          ],
+          "defaultValue": "&nbsp;"
+        },
+        {
+          "name": "checked",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "当前是否选中"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "disabled",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否禁用"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "color",
+          "type": {
+            "name": "Color"
+          },
+          "desc": [
+            "radio 的颜色，同 CSS 的 color"
+          ],
+          "defaultValue": "#3c76ff"
+        }
+      ],
+      "desc": [
+        "**解释**：单项选择器。"
+      ]
+    },
+    {
+      "name": "radio-group",
+      "docLink": "https://smartprogram.baidu.com/docs/develop/component/formlist_radio-group/",
+      "attrs": []
+    },
+    {
+      "name": "rich-text",
+      "docLink": "https://smartprogram.baidu.com/docs/develop/component/base_rich-text/",
+      "attrs": [
+        {
+          "name": "selectable",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "富文本是否可以长按选中，可用于复制，粘贴，长按搜索等场景"
+          ],
+          "defaultValue": "<div style=\"width: 120px;\">false（基础库 3.150.1 以前版本）</div>true（基础库 3.150.1 及以后版本）"
+        },
+        {
+          "name": "image-menu-prevent",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "阻止长按图片时弹起默认菜单（将该属性设置为`image-menu-prevent`或`image-menu-prevent=\"true\"`），只在初始化时有效，不能动态变更；若不想阻止弹起默认菜单，则不需要设置此属性"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "preview",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "富文本中的图片是否可点击预览。在不设置的情况下，若 rich-text 未监听点击事件，则默认开启。未显示设置 preview 时会进行点击默认预览判断，建议显示设置 preview"
+          ]
+        }
+      ],
+      "desc": [
+        "**解释**：富文本。"
+      ]
+    },
+    {
+      "name": "rich-text-input",
+      "docLink": "https://smartprogram.baidu.com/docs/develop/component/formlist_rich-text-input/",
+      "attrs": [
+        {
+          "name": "placeholder",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "输入框为空时占位符。其样式暂时只支持设置 text-align、font-size、font-weight、color"
+          ]
+        },
+        {
+          "name": "placeholder-style",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "placeholder 的样式"
+          ]
+        },
+        {
+          "name": "placeholder-class",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "placeholder 的样式类"
+          ],
+          "defaultValue": "rich-text-input-placeholder"
+        },
+        {
+          "name": "disabled",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否禁用"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "maxlength",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "最大输入长度，设置为 -1 的时候不限制最大长度"
+          ],
+          "defaultValue": "140"
+        },
+        {
+          "name": "prevent-blur-class",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "用于阻止输入框失焦的 class。当元素节点上设置了对应的 class 后，点击该元素不会触发输入框失焦"
+          ]
+        },
+        {
+          "name": "bindinput",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "当键盘输入时，触发 input 事件，`event.detail = {value, cursor, keyCode}`，keyCode 为键值"
+          ]
+        },
+        {
+          "name": "bindfocus",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "输入框聚焦时触发，`event.detail = {value, height}`，height 为键盘高度"
+          ]
+        },
+        {
+          "name": "bindblur",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "输入框失去焦点时触发，`event.detail = {value}`"
+          ]
+        },
+        {
+          "name": "bindconfirm",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "点击完成按钮时触发，`event.detail = {value}`"
+          ]
+        },
+        {
+          "name": "bindtagtap",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "点击输入框中的标签触发，`event.detail = {tagId, text, class, style}`，tagId 为标签 id，通过 [RichTextInputContext.addTag](/docs/develop/api/form/RichTextInputContext-addTag/) 获取"
+          ]
+        },
+        {
+          "name": "bindtagdeleted",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "输入框中的标签被删除时触发，`event.detail = {tagId, text, class, style}`"
+          ]
+        }
+      ],
+      "desc": [
+        "**解释**：富文本输入框。"
+      ]
+    },
+    {
+      "name": "rtc-room",
+      "docLink": "https://smartprogram.baidu.com/docs/develop/component/media_rtc-room/",
+      "attrs": []
+    },
+    {
+      "name": "rtc-room-item",
+      "docLink": "https://smartprogram.baidu.com/docs/develop/component/media_rtc-room-item/",
+      "attrs": []
+    },
+    {
+      "name": "scroll-view",
+      "docLink": "https://smartprogram.baidu.com/docs/develop/component/view_scroll-view/",
+      "attrs": [
+        {
+          "name": "scroll-x",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "允许横向滚动"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "scroll-y",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "允许纵向滚动"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "upper-threshold",
+          "type": {
+            "name": "Number/String"
+          },
+          "desc": [
+            "距顶部 / 左边多远时（单位 px），触发 scrolltoupper 事件"
+          ],
+          "defaultValue": "50"
+        },
+        {
+          "name": "lower-threshold",
+          "type": {
+            "name": "Number/String"
+          },
+          "desc": [
+            "距底部 / 右边多远时（单位 px），触发 scrolltolower 事件"
+          ],
+          "defaultValue": "50"
+        },
+        {
+          "name": "enhanced",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "启用 scroll-view 增强特性"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "bounces",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "iOS 下 scroll-view 边界弹性控制 (同时开启 enhanced 属性后生效)"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "scroll-top",
+          "type": {
+            "name": "Number/String"
+          },
+          "desc": [
+            "设置竖向滚动条位置。要动态设置滚动条位置，用法`scroll-top=\"{= scrollTop =}\"`。<br>如果在设置组件渲染数据的同时设置了 scroll-top、scroll-left 值，需要在 [swan.nextTick](https://smartprogram.baidu.com/docs/develop/api/show/custom_component/) 回调中设置 scroll-top、scroll-left ，确保滚动条位置准确"
+          ]
+        },
+        {
+          "name": "scroll-left",
+          "type": {
+            "name": "Number/String"
+          },
+          "desc": [
+            "设置横向滚动条位置。要动态设置滚动条位置，用法`scroll-left=\"{= scrollLeft =}\"`。<br>如果在设置组件渲染数据的同时设置了 scroll-top、scroll-left 值，需要在 [swan.nextTick](https://smartprogram.baidu.com/docs/develop/api/show/custom_component/) 回调中设置 scroll-top、scroll-left ，确保滚动条位置准确"
+          ]
+        },
+        {
+          "name": "scroll-into-view",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "值应为某子元素 id（id 不能以数字开头）。设置滚动方向后，按方向滚动到该元素，动态设置用法`scroll-into-view=\"{= scrollIntoView =}\"`"
+          ]
+        },
+        {
+          "name": "scroll-with-animation",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "在设置滚动条位置时使用动画过渡"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "enable-back-to-top",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "安卓双击标题栏时，滚动条返回顶部，只支持竖向 <br> 注：iOS 端暂不支持"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "bindscrolltoupper",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "滚动到顶部 / 左边，会触发 scrolltoupper 事件"
+          ]
+        },
+        {
+          "name": "bindscrolltolower",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "滚动到底部 / 右边，会触发 scrolltolower 事件"
+          ]
+        },
+        {
+          "name": "bindscroll",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "滚动时触发，`event.detail = {scrollLeft, scrollTop, scrollHeight, scrollWidth, deltaX, deltaY}`"
+          ]
+        }
+      ],
+      "desc": [
+        "**解释**：可滚动视图区域，可实现横向滚动和竖向滚动。使用竖向滚动时，需要给定该组件一个固定高度，可以通过 CSS 设置 height 。"
+      ]
+    },
+    {
+      "name": "slider",
+      "docLink": "https://smartprogram.baidu.com/docs/develop/component/formlist_slider/",
+      "attrs": [
+        {
+          "name": "min",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "最小值"
+          ],
+          "defaultValue": "0"
+        },
+        {
+          "name": "max",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "最大值"
+          ],
+          "defaultValue": "100"
+        },
+        {
+          "name": "step",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "步长，取值必须大于 0，并且可被 max - min 整除"
+          ],
+          "defaultValue": "1"
+        },
+        {
+          "name": "disabled",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否禁用"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "value",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "当前取值"
+          ],
+          "defaultValue": "0"
+        },
+        {
+          "name": "background-color",
+          "type": {
+            "name": "Color"
+          },
+          "desc": [
+            "背景条的颜色"
+          ],
+          "defaultValue": "#cccccc"
+        },
+        {
+          "name": "block-size",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "滑块的大小，取值范围为 12-28"
+          ],
+          "defaultValue": "24"
+        },
+        {
+          "name": "block-color",
+          "type": {
+            "name": "Color"
+          },
+          "desc": [
+            "滑块的颜色"
+          ],
+          "defaultValue": "#ffffff"
+        },
+        {
+          "name": "active-color",
+          "type": {
+            "name": "Color"
+          },
+          "desc": [
+            "已选择的颜色"
+          ],
+          "defaultValue": "#3c76ff"
+        },
+        {
+          "name": "show-value",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否显示当前 value"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "bindchange",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "完成一次拖动后触发的事件，`event.detail = {value: value}`"
+          ]
+        },
+        {
+          "name": "bindchanging",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "拖动过程中触发的事件，`event.detail = {value: value}`"
+          ]
+        }
+      ],
+      "desc": [
+        "**解释**：滑动选择器。"
+      ]
+    },
+    {
+      "name": "swiper",
+      "docLink": "https://smartprogram.baidu.com/docs/develop/component/view_swiper/",
+      "attrs": [
+        {
+          "name": "indicator-dots",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否显示面板指示点"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "indicator-color",
+          "type": {
+            "name": "Color"
+          },
+          "desc": [
+            "指示点颜色"
+          ],
+          "defaultValue": "rgba(0, 0, 0, .3)"
+        },
+        {
+          "name": "indicator-active-color",
+          "type": {
+            "name": "Color"
+          },
+          "desc": [
+            "当前选中的指示点颜色"
+          ],
+          "defaultValue": "#333"
+        },
+        {
+          "name": "autoplay",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否自动切换"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "current",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "当前所在页面的 index"
+          ],
+          "defaultValue": "0"
+        },
+        {
+          "name": "current-item-id",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "当前所在滑块的 item-id ，不能与 current 被同时指定"
+          ]
+        },
+        {
+          "name": "interval",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "自动切换时间间隔（单位：ms）"
+          ],
+          "defaultValue": "5000"
+        },
+        {
+          "name": "duration",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "滑动动画时长（单位：ms）"
+          ],
+          "defaultValue": "500"
+        },
+        {
+          "name": "circular",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否采用衔接滑动"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "vertical",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "滑动方向是否为纵向"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "previous-margin",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "前边距，可用于露出前一项的一小部分，支持 px 和 rpx"
+          ],
+          "defaultValue": "\"0px\""
+        },
+        {
+          "name": "next-margin",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "后边距，可用于露出后一项的一小部分，支持 px 和 rpx"
+          ],
+          "defaultValue": "\"0px\""
+        },
+        {
+          "name": "display-multiple-items",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "同时显示的滑块数量"
+          ],
+          "defaultValue": "1"
+        },
+        {
+          "name": "disable-touchmove",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否停止响应用户 touchmove 操作"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "bindchange",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "current 改变时会触发 change 事件，`event.detail = {current: current, source: source}`"
+          ]
+        },
+        {
+          "name": "bindanimationfinish",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "动画结束时会触发 animationfinish 事件，event.detail 同上"
+          ]
+        }
+      ],
+      "desc": [
+        "**解释**：滑块视图容器。内部只允许使用 [swiper-item](https://smartprogram.baidu.com/docs/develop/component/view_swiper-item/) 组件描述滑块内容，否则会导致未定义的行为。"
+      ]
+    },
+    {
+      "name": "swiper-item",
+      "docLink": "https://smartprogram.baidu.com/docs/develop/component/view_swiper-item/",
+      "attrs": []
+    },
+    {
+      "name": "switch",
+      "docLink": "https://smartprogram.baidu.com/docs/develop/component/formlist_switch/",
+      "attrs": [
+        {
+          "name": "checked",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否选中"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "color",
+          "type": {
+            "name": "Color"
+          },
+          "desc": [
+            "switch 的颜色，同 CSS 的 color"
+          ],
+          "defaultValue": "#3388ff"
+        },
+        {
+          "name": "disabled",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否禁用"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "bindchange",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "checked 改变时触发 change 事件，`event.detail = {checked: true}`"
+          ]
+        }
+      ],
+      "desc": [
+        "**解释**：开关选择器。"
+      ]
+    },
+    {
+      "name": "tab-item",
+      "docLink": "https://smartprogram.baidu.com/docs/develop/component/tab-item/",
+      "attrs": []
+    },
+    {
+      "name": "tabs",
+      "docLink": "https://smartprogram.baidu.com/docs/develop/component/tabs/",
+      "attrs": []
+    },
+    {
+      "name": "text",
+      "docLink": "https://smartprogram.baidu.com/docs/develop/component/base_text/",
+      "attrs": [
+        {
+          "name": "selectable",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "文本是否可选。true：可用于文本复制，粘贴，长按搜索等场景。3.150.1 以后版本只能通过字面量的方式设置，不支持变量"
+          ],
+          "defaultValue": "true（基础库 3.150.1 及以后版本）<br> false（基础库 3.150.1 以前版本）"
+        }
+      ],
+      "desc": [
+        "**解释**：文本元素。"
+      ]
+    },
+    {
+      "name": "textarea",
+      "docLink": "https://smartprogram.baidu.com/docs/develop/component/formlist_textarea/",
+      "attrs": [
+        {
+          "name": "value",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "输入框的内容，若要动态设置输入框内容，需设置`value = \"{= value =}\"`（注：若要取键盘输入后的 value 请通过 bindinput 获取）"
+          ]
+        },
+        {
+          "name": "disabled",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否禁用"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "maxlength",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "最大输入长度，设置为 -1 的时候不限制最大长度"
+          ],
+          "defaultValue": "140"
+        },
+        {
+          "name": "placeholder",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "输入框为空时占位符。其样式暂时只支持设置 text-align、font-size、font-weight、color"
+          ]
+        },
+        {
+          "name": "placeholder-style",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "指定 placeholder 的样式"
+          ]
+        },
+        {
+          "name": "placeholder-class",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "指定 placeholder 的样式类"
+          ]
+        },
+        {
+          "name": "auto-height",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否自动增高，设置 auto-height 时，style.height 不生效"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "cursor",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "指定 focus 时的光标位置，自动聚焦时才会生效"
+          ],
+          "defaultValue": "-1"
+        },
+        {
+          "name": "auto-focus",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "自动聚焦，调起键盘"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "confirm-hold",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "点击键盘右下角按钮时是否保持键盘不收起"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "focus",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "获取焦点，调起键盘"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "fixed",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "如果 textarea 是在一个`position: fixed`的区域，需要显示指定属性 fixed 为 true"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "cursor-spacing",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "指定光标与键盘的距离（单位：px）。取 textarea 距离底部的距离和 cursor-spacing 指定的距离的最小值作为光标与键盘的距离"
+          ],
+          "defaultValue": "0"
+        },
+        {
+          "name": "show-confirm-bar",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否显示键盘上方带有“完成”按钮那一栏"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "selection-start",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "光标起始位置，自动聚焦时有效，需与 selection-end 搭配使用"
+          ],
+          "defaultValue": "-1"
+        },
+        {
+          "name": "selection-end",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "光标结束位置，自动聚焦时有效，需与 selection-start 搭配使用"
+          ],
+          "defaultValue": "-1"
+        },
+        {
+          "name": "adjust-position",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "键盘弹起时，是否自动上推页面"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "hold-keyboard",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "focus 时，点击页面的时候不收起键盘"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "bindfocus",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "输入框聚焦时触发，`event.detail = {value, height}`，height 为键盘高度"
+          ]
+        },
+        {
+          "name": "bindblur",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "输入框失去焦点时触发，`event.detail = {value, cursor}`"
+          ]
+        },
+        {
+          "name": "bindlinechange",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "输入框行数变化时调用，`event.detail = {height: 0, heightRpx: 0, lineCount: 0, lineHeight: 0}`"
+          ]
+        },
+        {
+          "name": "bindinput",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "当键盘输入时，触发 input 事件，`event.detail = {value, cursor}`，bindinput 处理函数的返回值并不会反映到 textarea 上"
+          ]
+        },
+        {
+          "name": "bindconfirm",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "点击完成时，触发 confirm 事件，`event.detail = {value: value}`"
+          ]
+        }
+      ],
+      "desc": [
+        "**解释**：多行输入框。内部不支持嵌套其他组件。如需更多自定义样式，可使用 Smart UI 组件，详见 [textarea 自定义多行输入框](https://smartprogram.baidu.com/docs/develop/extended/ui_component/smt-textarea/)。"
+      ]
+    },
+    {
+      "name": "top-swan",
+      "docLink": "https://smartprogram.baidu.com/docs/develop/component/top_swan/",
+      "attrs": []
+    },
+    {
+      "name": "video",
+      "docLink": "https://smartprogram.baidu.com/docs/develop/component/media_video/",
+      "attrs": [
+        {
+          "name": "src",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "视频的资源地址，支持云文件 ID"
+          ]
+        },
+        {
+          "name": "title",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "视频标题，全屏时在视频顶部展示"
+          ]
+        },
+        {
+          "name": "initial-time",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "指定视频初始播放位置"
+          ]
+        },
+        {
+          "name": "controls",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否显示默认播放控件（播放/暂停按钮、播放进度、时间）"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "autoplay",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否自动播放"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "loop",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否循环播放"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "muted",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否静音播放"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "poster",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "视频封面的图片网络资源地址，支持云文件 ID"
+          ]
+        },
+        {
+          "name": "page-gesture",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "在非全屏模式下，是否开启使用手势调节亮度与音量，兼容 vslide-gesture 属性"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "show-progress",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "若不设置，宽度大于 240 时才会显示"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "show-fullscreen-btn",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否显示全屏按钮"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "enable-progress-gesture",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否开启使用手势控制进度"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "danmu-list",
+          "type": {
+            "name": "Array.&lt;object&gt;"
+          },
+          "desc": [
+            "弹幕列表"
+          ]
+        },
+        {
+          "name": "danmu-btn",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否显示弹幕按钮，只在初始化时有效，不能动态变更"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "enable-danmu",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否展示弹幕，只在初始化时有效，不能动态变更"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "show-play-btn",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否显示视频底部控制栏的播放按钮"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "show-center-play-btn",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否显示视频中间的播放按钮"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "show-mute-btn",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否显示静音按钮"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "show-no-wifi-tip",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "非 wifi 环境下是否显示继续播放浮层"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "vslide-gesture",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "非全屏模式下，是否开启亮度与音量调节手势，兼容 page-gesture 属性"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "vslide-gesture-in-fullscreen",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "全屏模式下，是否开启亮度与音量调节手势"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "show-lock-btn",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "全屏模式下，是否显示锁屏按钮"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "enable-play-gesture",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否开启播放手势，即双击切换播放/暂停"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "show-rate-btn",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否显示倍速播放按钮"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "show-vslide-btn-in-fullscreen",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "全屏模式下，是否显示侧边栏控制按钮"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "silent-play",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否进入无声视频模式，进入无声视频模式后，视频将静音播放且不响应系统物理音量变化，点击播放器提示无声视频，手势调节失效"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "picture-in-picture-mode",
+          "type": {
+            "name": "String / Array"
+          },
+          "desc": [
+            "设置小窗模式：push，pop，空字符串或通过数组形式设置多种模式（如 [\"push\", \"pop\"]）"
+          ],
+          "defaultValue": "-"
+        },
+        {
+          "name": "picture-in-picture-show-progress",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否在小窗模式下展示播放进度"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "picture-in-picture-init-position",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "小窗模式下小窗的初始显示位置，格式为 (alignment, y)，其中 alignment 表示小窗吸附屏幕左侧还是右侧，可选值为 left、right，y 代表小窗最顶部所在的屏幕高度百分比"
+          ],
+          "defaultValue": "-"
+        },
+        {
+          "name": "bindplay",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "当开始播放时触发 play 事件"
+          ]
+        },
+        {
+          "name": "bindpause",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "当暂停播放时触发 pause 事件"
+          ]
+        },
+        {
+          "name": "bindended",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "当播放到末尾时触发 ended 事件"
+          ]
+        },
+        {
+          "name": "bindtimeupdate",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "播放进度变化时触发。`event.detail = {currentTime, duration}`"
+          ]
+        },
+        {
+          "name": "bindfullscreenchange",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "当视频进入和退出全屏时触发。`event.detail = {fullscreen, direction}`，direction 取为 vertical 或 horizontal"
+          ]
+        },
+        {
+          "name": "bindwaiting",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "视频出现缓冲时触发"
+          ]
+        },
+        {
+          "name": "binderror",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "视频播放出错时触发"
+          ]
+        },
+        {
+          "name": "bindloadedmetadata",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "视频元数据加载完成时触发。`event.detail = {width, height, duration}`"
+          ]
+        },
+        {
+          "name": "bindcontrolstoggle",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "切换controls控件显示隐藏时触发。event.detail = {show}"
+          ]
+        },
+        {
+          "name": "bindenterpictureinpicture",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "播放器进入小窗事件"
+          ],
+          "defaultValue": "-"
+        },
+        {
+          "name": "bindleavepictureinpicture",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "播放器退出小窗事件"
+          ],
+          "defaultValue": "-"
+        }
+      ],
+      "desc": [
+        "**解释**：视频。video 组件默认宽度 300px 、高度 225px 。该组件还提供丰富的 API 来控制视频的播放、暂停、全屏、弹幕等，详见 [swan.createVideoContext](https://smartprogram.baidu.com/docs/develop/api/media/videocontext_swan-createVideoContext/) 。"
+      ]
+    },
+    {
+      "name": "view",
+      "docLink": "https://smartprogram.baidu.com/docs/develop/component/view_view/",
+      "attrs": [
+        {
+          "name": "hover-class",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "指定按下去的样式类。当`hover-class=\"none\"`时，没有点击态效果"
+          ],
+          "defaultValue": "none"
+        },
+        {
+          "name": "hover-stop-propagation",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "指定是否阻止本节点的祖先节点出现点击态"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "hover-start-time",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "按住后出现点击态的时间长度（单位：毫秒）"
+          ],
+          "defaultValue": "50"
+        },
+        {
+          "name": "hover-stay-time",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "手指松开后点击态保留的时间长度（单位：毫秒）"
+          ],
+          "defaultValue": "400"
+        }
+      ],
+      "desc": [
+        "**解释**：视图容器。相当于 HTML 中的 div 标签，可将页面分割为独立的、不同的部分。如果需要使用滚动视图，请使用 [scroll-view](https://smartprogram.baidu.com/docs/develop/component/view_scroll-view/) 组件。"
+      ]
+    },
+    {
+      "name": "web-view",
+      "docLink": "https://smartprogram.baidu.com/docs/develop/component/open_web-view/",
+      "attrs": []
+    }
+  ]
+}

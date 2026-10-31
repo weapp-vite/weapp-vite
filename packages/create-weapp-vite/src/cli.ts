@@ -1,3 +1,4 @@
+import type { Toolchain } from './toolchain'
 import path from 'node:path'
 import process from 'node:process'
 import { confirm, input, select } from '@inquirer/prompts'
@@ -7,63 +8,51 @@ import { fs } from '@weapp-core/shared/fs'
 import { validateDependencyVersionStrategy } from './dependencyVersions'
 import { createProject, TemplateName } from './index'
 import { RECOMMENDED_SKILLS_INSTALL_COMMAND } from './skills'
+import { TEMPLATE_DEFINITIONS } from './templates'
 import { validateToolchain } from './toolchain'
 
 const cwd = process.cwd()
 
-const TEMPLATE_CHOICES: Array<{ name: string, value: TemplateName }> = [
-  {
-    name: '默认模板',
-    value: TemplateName.default,
-  },
-  {
-    name: '原生多平台 + Web 模板',
-    value: TemplateName.multiPlatform,
-  },
-  {
-    name: 'Vue SFC 多平台 + Web 模板',
-    value: TemplateName.multiPlatformSfc,
-  },
-  {
-    name: 'Wevu 模板 (Vue SFC)',
-    value: TemplateName.wevu,
-  },
-  {
-    name: 'React 模板 (React 19 + 小程序 runtime)',
-    value: TemplateName.react,
-  },
-  {
-    name: 'Wevu + TDesign 模板 (wevu + tdesign + tailwindcss)',
-    value: TemplateName.wevuTdesign,
-  },
-  {
-    name: '集成 Tailwindcss',
-    value: TemplateName.tailwindcss,
-  },
-  {
-    name: 'TDesign 模板 (tdesign + tailwindcss)',
-    value: TemplateName.tdesign,
-  },
-  {
-    name: 'Vant 模板 (vant + tailwindcss)',
-    value: TemplateName.vant,
-  },
-  {
-    name: '插件模板 (src + pluginRoot)',
-    value: TemplateName.plugin,
-  },
-  {
-    name: '组件库模板 (lib 模式)',
-    value: TemplateName.lib,
-  },
+const MORE_TEMPLATES = 'more-templates'
+const TEMPLATE_CHOICES: Array<{ name: string, value: TemplateName | typeof MORE_TEMPLATES }> = [
+  ...TEMPLATE_DEFINITIONS
+    .filter(template => template.visibility === 'default')
+    .map(template => ({ name: template.label, value: template.id })),
+  { name: '更多模板（高级 / 实验）', value: MORE_TEMPLATES },
 ]
+const MORE_TEMPLATE_CHOICES = TEMPLATE_DEFINITIONS
+  .filter(template => template.visibility !== 'default')
+  .map(template => ({
+    name: `${template.visibility === 'advanced' ? '高级' : '实验'} · ${template.label}`,
+    value: template.id,
+  }))
+const TOOLCHAIN_CHOICES: Array<{ name: string, value: Toolchain }> = [
+  { name: 'weapp-vite（wv，默认）', value: 'wv' },
+  { name: 'Vite（实验性构建宿主）', value: 'vite' },
+  { name: 'Vite+（vp + Oxlint + Oxfmt，实验性构建宿主）', value: 'vite-plus' },
+]
+
+async function selectTemplate(): Promise<TemplateName> {
+  const template = await select<TemplateName | typeof MORE_TEMPLATES>({
+    message: '选择模板',
+    choices: TEMPLATE_CHOICES,
+    default: TemplateName.default,
+  })
+  if (template !== MORE_TEMPLATES) {
+    return template
+  }
+  return select<TemplateName>({
+    message: '更多模板（高级 / 实验）',
+    choices: MORE_TEMPLATE_CHOICES,
+  })
+}
 
 function parseCliArgs(argv: string[]) {
   const positionals: string[] = []
   let installSkills: boolean | undefined
   let dependencyVersionStrategy = 'bundled'
   let registry: string | undefined
-  let toolchain = 'wv'
+  let toolchain: string | undefined
 
   for (const arg of argv) {
     if (arg === '--') {
@@ -105,7 +94,9 @@ function parseCliArgs(argv: string[]) {
   }
 
   validateDependencyVersionStrategy(dependencyVersionStrategy)
-  validateToolchain(toolchain)
+  if (toolchain !== undefined) {
+    validateToolchain(toolchain)
+  }
 
   return {
     command: positionals[0],
@@ -145,11 +136,15 @@ export async function run() {
   }
   const templateName = isArgMode
     ? argTemplate ?? TemplateName.default
-    : await select<TemplateName>({
-        message: '选择模板',
-        choices: TEMPLATE_CHOICES,
-        default: TemplateName.default,
-      })
+    : await selectTemplate()
+
+  const toolchain = parsedArgs.toolchain ?? (isArgMode
+    ? 'wv'
+    : await select<Toolchain>({
+        message: '选择工具链',
+        choices: TOOLCHAIN_CHOICES,
+        default: 'wv',
+      }))
 
   const installSkills = argInstallSkills ?? (isArgMode
     ? false
@@ -162,7 +157,7 @@ export async function run() {
     installSkills,
     dependencyVersionStrategy: parsedArgs.dependencyVersionStrategy,
     registry: parsedArgs.registry,
-    toolchain: parsedArgs.toolchain,
+    toolchain,
   })
 }
 

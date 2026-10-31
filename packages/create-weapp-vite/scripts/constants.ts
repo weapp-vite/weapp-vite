@@ -1,48 +1,6 @@
-import { TemplateName } from '../src/enums'
+import { TEMPLATE_DEFINITIONS } from '../src/templates'
 
-export const Templates = [
-  {
-    target: 'weapp-vite-template',
-    dest: TemplateName.default,
-  },
-  {
-    target: 'weapp-vite-multi-platform-template',
-    dest: TemplateName.multiPlatform,
-  },
-  {
-    target: 'weapp-vite-multi-platform-sfc-template',
-    dest: TemplateName.multiPlatformSfc,
-  },
-  {
-    target: 'weapp-vite-plugin-template',
-    dest: TemplateName.plugin,
-  },
-  {
-    target: 'weapp-vite-lib-template',
-    dest: TemplateName.lib,
-  },
-  {
-    target: 'weapp-vite-wevu-template',
-    dest: TemplateName.wevu,
-  },
-  {
-    target: 'weapp-vite-react-template',
-    dest: TemplateName.react,
-  },
-  {
-    target: 'weapp-vite-wevu-tailwindcss-tdesign-template',
-    dest: TemplateName.wevuTdesign,
-  },
-  {
-    target: 'weapp-vite-tailwindcss-template',
-    dest: TemplateName.tailwindcss,
-  },
-  {
-    target: 'weapp-vite-tailwindcss-tdesign-template',
-    dest: TemplateName.tdesign,
-  },
-  {
-    target: 'weapp-vite-tailwindcss-vant-template',
-    dest: TemplateName.vant,
-  },
-]
+export const Templates = TEMPLATE_DEFINITIONS.map(template => ({
+  target: template.directory,
+  dest: template.id,
+}))

@@ -199,7 +199,7 @@ export function compileVueTemplateToWxml(
 
     if (context.classStyleWxs) {
       const ext = context.classStyleWxsExtension || 'wxs'
-      const helperTag = buildClassStyleWxsTag(ext, context.classStyleWxsSrc)
+      const helperTag = buildClassStyleWxsTag(ext, context.classStyleWxsSrc, context.platform.name)
       wxml = `${helperTag}\n${wxml}`
     }
     if (context.formatWxml) {

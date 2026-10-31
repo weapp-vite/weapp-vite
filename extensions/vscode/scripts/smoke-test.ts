@@ -8,7 +8,7 @@ import { pathToFileURL } from 'node:url'
 
 function createMockVscode() {
   const registeredCommands: Array<{ command: string, handler: unknown }> = []
-  const registeredProviders: Array<{ type: string, selector: unknown }> = []
+  const registeredProviders: Array<{ type: string, selector: unknown, provider?: unknown }> = []
   const createdTreeViews: Array<{ viewId: string, options: unknown }> = []
   const diagnosticCollections: Array<{ name: string }> = []
   const outputChannels: Array<{ name: string }> = []
@@ -106,15 +106,18 @@ function createMockVscode() {
         readFile: async () => Buffer.from(''),
         writeFile: async () => true,
       },
-      getWorkspaceFolder: () => undefined,
+      getWorkspaceFolder: (): { uri: { fsPath: string } } | undefined => undefined,
       getConfiguration: () => ({
         get(_key: string, defaultValue: unknown) {
           return defaultValue
         },
         update: async () => true,
       }),
-      findFiles: async () => [],
+      findFiles: async (): Promise<Array<{ fsPath: string }>> => [],
       onDidChangeWorkspaceFolders() {
+        return { dispose() {} }
+      },
+      onDidGrantWorkspaceTrust() {
         return { dispose() {} }
       },
       onDidChangeConfiguration() {
@@ -139,7 +142,7 @@ function createMockVscode() {
         return { dispose() {} }
       },
       applyEdit: async () => true,
-      openTextDocument: async () => ({
+      openTextDocument: async (_uri?: unknown): Promise<any> => ({
         uri: { path: '/tmp/demo.ts' },
       }),
     },
@@ -167,8 +170,8 @@ function createMockVscode() {
         registeredProviders.push({ type: 'codeActions', selector })
         return { dispose() {} }
       },
-      registerCompletionItemProvider(selector: unknown) {
-        registeredProviders.push({ type: 'completion', selector })
+      registerCompletionItemProvider(selector: unknown, provider: unknown) {
+        registeredProviders.push({ type: 'completion', selector, provider })
         return { dispose() {} }
       },
       registerDocumentLinkProvider(selector: unknown) {
@@ -187,16 +190,16 @@ function createMockVscode() {
         registeredProviders.push({ type: 'documentHighlight', selector })
         return { dispose() {} }
       },
-      registerDefinitionProvider(selector: unknown) {
-        registeredProviders.push({ type: 'definition', selector })
+      registerDefinitionProvider(selector: unknown, provider: unknown) {
+        registeredProviders.push({ type: 'definition', selector, provider })
         return { dispose() {} }
       },
       registerReferenceProvider(selector: unknown) {
         registeredProviders.push({ type: 'reference', selector })
         return { dispose() {} }
       },
-      registerRenameProvider(selector: unknown) {
-        registeredProviders.push({ type: 'rename', selector })
+      registerRenameProvider(selector: unknown, provider: unknown) {
+        registeredProviders.push({ type: 'rename', selector, provider })
         return { dispose() {} }
       },
       registerDocumentSemanticTokensProvider(selector: unknown) {
@@ -222,10 +225,16 @@ function createMockVscode() {
       start: { line: number, character: number }
       end: { line: number, character: number }
 
-      constructor(startLine: number, startCharacter: number, endLine: number, endCharacter: number) {
-        this.start = { line: startLine, character: startCharacter }
-        this.end = { line: endLine, character: endCharacter }
+      constructor(start: number | { line: number, character: number }, end: number | { line: number, character: number }, endLine?: number, endCharacter?: number) {
+        this.start = typeof start === 'number' ? { line: start, character: end as number } : start
+        this.end = typeof end === 'number' ? { line: endLine!, character: endCharacter! } : end
       }
+    },
+    Location: class {
+      constructor(public uri: unknown, public range: unknown) {}
+    },
+    RelativePattern: class {
+      constructor(public base: unknown, public pattern: string) {}
     },
     Diagnostic: class {
       range: unknown
@@ -302,7 +311,17 @@ function createMockVscode() {
       }
     },
     WorkspaceEdit: class {
-      replace() {}
+      private changes = new Map<{ fsPath: string }, Array<{ range: unknown, newText: string }>>()
+      replace(uri: { fsPath: string }, range: unknown, newText: string) {
+        assert.equal(typeof newText, 'string')
+        const edits = this.changes.get(uri) ?? []
+        edits.push({ range, newText })
+        this.changes.set(uri, edits)
+      }
+
+      entries() {
+        return [...this.changes.entries()]
+      }
     },
     EventEmitter: class {
       event = () => ({ dispose() {} })
@@ -440,7 +459,7 @@ async function main() {
         'weapp-vite.revealPageRouteInAppJsonFromTreeItem',
       ],
     )
-    assert.equal(state.registeredProviders.length, 18)
+    assert.equal(state.registeredProviders.length, 35)
     assert.equal(state.registeredProviders.some(item => item.type === 'semanticTokens'), false)
     assert.ok(
       state.registeredProviders.some(item => item.type === 'documentFormatting'
@@ -457,8 +476,56 @@ async function main() {
     assert.equal(state.statusBarItems.length, 1)
     assert.equal(state.statusBarItems[0]?.command, 'weapp-vite.runAction')
     assert.equal(state.outputChannels.length, 0)
-    assert.equal(state.diagnosticCollections.length, 1)
+    assert.equal(state.diagnosticCollections.length, 2)
     assert.ok(subscriptions.length >= 1)
+
+    const nativeCompletion = state.registeredProviders.find(item => item.type === 'completion'
+      && JSON.stringify(item.selector) === JSON.stringify([{ language: 'miniprogram-script', scheme: 'file' }]))?.provider as { provideCompletionItems: (document: unknown) => Promise<Array<{ label: string }>> } | undefined
+    assert.ok(nativeCompletion, 'missing native script completion provider')
+    const scriptNames = await nativeCompletion.provideCompletionItems({
+      uri: { fsPath: path.join(tempDir, 'tools.wxs') },
+      version: 1,
+      languageId: 'miniprogram-script',
+      getText: () => 'var value=1;module.exports={value:value};',
+    })
+    assert.ok(scriptNames.some(item => item.label === 'value'), 'packaged AST parser did not analyze a standalone native script')
+
+    const moduleDefinition = state.registeredProviders.find(item => item.type === 'definition'
+      && JSON.stringify(item.selector).includes('"wxml"'))?.provider as { provideDefinition: (document: unknown, position: unknown) => Promise<{ uri: { fsPath: string }, range: { start: { character: number } } } | null> } | undefined
+    assert.ok(moduleDefinition, 'missing template module definition provider')
+    const templateSource = '<wxs module="tools">var value=1;module.exports={value:value};</wxs><text>{{tools.value}}</text>'
+    const templateUri = { fsPath: path.join(tempDir, 'inline.wxml') }
+    const target = await moduleDefinition.provideDefinition({
+      uri: templateUri,
+      version: 1,
+      languageId: 'wxml',
+      getText: () => templateSource,
+      positionAt: (character: number) => ({ line: 0, character }),
+      offsetAt: (position: { character: number }) => position.character,
+    }, { line: 0, character: templateSource.lastIndexOf('value') + 1 })
+    assert.equal(target?.uri.fsPath, templateUri.fsPath, 'packaged template module definition is missing')
+    assert.equal(target?.range.start.character, templateSource.indexOf('value'), 'packaged template module definition points to the wrong binding')
+
+    const nativeRename = state.registeredProviders.find(item => item.type === 'rename'
+      && JSON.stringify(item.selector) === JSON.stringify([{ language: 'miniprogram-script', scheme: 'file' }]))?.provider as { provideRenameEdits: (document: unknown, position: unknown, name: string) => Promise<{ entries: () => Array<[{ fsPath: string }, Array<{ newText: string }>]> } | null> } | undefined
+    assert.ok(nativeRename, 'missing native script rename provider')
+    const virtualDocument = (name: string, source: string, languageId: string) => ({
+      uri: { fsPath: path.join(tempDir, name) },
+      version: 1,
+      languageId,
+      getText: () => source,
+      positionAt: (character: number) => ({ line: 0, character }),
+      offsetAt: (position: { character: number }) => position.character,
+    })
+    const plainVue = virtualDocument('plain.vue', '<wxs module="inline">module.exports={value:1};</wxs><template><text>{{inline.value}}</text></template>', 'plaintext')
+    const scriptOnlyVue = virtualDocument('scriptOnly.vue', '<script setup>const value=1</script>', 'plaintext')
+    const nativeScript = virtualDocument('rename.wxs', 'module.exports.value=1;', 'miniprogram-script')
+    const indexed = new Map([plainVue, scriptOnlyVue].map(document => [document.uri.fsPath, document]))
+    state.mockVscode.workspace.getWorkspaceFolder = () => ({ uri: { fsPath: tempDir } })
+    state.mockVscode.workspace.findFiles = async () => [...indexed.values()].map(document => document.uri)
+    state.mockVscode.workspace.openTextDocument = async uri => indexed.get((uri as { fsPath: string }).fsPath)
+    const renamed = await nativeRename.provideRenameEdits(nativeScript, nativeScript.positionAt(nativeScript.getText().indexOf('value') + 1), 'amount')
+    assert.deepEqual(renamed?.entries().map(([uri, edits]) => ({ fileName: path.basename(uri.fsPath), names: edits.map(edit => edit.newText) })), [{ fileName: 'rename.wxs', names: ['amount'] }], 'packaged rename must safely scan plaintext Vue project sources')
 
     console.log('extensions/vscode smoke test ok')
   }

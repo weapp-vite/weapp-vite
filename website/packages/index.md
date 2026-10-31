@@ -36,6 +36,9 @@ keywords:
 - 想在浏览器里做小程序语法预览、调试与兼容验证：用 `@weapp-vite/web`（实验）
 - 想增强 `<json>` 配置块智能提示：用 `@weapp-vite/volar`
 - 想在 Wevu 项目中静态拦截不支持或高风险的 Vue、Pinia、Vue Router API：用 `@weapp-vite/eslint`
+- 使用 Vite+ 或 Oxlint 检查小程序 runtime 与 Wevu API：用 `@weapp-vite/oxlint`
+- 使用 Vite+ 或 Oxfmt 统一小程序源码格式：用 `@weapp-vite/oxfmt`
+- 需要复用多平台模板与脚本模块分析、作用域及结构化诊断：用 `@weapp-vite/language-service`
 - 想用 Vitest 测试真实小程序编译产物：用 `@mpcore/test`、`@mpcore/vitest` 与 `@mpcore/weapp-vite`
 - 想低成本测试不依赖模板的 Wevu Composition API：用 `@wevu/test-utils`
 - 想跨页面共享服务端数据、协调请求并在变更后刷新列表：用 `@wevu/query`
@@ -55,6 +58,9 @@ keywords:
 | `@weapp-vite/web`         | Web 端实验运行时与插件                   | 浏览器侧验证小程序语法/页面                          | [/packages/web](/packages/web)                                             |
 | `@weapp-vite/mcp`         | MCP 服务实现                             | AI 代码助手接入与仓库能力开放                        | [/packages/mcp](/packages/mcp)                                             |
 | `@weapp-vite/eslint`      | Wevu 兼容性 ESLint 规则                  | 静态拦截不支持与高风险的 Vue 生态 API                | [/packages/eslint](/packages/eslint)                                       |
+| `@weapp-vite/oxlint` | 小程序 Oxlint 规则与预设 | Vite+ / Oxlint runtime 与 Wevu API 静态检查 | [Oxlint](/packages/oxlint) |
+| `@weapp-vite/oxfmt` | 小程序 Oxfmt 格式预设 | 标准源码、原生样式、多平台模板及脚本模块的安全格式化 | [Oxfmt](/packages/oxfmt) |
+| `@weapp-vite/language-service` | 共享小程序语言内核 | 平台诊断、模板/模块作用域、引用与无损源码编辑 | [语言内核](/packages/language-service) |
 | `@weapp-vite/volar`       | Volar 语言插件                           | `<json>` 配置块补全与校验                            | [/packages/volar](/packages/volar)                                         |
 | `@mpcore/test`            | 小程序逻辑树测试工具                     | 页面/组件单测、宿主 mock、交互与诊断                 | [/packages/mpcore-test](/packages/mpcore-test)                             |
 | `@wevu/test-utils`        | Wevu 逻辑与 Vue SFC 测试工具             | Composition API、SFC、响应式状态、生命周期与事件     | [/packages/wevu-test-utils](/packages/wevu-test-utils)                     |

@@ -97,6 +97,7 @@ exports.run = async function run() {
   const workspaceFolder = vscode.workspace.workspaceFolders?.[0]
 
   assert.ok(workspaceFolder, 'missing VS Code smoke workspace folder')
+  await require('./language-tools-host.cjs').assertLanguageTools(vscode, workspaceFolder)
 
   const rawBannerWxmlPath = path.join(
     workspaceFolder.uri.fsPath,

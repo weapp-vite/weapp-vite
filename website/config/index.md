@@ -156,6 +156,7 @@ export default defineConfig(env => ({
 | [npm 配置](./npm.md) | `weapp.npm` 依赖落位、缓存、支付宝 npm 模式、构建覆盖 |
 | [WXML 配置](./wxml.md) | `weapp.wxml` 扫描与模板处理入口 |
 | [WXS 配置](./wxs.md) | `weapp.wxs` 与 Vue class/style 运行时的关系 |
+| [平台语言配置](./language.md) | `weapp.language`、原生模板/模块的共享 CLI 与 VSCode 诊断 |
 | [自动导入组件配置](./auto-import-components.md) | `weapp.autoImportComponents` 字段与产物输出 |
 | [共享 Chunk 配置](./chunks.md) | `weapp.chunks` 共享策略、输出形态与优化日志 |
 | [Web 运行时配置](./web.md) | `weapp.web` 浏览器预览与调试 |

@@ -59,8 +59,22 @@
 - 为 `app.json`、`vite.config.*` / `weapp-vite.config.*`、页面 `<json>`、`definePageJson(...)` 提供补全、悬浮和轻量诊断
 - 支持本地 `usingComponents` 路径校验、跳转和缺失组件创建
 - 在 `.vue <template>`、HTML 及 WXML、AXML、TTML、Swan、JXML、QML、KSML、XHSML、TyML 中提供小程序模板语法高亮和智能增强
+- 原生模板与 WXS/SJS/KS/filter 模块使用 `@weapp-vite/language-service` 的平台诊断和作用域模型，提供循环变量、事件、模块别名与导出成员的补全、悬浮、跳转、引用和重命名
+- 命名模板支持本文件与直接 `import` 的声明导航；动态 `is` 表达式继续使用表达式符号服务
 - 为静态 class 提供补全、定义跳转、引用、重命名和主题感知语义着色，并支持 CSS、SCSS、Sass、Less、Stylus 嵌套选择器
 - 内置 `weapp-vite File Icons` 文件图标主题，可按需手动启用
+
+### 3.6 与 CLI 共用语言规则和格式化器
+
+独立模板使用 `wxml` / `miniprogram-template` 语言；`.wxs`、`.sjs`、`.ks`、`.filter.js`、`.filter.ts` 及 `.wxs.ts` / `.sjs.ts` / `.ks.ts` 等编译源码使用 `miniprogram-script`。原生样式 `.wxss`、`.acss`、`.ttss`、`.qss`、`.jxss`、`.tyss` 关联为 CSS。构建平台仍为既有六平台，QQ、快手和涂鸦的语言 profile 不增加构建目标。
+
+模板格式化只编辑标签与属性布局，保留文本空白、实体、属性值、引号、属性顺序、重复属性和显式闭合形式。项目安装 `@weapp-vite/oxfmt` 与 Vite+ 后，扩展使用项目的同一格式化入口处理标准文件、原生样式和独立/内联脚本模块；方言、结构或语义检查失败时显示诊断并返回零修改。未安装工具的旧项目只保留纯 TS 模板格式化，不自行携带 native 二进制。
+
+项目配置读取 `vite.config.ts` 中的 `weapp.language`、`lint` 和 `fmt`。共享 `.sjs` 或互相冲突的模块归属需要显式配置，不能默认为微信语义。只有受信任工作区才会加载并执行项目配置或项目格式化器；未信任时只进行不执行项目代码的语言分析。
+
+生成项目已将模板和模块的唯一格式化提供者设为 `weapp-vite.weapp-vite`，标准 JS/TS 使用 Oxc。不要把 WXML 关联为 HTML；`lang="js/ts"` 引用的普通编译源文件只有在模板确认归属后才接管模块语言，原生百度 filter 使用 `.filter.js`。内置组件提示以各平台离线数据的官方来源和覆盖清单为准，不借用其他平台补全缺失项。
+
+语言诊断不提供完整模板类型检查器，Vue parser services 专项规则仍由 ESLint 执行，样式语义仍由 Stylelint 检查。CLI、编辑器与构建检查通过，也不代表真实小程序 IDE runtime 已完成验收。
 
 ## 4. 常用命令
 

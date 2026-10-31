@@ -1,0 +1,2886 @@
+{
+  "platform": "ty",
+  "availability": "snapshot",
+  "version": "sha256:b6015296923ecbbca9172c2ba56afae8ac718e12c5fedd9040ce5f30cfb98916",
+  "source": "https://developer.tuya.com/cn/miniapp/develop/miniapp/component/view-container/view",
+  "snapshotDate": "2026-10-30",
+  "upstreamRetrievedAt": "2026-10-30",
+  "components": [
+    {
+      "name": "aria-component",
+      "docLink": "https://developer.tuya.com/cn/miniapp/develop/miniapp/component/aria-component",
+      "attrs": []
+    },
+    {
+      "name": "button",
+      "docLink": "https://developer.tuya.com/cn/miniapp/develop/miniapp/component/form-component/button",
+      "attrs": [
+        {
+          "name": "hover-stop-propagation",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否阻止本节点的祖先节点出现点击态"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "size",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "按钮的大小，可选值：default 默认大小，mini 小尺寸"
+          ],
+          "defaultValue": "default"
+        },
+        {
+          "name": "type",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "按钮的样式类型，可选值：primary 主题色，default 白色，warn 红色"
+          ],
+          "defaultValue": "default"
+        },
+        {
+          "name": "plain",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "按钮是否镂空，背景色透明"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "loading",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "名称前是否带 loading 图标"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "disabled",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否禁用"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "form-type",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "用于 form 组件，可选值：submit 提交表单，reset 重置表单"
+          ],
+          "defaultValue": ""
+        },
+        {
+          "name": "hover-start-time",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "按住后多久出现点击态，单位毫秒"
+          ],
+          "defaultValue": "20"
+        },
+        {
+          "name": "hover-stay-time",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "手指松开后点击态保留时间，单位毫秒"
+          ],
+          "defaultValue": "70"
+        }
+      ],
+      "desc": [
+        "按钮组件，支持多种样式类型、尺寸和表单提交等功能。"
+      ]
+    },
+    {
+      "name": "camera",
+      "docLink": "https://developer.tuya.com/cn/miniapp/develop/miniapp/component/media-component/camera",
+      "attrs": [
+        {
+          "name": "mode",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "相机模式，只在初始化时有效，不能动态变更"
+          ],
+          "defaultValue": "normal"
+        },
+        {
+          "name": "resolution",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "相机分辨率，不支持动态修改：low、medium、high"
+          ],
+          "defaultValue": "medium"
+        },
+        {
+          "name": "device-position",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "摄像头朝向：front、back"
+          ],
+          "defaultValue": "back"
+        },
+        {
+          "name": "flash",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "闪光灯模式：auto、on、off、torch"
+          ],
+          "defaultValue": "auto"
+        },
+        {
+          "name": "background-color",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "背景颜色，必须为十六进制格式"
+          ],
+          "defaultValue": "#ffffff"
+        },
+        {
+          "name": "border-width",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "边框宽度，单位 px"
+          ],
+          "defaultValue": "0"
+        },
+        {
+          "name": "border-style",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "边框样式：solid、dashed"
+          ],
+          "defaultValue": "solid"
+        },
+        {
+          "name": "border-color",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "边框颜色，必须为十六进制格式"
+          ],
+          "defaultValue": "#ffffff"
+        },
+        {
+          "name": "border-radius",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "边框圆角，单位 px"
+          ],
+          "defaultValue": "0"
+        },
+        {
+          "name": "border-radius-top-left",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "左上角圆角，单位 px"
+          ]
+        },
+        {
+          "name": "border-radius-top-right",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "右上角圆角，单位 px"
+          ]
+        },
+        {
+          "name": "border-radius-bottom-left",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "左下角圆角，单位 px"
+          ]
+        },
+        {
+          "name": "border-radius-bottom-right",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "右下角圆角，单位 px"
+          ]
+        }
+      ],
+      "desc": [
+        "相机组件，用于拍照或录像。"
+      ]
+    },
+    {
+      "name": "canvas",
+      "docLink": "https://developer.tuya.com/cn/miniapp/develop/miniapp/component/canvas/canvas",
+      "attrs": [
+        {
+          "name": "type",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "canvas 类型"
+          ],
+          "defaultValue": "2d"
+        },
+        {
+          "name": "canvas-id",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "canvas 组件的唯一标识符"
+          ],
+          "defaultValue": ""
+        },
+        {
+          "name": "disable-scroll",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "当在 canvas 中移动时，禁止屏幕滚动以及下拉刷新"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "auto-resize",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否开启画布大小自适应，画布宽高按 100% 适应 canvas 尺寸， 并会发送 resize 事件，此时可通过监听 bind:resize 事件，在回调中重新绘制画布"
+          ],
+          "defaultValue": "false"
+        }
+      ],
+      "desc": [
+        "画布组件，用于绘制图形。"
+      ]
+    },
+    {
+      "name": "checkbox",
+      "docLink": "https://developer.tuya.com/cn/miniapp/develop/miniapp/component/form-component/checkbox",
+      "attrs": [
+        {
+          "name": "checked",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否选中"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "disabled",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否禁用"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "color",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "选中时的颜色，同 CSS color"
+          ],
+          "defaultValue": ""
+        },
+        {
+          "name": "value",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "该项在表单中的值"
+          ]
+        }
+      ],
+      "desc": [
+        "多选项目，搭配 checkbox-group 使用。"
+      ]
+    },
+    {
+      "name": "checkbox-group",
+      "docLink": "https://developer.tuya.com/cn/miniapp/develop/miniapp/component/form-component/checkbox-group",
+      "attrs": [
+        {
+          "name": "name",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "在表单中的字段名"
+          ]
+        }
+      ],
+      "desc": [
+        "多项选择器组，内部由多个 checkbox 组成。"
+      ]
+    },
+    {
+      "name": "cover-view",
+      "docLink": "https://developer.tuya.com/cn/miniapp/develop/miniapp/component/view-container/cover-view",
+      "attrs": [],
+      "desc": [
+        "覆盖在原生组件之上的视图容器，可覆盖在 map、video、canvas 等原生组件上。"
+      ]
+    },
+    {
+      "name": "extended",
+      "docLink": "https://developer.tuya.com/cn/miniapp/develop/miniapp/component/extended",
+      "attrs": []
+    },
+    {
+      "name": "form",
+      "docLink": "https://developer.tuya.com/cn/miniapp/develop/miniapp/component/form-component/form",
+      "attrs": [],
+      "desc": [
+        "表单容器，用于提交表单内组件的值。"
+      ]
+    },
+    {
+      "name": "gesture",
+      "docLink": "https://developer.tuya.com/cn/miniapp/develop/miniapp/component/extended/gesture",
+      "attrs": []
+    },
+    {
+      "name": "icon",
+      "docLink": "https://developer.tuya.com/cn/miniapp/develop/miniapp/component/basic-content/icon",
+      "attrs": [
+        {
+          "name": "type",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "图标类型"
+          ],
+          "defaultValue": ""
+        },
+        {
+          "name": "size",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "图标大小，单位 px"
+          ],
+          "defaultValue": "0"
+        },
+        {
+          "name": "color",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "图标颜色，同 CSS color"
+          ],
+          "defaultValue": ""
+        }
+      ],
+      "desc": [
+        "图标组件。"
+      ]
+    },
+    {
+      "name": "image",
+      "docLink": "https://developer.tuya.com/cn/miniapp/develop/miniapp/component/media-component/image",
+      "attrs": [
+        {
+          "name": "src",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "图片地址"
+          ]
+        },
+        {
+          "name": "mode",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "图片裁剪、缩放的模式"
+          ],
+          "defaultValue": "scaleToFill"
+        },
+        {
+          "name": "lazy-load",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "开启懒加载，滚动到可视区域后再加载图片"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "fade-duration",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "图片渐显动画时长，单位毫秒"
+          ],
+          "defaultValue": "0"
+        }
+      ],
+      "desc": [
+        "图片组件，支持多种裁剪和缩放模式。"
+      ]
+    },
+    {
+      "name": "input",
+      "docLink": "https://developer.tuya.com/cn/miniapp/develop/miniapp/component/form-component/input",
+      "attrs": [
+        {
+          "name": "name",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "在表单中的字段名"
+          ]
+        },
+        {
+          "name": "value",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "输入框的初始值"
+          ],
+          "defaultValue": ""
+        },
+        {
+          "name": "type",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "输入类型，可选值：text 文本输入键盘，number 数字输入键盘，digit 带小数点的数字键盘"
+          ],
+          "defaultValue": "text"
+        },
+        {
+          "name": "password",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否为密码输入框"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "placeholder",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "输入框为空时显示的占位文字"
+          ],
+          "defaultValue": ""
+        },
+        {
+          "name": "placeholder-style",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "占位符样式"
+          ],
+          "defaultValue": ""
+        },
+        {
+          "name": "disabled",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否禁用"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "maxlength",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "最大输入长度，设置为 -1 时不限制"
+          ],
+          "defaultValue": "140"
+        },
+        {
+          "name": "confirm-type",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "键盘右下角按钮文字类型，可选值：send 发送，search 搜索，next 下一个，go 前往，done 完成"
+          ],
+          "defaultValue": ""
+        },
+        {
+          "name": "cursor",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "指定 focus 时的光标位置"
+          ]
+        }
+      ],
+      "desc": [
+        "输入框组件。"
+      ]
+    },
+    {
+      "name": "ipc-player",
+      "docLink": "https://developer.tuya.com/cn/miniapp/develop/miniapp/component/media-component/ipc-player",
+      "attrs": [
+        {
+          "name": "device-id",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "组件的唯一标识符，必须设置该属性"
+          ]
+        },
+        {
+          "name": "autoplay",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否自动播放"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "muted",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否静音"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "sound-mode",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "声音输出方式：speaker、ear"
+          ],
+          "defaultValue": "speaker"
+        },
+        {
+          "name": "clarity",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "清晰度"
+          ],
+          "defaultValue": "normal"
+        },
+        {
+          "name": "extProps",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "额外参数配置"
+          ]
+        },
+        {
+          "name": "object-fit",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "填充模式：contain、cover、fill"
+          ],
+          "defaultValue": "contain"
+        },
+        {
+          "name": "orientation",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "画面方向：vertical、horizontal"
+          ],
+          "defaultValue": "vertical"
+        },
+        {
+          "name": "auto-pause-if-navigate",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "跳转其他页面时是否自动暂停"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "auto-pause-if-open-native",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "跳转原生页面时是否自动暂停"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "rotate-z",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "摄像头旋转角度，有效值 0~360 的整数"
+          ],
+          "defaultValue": "0"
+        },
+        {
+          "name": "scalable",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否可缩放"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "scale-multiple",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "缩放比例，仅 scalable 为 true 时生效"
+          ],
+          "defaultValue": "0"
+        },
+        {
+          "name": "ptz-controllable",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否开启视频区域云平台控制"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "background-color",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "背景颜色，必须为十六进制格式"
+          ],
+          "defaultValue": "#ffffff"
+        },
+        {
+          "name": "border-width",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "边框宽度，单位 px"
+          ],
+          "defaultValue": "0"
+        },
+        {
+          "name": "border-style",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "边框样式：solid、dashed"
+          ],
+          "defaultValue": "solid"
+        },
+        {
+          "name": "border-color",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "边框颜色，必须为十六进制格式"
+          ],
+          "defaultValue": "#ffffff"
+        },
+        {
+          "name": "border-radius",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "边框圆角，单位 px"
+          ],
+          "defaultValue": "0"
+        },
+        {
+          "name": "border-radius-top-left",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "左上角圆角，单位 px"
+          ]
+        },
+        {
+          "name": "border-radius-top-right",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "右上角圆角，单位 px"
+          ]
+        },
+        {
+          "name": "border-radius-bottom-left",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "左下角圆角，单位 px"
+          ]
+        },
+        {
+          "name": "border-radius-bottom-right",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "右下角圆角，单位 px"
+          ]
+        }
+      ],
+      "desc": [
+        "IPC 云播放器组件，用于实时视频流播放。"
+      ]
+    },
+    {
+      "name": "label",
+      "docLink": "https://developer.tuya.com/cn/miniapp/develop/miniapp/component/form-component/label",
+      "attrs": [
+        {
+          "name": "for",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "绑定控件的 id"
+          ]
+        }
+      ],
+      "desc": [
+        "标签组件，用于改善表单组件的可用性。使用for属性找到对应的id，或者将控件放在该标签下，当点击时，就会触发对应的控件。 for优先级高于内部控件，内部有多个控件的时候默认触发第一个控件。 目前可以绑定的控件有：button, checkbox, radio, switch, input。"
+      ]
+    },
+    {
+      "name": "map",
+      "docLink": "https://developer.tuya.com/cn/miniapp/develop/miniapp/component/map/map",
+      "attrs": [
+        {
+          "name": "longitude",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "中心经度。鸿蒙端仅初始化时生效，动态修改无效"
+          ],
+          "defaultValue": "116.404177"
+        },
+        {
+          "name": "latitude",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "中心纬度。鸿蒙端仅初始化时生效，动态修改无效"
+          ],
+          "defaultValue": "39.909652"
+        },
+        {
+          "name": "scale",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "缩放级别，取值范围 4-19。鸿蒙端仅初始化时生效，动态修改无效"
+          ],
+          "defaultValue": "16"
+        },
+        {
+          "name": "markers",
+          "type": {
+            "name": "Array<any>"
+          },
+          "desc": [
+            "标记点。鸿蒙端不支持"
+          ],
+          "defaultValue": "[]"
+        },
+        {
+          "name": "polyline",
+          "type": {
+            "name": "Array<any>"
+          },
+          "desc": [
+            "路线。鸿蒙端不支持"
+          ],
+          "defaultValue": "[]"
+        },
+        {
+          "name": "circles",
+          "type": {
+            "name": "Array<any>"
+          },
+          "desc": [
+            "圆形区域。鸿蒙端不支持"
+          ],
+          "defaultValue": "[]"
+        },
+        {
+          "name": "polygons",
+          "type": {
+            "name": "Array<any>"
+          },
+          "desc": [
+            "多边形区域。鸿蒙端不支持"
+          ],
+          "defaultValue": "[]"
+        },
+        {
+          "name": "disable-animation",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "禁用地图自带动画。仅 iOS 端支持，且仅在中心点移动时生效"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "disable-rotate",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "禁用旋转手势。鸿蒙端不支持"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "map-type",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "地图类型：-1 跟随 App 主题、0 深色、1 浅色、2 卫星图。鸿蒙端不支持"
+          ]
+        },
+        {
+          "name": "show-scale-view",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否显示比例尺控件。仅 Android 端支持，且仅初始化时生效"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "background-color",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "背景颜色，必须为十六进制格式"
+          ],
+          "defaultValue": "#ffffff"
+        },
+        {
+          "name": "border-width",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "边框宽度，单位 px"
+          ],
+          "defaultValue": "0"
+        },
+        {
+          "name": "border-style",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "边框样式，可选值：solid 实线，dashed 虚线"
+          ],
+          "defaultValue": "solid"
+        },
+        {
+          "name": "border-color",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "边框颜色，必须为十六进制格式"
+          ],
+          "defaultValue": "#ffffff"
+        },
+        {
+          "name": "border-radius",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "边框圆角，单位 px"
+          ],
+          "defaultValue": "0"
+        },
+        {
+          "name": "border-radius-top-left",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "左上角圆角，单位 px"
+          ]
+        },
+        {
+          "name": "border-radius-top-right",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "右上角圆角，单位 px"
+          ]
+        },
+        {
+          "name": "border-radius-bottom-left",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "左下角圆角，单位 px"
+          ]
+        },
+        {
+          "name": "border-radius-bottom-right",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "右下角圆角，单位 px"
+          ]
+        }
+      ],
+      "desc": [
+        "地图组件。"
+      ]
+    },
+    {
+      "name": "movable-area",
+      "docLink": "https://developer.tuya.com/cn/miniapp/develop/miniapp/component/view-container/movable-area",
+      "attrs": [
+        {
+          "name": "scale-area",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "当里面的 movable-view 设置为支持双指缩放时，设置此值可将缩放手势生效区域修改为整个 movable-area"
+          ],
+          "defaultValue": "false"
+        }
+      ],
+      "desc": [
+        "可移动区域容器，搭配 movable-view 使用。"
+      ]
+    },
+    {
+      "name": "movable-view",
+      "docLink": "https://developer.tuya.com/cn/miniapp/develop/miniapp/component/view-container/movable-view",
+      "attrs": [
+        {
+          "name": "direction",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "movable-view 的移动方向，可选值：all 任意方向，vertical 垂直方向，horizontal 水平方向，none 不可移动"
+          ],
+          "defaultValue": "none"
+        },
+        {
+          "name": "inertia",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "movable-view 是否带有惯性"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "out-of-bounds",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "超过可移动区域后，movable-view 是否还可以移动"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "x",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "定义 x 轴方向的偏移，如果 x 的值不在可移动范围内，会自动移动到可移动范围"
+          ],
+          "defaultValue": "0"
+        },
+        {
+          "name": "y",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "定义 y 轴方向的偏移，如果 y 的值不在可移动范围内，会自动移动到可移动范围"
+          ],
+          "defaultValue": "0"
+        },
+        {
+          "name": "damping",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "阻尼系数，用于控制 x 或 y 改变时的动画"
+          ],
+          "defaultValue": "20"
+        },
+        {
+          "name": "friction",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "摩擦系数，用于控制惯性滑动的动画，值越大摩擦力越大"
+          ],
+          "defaultValue": "2"
+        },
+        {
+          "name": "disabled",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否禁用"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "scale",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否支持双指缩放"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "scale-min",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "定义缩放倍数最小值"
+          ],
+          "defaultValue": "0.5"
+        },
+        {
+          "name": "scale-max",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "定义缩放倍数最大值"
+          ],
+          "defaultValue": "10"
+        },
+        {
+          "name": "scale-value",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "定义缩放倍数，取值范围为 0.5 - 10"
+          ],
+          "defaultValue": "1"
+        },
+        {
+          "name": "animation",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否使用动画"
+          ],
+          "defaultValue": "true"
+        }
+      ],
+      "desc": [
+        "可移动视图容器，在 movable-area 中使用。"
+      ]
+    },
+    {
+      "name": "native-component",
+      "docLink": "https://developer.tuya.com/cn/miniapp/develop/miniapp/component/native-component/native-component",
+      "attrs": [
+        {
+          "name": "border-width",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "边框的宽度, 单位 px"
+          ],
+          "defaultValue": "0"
+        },
+        {
+          "name": "border-style",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "边框的样式, 可选值: solid 和 dashed"
+          ],
+          "defaultValue": "solid"
+        },
+        {
+          "name": "border-color",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "边框的颜色, 必须为十六进制格式"
+          ],
+          "defaultValue": "#ffffff"
+        },
+        {
+          "name": "border-radius",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "边框的圆角, 单位 px"
+          ],
+          "defaultValue": "0"
+        },
+        {
+          "name": "border-radius-top-left",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "边框的左上角圆角大小, 单位 px"
+          ]
+        },
+        {
+          "name": "border-radius-top-right",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "边框的右上角圆角大小, 单位 px"
+          ]
+        },
+        {
+          "name": "border-radius-bottom-left",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "边框的左下角圆角大小, 单位 px"
+          ]
+        },
+        {
+          "name": "border-radius-bottom-right",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "边框的右下角圆角大小, 单位 px"
+          ]
+        },
+        {
+          "name": "background-color",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "背景颜色, 必须为十六进制格式"
+          ],
+          "defaultValue": "#ffffff"
+        }
+      ]
+    },
+    {
+      "name": "native-video",
+      "docLink": "https://developer.tuya.com/cn/miniapp/develop/miniapp/component/media-component/native-video",
+      "attrs": [
+        {
+          "name": "hidden",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否隐藏组件"
+          ]
+        },
+        {
+          "name": "src",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "视频资源地址"
+          ]
+        },
+        {
+          "name": "poster",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "视频封面图地址"
+          ]
+        },
+        {
+          "name": "controls",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否显示默认播放控件"
+          ]
+        },
+        {
+          "name": "duration",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "指定视频时长"
+          ],
+          "defaultValue": "0"
+        },
+        {
+          "name": "autoplay",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否自动播放"
+          ]
+        },
+        {
+          "name": "loop",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否循环播放"
+          ]
+        },
+        {
+          "name": "muted",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否静音播放"
+          ]
+        },
+        {
+          "name": "initial-time",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "指定视频初始播放位置，单位秒"
+          ],
+          "defaultValue": "0"
+        },
+        {
+          "name": "object-fit",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "视频的裁剪模式，可选值：contain 包含，fill 填充，cover 覆盖"
+          ],
+          "defaultValue": "contain"
+        },
+        {
+          "name": "show-fullscreen-btn",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否显示全屏按钮"
+          ]
+        },
+        {
+          "name": "show-play-btn",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否显示播放按钮"
+          ]
+        },
+        {
+          "name": "show-mute-btn",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否显示静音按钮"
+          ]
+        },
+        {
+          "name": "show-center-play-btn",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否显示视频中间的播放按钮"
+          ]
+        },
+        {
+          "name": "auto-pause",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "当跳转到其他页面时，是否自动暂停本页面的视频"
+          ]
+        },
+        {
+          "name": "background-color",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "背景颜色，必须为十六进制颜色值"
+          ],
+          "defaultValue": "#ffffff"
+        },
+        {
+          "name": "border-width",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "边框宽度，单位 px"
+          ],
+          "defaultValue": "0"
+        },
+        {
+          "name": "border-style",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "边框样式"
+          ],
+          "defaultValue": "solid"
+        },
+        {
+          "name": "border-color",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "边框颜色，必须为十六进制颜色值"
+          ],
+          "defaultValue": "#ffffff"
+        },
+        {
+          "name": "border-radius",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "统一设置四角圆角半径，单位 px"
+          ],
+          "defaultValue": "0"
+        },
+        {
+          "name": "border-radius-top-left",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "左上角圆角半径，单位 px，-1 表示使用 border-radius"
+          ]
+        },
+        {
+          "name": "border-radius-top-right",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "右上角圆角半径，单位 px，-1 表示使用 border-radius"
+          ]
+        },
+        {
+          "name": "border-radius-bottom-left",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "左下角圆角半径，单位 px，-1 表示使用 border-radius"
+          ]
+        },
+        {
+          "name": "border-radius-bottom-right",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "右下角圆角半径，单位 px，-1 表示使用 border-radius"
+          ]
+        }
+      ],
+      "desc": [
+        "原生视频播放组件，渲染层由客户端实现，仅支持原生环境。"
+      ]
+    },
+    {
+      "name": "navigator",
+      "docLink": "https://developer.tuya.com/cn/miniapp/develop/miniapp/component/navigation/navigator",
+      "attrs": [
+        {
+          "name": "hover-stop-propagation",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否阻止本节点的祖先节点出现点击态"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "hover-start-time",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "按住后多久出现点击态，单位毫秒"
+          ],
+          "defaultValue": "20"
+        },
+        {
+          "name": "hover-stay-time",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "手指松开后点击态保留时间，单位毫秒"
+          ],
+          "defaultValue": "70"
+        },
+        {
+          "name": "url",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "跳转地址"
+          ],
+          "defaultValue": ""
+        },
+        {
+          "name": "open-type",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "跳转方式，可选值：navigate 跳转新页面（可返回），redirect 关闭当前页并跳转（不可返回），switchTab 跳转到 tabBar 页面，reLaunch 关闭所有页面并跳转，navigateBack 返回上一页"
+          ],
+          "defaultValue": "navigate"
+        },
+        {
+          "name": "delta",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "当 open-type 为 'navigateBack' 时有效，表示回退的层数"
+          ],
+          "defaultValue": "1"
+        },
+        {
+          "name": "hover-class",
+          "type": {
+            "name": "any"
+          },
+          "desc": [
+            "指定点击时的样式类"
+          ],
+          "defaultValue": "navigator-hover"
+        }
+      ],
+      "desc": [
+        "页面链接组件，用于页面间跳转。"
+      ]
+    },
+    {
+      "name": "page-container",
+      "docLink": "https://developer.tuya.com/cn/miniapp/develop/miniapp/component/view-container/page-container",
+      "attrs": [
+        {
+          "name": "show",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否显示容器组件"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "duration",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "动画时长，单位毫秒"
+          ],
+          "defaultValue": "300"
+        },
+        {
+          "name": "z-index",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "z-index 层级"
+          ],
+          "defaultValue": "100"
+        },
+        {
+          "name": "overlay",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否展示遮罩层"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "position",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "弹出位置，可选值：top 顶部，bottom 底部，right 右侧，center 居中"
+          ],
+          "defaultValue": "bottom"
+        },
+        {
+          "name": "round",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否显示圆角"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "overlay-style",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "自定义遮罩层样式"
+          ],
+          "defaultValue": ""
+        },
+        {
+          "name": "custom-style",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "自定义弹出层样式"
+          ],
+          "defaultValue": ""
+        }
+      ],
+      "desc": [
+        "页面容器，可从底部、顶部或居中弹出覆盖层。"
+      ]
+    },
+    {
+      "name": "picker",
+      "docLink": "https://developer.tuya.com/cn/miniapp/develop/miniapp/component/form-component/picker",
+      "attrs": [
+        {
+          "name": "checked",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否选中"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "color",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "选中时的颜色，同 CSS color"
+          ],
+          "defaultValue": ""
+        },
+        {
+          "name": "range",
+          "type": {
+            "name": "Array<any>"
+          },
+          "desc": [
+            "选择器的数据源，mode 为 selector 或 multiSelector 时有效"
+          ],
+          "defaultValue": "[]"
+        },
+        {
+          "name": "value",
+          "type": {
+            "name": "any[] | string"
+          },
+          "desc": [
+            "mode = selector，表示选择了 range 中的第几个（下标从 0 开始） mode = multiSelector，表示选择了 range 中的第几个（下标从 0 开始） mode = time，表示选中的时间，格式为\"hh:mm\" mode = date，表示选中的日期，格式为\"YYYY-MM-DD\""
+          ],
+          "defaultValue": ""
+        },
+        {
+          "name": "mode",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "选择器类型，可选值：selector 单列选择，multiSelector 多列选择，time 时间选择，date 日期选择"
+          ],
+          "defaultValue": "selector"
+        },
+        {
+          "name": "fields",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "仅 date 模式有效，可选值：year 精确到年，month 精确到月，day 精确到日"
+          ],
+          "defaultValue": "day"
+        },
+        {
+          "name": "start",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "仅 time/date 模式有效，表示有效时间/日期范围的开始"
+          ],
+          "defaultValue": ""
+        },
+        {
+          "name": "end",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "仅 time/date 模式有效，表示有效时间/日期范围的结束"
+          ],
+          "defaultValue": ""
+        },
+        {
+          "name": "disabled",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否禁用"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "range-key",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "range 为对象数组时，通过 rangeKey 来指定 Object 中 key 的值作为选择器显示内容"
+          ],
+          "defaultValue": ""
+        },
+        {
+          "name": "confirm-text",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "确认按钮文字"
+          ],
+          "defaultValue": "确定"
+        },
+        {
+          "name": "cancel-text",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "取消按钮文字"
+          ],
+          "defaultValue": "取消"
+        }
+      ],
+      "desc": [
+        "从底部弹起的滚动选择器。"
+      ]
+    },
+    {
+      "name": "picker-view",
+      "docLink": "https://developer.tuya.com/cn/miniapp/develop/miniapp/component/form-component/picker-view",
+      "attrs": [
+        {
+          "name": "checked",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否选中"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "disabled",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否禁用"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "color",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "选中时的颜色，同 CSS color"
+          ],
+          "defaultValue": ""
+        },
+        {
+          "name": "value",
+          "type": {
+            "name": "Array<any>"
+          },
+          "desc": [
+            "数组中的数字依次表示 picker-view 内的 picker-view-column 选择的第几项"
+          ],
+          "defaultValue": "[]"
+        },
+        {
+          "name": "indicator-style",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "设置选择器中间选中框的样式"
+          ],
+          "defaultValue": ""
+        },
+        {
+          "name": "mask-style",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "设置蒙层的样式"
+          ],
+          "defaultValue": ""
+        }
+      ],
+      "desc": [
+        "嵌入页面的滚动选择器，需搭配 picker-view-column 使用。"
+      ]
+    },
+    {
+      "name": "picker-view-column",
+      "docLink": "https://developer.tuya.com/cn/miniapp/develop/miniapp/component/form-component/picker-view-column",
+      "attrs": [],
+      "desc": [
+        "滚动选择器子项，仅可放置在 picker-view 中，每个代表一列。"
+      ]
+    },
+    {
+      "name": "progress",
+      "docLink": "https://developer.tuya.com/cn/miniapp/develop/miniapp/component/basic-content/progress",
+      "attrs": [
+        {
+          "name": "percent",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "当前进度，取值范围 0~100"
+          ],
+          "defaultValue": "0"
+        },
+        {
+          "name": "show-info",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否在进度条右侧显示百分比"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "border-radius",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "圆角大小，默认单位 rpx"
+          ],
+          "defaultValue": "0"
+        },
+        {
+          "name": "font-size",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "右侧百分比字体大小，默认单位 px"
+          ],
+          "defaultValue": "16"
+        },
+        {
+          "name": "stroke-width",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "进度条线宽，默认单位 rpx"
+          ],
+          "defaultValue": "6"
+        },
+        {
+          "name": "active-color",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "已完成部分的颜色"
+          ],
+          "defaultValue": ""
+        },
+        {
+          "name": "background-color",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "未完成部分的颜色"
+          ],
+          "defaultValue": ""
+        },
+        {
+          "name": "active",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否开启从左到右的进度动画"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "active-mode",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "动画播放模式，可选值：backwards 从头播放，forwards 从上次结束点继续播放"
+          ],
+          "defaultValue": "backwards"
+        }
+      ],
+      "desc": [
+        "进度条组件，用于展示操作或任务的当前进度。"
+      ]
+    },
+    {
+      "name": "radio",
+      "docLink": "https://developer.tuya.com/cn/miniapp/develop/miniapp/component/form-component/radio",
+      "attrs": [
+        {
+          "name": "checked",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否选中"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "disabled",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否禁用"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "color",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "选中时的颜色，同 CSS color"
+          ],
+          "defaultValue": ""
+        },
+        {
+          "name": "value",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "该项在表单中的值"
+          ]
+        }
+      ],
+      "desc": [
+        "单选项目，搭配 radio-group 使用。"
+      ]
+    },
+    {
+      "name": "radio-group",
+      "docLink": "https://developer.tuya.com/cn/miniapp/develop/miniapp/component/form-component/radio-group",
+      "attrs": [
+        {
+          "name": "name",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "在表单中的字段名"
+          ]
+        }
+      ],
+      "desc": [
+        "单项选择器组，内部由多个 radio 组成。"
+      ]
+    },
+    {
+      "name": "redux",
+      "docLink": "https://developer.tuya.com/cn/miniapp/develop/miniapp/component/extended/redux",
+      "attrs": []
+    },
+    {
+      "name": "rich-text",
+      "docLink": "https://developer.tuya.com/cn/miniapp/develop/miniapp/component/basic-content/rich-text",
+      "attrs": [
+        {
+          "name": "nodes",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "节点列表/HTML String"
+          ]
+        }
+      ],
+      "desc": [
+        "富文本组件，用于展示 HTML 内容。"
+      ]
+    },
+    {
+      "name": "scroll-view",
+      "docLink": "https://developer.tuya.com/cn/miniapp/develop/miniapp/component/view-container/scroll-view",
+      "attrs": [
+        {
+          "name": "refresher-enabled",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "开启自定义下拉刷新"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "refresher-threshold",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "设置自定义下拉刷新阈值，单位 px"
+          ],
+          "defaultValue": "45"
+        },
+        {
+          "name": "refresher-default-style",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "设置自定义下拉刷新默认样式，none 表示不使用默认样式"
+          ],
+          "defaultValue": "black"
+        },
+        {
+          "name": "refresher-background",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "设置自定义下拉刷新区域背景颜色"
+          ],
+          "defaultValue": "#fff"
+        },
+        {
+          "name": "refresher-triggered",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "设置当前下拉刷新状态，true 表示已触发，false 表示未触发"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "scroll-x",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "允许横向滚动"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "scroll-y",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "允许纵向滚动"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "upper-threshold",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "距顶部/左边多远时触发 scrolltoupper 事件，单位 px"
+          ],
+          "defaultValue": "50"
+        },
+        {
+          "name": "lower-threshold",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "距底部/右边多远时触发 scrolltolower 事件，单位 px"
+          ],
+          "defaultValue": "50"
+        },
+        {
+          "name": "scroll-top",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "设置竖向滚动条位置，单位 px"
+          ],
+          "defaultValue": "0"
+        },
+        {
+          "name": "scroll-left",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "设置横向滚动条位置，单位 px"
+          ],
+          "defaultValue": "0"
+        },
+        {
+          "name": "scroll-into-view",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "值应为某子元素 id（id 不能以数字开头），设置哪个方向可滚动则在哪个方向滚动到该元素"
+          ]
+        },
+        {
+          "name": "scroll-into-view-offset",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "跳转到 scroll-into-view 目标节点时的额外偏移，单位 px"
+          ],
+          "defaultValue": "0"
+        },
+        {
+          "name": "scroll-with-animation",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "在设置滚动条位置时使用动画过渡"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "hide-scrollbar",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否隐藏滚动条"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "bounces",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否启用 iOS 滚动回弹效果（iOS 16.0+ 完全支持）"
+          ],
+          "defaultValue": "true"
+        }
+      ],
+      "desc": [
+        "可滚动视图区域，支持横向或纵向滚动，可配置下拉刷新、滚动事件监听等功能。"
+      ]
+    },
+    {
+      "name": "slider",
+      "docLink": "https://developer.tuya.com/cn/miniapp/develop/miniapp/component/form-component/slider",
+      "attrs": [
+        {
+          "name": "name",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "在表单中的字段名"
+          ]
+        },
+        {
+          "name": "min",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "最小值"
+          ],
+          "defaultValue": "0"
+        },
+        {
+          "name": "max",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "最大值"
+          ],
+          "defaultValue": "100"
+        },
+        {
+          "name": "step",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "步长，取值须大于 0 且能被 (max - min) 整除"
+          ],
+          "defaultValue": "1"
+        },
+        {
+          "name": "value",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "当前取值"
+          ],
+          "defaultValue": "0"
+        },
+        {
+          "name": "show-value",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否显示当前 value"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "active-color",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "已选择的颜色"
+          ],
+          "defaultValue": ""
+        },
+        {
+          "name": "background-color",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "背景条的颜色"
+          ],
+          "defaultValue": ""
+        },
+        {
+          "name": "block-size",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "滑块的大小，取值范围 12~28"
+          ],
+          "defaultValue": "28"
+        },
+        {
+          "name": "block-color",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "滑块的颜色"
+          ],
+          "defaultValue": ""
+        },
+        {
+          "name": "disabled",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否禁用"
+          ],
+          "defaultValue": "false"
+        }
+      ],
+      "desc": [
+        "滑动选择器，可设置范围与步长。"
+      ]
+    },
+    {
+      "name": "swiper",
+      "docLink": "https://developer.tuya.com/cn/miniapp/develop/miniapp/component/view-container/swiper",
+      "attrs": [
+        {
+          "name": "indicator-dots",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否显示面板指示点"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "indicator-color",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "指示点颜色"
+          ],
+          "defaultValue": "rgba(0,0,0,0.3)"
+        },
+        {
+          "name": "indicator-active-color",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "当前选中的指示点颜色"
+          ],
+          "defaultValue": "#333"
+        },
+        {
+          "name": "vertical",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "滑动方向是否为纵向"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "autoplay",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否自动切换"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "circular",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否采用衔接滑动"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "interval",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "自动切换时间间隔，单位毫秒"
+          ],
+          "defaultValue": "5000"
+        },
+        {
+          "name": "duration",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "滑动动画时长，单位毫秒"
+          ],
+          "defaultValue": "500"
+        },
+        {
+          "name": "current",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "当前所在滑块的 index"
+          ],
+          "defaultValue": "0"
+        }
+      ],
+      "desc": [
+        "滑块视图容器，可用于轮播展示。"
+      ]
+    },
+    {
+      "name": "swiper-item",
+      "docLink": "https://developer.tuya.com/cn/miniapp/develop/miniapp/component/view-container/swiper-item",
+      "attrs": [
+        {
+          "name": "item-id",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "该滑块的标识符"
+          ],
+          "defaultValue": ""
+        }
+      ],
+      "desc": [
+        "滑块视图容器的子项，仅可放置在 swiper 组件内使用。"
+      ]
+    },
+    {
+      "name": "switch",
+      "docLink": "https://developer.tuya.com/cn/miniapp/develop/miniapp/component/form-component/switch",
+      "attrs": [
+        {
+          "name": "checked",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否选中"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "disabled",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否禁用"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "color",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "选中时的颜色，同 CSS color"
+          ],
+          "defaultValue": ""
+        },
+        {
+          "name": "name",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "在表单中的字段名"
+          ]
+        },
+        {
+          "name": "type",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "样式类型，可选值：switch 开关样式，checkbox 复选框样式"
+          ],
+          "defaultValue": "switch"
+        }
+      ],
+      "desc": [
+        "开关选择器。"
+      ]
+    },
+    {
+      "name": "text",
+      "docLink": "https://developer.tuya.com/cn/miniapp/develop/miniapp/component/basic-content/text",
+      "attrs": [
+        {
+          "name": "user-select",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "文本是否可选"
+          ],
+          "defaultValue": "false"
+        }
+      ],
+      "desc": [
+        "文本组件，用于展示文本内容，支持文本选中等功能。"
+      ]
+    },
+    {
+      "name": "textarea",
+      "docLink": "https://developer.tuya.com/cn/miniapp/develop/miniapp/component/form-component/textarea",
+      "attrs": [
+        {
+          "name": "name",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "在表单中的字段名"
+          ]
+        },
+        {
+          "name": "value",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "输入框内容"
+          ],
+          "defaultValue": ""
+        },
+        {
+          "name": "maxlength",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "最大输入长度，设置为 -1 时不限制"
+          ]
+        },
+        {
+          "name": "placeholder",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "输入框为空时显示的占位文字"
+          ],
+          "defaultValue": ""
+        },
+        {
+          "name": "placeholder-style",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "占位符样式"
+          ],
+          "defaultValue": ""
+        },
+        {
+          "name": "disabled",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否禁用"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "auto-height",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否自动增高，设置 autoHeight 时，style.height 不生效"
+          ],
+          "defaultValue": "false"
+        }
+      ],
+      "desc": [
+        "多行输入框组件。"
+      ]
+    },
+    {
+      "name": "video",
+      "docLink": "https://developer.tuya.com/cn/miniapp/develop/miniapp/component/media-component/video",
+      "attrs": [
+        {
+          "name": "src",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "视频资源地址"
+          ]
+        },
+        {
+          "name": "poster",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "封面图片地址"
+          ]
+        },
+        {
+          "name": "controls",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否显示默认播放控件"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "duration",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "指定视频时长"
+          ],
+          "defaultValue": "0"
+        },
+        {
+          "name": "autoplay",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否自动播放"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "loop",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否循环播放"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "muted",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否静音播放"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "initial-time",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "初始化播放位置，单位秒"
+          ],
+          "defaultValue": "0"
+        },
+        {
+          "name": "object-fit",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "当视频大小与 video 容器大小不一致时的表现，可选值：contain 包含，fill 填充，cover 覆盖"
+          ],
+          "defaultValue": "contain"
+        },
+        {
+          "name": "danmu-list",
+          "type": {
+            "name": "Array<any>"
+          },
+          "desc": [
+            "弹幕列表"
+          ],
+          "defaultValue": "[]"
+        },
+        {
+          "name": "danmu-btn",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否显示弹幕按钮"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "enable-danmu",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否展示弹幕"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "show-fullscreen-btn",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否显示全屏按钮"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "show-play-btn",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否显示视频底部控制栏的播放按钮"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "show-mute-btn",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否显示静音按钮"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "show-center-play-btn",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否显示视频中间的播放按钮"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "auto-pause",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否在离开页面时自动暂停"
+          ],
+          "defaultValue": "true"
+        }
+      ],
+      "desc": [
+        "视频组件，支持播放控件、弹幕与全屏。"
+      ]
+    },
+    {
+      "name": "view",
+      "docLink": "https://developer.tuya.com/cn/miniapp/develop/miniapp/component/view-container/view",
+      "attrs": [
+        {
+          "name": "hover-class",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "指定按下去的样式类，hover-class=\"none\" 时无点击态效果"
+          ]
+        },
+        {
+          "name": "hover-stop-propagation",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否阻止本节点的祖先节点出现点击态"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "hover-start-time",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "按住后多久出现点击态，单位毫秒"
+          ],
+          "defaultValue": "20"
+        },
+        {
+          "name": "hover-stay-time",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "手指松开后点击态保留时间，单位毫秒"
+          ],
+          "defaultValue": "70"
+        }
+      ],
+      "desc": [
+        "视图容器，是最基本的布局组件，类似 HTML 中的 div。"
+      ]
+    },
+    {
+      "name": "web-view",
+      "docLink": "https://developer.tuya.com/cn/miniapp/develop/miniapp/component/open/web-view",
+      "attrs": [
+        {
+          "name": "src",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "网页链接"
+          ],
+          "defaultValue": ""
+        }
+      ],
+      "desc": [
+        "WebView 组件，用于承载网页内容。"
+      ]
+    }
+  ]
+}

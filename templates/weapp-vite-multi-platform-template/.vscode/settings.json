@@ -1,0 +1,31 @@
+{
+  "files.associations": {
+    "*.wxml": "wxml",
+    "*.axml": "miniprogram-template",
+    "*.swan": "miniprogram-template",
+    "*.ttml": "miniprogram-template",
+    "*.jxml": "miniprogram-template",
+    "*.xhsml": "miniprogram-template",
+    "*.qml": "miniprogram-template",
+    "*.ksml": "miniprogram-template",
+    "*.tyml": "miniprogram-template",
+    "*.wxss": "css",
+    "*.acss": "css",
+    "*.css": "css",
+    "*.ttss": "css",
+    "*.jxss": "css",
+    "*.qss": "css",
+    "*.tyss": "css",
+    "*.wxs": "miniprogram-script",
+    "*.wxs.js": "miniprogram-script",
+    "*.wxs.ts": "miniprogram-script",
+    "*.sjs": "miniprogram-script",
+    "*.sjs.js": "miniprogram-script",
+    "*.sjs.ts": "miniprogram-script",
+    "*.ks": "miniprogram-script",
+    "*.ks.js": "miniprogram-script",
+    "*.ks.ts": "miniprogram-script",
+    "*.filter.js": "miniprogram-script",
+    "*.filter.ts": "miniprogram-script"
+  }
+}

@@ -52,6 +52,8 @@
   },
   "activationEvents": [
     "onLanguage:wxml",
+    "onLanguage:miniprogram-template",
+    "onLanguage:miniprogram-script",
     "workspaceContains:**/weapp-vite.config.ts",
     "workspaceContains:**/weapp-vite.config.mts",
     "workspaceContains:**/weapp-vite.config.cts",
@@ -429,6 +431,12 @@
         "configuration": "./syntaxes/wxml.language-configuration.json"
       },
       {
+        "id": "miniprogram-script",
+        "aliases": ["Mini Program Script", "WXS", "SJS"],
+        "extensions": [".wxs", ".sjs", ".ks", ".wxs.ts", ".sjs.ts", ".ks.ts", ".wxs.js", ".sjs.js", ".ks.js", ".filter.ts", ".filter.js"],
+        "configuration": "./syntaxes/miniprogram-script.language-configuration.json"
+      },
+      {
         "id": "miniprogram-template",
         "aliases": [
           "Mini Program Template",
@@ -462,6 +470,11 @@
       }
     ],
     "grammars": [
+      {
+        "language": "miniprogram-script",
+        "scopeName": "source.miniprogram-script",
+        "path": "./syntaxes/miniprogram-script.tmLanguage.json"
+      },
       {
         "language": "wxml",
         "scopeName": "text.html.wxml",
@@ -833,7 +846,7 @@
   },
   "scripts": {
     "build": "pnpm exec tsdown --config tsdown.config.mts",
-    "lint": "pnpm eslint extension.ts extension/**/*.ts scripts/**/*.ts tsdown.config.mts",
+    "lint": "pnpm eslint extension.ts \"extension/**/*.ts\" \"scripts/**/*.{ts,cjs}\" tsdown.config.mts vitest.config.ts",
     "typecheck": "pnpm exec tsc -p tsconfig.json --noEmit",
     "test": "pnpm vitest run -c vitest.config.ts",
     "test:host:smoke": "node --import tsx scripts/vscode-host-smoke.ts",
@@ -857,11 +870,15 @@
     }
   },
   "devDependencies": {
+    "@babel/parser": "catalog:",
+    "@babel/traverse": "catalog:",
     "@types/node": "catalog:",
     "@types/vscode": "^1.140.0",
     "@vscode/test-electron": "^3.1.0",
     "@weapp-vite/ast": "workspace:*",
+    "@weapp-vite/language-service": "workspace:*",
     "adm-zip": "^0.6.1",
+    "import-meta-resolve": "^4.2.0",
     "tinyexec": "^1.3.1"
   }
 }

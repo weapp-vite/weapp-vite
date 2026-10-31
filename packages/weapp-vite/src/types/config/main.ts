@@ -1,3 +1,4 @@
+import type { LanguageOptions } from '@weapp-vite/language-service'
 import type { UserConfig as ViteUserConfig } from 'vite'
 import type { WrapPluginOptions } from 'vite-plugin-performance'
 import type { CreateCompilerOptions } from 'weapp-tailwindcss/core'
@@ -252,6 +253,8 @@ export interface WeappViteConfig {
   lib?: WeappLibConfig
   isAdditionalWxml?: (wxmlFilePath: string) => boolean
   platform?: MpPlatform | 'web'
+  /** 模板和原生脚本模块的语言平台及按文件覆盖；不会增加构建目标。 */
+  language?: LanguageOptions
   multiPlatform?: boolean | MultiPlatformConfig
   jsFormat?: JsFormat
   /**

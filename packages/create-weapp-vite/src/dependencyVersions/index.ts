@@ -7,6 +7,8 @@ import { version as reactVersion } from '../../../../packages-runtime/react/pack
 import { version as wevuVersion } from '../../../../packages-runtime/wevu/package.json'
 import { version as dashboardVersion } from '../../../dashboard/package.json'
 import { version as eslintVersion } from '../../../eslint/package.json'
+import { version as oxfmtVersion } from '../../../oxfmt/package.json'
+import { version as oxlintVersion } from '../../../oxlint/package.json'
 import { version as weappViteVersion } from '../../../weapp-vite/package.json'
 import { displayRegistry, getPackageVersionsFromNpm, publicRegistryOptions, resolveRegistryOptions } from '../npm'
 import { findCompatibleVersion } from './compatible'
@@ -20,6 +22,8 @@ const BUNDLED_VERSIONS = {
   '@weapp-vite/dashboard': dashboardVersion,
   '@weapp-vite/react': reactVersion,
   '@weapp-vite/eslint': eslintVersion,
+  '@weapp-vite/oxlint': oxlintVersion,
+  '@weapp-vite/oxfmt': oxfmtVersion,
 }
 const CORE_PACKAGES = ['weapp-vite', 'wevu', '@weapp-vite/dashboard'] as const
 const DEPENDENCY_FIELDS = ['dependencies', 'devDependencies', 'peerDependencies', 'optionalDependencies'] as const

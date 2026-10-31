@@ -4,6 +4,7 @@ import tailwindcss from '@tailwindcss/vite'
 import vue from '@vitejs/plugin-vue'
 import { playwright } from '@vitest/browser-playwright'
 import { defineConfig } from 'vitest/config'
+import { createFormattingFiles } from '../../../e2e/utils/formattingProject'
 import { createNativeTopologyFiles } from './test/helpers/nativeTopology'
 import { createProductionMountFiles } from './test/helpers/productionMount'
 import { createPropsProjectionFiles } from './test/helpers/propsProjection'
@@ -52,6 +53,9 @@ export default defineConfig({
   plugins: [vue(), tailwindcss(), {
     name: 'stateful-native-component-fixture',
     resolveId(id) {
+      if (id === 'virtual:formatting-semantics-fixture') {
+        return `\0${id}`
+      }
       if (id === 'virtual:stateful-native-entry-replay-fixture') {
         return `\0${id}`
       }
@@ -81,6 +85,9 @@ export default defineConfig({
       }
     },
     async load(id) {
+      if (id === '\0virtual:formatting-semantics-fixture') {
+        return `export default ${JSON.stringify(await createFormattingFiles())}`
+      }
       if (id === '\0virtual:stateful-native-entry-replay-fixture') {
         return `export default ${JSON.stringify(await createStatefulNativeEntryReplayFiles())}`
       }
@@ -137,7 +144,7 @@ export default defineConfig({
   }],
   server: {
     fs: {
-      allow: [mpcoreRoot, path.resolve(simulatorRoot, '../../../e2e/utils/requestClientsRealWebSocketProbe.ts'), path.resolve(simulatorRoot, '../../../e2e-apps/github-issues/src/pages/css-nested-vars'), path.resolve(simulatorRoot, '../../../e2e-apps/github-issues/fixtures/issue-1235/src')],
+      allow: [mpcoreRoot, path.resolve(simulatorRoot, '../../../e2e/utils/formattingContract.ts'), path.resolve(simulatorRoot, '../../../e2e/utils/requestClientsRealWebSocketProbe.ts'), path.resolve(simulatorRoot, '../../../e2e-apps/github-issues/src/pages/css-nested-vars'), path.resolve(simulatorRoot, '../../../e2e-apps/github-issues/fixtures/issue-1235/src')],
     },
     warmup: {
       clientFiles: [path.resolve(simulatorRoot, './e2e/statefulVueComponent.e2e.test.ts')],

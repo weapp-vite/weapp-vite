@@ -1,0 +1,70 @@
+{
+  "name": "@weapp-vite/oxlint",
+  "type": "module",
+  "version": "0.0.0",
+  "description": "Oxlint presets and mini-program compatibility rules for weapp-vite",
+  "license": "MIT",
+  "homepage": "https://vite.weapp.dev/packages/oxlint",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/weapp-vite/weapp-vite.git",
+    "directory": "packages/oxlint"
+  },
+  "bugs": {
+    "url": "https://github.com/weapp-vite/weapp-vite/issues"
+  },
+  "keywords": ["weapp-vite", "miniprogram", "oxlint", "lint"],
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    },
+    "./plugin": {
+      "types": "./dist/plugin.d.mts",
+      "import": "./dist/plugin.mjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "bin": {
+    "weapp-vite-lint": "./dist/cli.mjs"
+  },
+  "files": ["dist"],
+  "engines": {
+    "node": "^22.23.4 || ^24.22.1 || >=26.12.1"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "test": "vitest run --config ./vitest.config.ts",
+    "test:types": "pnpm run test:types:check",
+    "test:types:check": "tsd",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
+  },
+  "peerDependencies": {
+    "vite-plus": ">=1.2.0 <2"
+  },
+  "peerDependenciesMeta": {
+    "vite-plus": { "optional": true }
+  },
+  "dependencies": {
+    "@types/eslint": "^9.6.1",
+    "@weapp-vite/eslint": "workspace:*",
+    "@weapp-vite/language-service": "workspace:*",
+    "execa": "^10.2.1"
+  },
+  "devDependencies": {
+    "eslint": "catalog:",
+    "typescript": "catalog:",
+    "vite-plus": "1.2.0",
+    "vitest": "^5.0.5"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  }
+}

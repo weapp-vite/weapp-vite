@@ -240,6 +240,12 @@ export default await defineEslintConfig({
         'e18e/ban-dependencies': 'off',
       },
     }, {
+      files: ['packages/oxfmt/package.json', 'packages/oxlint/package.json', 'packages/language-service/package.json'],
+      rules: {
+        // 格式入口依赖跨平台进程启动及与 Vite Plus 一致的路径 glob 语义。
+        'e18e/ban-dependencies': ['warn', { allowed: ['execa', 'fast-glob'] }],
+      },
+    }, {
       files: ['@weapp-core/shared/package.json', '@weapp-core/shared/test-d/get-value.test-d.ts'],
       rules: {
         // 既有公开 get 导出保留上游重载与 Options，发布声明需要同一依赖。

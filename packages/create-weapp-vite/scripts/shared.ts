@@ -5,13 +5,15 @@ import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { Templates } from './constants'
 
-const templates = Templates.map((x) => {
-  return {
-    target: `../../../templates/${x.target}`,
-    dest: `../templates/${x.dest}`,
-  }
-})
+const templateSourceRoot = path.resolve(import.meta.dirname, '../../../templates')
 const WINDOWS_VERBATIM_PATH_RE = /^\\\\\?\\/
+
+interface TemplateSyncOptions {
+  /** 指定本次同步拥有的输出目录，测试不得删除其他准备阶段的共享产物。 */
+  targetRoot?: string
+  /** 将锁与缓存凭据放入调用方拥有的目录，隔离测试和其他工作树。 */
+  cacheRoot?: string
+}
 
 async function ensureGitignoreForTemplate(templateRoot: string) {
   const dotGitignore = path.resolve(templateRoot, '.gitignore')
@@ -159,8 +161,8 @@ async function isTemplateDirSynced(sourceRoot: string, destRoot: string) {
 async function getTemplateSyncSignature() {
   const hasher = crypto.createHash('sha256')
 
-  for (const { target } of templates) {
-    const absTarget = path.resolve(import.meta.dirname, target)
+  for (const { target } of Templates) {
+    const absTarget = path.resolve(templateSourceRoot, target)
     hasher.update(target)
 
     if (!await fs.pathExists(absTarget)) {
@@ -178,10 +180,10 @@ async function getTemplateSyncSignature() {
   return hasher.digest('hex').slice(0, 16)
 }
 
-async function hasSyncedTemplates() {
-  for (const { dest, target } of templates) {
-    const absTarget = path.resolve(import.meta.dirname, target)
-    const absDest = path.resolve(import.meta.dirname, dest)
+async function hasSyncedTemplates(targetRoot: string) {
+  for (const { dest, target } of Templates) {
+    const absTarget = path.resolve(templateSourceRoot, target)
+    const absDest = path.resolve(targetRoot, dest)
     if (!await isTemplateDirSynced(absTarget, absDest)) {
       return false
     }
@@ -190,14 +192,17 @@ async function hasSyncedTemplates() {
   return true
 }
 
-export async function main() {
+export async function main(options: TemplateSyncOptions = {}) {
+  const targetRoot = options.targetRoot ?? path.resolve(import.meta.dirname, '../templates')
+  const cacheRoot = options.cacheRoot ?? os.tmpdir()
+  await fs.ensureDir(cacheRoot)
   const signature = await getTemplateSyncSignature()
-  const markerFile = path.join(os.tmpdir(), `create-weapp-vite-templates.${signature}.done`)
-  if (await fs.pathExists(markerFile) && await hasSyncedTemplates()) {
+  const markerFile = path.join(cacheRoot, `create-weapp-vite-templates.${signature}.done`)
+  if (await fs.pathExists(markerFile) && await hasSyncedTemplates(targetRoot)) {
     return
   }
 
-  const lockFile = path.join(os.tmpdir(), 'create-weapp-vite-templates.lock')
+  const lockFile = path.join(cacheRoot, 'create-weapp-vite-templates.lock')
   let lockHandle: fsPromises.FileHandle | undefined
 
   for (let i = 0; i < 200; i++) {
@@ -218,19 +223,20 @@ export async function main() {
   }
 
   try {
-    if (await fs.pathExists(markerFile) && await hasSyncedTemplates()) {
+    if (await fs.pathExists(markerFile) && await hasSyncedTemplates(targetRoot)) {
       return
     }
 
-    for (const { dest, target } of templates) {
-      const absDest = path.resolve(import.meta.dirname, dest)
+    for (const { dest, target } of Templates) {
+      const absDest = path.resolve(targetRoot, dest)
+      const absTarget = path.resolve(templateSourceRoot, target)
       await fs.emptyDir(absDest)
       await fs.copy(
-        path.resolve(import.meta.dirname, target),
+        absTarget,
         absDest,
         {
           filter(src: string) {
-            if (shouldSkipTemplateFile(src, path.resolve(import.meta.dirname, target))) {
+            if (shouldSkipTemplateFile(src, absTarget)) {
               return false
             }
             return true

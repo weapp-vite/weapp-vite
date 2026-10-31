@@ -3,8 +3,10 @@ import { defineConfig } from 'tsdown'
 
 export default defineConfig({
   alias: {
-    '@weapp-vite/ast/babel': path.resolve(import.meta.dirname, '../../packages/ast/src/babel.ts'),
+    '@weapp-vite/language-service': path.resolve(import.meta.dirname, '../../packages/language-service/src/index.ts'),
     '@weapp-vite/ast/babelTypes': path.resolve(import.meta.dirname, '../../packages/ast/src/babelTypes.ts'),
+    '@weapp-vite/ast/babel': path.resolve(import.meta.dirname, 'extension/languages/ast.ts'),
+    '@weapp-vite/ast': path.resolve(import.meta.dirname, 'extension/languages/ast.ts'),
   },
   clean: true,
   deps: {

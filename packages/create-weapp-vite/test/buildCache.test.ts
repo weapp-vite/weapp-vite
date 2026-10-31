@@ -10,6 +10,8 @@ const packageManifests = {
   '@weapp-vite/react': 'packages-runtime/react/package.json',
   '@weapp-vite/dashboard': 'packages/dashboard/package.json',
   '@weapp-vite/eslint': 'packages/eslint/package.json',
+  '@weapp-vite/oxlint': 'packages/oxlint/package.json',
+  '@weapp-vite/oxfmt': 'packages/oxfmt/package.json',
 }
 
 interface TurboDryRun {

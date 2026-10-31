@@ -63,7 +63,8 @@
     "fontoxpath": "^3.34.0",
     "htmlparser2": "catalog:",
     "pathe": "catalog:",
-    "postcss": "catalog:"
+    "postcss": "catalog:",
+    "postcss-value-parser": "4.2.0"
   },
   "publishConfig": {
     "access": "public",

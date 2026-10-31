@@ -1,0 +1,1 @@
+<wxs module="tools" src="./tools.wxs"/><text>{{tools.value}} {{"tools.value"}}</text>

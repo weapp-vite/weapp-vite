@@ -1,6 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
+import { discoverAgentFiles } from './discover'
 import { agentManifest } from './manifest'
 import { renderAgentDocument } from './render'
 import { resolveDocument, resolveLayer, validateManifest } from './resolve'
@@ -29,47 +30,6 @@ function parseArgs(argv: string[]) {
     throw new Error('choose only one of --check or --write')
   }
   return options
-}
-
-function discoverAgentFiles() {
-  const files: string[] = []
-  const ignored = new Set([
-    '.git',
-    'node_modules',
-    'dist',
-    'coverage',
-    'docs/reports',
-    '.cache',
-    '.codex-tmp',
-    '.minidev',
-    '.playwright',
-    '.playwright-cli',
-    '.pnpm-store',
-    '.tmp',
-    '.turbo',
-    '.weapp-vite',
-    '.wevu-config',
-  ])
-  function visit(directory: string) {
-    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
-      if (ignored.has(entry.name)) {
-        continue
-      }
-      const fullPath = path.join(directory, entry.name)
-      const relativePath = path.relative(process.cwd(), fullPath)
-      if (relativePath === 'docs/reports' || relativePath.startsWith('docs/reports/')) {
-        continue
-      }
-      if (entry.isDirectory()) {
-        visit(fullPath)
-      }
-      else if (entry.name === 'AGENTS.md') {
-        files.push(path.relative(process.cwd(), fullPath))
-      }
-    }
-  }
-  visit(process.cwd())
-  return files.sort()
 }
 
 function expectedFiles(options: { target?: string } = {}) {
@@ -147,7 +107,7 @@ export function runAgentsCommand(argv = process.argv.slice(2)) {
   }
   if (!options.target && !options.profile && !options.write) {
     const expectedPaths = new Set(agentManifest.documents.map(document => document.path))
-    for (const file of discoverAgentFiles()) {
+    for (const file of discoverAgentFiles(process.cwd())) {
       if (!expectedPaths.has(file)) {
         mismatches.push(`${file}: AGENTS.md is not registered in manifest`)
       }
