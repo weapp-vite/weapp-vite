@@ -6,11 +6,11 @@ import path from 'node:path'
 import { transformWithOxc } from 'vite'
 import { baseTemplate } from './baseTemplate'
 import { validateNativeBridgeConfiguration } from './nativeBridge'
+import { isReactTransformSource, observeReactSourceInput } from './sourceInput'
 import { compileStaticReactPage, hasNativeComponentBridge } from './staticTemplate/index'
 import { ReactStaticTemplateUnsupportedError } from './staticTemplate/types'
 
 export const REACT_PLUGIN_NAME = 'weapp-vite:react'
-const REACT_FILE_RE = /\.(?:jsx|tsx)(?:\?.*)?$/
 
 interface ReactTemplateAsset {
   nativeComponents: string[]
@@ -65,8 +65,7 @@ export function isReactStaticTemplateSource(
   return Boolean(
     config
     && config.renderMode !== 'dynamic'
-    && REACT_FILE_RE.test(id)
-    && !id.includes('/node_modules/'),
+    && isReactTransformSource(id),
   )
 }
 
@@ -154,9 +153,10 @@ export function createReactPlugin(ctx: CompilerContext): Plugin[] {
       await refreshStaticTemplate(context.file, 'update', message => this.warn(message))
     },
     transform: async function transformReact(source, id) {
-      if (!REACT_FILE_RE.test(id) || id.includes('/node_modules/')) {
+      if (!isReactTransformSource(id)) {
         return null
       }
+      observeReactSourceInput(ctx, source, id)
 
       let transformedSource = source
       const fileName = resolveStaticTemplateFileName(
