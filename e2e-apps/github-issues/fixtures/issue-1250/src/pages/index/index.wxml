@@ -6,3 +6,15 @@
 <button id="toast-sequence" bindtap="toastSequence">Replace Toast</button>
 <button id="hide-toast" bindtap="hideToast">Hide Toast</button>
 <text id="snapshot">{{snapshot}}</text>
+<button id="exercise-apis" bindtap="exerciseApis">Run API consumers</button>
+<text id="api-snapshot">{{apiSnapshot}}</text>
+<button id="audio-play" bindtap="audioPlay">Play generated WAV</button>
+<button id="audio-pause" bindtap="audioPause">Pause audio</button>
+<button id="audio-resume" bindtap="audioResume">Resume audio</button>
+<button id="audio-seek" bindtap="audioSeek">Seek audio</button>
+<button id="audio-stop" bindtap="audioStop">Stop audio</button>
+<button id="audio-unsubscribe" bindtap="audioUnsubscribe">Unsubscribe audio</button>
+<button id="audio-destroy" bindtap="audioDestroy">Destroy audio</button>
+<button id="audio-end" bindtap="audioEnd">Play short WAV</button>
+<button id="audio-error" bindtap="audioError">Play invalid WAV</button>
+<text id="audio-snapshot">{{audioSnapshot}}</text>

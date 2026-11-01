@@ -1,0 +1,4 @@
+<view id="layout-shell">
+  <layout-typo>Layout source remains visible</layout-typo>
+  <slot />
+</view>

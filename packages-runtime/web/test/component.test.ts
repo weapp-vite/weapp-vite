@@ -155,6 +155,7 @@ function setupTestDom() {
   if ((globalThis as any).document) {
     return
   }
+  let testDocument: VirtualDocument
 
   class AttributeList implements Iterable<{ name: string, value: string }> {
     #map = new Map<string, string>()
@@ -234,6 +235,10 @@ function setupTestDom() {
     constructor(tagName: string) {
       super()
       this.tagName = tagName.toUpperCase()
+    }
+
+    get ownerDocument(): VirtualDocument {
+      return testDocument
     }
 
     appendChild<T extends VirtualElement | VirtualTextNode>(child: T): T {
@@ -551,7 +556,8 @@ function setupTestDom() {
   }
 
   ;(globalThis as any).HTMLElement = BaseHTMLElement as unknown as typeof HTMLElement
-  ;(globalThis as any).document = new VirtualDocument()
+  testDocument = new VirtualDocument()
+  ;(globalThis as any).document = testDocument
   ;(globalThis as any).customElements = customElements
   ;(globalThis as any).NodeFilter = { SHOW_ELEMENT: 1, SHOW_COMMENT: 128 }
 }

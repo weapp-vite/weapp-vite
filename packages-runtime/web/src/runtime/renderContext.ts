@@ -1,20 +1,25 @@
 import type { ComponentPublicInstance } from './component'
+import type { ControlledReader, ControlledScope } from './controlledAttributes/dependencies'
 import type { TemplateScope } from './template'
+import type { TemplateScopeSource } from './templateScopeSources'
 import { nameRuntimeEventHandler } from './componentEvents'
-import { readRuntimeDataset } from './dataset'
+import { bindControlledAttribute } from './controlledAttributes'
 import { getRuntimeExecutionMode, warnRuntimeExecutionOnce } from './execution'
 import { invokeMiniProgramEventHandler } from './inputHandlerResult'
+import { registerTemplateScopeSources } from './templateScopeSources'
+import { createRuntimeEventPayload } from './touchEvents'
 import { emitRuntimeWarning } from './warning'
 
 export interface RenderContext {
   instance: ComponentPublicInstance
   eval: (expression: string, scope: TemplateScope, wxs?: Record<string, any>) => any
-  createScope: (parent: TemplateScope, locals?: Record<string, any>) => TemplateScope
-  mergeScope: (parent: TemplateScope, data?: any) => TemplateScope
+  createScope: (parent: TemplateScope, locals?: Record<string, any>, sources?: readonly TemplateScopeSource[]) => TemplateScope
+  mergeScope: (parent: TemplateScope, data?: any, sources?: readonly TemplateScopeSource[]) => TemplateScope
   normalizeList: (value: any) => any[]
   key: (rawKey: string, item: any, index: number, scope: TemplateScope, wxs?: Record<string, any>) => any
   renderTemplate: (templates: Record<string, any>, name: any, scope: TemplateScope, ctx: RenderContext) => any
   event: (eventName: string, handlerName: any, scope: TemplateScope, wxs?: Record<string, any>, flags?: { catch?: boolean, capture?: boolean }) => (event: Event) => void
+  controlledAttribute: (name: string, read: ControlledReader, scope: ControlledScope) => ReturnType<typeof bindControlledAttribute>
   createWxsModule: (code: string, id: string, requireMap?: Record<string, any>) => Record<string, any>
 }
 
@@ -27,8 +32,10 @@ function createScope(initial?: TemplateScope): TemplateScope {
   return Object.assign(Object.create(null), initial ?? {})
 }
 
-function createChildScope(parent: TemplateScope, locals?: Record<string, any>): TemplateScope {
-  return Object.assign(Object.create(parent), locals ?? {})
+function createChildScope(parent: TemplateScope, locals?: Record<string, any>, sources?: readonly TemplateScopeSource[]): TemplateScope {
+  const scope = Object.assign(Object.create(parent), locals ?? {})
+  registerTemplateScopeSources(scope, parent, sources)
+  return scope
 }
 
 function evaluateExpression(expression: string, scope: TemplateScope): any {
@@ -133,24 +140,7 @@ function createEventHandler(
     return () => {}
   }
   return nameRuntimeEventHandler((nativeEvent: Event) => {
-    if (flags?.catch) {
-      nativeEvent.stopPropagation()
-    }
-    const target = nativeEvent.target as HTMLElement | null
-    const currentTarget = nativeEvent.currentTarget as HTMLElement | null
-    const dataset = readRuntimeDataset(currentTarget)
-    const syntheticEvent = {
-      type: eventName,
-      timeStamp: nativeEvent.timeStamp,
-      detail: (nativeEvent as CustomEvent).detail ?? (nativeEvent as InputEvent).data ?? undefined,
-      target: {
-        dataset: (target as HTMLElement | null)?.dataset ? readRuntimeDataset(target) : dataset,
-      },
-      currentTarget: {
-        dataset,
-      },
-      originalEvent: nativeEvent,
-    }
+    const syntheticEvent = createRuntimeEventPayload(eventName, nativeEvent, nativeEvent.currentTarget as Element, flags?.catch)
     invokeMiniProgramEventHandler(handler, instance, syntheticEvent, nativeEvent)
   }, eventName)
 }
@@ -192,20 +182,20 @@ export function createRenderContext(
     })
   }
 
-  return {
+  const context: RenderContext = {
     instance,
     eval: (expression, scope, wxs) => {
       const baseScope = scope ?? createScope()
       const renderScope = wxs ? createChildScope(baseScope, wxs) : baseScope
       return evaluateExpression(expression, renderScope)
     },
-    createScope: (parent, locals) => createChildScope(parent, locals),
-    mergeScope: (parent, data) => {
+    createScope: (parent, locals, sources) => createChildScope(parent, locals, sources),
+    mergeScope: (parent, data, sources) => {
       const baseScope = parent ?? createScope()
       if (!data || typeof data !== 'object') {
         return baseScope
       }
-      return createChildScope(baseScope, data as Record<string, any>)
+      return createChildScope(baseScope, data as Record<string, any>, sources)
     },
     normalizeList,
     key: (rawKey, item, index, scope, wxs) => {
@@ -229,8 +219,10 @@ export function createRenderContext(
       const resolvedHandler = String(handlerName ?? '')
       return createEventHandler(instance, methods, eventName, resolvedHandler, flags)
     },
+    controlledAttribute: (name, read, scope) => bindControlledAttribute(context, name, read, scope),
     createWxsModule,
   }
+  return context
 }
 
 export { createChildScope, createScope, evaluateExpression }

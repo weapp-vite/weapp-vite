@@ -40,7 +40,9 @@ export { setNavigationBarMetrics } from './navigationBar'
 export type { NavigationBarMetrics } from './navigationBar'
 export { setPageLayout } from './pageLayout'
 export {
+  arrayBufferToBase64,
   authorize,
+  base64ToArrayBuffer,
   canIUse,
   checkSession,
   chooseAddress,
@@ -55,6 +57,7 @@ export {
   compressImage,
   compressVideo,
   createCanvasContext,
+  createInnerAudioContext,
   createInterstitialAd,
   createRewardedVideoAd,
   createSelectorQuery,
@@ -81,6 +84,8 @@ export {
   getLogManager,
   getMenuButtonBoundingClientRect,
   getNetworkType,
+  getPerformance,
+  getRealtimeLogManager,
   getSetting,
   getStorage,
   getStorageInfo,
@@ -117,6 +122,8 @@ export {
   offBeforeAppRoute,
   offBeforePageUnload,
   offError,
+  offKeyboardHeightChange,
+  offMemoryWarning,
   offNetworkStatusChange,
   offThemeChange,
   offUnhandledRejection,
@@ -128,6 +135,8 @@ export {
   onBeforeAppRoute,
   onBeforePageUnload,
   onError,
+  onKeyboardHeightChange,
+  onMemoryWarning,
   onNetworkStatusChange,
   onThemeChange,
   onUnhandledRejection,
@@ -152,6 +161,7 @@ export {
   removeTabBarBadge,
   reportAnalytics,
   reportEvent,
+  reportMonitor,
   request,
   requestPayment,
   requestSubscribeMessage,
@@ -163,6 +173,8 @@ export {
   setBackgroundColor,
   setBackgroundTextStyle,
   setClipboardData,
+  setEnableDebug,
+  setKeepScreenOn,
   setNavigationBarColor,
   setNavigationBarTitle,
   setStorage,
@@ -185,6 +197,9 @@ export {
   uploadFile,
   vibrateShort,
 } from './polyfill'
+export type { KeyboardHeightChangeCallback, MemoryWarningCallback, SetEnableDebugOptions, SetKeepScreenOnOptions } from './polyfill'
+export type { CreateInnerAudioContextOptions, InnerAudioContext, InnerAudioError } from './polyfill'
+export type { MiniProgramPerformance, MiniProgramPerformanceEntry, MiniProgramPerformanceObserver, RealtimeLogManager, RealtimeTagLogManager } from './polyfill'
 export type { AppHideCallback, AppHideOptions, AppLaunchOptions, AppShowCallback } from './polyfill'
 export type { MiniProgramErrorCallback, ThemeChangeCallback, ThemeChangeEvent, UnhandledRejectionCallback, UnhandledRejectionEvent } from './polyfill'
 export type { AppRouteCallback, AppRouteEvent, AppRouteOpenType, BeforePageUnloadCallback, BeforePageUnloadEvent } from './polyfill'

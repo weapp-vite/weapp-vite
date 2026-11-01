@@ -9,11 +9,16 @@ import type {
 import { extractNavigationBarFromPageMeta } from './navigation'
 import { parseWxml } from './parser'
 import { collectSpecialNodes } from './specialNodes'
+import { collectTagDiagnostics } from './unknownTags'
 
 /** 共享模板分析阶段，依赖扫描复用其结果而不生成渲染代码。 */
-export function prepareWxml(options: WxmlCompileOptions, dependencyContext: WxmlDependencyContext) {
+export function prepareWxml(options: WxmlCompileOptions, dependencyContext: WxmlDependencyContext, diagnoseTags = false) {
   const warnings = dependencyContext.warnings
   let nodes = parseWxml(options.source)
+  const originalSource = options.diagnosticSource ?? options.source
+  const tagDiagnostics = diagnoseTags
+    ? [...(options.sourceTagDiagnostics ?? collectTagDiagnostics(originalSource === options.source ? nodes : parseWxml(originalSource), originalSource, options.id, options.componentTags))]
+    : []
   let navigationBarAttrs: Record<string, string> | undefined
   if (options.navigationBar) {
     const extracted = extractNavigationBarFromPageMeta(nodes)
@@ -40,5 +45,5 @@ export function prepareWxml(options: WxmlCompileOptions, dependencyContext: Wxml
     resolveWxs: (raw: string) => options.resolveWxsPath(raw, options.id),
   })
 
-  return { renderNodes, navigationBarAttrs, templates, includes, imports, wxs }
+  return { renderNodes, navigationBarAttrs, templates, includes, imports, wxs, tagDiagnostics }
 }

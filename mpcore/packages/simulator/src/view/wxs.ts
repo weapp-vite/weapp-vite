@@ -1,3 +1,5 @@
+import { copyTemplatePropertySources } from './nativeBindings/sources'
+
 export type WxsModuleBindings = Record<string, unknown>
 export type LoadWxsModule = (filePath: string, inlineSource?: string) => unknown
 
@@ -29,7 +31,12 @@ export function callWxsFunction(fn: unknown, receiver: unknown, args: unknown[])
 }
 
 export function wxsScopeData(scope: { data: Record<string, any>, wxs?: WxsModuleBindings }) {
-  return scope.wxs ? { ...scope.data, ...scope.wxs } : scope.data
+  if (!scope.wxs) {
+    return scope.data
+  }
+  const data = { ...scope.data, ...scope.wxs }
+  copyTemplatePropertySources(data, scope.data, Object.keys(scope.wxs))
+  return data
 }
 
 export function createWxsModuleLoader(options: {

@@ -8,6 +8,7 @@ import type {
 } from './selectorQueryTypes'
 import { resolveComponentPublicInstanceTarget } from '../component/publicInstance'
 import { readRuntimeDataset } from '../dataset'
+import { resolveNativeComponentNode } from '../nativeComponents/nodeRegistry'
 
 function isQueryRoot(value: unknown): value is ParentNode {
   if (!value || typeof value !== 'object') {
@@ -277,7 +278,7 @@ function readNodeFields(node: unknown, fields: SelectorQueryNodeFields) {
     }
   }
   if (fields.node) {
-    result.node = node
+    result.node = resolveNativeComponentNode(node)
   }
   if (fields.context) {
     result.context = node
@@ -307,7 +308,7 @@ function runQueryTask(scope: unknown, task: SelectorQueryTask) {
   if (task.type === 'fields') {
     return mapQueryResult(task.target, targets, node => readNodeFields(node, task.fields))
   }
-  return mapQueryResult(task.target, targets, node => ({ node }))
+  return mapQueryResult(task.target, targets, node => ({ node: resolveNativeComponentNode(node) }))
 }
 
 function createNodesRef(

@@ -19,9 +19,14 @@ it('initializes legacy rpx once before the first real page render and resets DOM
   await vi.waitFor(() => expect(document.querySelector('[data-weapp-page-active="true"]')).not.toBeNull())
   const host = document.querySelector('[data-weapp-page-active="true"]') as ComponentPublicInstance & { updateComplete: Promise<boolean> }
   await host.updateComplete
-  const style = () => host.shadowRoot!.querySelector('#probe')!.getAttribute('style')
+  const width = () => {
+    const style = host.shadowRoot!.querySelector<HTMLElement>('#probe')!.style
+    expect(style.length).toBe(1)
+    expect(style.getPropertyPriority('width')).toBe('')
+    return style.getPropertyValue('width')
+  }
   const variable = (name: string) => Number.parseFloat(document.documentElement.style.getPropertyValue(name))
-  expect(style()).toBe('width:calc(var(--legacy-unit) * 10)')
+  expect(width()).toBe('calc(var(--legacy-unit) * 10)')
   expect(variable('--legacy-unit')).toBeCloseTo(window.innerWidth / 375)
 
   initializePageRoutes([route], {
@@ -31,12 +36,12 @@ it('initializes legacy rpx once before the first real page render and resets DOM
   })
   await host.setData({ styles: 'width:20rpx' })
   await host.updateComplete
-  expect(style()).toBe('width:calc(var(--selected-unit) * 20)')
+  expect(width()).toBe('calc(var(--selected-unit) * 20)')
   expect(variable('--selected-unit')).toBeCloseTo(window.innerWidth / 320)
 
   initializePageRoutes([route], { runtime: { viewport: { mode: 'responsive' } } })
   await host.setData({ styles: 'width:30rpx' })
   await host.updateComplete
-  expect(style()).toBe('width:calc(var(--rpx) * 30)')
+  expect(width()).toBe('calc(var(--rpx) * 30)')
   expect(variable('--rpx')).toBeCloseTo(window.innerWidth / 750)
 })

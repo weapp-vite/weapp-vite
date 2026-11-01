@@ -37,6 +37,8 @@ export interface VueTransformResult {
   componentGenerics?: TemplateCompileResult['componentGenerics']
   classStyleWxs?: boolean
   meta?: {
+    /** 原始模板标签与源码位置，沿用编译诊断的内联及外部块归属。@internal */
+    templateTags?: TemplateCompileResult['sourceTags']
     routeConfig?: JsonMergeContext['routeConfig']
     pageMeta?: JsonMergeContext['pageMeta']
     /** @internal */

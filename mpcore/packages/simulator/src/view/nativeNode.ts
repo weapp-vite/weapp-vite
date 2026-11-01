@@ -6,6 +6,7 @@ import type { HeadlessTestingNodeEventInit } from './nodeHandle'
 import { getNativeNodeOwner, visitNativeNodeEventBindings } from './componentEvent'
 import { createMiniProgramEventPayload, resolveMiniProgramEventBinding } from './eventBinding'
 import { prepareNativeFormSubmit } from './nativeForm'
+import { dispatchNativeRefresherEvent } from './nativeRefresher'
 import { collectNodeDataset } from './nodeDataset'
 import { resolveNativeScrollBounds } from './nodeGeometry'
 
@@ -131,6 +132,9 @@ export function dispatchNativeNodeEvent(
   onHandlerResult?: (result: unknown) => void,
   resolveComponent?: ResolveNativeFormComponent,
 ) {
+  if (dispatchNativeRefresherEvent(page, node, eventName, event, target => getNativeScrollOffset(page, target).scrollTop)) {
+    return true
+  }
   if (eventName === 'scroll' && node.name === 'scroll-view') {
     const detail = event.detail as { scrollTop?: unknown, scrollLeft?: unknown } | undefined
     const state = pageScrollViews.get(page)?.get(nodeKey(node))

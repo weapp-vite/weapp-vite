@@ -1,5 +1,7 @@
 import { WEAPP_VITE_WEB_LEGACY_DATASET_COMMENT_PREFIX } from '@weapp-core/constants'
+import { commitLegacyControlledValues } from '../controlledAttributes'
 import { clearRuntimeDataset, storeRuntimeDataset } from '../dataset'
+import { resetLegacyMarkupKeys } from './markupKeys'
 
 export type LegacyDatasetValues = Array<Map<string, unknown>>
 
@@ -12,6 +14,7 @@ const commits = new WeakMap<object, LegacyDatasetCommit>()
 
 /** 每次渲染只收集当前组件的值，提交前仍由旧一轮绑定负责读取。 */
 export function resetLegacyDatasetRender(context: object) {
+  resetLegacyMarkupKeys(context)
   const commit = commits.get(context)
   if (commit) {
     commit.values = []
@@ -51,8 +54,10 @@ export function commitLegacyDatasetBindings(root: HTMLElement | ShadowRoot, cont
   }
   releaseLegacyDatasetBindings(context)
   if (commit.values.length === 0) {
+    commitLegacyControlledValues(context, [])
     return
   }
+  const controlled: Array<{ element: Element, token: object }> = []
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_COMMENT)
   while (walker.nextNode()) {
     const comment = walker.currentNode as Comment
@@ -68,6 +73,8 @@ export function commitLegacyDatasetBindings(root: HTMLElement | ShadowRoot, cont
     for (const [attribute, value] of values) {
       storeRuntimeDataset(element as Element, attribute, value)
     }
+    controlled.push({ element: element as Element, token: values })
     commit.bound.push({ element: element as Element, attributes: [...values.keys()] })
   }
+  commitLegacyControlledValues(context, controlled)
 }

@@ -12,6 +12,8 @@ const templateResult = compileTemplate(
   '/project/src/pages/index.vue',
 )
 expectType<CompilerDiagnostic[]>(templateResult.diagnostics)
+expectType<string | undefined>(templateResult.sourceTags?.[0]?.tag)
+expectType<SourceSpan | undefined>(templateResult.sourceTags?.[0]?.loc)
 expectAssignable<CompilerDiagnosticCode>('WV1001')
 expectAssignable<CompilerDiagnosticCode>('WV2003')
 expectNotAssignable<CompilerDiagnosticCode>('WV9999')
@@ -30,6 +32,8 @@ compileSfc(
   '/project/src/pages/index.vue',
 ).then((sfcResult) => {
   expectType<CompilerDiagnostic[] | undefined>(sfcResult.diagnostics)
+  expectType<string | undefined>(sfcResult.meta?.templateTags?.[0]?.filename)
+  expectType<SourceSpan | undefined>(sfcResult.meta?.templateTags?.[0]?.loc)
 })
 
 compileJsxFile(

@@ -55,17 +55,27 @@ describe.each(['compiled', 'legacy'])('%s inline style rendering', (mode) => {
     const host = document.createElement(tag) as ComponentPublicInstance & { updateComplete: Promise<boolean> }
     document.body.append(host)
     await host.updateComplete
-    expect(host.shadowRoot!.querySelector('#static')!.getAttribute('style')).toBe('width:5px')
-    expect(host.shadowRoot!.querySelector('#probe')!.getAttribute('style')).toBe('width:10px;height:20px')
+    const declarations = (selector: string) => {
+      const style = host.shadowRoot!.querySelector<HTMLElement>(selector)!.style
+      const values: Record<string, string> = {}
+      for (let index = 0; index < style.length; index++) {
+        const name = style.item(index)
+        expect(style.getPropertyPriority(name)).toBe('')
+        values[name] = style.getPropertyValue(name)
+      }
+      return values
+    }
+    expect(declarations('#static')).toEqual({ width: '5px' })
+    expect(declarations('#probe')).toEqual({ width: '10px', height: '20px' })
     await host.setData({ styles: { 'width': '80rpx', '--customHeight': '40rpx' } })
     await host.updateComplete
-    expect(host.shadowRoot!.querySelector('#probe')!.getAttribute('style')).toBe('width:20px;--customHeight:10px')
+    expect(declarations('#probe')).toEqual({ 'width': '20px', '--customHeight': '10px' })
     await host.setData({ styles: null })
     await host.updateComplete
-    expect(host.shadowRoot!.querySelector<HTMLElement>('#probe')!.style.width).toBe('')
+    expect(declarations('#probe')).toEqual({})
     await host.setData({ styles: 'width:12rpx' })
     await host.updateComplete
-    expect(host.shadowRoot!.querySelector('#probe')!.getAttribute('style')).toBe('width:3px')
+    expect(declarations('#probe')).toEqual({ width: '3px' })
   })
 
   it.each(['{{styles}}', ' {{styles}} '])('preserves typed datasets while updating, clearing and restoring inline styles with %s', async (styleBinding) => {

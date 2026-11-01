@@ -1,0 +1,4 @@
+{
+  "pages": ["pages/index/index", "pages/other/index", "pages/sfc/index", "pages/external/index"],
+  "window": { "navigationBarTitleText": "Tag diagnostics" }
+}

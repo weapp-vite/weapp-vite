@@ -15,6 +15,7 @@ import {
   resolveRuntimeProviderHmrFooter,
 } from '../../../../runtimeProviders'
 import { normalizePreserveModulesRolldownOptions } from '../../../preserveModules'
+import { resolvePollingWatchOptions } from '../../../watch/options'
 import { stripRollupOptions } from './inline'
 
 const loadWebPlugin = createBabelBackendLoader(() => import('@weapp-vite/web/plugin'))
@@ -128,6 +129,8 @@ export function mergeWeb(options: MergeWebOptions, ...configs: Partial<InlineCon
         ? null
         : {
             ...inline.server?.watch,
+            // Vite 的 macOS watcher 在读取环境变量前选择 FSEvents，必须提前归一化后端选项。
+            ...resolvePollingWatchOptions({ inlineConfig: inline }),
             awaitWriteFinish: inline.server?.watch?.awaitWriteFinish ?? { stabilityThreshold: 50, pollInterval: 10 },
           },
     }

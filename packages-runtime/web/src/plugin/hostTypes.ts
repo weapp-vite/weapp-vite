@@ -1,6 +1,6 @@
 import type { SourceMap } from 'magic-string'
 import type { AcceptedPlugin, ProcessOptions } from 'postcss'
-import type { ViteDevServer } from 'vite'
+import type { Logger, ViteDevServer } from 'vite'
 import type { createWebAssetMiddleware } from './assets'
 import type { ResolveWebModuleId, WebStylePreprocessOptions } from './types'
 
@@ -27,6 +27,7 @@ export interface WebUserConfig {
 export interface WebResolvedConfig extends WebUserConfig {
   root: string
   command: string
+  logger?: Pick<Logger, 'error'>
   createResolver?: () => ResolveWebModuleId
   optimizeDeps?: {
     exclude?: string[]

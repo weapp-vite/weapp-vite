@@ -12,6 +12,7 @@ import {
   MINI_PROGRAM_EVENT_ATTRIBUTE_PREFIX,
   MINI_PROGRAM_EVENT_FLAG_ATTRIBUTE_PREFIX,
 } from '../component/constants'
+import { recordLegacyControlledValue } from '../controlledAttributes'
 import { transformInlineStyleValue } from '../inlineStyle'
 import { escapeAttribute, evaluateExpression, resolveAttributeValue } from './expression'
 
@@ -70,10 +71,23 @@ export function buildAttributeString(
   attribs: Record<string, string>,
   scope: LegacyTemplateScope,
   dataset?: Map<string, unknown>,
+  controlledAttributes: readonly string[] = [],
+  sourceAttributes?: Map<string, string>,
 ) {
   let result = ''
+  const appendAttribute = (name: string, value: string) => {
+    result += ` ${name}="${escapeAttribute(value)}"`
+    sourceAttributes?.set(name.toLowerCase(), value)
+  }
   for (const [name, rawValue] of Object.entries(attribs)) {
     if (CONTROL_ATTRS.has(name)) {
+      continue
+    }
+    if (dataset && controlledAttributes.includes(name)) {
+      const expression = /^\{\{([\s\S]*)\}\}$/.exec(rawValue.trim())
+      recordLegacyControlledValue(dataset, name, tracked => expression
+        ? evaluateExpression(expression[1]!, tracked)
+        : resolveAttributeValue(rawValue, tracked), scope)
       continue
     }
 
@@ -88,13 +102,13 @@ export function buildAttributeString(
         continue
       }
       const flags = EVENT_PREFIX_FLAGS[eventInfo.prefix]!
-      result += ` ${MINI_PROGRAM_EVENT_ATTRIBUTE_PREFIX}${encodedEvent}="${escapeAttribute(handlerName)}"`
+      appendAttribute(`${MINI_PROGRAM_EVENT_ATTRIBUTE_PREFIX}${encodedEvent}`, handlerName)
       const flagTokens = [
         flags.capture ? 'capture' : '',
         flags.catch ? 'catch' : '',
       ].filter(Boolean)
       if (flagTokens.length) {
-        result += ` ${MINI_PROGRAM_EVENT_FLAG_ATTRIBUTE_PREFIX}${encodedEvent}="${flagTokens.join(',')}"`
+        appendAttribute(`${MINI_PROGRAM_EVENT_FLAG_ATTRIBUTE_PREFIX}${encodedEvent}`, flagTokens.join(','))
       }
       continue
     }
@@ -107,7 +121,7 @@ export function buildAttributeString(
         ? evaluateExpression(expression[1]!, scope)
         : rawValue.replace(/\{\{([\s\S]*?)\}\}/g, (_, source: string) => String(evaluateExpression(source, scope) ?? ''))
       dataset?.set(normalizedName, value)
-      result += ` ${normalizedName}="${escapeAttribute(String(value ?? ''))}"`
+      appendAttribute(normalizedName, String(value ?? ''))
       continue
     }
     if (normalizedName === 'style') {
@@ -117,7 +131,7 @@ export function buildAttributeString(
         : resolveAttributeValue(rawValue, scope)
       const style = transformInlineStyleValue(rawStyle)
       if (style != null && style !== '') {
-        result += ` style="${escapeAttribute(String(style))}"`
+        appendAttribute('style', String(style))
       }
       continue
     }
@@ -125,7 +139,7 @@ export function buildAttributeString(
     if (value === '') {
       continue
     }
-    result += ` ${normalizedName}="${escapeAttribute(value)}"`
+    appendAttribute(normalizedName, value)
   }
   return result
 }

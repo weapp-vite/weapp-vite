@@ -1,5 +1,6 @@
 /* eslint-disable ts/no-use-before-define -- 递归表达式解释器的求值 helper 会互相调用。 */
 import { parseExpression } from '@babel/parser'
+import { captureTemplateValueReads, recordTemplateControlRead, recordTemplateDependencies, recordTemplatePropertyRead, recordTemplateSpreadRead, recordTemplateValueRead } from './nativeBindings/reads'
 import { isTemplateExpression } from './templateInterpolation'
 import { callWxsFunction } from './wxs'
 
@@ -43,7 +44,9 @@ function resolveIdentifier(source: Record<string, any>, name: string) {
   if (name === 'Infinity') {
     return Number.POSITIVE_INFINITY
   }
-  return source[name]
+  const value = source[name]
+  recordTemplateValueRead(source, value, name)
+  return value
 }
 
 function resolveMemberKey(node: ExpressionNode, source: Record<string, any>) {
@@ -54,7 +57,12 @@ function resolveMemberKey(node: ExpressionNode, source: Record<string, any>) {
 }
 
 function readMemberValue(node: ExpressionNode, source: Record<string, any>) {
-  const target = evaluateExpressionNode(node.object, source)
+  // 构造对象先定位接收者，再消费实际字段；不能提前把兄弟字段都算作依赖。
+  const targetRead = captureTemplateValueReads(source, () => evaluateExpressionNode(node.object, source), false)
+  const target = targetRead.value
+  if (target === null || typeof target !== 'object') {
+    recordTemplateDependencies(source, targetRead.source.paths)
+  }
   if (target == null) {
     return undefined
   }
@@ -62,7 +70,9 @@ function readMemberValue(node: ExpressionNode, source: Record<string, any>) {
   if ((typeof key !== 'string' && typeof key !== 'number') || BLOCKED_MEMBER_KEYS.has(String(key))) {
     return undefined
   }
-  return target[key]
+  const value = target[key]
+  recordTemplateValueRead(source, value, key, target)
+  return value
 }
 
 function evaluateUnaryExpression(node: ExpressionNode, source: Record<string, any>) {
@@ -147,22 +157,33 @@ function evaluateObjectExpression(node: ExpressionNode, source: Record<string, a
   const result: Record<string, any> = {}
   for (const property of node.properties ?? []) {
     if (property.type === 'SpreadElement') {
-      const spreadValue = evaluateExpressionNode(property.argument, source)
-      if (spreadValue && typeof spreadValue === 'object') {
-        Object.assign(result, spreadValue)
+      const spread = captureTemplateValueReads(source, () => evaluateExpressionNode(property.argument, source))
+      if (spread.value && typeof spread.value === 'object') {
+        recordTemplateSpreadRead(source, result, spread)
+        Object.assign(result, spread.value)
+        for (const key of Object.keys(spread.value)) {
+          recordTemplatePropertyRead(source, result, key, spread.propertySource(key))
+        }
       }
       continue
     }
     if (property.type !== 'ObjectProperty') {
       continue
     }
-    const key = property.computed
+    const keyRead = captureTemplateValueReads(source, () => property.computed
       ? evaluateExpressionNode(property.key, source)
-      : property.key?.name ?? property.key?.value
+      : property.key?.name ?? property.key?.value)
+    const key = keyRead.value
     if ((typeof key !== 'string' && typeof key !== 'number') || BLOCKED_MEMBER_KEYS.has(String(key))) {
       continue
     }
-    result[key] = evaluateExpressionNode(property.value, source)
+    const value = captureTemplateValueReads(source, () => evaluateExpressionNode(property.value, source))
+    result[key] = value.value
+    recordTemplatePropertyRead(source, result, key, {
+      ...value.source,
+      paths: [...value.source.paths, ...keyRead.source.paths],
+      controls: [...(value.source.controls ?? []), ...keyRead.source.paths],
+    })
   }
   return result
 }
@@ -217,24 +238,27 @@ function evaluateExpressionNode(node: ExpressionNode | null | undefined, source:
     case 'BinaryExpression':
       return evaluateBinaryExpression(node, source)
     case 'LogicalExpression': {
-      const left = evaluateExpressionNode(node.left, source)
-      if (node.operator === '&&') {
-        return left ? evaluateExpressionNode(node.right, source) : left
-      }
-      if (node.operator === '||') {
-        return left || evaluateExpressionNode(node.right, source)
-      }
-      if (node.operator === '??') {
-        return left ?? evaluateExpressionNode(node.right, source)
-      }
-      return undefined
+      const left = captureTemplateValueReads(source, () => evaluateExpressionNode(node.left, source))
+      const useRight = node.operator === '&&' ? Boolean(left.value) : node.operator === '||' ? !left.value : node.operator === '??' && left.value == null
+      const value = useRight ? evaluateExpressionNode(node.right, source) : left.value
+      recordTemplateControlRead(source, value, left.source.paths)
+      return value
     }
-    case 'ConditionalExpression':
-      return evaluateExpressionNode(node.test, source)
-        ? evaluateExpressionNode(node.consequent, source)
-        : evaluateExpressionNode(node.alternate, source)
-    case 'ArrayExpression':
-      return node.elements.map((item: ExpressionNode | null) => evaluateExpressionNode(item, source))
+    case 'ConditionalExpression': {
+      const condition = captureTemplateValueReads(source, () => evaluateExpressionNode(node.test, source))
+      const value = evaluateExpressionNode(condition.value ? node.consequent : node.alternate, source)
+      recordTemplateControlRead(source, value, condition.source.paths)
+      return value
+    }
+    case 'ArrayExpression': {
+      const result: unknown[] = []
+      node.elements.forEach((item: ExpressionNode | null, index: number) => {
+        const value = captureTemplateValueReads(source, () => evaluateExpressionNode(item, source))
+        recordTemplatePropertyRead(source, result, index, value.source)
+        result.push(value.value)
+      })
+      return result
+    }
     case 'ObjectExpression':
       return evaluateObjectExpression(node, source)
     case 'TemplateLiteral':

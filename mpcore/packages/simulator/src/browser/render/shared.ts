@@ -1,8 +1,11 @@
 import type { ArtifactSource } from '../../kernel/artifactSource'
+import type { TemplateValueSource } from '../../view/nativeBindings/sources'
 import type { LoadWxsModule } from '../../view/wxs'
 import type { BrowserVirtualFiles } from '../virtualFiles'
 import type { BrowserRenderScope, DomNodeLike } from './types'
 import { dirname, join, normalize } from 'pathe'
+import { resolveNativeAttributeValue } from '../../view/nativeBindings'
+import { createNativeLoopData } from '../../view/nativeBindings/scopes'
 import { setNativePickerValue } from '../../view/nativeForm'
 import { collectNodeDataset, isDatasetAttribute, toDatasetKey } from '../../view/nodeDataset'
 import { renderRichTextNodes } from '../../view/richText'
@@ -138,21 +141,21 @@ export function isIgnorableTextNode(node: DomNodeLike) {
   return node.type === 'text' && typeof node.data === 'string' && node.data.trim() === ''
 }
 
-function resolveAttributeValue(value: string, scope: BrowserRenderScope) {
+function resolveAttributeValue(value: string, source: Record<string, any>) {
   if (isMustacheOnly(value)) {
     const expression = value.trim().slice(2, -2)
-    return resolveRawValueByPath(wxsScopeData(scope), expression)
+    return resolveRawValueByPath(source, expression)
   }
-  return interpolateTemplate(value, wxsScopeData(scope))
+  return interpolateTemplate(value, source)
 }
 
-export function resolveComponentAttributeValue(value: string, scope: BrowserRenderScope) {
+export function resolveComponentAttributeValue(value: string, scope: BrowserRenderScope, source = wxsScopeData(scope)) {
   if (isMustacheOnly(value)) {
     const expression = value.trim().slice(2, -2)
     // 存在 WXML 绑定但值为 undefined 时，宿主传入 null；省略属性仍由组件默认值处理。
-    return resolveRawValueByPath(wxsScopeData(scope), expression) ?? null
+    return resolveRawValueByPath(source, expression) ?? null
   }
-  return interpolateTemplate(value, wxsScopeData(scope))
+  return interpolateTemplate(value, source)
 }
 
 export function applyNodeBindings(node: DomNodeLike, scope: BrowserRenderScope, richText = false) {
@@ -179,9 +182,9 @@ export function applyNodeBindings(node: DomNodeLike, scope: BrowserRenderScope, 
       node.attribs['data-sim-tap'] = value
       continue
     }
-    const resolvedValue = typeof value === 'string'
-      ? resolveAttributeValue(value, scope)
-      : value
+    const resolvedValue = resolveNativeAttributeValue(node, key, scope, source => typeof value === 'string'
+      ? resolveAttributeValue(value, source)
+      : value)
     if (key === 'value') {
       setNativePickerValue(node, resolvedValue)
     }
@@ -205,13 +208,9 @@ export function evaluateConditionalBranch(node: DomNodeLike, scope: BrowserRende
   return Boolean(resolveRawValueByPath(wxsScopeData(scope), condition))
 }
 
-export function createLoopScope(scope: BrowserRenderScope, itemName: string, indexName: string, item: unknown, index: number | string): BrowserRenderScope {
+export function createLoopScope(scope: BrowserRenderScope, itemName: string, indexName: string, item: unknown, index: number | string, itemSource: TemplateValueSource, indexPaths: string[][]): BrowserRenderScope {
   return {
     ...scope,
-    data: {
-      ...scope.data,
-      [indexName]: index,
-      [itemName]: item,
-    },
+    data: createNativeLoopData(scope, itemName, indexName, item, index, itemSource, indexPaths),
   }
 }

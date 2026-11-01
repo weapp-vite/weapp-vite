@@ -25,13 +25,16 @@ import {
   setBackgroundTextStyleBridge,
 } from './background'
 import { createCloudBridge } from './cloud'
+import * as compatibilityApi from './compatibilityApi'
 import * as deviceAuthSystemApi from './deviceAuthSystemApi'
 import * as eventBusApi from './eventBus'
 import { WEB_USER_DATA_PATH } from './files'
 import { loadFontFace } from './font'
+import * as innerAudioApi from './innerAudio'
 import * as lifecycleEventApi from './lifecycleEvents'
 import { getLocale } from './locale'
 import { createNavigationBarRuntimeBridge } from './navigationBarRuntime'
+import * as performanceApi from './performance'
 import {
   createInterstitialAdBridge,
   createRewardedVideoAdBridge,
@@ -41,6 +44,7 @@ import {
   getUpdateManagerBridge,
   reportAnalyticsBridge,
 } from './platformApi'
+import * as realtimeLogApi from './realtimeLog'
 import {
   getAppInstance,
   getCurrentPagesInternal,
@@ -74,12 +78,16 @@ import * as runtimeDataApi from './runtimeDataApi'
 import * as uiMediaApi from './uiMediaApi'
 
 export { createAnimation } from './animation'
+export * from './compatibilityApi'
 export * from './deviceAuthSystemApi'
 export * from './eventBus'
 export { loadFontFace } from './font'
+export * from './innerAudio'
 export { offError, offThemeChange, offUnhandledRejection, onError, onThemeChange, onUnhandledRejection, reportEvent } from './lifecycleEvents'
 export type { MiniProgramErrorCallback, ThemeChangeCallback, ThemeChangeEvent, UnhandledRejectionCallback, UnhandledRejectionEvent } from './lifecycleEvents'
 export { getLocale } from './locale'
+export * from './performance'
+export * from './realtimeLog'
 
 export {
   getEnterOptionsSync,
@@ -242,6 +250,10 @@ export function installMiniProgramGlobals(): void {
     ...uiMediaApi,
     ...deviceAuthSystemApi,
     ...eventBusApi,
+    ...compatibilityApi,
+    ...innerAudioApi,
+    ...performanceApi,
+    ...realtimeLogApi,
     onError: lifecycleEventApi.onError,
     offError: lifecycleEventApi.offError,
     onUnhandledRejection: lifecycleEventApi.onUnhandledRejection,

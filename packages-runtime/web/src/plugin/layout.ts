@@ -1,4 +1,5 @@
 import type { LayoutEntry } from './types'
+import { WEVU_PAGE_LAYOUT_NAME_KEY, WEVU_PAGE_LAYOUT_PROPS_KEY } from '@weapp-core/constants'
 
 function collectLayoutPropKeys(layouts: LayoutEntry[]) {
   const keys = new Set<string>()
@@ -23,9 +24,9 @@ export function wrapPageTemplate(source: string, layouts: LayoutEntry[]) {
   const propKeys = collectLayoutPropKeys(layouts)
   const branches = layouts.map((layout, index) => {
     const condition = index === 0
-      ? `!__wv_page_layout_name || __wv_page_layout_name === '${layout.name}'`
-      : `__wv_page_layout_name === '${layout.name}'`
-    const attrs = propKeys.map(key => `${key.replace(/[A-Z]/g, match => `-${match.toLowerCase()}`)}="{{(__wv_page_layout_props&&__wv_page_layout_props.${key})}}"`).join(' ')
+      ? `typeof ${WEVU_PAGE_LAYOUT_NAME_KEY} === 'undefined' || !${WEVU_PAGE_LAYOUT_NAME_KEY} || ${WEVU_PAGE_LAYOUT_NAME_KEY} === '${layout.name}'`
+      : `${WEVU_PAGE_LAYOUT_NAME_KEY} === '${layout.name}'`
+    const attrs = propKeys.map(key => `${key.replace(/[A-Z]/g, match => `-${match.toLowerCase()}`)}="{{(${WEVU_PAGE_LAYOUT_PROPS_KEY}&&${WEVU_PAGE_LAYOUT_PROPS_KEY}.${key})}}"`).join(' ')
     const open = attrs ? `<${layout.tag} ${attrs}>` : `<${layout.tag}>`
     const directive = index === 0 ? 'wx:if' : 'wx:elif'
     return `<block ${directive}="{{${condition}}}">${open}${source}</${layout.tag}></block>`

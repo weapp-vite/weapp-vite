@@ -314,10 +314,10 @@ describe('weapp web plugin hook matrix', () => {
     expect(await resolveId('unknown:module')).toBeNull()
   })
 
-  it('loads virtual, WXML, WXS, WXSS and SFC modules', async () => {
+  it.each(['serve', 'build'] as const)('loads virtual, WXML, WXS, WXSS and SFC modules (%s)', async (command) => {
     const { componentDir, pageDir, root, srcRoot } = await createPluginFixture()
     const plugin = weappWebPlugin({ srcDir: 'src' })
-    await plugin.configResolved?.call({ warn: vi.fn() }, { root, command: 'build' } as any)
+    await plugin.configResolved?.call({ warn: vi.fn() }, { root, command } as any)
     const load = plugin.load!
     const addWatchFile = vi.fn()
     const warn = vi.fn()
@@ -337,7 +337,7 @@ describe('weapp web plugin hook matrix', () => {
     await expect(load.call(context, `${join(componentDir, 'index.wxml')}?weapp-web-template`))
       .resolves
       .toContain(`from 'lit'`)
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining('<camera>'))
+    expect(warn.mock.calls.some(([message]) => String(message).includes('<camera>'))).toBe(command === 'serve')
     await expect(load.call({}, `${join(componentDir, 'index.wxml')}?weapp-web-template`))
       .resolves
       .toContain(`from 'lit'`)

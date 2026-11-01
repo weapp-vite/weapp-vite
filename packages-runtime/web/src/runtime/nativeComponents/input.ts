@@ -54,8 +54,9 @@ export class WeappInput extends BaseElement {
       this.#initialValue = this.getAttribute('value') ?? ''
       this.#initialValueCaptured = true
     }
+    const initializeValue = !this.#input
     this.#ensureStructure()
-    this.#syncAttributes()
+    this.#syncAttributes(initializeValue)
     connectFormControl(this)
     this.#syncFocus()
   }
@@ -65,7 +66,7 @@ export class WeappInput extends BaseElement {
   }
 
   attributeChangedCallback(name: string) {
-    this.#syncAttributes()
+    this.#syncAttributes(name === 'value')
     if (name === 'focus') {
       this.#syncFocus()
     }
@@ -135,12 +136,12 @@ export class WeappInput extends BaseElement {
     this.#input = input
   }
 
-  #syncAttributes() {
+  #syncAttributes(syncValue = false) {
     if (!this.#input) {
       return
     }
     const value = this.getAttribute('value') ?? ''
-    if (this.#input.value !== value) {
+    if (syncValue && this.#input.value !== value) {
       this.#input.value = value
     }
     this.#input.type = resolveInputType(this)

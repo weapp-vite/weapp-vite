@@ -165,13 +165,20 @@ function shouldWrapShorthandObject(expression: string) {
   return hasTopLevelColon(trimmed)
 }
 
-export function buildTemplateDataExpression(raw: string, scopeVar: string, wxsVar: string) {
+export function normalizeTemplateDataExpression(raw: string) {
   const trimmed = raw.trim()
   const parts = parseInterpolations(trimmed)
   if (parts.length === 1 && parts[0]?.type === 'expr') {
     const expr = parts[0].value.trim()
-    const normalizedExpr = shouldWrapShorthandObject(expr) ? `{ ${expr} }` : expr
-    return buildExpression([{ type: 'expr', value: normalizedExpr }], scopeVar, wxsVar)
+    return shouldWrapShorthandObject(expr) ? `{ ${expr} }` : expr
+  }
+  return undefined
+}
+
+export function buildTemplateDataExpression(raw: string, scopeVar: string, wxsVar: string) {
+  const expression = normalizeTemplateDataExpression(raw)
+  if (expression) {
+    return buildExpression([{ type: 'expr', value: expression }], scopeVar, wxsVar)
   }
   return buildExpression(parseInterpolations(raw), scopeVar, wxsVar)
 }

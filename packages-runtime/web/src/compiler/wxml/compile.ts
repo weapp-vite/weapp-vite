@@ -1,4 +1,4 @@
-import type { WxmlCompileOptions, WxmlCompileResult } from './types'
+import type { WxmlCompileOptions, WxmlCompileResult, WxmlTagDiagnostic } from './types'
 
 import { readFileSync } from 'node:fs'
 import { RUNTIME_ID } from '../../plugin/constants'
@@ -7,7 +7,6 @@ import { buildNavigationBarAttrs } from './navigation'
 import { prepareWxml } from './prepare'
 import { renderer } from './renderer'
 import { normalizeTemplatePath, shouldMarkWxsImport, toRelativeImport } from './specialNodes'
-import { collectUnknownTags, formatUnknownTagWarning } from './unknownTags'
 
 const WEB_TEMPLATE_QUERY = 'weapp-web-template'
 
@@ -20,15 +19,7 @@ function compileTemplate(options: WxmlCompileOptions, diagnoseUnknownTags: boole
   const expandDependencies = options.expandDependencies ?? !options.dependencyContext
   const warnings = dependencyContext.warnings
 
-  const warnUnknownTags = (prepared: ReturnType<typeof prepareWxml>, id: string) => {
-    if (!diagnoseUnknownTags) {
-      return
-    }
-    const tags = collectUnknownTags(prepared.renderNodes, options.componentTags, prepared.templates.flatMap(template => template.nodes))
-    if (tags.length > 0) {
-      warnings.push(formatUnknownTagWarning(tags, id))
-    }
-  }
+  const tagDiagnostics: WxmlTagDiagnostic[] = []
 
   const expandDependencyTree = (dependencies: string[], importer: string) => {
     for (const target of dependencies) {
@@ -56,8 +47,9 @@ function compileTemplate(options: WxmlCompileOptions, diagnoseUnknownTags: boole
           source,
           resolveTemplatePath: options.resolveTemplatePath,
           resolveWxsPath: options.resolveWxsPath,
-        }, dependencyContext)
-        warnUnknownTags(result, target)
+          componentTags: options.componentTags,
+        }, dependencyContext, diagnoseUnknownTags)
+        tagDiagnostics.push(...result.tagDiagnostics)
         collectDependencies(result, dependencyContext)
         expandDependencyTree([...result.imports, ...result.includes].map(entry => entry.id), target)
       }
@@ -70,8 +62,8 @@ function compileTemplate(options: WxmlCompileOptions, diagnoseUnknownTags: boole
     }
   }
 
-  const prepared = prepareWxml(options, dependencyContext)
-  warnUnknownTags(prepared, options.id)
+  const prepared = prepareWxml(options, dependencyContext, diagnoseUnknownTags)
+  tagDiagnostics.push(...prepared.tagDiagnostics)
   const {
     renderNodes: renderNodesList,
     navigationBarAttrs,
@@ -198,6 +190,7 @@ function compileTemplate(options: WxmlCompileOptions, diagnoseUnknownTags: boole
     code,
     dependencies,
     warnings: warnings.length > 0 ? warnings : undefined,
+    tagDiagnostics,
   }
 }
 

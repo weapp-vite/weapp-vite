@@ -1,0 +1,4 @@
+<view>
+  <sfc-card wx:if="{{false}}" />
+  <sfc-included-typo id="sfc-included">Included SFC source</sfc-included-typo>
+</view>
