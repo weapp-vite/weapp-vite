@@ -37,16 +37,21 @@ vite dev
 {
   "type": "module",
   "devDependencies": {
-    "vite-plus": "1.0.0",
-    "vite": "npm:@voidzero-dev/vite-plus-core@1.0.0"
+    "vite-plus": "1.2.0",
+    "vite": "npm:@voidzero-dev/vite-plus-core@1.2.0"
   },
   "overrides": {
-    "vite": "npm:@voidzero-dev/vite-plus-core@1.0.0"
+    "vite": "npm:@voidzero-dev/vite-plus-core@1.2.0",
+    "vitest": "5.0.4"
   }
 }
 ```
 
-pnpm 使用项目级 `pnpm-workspace.yaml` 的 `overrides` 完成同样的 alias；不要只修改顶层依赖而留下 weapp-vite 内嵌的另一套 Vite。该组合对应 Vite 8.3.1 / Rolldown 1.2.11；Vite+ 项目验证线为 Node 24.11+，普通 weapp-vite 的 Node 范围不变。
+pnpm 使用项目级 `pnpm-workspace.yaml` 的 `overrides` 完成同样的 alias；不要只修改顶层依赖而留下 weapp-vite 内嵌的另一套 Vite。该组合固定配套 `vitest@5.0.4`，避免测试包与 `vp test` 使用不同 runner。脚手架生成的 Vite+ 项目要求 Node `^24.22.1 || >=26.12.1`。
+
+使用 `create-weapp-vite ... --toolchain=vite-plus` 可以直接生成上述配对配置，并接入 `@weapp-vite/oxlint` 与 `@weapp-vite/oxfmt`。`vp check` 使用 workspace 根已有的 lint/fmt 配置；成员配置不会覆盖根策略。
+
+原生模板、样式与 WXS/SJS/KS/Filter 的平台归属配置见 [`weapp.language`](./weapp-config.md#language)。生成项目通过 `weapp-vite-lint` 和 `weapp-vite-format` 组合标准工具与语言适配器；直接运行 `vp lint` / `vp fmt` 不包含完整原生语言检查。QQ、快手和涂鸦的语言 profile 不会扩展插件的六个平台构建目标。
 
 ## 当前命令边界
 

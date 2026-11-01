@@ -3,11 +3,12 @@ import type { BrowserVirtualFiles } from '../virtualFiles'
 import { posix } from 'pathe'
 import postcss from 'postcss'
 import { normalizeBrowserFilePath, readBrowserVirtualFile } from '../virtualFiles'
+import { resolveResponsiveUnits } from './responsiveUnits'
 
 export interface BrowserPageStyles {
   /** 按实际遍历顺序去重的项目相对样式依赖。 */
   dependencies: string[]
-  /** 已展开本地导入的页面 CSS；不包含嵌套组件样式隔离转换。 */
+  /** 已展开本地导入的页面 CSS；指定设备宽度时将 rpx 转为 px，不包含嵌套组件样式隔离转换。 */
   cssText: string
   /** Component 页面的 page-* 隔离选项可关闭隐式 app.wxss。 */
   appWxssEnabled: boolean
@@ -20,8 +21,11 @@ const PAGE_ISOLATION = new Set(['page-isolated', 'page-strong-isolated', 'page-a
 export function resolveBrowserPageStyles(
   files: BrowserVirtualFiles,
   route: string,
-  options: { miniprogramRootPath?: string, styleIsolation?: string } = {},
+  options: { miniprogramRootPath?: string, styleIsolation?: string, viewportWidth?: number } = {},
 ): BrowserPageStyles {
+  if (options.viewportWidth !== undefined && (!Number.isFinite(options.viewportWidth) || options.viewportWidth <= 0)) {
+    throw new RangeError('Browser WXSS viewportWidth must be a positive finite number')
+  }
   const root = normalizeBrowserFilePath(options.miniprogramRootPath ?? '')
   const dependencies = new Set<string>()
   const appWxssEnabled = !PAGE_ISOLATION.has(options.styleIsolation ?? '')
@@ -75,7 +79,13 @@ export function resolveBrowserPageStyles(
   ]
   const cssText = entries
     .filter(filename => readBrowserVirtualFile(files, filename) !== undefined)
-    .map(filename => visit(normalizeBrowserFilePath(filename), []).toString())
+    .map((filename) => {
+      const stylesheet = visit(normalizeBrowserFilePath(filename), [])
+      if (options.viewportWidth !== undefined) {
+        resolveResponsiveUnits(stylesheet, options.viewportWidth)
+      }
+      return stylesheet.toString()
+    })
     .join('\n')
   return { appWxssEnabled, cssText, dependencies: [...dependencies] }
 }

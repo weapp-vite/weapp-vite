@@ -95,8 +95,7 @@ export async function leaveCrashedClassicLease(project: string) {
     expect(JSON.parse(saved)).toHaveProperty('pid', dev.pid)
     expect(JSON.parse(await readFile(path.join(project, 'project.private.config.json'), 'utf8'))).toHaveProperty('setting.compileHotReLoad', false)
     expect(dev.pid).toBeTypeOf('number')
-    // PID 来源于本测试持有的直接 CLI 子进程，不按名称或命令行查找目标。
-    process.kill(dev.pid!, 'SIGKILL')
+    await dev.crash()
     const failure = await stopFailedClassicLeaseDev(dev)
     stopped = true
     expect(failure).toBeInstanceOf(Error)

@@ -147,6 +147,7 @@ export function emitWxmlAssetFile(options: {
   }
 
   const result = handleWxml(token, {
+    platform,
     removeComment: false,
     importMetaDefineRegistry,
     importMetaExtension: templateExtension,

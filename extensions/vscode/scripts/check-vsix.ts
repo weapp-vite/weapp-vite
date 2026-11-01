@@ -33,6 +33,8 @@ const requiredEntries = [
   'extension/syntaxes/weapp-vite-custom-blocks.tmLanguage.json',
   'extension/syntaxes/wxml.tmLanguage.json',
   'extension/syntaxes/miniprogram-template.tmLanguage.json',
+  'extension/syntaxes/miniprogram-script.tmLanguage.json',
+  'extension/syntaxes/miniprogram-script.language-configuration.json',
 ]
 
 const forbiddenEntries = [
@@ -53,6 +55,8 @@ for (const entry of requiredEntries) {
 for (const entry of forbiddenEntries) {
   assert.ok(!entries.includes(entry), `unexpected vsix entry: ${entry}`)
 }
+
+assert.ok(!entries.some((entry: string) => /\.(?:node|wasm)$/u.test(entry)), 'native formatter binaries must be resolved from the trusted project')
 
 assert.ok(packageJsonEntry, 'missing packaged extension/package.json')
 

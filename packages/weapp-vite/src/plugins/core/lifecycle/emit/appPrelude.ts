@@ -155,10 +155,10 @@ function hasRequestGlobalsPreludeDependency(
   }
 
   return requestGlobalsPreludeOptions.installerChunks.has(toPosixPath(chunk.fileName))
-    || Boolean(resolveRequestGlobalsInstallerImport(chunk, requestGlobalsPreludeOptions.installerChunks))
     || chunk.code.includes(REQUEST_GLOBAL_BUNDLE_MARKER)
     || chunk.code.includes(REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER)
     || chunk.code.includes(REQUEST_GLOBAL_PASSIVE_BINDINGS_MARKER)
+    || Boolean(resolveRequestGlobalsInstallerImport(chunk, requestGlobalsPreludeOptions.installerChunks))
 }
 
 export function emitAppPreludeRequireAssets(

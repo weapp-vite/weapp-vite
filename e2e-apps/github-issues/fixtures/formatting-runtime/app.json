@@ -1,0 +1,6 @@
+{
+  "pages": ["pages/raw/index"],
+  "window": {
+    "navigationBarTitleText": "Oxfmt runtime parity"
+  }
+}

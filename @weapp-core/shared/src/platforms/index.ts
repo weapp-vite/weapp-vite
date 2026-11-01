@@ -13,6 +13,7 @@ export {
   getMiniProgramRuntimeGlobalKeys,
   getMiniProgramRuntimeGlobalKeysByResolvePriority,
   getMiniProgramRuntimeHostConfigKey,
+  getMiniProgramScriptModuleOptions,
   getMiniProgramTemplatePreset,
   getSupportedMiniProgramDirectivePrefixes,
   getSupportedMiniProgramPlatforms,

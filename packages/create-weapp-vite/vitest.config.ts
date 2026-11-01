@@ -15,6 +15,7 @@ export default defineProject({
     fileParallelism: false,
     globals: true,
     testTimeout: 60_000,
+    globalSetup: ['./vitest.global-setup.mjs'],
     setupFiles: ['./vitest.setup.ts'],
     coverage: createProjectCoverage('packages/create-weapp-vite'),
   },

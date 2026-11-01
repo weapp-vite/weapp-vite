@@ -18,6 +18,7 @@ import {
   buildVueUsingComponentDiagnostics,
 } from './editor/content'
 import {
+  WeappNativeDocumentFormattingProvider,
   WeappWxmlDocumentFormattingProvider,
 } from './editor/format'
 import {
@@ -30,6 +31,12 @@ import {
   WeappViteVueCompletionProvider,
   WeappViteVueDocumentLinkProvider,
 } from './editor/providers'
+import { LanguageDiagnosticController } from './languages/diagnostics'
+import { NATIVE_SCRIPT_DOCUMENT_SELECTORS, NATIVE_STYLE_DOCUMENT_SELECTORS, synchronizeNativeScriptLanguage } from './languages/documents'
+import { TemplateModuleProviders } from './languages/modules/providers'
+import { NamedTemplateProviders } from './languages/namedTemplates'
+import { invalidateLanguageProjectConfiguration } from './languages/project'
+import { MiniProgramScriptProviders } from './languages/scriptProviders'
 import {
   getPageFileCandidatePaths,
   getRouteFromPageFilePath,
@@ -502,7 +509,13 @@ export function activate(context: any) {
   const viteConfigCompletionProvider = new WeappViteConfigCompletionProvider()
   const hoverProvider = new WeappViteHoverProvider()
   const vueDocumentLinkProvider = new WeappViteVueDocumentLinkProvider()
-  const wxmlDocumentFormattingProvider = new WeappWxmlDocumentFormattingProvider()
+  const languageDiagnostics = new LanguageDiagnosticController()
+  const reportFormattingError = (document: vscode.TextDocument, error: unknown) => languageDiagnostics.reportFormattingError(document, error)
+  const wxmlDocumentFormattingProvider = new WeappWxmlDocumentFormattingProvider(reportFormattingError)
+  const nativeDocumentFormattingProvider = new WeappNativeDocumentFormattingProvider(reportFormattingError)
+  const scriptProviders = new MiniProgramScriptProviders()
+  const moduleProviders = new TemplateModuleProviders()
+  const namedTemplateProviders = new NamedTemplateProviders()
   const wxmlCompletionProvider = new WeappTemplateCompletionProvider()
   const wxmlHoverProvider = new WeappTemplateHoverProvider()
   const wxmlDocumentHighlightProvider = new WeappTemplateDocumentHighlightProvider()
@@ -539,6 +552,7 @@ export function activate(context: any) {
   const scheduleVuePageDiagnosticsRefresh = createDebouncedDocumentTask(450, refreshVuePageDiagnostics)
   const refreshProjectState = (refreshTree = true) => {
     clearProjectContextCache()
+    invalidateLanguageProjectConfiguration()
     scheduleStatusBarRefresh()
 
     if (refreshTree) {
@@ -630,6 +644,26 @@ export function activate(context: any) {
       MINI_PROGRAM_TEMPLATE_DOCUMENT_SELECTORS,
       wxmlDocumentFormattingProvider,
     ),
+    vscode.languages.registerDocumentFormattingEditProvider(
+      [...NATIVE_SCRIPT_DOCUMENT_SELECTORS, ...NATIVE_STYLE_DOCUMENT_SELECTORS],
+      nativeDocumentFormattingProvider,
+    ),
+    vscode.languages.registerCompletionItemProvider(NATIVE_SCRIPT_DOCUMENT_SELECTORS, scriptProviders, '.'),
+    vscode.languages.registerHoverProvider(NATIVE_SCRIPT_DOCUMENT_SELECTORS, scriptProviders),
+    vscode.languages.registerDefinitionProvider(NATIVE_SCRIPT_DOCUMENT_SELECTORS, scriptProviders),
+    vscode.languages.registerReferenceProvider(NATIVE_SCRIPT_DOCUMENT_SELECTORS, scriptProviders),
+    vscode.languages.registerRenameProvider(NATIVE_SCRIPT_DOCUMENT_SELECTORS, scriptProviders),
+    vscode.languages.registerDocumentLinkProvider(NATIVE_SCRIPT_DOCUMENT_SELECTORS, scriptProviders),
+    vscode.languages.registerCompletionItemProvider(TEMPLATE_DOCUMENT_SELECTORS, moduleProviders, '.', '{'),
+    vscode.languages.registerHoverProvider(TEMPLATE_DOCUMENT_SELECTORS, moduleProviders),
+    vscode.languages.registerDefinitionProvider(TEMPLATE_DOCUMENT_SELECTORS, moduleProviders),
+    vscode.languages.registerReferenceProvider(TEMPLATE_DOCUMENT_SELECTORS, moduleProviders),
+    vscode.languages.registerRenameProvider(TEMPLATE_DOCUMENT_SELECTORS, moduleProviders),
+    vscode.languages.registerCompletionItemProvider(TEMPLATE_DOCUMENT_SELECTORS, namedTemplateProviders, '"', '\''),
+    vscode.languages.registerHoverProvider(TEMPLATE_DOCUMENT_SELECTORS, namedTemplateProviders),
+    vscode.languages.registerDefinitionProvider(TEMPLATE_DOCUMENT_SELECTORS, namedTemplateProviders),
+    vscode.languages.registerReferenceProvider(TEMPLATE_DOCUMENT_SELECTORS, namedTemplateProviders),
+    vscode.languages.registerRenameProvider(TEMPLATE_DOCUMENT_SELECTORS, namedTemplateProviders),
     vscode.languages.registerDocumentLinkProvider(
       TEMPLATE_DOCUMENT_SELECTORS,
       wxmlDocumentLinkProvider,
@@ -724,12 +758,21 @@ export function activate(context: any) {
       refreshProjectState()
       refreshPagesState()
     }),
+    vscode.workspace.onDidGrantWorkspaceTrust(() => {
+      invalidateLanguageProjectConfiguration()
+      for (const document of vscode.workspace.textDocuments) {
+        void synchronizeNativeScriptLanguage(document)
+        languageDiagnostics.refresh(document, true)
+      }
+    }),
     vscode.workspace.onDidChangeConfiguration((event) => {
       if (event.affectsConfiguration('weapp-vite')) {
         refreshProjectState()
         refreshPagesState()
 
         for (const document of vscode.workspace.textDocuments) {
+          void synchronizeNativeScriptLanguage(document)
+          languageDiagnostics.refresh(document, true)
           schedulePackageJsonDiagnosticsRefresh(document)
           scheduleAppJsonDiagnosticsRefresh(document)
           scheduleVuePageDiagnosticsRefresh(document)
@@ -737,6 +780,7 @@ export function activate(context: any) {
       }
     }),
     vscode.workspace.onDidSaveTextDocument((document) => {
+      languageDiagnostics.refresh(document)
       if (isPackageJsonDocument(document)) {
         void refreshPackageJsonDiagnostics(document)
       }
@@ -751,6 +795,10 @@ export function activate(context: any) {
 
       if (isPackageJsonDocument(document) || VITE_CONFIG_FILE_PATTERN.test(document.fileName)) {
         refreshProjectState()
+        for (const languageDocument of vscode.workspace.textDocuments) {
+          void synchronizeNativeScriptLanguage(languageDocument)
+          languageDiagnostics.refresh(languageDocument, true)
+        }
       }
 
       if (isAppJsonDocument(document) || isVueDocument(document)) {
@@ -758,6 +806,8 @@ export function activate(context: any) {
       }
     }),
     vscode.workspace.onDidOpenTextDocument((document) => {
+      void synchronizeNativeScriptLanguage(document)
+      languageDiagnostics.refresh(document)
       void refreshPackageJsonDiagnostics(document)
       void refreshAppJsonDiagnostics(document)
       void refreshVuePageDiagnostics(document)
@@ -766,6 +816,7 @@ export function activate(context: any) {
       }
     }),
     vscode.workspace.onDidChangeTextDocument((event) => {
+      languageDiagnostics.refresh(event.document)
       schedulePackageJsonDiagnosticsRefresh(event.document)
       scheduleAppJsonDiagnosticsRefresh(event.document)
       scheduleVuePageDiagnosticsRefresh(event.document)
@@ -777,6 +828,7 @@ export function activate(context: any) {
         refreshPagesState(event.document)
       }
     }),
+    vscode.workspace.onDidCloseTextDocument(document => languageDiagnostics.close(document)),
     vscode.workspace.onDidRenameFiles((event) => {
       void (async () => {
         let didSyncAnyRoute = false
@@ -852,11 +904,13 @@ export function activate(context: any) {
   void syncPagesTreeState(pagesTreeProvider, pagesTreeView)
 
   for (const document of vscode.workspace.textDocuments) {
+    void synchronizeNativeScriptLanguage(document)
+    languageDiagnostics.refresh(document)
     void refreshPackageJsonDiagnostics(document)
     void refreshAppJsonDiagnostics(document)
   }
 
-  context.subscriptions.push(...disposables, projectTreeView, pagesTreeView, getDiagnostics(), {
+  context.subscriptions.push(...disposables, projectTreeView, pagesTreeView, getDiagnostics(), languageDiagnostics, {
     dispose() {
       templateDecorationController.dispose()
       state.terminalCache = undefined

@@ -2,6 +2,7 @@ import type { VueTransformResult } from 'wevu/compiler'
 import type { CompilerContext } from '../../../../../context'
 import type { JsonMergeStrategy } from '../../../../../types'
 import type { ClassStyleWxsAsset } from './types'
+import { getMiniProgramScriptModuleOptions } from '@weapp-core/shared'
 import { getClassStyleWxsSource } from 'wevu/compiler'
 import { finalizeAppConfigForBuild } from '../../../../../runtime/appConfig'
 import { normalizeFsResolvedId } from '../../../../../utils/resolvedId'
@@ -158,7 +159,7 @@ export function resolveClassStyleWxsAsset(
   const classStyleWxsLocation = resolveClassStyleWxsLocationForBase(ctx, relativeBase, wxsExtension, configService)
   return {
     fileName: classStyleWxsLocation.fileName,
-    source: getClassStyleWxsSource({ extension: wxsExtension }),
+    source: getClassStyleWxsSource({ extension: wxsExtension, moduleFormat: getMiniProgramScriptModuleOptions(configService.platform, wxsExtension).format }),
   }
 }
 

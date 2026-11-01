@@ -1,0 +1,5 @@
+export { resolveDocumentFormatOptions } from './config'
+export { prepareFormatting as prepareProjectFormatting } from './prepare'
+export type { FormatCandidate } from './prepare'
+export { loadProjectConfig, resolveProjectDocumentInput, resolveProjectReference } from '@weapp-vite/language-service/project'
+export type { ProjectLanguageConfig } from '@weapp-vite/language-service/project'

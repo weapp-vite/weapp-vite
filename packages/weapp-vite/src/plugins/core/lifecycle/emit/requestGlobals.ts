@@ -69,8 +69,7 @@ export function resolveRequestGlobalsInstallerName(code: string) {
   return findRequestGlobalsInstaller(code)
 }
 
-export function resolveRequestGlobalsExportName(code: string) {
-  const installerName = resolveRequestGlobalsInstallerName(code)
+export function resolveRequestGlobalsExportName(code: string, installerName = resolveRequestGlobalsInstallerName(code)) {
   if (!installerName) {
     return null
   }
@@ -158,7 +157,7 @@ export function injectRequestGlobalsBundleRuntime(
     }
     const chunk = output as OutputChunk
     const installerName = resolveRequestGlobalsInstallerName(chunk.code)
-    const exportName = resolveRequestGlobalsExportName(chunk.code)
+    const exportName = resolveRequestGlobalsExportName(chunk.code, installerName)
     if (!installerName) {
       continue
     }
@@ -832,7 +831,7 @@ export function createRequestGlobalsPreludeCode(
   }
 
   const installerName = resolveRequestGlobalsInstallerName(chunk.code)
-  const exportName = resolveRequestGlobalsExportName(chunk.code)
+  const exportName = resolveRequestGlobalsExportName(chunk.code, installerName)
   let installerHostCode: string | undefined
 
   if (installerName && exportName) {

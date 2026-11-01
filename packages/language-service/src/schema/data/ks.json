@@ -1,0 +1,3311 @@
+{
+  "platform": "ks",
+  "availability": "snapshot",
+  "version": "sha256:06e955aca5f17dbea23d6fd4d18c9853dfe9fcbeb016668ed2264cadd1179dfb",
+  "source": "https://mp.kuaishou.com/docs/develop/frame/buildInComponent.html",
+  "snapshotDate": "2026-10-30",
+  "upstreamRetrievedAt": "2026-10-30",
+  "components": [
+    {
+      "name": "ad",
+      "docLink": "https://mp.kuaishou.com/docs/develop/components/open/ad.html",
+      "attrs": [
+        {
+          "name": "type",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "广告类型"
+          ]
+        },
+        {
+          "name": "unit-id",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "广告单元 id"
+          ]
+        },
+        {
+          "name": "ad-theme",
+          "type": {
+            "name": "'white' | 'black'"
+          },
+          "desc": [
+            "广告主题色"
+          ],
+          "defaultValue": "'white'"
+        },
+        {
+          "name": "bindload",
+          "type": {
+            "name": "(e: { detail: Record<string, unknown> } & Event) => void"
+          },
+          "desc": [
+            "广告加载成功的回调"
+          ]
+        },
+        {
+          "name": "binderror",
+          "type": {
+            "name": "(e: { detail: { errCode: number } } & Event) => void"
+          },
+          "desc": [
+            "广告加载失败的回调"
+          ]
+        },
+        {
+          "name": "bindclose",
+          "type": {
+            "name": "(e: { detail: Record<string, unknown> } & Event) => void"
+          },
+          "desc": [
+            "广告关闭的回调"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "address",
+      "docLink": "https://mp.kuaishou.com/docs/develop/components/life/address.html",
+      "attrs": [
+        {
+          "name": "bindchange",
+          "type": {
+            "name": "(e: { detail: Record<string, unknown> } & Event) => void"
+          },
+          "desc": [
+            "用户选择地址时、地址信息发生变化时触发"
+          ]
+        },
+        {
+          "name": "binderror",
+          "type": {
+            "name": "(e: { detail: { errMsg: string, errCode: number } } & Event) => void"
+          },
+          "desc": [
+            "错误回调"
+          ]
+        },
+        {
+          "name": "concat-name",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "联系人名字"
+          ]
+        },
+        {
+          "name": "concat-phone",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "联系电话"
+          ]
+        },
+        {
+          "name": "location-name",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "地址名称"
+          ]
+        },
+        {
+          "name": "province-code",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "省"
+          ]
+        },
+        {
+          "name": "province-name",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "省名称"
+          ]
+        },
+        {
+          "name": "city-code",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "市"
+          ]
+        },
+        {
+          "name": "city-name",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "市名称"
+          ]
+        },
+        {
+          "name": "district-code",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "区"
+          ]
+        },
+        {
+          "name": "district-name",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "区名称"
+          ]
+        },
+        {
+          "name": "town-code",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "街道"
+          ]
+        },
+        {
+          "name": "town-name",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "街道名称"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "button",
+      "docLink": "https://mp.kuaishou.com/docs/develop/components/form/button.html",
+      "attrs": [
+        {
+          "name": "size",
+          "type": {
+            "name": "'small' | 'default' | 'tiny' | 'mini' | 'medium' | 'large' | 'huge'"
+          },
+          "desc": [
+            "按钮的大小"
+          ],
+          "defaultValue": "'default'"
+        },
+        {
+          "name": "type",
+          "type": {
+            "name": "'warn' | 'default' | 'primary'"
+          },
+          "desc": [
+            "按钮的样式类型"
+          ],
+          "defaultValue": "'default'"
+        },
+        {
+          "name": "plain",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "按钮是否镂空，背景色透明"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "disabled",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否禁用"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "loading",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "名称前是否带 loading 图标"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "form-type",
+          "type": {
+            "name": "'submit' | 'reset'"
+          },
+          "desc": [
+            "用于 form 组件，点击分别会触发 form 组件的 submit/reset 事件"
+          ]
+        },
+        {
+          "name": "open-type",
+          "type": {
+            "name": "'share' | 'getPhoneNumber' | 'getUserInfo' | 'launchApp' | 'openSetting' | 'favorite' | 'openProfile' | 'openUserProfile' | 'videoGenerate' | 'openChatGroupProfile' | 'videoPublish' | 'getUserExtendInfo' | 'addShortcut' | 'contact' | 'openWebUrl'"
+          },
+          "desc": [
+            "开放能力"
+          ]
+        },
+        {
+          "name": "hover-class",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "指定按钮按下去的样式类。当 hover-class=\"none\" 时，没有点击态效果"
+          ],
+          "defaultValue": "'button-hover'"
+        },
+        {
+          "name": "hover-start-time",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "按住后多久出现点击态，单位毫秒"
+          ],
+          "defaultValue": "20"
+        },
+        {
+          "name": "hover-stay-time",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "手指松开后点击态保留时间，单位毫秒"
+          ],
+          "defaultValue": "70"
+        },
+        {
+          "name": "lang",
+          "type": {
+            "name": "'en' | 'zh_CN' | 'zh_TW'"
+          },
+          "desc": [
+            "指定返回用户信息的语言，zh_CN 简体中文，zh_TW 繁体中文，en 英文。"
+          ],
+          "defaultValue": "'en'"
+        },
+        {
+          "name": "user",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "要跳转的号主页，可以传快手号或者快手 id，open-type=\"openProfile\" 时有效"
+          ],
+          "defaultValue": "''"
+        },
+        {
+          "name": "fit",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "按钮是否自动适应父元素宽度"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "chat-group-number",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "群聊号，open-type 为openChatGroupProfile时有效"
+          ]
+        },
+        {
+          "name": "share-user-id",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "分享用户的openid，open-type为getUserExtendInfo时有效"
+          ]
+        },
+        {
+          "name": "bindaddshortcut",
+          "type": {
+            "name": "(e: { detail: Record<string, unknown> } & Event) => void"
+          },
+          "desc": [
+            "添加到桌面回调，open-type=\"addShortcut\" 时有效"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "camera",
+      "docLink": "https://mp.kuaishou.com/docs/develop/components/media/camera.html",
+      "attrs": [
+        {
+          "name": "mode",
+          "type": {
+            "name": "'normal' | 'scanCode'"
+          },
+          "desc": [
+            "应用模式，只在初始化时有效，不能动态变更"
+          ],
+          "defaultValue": "'normal'"
+        },
+        {
+          "name": "device-position",
+          "type": {
+            "name": "'front' | 'back'"
+          },
+          "desc": [
+            "摄像头朝向"
+          ],
+          "defaultValue": "'back'"
+        },
+        {
+          "name": "flash",
+          "type": {
+            "name": "'auto' | 'on' | 'off' | 'torch'"
+          },
+          "desc": [
+            "闪光灯，值为 auto, on, off"
+          ],
+          "defaultValue": "'auto'"
+        }
+      ]
+    },
+    {
+      "name": "canvas",
+      "docLink": "https://mp.kuaishou.com/docs/develop/components/canvas/canvas.html",
+      "attrs": [
+        {
+          "name": "canvas-id",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "canvas 组件的唯一标识符"
+          ],
+          "defaultValue": "defaultCanvasId"
+        },
+        {
+          "name": "bindtouchstart",
+          "type": {
+            "name": "(e: { detail: Record<string, unknown> } & Event) => void"
+          },
+          "desc": [
+            "手指触摸动作开始"
+          ]
+        },
+        {
+          "name": "bindtouchmove",
+          "type": {
+            "name": "(e: { detail: Record<string, unknown> } & Event) => void"
+          },
+          "desc": [
+            "手指触摸后移动"
+          ]
+        },
+        {
+          "name": "bindtouchend",
+          "type": {
+            "name": "(e: { detail: Record<string, unknown> } & Event) => void"
+          },
+          "desc": [
+            "手指触摸动作结束"
+          ]
+        },
+        {
+          "name": "bindtouchcancel",
+          "type": {
+            "name": "(e: { detail: Record<string, unknown> } & Event) => void"
+          },
+          "desc": [
+            "手指触摸动作被打断，如来电提醒，弹窗"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "checkbox",
+      "docLink": "https://mp.kuaishou.com/docs/develop/components/form/checkbox.html",
+      "attrs": [
+        {
+          "name": "value",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "checkbox 标识，选中时触发 checkbox-group 的 change 事件，并携带 checkbox 的 value"
+          ]
+        },
+        {
+          "name": "disabled",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否禁用"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "checked",
+          "type": {
+            "name": "string | boolean"
+          },
+          "desc": [
+            "当前是否选中，可用来设置默认选中"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "color",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "checkbox 的颜色，同 css 的 color"
+          ],
+          "defaultValue": "'#fe3666'"
+        },
+        {
+          "name": "checkbox-style",
+          "type": {
+            "name": "'filled' | 'linear'"
+          },
+          "desc": [
+            "checkbox 的样式，默认为linear"
+          ],
+          "defaultValue": "'linear'"
+        },
+        {
+          "name": "shape",
+          "type": {
+            "name": "'square' | 'circle'"
+          },
+          "desc": [
+            "checkbox 的形状，默认为square"
+          ],
+          "defaultValue": "'square'"
+        }
+      ]
+    },
+    {
+      "name": "checkbox-group",
+      "docLink": "https://mp.kuaishou.com/docs/develop/components/form/checkbox-group.html",
+      "attrs": [
+        {
+          "name": "name",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "在表单中的字段名"
+          ]
+        },
+        {
+          "name": "bindchange",
+          "type": {
+            "name": "(e: { detail: { value: any[] } } & Event) => void"
+          },
+          "desc": [
+            "checkbox-group 中选中项发生改变时触发 change 事件，detail = {value:[选中的checkbox的value的数组]}"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "cover-image",
+      "docLink": "https://mp.kuaishou.com/docs/develop/components/view/cover-image.html",
+      "attrs": [
+        {
+          "name": "src",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "图标路径，支持临时路径、网络地址"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "cover-view",
+      "docLink": "https://mp.kuaishou.com/docs/develop/components/view/cover-view.html",
+      "attrs": []
+    },
+    {
+      "name": "follow-service",
+      "docLink": "https://mp.kuaishou.com/docs/develop/components/open/follow-service.html",
+      "attrs": [
+        {
+          "name": "followed-id",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "指定 id，若不提供或校验不通过（一切拉取服务号信息的失败情况），则不显示该组件"
+          ]
+        },
+        {
+          "name": "desc",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "描述文案"
+          ],
+          "defaultValue": "'关注我，及时获取更多动态信息'"
+        },
+        {
+          "name": "theme",
+          "type": {
+            "name": "'normal' | 'thin'"
+          },
+          "desc": [
+            "卡片排版主题"
+          ],
+          "defaultValue": "'normal'"
+        },
+        {
+          "name": "background-color",
+          "type": {
+            "name": "'white' | 'gray'"
+          },
+          "desc": [
+            "组件背景色主题"
+          ],
+          "defaultValue": "'white'"
+        },
+        {
+          "name": "show-close-button",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否显示右侧关闭按钮"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "binderror",
+          "type": {
+            "name": "(e: { detail: { errMsg: string } } & Event) => void"
+          },
+          "desc": [
+            "拉取服务号信息失败时的回调（此时不显示组件）"
+          ]
+        },
+        {
+          "name": "bindfollow",
+          "type": {
+            "name": "(e: { detail: { errMsg: string } } & Event) => void"
+          },
+          "desc": [
+            "点击添加关注回调"
+          ]
+        },
+        {
+          "name": "bindopenprofile",
+          "type": {
+            "name": "(e: { detail: { errMsg: string } } & Event) => void"
+          },
+          "desc": [
+            "跳转服务号主页回调"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "form",
+      "docLink": "https://mp.kuaishou.com/docs/develop/components/form/form.html",
+      "attrs": [
+        {
+          "name": "bindsubmit",
+          "type": {
+            "name": "(e: { detail: { value: Record<string, unknown> } } & Event) => void"
+          },
+          "desc": [
+            "携带 form 中的数据触发 submit 事件，event.detail = { value : {'name': 'value'} }"
+          ]
+        },
+        {
+          "name": "bindreset",
+          "type": {
+            "name": "(e: { detail: Record<string, unknown> } & Event) => void"
+          },
+          "desc": [
+            "表单重置时会触发 reset 事件"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "icon",
+      "docLink": "https://mp.kuaishou.com/docs/develop/components/base/icon.html",
+      "attrs": [
+        {
+          "name": "type",
+          "type": {
+            "name": "'success' | 'success_no_circle' | 'info' | 'warn' | 'waiting' | 'cancel' | 'download' | 'search' | 'clear' | 'loading'"
+          },
+          "desc": [
+            "icon 的类型"
+          ]
+        },
+        {
+          "name": "size",
+          "type": {
+            "name": "string | number"
+          },
+          "desc": [
+            "icon 的大小"
+          ],
+          "defaultValue": "23"
+        },
+        {
+          "name": "color",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "icon 的颜色，同 css 的 color"
+          ],
+          "defaultValue": "'#ff0000'"
+        },
+        {
+          "name": "anim",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否执行动画，仅在 type 为 loading 时生效"
+          ],
+          "defaultValue": "true"
+        }
+      ]
+    },
+    {
+      "name": "image",
+      "docLink": "https://mp.kuaishou.com/docs/develop/components/media/image.html",
+      "attrs": [
+        {
+          "name": "src",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "图片资源地址"
+          ],
+          "defaultValue": "''"
+        },
+        {
+          "name": "mode",
+          "type": {
+            "name": "'center' | 'scaleToFill' | 'aspectFit' | 'aspectFill' | 'widthFix' | 'heightFix' | 'top' | 'bottom' | 'left' | 'right' | 'top left' | 'top right' | 'bottom left' | 'bottom right'"
+          },
+          "desc": [
+            "图片裁剪、缩放的模式"
+          ],
+          "defaultValue": "'scaleToFill'"
+        },
+        {
+          "name": "lazy-load",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "图片懒加载，在即将进入一定范围（上下三屏）时才开始加载"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "binderror",
+          "type": {
+            "name": "(e: { detail: { errMsg: string } } & Event) => void"
+          },
+          "desc": [
+            "当错误发生时触发，event.detail = {errMsg}"
+          ]
+        },
+        {
+          "name": "bindload",
+          "type": {
+            "name": "(e: { detail: { height: number, width: number } } & Event) => void"
+          },
+          "desc": [
+            "当图片载入完毕时触发，event.detail = {height, width}"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "input",
+      "docLink": "https://mp.kuaishou.com/docs/develop/components/form/input.html",
+      "attrs": [
+        {
+          "name": "name",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "在表单中的字段名"
+          ]
+        },
+        {
+          "name": "value",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "输入框的初始内容"
+          ],
+          "defaultValue": "''"
+        },
+        {
+          "name": "type",
+          "type": {
+            "name": "'number' | 'text' | 'idcard' | 'digit'"
+          },
+          "desc": [
+            "input 的类型"
+          ],
+          "defaultValue": "'text'"
+        },
+        {
+          "name": "disabled",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否禁用"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "placeholder",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "输入框为空时占位符"
+          ],
+          "defaultValue": "''"
+        },
+        {
+          "name": "password",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否是密码类型"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "placeholder-style",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "指定 placeholder 的样式"
+          ],
+          "defaultValue": "''"
+        },
+        {
+          "name": "cursor-color",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "光标默认色, 目前支持hex颜色码"
+          ],
+          "defaultValue": "'#FE3666'"
+        },
+        {
+          "name": "auto-focus",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "自动聚焦，拉起键盘"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "focus",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "获取焦点"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "maxlength",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "最大输入长度，设置为 -1 的时候不限制最大长度"
+          ],
+          "defaultValue": "140"
+        },
+        {
+          "name": "confirm-type",
+          "type": {
+            "name": "'search' | 'send' | 'next' | 'go' | 'done'"
+          },
+          "desc": [
+            "设置键盘右下角按钮的文字，仅在 type='text' 时生效"
+          ],
+          "defaultValue": "'done'"
+        },
+        {
+          "name": "bindinput",
+          "type": {
+            "name": "(e: { detail: { value: string, cursor: number, keyCode: number } } & Event) => string | void"
+          },
+          "desc": [
+            "键盘输入时触发，event.detail = {value, cursor, keyCode}，keyCode 为键值，处理函数可以直接 return 一个字符串，将替换输入框的内容。"
+          ]
+        },
+        {
+          "name": "bindfocus",
+          "type": {
+            "name": "(e: { detail: { value: string, height: number } } & Event) => void"
+          },
+          "desc": [
+            "输入框聚焦时触发，event.detail = { value, height }，height 为键盘高度"
+          ]
+        },
+        {
+          "name": "bindblur",
+          "type": {
+            "name": "(e: { detail: { value: string, encryptedValue: string, encryptError: string } } & Event) => void"
+          },
+          "desc": [
+            "输入框失去焦点时触发，event.detail = { value }"
+          ]
+        },
+        {
+          "name": "bindconfirm",
+          "type": {
+            "name": "(e: { detail: { value: string } } & Event) => void"
+          },
+          "desc": [
+            "点击完成按钮时触发，event.detail = { value }"
+          ]
+        },
+        {
+          "name": "bindkeyboardheightchange",
+          "type": {
+            "name": "(e: { detail: { height: number, duration: number } } & Event) => void"
+          },
+          "desc": [
+            "键盘高度发生变化的时候触发此事件，event.detail = {height: height, duration: duration}"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "label",
+      "docLink": "https://mp.kuaishou.com/docs/develop/components/form/label.html",
+      "attrs": []
+    },
+    {
+      "name": "map",
+      "docLink": "https://mp.kuaishou.com/docs/develop/components/map/map.html",
+      "attrs": [
+        {
+          "name": "longitude",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "经度"
+          ]
+        },
+        {
+          "name": "latitude",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "纬度"
+          ]
+        },
+        {
+          "name": "scale",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "缩放级别，取值范围为 3-19"
+          ],
+          "defaultValue": "16"
+        },
+        {
+          "name": "markers",
+          "type": {
+            "name": "Marker[]"
+          },
+          "desc": [
+            "标记点"
+          ],
+          "defaultValue": "[]"
+        },
+        {
+          "name": "circles",
+          "type": {
+            "name": "Circle[]"
+          },
+          "desc": [
+            "圆"
+          ],
+          "defaultValue": "[]"
+        },
+        {
+          "name": "show-location",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否显示当前位置"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "bindregionchange",
+          "type": {
+            "name": "(e: { type: string, detail: Record<string, unknown> } & Event) => void"
+          },
+          "desc": [
+            "视野发生变化时触发"
+          ]
+        },
+        {
+          "name": "bindmarkertap",
+          "type": {
+            "name": "(e: { type: string, detail: Record<string, unknown> } & Event) => void"
+          },
+          "desc": [
+            "点击标记点时触发"
+          ]
+        },
+        {
+          "name": "bindcallouttap",
+          "type": {
+            "name": "(e: { type: string, detail: Record<string, unknown> } & Event) => void"
+          },
+          "desc": [
+            "点击标记点对应的气泡时触发"
+          ]
+        },
+        {
+          "name": "id",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "标记点id"
+          ]
+        },
+        {
+          "name": "title",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "标题"
+          ]
+        },
+        {
+          "name": "icon-path",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "图片路径"
+          ]
+        },
+        {
+          "name": "default-show-title",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "默认展开title"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "custom-callout",
+          "type": {
+            "name": "CallOut"
+          },
+          "desc": [
+            "标记点上方的气泡窗口"
+          ]
+        },
+        {
+          "name": "type",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "样式类型"
+          ]
+        },
+        {
+          "name": "desc-object",
+          "type": {
+            "name": "CallOutContent"
+          },
+          "desc": [
+            "描述信息"
+          ]
+        },
+        {
+          "name": "can-show-on-tap",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "点击默认行为"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "sub-title",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "副文案"
+          ]
+        },
+        {
+          "name": "image-path",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "主图地址"
+          ]
+        },
+        {
+          "name": "right-icon-path",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "右侧图地址"
+          ]
+        },
+        {
+          "name": "show-right-icon",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否显示右侧图片（默认使用右箭头）"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "color",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "边框颜色"
+          ],
+          "defaultValue": "'#5181FBFF'"
+        },
+        {
+          "name": "fill-color",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "填充颜色"
+          ],
+          "defaultValue": "'#5181FB1A'"
+        },
+        {
+          "name": "radius",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "半径，单位“米“"
+          ],
+          "defaultValue": "100"
+        },
+        {
+          "name": "stroke-width",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "边框宽度"
+          ],
+          "defaultValue": "1"
+        }
+      ]
+    },
+    {
+      "name": "movable-area",
+      "docLink": "https://mp.kuaishou.com/docs/develop/components/view/movable-area.html",
+      "attrs": []
+    },
+    {
+      "name": "movable-view",
+      "docLink": "https://mp.kuaishou.com/docs/develop/components/view/movable-view.html",
+      "attrs": [
+        {
+          "name": "direction",
+          "type": {
+            "name": "'all' | 'vertical' | 'horizontal' | 'none'"
+          },
+          "desc": [
+            "movable-view 的移动方向，属性值有 all、vertical、horizontal、none"
+          ],
+          "defaultValue": "'none'"
+        },
+        {
+          "name": "out-of-bounds",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "超过可移动区域后，movable-view 是否还可以移动"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "x",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "定义 x 轴方向的偏移，如果x的值不在可移动范围内，会自动移动到可移动范围；改变 x 的值会触发动画；单位支持 px（默认）、rpx"
+          ]
+        },
+        {
+          "name": "y",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "定义 y 轴方向的偏移，如果y的值不在可移动范围内，会自动移动到可移动范围；改变 y 的值会触发动画；单位支持 px（默认）、rpx"
+          ]
+        },
+        {
+          "name": "disabled",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否禁用"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "scale",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否支持双指缩放，默认缩放手势生效区域是在 movable-view 内"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "scale-min",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "定义缩放倍数最小值"
+          ],
+          "defaultValue": "0.5"
+        },
+        {
+          "name": "scale-max",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "定义缩放倍数最大值"
+          ],
+          "defaultValue": "10"
+        },
+        {
+          "name": "scale-value",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "定义缩放倍数，取值范围为 0.5 - 10"
+          ],
+          "defaultValue": "1"
+        },
+        {
+          "name": "animation",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否使用动画"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "bindchange",
+          "type": {
+            "name": "(e: { detail: { x: number, y: number, source: string } } & Event) => void"
+          },
+          "desc": [
+            "拖动过程中触发的事件，event.detail = {x, y, source}"
+          ]
+        },
+        {
+          "name": "bindscale",
+          "type": {
+            "name": "(e: { detail: { x: number, y: number, scale: number } } & Event) => void"
+          },
+          "desc": [
+            "缩放过程中触发的事件，event.detail = {x, y, scale}"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "navigation-bar",
+      "docLink": "https://mp.kuaishou.com/docs/develop/components/route/navigation-bar.html",
+      "attrs": [
+        {
+          "name": "title",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "导航条标题"
+          ]
+        },
+        {
+          "name": "loading",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否在导航条显示 loading 加载提示"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "front-color",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "导航条前景颜色值，包括按钮、标题、状态栏的颜色，仅支持 #ffffff 和 #000000"
+          ],
+          "defaultValue": "'#000000'"
+        },
+        {
+          "name": "background-color",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "导航条背景颜色值，有效值为十六进制颜色"
+          ],
+          "defaultValue": "'#ffffff'"
+        },
+        {
+          "name": "color-animation-duration",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "改变导航栏颜色时的动画时长"
+          ],
+          "defaultValue": "0"
+        },
+        {
+          "name": "color-animation-timing-func",
+          "type": {
+            "name": "'linear' | 'easeIn' | 'easeOut' | 'easeInOut'"
+          },
+          "desc": [
+            "改变导航栏颜色时的动画方式，支持 linear 、 easeIn 、 easeOut 和 easeInOut"
+          ],
+          "defaultValue": "'linear'"
+        }
+      ]
+    },
+    {
+      "name": "navigator",
+      "docLink": "https://mp.kuaishou.com/docs/develop/components/route/navigator.html",
+      "attrs": [
+        {
+          "name": "target",
+          "type": {
+            "name": "'self' | 'miniProgram'"
+          },
+          "desc": [
+            "在哪个目标上发生跳转，默认当前小程序"
+          ],
+          "defaultValue": "'self'"
+        },
+        {
+          "name": "url",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "当前小程序内的跳转链接"
+          ]
+        },
+        {
+          "name": "open-type",
+          "type": {
+            "name": "'navigate' | 'redirect' | 'switchTab' | 'reLaunch' | 'navigateBack' | 'exit'"
+          },
+          "desc": [
+            "跳转方式"
+          ],
+          "defaultValue": "'navigate'"
+        },
+        {
+          "name": "delta",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "当 open-type 为 'navigateBack' 时有效，表示回退的层数"
+          ],
+          "defaultValue": "1"
+        },
+        {
+          "name": "app-id",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "当 target=\"miniProgram\" 时有效，要打开的小程序 appId"
+          ]
+        },
+        {
+          "name": "path",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "当 target=\"miniProgram\" 时有效，打开的页面路径，如果为空则打开首页"
+          ]
+        },
+        {
+          "name": "extra-data",
+          "type": {
+            "name": "Record<string | number | symbol, unknown>"
+          },
+          "desc": [
+            "当 target=\"miniProgram\" 时有效，需要传递给目标小程序的数据，目标小程序可在 App.onLaunch()，App.onShow() 中获取到这份数据。"
+          ]
+        },
+        {
+          "name": "version",
+          "type": {
+            "name": "'develop' | 'trial' | 'release'"
+          },
+          "desc": [
+            "当 target=\"miniProgram\" 时有效，要打开的小程序版本"
+          ],
+          "defaultValue": "'release'"
+        },
+        {
+          "name": "hover-class",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "指定点击时的样式类，当 hover-class=\"none\" 时，没有点击态效果"
+          ],
+          "defaultValue": "'navigator-hover'"
+        },
+        {
+          "name": "hover-stop-propagation",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "指定是否阻止本节点的祖先节点出现点击态"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "hover-start-time",
+          "type": {
+            "name": "string | number"
+          },
+          "desc": [
+            "按住后多久出现点击态，单位毫秒"
+          ],
+          "defaultValue": "50"
+        },
+        {
+          "name": "hover-stay-time",
+          "type": {
+            "name": "string | number"
+          },
+          "desc": [
+            "手指松开后点击态保留时间，单位毫秒"
+          ],
+          "defaultValue": "600"
+        }
+      ]
+    },
+    {
+      "name": "page-meta",
+      "docLink": "https://mp.kuaishou.com/docs/develop/components/base/page-meta.html",
+      "attrs": [
+        {
+          "name": "background-text-style",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "下拉背景字体、loading 图的样式，仅支持 dark 和 light"
+          ]
+        },
+        {
+          "name": "background-color",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "窗口的背景色，必须为十六进制颜色值"
+          ]
+        },
+        {
+          "name": "background-color-top",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "顶部窗口的背景色，必须为十六进制颜色值"
+          ]
+        },
+        {
+          "name": "background-color-bottom",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "底部窗口的背景色，必须为十六进制颜色值"
+          ]
+        },
+        {
+          "name": "root-background-color",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "页面内容的背景色，用于页面中的空白部分和页面大小变化 resize 动画期间\b的临时空闲区域"
+          ]
+        },
+        {
+          "name": "scroll-top",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "滚动位置，可以使用 px 或者 rpx 为单位，在被设置时，页面会滚动到对应位置"
+          ]
+        },
+        {
+          "name": "scroll-duration",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "滚动动画时长"
+          ],
+          "defaultValue": "300"
+        },
+        {
+          "name": "page-style",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "页面根节点样式"
+          ]
+        },
+        {
+          "name": "page-font-size",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "页面 page 的字体大小，可以设置为 system ，表示使用当前用户设置的快手字体大小"
+          ]
+        },
+        {
+          "name": "root-font-size",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "页面的根字体大小，页面中的所有 rem 单位，将使用这个字体大小作为参考值, 也可以设置为 system"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "payment-list",
+      "docLink": "https://mp.kuaishou.com/docs/develop/components/open/payment-list.html",
+      "attrs": [
+        {
+          "name": "theme-color",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "选中状态下的按钮背景色"
+          ],
+          "defaultValue": "'#FE3666'"
+        },
+        {
+          "name": "pay-scene",
+          "type": {
+            "name": "'SINGLE' | 'RENEW'"
+          },
+          "desc": [
+            "支付场景值"
+          ],
+          "defaultValue": "'SINGLE'"
+        },
+        {
+          "name": "bindchange",
+          "type": {
+            "name": "(e: { detail: { provider: string, provider_channel_type: string } } & Event) => void"
+          },
+          "desc": [
+            "点击更新选择的支付渠道触发"
+          ]
+        },
+        {
+          "name": "binderror",
+          "type": {
+            "name": "(e: { detail: { errMsg: string } } & Event) => void"
+          },
+          "desc": [
+            "组件初始化失败触发"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "picker",
+      "docLink": "https://mp.kuaishou.com/docs/develop/components/form/picker.html",
+      "attrs": [
+        {
+          "name": "name",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "在表单中的字段名"
+          ]
+        },
+        {
+          "name": "mode",
+          "type": {
+            "name": "'region'"
+          },
+          "desc": [
+            "选择器类型"
+          ]
+        },
+        {
+          "name": "disabled",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否禁用"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "bindcancel",
+          "type": {
+            "name": "(e: { detail: Record<string, unknown> } & Event) => void"
+          },
+          "desc": [
+            "取消选择时触发"
+          ]
+        },
+        {
+          "name": "range",
+          "type": {
+            "name": "(string | Record<string, string>)[][]"
+          },
+          "desc": [
+            "mode 为 selector 或 multiSelector 时，range 有效"
+          ],
+          "defaultValue": "[]"
+        },
+        {
+          "name": "range-key",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "当 range 是一个 Object Array 时，通过 range-key 来指定 Object 中 key 的值作为选择器显示内容"
+          ]
+        },
+        {
+          "name": "value",
+          "type": {
+            "name": "string[]"
+          },
+          "desc": [
+            "表示选中的省市区，默认选中每一列的第一个值"
+          ],
+          "defaultValue": "[]"
+        },
+        {
+          "name": "bindchange",
+          "type": {
+            "name": "(e: { detail: { value: string[], code: string[], postcode: string } } & Event) => void"
+          },
+          "desc": [
+            "value 改变时触发 change 事件，event.detail = {value, code, postcode}，其中字段 code 是统计用区划代码，postcode 是邮政编码"
+          ]
+        },
+        {
+          "name": "bindcolumnchange",
+          "type": {
+            "name": "(e: { detail: { value: number, column: number } } & Event) => void"
+          },
+          "desc": [
+            "列改变时触发"
+          ]
+        },
+        {
+          "name": "start",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "表示有效日期范围的开始，字符串格式为\"YYYY-MM-DD\""
+          ]
+        },
+        {
+          "name": "end",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "表示有效日期范围的结束，字符串格式为\"YYYY-MM-DD\""
+          ]
+        },
+        {
+          "name": "fields",
+          "type": {
+            "name": "'day' | 'month' | 'year'"
+          },
+          "desc": [
+            "有效值 year,month,day，表示选择器的粒度"
+          ],
+          "defaultValue": "'day'"
+        },
+        {
+          "name": "custom-item",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "可为每一列的顶部添加一个自定义的项"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "picker-view",
+      "docLink": "https://mp.kuaishou.com/docs/develop/components/form/picker-view.html",
+      "attrs": [
+        {
+          "name": "name",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "在表单中的字段名"
+          ]
+        },
+        {
+          "name": "value",
+          "type": {
+            "name": "number[]"
+          },
+          "desc": [
+            "数组中的数字依次表示 picker-view 内的 picker-view-column 选择的第几项（下标从 0 开始），数字大于 picker-view-column 可选项长度时，选择最后一项。"
+          ]
+        },
+        {
+          "name": "indicator-style",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "设置选择器中间选中框的样式"
+          ]
+        },
+        {
+          "name": "indicator-class",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "设置选择器中间选中框的类名"
+          ]
+        },
+        {
+          "name": "mask-style",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "设置蒙层的样式"
+          ]
+        },
+        {
+          "name": "mask-class",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "设置蒙层的类名"
+          ]
+        },
+        {
+          "name": "bindchange",
+          "type": {
+            "name": "(e: { detail: { value: number[] } } & Event) => void"
+          },
+          "desc": [
+            "滚动选择时触发 change 事件，event.detail = {value}；value 为数组，表示 picker-view 内的 picker-view-column 当前选择的是第几项（下标从 0 开始）"
+          ]
+        },
+        {
+          "name": "bindpickstart",
+          "type": {
+            "name": "(e: { detail: Record<string, unknown> } & Event) => void"
+          },
+          "desc": [
+            "当滚动选择开始时候触发事件"
+          ]
+        },
+        {
+          "name": "bindpickend",
+          "type": {
+            "name": "(e: { detail: Record<string, unknown> } & Event) => void"
+          },
+          "desc": [
+            "当滚动选择结束时候触发事件"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "picker-view-column",
+      "docLink": "https://mp.kuaishou.com/docs/develop/components/form/picker-view-column.html",
+      "attrs": []
+    },
+    {
+      "name": "progress",
+      "docLink": "https://mp.kuaishou.com/docs/develop/components/base/progress.html",
+      "attrs": [
+        {
+          "name": "percent",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "百分比 0~100"
+          ]
+        },
+        {
+          "name": "show-info",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "在进度条右侧显示百分比"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "border-radius",
+          "type": {
+            "name": "string | number"
+          },
+          "desc": [
+            "圆角大小"
+          ],
+          "defaultValue": "0"
+        },
+        {
+          "name": "font-size",
+          "type": {
+            "name": "string | number"
+          },
+          "desc": [
+            "右侧百分比字体大小"
+          ],
+          "defaultValue": "16"
+        },
+        {
+          "name": "stroke-width",
+          "type": {
+            "name": "string | number"
+          },
+          "desc": [
+            "进度条线的宽度"
+          ],
+          "defaultValue": "6"
+        },
+        {
+          "name": "color",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "进度条颜色（请使用 activeColor）"
+          ],
+          "defaultValue": "'#09BB07'"
+        },
+        {
+          "name": "active-color",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "已选择的进度条的颜色"
+          ],
+          "defaultValue": "'#09BB07'"
+        },
+        {
+          "name": "background-color",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "未选择的进度条的颜色"
+          ],
+          "defaultValue": "'#EBEBEB'"
+        },
+        {
+          "name": "active",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "进度条从左往右的动画"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "active-mode",
+          "type": {
+            "name": "'backwards' | 'forwards'"
+          },
+          "desc": [
+            "backwards: 动画从头播; forwards: 动画从上次结束点接着播"
+          ],
+          "defaultValue": "'backwards'"
+        },
+        {
+          "name": "duration",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "进度增加 1% 所需毫秒"
+          ],
+          "defaultValue": "30"
+        }
+      ]
+    },
+    {
+      "name": "radio",
+      "docLink": "https://mp.kuaishou.com/docs/develop/components/form/radio.html",
+      "attrs": [
+        {
+          "name": "name",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "在表单中的字段名"
+          ]
+        },
+        {
+          "name": "value",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "radio 标识。当该 radio 选中时，radio-group 的 change 事件会携带 radio 的 value"
+          ],
+          "defaultValue": "''"
+        },
+        {
+          "name": "checked",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "当前是否选中"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "disabled",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否禁用"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "color",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "radio 的颜色，同 css 的 color"
+          ],
+          "defaultValue": "'#fe3666'"
+        },
+        {
+          "name": "radio-style",
+          "type": {
+            "name": "'filled' | 'linear'"
+          },
+          "desc": [
+            "radio 样式"
+          ],
+          "defaultValue": "'filled'"
+        }
+      ]
+    },
+    {
+      "name": "radio-group",
+      "docLink": "https://mp.kuaishou.com/docs/develop/components/form/radio-group.html",
+      "attrs": [
+        {
+          "name": "name",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "在表单中的字段名"
+          ]
+        },
+        {
+          "name": "bindchange",
+          "type": {
+            "name": "(e: { detail: { value: string[] } } & Event) => void"
+          },
+          "desc": [
+            "radio-group 中选中项发生改变时触发 change 事件，detail = {value:[选中的 radio 的 value 的数组]}"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "rich-text",
+      "docLink": "https://mp.kuaishou.com/docs/develop/components/base/rich-text.html",
+      "attrs": [
+        {
+          "name": "nodes",
+          "type": {
+            "name": "string | PropNode<'a' | 'abbr' | 'address' | 'article' | 'aside' | 'b' | 'bdi' | 'bdo' | 'big' | 'blockquote' | 'br' | 'caption' | 'center' | 'cite' | 'code' | 'col' | 'colgroup' | 'dd' | 'del' | 'div' | 'dl' | 'dt' | 'em' | 'fieldset' | 'font' | 'footer' | 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'header' | 'hr' | 'i' | 'img' | 'ins' | 'label' | 'legend' | 'li' | 'mark' | 'nav' | 'ol' | 'p' | 'pre' | 'q' | 'rt' | 'ruby' | 's' | 'section' | 'small' | 'span' | 'strong' | 'sub' | 'sup' | 'table' | 'tbody' | 'td' | 'tfoot' | 'th' | 'thead' | 'tr' | 'tt' | 'u' | 'ul'>[]"
+          },
+          "desc": [
+            "节点列表/HTML String"
+          ],
+          "defaultValue": "[]"
+        },
+        {
+          "name": "space",
+          "type": {
+            "name": "'ensp' | 'emsp' | 'nbsp'"
+          },
+          "desc": [
+            "显示连续空格"
+          ]
+        },
+        {
+          "name": "name",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "标签名"
+          ]
+        },
+        {
+          "name": "attrs",
+          "type": {
+            "name": "object"
+          },
+          "desc": [
+            "属性"
+          ]
+        },
+        {
+          "name": "children",
+          "type": {
+            "name": "array"
+          },
+          "desc": [
+            "子节点列表"
+          ]
+        },
+        {
+          "name": "text",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "文本"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "scroll-view",
+      "docLink": "https://mp.kuaishou.com/docs/develop/components/view/scroll-view.html",
+      "attrs": [
+        {
+          "name": "scroll-x",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "允许横向滚动"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "scroll-y",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "允许纵向滚动"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "upper-threshold",
+          "type": {
+            "name": "string | number"
+          },
+          "desc": [
+            "距顶部/左边多远时，触发 scrolltoupper 事件"
+          ],
+          "defaultValue": "50"
+        },
+        {
+          "name": "lower-threshold",
+          "type": {
+            "name": "string | number"
+          },
+          "desc": [
+            "距底部/右边多远时，触发 scrolltolower 事件"
+          ],
+          "defaultValue": "50"
+        },
+        {
+          "name": "scroll-top",
+          "type": {
+            "name": "string | number"
+          },
+          "desc": [
+            "设置竖向滚动条位置"
+          ],
+          "defaultValue": "0"
+        },
+        {
+          "name": "scroll-left",
+          "type": {
+            "name": "string | number"
+          },
+          "desc": [
+            "设置横向滚动条位置"
+          ],
+          "defaultValue": "0"
+        },
+        {
+          "name": "scroll-into-view",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "值应为某子元素 id（id不能以数字开头）。设置哪个方向可滚动，则在哪个方向滚动到该元素"
+          ]
+        },
+        {
+          "name": "scroll-with-animation",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "在设置滚动条位置时使用动画过渡"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "show-scrollbar",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "滚动条显隐控制"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "bindscrolltoupper",
+          "type": {
+            "name": "(e: { detail: Record<string, unknown> } & Event) => void"
+          },
+          "desc": [
+            "滚动到顶部/左边时触发"
+          ]
+        },
+        {
+          "name": "bindscrolltolower",
+          "type": {
+            "name": "(e: { detail: Record<string, unknown> } & Event) => void"
+          },
+          "desc": [
+            "滚动到底部/右边时触发"
+          ]
+        },
+        {
+          "name": "bindscroll",
+          "type": {
+            "name": "(e: { detail: { scrollLeft: number, scrollTop: number, scrollHeight: number, scrollWidth: number, deltaX: number, deltaY: number } } & Event) => void"
+          },
+          "desc": [
+            "滚动时触发，event.detail = {scrollLeft, scrollTop, scrollHeight, scrollWidth, deltaX, deltaY}"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "slider",
+      "docLink": "https://mp.kuaishou.com/docs/develop/components/form/slider.html",
+      "attrs": [
+        {
+          "name": "name",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "在表单中的字段名"
+          ]
+        },
+        {
+          "name": "min",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "最小值"
+          ],
+          "defaultValue": "0"
+        },
+        {
+          "name": "max",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "最大值"
+          ],
+          "defaultValue": "100"
+        },
+        {
+          "name": "step",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "步长，取值必须大于 0，并且可被(max - min)整除"
+          ],
+          "defaultValue": "1"
+        },
+        {
+          "name": "disabled",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否禁用"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "value",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "当前取值"
+          ],
+          "defaultValue": "0"
+        },
+        {
+          "name": "color",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "背景条的颜色（请使用 backgroundColor）"
+          ],
+          "defaultValue": "'#e9e9e9'"
+        },
+        {
+          "name": "selected-color",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "已选择的颜色（请使用 activeColor）"
+          ],
+          "defaultValue": "'#1aad19'"
+        },
+        {
+          "name": "active-color",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "已选择的颜色"
+          ],
+          "defaultValue": "'#1aad19'"
+        },
+        {
+          "name": "background-color",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "背景条的颜色"
+          ],
+          "defaultValue": "'#e9e9e9'"
+        },
+        {
+          "name": "block-size",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "滑块的大小，取值范围为 12 - 28"
+          ],
+          "defaultValue": "28"
+        },
+        {
+          "name": "block-color",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "滑块的颜色"
+          ],
+          "defaultValue": "'#ffffff'"
+        },
+        {
+          "name": "show-value",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否显示当前 value"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "bindchange",
+          "type": {
+            "name": "(e: { detail: { value: number } } & Event) => void"
+          },
+          "desc": [
+            "完成一次拖动后触发的事件，event.detail = {value}"
+          ]
+        },
+        {
+          "name": "bindchanging",
+          "type": {
+            "name": "(e: { detail: { value: number } } & Event) => void"
+          },
+          "desc": [
+            "拖动过程中触发的事件，event.detail = {value}"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "swiper",
+      "docLink": "https://mp.kuaishou.com/docs/develop/components/view/swiper.html",
+      "attrs": [
+        {
+          "name": "indicator-dots",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否显示面板指示点"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "indicator-style",
+          "type": {
+            "name": "'dot' | 'common'"
+          },
+          "desc": [
+            "指示点样式，默认为dot"
+          ],
+          "defaultValue": "'dot'"
+        },
+        {
+          "name": "indicator-color",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "指示点颜色, indicatorStyle='dot'时默认值为#C6C6C6, indicatorStyle='common'时默认值为#ffffff80"
+          ],
+          "defaultValue": "''"
+        },
+        {
+          "name": "indicator-active-color",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "当前选中的指示点颜色,indicatorStyle='dot'时默认值为#000000, indicatorStyle='common'时默认值为#ffffff"
+          ],
+          "defaultValue": "''"
+        },
+        {
+          "name": "autoplay",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否自动切换"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "current",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "当前所在滑块的 index"
+          ],
+          "defaultValue": "0"
+        },
+        {
+          "name": "interval",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "自动切换时间间隔"
+          ],
+          "defaultValue": "5000"
+        },
+        {
+          "name": "duration",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "滑动动画时长"
+          ],
+          "defaultValue": "500"
+        },
+        {
+          "name": "circular",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否采用衔接滑动"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "vertical",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "滑动方向是否为纵向"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "easing-function",
+          "type": {
+            "name": "'default' | 'linear' | 'easeInCubic' | 'easeOutCubic' | 'easeInOutCubic'"
+          },
+          "desc": [
+            "指定 swiper 切换缓动动画类型"
+          ],
+          "defaultValue": "'default'"
+        },
+        {
+          "name": "placement",
+          "type": {
+            "name": "'inner' | 'outer'"
+          },
+          "desc": [
+            "指定指示器位置"
+          ],
+          "defaultValue": "'inner'"
+        },
+        {
+          "name": "indicator-show-number",
+          "type": {
+            "name": "number | 'fit'"
+          },
+          "desc": [
+            "指定指示器显示个数，默认为5，为\"fit\"为当前SwiperItem个数。仅对indicatorStyle=\"dot\"生效"
+          ],
+          "defaultValue": "5"
+        },
+        {
+          "name": "bindchange",
+          "type": {
+            "name": "(e: { detail: { current: number, source: 'touch' | 'autoplay' } } & Event) => void"
+          },
+          "desc": [
+            "current 改变时会触发 change 事件，event.detail = {current, source}"
+          ]
+        },
+        {
+          "name": "bindtransition",
+          "type": {
+            "name": "(e: { detail: { dx: number, dy: number } } & Event) => void"
+          },
+          "desc": [
+            "swiper-item 的位置发生改变时会触发 transition 事件，event.detail = {dx: dx, dy: dy}"
+          ]
+        },
+        {
+          "name": "bindanimationfinish",
+          "type": {
+            "name": "(e: { detail: { dx: number, dy: number } } & Event) => void"
+          },
+          "desc": [
+            "动画结束时会触发 animationfinish 事件，event.detail 同上"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "swiper-item",
+      "docLink": "https://mp.kuaishou.com/docs/develop/components/view/swiper-item.html",
+      "attrs": []
+    },
+    {
+      "name": "switch",
+      "docLink": "https://mp.kuaishou.com/docs/develop/components/form/switch.html",
+      "attrs": [
+        {
+          "name": "name",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "在表单中的字段名"
+          ]
+        },
+        {
+          "name": "checked",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否选中"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "disabled",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否禁用"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "color",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "switch 的颜色，同 css 的 color"
+          ],
+          "defaultValue": "''"
+        },
+        {
+          "name": "type",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "样式，有效值：switch, checkbox"
+          ],
+          "defaultValue": "'switch'"
+        },
+        {
+          "name": "bindchange",
+          "type": {
+            "name": "(e: { detail: { value: boolean } } & Event) => void"
+          },
+          "desc": [
+            "checked 改变时触发 change 事件，event.detail={value}"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "text",
+      "docLink": "https://mp.kuaishou.com/docs/develop/components/base/text.html",
+      "attrs": [
+        {
+          "name": "selectable",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "文本是否可选"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "space",
+          "type": {
+            "name": "'ensp' | 'emsp' | 'nbsp'"
+          },
+          "desc": [
+            "显示连续空格"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "textarea",
+      "docLink": "https://mp.kuaishou.com/docs/develop/components/form/textarea.html",
+      "attrs": [
+        {
+          "name": "name",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "在表单中的字段名"
+          ]
+        },
+        {
+          "name": "value",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "输入框的内容"
+          ],
+          "defaultValue": "''"
+        },
+        {
+          "name": "maxlength",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "最大输入长度，设置为 -1 的时候不限制最大长度"
+          ],
+          "defaultValue": "140"
+        },
+        {
+          "name": "disabled",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否禁用"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "placeholder",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "输入框为空时占位符"
+          ],
+          "defaultValue": "''"
+        },
+        {
+          "name": "placeholder-style",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "指定 placeholder 的样式，目前仅支持 color , font-size 和 font-weight"
+          ],
+          "defaultValue": "''"
+        },
+        {
+          "name": "auto-focus",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "自动聚焦，拉起键盘。"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "focus",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "获取焦点"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "fixed",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "如果 textarea 是在一个 position:fixed 的区域，需要显示指定属性 fixed 为 true"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "cursor-color",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "光标默认色, 目前支持hex颜色码"
+          ],
+          "defaultValue": "'#FE3666'"
+        },
+        {
+          "name": "auto-height",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否自动增高，设置 auto-height 时，style.height 不生效"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "confirm-type",
+          "type": {
+            "name": "'search' | 'send' | 'next' | 'go' | 'done' | 'return'"
+          },
+          "desc": [
+            "设置键盘右下角按钮的文字"
+          ],
+          "defaultValue": "'return'"
+        },
+        {
+          "name": "bindfocus",
+          "type": {
+            "name": "(e: { detail: { value: string, height: number } } & Event) => void"
+          },
+          "desc": [
+            "输入框聚焦时触发，event.detail = {}"
+          ]
+        },
+        {
+          "name": "bindblur",
+          "type": {
+            "name": "(e: { detail: { value: string, cursor: number } } & Event) => void"
+          },
+          "desc": [
+            "输入框失去焦点时触发，event.detail = {value}"
+          ]
+        },
+        {
+          "name": "bindinput",
+          "type": {
+            "name": "(e: { detail: { value: string, cursor: number, keyCode: number } } & Event) => void"
+          },
+          "desc": [
+            "当键盘输入时，触发 input 事件，event.detail = {value, cursor, keyCode}，keyCode 为键值，目前工具还不支持返回 keyCode 参数。bindinput 处理函数的返回值并不会反映到 textarea 上"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "video",
+      "docLink": "https://mp.kuaishou.com/docs/develop/components/media/video.html",
+      "attrs": [
+        {
+          "name": "src",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "要播放视频的资源地址，支持网络路径、本地临时路径"
+          ]
+        },
+        {
+          "name": "controls",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "控制所有的控件展示与隐藏(除了全屏的返回按钮)。"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "autoplay",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否自动播放"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "loop",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否循环播放"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "muted",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否静音播放"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "initial-time",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "指定视频初始播放位置（未设置definition时有效）"
+          ],
+          "defaultValue": "0"
+        },
+        {
+          "name": "page-gesture",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "在非全屏模式下，是否开启亮度与音量调节手势（废弃，见 vslide-gesture）"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "vslide-gesture",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "在非全屏模式下，是否开启亮度与音量调节手势（同 page-gesture）"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "direction",
+          "type": {
+            "name": "0 | 90 | -90"
+          },
+          "desc": [
+            "设置全屏时视频的方向"
+          ]
+        },
+        {
+          "name": "show-progress",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "控制进度条（包含左右两端的时间文字）的隐藏与展示，小屏和横竖屏全屏均生效。"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "show-bottom-controls",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "控制整个控制条区域（包括播放/暂停、进度条、全屏按钮、静音按钮、倍速按钮等）的显示与隐藏 (仅在全屏下生效)。"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "show-fullscreen-btn",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否显示全屏按钮，仅在小屏状态下显示，全屏状态下通过标题旁边的箭头退出全屏"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "show-play-btn",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否显示视频底部控制栏的播放按钮，仅在全屏时显示"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "enable-progress-gesture",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否开启控制进度的手势"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "object-fit",
+          "type": {
+            "name": "'contain' | 'fill' | 'cover'"
+          },
+          "desc": [
+            "当视频大小与 video 容器大小不一致时，视频的表现形式"
+          ],
+          "defaultValue": "'contain'"
+        },
+        {
+          "name": "poster",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "视频封面的图片网络资源地址，若 controls 属性值为 false 则设置 poster 无效"
+          ]
+        },
+        {
+          "name": "show-mute-btn",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否显示静音按钮，仅在全屏时显示"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "title",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "视频的标题，全屏时在顶部展示"
+          ]
+        },
+        {
+          "name": "play-btn-position",
+          "type": {
+            "name": "'center' | 'bottom'"
+          },
+          "desc": [
+            "播放按钮的位置(仅Android支持)"
+          ],
+          "defaultValue": "'bottom'"
+        },
+        {
+          "name": "enable-play-gesture",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否开启播放手势，即双击切换播放/暂停"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "vslide-gesture-in-fullscreen",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "在全屏模式下，是否开启亮度与音量调节手势"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "show-screen-lock-button",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否显示锁屏按钮，仅在全屏时显示"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "show-playback-rate-btn",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否显示倍速控件。点击倍速控件后可选择倍速，可选值： 0.5/0.75/1.0/1.25/1.5/2"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "show-bottom-progress",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "控制小屏场景下所有控件消失后展示的红色进度条的显示与隐藏。"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "enable-long-press-forward",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否允许长按倍速功能。"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "show-center-play-btn",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否显示视频中间的播放按钮。"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "show-casting-button",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "显示投屏按钮。安卓在同层渲染下生效，支持 DLNA 协议。可以通过VideoContext的相关方法进行操作。"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "referrer-policy",
+          "type": {
+            "name": "'origin' | 'no-referrer'"
+          },
+          "desc": [
+            "格式固定为 https://miniapi.ksapisrv.com/{appid}/{version}/page-frame.html，其中 {appid} 为小程序的 appid，{version} 为小程序的版本号，版本号为 0 表示为开发版、体验版以及审核版本，版本号为 devtools 表示为开发者工具，其余为正式版本；"
+          ],
+          "defaultValue": "'no-referrer'"
+        },
+        {
+          "name": "definition",
+          "type": {
+            "name": "Definition"
+          },
+          "desc": [
+            "清晰度，设置清晰度列表和默认播放的清晰度。切换清晰度按钮仅在全屏时展示，属性说明详见 文档下面的 Definition 类型说明。需要保证 src 和 definition 中有一个为必填，若同时设置了 src 和 definition，definition 优先级高于 src。"
+          ]
+        },
+        {
+          "name": "bindplay",
+          "type": {
+            "name": "(e: { detail: Record<string, unknown> } & Event) => void"
+          },
+          "desc": [
+            "当开始/继续播放时触发 play 事件"
+          ]
+        },
+        {
+          "name": "bindpause",
+          "type": {
+            "name": "(e: { detail: Record<string, unknown> } & Event) => void"
+          },
+          "desc": [
+            "当暂停播放时触发 pause 事件"
+          ]
+        },
+        {
+          "name": "bindended",
+          "type": {
+            "name": "(e: { detail: Record<string, unknown> } & Event) => void"
+          },
+          "desc": [
+            "当播放到末尾时触发 ended 事件"
+          ]
+        },
+        {
+          "name": "bindtimeupdate",
+          "type": {
+            "name": "(e: { detail: Record<string, unknown> } & Event) => void"
+          },
+          "desc": [
+            "播放进度变化时触发，event.detail = {currentTime, duration} 。触发频率 250ms 一次"
+          ]
+        },
+        {
+          "name": "bindfullscreenchange",
+          "type": {
+            "name": "(e: { detail: Record<string, unknown> } & Event) => void"
+          },
+          "desc": [
+            "视频进入和退出全屏时触发，event.detail = {fullScreen, direction}，direction 有效值为 vertical 或 horizontal"
+          ]
+        },
+        {
+          "name": "binderror",
+          "type": {
+            "name": "(e: { detail: Record<string, unknown> } & Event) => void"
+          },
+          "desc": [
+            "视频播放出错时触发"
+          ]
+        },
+        {
+          "name": "bindrendererror",
+          "type": {
+            "name": "(e: { detail: { videoPlayerId: string, errorCode: number, errMsg: string } } & Event) => void"
+          },
+          "desc": [
+            "同层失败时触发"
+          ]
+        },
+        {
+          "name": "bindcastinguserselect",
+          "type": {
+            "name": "(e: { detail: Record<string, unknown> } & Event) => void"
+          },
+          "desc": [
+            "用户选择投屏设备时触发 detail = { state: \"success\"/\"fail\" }"
+          ]
+        },
+        {
+          "name": "bindcastingstatechange",
+          "type": {
+            "name": "(e: { detail: Record<string, unknown> } & Event) => void"
+          },
+          "desc": [
+            "投屏成功/失败时触发 detail = { state: \"success\"/\"fail\" }"
+          ]
+        },
+        {
+          "name": "bindcastinginterrupt",
+          "type": {
+            "name": "(e: { detail: Record<string, unknown> } & Event) => void"
+          },
+          "desc": [
+            "投屏被中断时触发"
+          ]
+        },
+        {
+          "name": "bindloadedmetadata",
+          "type": {
+            "name": "(e: { detail: Record<string, unknown> } & Event) => void"
+          },
+          "desc": [
+            "视频元数据加载完成时触发。detail = { width, height, duration }"
+          ]
+        },
+        {
+          "name": "default-definition",
+          "type": {
+            "name": "'4K' | '2K' | '1080P' | '720P' | '480P' | '360P'"
+          },
+          "desc": [
+            "默认播放的清晰度，可选值：'360P' / '480P' / '720P' / '1080P' / '2K' / '4K'。没有设置时，会以 list 列表中设置的最高清晰度作为默认值播放。"
+          ]
+        },
+        {
+          "name": "list",
+          "type": {
+            "name": "DefinitionListItem[]"
+          },
+          "desc": [
+            "清晰度列表"
+          ]
+        },
+        {
+          "name": "name",
+          "type": {
+            "name": "'4K' | '2K' | '1080P' | '720P' | '480P' | '360P'"
+          },
+          "desc": [
+            "url 对应的清晰度，可选值：'360P' / '480P' / '720P' / '1080P' / '2K' / '4K'。"
+          ]
+        },
+        {
+          "name": "url",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "对应清晰度的视频播放链接，需要以 'http://'、'https://'、'kwfile://' 或 'file://' 开头。"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "view",
+      "docLink": "https://mp.kuaishou.com/docs/develop/components/view/view.html",
+      "attrs": [
+        {
+          "name": "hover-class",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "指定按下去的样式类。当 hover-class=\"none\" 时，没有点击态效果"
+          ],
+          "defaultValue": "'none'"
+        },
+        {
+          "name": "hover-stop-propagation",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "指定是否阻止本节点的祖先节点出现点击态"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "hover-start-time",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "按住后多久出现点击态，单位毫秒"
+          ],
+          "defaultValue": "50"
+        },
+        {
+          "name": "hover-stay-time",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "手指松开后点击态保留时间，单位毫秒"
+          ],
+          "defaultValue": "400"
+        }
+      ]
+    },
+    {
+      "name": "web-view",
+      "docLink": "https://mp.kuaishou.com/docs/develop/components/open/web-view.html",
+      "attrs": [
+        {
+          "name": "src",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "webview 指向网页的链接"
+          ]
+        },
+        {
+          "name": "bindmessage",
+          "type": {
+            "name": "(e: { detail: { data: Record<string, unknown> } } & Event) => void"
+          },
+          "desc": [
+            "网页向小程序 postMessage 时，会在特定时机（小程序后退、组件销毁、分享）触发并收到消息。e.detail = { data }，data是多次 postMessage 的参数组成的数组"
+          ]
+        },
+        {
+          "name": "bindload",
+          "type": {
+            "name": "(e: { detail: { src: string } } & Event) => void"
+          },
+          "desc": [
+            "网页加载成功时候触发此事件。e.detail = { src }"
+          ]
+        },
+        {
+          "name": "binderror",
+          "type": {
+            "name": "(e: { detail: { src: string } } & Event) => void"
+          },
+          "desc": [
+            "网页加载失败的时候触发此事件。e.detail = { src }"
+          ]
+        }
+      ]
+    }
+  ]
+}

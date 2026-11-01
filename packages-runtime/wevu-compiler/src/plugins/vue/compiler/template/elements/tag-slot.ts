@@ -260,7 +260,7 @@ export function createScopedSlotComponent(
   })
   if (scopedContext.classStyleWxs) {
     const ext = scopedContext.classStyleWxsExtension || 'wxs'
-    const helperTag = buildClassStyleWxsTag(ext, scopedContext.classStyleWxsSrc)
+    const helperTag = buildClassStyleWxsTag(ext, scopedContext.classStyleWxsSrc, scopedContext.platform.name)
     template = `${helperTag}\n${template}`
   }
   asset.template = template

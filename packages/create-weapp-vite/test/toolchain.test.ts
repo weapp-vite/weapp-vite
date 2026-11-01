@@ -48,9 +48,9 @@ describe('scaffold toolchain selection', () => {
     expect(pkg.devDependencies?.vite).toBe(`npm:@voidzero-dev/vite-plus-core@${version}`)
     expect(pkg.overrides?.vite).toBe(pkg.devDependencies?.vite)
     expect(workspace.overrides.vite).toBe(pkg.devDependencies?.vite)
-    expect(workspace.overrides.vitest).toBe('5.0.1')
-    expect(pkg.overrides?.vitest).toBe('5.0.1')
-    expect(workspace.peerDependencyRules.allowedVersions).toEqual({ vite: '1.0.0' })
+    expect(workspace.overrides.vitest).toBe('5.0.4')
+    expect(pkg.overrides?.vitest).toBe('5.0.4')
+    expect(workspace.peerDependencyRules.allowedVersions).toEqual({ vite: '1.2.0' })
     expect(workspace.allowBuilds.rolldown).toBe(true)
     expect(pkg.engines?.node).toBe('^24.22.1 || >=26.12.1')
     expect(await fs.readFile(path.join(root, 'vite.config.ts'), 'utf8')).toContain('from \'vite-plus\'')
@@ -94,12 +94,12 @@ describe('scaffold toolchain selection', () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-toolchain-runner-'))
     roots.push(root)
     const workspaceFile = path.join(root, 'pnpm-workspace.yaml')
-    const workspace = 'packages:\n  - apps/*\noverrides:\n  vite: npm:@voidzero-dev/vite-plus-core@1.0.0\n'
+    const workspace = 'packages:\n  - apps/*\noverrides:\n  vite: npm:@voidzero-dev/vite-plus-core@1.2.0\n'
     await fs.writeFile(workspaceFile, workspace)
     const target = path.join(root, 'apps/demo')
     await expect(createProject(target, TemplateName.default, { toolchain: 'vite-plus' })).rejects.toThrow('overrides.vitest')
     expect(await fs.pathExists(target)).toBe(false)
-    const runnerConfigured = `${workspace}  vitest: 5.0.1\n`
+    const runnerConfigured = `${workspace}  vitest: 5.0.4\n`
     await fs.writeFile(workspaceFile, runnerConfigured)
     await expect(createProject(target, TemplateName.default, { toolchain: 'vite-plus' })).rejects.toThrow('peerDependencyRules.allowedVersions.vite')
     expect(await fs.pathExists(target)).toBe(false)
@@ -108,7 +108,7 @@ describe('scaffold toolchain selection', () => {
     await fs.writeFile(workspaceFile, `${runnerConfigured}${peerPolicy}^8.0.0\n`)
     await expect(createProject(target, TemplateName.default, { toolchain: 'vite-plus' })).rejects.toThrow('peerDependencyRules.allowedVersions.vite')
     expect(await fs.pathExists(target)).toBe(false)
-    const configured = `${runnerConfigured}${peerPolicy}1.0.0 || ^8.0.0\n`
+    const configured = `${runnerConfigured}${peerPolicy}1.2.0 || ^8.0.0\n`
     await fs.writeFile(workspaceFile, configured)
     await createProject(target, TemplateName.default, { toolchain: 'vite-plus' })
     expect(await fs.readFile(workspaceFile, 'utf8')).toBe(configured)

@@ -56,8 +56,9 @@ describe('platform build verification gate', { concurrent: false }, () => {
     expect(templateContent).toContain(`./card.${templateExt}`)
     expect(templateContent).toContain(eventAttr)
     if (scriptModuleExt && scriptModuleTag) {
-      expect(templateContent).toContain(scriptModuleTag)
-      expect(templateContent).toContain(`./utils.${scriptModuleExt}`)
+      const sourceAttribute = platform === 'alipay' ? 'from' : 'src'
+      const moduleAttribute = platform === 'alipay' ? 'name' : 'module'
+      expect(templateContent).toContain(`${scriptModuleTag} ${sourceAttribute}="./utils.${scriptModuleExt}" ${moduleAttribute}="util"`)
     }
   })
 
@@ -149,7 +150,7 @@ describe('platform build verification gate', { concurrent: false }, () => {
     expect(runtimeChunk.code).toContain('didUnmount')
   })
 
-  it('builds the Douyin native, Vue SFC, WXS, subpackage, and npm integration', async () => {
+  it('builds the Douyin native, Vue SFC, SJS, subpackage, and npm integration', async () => {
     const outputRoot = path.join(DOUYIN_DEMO_ROOT, 'dist')
     await fs.remove(outputRoot)
 
@@ -160,14 +161,17 @@ describe('platform build verification gate', { concurrent: false }, () => {
     await runBuild(DOUYIN_DEMO_ROOT, 'tt', { skipNpm: false })
 
     const nativeTemplate = await fs.readFile(path.join(outputRoot, 'pages/index/index.ttml'), 'utf8')
-    expect(nativeTemplate).toContain('<wxs src="./utils.wxs" module="util"')
+    expect(nativeTemplate).toContain('<sjs src="./utils.sjs" module="util"')
     expect(nativeTemplate).toContain('tt:if="{{nativeCount >= 1}}"')
     expect(nativeTemplate).toContain('bind:tap="openNativeSubpackage"')
     expect(nativeTemplate).toContain('<native-counter')
     expect(nativeTemplate).toContain('<douyin-native-card')
     expect(await fs.pathExists(path.join(outputRoot, 'pages/index/index.ttss'))).toBe(true)
     expect(await fs.pathExists(path.join(outputRoot, 'pages/index/index.wxml'))).toBe(false)
-    expect(await fs.readFile(path.join(outputRoot, 'pages/index/utils.wxs'), 'utf8')).toContain('MP_PLATFORM=tt')
+    const nativeSjs = await fs.readFile(path.join(outputRoot, 'pages/index/utils.sjs'), 'utf8')
+    expect(nativeSjs).toContain('MP_PLATFORM=tt')
+    expect(nativeSjs).toContain('module.exports')
+    expect(nativeSjs).not.toContain('export default')
 
     expect(await fs.readFile(path.join(outputRoot, 'components/native-counter/index.ttml'), 'utf8')).toContain('bind:tap="increase"')
     expect(await fs.readFile(path.join(outputRoot, 'package-native/pages/detail/index.ttml'), 'utf8')).toContain('tt:if="{{ready}}"')

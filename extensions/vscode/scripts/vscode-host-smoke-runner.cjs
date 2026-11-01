@@ -1,5 +1,6 @@
 const assert = require('node:assert/strict')
 const path = require('node:path')
+const process = require('node:process')
 
 async function waitForCommand(commandId, timeoutMs = 15000) {
   const startTime = Date.now()
@@ -81,6 +82,13 @@ async function assertTextDefinition(vscode, document, text, offsetInText, expect
 
 exports.run = async function run() {
   const vscode = require('vscode')
+  const extensionId = process.env.WEAPP_VITE_VSCODE_HOST_EXTENSION_ID
+  assert.ok(extensionId, 'missing host smoke extension identity')
+  const extension = vscode.extensions.getExtension(extensionId)
+  assert.ok(extension, `未找到宿主测试扩展: ${extensionId}`)
+  assert.equal(extension.id, 'weapp-vite.weapp-vite')
+  await extension.activate()
+  assert.equal(extension.isActive, true)
 
   await waitForCommand('weapp-vite.showOutput')
 
@@ -97,6 +105,7 @@ exports.run = async function run() {
   const workspaceFolder = vscode.workspace.workspaceFolders?.[0]
 
   assert.ok(workspaceFolder, 'missing VS Code smoke workspace folder')
+  await require('./language-tools-host.cjs').assertLanguageTools(vscode, workspaceFolder)
 
   const rawBannerWxmlPath = path.join(
     workspaceFolder.uri.fsPath,

@@ -19,6 +19,20 @@ export function getMiniProgramPlatformDescriptor(platform: MpPlatform): MiniProg
 }
 
 /**
+ * @description 获取原生模板脚本契约；未传平台时保留既有按扩展名选择的兼容行为。
+ */
+export function getMiniProgramScriptModuleOptions(platform?: MpPlatform, extension = 'wxs') {
+  const normalized = extension.replace(/^\./, '')
+  const descriptor = platform ? getMiniProgramPlatformDescriptor(platform) : undefined
+  return {
+    tag: descriptor?.scriptModuleTagByExtension?.[normalized] ?? (normalized === 'sjs' ? 'sjs' : 'wxs'),
+    format: descriptor?.scriptModule?.format ?? (!platform && normalized === 'sjs' ? 'esm' : 'commonjs'),
+    sourceAttribute: descriptor?.scriptModule?.sourceAttribute ?? 'src',
+    moduleAttribute: descriptor?.scriptModule?.moduleAttribute ?? 'module',
+  } as const
+}
+
+/**
  * @description 获取模板编译预设。
  */
 export function getMiniProgramTemplatePreset(platform?: MpPlatform): MiniProgramTemplatePreset {

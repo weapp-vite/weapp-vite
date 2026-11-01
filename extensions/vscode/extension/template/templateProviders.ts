@@ -1,6 +1,6 @@
 import { Buffer } from 'node:buffer'
 import * as vscode from 'vscode'
-
+import { getDocumentPlatform, getLanguageDocumentInput } from '../languages/documents'
 import {
   isCompletionEnabled,
   isHoverEnabled,
@@ -9,6 +9,7 @@ import {
   isWxmlDefinitionEnabled,
   isWxmlEnhancementEnabled,
 } from '../shared/config'
+import { getTemplateDirectiveEntries } from './directives'
 import {
   getMiniprogramAttributeCompletionDetail,
   getMiniprogramAttributeHoverMarkdown,
@@ -18,6 +19,8 @@ import {
   getMiniprogramComponentHoverMarkdown,
   getMiniprogramComponentNames,
 } from './miniprogramSchema'
+import { getTemplateAnalysis } from './templateAnalysis'
+
 import {
   getClassNameAtOffset,
   getEventHandlerReferenceAtOffset,
@@ -33,6 +36,8 @@ import {
   toDocumentOffsetFromWxmlSource,
   toWxmlSourceOffset,
 } from './templateContext'
+import { getEventExpressionIdentifiers, getTemplateEventExpressions } from './templateEvents'
+import { getExpressionIdentifiers } from './templateIdentifiers'
 import {
   getTemplateComponentAttributeDefinitionRange,
   getTemplateComponentAttributeRenameText,
@@ -99,7 +104,11 @@ async function isEnabledForDocument(document: vscode.TextDocument, position?: vs
       return false
     }
 
-    return isRecognizedWeappWxmlDocument(document)
+    const recognized = await isRecognizedWeappWxmlDocument(document)
+    if (recognized) {
+      await getLanguageDocumentInput(document)
+    }
+    return recognized
   }
 
   if (document.languageId !== 'vue') {
@@ -113,6 +122,7 @@ async function isEnabledForDocument(document: vscode.TextDocument, position?: vs
   if (!(await isRecognizedWeappVueDocument(document))) {
     return false
   }
+  await getLanguageDocumentInput(document)
 
   if (!position) {
     return true
@@ -241,14 +251,18 @@ function collectExpressionTokenReferences(
   expression: string,
   expressionStart: number,
   definitionType: 'prop' | 'method',
+  fileName = 'component.wxml',
+  event = false,
 ) {
   const references: TemplateIdentifierReference[] = []
 
-  for (const match of expression.matchAll(/[$A-Z_a-z][\w$]*/gu)) {
-    const identifier = match[0]
-    const start = expressionStart + (match.index ?? 0)
-    const end = start + identifier.length
-    const scopedIdentifierMatch = getWxmlScopedIdentifierMatch(sourceText, start, identifier)
+  for (const token of event ? getEventExpressionIdentifiers(expression, expressionStart) : getExpressionIdentifiers(expression, expressionStart)) {
+    const identifier = token.name
+    const start = token.start
+    const end = token.end
+    const scopedIdentifierMatch = token.declaration
+      ? { definitionStart: token.declaration.start, definitionEnd: token.declaration.end, navigationStart: undefined, navigationEnd: undefined }
+      : getWxmlScopedIdentifierMatch(sourceText, start, identifier, fileName)
     const scopeKey = getScopedReferenceKey(
       scopedIdentifierMatch?.definitionStart ?? scopedIdentifierMatch?.navigationStart ?? null,
       scopedIdentifierMatch?.definitionEnd ?? scopedIdentifierMatch?.navigationEnd ?? null,
@@ -275,14 +289,19 @@ function collectScopedMemberExpressionReferences(
   sourceText: string,
   expression: string,
   expressionStart: number,
+  fileName = 'component.wxml',
 ) {
   const references: TemplateIdentifierReference[] = []
 
+  const identifiers = getExpressionIdentifiers(expression, expressionStart)
   for (const match of expression.matchAll(/([$A-Za-z_][\w$]*)(?:\.[$A-Za-z_][\w$]*)+/gu)) {
     const identifier = match[1]
     const start = expressionStart + (match.index ?? 0)
     const identifierEnd = start + identifier.length
-    const scopedIdentifierMatch = getWxmlScopedIdentifierMatch(sourceText, start, identifier)
+    if (!identifiers.some(token => token.start === start && token.name === identifier && !token.declaration)) {
+      continue
+    }
+    const scopedIdentifierMatch = getWxmlScopedIdentifierMatch(sourceText, start, identifier, fileName)
 
     if (!scopedIdentifierMatch) {
       continue
@@ -336,38 +355,18 @@ function collectScopedMemberExpressionReferences(
   return references
 }
 
-function collectTemplateIdentifierReferences(sourceText: string) {
+function collectTemplateIdentifierReferences(sourceText: string, fileName = 'component.wxml') {
   const references: TemplateIdentifierReference[] = []
-  const interpolationPattern = /\{\{([\s\S]*?)\}\}/gu
-  const eventAttributePattern = /(?:bind|catch|capture-bind|capture-catch|mut-bind|@)[\w:-]*\s*=\s*("([^"]*)"|'([^']*)')/gu
 
-  for (const match of sourceText.matchAll(interpolationPattern)) {
-    const fullMatch = match[0]
-    const expression = match[1] ?? ''
-    const matchIndex = match.index ?? -1
-
-    if (matchIndex < 0) {
-      continue
-    }
-
-    const expressionStart = matchIndex + fullMatch.indexOf(expression)
-
-    references.push(...collectExpressionTokenReferences(sourceText, expression, expressionStart, 'prop'))
+  for (const expression of getTemplateAnalysis(sourceText, fileName).expressions) {
+    references.push(...collectExpressionTokenReferences(sourceText, expression.source, expression.start, 'prop', fileName))
   }
 
-  for (const match of sourceText.matchAll(eventAttributePattern)) {
-    const rawValue = match[1]
-    const value = match[2] ?? match[3] ?? ''
-    const fullMatch = match[0]
-    const matchIndex = match.index ?? -1
+  for (const event of getTemplateEventExpressions(sourceText, fileName)) {
+    const value = event.source
+    const valueStart = event.start
 
-    if (matchIndex < 0) {
-      continue
-    }
-
-    const valueStart = matchIndex + fullMatch.lastIndexOf(rawValue) + 1
-
-    for (const reference of collectExpressionTokenReferences(sourceText, value, valueStart, 'prop')) {
+    for (const reference of collectExpressionTokenReferences(sourceText, value, valueStart, 'prop', fileName, true)) {
       const eventReference = getEventHandlerReferenceAtOffset(value, valueStart, reference.start)
 
       if (reference.definitionType !== 'local' && eventReference) {
@@ -378,74 +377,44 @@ function collectTemplateIdentifierReferences(sourceText: string) {
     }
   }
 
-  return references
+  return [...new Map(references.map(reference => [`${reference.start}:${reference.end}`, reference])).values()]
 }
 
 function createTemplateReferenceRange(document: vscode.TextDocument, reference: TemplateIdentifierReference) {
   return createSourceRange(document, reference.start, reference.end)
 }
 
-function createLoopLocalReferenceAtOffset(tagContext: ReturnType<typeof parseWxmlTagContext>, sourceOffset: number) {
-  if (!tagContext.attribute || !isOffsetInsideAttributeValue(tagContext.attribute, sourceOffset)) {
+function createLoopLocalReferenceAtOffset(sourceText: string, sourceOffset: number, fileName: string) {
+  const binding = getTemplateAnalysis(sourceText, fileName).scopes.flatMap(scope => scope.bindings).find(binding => binding.end > binding.start && binding.start <= sourceOffset && sourceOffset <= binding.end)
+  if (!binding) {
     return null
   }
-
-  if (tagContext.attribute.name !== 'wx:for-item' && tagContext.attribute.name !== 'wx:for-index') {
-    return null
-  }
-
-  const identifier = tagContext.attribute.value.trim()
-
-  if (!identifier) {
-    return null
-  }
-
   return {
-    definitionEnd: tagContext.attribute.valueEnd,
-    definitionStart: tagContext.attribute.valueStart,
+    definitionEnd: binding.end,
+    definitionStart: binding.start,
     definitionType: 'local',
-    end: tagContext.attribute.valueEnd,
-    identifier,
-    scopeKey: getScopedReferenceKey(tagContext.attribute.valueStart, tagContext.attribute.valueEnd, identifier),
-    start: tagContext.attribute.valueStart,
+    end: binding.end,
+    identifier: binding.name,
+    scopeKey: getScopedReferenceKey(binding.start, binding.end, binding.name),
+    start: binding.start,
   } satisfies TemplateIdentifierReference
 }
 
-function collectScopedMemberReferences(sourceText: string) {
+function collectScopedMemberReferences(sourceText: string, fileName = 'component.wxml') {
   const references: TemplateIdentifierReference[] = []
-  const interpolationPattern = /\{\{([\s\S]*?)\}\}/gu
-  const eventAttributePattern = /(?:bind|catch|capture-bind|capture-catch|mut-bind|@)[\w:-]*\s*=\s*("([^"]*)"|'([^']*)')/gu
 
-  for (const match of sourceText.matchAll(interpolationPattern)) {
-    const fullMatch = match[0]
-    const expression = match[1] ?? ''
-    const matchIndex = match.index ?? -1
-
-    if (matchIndex < 0) {
-      continue
-    }
-
-    references.push(...collectScopedMemberExpressionReferences(
-      sourceText,
-      expression,
-      matchIndex + fullMatch.indexOf(expression),
-    ))
+  for (const expression of getTemplateAnalysis(sourceText, fileName).expressions) {
+    references.push(...collectScopedMemberExpressionReferences(sourceText, expression.source, expression.start, fileName))
   }
 
-  for (const match of sourceText.matchAll(eventAttributePattern)) {
-    const rawValue = match[1]
-    const value = match[2] ?? match[3] ?? ''
-    const fullMatch = match[0]
-    const matchIndex = match.index ?? -1
-
-    if (matchIndex < 0) {
-      continue
-    }
+  for (const event of getTemplateEventExpressions(sourceText, fileName)) {
+    const value = event.source
 
     references.push(...collectScopedMemberExpressionReferences(
       sourceText,
       value,
-      matchIndex + fullMatch.lastIndexOf(rawValue) + 1,
+      event.start,
+      fileName,
     ))
   }
 
@@ -454,33 +423,37 @@ function collectScopedMemberReferences(sourceText: string) {
 
 function getTemplateIdentifierReferenceAtOffset(
   sourceText: string,
-  tagContext: ReturnType<typeof parseWxmlTagContext>,
+  _tagContext: ReturnType<typeof parseWxmlTagContext>,
   sourceOffset: number,
+  fileName = 'component.wxml',
 ) {
-  const loopLocalReference = createLoopLocalReferenceAtOffset(tagContext, sourceOffset)
+  const loopLocalReference = createLoopLocalReferenceAtOffset(sourceText, sourceOffset, fileName)
 
   if (loopLocalReference) {
     return loopLocalReference
   }
 
-  return collectTemplateIdentifierReferences(sourceText)
+  const reference = collectTemplateIdentifierReferences(sourceText, fileName)
     .find(reference => sourceOffset >= reference.start && sourceOffset <= reference.end)
     ?? null
+  const modules = getTemplateAnalysis(sourceText, fileName).references.filter(reference => reference.kind === 'script-module')
+  return reference && reference.definitionType !== 'local' && modules.some(module => module.name === reference.identifier) ? null : reference
 }
 
 function getTemplateDefinitionReferenceAtOffset(
   sourceText: string,
   tagContext: ReturnType<typeof parseWxmlTagContext>,
   sourceOffset: number,
+  fileName = 'component.wxml',
 ) {
-  const memberReference = collectScopedMemberReferences(sourceText)
+  const memberReference = collectScopedMemberReferences(sourceText, fileName)
     .find(reference => sourceOffset >= reference.start && sourceOffset <= reference.end)
 
   if (memberReference) {
     return memberReference
   }
 
-  return getTemplateIdentifierReferenceAtOffset(sourceText, tagContext, sourceOffset)
+  return getTemplateIdentifierReferenceAtOffset(sourceText, tagContext, sourceOffset, fileName)
 }
 
 async function resolveTemplateIdentifierReferenceDefinition(
@@ -515,8 +488,9 @@ async function resolveTemplateIdentifierReferenceDefinition(
 function getTemplateIdentifierReferencesForTarget(
   sourceText: string,
   targetReference: TemplateIdentifierReference,
+  fileName = 'component.wxml',
 ) {
-  const references = collectTemplateIdentifierReferences(sourceText)
+  const references = collectTemplateIdentifierReferences(sourceText, fileName)
 
   if (targetReference.definitionType === 'local') {
     return references.filter(reference =>
@@ -773,13 +747,13 @@ export class WeappTemplateCompletionProvider implements vscode.CompletionItemPro
         item.sortText = `0${index.toString().padStart(3, '0')}`
         return item
       }))
-      const nativeItems = getMiniprogramComponentNames()
+      const nativeItems = getMiniprogramComponentNames(getDocumentPlatform(document))
         .filter(tagName => !localSet.has(tagName.toLowerCase()))
         .map((tagName, index) => {
           const item = createCompletionItem(
             tagName,
             vscode.CompletionItemKind.Module,
-            getMiniprogramComponentHoverMarkdown(tagName) ?? undefined,
+            getMiniprogramComponentHoverMarkdown(tagName, getDocumentPlatform(document)) ?? undefined,
           )
           item.insertText = tagName
           item.detail = getMiniprogramComponentCompletionDetail()
@@ -807,7 +781,7 @@ export class WeappTemplateCompletionProvider implements vscode.CompletionItemPro
       }
 
       const values = attribute && tagContext.tagName
-        ? getMiniprogramAttributeValues(tagContext.tagName, attribute.name)
+        ? getMiniprogramAttributeValues(tagContext.tagName, attribute.name, getDocumentPlatform(document))
         : []
 
       return values.map((value, index) => {
@@ -861,13 +835,14 @@ export class WeappTemplateCompletionProvider implements vscode.CompletionItemPro
       const nativeAttributeItems = getMiniprogramComponentAttributes(
         tagContext.tagName,
         currentAttributes,
+        getDocumentPlatform(document),
       )
         .filter(attribute => !existingAttributes.has(attribute.name))
         .map((attribute, index) => {
           const item = createCompletionItem(
             attribute.name,
             vscode.CompletionItemKind.Property,
-            getMiniprogramAttributeHoverMarkdown(tagContext.tagName!, attribute.name, currentAttributes) ?? undefined,
+            getMiniprogramAttributeHoverMarkdown(tagContext.tagName!, attribute.name, currentAttributes, getDocumentPlatform(document)) ?? undefined,
           )
 
           if (attribute.type?.name === 'boolean') {
@@ -881,12 +856,22 @@ export class WeappTemplateCompletionProvider implements vscode.CompletionItemPro
             tagContext.tagName!,
             attribute.name,
             currentAttributes,
+            getDocumentPlatform(document),
           )
           item.sortText = `2${index.toString().padStart(3, '0')}`
           return item
         })
 
-      return [...componentPropItems, ...componentEventItems, ...nativeAttributeItems]
+      const known = new Set([...componentPropItems, ...componentEventItems, ...nativeAttributeItems].map(item => String(item.label)))
+      const directives = getTemplateDirectiveEntries(document)
+        .filter(entry => !existingAttributes.has(entry.name) && !known.has(entry.name))
+        .map((entry) => {
+          const item = createCompletionItem(entry.name, vscode.CompletionItemKind.Keyword, entry.markdown)
+          item.insertText = entry.boolean ? entry.name : new vscode.SnippetString(`${entry.name}="$1"`)
+          item.detail = 'platform directive'
+          return item
+        })
+      return [...componentPropItems, ...componentEventItems, ...nativeAttributeItems, ...directives]
     }
 
     return []
@@ -918,6 +903,10 @@ export class WeappTemplateHoverProvider implements vscode.HoverProvider {
       : null
 
     if (tagContext.attribute && sourceOffset >= tagContext.attribute.nameStart && sourceOffset <= tagContext.attribute.nameEnd) {
+      const directive = getTemplateDirectiveEntries(document).find(entry => entry.name === tagContext.attribute?.name)
+      if (directive) {
+        return new vscode.Hover(new vscode.MarkdownString(directive.markdown))
+      }
       if (resolvedMeta) {
         const componentProps = await getTemplateComponentProps(document, tagContext.tagName)
         const propEntry = componentProps.find(attribute => attribute.label === tagContext.attribute?.name)
@@ -942,6 +931,7 @@ export class WeappTemplateHoverProvider implements vscode.HoverProvider {
         tagContext.tagName,
         tagContext.attribute.name,
         Object.fromEntries(tagContext.attributes.map(attribute => [attribute.name, attribute.value])),
+        getDocumentPlatform(document),
       )
       return markdown ? new vscode.Hover(new vscode.MarkdownString(markdown)) : null
     }
@@ -961,7 +951,7 @@ export class WeappTemplateHoverProvider implements vscode.HoverProvider {
         ))
       }
 
-      const markdown = getMiniprogramComponentHoverMarkdown(tagContext.tagName)
+      const markdown = getMiniprogramComponentHoverMarkdown(tagContext.tagName, getDocumentPlatform(document))
       return markdown ? new vscode.Hover(new vscode.MarkdownString(markdown)) : null
     }
 
@@ -981,7 +971,7 @@ export class WeappTemplateDocumentLinkProvider implements vscode.DocumentLinkPro
       return []
     }
 
-    const linkPattern = /\b(src|href|url)\s*=\s*("([^"]*)"|'([^']*)')/gu
+    const linkPattern = /\b(src|from|href|url)\s*=\s*("([^"]*)"|'([^']*)')/gu
     const links: vscode.DocumentLink[] = []
 
     for (const match of sourceText.matchAll(linkPattern)) {
@@ -1036,7 +1026,7 @@ export class WeappTemplateDefinitionProvider implements vscode.DefinitionProvide
     const tagContext = parseWxmlTagContext(sourceText, sourceOffset)
 
     if (!tagContext.isInsideTag) {
-      const reference = getTemplateDefinitionReferenceAtOffset(sourceText, tagContext, sourceOffset)
+      const reference = getTemplateDefinitionReferenceAtOffset(sourceText, tagContext, sourceOffset, document.uri.fsPath)
 
       if (!reference) {
         return null
@@ -1080,7 +1070,7 @@ export class WeappTemplateDefinitionProvider implements vscode.DefinitionProvide
       && interpolationContext
       && isOffsetInsideAttributeValue(tagContext.attribute, sourceOffset)
     ) {
-      const reference = getTemplateDefinitionReferenceAtOffset(sourceText, tagContext, sourceOffset)
+      const reference = getTemplateDefinitionReferenceAtOffset(sourceText, tagContext, sourceOffset, document.uri.fsPath)
 
       if (!reference) {
         return null
@@ -1090,7 +1080,7 @@ export class WeappTemplateDefinitionProvider implements vscode.DefinitionProvide
     }
 
     if (tagContext.attribute && isOffsetInsideAttributeValue(tagContext.attribute, sourceOffset) && isEventAttribute(tagContext.attribute.name)) {
-      const scriptReference = getTemplateDefinitionReferenceAtOffset(sourceText, tagContext, sourceOffset)
+      const scriptReference = getTemplateDefinitionReferenceAtOffset(sourceText, tagContext, sourceOffset, document.uri.fsPath)
 
       if (!scriptReference) {
         return null
@@ -1166,13 +1156,13 @@ export class WeappTemplateReferenceProvider implements vscode.ReferenceProvider 
       return locations
     }
 
-    const targetReference = getTemplateIdentifierReferenceAtOffset(sourceText, tagContext, sourceOffset)
+    const targetReference = getTemplateIdentifierReferenceAtOffset(sourceText, tagContext, sourceOffset, document.uri.fsPath)
 
     if (!targetReference) {
       return []
     }
 
-    const templateLocations = getTemplateIdentifierReferencesForTarget(sourceText, targetReference)
+    const templateLocations = getTemplateIdentifierReferencesForTarget(sourceText, targetReference, document.uri.fsPath)
       .map((reference) => {
         const range = createTemplateReferenceRange(document, reference)
         return range ? new vscode.Location(document.uri, range.start) : null
@@ -1267,7 +1257,7 @@ export class WeappTemplateRenameProvider implements vscode.RenameProvider {
       }
     }
 
-    const targetReference = getTemplateIdentifierReferenceAtOffset(sourceText, tagContext, sourceOffset)
+    const targetReference = getTemplateIdentifierReferenceAtOffset(sourceText, tagContext, sourceOffset, document.uri.fsPath)
 
     if (!targetReference) {
       return null
@@ -1372,7 +1362,7 @@ export class WeappTemplateRenameProvider implements vscode.RenameProvider {
       return null
     }
 
-    const targetReference = getTemplateIdentifierReferenceAtOffset(sourceText, tagContext, sourceOffset)
+    const targetReference = getTemplateIdentifierReferenceAtOffset(sourceText, tagContext, sourceOffset, document.uri.fsPath)
 
     if (!targetReference) {
       return null
@@ -1394,7 +1384,7 @@ export class WeappTemplateRenameProvider implements vscode.RenameProvider {
       edit.replace(uri, normalizedRange, newName)
     }
 
-    for (const reference of getTemplateIdentifierReferencesForTarget(sourceText, targetReference)) {
+    for (const reference of getTemplateIdentifierReferencesForTarget(sourceText, targetReference, document.uri.fsPath)) {
       const range = createTemplateReferenceRange(document, reference)
 
       if (range) {

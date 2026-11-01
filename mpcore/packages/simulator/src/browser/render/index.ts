@@ -589,6 +589,7 @@ export function renderBrowserPageTree(
     styles: resolveBrowserPageStyles(context.files, resourcePath, {
       miniprogramRootPath: context.project.miniprogramRootPath,
       styleIsolation: resolveBrowserComponentPageStyleIsolation(context.files, page, resourcePath, context.project.miniprogramRootPath),
+      viewportWidth: context.viewportWidth,
     }),
     wxml: roots.map(serializeDomNode).join(''),
   }

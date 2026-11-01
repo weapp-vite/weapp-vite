@@ -1,0 +1,13 @@
+{
+  "appid": "wxb3d842a4a7e3440d",
+  "projectname": "formatting-runtime",
+  "miniprogramRoot": "./",
+  "compileType": "miniprogram",
+  "setting": {
+    "es6": false,
+    "minified": false,
+    "minifyWXML": false,
+    "minifyWXSS": false,
+    "urlCheck": false
+  }
+}

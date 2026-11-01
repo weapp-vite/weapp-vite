@@ -13,8 +13,8 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "postinstall": "wv prepare",
-    "stylelint": "stylelint \"src/**/*.{css,scss,vue,wxss}\" --allow-empty-input",
-    "stylelint:fix": "stylelint \"src/**/*.{css,scss,vue,wxss}\" --fix --allow-empty-input",
+    "stylelint": "stylelint \"src/**/*.{css,scss,vue,wxss,acss,ttss,jxss,qss,tyss}\" --allow-empty-input",
+    "stylelint:fix": "stylelint \"src/**/*.{css,scss,vue,wxss,acss,ttss,jxss,qss,tyss}\" --fix --allow-empty-input",
     "typecheck": "vue-tsc --noEmit -p .weapp-vite/tsconfig.app.json"
   },
   "dependencies": {

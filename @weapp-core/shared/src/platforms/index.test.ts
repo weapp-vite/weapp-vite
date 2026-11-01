@@ -12,6 +12,7 @@ import {
   getMiniProgramRuntimeGlobalKeys,
   getMiniProgramRuntimeGlobalKeysByResolvePriority,
   getMiniProgramRuntimeHostConfigKey,
+  getMiniProgramScriptModuleOptions,
   getMiniProgramTemplatePreset,
   getSupportedMiniProgramDirectivePrefixes,
   getSupportedMiniProgramPlatforms,
@@ -24,6 +25,13 @@ import {
 } from './index'
 
 describe('mini program platform registry', () => {
+  it('distinguishes module format and attributes for platforms sharing SJS', () => {
+    expect(getMiniProgramScriptModuleOptions('tt', 'sjs')).toEqual({ tag: 'sjs', format: 'commonjs', sourceAttribute: 'src', moduleAttribute: 'module' })
+    expect(getMiniProgramScriptModuleOptions('swan', 'sjs')).toEqual({ tag: 'import-sjs', format: 'esm', sourceAttribute: 'src', moduleAttribute: 'module' })
+    expect(getMiniProgramScriptModuleOptions('alipay', 'sjs')).toEqual({ tag: 'import-sjs', format: 'esm', sourceAttribute: 'from', moduleAttribute: 'name' })
+    expect(getMiniProgramPlatformDescriptor('tt').outputExtensions.wxs).toBe('sjs')
+  })
+
   it('normalizes and resolves platform aliases', () => {
     expect(normalizeMiniProgramPlatform('  WeChat  ')).toBe('wechat')
     expect(normalizeMiniProgramPlatform('')).toBeUndefined()

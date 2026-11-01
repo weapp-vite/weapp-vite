@@ -10,7 +10,7 @@ import {
 } from './wxmlFormatter'
 
 function format(input: string) {
-  return formatWxmlText(input, { indent: '  ' })
+  return formatWxmlText(input, { indent: '  ', wrapAttributes: 3 })
 }
 
 const exactCases = [
@@ -24,23 +24,12 @@ const exactCases = [
   data-id="{{item.id}}"
   data-type="{{item.type}}"
   disabled="{{loading}}"
->
-  提交
-</button>
-`,
+>提交</button>`,
   },
   {
     name: 'formats nested swiper tags',
     input: '<swiper indicator-dots="true"><swiper-item><view>页面1</view></swiper-item><swiper-item><view>页面2</view></swiper-item></swiper>',
-    expected: `<swiper indicator-dots="true">
-  <swiper-item>
-    <view>页面1</view>
-  </swiper-item>
-  <swiper-item>
-    <view>页面2</view>
-  </swiper-item>
-</swiper>
-`,
+    expected: '<swiper indicator-dots="true"><swiper-item><view>页面1</view></swiper-item><swiper-item><view>页面2</view></swiper-item></swiper>',
   },
   {
     name: 'preserves boolean attributes',
@@ -50,8 +39,8 @@ const exactCases = [
   disabled
   required
   placeholder="请输入"
-  maxlength="100" />
-`,
+  maxlength="100"
+/>`,
   },
   {
     name: 'keeps wrapped text content with the closing text tag',
@@ -59,8 +48,7 @@ const exactCases = [
     expected: `<text
   class="tip-wrap cashback-wrap"
   wx:if="{{item.incomeSource && item.incomeSource === 'platform_cashback'}}"
->限时奖励</text>
-`,
+>限时奖励</text>`,
   },
   {
     name: 'wraps text attributes while preserving inline text content',
@@ -70,8 +58,7 @@ const exactCases = [
   data-id="123"
   bind:tap="handleTap"
   style="color:red"
->这是文本内容</text>
-`,
+>这是文本内容</text>`,
   },
   {
     name: 'wraps text boolean attributes while preserving inline text content',
@@ -81,13 +68,12 @@ const exactCases = [
   tabindex
   assdassd
   asd
->asdasdasdsaaszdasd asdasdasd asdasd asd asd asd asd asd asd asd a</text>
-`,
+>asdasdasdsaaszdasd asdasdasd asdasd asd asd asd asd asd asd asd a</text>`,
   },
   {
     name: 'keeps short text tags on one line',
     input: '<text class="tip-wrap cashback-wrap">限时奖励</text>',
-    expected: '<text class="tip-wrap cashback-wrap">限时奖励</text>\n',
+    expected: '<text class="tip-wrap cashback-wrap">限时奖励</text>',
   },
 ]
 
@@ -169,7 +155,7 @@ describe('formatWxmlText', () => {
 
       assert.equal(output.includes('undefined'), false)
       assert.equal(output.includes('__WEAPP_VITE_WXML_'), false)
-      assert.match(output, /\n$/u)
+      assert.equal(format(output), output)
     }
   })
 
@@ -180,7 +166,7 @@ describe('formatWxmlText', () => {
       assert.equal(output.includes('undefined'), false)
       assert.equal(output.includes('__WEAPP_VITE_WXML_'), false)
       assert.match(output, /<[\w-]+|<!--/u)
-      assert.match(output, /\n$/u)
+      assert.equal(format(output), output)
     }
   })
 
@@ -196,7 +182,7 @@ describe('formatWxmlText', () => {
   it('keeps mixed text and nested tags semantically unchanged', () => {
     const input = '<view>Hello  <text>{{name}}</text>, welcome back.</view>'
 
-    assert.equal(format(input), `${input}\n`)
+    assert.equal(format(input), input)
   })
 
   it('preserves inline script modules as opaque source', () => {
@@ -215,7 +201,7 @@ module.exports = { compare }`
     const output = format(input)
 
     assert.match(output, /const marker = "<\/wxs>"; module\.exports = \{ marker \}<\/wxs>/u)
-    assert.match(output, /\n<view>\{\{tools\.marker\}\}<\/view>\n$/u)
+    assert.match(output, /<view>\{\{tools\.marker\}\}<\/view>$/u)
     assert.equal(format(output), output)
   })
 
@@ -232,7 +218,7 @@ module.exports = { compare }`
     const input = '<import src="/shared.wxml"/>\n{{a}}{{b}}{{sum}}\n<button bindtap="add">Add</button>'
     const output = format(input)
 
-    assert.equal(output, '<import src="/shared.wxml" />\n{{a}}{{b}}{{sum}}\n<button bindtap="add">Add</button>\n')
+    assert.equal(output, '<import src="/shared.wxml" />\n{{a}}{{b}}{{sum}}\n<button bindtap="add">Add</button>')
     assert.equal(format(output), output)
   })
 
@@ -240,8 +226,8 @@ module.exports = { compare }`
     const input = '<?xml version="1.0"?><![CDATA[a < b && c > d]]><!-- #ifdef WEAPP --><view>微信</view><!-- #endif -->'
     const output = format(input)
 
-    assert.match(output, /^<\?xml version="1\.0"\?>\n<!\[CDATA\[a < b && c > d\]\]>\n<!-- #ifdef WEAPP -->/u)
-    assert.match(output, /<!-- #endif -->\n$/u)
+    assert.match(output, /^<\?xml version="1\.0"\?><!\[CDATA\[a < b && c > d\]\]><!-- #ifdef WEAPP -->/u)
+    assert.match(output, /<!-- #endif -->$/u)
   })
 
   it('covers platform directives, events and script-module syntax without rewriting them', () => {

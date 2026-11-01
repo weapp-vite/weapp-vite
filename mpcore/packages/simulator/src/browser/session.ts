@@ -983,6 +983,7 @@ export class BrowserHeadlessSession {
       templateSource: this.templateRegistration.artifactSource,
       moduleLoader: this.moduleLoader,
       project: this.project,
+      viewportWidth: this.systemInfo.windowWidth,
       session: {
         createIntersectionObserver: (scope, options) => this.createIntersectionObserver(scope, options),
         createMediaQueryObserver: scope => this.createMediaQueryObserver(scope),
@@ -1390,6 +1391,7 @@ export class BrowserHeadlessSession {
       templateSource: this.templateRegistration.artifactSource,
       moduleLoader: this.moduleLoader,
       project: this.project,
+      viewportWidth: this.systemInfo.windowWidth,
       session: {
         createIntersectionObserver: (scope, options) => this.createIntersectionObserver(scope, options),
         createMediaQueryObserver: scope => this.createMediaQueryObserver(scope),
@@ -1520,6 +1522,7 @@ export class BrowserHeadlessSession {
       templateSource: this.templateRegistration.artifactSource,
       moduleLoader: this.moduleLoader,
       project: this.project,
+      viewportWidth: this.systemInfo.windowWidth,
       session: {
         createIntersectionObserver: (scope, options) => this.createIntersectionObserver(scope, options),
         createMediaQueryObserver: scope => this.createMediaQueryObserver(scope),

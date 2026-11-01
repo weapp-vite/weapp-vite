@@ -19,7 +19,7 @@ describe('wxmlScriptModule utils', () => {
     expect(resolveScriptModuleTagByPlatform('weapp', 'wxs')).toBeUndefined()
     expect(resolveScriptModuleTagByPlatform('alipay', 'sjs')).toBe('import-sjs')
     expect(resolveScriptModuleTagByPlatform('alipay', 'wxs')).toBeUndefined()
-    expect(resolveScriptModuleTagByPlatform('swan', 'sjs')).toBeUndefined()
+    expect(resolveScriptModuleTagByPlatform('swan', 'sjs')).toBe('import-sjs')
   })
 
   it('normalizes import-sjs attributes', () => {
@@ -30,7 +30,7 @@ describe('wxmlScriptModule utils', () => {
 
   it('exposes shared script module tag metadata', () => {
     expect(getDerivedScriptModuleTagNames()).toContain('import-sjs')
-    expect(getScriptModuleTagNames()).toEqual(['wxs', 'sjs', 'import-sjs'])
+    expect(getScriptModuleTagNames()).toEqual(['wxs', 'sjs', 'filter', 'import-sjs'])
     expect(normalizeScriptModuleExtension()).toBeUndefined()
     expect(normalizeScriptModuleExtension('.sjs')).toBe('sjs')
     expect(normalizeScriptModuleExtension('wxs')).toBe('wxs')

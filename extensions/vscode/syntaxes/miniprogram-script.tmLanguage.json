@@ -1,0 +1,5 @@
+{
+  "name": "Mini Program Script",
+  "scopeName": "source.miniprogram-script",
+  "patterns": [{ "include": "source.ts" }]
+}

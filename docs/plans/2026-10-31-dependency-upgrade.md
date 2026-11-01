@@ -242,3 +242,21 @@ Windows miniapp shard 4 原始 job 虽退出 0，实际只完成 30 个分配任
 恢复后串行最小 smoke 的 2 个 case、6 个 checkpoint 通过，登记资源全部终结；随后按原断言复验 issue #1140，`emptyOutDir=true` 的 14 个 checkpoint 通过，`false` 初始启动仍失败，整体退出 1、仅捕获 14／28 checkpoint。Computer Use 在失败窗口确认“模拟器启动失败”和基础库 3.17.5；没有额外编译、导航或重启。再次失败说明首次下载不足以解释问题，当前暂停后续真实 IDE 启动并保留两轮失败。此次诊断的 9 条 journal 与端口均 released，宿主 cold、所选安装进程数为 0，资源报告 complete；不将资源清理成功记为 runtime 验收通过。
 
 本轮局部失败的原生日志未出现 `MaxSubPackageLimit` 或 `checkAppFields`，只记录通用 simulator launch failed；相同 analyzer 错误在成功窗口的八次启动中也出现。基础库 3.17.5 在成功窗口初次启动前已存在于本地，具体宿主内部异常仍未确定；不据此修改项目配置或 runtime 断言。
+
+只读核对该 Stable 安装的源码后，失败 stack 精确对应将 null／undefined rejection 包装为通用 Error 的位置；原始 renderer console 的 `launch error` 没有写入同时段磁盘日志。额外 worker 日志仅有一条 watcher 警告和一份空文件，无法还原最初拒绝的调用。成功窗口也有相同的 builder 并发回写现象，不能据此定因。继续保留环境阻塞和未完成最终验收，不再重复重启。
+
+## HMR 解析开销修正
+
+入口与 Windows 诊断修复已随 `6922da4c1c6e2d05871bc6d87361d5475a096813` 推送 main。用户要求再次获取代码后，重新 fetch、切换 main 并快进核对，远端仍为同一提交、本地干净且与远端一致。其 [official E2E full run 41272843816](https://github.com/weapp-vite/weapp-vite/actions/runs/41272843816) 使用原 full 输入执行，尚未终态；当前候选的性能修正不能沿用这轮结果冒充已验证。
+
+真实 runtime-demo CLI 的单次 native-template 首编辑 CPU 采样确认，同一产物在 installer 识别和 export 识别之间重复解析；重复子树为 113 个样本、约 140.960ms。另有 prelude 在已有 runtime 标记后仍先做 AST 导入扫描。这些是采样证据，不能将异步累计 hook 耗时相加作为 CPU，也不能将采样权重直接当作补丁收益。
+
+修正只复用同一次调用中同一 code 的 string／null 结果，不增加跨 generation 缓存；prelude 先检查已有三个稳定标记，再保留未标记输入的导入解析。installer 仅在稳定 marker、公共导出名和反斜杠全部缺失时跳过 AST。旧识别器支持的字符串、无插值模板、变量别名和转义标识符仍走原路径；动态表达式继续保持原来的未识别结果，不能把含线索但非 installer 的代码当成 installer。
+
+回归先在旧实现分别观察到重复查询、三个 marker 消费者和七个无关输入的额外解析，再验证修正。合并后 19 文件、239 项定向测试、owning typecheck、公开类型、精确 ESLint 与包构建全部通过；覆盖真实 Vite／minify／SSE wrapper、prelude 初始化顺序、依赖闭包、disabled、幂等、转义输入及同一 chunk 的负值→正值→退役替换。独立静态复核未发现确定缺陷。两个已有大文件仅改调用参数和 OR 次序，保留既有函数归属；拆分会扩大本次局部优化范围，新增回归均小于 300 行。
+
+同机、相同 Node／输入／配置／编辑指纹的真实单次对照中，总耗时由 1885.217ms 降至仅复用查询时的 1753.644ms，再到合并三项优化后的 1629.193ms；rewrite 由 698.825ms 降至 542.207ms、407.598ms。相较初始分别观察到约 13.6% 和 41.7% 下降，重复 finder 采样归零，其他 installer 工作仍存在。每轮仅一次正常首编辑、没有追加 warmup，来源／原生发布／END 回执及 Inspector、CLI、源码恢复、child scope 和机器租约收尾均通过。单对观测不提供统计提速保证，也不替代正式 full 审计；1629ms 仍超过 1.5 秒原阈值。
+
+四个受影响项目的正规定向 HMR 审计已完成，使用原 warmup、write、native watcher、零重试和全部原阈值，不写历史 baseline。14／14 场景功能及 profile 完整，0 失败、0 未执行；runtime-demo 六项为 1355.6–1422.0ms，低于原 1500ms 门限，comprehensive 两项及 uview 三项也通过各自门限。wot 三项为 6635.1–6723.5ms，连同 p95 仍有 4 项超过 5000ms，命令退出 1，不能记录为全量性能通过。此前同宿主旧依赖基线的 wot 也超限，但单轮对照仍不提供统计无退化保证。定向结果不能代表新提交的全仓 full 或跨平台 CI 通过。
+
+最终包构建后，真实 emitted CommonJS 的 prelude HMR 回归在 classic 与 stateful-experimental 两种模式下各完成一项，覆盖样式和模板保存后的跨 generation 初始化、未变化组件及产物稳定性，2／2 通过；入口机器租约与登记资源收尾完成。这不替代尚阻塞的真实 IDE 最终验收。

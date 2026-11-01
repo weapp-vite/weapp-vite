@@ -26,6 +26,33 @@ export default defineConfig({
 
 源码根目录。排查输出缺页、找不到入口、自动路由异常时先确认它。
 
+### `language`
+
+`weapp.language` 设置模板、原生样式和脚本模块的平台归属，供组合 lint、格式化 CLI 与 VSCode 共用；构建目标仍由 `weapp.platform` 选择。
+
+```ts
+export default defineConfig({
+  weapp: {
+    platform: 'weapp',
+    language: {
+      overrides: [
+        { files: ['src/alipay/**'], platform: 'alipay' },
+        { files: ['src/douyin/**'], platform: 'tt' },
+        { files: ['src/qq/**'], platform: 'qq' },
+      ],
+    },
+  },
+})
+```
+
+`language.platform` 显式设置语言平台，`overrides` 按文件 glob 覆盖且后匹配项优先，路径相对选中的配置目录。语言平台包括 `weapp`、`alipay`、`tt`、`swan`、`jd`、`xhs`、`qq`、`ks`、`ty`；QQ、快手、涂鸦只提供语言支持，不扩展六个小程序构建目标。
+
+无显式归属时使用唯一扩展名、模板引用和项目的 `weapp.platform` 推断；共享 `.sjs`、`.wxs`、`.css` 不单靠后缀确定宿主。多个平台引用同一模块而产生歧义时，应显式配置平台；编译阶段或方言冲突需要统一引用来源。原生模块按目标方言检查，`.wxs.ts`、`.sjs.ts`、`.ks.ts`、`.filter.ts` 与 `lang="ts/js"` 按编译源码处理。百度 Filter 使用 `.filter.js` / `.filter.ts`，快手使用 `.ks` / `<ks>`。
+
+Vite+ 项目通过 `weapp-vite-lint` 组合标准 Oxlint 与原生语言诊断，通过 `weapp-vite-format --write` / `--check` 处理标准文件及原生语言。`--check-all` 组合 `vp check`、原生语言检查和项目已有的 Vue / Stylelint 脚本，仍不替代独立 TypeScript 类型检查。模板只调整标签布局，保留文本空白和属性原文；原生模块在格式化前后校验方言和 AST 语义。
+
+普通 lint / format 使用最近项目配置，`--check-all` 与 `vp check` 优先使用 workspace 根配置；成员预设不覆盖根策略，也不会自动改写上级配置。顶层 `lint` / `fmt` 管理规则和格式，`weapp.language` 管理语言归属。语法、CLI、编辑器与构建验证不等同于真实小程序 IDE runtime 验收。完整 API 与职责见[平台语言配置](https://vite.weapp.dev/config/language.html)。
+
 ### `autoRoutes`
 
 适合希望用约定生成页面路由的项目。启用后要保持 pages 目录与输出约定稳定。

@@ -10,6 +10,8 @@
         "$TURBO_ROOT$/packages-runtime/react/package.json",
         "$TURBO_ROOT$/packages/dashboard/package.json",
         "$TURBO_ROOT$/packages/eslint/package.json",
+        "$TURBO_ROOT$/packages/oxlint/package.json",
+        "$TURBO_ROOT$/packages/oxfmt/package.json",
         "$TURBO_ROOT$/pnpm-workspace.yaml"
       ]
     }

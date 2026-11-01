@@ -40,23 +40,6 @@ exports[`wxml > scanWxml case catch case 1 > components 1`] = `{}`;
 
 exports[`wxml > scanWxml case catch case 1 > deps 1`] = `[]`;
 
-exports[`wxml > scanWxml case inline > components 1`] = `{}`;
-
-exports[`wxml > scanWxml case inline > deps 1`] = `[]`;
-
-exports[`wxml > scanWxml case inline 1`] = `
-"<view>{{test.foo}}</view>
-
-<wxs module="test" >
-module.exports.foo = module.exports.bbc = module.exports.bar = module.exports.abc = void 0;
-var _require = require("./index.wxs"),
-  bar = module.exports.bar = _require.bar,
-  foo = module.exports.foo = _require.foo;
-var bbc = module.exports.bbc = require('./bbc.wxs');
-var abc = module.exports.abc = 'abc';
-</wxs>"
-`;
-
 exports[`wxml > scanWxml case mut-bind > components 1`] = `{}`;
 
 exports[`wxml > scanWxml case mut-bind > deps 1`] = `[]`;

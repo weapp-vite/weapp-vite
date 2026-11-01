@@ -301,9 +301,9 @@ describe('handleWxml', () => {
   })
 
   it.each([
-    ['alipay', 'sjs', '<wxs src="./helper.wxs"></wxs>', '<import-sjs from="normalized/./helper.wxs.sjs"></import-sjs>', 'import-sjs'],
-    ['swan', 'sjs', '<wxs src="./helper.wxs"></wxs>', '<sjs src="normalized/./helper.wxs.sjs"></sjs>', undefined],
-  ])('rewrites script module for %s', (_platform, extension, code, expected, scriptModuleTag) => {
+    ['an explicit import-sjs tag', 'sjs', '<wxs src="./helper.wxs"></wxs>', '<import-sjs from="normalized/./helper.wxs.sjs"></import-sjs>', 'import-sjs'],
+    ['an extension-derived tag without a platform', 'sjs', '<wxs src="./helper.wxs"></wxs>', '<sjs src="normalized/./helper.wxs.sjs"></sjs>', undefined],
+  ])('rewrites script modules using %s', (_case, extension, code, expected, scriptModuleTag) => {
     const value = './helper.wxs'
     const srcStart = code.indexOf(value)
     const closeTagStart = code.lastIndexOf('</wxs>')

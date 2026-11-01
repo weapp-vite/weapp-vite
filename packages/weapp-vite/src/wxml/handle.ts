@@ -1,4 +1,4 @@
-import type { HandleWxmlOptions } from '../types'
+import type { HandleWxmlOptions, MpPlatform } from '../types'
 import type { scanWxml } from './scan'
 import { defu } from '@weapp-core/shared'
 import MagicString from 'magic-string'
@@ -10,6 +10,7 @@ import {
   shouldNormalizeScriptModuleAttributes,
 } from '../utils/wxmlScriptModule'
 import { transformWxsCode } from '../wxs'
+import { transformFilterCode } from '../wxs/filter'
 import { normalizeWxsFilename } from '../wxs/utils'
 
 type ScanResult = ReturnType<typeof scanWxml>
@@ -215,7 +216,7 @@ function createCacheKey(options: Required<HandleWxmlOptions>) {
   const defineKeys = resolvedDefineImportMetaEnv
     ? Object.keys(resolvedDefineImportMetaEnv).sort().map(key => `${key}:${String(resolvedDefineImportMetaEnv[key])}`).join(',')
     : ''
-  return `${options.removeComment ? 1 : 0}|${options.transformEvent ? 1 : 0}|${options.transformPlatformSyntax ? 1 : 0}|${extension}|${tag}|${templateExt}|${importMetaExtension}|${importMetaRelativePath}|${defineKeys}`
+  return `${options.platform ?? ''}|${options.removeComment ? 1 : 0}|${options.transformEvent ? 1 : 0}|${options.transformPlatformSyntax ? 1 : 0}|${extension}|${tag}|${templateExt}|${importMetaExtension}|${importMetaRelativePath}|${defineKeys}`
 }
 
 function getCachedResult(data: ScanResult, cacheKey: string) {
@@ -232,8 +233,8 @@ function setCachedResult(data: ScanResult, cacheKey: string, result: HandleWxmlR
   return result
 }
 
-function getCachedInlineWxsTransform(code: string, extension: string) {
-  const key = `${extension}::${code}`
+function getCachedInlineWxsTransform(code: string, extension: string, platform?: MpPlatform, filter = false) {
+  const key = `${platform ?? ''}::${extension}::${filter}::${code}`
   const cached = inlineWxsTransformCache.get(key)
   if (cached) {
     inlineWxsTransformCache.delete(key)
@@ -241,7 +242,7 @@ function getCachedInlineWxsTransform(code: string, extension: string) {
     return cached
   }
 
-  const transformed = transformWxsCode(code, { extension })
+  const transformed = filter ? transformFilterCode(code, 'inline.filter.ts') : transformWxsCode(code, { extension, ...(platform ? { platform } : {}) })
   inlineWxsTransformCache.set(key, transformed)
   if (inlineWxsTransformCache.size > INLINE_WXS_CACHE_LIMIT) {
     const firstKey = inlineWxsTransformCache.keys().next().value
@@ -254,6 +255,7 @@ function getCachedInlineWxsTransform(code: string, extension: string) {
 
 export function handleWxml(data: ReturnType<typeof scanWxml>, options?: HandleWxmlOptions) {
   const opts = defu<Required<HandleWxmlOptions>, HandleWxmlOptions[]>(options, {
+    platform: undefined,
     defineImportMetaEnv: undefined,
     importMetaDefineRegistry: undefined,
     importMetaRelativePath: undefined,
@@ -303,6 +305,7 @@ export function handleWxml(data: ReturnType<typeof scanWxml>, options?: HandleWx
     ? opts.templateExtension.slice(1)
     : opts.templateExtension
   const resolvedScriptTag = resolveScriptModuleTagName({
+    platform: opts.platform,
     scriptModuleExtension: normalizedScriptExtension,
     scriptModuleTag: opts.scriptModuleTag,
   })
@@ -331,8 +334,8 @@ export function handleWxml(data: ReturnType<typeof scanWxml>, options?: HandleWx
   const ms = new MagicString(code)
 
   if (shouldNormalizeImports) {
-    for (const { start, end, value } of wxsImportNormalizeTokens) {
-      ms.update(start, end, normalizeWxsFilename(value, normalizedScriptExtension ?? 'wxs'))
+    for (const { start, end, value, tagName } of wxsImportNormalizeTokens) {
+      ms.update(start, end, tagName === 'filter' ? value.replace(/\.[jt]s$/i, '.js') : normalizeWxsFilename(value, normalizedScriptExtension ?? 'wxs'))
     }
   }
 
@@ -353,8 +356,8 @@ export function handleWxml(data: ReturnType<typeof scanWxml>, options?: HandleWx
   }
 
   if (shouldTransformInlineWxs) {
-    for (const { end, start, value } of inlineWxsTokens) {
-      const { result } = getCachedInlineWxsTransform(value, normalizedScriptExtension ?? 'wxs')
+    for (const { end, start, value, tagName } of inlineWxsTokens) {
+      const { result } = getCachedInlineWxsTransform(value, normalizedScriptExtension ?? 'wxs', opts.platform, tagName === 'filter')
       if (result?.code) {
         ms.update(start, end, `\n${result.code}`)
       }
@@ -405,7 +408,7 @@ export function handleWxml(data: ReturnType<typeof scanWxml>, options?: HandleWx
     }
   }
 
-  const finalCode = shouldTransformPlatformSyntax && shouldNormalizeScriptModuleAttributes(resolvedScriptTag)
+  const finalCode = shouldTransformPlatformSyntax && shouldNormalizeScriptModuleAttributes(resolvedScriptTag, opts.platform)
     ? normalizeImportSjsAttributes(ms.toString())
     : ms.toString()
   const codeWithDefine = replaceDefineImportMetaEnv(finalCode, resolvedDefineImportMetaEnv)

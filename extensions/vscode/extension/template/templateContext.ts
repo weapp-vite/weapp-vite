@@ -1,14 +1,17 @@
 import type * as vscode from 'vscode'
 import path from 'node:path'
+import { isEventAttribute as isPlatformEventAttribute, languageProfiles } from '@weapp-vite/language-service'
+import { getTemplateAnalysis } from './templateAnalysis'
 
 import {
   isMiniProgramTemplatePath,
   isStandaloneTemplateDocument,
+  isVueSourceDocument,
 } from './templateLanguages'
 
 const TEMPLATE_BLOCK_PATTERN = /<template\b[^>]*>/giu
 const TEMPLATE_CLOSE_PATTERN = /<\/template>/giu
-const LINK_ATTRIBUTE_NAMES = new Set(['src', 'href', 'url'])
+const LINK_ATTRIBUTE_NAMES = new Set(['src', 'from', 'href', 'url'])
 
 export interface TemplateBlockRange {
   contentEnd: number
@@ -251,86 +254,6 @@ function getScriptIdentifierSpanAtOffset(expression: string, expressionStart: nu
   }
 }
 
-function getImplicitWxForLocalNavigationRange(attribute: WxmlAttributeMatch) {
-  const match = /[$A-Z_a-z][\w$]*/u.exec(attribute.value)
-
-  if (!match || match.index == null) {
-    return null
-  }
-
-  return {
-    end: attribute.valueStart + match.index + match[0].length,
-    start: attribute.valueStart + match.index,
-  }
-}
-
-function getWxmlOpenTagStack(sourceText: string, offset: number) {
-  const stack: Array<{
-    attributes: WxmlAttributeMatch[]
-    tagName: string
-  }> = []
-  const tagPattern = /<!--[\s\S]*?-->|<[^<>]+>/gu
-
-  for (const match of sourceText.matchAll(tagPattern)) {
-    const tagText = match[0]
-    const tagStart = match.index ?? -1
-
-    if (tagStart < 0) {
-      continue
-    }
-
-    const tagEnd = tagStart + tagText.length
-
-    if (tagEnd > offset) {
-      if (tagStart <= offset) {
-        const tagNameMatch = parseTagName(tagText)
-
-        if (tagNameMatch?.name && !tagNameMatch.isClosingTag) {
-          stack.push({
-            attributes: parseTagAttributes(tagText, tagStart, tagNameMatch.nameEnd),
-            tagName: tagNameMatch.name,
-          })
-        }
-      }
-
-      break
-    }
-
-    if (tagText.startsWith('<!--')) {
-      continue
-    }
-
-    const tagNameMatch = parseTagName(tagText)
-
-    if (!tagNameMatch?.name) {
-      continue
-    }
-
-    if (tagNameMatch.isClosingTag) {
-      for (let index = stack.length - 1; index >= 0; index--) {
-        if (stack[index].tagName === tagNameMatch.name) {
-          stack.splice(index, 1)
-          break
-        }
-      }
-
-      continue
-    }
-
-    const attributes = parseTagAttributes(tagText, tagStart, tagNameMatch.nameEnd)
-    const isSelfClosing = /\/\s*>$/u.test(tagText)
-
-    if (!isSelfClosing) {
-      stack.push({
-        attributes,
-        tagName: tagNameMatch.name,
-      })
-    }
-  }
-
-  return stack
-}
-
 export function isWxmlDocument(document: vscode.TextDocument) {
   return isStandaloneTemplateDocument(document)
 }
@@ -374,7 +297,7 @@ export function getWxmlSourceText(document: vscode.TextDocument) {
     return text
   }
 
-  if (document.languageId !== 'vue') {
+  if (!isVueSourceDocument(document)) {
     return null
   }
 
@@ -435,6 +358,33 @@ export function resolveWxmlFileCompanionPaths(filePath: string) {
 
 export function parseWxmlTagContext(sourceText: string, offset: number): WxmlTagContext {
   const safeOffset = Math.max(0, Math.min(offset, sourceText.length))
+  const sharedToken = getTemplateAnalysis(sourceText).tokens.find(token => token.start <= safeOffset && safeOffset < token.end)
+  if (sharedToken?.kind === 'tag') {
+    const attributes = sharedToken.attributes.filter(attribute => attribute.value !== undefined)
+      .map(attribute => ({
+        name: attribute.name,
+        nameStart: attribute.nameStart,
+        nameEnd: attribute.nameEnd,
+        value: attribute.value!,
+        rawValue: attribute.rawValue!,
+        valueStart: attribute.valueStart!,
+        valueEnd: attribute.valueEnd!,
+      }))
+    return {
+      attribute: attributes.find(attribute => attribute.nameStart <= safeOffset && safeOffset <= attribute.valueEnd + 1) ?? null,
+      attributes,
+      isClosingTag: sharedToken.closing,
+      isInsideTag: true,
+      tagName: sharedToken.name,
+      tagNameStart: sharedToken.nameStart,
+      tagNameEnd: sharedToken.nameEnd,
+      tagStart: sharedToken.start,
+    }
+  }
+  if (sharedToken) {
+    return { attribute: null, attributes: [], isClosingTag: false, isInsideTag: false, tagName: null, tagNameEnd: null, tagNameStart: null, tagStart: null }
+  }
+  // 输入中的半成品标签尚无完整 token，只为编辑时补全保留容错上下文。
   const beforeCursor = sourceText.slice(0, safeOffset)
   const tagStart = beforeCursor.lastIndexOf('<')
   const tagEndBeforeCursor = beforeCursor.lastIndexOf('>')
@@ -526,29 +476,12 @@ export function isEventAttribute(attributeName: string | null | undefined) {
     return false
   }
 
-  return /^(?:bind|catch|capture-bind|capture-catch|mut-bind|@)/u.test(attributeName)
+  return attributeName.startsWith('@') || languageProfiles.some(profile => isPlatformEventAttribute(attributeName, profile))
 }
 
-export function getWxmlInterpolationContext(sourceText: string, offset: number): WxmlInterpolationContext | null {
-  const openIndex = sourceText.lastIndexOf('{{', offset)
-  const closeBeforeOffset = sourceText.lastIndexOf('}}', offset)
-  const closeIndex = sourceText.indexOf('}}', offset)
-
-  if (
-    openIndex < 0
-    || closeIndex < 0
-    || openIndex > offset
-    || closeIndex < offset
-    || closeBeforeOffset > openIndex
-  ) {
-    return null
-  }
-
-  return {
-    expression: sourceText.slice(openIndex + 2, closeIndex).trim(),
-    start: openIndex + 2,
-    end: closeIndex,
-  }
+export function getWxmlInterpolationContext(sourceText: string, offset: number, fileName = 'component.wxml'): WxmlInterpolationContext | null {
+  const expression = getTemplateAnalysis(sourceText, fileName).expressions.find(expression => expression.start <= offset && offset <= expression.end)
+  return expression ? { expression: expression.source.trim(), start: expression.start, end: expression.end } : null
 }
 
 export function getPrimaryScriptIdentifier(expression: string) {
@@ -600,71 +533,31 @@ export function getWxmlScopedIdentifierMatch(
   sourceText: string,
   offset: number,
   identifier: string,
+  fileName = 'component.wxml',
 ): WxmlScopedIdentifierMatch | null {
   const normalizedIdentifier = identifier.trim()
-
   if (!/^[A-Za-z_$][\w$]*$/u.test(normalizedIdentifier)) {
     return null
   }
-
-  const openTagStack = getWxmlOpenTagStack(sourceText, offset)
-
-  for (let index = openTagStack.length - 1; index >= 0; index--) {
-    const attributes = openTagStack[index].attributes
-    const forAttribute = attributes.find(attribute => attribute.name === 'wx:for')
-
-    if (!forAttribute) {
+  const analysis = getTemplateAnalysis(sourceText, fileName)
+  const scopes = analysis.scopes.filter(scope => scope.start <= offset && scope.end >= offset)
+    .sort((left, right) => right.start - left.start)
+  for (const scope of scopes) {
+    const binding = scope.bindings.find(binding => binding.name === normalizedIdentifier)
+    if (!binding) {
       continue
     }
-
-    const itemAttribute = attributes.find(attribute => attribute.name === 'wx:for-item')
-    const indexAttribute = attributes.find(attribute => attribute.name === 'wx:for-index')
-    const itemIdentifier = itemAttribute?.value.trim() || 'item'
-    const indexIdentifier = indexAttribute?.value.trim() || 'index'
-    const implicitNavigationRange = getImplicitWxForLocalNavigationRange(forAttribute)
-    const collection = implicitNavigationRange
-      ? {
-          collectionEnd: implicitNavigationRange.end,
-          collectionName: sourceText.slice(implicitNavigationRange.start, implicitNavigationRange.end),
-          collectionStart: implicitNavigationRange.start,
-        }
-      : {}
-
-    if (normalizedIdentifier === itemIdentifier) {
-      const navigationRange = itemAttribute ? null : implicitNavigationRange
-
-      return {
-        ...collection,
-        definitionEnd: itemAttribute?.valueEnd ?? null,
-        definitionStart: itemAttribute?.valueStart ?? null,
-        identifier: normalizedIdentifier,
-        ...(navigationRange
-          ? {
-              navigationEnd: navigationRange.end,
-              navigationStart: navigationRange.start,
-            }
-          : {}),
-      }
-    }
-
-    if (normalizedIdentifier === indexIdentifier) {
-      const navigationRange = indexAttribute ? null : implicitNavigationRange
-
-      return {
-        ...collection,
-        definitionEnd: indexAttribute?.valueEnd ?? null,
-        definitionStart: indexAttribute?.valueStart ?? null,
-        identifier: normalizedIdentifier,
-        ...(navigationRange
-          ? {
-              navigationEnd: navigationRange.end,
-              navigationStart: navigationRange.start,
-            }
-          : {}),
-      }
+    const explicit = binding.end > binding.start
+    return {
+      identifier: normalizedIdentifier,
+      definitionStart: explicit ? binding.start : null,
+      definitionEnd: explicit ? binding.end : null,
+      collectionStart: binding.collection.start,
+      collectionEnd: binding.collection.end,
+      collectionName: binding.collection.source,
+      ...(!explicit ? { navigationStart: binding.collection.start, navigationEnd: binding.collection.end } : {}),
     }
   }
-
   return null
 }
 

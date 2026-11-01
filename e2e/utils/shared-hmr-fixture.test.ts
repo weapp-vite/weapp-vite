@@ -15,7 +15,7 @@ describe('shared HMR fixture baselines', () => {
   it.each([
     ['weapp', 'wxs'],
     ['alipay', 'sjs'],
-    ['tt', 'wxs'],
+    ['tt', 'sjs'],
   ] as const)('uses the host script module extension for %s', (platform, extension) => {
     expect(resolveSharedHmrScriptModuleExt(platform)).toBe(extension)
   })

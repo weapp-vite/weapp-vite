@@ -1,8 +1,12 @@
 import type babelPresetEnv from '@babel/preset-env'
 import type babelPresetTypescript from '@babel/preset-typescript'
+import type { MpPlatform } from '@weapp-core/shared'
 import { createRequire } from 'node:module'
+import { getMiniProgramScriptModuleOptions } from '@weapp-core/shared'
 import * as babel from '@weapp-vite/ast/babelCore'
 import * as t from '@weapp-vite/ast/babelTypes'
+import { collectWxsDependencies } from './dependencies'
+import { isDefaultExportSpecifier, runtimeExportShape } from './moduleExports'
 import { normalizeWxsFilename } from './utils'
 
 type BabelPluginItem = NonNullable<babel.TransformOptions['plugins']>[number]
@@ -27,6 +31,7 @@ function getBabelPresets() {
 export interface TransformWxsCodeOptions {
   filename?: string
   extension?: string
+  platform?: MpPlatform
 }
 
 export interface TransformWxsCodeResult {
@@ -42,37 +47,10 @@ export function transformWxsCode(code: string, options?: TransformWxsCodeOptions
   const presets = getBabelPresets()
   const filename = options?.filename ?? 'script.ts'
   const extension = options?.extension ?? 'wxs'
-  const preserveEsmExports = extension.replace(/^\./, '') === 'sjs'
+  const preserveEsmExports = getMiniProgramScriptModuleOptions(options?.platform, extension).format === 'esm'
   const importees: Array<{ source: string }> = []
-
-  const maybePushImportee = (value: unknown) => {
-    if (typeof value !== 'string' || !value) {
-      return
-    }
-    importees.push({ source: value })
-  }
-
-  const tryCollectArgument = (path: babel.NodePath<any>) => {
-    const node = path.node
-    if (t.isStringLiteral(node)) {
-      maybePushImportee(node.value)
-      return
-    }
-    if (t.isTemplateLiteral(node) && node.expressions.length === 0) {
-      const value = node.quasis.map(q => q.value.cooked ?? q.value.raw ?? '').join('')
-      maybePushImportee(value)
-      return
-    }
-    try {
-      const evaluated = path.evaluate()
-      if (evaluated.confident) {
-        maybePushImportee(evaluated.value)
-      }
-    }
-    catch {
-      // 忽略不确定（置信度不足）的求值错误
-    }
-  }
+  let flattenDefault = true
+  let preserveInteropMarker = false
 
   const result = babel.transformSync(code, {
     babelrc: false,
@@ -85,6 +63,14 @@ export function transformWxsCode(code: string, options?: TransformWxsCodeOptions
     plugins: [
       {
         visitor: {
+          Program: {
+            enter(p: babel.NodePath<t.Program>) {
+              importees.push(...collectWxsDependencies(p))
+              const shape = runtimeExportShape(p)
+              flattenDefault = !shape.named
+              preserveInteropMarker = shape.named && shape.defaultExport
+            },
+          },
           Directive: {
             enter(p: babel.NodePath<t.Directive>) {
               p.remove()
@@ -93,15 +79,12 @@ export function transformWxsCode(code: string, options?: TransformWxsCodeOptions
           CallExpression: {
             enter(p: babel.NodePath<t.CallExpression>) {
               const node = p.node
-              if (!t.isIdentifier(node.callee, { name: 'require' })) {
+              if (!t.isIdentifier(node.callee, { name: 'require' }) || p.scope.getBinding('require')) {
                 return
               }
               if (node.arguments.length !== 1) {
                 return
               }
-
-              const argPath = p.get('arguments.0') as babel.NodePath<any>
-              tryCollectArgument(argPath)
 
               const arg = node.arguments[0]
               if (t.isStringLiteral(arg)) {
@@ -125,8 +108,14 @@ export function transformWxsCode(code: string, options?: TransformWxsCodeOptions
               && expression.arguments[0].name === 'exports'
               && t.isStringLiteral(expression.arguments[1])
               && expression.arguments[1].value === '__esModule'
+              && !p.scope.getBinding('exports')
             ) {
-              p.remove()
+              if (!preserveInteropMarker) {
+                p.remove()
+              }
+              else {
+                p.replaceWith(t.expressionStatement(t.assignmentExpression('=', t.memberExpression(t.memberExpression(t.identifier('module'), t.identifier('exports')), t.identifier('__esModule')), t.booleanLiteral(true))))
+              }
             }
           },
           AssignmentExpression: {
@@ -141,6 +130,7 @@ export function transformWxsCode(code: string, options?: TransformWxsCodeOptions
                 || left.computed
                 || !t.isIdentifier(left.object, { name: 'module' })
                 || !t.isIdentifier(left.property, { name: 'exports' })
+                || p.scope.getBinding('module')
                 || !p.parentPath.isExpressionStatement()
               ) {
                 return
@@ -152,7 +142,7 @@ export function transformWxsCode(code: string, options?: TransformWxsCodeOptions
           NewExpression: {
             enter(p: babel.NodePath<t.NewExpression>) {
               const node = p.node
-              if (t.isIdentifier(node.callee, { name: 'RegExp' })) {
+              if (t.isIdentifier(node.callee, { name: 'RegExp' }) && !p.scope.getBinding('RegExp')) {
                 p.replaceWith(
                   t.callExpression(
                     t.identifier('getRegExp'),
@@ -160,7 +150,7 @@ export function transformWxsCode(code: string, options?: TransformWxsCodeOptions
                   ),
                 )
               }
-              else if (t.isIdentifier(node.callee, { name: 'Date' })) {
+              else if (t.isIdentifier(node.callee, { name: 'Date' }) && !p.scope.getBinding('Date')) {
                 p.replaceWith(
                   t.callExpression(
                     t.identifier('getDate'),
@@ -187,7 +177,7 @@ export function transformWxsCode(code: string, options?: TransformWxsCodeOptions
                 return
               }
               const node = p.node
-              if (!t.isIdentifier(node.object, { name: 'exports' })) {
+              if (!t.isIdentifier(node.object, { name: 'exports' }) || p.scope.getBinding('exports')) {
                 return
               }
               const moduleExports = t.memberExpression(t.identifier('module'), t.identifier('exports'))
@@ -202,7 +192,65 @@ export function transformWxsCode(code: string, options?: TransformWxsCodeOptions
           },
           ImportDeclaration: {
             enter(p: babel.NodePath<t.ImportDeclaration>) {
-              maybePushImportee(p.node.source.value)
+              p.node.source.value = normalizeWxsFilename(p.node.source.value, extension)
+            },
+          },
+          ExportAllDeclaration: {
+            enter(p: babel.NodePath<t.ExportAllDeclaration>) {
+              if (p.node.source) {
+                p.node.source.value = normalizeWxsFilename(p.node.source.value, extension)
+              }
+            },
+          },
+          ExportNamedDeclaration: {
+            enter(p: babel.NodePath<t.ExportNamedDeclaration>) {
+              if (p.node.source) {
+                p.node.source.value = normalizeWxsFilename(p.node.source.value, extension)
+              }
+              const specifier = p.node.specifiers.find(isDefaultExportSpecifier)
+              if (preserveEsmExports || !flattenDefault || !specifier) {
+                return
+              }
+              let value: t.Expression
+              const declarations: t.Statement[] = []
+              if (p.node.source) {
+                const local = p.scope.generateUidIdentifier('defaultExport')
+                const imported = t.isExportNamespaceSpecifier(specifier) ? t.importNamespaceSpecifier(local) : t.isExportSpecifier(specifier) && !t.isIdentifier(specifier.local, { name: 'default' }) ? t.importSpecifier(local, specifier.local) : t.importDefaultSpecifier(local)
+                declarations.push(t.importDeclaration([imported], p.node.source))
+                value = local
+              }
+              else if (t.isExportSpecifier(specifier) && t.isIdentifier(specifier.local)) {
+                value = specifier.local
+              }
+              else {
+                return
+              }
+              declarations.push(t.expressionStatement(t.assignmentExpression('=', t.memberExpression(t.identifier('module'), t.identifier('exports')), value)))
+              p.node.specifiers = p.node.specifiers.filter(candidate => candidate !== specifier)
+              p.replaceWithMultiple(p.node.specifiers.length ? [...declarations, p.node] : declarations)
+            },
+          },
+          ExportDefaultDeclaration: {
+            enter(p: babel.NodePath<t.ExportDefaultDeclaration>) {
+              if (preserveEsmExports || !flattenDefault) {
+                return
+              }
+              const declaration = p.node.declaration
+              if (t.isTSInterfaceDeclaration(declaration) || t.isTSDeclareFunction(declaration)) {
+                return
+              }
+              const named = (t.isFunctionDeclaration(declaration) || t.isClassDeclaration(declaration)) && declaration.id
+              const exported = named ? t.identifier(named.name) : t.isFunctionDeclaration(declaration) ? t.toExpression(declaration) : t.isClassDeclaration(declaration) ? t.toExpression(declaration) : t.isExpression(declaration) ? declaration : undefined
+              if (!exported) {
+                return
+              }
+              const assignment = t.expressionStatement(t.assignmentExpression('=', t.memberExpression(t.identifier('module'), t.identifier('exports')), exported))
+              if (named) {
+                p.replaceWithMultiple([declaration, assignment])
+              }
+              else {
+                p.replaceWith(assignment)
+              }
             },
           },
 

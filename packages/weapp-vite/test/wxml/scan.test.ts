@@ -1,3 +1,4 @@
+import { runInNewContext } from 'node:vm'
 import { handleWxml } from '@/wxml/handle'
 import { scanWxml } from '@/wxml/scan'
 
@@ -133,9 +134,31 @@ export {
 </wxs>`)
     const { deps, components } = res
     const { code } = handleWxml(res)
-    expect(code).toMatchSnapshot()
-    expect(deps).toMatchSnapshot('deps')
-    expect(components).toMatchSnapshot('components')
+    expect(code).toContain('<view>{{test.foo}}</view>')
+    const script = /<wxs\b([^>]*)>([\s\S]*)<\/wxs>$/.exec(code)
+    expect(script).not.toBeNull()
+    expect(script![1]).toMatch(/\bmodule="test"/)
+    expect(script![1]).not.toMatch(/\blang\s*=/)
+    const modules = new Map<string, unknown>([
+      ['./index.wxs', { bar: 'bar value', foo: 'foo value' }],
+      ['./bbc.wxs', { value: 'bbc value' }],
+    ])
+    const requests: string[] = []
+    const module = { exports: {} }
+    runInNewContext(script![2], {
+      module,
+      require(source: string) {
+        requests.push(source)
+        if (!modules.has(source)) {
+          throw new Error(`Unexpected WXS dependency: ${source}`)
+        }
+        return modules.get(source)
+      },
+    })
+    expect(module.exports).toEqual({ abc: 'abc', bar: 'bar value', foo: 'foo value', bbc: { value: 'bbc value' } })
+    expect(requests).toEqual(['./index.wxs', './bbc.wxs'])
+    expect(deps).toEqual([])
+    expect(components).toEqual({})
   })
 
   it('scanWxml deps case 0', () => {
