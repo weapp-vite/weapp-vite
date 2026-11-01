@@ -9,7 +9,6 @@ import { createFrameworkResourceSequence } from './frameworkSequence'
 const observed = vi.hoisted(() => ({
   settle: vi.fn<() => Promise<void>>(),
   runtime: vi.fn(async () => ({})),
-  engine: vi.fn(async () => {}),
 }))
 
 vi.mock('vite', () => ({ createServer: vi.fn() }))
@@ -34,19 +33,16 @@ let context: object
 beforeEach(() => {
   observed.settle.mockReset().mockResolvedValue(undefined)
   observed.runtime.mockClear()
-  observed.engine.mockClear()
   context = { [Symbol.for(WEAPP_VITE_CLASSIC_SETTLEMENT_KEY)]: { whenSettled: observed.settle } }
   vi.mocked(createServer).mockReset().mockImplementation(async (config) => {
-    const engine = { close: async () => {}, ensureCurrentBuildFinish: observed.engine }
     const watcher = { async close() {} }
     const server = {
       [Symbol.for(WEAPP_VITE_CLASSIC_SETTLEMENT_KEY)]: Reflect.get(context, Symbol.for(WEAPP_VITE_CLASSIC_SETTLEMENT_KEY)),
       watcher,
-      environments: { client: { bundledDev: { _devEngine: engine } } },
+      environments: { client: {} },
       async listen() {},
       async close() {
         await watcher.close()
-        await engine.close()
       },
     } as unknown as ViteDevServer
     const plugin = config?.plugins?.[1] as Plugin
@@ -77,7 +73,6 @@ it('waits for the classic generation before reading runtime evidence', async () 
       throw new Error('Classic observation bypassed generation settlement')
     })])
     expect(observed.runtime).not.toHaveBeenCalled()
-    expect(observed.engine).not.toHaveBeenCalled()
     publication.resolve()
     await observation
     expect(observed.runtime).toHaveBeenCalledOnce()

@@ -1,4 +1,3 @@
-import type { DevEngine } from 'rolldown/experimental'
 import type { ViteDevServer } from 'vite'
 import type { SequenceInput } from './driver'
 import { readFile } from 'node:fs/promises'
@@ -56,9 +55,10 @@ export class FrameworkSequenceSession {
           enforce: 'post',
           configureServer: (server) => {
             this.watchers.track(server.watcher)
-            const engine = (server.environments.client?.bundledDev as { _devEngine?: DevEngine } | undefined)?._devEngine
-            if (engine) {
-              this.engines.track(engine)
+            // 公开宿主先于 listen 存在；直接保留其 close 结果，避免环境层吞掉内部引擎错误。
+            const bundledDev = server.environments.client?.bundledDev
+            if (bundledDev) {
+              this.engines.track(bundledDev)
             }
           },
           load: (id) => { this.measurements.load(id) },
@@ -93,6 +93,7 @@ export class FrameworkSequenceSession {
   }
 
   observeSession() {
+    // engines 计数对应 bundledDev 生命周期 owner；classic 使用自有快照控制器，为 0。
     return { watchers: this.watchers.size, engines: this.engines.size }
   }
 

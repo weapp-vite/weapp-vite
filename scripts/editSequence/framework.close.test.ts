@@ -36,15 +36,29 @@ beforeEach(() => {
   }
   vi.mocked(createServer).mockReset().mockImplementation(async (config) => {
     const watcher = { close: closes.watcher }
-    const engine = { close: closes.engine, ensureCurrentBuildFinish: async () => {} }
+    const stateful = config?.weapp?.hmr?.runtime === 'stateful-experimental'
+    let engine: { close: typeof closes.engine } | undefined
+    const bundledDev = stateful ? { close: () => engine?.close() ?? Promise.resolve() } : undefined
+    const environment = {
+      bundledDev,
+      async close() {
+        // Vite 的环境层吞掉 bundledDev.close 拒绝；观测必须保留公开 owner 的原始结果。
+        await Promise.allSettled([bundledDev?.close()])
+      },
+    }
     const server = {
       [Symbol.for(WEAPP_VITE_CLASSIC_SETTLEMENT_KEY)]: { whenSettled: async () => {} },
       watcher,
-      environments: { client: { bundledDev: { _devEngine: engine } } },
-      async listen() {},
+      config: { plugins: [{ name: 'weapp-vite:stateful-hmr-session', api: { whenSettled: async () => {} } }] },
+      environments: { client: environment },
+      async listen() {
+        if (bundledDev) {
+          engine = { close: closes.engine }
+        }
+      },
       async close() {
         // 复现原生宿主吞掉引擎关闭错误的边界；本测试不创建真实宿主或 watcher。
-        await Promise.allSettled([watcher.close(), engine.close()])
+        await Promise.allSettled([watcher.close(), environment.close()])
         await closes.server()
       },
     } as unknown as ViteDevServer
@@ -63,11 +77,11 @@ beforeEach(() => {
   })
 })
 
-async function createObservedSession() {
-  const session = new FrameworkSequenceSession('weapp-classic', path.resolve('mock-framework-close'))
+async function createObservedSession(mode: 'weapp-classic' | 'weapp-stateful' = 'weapp-stateful') {
+  const session = new FrameworkSequenceSession(mode, path.resolve('mock-framework-close'))
   const sequence = createFrameworkResourceSequence(14, 1)
   await session.observe({ files: sequence.files, step: 0, signal: new AbortController().signal })
-  expect(session.observeSession()).toEqual({ watchers: 1, engines: 1 })
+  expect(session.observeSession().watchers).toBe(1)
   return session
 }
 
@@ -163,4 +177,54 @@ it('returns the cached framework promise during synchronous runtime close reentr
   expect(closes.runtime).toHaveBeenCalledTimes(1)
   expect(closes.server).toHaveBeenCalledTimes(1)
   expect(session.observeSession()).toEqual({ watchers: 0, engines: 0 })
+})
+
+it('keeps the classic bundled owner count at zero when that host is not used', async () => {
+  const session = await createObservedSession('weapp-classic')
+  expect(session.observeSession()).toEqual({ watchers: 1, engines: 0 })
+  await session.close()
+  expect(session.observeSession()).toEqual({ watchers: 0, engines: 0 })
+  expect(closes.engine).not.toHaveBeenCalled()
+})
+
+it.each(['fulfilled', 'rejected'] as const)('retains the late engine owner until its public close is %s', async (status) => {
+  const closed = Promise.withResolvers<void>()
+  const entered = Promise.withResolvers<void>()
+  const failure = new Error('late engine close failed')
+  closes.engine.mockImplementation(() => {
+    entered.resolve()
+    return closed.promise
+  })
+  const session = await createObservedSession()
+  const server = await vi.mocked(createServer).mock.results[0]!.value
+  const owner = server.environments.client!.bundledDev!
+  const closing = session.close()
+  let settled = false
+  const completed = closing.then(() => {
+    settled = true
+  }, (error: unknown) => {
+    settled = true
+    return error
+  })
+  try {
+    await entered.promise
+    const ownerClosing = owner.close()
+    expect(owner.close()).toBe(ownerClosing)
+    expect(session.close()).toBe(closing)
+    expect(settled).toBe(false)
+    expect(session.observeSession().engines).toBe(1)
+    if (status === 'rejected') {
+      closed.reject(failure)
+    }
+    else {
+      closed.resolve()
+    }
+    expect(await completed).toBe(status === 'rejected' ? failure : undefined)
+    expect(session.observeSession()).toEqual({ watchers: 0, engines: status === 'rejected' ? 1 : 0 })
+    expect(closes.engine).toHaveBeenCalledTimes(1)
+  }
+  finally {
+    closed.resolve()
+    await completed
+  }
 })
