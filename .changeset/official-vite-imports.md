@@ -2,6 +2,7 @@
 "weapp-vite": patch
 "create-weapp-vite": patch
 "@weapp-vite/hmr": patch
+"@weapp-core/constants": patch
 ---
 
 fix(weapp-vite): 将 package imports 的 query/hash 兼容处理内置到发布包，在主构建、子构建与 Web 路径自动接入，保留精确映射、条件、自定义解析器和 external 语义。
@@ -17,5 +18,7 @@ fix(weapp-vite): 将 package imports 的 query/hash 兼容处理内置到发布�
 Vite+ 模板和独立消费者同步使用官方 1.4.0 launcher/core 配对及其内置 Rolldown 1.2.15，并将 Vitest 固定到配套的 5.0.5；独立构建继续使用官方 Vite 8.3.5 和 Rolldown 1.2.16，不再依赖工作区 Vite/Rolldown 补丁。
 
 开发宿主按每代所有权接管监听，启动和重启等待后端初扫或现存源码登记后再报告就绪；关闭先解除登记等待，再释放本代编译及监听资源，保留幸存 owner 和独立原生监听。
+
+classic 构建的内部完成边界等待原生发布、样式收尾和已启动的 profile 写入；配置重启与关闭撤销旧代观察，失败后只有实际成功发布才能恢复采样，避免将未完成的构建计为资源验收通过。
 
 修补后的 Chokidar 继续随发布产物打包交付。公开产品生命周期契约作为完整硬门禁，原上游实现与引用回收诊断独立保留，失败仍非零退出；两者结果不互相替代。

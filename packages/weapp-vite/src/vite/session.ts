@@ -3,6 +3,7 @@ import type { HmrRuntimeSession } from '../runtime/hmrRuntimeSession'
 import type { PreparedNpmOutput } from './npm'
 import { attachDevModuleGraphHost } from '../moduleGraph/host'
 import { getInitialBuildInputObservation } from '../runtime/buildPlugin/initialBuildChanges'
+import { linkClassicSettlement } from '../runtime/buildPlugin/settlement'
 import { checkAppWorkersOptions } from '../runtime/buildPlugin/workers'
 import { prepareClassicIdeConfig } from '../runtime/classicIdeConfig/prepare'
 import { CompilerSession } from '../runtime/compilerSession'
@@ -209,6 +210,9 @@ export class WeappBuildSession extends CompilerSession {
     }
     if (this.statefulController) {
       this.onClose(attachStatefulHmrHost(this.context, { server, controller: this.statefulController }))
+    }
+    else {
+      this.onClose(linkClassicSettlement(this.context, server))
     }
     this.onClose(attachDevModuleGraphHost(this.context, server, (result) => {
       successful = result

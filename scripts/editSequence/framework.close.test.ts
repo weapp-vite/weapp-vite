@@ -1,5 +1,6 @@
 import type { Plugin, ViteDevServer } from 'vite'
 import path from 'node:path'
+import { WEAPP_VITE_CLASSIC_SETTLEMENT_KEY } from '@weapp-core/constants'
 import { createServer } from 'vite'
 import { beforeEach, expect, it, vi } from 'vitest'
 import { FrameworkSequenceSession } from './framework'
@@ -37,6 +38,7 @@ beforeEach(() => {
     const watcher = { close: closes.watcher }
     const engine = { close: closes.engine, ensureCurrentBuildFinish: async () => {} }
     const server = {
+      [Symbol.for(WEAPP_VITE_CLASSIC_SETTLEMENT_KEY)]: { whenSettled: async () => {} },
       watcher,
       environments: { client: { bundledDev: { _devEngine: engine } } },
       async listen() {},

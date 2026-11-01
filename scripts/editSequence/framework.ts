@@ -3,6 +3,7 @@ import type { ViteDevServer } from 'vite'
 import type { SequenceInput } from './driver'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
+import { WEAPP_VITE_CLASSIC_SETTLEMENT_KEY } from '@weapp-core/constants'
 import { createServer } from 'vite'
 import { weapp } from 'weapp-vite/vite'
 import { compareBenchmarkOutputs, snapshotBenchmarkOutputs } from '../benchmarkTemplatesHmr/outputScope'
@@ -35,10 +36,6 @@ export class FrameworkSequenceSession {
     this.outDir = path.join(root, 'dist')
     this.runtime = new FrameworkSequenceRuntime(root, this.outDir, this.stateful)
     this.measurements = new SequenceMeasurements(root)
-  }
-
-  private get engine() {
-    return (this.server?.environments.client?.bundledDev as { _devEngine?: DevEngine } | undefined)?._devEngine
   }
 
   async observe(input: SequenceInput) {
@@ -108,7 +105,11 @@ export class FrameworkSequenceSession {
       await api.whenSettled()
     }
     else {
-      await this.engine?.ensureCurrentBuildFinish()
+      const binding: unknown = this.server ? Reflect.get(this.server, Symbol.for(WEAPP_VITE_CLASSIC_SETTLEMENT_KEY)) : undefined
+      if (!binding || typeof binding !== 'object' || !('whenSettled' in binding) || typeof binding.whenSettled !== 'function') {
+        throw new Error('Framework resource observation requires the rebuilt classic generation settlement binding')
+      }
+      await binding.whenSettled()
     }
   }
 
