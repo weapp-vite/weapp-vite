@@ -2482,6 +2482,9 @@ importers:
       '@weapp-vite/language-service':
         specifier: workspace:*
         version: link:../../packages/language-service
+      '@weapp-vite/oxfmt':
+        specifier: workspace:*
+        version: link:../../packages/oxfmt
       adm-zip:
         specifier: ^0.6.1
         version: 0.6.1
@@ -2491,6 +2494,9 @@ importers:
       tinyexec:
         specifier: ^1.3.1
         version: 1.3.1
+      weapp-vite:
+        specifier: workspace:*
+        version: link:../../packages/weapp-vite
 
   mpcore/demos/web:
     dependencies:

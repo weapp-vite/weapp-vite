@@ -2,9 +2,40 @@ import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
+import { fileURLToPath } from 'node:url'
+import { createPublishManifest } from './release-vsce'
 import {
   ensureVscodeUserSettings,
 } from './vscode-e2e-shared'
+
+/** 宿主使用正式扩展身份及发布白名单，不改动工作区的默认格式器配置。 */
+export async function prepareHostSmokeExtension(extensionRoot: string, userDataDir: string) {
+  const source: unknown = JSON.parse(await fs.readFile(path.join(extensionRoot, 'package.json'), 'utf8'))
+  if (!source || typeof source !== 'object' || Array.isArray(source)) {
+    throw new Error('扩展 package.json 必须为对象')
+  }
+  const manifest: Record<string, unknown> = createPublishManifest(source as Record<string, unknown>)
+  const files = manifest.files
+  if (typeof manifest.publisher !== 'string' || typeof manifest.name !== 'string' || typeof manifest.main !== 'string'
+    || !Array.isArray(files) || files.some(file => typeof file !== 'string')) {
+    throw new Error('宿主 smoke 需要完整的扩展身份、入口和发布文件白名单')
+  }
+
+  const extensionDevelopmentPath = path.join(userDataDir, 'extension')
+  await fs.mkdir(extensionDevelopmentPath, { recursive: true })
+  for await (const relative of fs.glob(files as string[], { cwd: extensionRoot })) {
+    const sourcePath = path.join(extensionRoot, relative)
+    if (!(await fs.stat(sourcePath)).isFile()) {
+      continue
+    }
+    const destination = path.join(extensionDevelopmentPath, relative)
+    await fs.mkdir(path.dirname(destination), { recursive: true })
+    await fs.copyFile(sourcePath, destination)
+  }
+  await fs.writeFile(path.join(extensionDevelopmentPath, 'package.json'), `${JSON.stringify(manifest, null, 2)}\n`)
+  await fs.access(path.join(extensionDevelopmentPath, manifest.main))
+  return { extensionDevelopmentPath, extensionId: `${manifest.publisher}.${manifest.name}` }
+}
 
 async function resolveVscodeTestElectron() {
   const moduleName = '@vscode/test-electron'
@@ -31,13 +62,15 @@ async function main() {
   try {
     await fs.access(distEntryPath)
     await fs.access(runnerPath)
+    const { extensionDevelopmentPath, extensionId } = await prepareHostSmokeExtension(extensionRoot, userDataDir)
     await ensureVscodeUserSettings(userDataDir)
     const { runTests } = await resolveVscodeTestElectron()
     const vscodeExecutablePath = process.env.VSCODE_EXECUTABLE_PATH
 
     await runTests({
-      extensionDevelopmentPath: extensionRoot,
+      extensionDevelopmentPath,
       extensionTestsPath: runnerPath,
+      extensionTestsEnv: { WEAPP_VITE_VSCODE_HOST_EXTENSION_ID: extensionId },
       ...(vscodeExecutablePath ? { vscodeExecutablePath } : {}),
       launchArgs: [
         fixturePath,
@@ -54,4 +87,6 @@ async function main() {
   }
 }
 
-void main()
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  void main()
+}
