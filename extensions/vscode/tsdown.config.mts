@@ -1,11 +1,8 @@
-import path from 'node:path'
 import { defineConfig } from 'tsdown'
+import { workspaceSourceAliases } from './scripts/workspaceSourceAliases.ts'
 
 export default defineConfig({
-  alias: {
-    '@weapp-vite/ast/babel': path.resolve(import.meta.dirname, '../../packages/ast/src/babel.ts'),
-    '@weapp-vite/ast/babelTypes': path.resolve(import.meta.dirname, '../../packages/ast/src/babelTypes.ts'),
-  },
+  alias: Object.fromEntries(Object.entries(workspaceSourceAliases).map(([specifier, replacement]) => [`${specifier}$`, replacement])),
   clean: true,
   deps: {
     resolveDepSubpath: true,

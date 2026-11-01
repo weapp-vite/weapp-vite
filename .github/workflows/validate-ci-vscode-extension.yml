@@ -109,9 +109,6 @@ jobs:
         with:
           node-version: 24
 
-      - name: Build extension
-        run: pnpm --dir extensions/vscode run build
-
       - name: Run VS Code host smoke test
         run: pnpm --dir extensions/vscode run test:host:smoke
 

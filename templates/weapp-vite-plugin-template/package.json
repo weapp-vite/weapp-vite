@@ -26,8 +26,8 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "open": "wv open",
-    "stylelint": "stylelint \"{src,plugin,shared}/**/*.{css,scss,vue,wxss}\" --allow-empty-input",
-    "stylelint:fix": "stylelint \"{src,plugin,shared}/**/*.{css,scss,vue,wxss}\" --fix --allow-empty-input",
+    "stylelint": "stylelint \"{src,plugin,shared}/**/*.{css,scss,vue,wxss,acss,ttss,qss,jxss,tyss}\" --allow-empty-input",
+    "stylelint:fix": "stylelint \"{src,plugin,shared}/**/*.{css,scss,vue,wxss,acss,ttss,qss,jxss,tyss}\" --fix --allow-empty-input",
     "g": "wv generate",
     "postinstall": "wv prepare"
   },

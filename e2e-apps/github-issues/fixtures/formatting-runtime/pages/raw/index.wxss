@@ -1,0 +1,9 @@
+.panel>#style-probe[data-active="yes"]{
+width:120rpx;
+height:40rpx;
+margin-left:8rpx;
+color:rgb(12 34 56)
+}
+.panel>.item+.item{padding-left:10rpx}
+#spaces{white-space:pre-wrap}
+page{background:#fff}

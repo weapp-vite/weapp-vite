@@ -369,8 +369,8 @@
       }
     },
     {
-      "end": "(<?/)(wxs)?(>)",
-      "begin": "(<)(wxs)",
+      "end": "(</)(\\2)(\\s*>)|(/>)",
+      "begin": "(<)(wxs|sjs|ks|filter|script)\\b",
       "endCaptures": {
         "1": {
           "name": "punctuation.definition.tag.begin.html"
@@ -395,7 +395,7 @@
           "include": "#tag-stuff"
         },
         {
-          "end": "(?=</wxs>)",
+          "end": "(?=</(?:wxs|sjs|ks|filter|script)\\s*>)",
           "begin": "(>)",
           "beginCaptures": {
             "1": {
@@ -404,7 +404,7 @@
           },
           "patterns": [
             {
-              "include": "source.js"
+              "include": "source.ts"
             }
           ]
         }

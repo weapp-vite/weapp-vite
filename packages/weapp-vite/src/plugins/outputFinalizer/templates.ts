@@ -21,6 +21,8 @@ const TEMPLATE_STATIC_REWRITE_MARKERS = [
   '</wxs',
   '<sjs',
   '</sjs',
+  '<filter',
+  '</filter',
   '.html',
   '.wxs',
   '.sjs',
@@ -110,6 +112,7 @@ export async function normalizeTemplateAssetEntries(
       if (mayNeedTemplateNormalization(code, configService?.platform)) {
         const token = scanWxml(code, { platform: configService?.platform })
         normalized = handleWxml(token, {
+          platform: configService?.platform,
           removeComment: false,
           scriptModuleExtension: configService?.outputExtensions?.wxs,
           scriptModuleTag: resolveScriptModuleTagName({

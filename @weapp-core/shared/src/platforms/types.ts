@@ -126,6 +126,14 @@ export interface MiniProgramPlatformDescriptor {
    */
   scriptModuleTagByExtension?: Readonly<Partial<Record<string, string>>>
   /**
+   * @description 原生模板脚本的模块制式与引用属性，不能仅凭共用的 SJS 后缀推断。
+   */
+  scriptModule?: {
+    format: 'commonjs' | 'esm'
+    sourceAttribute: 'src' | 'from'
+    moduleAttribute: 'module' | 'name'
+  }
+  /**
    * @description 是否使用项目根目录作为 npm 产物目录基准。
    */
   usesProjectRootNpmDir?: boolean

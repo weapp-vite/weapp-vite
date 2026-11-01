@@ -1,0 +1,1 @@
+<filter module="tools" src="./tools.filter.js"/><filter module="compiled" lang="js" src="./filter.js"/><text>{{tools.value()}} {{compiled.value()}}</text>

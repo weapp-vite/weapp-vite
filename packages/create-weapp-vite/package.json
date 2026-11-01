@@ -64,7 +64,10 @@
     "typecheck": "tsc --noEmit",
     "release": "pnpm publish",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix",
+    "templates:prepare": "node --import tsx scripts/prepare-templates.ts",
+    "templates:languages": "node --import tsx scripts/sync-language-settings.ts",
+    "templates:languages:check": "node --import tsx scripts/sync-language-settings.ts --check"
   },
   "publishConfig": {
     "exports": {
@@ -86,7 +89,9 @@
     "@weapp-core/init": "workspace:*",
     "@weapp-core/logger": "workspace:*",
     "@weapp-core/shared": "workspace:*",
+    "@weapp-vite/language-service": "workspace:*",
     "execa": "^10.2.1",
+    "jsonc-parser": "^3.3.1",
     "make-fetch-happen": "^16.0.1",
     "npm-registry-fetch": "^20.0.1",
     "pathe": "catalog:",
@@ -98,6 +103,10 @@
   "devDependencies": {
     "@types/make-fetch-happen": "^10.0.4",
     "@types/npm-registry-fetch": "^8.0.9",
-    "@types/npmcli__config": "^6.0.4"
+    "@types/npmcli__config": "^6.0.4",
+    "@weapp-vite/oxfmt": "workspace:*",
+    "@weapp-vite/oxlint": "workspace:*",
+    "oxfmt": "0.73.0",
+    "vite-plus": "1.2.0"
   }
 }

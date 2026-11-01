@@ -1,0 +1,4199 @@
+{
+  "platform": "qq",
+  "availability": "snapshot",
+  "version": "sha256:d3226e1570f9e1d61fb6d3d17666d5dfa472940b8f7de52e6ce3aed70666665b",
+  "source": "https://q.qq.com/wiki/develop/miniprogram/component/",
+  "snapshotDate": "2026-10-30",
+  "upstreamRetrievedAt": "2026-10-30",
+  "components": [
+    {
+      "name": "ad",
+      "docLink": "https://q.qq.com/wiki/develop/miniprogram/component/open-ability/ad.html",
+      "attrs": [
+        {
+          "name": "unit-id",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "广告单元 id，可在QQ 小程序管理后台 的流量主模块新建"
+          ]
+        },
+        {
+          "name": "type",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "广告类型"
+          ],
+          "defaultValue": "banner"
+        },
+        {
+          "name": "ad-left",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "type 为 feeds 时广告左边距（px），必须大于 0"
+          ]
+        },
+        {
+          "name": "ad-top",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "type 为 feeds 时广告上边距（px），必须大于 0"
+          ]
+        },
+        {
+          "name": "ad-width",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "type 为 feeds 时广告宽度（px），默认 100%，最大值为屏幕宽度，最小值为 265"
+          ]
+        },
+        {
+          "name": "ad-height",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "type 为 feeds 时广告高度（px），最小 85，最大 160"
+          ]
+        },
+        {
+          "name": "block-size",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "type 为 block 时请求积木广告数量（展示以实际拉取广告数量为准）"
+          ],
+          "defaultValue": "1"
+        },
+        {
+          "name": "block-orientation",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "type 为 block 时请求积木广告排列方向"
+          ],
+          "defaultValue": "landscape"
+        },
+        {
+          "name": "bindsize",
+          "type": {
+            "name": "eventhandle"
+          },
+          "desc": [
+            "type 为 feeds 时广告实际宽高回调，event.detail = {width:296,height:150}"
+          ]
+        },
+        {
+          "name": "bindload",
+          "type": {
+            "name": "eventhandle"
+          },
+          "desc": [
+            "广告加载成功的回调"
+          ]
+        },
+        {
+          "name": "binderror",
+          "type": {
+            "name": "eventhandle"
+          },
+          "desc": [
+            "广告加载失败的回调，event.detail = {errCode: 1002}"
+          ]
+        },
+        {
+          "name": "test-banner-type",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "开发者工具下，type 为 banner 时，指定 banner 广告展示三图文还是单图"
+          ],
+          "defaultValue": "three"
+        }
+      ]
+    },
+    {
+      "name": "audio",
+      "docLink": "https://q.qq.com/wiki/develop/miniprogram/component/media/audio.html",
+      "attrs": [
+        {
+          "name": "id",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "audio 组件的唯一标识符"
+          ]
+        },
+        {
+          "name": "src",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "要播放音频的资源地址"
+          ]
+        },
+        {
+          "name": "loop",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否循环播放"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "controls",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否显示默认控件"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "poster",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "默认控件上的音频封面的图片资源地址，如果 controls 属性值为 false 则设置 poster 无效"
+          ]
+        },
+        {
+          "name": "name",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "默认控件上的音频名字，如果 controls 属性值为 false 则设置 name 无效"
+          ],
+          "defaultValue": "未知音频"
+        },
+        {
+          "name": "author",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "默认控件上的作者名字，如果 controls 属性值为 false 则设置 author 无效"
+          ],
+          "defaultValue": "未知作者"
+        },
+        {
+          "name": "binderror",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "当发生错误时触发 error 事件，detail = {errMsg: MediaError.code}"
+          ]
+        },
+        {
+          "name": "bindplay",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "当开始/继续播放时触发play事件"
+          ]
+        },
+        {
+          "name": "bindpause",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "当暂停播放时触发 pause 事件"
+          ]
+        },
+        {
+          "name": "bindtimeupdate",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "当播放进度改变时触发 timeupdate 事件，detail = {currentTime, duration}"
+          ]
+        },
+        {
+          "name": "bindended",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "当播放到末尾时触发 ended 事件"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "button",
+      "docLink": "https://q.qq.com/wiki/develop/miniprogram/component/form/button.html",
+      "attrs": [
+        {
+          "name": "size",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "按钮的大小"
+          ],
+          "defaultValue": "default"
+        },
+        {
+          "name": "type",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "按钮的样式类型"
+          ],
+          "defaultValue": "default"
+        },
+        {
+          "name": "plain",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "按钮是否镂空，背景色透明"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "disabled",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否禁用"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "loading",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "名称前是否带 loading 图标"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "form-type",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "用于 <form> 组件，点击分别会触发 <form> 组件的 submit/reset 事件"
+          ]
+        },
+        {
+          "name": "open-type",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "QQ 开放能力"
+          ]
+        },
+        {
+          "name": "hover-class",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "指定按钮按下去的样式类。当 hover-class=\"none\" 时，没有点击态效果"
+          ],
+          "defaultValue": "button-hover"
+        },
+        {
+          "name": "hover-stop-propagation",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "指定是否阻止本节点的祖先节点出现点击态"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "hover-start-time",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "按住后多久出现点击态，单位毫秒"
+          ],
+          "defaultValue": "20"
+        },
+        {
+          "name": "hover-stay-time",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "手指松开后点击态保留时间，单位毫秒"
+          ],
+          "defaultValue": "70"
+        },
+        {
+          "name": "lang",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "指定返回用户信息的语言，zh_CN 简体中文，zh_TW 繁体中文，en 英文。"
+          ],
+          "defaultValue": "en"
+        },
+        {
+          "name": "bindgetuserinfo",
+          "type": {
+            "name": "Handler"
+          },
+          "desc": [
+            "用户点击该按钮时，会返回获取到的用户信息，回调的 detail 数据与qq.getUserInfo返回的一致"
+          ]
+        },
+        {
+          "name": "app-parameter",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "打开 APP 时，向 APP 传递的参数"
+          ]
+        },
+        {
+          "name": "group-id",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "打开群资料卡时，传递的群号"
+          ]
+        },
+        {
+          "name": "guild-id",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "打开频道页面时，传递的频道号"
+          ]
+        },
+        {
+          "name": "public-id",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "打开公众号资料卡时，传递的号码"
+          ]
+        },
+        {
+          "name": "binderror",
+          "type": {
+            "name": "Handler"
+          },
+          "desc": [
+            "当使用开放能力时，发生错误的回调"
+          ]
+        },
+        {
+          "name": "bindlaunchapp",
+          "type": {
+            "name": "Handler"
+          },
+          "desc": [
+            "打开 APP 成功的回调"
+          ]
+        },
+        {
+          "name": "bindopensetting",
+          "type": {
+            "name": "Handler"
+          },
+          "desc": [
+            "在打开授权设置页后回调"
+          ]
+        },
+        {
+          "name": "share-type",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "分享类型集合，请参考下面share-type有效值说明。share-type后续将不再维护，请更新为share-mode"
+          ],
+          "defaultValue": "27"
+        },
+        {
+          "name": "share-mode",
+          "type": {
+            "name": "Array<String>"
+          },
+          "desc": [
+            "分享类型集合，请参考下面share-mode有效值说明"
+          ],
+          "defaultValue": "['qq', 'qzone']"
+        },
+        {
+          "name": "aria-label",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "无障碍访问，（属性）元素的额外描述"
+          ]
+        },
+        {
+          "name": "open-id",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "添加好友时，对方的 openid"
+          ]
+        },
+        {
+          "name": "bindaddfriend",
+          "type": {
+            "name": "Handler"
+          },
+          "desc": [
+            "添加好友的回调"
+          ]
+        },
+        {
+          "name": "bindaddgroupapp",
+          "type": {
+            "name": "Handler"
+          },
+          "desc": [
+            "添加群应用的回调。errCode 错误码：41004（当前用户非管理员或群主，无权操作），41005（超过可添加群应用的群数量）"
+          ]
+        },
+        {
+          "name": "bindcontact",
+          "type": {
+            "name": "Handler"
+          },
+          "desc": [
+            "打开客服会话的回调。"
+          ]
+        },
+        {
+          "name": "share-message-friend-info",
+          "type": {
+            "name": "FriendInfo"
+          },
+          "desc": [
+            "发送对象的 FriendInfo"
+          ]
+        },
+        {
+          "name": "share-message-title",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "转发标题，不传则默认使用当前小程序的昵称。 FriendInfo"
+          ]
+        },
+        {
+          "name": "share-message-img",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "转发显示图片的链接，可以是网络图片路径（仅 QQ CDN 域名路径）或本地图片文件路径或相对代码包根目录的图片文件路径。显示图片长宽比是 5:4FriendInfo"
+          ]
+        },
+        {
+          "name": "entry-data-hash",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "发送小程序信息至群聊时 QQ群的信息,可由getLaunchOptionsSync 或qq.onAppShow 获得"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "camera",
+      "docLink": "https://q.qq.com/wiki/develop/miniprogram/component/media/camera.html",
+      "attrs": [
+        {
+          "name": "mode",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "有效值为 normal, scanCode"
+          ],
+          "defaultValue": "normal"
+        },
+        {
+          "name": "device-position",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "前置或后置，值为front, back"
+          ],
+          "defaultValue": "back"
+        },
+        {
+          "name": "flash",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "闪光灯，值为auto, on, off"
+          ],
+          "defaultValue": "auto"
+        },
+        {
+          "name": "bindstop",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "摄像头在非正常终止时触发，如退出后台等情况"
+          ]
+        },
+        {
+          "name": "binderror",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "用户不允许使用摄像头时触发"
+          ]
+        },
+        {
+          "name": "bindscancode",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "在扫码识别成功时触发，仅在 mode=\"scanCode\" 时生效"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "canvas",
+      "docLink": "https://q.qq.com/wiki/develop/miniprogram/component/canvas/canvas.html",
+      "attrs": [
+        {
+          "name": "canvas-id",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "canvas 组件的唯一标识符"
+          ]
+        },
+        {
+          "name": "disable-scroll",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "当在 canvas 中移动时且有绑定手势事件时，禁止屏幕滚动以及下拉刷新"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "bindtouchstart",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "手指触摸动作开始"
+          ]
+        },
+        {
+          "name": "bindtouchmove",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "手指触摸后移动"
+          ]
+        },
+        {
+          "name": "bindtouchend",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "手指触摸动作结束"
+          ]
+        },
+        {
+          "name": "bindtouchcancel",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "手指触摸动作被打断，如来电提醒，弹窗"
+          ]
+        },
+        {
+          "name": "bindlongtap",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "手指长按 500ms 之后触发，触发了长按事件后进行移动不会触发屏幕的滚动"
+          ]
+        },
+        {
+          "name": "binderror",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "当发生错误时触发 error 事件，detail = {errMsg: 'something wrong'}"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "checkbox",
+      "docLink": "https://q.qq.com/wiki/develop/miniprogram/component/form/checkbox.html",
+      "attrs": [
+        {
+          "name": "value",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "<checkbox>标识，选中时触发<checkbox-group>的 change 事件，并携带 <checkbox> 的 value"
+          ]
+        },
+        {
+          "name": "disabled",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否禁用"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "checked",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "当前是否选中，可用来设置默认选中"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "color",
+          "type": {
+            "name": "Color"
+          },
+          "desc": [
+            "checkbox的颜色，同css的color"
+          ]
+        },
+        {
+          "name": "aria-label",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "无障碍访问，（属性）元素的额外描述"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "cover-image",
+      "docLink": "https://q.qq.com/wiki/develop/miniprogram/component/view-container/cover.html#cover-image",
+      "attrs": [
+        {
+          "name": "src",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "图标路径，支持临时路径、网络地址、云文件ID。暂不支持base64格式。"
+          ]
+        },
+        {
+          "name": "bindload",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "图片加载成功时触发"
+          ]
+        },
+        {
+          "name": "binderror",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "图片加载失败时触发"
+          ]
+        },
+        {
+          "name": "aria-role",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "无障碍访问，（角色）标识元素的作用"
+          ]
+        },
+        {
+          "name": "aria-label",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "无障碍访问，（属性）元素的额外描述"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "cover-view",
+      "docLink": "https://q.qq.com/wiki/develop/miniprogram/component/view-container/cover.html",
+      "attrs": [
+        {
+          "name": "scroll-top",
+          "type": {
+            "name": "Number / String"
+          },
+          "desc": [
+            "设置顶部滚动偏移量，仅在设置了 overflow-y: scroll 成为滚动元素后生效"
+          ]
+        },
+        {
+          "name": "aria-role",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "无障碍访问，（角色）标识元素的作用"
+          ]
+        },
+        {
+          "name": "aria-label",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "无障碍访问，（属性）元素的额外描述"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "form",
+      "docLink": "https://q.qq.com/wiki/develop/miniprogram/component/form/form.html",
+      "attrs": [
+        {
+          "name": "report-submit",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否返回 formId 用于发送模板消息 。formId有很小的概率是无效的（如遇到网络失败或因违规使用被封禁接口的情况），如果无效，将返回 requestFormId:fail 开头的 formId"
+          ]
+        },
+        {
+          "name": "bindsubmit",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "携带 form 中的数据触发 submit 事件，event.detail = {value : {'name': 'value'} , formId: ''}"
+          ]
+        },
+        {
+          "name": "bindreset",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "表单重置时会触发 reset 事件"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "functional-page-navigator",
+      "docLink": "https://q.qq.com/wiki/develop/miniprogram/component/navigation/functional-page-navigator.html",
+      "attrs": []
+    },
+    {
+      "name": "icon",
+      "docLink": "https://q.qq.com/wiki/develop/miniprogram/component/basic-content/icon.html",
+      "attrs": [
+        {
+          "name": "type",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "icon的类型，有效值：success, success_no_circle, info, warn, waiting, cancel, download, search, clear"
+          ]
+        },
+        {
+          "name": "size",
+          "type": {
+            "name": "Number / String"
+          },
+          "desc": [
+            "icon的大小，单位px"
+          ],
+          "defaultValue": "23px"
+        },
+        {
+          "name": "color",
+          "type": {
+            "name": "Color"
+          },
+          "desc": [
+            "icon的颜色，同css的color"
+          ]
+        },
+        {
+          "name": "aria-label",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "无障碍访问，（属性）元素的额外描述"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "image",
+      "docLink": "https://q.qq.com/wiki/develop/miniprogram/component/media/image.html",
+      "attrs": [
+        {
+          "name": "src",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "图片资源地址，支持云文件ID（2.2.3起）"
+          ]
+        },
+        {
+          "name": "mode",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "图片裁剪、缩放的模式"
+          ],
+          "defaultValue": "'scaleToFill'"
+        },
+        {
+          "name": "lazy-load",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "图片懒加载。只针对page与scroll-view下的image有效"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "binderror",
+          "type": {
+            "name": "HandleEvent"
+          },
+          "desc": [
+            "当错误发生时，发布到 AppService 的事件名，事件对象event.detail = {errMsg: 'something wrong'}"
+          ]
+        },
+        {
+          "name": "bindload",
+          "type": {
+            "name": "HandleEvent"
+          },
+          "desc": [
+            "当图片载入完毕时，发布到 AppService 的事件名，事件对象event.detail = {height:'图片高度px', width:'图片宽度px'}"
+          ]
+        },
+        {
+          "name": "aria-label",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "无障碍访问，（属性）元素的额外描述"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "input",
+      "docLink": "https://q.qq.com/wiki/develop/miniprogram/component/form/input.html",
+      "attrs": [
+        {
+          "name": "value",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "输入框的初始内容"
+          ]
+        },
+        {
+          "name": "type",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "input 的类型"
+          ],
+          "defaultValue": "\"text\""
+        },
+        {
+          "name": "password",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否是密码类型"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "placeholder",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "输入框为空时占位符"
+          ]
+        },
+        {
+          "name": "placeholder-style",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "指定 placeholder 的样式"
+          ]
+        },
+        {
+          "name": "placeholder-class",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "指定 placeholder 的样式类"
+          ],
+          "defaultValue": "\"input-placeholder\""
+        },
+        {
+          "name": "disabled",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否禁用"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "maxlength",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "最大输入长度，设置为 -1 的时候不限制最大长度"
+          ],
+          "defaultValue": "140"
+        },
+        {
+          "name": "cursor-spacing",
+          "type": {
+            "name": "Number / String"
+          },
+          "desc": [
+            "指定光标与键盘的距离，单位 px（2.4.0 起支持 rpx）。取 input 距离底部的距离和 cursor-spacing 指定的距离的最小值作为光标与键盘的距离"
+          ],
+          "defaultValue": "0"
+        },
+        {
+          "name": "auto-focus",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "(即将废弃，请直接使用 focus )自动聚焦，拉起键盘"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "focus",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "获取焦点"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "confirm-type",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "设置键盘右下角按钮的文字，仅在 type='text'时生效"
+          ],
+          "defaultValue": "\"done\""
+        },
+        {
+          "name": "confirm-hold",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "点击键盘右下角按钮时是否保持键盘不收起"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "cursor",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "指定 focus 时的光标位置"
+          ]
+        },
+        {
+          "name": "selection-start",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "光标起始位置，自动聚集时有效，需与 selection-end 搭配使用"
+          ],
+          "defaultValue": "-1"
+        },
+        {
+          "name": "selection-end",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "光标结束位置，自动聚集时有效，需与 selection-start 搭配使用"
+          ],
+          "defaultValue": "-1"
+        },
+        {
+          "name": "adjust-position",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "键盘弹起时，是否自动上推页面"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "bindinput",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "键盘输入时触发，event.detail = {value, cursor, keyCode}，keyCode 为键值，处理函数可以直接 return 一个字符串，将替换输入框的内容。"
+          ]
+        },
+        {
+          "name": "bindfocus",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "输入框聚焦时触发，event.detail = { value, height }，height 为键盘高度"
+          ]
+        },
+        {
+          "name": "bindblur",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "输入框失去焦点时触发，event.detail = {value: value}"
+          ]
+        },
+        {
+          "name": "bindconfirm",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "点击完成按钮时触发，event.detail = {value: value}"
+          ]
+        },
+        {
+          "name": "bindkeyboardheightchange",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "键盘高度发生变化的时候触发此事件，event.detail = {height: height, duration: duration}"
+          ]
+        },
+        {
+          "name": "aria-label",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "无障碍访问，（属性）元素的额外描述"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "label",
+      "docLink": "https://q.qq.com/wiki/develop/miniprogram/component/form/label.html",
+      "attrs": [
+        {
+          "name": "for",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "绑定控件的 id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "live-player",
+      "docLink": "https://q.qq.com/wiki/develop/miniprogram/component/media/live-player.html",
+      "attrs": [
+        {
+          "name": "src",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "音视频地址。目前仅支持flv, rtmp格式"
+          ]
+        },
+        {
+          "name": "mode",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "模式"
+          ],
+          "defaultValue": "live"
+        },
+        {
+          "name": "autoplay",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "自动播放"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "muted",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否静音"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "orientation",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "画面方向"
+          ],
+          "defaultValue": "vertical"
+        },
+        {
+          "name": "object-fit",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "填充模式，可选值有contain, fillCrop"
+          ],
+          "defaultValue": "contain"
+        },
+        {
+          "name": "min-cache",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "最小缓冲区，单位s"
+          ],
+          "defaultValue": "1"
+        },
+        {
+          "name": "max-cache",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "最大缓冲区，单位s"
+          ],
+          "defaultValue": "3"
+        },
+        {
+          "name": "sound-mode",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "声音输出方式"
+          ],
+          "defaultValue": "speaker"
+        },
+        {
+          "name": "auto-pause-if-navigate",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "当跳转到其它小程序页面时，是否自动暂停本页面的实时音视频播放"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "auto-pause-if-open-native",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "当跳转到其它QQ原生页面时，是否自动暂停本页面的实时音视频播放"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "enable-metadata",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否回调metadata"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "bindstatechange",
+          "type": {
+            "name": "eventhandle"
+          },
+          "desc": [
+            "播放状态变化事件，detail = {code}"
+          ]
+        },
+        {
+          "name": "bindfullscreenchange",
+          "type": {
+            "name": "eventhandle"
+          },
+          "desc": [
+            "全屏变化事件，detail = {direction, fullScreen}"
+          ]
+        },
+        {
+          "name": "bindnetstatus",
+          "type": {
+            "name": "eventhandle"
+          },
+          "desc": [
+            "网络状态通知，detail = {info}"
+          ]
+        },
+        {
+          "name": "bindmetadatachange",
+          "type": {
+            "name": "eventhandle"
+          },
+          "desc": [
+            "metadata通知，detail = {info}"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "live-pusher",
+      "docLink": "https://q.qq.com/wiki/develop/miniprogram/component/media/live-pusher.html",
+      "attrs": [
+        {
+          "name": "url",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "推流地址。目前仅支持 rtmp 格式"
+          ]
+        },
+        {
+          "name": "mode",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "SD（标清）, HD（高清）, FHD（超清）, RTC（实时通话）"
+          ],
+          "defaultValue": "RTC"
+        },
+        {
+          "name": "autopush",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "自动推流"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "muted",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否静音"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "enable-camera",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "开启摄像头"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "auto-focus",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "自动聚集"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "orientation",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "画面方向"
+          ],
+          "defaultValue": "vertical"
+        },
+        {
+          "name": "beauty",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "美颜，取值范围 0-9 ，0 表示关闭"
+          ],
+          "defaultValue": "0"
+        },
+        {
+          "name": "whiteness",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "美白，取值范围 0-9 ，0 表示关闭"
+          ],
+          "defaultValue": "0"
+        },
+        {
+          "name": "aspect",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "宽高比，可选值有 3:4, 9:16"
+          ],
+          "defaultValue": "9:16"
+        },
+        {
+          "name": "min-bitrate",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "最小码率"
+          ],
+          "defaultValue": "200"
+        },
+        {
+          "name": "max-bitrate",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "最大码率"
+          ],
+          "defaultValue": "1000"
+        },
+        {
+          "name": "audio-quality",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "高音质(48KHz)或低音质(16KHz)，值为high, low"
+          ],
+          "defaultValue": "high"
+        },
+        {
+          "name": "waiting-image",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "进入后台时推流的等待画面"
+          ]
+        },
+        {
+          "name": "waiting-image-hash",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "等待画面资源的MD5值"
+          ]
+        },
+        {
+          "name": "zoom",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "调整焦距"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "device-position",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "前置或后置，值为front, back"
+          ],
+          "defaultValue": "front"
+        },
+        {
+          "name": "background-mute",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "进入后台时是否静音"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "mirror",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "设置推流画面是否镜像，产生的效果在 live-player 反应到"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "bindstatechange",
+          "type": {
+            "name": "eventhandle"
+          },
+          "desc": [
+            "状态变化事件，detail = {code}"
+          ]
+        },
+        {
+          "name": "bindnetstatus",
+          "type": {
+            "name": "eventhandle"
+          },
+          "desc": [
+            "网络状态通知，detail = {info}"
+          ]
+        },
+        {
+          "name": "binderror",
+          "type": {
+            "name": "eventhandle"
+          },
+          "desc": [
+            "渲染错误事件，detail = {errMsg, errCode}"
+          ]
+        },
+        {
+          "name": "bindbgmstart",
+          "type": {
+            "name": "eventhandle"
+          },
+          "desc": [
+            "背景音开始播放时触发"
+          ]
+        },
+        {
+          "name": "bindbgmprogress",
+          "type": {
+            "name": "eventhandle"
+          },
+          "desc": [
+            "背景音进度变化时触发，detail = {progress, duration}"
+          ]
+        },
+        {
+          "name": "bindbgmcomplete",
+          "type": {
+            "name": "eventhandle"
+          },
+          "desc": [
+            "背景音播放完成时触发"
+          ]
+        },
+        {
+          "name": "audio-reverb-type",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "混响模式(0～6)：\"关闭混响\", \"KTV\", \"小房间\", \"大会堂\", \"低沉\", \"洪亮\", \"磁性\""
+          ],
+          "defaultValue": "0"
+        }
+      ]
+    },
+    {
+      "name": "map",
+      "docLink": "https://q.qq.com/wiki/develop/miniprogram/component/map/map.html",
+      "attrs": [
+        {
+          "name": "longitude",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "经度"
+          ]
+        },
+        {
+          "name": "latitude",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "纬度"
+          ]
+        },
+        {
+          "name": "scale",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "缩放级别，取值范围为3～20"
+          ],
+          "defaultValue": "16"
+        },
+        {
+          "name": "markers",
+          "type": {
+            "name": "Array.<marker>"
+          },
+          "desc": [
+            "标记点"
+          ]
+        },
+        {
+          "name": "polyline",
+          "type": {
+            "name": "Array.<polyline>"
+          },
+          "desc": [
+            "路线"
+          ]
+        },
+        {
+          "name": "circles",
+          "type": {
+            "name": "Array.<circle>"
+          },
+          "desc": [
+            "圆"
+          ]
+        },
+        {
+          "name": "include-points",
+          "type": {
+            "name": "Array.<point>"
+          },
+          "desc": [
+            "缩放视野以包含所有给定的坐标点"
+          ]
+        },
+        {
+          "name": "show-location",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "显示带有方向的当前定位点"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "polygons",
+          "type": {
+            "name": "Array.<polygon>"
+          },
+          "desc": [
+            "多边形"
+          ]
+        },
+        {
+          "name": "subkey",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "个性化地图使用的key"
+          ]
+        },
+        {
+          "name": "layer-style",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "个性化地图配置的style，不支持动态修改"
+          ],
+          "defaultValue": "1"
+        },
+        {
+          "name": "rotate",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "旋转角度"
+          ]
+        },
+        {
+          "name": "skew",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "倾斜角度，范围0～40，关于z轴的倾角"
+          ],
+          "defaultValue": "0"
+        },
+        {
+          "name": "enable-3D",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "展示3D楼块（工具暂不支持）"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "show-compass",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "显示指南针"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "show-scale",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "显示比例尺（工具暂不支持）"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "enable-overlooking",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "开启俯视"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "enable-zoom",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否支持缩放"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "enable-scroll",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否支持拖动"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "enable-rotate",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否支持旋转"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "enable-satellite",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否开启卫星图"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "enable-traffic",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否开启实时路况"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "setting",
+          "type": {
+            "name": "Object"
+          },
+          "desc": [
+            "配置项"
+          ]
+        },
+        {
+          "name": "bindtap",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "点击地图时触发，返回经纬度信息"
+          ]
+        },
+        {
+          "name": "bindmarkertap",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "点击标记点时触发 e.detail = {markerId}"
+          ]
+        },
+        {
+          "name": "bindupdated",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "在地图渲染更新完成时触发"
+          ]
+        },
+        {
+          "name": "bindregionchange",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "视野发生变化时触发 \b会触发两次，返回的type值分别为begin/end。"
+          ]
+        },
+        {
+          "name": "bindpoitap",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "点击地图poi点时触发 e.detail = {name, longitude, latitude}"
+          ]
+        },
+        {
+          "name": "id",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "标记点id"
+          ]
+        },
+        {
+          "name": "title",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "标注点名"
+          ]
+        },
+        {
+          "name": "zIndex",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "设置多边形z轴数值"
+          ]
+        },
+        {
+          "name": "iconPath",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "显示的图标"
+          ]
+        },
+        {
+          "name": "alpha",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "标注的透明度"
+          ]
+        },
+        {
+          "name": "width",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "线的宽度"
+          ]
+        },
+        {
+          "name": "height",
+          "type": {
+            "name": "number/String"
+          },
+          "desc": [
+            "标注图标高度"
+          ]
+        },
+        {
+          "name": "callout",
+          "type": {
+            "name": "Object"
+          },
+          "desc": [
+            "自定义标记点上方的气泡窗口"
+          ]
+        },
+        {
+          "name": "label",
+          "type": {
+            "name": "Object"
+          },
+          "desc": [
+            "为标记点旁边增加标签"
+          ]
+        },
+        {
+          "name": "anchor",
+          "type": {
+            "name": "Object"
+          },
+          "desc": [
+            "经纬度在标注图标的锚点，默认底边中点"
+          ]
+        },
+        {
+          "name": "aria-label",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "无障碍访问，元素的额外描述"
+          ]
+        },
+        {
+          "name": "points",
+          "type": {
+            "name": "Array"
+          },
+          "desc": [
+            "经纬度数组"
+          ]
+        },
+        {
+          "name": "color",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "描边的颜色"
+          ]
+        },
+        {
+          "name": "dottedLine",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否虚线"
+          ]
+        },
+        {
+          "name": "arrowLine",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "带箭头的线"
+          ]
+        },
+        {
+          "name": "arrowIconPath",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "更换箭头图标"
+          ]
+        },
+        {
+          "name": "borderColor",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "线的边框颜色"
+          ]
+        },
+        {
+          "name": "borderWidth",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "线的厚度"
+          ]
+        },
+        {
+          "name": "strokeWidth",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "描边的宽度"
+          ]
+        },
+        {
+          "name": "strokeColor",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "描边的颜色"
+          ]
+        },
+        {
+          "name": "fillColor",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "填充颜色"
+          ]
+        },
+        {
+          "name": "radius",
+          "type": {
+            "name": "number"
+          },
+          "desc": [
+            "半径"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "movable-area",
+      "docLink": "https://q.qq.com/wiki/develop/miniprogram/component/view-container/movable-view.html#movable-area",
+      "attrs": [
+        {
+          "name": "scale-area",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "当里面的movable-view设置为支持双指缩放时，设置此值可将缩放手势生效区域修改为整个movable-area"
+          ],
+          "defaultValue": "false"
+        }
+      ]
+    },
+    {
+      "name": "movable-view",
+      "docLink": "https://q.qq.com/wiki/develop/miniprogram/component/view-container/movable-view.html",
+      "attrs": [
+        {
+          "name": "direction",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "movable-view的移动方向，属性值有all、vertical、horizontal、none"
+          ],
+          "defaultValue": "none"
+        },
+        {
+          "name": "inertia",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "movable-view是否带有惯性"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "out-of-bounds",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "超过可移动区域后，movable-view是否还可以移动"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "x",
+          "type": {
+            "name": "Number / String"
+          },
+          "desc": [
+            "定义x轴方向的偏移，如果x的值不在可移动范围内，会自动移动到可移动范围；改变x的值会触发动画"
+          ]
+        },
+        {
+          "name": "y",
+          "type": {
+            "name": "Number / String"
+          },
+          "desc": [
+            "定义y轴方向的偏移，如果y的值不在可移动范围内，会自动移动到可移动范围；改变y的值会触发动画"
+          ]
+        },
+        {
+          "name": "damping",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "阻尼系数，用于控制x或y改变时的动画和过界回弹的动画，值越大移动越快"
+          ],
+          "defaultValue": "20"
+        },
+        {
+          "name": "friction",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "摩擦系数，用于控制惯性滑动的动画，值越大摩擦力越大，滑动越快停止；必须大于0，否则会被设置成默认值"
+          ],
+          "defaultValue": "2"
+        },
+        {
+          "name": "disabled",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否禁用"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "scale",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否支持双指缩放，默认缩放手势生效区域是在movable-view内"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "scale-min",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "定义缩放倍数最小值"
+          ],
+          "defaultValue": "0.5"
+        },
+        {
+          "name": "scale-max",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "定义缩放倍数最大值"
+          ],
+          "defaultValue": "10"
+        },
+        {
+          "name": "scale-value",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "定义缩放倍数，取值范围为 0.5 - 10"
+          ],
+          "defaultValue": "1"
+        },
+        {
+          "name": "animation",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否使用动画"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "bindchange",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "拖动过程中触发的事件，event.detail = {x: x, y: y, source: source}，其中source表示产生移动的原因，值可为touch（拖动）、touch-out-of-bounds（超出移动范围）、out-of-bounds（超出移动范围后的回弹）、friction（惯性）和空字符串（setData）"
+          ]
+        },
+        {
+          "name": "bindscale",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "缩放过程中触发的事件，event.detail = {x: x, y: y, scale: scale}"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "navigator",
+      "docLink": "https://q.qq.com/wiki/develop/miniprogram/component/navigation/navigator.html",
+      "attrs": [
+        {
+          "name": "target",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "在哪个目标上发生跳转，默认当前小程序，可选值self/miniProgram"
+          ],
+          "defaultValue": "self"
+        },
+        {
+          "name": "url",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "当前小程序内的跳转链接"
+          ]
+        },
+        {
+          "name": "open-type",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "跳转方式"
+          ],
+          "defaultValue": "navigate"
+        },
+        {
+          "name": "delta",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "当 open-type 为 'navigateBack' 时有效，表示回退的层数"
+          ]
+        },
+        {
+          "name": "app-id",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "当target=\"miniProgram\"时有效，要打开的小程序 appId"
+          ]
+        },
+        {
+          "name": "path",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "当target=\"miniProgram\"时有效，打开的页面路径，如果为空则打开首页"
+          ]
+        },
+        {
+          "name": "extra-data",
+          "type": {
+            "name": "Object"
+          },
+          "desc": [
+            "当target=\"miniProgram\"时有效，需要传递给目标小程序的数据，目标小程序可在 App.onLaunch()，App.onShow() 中获取到这份数据。详情"
+          ]
+        },
+        {
+          "name": "version",
+          "type": {
+            "name": "version"
+          },
+          "desc": [
+            "当target=\"miniProgram\"时有效，要打开的小程序版本，有效值 develop（开发版），trial（体验版），release（正式版），仅在当前小程序为开发版或体验版时此参数有效；如果当前小程序是正式版，则打开的小程序必定是正式版。"
+          ],
+          "defaultValue": "release"
+        },
+        {
+          "name": "hover-class",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "指定点击时的样式类，当hover-class=\"none\"时，没有点击态效果"
+          ],
+          "defaultValue": "navigator-hover"
+        },
+        {
+          "name": "hover-stop-propagation",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "指定是否阻止本节点的祖先节点出现点击态"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "hover-start-time",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "按住后多久出现点击态，单位毫秒"
+          ],
+          "defaultValue": "50"
+        },
+        {
+          "name": "hover-stay-time",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "手指松开后点击态保留时间，单位毫秒"
+          ],
+          "defaultValue": "600"
+        },
+        {
+          "name": "bindsuccess",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "当target=\"miniProgram\"时有效，跳转小程序成功"
+          ]
+        },
+        {
+          "name": "bindfail",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "当target=\"miniProgram\"时有效，跳转小程序失败"
+          ]
+        },
+        {
+          "name": "bindcomplete",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "当target=\"miniProgram\"时有效，跳转小程序完成"
+          ]
+        },
+        {
+          "name": "aria-label",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "无障碍访问，（属性）元素的额外描述"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "official-account",
+      "docLink": "https://q.qq.com/wiki/develop/miniprogram/component/open-ability/official-account.html",
+      "attrs": []
+    },
+    {
+      "name": "open-data",
+      "docLink": "https://q.qq.com/wiki/develop/miniprogram/component/open-ability/open-data.html",
+      "attrs": [
+        {
+          "name": "type",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "开放数据类型"
+          ]
+        },
+        {
+          "name": "lang",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "当 type=\"user*\" 时生效，以哪种语言展示 userInfo，有效值有：en, zh_CN, zh_TW"
+          ],
+          "defaultValue": "en"
+        },
+        {
+          "name": "share-ticket",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "当 type=groupCloudStorage 时有效，群分享对应的 shareTicket"
+          ],
+          "defaultValue": "en"
+        },
+        {
+          "name": "key-list",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "当 type=*CloudStorage 时有效，指定要拉取的 key 列表"
+          ],
+          "defaultValue": "en"
+        },
+        {
+          "name": "component-data",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "当 type=*CloudStorage 时有效，从主域透传给开放数据域的数据，会自动注入到自定义开放数据域组件的 properties 中"
+          ],
+          "defaultValue": "en"
+        },
+        {
+          "name": "generic:simple-component",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "当 type=*CloudStorage 时有效,指定使用哪个自定义开放数据域组件来渲染开放数据,具体说明见下方"
+          ],
+          "defaultValue": "en"
+        },
+        {
+          "name": "binderror",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "当 type=*CloudStorage 时有效,开放数据请求或定向分享失败时触发，event.detail = {errMsg: \"getGroupCloudStorage:fail no data\"}"
+          ],
+          "defaultValue": "en"
+        },
+        {
+          "name": "kvDataList",
+          "type": {
+            "name": "Array.<KVData>"
+          },
+          "desc": [
+            "用户的应用数据"
+          ]
+        },
+        {
+          "name": "userList",
+          "type": {
+            "name": "Array.<UserData>"
+          },
+          "desc": [
+            "当type=friendCloudStorage 或 type=groupCloudStorage 时"
+          ]
+        },
+        {
+          "name": "componentData",
+          "type": {
+            "name": "Object"
+          },
+          "desc": [
+            "从主域透传给开放数据域的数据"
+          ]
+        },
+        {
+          "name": "key",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "数据的 key"
+          ]
+        },
+        {
+          "name": "value",
+          "type": {
+            "name": "KVData"
+          },
+          "desc": [
+            "数据的 value"
+          ]
+        },
+        {
+          "name": "openid",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "用户的 openid"
+          ]
+        },
+        {
+          "name": "avatarUrl",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "用户的 QQ 头像 url"
+          ]
+        },
+        {
+          "name": "nickname",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "用户的 QQ 昵称"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "picker",
+      "docLink": "https://q.qq.com/wiki/develop/miniprogram/component/form/picker.html",
+      "attrs": [
+        {
+          "name": "range",
+          "type": {
+            "name": "二维Array / 二维Object Array"
+          },
+          "desc": [
+            "mode为 selector 或 multiSelector 时，range 有效。二维数组，长度表示多少列，数组的每项表示每列的数据，如[[\"a\",\"b\"], [\"c\",\"d\"]]"
+          ],
+          "defaultValue": "[]"
+        },
+        {
+          "name": "range-key",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "当 range 是一个 二维Object Array 时，通过 range-key 来指定 Object 中 key 的值作为选择器显示内容"
+          ]
+        },
+        {
+          "name": "value",
+          "type": {
+            "name": "Array"
+          },
+          "desc": [
+            "表示选中的省市区，默认选中每一列的第一个值"
+          ],
+          "defaultValue": "[]"
+        },
+        {
+          "name": "bindchange",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "value 改变时触发 change 事件，event.detail = {value: value, code: code, postcode: postcode}，其中字段code是统计用区划代码，postcode是邮政编码"
+          ]
+        },
+        {
+          "name": "disabled",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否禁用"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "bindcancel",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "取消选择时触发"
+          ]
+        },
+        {
+          "name": "bindcolumnchange",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "某一列的值改变时触发 columnchange 事件，event.detail = {column: column, value: value}，column 的值表示改变了第几列（下标从0开始），value 的值表示变更值的下标"
+          ]
+        },
+        {
+          "name": "start",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "表示有效日期范围的开始，字符串格式为\"YYYY-MM-DD\""
+          ]
+        },
+        {
+          "name": "end",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "表示有效日期范围的结束，字符串格式为\"YYYY-MM-DD\""
+          ]
+        },
+        {
+          "name": "fields",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "有效值 year,month,day，表示选择器的粒度"
+          ],
+          "defaultValue": "day"
+        },
+        {
+          "name": "custom-item",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "可为每一列的顶部添加一个自定义的项"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "picker-view",
+      "docLink": "https://q.qq.com/wiki/develop/miniprogram/component/form/picker-view.html",
+      "attrs": [
+        {
+          "name": "value",
+          "type": {
+            "name": "NumberArray"
+          },
+          "desc": [
+            "数组中的数字依次表示 picker-view 内的 picker-view-column 选择的第几项（下标从 0 开始），数字大于 picker-view-column 可选项长度时，选择最后一项。"
+          ]
+        },
+        {
+          "name": "indicator-style",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "设置选择器中间选中框的样式"
+          ]
+        },
+        {
+          "name": "indicator-class",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "设置选择器中间选中框的类名"
+          ]
+        },
+        {
+          "name": "mask-style",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "设置蒙层的样式"
+          ]
+        },
+        {
+          "name": "mask-class",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "设置蒙层的类名"
+          ]
+        },
+        {
+          "name": "bindchange",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "当滚动选择，value 改变时触发 change 事件，event.detail = {value: value}；value为数组，表示 picker-view 内的 picker-view-column 当前选择的是第几项（下标从 0 开始）"
+          ]
+        },
+        {
+          "name": "bindpickstart",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "当滚动选择开始时候触发事件"
+          ]
+        },
+        {
+          "name": "bindpickend",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "当滚动选择结束时候触发事件"
+          ]
+        },
+        {
+          "name": "aria-label",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "无障碍访问，（属性）元素的额外描述"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "progress",
+      "docLink": "https://q.qq.com/wiki/develop/miniprogram/component/basic-content/progress.html",
+      "attrs": [
+        {
+          "name": "percent",
+          "type": {
+            "name": "Float"
+          },
+          "desc": [
+            "百分比0~100"
+          ],
+          "defaultValue": "无"
+        },
+        {
+          "name": "show-info",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "在进度条右侧显示百分比"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "border-radius",
+          "type": {
+            "name": "Number / String"
+          },
+          "desc": [
+            "圆角大小，单位px"
+          ],
+          "defaultValue": "0"
+        },
+        {
+          "name": "font-size",
+          "type": {
+            "name": "Number / String"
+          },
+          "desc": [
+            "右侧百分比字体大小，单位px"
+          ],
+          "defaultValue": "16"
+        },
+        {
+          "name": "stroke-width",
+          "type": {
+            "name": "Number / String"
+          },
+          "desc": [
+            "进度条线的宽度，单位px"
+          ],
+          "defaultValue": "6"
+        },
+        {
+          "name": "color",
+          "type": {
+            "name": "Color"
+          },
+          "desc": [
+            "进度条颜色 （请使用 activeColor）"
+          ],
+          "defaultValue": "#09BB07"
+        },
+        {
+          "name": "activeColor",
+          "type": {
+            "name": "Color"
+          },
+          "desc": [
+            "已选择的进度条的颜色"
+          ]
+        },
+        {
+          "name": "backgroundColor",
+          "type": {
+            "name": "Color"
+          },
+          "desc": [
+            "未选择的进度条的颜色"
+          ]
+        },
+        {
+          "name": "active",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "进度条从左往右的动画"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "active-mode",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "backwards: 动画从头播；forwards：动画从上次结束点接着播"
+          ],
+          "defaultValue": "backwards"
+        },
+        {
+          "name": "bindactiveend",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "动画完成事件"
+          ]
+        },
+        {
+          "name": "aria-label",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "无障碍访问，（属性）元素的额外描述"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "radio",
+      "docLink": "https://q.qq.com/wiki/develop/miniprogram/component/form/radio.html",
+      "attrs": [
+        {
+          "name": "value",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "<radio> 标识。当该<radio> 选中时，<radio-group> 的 change 事件会携带<radio>的value"
+          ]
+        },
+        {
+          "name": "checked",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "当前是否选中"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "disabled",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否禁用"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "color",
+          "type": {
+            "name": "Color"
+          },
+          "desc": [
+            "radio的颜色，同css的color"
+          ]
+        },
+        {
+          "name": "aria-label",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "无障碍访问，（属性）元素的额外描述"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "rich-text",
+      "docLink": "https://q.qq.com/wiki/develop/miniprogram/component/basic-content/rich-text.html",
+      "attrs": [
+        {
+          "name": "nodes",
+          "type": {
+            "name": "Array / String"
+          },
+          "desc": [
+            "节点列表 / HTML String"
+          ],
+          "defaultValue": "[]"
+        },
+        {
+          "name": "space",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "显示连续空格"
+          ]
+        },
+        {
+          "name": "name",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "标签名"
+          ]
+        },
+        {
+          "name": "attrs",
+          "type": {
+            "name": "Object"
+          },
+          "desc": [
+            "属性"
+          ]
+        },
+        {
+          "name": "children",
+          "type": {
+            "name": "Array"
+          },
+          "desc": [
+            "子节点列表"
+          ]
+        },
+        {
+          "name": "text",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "文本"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "scroll-view",
+      "docLink": "https://q.qq.com/wiki/develop/miniprogram/component/view-container/scroll-view.html",
+      "attrs": [
+        {
+          "name": "scroll-x",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "允许横向滚动"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "scroll-y",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "允许纵向滚动"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "upper-threshold",
+          "type": {
+            "name": "Number / String"
+          },
+          "desc": [
+            "距顶部/左边多远时（单位px），触发 scrolltoupper 事件"
+          ],
+          "defaultValue": "50"
+        },
+        {
+          "name": "lower-threshold",
+          "type": {
+            "name": "Number / String"
+          },
+          "desc": [
+            "距底部/右边多远时（单位px），触发 scrolltolower 事件"
+          ],
+          "defaultValue": "50"
+        },
+        {
+          "name": "scroll-top",
+          "type": {
+            "name": "Number / String"
+          },
+          "desc": [
+            "设置竖向滚动条位置（单位px）"
+          ]
+        },
+        {
+          "name": "scroll-left",
+          "type": {
+            "name": "Number / String"
+          },
+          "desc": [
+            "设置横向滚动条位置（单位px）"
+          ]
+        },
+        {
+          "name": "scroll-into-view",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "值应为某子元素id（id不能以数字开头）。设置哪个方向可滚动，则在哪个方向滚动到该元素"
+          ]
+        },
+        {
+          "name": "scroll-with-animation",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "在设置滚动条位置时使用动画过渡"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "enable-back-to-top",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "iOS点击顶部状态栏、安卓双击标题栏时，滚动条返回顶部，只支持竖向"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "bindscrolltoupper",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "滚动到顶部/左边，会触发 scrolltoupper 事件"
+          ]
+        },
+        {
+          "name": "bindscrolltolower",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "滚动到底部/右边，会触发 scrolltolower 事件"
+          ]
+        },
+        {
+          "name": "bindscroll",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "滚动时触发，event.detail = {scrollLeft, scrollTop, scrollHeight, scrollWidth, deltaX, deltaY}"
+          ]
+        },
+        {
+          "name": "aria-label",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "无障碍访问，（属性）元素的额外描述"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "slider",
+      "docLink": "https://q.qq.com/wiki/develop/miniprogram/component/form/slider.html",
+      "attrs": [
+        {
+          "name": "min",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "最小值"
+          ],
+          "defaultValue": "0"
+        },
+        {
+          "name": "max",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "最大值"
+          ],
+          "defaultValue": "100"
+        },
+        {
+          "name": "step",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "步长，取值必须大于 0，并且可被(max - min)整除"
+          ],
+          "defaultValue": "1"
+        },
+        {
+          "name": "disabled",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否禁用"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "value",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "当前取值"
+          ],
+          "defaultValue": "0"
+        },
+        {
+          "name": "color",
+          "type": {
+            "name": "Color"
+          },
+          "desc": [
+            "背景条的颜色（请使用 backgroundColor）"
+          ],
+          "defaultValue": "#e9e9e9"
+        },
+        {
+          "name": "selected-color",
+          "type": {
+            "name": "Color"
+          },
+          "desc": [
+            "已选择的颜色（请使用 activeColor）"
+          ],
+          "defaultValue": "#1aad19"
+        },
+        {
+          "name": "activeColor",
+          "type": {
+            "name": "Color"
+          },
+          "desc": [
+            "已选择的颜色"
+          ],
+          "defaultValue": "#1aad19"
+        },
+        {
+          "name": "backgroundColor",
+          "type": {
+            "name": "Color"
+          },
+          "desc": [
+            "背景条的颜色"
+          ],
+          "defaultValue": "#e9e9e9"
+        },
+        {
+          "name": "block-size",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "滑块的大小，取值范围为 12 - 28"
+          ],
+          "defaultValue": "28"
+        },
+        {
+          "name": "block-color",
+          "type": {
+            "name": "Color"
+          },
+          "desc": [
+            "滑块的颜色"
+          ],
+          "defaultValue": "#ffffff"
+        },
+        {
+          "name": "show-value",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否显示当前 value"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "bindchange",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "完成一次拖动后触发的事件，event.detail = {value: value}"
+          ]
+        },
+        {
+          "name": "bindchanging",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "拖动过程中触发的事件，event.detail = {value: value}"
+          ]
+        },
+        {
+          "name": "aria-label",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "无障碍访问，（属性）元素的额外描述"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "swiper",
+      "docLink": "https://q.qq.com/wiki/develop/miniprogram/component/view-container/swiper.html",
+      "attrs": [
+        {
+          "name": "indicator-dots",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否显示面板指示点"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "indicator-color",
+          "type": {
+            "name": "Color"
+          },
+          "desc": [
+            "指示点颜色"
+          ],
+          "defaultValue": "rgba(0, 0, 0, .3)"
+        },
+        {
+          "name": "indicator-active-color",
+          "type": {
+            "name": "Color"
+          },
+          "desc": [
+            "当前选中的指示点颜色"
+          ],
+          "defaultValue": "#000000"
+        },
+        {
+          "name": "autoplay",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否自动切换"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "current",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "当前所在滑块的 index"
+          ],
+          "defaultValue": "0"
+        },
+        {
+          "name": "current-item-id",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "当前所在滑块的 item-id ，不能与 current 被同时指定"
+          ],
+          "defaultValue": "\"\""
+        },
+        {
+          "name": "interval",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "自动切换时间间隔"
+          ],
+          "defaultValue": "5000"
+        },
+        {
+          "name": "duration",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "滑动动画时长"
+          ],
+          "defaultValue": "500"
+        },
+        {
+          "name": "circular",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否采用衔接滑动"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "vertical",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "滑动方向是否为纵向"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "previous-margin",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "前边距，可用于露出前一项的一小部分，接受 px 和 rpx 值"
+          ],
+          "defaultValue": "\"0px\""
+        },
+        {
+          "name": "next-margin",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "后边距，可用于露出后一项的一小部分，接受 px 和 rpx 值"
+          ],
+          "defaultValue": "\"0px\""
+        },
+        {
+          "name": "display-multiple-items",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "同时显示的滑块数量"
+          ],
+          "defaultValue": "1"
+        },
+        {
+          "name": "skip-hidden-item-layout",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否跳过未显示的滑块布局，设为 true 可优化复杂情况下的滑动性能，但会丢失隐藏状态滑块的布局信息"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "bindchange",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "current 改变时会触发 change 事件，event.detail = {current: current, source: source}"
+          ]
+        },
+        {
+          "name": "bindtransition",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "swiper-item 的位置发生改变时会触发 transition 事件，event.detail = {dx: dx, dy: dy}"
+          ]
+        },
+        {
+          "name": "bindanimationfinish",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "动画结束时会触发 animationfinish 事件，event.detail 同上"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "switch",
+      "docLink": "https://q.qq.com/wiki/develop/miniprogram/component/form/switch.html",
+      "attrs": [
+        {
+          "name": "checked",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否选中"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "disabled",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否禁用"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "type",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "样式，有效值：switch, checkbox"
+          ],
+          "defaultValue": "switch"
+        },
+        {
+          "name": "bindchange",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "checked 改变时触发 change 事件，event.detail={ value:checked}"
+          ]
+        },
+        {
+          "name": "color",
+          "type": {
+            "name": "Color"
+          },
+          "desc": [
+            "switch 的颜色，同 css 的 color"
+          ]
+        },
+        {
+          "name": "aria-label",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "无障碍访问，（属性）元素的额外描述"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "text",
+      "docLink": "https://q.qq.com/wiki/develop/miniprogram/component/basic-content/text.html",
+      "attrs": [
+        {
+          "name": "selectable",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "文本是否可选"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "space",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "显示连续空格"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "decode",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否解码"
+          ],
+          "defaultValue": "false"
+        }
+      ]
+    },
+    {
+      "name": "textarea",
+      "docLink": "https://q.qq.com/wiki/develop/miniprogram/component/form/textarea.html",
+      "attrs": [
+        {
+          "name": "value",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "输入框的内容"
+          ]
+        },
+        {
+          "name": "placeholder",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "输入框为空时占位符"
+          ]
+        },
+        {
+          "name": "placeholder-style",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "指定 placeholder 的样式，目前仅支持color,font-size和font-weight"
+          ]
+        },
+        {
+          "name": "placeholder-class",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "指定 placeholder 的样式类"
+          ],
+          "defaultValue": "textarea-placeholder"
+        },
+        {
+          "name": "disabled",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否禁用"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "maxlength",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "最大输入长度，设置为 -1 的时候不限制最大长度"
+          ],
+          "defaultValue": "140"
+        },
+        {
+          "name": "auto-focus",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "自动聚焦，拉起键盘。"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "focus",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "获取焦点"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "auto-height",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否自动增高，设置auto-height时，style.height不生效"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "fixed",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "如果 textarea 是在一个 position:fixed 的区域，需要显示指定属性 fixed 为 true"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "cursor-spacing",
+          "type": {
+            "name": "Number / String"
+          },
+          "desc": [
+            "指定光标与键盘的距离，单位px。取 textarea 距离底部的距离和 cursor-spacing 指定的距离的最小值作为光标与键盘的距离"
+          ],
+          "defaultValue": "0"
+        },
+        {
+          "name": "cursor",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "指定focus时的光标位置"
+          ]
+        },
+        {
+          "name": "show-confirm-bar",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否显示键盘上方带有”完成“按钮那一栏"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "selection-start",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "光标起始位置，自动聚集时有效，需与selection-end搭配使用"
+          ],
+          "defaultValue": "-1"
+        },
+        {
+          "name": "selection-end",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "光标结束位置，自动聚集时有效，需与selection-start搭配使用"
+          ],
+          "defaultValue": "-1"
+        },
+        {
+          "name": "adjust-position",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "键盘弹起时，是否自动上推页面"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "bindfocus",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "输入框聚焦时触发，event.detail = { value, height }，height 为键盘高度"
+          ]
+        },
+        {
+          "name": "bindblur",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "输入框失去焦点时触发，event.detail = {value, cursor}"
+          ]
+        },
+        {
+          "name": "bindlinechange",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "输入框行数变化时调用，event.detail = {height: 0, heightRpx: 0, lineCount: 0}"
+          ]
+        },
+        {
+          "name": "bindinput",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "当键盘输入时，触发 input 事件，event.detail = {value, cursor, keyCode}，keyCode 为键值，目前工具还不支持返回keyCode参数。bindinput 处理函数的返回值并不会反映到 textarea 上"
+          ]
+        },
+        {
+          "name": "bindconfirm",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "点击完成时， 触发 confirm 事件，event.detail = {value: value}"
+          ]
+        },
+        {
+          "name": "aria-label",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "无障碍访问，（属性）元素的额外描述"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "video",
+      "docLink": "https://q.qq.com/wiki/develop/miniprogram/component/media/video.html",
+      "attrs": [
+        {
+          "name": "src",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "要播放视频的资源地址，支持云文件ID"
+          ]
+        },
+        {
+          "name": "duration",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "指定视频时长"
+          ]
+        },
+        {
+          "name": "controls",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否显示默认播放控件（播放/暂停按钮、播放进度、时间）"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "danmu-list",
+          "type": {
+            "name": "Object Array"
+          },
+          "desc": [
+            "弹幕列表"
+          ]
+        },
+        {
+          "name": "danmu-btn",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否显示弹幕按钮，只在初始化时有效，不能动态变更"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "enable-danmu",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否展示弹幕，只在初始化时有效，不能动态变更"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "autoplay",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否自动播放"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "loop",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否循环播放"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "muted",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否静音播放"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "initial-time",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "指定视频初始播放位置"
+          ]
+        },
+        {
+          "name": "page-gesture",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "在非全屏模式下，是否开启亮度与音量调节手势"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "direction",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "设置全屏时视频的方向，不指定则根据宽高比自动判断。有效值为 0（正常竖向）, 90（屏幕逆时针90度）, -90（屏幕顺时针90度）"
+          ]
+        },
+        {
+          "name": "show-progress",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "若不设置，宽度大于240时才会显示"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "show-fullscreen-btn",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否显示全屏按钮"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "show-play-btn",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否显示视频底部控制栏的播放按钮"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "show-center-play-btn",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否显示视频中间的播放按钮"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "enable-progress-gesture",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否开启控制进度的手势"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "object-fit",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "当视频大小与 video 容器大小不一致时，视频的表现形式。contain：包含，fill：填充，cover：覆盖"
+          ],
+          "defaultValue": "contain"
+        },
+        {
+          "name": "poster",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "视频封面的图片网络资源地址或云文件ID。若 controls 属性值为 false 则设置 poster 无效"
+          ]
+        },
+        {
+          "name": "show-mute-btn",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否显示静音按钮"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "title",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "视频的标题，全屏时在顶部展示"
+          ]
+        },
+        {
+          "name": "play-btn-position",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "播放按钮的位置，有效值为：bottom（controls bar 上）、center（视频中间）"
+          ],
+          "defaultValue": "bottom"
+        },
+        {
+          "name": "enable-play-gesture",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "是否开启播放手势，即双击切换播放/暂停"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "auto-pause-if-navigate",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "当跳转到其它小程序页面时，是否自动暂停本页面的视频"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "auto-pause-if-open-native",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "当跳转到其它QQ原生页面时，是否自动暂停本页面的视频"
+          ],
+          "defaultValue": "true"
+        },
+        {
+          "name": "bindplay",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "当开始/继续播放时触发play事件"
+          ]
+        },
+        {
+          "name": "bindpause",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "当暂停播放时触发 pause 事件"
+          ]
+        },
+        {
+          "name": "bindended",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "当播放到末尾时触发 ended 事件"
+          ]
+        },
+        {
+          "name": "bindtimeupdate",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "播放进度变化时触发，event.detail = {currentTime, duration} 。触发频率 250ms 一次"
+          ]
+        },
+        {
+          "name": "bindfullscreenchange",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "视频进入和退出全屏时触发，event.detail = {fullScreen, direction}，direction 有效值为 vertical 或 horizontal"
+          ]
+        },
+        {
+          "name": "bindwaiting",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "视频出现缓冲时触发"
+          ]
+        },
+        {
+          "name": "binderror",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "视频播放出错时触发"
+          ]
+        },
+        {
+          "name": "bindprogress",
+          "type": {
+            "name": "EventHandle"
+          },
+          "desc": [
+            "加载进度变化时触发，只支持一段加载。event.detail = {buffered}，百分比"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "view",
+      "docLink": "https://q.qq.com/wiki/develop/miniprogram/component/view-container/view.html",
+      "attrs": [
+        {
+          "name": "hover-class",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "指定按下去的样式类。当 hover-class=\"none\" 时，没有点击态效果"
+          ],
+          "defaultValue": "none"
+        },
+        {
+          "name": "hover-stop-propagation",
+          "type": {
+            "name": "Boolean"
+          },
+          "desc": [
+            "指定是否阻止本节点的祖先节点出现点击态"
+          ],
+          "defaultValue": "false"
+        },
+        {
+          "name": "hover-start-time",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "按住后多久出现点击态，单位毫秒"
+          ],
+          "defaultValue": "50"
+        },
+        {
+          "name": "hover-stay-time",
+          "type": {
+            "name": "Number"
+          },
+          "desc": [
+            "手指松开后点击态保留时间，单位毫秒"
+          ],
+          "defaultValue": "400"
+        },
+        {
+          "name": "aria-role",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "无障碍访问，（角色）标识元素的作用"
+          ]
+        },
+        {
+          "name": "aria-label",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "无障碍访问，（属性）元素的额外描述"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "web-view",
+      "docLink": "https://q.qq.com/wiki/develop/miniprogram/component/open-ability/web-view.html",
+      "attrs": [
+        {
+          "name": "src",
+          "type": {
+            "name": "String"
+          },
+          "desc": [
+            "webview 指向网页的链接。网页需登录QQ 小程序管理后台 配置业务域名。"
+          ]
+        },
+        {
+          "name": "bindmessage",
+          "type": {
+            "name": "EventHandler"
+          },
+          "desc": [
+            "网页向小程序 postMessage 时，会在特定时机（小程序后退、组件销毁、分享）触发并收到消息。e.detail = { data }，data 是多次 postMessage 的参数组成的数组"
+          ]
+        },
+        {
+          "name": "bindload",
+          "type": {
+            "name": "EventHandler"
+          },
+          "desc": [
+            "网页加载成功时候触发此事件。e.detail = { src }"
+          ]
+        },
+        {
+          "name": "binderror",
+          "type": {
+            "name": "EventHandler"
+          },
+          "desc": [
+            "网页加载失败的时候触发此事件。e.detail = { src }"
+          ]
+        }
+      ]
+    }
+  ]
+}

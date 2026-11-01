@@ -83,6 +83,7 @@ exports.run = async function run() {
 
   const workspaceFolder = vscode.workspace.workspaceFolders?.[0]
   assert.ok(workspaceFolder, '未找到测试工作区')
+  await require('./language-tools-host.cjs').assertLanguageTools(vscode, workspaceFolder)
 
   const fixturePagePath = path.join(workspaceFolder.uri.fsPath, 'src', 'pages', 'home', 'index.vue')
   const document = await vscode.workspace.openTextDocument(vscode.Uri.file(fixturePagePath))

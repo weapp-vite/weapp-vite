@@ -8,10 +8,15 @@ expectAssignable<TemplateName>(TemplateName.multiPlatformSfc)
 expectAssignable<TemplateName>(TemplateName.plugin)
 expectAssignable<TemplateName>(TemplateName.wevu)
 expectAssignable<TemplateName>(TemplateName.react)
+expectAssignable<TemplateName>(TemplateName.lib)
 
 expectType<Promise<void>>(createProject('/tmp/demo', TemplateName.default))
 expectType<Promise<void>>(createProject('/tmp/demo', TemplateName.multiPlatform))
 expectType<Promise<void>>(createProject('/tmp/demo', TemplateName.multiPlatformSfc))
+expectType<Promise<void>>(createProject('/tmp/demo', TemplateName.plugin))
+expectType<Promise<void>>(createProject('/tmp/demo', TemplateName.lib))
+expectType<Promise<void>>(createProject('/tmp/demo', TemplateName.multiPlatform, { toolchain: 'vite-plus' }))
+expectType<Promise<void>>(createProject('/tmp/demo', TemplateName.multiPlatformSfc, { toolchain: 'vite-plus' }))
 
 const options: CreateProjectOptions = {
   installSkills: true,

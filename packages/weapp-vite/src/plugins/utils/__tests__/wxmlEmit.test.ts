@@ -546,12 +546,12 @@ const cover = '/cover.png'
     expect(payload.source).toContain('from="./helper.sjs"')
   })
 
-  it('falls back to extension-derived script module tag when adapter does not override it', () => {
+  it('uses the Swan adapter tag while preserving src and module attributes', () => {
     ctx = createMockCompiler({
       outputExtensions: { wxml: 'swan', wxs: 'sjs' },
       platform: 'swan',
     })
-    const token = ctx.wxmlService!.analyze('<wxs src="./helper.wxs" />')
+    const token = ctx.wxmlService!.analyze('<wxs module="helper" src="./helper.wxs" />')
     ctx.wxmlService!.tokenMap.set(filePath, token)
     ctx.wxmlService!.depsMap.set(filePath, new Set())
 
@@ -565,8 +565,26 @@ const cover = '/cover.png'
 
     const payload = emitFile.mock.calls[0]?.[0]
     expect(payload.fileName).toBe('pages/index/index.swan')
-    expect(payload.source).toContain('<sjs')
-    expect(payload.source).toContain('src="./helper.sjs"')
+    expect(payload.source).toBe('<import-sjs module="helper" src="./helper.sjs" />')
+  })
+
+  it('uses the extension-derived script tag when the asset has no platform profile', () => {
+    const emitFile = vi.fn()
+    emitWxmlAssetFile({
+      runtime: { emitFile },
+      id: filePath,
+      fileName: 'pages/index/index.wxml',
+      token: ctx.wxmlService!.analyze('<wxs module="helper" src="./helper.wxs" />'),
+      emittedCodeCache: new Map(),
+      scriptModuleExtension: 'sjs',
+      templateExtension: 'wxml',
+    })
+
+    expect(emitFile).toHaveBeenCalledWith({
+      type: 'asset',
+      fileName: 'pages/index/index.wxml',
+      source: '<sjs module="helper" src="./helper.sjs" />',
+    })
   })
 
   it('rewrites wx directives and pascal-case tags for alipay output', () => {
@@ -646,14 +664,14 @@ const cover = '/cover.png'
 
   it('preserves native Douyin template syntax when the source is TTML', () => {
     ctx = createMockCompiler({
-      outputExtensions: { wxml: 'ttml', wxs: 'wxs' },
+      outputExtensions: { wxml: 'ttml', wxs: 'sjs' },
       platform: 'tt',
     })
     const nativeFilePath = '/project/src/pages/native/index.ttml'
-    const source = '<wxs src="./helper.wxs" module="helper" /><native-counter tt:if="{{ok}}" bind:tap="handleTap" />'
+    const source = '<sjs src="./helper.sjs" module="helper" /><native-counter tt:if="{{ok}}" bind:tap="handleTap" />'
     const token = ctx.wxmlService!.analyze(source)
     ctx.wxmlService!.tokenMap.set(nativeFilePath, token)
-    ctx.wxmlService!.depsMap.set(nativeFilePath, new Set(['/project/src/pages/native/helper.wxs']))
+    ctx.wxmlService!.depsMap.set(nativeFilePath, new Set(['/project/src/pages/native/helper.sjs']))
 
     const emitFile = vi.fn()
     const addWatchFile = vi.fn()
@@ -666,7 +684,7 @@ const cover = '/cover.png'
     expect(result).toEqual(['pages/native/index.ttml'])
     expect(emitFile.mock.calls[0]?.[0].source).toBe(source)
     expect(addWatchFile).toHaveBeenCalledWith(nativeFilePath)
-    expect(addWatchFile).toHaveBeenCalledWith('/project/src/pages/native/helper.wxs')
+    expect(addWatchFile).toHaveBeenCalledWith('/project/src/pages/native/helper.sjs')
   })
 
   it('respects custom json extension', () => {

@@ -15,13 +15,14 @@ import {
   shouldNormalizeTemplateImportSource,
 } from '../shared'
 import { resolveEventDirectiveName } from './events'
+import { createScriptScanSource } from './scripts'
 
 const wxsScriptExtensions = new Set(['js', 'ts'])
 
 const TAG_NAME_LOWER_TO_UPPER_RE = /([a-z0-9])([A-Z])/g
 const TAG_NAME_MULTI_UPPER_RE = /([A-Z]+)([A-Z][a-z])/g
 const TAG_NAME_HAS_UPPER_RE = /[A-Z]/
-const SCRIPT_MODULE_IMPORT_RE = /\.(?:wxs|sjs)(?:\.[jt]s)?$/i
+const SCRIPT_MODULE_IMPORT_RE = /\.(?:wxs|sjs)(?:\.[jt]s)?$|\.filter\.[jt]s$/i
 const COMMENT_IFDEF_RE = /#ifdef\s+(\w+)/
 const COMMENT_ENDIF_RE = /#endif/
 const MP_DIRECTIVE_NAME_RE = /^([a-z]+):(if|elif|else|for|for-item|for-index|key)$/
@@ -56,6 +57,7 @@ function shouldNormalizeTagName(tagName: string) {
 
 export function parseWxml(options: ParserOptions): ParserResult {
   const { source, platform, excludeComponent } = options
+  const { parserSource, tagAttributes } = createScriptScanSource(source)
   const { directivePrefix, normalizeComponentTagName } = getWxmlPlatformTransformOptions(platform)
   const deps: WxmlDep[] = []
   let currentTagName: string | undefined
@@ -75,7 +77,7 @@ export function parseWxml(options: ParserOptions): ParserResult {
   // 注释
   const commentTokens: Token[] = []
   // 内联wxs
-  const inlineWxsTokens: Token[] = []
+  const inlineWxsTokens: WxmlToken['inlineWxsTokens'] = []
   // 可包含 mustache 的模板文本与属性
   const templateTokens: Token[] = []
   // WXS/SJS 声明，保留完整属性用于模块冲突等语义检查
@@ -83,7 +85,7 @@ export function parseWxml(options: ParserOptions): ParserResult {
   // 脚本模块标签替换（wxs/sjs）
   const scriptModuleTagTokens: Token[] = []
   // 处理 xxx.wxs.ts 转变为合法引用
-  const wxsImportNormalizeTokens: Token[] = []
+  const wxsImportNormalizeTokens: WxmlToken['wxsImportNormalizeTokens'] = []
   // 移除内联 wxs 的 lang 属性
   const removeWxsLangAttrTokens: Token[] = []
   // 模板 import/include 的扩展名替换
@@ -105,7 +107,7 @@ export function parseWxml(options: ParserOptions): ParserResult {
       onopentagname(name) {
         tagStack.push(name)
         currentTagName = name
-        importAttrs = getScriptModuleImportAttrs(currentTagName) ?? getTemplateImportAttrs(currentTagName)
+        importAttrs = getScriptModuleImportAttrs(currentTagName, platform) ?? getTemplateImportAttrs(currentTagName)
         tagStartIndex = parser.startIndex
         currentHasLoopDirective = false
         if (normalizeComponentTagName && shouldNormalizeTagName(name)) {
@@ -118,7 +120,7 @@ export function parseWxml(options: ParserOptions): ParserResult {
             })
           }
         }
-        if (isScriptModuleTagName(name)) {
+        if (name !== 'filter' && isScriptModuleTagName(name)) {
           scriptModuleTagTokens.push({
             start: parser.startIndex + 1,
             end: parser.startIndex + 1 + name.length,
@@ -176,24 +178,12 @@ export function parseWxml(options: ParserOptions): ParserResult {
                 end: parser.endIndex,
                 attrs,
               })
-              const matchesScriptModuleImportAttr = isScriptModuleImportAttr(currentTagName, name)
-              if (matchesScriptModuleImportAttr) {
-                if (SCRIPT_MODULE_IMPORT_RE.test(value)) {
-                  const valueStart = parser.startIndex + name.length + 2
-                  wxsImportNormalizeTokens.push(
-                    {
-                      start: valueStart,
-                      end: parser.endIndex - 1,
-                      value,
-                    },
-                  )
-                }
-              }
               if (isTemplateImportAttr(currentTagName, name) && shouldNormalizeTemplateImportSource(value)) {
-                const valueStart = parser.startIndex + name.length + 2
+                const attribute = tagAttributes.get(tagStartIndex)?.find(attribute => attribute.nameStart === parser.startIndex)
+                const valueStart = attribute?.valueStart ?? parser.startIndex + name.length + 2
                 templateImportNormalizeTokens.push({
                   start: valueStart,
-                  end: parser.endIndex - 1,
+                  end: attribute?.valueEnd ?? parser.endIndex - 1,
                   value,
                 })
               }
@@ -249,6 +239,12 @@ export function parseWxml(options: ParserOptions): ParserResult {
         }
         if (isScriptModuleTagName(name)) {
           scriptModules.push({ attrs: attributes, tagName: name })
+          for (const attribute of tagAttributes.get(tagStartIndex) ?? []) {
+            const value = attributes[attribute.name]
+            if (isScriptModuleImportAttr(name, attribute.name, platform) && value && (SCRIPT_MODULE_IMPORT_RE.test(value) || wxsScriptExtensions.has(attributes.lang))) {
+              wxsImportNormalizeTokens.push({ start: attribute.valueStart!, end: attribute.valueEnd!, value, ...(name === 'filter' ? { tagName: 'filter' } : {}) })
+            }
+          }
         }
       },
       onclosetag(name) {
@@ -297,7 +293,7 @@ export function parseWxml(options: ParserOptions): ParserResult {
           }
         }
 
-        if (currentTagName && isScriptModuleTagName(currentTagName)) {
+        if (currentTagName && currentTagName !== 'filter' && isScriptModuleTagName(currentTagName)) {
           if (parser.startIndex !== tagStartIndex) {
             const nameStart = parser.startIndex + 2
             scriptModuleTagTokens.push({
@@ -314,12 +310,15 @@ export function parseWxml(options: ParserOptions): ParserResult {
         tagStartIndex = 0
       },
       ontext(data) {
-        if (currentTagName && isScriptModuleTagName(currentTagName) && wxsScriptExtensions.has(attrs.lang)) {
-          inlineWxsTokens.push({
-            start: parser.startIndex,
-            end: parser.endIndex,
-            value: data,
-          })
+        if (currentTagName && isScriptModuleTagName(currentTagName)) {
+          if (wxsScriptExtensions.has(attrs.lang)) {
+            inlineWxsTokens.push({
+              start: parser.startIndex,
+              end: parser.endIndex + 1,
+              value: source.slice(parser.startIndex, parser.endIndex + 1),
+              ...(currentTagName === 'filter' ? { tagName: 'filter' } : {}),
+            })
+          }
         }
         else {
           templateTokens.push({
@@ -361,9 +360,7 @@ export function parseWxml(options: ParserOptions): ParserResult {
       xmlMode: true,
     },
   )
-  parser.write(
-    source,
-  )
+  parser.write(parserSource)
   parser.end()
 
   if (removalRanges.length > 1) {

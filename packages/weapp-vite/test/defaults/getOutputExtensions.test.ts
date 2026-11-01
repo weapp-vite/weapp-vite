@@ -24,13 +24,14 @@ describe('getOutputExtensions', () => {
     })
   })
 
-  it('keeps existing mappings for tt mini program', () => {
+  it('returns TTML, TTSS and SJS extensions for tt mini program', () => {
     const extensions = getOutputExtensions('tt')
     expect(extensions).toEqual({
       js: 'js',
       json: 'json',
       wxml: 'ttml',
       wxss: 'ttss',
+      wxs: 'sjs',
     })
   })
 

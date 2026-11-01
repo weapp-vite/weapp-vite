@@ -1,11 +1,12 @@
 import type { MpPlatform } from '../types'
+import { getMiniProgramScriptModuleOptions } from '@weapp-core/shared'
 import { getPlatformScriptModuleTag } from '../platform'
 import { MINI_PROGRAM_PLATFORM_ADAPTERS } from '../platforms/adapters'
 
 const IMPORT_SJS_TAG_RE = /<import-sjs([\s\S]*?)>/g
 const IMPORT_SJS_SRC_RE = /\bsrc\s*=\s*/g
 const IMPORT_SJS_MODULE_RE = /\bmodule\s*=\s*/g
-const DEFAULT_SCRIPT_MODULE_TAG_NAMES = ['wxs', 'sjs'] as const
+const DEFAULT_SCRIPT_MODULE_TAG_NAMES = ['wxs', 'sjs', 'filter'] as const
 const DEFAULT_SCRIPT_MODULE_TAG_BY_EXTENSION = Object.freeze({
   wxs: 'wxs',
   sjs: 'sjs',
@@ -14,6 +15,7 @@ const SCRIPT_MODULE_IMPORT_ATTRS = Object.freeze({
   'wxs': ['src'],
   'sjs': ['src'],
   'import-sjs': ['from'],
+  'filter': ['src'],
 } satisfies Readonly<Record<string, readonly string[]>>)
 
 type ScriptModuleExtensionKey = keyof typeof DEFAULT_SCRIPT_MODULE_TAG_BY_EXTENSION
@@ -69,25 +71,28 @@ export function isScriptModuleTagName(tagName?: string) {
   return typeof tagName === 'string' && getScriptModuleTagNames().includes(tagName)
 }
 
-export function getScriptModuleImportAttrs(tagName?: string) {
+export function getScriptModuleImportAttrs(tagName?: string, platform?: MpPlatform) {
   if (!tagName) {
     return undefined
   }
   if (!(tagName in SCRIPT_MODULE_IMPORT_ATTRS)) {
     return undefined
   }
+  if (platform && tagName === getMiniProgramScriptModuleOptions(platform, 'sjs').tag) {
+    return [getMiniProgramScriptModuleOptions(platform, 'sjs').sourceAttribute]
+  }
   return SCRIPT_MODULE_IMPORT_ATTRS[tagName as ScriptModuleImportTagName]
 }
 
-export function isScriptModuleImportAttr(tagName: string | undefined, attrName: string) {
+export function isScriptModuleImportAttr(tagName: string | undefined, attrName: string, platform?: MpPlatform) {
   if (!tagName) {
     return false
   }
-  return getScriptModuleImportAttrs(tagName)?.includes(attrName) === true
+  return getScriptModuleImportAttrs(tagName, platform)?.includes(attrName) === true
 }
 
-export function shouldNormalizeScriptModuleAttributes(tagName?: string) {
-  return tagName === 'import-sjs'
+export function shouldNormalizeScriptModuleAttributes(tagName?: string, platform?: MpPlatform) {
+  return tagName === 'import-sjs' && (!platform || getMiniProgramScriptModuleOptions(platform, 'sjs').sourceAttribute === 'from')
 }
 
 export function normalizeImportSjsAttributes(source: string) {

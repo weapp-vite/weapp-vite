@@ -7,7 +7,9 @@
 ## 特性
 
 - 交互式创建或非交互式参数创建
-- 内置多种模板（默认、原生多平台 + Web、Vue SFC 多平台 + Web、Wevu、Wevu + TDesign、Tailwindcss、TDesign、Vant、插件、组件库）
+- 默认展示原生、Wevu、Wevu + TDesign、TailwindCSS、TDesign、Vant 六个模板；React、多平台、插件、组件库收纳在“更多模板”
+- 模板选择后独立选择 `wv`、Vite 或 Vite+ 工具链，默认 `wv`
+- Vite+ 项目内置小程序 Oxlint 规则与 Oxfmt 格式预设
 - 默认不联网查询版本，使用随包依赖；可显式按用户 registry 查询兼容稳定版
 - 自动处理 `.gitignore` 写入
 - 可选安装推荐的 AI skills（`sonofmagic/skills`）
@@ -37,7 +39,7 @@ npx create-weapp-vite
 pnpm create weapp-vite
 ```
 
-交互流程询问是否安装推荐的 AI skills，默认选择“否”。显式安装时执行：
+交互流程依次选择模板、工具链，再询问是否安装推荐的 AI skills；工具链默认 `wv`，AI skills 默认选择“否”。显式安装时执行：
 
 ```bash
 npx --yes skills add sonofmagic/skills
@@ -73,11 +75,44 @@ import { createProject, TemplateName } from 'create-weapp-vite'
 
 await createProject('my-app', TemplateName.wevu)
 await createProject('my-app', TemplateName.wevu, { installSkills: true })
+await createProject('my-app', TemplateName.wevu, { toolchain: 'vite-plus' })
 await createProject('my-app', TemplateName.wevu, {
   dependencyVersionStrategy: 'compatible',
   registry: 'https://registry.npmmirror.com/',
 })
 ```
+
+## Vite+ 模板
+
+工具链与业务模板独立，已有模板名与非交互默认值保持兼容：
+
+```bash
+pnpm create weapp-vite my-app wevu --toolchain=vite-plus
+pnpm create weapp-vite my-native-app default --toolchain=vite-plus
+pnpm create weapp-vite my-vite-app wevu --toolchain=vite
+```
+
+Vite+ 生成项目的 `dev` / `build` 使用 `vp`，`vite.config.ts` 导入共享的 `weapp-vite.config.ts`，并接入 `@weapp-vite/oxlint` 与 `@weapp-vite/oxfmt`。原生项目使用 `miniProgramRecommended`，Wevu 项目使用 `wevuRecommended`，React 项目使用 `reactRecommended`；三者均包含小程序 runtime 规则，格式配置使用 `recommended`。
+
+| 脚本 | 用途 |
+| --- | --- |
+| `pnpm lint` / `pnpm lint:fix` | Oxlint 脚本检查与修复，以及原生语言诊断 |
+| `pnpm format` / `pnpm format:check` | 标准文件、原生样式、模板与脚本模块的格式化、只读检查 |
+| `pnpm check` | 一次 Vite+ 标准检查、原生语言预检与格式检查，以及适用的 Vue / Stylelint 检查 |
+| `pnpm lint:vue` / `pnpm lint:vue:fix` | Wevu 项目的 Vue 模板专项 ESLint 检查与修复 |
+| `pnpm stylelint` | 样式与 Vue SFC style 检查 |
+
+`lint` / `lint:fix` 调用 `weapp-vite-lint` / `weapp-vite-lint --fix`，组合 Oxlint 与共享平台语言诊断。`format`、`format:check`、`check` 分别调用 `weapp-vite-format --write`、`--check`、`--check-all`。格式化在写入前预检全部候选文件；`check` 通过 Node 编排一次 `vp check` 与适用的专项检查，不重复调用标准 lint/fmt。
+
+登记的 WXML、AXML、TTML、SWAN、JXML、QML、KSML、XHSML、TYML 使用同一源码片段格式化器，逐字保留文本、实体、属性值与引号、顺序、重复属性及显式闭合形式。独立/内联 WXS、SJS、KS、filter 和 `.wxs.ts` 等编译源码使用平台方言与 AST 语义复验；原生 WXSS、ACSS、TTSS、QSS、JXSS、TYSS 及 CSS 使用样式适配器。词法、结构或语义校验失败时拒绝写回。
+
+平台选择放在 `vite.config.ts` 的 `weapp.language`，支持按文件 glob 覆盖；共享脚本后缀存在歧义或引用冲突时需显式指定。标准 `lint` / `fmt` 配置仍各自管理检查和格式选项。生成的 VSCode 配置将模板及原生模块交给 weapp-vite 扩展，原生样式关联 CSS，标准 JS/TS 使用 Oxc。保留预设的原生语言忽略项，不把 WXML 关联为 HTML；单独 `vp fmt` 不覆盖全部原生语言。
+
+`wv prepare`、打开 IDE、Dashboard、上传与 MCP 命令继续由 `wv` 提供；`postinstall` 保持 `wv prepare`，格式化在模板准备阶段完成。Vue parser services 专项检查、Stylelint 和项目类型检查各自保留；语言工具不新增完整模板类型检查器。本轮验收覆盖 TS、CLI、VSCode 与构建，不代表真实小程序 IDE runtime 验收。
+
+Vite+ 使用固定配对 `vite-plus@1.2.0`、`vite` → `@voidzero-dev/vite-plus-core@1.2.0` 与 `vitest@5.0.4`。独立项目同时生成 npm overrides 与 pnpm workspace 策略。已有 pnpm workspace 须先配置相同的 `overrides.vite`、`overrides.vitest`，以及包含 `1.2.0` 的 `peerDependencyRules.allowedVersions.vite`；脚手架会在生成前校验，保留父工作区文件。
+
+在已有 workspace 中，`pnpm check` 的标准检查与原生语言适配器优先使用根 `vite.config.ts` 的配置；成员预设不会覆盖根策略。团队应在根配置接入相应预设，并将文件匹配范围定位到成员目录。普通 `weapp-vite-format --write` / `--check` 使用最近的项目格式配置，支持显式 `--config` 和文件范围；`--check-all` 与 `vp check` 不提供该参数。详细配置见 [平台语言配置](https://vite.weapp.dev/config/language)、[Oxlint 文档](https://vite.weapp.dev/packages/oxlint) 与 [Oxfmt 文档](https://vite.weapp.dev/packages/oxfmt)。
 
 ## 依赖版本策略
 
@@ -148,19 +183,18 @@ pnpm --config.registry=https://registry.npmmirror.com/ dlx create-weapp-vite@<ve
 
 ## 配置
 
-`TemplateName` 支持以下模板：
+默认模板列表展示以下六项，网站推荐与交互入口保持一致：
 
-- `default`
-- `multi-platform`
-- `multi-platform-sfc`
-- `wevu`
-- `react`
-- `wevu-tdesign`
-- `tailwindcss`
-- `tdesign`
-- `vant`
-- `plugin`
-- `lib`
+| 模板名 | 说明 |
+| --- | --- |
+| `default` | 原生小程序 |
+| `wevu` | Wevu + Vue SFC |
+| `wevu-tdesign` | Wevu + TDesign + TailwindCSS |
+| `tailwindcss` | 原生小程序 + TailwindCSS |
+| `tdesign` | TDesign + TailwindCSS |
+| `vant` | Vant + TailwindCSS |
+
+`react`、`multi-platform`、`multi-platform-sfc`、`plugin`、`lib` 收纳在“更多模板”。这些模板及其 `TemplateName` 枚举仍保留，既有命令、自动化脚本与可编程 API 可继续显式创建；收纳不会改变模板的编译能力。
 
 `multi-platform` 使用原生 Page/Component，覆盖微信、支付宝、抖音、百度、京东、小红书与 Web Runtime。它按命令构建单个目标，不会隐式生成全部平台产物；创建后请使用 `dev:<platform>` / `build:<platform>` 脚本。
 

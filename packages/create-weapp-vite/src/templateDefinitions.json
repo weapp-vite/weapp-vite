@@ -1,0 +1,79 @@
+[
+  {
+    "id": "default",
+    "directory": "weapp-vite-template",
+    "label": "默认模板",
+    "visibility": "default",
+    "framework": "native"
+  },
+  {
+    "id": "wevu",
+    "directory": "weapp-vite-wevu-template",
+    "label": "Wevu 模板 (Vue SFC)",
+    "visibility": "default",
+    "framework": "wevu"
+  },
+  {
+    "id": "wevu-tdesign",
+    "directory": "weapp-vite-wevu-tailwindcss-tdesign-template",
+    "label": "Wevu + TDesign 模板 (wevu + tdesign + tailwindcss)",
+    "visibility": "default",
+    "framework": "wevu"
+  },
+  {
+    "id": "tailwindcss",
+    "directory": "weapp-vite-tailwindcss-template",
+    "label": "集成 TailwindCSS",
+    "visibility": "default",
+    "framework": "native"
+  },
+  {
+    "id": "tdesign",
+    "directory": "weapp-vite-tailwindcss-tdesign-template",
+    "label": "TDesign 模板 (tdesign + tailwindcss)",
+    "visibility": "default",
+    "framework": "native"
+  },
+  {
+    "id": "vant",
+    "directory": "weapp-vite-tailwindcss-vant-template",
+    "label": "Vant 模板 (vant + tailwindcss)",
+    "visibility": "default",
+    "framework": "native"
+  },
+  {
+    "id": "plugin",
+    "directory": "weapp-vite-plugin-template",
+    "label": "插件模板 (src + pluginRoot)",
+    "visibility": "advanced",
+    "framework": "wevu"
+  },
+  {
+    "id": "lib",
+    "directory": "weapp-vite-lib-template",
+    "label": "组件库模板 (lib 模式)",
+    "visibility": "advanced",
+    "framework": "wevu"
+  },
+  {
+    "id": "multi-platform",
+    "directory": "weapp-vite-multi-platform-template",
+    "label": "原生多平台 + Web 模板",
+    "visibility": "experimental",
+    "framework": "native"
+  },
+  {
+    "id": "multi-platform-sfc",
+    "directory": "weapp-vite-multi-platform-sfc-template",
+    "label": "Vue SFC 多平台 + Web 模板",
+    "visibility": "experimental",
+    "framework": "wevu"
+  },
+  {
+    "id": "react",
+    "directory": "weapp-vite-react-template",
+    "label": "React 模板 (React 19 + 小程序 runtime)",
+    "visibility": "experimental",
+    "framework": "react"
+  }
+]

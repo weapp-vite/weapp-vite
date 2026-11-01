@@ -31,6 +31,8 @@ export default await defineEslintConfig({
       'website/snippets',
       '**/*.auto.{js,ts}',
       '**/node_modules/**',
+      // 发布模板由准备流程生成并使用消费者工具链检查，避免仓库规则二次改写。
+      'packages/create-weapp-vite/templates/**',
       '**/dist/**',
       '**/dist-*/**',
       '**/dist-plugin/**',
@@ -238,6 +240,12 @@ export default await defineEslintConfig({
       files: ['package.json'],
       rules: {
         'e18e/ban-dependencies': 'off',
+      },
+    }, {
+      files: ['packages/oxfmt/package.json', 'packages/oxlint/package.json', 'packages/language-service/package.json'],
+      rules: {
+        // 格式入口依赖跨平台进程启动及与 Vite Plus 一致的路径 glob 语义。
+        'e18e/ban-dependencies': ['warn', { allowed: ['execa', 'fast-glob'] }],
       },
     }, {
       files: ['@weapp-core/shared/package.json', '@weapp-core/shared/test-d/get-value.test-d.ts'],

@@ -70,11 +70,12 @@ describe('complete headless DOM workflow sharding', () => {
     expect(preparationIndex).toBeGreaterThanOrEqual(0)
     expect(preparationIndex).toBeLessThan(commands.indexOf(cleanupCommand))
     expect(commands.indexOf(cleanupCommand)).toBeLessThan(commands.indexOf(runtimeCommand))
-    for (const name of ['windowsKernelQuery', 'processes', 'windowsProcessTree', 'windowsProcessRows', 'windowsQueryTrace']) {
+    for (const name of ['windowsKernelQuery', 'processes', 'crash', 'windowsGenerationCapture', 'windowsGenerationReporting', 'windowsProcessTree', 'windowsProcessRows', 'windowsQueryTrace']) {
       expect(cleanupCommand).toContain(`e2e/utils/devProcessCleanup/${name}.test.ts`)
     }
     expect(cleanupCommand).toContain('WEAPP_VITE_E2E_CLEANUP_TRACE=1')
     expect(cleanupCommand).toContain('e2e/utils/dev-process.cleanup.test.ts')
+    expect(cleanupCommand).toContain('e2e/utils/dev-process.crash.test.ts')
     expect(cleanupCommand).toContain('2>&1 | tee .tmp/ide-dom-headless-preflight/cleanup.log')
     expect(runtimeCommand).toContain('node --import tsx e2e/scripts/run-e2e-suite.ts ide-dom-headless:classic --plan=.tmp/verification-plan/ide-dom-headless.json --shard-index=${{ matrix.shard }}')
     for (const setting of ['WEAPP_VITE_E2E_CLEANUP_TRACE=1', 'WEAPP_VITE_E2E_DEV_PROCESS_TRACE=1', 'WEAPP_VITE_E2E_DEV_SHUTDOWN_TRACE=1', 'WEAPP_VITE_E2E_DOM_SCOPE_TRACE_CHECKPOINTS=home-ready']) {

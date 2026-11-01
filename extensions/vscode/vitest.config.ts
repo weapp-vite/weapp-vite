@@ -1,20 +1,15 @@
 import path from 'node:path'
 import { defineConfig } from 'vitest/config'
-
-const packageDir = import.meta.dirname
+import { workspaceSourceAliases } from './scripts/workspaceSourceAliases.ts'
 
 export default defineConfig({
+  // 导入的配置和跨包源码都归此测试项目转换，避免遍历根 solution 的应用引用。
+  tsconfig: path.resolve(import.meta.dirname, 'tsconfig.json'),
   resolve: {
-    alias: [
-      {
-        find: '@weapp-vite/ast/babel',
-        replacement: path.resolve(packageDir, '../../packages/ast/src/babel.ts'),
-      },
-      {
-        find: '@weapp-vite/ast/babelTypes',
-        replacement: path.resolve(packageDir, '../../packages/ast/src/babelTypes.ts'),
-      },
-    ],
+    alias: Object.entries(workspaceSourceAliases).map(([specifier, replacement]) => ({
+      find: new RegExp(`^${specifier.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'u'),
+      replacement,
+    })),
   },
   test: {
     include: ['extension/**/*.test.ts'],

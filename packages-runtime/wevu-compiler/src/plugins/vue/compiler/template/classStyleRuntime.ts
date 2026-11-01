@@ -2,6 +2,7 @@ import {
   WEVU_CLASS_STYLE_RUNTIME_FILE,
   WEVU_CLASS_STYLE_RUNTIME_MODULE,
 } from '@weapp-core/constants'
+import { getMiniProgramScriptModuleOptions, resolveMiniProgramPlatform } from '@weapp-core/shared'
 import path from 'pathe'
 import { normalizeRoot, toPosixPath } from '../../../../utils/path'
 
@@ -16,6 +17,7 @@ export const CLASS_STYLE_WXS_FILE = WEVU_CLASS_STYLE_RUNTIME_FILE
 
 export interface ClassStyleWxsSourceOptions {
   extension?: string
+  moduleFormat?: 'commonjs' | 'esm'
 }
 
 function resolveScriptModuleTag(extension: string) {
@@ -26,11 +28,12 @@ function resolveScriptModuleTag(extension: string) {
 /**
  * 构建 class/style WXS 引用标签。
  */
-export function buildClassStyleWxsTag(extension: string, src?: string) {
+export function buildClassStyleWxsTag(extension: string, src?: string, platform?: string) {
   const normalized = extension.startsWith('.') ? extension.slice(1) : extension
   const resolvedSrc = src ?? `./${CLASS_STYLE_WXS_FILE}.${normalized}`
-  const tag = resolveScriptModuleTag(normalized)
-  return `<${tag} module="${CLASS_STYLE_WXS_MODULE}" src="${resolvedSrc}"/>`
+  const options = getMiniProgramScriptModuleOptions(resolveMiniProgramPlatform(platform), normalized)
+  const tag = platform ? options.tag : resolveScriptModuleTag(normalized)
+  return `<${tag} ${options.moduleAttribute}="${CLASS_STYLE_WXS_MODULE}" ${options.sourceAttribute}="${resolvedSrc}"/>`
 }
 
 /**
@@ -270,7 +273,7 @@ export function getClassStyleWxsSource(options: ClassStyleWxsSourceOptions = {})
     '',
   ]
 
-  const exportLines = isSjs
+  const exportLines = (options.moduleFormat ?? (isSjs ? 'esm' : 'commonjs')) === 'esm'
     ? [
         'export default {',
         '  cls: normalizeClass,',

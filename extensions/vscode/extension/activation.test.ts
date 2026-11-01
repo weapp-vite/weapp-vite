@@ -210,6 +210,9 @@ function createMockVscode() {
       onDidChangeWorkspaceFolders(handler: Handler) {
         return { dispose() {}, handler }
       },
+      onDidGrantWorkspaceTrust(handler: Handler) {
+        return { dispose() {}, handler }
+      },
       onDidChangeConfiguration(handler: Handler) {
         return { dispose() {}, handler }
       },
@@ -517,7 +520,7 @@ it('activate registers commands, providers, status bar and diagnostics without e
         'weapp-vite.revealPageRouteInAppJsonFromTreeItem',
       ],
     )
-    assert.equal(state.registeredProviders.length, 18)
+    assert.equal(state.registeredProviders.length, 35)
     assert.equal(state.registeredProviders.some(item => item.type === 'semanticTokens'), false)
     assert.ok(
       state.registeredProviders.some(item => item.type === 'documentFormatting'
@@ -534,7 +537,9 @@ it('activate registers commands, providers, status bar and diagnostics without e
     assert.equal(state.statusBarItems.length, 1)
     assert.equal(state.statusBarItems[0].command, 'weapp-vite.runAction')
     assert.equal(state.outputChannels.length, 0)
-    assert.equal(state.diagnosticCollections.length, 1)
+    assert.equal(state.diagnosticCollections.length, 2)
+    assert.ok(state.registeredProviders.some(item => item.type === 'documentFormatting'
+      && JSON.stringify(item.selector).includes('miniprogram-script')))
     assert.ok(subscriptions.length >= 1)
   })
 })

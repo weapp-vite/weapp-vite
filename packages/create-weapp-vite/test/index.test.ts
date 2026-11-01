@@ -45,7 +45,10 @@ vi.mock('@inquirer/prompts', () => {
       }
       return false
     },
-    select: async (opts: { choices?: Array<{ name: string, value: unknown }> }) => {
+    select: async (opts: { message?: string, choices?: Array<{ name: string, value: unknown }>, default?: unknown }) => {
+      if (opts.message === '选择工具链') {
+        return opts.default
+      }
       lastSelectChoices = opts.choices
       return (answers.template ?? 'default') // TemplateName.default
     },
@@ -137,16 +140,12 @@ describe('create-weapp-vite CLI (mocked prompts)', () => {
     await waitForFile(path.join(out, 'package.json'))
     expect(lastSelectChoices?.map(c => c.value)).toEqual([
       'default',
-      'multi-platform',
-      'multi-platform-sfc',
       'wevu',
-      'react',
       'wevu-tdesign',
       'tailwindcss',
       'tdesign',
       'vant',
-      'plugin',
-      'lib',
+      'more-templates',
     ])
     const hasProjectConfig = await fs.pathExists(path.join(out, 'project.config.json'))
     if (!hasProjectConfig) {

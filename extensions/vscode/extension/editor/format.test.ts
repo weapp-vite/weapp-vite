@@ -12,6 +12,8 @@ function createVscodeModule(mockVscode: Record<string, unknown>) {
 
 function createDocument(text: string) {
   return {
+    uri: { fsPath: 'page.wxml' },
+    version: 1,
     getText() {
       return text
     },
@@ -54,7 +56,7 @@ it('formats wxml in-process without opening an html formatter document', async (
     WeappWxmlDocumentFormattingProvider,
   } = await import('./format')
   const provider = new WeappWxmlDocumentFormattingProvider()
-  const sourceText = '<view> <text>{{ msg }}</text> </view>\n'
+  const sourceText = '<view   class="demo"> <text>{{ msg }}</text> </view>\n'
   const edits = await provider.provideDocumentFormattingEdits(createDocument(sourceText) as never, {
     insertSpaces: true,
     tabSize: 2,
@@ -66,7 +68,7 @@ it('formats wxml in-process without opening an html formatter document', async (
   assert.deepEqual(edits[0]?.range.start, { line: 0, character: 0 })
   assert.deepEqual(edits[0]?.range.end, { line: 1, character: 0 })
   assert.equal(edits[0]?.newText.includes('undefined'), false)
-  assert.equal(edits[0]?.newText, '<view>\n  <text>{{ msg }}</text>\n</view>\n')
+  assert.equal(edits[0]?.newText, '<view class="demo"> <text>{{ msg }}</text> </view>\n')
 
   vi.doUnmock('vscode')
   vi.resetModules()
