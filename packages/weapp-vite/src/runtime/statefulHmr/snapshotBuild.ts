@@ -130,6 +130,7 @@ export async function buildStatefulHmrSnapshot(
     await ctx.scanService.loadAppEntry()
     ctx.scanService.loadSubPackages()
     let globalStyleRoutes: string[] = []
+    let compilerProviderSupported = true
     let publicAssets: ReturnType<typeof createPublicAssetSourcePlan> | undefined
     const baseOptions = ctx.configService.merge(
       undefined,
@@ -154,6 +155,8 @@ export async function buildStatefulHmrSnapshot(
         }
       },
       async generateBundle(_options, bundle) {
+        // 原生构建返回前会注销 provider，能力结果只属于仍持有它的本轮产物。
+        compilerProviderSupported &&= getCompilerHmrHost(ctx).supported
         // 资产快照随后会删除 JS chunk，必须在完整产物阶段确认页面注册与样式边界。
         globalStyleRoutes = resolveComponentPageGlobalStyleRoutes(Object.values(bundle), ctx.runtimeState.build.hmr.componentPageStyleOptions)
         // write:false 不运行 Vite 的 public 复制阶段；把未被编译产物覆盖的文件交给原生资产写出。
@@ -244,7 +247,7 @@ export async function buildStatefulHmrSnapshot(
     }
     await validateTailwindSnapshotGeneration(ctx as CompilerContext, inputFiles, consumedFiles)
     await validateImportedTailwindSnapshot(sources, inputFiles, consumedFiles)
-    if (!getCompilerHmrHost(ctx).supported) {
+    if (!compilerProviderSupported) {
       throw new HmrRuntimeCapabilityError({ code: 'compiler-provider', message: '编译 provider 不支持事务式状态保持更新。' })
     }
     const reusableInputs = inputs && coversSnapshotInputs(inputs, inputFiles) && await validateSnapshotInputs(inputs) ? inputs : undefined

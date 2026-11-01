@@ -3265,10 +3265,10 @@ importers:
         version: link:../oxlint
       oxfmt:
         specifier: 0.73.0
-        version: 0.73.0(vite-plus@1.2.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.0)(@vitest/browser-playwright@5.0.5)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.4)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.64.1)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.107.1)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
+        version: 0.73.0(vite-plus@1.4.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.0)(@vitest/browser-playwright@5.0.5)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.5)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.64.1)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.107.1)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
       vite-plus:
-        specifier: 1.2.0
-        version: 1.2.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.0)(@vitest/browser-playwright@5.0.5)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.4)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.64.1)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.107.1)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)
+        specifier: 1.4.0
+        version: 1.4.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.0)(@vitest/browser-playwright@5.0.5)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.5)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.64.1)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.107.1)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)
 
   packages/dashboard:
     dependencies:
@@ -3396,7 +3396,7 @@ importers:
         version: 1.2.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.0)(@vitest/browser-playwright@5.0.5)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.5)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.64.1)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.107.1)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)
       vitest:
         specifier: ^5.0.5
-        version: 5.0.5(patch_hash=abc79ba5cbb797c526f2930277b2073b4d2f23370f70d4312ddedf9d90f64e9d)(@types/node@26.6.6)(@vitest/browser-playwright@5.0.5)(@vitest/browser-preview@5.0.5)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.5)(happy-dom@21.0.4(bufferutil@4.1.0))(vite@8.3.5)
+        version: 5.0.5(patch_hash=abc79ba5cbb797c526f2930277b2073b4d2f23370f70d4312ddedf9d90f64e9d)(@types/node@26.6.6)(@vitest/browser-playwright@5.0.5)(@vitest/browser-preview@5.0.4)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.5)(happy-dom@21.0.4(bufferutil@4.1.0))(vite@8.3.5)
 
   packages/mcp:
     dependencies:
@@ -25179,7 +25179,7 @@ snapshots:
       '@testing-library/dom': 10.4.2
       '@testing-library/user-event': 14.6.8(@testing-library/dom@10.4.2)
       '@vitest/browser': 5.0.4(@voidzero-dev/vite-plus-core@1.2.0)(bufferutil@4.1.0)(vitest@5.0.4)
-      vitest: 5.0.4(@types/node@26.6.6)(@vitest/browser-playwright@5.0.5)(@vitest/browser-preview@5.0.4)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.4)(@voidzero-dev/vite-plus-core@1.2.0)(happy-dom@21.0.4(bufferutil@4.1.0))
+      vitest: 5.0.4(@types/node@26.6.6)(@vitest/browser-playwright@5.0.5)(@vitest/browser-preview@5.0.4)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.5)(@voidzero-dev/vite-plus-core@1.2.0)(happy-dom@21.0.4(bufferutil@4.1.0))
     transitivePeerDependencies:
       - bufferutil
       - msw
@@ -25221,7 +25221,7 @@ snapshots:
       pngjs: 7.0.0
       sirv: 3.0.2
       tinyrainbow: 3.2.0
-      vitest: 5.0.4(@types/node@26.6.6)(@vitest/browser-playwright@5.0.5)(@vitest/browser-preview@5.0.4)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.4)(@voidzero-dev/vite-plus-core@1.2.0)(happy-dom@21.0.4(bufferutil@4.1.0))
+      vitest: 5.0.4(@types/node@26.6.6)(@vitest/browser-playwright@5.0.5)(@vitest/browser-preview@5.0.4)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.5)(@voidzero-dev/vite-plus-core@1.2.0)(happy-dom@21.0.4(bufferutil@4.1.0))
       ws: 8.22.1(bufferutil@4.1.0)
     transitivePeerDependencies:
       - bufferutil
@@ -25358,7 +25358,7 @@ snapshots:
       pathe: 2.0.3
       sirv: 3.0.2
       tinyrainbow: 3.2.0
-      vitest: 5.0.4(@types/node@26.6.6)(@vitest/browser-playwright@5.0.5)(@vitest/browser-preview@5.0.4)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.4)(@voidzero-dev/vite-plus-core@1.2.0)(happy-dom@21.0.4(bufferutil@4.1.0))
+      vitest: 5.0.4(@types/node@26.6.6)(@vitest/browser-playwright@5.0.5)(@vitest/browser-preview@5.0.4)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.5)(@voidzero-dev/vite-plus-core@1.2.0)(happy-dom@21.0.4(bufferutil@4.1.0))
 
   '@vitest/ui@5.0.5(vitest@5.0.5)':
     dependencies:
@@ -30835,31 +30835,6 @@ snapshots:
       '@oxfmt/binding-win32-ia32-msvc': 0.35.0
       '@oxfmt/binding-win32-x64-msvc': 0.35.0
 
-  oxfmt@0.73.0(vite-plus@1.2.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.0)(@vitest/browser-playwright@5.0.5)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.4)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.64.1)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.107.1)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)):
-    dependencies:
-      tinypool: 2.2.0
-    optionalDependencies:
-      '@oxfmt/binding-android-arm-eabi': 0.73.0
-      '@oxfmt/binding-android-arm64': 0.73.0
-      '@oxfmt/binding-darwin-arm64': 0.73.0
-      '@oxfmt/binding-darwin-x64': 0.73.0
-      '@oxfmt/binding-freebsd-x64': 0.73.0
-      '@oxfmt/binding-linux-arm-gnueabihf': 0.73.0
-      '@oxfmt/binding-linux-arm-musleabihf': 0.73.0
-      '@oxfmt/binding-linux-arm64-gnu': 0.73.0
-      '@oxfmt/binding-linux-arm64-musl': 0.73.0
-      '@oxfmt/binding-linux-ppc64-gnu': 0.73.0
-      '@oxfmt/binding-linux-riscv64-gnu': 0.73.0
-      '@oxfmt/binding-linux-riscv64-musl': 0.73.0
-      '@oxfmt/binding-linux-s390x-gnu': 0.73.0
-      '@oxfmt/binding-linux-x64-gnu': 0.73.0
-      '@oxfmt/binding-linux-x64-musl': 0.73.0
-      '@oxfmt/binding-openharmony-arm64': 0.73.0
-      '@oxfmt/binding-win32-arm64-msvc': 0.73.0
-      '@oxfmt/binding-win32-ia32-msvc': 0.73.0
-      '@oxfmt/binding-win32-x64-msvc': 0.73.0
-      vite-plus: 1.2.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.0)(@vitest/browser-playwright@5.0.5)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.4)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.64.1)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.107.1)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)
-
   oxfmt@0.73.0(vite-plus@1.2.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.0)(@vitest/browser-playwright@5.0.5)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.5)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.64.1)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.107.1)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)):
     dependencies:
       tinypool: 2.2.0
@@ -30884,6 +30859,31 @@ snapshots:
       '@oxfmt/binding-win32-ia32-msvc': 0.73.0
       '@oxfmt/binding-win32-x64-msvc': 0.73.0
       vite-plus: 1.2.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.0)(@vitest/browser-playwright@5.0.5)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.5)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.64.1)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.107.1)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)
+
+  oxfmt@0.73.0(vite-plus@1.4.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.0)(@vitest/browser-playwright@5.0.5)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.5)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.64.1)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.107.1)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)):
+    dependencies:
+      tinypool: 2.2.0
+    optionalDependencies:
+      '@oxfmt/binding-android-arm-eabi': 0.73.0
+      '@oxfmt/binding-android-arm64': 0.73.0
+      '@oxfmt/binding-darwin-arm64': 0.73.0
+      '@oxfmt/binding-darwin-x64': 0.73.0
+      '@oxfmt/binding-freebsd-x64': 0.73.0
+      '@oxfmt/binding-linux-arm-gnueabihf': 0.73.0
+      '@oxfmt/binding-linux-arm-musleabihf': 0.73.0
+      '@oxfmt/binding-linux-arm64-gnu': 0.73.0
+      '@oxfmt/binding-linux-arm64-musl': 0.73.0
+      '@oxfmt/binding-linux-ppc64-gnu': 0.73.0
+      '@oxfmt/binding-linux-riscv64-gnu': 0.73.0
+      '@oxfmt/binding-linux-riscv64-musl': 0.73.0
+      '@oxfmt/binding-linux-s390x-gnu': 0.73.0
+      '@oxfmt/binding-linux-x64-gnu': 0.73.0
+      '@oxfmt/binding-linux-x64-musl': 0.73.0
+      '@oxfmt/binding-openharmony-arm64': 0.73.0
+      '@oxfmt/binding-win32-arm64-msvc': 0.73.0
+      '@oxfmt/binding-win32-ia32-msvc': 0.73.0
+      '@oxfmt/binding-win32-x64-msvc': 0.73.0
+      vite-plus: 1.4.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.0)(@vitest/browser-playwright@5.0.5)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.5)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.64.1)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.107.1)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)
 
   oxfmt@0.74.0(vite-plus@1.4.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.0)(@vitest/browser-playwright@5.0.5)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.5)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.64.1)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.107.1)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)):
     dependencies:
@@ -30918,30 +30918,6 @@ snapshots:
       '@oxlint-tsgolint/linux-x64': 7.0.2004
       '@oxlint-tsgolint/win32-arm64': 7.0.2004
       '@oxlint-tsgolint/win32-x64': 7.0.2004
-
-  oxlint@1.88.0(oxlint-tsgolint@7.0.2004)(vite-plus@1.2.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.0)(@vitest/browser-playwright@5.0.5)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.4)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.64.1)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.107.1)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)):
-    optionalDependencies:
-      '@oxlint/binding-android-arm-eabi': 1.88.0
-      '@oxlint/binding-android-arm64': 1.88.0
-      '@oxlint/binding-darwin-arm64': 1.88.0
-      '@oxlint/binding-darwin-x64': 1.88.0
-      '@oxlint/binding-freebsd-x64': 1.88.0
-      '@oxlint/binding-linux-arm-gnueabihf': 1.88.0
-      '@oxlint/binding-linux-arm-musleabihf': 1.88.0
-      '@oxlint/binding-linux-arm64-gnu': 1.88.0
-      '@oxlint/binding-linux-arm64-musl': 1.88.0
-      '@oxlint/binding-linux-ppc64-gnu': 1.88.0
-      '@oxlint/binding-linux-riscv64-gnu': 1.88.0
-      '@oxlint/binding-linux-riscv64-musl': 1.88.0
-      '@oxlint/binding-linux-s390x-gnu': 1.88.0
-      '@oxlint/binding-linux-x64-gnu': 1.88.0
-      '@oxlint/binding-linux-x64-musl': 1.88.0
-      '@oxlint/binding-openharmony-arm64': 1.88.0
-      '@oxlint/binding-win32-arm64-msvc': 1.88.0
-      '@oxlint/binding-win32-ia32-msvc': 1.88.0
-      '@oxlint/binding-win32-x64-msvc': 1.88.0
-      oxlint-tsgolint: 7.0.2004
-      vite-plus: 1.2.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.0)(@vitest/browser-playwright@5.0.5)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.4)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.64.1)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.107.1)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)
 
   oxlint@1.88.0(oxlint-tsgolint@7.0.2004)(vite-plus@1.2.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.0)(@vitest/browser-playwright@5.0.5)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.5)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.64.1)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.107.1)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)):
     optionalDependencies:
@@ -33744,68 +33720,6 @@ snapshots:
       - ocache
       - srvx
 
-  vite-plus@1.2.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.0)(@vitest/browser-playwright@5.0.5)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.4)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.64.1)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.107.1)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1):
-    dependencies:
-      '@oxc-project/types': 0.154.0
-      '@oxlint/plugins': 1.88.0
-      '@vitest/browser': 5.0.4(@voidzero-dev/vite-plus-core@1.2.0)(bufferutil@4.1.0)(vitest@5.0.4)
-      '@vitest/browser-preview': 5.0.4(@voidzero-dev/vite-plus-core@1.2.0)(bufferutil@4.1.0)(vitest@5.0.4)
-      '@vitest/mocker': 5.0.4(@voidzero-dev/vite-plus-core@1.2.0)
-      '@vitest/pretty-format': 5.0.4
-      '@vitest/snapshot': 5.0.4
-      '@vitest/spy': 5.0.4
-      '@vitest/utils': 5.0.4
-      oxfmt: 0.73.0(vite-plus@1.2.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.0)(@vitest/browser-playwright@5.0.5)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.4)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.64.1)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.107.1)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
-      oxlint: 1.88.0(oxlint-tsgolint@7.0.2004)(vite-plus@1.2.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.0)(@vitest/browser-playwright@5.0.5)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.4)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.64.1)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.107.1)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
-      oxlint-tsgolint: 7.0.2004
-      vite: '@voidzero-dev/vite-plus-core@1.2.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.107.1)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)'
-      vitest: 5.0.4(@types/node@26.6.6)(@vitest/browser-playwright@5.0.5)(@vitest/browser-preview@5.0.4)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.4)(@voidzero-dev/vite-plus-core@1.2.0)(happy-dom@21.0.4(bufferutil@4.1.0))
-    optionalDependencies:
-      '@vitest/browser-playwright': 5.0.5(bufferutil@4.1.0)(playwright@1.64.1)(vite@8.3.5)(vitest@5.0.5)
-      '@voidzero-dev/vite-plus-darwin-arm64': 1.2.0
-      '@voidzero-dev/vite-plus-darwin-x64': 1.2.0
-      '@voidzero-dev/vite-plus-linux-arm64-gnu': 1.2.0
-      '@voidzero-dev/vite-plus-linux-arm64-musl': 1.2.0
-      '@voidzero-dev/vite-plus-linux-x64-gnu': 1.2.0
-      '@voidzero-dev/vite-plus-linux-x64-musl': 1.2.0
-      '@voidzero-dev/vite-plus-win32-arm64-msvc': 1.2.0
-      '@voidzero-dev/vite-plus-win32-x64-msvc': 1.2.0
-      playwright: 1.64.1
-    transitivePeerDependencies:
-      - '@arethetypeswrong/core'
-      - '@astrojs/compiler-rs'
-      - '@edge-runtime/vm'
-      - '@opentelemetry/api'
-      - '@types/node'
-      - '@typescript/native-preview'
-      - '@vitejs/devtools'
-      - '@vitest/coverage-istanbul'
-      - '@vitest/coverage-v8'
-      - '@vitest/ui'
-      - '@volar/typescript'
-      - '@vue/language-core'
-      - bufferutil
-      - esbuild
-      - happy-dom
-      - jiti
-      - jsdom
-      - less
-      - msw
-      - publint
-      - sass
-      - sass-embedded
-      - stylus
-      - sugarss
-      - svelte
-      - terser
-      - tsx
-      - typescript
-      - unplugin-unused
-      - unrun
-      - utf-8-validate
-      - vue-tsc
-      - yaml
-
   vite-plus@1.2.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.0)(@vitest/browser-playwright@5.0.5)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.5)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.64.1)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.107.1)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1):
     dependencies:
       '@oxc-project/types': 0.154.0
@@ -34041,32 +33955,6 @@ snapshots:
       - universal-cookie
       - yaml
 
-  vitest@5.0.4(@types/node@26.6.6)(@vitest/browser-playwright@5.0.5)(@vitest/browser-preview@5.0.4)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.4)(@voidzero-dev/vite-plus-core@1.2.0)(happy-dom@21.0.4(bufferutil@4.1.0)):
-    dependencies:
-      '@types/chai': 5.2.3
-      '@vitest/mocker': 5.0.4(@voidzero-dev/vite-plus-core@1.2.0)
-      chai: 6.3.0
-      es-module-lexer: 2.3.2
-      expect-type: 1.4.0
-      magic-string: 1.4.5
-      obug: 3.0.0
-      picomatch: 4.0.7
-      std-env: 4.3.0
-      tinybench: 6.2.2
-      tinyexec: 1.3.1
-      tinyglobby: 0.2.17
-      vite: '@voidzero-dev/vite-plus-core@1.2.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.107.1)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)'
-      why-is-node-running: 3.2.1
-    optionalDependencies:
-      '@types/node': 26.6.6
-      '@vitest/browser-playwright': 5.0.5(bufferutil@4.1.0)(playwright@1.64.1)(vite@8.3.5)(vitest@5.0.5)
-      '@vitest/browser-preview': 5.0.4(@voidzero-dev/vite-plus-core@1.2.0)(bufferutil@4.1.0)(vitest@5.0.4)
-      '@vitest/coverage-v8': 5.0.5(@vitest/browser@5.0.5)(vitest@5.0.5)
-      '@vitest/ui': 5.0.4(vitest@5.0.4)
-      happy-dom: 21.0.4(bufferutil@4.1.0)
-    transitivePeerDependencies:
-      - msw
-
   vitest@5.0.4(@types/node@26.6.6)(@vitest/browser-playwright@5.0.5)(@vitest/browser-preview@5.0.4)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.5)(@voidzero-dev/vite-plus-core@1.2.0)(happy-dom@21.0.4(bufferutil@4.1.0)):
     dependencies:
       '@types/chai': 5.2.3
@@ -34113,6 +34001,32 @@ snapshots:
       '@types/node': 22.20.5
       '@vitest/browser-playwright': 5.0.5(bufferutil@4.1.0)(playwright@1.64.1)(vite@8.3.5)(vitest@5.0.5)
       '@vitest/browser-preview': 5.0.5(bufferutil@4.1.0)(vite@8.3.5)(vitest@5.0.5)
+      '@vitest/coverage-v8': 5.0.5(@vitest/browser@5.0.5)(vitest@5.0.5)
+      '@vitest/ui': 5.0.5(vitest@5.0.5)
+      happy-dom: 21.0.4(bufferutil@4.1.0)
+    transitivePeerDependencies:
+      - msw
+
+  vitest@5.0.5(patch_hash=abc79ba5cbb797c526f2930277b2073b4d2f23370f70d4312ddedf9d90f64e9d)(@types/node@26.6.6)(@vitest/browser-playwright@5.0.5)(@vitest/browser-preview@5.0.4)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.5)(happy-dom@21.0.4(bufferutil@4.1.0))(vite@8.3.5):
+    dependencies:
+      '@types/chai': 5.2.3
+      '@vitest/mocker': 5.0.5(vite@8.3.5)
+      chai: 6.3.0
+      es-module-lexer: 2.3.2
+      expect-type: 1.4.0
+      magic-string: 1.4.5
+      obug: 3.0.0
+      picomatch: 4.0.7
+      std-env: 4.3.0
+      tinybench: 6.2.2
+      tinyexec: 1.3.1
+      tinyglobby: 0.2.17
+      vite: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.0)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.107.1)(sass@1.107.1)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
+      why-is-node-running: 3.2.1
+    optionalDependencies:
+      '@types/node': 26.6.6
+      '@vitest/browser-playwright': 5.0.5(bufferutil@4.1.0)(playwright@1.64.1)(vite@8.3.5)(vitest@5.0.5)
+      '@vitest/browser-preview': 5.0.4(@voidzero-dev/vite-plus-core@1.2.0)(bufferutil@4.1.0)(vitest@5.0.4)
       '@vitest/coverage-v8': 5.0.5(@vitest/browser@5.0.5)(vitest@5.0.5)
       '@vitest/ui': 5.0.5(vitest@5.0.5)
       happy-dom: 21.0.4(bufferutil@4.1.0)

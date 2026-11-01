@@ -77,6 +77,7 @@ it.each(['rolldown', 'vite'] as const)('keeps an explicitly missing %s managed t
 it('checks compiler capability in the context that actually compiled its providers', async () => {
   const project = await fixture({ files: [] })
   let compiled = false
+  let disposed = false
   project.options.hostConfig!.config.weapp!.compilerPlugins = [{
     name: 'legacy-content-provider',
     capabilities: { content: true },
@@ -85,9 +86,48 @@ it('checks compiler capability in the context that actually compiled its provide
         buildStart() {
           compiled = true
         },
+        dispose() {
+          disposed = true
+        },
       }
     },
   }]
   await expect(buildStatefulHmrSnapshot(project.options)).rejects.toMatchObject({ fallback: { code: 'compiler-provider' } })
   expect(compiled).toBe(true)
+  expect(disposed).toBe(true)
+})
+
+it.each(['remove', 'replace'] as const)('does not carry retired provider capabilities into a later snapshot after %s', async (change) => {
+  const project = await fixture({ files: [] })
+  let active = 0
+  const weapp = project.options.hostConfig!.config.weapp!
+  weapp.compilerPlugins = [{
+    name: 'content-provider',
+    capabilities: { content: true },
+    create() {
+      active++
+      return {
+        dispose() { active-- },
+      }
+    },
+  }]
+  await expect(buildStatefulHmrSnapshot(project.options)).rejects.toMatchObject({ fallback: { code: 'compiler-provider' } })
+  expect(active).toBe(0)
+
+  weapp.compilerPlugins = change === 'remove'
+    ? []
+    : [{
+        name: 'content-provider',
+        capabilities: { content: true },
+        create() {
+          active++
+          return {
+            prepareHmr: async () => ({}),
+            dispose() { active-- },
+          }
+        },
+      }]
+  const snapshot = prepareStatefulHmrSnapshot(await buildStatefulHmrSnapshot(project.options))
+  expect(snapshot.output.map(file => file.fileName)).toContain('pages/home/index.js')
+  expect(active).toBe(0)
 })

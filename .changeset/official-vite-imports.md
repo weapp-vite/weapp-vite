@@ -9,3 +9,7 @@ fix(weapp-vite): 将 package imports 的 query/hash 兼容处理内置到发布�
 使用官方 Vite/Rolldown，隔离连续构建中的自有插件钩子容器，并在编译插件关闭后释放会话引用。
 
 编译 provider 终结时按注册所有权撤销 HMR 回调，避免配置重启删除或改名后继续调用旧 provider，同时保留新一代同名注册与快照资源生命周期。
+
+状态保持快照在本轮产物生成时记录编译 provider 能力，保留构建关闭后的能力回退判断，并允许删除或替换 provider 后恢复。
+
+Vite+ 模板和独立消费者同步使用官方 1.4.0 launcher/core 配对，并将 Vitest 固定到配套的 5.0.5，保持整个依赖图使用同一宿主引擎。

@@ -79,6 +79,12 @@ PR 第二轮 CI（run `41312400012`）完整结束，171 项成功、72 项按�
 
 Windows 浏览器首轮在握手阶段超时，尚未执行测试；第二轮仅增加启动及请求失败诊断，完整通过 98 个文件、218 项测试，并记录浏览器正常退出和临时目录清理。其他两个平台也通过。首次超时未复现，诊断开关不能视为根因修复；保留原超时、完整测试范围及首次失败日志。普通 Vite、wv 的独立 imports 消费者第二轮再次通过，Vite+ 保留相同首次构建错误。
 
+按 [Vite+ 官方配置说明](https://viteplus.dev/guide/local-cli)及[升级说明](https://viteplus.dev/guide/upgrade-project)，`vite` override 指向与 launcher 同版本的 core alias，Vitest 也固定到配套版本。原消费者已经配置该 alias，但脚手架与消费者仍固定 1.2.0。现已同步至官方 Vite+/core 1.4.0、Vitest 5.0.5，并为消费者补齐 Vitest override。core 无运行时 Vite 子依赖，Vite 源码直接打入其发布包，不能通过子依赖 override 单独替换；`vp` 也会校验 core 包名和与 launcher 一致的版本。
+
+新版独立 npm 消费者已通过主包、独立分包、worker、精确 query 键、开发更新、imports 配置重启和 Web 构建。core 1.4.0 的 66 份 JS/JSON 与官方档案一致，未应用补丁；实际内置 Vite 8.3.5、Rolldown 1.2.15。另装的官方 Rolldown 1.2.16 也完成 32 份文件核验，但它不是该 Vite+ 宿主的内置引擎。原 core 1.2.0 的精确键失败保留为历史证据，新配对已不受此阻塞。脚手架配对 25 项测试、lint、typecheck、build、test:types 通过；锁文件没有新增、删除或改动 package resolution，其余三份补丁 hash 不变。
+
+第三轮远端检查完整结束：169 成功、72 按既有条件跳过、11 失败。补齐全部原始失败日志后，发现 HMR provider 注销使快照在原生构建关闭后查询到空注册表，遗漏旧 provider 的能力拒绝，并影响启动回退的两项相邻用例。快照现改为在本轮 `generateBundle` 捕获能力，在关闭完成后保留原 fallback；新增删除或同名替换 provider 后的恢复回归。修复前 3 项失败，修复后相关 4 文件 71 项通过。另一个 macOS miniapp 分片实际测试通过，失败发生在 timing artifact 的 `FinalizeArtifact ETIMEDOUT`，未将其归为产品断言失败。
+
 真实 Stable DevTools 2.02.2608080、基础库 3.17.2 已运行同一独立消费者并采集两个页面检查点，但严格 suite 因 5 次 `SystemError -80002 / webapi_getwxaasyncsecinfo:fail` 失败；随后关窗缺少完整原生销毁证据，清理门禁也失败。没有修改错误门禁、重复导航或重启重试来换取通过。
 
 官方退出后，通过公开的精确租约恢复和 installation-exit 领域接口再次核验安装身份、进程及登记端口已退出，保留原始错误和窗口记录，追加独立恢复证据。两级命令 scope 已完成，机器租约已释放；该任务的 bridge wrapper 已封存后按精确目录身份移除。资源收尾成功没有改变原验收失败结果。最终真实 runtime 验收与完整资源验收仍未完成。
@@ -89,11 +95,10 @@ Windows 浏览器首轮在握手阶段超时，尚未执行测试；第二轮仅
 | --- | --- |
 | Vite hook 包装器释放 | 原始 object hook 仍持有 wrapper 和 owner；产品只隔离自有 hook |
 | Vite 原生 imports resolver | 直接调用仍把 `part?raw` 替换为 `part?raw.js`；产品公开插件路径已覆盖 |
-| Vite+ core 精确 query 键 | 官方 core 1.0.0、1.2.0 均在首次构建中查找 `#exact` 而不是精确键 `#exact?raw`，原错误保留 |
-| Vite optimizer close | 重复关闭未共享资源完成边界 |
-| Vite optimizer cancellation | 取消未等待 native cancel 完成 |
-| Vite server scan cancellation | 关闭后仍出现新的临时优化目录 |
-| Vite 内置 polling watcher | 多 owner 的监听更新/释放契约失败 |
+| Vite optimizer close | 提取测试首先失败于返回 Promise 身份不同；不足以证明公开资源关闭缺陷，后置断言未执行 |
+| Vite optimizer cancellation | 测试注入异步 cancel，但当前真实 cancel 仅同步设置标记；不能据此认定真实 native cancel 未完成 |
+| Vite server scan cancellation | 公开 API 复现关闭完成时仍遗留本轮临时优化目录；尚未证明持续积累或关闭后仍写入 |
+| Vite 内置 polling watcher | ready 后立即保存未收到更新；多 owner 测试在首次更新处失败，后续关闭归属断言尚未执行 |
 | Rolldown bundle retention | 三轮构建关闭并 GC 后仍保留 input options |
 | Rolldown watch retention | 两次输出正确更新，但关闭并 GC 后 input/output/logger owner 仍存活 |
 
