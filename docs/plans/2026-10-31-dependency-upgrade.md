@@ -1,10 +1,12 @@
 # 全仓依赖升级与迁移记录（2026-10-31）
 
-本轮以 `8963dcaf4ea66ed1325b2f4ee28837fbf73f9f8d` 为基线，覆盖 257 份自有 npm 清单、workspace catalog、独立 npm runner、Rust 及 GitHub Actions。npm 目标冻结于 `2026-10-31T15:02:50.556Z`，共 53 个 npm 包和 pnpm；后续验证沿用同一批直接依赖目标。
+初始依赖升级与兼容迁移已提交并推送 main。repoctl 修复、版本 PR 和正式发布均已完成，本仓库已接入官方 6.3.2 并删除整份 monorepo 补丁；冻结安装和发布回归通过。扫码后真实 IDE 的最小冷启动复验通过，正式全量验收尚待执行。此前 Workspace HMR full 的 14 条计时失败仍保留，当前不标记最终验收完成。
+
+本轮以 `8963dcaf4ea66ed1325b2f4ee28837fbf73f9f8d` 为基线，核对 257 份自有 npm 清单、278 个外部包名，以及 workspace catalog、独立 npm runner、Rust 与 GitHub Actions。npm 目标冻结于 `2026-10-31T15:02:50.556Z`，实际升级目标为 53 个 npm 包加 pnpm，共 54 项；后续验证沿用同一批直接依赖目标。下表与冻结清单逐项一致，没有漏项或目标版本差异。用户追加授权后，吸收 monorepo 补丁的 repoctl 新正式版成为唯一额外目标；该目标现重新冻结为官方 repoctl/core 6.3.2、templates 3.1.4，其他直接目标不变。
 
 ## 兼容范围
 
-按用户确认保留 TypeScript 6.0.3 和历史 TypeScript/旧版复现 fixture。第三方 Dimina upstream、历史性能环境和报告保持原样。现有 VitePress 与 vite-tsconfig-paths 预发布版本线保留，稳定 latest 低于现有预发布线时不降级。
+按用户确认保留 TypeScript 6.0.3 和历史 TypeScript／旧版复现 fixture，包括 `fixtures/ts-base` 中的 `miniprogram-api-typings ^2.8.3-1` 历史预发布声明。第三方 Dimina upstream、历史性能环境和报告保持原样。现有 VitePress 与 vite-tsconfig-paths 预发布版本线保留，稳定 latest 低于现有预发布线时不降级。
 
 开发及验证使用 Node 24.22.1、pnpm 12.16.1。产品 Node 范围继续为 `^22.23.4 || ^24.22.1 || >=26.12.1`。保留原有精确、`^`、`~` 和 catalog 声明方式，以及公开 peer 的兼容范围。
 
@@ -52,7 +54,7 @@
 | pnpm | 12.15.0 | 12.16.1 |
 | postcss | ^8.5.31 | 8.5.32 |
 | remotion | 4.0.538 | 4.0.539 |
-| repoctl | 6.2.1 | 6.3.1 |
+| repoctl | 6.2.1 | 6.3.1（初始冻结），6.3.2（补丁上游化后） |
 | rolldown | 1.2.15 | 1.2.16 |
 | rolldown-plugin-dts | 0.28.8 | 0.29.0 |
 | rollup | ^4.65.0 | 4.67.2 |
@@ -72,7 +74,7 @@
 - eventsource-parser 4 继续使用 `eventsource-parser/stream`；验证分块 UTF-8、CRLF、多行事件、取消和错误传播。
 - tailwind-variants 4 的现有 `tv`、variants、defaultVariants 和 slots 用法继续适用；验证 CSS 变量类、padding 覆盖及 slot 隔离。
 - Rolldown 1.2.16 保持锁文件单版本，迁移原生 options 的纯 JavaScript 快照与生命周期补丁，保留新版缓存逻辑。
-- repoctl 6.3.1 的上游实现已覆盖消费者 runtime context 和本地 peer locator；补丁保留共享 nightly 截止时间处理，并固定官方生成模板中的 artifact Actions SHA。snapshot 工作流通过正式 API 重新生成，内嵌工具版本和 builder 内容摘要一起更新，保留逐字节比较合同。
+- repoctl 6.3.1 已覆盖消费者 runtime context 和本地 peer locator；6.3.2 进一步吸收剩余 nightly 共享质量预算及三份模板的九处 artifact Actions SHA。质量脚本／verify hook 共享预算，构建、打包和上传各保留独立超时。整份 monorepo patch、workspace 登记和锁文件 patch hash 已删除；其余五份补丁 hash 不变。snapshot pair 由安装后的官方 CLI 成对生成，publisher 自动计算 builder SHA256，自动 intent 保留 plan/apply 审批覆盖。
 - rolldown-plugin-dts 0.29 将六个 TypeScript 编译选项迁至 `tsc`。包装层归一化旧顶层选项，新 `tsc` 值优先，显式 `false` 生效；保留自动 project references、每轮独立上下文及独立 Vue 声明生成。公开配置类型兼容旧键并支持新命名空间。
 - Vite 8.3.5、Chokidar 6.0.0、Vitest 5.0.5、plugin-vue 6.0.10 仍为本轮稳定目标，现有补丁继续保留。
 
@@ -118,21 +120,33 @@ workspace 消除项涉及 markdown-it、body-parser、undici、fast-uri、serova
 | --- | --- |
 | frozen install、生命周期、独立 runner npm ci 和 API smoke | 通过 |
 | catalog 同步、peer 清单、发布协议、包元数据、changeset、Rolldown 单版本 | 通过；peer 提示见上文 |
-| 包构建、包级 typecheck | 45 / 45、45 / 45 通过 |
+| 包构建、包级 typecheck | 45 / 45、45 / 45 通过；后续 HMR 修复另完成 owning typecheck 与包重建 |
 | 全仓公开类型任务 | 80 / 80 通过；DTS 兼容迁移后另补 owning typecheck、35 项回归、公开 tsd，均通过 |
 | 发布回归与脚本补集 | 发布组 291 项通过、1 skip，snapshot 修正后定向 40 项通过；补集 75 文件、1,173 项通过、1 skip |
 | 完整根单测 | 2,334 文件已执行；首轮 22,017 项通过，38 项失败及 5 个 suite 加载失败，按下文复验 |
 | 单测失败补验 | 稳定产物后 16 文件、109 项通过；Tailwind 消费图合同修正后 4 项通过，无剩余失败 |
 | 应用及模板构建 | 76 / 76 通过，无重复运行模板入口 |
 | 网站构建 | 31 / 31 通过，30 项命中已有包构建缓存 |
-| SSE 分块与样式变体回归 | 通过；包含分块 UTF-8、CRLF、多行事件、取消、错误及 slots/布尔变体 |
+| SSE 分块与样式变体回归 | 通过；包含分块 UTF-8、CRLF、多行事件、取消、错误及 slots／布尔变体 |
 | Vite / Rolldown / Chokidar 依赖 contracts | 18 / 8 / 29 项通过 |
 | Rust fmt、locked check/test、官方缓存离线复验 | 通过，20 项 Rust 测试通过 |
 | 真实 N-API release 构建与 correctness | 通过；9 个导出、9 个 suite、183 项真实 addon 对齐／fallback 测试通过 |
-| 实际 native profile | 通过；40 trials、2,560 wall 与 64 diagnostic 样本，原始完整输出对齐，冻结身份终检通过 |
-| pnpm / npm 严格 tarball 安装 | 两者通过；54 项消费工具回归通过，保留 strict peers、engine 与生命周期检查 |
-| 非 HMR CI（含六平台构建） | 87 / 87 场景通过；平台补集 3 文件、11 项通过 |
-| headless、Web、HMR、真实 tarball、正式 IDE 与跨系统 CI | 待继续执行；未完成项不计通过 |
+| 实际 native profile | 通过；`f6561e7bd` 冻结输入的 40 trials、2,560 wall 与 64 diagnostic 样本，原始完整输出对齐，冻结身份终检通过；范围见下文 |
+| 全包 pnpm / npm 严格 tarball 安装 | 两者通过，54 项消费工具回归通过；该批安装使用 `f6561e7bd` 档案及 peer 夹具修复输入，保留 strict peers、engine 与生命周期检查 |
+| `f5f1a4b15` 当前发布档案与实际消费者 | 正式 pack、provenance verify 通过；macOS 的 `wv`、`vite`、`vite-plus` 三种实际 tarball 消费者通过，涵盖严格安装、exports、配置、类型、构建、dev/watch、Tailwind 编辑恢复及实际 stateful 请求／classic fallback |
+| 当前档案 Dashboard 严格公开类型 | NodeNext 检查通过，`strict: true`、`skipLibCheck: false`，仅使用 Node ambient |
+| 非 HMR CI（含六平台构建） | 87 / 87 suite 任务通过；87 是任务／测试文件数。平台补集 3 文件、11 项通过 |
+| 正式 HMR build | `pnpm e2e:hmr:build` 42 / 42 适用任务通过；`f5f1a4b15` 冻结计划、回执 complete／passed |
+| headless full | 89 个适用任务全部通过、14 个范围外；DOM 213 项通过、6 skip |
+| 正式严格 HMR headless | `9ebebb8bfa` 冻结计划、严格 DOM／runtime 回执完整；14 个适用任务全部通过、14 个范围外。23 个选定 case、155 个 checkpoint 全部通过，原始报告另有 6 个未选定 skip，不计入选定覆盖 |
+| CI Workspace HMR full | `9ebebb8bfa` 的 76 个项目、229 / 229 功能场景成功，0 未执行；仍有 14 条计时阈值失败，与前轮集合一致，整体 full 审计失败 |
+| HMR profile 恢复同步回归 | 本机目标回归、lint、hooks 与 pre-push quick 通过；`9ebebb8bfa` 正式 CI 六个 Windows／macOS／Linux × Node 22／24 HMR Guard 均通过 |
+| Web | `9ebebb8bfa` 冻结输入，24 / 24 文件、153 / 153 项通过，suite 1 / 1 通过 |
+| Simulator browser | 同一冻结输入，96 / 96 文件、216 / 216 项通过 |
+| 网站浏览器 | 同一冻结输入，8 / 8 项通过；复用已有 VitePress 构建 |
+| 正式 exhaustive IDE | 首轮登录失败保留；扫码后最小冷启动 1 task／2 case／6 checkpoint 通过，正式新计划 137 个有效任务尚待执行 |
+| `f5f1a4b15` 跨系统 CI | 已终态：9 个 workflow 中 8 成功、1 失败；310 个 job 中 246 成功、62 既定跳过、2 已知失败。三系统严格消费者与核心检查通过，HMR 计时及旧 profile 同步测试失败保留 |
+| `9ebebb8bfa` official E2E full | run 41251548616 已终态：119 个 job，99 成功、19 既定条件跳过、1 项计时门禁失败；无新增功能失败 |
 
 首轮根单测与应用 Turbo 构建重叠，构建清空并重新生成共享 dist，导致消费入口暂时不存在，部分测试又把缺失导入 externalize 成残留 require。产物稳定后，相应失败全部复验通过，未修改 runtime 源码来规避此执行竞争。后续共享产物构建与消费验证串行。
 
@@ -148,22 +162,57 @@ SSE 原有测试文件及 DTS 集成测试已超过 300 行，本次继续复用
 
 实际 native profile 在 `f6561e7bd` 冻结输入上完成，8 份真实 SFC 夹具各做冷／热、sourcemap 开／关与 native 开／关成对采样，启用顺序交替。2,624 份样本均完成，完整 code、map、sourcesContent、诊断与元数据对齐。收益因场景而异，不能据此宣称整个构建链固定提速；addon 首次加载成本另计，native 继续保持可选且显式启用。该采样范围是公开 `compileVueFile`，不包含 CLI、HMR、最终 Tailwind CSS 或宿主 runtime。
 
-三系统严格 pnpm 消费者暴露同一夹具问题：全部发布档案被放在顶层，但未显式提供 vite-plugin-performance 的必需 Vite peer；兄弟包 weapp-vite 内部依赖不承担消费者顶层 peer。夹具现从实际 tarball 清单核对全部必需 peer，并使用 packed weapp-vite 声明补入 Vite；候选档案继续优先，缺失或冲突范围直接报错，optional peer 不自动补齐。54 项回归以及 pnpm、npm 两种真实 tarball 严格安装均通过，三系统 CI 复验仍待修复提交。
+三系统严格 pnpm 消费者暴露同一夹具问题：全部发布档案被放在顶层，但未显式提供 vite-plugin-performance 的必需 Vite peer；兄弟包 weapp-vite 内部依赖不承担消费者顶层 peer。夹具现从实际 tarball 清单核对全部必需 peer，并使用 packed weapp-vite 声明补入 Vite；候选档案继续优先，缺失或冲突范围直接报错，optional peer 不自动补齐。54 项回归以及使用 `f6561e7bd` 档案的 pnpm、npm 两种真实全包严格安装均通过。修复已随 `f5f1a4b15` 推送，当前档案的三种本机消费者与 Dashboard 严格类型也已通过；该提交的三系统严格消费者 CI 最终均通过，保持各批档案及安装结果的输入边界。
 
 本机首次消费安装因任务证据目录过深触发 pnpm store 索引文件名长度限制。将同一批档案复制到短临时目录，逐文件 hash 与正式 provenance 再核对后完成安装；没有重新打包、替换候选或放宽 peer 策略。
-
-后续 `f6561e7bd` 的 12 个正式主线 workflow 均已结束：10 成功、2 失败；335 个 job 中 269 成功、62 为既定条件跳过、4 失败。三系统 × Node 22／24 的主构建、lint、完整 coverage inventory 与汇总均通过，Rust addon 三系统 correctness 通过。失败分别是三系统 pnpm peer 夹具，以及单个 Workspace HMR 全量审计；未将跳过或失败写成成功。
 
 Workspace HMR 的 React 失败已定位到原始 TSX 与转换后 JS 摘要混淆：React pre 插件先于 core 执行。现由 React 在转换前记录普通 TSX，并与 core 共用原生入口 loaded／resolved 所有权；loader 已读取的入口继续由 raw reader 独占。另修复 Vite 稳定读取跨过文件 truncate 阶段的来源版本结算，使用同一次 `read()` 的返回值，保留到达身份与时间，以每源代次保护后续保存、删除、关闭和 alias 绑定。远端 artifact 没有保存 token 摘要，无法断言该次 native restore 具体读到了空字节，也无证据将其归责于 Rolldown。9 文件、73 项根因和竞态回归、精确 lint 与 owning typecheck 已通过；重建后复测 8 项目、25 场景，更新、恢复及 native 来源回执全部成功，没有功能失败或未执行项。
 
 原 `devProvider.ts` 已超过 300 行，本次只在两种 provider 共用的唯一 hotUpdate hook 增加稳定读取结算，保留在同一处可避免入口分叉；新增来源 helper 与回归文件分别独立，均少于 300 行。
 
-全量 HMR 审计还有 14 条成功场景耗时超限和 2 条重复 p95 汇总，分布在 comprehensive、runtime-demo、uview、wot 四组；另外 3 条未执行样式场景由前一个 restore 失败导致。独立计时失败将沿原 full 阈值复测，不因来源修复推定消除；现有旧报告缺少相同宿主和模式的可比基线，尚不能判断是否由本轮升级引起。
+来源修复后的 `f5f1a4b15` CI Workspace HMR full 已覆盖 76 个项目，229 / 229 功能场景成功，0 未执行；runtime-demo、uview、wot 仍有 14 条计时阈值失败，整体 full 审计保持失败。旧 `f6561e7bd` 运行中的来源失败及其连带未执行项不再算作当前功能失败。保留原 full 阈值和历史基线，不用功能全部成功替代计时门禁通过。
 
-同宿主对照使用升级前 `8963dcaf` 的独立干净工作树、原 pnpm 12.15.0 和原锁，以及相同 Node 24.22.1、四项目／14 场景、完整 warmup 和原审计阈值。基线同样功能 14／14 成功、同样 10 条计时超限；候选的 8 项目／25 场景功能及来源回执全部成功，同样仅有这 10 条计时失败。runtime-demo 场景中位数为基线 1735.1ms、候选 1748.7ms，wot 为 6809.2ms、6801.7ms。comprehensive 与 uview 在本机两轮都通过原阈值。单轮对照只能确认超限在升级前已存在，不能提供统计性的无退化或固定提速保证。保留计时门禁失败，不修改阈值、不刷新历史基线，也不把该审计标成完整通过。
+本机同宿主对照使用升级前 `8963dcaf` 的独立干净工作树、原 pnpm 12.15.0 和原锁，以及相同 Node 24.22.1、四项目／14 场景、完整 warmup 和原审计阈值。基线功能 14／14 成功，候选本机 8 项目／25 场景功能及来源回执全部成功；两者均只有 runtime-demo、wot 对应的 10 条计时失败。runtime-demo 场景中位数为基线 1735.1ms、候选 1748.7ms，wot 为 6809.2ms、6801.7ms。comprehensive 与 uview 在本机两轮都通过原阈值。单轮结果只能确认本机这两组超限在升级前已存在，不能据此归因远端 uview 等场景，也不能提供统计性的无退化或固定提速保证。
 
-## 待完成验收与交付
+Ubuntu Node 22 的 HMR profile 恢复测试把旧恢复 complete 当成正常编辑的完成记录，正常编辑的异步 JSONL append 因而落入静默窗口。测试现先等待恢复记录，再以新游标等待正常编辑记录；每轮精确新增一条，确认同会话、不同 buildId／eventId，并保留完整静默数组及诊断文件来源为零的断言。目标 E2E、lint、原生 hooks 和 quick 均通过，测试修正已随 `9ebebb8bfa` 推送 main。该提交仅修改测试，生产源码与 dist 仍与 `f5f1a4b15` 一致；正式 CI full 复验已终态，六组跨平台 HMR Guard 均成功；Workspace HMR 计时审计仍失败，未将整体运行记为成功。
 
-按既有 manifest 去重执行 non-HMR CI、平台能力补集、HMR build、headless full、正式 HMR headless、Web、Simulator browser 和网站浏览器。headless full 虽含 HMR 文件，正式 HMR 入口还有冻结计划、严格 DOM 和 receipt，保留有意重叠；正式 exhaustive IDE 已覆盖全部适用 HMR IDE 文件，不再另跑相同 gate。
+`9ebebb8bfa` 的 official E2E full run 41251548616 已终态：119 个 job 中 99 成功、19 既定跳过、1 个 Workspace HMR 计时门禁失败。六组 Windows／macOS／Linux × Node 22／24 HMR Guard 均成功，229 个 HMR 功能场景全部通过；14 条计时失败与前轮集合一致。三组浏览器验证已在该提交上串行完成；各自归档包含原始日志、退出状态、manifest、SHA256SUMS 与校验回执，结束时工作树干净且机器租约已释放。
 
-源码验证后按现有主线授权提交推送。正式 exhaustive IDE 必须从干净且与 origin/main 一致的根 main 启动；Windows、macOS、Linux 结果以实际 CI 为准。未执行、环境阻塞、失败和成功分别记录，全部适用门禁完成前保持“未完成最终验收”。
+本轮 14 条计时 issue 来自 12 个场景与两个项目 p95：runtime-demo 六场景为 3.324–3.524 秒（阈值 1.5 秒）；uview 三场景与 p95 为 9.266–9.970 秒（阈值 6 秒）；wot 三场景与 p95 为 12.275–13.413 秒（阈值 5 秒）。`totalMs = bundlerMs + watchToDirtyMs`，后者分别约 9–10、12–13、58–60 毫秒，主要耗时在 bundler。snapshot build、transform/load 等统计可重叠，不能累加归因于某个插件。六份跨系统原始日志均记录 profile 恢复测试实际通过，19 个条件跳过 job 的名称集合与前轮一致，跳过不计通过。
+
+## 上游补丁与剩余验收
+
+已完成的 non-HMR CI、平台能力补集、正式 HMR build、headless full、正式严格 HMR headless、三组浏览器和实际 tarball 消费者使用各自冻结回执记录，不重复执行未受影响的范围。headless full 虽含 HMR 文件，正式 HMR 入口另有冻结计划、严格 DOM 和 runtime receipt，两者按各自范围验收。
+
+用户追加授权将剩余 monorepo 补丁上游化，已创建 [issue #1127](https://github.com/icelib/repoctl/issues/1127)，修复 [PR #1128](https://github.com/icelib/repoctl/pull/1128) 以 `bfb5e5566fe67be1c7bc2ede0fc4bfed6fbd0167` squash 合并。上游 build、lint、typecheck、tsd、完整 3,470 项单测（含 41 项新增回归）、九组跨平台矩阵及同轮 PR Validation 全部通过。版本 [PR #1129](https://github.com/icelib/repoctl/pull/1129) 的九组矩阵、两组 Dev Container 及 PR Validation 共 15 个 job 全部通过，以 `c3d932afc63002ee5722648e38df4964272f842c` squash 合并。
+
+正式 [Release run 41260866623](https://github.com/icelib/repoctl/actions/runs/41260866623) 的 plan、verify、prepare、upload、confirm、finalize 及文档部署全部成功。官方 npm exact/latest 与五个 GitHub 正式 tag 均核对：repoctl/core 6.3.2、templates 3.1.4、create-icebreaker 2.1.12、create-repoctl 1.2.12。npm 未提供 gitHead，原始缺项和初次 collector 失败保留；改用真实 SLSA 来源证据。Sigstore 4.1.1 已逐包验证签名、证书、透明日志、精确 release.yml@main 身份及 issuer，subject SHA512 绑定官方 registry integrity，source、run 与 attempt 均对应本次发布。
+
+三份真实官方 tarball 的 SHA512／SHA1、完整 dist/resource 字节、三个模板 hash、九处 Actions pin 和精确依赖闭包均通过。独立 npm consumer 正常安装，以及本仓库 pnpm 安装后的三包内容核对均通过。公开 `releaseNightly` 离线回归保留过期 marker，实际经过归档、版本改写、构建、打包、上传回执及下载确认；质量预算递减为 2700000／2400000ms，后续构建／打包／上传仍各为 600000ms。该临时 fixture 显式平台不适用，其模拟内部 consumer 不计作真实 runtime 安装；真实安装由另行的 npm／pnpm 安装提供证据。
+
+本仓库官方包下 `pnpm test:release` 为 22 文件、292 项通过、1 既定 skip；更新文档后的审批／文档补验另有 48 项通过。冻结安装、ESLint、catalog changeset、发布协议和 changeset frontmatter 均通过。锁文件只替换 repoctl、core、templates 三个工具包，其余 package resolution 和 importer 未变；TypeScript 6.0.3、pnpm 12.16.1、单 Rolldown 1.2.16 保持。重新安全审计仍为 51 条、严重度分布不变、没有新增 advisory；peer 约束同初次升级后的记录，变化仅在父链代表路径顺序及 repoctl 版本。纯发布工具接入不新增 changeset。
+
+## 最新 main 与验证范围
+
+用户要求同步后，main 已更新到 `eaa0395c634e03031d342e1de49e06c7e2ffedde`（PR #1293）。新增两份内部 fixture 清单没有增加 registry 依赖；原 257 份清单评估及冻结目标继续保留其时间点。新增源码涉及 constants、Web、Simulator、compiler 与 weapp-vite，已先重建 29 个相关包及依赖闭包，并完成 owning typecheck／公开类型检查；下游使用该轮新 dist。
+
+PR #1293 的原生 [run 41241858187](https://github.com/weapp-vite/weapp-vite/actions/runs/41241858187) 为 164 job 成功、70 既定范围跳过。已校验冻结 context、checkout 两个 parent、PR head/base 和 artifact digest；PR checkout 与当前 main 的完整递归文件树只差 `e2e/ci/hmr-profile-failed-recovery.test.ts` 一份恢复回归。生产源码、生产依赖和对应 harness 输入一致，恢复文件另有 `9eb` 六组跨平台成功证据；repoctl 新开发工具闭包由上述独立回归覆盖。可复用范围如下，不能将范围跳过计为通过。
+
+| 当前源码的验证 | 实际证据与边界 |
+| --- | --- |
+| package 单测／coverage | PR CI：2,326 文件、22,251 项通过；28 文件／52 项既定 skip |
+| 公开类型 | PR CI：37／37 任务通过；本机新增 owning 检查通过 |
+| 六平台与 headless | 对应原生 CI job 成功；六平台能力集 7 文件、40 项通过 |
+| Web runtime | PR CI：26 文件、165 项通过 |
+| Simulator browser | PR CI：Linux 97 文件、217 项通过，对应 Windows／macOS job 成功 |
+| Firefox／WebKit smoke | PR CI：1 文件、2 项通过 |
+| Web 项目构建 | PR CI：49 个发现项目通过；不代表完整 apps 构建 |
+| 全部应用与模板构建 | 本机新 main：76／76 任务通过，0 cached；不重复启动模板入口 |
+| runtime-size | PR CI full artifact：49 tiers；已核对 frozen head/base 与摘要，job 成功 |
+| 网站 | 新 main 构建 31／31 任务通过；实际网站浏览器 8／8 项通过 |
+| Workspace HMR full | PR 中为范围跳过；旧两轮 229／229 功能通过和 14 条计时失败保留，未解除该门禁 |
+| 真实 IDE | 扫码后独立最小冷启动通过；正式 159 planned／137 active／22 out-of-scope 尚待执行 |
+
+真实 IDE 最小复验使用 Stable 2.02.2608080、基础库 3.17.2，原生和 wevu 两个 case、6 个 DOM checkpoint 均完成，日志订阅恢复。任务窗口预算保持 1，资源 journal、端口、watcher、宿主和机器租约已终结；before/after 均为 cold，域层确认所选安装进程数为 0。官方查询报告 Stable 2.02.2609240，本轮按本地约束使用已安装 Stable，记录 officialVersionMatches=false，不将元数据当作实际 runtime 版本。
+
+正式 exhaustive IDE 仍须从干净且与 origin/main 一致的根 main 启动，使用新 manifest 覆盖 issue #1252。当前复验仅为单文件严格诊断，不等于正式全量通过。Windows／macOS／Linux 结果以实际 CI 为准；未执行、范围外、skip、环境阻塞、失败和成功分别记录。此前计时失败不改阈值、不覆盖历史基线，也不因单轮本机对照就宣称全部已存在或无退化。

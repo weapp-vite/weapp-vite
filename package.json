@@ -353,7 +353,7 @@
     "postcss-load-config": "^6.0.1",
     "postcss-selector-parser": "catalog:",
     "prettier": "^3.9.10",
-    "repoctl": "6.3.1",
+    "repoctl": "6.3.2",
     "rolldown": "catalog:",
     "rollup": "^4.67.2",
     "rollup-plugin-dts": "^6.5.1",

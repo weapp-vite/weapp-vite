@@ -1,6 +1,6 @@
 # repoctl 发布流程
 
-仓库使用 repoctl 6.2.1。正式版、预发布版、npm nightly 和 OIDC 审计共用 `Release`（`release.yml`），继续使用现有 npm Trusted Publisher 绑定。PR snapshot 使用官方独立构建与发布工作流，只需要内置 GitHub token 和 npm OIDC，无须 GitHub App 或发布 PAT。
+仓库使用 `repoctl@6.3.2`。正式版、预发布版、npm nightly 和 OIDC 审计共用 `Release`（`release.yml`），继续使用现有 npm Trusted Publisher 绑定。PR snapshot 使用官方独立构建与发布工作流，只需要内置 GitHub token 和 npm OIDC，无须 GitHub App 或发布 PAT。
 
 ## 正式版与预发布版
 
@@ -53,7 +53,11 @@ CI Policy 在既有审批后检查公开包与 changeset 的完整对应，测�
 3. 发布到 `snapshot-nightly`，确认 registry 可见性与完整性。
 4. 使用独立 consumer 安装完整批次，验证内部依赖与消费结果。
 
-仓库通过 pnpm 补丁修正 repoctl 6.2.1 对每条 nightly 质量命令固定 10 分钟的限制。工作流设置 `REPOCTL_NIGHTLY_QUALITY_DEADLINE_EPOCH`，全部质量脚本共享 45 分钟，每次启动只使用剩余预算；预算耗尽或时间戳无效时停止。未设置时保留上游默认值。此预算仅用于质量阶段，后续构建、上传和 consumer 保持原生独立超时。42 个公开包按顺序打包、上传和消费验证，原 90 分钟 job 上限曾在最后一个包上传时终止；现将整个 job 上限设为 240 分钟，为发布确认、严格入口检查与诊断保留时间。该上限是作业容量预算，不代表覆盖所有网络故障的最坏耗时。
+上游 [#1127](https://github.com/icelib/repoctl/issues/1127) 与 [#1128](https://github.com/icelib/repoctl/pull/1128) 已将共享截止时间纳入 nightly 的质量专用命令入口。工作流设置 `REPOCTL_NIGHTLY_QUALITY_DEADLINE_EPOCH`，全部质量脚本和 verify hooks 共享 45 分钟；每条命令派发前重新计算剩余预算，并以它替换单命令的默认或显式超时。该值必须是非空纯十进制数字，表示正的 epoch 秒，换算后的毫秒须为安全整数；无效或过期时立即失败，不再派发后续质量命令。未设置标记时，质量脚本和 verify hooks 保留显式 `qualityTimeoutMs`，没有显式配置则使用默认 45 分钟。共享截止时间仅作用于质量脚本和 verify hooks，后续构建、上传及 consumer 保持各自的原生独立超时。
+
+正式发布包消费验证与发布回归通过后，本仓库已移除整份 `@icebreakers__monorepo@6.3.1.patch` 及对应登记，直接消费上游实现。公共 deadline、consumer 和工作流回归继续保留，`pnpm test:release` 仍为完整发布门禁；本次仅升级发布工具，不添加 changeset，也不联动 `create-weapp-vite` 版本。
+
+42 个公开包按顺序打包、上传和消费验证，原 90 分钟 job 上限曾在最后一个包上传时终止；现将整个 job 上限设为 240 分钟，为发布确认、严格入口检查与诊断保留时间。该上限是作业容量预算，不代表覆盖所有网络故障的最坏耗时。
 
 Vitest setup 导出通过 `repoctl.packageCheck.runtimeContexts` 显式声明测试框架上下文。打包检查和发布后的 consumer 均使用隔离安装的真实 Vitest CLI 执行 setup。自动路由的占位入口声明 `expected-error` 契约，实际导入必须抛出精确的平台保护错误；意外成功或其他错误都会失败。其他导出继续直接验证 Node 导入，所有声明仍使用 `--strict --skipLibCheck false` 检查。
 
@@ -76,7 +80,7 @@ pnpm add wevu@snapshot-nightly
 
 ## PR snapshot
 
-repoctl 6.2.0 已通过 [#1114](https://github.com/icelib/repoctl/pull/1114) 和 [#1116](https://github.com/icelib/repoctl/pull/1116) 提供 prepared snapshot、自动 changeset、正式 Release PR 校验和 hooks 公共入口。本仓库使用官方成对工作流 `.github/workflows/repoctl-snapshot-build.yml` 与 `.github/workflows/repoctl-snapshot-publish.yml`，固定 repoctl 6.2.1、pnpm 12.15.0，并复用 `pr-ci-approval`。
+repoctl 6.2.0 已通过 [#1114](https://github.com/icelib/repoctl/pull/1114) 和 [#1116](https://github.com/icelib/repoctl/pull/1116) 提供 prepared snapshot、自动 changeset、正式 Release PR 校验和 hooks 公共入口。本仓库使用官方成对工作流 `.github/workflows/repoctl-snapshot-build.yml` 与 `.github/workflows/repoctl-snapshot-publish.yml`，固定 `repoctl@6.3.2`、pnpm 12.16.1，并复用 `pr-ci-approval`。
 
 启用前，将工作流合入默认分支，并为所有公开包新增允许仓库 `weapp-vite/weapp-vite`、工作流 `repoctl-snapshot-publish.yml` 的 npm Trusted Publisher，保留 `release.yml` 的现有连接。publisher job 没有 Environment，npm 对应字段应留空；`pr-ci-approval` 保护的是 builder freeze。npm 当前允许每包最多 10 个 trusted publisher；新增配置的首次成功发布时限以 npm 页面为准。当前迁移只准备仓库配置，没有修改远端 npm 设置或执行真实发布。
 
@@ -84,4 +88,6 @@ repoctl 6.2.0 已通过 [#1114](https://github.com/icelib/repoctl/pull/1114) 和
 
 仅 publisher 获得 OIDC，不 checkout、安装或执行候选源码；fork、过期提交和不完整产物会被拒绝。上传前完成所有包的 registry/tag/OIDC 预检，发布仅使用 `snapshot-pr-<编号>`，保持 `latest`，不消费正式 changeset、不修改版本、changelog 或发布账本。独立 consumer 从 registry 安装精确版本，核验完整性、入口和类型，报告给出准确安装命令；consumer 失败仍会使工作流失败，不能将已上传等同于完整验收。
 
-后续升级工作流时，使用公开 `getSnapshotWorkflows()` 或 `repo release snapshot workflow` 成对生成，并核对审批环境、路径、pnpm 版本与 builder 摘要。两份官方模板保留原始字节，由限定的 ESLint YAML 规则排除保护配对摘要。不要单独格式化 builder 后沿用旧的 publisher 摘要。
+上游 [#1128](https://github.com/icelib/repoctl/pull/1128) 同时更新 snapshot build、snapshot publish 和自动 intent 模板中的 9 处 artifact action pins（分别为 3、4、2 处），使用 `upload-artifact@v7.0.2` 与 `download-artifact@v8.0.2` 的固定 SHA；这些模板由正式发布包提供，无须保留本地 monorepo 补丁。
+
+后续升级工作流时，使用公开 `getSnapshotWorkflows()` 或 `repo release snapshot workflow` 成对生成，并核对审批环境、路径、pnpm 版本与 builder 摘要。生成器根据完整 builder 字节自动计算 SHA256 并填入 publisher。两份官方模板保留原始字节，由限定的 ESLint YAML 规则排除保护配对摘要。不要单独格式化 builder 后沿用旧的 publisher 摘要。自动 intent 继续通过原生入口生成，并保留仓库对 plan 和 apply 的 `pr-ci-approval` 审批覆盖。

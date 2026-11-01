@@ -1,6 +1,6 @@
 # 发布重试与恢复
 
-仓库固定使用 `repoctl@6.3.1`，发布重试、工作区根包识别和发布说明过滤均由上游正式实现负责。
+仓库固定使用 `repoctl@6.3.2`，发布重试、工作区根包识别和发布说明过滤均由上游正式实现负责。
 `@icebreakers/monorepo@6.1.0` 的上游实现包含发布说明分类修正：明确的 Conventional 摘要类型
 优先于整理提交类型及正文关键词，并保留正文中的依赖版本描述；原生 Dependencies 条目仍归维护。
 同一分类规则用于 Release PR、正式发布和发布说明修复，避免合并 intent 后功能、修复和性能被改归维护。
@@ -14,14 +14,25 @@
 和本批次必需 peer 的候选 locator；本仓库不再维护这些功能的重复补丁。上游还验证运行合同指向实际打包的
 ESM 文件，并在执行框架或导入 guard 前确认消费者解析结果。
 
-对应补丁保留 `REPOCTL_NIGHTLY_QUALITY_DEADLINE_EPOCH` 的共享剩余预算：每条命令启动前重新检查，
-预算失效时禁止派发；未设置时保留上游 `qualityTimeoutMs` 配置和默认 45 分钟的质量检查超时。
-非质量命令继续使用上游各自的超时。升级时同时运行 `scripts/repoctl-nightly-deadline.test.ts`
-和 `scripts/repoctl-consumer-context.test.ts`，不能以每命令的新超时配置替代共享截止时间。
+上游 [#1127](https://github.com/icelib/repoctl/issues/1127) 与
+[#1128](https://github.com/icelib/repoctl/pull/1128) 已将本仓库剩余的 nightly 共享预算和 artifact pins
+吸收到正式实现。质量脚本与 verify hooks 使用质量专用命令入口，读取
+`REPOCTL_NIGHTLY_QUALITY_DEADLINE_EPOCH`，每条命令派发前重新计算剩余预算；存在该标记时，
+共享剩余预算替换单命令的默认或显式超时。标记必须是非空纯十进制数字，表示正的 epoch 秒，
+换算后的毫秒须为安全整数；无效或过期时立即失败，不再派发命令。未设置时保留显式
+`qualityTimeoutMs`，没有显式配置则使用默认 45 分钟。后续构建、上传和 consumer 继续使用各自的独立超时。
 
-官方工作流生成器尚未开放 Actions 版本配置，补丁同步更新 snapshot build/publish 和自动 intent 模板的
-`upload-artifact@v7.0.2`、`download-artifact@v8.0.2` 固定 SHA。生成器继续计算完整 builder 的 SHA256，
-`scripts/repoctl-snapshot-workflow.test.ts` 保留生成模板与仓库工作流的全文精确比较。
+官方 snapshot build、snapshot publish 和自动 intent 模板的 9 处 artifact action pins
+（分别为 3、4、2 处）已同步为 `upload-artifact@v7.0.2`、`download-artifact@v8.0.2` 的固定 SHA。
+生成器继续计算完整 builder 的 SHA256，`scripts/repoctl-snapshot-workflow.test.ts`
+保留生成模板与仓库工作流的全文精确比较；snapshot 工作流必须成对生成并保留原始字节。
+
+正式发布包消费验证及发布回归通过后，本仓库已删除整份
+`@icebreakers__monorepo@6.3.1.patch`、对应 `patchedDependencies` 和锁文件补丁登记，
+不再维护这两类重复实现。其余五份独立补丁继续保留。升级时继续运行
+`scripts/repoctl-nightly-deadline.test.ts`、`scripts/repoctl-consumer-context.test.ts`
+和 `scripts/repoctl-snapshot-workflow.test.ts`，并完成 `pnpm test:release`；
+不能以每命令的新超时配置替代共享截止时间，也不能因移除补丁而删除公共行为回归。
 
 Vite 与 Rolldown 的构建引用生命周期补丁见[编译依赖内存说明](./compiler-memory.md)。
 
