@@ -1,7 +1,7 @@
 {
   "name": "@wevu/api",
   "type": "module",
-  "version": "0.3.9",
+  "version": "0.4.0",
   "description": "Compatibility entry for @weapp-core/api",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
@@ -25,6 +25,13 @@
   "sideEffects": [
     "./dist/vitest/setup.mjs"
   ],
+  "repoctl": {
+    "packageCheck": {
+      "runtimeContexts": {
+        "./vitest/setup": "vitest"
+      }
+    }
+  },
   "exports": {
     ".": {
       "types": "./types/index.d.ts",

@@ -1,4 +1,3 @@
-/// <reference types="miniprogram-api-typings" />
 import './vue-augment'
 
 export * from './macros'

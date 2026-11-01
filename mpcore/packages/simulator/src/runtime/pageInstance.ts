@@ -4,6 +4,7 @@ import type { HeadlessComponentInstance } from './componentInstance'
 import { synchronizeAttachmentBindings } from '../host/attachmentBindingUpdates'
 import { bindComponentPageAttachment } from '../host/componentPageAttachment'
 import { cloneBackgroundSnapshot, cloneNavigationBarSnapshot } from '../project/pageConfig'
+import { recordNativeDataCommit } from '../view/nativeBindings/commits'
 
 const ARRAY_INDEX_PATH_RE = /\[(\d+)\]/g
 const ARRAY_INDEX_SEGMENT_RE = /^\d+$/
@@ -138,6 +139,7 @@ export function createPageInstance(
     route: normalizedRoute,
     setData(patch, callback) {
       instance.__lastChangedKeys__ = Object.keys(patch)
+      recordNativeDataCommit(instance, instance.__lastChangedKeys__)
       for (const [key, value] of Object.entries(patch)) {
         assignByPath(instance.data, key, value)
         const rootKey = parseDataPath(key)[0]

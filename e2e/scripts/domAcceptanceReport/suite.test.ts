@@ -11,7 +11,7 @@ import { getIdeExhaustiveTasks, IDE_EXHAUSTIVE_OUT_OF_SCOPE_LABELS, IDE_GITHUB_I
 import { createSuiteReport } from '../suiteReport'
 import { runTaskSuite as runTaskSuiteWithOptions } from '../suiteRunner'
 import { currentVerificationProfile } from '../verification/profile'
-import { evaluateAcceptanceCase, summarizeAcceptanceCases } from './helpers'
+import * as acceptanceHelpers from './helpers'
 import { validateTaskAcceptance } from './task'
 
 let machine: IsolatedMachineLease
@@ -60,6 +60,8 @@ describe('strict IDE suite acceptance', () => {
     const task: SuiteTask = { label: 'missing-evidence', command: 'node', args: [] }
     vi.spyOn(console, 'log').mockImplementation(() => {})
     vi.spyOn(console, 'error').mockImplementation(() => {})
+    // 固定身份采样，仍让真实 runner 根据 suite 名称决定严格验收，避免无关 Git 扫描。
+    vi.spyOn(acceptanceHelpers, 'createAcceptanceIdentity').mockReturnValue(identity)
     const code = await runTaskSuite(suite, [task], {
       runTask: async () => 0,
       failOnTaskFailure,
@@ -129,7 +131,7 @@ describe('strict IDE suite acceptance', () => {
     const label = 'unit-accepted-task'
     const startedAt = '2026-10-19T00:00:00.000Z'
     const finishedAt = '2026-10-19T00:00:02.000Z'
-    const cases = [evaluateAcceptanceCase({
+    const cases = [acceptanceHelpers.evaluateAcceptanceCase({
       id: 'mount',
       file: `e2e/${label}`,
       name: 'mounts',
@@ -158,7 +160,7 @@ describe('strict IDE suite acceptance', () => {
       errors: [],
       environment: { nodeVersion: process.version, ideVersion: null, baseLibraryVersion: null },
       cases,
-      summary: summarizeAcceptanceCases(cases),
+      summary: acceptanceHelpers.summarizeAcceptanceCases(cases),
     }))
     const task: SuiteTask = { label, command: 'node', args: [], env: { WEAPP_VITE_E2E_RUNTIME_PROVIDER: 'headless' }, artifacts: [{ kind: 'dom-acceptance-report', indexPath: file }] }
     vi.spyOn(console, 'log').mockImplementation(() => {})

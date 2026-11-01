@@ -22,6 +22,7 @@ export interface RuntimeRenderScope {
   alias?: string
   classList?: string[]
   data: Record<string, any>
+  dataOwner?: { data: Record<string, any> }
   dataset?: Record<string, unknown>
   eventBindings?: Map<string, MiniProgramEventBinding>
   captureEventBindings?: Map<string, MiniProgramEventBinding>

@@ -592,6 +592,12 @@ export default defineConfig({
 
 ### `web`
 
+浏览器预览使用 `weapp.web`，与小程序中的 `appPrelude.webRuntime` 分别配置。`weapp.web.pluginOptions.runtime.warnings` 控制运行时兼容告警及开发期模板标签诊断：`level` 默认为 `warn`，`off` 关闭，`error` 只提高日志级别；`dedupe` 默认 `true`。
+
+标签诊断仅在 Web 开发服务输出，区分未知/未注册标签与尚未适配的官方组件，包含 WXML、layout、include/import 和 Vue SFC 内联/外部模板的原始文件及行列。共享模板按入口注册作用域判断；诊断按作用域、源文件、标签和原因去重，位置变化或修正后再次引入会重新提示。生产构建与生产页面没有这类诊断，API 降级告警仍遵循运行时配置。
+
+Web 支持主键拖动到 touch 事件的基础适配，真实触摸沿用原生事件，滚轮不转换为触摸。`scroll-view` 支持浏览器平滑定位与基础 refresher；刷新结束须显式提交 `refresher-triggered: false`。音频使用 `HTMLAudioElement`，键盘高度、内存告警、微信性能指标与监控上报仅兼容调用。完整边界见 [Web 运行时配置](https://vite.weapp.dev/config/web.html) 和 [Web 兼容矩阵](https://vite.weapp.dev/guide/web-compat-matrix.html)。
+
 Web 重新扫描项目期间，已扫描 Vue SFC 的模板、样式与脚本继续使用上一次成功扫描的完整快照。扫描成功后才切换到新版本；扫描失败会保留旧快照并报告错误，修复后可继续更新。同一文件的正斜杠与反斜杠路径共用缓存，不会混入尚未发布的磁盘内容。
 
 ### `hmr.runtime`

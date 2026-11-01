@@ -1,6 +1,6 @@
-import type { Diagnostic, DocumentAnalysis, DocumentInput, LanguageOptions, LanguagePlatform, ScriptAnalysis, ScriptDialect, ScriptExportScope, ScriptFormatResult, ScriptTemplateExports, SourceEdit, TemplateAnalysis, TemplateFormatResult } from '..'
+import type { Diagnostic, DocumentAnalysis, DocumentInput, LanguageOptions, LanguagePlatform, ScriptAnalysis, ScriptDialect, ScriptExportScope, ScriptFormatResult, ScriptTemplateExports, SourceEdit, TemplateAnalysis, TemplateFormatResult } from '@weapp-vite/language-service'
+import { analyzeDocument, analyzeScript, analyzeTemplate, formatScript, formatTemplate, formatTemplateResult, getLanguageFileAssociations, getLanguageProfile, getLanguageSupportMatrix, getScriptTemplateExports, getTemplateScriptInput, LanguageError, resolveLanguageProfile } from '@weapp-vite/language-service'
 import { expectAssignable, expectError, expectType } from 'tsd'
-import { analyzeDocument, analyzeScript, analyzeTemplate, formatScript, formatTemplate, formatTemplateResult, getLanguageFileAssociations, getLanguageProfile, getLanguageSupportMatrix, getScriptTemplateExports, getTemplateScriptInput, LanguageError, resolveLanguageProfile } from '..'
 
 expectType<string>(formatTemplate('<view/>', 'page.axml', { platform: 'alipay', singleAttributePerLine: true }))
 expectType<TemplateAnalysis>(analyzeTemplate({ source: '<view/>', fileName: 'page.qml', platform: 'qq' }))

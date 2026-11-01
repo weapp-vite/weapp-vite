@@ -1,7 +1,7 @@
 {
   "name": "weapp-vite-react-template",
   "type": "module",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "private": true,
   "weappVite": {
     "web": false
@@ -26,7 +26,7 @@
   "devDependencies": {
     "@icebreakers/eslint-config": "catalog:",
     "@icebreakers/stylelint-config": "catalog:",
-    "@swc/core": "^1.16.20",
+    "@swc/core": "^1.16.21",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-reconciler": "catalog:",

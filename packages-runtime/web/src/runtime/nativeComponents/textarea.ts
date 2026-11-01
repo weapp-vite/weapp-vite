@@ -50,8 +50,9 @@ export class WeappTextarea extends BaseElement {
       this.#initialValue = this.getAttribute('value') ?? ''
       this.#initialValueCaptured = true
     }
+    const initializeValue = !this.#textarea
     this.#ensureStructure()
-    this.#syncAttributes()
+    this.#syncAttributes(initializeValue)
     connectFormControl(this)
     this.#syncFocus()
   }
@@ -61,7 +62,7 @@ export class WeappTextarea extends BaseElement {
   }
 
   attributeChangedCallback(name: string) {
-    this.#syncAttributes()
+    this.#syncAttributes(name === 'value')
     if (name === 'focus' || name === 'auto-focus') {
       this.#syncFocus()
     }
@@ -133,12 +134,12 @@ export class WeappTextarea extends BaseElement {
     this.#textarea = textarea
   }
 
-  #syncAttributes() {
+  #syncAttributes(syncValue = false) {
     if (!this.#textarea) {
       return
     }
     const value = this.getAttribute('value') ?? ''
-    if (this.#textarea.value !== value) {
+    if (syncValue && this.#textarea.value !== value) {
       this.#textarea.value = value
     }
     this.#textarea.placeholder = this.getAttribute('placeholder') ?? ''

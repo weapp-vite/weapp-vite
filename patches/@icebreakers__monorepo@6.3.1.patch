@@ -1,0 +1,108 @@
+diff --git a/dist/commands-XgXSc1Oe.mjs b/dist/commands-XgXSc1Oe.mjs
+--- a/dist/commands-XgXSc1Oe.mjs
++++ b/dist/commands-XgXSc1Oe.mjs
+@@ -15876,6 +15876,14 @@
+ //#endregion
+ //#region src/commands/release/nightly/process.ts
+ function nightlyCommand(report, options, executable, args, timeout = 6e5) {
++	const env = options.env ?? process.env;
++	const deadline = env["REPOCTL_NIGHTLY_QUALITY_DEADLINE_EPOCH"];
++	if (deadline !== void 0) {
++		const epoch = Number(deadline);
++		if (!deadline || /\D/.test(deadline) || epoch <= 0 || !Number.isSafeInteger(epoch * 1e3)) throw new Error("Nightly quality deadline must be a positive safe integer epoch timestamp.");
++		timeout = Math.min(epoch * 1e3 - Date.now(), 2147483647);
++		if (timeout <= 0) throw new Error("Nightly shared quality budget exhausted before starting a command.");
++	}
+ 	const result = (options.spawn ?? crossSpawn.sync)(executable, args, {
+ 		cwd: options.cwd,
+ 		env: {
+diff --git a/resources/release-snapshot/build.yml b/resources/release-snapshot/build.yml
+--- a/resources/release-snapshot/build.yml
++++ b/resources/release-snapshot/build.yml
+@@ -67,7 +67,7 @@
+           "$RUNNER_TEMP/repoctl-tools/node_modules/.bin/repo" release snapshot freeze --source "$RUNNER_TEMP/snapshot-source.json" --out "$RUNNER_TEMP/snapshot-plan.json" --json
+       - name: Upload the frozen plan
+         id: artifact
+-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
++        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+         with:
+           name: snapshot-plan-${{ github.run_id }}-${{ github.run_attempt }}
+           path: ${{ runner.temp }}/snapshot-plan.json
+@@ -97,7 +97,7 @@
+         run: |
+           npm install --prefix "$RUNNER_TEMP/repoctl-tools" --ignore-scripts --no-audit --no-fund --package-lock=false repoctl@__VERSION__ pnpm@__PNPM_VERSION__
+           echo "$RUNNER_TEMP/repoctl-tools/node_modules/.bin" >> "$GITHUB_PATH"
+-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
++      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+         with:
+           artifact-ids: ${{ needs.freeze.outputs.plan_artifact }}
+           path: ${{ runner.temp }}/snapshot-plan
+@@ -119,7 +119,7 @@
+           fs.appendFileSync(process.env.GITHUB_OUTPUT, `directory=${prepared.directory}\n`);
+           NODE
+       - name: Upload only the portable manifest and tarballs
+-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
++        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+         with:
+           name: snapshot-build-${{ github.run_id }}-${{ github.run_attempt }}
+           path: ${{ steps.prepare.outputs.directory }}
+diff --git a/resources/release-snapshot/publish.yml b/resources/release-snapshot/publish.yml
+--- a/resources/release-snapshot/publish.yml
++++ b/resources/release-snapshot/publish.yml
+@@ -89,7 +89,7 @@
+       - name: Retain the trusted publication report
+         id: report
+         if: always()
+-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
++        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+         with:
+           name: snapshot-publication-${{ github.run_id }}-${{ github.run_attempt }}
+           path: ${{ runner.temp }}/snapshot-publication.json
+@@ -114,7 +114,7 @@
+         run: |
+           npm install --prefix "$RUNNER_TEMP/repoctl-tools" --ignore-scripts --no-audit --no-fund --package-lock=false repoctl@__VERSION__ pnpm@__PNPM_VERSION__
+           echo "$RUNNER_TEMP/repoctl-tools/node_modules/.bin" >> "$GITHUB_PATH"
+-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
++      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+         with:
+           artifact-ids: ${{ needs.publish.outputs.report_artifact }}
+           path: ${{ runner.temp }}/publication
+@@ -126,7 +126,7 @@
+       - name: Retain consumer evidence
+         id: report
+         if: always()
+-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
++        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+         with:
+           name: snapshot-consumer-${{ github.run_id }}-${{ github.run_attempt }}
+           path: ${{ runner.temp }}/snapshot-consumer.json
+@@ -147,7 +147,7 @@
+       actions: read
+       pull-requests: write
+     steps:
+-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
++      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+         with:
+           artifact-ids: ${{ needs.publish.outputs.report_artifact }}
+           path: ${{ runner.temp }}/publication
+diff --git a/resources/release-auto-changeset/workflow.yml b/resources/release-auto-changeset/workflow.yml
+--- a/resources/release-auto-changeset/workflow.yml
++++ b/resources/release-auto-changeset/workflow.yml
+@@ -53,7 +53,7 @@
+         run: |
+           GITHUB_TOKEN="$GH_TOKEN" "$RUNNER_TEMP/repoctl-tools/node_modules/.bin/repoctl" release auto-changeset --repository "$GITHUB_REPOSITORY" --pr "$PR_NUMBER" --policy-path "$REPOCTL_POLICY_PATH" --out "$RUNNER_TEMP/auto-changeset-plan.json"
+           echo "changed=$(jq 'has("change")' "$RUNNER_TEMP/auto-changeset-plan.json")" >> "$GITHUB_OUTPUT"
+-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
++      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+         id: upload
+         with:
+           name: auto-changeset-plan-${{ github.run_id }}-${{ github.run_attempt }}
+@@ -79,7 +79,7 @@
+       - name: Install trusted repoctl
+         working-directory: ${{ runner.temp }}
+         run: npm install --prefix "$RUNNER_TEMP/repoctl-tools" --ignore-scripts --no-audit --no-fund --package-lock=false repoctl@__VERSION__
+-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
++      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+         with:
+           artifact-ids: ${{ needs.plan.outputs.artifact-id }}
+           path: ${{ runner.temp }}/auto-changeset-plan

@@ -1,7 +1,7 @@
 {
   "name": "@weapp-vite/eslint",
   "type": "module",
-  "version": "0.2.11",
+  "version": "0.3.0",
   "description": "Wevu compatibility ESLint plugin and recommended configuration",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
@@ -68,7 +68,7 @@
     }
   },
   "devDependencies": {
-    "@typescript-eslint/parser": "^8.72.0",
+    "@typescript-eslint/parser": "^8.72.1",
     "eslint": "catalog:",
     "typescript": "catalog:",
     "vitest": "^5.0.5",

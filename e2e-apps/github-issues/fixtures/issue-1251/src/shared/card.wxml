@@ -1,0 +1,4 @@
+<view>
+  <scope-card id="scope-card" />
+  <shared-typo id="shared-unknown">Shared source remains visible</shared-typo>
+</view>

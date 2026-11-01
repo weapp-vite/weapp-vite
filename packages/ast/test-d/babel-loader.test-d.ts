@@ -1,5 +1,6 @@
 import type * as BabelCore from '@babel/core'
 import type { NodePath, TransformOptions } from '@weapp-vite/ast/babelCore'
+import type { SourceMapConverter } from 'convert-source-map'
 import babelCore, { parseSync, transformAsync, transformSync, types } from '@weapp-vite/ast/babelCore'
 import { createBabelBackendLoader } from '@weapp-vite/ast/babelLoader'
 import { expectAssignable, expectError, expectType } from 'tsd'
@@ -16,3 +17,6 @@ expectType<typeof BabelCore.transformSync>(transformSync)
 expectType<typeof BabelCore.types>(types)
 expectAssignable<BabelCore.InputOptions>({ sourceMaps: true } as TransformOptions)
 expectAssignable<BabelCore.NodePath>({} as NodePath)
+
+declare const file: InstanceType<typeof babelCore.File>
+expectType<SourceMapConverter | null>(file.inputMap)

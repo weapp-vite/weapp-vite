@@ -1,4 +1,6 @@
 import type { Plugin, ViteDevServer } from 'vite'
+import type { HmrRuntimeSession } from '../runtime/hmrRuntimeSession'
+import type { WeappVitePluginApi } from '../types'
 import { randomUUID } from 'node:crypto'
 import { mkdir, mkdtemp, readdir, readFile, realpath, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
@@ -13,6 +15,7 @@ import {
 import { createServer } from 'vite'
 import { expect, it, vi } from 'vitest'
 import { assertNoStatefulInstallations } from '../../scripts/consumerHmr/installedRuntime.mjs'
+import { getHmrRuntimeSession } from '../runtime/hmrRuntimeSession'
 import { observeClassicFallback } from './hmrFallback/settlementProbe'
 import { weapp } from './index'
 
@@ -193,8 +196,20 @@ it.each([false, true])('revalidates startup snapshots saved before the host atta
   const project = await fixture()
   let changed = false
   let snapshots = 0
+  let runtime: HmrRuntimeSession | undefined
   const gate: Plugin = {
     name: 'startup-snapshot-admission-gate',
+    configureServer(nextServer) {
+      if (runtime) {
+        return
+      }
+      const api = nextServer.config.plugins.find(plugin => plugin.name === 'weapp-vite:context')?.api as WeappVitePluginApi | undefined
+      if (!api) {
+        throw new Error('Startup snapshot fixture did not expose its initial compiler context')
+      }
+      // 启动请求早于 start 返回；在宿主绑定前保留同一命令的交接任务。
+      runtime = getHmrRuntimeSession(api.ctx)
+    },
     buildStart() {
       if (this.environment.mode === 'build') {
         snapshots++
@@ -214,6 +229,15 @@ it.each([false, true])('revalidates startup snapshots saved before the host atta
   let server: ViteDevServer | undefined
   try {
     server = await project.start([gate])
+    if (unsupported) {
+      if (!runtime) {
+        throw new Error('Startup snapshot fixture did not capture its runtime session')
+      }
+      // 先确认请求已创建，避免无请求时 whenSettled 立即完成。
+      expect(runtime.fallback?.code).toBe('skyline')
+      await runtime.whenSettled()
+      expect(runtime.phase).toBe('classic')
+    }
     await expect.poll(() => project.read('pages/home/index.js')).toContain('saved-before-startup-host')
     if (unsupported) {
       await expect.poll(() => server!.config.experimental.bundledDev).toBe(false)

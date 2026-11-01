@@ -33,6 +33,7 @@ function toRenderNode(node: Node, children?: RenderNode[]): RenderNode | undefin
       name: element.name,
       attribs: element.attribs,
       children,
+      startIndex: element.startIndex ?? undefined,
     }
   }
   return undefined
@@ -53,6 +54,7 @@ export function parseWxml(source: string): RenderNode[] {
     xmlMode: true,
     decodeEntities: true,
     recognizeSelfClosing: true,
+    withStartIndices: true,
   })
   const nodes = document.children.filter(isRenderableNode)
   return nodes

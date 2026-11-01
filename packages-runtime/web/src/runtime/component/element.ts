@@ -12,10 +12,11 @@ import type {
 import type { ClassAttributeElement } from './virtualHost'
 import { WEVU_HOST_COMMIT_PROMISE_KEY, WEVU_HOST_INSTALL_METHOD_KEY } from '@weapp-core/constants'
 import { html } from 'lit'
-import { unsafeHTML } from 'lit/directives/unsafe-html.js'
 import { getAppStyle, trackAppStyle } from '../appStyle'
 import { markComponentEvent, registerComponentEventTarget } from '../componentEvents'
+import { recordControlledDataCommit, releaseLegacyControlledValues } from '../controlledAttributes'
 import { commitLegacyDatasetBindings, releaseLegacyDatasetBindings, resetLegacyDatasetRender } from '../legacyTemplate/dataset'
+import { legacyMarkup } from '../legacyTemplate/markup'
 import { createIntersectionObserverBridge } from '../polyfill/intersectionObserver'
 import { createRenderContext } from '../renderContext'
 import { hasOwn } from '../utils/object'
@@ -26,7 +27,7 @@ import {
   selectRuntimeComponent,
   selectRuntimeComponents,
 } from './dom'
-import { bindRuntimeEvents } from './events'
+import { bindRuntimeEvents, releaseRuntimeEvents } from './events'
 import { runComponentObservers } from './observers'
 import { createComponentPublicInstance } from './publicInstance'
 import { resolveRelationNodes } from './relations'
@@ -264,6 +265,8 @@ export function createComponentElementClass({
         superDisconnected.call(this)
       }
       this.#isMounted = false
+      releaseRuntimeEvents(resolveRenderRoot(this))
+      releaseLegacyControlledValues(this.#renderContext)
       releaseLegacyDatasetBindings(this.#renderContext)
       trackAppStyle(this, false)
       instances.delete(this)
@@ -292,10 +295,13 @@ export function createComponentElementClass({
 
     updated() {
       this.#syncVirtualHostClasses()
-      commitLegacyDatasetBindings(resolveRenderRoot(this), this.#renderContext)
       if (this.#usesLegacyTemplate) {
         bindRuntimeEvents(resolveRenderRoot(this), this.#methods, this)
       }
+      else {
+        releaseRuntimeEvents(resolveRenderRoot(this))
+      }
+      commitLegacyDatasetBindings(resolveRenderRoot(this), this.#renderContext)
     }
 
     render() {
@@ -303,7 +309,7 @@ export function createComponentElementClass({
       const result = runtimeState.templateRef(this.#state, this.#renderContext)
       const appStyle = runtimeState.inheritAppStyle ? getAppStyle() : ''
       this.#usesLegacyTemplate = typeof result === 'string'
-      return html`<style>${appStyle}</style><style>${runtimeState.styleRef}</style>${typeof result === 'string' ? unsafeHTML(result) : result}`
+      return html`<style>${appStyle}</style><style>${runtimeState.styleRef}</style>${typeof result === 'string' ? legacyMarkup(result, this.#renderContext) : result}`
     }
 
     requestUpdate(name?: PropertyKey, oldValue?: unknown, options?: unknown) {
@@ -333,6 +339,7 @@ export function createComponentElementClass({
       let changed = false
       const changedKeys: string[] = []
       const previousProperties: DataRecord = {}
+      const submittedPaths: string[][] = []
       let copiedContainers: WeakSet<object> | undefined
       for (const [path, value] of Object.entries(patch)) {
         const segments = parseDataPath(path)
@@ -340,6 +347,7 @@ export function createComponentElementClass({
         if (!topKey || topKey === '$slots') {
           continue
         }
+        submittedPaths.push(segments)
         let nextValue = value
         if (value !== null && typeof value === 'object') {
           // 整体提交需刷新整个子树，新的外层对象也可能复用已原地修改的后代。
@@ -362,8 +370,11 @@ export function createComponentElementClass({
         changedKeys.push(path)
         changed = true
       }
-      if (changed) {
+      const controlled = recordControlledDataCommit(this.#renderContext, submittedPaths)
+      if (changed || controlled) {
         this.requestUpdate()
+      }
+      if (changed) {
         runComponentObservers(runtimeState.componentRef, this.#publicInstance, changedKeys, previousProperties)
         for (const key of changedKeys) {
           if (runtimeState.componentRef.properties?.[key]?.observer) {
@@ -371,7 +382,7 @@ export function createComponentElementClass({
           }
         }
       }
-      return changed
+      return changed || controlled
     }
 
     #setProperty(name: string, value: any) {

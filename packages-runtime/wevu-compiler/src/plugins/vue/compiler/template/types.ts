@@ -1,7 +1,7 @@
 import type { Expression } from '@weapp-vite/ast/babelTypes'
 import type { WevuRuntimeCapabilityMetadata } from '../../../../runtimeCapabilities'
 import type { WevuBindingManifestV1, WevuRuntimeBindingManifestMode } from '../../../../types/bindingManifest'
-import type { CompilerDiagnostic } from '../../../../types/diagnostics'
+import type { CompilerDiagnostic, SourceSpan } from '../../../../types/diagnostics'
 import type { EncodedSourceMapLike } from '../../../../utils/sourcemap'
 import type { MiniProgramPlatform } from './platform'
 
@@ -72,6 +72,8 @@ export interface InlineExpressionAsset {
 export interface TemplateCompileResult {
   code: string
   diagnostics: CompilerDiagnostic[]
+  /** 原始模板 AST 的标签位置，供宿主诊断使用，不对应生成的 WXML。@internal */
+  sourceTags?: Array<{ tag: string, resolvedTag: string, filename: string, loc?: SourceSpan }>
   bindingManifest: WevuBindingManifestV1
   scopedSlotComponents?: ScopedSlotComponentAsset[]
   slotFallbackWrapperComponent?: SlotFallbackWrapperComponentAsset

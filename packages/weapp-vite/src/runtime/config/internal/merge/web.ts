@@ -15,6 +15,7 @@ import {
   resolveRuntimeProviderHmrFooter,
 } from '../../../../runtimeProviders'
 import { normalizePreserveModulesRolldownOptions } from '../../../preserveModules'
+import { resolvePollingWatchOptions } from '../../../watch/options'
 import { stripRollupOptions } from './inline'
 
 const loadWebPlugin = createBabelBackendLoader(() => import('@weapp-vite/web/plugin'))
@@ -117,6 +118,23 @@ export function mergeWeb(options: MergeWebOptions, ...configs: Partial<InlineCon
 
   inline.root = web.root
   inline.configFile = false
+
+  if (isDev) {
+    const requestedWatch = [config, web.userConfig, ...configs].find(source => source?.server?.watch !== undefined)?.server?.watch
+    // 使用 Vite 原生写入稳定分支，避免内置 watcher 的前沿节流丢失快速恢复保存。
+    // 保留显式关闭和用户选项；复制配置，避免修改调用方持有的对象。
+    inline.server = {
+      ...inline.server,
+      watch: requestedWatch === null
+        ? null
+        : {
+            ...inline.server?.watch,
+            // Vite 的 macOS watcher 在读取环境变量前选择 FSEvents，必须提前归一化后端选项。
+            ...resolvePollingWatchOptions({ inlineConfig: inline }),
+            awaitWriteFinish: inline.server?.watch?.awaitWriteFinish ?? { stabilityThreshold: 50, pollInterval: 10 },
+          },
+    }
+  }
 
   const runtimeProvider = resolveRuntimeProvider('web', 'web')
   const runtimeProviderPlugin = createSelectedRuntimeProviderPlugin(runtimeProvider, isDev)

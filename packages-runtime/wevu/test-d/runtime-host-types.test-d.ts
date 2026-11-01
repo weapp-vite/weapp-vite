@@ -3,10 +3,13 @@ import type {
   DefaultMiniProgramHostNamespace,
   DefaultMiniProgramHostSourceContract,
   DouyinMiniProgramHostSourceContract,
+  HostMiniProgramBehaviorIdentifier,
+  HostMiniProgramComponentTrivialInstance,
   HostMiniProgramLaunchOptions,
   HostMiniProgramNavigateToOption,
   HostMiniProgramPageLifetime,
   HostMiniProgramRouter,
+  HostMiniProgramSelectorQuery,
   MiniProgramHostNamespace,
   MiniProgramHostNamespaceBySource,
   MiniProgramHostSourceName,
@@ -25,6 +28,14 @@ import type {
   WechatMiniProgramHostSourceContract,
 } from 'wevu'
 import { expectAssignable, expectType } from 'tsd'
+import { useSelectorQuery } from 'wevu'
+
+expectType<WechatMiniprogram.SelectorQuery | null>(useSelectorQuery()())
+expectType<WechatMiniprogram.SelectorQuery>({} as HostMiniProgramSelectorQuery)
+expectType<WechatMiniprogram.Component.TrivialInstance>({} as HostMiniProgramComponentTrivialInstance)
+expectType<WechatMiniprogram.Behavior.Identifier>({} as HostMiniProgramBehaviorIdentifier)
+expectType<typeof Behavior>({} as WechatMiniProgramHostNamespace.Behavior.Constructor)
+expectType<typeof Component>({} as WechatMiniProgramHostNamespace.Component.Constructor)
 
 expectAssignable<MiniProgramLaunchOptions>({} as HostMiniProgramLaunchOptions)
 expectAssignable<HostMiniProgramLaunchOptions>({} as MiniProgramLaunchOptions)

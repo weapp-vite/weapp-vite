@@ -44,12 +44,22 @@ CI Policy 在既有审批后检查公开包与 changeset 的完整对应，测�
 
 每天北京时间 06:17（UTC 22:17）运行，也可以在默认分支手动选择 `mode=nightly`。它发布全部公开 workspace 包，不能用恢复参数筛选包或换成历史来源；`dry-run=true` 只检查来源、候选版本与 registry 状态，不构建、上传或验证 consumer。
 
+正式版和 nightly 的 npm job 共用按分支划分的 `npm-release` 队列，发布完成即释放互斥。后续文档部署使用自己的站点及渠道队列，不占用 npm 发布锁。
+
 正式执行由 repoctl 原生 nightly 管线完成：
 
 1. 冻结默认分支提交与运行身份，检查完整包计划的 OIDC 权限。
 2. 执行现有质量脚本，禁用质量缓存，隔离 archive、安装、构建和打包。
 3. 发布到 `snapshot-nightly`，确认 registry 可见性与完整性。
 4. 使用独立 consumer 安装完整批次，验证内部依赖与消费结果。
+
+仓库通过 pnpm 补丁修正 repoctl 6.2.1 对每条 nightly 质量命令固定 10 分钟的限制。工作流设置 `REPOCTL_NIGHTLY_QUALITY_DEADLINE_EPOCH`，全部质量脚本共享 45 分钟，每次启动只使用剩余预算；预算耗尽或时间戳无效时停止。未设置时保留上游默认值。此预算仅用于质量阶段，后续构建、上传和 consumer 保持原生独立超时。42 个公开包按顺序打包、上传和消费验证，原 90 分钟 job 上限曾在最后一个包上传时终止；现将整个 job 上限设为 240 分钟，为发布确认、严格入口检查与诊断保留时间。该上限是作业容量预算，不代表覆盖所有网络故障的最坏耗时。
+
+Vitest setup 导出通过 `repoctl.packageCheck.runtimeContexts` 显式声明测试框架上下文。打包检查和发布后的 consumer 均使用隔离安装的真实 Vitest CLI 执行 setup。自动路由的占位入口声明 `expected-error` 契约，实际导入必须抛出精确的平台保护错误；意外成功或其他错误都会失败。其他导出继续直接验证 Node 导入，所有声明仍使用 `--strict --skipLibCheck false` 检查。
+
+消费项目显式安装本轮已检查的 workspace peer，避免 pnpm 自动选择 registry 中同版本的旧包。原有 peer 别名、版本范围和冲突校验继续执行，外部必需 peer 仍由包管理器正常解析。
+
+`ast-native` 的 `prepack` 按锁定的 Rust 工具链和 `Cargo.lock` 构建发布宿主的二进制，确保隔离源码打包不依赖本地未跟踪产物。这仅提供当前宿主的 native 模块；其他平台继续使用既有 JS fallback。
 
 nightly 不消费 changeset，不改正式版本、changelog、发布账本或 `latest`。定时运行发现同一源码批次已经发布时会跳过。所有公开包都需要允许当前仓库 `release.yml` 的 npm Trusted Publisher；审计失败时不会开始上传，不改为长期 npm token。
 
@@ -62,7 +72,7 @@ pnpm add wevu@snapshot-nightly
 
 带内部 peer 依赖的组合以成功运行 Summary 中的完整批次安装命令为准。需要固定复现时使用报告中的精确 snapshot 版本，避免浮动 tag 后续更新。
 
-运行保留 `nightly-report.json`、`snapshot-report.json`、`consumer-report.json` 与 tarball 14 天。上传确认成功但 consumer 失败时，整次运行仍失败；先检查报告，修正问题后手动运行新的 nightly。不能把定时去重后的跳过当成 consumer 已通过。
+运行保留 `nightly-report.json`、`snapshot-report.json`、`consumer-report.json` 与 tarball 14 天。附件按原生输出目录的固定层级匹配，避免递归扫描隔离源码和 consumer 的依赖树。上传确认成功但 consumer 失败时，整次运行仍失败；先检查报告，修正问题后手动运行新的 nightly。不能把定时去重后的跳过当成 consumer 已通过。
 
 ## PR snapshot
 

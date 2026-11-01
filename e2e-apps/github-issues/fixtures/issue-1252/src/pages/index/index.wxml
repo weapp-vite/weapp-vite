@@ -1,0 +1,30 @@
+<view id="ready">ready</view>
+<button id="trigger" bindtap="trigger">trigger true</button>
+<button id="restore" bindtap="restore">trigger false</button>
+<button id="reset" bindtap="reset">reset trace</button>
+<button id="disable" bindtap="disable">toggle enabled</button>
+<button id="reenter" bindtap="reenter">reenter on restore</button>
+<button id="scroll-down" bindtap="scrollDown">scroll down</button>
+<button id="scroll-up" bindtap="scrollUp">scroll up</button>
+<button id="custom-appearance" bindtap="customAppearance">custom appearance</button>
+<view bindtouchstart="canvasParent">
+  <canvas type="2d" id="signature" canvas-id="signature" disable-scroll="{{true}}" style="width: 300px; height: 100px; background: #fce5be" bindtouchstart="canvasTouch" bindtouchmove="canvasTouch" bindtouchend="canvasTouch"></canvas>
+</view>
+<text id="canvas-trace">{{canvasTrace}}</text>
+<text id="canvas-end">{{canvasEnd}}</text>
+<text id="canvas-parents">{{canvasParents}}</text>
+<view bindtouchstart="legacyParent">
+  <canvas id="legacy-signature" canvas-id="legacy-signature" disable-scroll="{{true}}" style="width: 300px; height: 100px; background: #e5f5dc" bindtouchstart="legacyTouch" bindtouchend="legacyTouch"></canvas>
+</view>
+<text id="legacy-start">{{legacyStart}}</text>
+<text id="legacy-end">{{legacyEnd}}</text>
+<text id="legacy-parents">{{legacyParents}}</text>
+<view bindtouchstart="canvasParent">
+  <view id="caught-source" catchtouchstart="touch" bindtouchmove="touch" bindtouchend="touch" bindtouchcancel="touch" style="height: 60px; background: #ddd">caught touch source</view>
+</view>
+<scroll-view id="feed" scroll-y scroll-with-animation="{{animated}}" scroll-top="{{top}}" refresher-enabled="{{enabled}}" refresher-triggered="{{triggered}}" refresher-default-style="{{defaultStyle}}" refresher-background="#e2f3ff" refresher-threshold="45" bindrefresherpulling="record" bindrefresherrefresh="record" bindrefresherrestore="record" bindrefresherabort="record" style="height: 240px; border: 1px solid #555">
+  <view slot="refresher" id="custom-refresher">custom refreshing</view>
+  <view id="drag" style="height: 1200px; background: linear-gradient(#daf1ff, #91c4ee)" bindtouchstart="touch" bindtouchmove="touch" bindtouchend="touch" bindtouchcancel="touch">drag down from here</view>
+</scroll-view>
+<text id="trace">{{trace}}</text>
+<text id="touches">{{touchTrace}}</text>

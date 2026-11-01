@@ -17,6 +17,7 @@ interface Step {
 }
 
 interface Job {
+  'concurrency'?: Record<string, unknown>
   'if'?: string
   'needs'?: string
   'uses'?: string
@@ -29,6 +30,7 @@ interface Job {
 }
 
 interface Workflow {
+  concurrency?: Record<string, unknown>
   on: {
     schedule: { cron: string }[]
     workflow_dispatch: { inputs: Record<string, { options?: string[] }> }
@@ -62,6 +64,20 @@ function runNightlyInputRejection(name: string, parentEnv = process.env) {
 }
 
 describe('repoctl nightly workflow', () => {
+  it('serializes npm publishers without holding their lock during documentation deployment', () => {
+    expect(workflow.concurrency).toBeUndefined()
+    const publishers = { 'group': `npm-release-${expression('github.ref')}`, 'cancel-in-progress': false }
+    expect(workflow.jobs.release?.concurrency).toEqual(publishers)
+    expect(workflow.jobs.nightly?.concurrency).toEqual(publishers)
+    expect(workflow.jobs.docs?.concurrency).toBeUndefined()
+    expect(workflow.jobs['oidc-audit']?.concurrency).toBeUndefined()
+    const docs = readWorkflowFixture('repoctl-docs-deploy.yml') as { concurrency: Record<string, unknown> }
+    expect(docs.concurrency).toEqual({
+      'group': `docs-${expression('inputs.site')}-${expression('inputs.channel')}`,
+      'cancel-in-progress': false,
+    })
+  })
+
   it('uses one existing publisher workflow with matching manual and scheduled routes', async () => {
     const config = await createJiti(import.meta.url).import<{
       commands: { release: { nightly: { provider: string, schedule: string } } }
@@ -110,20 +126,42 @@ describe('repoctl nightly workflow', () => {
     const nightly = workflow.jobs.nightly!
     const steps = nightly.steps!
     const publish = steps.find(step => step.id === 'nightly-publish')!
-    expect(nightly['timeout-minutes']).toBe(90)
+    expect(nightly['timeout-minutes']).toBe(240)
     expect(steps.find(step => step.id === 'nightly-checkout')?.with?.ref).toBe(expression('github.sha'))
     expect(steps.find(step => step.id === 'nightly-npm')?.run).toBe('npm install --global npm@11.16.0 --registry=https://registry.npmjs.org')
     expect(publish.env?.REPOCTL_SNAPSHOT_PUBLISH).toBe('1')
     expect(publish.run).toContain('args=(--publish --output "$RUNNER_TEMP/repoctl-nightly" --json)')
     expect(publish.run).toContain('args+=(--dry-run)')
+    expect(publish.run).toContain('export REPOCTL_NIGHTLY_QUALITY_DEADLINE_EPOCH="$(( $(date +%s) + 2700 ))"')
     expect(publish.run).toContain('pnpm exec repo release nightly "$' + '{args[@]}"')
     expect(publish.run).not.toMatch(/npm publish|--filter|--tag latest|version -r/)
     expect(steps.some(step => step.uses?.startsWith('actions/cache/'))).toBe(false)
     const diagnostics = steps.find(step => step.name === 'Preserve nightly diagnostics')!
     expect(diagnostics.if).toBe(expression('always()'))
-    expect(diagnostics.with?.path).toContain('/**/consumer-report.json')
-    expect(diagnostics.with?.path).toContain('/**/tarballs/**/*.tgz')
     expect(diagnostics.with?.['retention-days']).toBe(14)
+  })
+
+  it('archives native reports and tarballs without recursively scanning isolated dependency trees', () => {
+    const diagnostics = workflow.jobs.nightly!.steps!.find(step => step.name === 'Preserve nightly diagnostics')!
+    const patterns = String(diagnostics.with?.path).trim().split('\n').map(pattern => pattern.replace(`${expression('runner.temp')}/`, ''))
+    expect(patterns.every(pattern => !pattern.includes('**'))).toBe(true)
+    const nightly = 'repoctl-nightly/repoctl-nightly-run'
+    const snapshot = `${nightly}/repoctl-snapshot-identity-run`
+    const reports = [
+      'repoctl-nightly/report.json',
+      `${nightly}/nightly-report.json`,
+      `${nightly}/consumer-report.json`,
+      `${snapshot}/snapshot-report.json`,
+      `${snapshot}/tarballs/0/package.tgz`,
+      `${snapshot}/tarballs/41/package.tgz`,
+    ]
+    const dependencies = [
+      `${snapshot}/source/node_modules/package/nightly-report.json`,
+      `${snapshot}/source/node_modules/package/tarballs/0/package.tgz`,
+      `${snapshot}/consumers/0/node_modules/package/snapshot-report.json`,
+      `${nightly}/consumer/node_modules/package/consumer-report.json`,
+    ]
+    expect([...reports, ...dependencies].filter(file => patterns.some(pattern => path.matchesGlob(file, pattern)))).toEqual(reports)
   })
 
   it('audits every public package and passes recovery inputs to their validation boundary', () => {

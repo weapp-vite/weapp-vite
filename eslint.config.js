@@ -31,6 +31,8 @@ export default await defineEslintConfig({
       'website/snippets',
       '**/*.auto.{js,ts}',
       '**/node_modules/**',
+      // 发布模板由准备流程生成并使用消费者工具链检查，避免仓库规则二次改写。
+      'packages/create-weapp-vite/templates/**',
       '**/dist/**',
       '**/dist-*/**',
       '**/dist-plugin/**',

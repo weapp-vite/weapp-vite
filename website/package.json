@@ -42,9 +42,9 @@
   "devDependencies": {
     "@egoist/tailwindcss-icons": "catalog:",
     "@iconify-json/bi": "^1.2.7",
-    "@iconify-json/logos": "^1.2.17",
+    "@iconify-json/logos": "^1.2.18",
     "@iconify-json/mdi": "catalog:",
-    "@iconify-json/vscode-icons": "^1.2.93",
+    "@iconify-json/vscode-icons": "^1.2.94",
     "@shikijs/vitepress-twoslash": "^4.5.0",
     "@tailwindcss/vite": "catalog:",
     "create-weapp-vite": "workspace:*",
@@ -57,6 +57,6 @@
     "vitepress-plugin-llms": "1.14.0",
     "vitepress-plugin-mermaid": "^2.0.17",
     "weapp-vite": "workspace:*",
-    "wrangler": "^4.152.0"
+    "wrangler": "^4.156.0"
   }
 }

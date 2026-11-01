@@ -4,7 +4,7 @@ import { join, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { compileWxml } from '../src/compiler/wxml/compile'
 import { parseWxml } from '../src/compiler/wxml/parser'
-import { collectUnknownTags, formatUnknownTagWarning } from '../src/compiler/wxml/unknownTags'
+import { collectUnknownTags, formatTagDiagnostic, formatUnknownTagWarning } from '../src/compiler/wxml/unknownTags'
 
 function tagsOf(source: string, componentTags?: Record<string, string>) {
   return collectUnknownTags(parseWxml(source), componentTags)
@@ -18,7 +18,7 @@ function warningsOf(source: string, componentTags?: Record<string, string>) {
     resolveWxsPath: (name: string) => `/fake/${name}.wxs`,
     componentTags,
   })
-  return compiled.warnings ?? []
+  return [...compiled.warnings ?? [], ...compiled.tagDiagnostics?.map(formatTagDiagnostic) ?? []]
 }
 
 describe('collectUnknownTags', () => {
@@ -108,10 +108,10 @@ describe('unknown tag warnings', () => {
         resolveWxsPath: () => undefined,
         componentTags: { 'my-card': 'registered-card' },
       })
-      expect(compiled.warnings).toHaveLength(2)
-      expect(compiled.warnings?.filter(warning => warning.includes('<buton>'))).toHaveLength(1)
-      expect(compiled.warnings?.filter(warning => warning.includes('<order-card>'))).toHaveLength(1)
-      expect(compiled.warnings?.some(warning => warning.includes('<my-card>'))).toBe(false)
+      expect(compiled.tagDiagnostics).toHaveLength(2)
+      expect(compiled.tagDiagnostics?.filter(diagnostic => diagnostic.tag === 'buton')).toHaveLength(1)
+      expect(compiled.tagDiagnostics?.filter(diagnostic => diagnostic.tag === 'order-card')).toHaveLength(1)
+      expect(compiled.tagDiagnostics?.some(diagnostic => diagnostic.tag === 'my-card')).toBe(false)
     }
     finally {
       rmSync(root, { recursive: true, force: true })

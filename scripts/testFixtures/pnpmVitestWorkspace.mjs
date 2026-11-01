@@ -1,6 +1,7 @@
 import { readFile, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import path from 'node:path'
+import process from 'node:process'
 // eslint-disable-next-line e18e/ban-dependencies -- 独立 fixture 使用真实 pnpm 建立本地入口与 bin，不触及仓库安装。
 import { execa } from 'execa'
 import { parseAllDocuments, stringify } from 'yaml'
@@ -38,4 +39,12 @@ export async function preparePnpmVitestFixture(directory, manifest) {
   const args = ['--dir', directory, 'install', '--offline', '--ignore-scripts']
   await execa('pnpm', [...args, '--lockfile-only'], { cwd: directory })
   await execa('pnpm', [...args, '--frozen-lockfile'], { cwd: directory })
+  // 在合法 manifest 下取得真实 pnpm 入口；负例修改版本后仍由同一 pnpm 校验，而非让 Corepack 重新选版。
+  const probe = await execa('pnpm', ['exec', process.execPath, '--eval', 'process.stdout.write(process.env.npm_execpath ?? "")'], { cwd: directory })
+  const entry = probe.stdout.trim()
+  if (!path.isAbsolute(entry)) {
+    throw new Error('pnpm fixture requires the actual package-manager entrypoint')
+  }
+  const nodeEntry = /\.[cm]?js$/i.test(entry)
+  return (commandArgs, options = {}) => execa(nodeEntry ? process.execPath : entry, nodeEntry ? [entry, ...commandArgs] : commandArgs, { ...options, cwd: directory })
 }

@@ -31,9 +31,9 @@ describe('supported WeChat startup classic inventory', () => {
     ['hmr-build', 45, 3],
     ['ide-hmr-headless', 28, 14],
     ['ide-hmr', 34, 19],
-    ['ide-full:exhaustive', 158, 22],
-    ['ide-dom-headless', 92, 14],
-    ['ide-headless-full', 103, 14],
+    ['ide-full:exhaustive', 159, 22],
+    ['ide-dom-headless', 93, 14],
+    ['ide-headless-full', 104, 14],
   ] as const)('preserves the complete %s task inventory and explicit experimental exclusions', async (suite, total, excluded) => {
     const original = await getSuiteTasks(suite, { topology: 'optimized-v1' })
     const supported = await getSuiteTasks(`${suite}:classic`, { topology: 'optimized-v1' })
@@ -51,10 +51,10 @@ describe('supported WeChat startup classic inventory', () => {
     }
   })
 
-  it.each(['ide-full:exhaustive', 'ide-dom-headless', 'ide-headless-full'])('retains issue 969, 1249, 1263, 1264 and 1278 runtime tasks without classic exclusions in %s', async (suite) => {
+  it.each(['ide-full:exhaustive', 'ide-dom-headless', 'ide-headless-full'])('retains issue 969, 1249, 1252, 1263, 1264 and 1278 runtime tasks without classic exclusions in %s', async (suite) => {
     const original = await getSuiteTasks(suite, { topology: 'optimized-v1' })
     const supported = await getSuiteTasks(`${suite}:classic`, { topology: 'optimized-v1' })
-    for (const label of ['ide/issue-969-launch.runtime.test.ts', 'ide/issue-1249-dataset.runtime.test.ts', 'ide/issue-1263-chunk-debug-name.runtime.test.ts', 'ide/issue-1264-basic-wx-apis.runtime.test.ts', 'ide/issue-1278-classic-lease-recovery.runtime.test.ts']) {
+    for (const label of ['ide/issue-969-launch.runtime.test.ts', 'ide/issue-1249-dataset.runtime.test.ts', 'ide/issue-1252-refresher.runtime.test.ts', 'ide/issue-1263-chunk-debug-name.runtime.test.ts', 'ide/issue-1264-basic-wx-apis.runtime.test.ts', 'ide/issue-1278-classic-lease-recovery.runtime.test.ts']) {
       const tasks = supported.filter(task => task.label === label)
       expect(tasks).toHaveLength(1)
       expect(tasks[0]?.outOfScopeReason).toBeUndefined()

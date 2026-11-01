@@ -5,8 +5,10 @@ import type {
   ReactMiniProgramRoot,
   ReactMiniProgramRootOptions,
 } from '@weapp-vite/react'
+import type { MiniProgramHostProps as PublishedHostProps } from '@weapp-vite/react/types'
 import type { ReactElement } from 'react'
 import { Button, createNativeComponent, createReactMiniProgramRoot, Slot, Text, View } from '@weapp-vite/react'
+import { View as ComponentView } from '@weapp-vite/react/components'
 import { expectAssignable, expectType } from 'tsd'
 
 const adapter: MiniProgramPageAdapter = {
@@ -23,6 +25,8 @@ expectAssignable<ReactElement>(View({ children: 'view' }))
 expectAssignable<ReactElement>(Text({ children: 'text' }))
 expectAssignable<ReactElement>(Button({ children: 'button' }))
 expectAssignable<ReactElement>(Slot({}))
+expectAssignable<ReactElement>(ComponentView({ children: 'subpath' }))
+expectAssignable<PublishedHostProps>({ children: ComponentView({ children: 'typed child' }) })
 
 interface NativeCardProps {
   label: string

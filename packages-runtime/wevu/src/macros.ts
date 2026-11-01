@@ -1,5 +1,3 @@
-/// <reference types="miniprogram-api-typings" />
-
 import type {
   BooleanKey,
   ComponentTypeEmits,

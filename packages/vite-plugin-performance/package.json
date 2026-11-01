@@ -1,7 +1,7 @@
 {
   "name": "vite-plugin-performance",
   "type": "module",
-  "version": "2.0.9",
+  "version": "2.1.0",
   "description": "vite-plugin-performance tools and runtime components for modern WeChat and multi-platform mini-program development.",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
@@ -45,6 +45,8 @@
     "build": "tsdown",
     "test": "vitest run",
     "test:dev": "vitest",
+    "test:types": "pnpm run test:types:check",
+    "test:types:check": "tsd --files \"test-d/**/*.test-d.ts\"",
     "typecheck": "tsc --noEmit",
     "release": "pnpm publish",
     "lint": "eslint .",
@@ -53,5 +55,14 @@
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org"
+  },
+  "peerDependencies": {
+    "vite": "catalog:"
+  },
+  "tsd": {
+    "compilerOptions": {
+      "module": "NodeNext",
+      "moduleResolution": "NodeNext"
+    }
   }
 }

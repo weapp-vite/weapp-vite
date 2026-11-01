@@ -18,6 +18,7 @@ import { resolveHtmlTagToWxmlMap } from './template/htmlTagMapping'
 import { transformNode } from './template/nodes'
 import { getMiniProgramTemplatePlatform } from './template/platforms'
 import { retainScopedSlotOwnerBindings } from './template/scopedSlotOwnerBindings'
+import { collectTemplateSourceTags } from './template/sourceTags'
 
 const HTML_VOID_TAGS = new Set([
   'area',
@@ -133,6 +134,7 @@ export function compileVueTemplateToWxml(
       isVoidTag: tag => HTML_VOID_TAGS.has(tag),
       onError: error => warn({ diagnostics, filename }, `模板解析失败：${error.message}`, error.loc, 'template', 'WV2001'),
     })
+    const sourceTags = collectTemplateSourceTags(ast, filename, htmlTagToWxmlMap)
 
     const context: TransformContext = {
       source: template,
@@ -212,6 +214,7 @@ export function compileVueTemplateToWxml(
       code: wxml,
       diagnostics,
       bindingManifest: context.bindingManifest,
+      sourceTags,
     }
 
     if (context.scopedSlotComponents.length) {

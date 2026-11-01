@@ -13,7 +13,7 @@ defaults:
     shell: bash
 
 env:
-  SNAPSHOT_BUILDER_SHA256: e31b202110e044e2121d048eac1df66df43f91e5cf76e3a54896800d801b5c9c
+  SNAPSHOT_BUILDER_SHA256: 8ab77253e8283c85898d571315f91b80bea9ac431c0c009baffb9f9934d45932
   SNAPSHOT_BUILDER_WORKFLOW: ".github/workflows/repoctl-snapshot-build.yml"
   SNAPSHOT_PUBLISHER_WORKFLOW: ".github/workflows/repoctl-snapshot-publish.yml"
   SNAPSHOT_BUILD_ENVIRONMENT: "pr-ci-approval"
@@ -37,7 +37,7 @@ jobs:
           node-version: 24.22.1
       - name: Install the pinned verifier without candidate code
         working-directory: ${{ runner.temp }}
-        run: npm install --prefix "$RUNNER_TEMP/repoctl-tools" --ignore-scripts --no-audit --no-fund --package-lock=false repoctl@6.2.1 pnpm@12.15.0
+        run: npm install --prefix "$RUNNER_TEMP/repoctl-tools" --ignore-scripts --no-audit --no-fund --package-lock=false repoctl@6.3.1 pnpm@12.16.1
       - name: Verify GitHub approval, frozen plan, current revision and artifact bytes
         id: verify
         env:
@@ -75,7 +75,7 @@ jobs:
       - name: Install only the pinned trusted publisher
         working-directory: ${{ runner.temp }}
         run: |
-          npm install --prefix "$RUNNER_TEMP/repoctl-tools" --ignore-scripts --no-audit --no-fund --package-lock=false repoctl@6.2.1 pnpm@12.15.0
+          npm install --prefix "$RUNNER_TEMP/repoctl-tools" --ignore-scripts --no-audit --no-fund --package-lock=false repoctl@6.3.1 pnpm@12.16.1
           echo "$RUNNER_TEMP/repoctl-tools/node_modules/.bin" >> "$GITHUB_PATH"
       - name: Recheck all evidence, audit npm OIDC and publish without package scripts
         env:
@@ -89,7 +89,7 @@ jobs:
       - name: Retain the trusted publication report
         id: report
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: snapshot-publication-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/snapshot-publication.json
@@ -112,9 +112,9 @@ jobs:
       - name: Install the pinned consumer verifier
         working-directory: ${{ runner.temp }}
         run: |
-          npm install --prefix "$RUNNER_TEMP/repoctl-tools" --ignore-scripts --no-audit --no-fund --package-lock=false repoctl@6.2.1 pnpm@12.15.0
+          npm install --prefix "$RUNNER_TEMP/repoctl-tools" --ignore-scripts --no-audit --no-fund --package-lock=false repoctl@6.3.1 pnpm@12.16.1
           echo "$RUNNER_TEMP/repoctl-tools/node_modules/.bin" >> "$GITHUB_PATH"
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           artifact-ids: ${{ needs.publish.outputs.report_artifact }}
           path: ${{ runner.temp }}/publication
@@ -126,7 +126,7 @@ jobs:
       - name: Retain consumer evidence
         id: report
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: snapshot-consumer-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/snapshot-consumer.json
@@ -147,7 +147,7 @@ jobs:
       actions: read
       pull-requests: write
     steps:
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           artifact-ids: ${{ needs.publish.outputs.report_artifact }}
           path: ${{ runner.temp }}/publication

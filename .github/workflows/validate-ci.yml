@@ -170,6 +170,7 @@ jobs:
       runs_on: ubuntu-latest
       node_version: '24'
       timeout_minutes: 15
+      build_command: pnpm exec turbo run build --filter=@weapp-core/types...
       main_command: |
         pnpm --filter @weapp-core/api catalog:check
         pnpm --filter @weapp-core/api docs:check
@@ -221,6 +222,7 @@ jobs:
       runs_on: ubuntu-latest
       node_version: ${{ matrix.node-version }}
       timeout_minutes: 15
+      build_command: pnpm exec turbo run build --filter=@weapp-core/types...
       main_command: |
         pnpm --filter @weapp-core/api catalog:check
         pnpm --filter @weapp-core/api docs:check

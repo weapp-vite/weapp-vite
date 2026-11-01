@@ -1,5 +1,6 @@
 import type { CreateComponentInstanceOptions, HeadlessComponentInstance } from './types'
 import { synchronizeAttachmentBindings } from '../../host/attachmentBindingUpdates'
+import { recordNativeDataCommit } from '../../view/nativeBindings/commits'
 import { runComponentObservers } from './observers'
 import {
   coerceComponentPropertyValue,
@@ -30,6 +31,7 @@ export function createComponentInstance(options: CreateComponentInstanceOptions)
     },
     setData(patch, callback) {
       const changedKeys = Object.keys(patch)
+      recordNativeDataCommit(instance, changedKeys)
       const dataKeys = [...new Set(changedKeys.map(key => parseDataPath(key)[0]!))]
       const propertyKeys = dataKeys
         .filter(key => Object.hasOwn(definition.properties ?? {}, key))

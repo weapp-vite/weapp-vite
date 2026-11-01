@@ -1,6 +1,9 @@
 import { readFileSync } from 'node:fs'
+// 安装生命周期早于 workspace 构建，启动阶段直接使用日志包同源的轻量染色实现。
+import colors from 'picocolors'
 // eslint-disable-next-line e18e/ban-dependencies -- 启动检查使用与发布 engines 完全相同的 npm semver 语义。
 import satisfies from 'semver/functions/satisfies.js'
+import { formatNodeVersionWarning } from './nodeVersionWarning.js'
 
 const { engines } = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
 
@@ -115,13 +118,13 @@ export async function runWeappViteCLI(options = {}) {
     importer = () => ['accept', 'mcp'].includes(argv[0])
       ? import('../dist/cli-acceptance.mjs')
       : import('../dist/cli.mjs'),
-    write = message => getGlobalProcess().stderr.write(`\n WARN  ${message}\n\n`),
+    write = message => getGlobalProcess().stderr.write(`\n ${colors.bold(colors.yellow('警告'))}  ${message}\n\n`),
   } = options
-  // Bun 的 versions.node 只是兼容标识；真实 Node 仍在加载依赖前校验发布声明，prepare 不能吞掉该检查。
+  // Bun 的 versions.node 只是兼容标识；真实 Node 在加载依赖前提示升级，不因版本号阻断命令。
   const bunVersion = getGlobalProcess().versions.bun
   const isBun = typeof bunVersion === 'string' && bunVersion.length > 0
   if (!isBun && !satisfies(nodeVersion, engines.node)) {
-    throw new Error(`weapp-vite requires Node.js ${engines.node}; current version is ${nodeVersion}. Please upgrade Node.js before running this command.`)
+    write(formatNodeVersionWarning('weapp-vite', nodeVersion, engines.node))
   }
   const restorePrepareGuard = guardPrepareProcessExit(argv)
   const restoreKnownNoiseGuard = guardKnownLocalPkgResolveNoise()

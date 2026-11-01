@@ -2,6 +2,7 @@ import type { SwiperChangeSource } from './helpers'
 import type { WeappSwiperItem } from './item'
 import { getNativeComponentDescriptor } from '../../../shared/nativeComponents'
 import { dispatchMiniProgramEvent, readBooleanAttribute, resolveContainingShadowRoot } from '../helpers'
+import { watchNativePointerSession } from '../pointerSession'
 import { ensureNativeComponentStyle } from '../style'
 import {
   createSwiperChangeDetail,
@@ -31,6 +32,7 @@ export class WeappSwiper extends BaseElement {
   #animationTimer?: ReturnType<typeof globalThis.setTimeout>
   #resizeObserver?: ResizeObserver
   #pointer?: { id: number, start: number, delta: number }
+  #releasePointer?: () => void
 
   connectedCallback() {
     ensureNativeComponentStyle(resolveContainingShadowRoot(this))
@@ -43,6 +45,9 @@ export class WeappSwiper extends BaseElement {
   }
 
   disconnectedCallback() {
+    this.#pointer = undefined
+    this.#releasePointer?.()
+    this.#releasePointer = undefined
     this.#clearTimers()
     this.#resizeObserver?.disconnect()
     this.#resizeObserver = undefined
@@ -82,7 +87,7 @@ export class WeappSwiper extends BaseElement {
     viewport.addEventListener('pointerdown', this.#handlePointerDown)
     viewport.addEventListener('pointermove', this.#handlePointerMove)
     viewport.addEventListener('pointerup', this.#handlePointerEnd)
-    viewport.addEventListener('pointercancel', this.#handlePointerEnd)
+    viewport.addEventListener('pointercancel', this.#cancelPointer)
     this.#viewport = viewport
     this.#track = track
     this.#slot = slot
@@ -204,7 +209,7 @@ export class WeappSwiper extends BaseElement {
       clearTimeout(this.#autoplayTimer)
       this.#autoplayTimer = undefined
     }
-    if (!this.isConnected || !readBooleanAttribute(this, 'autoplay') || this.#items.length < 2) {
+    if (!this.isConnected || this.#pointer || !readBooleanAttribute(this, 'autoplay') || this.#items.length < 2) {
       return
     }
     const interval = resolveSwiperNumber(this.getAttribute('interval'), 5000, 16)
@@ -225,16 +230,18 @@ export class WeappSwiper extends BaseElement {
   }
 
   #handlePointerDown = (event: PointerEvent) => {
-    if (readBooleanAttribute(this, 'disable-touch') || this.#items.length < 2 || event.button !== 0) {
+    if (!this.isConnected || !this.#viewport?.isConnected || readBooleanAttribute(this, 'disable-touch') || this.#items.length < 2 || event.button !== 0) {
       return
     }
     const vertical = readBooleanAttribute(this, 'vertical')
+    this.#cancelPointer()
     this.#pointer = {
       id: event.pointerId,
       start: vertical ? event.clientY : event.clientX,
       delta: 0,
     }
-    this.#viewport?.setPointerCapture?.(event.pointerId)
+    this.#releasePointer = watchNativePointerSession(this.#viewport!, event, this.#cancelPointer)
+    this.#restartAutoplay()
     this.#clearAnimationTimer()
     this.#syncVisual(false)
   }
@@ -267,7 +274,8 @@ export class WeappSwiper extends BaseElement {
     }
     const delta = this.#pointer.delta
     this.#pointer = undefined
-    this.#viewport?.releasePointerCapture?.(event.pointerId)
+    this.#releasePointer?.()
+    this.#releasePointer = undefined
     const next = resolveSwipeTarget({
       current: this.#current,
       delta,
@@ -277,6 +285,19 @@ export class WeappSwiper extends BaseElement {
     })
     this.#setCurrent(next, 'touch')
     this.#restartAutoplay()
+  }
+
+  #cancelPointer = () => {
+    if (!this.#pointer) {
+      return
+    }
+    this.#pointer = undefined
+    this.#releasePointer?.()
+    this.#releasePointer = undefined
+    if (this.isConnected) {
+      this.#syncVisual(true)
+      this.#restartAutoplay()
+    }
   }
 
   #clearAnimationTimer() {

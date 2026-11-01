@@ -59,6 +59,8 @@ export const WEAPP_VITE_WEB_ENTRY_RESOLVED_MODULE_ID = '\0@weapp-vite/web/entry'
 export const WEAPP_VITE_WEB_AUTO_ROUTES_RESOLVED_MODULE_ID = '\0@weapp-vite/web/auto-routes'
 /** 旧版字符串模板按本次提交索引关联 dataset 值，不写入用户 dataset。 */
 export const WEAPP_VITE_WEB_LEGACY_DATASET_COMMENT_PREFIX = 'weapp-dataset:'
+/** 旧版字符串模板的片段结束边界，不进入用户 dataset。 */
+export const WEAPP_VITE_WEB_LEGACY_FRAGMENT_END_COMMENT = 'weapp-legacy-fragment-end'
 
 export const WEAPP_I18N_PUBLIC_MODULE_ID = 'weapp-vite/i18n'
 export const WEAPP_I18N_VIRTUAL_MODULE_ID = 'virtual:weapp-vite/i18n'

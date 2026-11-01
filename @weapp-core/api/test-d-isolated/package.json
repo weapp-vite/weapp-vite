@@ -1,0 +1,22 @@
+{
+  "name": "weapi-isolated-public-types",
+  "type": "module",
+  "private": true,
+  "types": "index.d.ts",
+  "tsd": {
+    "compilerOptions": {
+      "target": "ES2022",
+      "module": "NodeNext",
+      "moduleResolution": "NodeNext",
+      "lib": ["ES2022", "DOM"],
+      "types": ["node"],
+      "strict": true,
+      "skipLibCheck": false,
+      "paths": {
+        "@weapp-core/api": ["../types/index.d.ts"],
+        "@weapp-core/api/vitest": ["../dist/vitest.d.mts"],
+        "@weapp-core/api/vitest/setup": ["../dist/vitest/setup.d.mts"]
+      }
+    }
+  }
+}

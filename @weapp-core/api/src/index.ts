@@ -1,4 +1,3 @@
-/// <reference types="miniprogram-api-typings" />
 import { createWeapi } from './core/createWeapi'
 
 export {

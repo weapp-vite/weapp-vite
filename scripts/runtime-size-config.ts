@@ -214,16 +214,18 @@ const runtimeSizeProductionBaselines: Readonly<Record<RuntimeSizePlatform, Reado
   },
   web: {
     'reactivity-core': 6_560,
+    // #1250–#1253 相对 f6561e7bd 的新增能力净成本，已完成逐模块有符号归因及 ES2018 优化。
+    // 保留旧锚点、原增长占用和统一 5% 余量；详见 docs/plans/2026-11-01-web-issues-1250-1253-runtime-size.md。
     // #1256 新增生命周期、主题和 Toast API，相对 ed62c5e65b74 的 production 净增 1,851 B。
     // 仅将已归因的能力成本加入 #1064 原锚点，保留原有增长占用及统一 5% 余量。
-    'minimal-app': 179_346,
-    'typical-page': 435_156,
-    'complex-component': 445_350,
-    'public-app': 256_062,
-    'public-page': 472_400,
+    'minimal-app': 179_346 + 7_624,
+    'typical-page': 435_156 + 28_685,
+    'complex-component': 445_350 + 28_685,
+    'public-app': 256_062 + 7_624,
+    'public-page': 472_400 + 28_674,
     // #1254 内联样式单位转换相对 211b4b5783ef 的 production 净增 14,585 B，模块差分完整归因。
     // 只计入新增能力成本，保留主线原有增长占用及统一 5% 余量。
-    'full-provider': 609_058,
+    'full-provider': 609_058 + 28_918,
   },
 }
 

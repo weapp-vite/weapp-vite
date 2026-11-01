@@ -40,7 +40,7 @@ it.each([false, true])('watches fixture edits without subscribing to disposable 
     }],
   })
   try {
-    // 原生监听只观察同一次真实保存，区分系统事件缺失与 Vite 事件过滤。
+    // 独立记录同目录的原生事件，区分系统事件缺失与 Vite 事件过滤。
     nativeWatcher = watch(fixture, (event, file) => nativeEvents.push(`${event}:${String(file)}`))
     nativeWatcher.on('error', error => errors.push(error))
     await expect.poll(() => ready, { timeout: 10_000 }).toBe(true)
@@ -51,17 +51,23 @@ it.each([false, true])('watches fixture edits without subscribing to disposable 
     const watched = Object.keys(server.watcher.getWatched()).map(directory => path.relative(root, directory).replaceAll('\\', '/'))
     expect(watched.some(directory => directory.split('/').some(part => part === '.cache' || part === '.weapp-vite'))).toBe(false)
     const before = await stat(source)
-    if (removeCache) {
-      await rm(path.join(root, '.cache'), { recursive: true })
-    }
-    await writeFile(source, 'Page({ data: { value: 1 } })')
+    let phase = 'watcher-handshake'
     try {
+      // 扫描登记不代表原生通知已能交付；先用独立文件的一次创建确认同目录的 Vite 事件链。
+      await writeFile(path.join(fixture, 'watch-ready.txt'), 'ready', { flag: 'wx' })
+      await expect.poll(() => watcherEvents, { timeout: 5000 }).toContain('add:fixtures/native/watch-ready.txt')
+      phase = 'fixture-edit'
+      if (removeCache) {
+        await rm(path.join(root, '.cache'), { recursive: true })
+      }
+      await writeFile(source, 'Page({ data: { value: 1 } })')
       await expect.poll(() => changes, { timeout: 5000 }).toContain('fixtures/native/index.js')
     }
     catch (cause) {
       const after = await stat(source)
       throw new Error(`Fixture watch observation: ${JSON.stringify({
         removeCache,
+        phase,
         nativeEvents,
         watcherEvents,
         watched,

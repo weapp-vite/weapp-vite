@@ -51,6 +51,15 @@ export function hasNativeExitEvidence(row: NativeRow) {
     && task.count === 0 && task.errno === 3 && task.identity === null && task.rssBytes === null
 }
 
+/** 活体证据必须来自完整原生调用，路径文本或部分成功不能替代。 */
+export function completeNativeLiveRow(row: NativeRow) {
+  const { before, after, pathBefore, pathAfter, task } = row.entry
+  return [before, after].every(read => read.result === 0 && read.length > 0 && read.errno === 0)
+    && [pathBefore, pathAfter].every(read => read.count > 0 && read.errno === 0)
+    && task.count > 0 && task.errno === 0 && row.rssBytes !== null
+    && row.imageSource === 'kernel-path' && row.images?.length === 1 && row.entry.gaps.length === 0
+}
+
 export function validNativeImage(image: string | null): image is string {
   return typeof image === 'string' && path.isAbsolute(image) && !/[\r\n\0]/.test(image)
 }

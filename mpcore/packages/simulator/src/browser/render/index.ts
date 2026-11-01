@@ -18,6 +18,7 @@ import { selectConditionalChildren } from '../../view/conditionalChildren'
 import { customTabBarHostScope, customTabBarScopeId, hasCustomTabBar } from '../../view/customTabBar'
 import { registerInspectionTrees } from '../../view/inspectionTree'
 import { resolveLoopEntries, resolveLoopInstanceSuffix } from '../../view/loopEntries'
+import { resolveNativeScopeValue, resolveNativeTemplateData } from '../../view/nativeBindings/scopes'
 import { linkRenderedParents } from '../../view/renderedTree'
 import { createPageRenderPass, createRenderPass, isRenderPassStale, markPageTreeConstructed, registerSlotDeclarations } from '../../view/renderPass'
 import { isTemplateDefinition, resolveTemplateCall, resolveTemplateData } from '../../view/templateRuntime'
@@ -53,8 +54,8 @@ function expandNodeByFor(node: DomNodeLike, scope: BrowserRenderScope) {
     return [{ node, scope, instanceSuffix: '' }]
   }
 
-  const list = resolveRawValueByPath(wxsScopeData(scope), forExpression)
-  const items = resolveLoopEntries(list)
+  const list = resolveNativeScopeValue(scope, source => resolveRawValueByPath(source, forExpression))
+  const items = resolveLoopEntries(list.value)
   const itemName = node.attribs?.['wx:for-item']?.trim() || 'item'
   const indexName = node.attribs?.['wx:for-index']?.trim() || 'index'
   const key = node.attribs?.['wx:key']?.trim()
@@ -62,7 +63,7 @@ function expandNodeByFor(node: DomNodeLike, scope: BrowserRenderScope) {
 
   return items.map(([index, item]) => ({
     node: cloneNode(node),
-    scope: createLoopScope(scope, itemName, indexName, item, index),
+    scope: createLoopScope(scope, itemName, indexName, item, index, list.propertySource(index), list.paths),
     instanceSuffix: resolveLoopInstanceSuffix(item, index, key, keyOccurrences),
   }))
 }
@@ -242,7 +243,7 @@ function renderNodeTree(
     const definition = templateRenderState.definitions.get(templateName)
     const templateScope = {
       ...scope,
-      data: resolveTemplateData(clonedNode, wxsScopeData(scope)),
+      data: resolveNativeTemplateData(scope, source => resolveTemplateData(clonedNode, source)),
       wxs: definition && templateRenderState.definitionWxsScopes?.get(definition),
     }
     clonedNode.name = 'block'
@@ -470,6 +471,7 @@ function reconcileBrowserPageTree(
     const pageScopeId = `page:${route}`
     const pageScope: BrowserRenderScope = {
       data: page.data,
+      dataOwner: page,
       getMethod: (methodName: string) => {
         const method = page[methodName]
         return typeof method === 'function' ? method.bind(page) : undefined

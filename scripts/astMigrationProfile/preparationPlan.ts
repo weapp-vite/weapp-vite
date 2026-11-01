@@ -23,7 +23,7 @@ export function uniqueProfileProjects(cases: readonly ProfileCase[]) {
 /** 回执中的 cwd 与 CLI 参数均为仓库相对路径，实际执行仍使用当前 Node。 */
 export function createPreparationPlan(cases: readonly ProfileCase[]): PreparationCommand[] {
   return [
-    { phase: 'native', command: 'pnpm', args: ['--filter', '@weapp-vite/ast-native', 'native:build', '--', '--locked'], cwd: '.' },
+    { phase: 'native', command: 'pnpm', args: ['--filter', '@weapp-vite/ast-native', 'native:build'], cwd: '.' },
     { phase: 'closure', command: 'pnpm', args: ['exec', 'turbo', 'run', 'build', '--filter=weapp-vite...', '--filter=@wevu/compiler...', '--force', '--concurrency=1'], cwd: '.' },
     ...uniqueProfileProjects(cases).map(({ project, config }): PreparationCommand => ({
       phase: 'project-support',

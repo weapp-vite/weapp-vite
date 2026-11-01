@@ -46,6 +46,7 @@ export class WeappPickerViewColumn extends BaseElement {
   }
 
   disconnectedCallback() {
+    this.#picking = false
     if (this.#scrollTimer) {
       clearTimeout(this.#scrollTimer)
       this.#scrollTimer = undefined
@@ -126,7 +127,7 @@ export class WeappPickerViewColumn extends BaseElement {
   }
 
   #handlePickStart = () => {
-    if (this.#picking || this.#suppressScroll) {
+    if (!this.isConnected || !this.#scroller?.isConnected || this.#picking || this.#suppressScroll) {
       return
     }
     this.#picking = true
@@ -134,7 +135,7 @@ export class WeappPickerViewColumn extends BaseElement {
   }
 
   #handleScroll = () => {
-    if (this.#suppressScroll) {
+    if (!this.isConnected || this.#suppressScroll) {
       return
     }
     this.#handlePickStart()
@@ -147,6 +148,9 @@ export class WeappPickerViewColumn extends BaseElement {
   }
 
   #schedulePickEnd = () => {
+    if (!this.isConnected || !this.#scroller?.isConnected) {
+      return
+    }
     if (this.#scrollTimer) {
       clearTimeout(this.#scrollTimer)
     }

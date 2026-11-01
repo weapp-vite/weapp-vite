@@ -10,7 +10,8 @@ import { transform } from 'esbuild'
 import MagicString from 'magic-string'
 import path from 'pathe'
 import { compileVueFile, getMiniProgramTemplatePlatform, isUniAppCompatibilityFile, transformUniAppSource } from 'wevu/compiler'
-import { compileWxml } from '../compiler/wxml'
+import { compileWxml } from '../compiler/wxml/compile'
+import { classifyTemplateTag } from '../compiler/wxml/unknownTags'
 import { resolveScriptFile } from './files'
 import { appendInlineQuery, normalizePath, resolveTemplatePathSync, resolveWxsPathSync, toRelativeImport } from './path'
 
@@ -212,15 +213,20 @@ export function generateWebVueSfcTemplate(
   filename: string,
   srcRoot: string,
 ) {
-  const compiled = compileWxml({
+  const controls = new Set(['component', 'transition', 'transition-group', 'keep-alive', 'slot', 'template'])
+  const sourceTagDiagnostics = (result.meta?.templateTags ?? []).flatMap((entry) => {
+    const reason = controls.has(entry.tag) ? undefined : classifyTemplateTag(entry.tag, meta.componentTags) && classifyTemplateTag(entry.resolvedTag, meta.componentTags)
+    return reason ? [{ tag: entry.tag, reason, filename: entry.filename, line: entry.loc?.start.line, column: entry.loc?.start.column }] : []
+  })
+  return compileWxml({
     id: filename,
     source: result.template ?? '',
+    sourceTagDiagnostics,
     navigationBar: meta.navigationBar ? { config: meta.navigationBar } : undefined,
     componentTags: meta.componentTags,
     resolveTemplatePath: (request, importer) => resolveTemplatePathSync(request, importer, srcRoot),
     resolveWxsPath: (request, importer) => resolveWxsPathSync(request, importer, srcRoot),
   })
-  return compiled
 }
 
 export function resolveWebVueSfcStyleLanguage(result: VueTransformResult, filename: string) {

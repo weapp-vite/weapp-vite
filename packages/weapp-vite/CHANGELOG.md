@@ -1,5 +1,124 @@
 # weapp-vite
 
+## 7.7.0
+
+### Minor Changes
+
+- chore(deps)!: 升级工具链依赖，更新 Node.js 支持范围与升级提醒。
+
+  Node.js 官方支持范围为 `^22.23.4 || ^24.22.1 || >=26.12.1`，发布包与生成项目的 `engines.node` 使用此范围。Vite+ 仍使用 `^24.22.1 || >=26.12.1`。
+
+  `weapp-vite` 的 `build`、`dev`、`prepare`、`accept`、`mcp` 和 Tailwind 集成在范围外提示升级并继续运行。提醒通过 stderr 输出中文，按终端颜色设置突出当前版本和推荐范围，并提示“建议升级到受支持 LTS 分支的最新补丁版本，以获得安全修复”；Tailwind 每个插件实例只提醒一次。
+
+  依赖加载、构建和 CSS 入口错误仍按原有方式处理，`prepare` 保留既有容错行为；允许尝试运行不代表承诺兼容所有旧版本。Bun 按独立运行时识别，不因其 Node 兼容版本触发提醒。入门与随包文档同步说明这一行为。
+
+  修复仓库首次安装时，`wv prepare` 因日志依赖尚未构建而提前退出的问题。中文与颜色提示在 workspace 包尚无构建产物时也能正常加载；CLI 尚未构建时仍提示跳过支持文件预生成，不阻断安装。
+
+  此次升级还修复了 Web 路由目录重命名时的重复 reload，以及 Wot UI 2.4.0 宽屏裁剪器白屏问题。TypeScript 编译器版本保持不变。
+
+  升级时请检查以下迁移要求：
+
+  公开构建队列升级至 p-queue 10：事件监听改用 `addEventListener` / `removeEventListener`，事件值从 `event.detail` 读取；清空队列会以 `AbortError` 拒绝尚未执行的任务。
+
+  截图比较升级至 pixelmatch 8 的 OKLab/HyAB 算法：相同阈值可能得到不同差异结果，请保留现有阈值并重新复核截图基线。
+
+  Chokidar 6 自有监听器通过 `build.watch.chokidar` 配置 `backend`、`pollingInterval`、`pollingBinaryInterval`，兼容旧 polling 别名。`server.watch` 仍由 Vite 管理，Rolldown 原生监听选项使用 `build.watch.watcher`。
+
+  本轮依赖升级沿用已确认的发布例外，该条目覆盖 40 个 minor 和 2 个 patch，不代表完全向后兼容。具体依赖版本和迁移步骤见 `docs/plans/2026-10-26-dependency-upgrade.md`。
+
+- feat: 支持在微信小程序中使用 Fetch 响应流和 EventSource。
+
+  `@wevu/web-apis` 与 `wevu` 支持增量 UTF-8 解码、标准流消费和取消，以及 SSE 事件解析与重连，可复用 Web 的 Fetch 响应流和 `EventSource` 写法。
+
+  `weapp-vite` 在第三方模块执行前注入所需构造器，避免依赖在初始化时找不到相关 API。
+
+  宿主缺少早期真实 HTTP 状态码或分块 API 时，会明确报告能力限制；普通缓冲请求和现有 Wevu 入口继续可用。
+
+### Patch Changes
+
+- fix(dev): 修复开发命令关闭和 IDE 配置恢复问题。
+
+  在 stateful HMR 降级到 classic 首次构建期间关闭开发命令，不再循环等待，监听器会完成释放并恢复 IDE 私有配置。
+
+  配置重启期间也能正常关闭，清理失败和尚未恢复的启动错误继续报告；普通配置或编译错误仅在后续构建成功后解除。
+
+  再次启动时恢复已确认退出进程遗留的 IDE 配置占用记录，并保留用户修改；活跃进程、旧版或损坏记录仍提供明确诊断与恢复指引。
+
+  修复 Windows 配置锁竞争中的瞬态 `EPERM` 和删除冲突，在原有时间预算内重试；持续权限故障仍报告原始原因，也不会误删其他活跃进程的记录。
+
+- fix(hmr): 修复开发重启、热更新和跨平台文件监听问题。
+
+  classic 开发模式会等待启动期间收到的源码修改构建完成后再报告就绪；配置重启和共享脚本更新后的发布诊断正确关联已保存源码，符号链接下也能识别来源。
+
+  Vue 源码、共享样式和编译辅助文件的延迟通知不再重复发布产物；修复 macOS 目录监听就绪后遗漏辅助文件首次写入的问题，并减少启动扫描的监听资源占用。
+
+  修复 stateful HMR 的 CommonJS 分块中动态 `import` 加载失败，保留异步加载、模块缓存、共享状态和异常拒绝语义；classic 完整重扫期间修改应用配置后，已移除页面不再残留产物，独立分包、插件和首次构建仍保持各自的入口边界。
+
+  修复 Windows 首次轮询将未修改文件误报为变更的问题，保留 UNC 路径身份，并限制逻辑模块实现 chunk 的文件名长度。生产监听继续使用 Chokidar；Parcel 仅供仓库开发对照，不提供公开切换配置。
+
+  监听初始化或关闭失败时保留真实错误，WXML 处理失败后仍回收已创建的资源；生产 watch 的诊断使用最终输出的脚本内容，并在关闭时释放相关内存。
+
+- fix(css): 修复热更新中的样式恢复、删除和产物保留问题。
+
+  App 与页面样式恢复为原始源码后，生成相同的样式产物；内容未变化时不再重复写入。
+
+  完整构建保留未变化页面仍在使用的 WXSS，增量更新仅处理本轮涉及的样式。
+
+  仅修改脚本并移除最后一个 CSS 导入时，当前入口的原生样式正确接管 WXSS，并清除已移除的导入规则；无关入口及仍有 CSS 导入的入口保留完整样式。
+
+  组件删除先于引用更新被监听到时，不再输出已经缺失的可选样式；同路径样式恢复后重新编译，其他读取错误仍正常报错。
+
+  构建诊断分别展示增量失效数量和 classic 模式的实际编译数量，避免混淆两者的构建成本。
+
+- fix(tooling): 改善构建诊断和脚手架依赖配置。
+
+  开发、生产构建及保留模块的拆包分组提供可读计时标签，消除 Rolldown 关于缺少 `debugName` 的告警。
+
+  修复诊断脚本在严格 TypeScript 检查下的类型错误，并明确 simulator 浏览器工具链使用的配置，避免无关应用的配置尚未准备时导致 Vue 转换失败。
+
+  同步脚手架模板的 `@vue/shared` 依赖映射，让模板依赖清单与工作区配置保持一致。
+
+- fix(compiler): 减少无属性冲突时生成的冗余计算状态。
+
+  确认不会与 props 冲突的模板变量直接绑定，减少冗余 `computed`；同名 setup 状态保持隔离，无法确定是否安全的声明或导入仍保守处理。
+
+  props 声明修改、恢复或重导出变化后，引用组件会重新编译。
+
+- fix(web): 修复连续快速保存时恢复内容未触发 HMR 的问题。
+
+  Web 开发模式默认使用 Vite 的写入稳定机制，避免内置监听器丢弃紧随上次更新的恢复事件。显式关闭监听、`awaitWriteFinish` 配置及其他监听选项保持有效，不修改调用方持有的配置对象。
+
+- fix(web): 保留 data-* 完整表达式的原始值类型。
+
+  编译模板与旧字符串模板的事件、组件事件、选择器和交叉观察器保留数字、布尔值、对象及数组，修复这些值被字符串化的问题；DOM 属性仍可按字符串查询，更新、移除和重新连接时读取保持正确。
+
+  HTML 属性名按 DOM 的 ASCII 大小写规则归一，避免 `data-itemName` 与 `data-item-name` 串值；SVG/XML 保留大小写敏感语义。
+
+  模拟器的交叉观察器回调同样保留 dataset 原始值类型，与事件和选择器读取保持一致。
+
+- Updated dependencies:
+  - @weapp-core/constants@0.5.0
+  - @weapp-core/init@6.1.0
+  - @weapp-core/logger@3.2.0
+  - @weapp-core/schematics@6.3.0
+  - @weapp-core/shared@3.4.0
+  - @weapp-vite/acceptance@0.2.0
+  - @weapp-vite/ast@7.7.0
+  - @weapp-vite/eslint@0.3.0
+  - @weapp-vite/hmr@0.3.0
+  - @weapp-vite/i18n@0.3.0
+  - @weapp-vite/mcp@2.2.0
+  - @weapp-vite/miniprogram-automator@1.5.0
+  - @weapp-vite/tailwindcss@1.1.0
+  - @weapp-vite/volar@2.2.0
+  - @weapp-vite/web@2.1.0
+  - @wevu/api@0.4.0
+  - @wevu/web-apis@1.4.0
+  - rolldown-require@2.1.0
+  - vite-plugin-performance@2.1.0
+  - weapp-ide-cli@6.4.0
+  - wevu@7.7.0
+
 ## 7.6.0
 
 ### Minor Changes

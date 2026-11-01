@@ -1,0 +1,17 @@
+{
+  "name": "client-public-types-tsd",
+  "type": "module",
+  "private": true,
+  "types": "index.d.ts",
+  "tsd": {
+    "compilerOptions": {
+      "module": "NodeNext",
+      "moduleResolution": "NodeNext",
+      "target": "ES2022",
+      "lib": ["ES2022", "DOM"],
+      "types": ["node"],
+      "strict": true,
+      "skipLibCheck": false
+    }
+  }
+}

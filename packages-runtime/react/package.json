@@ -1,7 +1,7 @@
 {
   "name": "@weapp-vite/react",
   "type": "module",
-  "version": "0.2.13",
+  "version": "0.3.0",
   "description": "React 19 runtime for weapp-vite mini programs",
   "license": "MIT",
   "homepage": "https://github.com/weapp-vite/weapp-vite#readme",
@@ -72,13 +72,19 @@
     "react-reconciler": "catalog:"
   },
   "dependencies": {
+    "@types/react": "catalog:",
     "@weapp-core/constants": "workspace:*"
   },
   "devDependencies": {
-    "@types/react": "catalog:",
     "@types/react-reconciler": "catalog:",
     "miniprogram-api-typings": "catalog:",
     "react": "catalog:",
     "react-reconciler": "catalog:"
+  },
+  "tsd": {
+    "compilerOptions": {
+      "module": "NodeNext",
+      "moduleResolution": "NodeNext"
+    }
   }
 }

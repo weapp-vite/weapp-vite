@@ -1,4 +1,5 @@
 import { readBooleanAttribute } from '../helpers'
+import { scrollViewport } from './scroll'
 
 /** 按原始 id 查找 light DOM，避免将引号、反斜杠等 id 内容拼入选择器。 */
 export function findScrollTarget(element: Element) {
@@ -36,6 +37,7 @@ export function scrollToTarget(element: Element, viewport: HTMLDivElement, targe
     || (readBooleanAttribute(element, 'scroll-x') && width <= 0)) {
     return false
   }
+  const position: { top?: number, left?: number } = {}
   const apply = (axis: 'x' | 'y') => {
     if (!readBooleanAttribute(element, `scroll-${axis}`)) {
       return
@@ -50,13 +52,16 @@ export function scrollToTarget(element: Element, viewport: HTMLDivElement, targe
       return
     }
     if (vertical) {
-      viewport.scrollTop = Math.max(0, viewport.scrollTop + distance - offset)
+      position.top = Math.max(0, viewport.scrollTop + distance - offset)
     }
     else {
-      viewport.scrollLeft = Math.max(0, viewport.scrollLeft + distance - offset)
+      position.left = Math.max(0, viewport.scrollLeft + distance - offset)
     }
   }
   apply('y')
   apply('x')
+  if (position.top !== undefined || position.left !== undefined) {
+    scrollViewport(element, viewport, position)
+  }
   return true
 }

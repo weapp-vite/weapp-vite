@@ -1,7 +1,7 @@
 import type { ComponentPublicInstance } from './types'
 import { listenRuntimeEvent, nameRuntimeEventHandler } from '../componentEvents'
-import { readRuntimeDataset } from '../dataset'
 import { invokeMiniProgramEventHandler } from '../inputHandlerResult'
+import { createRuntimeEventPayload } from '../touchEvents'
 import {
   decodeEventAttributeName,
   EVENT_ATTRIBUTE_PREFIXES,
@@ -34,6 +34,24 @@ interface RuntimeEventBinding {
 }
 
 const runtimeEventBindings = new WeakMap<HTMLElement, Map<string, RuntimeEventBinding>>()
+const runtimeEventRoots = new WeakMap<HTMLElement | ShadowRoot, Set<HTMLElement>>()
+
+function releaseElementEvents(element: HTMLElement) {
+  const bindings = runtimeEventBindings.get(element)
+  for (const binding of bindings?.values() ?? []) {
+    binding.dispose()
+  }
+  runtimeEventBindings.delete(element)
+}
+
+/** 兼容模板的事件由渲染根持有，断连时同时释放文档级触摸兴趣。 */
+export function releaseRuntimeEvents(root: HTMLElement | ShadowRoot) {
+  const elements = runtimeEventRoots.get(root)
+  for (const element of elements ?? []) {
+    releaseElementEvents(element)
+  }
+  runtimeEventRoots.delete(root)
+}
 
 function getEventFlagAttributeValue(element: HTMLElement, encodedEventName: string) {
   for (const prefix of EVENT_FLAG_ATTRIBUTE_PREFIXES) {
@@ -53,7 +71,9 @@ export function bindRuntimeEvents(
   if (typeof document === 'undefined') {
     return
   }
-  const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT)
+  const previous = runtimeEventRoots.get(root)
+  const current = new Set<HTMLElement>()
+  const walker = root.ownerDocument.createTreeWalker(root, NodeFilter.SHOW_ELEMENT)
   while (walker.nextNode()) {
     const element = walker.currentNode as HTMLElement
     let bindings = runtimeEventBindings.get(element)
@@ -93,22 +113,7 @@ export function bindRuntimeEvents(
       const flagAttributeValue = getEventFlagAttributeValue(element, encodedEventName)
       const flags = parseEventFlags(flagAttributeValue)
       const listener = nameRuntimeEventHandler((nativeEvent) => {
-        if (flags.catch) {
-          nativeEvent.stopPropagation()
-        }
-        const dataset = { ...readRuntimeDataset(element) }
-        const syntheticEvent = {
-          type: eventName,
-          timeStamp: nativeEvent.timeStamp,
-          detail: (nativeEvent as CustomEvent).detail ?? (nativeEvent as InputEvent).data ?? undefined,
-          target: {
-            dataset: readRuntimeDataset(nativeEvent.target as Element | null),
-          },
-          currentTarget: {
-            dataset,
-          },
-          originalEvent: nativeEvent,
-        }
+        const syntheticEvent = createRuntimeEventPayload(eventName, nativeEvent, element, flags.catch)
         invokeMiniProgramEventHandler(handler, instance, syntheticEvent, nativeEvent)
       }, eventName)
       const dispose = listenRuntimeEvent(element, eventName, listener, flags.capture)
@@ -121,5 +126,14 @@ export function bindRuntimeEvents(
     if (bindings?.size === 0) {
       runtimeEventBindings.delete(element)
     }
+    else if (bindings?.size) {
+      current.add(element)
+    }
   }
+  for (const element of previous ?? []) {
+    if (!current.has(element)) {
+      releaseElementEvents(element)
+    }
+  }
+  runtimeEventRoots.set(root, current)
 }

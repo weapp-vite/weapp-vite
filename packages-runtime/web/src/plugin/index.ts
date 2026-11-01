@@ -21,6 +21,7 @@ import { getStableWebComponentId, scanProject } from './scan'
 import { collectSfcHmrModules } from './sfcHmr'
 import { createEmptyScanState } from './state'
 import { createInlineStyleModule } from './styleModule'
+import { createTagDiagnosticReporter } from './tagDiagnostics'
 import { ensureWebVueSfcResult, generateWebVueSfcStyle, generateWebVueSfcTemplate, resolveWebVueSfcStyleLanguage, transformWebVueSfcScript } from './vueSfc'
 
 const WEB_RUNTIME_MODULE_IDS = [
@@ -126,6 +127,7 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
   let scanQueue: Promise<void> = Promise.resolve()
   const wxssOptions = options.wxss
   const runtimeProvider = options.__runtimeProvider
+  const tagDiagnostics = createTagDiagnosticReporter(options.runtime)
   const hmrAcceptCode = runtimeProvider
     ? runtimeProvider.hmrAcceptCode
     : 'if (import.meta.hot) { import.meta.hot.accept() }'
@@ -257,6 +259,7 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
       return css ? { css } : undefined
     },
     async configResolved(this: WebPluginContext, config: WebResolvedConfig) {
+      tagDiagnostics.configure(config)
       root = config.root
       const { createRequire } = await import('node:module')
       const requireFromWebRuntime = createRequire(import.meta.url)
@@ -356,6 +359,7 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
       if (hasQuery(id, TEMPLATE_QUERY)) {
         const filename = cleanUrl(id)
         let source = await readFile(filename, 'utf8')
+        const diagnosticSource = source
         const pageMeta = resolveMetaByTemplate(filename)
         if (pageMeta?.kind === 'page' && state.scanResult.layouts.length) {
           source = wrapPageTemplate(source, state.scanResult.layouts)
@@ -366,11 +370,15 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
         const compiled = compileTemplate({
           id: filename,
           source,
+          diagnosticSource,
           resolveTemplatePath,
           resolveWxsPath,
           navigationBar: navigationConfig ? { config: navigationConfig } : undefined,
           componentTags,
         })
+        if (pageMeta) {
+          tagDiagnostics.report(filename, compiled.tagDiagnostics, componentTags, this)
+        }
         for (const dependency of compiled.dependencies) {
           this.addWatchFile?.(dependency)
         }
@@ -416,6 +424,7 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
           stylePreprocessOptions,
         })
         const compiled = generateWebVueSfcTemplate(result, meta, filename, srcRoot)
+        tagDiagnostics.report(filename, compiled.tagDiagnostics, meta.componentTags, this)
         for (const dependency of compiled.dependencies) {
           this.addWatchFile?.(dependency)
         }
@@ -545,14 +554,16 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
         }
         const navigationConfig = state.pageNavigationMap.get(normalizedId)
         const componentTags = state.templateComponentMap.get(normalizedId)
-        const { code: compiled, dependencies, warnings } = compileWxml({
+        const { code: compiled, dependencies, warnings, tagDiagnostics: diagnostics } = compileWxml({
           id: clean,
           source: templateSource,
+          diagnosticSource: code,
           resolveTemplatePath,
           resolveWxsPath,
           navigationBar: navigationConfig ? { config: navigationConfig } : undefined,
           componentTags,
         })
+        tagDiagnostics.report(clean, diagnostics, componentTags, this)
         const addWatchFile = this.addWatchFile
         if (dependencies.length > 0 && addWatchFile) {
           for (const dep of dependencies) {

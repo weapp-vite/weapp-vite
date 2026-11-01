@@ -1,5 +1,81 @@
 # @mpcore/simulator
 
+## 1.2.0
+
+### Minor Changes
+
+- chore(deps)!: 升级工具链依赖，更新 Node.js 支持范围与升级提醒。
+
+  Node.js 官方支持范围为 `^22.23.4 || ^24.22.1 || >=26.12.1`，发布包与生成项目的 `engines.node` 使用此范围。Vite+ 仍使用 `^24.22.1 || >=26.12.1`。
+
+  `weapp-vite` 的 `build`、`dev`、`prepare`、`accept`、`mcp` 和 Tailwind 集成在范围外提示升级并继续运行。提醒通过 stderr 输出中文，按终端颜色设置突出当前版本和推荐范围，并提示“建议升级到受支持 LTS 分支的最新补丁版本，以获得安全修复”；Tailwind 每个插件实例只提醒一次。
+
+  依赖加载、构建和 CSS 入口错误仍按原有方式处理，`prepare` 保留既有容错行为；允许尝试运行不代表承诺兼容所有旧版本。Bun 按独立运行时识别，不因其 Node 兼容版本触发提醒。入门与随包文档同步说明这一行为。
+
+  修复仓库首次安装时，`wv prepare` 因日志依赖尚未构建而提前退出的问题。中文与颜色提示在 workspace 包尚无构建产物时也能正常加载；CLI 尚未构建时仍提示跳过支持文件预生成，不阻断安装。
+
+  此次升级还修复了 Web 路由目录重命名时的重复 reload，以及 Wot UI 2.4.0 宽屏裁剪器白屏问题。TypeScript 编译器版本保持不变。
+
+  升级时请检查以下迁移要求：
+
+  公开构建队列升级至 p-queue 10：事件监听改用 `addEventListener` / `removeEventListener`，事件值从 `event.detail` 读取；清空队列会以 `AbortError` 拒绝尚未执行的任务。
+
+  截图比较升级至 pixelmatch 8 的 OKLab/HyAB 算法：相同阈值可能得到不同差异结果，请保留现有阈值并重新复核截图基线。
+
+  Chokidar 6 自有监听器通过 `build.watch.chokidar` 配置 `backend`、`pollingInterval`、`pollingBinaryInterval`，兼容旧 polling 别名。`server.watch` 仍由 Vite 管理，Rolldown 原生监听选项使用 `build.watch.watcher`。
+
+  本轮依赖升级沿用已确认的发布例外，该条目覆盖 40 个 minor 和 2 个 patch，不代表完全向后兼容。具体依赖版本和迁移步骤见 `docs/plans/2026-10-26-dependency-upgrade.md`。
+
+### Patch Changes
+
+- feat: 支持在微信小程序中使用 Fetch 响应流和 EventSource。
+
+  `@wevu/web-apis` 与 `wevu` 支持增量 UTF-8 解码、标准流消费和取消，以及 SSE 事件解析与重连，可复用 Web 的 Fetch 响应流和 `EventSource` 写法。
+
+  `weapp-vite` 在第三方模块执行前注入所需构造器，避免依赖在初始化时找不到相关 API。
+
+  宿主缺少早期真实 HTTP 状态码或分块 API 时，会明确报告能力限制；普通缓冲请求和现有 Wevu 入口继续可用。
+
+- fix(simulator): 补齐常用 wx API，并修正启动与组件查询行为。
+
+  支持 `wx.login`、`wx.getAccountInfoSync`、`wx.arrayBufferToBase64` 和 `wx.base64ToArrayBuffer`，提供会话级登录 mock 与账号信息配置。
+
+  冷启动导航的 `success` / `complete` 在 App 启动栈退出后、目标页面 ready 前交付。
+
+  区分 WXML 裸属性与显式空字符串，让未限定类型的属性在 Node 与浏览器模拟器中接收正确的布尔值，并保留空值与默认值行为。
+
+  修复未投影组件自身节点查询的作用域和零尺寸结果，在挂载完成后交付查询回调；回调仍可省略，组件销毁后取消尚未派发的回调。
+
+- perf(simulator): 减少复杂组件树挂载时的重复配置读取。
+
+  在单次同步渲染中复用组件配置与路径解析结果；下一轮渲染仍重新读取，确保配置更新继续生效。
+
+- fix(tooling): 改善构建诊断和脚手架依赖配置。
+
+  开发、生产构建及保留模块的拆包分组提供可读计时标签，消除 Rolldown 关于缺少 `debugName` 的告警。
+
+  修复诊断脚本在严格 TypeScript 检查下的类型错误，并明确 simulator 浏览器工具链使用的配置，避免无关应用的配置尚未准备时导致 Vue 转换失败。
+
+  同步脚手架模板的 `@vue/shared` 依赖映射，让模板依赖清单与工作区配置保持一致。
+
+- fix(compiler): 减少无属性冲突时生成的冗余计算状态。
+
+  确认不会与 props 冲突的模板变量直接绑定，减少冗余 `computed`；同名 setup 状态保持隔离，无法确定是否安全的声明或导入仍保守处理。
+
+  props 声明修改、恢复或重导出变化后，引用组件会重新编译。
+
+- fix(web): 保留 data-* 完整表达式的原始值类型。
+
+  编译模板与旧字符串模板的事件、组件事件、选择器和交叉观察器保留数字、布尔值、对象及数组，修复这些值被字符串化的问题；DOM 属性仍可按字符串查询，更新、移除和重新连接时读取保持正确。
+
+  HTML 属性名按 DOM 的 ASCII 大小写规则归一，避免 `data-itemName` 与 `data-item-name` 串值；SVG/XML 保留大小写敏感语义。
+
+  模拟器的交叉观察器回调同样保留 dataset 原始值类型，与事件和选择器读取保持一致。
+
+- Updated dependencies:
+  - @weapp-core/constants@0.5.0
+  - @weapp-core/shared@3.4.0
+
 ## 1.1.0
 
 ### Minor Changes

@@ -5,6 +5,7 @@ import path from 'node:path'
 import process from 'node:process'
 // eslint-disable-next-line e18e/ban-dependencies -- 四组使用同一个已准备 checkout 的 CLI 串行采样。
 import { execa } from 'execa'
+import { benchmarkShutdownEnvironment } from './devShutdown'
 
 export const autoImportCounts = [1, 20, 50, 69]
 const modes = ['manual', 'automatic'] as const
@@ -27,6 +28,7 @@ export async function collectAutoImport(checkout: Checkout, driver: string, outp
     reject: false,
     all: true,
     env: {
+      ...benchmarkShutdownEnvironment(checkout.id, checkout.commit),
       AUTO_IMPORT_BENCH_TARGET_ROOT: checkout.cwd,
       AUTO_IMPORT_BENCH_PAIRED: '1',
       BENCH_ITERATIONS: '1',

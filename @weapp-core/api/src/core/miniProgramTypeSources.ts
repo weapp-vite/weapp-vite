@@ -1,11 +1,10 @@
-/// <reference types="miniprogram-api-typings" />
-/// <reference types="@mini-types/alipay" />
-/// <reference types="@douyin-microapp/typings" />
+import type { my } from '@weapp-core/types/alipay-api'
+import type { WechatMiniProgramApi } from '@weapp-core/types/wechat-api'
 
 /**
  * @description 微信小程序 API 原始适配器类型源
  */
-export type WeapiWechatMiniProgramRawAdapterSource = WechatMiniprogram.Wx
+export type WeapiWechatMiniProgramRawAdapterSource = WechatMiniProgramApi
 
 /**
  * @description 默认小程序 API 原始适配器类型源（当前复用微信 typings）
@@ -15,12 +14,14 @@ export type WeapiDefaultMiniProgramRawAdapterSource = WeapiWechatMiniProgramRawA
 /**
  * @description 支付宝小程序 API 原始适配器类型源
  */
-export type WeapiAlipayMiniProgramRawAdapterSource = typeof my
+export type WeapiAlipayMiniProgramRawAdapterSource = typeof globalThis extends { my: infer Adapter }
+  ? Adapter
+  : typeof my
 
 /**
  * @description 抖音小程序 API 原始适配器类型源
  */
-export type WeapiDouyinMiniProgramRawAdapterSource = typeof tt
+export type WeapiDouyinMiniProgramRawAdapterSource = typeof import('@douyin-microapp/typings/types/api.js', { with: { 'resolution-mode': 'require' } })
 
 /**
  * @description `tt` 命名兼容入口，保持与抖音宿主语义主名一致

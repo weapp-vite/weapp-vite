@@ -252,6 +252,7 @@ export interface WeappLibDtsOptions {
   enabled?: boolean
   mode?: 'internal' | 'vue-tsc'
   internal?: WeappLibInternalDtsOptions
+  /** 优先使用 tsc 命名空间；兼容旧顶层选项，编译上下文隔离与 Vue 处理由框架管理。 */
   rolldown?: RolldownDtsOptions
   vueTsc?: WeappLibVueTscOptions
 }

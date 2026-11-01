@@ -54,8 +54,8 @@
   "scripts": {
     "build": "tsdown",
     "test": "vitest run --config ./vitest.config.ts",
-    "test:types": "pnpm run test:types:check",
-    "test:types:check": "tsd",
+    "test:types": "pnpm build && pnpm run test:types:check",
+    "test:types:check": "tsd --files \"test-d/**/*.test-d.ts\"",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
@@ -80,6 +80,14 @@
     "typescript": "catalog:",
     "vite-plus": "1.2.0",
     "vitest": "^5.0.5"
+  },
+  "tsd": {
+    "compilerOptions": {
+      "module": "NodeNext",
+      "moduleResolution": "NodeNext",
+      "strict": true,
+      "skipLibCheck": false
+    }
   },
   "publishConfig": {
     "access": "public",

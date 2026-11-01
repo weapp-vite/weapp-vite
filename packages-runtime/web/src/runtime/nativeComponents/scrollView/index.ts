@@ -1,10 +1,14 @@
 import type { ScrollPosition } from './helpers'
 import { getNativeComponentDescriptor } from '../../../shared/nativeComponents'
+import { registerControlledAttributeCommit } from '../../controlledAttributes'
 import { dispatchMiniProgramEvent, readBooleanAttribute, resolveContainingShadowRoot } from '../helpers'
 import { ensureNativeComponentStyle } from '../style'
 import { createScrollBoundaryTracker } from './boundaries'
 import { createScrollEventDetail } from './helpers'
 import { findScrollTarget, scrollToTarget } from './position'
+import { createScrollViewRefresher } from './refresher'
+import { REFRESHER_STYLE } from './refresher/appearance'
+import { scrollViewport } from './scroll'
 
 export { createScrollEventDetail } from './helpers'
 
@@ -26,6 +30,8 @@ export class WeappScrollView extends BaseElement {
   #childrenObserver?: MutationObserver
   #resizeObserver?: ResizeObserver
   #alignedTarget?: Element
+  #refresher?: ReturnType<typeof createScrollViewRefresher>
+  #disposeControlled?: () => void
 
   get scrollTop() {
     return this.#viewport?.scrollTop ?? 0
@@ -33,7 +39,7 @@ export class WeappScrollView extends BaseElement {
 
   set scrollTop(value: number) {
     if (this.#viewport) {
-      this.#viewport.scrollTop = value
+      scrollViewport(this, this.#viewport, { top: value })
     }
   }
 
@@ -43,7 +49,7 @@ export class WeappScrollView extends BaseElement {
 
   set scrollLeft(value: number) {
     if (this.#viewport) {
-      this.#viewport.scrollLeft = value
+      scrollViewport(this, this.#viewport, { left: value })
     }
   }
 
@@ -51,6 +57,11 @@ export class WeappScrollView extends BaseElement {
     ensureNativeComponentStyle(resolveContainingShadowRoot(this))
     const initializePosition = !this.#viewport
     this.#ensureStructure()
+    if (!this.#viewport || !this.shadowRoot) {
+      return
+    }
+    this.#refresher ??= createScrollViewRefresher(this, this.#viewport!)
+    this.#disposeControlled ??= registerControlledAttributeCommit(this, 'refresher-triggered', () => this.#refresher?.commit(readBooleanAttribute(this, 'refresher-triggered')))
     if (!initializePosition) {
       this.#previous = { scrollLeft: this.scrollLeft, scrollTop: this.scrollTop }
     }
@@ -72,10 +83,14 @@ export class WeappScrollView extends BaseElement {
     this.#childrenObserver?.disconnect()
     this.#resizeObserver?.disconnect()
     this.#alignedTarget = undefined
+    this.#refresher?.destroy()
+    this.#refresher = undefined
+    this.#disposeControlled?.()
+    this.#disposeControlled = undefined
   }
 
   attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null) {
-    if (oldValue !== newValue) {
+    if (oldValue !== newValue || name === 'refresher-triggered') {
       this.#syncAttributes(name)
     }
   }
@@ -87,6 +102,7 @@ export class WeappScrollView extends BaseElement {
     const root = this.shadowRoot ?? this.attachShadow({ mode: 'open' })
     const style = document.createElement('style')
     style.textContent = `
+      ${REFRESHER_STYLE}
       :host { min-width: 0; min-height: 0; }
       .viewport { width: 100%; height: 100%; overscroll-behavior: contain; }
       .viewport.flex {
@@ -166,6 +182,7 @@ export class WeappScrollView extends BaseElement {
     if (!viewport) {
       return
     }
+    this.#refresher?.sync(changedName)
     if (!changedName || changedName === 'scroll-x') {
       const scrollX = readBooleanAttribute(this, 'scroll-x')
       viewport.style.overflowX = scrollX ? 'auto' : 'hidden'
@@ -182,17 +199,21 @@ export class WeappScrollView extends BaseElement {
         && this.hasAttribute('show-scrollbar') && !readBooleanAttribute(this, 'show-scrollbar')
       viewport.classList.toggle('no-scrollbar', hidden)
     }
+    const position: { top?: number, left?: number } = {}
     if (initializePosition || changedName === 'scroll-top') {
       const scrollTop = Number(this.getAttribute('scroll-top'))
       if (Number.isFinite(scrollTop)) {
-        viewport.scrollTop = scrollTop
+        position.top = scrollTop
       }
     }
     if (initializePosition || changedName === 'scroll-left') {
       const scrollLeft = Number(this.getAttribute('scroll-left'))
       if (Number.isFinite(scrollLeft)) {
-        viewport.scrollLeft = scrollLeft
+        position.left = scrollLeft
       }
+    }
+    if (position.top !== undefined || position.left !== undefined) {
+      scrollViewport(this, viewport, position)
     }
     if (!changedName || POSITION_ATTRIBUTES.has(changedName)) {
       this.#scrollIntoView()

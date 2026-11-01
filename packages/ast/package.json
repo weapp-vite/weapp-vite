@@ -1,7 +1,7 @@
 {
   "name": "@weapp-vite/ast",
   "type": "module",
-  "version": "7.6.0",
+  "version": "7.7.0",
   "description": "weapp-vite 共享 AST 分析工具包，统一 Babel/Oxc 解析与常用分析操作",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
@@ -128,7 +128,8 @@
     "@babel/parser": "catalog:",
     "@babel/traverse": "catalog:",
     "@babel/types": "catalog:",
-    "@oxc-project/types": "^0.155.0",
+    "@oxc-project/types": "^0.156.0",
+    "@types/convert-source-map": "^2.0.3",
     "@weapp-core/shared": "workspace:*",
     "oxc-parser": "catalog:",
     "oxc-walker": "catalog:"

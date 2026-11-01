@@ -2,8 +2,6 @@ import { lstat, mkdir, mkdtemp, readdir, readFile, realpath, rm, writeFile } fro
 import { createRequire } from 'node:module'
 import os from 'node:os'
 import path from 'node:path'
-// eslint-disable-next-line e18e/ban-dependencies -- 空缓存回归使用真实 pnpm，验证离线安装及执行门禁。
-import { execa } from 'execa'
 import { afterEach, expect, it, vi } from 'vitest'
 import { parseAllDocuments, stringify } from 'yaml'
 import { createPnpmVitestFixtureLock, preparePnpmVitestFixture } from './pnpmVitestWorkspace.mjs'
@@ -26,8 +24,8 @@ async function fixture() {
   }
   vi.stubEnv('CI', 'true')
   vi.stubEnv('PNPM_CONFIG_OFFLINE', 'true')
-  await preparePnpmVitestFixture(directory, { private: true, type: 'module' })
-  return { directory, root }
+  const runPnpm = await preparePnpmVitestFixture(directory, { private: true, type: 'module' })
+  return { directory, root, runPnpm }
 }
 
 it('isolates root configuration and project dependencies while retaining the locked package-manager resolution', () => {
@@ -52,14 +50,15 @@ it('isolates root configuration and project dependencies while retaining the loc
 })
 
 it('prepares and executes real Vitest in CI with an empty offline cache and the frozen package-manager identity', async () => {
-  const { directory, root } = await fixture()
-  const result = await execa('pnpm', ['exec', 'vitest', '--version'], { cwd: directory })
+  const { directory, root, runPnpm } = await fixture()
+  const result = await runPnpm(['exec', 'vitest', '--version'])
   const { version } = JSON.parse(await readFile(require.resolve('vitest/package.json'), 'utf8'))
   expect(result.stdout).toContain(`vitest/${version}`)
   expect((await lstat(path.join(directory, 'node_modules'))).isSymbolicLink()).toBe(false)
   const repository = JSON.parse(await readFile(new URL('../../package.json', import.meta.url), 'utf8'))
   const manifest = JSON.parse(await readFile(path.join(directory, 'package.json'), 'utf8'))
   expect(manifest.packageManager).toBe(repository.packageManager)
+  expect((await runPnpm(['--version'])).stdout.trim()).toBe(repository.packageManager.slice('pnpm@'.length))
   const metadata = await readdir(path.join(root, 'cache'), { recursive: true }).catch((error) => {
     if (error.code === 'ENOENT') {
       return []
@@ -70,24 +69,24 @@ it('prepares and executes real Vitest in CI with an empty offline cache and the 
 }, 30_000)
 
 it('retains the actual package-manager version error without attempting an offline self-download', async () => {
-  const { directory } = await fixture()
+  const { directory, runPnpm } = await fixture()
   const file = path.join(directory, 'package.json')
   const manifest = JSON.parse(await readFile(file, 'utf8'))
   manifest.packageManager = 'pnpm@0.0.0'
   await writeFile(file, JSON.stringify(manifest))
-  const result = await execa('pnpm', ['exec', 'vitest', '--version'], { cwd: directory, reject: false })
+  const result = await runPnpm(['exec', 'vitest', '--version'], { reject: false, env: { COREPACK_ENABLE_NETWORK: '0' } })
   expect(result.exitCode).not.toBe(0)
   expect(result.stderr).toContain('ERR_PNPM_BAD_PM_VERSION')
   expect(result.stderr).toContain('0.0.0')
 }, 30_000)
 
 it('rejects fixture dependency changes during frozen offline installation', async () => {
-  const { directory } = await fixture()
+  const { directory, runPnpm } = await fixture()
   const file = path.join(directory, 'package.json')
   const manifest = JSON.parse(await readFile(file, 'utf8'))
   manifest.devDependencies.vitest = '0.0.0'
   await writeFile(file, JSON.stringify(manifest))
-  const result = await execa('pnpm', ['install', '--offline', '--frozen-lockfile', '--ignore-scripts'], { cwd: directory, reject: false })
+  const result = await runPnpm(['install', '--offline', '--frozen-lockfile', '--ignore-scripts'], { reject: false })
   expect(result.exitCode).not.toBe(0)
   expect(result.stderr).toContain('ERR_PNPM_OUTDATED_LOCKFILE')
 }, 30_000)

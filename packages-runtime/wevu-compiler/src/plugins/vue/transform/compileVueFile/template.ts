@@ -1,13 +1,13 @@
 import type { SFCDescriptor } from 'vue/compiler-sfc'
 import type { WevuBindingManifestV1, WevuRuntimeBindingManifestMode } from '../../../../types/bindingManifest'
-import type { SourcePosition } from '../../../../types/diagnostics'
+import type { CompilerDiagnostic, SourcePosition } from '../../../../types/diagnostics'
 import type { TemplateCompileOptions, TemplateCompileResult } from '../../compiler/template'
 import type { VueTransformResult } from './types'
 import { createRuntimeBindingManifest } from '../../../../bindingManifest'
 import { compileVueTemplateToWxml } from '../../compiler/template'
 
 function remapTemplateDiagnostics(
-  diagnostics: TemplateCompileResult['diagnostics'],
+  diagnostics: Array<Pick<CompilerDiagnostic, 'filename' | 'loc'>>,
   base: SourcePosition,
   source: string,
 ) {
@@ -37,7 +37,7 @@ function remapTemplateDiagnostics(
 }
 
 function ownExternalTemplateDiagnostics(
-  diagnostics: TemplateCompileResult['diagnostics'],
+  diagnostics: Array<Pick<CompilerDiagnostic, 'filename' | 'loc'>>,
   filename: string,
   source: string,
 ) {
@@ -146,24 +146,29 @@ export function compileTemplatePhase(
   }
   result.bindingManifest = templateCompiled.bindingManifest
   result.template = templateCompiled.code
-  if (templateCompiled.diagnostics.length) {
+  const located = [...templateCompiled.diagnostics, ...templateCompiled.sourceTags ?? []]
+  if (located.length) {
     if (descriptor.template.src) {
       if (templateResolvedId) {
         ownExternalTemplateDiagnostics(
-          templateCompiled.diagnostics,
+          located,
           templateResolvedId,
           descriptor.template.content,
         )
       }
       else {
-        for (const diagnostic of templateCompiled.diagnostics) {
+        for (const diagnostic of located) {
           diagnostic.loc = undefined
         }
       }
     }
     else {
-      remapTemplateDiagnostics(templateCompiled.diagnostics, descriptor.template.loc.start, source)
+      remapTemplateDiagnostics(located, descriptor.template.loc.start, source)
     }
+  }
+  result.meta ??= {}
+  result.meta.templateTags = templateCompiled.sourceTags
+  if (templateCompiled.diagnostics.length) {
     result.diagnostics = templateCompiled.diagnostics
   }
   if (templateCompiled.scopedSlotComponents?.length) {

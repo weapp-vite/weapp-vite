@@ -1,21 +1,24 @@
+import type { WechatBehaviorConstructor, WechatMiniprogram, WechatPageConstructor } from '@weapp-core/types/wechat-api'
 import type { I18nGlobal } from './configTypes'
 
-export type I18nBehavior = WechatMiniprogram.Behavior.Identifier<
+declare const _selectedBehavior: WechatBehaviorConstructor
+
+export type I18nBehavior = ReturnType<typeof _selectedBehavior<
   WechatMiniprogram.IAnyObject,
   WechatMiniprogram.IAnyObject,
   WechatMiniprogram.IAnyObject,
   []
->
+>>
 
 export interface I18nHost {
-  Behavior: typeof Behavior
-  Page: typeof Page
+  Behavior: WechatBehaviorConstructor
+  Page: WechatPageConstructor
 }
 
 export interface I18nInstance {
   global: I18nGlobal
   behavior: I18nBehavior
-  page: typeof Page
+  page: WechatPageConstructor
 }
 
 export type {

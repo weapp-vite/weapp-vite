@@ -97,6 +97,16 @@ export default defineConfig({
 - `navigateTo` / `navigateBack` / `getCurrentPages`
 - `request` / `showToast` 等 polyfill API
 
+`createInnerAudioContext()` 基于独立的 `HTMLAudioElement`，支持常用媒体属性、`play/pause/stop/seek/destroy` 与 `on*/off*` 事件。播放操作保持小程序的同步调用形态，失败通过 `onError` 通知；自动播放、编码格式与资源访问受浏览器限制，微信静音开关、来源策略及 WebAudio 后端选择只保留调用兼容。
+
+`arrayBufferToBase64` / `base64ToArrayBuffer` 提供字节转换。`setKeepScreenOn`、`setEnableDebug`、键盘高度/内存监听、`getPerformance` 和 `reportMonitor` 仅兼容调用，不会产生微信系统能力或虚构指标；无等价事件的监听不会触发回调。`getRealtimeLogManager` 仅输出本地 console，支持 tag 和过滤文本标记，不向微信上传。降级告警遵循 `runtime.warnings`；API 级 `canIUse()` 只表示入口存在。逐项限制见 [Web 兼容矩阵](/guide/web-compat-matrix)。
+
+## 开发期模板诊断
+
+开发服务会区分未知/未注册标签与尚未适配的官方组件，输出标签、原始文件和行列位置。原生 WXML、layout、include/import 及 Vue SFC 内联/外部模板保留各自来源；共享模板按入口组件注册作用域分别检查。已注册组件、合法 HTML/SVG/MathML、模板控制标签和已适配组件不会误报。
+
+诊断复用 `runtime.warnings.level`（`warn` / `error` / `off`）与 `dedupe`，默认警告并去重。`error` 只提升日志级别，不使编译失败；修正后再次出现或位置变化会重新提示。生产构建与生产页面不输出标签诊断。完整配置见 [Web 运行时配置](/config/web#开发期标签诊断)。
+
 ## 应用样式与组件边界
 
 `app.vue` 的内联 `<style>`、`<style src="./app.css">` 和原生 `App` 入口样式共用注册与 HMR 链路。页面接收应用样式；自定义组件默认保持 `isolated`，可通过 `options.styleIsolation: 'apply-shared' | 'shared'` 或 `addGlobalClass` 接收应用样式，显式 `isolated` 优先于 `addGlobalClass`。Shadow DOM 保持独立；`shared` 仅支持接收应用样式，不会将组件样式反向传播到页面或其他组件。
@@ -113,13 +123,19 @@ export default defineConfig({
 
 现有限制：`<script setup>` 和 legacy 字符串模板的同节点同名捕获/冒泡处理器存在独立的处理器键冲突，暂需使用不同层级的节点；这不属于原生事件与组件事件的来源隔离。
 
+## 鼠标与触摸输入
+
+桌面主键拖动可产生 `touchstart` / `touchmove` / `touchend` / `touchcancel`，真实触摸沿用原生事件，两种输入可在同一设备交替使用。鼠标移出节点后继续完成原拖动；取消、窗口失焦和节点卸载会结束会话。普通节点提供 identifier、page/client 坐标和 force；现代 `type="2d"` Canvas 另有相对可见画布的 CSS 像素 x/y，保留 currentTarget 和事件冒泡，其他 Canvas 模式仍需分别验证。编译模板和 legacy 字符串模板共用这些规则。
+
+滚轮、右键和笔输入不会转换为 touch。`catchtouchmove` 只阻止当前可取消输入的默认滚动，普通触摸绑定不锁住整个页面滚动。
+
 ## 视觉与组件适配
 
 - 默认提供 375px 宽的居中小程序设备视口；移动宽度下自动铺满
 - `rpx` 跟随设备容器宽度和 resize 更新
 - `view`、`text`、`image`、`button`、`input`、`scroll-view`、`icon`、`progress`、`rich-text`、`navigator`、`swiper` / `swiper-item`、`canvas`、`video`、`cover-view` / `cover-image`、`movable-area` / `movable-view` 及常用表单组件使用独立运行时标签，不会过早降级为无语义 DOM
 - `page` 和原生组件 WXSS 选择器通过 PostCSS 结构化转换
-- `image.mode`、input 常用属性与事件、scroll-view 滚动状态和事件已有基础适配
+- `image.mode`、input 常用属性与事件、scroll-view 滚动状态、平滑定位与基础 refresher 已有适配
 - `form`、`label`、`textarea`、checkbox/radio group 和 `switch` 支持表单收集、提交、重置及微信形状的交互事件
 - `icon` 覆盖九种内建图标类型；`progress` 支持常用视觉属性、按每增长 1% 计时的 active 动画和去重的 `activeend`；`rich-text` 将字符串与节点数组统一转为经过脚本、事件属性、危险 URL 和 CSS 过滤的安全 DOM
 - `navigator` 复用页面栈和 mini-program bridge；`swiper` 支持受控状态、触摸、autoplay 及 `change` / `transition` / `animationfinish` 事件
@@ -143,6 +159,14 @@ export default defineConfig({
 | `page.json.onReachBottomDistance` 自定义距离 | 暂不支持，仍使用默认 50px |
 
 需要保留旧的浏览器全宽行为时，将 `runtime.viewport.mode` 设置为 `responsive`。
+
+### `scroll-view` 刷新与滚动动画
+
+`scroll-with-animation` 使用浏览器平滑滚动，支持 `scroll-top`、`scroll-left`、公开属性赋值和 `scroll-into-view`，双轴目标由同一次定位提交。动画时长和曲线由浏览器决定。
+
+同时启用 `scroll-y` 与 `refresher-enabled` 后，顶部向下拖动可触发刷新。支持阈值（默认 45px）、`refresher-triggered`、默认 black/white/none 样式、背景和 `slot="refresher"`。短拖动依次产生 `refresherpulling`、`refresherabort`；超过阈值后释放产生 `refresherpulling`、`refresherrefresh`。程序提交 `true` 同样先 pulling 再 refresh，完成后须显式提交 `false` 产生 `refresherrestore`；手势刷新不会自动把绑定数据改成 `true`，原值为 `false` 时仍需显式提交结束。
+
+刷新事件不冒泡，`detail.dy` 为下拉距离；刷新位移与正常滚动状态独立，禁用或卸载会取消待执行动画及回调。滚轮、未到顶部、横向拖动和内层手势组件不触发外层刷新。阻尼、回弹及增强模式的高级能力仍有兼容限制。
 
 ## 浏览器路由
 

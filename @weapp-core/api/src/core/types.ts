@@ -34,9 +34,6 @@ import type {
 import type { WeapiAdapter, WeapiPromisify } from './promisify'
 import type { WeapiCrossPlatformMethodDocs } from './types/methodDocs'
 
-/// <reference types="miniprogram-api-typings" />
-/// <reference types="@mini-types/alipay" />
-/// <reference types="@douyin-microapp/typings" />
 export type {
   WeapiAlipayMiniProgramRawAdapterSource,
   WeapiAlipayRawAdapter,

@@ -1,3 +1,4 @@
+import type { WechatMiniprogram } from '@weapp-core/types/wechat-api'
 import type {
   I18nBehavior,
   I18nCatalog,
@@ -10,6 +11,9 @@ import type {
 } from './types'
 import { WEAPP_I18N_LOCALE_DATA_KEY } from '@weapp-core/constants'
 import { compileI18nMessages } from './compiler'
+
+declare const Behavior: I18nHost['Behavior']
+declare const Page: I18nHost['Page']
 
 interface RuntimeInstance {
   setData: (data: Record<string, unknown>) => void
@@ -154,11 +158,11 @@ function createBehavior(state: ReturnType<typeof createState>, host: I18nHost): 
       [WEAPP_I18N_LOCALE_DATA_KEY]: state.currentLocale(),
     },
     lifetimes: {
-      attached() {
-        state.attach(this as RuntimeInstance)
+      attached(this: RuntimeInstance) {
+        state.attach(this)
       },
-      detached() {
-        state.detach(this as RuntimeInstance)
+      detached(this: RuntimeInstance) {
+        state.detach(this)
       },
     },
   }) as unknown as I18nBehavior
@@ -196,7 +200,7 @@ function createPageAdapter(state: ReturnType<typeof createState>, host: I18nHost
       },
     })
     return host.Page(next as never)
-  }) as typeof Page
+  }) as I18nInstance['page']
 }
 
 export function createI18n(options: I18nOptions | I18nCatalog, host?: Partial<I18nHost>): I18nInstance {
