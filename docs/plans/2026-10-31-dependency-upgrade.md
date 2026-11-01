@@ -1,6 +1,6 @@
 # 全仓依赖升级与迁移记录（2026-10-31）
 
-初始依赖升级与兼容迁移已提交并推送 main。repoctl 修复、版本 PR 和正式发布均已完成，本仓库已接入官方 6.3.2 并删除整份 monorepo 补丁；冻结安装和发布回归通过。扫码后真实 IDE 的最小冷启动复验通过，正式全量验收尚待执行。此前 Workspace HMR full 的 14 条计时失败仍保留，当前不标记最终验收完成。
+初始依赖升级与兼容迁移已提交并推送 main。repoctl 修复、版本 PR 和正式发布均已完成，本仓库已接入官方 6.3.2 并删除整份 monorepo 补丁；冻结安装和发布回归通过。最新冻结提交 `8d95556f4` 的远端完整 CI 已终态，119 个 job 中 96 成功、19 既定范围跳过、4 失败。正式 exhaustive IDE 执行 53 个适用任务，52 通过、1 阻塞，另有 84 个适用任务未执行；Workspace HMR full 仍有 16 条计时失败。验收入口修复与 Windows 诊断已完成本机定向回归，最终 suiteRunner 复跑与 E2E 类型检查通过，后续适用门禁仍待完成，当前不标记最终交付完成。
 
 本轮以 `8963dcaf4ea66ed1325b2f4ee28837fbf73f9f8d` 为基线，核对 257 份自有 npm 清单、278 个外部包名，以及 workspace catalog、独立 npm runner、Rust 与 GitHub Actions。npm 目标冻结于 `2026-10-31T15:02:50.556Z`，实际升级目标为 53 个 npm 包加 pnpm，共 54 项；后续验证沿用同一批直接依赖目标。下表与冻结清单逐项一致，没有漏项或目标版本差异。用户追加授权后，吸收 monorepo 补丁的 repoctl 新正式版成为唯一额外目标；该目标现重新冻结为官方 repoctl/core 6.3.2、templates 3.1.4，其他直接目标不变。
 
@@ -139,14 +139,16 @@ workspace 消除项涉及 markdown-it、body-parser、undici、fast-uri、serova
 | 正式 HMR build | `pnpm e2e:hmr:build` 42 / 42 适用任务通过；`f5f1a4b15` 冻结计划、回执 complete／passed |
 | headless full | 89 个适用任务全部通过、14 个范围外；DOM 213 项通过、6 skip |
 | 正式严格 HMR headless | `9ebebb8bfa` 冻结计划、严格 DOM／runtime 回执完整；14 个适用任务全部通过、14 个范围外。23 个选定 case、155 个 checkpoint 全部通过，原始报告另有 6 个未选定 skip，不计入选定覆盖 |
-| CI Workspace HMR full | `9ebebb8bfa` 的 76 个项目、229 / 229 功能场景成功，0 未执行；仍有 14 条计时阈值失败，与前轮集合一致，整体 full 审计失败 |
+| CI Workspace HMR full | `8d95556f4` 的 76 个项目、229 / 229 功能场景与 profile 完成，0 功能失败、0 未执行；16 条计时阈值失败，包括原 14 条及 comprehensive 的 vue-script／vue-template 两条，整体 full 审计失败 |
 | HMR profile 恢复同步回归 | 本机目标回归、lint、hooks 与 pre-push quick 通过；`9ebebb8bfa` 正式 CI 六个 Windows／macOS／Linux × Node 22／24 HMR Guard 均通过 |
 | Web | `9ebebb8bfa` 冻结输入，24 / 24 文件、153 / 153 项通过，suite 1 / 1 通过 |
 | Simulator browser | 同一冻结输入，96 / 96 文件、216 / 216 项通过 |
 | 网站浏览器 | 同一冻结输入，8 / 8 项通过；复用已有 VitePress 构建 |
-| 正式 exhaustive IDE | 首轮登录失败保留；扫码后最小冷启动 1 task／2 case／6 checkpoint 通过，正式新计划 137 个有效任务尚待执行 |
+| 正式 exhaustive IDE | `8d95556f4` 的 run `c5db45c7-b177-4753-954a-1221fa28dbaf` 退出 1：159 个计划任务中 137 适用、22 范围外；执行 53 个，52 通过、1 阻塞，84 个适用任务未执行。扫码后的最小冷启动及首轮登录失败分别保留 |
 | `f5f1a4b15` 跨系统 CI | 已终态：9 个 workflow 中 8 成功、1 失败；310 个 job 中 246 成功、62 既定跳过、2 已知失败。三系统严格消费者与核心检查通过，HMR 计时及旧 profile 同步测试失败保留 |
 | `9ebebb8bfa` official E2E full | run 41251548616 已终态：119 个 job，99 成功、19 既定条件跳过、1 项计时门禁失败；无新增功能失败 |
+| `8d95556f4` official E2E full | run 41264359935 已终态：119 个 job，96 成功、19 既定范围跳过、4 失败；HMR 计时、Windows Node 24 headless shard／aggregate 及 miniapp aggregate，详见下文 |
+| 验收入口与 Windows 诊断定向回归 | 本机串行执行：28 文件通过、1 文件既定 skip；289 项通过、3 项既定 skip，退出 0。最终 suiteRunner 复跑 10 文件／109 项通过，E2E 工程类型检查通过；不替代新提交的远端矩阵与真实 IDE 验收 |
 
 首轮根单测与应用 Turbo 构建重叠，构建清空并重新生成共享 dist，导致消费入口暂时不存在，部分测试又把缺失导入 externalize 成残留 require。产物稳定后，相应失败全部复验通过，未修改 runtime 源码来规避此执行竞争。后续共享产物构建与消费验证串行。
 
@@ -178,7 +180,7 @@ Ubuntu Node 22 的 HMR profile 恢复测试把旧恢复 complete 当成正常编
 
 `9ebebb8bfa` 的 official E2E full run 41251548616 已终态：119 个 job 中 99 成功、19 既定跳过、1 个 Workspace HMR 计时门禁失败。六组 Windows／macOS／Linux × Node 22／24 HMR Guard 均成功，229 个 HMR 功能场景全部通过；14 条计时失败与前轮集合一致。三组浏览器验证已在该提交上串行完成；各自归档包含原始日志、退出状态、manifest、SHA256SUMS 与校验回执，结束时工作树干净且机器租约已释放。
 
-本轮 14 条计时 issue 来自 12 个场景与两个项目 p95：runtime-demo 六场景为 3.324–3.524 秒（阈值 1.5 秒）；uview 三场景与 p95 为 9.266–9.970 秒（阈值 6 秒）；wot 三场景与 p95 为 12.275–13.413 秒（阈值 5 秒）。`totalMs = bundlerMs + watchToDirtyMs`，后者分别约 9–10、12–13、58–60 毫秒，主要耗时在 bundler。snapshot build、transform/load 等统计可重叠，不能累加归因于某个插件。六份跨系统原始日志均记录 profile 恢复测试实际通过，19 个条件跳过 job 的名称集合与前轮一致，跳过不计通过。
+`9ebebb8bfa` 这轮的 14 条计时 issue 来自 12 个场景与两个项目 p95：runtime-demo 六场景为 3.324–3.524 秒（阈值 1.5 秒）；uview 三场景与 p95 为 9.266–9.970 秒（阈值 6 秒）；wot 三场景与 p95 为 12.275–13.413 秒（阈值 5 秒）。`totalMs = bundlerMs + watchToDirtyMs`，后者分别约 9–10、12–13、58–60 毫秒，主要耗时在 bundler。snapshot build、transform/load 等统计可重叠，不能累加归因于某个插件。六份跨系统原始日志均记录 profile 恢复测试实际通过，19 个条件跳过 job 的名称集合与前轮一致，跳过不计通过。
 
 ## 上游补丁与剩余验收
 
@@ -194,9 +196,9 @@ Ubuntu Node 22 的 HMR profile 恢复测试把旧恢复 complete 当成正常编
 
 ## 最新 main 与验证范围
 
-用户要求同步后，main 已更新到 `eaa0395c634e03031d342e1de49e06c7e2ffedde`（PR #1293）。新增两份内部 fixture 清单没有增加 registry 依赖；原 257 份清单评估及冻结目标继续保留其时间点。新增源码涉及 constants、Web、Simulator、compiler 与 weapp-vite，已先重建 29 个相关包及依赖闭包，并完成 owning typecheck／公开类型检查；下游使用该轮新 dist。
+用户要求同步后，main 先更新到 `eaa0395c634e03031d342e1de49e06c7e2ffedde`（PR #1293），再提交并推送官方 repoctl 6.3.2 接入，当前冻结远端为 `8d95556f45eb4c02cb27d3a0cc11c1483b774c15`。后续两次 fetch 均未发现新增 main 提交。新增两份内部 fixture 清单没有增加 registry 依赖；原 257 份清单评估及冻结目标继续保留其时间点。新增源码涉及 constants、Web、Simulator、compiler 与 weapp-vite，已先重建 29 个相关包及依赖闭包，并完成 owning typecheck／公开类型检查；下游使用该轮新 dist。
 
-PR #1293 的原生 [run 41241858187](https://github.com/weapp-vite/weapp-vite/actions/runs/41241858187) 为 164 job 成功、70 既定范围跳过。已校验冻结 context、checkout 两个 parent、PR head/base 和 artifact digest；PR checkout 与当前 main 的完整递归文件树只差 `e2e/ci/hmr-profile-failed-recovery.test.ts` 一份恢复回归。生产源码、生产依赖和对应 harness 输入一致，恢复文件另有 `9eb` 六组跨平台成功证据；repoctl 新开发工具闭包由上述独立回归覆盖。可复用范围如下，不能将范围跳过计为通过。
+PR #1293 的原生 [run 41241858187](https://github.com/weapp-vite/weapp-vite/actions/runs/41241858187) 为 164 job 成功、70 既定范围跳过。已校验冻结 context、checkout 两个 parent、PR head/base 和 artifact digest；PR checkout 与接入 repoctl 6.3.2 前的 `eaa0395c6` main 完整递归文件树只差 `e2e/ci/hmr-profile-failed-recovery.test.ts` 一份恢复回归。生产源码、生产依赖和对应 harness 输入一致，恢复文件另有 `9eb` 六组跨平台成功证据；repoctl 新开发工具闭包由上述独立回归覆盖。可复用范围如下，不能将范围跳过计为通过。
 
 | 当前源码的验证 | 实际证据与边界 |
 | --- | --- |
@@ -210,9 +212,33 @@ PR #1293 的原生 [run 41241858187](https://github.com/weapp-vite/weapp-vite/ac
 | 全部应用与模板构建 | 本机新 main：76／76 任务通过，0 cached；不重复启动模板入口 |
 | runtime-size | PR CI full artifact：49 tiers；已核对 frozen head/base 与摘要，job 成功 |
 | 网站 | 新 main 构建 31／31 任务通过；实际网站浏览器 8／8 项通过 |
-| Workspace HMR full | PR 中为范围跳过；旧两轮 229／229 功能通过和 14 条计时失败保留，未解除该门禁 |
-| 真实 IDE | 扫码后独立最小冷启动通过；正式 159 planned／137 active／22 out-of-scope 尚待执行 |
+| Workspace HMR full | PR 中为范围跳过；`8d95556f4` 正式 full 已执行，229／229 功能及 profile 完成，16 条计时失败，门禁未解除 |
+| 真实 IDE | 扫码后独立最小冷启动通过；`8d95556f4` 正式 159 planned／137 active／22 out-of-scope 已执行 53 个适用任务，52 通过、1 阻塞、84 未执行 |
 
 真实 IDE 最小复验使用 Stable 2.02.2608080、基础库 3.17.2，原生和 wevu 两个 case、6 个 DOM checkpoint 均完成，日志订阅恢复。任务窗口预算保持 1，资源 journal、端口、watcher、宿主和机器租约已终结；before/after 均为 cold，域层确认所选安装进程数为 0。官方查询报告 Stable 2.02.2609240，本轮按本地约束使用已安装 Stable，记录 officialVersionMatches=false，不将元数据当作实际 runtime 版本。
 
-正式 exhaustive IDE 仍须从干净且与 origin/main 一致的根 main 启动，使用新 manifest 覆盖 issue #1252。当前复验仅为单文件严格诊断，不等于正式全量通过。Windows／macOS／Linux 结果以实际 CI 为准；未执行、范围外、skip、环境阻塞、失败和成功分别记录。此前计时失败不改阈值、不覆盖历史基线，也不因单轮本机对照就宣称全部已存在或无退化。
+正式 exhaustive IDE 已从干净且与 origin/main 一致的根 main `8d95556f4` 启动，使用包含 issue #1252 的新 manifest，未指定 filter、shard 或 allow-failures。原始失败及未执行项保持记录；后续正式验收仍须从满足相同干净条件的新冻结 main 启动。Windows／macOS／Linux 结果以实际 CI 为准；未执行、范围外、skip、环境阻塞、失败和成功分别记录。此前计时失败不改阈值、不覆盖历史基线，也不因单轮本机对照就宣称全部已存在或无退化。
+
+## 当前远端失败与入口修复
+
+`8d95556f4` 的 [official E2E full run 41264359935](https://github.com/weapp-vite/weapp-vite/actions/runs/41264359935) 已终态，119 个 job 为 96 成功、19 既定范围跳过、4 失败。四项失败分别为 Workspace HMR full、Windows Node 24 headless shard 1、其 headless aggregate，以及 Windows Node 24 miniapp aggregate。HMR 的 229 个功能场景及 profile 均完成，16 条计时 issue 在原 14 条之外新增 comprehensive 的 vue-script、vue-template 两项；不能将新增项称为历史失败，也不能将功能成功记为性能门禁通过。
+
+Windows headless 的 issue #1134 已完成 DOM case 和 7 个 checkpoint，但 afterAll 因进程 parent generation unknown 清理失败。后续 recheck、capture 和 reconcile 完成、pending 归零，不撤销首次错误；现有 artifact 缺少相关进程的原始祖先、创建时间和 executable，尚不能确定具体失败分支。当前 Windows 修改只补充 generation 捕获过程的诊断，不改变 unknown guard、错误原因、查询次数或终止权限，也不宣称该根因已修复。失败时将限定范围的脱敏诊断作为独立 stdout JSON 行保留，避免通用错误格式化折叠字段；真实 Vitest 子进程回归已覆盖超过 10 KB 的完整投影和同步输出失败保留首错，相关 22 项测试通过。
+
+Windows miniapp shard 4 原始 job 虽退出 0，实际只完成 30 个分配任务中的 2 个，另 28 个未执行，aggregate 因报告不完整而失败。原因已由原始日志确认：正常临时路径的随机后缀被宽泛的 DevTools／OOM 正则误判，触发 unsafe-stop；旧入口又将缺项失败与 strict 绑定，误报全部通过。入口现限定已知宿主日志正文中的独立 OOM token，并保留独立完整签名、fatal、宿主身份和安装守卫；unsafe 与实际缺项均强制非零退出，保留首次错误，并按冻结 shard 分配核对任务分母。真实子进程回归覆盖分块 stdout／stderr、ANSI、CRLF、末尾无换行、路径误判及后续错误，计划回归覆盖完整、partial 和 shard 执行范围。
+
+上述入口修复与 Windows 诊断的本机串行定向回归已完成：28 文件通过、1 文件既定 skip；289 项通过、3 项既定 skip，命令退出 0。最终 suiteRunner 复跑 10 文件、109 项通过，`tsc --noEmit -p e2e/tsconfig.json` 退出 0；本机结果不替代后续新提交的原生远端 CI，也不消除本轮四项失败。
+
+## 正式 IDE 阻塞与资源核验
+
+正式 run `c5db45c7-b177-4753-954a-1221fa28dbaf` 退出 1，strict=true、coverage=partial、acceptance／execution 均 incomplete。159 个计划任务中 137 个适用、22 个范围外；实际执行 53 个，52 通过、1 阻塞，84 个适用任务未执行。已启动任务的 166 个选定 DOM case 为 165 通过、1 失败，另有 6 个既定 raw skip；509 个计划 checkpoint 捕获 495 个。原始报告和完整归档均保留。
+
+首个阻塞任务为 `ide/issue-1140-mode-cache.runtime.test.ts` 的 `emptyOutDir=true`：production step0 initial 已完成构建对比，bridge 连接成功，但模拟器启动失败、没有 page ready，日志订阅预算耗尽，报 `E2E_DEVTOOLS_SIMULATOR_BOOT_FAILED`，14 个 checkpoint 均未捕获。同一原生日志窗口正在首次下载基础库 3.17.5，启动失败后约 8 秒下载校验才完成；这只能作为环境时序证据，不能证明唯一根因。失败 case 未独立观察到 runtime 基础库版本，不能倒填后续 `emptyOutDir=false` 成功 case 的 3.17.5；后者 14／14 checkpoint 通过也不撤销首错。
+
+53 份任务资源报告均 complete、无资源错误；79 条 journal 记录已 released，对应窗口均具备 nativeClosed 与 webContentsDestroyed 双重销毁记录，79 个登记端口已释放，各任务域层宿主检查均 cold、所选安装进程数为 0。13 组 snapshot／watcher 创建与清理配平；这些结果只证明登记资源终结，不替代 runtime 通过。
+
+正式运行退出后已完成一次 Computer Use 恢复核验：独占机器租约，从 cold 状态正常打开同一 Stable 安装，确认已登录且仅有项目列表，再通过菜单正常退出；域层重新确认 cold、所选安装进程数为 0，租约释放并退出 0。未删除登录信息、缓存或 session，也未强杀进程。该恢复不证明阻塞根因已消除；后续先做最小 smoke，再按正式入口继续验收，不通过循环重启改写本轮失败。
+
+恢复后串行最小 smoke 的 2 个 case、6 个 checkpoint 通过，登记资源全部终结；随后按原断言复验 issue #1140，`emptyOutDir=true` 的 14 个 checkpoint 通过，`false` 初始启动仍失败，整体退出 1、仅捕获 14／28 checkpoint。Computer Use 在失败窗口确认“模拟器启动失败”和基础库 3.17.5；没有额外编译、导航或重启。再次失败说明首次下载不足以解释问题，当前暂停后续真实 IDE 启动并保留两轮失败。此次诊断的 9 条 journal 与端口均 released，宿主 cold、所选安装进程数为 0，资源报告 complete；不将资源清理成功记为 runtime 验收通过。
+
+本轮局部失败的原生日志未出现 `MaxSubPackageLimit` 或 `checkAppFields`，只记录通用 simulator launch failed；相同 analyzer 错误在成功窗口的八次启动中也出现。基础库 3.17.5 在成功窗口初次启动前已存在于本地，具体宿主内部异常仍未确定；不据此修改项目配置或 runtime 断言。

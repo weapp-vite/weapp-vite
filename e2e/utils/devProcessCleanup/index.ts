@@ -164,7 +164,7 @@ export function createDevProcessCleanup(options: DevProcessCleanupOptions) {
         unconfirmed = undefined
       }
       else {
-        unconfirmed = new UnconfirmedDevProcessTreeError(remaining, { cause: unconfirmed.cause })
+        unconfirmed = new UnconfirmedDevProcessTreeError(remaining, { cause: unconfirmed.cause, diagnostics: unconfirmed.diagnostics })
         if (!options.isRootHeld()) {
           throw unconfirmed
         }
@@ -184,7 +184,7 @@ export function createDevProcessCleanup(options: DevProcessCleanupOptions) {
       catch (error) {
         if (error instanceof UnconfirmedDevProcessTreeError) {
           const candidates = new Map([...(unconfirmed?.candidates ?? []), ...error.candidates].map(candidate => [candidate.pid, candidate]))
-          unconfirmed = new UnconfirmedDevProcessTreeError([...candidates.values()], { cause: error.cause })
+          unconfirmed = new UnconfirmedDevProcessTreeError([...candidates.values()], { cause: error.cause, diagnostics: [...(unconfirmed?.diagnostics ?? []), ...error.diagnostics] })
         }
         else {
           incompleteCapture ??= { cause: error }
@@ -197,7 +197,7 @@ export function createDevProcessCleanup(options: DevProcessCleanupOptions) {
       if (unconfirmed) {
         const remaining = unconfirmed.candidates.filter(candidate => !identities.some(identity => identity.pid === candidate.pid))
         if (remaining.length) {
-          unconfirmed = new UnconfirmedDevProcessTreeError(remaining, { cause: unconfirmed.cause })
+          unconfirmed = new UnconfirmedDevProcessTreeError(remaining, { cause: unconfirmed.cause, diagnostics: unconfirmed.diagnostics })
           throw unconfirmed
         }
         unconfirmed = undefined

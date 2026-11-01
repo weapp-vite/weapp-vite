@@ -1,4 +1,6 @@
 import type { ManagedWechatHostIdentity } from '../../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/types'
+import type { WindowsProcessGenerationDiagnostics, WindowsProcessQueryObservation } from './windowsGenerationDiagnostics'
+import { createWindowsGenerationDiagnosticCapture, reportWindowsGenerationDiagnostic } from './windowsGenerationDiagnostics'
 import { windowsLegacyProcessStarted } from './windowsKernelQuery'
 
 export interface ProcessEntry {
@@ -17,9 +19,11 @@ export interface DevProcessCandidate {
 /** 根在发现期间退出时，候选后代只保留为待核验记录，不获得终止权限。 */
 export class UnconfirmedDevProcessTreeError extends Error {
   readonly pids: readonly number[]
+  readonly diagnostics: readonly WindowsProcessGenerationDiagnostics[]
 
-  constructor(readonly candidates: readonly DevProcessCandidate[], options?: ErrorOptions) {
+  constructor(readonly candidates: readonly DevProcessCandidate[], options?: ErrorOptions & { diagnostics?: readonly WindowsProcessGenerationDiagnostics[] }) {
     super('Dev process identity could not be verified; descendant ownership remains unconfirmed.', options)
+    this.diagnostics = options?.diagnostics ?? []
     // 树内部使用内核 100ns；恢复候选与后续身份读回共用旧身份格式，不能把精度差当作退出。
     this.candidates = candidates.map(candidate => ({
       ...candidate,
@@ -48,7 +52,9 @@ export async function collectWindowsProcessTree(
   rootPid: number,
   entries: ProcessEntry[],
   reinspect: (pids: number[]) => Promise<ProcessEntry[]>,
+  queries: readonly WindowsProcessQueryObservation[] = [],
 ) {
+  const diagnostic = createWindowsGenerationDiagnosticCapture(rootPid, entries, queries)
   const resolvedEntries = new Map<number, ProcessEntry>()
   const candidates = () => {
     const pending = new Map<number, ProcessEntry>()
@@ -74,14 +80,18 @@ export async function collectWindowsProcessTree(
     discover(rootPid)
     return pending
   }
-  const unconfirmed = (cause: unknown) => new UnconfirmedDevProcessTreeError([...candidates().values()].map(entry => ({
-    pid: entry.pid,
-    started: entry.started ?? entry.identity?.started,
-    executable: entry.identity?.executable,
-  })), { cause })
+  const unconfirmed = (cause: unknown) => {
+    const pending = [...candidates().values()]
+    return new UnconfirmedDevProcessTreeError(pending.map(entry => ({
+      pid: entry.pid,
+      started: entry.started ?? entry.identity?.started,
+      executable: entry.identity?.executable,
+    })), { cause, diagnostics: [diagnostic.finish(pending, [...resolvedEntries.values()])] })
+  }
   const seen = new Set<number>()
   const result: ProcessEntry[] = []
-  const visit = async (original: ProcessEntry, parentStarted?: bigint) => {
+  const visit = async (original: ProcessEntry, parentStarted?: bigint, ancestors: readonly ProcessEntry[] = []) => {
+    diagnostic.guard('initial-creation-time', original, ancestors, parentStarted)
     const initialStarted = startedAt(original)
     if (parentStarted !== undefined && initialStarted !== undefined && initialStarted < parentStarted) {
       return
@@ -89,8 +99,10 @@ export async function collectWindowsProcessTree(
     let entry = original
     let exited = false
     if (!entry.identity || initialStarted === undefined) {
-      const current = await reinspect([entry.pid])
+      diagnostic.guard('identity-reinspection', entry, ancestors, parentStarted)
+      const current = await diagnostic.reinspect([entry.pid], reinspect)
       if (current.length > 1) {
+        diagnostic.guard('duplicate-reinspection', entry, ancestors, parentStarted)
         throw new Error('Dev process identity inspection returned duplicate candidates.')
       }
       if (current.length === 0) {
@@ -98,6 +110,7 @@ export async function collectWindowsProcessTree(
       }
       else {
         const fresh = current[0]!
+        diagnostic.guard('reinspection-contract', entry, ancestors, parentStarted)
         if (fresh.pid !== entry.pid || fresh.ppid !== entry.ppid || !fresh.identity
           || (initialStarted !== undefined && startedAt(fresh) !== initialStarted)) {
           throw new Error('Dev process candidate changed during identity inspection.')
@@ -106,23 +119,26 @@ export async function collectWindowsProcessTree(
         resolvedEntries.set(entry.pid, entry)
       }
     }
+    diagnostic.guard('resolved-creation-time', entry, ancestors, parentStarted)
     const started = startedAt(entry)
     const children = entries.filter(candidate => candidate.ppid === entry.pid)
     if (started === undefined) {
       if (exited && children.length === 0) {
         return
       }
+      diagnostic.guard('unknown-parent-generation', entry, ancestors, parentStarted)
       throw new Error('Dev process parent generation is unknown; descendants remain unconfirmed.')
     }
     if (parentStarted !== undefined && started < parentStarted) {
       return
     }
     if (seen.has(entry.pid)) {
+      diagnostic.guard('unresolved-parent-cycle', entry, ancestors, parentStarted)
       throw new Error('Dev process snapshot contains an unresolved parent cycle.')
     }
     seen.add(entry.pid)
     for (const child of children) {
-      await visit(child, started)
+      await visit(child, started, [...ancestors, entry])
     }
     if (!exited) {
       result.push(entry)
@@ -140,6 +156,10 @@ export async function collectWindowsProcessTree(
     return result
   }
   catch (error) {
-    throw unconfirmed(error)
+    const failure = unconfirmed(error)
+    for (const diagnostic of failure.diagnostics) {
+      reportWindowsGenerationDiagnostic(diagnostic)
+    }
+    throw failure
   }
 }

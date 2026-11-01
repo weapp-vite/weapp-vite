@@ -1,4 +1,5 @@
 import type { ManagedWechatHostIdentity } from '../../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/types'
+import type { WindowsProcessQueryObservation } from './windowsGenerationDiagnostics'
 import type { ProcessEntry } from './windowsProcessTree'
 import fs from 'node:fs/promises'
 import process from 'node:process'
@@ -8,6 +9,7 @@ import { readDarwinManagedProcessIdentities } from '../../../packages/weapp-ide-
 import { readManagedProcessIdentity, sameManagedProcess } from '../../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/processIdentity'
 import { resolveWechatInspectionTimeout } from '../../../packages/weapp-ide-cli/src/devtoolsTarget/inspection'
 import { traceCleanupStage } from '../cleanupTrace'
+import { observeWindowsProcessQuery } from './windowsGenerationDiagnostics'
 import { queryWindowsKernelProcesses, windowsLegacyProcessStarted } from './windowsKernelQuery'
 import { parseWindowsProcessRows } from './windowsProcessRows'
 import { collectWindowsProcessTree, UnconfirmedDevProcessTreeError } from './windowsProcessTree'
@@ -35,16 +37,16 @@ function inspectionError() {
   return new Error('Dev process identity could not be verified; no unverified process was signalled.')
 }
 
-async function readWindowsProcesses(pids?: number[]): Promise<ProcessEntry[]> {
+async function readWindowsProcesses(pids?: number[], observations?: WindowsProcessQueryObservation[]): Promise<ProcessEntry[]> {
   if (pids?.length === 0) {
     return []
   }
   const timeoutMs = resolveWechatInspectionTimeout('win32')
   const trace = process.env.WEAPP_VITE_E2E_CLEANUP_TRACE === '1'
-  const result = await traceCleanupStage(pids ? 'dev-kernel-identities' : 'dev-kernel-snapshot', () => queryWindowsKernelProcesses(pids, trace), {
+  const result = await observeWindowsProcessQuery(pids, observations, () => traceCleanupStage(pids ? 'dev-kernel-identities' : 'dev-kernel-snapshot', () => queryWindowsKernelProcesses(pids, trace), {
     processCount: pids?.length,
     timeoutMs,
-  })
+  }))
   if (trace) {
     reportWindowsQueryTrace(pids ? 'identities' : 'snapshot', result)
   }
@@ -140,8 +142,11 @@ function collectProcessTree(rootPid: number, entries: ProcessEntry[]) {
 /** 只在直接子进程句柄仍存活时登记后代；根退出后不能从相同 PID 重新发现树。 */
 export async function captureDevProcessTree(rootPid: number, isRootHeld: () => boolean, confirmRootExit?: () => Promise<boolean>): Promise<DevProcessIdentity[]> {
   const windows = process.platform === 'win32'
-  const entries = windows ? await readWindowsProcesses() : process.platform === 'linux' ? await readLinuxProcesses() : await readMacProcesses()
-  const tree = windows ? await collectWindowsProcessTree(rootPid, entries, readWindowsProcesses) : collectProcessTree(rootPid, entries)
+  const observations: WindowsProcessQueryObservation[] = []
+  const entries = windows ? await readWindowsProcesses(undefined, observations) : process.platform === 'linux' ? await readLinuxProcesses() : await readMacProcesses()
+  const tree = windows
+    ? await collectWindowsProcessTree(rootPid, entries, pids => readWindowsProcesses(pids, observations), observations)
+    : collectProcessTree(rootPid, entries)
   const descendants = tree.filter(entry => entry.pid !== rootPid).map(entry => ({
     pid: entry.pid,
     started: entry.identity?.started ?? entry.started,
