@@ -6,6 +6,7 @@ import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { execa } from 'execa'
 import { createDevProcessCleanup } from './devProcessCleanup'
+import { crashDevProcess } from './devProcessCleanup/crash'
 import { waitForNativeDevProcessExit } from './devProcessCleanup/rootExit'
 import { createDevProcessShutdownFailure, DEV_PROCESS_GRACEFUL_TIMEOUT_MS } from './devProcessCleanup/shutdown'
 import { createDevProcessDiagnostics } from './devProcessDiagnostics'
@@ -20,6 +21,7 @@ interface DevProcessController {
   waitForInitialBuild: (timeoutMs?: number) => Promise<string>
   getOutput: () => string
   getBuildErrors: () => readonly string[]
+  crash: (timeoutMs?: number) => Promise<void>
   stop: (forceKillDelayMs?: number, options?: DevProcessStopOptions) => Promise<void>
 }
 
@@ -128,8 +130,11 @@ export function startDevProcess(
   }
   const child = spawn()
   let exited = false
+  let shutdownStarted = false
   let stopTask: Promise<void> | undefined
   let stopSucceeded = false
+  let crashTask: Promise<void> | undefined
+  let crashRequested = false
   const outputChunks: string[] = []
   const diagnostics = createDevProcessDiagnostics(project)
 
@@ -226,6 +231,7 @@ export function startDevProcess(
 
   let exitedAfterIpc = false
   let forcedShutdown: DevProcessForcedShutdown | undefined
+  const isRootHeld = () => !exited && child.nodeChildProcess?.exitCode == null && child.nodeChildProcess?.signalCode == null
   const cleanup = createDevProcessCleanup({
     pid: child.pid,
     settledExit,
@@ -236,7 +242,7 @@ export function startDevProcess(
     onForcedRootExit: (evidence) => {
       forcedShutdown ??= evidence
     },
-    isRootHeld: () => !exited && child.nodeChildProcess?.exitCode == null && child.nodeChildProcess?.signalCode == null,
+    isRootHeld,
     confirmRootExit: timeoutMs => waitForNativeDevProcessExit(child.nodeChildProcess, timeoutMs),
     disconnectRoot: () => {
       if (!child.nodeChildProcess?.connected) {
@@ -251,6 +257,7 @@ export function startDevProcess(
   })
 
   const stop = (forceKillDelayMs = 3_000, options: DevProcessStopOptions = {}) => {
+    shutdownStarted = true
     const traceFailure = trace?.getFailure()
     if (stopSucceeded && traceFailure) {
       // 已完成的清理不重跑；迟到输出使后续 stop 稳定观察到新的采集失败。
@@ -260,8 +267,10 @@ export function startDevProcess(
     if (!stopTask) {
       // 并发调用共享同一次清理；只有核验退出和输出排空后才撤销登记。
       let shutdownFailure: unknown
-      const cleanupTask = cleanup(forceKillDelayMs, { ...options, gracefulTimeoutMs: options.gracefulTimeoutMs ?? DEV_PROCESS_GRACEFUL_TIMEOUT_MS }).then(async () => {
-        if (forcedShutdown || exitedAfterIpc || gracefulShutdown || spawnOptions.ipc === true) {
+      // crash 自己保留原错误；即使模拟失败，stop 仍须独立排空已登记资源。
+      const drain = () => cleanup(forceKillDelayMs, { ...options, gracefulTimeoutMs: options.gracefulTimeoutMs ?? DEV_PROCESS_GRACEFUL_TIMEOUT_MS })
+      const cleanupTask = (crashTask ? crashTask.then(drain, drain) : drain()).then(async () => {
+        if (crashRequested || forcedShutdown || exitedAfterIpc || gracefulShutdown || spawnOptions.ipc === true) {
           const info = await settledExit
           shutdownFailure = createDevProcessShutdownFailure(info, formatExitInfo(info), message => appendRecentOutput(message, outputChunks, spawnInfo), forcedShutdown)
         }
@@ -292,6 +301,21 @@ export function startDevProcess(
   }
   TRACKED_DEV_DISPOSERS.add(stop)
 
+  const crash = (timeoutMs = 3_000) => {
+    if (!crashTask) {
+      if (shutdownStarted) {
+        return Promise.reject(new Error('Cannot crash a dev process after shutdown has started.'))
+      }
+      crashTask = crashDevProcess({
+        root: child.nodeChildProcess,
+        isRootHeld,
+        capture: cleanup.capture,
+        onSignal: () => crashRequested = true,
+      }, timeoutMs)
+    }
+    return crashTask
+  }
+
   void settledExit.then((info) => {
     try {
       diagnostics.flush()
@@ -309,6 +333,7 @@ export function startDevProcess(
     waitForInitialBuild: (timeoutMs?: number) => waitForOutput('小程序初次构建完成', 'mini program initial build completion', timeoutMs),
     getOutput: () => outputChunks.join(''),
     getBuildErrors: diagnostics.getBuildErrors,
+    crash,
     stop,
   }
 }

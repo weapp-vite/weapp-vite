@@ -1,3 +1,4 @@
+import { getMiniProgramPlatformDescriptor } from '@weapp-core/shared'
 import path from 'pathe'
 
 export const SHARED_HMR_DIRNAME = 'shared-hmr'
@@ -28,7 +29,7 @@ export function resolveSharedHmrRelativeImports() {
 }
 
 export function resolveSharedHmrScriptModuleExt(platform: 'weapp' | 'alipay' | 'tt') {
-  return platform === 'alipay' ? 'sjs' : 'wxs'
+  return getMiniProgramPlatformDescriptor(platform).outputExtensions.wxs ?? 'wxs'
 }
 
 export function buildSharedImportTemplate(marker: string) {

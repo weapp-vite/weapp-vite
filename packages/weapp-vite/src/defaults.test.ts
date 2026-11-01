@@ -22,6 +22,7 @@ describe('getWeappViteConfig', () => {
       json: 'json',
       wxml: 'ttml',
       wxss: 'ttss',
+      wxs: 'sjs',
     })
   })
 

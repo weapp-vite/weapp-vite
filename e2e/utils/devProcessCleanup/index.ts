@@ -148,7 +148,7 @@ export function createDevProcessCleanup(options: DevProcessCleanupOptions) {
     }
   }
 
-  return async (forceKillDelayMs: number, stopOptions: DevProcessStopOptions = {}) => {
+  const capture = async (forceKillDelayMs: number) => {
     if (!options.isRootHeld()) {
       assertCaptureComplete()
     }
@@ -209,6 +209,10 @@ export function createDevProcessCleanup(options: DevProcessCleanupOptions) {
       captured = true
     }
     assertCaptureComplete()
+  }
+
+  const cleanup = async (forceKillDelayMs: number, stopOptions: DevProcessStopOptions = {}) => {
+    await capture(forceKillDelayMs)
     if (!disconnected && (options.requestRootShutdown || options.isRootHeld())) {
       const gracefulTimeoutMs = stopOptions.gracefulTimeoutMs ?? forceKillDelayMs
       try {
@@ -258,4 +262,5 @@ export function createDevProcessCleanup(options: DevProcessCleanupOptions) {
       }
     }
   }
+  return Object.assign(cleanup, { capture })
 }
