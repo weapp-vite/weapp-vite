@@ -26,6 +26,15 @@ function isObjectDefineProperty(node: any) {
 
 /** 通过显式运行时标记或公共导出关联定位 installer，避免依赖打包器生成的局部名字。 */
 export function findRequestGlobalsInstaller(code: string): string | null {
+  // 只排除缺少全部识别线索的源码；保留转义字符串、模板及标识符的完整 AST 识别。
+  if (
+    !code.includes(REQUEST_GLOBAL_INSTALLER_MARKER)
+    && !code.includes('installWebRuntimeGlobals')
+    && !code.includes('\\')
+  ) {
+    return null
+  }
+
   try {
     const functions = new Set<string>()
     const marked = new Set<string>()
