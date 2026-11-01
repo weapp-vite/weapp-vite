@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createOwnedPluginGeneration } from '../../../plugins/ownedInstances'
 import {
   createLoadConfig,
   resolveConfigFilePath,
@@ -180,6 +181,55 @@ describe('runtime config internal loadConfig', () => {
       ])
       expect(plugins).toEqual([plugin])
     }
+  })
+
+  it('isolates internally created tsconfig hooks while preserving same-named user plugins', async () => {
+    const receiver = { environment: { name: 'current-generation' } }
+    const resolved = { id: 'resolved-alias' }
+    const metadata = { owner: 'factory' }
+    const handler = Object.assign(function (this: unknown, id: string, importer: string | undefined) {
+      expect(this).toBe(receiver)
+      expect(id).toBe('aliased-entry')
+      expect(importer).toBe('entry.ts')
+      return resolved
+    }, { metadata })
+    const hook = { order: 'pre' as const, filter: { id: /^aliased-/ }, handler }
+    const internal = { name: 'vite-tsconfig-paths', options: undefined, resolveId: hook, api: metadata }
+    const user = { name: internal.name, resolveId: { ...hook } }
+    tsconfigPathsMock.mockReturnValueOnce(internal)
+    const hostConfig = {
+      plugins: [user],
+      weapp: { platform: 'weapp' as const, tsconfigPaths: { projects: ['tsconfig.json'] } },
+    }
+    const result = await createFactory()({ cwd: '/project', mode: 'test', isDev: true, hostConfig: { config: hostConfig } })
+    const plugins = result.config.plugins!
+    expect(plugins).toContain(user)
+    expect(plugins).toContain(internal)
+    const first = createOwnedPluginGeneration()(plugins)
+    const second = createOwnedPluginGeneration()(plugins)
+    const index = plugins.indexOf(internal)
+    const firstInternal = first[index] as typeof internal
+    const secondInternal = second[index] as typeof internal
+    expect(first[plugins.indexOf(user)]).toBe(user)
+    expect(second[plugins.indexOf(user)]).toBe(user)
+    expect(user.resolveId.handler).toBe(handler)
+    expect(firstInternal).not.toBe(internal)
+    expect(secondInternal).not.toBe(firstInternal)
+    expect(firstInternal.resolveId).not.toBe(hook)
+    expect(secondInternal.resolveId).not.toBe(firstInternal.resolveId)
+    expect(firstInternal.resolveId.handler).not.toBe(handler)
+    expect(secondInternal.resolveId.handler).not.toBe(firstInternal.resolveId.handler)
+    expect(firstInternal.resolveId.filter).toBe(hook.filter)
+    expect(firstInternal.resolveId.order).toBe('pre')
+    expect(firstInternal.api).toBe(metadata)
+    expect(firstInternal.resolveId.handler.metadata).toBe(metadata)
+    expect(firstInternal.resolveId.handler.call(receiver, 'aliased-entry', 'entry.ts')).toBe(resolved)
+    expect(secondInternal.resolveId.handler.call(receiver, 'aliased-entry', 'entry.ts')).toBe(resolved)
+    Reflect.set(firstInternal.resolveId, 'order', 'post')
+    expect(secondInternal.resolveId.order).toBe('pre')
+    expect(Object.getOwnPropertyDescriptor(hook, 'order')).toEqual({ value: 'pre', writable: true, enumerable: true, configurable: true })
+    expect(Object.getOwnPropertyDescriptor(hook, 'filter')?.value).toBe(hook.filter)
+    expect(hostConfig.plugins).toEqual([user])
   })
 
   it('resolves config file paths and loaded weapp config reuse checks', () => {

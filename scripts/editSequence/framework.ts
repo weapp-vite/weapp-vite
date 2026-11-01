@@ -25,6 +25,7 @@ export class FrameworkSequenceSession {
   private readonly watchers = new SequenceResourceOwnership()
   private readonly engines = new SequenceResourceOwnership()
   private readonly diagnostics: ReturnType<typeof createFrameworkPhaseDiagnostics>
+  private closing?: Promise<void>
   readonly measurements: SequenceMeasurements
   outputChanges?: ReturnType<typeof compareBenchmarkOutputs>
 
@@ -125,16 +126,50 @@ export class FrameworkSequenceSession {
     }
   }
 
-  async close() {
+  close() {
+    if (!this.closing) {
+      const result = Promise.withResolvers<void>()
+      this.closing = result.promise
+      try {
+        Promise.resolve(this.closeResources()).then(result.resolve, result.reject)
+      }
+      catch (error) {
+        result.reject(error)
+      }
+    }
+    return this.closing
+  }
+
+  private async closeResources() {
+    const errors: unknown[] = []
+    let hostClosed = false
     try {
       await observeFrameworkPhase(this.diagnostics, 'runtime-close', () => this.runtime.close())
     }
-    finally {
+    catch (error) {
+      errors.push(error)
+    }
+    try {
       await observeFrameworkPhase(this.diagnostics, 'server-close', () => this.server?.close() ?? Promise.resolve())
+      hostClosed = true
+    }
+    catch (error) {
+      errors.push(error)
+    }
+    const ownershipErrors = [...this.watchers.errors, ...this.engines.errors]
+    errors.push(...ownershipErrors)
+    if (hostClosed && !this.watchers.size && !this.engines.size) {
       this.server = undefined
     }
-    if (this.watchers.size || this.engines.size) {
-      throw new Error(`Framework host retained ${this.watchers.size} watchers and ${this.engines.size} native engines after close`)
+    if (this.watchers.size + this.engines.size > ownershipErrors.length) {
+      errors.push(new Error(`Framework host retained ${this.watchers.size} watchers and ${this.engines.size} native engines after close`))
+    }
+    const failures = [...new Set(errors)]
+    if (failures.length === 1) {
+      throw failures[0]
+    }
+    if (failures.length) {
+      throw new AggregateError(failures, 'Framework runtime and host cleanup failed', { cause: failures[0] })
     }
   }
 }
