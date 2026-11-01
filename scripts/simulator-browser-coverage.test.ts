@@ -31,8 +31,11 @@ describe('simulator browser CI coverage', () => {
   })
 
   it('runs the browser suite through the cloud CI entry', async () => {
-    const workflow = readWorkflowFixture(readVerificationTopologyVariant() === 'baseline' ? 'validate-ci-e2e.yml' : 'reusable-miniapp-platform.yml') as Workflow
-    expect(workflow.jobs['simulator-browser']?.with?.main_command).toBe('pnpm --filter @mpcore/simulator test:e2e')
+    const baseline = readVerificationTopologyVariant() === 'baseline'
+    const workflow = readWorkflowFixture(baseline ? 'validate-ci-e2e.yml' : 'reusable-miniapp-platform.yml') as Workflow
+    const command = 'pnpm --filter @mpcore/simulator test:e2e'
+    const diagnostics = `pnpm exec cross-env DEBUG=vitest:browser:*,pw:browser VITEST_PW_DEBUG=1 ${command}`
+    expect(workflow.jobs['simulator-browser']?.with?.main_command).toBe(baseline ? command : `$${'{{'} inputs.runs_on == 'windows-latest' && '${diagnostics}' || '${command}' }}`)
     const manifest = JSON.parse(await readFile(path.join(simulatorRoot, 'package.json'), 'utf8')) as { scripts: Record<string, string> }
     expect(manifest.scripts['test:e2e']).toMatch(/(?:--config|-c) (?:\.\/)?vitest\.e2e\.config\.ts(?: |$)/)
   })
