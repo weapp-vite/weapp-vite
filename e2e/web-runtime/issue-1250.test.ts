@@ -28,6 +28,16 @@ interface AudioSnapshot {
   srcEmpty: boolean
 }
 
+interface NativeAudioSnapshot {
+  currentTime: number
+  duration: number
+  paused: boolean
+  ended: boolean
+  networkState: number
+  readyState: number
+  error: { code: number, message: string } | null
+}
+
 const ROOT = '[data-weapp-page-active="true"]'
 
 describe('issue #1250: compiled Web lifecycle API consumers', { concurrent: false }, () => {
@@ -52,6 +62,7 @@ describe('issue #1250: compiled Web lifecycle API consumers', { concurrent: fals
       const add = EventTarget.prototype.addEventListener
       const remove = EventTarget.prototype.removeEventListener
       let unhandledCount = 0
+      let currentAudio: HTMLAudioElement | undefined
       // 这些是主动派发的真实 Window 事件，阻止浏览器将其作为未处理故障上报。
       add.call(window, 'error', event => event.preventDefault(), true)
       add.call(window, 'unhandledrejection', (event) => {
@@ -75,6 +86,7 @@ describe('issue #1250: compiled Web lifecycle API consumers', { concurrent: fals
           return 'theme'
         }
         if (target instanceof HTMLAudioElement) {
+          currentAudio = target
           return 'audio'
         }
       }
@@ -102,6 +114,19 @@ describe('issue #1250: compiled Web lifecycle API consumers', { concurrent: fals
         }])),
       })
       Object.defineProperty(window, '__issue1250UnhandledCount', { value: () => unhandledCount })
+      Object.defineProperty(window, '__issue1250NativeAudio', {
+        value: () => currentAudio
+          ? {
+              currentTime: currentAudio.currentTime,
+              duration: currentAudio.duration,
+              paused: currentAudio.paused,
+              ended: currentAudio.ended,
+              networkState: currentAudio.networkState,
+              readyState: currentAudio.readyState,
+              error: currentAudio.error ? { code: currentAudio.error.code, message: currentAudio.error.message } : null,
+            }
+          : undefined,
+      })
     })
     await page.goto(server!.resolvedUrls!.local[0])
     await expect.poll(() => page.locator(`${ROOT} #ready`).textContent()).toBe('ready')
@@ -144,6 +169,28 @@ describe('issue #1250: compiled Web lifecycle API consumers', { concurrent: fals
 
   async function audioSnapshot(): Promise<AudioSnapshot> {
     return JSON.parse(await page.locator(`${ROOT} #audio-snapshot`).textContent() ?? '{}') as AudioSnapshot
+  }
+
+  async function nativeAudioSnapshot(): Promise<NativeAudioSnapshot | undefined> {
+    return page.evaluate(() => Reflect.get(window, '__issue1250NativeAudio')())
+  }
+
+  async function waitForNativeAudio(outcome: 'ended' | 'error') {
+    try {
+      // 媒体装载、解码和播放使用 Playwright 的统一有限等待，不计入 wx 回调桥接的短轮询。
+      await page.waitForFunction((expected) => {
+        const state = Reflect.get(window, '__issue1250NativeAudio')() as NativeAudioSnapshot | undefined
+        return state && (state.error !== null || (expected === 'ended' && state.ended))
+      }, outcome)
+    }
+    catch (cause) {
+      throw new Error(`原生音频未到达 ${outcome}：${JSON.stringify({ native: await nativeAudioSnapshot(), wx: await audioSnapshot() })}`, { cause })
+    }
+    const state = await nativeAudioSnapshot()
+    if (!state) {
+      throw new Error('音频实例尚未创建')
+    }
+    return state
   }
 
   it('delivers native error strings and original rejection values once, then releases subscriptions', async () => {
@@ -267,8 +314,22 @@ describe('issue #1250: compiled Web lifecycle API consumers', { concurrent: fals
 
   it('receives real ended and decode errors without leaking playback rejections', async () => {
     await page.locator(`${ROOT} #audio-end`).click()
-    await expect.poll(async () => (await audioSnapshot()).events?.includes('Ended')).toBe(true)
+    const ended = await waitForNativeAudio('ended')
+    expect(ended).toMatchObject({ ended: true, paused: true, error: null })
+    expect(ended.duration).toBeCloseTo(0.35, 2)
+    expect(ended.currentTime).toBeCloseTo(ended.duration, 2)
+    await expect.poll(audioSnapshot, { message: `wx 回调应反映真实媒体完成状态：${JSON.stringify(ended)}` }).toMatchObject({
+      events: expect.arrayContaining(['Play', 'Canplay', 'Ended']),
+      errors: [],
+      paused: true,
+    })
+    const completed = await audioSnapshot()
+    expect(completed.events.filter(name => name === 'Ended')).toHaveLength(1)
+    expect(completed.currentTime).toBeCloseTo(ended.duration, 2)
+    expect(completed.duration).toBeCloseTo(ended.duration, 2)
     await page.locator(`${ROOT} #audio-error`).click()
+    const invalid = await waitForNativeAudio('error')
+    expect(invalid.error).toMatchObject({ code: 4 })
     await expect.poll(async () => (await audioSnapshot()).errors.length).toBe(1)
     expect((await audioSnapshot()).errors[0]).toMatchObject({ errCode: 10004, errMsg: expect.stringContaining('fail') })
     expect(await page.evaluate(() => Reflect.get(window, '__issue1250UnhandledCount')())).toBe(0)

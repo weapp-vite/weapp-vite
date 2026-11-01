@@ -4,6 +4,7 @@ import path from 'node:path'
 import fg from 'fast-glob'
 import ignore from 'ignore'
 import { isScriptModuleFile, TEMPLATE_EXTENSIONS } from '../profiles'
+import { projectAncestorDirectories } from './paths'
 
 export const PROJECT_IGNORES = ['**/.git/**', '**/node_modules/**', '**/dist/**', '**/dist-*/**', '**/.weapp-vite/**', '**/miniprogram_npm/**', '**/generated/**', '**/pnpm-lock.yaml', '**/package-lock.json', '**/yarn.lock']
 
@@ -39,11 +40,12 @@ async function globForInput(input: string, cwd: string) {
 export async function collectProjectFiles(cwd: string, inputs: string[] = ['.'], ignorePatterns: string[] = []) {
   cwd = path.resolve(cwd)
   const patterns = await Promise.all(inputs.map(input => globForInput(input, cwd)))
-  const files = await fg(patterns, { cwd, absolute: true, onlyFiles: true, dot: true, followSymbolicLinks: false, ignore: [...PROJECT_IGNORES, ...ignorePatterns] })
+  const entries = await fg(patterns, { cwd, absolute: true, onlyFiles: true, dot: true, followSymbolicLinks: false, ignore: [...PROJECT_IGNORES, ...ignorePatterns] })
+  // fast-glob 的绝对路径固定使用正斜杠；项目图和文件系统边界统一使用原生路径。
+  const files = entries.map(file => path.resolve(file))
   const matchers = new Map<string, ReturnType<typeof ignore>>()
   async function excluded(file: string) {
-    let directory = path.dirname(file)
-    while (true) {
+    for (const directory of projectAncestorDirectories(cwd, file)) {
       let matcher = matchers.get(directory)
       if (!matcher) {
         matcher = ignore()
@@ -61,11 +63,8 @@ export async function collectProjectFiles(cwd: string, inputs: string[] = ['.'],
       if (matcher.ignores(path.relative(directory, file).split(path.sep).join('/'))) {
         return true
       }
-      if (directory === cwd) {
-        return false
-      }
-      directory = path.dirname(directory)
     }
+    return false
   }
   const included: string[] = []
   for (const file of files.sort()) {

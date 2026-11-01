@@ -149,8 +149,10 @@ describe('project document ownership', () => {
   })
 
   it('normalizes inputs, honors nested ignore files and rejects escaping roots', async () => {
-    const root = await fixture({ '.gitignore': 'src/ignored.axml\n', 'src/ignored.axml': '<view/>', 'src/keep.axml': '<view/>', 'src/child/.gitignore': '*.sjs\n', 'src/child/ignored.sjs': 'invalid', 'dist/out.wxml': 'invalid' })
-    expect((await collectProjectFiles(root)).filter(file => /\.(?:axml|sjs|wxml)$/.test(file)).map(file => path.relative(root, file))).toEqual([path.join('src', 'keep.axml')])
+    const root = await fixture({ '.gitignore': 'src/ignored.axml\n', '.prettierignore': 'src/format-ignored.axml\n', 'src/ignored.axml': '<view/>', 'src/format-ignored.axml': '<view/>', 'src/keep.axml': '<view/>', 'src/child/.gitignore': '*.sjs\n', 'src/child/ignored.sjs': 'invalid', 'dist/out.wxml': 'invalid' })
+    const files = await collectProjectFiles(root)
+    expect(files.every(file => file === path.resolve(file))).toBe(true)
+    expect(files.filter(file => /\.(?:axml|sjs|wxml)$/.test(file)).map(file => path.relative(root, file))).toEqual([path.join('src', 'keep.axml')])
     expect(await collectProjectFiles(path.relative('.', root))).toEqual(await collectProjectFiles(root))
     await expect(collectProjectFiles(root, ['../outside'])).rejects.toThrow('所属项目内')
   })

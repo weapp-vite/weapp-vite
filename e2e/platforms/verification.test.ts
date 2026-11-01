@@ -17,6 +17,19 @@ describe('platform verification capabilities', () => {
     )
   })
 
+  it('keeps explicit script-module contracts for each supported build platform', () => {
+    // 抖音使用 SJS：developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/framework/sjs-syntax-reference/module。
+    // 百度使用 import-sjs：smartprogram.baidu.com/docs/develop/framework/sjs_start。
+    expect(BUILD_VERIFICATION_CAPABILITIES.map(({ id, expectation }) => [id, expectation.scriptModuleExt, expectation.scriptModuleTag])).toEqual([
+      ['weapp', 'wxs', '<wxs'],
+      ['tt', 'sjs', '<sjs'],
+      ['alipay', 'sjs', '<import-sjs'],
+      ['swan', 'sjs', '<import-sjs'],
+      ['jd', 'wxs', '<wxs'],
+      ['xhs', 'wxs', '<wxs'],
+    ])
+  })
+
   it('keeps aliases aligned with the shared registry for public platforms', () => {
     for (const capability of BUILD_VERIFICATION_CAPABILITIES) {
       expect(MINI_PROGRAM_PLATFORM_ALIASES[capability.id]).toBe(capability.id)

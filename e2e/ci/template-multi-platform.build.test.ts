@@ -67,8 +67,9 @@ describe('multi-platform template build matrix', { concurrent: false }, () => {
 
       if (scriptModuleExt && scriptModuleTag) {
         expect(await fs.pathExists(path.join(outputRoot, `pages/index/platform.${scriptModuleExt}`))).toBe(true)
-        expect(template).toContain(scriptModuleTag)
-        expect(template).toContain(`./platform.${scriptModuleExt}`)
+        const sourceAttribute = platform === 'alipay' ? 'from' : 'src'
+        const moduleAttribute = platform === 'alipay' ? 'name' : 'module'
+        expect(template).toContain(`${scriptModuleTag} ${moduleAttribute}="platformTools" ${sourceAttribute}="./platform.${scriptModuleExt}"`)
       }
     },
   )
