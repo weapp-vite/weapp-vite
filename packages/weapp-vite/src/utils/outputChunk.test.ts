@@ -1,6 +1,7 @@
 import type { OutputChunk } from 'rolldown'
 import { Buffer } from 'node:buffer'
-import { readdir, readFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises'
+import os from 'node:os'
 import path from 'node:path'
 import { originalPositionFor, TraceMap } from '@jridgewell/trace-mapping'
 import MagicString from 'magic-string'
@@ -66,7 +67,7 @@ async function collectTypeScriptFiles(target: string): Promise<string[]> {
     if (entry.isDirectory()) {
       files.push(...await collectTypeScriptFiles(resolved))
     }
-    else if (entry.isFile() && entry.name.endsWith('.ts')) {
+    else if (entry.isFile() && entry.name.endsWith('.ts') && !/\.(?:test|spec)\.ts$/.test(entry.name)) {
       files.push(resolved)
     }
   }
@@ -74,6 +75,24 @@ async function collectTypeScriptFiles(target: string): Promise<string[]> {
 }
 
 describe('output chunk code rewrite', () => {
+  it('scans nested production TypeScript files while excluding co-located tests', async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), 'output-chunk-source-guard-'))
+    try {
+      await mkdir(path.join(root, 'nested/deeper'), { recursive: true })
+      const files = ['index.ts', 'index.test.ts', 'nested/emit.ts', 'nested/emit.spec.ts', 'nested/deeper/testHelpers.ts', 'nested/deeper/emit.test.ts', 'nested/emit.js']
+      await Promise.all(files.map(file => writeFile(path.join(root, file), 'output.code = "fixture"')))
+      const collected = await collectTypeScriptFiles(root)
+      expect(collected.map(file => path.relative(root, file).replaceAll('\\', '/')).sort()).toEqual([
+        'index.ts',
+        'nested/deeper/testHelpers.ts',
+        'nested/emit.ts',
+      ])
+    }
+    finally {
+      await rm(root, { recursive: true, force: true })
+    }
+  })
+
   it('preserves original mappings through prepend, replace, append, and a second transform', () => {
     const source = 'src/pages/probe/index.ts'
     const originalCode = [
