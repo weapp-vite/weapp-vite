@@ -69,7 +69,11 @@ describe('dev module graph provider', () => {
     expect(ignored[1]!('/project/dist/miniprogram_npm/@vant/weapp/field/index.json')).toBe(true)
     expect(ignored[1]!('/project/src/pages/index.ts')).toBe(false)
     expect(config.build).toMatchObject({ watch: undefined, write: false })
-    expect(config.plugins).toEqual([expect.objectContaining({ name: 'weapp-vite:module-graph-provider' }), resolver])
+    expect(config.plugins).toEqual([
+      expect.objectContaining({ name: 'weapp-vite:module-graph-provider' }),
+      expect.objectContaining({ name: 'weapp-vite:package-imports-query' }),
+      resolver,
+    ])
     const providerPlugin = config.plugins[0] as Plugin
     const read = vi.fn(async () => '<view />')
     await (providerPlugin.hotUpdate as any).call(

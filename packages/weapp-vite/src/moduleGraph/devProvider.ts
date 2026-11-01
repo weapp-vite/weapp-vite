@@ -11,6 +11,7 @@ import {
   WEVU_AUTO_ROUTES_RESOLVED_MODULE_ID,
   WEVU_AUTO_ROUTES_VIRTUAL_MODULE_ID,
 } from '../plugins/autoRoutes.shared'
+import { createPackageImportsQueryPlugin } from '../plugins/packageImports'
 import { resolveNpmBuildCandidateDependenciesSync } from '../runtime/npmPlugin/service/dependencies'
 import { createViteWatchIgnored, resolvePollingWatchOptions } from '../runtime/watch/options'
 import { deduplicateCleanupErrors } from '../runtime/watcher/cleanupErrors'
@@ -274,6 +275,7 @@ export async function createDevModuleGraphProvider(
     customLogger: createLogger('silent'),
     plugins: [
       createDevModuleGraphPlugin(ctx, buildConfig, onChange, observe),
+      createPackageImportsQueryPlugin(),
       ...collectResolverPlugins(buildConfig),
     ],
     server: {

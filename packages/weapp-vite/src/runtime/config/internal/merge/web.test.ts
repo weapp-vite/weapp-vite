@@ -82,6 +82,7 @@ describe('runtime config merge web', () => {
     expect((await Promise.all(result?.plugins ?? [])).flat(Infinity).map(plugin => plugin && typeof plugin === 'object' && 'name' in plugin ? plugin.name : undefined)).toEqual([
       'weapp-vite:runtime-provider:web-runtime',
       'weapp-web-plugin',
+      'weapp-vite:package-imports-query',
       'weapp-vite:auto-routes',
     ])
   })
@@ -133,6 +134,7 @@ describe('runtime config merge web', () => {
     expect((await Promise.all(result?.plugins ?? [])).flat(Infinity).map((plugin: any) => plugin.name)).toEqual([
       'weapp-vite:runtime-provider:web-runtime',
       'weapp-web-plugin',
+      'weapp-vite:package-imports-query',
       'user-plugin',
     ])
     expect(weappWebPluginMock).toHaveBeenCalledWith(expect.objectContaining({

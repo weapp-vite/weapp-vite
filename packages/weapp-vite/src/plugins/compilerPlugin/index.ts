@@ -116,9 +116,11 @@ export function createCompilerPluginPlugins(ctx: CompilerContext): Plugin[] {
   const owners = new Map<string, string>()
   const sourceStates = new Map<string, SourceState>()
   let recordsPromise: Promise<ControllerRecord[]> | undefined
-  let disposed = false
-  let closeWatcherCalled = false
-  let closeBundleCalled = false
+  let disposePromise: Promise<void> | undefined
+  let closeWatcherPromise: Promise<void> | undefined
+  let closeBundlePromise: Promise<void> | undefined
+  let disposeSettled = false
+  let activeCloseHooks = 0
   const dependencyTracker = createCompilerDependencyTracker(ctx)
   const context = createContext(ctx, resolvedConfigRef, pluginContextRef, owners, dependencyTracker.remember)
 
@@ -165,17 +167,37 @@ export function createCompilerPluginPlugins(ctx: CompilerContext): Plugin[] {
     }
   }
 
-  async function disposeControllers() {
-    if (disposed) {
-      return
+  function releaseTerminalContext() {
+    if (disposeSettled && activeCloseHooks === 0) {
+      resolvedConfigRef.value = undefined
+      pluginContextRef.value = undefined
     }
-    disposed = true
+  }
+
+  async function callCloseHook(method: 'closeBundle' | 'closeWatcher') {
+    activeCloseHooks++
     try {
-      await callControllers('dispose')
+      await callControllers(method)
     }
     finally {
-      dependencyTracker.dispose()
+      activeCloseHooks--
+      releaseTerminalContext()
     }
+  }
+
+  function disposeControllers() {
+    disposePromise ??= (async () => {
+      try {
+        await callControllers('dispose')
+      }
+      finally {
+        // 只计原始关闭钩子，避免共享 dispose 与完整 close Promise 相互等待。
+        disposeSettled = true
+        releaseTerminalContext()
+        dependencyTracker.dispose()
+      }
+    })()
+    return disposePromise
   }
 
   function setSourceState(provider: string, ids: string[], state: SourceState) {
@@ -305,31 +327,29 @@ export function createCompilerPluginPlugins(ctx: CompilerContext): Plugin[] {
     async buildEnd(error) {
       await callControllers('buildEnd', error)
     },
-    async closeWatcher() {
-      if (closeWatcherCalled) {
-        return
-      }
-      closeWatcherCalled = true
+    closeWatcher() {
+      closeWatcherPromise ??= (async () => {
+        try {
+          await callCloseHook('closeWatcher')
+        }
+        finally {
+          await disposeControllers()
+        }
+      })()
+      return closeWatcherPromise
+    },
+  }, 'source', 'source')
+
+  function closeControllers() {
+    closeBundlePromise ??= (async () => {
       try {
-        await callControllers('closeWatcher')
+        await callCloseHook('closeBundle')
       }
       finally {
         await disposeControllers()
       }
-    },
-  }, 'source', 'source')
-
-  async function closeControllers() {
-    if (closeBundleCalled) {
-      return
-    }
-    closeBundleCalled = true
-    try {
-      await callControllers('closeBundle')
-    }
-    finally {
-      await disposeControllers()
-    }
+    })()
+    return closeBundlePromise
   }
 
   const outputPlugin = markWeappCompilerPlugin({

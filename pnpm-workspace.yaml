@@ -155,8 +155,6 @@ allowBuilds:
 
 shamefullyHoist: true
 patchedDependencies:
-  vite@8.3.5: patches/vite@8.3.5.patch
-  rolldown@1.2.16: patches/rolldown@1.2.16.patch
   chokidar@6.0.0: patches/chokidar@6.0.0.patch
   vitest@5.0.5: patches/vitest@5.0.5.patch
   '@vitejs/plugin-vue@6.0.10': patches/@vitejs__plugin-vue@6.0.10.patch
