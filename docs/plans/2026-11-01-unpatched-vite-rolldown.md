@@ -4,7 +4,7 @@
 
 候选使用官方 Vite 8.3.5、Rolldown 1.2.16，删除两份工作区补丁及其登记，锁文件由 pnpm 重新生成。Chokidar、Vitest、plugin-vue 三份补丁保持不变。
 
-本候选准备通过草稿 PR 持续验证。正常推送已被原生 pre-push 的 Vite 契约失败拦截；尚未创建 PR，需获得本次推送例外后才可进入远端 CI。当前不能视为通过发布、完整资源或真实 IDE runtime 验收；原始失败断言和资源门限保持不变。
+本候选已创建草稿 PR #1294 持续验证。正常推送被原生 pre-push 的 Vite 契约失败拦截后，用户明确授权本 PR 在该已确认上游阻塞下推送候选和后续修复；不将例外记为本地门禁通过。全部远端 CI、原生审批、原始失败断言和资源门限保持不变，当前不能视为通过发布、完整资源或真实 IDE runtime 验收。
 
 ## 产品实现
 
@@ -20,7 +20,9 @@ classic 多轮构建以前复用自有 object hook，原版 Vite 的包装器会
 
 可选 compiler provider 关闭后清除 config/native context 引用；重复和并发关闭等待对应资源完成。清理期间仍允许控制器使用其上下文。现有 CompilerSession、generation watcher 的关闭/重启等待机制保留；没有新增依赖私有字段访问、fork、运行时依赖改写、独立编译进程或手写 bundle。
 
-`compilerPlugin/index.ts` 已超过 300 行。本次只调整现有闭包的终态清理，保留其单一所有者；拆分会扩大生命周期变更，暂不拆分。新增解析和实例隔离模块均拆为小文件。
+多 provider 的终态清理等待全部 controller 收敛，单项 close/dispose 失败不再跳过其余资源，所有错误均保留。初始化部分成功后其他工厂失败，或最终名称校验失败时，也会等待并释放本轮已返回的 controller；失败初始化不注册 HMR。普通构建 hook 保留现有失败传播行为。
+
+`compilerPlugin/index.ts` 已超过 300 行。独立的 controller 初始化与清理已提取至 `compilerPlugin/lifecycle.ts`，其余可变上下文和关闭状态保留同一闭包，避免扩大生命周期所有权变更。新增解析和实例隔离模块均拆为小文件。
 
 ## 回归入口
 
@@ -61,9 +63,13 @@ node --expose-gc --import tsx scripts/dependencyContracts/rolldown/run.mjs --rep
 
 正常推送的 pre-push 在独立冻结候选快照中实际执行，lint、全部构建层、产品相邻单测和包级 typecheck 通过。工具测试为 57 文件 784 项通过、1 文件 1 项失败：官方 Vite 的 hook 包装器和 owner 在 GC 后仍存活，违反现有释放断言。该契约直接提取依赖内部函数，不加载 weapp-vite，不能通过产品代码修复。推送退出 1，失败回执未复用为成功。
 
+后续异常清理回归先复现 5 项失败，修复后 compilerPlugin 目录 6 文件 46 项通过；包级 typecheck、build 及新 dist 的独立 wv npm 消费验证通过。该消费者再次核验官方依赖内容，并通过构建、开发更新、配置重启、Web 和两个 headless 页面检查点。
+
 合并主线后的独立 npm `wv` 消费者通过新 CI 入口实际执行，主包、独立分包、worker、Web 构建、开发源码更新、package imports 映射变化及配置重启通过。headless runtime 的主包与独立分包两个检查点通过。该安装的 Vite 8.3.5 共 17 份 JS/JSON、Rolldown 1.2.16 共 32 份 JS/JSON 与官方 npm 档案逐字节一致，integrity 校验通过，两者均未应用补丁。
 
 合并前候选的普通 Vite 宿主独立 npm 消费者通过相同构建、开发更新、配置重启及 Web 验证；其 Vite/Rolldown 官方档案核验通过。Vite+ 先前使用官方 `@voidzero-dev/vite-plus-core@1.0.0`，其 70 份 JS/JSON 与官方档案一致，内置 Vite 8.3.1、Rolldown 1.2.11。该宿主首次构建因精确键 `#exact?raw` 被按 `#exact` 查找而失败；后续开发更新和配置重启未执行，失败安装及配置已保留。最新主线配对版本为 1.2.0，其内置 Vite 8.3.4、Rolldown 1.2.13；合并后消费者在 npm install 阶段因网络 ETIMEDOUT 退出，未进入构建，不记为产品通过或失败。官方 core 1.2.0 源码仍有相同精确键截断，但该观察不能代替运行验证。安装中独立存在的 Rolldown 1.2.16 不代表 Vite+ 使用它，也不将 core alias 称为普通 Vite 8.3.5。
+
+PR 首轮 CI 中普通 Vite 和 wv 的独立 imports 消费者通过。Vite+ 消费者完成安装并核对 core 1.2.0 的 65 份 JS/JSON 与官方档案一致后，在主包、独立分包首次构建均复现 `Missing "#exact" specifier`。本轮保留原始错误，后续阶段未执行。该结果补足了先前仅有源码观察、安装超时的证据边界。
 
 真实 Stable DevTools 2.02.2608080、基础库 3.17.2 已运行同一独立消费者并采集两个页面检查点，但严格 suite 因 5 次 `SystemError -80002 / webapi_getwxaasyncsecinfo:fail` 失败；随后关窗缺少完整原生销毁证据，清理门禁也失败。没有修改错误门禁、重复导航或重启重试来换取通过。
 
@@ -75,7 +81,7 @@ node --expose-gc --import tsx scripts/dependencyContracts/rolldown/run.mjs --rep
 | --- | --- |
 | Vite hook 包装器释放 | 原始 object hook 仍持有 wrapper 和 owner；产品只隔离自有 hook |
 | Vite 原生 imports resolver | 直接调用仍把 `part?raw` 替换为 `part?raw.js`；产品公开插件路径已覆盖 |
-| Vite+ core 精确 query 键 | 官方 core 1.0.0 在首次构建中查找 `#exact` 而不是精确键 `#exact?raw`；1.2.0 的源码仍有截断，运行验证被安装超时阻断 |
+| Vite+ core 精确 query 键 | 官方 core 1.0.0、1.2.0 均在首次构建中查找 `#exact` 而不是精确键 `#exact?raw`，原错误保留 |
 | Vite optimizer close | 重复关闭未共享资源完成边界 |
 | Vite optimizer cancellation | 取消未等待 native cancel 完成 |
 | Vite server scan cancellation | 关闭后仍出现新的临时优化目录 |
