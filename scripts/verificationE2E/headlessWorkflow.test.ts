@@ -70,7 +70,7 @@ describe('complete headless DOM workflow sharding', () => {
     expect(preparationIndex).toBeGreaterThanOrEqual(0)
     expect(preparationIndex).toBeLessThan(commands.indexOf(cleanupCommand))
     expect(commands.indexOf(cleanupCommand)).toBeLessThan(commands.indexOf(runtimeCommand))
-    for (const name of ['windowsKernelQuery', 'processes', 'crash', 'windowsProcessTree', 'windowsProcessRows', 'windowsQueryTrace']) {
+    for (const name of ['windowsKernelQuery', 'processes', 'crash', 'windowsGenerationCapture', 'windowsGenerationReporting', 'windowsProcessTree', 'windowsProcessRows', 'windowsQueryTrace']) {
       expect(cleanupCommand).toContain(`e2e/utils/devProcessCleanup/${name}.test.ts`)
     }
     expect(cleanupCommand).toContain('WEAPP_VITE_E2E_CLEANUP_TRACE=1')

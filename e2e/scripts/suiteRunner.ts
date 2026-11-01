@@ -10,6 +10,7 @@ import { randomUUID } from 'node:crypto'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
+import { stripVTControlCharacters } from 'node:util'
 import { execa } from 'execa'
 import { withMachineE2ELease } from '../../packages/devtools-runtime/src/lease/machine'
 import { MANAGED_PROJECT_JOURNAL_ENV } from '../../packages/weapp-ide-cli/src/devtoolsProjectOwnership'
@@ -138,6 +139,22 @@ function resolveIdeHmrCompanionSentinelPath(suiteName: string) {
   return path.join(IDE_HMR_COMPANION_SENTINEL_DIR, `${safeSuiteName}.passed`)
 }
 
+/** 仅从已知宿主日志正文识别独立 OOM；路径和普通测试标题不授予停机依据。 */
+function hasUnsafeRuntimeDiagnostic(line: string) {
+  const normalized = stripVTControlCharacters(line)
+  if (normalized.includes(DEV_PROCESS_GRACEFUL_SHUTDOWN_ERROR_NAME)
+    || /WECHAT_DEVTOOLS_HOST_IDENTITY_MISMATCH|DEVTOOLS_INSTALLATION_MISMATCH|FATAL ERROR.*(?:heap|memory)|out of memory/i.test(normalized)) {
+    return true
+  }
+  const runtimePrefix = /^\s*\[(?:info|warn|error)\]\s+\[runtime:devtools-log\]\s+/i.exec(normalized)
+  const runtimeMessage = runtimePrefix ? normalized.slice(runtimePrefix[0].length) : undefined
+  const messageBody = runtimeMessage?.split(/\s(?:project|runtimeRoot)=/, 1)[0] ?? ''
+  const devtoolsToken = /\bDevTools\b/i.exec(messageBody)
+  return (devtoolsToken !== null && /\bOOM\b/i.test(messageBody.slice(devtoolsToken.index + devtoolsToken[0].length)))
+    // 保留独立完整签名兼容；不能把普通输出中的同名短语当作该签名。
+    || /^WeChat\s+DevTools\s*:\s*OOM$/i.test(normalized.trim())
+}
+
 function createTaskArtifactCollector() {
   const artifacts: SuiteTaskArtifact[] = []
   const seen = new Set<string>()
@@ -163,7 +180,7 @@ function createTaskArtifactCollector() {
       if (/DEVTOOLS_LOGIN_REQUIRED|WechatIdeLoginRequiredError|检测到微信开发者工具登录状态失效|\[runtime:launch-login\]/.test(line)) {
         runtimeBlocker ??= { code: 'needs-login', reason: line.trim() }
       }
-      if (line.includes(DEV_PROCESS_GRACEFUL_SHUTDOWN_ERROR_NAME) || /WECHAT_DEVTOOLS_HOST_IDENTITY_MISMATCH|DEVTOOLS_INSTALLATION_MISMATCH|FATAL ERROR.*(?:heap|memory)|out of memory|DevTools.*OOM/i.test(line)) {
+      if (hasUnsafeRuntimeDiagnostic(line)) {
         unsafeRuntimeReason ??= line
       }
       const runtimeMatch = /\[devtools:runtime\] (\{.*\})/.exec(line)
@@ -368,15 +385,20 @@ export function getTaskSpawnOptions(task: SuiteTask): Options {
   }
 }
 
-export function formatSuiteSummary(suiteName: string, results: SuiteTaskResult[]) {
+export function formatSuiteSummary(suiteName: string, results: SuiteTaskResult[], plannedCount = results.length) {
   const failures = results.filter(result => result.exitCode !== 0)
   const lines = [
     '',
-    `[${suiteName}] summary ${results.length - failures.length}/${results.length} passed`,
+    `[${suiteName}] summary ${results.length - failures.length}/${plannedCount} passed`,
   ]
 
+  if (results.length < plannedCount) {
+    lines.push(`[${suiteName}] incomplete: ${plannedCount - results.length} task(s) not executed`)
+  }
   if (failures.length === 0) {
-    lines.push(`[${suiteName}] all tasks passed`)
+    if (results.length === plannedCount) {
+      lines.push(`[${suiteName}] all tasks passed`)
+    }
     return lines.join('\n')
   }
 
@@ -862,6 +884,17 @@ async function runOwnedTaskSuite(
       exitCode = 1
       task.unsafeRuntimeReason ??= task.runtimeBlocker.reason
     }
+    if (task.unsafeRuntimeReason) {
+      // 保留原有非零退出和首条诊断；后续错误不能覆盖已观察到的终态故障。
+      if (exitCode === 0) {
+        exitCode = 1
+      }
+      if (!reason?.includes(task.unsafeRuntimeReason)) {
+        reason = [task.unsafeRuntimeReason, reason].filter(Boolean).join('; ')
+      }
+      options.onUnsafeRuntime?.(task.unsafeRuntimeReason)
+      resourceCleanupFailed = true
+    }
     const durationMs = Date.now() - startedAt
     const runtimeBlocker = exitCode !== 0 ? task.runtimeBlocker : undefined
     if (runtimeBlocker) {
@@ -880,10 +913,6 @@ async function runOwnedTaskSuite(
       timings,
     })
 
-    if (task.unsafeRuntimeReason) {
-      options.onUnsafeRuntime?.(task.unsafeRuntimeReason)
-      resourceCleanupFailed = true
-    }
     const status = exitCode === 0 ? 'pass' : 'fail'
     console.log(formatSuiteProgress(
       suiteName,
@@ -904,7 +933,13 @@ async function runOwnedTaskSuite(
 
   await options.afterAll?.()
   const assignedTasks = tasks.filter(task => !task.outOfScopeReason).map(task => task.label)
-  const executionStatus = signal.aborted ? 'cancelled' : results.length !== assignedTasks.length ? 'incomplete' : results.some(result => result.exitCode !== 0 || result.status !== 'passed') ? 'failed' : 'passed'
+  const expectedTasks = reportContext.execution?.scope === 'shard'
+    ? reportContext.execution.assignedTasks
+    : reportContext.partial ? assignedTasks : reportContext.plannedTasks.filter(task => !task.outOfScopeReason).map(task => task.label)
+  const plannedExecution = expectedTasks.length
+  const executedLabels = new Set(results.map(result => result.label))
+  const executionIncomplete = results.length !== plannedExecution || expectedTasks.some(label => !executedLabels.has(label))
+  const executionStatus = signal.aborted ? 'cancelled' : executionIncomplete ? 'incomplete' : results.some(result => result.exitCode !== 0 || result.status !== 'passed') ? 'failed' : 'passed'
   reportContext.execution = {
     ...(reportContext.execution ?? { scope: reportContext.partial ? 'ad-hoc' : 'full', profile: currentVerificationProfile(suiteName.replace(/^e2e:/, '').split(/\s/)[0]!), assignedTasks, startedAt: suiteStartedAt, finishedAt: '' }),
     executionTopology,
@@ -924,7 +959,7 @@ async function runOwnedTaskSuite(
       )
     }
   }
-  console.log(signal.aborted ? `[${suiteName}] cancelled after ${results.length}/${tasks.length} tasks; cleanup finished` : formatSuiteSummary(suiteName, results))
+  console.log(signal.aborted ? `[${suiteName}] cancelled after ${results.length}/${tasks.length} tasks; cleanup finished` : formatSuiteSummary(suiteName, results, plannedExecution))
   if (!shouldEmitReportMarkers()) {
     const artifactSummary = formatSuiteArtifactsSummary(
       suiteName,
@@ -935,13 +970,10 @@ async function runOwnedTaskSuite(
     }
   }
 
-  const plannedExecution = reportContext.execution?.scope === 'shard'
-    ? assignedTasks.length
-    : reportContext.plannedTasks.filter(task => !task.outOfScopeReason).length
-  const incomplete = reportContext.strict && ((reportContext.partial && reportContext.execution?.scope !== 'shard')
-    || results.length !== plannedExecution
+  const strictIncomplete = reportContext.strict && ((reportContext.partial && reportContext.execution?.scope !== 'shard')
     || !results.length || results.some(result => result.status !== 'passed'))
-  if (signal.aborted || ((resourceCleanupFailed || failOnTaskFailure || reportContext.strict) && (results.some(result => result.exitCode !== 0) || incomplete))) {
+  if (signal.aborted || resourceCleanupFailed || executionIncomplete
+    || ((failOnTaskFailure || reportContext.strict) && (results.some(result => result.exitCode !== 0) || strictIncomplete))) {
     process.exitCode = 1
     return 1
   }
