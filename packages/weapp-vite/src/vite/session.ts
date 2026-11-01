@@ -15,6 +15,7 @@ import { prepareStatefulClassicHandoff } from '../runtime/statefulHmr/session'
 import { buildStatefulHmrSnapshot, prepareStatefulHmrSnapshot } from '../runtime/statefulHmr/snapshotBuild'
 import { clearStatefulHmrSnapshot, offerStatefulHmrSnapshot, StatefulHmrSnapshotHandoff } from '../runtime/statefulHmr/snapshotHandoff'
 import { syncManagedTsconfigFiles } from '../runtime/tsconfigSupport'
+import { createViteInputRegistration } from '../runtime/watch/viteRegistration'
 import { resolveRealpath } from '../utils/realpathScope'
 import { prepareNpmAssets } from './npm'
 import { publishOwnedNpmAssets } from './npm/ownership'
@@ -27,6 +28,7 @@ export class WeappBuildSession extends CompilerSession {
   private validating?: Promise<void>
   private hostClosing?: Promise<void>
   private terminalClosing?: Promise<void>
+  private inputRegistration?: ReturnType<typeof createViteInputRegistration>
   isWeb = false
   statefulController?: ReturnType<typeof createStatefulHmrHostPlugins>
 
@@ -106,6 +108,7 @@ export class WeappBuildSession extends CompilerSession {
   /** 只关闭本代资源；宿主负责在原生 watcher 和服务器均退出后恢复 IDE 设置。 */
   closeHostGeneration(reason: 'restart' | 'close'): Promise<void> {
     if (!this.hostClosing) {
+      this.inputRegistration?.cancel()
       if (reason === 'restart' && this.hmrRuntimeSession.fallback) {
         prepareStatefulClassicHandoff(this.context)
       }
@@ -169,6 +172,21 @@ export class WeappBuildSession extends CompilerSession {
   }
 
   async startDev(server: ViteDevServer) {
+    if (this.isClosing) {
+      throw new Error('[weapp-vite] 已关闭的会话不能启动开发宿主。')
+    }
+    const registration = createViteInputRegistration(server, [this.isWeb ? server.config.root : this.context.configService.absoluteSrcRoot])
+    this.inputRegistration = registration
+    this.onClose(() => {
+      if (this.inputRegistration === registration) {
+        this.inputRegistration = undefined
+      }
+      return registration.close()
+    })
+    const registered = await this.run(() => registration.ready)
+    if (registered === 'closed' || this.isClosing) {
+      return
+    }
     if (this.isWeb) {
       await this.run(() => syncManagedTsconfigFiles(this.context))
       this.state = 'watching'

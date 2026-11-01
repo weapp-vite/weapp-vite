@@ -5,6 +5,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { createServer } from 'vite'
 import { expect, it, onTestFailed, vi } from 'vitest'
+import { createViteInputRegistration } from '../runtime/watch/viteRegistration'
 import { weapp } from './index'
 
 const harness = vi.hoisted(() => ({ pause: undefined as (() => Promise<void>) | undefined }))
@@ -19,35 +20,6 @@ vi.mock('../runtime/tsconfigSupport', async (importOriginal) => {
     },
   }
 })
-
-/** Vite 创建 watcher 后还会异步初始化环境，configureServer 可能晚于唯一一次 ready。 */
-function waitForStartupWatcherReady(watcher: ViteDevServer['watcher']) {
-  const initialScan = watcher as ViteDevServer['watcher'] & { _readyEmitted?: boolean }
-  if (typeof initialScan._readyEmitted !== 'boolean') {
-    throw new TypeError('The Vite watcher does not expose its initial scan readiness')
-  }
-  return new Promise<void>((resolve, reject) => {
-    let onReady: () => void
-    let onError: (error: Error) => void
-    const cleanup = () => {
-      watcher.off('ready', onReady)
-      watcher.off('error', onError)
-    }
-    onReady = () => {
-      cleanup()
-      resolve()
-    }
-    onError = (error: Error) => {
-      cleanup()
-      reject(error)
-    }
-    watcher.once('ready', onReady)
-    watcher.once('error', onError)
-    if (initialScan._readyEmitted) {
-      onReady()
-    }
-  })
-}
 
 it.each(['entry-validation', 'initial-build'] as const)('keeps source saves admitted during %s before the classic graph is ready', async (stage) => {
   const root = await realpath(await mkdtemp(path.join(os.tmpdir(), 'weapp-vite-startup-save-')))
@@ -162,7 +134,13 @@ it.each(['entry-validation', 'initial-build'] as const)('keeps source saves admi
               }
             })
             phase = 'watcher-initial-scan'
-            await waitForStartupWatcherReady(host.watcher)
+            const registration = createViteInputRegistration(host, [path.join(root, 'src')])
+            try {
+              expect(await registration.ready).toBe('registered')
+            }
+            finally {
+              await registration.close()
+            }
             watcherReady = true
             phase = 'waiting-for-admission-gate'
           },

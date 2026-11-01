@@ -1,63 +1,101 @@
-# 构建依赖的引用生命周期补丁
+# 官方编译依赖的生命周期与资源验收
 
-本轮候选针对 Vite `8.3.5` 和 Rolldown `1.2.16`。补丁由工作区的
-`patchedDependencies` 登记，并随 `pnpm install --frozen-lockfile` 应用。
-本说明不代表正式资源验收、跨平台矩阵或真实微信 IDE 验收已经通过。
+当前工作区使用官方 Vite `8.3.5` 和 Rolldown `1.2.16`，没有对应补丁文件、
+`patchedDependencies` 登记或锁文件补丁绑定。Vite+ `1.4.0` 的 launcher/core 保持官方配对，
+其内置 Rolldown 为 `1.2.15`；独立 Rolldown 与 Vite+ 内置引擎分别核对实际版本。
+本说明不代表本轮产品验证、正式资源验收、跨平台矩阵或真实微信 IDE 验收已经通过。
 
-## 适用范围
+## 交付范围
 
-补丁只影响使用本仓库工作区配置和锁文件安装的依赖。发布的 `weapp-vite` 产物仍然从外部
-`vite` / `rolldown` 包加载相关实现，工作区的 pnpm 补丁不会自动传递给 npm 消费者。
-独立应用安装已发布的 `weapp-vite` 时，不能据此宣称同样获得了内存修复。
+发布的 `weapp-vite` 继续加载外部官方 `vite` / `rolldown`。此前仅由工作区 pnpm 应用的补丁
+不会自动传递给普通 npm 消费者，现已移除，不能再据此宣称独立安装获得了相同内存修复。
 
-候选使用 JS 补丁，没有替换平台原生二进制，也没有手工改写应用构建产物。
-后续若通过上游版本或其他分发方式交付给外部用户，仍需独立安装消费端并验证实际解析到的实现。
+当前仍保留 Chokidar `6.0.0`、Vitest `5.0.5` 和 `@vitejs/plugin-vue` `6.0.10` 三份独立补丁。
+其中 Chokidar 与 `readdirp` 由 `weapp-vite` 的 `alwaysBundle` 打入发布 JavaScript，消费者使用相同修补实现；
+Vitest 与 Vue 插件补丁服务仓库测试及 Web 开发、构建，不会自动修改消费者安装的对应依赖。
+各补丁用途与发布消费检查见[补丁说明](./README.md)。
 
-## 修复的引用链
+没有替换平台原生二进制，也不手工改写应用构建产物。普通 npm 安装的消费者仍须独立确认实际
+解析到的依赖、发布产物和监听实现，不能用工作区运行结果替代发布消费验证。
 
-Vite 的原始 hook 元数据缓存通过包装器数组强持有历次构建环境。补丁将包装器登记改为弱引用，
-单独保存元数据描述符，保持原始 `filter` / `order` 广播顺序、只读写入错误和重入追加行为。
-用户显式将首个包装器的元数据改为访问器时，补丁保留该接收对象，以维持 `this.handler`
-等动态行为；全部访问器移除或恢复为数据属性后解除这项保留。
+## 产品适配与内部观察
 
-Vite 传给原生 resolver 的回调原本与环境工厂共享闭包，额外捕获 `partialEnv` / `getEnv`。
-补丁通过顶层工厂创建 imports、警告和 debug 回调。imports 回调仍在每次调用时展开原 options，
-并读取当次的 `resolveOptions.isRequire`；没有丢弃后续回调或将输入提前冻结。
-`getEnv` 的开发模式生命周期保持原实现，需要独立验证其行为。
+`weapp-vite` 为每代构建隔离自有插件钩子容器，关闭后释放自身持有的会话引用。
+package imports 的 query/hash 兼容在产品插件内处理，保留精确映射、条件、自定义解析器和 external 语义。
+这些适配约束产品自己的引用与解析路径，不改写第三方插件或上游私有缓存。
 
-Vite 开发依赖扫描的取消原本仍会派生优化任务，关闭时并发读取的 `optimizationResult`
-可能尚未建立，导致 `close()` 返回后留下新的缓存目录。补丁先终结初始化和扫描，
-阻止关闭阶段派生新写入，并等待已开始的优化、原生取消和缓存发布。发布中的任务不会
-因引用已从 `optimizationResult` 移走而失去归属；重复关闭复用同一个结果。
+产品自有开发宿主通过公开 Chokidar API 接管监听，并保留显式使用 Vite 原生后端的配置路径。
+启动和重启分别等待本代后端初扫或现存源码登记；关闭先解除登记屏障，再等待本代编译任务和资源释放。
+独立 owner 关闭后不能撤销幸存 owner 或用户自己的监听。登记状态与实际保存交付是两项观察，
+需要分别验证；`ready` 不能替代实际文件变化、产物更新及关闭证据。
+显式要求 `followSymlinks:false`、glob 监听或原生 fs-events 后端的配置仍使用 Vite 原生 watcher；
+不能把适配后端的通过结果用于证明这些回退路径的缺失输入登记问题已经解决。
 
-Rolldown 的 normalized options 包装器可经由插件闭包回到保存原生回调的 options。
-补丁保存同一次原生调用的纯 JS 数据，保持输入和输出包装器的缓存及 getter 行为，
-避免由该包装器长期持有原生 options。原生回调执行、失败传播和关闭顺序仍须符合原契约。
+原 Vite hooks、resolver 和 optimizer 诊断继续保留，包括元数据广播、动态输入、强弱引用、
+受控扫描取消及缓存发布边界。原 Rolldown 诊断继续保留 options 身份、getter、关闭后引用和 GC 等断言。
+这些诊断可能仍暴露官方依赖的内部行为差异；产品适配不等于这些问题已经由上游修复。
+受控替身上的取消或回收结果，也不能写成真实原生异步取消已经验收。
 
-## 验证入口与边界
+## 公开产品硬门禁
 
 ```sh
 pnpm install --frozen-lockfile
-pnpm vitest run scripts/dependencyContracts/vite.test.ts
+pnpm --filter weapp-vite build
 pnpm test:dependency-contracts
 ```
 
-Vite 契约读取当前安装包，在独立 Node 子进程中按严格模式执行所提取的函数。
-它验证元数据读写、广播中止、重入、弱引用回收、访问器接收对象、imports 条件、动态输入和日志参数。
-优化器覆盖初始化未完成、扫描取消、缓存发布与遍历等待原生构建四个受控关闭边界，并用真实 Vite
-middleware server 暂停原生依赖扫描，确认关闭会等待扫描且不留下取消后新建的缓存；原生取消期间的回归同时确认 writer 终结前不清理缓存。
-源码提取失败会直接失败，不静默跳过，也不在线下载另一份依赖作为测试前提。
-包元数据查找和原生插件构造在此处是受控边界；它不等同于真实 N-API、开发服务器或 watch 验证。
+`test:dependency-contracts` 通过正式入口取得机器级串行租约，依次运行 Vite、Rolldown 的公开产品契约
+和现有 Chokidar 完整依赖契约，不接受跳过或继续忽略失败。Vite/Rolldown 产品入口只接受 `--report <file>`，
+不能通过局部筛选得到完整通过结果。
 
-`test:dependency-contracts` 取得机器级串行租约，在独立 Node 进程中依次运行 Vite 函数契约和
-Rolldown 真实 build / watch 契约。后者固定覆盖八组场景：不同 output、缓存与 getter、重复关闭、
-失败后复用、失败时的后续回调、关闭后的引用释放、watch 重建与 scan。watch 必须实际执行
-42 → 43 的产物变化，关闭后的 input/output options 和日志 owner 必须释放；关闭或超时不明时
-保留租约与现场，不能与其他 E2E 重叠。报告保存到 `.tmp/dependency-contracts/rolldown.json`，
-CI 的 Linux、Windows 和 macOS 构建矩阵运行同一入口并上传报告。
+Vite 的六项清单固定为 `hooks`、`resolver`、`mini-optimizer`、`web-optimizer`、`polling`、`ready`：
 
-开发模式依赖优化、真实 resolver 的 package imports 和共享插件跨环境元数据更新，仍需真实
-Vite 集成验证，不能只依据上述函数级测试判断通过。
+- 通过真实构建观察自有钩子执行顺序、连续构建和运行结果，以及 package imports 的映射、条件与错误行为。
+- 观察小程序模式的依赖发现设置，以及 Web 扫描关闭等待和缓存状态；这些观察不证明所有 native cancel 时序。
+- 通过实际文件保存观察多个监听 owner、独立原生 listener、两种关闭顺序和幸存者交付。
+- 观察缺失 env/public 目录下的首次保存，以及重启后立即保存、新 owner 登记与旧 owner 停止回调。
+
+当前官方 Vite `8.3.5` 的 Web scanner 关闭仍有真实失败：扫描尚在执行时请求关闭，
+扫描结束后会留下新建的 `deps_temp_*` 缓存。立即关闭和先等待公开 requests idle 再关闭均保留
+严格的缓存清空断言；它们属于产品硬门禁，不能移入内部诊断或以额外调用一次 `close()` 宣称修复。
+只通过 watcher 或小程序模式不表示完整产品门禁通过。
+
+Rolldown 的七项清单固定为 `generate-write`、`close`、`errors`、`inflight-error`、`repeat-build`、`watch`、`scan`：
+验证 generate/write 产物和运行结果、公开 output 选项、关闭等待、错误及后续回调、重复构建、
+实际 watch 编辑后 42 → 43 的产物变化，以及 scan 与关闭钩子。产品门禁不要求内部 options 对象身份或 GC 形态。
+
+两份产品报告分别保存到 `.tmp/dependency-contracts/vite.json` 和 `.tmp/dependency-contracts/rolldown.json`，
+使用 `suite: product-lifecycle`，记录完整 `planned`、实际成功的 `completed` 前缀和逐项观察。
+缺项、重复、乱序、失败或空观察不能被记为完整通过；后续失败保留此前已完成的结果。
+关闭或超时不明时必须保留资源归属与现场，不能与其他 E2E 重叠。
+
+CI 的 Linux、Windows 和 macOS 构建矩阵仍须运行适用入口并保存报告。
+当前机器上的单次通过不能代替跨平台、发布消费或正式资源验收；本轮尚在执行的验证只记录实际状态。
+
+当前候选的普通 npm tarball 消费验证已覆盖 `wv`、Vite 和 Vite+ 三条宿主：主包、独立分包、worker、
+imports 精确 query、源码更新、配置重启、headless 页面及 Web 构建均通过，所用官方编译依赖已逐文件核对无补丁。
+该结果不代替 Web optimizer 关闭门禁或正式资源验收。
+
+局部真实 DevTools 消费验证使用已安装 Stable `2.02.2608080`、基础库 `3.17.2`，不宣称为官方最新版本。
+主包和独立分包的两个 DOM 检查点都捕获到预期内容，但宿主产生五条 `webapi_getwxaasyncsecinfo:fail`
+错误，严格日志断言失败；关窗也未取得完整原生销毁证据。本次验收仍为失败，后续仅通过正常退出安装和
+领域恢复终结本任务资源，保留原错误与关窗证据，没有通过重跑、忽略日志或补造销毁事件改变结果。
+
+## 独立内部诊断
+
+```sh
+pnpm diagnose:dependency-internals
+```
+
+该入口在独立 Node 进程中使用 `--expose-gc`，运行原 Vite 函数提取与 watcher 诊断，以及原 Rolldown
+真实 build/watch、options 身份和引用释放诊断。提取失败、内部断言失败或清理失败仍非零退出，
+不静默跳过、不以在线下载另一份依赖替代当前安装，也不将产品通过改写为诊断通过。
+
+诊断报告使用 `suite: dependency-internals`，完整入口不接受筛选。底层 `vite/run.mjs` 的显式 `--case`
+筛选只表示所选诊断完成，必须保留完整计划、所选清单和实际完成项；不能由该结果推断全部诊断通过。Rolldown 报告保存在
+`.tmp/dependency-diagnostics/rolldown.json`。内部诊断与产品门禁的结果分别记录，失败证据继续保留。
+
+## 正式资源验收
 
 正式资源验收继续使用 `scripts/editSequence` 和 `compiler-resource-acceptance.yml` 的原门限：
 
@@ -70,17 +108,11 @@ Vite 集成验证，不能只依据上述函数级测试判断通过。
 函数级 WeakRef 回收或一次诊断内存下降不能替代这些门限。真实微信开发者工具及其宿主内存验收
 仍按 IDE 套件执行，不能用 headless 资源报告替代。
 
-## 升级与移除
+## 后续升级
 
-依赖升级前检查上游对应实现和实际安装后的补丁应用结果。Vite `8.3.5`、Rolldown `1.2.16`
-的发布包已做只读源码比较，仍有本轮涉及的引用结构；这项比较不是新版运行验收。
+升级前核对官方依赖及 Vite+ 配对版本、实际解析入口和锁文件，重建受影响包后依次执行公开产品门禁、
+独立内部诊断、发布消费验证和必要的跨平台及正式资源验收。内部诊断与产品行为不一致时，先保留双方证据，
+不能仅因版本号提高、一次构建通过或产品适配生效，就宣称上游内存和原生生命周期问题全部解决。
 
-当上游正式修复后，在同一候选提交中移除对应补丁登记并由 pnpm 更新锁文件，再运行固定契约、
-真实 build/watch、必要的跨平台检查和原资源门禁。不能仅因版本号提高、补丁冲突或某次构建通过
-就移除保护；也不能更新提取边界后顺手放宽行为断言。测试文件按 hook 行为、引用生命周期和 resolver
-拆分，保持单文件小于 300 行；第三方发布 bundle 的结构由依赖维护。
-
-Rolldown 1.2.15 新增的公开 `charset` 输出字段同样进入纯 JS 快照。依赖契约按公开 accessor 集合核对字段，并覆盖 ASCII、UTF-8、默认值、跨生成轮次与关闭后读取；旧补丁的 `undefined` 回归保留独立失败证据。
-
-Rolldown 1.2.16 的 normalized options 包装器仍持有 native options，因此保留完整快照补丁。
-新版新增的 output code cache 及其 `clear()` 释放流程保持上游实现，未被快照迁移覆盖。
+后续若移除 Chokidar 等剩余补丁，仍须确认上游正式版本覆盖原行为契约，并完成跨平台与发布产物回归，
+同步核对打包策略和第三方软件声明。不得为了通过当前官方版本而弱化既有内部诊断断言。

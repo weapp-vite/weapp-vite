@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest'
 import { parseViteContractCases, runViteContractCases, viteContractCases } from './runner.mjs'
 
-it('keeps every Vite contract in the default gate and supports explicit diagnostic cases', () => {
+it('keeps every upstream Vite diagnostic in the default inventory and supports explicit diagnostic cases', () => {
   expect(parseViteContractCases([])).toEqual(['hooks', 'resolver', 'optimizer', 'optimizer-cancel', 'optimizer-server', 'polling'])
   expect(parseViteContractCases(['--case', 'resolver', '--case=optimizer-cancel', '--case=resolver'])).toEqual(['resolver', 'optimizer-cancel'])
   for (const args of [['--case'], ['--case='], ['--case=missing'], ['--skip']]) {

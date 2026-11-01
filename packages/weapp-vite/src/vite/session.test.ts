@@ -1,3 +1,8 @@
+import type { ViteDevServer } from 'vite'
+import { EventEmitter } from 'node:events'
+import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import os from 'node:os'
+import path from 'node:path'
 import { expect, it, vi } from 'vitest'
 import { deferWatcherResourceCleanup } from '../runtime/watcherPlugin'
 import { WeappBuildSession } from './session'
@@ -43,4 +48,33 @@ it('releases only its own resources and reaches closed even when cleanup rejects
   expect(secondCleanup).not.toHaveBeenCalled()
   await second.close()
   expect(secondCleanup).toHaveBeenCalledOnce()
+})
+
+it('rejects starting an already closed session before creating registration observers', async () => {
+  const session = new WeappBuildSession()
+  await session.close()
+  await expect(session.startDev({} as ViteDevServer)).rejects.toThrow('已关闭')
+})
+
+it('cancels registration before waiting for in-flight startup on close', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'host-startup-registration-'))
+  const session = new WeappBuildSession()
+  session.state = 'ready'
+  session.isWeb = true
+  const getWatched = vi.fn(() => ({}))
+  const watcher = Object.assign(new EventEmitter(), { options: {}, getWatched })
+  const server = { watcher, config: { root, server: { watch: {} }, experimental: {} } } as unknown as ViteDevServer
+  try {
+    await writeFile(path.join(root, 'entry.js'), 'export {}')
+    const startup = session.startDev(server)
+    await vi.waitFor(() => expect(getWatched).toHaveBeenCalled())
+    await session.close()
+    await startup
+    expect(session.state).toBe('closed')
+    expect(watcher.listenerCount('error')).toBe(0)
+  }
+  finally {
+    await session.close()
+    await rm(root, { recursive: true, force: true })
+  }
 })

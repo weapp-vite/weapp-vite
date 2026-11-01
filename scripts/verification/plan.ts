@@ -228,6 +228,15 @@ export async function createVerificationPlan(options: PlanOptions): Promise<Veri
         selectedTests.add(file)
       }
     }
+    if (mode === 'quick') {
+      const managed = [...selectedTests].filter(file => inventory.managed.has(file)).sort()
+      for (const file of managed) {
+        selectedTests.delete(file)
+      }
+      if (managed.length) {
+        remaining.push(`受管工具测试 ${managed.join(', ')} 会启动真实 server/watch 与机器租约，完整契约由 review / CI 承担；quick 未执行`)
+      }
+    }
     const scope = [...selectedTests].filter(file => inventory.all.includes(file) && (mode !== 'full' || !inventory.root.has(file))).sort()
     if (scope.length) {
       // 完整集合用目录和排除模式表达，避免 Windows 启动参数超过命令行长度限制。

@@ -21,6 +21,7 @@ const packages: WorkspacePackage[] = [
 ]
 const resources = getResourceBudget({ cpus: 4, totalMemoryBytes: 16 * 1024 ** 3, freeMemoryBytes: 12 * 1024 ** 3, jobs: 2 })
 const changes = (files: string[]): ChangeSet => ({ base: 'base', head: 'head', files, fingerprint: 'fingerprint', fallback: false, warnings: [] })
+const managedViteTest = 'scripts/dependencyContracts/vite.test.ts'
 
 async function createPlanRoot() {
   const root = await mkdtemp(path.join(os.tmpdir(), 'verify-plan-'))
@@ -395,7 +396,7 @@ it('retains managed review internal contracts for deleted E2E inputs without a q
 
 async function createToolPlanRoot() {
   const root = await createPlanRoot()
-  const files = ['scripts/helper.test.ts', 'scripts/helper.test.mjs', 'scripts/pr-context.test.mjs', 'scripts/workflow.test.ts', 'scripts/prAdmission/context.test.mjs']
+  const files = ['scripts/helper.test.ts', 'scripts/helper.test.mjs', 'scripts/pr-context.test.mjs', 'scripts/workflow.test.ts', 'scripts/prAdmission/context.test.mjs', managedViteTest]
   for (const file of files) {
     await mkdir(path.dirname(path.join(root, file)), { recursive: true })
     await writeFile(path.join(root, file), '')
@@ -439,6 +440,7 @@ it('unions script and workflow contracts once, and gives full the exact compleme
     const full = await createVerificationPlan({ ...input, mode: 'full' })
     const rootFiles = [...(await scriptTestInventory(root)).root]
     const extraFiles = plannedToolFiles(full, files)
+    expect(rootFiles).toContain(managedViteTest)
     expect(extraFiles.filter(file => rootFiles.includes(file))).toEqual([])
     expect([...rootFiles, ...extraFiles].sort()).toEqual([...files].sort())
     expect(full.tasks.find(item => item.id === 'repo-scripts')?.dependencies).toEqual(['tests'])
@@ -456,11 +458,56 @@ it('delegates unfilterable deleted scripts and retains neighboring and workflow 
     expect(plannedToolFiles(deleted, files)).toEqual([])
     expect(deleted.remaining.some(item => item.includes('完整工具测试'))).toBe(true)
     const quick = await createVerificationPlan({ ...input, mode: 'quick', changes: changes(['scripts/helper.mjs', '.github/workflows/ci.yml']) })
-    expect(plannedToolFiles(quick, files)).toEqual([...files].sort())
+    expect(plannedToolFiles(quick, files)).toEqual(files.filter(file => file !== managedViteTest).sort())
     const workflow = await createVerificationPlan({ ...input, mode: 'review', changes: changes(['.github/workflows/deleted.yml']) })
-    expect(plannedToolFiles(workflow, files)).toEqual(files.filter(file => !file.includes('helper')).sort())
+    expect(plannedToolFiles(workflow, files)).toEqual(files.filter(file => !file.includes('helper') && file !== managedViteTest).sort())
     const full = await createVerificationPlan({ ...input, mode: 'full', changes: changes([]) })
     expect(plannedToolFiles(full, files)).toEqual(files.filter(file => file.endsWith('.mjs')).sort())
+  }
+  finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+it.each(['affected', 'shadow'] as const)('delegates direct and neighboring managed Vite contracts from quick under %s selection', async (selection) => {
+  const { root, files } = await createToolPlanRoot()
+  try {
+    const input = { root, packages, resources, selection }
+    for (const file of [managedViteTest, 'scripts/dependencyContracts/vite.ts']) {
+      const quick = await createVerificationPlan({ ...input, mode: 'quick', changes: changes([file]) })
+      expect(plannedToolFiles(quick, files)).toEqual([])
+      expect(quick.tasks.some(task => task.id === 'repo-scripts' || task.kind === 'runtime')).toBe(false)
+      expect(quick.remaining).toContain(`受管工具测试 ${managedViteTest} 会启动真实 server/watch 与机器租约，完整契约由 review / CI 承担；quick 未执行`)
+    }
+    const mixed = await createVerificationPlan({ ...input, mode: 'quick', changes: changes([managedViteTest, 'scripts/helper.mjs', 'package.json']) })
+    expect(plannedToolFiles(mixed, files)).toEqual(['scripts/helper.test.mjs', 'scripts/helper.test.ts'])
+    expect(mixed.remaining.some(item => item.includes(managedViteTest))).toBe(true)
+  }
+  finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+it.each(['explicit', 'fallback'])('filters managed contracts after %s workflow selection without restoring a broad scripts filter', async (source) => {
+  const { root, files } = await createToolPlanRoot()
+  try {
+    const manifestFile = path.join(root, 'package.json')
+    const manifest = JSON.parse(await readFile(manifestFile, 'utf8')) as { scripts: Record<string, string> }
+    if (source === 'explicit') {
+      manifest.scripts['test:pr-actions'] = 'vitest run --config scripts/vitest.config.mjs scripts/dependencyContracts scripts/helper.test.ts'
+    }
+    else {
+      delete manifest.scripts['test:pr-actions']
+    }
+    await writeFile(manifestFile, JSON.stringify(manifest))
+    const input = { root, packages, resources, selection: 'affected' as const, changes: changes(['.github/workflows/ci.yml']) }
+    const quick = await createVerificationPlan({ ...input, mode: 'quick' })
+    expect(plannedToolFiles(quick, files)).toEqual(source === 'explicit' ? ['scripts/helper.test.ts'] : files.filter(file => file !== managedViteTest).sort())
+    expect(quick.tasks.find(task => task.id === 'repo-scripts')?.args).not.toContain('scripts')
+    expect(quick.remaining.some(item => item.includes(managedViteTest) && item.includes('review / CI'))).toBe(true)
+    const review = await createVerificationPlan({ ...input, mode: 'review' })
+    expect(plannedToolFiles(review, files)).toContain(managedViteTest)
+    expect(review.remaining.some(item => item.includes(managedViteTest))).toBe(false)
   }
   finally {
     await rm(root, { recursive: true, force: true })

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 
 export const viteContractCases = Object.freeze(['hooks', 'resolver', 'optimizer', 'optimizer-cancel', 'optimizer-server', 'polling'])
 
-/** 无参数仍执行完整门禁；显式筛选仅用于独立诊断。 */
+/** 无参数执行完整上游实现诊断；显式筛选只表示所选诊断完成。 */
 export function parseViteContractCases(args) {
   const selected = []
   for (let index = 0; index < args.length; index++) {

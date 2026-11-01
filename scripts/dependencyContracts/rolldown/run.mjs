@@ -7,7 +7,7 @@ import path from 'node:path'
 import { performance } from 'node:perf_hooks'
 import process from 'node:process'
 import { withMachineE2ELease } from '../../../packages/devtools-runtime/src/lease/machine.ts'
-import { completeContractReport, contractNames, createContractCleanupKey, hashText, normalizeReport, parseContractArguments, UnconfirmedContractCleanupError } from './helpers.mjs'
+import { completeContractReport, contractNames, contractProgress, createContractCleanupKey, hashText, normalizeReport, parseContractArguments, UnconfirmedContractCleanupError } from './helpers.mjs'
 import { escaped, hooks } from './hooks.mjs'
 import { closing, failFast, failures } from './lifecycle.mjs'
 import { retention } from './retention.mjs'
@@ -19,6 +19,9 @@ await mkdir(path.dirname(reportFile), { recursive: true })
 let fixtureRoot
 const report = {
   schemaVersion: 1,
+  suite: 'dependency-internals',
+  planned: [...contractNames],
+  completed: [],
   node: process.version,
   status: 'running',
   startedAt: new Date().toISOString(),
@@ -38,6 +41,7 @@ try {
     const preserveAndExit = async (status, error, exitCode) => {
       clearTimeout(timeout)
       report.status = status
+      Object.assign(report, contractProgress(report))
       report.error = { message: String(error), stack: error?.stack, errors: error?.errors?.map(item => ({ message: String(item), stack: item?.stack })) }
       report.cleanup = { status: 'unconfirmed', lease: 'preserved', fixture: 'preserved', bindingSha256: hashText(cleanupKey) }
       try {
@@ -109,6 +113,7 @@ try {
             await termination
           }
           report.results.push({ name, status: 'passed', result, durationMs: performance.now() - started })
+          report.completed.push(name)
         }
         catch (error) {
           report.results.push({ name, status: 'failed', error: { message: String(error), stack: error?.stack, actual: error?.actual, expected: error?.expected }, durationMs: performance.now() - started })
@@ -164,11 +169,13 @@ try {
 }
 catch (error) {
   report.status = 'failed'
+  Object.assign(report, contractProgress(report))
   report.error = { message: String(error), stack: error?.stack, errors: error?.errors?.map(item => ({ message: String(item), stack: item?.stack })) }
   process.exitCode = 1
 }
 finally {
+  Object.assign(report, contractProgress(report))
   report.finishedAt = new Date().toISOString()
   await persist()
-  console.log(JSON.stringify({ status: report.status, completed: report.results.filter(item => item.status === 'passed').map(item => item.name) }))
+  console.log(JSON.stringify({ suite: report.suite, status: report.status, planned: report.planned, completed: report.completed, failed: report.failed, notExecuted: report.notExecuted }))
 }
