@@ -103,6 +103,7 @@ export function createCompilerPluginPlugins(ctx: CompilerContext): Plugin[] {
   const pluginContextRef: { value?: PluginContextRef } = {}
   const owners = new Map<string, string>()
   const sourceStates = new Map<string, SourceState>()
+  const releaseHmrProviders: Array<() => void> = []
   let recordsPromise: Promise<ControllerRecord[]> | undefined
   let disposePromise: Promise<void> | undefined
   let closeWatcherPromise: Promise<void> | undefined
@@ -118,7 +119,7 @@ export function createCompilerPluginPlugins(ctx: CompilerContext): Plugin[] {
     recordsPromise ??= initializeCompilerControllers(options, context).then((resolved) => {
       for (const { provider, controller } of resolved) {
         if (provider.capabilities?.content || controller.prepareHmr) {
-          getCompilerHmrHost(ctx).register(provider.name, controller.prepareHmr
+          releaseHmrProviders.push(getCompilerHmrHost(ctx).register(provider.name, controller.prepareHmr
             ? async (request) => {
               const preparation = await controller.prepareHmr!(request)
               for (const file of preparation.dependencies ?? []) {
@@ -129,7 +130,7 @@ export function createCompilerPluginPlugins(ctx: CompilerContext): Plugin[] {
               }
               return preparation
             }
-            : undefined)
+            : undefined))
         }
       }
       return resolved
@@ -170,6 +171,9 @@ export function createCompilerPluginPlugins(ctx: CompilerContext): Plugin[] {
         throwControllerErrors(await collectControllerCleanupErrors(await records(), 'dispose'), 'Compiler provider disposal failed')
       }
       finally {
+        for (const release of releaseHmrProviders.splice(0)) {
+          release()
+        }
         // 只计原始关闭钩子，避免共享 dispose 与完整 close Promise 相互等待。
         disposeSettled = true
         releaseTerminalContext()

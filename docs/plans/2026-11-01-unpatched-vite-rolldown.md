@@ -22,6 +22,8 @@ classic 多轮构建以前复用自有 object hook，原版 Vite 的包装器会
 
 多 provider 的终态清理等待全部 controller 收敛，单项 close/dispose 失败不再跳过其余资源，所有错误均保留。初始化部分成功后其他工厂失败，或最终名称校验失败时，也会等待并释放本轮已返回的 controller；失败初始化不注册 HMR。普通构建 hook 保留现有失败传播行为。
 
+同一 CLI 上下文配置重启时，HMR host 可能跨代继续存在。compiler provider 现在保存各自注册的释放句柄，在终态 dispose 的 finally 中注销；删除、改名或不支持 HMR 的旧 provider 不再残留。注册使用独立 token，旧代较晚结束也不能删除新代同名 provider，释放闭包不捕获旧回调。普通构建快照仍由 watcher lease 延后清理，不会提前注销活跃 provider。
+
 `compilerPlugin/index.ts` 已超过 300 行。独立的 controller 初始化与清理已提取至 `compilerPlugin/lifecycle.ts`，其余可变上下文和关闭状态保留同一闭包，避免扩大生命周期所有权变更。新增解析和实例隔离模块均拆为小文件。
 
 ## 回归入口
@@ -65,11 +67,17 @@ node --expose-gc --import tsx scripts/dependencyContracts/rolldown/run.mjs --rep
 
 后续异常清理回归先复现 5 项失败，修复后 compilerPlugin 目录 6 文件 46 项通过；包级 typecheck、build 及新 dist 的独立 wv npm 消费验证通过。该消费者再次核验官方依赖内容，并通过构建、开发更新、配置重启、Web 和两个 headless 页面检查点。
 
+HMR provider 跨代注册回归先复现 7 项失败，修复后共享 host 与 compilerPlugin 的 10 文件 72 项测试通过，覆盖删除、改名、legacy provider 移除、dispose 失败、旧代迟到清理和 watcher lease。共享 HMR 包补充公开返回类型断言，并登记 patch 发布。HMR 与 weapp-vite 的 build、typecheck、test:types 均通过；新 dist 的独立 npm wv 消费者再次通过官方依赖核验、构建、开发更新、配置重启、Web 和两个 headless 页面检查点。该消费者证明发布产物没有引入已有主路径回归，跨代注册本身由上述定向契约覆盖。
+
 合并主线后的独立 npm `wv` 消费者通过新 CI 入口实际执行，主包、独立分包、worker、Web 构建、开发源码更新、package imports 映射变化及配置重启通过。headless runtime 的主包与独立分包两个检查点通过。该安装的 Vite 8.3.5 共 17 份 JS/JSON、Rolldown 1.2.16 共 32 份 JS/JSON 与官方 npm 档案逐字节一致，integrity 校验通过，两者均未应用补丁。
 
 合并前候选的普通 Vite 宿主独立 npm 消费者通过相同构建、开发更新、配置重启及 Web 验证；其 Vite/Rolldown 官方档案核验通过。Vite+ 先前使用官方 `@voidzero-dev/vite-plus-core@1.0.0`，其 70 份 JS/JSON 与官方档案一致，内置 Vite 8.3.1、Rolldown 1.2.11。该宿主首次构建因精确键 `#exact?raw` 被按 `#exact` 查找而失败；后续开发更新和配置重启未执行，失败安装及配置已保留。最新主线配对版本为 1.2.0，其内置 Vite 8.3.4、Rolldown 1.2.13；合并后消费者在 npm install 阶段因网络 ETIMEDOUT 退出，未进入构建，不记为产品通过或失败。官方 core 1.2.0 源码仍有相同精确键截断，但该观察不能代替运行验证。安装中独立存在的 Rolldown 1.2.16 不代表 Vite+ 使用它，也不将 core alias 称为普通 Vite 8.3.5。
 
 PR 首轮 CI 中普通 Vite 和 wv 的独立 imports 消费者通过。Vite+ 消费者完成安装并核对 core 1.2.0 的 65 份 JS/JSON 与官方档案一致后，在主包、独立分包首次构建均复现 `Missing "#exact" specifier`。本轮保留原始错误，后续阶段未执行。该结果补足了先前仅有源码观察、安装超时的证据边界。
+
+PR 第二轮 CI（run `41312400012`）完整结束，171 项成功、72 项按既有条件跳过、9 项失败。发布策略检查已通过；源码守卫排除测试 fixture 后，coverage 第三分片只剩 4 项原生 Vite polling 失败。其余失败为 4 个平台/Node 组合的 Vite hook 释放契约、第一分片的 missing-env ready、第二分片的 hook 释放和 2 项 Web polling、Vite+ 精确键解析，以及按原规则拒绝失败分片的 coverage 汇总。没有降低断言或 coverage 阈值。
+
+Windows 浏览器首轮在握手阶段超时，尚未执行测试；第二轮仅增加启动及请求失败诊断，完整通过 98 个文件、218 项测试，并记录浏览器正常退出和临时目录清理。其他两个平台也通过。首次超时未复现，诊断开关不能视为根因修复；保留原超时、完整测试范围及首次失败日志。普通 Vite、wv 的独立 imports 消费者第二轮再次通过，Vite+ 保留相同首次构建错误。
 
 真实 Stable DevTools 2.02.2608080、基础库 3.17.2 已运行同一独立消费者并采集两个页面检查点，但严格 suite 因 5 次 `SystemError -80002 / webapi_getwxaasyncsecinfo:fail` 失败；随后关窗缺少完整原生销毁证据，清理门禁也失败。没有修改错误门禁、重复导航或重启重试来换取通过。
 
