@@ -36,6 +36,8 @@ pnpm exec vitest run packages/weapp-vite/src/plugins/packageImports packages/wea
 
 独立 npm tarball 消费入口沿用已有打包闭包和机器租约。新入口不会把内部兼容插件写进消费者配置，并清除继承的 NODE_OPTIONS/NODE_PATH；保留机器租约变量。消费安装使用严格 peer 校验，并将安装后的 JS/JSON 文件逐字节与锁文件指向的官方 npm 档案比较，同时记录实际引擎入口、版本、integrity 和内容摘要。
 
+PR CI 的 legacy 和 optimized-v2 均执行三种宿主的 imports 消费场景，wv 强制运行 headless。v2 在原有 32 项上增加三项，完整聚合必须收到 35 项成功证据；原始来源记录、摘要及各执行阶段同时核对，首次构建前保存的来源记录不能冒充完整成功。仅修改 `e2e/consumers` 时也会选中该消费检查。
+
 ```sh
 node --import tsx e2e/scripts/run-e2e-commands.ts node packages/weapp-vite/scripts/consumerImports/install.mjs vite
 node --import tsx e2e/scripts/run-e2e-commands.ts node packages/weapp-vite/scripts/consumerImports/install.mjs wv headless
@@ -55,11 +57,11 @@ node --expose-gc --import tsx scripts/dependencyContracts/rolldown/run.mjs --rep
 
 ## 本地验证结果
 
-最终产品源码已经重建，owning package 的 typecheck、test:types、14 文件 114 项定向回归、4 文件 22 项集成断言及契约入口的 3 项测试通过。相关 ESLint 与 diff 格式检查通过。依赖锁核对确认 2914 项原有 package resolution 不变，其余三份补丁的 hash 不变。
+合并主线 `33ca1b4b00` 后，受影响包及新增工具依赖已重建，owning package 的 typecheck、test:types、15 文件 121 项定向回归通过；CI 调度和证据校验的 126 项单测及路由检查通过。原生 hooks、相关 ESLint 与 diff 格式检查通过。相对该主线，依赖锁的 2976 项原有 package resolution 不变，仅新增显式 resolver 依赖，其余三份补丁的 hash 不变。先前的 4 文件 22 项集成断言及契约入口 3 项测试保留原通过证据。
 
-最终候选的独立 npm `wv` 消费者通过主包、独立分包、worker、Web 构建，开发源码更新、package imports 映射变化及配置重启。headless runtime 的主包与独立分包两个检查点通过。该安装的 Vite 8.3.5 共 17 份 JS/JSON、Rolldown 1.2.16 共 32 份 JS/JSON 与官方 npm 档案逐字节一致，integrity 校验通过，两者均未应用补丁。
+合并主线后的独立 npm `wv` 消费者通过新 CI 入口实际执行，主包、独立分包、worker、Web 构建、开发源码更新、package imports 映射变化及配置重启通过。headless runtime 的主包与独立分包两个检查点通过。该安装的 Vite 8.3.5 共 17 份 JS/JSON、Rolldown 1.2.16 共 32 份 JS/JSON 与官方 npm 档案逐字节一致，integrity 校验通过，两者均未应用补丁。
 
-最终候选的普通 Vite 宿主独立 npm 消费者也通过相同构建、开发更新、配置重启及 Web 验证；其 Vite/Rolldown 官方档案核验通过。Vite+ 保留仓库批准的 launcher/core 配对与其自身引擎入口：实际为官方 `@voidzero-dev/vite-plus-core@1.0.0`，70 份 JS/JSON 与官方档案一致；其 `bundledVersions` 为 Vite 8.3.1、Rolldown 1.2.11，宿主使用该内置引擎。安装中独立存在的 Rolldown 1.2.16 不代表 Vite+ 使用它，也不将该 alias 称为 Vite 8.3.5。Vite+ 首次构建即因 core 将精确键 `#exact?raw` 按 `#exact` 查找而失败；插件保留委托解析的原始错误，后续开发更新和配置重启未执行。失败安装及复现配置已保留，没有换宿主绕过。
+合并前候选的普通 Vite 宿主独立 npm 消费者通过相同构建、开发更新、配置重启及 Web 验证；其 Vite/Rolldown 官方档案核验通过。Vite+ 先前使用官方 `@voidzero-dev/vite-plus-core@1.0.0`，其 70 份 JS/JSON 与官方档案一致，内置 Vite 8.3.1、Rolldown 1.2.11。该宿主首次构建因精确键 `#exact?raw` 被按 `#exact` 查找而失败；后续开发更新和配置重启未执行，失败安装及配置已保留。最新主线配对版本为 1.2.0，其内置 Vite 8.3.4、Rolldown 1.2.13，同样保留该宿主引擎与原始错误语义。安装中独立存在的 Rolldown 1.2.16 不代表 Vite+ 使用它，也不将 core alias 称为普通 Vite 8.3.5。
 
 真实 Stable DevTools 2.02.2608080、基础库 3.17.2 已运行同一独立消费者并采集两个页面检查点，但严格 suite 因 5 次 `SystemError -80002 / webapi_getwxaasyncsecinfo:fail` 失败；随后关窗缺少完整原生销毁证据，清理门禁也失败。没有修改错误门禁、重复导航或重启重试来换取通过。
 

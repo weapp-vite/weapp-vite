@@ -189,6 +189,38 @@ describe('independent CI preparation with unchanged validation scope', () => {
     expect(Object.values(consumerContractGroups).flat()).toHaveLength(17)
   })
 
+  it('runs all package imports hosts from the prepared candidate in the legacy Ubuntu lane', () => {
+    const child = read('reusable-consumer-platform.yml')
+    const imports = child.jobs['imports-runtime']
+    expect(imports.if).toBe(`\${{ inputs.verification_topology != 'optimized-v2' && !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.prepare.result == 'success' && (inputs.runs_on == 'ubuntu-latest') }}`)
+    expect(imports.needs).toEqual(['pr-context', 'prepare'])
+    expect(imports.uses).toBe('./.github/workflows/reusable-node-command.yml')
+    expect(imports.strategy).toEqual({ 'fail-fast': false, 'matrix': { host: ['wv', 'vite', 'vite-plus'] } })
+    expect(imports['continue-on-error']).toBeUndefined()
+    expect(imports.with).toMatchObject({
+      pr_context: `\${{ inputs.pr_context }}`,
+      pr_profile: 'ci-vite-host-consumer',
+      verification_topology: `\${{ inputs.verification_topology }}`,
+      runs_on: `\${{ inputs.runs_on }}`,
+      node_version: '24',
+      timeout_minutes: 30,
+      build_command: '',
+      main_command: `node scripts/consumerBatches/imports.mjs \${{ matrix.host }}`,
+      artifact_name: `imports-consumer-\${{ matrix.host }}`,
+      artifact_path: `.cache/imports-consumer-\${{ matrix.host }}.json*\ndocs/reports/dom-acceptance/**`,
+      consume_build_artifact: child.jobs.prepare.with.build_artifact_name,
+      build_artifact_node_major: '24',
+      build_artifact_scope: 'packages/weapp-vite,packages-runtime/wevu,mpcore/packages/simulator',
+      consume_aux_artifact: child.jobs.prepare.with.artifact_name,
+      aux_artifact_path: '.cache/node-support-tarballs',
+      consumer_tarballs: '.cache/node-support-tarballs',
+      timing_artifact_name: `timing-consumer-imports-runtime-\${{ inputs.runs_on }}-\${{ matrix.host }}`,
+    })
+    for (const input of ['checkout_ref', 'base_sha', 'head_sha', 'pr_number', 'head_ref', 'base_ref']) {
+      expect(imports.with[input]).toBe(child.jobs.prepare.with[input])
+    }
+  })
+
   it('keeps v2 opt in and validates actual jobs, single installs and strict aggregate evidence', () => {
     const consumer = read('reusable-consumer-platform.yml')
     expect(consumer.on.workflow_call.inputs.verification_topology.default).toBe('optimized-v1')

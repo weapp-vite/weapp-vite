@@ -128,6 +128,7 @@
       "scripts/nodeSupport/**",
       "scripts/playwrightCache.*",
       "packages/weapp-vite/**",
+      "e2e/consumers/**",
       "e2e/ide/stateful-hmr.runtime.test.ts",
       "e2e/ide/hmr-auto-classic.runtime.test.ts",
       "e2e/ide/react-runtime-spike.runtime.test.ts",

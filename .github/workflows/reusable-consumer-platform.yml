@@ -245,6 +245,47 @@ jobs:
       consumer_tarballs: .cache/node-support-tarballs
       timing_artifact_name: timing-consumer-consumer-${{ inputs.runs_on }}-${{ matrix.toolchain }}
     secrets: inherit
+  imports-runtime:
+    if: ${{ inputs.verification_topology != 'optimized-v2' && !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.prepare.result == 'success' && (inputs.runs_on == 'ubuntu-latest') }}
+    needs:
+      - pr-context
+      - prepare
+    name: Package imports consumer (${{ matrix.host }})
+    strategy:
+      fail-fast: false
+      matrix:
+        host:
+          - wv
+          - vite
+          - vite-plus
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      pr_context: ${{ inputs.pr_context }}
+      pr_profile: ci-vite-host-consumer
+      verification_topology: ${{ inputs.verification_topology }}
+      checkout_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}
+      base_sha: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}
+      head_sha: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}
+      pr_number: ${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}
+      head_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}
+      base_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}
+      runs_on: ${{ inputs.runs_on }}
+      node_version: '24'
+      timeout_minutes: 30
+      build_command: ''
+      main_command: node scripts/consumerBatches/imports.mjs ${{ matrix.host }}
+      artifact_name: imports-consumer-${{ matrix.host }}
+      artifact_path: |-
+        .cache/imports-consumer-${{ matrix.host }}.json*
+        docs/reports/dom-acceptance/**
+      consume_build_artifact: consumer-${{ inputs.runs_on }}-node-24-build
+      build_artifact_node_major: '24'
+      build_artifact_scope: packages/weapp-vite,packages-runtime/wevu,mpcore/packages/simulator
+      consume_aux_artifact: consumer-tarballs-${{ inputs.runs_on }}
+      aux_artifact_path: .cache/node-support-tarballs
+      consumer_tarballs: .cache/node-support-tarballs
+      timing_artifact_name: timing-consumer-imports-runtime-${{ inputs.runs_on }}-${{ matrix.host }}
+    secrets: inherit
   stateful-runtime:
     if: ${{ inputs.verification_topology != 'optimized-v2' && !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.prepare.result == 'success' && (inputs.runs_on == 'ubuntu-latest') }}
     needs:

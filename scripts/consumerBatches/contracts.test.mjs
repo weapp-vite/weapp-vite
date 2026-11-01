@@ -5,16 +5,18 @@ const identity = { commit: 'a'.repeat(40), repository: 'example/project', runId:
 const reportFixture = plan => [1, 2, 3, 4].map(shardIndex => ({ identity: plan.identity, planHash: plan.planHash, shardIndex, status: 'passed', results: plan.tasks.filter(task => task.shardIndex === shardIndex).map(task => ({ id: task.id, profile: task.profile, status: 'passed', exitCode: 0, durationMs: 1, evidenceHash: 'b'.repeat(64) })) }))
 
 describe('complete consumer batches', () => {
-  it('retains all 32 host/profile contracts and distributes static weights deterministically', () => {
+  it('retains all original contracts plus three imports hosts and distributes static weights deterministically', () => {
     const plan = createConsumerBatchPlan(identity)
-    expect(consumerScenarios()).toHaveLength(32)
-    expect(new Set(plan.tasks.map(task => task.id)).size).toBe(32)
+    expect(consumerScenarios()).toHaveLength(35)
+    expect(new Set(plan.tasks.map(task => task.id)).size).toBe(35)
+    expect(plan.tasks.filter(task => task.profile === 'imports').map(task => task.id)).toEqual(['vite-plus/imports', 'vite/imports', 'wv/imports'])
+    expect(plan.tasks.filter(task => task.profile !== 'imports')).toHaveLength(32)
     expect(plan.tasks.some(task => task.id === 'wv/classic-watch')).toBe(false)
     expect(plan.weightSource).toBe('static-relative-v1')
     const weights = [1, 2, 3, 4].map(index => plan.tasks.filter(task => task.shardIndex === index).reduce((sum, task) => sum + task.weight, 0))
     expect(Math.max(...weights) - Math.min(...weights)).toBeLessThanOrEqual(8)
     expect(createConsumerBatchPlan(identity)).toEqual(plan)
-    expect(aggregateConsumerBatches(plan, reportFixture(plan), identity.commit).scenarios).toHaveLength(32)
+    expect(aggregateConsumerBatches(plan, reportFixture(plan), identity.commit).scenarios).toHaveLength(35)
   })
 
   it('refuses missing, duplicate, failed or mismatched scenario evidence', () => {
