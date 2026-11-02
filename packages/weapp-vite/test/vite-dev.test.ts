@@ -1,7 +1,9 @@
 import type { InlineConfig, Plugin, ViteDevServer } from 'vite'
+import { realpathSync } from 'node:fs'
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
+import process from 'node:process'
 import { createServer } from 'vite'
 import { afterEach, expect, it, vi } from 'vitest'
 import { weapp } from '../src/vite'
@@ -44,13 +46,73 @@ async function fixture(plugins: Plugin[] = [], initialScript = 'Page({ data: { m
   return { root, server, read: (file: string) => readFile(path.join(root, 'dist', file), 'utf8') }
 }
 
-it('writes initial classic output and updates scripts in middleware mode', async () => {
-  const { root, server, read } = await fixture()
-  expect(await read('pages/home/index.js')).toContain('initial-message')
-  await writeFile(path.join(root, 'src/pages/home/index.ts'), 'Page({ data: { message: "updated-message" } })')
-  await expect.poll(() => read('pages/home/index.js'), { timeout: 10_000 }).toContain('updated-message')
-  await server.close()
-  await server.close()
+it('writes initial classic output and updates scripts in middleware mode', async ({ onTestFailed, signal }) => {
+  const startedAt = performance.now()
+  let phase = 'fixture-setup'
+  let inputRoot: string | undefined
+  let canonicalRoot: string | undefined
+  let resolvedRoot: string | undefined
+  let host: ViteDevServer | undefined
+  const snapshot = () => {
+    let watched: Record<string, string[]> | undefined
+    let watchedError: string | undefined
+    try {
+      watched = host?.watcher.getWatched()
+    }
+    catch (error) {
+      watchedError = String(error)
+    }
+    return { phase, elapsedMs: Math.round(performance.now() - startedAt), inputRoot, canonicalRoot, resolvedRoot, hostRoot: host?.config.root, watcherCwd: host?.watcher.options.cwd, watched, watchedError }
+  }
+  let failureState: ReturnType<typeof snapshot> | undefined
+  const captureFailure = () => {
+    failureState ??= snapshot()
+  }
+  // 失败回调晚于 afterEach；在超时或原始断言失败时先保留关闭前的监听状态。
+  signal.addEventListener('abort', captureFailure, { once: true })
+  onTestFailed(() => {
+    process.stderr.write(`[classic-middleware-readiness] ${JSON.stringify(failureState ?? snapshot())}\n`)
+  })
+  const probe: Plugin = {
+    name: 'test:classic-middleware-readiness-probe',
+    configResolved(config) {
+      resolvedRoot = config.root
+      phase = 'config-resolved'
+    },
+    configureServer: {
+      order: 'pre',
+      handler(server) {
+        host = server
+        phase = 'configure-server'
+      },
+    },
+  }
+  try {
+    const { root, server, read } = await fixture([probe], undefined, async (root) => {
+      inputRoot = root
+      canonicalRoot = realpathSync.native(root)
+      phase = 'create-server'
+      return {}
+    })
+    phase = 'read-initial-output'
+    expect(await read('pages/home/index.js')).toContain('initial-message')
+    phase = 'save-source'
+    await writeFile(path.join(root, 'src/pages/home/index.ts'), 'Page({ data: { message: "updated-message" } })')
+    phase = 'wait-for-updated-output'
+    await expect.poll(() => read('pages/home/index.js'), { timeout: 10_000 }).toContain('updated-message')
+    phase = 'close-first'
+    await server.close()
+    phase = 'close-second'
+    await server.close()
+    phase = 'complete'
+  }
+  catch (error) {
+    captureFailure()
+    throw error
+  }
+  finally {
+    signal.removeEventListener('abort', captureFailure)
+  }
 }, 30_000)
 
 it('rejects bundled development before starting a classic host', async () => {

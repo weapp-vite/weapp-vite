@@ -60,10 +60,11 @@ it('does not wait for an absolute ignored directory when the watcher uses cwd', 
 
 it('passes absolute paths and stats to ignored callbacks when the watcher uses cwd', async () => {
   const root = path.resolve('registration-ignore-fixture')
-  const ignored = vi.fn((file: string, stats?: Stats) => file === path.join(root, 'generated') && stats?.isDirectory() === true)
+  const expectedGenerated = path.join(root, 'generated').replaceAll('\\', '/')
+  const ignored = vi.fn((file: string, stats?: Stats) => file === expectedGenerated && stats?.isDirectory() === true)
   const { server, generated } = setup(ignored)
   await expectRegistered(server)
-  expect(ignored).toHaveBeenCalledWith(generated, expect.objectContaining({ isDirectory: expect.any(Function) }))
+  expect(ignored).toHaveBeenCalledWith(expectedGenerated, expect.objectContaining({ isDirectory: expect.any(Function) }))
   expect(mocks.readdir).not.toHaveBeenCalledWith(generated)
 })
 

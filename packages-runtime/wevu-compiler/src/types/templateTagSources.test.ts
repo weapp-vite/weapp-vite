@@ -24,7 +24,7 @@ describe('original template tag sources', () => {
     })
     expect(result.meta?.templateTags).toContainEqual(expect.objectContaining({
       tag: 'missing-card',
-      filename: externalFilename,
+      filename: externalFilename.replaceAll('\\', '/'),
       loc: expect.objectContaining({ start: { offset: source.indexOf('<missing-card'), line: 2, column: 3 } }),
     }))
   })

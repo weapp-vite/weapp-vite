@@ -42,6 +42,7 @@ export function prepareDevHostConfig(session: WeappBuildSession, merged: InlineC
   return {
     plugins: [createDevModuleGraphPlugin(ctx, merged, change => notifyDevModuleGraphHost(ctx, change)), createPackageImportsQueryPlugin()],
     config: {
+      root: ctx.configService.cwd,
       appType: 'custom',
       resolve: merged.resolve,
       define: merged.define,

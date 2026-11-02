@@ -67,6 +67,8 @@ it('registers the public Vite bundled owner before listen and observes its nativ
     expect(ownership.size).toBe(1)
     await server.listen()
     const owner = server.environments.client!.bundledDev!
+    // listen 后首构仍在后台运行；先等真实产物，再验证原生构建资源的关闭。
+    await expect.poll(() => owner.hasBuildOutput, { timeout: 10_000 }).toBe(true)
     const closing = owner.close()
     expect(owner.close()).toBe(closing)
     await closing

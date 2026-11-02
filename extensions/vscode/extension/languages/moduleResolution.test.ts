@@ -1,7 +1,8 @@
+import { realpathSync } from 'node:fs'
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
-import { pathToFileURL } from 'node:url'
+import { fileURLToPath } from 'node:url'
 import { expect, it } from 'vitest'
 import { resolveProjectImport } from './moduleResolution'
 
@@ -16,7 +17,12 @@ it('resolves import-only project exports with the project parent URL', async () 
       exports: { './project': { import: './import.mjs' } },
     }))
     await fs.writeFile(path.join(packageRoot, 'import.mjs'), 'export const value = true\n')
-    expect(resolveProjectImport('language-format-fixture/project', root)).toBe(pathToFileURL(await fs.realpath(path.join(packageRoot, 'import.mjs'))).href)
+    const resolved = new URL(resolveProjectImport('language-format-fixture/project', root))
+    // ESM 解析可能保留 Windows 短路径；按原生真实路径验证同一个 import 条件文件。
+    expect(resolved.protocol).toBe('file:')
+    expect(resolved.search).toBe('')
+    expect(resolved.hash).toBe('')
+    expect(realpathSync.native(fileURLToPath(resolved))).toBe(realpathSync.native(path.join(packageRoot, 'import.mjs')))
     expect(() => resolveProjectImport('missing-language-format/project', root)).toThrow()
   }
   finally {

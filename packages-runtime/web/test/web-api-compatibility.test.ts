@@ -53,7 +53,7 @@ describe('issue #1250 remaining public API contracts', () => {
     expect(encoded).toBe(Buffer.from(bytes).toString('base64'))
     const decoded = runtime.base64ToArrayBuffer(encoded)
     expect(decoded).toBeInstanceOf(ArrayBuffer)
-    expect(new Uint8Array(decoded)).toEqual(bytes)
+    expect(Buffer.from(decoded).equals(Buffer.from(bytes))).toBe(true)
     expect(runtime.arrayBufferToBase64(new ArrayBuffer(0))).toBe('')
     expect(runtime.base64ToArrayBuffer('').byteLength).toBe(0)
     expect(() => runtime.base64ToArrayBuffer('%%%')).toThrow()

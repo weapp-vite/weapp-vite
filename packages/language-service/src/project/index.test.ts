@@ -137,13 +137,14 @@ describe('project document ownership', () => {
       'package.json': '{"name":"language-config","type":"module"}',
       'vite.config.mjs': 'export default {weapp:{platform:"weapp",language:{overrides:[{files:["src/**/*.sjs"],platform:"tt"}]}},fmt:{printWidth:100}}',
     })
-    expect(await loadProjectConfig(root)).toMatchObject({ root, fmt: { printWidth: 100 }, language: { defaultPlatform: 'weapp', overrides: [{ files: ['src/**/*.sjs'], platform: 'tt' }] } })
+    const expectedRoot = root.replaceAll('\\', '/')
+    expect(await loadProjectConfig(root)).toMatchObject({ root: expectedRoot, fmt: { printWidth: 100 }, language: { defaultPlatform: 'weapp', overrides: [{ files: ['src/**/*.sjs'], platform: 'tt' }] } })
     await writeFile(path.join(root, 'explicit.config.mjs'), 'export default {weapp:{platform:"weapp",language:{defaultPlatform:"tt"}}}')
     expect(await loadProjectConfig(root, { configFile: 'explicit.config.mjs' })).toMatchObject({ language: { defaultPlatform: 'tt' } })
     await writeFile(path.join(root, '.oxlintrc.json'), '{"ignorePatterns":["src/vendor/**"]}')
-    expect(await loadProjectConfig(root, { configFile: '.oxlintrc.json', configKind: 'lint' })).toMatchObject({ root, lint: { ignorePatterns: ['src/vendor/**'] }, language: { defaultPlatform: 'weapp' } })
+    expect(await loadProjectConfig(root, { configFile: '.oxlintrc.json', configKind: 'lint' })).toMatchObject({ root: expectedRoot, lint: { ignorePatterns: ['src/vendor/**'] }, language: { defaultPlatform: 'weapp' } })
     await writeFile(path.join(root, '.oxfmtrc.json'), '{"tabWidth":4}')
-    expect(await loadProjectConfig(root, { configFile: '.oxfmtrc.json' })).toMatchObject({ root, fmt: { tabWidth: 4 }, language: { defaultPlatform: 'weapp' } })
+    expect(await loadProjectConfig(root, { configFile: '.oxfmtrc.json' })).toMatchObject({ root: expectedRoot, fmt: { tabWidth: 4 }, language: { defaultPlatform: 'weapp' } })
     await writeFile(path.join(root, 'invalid.config.mjs'), 'export default {weapp:{language:{platform:"unknown"}}}')
     await expect(loadProjectConfig(root, { configFile: 'invalid.config.mjs' })).rejects.toThrow('无效的 weapp.language.platform')
   })

@@ -43,7 +43,7 @@ import path from 'node:path'
 import process from 'node:process'
 import ts from 'typescript'
 
-const root = fs.realpathSync(process.cwd())
+const root = fs.realpathSync.native(process.cwd())
 const parsed = ts.getParsedCommandLineOfConfigFile(path.join(root, 'tsconfig.json'), {}, {
   ...ts.sys,
   onUnRecoverableConfigFileDiagnostic(diagnostic) {
@@ -54,7 +54,7 @@ assert(parsed, 'Unable to parse isolated consumer tsconfig')
 const program = ts.createProgram(parsed.fileNames, parsed.options)
 const diagnostics = [...parsed.errors, ...ts.getPreEmitDiagnostics(program)]
 for (const file of program.getSourceFiles()) {
-  const relative = path.relative(root, fs.realpathSync(file.fileName))
+  const relative = path.relative(root, fs.realpathSync.native(file.fileName))
   assert(relative !== '..' && !relative.startsWith('..' + path.sep) && !path.isAbsolute(relative), 'TypeScript resolved a declaration outside the isolated consumer')
 }
 if (diagnostics.length) {

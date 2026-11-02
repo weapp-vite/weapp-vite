@@ -370,6 +370,12 @@ describe('simulator browser e2e', { concurrent: false }, () => {
       model: 'headless-simulator',
       platform: 'devtools',
     })
+    const reloadIcon = mountNode!.querySelector('[class~="icon-[mdi--reload]"]')
+    expect(reloadIcon).not.toBeNull()
+    expect(getComputedStyle(reloadIcon!).maskImage).toContain('data:image/svg+xml')
+    const reloadBounds = reloadIcon!.getBoundingClientRect()
+    expect(reloadBounds.width).toBeGreaterThan(0)
+    expect(reloadBounds.height).toBeGreaterThan(0)
   })
 
   it('keeps the page selected by App.onLaunch in the rendered browser preview', async () => {
