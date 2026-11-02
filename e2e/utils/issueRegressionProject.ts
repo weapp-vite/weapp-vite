@@ -7,7 +7,7 @@ import { sanitizeBuildCommandEnv } from './buildLog'
 
 const ROOT = path.resolve(import.meta.dirname, '../..')
 
-export async function createIssueRegressionProject(issueId: 1126 | 1127 | 1128 | 1172 | 1182 | 1235 | 1248 | 1249 | 1250 | 1251 | 1252 | 1261 | 1263 | 1264 | 1278) {
+export async function createIssueRegressionProject(issueId: 1126 | 1127 | 1128 | 1172 | 1182 | 1235 | 1248 | 1249 | 1250 | 1251 | 1252 | 1261 | 1263 | 1264 | 1278 | 1295) {
   const parent = path.join(ROOT, '.tmp/e2e-projects')
   await mkdir(parent, { recursive: true })
   const project = await mkdtemp(path.join(parent, `issue-${issueId}-`))

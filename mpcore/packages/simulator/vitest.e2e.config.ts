@@ -65,6 +65,9 @@ export default defineConfig({
       if (id === 'virtual:props-projection-fixture') {
         return `\0${id}`
       }
+      if (id === 'virtual:merge-models-projection-fixture') {
+        return `\0${id}`
+      }
       if (id === 'virtual:native-topology-fixture') {
         return `\0${id}`
       }
@@ -96,6 +99,9 @@ export default defineConfig({
       }
       if (id === '\0virtual:props-projection-fixture') {
         return `export default ${JSON.stringify(await createPropsProjectionFiles())}`
+      }
+      if (id === '\0virtual:merge-models-projection-fixture') {
+        return `export default ${JSON.stringify(await createPropsProjectionFiles(undefined, 1295))}`
       }
       if (id === '\0virtual:native-topology-fixture') {
         return `export default ${JSON.stringify(createNativeTopologyFiles())}`
