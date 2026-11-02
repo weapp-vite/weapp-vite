@@ -2,9 +2,9 @@
 import { computed, ref } from 'wevu'
 
 const props = defineProps({
-  source: String,
+  source: { type: String, default: 'change' },
 })
-const modelValue = defineModel<string>()
+const modelValue = defineModel<string>({ default: 'modelValue' })
 const change = ref(props.source ?? 'change')
 const selectA = ref('selectA')
 const selectB = ref('selectB')

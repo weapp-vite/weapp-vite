@@ -12,6 +12,10 @@ const attachingInstances = new WeakSet<object>()
 const instanceStyleIsolation = new WeakMap<object, string>()
 const componentPageInstances = new WeakSet<object>()
 
+export function isComponentPageDefinition(definition: object) {
+  return definitionAttachments.has(definition)
+}
+
 export function isComponentPageInstance(instance: object) {
   return componentPageInstances.has(instance)
 }
