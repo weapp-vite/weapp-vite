@@ -6,6 +6,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { execa } from 'execa'
 import { createDevProcessCleanup } from '../../e2e/utils/devProcessCleanup'
+import { assertWindowsKernelInspectorReady } from '../../e2e/utils/devProcessCleanup/windowsKernelArtifact'
 import { CollectorStopError } from './collectorStop'
 
 /** 子进程有界运行；诊断进度独立于采样计时，失败也保存输出。 */
@@ -20,6 +21,7 @@ export async function runCollector(command: string, args: string[], options: {
   if (!Number.isFinite(options.timeoutMs) || options.timeoutMs <= 0) {
     throw new Error('Invalid collector deadline')
   }
+  assertWindowsKernelInspectorReady()
   const started = Date.now()
   const clean = (value: string) => (options.redact ?? [options.cwd]).reduce((text, root) => text.replaceAll(root, '<checkout>'), value)
   await mkdir(path.dirname(options.logFile), { recursive: true })

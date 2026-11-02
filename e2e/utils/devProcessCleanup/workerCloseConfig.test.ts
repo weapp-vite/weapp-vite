@@ -29,3 +29,12 @@ it('keeps the root infrastructure project under the same native close gate and c
     expect(infrastructure).toContain(file)
   }
 })
+
+it.each(['vitest.config.mts', 'scripts/vitest.config.mjs'])('protects script-owned benchmark shutdown through %s', async (filename) => {
+  const source = await readFile(new URL(`../../../${filename}`, import.meta.url), 'utf8')
+  const scripts = filename === 'vitest.config.mts'
+    ? source.slice(source.indexOf('name: \'repo-scripts\''), source.indexOf('name: \'e2e-hmr-infra\''))
+    : source
+  expect(scripts).toContain('e2e/vitest.e2e.dev-process.setup.ts')
+  expect(scripts).toMatch(/hookTimeout:\s*DEV_PROCESS_CLEANUP_HOOK_TIMEOUT_MS/u)
+})

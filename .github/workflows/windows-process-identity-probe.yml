@@ -90,6 +90,7 @@ jobs:
       node_version: '${{ matrix.node }}'
       timeout_minutes: 20
       build_command: pnpm build:pkgs:ci:windows
+      e2e_native_tools: true
       main_command: node --import tsx scripts/windowsProcessIdentityProbe/checkProcessRows.ts
     secrets: inherit
 

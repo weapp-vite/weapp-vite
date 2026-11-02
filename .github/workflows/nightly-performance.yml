@@ -127,6 +127,10 @@ jobs:
       - name: Install trusted driver dependencies
         working-directory: driver
         run: pnpm install --frozen-lockfile --prefer-offline
+      - name: Build trusted Windows E2E cleanup tool
+        if: runner.os == 'Windows'
+        working-directory: driver
+        run: pnpm e2e:build-tools
       - name: Install head dependencies
         working-directory: head
         run: pnpm install --frozen-lockfile --prefer-offline

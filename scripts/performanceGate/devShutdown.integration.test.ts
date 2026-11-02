@@ -3,9 +3,37 @@ import { createRequire } from 'node:module'
 import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
-import { expect, it } from 'vitest'
+import { aroundAll, expect, it } from 'vitest'
+import { MANAGED_PROJECT_JOURNAL_ENV } from 'weapp-ide-cli'
+import { closeWindowsKernelQueryScope, currentWindowsKernelQueryScope } from '../../e2e/utils/devProcessCleanup/windowsKernelQueryScope'
+import { withMachineE2ELease } from '../../packages/devtools-runtime/src/lease/machine'
 import { benchmarkShutdownEnvironment, startBenchmarkDevProcess } from './devShutdown'
 import { historicalBaselineSha } from './historicalBaseline.mjs'
+
+// 租约覆盖全部用例和原生收尾；清理失败时保留未完成 scope，阻止释放机器门禁。
+aroundAll(async (runSuite) => {
+  await withMachineE2ELease(async (lease) => {
+    const scope = await lease.createChildScope({ cleanupKey: 'benchmark-dev-shutdown-integration' })
+    const nativeScope = currentWindowsKernelQueryScope()
+    const previousJournal = process.env[MANAGED_PROJECT_JOURNAL_ENV]
+    delete process.env[MANAGED_PROJECT_JOURNAL_ENV]
+    try {
+      await runSuite()
+      await scope.seal()
+      // afterAll 会记录清理错误；复用同一 drain，只有资源确认终结后才完成 scope。
+      await closeWindowsKernelQueryScope(nativeScope, new Error('Benchmark shutdown integration is closing.'))
+      await scope.complete()
+    }
+    finally {
+      if (previousJournal === undefined) {
+        delete process.env[MANAGED_PROJECT_JOURNAL_ENV]
+      }
+      else {
+        process.env[MANAGED_PROJECT_JOURNAL_ENV] = previousJournal
+      }
+    }
+  })
+}, 0)
 
 const fixture = `
   const { watch } = await import('node:fs')

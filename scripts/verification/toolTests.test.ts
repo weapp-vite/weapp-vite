@@ -22,13 +22,15 @@ it('keeps root-only integration contracts out of the supplemental script partiti
   expect([...inventory.root].every(file => discovered.has(file))).toBe(true)
 })
 
-it('classifies the real Vite product contract without removing root or coverage discovery', async () => {
+it('classifies real Vite and benchmark shutdown contracts without removing root or coverage discovery', async () => {
   const cwd = path.resolve(import.meta.dirname, '../..')
-  const managed = 'scripts/dependencyContracts/vite.test.ts'
+  const managed = ['scripts/dependencyContracts/vite.test.ts', 'scripts/performanceGate/devShutdown.integration.test.ts']
   const inventory = await scriptTestInventory(cwd)
-  expect(inventory.managed).toEqual(new Set([managed]))
-  expect(inventory.all).toContain(managed)
-  expect(inventory.root.has(managed)).toBe(true)
+  expect(inventory.managed).toEqual(new Set(managed))
+  for (const file of managed) {
+    expect(inventory.all).toContain(file)
+    expect(inventory.root.has(file)).toBe(true)
+  }
 
   const manifest = JSON.parse(await readFile(path.join(cwd, 'package.json'), 'utf8')) as { scripts: Record<string, string> }
   const configuration = await readFile(path.join(cwd, 'vitest.config.mts'), 'utf8')
@@ -36,7 +38,10 @@ it('classifies the real Vite product contract without removing root or coverage 
   for (const script of ['test', 'test:coverage']) {
     const { filter, options } = parseCLI(manifest.scripts[script]!)
     expect(filter).toEqual([])
-    expect(await glob(ROOT_REPOSITORY_TEST_GLOBS, { cwd, ignore: options.exclude })).toContain(managed)
+    const discovered = await glob(ROOT_REPOSITORY_TEST_GLOBS, { cwd, ignore: options.exclude })
+    for (const file of managed) {
+      expect(discovered).toContain(file)
+    }
   }
 
   const support = 'packages/weapp-vite/scripts/viteProductContracts/support.test.ts'

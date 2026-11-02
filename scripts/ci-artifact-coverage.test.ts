@@ -128,10 +128,9 @@ describe('CI artifact coverage', () => {
 
   it('prepares native tools for the standalone Windows process identity probe', async () => {
     const workflow = await readWorkflow('windows-process-identity-probe.yml')
-    for (const jobName of ['writer-full-build', 'writer-full-dom', 'provider-cleanup']) {
+    for (const jobName of ['writer-full-build', 'writer-full-dom', 'provider-cleanup', 'process-row-contract']) {
       expect(workflow.jobs[jobName].with?.e2e_native_tools, jobName).toBe(true)
     }
-    expect(workflow.jobs['process-row-contract'].with?.e2e_native_tools).toBeUndefined()
     const steps = workflow.jobs['self-writer-check'].steps ?? []
     const buildIndex = steps.findIndex(step => step.name === 'Build private Windows E2E native tools')
     expect(steps[buildIndex]?.run).toBe('pnpm e2e:build-tools')

@@ -8,8 +8,9 @@ import process from 'node:process'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { runCollector } from './process'
 
-const fixtures = vi.hoisted(() => ({ execute: vi.fn(), capture: vi.fn(), identities: vi.fn(), alive: vi.fn(), kill: vi.fn() }))
+const fixtures = vi.hoisted(() => ({ execute: vi.fn(), capture: vi.fn(), identities: vi.fn(), alive: vi.fn(), kill: vi.fn(), preflight: vi.fn() }))
 vi.mock('execa', () => ({ execa: fixtures.execute }))
+vi.mock('../../e2e/utils/devProcessCleanup/windowsKernelArtifact', () => ({ assertWindowsKernelInspectorReady: fixtures.preflight }))
 vi.mock('../../e2e/utils/devProcessCleanup/processes', async (original) => {
   const actual = await original<typeof import('../../e2e/utils/devProcessCleanup/processes')>()
   return { ...actual, captureDevProcessTree: fixtures.capture, readDevProcessIdentities: fixtures.identities, isDevProcessAlive: fixtures.alive, killWindowsDevProcesses: fixtures.kill }
@@ -56,6 +57,16 @@ afterEach(async () => {
   vi.useRealTimers()
   vi.restoreAllMocks()
   await rm(directory, { recursive: true, force: true })
+})
+
+it('rejects a missing cleanup tool before dispatching a collector', async () => {
+  const failure = new Error('Run pnpm e2e:build-tools')
+  fixtures.preflight.mockImplementationOnce(() => {
+    throw failure
+  })
+  await expect(runCollector('fixture-node', ['worker'], options())).rejects.toBe(failure)
+  expect(fixtures.execute).not.toHaveBeenCalled()
+  expect(fixtures.capture).not.toHaveBeenCalled()
 })
 
 it('does not rediscover or signal a collector PID after its child has exited', async () => {
@@ -114,8 +125,9 @@ it('bounds a silent child and only releases reverified registered identities', a
   await waitForLaunch()
   await vi.advanceTimersByTimeAsync(500)
   expect(await failed).toMatchObject({ message: expect.stringContaining('deadline exceeded (500 ms)') })
-  expect(fixtures.capture).toHaveBeenCalledWith(61, expect.any(Function), undefined)
-  expect(fixtures.identities).toHaveBeenCalledWith([62, 61])
+  // Collector 未传检查取消信号，快照和身份复核均应收到显式 undefined。
+  expect(fixtures.capture).toHaveBeenCalledWith(61, expect.any(Function), undefined, undefined)
+  expect(fixtures.identities).toHaveBeenCalledWith([62, 61], undefined)
   expect(fixtures.kill).toHaveBeenCalledTimes(1)
   expect(fixtures.execute).toHaveBeenCalledTimes(1)
   expect(fixture.child.kill).not.toHaveBeenCalled()

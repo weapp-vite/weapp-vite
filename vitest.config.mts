@@ -137,6 +137,8 @@ const projects = [
     // 只限制测试发现范围；保留 Vite 默认转换，让跨目录导入的 TypeScript 依赖同样完成类型剥离。
     test: {
       name: 'repo-scripts',
+      setupFiles: [path.resolve(ROOT_DIR, 'e2e/vitest.e2e.dev-process.setup.ts')],
+      hookTimeout: DEV_PROCESS_CLEANUP_HOOK_TIMEOUT_MS,
       include: ROOT_REPOSITORY_TEST_GLOBS,
       exclude: ['**/node_modules/**', '**/.git/**'],
     },

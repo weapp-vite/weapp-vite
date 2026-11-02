@@ -5,7 +5,10 @@ export const ROOT_REPOSITORY_TEST_GLOBS = ['scripts/**/*.test.ts', 'integrations
 export const SCRIPT_TEST_GLOBS = ['scripts/**/*.test.mjs', 'scripts/**/*.test.ts']
 
 /** 受管测试自行取得机器租约并启动真实资源，分类不改变完整入口的发现范围。 */
-const MANAGED_SCRIPT_TESTS = new Set(['scripts/dependencyContracts/vite.test.ts'])
+const MANAGED_SCRIPT_TESTS = new Set([
+  'scripts/dependencyContracts/vite.test.ts',
+  'scripts/performanceGate/devShutdown.integration.test.ts',
+])
 
 /** 根入口与独立工具入口共用发现规则，补集和并集都按真实文件去重。 */
 export async function scriptTestInventory(root: string): Promise<{ all: string[], root: Set<string>, managed: Set<string> }> {

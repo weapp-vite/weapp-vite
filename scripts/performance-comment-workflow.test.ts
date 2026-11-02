@@ -70,6 +70,25 @@ describe('performance reporting workflows', () => {
     }
   })
 
+  it.each(['nightly-performance.yml', 'candidate-performance.yml'])('builds the trusted Windows cleanup tool before any collector in %s', async (file) => {
+    const workflow = readWorkflowFixture(file)
+    const steps = workflow.jobs.collect.steps as Array<{ 'name'?: string, 'if'?: string, 'run'?: string, 'working-directory'?: string }>
+    const installIndex = steps.findIndex(step => step.name === 'Install trusted driver dependencies')
+    const buildIndex = steps.findIndex(step => step.name === 'Build trusted Windows E2E cleanup tool')
+    const collectIndex = steps.findIndex(step => step.name === 'Collect paired shard')
+    expect(installIndex).toBeGreaterThanOrEqual(0)
+    expect(buildIndex).toBeGreaterThan(installIndex)
+    expect(buildIndex).toBeLessThan(collectIndex)
+    expect(steps[buildIndex]).toEqual({
+      'name': 'Build trusted Windows E2E cleanup tool',
+      'if': 'runner.os == \'Windows\'',
+      'working-directory': 'driver',
+      'run': 'pnpm e2e:build-tools',
+    })
+    expect(steps[collectIndex]?.run).toBe('pnpm exec tsx scripts/performanceGate/full.ts')
+    expect(steps[collectIndex]?.['working-directory']).toBe('driver')
+  })
+
   it('collects an explicitly selected candidate once and keeps tokens outside measured jobs', async () => {
     const workflow = parse(await readFile(path.join(root, '.github/workflows/candidate-performance.yml'), 'utf8'))
     const nightly = parse(await readFile(path.join(root, '.github/workflows/nightly-performance.yml'), 'utf8'))

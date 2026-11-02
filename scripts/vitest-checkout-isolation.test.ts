@@ -16,6 +16,7 @@ const configFiles = [
   'scripts/verification/toolTests.ts',
   'scripts/verification/topology.ts',
   'e2e/ci/githubIssuesBuild/groups.ts',
+  'e2e/utils/devProcessCleanup/shutdown.ts',
   'scripts/verificationBenchmark/localReporterConfig.mjs',
   'scripts/verificationTelemetry/vitest.mjs',
   'scripts/verificationTelemetry/reporter.mjs',
@@ -88,6 +89,10 @@ describe('Vitest checkout cleanup isolation', () => {
       expect(setupPaths.map(file => path.normalize(file)))
         .toEqual(mode === 'workspace' ? [] : [path.join(checkoutRoot, setupFilename)])
       expect(context.projects.length).toBeGreaterThan(0)
+      if (mode === 'workspace') {
+        const workerSetup = [...new Set(context.projects.flatMap(project => project.config.setupFiles))]
+        expect(workerSetup).toEqual([path.join(checkoutRoot, 'e2e/vitest.e2e.dev-process.setup.ts')])
+      }
 
       // 用临时探针执行解析后的入口，避免调用真实仓库的 fixture 清理。
       for (const file of setupPaths) {

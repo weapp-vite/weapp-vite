@@ -198,8 +198,8 @@
         "runs_on": "ubuntu-latest",
         "node_version": "24",
         "timeout_minutes": 15,
-        "main_command": "pnpm --filter @weapp-core/api catalog:check\npnpm --filter @weapp-core/api docs:check\npnpm --filter @weapp-core/api lint\npnpm --filter @weapp-core/api typecheck\npnpm --filter @weapp-core/api typecheck:test\npnpm --filter @weapp-core/api structure:check\npnpm --filter @weapp-core/api strict-alias:check\npnpm --filter @weapp-core/api coverage:check\npnpm --filter @weapp-core/api test\npnpm --filter @weapp-core/api test:types\npnpm --filter @weapp-core/api report:api\npnpm --filter @wevu/api lint\npnpm --filter @wevu/api typecheck\npnpm --filter @wevu/api typecheck:test\npnpm --filter @wevu/api test\npnpm --filter @wevu/api test:types\ngit diff --exit-code -- \\\n  @weapp-core/api/README.md \\\n  @weapp-core/api/src/core/apiCatalog.ts \\\n  @weapp-core/api/src/core/types.ts \\\n  @weapp-core/api/src/index.ts \\\n  @weapp-core/api/types/index.d.ts \\\n  @weapp-core/api/reports/api-compat \\\n  packages-runtime/weapi/types/index.d.ts\n",
-        "build_command": "pnpm exec turbo run build --filter=@weapp-core/types..."
+        "build_command": "pnpm exec turbo run build --filter=@weapp-core/types...",
+        "main_command": "pnpm --filter @weapp-core/api catalog:check\npnpm --filter @weapp-core/api docs:check\npnpm --filter @weapp-core/api lint\npnpm --filter @weapp-core/api typecheck\npnpm --filter @weapp-core/api typecheck:test\npnpm --filter @weapp-core/api structure:check\npnpm --filter @weapp-core/api strict-alias:check\npnpm --filter @weapp-core/api coverage:check\npnpm --filter @weapp-core/api test\npnpm --filter @weapp-core/api test:types\npnpm --filter @weapp-core/api report:api\npnpm --filter @wevu/api lint\npnpm --filter @wevu/api typecheck\npnpm --filter @wevu/api typecheck:test\npnpm --filter @wevu/api test\npnpm --filter @wevu/api test:types\ngit diff --exit-code -- \\\n  @weapp-core/api/README.md \\\n  @weapp-core/api/src/core/apiCatalog.ts \\\n  @weapp-core/api/src/core/types.ts \\\n  @weapp-core/api/src/index.ts \\\n  @weapp-core/api/types/index.d.ts \\\n  @weapp-core/api/reports/api-compat \\\n  packages-runtime/weapi/types/index.d.ts\n"
       },
       "secrets": "inherit"
     },
@@ -231,8 +231,8 @@
         "runs_on": "ubuntu-latest",
         "node_version": "${{ matrix.node-version }}",
         "timeout_minutes": 15,
-        "main_command": "pnpm --filter @weapp-core/api catalog:check\npnpm --filter @weapp-core/api docs:check\npnpm --filter @weapp-core/api lint\npnpm --filter @weapp-core/api typecheck\npnpm --filter @weapp-core/api typecheck:test\npnpm --filter @weapp-core/api structure:check\npnpm --filter @weapp-core/api strict-alias:check\npnpm --filter @weapp-core/api coverage:check\npnpm --filter @weapp-core/api test\npnpm --filter @weapp-core/api test:types\npnpm --filter @weapp-core/api report:api\npnpm --filter @wevu/api lint\npnpm --filter @wevu/api typecheck\npnpm --filter @wevu/api typecheck:test\npnpm --filter @wevu/api test\npnpm --filter @wevu/api test:types\ngit diff --exit-code -- \\\n  @weapp-core/api/README.md \\\n  @weapp-core/api/src/core/apiCatalog.ts \\\n  @weapp-core/api/src/core/types.ts \\\n  @weapp-core/api/src/index.ts \\\n  @weapp-core/api/types/index.d.ts \\\n  @weapp-core/api/reports/api-compat \\\n  packages-runtime/weapi/types/index.d.ts\n",
-        "build_command": "pnpm exec turbo run build --filter=@weapp-core/types..."
+        "build_command": "pnpm exec turbo run build --filter=@weapp-core/types...",
+        "main_command": "pnpm --filter @weapp-core/api catalog:check\npnpm --filter @weapp-core/api docs:check\npnpm --filter @weapp-core/api lint\npnpm --filter @weapp-core/api typecheck\npnpm --filter @weapp-core/api typecheck:test\npnpm --filter @weapp-core/api structure:check\npnpm --filter @weapp-core/api strict-alias:check\npnpm --filter @weapp-core/api coverage:check\npnpm --filter @weapp-core/api test\npnpm --filter @weapp-core/api test:types\npnpm --filter @weapp-core/api report:api\npnpm --filter @wevu/api lint\npnpm --filter @wevu/api typecheck\npnpm --filter @wevu/api typecheck:test\npnpm --filter @wevu/api test\npnpm --filter @wevu/api test:types\ngit diff --exit-code -- \\\n  @weapp-core/api/README.md \\\n  @weapp-core/api/src/core/apiCatalog.ts \\\n  @weapp-core/api/src/core/types.ts \\\n  @weapp-core/api/src/index.ts \\\n  @weapp-core/api/types/index.d.ts \\\n  @weapp-core/api/reports/api-compat \\\n  packages-runtime/weapi/types/index.d.ts\n"
       },
       "secrets": "inherit"
     }
@@ -278,6 +278,7 @@
         "node_version": "24",
         "timeout_minutes": 20,
         "build_command": "pnpm exec turbo run build --filter=weapp-vite...",
+        "e2e_native_tools": true,
         "test_command": "pnpm test:watcher-comparison --report .tmp/watcher-comparison/report.json",
         "main_command": "pnpm vitest run -c e2e/vitest.e2e.ci.config.ts e2e/ci/snapshot-sidecar.hmr.test.ts",
         "artifact_name": "watcher-comparison-${{ matrix.os }}-node-24-${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
@@ -361,6 +362,7 @@
         "node_version": "${{ format('{0}', matrix.node-version) }}",
         "timeout_minutes": 40,
         "build_command": "pnpm build:ci:windows",
+        "e2e_native_tools": true,
         "main_command": "pnpm exec cross-env WEAPP_VITE_E2E_CLEANUP_TRACE=1 pnpm e2e:ci:full -- --shard-index=${{ matrix.shard }} --shard-total=4",
         "e2e_platform": "weapp",
         "artifact_name": "windows-dev-cleanup-node-${{ matrix.node-version }}-shard-${{ matrix.shard }}-${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
@@ -432,6 +434,7 @@
         "node_version": "${{ format('{0}', matrix.node-version) }}",
         "timeout_minutes": 15,
         "build_command": "pnpm exec turbo run build --filter=weapp-vite...",
+        "e2e_native_tools": true,
         "main_command": "pnpm exec cross-env WEAPP_VITE_E2E_CLEANUP_TRACE=1 WEAPP_VITE_E2E_DEV_PROCESS_TRACE=1 WEAPP_VITE_E2E_DEV_SHUTDOWN_TRACE=1 WEAPP_VITE_E2E_DEV_PROCESS_TRACE_DIR=.tmp/windows-native-runtime-cleanup/dev-process pnpm vitest run -c e2e/vitest.e2e.internal.config.ts e2e/utils/runtimeDevProcess.integration.test.ts --maxWorkers=1 --no-file-parallelism --reporter=default --reporter=json --outputFile=.tmp/windows-native-runtime-cleanup/report.json",
         "artifact_name": "windows-native-runtime-cleanup-node-${{ matrix.node-version }}-${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
         "artifact_path": ".tmp/windows-native-runtime-cleanup/**"
@@ -467,6 +470,7 @@
         "node_version": "${{ format('{0}', matrix.node-version) }}",
         "timeout_minutes": 20,
         "build_command": "pnpm exec turbo run build --filter=weapp-vite... --filter=@mpcore/simulator...",
+        "e2e_native_tools": true,
         "main_command": "pnpm exec cross-env WEAPP_VITE_E2E_RUNTIME_PROVIDER=headless WEAPP_VITE_E2E_DOM_ACCEPTANCE=1 WEAPP_VITE_E2E_CLEANUP_TRACE=1 WEAPP_VITE_E2E_DEV_PROCESS_TRACE=1 WEAPP_VITE_E2E_DEV_SHUTDOWN_TRACE=1 WEAPP_VITE_E2E_DEV_PROCESS_TRACE_DIR=.tmp/windows-startup-fallback/dev-process pnpm vitest run -c e2e/vitest.e2e.headless.config.ts e2e/ide/hmr-startup-fallback.runtime.test.ts --reporter=default --reporter=json --reporter=./e2e/scripts/domAcceptanceReport/reporter.ts --outputFile=.tmp/windows-startup-fallback/report.json",
         "e2e_platform": "weapp",
         "artifact_name": "windows-startup-fallback-node-${{ matrix.node-version }}-${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
@@ -550,6 +554,7 @@
         "node_version": "${{ format('{0}', matrix.node-version) }}",
         "timeout_minutes": 30,
         "build_command": "pnpm exec turbo run build --filter=weapp-vite... --filter=@mpcore/simulator...",
+        "e2e_native_tools": true,
         "main_command": "pnpm vitest run e2e/utils/devBuildCompletion.test.ts e2e/utils/hmrOutputDiagnostics.test.ts e2e/scripts/e2e-suite-manifest.test.ts e2e/scripts/hmr-guard-manifest.test.ts\npnpm exec vitest run --config scripts/vitest.config.mjs scripts/workspace-hmr/statefulArtifactMeasurement.test.ts scripts/workspace-hmr/statefulArtifactMeasurement.deadline.test.ts scripts/workspace-hmr/statefulAuditClient.test.ts scripts/workspace-hmr/statefulAuditUpdate.test.ts scripts/e2e-diagnostic-workflow.test.ts scripts/repoctl-release-workflow.test.ts scripts/utils/atomicRename.test.ts scripts/editSequence/buildSources.test.ts scripts/editSequence/frameworkSources.test.ts\npnpm vitest run -c e2e/vitest.e2e.ci.config.ts e2e/ci/auto-import-vue-sfc.test.ts e2e/ci/external-linked-vue-component.hmr.test.ts\npnpm exec cross-env WEAPP_VITE_E2E_RUNTIME_PROVIDER=headless WEAPP_VITE_E2E_DOM_ACCEPTANCE=1 pnpm vitest run -c e2e/vitest.e2e.headless.config.ts e2e/ide/issue-1134-native-topology.runtime.test.ts e2e/ide/script-setup-external-src.runtime.test.ts e2e/ide/issue-1015-css-hmr.runtime.test.ts e2e/ide/issue-1140-mode-cache.runtime.test.ts e2e/ide/issue-1058-template-tags.runtime.test.ts\n",
         "e2e_platform": "weapp",
         "artifact_name": "runtime-publication-${{ matrix.os }}-node-${{ matrix.node-version }}-${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
@@ -592,6 +597,7 @@
         "node_version": "${{ format('{0}', matrix.node-version) }}",
         "timeout_minutes": 30,
         "build_command": "pnpm exec turbo run build --filter=weapp-vite... --filter=@mpcore/simulator...",
+        "e2e_native_tools": true,
         "main_command": "pnpm vitest run packages/weapp-vite/src/utils/watchDependencies.test.ts packages/weapp-vite/src/runtime/statefulHmr/snapshotInputs.test.ts packages/weapp-vite/src/runtime/statefulHmr/snapshotBuild.integration.test.ts scripts/editSequence/processTree.test.ts scripts/editSequence/processTree.windows.integration.test.ts scripts/editSequence/processObserver.test.ts scripts/editSequence/processObserverClose.test.ts scripts/editSequence/worker.test.ts scripts/utils/atomicRename.test.ts scripts/editSequence/buildSources.test.ts scripts/editSequence/frameworkSources.test.ts\npnpm vitest run -c e2e/vitest.e2e.ci.config.ts e2e/ci/edit-sequence.test.ts --reporter=default --reporter=json --outputFile=.tmp/hmr-lifecycle-report.json\n",
         "e2e_platform": "weapp",
         "artifact_name": "hmr-lifecycle-${{ matrix.os }}-node-${{ matrix.node-version }}-${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
@@ -628,6 +634,7 @@
         "node_version": "${{ format('{0}', matrix.node-version) }}",
         "timeout_minutes": 30,
         "build_command": "pnpm build:pkgs:ci:windows",
+        "e2e_native_tools": true,
         "main_command": "pnpm vitest run -c e2e/vitest.e2e.ci.config.ts e2e/ci/hmr-layout-shared-template-wxs.test.ts",
         "e2e_platform": "weapp"
       },
@@ -663,6 +670,7 @@
         "node_version": "24",
         "timeout_minutes": 30,
         "build_command": "pnpm --filter weapp-vite... --filter @mpcore/simulator... build",
+        "e2e_native_tools": true,
         "main_command": "node integrations/shared-hmr-tailwind/prepare.mjs\nnode integrations/shared-hmr-tailwind/verify-install.mjs\nnode integrations/shared-hmr-tailwind/verify-isolated.mjs\nnode integrations/shared-hmr-tailwind/run-taro.mjs --build\npnpm exec cross-env WEAPP_VITE_E2E_RUNTIME_PROVIDER=headless WEAPP_VITE_E2E_DOM_ACCEPTANCE=1 pnpm vitest run -c e2e/vitest.e2e.headless.config.ts e2e/ide/shared-taro-hmr.runtime.test.ts\n",
         "artifact_name": "shared-compiler-hosts-${{ matrix.os }}",
         "artifact_path": "docs/reports/dom-acceptance/**\n.tmp/shared-hosts/artifacts.json\n"
@@ -732,6 +740,7 @@
         "node_version": "22",
         "timeout_minutes": 40,
         "build_command": "${{ matrix.build-command }}",
+        "e2e_native_tools": true,
         "main_command": "node -e \"console.log('Bun workspace build artifact ready')\"",
         "build_artifact_name": "miniapp-${{ matrix.os }}-node-22-weapp-build"
       },
@@ -1045,6 +1054,7 @@
         "bun_version": "${{ matrix.bun-version }}",
         "timeout_minutes": 15,
         "consume_build_artifact": "miniapp-${{ matrix.os }}-node-22-weapp-build",
+        "e2e_native_tools": true,
         "main_command": "bun --version\npnpm e2e:bun\n",
         "artifact_name": "bun-cli-${{ matrix.os }}-${{ matrix.bun-version }}-${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
         "artifact_path": ".tmp/bun-cli/**\ndocs/reports/*-e2e-bun-*-suite-report/**\n"
@@ -1224,6 +1234,7 @@
         "PR_HEAD_REF": "${{ inputs.head_ref }}",
         "WEAPP_VITE_E2E_EXCLUDE_PROJECTS": "${{ inputs.e2e_exclude_projects }}",
         "BUILD_ARTIFACT_EXPECTED_SCOPE": "${{ inputs.build_artifact_scope }}",
+        "BUILD_ARTIFACT_EXPECTED_E2E_NATIVE_TOOLS": "${{ inputs.e2e_native_tools && runner.os == 'Windows' && '1' || '' }}",
         "WEAPP_VITE_CONSUMER_TARBALLS": "${{ inputs.consumer_tarballs }}",
         "WEAPP_VITE_VERIFICATION_TELEMETRY": "${{ inputs.verification_telemetry && '1' || '' }}"
       },
@@ -1295,6 +1306,11 @@
           }
         },
         {
+          "name": "Build private Windows E2E native tools",
+          "if": "runner.os == 'Windows' && inputs.e2e_native_tools && inputs.consume_build_artifact == ''",
+          "run": "pnpm e2e:build-tools"
+        },
+        {
           "name": "Download workspace build artifact",
           "if": "inputs.consume_build_artifact != ''",
           "uses": "actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333",
@@ -1318,6 +1334,11 @@
           "name": "Verify restored workspace artifact identity",
           "if": "inputs.consume_build_artifact != '' && inputs.verification_topology == 'optimized-v2'",
           "run": "node scripts/verify-build-artifact-manifest.mjs"
+        },
+        {
+          "name": "Verify private Windows E2E native tools without compilation",
+          "if": "runner.os == 'Windows' && inputs.e2e_native_tools && inputs.consume_build_artifact != ''",
+          "run": "pnpm e2e:build-tools -- --check"
         },
         {
           "name": "Download auxiliary verification artifact",
@@ -1503,7 +1524,7 @@
           "with": {
             "name": "${{ inputs.build_artifact_name }}",
             "include-hidden-files": true,
-            "path": "packages/*/dist/**\npackages-runtime/*/dist/**\npackages-private/*/dist/**\n@weapp-core/*/dist/**\nbenchmarks/*/dist/**\nmpcore/packages/*/dist/**\npackages/*/bin/**\npackages-runtime/*/bin/**\npackages-private/*/bin/**\n@weapp-core/*/bin/**\nmpcore/packages/*/bin/**\n.tmp/build-artifact-manifest.json\n.tmp/verification-telemetry/plans/**\n",
+            "path": "packages/*/dist/**\npackages-runtime/*/dist/**\npackages-private/*/dist/**\n@weapp-core/*/dist/**\nbenchmarks/*/dist/**\nmpcore/packages/*/dist/**\npackages/*/bin/**\npackages-runtime/*/bin/**\npackages-private/*/bin/**\n@weapp-core/*/bin/**\nmpcore/packages/*/bin/**\n.cache/e2e-native/windows-kernel-inspector/snapshot.exe\n.cache/e2e-native/windows-kernel-inspector/manifest.json\n.tmp/build-artifact-manifest.json\n.tmp/verification-telemetry/plans/**\n",
             "if-no-files-found": "error"
           }
         },
@@ -1621,6 +1642,7 @@
         "node_version": "${{ inputs.node_version }}",
         "timeout_minutes": 40,
         "build_command": "${{ inputs.build_command }}",
+        "e2e_native_tools": true,
         "main_command": "${{ inputs.run_coverage && 'node scripts/coverageShards/index.mjs plan --shards=4 --output=.tmp/coverage-plan/plan.json' || 'node --version' }}",
         "build_artifact_name": "quality-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-build",
         "artifact_name": "${{ inputs.run_coverage && format('coverage-plan-{0}-node-{1}', inputs.runs_on, inputs.node_version) || '' }}",
@@ -1746,6 +1768,7 @@
         "timeout_minutes": 40,
         "consume_build_artifact": "quality-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-build",
         "consume_aux_artifact": "coverage-plan-${{ inputs.runs_on }}-node-${{ inputs.node_version }}",
+        "e2e_native_tools": true,
         "aux_artifact_path": ".tmp/coverage-plan",
         "main_command": "node scripts/coverageShards/index.mjs run --plan=.tmp/coverage-plan/plan.json --shard=${{ matrix.shard }} --output=.tmp/coverage-shard",
         "artifact_name": "coverage-shard-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-${{ matrix.shard }}",
@@ -1889,6 +1912,7 @@
         "node_version": "${{ inputs.node_version }}",
         "timeout_minutes": 40,
         "build_command": "${{ inputs.build_command }}",
+        "e2e_native_tools": true,
         "main_command": "node --version",
         "build_artifact_name": "miniapp-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-weapp-build",
         "timing_artifact_name": "timing-miniapp-build-${{ inputs.runs_on }}-${{ inputs.node_version }}-${{ inputs.mode }}"
@@ -2030,6 +2054,7 @@
         "node_version": "${{ inputs.node_version }}",
         "timeout_minutes": 30,
         "consume_build_artifact": "miniapp-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-weapp-build",
+        "e2e_native_tools": true,
         "consume_aux_artifact": "miniapp-plan-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-${{ inputs.mode }}",
         "aux_artifact_path": ".tmp/verification-plan",
         "main_command": "node -e \"require('node:fs').mkdirSync('.tmp/ide-dom-headless-preflight', { recursive: true })\"\npnpm exec cross-env WEAPP_VITE_E2E_CLEANUP_TRACE=1 pnpm vitest run -c e2e/vitest.e2e.utils.config.ts e2e/utils/devProcessCleanup/windowsKernelQuery.test.ts e2e/utils/devProcessCleanup/processes.test.ts e2e/utils/dev-process.cleanup.test.ts e2e/utils/dev-process.crash.test.ts e2e/utils/devProcessCleanup/crash.test.ts e2e/utils/devProcessCleanup/windowsGenerationCapture.test.ts e2e/utils/devProcessCleanup/windowsGenerationReporting.test.ts e2e/utils/devProcessCleanup/windowsProcessTree.test.ts e2e/utils/devProcessCleanup/windowsProcessRows.test.ts e2e/utils/devProcessCleanup/windowsQueryTrace.test.ts 2>&1 | tee .tmp/ide-dom-headless-preflight/cleanup.log\npnpm exec cross-env WEAPP_VITE_E2E_CLEANUP_TRACE=1 WEAPP_VITE_E2E_DEV_PROCESS_TRACE=1 WEAPP_VITE_E2E_DEV_SHUTDOWN_TRACE=1 WEAPP_VITE_E2E_DOM_SCOPE_TRACE_CHECKPOINTS=home-ready node --import tsx e2e/scripts/run-e2e-suite.ts ide-dom-headless:classic --plan=.tmp/verification-plan/ide-dom-headless.json --shard-index=${{ matrix.shard }}\n",
@@ -2139,6 +2164,7 @@
         "node_version": "${{ inputs.node_version }}",
         "timeout_minutes": 30,
         "consume_build_artifact": "miniapp-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-weapp-build",
+        "e2e_native_tools": true,
         "main_command": "node packages/weapp-vite/bin/weapp-vite.js prepare e2e-apps/github-issues --platform weapp\nnode packages/weapp-vite/bin/weapp-vite.js prepare e2e-apps/template-wevu-regression --platform weapp\nnode --import tsx scripts/check-e2e-ide-shared-launch.ts\nnode --import tsx e2e/scripts/domAcceptanceReport/inventory.ts --write --check\npnpm vitest run -c e2e/vitest.e2e.internal.config.ts --maxWorkers=1 --no-file-parallelism\n",
         "artifact_name": "dom-acceptance-inventory-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
         "artifact_path": "e2e/dom-acceptance-inventory.json\ne2e/dom-acceptance-inventory.md\n",
@@ -2181,6 +2207,7 @@
         "runs_on": "${{ inputs.runs_on }}",
         "node_version": "${{ inputs.node_version }}",
         "consume_build_artifact": "miniapp-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-weapp-build",
+        "e2e_native_tools": true,
         "build_artifact_scope": "packages/weapp-vite,mpcore/packages/simulator",
         "timeout_minutes": 40,
         "consume_aux_artifact": "miniapp-plan-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-${{ inputs.mode }}",
@@ -2216,6 +2243,7 @@
         "runs_on": "${{ inputs.runs_on }}",
         "node_version": "${{ inputs.node_version }}",
         "consume_build_artifact": "miniapp-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-weapp-build",
+        "e2e_native_tools": true,
         "build_artifact_scope": "packages/weapp-vite,mpcore/packages/simulator",
         "timeout_minutes": 50,
         "main_command": "${{ inputs.mode == 'pr' && 'pnpm e2e:hmr:guard:smoke' || 'pnpm e2e:ci:hmr' }}",
@@ -2258,6 +2286,7 @@
         "bun_version": "${{ matrix.bun-version }}",
         "timeout_minutes": 15,
         "consume_build_artifact": "miniapp-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-weapp-build",
+        "e2e_native_tools": true,
         "main_command": "bun --version\npnpm e2e:bun\n",
         "artifact_name": "bun-cli-${{ inputs.runs_on }}-${{ matrix.bun-version }}-${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
         "artifact_path": ".tmp/bun-cli/**\ndocs/reports/*-e2e-bun-*-suite-report/**\n",
@@ -2624,6 +2653,51 @@
         "aux_artifact_path": ".cache/node-support-tarballs",
         "consumer_tarballs": ".cache/node-support-tarballs",
         "timing_artifact_name": "timing-consumer-consumer-${{ inputs.runs_on }}-${{ matrix.toolchain }}"
+      },
+      "secrets": "inherit"
+    },
+    "imports-runtime": {
+      "if": "${{ inputs.verification_topology != 'optimized-v2' && !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.prepare.result == 'success' && (inputs.runs_on == 'ubuntu-latest') }}",
+      "needs": [
+        "pr-context",
+        "prepare"
+      ],
+      "name": "Package imports consumer (${{ matrix.host }})",
+      "strategy": {
+        "fail-fast": false,
+        "matrix": {
+          "host": [
+            "wv",
+            "vite",
+            "vite-plus"
+          ]
+        }
+      },
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "pr_profile": "ci-vite-host-consumer",
+        "verification_topology": "${{ inputs.verification_topology }}",
+        "checkout_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
+        "base_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}",
+        "head_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}",
+        "pr_number": "${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}",
+        "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
+        "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
+        "runs_on": "${{ inputs.runs_on }}",
+        "node_version": "24",
+        "timeout_minutes": 30,
+        "build_command": "",
+        "main_command": "node scripts/consumerBatches/imports.mjs ${{ matrix.host }}",
+        "artifact_name": "imports-consumer-${{ matrix.host }}",
+        "artifact_path": ".cache/imports-consumer-${{ matrix.host }}.json*\ndocs/reports/dom-acceptance/**",
+        "consume_build_artifact": "consumer-${{ inputs.runs_on }}-node-24-build",
+        "build_artifact_node_major": "24",
+        "build_artifact_scope": "packages/weapp-vite,packages-runtime/wevu,mpcore/packages/simulator",
+        "consume_aux_artifact": "consumer-tarballs-${{ inputs.runs_on }}",
+        "aux_artifact_path": ".cache/node-support-tarballs",
+        "consumer_tarballs": ".cache/node-support-tarballs",
+        "timing_artifact_name": "timing-consumer-imports-runtime-${{ inputs.runs_on }}-${{ matrix.host }}"
       },
       "secrets": "inherit"
     },
@@ -3348,51 +3422,6 @@
           }
         }
       ]
-    },
-    "imports-runtime": {
-      "if": "${{ inputs.verification_topology != 'optimized-v2' && !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.prepare.result == 'success' && (inputs.runs_on == 'ubuntu-latest') }}",
-      "needs": [
-        "pr-context",
-        "prepare"
-      ],
-      "name": "Package imports consumer (${{ matrix.host }})",
-      "strategy": {
-        "fail-fast": false,
-        "matrix": {
-          "host": [
-            "wv",
-            "vite",
-            "vite-plus"
-          ]
-        }
-      },
-      "uses": "./.github/workflows/reusable-node-command.yml",
-      "with": {
-        "pr_context": "${{ inputs.pr_context }}",
-        "pr_profile": "ci-vite-host-consumer",
-        "verification_topology": "${{ inputs.verification_topology }}",
-        "checkout_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}",
-        "base_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseSha || needs.pr-context.outputs.base_sha) }}",
-        "head_sha": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headSha || needs.pr-context.outputs.head_sha) }}",
-        "pr_number": "${{ (inputs.verification_topology == 'optimized-v2' && format('{0}', fromJSON(inputs.pr_context).prNumber || '') || needs.pr-context.outputs.pr_number) }}",
-        "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
-        "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
-        "runs_on": "${{ inputs.runs_on }}",
-        "node_version": "24",
-        "timeout_minutes": 30,
-        "build_command": "",
-        "main_command": "node scripts/consumerBatches/imports.mjs ${{ matrix.host }}",
-        "artifact_name": "imports-consumer-${{ matrix.host }}",
-        "artifact_path": ".cache/imports-consumer-${{ matrix.host }}.json*\ndocs/reports/dom-acceptance/**",
-        "consume_build_artifact": "consumer-${{ inputs.runs_on }}-node-24-build",
-        "build_artifact_node_major": "24",
-        "build_artifact_scope": "packages/weapp-vite,packages-runtime/wevu,mpcore/packages/simulator",
-        "consume_aux_artifact": "consumer-tarballs-${{ inputs.runs_on }}",
-        "aux_artifact_path": ".cache/node-support-tarballs",
-        "consumer_tarballs": ".cache/node-support-tarballs",
-        "timing_artifact_name": "timing-consumer-imports-runtime-${{ inputs.runs_on }}-${{ matrix.host }}"
-      },
-      "secrets": "inherit"
     }
   }
 }
