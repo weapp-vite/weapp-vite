@@ -62,6 +62,19 @@ it.each(['modified', 'deleted'])('runs neighboring tests for %s sources and expa
   }
 })
 
+it.each(['review', 'full'] as const)('retains the existing managed runtime gates for package E2E changes in %s', async (mode) => {
+  const root = await createPlanRoot()
+  try {
+    const item: WorkspacePackage = { name: '@mpcore/simulator', directory: 'mpcore/packages/simulator', scripts: { test: 'vitest run' }, dependencies: [], extraInputs: [] }
+    const plan = await createVerificationPlan({ root, packages: [...packages, item], resources, selection: 'affected', changes: changes([`${item.directory}/e2e/browser.e2e.test.ts`]), mode })
+    expect(plan.tasks.find(task => task.id === 'runtime:headless')?.args).toEqual(['run', mode === 'full' ? 'e2e:ide:headless:full' : 'e2e:ide:headless:gate'])
+    expect(plan.tasks.some(task => task.id === 'runtime:full')).toBe(mode === 'full')
+  }
+  finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
 it.each(['bootstrap', 'nodeVersionWarning'])('filters the adjacent bin regression for %s.js in quick', async (source) => {
   const root = await createPlanRoot()
   try {

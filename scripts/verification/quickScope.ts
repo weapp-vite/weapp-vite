@@ -16,6 +16,11 @@ export function quickCheckPackages(selected: WorkspacePackage[], owned: Set<stri
   return selected.filter(item => isLibraryPackage(item) || owned.has(item.name))
 }
 
+/** 显式 E2E 留给受管入口，源码 runtime 和嵌套工具 e2e 目录中的普通单测继续保留。 */
+export function isQuickUnitTest(item: WorkspacePackage, file: string): boolean {
+  return !file.startsWith(`${item.directory}/e2e/`) && !/\.e2e\.(?:test|spec)\.[cm]?[jt]sx?$/.test(file)
+}
+
 /** dist 准备以实际检查为根，不把全局 extraInputs 当成直接消费者构建授权。 */
 export function quickBuildRoots(selected: WorkspacePackage[], owned: Set<string>, tested: Set<string>): WorkspacePackage[] {
   return quickCheckPackages(selected, owned).filter(item => item.scripts.typecheck

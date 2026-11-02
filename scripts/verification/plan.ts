@@ -5,7 +5,7 @@ import path from 'node:path'
 import { sharedBuildPackages, splitCliBuild, usePreparedTypeChecks } from './build.ts'
 import { DOCUMENT_CONTRACTS, isRootPolicyDocument, requiredDocumentContracts } from './classification.ts'
 import { DEFAULT_SELECTION } from './policy.ts'
-import { isLibraryPackage, needsConsumerPrepare, quickBuildRoots, quickCheckPackages } from './quickScope.ts'
+import { isLibraryPackage, isQuickUnitTest, needsConsumerPrepare, quickBuildRoots, quickCheckPackages } from './quickScope.ts'
 import { isRootToolingInput, rootToolingContractTests } from './rootTooling.ts'
 import { fullRuntimeBlock } from './runtime.ts'
 import { fingerprintConfiguration } from './snapshot.ts'
@@ -112,7 +112,10 @@ export async function createVerificationPlan(options: PlanOptions): Promise<Veri
     const checked = mode === 'quick' ? quickCheckPackages(selected, owned) : selected
     const relatedTests = new Map(mode === 'quick'
       ? await Promise.all(checked.filter(item => owned.has(item.name) && (item.scripts.test || item.scripts['test:pure']))
-          .map(async item => [item.name, await nearbyTests(root, changes.files.filter(file => ownerOf(file, packages)?.name === item.name))] as const))
+          .map(async (item) => {
+            const related = await nearbyTests(root, changes.files.filter(file => ownerOf(file, packages)?.name === item.name))
+            return [item.name, related.filter(file => isQuickUnitTest(item, file))] as const
+          }))
       : [])
     const roots = mode === 'quick' ? quickBuildRoots(selected, owned, new Set([...relatedTests].filter(([, files]) => files.length).map(([name]) => name))) : selected
     const needed = new Set(roots.map(item => item.name))

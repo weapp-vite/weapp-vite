@@ -45,6 +45,44 @@ function buildFilters(plan: Awaited<ReturnType<typeof createVerificationPlan>>):
   return plan.tasks.filter(item => item.kind === 'build').flatMap(item => item.args.filter(arg => arg.startsWith('--filter=')).map(arg => arg.slice('--filter='.length))).sort()
 }
 
+it.each(['test', 'test:pure'])('keeps package E2E cases out of quick %s without dropping adjacent unit contracts', async (script) => {
+  const root = await createRoot()
+  try {
+    const item: WorkspacePackage = {
+      name: '@mpcore/simulator',
+      directory: 'mpcore/packages/simulator',
+      scripts: { [script]: 'vitest run', 'test:e2e': 'vitest run -c vitest.e2e.config.ts' },
+      dependencies: [],
+      extraInputs: [],
+    }
+    const runtimeFiles = ['e2e/browser.e2e.test.ts', 'e2e/lifecycle.test.ts', 'test/browser.e2e.spec.ts']
+    const unitFiles = ['src/runtime/value.test.ts', 'test/e2e/suiteReportLinks.test.ts']
+    for (const file of [...runtimeFiles, ...unitFiles]) {
+      const absolute = path.join(root, item.directory, file)
+      await mkdir(path.dirname(absolute), { recursive: true })
+      await writeFile(absolute, '')
+    }
+    const input = { root, packages: [item], resources, selection: 'affected' as const }
+    const runtimeChanges = runtimeFiles.map(file => `${item.directory}/${file}`)
+    const runtimeOnly = await createVerificationPlan({ ...input, changes: changes(runtimeChanges), mode: 'quick' })
+    expect(runtimeOnly.tasks.some(task => task.id.startsWith('test:') || task.kind === 'runtime' || task.kind === 'build')).toBe(false)
+    expect(runtimeOnly.remaining.some(reason => reason.includes('review / CI'))).toBe(true)
+    const mixed = await createVerificationPlan({
+      ...input,
+      changes: changes([...runtimeChanges, `${item.directory}/e2e/lifecycle.ts`, `${item.directory}/src/runtime/value.ts`, `${item.directory}/${unitFiles[1]}`]),
+      mode: 'quick',
+    })
+    expect(mixed.tasks.find(task => task.id === `test:${item.name}`)).toMatchObject({
+      args: ['--filter', item.name, 'run', script, '--maxWorkers=2', ...unitFiles],
+      blockedReason: undefined,
+    })
+    expect(mixed.tasks.some(task => task.kind === 'runtime')).toBe(false)
+  }
+  finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
 it.each(['package.json', 'unknown.config', 'scripts/unmapped.ts'])('retains conservative impact for %s without turning indirect consumers into quick checks', async (file) => {
   const root = await createRoot()
   try {
