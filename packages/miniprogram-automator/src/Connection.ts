@@ -47,6 +47,7 @@ const APP_SERVICE_PAGE_METHOD_VERSIONS = new Set(['2.02.2608070', '2.02.2608080'
 const COMPONENT_CALLER_BRIDGE_COMBINATIONS: ReadonlyMap<string, ReadonlySet<string>> = new Map([
   ['2.02.2608080', new Set(['3.17.5'])],
   ['2.02.2609231', new Set(['3.17.5', '3.17.6'])],
+  ['2.02.2609240', new Set(['3.17.6'])],
 ])
 /** Connection 的实现。 */
 export default class Connection extends EventEmitter {

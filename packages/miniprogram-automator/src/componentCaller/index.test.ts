@@ -21,6 +21,7 @@ describe('component caller protocol ownership', () => {
     ['2.02.2608080', '3.17.5'],
     ['2.02.2609231', '3.17.5'],
     ['2.02.2609231', '3.17.6'],
+    ['2.02.2609240', '3.17.6'],
   ] as const)('routes configured CustomElement calls through one exact caller in %s / %s', async (version, SDKVersion) => {
     const harness = createConnectionHarness()
     const transport = Object.assign(new EventEmitter(), { send: vi.fn(), close: vi.fn(async () => {}) })
@@ -65,6 +66,12 @@ describe('component caller protocol ownership', () => {
     ['2.02.2608080', '3.17.6'],
     ['2.02.2609231', '3.17.7'],
     ['2.02.2609231', undefined],
+    ['2.02.2609240', '3.17.2'],
+    ['2.02.2609240', '3.17.5'],
+    ['2.02.2609240', '3.17.7'],
+    ['2.02.2609240', 'unknown'],
+    ['2.02.2609240', ''],
+    ['2.02.2609240', undefined],
     ['2.02.2610082', '3.17.6'],
     ['unknown', '3.17.6'],
   ] as const)('keeps configured CustomElement calls native in %s / %s', async (version, SDKVersion) => {

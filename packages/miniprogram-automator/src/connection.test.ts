@@ -100,6 +100,13 @@ describe('Connection', () => {
     ['2.02.2609231', '3.17.7', false],
     ['2.02.2609231', '', false],
     ['2.02.2609231', undefined, false],
+    ['2.02.2609240', '3.17.6', true],
+    ['2.02.2609240', '3.17.2', false],
+    ['2.02.2609240', '3.17.5', false],
+    ['2.02.2609240', '3.17.7', false],
+    ['2.02.2609240', 'unknown', false],
+    ['2.02.2609240', '', false],
+    ['2.02.2609240', undefined, false],
     ['2.02.2610082', '3.17.5', false],
     ['2.02.2610082', '3.17.6', false],
     ['2.02.2610092', '3.17.6', false],
@@ -125,6 +132,14 @@ describe('Connection', () => {
     connection.configureToolInfo({ version: '2.02.2609231', SDKVersion: '3.17.5' })
     expect(connection.prefersComponentCallerBridge).toBe(true)
     connection.configureToolInfo({ version: '2.02.2609231' })
+    expect(connection.prefersComponentCallerBridge).toBe(false)
+    connection.configureToolInfo({ version: '2.02.2609240', SDKVersion: '3.17.6' })
+    expect(connection.prefersComponentCallerBridge).toBe(true)
+    connection.configureToolInfo({ version: '2.02.2609240', SDKVersion: '3.17.2' })
+    expect(connection.prefersComponentCallerBridge).toBe(false)
+    connection.configureToolInfo({ version: '2.02.2609240', SDKVersion: '3.17.6' })
+    expect(connection.prefersComponentCallerBridge).toBe(true)
+    connection.configureToolInfo({ version: '2.02.2609240' })
     expect(connection.prefersComponentCallerBridge).toBe(false)
     await connection.dispose()
   })
