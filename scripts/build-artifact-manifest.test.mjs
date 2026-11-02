@@ -37,6 +37,32 @@ it('binds uploaded outputs to revision, toolchain, lockfile and package scope', 
   expect(() => verifyBuildArtifactManifest(root, { ...manifest, toolchain: { ...manifest.toolchain, nodeVersion: 'v0.1.0' } }, env)).toThrow(/toolchain/)
 })
 
+it('requires both exact Windows tools and ignores unrelated cache files', async () => {
+  const root = await fixture()
+  const toolRoot = '.cache/e2e-native/windows-kernel-inspector'
+  const requiredEnv = { ...env, BUILD_ARTIFACT_EXPECTED_E2E_NATIVE_TOOLS: '1' }
+  expect(() => verifyBuildArtifactManifest(root, createBuildArtifactManifest(root, env), requiredEnv)).toThrow(/required Windows E2E native tools/)
+  await mkdir(path.join(root, toolRoot), { recursive: true })
+  await writeFile(path.join(root, toolRoot, 'snapshot.exe'), 'compiler-owned fixture image')
+  expect(() => verifyBuildArtifactManifest(root, createBuildArtifactManifest(root, env), requiredEnv)).toThrow(/required Windows E2E native tools/)
+  await writeFile(path.join(root, toolRoot, 'manifest.json'), '{}')
+  await writeFile(path.join(root, toolRoot, 'build.lock'), 'not an output')
+  await writeFile(path.join(root, '.cache/e2e-native/unrelated.txt'), 'not an output')
+  const manifest = createBuildArtifactManifest(root, env)
+  expect(manifest.scope).toEqual([toolRoot, 'packages/example'])
+  expect(manifest.files).toEqual([`${toolRoot}/manifest.json`, `${toolRoot}/snapshot.exe`, 'packages/example/dist/index.js'])
+  expect(verifyBuildArtifactManifest(root, manifest, requiredEnv)).toBe(manifest)
+  await writeFile(path.join(root, toolRoot, 'snapshot.exe'), 'changed image')
+  expect(() => verifyBuildArtifactManifest(root, manifest, requiredEnv)).toThrow(/checksum/)
+})
+
+it('rejects a non-tool path under the private tool directory', async () => {
+  const root = await fixture()
+  const manifest = createBuildArtifactManifest(root, env)
+  const unsafe = '.cache/e2e-native/windows-kernel-inspector/arbitrary.exe'
+  expect(() => verifyBuildArtifactManifest(root, { ...manifest, files: [unsafe], checksums: { [unsafe]: '0'.repeat(64) } }, env)).toThrow(/Invalid/)
+})
+
 it('rejects changed bytes even when all output filenames still exist', async () => {
   const root = await fixture()
   const manifest = createBuildArtifactManifest(root, env)

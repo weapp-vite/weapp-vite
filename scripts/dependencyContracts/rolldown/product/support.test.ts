@@ -8,7 +8,7 @@ describe('public Rolldown bundle ownership', () => {
       bundle.closed = true
     }) }
     const rolldown = vi.fn(async () => bundle)
-    expect(await withBundle(rolldown, { input: 'entry.js' }, async current => ({ same: current === bundle }))).toEqual({ same: true })
+    expect(await withBundle(rolldown, { input: 'entry.js' }, async (current: typeof bundle) => ({ same: current === bundle }))).toEqual({ same: true })
     expect(rolldown).toHaveBeenCalledExactlyOnceWith({ input: 'entry.js' })
     expect(bundle.close).toHaveBeenCalledTimes(1)
     expect(bundle.closed).toBe(true)

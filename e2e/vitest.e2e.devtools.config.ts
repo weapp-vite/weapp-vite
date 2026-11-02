@@ -2,6 +2,7 @@ import path from 'node:path'
 import { configDefaults, defineConfig } from 'vitest/config'
 import { excludedE2ETestPatterns } from '../scripts/e2eProjectScope.ts'
 import { localReporters, localTestPolicy } from '../scripts/verificationBenchmark/localReporterConfig.mjs'
+import { DEV_PROCESS_CLEANUP_HOOK_TIMEOUT_MS } from './utils/devProcessCleanup/shutdown.ts'
 import { ensureIdeWarningReportEnv } from './utils/ideWarningReport.ts'
 import { resolveVitestIncludePatterns } from './utils/vitestTargetFile.ts'
 
@@ -22,14 +23,14 @@ export default defineConfig({
     ]),
     testTimeout: 36_000_000,
     // 真实 IDE teardown 需要等待窗口销毁证据与 utility backend 重启。
-    hookTimeout: 120_000,
+    hookTimeout: DEV_PROCESS_CLEANUP_HOOK_TIMEOUT_MS,
     globals: true,
     pool: 'threads',
     // 微信开发者工具的 renderer/compiler 进程不属于 Vitest worker 树；固定单 worker，避免窗口收尾期间叠加 IDE 会话耗尽宿主内存。
     maxWorkers: 1,
     fileParallelism: false,
     globalSetup: [path.resolve(import.meta.dirname, 'vitest.e2e.machine.global-setup.ts'), DEVTOOLS_GLOBAL_SETUP],
-    setupFiles: [DOM_SETUP_FILE, DEVTOOLS_SETUP_FILE],
+    setupFiles: [path.resolve(import.meta.dirname, './vitest.e2e.dev-process.setup.ts'), DOM_SETUP_FILE, DEVTOOLS_SETUP_FILE],
     reporters: localReporters(['default', DOM_REPORTER]),
     ...localTestPolicy(),
   },

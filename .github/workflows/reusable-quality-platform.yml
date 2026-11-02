@@ -60,6 +60,7 @@ jobs:
       node_version: ${{ inputs.node_version }}
       timeout_minutes: 40
       build_command: ${{ inputs.build_command }}
+      e2e_native_tools: true
       main_command: ${{ inputs.run_coverage && 'node scripts/coverageShards/index.mjs plan --shards=4 --output=.tmp/coverage-plan/plan.json' || 'node --version' }}
       build_artifact_name: quality-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-build
       artifact_name: ${{ inputs.run_coverage && format('coverage-plan-{0}-node-{1}', inputs.runs_on, inputs.node_version) || '' }}
@@ -175,6 +176,7 @@ jobs:
       timeout_minutes: 40
       consume_build_artifact: quality-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-build
       consume_aux_artifact: coverage-plan-${{ inputs.runs_on }}-node-${{ inputs.node_version }}
+      e2e_native_tools: true
       aux_artifact_path: .tmp/coverage-plan
       main_command: node scripts/coverageShards/index.mjs run --plan=.tmp/coverage-plan/plan.json --shard=${{ matrix.shard }} --output=.tmp/coverage-shard
       artifact_name: coverage-shard-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-${{ matrix.shard }}

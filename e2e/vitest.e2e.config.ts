@@ -1,6 +1,7 @@
 import path from 'node:path'
 import { defineConfig } from 'vitest/config'
 import { excludedE2ETestPatterns } from '../scripts/e2eProjectScope.ts'
+import { DEV_PROCESS_CLEANUP_HOOK_TIMEOUT_MS } from './utils/devProcessCleanup/shutdown.ts'
 import { ensureIdeWarningReportEnv } from './utils/ideWarningReport.ts'
 import { resolveE2EMaxWorkers } from './utils/max-workers.ts'
 import { resolveVitestIncludePatterns } from './utils/vitestTargetFile.ts'
@@ -15,6 +16,8 @@ ensureIdeWarningReportEnv()
 
 export default defineConfig({
   test: {
+    setupFiles: [path.resolve(import.meta.dirname, './vitest.e2e.dev-process.setup.ts')],
+    hookTimeout: DEV_PROCESS_CLEANUP_HOOK_TIMEOUT_MS,
     include: resolveVitestIncludePatterns(import.meta.dirname, [
       path.resolve(import.meta.dirname, './ci/**/*.test.ts'),
       path.resolve(import.meta.dirname, './ide/**/*.test.ts'),

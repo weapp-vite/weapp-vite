@@ -97,6 +97,10 @@ on:
       main_command:
         required: true
         type: string
+      e2e_native_tools:
+        required: false
+        type: boolean
+        default: false
       e2e_platform:
         required: false
         type: string
@@ -199,6 +203,7 @@ jobs:
       PR_HEAD_REF: ${{ inputs.head_ref }}
       WEAPP_VITE_E2E_EXCLUDE_PROJECTS: ${{ inputs.e2e_exclude_projects }}
       BUILD_ARTIFACT_EXPECTED_SCOPE: ${{ inputs.build_artifact_scope }}
+      BUILD_ARTIFACT_EXPECTED_E2E_NATIVE_TOOLS: ${{ inputs.e2e_native_tools && runner.os == 'Windows' && '1' || '' }}
       WEAPP_VITE_CONSUMER_TARBALLS: ${{ inputs.consumer_tarballs }}
       WEAPP_VITE_VERIFICATION_TELEMETRY: ${{ inputs.verification_telemetry && '1' || '' }}
 
@@ -246,6 +251,9 @@ jobs:
         uses: ./.github/actions/refresh-workspace-deps
         with:
           build-command: ${{ inputs.build_command }}
+      - name: Build private Windows E2E native tools
+        if: runner.os == 'Windows' && inputs.e2e_native_tools && inputs.consume_build_artifact == ''
+        run: pnpm e2e:build-tools
       - name: Download workspace build artifact
         if: inputs.consume_build_artifact != ''
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
@@ -264,6 +272,9 @@ jobs:
       - name: Verify restored workspace artifact identity
         if: inputs.consume_build_artifact != '' && inputs.verification_topology == 'optimized-v2'
         run: node scripts/verify-build-artifact-manifest.mjs
+      - name: Verify private Windows E2E native tools without compilation
+        if: runner.os == 'Windows' && inputs.e2e_native_tools && inputs.consume_build_artifact != ''
+        run: pnpm e2e:build-tools -- --check
       - name: Download auxiliary verification artifact
         if: inputs.consume_aux_artifact != ''
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
@@ -427,6 +438,8 @@ jobs:
             packages-private/*/bin/**
             @weapp-core/*/bin/**
             mpcore/packages/*/bin/**
+            .cache/e2e-native/windows-kernel-inspector/snapshot.exe
+            .cache/e2e-native/windows-kernel-inspector/manifest.json
             .tmp/build-artifact-manifest.json
             .tmp/verification-telemetry/plans/**
           if-no-files-found: error

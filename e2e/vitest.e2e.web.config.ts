@@ -2,6 +2,7 @@ import path from 'node:path'
 import { defineConfig } from 'vitest/config'
 import { excludedE2ETestPatterns } from '../scripts/e2eProjectScope.ts'
 import { localReporters, localTestPolicy } from '../scripts/verificationBenchmark/localReporterConfig.mjs'
+import { DEV_PROCESS_CLEANUP_HOOK_TIMEOUT_MS } from './utils/devProcessCleanup/shutdown.ts'
 import { resolveE2EMaxWorkers } from './utils/max-workers.ts'
 import { createE2ESourceTransform } from './utils/sourceTransform.ts'
 
@@ -9,6 +10,7 @@ export default defineConfig({
   oxc: { exclude: /.*/ },
   plugins: [createE2ESourceTransform()],
   test: {
+    setupFiles: [path.resolve(import.meta.dirname, './vitest.e2e.dev-process.setup.ts')],
     reporters: localReporters(),
     ...localTestPolicy(),
     globalSetup: [path.resolve(import.meta.dirname, 'vitest.e2e.machine.global-setup.ts')],
@@ -19,7 +21,7 @@ export default defineConfig({
     ],
     exclude: [path.resolve(import.meta.dirname, './web-runtime/web-browser-smoke.test.ts'), ...excludedE2ETestPatterns()],
     testTimeout: 180_000,
-    hookTimeout: 180_000,
+    hookTimeout: DEV_PROCESS_CLEANUP_HOOK_TIMEOUT_MS,
     globals: true,
     pool: 'threads',
     maxWorkers: resolveE2EMaxWorkers(),

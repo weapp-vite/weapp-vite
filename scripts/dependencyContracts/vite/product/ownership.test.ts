@@ -3,13 +3,37 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createProductReport } from '../../report.mjs'
 import { ViteProductTerminationError, withViteProductOwnership } from './ownership.mjs'
 
+interface OwnershipLease {
+  createChildScope: (options: { cleanupKey: string }) => Promise<{
+    seal: () => Promise<void>
+    complete: () => Promise<void>
+  }>
+}
+
+interface OwnershipOptions {
+  reportFile: string
+  report: ReturnType<typeof harness>['report']
+  execute: () => Promise<void>
+  pendingFixtures: () => string[]
+  persist: () => Promise<void>
+  timeoutMs?: number
+  exit?: (code: number) => void
+  signals?: EventEmitter
+}
+
+// 监督器允许测试退出替身返回，并在随后抛出资源未终结错误。
+const superviseOwnership = withViteProductOwnership as (
+  lease: OwnershipLease,
+  options: OwnershipOptions,
+) => Promise<void>
+
 function harness() {
   const scope = { seal: vi.fn(async () => {}), complete: vi.fn(async () => {}) }
   const lease = { createChildScope: vi.fn(async () => scope) }
-  const report = createProductReport('vite', ['hooks'])
+  const report: ReturnType<typeof createProductReport> & { cleanup?: { status: 'confirmed' | 'unconfirmed' } } = createProductReport('vite', ['hooks'])
   const signals = new EventEmitter()
   const pending: string[] = []
-  const exit = vi.fn()
+  const exit = vi.fn<(code: number) => void>()
   const persist = vi.fn(async () => {})
   const execute = vi.fn(async () => {})
   const options = { reportFile: 'report.json', report, execute, pendingFixtures: () => [...pending], persist, exit, signals, timeoutMs: 100 }
@@ -33,7 +57,7 @@ describe('Vite product resource supervision', () => {
       state.pending.push('owned-fixture')
       state.pending.length = 0
     })
-    await withViteProductOwnership(state.lease, state.options)
+    await superviseOwnership(state.lease, state.options)
     expect(state.lease.createChildScope).toHaveBeenCalledWith({ cleanupKey: expect.stringContaining('vite-product:') })
     expect(state.scope.seal).toHaveBeenCalledTimes(1)
     expect(state.scope.complete).toHaveBeenCalledTimes(1)
@@ -46,7 +70,7 @@ describe('Vite product resource supervision', () => {
   it.each([undefined, null, false, 0, new AggregateError([new Error('assertion')], 'Product assertion failed')])('preserves %j execution failure after confirmed cleanup', async (error) => {
     const state = harness()
     state.execute.mockRejectedValueOnce(error)
-    const outcome = await withViteProductOwnership(state.lease, state.options).then(() => ({ status: 'fulfilled' }), reason => ({ status: 'rejected', reason }))
+    const outcome = await superviseOwnership(state.lease, state.options).then(() => ({ status: 'fulfilled' }), reason => ({ status: 'rejected', reason }))
     expect(outcome).toEqual({ status: 'rejected', reason: error })
     expect(state.scope.complete).toHaveBeenCalledTimes(1)
     expect(state.report.cleanup).toMatchObject({ status: 'confirmed' })
@@ -58,7 +82,7 @@ describe('Vite product resource supervision', () => {
     const original = new Error('Native owner close failed')
     state.pending.push('owned-fixture')
     state.execute.mockRejectedValueOnce(original)
-    await expect(withViteProductOwnership(state.lease, state.options)).rejects.toBeInstanceOf(ViteProductTerminationError)
+    await expect(superviseOwnership(state.lease, state.options)).rejects.toBeInstanceOf(ViteProductTerminationError)
     expect(state.scope.seal).toHaveBeenCalledTimes(1)
     expect(state.scope.complete).not.toHaveBeenCalled()
     expect(state.report).toMatchObject({ status: 'failed', ownership: { scope: 'sealed' }, cleanup: { status: 'unconfirmed', pendingFixtures: ['owned-fixture'], lease: 'preserved' }, error: { message: original.message } })
@@ -71,7 +95,7 @@ describe('Vite product resource supervision', () => {
     const held = Promise.withResolvers<void>()
     state.pending.push('pending-fixture')
     state.execute.mockImplementationOnce(() => held.promise)
-    const observed = withViteProductOwnership(state.lease, state.options).catch(error => error)
+    const observed = superviseOwnership(state.lease, state.options).catch(error => error)
     await vi.advanceTimersByTimeAsync(101)
     expect(await observed).toBeInstanceOf(ViteProductTerminationError)
     expect(state.report).toMatchObject({ status: 'timeout', cleanup: { status: 'unconfirmed', pendingFixtures: ['pending-fixture'] } })
@@ -88,7 +112,7 @@ describe('Vite product resource supervision', () => {
     const state = harness()
     const held = Promise.withResolvers<void>()
     state.execute.mockImplementationOnce(() => held.promise)
-    const observed = withViteProductOwnership(state.lease, state.options).catch(error => error)
+    const observed = superviseOwnership(state.lease, state.options).catch(error => error)
     await vi.advanceTimersByTimeAsync(0)
     state.signals.emit('SIGTERM')
     state.signals.emit('SIGINT')
@@ -106,7 +130,7 @@ describe('Vite product resource supervision', () => {
     const scopeError = new Error('Scope completion failed')
     state.execute.mockRejectedValueOnce(original)
     state.scope.complete.mockRejectedValueOnce(scopeError)
-    await expect(withViteProductOwnership(state.lease, state.options)).rejects.toMatchObject({ cause: expect.objectContaining({ errors: [original, scopeError] }) })
+    await expect(superviseOwnership(state.lease, state.options)).rejects.toMatchObject({ cause: expect.objectContaining({ errors: [original, scopeError] }) })
     expect(state.report).toMatchObject({ status: 'failed', ownership: { scope: 'sealed' }, cleanup: { status: 'unconfirmed' }, error: { errors: [{ message: original.message }, { message: scopeError.message }] } })
     expect(state.exit).toHaveBeenCalledExactlyOnceWith(1)
   })
@@ -119,7 +143,7 @@ describe('Vite product resource supervision', () => {
     state.scope.seal.mockRejectedValue(sealError)
     state.persist.mockRejectedValueOnce(reportError)
     const log = vi.spyOn(console, 'error').mockImplementation(() => {})
-    await expect(withViteProductOwnership(state.lease, state.options)).rejects.toBeInstanceOf(ViteProductTerminationError)
+    await expect(superviseOwnership(state.lease, state.options)).rejects.toBeInstanceOf(ViteProductTerminationError)
     expect(state.report).toMatchObject({ cleanup: { status: 'unconfirmed', sealError: { message: String(sealError) } } })
     expect(log).toHaveBeenCalledWith(expect.any(String), reportError)
     expect(state.scope.complete).not.toHaveBeenCalled()

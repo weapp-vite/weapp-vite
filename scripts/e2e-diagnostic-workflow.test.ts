@@ -166,6 +166,7 @@ describe('bounded HMR workflow diagnosis', () => {
       node_version: `\${{ format('{0}', matrix.node-version) }}`,
       timeout_minutes: 15,
       build_command: 'pnpm exec turbo run build --filter=weapp-vite...',
+      e2e_native_tools: true,
       main_command: 'pnpm exec cross-env WEAPP_VITE_E2E_CLEANUP_TRACE=1 WEAPP_VITE_E2E_DEV_PROCESS_TRACE=1 WEAPP_VITE_E2E_DEV_SHUTDOWN_TRACE=1 WEAPP_VITE_E2E_DEV_PROCESS_TRACE_DIR=.tmp/windows-native-runtime-cleanup/dev-process pnpm vitest run -c e2e/vitest.e2e.internal.config.ts e2e/utils/runtimeDevProcess.integration.test.ts --maxWorkers=1 --no-file-parallelism --reporter=default --reporter=json --outputFile=.tmp/windows-native-runtime-cleanup/report.json',
       artifact_name: frozenWorkflowText(`windows-native-runtime-cleanup-node-\${{ matrix.node-version }}-\${{ needs.pr-context.outputs.checkout_sha }}`, 'ci-e2e'),
       artifact_path: '.tmp/windows-native-runtime-cleanup/**',

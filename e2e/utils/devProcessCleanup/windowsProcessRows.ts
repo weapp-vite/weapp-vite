@@ -1,25 +1,25 @@
 import { Buffer } from 'node:buffer'
 
-const header = 'WEAPP_DEV_PROCESS_ROWS_V1'
+export const WINDOWS_PROCESS_ROWS_HEADER = 'WEAPP_DEV_PROCESS_ROWS_V1'
 
 /** 固定字段保留 CIM 原值；UTF-16LE 编码路径，避免分隔符与 Unicode 改变身份。 */
 export function serializeWindowsProcessRows() {
   const fields = '$weappChars=([string]$weappRow.ExecutablePath).ToCharArray(); $weappBytes=[byte[]]::new($weappChars.Length*2); [Buffer]::BlockCopy($weappChars,0,$weappBytes,0,$weappBytes.Length); $weappPath=[Convert]::ToBase64String($weappBytes); [Console]::Out.WriteLine(([string]$weappRow.ProcessId)+"`t"+([string]$weappRow.ParentProcessId)+"`t"+$weappPath+"`t"+([string]$weappRow.Started))'
   return [
-    `[Console]::Out.WriteLine('${header}')`,
+    `[Console]::Out.WriteLine('${WINDOWS_PROCESS_ROWS_HEADER}')`,
     `foreach ($weappRow in $weappQueryRows) { ${fields} }`,
-    `[Console]::Out.WriteLine('${header}|'+$weappQueryRows.Count)`,
+    `[Console]::Out.WriteLine('${WINDOWS_PROCESS_ROWS_HEADER}|'+$weappQueryRows.Count)`,
   ].join('; ')
 }
 
 /** 完整包络、行数及规范编码均有效才交给现有身份门禁，不接受部分输出。 */
 export function parseWindowsProcessRows(output: string): unknown[] {
   const lines = output.replace(/\r?\n$/, '').split(/\r?\n/)
-  if (lines.shift() !== header) {
+  if (lines.shift() !== WINDOWS_PROCESS_ROWS_HEADER) {
     throw new Error('Windows process row envelope is missing.')
   }
   const tail = lines.pop()
-  if (tail !== `${header}|${lines.length}`) {
+  if (tail !== `${WINDOWS_PROCESS_ROWS_HEADER}|${lines.length}`) {
     throw new Error('Windows process row count is incomplete.')
   }
   return lines.map((line) => {

@@ -5,6 +5,8 @@ import process from 'node:process'
 
 const outputRoots = ['packages', 'packages-runtime', 'packages-private', '@weapp-core', 'benchmarks', 'mpcore/packages']
 const outputPattern = /^(?:packages|packages-runtime|packages-private|@weapp-core|benchmarks|mpcore\/packages)\/[^/]+\/(?:dist|bin)\/.+$/u
+const e2eNativeToolScope = '.cache/e2e-native/windows-kernel-inspector'
+const e2eNativeToolFiles = [`${e2eNativeToolScope}/snapshot.exe`, `${e2eNativeToolScope}/manifest.json`]
 const digestPattern = /^[a-f\d]{64}$/u
 
 function digest(bytes) {
@@ -35,12 +37,16 @@ function actualPackageManager(env) {
 }
 
 function scopedPackage(file) {
+  if (e2eNativeToolFiles.includes(file)) {
+    return e2eNativeToolScope
+  }
   return file.slice(0, file.search(/\/(?:dist|bin)\//u))
 }
 
 function safeOutput(root, relative) {
   if (typeof relative !== 'string' || relative.includes('\\') || relative.includes('\0')
-    || relative.split('/').some(part => part === '.' || part === '..') || !outputPattern.test(relative)) {
+    || relative.split('/').some(part => part === '.' || part === '..')
+    || !(outputPattern.test(relative) || e2eNativeToolFiles.includes(relative))) {
     throw new Error(`Invalid build artifact output: ${String(relative)}`)
   }
   const absolute = path.resolve(root, relative)
@@ -83,10 +89,15 @@ function collectOutputs(root) {
       }
     }
   }
+  for (const file of e2eNativeToolFiles) {
+    if (fs.existsSync(path.join(root, file))) {
+      files.push(file)
+    }
+  }
   return files.sort()
 }
 
-/** 只收集实际上传的包级产物，并绑定冻结提交、工具链与每个文件的内容。 */
+/** 只收集实际上传的包级及私用工具产物，并绑定冻结提交、工具链与文件内容。 */
 export function createBuildArtifactManifest(root, env = process.env) {
   const files = collectOutputs(root)
   if (files.length === 0) {
@@ -147,6 +158,12 @@ export function verifyBuildArtifactManifest(root, manifest, env = process.env) {
     throw new Error('Build artifact scope mismatch')
   }
   const required = (env.BUILD_ARTIFACT_EXPECTED_SCOPE ?? '').split(',').map(value => value.trim()).filter(Boolean)
+  if (env.BUILD_ARTIFACT_EXPECTED_E2E_NATIVE_TOOLS === '1') {
+    required.push(e2eNativeToolScope)
+    if (e2eNativeToolFiles.some(file => !manifest.files.includes(file))) {
+      throw new Error('Build artifact does not cover the required Windows E2E native tools; run pnpm e2e:build-tools')
+    }
+  }
   if (required.some(name => !scope.includes(name))) {
     throw new Error('Build artifact does not cover the required packages')
   }

@@ -4,6 +4,7 @@ import { excludedE2ETestPatterns } from '../scripts/e2eProjectScope.ts'
 import { resolveVerificationTopology } from '../scripts/verification/topology'
 import { localReporters, localTestPolicy } from '../scripts/verificationBenchmark/localReporterConfig.mjs'
 import { GITHUB_ISSUES_BUILD_BASELINE_LABEL, GITHUB_ISSUES_BUILD_TASK_LABELS } from './ci/githubIssuesBuild/groups'
+import { DEV_PROCESS_CLEANUP_HOOK_TIMEOUT_MS } from './utils/devProcessCleanup/shutdown.ts'
 import { resolveE2EMaxWorkers } from './utils/max-workers.ts'
 import { resolveVitestIncludePatterns } from './utils/vitestTargetFile.ts'
 
@@ -15,6 +16,8 @@ const excludedGithubIssueBuilds = topology.id === 'optimized-v2'
 
 export default defineConfig({
   test: {
+    setupFiles: [path.resolve(import.meta.dirname, './vitest.e2e.dev-process.setup.ts')],
+    hookTimeout: DEV_PROCESS_CLEANUP_HOOK_TIMEOUT_MS,
     reporters: localReporters(),
     ...localTestPolicy(),
     // 构建、headless 和 mock 契约共享机器互斥，不初始化真实 IDE 所有权。

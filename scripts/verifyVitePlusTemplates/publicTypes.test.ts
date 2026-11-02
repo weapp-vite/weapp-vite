@@ -7,6 +7,10 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { runCommand } from '../createWeappViteSmoke/process.mjs'
 import { verifyOxlintPublicTypes } from '../verify-oxlint-public-types.mjs'
 
+type PublicTypesResult = Awaited<ReturnType<typeof verifyOxlintPublicTypes>> & {
+  report: { cleanup?: 'passed' | 'failed', error?: string }
+}
+
 const roots: string[] = []
 const typescriptRoot = path.dirname(fileURLToPath(import.meta.resolve('typescript/package.json')))
 
@@ -66,9 +70,9 @@ describe('Oxlint isolated public type consumer', () => {
   it.each([false, true])('compiles imported declarations with ESLint types installed=%s and always removes its consumer', async (eslintTypes) => {
     const input = await fixture()
     let consumerRoot = ''
-    const result = await verifyOxlintPublicTypes(input.env, {
+    const result: PublicTypesResult = await verifyOxlintPublicTypes(input.env, {
       readManifest: input.readManifest,
-      execute: async (invocation: Parameters<typeof runCommand>[0]) => {
+      execute: async (invocation) => {
         if (invocation.label.endsWith('/install')) {
           consumerRoot = invocation.cwd
           await installTypeFixture(consumerRoot, eslintTypes)
@@ -92,9 +96,9 @@ describe('Oxlint isolated public type consumer', () => {
     const input = await fixture()
     const external = path.join(input.root, 'external.d.ts')
     await fs.writeFile(external, 'declare const externalTypeLeak: true\n')
-    const result = await verifyOxlintPublicTypes(input.env, {
+    const result: PublicTypesResult = await verifyOxlintPublicTypes(input.env, {
       readManifest: input.readManifest,
-      execute: async (invocation: Parameters<typeof runCommand>[0]) => {
+      execute: async (invocation) => {
         if (invocation.label.endsWith('/install')) {
           await installTypeFixture(invocation.cwd, true, `/// <reference path="${external.replaceAll('\\', '/')}" />`)
           return { stdout: '', stderr: '' }

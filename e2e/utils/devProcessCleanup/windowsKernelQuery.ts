@@ -1,15 +1,12 @@
-import { rmSync } from 'node:fs'
 import fs from 'node:fs/promises'
-import { tmpdir } from 'node:os'
-import { isAbsolute, join } from 'node:path'
+import { join } from 'node:path'
 import process from 'node:process'
-import { fileURLToPath } from 'node:url'
-// eslint-disable-next-line e18e/ban-dependencies -- 编译与查询均使用有界、受持有句柄管理的子进程。
+// eslint-disable-next-line e18e/ban-dependencies -- 查询使用有界、受持有句柄管理的子进程。
 import { execa } from 'execa'
 import { resolveWechatInspectionTimeout } from '../../../packages/weapp-ide-cli/src/devtoolsTarget/inspection'
-import { traceCleanupStage } from '../cleanupTrace'
-import { runWithCleanup } from '../runWithCleanup'
-import { observeWindowsCompilerChild } from './windowsCompilerChildTrace'
+import { withWindowsInspectorDirectory } from './windowsInspectorOperation'
+import { readWindowsKernelInspector } from './windowsKernelArtifact'
+import { canDispatchWindowsKernelQuery, closeWindowsKernelQueryScope, currentWindowsKernelQueryScope, registerWindowsKernelOperation } from './windowsKernelQueryScope'
 import { traceWindowsQueryChild } from './windowsQueryChildTrace'
 
 interface WindowsKernelQueryResult {
@@ -20,8 +17,6 @@ interface WindowsKernelQueryResult {
   timedOut?: boolean
 }
 
-let inspector: Promise<Uint8Array> | undefined
-
 function remaining(deadline: number): number {
   const milliseconds = Math.floor(deadline - performance.now())
   if (milliseconds <= 0) {
@@ -30,114 +25,69 @@ function remaining(deadline: number): number {
   return milliseconds
 }
 
-async function withInspectorDirectory<T>(operation: (directory: string) => Promise<T>): Promise<T> {
-  const directory = await fs.mkdtemp(join(tmpdir(), 'weapp-dev-process-'))
-  const onExit = () => {
-    try {
-      rmSync(directory, { recursive: true, force: true })
-    }
-    catch (error) {
-      process.exitCode = Number(process.exitCode) || 1
-      process.stderr.write(`Windows kernel inspector directory cleanup failed: ${String(error)}\n`)
-    }
-  }
-  process.once('exit', onExit)
-  return runWithCleanup(() => operation(directory), async () => {
-    await fs.rm(directory, { recursive: true, force: true })
-    process.removeListener('exit', onExit)
-  })
+/** 只取消本 worker 登记的查询，等待相同原生句柄排空后才交还清理所有权。 */
+export function drainWindowsKernelQueries(reason: unknown): Promise<void> {
+  return closeWindowsKernelQueryScope(currentWindowsKernelQueryScope(), reason)
 }
 
-async function compileInspector(deadline: number): Promise<Uint8Array> {
-  // Windows worker 的环境变量副本区分大小写，不能假定宿主保留某一种键名拼写。
-  const environmentKeys = Object.keys(process.env)
-  const systemRootKey = environmentKeys.find(key => key.toLowerCase() === 'systemroot')
-  const windirKey = environmentKeys.find(key => key.toLowerCase() === 'windir')
-  const windowsRoot = (systemRootKey && process.env[systemRootKey]) || (windirKey && process.env[windirKey])
-  if (!windowsRoot || !isAbsolute(windowsRoot)) {
-    throw new Error('Windows kernel inspection requires an absolute Windows system directory.')
-  }
-  return withInspectorDirectory(async (directory) => {
-    const executable = join(directory, 'snapshot.exe')
-    const compiler = join(windowsRoot, 'Microsoft.NET', process.arch === 'ia32' ? 'Framework' : 'Framework64', 'v4.0.30319', 'csc.exe')
-    const timeout = remaining(deadline)
-    await traceCleanupStage('dev-kernel-compile', async () => {
-      const startedMs = performance.now()
-      const subprocess = execa(compiler, [
-        '/nologo',
-        '/codepage:65001',
-        '/utf8output',
-        '/optimize+',
-        '/target:exe',
-        '/platform:anycpu',
-        `/out:${executable}`,
-        fileURLToPath(new URL('./windowsKernelQuery.cs', import.meta.url)),
-      ], { stdin: 'ignore', timeout, reject: false, windowsHide: true })
-      const observation = observeWindowsCompilerChild(subprocess, startedMs)
-      try {
-        const result = await subprocess.catch((error: unknown) => {
-          throw new Error(`Windows kernel inspector compilation rejected: child=${JSON.stringify(observation.snapshot())}.`, { cause: error })
-        })
-        if (result.exitCode !== 0) {
-          throw new Error(`Windows kernel inspector compilation failed: exitCode=${result.exitCode ?? 'none'}, signal=${result.signal ?? 'none'}, timedOut=${result.timedOut ?? false}, child=${JSON.stringify(observation.snapshot())}.`, { cause: result })
-        }
-      }
-      finally {
-        observation.dispose()
-      }
-    }, { timeoutMs: timeout })
-    return fs.readFile(executable)
-  })
-}
-
-/** 冷编译计入原预算；只缓存成功产物的字节，每次查询返回前回收自己的可执行文件。 */
-export async function queryWindowsKernelProcesses(pids?: readonly number[], trace = false): Promise<WindowsKernelQueryResult> {
+/** 运行时只消费校验后的构建产物；每次查询独立持有进程、取消信号及临时目录。 */
+export function queryWindowsKernelProcesses(pids?: readonly number[], trace = false, options: { signal?: AbortSignal } = {}): Promise<WindowsKernelQueryResult> {
   if (pids?.some(pid => !Number.isSafeInteger(pid) || pid <= 0 || pid > 0xFFFFFFFF)) {
-    throw new TypeError('Windows process queries require positive 32-bit PIDs.')
+    return Promise.reject(new TypeError('Windows process queries require positive 32-bit PIDs.'))
   }
   if (process.platform !== 'win32') {
-    throw new Error('Windows kernel inspection is only available on Windows.')
+    return Promise.reject(new Error('Windows kernel inspection is only available on Windows.'))
+  }
+  const scope = currentWindowsKernelQueryScope()
+  if (!canDispatchWindowsKernelQuery(scope)) {
+    return Promise.reject(new Error('Windows kernel query scope is closing; no new inspection was dispatched.'))
   }
   const startedMs = performance.now()
   const deadline = startedMs + resolveWechatInspectionTimeout('win32')
+  const controller = new AbortController()
+  const signal = options.signal ? AbortSignal.any([options.signal, controller.signal]) : controller.signal
   const args = trace ? ['--trace'] : []
   args.push(pids ? '--pids' : '--all')
   if (pids) {
     args.push(...new Set(pids.map(String)))
   }
-  const compilation = inspector ??= compileInspector(deadline)
-  let image: Uint8Array
-  try {
-    image = await compilation
-  }
-  catch (error) {
-    if (inspector === compilation) {
-      inspector = undefined
-    }
-    throw error
-  }
-  let result: WindowsKernelQueryResult | undefined
-  try {
-    return await withInspectorDirectory(async (directory) => {
-      const executable = join(directory, 'snapshot.exe')
-      await fs.writeFile(executable, image)
-      const subprocess = execa(executable, args, {
-        stdin: 'ignore',
-        timeout: remaining(deadline),
-        reject: false,
-        windowsHide: true,
+  const settled = (async () => {
+    signal.throwIfAborted()
+    const image = readWindowsKernelInspector()
+    let result: WindowsKernelQueryResult | undefined
+    try {
+      return await withWindowsInspectorDirectory(async (directory, settle) => {
+        const executable = join(directory, 'snapshot.exe')
+        await fs.writeFile(executable, image)
+        signal.throwIfAborted()
+        const subprocess = execa(executable, args, {
+          stdin: 'ignore',
+          timeout: remaining(deadline),
+          reject: false,
+          windowsHide: true,
+          cancelSignal: signal,
+        })
+        const observation = trace ? traceWindowsQueryChild(pids ? 'identities' : 'snapshot', subprocess, startedMs) : subprocess
+        result = await settle(Object.assign(observation, { nodeChildProcess: subprocess.nodeChildProcess }))
+        return result
       })
-      result = await (trace ? traceWindowsQueryChild(pids ? 'identities' : 'snapshot', subprocess, startedMs) : subprocess)
-      return result
-    })
-  }
-  catch (cleanupError) {
-    // reject:false 的查询失败也是已结算的值；不能让随后的文件回收错误覆盖它。
-    if (result && result.exitCode !== 0) {
-      throw new AggregateError([result, cleanupError], 'Windows kernel query and cleanup both failed.', { cause: result })
     }
-    throw cleanupError
-  }
+    catch (cleanupError) {
+      if (result && result.exitCode !== 0) {
+        throw new AggregateError([result, cleanupError], 'Windows kernel query and cleanup both failed.', { cause: result })
+      }
+      throw cleanupError
+    }
+  })()
+  registerWindowsKernelOperation(scope, {
+    cancel: () => controller.abort(new Error('Windows kernel query owner is closing.')),
+    settled: settled.then((result) => {
+      if (result.exitCode !== 0) {
+        throw result
+      }
+    }),
+  })
+  return settled
 }
 
 /** 旧 CIM 身份只有微秒精度；原始内核时间继续单独参与父子代次核验。 */

@@ -9,6 +9,8 @@ import { createDevProcessCleanup } from './devProcessCleanup'
 import { crashDevProcess } from './devProcessCleanup/crash'
 import { waitForNativeDevProcessExit } from './devProcessCleanup/rootExit'
 import { createDevProcessShutdownFailure, DEV_PROCESS_GRACEFUL_TIMEOUT_MS } from './devProcessCleanup/shutdown'
+import { assertWindowsKernelInspectorReady } from './devProcessCleanup/windowsKernelArtifact'
+import { currentWindowsKernelQueryScope, holdWindowsKernelOwner, inWindowsKernelOwnerRecovery, recordWindowsKernelOwnerFailure, registerWindowsKernelOperation, releaseWindowsKernelOwner } from './devProcessCleanup/windowsKernelQueryScope'
 import { createDevProcessDiagnostics } from './devProcessDiagnostics'
 import { captureDevProcessOutput } from './devProcessStdio'
 import { createDevProcessTrace } from './devProcessTrace'
@@ -38,7 +40,7 @@ type DevProcessOptions = Options & {
   disposeShutdown?: () => Promise<void>
 }
 
-const TRACKED_DEV_DISPOSERS = new Set<(forceKillDelayMs: number) => Promise<void>>()
+const TRACKED_DEV_DISPOSERS = new Set<(forceKillDelayMs: number, options?: DevProcessStopOptions) => Promise<void>>()
 
 function normalizeErrorMessage(error: unknown) {
   if (error instanceof Error) {
@@ -89,9 +91,9 @@ function sleep(ms: number) {
   return new Promise<void>(resolve => setTimeout(resolve, ms))
 }
 
-export async function cleanupTrackedDevProcesses(forceKillDelayMs = 3_000) {
+export async function cleanupTrackedDevProcesses(forceKillDelayMs = 3_000, options: DevProcessStopOptions = {}) {
   for (const dispose of [...TRACKED_DEV_DISPOSERS]) {
-    await dispose(forceKillDelayMs)
+    await dispose(forceKillDelayMs, options)
   }
 }
 
@@ -100,6 +102,11 @@ export function startDevProcess(
   args: readonly string[],
   options?: DevProcessOptions,
 ): DevProcessController {
+  assertWindowsKernelInspectorReady()
+  const queryScope = currentWindowsKernelQueryScope()
+  if (queryScope.closing) {
+    throw new Error('Cannot start a dev process while its kernel query scope is closing.')
+  }
   const { gracefulShutdown, disposeShutdown, ...spawnOptions } = options ?? {}
   const spawnInfo: DevProcessSpawnInfo = {
     args,
@@ -129,9 +136,11 @@ export function startDevProcess(
     }
   }
   const child = spawn()
+  const queryOwner = holdWindowsKernelOwner(queryScope, child.pid)
   let exited = false
   let shutdownStarted = false
   let stopTask: Promise<void> | undefined
+  let inspectionController: AbortController | undefined
   let stopSucceeded = false
   let crashTask: Promise<void> | undefined
   let crashRequested = false
@@ -265,10 +274,14 @@ export function startDevProcess(
       stopTask = Promise.reject(traceFailure)
     }
     if (!stopTask) {
+      inspectionController = new AbortController()
+      const controller = inspectionController
       // 并发调用共享同一次清理；只有核验退出和输出排空后才撤销登记。
       let shutdownFailure: unknown
       // crash 自己保留原错误；即使模拟失败，stop 仍须独立排空已登记资源。
-      const drain = () => cleanup(forceKillDelayMs, { ...options, gracefulTimeoutMs: options.gracefulTimeoutMs ?? DEV_PROCESS_GRACEFUL_TIMEOUT_MS })
+      const recover = queryScope.closing
+      const runCleanup = () => cleanup(forceKillDelayMs, { ...options, inspectionSignal: controller.signal, gracefulTimeoutMs: options.gracefulTimeoutMs ?? DEV_PROCESS_GRACEFUL_TIMEOUT_MS })
+      const drain = () => recover ? inWindowsKernelOwnerRecovery(queryScope, queryOwner, runCleanup) : runCleanup()
       const cleanupTask = (crashTask ? crashTask.then(drain, drain) : drain()).then(async () => {
         if (crashRequested || forcedShutdown || exitedAfterIpc || gracefulShutdown || spawnOptions.ipc === true) {
           const info = await settledExit
@@ -283,7 +296,9 @@ export function startDevProcess(
             : error
         }
         TRACKED_DEV_DISPOSERS.delete(stop)
+        releaseWindowsKernelOwner(queryScope, queryOwner)
       }).catch((error: unknown) => {
+        recordWindowsKernelOwnerFailure(queryScope, queryOwner, error)
         stopTask = undefined
         throw withTraceFailure(error)
       })
@@ -296,6 +311,21 @@ export function startDevProcess(
         }
         stopSucceeded = true
       })
+      registerWindowsKernelOperation(queryScope, {
+        cancel: () => controller.abort(new Error('Dev process inspection owner is closing.')),
+        settled: stopTask,
+      }, recover ? queryOwner : undefined)
+    }
+    // afterEach 接管尚在执行的 stop 时仍能取消同一个检查；不能另起查询或丢失原始结果。
+    if (options.inspectionSignal) {
+      const controller = inspectionController!
+      const signal = options.inspectionSignal
+      const abort = () => controller.abort(signal.reason)
+      signal.addEventListener('abort', abort, { once: true })
+      if (signal.aborted) {
+        abort()
+      }
+      void stopTask.then(() => signal.removeEventListener('abort', abort), () => signal.removeEventListener('abort', abort))
     }
     return stopTask
   }

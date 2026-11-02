@@ -1,5 +1,6 @@
 import path from 'node:path'
 import { defineConfig } from 'vitest/config'
+import { DEV_PROCESS_CLEANUP_HOOK_TIMEOUT_MS } from './utils/devProcessCleanup/shutdown.ts'
 import { resolveE2EMaxWorkers } from './utils/max-workers.ts'
 
 const CI_TEST_GLOB = path.resolve(import.meta.dirname, './ci/**/*.test.ts').replaceAll('\\', '/')
@@ -13,6 +14,8 @@ const DEV_WATCH_EXCLUDE = [
 
 export default defineConfig({
   test: {
+    setupFiles: [path.resolve(import.meta.dirname, './vitest.e2e.dev-process.setup.ts')],
+    hookTimeout: DEV_PROCESS_CLEANUP_HOOK_TIMEOUT_MS,
     globalSetup: [path.resolve(import.meta.dirname, 'vitest.e2e.machine-lease.global-setup.ts')],
     include: [CI_TEST_GLOB],
     exclude: DEV_WATCH_EXCLUDE,

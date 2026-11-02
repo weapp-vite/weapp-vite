@@ -5,6 +5,7 @@ import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vitest/config'
 import YAML from 'yaml'
+import { DEV_PROCESS_CLEANUP_HOOK_TIMEOUT_MS } from './e2e/utils/devProcessCleanup/shutdown.ts'
 import { ROOT_REPOSITORY_TEST_GLOBS } from './scripts/verification/toolTests.ts'
 import { localReporters, localTestPolicy } from './scripts/verificationBenchmark/localReporterConfig.mjs'
 
@@ -146,9 +147,10 @@ const projects = [
       name: 'e2e-hmr-infra',
       // 此项目仅验证模拟会话与 runner 基础设施；不能向其他单测项目传播真实 IDE 日志。
       globalSetup: [path.resolve(ROOT_DIR, 'e2e/vitest.e2e.machine-lease.global-setup.ts')],
+      setupFiles: [path.resolve(ROOT_DIR, 'e2e/vitest.e2e.dev-process.setup.ts')],
       // 真实子进程和冷身份检查分多阶段执行；保留各查询自己的预算，避免外层默认超时截断收尾。
       testTimeout: 60_000,
-      hookTimeout: 30_000,
+      hookTimeout: DEV_PROCESS_CLEANUP_HOOK_TIMEOUT_MS,
       include: [
         'e2e/utils/capabilityFallbackDiagnostics.test.ts',
         'e2e/utils/capabilityFallbackRuntime.test.ts',
@@ -188,6 +190,8 @@ const projects = [
         'e2e/utils/automatorWarmup.test.ts',
         'e2e/utils/cleanupSteps.test.ts',
         'e2e/utils/dev-process.capture.test.ts',
+        'e2e/utils/dev-process-cleanup-budget.test.ts',
+        'e2e/utils/dev-process.preflight.test.ts',
         'e2e/utils/dev-process.cleanup.integration.test.ts',
         'e2e/utils/dev-process.cleanup.test.ts',
         'e2e/utils/dev-process.crash.test.ts',
@@ -205,7 +209,10 @@ const projects = [
         'e2e/utils/devProcessCleanup/windowsGenerationReporting.test.ts',
         'e2e/utils/devProcessCleanup/windowsTermination.test.ts',
         'e2e/utils/devProcessCleanup/windowsCompilerChildTrace.test.ts',
+        'e2e/utils/devProcessCleanup/windowsKernelArtifact.test.ts',
+        'e2e/utils/devProcessCleanup/windowsKernelQuery.cancellation.test.ts',
         'e2e/utils/devProcessCleanup/windowsKernelQuery.compiler.test.ts',
+        'e2e/utils/devProcessCleanup/workerCloseConfig.test.ts',
         'e2e/utils/dev-memory.test.ts',
         'e2e/utils/devBuildCompletion.test.ts',
         'e2e/utils/devBuildCompletion.nativeIdentity.test.ts',

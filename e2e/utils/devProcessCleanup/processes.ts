@@ -37,13 +37,13 @@ function inspectionError() {
   return new Error('Dev process identity could not be verified; no unverified process was signalled.')
 }
 
-async function readWindowsProcesses(pids?: number[], observations?: WindowsProcessQueryObservation[]): Promise<ProcessEntry[]> {
+async function readWindowsProcesses(pids?: number[], observations?: WindowsProcessQueryObservation[], signal?: AbortSignal): Promise<ProcessEntry[]> {
   if (pids?.length === 0) {
     return []
   }
   const timeoutMs = resolveWechatInspectionTimeout('win32')
   const trace = process.env.WEAPP_VITE_E2E_CLEANUP_TRACE === '1'
-  const result = await observeWindowsProcessQuery(pids, observations, () => traceCleanupStage(pids ? 'dev-kernel-identities' : 'dev-kernel-snapshot', () => queryWindowsKernelProcesses(pids, trace), {
+  const result = await observeWindowsProcessQuery(pids, observations, () => traceCleanupStage(pids ? 'dev-kernel-identities' : 'dev-kernel-snapshot', () => signal ? queryWindowsKernelProcesses(pids, trace, { signal }) : queryWindowsKernelProcesses(pids, trace), {
     processCount: pids?.length,
     timeoutMs,
   }))
@@ -140,12 +140,12 @@ function collectProcessTree(rootPid: number, entries: ProcessEntry[]) {
 }
 
 /** 只在直接子进程句柄仍存活时登记后代；根退出后不能从相同 PID 重新发现树。 */
-export async function captureDevProcessTree(rootPid: number, isRootHeld: () => boolean, confirmRootExit?: () => Promise<boolean>): Promise<DevProcessIdentity[]> {
+export async function captureDevProcessTree(rootPid: number, isRootHeld: () => boolean, confirmRootExit?: () => Promise<boolean>, signal?: AbortSignal): Promise<DevProcessIdentity[]> {
   const windows = process.platform === 'win32'
   const observations: WindowsProcessQueryObservation[] = []
-  const entries = windows ? await readWindowsProcesses(undefined, observations) : process.platform === 'linux' ? await readLinuxProcesses() : await readMacProcesses()
+  const entries = windows ? await readWindowsProcesses(undefined, observations, signal) : process.platform === 'linux' ? await readLinuxProcesses() : await readMacProcesses()
   const tree = windows
-    ? await collectWindowsProcessTree(rootPid, entries, pids => readWindowsProcesses(pids, observations), observations)
+    ? await collectWindowsProcessTree(rootPid, entries, pids => readWindowsProcesses(pids, observations, signal), observations)
     : collectProcessTree(rootPid, entries)
   const descendants = tree.filter(entry => entry.pid !== rootPid).map(entry => ({
     pid: entry.pid,
@@ -218,14 +218,14 @@ export function isDevProcessAlive(pid: number) {
 }
 
 /** 批量核验身份；Windows 残留行只有独立 ESRCH 退出证据才能解除，不能仅因字段缺失而成功。 */
-export async function readDevProcessIdentities(pids: number[]): Promise<Map<number, DevProcessIdentity | undefined>> {
+export async function readDevProcessIdentities(pids: number[], signal?: AbortSignal): Promise<Map<number, DevProcessIdentity | undefined>> {
   if (process.platform === 'darwin') {
     return readDarwinManagedProcessIdentities(pids)
   }
   if (process.platform !== 'win32') {
     return new Map(await Promise.all(pids.map(async pid => [pid, await readManagedProcessIdentity(pid)] as const)))
   }
-  const entries = await readWindowsProcesses(pids)
+  const entries = await readWindowsProcesses(pids, undefined, signal)
   return new Map(pids.map((pid) => {
     const entry = entries.find(entry => entry.pid === pid)
     if (entry && !entry.identity && isDevProcessAlive(pid)) {

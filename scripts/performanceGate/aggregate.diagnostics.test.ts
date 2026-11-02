@@ -5,6 +5,15 @@ import { expect, it } from 'vitest'
 import { aggregatePlan, renderTarget, verifyShard } from './aggregate.mjs'
 import { fixture, plan } from './aggregateFixture'
 
+interface AggregateTarget {
+  status: string
+  systems: Array<{
+    os: string
+    status: string
+    parts: Array<ReturnType<typeof verifyShard> & { shard: string }>
+  }>
+}
+
 it('recomputes requested and actual runtime diagnostics from raw evidence instead of uploaded summaries', () => {
   const { identity, report } = fixture('hmr:stateful-experimental:weapp-vite-template')
   for (const row of report.primary.samples) {
@@ -58,10 +67,11 @@ it.each(['paired-v3-profile-capability', 'paired-v4-template-consumption'])('kee
 
 it('keeps a baseline-only feature budget failure as regression while cross-commit comparison passes', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'performance-budget-diagnostics-'))
-  const affected = plan.matrix.find(row => row.shard === 'auto-build')!
+  const matrix: Array<{ shard: string, os: string, artifact: string }> = plan.matrix
+  const affected = matrix.find(row => row.shard === 'auto-build')!
   const scenario = 'auto-build:1:manual:repeat'
   try {
-    for (const row of plan.matrix) {
+    for (const row of matrix) {
       const { report } = fixture(row.shard, row.os)
       if (row.artifact === affected.artifact) {
         for (const sample of report.primary.samples) {
@@ -75,7 +85,7 @@ it('keeps a baseline-only feature budget failure as regression while cross-commi
       await mkdir(directory)
       await writeFile(path.join(directory, 'report.json'), JSON.stringify(report))
     }
-    const result = (await aggregatePlan(plan, root)).targets[0]!
+    const result: AggregateTarget = (await aggregatePlan(plan, root)).targets[0]!
     const system = result.systems.find(system => system.os === affected.os)!
     const part = system.parts.find(part => part.shard === affected.shard)!
     expect(part.gate.status).toBe('passed')
@@ -88,7 +98,8 @@ it('keeps a baseline-only feature budget failure as regression while cross-commi
     const lastPart = result.systems.at(-1)!.parts.at(-1)!
     expect(markdown.indexOf(`${result.systems.at(-1)!.os} / ${lastPart.gate.scenarios.at(-1)!.id}`)).toBeLessThan(firstDetail)
     await rm(path.join(root, affected.artifact), { recursive: true })
-    const missing = (await aggregatePlan(plan, root)).targets[0]!.systems.find(system => system.os === affected.os)!.parts.find(part => part.shard === affected.shard)!
+    const missingTarget: AggregateTarget = (await aggregatePlan(plan, root)).targets[0]!
+    const missing = missingTarget.systems.find(system => system.os === affected.os)!.parts.find(part => part.shard === affected.shard)!
     expect(missing.gate.status).toBe('incomplete')
     expect(missing.failureReasons).toMatchObject([{ kind: 'collection', batch: 'primary', side: 'unknown' }])
   }

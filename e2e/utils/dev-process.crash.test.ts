@@ -7,6 +7,7 @@ import { fixtureWindowsProcessRows } from './testSupport/windowsProcessRows'
 const execaMock = vi.hoisted(() => vi.fn())
 const kernelQueryMock = vi.hoisted(() => vi.fn())
 vi.mock('execa', () => ({ execa: execaMock }))
+vi.mock('./devProcessCleanup/windowsKernelArtifact', () => ({ assertWindowsKernelInspectorReady: vi.fn() }))
 vi.mock('./devProcessDiagnostics', () => ({ createDevProcessDiagnostics: () => ({ write() {}, flush() {} }) }))
 vi.mock('./devProcessCleanup/windowsKernelQuery', async (importOriginal) => {
   const actual = await importOriginal<typeof import('./devProcessCleanup/windowsKernelQuery')>()

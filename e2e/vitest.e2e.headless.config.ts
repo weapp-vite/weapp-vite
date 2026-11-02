@@ -2,6 +2,7 @@ import path from 'node:path'
 import { configDefaults, defineConfig } from 'vitest/config'
 import { excludedE2ETestPatterns } from '../scripts/e2eProjectScope.ts'
 import { localReporters, localTestPolicy } from '../scripts/verificationBenchmark/localReporterConfig.mjs'
+import { DEV_PROCESS_CLEANUP_HOOK_TIMEOUT_MS } from './utils/devProcessCleanup/shutdown.ts'
 import { ensureIdeWarningReportEnv } from './utils/ideWarningReport.ts'
 import { resolveE2EMaxWorkers } from './utils/max-workers.ts'
 import { resolveVitestIncludePatterns } from './utils/vitestTargetFile.ts'
@@ -10,6 +11,7 @@ ensureIdeWarningReportEnv()
 
 export default defineConfig({
   test: {
+    hookTimeout: DEV_PROCESS_CLEANUP_HOOK_TIMEOUT_MS,
     globalSetup: [path.resolve(import.meta.dirname, 'vitest.e2e.machine.global-setup.ts')],
     exclude: [...configDefaults.exclude, ...excludedE2ETestPatterns()],
     // 与真实 IDE 使用相同的完整 case 名称，避免验收清单身份漂移。
@@ -22,7 +24,7 @@ export default defineConfig({
     pool: 'threads',
     maxWorkers: resolveE2EMaxWorkers(),
     fileParallelism: false,
-    setupFiles: [path.resolve(import.meta.dirname, './vitest.e2e.dom.setup.ts')],
+    setupFiles: [path.resolve(import.meta.dirname, './vitest.e2e.dev-process.setup.ts'), path.resolve(import.meta.dirname, './vitest.e2e.dom.setup.ts')],
     reporters: localReporters(['default', path.resolve(import.meta.dirname, './scripts/domAcceptanceReport/reporter.ts')]),
     ...localTestPolicy(),
   },

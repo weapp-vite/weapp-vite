@@ -9,6 +9,13 @@ import { nativeLanguagePublicApiDependencies, verifyNativeLanguages } from './la
 import { runStep } from './runner.mjs'
 import { prepareParentWorkspace, verifyWorkspaceInheritance } from './workspace.mjs'
 
+const applyFixtureOverlay = applyCandidateOverlay as (
+  root: string,
+  manager: string,
+  artifacts: Array<{ name: string, tarball: string }>,
+  options: { directDependencies: string[] },
+) => ReturnType<typeof applyCandidateOverlay>
+
 const roots: string[] = []
 
 async function temporaryRoot() {
@@ -115,7 +122,7 @@ describe('Vite+ packed template consumer contracts', () => {
     const originalWorkspace = '# generated policy\npackages: []\n'
     await fs.writeFile(path.join(root, 'package.json'), originalManifest)
     await fs.writeFile(path.join(root, 'pnpm-workspace.yaml'), originalWorkspace)
-    const restore = await applyCandidateOverlay(root, manager, [candidate], { directDependencies: nativeLanguagePublicApiDependencies })
+    const restore = await applyFixtureOverlay(root, manager, [candidate], { directDependencies: nativeLanguagePublicApiDependencies })
     const manifest = JSON.parse(await fs.readFile(path.join(root, 'package.json'), 'utf8')) as { devDependencies: Record<string, string>, overrides?: Record<string, string> }
     expect(manifest.devDependencies).toMatchObject({ '@weapp-vite/oxfmt': '^0.1.0', [candidate.name]: `file:${candidate.tarball.replaceAll('\\', '/')}` })
     if (manager === 'npm') {
@@ -134,7 +141,7 @@ describe('Vite+ packed template consumer contracts', () => {
     const root = await temporaryRoot()
     const original = '# generated policy\npackages: []\n'
     await fs.writeFile(path.join(root, 'pnpm-workspace.yaml'), original)
-    await expect(applyCandidateOverlay(root, 'pnpm', [], { directDependencies: nativeLanguagePublicApiDependencies })).rejects.toThrow('no candidate tarball')
+    await expect(applyFixtureOverlay(root, 'pnpm', [], { directDependencies: nativeLanguagePublicApiDependencies })).rejects.toThrow('no candidate tarball')
     expect(await fs.readFile(path.join(root, 'pnpm-workspace.yaml'), 'utf8')).toBe(original)
   })
 

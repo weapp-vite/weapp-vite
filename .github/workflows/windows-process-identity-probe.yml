@@ -30,6 +30,7 @@ jobs:
       node_version: '${{ matrix.node }}'
       timeout_minutes: 40
       build_command: pnpm build:pkgs:ci:windows
+      e2e_native_tools: true
       main_command: node -e "console.log('writer diagnostic build artifact ready')"
       build_artifact_name: writer-diagnostic-node-${{ matrix.node }}-build
     secrets: inherit
@@ -48,6 +49,7 @@ jobs:
       node_version: '${{ matrix.node }}'
       timeout_minutes: 30
       consume_build_artifact: writer-diagnostic-node-${{ matrix.node }}-build
+      e2e_native_tools: true
       main_command: pnpm exec cross-env NODE_DEBUG=weapp-ide-journal-writer node --import tsx e2e/scripts/run-e2e-suite.ts ide-dom-headless
       artifact_name: windows-writer-full-dom-node-${{ matrix.node }}-${{ github.sha }}
       artifact_path: |
@@ -68,6 +70,7 @@ jobs:
       node_version: '${{ matrix.node }}'
       timeout_minutes: 20
       build_command: pnpm build:pkgs:ci:windows
+      e2e_native_tools: true
       # 保留原 provider 用例及查询预算；阶段日志只用于定位，不替代完整 CI 清单。
       main_command: pnpm exec cross-env WEAPP_VITE_E2E_CLEANUP_TRACE=1 pnpm vitest run -c e2e/vitest.e2e.ci.config.ts e2e/ci/issue-1065-provider.test.ts --maxWorkers=1 --no-file-parallelism --reporter=default --reporter=json --outputFile=.tmp/windows-provider-cleanup/report.json
       artifact_name: windows-provider-cleanup-node-${{ matrix.node }}-${{ github.sha }}
@@ -128,6 +131,10 @@ jobs:
       - name: Prepare E2E bridge dependencies
         shell: bash
         run: pnpm exec turbo run build --filter=weapp-vite... --filter=@mpcore/simulator...
+
+      - name: Build private Windows E2E native tools
+        shell: bash
+        run: pnpm e2e:build-tools
 
       - name: Verify isolated E2E journal and bridge contracts
         shell: bash

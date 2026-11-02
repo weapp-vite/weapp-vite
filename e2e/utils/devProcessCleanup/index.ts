@@ -5,6 +5,7 @@ import { sameManagedProcess } from '../../../packages/weapp-ide-cli/src/devtools
 import { traceCleanupStage } from '../cleanupTrace'
 import { captureDevProcessTree, DevProcessTerminationError, isDevProcessAlive, killWindowsDevProcesses, readDevProcessIdentities, UnconfirmedDevProcessTreeError } from './processes'
 import { waitForGracefulExit } from './shutdown'
+import { currentWindowsKernelQueryScope, inWindowsKernelQueryScope } from './windowsKernelQueryScope'
 
 interface DevProcessCleanupOptions {
   pid?: number
@@ -39,6 +40,7 @@ async function waitForExit(settledExit: Promise<unknown>, timeoutMs: number) {
 
 /** 登记身份跨 stop 重试保留；根退出仅撤销根的权限，不撤销已登记后代的独立身份。 */
 export function createDevProcessCleanup(options: DevProcessCleanupOptions) {
+  const queryScope = currentWindowsKernelQueryScope()
   const pending = new Map<number, DevProcessIdentity>()
   let captured = false
   let disconnected = false
@@ -59,9 +61,9 @@ export function createDevProcessCleanup(options: DevProcessCleanupOptions) {
     }
   }
 
-  const reconcileIdentities = async () => {
+  const reconcileIdentities = async (signal?: AbortSignal) => {
     forgetExitedRoot()
-    const current = await traceCleanupStage('dev-reconcile', () => readDevProcessIdentities([...pending.keys()]), { processCount: pending.size })
+    const current = await traceCleanupStage('dev-reconcile', () => readDevProcessIdentities([...pending.keys()], signal), { processCount: pending.size })
     forgetExitedRoot()
     for (const [pid, identity] of pending) {
       const live = current.get(pid)
@@ -91,8 +93,8 @@ export function createDevProcessCleanup(options: DevProcessCleanupOptions) {
     }
   }
 
-  const signalOwned = async (signal: 'SIGTERM' | 'SIGKILL') => {
-    await reconcileIdentities()
+  const signalOwned = async (signal: 'SIGTERM' | 'SIGKILL', inspectionSignal?: AbortSignal) => {
+    await reconcileIdentities(inspectionSignal)
     if (process.platform === 'win32') {
       const terminatesRoot = options.pid != null && pending.has(options.pid)
       try {
@@ -106,7 +108,7 @@ export function createDevProcessCleanup(options: DevProcessCleanupOptions) {
         // 原生命令启动失败没有终止回执，不能豁免随后自然完成的 IPC 退出核验。
         rootTerminationRequested ||= terminatesRoot
         try {
-          await reconcileIdentities()
+          await reconcileIdentities(inspectionSignal)
         }
         catch (inspectionError) {
           throw new AggregateError([error, inspectionError], 'Dev process termination and independent exit verification failed.', { cause: error })
@@ -148,13 +150,13 @@ export function createDevProcessCleanup(options: DevProcessCleanupOptions) {
     }
   }
 
-  const capture = async (forceKillDelayMs: number) => {
+  const capture = async (forceKillDelayMs: number, signal?: AbortSignal) => {
     if (!options.isRootHeld()) {
       assertCaptureComplete()
     }
     if (unconfirmed) {
       const candidates = [...unconfirmed.pids]
-      const current = await traceCleanupStage('dev-recheck-unconfirmed', () => readDevProcessIdentities(candidates), { processCount: candidates.length })
+      const current = await traceCleanupStage('dev-recheck-unconfirmed', () => readDevProcessIdentities(candidates, signal), { processCount: candidates.length })
       const remaining = unconfirmed.candidates.filter((candidate) => {
         const live = current.get(candidate.pid)
         return live && (!candidate.started || candidate.started === live.started)
@@ -179,7 +181,7 @@ export function createDevProcessCleanup(options: DevProcessCleanupOptions) {
         const observeRootExit = confirmRootExit
           ? () => traceCleanupStage('dev-native-root-exit', () => confirmRootExit(timeoutMs), { timeoutMs })
           : undefined
-        identities = await traceCleanupStage('dev-capture', () => captureDevProcessTree(rootPid, options.isRootHeld, observeRootExit))
+        identities = await traceCleanupStage('dev-capture', () => captureDevProcessTree(rootPid, options.isRootHeld, observeRootExit, signal))
       }
       catch (error) {
         if (error instanceof UnconfirmedDevProcessTreeError) {
@@ -212,7 +214,7 @@ export function createDevProcessCleanup(options: DevProcessCleanupOptions) {
   }
 
   const cleanup = async (forceKillDelayMs: number, stopOptions: DevProcessStopOptions = {}) => {
-    await capture(forceKillDelayMs)
+    await capture(forceKillDelayMs, stopOptions.inspectionSignal)
     if (!disconnected && (options.requestRootShutdown || options.isRootHeld())) {
       const gracefulTimeoutMs = stopOptions.gracefulTimeoutMs ?? forceKillDelayMs
       try {
@@ -236,13 +238,13 @@ export function createDevProcessCleanup(options: DevProcessCleanupOptions) {
     forgetExitedRoot()
     if (pending.size) {
       if (process.platform !== 'win32') {
-        await signalOwned('SIGTERM')
+        await signalOwned('SIGTERM', stopOptions.inspectionSignal)
         await traceCleanupStage('dev-owned-exit', () => waitForOwnedExit(forceKillDelayMs), { processCount: pending.size, timeoutMs: forceKillDelayMs })
       }
       if (pending.size) {
-        await signalOwned('SIGKILL')
+        await signalOwned('SIGKILL', stopOptions.inspectionSignal)
         if (!await traceCleanupStage('dev-owned-exit', () => waitForOwnedExit(forceKillDelayMs + 1_000), { processCount: pending.size, timeoutMs: forceKillDelayMs + 1_000 })) {
-          await reconcileIdentities()
+          await reconcileIdentities(stopOptions.inspectionSignal)
           if (pending.size) {
             throw new Error('Owned dev processes did not exit; cleanup remains registered for retry.')
           }
@@ -262,5 +264,8 @@ export function createDevProcessCleanup(options: DevProcessCleanupOptions) {
       }
     }
   }
-  return Object.assign(cleanup, { capture })
+  return Object.assign(
+    (forceKillDelayMs: number, stopOptions?: DevProcessStopOptions) => inWindowsKernelQueryScope(queryScope, () => cleanup(forceKillDelayMs, stopOptions)),
+    { capture: (forceKillDelayMs: number) => inWindowsKernelQueryScope(queryScope, () => capture(forceKillDelayMs)) },
+  )
 }

@@ -8,11 +8,14 @@ import { readVerificationTopologyVariant, readWorkflowFixture, readWorkflowGraph
 interface WorkflowStep {
   name?: string
   uses?: string
+  if?: string
+  run?: string
   with?: Record<string, unknown>
 }
 
 interface Workflow {
-  jobs: Record<string, { steps?: WorkflowStep[], with?: Record<string, unknown> }>
+  on?: { workflow_call?: { inputs?: Record<string, unknown> } }
+  jobs: Record<string, { steps?: WorkflowStep[], with?: Record<string, unknown>, env?: Record<string, unknown> }>
 }
 
 async function readWorkflow(name: string) {
@@ -71,9 +74,70 @@ describe('CI artifact coverage', () => {
       'packages-private/*/bin/**',
       '@weapp-core/*/bin/**',
       'mpcore/packages/*/bin/**',
+      '.cache/e2e-native/windows-kernel-inspector/snapshot.exe',
+      '.cache/e2e-native/windows-kernel-inspector/manifest.json',
       '.tmp/build-artifact-manifest.json',
       '.tmp/verification-telemetry/plans/**',
     ])
+  })
+
+  it('builds Windows E2E tools explicitly before publishing and only verifies restored tools', async () => {
+    const workflow = await readWorkflow('reusable-node-command.yml')
+    expect(workflow.on?.workflow_call?.inputs?.e2e_native_tools).toEqual({ required: false, type: 'boolean', default: false })
+    const job = workflow.jobs.run
+    const steps = job.steps ?? []
+    const buildIndex = steps.findIndex(step => step.name === 'Build private Windows E2E native tools')
+    const verifyIndex = steps.findIndex(step => step.name === 'Verify private Windows E2E native tools without compilation')
+    expect(buildIndex).toBeGreaterThan(steps.findIndex(step => step.uses === './.github/actions/refresh-workspace-deps'))
+    expect(buildIndex).toBeLessThan(steps.findIndex(step => step.name === 'Create workspace build artifact manifest'))
+    expect(steps[buildIndex]).toMatchObject({ if: 'runner.os == \'Windows\' && inputs.e2e_native_tools && inputs.consume_build_artifact == \'\'', run: 'pnpm e2e:build-tools' })
+    expect(verifyIndex).toBeGreaterThan(steps.findIndex(step => step.name === 'Verify restored workspace artifact identity'))
+    expect(verifyIndex).toBeLessThan(steps.findIndex(step => step.name === 'Run command'))
+    expect(steps[verifyIndex]).toMatchObject({ if: 'runner.os == \'Windows\' && inputs.e2e_native_tools && inputs.consume_build_artifact != \'\'', run: 'pnpm e2e:build-tools -- --check' })
+    // eslint-disable-next-line no-template-curly-in-string -- GitHub Actions 表达式是 workflow 的原始字符串契约。
+    expect(job.env?.BUILD_ARTIFACT_EXPECTED_E2E_NATIVE_TOOLS).toBe('${{ inputs.e2e_native_tools && runner.os == \'Windows\' && \'1\' || \'\' }}')
+  })
+
+  it('shares the native tool producer across Miniapp consumers and keeps unrelated browser tests opt out', async () => {
+    const workflow = await readWorkflow('reusable-miniapp-platform.yml')
+    for (const jobName of ['build', 'ide-dom-headless', 'ide-dom-acceptance-internal', 'miniapp', 'hmr', 'bun-cli']) {
+      expect(workflow.jobs[jobName].with?.e2e_native_tools, jobName).toBe(true)
+    }
+    expect(workflow.jobs['simulator-browser'].with?.e2e_native_tools).toBeUndefined()
+  })
+
+  it('shares native tools with the root coverage infrastructure without making static contracts depend on them', async () => {
+    const workflow = await readWorkflow('reusable-quality-platform.yml')
+    for (const jobName of ['build', 'coverage']) {
+      expect(workflow.jobs[jobName].with?.e2e_native_tools, jobName).toBe(true)
+    }
+    for (const jobName of ['contracts', 'types', 'lint']) {
+      expect(workflow.jobs[jobName].with?.e2e_native_tools, jobName).toBeUndefined()
+    }
+  })
+
+  it('prepares native tools for direct Windows E2E diagnostics as well as restored Bun consumers', async () => {
+    const workflow = await readWorkflow('validate-ci-e2e.yml')
+    for (const jobName of ['watcher-comparison-diagnostic', 'windows-dev-cleanup-diagnostic', 'windows-native-runtime-cleanup-diagnostic', 'windows-startup-fallback-diagnostic', 'runtime-publication-diagnostic', 'lifecycle-diagnostic', 'shared-layout-windows-diagnostic', 'shared-compiler-hosts', 'bun-build-diagnostic', 'bun-cli']) {
+      expect(workflow.jobs[jobName].with?.e2e_native_tools, jobName).toBe(true)
+    }
+    for (const jobName of ['native-compiler-batch-diagnostic', 'plugin-watch-readiness-diagnostic', 'windows-process-narrow-diagnostic']) {
+      expect(workflow.jobs[jobName].with?.e2e_native_tools, jobName).toBeUndefined()
+    }
+  })
+
+  it('prepares native tools for the standalone Windows process identity probe', async () => {
+    const workflow = await readWorkflow('windows-process-identity-probe.yml')
+    for (const jobName of ['writer-full-build', 'writer-full-dom', 'provider-cleanup']) {
+      expect(workflow.jobs[jobName].with?.e2e_native_tools, jobName).toBe(true)
+    }
+    expect(workflow.jobs['process-row-contract'].with?.e2e_native_tools).toBeUndefined()
+    const steps = workflow.jobs['self-writer-check'].steps ?? []
+    const buildIndex = steps.findIndex(step => step.name === 'Build private Windows E2E native tools')
+    expect(steps[buildIndex]?.run).toBe('pnpm e2e:build-tools')
+    expect(buildIndex).toBeGreaterThan(steps.findIndex(step => step.name === 'Prepare E2E bridge dependencies'))
+    expect(buildIndex).toBeLessThan(steps.findIndex(step => step.name === 'Verify isolated E2E journal and bridge contracts'))
+    expect(buildIndex).toBeLessThan(steps.findIndex(step => step.name === 'Diagnose stateful cleanup with the existing DOM manifest'))
   })
 
   it.each(['web-e2e-baseline-pr', 'web-e2e-baseline-full'])('retains Web failure diagnostics alongside the existing visual artifacts in %s', async (jobName) => {

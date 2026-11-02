@@ -57,6 +57,7 @@ jobs:
       node_version: ${{ inputs.node_version }}
       timeout_minutes: 40
       build_command: ${{ inputs.build_command }}
+      e2e_native_tools: true
       main_command: node --version
       build_artifact_name: miniapp-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-weapp-build
       timing_artifact_name: timing-miniapp-build-${{ inputs.runs_on }}-${{ inputs.node_version }}-${{ inputs.mode }}
@@ -172,6 +173,7 @@ jobs:
       node_version: ${{ inputs.node_version }}
       timeout_minutes: 30
       consume_build_artifact: miniapp-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-weapp-build
+      e2e_native_tools: true
       consume_aux_artifact: miniapp-plan-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-${{ inputs.mode }}
       aux_artifact_path: .tmp/verification-plan
       main_command: |
@@ -259,6 +261,7 @@ jobs:
       node_version: ${{ inputs.node_version }}
       timeout_minutes: 30
       consume_build_artifact: miniapp-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-weapp-build
+      e2e_native_tools: true
       main_command: |
         node packages/weapp-vite/bin/weapp-vite.js prepare e2e-apps/github-issues --platform weapp
         node packages/weapp-vite/bin/weapp-vite.js prepare e2e-apps/template-wevu-regression --platform weapp
@@ -302,6 +305,7 @@ jobs:
       runs_on: ${{ inputs.runs_on }}
       node_version: ${{ inputs.node_version }}
       consume_build_artifact: miniapp-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-weapp-build
+      e2e_native_tools: true
       build_artifact_scope: packages/weapp-vite,mpcore/packages/simulator
       timeout_minutes: 40
       consume_aux_artifact: miniapp-plan-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-${{ inputs.mode }}
@@ -334,6 +338,7 @@ jobs:
       runs_on: ${{ inputs.runs_on }}
       node_version: ${{ inputs.node_version }}
       consume_build_artifact: miniapp-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-weapp-build
+      e2e_native_tools: true
       build_artifact_scope: packages/weapp-vite,mpcore/packages/simulator
       timeout_minutes: 50
       main_command: ${{ inputs.mode == 'pr' && 'pnpm e2e:hmr:guard:smoke' || 'pnpm e2e:ci:hmr' }}
@@ -370,6 +375,7 @@ jobs:
       bun_version: ${{ matrix.bun-version }}
       timeout_minutes: 15
       consume_build_artifact: miniapp-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-weapp-build
+      e2e_native_tools: true
       main_command: |
         bun --version
         pnpm e2e:bun

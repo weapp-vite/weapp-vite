@@ -1,38 +1,40 @@
 import { ChildProcess } from 'node:child_process'
 import fs from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import process from 'node:process'
-import { PassThrough } from 'node:stream'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+import { buildWindowsKernelInspector } from '../../../scripts/e2eNativeTools/build'
+import { createWindowsKernelArtifactFixture, KERNEL_FIXTURE_COMMIT } from '../testSupport/windowsKernelArtifact'
+import { WINDOWS_KERNEL_COMPILE_TIMEOUT_MS, WINDOWS_KERNEL_TOOL_ROOT } from './windowsKernelArtifact'
 
 const execute = vi.hoisted(() => vi.fn())
 vi.mock('execa', () => ({ execa: execute }))
 
 beforeEach(() => {
-  vi.resetModules()
   execute.mockReset()
 })
-
 afterEach(() => {
   vi.restoreAllMocks()
   vi.unstubAllEnvs()
 })
 
-it.each(['running', 'exited-awaiting-close', 'closed', 'rejected'] as const)('preserves the compiler %s failure, original cause and cleanup within the existing deadline', async (phase) => {
-  const directory = await fs.mkdtemp(join(tmpdir(), 'kernel-compiler-evidence-'))
+it.each(['running', 'exited-awaiting-close', 'closed', 'rejected', 'spawn-failed'] as const)('preserves the compiler %s failure and waits for its native close within the existing compiler budget', async (phase) => {
+  const root = await fs.mkdtemp(join(tmpdir(), 'kernel-builder-evidence-'))
+  let child: ChildProcess | undefined
   try {
+    await createWindowsKernelArtifactFixture(root)
+    const temporary = join(root, 'temp')
+    await fs.mkdir(temporary)
+    const system = join(root, 'system')
+    const compiler = join(system, 'Microsoft.NET', process.arch === 'ia32' ? 'Framework' : 'Framework64', 'v4.0.30319', 'csc.exe')
+    await fs.mkdir(dirname(compiler), { recursive: true })
+    await fs.writeFile(compiler, 'compiler fixture')
     vi.spyOn(process, 'platform', 'get').mockReturnValue('win32')
-    for (const key of new Set(['SystemRoot', ...Object.keys(process.env).filter(key => key.toLowerCase() === 'systemroot')])) {
-      vi.stubEnv(key, directory)
-    }
     for (const key of ['TMPDIR', 'TMP', 'TEMP']) {
-      vi.stubEnv(key, directory)
+      vi.stubEnv(key, temporary)
     }
-    vi.stubEnv('WEAPP_VITE_E2E_CLEANUP_TRACE', '0')
-    const output = vi.spyOn(process.stdout, 'write').mockReturnValue(true)
-    const child = new ChildProcess()
-    Object.assign(child, { stdout: new PassThrough(), stderr: new PassThrough() })
+    child = new ChildProcess()
     const original = Object.assign(new Error('original compiler failure'), {
       exitCode: undefined,
       signal: 'SIGTERM',
@@ -42,14 +44,19 @@ it.each(['running', 'exited-awaiting-close', 'closed', 'rejected'] as const)('pr
     })
     execute.mockImplementation(() => Object.assign(new Promise((resolve, reject) => {
       queueMicrotask(() => {
-        child.emit('spawn')
+        if (phase === 'spawn-failed') {
+          child!.emit('error', original)
+        }
+        else {
+          child!.emit('spawn')
+        }
         if (phase === 'exited-awaiting-close' || phase === 'closed') {
-          child.emit('exit', null, 'SIGTERM')
+          child!.emit('exit', null, 'SIGTERM')
         }
         if (phase === 'closed') {
-          child.emit('close', null, 'SIGTERM')
+          child!.emit('close', null, 'SIGTERM')
         }
-        if (phase === 'rejected') {
+        if (phase === 'rejected' || phase === 'spawn-failed') {
           reject(original)
         }
         else {
@@ -57,25 +64,30 @@ it.each(['running', 'exited-awaiting-close', 'closed', 'rejected'] as const)('pr
         }
       })
     }), { nodeChildProcess: child }))
-    const { queryWindowsKernelProcesses } = await import('./windowsKernelQuery')
-    const failure: unknown = await queryWindowsKernelProcesses([61]).catch((error: unknown) => error)
+    let finished = false
+    const pending = buildWindowsKernelInspector(root, { sYsTeMrOoT: system, BUILD_ARTIFACT_EXPECTED_COMMIT: KERNEL_FIXTURE_COMMIT }).catch((error: unknown) => error).finally(() => finished = true)
+    await vi.waitFor(() => expect(execute).toHaveBeenCalledOnce())
+    if (phase !== 'closed') {
+      expect(finished).toBe(false)
+      expect(await fs.readdir(temporary)).toHaveLength(1)
+      child.emit('close', null, 'SIGTERM')
+    }
+    const failure = await pending as Error
     expect(failure).toBeInstanceOf(Error)
-    expect((failure as Error).cause).toBe(original)
-    expect((failure as Error).message).toContain(`"phase":"${phase === 'rejected' ? 'running' : phase}"`)
-    expect((failure as Error).message).not.toContain('original compiler failure')
-    expect(execute).toHaveBeenCalledOnce()
-    expect(execute.mock.calls[0]![2]).toMatchObject({ timeout: expect.any(Number), stdin: 'ignore', reject: false, windowsHide: true })
-    expect(execute.mock.calls[0]![2].timeout).toBeGreaterThan(10_000)
-    expect(execute.mock.calls[0]![2].timeout).toBeLessThanOrEqual(30_000)
-    expect(await fs.readdir(directory)).toEqual([])
+    expect(failure.cause).toBe(original)
+    expect(failure.message).toContain(`"phase":"${phase === 'rejected' ? 'running' : phase}"`)
+    expect(failure.message).toContain('"phase":"closed"')
+    expect(failure.message).not.toContain('original compiler failure')
+    expect(execute.mock.calls[0]![0]).toBe(compiler)
+    expect(execute.mock.calls[0]![2]).toMatchObject({ timeout: WINDOWS_KERNEL_COMPILE_TIMEOUT_MS, stdin: 'ignore', reject: false, windowsHide: true })
+    expect(await fs.readdir(temporary)).toEqual([])
+    expect(await fs.readdir(join(root, WINDOWS_KERNEL_TOOL_ROOT))).toEqual(['snapshot.exe'])
     expect(child.eventNames()).toEqual([])
-    expect(child.stdout!.listenerCount('data')).toBe(0)
-    expect(child.stderr!.listenerCount('data')).toBe(0)
-    expect(output).not.toHaveBeenCalled()
   }
   finally {
+    child?.emit('close', null, 'SIGTERM')
     vi.restoreAllMocks()
     vi.unstubAllEnvs()
-    await fs.rm(directory, { recursive: true, force: true })
+    await fs.rm(root, { recursive: true, force: true })
   }
 })

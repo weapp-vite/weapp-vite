@@ -4,11 +4,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanupTrackedDevProcesses, startDevProcess } from './dev-process'
 import { cleanupResidualDevProcesses } from './dev-process-cleanup'
 import { DEV_PROCESS_GRACEFUL_TIMEOUT_MS, DevProcessGracefulShutdownError } from './devProcessCleanup/shutdown'
+import { beginWindowsKernelQueryScope, canDispatchWindowsKernelQuery, closeWindowsKernelQueryScope, currentWindowsKernelQueryScope } from './devProcessCleanup/windowsKernelQueryScope'
 import { createChild, createProcessTreeFixture } from './devProcessCleanupFixture'
 
 const execaMock = vi.hoisted(() => vi.fn())
 const kernelQueryMock = vi.hoisted(() => vi.fn())
 vi.mock('execa', () => ({ execa: execaMock }))
+vi.mock('./devProcessCleanup/windowsKernelArtifact', () => ({ assertWindowsKernelInspectorReady: vi.fn() }))
 vi.mock('./devProcessDiagnostics', () => ({ createDevProcessDiagnostics: () => ({ write() {}, flush() {} }) }))
 vi.mock('./devProcessCleanup/windowsKernelQuery', async (importOriginal) => {
   const actual = await importOriginal<typeof import('./devProcessCleanup/windowsKernelQuery')>()
@@ -75,6 +77,37 @@ describe('dev process cleanup ownership', () => {
     await cleanupResidualDevProcesses()
     expect(fixture.signals).toEqual([{ pid: 62, signal: 'SIGTERM' }, { pid: 61, signal: 'SIGTERM' }])
     expect([...fixture.processes.keys()]).toEqual([71, 72])
+  })
+
+  it('keeps a failed disposer as the close owner and permits only its explicit retry before the next generation', async () => {
+    beginWindowsKernelQueryScope()
+    vi.spyOn(process, 'platform', 'get').mockReturnValue('win32')
+    const fixture = mockProcessTree()
+    const original = new Error('first owned snapshot failure')
+    kernelQueryMock.mockImplementation((...args: Parameters<typeof fixture.queryWindows>) => {
+      expect(canDispatchWindowsKernelQuery(currentWindowsKernelQueryScope())).toBe(true)
+      return fixture.queryWindows(...args)
+    })
+    kernelQueryMock.mockRejectedValueOnce(original)
+    const dev = startDevProcess('node', ['fixture.js'])
+    await expect(dev.stop(0)).rejects.toBe(original)
+    const scope = currentWindowsKernelQueryScope()
+    expect(scope.owners.size).toBe(1)
+    let finished = false
+    const closed = closeWindowsKernelQueryScope(scope, new Error('Worker close requested')).catch((error: unknown) => error).finally(() => finished = true)
+    await Promise.resolve()
+    expect(finished).toBe(false)
+    expect(canDispatchWindowsKernelQuery(scope)).toBe(false)
+    expect(() => beginWindowsKernelQueryScope()).toThrow(/still owns/)
+    const dispatches = execaMock.mock.calls.length
+    expect(() => startDevProcess('node', ['other-fixture.js'])).toThrow(/scope is closing/)
+    expect(execaMock).toHaveBeenCalledTimes(dispatches)
+    await dev.stop(0)
+    const failure = await closed as AggregateError
+    expect(failure.errors).toContain(original)
+    expect(scope.owners.size).toBe(0)
+    expect([...fixture.processes.keys()]).toEqual([71, 72])
+    expect(() => beginWindowsKernelQueryScope()).not.toThrow()
   })
 
   it('does not use an exited child PID after it could have been reused', async () => {

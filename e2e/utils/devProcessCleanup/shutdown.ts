@@ -1,6 +1,8 @@
 export interface DevProcessStopOptions {
   gracefulTimeoutMs?: number
   signal?: AbortSignal
+  /** 清理所有者的总期限；与只取消正常退出等待的 signal 分开。 */
+  inspectionSignal?: AbortSignal
 }
 
 export interface DevProcessForcedShutdown {
@@ -18,6 +20,9 @@ export interface DevProcessExitInfo {
 
 // 活动 watch 构建与首构使用相同的完成预算，独立于强杀后的进程观察预算。
 export const DEV_PROCESS_GRACEFUL_TIMEOUT_MS = 90_000
+// 允许正常退出、四个检查阶段、精确终止和输出排空；更多补查仍受同一个总期限约束。
+export const DEV_PROCESS_CLEANUP_TIMEOUT_MS = DEV_PROCESS_GRACEFUL_TIMEOUT_MS + 4 * 30_000 + 10_000 + 7_000
+export const DEV_PROCESS_CLEANUP_HOOK_TIMEOUT_MS = DEV_PROCESS_CLEANUP_TIMEOUT_MS + 5_000
 export const DEV_PROCESS_GRACEFUL_SHUTDOWN_ERROR_NAME = 'DevProcessGracefulShutdownError'
 
 /** 进程终结不代表开发会话已经恢复配置和释放资源，保留为不可改写的验收失败。 */
