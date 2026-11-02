@@ -126,6 +126,30 @@ it('isReleaseWorthyWorkspaceFile ignores test and docs noise', () => {
   assert.equal(isReleaseWorthyWorkspaceFile('packages/demo/vitest.config.ts', 'packages/demo'), false)
 })
 
+it('isReleaseWorthyWorkspaceFile excludes package-root Vitest variant configs without hiding source or build config changes', () => {
+  for (const file of [
+    'vitest.e2e.config.ts',
+    'vitest.bench.config.mts',
+    'vitest.watch-native.config.cts',
+    'vitest.web.config.js',
+    'vitest.e2e.ci.build-only.config.mjs',
+    'vitest.compat.config.cjs',
+  ]) {
+    assert.equal(isReleaseWorthyWorkspaceFile(`packages/demo/${file}`, 'packages/demo'), false, file)
+  }
+  for (const file of [
+    'src/vitest.e2e.config.ts',
+    'src/vitestAdapter.ts',
+    'vite.e2e.config.ts',
+    'tsdown.config.ts',
+    'package.json',
+    'vitest.e2e.config.ts.backup',
+    'vitest.e2e.config.d.ts',
+  ]) {
+    assert.equal(isReleaseWorthyWorkspaceFile(`packages/demo/${file}`, 'packages/demo'), true, file)
+  }
+})
+
 it('collectPublishableWorkspaceChangesetIssues reports missing changed packages and releasing dependents', () => {
   const packages: PublishableWorkspacePackageEntry[] = [
     {

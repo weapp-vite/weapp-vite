@@ -247,6 +247,10 @@ export function isReleaseWorthyWorkspaceFile(file: string, packageDir: string) {
   if (NON_RELEASE_PREFIXES.some(prefix => lowerRelativePath.startsWith(prefix))) {
     return false
   }
+  // 只排除包根目录的 Vitest 变体配置，避免把 src 内同名源码当作测试基础设施。
+  if (/^vitest(?:\.[a-z0-9-]+)+\.config\.[cm]?[jt]s$/u.test(lowerRelativePath)) {
+    return false
+  }
 
   const lowerBaseName = path.posix.basename(lowerRelativePath)
   if (NON_RELEASE_BASENAMES.has(lowerBaseName)) {
