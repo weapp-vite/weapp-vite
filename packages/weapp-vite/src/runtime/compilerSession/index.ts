@@ -1,6 +1,7 @@
 import type { InitializeCompilerContextOptions } from './context'
 import { createCompilerContextInstance } from '../../context/createCompilerContextInstance'
 import { closeInitialBuildInputObservation } from '../buildPlugin/initialBuildChanges'
+import { deduplicateCleanupErrors } from '../watcher/cleanupErrors'
 import { retainWatcherService } from '../watcherPlugin'
 import { initializeCompilerContext } from './context'
 
@@ -76,7 +77,14 @@ export class CompilerSession {
         }
         this.cleanup.clear()
         try {
-          await this.release()
+          // 控制器也会保留共享资源；减少本会话引用不能替代终结其独有上下文的监听器。
+          await this.context.watcherService.closeAll()
+        }
+        catch (error) {
+          errors.push(error)
+        }
+        try {
+          await this.release.releaseResources()
         }
         catch (error) {
           errors.push(error)
@@ -86,7 +94,7 @@ export class CompilerSession {
         this.state = 'closed'
       }
       if (errors.length) {
-        throw new AggregateError(errors, 'Compiler session resource cleanup failed')
+        throw new AggregateError(deduplicateCleanupErrors(errors), 'Compiler session resource cleanup failed')
       }
     })()
   }

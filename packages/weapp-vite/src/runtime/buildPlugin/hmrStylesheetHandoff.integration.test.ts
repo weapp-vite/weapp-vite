@@ -13,6 +13,7 @@ import { ensureWorkspacePackageLink } from '../../../test/utils'
 import { CompilerSession } from '../compilerSession'
 import { getHmrRuntimeSession } from '../hmrRuntimeSession'
 import { ownsSidecarDelivery } from '../watch/sidecarDelivery'
+import { getRegisteredWatcherServiceControllers } from '../watcher/controllerClose'
 
 // 仅验证模拟宿主的 stateful 机制；真实 IDE 未证明在线交接，不计入稳定 IDE 验收。
 vi.mock('../hmrRuntimeHostCapabilities', () => ({ resolveStatefulHmrStartupFallback: () => undefined }))
@@ -205,6 +206,9 @@ it('publishes an imported native stylesheet saved after the first classic write 
     releasePublication.resolve()
     try {
       await compiler.close()
+      expect(compiler.context.watcherService.rollupWatcherMap.size).toBe(0)
+      expect(compiler.context.watcherService.sidecarWatcherMap.size).toBe(0)
+      expect(getRegisteredWatcherServiceControllers(compiler.context.watcherService)).toEqual([])
     }
     finally {
       await rm(root, { recursive: true, force: true })
