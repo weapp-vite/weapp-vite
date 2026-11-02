@@ -8,7 +8,7 @@ import { pathToFileURL } from 'node:url'
 // eslint-disable-next-line e18e/ban-dependencies -- 消费者批次使用跨平台启动器并传递取消信号。
 import { execa } from 'execa'
 import { assertConsumerBatchPlan } from './contracts.mjs'
-import { assertConsumerEvidence, assertConsumerExecutionIdentity } from './identity.mjs'
+import { assertConsumerEvidence, assertConsumerExecutionIdentity, assertImportsConsumerEvidenceFile } from './identity.mjs'
 
 /** 每个逻辑场景仍调用原独立消费者入口；失败或取消后不再启动下一份受管资源。 */
 export async function runConsumerBatch(plan, shardIndex, output, { execute = execa, signal, now = () => performance.now() } = {}) {
@@ -37,7 +37,10 @@ export async function runConsumerBatch(plan, shardIndex, output, { execute = exe
         assert.equal(preflight.exitCode, 0, 'Consumer Web diagnostics failed')
       }
       signal?.throwIfAborted()
-      const result = await execute(process.execPath, ['packages/weapp-vite/scripts/verify-vite-host-install.mjs', task.host, ...(task.profile === 'consumer' ? [] : ['headless', task.profile])], {
+      const args = task.profile === 'imports'
+        ? ['scripts/consumerBatches/imports.mjs', task.host]
+        : ['packages/weapp-vite/scripts/verify-vite-host-install.mjs', task.host, ...(task.profile === 'consumer' ? [] : ['headless', task.profile])]
+      const result = await execute(process.execPath, args, {
         stdio: 'inherit',
         reject: false,
         cancelSignal: signal,
@@ -50,7 +53,10 @@ export async function runConsumerBatch(plan, shardIndex, output, { execute = exe
       assert.equal(exitCode, 0, `Consumer scenario failed: ${task.id}`)
       const bytes = await readFile(evidence)
       const observed = JSON.parse(bytes.toString('utf8'))
-      assertConsumerEvidence(observed, plan.identity, task.host, plan.identity.builderNode)
+      assertConsumerEvidence(observed, plan.identity, task.host, plan.identity.builderNode, task.profile)
+      if (task.profile === 'imports') {
+        await assertImportsConsumerEvidenceFile(evidence, observed, task.host)
+      }
       evidenceHash = createHash('sha256').update(bytes).digest('hex')
     }
     catch (error) {

@@ -2,15 +2,13 @@ import type { OutputBundle } from 'rolldown'
 import type { Plugin, ResolvedConfig } from 'vite'
 import type { CompilerContext } from '../../context'
 import type {
-  WeappCompilerPlugin,
   WeappCompilerPluginContext,
   WeappCompilerPluginController,
-  WeappCompilerPluginFactory,
-  WeappCompilerPluginOption,
   WeappCompilerResourceKind,
   WeappCompilerSourceRequest,
 } from '../../types/compilerPlugin'
 import type { PluginContextRef } from './helpers'
+import type { ControllerCleanupMethod, ControllerRecord } from './lifecycle'
 import { fs } from '@weapp-core/shared/fs'
 import { createLogger } from 'vite'
 import { deferWatcherResourceCleanup } from '../../runtime/watcherPlugin'
@@ -30,6 +28,7 @@ import {
   readCompilerOutputAsset,
 } from './helpers'
 import { getCompilerHmrHost } from './hmr'
+import { collectControllerCleanupErrors, initializeCompilerControllers, throwControllerErrors } from './lifecycle'
 
 export {
   getWeappCompilerPluginMeta,
@@ -37,11 +36,6 @@ export {
   markWeappCompilerPlugin,
   WEAPP_COMPILER_PLUGIN_META,
 } from './helpers'
-
-interface ControllerRecord {
-  provider: WeappCompilerPlugin
-  controller: WeappCompilerPluginController
-}
 
 interface SourceState {
   provider: string
@@ -99,12 +93,6 @@ function createContext(ctx: CompilerContext, resolvedConfigRef: { value?: Resolv
   }
 }
 
-function createProvider(option: WeappCompilerPluginOption, context: WeappCompilerPluginContext): WeappCompilerPlugin | Promise<WeappCompilerPlugin> {
-  return typeof option === 'function'
-    ? (option as WeappCompilerPluginFactory)(context)
-    : option
-}
-
 export function createCompilerPluginPlugins(ctx: CompilerContext): Plugin[] {
   const options = normalizeCompilerPluginOptions(ctx.configService.weappViteConfig?.compilerPlugins)
   if (!options.length) {
@@ -115,41 +103,35 @@ export function createCompilerPluginPlugins(ctx: CompilerContext): Plugin[] {
   const pluginContextRef: { value?: PluginContextRef } = {}
   const owners = new Map<string, string>()
   const sourceStates = new Map<string, SourceState>()
+  const releaseHmrProviders: Array<() => void> = []
   let recordsPromise: Promise<ControllerRecord[]> | undefined
-  let disposed = false
-  let closeWatcherCalled = false
-  let closeBundleCalled = false
+  let disposePromise: Promise<void> | undefined
+  let closeWatcherPromise: Promise<void> | undefined
+  let closeBundlePromise: Promise<void> | undefined
+  let disposeSettled = false
+  let activeCloseHooks = 0
   const dependencyTracker = createCompilerDependencyTracker(ctx)
   const context = createContext(ctx, resolvedConfigRef, pluginContextRef, owners, dependencyTracker.remember)
 
   const sourceStateKey = (provider: string, id: string) => `${provider}:${normalizeFsResolvedId(id, { stripLeadingNullByte: true })}`
 
   async function records() {
-    recordsPromise ??= Promise.all(options.map(async (option) => {
-      const provider = await createProvider(option, context)
-      const controller = await provider.create(context)
-      if (provider.capabilities?.content || controller.prepareHmr) {
-        getCompilerHmrHost(ctx).register(provider.name, controller.prepareHmr
-          ? async (request) => {
-            const preparation = await controller.prepareHmr!(request)
-            for (const file of preparation.dependencies ?? []) {
-              context.addWatchFile(file)
+    recordsPromise ??= initializeCompilerControllers(options, context).then((resolved) => {
+      for (const { provider, controller } of resolved) {
+        if (provider.capabilities?.content || controller.prepareHmr) {
+          releaseHmrProviders.push(getCompilerHmrHost(ctx).register(provider.name, controller.prepareHmr
+            ? async (request) => {
+              const preparation = await controller.prepareHmr!(request)
+              for (const file of preparation.dependencies ?? []) {
+                context.addWatchFile(file)
+              }
+              for (const file of preparation.invalidated ?? []) {
+                context.invalidate(file)
+              }
+              return preparation
             }
-            for (const file of preparation.invalidated ?? []) {
-              context.invalidate(file)
-            }
-            return preparation
-          }
-          : undefined)
-      }
-      return { provider, controller }
-    })).then((resolved) => {
-      const names = new Set<string>()
-      for (const { provider } of resolved) {
-        if (names.has(provider.name)) {
-          throw new Error(`编译插件名称重复：\`${provider.name}\`。请为每个 compiler provider 使用唯一名称。`)
+            : undefined))
         }
-        names.add(provider.name)
       }
       return resolved
     })
@@ -165,17 +147,59 @@ export function createCompilerPluginPlugins(ctx: CompilerContext): Plugin[] {
     }
   }
 
-  async function disposeControllers() {
-    if (disposed) {
-      return
+  function releaseTerminalContext() {
+    if (disposeSettled && activeCloseHooks === 0) {
+      resolvedConfigRef.value = undefined
+      pluginContextRef.value = undefined
     }
-    disposed = true
+  }
+
+  async function callCloseHook(method: 'closeBundle' | 'closeWatcher') {
+    activeCloseHooks++
     try {
-      await callControllers('dispose')
+      throwControllerErrors(await collectControllerCleanupErrors(await records(), method), `Compiler provider ${method} failed`)
     }
     finally {
-      dependencyTracker.dispose()
+      activeCloseHooks--
+      releaseTerminalContext()
     }
+  }
+
+  function disposeControllers() {
+    disposePromise ??= (async () => {
+      try {
+        throwControllerErrors(await collectControllerCleanupErrors(await records(), 'dispose'), 'Compiler provider disposal failed')
+      }
+      finally {
+        for (const release of releaseHmrProviders.splice(0)) {
+          release()
+        }
+        // 只计原始关闭钩子，避免共享 dispose 与完整 close Promise 相互等待。
+        disposeSettled = true
+        releaseTerminalContext()
+        dependencyTracker.dispose()
+      }
+    })()
+    return disposePromise
+  }
+
+  async function closeAndDisposeControllers(method: Exclude<ControllerCleanupMethod, 'dispose'>) {
+    const errors: unknown[] = []
+    try {
+      await callCloseHook(method)
+    }
+    catch (error) {
+      errors.push(error)
+    }
+    try {
+      await disposeControllers()
+    }
+    catch (error) {
+      if (!errors.includes(error)) {
+        errors.push(error)
+      }
+    }
+    throwControllerErrors(errors, 'Compiler provider close and disposal failed')
   }
 
   function setSourceState(provider: string, ids: string[], state: SourceState) {
@@ -305,31 +329,15 @@ export function createCompilerPluginPlugins(ctx: CompilerContext): Plugin[] {
     async buildEnd(error) {
       await callControllers('buildEnd', error)
     },
-    async closeWatcher() {
-      if (closeWatcherCalled) {
-        return
-      }
-      closeWatcherCalled = true
-      try {
-        await callControllers('closeWatcher')
-      }
-      finally {
-        await disposeControllers()
-      }
+    closeWatcher() {
+      closeWatcherPromise ??= closeAndDisposeControllers('closeWatcher')
+      return closeWatcherPromise
     },
   }, 'source', 'source')
 
-  async function closeControllers() {
-    if (closeBundleCalled) {
-      return
-    }
-    closeBundleCalled = true
-    try {
-      await callControllers('closeBundle')
-    }
-    finally {
-      await disposeControllers()
-    }
+  function closeControllers() {
+    closeBundlePromise ??= closeAndDisposeControllers('closeBundle')
+    return closeBundlePromise
   }
 
   const outputPlugin = markWeappCompilerPlugin({

@@ -17,7 +17,7 @@ describe('published consumer toolchain selection', () => {
   it('keeps the Vite+ launcher, core alias and override on the same paired version', () => {
     expect(resolveConsumerToolchain('vite-plus', { name: 'weapp-vite', dependencies: { vite: '8.4.0' } }, versions)).toEqual({
       dependencies: { 'vite': 'npm:@voidzero-dev/vite-plus-core@1.2.3', 'vite-plus': '1.2.3', 'vitest': '5.0.1' },
-      overrides: { vite: 'npm:@voidzero-dev/vite-plus-core@1.2.3' },
+      overrides: { vite: 'npm:@voidzero-dev/vite-plus-core@1.2.3', vitest: '5.0.1' },
     })
   })
 

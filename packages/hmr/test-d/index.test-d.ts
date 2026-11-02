@@ -9,6 +9,8 @@ export async function verifyPublicTypes() {
   expectType<ReadonlyMap<string, string | null>>(input.sources)
   const host = new HmrCompilerHost({ sourceId: id => id, hasVisualChange: (_id, previous, current) => previous !== current })
   expectAssignable<HmrCompilerRequest>(host.freeze(['page.tsx']))
+  expectType<() => void>(host.register('content', async () => ({})))
+  expectType<() => void>(host.register('legacy'))
   const provider: HmrCompilerPreparation = { assets: [{ fileName: 'app.wxss', code: '.card{}' }] }
   const batch = { origin: 'native' as const, changedFiles: ['page.tsx'], updates: [{ clientId: 'taro', update: { type: 'Patch', code: 'code', filename: 'same.js', seq: 4 } }] }
   expectType<'native'>(captureHmrBatch(batch).origin)

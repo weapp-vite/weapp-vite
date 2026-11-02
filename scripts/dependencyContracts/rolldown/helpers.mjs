@@ -144,6 +144,13 @@ export function completeContractReport(report) {
   return { ...report, status: 'passed' }
 }
 
+/** 按实际完成清单区分当前失败与未执行项，不解释产品或诊断各自的观察结构。 */
+export function contractProgress(report) {
+  const completed = new Set(report.completed)
+  const failed = report.currentContract && !completed.has(report.currentContract) ? report.currentContract : undefined
+  return { failed, notExecuted: report.planned.filter(name => !completed.has(name) && name !== failed) }
+}
+
 export function normalizeReport(value, root) {
   if (typeof value === 'string') {
     const normalized = value.replaceAll(root, '<fixture>').replaceAll(root.replaceAll('\\', '/'), '<fixture>')

@@ -6,6 +6,7 @@ import { defu } from '@weapp-core/shared'
 import path from 'pathe'
 import { getOutputExtensions, getWeappViteConfig } from '../../../defaults'
 import { DEFAULT_MP_PLATFORM } from '../../../platform'
+import { markOwnedPlugin } from '../../../plugins/ownedInstances'
 import { getAliasEntries } from '../../../utils'
 import { hasLibEntry, resolveWeappLibConfig } from '../../lib'
 import { hasDeprecatedEnhanceUsage, migrateEnhanceOptions } from '../enhance'
@@ -299,7 +300,7 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
       const usesAdvancedTsconfigPathsOptions = typeof tsconfigPathsOptions === 'object' && tsconfigPathsOptions !== null
       if (usesAdvancedTsconfigPathsOptions) {
         const { default: tsconfigPaths } = await import('vite-tsconfig-paths')
-        config.plugins = [...config.plugins, tsconfigPaths(tsconfigPathsOptions)]
+        config.plugins = [...config.plugins, markOwnedPlugin(tsconfigPaths(tsconfigPathsOptions))]
       }
       else if (shouldDelegateToNativeTsconfigPaths) {
         config.resolve ??= {}

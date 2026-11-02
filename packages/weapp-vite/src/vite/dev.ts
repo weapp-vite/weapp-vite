@@ -3,6 +3,7 @@ import type { WeappBuildSession } from './session'
 import { WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY } from '@weapp-core/constants'
 import { createDevModuleGraphPlugin } from '../moduleGraph/devProvider'
 import { notifyDevModuleGraphHost } from '../moduleGraph/host'
+import { createPackageImportsQueryPlugin } from '../plugins/packageImports'
 import { createViteWatchIgnored } from '../runtime/watch/options'
 
 /** 宿主仅提供依赖图和服务生命周期；小程序快照沿用原生构建落盘。 */
@@ -39,7 +40,7 @@ export function prepareDevHostConfig(session: WeappBuildSession, merged: InlineC
     }
   }
   return {
-    plugins: [createDevModuleGraphPlugin(ctx, merged, change => notifyDevModuleGraphHost(ctx, change))],
+    plugins: [createDevModuleGraphPlugin(ctx, merged, change => notifyDevModuleGraphHost(ctx, change)), createPackageImportsQueryPlugin()],
     config: {
       appType: 'custom',
       resolve: merged.resolve,

@@ -1,4 +1,19 @@
-# 发布重试与恢复
+# 依赖补丁与发布维护
+
+当前 `patchedDependencies` 只登记三份补丁：
+
+| 依赖 | 用途 | 发布交付范围 |
+| --- | --- | --- |
+| `chokidar@6.0.0` | 修正文件监听的异步提交、目录恢复和资源关闭边界 | `weapp-vite` 通过 `alwaysBundle` 将修补代码打入 `dist`，普通 npm 消费者也使用该实现 |
+| `vitest@5.0.5` | 以 UTF-8 读取模块缓存，保留测试启动的原始错误 | 仓库测试工具，不修补消费者安装的 Vitest |
+| `@vitejs/plugin-vue@6.0.10` | 向 Oxc 转换补传当前 Vite 配置和 watcher | 仓库 Web UI、文档及相关测试的开发和构建，不修补消费者安装的 Vue 插件 |
+
+工作区的 pnpm 补丁登记不会随 npm 依赖安装自动传播；已打入发布产物的修改代码会交付给消费者。
+当前使用官方 Vite `8.3.5` 和 Rolldown `1.2.16`，不再维护它们的补丁。Vite+ `1.4.0` launcher/core
+使用其配对发行的内置 Vite `8.3.5` / Rolldown `1.2.15`，Vitest 为 `5.0.5`，
+不能将其与工作区独立 Rolldown 的版本混为一谈。
+
+## 发布重试与恢复
 
 仓库固定使用 `repoctl@6.3.2`，发布重试、工作区根包识别和发布说明过滤均由上游正式实现负责。
 `@icebreakers/monorepo@6.1.0` 的上游实现包含发布说明分类修正：明确的 Conventional 摘要类型
@@ -29,12 +44,12 @@ ESM 文件，并在执行框架或导入 guard 前确认消费者解析结果。
 
 正式发布包消费验证及发布回归通过后，本仓库已删除整份
 `@icebreakers__monorepo@6.3.1.patch`、对应 `patchedDependencies` 和锁文件补丁登记，
-不再维护这两类重复实现。其余五份独立补丁继续保留。升级时继续运行
+不再维护这两类重复实现。当前保留的三份补丁见上表。升级时继续运行
 `scripts/repoctl-nightly-deadline.test.ts`、`scripts/repoctl-consumer-context.test.ts`
 和 `scripts/repoctl-snapshot-workflow.test.ts`，并完成 `pnpm test:release`；
 不能以每命令的新超时配置替代共享截止时间，也不能因移除补丁而删除公共行为回归。
 
-Vite 与 Rolldown 的构建引用生命周期补丁见[编译依赖内存说明](./compiler-memory.md)。
+官方 Vite/Rolldown 的产品适配、内部诊断和资源验收边界见[编译依赖内存说明](./compiler-memory.md)。
 
 此前 [Release 35973791530](https://github.com/weapp-vite/weapp-vite/actions/runs/35973791530)
 在部分上传成功后遇到 OIDC 503。pnpm 12.5.1 没有保存失败批次的部分 summary，
@@ -86,10 +101,11 @@ Release 无论成功或失败均尝试保存 `npm-publish-summary-<run_attempt>`
 - 延迟返回的缺失结果在提交删除前再次确认目标仍然缺失；目标已重建时复用成功 stat 继续正常协调，避免旧 ENOENT 移除另一个 owner 已观察的新 inode。
 - `readdirp` 的扫描根 `warn(ENOENT)` 复用本轮目录缺失确认，并在异步确认后复核原目录身份；子项 warning、权限错误、缺少路径以及仍存在的根目录不能触发根清理，原 warning 仍供监听者读取。
 - 目录自身注册失败时，释放先前为它取得的 root-parent closer；不泄漏半完成的订阅。
+- macOS 目录监听拓扑变化后，在同一恢复批次协调仍存活的 owner；初扫、恢复和关闭各自保留归属，旧拓扑代不能提交结果，迟到的重复观察不重复发布文件变化。
 
 Chokidar 6 的原生文件由父目录资源协调，删除使用 tree membership，polling 使用共享 scheduler 与异步 stat。这些流程由上游负责，不沿用 v5 的文件句柄重绑、remove throttle 或 StatWatcher 修补。新旧版的共同公开契约继续由仓库 29 场景验证，观测机制说明见[依赖契约](../scripts/dependencyContracts/chokidar/README.md)。
 
-`weapp-vite` 将修补后的 Chokidar 与 `readdirp@5.1.1` 打包到 JavaScript 产物，消费发布包时使用相同实现；类型声明继续引用公开依赖类型。完整 MIT 许可证随包保存在 `packages/weapp-vite/THIRD_PARTY_NOTICES.md`。
+`packages/weapp-vite/tsdown.config.ts` 通过 `alwaysBundle: ['chokidar', 'readdirp']` 将修补后的 Chokidar 与 `readdirp@5.1.1` 打包到 JavaScript 产物，消费发布包时使用相同实现；类型声明继续引用公开依赖类型。完整 MIT 许可证随包保存在 `packages/weapp-vite/THIRD_PARTY_NOTICES.md`。
 
 更新或移除补丁前，在目标 Windows、macOS、Linux 环境保留依赖契约报告：
 
@@ -109,16 +125,32 @@ node --import tsx e2e/scripts/run-e2e-commands.ts node --import tsx packages/wea
 才可移除补丁与配套打包策略，并同步检查第三方软件声明。补丁涉及的上游发行文件原本超过
 300 行；保留发行结构能让差分直接对应上游，便于审查和升级，因此不为本地补丁拆分模块。
 
+## 官方 Vite/Rolldown 与产品监听
 
-## Vite 内置 polling 副本
+当前没有 Vite 或 Rolldown 补丁文件、`patchedDependencies` 登记或锁文件补丁绑定。
+自有插件钩子容器、package imports 兼容及会话释放由 `weapp-vite` 自身代码负责；这不表示上游
+全部引用生命周期问题已修复。
 
-`vite@8.3.5.patch` 同步修正其发行文件内置 Chokidar 的 polling listener 归属与升级失败恢复。
-`scripts/dependencyContracts/vite/polling.mjs` 通过真实 Vite server 验证两个 owner、独立原生 listener、
-两种关闭顺序及精确释放，不依赖内置 helper 的局部名称。
+产品自有开发宿主通过公开 Chokidar API 持有监听资源，按本代 owner 处理初扫、动态注册、事件交付和关闭，
+并保留显式使用 Vite 原生后端的配置路径。启动与重启等待相应后端或现存源码的登记屏障；
+关闭先解除登记等待，再等待编译任务与本代资源收尾，防止退出反向等待自身的初扫。
+登记完成只证明该观察面，首个保存是否交付仍须实际文件编辑和产物验证。
 
-这份仓库补丁不会自动进入普通 npm 消费者的外部 Vite。产品宿主重启先等待旧编译会话和精确旧 watcher
-完整关闭，再进入 Vite 的新配置准备；发布消费合同使用未打补丁的 npm Vite 独立验证这一交接约束。
-不能把本机依赖合同通过视为用户已安装补丁。
+PR #1294 按用户授权接受 Web optimizer 关闭残留与连续构建资源增长两项验收例外；两项均未修复。
+例外对固定官方 Vite `8.3.5` / Rolldown `1.2.16` 持续适用至显式移除，不在合并后自动结束，
+版本不符时必需入口失败并要求重新评审或移除，不自动适用于 Vite+ 内置 Rolldown `1.2.15`。
+Web 扫描期间关闭或重启可能留下临时缓存；同一 Node 进程连续构建可能持续保留旧代编译引用、增加内存。
+现有实测不证明增长线性、所有增长同因或 Vite+ 有相同资源表现；风险与证据边界见
+[编译依赖内存说明](./compiler-memory.md)。
+
+`pnpm test:dependency-contracts` 的 Vite 必需清单固定为 `hooks`、`resolver`、`mini-optimizer`、
+`polling`、`ready` 五项，Rolldown 七项及 Chokidar 完整契约保留，不接受任意筛选或跳过参数。
+Vite 报告保留六项 `fullInventory`、`waived` 和未执行的 `web-optimizer`，适用项通过时明确标记
+`assessment: accepted-with-waivers`，不称为完整六项产品通过。
+`pnpm diagnose:vite-product-lifecycle` 继续运行原六项公开产品契约；原始内部断言保留在
+`pnpm diagnose:dependency-internals`。两种诊断失败仍非零退出并保留证据，没有吞错或降低断言。
+正式资源验收不再作为当前候选的发布必需项，但手动 workflow、原 `32/16 MiB` 门限及失败断言不变。
+其他 CI、coverage、审查和真实 IDE 门禁不因这两项例外被豁免，各项仍分别记录实际结果。
 
 ## Vitest 模块缓存的文本读取
 
@@ -126,3 +158,9 @@ node --import tsx e2e/scripts/run-e2e-commands.ts node --import tsx packages/wea
 错误格式化路径随后把它当作字符串调用 `charCodeAt`，掩盖 global setup 的原始错误。
 补丁只补充文本编码，保留缓存行为；`e2e/scripts/domAcceptanceReport/reporter.startup.test.ts`
 继续通过缓存路径验证原始失败和验收报告，不以关闭缓存绕过问题。
+
+## Vue 插件的 Oxc 上下文
+
+`@vitejs/plugin-vue@6.0.10.patch` 为 `transformWithOxc` 补传 `devServer.config` 和 `devServer.watcher`，
+让 Vue 中的 TypeScript 转换使用当前 Vite 配置及其监听上下文，避免遗漏显式 tsconfig 后转而扫描无关项目引用。
+仓库 Web 构建的既有 tsconfig guard 继续保留；补丁不作为 `weapp-vite` 对外 Vue 编译器的运行时依赖交付。

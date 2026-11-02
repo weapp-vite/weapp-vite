@@ -14,6 +14,8 @@ import { css } from './css'
 import { i18n } from './i18n'
 import { createLibDtsPlugin } from './libDts'
 import { createOutputFinalizerPlugin, createOutputPublicationPlugin } from './outputFinalizer'
+import { markOwnedPlugin } from './ownedInstances'
+import { createPackageImportsQueryPlugin } from './packageImports'
 import { createPluginProjectOutputPlugin } from './pluginProjectOutput'
 import { preflight } from './preflight'
 import { createProjectConfigDirectoryPlugin } from './projectConfig/directory'
@@ -65,6 +67,16 @@ function flatten(groups: Plugin[][]): Plugin[] {
   }, [])
 }
 
+function markInternalPlugins(plugins: Plugin[]): Plugin[] {
+  for (const plugin of plugins) {
+    // 这里只处理内部工厂产物；第三方适配器仍保留原对象和元数据广播语义。
+    if (plugin.name.startsWith('weapp-vite:') || plugin.name.startsWith('weapp-runtime:')) {
+      markOwnedPlugin(plugin)
+    }
+  }
+  return plugins
+}
+
 function hasWevuDependency(ctx: CompilerContext) {
   const packageJson = ctx.configService?.packageJson
   return Boolean(packageJson?.dependencies?.wevu || packageJson?.devDependencies?.wevu)
@@ -80,7 +92,7 @@ export function vitePluginWeapp(
   const vueRuntimeEnabled = vueEnabled && (!reactEnabled || hasWevuDependency(ctx))
   const runtimeProvider = resolveRuntimeProvider('miniprogram', vueRuntimeEnabled ? 'vue' : 'native')
   const groups: Plugin[][] = [
-    [createContextPlugin(ctx), createSelectedRuntimeProviderPlugin(runtimeProvider, ctx.configService.isDev)],
+    [createContextPlugin(ctx), createPackageImportsQueryPlugin(), createSelectedRuntimeProviderPlugin(runtimeProvider, ctx.configService.isDev)],
     preflight(ctx),
     uniAppCompatibility(ctx),
     createReactPlugin(ctx),
@@ -127,14 +139,14 @@ export function vitePluginWeapp(
 
   const assembled = attachRuntimePlugins(ctx, flatten(groups))
   if (subPackageMeta) {
-    return assembled
+    return markInternalPlugins(assembled)
   }
 
-  return applyInspect(ctx, assembled)
+  return markInternalPlugins(applyInspect(ctx, assembled))
 }
 
 export function vitePluginWeappWorkers(ctx: CompilerContext): Plugin<WeappVitePluginApi>[] {
-  const groups = [[createContextPlugin(ctx)], preflight(ctx), workers(ctx)]
+  const groups = [[createContextPlugin(ctx), createPackageImportsQueryPlugin()], preflight(ctx), workers(ctx)]
   const assembled = attachRuntimePlugins(ctx, flatten(groups))
-  return applyInspect(ctx, assembled)
+  return markInternalPlugins(applyInspect(ctx, assembled))
 }

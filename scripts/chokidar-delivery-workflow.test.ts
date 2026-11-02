@@ -57,6 +57,7 @@ const expandedConsumerJobs = [
   'lib-runtime',
   'platform-runtime',
   'web-runtime',
+  'imports-runtime',
 ]
 
 describe('Windows ordinary npm watcher delivery workflow', () => {
@@ -106,7 +107,7 @@ describe('Windows ordinary npm watcher delivery workflow', () => {
     })
     const runtimeProfiles = ['stateful', 'classic', 'react', 'independent', 'worker', 'plugin', 'lib', 'platform', 'web']
     const runtimeJobs = runtimeProfiles.map(profile => `${profile}-runtime`)
-    expect([...Object.keys(consumerContractGroups), 'node-support', 'dependency-compatibility', 'consumer', ...runtimeJobs].sort()).toEqual([...expandedConsumerJobs].sort())
+    expect([...Object.keys(consumerContractGroups), 'node-support', 'dependency-compatibility', 'consumer', ...runtimeJobs, 'imports-runtime'].sort()).toEqual([...expandedConsumerJobs].sort())
     if (!reusable.jobs['consumer-platform']) {
       for (const [name, files] of Object.entries(consumerContractGroups)) {
         const expanded = reusable.jobs[name]
@@ -126,7 +127,7 @@ describe('Windows ordinary npm watcher delivery workflow', () => {
       }
       expect(reusable.jobs['classic-runtime'].strategy.matrix.exclude).toEqual([{ host: 'wv', profile: 'classic-watch' }])
     }
-    expect(Object.keys(child.jobs).sort()).toEqual(['pr-context', 'prepare', 'node-support', 'contracts', 'dependency-compatibility', 'consumer', ...runtimeJobs, ...v2Jobs].sort())
+    expect(Object.keys(child.jobs).sort()).toEqual(['pr-context', 'prepare', 'node-support', 'contracts', 'dependency-compatibility', 'consumer', ...runtimeJobs, 'imports-runtime', ...v2Jobs].sort())
     expect(child.jobs['pr-context']).toMatchObject({
       uses: './.github/workflows/reusable-frozen-pr-context.yml',
       with: { pr_context: '${{ inputs.pr_context }}', profile: 'ci-vite-host-consumer' },
@@ -183,8 +184,8 @@ describe('Windows ordinary npm watcher delivery workflow', () => {
         continue
       }
       expect(candidate.needs).toEqual(['pr-context', 'prepare'])
-      const legacyOnly = name === 'node-support' || name === 'consumer' || runtimeJobs.includes(name)
-      const ubuntuOnly = name === 'consumer' || runtimeJobs.includes(name)
+      const legacyOnly = name === 'node-support' || name === 'consumer' || name === 'imports-runtime' || runtimeJobs.includes(name)
+      const ubuntuOnly = name === 'consumer' || name === 'imports-runtime' || runtimeJobs.includes(name)
       expect(candidate.if).toBe(`\${{ ${legacyOnly ? 'inputs.verification_topology != \'optimized-v2\' && ' : ''}${childGate}${ubuntuOnly ? ' && (inputs.runs_on == \'ubuntu-latest\')' : ''} }}`)
       if (name !== 'node-support') {
         expect(candidate.uses).toBe('./.github/workflows/reusable-node-command.yml')
@@ -216,6 +217,37 @@ describe('Windows ordinary npm watcher delivery workflow', () => {
         expect(runtime.with.main_command).toBe(`node packages/weapp-vite/scripts/verify-vite-host-install.mjs \${{ matrix.host }} headless ${profile === 'classic' ? '${{ matrix.profile }}' : profile}`)
       }
     }
+  })
+
+  it('keeps package imports consumption strict across all three legacy hosts', () => {
+    const child = parse(readFileSync(new URL('../.github/workflows/reusable-consumer-platform.yml', import.meta.url), 'utf8'))
+    const imports = child.jobs['imports-runtime']
+    expect(imports.if).toBe(`\${{ inputs.verification_topology != 'optimized-v2' && ${childGate} && (inputs.runs_on == 'ubuntu-latest') }}`)
+    expect(imports.needs).toEqual(['pr-context', 'prepare'])
+    expect(imports.uses).toBe('./.github/workflows/reusable-node-command.yml')
+    expect(imports.strategy).toEqual({ 'fail-fast': false, 'matrix': { host: ['wv', 'vite', 'vite-plus'] } })
+    expect(imports['continue-on-error']).toBeUndefined()
+    expect(imports.secrets).toBe('inherit')
+    expect(imports.with).toEqual({
+      pr_context: '${{ inputs.pr_context }}',
+      pr_profile: profile,
+      verification_topology: '${{ inputs.verification_topology }}',
+      ...frozenIdentity,
+      runs_on: '${{ inputs.runs_on }}',
+      node_version: '24',
+      timeout_minutes: 30,
+      build_command: '',
+      main_command: 'node scripts/consumerBatches/imports.mjs ${{ matrix.host }}',
+      artifact_name: 'imports-consumer-${{ matrix.host }}',
+      artifact_path: '.cache/imports-consumer-${{ matrix.host }}.json*\ndocs/reports/dom-acceptance/**',
+      consume_build_artifact: 'consumer-${{ inputs.runs_on }}-node-24-build',
+      build_artifact_node_major: '24',
+      build_artifact_scope: 'packages/weapp-vite,packages-runtime/wevu,mpcore/packages/simulator',
+      consume_aux_artifact: 'consumer-tarballs-${{ inputs.runs_on }}',
+      aux_artifact_path: '.cache/node-support-tarballs',
+      consumer_tarballs: '.cache/node-support-tarballs',
+      timing_artifact_name: 'timing-consumer-imports-runtime-${{ inputs.runs_on }}-${{ matrix.host }}',
+    })
   })
 
   it('binds the v2 node and consumer batches to frozen prepare plans and strict aggregates', () => {

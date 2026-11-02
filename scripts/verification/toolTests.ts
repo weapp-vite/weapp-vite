@@ -4,8 +4,11 @@ import path from 'node:path'
 export const ROOT_REPOSITORY_TEST_GLOBS = ['scripts/**/*.test.ts', 'integrations/shared-hmr-tailwind/**/*.test.ts']
 export const SCRIPT_TEST_GLOBS = ['scripts/**/*.test.mjs', 'scripts/**/*.test.ts']
 
+/** 受管测试自行取得机器租约并启动真实资源，分类不改变完整入口的发现范围。 */
+const MANAGED_SCRIPT_TESTS = new Set(['scripts/dependencyContracts/vite.test.ts'])
+
 /** 根入口与独立工具入口共用发现规则，补集和并集都按真实文件去重。 */
-export async function scriptTestInventory(root: string): Promise<{ all: string[], root: Set<string> }> {
+export async function scriptTestInventory(root: string): Promise<{ all: string[], root: Set<string>, managed: Set<string> }> {
   const all: string[] = []
   for await (const file of glob(SCRIPT_TEST_GLOBS, { cwd: root, exclude: ['**/node_modules/**', '**/.git/**'] })) {
     all.push(file.replaceAll('\\', '/'))
@@ -13,6 +16,7 @@ export async function scriptTestInventory(root: string): Promise<{ all: string[]
   return {
     all: [...new Set(all)].sort(),
     root: new Set(all.filter(file => ROOT_REPOSITORY_TEST_GLOBS.some(pattern => path.posix.matchesGlob(file, pattern)))),
+    managed: new Set(all.filter(file => MANAGED_SCRIPT_TESTS.has(file))),
   }
 }
 

@@ -239,6 +239,7 @@
     "postcss": "catalog:",
     "postcss-selector-parser": "catalog:",
     "postcss-value-parser": "4.2.0",
+    "resolve.exports": "2.0.4",
     "rolldown": "catalog:",
     "rolldown-plugin-dts": "0.29.0",
     "rolldown-require": "workspace:*",

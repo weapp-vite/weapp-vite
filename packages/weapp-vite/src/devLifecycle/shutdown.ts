@@ -28,6 +28,7 @@ export class DevShutdownScope {
   private readonly completed = Promise.withResolvers<void>()
   private readonly pending = new Set<Promise<unknown>>()
   private readonly cleanups = new Set<Cleanup>()
+  private readonly stoppingCallbacks = new Set<Cleanup>()
   private readonly errors = new Set<unknown>()
   private closing?: Promise<void>
   private failure?: unknown
@@ -70,7 +71,8 @@ export class DevShutdownScope {
         return await action()
       }
       catch (error) {
-        if (this.stopping) {
+        // 已开始的清理失败必须留在命令退出结果中，即使下层 owner 已退休或发生重启交接。
+        if (this.stopping || phase === 'cleanup') {
           this.errors.add(error)
         }
         throw error
@@ -96,10 +98,29 @@ export class DevShutdownScope {
     }
   }
 
+  /** 取消在退出请求时立即派发；已退休 owner 可注销，异步失败仍纳入同一退出结果。 */
+  onStopping(cleanup: Cleanup): () => void {
+    if (this.finished) {
+      throw new Error('Cannot subscribe after development shutdown completed')
+    }
+    if (this.stopping) {
+      this.startStoppingCallback(cleanup)
+    }
+    else {
+      this.stoppingCallbacks.add(cleanup)
+    }
+    return () => {
+      this.stoppingCallbacks.delete(cleanup)
+    }
+  }
+
   request(reason: ShutdownReason = 'close'): void {
     if (!this.reason) {
       this.reason = reason
       this.requested.resolve()
+      const callbacks = [...this.stoppingCallbacks]
+      this.stoppingCallbacks.clear()
+      callbacks.forEach(callback => this.startStoppingCallback(callback))
     }
     // 延后一轮，保证当前同步 acquisition 先登记为在途操作。
     this.closing ??= Promise.resolve().then(() => this.drain())
@@ -120,6 +141,13 @@ export class DevShutdownScope {
   private readonly onSigterm = () => this.request('SIGTERM')
   private readonly onDisconnect = () => this.request('disconnect')
   private readonly onStdinEnd = () => this.request('stdin')
+
+  private startStoppingCallback(cleanup: Cleanup): void {
+    const task = this.run('cleanup', cleanup)
+    // 即使 request 在 startup 内调用，取消任务也必须独立完成，不能继承内部 cleanup 的免登记规则。
+    this.pending.add(task)
+    void task.catch(error => this.errors.add(error)).finally(() => this.pending.delete(task))
+  }
 
   private async drain(): Promise<void> {
     try {
@@ -162,6 +190,7 @@ export class DevShutdownScope {
     }
     finally {
       this.finished = true
+      this.stoppingCallbacks.clear()
       process.off('SIGINT', this.onSigint)
       process.off('SIGTERM', this.onSigterm)
       process.off('disconnect', this.onDisconnect)

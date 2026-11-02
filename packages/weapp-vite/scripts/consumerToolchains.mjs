@@ -27,6 +27,6 @@ export function resolveConsumerToolchain(toolchain, candidateManifest, versions 
   const vite = `npm:@voidzero-dev/vite-plus-core@${pairing.version}`
   return {
     dependencies: { vite, 'vite-plus': pairing.version, 'vitest': pairing.vitest },
-    overrides: { vite },
+    overrides: { vite, vitest: pairing.vitest },
   }
 }

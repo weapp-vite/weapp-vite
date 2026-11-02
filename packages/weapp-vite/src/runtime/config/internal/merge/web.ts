@@ -9,6 +9,8 @@ import { createBabelBackendLoader } from '@weapp-vite/ast/babelLoader'
 import { resolveWeappAutoRoutesConfig } from '../../../../autoRoutesConfig'
 import { applyWeappViteHostMeta } from '../../../../pluginHost'
 import { autoRoutes } from '../../../../plugins/autoRoutes'
+import { markOwnedPlugin, markOwnedPlugins } from '../../../../plugins/ownedInstances'
+import { createPackageImportsQueryPlugin } from '../../../../plugins/packageImports'
 import {
   createSelectedRuntimeProviderPlugin,
   resolveRuntimeProvider,
@@ -137,8 +139,8 @@ export function mergeWeb(options: MergeWebOptions, ...configs: Partial<InlineCon
   }
 
   const runtimeProvider = resolveRuntimeProvider('web', 'web')
-  const runtimeProviderPlugin = createSelectedRuntimeProviderPlugin(runtimeProvider, isDev)
-  const webPlugin = loadWebPlugin().then(({ weappWebPlugin }) => weappWebPlugin({
+  const runtimeProviderPlugin = markOwnedPlugin(createSelectedRuntimeProviderPlugin(runtimeProvider, isDev))
+  const webPlugin = loadWebPlugin().then(({ weappWebPlugin }) => markOwnedPlugins(weappWebPlugin({
     ...web.pluginOptions,
     __uniApp: options.uniApp || undefined,
     __autoImportResolvers: options.autoImportResolvers,
@@ -147,13 +149,13 @@ export function mergeWeb(options: MergeWebOptions, ...configs: Partial<InlineCon
       moduleId: WEAPP_VITE_RUNTIME_VIRTUAL_ID,
       hmrAcceptCode: resolveRuntimeProviderHmrFooter(runtimeProvider),
     },
-  }))
+  })))
   const autoRoutesPlugins = options.ctx
     && !options.configService?.weappLibConfig?.enabled
     && resolveWeappAutoRoutesConfig(options.configService?.weappViteConfig?.autoRoutes).enabled
     ? autoRoutes(options.ctx)
     : []
-  inline.plugins = mergeWebPlugins(inline.plugins, webPlugin, runtimeProviderPlugin, autoRoutesPlugins)
+  inline.plugins = mergeWebPlugins(inline.plugins, webPlugin, runtimeProviderPlugin, markOwnedPlugins([createPackageImportsQueryPlugin(), ...autoRoutesPlugins]))
 
   inline.build ??= {}
   inline.build.outDir = web.outDir

@@ -28,6 +28,12 @@ const packageData = {
   },
 }
 
+/** 直接提取原版插件的对象方法，避免契约入口依赖工作区补丁新增的工厂。 */
+export function extractSubpathImportsMethod(source) {
+  const plugin = extract(source, 'function oxcResolvePlugin(', 'function optimizerResolvePlugin(')
+  return extract(plugin, 'resolveSubpathImports(id, importer, isRequire) {', '...partialEnv.config.command')
+}
+
 function expose(source) {
   const lookups = []
   const warnings = []
@@ -64,7 +70,7 @@ function expose(source) {
     viteResolvePlugin: options => options,
     debug$3: message => debugMessages.push(message),
   }
-  const factories = extract(source, 'function createSubpathImportsResolver(', 'function oxcResolvePlugin(')
+  const callback = extractSubpathImportsMethod(source)
   const exportsRegion = extract(source, '//#region ../../node_modules/.pnpm/resolve.exports@', '\n//#endregion')
   const code = [
     exportsRegion,
@@ -73,9 +79,8 @@ function expose(source) {
     'const DEV_PROD_CONDITION = "development|production";',
     extract(source, 'function getConditions(', 'function resolveDeepImport('),
     extract(source, 'function resolveSubpathImports(', 'function ensureVersionQuery('),
-    factories,
     extract(source, 'function oxcResolvePlugin(', 'function optimizerResolvePlugin('),
-    'globalThis.create = createSubpathImportsResolver;',
+    `globalThis.create = (options, resolveOptions) => ({ ${callback} }).resolveSubpathImports;`,
     'globalThis.createPlugin = oxcResolvePlugin;',
   ].join('\n')
   const context = evaluateStrict(code, globals)

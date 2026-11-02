@@ -12,6 +12,7 @@ const descriptors: Array<[string, Plugin['enforce']?]> = [
   ...['config', 'watcher', 'wxml', 'json', 'scan', 'auto-routes', 'auto-import', 'npm', 'build', 'web']
     .map(name => [`weapp-runtime:${name}-service`] as [string]),
   ['weapp-vite:context', 'pre'],
+  ['weapp-vite:package-imports-query', 'pre'],
   ['weapp-vite:runtime-provider:native-miniprogram', 'pre'],
   ['weapp-vite:runtime-provider:wevu-miniprogram', 'pre'],
   ['weapp-vite:preflight', 'pre'],

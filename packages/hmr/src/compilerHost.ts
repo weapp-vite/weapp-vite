@@ -1,7 +1,7 @@
 import type { HmrCompilerPreparation, HmrCompilerProvider, HmrCompilerRequest } from './types'
 import { CompilerHmrResyncError, HmrPreparationCleanupError } from './errors'
 
-interface Provider { prepare?: HmrCompilerProvider['prepareHmr'] }
+interface Provider { token: symbol, prepare?: HmrCompilerProvider['prepareHmr'] }
 
 /** 部分准备失败后仍尝试全部释放，保留最初的拒绝及每个清理错误。 */
 async function rejectPreparations(results: HmrCompilerPreparation[], failure: unknown): Promise<never> {
@@ -97,8 +97,15 @@ export class HmrCompilerHost {
     })
   }
 
-  register(name: string, prepare?: Provider['prepare']): void {
-    this.providers.set(name, { prepare })
+  /** 返回仅能撤销本次注册的释放函数，不保留已退役 provider 的回调。 */
+  register(name: string, prepare?: Provider['prepare']): () => void {
+    const token = Symbol('compiler-provider-registration')
+    this.providers.set(name, { token, prepare })
+    return () => {
+      if (this.providers.get(name)?.token === token) {
+        this.providers.delete(name)
+      }
+    }
   }
 
   freeze(changedFiles: readonly string[]): HmrCompilerRequest {

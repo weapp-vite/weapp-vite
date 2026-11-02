@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto'
 import { assertFrozenConsumerIdentity } from './identity.mjs'
 
 export const consumerHosts = ['wv', 'vite', 'vite-plus']
-const weights = { 'consumer': 4, 'stateful': 6, 'classic': 6, 'classic-watch': 7, 'react': 4, 'independent': 4, 'worker': 5, 'plugin': 5, 'lib': 7, 'platform': 8, 'web': 7 }
+const weights = { 'consumer': 4, 'imports': 6, 'stateful': 6, 'classic': 6, 'classic-watch': 7, 'react': 4, 'independent': 4, 'worker': 5, 'plugin': 5, 'lib': 7, 'platform': 8, 'web': 7 }
 export const hash = value => createHash('sha256').update(JSON.stringify(value)).digest('hex')
 
 /** 权重是明确标记的静态相对值；每轮报告另存真实耗时，不能冒充历史测量。 */

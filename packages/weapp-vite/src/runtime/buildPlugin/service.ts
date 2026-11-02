@@ -88,6 +88,7 @@ import { createIndependentBuilder } from './independent'
 import { getInitialBuildInputObservation } from './initialBuildChanges'
 import { cleanOutputs, isOutputRootInsideOutDir, resetEmittedOutputCaches, shouldCleanOutputs } from './outputs'
 import { assertPluginProjectOutput, createPluginProjectSession, isPluginProjectClosing, runPluginProjectRestart, setPluginProjectBuildOptions } from './pluginProject'
+import { bindClassicSettlement } from './settlement'
 import { createSnapshotBuildConfig } from './snapshotConfig'
 import { refreshSnapshotSources } from './snapshotSources'
 import { observeClassicSourceChange } from './sourceObservation'
@@ -1655,7 +1656,9 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     // 首构写出及其事件回放均须结束，后续批次才能取得共享 profile 和输出的所有权。
     const initialSnapshot = Promise.withResolvers<undefined>()
     let snapshotBuildChain: Promise<'snapshot' | 'closed' | undefined> = target === 'app' ? initialSnapshot.promise : Promise.resolve(undefined)
+    let latestSnapshotBuild: Promise<unknown> = snapshotBuildChain
     let watcherEventCompletion = Promise.resolve()
+    let settlementEventCompletion = watcherEventCompletion
     let startTime: DOMHighResTimeStamp
     let sourcePublication: ReturnType<typeof beginClassicSourcePublication> | undefined
 
@@ -2156,6 +2159,12 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         }
         return undefined
       })
+      // 恢复链只服务下一次调度；观察方仍须取得本次发布的原始成功或失败。
+      latestSnapshotBuild = currentSnapshotBuild
+      // 只有实际成功发布才能恢复旧失败；无产物变化的批次仍继承上一代结果。
+      const previousCompletion = settlementEventCompletion
+      settlementEventCompletion = currentSnapshotBuild.then(result => result === 'snapshot' ? undefined : previousCompletion)
+      void settlementEventCompletion.catch(() => {})
       return currentSnapshotBuild
     }
 
@@ -2234,6 +2243,13 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       scheduleSnapshotBuild({ event, file: id, sourceEvent, verifyInitialInput: true, initialRoute }, receivedAtMs)
     }
 
+    const settlement = target === 'app'
+      ? bindClassicSettlement(ctx, {
+          flush: flushPendingSnapshotBuild,
+          read: () => ({ build: latestSnapshotBuild, completion: settlementEventCompletion, profile: profileWriteChain, pending: Boolean(pendingSnapshotBatch) }),
+          isActive: () => !devWatcherClosed && !snapshotConfigRestartRequested,
+        })
+      : undefined
     const releaseWatcherResources = devBuildWatcher ? retainWatcherService(watcherService) : undefined
     let moduleGraphProvider: DevModuleGraphProvider | undefined
     let releaseAutoRoutesTopology: (() => void) | undefined
@@ -2253,6 +2269,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
 
     function markSnapshotClosed() {
       devWatcherClosed = true
+      settlement?.retire()
       sourcePublication?.finish(false)
       initialSnapshot.resolve(undefined)
       releaseAutoRoutesTopology?.()
@@ -2265,6 +2282,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         return
       }
       snapshotConfigRestartRequested = true
+      settlement?.retire()
       // 待执行的旧配置批次没有发布所有权；新代完整扫描会读取其中所有最新源码。
       clearPendingSnapshotBuilds()
       if (generationReadyForRestart && !configRestartTask) {
@@ -2621,6 +2639,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             // 转换的首个 classic 发布必须成功；失败由宿主停止交接，不能保留纠错 watcher。
             if (!canRecoverStartupFailure) {
               devWatcherClosed = true
+              settlement?.retire()
               throw error
             }
             // 借用宿主时保留恢复调度，首构建失败后下次输入变更执行完整快照。
@@ -2635,6 +2654,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     const startupErrors = startup.flatMap(result => result.status === 'rejected' ? [result.reason] : [])
     if (startupErrors.length > 0) {
       devWatcherClosed = true
+      settlement?.retire()
       initialSnapshot.resolve(undefined)
       // worker 属于初次发布事务；一个关闭失败不能遗留控制器租约。
       const cleanup = await Promise.allSettled([
@@ -2673,6 +2693,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         return configRestartTask
       }
       snapshotConfigRestartRequested = true
+      settlement?.retire()
       clearPendingSnapshotBuilds()
       const restart = () => runPluginProjectRestart(ctx as CompilerContext, async () => {
         // 直接配置通知先等待已开始的发布和收尾；END 路径必须让当前批次先退出，避免自等待。
@@ -2861,6 +2882,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         })
         // 配置重启会关闭并等待当前批次，不能让该批次反向等待自己的重启任务。
         watcherEventCompletion = shouldRestart ? Promise.resolve() : completion
+        settlementEventCompletion = watcherEventCompletion
         void completion.catch(() => {})
         if (!shouldRestart) {
           // 原生 watcher 必须等本代样式与 profile 收尾，才能启动下一代。
@@ -2873,6 +2895,10 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         void writeHmrProfileJsonSample(Math.max(0, performance.now() - startTime), 'failed').catch((error) => {
           debug?.(`write failed hmr profile json: ${String(error)}`)
         })
+        settlementEventCompletion = profileWriteChain.then(() => {
+          throw e.error
+        })
+        void settlementEventCompletion.catch(() => {})
         resetHmrProfile()
         if (target !== 'app') {
           rejectWatcher(e)
@@ -2907,7 +2933,10 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         sidecarRoot: snapshotWatcherRoot,
         // 完整 drain 可以在 native 发布期间清空 map，本代仍须保留自己的关闭归属。
         ownedSidecarWatcher: snapshotSidecar.resource,
-        waitForPendingSnapshotBuilds: () => snapshotBuildChain,
+        async waitForPendingSnapshotBuilds() {
+          await snapshotBuildChain
+          await profileWriteChain
+        },
         markClosed: markSnapshotClosed,
         releaseResources: releaseWatcherResources?.releaseResources,
       })

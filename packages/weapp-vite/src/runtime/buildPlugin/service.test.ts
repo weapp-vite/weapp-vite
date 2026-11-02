@@ -10,6 +10,7 @@ import { EventEmitter } from 'node:events'
 import { realpathSync } from 'node:fs'
 import os from 'node:os'
 import process from 'node:process'
+import { WEAPP_VITE_CLASSIC_SETTLEMENT_KEY } from '@weapp-core/constants'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -4560,12 +4561,19 @@ describe('runtime buildPlugin service', () => {
       await vi.waitFor(() => expect(mkdirMock).toHaveBeenCalledOnce())
       change('second', '/project/src/second.ts')
       await secondStarted.promise
+      const settlement = Reflect.get(ctx, Symbol.for(WEAPP_VITE_CLASSIC_SETTLEMENT_KEY)) as { whenSettled: () => Promise<void> }
+      const sampled = vi.fn()
+      const settled = settlement.whenSettled().then(sampled)
+      await Promise.resolve()
+      expect(sampled).not.toHaveBeenCalled()
       directory.resolve()
       await vi.waitFor(() => expect(appendFileMock).toHaveBeenCalledTimes(1))
       const first = JSON.parse(appendFileMock.mock.calls[0][1]) as HmrProfileJsonSample
       expect(first).toMatchObject({ schemaVersion: 1, pipeline: 'standard', status: 'complete', eventId: 'first', dirtyReasonSummary: ['first:1'], buildId: expect.any(String) })
       expect(ctx.runtimeState.build.hmr.profile.eventId).toBe('second')
       secondRelease.resolve()
+      await settled
+      expect(sampled).toHaveBeenCalledOnce()
       await vi.waitFor(() => expect(appendFileMock).toHaveBeenCalledTimes(2))
       const second = JSON.parse(appendFileMock.mock.calls[1][1]) as HmrProfileJsonSample
       expect(second.eventId).toBe('second')
@@ -4577,6 +4585,35 @@ describe('runtime buildPlugin service', () => {
       directory.resolve()
       secondRelease.resolve()
       await watcher.close()
+    }
+  })
+
+  it('waits for an already started profile write before closing the classic owner', async () => {
+    const { ctx, watcher, onProviderChange } = await startClassicSnapshotContext()
+    ctx.configService.weappViteConfig.hmr = { profileJson: true }
+    const directory = Promise.withResolvers<void>()
+    const entered = Promise.withResolvers<void>()
+    const closed = vi.fn()
+    mkdirMock.mockImplementationOnce(() => {
+      entered.resolve()
+      return directory.promise
+    })
+    let closing: Promise<void> | undefined
+    try {
+      onProviderChange({ event: 'update', file: '/project/src/profile-owner.ts' })
+      await entered.promise
+      closing = watcher.close().then(closed)
+      // 让已入队的关闭步骤退出微任务队列；不靠固定等待推测文件写入完成。
+      await new Promise<void>(resolve => setImmediate(resolve))
+      expect(closed).not.toHaveBeenCalled()
+      directory.resolve()
+      await closing
+      expect(appendFileMock).toHaveBeenCalledOnce()
+      expect(closed).toHaveBeenCalledOnce()
+    }
+    finally {
+      directory.resolve()
+      await (closing ?? watcher.close())
     }
   })
 

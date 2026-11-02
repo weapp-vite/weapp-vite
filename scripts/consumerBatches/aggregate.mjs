@@ -5,7 +5,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
 import { aggregateConsumerBatches } from './contracts.mjs'
-import { assertConsumerEvidence, assertConsumerExecutionIdentity } from './identity.mjs'
+import { assertConsumerEvidence, assertConsumerExecutionIdentity, assertImportsConsumerEvidenceFile } from './identity.mjs'
 
 async function readReports(directory) {
   const entries = await readdir(directory, { withFileTypes: true })
@@ -34,7 +34,11 @@ export async function aggregateConsumerBatchDirectory(plan, reportsRoot, commit)
       assert(scenario.evidence === `${task.host}-${task.profile}.json`, 'Consumer evidence path mismatch')
       const bytes = await readFile(path.join(directory, scenario.evidence))
       assert.equal(createHash('sha256').update(bytes).digest('hex'), scenario.evidenceHash, 'Consumer evidence digest mismatch')
-      assertConsumerEvidence(JSON.parse(bytes.toString('utf8')), plan.identity, task.host, plan.identity.builderNode)
+      const value = JSON.parse(bytes.toString('utf8'))
+      assertConsumerEvidence(value, plan.identity, task.host, plan.identity.builderNode, task.profile)
+      if (task.profile === 'imports') {
+        await assertImportsConsumerEvidenceFile(path.join(directory, scenario.evidence), value, task.host)
+      }
     }
   }
   return result

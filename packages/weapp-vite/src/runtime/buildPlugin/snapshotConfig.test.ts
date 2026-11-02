@@ -5,6 +5,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { resolveConfig } from 'vite'
 import { afterEach, expect, it } from 'vitest'
+import { markOwnedPlugin } from '../../plugins/ownedInstances'
 import { createSnapshotBuildConfig } from './snapshotConfig'
 
 const roots: string[] = []
@@ -136,4 +137,25 @@ it('does not persist implicitly created environments into the reusable snapshot 
     expect(Object.keys(resolved.environments)).toEqual(['client'])
     expect(options).toEqual({ root, configFile: false, envDir: false, logLevel: 'silent' })
   }
+})
+
+it('uses one owned plugin generation across top-level, environment and output plugin options', () => {
+  const owned = markOwnedPlugin({ name: 'owned-config-plugin', transform: { order: 'pre' as const, handler: () => null } })
+  const thirdParty = { name: 'third-party-config-plugin' }
+  const options: InlineConfig = {
+    plugins: [owned, thirdParty],
+    build: { rolldownOptions: { plugins: [owned, thirdParty], output: [{ plugins: [owned] }] } },
+    environments: { client: { build: { rolldownOptions: { plugins: [owned] } } } },
+  }
+  const first = createSnapshotBuildConfig(options)
+  const second = createSnapshotBuildConfig(options)
+  const copied = first.plugins![0]
+  expect(copied).not.toBe(owned)
+  expect(second.plugins![0]).not.toBe(copied)
+  expect(first.plugins![1]).toBe(thirdParty)
+  expect(first.build!.rolldownOptions!.plugins).toEqual([copied, thirdParty])
+  expect(first.environments!.client!.build!.rolldownOptions!.plugins).toEqual([copied])
+  expect((first.build!.rolldownOptions!.output as OutputOptions[])[0]!.plugins).toEqual([copied])
+  expect(options.plugins![0]).toBe(owned)
+  expect(options.build!.rolldownOptions!.plugins).toEqual([owned, thirdParty])
 })

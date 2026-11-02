@@ -10,6 +10,7 @@ import { aggregateConsumerBatchDirectory } from './aggregate.mjs'
 import { createConsumerBatchPlan } from './contracts.mjs'
 import { freezeConsumerIdentity } from './identity.mjs'
 import { runConsumerBatch } from './run.mjs'
+import { importsReceipt } from './testFixture.mjs'
 
 const roots = []
 afterEach(async () => {
@@ -34,7 +35,14 @@ const digest = bytes => createHash('sha256').update(bytes).digest('hex')
 function executor(identity) {
   return vi.fn(async (_command, args, options) => {
     if (options.env?.WEAPP_VITE_CONSUMER_EVIDENCE) {
-      await writeFile(options.env.WEAPP_VITE_CONSUMER_EVIDENCE, json(rawConsumer(identity, args[1])))
+      const evidence = rawConsumer(identity, args[1])
+      if (args[0] === 'scripts/consumerBatches/imports.mjs') {
+        evidence.imports = importsReceipt(args[1])
+        const original = json(evidence.imports)
+        evidence.importsSha256 = digest(original)
+        await writeFile(`${options.env.WEAPP_VITE_CONSUMER_EVIDENCE}.imports.json`, original)
+      }
+      await writeFile(options.env.WEAPP_VITE_CONSUMER_EVIDENCE, json(evidence))
     }
     return { exitCode: 0 }
   })
@@ -47,13 +55,28 @@ describe('consumer completion and downloaded evidence', () => {
     for (const shard of [1, 2, 3, 4]) {
       await runConsumerBatch(plan, shard, path.join(directory, `shard-${shard}`), { execute })
     }
-    expect(execute.mock.calls.filter(([, , options]) => options.env?.WEAPP_VITE_CONSUMER_EVIDENCE)).toHaveLength(32)
-    expect((await aggregateConsumerBatchDirectory(plan, directory, identity.commit)).scenarios).toHaveLength(32)
+    expect(execute.mock.calls.filter(([, , options]) => options.env?.WEAPP_VITE_CONSUMER_EVIDENCE)).toHaveLength(35)
+    expect(execute.mock.calls.filter(([, args]) => args[0] === 'scripts/consumerBatches/imports.mjs').map(([, args]) => args[1]).sort()).toEqual(['vite', 'vite-plus', 'wv'].sort())
+    expect((await aggregateConsumerBatchDirectory(plan, directory, identity.commit)).scenarios).toHaveLength(35)
     const first = plan.tasks.find(task => task.shardIndex === 1)
     const filename = path.join(directory, 'shard-1', `${first.host}-${first.profile}.json`)
     await writeFile(filename, json({ ...rawConsumer(identity, first.host), node: 'v0.0.1' }))
     await expect(aggregateConsumerBatchDirectory(plan, directory, identity.commit)).rejects.toThrow('digest')
     await rm(filename)
+    await expect(aggregateConsumerBatchDirectory(plan, directory, identity.commit)).rejects.toMatchObject({ code: 'ENOENT' })
+  })
+
+  it('refuses missing or altered original imports evidence during downloaded aggregation', async () => {
+    const { directory, identity, plan } = await fixture()
+    const execute = executor(identity)
+    for (const shard of [1, 2, 3, 4]) {
+      await runConsumerBatch(plan, shard, path.join(directory, `shard-${shard}`), { execute })
+    }
+    const task = plan.tasks.find(task => task.id === 'wv/imports')
+    const originalFile = path.join(directory, `shard-${task.shardIndex}`, 'wv-imports.json.imports.json')
+    await writeFile(originalFile, json({ ...importsReceipt('wv'), checks: [] }))
+    await expect(aggregateConsumerBatchDirectory(plan, directory, identity.commit)).rejects.toThrow('Imports source evidence digest mismatch')
+    await rm(originalFile)
     await expect(aggregateConsumerBatchDirectory(plan, directory, identity.commit)).rejects.toMatchObject({ code: 'ENOENT' })
   })
 

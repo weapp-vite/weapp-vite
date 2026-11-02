@@ -107,6 +107,6 @@
     "@weapp-vite/oxfmt": "workspace:*",
     "@weapp-vite/oxlint": "workspace:*",
     "oxfmt": "0.73.0",
-    "vite-plus": "1.2.0"
+    "vite-plus": "1.4.0"
   }
 }

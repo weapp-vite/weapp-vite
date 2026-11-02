@@ -3,8 +3,8 @@ import { once } from 'node:events'
 import { mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
-import { createServer } from 'vite'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { createDevViteServer } from '../../../../devLifecycle/vite'
 import { mergeWeb } from './web'
 
 function webConfig(config: InlineConfig = {}, userConfig?: InlineConfig, isDev = true) {
@@ -110,29 +110,30 @@ describe('Web source write delivery', () => {
         vi.stubEnv('CHOKIDAR_INTERVAL', '5')
       }
       const config = webConfig({ root, server: selection === 'options' ? { watch: { usePolling: true, interval: 5 } } : undefined })
-      server = await createServer({
+      server = await createDevViteServer({
         root,
         configFile: false,
         logLevel: 'silent',
         optimizeDeps: { noDiscovery: true, include: [] },
         server: { ...config.server, middlewareMode: true, hmr: false },
       })
-      const watcher = server.watcher as ViteDevServer['watcher'] & { _readyEmitted?: boolean }
+      const watcher = server.watcher
       expect(watcher.options.usePolling).toBe(true)
       expect(watcher.options.useFsEvents).toBe(false)
-      if (!watcher._readyEmitted) {
-        await once(watcher, 'ready', { signal: abort.signal })
-      }
+      expect(watcher.getWatched()[root]).toContain('source.txt')
+      await server.transformRequest('/source.txt?raw')
       phase = 'update'
       const updated = once(watcher, 'change', { signal: abort.signal })
       await writeFile(source, 'updated')
       expect((await updated)[0]).toBe(source)
       expect(await readFile(source, 'utf8')).toBe('updated')
+      await expect.poll(async () => (await server!.transformRequest('/source.txt?raw'))?.code).toContain('updated')
       phase = 'restore'
       const restored = once(watcher, 'change', { signal: abort.signal })
       await writeFile(source, 'original')
       expect((await restored)[0]).toBe(source)
       expect(await readFile(source, 'utf8')).toBe('original')
+      await expect.poll(async () => (await server!.transformRequest('/source.txt?raw'))?.code).toContain('original')
     }
     finally {
       clearTimeout(timeout)

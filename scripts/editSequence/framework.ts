@@ -1,8 +1,8 @@
-import type { DevEngine } from 'rolldown/experimental'
 import type { ViteDevServer } from 'vite'
 import type { SequenceInput } from './driver'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
+import { WEAPP_VITE_CLASSIC_SETTLEMENT_KEY } from '@weapp-core/constants'
 import { createServer } from 'vite'
 import { weapp } from 'weapp-vite/vite'
 import { compareBenchmarkOutputs, snapshotBenchmarkOutputs } from '../benchmarkTemplatesHmr/outputScope'
@@ -25,6 +25,7 @@ export class FrameworkSequenceSession {
   private readonly watchers = new SequenceResourceOwnership()
   private readonly engines = new SequenceResourceOwnership()
   private readonly diagnostics: ReturnType<typeof createFrameworkPhaseDiagnostics>
+  private closing?: Promise<void>
   readonly measurements: SequenceMeasurements
   outputChanges?: ReturnType<typeof compareBenchmarkOutputs>
 
@@ -34,10 +35,6 @@ export class FrameworkSequenceSession {
     this.outDir = path.join(root, 'dist')
     this.runtime = new FrameworkSequenceRuntime(root, this.outDir, this.stateful)
     this.measurements = new SequenceMeasurements(root)
-  }
-
-  private get engine() {
-    return (this.server?.environments.client?.bundledDev as { _devEngine?: DevEngine } | undefined)?._devEngine
   }
 
   async observe(input: SequenceInput) {
@@ -58,9 +55,10 @@ export class FrameworkSequenceSession {
           enforce: 'post',
           configureServer: (server) => {
             this.watchers.track(server.watcher)
-            const engine = (server.environments.client?.bundledDev as { _devEngine?: DevEngine } | undefined)?._devEngine
-            if (engine) {
-              this.engines.track(engine)
+            // 公开宿主先于 listen 存在；直接保留其 close 结果，避免环境层吞掉内部引擎错误。
+            const bundledDev = server.environments.client?.bundledDev
+            if (bundledDev) {
+              this.engines.track(bundledDev)
             }
           },
           load: (id) => { this.measurements.load(id) },
@@ -95,6 +93,7 @@ export class FrameworkSequenceSession {
   }
 
   observeSession() {
+    // engines 计数对应 bundledDev 生命周期 owner；classic 使用自有快照控制器，为 0。
     return { watchers: this.watchers.size, engines: this.engines.size }
   }
 
@@ -107,7 +106,11 @@ export class FrameworkSequenceSession {
       await api.whenSettled()
     }
     else {
-      await this.engine?.ensureCurrentBuildFinish()
+      const binding: unknown = this.server ? Reflect.get(this.server, Symbol.for(WEAPP_VITE_CLASSIC_SETTLEMENT_KEY)) : undefined
+      if (!binding || typeof binding !== 'object' || !('whenSettled' in binding) || typeof binding.whenSettled !== 'function') {
+        throw new Error('Framework resource observation requires the rebuilt classic generation settlement binding')
+      }
+      await binding.whenSettled()
     }
   }
 
@@ -125,16 +128,50 @@ export class FrameworkSequenceSession {
     }
   }
 
-  async close() {
+  close() {
+    if (!this.closing) {
+      const result = Promise.withResolvers<void>()
+      this.closing = result.promise
+      try {
+        Promise.resolve(this.closeResources()).then(result.resolve, result.reject)
+      }
+      catch (error) {
+        result.reject(error)
+      }
+    }
+    return this.closing
+  }
+
+  private async closeResources() {
+    const errors: unknown[] = []
+    let hostClosed = false
     try {
       await observeFrameworkPhase(this.diagnostics, 'runtime-close', () => this.runtime.close())
     }
-    finally {
+    catch (error) {
+      errors.push(error)
+    }
+    try {
       await observeFrameworkPhase(this.diagnostics, 'server-close', () => this.server?.close() ?? Promise.resolve())
+      hostClosed = true
+    }
+    catch (error) {
+      errors.push(error)
+    }
+    const ownershipErrors = [...this.watchers.errors, ...this.engines.errors]
+    errors.push(...ownershipErrors)
+    if (hostClosed && !this.watchers.size && !this.engines.size) {
       this.server = undefined
     }
-    if (this.watchers.size || this.engines.size) {
-      throw new Error(`Framework host retained ${this.watchers.size} watchers and ${this.engines.size} native engines after close`)
+    if (this.watchers.size + this.engines.size > ownershipErrors.length) {
+      errors.push(new Error(`Framework host retained ${this.watchers.size} watchers and ${this.engines.size} native engines after close`))
+    }
+    const failures = [...new Set(errors)]
+    if (failures.length === 1) {
+      throw failures[0]
+    }
+    if (failures.length) {
+      throw new AggregateError(failures, 'Framework runtime and host cleanup failed', { cause: failures[0] })
     }
   }
 }

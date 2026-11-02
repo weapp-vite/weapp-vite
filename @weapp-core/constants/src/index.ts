@@ -92,6 +92,8 @@ export const WEAPP_VITE_CLASSIC_GENERATION_MARKER = '__WEAPP_VITE_CLASSIC_GENERA
 export const WEAPP_VITE_OUTPUT_PUBLICATION_PLUGIN_NAME = 'weapp-vite:output-publication'
 /** 库模块重新执行后，原生服务器交接仍使用同一个关闭资源记录。 */
 export const WEAPP_VITE_DEV_SERVER_CLOSE_KEY = 'weapp-vite:dev-server-close'
+/** classic 编译代的内部完成屏障，在构建和消费端之间共享观察归属。 */
+export const WEAPP_VITE_CLASSIC_SETTLEMENT_KEY = 'weapp-vite:classic-settlement'
 
 export const WEVU_ROUTER_MODULE_ID = 'wevu/router'
 export const WEVU_DEFINE_PAGE_META_MACRO = 'definePageMeta'
