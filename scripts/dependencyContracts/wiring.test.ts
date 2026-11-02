@@ -9,7 +9,7 @@ const read = (file: string) => readFile(new URL(file, import.meta.url), 'utf8')
 it('runs public product entries from the required gate and preserves explicit diagnostics', async () => {
   const manifest = JSON.parse(await read('../../package.json')) as { scripts: Record<string, string> }
   const gate = manifest.scripts['test:dependency-contracts']!
-  expect(gate).toContain('scripts/dependencyContracts/vite/product/run.mjs')
+  expect(gate).toContain('scripts/dependencyContracts/vite/product/required.mjs')
   expect(gate).toContain('scripts/dependencyContracts/rolldown/product/run.mjs')
   expect(gate).toContain('scripts/dependencyContracts/chokidar/run.mjs')
   expect(gate).not.toContain('--expose-gc')
@@ -19,7 +19,9 @@ it('runs public product entries from the required gate and preserves explicit di
   expect(diagnostics).toContain('--expose-gc')
   expect(diagnostics).toContain('scripts/dependencyContracts/vite/diagnostics.mjs')
   expect(diagnostics).toContain('scripts/dependencyContracts/rolldown/run.mjs')
-  for (const command of [gate, diagnostics]) {
+  const fullProduct = manifest.scripts['diagnose:vite-product-lifecycle']!
+  expect(fullProduct).toContain('scripts/dependencyContracts/vite/product/run.mjs')
+  for (const command of [gate, diagnostics, fullProduct]) {
     expect(command).not.toMatch(/--(?:skip|allow-failures|continue-on-error)|\|\|\s*true/)
   }
 })
@@ -32,8 +34,16 @@ it('keeps the public Vite entry independent from source extraction and the diagn
   expect(source).toContain('require.resolve(\'vite/package.json\')')
   expect(source).not.toMatch(/readInstalledVite|evaluateStrict|extract\(|\/hooks\/|optimizerCancel|--expose-gc/)
   const wrapper = await read('./vite.test.ts')
-  expect(wrapper).toContain('./vite/product/run.mjs')
+  expect(wrapper).toContain('./vite/product/required.mjs')
+  expect(wrapper).toContain('accepted-with-waivers')
   expect(wrapper).not.toContain('./vite/run.mjs')
+  const required = await read('./vite/product/required.mjs')
+  expect(required).toContain('applyViteAcceptancePolicy(report, { vite: vite.version, rolldown: rolldown.version })')
+  expect(required).toContain('createRequire(new URL(\'../../../../packages/weapp-vite/scripts/viteProductContracts/index.ts\', import.meta.url))')
+  expect(required).toContain('verifyViteProductAcceptance((result) =>')
+  expect(required).toContain('withViteProductOwnership')
+  expect(required).toContain('completeProductReport(report, viteRequiredContractNames)')
+  expect(required).toContain('process.exitCode = 1')
 })
 
 it('keeps public lifecycle and watcher regressions discoverable from the HMR entry', async () => {

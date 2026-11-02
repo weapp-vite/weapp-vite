@@ -10,7 +10,8 @@
 
 工作区的 pnpm 补丁登记不会随 npm 依赖安装自动传播；已打入发布产物的修改代码会交付给消费者。
 当前使用官方 Vite `8.3.5` 和 Rolldown `1.2.16`，不再维护它们的补丁。Vite+ `1.4.0` launcher/core
-使用其配对发行的内置 Rolldown `1.2.15`，不能将其与工作区独立 Rolldown 的版本混为一谈。
+使用其配对发行的内置 Vite `8.3.5` / Rolldown `1.2.15`，Vitest 为 `5.0.5`，
+不能将其与工作区独立 Rolldown 的版本混为一谈。
 
 ## 发布重试与恢复
 
@@ -135,10 +136,21 @@ node --import tsx e2e/scripts/run-e2e-commands.ts node --import tsx packages/wea
 关闭先解除登记等待，再等待编译任务与本代资源收尾，防止退出反向等待自身的初扫。
 登记完成只证明该观察面，首个保存是否交付仍须实际文件编辑和产物验证。
 
-`pnpm test:dependency-contracts` 是公开产品行为的硬门禁，Vite/Rolldown 固定运行完整产品清单，
-不接受筛选或跳过参数。原始 hooks、resolver、optimizer、polling、options 身份和 GC 等内部断言
-保留在 `pnpm diagnose:dependency-internals`；失败仍以非零退出并保留证据，不能用产品门禁通过替代。
-本轮真实产品验证、跨平台矩阵和正式资源验收须分别记录实际结果，不能预先记为通过。
+PR #1294 按用户授权接受 Web optimizer 关闭残留与连续构建资源增长两项验收例外；两项均未修复。
+例外对固定官方 Vite `8.3.5` / Rolldown `1.2.16` 持续适用至显式移除，不在合并后自动结束，
+版本不符时必需入口失败并要求重新评审或移除，不自动适用于 Vite+ 内置 Rolldown `1.2.15`。
+Web 扫描期间关闭或重启可能留下临时缓存；同一 Node 进程连续构建可能持续保留旧代编译引用、增加内存。
+现有实测不证明增长线性、所有增长同因或 Vite+ 有相同资源表现；风险与证据边界见
+[编译依赖内存说明](./compiler-memory.md)。
+
+`pnpm test:dependency-contracts` 的 Vite 必需清单固定为 `hooks`、`resolver`、`mini-optimizer`、
+`polling`、`ready` 五项，Rolldown 七项及 Chokidar 完整契约保留，不接受任意筛选或跳过参数。
+Vite 报告保留六项 `fullInventory`、`waived` 和未执行的 `web-optimizer`，适用项通过时明确标记
+`assessment: accepted-with-waivers`，不称为完整六项产品通过。
+`pnpm diagnose:vite-product-lifecycle` 继续运行原六项公开产品契约；原始内部断言保留在
+`pnpm diagnose:dependency-internals`。两种诊断失败仍非零退出并保留证据，没有吞错或降低断言。
+正式资源验收不再作为当前候选的发布必需项，但手动 workflow、原 `32/16 MiB` 门限及失败断言不变。
+其他 CI、coverage、审查和真实 IDE 门禁不因这两项例外被豁免，各项仍分别记录实际结果。
 
 ## Vitest 模块缓存的文本读取
 
