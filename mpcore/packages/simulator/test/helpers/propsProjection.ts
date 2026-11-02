@@ -10,16 +10,18 @@ export interface PropsProjectionFixture {
 }
 
 /** 与真实微信 fixture 共用源码，由编译器和 bundler 生成脚本、模板及配置。 */
-export async function createPropsProjectionFiles(outputDir?: string): Promise<PropsProjectionFixture> {
+export async function createPropsProjectionFiles(outputDir?: string, fixtureId: 1261 | 1295 = 1261): Promise<PropsProjectionFixture> {
   const repoRoot = path.resolve(import.meta.dirname, '../../../../..')
-  const sourceRoot = path.join(repoRoot, 'e2e-apps/github-issues/fixtures/issue-1261/src')
-  const entries = [
-    'app',
-    'pages/index/index',
-    'components/navBar/index',
-    'components/conflictProbe/index',
-    'components/mutableProbe/index',
-  ]
+  const sourceRoot = path.join(repoRoot, `e2e-apps/github-issues/fixtures/issue-${fixtureId}/src`)
+  const entries = fixtureId === 1295
+    ? ['app', 'pages/index/index']
+    : [
+        'app',
+        'pages/index/index',
+        'components/navBar/index',
+        'components/conflictProbe/index',
+        'components/mutableProbe/index',
+      ]
   const sources = new Map<string, Promise<string>>()
   const compiled = new Map<string, VueTransformResult>()
   const readSource = (filename: string) => {

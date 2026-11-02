@@ -36,6 +36,48 @@ function fixture(files: Record<string, string> = {}) {
 }
 
 describe('props key proofs', () => {
+  it('merges statically analyzable props and model declarations from Vue', async () => {
+    const current = fixture()
+    const result = await current.analyze(
+      'import { mergeModels as _mergeModels } from "vue"',
+      '_mergeModels({ max: Number, haveNext: Boolean }, { min: String })',
+    )
+    expect(result.conflicts).toEqual(['haveNext'])
+  })
+
+  it('merges statically analyzable array declarations from Vue', async () => {
+    const current = fixture()
+    const result = await current.analyze(
+      'import { mergeModels as _mergeModels } from "vue"',
+      '_mergeModels(["max", "haveNext"], ["min"])',
+    )
+    expect(result.conflicts).toEqual(['haveNext'])
+  })
+
+  it.each([
+    ['["max", "haveNext"]', '{ min: String }'],
+    ['{ max: Number, haveNext: Boolean }', '["min"]'],
+  ])('normalizes mixed static declarations: %s and %s', async (left, right) => {
+    const result = await fixture().analyze(
+      'import { mergeModels as merge } from "vue"',
+      `merge(${left}, ${right})`,
+    )
+    expect(result.conflicts).toEqual(['haveNext'])
+  })
+
+  it.each([
+    ['a type-only import', 'import type { mergeModels as _mergeModels } from "vue"', '_mergeModels({ max: Number }, { haveNext: Boolean })'],
+    ['a type-only specifier', 'import { type mergeModels as _mergeModels } from "vue"', '_mergeModels({ max: Number }, { haveNext: Boolean })'],
+    ['a missing argument', 'import { mergeModels as _mergeModels } from "vue"', '_mergeModels({ haveNext: Boolean })'],
+    ['an extra argument', 'import { mergeModels as _mergeModels } from "vue"', '_mergeModels({ max: Number }, { min: Number }, { haveNext: Boolean })'],
+    ['a dynamic model declaration', 'import { mergeModels as _mergeModels } from "vue"', '_mergeModels({ max: Number }, readProps())'],
+    ['a local helper', 'const _mergeModels = (...values) => values[0]', '_mergeModels({ max: Number }, { haveNext: Boolean })'],
+    ['a helper from another module', 'import { mergeModels as _mergeModels } from "other"', '_mergeModels({ max: Number }, { haveNext: Boolean })'],
+    ['a dynamic argument', 'import { mergeModels as _mergeModels } from "vue"', '_mergeModels(readProps(), { haveNext: Boolean })'],
+  ])('keeps conservative projection for %s', async (_kind, preamble, props) => {
+    expect((await fixture().analyze(preamble, props)).conflicts).toEqual(['haveNext', 'havePrev'])
+  })
+
   it.each([
     ['local object', 'const base = { max: Number }', 'base'],
     ['local aliases', 'const base = { max: Number }; const alias = base', '{ ...alias }'],

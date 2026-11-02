@@ -2,9 +2,10 @@ import type { HeadlessPageDefinition, HeadlessWxMediaQueryObserver } from '../ho
 import type { HeadlessBackgroundSnapshot, HeadlessBackgroundTextStyle, HeadlessNavigationBarSnapshot } from '../project/pageConfig'
 import type { HeadlessComponentInstance } from './componentInstance'
 import { synchronizeAttachmentBindings } from '../host/attachmentBindingUpdates'
-import { bindComponentPageAttachment } from '../host/componentPageAttachment'
+import { bindComponentPageAttachment, isComponentPageDefinition } from '../host/componentPageAttachment'
 import { cloneBackgroundSnapshot, cloneNavigationBarSnapshot } from '../project/pageConfig'
 import { recordNativeDataCommit } from '../view/nativeBindings/commits'
+import { resolveInitialProperties } from './componentInstance/properties'
 
 const ARRAY_INDEX_PATH_RE = /\[(\d+)\]/g
 const ARRAY_INDEX_SEGMENT_RE = /^\d+$/
@@ -122,7 +123,10 @@ export function createPageInstance(
   } = {},
 ): HeadlessPageInstance {
   const normalizedRoute = normalizeRoute(route)
-  const data = resolveInitialData(definition)
+  const data = {
+    ...resolveInitialData(definition),
+    ...(isComponentPageDefinition(definition) ? resolveInitialProperties(definition, {}) : {}),
+  }
   const instance: HeadlessPageInstance = {
     __background__: pageState.background
       ? cloneBackgroundSnapshot(pageState.background)

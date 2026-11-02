@@ -49,6 +49,49 @@ function registerGeneratedComponent(script: string) {
 }
 
 describe('setup bindings shadowing native props', () => {
+  it('only projects the real model prop when Vue merges defineProps and defineModel', async () => {
+    const result = await compileVueFile(`<script setup lang="ts">
+import { computed, ref } from 'vue'
+const props = defineProps<{
+  modelValue: string
+}>()
+const modelValue = defineModel<string>()
+const change = ref('change')
+const selectA = ref('select-a')
+const selectB = ref('select-b')
+const localVisible = ref(true)
+const localResult = ref(1)
+const hasNext = computed(() => true)
+</script>
+<template>
+  <view
+    :model-value="modelValue"
+    :change="change"
+    :select-a="selectA"
+    :select-b="selectB"
+    :local-visible="localVisible"
+    :local-result="localResult"
+    :has-next="hasNext"
+  />
+</template>`, 'src/components/issue-1295.vue')
+
+    const bindings = result.bindingManifest?.bindings
+      .filter(binding => binding.kind === 'attribute')
+      .map(binding => [binding.sourceRoots[0], binding.outputPath])
+    expect(bindings).toEqual([
+      ['modelValue', expect.stringMatching(/^__wv_bind_/)],
+      ['change', 'change'],
+      ['selectA', 'selectA'],
+      ['selectB', 'selectB'],
+      ['localVisible', 'localVisible'],
+      ['localResult', 'localResult'],
+      ['hasNext', 'hasNext'],
+    ])
+    expect(result.template).toContain('change="{{change}}"')
+    expect(result.template).toContain('select-a="{{selectA}}"')
+    expect(result.template).not.toContain('__wv_bind_1')
+  })
+
   it('shares one compiled-script parse between props derivation and setup projection', async () => {
     const filename = 'src/components/shared-props-analysis.vue'
     const source = `<script setup>

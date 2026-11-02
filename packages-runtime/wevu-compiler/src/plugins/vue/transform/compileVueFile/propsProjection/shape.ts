@@ -2,7 +2,7 @@ import type { Node } from '@weapp-vite/ast/babelTypes'
 import type { createPropsModuleResolver, ModuleFacts } from './modules'
 import type { PropsOwnership } from './ownership'
 import * as t from '@weapp-vite/ast/babelTypes'
-import { staticName, unwrap } from './modules'
+import { isImportedCall, staticName, unwrap } from './modules'
 import { isObjectCall, isSafePropsBinding } from './ownership'
 
 interface PropsShape {
@@ -60,6 +60,18 @@ export function createPropsShapeAnalyzer(modules: ReturnType<typeof createPropsM
       const imported = await modules.resolveImport(node, module)
       const value = imported && await analyze(imported.node, imported.module, next)
       return value?.frozen ? value : undefined
+    }
+    if (t.isCallExpression(node) && isImportedCall(node, module, 'mergeModels', ['vue'])) {
+      if (node.arguments.length !== 2 || !node.arguments.every(t.isExpression)) {
+        return undefined
+      }
+      const [left, right] = await Promise.all(node.arguments.map(argument => analyze(argument, module, next)))
+      if (!left || !right) {
+        return undefined
+      }
+      const names = new Set(left.names)
+      right.names.forEach(name => names.add(name))
+      return { kind: left.kind === 'array' && right.kind === 'array' ? 'array' : 'object', names, frozen: false }
     }
     if (isObjectCall(node, module.scope, 'freeze') && node.arguments.length === 1 && t.isExpression(node.arguments[0])) {
       const value = await analyze(node.arguments[0], module, next)

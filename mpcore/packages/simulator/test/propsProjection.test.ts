@@ -93,3 +93,66 @@ describe.each(['node', 'browser'] as const)('%s compiled props projection (issue
     }
   })
 })
+
+describe.each(['node', 'browser'] as const)('%s compiled mergeModels props projection (issue #1295)', (provider) => {
+  it('keeps unrelated bindings direct across updates and fresh page instances', async () => {
+    const projectPath = await mkdtemp(path.join(tmpdir(), 'merge-models-projection-'))
+    try {
+      const { files, bindings } = await createPropsProjectionFiles(provider === 'node' ? projectPath : undefined, 1295)
+      const pageBindings = bindings['pages/index/index']!
+      for (const name of ['change', 'selectA', 'selectB', 'localVisible', 'localResult', 'hasNext']) {
+        expect(pageBindings.filter(binding => binding.sourceRoots.includes(name)).map(binding => binding.outputPath)).toEqual([name])
+      }
+      const model = pageBindings.find(binding => binding.sourceRoots.includes('modelValue'))
+      expect(model?.outputPath).toMatch(/^__wv_bind_/)
+
+      const session = provider === 'node'
+        ? createHeadlessSession({ projectPath })
+        : createBrowserHeadlessSession({ files: createBrowserVirtualFiles(files) })
+      try {
+        let page = session.reLaunch('/pages/index/index')
+        const check = async (updated = false) => {
+          await vi.waitFor(() => {
+            const rendered = session.renderCurrentPage().wxml
+            const values = {
+              change: updated ? 'updated-change' : 'change',
+              selectA: updated ? 'updated-a' : 'selectA',
+              selectB: updated ? 'updated-b' : 'selectB',
+              localVisible: !updated,
+              localResult: updated ? 'updated-result' : 'localResult',
+              hasNext: !updated,
+            }
+            expect(page.data).toMatchObject(values)
+            for (const [selector, name] of [
+              ['model-value', model!.outputPath],
+              ['change', 'change'],
+              ['select-a', 'selectA'],
+              ['select-b', 'selectB'],
+              ['local-visible', 'localVisible'],
+              ['local-result', 'localResult'],
+              ['has-next', 'hasNext'],
+            ]) {
+              const text = selector === 'model-value' ? 'modelValue' : page.data[name!]
+              expect(rendered).toMatch(new RegExp(`id="${selector}"[^>]*>${text}<\\/text>`))
+            }
+            expect(page.data[model!.outputPath]).toBe('modelValue')
+          })
+        }
+        await check()
+        page.changeBindings()
+        await check(true)
+        const previous = page
+        page = session.reLaunch('/pages/index/index')
+        expect(page).not.toBe(previous)
+        await check()
+        expect(session.getDiagnostics()).toEqual([])
+      }
+      finally {
+        session.close()
+      }
+    }
+    finally {
+      await rm(projectPath, { recursive: true, force: true })
+    }
+  })
+})

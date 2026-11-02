@@ -46,6 +46,29 @@ export function staticName(node: Node, computed = false): string | undefined {
   }
 }
 
+/** 只接受由指定模块导入的具名运行时 helper，避免把同名本地函数误认为编译器语义。 */
+export function isImportedCall(
+  node: Node,
+  module: ModuleFacts,
+  importedName: string,
+  sources: readonly string[],
+): boolean {
+  if (!t.isCallExpression(node) || !t.isIdentifier(node.callee)) {
+    return false
+  }
+  const binding = module.scope.getBinding(node.callee.name)
+  const importPath = binding?.path
+  const declaration = importPath?.parentPath
+  return Boolean(
+    importPath?.isImportSpecifier()
+    && importPath.node.importKind !== 'type'
+    && t.isIdentifier(importPath.node.imported, { name: importedName })
+    && declaration?.isImportDeclaration()
+    && declaration.node.importKind !== 'type'
+    && sources.includes(declaration.node.source.value),
+  )
+}
+
 /** 只跟随所请求的导出；模块读取和解析在本次分析内复用。 */
 export function createPropsModuleResolver(reader: ReturnType<typeof createAnalysisSourceReader>, root: ModuleFacts) {
   const modules = new Map<string, Promise<ModuleFacts | undefined>>([[root.id, Promise.resolve(root)]])
