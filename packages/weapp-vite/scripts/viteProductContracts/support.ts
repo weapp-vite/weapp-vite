@@ -41,14 +41,17 @@ export function observeOutcome<T>(task: Promise<T>): Promise<PromiseSettledResul
 }
 
 export async function fixture(files: Record<string, string>, action: (root: string) => Promise<void>) {
-  let root = await mkdtemp(path.join(os.tmpdir(), 'weapp-vite-public-contract-'))
-  pendingFixtures.add(root)
+  let container = await mkdtemp(path.join(os.tmpdir(), 'weapp-vite-public-contract-'))
+  pendingFixtures.add(container)
   let failure: ProductFailure | undefined
   try {
-    const resolved = await realpath(root)
-    pendingFixtures.delete(root)
-    root = resolved
-    pendingFixtures.add(root)
+    const resolved = await realpath(container)
+    pendingFixtures.delete(container)
+    container = resolved
+    pendingFixtures.add(container)
+    // 物理 watcher 会扫描项目父目录，该范围也必须由当前 fixture 独占。
+    const root = path.join(container, 'project')
+    await mkdir(root)
     for (const [name, source] of Object.entries(files)) {
       const file = path.join(root, name)
       await mkdir(path.dirname(file), { recursive: true })
@@ -65,8 +68,8 @@ export async function fixture(files: Record<string, string>, action: (root: stri
     throw failure.error
   }
   try {
-    await rm(root, { recursive: true, force: true })
-    pendingFixtures.delete(root)
+    await rm(container, { recursive: true, force: true })
+    pendingFixtures.delete(container)
   }
   catch (error) {
     throw cleanupFailure([error], 'Product fixture cleanup did not complete', failure)

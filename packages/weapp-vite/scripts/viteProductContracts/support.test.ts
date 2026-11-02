@@ -84,20 +84,27 @@ describe('product server and fixture cleanup', () => {
     expect(error).toHaveProperty('cause', undefined)
   })
 
-  it('removes a fixture after an ordinary operation failure and retains its identity', async () => {
+  it('isolates the project and removes its canonical container after an ordinary operation failure', async () => {
+    files.realpath.mockImplementationOnce(async (file: string) => `${file}-canonical`)
     const original = new Error('fixture operation failed')
     let root: string | undefined
     const result = await observeOutcome(fixture({ 'nested/source.js': 'export const value = 42' }, async (directory) => {
       root = directory
+      expect(getPendingProductFixtures()).toContain(path.dirname(directory))
+      expect(getPendingProductFixtures()).not.toContain(await files.mkdtemp.mock.results[0]!.value)
       throw original
     }))
     expect(failureOf(result)).toBe(original)
+    const container = `${await files.mkdtemp.mock.results[0]!.value}-canonical`
+    expect(root).toBe(path.join(container, 'project'))
+    expect(files.mkdir).toHaveBeenCalledWith(root)
     expect(files.writeFile).toHaveBeenCalledExactlyOnceWith(path.join(root!, 'nested/source.js'), 'export const value = 42')
-    expect(files.rm).toHaveBeenCalledExactlyOnceWith(root, { recursive: true, force: true })
-    expect(getPendingProductFixtures()).not.toContain(root)
+    expect(files.rm).toHaveBeenCalledExactlyOnceWith(container, { recursive: true, force: true })
+    expect(getPendingProductFixtures()).not.toContain(container)
   })
 
   it('retains both the operation failure and fixture removal failure', async () => {
+    files.realpath.mockImplementationOnce(async (file: string) => `${file}-canonical`)
     const original = new Error('fixture operation failed')
     const cleanup = new Error('fixture removal failed')
     files.rm.mockRejectedValueOnce(cleanup)
