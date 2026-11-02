@@ -50,7 +50,6 @@ var bbc = module.exports.bbc = require('./bbc.wxs');
 var abc = module.exports.abc = 'abc';
 function tigger(value) {
   console.log(abc);
-}
-</wxs>",
+}</wxs>",
 ]
 `;

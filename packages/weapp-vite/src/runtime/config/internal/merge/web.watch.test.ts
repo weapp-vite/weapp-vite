@@ -1,6 +1,6 @@
 import type { InlineConfig, ViteDevServer } from 'vite'
 import { once } from 'node:events'
-import { mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -97,13 +97,16 @@ describe('Web source write delivery', () => {
   })
 
   it.each(['options', 'environment'] as const)('delivers immediate saves through the selected Vite polling backend (%s)', async (selection) => {
-    const root = await realpath(await mkdtemp(path.join(os.tmpdir(), 'web-save-delivery-')))
+    const container = await realpath(await mkdtemp(path.join(os.tmpdir(), 'web-save-delivery-')))
+    const root = path.join(container, 'project')
     const source = path.join(root, 'source.txt')
     let server: ViteDevServer | undefined
     let phase = 'initial scan'
     const abort = new AbortController()
     const timeout = setTimeout(() => abort.abort(new Error(`Vite watcher did not finish ${phase}`)), 10_000)
     try {
+      // 物理 watcher 会从逻辑根的父目录扫描，必须让整个扫描范围归本测试独占。
+      await mkdir(root)
       await writeFile(source, 'original')
       if (selection === 'environment') {
         vi.stubEnv('CHOKIDAR_USEPOLLING', '1')
@@ -138,8 +141,12 @@ describe('Web source write delivery', () => {
     finally {
       clearTimeout(timeout)
       abort.abort()
-      await server?.close()
-      await rm(root, { recursive: true, force: true })
+      try {
+        await server?.close()
+      }
+      finally {
+        await rm(container, { recursive: true, force: true })
+      }
     }
   }, 30_000)
 })

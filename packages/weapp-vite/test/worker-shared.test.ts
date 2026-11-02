@@ -95,6 +95,20 @@ describe.skipIf(CI.isCI)('worker-shared', () => {
       }
     }
 
+    const wxsEntry = 'pages/index/esm.wxs'
+    const wxsDependencies = new Set<string>()
+    const wxsSource = outputs.find(output => output.file === wxsEntry)?.content
+    expect(wxsSource).toBeTypeOf('string')
+    runInNewContext(wxsSource!, {
+      require(specifier: string) {
+        const dependency = path.normalize(path.join(path.dirname(wxsEntry), specifier))
+        expect(files).toContain(dependency)
+        wxsDependencies.add(dependency)
+        return {}
+      },
+    }, { filename: wxsEntry, timeout: 1000 })
+    expect([...wxsDependencies].sort()).toEqual(['cjs', 'dep', 'dep1', 'dep2'].map(name => `pages/index/${name}.wxs`))
+
     const runtime = createBundleRuntime(outputs.filter(({ file }) => !isWorkerScript(file)))
     runtime.assertDependencyGraph()
     runtime.assertAppAndNavbar()

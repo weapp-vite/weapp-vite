@@ -8,7 +8,8 @@ const repositoryRoot = fileURLToPath(new URL('../../', import.meta.url))
 describe.each([
   ['repository', '.'],
   ['scaffold package', 'packages/create-weapp-vite'],
-])('generated template lint ownership from %s', (_label, directory) => {
+  ['platform types package', '@weapp-core/types'],
+])('generated asset lint ownership from %s', (_label, directory) => {
   it('excludes publication assets while retaining their source and generation configuration', async () => {
     const eslint = new ESLint({ cwd: path.join(repositoryRoot, directory), errorOnUnmatchedPattern: false })
     const repositoryEslint = new ESLint({ cwd: repositoryRoot, overrideConfigFile: path.join(repositoryRoot, 'eslint.config.js') })
@@ -35,4 +36,21 @@ describe.each([
       await expect(repositoryEslint.isPathIgnored(path.join(repositoryRoot, file)), file).resolves.toBe(false)
     }
   }, 30_000)
+
+  it('excludes generated platform declarations while retaining their source and generator', async () => {
+    const eslint = new ESLint({ cwd: path.join(repositoryRoot, directory) })
+    for (const file of [
+      '@weapp-core/types/.generated/platform-types/alipay.d.ts',
+      '@weapp-core/types/.generated/platform-types/wechat.d.ts',
+    ]) {
+      await expect(eslint.isPathIgnored(path.join(repositoryRoot, file)), file).resolves.toBe(true)
+    }
+    for (const file of [
+      '@weapp-core/types/src/alipay-api.ts',
+      '@weapp-core/types/src/wechat-api.ts',
+      '@weapp-core/types/scripts/generate-platform-types.mjs',
+    ]) {
+      await expect(eslint.isPathIgnored(path.join(repositoryRoot, file)), file).resolves.toBe(false)
+    }
+  })
 })

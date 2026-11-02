@@ -33,6 +33,8 @@ export default await defineEslintConfig({
       '**/node_modules/**',
       // 发布模板由准备流程生成并使用消费者工具链检查，避免仓库规则二次改写。
       'packages/create-weapp-vite/templates/**',
+      // 官方平台声明由生成器保留原始签名与许可证，生成副本不参与源码格式检查。
+      '@weapp-core/types/.generated/**',
       '**/dist/**',
       '**/dist-*/**',
       '**/dist-plugin/**',

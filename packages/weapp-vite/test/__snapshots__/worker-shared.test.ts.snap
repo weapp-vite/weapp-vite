@@ -47,16 +47,16 @@ exports[`worker-shared > dist > pages/index/bbc.wxs 1`] = `
 "module.exports = {
   a: '1',
   v: '2'
-};"
+}"
 `;
 
 exports[`worker-shared > dist > pages/index/cjs.wxs 1`] = `
 "function tapName(event, ownerInstance) {
-  console.log('tap 撒的撒打算', JSON.stringify(event));
+  console.log('tap 撒的撒打算', JSON.stringify(event))
 }
 module.exports = {
   tapName: tapName
-};"
+}"
 `;
 
 exports[`worker-shared > dist > pages/index/dep.wxs 1`] = `""`;
