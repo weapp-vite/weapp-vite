@@ -71,6 +71,7 @@ describe('Connection', () => {
     ['2.02.2608070', false, true],
     ['2.02.2608080', false, true],
     ['2.02.2609231', false, true],
+    ['2.02.2609240', false, true],
     ['2.02.2610082', false, true],
     ['2.02.2610092', false, true],
     ['2.01.2601010', false, false],
@@ -231,7 +232,7 @@ describe('Connection', () => {
     expect(closed).toHaveBeenCalledOnce()
   })
 
-  it.each(['2.02.2608080', '2.02.2610082'])('reads async method results through AppService while keeping element queries native in %s', async (version) => {
+  it.each(['2.02.2608080', '2.02.2609240', '2.02.2610082'])('reads async method results through AppService while keeping element queries native in %s', async (version) => {
     const { default: Connection } = await import('./Connection')
     const { default: Page } = await import('./Page')
     const transport = new FakeTransport()
