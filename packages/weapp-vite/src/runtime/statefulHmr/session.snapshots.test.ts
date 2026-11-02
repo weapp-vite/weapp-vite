@@ -59,9 +59,8 @@ const harness = vi.hoisted(() => ({
   closeServer: vi.fn<() => Promise<void>>(),
 }))
 
-vi.mock('vite', async importOriginal => ({
-  ...await importOriginal<typeof import('vite')>(),
-  createServer: harness.createServer,
+vi.mock('../../devLifecycle/vite', () => ({
+  createDevViteServer: harness.createServer,
 }))
 vi.mock('./outputWriter', () => ({ writeStatefulHmrOutput: harness.writeOutput }))
 vi.mock('../../plugins/asset/prune', () => ({ pruneOwnedAssetFiles: vi.fn(async () => {}) }))

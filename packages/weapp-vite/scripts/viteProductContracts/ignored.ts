@@ -1,4 +1,4 @@
-import type { Stats } from 'node:fs'
+import type { BigIntStats, Stats } from 'node:fs'
 import type { ViteDevServer } from 'vite'
 import type { ProductFailure } from './support'
 import assert from 'node:assert/strict'
@@ -13,7 +13,7 @@ import { closeServers, event, fixture, serverConfig, waitFor } from './support'
 const selections = ['relative-literal', 'cwd-negation', 'literal-directory', 'function-directory', 'stats-file'] as const
 type Selection = typeof selections[number]
 
-function ignoredFor(selection: Selection, root: string) {
+export function ignoredFor(selection: Selection, root: string) {
   if (selection === 'relative-literal') {
     return ['ignored.js']
   }
@@ -21,7 +21,7 @@ function ignoredFor(selection: Selection, root: string) {
     return ['**/*.generated.ts', '!**/keep.generated.ts']
   }
   if (selection === 'stats-file') {
-    return (_file: string, stats?: Stats) => stats?.isFile() === true && stats.size === 0
+    return (_file: string, stats?: Stats | BigIntStats) => stats?.isFile() === true && Number(stats.size) === 0
   }
   const directory = path.join(root, 'pruned')
   return selection === 'literal-directory'
@@ -79,7 +79,7 @@ export async function watcherIgnored() {
         }
         else if (selection === 'stats-file') {
           const input = path.join(root, 'empty.js')
-          assert.equal(registered(server, input), false, 'The initially empty ignored input must not be registered')
+          assert.equal(registered(server, input), false, `[${host}/${selection}] The initially empty ignored input must not be registered`)
           await writeFile(input, 'export const value = "now-nonempty"')
           server.watcher.add(input)
           await waitFor(() => registered(server!, input), Boolean, 'Explicitly adding an input must re-evaluate its current stats')

@@ -4,14 +4,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createWebServicePlugin } from './webPlugin'
 
 const buildMock = vi.hoisted(() => vi.fn(async () => 'build-result'))
-const createServerMock = vi.hoisted(() => vi.fn())
+const createDevServerMock = vi.hoisted(() => vi.fn())
 
 vi.mock('vite', () => {
   return {
     build: buildMock,
-    createServer: createServerMock,
   }
 })
+
+vi.mock('../devLifecycle/vite', () => ({
+  createDevViteServer: createDevServerMock,
+}))
 
 function createCtx(overrides: Partial<MutableCompilerContext['configService']> = {}) {
   const configService = {
@@ -31,7 +34,7 @@ function createCtx(overrides: Partial<MutableCompilerContext['configService']> =
 beforeEach(() => {
   buildMock.mockReset()
   buildMock.mockResolvedValue('build-result')
-  createServerMock.mockReset()
+  createDevServerMock.mockReset()
 })
 
 describe('runtime webPlugin', () => {
@@ -44,7 +47,7 @@ describe('runtime webPlugin', () => {
       listen: vi.fn(async () => {}),
       close: vi.fn(async () => {}),
     }
-    createServerMock.mockResolvedValue(server)
+    createDevServerMock.mockResolvedValue(server)
     const ctx = createCtx({
       isDev: true,
       weappWebConfig: {
@@ -61,7 +64,7 @@ describe('runtime webPlugin', () => {
 
     expect(first).toBe(server)
     expect(second).toBe(server)
-    expect(createServerMock).toHaveBeenCalledTimes(1)
+    expect(createDevServerMock).toHaveBeenCalledTimes(1)
     expect(server.listen).toHaveBeenCalledTimes(1)
     expect(server.listen).toHaveBeenCalledWith(undefined)
 
@@ -75,7 +78,7 @@ describe('runtime webPlugin', () => {
       listen: vi.fn(async () => {}),
       close: vi.fn(async () => {}),
     }
-    createServerMock.mockResolvedValue(server)
+    createDevServerMock.mockResolvedValue(server)
     const ctx = createCtx({
       mergeWeb: vi.fn(() => ({
         root: '/web-root',
@@ -112,7 +115,7 @@ describe('runtime webPlugin', () => {
     createWebServicePlugin(noConfigCtx)
     expect(await noConfigCtx.webService?.startDevServer()).toBeUndefined()
 
-    expect(createServerMock).not.toHaveBeenCalled()
+    expect(createDevServerMock).not.toHaveBeenCalled()
   })
 
   it('builds web output only when enabled and mergeWeb is available', async () => {
