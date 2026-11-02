@@ -8,6 +8,7 @@ import { execa } from 'execa'
 import { collectShardBatch, requestedConfirmationMetrics } from './batch'
 import { collectorStop } from './collectorStop'
 import { assertSha, frozenManifest, metricsForShard, policy } from './contract.mjs'
+import { createShardDiagnostics, renderShardDiagnostics } from './diagnostics'
 import { autoImportFeatureCosts, renderFeatureCosts } from './featureCosts'
 import { discoverManifest } from './manifest'
 import { runCollector } from './process'
@@ -62,10 +63,14 @@ catch (error) {
   primary.errors.push([process.cwd(), process.env.TEMPLATES_PERF_BASELINE_DIR, process.env.TEMPLATES_PERF_OPTIMIZED_DIR].filter((root): root is string => Boolean(root)).reduce((text, root) => text.replaceAll(root, '<checkout>'), String(error)))
 }
 const gate = evaluateAuditGate(primary, confirmation, metrics)
-const report = { ...(checkouts ? createAuditReport(checkouts, primary, confirmation, gate) : {}), ...metadata, primary, confirmation, gate, manifest: { metrics }, executionPlan: { metrics, confirmation: requested }, featureCosts: autoImportFeatureCosts(primary).filter(row => row.kind === shard) }
+const featureCosts = autoImportFeatureCosts(primary).filter(row => row.kind === shard)
+const diagnostics = createShardDiagnostics({ shard, primary, confirmation, gate, featureCosts })
+const report = { ...(checkouts ? createAuditReport(checkouts, primary, confirmation, gate) : {}), ...metadata, primary, confirmation, gate, manifest: { metrics }, executionPlan: { metrics, confirmation: requested }, featureCosts, ...diagnostics }
 await writeFile(path.join(output, 'report.json'), JSON.stringify(report))
-const markdown = [renderGate(gate), report.featureCosts.length ? renderFeatureCosts(report.featureCosts) : '', ...primary.errors, ...confirmation?.errors ?? []].join('\n')
+const diagnosticMarkdown = renderShardDiagnostics(diagnostics)
+const markdown = [renderGate(gate), diagnosticMarkdown, report.featureCosts.length ? renderFeatureCosts(report.featureCosts) : '', ...primary.errors, ...confirmation?.errors ?? []].join('\n')
 await writeFile(path.join(output, 'report.md'), markdown)
+console.log(`[paired-perf] ${metadata.targetId} / ${os} / ${shard}: ${gate.status}\n${diagnosticMarkdown}`)
 if (process.env.GITHUB_STEP_SUMMARY) {
   await writeFile(process.env.GITHUB_STEP_SUMMARY, markdown, { flag: 'a' })
 }

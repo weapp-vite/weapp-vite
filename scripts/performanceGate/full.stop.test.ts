@@ -1,4 +1,5 @@
 import type { CollectorStop } from './collectorStop'
+import type { ShardDiagnostics } from './diagnostics'
 import type { AuditBatch } from './report'
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
@@ -66,12 +67,18 @@ it.each((['cleanup-unconfirmed', 'cancelled'] as const).flatMap(reason => (['pre
     if (stage === 'primary') {
       expect(mocks.batch.mock.calls[0]![3]).toBe('primary')
     }
-    const report = JSON.parse(await readFile(path.join(root, 'report.json'), 'utf8')) as { primary: AuditBatch, confirmation?: AuditBatch, executionPlan: { confirmation: string[] }, gate: { status: string } }
+    const report = JSON.parse(await readFile(path.join(root, 'report.json'), 'utf8')) as ShardDiagnostics & { primary: AuditBatch, confirmation?: AuditBatch, executionPlan: { confirmation: string[] }, gate: { status: string } }
     expect(report.primary.stop).toEqual(stop)
     expect(report.primary.samples).toHaveLength(stage === 'primary' ? 40 : 0)
     expect(report.executionPlan.confirmation).toEqual([])
     expect(report.confirmation).toBeUndefined()
     expect(report.gate.status).toBe('incomplete')
+    expect(report.runtimeSummary?.requestedRuntime).toBe('classic')
+    expect(report.runtimeSummary?.primary.baseline.observations).toBe(stage === 'primary' ? metrics.length * 20 : 0)
+    expect(report.failureReasons).toContainEqual({ kind: 'collector-stop', batch: 'primary', reason, resourcesReleased: stop.resourcesReleased })
+    const markdown = await readFile(path.join(root, 'report.md'), 'utf8')
+    expect(markdown).toContain('HMR 请求与实际管线')
+    expect(markdown).toContain(`采集停止 primary：${reason}`)
     expect(process.exitCode).toBe(1)
   }
   finally {

@@ -70,6 +70,8 @@ job 硬上限 180 分钟；准备子进程 20 分钟，采集器每侧最多 15 
 
 最终汇总要求每个目标的 27 个预期分片齐全，逐项校验身份、场景、轮次唯一性、交替顺序和产物证据，并从原始样本重算门禁，不能信任上传的 `gate.status`。任一分片、SHA 或生命周期证据缺失均不能通过。报告按 OS 和场景逐行展示，🔴 标记回退、不稳定或不完整，🟢 标记已通过场景的耗时下降；同提交自动导入启用成本单列。
 
+完整分片的 JSON、Markdown 与日志增加诊断：`runtimeSummary` 将冻结计划请求的 HMR runtime 与原始 `runtimeBefore`、`runtimeAfter`、`profilePipeline` 分开，按首批/确认、baseline/optimized 统计每个场景阶段的产物观测数；历史报告缺失字段记为 `unknown`，不从请求值或 profile 可用性推断实际管线。`failureReasons` 区分跨提交结论、采集失败所属侧/轮次、采集停止和功能预算所属侧。可信汇总从已校验的原始采样和重算的门禁、预算重新生成诊断，不采信上传的派生字段；基线侧采集失败、功能预算越线和安全回退的原判定均保留，诊断不改变采样、基线、门槛或退出语义。
+
 所有执行被测代码的 job 只有 `contents: read`，checkout 不保留凭据，不注入写权限 token 或业务 secrets。planner 的提交状态登记和 `workflow_run` 评论分别在可信任务中完成；高权限报告任务只 checkout main，以 Node 24 直接执行只依赖核心模块的脚本，不安装/执行 PR 的报告代码。报告重新校验来源运行、冻结计划、可信状态登记和原始分片。手动 PR 运行另上传 `pr-context`，分别记录可信调度 SHA 与被测 head/base；报告核对实际 run id、默认分支、事件和固定上下文，不能把 dispatch 的 main SHA 当作 PR HEAD。发布 PR 评论前两次检查最新 HEAD/base，过期结果只留在历史提交状态和 artifact，不覆盖当前 PR。
 
 PR 评论明确区分正确性冒烟与完整性能“未运行（需手动启动） / 运行中 / 已完成”；成功采集、smoke 通过或 GitHub 没有 required 元数据都不代表通过 5% 门禁。

@@ -4,6 +4,7 @@ import process from 'node:process'
 import { pathToFileURL } from 'node:url'
 import { isCollectorStop } from './collectorStop.ts'
 import { frozenManifest, isReportSamplingContract, metricsForShard, policy, shards } from './contract.mjs'
+import { createShardDiagnostics, renderShardDiagnostics } from './diagnostics.ts'
 import { evaluateGate } from './evaluate.ts'
 import { hmrProfileCapability } from './profileCapability.mjs'
 
@@ -117,7 +118,7 @@ export function verifyShard(report, expected) {
       }
     }
   }
-  return { gate, errors, featureCosts }
+  return { gate, errors, featureCosts, ...createShardDiagnostics({ shard: expected.shard, primary: report.primary, confirmation: report.confirmation, gate, featureCosts }) }
 }
 
 export function summarizeStatus(rows) {
@@ -153,7 +154,9 @@ export async function aggregatePlan(plan, root) {
           parts.push({ shard, ...verifyShard(report, { schemaVersion: 2, purpose: 'full', samplingContract: plan.samplingContract, driverSha: plan.driverSha, headSha: target.headSha, baselineSha: target.baselineSha, targetId: target.id, prNumber: target.prNumber, runId: plan.runId, os, shard }) })
         }
         catch (error) {
-          parts.push({ shard, gate: { status: 'incomplete', scenarios: [] }, featureCosts: [], errors: [String(error).replaceAll(root, '<artifacts>')] })
+          const gate = { status: 'incomplete', scenarios: [] }
+          const errors = [String(error).replaceAll(root, '<artifacts>')]
+          parts.push({ shard, gate, featureCosts: [], errors, ...createShardDiagnostics({ shard, primary: { samples: [], errors }, gate, featureCosts: [] }) })
         }
       }
       systems.push({ os, status: summarizeStatus(parts.map(p => p.featureCosts.some(c => c.overFeatureBudget) ? 'regression' : p.gate.status)), parts })
@@ -172,8 +175,15 @@ export function renderTarget(target) {
         const marker = row.status !== 'passed' ? '🔴 ' : row.primary.changePercent < 0 ? '🟢 ' : ''
         lines.push(`| ${system.os} / ${row.id} | ${marker}${format(row.primary.changePercent)} | ${row.confirmation ? `${row.status === 'passed' ? '' : '🔴 '}${format(row.confirmation.changePercent)}` : '未执行或不完整'} | ${row.status === 'passed' ? '' : '🔴 '}${row.status} |`)
       }
+    }
+  }
+  for (const system of target.systems) {
+    for (const part of system.parts) {
       for (const error of part.errors) {
         lines.push(`\n🔴 ${system.os}/${part.shard}: ${error.replaceAll('\n', ' ').replaceAll('<', '&lt;')}`)
+      }
+      if (part.failureReasons) {
+        lines.push('', `#### ${system.os} / ${part.shard} 诊断`, '', renderShardDiagnostics(part))
       }
       if (part.featureCosts.length) {
         lines.push('', `#### ${system.os} / ${part.shard} 启用成本`, '', '同提交手动/自动比较，预算同时超过 25% 和 200 ms；与跨提交 5% 门禁分开。', '', '| 提交侧 / 场景 | 手动 P50 | 自动 P50 | 增量 | 增幅 | 功能预算 |', '| --- | ---: | ---: | ---: | ---: | --- |')
