@@ -971,6 +971,7 @@
     "run": {
       "runs-on": "${{ inputs.runs_on }}",
       "commands": [
+        "echo \"BUILD_ARTIFACT_EXPECTED_E2E_NATIVE_TOOLS=$BUILD_ARTIFACT_EXPECTED_E2E_NATIVE_TOOLS\" >> \"$GITHUB_ENV\"",
         "git config --system core.longpaths true",
         "git fetch --no-tags origin \"$PR_BASE_SHA\"",
         "pnpm e2e:build-tools",

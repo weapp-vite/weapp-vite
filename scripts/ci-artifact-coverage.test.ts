@@ -11,6 +11,7 @@ interface WorkflowStep {
   if?: string
   run?: string
   with?: Record<string, unknown>
+  env?: Record<string, unknown>
 }
 
 interface Workflow {
@@ -94,8 +95,19 @@ describe('CI artifact coverage', () => {
     expect(verifyIndex).toBeGreaterThan(steps.findIndex(step => step.name === 'Verify restored workspace artifact identity'))
     expect(verifyIndex).toBeLessThan(steps.findIndex(step => step.name === 'Run command'))
     expect(steps[verifyIndex]).toMatchObject({ if: 'runner.os == \'Windows\' && inputs.e2e_native_tools && inputs.consume_build_artifact != \'\'', run: 'pnpm e2e:build-tools -- --check' })
-    // eslint-disable-next-line no-template-curly-in-string -- GitHub Actions 表达式是 workflow 的原始字符串契约。
-    expect(job.env?.BUILD_ARTIFACT_EXPECTED_E2E_NATIVE_TOOLS).toBe('${{ inputs.e2e_native_tools && runner.os == \'Windows\' && \'1\' || \'\' }}')
+    expect(Object.values(job.env ?? {}).join('\n')).not.toMatch(/\brunner\./u)
+    expect(job.env?.BUILD_ARTIFACT_EXPECTED_E2E_NATIVE_TOOLS).toBeUndefined()
+    const requirementIndex = steps.findIndex(step => step.name === 'Configure private Windows E2E artifact requirement')
+    expect(requirementIndex).toBeGreaterThanOrEqual(0)
+    for (const name of ['Download workspace build artifact', 'Refresh workspace links after artifact restore', 'Verify restored workspace artifact identity', 'Create workspace build artifact manifest']) {
+      expect(requirementIndex).toBeLessThan(steps.findIndex(step => step.name === name))
+    }
+    // eslint-disable-next-line no-template-curly-in-string -- GitHub Actions 表达式只能在支持 runner 上下文的步骤环境中求值。
+    expect(steps[requirementIndex]?.env?.BUILD_ARTIFACT_EXPECTED_E2E_NATIVE_TOOLS).toBe('${{ inputs.e2e_native_tools && runner.os == \'Windows\' && \'1\' || \'\' }}')
+    expect(steps[requirementIndex]).toMatchObject({
+      shell: 'bash',
+      run: 'echo "BUILD_ARTIFACT_EXPECTED_E2E_NATIVE_TOOLS=$BUILD_ARTIFACT_EXPECTED_E2E_NATIVE_TOOLS" >> "$GITHUB_ENV"',
+    })
   })
 
   it('shares the native tool producer across Miniapp consumers and keeps unrelated browser tests opt out', async () => {

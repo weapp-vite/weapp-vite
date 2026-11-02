@@ -203,11 +203,15 @@ jobs:
       PR_HEAD_REF: ${{ inputs.head_ref }}
       WEAPP_VITE_E2E_EXCLUDE_PROJECTS: ${{ inputs.e2e_exclude_projects }}
       BUILD_ARTIFACT_EXPECTED_SCOPE: ${{ inputs.build_artifact_scope }}
-      BUILD_ARTIFACT_EXPECTED_E2E_NATIVE_TOOLS: ${{ inputs.e2e_native_tools && runner.os == 'Windows' && '1' || '' }}
       WEAPP_VITE_CONSUMER_TARBALLS: ${{ inputs.consumer_tarballs }}
       WEAPP_VITE_VERIFICATION_TELEMETRY: ${{ inputs.verification_telemetry && '1' || '' }}
 
     steps:
+      - name: Configure private Windows E2E artifact requirement
+        shell: bash
+        env:
+          BUILD_ARTIFACT_EXPECTED_E2E_NATIVE_TOOLS: ${{ inputs.e2e_native_tools && runner.os == 'Windows' && '1' || '' }}
+        run: echo "BUILD_ARTIFACT_EXPECTED_E2E_NATIVE_TOOLS=$BUILD_ARTIFACT_EXPECTED_E2E_NATIVE_TOOLS" >> "$GITHUB_ENV"
       - name: Enable Git long paths on Windows
         if: runner.os == 'Windows'
         shell: bash
