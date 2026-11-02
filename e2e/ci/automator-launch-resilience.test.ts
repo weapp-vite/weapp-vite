@@ -5,6 +5,8 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { MANAGED_PROJECT_JOURNAL_ENV } from 'weapp-ide-cli'
+import { createManagedWechatProjectJournal } from '../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/journal'
 import { parseTerminalRuntimeFailureLine, TERMINAL_RUNTIME_FAILURE_MARKER } from '../utils/terminalRuntimeFailure'
 import { createMockBridgeSnapshotCleanup } from './automatorLaunchResilience/snapshotCleanup'
 
@@ -447,7 +449,7 @@ describe('automator launch resilience', { concurrent: false, timeout: 30_000 }, 
   })
 
   it('routes a managed direct launch through its owned bridge and closes only the received project', async () => {
-    const parentJournal = path.join(sandboxRoot, 'managed-journal')
+    const parentJournal = await createManagedWechatProjectJournal(path.join(sandboxRoot, 'managed-journals'))
     vi.stubEnv('WEAPP_IDE_MANAGED_PROJECT_JOURNAL', parentJournal)
     process.env.WEAPP_VITE_E2E_BRIDGE_CONNECT_SETTLE_DELAY = '1'
     createProjectFixture(sandboxRoot, { pages: ['pages/index/index'] })
@@ -480,7 +482,7 @@ describe('automator launch resilience', { concurrent: false, timeout: 30_000 }, 
   })
 
   it.each(['direct', 'bridge'] as const)('rejects a managed %s launch without ownership evidence and cleans only its attempt journal', async (launchMode) => {
-    const parentJournal = path.join(sandboxRoot, 'managed-journal')
+    const parentJournal = await createManagedWechatProjectJournal(path.join(sandboxRoot, 'managed-journals'))
     vi.stubEnv('WEAPP_IDE_MANAGED_PROJECT_JOURNAL', parentJournal)
     process.env.WEAPP_VITE_E2E_BRIDGE_CONNECT_SETTLE_DELAY = '1'
     process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_PREBUILD = '0'
@@ -1202,8 +1204,65 @@ describe('automator launch resilience', { concurrent: false, timeout: 30_000 }, 
     expect(isLikelyLaunchRetryableError(new Error('launch failed', { cause }))).toBe(false)
   })
 
+  it.each(['E2E_DEVTOOLS_SIMULATOR_BOOT_FAILED', 'E2E_RUNTIME_LOG_SUBSCRIPTION_DEADLINE'])('blocks another case in the same managed invocation after %s and permits a new invocation', async (code) => {
+    const parentJournal = await createManagedWechatProjectJournal(path.join(sandboxRoot, 'managed-journals'))
+    vi.stubEnv(MANAGED_PROJECT_JOURNAL_ENV, parentJournal)
+    process.env.WEAPP_VITE_E2E_BRIDGE_CONNECT_SETTLE_DELAY = '1'
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_PREBUILD = '0'
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER = '0'
+    createProjectFixture(sandboxRoot, { pages: ['pages/index/index'] })
+    const terminal = Object.assign(new Error('initial managed launch failed'), { code })
+    execaMock.mockRejectedValueOnce(terminal)
+    const { launchAutomator } = await import('../utils/automator')
+    const { resolveSelectedWechatDevtools } = await import('../utils/devtoolsSelection')
+    const stderrWrite = vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
+    try {
+      const firstFailure = await launchAutomator({ projectPath: sandboxRoot, timeout: 1_000, maxLaunchRetries: 1 }).catch((error: unknown) => error)
+      expect(firstFailure).toBe(terminal)
+      expect(cleanupManagedWechatProjectsMock).toHaveBeenCalled()
+      const selectionCalls = vi.mocked(resolveSelectedWechatDevtools).mock.calls.length
+      const diagnosticCalls = captureDevtoolsLogBaselineMock.mock.calls.length
+      const cleanupCalls = cleanupManagedWechatProjectsMock.mock.calls.length
+
+      await expect(launchAutomator({ projectPath: path.join(sandboxRoot, 'another-case'), timeout: 1_000 }))
+        .rejects
+        .toMatchObject({ name: 'ManagedRuntimeLaunchBlockedError', cause: firstFailure })
+      expect(resolveSelectedWechatDevtools).toHaveBeenCalledTimes(selectionCalls)
+      expect(captureDevtoolsLogBaselineMock).toHaveBeenCalledTimes(diagnosticCalls)
+      expect(cleanupManagedWechatProjectsMock).toHaveBeenCalledTimes(cleanupCalls)
+      expect(execaMock).toHaveBeenCalledOnce()
+      expect(connectMock).not.toHaveBeenCalled()
+      expect(launchMock).not.toHaveBeenCalled()
+      expect(readTerminalRuntimeFailures(stderrWrite.mock.calls.map(([chunk]) => chunk))).toHaveLength(1)
+
+      const nextJournal = await createManagedWechatProjectJournal(path.join(sandboxRoot, 'managed-journals'))
+      vi.stubEnv(MANAGED_PROJECT_JOURNAL_ENV, nextJournal)
+      const miniProgram = createMockMiniProgram()
+      execaMock.mockImplementationOnce(async (_command, _args, options) => ({
+        exitCode: 0,
+        stdout: JSON.stringify({
+          wsEndpoint: 'ws://127.0.0.1:9420',
+          managedProject: { id: 'next-owned-window', journalPath: options.env[MANAGED_PROJECT_JOURNAL_ENV] },
+        }),
+      }))
+      connectMock.mockResolvedValueOnce(miniProgram)
+
+      const session = await launchAutomator({ projectPath: sandboxRoot, timeout: 1_000, maxLaunchRetries: 1 })
+      expect(execaMock).toHaveBeenCalledTimes(2)
+      await session.close()
+      expect(closeManagedWechatProjectMock).toHaveBeenCalledWith(expect.objectContaining({ id: 'next-owned-window' }))
+
+      vi.stubEnv(MANAGED_PROJECT_JOURNAL_ENV, parentJournal)
+      await expect(launchAutomator({ projectPath: sandboxRoot })).rejects.toMatchObject({ cause: firstFailure })
+      expect(execaMock).toHaveBeenCalledTimes(2)
+    }
+    finally {
+      stderrWrite.mockRestore()
+    }
+  })
+
   it.each(['E2E_DEVTOOLS_SIMULATOR_BOOT_FAILED', 'E2E_RUNTIME_LOG_SUBSCRIPTION_DEADLINE'])('preserves terminal failure %s when owned bridge cleanup also fails', async (code) => {
-    vi.stubEnv('WEAPP_IDE_MANAGED_PROJECT_JOURNAL', path.join(sandboxRoot, 'managed-journal'))
+    vi.stubEnv(MANAGED_PROJECT_JOURNAL_ENV, await createManagedWechatProjectJournal(path.join(sandboxRoot, 'managed-journals')))
     process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_PREBUILD = '0'
     process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER = '0'
     createProjectFixture(sandboxRoot, { pages: ['pages/index/index'] })

@@ -10,23 +10,10 @@ import { createWeappModeSequence } from '../../scripts/editSequence/weappModeSce
 import { launchAutomator } from '../utils/automator'
 import { createDomAcceptance } from '../utils/domAcceptance'
 import { createProductionRuntime } from '../utils/productionRuntime'
+import { releaseProductionRuntimeResources } from '../utils/productionRuntimeCleanup'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 
 const homeRoute = '/pages/home/index'
-
-async function releaseResources(operations: Array<() => Promise<unknown>>, failures: unknown[] = []) {
-  for (const operation of operations) {
-    try {
-      await operation()
-    }
-    catch (error) {
-      failures.push(error)
-    }
-  }
-  if (failures.length) {
-    throw new AggregateError(failures, 'Mode/cache runtime resources did not close cleanly')
-  }
-}
 
 function expectedValue(step: number) {
   return step >= 6 ? 'inline-after-removal' : step >= 2 ? 'changed-main' : 'main-shared'
@@ -91,7 +78,12 @@ describe.each([true, false])('issue #1140 production runtime after mode/cache tr
       // driver 的超时只停止等待；先接住晚到的连接/构建结果，再释放它们使用的目录。
       const settled = await Promise.allSettled([...pending])
       const failures = settled.flatMap(result => result.status === 'rejected' ? [result.reason] : [])
-      await releaseResources([closeHost, async () => suiteSession?.close(), async () => suiteFixture?.close()], failures)
+      await releaseProductionRuntimeResources({
+        closeRuntime: closeHost,
+        closeBuild: async () => suiteSession?.close(),
+        removeFixture: async () => suiteFixture?.close(),
+        pendingFailures: failures,
+      })
     })()
     return cleanup
   }
@@ -168,7 +160,11 @@ describe.each([true, false])('issue #1140 production runtime after mode/cache tr
             failure = { error }
           }
           try {
-            await releaseResources([() => fresh.close(), () => rm(root, { recursive: true, force: true })])
+            await releaseProductionRuntimeResources({
+              closeRuntime: async () => {},
+              closeBuild: () => fresh.close(),
+              removeFixture: () => rm(root, { recursive: true, force: true }),
+            })
           }
           catch (cleanupError) {
             if (failure) {

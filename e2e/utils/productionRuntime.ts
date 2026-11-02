@@ -1,7 +1,7 @@
 import type { RuntimeProviderName } from './runtimeProvider'
 import path from 'node:path'
 import process from 'node:process'
-import { MANAGED_PROJECT_JOURNAL_ENV } from '../../packages/weapp-ide-cli/src/devtoolsProjectOwnership'
+import { MANAGED_PROJECT_JOURNAL_ENV } from 'weapp-ide-cli'
 
 interface RuntimeSession {
   close: () => Promise<unknown>
@@ -24,7 +24,7 @@ export function createProductionRuntime<T extends RuntimeSession>(options: Produ
     throw new Error('Production runtime requires an explicitly selected WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH')
   }
   let owned: { session: T, releasePending: boolean } | undefined
-  let launchFailed = false
+  let launchFailure: { error: unknown } | undefined
   let opening: Promise<T> | undefined
   let closing: Promise<void> | undefined
 
@@ -35,6 +35,9 @@ export function createProductionRuntime<T extends RuntimeSession>(options: Produ
     const pendingOpen = opening
     closing = (async () => {
       await pendingOpen
+      if (launchFailure) {
+        throw new Error('Previous production launch failed; its managed project journal must be recovered before confirming cleanup', { cause: launchFailure.error })
+      }
       if (!owned) {
         return
       }
@@ -55,8 +58,8 @@ export function createProductionRuntime<T extends RuntimeSession>(options: Produ
     const pendingClose = closing
     opening ??= (async () => {
       await pendingClose
-      if (launchFailed) {
-        throw new Error('Previous production launch failed; its managed project journal must be recovered before retrying')
+      if (launchFailure) {
+        throw new Error('Previous production launch failed; its managed project journal must be recovered before retrying', { cause: launchFailure.error })
       }
       if (owned) {
         if (owned.releasePending) {
@@ -74,7 +77,9 @@ export function createProductionRuntime<T extends RuntimeSession>(options: Produ
         return session
       }
       catch (error) {
-        launchFailed = options.provider === 'devtools'
+        if (options.provider === 'devtools') {
+          launchFailure = { error }
+        }
         throw error
       }
     })()

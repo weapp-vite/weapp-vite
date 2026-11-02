@@ -1,6 +1,7 @@
 import type { MiniProgram, Page } from '@weapp-vite/miniprogram-automator'
 import type { HeadlessAutomatorLaunchOptions } from './automator.headless'
 import type { RelaunchFailureInput, RelaunchFailureObserver, RelaunchFailurePhase } from './automatorRelaunchFailure'
+import type { TerminalRuntimeLaunchGuard } from './terminalRuntimeLaunchGuard'
 import crypto from 'node:crypto'
 import fs from 'node:fs'
 import net from 'node:net'
@@ -46,6 +47,7 @@ import {
 } from './runtimeProvider'
 import { createStartupProtocolDiagnostics } from './startupProtocolDiagnostics'
 import { classifyTerminalRuntimeFailure, TERMINAL_RUNTIME_FAILURE_MARKER } from './terminalRuntimeFailure'
+import { createTerminalRuntimeLaunchGuard } from './terminalRuntimeLaunchGuard'
 import { watchResolvedDirectory } from './watchResolvedDirectory'
 
 export { reconnectAutomator } from './automatorReconnect'
@@ -2932,29 +2934,14 @@ export async function launchAutomatorViaCliBridge(
   }
 }
 
-export function launchAutomator(options: LaunchAutomatorOptions) {
-  const provider = resolveRuntimeProviderName()
-  if (provider === 'headless') {
-    return launchHeadlessAutomator({
-      configureSession: options.configureHeadlessSession,
-      compiledTemplatePaths: options.headlessCompiledTemplatePaths,
-      projectPath: options.projectPath!,
-      onSessionCreated(session) {
-        enhanceMiniProgramWithRuntimeLogs(session, resolveReportProjectPath(options.projectPath!))
-      },
-    }).catch((error: unknown) => {
-      appendIdeReportEvent({
-        source: 'runtime',
-        kind: 'message',
-        project: resolveReportProjectPath(options.projectPath!),
-        level: 'error',
-        channel: 'launch',
-        text: error instanceof Error ? error.stack || error.message : normalizeRuntimeConsoleText(error),
-      })
-      throw error
-    })
+function launchDevtoolsAutomator(options: LaunchAutomatorOptions, launchGuard: TerminalRuntimeLaunchGuard) {
+  async function assertLaunchAllowed() {
+    const blocked = await launchGuard.blockedError()
+    if (blocked) {
+      throw blocked
+    }
   }
-  assertRuntimeProviderImplemented(provider)
+
   patchNetListenToLoopback()
   const { configureHeadlessSession: _configureHeadlessSession, headlessCompiledTemplatePaths: _headlessCompiledTemplatePaths, onOwnedSnapshot, onSessionMetadata, onRelaunchFailureBeforeClose, bridgeProjectMode, disableRelaunchSessionRecovery, engineBuildFallbackSettleMs, launchMode: requestedLaunchMode, maxLaunchRetries, projectConfig, refreshProjectAfterConnect, retryWarmupTimeout, skipRelaunchPageRootCheck, skipWarmup, timeout, trustProject, warmupAllowRelaunch, warmupAnyPage, warmupRootSelectors, warmupRoute, ...rest } = options
   const selectedCliPath = resolveWechatCliPath(rest.cliPath)
@@ -2973,6 +2960,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
   return (async () => {
     const selectedTarget = await resolveSelectedWechatDevtools(selectedCliPath)
     for (let attempt = 1; attempt <= launchRetries; attempt += 1) {
+      await assertLaunchAllowed()
       let miniProgram: any = null
       let bridgeLaunch: Promise<any> | undefined
       let closeAttemptProject: (() => Promise<void>) | undefined
@@ -3011,6 +2999,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
             await lifecycle.step(() => waitForBridgeWrapperWarmupAsset(bridgeWrapperProject, resolvedWarmupRoute, project))
             const launchProjectPath = bridgeWrapperProject?.path ?? rest.projectPath
             if (launchProjectPath) {
+              await assertLaunchAllowed()
               await lifecycle.step(() => importManagedDevtoolsProject({
                 cliPath: selectedTarget.cliPath,
                 projectPath: launchProjectPath,
@@ -3048,6 +3037,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
               }))
             }
             lifecycle.throwIfAborted()
+            await assertLaunchAllowed()
             process.stdout.write(`[info] [runtime:launch-step] connect-start mode=${launchMode || 'direct'} project=${project}\n`)
             miniProgram = launchMode === AUTOMATOR_LAUNCH_MODE_BRIDGE || Boolean(process.env[MANAGED_PROJECT_JOURNAL_ENV])
               ? await (bridgeLaunch = launchAutomatorViaCliBridge(launchEvidence.enabled ? { ...launchOptions, launchEvidenceId: launchEvidence.launchId } : launchOptions, project, lifecycle, devtoolsLogMonitor, onSessionMetadata, (close) => {
@@ -3183,7 +3173,14 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
         const normalizedError = caughtError instanceof AutomatorBridgeBudgetError && lastLaunchFailure
           ? lastLaunchFailure.error
           : runtimeLogSubscription?.normalizeError(caughtError) ?? caughtError
-        const error = devtoolsLogMonitor.normalizeError(normalizedError)
+        let error = devtoolsLogMonitor.normalizeError(normalizedError)
+        try {
+          // 先冻结父 journal；清理等待不能授予另一 case 或 worker 新的启动资格。
+          await launchGuard.record(error)
+        }
+        catch (stateError) {
+          error = stateError
+        }
         operation.recordFailure(error)
         lastLaunchFailure = { error }
         try {
@@ -3254,6 +3251,39 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
       diagnostics.finish(false)
     }
   })
+}
+
+export function launchAutomator(options: LaunchAutomatorOptions) {
+  const provider = resolveRuntimeProviderName()
+  if (provider === 'headless') {
+    return launchHeadlessAutomator({
+      configureSession: options.configureHeadlessSession,
+      compiledTemplatePaths: options.headlessCompiledTemplatePaths,
+      projectPath: options.projectPath!,
+      onSessionCreated(session) {
+        enhanceMiniProgramWithRuntimeLogs(session, resolveReportProjectPath(options.projectPath!))
+      },
+    }).catch((error: unknown) => {
+      appendIdeReportEvent({
+        source: 'runtime',
+        kind: 'message',
+        project: resolveReportProjectPath(options.projectPath!),
+        level: 'error',
+        channel: 'launch',
+        text: error instanceof Error ? error.stack || error.message : normalizeRuntimeConsoleText(error),
+      })
+      throw error
+    })
+  }
+  assertRuntimeProviderImplemented(provider)
+  return (async () => {
+    const guard = await createTerminalRuntimeLaunchGuard(process.env[MANAGED_PROJECT_JOURNAL_ENV])
+    const blocked = await guard.blockedError()
+    if (blocked) {
+      throw blocked
+    }
+    return launchDevtoolsAutomator(options, guard)
+  })()
 }
 
 async function assertDevtoolsLoggedInWithoutTiming(projectPath: string) {

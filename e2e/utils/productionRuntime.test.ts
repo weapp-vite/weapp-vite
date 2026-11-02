@@ -1,5 +1,6 @@
 import path from 'node:path'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+import { MANAGED_PROJECT_JOURNAL_ENV } from 'weapp-ide-cli'
 import { createProductionRuntime } from './productionRuntime'
 
 const { execa } = vi.hoisted(() => ({ execa: vi.fn() }))
@@ -10,7 +11,7 @@ const cliPath = 'selected-stable-cli'
 beforeEach(() => {
   execa.mockReset().mockResolvedValue({ exitCode: 0 })
   vi.stubEnv('WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH', cliPath)
-  vi.stubEnv('WEAPP_IDE_MANAGED_PROJECT_JOURNAL', 'owned-task-journal')
+  vi.stubEnv(MANAGED_PROJECT_JOURNAL_ENV, 'owned-task-journal')
 })
 afterEach(() => vi.unstubAllEnvs())
 
@@ -118,7 +119,7 @@ it('leaves an uncertain failed launch to its journal and refuses another DevTool
   const launch = vi.fn().mockRejectedValueOnce(failure).mockResolvedValue({ close: vi.fn() })
   const runtime = createProductionRuntime({ projectPath, provider: 'devtools', launch })
   await expect(runtime.open()).rejects.toBe(failure)
-  await runtime.close()
+  await expect(runtime.close()).rejects.toMatchObject({ cause: failure, message: expect.stringContaining('managed project journal') })
   await expect(runtime.open()).rejects.toThrow('managed project journal must be recovered')
   expect(launch).toHaveBeenCalledOnce()
   expect(execa).not.toHaveBeenCalled()
@@ -144,7 +145,7 @@ it('requires explicit CLI selection for DevTools without changing user configura
 })
 
 it('requires a managed journal before any DevTools session can launch', async () => {
-  vi.stubEnv('WEAPP_IDE_MANAGED_PROJECT_JOURNAL', '')
+  vi.stubEnv(MANAGED_PROJECT_JOURNAL_ENV, '')
   const launch = vi.fn(async () => ({ close: vi.fn() }))
   const runtime = createProductionRuntime({ projectPath, provider: 'devtools', launch })
   await expect(runtime.open()).rejects.toThrow('requires a managed project journal')
@@ -155,13 +156,13 @@ it('requires a managed journal before any DevTools session can launch', async ()
 })
 
 it('allows direct Vitest setup to register the journal after describe constructs the runtime', async () => {
-  vi.stubEnv('WEAPP_IDE_MANAGED_PROJECT_JOURNAL', undefined)
+  vi.stubEnv(MANAGED_PROJECT_JOURNAL_ENV, undefined)
   const session = { close: vi.fn(async () => {}) }
   const launch = vi.fn(async () => session)
   const runtime = createProductionRuntime({ projectPath, provider: 'devtools', launch })
 
   await expect(runtime.open()).rejects.toThrow('requires a managed project journal')
-  vi.stubEnv('WEAPP_IDE_MANAGED_PROJECT_JOURNAL', 'journal-from-before-all')
+  vi.stubEnv(MANAGED_PROJECT_JOURNAL_ENV, 'journal-from-before-all')
   expect(await runtime.open()).toBe(session)
 
   expect(launch).toHaveBeenCalledExactlyOnceWith({ projectPath, cliPath })
