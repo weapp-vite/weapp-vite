@@ -1,4 +1,18 @@
+import { isDeepStrictEqual } from 'node:util'
 import { z } from 'zod'
+import { isPermittedInstallationReplacement, replacementTargetSchema } from './replacement'
+
+const processInspectionSchema = z.object({
+  platform: z.literal('darwin'),
+  installationRoot: z.string().min(1),
+  checkedAt: z.string().datetime(),
+  inspectedProcessCount: z.number().int().nonnegative(),
+  kernelPathProcessCount: z.number().int().nonnegative(),
+  textImageProcessCount: z.number().int().nonnegative(),
+  exitedProcessCount: z.number().int().nonnegative(),
+  zombieProcessCount: z.number().int().nonnegative(),
+  selectedProcessCount: z.literal(0),
+}).strict()
 
 export const installationExitRecoverySchema = z.object({
   protocol: z.literal('wechat-devtools-installation-exit-v1'),
@@ -16,15 +30,18 @@ export const installationExitRecoverySchema = z.object({
   }).strict(),
   stoppedOwnerPids: z.array(z.number().int().positive()).min(1),
   closedPorts: z.array(z.number().int().min(1).max(65535)).min(1),
-  processInspection: z.object({
-    platform: z.literal('darwin'),
-    installationRoot: z.string().min(1),
-    checkedAt: z.string().datetime(),
-    inspectedProcessCount: z.number().int().nonnegative(),
-    kernelPathProcessCount: z.number().int().nonnegative(),
-    textImageProcessCount: z.number().int().nonnegative(),
-    exitedProcessCount: z.number().int().nonnegative(),
-    zombieProcessCount: z.number().int().nonnegative(),
-    selectedProcessCount: z.literal(0),
-  }).strict(),
-}).strict()
+  processInspection: processInspectionSchema,
+  replacement: z.object({
+    protocol: z.literal('wechat-devtools-installation-replacement-exit-v1'),
+    originalTarget: replacementTargetSchema,
+    replacementTarget: replacementTargetSchema,
+    stoppedHostPids: z.array(z.number().int().positive()),
+    exitInspections: z.tuple([processInspectionSchema, processInspectionSchema]),
+  }).strict().optional(),
+}).strict().refine(evidence => !evidence.replacement || (
+  isPermittedInstallationReplacement(evidence.replacement.originalTarget, evidence.replacement.replacementTarget)
+  && evidence.replacement.originalTarget.installationId === evidence.installationId
+  && evidence.replacement.originalTarget.profileDir === evidence.profileDir
+  && evidence.replacement.exitInspections[0].installationRoot === evidence.processInspection.installationRoot
+  && isDeepStrictEqual(evidence.replacement.exitInspections[1], evidence.processInspection)
+), { message: 'Installation replacement recovery requires matching identity and both exit inspections.' })

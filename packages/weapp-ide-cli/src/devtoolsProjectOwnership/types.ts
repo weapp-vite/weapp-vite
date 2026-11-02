@@ -35,6 +35,14 @@ export interface ManagedWechatInstallationExitEvidence {
     zombieProcessCount: number
     selectedProcessCount: 0
   }
+  /** 同根替换必须显式声明；保留原目标及两轮独立退出证据。 */
+  replacement?: {
+    protocol: 'wechat-devtools-installation-replacement-exit-v1'
+    originalTarget: ResolvedWechatDevtoolsTarget
+    replacementTarget: ResolvedWechatDevtoolsTarget
+    stoppedHostPids: number[]
+    exitInspections: [ManagedWechatInstallationExitEvidence['processInspection'], ManagedWechatInstallationExitEvidence['processInspection']]
+  }
 }
 
 export interface ManagedWechatWindowLogCursor {

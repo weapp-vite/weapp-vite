@@ -11,9 +11,12 @@ import { managedRecordPath, readManagedWechatProjectRecords, withManagedJournalL
 import { resolveManagedJournalScope } from '../journal/scope'
 import { finalizeManagedProjectSnapshot, isManagedWechatProjectFullyReleased } from '../snapshot'
 import { inspectExitedWechatInstallation } from './processes'
+import { assertInstallationReplacement } from './replacement'
 
 export interface RecoverManagedWechatProjectsAfterInstallationExitOptions {
   target: ResolvedWechatDevtoolsTarget
+  /** 明确接管同路径升级后的安装；默认仍拒绝任何安装漂移。 */
+  replacementTarget?: ResolvedWechatDevtoolsTarget
   recoveryScope: MachineE2ELeaseRecoveryScope
 }
 
@@ -40,7 +43,7 @@ function canRecoverAfterExit(record: ManagedWechatProjectRecord) {
 async function recoverAfterExit(
   options: RecoverManagedWechatProjectsAfterInstallationExitOptions,
 ): Promise<ManagedWechatInstallationExitRecoveryResult> {
-  const { target, recoveryScope } = options
+  const { target, replacementTarget, recoveryScope } = options
   await assertMachineE2ELeaseRecoveryScope(recoveryScope)
   const journalPath = recoveryScope.cleanupKey
   if (!journalPath || !path.isAbsolute(journalPath) || path.resolve(journalPath) !== journalPath) {
@@ -61,6 +64,9 @@ async function recoverAfterExit(
     if (records.some(record => !isDeepStrictEqual(record.target, target))) {
       throw new Error('Installation-exit recovery cannot include another installation or profile.')
     }
+    if (replacementTarget) {
+      assertInstallationReplacement(target, replacementTarget)
+    }
     if (records.some(record => record.state !== 'released' && !canRecoverAfterExit(record))) {
       throw new Error('Installation-exit recovery refuses confirmed or unresolved project-close ownership.')
     }
@@ -76,6 +82,8 @@ async function recoverAfterExit(
     }
     const before = new Map(await Promise.all(records.map(async record => [record.id, await fingerprint(record)] as const)))
     const ownerPids = [...new Set(records.map(record => record.ownerPid))].sort((a, b) => a - b)
+    const hostPids = [...new Set(records.flatMap(record => record.host ? [record.host.pid] : []))].sort((a, b) => a - b)
+    const currentTarget = replacementTarget ?? target
     const ports = [...new Set(records.map(record => record.port))]
     if (ports.includes(undefined)) {
       throw new Error('Installation-exit recovery requires every registered automator port.')
@@ -83,10 +91,15 @@ async function recoverAfterExit(
     const closedPorts = (ports as number[]).sort((a, b) => a - b)
     const verifyExit = async () => {
       await assertMachineE2ELeaseRecoveryScope(recoveryScope)
-      await assertManagedInstallation(target)
+      await assertManagedInstallation(currentTarget)
       for (const pid of ownerPids) {
         if (await readManagedProcessIdentity(pid)) {
           throw new Error('Installation-exit recovery requires every journal owner process to have stopped.')
+        }
+      }
+      for (const pid of hostPids) {
+        if (await readManagedProcessIdentity(pid)) {
+          throw new Error('Installation-exit recovery requires every recorded host process to have stopped.')
         }
       }
       for (const port of closedPorts) {
@@ -94,7 +107,11 @@ async function recoverAfterExit(
           throw new Error('Installation-exit recovery found a live registered automator port.')
         }
       }
-      return inspectExitedWechatInstallation(target)
+      const inspection = await inspectExitedWechatInstallation(currentTarget)
+      if (replacementTarget) {
+        await assertManagedInstallation(currentTarget)
+      }
+      return inspection
     }
     const assertUnchanged = async () => {
       if (!isDeepStrictEqual(await resolveManagedJournalScope(journalPath), binding)) {
@@ -110,7 +127,7 @@ async function recoverAfterExit(
         }
       }
     }
-    await verifyExit()
+    const firstInspection = await verifyExit()
     await assertUnchanged()
     const inspection = await verifyExit()
     await assertUnchanged()
@@ -136,6 +153,17 @@ async function recoverAfterExit(
         stoppedOwnerPids: ownerPids,
         closedPorts,
         processInspection: inspection,
+        ...(replacementTarget
+          ? {
+              replacement: {
+                protocol: 'wechat-devtools-installation-replacement-exit-v1' as const,
+                originalTarget: target,
+                replacementTarget,
+                stoppedHostPids: hostPids,
+                exitInspections: [firstInspection, inspection],
+              },
+            }
+          : {}),
       }
       record.state = 'released'
       record.releasedReason = 'installation-exited'
