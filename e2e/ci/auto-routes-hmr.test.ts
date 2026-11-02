@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest'
 import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
+import { waitForEmittedJson } from '../utils/emittedJson'
 import { createHmrMarker, replaceFileByRename, waitForFileContains } from '../utils/hmr-helpers'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
@@ -71,31 +72,22 @@ async function waitForFileNotContains(filePath: string, marker: string, timeoutM
 }
 
 async function waitForAppJsonPagesToContain(route: string, timeoutMs = 90_000) {
-  const start = Date.now()
-  while (Date.now() - start < timeoutMs) {
-    if (await fs.pathExists(APP_JSON_DIST)) {
-      const appJson = await fs.readJson(APP_JSON_DIST) as { pages?: unknown }
-      if (Array.isArray(appJson?.pages) && appJson.pages.includes(route)) {
-        return appJson
-      }
+  return waitForEmittedJson(APP_JSON_DIST, (appJson) => {
+    if (!appJson || typeof appJson !== 'object' || !('pages' in appJson)) {
+      return false
     }
-    await sleep(250)
-  }
-  throw new Error(`Timed out waiting for ${APP_JSON_DIST} pages to contain route: ${route}`)
+    return Array.isArray(appJson.pages) && appJson.pages.includes(route)
+  }, { condition: `pages to contain route: ${route}`, timeoutMs })
 }
 
 async function waitForAppJsonWindowTitle(title: string, timeoutMs = 90_000) {
-  const start = Date.now()
-  while (Date.now() - start < timeoutMs) {
-    if (await fs.pathExists(APP_JSON_DIST)) {
-      const appJson = await fs.readJson(APP_JSON_DIST) as { window?: { navigationBarTitleText?: unknown } }
-      if (appJson?.window?.navigationBarTitleText === title) {
-        return appJson
-      }
+  return waitForEmittedJson(APP_JSON_DIST, (appJson) => {
+    if (!appJson || typeof appJson !== 'object' || !('window' in appJson)) {
+      return false
     }
-    await sleep(250)
-  }
-  throw new Error(`Timed out waiting for ${APP_JSON_DIST} window.navigationBarTitleText to become: ${title}`)
+    const window = appJson.window
+    return !!window && typeof window === 'object' && 'navigationBarTitleText' in window && window.navigationBarTitleText === title
+  }, { condition: `window.navigationBarTitleText to become: ${title}`, timeoutMs })
 }
 
 async function waitForOutputSince(
