@@ -1,5 +1,70 @@
 # @wevu/test-utils
 
+## 1.1.1
+
+### Patch Changes
+
+- chore(deps): 自动补充依赖升级发布记录。
+  涉及包：
+  - @weapp-core/types：devDependencies.tsdown
+  - @weapp-vite/glass-easel-web-adapter：devDependencies.tsdown
+  - @wevu/web-apis：devDependencies.eventsource-parser
+  - @weapp-agent/cli：dependencies.@ai-sdk/anthropic、dependencies.@ai-sdk/openai、dependencies.@ai-sdk/openai-compatible、dependencies.ai、devDependencies.tsdown
+  - @weapp-vite/ast：dependencies.@oxc-project/types
+  - create-weapp-vite：dependencies.@inquirer/prompts
+  - @weapp-vite/dashboard：dependencies.@devframes/agentic、dependencies.@devframes/hub、dependencies.@devframes/hub-ui
+  - @weapp-vite/eslint：devDependencies.@typescript-eslint/parser
+  - @weapp-vite/miniprogram-automator：dependencies.ws
+  - weapp-vite：dependencies.@typescript-eslint/parser、dependencies.rolldown-plugin-dts、devDependencies.@devframes/agentic、devDependencies.@devframes/hub、devDependencies.@devframes/hub-ui、optionalDependencies.@swc/core
+
+  chore(deps): 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@babel/core, @babel/generator, @babel/parser, @babel/traverse, @babel/types, @icebreakers/eslint-config, @types/node, @vue/language-core, autoprefixer, axios, devframe, eslint, magic-string, oxc-parser, postcss, rolldown, sass, sass-embedded, tailwind-variants, tslib, uview-plus, vue-tsc。命名 catalog 变更键：无。
+
+  迁移 rolldown-plugin-dts 0.29 的 tsc 配置命名空间，兼容旧顶层配置，保留项目引用、上下文隔离和 Vue 声明生成契约。Rust N-API 与 Oxc 配套升级，保留可选原生路径及 JavaScript fallback；SSE 与样式变体由回归覆盖。TypeScript 保留 6.0.3，Node 支持范围不变。
+
+  修复 classic HMR 的来源证明：React 普通 JSX/TSX 在转换前记录实际输入，原生入口继续由 raw reader 独占；保存事件以 Vite 同次稳定读取结算摘要，避免文件截断阶段污染恢复版本，并保留晚到读取、后续保存和关闭之间的所有权隔离。
+
+  减少 request globals 与 prelude 的构建期重复解析：复用同一产物的 installer 识别结果，先检查已有 runtime 标记，并仅对完全缺少标记、公共导出和转义线索的代码跳过 AST；保留转义输入、跨轮次替换、初始化顺序和原生输出契约。
+
+- fix(weapp-vite): 将 package imports 的 query/hash 兼容处理内置到发布包，在主构建、子构建与 Web 路径自动接入，保留精确映射、条件、自定义解析器和 external 语义。
+
+  同步为 `@weapp-core/constants` 的公开直接依赖包发布补丁版本，使消费者的依赖范围随共享常量更新。
+
+  使用官方 Vite/Rolldown，隔离连续构建中的自有插件钩子容器，并在编译插件关闭后释放会话引用。
+
+  高级 tsconfigPaths 配置由内部创建的解析插件同样隔离每代 hook 容器，用户自行提供的同名插件保持对象与元数据语义。
+
+  编译 provider 终结时按注册所有权撤销 HMR 回调，避免配置重启删除或改名后继续调用旧 provider，同时保留新一代同名注册与快照资源生命周期。
+
+  状态保持快照在本轮产物生成时记录编译 provider 能力，保留构建关闭后的能力回退判断，并允许删除或替换 provider 后恢复。
+
+  Vite+ 模板和独立消费者同步使用官方 1.4.0 launcher/core 配对及其内置 Rolldown 1.2.15，并将 Vitest 固定到配套的 5.0.5；独立构建继续使用官方 Vite 8.3.5 和 Rolldown 1.2.16，不再依赖工作区 Vite/Rolldown 补丁。
+
+  开发宿主按每代所有权接管监听，启动和重启等待后端初扫或现存源码登记后再报告就绪；关闭先解除登记等待，再释放本代编译及监听资源，保留幸存 owner 和独立原生监听。
+
+  classic 构建的内部完成边界等待原生发布、样式收尾和已启动的 profile 写入；配置重启与关闭撤销旧代观察，失败后只有实际成功发布才能恢复采样，避免将未完成的构建计为资源验收通过。
+
+  修补后的 Chokidar 继续随发布产物打包交付。PR #1294 按用户授权引入两项持续的临时验收例外：Web optimizer 关闭残留，以及连续构建资源增长。两项均未修复；仅适用于固定官方 Vite 8.3.5 / Rolldown 1.2.16，版本变化时必需入口失败并要求重新评审或移除例外，不自动适用于 Vite+ 内置 Rolldown 1.2.15。
+
+  Web 扫描期间关闭或重启可能留下临时缓存；同一 Node 进程连续构建可能保留旧代编译引用并增加内存。classic 512 SFC / 14 次编辑的产物与 runtime 对照通过，但 RSS 增长 233.938 MiB、强制 GC 后 heap 增长 37.009 MiB，仍超过原 32/16 MiB 门限。该结果不证明线性增长、所有增长同因或 Vite+ 有相同资源表现。
+
+  Vite 必需产品入口固定执行五项并报告完整清单、豁免项和未执行项，通过时标记 accepted-with-waivers。原六项公开产品契约通过 diagnose:vite-product-lifecycle 保留，上游内部及引用回收诊断独立保留，原始失败仍非零退出。资源手动 workflow、原门限和断言不变；其他 CI、coverage、审查与真实 IDE 门禁不自动豁免，不能将例外写成问题已修复或完整验收通过。
+
+- feat(web): 补齐平台 API、桌面触摸和下拉刷新预览，完善原始模板诊断。
+
+  - 增加基于浏览器音频的 `createInnerAudioContext` 和字节/Base64 转换，补齐性能、实时日志、键盘、内存、调试与息屏等 API 的调用入口，并明确无法等价实现的微信能力及降级告警。
+  - 按每次输入处理鼠标主键拖动和真实触摸，保留触摸坐标、现代 2D Canvas 的相对坐标与事件形状，释放取消、失焦和卸载后的交互资源，查询 Canvas 节点可直接绘制。
+  - 为 `scroll-view` 增加浏览器平滑定位和基础 refresher，区分显式受控数据提交与无关重渲染；刷新完成后即使数据原值已为 `false`，再次提交也能正确收回。
+  - legacy 模板更新保留未变化的节点与组件状态，避免父级数据更新在原生事件传播途中拆除后续监听，并保留原生组件自行维护的 DOM 和样式。
+  - 开发服务区分未知标签和未适配官方组件，诊断定位到 WXML、layout、include/import 及内联/外部 SFC 原始模板，并按入口注册作用域检查依赖；复用告警级别与去重配置，生产构建保持静默，并修复 polling 模式的真实保存热更新。
+  - 同步 simulator 的受控属性提交、原生刷新状态与测试桥接，保留编译器原始标签来源，并更新随包配置说明及脚手架版本联动。
+  - 联动发布 constants 的全部公开直接依赖，确保新的共享运行时标记随依赖版本范围一起更新。
+
+- Updated dependencies:
+  - @weapp-core/constants@0.5.1
+  - @wevu/compiler@7.8.0
+  - wevu@7.8.0
+
 ## 1.1.0
 
 ### Minor Changes
