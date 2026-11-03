@@ -36,6 +36,21 @@ describe('performance reporting workflows', () => {
     expect(workflow.jobs.smoke.steps.find((step: { name?: string }) => step.name === 'Check collector contracts').run).toContain('--config scripts/vitest.config.mjs')
   })
 
+  it('builds published workspace dependencies before collector contracts on a clean checkout', () => {
+    const workflow = readWorkflowFixture('ci-performance.yml')
+    const steps = workflow.jobs.smoke.steps as Array<{ name?: string, if?: string, run?: string }>
+    const installIndex = steps.findIndex(step => step.name === 'Install dependencies')
+    const buildIndex = steps.findIndex(step => step.name === 'Build collector contract dependencies')
+    const contractsIndex = steps.findIndex(step => step.name === 'Check collector contracts')
+    expect(installIndex).toBeGreaterThanOrEqual(0)
+    expect(buildIndex).toBeGreaterThan(installIndex)
+    expect(contractsIndex).toBeGreaterThan(buildIndex)
+    expect(steps[buildIndex]?.run).toBe('pnpm exec turbo run build --filter=weapp-ide-cli...')
+    for (const index of [installIndex, buildIndex, contractsIndex]) {
+      expect(steps[index]?.if).toBe('steps.scope.outputs.needed == \'true\'')
+    }
+  })
+
   it('isolates scheduled full collection, bounds concurrency and always retains failed evidence', async () => {
     const workflow = parse(await readFile(path.join(root, '.github/workflows/nightly-performance.yml'), 'utf8'))
     expect(Object.keys(workflow.on).sort()).toEqual(['schedule', 'workflow_dispatch'])

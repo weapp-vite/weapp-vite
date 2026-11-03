@@ -69,6 +69,9 @@ jobs:
       - name: Install dependencies
         if: steps.scope.outputs.needed == 'true'
         run: pnpm install --frozen-lockfile --prefer-offline
+      - name: Build collector contract dependencies
+        if: steps.scope.outputs.needed == 'true'
+        run: pnpm exec turbo run build --filter=weapp-ide-cli...
       - name: Check collector contracts
         if: steps.scope.outputs.needed == 'true'
         run: pnpm exec vitest run --config scripts/vitest.config.mjs scripts/performanceGate scripts/benchmarkTemplatesHmr scripts/benchmarkTemplatesPerformance/measuredBuild.test.ts scripts/performance-comment-workflow.test.ts
