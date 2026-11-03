@@ -37,6 +37,7 @@ it('records compiler lifecycle timings without output or consuming stream conten
   observer.dispose()
   expect(snapshot).toEqual({
     phase: 'closed',
+    pid: 83,
     events: [
       { event: 'handle', elapsedMs: 0 },
       { event: 'spawn', elapsedMs: 2 },
@@ -53,6 +54,13 @@ it('records compiler lifecycle timings without output or consuming stream conten
   expect(child.eventNames()).toEqual([])
   expect(JSON.stringify(snapshot)).not.toContain('private')
   expect(output).not.toHaveBeenCalled()
+})
+
+it.each([undefined, 0, -1, Number.NaN, 1.5])('does not report an invalid compiler PID %s', (pid) => {
+  const child = compilerChild(pid)
+  const observer = observeWindowsCompilerChild({ nodeChildProcess: child }, performance.now())
+  expect(observer.snapshot().pid).toBeUndefined()
+  observer.dispose()
 })
 
 it.each(['not-spawned', 'spawn-failed', 'running', 'exited-awaiting-close', 'closed'] as const)('distinguishes %s when compilation settles without waiting for another event', (phase) => {

@@ -101,7 +101,19 @@ describe('shared build token views', () => {
 
   it('retains the legacy escape diagnostic without recovering malformed structure', () => {
     const source = String.raw`<view title="\"legacy\"" />`
-    expect(scan(source).glassEaselFindings).toContainEqual(expect.objectContaining({ code: 'GE004' }))
+    expect(scan(source).glassEaselFindings).toEqual([
+      expect.objectContaining({ code: 'GE004', severity: 'error', start: source.indexOf('title=') }),
+    ])
     expect(() => scan(String.raw`<view title="\"legacy\""><text></view>`)).toThrow(/\[weapp\.wxml\] \d+:/)
+  })
+
+  it('reports each complete escaped attribute once while preserving following components', () => {
+    const source = String.raw`<view title="\"legacy\"" label='\'other\'' /><Next />`
+    const token = scan(source)
+    expect(token.glassEaselFindings).toEqual([
+      expect.objectContaining({ code: 'GE004', severity: 'error', start: source.indexOf('title=') }),
+      expect.objectContaining({ code: 'GE004', severity: 'error', start: source.indexOf('label=') }),
+    ])
+    expect(Object.keys(token.components)).toEqual(['view', 'Next'])
   })
 })

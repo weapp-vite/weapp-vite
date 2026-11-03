@@ -11,6 +11,7 @@ interface CompilerChildMarker {
 
 interface CompilerChildSnapshot {
   phase: 'unavailable' | 'not-spawned' | 'spawn-failed' | 'running' | 'exited-awaiting-close' | 'closed'
+  pid?: number
   events: CompilerChildMarker[]
 }
 
@@ -83,8 +84,10 @@ export function observeWindowsCompilerChild(subprocess: { nodeChildProcess?: Chi
   }
   return {
     snapshot(): CompilerChildSnapshot {
+      const pid = child?.pid
       return {
         phase: !available ? 'unavailable' : closed ? 'closed' : exited ? 'exited-awaiting-close' : failed && !spawned ? 'spawn-failed' : spawned ? 'running' : 'not-spawned',
+        pid: pid !== undefined && Number.isSafeInteger(pid) && pid > 0 ? pid : undefined,
         events: events.map(event => ({ ...event })),
       }
     },

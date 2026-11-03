@@ -63,6 +63,8 @@ export async function buildWindowsKernelInspector(root = WINDOWS_KERNEL_WORKSPAC
       const compilationSource = join(directory, 'snapshot.cs')
       await fs.writeFile(compilationSource, source)
       signal?.throwIfAborted()
+      const startedMs = performance.now()
+      const dispatchedAt = new Date().toISOString()
       const subprocess = execa(compiler, [...WINDOWS_KERNEL_COMPILER_FLAGS, `/out:${executable}`, compilationSource], {
         stdin: 'ignore',
         timeout: WINDOWS_KERNEL_COMPILE_TIMEOUT_MS,
@@ -70,7 +72,7 @@ export async function buildWindowsKernelInspector(root = WINDOWS_KERNEL_WORKSPAC
         windowsHide: true,
         cancelSignal: signal,
       })
-      const observation = observeWindowsCompilerChild(subprocess, performance.now())
+      const observation = observeWindowsCompilerChild(subprocess, startedMs)
       let settlement: ReturnType<typeof observation.snapshot> | undefined
       const observed = Object.assign(subprocess.then((result) => {
         settlement = observation.snapshot()
@@ -79,12 +81,28 @@ export async function buildWindowsKernelInspector(root = WINDOWS_KERNEL_WORKSPAC
         settlement = observation.snapshot()
         throw error
       }), { nodeChildProcess: subprocess.nodeChildProcess })
+      const compilationFailure = (message: string, cause: unknown) => {
+        const drain = observation.snapshot()
+        const inputs = {
+          dispatchedAt,
+          observedAt: new Date().toISOString(),
+          sourceSha256: windowsKernelDigest(source),
+          flagsSha256: windowsKernelDigest(JSON.stringify(WINDOWS_KERNEL_COMPILER_FLAGS)),
+          compilerRelativePath: compilerPath,
+          timeoutMs: WINDOWS_KERNEL_COMPILE_TIMEOUT_MS,
+          node: process.version,
+          arch: process.arch,
+          nativeCloseConfirmed: drain.phase === 'closed',
+          ownerCancelled: signal?.aborted ?? false,
+        }
+        return new Error(`${message}, child=${JSON.stringify(settlement ?? drain)}, drain=${JSON.stringify(drain)}, inputs=${JSON.stringify(inputs)}.`, { cause })
+      }
       try {
         const result = await settle(observed).catch((cause: unknown) => {
-          throw new Error(`Windows kernel inspector compilation rejected: child=${JSON.stringify(settlement ?? observation.snapshot())}, drain=${JSON.stringify(observation.snapshot())}.`, { cause })
+          throw compilationFailure('Windows kernel inspector compilation rejected', cause)
         })
         if (result.exitCode !== 0) {
-          throw new Error(`Windows kernel inspector compilation failed: exitCode=${result.exitCode ?? 'none'}, signal=${result.signal ?? 'none'}, timedOut=${result.timedOut ?? false}, child=${JSON.stringify(settlement ?? observation.snapshot())}, drain=${JSON.stringify(observation.snapshot())}.`, { cause: result })
+          throw compilationFailure(`Windows kernel inspector compilation failed: exitCode=${result.exitCode ?? 'none'}, signal=${result.signal ?? 'none'}, timedOut=${result.timedOut ?? false}`, result)
         }
         signal?.throwIfAborted()
         const manifest: WindowsKernelArtifactManifest = {

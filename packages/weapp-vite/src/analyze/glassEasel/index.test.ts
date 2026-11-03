@@ -52,9 +52,8 @@ describe('glass-easel analyze', () => {
       'GE002',
       'GE003',
       'GE004',
-      'GE004',
     ])
-    expect(result.summary).toEqual({ errors: 5, warnings: 2 })
+    expect(result.summary).toEqual({ errors: 4, warnings: 2 })
   })
 
   it('keeps componentFramework-only projects on the fallback path', () => {

@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import process from 'node:process'
 import { afterEach, expect, it, vi } from 'vitest'
-import { readWindowsKernelInspector, WINDOWS_KERNEL_COMPILE_TIMEOUT_MS, WINDOWS_KERNEL_TOOL_ROOT } from '../../e2e/utils/devProcessCleanup/windowsKernelArtifact'
+import { readWindowsKernelInspector, WINDOWS_KERNEL_COMPILE_TIMEOUT_MS, WINDOWS_KERNEL_COMPILER_FLAGS, WINDOWS_KERNEL_SOURCE, WINDOWS_KERNEL_TOOL_ROOT, windowsKernelDigest } from '../../e2e/utils/devProcessCleanup/windowsKernelArtifact'
 import { createWindowsKernelArtifactFixture, KERNEL_FIXTURE_COMMIT } from '../../e2e/utils/testSupport/windowsKernelArtifact'
 import { buildWindowsKernelInspector } from './build'
 
@@ -35,7 +35,7 @@ async function fixture() {
   }
   vi.spyOn(process, 'platform', 'get').mockReturnValue('win32')
   const env = { sYsTeMrOoT: system, BUILD_ARTIFACT_EXPECTED_COMMIT: KERNEL_FIXTURE_COMMIT, GITHUB_RUN_ID: '23', GITHUB_RUN_ATTEMPT: '1' }
-  return { root, env, temporary }
+  return { root, env, temporary, compiler }
 }
 
 function successfulCompiler() {
@@ -125,7 +125,8 @@ it('does nothing on Unix and never probes or compiles a Windows executable', asy
 })
 
 it('cancels its exact compiler but keeps the build lock and temporary source until native close', async () => {
-  const { root, env, temporary } = await fixture()
+  const { root, env, temporary, compiler } = await fixture()
+  const read = vi.spyOn(fs, 'readFile')
   const controller = new AbortController()
   const child = new ChildProcess()
   const original = Object.assign(new Error('original compiler cancellation'), { isCanceled: true })
@@ -151,6 +152,8 @@ it('cancels its exact compiler but keeps the build lock and temporary source unt
     child.emit('close', null, 'SIGTERM')
     const failure = await pending as Error
     expect(failure.cause).toBe(original)
+    expect(failure.message).toContain('"ownerCancelled":true')
+    expect(read.mock.calls.some(([path]) => String(path) === compiler)).toBe(false)
     expect(await fs.readdir(temporary)).toEqual([])
     expect(await fs.readdir(join(root, WINDOWS_KERNEL_TOOL_ROOT))).toEqual(['snapshot.exe'])
   }
@@ -158,6 +161,64 @@ it('cancels its exact compiler but keeps the build lock and temporary source unt
     child.emit('close', null, 'SIGTERM')
     await pending
   }
+})
+
+it('records owned compiler identity and failure inputs without adding diagnostic reads or compiler attempts', async () => {
+  const { root, env, compiler } = await fixture()
+  const source = await fs.readFile(join(root, WINDOWS_KERNEL_SOURCE))
+  const child = Object.assign(new ChildProcess(), { pid: 83 })
+  const original = { exitCode: undefined, signal: 'SIGTERM', timedOut: true, stdout: '', stderr: '' }
+  const readFile = fs.readFile
+  const read = vi.spyOn(fs, 'readFile').mockImplementation(async (...args) => {
+    if (String(args[0]).startsWith(dirname(compiler))) {
+      throw Object.assign(new Error('diagnostic read failure'), { code: 'EACCES' })
+    }
+    return readFile(...args)
+  })
+  execute.mockImplementation(() => {
+    const pending = Promise.resolve().then(() => {
+      child.emit('spawn')
+      child.emit('exit', null, 'SIGTERM')
+      return original
+    })
+    return Object.assign(pending, { nodeChildProcess: child })
+  })
+  const pending = buildWindowsKernelInspector(root, env).catch((error: unknown) => error)
+  try {
+    await vi.waitFor(() => expect(execute).toHaveBeenCalledOnce())
+    expect(read.mock.calls.some(([path]) => String(path) === compiler)).toBe(false)
+    child.emit('close', null, 'SIGTERM')
+    const failure = await pending as Error
+    expect(failure.cause).toBe(original)
+    expect(execute).toHaveBeenCalledOnce()
+    expect(execute.mock.calls[0][2].timeout).toBe(30_000)
+    expect(failure.message).toContain('"pid":83')
+    expect(failure.message).toContain(`"sourceSha256":"${windowsKernelDigest(source)}"`)
+    expect(failure.message).toContain(`"flagsSha256":"${windowsKernelDigest(JSON.stringify(WINDOWS_KERNEL_COMPILER_FLAGS))}"`)
+    expect(failure.message).toContain('"dispatchedAt":')
+    expect(failure.message).toContain('"observedAt":')
+    expect(failure.message).toContain('"nativeCloseConfirmed":true')
+    expect(read.mock.calls.some(([path]) => String(path).startsWith(dirname(compiler)))).toBe(false)
+    expect(failure.message).not.toContain('diagnostic read failure')
+    await expect(fs.stat(join(root, WINDOWS_KERNEL_TOOL_ROOT, 'manifest.json'))).rejects.toMatchObject({ code: 'ENOENT' })
+  }
+  finally {
+    child.emit('close', null, 'SIGTERM')
+    await pending
+  }
+})
+
+it('does not read installation files when a compiler handle cannot confirm native close', async () => {
+  const { root, env, compiler, temporary } = await fixture()
+  const read = vi.spyOn(fs, 'readFile')
+  execute.mockReturnValue(Promise.resolve({ exitCode: 0 }))
+  const failure = await buildWindowsKernelInspector(root, env).catch((error: unknown) => error) as AggregateError
+  expect(failure).toBeInstanceOf(AggregateError)
+  expect((failure.errors[0] as Error).message).toContain('"nativeCloseConfirmed":false')
+  expect((failure.errors[1] as Error).message).toContain('directory retained because its child identity is unconfirmed')
+  expect(await fs.readdir(temporary)).toHaveLength(1)
+  expect(read.mock.calls.some(([path]) => String(path) === compiler)).toBe(false)
+  expect(execute).toHaveBeenCalledOnce()
 })
 
 it('retains compilation, lock-close and lock-removal failures while trying both cleanup phases', async () => {
