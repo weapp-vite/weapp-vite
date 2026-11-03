@@ -6,10 +6,14 @@ import process from 'node:process'
 import { pathToFileURL } from 'node:url'
 import { promisify } from 'node:util'
 import { expect, it } from 'vitest'
+import { fixtureProcessSource, isFixtureProcessAlive, parseFixturePid, requestFixtureCleanup } from './fixtureProcessControl'
 
 it.each(['registered', 'missing-binding'] as const)('handles an exiting nested runner with %s cleanup ownership', async (binding) => {
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'suite-runner-exit-cleanup-'))
   const childPidFile = path.join(tempRoot, 'child.pid')
+  const cleanupFile = path.join(tempRoot, 'cleanup')
+  const runnerPidFile = path.join(tempRoot, 'runner.pid')
+  const outerPidFile = path.join(tempRoot, 'outer.pid')
   const runnerScript = path.join(tempRoot, 'runner.mjs')
   const outerScript = path.join(tempRoot, 'outer.mjs')
   const preloadScript = path.join(tempRoot, 'isolated-home.mjs')
@@ -27,14 +31,14 @@ it.each(['registered', 'missing-binding'] as const)('handles an exiting nested r
   fs.writeFileSync(runnerScript, `
     import fs from 'node:fs';
     import { runTaskSuite } from ${JSON.stringify(suiteRunnerUrl)};
-    const pidFile = process.argv[2];
+    ${fixtureProcessSource(runnerPidFile, cleanupFile, 15_000)}
     void runTaskSuite('e2e:test', [{
       label: 'ignores-termination',
       command: process.execPath,
-      args: ['-e', 'process.on("SIGTERM", () => {}); require("node:fs").writeFileSync(process.argv[1], String(process.pid)); setInterval(() => {}, 5000)', pidFile],
+      args: ['-e', 'process.on("SIGTERM", () => {});' + ${JSON.stringify(fixtureProcessSource(childPidFile, cleanupFile, 15_000))} + '; setInterval(() => {}, 5000)'],
     }], { writeReport: false });
     setInterval(() => {
-      if (fs.existsSync(pidFile)) {
+      if (fs.existsSync(${JSON.stringify(childPidFile)})) {
         if (${JSON.stringify(binding)} === 'missing-binding') {
           const directory = ${JSON.stringify(path.join(tempRoot, '.local/state/weapp-agent/machine-e2e/scopes'))};
           for (const file of fs.readdirSync(directory)) {
@@ -52,12 +56,13 @@ it.each(['registered', 'missing-binding'] as const)('handles an exiting nested r
   fs.writeFileSync(outerScript, `
     import fs from 'node:fs';
     import { runTaskSuite } from ${JSON.stringify(suiteRunnerUrl)};
+    ${fixtureProcessSource(outerPidFile, cleanupFile, 15_000)}
     let scopesBeforeNextTask;
     try {
       const exitCode = await runTaskSuite('e2e:runner-exit-fixture', [{
         label: 'exiting-runner',
         command: process.execPath,
-        args: ${JSON.stringify(['--import', 'tsx', '--import', preloadUrl, runnerScript, childPidFile])},
+        args: ${JSON.stringify(['--import', 'tsx', '--import', preloadUrl, runnerScript])},
         env: { WEAPP_VITE_E2E_TASK_TIMEOUT_MS: '5000' },
       }, {
         label: 'after-recovery',
@@ -83,6 +88,7 @@ it.each(['registered', 'missing-binding'] as const)('handles an exiting nested r
     }
   `)
 
+  const errors: unknown[] = []
   try {
     const running = promisify(execFile)(process.execPath, ['--import', 'tsx', '--import', preloadUrl, outerScript], {
       cwd: path.resolve(import.meta.dirname, '../../..'),
@@ -116,16 +122,8 @@ it.each(['registered', 'missing-binding'] as const)('handles an exiting nested r
       expect(result.scopesBeforeNextTask).toHaveLength(2)
       expect(result.scopesBeforeNextTask?.every(scope => scope.sealed && scope.completed && typeof scope.cleanupKey === 'string')).toBe(true)
     }
-    const childPid = Number(fs.readFileSync(childPidFile, 'utf8'))
-    await expect.poll(() => {
-      try {
-        process.kill(childPid, 0)
-        return false
-      }
-      catch (error) {
-        return (error as NodeJS.ErrnoException).code === 'ESRCH'
-      }
-    }, { timeout: 2000 }).toBe(true)
+    const childPid = parseFixturePid(fs.readFileSync(childPidFile, 'utf8'))
+    await expect.poll(() => !isFixtureProcessAlive(childPid), { timeout: 2000 }).toBe(true)
     const leaseDirectory = path.join(tempRoot, '.local', 'state', 'weapp-agent', 'machine-e2e')
     if (binding === 'missing-binding') {
       expect(fs.existsSync(path.join(leaseDirectory, 'owner.json'))).toBe(true)
@@ -138,15 +136,23 @@ it.each(['registered', 'missing-binding'] as const)('handles an exiting nested r
       expect(fs.existsSync(leaseDirectory)).toBe(false)
     }
   }
+  catch (error) {
+    errors.push(error)
+  }
   finally {
-    if (fs.existsSync(childPidFile)) {
-      try {
-        process.kill(Number(fs.readFileSync(childPidFile, 'utf8')), 'SIGKILL')
-      }
-      catch {
-      }
+    try {
+      await requestFixtureCleanup({ cleanupFile, pidFiles: [outerPidFile, runnerPidFile, childPidFile], timeoutMs: 2000 })
+      // 只在本 fixture 注册的进程均已停止后删除控制文件和隔离租约。
+      fs.rmSync(tempRoot, { recursive: true, force: true })
     }
-    // 独立 fixture 已退出、其已登记子进程已终止；只清理本用例临时租约和日志。
-    fs.rmSync(tempRoot, { recursive: true, force: true })
+    catch (error) {
+      errors.push(error)
+    }
+  }
+  if (errors.length === 1) {
+    throw errors[0]
+  }
+  if (errors.length > 1) {
+    throw new AggregateError(errors, 'Nested runner assertion and fixture cleanup failed.')
   }
 }, 15_000)

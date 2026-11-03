@@ -10,6 +10,7 @@ import { MANAGED_PROJECT_JOURNAL_ENV } from 'weapp-ide-cli'
 import { createManagedWechatProjectJournal } from '../../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/journal'
 import { createIsolatedMachineLease } from '../../utils/testSupport/machineLease'
 import { runTaskSuite as runTaskSuiteWithOptions } from '../suiteRunner'
+import { fixtureProcessSource, isFixtureProcessAlive, parseFixturePid, requestFixtureCleanup } from './fixtureProcessControl'
 import { createStdioLeakFixture } from './stdioLeakFixture'
 
 let machine: IsolatedMachineLease
@@ -33,6 +34,15 @@ afterEach(async () => {
 
 function runTaskSuite(...[name, tasks, options]: Parameters<typeof runTaskSuiteWithOptions>) {
   return runTaskSuiteWithOptions(name, tasks, { ...options, machineLeaseOptions: { stateDirectory: machine.stateDirectory } })
+}
+
+function throwFixtureErrors(errors: unknown[]) {
+  if (errors.length === 1) {
+    throw errors[0]
+  }
+  if (errors.length > 1) {
+    throw new AggregateError(errors, 'Process assertion and fixture cleanup failed.')
+  }
 }
 
 describe('suiteRunner real process and machine lease integration', () => {
@@ -266,8 +276,10 @@ describe('suiteRunner real process and machine lease integration', () => {
   it('force kills a timed out task that ignores graceful termination', async () => {
     const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'suite-runner-force-kill-'))
     const pidFile = path.join(tempRoot, 'child.pid')
+    const cleanupFile = path.join(tempRoot, 'cleanup')
     const previousExitCode = process.exitCode
     process.exitCode = undefined
+    const errors: unknown[] = []
 
     try {
       const exitCode = await runTaskSuite('e2e:test', [{
@@ -275,92 +287,85 @@ describe('suiteRunner real process and machine lease integration', () => {
         command: process.execPath,
         args: ['-e', `
           process.on('SIGTERM', () => {});
-          require('node:fs').writeFileSync(process.argv[1], String(process.pid));
+          ${fixtureProcessSource(pidFile, cleanupFile, 15_000)}
           setInterval(() => {}, 5000);
-        `, pidFile],
+        `],
         env: { WEAPP_VITE_E2E_TASK_TIMEOUT_MS: '1000' },
       }], { writeReport: false })
 
-      const childPid = Number(fs.readFileSync(pidFile, 'utf8'))
+      const childPid = parseFixturePid(fs.readFileSync(pidFile, 'utf8'))
       expect(exitCode).toBe(1)
-      await expect.poll(() => {
-        try {
-          process.kill(childPid, 0)
-          return false
-        }
-        catch (error) {
-          return (error as NodeJS.ErrnoException).code === 'ESRCH'
-        }
-      }, { timeout: 1000 }).toBe(true)
+      await expect.poll(() => !isFixtureProcessAlive(childPid), { timeout: 1000 }).toBe(true)
+    }
+    catch (error) {
+      errors.push(error)
     }
     finally {
-      if (fs.existsSync(pidFile)) {
-        try {
-          process.kill(Number(fs.readFileSync(pidFile, 'utf8')), 'SIGKILL')
-        }
-        catch {
-        }
+      try {
+        await requestFixtureCleanup({ cleanupFile, pidFiles: [pidFile], timeoutMs: 2000 })
+        fs.rmSync(tempRoot, { recursive: true, force: true })
       }
-      fs.rmSync(tempRoot, { recursive: true, force: true })
-      process.exitCode = previousExitCode
+      catch (error) {
+        errors.push(error)
+      }
+      finally {
+        process.exitCode = previousExitCode
+      }
     }
+    throwFixtureErrors(errors)
   }, 15_000)
 
   it('cleans up a timed out process tree after its entry process exits gracefully', async () => {
     const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'suite-runner-process-tree-'))
     const parentPidFile = path.join(tempRoot, 'parent.pid')
+    const cleanupFile = path.join(tempRoot, 'cleanup')
     const childPidFile = path.join(tempRoot, 'child.pid')
     const childScript = path.join(tempRoot, 'child.cjs')
     const parentScript = path.join(tempRoot, 'parent.cjs')
     const previousExitCode = process.exitCode
     process.exitCode = undefined
+    const errors: unknown[] = []
     fs.writeFileSync(childScript, `
       process.on('SIGTERM', () => {});
-      require('node:fs').writeFileSync(process.argv[2], String(process.pid));
+      ${fixtureProcessSource(childPidFile, cleanupFile, 20_000)}
       setInterval(() => {}, 5000);
     `)
     fs.writeFileSync(parentScript, `
-      const fs = require('node:fs');
       const { spawn } = require('node:child_process');
       process.on('SIGTERM', () => process.exit(0));
-      fs.writeFileSync(process.argv[2], String(process.pid));
-      spawn(process.execPath, [process.argv[3], process.argv[4]], { stdio: 'ignore' });
+      ${fixtureProcessSource(parentPidFile, cleanupFile, 20_000)}
+      spawn(process.execPath, [${JSON.stringify(childScript)}], { stdio: 'ignore' });
     `)
 
     try {
       const exitCode = await runTaskSuite('e2e:test', [{
         label: 'process-tree-timeout',
         command: process.execPath,
-        args: [parentScript, parentPidFile, childScript, childPidFile],
+        args: [parentScript],
         env: { WEAPP_VITE_E2E_TASK_TIMEOUT_MS: '2000' },
       }], { writeReport: false })
 
       expect(exitCode).toBe(1)
       for (const pidFile of [parentPidFile, childPidFile]) {
-        const pid = Number(fs.readFileSync(pidFile, 'utf8'))
-        await expect.poll(() => {
-          try {
-            process.kill(pid, 0)
-            return false
-          }
-          catch (error) {
-            return (error as NodeJS.ErrnoException).code === 'ESRCH'
-          }
-        }, { timeout: 2000 }).toBe(true)
+        const pid = parseFixturePid(fs.readFileSync(pidFile, 'utf8'))
+        await expect.poll(() => !isFixtureProcessAlive(pid), { timeout: 2000 }).toBe(true)
       }
+    }
+    catch (error) {
+      errors.push(error)
     }
     finally {
-      for (const pidFile of [parentPidFile, childPidFile]) {
-        if (fs.existsSync(pidFile)) {
-          try {
-            process.kill(Number(fs.readFileSync(pidFile, 'utf8')), 'SIGKILL')
-          }
-          catch {
-          }
-        }
+      try {
+        await requestFixtureCleanup({ cleanupFile, pidFiles: [parentPidFile, childPidFile], timeoutMs: 2000 })
+        fs.rmSync(tempRoot, { recursive: true, force: true })
       }
-      fs.rmSync(tempRoot, { recursive: true, force: true })
-      process.exitCode = previousExitCode
+      catch (error) {
+        errors.push(error)
+      }
+      finally {
+        process.exitCode = previousExitCode
+      }
     }
+    throwFixtureErrors(errors)
   }, 20_000)
 })

@@ -104,10 +104,19 @@ it('preserves user plugin hooks once', async () => {
 it('recovers Web transforms after invalid source and supports independent middleware hosts', async () => {
   const first = await fixture()
   const second = await fixture()
+  // 此用例验证变换恢复和宿主隔离；官方依赖优化器的关闭缺陷仍由独立诊断保留。
+  // 不让不属于本用例的后台预构建持有临时目录，其他默认 Web 用例继续启用优化器。
+  for (const { config } of [first, second]) {
+    config.optimizeDeps = { ...config.optimizeDeps, noDiscovery: true, include: [] }
+  }
   const server = await createServer(first.config)
   const other = await createServer(second.config)
   const file = path.join(first.root, 'src/pages/home/index.ts')
   try {
+    for (const host of [server, other]) {
+      expect(host.config.optimizeDeps).toMatchObject({ noDiscovery: true, include: [] })
+      expect(host.environments.client?.depsOptimizer).toBeUndefined()
+    }
     const url = '/src/pages/home/index.ts'
     expect((await server.transformRequest(url))?.code).toContain('web-host')
     await writeFile(file, 'Page({invalid:')

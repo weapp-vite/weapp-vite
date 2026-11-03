@@ -32,6 +32,13 @@ export async function createCoveragePlan(root, output, shards = 4) {
   return plan
 }
 
+const executionFields = ['exitCode', 'signal', 'signalDescription', 'failed', 'timedOut', 'isCanceled', 'isGracefullyCanceled', 'isTerminated', 'isForcefullyTerminated', 'isMaxBuffer', 'code', 'shortMessage', 'originalMessage', 'durationMs']
+
+/** 只保留进程实际提供的退出字段；缺失值不推断为退出码或信号。 */
+function describeExecution(result, outcome) {
+  return { outcome, ...Object.fromEntries(executionFields.map(field => [field, result?.[field] ?? null])) }
+}
+
 export async function runCoverageShard(root, planPath, index, output) {
   root = await realpath(root)
   const plan = await readJson(planPath)
@@ -43,19 +50,56 @@ export async function runCoverageShard(root, planPath, index, output) {
   const blob = path.join(output, 'blob.json')
   await Promise.all([observedPath, blob, path.join(output, 'manifest.json')].map(file => rm(file, { force: true })))
   const startedAt = performance.now()
-  const result = await execa('pnpm', ['exec', 'vitest', 'run', ...baseArguments, `--config=${shardConfig}`, '--coverage.enabled', '--coverage.reporter=json', `--shard=${index}/${plan.shards}`, '--reporter=default', '--reporter=blob', `--reporter=${reporter}`, `--outputFile.blob=${blob}`, `--coverage.reportsDirectory=${path.join(output, 'coverage')}`], { cwd: root, stdio: 'inherit', reject: false, env: { COVERAGE_SHARD_REPORT: observedPath } })
-  let observed = { inventory: [], passed: false }
+  const failures = []
+  const errors = []
+  const recordError = (stage, error) => {
+    failures.push(error)
+    errors.push({ stage, name: error?.name ?? null, code: error?.code ?? null, message: error instanceof Error ? error.message : String(error) })
+  }
+  let result
+  let outcome = 'returned'
   try {
-    observed = await readJson(observedPath)
+    result = await execa('pnpm', ['exec', 'vitest', 'run', ...baseArguments, `--config=${shardConfig}`, '--coverage.enabled', '--coverage.reporter=json', `--shard=${index}/${plan.shards}`, '--reporter=default', '--reporter=blob', `--reporter=${reporter}`, `--outputFile.blob=${blob}`, `--coverage.reportsDirectory=${path.join(output, 'coverage')}`], { cwd: root, stdio: 'inherit', reject: false, env: { COVERAGE_SHARD_REPORT: observedPath } })
   }
   catch (error) {
-    if (error.code !== 'ENOENT') {
-      throw error
+    outcome = 'threw'
+    result = error
+    recordError('execute', error)
+  }
+  if (outcome === 'returned' && result?.failed === true) {
+    recordError('execute', result)
+  }
+  const execution = describeExecution(result, outcome)
+  let observed = { inventory: [], cases: [], passed: false }
+  try {
+    const value = await readJson(observedPath)
+    assert(value !== null && typeof value === 'object' && Array.isArray(value.inventory) && Array.isArray(value.cases) && typeof value.passed === 'boolean', 'Invalid observed coverage report')
+    observed = value
+  }
+  catch (error) {
+    recordError('observed', error)
+  }
+  let blobHash = null
+  if (execution.exitCode === 0) {
+    try {
+      blobHash = await digestFile(blob)
+    }
+    catch (error) {
+      recordError('blob', error)
     }
   }
-  const report = { schemaVersion: 1, identity, planHash: plan.planHash, index, status: result.exitCode === 0 && observed.passed ? 'passed' : 'failed', inventory: observed.inventory, cases: observed.cases ?? [], durationMs: performance.now() - startedAt, blobHash: result.exitCode === 0 ? await digestFile(blob) : null }
-  await save(path.join(output, 'manifest.json'), report)
-  assert.equal(report.status, 'passed', `Coverage shard ${index} failed`)
+  const completed = outcome === 'returned' && execution.exitCode === 0 && execution.failed === false && execution.signal === null
+    && !['timedOut', 'isCanceled', 'isGracefullyCanceled', 'isTerminated', 'isForcefullyTerminated', 'isMaxBuffer'].some(field => execution[field] === true)
+  const report = { schemaVersion: 1, identity, planHash: plan.planHash, index, status: completed && observed.passed && errors.length === 0 ? 'passed' : 'failed', inventory: observed.inventory, cases: observed.cases, durationMs: performance.now() - startedAt, blobHash, execution, errors }
+  try {
+    await save(path.join(output, 'manifest.json'), report)
+  }
+  catch (error) {
+    throw new AggregateError([...failures, error], `Unable to save coverage shard ${index} manifest: ${JSON.stringify({ execution, errors })}`)
+  }
+  if (report.status !== 'passed') {
+    throw new Error(`Coverage shard ${index} failed: ${JSON.stringify({ execution, errors })}`, { cause: failures.length === 1 ? failures[0] : failures.length ? new AggregateError(failures, 'Coverage shard evidence collection failed') : undefined })
+  }
   return report
 }
 
