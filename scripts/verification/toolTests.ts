@@ -4,6 +4,12 @@ import path from 'node:path'
 export const ROOT_REPOSITORY_TEST_GLOBS = ['scripts/**/*.test.ts', 'integrations/shared-hmr-tailwind/**/*.test.ts']
 export const SCRIPT_TEST_GLOBS = ['scripts/**/*.test.mjs', 'scripts/**/*.test.ts']
 
+/** 真实构建与隔离类型编译独占串行分组，避免与其他项目争用子进程资源。 */
+export const REPOSITORY_SUBPROCESS_TEST_FILES = [
+  'scripts/verification/build.test.ts',
+  'scripts/verifyVitePlusTemplates/publicTypes.test.ts',
+]
+
 /** 受管测试自行取得机器租约并启动真实资源，分类不改变完整入口的发现范围。 */
 const MANAGED_SCRIPT_TESTS = new Set([
   'scripts/dependencyContracts/vite.test.ts',

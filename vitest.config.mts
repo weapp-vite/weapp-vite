@@ -1,4 +1,5 @@
-import type { Plugin } from 'vite'
+import type { OxcOptions, Plugin } from 'vite'
+import type { TestProjectInlineConfiguration } from 'vitest/config'
 import fs from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
@@ -6,7 +7,7 @@ import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vitest/config'
 import YAML from 'yaml'
 import { DEV_PROCESS_CLEANUP_HOOK_TIMEOUT_MS } from './e2e/utils/devProcessCleanup/shutdown.ts'
-import { ROOT_REPOSITORY_TEST_GLOBS } from './scripts/verification/toolTests.ts'
+import { REPOSITORY_SUBPROCESS_TEST_FILES, ROOT_REPOSITORY_TEST_GLOBS } from './scripts/verification/toolTests.ts'
 import { localReporters, localTestPolicy } from './scripts/verificationBenchmark/localReporterConfig.mjs'
 
 const ROOT_DIR = path.dirname(fileURLToPath(new URL(import.meta.url)))
@@ -116,31 +117,49 @@ function resolveProjects(): string[] {
   return projects
 }
 
-const projects = [
-  {
-    extends: false,
-    // 脚本项目只剥离类型，不加载 workspace 的应用 solution references。
-    oxc: { tsconfig: false },
-    plugins: [{
-      name: 'repo-scripts:published-node-conditions',
-      config: {
-        order: 'post',
-        handler(config) {
-          // 工具脚本沿用原生 Node 的发布入口，避免 development 条件选择依赖包中的未编译源码。
-          config.environments ??= {}
-          config.environments.ssr ??= {}
-          config.environments.ssr.resolve ??= {}
-          config.environments.ssr.resolve.conditions = ['node']
-        },
+// Vite 的类型省略 tsconfig，但非 bundled 转换仍将它传给 Rolldown，需保留原有禁用行为。
+const repositoryScriptTransform: OxcOptions & { tsconfig: false } = { tsconfig: false }
+
+const repositoryScriptProject = {
+  extends: false,
+  // 脚本项目只剥离类型，不加载 workspace 的应用 solution references。
+  oxc: repositoryScriptTransform,
+  plugins: [{
+    name: 'repo-scripts:published-node-conditions',
+    config: {
+      order: 'post',
+      handler(config) {
+        // 工具脚本沿用原生 Node 的发布入口，避免 development 条件选择依赖包中的未编译源码。
+        config.environments ??= {}
+        config.environments.ssr ??= {}
+        config.environments.ssr.resolve ??= {}
+        config.environments.ssr.resolve.conditions = ['node']
       },
-    } satisfies Plugin],
-    // 只限制测试发现范围；保留 Vite 默认转换，让跨目录导入的 TypeScript 依赖同样完成类型剥离。
+    },
+  } satisfies Plugin],
+  // 只限制测试发现范围；保留 Vite 默认转换，让跨目录导入的 TypeScript 依赖同样完成类型剥离。
+  test: {
+    name: 'repo-scripts',
+    setupFiles: [path.resolve(ROOT_DIR, 'e2e/vitest.e2e.dev-process.setup.ts')],
+    hookTimeout: DEV_PROCESS_CLEANUP_HOOK_TIMEOUT_MS,
+    include: ROOT_REPOSITORY_TEST_GLOBS,
+    exclude: ['**/node_modules/**', '**/.git/**', ...REPOSITORY_SUBPROCESS_TEST_FILES],
+  },
+} satisfies TestProjectInlineConfiguration
+
+const projects = [
+  repositoryScriptProject,
+  {
+    ...repositoryScriptProject,
     test: {
-      name: 'repo-scripts',
-      setupFiles: [path.resolve(ROOT_DIR, 'e2e/vitest.e2e.dev-process.setup.ts')],
-      hookTimeout: DEV_PROCESS_CLEANUP_HOOK_TIMEOUT_MS,
-      include: ROOT_REPOSITORY_TEST_GLOBS,
+      ...repositoryScriptProject.test,
+      name: 'repo-scripts-subprocess',
+      include: REPOSITORY_SUBPROCESS_TEST_FILES,
       exclude: ['**/node_modules/**', '**/.git/**'],
+      // 等待普通项目与编译器的 100/101 分组结束，保留原有默认测试时限。
+      sequence: { groupOrder: 200 },
+      maxWorkers: 1,
+      fileParallelism: false,
     },
   },
   {

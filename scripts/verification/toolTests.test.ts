@@ -1,9 +1,55 @@
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { glob } from 'tinyglobby'
+import { loadConfigFromFile } from 'vite'
 import { expect, it } from 'vitest'
 import { parseCLI } from 'vitest/node'
-import { ROOT_REPOSITORY_TEST_GLOBS, scriptTestInventory } from './toolTests'
+import { REPOSITORY_SUBPROCESS_TEST_FILES, ROOT_REPOSITORY_TEST_GLOBS, scriptTestInventory } from './toolTests'
+
+it('assigns every root contract once while isolating real subprocess tests with their original budget', async () => {
+  const cwd = path.resolve(import.meta.dirname, '../..')
+  const loaded = await loadConfigFromFile({ command: 'serve', mode: 'test' }, path.join(cwd, 'vitest.config.mts'))
+  interface Project {
+    extends?: boolean
+    oxc?: { tsconfig: boolean }
+    plugins?: Array<{ name: string }>
+    test: {
+      name: string
+      include: string[]
+      exclude: string[]
+      setupFiles: string[]
+      hookTimeout: number
+      testTimeout?: number
+      maxWorkers?: number
+      fileParallelism?: boolean
+      sequence?: { groupOrder: number }
+    }
+  }
+  const config = loaded!.config as { test: { projects: Array<Project | string>, testTimeout?: number } }
+  const projects = config.test.projects.filter((project): project is Project => typeof project !== 'string')
+  const ordinary = projects.find(project => project.test.name === 'repo-scripts')!
+  const subprocess = projects.find(project => project.test.name === 'repo-scripts-subprocess')!
+  const discovered = await Promise.all([ordinary, subprocess].map(project => glob(project.test.include, { cwd, ignore: project.test.exclude })))
+  const expected = await glob(ROOT_REPOSITORY_TEST_GLOBS, { cwd, ignore: ['**/node_modules/**', '**/.git/**'] })
+  expect(discovered.flat().sort()).toEqual(expected.sort())
+  expect(new Set(discovered.flat()).size).toBe(expected.length)
+  expect(discovered[1]!.sort()).toEqual([...REPOSITORY_SUBPROCESS_TEST_FILES].sort())
+  expect(discovered[1]).toEqual([
+    'scripts/verification/build.test.ts',
+    'scripts/verifyVitePlusTemplates/publicTypes.test.ts',
+  ])
+  expect(subprocess.test).toMatchObject({ sequence: { groupOrder: 200 }, maxWorkers: 1, fileParallelism: false })
+  expect(projects.filter(project => project.test.sequence?.groupOrder === 200)).toEqual([subprocess])
+  expect(subprocess.test.setupFiles).toEqual(ordinary.test.setupFiles)
+  expect(subprocess.test.setupFiles).toEqual([path.join(cwd, 'e2e/vitest.e2e.dev-process.setup.ts')])
+  expect(subprocess.test.hookTimeout).toBe(ordinary.test.hookTimeout)
+  for (const project of [ordinary, subprocess]) {
+    expect(project.extends).toBe(false)
+    expect(project.oxc).toEqual({ tsconfig: false })
+    expect(project.plugins?.map(plugin => plugin.name)).toContain('repo-scripts:published-node-conditions')
+    expect(project.test.testTimeout ?? config.test.testTimeout ?? 5000).toBe(5000)
+  }
+})
 
 it('discovers every shared Tailwind contract in the root project, including nested helpers', async () => {
   const cwd = path.resolve(import.meta.dirname, '../..')
