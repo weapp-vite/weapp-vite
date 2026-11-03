@@ -179,7 +179,11 @@ it('keeps the agent CLI on the stable release line', async () => {
 })
 
 it.each(['policy-pr', 'policy-full'])('runs release guards in %s before publishing', async (jobName) => {
-  const workflow = readWorkflowFixture('ci-policy.yml') as { jobs?: Record<string, { with?: { main_command?: string } }> }
-  const commands = workflow.jobs?.[jobName]?.with?.main_command ?? ''
+  const workflow = readWorkflowFixture('ci-policy.yml') as { jobs?: Record<string, { with?: { build_command?: string, main_command?: string } }> }
+  const inputs = workflow.jobs?.[jobName]?.with
+  // 冷环境必须先准备正式包入口，工具契约不能隐式依赖其他 job 的 dist。
+  assert.equal(inputs?.build_command, 'pnpm exec turbo run build --filter=weapp-ide-cli...')
+  const commands = inputs?.main_command ?? ''
   assert.match(commands, /^\s*pnpm test:release\s*$/m)
+  assert.match(commands, /^\s*pnpm test:pr-actions\s*$/m)
 })

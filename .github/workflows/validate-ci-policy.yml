@@ -41,6 +41,7 @@ jobs:
       runs_on: ubuntu-latest
       node_version: '24'
       timeout_minutes: 10
+      build_command: pnpm exec turbo run build --filter=weapp-ide-cli...
       main_command: |
         pnpm test:release
         if [[ -f scripts/manual-pr-actions.test.mjs ]]; then
@@ -89,6 +90,7 @@ jobs:
       runs_on: ubuntu-latest
       node_version: '${{ matrix.node-version }}'
       timeout_minutes: 10
+      build_command: pnpm exec turbo run build --filter=weapp-ide-cli...
       main_command: |
         pnpm test:release
         if [[ -f scripts/manual-pr-actions.test.mjs ]]; then
