@@ -1,0 +1,443 @@
+/* eslint-disable e18e/ban-dependencies -- 复用现有跨平台构建采样器。 */
+import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
+import { access, lstat, mkdir, readFile, readdir, readlink, realpath, rename, rm, writeFile } from 'node:fs/promises'
+import os from 'node:os'
+import path from 'node:path'
+import { performance } from 'node:perf_hooks'
+import process from 'node:process'
+import { fileURLToPath } from 'node:url'
+import { execa } from 'execa'
+import { withMachineE2ELease } from '../../../packages/devtools-runtime/src/lease/machine.ts'
+import { verifyBenchmarkAppOutputs } from '../../../scripts/benchmarkTemplatesPerformance/appOutputs.ts'
+import { createPeakRssSampler } from '../../../scripts/benchmarkTemplatesPerformance/peakRssSampler.ts'
+import { sampleProcessTreeRssBytes } from '../../../scripts/benchmarkTemplatesPerformance/processTreeRss.ts'
+
+type Side = 'baseline' | 'candidate'
+type Manifest = Record<string, string>
+type RssResult = Awaited<ReturnType<ReturnType<typeof createPeakRssSampler>['stop']>>
+interface Comparison {
+  template: string
+  baselineSamples: number
+  candidateSamples: number
+  baselineP50Ms: number | null
+  candidateP50Ms: number | null
+  ratio: number | null
+  complete: boolean
+  comparisonCriterionMet: boolean | null
+  pairedDiagnostics: { pair: number, globalPair: number, order: 'AB' | 'BA', baselineMs: number, candidateMs: number, ratio: number, differenceMs: number }[]
+  orderDiagnostics: { order: 'AB' | 'BA', pairs: number, pairRatioP50: number | null }[]
+}
+interface Sample {
+  id: string
+  template: string
+  pair: number
+  globalPair: number
+  side: Side
+  order: 'AB' | 'BA'
+  position: 1 | 2
+  identity: string
+  status: 'running' | 'complete' | 'failed'
+  startedAt?: string
+  finishedAt?: string
+  wallMs?: number
+  pid?: number
+  exitCode?: number | null
+  signal?: string | null
+  cancelled?: boolean
+  memory?: RssResult
+  stdout: string
+  stderr: string
+  stdoutSha256?: string
+  stderrSha256?: string
+  artifacts?: Awaited<ReturnType<typeof verifyBenchmarkAppOutputs>> & { manifest: string, manifestSha256: string, fileCount: number }
+  error?: string
+}
+
+const baselineCommit = 'b6d0577164c8ccb3b2c0e5afff702c1997297550'
+const templates = ['weapp-vite-tailwindcss-tdesign-template', 'weapp-vite-template', 'weapp-vite-wevu-template']
+const sourceRoots = ['packages', 'packages-runtime', 'packages-private', '@weapp-core', 'mpcore/packages', 'templates', 'patches']
+const packageParents = ['packages', 'packages-runtime', 'packages-private', '@weapp-core', 'mpcore/packages']
+const runnerRoots = [
+  'scripts/benchmarkWxmlPerformance', 'scripts/benchmarkTemplatesHmr', 'scripts/benchmarkTemplatesPerformance',
+  'scripts/performanceGate', 'scripts/workspace-hmr', 'scripts/utils', 'e2e/utils', 'packages/devtools-runtime/src',
+]
+const runnerFiles = ['scripts/benchmark-templates-hmr.ts', '.tmp/current-run/wxml/run-build-paired.ts']
+const repository = await realpath(fileURLToPath(new URL('../../../', import.meta.url)))
+const [baselineInput, candidateInput, outputInput, ...extra] = process.argv.slice(2)
+assert.ok(baselineInput && candidateInput && outputInput && extra.length === 0, 'Usage: node --import tsx .tmp/current-run/wxml/run-build-paired.ts <baseline-root> <candidate-root> <new-output-directory>')
+const roots: Record<Side, string> = { baseline: await realpath(path.resolve(baselineInput)), candidate: await realpath(path.resolve(candidateInput)) }
+assert.equal(roots.candidate, repository, 'Candidate must be the current runner checkout, including its dirty source tree')
+assert.notEqual(roots.baseline, roots.candidate, 'Baseline and candidate must be separate checkouts')
+const output = path.resolve(outputInput)
+assert.ok(!Object.values(roots).some(root => sourceRoots.some(directory => within(path.join(root, directory), output))), 'Output must not be inside measured source/package directories')
+await mkdir(output)
+await mkdir(path.join(output, 'samples'))
+
+const cancellation = new AbortController()
+let receivedSignal: NodeJS.Signals | undefined
+const cancel = (signal: NodeJS.Signals) => {
+  receivedSignal ??= signal
+  cancellation.abort(new Error(`Interrupted by ${signal}`))
+}
+const interrupt = () => cancel('SIGINT')
+const terminate = () => cancel('SIGTERM')
+process.on('SIGINT', interrupt)
+process.on('SIGTERM', terminate)
+
+const report = {
+  schemaVersion: 1,
+  kind: 'paired-full-build-comparison',
+  startedAt: new Date().toISOString(),
+  finishedAt: null as string | null,
+  status: 'preflight' as string,
+  trusted: false,
+  roots,
+  plan: {
+    templates, pairsPerTemplate: 7, expectedBuilds: 42, warmups: 0, discardedSamples: 0, replacements: 0,
+    order: 'Global odd pair: baseline then candidate (AB); global even pair: candidate then baseline (BA)',
+    command: ['pnpm', '--filter', '<template>', 'build'],
+    timing: 'Remove template dist before timing; wall starts immediately before execa and stops at child completion; RSS stop and output verification are outside wall',
+    rss: 'Existing process-tree RSS sampler, 100ms interval; availability is retained per sample',
+    identityChecks: 'Complete before/after inventories; additions, deletions and content changes invalidate the entire capture',
+    criterion: { metric: 'candidate P50 / baseline P50 for each template', maximumRatio: 1.05, type: 'full-build comparison criterion' },
+    hmrBudget: { evaluated: false, budgetMs: 500, reason: 'This run measures full builds and cannot establish HMR budget compliance' },
+    failurePolicy: 'Stop on first build, output verification, cancellation or identity failure; retain all attempted samples; no retries or replacement samples',
+  },
+  samples: [] as Sample[],
+  identities: {} as Partial<Record<'before' | 'after', { file: string, sha256: string }>>,
+  checkpoints: [] as { at: string, stage: string, sample?: string }[],
+  drift: [] as string[],
+  comparisons: [] as Comparison[],
+  error: undefined as string | undefined,
+  receivedSignal: undefined as string | undefined,
+}
+
+function within(directory: string, target: string) {
+  const relative = path.relative(directory, target)
+  return relative === '' || (!relative.startsWith(`..${path.sep}`) && relative !== '..' && !path.isAbsolute(relative))
+}
+
+function hash(value: Buffer | string) {
+  return createHash('sha256').update(value).digest('hex')
+}
+
+function errorText(error: unknown): string {
+  if (error instanceof AggregateError) return `${error.stack ?? error.message}\n${error.errors.map(errorText).join('\n')}`
+  return error instanceof Error ? error.stack ?? error.message : String(error)
+}
+
+async function saveJson(filename: string, value: unknown) {
+  const serialized = `${JSON.stringify(value, null, 2)}\n`
+  const destination = path.join(output, filename)
+  await writeFile(`${destination}.pending`, serialized)
+  await rename(`${destination}.pending`, destination)
+  return { file: filename, sha256: hash(serialized) }
+}
+
+async function checkpoint(stage: string, sample?: Sample) {
+  report.checkpoints.push({ at: new Date().toISOString(), stage, ...(sample ? { sample: sample.id } : {}) })
+  if (sample) await saveJson(`samples/${sample.id}/sample.json`, sample)
+  report.comparisons = comparisons()
+  await saveJson('report.json', report)
+}
+
+async function git(root: string, ...args: string[]) {
+  return (await execa('git', args, { cwd: root, maxBuffer: 100 * 1024 * 1024 })).stdout
+}
+
+async function fingerprint(filename: string) {
+  const stat = await lstat(filename)
+  if (stat.isSymbolicLink()) {
+    const target = await readlink(filename)
+    const contents = await readFile(filename).catch((error: NodeJS.ErrnoException) => {
+      if (error.code === 'EISDIR') return Buffer.from('directory-target')
+      if (error.code === 'ENOENT') return Buffer.from('missing-target')
+      throw error
+    })
+    return `symlink:${hash(target)}:${hash(contents)}`
+  }
+  assert.ok(stat.isFile(), `Expected regular input file: ${filename}`)
+  return hash(await readFile(filename))
+}
+
+async function inventory(root: string, relative: string, result: Manifest) {
+  const directory = path.join(root, relative)
+  let entries
+  try {
+    entries = await readdir(directory, { withFileTypes: true })
+  }
+  catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return false
+    throw error
+  }
+  for (const entry of entries.sort((left, right) => left.name.localeCompare(right.name, 'en'))) {
+    const filename = path.posix.join(relative, entry.name)
+    if (entry.isDirectory()) await inventory(root, filename, result)
+    else result[filename] = await fingerprint(path.join(root, filename))
+  }
+  return true
+}
+
+async function sourceManifest(root: string) {
+  const files = new Set([
+    ...(await git(root, 'ls-files', '-z')).split('\0'),
+    ...(await git(root, 'ls-files', '--others', '--exclude-standard', '-z')).split('\0'),
+  ])
+  const result: Manifest = {}
+  for (const filename of [...files].sort()) {
+    if (!filename || (filename.includes('/') && !sourceRoots.some(directory => filename.startsWith(`${directory}/`)))) continue
+    if (filename.split('/').some(segment => segment === 'dist' || segment === 'node_modules')) continue
+    try {
+      result[filename] = await fingerprint(path.join(root, filename))
+    }
+    catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
+      result[filename] = 'missing-tracked-input'
+    }
+  }
+  return result
+}
+
+async function distManifest(root: string) {
+  const directories: Record<string, boolean> = {}
+  const files: Manifest = {}
+  for (const parent of packageParents) {
+    const entries = await readdir(path.join(root, parent), { withFileTypes: true }).catch((error: NodeJS.ErrnoException) => {
+      if (error.code === 'ENOENT') return []
+      throw error
+    })
+    for (const entry of entries.sort((left, right) => left.name.localeCompare(right.name, 'en'))) {
+      if (!entry.isDirectory()) continue
+      const directory = path.posix.join(parent, entry.name, 'dist')
+      directories[directory] = await inventory(root, directory, files)
+    }
+  }
+  return { directories, files }
+}
+
+async function runnerManifest() {
+  const result: Manifest = {}
+  for (const directory of runnerRoots) await inventory(repository, directory, result)
+  for (const filename of runnerFiles) result[filename] = await fingerprint(path.join(repository, filename))
+  return result
+}
+
+async function commandPath(command: string) {
+  const extensions = process.platform === 'win32' ? (process.env.PATHEXT ?? '.COM;.EXE;.BAT;.CMD').split(';') : ['']
+  for (const directory of (process.env.PATH ?? '').split(path.delimiter)) {
+    if (!directory) continue
+    for (const extension of extensions) {
+      const filename = path.resolve(directory, `${command}${extension}`)
+      try {
+        await access(filename)
+        if ((await lstat(filename)).isDirectory()) continue
+        return { path: filename, realpath: await realpath(filename), sha256: await fingerprint(filename) }
+      }
+      catch (error) {
+        if (!['ENOENT', 'ENOTDIR', 'EACCES'].includes((error as NodeJS.ErrnoException).code ?? '')) throw error
+      }
+    }
+  }
+  throw new Error(`Cannot identify executable: ${command}`)
+}
+
+async function checkoutIdentity(root: string) {
+  const installed: Manifest = {}
+  for (const filename of ['node_modules/.modules.yaml', 'node_modules/.pnpm/lock.yaml', 'node_modules/.pnpm-workspace-state-v1.json']) {
+    try { installed[filename] = await fingerprint(path.join(root, filename)) }
+    catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
+      installed[filename] = 'absent'
+    }
+  }
+  return {
+    root,
+    head: (await git(root, 'rev-parse', 'HEAD')).trim(),
+    status: await git(root, 'status', '--porcelain=v1', '-z', '--untracked-files=all'),
+    diffSha256: hash(await git(root, 'diff', 'HEAD', '--binary')),
+    lockSha256: await fingerprint(path.join(root, 'pnpm-lock.yaml')),
+    source: await sourceManifest(root),
+    dist: await distManifest(root),
+    installed,
+    pnpmVersion: (await execa('pnpm', ['--version'], { cwd: root })).stdout.trim(),
+  }
+}
+
+async function identity() {
+  return {
+    baseline: await checkoutIdentity(roots.baseline),
+    candidate: await checkoutIdentity(roots.candidate),
+    runner: await runnerManifest(),
+    runtime: {
+      node: { version: process.version, executable: process.execPath, sha256: await fingerprint(process.execPath) },
+      pnpm: await commandPath('pnpm'),
+      platform: process.platform, arch: process.arch, osRelease: os.release(),
+      cpuModels: [...new Set(os.cpus().map(cpu => cpu.model))], logicalCpus: os.cpus().length, totalMemoryBytes: os.totalmem(),
+    },
+  }
+}
+
+function differences(before: unknown, after: unknown, prefix = ''): string[] {
+  if (JSON.stringify(before) === JSON.stringify(after)) return []
+  if (before && after && typeof before === 'object' && typeof after === 'object' && !Array.isArray(before) && !Array.isArray(after)) {
+    const left = before as Record<string, unknown>
+    const right = after as Record<string, unknown>
+    return [...new Set([...Object.keys(left), ...Object.keys(right)])].sort()
+      .flatMap(key => differences(left[key], right[key], prefix ? `${prefix}.${key}` : key))
+  }
+  return [prefix]
+}
+
+function p50(values: number[]) {
+  if (!values.length) return null
+  const sorted = [...values].sort((left, right) => left - right)
+  const middle = Math.floor(sorted.length / 2)
+  return sorted.length % 2 ? sorted[middle]! : (sorted[middle - 1]! + sorted[middle]!) / 2
+}
+
+function comparisons(): Comparison[] {
+  return templates.map((template) => {
+    const successful = report.samples.filter(sample => sample.template === template && sample.status === 'complete')
+    const baseline = successful.filter(sample => sample.side === 'baseline').map(sample => sample.wallMs!)
+    const candidate = successful.filter(sample => sample.side === 'candidate').map(sample => sample.wallMs!)
+    const baselineP50Ms = p50(baseline)
+    const candidateP50Ms = p50(candidate)
+    const ratio = baselineP50Ms !== null && candidateP50Ms !== null ? candidateP50Ms / baselineP50Ms : null
+    const paired = Array.from({ length: 7 }, (_, index) => {
+      const a = successful.find(sample => sample.side === 'baseline' && sample.pair === index + 1)
+      const b = successful.find(sample => sample.side === 'candidate' && sample.pair === index + 1)
+      return a && b ? { pair: index + 1, globalPair: a.globalPair, order: a.order, baselineMs: a.wallMs!, candidateMs: b.wallMs!, ratio: b.wallMs! / a.wallMs!, differenceMs: b.wallMs! - a.wallMs! } : null
+    }).filter(value => value !== null)
+    return {
+      template, baselineSamples: baseline.length, candidateSamples: candidate.length, baselineP50Ms, candidateP50Ms, ratio,
+      complete: baseline.length === 7 && candidate.length === 7,
+      comparisonCriterionMet: baseline.length === 7 && candidate.length === 7 && ratio !== null ? ratio <= 1.05 : null,
+      pairedDiagnostics: paired,
+      orderDiagnostics: (['AB', 'BA'] as const).map(order => ({ order, pairs: paired.filter(pair => pair.order === order).length, pairRatioP50: p50(paired.filter(pair => pair.order === order).map(pair => pair.ratio)) })),
+    }
+  })
+}
+
+async function measure(template: string, pair: number, globalPair: number, side: Side, position: 1 | 2, environment: NodeJS.ProcessEnv) {
+  assert.ok(!cancellation.signal.aborted, 'Run was cancelled before the next sample')
+  const id = `${String(globalPair).padStart(2, '0')}-${template}-p${pair}-${side}`
+  const directory = `samples/${id}`
+  await mkdir(path.join(output, directory))
+  const sample: Sample = {
+    id, template, pair, globalPair, side, position, order: globalPair % 2 ? 'AB' : 'BA',
+    identity: 'identity-before.json', status: 'running', stdout: `${directory}/stdout.log`, stderr: `${directory}/stderr.log`,
+  }
+  report.samples.push(sample)
+  await writeFile(path.join(output, sample.stdout), '')
+  await writeFile(path.join(output, sample.stderr), '')
+  await checkpoint('sample-prepared', sample)
+  let sampler: ReturnType<typeof createPeakRssSampler> | undefined
+  const project = path.join(roots[side], 'templates', template)
+  try {
+    await rm(path.join(project, 'dist'), { recursive: true, force: true })
+    assert.ok(!cancellation.signal.aborted, 'Run was cancelled before command launch')
+    sample.startedAt = new Date().toISOString()
+    const start = performance.now()
+    const child = execa('pnpm', ['--filter', template, 'build'], {
+      cwd: roots[side], reject: false, env: environment, stdin: 'ignore',
+      stdout: { file: path.join(output, sample.stdout) }, stderr: { file: path.join(output, sample.stderr) }, buffer: false,
+      cancelSignal: cancellation.signal, forceKillAfterDelay: 5_000,
+    })
+    sampler = createPeakRssSampler(() => typeof child.pid === 'number' ? sampleProcessTreeRssBytes(child.pid) : Promise.resolve(null))
+    sample.pid = child.pid
+    let result
+    try { result = await child }
+    finally {
+      sample.wallMs = performance.now() - start
+      sample.finishedAt = new Date().toISOString()
+    }
+    sample.exitCode = result.exitCode ?? null
+    sample.signal = result.signal ?? null
+    sample.cancelled = Boolean(result.isCanceled || cancellation.signal.aborted)
+    sample.memory = await sampler.stop()
+    sampler = undefined
+    assert.equal(result.exitCode, 0, `Build failed: ${id}`)
+    assert.ok(!sample.cancelled, `Build cancelled: ${id}`)
+    const pages = await verifyBenchmarkAppOutputs(project)
+    const files: Manifest = {}
+    assert.ok(await inventory(project, 'dist', files), 'Build did not produce dist')
+    const artifactManifest = await saveJson(`${directory}/artifacts.json`, files)
+    sample.artifacts = { ...pages, manifest: artifactManifest.file, manifestSha256: artifactManifest.sha256, fileCount: Object.keys(files).length }
+    sample.status = 'complete'
+  }
+  catch (error) {
+    sample.status = 'failed'
+    sample.error = errorText(error)
+    sample.cancelled = Boolean(cancellation.signal.aborted)
+    throw error
+  }
+  finally {
+    if (sampler) sample.memory = await sampler.stop()
+    sample.finishedAt ??= new Date().toISOString()
+    sample.stdoutSha256 = await fingerprint(path.join(output, sample.stdout))
+    sample.stderrSha256 = await fingerprint(path.join(output, sample.stderr))
+    await checkpoint('sample-finished', sample)
+  }
+  process.stdout.write(`${globalPair}/21 ${side} ${template} pair ${pair}/7: ${sample.wallMs!.toFixed(1)} ms\n`)
+}
+
+let before: Awaited<ReturnType<typeof identity>> | undefined
+try {
+  await checkpoint('created')
+  await withMachineE2ELease(async (lease) => {
+    try {
+      before = await identity()
+      report.identities.before = await saveJson('identity-before.json', before)
+      assert.equal(before.baseline.head, baselineCommit, 'Baseline commit must be exactly b6d0577')
+      assert.equal(before.baseline.status, '', 'Baseline checkout must be clean')
+      assert.notEqual(before.candidate.status, '', 'Candidate must retain the current dirty-tree changes')
+      for (const template of templates) {
+        const prefix = `templates/${template}/`
+        const inputs = (source: Manifest) => Object.fromEntries(Object.entries(source).filter(([filename]) => filename.startsWith(prefix)))
+        assert.ok(Object.keys(inputs(before.baseline.source)).length, `Missing baseline template inputs: ${template}`)
+        assert.deepEqual(inputs(before.baseline.source), inputs(before.candidate.source), `Template inputs differ: ${template}`)
+      }
+      report.status = 'running'
+      await checkpoint('identities-frozen-and-inputs-equal')
+      let globalPair = 0
+      for (const template of templates) {
+        for (let pair = 1; pair <= 7; pair++) {
+          globalPair++
+          const order: Side[] = globalPair % 2 ? ['baseline', 'candidate'] : ['candidate', 'baseline']
+          for (const [index, side] of order.entries()) await measure(template, pair, globalPair, side, index === 0 ? 1 : 2, lease.environment)
+        }
+      }
+      assert.equal(report.samples.length, 42)
+      assert.ok(report.samples.every(sample => sample.status === 'complete'))
+    }
+    finally {
+      if (before) {
+        const after = await identity()
+        report.identities.after = await saveJson('identity-after.json', after)
+        report.drift = differences(before, after)
+        await checkpoint('identities-checked')
+        assert.equal(report.drift.length, 0, `Identity drift: ${report.drift.join(', ')}`)
+      }
+    }
+  })
+  assert.ok(!cancellation.signal.aborted, 'Run was cancelled')
+  report.trusted = true
+  report.comparisons = comparisons()
+  report.status = report.comparisons.every(comparison => comparison.comparisonCriterionMet === true) ? 'comparison-met' : 'comparison-not-met'
+  process.exitCode = report.status === 'comparison-met' ? 0 : 1
+}
+catch (error) {
+  report.status = cancellation.signal.aborted ? 'cancelled' : 'failed'
+  report.error = errorText(error)
+  process.exitCode = 1
+  process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`)
+}
+finally {
+  process.off('SIGINT', interrupt)
+  process.off('SIGTERM', terminate)
+  report.finishedAt = new Date().toISOString()
+  report.receivedSignal = receivedSignal
+  await checkpoint('finished')
+  await saveJson('exit.json', { exitCode: process.exitCode ?? 1, status: report.status, trusted: report.trusted, receivedSignal, finishedAt: report.finishedAt })
+}

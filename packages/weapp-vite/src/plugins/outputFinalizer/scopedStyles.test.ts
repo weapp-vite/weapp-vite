@@ -44,6 +44,32 @@ describe('Class-based platform scoped styles', () => {
       .toBe('.panel.data-v-one,.panel.data-v-two{color:red}')
   })
 
+  it('preserves quoted class bytes, entity spelling and literal XML backslashes', () => {
+    const source = String.raw`<view title="tail\" class='a &quot;b&quot;' data-v-one data-v-two=""/>`
+    expect(normalizeClassScopedTemplate(source)).toBe(String.raw`<view title="tail\" class='a &quot;b&quot; data-v-one data-v-two' data-v-one data-v-two=""/>`)
+  })
+
+  it('uses the last class attribute independently of earlier quoted or unquoted duplicates', () => {
+    expect(normalizeClassScopedTemplate('<view class=first class="last" data-v-one/>'))
+      .toBe('<view class=first class="last data-v-one" data-v-one/>')
+    expect(normalizeClassScopedTemplate('<view class="first" class=last data-v-one/>'))
+      .toBe('<view class="first" class="last data-v-one" data-v-one/>')
+    expect(normalizeClassScopedTemplate('<view class data-v-one/>'))
+      .toBe('<view class=" data-v-one" data-v-one/>')
+  })
+
+  it.each(['alipay', 'tt'] as const)('keeps target %s scripts opaque while traversing ordinary filter components', (platform) => {
+    const tag = platform === 'alipay' ? 'import-sjs' : 'sjs'
+    const script = `<${tag}>var html = '<view data-v-fake=""/>';</${tag}>`
+    const template = `${script}<!-- <view data-v-comment/> --><filter><view data-v-real=""/></filter>`
+    expect(normalizeClassScopedTemplate(template, platform))
+      .toBe(`${script}<!-- <view data-v-comment/> --><filter><view class="data-v-real" data-v-real=""/></filter>`)
+  })
+
+  it('rejects malformed structure before publishing a partial scope rewrite', () => {
+    expect(() => normalizeClassScopedTemplate('<view data-v-one><text></view>')).toThrow('[weapp.wxml] 23:')
+  })
+
   it.each(['alipay', 'weapp', 'tt'])('normalizes final output for Alipay and Douyin, including style-only updates (%s)', async (platform) => {
     const styleExt = platform === 'alipay' ? 'acss' : platform === 'tt' ? 'ttss' : 'wxss'
     const filename = `pages/index/index.${styleExt}`

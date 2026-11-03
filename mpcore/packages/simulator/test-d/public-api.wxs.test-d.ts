@@ -1,6 +1,6 @@
 import type { BrowserRendererContext, RuntimeRendererContext } from '..'
 import { expectType } from 'tsd'
-import { createBrowserHeadlessSession, createBrowserVirtualFiles } from '..'
+import { createBrowserHeadlessSession, createBrowserVirtualFiles, HeadlessTestingNodeHandle } from '..'
 
 declare const browserContext: BrowserRendererContext
 declare const runtimeContext: RuntimeRendererContext
@@ -18,3 +18,9 @@ const files = createBrowserVirtualFiles([
 const session = createBrowserHeadlessSession({ files })
 session.reLaunch('/pages/index/index')
 expectType<string>(session.renderCurrentPage().wxml)
+const rendered = session.renderCurrentPage()
+const root = new HeadlessTestingNodeHandle(rendered.root)
+expectType<Promise<string>>(root.text())
+expectType<Promise<string | undefined>>(root.attr('title'))
+expectType<Promise<HeadlessTestingNodeHandle | null>>(root.$('view'))
+expectType<Promise<HeadlessTestingNodeHandle[]>>(root.$$('view'))

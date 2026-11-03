@@ -594,6 +594,32 @@ export default defineConfig({
 
 浏览器预览使用 `weapp.web`，与小程序中的 `appPrelude.webRuntime` 分别配置。`weapp.web.pluginOptions.runtime.warnings` 控制运行时兼容告警及开发期模板标签诊断：`level` 默认为 `warn`，`off` 关闭，`error` 只提高日志级别；`dedupe` 默认 `true`。
 
+`weapp.web.pluginOptions.templateInput` 覆盖原生模板入口及原生 include/import 依赖的输入规则；它描述模板来源和编码，独立于 Web 输出目标：
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    web: {
+      pluginOptions: {
+        templateInput: { platform: 'weapp', syntax: 'xml' },
+      },
+    },
+  },
+})
+```
+
+| 字段 | 含义 |
+| --- | --- |
+| `platform` | `weapp`、`alipay`、`tt`、`swan`、`jd`、`xhs`，以及历史 `qq`、`ks` 输入 |
+| `syntax` | `legacy` 或 `xml`；显式值优先于平台和文件后缀默认 |
+| `rawTags` | 替换完整原始脚本标签列表，类型为 `readonly string[]` |
+
+未覆盖时，`.wxml` 使用微信 / legacy；`.axml`、`.ttml`、`.swan`、`.jxml`、`.xhsml` 使用对应平台 / XML；历史 `.qml`、`.ksml` 使用 QQ、快手 / XML；`.html` 使用 XML。每个已知后缀的原生依赖选择自身规则，无已知后缀的依赖继承父模板规则。默认原始脚本标签来自实际输入平台，并包含 `script`；当前 Web 脚本执行入口仍只处理 `wxs`。
+
+Vue SFC 生成模板（含 `<template src>`）固定使用微信 / XML，不受这个原生模板选项覆盖；其中的原生 include/import 依赖仍按自身后缀及显式插件配置选择。直接使用 `@weapp-vite/web/plugin` 时，对应入口为 `weappWebPlugin({ templateInput })`；字符串模板入口为 `createTemplate(source, options?)`，省略选项默认微信 / legacy。输入方言支持不代表对应平台 runtime 已通过验收，详见[模板输入规则](https://vite.weapp.dev/config/web.html#模板输入规则)和[Web 包说明](https://vite.weapp.dev/packages/web.html#模板输入方言)。
+
 标签诊断仅在 Web 开发服务输出，区分未知/未注册标签与尚未适配的官方组件，包含 WXML、layout、include/import 和 Vue SFC 内联/外部模板的原始文件及行列。共享模板按入口注册作用域判断；诊断按作用域、源文件、标签和原因去重，位置变化或修正后再次引入会重新提示。生产构建与生产页面没有这类诊断，API 降级告警仍遵循运行时配置。
 
 Web 支持主键拖动到 touch 事件的基础适配，真实触摸沿用原生事件，滚轮不转换为触摸。`scroll-view` 支持浏览器平滑定位与基础 refresher；刷新结束须显式提交 `refresher-triggered: false`。音频使用 `HTMLAudioElement`，键盘高度、内存告警、微信性能指标与监控上报仅兼容调用。完整边界见 [Web 运行时配置](https://vite.weapp.dev/config/web.html) 和 [Web 兼容矩阵](https://vite.weapp.dev/guide/web-compat-matrix.html)。

@@ -229,7 +229,7 @@ export {
 export type { WebPageHead, WebResourceHint, WebResourceHintRelation, WebResourceHintsConfig, WebSeoConfig } from './seo'
 export { injectStyle, removeStyle } from './style'
 export { createTemplate, renderTemplate } from './template'
-export type { TemplateRenderer, TemplateScope } from './template'
+export type { TemplateInputOptions, TemplateRenderer, TemplateScope } from './template'
 export { getWebViewportWidth, resolveWebViewportConfig, setupWebViewport } from './viewport'
 export type { ResolvedWebViewportConfig, WebViewportConfig } from './viewport'
 export { setRuntimeWarningOptions } from './warning'

@@ -54,6 +54,43 @@ defineComponent('wv-hello-world', {
 document.body.innerHTML = '<wv-hello-world title="文档地址"></wv-hello-world>'
 ```
 
+## 模板输入方言
+
+`templateInput` 描述模板源码的平台与编码，独立于 Web 输出目标。直接使用 Vite 插件时，它是 `weappWebPlugin` 的顶层选项；在 `weapp-vite` 配置中，入口为 `weapp.web.pluginOptions.templateInput`：
+
+```ts
+import { weappWebPlugin } from '@weapp-vite/web/plugin'
+
+weappWebPlugin({
+  templateInput: { platform: 'weapp', syntax: 'xml' },
+})
+```
+
+原生模板入口及其原生 include/import 依赖默认按各自后缀选择输入规则：
+
+| 输入 | 默认规则 |
+| --- | --- |
+| `.wxml` | 微信 / `legacy` |
+| `.axml`、`.ttml`、`.swan`、`.jxml`、`.xhsml` | 对应平台 / `xml` |
+| 历史 `.qml`、`.ksml` | QQ、快手 / `xml` |
+| `.html` | `xml` |
+| 无已知后缀的依赖 | 继承父模板输入规则 |
+
+`platform` 支持 `weapp`、`alipay`、`tt`、`swan`、`jd`、`xhs` 及历史 `qq`、`ks`；显式 `syntax: 'legacy' | 'xml'` 优先于平台和后缀默认。`rawTags?: readonly string[]` 替换完整原始脚本标签列表，未覆盖时按实际输入平台选择，并包含 `script`。识别脚本边界不代表执行该平台的脚本语言；当前 Web 脚本执行入口仍只处理 `wxs`。
+
+Vue SFC 生成模板（含 `<template src>`）固定使用微信 / XML，不受原生模板选项覆盖。同一 `.wxml` 文件作为 SFC 外部模板时保留 XML 反斜杠，作为原生入口时默认按 legacy 解码；它们的原生 include/import 依赖仍按自身后缀及显式插件配置选择。
+
+字符串模板的 `createTemplate(source, options?)` 接受同一组输入选项，省略时默认微信 / legacy：
+
+```ts
+import { createTemplate } from '@weapp-vite/web/runtime'
+
+const render = createTemplate('<view>{{ message }}</view>', { syntax: 'xml' })
+const output = render({ message: 'hello' })
+```
+
+`TemplateInputOptions` 从包主入口、`/runtime` 和 `/runtime/polyfill` 导出。完整插值中的表达式错误沿用 safe / compat / strict 执行策略；缺少 `}}`、破损标签或字符串等无法确定结构边界的完整模板会明确报错。输入方言支持不代表对应平台 runtime 已通过验收。完整说明见[模板输入方言](https://vite.weapp.dev/packages/web.html#模板输入方言)。
+
 ## 开发期模板诊断
 
 Vite 开发服务会区分“未知或未注册标签”和“官方组件尚未实现 Web 语义”，提示标签、源文件及行列位置。检查使用原始 WXML、layout、include/import 依赖和 Vue SFC 模板的位置，外部 SFC 模板指向实际模板文件；共享模板按各入口的组件注册作用域分别判断。已注册组件、合法 HTML/SVG/MathML、已适配原生组件和模板控制标签不会误报。

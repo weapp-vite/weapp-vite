@@ -1,5 +1,5 @@
-import type { Diagnostic, DocumentAnalysis, DocumentInput, LanguageOptions, LanguagePlatform, ScriptAnalysis, ScriptDialect, ScriptExportScope, ScriptFormatResult, ScriptTemplateExports, SourceEdit, TemplateAnalysis, TemplateFormatResult } from '@weapp-vite/language-service'
-import { analyzeDocument, analyzeScript, analyzeTemplate, formatScript, formatTemplate, formatTemplateResult, getLanguageFileAssociations, getLanguageProfile, getLanguageSupportMatrix, getScriptTemplateExports, getTemplateScriptInput, LanguageError, resolveLanguageProfile } from '@weapp-vite/language-service'
+import type { Diagnostic, DocumentAnalysis, DocumentInput, LanguageOptions, LanguagePlatform, ScriptAnalysis, ScriptDialect, ScriptExportScope, ScriptFormatResult, ScriptTemplateExports, SourceEdit, TemplateAnalysis, TemplateAttribute, TemplateFormatResult, TemplateToken } from '@weapp-vite/language-service'
+import { analyzeDocument, analyzeScript, analyzeTemplate, formatScript, formatTemplate, formatTemplateResult, getLanguageFileAssociations, getLanguageProfile, getLanguageSupportMatrix, getScriptTemplateExports, getTemplateScriptInput, LanguageError, resolveLanguageProfile, scanTemplate } from '@weapp-vite/language-service'
 import { expectAssignable, expectError, expectType } from 'tsd'
 
 expectType<string>(formatTemplate('<view/>', 'page.axml', { platform: 'alipay', singleAttributePerLine: true }))
@@ -34,3 +34,15 @@ expectType<string[] | undefined>(analyzeScript({ source: '', fileName: 'tools.wx
 expectType<DocumentInput>(getTemplateScriptInput('page.swan', { tagName: 'filter', source: '', sourceKind: 'native', start: 0, end: 0 }, 'swan'))
 expectError(getLanguageProfile('unknown'))
 expectError(analyzeTemplate({ source: '<view/>', fileName: 'page.wxml', platform: 'browser' }))
+
+const scanned = scanTemplate('<view/>')
+expectType<TemplateToken[]>(scanned.tokens)
+expectType<Diagnostic[]>(scanned.diagnostics)
+scanned.tokens.splice(0, 1)
+scanned.diagnostics.push({ code: 'custom', message: '可变诊断', severity: 'info', start: 0, end: 0 })
+const scannedTag = scanned.tokens[0]
+if (scannedTag?.kind === 'tag') {
+  expectType<TemplateAttribute[]>(scannedTag.attributes)
+  scannedTag.attributes.push({ name: 'added', start: 0, end: 0, nameStart: 0, nameEnd: 0, quote: '"' })
+  expectType<'"' | '\'' | undefined>(scannedTag.attributes[0]?.quote)
+}

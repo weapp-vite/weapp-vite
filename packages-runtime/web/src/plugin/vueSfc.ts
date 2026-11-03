@@ -1,6 +1,7 @@
 import type { NodePath } from '@babel/traverse'
 import type { CallExpression } from '@babel/types'
 import type { VueTransformResult } from 'wevu/compiler'
+import type { WxmlCompileOptions } from '../compiler/wxml/types'
 import type { ModuleMeta, ResolveWebAutoImportTag, ResolveWebModuleId, ScanState, WebStylePreprocessOptions } from './types'
 import { parse } from '@babel/parser'
 import _babelTraverse from '@babel/traverse'
@@ -212,6 +213,7 @@ export function generateWebVueSfcTemplate(
   meta: ModuleMeta,
   filename: string,
   srcRoot: string,
+  resolveInput?: WxmlCompileOptions['resolveInput'],
 ) {
   const controls = new Set(['component', 'transition', 'transition-group', 'keep-alive', 'slot', 'template'])
   const sourceTagDiagnostics = (result.meta?.templateTags ?? []).flatMap((entry) => {
@@ -221,6 +223,8 @@ export function generateWebVueSfcTemplate(
   return compileWxml({
     id: filename,
     source: result.template ?? '',
+    input: { platform: 'weapp', syntax: 'xml' },
+    resolveInput,
     sourceTagDiagnostics,
     navigationBar: meta.navigationBar ? { config: meta.navigationBar } : undefined,
     componentTags: meta.componentTags,

@@ -50,10 +50,41 @@ describe('WXML function transform runtime', { concurrent: false }, () => {
       ])
       await dom.check('transformed', host, page)
       const renamed = await page.$('view#renamed')
+      const encodingAttributes = [
+        'data-single-escape',
+        'data-double-escape',
+        'data-single-tail',
+        'data-double-tail',
+        'data-single-mixed',
+        'data-double-mixed',
+        'data-symbols',
+        'data-comparison',
+        'data-bitwise',
+        'data-expression-entity',
+      ]
+      const encodingValues: Record<string, string | undefined> = {}
+      for (const name of encodingAttributes) {
+        encodingValues[name] = await attribute(renamed, name)
+      }
+      await context.annotate(JSON.stringify({ route, values: encodingValues }), 'wxml-attribute-encoding')
       expect(await attribute(renamed, 'data-literal')).toBe('中文 & "单\'双" \\ {{literal}}')
       expect(await attribute(renamed, 'data-number')).toBe('42')
       expect(await attribute(renamed, 'data-bool')).toBe('false')
       expect(await attribute(renamed, 'data-expression')).toBe('dynamic')
+      expect(await attribute(renamed, 'data-single-escape')).toBe(String.raw`a\x27b`)
+      expect(await attribute(renamed, 'data-double-escape')).toBe(String.raw`a\x22b`)
+      expect(await attribute(renamed, 'data-single-tail')).toBe('tail\\')
+      expect(await attribute(renamed, 'data-double-tail')).toBe('tail\\')
+      expect(await attribute(renamed, 'data-single-mixed')).toBe(String.raw`a\\x27b`)
+      expect(await attribute(renamed, 'data-double-mixed')).toBe(String.raw`a\\x22b`)
+      expect(await attribute(renamed, 'data-symbols')).toBe('<>&')
+      expect(await attribute(renamed, 'data-comparison')).toBe('true')
+      expect(await attribute(renamed, 'data-bitwise')).toBe('3')
+      expect(await attribute(renamed, 'data-expression-entity')).toBe('&amp;')
+      if (kind === 'native') {
+        expect(await (await page.$('#function-division'))?.text()).toBe('function-division')
+        expect(await (await page.$('#commented-wxs'))?.text()).toBe('external-ignored:inline-ignored')
+      }
       const retained = await page.$('#retained')
       expect(await attribute(retained, 'data-testid')).toBe('keep')
       expect(await attribute(retained, 'data-direct-child')).toBe('true')

@@ -80,9 +80,9 @@
     "@vue/shared": "catalog:",
     "@weapp-core/constants": "workspace:*",
     "@weapp-core/shared": "workspace:*",
+    "@weapp-vite/wxml": "workspace:*",
     "domhandler": "^6.0.1",
     "esbuild": "catalog:",
-    "htmlparser2": "catalog:",
     "lit": "^3.3.3",
     "magic-string": "catalog:",
     "pathe": "catalog:",
@@ -94,7 +94,8 @@
     "wevu": "workspace:*"
   },
   "devDependencies": {
-    "happy-dom": "catalog:"
+    "happy-dom": "catalog:",
+    "htmlparser2": "catalog:"
   },
   "publishConfig": {
     "access": "public",

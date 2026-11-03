@@ -1,3 +1,9 @@
+<wxs module="lexical">
+var fraction = (function () {}) / 2;
+module.exports = { value: fraction !== fraction ? 'function-division' : 'wrong' };
+</wxs>
+<!-- <wxs module="commentedExternal" src="./must-not-load.wxs"></wxs> -->
+<!-- <wxs module="commentedInline">module.exports = { value: 'must-not-execute' };</wxs> -->
 <view id="transform-root" data-testid="remove">
   <text id="retained" data-testid="keep">retained</text>
   <text id="renamed" data-use-view data-clean="remove">renamed</text>
@@ -7,4 +13,6 @@
     <button id="tap" data-track="track" bindtap="tap">tap</button>
   </view>
   <view id="result">{{count}}:{{track}}</view>
+  <view id="function-division">{{lexical.value}}</view>
+  <view id="commented-wxs">{{commentedExternal ? 'registered' : 'external-ignored'}}:{{commentedInline ? 'registered' : 'inline-ignored'}}</view>
 </view>

@@ -1,27 +1,22 @@
-import type { TemplateNodeLike } from './templateRuntime'
 import { describe, expect, it } from 'vitest'
-import { maskTemplateAttributes } from './templateAttributes'
 import { isTemplateExpression, templateInterpolations } from './templateInterpolation'
 import { interpolateTemplateText } from './templateText'
 import { parseWxsTemplateDocument } from './wxsDocument'
 
 describe('WXML interpolation and attribute boundaries', () => {
-  it('does not allocate placeholders for ordinary attributes or literal text backslashes', () => {
+  it('preserves ordinary attributes and literal text backslashes', () => {
     const source = '<view title="中文 &quot; {{value}}" count="{{42}}"><text>plain</text></view>'
-    expect(maskTemplateAttributes(source)).toEqual({ source, attributes: new Map() })
     const textEscape = source.replace('plain', String.raw`path\file`)
-    expect(maskTemplateAttributes(textEscape)).toEqual({ source: textEscape, attributes: new Map() })
-    const page = parseWxsTemplateDocument(source).children[0] as any
-    expect(page.children[0].attribs).toEqual({ title: '中文 &quot; {{value}}', count: '{{42}}' })
+    const escaped = parseWxsTemplateDocument(textEscape).children[0]?.children?.[0]
+    expect(escaped?.children?.[0]?.children?.[0]?.data).toBe(String.raw`path\file`)
+    const page = parseWxsTemplateDocument(source).children[0]!
+    expect(page.children?.[0]?.attribs).toEqual({ title: '中文 &quot; {{value}}', count: '{{42}}' })
   })
 
-  it('only masks escaped attributes when ordinary and escaped values share a template', () => {
+  it('decodes escaped attributes alongside ordinary raw entity values', () => {
     const source = String.raw`<view title="a\"b" data-static="&amp;" value="{{value}}"/>`
-    const masked = maskTemplateAttributes(source)
-    expect(masked.attributes.size).toBe(1)
-    expect(masked.source).toContain('data-static="&amp;" value="{{value}}"')
-    const page = parseWxsTemplateDocument(source).children[0] as any
-    expect(page.children[0].attribs).toEqual({ 'title': 'a"b', 'data-static': '&amp;', 'value': '{{value}}' })
+    const page = parseWxsTemplateDocument(source).children[0]!
+    expect(page.children?.[0]?.attribs).toEqual({ 'title': 'a"b', 'data-static': '&amp;', 'value': '{{value}}' })
   })
 
   it('keeps quoted delimiters, object literals and adjacent bindings separate', () => {
@@ -33,17 +28,27 @@ describe('WXML interpolation and attribute boundaries', () => {
     expect(interpolateTemplateText('{{unclosed', {})).toBe('{{unclosed')
   })
 
-  it('does not alter comments or WXS bodies and avoids placeholder collisions', () => {
+  it('uses shared regexp, template-string and comment boundaries without losing incomplete-text tolerance', () => {
+    const template = '`text }} $' + '{value}`'
+    const source = `{{ /}}/.test(value) }}{{ ${template} }}{{ value /* }} */ }}tail{{unfinished`
+    expect(templateInterpolations(source).map(range => range.expression)).toEqual([
+      ' /}}/.test(value) ',
+      ` ${template} `,
+      ' value /* }} */ ',
+    ])
+    expect(templateInterpolations('{{call(}}after{{value}}').map(range => range.expression)).toEqual(['call(', 'value'])
+    expect(interpolateTemplateText('prefix{{value}}tail{{unfinished', { value: 'ok' })).toBe('prefixoktail{{unfinished')
+  })
+
+  it('does not alter comments, WXS bodies or former placeholder-looking values', () => {
     const source = String.raw`<!-- <view a="\""/> --><view title="a\"b" data-token=__mpcore_quoted_attribute_0 /><wxs module="x">var x = '<view title="ignored"/>';</wxs>`
-    const masked = maskTemplateAttributes(source)
-    expect(masked.source).toContain('<!-- <view a=')
     const document = parseWxsTemplateDocument(source)
-    const page = document.children[0] as any
-    const view = page.children.find((node: any) => node.name === 'view')
-    expect(view.attribs.title).toBe('a"b')
-    expect(view.attribs['data-token']).toBe('__mpcore_quoted_attribute_0')
-    const wxs = page.children.find((node: any) => node.name === 'wxs')
-    expect(wxs.children[0].data).toBe(`var x = '<view title="ignored"/>';`)
+    const page = document.children[0]!
+    const view = page.children?.find(node => node.name === 'view')
+    expect(view?.attribs?.title).toBe('a"b')
+    expect(view?.attribs?.['data-token']).toBe('__mpcore_quoted_attribute_0')
+    const wxs = page.children?.find(node => node.name === 'wxs')
+    expect(wxs?.children?.[0]?.data).toBe(`var x = '<view title="ignored"/>';`)
   })
 
   describe.each([
@@ -53,7 +58,7 @@ describe('WXML interpolation and attribute boundaries', () => {
   ])('$path static whitespace', ({ prefix, attributes }) => {
     it.each([' ', '   ', '\t', '\r\n  '])('removes ASCII-only source nodes containing %j before interpolation', (space) => {
       const source = `${prefix}<view${attributes}><text>A</text>${space}<text>B</text><text>${space}</text></view>`
-      const document = parseWxsTemplateDocument(source) as unknown as TemplateNodeLike
+      const document = parseWxsTemplateDocument(source)
       const page = document.children?.[0]
       const view = page?.children?.find(node => node.name === 'view')
       expect(view?.children?.filter(node => node.type === 'text')).toEqual([])
@@ -72,7 +77,7 @@ describe('WXML interpolation and attribute boundaries', () => {
 
   it('keeps explicit whitespace bindings and nonempty source text unchanged', () => {
     const source = `<view><text>{{' '}}</text><text>{{space}}</text><text>  A  B  </text><text>prefix  {{label}}  suffix</text></view>`
-    const document = parseWxsTemplateDocument(source) as unknown as TemplateNodeLike
+    const document = parseWxsTemplateDocument(source)
     const view = document.children?.[0]?.children?.[0]
     expect(view?.children?.map(node => node.children?.[0]?.data)).toEqual([
       `{{' '}}`,

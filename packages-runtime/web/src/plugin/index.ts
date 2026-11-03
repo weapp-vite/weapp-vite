@@ -9,6 +9,8 @@ import { compileWxml } from '../compiler/wxml'
 import { compileWxmlDependency } from '../compiler/wxml/compile'
 import { transformWxsToEsm } from '../compiler/wxs'
 import { createWxssPostcssPlugin, transformWxssToCss } from '../css/wxss'
+import { resolveTemplateInput } from '../shared/templateInput'
+import { readTemplateInputQuery } from '../shared/templateInputQuery'
 import { createWebAssetMiddleware, emitWebAssets } from './assets'
 import { AUTO_ROUTES_ID, ENTRY_ID, RESOLVED_AUTO_ROUTES_ID, RUNTIME_ID, SCRIPT_EXTS, SFC_STYLE_QUERY, SFC_TEMPLATE_QUERY, STYLE_EXTS, STYLE_QUERY, TEMPLATE_EXTS, TEMPLATE_QUERY, TRANSFORM_STYLE_EXTS, WEB_COMPONENT_PREFIX, WEB_COMPONENT_QUERY, WXS_EXTS } from './constants'
 import { collectExternalComponentOptimizeDeps } from './dependencyScan'
@@ -370,6 +372,8 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
         const compiled = compileTemplate({
           id: filename,
           source,
+          input: readTemplateInputQuery(id) ?? resolveTemplateInput(filename, options.templateInput),
+          resolveInput: (target, inherited) => resolveTemplateInput(target, options.templateInput, inherited),
           diagnosticSource,
           resolveTemplatePath,
           resolveWxsPath,
@@ -423,7 +427,7 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
           uniApp: options.__uniApp,
           stylePreprocessOptions,
         })
-        const compiled = generateWebVueSfcTemplate(result, meta, filename, srcRoot)
+        const compiled = generateWebVueSfcTemplate(result, meta, filename, srcRoot, (target, inherited) => resolveTemplateInput(target, options.templateInput, inherited))
         tagDiagnostics.report(filename, compiled.tagDiagnostics, meta.componentTags, this)
         for (const dependency of compiled.dependencies) {
           this.addWatchFile?.(dependency)
@@ -557,6 +561,8 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
         const { code: compiled, dependencies, warnings, tagDiagnostics: diagnostics } = compileWxml({
           id: clean,
           source: templateSource,
+          input: resolveTemplateInput(clean, options.templateInput),
+          resolveInput: (target, inherited) => resolveTemplateInput(target, options.templateInput, inherited),
           diagnosticSource: code,
           resolveTemplatePath,
           resolveWxsPath,

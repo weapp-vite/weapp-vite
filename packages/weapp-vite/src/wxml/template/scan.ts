@@ -1,5 +1,8 @@
+import type { Token } from '@weapp-vite/wxml'
 import type { SourceRange, WxmlSyntax } from './lexical'
-import { failAt, findScriptClose, isSpace, skipDelimited, skipInterpolation, skipSpace } from './lexical'
+import { findScriptClosingTag } from '@weapp-vite/language-service'
+import { scan, scanComments } from '@weapp-vite/wxml'
+import { failAt } from './lexical'
 
 export interface Attribute extends SourceRange {
   name: string
@@ -22,177 +25,82 @@ export interface Element extends SourceRange {
   removed: boolean
 }
 
-interface Frame {
-  node?: Element
-  previous?: Element
+function containsText(source: string, token: Token) {
+  if (token.kind === 'cdata') {
+    return true
+  }
+  if (token.kind !== 'text') {
+    return false
+  }
+  for (let index = token.start; index < token.end; index++) {
+    const code = source.charCodeAt(index)
+    if (code !== 32 && code !== 9 && code !== 10 && code !== 12 && code !== 13) {
+      return true
+    }
+  }
+  return false
 }
 
-function readAttribute(code: string, start: number, fileName: string, syntax: WxmlSyntax, attributes?: Attribute[]): number {
-  let i = start
-  while (i < code.length && !isSpace(code[i]) && code[i] !== '=' && code[i] !== '>' && code[i] !== '/') {
-    i++
+/** 将共享词法结果映射为既有编辑视图，不再重复解释源码边界。 */
+export function scanTemplate(code: string, fileName: string, scriptTags: ReadonlySet<string>, collectComments: boolean, syntax: WxmlSyntax, collectElements = true) {
+  const options = { syntax, rawTags: [...scriptTags], resolveScriptBoundary: findScriptClosingTag }
+  const scanned = collectElements ? scan(code, options) : scanComments(code, options)
+  const diagnostic = scanned.diagnostics.find(item => item.severity === 'error')
+  if (diagnostic) {
+    failAt(code, fileName, diagnostic.start, diagnostic.message)
   }
-  if (i === start) {
-    failAt(code, fileName, start, 'Invalid attribute in opening tag.')
-  }
-  const nameEnd = i
-  i = skipSpace(code, i)
-  if (code[i] !== '=') {
-    attributes?.push({ name: code.slice(start, nameEnd), nameEnd, start, end: nameEnd, valueStart: nameEnd, valueEnd: nameEnd })
-    return nameEnd
-  }
-  i = skipSpace(code, i + 1)
-  const quote = code[i] === '"' || code[i] === '\'' ? code[i++] : undefined
-  const valueStart = i
-  while (i < code.length) {
-    if (code.startsWith('{{', i)) {
-      i = skipInterpolation(code, i, fileName, syntax, quote)
-    }
-    else if (quote && syntax === 'legacy' && code[i] === '\\' && (code[i + 1] === quote || code[i + 1] === '\\')) {
-      i += 2
-    }
-    else if (quote ? code[i] === quote : isSpace(code[i]) || code[i] === '>' || code.startsWith('/>', i)) {
-      const end = quote ? i + 1 : i
-      attributes?.push({ name: code.slice(start, nameEnd), nameEnd, quote, start, end, valueStart, valueEnd: i })
-      return end
-    }
-    else {
-      i++
-    }
-  }
-  return failAt(code, fileName, start, `Unterminated attribute ${code.slice(start, nameEnd)}.`)
-}
-
-export function scanTemplate(
-  code: string,
-  fileName: string,
-  scriptTags: ReadonlySet<string>,
-  collectComments: boolean,
-  syntax: WxmlSyntax,
-  collectElements = true,
-) {
   const elements: Element[] = []
   const comments: SourceRange[] = []
-  const stack: Frame[] = collectElements ? [{}] : []
-  // 只清理注释时，共用词法边界但不建立节点/属性树；最后一个候选之后没有需要处理的内容。
-  const scanEnd = collectElements ? code.length : code.lastIndexOf('<!--') + 1
-  let i = 0
-  while (i < scanEnd) {
-    const frame = stack[stack.length - 1]
-    if (code.startsWith('{{', i)) {
-      if (frame) {
-        frame.previous = undefined
-      }
-      i = skipInterpolation(code, i, fileName, syntax)
+  const indexed = new Map<number, Element>()
+  const previous = new Map<number | undefined, Element | undefined>()
+  let parentIndex: number | undefined
+  for (let index = 0; index < scanned.tokens.length; index++) {
+    const token = scanned.tokens[index]!
+    if (token.kind === 'comment' && collectComments) {
+      comments.push({ start: token.start, end: token.end })
+    }
+    if (!collectElements) {
       continue
     }
-    if (code.startsWith('<!--', i)) {
-      const end = skipDelimited(code, i, '<!--', '-->', fileName)
-      if (collectComments) {
-        comments.push({ start: i, end })
-      }
-      i = end
-      continue
-    }
-    if (code.startsWith('<![CDATA[', i)) {
-      if (frame) {
-        frame.previous = undefined
-      }
-      i = skipDelimited(code, i, '<![CDATA[', ']]>', fileName)
-      continue
-    }
-    if (code.startsWith('<?', i) || code.startsWith('<!', i)) {
-      const start = i
-      let quote: string | undefined
-      for (i += 2; i < code.length; i++) {
-        if (quote) {
-          if (code[i] === quote) {
-            quote = undefined
-          }
-        }
-        else if (code[i] === '"' || code[i] === '\'') {
-          quote = code[i]
-        }
-        else if (code[i] === '>') {
-          break
-        }
-      }
-      if (i === code.length) {
-        failAt(code, fileName, start, 'Unterminated template declaration.')
-      }
-      i++
-      continue
-    }
-    if (code.startsWith('</', i)) {
-      const start = i
-      const nameStart = i += 2
-      while (i < code.length && !isSpace(code[i]) && code[i] !== '>') {
-        i++
-      }
-      const nameEnd = i
-      i = skipSpace(code, i)
-      if (code[i] !== '>' || (collectElements && (!frame.node || code.slice(nameStart, nameEnd) !== frame.node.tag))) {
-        failAt(code, fileName, start, `Unexpected closing tag </${code.slice(nameStart, nameEnd)}>.`)
-      }
-      i++
-      if (collectElements) {
-        frame.node!.end = i
-        frame.node!.closingName = { start: nameStart, end: nameEnd }
-        stack.pop()
+    if (token.kind !== 'tag') {
+      if (containsText(code, token)) {
+        previous.delete(parentIndex)
       }
       continue
     }
-    const next = code.charCodeAt(i + 1)
-    if (code[i] !== '<' || !((next >= 65 && next <= 90) || (next >= 97 && next <= 122) || next === 95)) {
-      if (frame && !isSpace(code[i])) {
-        frame.previous = undefined
-      }
-      i++
+    if (token.closing) {
+      parentIndex = token.parent
       continue
     }
-    const start = i++
-    const nameStart = i
-    while (i < code.length && !isSpace(code[i]) && code[i] !== '/' && code[i] !== '>') {
-      i++
+    const closing = token.matching === undefined ? undefined : scanned.tokens[token.matching]
+    const element: Element = {
+      tag: token.name,
+      start: token.start,
+      end: closing?.end ?? token.end,
+      nameStart: token.nameStart,
+      nameEnd: token.nameEnd,
+      openingEnd: token.end,
+      selfClosing: token.selfClosing,
+      closingName: closing?.kind === 'tag' ? { start: closing.nameStart, end: closing.nameEnd } : undefined,
+      attrs: token.attributes.map(attribute => ({
+        name: attribute.name,
+        nameEnd: attribute.nameEnd,
+        quote: attribute.quote,
+        start: attribute.start,
+        end: attribute.end,
+        valueStart: attribute.valueStart ?? attribute.nameEnd,
+        valueEnd: attribute.valueEnd ?? attribute.nameEnd,
+      })),
+      parent: token.parent === undefined ? undefined : indexed.get(token.parent),
+      previous: previous.get(token.parent),
+      removed: false,
     }
-    const tag = code.slice(nameStart, i)
-    const node: Element | undefined = collectElements
-      ? { tag, nameStart, nameEnd: i, openingEnd: 0, selfClosing: false, start, end: 0, attrs: [], parent: frame.node, previous: frame.previous, removed: false }
-      : undefined
-    let selfClosing = false
-    let openingEnd = 0
-    while (i < code.length) {
-      i = skipSpace(code, i)
-      if (code[i] === '>' || code.startsWith('/>', i)) {
-        selfClosing = code[i] === '/'
-        i += selfClosing ? 2 : 1
-        openingEnd = i
-        break
-      }
-      if (i < code.length) {
-        i = readAttribute(code, i, fileName, syntax, node?.attrs)
-      }
+    elements.push(element)
+    indexed.set(index, element)
+    previous.set(token.parent, element)
+    if (!token.selfClosing) {
+      parentIndex = index
     }
-    if (!openingEnd) {
-      failAt(code, fileName, start, `Unterminated opening tag <${tag}>.`)
-    }
-    if (node) {
-      node.end = openingEnd
-      node.openingEnd = openingEnd
-      node.selfClosing = selfClosing
-      elements.push(node)
-      frame.previous = node
-      if (!selfClosing) {
-        stack.push({ node })
-      }
-    }
-    if (!selfClosing && scriptTags.has(tag)) {
-      i = findScriptClose(code, i, tag, fileName)
-    }
-  }
-  const unclosed = stack[stack.length - 1]?.node
-  if (unclosed) {
-    failAt(code, fileName, unclosed.start, `Missing closing tag for <${unclosed.tag}>.`)
   }
   return { elements, comments }
 }

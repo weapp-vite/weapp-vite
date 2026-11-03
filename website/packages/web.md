@@ -16,6 +16,8 @@ keywords:
 
 `@weapp-vite/web` 是实验性的 H5 运行时与 Vite 插件，用于把小程序模板能力映射到浏览器环境做验证。
 
+编译器和浏览器字符串模板入口复用 [`@weapp-vite/wxml`](/packages/wxml) 的解析核心。`web` 决定输出目标，输入模板的方言单独选择；WXML 输入仍按小程序语法读取。组件映射、空白处理、表达式求值和渲染后 DOM 输出继续由 Web 层负责，现有 `renderTemplate(ChildNode[])` 接口保持兼容。
+
 > 当前仍是 POC 阶段，适合技术验证，不建议直接作为生产方案。
 
 ## 何时使用
@@ -87,6 +89,55 @@ export default defineConfig({
   ],
 })
 ```
+
+### 模板输入方言
+
+`templateInput` 描述输入模板的来源与编码，独立于 Web 输出目标。原生模板入口和它们的原生 include/import 依赖默认按各自文件后缀选择：
+
+| 输入 | 默认规则 |
+| --- | --- |
+| `.wxml` | 微信 / `legacy` |
+| `.axml`、`.ttml`、`.swan`、`.jxml`、`.xhsml` | 对应平台 / `xml` |
+| 历史 `.qml`、`.ksml` | QQ、快手 / `xml` |
+| `.html` | `xml` |
+| 无已知后缀的依赖 | 继承父模板输入规则 |
+
+显式 `syntax` 优先。需要读取使用 XML 编码的原生 WXML 时，可配置：
+
+```ts
+weappWebPlugin({
+  templateInput: {
+    platform: 'weapp',
+    syntax: 'xml',
+  },
+})
+```
+
+`templateInput.platform` 支持六个构建平台以及历史 QQ、快手入口；`rawTags?: readonly string[]` 可替换完整原始脚本标签列表。默认按实际输入平台选择脚本标签，并包含 `script`，因此微信或 SVG 的普通 `<filter>` 子树仍参与编译。该选项在 weapp-vite 配置中位于 `weapp.web.pluginOptions.templateInput`，详见 [Web 配置](/config/web#模板输入规则)。
+
+识别原始脚本边界不代表执行该平台的脚本语言。当前 Web 脚本收集和执行入口仍只处理 `wxs`，`sjs`、`filter` 等平台脚本的执行能力需由对应消费者另行提供。
+
+Vue SFC 降低后的模板（含 `<template src>`）固定使用微信 / XML 编码。即使同一 `.wxml` 文件同时作为 SFC 外部模板和原生模板入口，两条路径也分别使用各自输入规则；SFC 路径保留 XML 反斜杠，原生路径默认按 legacy 解码。原生 include/import 依赖继续按自身后缀及显式插件配置选择。
+
+直接调用编译器内部的 `parseWxml(source)` 保留历史 XML 默认；显式传入 `{ platform: 'weapp' }` 时采用 legacy，显式 `syntax` 仍优先。
+
+### 字符串模板
+
+`createTemplate(source, options?)` 使用相同输入选项，省略时默认微信 / legacy：
+
+```ts
+import { createTemplate } from '@weapp-vite/web/runtime'
+
+const render = createTemplate('<view>{{ message }}</view>', {
+  platform: 'weapp',
+  syntax: 'xml',
+})
+const output = render({ message: 'hello' })
+```
+
+`TemplateInputOptions` 从包主入口、`/runtime` 和 `/runtime/polyfill` 导出。已有 `renderTemplate(nodes: ChildNode[], scope?)` 继续接收 domhandler 形状的节点。
+
+结束边界确定的完整插值即使表达式内部有误，仍遵循现有 safe / compat / strict 执行策略；缺少 `}}`、标签破损或字符串等边界无法确定时，编译器和 `createTemplate` 会明确拒绝输入。独立低层 `interpolateText` 的历史容错行为不作为完整模板的结构恢复规则。
 
 ## 运行时能力
 

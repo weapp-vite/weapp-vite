@@ -46,7 +46,7 @@ describe('issue #984: production package runtime initialization', () => {
     await symlink(path.join(WEB_ROOT, 'node_modules'), path.join(installedPackage, 'node_modules'), 'junction')
     await symlink(path.join(ROOT, 'packages-runtime/wevu'), path.join(consumer, 'node_modules/wevu'), 'junction')
     await symlink(path.join(WEB_ROOT, 'node_modules/lit'), path.join(consumer, 'node_modules/lit'), 'junction')
-    browser = await chromium.launch()
+    browser = await chromium.launch({ headless: true })
   })
 
   afterAll(async () => {

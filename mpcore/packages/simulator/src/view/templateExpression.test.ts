@@ -31,6 +31,36 @@ describe('template expression', () => {
     expect(callback).not.toHaveBeenCalled()
   })
 
+  it('consumes observed WXML string tokens in values and object keys', () => {
+    const value = String.raw`c\x22d`
+    expect(resolveTemplateExpression({}, String.raw`{'a\'b': "c\"d"}`)).toEqual({
+      [String.raw`a\x27b`]: value,
+    })
+    expect(resolveTemplateExpression({}, String.raw`{['a\'b']: "c\"d"}`)).toEqual({
+      [String.raw`a\x27b`]: value,
+    })
+  })
+
+  it('preserves JavaScript string values from page data and WXS exports', () => {
+    const loader = createWxsModuleLoader({
+      readSource: () => '',
+      resolvePath: (_owner, request) => request,
+      execute(_source, _file, module) {
+        module.exports = {
+          quoted: () => 'a\'b',
+          slashed: () => String.raw`a\'b`,
+        }
+      },
+    })
+    const tools = loader.load('strings.wxs')
+    const source = { tools, quoted: 'a\'b', slashed: String.raw`a\'b` }
+    expect(resolveTemplateExpression(source, 'quoted')).toBe('a\'b')
+    expect(resolveTemplateExpression(source, 'slashed')).toBe(String.raw`a\'b`)
+    expect(resolveTemplateExpression(source, 'tools.quoted()')).toBe('a\'b')
+    expect(resolveTemplateExpression(source, 'tools.slashed()')).toBe(String.raw`a\'b`)
+    loader.clear()
+  })
+
   it('only invokes registered WXS exports and preserves their receiver with cloned data', () => {
     const loader = createWxsModuleLoader({
       readSource: () => '',

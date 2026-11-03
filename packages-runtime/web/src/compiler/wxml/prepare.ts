@@ -6,6 +6,7 @@ import type {
   WxmlDependencyContext,
   WxsEntry,
 } from './types'
+import { resolveTemplateInput } from '../../shared/templateInput'
 import { extractNavigationBarFromPageMeta } from './navigation'
 import { parseWxml } from './parser'
 import { collectSpecialNodes } from './specialNodes'
@@ -14,10 +15,11 @@ import { collectTagDiagnostics } from './unknownTags'
 /** 共享模板分析阶段，依赖扫描复用其结果而不生成渲染代码。 */
 export function prepareWxml(options: WxmlCompileOptions, dependencyContext: WxmlDependencyContext, diagnoseTags = false) {
   const warnings = dependencyContext.warnings
-  let nodes = parseWxml(options.source)
+  const input = resolveTemplateInput(options.id, options.input)
+  let nodes = parseWxml(options.source, input)
   const originalSource = options.diagnosticSource ?? options.source
   const tagDiagnostics = diagnoseTags
-    ? [...(options.sourceTagDiagnostics ?? collectTagDiagnostics(originalSource === options.source ? nodes : parseWxml(originalSource), originalSource, options.id, options.componentTags))]
+    ? [...(options.sourceTagDiagnostics ?? collectTagDiagnostics(originalSource === options.source ? nodes : parseWxml(originalSource, input), originalSource, options.id, options.componentTags))]
     : []
   let navigationBarAttrs: Record<string, string> | undefined
   if (options.navigationBar) {
@@ -45,5 +47,5 @@ export function prepareWxml(options: WxmlCompileOptions, dependencyContext: Wxml
     resolveWxs: (raw: string) => options.resolveWxsPath(raw, options.id),
   })
 
-  return { renderNodes, navigationBarAttrs, templates, includes, imports, wxs, tagDiagnostics }
+  return { renderNodes, navigationBarAttrs, templates, includes, imports, wxs, tagDiagnostics, input }
 }

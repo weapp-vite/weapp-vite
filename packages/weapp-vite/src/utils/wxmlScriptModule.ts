@@ -1,6 +1,6 @@
 import type { MpPlatform } from '../types'
 import { getMiniProgramScriptModuleOptions } from '@weapp-core/shared'
-import { getPlatformScriptModuleTag } from '../platform'
+import { getPlatformOutputExtensions, getPlatformScriptModuleTag } from '../platform'
 import { MINI_PROGRAM_PLATFORM_ADAPTERS } from '../platforms/adapters'
 
 const IMPORT_SJS_TAG_RE = /<import-sjs([\s\S]*?)>/g
@@ -39,7 +39,7 @@ export function getDefaultScriptModuleTagByExtension(scriptModuleExtension?: str
     return 'wxs'
   }
   const normalizedExtension = normalizeScriptModuleExtension(scriptModuleExtension)
-  if (!normalizedExtension || !(normalizedExtension in DEFAULT_SCRIPT_MODULE_TAG_BY_EXTENSION)) {
+  if (!normalizedExtension || !Object.hasOwn(DEFAULT_SCRIPT_MODULE_TAG_BY_EXTENSION, normalizedExtension)) {
     return 'wxs'
   }
   return DEFAULT_SCRIPT_MODULE_TAG_BY_EXTENSION[normalizedExtension as ScriptModuleExtensionKey]
@@ -67,6 +67,12 @@ export function getScriptModuleTagNames() {
   return [...new Set([...DEFAULT_SCRIPT_MODULE_TAG_NAMES, ...getDerivedScriptModuleTagNames()])]
 }
 
+/** 最终产物只将目标平台的脚本标签视为原始正文，避免遮蔽同名普通组件。 */
+export function getOutputTemplateRawTags(platform: MpPlatform) {
+  const tag = getMiniProgramScriptModuleOptions(platform, getPlatformOutputExtensions(platform).wxs).tag
+  return platform === 'swan' ? [tag, 'filter'] : [tag]
+}
+
 export function isScriptModuleTagName(tagName?: string) {
   return typeof tagName === 'string' && getScriptModuleTagNames().includes(tagName)
 }
@@ -75,7 +81,7 @@ export function getScriptModuleImportAttrs(tagName?: string, platform?: MpPlatfo
   if (!tagName) {
     return undefined
   }
-  if (!(tagName in SCRIPT_MODULE_IMPORT_ATTRS)) {
+  if (!Object.hasOwn(SCRIPT_MODULE_IMPORT_ATTRS, tagName)) {
     return undefined
   }
   if (platform && tagName === getMiniProgramScriptModuleOptions(platform, 'sjs').tag) {

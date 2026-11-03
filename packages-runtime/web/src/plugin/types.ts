@@ -4,8 +4,11 @@ import type { WxssTransformOptions } from '../css/wxss'
 import type { WebRoutingConfig } from '../runtime/polyfill/routeRuntime/history'
 import type { WebResourceHintsConfig, WebSeoConfig } from '../runtime/seo'
 import type { WebTabBarConfig } from '../shared/tabBar'
+import type { TemplateInputOptions } from '../shared/templateInput'
 
 export interface WeappWebPluginOptions {
+  /** 原生模板输入规则覆盖；默认按文件后缀选择，Vue SFC 生成模板固定使用 XML。 */
+  templateInput?: TemplateInputOptions
   wxss?: WxssTransformOptions
   /**
    * 小程序项目的源代码根目录，默认 `<root>/src`。

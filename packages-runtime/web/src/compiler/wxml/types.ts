@@ -1,6 +1,12 @@
+import type { TemplateInputOptions } from '../../shared/templateInput'
+
 export interface WxmlCompileOptions {
   id: string
   source: string
+  /** 当前模板来源与编码；Web 是输出目标，不参与输入规则推断。 */
+  input?: TemplateInputOptions
+  /** 每个真实依赖独立选择来源；未知扩展名可继承父模板规则。 */
+  resolveInput?: (filename: string, inherited: TemplateInputOptions) => TemplateInputOptions
   /** 标签诊断使用的原始模板；布局包装不得改变其文件位置。 */
   diagnosticSource?: string
   /** 原始 AST 已提供入口诊断时直接复用；依赖仍按各自源码采集。 */

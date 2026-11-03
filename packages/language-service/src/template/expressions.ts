@@ -1,14 +1,14 @@
 import type { TemplateExpression, TemplateToken } from './types'
-import { expressionEnd } from './expression'
+import { expressionEnd } from '@weapp-vite/wxml'
 import { scanTemplate } from './scanner'
 
 /** 仅提取文本和属性中的插值，不扫描脚本、注释或 CDATA 内的相似字符。 */
 export function collectTemplateExpressions(source: string, tokens: TemplateToken[]): TemplateExpression[] {
   const expressions: TemplateExpression[] = []
   const ranges = tokens.flatMap(token => token.kind === 'text'
-    ? [token]
+    ? [{ start: token.start, end: token.end, quote: undefined }]
     : token.kind === 'tag'
-      ? token.attributes.filter(attribute => attribute.valueStart !== undefined).map(attribute => ({ start: attribute.valueStart!, end: attribute.valueEnd! }))
+      ? token.attributes.filter(attribute => attribute.valueStart !== undefined).map(attribute => ({ start: attribute.valueStart!, end: attribute.valueEnd!, quote: attribute.quote }))
       : [])
   for (const range of ranges) {
     let cursor = range.start
@@ -17,7 +17,7 @@ export function collectTemplateExpressions(source: string, tokens: TemplateToken
       if (start < 0 || start >= range.end) {
         break
       }
-      const end = expressionEnd(source, start)
+      const end = expressionEnd(source, start, true, 'xml', range.quote)
       expressions.push({ start: start + 2, end: end - 2, fullStart: start, fullEnd: end, source: source.slice(start + 2, end - 2) })
       cursor = end
     }

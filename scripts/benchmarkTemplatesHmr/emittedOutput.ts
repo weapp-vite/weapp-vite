@@ -1,3 +1,4 @@
+import type { BenchmarkOutputChanges } from './outputChanges'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { performance } from 'node:perf_hooks'
@@ -103,12 +104,13 @@ export function createEmittedScriptReader(entryFile: string, outputRoot: string,
 export async function waitForBenchmarkOutput(
   read: () => Promise<string>,
   marker: string,
-  options: { absent?: boolean, timeoutMs: number, intervalMs?: number, expectedContent?: string, signal?: AbortSignal },
+  options: { absent?: boolean, timeoutMs: number, intervalMs?: number, expectedContent?: string, signal?: AbortSignal, changes?: BenchmarkOutputChanges },
 ) {
   const startedAt = performance.now()
   let latestError = ''
   while (performance.now() - startedAt < options.timeoutMs) {
     options.signal?.throwIfAborted()
+    const revision = options.changes?.revision
     try {
       const content = await read()
       options.signal?.throwIfAborted()
@@ -122,7 +124,13 @@ export async function waitForBenchmarkOutput(
       options.signal?.throwIfAborted()
       latestError = error instanceof Error ? error.message : String(error)
     }
-    await setTimeout(options.intervalMs ?? 25, undefined, { signal: options.signal })
+    const delay = Math.min(options.intervalMs ?? 25, Math.max(0, options.timeoutMs - (performance.now() - startedAt)))
+    if (options.changes && revision !== undefined) {
+      await options.changes.wait(revision, delay, options.signal)
+    }
+    else {
+      await setTimeout(delay, undefined, { signal: options.signal })
+    }
   }
   throw new Error(`Timed out waiting for reachable emitted output to ${options.absent ? 'omit' : 'contain'} marker: ${marker}${latestError ? `. ${latestError}` : ''}`)
 }

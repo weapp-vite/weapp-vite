@@ -1,4 +1,6 @@
-/** 按表达式词法寻找插值边界，字符串和对象内部的大括号不结束绑定。 */
+import { expressionEnd, TemplateLexicalError } from '@weapp-vite/wxml'
+
+/** 共享词法边界，保留历史上不完整绑定按字面量显示、闭合但无效表达式交给求值层的行为。 */
 export function templateInterpolations(source: string) {
   const ranges: Array<{ start: number, end: number, expression: string }> = []
   let offset = 0
@@ -7,38 +9,21 @@ export function templateInterpolations(source: string) {
     if (start < 0) {
       break
     }
-    let quote: string | undefined
-    let depth = 0
-    let closed = false
-    for (let i = start + 2; i < source.length; i++) {
-      const char = source[i]
-      if (quote) {
-        if (char === '\\') {
-          i++
-        }
-        else if (char === quote) {
-          quote = undefined
-        }
-      }
-      else if (char === '\'' || char === '"') {
-        quote = char
-      }
-      else if (char === '{') {
-        depth++
-      }
-      else if (char === '}') {
-        if (depth === 0 && source[i + 1] === '}') {
-          ranges.push({ start, end: i + 2, expression: source.slice(start + 2, i) })
-          offset = i + 2
-          closed = true
-          break
-        }
-        depth--
-      }
+    let end: number
+    try {
+      end = expressionEnd(source, start)
     }
-    if (!closed) {
-      break
+    catch (error) {
+      if (!(error instanceof TemplateLexicalError)) {
+        throw error
+      }
+      if (!error.recovery) {
+        break
+      }
+      end = error.recovery.end
     }
+    ranges.push({ start, end, expression: source.slice(start + 2, end - 2) })
+    offset = end
   }
   return ranges
 }

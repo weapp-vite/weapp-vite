@@ -14,6 +14,7 @@ import { WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE } from '@weapp-core/constants'
 /* eslint-disable-next-line e18e/ban-dependencies -- CI 性能脚本需要跨平台运行一次性 CLI prepare。 */
 import { execa } from 'execa'
 import { sampleHeapAfterGc, waitForInspectorUrl } from '../e2e/utils/dev-memory'
+import { createDevBuildCompletion } from '../e2e/utils/devBuildCompletion'
 import { readEmittedStylesheet } from '../e2e/utils/emittedStylesheet'
 import { replaceFileByRename } from '../e2e/utils/hmr-helpers'
 import { runWithCleanup } from '../e2e/utils/runWithCleanup'
@@ -21,12 +22,14 @@ import { attributeHmrProfile } from '../packages/weapp-vite/src/analyze/hmr/attr
 import { readHmrProfileLines } from '../packages/weapp-vite/src/analyze/hmr/reader'
 import { readDeclaredScenarios } from './benchmarkTemplatesHmr/declaredScenarios'
 import { sanitizeBenchmarkDevLog } from './benchmarkTemplatesHmr/diagnostics'
+import { createBenchmarkEditSchedule } from './benchmarkTemplatesHmr/editSchedule'
 import { createEmittedScriptReader, waitForBenchmarkOutput } from './benchmarkTemplatesHmr/emittedOutput'
 import { createBenchmarkDevEnv } from './benchmarkTemplatesHmr/environment'
 import { captureBenchmarkFailureEvidence, serializeBenchmarkError, writeBenchmarkCleanupFailureEvidence } from './benchmarkTemplatesHmr/failureEvidence'
 import { waitForBenchmarkInitialOutputs } from './benchmarkTemplatesHmr/initialOutput'
 import { mutateJsonMarker } from './benchmarkTemplatesHmr/jsonMutation'
 import { isNativeBenchmarkScriptEntry } from './benchmarkTemplatesHmr/nativeEntry'
+import { createBenchmarkOutputChanges } from './benchmarkTemplatesHmr/outputChanges'
 import { compareBenchmarkOutputs, snapshotBenchmarkOutputs } from './benchmarkTemplatesHmr/outputScope'
 import { collectBenchmarkHmrPhaseProfile, findBenchmarkHmrProfileSample } from './benchmarkTemplatesHmr/profile'
 import { restoreBenchmarkSource } from './benchmarkTemplatesHmr/sourceRestore'
@@ -78,6 +81,9 @@ interface ScenarioSample extends HmrProfileJsonSample {
   runtimeAfter: BenchmarkHmrRuntime
   timingSource: 'compiler-profile' | 'output-observation'
   phase?: SamplePhase
+  phaseOffsetMs?: number
+  phaseWaitMs?: number
+  measurementStartedAtEpochMs?: number
   heapUsedBytes?: number
   rssBytes?: number
   wallMs: number
@@ -99,6 +105,7 @@ interface ScenarioResult {
   sourceFile: string
   diagnostics?: {
     phase: string
+    classicCompletionFailed?: boolean
     transport: Array<StatefulHmrAuditEvent & { phase: string }>
     source?: { bytes: number, sha256: string, containsMarker: boolean }
     sourceError?: string
@@ -147,6 +154,7 @@ interface BenchmarkReport {
   outputScopeEnabled: boolean
   markerSeed: string
   sampleMode: 'best-of-cycle' | 'edit-only'
+  timingSchedule?: { seed: string, spanMs: number, placement: 'before-edit-outside-wall', algorithm: 'sha256-xorshift32-stratified-centers-v1' }
   timeoutMs: number
 }
 
@@ -170,6 +178,8 @@ if (!/^[\w-]+$/.test(markerSeed)) {
 }
 const startupTimeoutMs = readPositiveIntegerEnv('TEMPLATES_HMR_STARTUP_TIMEOUT_MS', 120_000)
 const settleMs = readPositiveIntegerEnv('TEMPLATES_HMR_SETTLE_MS', 300)
+const timingSeed = process.env.TEMPLATES_HMR_TIMING_SEED
+const timingSpanMs = Number(createBenchmarkDevEnv().CHOKIDAR_INTERVAL)
 const sampleMode = process.env.TEMPLATES_HMR_SAMPLE_MODE === 'edit-only' ? 'edit-only' : 'best-of-cycle'
 const maxScenariosPerTemplate = readOptionalPositiveIntegerEnv('TEMPLATES_HMR_MAX_SCENARIOS_PER_TEMPLATE')
 const keepWorkspace = process.env.TEMPLATES_HMR_KEEP_WORKSPACE === '1'
@@ -357,8 +367,12 @@ async function benchmarkTemplate(template: TemplateCase): Promise<TemplateResult
       result.scenarios = scenarioResults
       const statefulClient = new StatefulHmrAuditClient()
       for (const scenario of scenarios) {
-        const sample = await benchmarkScenario(workspace, profilePath, scenario, inspectorUrl, statefulClient)
+        const sample = await benchmarkScenario(workspace, profilePath, scenario, inspectorUrl, statefulClient, dev)
         scenarioResults.push(sample)
+        if (sample.diagnostics?.classicCompletionFailed) {
+          // 完成状态未知时先退出开发进程，不能继续恢复源码或启动下一场景。
+          throw new Error(sample.error)
+        }
         if (sample.error && process.env.TEMPLATES_HMR_STOP_ON_ERROR === '1') {
           break
         }
@@ -637,6 +651,7 @@ async function benchmarkScenario(
   scenario: ScenarioCase,
   inspectorUrl: string,
   statefulClient: StatefulHmrAuditClient,
+  dev: Pick<ReturnType<typeof startBenchmarkDevProcess>, 'getOutput' | 'waitFor'>,
 ): Promise<ScenarioResult> {
   if (!(await pathExists(scenario.sourceFile))) {
     return {
@@ -652,6 +667,7 @@ async function benchmarkScenario(
   let phase = 'prepare'
   let expectedMarker = ''
   let failure: ScenarioResult | undefined
+  let classicCompletionFailed = false
   const isScript = scenario.group === 'native-script' || scenario.group === 'vue-script'
   const isStyle = scenario.group.endsWith('style')
   const readOutputSource = scenario.readOutput ?? (isScript
@@ -665,6 +681,23 @@ async function benchmarkScenario(
   const controlPath = path.join(template.workspaceRoot, 'dist', WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE)
   const readRuntime = async (): Promise<BenchmarkHmrRuntime> => await pathExists(controlPath) ? 'stateful' : 'standard'
   let runtime = await readRuntime()
+  // 单 app 的串行测量以新成功日志约束后续 GC/写入；wall 仍只计到目标 marker 可见。
+  const captureClassicCompletion = () => runtime === 'standard'
+    ? createDevBuildCompletion(dev, { completed: '小程序已重新构建（' })
+    : undefined
+  const waitClassicCompletion = async (completion: ReturnType<typeof captureClassicCompletion>, samplePhase: string) => {
+    if (!completion) {
+      return
+    }
+    phase = `${samplePhase}-completion`
+    try {
+      await completion.wait(timeoutMs)
+    }
+    catch (error) {
+      classicCompletionFailed = true
+      throw error
+    }
+  }
   const usesStatefulScript = () => isScript && runtime === 'stateful'
   // 脚本含随 HMR 变化的版本/载荷；模板和 JSON 逐字恢复，样式比较保留完整语义及顺序，
   // 仅排除历史受管 nonce 与格式差异，
@@ -687,7 +720,7 @@ async function benchmarkScenario(
         },
       })
     }
-    await waitForBenchmarkOutput(readOutput, marker, { absent, timeoutMs, expectedContent: absent ? originalOutput : undefined, signal })
+    await waitForBenchmarkOutput(readOutput, marker, { absent, timeoutMs, expectedContent: absent ? originalOutput : undefined, signal, changes: outputChanges })
   }
 
   const acknowledgeArtifact = async () => {
@@ -716,6 +749,9 @@ async function benchmarkScenario(
     },
   })
 
+  // 注册在写入之前；事件只缩短观察延迟，不改变完整产物/marker 的验收条件。
+  const phaseOffsets = createBenchmarkEditSchedule(iterations, timingSpanMs, timingSeed === undefined ? undefined : `${timingSeed}:${template.id}:${scenario.id}`)
+  const outputChanges = createBenchmarkOutputChanges(path.dirname(scenario.outputFile))
   try {
     for (let index = 0; index < iterations; index += 1) {
       runtime = await readRuntime()
@@ -734,14 +770,26 @@ async function benchmarkScenario(
 
       const beforeOutputs = observeOutputScope ? await snapshotBenchmarkOutputs(path.join(template.workspaceRoot, 'dist')) : undefined
       const lineCount = await countJsonlLines(profilePath)
+      const waitingStartedAt = performance.now()
+      if (phaseOffsets[index] > 0) {
+        await sleep(phaseOffsets[index])
+      }
+      const phaseWaitMs = performance.now() - waitingStartedAt
       phase = 'edit'
+      const editCompletion = captureClassicCompletion()
       const startedAt = performance.now()
       const wallMs = await measureArtifact(expectedMarker, false, () => replaceFileByRename(scenario.sourceFile, updated), startedAt)
       await acknowledgeArtifact()
+      await waitClassicCompletion(editCompletion, 'edit')
       const profileSample = await collectBenchmarkHmrPhaseProfile(runtime, readRuntime, actualRuntime => waitForHmrProfileSample(template, profilePath, scenario.sourceFile, lineCount, profileTimeoutMs, actualRuntime), profileEnabled)
       runtime = profileSample.runtimeAfter
       const editMemorySample = await sampleHeapAfterGc(inspectorUrl).catch(() => undefined)
       const editSample = createScenarioSample(scenario, profileSample, wallMs, 'edit', editMemorySample, performance.timeOrigin + startedAt)
+      if (timingSeed !== undefined) {
+        editSample.phaseOffsetMs = phaseOffsets[index]
+        editSample.phaseWaitMs = phaseWaitMs
+        editSample.measurementStartedAtEpochMs = performance.timeOrigin + startedAt
+      }
       editSample.inputSha256 = createHash('sha256').update(updated).digest('hex')
       const editedOutputs = observeOutputScope ? await snapshotBenchmarkOutputs(path.join(template.workspaceRoot, 'dist')) : undefined
       if (beforeOutputs && editedOutputs) {
@@ -751,9 +799,11 @@ async function benchmarkScenario(
       const restoreLineCount = await countJsonlLines(profilePath)
       runtime = await readRuntime()
       phase = 'restore'
+      const restoreCompletion = captureClassicCompletion()
       const restoreStartedAt = performance.now()
       const restoreWallMs = await measureArtifact(expectedMarker, true, () => replaceFileByRename(scenario.sourceFile, original), restoreStartedAt)
       await acknowledgeArtifact()
+      await waitClassicCompletion(restoreCompletion, 'restore')
       const restoreProfileSample = await collectBenchmarkHmrPhaseProfile(runtime, readRuntime, actualRuntime => waitForHmrProfileSample(template, profilePath, scenario.sourceFile, restoreLineCount, profileTimeoutMs, actualRuntime), profileEnabled)
       runtime = restoreProfileSample.runtimeAfter
       const restoreMemorySample = await sampleHeapAfterGc(inspectorUrl).catch(() => undefined)
@@ -798,9 +848,11 @@ async function benchmarkScenario(
   finally {
     try {
       phase = 'cleanup'
-      if (await restoreBenchmarkSource(scenario.sourceFile, original) && expectedMarker) {
+      const cleanupCompletion = classicCompletionFailed ? undefined : captureClassicCompletion()
+      if (!classicCompletionFailed && await restoreBenchmarkSource(scenario.sourceFile, original) && expectedMarker) {
         await measureArtifact(expectedMarker, true, async () => {})
         await acknowledgeArtifact()
+        await waitClassicCompletion(cleanupCompletion, 'cleanup')
       }
     }
     catch (error) {
@@ -814,9 +866,16 @@ async function benchmarkScenario(
       failure.diagnostics ??= { phase, transport: [...transport] }
       failure.diagnostics.cleanupError = serializeBenchmarkError(error, repoRoot)
     }
+    finally {
+      outputChanges.close()
+    }
   }
 
   if (failure) {
+    if (classicCompletionFailed) {
+      failure.diagnostics ??= { phase, transport: [...transport] }
+      failure.diagnostics.classicCompletionFailed = true
+    }
     return failure
   }
   const maxMs = maxOptional(samples.map(sample => sample.totalMs))
@@ -884,6 +943,7 @@ function createReport(templates: TemplateResult[]): BenchmarkReport {
     outputScopeEnabled: observeOutputScope,
     markerSeed,
     sampleMode,
+    timingSchedule: timingSeed === undefined ? undefined : { seed: timingSeed, spanMs: timingSpanMs, placement: 'before-edit-outside-wall', algorithm: 'sha256-xorshift32-stratified-centers-v1' },
     summary: {
       maxMs,
       maxWallMs,

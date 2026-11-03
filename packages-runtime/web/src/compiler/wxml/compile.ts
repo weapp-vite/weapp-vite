@@ -1,17 +1,21 @@
 import type { WxmlCompileOptions, WxmlCompileResult, WxmlTagDiagnostic } from './types'
 
 import { readFileSync } from 'node:fs'
-import { RUNTIME_ID } from '../../plugin/constants'
+import { RUNTIME_ID, TEMPLATE_QUERY } from '../../plugin/constants'
+import { resolveTemplateInput } from '../../shared/templateInput'
+import { appendTemplateInputQuery } from '../../shared/templateInputQuery'
 import { addDependency, collectDependencies, createDependencyContext, warnCircularTemplate, warnReadTemplate } from './dependency'
 import { buildNavigationBarAttrs } from './navigation'
 import { prepareWxml } from './prepare'
 import { renderer } from './renderer'
 import { normalizeTemplatePath, shouldMarkWxsImport, toRelativeImport } from './specialNodes'
 
-const WEB_TEMPLATE_QUERY = 'weapp-web-template'
+function appendTemplateQuery(pathname: string, input: NonNullable<WxmlCompileOptions['input']>) {
+  return appendTemplateInputQuery(`${pathname}${pathname.includes('?') ? '&' : '?'}${TEMPLATE_QUERY}`, input)
+}
 
-function appendTemplateQuery(pathname: string) {
-  return `${pathname}${pathname.includes('?') ? '&' : '?'}${WEB_TEMPLATE_QUERY}`
+function templateIdentity(filename: string, input: NonNullable<WxmlCompileOptions['input']>) {
+  return JSON.stringify([filename, input.platform, input.syntax, input.rawTags])
 }
 
 function compileTemplate(options: WxmlCompileOptions, diagnoseUnknownTags: boolean): WxmlCompileResult {
@@ -21,44 +25,48 @@ function compileTemplate(options: WxmlCompileOptions, diagnoseUnknownTags: boole
 
   const tagDiagnostics: WxmlTagDiagnostic[] = []
 
-  const expandDependencyTree = (dependencies: string[], importer: string) => {
+  const resolveInput = (filename: string, inherited: NonNullable<WxmlCompileOptions['input']>) => resolveTemplateInput(filename, options.resolveInput?.(filename, inherited), inherited)
+  const expandDependencyTree = (dependencies: string[], importer: string, inheritedInput: NonNullable<WxmlCompileOptions['input']>) => {
     for (const target of dependencies) {
-      if (dependencyContext.active.has(target)) {
+      const input = resolveInput(target, inheritedInput)
+      const identity = templateIdentity(target, input)
+      if (dependencyContext.active.has(identity)) {
         warnCircularTemplate(dependencyContext, importer, target)
         continue
       }
-      if (dependencyContext.visited.has(target)) {
+      if (dependencyContext.visited.has(identity)) {
         continue
       }
-      dependencyContext.visited.add(target)
-      dependencyContext.active.add(target)
+      dependencyContext.visited.add(identity)
+      dependencyContext.active.add(identity)
       let source: string
       try {
         source = readFileSync(target, 'utf8')
       }
       catch {
         warnReadTemplate(dependencyContext, target)
-        dependencyContext.active.delete(target)
+        dependencyContext.active.delete(identity)
         continue
       }
       try {
         const result = prepareWxml({
           id: target,
           source,
+          input,
           resolveTemplatePath: options.resolveTemplatePath,
           resolveWxsPath: options.resolveWxsPath,
           componentTags: options.componentTags,
         }, dependencyContext, diagnoseUnknownTags)
         tagDiagnostics.push(...result.tagDiagnostics)
         collectDependencies(result, dependencyContext)
-        expandDependencyTree([...result.imports, ...result.includes].map(entry => entry.id), target)
+        expandDependencyTree([...result.imports, ...result.includes].map(entry => entry.id), target, result.input)
       }
       catch (error) {
         if (error instanceof Error && error.message) {
           warnings.push(`[web] 无法解析模板依赖: ${target} ${error.message}`)
         }
       }
-      dependencyContext.active.delete(target)
+      dependencyContext.active.delete(identity)
     }
   }
 
@@ -94,13 +102,13 @@ function compileTemplate(options: WxmlCompileOptions, diagnoseUnknownTags: boole
 
   for (const entry of imports) {
     const importPath = normalizeTemplatePath(toRelativeImport(options.id, entry.id))
-    importLines.push(`import { templates as ${entry.importName} } from '${appendTemplateQuery(importPath)}'`)
+    importLines.push(`import { templates as ${entry.importName} } from '${appendTemplateQuery(importPath, resolveInput(entry.id, prepared.input))}'`)
     addDependency(entry.id, dependencyContext, directDependencies)
   }
 
   for (const entry of includes) {
     const importPath = normalizeTemplatePath(toRelativeImport(options.id, entry.id))
-    importLines.push(`import { render as ${entry.importName} } from '${appendTemplateQuery(importPath)}'`)
+    importLines.push(`import { render as ${entry.importName} } from '${appendTemplateQuery(importPath, resolveInput(entry.id, prepared.input))}'`)
     addDependency(entry.id, dependencyContext, directDependencies)
   }
 
@@ -178,10 +186,11 @@ function compileTemplate(options: WxmlCompileOptions, diagnoseUnknownTags: boole
   bodyLines.push(`export default render`)
 
   if (expandDependencies) {
-    dependencyContext.visited.add(options.id)
-    dependencyContext.active.add(options.id)
-    expandDependencyTree([...imports, ...includes].map(entry => entry.id), options.id)
-    dependencyContext.active.delete(options.id)
+    const identity = templateIdentity(options.id, prepared.input)
+    dependencyContext.visited.add(identity)
+    dependencyContext.active.add(identity)
+    expandDependencyTree([...imports, ...includes].map(entry => entry.id), options.id, prepared.input)
+    dependencyContext.active.delete(identity)
   }
 
   const code = [...importLines, '', ...bodyLines].join('\n')

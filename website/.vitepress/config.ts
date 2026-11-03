@@ -372,6 +372,7 @@ const packagesSidebarItems: DefaultTheme.SidebarItem[] = [
       { text: '@weapp-vite/oxlint', link: '/packages/oxlint' },
       { text: '@weapp-vite/oxfmt', link: '/packages/oxfmt' },
       { text: '@weapp-vite/language-service', link: '/packages/language-service' },
+      { text: '@weapp-vite/wxml', link: '/packages/wxml' },
       { text: 'mpcore 小程序测试', link: '/packages/mpcore-test' },
       { text: '@wevu/test-utils', link: '/packages/wevu-test-utils' },
     ],

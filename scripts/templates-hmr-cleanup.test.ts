@@ -7,9 +7,11 @@ const fixture = vi.hoisted(() => ({
   stop: vi.fn(),
   inspector: vi.fn(),
   measure: vi.fn(),
+  completion: vi.fn(),
   root: '',
   projects: [] as string[],
   events: [] as string[],
+  pacing: [] as string[],
   removeFailure: undefined as Error | undefined,
   logFailure: undefined as Error | undefined,
   evidenceFailure: undefined as Error | undefined,
@@ -67,10 +69,20 @@ vi.mock('../e2e/utils/dev-process', () => ({
 }))
 vi.mock('../e2e/utils/dev-memory', () => ({
   waitForInspectorUrl: fixture.inspector,
-  sampleHeapAfterGc: async () => undefined,
+  sampleHeapAfterGc: async () => {
+    fixture.pacing.push('gc')
+    return undefined
+  },
+}))
+vi.mock('../e2e/utils/devBuildCompletion', () => ({
+  createDevBuildCompletion: () => {
+    fixture.pacing.push('capture')
+    return { wait: fixture.completion }
+  },
 }))
 vi.mock('../e2e/utils/hmr-helpers', () => ({
   replaceFileByRename: async (filename: string, source: string) => {
+    fixture.pacing.push(source === 'page { color: red; }' ? 'restore' : 'edit')
     const filesystem = await vi.importActual<typeof import('node:fs/promises')>('node:fs/promises')
     await filesystem.writeFile(filename, source)
     await filesystem.writeFile(path.join(path.dirname(path.dirname(path.dirname(path.dirname(filename)))), 'dist/pages/index/index.wxss'), source)
@@ -95,6 +107,7 @@ beforeEach(async () => {
   fixture.root = await filesystem.mkdtemp(path.join(os.tmpdir(), 'templates-hmr-cleanup-'))
   fixture.projects = []
   fixture.events = []
+  fixture.pacing = []
   fixture.removeFailure = undefined
   fixture.logFailure = undefined
   fixture.evidenceFailure = undefined
@@ -102,6 +115,9 @@ beforeEach(async () => {
     fixture.events.push('stop')
   })
   fixture.inspector.mockResolvedValue('unused-inspector')
+  fixture.completion.mockImplementation(async () => {
+    fixture.pacing.push('complete')
+  })
   fixture.measure.mockImplementation(async ({ measure }: { measure: (signal: AbortSignal) => Promise<number> }) => {
     await measure(new AbortController().signal)
     return 1
@@ -151,7 +167,13 @@ async function runBenchmark() {
 async function readReport() {
   return JSON.parse(await filesystem.readFile(path.join(fixture.root, 'reports/report.json'), 'utf8')) as {
     summary: { failedTemplateCount: number, failedScenarioCount: number, measuredScenarioCount: number }
-    templates: Array<{ error?: string }>
+    templates: Array<{
+      error?: string
+      scenarios: Array<{
+        samples: Array<{ wallMs: number }>
+        diagnostics?: { phase: string, classicCompletionFailed?: boolean }
+      }>
+    }>
   }
 }
 
@@ -290,5 +312,44 @@ describe('template HMR benchmark cleanup', () => {
     expect(fixture.events).toEqual(['start', 'stop', 'dev-log', 'fixture-remove', 'report', 'report'])
     expect(fixture.stop).toHaveBeenCalledOnce()
     await expect(filesystem.access(fixture.projects[0]!)).rejects.toMatchObject({ code: 'ENOENT' })
+  })
+
+  it('waits for classic completion after marker timing before GC and restore', async () => {
+    const completed = Promise.withResolvers<void>()
+    fixture.completion.mockImplementationOnce(async () => {
+      fixture.pacing.push('complete-wait')
+      await completed.promise
+    })
+    const pending = runBenchmark()
+    await vi.waitFor(() => expect(fixture.pacing).toEqual(['capture', 'edit', 'complete-wait']))
+    expect(fixture.stop).not.toHaveBeenCalled()
+    completed.resolve()
+    await pending
+    expect(fixture.pacing).toEqual(['capture', 'edit', 'complete-wait', 'gc', 'capture', 'restore', 'complete', 'gc', 'capture'])
+    expect((await readReport()).templates[0]?.scenarios[0]?.samples).toMatchObject([{ wallMs: 1 }])
+  })
+
+  it.each(['edit', 'restore'])('stops an unsettled classic %s without cleanup writes or sampling the next scenario', async (phase) => {
+    await filesystem.writeFile(path.join(fixture.root, 'templates/template-a/hmr-benchmark.json'), JSON.stringify([
+      { id: 'style', source: 'pages/index/index.wxss', output: 'pages/index/index.wxss', mutation: 'style' },
+      { id: 'next-style', source: 'pages/index/index.wxss', output: 'pages/index/index.wxss', mutation: 'style' },
+    ]))
+    if (phase === 'restore') {
+      fixture.completion.mockResolvedValueOnce(undefined)
+    }
+    fixture.completion.mockRejectedValueOnce(new Error('classic completion timed out'))
+    await runBenchmark()
+    const report = await readReport()
+    expect(report).toMatchObject({
+      summary: { failedTemplateCount: 1, failedScenarioCount: 1, measuredScenarioCount: 0 },
+      templates: [{
+        error: 'classic completion timed out',
+        scenarios: [{ samples: [], diagnostics: { phase: `${phase}-completion`, classicCompletionFailed: true } }],
+      }],
+    })
+    expect(report.templates[0]?.scenarios).toHaveLength(1)
+    expect(fixture.pacing).toEqual(phase === 'edit' ? ['capture', 'edit'] : ['capture', 'edit', 'gc', 'capture', 'restore'])
+    expect(fixture.events).toEqual(['start', 'stop', 'dev-log', 'fixture-remove', 'report', 'report'])
+    expect(process.exitCode).toBe(1)
   })
 })

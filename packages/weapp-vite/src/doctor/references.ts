@@ -2,11 +2,14 @@ import type { MpPlatform } from '../types'
 import type { DoctorArtifactSnapshot, DoctorReport } from './types'
 import { posix as path } from 'node:path'
 import { parseJsLike, traverse } from '@weapp-vite/ast/babel'
-import { Parser } from 'htmlparser2'
+import { findScriptClosingTag } from '@weapp-vite/language-service'
+import { decodeAttribute, scan } from '@weapp-vite/wxml'
 import postcss from 'postcss'
 import valueParser from 'postcss-value-parser'
 import { classifyPackage } from '../analyze/subpackages/classifier'
 import { getPlatformOutputExtensions } from '../platform'
+import { getOutputTemplateRawTags, getScriptModuleImportAttrs } from '../utils/wxmlScriptModule'
+import { getTemplateImportAttrs } from '../wxml/shared'
 import { addDiagnostic } from './report'
 import { incompleteCoverage } from './source'
 
@@ -75,14 +78,24 @@ export function checkArtifactReferences(
         })
       }
       else if (file.path.endsWith(`.${ext.wxml}`)) {
-        const parser = new Parser({
-          onopentag(name, attributes) {
-            if (['import', 'include', 'wxs', 'sjs', 'import-sjs'].includes(name) && attributes.src) {
-              reference(file.path, attributes.src)
+        const result = scan(file.text, { platform: target, syntax: 'xml', rawTags: getOutputTemplateRawTags(target), resolveScriptBoundary: findScriptClosingTag })
+        if (result.diagnostics.some(diagnostic => diagnostic.severity === 'error')) {
+          throw new TypeError('Invalid artifact template.')
+        }
+        for (const token of result.tokens) {
+          if (token.kind !== 'tag' || token.closing) {
+            continue
+          }
+          for (const name of getScriptModuleImportAttrs(token.name, target) ?? getTemplateImportAttrs(token.name) ?? []) {
+            const attribute = token.attributes.find(attribute => attribute.name === name)
+            if (attribute?.value) {
+              const value = decodeAttribute(attribute.value, 'xml')
+              if (value) {
+                reference(file.path, value)
+              }
             }
-          },
-        }, { xmlMode: true })
-        parser.end(file.text)
+          }
+        }
       }
       else if (file.path.endsWith(`.${ext.wxss}`)) {
         postcss.parse(file.text).walkAtRules('import', (rule) => {

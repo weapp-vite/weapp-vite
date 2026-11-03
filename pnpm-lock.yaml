@@ -2560,6 +2560,9 @@ importers:
       '@weapp-core/shared':
         specifier: workspace:*
         version: link:../../../@weapp-core/shared
+      '@weapp-vite/wxml':
+        specifier: workspace:*
+        version: link:../../../packages/wxml
       css-select:
         specifier: ^7.0.0
         version: 7.0.0
@@ -2569,9 +2572,6 @@ importers:
       fontoxpath:
         specifier: ^3.34.0
         version: 3.34.0
-      htmlparser2:
-        specifier: 'catalog:'
-        version: 12.0.0
       pathe:
         specifier: 'catalog:'
         version: 2.0.3
@@ -2581,6 +2581,10 @@ importers:
       postcss-value-parser:
         specifier: 4.2.0
         version: 4.2.0
+    devDependencies:
+      htmlparser2:
+        specifier: 'catalog:'
+        version: 12.0.0
 
   mpcore/packages/test:
     dependencies:
@@ -2828,15 +2832,15 @@ importers:
       '@weapp-core/shared':
         specifier: workspace:*
         version: link:../../@weapp-core/shared
+      '@weapp-vite/wxml':
+        specifier: workspace:*
+        version: link:../../packages/wxml
       domhandler:
         specifier: ^6.0.1
         version: 6.0.1
       esbuild:
         specifier: 'catalog:'
         version: 0.28.2
-      htmlparser2:
-        specifier: 'catalog:'
-        version: 12.0.0
       lit:
         specifier: ^3.3.3
         version: 3.3.3
@@ -2868,6 +2872,9 @@ importers:
       happy-dom:
         specifier: 'catalog:'
         version: 21.0.4(bufferutil@4.1.0)
+      htmlparser2:
+        specifier: 'catalog:'
+        version: 12.0.0
 
   packages-runtime/web-apis:
     dependencies:
@@ -3375,6 +3382,9 @@ importers:
       '@weapp-vite/ast':
         specifier: workspace:*
         version: link:../ast
+      '@weapp-vite/wxml':
+        specifier: workspace:*
+        version: link:../wxml
       fast-glob:
         specifier: ^3.3.3
         version: 3.3.3
@@ -3713,6 +3723,9 @@ importers:
       '@weapp-vite/web':
         specifier: workspace:*
         version: link:../../packages-runtime/web
+      '@weapp-vite/wxml':
+        specifier: workspace:*
+        version: link:../wxml
       '@wevu/api':
         specifier: workspace:*
         version: link:../../packages-runtime/weapi
@@ -3746,9 +3759,6 @@ importers:
       get-tsconfig:
         specifier: ^4.14.3
         version: 4.14.3
-      htmlparser2:
-        specifier: 'catalog:'
-        version: 12.0.0
       local-pkg:
         specifier: ^1.2.1
         version: 1.2.1
@@ -3861,6 +3871,9 @@ importers:
       '@vitejs/devtools-kit':
         specifier: 'catalog:'
         version: 0.8.0(@devframes/agentic@1.3.0)(cac@7.1.0)(crossws@0.4.17(srvx@1.0.8))(srvx@1.0.8)(vite@8.3.5)
+      htmlparser2:
+        specifier: 'catalog:'
+        version: 12.0.0
       oxc-parser:
         specifier: 'catalog:'
         version: 0.156.0
@@ -3877,6 +3890,25 @@ importers:
       '@swc/core':
         specifier: ^1.16.21
         version: 1.16.21
+
+  packages/wxml:
+    dependencies:
+      entities:
+        specifier: ^8.1.0
+        version: 8.1.0
+    devDependencies:
+      dom-serializer:
+        specifier: ^3.1.1
+        version: 3.1.1
+      htmlparser2:
+        specifier: 'catalog:'
+        version: 12.0.0
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vitest:
+        specifier: ~5.0.5
+        version: 5.0.5(patch_hash=abc79ba5cbb797c526f2930277b2073b4d2f23370f70d4312ddedf9d90f64e9d)(@types/node@26.6.6)(@vitest/browser-playwright@5.0.5)(@vitest/browser-preview@5.0.5)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.5)(happy-dom@21.0.4(bufferutil@4.1.0))(vite@8.3.5)
 
   templates/weapp-vite-lib-template:
     devDependencies:

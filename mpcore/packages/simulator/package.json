@@ -58,10 +58,10 @@
     "@babel/parser": "catalog:",
     "@weapp-core/constants": "workspace:*",
     "@weapp-core/shared": "workspace:*",
+    "@weapp-vite/wxml": "workspace:*",
     "css-select": "^7.0.0",
     "css-what": "^8.0.0",
     "fontoxpath": "^3.34.0",
-    "htmlparser2": "catalog:",
     "pathe": "catalog:",
     "postcss": "catalog:",
     "postcss-value-parser": "4.2.0"
@@ -69,5 +69,8 @@
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org"
+  },
+  "devDependencies": {
+    "htmlparser2": "catalog:"
   }
 }

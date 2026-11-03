@@ -282,7 +282,7 @@ export function createOutputFinalizerPlugin(ctx: CompilerContext, subPackageMeta
         checkpoint('finalizeTemplateMs')
         deferWxmlDependencyCommit(ctx, commitDependencies)
         if (ctx.configService.platform === 'alipay' || ctx.configService.platform === 'tt') {
-          normalizeClassScopedAssets(outputBundle, ctx.configService.outputExtensions)
+          normalizeClassScopedAssets(outputBundle, ctx.configService.outputExtensions, ctx.configService.platform)
         }
         assets.publish(asset => this.emitFile(asset))
         checkpoint('finalizePublishMs')

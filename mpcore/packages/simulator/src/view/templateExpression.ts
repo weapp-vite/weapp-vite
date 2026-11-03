@@ -1,6 +1,7 @@
 /* eslint-disable ts/no-use-before-define -- 递归表达式解释器的求值 helper 会互相调用。 */
 import { parseExpression } from '@babel/parser'
 import { captureTemplateValueReads, recordTemplateControlRead, recordTemplateDependencies, recordTemplatePropertyRead, recordTemplateSpreadRead, recordTemplateValueRead } from './nativeBindings/reads'
+import { resolveWxmlStringLiteral } from './templateExpression/stringLiteral'
 import { isTemplateExpression } from './templateInterpolation'
 import { callWxsFunction } from './wxs'
 
@@ -172,7 +173,9 @@ function evaluateObjectExpression(node: ExpressionNode, source: Record<string, a
     }
     const keyRead = captureTemplateValueReads(source, () => property.computed
       ? evaluateExpressionNode(property.key, source)
-      : property.key?.name ?? property.key?.value)
+      : property.key?.type === 'StringLiteral'
+        ? resolveWxmlStringLiteral(property.key)
+        : property.key?.name ?? property.key?.value)
     const key = keyRead.value
     if ((typeof key !== 'string' && typeof key !== 'number') || BLOCKED_MEMBER_KEYS.has(String(key))) {
       continue
@@ -222,6 +225,7 @@ function evaluateExpressionNode(node: ExpressionNode | null | undefined, source:
     case 'Identifier':
       return resolveIdentifier(source, node.name)
     case 'StringLiteral':
+      return resolveWxmlStringLiteral(node)
     case 'NumericLiteral':
     case 'BooleanLiteral':
       return node.value

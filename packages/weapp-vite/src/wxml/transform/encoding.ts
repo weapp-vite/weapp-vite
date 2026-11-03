@@ -23,7 +23,7 @@ export function encodeAttribute(value: WxmlAttributeValue, syntax: WxmlSyntax) {
     throw new TypeError('Expected a string, finite number, boolean, or nonempty expression.')
   }
   return syntax === 'legacy'
-    ? `{{${expression.replace(/"/g, '\\"')}}}`
+    ? `{{${expression.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}}}`
     : `{{${expression.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;')}}}`
 }
 

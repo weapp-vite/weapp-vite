@@ -8,6 +8,7 @@ export interface TemplateAttribute extends SourceRange {
   valueStart?: number
   valueEnd?: number
   rawValue?: string
+  quote?: '"' | '\''
 }
 
 export interface TemplateTag extends SourceRange {

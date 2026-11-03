@@ -14,6 +14,10 @@ keywords:
 
 这个包集中维护小程序源码范围、平台 profile、模板作用域、脚本模块引用和结构化诊断。CLI 与 VSCode 复用相同分析结果；文件系统、配置执行和编辑器协议分别放在适配层，语言内核不执行用户脚本。
 
+模板词法、源码范围和脚本边界候选由 [`@weapp-vite/wxml`](/packages/wxml) 提供。语言服务保留原有公开 API，并负责平台语义、作用域分析、格式化与脚本边界的 JS AST 歧义校验；只需要解析和序列化时可以直接使用基础包。
+
+公开的 `scanTemplate(source)` 继续固定使用 XML 词法，不随平台 profile 切换为 legacy。tokens、diagnostics 和标签 attributes 数组仍可修改；`TemplateAttribute.quote` 可选字段记录原属性的单引号或双引号，无引号属性为 `undefined`。原有跨平台原始标签集合 `wxs`、`sjs`、`ks`、`filter`、`script`、`import-sjs` 也保持兼容。需要按实际输入平台限制原始标签、或处理 legacy 编码时，可直接配置基础包。
+
 ## 支持范围
 
 | 类别 | 登记范围 |
@@ -48,6 +52,8 @@ const document = analyzeDocument({ source, fileName: 'src/page.ttml' })
 
 模板分析返回 token、元素、循环作用域与绑定、表达式、模板及模块引用。脚本分析返回模块依赖与绑定/引用/公开导出的源码区间。`Diagnostic` 使用 UTF-16 的 `start` / `end`、稳定 `code`、`message` 和 `error` / `warning` / `info`；CLI 行列与 VSCode Range 从同一偏移转换。
 
+不完整输入继续返回诊断与可用的源码范围。共享核心负责脚本字符串、正则和注释的词法候选；语言服务只在候选边界存在歧义时进行 JS AST 校验，基础包不会因此加载 AST parser。
+
 这些结果供编辑器实现补全、悬浮、定义、引用和重命名，包含循环遮蔽、事件参数、内联/外置模块与命名模板。它们不构成完整模板类型检查器。
 
 `getScriptTemplateExports` 把模板访问路径映射到源码导出作用域。编译为 CommonJS 时，仅有默认对象的模块使用 `tools.value`；命名与默认导出混合时，`tools.value` 对应命名导出，`tools.default.value` 对应默认对象成员。静态 `import` / `require`、别名和解构通过同一导出身份导航及安全重命名；无法确认宿主混合导出映射时返回歧义状态，不猜选同名成员。
@@ -62,6 +68,6 @@ const document = analyzeDocument({ source, fileName: 'src/page.ttml' })
 
 `@weapp-vite/language-service/project` 提供项目配置加载、文件收集、模块归属解析及诊断输出。VSCode 只在受信任工作区加载项目工具；无项目工具时可使用纯 TS 模板分析和格式化，不打包平台 native 格式器。
 
-平台配置见 [`weapp.language`](/config/language)。Oxlint 继续负责标准 JS/TS/Vue 脚本，组合 CLI 补齐原生语言；Vue parser services 规则保留 ESLint，样式语义保留 Stylelint。此次适配的验收范围为 TS、CLI、VSCode 和构建，未执行真实小程序 IDE runtime 验收。
+平台配置见 [`weapp.language`](/config/language)。Oxlint 继续负责标准 JS/TS/Vue 脚本，组合 CLI 补齐原生语言；Vue parser services 规则保留 ESLint，样式语义保留 Stylelint。语言服务检查与真实小程序 runtime 验收分别记录，共享解析器接入不代表完整消费链路或真实 IDE runtime 已完成验收。
 
 相关文档：[Oxlint](/packages/oxlint)、[Oxfmt](/packages/oxfmt)、[创建项目](/packages/create-weapp-vite)。

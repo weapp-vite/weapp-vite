@@ -53,6 +53,16 @@ export default defineConfig({
             node.setAttribute('data-number', 42)
             node.setAttribute('data-bool', false)
             node.setAttribute('data-expression', { expression: 'label' })
+            node.setAttribute('data-single-escape', { expression: String.raw`'a\'b'` })
+            node.setAttribute('data-double-escape', { expression: String.raw`"a\"b"` })
+            node.setAttribute('data-single-tail', { expression: String.raw`'tail\\'` })
+            node.setAttribute('data-double-tail', { expression: String.raw`"tail\\"` })
+            node.setAttribute('data-single-mixed', { expression: String.raw`'a\\\'b'` })
+            node.setAttribute('data-double-mixed', { expression: String.raw`"a\\\"b"` })
+            node.setAttribute('data-symbols', { expression: "'<>&'" })
+            node.setAttribute('data-comparison', { expression: '1 < 2 && 3 > 2' })
+            node.setAttribute('data-bitwise', { expression: '7 & 3' })
+            node.setAttribute('data-expression-entity', { expression: "'&amp;'" })
           }
           if (node.tagName === 'button') {
             node.renameAttribute('data-track', 'data-analytics')

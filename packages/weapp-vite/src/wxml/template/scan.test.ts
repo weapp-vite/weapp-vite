@@ -73,7 +73,7 @@ describe('WXML cleanup source ranges', () => {
       .toBe(String.raw`<view  title='{{ value === \'test\' }}'/>`)
   })
 
-  it('preserves native opposite-quote strings after attribute-layer escaping', () => {
+  it('preserves complete host encoding of opposite-quote JavaScript string escapes', () => {
     const retained = String.raw`probe="{{ 'a\\'b' }}"`
     const source = `<keep-card ${retained} data-testid="drop"/><!-- ordinary -->`
     expect(createWxmlRemover({ comment: true })(source, fileName))
@@ -83,10 +83,19 @@ describe('WXML cleanup source ranges', () => {
   })
 
   it('distinguishes an escaped opposite quote from an encoded trailing backslash', () => {
-    const retained = String.raw`probe="{{ 'a\\\'b' }}" tail="{{ 'tail\\\\' }}"`
+    const retained = String.raw`probe="{{ 'a\\\\\\'b' }}" tail="{{ 'tail\\\\' }}"`
     const source = `<keep-card ${retained} data-testid="drop"/><!-- ordinary -->`
     expect(createWxmlRemover({ attr: ['data-testid'], comment: true })(source, fileName))
       .toBe(`<keep-card ${retained} />`)
+  })
+
+  it.each([
+    String.raw`<keep-card probe="{{ \"a\\"b\" }}" data-testid="drop"/>`,
+    String.raw`<keep-card probe="{{ 'a\'b' }}" data-testid="drop"/>`,
+    String.raw`<keep-card probe="{{ "a\"b" }}" data-testid="drop"/>`,
+  ])('rejects legacy quote sequences that contradict the expression setter protocol: %s', (source) => {
+    expect(() => createWxmlRemover({ attr: ['data-testid'] })(source, fileName))
+      .toThrow('[weapp.wxml] pages/source/index.wxml:')
   })
 
   it('keeps XML literal backslashes distinct from legacy attribute escapes', () => {

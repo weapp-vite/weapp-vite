@@ -1,0 +1,96 @@
+import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
+import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises'
+import path from 'node:path'
+import process from 'node:process'
+import { execa } from 'execa'
+import { withMachineE2ELease } from '../../../packages/devtools-runtime/src/lease/machine.ts'
+
+const repository = process.cwd()
+const [mode, measuredInput, outputInput] = process.argv.slice(2)
+assert.ok(mode === 'build' || mode === 'hmr' || mode === 'plan')
+assert.ok(measuredInput && outputInput)
+const measured = path.resolve(measuredInput)
+const output = path.resolve(outputInput)
+const templates = ['weapp-vite-tailwindcss-tdesign-template', 'weapp-vite-template', 'weapp-vite-wevu-template']
+const hash = (value: Buffer | string) => createHash('sha256').update(value).digest('hex')
+await mkdir(output)
+const script = path.join(repository, mode === 'build' ? 'scripts/benchmarkWxmlPerformance/build.ts' : 'scripts/benchmark-templates-hmr.ts')
+const git = async (...args: string[]) => (await execa('git', args, { cwd: measured })).stdout
+const identity = {
+  mode, startedAt: new Date().toISOString(),
+  environment: { node: process.version, executable: process.execPath, packageManager: (await execa('pnpm', ['--version'], { cwd: measured })).stdout },
+  commit: await git('rev-parse', 'HEAD'),
+  diff: hash(await git('diff', 'HEAD', '--', 'packages', 'packages-runtime', 'mpcore/packages/simulator', 'pnpm-lock.yaml')),
+  script: path.relative(repository, script), scriptSha256: hash(await readFile(script)),
+  lockSha256: hash(await readFile(path.join(measured, 'pnpm-lock.yaml'))),
+  dist: {} as Record<string, string>,
+  source: {} as Record<string, string>,
+  runner: {} as Record<string, string>,
+  sampling: mode === 'build' ? '7 sequential full builds per template; checkout blocks, not alternating pairs' : '20 edit-only samples per selected scenario; fixed seed wxml-20261103-phase-v1 with one offset at each center of 20 strata over the 120ms input-poll period, outside marker-wall timing; original 300ms settle retained; classic completion awaited before GC/restore; marker-visible wall unchanged; parent-directory events wake full reads with unchanged 25ms polling fallback; profile disabled; candidate then baseline checkout blocks, not alternating pairs',
+}
+const tracked = (await git('ls-files', '--', 'packages', 'packages-runtime', 'mpcore/packages/simulator', 'templates')).split('\n')
+const untracked = (await git('ls-files', '--others', '--exclude-standard', '--', 'packages', 'packages-runtime', 'mpcore/packages/simulator', 'templates')).split('\n')
+for (const filename of new Set([...tracked, ...untracked])) {
+  if (!filename || !/\.(?:ts|mts|mjs|json|vue|wxml|wxss|css|scss)$/.test(filename)) continue
+  try { identity.source[filename] = hash(await readFile(path.join(measured, filename))) }
+  catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error }
+}
+for (const filename of await readdir(path.join(repository, 'scripts'), { recursive: true })) {
+  if (/^(?:benchmark-templates-hmr\.ts|benchmarkWxmlPerformance\/|benchmarkTemplatesHmr\/|benchmarkTemplatesPerformance\/|performanceGate\/|workspace-hmr\/|utils\/)/.test(filename) && /\.(?:ts|mts|mjs|json)$/.test(filename)) {
+    identity.runner[`scripts/${filename}`] = hash(await readFile(path.join(repository, 'scripts', filename)))
+  }
+}
+for (const filename of ['packages/weapp-vite/dist/cli.mjs', 'packages/wxml/dist/index.mjs', 'packages/language-service/dist/index.mjs', 'packages-runtime/web/dist/index.mjs']) {
+  try { identity.dist[filename] = hash(await readFile(path.join(measured, filename))) }
+  catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error }
+}
+for (const base of ['packages/weapp-vite/dist', 'packages/wxml/dist', 'packages/language-service/dist', 'packages-runtime/web/dist', 'mpcore/packages/simulator/dist']) {
+  try {
+    for (const file of await readdir(path.join(measured, base), { recursive: true })) {
+      if (/\.(?:mjs|cjs|js|json|mts)$/.test(file)) {
+        identity.dist[`${base}/${file}`] = hash(await readFile(path.join(measured, base, file)))
+      }
+    }
+  }
+  catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error }
+}
+for (const file of await readdir(path.join(repository, 'e2e/utils'), { recursive: true })) {
+  if (/\.(?:ts|mts|mjs|json)$/.test(file)) {
+    identity.runner[`e2e/utils/${file}`] = hash(await readFile(path.join(repository, 'e2e/utils', file)))
+  }
+}
+identity.runner['.tmp/current-run/wxml/run-related-v5.ts'] = hash(await readFile(path.join(repository, '.tmp/current-run/wxml/run-related-v5.ts')))
+await writeFile(path.join(output, 'identity.json'), `${JSON.stringify(identity, null, 2)}\n`)
+await withMachineE2ELease(async () => {
+  const result = await execa(process.execPath, ['--import', 'tsx', script], {
+    cwd: repository, reject: false, env: {
+      WXML_PERF_ROOT: measured, WXML_PERF_OUTPUT: path.join(output, 'report.json'),
+      TEMPLATES_HMR_REPO_ROOT: measured,
+      TEMPLATES_HMR_WORKSPACE_ROOT: path.join(measured, '.tmp', `wxml-final-hmr-${path.basename(output)}`),
+      TEMPLATES_HMR_REPORT_DIR: output,
+      TEMPLATES_HMR_FILTER: templates.join(','),
+      TEMPLATES_HMR_SCENARIO_FILTER: 'native-page-template,vue-page-template,native-page-style,vue-page-style',
+      TEMPLATES_HMR_ITERATIONS: '20', TEMPLATES_HMR_SAMPLE_MODE: 'edit-only',
+      TEMPLATES_HMR_PROFILE: '0', TEMPLATES_HMR_RUNTIME: 'classic',
+      TEMPLATES_HMR_TIMING_SEED: 'wxml-20261103-phase-v1',
+      TEMPLATES_HMR_PLAN_ONLY: mode === 'plan' ? '1' : '0',
+      TEMPLATES_HMR_MARKER_SEED: 'wxml-final', TEMPLATES_HMR_KEEP_WORKSPACE: '0',
+      TEMPLATES_HMR_FAIL_ON_ERROR: '1', TEMPLATES_HMR_STOP_ON_ERROR: '1',
+    },
+    stdout: ['pipe', 'inherit'], stderr: ['pipe', 'inherit'],
+  })
+  await writeFile(path.join(output, 'stdout.log'), result.stdout)
+  await writeFile(path.join(output, 'stderr.log'), result.stderr)
+  const drift: string[] = []
+  for (const [filename, expected] of Object.entries({ ...identity.source, ...identity.dist })) {
+    try { if (hash(await readFile(path.join(measured, filename))) !== expected) drift.push(filename) }
+    catch { drift.push(filename) }
+  }
+  for (const [filename, expected] of Object.entries(identity.runner)) {
+    if (hash(await readFile(path.join(repository, filename))) !== expected) drift.push(`runner:${filename}`)
+  }
+  await writeFile(path.join(output, 'identity-after.json'), `${JSON.stringify({ finishedAt: new Date().toISOString(), drift })}\n`)
+  await writeFile(path.join(output, 'exit.json'), `${JSON.stringify({ exitCode: result.exitCode, signal: result.signal, finishedAt: new Date().toISOString() })}\n`)
+  process.exitCode = drift.length ? 1 : result.exitCode ?? 1
+})

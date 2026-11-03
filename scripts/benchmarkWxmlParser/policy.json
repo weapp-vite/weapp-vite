@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "baselineRef": "b6d0577164c8ccb3b2c0e5afff702c1997297550",
+  "corpusRoots": ["apps", "templates", "e2e-apps", "mpcore/demos"],
+  "extensions": {
+    ".wxml": "weapp",
+    ".axml": "alipay",
+    ".ttml": "tt",
+    ".swan": "swan",
+    ".jxml": "jd",
+    ".qml": "qq",
+    ".ksml": "ks",
+    ".xhsml": "xhs",
+    ".tyml": "ty"
+  },
+  "deduplication": "sha256-exact-bytes-preserve-all-origins",
+  "cohortPolicy": "source-features-v1",
+  "expectedDocuments": 464,
+  "corpusSha256": "165250d4d0f700a7435ccb993e87a149272fc8b3eddd4a12538b50603508d2ef",
+  "samplingContract": "wxml-paired-v4-full-real-wxml-gates",
+  "features": {
+    "denseAttributeMinimum": 8,
+    "scriptTags": ["wxs", "sjs", "filter", "script", "import-sjs", "ks"],
+    "webTags": ["html", "body", "div", "span", "p", "a", "img", "h1", "h2", "h3", "section", "article", "main", "aside", "header", "footer", "ul", "ol", "li", "table", "tr", "td", "svg", "path", "circle", "rect", "math", "mrow", "mi", "mo"]
+  },
+  "pressure": {
+    "depths": [32, 128, 512, 2048],
+    "textBytes": [1024, 16384, 262144, 1048576],
+    "entityElements": [16, 1024]
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Actual host observations used to correct runtime expectations; this failed run is not final acceptance.",
+  "provider": "devtools",
+  "ideVersion": "2.02.2609240",
+  "baseLibraryVersion": "3.17.2",
+  "nodeVersion": "24.22.1",
+  "officialChannel": "stable",
+  "officialVersionMatched": true,
+  "runStartedAt": "2026-11-03T13:28:47.660Z",
+  "runFinishedAt": "2026-11-03T13:29:16.648Z",
+  "originalStatus": "failed",
+  "executedCases": 2,
+  "passedCases": 0,
+  "failureReasons": [
+    "Previous expectations treated WXML string escapes as standard JavaScript string escapes.",
+    "The new WXS fixture used bare exports, which is undefined in the actual host."
+  ],
+  "observations": [
+    {
+      "route": "/pages/native/index",
+      "values": {
+        "data-single-escape": "a\\x27b",
+        "data-double-escape": "a\\x22b",
+        "data-single-tail": "tail\\",
+        "data-double-tail": "tail\\",
+        "data-single-mixed": "a\\\\x27b",
+        "data-double-mixed": "a\\\\x22b",
+        "data-symbols": "<>&",
+        "data-comparison": "true",
+        "data-bitwise": "3",
+        "data-expression-entity": "&amp;"
+      }
+    },
+    {
+      "route": "/pages/vue/index",
+      "values": {
+        "data-single-escape": "a\\x27b",
+        "data-double-escape": "a\\x22b",
+        "data-single-tail": "tail\\",
+        "data-double-tail": "tail\\",
+        "data-single-mixed": "a\\\\x27b",
+        "data-double-mixed": "a\\\\x22b",
+        "data-symbols": "<>&",
+        "data-comparison": "true",
+        "data-bitwise": "3",
+        "data-expression-entity": "&amp;"
+      }
+    }
+  ],
+  "observationLogSha256": "3751f65c4916241a03e8b68c2403fd7f618a038a2f17e13def031da105b09343",
+  "limits": [
+    "Observations precede the failing assertions. Event and function-division assertions did not complete in this run.",
+    "Parser and serializer preserve logical binding source; execution semantics belong to consumers."
+  ]
+}

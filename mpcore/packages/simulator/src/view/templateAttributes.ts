@@ -1,119 +1,17 @@
-import { DomHandler, Parser } from 'htmlparser2'
-import { templateInterpolations } from './templateInterpolation'
+import { sourceAttributeForms } from './sharedDocument'
 
-const valuelessAttributes = new WeakMap<object, ReadonlySet<string>>()
-
-class TemplateAttributeHandler extends DomHandler {
-  private readonly attributeForms = new Map<string, boolean>()
-
-  onopentagname() {
-    this.attributeForms.clear()
-  }
-
-  onattribute(name: string, _value: string, quote?: string | null) {
-    // parser 对同名属性保留首值；词法信息必须使用同一归属规则。
-    if (!this.attributeForms.has(name)) {
-      this.attributeForms.set(name, quote === undefined)
-    }
-  }
-
-  onopentag(name: string, attributes: Record<string, string>) {
-    super.onopentag(name, attributes)
-    const names = new Set([...this.attributeForms]
-      .filter(([key, valueless]) => valueless && Object.hasOwn(attributes, key))
-      .map(([key]) => key))
-    if (names.size > 0) {
-      valuelessAttributes.set(this.tagStack[this.tagStack.length - 1]!, names)
-    }
-  }
-}
-
-/** 保留 parser 的无值属性信息，不把裸属性与显式空字符串混为一谈。 */
-export function parseTemplateAttributeDocument(source: string) {
-  const handler = new TemplateAttributeHandler(undefined, { xmlMode: true })
-  const parser = new Parser(handler, {
-    // WXML 不是 HTML；不能按浏览器规则隐式闭合或丢弃嵌套的 form 等原生节点。
-    xmlMode: true,
-    decodeEntities: false,
-    lowerCaseAttributeNames: false,
-    lowerCaseTags: false,
-    recognizeSelfClosing: true,
-  })
-  parser.end(source)
-  return handler.root
-}
-
+/** 裸属性词法信息属于节点，普通展开和渲染克隆保留同一份只读元数据。 */
 export function isValuelessTemplateAttribute(node: object, name: string) {
-  return valuelessAttributes.get(node)?.has(name) ?? false
+  return sourceAttributeForms(node)?.has(name) ?? false
 }
 
 export function copyTemplateAttributeMetadata(source: object, target: object) {
-  const attributes = valuelessAttributes.get(source)
+  const attributes = sourceAttributeForms(source)
+  const destination = target as { attributeForms?: ReadonlySet<string> }
   if (attributes) {
-    valuelessAttributes.set(target, attributes)
+    destination.attributeForms = attributes
   }
   else {
-    valuelessAttributes.delete(target)
+    delete destination.attributeForms
   }
-}
-
-function decodeAttribute(raw: string, quote: string) {
-  const source = raw.replaceAll(`\\${quote}`, quote)
-  let value = ''
-  let offset = 0
-  for (const range of templateInterpolations(source)) {
-    value += source.slice(offset, range.start).replace(/\\([\s\S])/g, '$1')
-    value += source.slice(range.start, range.end)
-    offset = range.end
-  }
-  return value + source.slice(offset).replace(/\\([\s\S])/g, '$1')
-}
-
-/** 先保存 WXML 属性词法值，再交给 HTML parser 构建标签树，避免反斜杠引号提前截断属性。 */
-export function maskTemplateAttributes(source: string) {
-  const attributes = new Map<string, string>()
-  // 普通属性可由 tokenizer 原样解析；仅转义值需要占位和后续恢复。
-  if (!source.includes('\\')) {
-    return { source, attributes }
-  }
-  let prefix = '__mpcore_quoted_attribute_'
-  while (source.includes(prefix)) {
-    prefix += '_'
-  }
-  let output = ''
-  let offset = 0
-  for (let i = 0; i < source.length; i++) {
-    if (source.startsWith('<!--', i)) {
-      const end = source.indexOf('-->', i + 4)
-      i = end < 0 ? source.length : end + 2
-      continue
-    }
-    if (source[i] !== '<' || !/[a-z_]/i.test(source[i + 1] ?? '')) {
-      continue
-    }
-    for (i++; i < source.length && source[i] !== '>'; i++) {
-      if (source[i] !== '"' && source[i] !== '\'') {
-        continue
-      }
-      const quote = source[i]!
-      const start = i + 1
-      for (i++; i < source.length && source[i] !== quote; i++) {
-        if (source[i] === '\\') {
-          i++
-        }
-      }
-      if (i >= source.length) {
-        break
-      }
-      const raw = source.slice(start, i)
-      if (!raw.includes('\\')) {
-        continue
-      }
-      const token = `${prefix}${attributes.size}`
-      attributes.set(token, decodeAttribute(raw, quote))
-      output += source.slice(offset, start) + token
-      offset = i
-    }
-  }
-  return { source: output + source.slice(offset), attributes }
 }

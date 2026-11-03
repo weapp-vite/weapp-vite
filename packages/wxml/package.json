@@ -1,0 +1,46 @@
+{
+  "name": "@weapp-vite/wxml",
+  "type": "module",
+  "version": "0.0.0",
+  "description": "Source-preserving multi-platform mini-program template parser and serializer",
+  "license": "MIT",
+  "homepage": "https://vite.weapp.dev/packages/wxml",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/weapp-vite/weapp-vite.git",
+    "directory": "packages/wxml"
+  },
+  "bugs": { "url": "https://github.com/weapp-vite/weapp-vite/issues" },
+  "keywords": ["weapp-vite", "wxml", "mini-program", "parser", "serializer"],
+  "sideEffects": false,
+  "exports": {
+    ".": { "types": "./dist/index.d.mts", "import": "./dist/index.mjs" },
+    "./package.json": "./package.json"
+  },
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "files": ["README.md", "dist"],
+  "engines": { "node": "^22.23.4 || ^24.22.1 || >=26.12.1" },
+  "scripts": {
+    "build": "tsdown",
+    "test": "vitest run --config ./vitest.config.ts",
+    "test:types": "pnpm build && pnpm run test:types:check",
+    "test:types:check": "tsd --files \"test-d/**/*.test-d.ts\"",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint .",
+    "bench": "node --stack-size=4096 --expose-gc --import tsx ../../scripts/benchmarkWxmlParser/index.ts --quick --browser --consumer-scanner packages/weapp-vite/src/wxml/scan/parser.ts#parseWxml --consumer-web packages-runtime/web/src/compiler/wxml/parser.ts#parseWxml --consumer-simulator mpcore/packages/simulator/src/view/wxsDocument.ts#parseWxsTemplateDocument",
+    "bench:check": "node --stack-size=4096 --expose-gc --import tsx ../../scripts/benchmarkWxmlParser/index.ts --check --browser --consumer-scanner packages/weapp-vite/src/wxml/scan/parser.ts#parseWxml --consumer-web packages-runtime/web/src/compiler/wxml/parser.ts#parseWxml --consumer-simulator mpcore/packages/simulator/src/view/wxsDocument.ts#parseWxsTemplateDocument"
+  },
+  "dependencies": { "entities": "^8.1.0" },
+  "devDependencies": {
+    "dom-serializer": "^3.1.1",
+    "htmlparser2": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "~5.0.5"
+  },
+  "tsd": {
+    "compilerOptions": { "module": "NodeNext", "moduleResolution": "NodeNext", "strict": true, "skipLibCheck": false }
+  },
+  "publishConfig": { "access": "public", "registry": "https://registry.npmjs.org" }
+}

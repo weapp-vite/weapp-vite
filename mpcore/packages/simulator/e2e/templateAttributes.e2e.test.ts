@@ -1,6 +1,7 @@
 import { expect, it } from 'vitest'
 import { createBrowserHeadlessSession, createBrowserVirtualFiles } from '../src/browser'
 import { HeadlessTestingNodeHandle } from '../src/view/nodeHandle'
+import { createSharedTemplateParserFiles, sharedTemplateExpressionValues } from '../test/helpers/sharedTemplateParser'
 
 it.each([false, true])('renders ordinary attributes without placeholder restoration (WXS: %s)', (withWxs) => {
   const files = createBrowserVirtualFiles([
@@ -63,6 +64,40 @@ it('renders WXML literal delimiters and escaped attributes without breaking even
     await probe?.tap()
     render()
     expect(preview.querySelector('#result')?.textContent).toBe(literal)
+  }
+  finally {
+    session.close()
+    preview.remove()
+  }
+})
+
+it('preserves first bare metadata and source values through repeated template clones and raw WXS strings', () => {
+  const session = createBrowserHeadlessSession({ files: createBrowserVirtualFiles(createSharedTemplateParserFiles()) })
+  const preview = document.createElement('div')
+  document.body.append(preview)
+  try {
+    const page = session.reLaunch('/pages/index/index')
+    preview.innerHTML = session.renderCurrentPage().wxml
+    const components = page.selectAllComponents!('.cloned')
+    expect(components.map(component => component.properties.payload)).toEqual([true, true])
+    const nodes = [...preview.querySelectorAll('.cloned')]
+    expect(nodes).toHaveLength(2)
+    for (const node of nodes) {
+      expect(node.querySelector('.bare-summary')?.textContent).toBe('boolean:true')
+      expect(node.getAttribute('title')).toBe('a"b')
+      expect(node.getAttribute('data-path')).toBe(String.raw`path\file`)
+      expect(node.getAttribute('data-entity')).toBe('&amp;')
+      expect(node.getAttribute('data-closing')).toBe('</wxs>')
+      expect(node.getAttribute('data-division')).toBe('function-division')
+      expect(node.getAttribute('data-commented-external')).toBe('comment-ignored')
+      expect(node.getAttribute('data-commented-inline')).toBe('comment-ignored')
+    }
+    const expressions = preview.querySelector('#setter-expressions')
+    expect(expressions).not.toBeNull()
+    expect(expressions!.getAttribute('data-static-entity')).toBe('&amp;')
+    for (const [name, value] of Object.entries(sharedTemplateExpressionValues)) {
+      expect(expressions!.getAttribute(name)).toBe(value)
+    }
   }
   finally {
     session.close()

@@ -19,7 +19,7 @@ export function getTemplateImportAttrs(tagName?: string) {
   if (!tagName) {
     return undefined
   }
-  if (!(tagName in TEMPLATE_IMPORT_ATTRS)) {
+  if (!Object.hasOwn(TEMPLATE_IMPORT_ATTRS, tagName)) {
     return undefined
   }
   return TEMPLATE_IMPORT_ATTRS[tagName as TemplateImportTagName]

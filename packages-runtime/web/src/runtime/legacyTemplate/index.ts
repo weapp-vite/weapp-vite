@@ -1,4 +1,5 @@
-import type { ChildNode, DataNode, Element, Node } from 'domhandler'
+import type { ChildNode, DataNode, Element } from 'domhandler'
+import type { TemplateInputOptions } from '../../shared/templateInput'
 import type { LegacyDatasetValues } from './dataset'
 import type {
   LegacyTemplateRenderer,
@@ -6,8 +7,8 @@ import type {
   RenderOptions,
 } from './types'
 import { WEAPP_VITE_WEB_LEGACY_FRAGMENT_END_COMMENT } from '@weapp-core/constants'
-import { parseDocument } from 'htmlparser2'
 import { resolveControlledNativeAttributes } from '../../shared/controlledAttributes'
+import { resolveTemplateInput } from '../../shared/templateInput'
 import {
   hasControlAttribute,
   normalizeTagName,
@@ -31,30 +32,17 @@ import {
   normalizeList,
 } from './expression'
 import { hasLegacyElementKey, recordLegacyElementKey, recordLegacyLoopScope, recordLegacyMarkupKeys } from './markupKeys'
+import { parseSharedTemplateNodes } from './parser'
 
 const templateCache = new Map<string, ChildNode[]>()
 
-function filterRenderableNode(node: Node) {
-  if (node.type === 'directive' || node.type === 'comment') {
-    return false
-  }
-  if (node.type === 'text') {
-    const data = (node as DataNode).data
-    return data.trim().length > 0
-  }
-  return true
-}
-
-function getOrParseTemplate(source: string) {
-  let cached = templateCache.get(source)
+function getOrParseTemplate(source: string, options: TemplateInputOptions) {
+  const input = resolveTemplateInput('', options, { platform: 'weapp' })
+  const key = JSON.stringify([source, input.platform, input.syntax, input.rawTags])
+  let cached = templateCache.get(key)
   if (!cached) {
-    const document = parseDocument(source, {
-      xmlMode: true,
-      decodeEntities: true,
-      recognizeSelfClosing: true,
-    })
-    cached = document.children.filter(filterRenderableNode)
-    templateCache.set(source, cached)
+    cached = parseSharedTemplateNodes(source, input)
+    templateCache.set(key, cached)
   }
   return cached
 }
@@ -258,8 +246,8 @@ export function renderTemplate(nodes: ChildNode[], scope?: LegacyTemplateScope) 
   return renderTree(nodes, renderScope)
 }
 
-export function createTemplate(source: string): LegacyTemplateRenderer {
-  const nodes = getOrParseTemplate(source)
+export function createTemplate(source: string, options: TemplateInputOptions = {}): LegacyTemplateRenderer {
+  const nodes = getOrParseTemplate(source, options)
   return (scope?: LegacyTemplateScope, context?: object) => {
     const datasets: LegacyDatasetValues | undefined = context ? [] : undefined
     const result = renderTree(nodes, createScope(scope), datasets)

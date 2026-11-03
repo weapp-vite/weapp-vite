@@ -62,6 +62,7 @@
   "dependencies": {
     "@weapp-core/shared": "workspace:*",
     "@weapp-vite/ast": "workspace:*",
+    "@weapp-vite/wxml": "workspace:*",
     "fast-glob": "^3.3.3",
     "ignore": "^7.0.5",
     "picomatch": "^4.0.7"

@@ -70,7 +70,6 @@ export default defineConfig({
       'comment-json',
       'obug',
       'fdir',
-      'htmlparser2',
       'local-pkg',
       'lru-cache',
       'magic-string',

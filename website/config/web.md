@@ -142,6 +142,7 @@ Web 产物输出目录，默认一般是 `dist/web`。
 
 - `wxss`
 - `form`
+- `templateInput`
 - `runtime`
 
 其中比较关键的是：
@@ -183,6 +184,34 @@ Web 产物输出目录，默认一般是 `dist/web`。
   - 去重注入的 `preconnect` / `dns-prefetch` / `prefetch` / `preload` 链接数组
 
 默认视口同时约束页面滚动、导航栏和 `fixed` 元素；`rpx` 也按设备容器宽度计算，而不是按桌面浏览器窗口计算。
+
+### 模板输入规则
+
+`web.pluginOptions.templateInput` 可覆盖原生模板入口及原生 include/import 依赖的输入规则：
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    web: {
+      pluginOptions: {
+        templateInput: { platform: 'weapp', syntax: 'xml' },
+      },
+    },
+  },
+})
+```
+
+| 字段 | 含义 |
+| --- | --- |
+| `platform` | 来源平台，支持六个构建平台及历史 `qq`、`ks` 模板入口 |
+| `syntax` | `legacy` 或 `xml`；显式值优先于平台、文件后缀的默认规则 |
+| `rawTags` | 替换完整原始脚本标签列表，类型为 `readonly string[]` |
+
+未覆盖时，`.wxml` 使用微信 / legacy，其他已知平台模板使用对应平台 / XML，`.html` 使用 XML，未知依赖后缀继承父模板规则。默认原始脚本标签来自实际输入平台，并包含 `script`。
+
+Vue SFC 生成模板（含 `<template src>`）固定使用微信 / XML，不随这个原生模板选项改为 legacy。输入方言只决定源码读取方式，不代表对应平台 runtime 已通过验收。字符串模板的 `createTemplate(source, options?)` 及结构错误处理见 [Web 包说明](/packages/web#模板输入方言)。
 
 ### 开发期标签诊断
 
