@@ -2,6 +2,10 @@
   dir: mpcore/packages/core
   intents:
     - npm-package-metadata
+"@mpcore/core@0.0.10":
+  dir: mpcore/packages/core
+  intents:
+    - dependency-upgrade-20261031-233944
 "@mpcore/core@0.0.2":
   dir: mpcore/packages/core
   intents:
@@ -186,6 +190,15 @@
     - tooling-scaffold-diagnostics
     - vue-props-compilation
     - web-typed-dataset
+"@mpcore/simulator@1.3.0":
+  dir: mpcore/packages/simulator
+  intents:
+    - dependency-upgrade-20261031-233944
+    - issue-1295-component-page-defaults
+    - official-vite-imports
+    - simulator-browser-wxss-rpx
+    - simulator-static-template-whitespace
+    - web-issues-1250-1253
 "@mpcore/test@0.1.10":
   dir: mpcore/packages/test
   intents:
@@ -243,6 +256,10 @@
   dir: mpcore/packages/test
   intents:
     - dependency-runtime-migration
+"@mpcore/test@1.2.1":
+  dir: mpcore/packages/test
+  intents:
+    - dependency-upgrade-20261031-233944
 "@mpcore/vitest@0.1.3":
   dir: mpcore/packages/vitest
   intents:
@@ -306,6 +323,10 @@
   dir: mpcore/packages/vitest
   intents:
     - dependency-runtime-migration
+"@mpcore/vitest@1.2.1":
+  dir: mpcore/packages/vitest
+  intents:
+    - dependency-upgrade-20261031-233944
 "@mpcore/weapp-vite@0.1.10":
   dir: mpcore/packages/weapp-vite
   intents:
@@ -363,6 +384,10 @@
   dir: mpcore/packages/weapp-vite
   intents:
     - dependency-runtime-migration
+"@mpcore/weapp-vite@1.1.1":
+  dir: mpcore/packages/weapp-vite
+  intents:
+    - dependency-upgrade-20261031-233944
 "@weapp-agent/cli@0.1.0":
   dir: packages/agent-cli
   intents:
@@ -380,6 +405,10 @@
   dir: packages/agent-cli
   intents:
     - dependency-runtime-migration
+"@weapp-agent/cli@0.2.1":
+  dir: packages/agent-cli
+  intents:
+    - dependency-upgrade-20261031-233944
 "@weapp-core/api@0.2.0":
   dir: "@weapp-core/api"
   intents:
@@ -445,6 +474,11 @@
   dir: "@weapp-core/api"
   intents:
     - dependency-runtime-migration
+"@weapp-core/api@0.4.1":
+  dir: "@weapp-core/api"
+  intents:
+    - dependency-upgrade-20261031-233944
+    - fix-api-scoped-platform-types
 "@weapp-core/constants@0.2.0":
   dir: "@weapp-core/constants"
   intents:
@@ -528,6 +562,12 @@
     - dependency-runtime-migration
     - fetch-streams-eventsource
     - web-typed-dataset
+"@weapp-core/constants@0.5.1":
+  dir: "@weapp-core/constants"
+  intents:
+    - dependency-upgrade-20261031-233944
+    - official-vite-imports
+    - web-issues-1250-1253
 "@weapp-core/init@6.0.16":
   dir: "@weapp-core/init"
   intents:
@@ -587,6 +627,10 @@
   dir: "@weapp-core/init"
   intents:
     - dependency-runtime-migration
+"@weapp-core/init@6.1.1":
+  dir: "@weapp-core/init"
+  intents:
+    - dependency-upgrade-20261031-233944
 "@weapp-core/logger@3.1.10":
   dir: "@weapp-core/logger"
   intents:
@@ -643,6 +687,10 @@
   dir: "@weapp-core/logger"
   intents:
     - dependency-runtime-migration
+"@weapp-core/logger@3.2.1":
+  dir: "@weapp-core/logger"
+  intents:
+    - dependency-upgrade-20261031-233944
 "@weapp-core/schematics@6.2.0":
   dir: "@weapp-core/schematics"
   intents:
@@ -707,6 +755,11 @@
   dir: "@weapp-core/schematics"
   intents:
     - dependency-runtime-migration
+"@weapp-core/schematics@6.3.1":
+  dir: "@weapp-core/schematics"
+  intents:
+    - dependency-upgrade-20261031-233944
+    - fix-nightly-dual-module-declarations
 "@weapp-core/shared@3.2.0":
   dir: "@weapp-core/shared"
   intents:
@@ -771,6 +824,11 @@
   dir: "@weapp-core/shared"
   intents:
     - dependency-runtime-migration
+"@weapp-core/shared@3.4.1":
+  dir: "@weapp-core/shared"
+  intents:
+    - dependency-upgrade-20261031-233944
+    - multiplatform-language-tools
 "@weapp-core/types@1.1.0":
   dir: "@weapp-core/types"
   intents:
@@ -823,6 +881,11 @@
   dir: "@weapp-core/types"
   intents:
     - dependency-runtime-migration
+"@weapp-core/types@1.2.1":
+  dir: "@weapp-core/types"
+  intents:
+    - dependency-upgrade-20261031-233944
+    - fix-api-scoped-platform-types
 "@weapp-vite/acceptance@0.1.0":
   dir: packages/acceptance
   intents:
@@ -842,6 +905,10 @@
   dir: packages/acceptance
   intents:
     - dependency-runtime-migration
+"@weapp-vite/acceptance@0.2.1":
+  dir: packages/acceptance
+  intents:
+    - dependency-upgrade-20261031-233944
 "@weapp-vite/ast-native@0.0.6":
   dir: packages/ast-native
   intents:
@@ -918,6 +985,11 @@
   dir: packages/ast-native
   intents:
     - dependency-runtime-migration
+"@weapp-vite/ast-native@0.2.1":
+  dir: packages/ast-native
+  intents:
+    - dependency-upgrade-20261031-233944
+    - nightly-native-pack
 "@weapp-vite/ast@6.20.5":
   dir: packages/ast
   intents:
@@ -986,6 +1058,11 @@
   dir: packages/ast
   intents:
     - dependency-runtime-migration
+"@weapp-vite/ast@7.8.0":
+  dir: packages/ast
+  intents:
+    - dependency-upgrade-20261031-233944
+    - fix-published-transitive-type-dependencies
 "@weapp-vite/dashboard@6.20.5":
   dir: packages/dashboard
   intents:
@@ -1056,6 +1133,10 @@
   dir: packages/dashboard
   intents:
     - dependency-runtime-migration
+"@weapp-vite/dashboard@7.8.0":
+  dir: packages/dashboard
+  intents:
+    - dependency-upgrade-20261031-233944
 "@weapp-vite/devtools-runtime@0.4.19":
   dir: packages/devtools-runtime
   intents:
@@ -1110,6 +1191,10 @@
   dir: packages/devtools-runtime
   intents:
     - dependency-runtime-migration
+"@weapp-vite/devtools-runtime@0.7.1":
+  dir: packages/devtools-runtime
+  intents:
+    - dependency-upgrade-20261031-233944
 "@weapp-vite/eslint@0.2.0":
   dir: packages/eslint
   intents:
@@ -1179,6 +1264,10 @@
   dir: packages/eslint
   intents:
     - dependency-runtime-migration
+"@weapp-vite/eslint@0.3.1":
+  dir: packages/eslint
+  intents:
+    - dependency-upgrade-20261031-233944
 "@weapp-vite/glass-easel-web-adapter@0.1.1":
   dir: packages-runtime/glass-easel-web-adapter
   intents:
@@ -1229,6 +1318,10 @@
   intents:
     - dependency-runtime-migration
     - glass-easel-experimental-adapter
+"@weapp-vite/glass-easel-web-adapter@0.2.1":
+  dir: packages-runtime/glass-easel-web-adapter
+  intents:
+    - dependency-upgrade-20261031-233944
 "@weapp-vite/hmr@0.2.0":
   dir: packages/hmr
   intents:
@@ -1254,6 +1347,11 @@
   dir: packages/hmr
   intents:
     - dependency-runtime-migration
+"@weapp-vite/hmr@0.3.1":
+  dir: packages/hmr
+  intents:
+    - dependency-upgrade-20261031-233944
+    - official-vite-imports
 "@weapp-vite/i18n@0.2.0":
   dir: packages-runtime/i18n
   intents:
@@ -1319,6 +1417,18 @@
     - dependency-runtime-migration
     - fetch-streams-eventsource
     - web-typed-dataset
+"@weapp-vite/i18n@0.3.1":
+  dir: packages-runtime/i18n
+  intents:
+    - dependency-upgrade-20261031-233944
+    - fix-api-scoped-platform-types
+    - fix-nightly-dual-module-declarations
+    - official-vite-imports
+    - web-issues-1250-1253
+"@weapp-vite/language-service@0.1.0":
+  dir: packages/language-service
+  intents:
+    - multiplatform-language-tools
 "@weapp-vite/mcp@1.5.0":
   dir: packages/mcp
   intents:
@@ -1389,6 +1499,12 @@
     - dependency-runtime-migration
     - fetch-streams-eventsource
     - web-typed-dataset
+"@weapp-vite/mcp@2.2.1":
+  dir: packages/mcp
+  intents:
+    - dependency-upgrade-20261031-233944
+    - official-vite-imports
+    - web-issues-1250-1253
 "@weapp-vite/miniprogram-automator@1.2.14":
   dir: packages/miniprogram-automator
   intents:
@@ -1479,6 +1595,24 @@
   intents:
     - dependency-runtime-migration
     - devtools-rc-component-methods
+"@weapp-vite/miniprogram-automator@1.5.1":
+  dir: packages/miniprogram-automator
+  intents:
+    - dependency-upgrade-20261031-233944
+    - fix-published-transitive-type-dependencies
+    - simulator-static-template-whitespace
+    - stable-component-caller-bridge
+    - stable-page-method-protocol
+"@weapp-vite/oxfmt@0.1.0":
+  dir: packages/oxfmt
+  intents:
+    - multiplatform-language-tools
+    - templates-vite-plus-quality
+"@weapp-vite/oxlint@0.1.0":
+  dir: packages/oxlint
+  intents:
+    - multiplatform-language-tools
+    - templates-vite-plus-quality
 "@weapp-vite/qr@1.1.10":
   dir: packages/qr
   intents:
@@ -1535,6 +1669,10 @@
   dir: packages/qr
   intents:
     - dependency-runtime-migration
+"@weapp-vite/qr@1.2.1":
+  dir: packages/qr
+  intents:
+    - dependency-upgrade-20261031-233944
 "@weapp-vite/react@0.2.1":
   dir: packages-runtime/react
   intents:
@@ -1608,6 +1746,13 @@
     - dependency-runtime-migration
     - fetch-streams-eventsource
     - web-typed-dataset
+"@weapp-vite/react@0.3.1":
+  dir: packages-runtime/react
+  intents:
+    - dependency-upgrade-20261031-233944
+    - fix-react-performance-type-dependencies
+    - official-vite-imports
+    - web-issues-1250-1253
 "@weapp-vite/tailwindcss@0.2.0":
   dir: packages/tailwindcss
   intents:
@@ -1639,6 +1784,11 @@
   dir: packages/tailwindcss
   intents:
     - dependency-runtime-migration
+"@weapp-vite/tailwindcss@1.1.1":
+  dir: packages/tailwindcss
+  intents:
+    - dependency-upgrade-20261031-233944
+    - fix-published-transitive-type-dependencies
 "@weapp-vite/volar@2.1.10":
   dir: packages/volar
   intents:
@@ -1697,11 +1847,20 @@
   dir: packages/volar
   intents:
     - dependency-runtime-migration
+"@weapp-vite/volar@2.2.1":
+  dir: packages/volar
+  intents:
+    - dependency-upgrade-20261031-233944
+    - fix-nightly-dual-module-declarations
 "@weapp-vite/vscode@0.5.3":
   dir: extensions/vscode
   intents:
     - calm-docs-domain
     - tsdown-023-constants
+"@weapp-vite/vscode@0.6.0":
+  dir: extensions/vscode
+  intents:
+    - multiplatform-language-tools
 "@weapp-vite/web@1.4.10":
   dir: packages-runtime/web
   intents:
@@ -1815,6 +1974,12 @@
     - web-scroll-pagination
     - web-style-units
     - web-typed-dataset
+"@weapp-vite/web@2.2.0":
+  dir: packages-runtime/web
+  intents:
+    - dependency-upgrade-20261031-233944
+    - official-vite-imports
+    - web-issues-1250-1253
 "@wevu/api@0.2.17":
   dir: packages-runtime/weapi
   intents:
@@ -1883,6 +2048,11 @@
   dir: packages-runtime/weapi
   intents:
     - dependency-runtime-migration
+"@wevu/api@0.4.1":
+  dir: packages-runtime/weapi
+  intents:
+    - dependency-upgrade-20261031-233944
+    - fix-api-scoped-platform-types
 "@wevu/compiler@6.20.5":
   dir: packages-runtime/wevu-compiler
   intents:
@@ -2020,6 +2190,14 @@
     - fetch-streams-eventsource
     - vue-props-compilation
     - web-typed-dataset
+"@wevu/compiler@7.8.0":
+  dir: packages-runtime/wevu-compiler
+  intents:
+    - dependency-upgrade-20261031-233944
+    - issue-1295-merge-models
+    - multiplatform-language-tools
+    - official-vite-imports
+    - web-issues-1250-1253
 "@wevu/json-render-components@0.1.0":
   dir: packages-runtime/json-render-components
   intents:
@@ -2042,6 +2220,10 @@
   dir: packages-runtime/json-render-components
   intents:
     - dependency-runtime-migration
+"@wevu/json-render-components@0.2.1":
+  dir: packages-runtime/json-render-components
+  intents:
+    - dependency-upgrade-20261031-233944
 "@wevu/json-render@0.1.0":
   dir: packages-runtime/json-render
   intents:
@@ -2064,6 +2246,10 @@
   dir: packages-runtime/json-render
   intents:
     - dependency-runtime-migration
+"@wevu/json-render@0.2.1":
+  dir: packages-runtime/json-render
+  intents:
+    - dependency-upgrade-20261031-233944
 "@wevu/query@0.0.0":
   dir: packages-runtime/wevu-query
   intents:
@@ -2119,6 +2305,10 @@
   dir: packages-runtime/wevu-query
   intents:
     - dependency-runtime-migration
+"@wevu/query@0.1.1":
+  dir: packages-runtime/wevu-query
+  intents:
+    - dependency-upgrade-20261031-233944
 "@wevu/test-utils@0.2.0":
   dir: packages-runtime/wevu-test-utils
   intents:
@@ -2194,6 +2384,12 @@
     - dependency-runtime-migration
     - fetch-streams-eventsource
     - web-typed-dataset
+"@wevu/test-utils@1.1.1":
+  dir: packages-runtime/wevu-test-utils
+  intents:
+    - dependency-upgrade-20261031-233944
+    - official-vite-imports
+    - web-issues-1250-1253
 "@wevu/web-apis@1.2.35":
   dir: packages-runtime/web-apis
   intents:
@@ -2269,6 +2465,12 @@
     - dependency-runtime-migration
     - fetch-streams-eventsource
     - web-typed-dataset
+"@wevu/web-apis@1.4.1":
+  dir: packages-runtime/web-apis
+  intents:
+    - dependency-upgrade-20261031-233944
+    - official-vite-imports
+    - web-issues-1250-1253
 create-weapp-vite@2.8.0:
   dir: packages/create-weapp-vite
   intents:
@@ -2759,6 +2961,14 @@ create-weapp-vite@3.3.0:
     - tooling-scaffold-diagnostics
     - vue-props-compilation
     - web-typed-dataset
+create-weapp-vite@3.4.0:
+  dir: packages/create-weapp-vite
+  intents:
+    - dependency-upgrade-20261031-233944
+    - multiplatform-language-tools
+    - official-vite-imports
+    - templates-vite-plus-quality
+    - web-issues-1250-1253
 rolldown-require@2.0.26:
   dir: packages/rolldown-require
   intents:
@@ -2824,6 +3034,10 @@ rolldown-require@2.1.0:
   dir: packages/rolldown-require
   intents:
     - dependency-runtime-migration
+rolldown-require@2.1.1:
+  dir: packages/rolldown-require
+  intents:
+    - dependency-upgrade-20261031-233944
 vite-plugin-performance@2.0.2:
   dir: packages/vite-plugin-performance
   intents:
@@ -2875,6 +3089,11 @@ vite-plugin-performance@2.1.0:
   dir: packages/vite-plugin-performance
   intents:
     - dependency-runtime-migration
+vite-plugin-performance@2.1.1:
+  dir: packages/vite-plugin-performance
+  intents:
+    - dependency-upgrade-20261031-233944
+    - fix-react-performance-type-dependencies
 weapp-ide-cli@6.0.8:
   dir: packages/weapp-ide-cli
   intents:
@@ -2964,6 +3183,11 @@ weapp-ide-cli@6.4.0:
   intents:
     - dependency-runtime-migration
     - ide-managed-resource-cleanup
+weapp-ide-cli@6.4.1:
+  dir: packages/weapp-ide-cli
+  intents:
+    - dependency-upgrade-20261031-233944
+    - explicit-installation-replacement-recovery
 weapp-vite-plugin-template@1.0.0:
   dir: templates/weapp-vite-plugin-template
   intents:
@@ -3407,6 +3631,17 @@ weapp-vite@7.7.0:
     - vue-props-compilation
     - web-dev-rapid-restores
     - web-typed-dataset
+weapp-vite@7.8.0:
+  dir: packages/weapp-vite
+  intents:
+    - compiler-session-watcher-drain
+    - dependency-upgrade-20261031-233944
+    - fix-classic-host-root-identity
+    - fix-nightly-dual-module-declarations
+    - multiplatform-language-tools
+    - official-vite-imports
+    - templates-vite-plus-quality
+    - web-issues-1250-1253
 wevu@6.20.5:
   dir: packages-runtime/wevu
   intents:
@@ -3565,3 +3800,10 @@ wevu@7.7.0:
     - dependency-runtime-migration
     - fetch-streams-eventsource
     - web-typed-dataset
+wevu@7.8.0:
+  dir: packages-runtime/wevu
+  intents:
+    - dependency-upgrade-20261031-233944
+    - fix-api-scoped-platform-types
+    - official-vite-imports
+    - web-issues-1250-1253

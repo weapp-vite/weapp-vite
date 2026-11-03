@@ -1,7 +1,7 @@
 {
   "name": "@weapp-vite/oxfmt",
   "type": "module",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Oxfmt formatting preset for weapp-vite mini-program projects",
   "license": "MIT",
   "homepage": "https://vite.weapp.dev/packages/oxfmt",

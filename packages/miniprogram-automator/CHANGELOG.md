@@ -1,5 +1,44 @@
 # @weapp-vite/miniprogram-automator
 
+## 1.5.1
+
+### Patch Changes
+
+- chore(deps): 自动补充依赖升级发布记录。
+  涉及包：
+  - @weapp-core/types：devDependencies.tsdown
+  - @weapp-vite/glass-easel-web-adapter：devDependencies.tsdown
+  - @wevu/web-apis：devDependencies.eventsource-parser
+  - @weapp-agent/cli：dependencies.@ai-sdk/anthropic、dependencies.@ai-sdk/openai、dependencies.@ai-sdk/openai-compatible、dependencies.ai、devDependencies.tsdown
+  - @weapp-vite/ast：dependencies.@oxc-project/types
+  - create-weapp-vite：dependencies.@inquirer/prompts
+  - @weapp-vite/dashboard：dependencies.@devframes/agentic、dependencies.@devframes/hub、dependencies.@devframes/hub-ui
+  - @weapp-vite/eslint：devDependencies.@typescript-eslint/parser
+  - @weapp-vite/miniprogram-automator：dependencies.ws
+  - weapp-vite：dependencies.@typescript-eslint/parser、dependencies.rolldown-plugin-dts、devDependencies.@devframes/agentic、devDependencies.@devframes/hub、devDependencies.@devframes/hub-ui、optionalDependencies.@swc/core
+
+  chore(deps): 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@babel/core, @babel/generator, @babel/parser, @babel/traverse, @babel/types, @icebreakers/eslint-config, @types/node, @vue/language-core, autoprefixer, axios, devframe, eslint, magic-string, oxc-parser, postcss, rolldown, sass, sass-embedded, tailwind-variants, tslib, uview-plus, vue-tsc。命名 catalog 变更键：无。
+
+  迁移 rolldown-plugin-dts 0.29 的 tsc 配置命名空间，兼容旧顶层配置，保留项目引用、上下文隔离和 Vue 声明生成契约。Rust N-API 与 Oxc 配套升级，保留可选原生路径及 JavaScript fallback；SSE 与样式变体由回归覆盖。TypeScript 保留 6.0.3，Node 支持范围不变。
+
+  修复 classic HMR 的来源证明：React 普通 JSX/TSX 在转换前记录实际输入，原生入口继续由 raw reader 独占；保存事件以 Vite 同次稳定读取结算摘要，避免文件截断阶段污染恢复版本，并保留晚到读取、后续保存和关闭之间的所有权隔离。
+
+  减少 request globals 与 prelude 的构建期重复解析：复用同一产物的 installer 识别结果，先检查已有 runtime 标记，并仅对完全缺少标记、公共导出和转义线索的代码跳过 AST；保留转义输入、跨轮次替换、初始化顺序和原生输出契约。
+
+- fix(types): 随包安装公开声明所需的第三方类型，修复独立 TypeScript 消费者无法解析 convert-source-map、ws 和 set-value 声明的问题。
+
+- fix(simulator): 对齐静态 WXML 空白语义并同步无头自动化运行时。
+
+  在插值前移除静态 ASCII 纯空白节点，保留显式绑定空格、非空文本和 WXS 正文。Node、浏览器及 testing fallback 统一使用同一模板解析规则，并同步 automator 内联的运行时副本。
+
+- fix(miniprogram-automator): 为微信开发者工具 Stable 2.02.2609240 与基础库 3.17.6 的精确组合启用已有组件 caller 桥接，避免原生组件方法调用访问错误对象，并保留其他基础库的原生协议选择。
+
+- fix(miniprogram-automator): 为微信开发者工具 Stable 2.02.2609240 沿用 AppService 页面方法调用，兼容原生协议无法访问真实页面方法的问题，并保留原生元素查询与组件作用域。
+
+- Updated dependencies:
+  - @weapp-vite/qr@1.2.1
+
 ## 1.5.0
 
 ### Minor Changes

@@ -3,7 +3,7 @@
   "name": "@weapp-vite/vscode",
   "displayName": "weapp-vite",
   "type": "module",
-  "version": "0.5.3",
+  "version": "0.6.0",
   "private": true,
   "description": "为 weapp-vite 项目提供命令入口、状态栏、代码片段、自定义块高亮与轻量编辑器增强的 VS Code 扩展。",
   "license": "MIT",
@@ -432,8 +432,24 @@
       },
       {
         "id": "miniprogram-script",
-        "aliases": ["Mini Program Script", "WXS", "SJS"],
-        "extensions": [".wxs", ".sjs", ".ks", ".wxs.ts", ".sjs.ts", ".ks.ts", ".wxs.js", ".sjs.js", ".ks.js", ".filter.ts", ".filter.js"],
+        "aliases": [
+          "Mini Program Script",
+          "WXS",
+          "SJS"
+        ],
+        "extensions": [
+          ".wxs",
+          ".sjs",
+          ".ks",
+          ".wxs.ts",
+          ".sjs.ts",
+          ".ks.ts",
+          ".wxs.js",
+          ".sjs.js",
+          ".ks.js",
+          ".filter.ts",
+          ".filter.js"
+        ],
         "configuration": "./syntaxes/miniprogram-script.language-configuration.json"
       },
       {
