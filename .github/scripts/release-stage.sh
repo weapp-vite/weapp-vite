@@ -14,6 +14,9 @@ if [[ ! "$release_deadline" =~ ^[0-9]+$ ]]; then
   exit 2
 fi
 
+source "${BASH_SOURCE[0]%/*}/release-timeout.sh"
+release_timeout="$(resolve_release_timeout)"
+
 release_remaining=$((release_deadline - $(date +%s)))
 release_kill_grace=5
 if ((release_remaining <= release_kill_grace)); then
@@ -22,7 +25,7 @@ if ((release_remaining <= release_kill_grace)); then
 fi
 
 # 终止宽限也计入共享预算，不能给每个阶段重新分配 50 分钟。
-exec timeout --signal=TERM --kill-after="${release_kill_grace}s" \
+exec "$release_timeout" --signal=TERM --kill-after="${release_kill_grace}s" \
   "$((release_remaining - release_kill_grace))s" \
   bash -c '
     set -euo pipefail

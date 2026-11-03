@@ -8,20 +8,14 @@ import { readLinuxProcessState, waitForProcessExit } from './repoctlReleaseDeadl
 
 const temporaryDirectories: string[] = []
 const helper = fileURLToPath(new URL('../.github/scripts/release-stage.sh', import.meta.url))
+const timeoutResolver = fileURLToPath(new URL('../.github/scripts/release-timeout.sh', import.meta.url))
 
 function findGnuTimeout() {
   if (process.platform === 'win32') {
     return undefined
   }
-  for (const command of ['timeout', 'gtimeout']) {
-    const version = spawnSync(command, ['--version'], { encoding: 'utf8' })
-    if (version.status === 0 && version.stdout.includes('GNU coreutils')) {
-      const resolved = spawnSync('bash', ['-c', 'command -v "$1"', 'bash', command], { encoding: 'utf8' })
-      if (resolved.status === 0) {
-        return resolved.stdout.trim()
-      }
-    }
-  }
+  const resolved = spawnSync('bash', [timeoutResolver], { encoding: 'utf8' })
+  return resolved.status === 0 ? resolved.stdout.trim() || undefined : undefined
 }
 
 const gnuTimeout = findGnuTimeout()
@@ -36,6 +30,10 @@ async function createDeadlineFixture() {
   const trace = path.join(directory, 'timeout.args')
   await fs.writeFile(path.join(directory, 'date'), '#!/bin/sh\nprintf "%s\\n" "$FIXTURE_NOW"\n', { mode: 0o755 })
   await fs.writeFile(path.join(directory, 'timeout'), `#!/bin/sh
+if [ "\${1:-}" = "--version" ]; then
+  printf '%s\\n' 'timeout (GNU coreutils) fixture'
+  exit 0
+fi
 printf '%s\\0' "$@" > "$FIXTURE_TRACE"
 if [ "\${FIXTURE_EXECUTE:-0}" = 1 ]; then
   shift 3
@@ -60,6 +58,34 @@ exit "\${FIXTURE_EXIT_CODE:-0}"
         },
       })
       return { exitCode: result.status, stderr: result.stderr }
+    },
+  }
+}
+
+async function createTimeoutFixture() {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'release timeout resolver-'))
+  temporaryDirectories.push(directory)
+  async function setCommand(command: 'timeout' | 'gtimeout' | 'gnutimeout', version: string, exitCode = 0) {
+    await fs.writeFile(path.join(directory, command), `#!/bin/sh
+if [ "\${1:-}" != "--version" ]; then
+  exit 19
+fi
+printf '%s\\n' '${version}'
+exit ${exitCode}
+`, { mode: 0o755 })
+  }
+  for (const command of ['timeout', 'gtimeout', 'gnutimeout'] as const) {
+    await setCommand(command, 'timeout (uutils coreutils) fixture')
+  }
+  return {
+    directory,
+    setCommand,
+    run() {
+      const result = spawnSync('bash', [timeoutResolver], {
+        encoding: 'utf8',
+        env: { ...process.env, PATH: `${directory}${path.delimiter}${process.env.PATH}` },
+      })
+      return { ...result, selected: result.stdout.trim() }
     },
   }
 }
@@ -245,4 +271,31 @@ setInterval(() => {}, 1000)
       await cleanupFixtureProcesses(evidence, ownerToken)
     }
   }, 20000)
+
+  it.each(['timeout', 'gtimeout', 'gnutimeout'] as const)('selects GNU %s with the default implementation and fallback priority verified', async (command) => {
+    const fixture = await createTimeoutFixture()
+    await fixture.setCommand(command, 'timeout (GNU coreutils) fixture')
+    await fixture.setCommand('gnutimeout', 'timeout (GNU coreutils) fixture')
+    const result = fixture.run()
+    expect(result.error).toBeUndefined()
+    expect(result.status).toBe(0)
+    expect(result.selected).toBe(path.join(fixture.directory, command))
+  })
+
+  it('rejects a version probe that exits unsuccessfully', async () => {
+    const fixture = await createTimeoutFixture()
+    await fixture.setCommand('timeout', 'timeout (GNU coreutils) fixture', 17)
+    const result = fixture.run()
+    expect(result.status).toBe(2)
+    expect(result.selected).toBe('')
+    expect(result.stderr).toContain('GNU timeout is required')
+  })
+
+  it('fails before selecting an implementation without the required identity', async () => {
+    const fixture = await createTimeoutFixture()
+    const result = fixture.run()
+    expect(result.status).toBe(2)
+    expect(result.selected).toBe('')
+    expect(result.stderr).toContain('GNU timeout is required')
+  })
 })
