@@ -1,20 +1,22 @@
 import type { RolldownOutput } from 'rolldown'
-import type { StatefulHmrDevEngineUpdate } from '../../../../../packages/weapp-vite/src/runtime/statefulHmr/viteAdapter'
+import type { StatefulHmrDevEngineUpdate } from '../../../../../../packages/weapp-vite/src/runtime/statefulHmr/viteAdapter'
 import assert from 'node:assert/strict'
 import { mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { dev } from 'rolldown/experimental'
 import { compileVueFile, resolveVueSfcHmrSignatures } from 'wevu/compiler'
-import { renameAtomicFile } from '../../../../../e2e/utils/hmrAtomicRename'
-import { createLogicalEntryModuleCode, createSidecarModuleCode } from '../../../../../packages/weapp-vite/src/moduleGraph/logicalEntry'
-import { createLogicalEntryId, createSidecarSourceSpecifier, parseSidecarModuleId, parseSidecarSourceRequest } from '../../../../../packages/weapp-vite/src/moduleGraph/protocol'
-import { isStatefulHmrBoundary } from '../../../../../packages/weapp-vite/src/runtime/statefulHmr/boundaries'
-import { createStatefulHmrRolldownRuntimeSource } from '../../../../../packages/weapp-vite/src/runtime/statefulHmr/commonRuntime'
-import { createStatefulHmrHostFormatPlugin } from '../../../../../packages/weapp-vite/src/runtime/statefulHmr/hostFormat'
-import { toStableModuleId } from '../../../../../packages/weapp-vite/src/runtime/statefulHmr/initialModuleGraph'
-import { createStatefulHmrSidecarModuleCode } from '../../../../../packages/weapp-vite/src/runtime/statefulHmr/sidecarPlugin'
-import { compileVueSharedRuntime } from './compileVueSharedRuntime'
+import { renameAtomicFile } from '../../../../../../e2e/utils/hmrAtomicRename'
+import { createLogicalEntryModuleCode, createSidecarModuleCode } from '../../../../../../packages/weapp-vite/src/moduleGraph/logicalEntry'
+import { createLogicalEntryId, createSidecarSourceSpecifier, parseSidecarModuleId, parseSidecarSourceRequest } from '../../../../../../packages/weapp-vite/src/moduleGraph/protocol'
+import { isStatefulHmrBoundary } from '../../../../../../packages/weapp-vite/src/runtime/statefulHmr/boundaries'
+import { createStatefulHmrRolldownRuntimeSource } from '../../../../../../packages/weapp-vite/src/runtime/statefulHmr/commonRuntime'
+import { createStatefulHmrHostFormatPlugin } from '../../../../../../packages/weapp-vite/src/runtime/statefulHmr/hostFormat'
+import { toStableModuleId } from '../../../../../../packages/weapp-vite/src/runtime/statefulHmr/initialModuleGraph'
+import { createStatefulHmrSidecarModuleCode } from '../../../../../../packages/weapp-vite/src/runtime/statefulHmr/sidecarPlugin'
+import { compileVueSharedRuntime } from '../compileVueSharedRuntime'
+import { createHmrFixtureTrace } from './diagnostics'
+import { createNativeWatchBaseline } from './watchBaseline'
 
 interface VueHmrSequenceOptions {
   type: 'component' | 'page'
@@ -28,22 +30,41 @@ async function collectVueHmrSequence(repoRoot: string, source: string, updates: 
   const runtime = await compileVueSharedRuntime(repoRoot)
   const root = await realpath(await mkdtemp(path.join(tmpdir(), 'vue-client-companion-')))
   const sourceId = path.join(root, 'index.vue').replaceAll('\\', '/')
+  const trace = createHmrFixtureTrace(root, type)
+  const { record } = trace
+  const baseline = createNativeWatchBaseline(root, record)
   const ownerId = createLogicalEntryId(sourceId, type)
   const compileOptions = { isPage: type === 'page', skipComponentTransform: type === 'component' }
   const delegatedEntries = new Set(type === 'component' ? [sourceId] : [])
   await writeFile(sourceId, source)
+  await writeFile(baseline.seedPath, '0')
   const compiled = await compileVueFile(source, sourceId, compileOptions)
   let previousSource = source
   let previousCompiled = compiled
   let output: RolldownOutput | undefined
   let buildError: Error | undefined
   let nextUpdate: PromiseWithResolvers<StatefulHmrDevEngineUpdate> | undefined
+  let sourceLoads = 0
+  let phase: 'initializing' | 'baseline' | 'editing' | 'idle' = 'initializing'
+  const fail = (error: unknown) => {
+    record('engine-failure', { phase, error: trace.error(error) })
+    buildError ??= error instanceof Error ? error : new Error('Vue companion native engine failed', { cause: error })
+    baseline.fail(buildError)
+    nextUpdate?.reject(buildError)
+  }
   const engine = await dev({
     cwd: root,
     input: ownerId,
     experimental: { devMode: { lazy: false, implement: createStatefulHmrRolldownRuntimeSource() } },
     plugins: [{
       name: 'real-vue-client-companion',
+      buildStart() {
+        this.addWatchFile(baseline.seedPath)
+        record('buildStart:watch-seed')
+      },
+      watchChange(id, change) {
+        record('watchChange', { file: trace.file(id), kind: change.event })
+      },
       resolveId(id) {
         if (id in modules) {
           return id
@@ -80,10 +101,13 @@ async function collectVueHmrSequence(repoRoot: string, source: string, updates: 
         }
         if (id === sourceId) {
           this.addWatchFile(sourceId)
+          sourceLoads += 1
+          record('source-load:start', { sourceLoads })
           const result = await compileVueFile(await readFile(sourceId, 'utf8'), sourceId, compileOptions)
           if (typeof result.script !== 'string') {
             throw new TypeError('Expected an executable Vue script')
           }
+          record('source-load:end', { sourceLoads })
           return result.script
         }
       },
@@ -97,29 +121,57 @@ async function collectVueHmrSequence(repoRoot: string, source: string, updates: 
     // 连续等长修改与还原使用内容轮询，避免宿主文件事件合并导致漏报。
     watch: { skipWrite: true, usePolling: true, pollInterval: 20, compareContentsForPolling: true },
     onOutput(result) {
+      record('onOutput', result instanceof Error ? { error: trace.error(result) } : { outputCount: result.output.length })
       if (result instanceof Error) {
-        buildError = result
-        nextUpdate?.reject(result)
+        fail(result)
       }
       else { output = result }
     },
     onHmrUpdates(result) {
+      record('onHmrUpdates', result instanceof Error
+        ? { phase, error: trace.error(result) }
+        : {
+            phase,
+            changedFiles: result.changedFiles.slice(0, 8).map(trace.file),
+            updateTypes: result.updates.map(({ update }) => update.type),
+          })
       if (result instanceof Error) {
-        nextUpdate?.reject(result)
+        fail(result)
+        return
       }
-      else if (result.updates[0]) {
-        nextUpdate?.resolve(result.updates[0].update as StatefulHmrDevEngineUpdate)
+      try {
+        if (baseline.observe(result.changedFiles, result.updates.map(({ update }) => update.type))) {
+          // 精确 seed-only Noop 可以晚到；它永远不能完成某次目标编辑。
+          return
+        }
+        if (phase === 'initializing' && result.updates.length === 0) {
+          record('onHmrUpdates:initial-no-client')
+          return
+        }
+        assert(phase === 'editing' && nextUpdate, 'Unexpected native update outside an active Vue source edit')
+        assert(result.changedFiles.some(file => path.resolve(root, file).replaceAll('\\', '/') === sourceId), 'Vue target update must include the real edited source')
+        assert.equal(result.updates.length, 1, 'Vue target edit requires exactly one registered client update')
+        assert.equal(result.updates[0]!.update.type, 'Patch', 'Vue target edit requires a registered client Patch')
+        nextUpdate.resolve(result.updates[0]!.update as StatefulHmrDevEngineUpdate)
+      }
+      catch (error) {
+        fail(error)
       }
     },
   })
+  record('run:start')
   const running = engine.run()
   const patches: Array<Extract<StatefulHmrDevEngineUpdate, { type: 'Patch' }>> = []
   const templates: string[] = []
   let initialFiles: Array<[string, string]> = []
   try {
     await engine.registerClient('vue-client-companion')
+    record('registerClient:end')
+    // run 等待初次构建，不是 watcher 的整个存活期；它也不证明 polling 基线。
+    await running
+    record('run:observed')
     await engine.ensureCurrentBuildFinish()
-    await engine.getBundleState()
+    record('initialBuild:finished', { ...await engine.getBundleState() })
     if (buildError) {
       throw buildError
     }
@@ -127,19 +179,45 @@ async function collectVueHmrSequence(repoRoot: string, source: string, updates: 
       throw new Error('Missing DevEngine initial output')
     }
     initialFiles = output.output.filter(item => item.type === 'chunk').map(item => [item.fileName, item.code])
-    for (const updated of updates) {
+    phase = 'baseline'
+    const initialSourceLoads = sourceLoads
+    const initialOutput = output
+    const initialGraphCode = engine.moduleGraph.getModuleInfo(sourceId)?.code
+    await baseline.wait(engine)
+    if (buildError) {
+      throw buildError
+    }
+    assert.equal(sourceLoads, initialSourceLoads, 'Watch readiness must not recompile the target Vue source')
+    assert.equal(output, initialOutput, 'Watch readiness must not emit another initial bundle')
+    assert.equal(engine.moduleGraph.getModuleInfo(sourceId)?.code, initialGraphCode, 'Watch readiness must preserve the target module graph')
+    assert.equal(await readFile(sourceId, 'utf8'), source, 'Watch readiness must not rewrite the target Vue source')
+    phase = 'idle'
+    for (const [index, updated] of updates.entries()) {
+      if (buildError) {
+        throw buildError
+      }
+      trace.setEditIndex(index)
+      record('edit:start')
       // 与注册 owner 回归保持一致：原子替换源码，避免轮询读取截断后的半成品。
       const pendingSource = `${sourceId}.pending`
       await writeFile(pendingSource, updated)
+      record('edit:staged')
+      if (buildError) {
+        throw buildError
+      }
       const update = Promise.withResolvers<StatefulHmrDevEngineUpdate>()
       nextUpdate = update
+      phase = 'editing'
       const timer = setTimeout(() => update.reject(new Error('Vue companion native HMR event timed out')), 10_000)
       try {
-        const [patch] = await Promise.all([update.promise, renameAtomicFile(pendingSource, sourceId)])
+        const [patch] = await Promise.all([update.promise, renameAtomicFile(pendingSource, sourceId).then(() => record('edit:renamed'))])
+        record('patch:observed', { type: patch.type })
         if (patch.type !== 'Patch') {
           throw new Error(`Expected Vue ${type} patch, received ${patch.type}`)
         }
+        record('patch-compile:start')
         const currentCompiled = await compileVueFile(updated, sourceId, compileOptions)
+        record('patch-compile:end')
         if (templateAssetDelivery) {
           const changedIds = patch.changedIds
           assert(Array.isArray(changedIds), 'Template asset companion requires changed module IDs')
@@ -162,21 +240,33 @@ async function collectVueHmrSequence(repoRoot: string, source: string, updates: 
         patches.push(patch)
         templates.push(currentCompiled.template ?? '')
         await engine.notifyPayloadDelivered(patch.filename)
+        record('patch:delivered')
         // 回调先于原生监听路径提交；下一次写文件必须等完整 coordinator 事务结束。
+        record('patch:coordinator-start')
         await engine.ensureCurrentBuildFinish()
-        await engine.getBundleState()
+        record('patch:coordinator-end', { ...await engine.getBundleState() })
+        if (buildError) {
+          throw buildError
+        }
         previousSource = updated
         previousCompiled = currentCompiled
       }
       finally {
         clearTimeout(timer)
         nextUpdate = undefined
+        phase = 'idle'
       }
     }
   }
+  catch (error) {
+    trace.report(error)
+    throw error
+  }
   finally {
+    record('engine-close:start')
     await engine.close()
     await running
+    record('engine-close:end')
     await rm(root, { recursive: true, force: true })
   }
   return { initialFiles, patches, templates, template: compiled.template }

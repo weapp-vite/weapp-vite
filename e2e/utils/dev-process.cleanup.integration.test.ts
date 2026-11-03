@@ -6,7 +6,7 @@ import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
 import { setTimeout as delay } from 'node:timers/promises'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { sameManagedProcess } from '../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/host'
 import { resolveWechatInspectionTimeout } from '../../packages/weapp-ide-cli/src/devtoolsTarget/inspection'
 import { startDevProcess } from './dev-process'
@@ -32,7 +32,7 @@ async function within<T>(task: Promise<T>, description: string, timeoutMs = 15_0
   }
 }
 
-async function waitUntil(check: () => Promise<boolean>, description: string) {
+async function waitUntil(check: () => Promise<boolean>, description: string, timeoutCause?: () => unknown) {
   const deadline = Date.now() + 10_000
   do {
     if (await within(check(), description)) {
@@ -40,7 +40,7 @@ async function waitUntil(check: () => Promise<boolean>, description: string) {
     }
     await delay(50)
   } while (Date.now() < deadline)
-  throw new Error(`Timed out: ${description}`)
+  throw new Error(`Timed out: ${description}`, timeoutCause ? { cause: timeoutCause() } : undefined)
 }
 
 async function readRegistration(directory: string): Promise<TreeRegistration | undefined> {
@@ -84,20 +84,33 @@ async function captureTree(directory: string, expectedRootPid: number | undefine
   return [root, descendant]
 }
 
-async function readTreeRunning(identities: DevProcessIdentity[]) {
-  // Linux 身份检查读取可执行文件，已停止但尚未回收的 zombie 不算仍在执行。
-  const current = await readDevProcessIdentities(identities.map(identity => identity.pid))
+function treeRunning(identities: DevProcessIdentity[], current: Map<number, DevProcessIdentity | undefined>) {
   return identities.map((identity) => {
     const live = current.get(identity.pid)
     return Boolean(live && sameManagedProcess(identity, live))
   })
 }
 
-async function waitForTreeExit(identities: DevProcessIdentity[]) {
+async function readTreeRunning(identities: DevProcessIdentity[], readIdentities = readDevProcessIdentities) {
+  // 身份读取器仅在完整证据确认进程停止或身份变更后，才允许把登记进程视为未运行。
+  const current = await readIdentities(identities.map(identity => identity.pid))
+  return treeRunning(identities, current)
+}
+
+async function waitForTreeExit(identities: DevProcessIdentity[], readIdentities = readDevProcessIdentities) {
+  let lastProbeError: unknown
   await waitUntil(async () => {
-    const running = await readTreeRunning(identities)
-    return running.every(value => !value)
-  }, 'registered process tree exit')
+    let current: Map<number, DevProcessIdentity | undefined>
+    try {
+      current = await readIdentities(identities.map(identity => identity.pid))
+    }
+    catch (error) {
+      // 退出期间可能跨越终态；失败采样仍未确认退出，必须等待后续完整身份核验。
+      lastProbeError = error
+      return false
+    }
+    return treeRunning(identities, current).every(value => !value)
+  }, 'registered process tree exit', () => lastProbeError)
 }
 
 async function readRegisteredDescendantPid(directory: string): Promise<number | undefined> {
@@ -232,4 +245,74 @@ describe('dev process real process tree cleanup', () => {
       })
     }
   }, 60_000)
+})
+
+describe('dev process exit observation', () => {
+  const identities: DevProcessIdentity[] = [
+    { pid: 61, started: 'fixture-root-start', executable: 'fixture-node' },
+    { pid: 62, started: 'fixture-child-start', executable: 'fixture-node' },
+  ]
+  const live = new Map(identities.map(identity => [identity.pid, identity]))
+  const gone = new Map(identities.map(identity => [identity.pid, undefined]))
+
+  it('requires a complete gone sample after an inspection failure and a still-running sample', async () => {
+    const transient = new Error('process changed state during inspection')
+    const readIdentities = vi.fn<typeof readDevProcessIdentities>()
+      .mockRejectedValueOnce(transient)
+      .mockResolvedValueOnce(live)
+      .mockResolvedValueOnce(gone)
+
+    await expect(waitForTreeExit(identities, readIdentities)).resolves.toBeUndefined()
+    expect(readIdentities.mock.calls).toEqual([[[61, 62]], [[61, 62]], [[61, 62]]])
+  })
+
+  it('keeps persistent inspection failures pending until the existing deadline and preserves the latest cause', async () => {
+    const first = new Error('initial inspection unavailable')
+    const latest = new Error('latest inspection unavailable')
+    const readIdentities = vi.fn<typeof readDevProcessIdentities>()
+      .mockRejectedValueOnce(first)
+      .mockRejectedValue(latest)
+    const now = vi.spyOn(Date, 'now')
+      .mockReturnValueOnce(0)
+      .mockReturnValueOnce(0)
+      .mockReturnValue(10_000)
+    try {
+      const failure = await waitForTreeExit(identities, readIdentities).catch((error: unknown) => error)
+      expect(failure).toBeInstanceOf(Error)
+      if (!(failure instanceof Error)) {
+        throw new Error('Expected the process tree exit observation to time out')
+      }
+      expect(failure.message).toBe('Timed out: registered process tree exit')
+      expect(failure.cause).toBe(latest)
+      expect(readIdentities).toHaveBeenCalledTimes(2)
+    }
+    finally {
+      now.mockRestore()
+    }
+  })
+
+  it('does not accept a partial tree exit while an original identity still runs', async () => {
+    const readIdentities = vi.fn<typeof readDevProcessIdentities>()
+      .mockResolvedValue(new Map([
+        [identities[0]!.pid, undefined],
+        [identities[1]!.pid, identities[1]],
+      ]))
+    const now = vi.spyOn(Date, 'now')
+      .mockReturnValueOnce(0)
+      .mockReturnValue(10_000)
+    try {
+      await expect(waitForTreeExit(identities, readIdentities)).rejects.toThrow('Timed out: registered process tree exit')
+      expect(readIdentities).toHaveBeenCalledOnce()
+    }
+    finally {
+      now.mockRestore()
+    }
+  })
+
+  it('keeps an external survivor identity assertion strict when inspection fails', async () => {
+    const failure = new Error('external process inspection unavailable')
+    const readIdentities = vi.fn<typeof readDevProcessIdentities>().mockRejectedValue(failure)
+    await expect(readTreeRunning(identities, readIdentities)).rejects.toBe(failure)
+    expect(readIdentities).toHaveBeenCalledOnce()
+  })
 })
