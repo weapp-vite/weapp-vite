@@ -11,6 +11,7 @@ describe('Darwin native frame protocol', () => {
     for (const observation of [frame.rows[1]!.before, frame.rows[1]!.after, frame.rows[1]!.task]) {
       observation.identity!.startedSeconds = '9007199254740993'
     }
+    frame.rows[1]!.enumeratedIdentity.startedSeconds = '9007199254740993'
     const value = parse(frame)
     expect(value.rows[1]!.task.rssBytes).toBe('9007199254740993')
     expect(value.rows[1]!.before.identity!.startedSeconds).toBe('9007199254740993')
@@ -43,7 +44,7 @@ describe('Darwin native frame protocol', () => {
     const frame = fixtureFrame()
     frame.rows[1]!.after.identity!.status = fixtureReady.abi.zombieStatus
     frame.rows[1]!.after.identity!.zombie = true
-    expect(parse(frame).rows[1]!.gaps).toEqual(['identity-changed', 'rss-identity-mismatch', 'zombie'])
+    expect(parse(frame).rows[1]!.gaps).toEqual(['identity-changed', 'enumeration-identity-changed', 'rss-identity-mismatch', 'zombie'])
     frame.rows[0]!.after.identity!.status = fixtureReady.abi.zombieStatus
     frame.rows[0]!.after.identity!.zombie = true
     expect(() => parse(frame)).toThrow(/ownership/)
@@ -52,7 +53,7 @@ describe('Darwin native frame protocol', () => {
     const frame = fixtureFrame()
     frame.rows[1]!.after.identity!.startedMicroseconds = '123457'
     frame.rows[1]!.pathAfter.executable = fixtureExecutable
-    expect(parse(frame).rows[1]!.gaps).toEqual(['identity-changed', 'image-changed', 'rss-identity-mismatch'])
+    expect(parse(frame).rows[1]!.gaps).toEqual(['identity-changed', 'enumeration-identity-changed', 'image-changed', 'rss-identity-mismatch'])
     frame.rows[1]!.after = { result: 0, length: 0, errno: 0, identity: null }
     expect(parse(frame).rows[1]!.gaps).toContain('identity-after-unavailable')
   })

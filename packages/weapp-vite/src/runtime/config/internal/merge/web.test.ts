@@ -178,7 +178,7 @@ describe('runtime config merge web', () => {
     })).toBeUndefined()
   })
 
-  it('normalizes object aliases and removes the existing runtime alias', () => {
+  it('normalizes object aliases and removes the existing runtime alias', async () => {
     const result = mergeWeb({
       config: {
         resolve: {
@@ -201,6 +201,7 @@ describe('runtime config merge web', () => {
       injectBuiltinAliases: vi.fn(),
       getDefineImportMetaEnv: () => ({}),
     })
+    await Promise.all(result?.plugins ?? [])
     expect(result?.resolve?.alias).toEqual([
       { find: 'weapp-vite/runtime', replacement: 'virtual:weapp-vite/runtime' },
       { find: 'user', replacement: '/user' },

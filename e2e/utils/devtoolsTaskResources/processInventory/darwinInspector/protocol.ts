@@ -71,8 +71,9 @@ function taskObservation(value: unknown, abi: DarwinInspectorAbi): DarwinTaskObs
   return { count, errno, identity: complete ? identity(raw.identity, abi) : null, rssBytes: complete ? decimal(raw.rssBytes) : null }
 }
 function entry(value: unknown, abi: DarwinInspectorAbi): DarwinProcessEntry {
-  const raw = record(value, ['pid', 'startedAtNanoseconds', 'endedAtNanoseconds', 'before', 'pathBefore', 'task', 'pathAfter', 'after'])
+  const raw = record(value, ['pid', 'enumeratedIdentity', 'startedAtNanoseconds', 'endedAtNanoseconds', 'before', 'pathBefore', 'task', 'pathAfter', 'after'])
   const pid = integer(raw.pid, 1, 0x7FFFFFFF)
+  const enumeratedIdentity = identity(raw.enumeratedIdentity, abi)
   const startedAtNanoseconds = decimal(raw.startedAtNanoseconds)
   const endedAtNanoseconds = decimal(raw.endedAtNanoseconds)
   if (BigInt(startedAtNanoseconds) > BigInt(endedAtNanoseconds)) {
@@ -83,7 +84,7 @@ function entry(value: unknown, abi: DarwinInspectorAbi): DarwinProcessEntry {
   const pathBefore = pathObservation(raw.pathBefore, abi)
   const pathAfter = pathObservation(raw.pathAfter, abi)
   const task = taskObservation(raw.task, abi)
-  if ([before.identity, after.identity, task.identity].some(item => item && item.pid !== pid)) {
+  if ([enumeratedIdentity, before.identity, after.identity, task.identity].some(item => item && item.pid !== pid)) {
     return invalid('identity belongs to another PID')
   }
   const gaps: DarwinProcessGap[] = []
@@ -102,6 +103,9 @@ function entry(value: unknown, abi: DarwinInspectorAbi): DarwinProcessEntry {
   if (before.identity && after.identity && !sameDarwinIdentity(before.identity, after.identity)) {
     gaps.push('identity-changed')
   }
+  if ([before.identity, task.identity, after.identity].some(observed => observed && !sameDarwinIdentity(enumeratedIdentity, observed))) {
+    gaps.push('enumeration-identity-changed')
+  }
   if (pathBefore.executable && pathAfter.executable && pathBefore.executable !== pathAfter.executable) {
     gaps.push('image-changed')
   }
@@ -111,10 +115,10 @@ function entry(value: unknown, abi: DarwinInspectorAbi): DarwinProcessEntry {
   if (task.identity && (!before.identity || !after.identity || !sameDarwinIdentity(task.identity, before.identity) || !sameDarwinIdentity(task.identity, after.identity))) {
     gaps.push('rss-identity-mismatch')
   }
-  if ([before.identity, after.identity, task.identity].some(item => item?.zombie)) {
+  if ([enumeratedIdentity, before.identity, after.identity, task.identity].some(item => item?.zombie)) {
     gaps.push('zombie')
   }
-  return { pid, startedAtNanoseconds, endedAtNanoseconds, before, pathBefore, task, pathAfter, after, gaps }
+  return { pid, enumeratedIdentity, startedAtNanoseconds, endedAtNanoseconds, before, pathBefore, task, pathAfter, after, gaps }
 }
 /** ready 的身份和映像必须绑定本次 child，不能仅按 helper 名称排除。 */
 export function parseDarwinInspectorReady(line: string, childPid: number, executable: string): DarwinInspectorReady {
@@ -141,7 +145,12 @@ export function parseDarwinProcessFrame(line: string, requestId: number, phase: 
   if (BigInt(startedAtNanoseconds) > BigInt(endedAtNanoseconds)) {
     return invalid('reversed frame interval')
   }
-  const enumeration = record(raw.enumeration, ['complete', 'bytes', 'recordSize', 'pidCount', 'pids', 'zeroPidCount'])
+  const enumeration = record(raw.enumeration, ['startedAtNanoseconds', 'endedAtNanoseconds', 'complete', 'bytes', 'recordSize', 'pidCount', 'pids', 'zeroPidCount'])
+  const enumerationStarted = decimal(enumeration.startedAtNanoseconds)
+  const enumerationEnded = decimal(enumeration.endedAtNanoseconds)
+  if (BigInt(enumerationStarted) < BigInt(startedAtNanoseconds) || BigInt(enumerationStarted) > BigInt(enumerationEnded) || BigInt(enumerationEnded) > BigInt(endedAtNanoseconds)) {
+    return invalid('enumeration interval outside frame or reversed')
+  }
   const count = integer(enumeration.pidCount, 1, 100_000)
   const zeroPidCount = integer(enumeration.zeroPidCount, 0, 1)
   const bytes = integer(enumeration.bytes, 1)
@@ -157,12 +166,12 @@ export function parseDarwinProcessFrame(line: string, requestId: number, phase: 
   if (new Set(rows.map(row => row.pid)).size !== count || rows.some(row => !pidSet.has(row.pid))) {
     return invalid('missing or extra process rows')
   }
-  if (rows.some(row => BigInt(row.startedAtNanoseconds) < BigInt(startedAtNanoseconds) || BigInt(row.endedAtNanoseconds) > BigInt(endedAtNanoseconds))) {
-    return invalid('process interval outside frame')
+  if (rows.some(row => BigInt(row.startedAtNanoseconds) < BigInt(enumerationEnded) || BigInt(row.endedAtNanoseconds) > BigInt(endedAtNanoseconds))) {
+    return invalid('process interval outside frame or before enumeration completed')
   }
   const own = rows.find(row => row.pid === ready.pid)
   if (!own || own.gaps.length || !own.before.identity || !own.after.identity || !own.task.identity || !sameDarwinIdentity(own.before.identity, ready.identity) || !sameDarwinIdentity(own.after.identity, ready.identity) || !sameDarwinIdentity(own.task.identity, ready.identity) || own.pathBefore.executable !== ready.executable || own.pathAfter.executable !== ready.executable) {
     return invalid('helper ownership changed')
   }
-  return { protocol: 1, requestId, phase, startedAtNanoseconds, endedAtNanoseconds, enumeration: { complete: true, bytes, recordSize: ready.abi.recordSize, pidCount: count, pids, zeroPidCount }, rows, ownedHelper: { pid: ready.pid, identity: ready.identity, executable: ready.executable, row: own } }
+  return { protocol: 1, requestId, phase, startedAtNanoseconds, endedAtNanoseconds, enumeration: { startedAtNanoseconds: enumerationStarted, endedAtNanoseconds: enumerationEnded, complete: true, bytes, recordSize: ready.abi.recordSize, pidCount: count, pids, zeroPidCount }, rows, ownedHelper: { pid: ready.pid, identity: ready.identity, executable: ready.executable, row: own } }
 }

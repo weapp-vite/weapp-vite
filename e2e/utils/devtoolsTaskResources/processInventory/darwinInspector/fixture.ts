@@ -30,6 +30,7 @@ export function fixtureFrame(requestId = 1): WireFrame {
     const image = own ? fixtureExecutable : path.posix.join('/', 'foreign-fixture')
     return {
       pid,
+      enumeratedIdentity: { ...identity },
       startedAtNanoseconds: String(requestId * 100 + 1),
       endedAtNanoseconds: String(requestId * 100 + 9),
       before: { result: 0, length: 128, errno: 0, identity: { ...identity } },
@@ -39,7 +40,7 @@ export function fixtureFrame(requestId = 1): WireFrame {
       task: { count: 96, errno: 0, identity: { ...identity }, rssBytes: own ? '100' : '200' },
     }
   })
-  return { protocol: 1, requestId, phase: ['prepare', 'anchor', 'closure1', 'closure2'][requestId - 1] as WireFrame['phase'], startedAtNanoseconds: String(requestId * 100), endedAtNanoseconds: String(requestId * 100 + 10), enumeration: { complete: true, bytes: 256, recordSize: 128, pidCount: 2, pids: [99, 11], zeroPidCount: 0 }, rows }
+  return { protocol: 1, requestId, phase: ['prepare', 'anchor', 'closure1', 'closure2'][requestId - 1] as WireFrame['phase'], startedAtNanoseconds: String(requestId * 100), endedAtNanoseconds: String(requestId * 100 + 10), enumeration: { startedAtNanoseconds: String(requestId * 100), endedAtNanoseconds: String(requestId * 100 + 1), complete: true, bytes: 256, recordSize: 128, pidCount: 2, pids: [99, 11], zeroPidCount: 0 }, rows }
 }
 
 /** 只持有内存管道，不执行编译器、helper 或系统进程。 */

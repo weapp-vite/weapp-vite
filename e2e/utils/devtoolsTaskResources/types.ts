@@ -45,7 +45,7 @@ export interface ProcessInventoryLocation {
 }
 
 export interface ProcessIdentityGapCause {
-  reason: 'process-absent' | 'identity-changed' | 'zombie' | 'kernel-path-unverifiable' | 'text-images-query-failed' | 'text-images-empty' | 'text-images-invalid' | 'fallback-budget-exhausted' | 'pre-anchor-exited' | 'kernel-identity-unverifiable' | 'image-changed' | 'rss-unavailable'
+  reason: 'enumeration-identity-changed' | 'process-absent' | 'identity-changed' | 'zombie' | 'kernel-path-unverifiable' | 'text-images-query-failed' | 'text-images-empty' | 'text-images-invalid' | 'fallback-budget-exhausted' | 'pre-anchor-exited' | 'kernel-identity-unverifiable' | 'image-changed' | 'rss-unavailable'
   firstObserved: ProcessInventoryLocation
 }
 
@@ -56,8 +56,12 @@ export interface ProcessIdentityGapObservation extends ProcessIdentityMetadata {
 
 export interface ProcessIdentityChangeObservation extends ProcessIdentityMetadata {
   changedTo: ProcessIdentityMetadata
-  reasons: Array<'returned-after-absence' | 'started-changed' | 'parent-changed' | 'zombie-changed'>
+  reasons: Array<'returned-after-absence' | 'started-changed' | 'parent-changed' | 'zombie-changed' | 'credentials-changed'>
   firstObserved: ProcessInventoryLocation
+  boundary?: {
+    from: { phase: ProcessInventoryLocation['phase'], position: 'enumeration' | 'before' | 'after' }
+    to: { phase: ProcessInventoryLocation['phase'], position: 'enumeration' | 'before' | 'task' | 'after' }
+  }
 }
 
 export interface NativeImageEvidence {
@@ -101,9 +105,12 @@ export interface NativeProcessFrameEvidence {
   startedAtNanoseconds: string
   endedAtNanoseconds: string
   enumeratedPidCount: number
+  enumerationInterval: { startedAtNanoseconds: string, endedAtNanoseconds: string }
   ownedHelper: { identity: ProcessIdentityMetadata, image: NativeImageEvidence }
   rows: Array<{
     pid: number
+    enumeratedIdentity: ProcessIdentityMetadata
+    enumerationIdentityChange: { from: ProcessIdentityMetadata, to: ProcessIdentityMetadata, position: 'before' | 'task' | 'after' } | null
     before: ProcessIdentityMetadata | null
     after: ProcessIdentityMetadata | null
     beforeQuery: { result: number, length: number, errno: number }

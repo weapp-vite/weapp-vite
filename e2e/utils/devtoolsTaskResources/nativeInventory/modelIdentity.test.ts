@@ -83,6 +83,7 @@ describe('native same-frame credential identity', () => {
   it('keeps separately complete cross-frame foreign credential changes distinct from a same-frame mismatch', () => {
     const frames = phases.map((phase, index) => {
       const foreign = entry(22)
+      foreign.enumeratedIdentity.uid += index
       for (const observation of [foreign.before, foreign.task, foreign.after]) {
         observation.identity!.uid += index
       }

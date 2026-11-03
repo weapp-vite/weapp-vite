@@ -85,7 +85,7 @@ static NSDictionary *readTask(pid_t pid) {
   }
   return @{@"count":@(count), @"errno":@(error), @"identity":identity, @"rssBytes":rss};
 }
-static NSDictionary *readRow(pid_t pid, uint64_t deadline) {
+static NSDictionary *readRow(pid_t pid, NSDictionary *enumeratedIdentity, uint64_t deadline) {
   budget(deadline);
   uint64_t started = nowNs();
   NSDictionary *before = readIdentity(pid);
@@ -98,7 +98,7 @@ static NSDictionary *readRow(pid_t pid, uint64_t deadline) {
   budget(deadline);
   NSDictionary *after = readIdentity(pid);
   budget(deadline);
-  return @{@"pid":@(pid), @"startedAtNanoseconds":precise(started), @"endedAtNanoseconds":precise(nowNs()), @"before":before, @"pathBefore":pathBefore, @"task":task, @"pathAfter":pathAfter, @"after":after};
+  return @{@"pid":@(pid), @"enumeratedIdentity":enumeratedIdentity, @"startedAtNanoseconds":precise(started), @"endedAtNanoseconds":precise(nowNs()), @"before":before, @"pathBefore":pathBefore, @"task":task, @"pathAfter":pathAfter, @"after":after};
 }
 static NSDictionary *frame(NSUInteger requestId, NSString *phase, uint64_t deadline) {
   uint64_t started = nowNs();
@@ -112,8 +112,11 @@ static NSDictionary *frame(NSUInteger requestId, NSString *phase, uint64_t deadl
   @try {
     bytes = capacity;
     budget(deadline);
-    if (sysctl(mib, 4, values, &bytes, NULL, 0) != 0 || bytes > capacity || bytes % sizeof(*values) != 0) fail(@"Cannot read complete process inventory.");
-    NSMutableArray *pids = [NSMutableArray array], *rows = [NSMutableArray array];
+    uint64_t enumerationStarted = nowNs();
+    int enumerationResult = sysctl(mib, 4, values, &bytes, NULL, 0);
+    uint64_t enumerationEnded = nowNs();
+    if (enumerationResult != 0 || bytes > capacity || bytes % sizeof(*values) != 0) fail(@"Cannot read complete process inventory.");
+    NSMutableArray *pids = [NSMutableArray array], *identities = [NSMutableArray array], *rows = [NSMutableArray array];
     NSMutableSet *seen = [NSMutableSet set];
     NSUInteger zeroCount = 0;
     for (size_t index = 0; index < bytes / sizeof(*values); index++) {
@@ -122,11 +125,12 @@ static NSDictionary *frame(NSUInteger requestId, NSString *phase, uint64_t deadl
       if (pid < 0 || [seen containsObject:@(pid)]) fail(@"Invalid process enumeration.");
       [seen addObject:@(pid)];
       [pids addObject:@(pid)];
+      [identities addObject:kernelIdentity(&values[index])];
     }
     if (zeroCount > 1 || pids.count == 0 || pids.count > 100000) fail(@"Incomplete process enumeration.");
-    for (NSNumber *pid in pids) [rows addObject:readRow(pid.intValue, deadline)];
+    for (NSUInteger index = 0; index < pids.count; index++) [rows addObject:readRow([pids[index] intValue], identities[index], deadline)];
     budget(deadline);
-    NSDictionary *enumeration = @{@"complete":@YES, @"bytes":@(bytes), @"recordSize":@(sizeof(*values)), @"pidCount":@(pids.count), @"pids":pids, @"zeroPidCount":@(zeroCount)};
+    NSDictionary *enumeration = @{@"startedAtNanoseconds":precise(enumerationStarted), @"endedAtNanoseconds":precise(enumerationEnded), @"complete":@YES, @"bytes":@(bytes), @"recordSize":@(sizeof(*values)), @"pidCount":@(pids.count), @"pids":pids, @"zeroPidCount":@(zeroCount)};
     return @{@"protocol":@1, @"requestId":@(requestId), @"phase":phase, @"startedAtNanoseconds":precise(started), @"endedAtNanoseconds":precise(nowNs()), @"enumeration":enumeration, @"rows":rows};
   } @finally {
     free(values);

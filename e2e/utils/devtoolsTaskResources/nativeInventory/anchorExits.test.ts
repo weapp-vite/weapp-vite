@@ -14,9 +14,9 @@ vi.mock('execa', () => ({ execa: mocks.execute }))
 const phases = ['prepare', 'anchor', 'closure1', 'closure2'] as const
 const target = {} as Parameters<typeof sampleNativeInstallationProcesses>[0]
 
-function exited(pid = 33): DarwinProcessEntry {
+function exited(pid = 33, parentPid = 1): DarwinProcessEntry {
   return {
-    ...entry(pid),
+    ...entry(pid, { parentPid }),
     before: { result: 0, length: 0, errno: 0, identity: null },
     after: { result: 0, length: 0, errno: 0, identity: null },
     pathBefore: { count: 0, errno: 3, executable: null },
@@ -65,7 +65,7 @@ afterEach(() => vi.restoreAllMocks())
 describe('complete native exit at the RSS anchor', () => {
   it.each([1, 22])('retains a prepared foreign process with parent %s and an explicit anchor exit', async (parentPid) => {
     const live = entry(33, { parentPid, rssBytes: '9000000' })
-    frames([entry(11, { rssBytes: '7000' }), live], [exited()], [], [])
+    frames([entry(11, { rssBytes: '7000' }), live], [exited(33, parentPid)], [], [])
     const report = await sample()
     expect(report).toMatchObject({
       installationRssBytes: { status: 'observed', value: 1000 },
@@ -87,6 +87,7 @@ describe('complete native exit at the RSS anchor', () => {
     })])
     expect(report.identityChangedProcesses).toEqual([expect.objectContaining({ pid: 33, reasons: expect.arrayContaining(['started-changed', 'parent-changed']) })])
     expect(report.nativeFrames?.[1]?.rows.find(row => row.pid === 33)).toMatchObject({
+      enumeratedIdentity: { pid: 33, parentPid },
       before: null,
       after: null,
       pathBefore: { count: 0, errno: 3, image: null },
@@ -154,7 +155,7 @@ describe('complete native exit at the RSS anchor', () => {
   it.each(['selected', 'descendant', 'unknown', 'unknown-ancestor'] as const)('keeps %s prepare membership blocking', async (relation) => {
     const live = entry(33, { parentPid: relation === 'descendant' ? 11 : relation === 'unknown' ? 77 : 22, executable: relation === 'selected' ? fixtureSelected : undefined })
     const ancestor = relation === 'unknown-ancestor' ? [entry(22, { parentPid: 77 })] : []
-    await rejected([live, ...ancestor], [exited()], [], [])
+    await rejected([live, ...ancestor], [exited(33, live.enumeratedIdentity.parentPid)], [], [])
   })
 
   it.each(['selected', 'partial', 'uid'] as const)('requires a complete foreign prepare ancestor with %s evidence', async (kind) => {
@@ -165,7 +166,7 @@ describe('complete native exit at the RSS anchor', () => {
     else if (kind === 'uid') {
       ancestor.after.identity!.uid = 502
     }
-    await rejected([entry(33, { parentPid: 22 }), ancestor], [exited()], [], [])
+    await rejected([entry(33, { parentPid: 22 }), ancestor], [exited(33, 22)], [], [])
   })
 
   it.each(['closure1', 'closure2'] as const)('rejects a PID reappearing in %s with a live or zombie identity', async (phase) => {
@@ -177,14 +178,14 @@ describe('complete native exit at the RSS anchor', () => {
   })
 
   it('rejects a cycle in the prepared foreign ancestry', async () => {
-    await rejected([entry(33, { parentPid: 22 }), entry(22, { parentPid: 33 })], [exited()], [], [])
+    await rejected([entry(33, { parentPid: 22 }), entry(22, { parentPid: 33 })], [exited(33, 22)], [], [])
   })
 
   it.each([fixtureSelected, '/System/Library/OtherForeign'])('retains a later ancestor text-image conflict with %s', async (executable) => {
     const ancestor = entry(22, { executable: null })
     ancestor.gaps = ['image-before-unavailable', 'image-after-unavailable']
     mocks.images.mockResolvedValue([executable])
-    await rejected([entry(33, { parentPid: 22 })], [exited()], [ancestor], [])
+    await rejected([entry(33, { parentPid: 22 })], [exited(33, 22)], [ancestor], [])
   })
 
   it('verifies the prepared first row even when its PID is one', async () => {

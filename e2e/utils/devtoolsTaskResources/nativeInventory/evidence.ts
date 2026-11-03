@@ -33,9 +33,12 @@ export function nativeFrameEvidence(frame: NativeFrame, installationRoot: string
     startedAtNanoseconds: frame.wire.startedAtNanoseconds,
     endedAtNanoseconds: frame.wire.endedAtNanoseconds,
     enumeratedPidCount: frame.wire.enumeration.pidCount,
+    enumerationInterval: { startedAtNanoseconds: frame.wire.enumeration.startedAtNanoseconds, endedAtNanoseconds: frame.wire.enumeration.endedAtNanoseconds },
     ownedHelper: { identity: identityEvidence(frame.wire.ownedHelper.identity)!, image: imageEvidence(frame.wire.ownedHelper.executable, installationRoot) },
-    rows: [...frame.rows.values()].map(({ entry }) => ({
+    rows: [...frame.rows.values()].map(({ entry, enumerationIdentityChange }) => ({
       pid: entry.pid,
+      enumeratedIdentity: identityEvidence(entry.enumeratedIdentity)!,
+      enumerationIdentityChange: enumerationIdentityChange && { from: identityEvidence(enumerationIdentityChange.from)!, to: identityEvidence(enumerationIdentityChange.to)!, position: enumerationIdentityChange.position },
       before: identityEvidence(entry.before.identity),
       after: identityEvidence(entry.after.identity),
       beforeQuery: { result: entry.before.result, length: entry.before.length, errno: entry.before.errno },

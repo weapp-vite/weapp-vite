@@ -34,10 +34,11 @@ export interface DarwinTaskObservation {
 
 export type DarwinProcessGap = 'identity-before-unavailable' | 'identity-after-unavailable'
   | 'image-before-unavailable' | 'image-after-unavailable' | 'identity-changed'
-  | 'image-changed' | 'rss-unavailable' | 'rss-identity-mismatch' | 'zombie'
+  | 'enumeration-identity-changed' | 'image-changed' | 'rss-unavailable' | 'rss-identity-mismatch' | 'zombie'
 
 export interface DarwinProcessEntry {
   pid: number
+  enumeratedIdentity: DarwinProcessIdentity
   startedAtNanoseconds: string
   endedAtNanoseconds: string
   before: DarwinIdentityObservation
@@ -71,6 +72,8 @@ export interface DarwinProcessFrame {
   startedAtNanoseconds: string
   endedAtNanoseconds: string
   enumeration: {
+    startedAtNanoseconds: string
+    endedAtNanoseconds: string
     complete: true
     bytes: number
     recordSize: number

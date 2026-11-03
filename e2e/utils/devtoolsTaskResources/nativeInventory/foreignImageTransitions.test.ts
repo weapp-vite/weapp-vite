@@ -87,6 +87,7 @@ describe('four-frame foreign image transitions are diagnostics outside selected 
     const values = rows().map((value, index) => {
       const foreign = entry(22, { executable: value[1]!.pathBefore.executable, parentPid: subject === 'ancestor' ? 33 : 1 })
       const changed = subject === 'process' ? foreign : entry(33)
+      changed.enumeratedIdentity.uid = index === 0 ? 0 : 501
       for (const identity of [changed.before.identity, changed.after.identity, changed.task.identity]) {
         identity!.uid = index === 0 ? 0 : 501
       }
@@ -110,7 +111,7 @@ describe('four-frame foreign image transitions are diagnostics outside selected 
   })
 
   it('verifies every foreign ancestor independently across all four frames', async () => {
-    const values = rows().map(value => [value[0]!, { ...value[1]!, before: { ...value[1]!.before, identity: { ...value[1]!.before.identity!, parentPid: 33 } }, after: { ...value[1]!.after, identity: { ...value[1]!.after.identity!, parentPid: 33 } }, task: { ...value[1]!.task, identity: { ...value[1]!.task.identity!, parentPid: 33 } } }, entry(33)])
+    const values = rows().map(value => [value[0]!, { ...value[1]!, enumeratedIdentity: { ...value[1]!.enumeratedIdentity, parentPid: 33 }, before: { ...value[1]!.before, identity: { ...value[1]!.before.identity!, parentPid: 33 } }, after: { ...value[1]!.after, identity: { ...value[1]!.after.identity!, parentPid: 33 } }, task: { ...value[1]!.task, identity: { ...value[1]!.task.identity!, parentPid: 33 } } }, entry(33)])
     const report = await sample(values)
     expect(report).toMatchObject({ installationRssBytes: { status: 'observed', value: 1000 }, verifiedForeignImageTransitionCount: 1 })
     expect(report.verifiedForeignImageTransitions?.[0]?.ancestry).toEqual([expect.objectContaining({ pid: 33, parentPid: 1, started: '1792800000.123456' })])

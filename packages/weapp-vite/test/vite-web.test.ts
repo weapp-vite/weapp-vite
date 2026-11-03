@@ -76,7 +76,9 @@ it('keeps standalone config Web selection and explicit CLI overrides coherent', 
   try {
     const ctx = await session.initialize({ cwd: root, mode: 'production', preloadAppEntry: false, syncSupportFiles: false })
     expect(ctx.configService.options.sourceConfig?.weapp?.platform).toBe('web')
-    expect(ctx.configService.mergeWeb()?.build?.rolldownOptions?.output).not.toMatchObject({ format: 'cjs' })
+    const inline = ctx.configService.mergeWeb()
+    await Promise.all(inline?.plugins ?? [])
+    expect(inline?.build?.rolldownOptions?.output).not.toMatchObject({ format: 'cjs' })
     expect(ctx.configService.weappWebConfig?.enabled).toBe(true)
   }
   finally { await session.close() }

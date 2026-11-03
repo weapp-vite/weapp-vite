@@ -154,6 +154,7 @@ describe('native inventory durable and privacy-safe evidence', () => {
       for (const query of [row.before, row.after]) {
         Object.assign(query, { uid: 909, command: sentinel, path: fixtureForeign, futureQueryField: { value: sentinel } })
       }
+      Object.assign(row.enumeratedIdentity, { futureIdentityField: sentinel })
       for (const observation of [row.before, row.task, row.after]) {
         Object.assign(observation.identity!, { futureIdentityField: sentinel })
       }
@@ -168,6 +169,8 @@ describe('native inventory durable and privacy-safe evidence', () => {
     for (const row of before.rows) {
       expect(row.beforeQuery).toEqual({ result: 0, length: 648, errno: 0 })
       expect(row.afterQuery).toEqual({ result: 0, length: 648, errno: 0 })
+      expect(row.enumeratedIdentity).toMatchObject({ pid: row.pid, started: '1792800000.123456' })
+      expect(row.enumerationIdentityChange).toBeNull()
       expect(row.before).toMatchObject({ pid: row.pid, started: '1792800000.123456' })
       expect(row.after).toMatchObject({ pid: row.pid, started: '1792800000.123456' })
     }

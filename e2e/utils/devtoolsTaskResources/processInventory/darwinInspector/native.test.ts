@@ -24,13 +24,19 @@ function validateFrame(frame: DarwinProcessFrame, pid: number) {
   expect(new Set(frame.enumeration.pids).size).toBe(frame.rows.length)
   expect(frame.enumeration.bytes).toBe((frame.rows.length + frame.enumeration.zeroPidCount) * frame.enumeration.recordSize)
   expect(frame.rows.map(row => row.pid).sort((a, b) => a - b)).toEqual([...frame.enumeration.pids].sort((a, b) => a - b))
+  expect(BigInt(frame.enumeration.startedAtNanoseconds)).toBeGreaterThanOrEqual(BigInt(frame.startedAtNanoseconds))
+  expect(BigInt(frame.enumeration.endedAtNanoseconds)).toBeGreaterThanOrEqual(BigInt(frame.enumeration.startedAtNanoseconds))
+  expect(BigInt(frame.enumeration.endedAtNanoseconds)).toBeLessThanOrEqual(BigInt(frame.endedAtNanoseconds))
+  expect(sameDarwinIdentity(frame.ownedHelper.row.enumeratedIdentity, frame.ownedHelper.identity)).toBe(true)
   for (const row of frame.rows) {
+    expect(row.enumeratedIdentity.pid).toBe(row.pid)
+    expect(typeof row.enumeratedIdentity.zombie).toBe('boolean')
     for (const observation of [row.before, row.task, row.after]) {
       if (observation.identity) {
         expect(typeof observation.identity.zombie).toBe('boolean')
       }
     }
-    expect(BigInt(row.startedAtNanoseconds)).toBeGreaterThanOrEqual(BigInt(frame.startedAtNanoseconds))
+    expect(BigInt(row.startedAtNanoseconds)).toBeGreaterThanOrEqual(BigInt(frame.enumeration.endedAtNanoseconds))
     expect(BigInt(row.endedAtNanoseconds)).toBeGreaterThanOrEqual(BigInt(row.startedAtNanoseconds))
     expect(BigInt(row.endedAtNanoseconds)).toBeLessThanOrEqual(BigInt(frame.endedAtNanoseconds))
   }
@@ -151,6 +157,7 @@ describe.skipIf(process.platform !== 'darwin')('real public SDK Darwin inspector
         expect(row?.before.identity?.parentPid).toBe(process.pid)
         expect(row?.pathBefore.executable).toBe(await fs.realpath(process.execPath))
         const identity = row!.before.identity!
+        expect(sameDarwinIdentity(row!.enumeratedIdentity, identity)).toBe(true)
         owner.stdin!.end()
         expect((await terminal).exitCode).toBe(0)
         for (const phase of ['anchor', 'closure1', 'closure2'] as const) {

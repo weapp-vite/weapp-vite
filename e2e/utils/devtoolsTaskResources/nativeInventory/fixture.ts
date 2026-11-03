@@ -15,6 +15,7 @@ export function entry(pid: number, options: { parentPid?: number, executable?: s
   const rssBytes = options.rssBytes === undefined ? '1000' : options.rssBytes
   return {
     pid,
+    enumeratedIdentity: { ...value },
     startedAtNanoseconds: '100',
     endedAtNanoseconds: '200',
     before: { result: 0, length: 648, errno: 0, identity: { ...value } },
@@ -35,7 +36,7 @@ export function frame(phase: DarwinInspectorPhase, rows = [entry(11), entry(22)]
     phase,
     startedAtNanoseconds: '50',
     endedAtNanoseconds: '250',
-    enumeration: { complete: true, bytes: values.length * 648, recordSize: 648, pidCount: values.length, pids: values.map(row => row.pid), zeroPidCount: 1 },
+    enumeration: { startedAtNanoseconds: '60', endedAtNanoseconds: '80', complete: true, bytes: (values.length + 1) * 648, recordSize: 648, pidCount: values.length, pids: values.map(row => row.pid), zeroPidCount: 1 },
     rows: values,
     ownedHelper: { pid: 99, identity: helper.before.identity!, executable: fixtureHelper, row: helper },
   }

@@ -23,6 +23,7 @@ function newExecRows(parentPid = 1): DarwinProcessEntry[][] {
 }
 
 function setIdentity(row: DarwinProcessEntry, updates: Partial<DarwinProcessIdentity>) {
+  Object.assign(row.enumeratedIdentity, updates)
   for (const read of [row.before, row.task, row.after]) {
     Object.assign(read.identity!, updates)
   }

@@ -1,5 +1,6 @@
 import type { ProcessIdentityChangeObservation, ProcessIdentityGapCause, ProcessIdentityGapObservation } from '../types'
 import type { NativeFrame, NativePhase, NativeRow } from './model'
+import { trackEnumerationIdentity } from './enumeration'
 import { hasNativeExitEvidence, insideInstallation, metadata, nativeLocation, sameNativeIdentity, validNativeImage } from './model'
 
 export type NativeRelation = 'installation-image' | 'descendant' | 'foreign' | 'unknown'
@@ -175,6 +176,9 @@ export function createNativeInventory(installationRoot: string) {
     for (const [pid, entry] of tracked) {
       const row = frame.rows.get(pid)
       const anchored = anchor?.rows.get(pid)
+      if (row) {
+        trackEnumerationIdentity(entry, row, frame.phase, changes, cause)
+      }
       // 完整锚点已排除所选安装的身份，闭合时的明确退出与未被枚举到等价；原始行仍保留。
       const foreignExit = row && anchored && (frame.phase === 'closure1' || frame.phase === 'closure2')
         && !entry.changed && !selectedSeen.has(pid) && sameNativeIdentity(entry.row.identity, anchored.identity)
@@ -198,6 +202,7 @@ export function createNativeInventory(installationRoot: string) {
       if (!entry) {
         entry = { row, firstPhase: frame.phase, absent: false, changed: false, imageEvidenceConflict: false, textImageEvidenceConflict: false, closureIdentityUnverifiable: false, classification: 'unknown', imageSource: 'not-verified', causes: [] }
         tracked.set(row.pid, entry)
+        trackEnumerationIdentity(entry, row, frame.phase, changes, cause)
       }
       if (!row.entry.before.identity || !row.finalIdentity) {
         cause(entry, 'kernel-identity-unverifiable', frame.phase)

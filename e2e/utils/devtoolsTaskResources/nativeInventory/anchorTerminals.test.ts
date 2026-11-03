@@ -45,6 +45,7 @@ function reject(values: DarwinProcessEntry[][]) {
 }
 
 function patchIdentity(row: DarwinProcessEntry, patch: Partial<DarwinProcessIdentity>) {
+  Object.assign(row.enumeratedIdentity, patch)
   for (const read of [row.before, row.after, row.task]) {
     if (read.identity) {
       Object.assign(read.identity, patch)
