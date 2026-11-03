@@ -82,6 +82,8 @@ describe('compiler test project partition', () => {
       }
     }
     expect(serial.has('src/plugins/core/lifecycle/watch.test.ts')).toBe(true)
+    expect(serial.has('src/plugins/wxs.loading.test.ts')).toBe(true)
+    expect(fast.has('src/plugins/wxs.loading.test.ts')).toBe(false)
     expect(fast.has('scripts/watcherComparison/fileWatcher.lifecycle.test.ts')).toBe(true)
     expect(fast.has('scripts/watcherComparison/fileWatcher.targets.test.ts')).toBe(true)
     expect(fast.has('scripts/watcherComparison/state.test.ts')).toBe(true)
@@ -107,8 +109,12 @@ it('keeps the complete discovered fixture union and final setup placement in eve
       const fast = projects.find(project => project.name === 'weapp-vite-fast')!
       const serial = projects.find(project => project.name === 'weapp-vite-serial')!
       expect(fast.files.filter(file => serial.files.includes(file))).toEqual([])
+      expect(fast).toMatchObject({ sequence: { groupOrder: 100 } })
+      expect(serial).toMatchObject({ sequence: { groupOrder: 101 } })
       expect(serial.fileParallelism).toBe(false)
       expect(serial.files).toContain('src/plugins/core/lifecycle/watch.test.ts')
+      expect(serial.files).toContain('src/plugins/wxs.loading.test.ts')
+      expect(fast.files).not.toContain('src/plugins/wxs.loading.test.ts')
       expect(fast.files).toContain('bin/bootstrap.test.ts')
       expect(fast.files).toContain('bin/nodeVersionWarning.test.ts')
       expect(serial.files.some(file => file.startsWith('bin/'))).toBe(false)

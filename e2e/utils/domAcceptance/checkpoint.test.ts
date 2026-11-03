@@ -77,6 +77,32 @@ describe('DOM acceptance evidence', () => {
     expect(evidence.nodes).toEqual([{ selector, query: 'xpath', count: 1, nodes: [{ text: 'ready' }] }])
   })
 
+  it.each(['devtools', 'headless'] as const)('preserves exact whitespace when requested for %s', async (provider) => {
+    for (const text of ['  A  B  ', ' ', '']) {
+      const { page, session } = createPage(text)
+      const exact: DomCheckpoint = {
+        ...checkpoint,
+        nodes: [{ selector: '#message', text, textWhitespace: 'preserve' }],
+      }
+      const evidence = await captureDomCheckpoint(session, page, exact, provider, 0)
+      expect(evidence.nodes[0]!.nodes[0]!.text).toBe(text)
+      page.$$ = async () => [{ text: async () => `${text} ` }]
+      await expect(captureDomCheckpoint(session, page, exact, provider, 0)).rejects.toThrow('text: expected')
+    }
+  })
+
+  it('keeps default trimmed text matching and evidence', async () => {
+    const { page, session } = createPage('  ready  ')
+    const evidence = await captureDomCheckpoint(session, page, checkpoint, 'devtools', 0)
+    expect(evidence.nodes[0]!.nodes[0]!.text).toBe('ready')
+  })
+
+  it('rejects an unknown text whitespace mode before capture', () => {
+    const plan = createPlan()
+    Object.assign(plan.checkpoints[0]!.nodes[0]!, { textWhitespace: 'unknown' })
+    expect(() => validateDomPlan(plan)).toThrow('Invalid DOM text whitespace mode')
+  })
+
   it('rejects XPath absence when the provider does not expose XPath queries', async () => {
     const { page, session } = createPage()
     await expect(captureDomCheckpoint(session, page, {

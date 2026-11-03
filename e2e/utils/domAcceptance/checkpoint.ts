@@ -46,6 +46,9 @@ export function validateDomPlan(plan: DomAcceptance) {
       if (node.query !== undefined && node.query !== 'css' && node.query !== 'xpath') {
         throw new Error(`Invalid DOM query mode: ${checkpoint.id}`)
       }
+      if (node.textWhitespace !== undefined && node.textWhitespace !== 'trim' && node.textWhitespace !== 'preserve') {
+        throw new Error(`Invalid DOM text whitespace mode: ${checkpoint.id}`)
+      }
       if (node.query === 'xpath' && (node.scope?.length || node.has)) {
         throw new Error('DOM XPath queries must express scope and descendants in the XPath selector')
       }
@@ -186,7 +189,8 @@ export async function captureDomCheckpoint(
         for (const element of elements) {
           const node: typeof nodes[number] = {}
           if (expected.text !== undefined) {
-            node.text = (await element.text()).trim()
+            const text = await element.text()
+            node.text = expected.textWhitespace === 'preserve' ? text : text.trim()
             assertEqual(node.text, expected.text, `${expected.selector} text`)
           }
           if (expected.attributes) {

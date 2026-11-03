@@ -12,7 +12,7 @@ export function parseWxsTemplateDocument(templateSource: string) {
   })
   const masked = maskTemplateAttributes(source)
   const document = parseTemplateAttributeDocument(`<page>${masked.source}</page>`)
-  if (!scripts.length && !masked.attributes.size && !/[\r\n]/.test(source)) {
+  if (!scripts.length && !masked.attributes.size && !/(?:^|>)[\t\r\n ]+(?:<|$)/.test(source)) {
     return document
   }
   const hasAttributes = masked.attributes.size > 0
@@ -30,10 +30,9 @@ export function parseWxsTemplateDocument(templateSource: string) {
       return
     }
     if (node.children) {
-      // IDE 不渲染标签之间的换行缩进；在插值前移除，避免误删绑定值中的显式空格。
+      // IDE 不渲染静态纯空白；在插值前移除，保留非空文本与绑定值中的显式空格。
       node.children = node.children.filter(child => child.type !== 'text'
-        || !/^[\t\r\n ]+$/.test(child.data ?? '')
-        || !/[\r\n]/.test(child.data ?? ''))
+        || !/^[\t\r\n ]+$/.test(child.data ?? ''))
     }
     for (const child of node.children ?? []) {
       restore(child)

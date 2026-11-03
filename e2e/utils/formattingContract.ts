@@ -17,8 +17,12 @@ export function formattingCheckpoints(route: string, computedStyles: boolean): D
     route,
     action: `检查格式化前后 ${step.id} 的模板、空白与事件语义`,
     nodes: [
-      { selector: '#inline', text: 'A B' },
-      { selector: '#spaces', text: `prefix  ${step.label}  suffix`, ...withStyles({ 'white-space': 'pre-wrap' }) },
+      { selector: '#inline', text: 'AB', textWhitespace: 'preserve' },
+      { selector: '#inline-explicit', text: 'A B', textWhitespace: 'preserve' },
+      { selector: '#space-only', text: '', textWhitespace: 'preserve' },
+      { selector: '#space-literal', text: '  A  B  ', textWhitespace: 'preserve' },
+      // 微信 SDK 仅枚举 computedStyle 长属性；两项共同验证 pre-wrap 的空白与换行语义。
+      { selector: '#spaces', text: `prefix  ${step.label}  suffix`, ...withStyles({ 'white-space-collapse': 'preserve', 'text-wrap-mode': 'wrap' }) },
       { selector: '#expression', text: `${step.count + 1} / ${step.label}` },
       { selector: '#conditional', ...(step.visible ? { text: `visible ${step.count}` } : { count: 0 }) },
       { selector: '#conditional-alternate', ...(step.visible ? { count: 0 } : { text: 'hidden' }) },

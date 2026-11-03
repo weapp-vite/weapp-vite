@@ -27,6 +27,7 @@ const projectTestExcludes = [
 
 const serialTestFiles = [
   'src/plugins/autoImport.test.ts',
+  'src/plugins/wxs.loading.test.ts',
   'src/plugins/wxs.test.ts',
   'src/plugins/core/lifecycle/load.test.ts',
   'src/plugins/core/lifecycle/watch.test.ts',

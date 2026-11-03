@@ -90,6 +90,22 @@ describe('DOM acceptance report validation', () => {
     expect(result.violations).toContain('Missing DOM acceptance plan and evidence for this case')
   })
 
+  it('rechecks exact whitespace in serialized checkpoint evidence', () => {
+    const acceptance = createPlan()
+    const expected = acceptance.checkpoints[0]!.nodes[0]!
+    expected.text = '  A  B  '
+    expected.textWhitespace = 'preserve'
+    const captured = acceptance.evidence[0]!.nodes[0]!.nodes[0]!
+    captured.text = expected.text
+    const input = { id: 'case-a', file: 'case.test.ts', name: 'whitespace', state: 'passed' as const }
+    expect(evaluateAcceptanceCase({ ...input, acceptance: JSON.parse(JSON.stringify(acceptance)) }).status).toBe('passed')
+    captured.text = expected.text.trim()
+    expect(evaluateAcceptanceCase({ ...input, acceptance }).status).toBe('blocked')
+    captured.text = expected.text
+    Object.assign(expected, { textWhitespace: 'unknown' })
+    expect(evaluateAcceptanceCase({ ...input, acceptance }).status).toBe('blocked')
+  })
+
   it.each(['skipped', 'pending'] as const)('does not accept %s cases with previously valid evidence', (state) => {
     expect(evaluateAcceptanceCase({ id: 'case-a', file: 'case.test.ts', name: 'mounts', state, acceptance: createPlan() }).status).not.toBe('passed')
   })

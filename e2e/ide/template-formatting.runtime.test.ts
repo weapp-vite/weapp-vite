@@ -56,7 +56,9 @@ describe('template Oxfmt runtime semantics', { concurrent: false }, () => {
           await (await page.$(step.target))!.tap()
         }
         await dom.check(`${route}-${step.id}`, runtime!, page)
-        states.push(await page.data())
+        // 原生宿主为不同页面注入不同 webview 标识；DOM checkpoint 已独立核验页面身份。
+        const data = await page.data() as Record<string, unknown>
+        states.push(Object.fromEntries(Object.entries(data).filter(([key]) => key !== '__webviewId__')))
       }
       observations.push(states)
     }

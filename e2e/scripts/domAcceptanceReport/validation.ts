@@ -17,6 +17,7 @@ const expectation = z.object({
   scope,
   count: z.number().int().nonnegative().optional(),
   text: z.string().optional(),
+  textWhitespace: z.enum(['trim', 'preserve']).optional(),
   attributes: strings.optional(),
   styles: z.record(z.string(), z.union([
     z.string(),

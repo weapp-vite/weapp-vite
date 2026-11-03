@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest'
 import { createBrowserHeadlessSession, createBrowserVirtualFiles } from '../src/browser'
-import { templateWhitespaceFiles } from '../test/helpers/templateWhitespace'
+import { templateWhitespaceChecks, templateWhitespaceFiles, templateWhitespaceStates } from '../test/helpers/templateWhitespace'
 
 it('renders formatted dynamic islands without adding indentation to their visible text', () => {
   const session = createBrowserHeadlessSession({ files: createBrowserVirtualFiles(templateWhitespaceFiles) })
@@ -13,6 +13,14 @@ it('renders formatted dynamic islands without adding indentation to their visibl
       expect(preview.querySelector('#island')?.textContent).toBe(`dynamic island: ${count}`)
       expect(preview.querySelector('#explicit')?.textContent).toBe('  spaced  ')
       page.increment()
+    }
+    const whitespacePage = session.reLaunch('/pages/whitespace/index')
+    for (const space of templateWhitespaceStates) {
+      whitespacePage.setData({ space })
+      preview.innerHTML = session.renderCurrentPage().wxml
+      for (const [selector, text] of templateWhitespaceChecks(space)) {
+        expect(preview.querySelector(selector)?.textContent, `${selector}/${JSON.stringify(space)}`).toBe(text)
+      }
     }
   }
   finally {

@@ -1,3 +1,4 @@
+import type { TemplateNodeLike } from './templateRuntime'
 import { describe, expect, it } from 'vitest'
 import { maskTemplateAttributes } from './templateAttributes'
 import { isTemplateExpression, templateInterpolations } from './templateInterpolation'
@@ -43,5 +44,41 @@ describe('WXML interpolation and attribute boundaries', () => {
     expect(view.attribs['data-token']).toBe('__mpcore_quoted_attribute_0')
     const wxs = page.children.find((node: any) => node.name === 'wxs')
     expect(wxs.children[0].data).toBe(`var x = '<view title="ignored"/>';`)
+  })
+
+  describe.each([
+    { path: 'single-line template', prefix: '', attributes: '' },
+    { path: 'restored attribute', prefix: '', attributes: String.raw` title="a\"b"` },
+    { path: 'restored WXS body', prefix: '<wxs module="spaces">  var value = " ";  </wxs>', attributes: '' },
+  ])('$path static whitespace', ({ prefix, attributes }) => {
+    it.each([' ', '   ', '\t', '\r\n  '])('removes ASCII-only source nodes containing %j before interpolation', (space) => {
+      const source = `${prefix}<view${attributes}><text>A</text>${space}<text>B</text><text>${space}</text></view>`
+      const document = parseWxsTemplateDocument(source) as unknown as TemplateNodeLike
+      const page = document.children?.[0]
+      const view = page?.children?.find(node => node.name === 'view')
+      expect(view?.children?.filter(node => node.type === 'text')).toEqual([])
+      expect(view?.children?.[0]?.children?.[0]?.data).toBe('A')
+      expect(view?.children?.[1]?.children?.[0]?.data).toBe('B')
+      expect(view?.children?.[2]?.children).toEqual([])
+      if (prefix) {
+        const wxs = page?.children?.find(node => node.name === 'wxs')
+        expect(wxs?.children?.[0]?.data).toBe('  var value = " ";  ')
+      }
+      if (attributes) {
+        expect(view?.attribs?.title).toBe('a"b')
+      }
+    })
+  })
+
+  it('keeps explicit whitespace bindings and nonempty source text unchanged', () => {
+    const source = `<view><text>{{' '}}</text><text>{{space}}</text><text>  A  B  </text><text>prefix  {{label}}  suffix</text></view>`
+    const document = parseWxsTemplateDocument(source) as unknown as TemplateNodeLike
+    const view = document.children?.[0]?.children?.[0]
+    expect(view?.children?.map(node => node.children?.[0]?.data)).toEqual([
+      `{{' '}}`,
+      '{{space}}',
+      '  A  B  ',
+      'prefix  {{label}}  suffix',
+    ])
   })
 })

@@ -15,6 +15,10 @@ vi.mock('execa', () => {
   }
 })
 
+vi.mock('../utils/devProcessCleanup/windowsKernelArtifact', () => ({
+  assertWindowsKernelInspectorReady: vi.fn(),
+}))
+
 vi.mock('../utils/devProcessCleanup/windowsKernelQuery', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../utils/devProcessCleanup/windowsKernelQuery')>()
   return {

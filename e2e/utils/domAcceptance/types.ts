@@ -14,6 +14,7 @@ export interface DomNodeExpectation {
   scope?: DomScope[]
   count?: number
   text?: string
+  textWhitespace?: 'trim' | 'preserve'
   attributes?: Record<string, string>
   styles?: Record<string, DomStyleExpectation>
   visible?: boolean

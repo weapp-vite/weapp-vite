@@ -1,12 +1,12 @@
 import type { HeadlessProjectDescriptor } from '../project'
 import type { HeadlessPageInstance } from '../runtime'
 import path from 'node:path'
-import { parseDocument } from 'htmlparser2'
 import { setNativePickerValue } from './nativeForm'
 import { isDatasetAttribute, toDatasetKey } from './nodeDataset'
 import { linkRenderedParents } from './renderedTree'
 import { renderRichTextNodes } from './richText'
 import { interpolateTemplateText } from './templateText'
+import { parseWxsTemplateDocument } from './wxsDocument'
 
 interface DomNodeLike {
   attribs?: Record<string, string>
@@ -141,11 +141,7 @@ export function renderPageTree(project: HeadlessProjectDescriptor, page: Headles
   if (templateSource == null) {
     throw new Error(`Missing template in headless runtime: ${templatePath}`)
   }
-  const document = parseDocument(`<page>${templateSource}</page>`, {
-    xmlMode: true,
-    decodeEntities: false,
-    recognizeSelfClosing: true,
-  }) as unknown as DomNodeLike
+  const document = parseWxsTemplateDocument(templateSource) as unknown as DomNodeLike
 
   interpolateDomTree(document, page.data)
   linkRenderedParents(document)
