@@ -1,3 +1,4 @@
+import type { BuildPackageArgs } from './builder'
 import os from 'node:os'
 
 import { fs } from '@weapp-core/shared/fs'
@@ -13,7 +14,7 @@ import {
   resolveTargetDependencies,
 } from './service'
 
-const buildPackageMock = vi.hoisted(() => vi.fn(async () => {}))
+const buildPackageMock = vi.hoisted(() => vi.fn<(args: BuildPackageArgs) => Promise<void>>(async () => {}))
 const checkDependenciesCacheOutdateMock = vi.hoisted(() => vi.fn(async () => true))
 const copyFileMock = vi.hoisted(() => vi.fn(async () => {}))
 const writeDependenciesCacheMock = vi.hoisted(() => vi.fn(async () => {}))
@@ -34,6 +35,7 @@ vi.mock('./builder', () => ({
     bundleBuild: vi.fn(),
     copyBuild: vi.fn(),
     buildPackage: buildPackageMock,
+    buildPackages: (requests: BuildPackageArgs[]) => Promise.all(requests.map(request => buildPackageMock(request))),
   }),
 }))
 

@@ -5,6 +5,7 @@ import { fs } from '@weapp-core/shared/fs'
 import { getPackageInfo } from 'local-pkg'
 import path from 'pathe'
 import { debug } from '../../../context/shared'
+import { settlePackageBuilds } from '../builder/output'
 import { packageSearchOptions } from '../packageResolution'
 import { getPackNpmRelationList } from '../relations'
 import { copyDirectoryWithFilter } from './copy'
@@ -127,15 +128,15 @@ export function createNpmBuildService(options: NpmBuildServiceOptions) {
       return
     }
 
-    await Promise.all(
+    await builder.buildPackages(
       args.dependencies.map((dep) => {
-        return builder.buildPackage({
+        return {
           dep,
           resolveFrom: args.resolveFrom,
           outDir: args.npmDistDir,
           options: args.options,
           isDependenciesCacheOutdate,
-        })
+        }
       }),
     )
 
@@ -192,18 +193,18 @@ export function createNpmBuildService(options: NpmBuildServiceOptions) {
         options,
       })
 
-      await Promise.all([
+      await settlePackageBuilds([
         sourceBuildPromise,
         mainBuildPromise,
       ])
 
       if (mainDependencies.length === 0) {
-        await Promise.all(subRelations.map((relation) => {
+        await settlePackageBuilds(subRelations.map((relation) => {
           return fs.remove(path.resolve(configService.cwd, relation.miniprogramNpmDistDir, npmDistDirName))
         }))
       }
       else {
-        await Promise.all(subRelations.map(async (relation) => {
+        await settlePackageBuilds(subRelations.map(async (relation) => {
           const targetDir = path.resolve(configService.cwd, relation.miniprogramNpmDistDir, npmDistDirName)
           await fs.remove(targetDir)
           await fs.copy(outDir, targetDir, {
@@ -257,7 +258,7 @@ export function createNpmBuildService(options: NpmBuildServiceOptions) {
         }
       }
       else {
-        await Promise.all(localSubPackageTasks.map(task => task()))
+        await settlePackageBuilds(localSubPackageTasks.map(task => task()))
       }
     }
 

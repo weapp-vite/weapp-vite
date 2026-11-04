@@ -4,33 +4,19 @@ import type { Plugin } from 'vite'
 import type { MutableCompilerContext } from '../../../context'
 import type { NpmBuildOptions } from '../../../types'
 import type { PackageBuildOutput } from './output'
+import type { PlannedPackage } from './packagePlan'
 import { existsSync } from 'node:fs'
-import { isBuiltin } from 'node:module'
 import process from 'node:process'
 import { defu, isObject } from '@weapp-core/shared'
 import { fs } from '@weapp-core/shared/fs'
-import { getPackageInfo, resolveModule } from 'local-pkg'
 import path from 'pathe'
 import { build as viteBuild } from 'vite'
 import { logger } from '../../../context/shared'
-import {
-  getPlatformNpmDistDirName,
-  shouldCopyEsModuleDirectory,
-  shouldHoistNestedMiniprogramDependencies,
-  shouldNormalizeMiniprogramPackage,
-  shouldRebuildCachedMiniprogramPackage,
-} from '../../../platform'
-import { packageSearchOptions } from '../packageResolution'
-import {
-  copyEsModuleDirectoryForAlipay,
-  hoistNestedMiniprogramDependenciesForAlipay,
-  normalizeMiniprogramPackageForAlipay,
-  shouldRebuildCachedAlipayMiniprogramPackage,
-} from './alipay'
-import { normalizeMiniprogramPackageJsModules } from './jsModule'
-import { settlePackageBuilds } from './output'
+import { getPlatformNpmDistDirName } from '../../../platform'
+import { prepareMiniPackage } from './miniPackage'
+import { arePackageEntriesCurrent, createPackageEntryAssetPlugin, PACKAGE_ASSET_ENTRY, packageEntryFileName, resolvePlannedPackageEntries } from './packageEntries'
 import { createNpmPackageCopyFilter } from './packageFiles'
-import { resolvePreferredPackageEntry } from './shared'
+import { createPackageBatchQueue, runPackageBuildPlan } from './packagePlan'
 
 export interface PackageBuilder {
   isMiniprogramPackage: (pkg: PackageJson) => boolean
@@ -38,6 +24,7 @@ export interface PackageBuilder {
   bundleBuild: (args: { entry: InputOption, name: string, options?: NpmBuildOptions, outDir: string }) => Promise<void>
   copyBuild: (args: { from: string, to: string, name: string }) => Promise<void>
   buildPackage: (args: BuildPackageArgs) => Promise<void>
+  buildPackages: (args: BuildPackageArgs[]) => Promise<void>
 }
 
 export interface BuildPackageArgs {
@@ -53,6 +40,7 @@ interface ResolvePackageBuildTargetArgs {
   name: string
   options?: NpmBuildOptions
   outDir: string
+  assetPlugin?: Plugin
 }
 
 interface ResolvedPackageBuildTarget {
@@ -100,7 +88,6 @@ export function createPackageBuilder(
   output?: PackageBuildOutput,
 ): PackageBuilder {
   const npmLogger = typeof logger.withTag === 'function' ? logger.withTag('npm') : logger
-  const packageBuildInFlight = new Map<string, Promise<void>>()
 
   function isMiniprogramPackage(pkg: PackageJson) {
     return Reflect.has(pkg, 'miniprogram') && typeof pkg.miniprogram === 'string'
@@ -127,7 +114,7 @@ export function createPackageBuilder(
     return path.resolve(root, rawOutDir)
   }
 
-  function resolvePackageBuildTarget({ entry, name, options, outDir }: ResolvePackageBuildTargetArgs): ResolvedPackageBuildTarget {
+  function resolvePackageBuildTarget({ entry, name, options, outDir, assetPlugin }: ResolvePackageBuildTargetArgs): ResolvedPackageBuildTarget {
     const importMetaDefineEntries = ctx.configService?.importMetaDefineEntries ?? {}
     const cwd = ctx.configService?.cwd ?? process.cwd()
     const defaultTsconfig = resolveDefaultNpmBuildTsconfig(cwd)
@@ -143,12 +130,12 @@ export function createPackageBuilder(
       oxc: {
         tsconfig: false,
       } as NpmBuildOptions['oxc'],
-      plugins: [],
+      plugins: assetPlugin ? [assetPlugin] : [],
       build: {
         lib: {
           entry,
           formats: ['cjs'],
-          fileName: (_format, entryName) => `${entryName}.js`,
+          fileName: (_format, entryName) => packageEntryFileName(entryName),
         },
         outDir,
         emptyOutDir: true,
@@ -228,168 +215,66 @@ export function createPackageBuilder(
     })
   }
 
-  let buildPackage: PackageBuilder['buildPackage']
-
-  async function runBuildPackage(
-    { dep, outDir, options, isDependenciesCacheOutdate }:
-    BuildPackageArgs,
-    packageInfo: NonNullable<Awaited<ReturnType<typeof getPackageInfo>>>,
-  ) {
+  const buildPackages = createPackageBatchQueue(async (args) => {
     if (!ctx.configService) {
       return
     }
-    const { packageJson: targetJson, rootPath } = packageInfo
-    output?.watchFile?.(path.join(rootPath, 'package.json'))
-    const dependencies = targetJson.dependencies ?? {}
-    const keys = Object.keys(dependencies)
-    if (isMiniprogramPackage(targetJson)) {
-      const sourceDir = path.resolve(rootPath, targetJson.miniprogram)
-      output?.watchFile?.(sourceDir)
-      const resolvedTarget = resolvePackageBuildTarget({
-        entry: {
-          index: sourceDir,
-        },
-        name: dep,
-        options,
-        outDir: path.resolve(outDir, dep),
-      })
-      const destOutDir = output?.directory(resolvedTarget.outDir) ?? resolvedTarget.outDir
-      const packageOutDir = output?.directory(outDir) ?? outDir
-
-      if (!resolvedTarget.options) {
-        npmLogger.info(`[npm] 依赖 \`${dep}\` 被 npm.buildOptions 跳过处理!`)
-        return
+    const owners = new Map<string, string>()
+    const resolveTarget = (node: PlannedPackage, targetArgs: ResolvePackageBuildTargetArgs) => {
+      const target = resolvePackageBuildTarget(targetArgs)
+      if (target.options) {
+        const key = path.resolve(target.outDir)
+        const identity = `${path.resolve(node.args.outDir)}\0${node.packageInfo.rootPath}\0${node.args.dep}`
+        if (owners.has(key) && owners.get(key) !== identity) {
+          throw new Error(`[npm] 多个逻辑依赖目标映射到同一输出目录：${node.args.dep}`)
+        }
+        owners.set(key, identity)
       }
-
-      if (await shouldSkipBuild(destOutDir, isDependenciesCacheOutdate)) {
-        await normalizeMiniprogramPackageJsModules(destOutDir, {
-          markEsModule: true,
-        })
-        const platformNpmDistDirName = getPlatformNpmDistDirName(ctx.configService.platform, {
-          alipayNpmMode: ctx.configService.weappViteConfig?.npm?.alipayNpmMode,
-        }) as 'miniprogram_npm' | 'node_modules'
-        const shouldRebuildPackage = shouldRebuildCachedMiniprogramPackage(ctx.configService.platform)
-          ? await shouldRebuildCachedAlipayMiniprogramPackage(destOutDir, packageOutDir, rootPath, platformNpmDistDirName)
-          : false
-        if (!shouldRebuildPackage) {
+      return target
+    }
+    await runPackageBuildPlan(args.map(input => ({ ...input, resolveFrom: input.resolveFrom ?? ctx.configService?.cwd })), {
+      output,
+      npmDirectories: [...new Set([
+        getPlatformNpmDistDirName(ctx.configService.platform, { alipayNpmMode: ctx.configService.weappViteConfig.npm?.alipayNpmMode }),
+        getPlatformNpmDistDirName(ctx.configService.platform, { alipayNpmMode: 'miniprogram_npm' }),
+      ])],
+      isMiniprogramPackage,
+      prepareMini: node => prepareMiniPackage(node, {
+        ctx,
+        output,
+        resolveTarget: target => resolveTarget(node, target),
+        copyBuild,
+        shouldSkipBuild,
+        skip: dep => npmLogger.info(`[npm] 依赖 \`${dep}\` 被 npm.buildOptions 跳过处理!`),
+      }),
+      async buildOrdinary(node) {
+        const { args: { dep, outDir, options, isDependenciesCacheOutdate } } = node
+        const { entries, assets } = await resolvePlannedPackageEntries(node)
+        if (!Object.keys(entries).length && !assets.length) {
+          npmLogger.warn(`[npm] 无法解析模块 \`${dep}\`，跳过处理!`)
+          return false
+        }
+        for (const file of [...Object.values(entries), ...assets.map(asset => asset.input)]) {
+          output?.watchFile?.(file)
+        }
+        const anchor = !Object.keys(entries).length
+        const entry = anchor ? { index: PACKAGE_ASSET_ENTRY } : entries
+        const target = resolveTarget(node, { entry, name: dep, options, outDir: path.resolve(outDir, dep), assetPlugin: assets.length ? createPackageEntryAssetPlugin(assets, anchor) : undefined })
+        if (!target.options) {
+          npmLogger.info(`[npm] 依赖 \`${dep}\` 被 npm.buildOptions 跳过处理!`)
+          return false
+        }
+        if (!output && !isDependenciesCacheOutdate && await arePackageEntriesCurrent(target.outDir, entries, assets)) {
           npmLogger.info(`[npm] 依赖 \`${dep}\` 未发生变化，跳过处理!`)
-          return
+          return false
         }
-      }
-      await copyBuild({
-        from: sourceDir,
-        to: destOutDir,
-        name: dep,
-      })
-      await normalizeMiniprogramPackageJsModules(destOutDir, {
-        markEsModule: true,
-      })
-
-      if (shouldNormalizeMiniprogramPackage(ctx.configService.platform)) {
-        const platformNpmDistDirName = getPlatformNpmDistDirName(ctx.configService.platform, {
-          alipayNpmMode: ctx.configService.weappViteConfig?.npm?.alipayNpmMode,
-        })
-        if (shouldCopyEsModuleDirectory(ctx.configService.platform) && platformNpmDistDirName === 'node_modules') {
-          await copyEsModuleDirectoryForAlipay(rootPath, destOutDir, { dereference: Boolean(output) })
-        }
-        await normalizeMiniprogramPackageForAlipay(destOutDir)
-        if (shouldHoistNestedMiniprogramDependencies(ctx.configService.platform)) {
-          await hoistNestedMiniprogramDependenciesForAlipay(destOutDir, packageOutDir)
-        }
-      }
-
-      if (keys.length > 0) {
-        await settlePackageBuilds(
-          keys.map((x) => {
-            return buildPackage({
-              dep: x,
-              resolveFrom: rootPath,
-              outDir,
-              options,
-              isDependenciesCacheOutdate,
-            })
-          }),
-        )
-      }
-    }
-    else {
-      const index = await resolvePreferredPackageEntry(rootPath, targetJson) ?? resolveModule(dep, packageSearchOptions(rootPath))
-      if (!index) {
-        npmLogger.warn(`[npm] 无法解析模块 \`${dep}\`，跳过处理!`)
-        return
-      }
-      const resolvedTarget = resolvePackageBuildTarget({
-        entry: {
-          index,
-        },
-        name: dep,
-        options,
-        outDir: path.resolve(outDir, dep),
-      })
-      const destOutDir = resolvedTarget.outDir
-
-      if (!resolvedTarget.options) {
-        npmLogger.info(`[npm] 依赖 \`${dep}\` 被 npm.buildOptions 跳过处理!`)
-        return
-      }
-
-      if (!isDependenciesCacheOutdate && await fs.pathExists(destOutDir)) {
-        const destEntry = path.resolve(destOutDir, 'index.js')
-        if (await fs.pathExists(destEntry)) {
-          const [srcStat, destStat] = await Promise.all([fs.stat(index), fs.stat(destEntry)])
-          if (srcStat.mtimeMs <= destStat.mtimeMs) {
-            npmLogger.info(`[npm] 依赖 \`${dep}\` 未发生变化，跳过处理!`)
-            return
-          }
-        }
-      }
-      await runResolvedBundleBuild(resolvedTarget.options, destOutDir)
-      if (keys.length > 0) {
-        await settlePackageBuilds(
-          keys.filter(x => isBuiltin(x)).map((x) => {
-            return buildPackage({
-              dep: `${x}/`,
-              resolveFrom: rootPath,
-              outDir,
-              options,
-              isDependenciesCacheOutdate,
-            })
-          }),
-        )
-      }
-    }
-
-    npmLogger.success(`[npm] \`${dep}\` 依赖处理完成!`)
-  }
-
-  buildPackage = async (
-    { dep, outDir, resolveFrom = ctx.configService?.cwd, options, isDependenciesCacheOutdate }: BuildPackageArgs,
-  ) => {
-    const packageInfo = await getPackageInfo(dep, packageSearchOptions(resolveFrom))
-    if (!packageInfo) {
-      return
-    }
-    // 解析根与输出根独立；不同父包解析到同一实体时仍复用同一次发布任务。
-    const taskKey = `${path.resolve(outDir)}::${packageInfo.rootPath}::${dep}`
-    const pending = packageBuildInFlight.get(taskKey)
-    if (pending) {
-      return pending
-    }
-
-    const task = runBuildPackage({
-      dep,
-      outDir,
-      options,
-      isDependenciesCacheOutdate,
-    }, packageInfo).finally(() => {
-      if (packageBuildInFlight.get(taskKey) === task) {
-        packageBuildInFlight.delete(taskKey)
-      }
+        await runResolvedBundleBuild(target.options, target.outDir)
+        return true
+      },
+      complete: dep => npmLogger.success(`[npm] \`${dep}\` 依赖处理完成!`),
     })
-
-    packageBuildInFlight.set(taskKey, task)
-    return task
-  }
+  })
+  const buildPackage: PackageBuilder['buildPackage'] = args => buildPackages([args])
 
   return {
     isMiniprogramPackage,
@@ -397,5 +282,6 @@ export function createPackageBuilder(
     bundleBuild,
     copyBuild,
     buildPackage,
+    buildPackages,
   }
 }

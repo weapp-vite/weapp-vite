@@ -21,7 +21,7 @@ export type ClassicContentAnalysis
     | Readonly<{ kind: 'style', dependencies: readonly string[] }>
 
 export function classicContentKind(file: string, extensions: ClassicPublicationExtensions): ContentKind | undefined {
-  if (file.endsWith('.js') || file.endsWith(extensions.module)) {
+  if (/\.[cm]?js$/.test(file) || file.endsWith(extensions.module)) {
     return 'script'
   }
   if (file.endsWith('.json') && !file.endsWith('.map.json')) {

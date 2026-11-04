@@ -1,11 +1,11 @@
 import { Buffer } from 'node:buffer'
 import { createHash } from 'node:crypto'
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, rename, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { setTimeout as sleep } from 'node:timers/promises'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { snapshotDist, waitForInitialDistSnapshot, waitForStableDistSnapshot } from './output'
+import { listFiles, snapshotDist, waitForInitialDistSnapshot, waitForStableDistSnapshot } from './output'
 
 const fsHooks = vi.hoisted(() => ({
   beforeRead: undefined as ((filename: string) => Promise<void>) | undefined,
@@ -61,7 +61,7 @@ function createPublication() {
 }
 
 describe('workspace HMR initial output publication', () => {
-  it('does not accept an early app.json and quiet partial tree before the build has published', async () => {
+  it.each(['miniprogram_npm', 'node_modules'])('does not accept an early app.json before the complete %s build has published', async (directory) => {
     const root = await createOutput()
     const { published, dev } = createPublication()
     let observed = false
@@ -73,7 +73,7 @@ describe('workspace HMR initial output publication', () => {
       // 首次写出可能先暴露 app.json，随后才清理 npm 并发布其余产物。
       await sleep(100)
       expect(observed).toBe(false)
-      const npmRoot = path.join(root, 'miniprogram_npm', 'dependency')
+      const npmRoot = path.join(root, directory, 'dependency')
       await mkdir(npmRoot, { recursive: true })
       await writeFile(path.join(npmRoot, 'LICENSE'), 'intermediate')
       await rm(npmRoot, { recursive: true })
@@ -81,8 +81,8 @@ describe('workspace HMR initial output publication', () => {
       await writeFile(path.join(npmRoot, 'index.js'), 'published')
       published.resolve('小程序初次构建完成')
       const snapshot = await waiting
-      expect([...snapshot.keys()]).toEqual(['app.json', 'miniprogram_npm/dependency/index.js'])
-      expect(snapshot.get('miniprogram_npm/dependency/index.js')).toEqual({
+      expect([...snapshot.keys()]).toEqual(['app.json', `${directory}/dependency/index.js`])
+      expect(snapshot.get(`${directory}/dependency/index.js`)).toEqual({
         hash: createHash('sha256').update('published').digest('hex'),
         size: 9,
       })
@@ -171,6 +171,100 @@ describe('workspace HMR initial output publication', () => {
 })
 
 describe('workspace HMR output snapshot races', () => {
+  it('keeps source exclusions separate from the entire physical publication inventory', async () => {
+    const root = await createOutput()
+    const files = [
+      'node_modules/@scope/library/dist/index.js',
+      'sub/node_modules/library/index.js',
+      'miniprogram_npm/library/node_modules/nested/index.js',
+      'dist/nested.js',
+      '.weapp-vite/retained.js',
+    ]
+    for (const file of files) {
+      await mkdir(path.dirname(path.join(root, file)), { recursive: true })
+      await writeFile(path.join(root, file), file)
+    }
+    expect((await listFiles(root)).map(file => path.relative(root, file).replaceAll('\\', '/'))).toEqual(['app.json'])
+    const snapshot = await snapshotDist(root)
+    expect([...snapshot.keys()].sort()).toEqual(['app.json', ...files].sort())
+    for (const file of files) {
+      expect(snapshot.get(file)).toEqual({ hash: createHash('sha256').update(file).digest('hex'), size: Buffer.byteLength(file) })
+    }
+  })
+
+  it.each(['node_modules/library/index.js', 'miniprogram_npm/library/index.js'])('rejects a listed npm file disappearing during the complete snapshot: %s', async (file) => {
+    const root = await createOutput()
+    const filename = path.join(root, file)
+    await mkdir(path.dirname(filename), { recursive: true })
+    await writeFile(filename, 'module.exports = {};')
+    fsHooks.beforeStat = async (candidate) => {
+      if (candidate === filename) {
+        await rm(filename)
+      }
+    }
+    await expect(snapshotDist(root)).rejects.toMatchObject({ code: 'ENOENT' })
+  })
+
+  it.each(['stat', 'readFile'] as const)('preserves the exact %s failure after a listed staged stylesheet is atomically published', async (operation) => {
+    const original = await vi.importActual<typeof import('node:fs/promises')>('node:fs/promises')
+    const root = await createOutput()
+    const staged = path.join(root, 'style.next')
+    const output = path.join(root, 'index.wxss')
+    await writeFile(staged, 'view { color: red; }')
+    let failure: unknown
+    const publish = async (filename: string) => {
+      if (filename !== staged) {
+        return
+      }
+      await rename(staged, output)
+      try {
+        await original[operation](staged)
+      }
+      catch (error) {
+        failure = error
+        throw error
+      }
+    }
+    fsHooks.beforeStat = operation === 'stat' ? publish : undefined
+    fsHooks.beforeRead = operation === 'readFile' ? publish : undefined
+    const result = await snapshotDist(root).then(() => undefined, error => error as unknown)
+    expect(failure).toMatchObject({ code: 'ENOENT' })
+    expect(result).toBe(failure)
+    expect(await original.readFile(output, 'utf8')).toBe('view { color: red; }')
+  })
+
+  it('restarts the whole stability window after a staged stylesheet disappears through same-directory rename', async () => {
+    const root = await createOutput()
+    const staged = path.join(root, 'style.next')
+    const output = path.join(root, 'index.wxss')
+    const published = 'view { color: red; }'
+    await writeFile(output, published)
+    let scans = 0
+    let now = 0
+    let renamed = false
+    vi.spyOn(Date, 'now').mockImplementation(() => now)
+    fsHooks.beforeReaddir = async (filename) => {
+      if (filename === root) {
+        now = scans++ * 20
+        if (scans === 2) {
+          // 相同字节发布也必须舍弃竞争轮次，不能拼出看似稳定的部分集合。
+          await writeFile(staged, published)
+        }
+      }
+    }
+    fsHooks.beforeStat = async (filename) => {
+      if (filename === staged && !renamed) {
+        renamed = true
+        await rename(staged, output)
+      }
+    }
+    const snapshot = await waitForStableDistSnapshot(root, 20, 2_000)
+    expect(renamed).toBe(true)
+    expect(scans).toBe(4)
+    expect([...snapshot.keys()]).toEqual(['app.json', 'index.wxss'])
+    expect(snapshot.get('index.wxss')).toEqual({ hash: createHash('sha256').update(published).digest('hex'), size: Buffer.byteLength(published) })
+  })
+
   it('bounds simultaneous reads and preserves sorted inventory when files finish out of order', async () => {
     const root = await createOutput()
     const names = Array.from({ length: 35 }, (_, index) => `asset-${String(index).padStart(2, '0')}.txt`)
@@ -279,7 +373,7 @@ describe('workspace HMR output snapshot races', () => {
   ] as const)('discards the entire $change snapshot from $operation and restarts its stability window', async ({ change, operation, injectedCode }) => {
     const original = await vi.importActual<typeof import('node:fs/promises')>('node:fs/promises')
     const root = await createOutput()
-    const temporaryRoot = path.join(root, 'temporary')
+    const temporaryRoot = path.join(root, 'node_modules')
     const transientFile = path.join(temporaryRoot, 'LICENSE')
     const appFile = path.join(root, 'app.json')
     const fourthRead = Promise.withResolvers<void>()

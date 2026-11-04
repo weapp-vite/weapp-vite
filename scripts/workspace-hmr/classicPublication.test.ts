@@ -2,6 +2,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY, WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY, WEAPP_VITE_STATEFUL_HMR_DIRECTORY } from '@weapp-core/constants'
+import { getMiniProgramPlatformDescriptor, getMiniProgramScriptModuleOptions, getSupportedMiniProgramPlatforms } from '@weapp-core/shared'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { inspectClassicPublication, inspectRetiredClassicTransport } from './classicPublication'
 
@@ -67,6 +68,20 @@ describe('classic full publication closure', () => {
   it('examines unreferenced emitted files too, so stale stateful code cannot hide outside app imports', async () => {
     await write('orphan.js', '// weapp-vite-stateful-build:old\nvoid 0;')
     await expect(inspectClassicPublication(root)).rejects.toThrow('stateful client')
+  })
+
+  it.each(['cjs', 'mjs'])('checks dependencies in emitted .%s scripts', async (extension) => {
+    await write(`orphan.${extension}`, 'module.exports = require("./missing.js");')
+    await expect(inspectClassicPublication(root)).rejects.toThrow('missing script dependency ./missing.js')
+  })
+
+  it('checks scripts inside every physical npm output, including directories that are not a weapp bare-import fallback', async () => {
+    await write('node_modules/unreferenced/index.js', 'require("./missing.js");')
+    await expect(inspectClassicPublication(root)).rejects.toThrow('missing script dependency ./missing.js from node_modules/unreferenced/index.js')
+    await write('node_modules/unreferenced/missing.js', 'module.exports = {};')
+    await expect(inspectClassicPublication(root)).resolves.toBeDefined()
+    await write('shared.js', 'require("unreferenced");')
+    await expect(inspectClassicPublication(root)).rejects.toThrow('missing script dependency unreferenced from shared.js')
   })
 
   it.each([
@@ -150,19 +165,43 @@ describe('classic full publication closure', () => {
     await expect(inspectClassicPublication(root)).rejects.toThrow('unsupported dynamic import')
   })
 
-  it('verifies the alipay template, stylesheet and sjs dependency extensions', async () => {
+  it.each(getSupportedMiniProgramPlatforms())('verifies complete page, component, template, style and module dependencies for %s', async (platform) => {
+    await rm(root, { recursive: true })
+    const { wxml: template, wxss: style, wxs: module = 'wxs' } = getMiniProgramPlatformDescriptor(platform).outputExtensions
+    const script = getMiniProgramScriptModuleOptions(platform, module)
+    await write('app.js', 'App({});')
+    await write('app.json', JSON.stringify({ pages: ['pages/index'], subPackages: [{ root: 'sub', pages: ['detail'] }] }))
     for (const entry of ['pages/index', 'sub/detail', 'components/card']) {
-      await writeEntry(entry, '.axml')
-      await rm(path.join(root, `${entry}.wxml`))
+      await writeEntry(entry, `.${template}`)
     }
-    await write('app.acss', '@import url("./theme.acss");')
-    await write('theme.acss', 'view { color: red; }')
-    await write('pages/index.axml', '<import-sjs from="./main.sjs" name="main"/><view/>')
-    await write('pages/main.sjs', 'module.exports = require("./dependency.sjs");')
-    await write('pages/dependency.sjs', 'module.exports = {};')
-    await expect(inspectClassicPublication(root, 'alipay')).resolves.toBeDefined()
-    await rm(path.join(root, 'pages/dependency.sjs'))
-    await expect(inspectClassicPublication(root, 'alipay')).rejects.toThrow('missing script dependency')
+    await write('pages/index.json', JSON.stringify({ usingComponents: { card: '/components/card' } }))
+    await write(`app.${style}`, `@import url("./theme.${style}");`)
+    await write(`theme.${style}`, 'view { color: red; }')
+    await write(`pages/index.${template}`, `<import src="../templates/base"/><${script.tag} ${script.sourceAttribute}="./main.${module}" ${script.moduleAttribute}="main"/><view/>`)
+    await write(`templates/base.${template}`, '<template name="base"><view/></template>')
+    await write(`pages/main.${module}`, script.format === 'esm'
+      ? `import value from "./dependency.${module}"; export default value;`
+      : `module.exports = require("./dependency.${module}");`)
+    await write(`pages/dependency.${module}`, script.format === 'esm' ? 'export default {};' : 'module.exports = {};')
+    const evidence = await inspectClassicPublication(root, platform)
+    expect(evidence.checkedFileCount).toBe(evidence.files.length)
+    for (const dependency of [
+      'sub/detail.js',
+      'sub/detail.json',
+      `sub/detail.${template}`,
+      'components/card.js',
+      'components/card.json',
+      `components/card.${template}`,
+      `templates/base.${template}`,
+      `theme.${style}`,
+      `pages/main.${module}`,
+      `pages/dependency.${module}`,
+    ]) {
+      const source = await readFile(path.join(root, dependency))
+      await rm(path.join(root, dependency))
+      await expect(inspectClassicPublication(root, platform)).rejects.toThrow(/missing/)
+      await write(dependency, source.toString('utf8'))
+    }
   })
 
   it('accepts quoted and unquoted local or external stylesheet urls but still checks local files', async () => {

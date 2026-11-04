@@ -9,6 +9,14 @@ import { describe, expect, it, vi } from 'vitest'
 import { normalizeFsResolvedId } from '../utils/resolvedId'
 import { autoImport } from './autoImport'
 
+async function createSourceFixture(prefix: string) {
+  const directory = await realpath(await mkdtemp(path.join(tmpdir(), prefix)))
+  const root = path.join(directory, 'src')
+  await mkdir(root)
+  // 通配 glob 的侧车还会监听源码父目录；该目录必须属于本 fixture。
+  return { root, cleanup: () => rm(directory, { recursive: true, force: true }) }
+}
+
 function hook<T extends (...args: any[]) => any>(value: T | { handler: T } | undefined): T {
   if (!value) {
     throw new Error('Expected plugin hook')
@@ -50,7 +58,7 @@ describe('auto import topology ownership', () => {
     ['component directory', { globs: ['components/**/*.vue'] }],
     ['source wildcard', { globs: ['**/*.vue'] }],
   ] as const)('does not send unrelated files to DevEngine with %s discovery', async (_name, options) => {
-    const root = await realpath(await mkdtemp(path.join(tmpdir(), 'auto-import-ownership-')))
+    const { root, cleanup } = await createSourceFixture('auto-import-ownership-')
     const source = path.join(root, 'entry.js')
     const userDependency = path.join(root, '.user.rules')
     await writeFile(source, 'export const value = 1; import.meta.hot.accept();')
@@ -108,12 +116,12 @@ describe('auto import topology ownership', () => {
       await engine.close()
       await running
       await auto.close()
-      await rm(root, { recursive: true, force: true })
+      await cleanup()
     }
   })
 
   it('publishes one native HMR patch per owned component edit without touching its importer', async () => {
-    const root = await realpath(await mkdtemp(path.join(tmpdir(), 'auto-import-component-update-')))
+    const { root, cleanup } = await createSourceFixture('auto-import-component-update-')
     const source = path.join(root, 'entry.js')
     const component = path.join(root, 'components/Card.vue')
     const code = (value: number) => `export const value = ${value}; import.meta.hot.accept();`
@@ -186,12 +194,12 @@ describe('auto import topology ownership', () => {
       await engine.close()
       await running
       await auto.close()
-      await rm(root, { recursive: true, force: true })
+      await cleanup()
     }
   })
 
   it.each(['components/**/*.vue', '/components/**/*.vue', '**/*.vue'])('discovers and removes new nested components through the sidecar for %s', async (glob) => {
-    const root = await realpath(await mkdtemp(path.join(tmpdir(), 'auto-import-topology-')))
+    const { root, cleanup } = await createSourceFixture('auto-import-topology-')
     const auto = fixture(root, { globs: [glob] })
     const addWatchFile = vi.fn()
     try {
@@ -210,7 +218,7 @@ describe('auto import topology ownership', () => {
     }
     finally {
       await auto.close()
-      await rm(root, { recursive: true, force: true })
+      await cleanup()
     }
   })
 })

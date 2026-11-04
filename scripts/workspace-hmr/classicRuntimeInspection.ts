@@ -33,6 +33,88 @@ function isRegistrationMethod(method: string | undefined) {
   return method === 'installNative' || method === 'takeNativeDefinitions'
 }
 
+function nullishValue(node: Node, scope: Scope) {
+  if (node.type === 'NullLiteral') {
+    return 1
+  }
+  if ((node.type === 'UnaryExpression' && node.operator === 'void' && node.argument.type === 'NumericLiteral')
+    || (node.type === 'Identifier' && node.name === 'undefined' && !scope.hasBinding('undefined'))) {
+    return 2
+  }
+}
+
+function sameReference(node: Node, scope: Scope, subject: NodePath) {
+  return node.type === 'Identifier' && subject.isIdentifier() && node.name === subject.node.name
+    && scope.getBinding(node.name) === subject.scope.getBinding(subject.node.name)
+}
+
+/** 只合并短路路径上必然执行的空值检查；重新赋值会作废此前值的证明。 */
+function guardSteps(node: Node, scope: Scope, subject: NodePath, truthy: boolean): { excluded: number, reset: boolean }[] | undefined {
+  if (node.type === 'LogicalExpression' && node.operator === (truthy ? '&&' : '||')) {
+    const left = guardSteps(node.left, scope, subject, truthy)
+    const right = guardSteps(node.right, scope, subject, truthy)
+    return left && right ? [...left, ...right] : undefined
+  }
+  if (node.type !== 'BinaryExpression' || !['===', '!==', '==', '!='].includes(node.operator)
+    || node.operator.startsWith('!') !== truthy) {
+    return undefined
+  }
+  const left = nullishValue(node.left, scope)
+  const right = nullishValue(node.right, scope)
+  const value = right ? node.left : left ? node.right : undefined
+  if (!value) {
+    return undefined
+  }
+  const reset = value.type === 'AssignmentExpression' && value.operator === '='
+  if (!sameReference(reset ? value.left : value, scope, subject)) {
+    return undefined
+  }
+  return [{ excluded: node.operator.length === 2 ? 3 : (right ?? left)!, reset }]
+}
+
+function excludesNullish(node: Node, scope: Scope, subject: NodePath, truthy: boolean) {
+  const steps = guardSteps(node, scope, subject, truthy)
+  let excluded = 0
+  for (const step of steps ?? []) {
+    excluded = (step.reset ? 0 : excluded) | step.excluded
+  }
+  return excluded === 3
+}
+
+/** 识别编译器降低的可选链，不把重复调用、单边检查或带副作用的前缀当作保护。 */
+function hasLoweredOptionalGuard(reference: NodePath) {
+  const subject = reference.get('object') as NodePath
+  if (!subject.isIdentifier()) {
+    return false
+  }
+  let current = reference
+  while (current.parentPath) {
+    const parent = current.parentPath
+    if (parent.isLogicalExpression()) {
+      if (parent.node.right === current.node) {
+        return excludesNullish(parent.node.left, parent.scope, subject, parent.node.operator === '&&')
+      }
+    }
+    else if (parent.isConditionalExpression()) {
+      if (parent.node.test !== current.node) {
+        return excludesNullish(parent.node.test, parent.scope, subject, parent.node.consequent === current.node)
+      }
+    }
+    else if ((parent.isAssignmentExpression({ operator: '=' }) && parent.node.right === current.node && parent.node.left.type === 'Identifier')
+      || ((parent.isMemberExpression() || parent.isOptionalMemberExpression()) && parent.node.object === current.node)
+      || ((parent.isCallExpression() || parent.isOptionalCallExpression()) && parent.node.callee === current.node)
+      || (parent.isUnaryExpression() && parent.node.operator !== 'delete')
+      || (parent.isBinaryExpression() && nullishValue(parent.node.left === current.node ? parent.node.right : parent.node.left, parent.scope))) {
+      // 这些外壳在读取当前值之前不会求值其他有副作用的表达式。
+    }
+    else {
+      return false
+    }
+    current = parent
+  }
+  return false
+}
+
 function registrationTargetReferences(target: Node, scope: Scope): NodePath[] {
   if (target.type === 'Identifier') {
     return scope.getBinding(target.name)?.referencePaths ?? []
@@ -76,6 +158,11 @@ function assertNoRegistrationCall(reference: NodePath) {
     if (member?.isAssignmentExpression() && member.node.operator === '=' && member.node.right === current.node) {
       pending.push(...registrationTargetReferences(member.node.left, member.scope), member)
     }
+    if ((member?.isConditionalExpression() && member.node.test !== current.node)
+      || member?.isLogicalExpression()
+      || (member?.isSequenceExpression() && member.node.expressions.at(-1) === current.node)) {
+      pending.push(member)
+    }
   }
 }
 
@@ -90,9 +177,10 @@ export function inspectClassicEmittedScript(ast: ReturnType<typeof parse>) {
         return
       }
       const parent = nodePath.parentPath
-      if (!nodePath.isOptionalMemberExpression() || !nodePath.node.optional
-        || (parent.isAssignmentExpression() && parent.node.left === nodePath.node)
-        || parent.isUnaryExpression({ operator: 'delete' })) {
+      if ((parent.isAssignmentExpression() && parent.node.left === nodePath.node)
+        || parent.isUpdateExpression()
+        || parent.isUnaryExpression({ operator: 'delete' })
+        || (!(nodePath.isOptionalMemberExpression() && nodePath.node.optional) && !hasLoweredOptionalGuard(nodePath))) {
         fail()
       }
       assertNoRegistrationCall(nodePath)

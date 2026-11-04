@@ -1,6 +1,7 @@
-import { access } from 'node:fs/promises'
+import { randomUUID } from 'node:crypto'
+import { access, open, rm } from 'node:fs/promises'
 import path from 'node:path'
-import { createSiblingPluginConfig } from '../../packages/weapp-vite/scripts/consumerHmr/configWrapper.mjs'
+import { pathToFileURL } from 'node:url'
 import { DEFAULT_VITE_CONFIG_FILES } from '../../packages/weapp-vite/src/utils/loadViteConfigFile'
 import { resolveWeappConfigFile } from '../../packages/weapp-vite/src/utils/weappConfig'
 
@@ -8,7 +9,6 @@ import { resolveWeappConfigFile } from '../../packages/weapp-vite/src/utils/weap
 export async function createWorkspaceNativePublicationConfig(project: {
   root: string
   sourceRoot: string
-  distRoot: string
 }, profilePath: string) {
   let viteConfig: string | undefined
   for (const name of DEFAULT_VITE_CONFIG_FILES) {
@@ -26,16 +26,56 @@ export async function createWorkspaceNativePublicationConfig(project: {
   }
   const weappConfig = await resolveWeappConfigFile({ root: project.root })
   const configFiles = [...new Set([viteConfig, weappConfig].filter((file): file is string => Boolean(file)))]
-  return createSiblingPluginConfig({
-    directory: path.dirname(configFiles.at(-1) ?? path.join(project.root, 'vite.config.mjs')),
-    configFiles,
-    pluginUrl: new URL('../../e2e/utils/nativePublication/plugin.ts', import.meta.url).href,
-    pluginExport: 'nativePublicationPlugin',
-    pluginOptions: {
-      sourceRoot: path.relative(project.root, project.sourceRoot) || '.',
-      outputRoot: path.relative(project.root, project.distRoot),
-      profilePath,
-    },
-    mergeUrl: import.meta.resolve('@weapp-core/shared'),
-  })
+  const id = randomUUID()
+  const configFile = path.join(path.dirname(configFiles.at(-1) ?? path.join(project.root, 'vite.config.mjs')), `.weapp-vite-e2e-${id}.config.mjs`)
+  const imports = configFiles.map((file, index) => `import original${index} from ${JSON.stringify(pathToFileURL(file).href)}`)
+  imports.push(`import { defu } from ${JSON.stringify(import.meta.resolve('@weapp-core/shared'))}`)
+  imports.push(`import { createWorkspaceHmrProjectConfig } from ${JSON.stringify(new URL('./projectConfig.ts', import.meta.url).href)}`)
+  const configExpression = configFiles.length > 1
+    ? `defu(${configFiles.map((_, index) => `config${index}`).reverse().join(', ')})`
+    : configFiles.length ? 'config0' : '{}'
+  const source = `${imports.join('\n')}
+async function resolveOriginal(original, env) {
+  const config = await (typeof original === 'function' ? original(env) : original)
+  if (!config || typeof config !== 'object' || Array.isArray(config)) {
+    throw new Error('Original Vite config must resolve to an object')
+  }
+  return config
+}
+export default async env => {
+${configFiles.map((_, index) => `  const config${index} = await resolveOriginal(original${index}, env)`).join('\n')}
+  return createWorkspaceHmrProjectConfig(${configExpression}, ${JSON.stringify({
+    id,
+    sourceRoot: path.relative(project.root, project.sourceRoot) || '.',
+    profilePath,
+  })})
+}
+`
+  let disposing: Promise<void> | undefined
+  const dispose = () => {
+    disposing ??= rm(configFile, { force: true }).catch((error) => {
+      disposing = undefined
+      throw error
+    })
+    return disposing
+  }
+  const handle = await open(configFile, 'wx')
+  try {
+    try {
+      await handle.writeFile(source)
+    }
+    finally {
+      await handle.close()
+    }
+    return { id, configFile, dispose }
+  }
+  catch (error) {
+    try {
+      await dispose()
+    }
+    catch (disposalError) {
+      throw new AggregateError([error, disposalError], 'Workspace HMR config preparation and disposal failed', { cause: error })
+    }
+    throw error
+  }
 }

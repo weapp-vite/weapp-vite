@@ -1,4 +1,5 @@
 /* eslint-disable ts/no-use-before-define */
+import type { MpPlatform } from '@weapp-core/shared'
 import type { WorkspaceHmrAuditBudget } from './workspace-hmr/auditDeadline'
 import type { WorkspaceHmrBaseline, WorkspaceHmrThresholds } from './workspace-hmr/baseline'
 import type { ClassicFallbackDeliveryEvidence } from './workspace-hmr/classicFallback'
@@ -16,6 +17,7 @@ import process from 'node:process'
 import { setTimeout as sleep } from 'node:timers/promises'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { promisify } from 'node:util'
+import { getMiniProgramPlatformDescriptor } from '@weapp-core/shared'
 import { sanitizeAcceptanceText, sanitizeAcceptanceValue } from '../e2e/scripts/domAcceptanceReport/helpers'
 import { startDevProcess } from '../e2e/utils/dev-process'
 import { cleanupResidualDevProcesses } from '../e2e/utils/dev-process-cleanup'
@@ -34,12 +36,13 @@ import {
 } from './workspace-hmr/baseline'
 import { WorkspaceHmrClassicFallback } from './workspace-hmr/classicFallback'
 import { createClassicPublicationInspector, inspectRetiredClassicTransport } from './workspace-hmr/classicPublication'
-import { captureWorkspaceClassicPublication } from './workspace-hmr/classicPublicationObservation'
+import { captureWorkspaceClassicPublication, inspectWorkspaceScenarioPublication, isWorkspaceClassicPublication } from './workspace-hmr/classicPublicationObservation'
 import { writeWorkspaceHmrTimelineEvidence } from './workspace-hmr/classicPublicationTimeline'
 import { collectWorkspaceHmrCleanupErrors, isWorkspaceHmrScenarioRetryable, readWorkspaceHmrScenarioRetries } from './workspace-hmr/cleanup'
 import { assertWorkspaceHmrDelivery, expectedWorkspaceHmrDelivery, orderWorkspaceHmrScenarios, planWorkspaceHmrScenarios, workspaceHmrFallbackReason } from './workspace-hmr/delivery'
 import { createWorkspaceNativePublicationConfig } from './workspace-hmr/nativePublicationConfig'
 import { listFiles, snapshotDist, waitForInitialDistSnapshot, waitForStableDistSnapshot } from './workspace-hmr/output'
+import { isWorkspaceHmrStylesheetOutput, readWorkspaceHmrProjectTarget, selectWorkspaceHmrSourceFiles, WORKSPACE_HMR_TARGET_PREFIX, workspaceHmrSidecarExtensions } from './workspace-hmr/projectTarget'
 import { isDynamicReactTemplateOutput, resolveReactTemplateScenarioCapability, waitForReactTemplateScriptOutput } from './workspace-hmr/reactTemplate'
 import { renderWorkspaceHmrExecution, summarizeWorkspaceHmrExecution } from './workspace-hmr/report'
 import {
@@ -68,18 +71,20 @@ interface PackageJson {
   }
 }
 
-interface ProjectCase {
+interface ProjectCandidate {
   id: string
   kind: 'apps' | 'templates' | 'e2e-apps'
   root: string
-  distRoot: string
   sourceRoot: string
-  platform: RuntimePlatform
   hmrRuntime: WorkspaceHmrRuntime
   thresholds?: WorkspaceHmrThresholds
 }
 
-type RuntimePlatform = 'weapp' | 'alipay'
+interface ProjectCase extends ProjectCandidate {
+  distRoot: string
+  platform: MpPlatform
+}
+
 type WorkspaceHmrRunMode = 'full' | 'smoke' | 'changed-project' | 'nightly-full'
 type WorkspaceHmrProjectKind = 'apps' | 'templates' | 'e2e-apps'
 type WorkspaceHmrScope = 'apps,e2e-apps' | 'apps' | 'e2e-apps' | 'templates' | 'workspace'
@@ -170,8 +175,8 @@ interface ScenarioResult extends WorkspaceHmrDeliveryContract, WorkspaceHmrStage
 interface ProjectResult {
   id: string
   baselineId?: string
-  kind: ProjectCase['kind']
-  platform: RuntimePlatform
+  kind: ProjectCandidate['kind']
+  platform?: MpPlatform
   source: string
   startupMs?: number
   thresholds?: WorkspaceHmrThresholds
@@ -209,10 +214,6 @@ const maxScenariosPerProject = readOptionalPositiveIntegerEnv('WORKSPACE_HMR_MAX
 const writeMode = readWorkspaceHmrWriteMode(process.env.WORKSPACE_HMR_WRITE_MODE)
 const pollingMode = readWorkspaceHmrPollingMode(process.env.WORKSPACE_HMR_USE_POLLING)
 const ROOTS: readonly WorkspaceHmrProjectKind[] = ['apps', 'templates', 'e2e-apps']
-const PLATFORM_EXT: Record<RuntimePlatform, { template: string, style: string }> = {
-  weapp: { template: 'wxml', style: 'wxss' },
-  alipay: { template: 'axml', style: 'acss' },
-}
 const SOURCE_DIRS = ['src', 'miniprogram', '.'] as const
 const WORKSPACE_HMR_IMPACT_PATH_PREFIXES = [
   '@weapp-core/',
@@ -249,7 +250,8 @@ const WORKSPACE_HMR_BASELINE_PROJECT_ALIASES = new Map<string, string>([
 
 async function main() {
   await mkdir(reportRoot, { recursive: true })
-  const selection = await selectProjectsForRunMode(await discoverProjects())
+  const devEnv = Object.freeze({ ...createDevProcessEnv({ usePolling: pollingMode === 'polling' }), WEAPP_VITE_HMR_PROFILE_JSON: '1' })
+  const selection = await selectProjectsForRunMode(await discoverWorkspaceHmrProjects())
   const { projects, status: selectionStatus } = resolveWorkspaceHmrSelection(selection.projects, {
     filter: projectFilter,
     hasRelevantChanges: selection.hasRelevantChanges,
@@ -263,7 +265,7 @@ async function main() {
   const results: ProjectResult[] = []
   for (const project of projects) {
     process.stdout.write(`[workspace-hmr] ${project.id}\n`)
-    results.push(await auditProject(project))
+    results.push(await auditProject(project, devEnv))
   }
 
   const generatedAt = new Date().toISOString()
@@ -352,7 +354,7 @@ async function prepareReferencedWorkspaceTsconfigs() {
   await assertBenchmarkTypeScriptPrepared(repoRoot, projects)
 }
 
-async function selectProjectsForRunMode(projects: ProjectCase[]) {
+async function selectProjectsForRunMode(projects: ProjectCandidate[]) {
   if (runMode === 'smoke') {
     return { projects: selectSmokeProjects(projects, workspaceHmrScope), hasRelevantChanges: true }
   }
@@ -416,7 +418,7 @@ function isWorkspaceProjectWebEntry(file: string) {
   )
 }
 
-function selectSmokeProjects(projects: ProjectCase[], scope: WorkspaceHmrScope) {
+function selectSmokeProjects(projects: ProjectCandidate[], scope: WorkspaceHmrScope) {
   if (scope === 'templates') {
     return projects.filter(project => project.kind === 'templates')
   }
@@ -484,10 +486,10 @@ function isWorkspaceHmrSkippedProject(projectId: string) {
   return SKIPPED_PROJECT_IDS.has(projectId) || isExcludedE2EProject(projectId)
 }
 
-async function discoverProjects(): Promise<ProjectCase[]> {
-  const projects: ProjectCase[] = []
-  for (const kind of rootsForScope(workspaceHmrScope)) {
-    const rootDir = path.join(repoRoot, kind)
+export async function discoverWorkspaceHmrProjects(roots: readonly WorkspaceHmrProjectKind[] = rootsForScope(workspaceHmrScope), workspaceRoot = repoRoot): Promise<ProjectCandidate[]> {
+  const projects: ProjectCandidate[] = []
+  for (const kind of roots) {
+    const rootDir = path.join(workspaceRoot, kind)
     for (const name of await readdir(rootDir)) {
       if (name.startsWith('__')) {
         continue
@@ -509,27 +511,17 @@ async function discoverProjects(): Promise<ProjectCase[]> {
       if (!sourceRoot) {
         continue
       }
-      const platform = await resolvePlatform(root)
       projects.push({
         id,
         kind,
         root,
-        distRoot: await resolveDistRoot(root, platform),
         sourceRoot,
-        platform,
         hmrRuntime: packageJson.workspaceHmr?.runtime === 'stateful' ? 'stateful' : 'standard',
         thresholds: packageJson.workspaceHmr?.thresholds,
       })
     }
   }
   return projects.sort((left, right) => left.id.localeCompare(right.id))
-}
-
-async function resolveDistRoot(root: string, platform: RuntimePlatform) {
-  if (await pathExists(path.join(root, `config/${platform}`))) {
-    return path.join(root, 'dist', platform, 'dist')
-  }
-  return path.join(root, 'dist')
 }
 
 async function resolveSourceRoot(root: string) {
@@ -545,102 +537,75 @@ async function resolveSourceRoot(root: string) {
   }
 }
 
-async function resolvePlatform(root: string): Promise<RuntimePlatform> {
-  if (await pathExists(path.join(root, 'project.config.json'))) {
-    return 'weapp'
-  }
-  if (await pathExists(path.join(root, 'config/weapp/project.config.json'))) {
-    return 'weapp'
-  }
-  if (await pathExists(path.join(root, 'mini.project.json'))) {
-    return 'alipay'
-  }
-  if (await pathExists(path.join(root, 'config/alipay/mini.project.json'))) {
-    return 'alipay'
-  }
-  return 'weapp'
-}
-
-async function auditProject(project: ProjectCase): Promise<ProjectResult> {
-  const profilePath = path.join(project.root, '.weapp-vite/hmr-profile.jsonl')
-  const distRoot = project.distRoot
-  let scenarios = await discoverScenarios(project)
-  let selectedScenarios = maxScenariosPerProject
-    ? scenarios.slice(0, maxScenariosPerProject)
-    : scenarios
+async function auditProject(candidate: ProjectCandidate, devEnv: Readonly<NodeJS.ProcessEnv>): Promise<ProjectResult> {
+  const profilePath = path.join(candidate.root, '.weapp-vite/hmr-profile.jsonl')
   const result: ProjectResult = {
-    id: project.id,
-    baselineId: WORKSPACE_HMR_BASELINE_PROJECT_ALIASES.get(project.id),
-    kind: project.kind,
-    platform: project.platform,
-    source: formatProjectPath(project.root),
-    thresholds: project.thresholds,
-    scenarios: selectedScenarios.map(scenario => ({
+    id: candidate.id,
+    baselineId: WORKSPACE_HMR_BASELINE_PROJECT_ALIASES.get(candidate.id),
+    kind: candidate.kind,
+    source: formatProjectPath(candidate.root),
+    thresholds: candidate.thresholds,
+    scenarios: [],
+  }
+  const backups = new Map<string, string>()
+  let dev: ReturnType<typeof startDevProcess> | undefined
+  let publicationConfig: Awaited<ReturnType<typeof createWorkspaceNativePublicationConfig>> | undefined
+  let fallback: WorkspaceHmrClassicFallback | undefined
+  let target: ReturnType<typeof readWorkspaceHmrProjectTarget>
+
+  try {
+    await rm(path.join(candidate.root, 'dist'), { recursive: true, force: true }).catch(() => {})
+    await rm(profilePath, { force: true }).catch(() => {})
+    statefulHmrAuditClients.delete(candidate.root)
+    await cleanupResidualDevProcesses()
+
+    const config = await createWorkspaceNativePublicationConfig(candidate, profilePath)
+    publicationConfig = config
+    const startupStart = performance.now()
+    const startupBudget = { deadline: Date.now() + startupTimeoutMs }
+    const startupRemaining = () => {
+      assertHmrAuditBudget(startupBudget, 'Workspace HMR startup exceeded its total deadline.')
+      return startupBudget.deadline - Date.now()
+    }
+    dev = startDevProcess(process.execPath, [cliPath, 'dev', '--config', config.configFile], {
+      cwd: candidate.root,
+      env: devEnv,
+      stdout: 'pipe',
+      stderr: 'pipe',
+      all: true,
+      disposeShutdown: () => config.dispose(),
+    })
+    await dev.waitForOutput(/^\[workspace-hmr-target\]\{[^\n]+\}\r?\n/m, 'the managed workspace HMR project target', startupRemaining())
+    target = readWorkspaceHmrProjectTarget(dev.getOutput(), { id: config.id, pid: dev.pid })
+    if (!target) {
+      throw new Error(`Workspace HMR did not return ${WORKSPACE_HMR_TARGET_PREFIX} for its managed development process.`)
+    }
+    const project: ProjectCase = { ...candidate, ...target }
+    const distRoot = project.distRoot
+    result.platform = project.platform
+    fallback = new WorkspaceHmrClassicFallback(distRoot, () => dev!.getOutput())
+    classicFallbacks.set(project.root, fallback)
+    classicPublicationInspectors.set(project.root, createClassicPublicationInspector(distRoot, project.platform))
+
+    let scenarios = await discoverScenarios(project)
+    let selectedScenarios = maxScenariosPerProject ? scenarios.slice(0, maxScenariosPerProject) : scenarios
+    if (!selectedScenarios.length) {
+      throw new Error('No auditable HMR scenarios discovered.')
+    }
+    result.scenarios = selectedScenarios.map(scenario => ({
       id: scenario.id,
       label: scenario.label,
       source: formatProjectPath(scenario.sourcePath),
       output: formatProjectPath(scenario.outputPath),
-    })),
-  }
-
-  if (!selectedScenarios.length) {
-    result.error = 'No auditable HMR scenarios discovered.'
-    return result
-  }
-
-  const backups = new Map<string, string>()
-  for (const scenario of selectedScenarios) {
-    if (!backups.has(scenario.sourcePath)) {
-      backups.set(scenario.sourcePath, await readFile(scenario.sourcePath, 'utf8'))
+    }))
+    for (const scenario of selectedScenarios) {
+      if (!backups.has(scenario.sourcePath)) {
+        backups.set(scenario.sourcePath, await readFile(scenario.sourcePath, 'utf8'))
+      }
     }
-  }
-
-  await rm(path.join(project.root, 'dist'), { recursive: true, force: true }).catch(() => {})
-  await rm(profilePath, { force: true }).catch(() => {})
-  statefulHmrAuditClients.delete(project.root)
-  await cleanupResidualDevProcesses()
-
-  const publicationConfig = await createWorkspaceNativePublicationConfig(project, profilePath)
-  let dev: ReturnType<typeof startDevProcess>
-  try {
-    dev = startDevProcess(process.execPath, [
-      cliPath,
-      'dev',
-      '--platform',
-      project.platform,
-      '--config',
-      publicationConfig.configFile,
-    ], {
-      cwd: project.root,
-      env: {
-        ...createDevProcessEnv({
-          usePolling: pollingMode === 'polling',
-        }),
-        WEAPP_VITE_HMR_PROFILE_JSON: '1',
-      },
-      stdout: 'pipe',
-      stderr: 'pipe',
-      all: true,
-      disposeShutdown: () => publicationConfig.dispose(),
-    })
-  }
-  catch (error) {
-    try {
-      await publicationConfig.dispose()
-    }
-    catch (disposalError) {
-      throw new AggregateError([error, disposalError], 'Workspace HMR launch and config disposal failed', { cause: error })
-    }
-    throw error
-  }
-  const fallback = new WorkspaceHmrClassicFallback(distRoot, () => dev.getOutput())
-  classicFallbacks.set(project.root, fallback)
-  classicPublicationInspectors.set(project.root, createClassicPublicationInspector(distRoot, project.platform))
-
-  try {
-    const startupStart = performance.now()
-    await waitForInitialDistSnapshot(dev, distRoot, startupDistStableMs, startupTimeoutMs)
-    await sleep(settleMs)
+    await waitForInitialDistSnapshot(dev, distRoot, startupDistStableMs, startupRemaining())
+    await sleep(Math.min(settleMs, startupRemaining()))
+    startupRemaining()
     project.hmrRuntime = resolveWorkspaceHmrRuntime(await pathExists(path.join(
       distRoot,
       '__weapp_vite_hmr/control.js',
@@ -656,6 +621,11 @@ async function auditProject(project: ProjectCase): Promise<ProjectResult> {
       source: formatProjectPath(scenario.sourcePath),
       output: formatProjectPath(scenario.outputPath),
     }))
+    for (const scenario of selectedScenarios) {
+      if (!backups.has(scenario.sourcePath)) {
+        backups.set(scenario.sourcePath, await readFile(scenario.sourcePath, 'utf8'))
+      }
+    }
     const runnableScenarios = []
     for (const scenario of selectedScenarios) {
       if (!(await pathExists(scenario.outputPath))) {
@@ -695,16 +665,29 @@ async function auditProject(project: ProjectCase): Promise<ProjectResult> {
   }
   catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    const devOutput = dev.getOutput().trim()
+    const devOutput = dev?.getOutput().trim()
     result.error = sanitizeAcceptanceText(devOutput
       ? `${message}\n\nRecent dev output:\n${devOutput.slice(-12_000)}`
       : message)
   }
   finally {
-    result.actualMode = fallback.actualMode ?? result.initialMode
-    result.fallbackReason = fallback.fallbackReason
+    result.actualMode = fallback?.actualMode ?? result.initialMode
+    result.fallbackReason = fallback?.fallbackReason
     const cleanupErrors = await collectWorkspaceHmrCleanupErrors([
-      { label: 'Failed to stop dev process', run: () => dev.stop(5_000) },
+      { label: 'Failed to stop dev process', run: async () => dev?.stop(5_000) },
+      // startDevProcess 同步抛错时仍释放已创建的 wrapper；正常停止失败时保留其诊断文件。
+      ...(!dev && publicationConfig ? [{ label: 'Failed to dispose project config', run: () => publicationConfig!.dispose() }] : []),
+      {
+        label: 'Failed to verify the final managed project target',
+        run: async () => {
+          if (target && dev && publicationConfig) {
+            const finalTarget = readWorkspaceHmrProjectTarget(dev.getOutput(), { id: publicationConfig.id, pid: dev.pid })
+            if (finalTarget?.platform !== target.platform || finalTarget.distRoot !== target.distRoot) {
+              throw new Error('Workspace HMR project target changed during acceptance.')
+            }
+          }
+        },
+      },
       ...[...backups].map(([filePath, source]) => ({
         label: `Failed to restore backup ${formatProjectPath(filePath)}`,
         run: () => writeFile(filePath, source, 'utf8'),
@@ -713,17 +696,17 @@ async function auditProject(project: ProjectCase): Promise<ProjectResult> {
       {
         label: 'Failed to freeze existing workspace HMR timeline evidence',
         run: async () => {
-          const directory = path.join('evidence', project.id)
-          result.evidence = { directory: normalizePath(directory), ...await writeWorkspaceHmrTimelineEvidence(path.join(reportRoot, directory), dev.getOutput(), profilePath) }
+          const directory = path.join('evidence', candidate.id)
+          result.evidence = { directory: normalizePath(directory), ...await writeWorkspaceHmrTimelineEvidence(path.join(reportRoot, directory), dev?.getOutput() ?? '', profilePath) }
         },
       },
     ])
     if (cleanupErrors.length) {
       result.error = [result.error, ...cleanupErrors.map(error => sanitizeAcceptanceText(error))].filter(Boolean).join('\n')
     }
-    statefulHmrAuditClients.delete(project.root)
-    classicFallbacks.delete(project.root)
-    classicPublicationInspectors.delete(project.root)
+    statefulHmrAuditClients.delete(candidate.root)
+    classicFallbacks.delete(candidate.root)
+    classicPublicationInspectors.delete(candidate.root)
   }
 
   return result
@@ -750,10 +733,15 @@ async function warmupProjectHmr(
   let delivery: WorkspaceHmrDeliveryEvidence | undefined
   let restore: WorkspaceHmrDeliveryEvidence | undefined
   try {
+    const budget = createScenarioBudget()
+    const publication = captureScenarioClassicPublication(project, scenario, dev, profilePath)
     await writeScenarioSource(scenario.sourcePath, updated)
-    delivery = await waitForScenarioMutation(project, scenario, expectedMarker, true)
+    delivery = await waitForScenarioMutation(project, scenario, expectedMarker, true, undefined, undefined, budget)
     assertWorkspaceHmrDelivery({ expectedDelivery, deliveryEvidence: delivery, actualMode: classicFallbacks.get(project.root)?.actualMode ?? (project.hmrRuntime === 'stateful' ? 'stateful-experimental' : 'classic') })
-    await acknowledgeScenarioArtifact(project, scenario)
+    await acknowledgeScenarioArtifact(project, scenario, budget)
+    if (isWorkspaceClassicPublication(project.hmrRuntime, classicFallbacks.get(project.root)?.actualMode)) {
+      await inspectScenarioClassicPublication(project, scenario, budget, publication, delivery?.output)
+    }
     if (project.hmrRuntime === 'standard') {
       await waitForHmrProfileSample(project, profilePath, profileLineCount, scenario.sourcePath, 5_000).catch(() => {})
     }
@@ -847,8 +835,8 @@ async function auditScenario(
     }
     result.actualMode = classicFallbacks.get(project.root)?.actualMode ?? (project.hmrRuntime === 'stateful' ? 'stateful-experimental' : 'classic')
     await update('acknowledge', () => acknowledgeScenarioArtifact(project, scenario, budget))
-    const classicPublication = classicFallbacks.get(project.root)?.actualMode === 'classic'
-      ? await update('publication', () => publication.inspect(budget, classicPublicationInspectors.get(project.root)!))
+    const classicPublication = isWorkspaceClassicPublication(project.hmrRuntime, classicFallbacks.get(project.root)?.actualMode)
+      ? await update('publication', () => inspectScenarioClassicPublication(project, scenario, budget, publication, delivery?.output, update))
       : undefined
     if (!classicPublication) {
       await update('settle', () => sleep(Math.min(settleMs, remainingScenarioBudget(budget))))
@@ -883,11 +871,12 @@ async function auditScenario(
       const repeatedPublication = captureScenarioClassicPublication(project, scenario, dev, profilePath, repeat)
       remainingScenarioBudget(budget)
       await repeat('write-source', () => writeScenarioSource(scenario.sourcePath, updated))
-      result.repeatDelivery = await repeat('delivery', () => waitForScenarioMutation(project, scenario, expectedMarker, true, undefined, undefined, budget))
-      if (result.repeatDelivery?.delivery !== 'classic') {
+      const repeatedDelivery = await repeat('delivery', () => waitForScenarioMutation(project, scenario, expectedMarker, true, undefined, undefined, budget))
+      result.repeatDelivery = repeatedDelivery
+      if (repeatedDelivery?.delivery !== 'classic') {
         throw new Error('Classic transition repeated save did not remain classic.')
       }
-      const repeatedInspection = await repeat('publication', () => repeatedPublication.inspect(budget, classicPublicationInspectors.get(project.root)!))
+      const repeatedInspection = await repeat('publication', () => inspectScenarioClassicPublication(project, scenario, budget, repeatedPublication, repeatedDelivery.output, repeat))
       const repeatedAfter = await repeat('snapshot-output', () => repeatedInspection.snapshot)
       const steady = [...diffDistSnapshots(restoredBefore, restoredAfter), ...diffDistSnapshots(restoredAfter, repeatedAfter)]
       result.steadyClassicImpact = [...new Map(steady.map(file => [file.path, file])).values()]
@@ -910,7 +899,7 @@ async function auditScenario(
       },
       recentDevOutput: sanitizeAcceptanceText(dev.getOutput().slice(-12_000)),
     }
-    if (isStylesheetOutput(scenario.outputPath)) {
+    if (isWorkspaceHmrStylesheetOutput(scenario.outputPath)) {
       try {
         result.diagnostics.reachableStylesheet = { containsMarker: (await readEmittedStylesheet(scenario.outputPath)).includes(expectedMarker) }
       }
@@ -952,9 +941,9 @@ async function discoverScenarios(project: ProjectCase, requireOutputs = false): 
     .sort((left, right) => scoreSourceFile(project.sourceRoot, left) - scoreSourceFile(project.sourceRoot, right)
       || left.localeCompare(right))
   const scenarios: ScenarioCase[] = []
-  const nativeTemplate = findPreferredSource(files, filePath => isNativeTemplate(filePath) && isEntryLikeSource(project.sourceRoot, filePath))
-  const nativeStyle = findPreferredSource(files, filePath => isStyle(filePath) && isEntryLikeSource(project.sourceRoot, filePath) && isSidecarEntryFile(filePath))
-  const nativeScript = findPreferredSource(files, filePath => isScript(filePath) && isAuditableScriptEntry(project.sourceRoot, filePath))
+  const nativeTemplate = findPreferredSource(selectWorkspaceHmrSourceFiles(files, project.platform, 'template'), filePath => isEntryLikeSource(project.sourceRoot, filePath))
+  const nativeStyle = findPreferredSource(selectWorkspaceHmrSourceFiles(files, project.platform, 'style'), filePath => isEntryLikeSource(project.sourceRoot, filePath) && isSidecarEntryFile(filePath, project.platform))
+  const nativeScript = findPreferredSource(files, filePath => isScript(filePath) && isAuditableScriptEntry(project.sourceRoot, filePath, project.platform))
   const vueFile = findPreferredVueSource(files, project.sourceRoot)
   const reactTemplate = findPreferredSource(files, filePath => isReactTemplateSource(filePath) && isPageLikeSource(project.sourceRoot, filePath))
 
@@ -1000,7 +989,7 @@ function createNativeTemplateScenario(project: ProjectCase, sourcePath: string):
     id: 'native-template',
     label: 'native template',
     sourcePath,
-    outputPath: resolveOutputPath(project, sourcePath, PLATFORM_EXT[project.platform].template),
+    outputPath: resolveOutputPath(project, sourcePath, getMiniProgramPlatformDescriptor(project.platform).outputExtensions.wxml),
     mutate: (source, marker) => {
       if (source.includes('</body>')) {
         return source.replace('</body>', `<view hidden>${marker}</view>\n</body>`)
@@ -1027,16 +1016,17 @@ function createNativeStyleScenario(project: ProjectCase, sourcePath: string): Sc
     label: 'native style',
     classicFallbackReason: 'stylesheet-output',
     sourcePath,
-    outputPath: resolveOutputPath(project, sourcePath, PLATFORM_EXT[project.platform].style),
+    outputPath: resolveOutputPath(project, sourcePath, getMiniProgramPlatformDescriptor(project.platform).outputExtensions.wxss),
     expectedMarker: marker => toCssIdent(marker),
     mutate: (source, marker) => `${source.trimEnd()}\n.hmr-audit-${toCssIdent(marker)} { color: #0f766e; }\n`,
   }
 }
 
 function createVueScenarios(project: ProjectCase, sourcePath: string, source: string): ScenarioCase[] {
-  const templateOutput = resolveOutputPath(project, sourcePath, PLATFORM_EXT[project.platform].template)
+  const extensions = getMiniProgramPlatformDescriptor(project.platform).outputExtensions
+  const templateOutput = resolveOutputPath(project, sourcePath, extensions.wxml)
   const scriptOutput = resolveHmrScriptOutputPath(project, sourcePath)
-  const styleOutput = resolveOutputPath(project, sourcePath, PLATFORM_EXT[project.platform].style)
+  const styleOutput = resolveOutputPath(project, sourcePath, extensions.wxss)
   const scenarios: ScenarioCase[] = [
     {
       id: 'vue-template',
@@ -1120,6 +1110,26 @@ function captureScenarioClassicPublication(project: ProjectCase, scenario: Scena
     profilePath,
     mode: classicFallbacks.get(project.root)?.actualMode === 'classic' || project.hmrRuntime === 'standard' ? 'classic' : 'stateful-experimental',
     stableMs: startupDistStableMs,
+    observe,
+  })
+}
+
+async function inspectScenarioClassicPublication(
+  project: ProjectCase,
+  scenario: ScenarioCase,
+  budget: WorkspaceHmrAuditBudget,
+  captured?: ReturnType<typeof captureScenarioClassicPublication>,
+  deliveredOutput?: string,
+  observe?: WorkspaceHmrStageObserver,
+) {
+  return inspectWorkspaceScenarioPublication({
+    project,
+    outputPath: scenario.outputPath,
+    deliveredOutput,
+    captured,
+    inspect: classicPublicationInspectors.get(project.root)!,
+    stableMs: startupDistStableMs,
+    budget,
     observe,
   })
 }
@@ -1242,16 +1252,8 @@ async function restoreScenarioMutation(
   const delivery = await observe('delivery', () => waitForScenarioMutation(project, scenario, marker, false, undefined, undefined, budget))
   await observe('acknowledge', () => acknowledgeScenarioArtifact(project, scenario, budget))
   let inspection: Awaited<ReturnType<ReturnType<typeof createClassicPublicationInspector>>> | undefined
-  if (classicFallbacks.get(project.root)?.actualMode === 'classic') {
-    if (publication) {
-      const capturedPublication = publication
-      inspection = await observe('publication', () => capturedPublication.inspect(budget, classicPublicationInspectors.get(project.root)!))
-    }
-    else {
-      // 源码已是原字节时没有新保存，也不能要求或伪造本轮来源 END。
-      inspection = await observe('publication.inspect-output', classicPublicationInspectors.get(project.root)!)
-      remainingScenarioBudget(budget)
-    }
+  if (isWorkspaceClassicPublication(project.hmrRuntime, classicFallbacks.get(project.root)?.actualMode)) {
+    inspection = await observe('publication', () => inspectScenarioClassicPublication(project, scenario, budget, publication, delivery?.output, observation))
   }
   return { delivery, publication: inspection }
 }
@@ -1293,7 +1295,7 @@ async function waitForClassicScenarioMutation(project: ProjectCase, scenario: Sc
     : scenario.outputPath)
   const readOutput = path.extname(output) === '.js'
     ? createEmittedScriptReader(output, project.distRoot)
-    : isStylesheetOutput(output)
+    : isWorkspaceHmrStylesheetOutput(output)
       ? () => readEmittedStylesheet(output)
       : () => readFile(output, 'utf8')
   return await fallback.waitForDelivery({
@@ -1350,30 +1352,30 @@ function isPageLikeRelative(relative: string) {
     || relative.startsWith('package')
 }
 
-function isSidecarEntryFile(filePath: string) {
+function isSidecarEntryFile(filePath: string, platform: MpPlatform) {
   const ext = path.extname(filePath)
   const basePath = filePath.slice(0, -ext.length)
-  return ['.ts', '.js', '.vue', '.json', '.wxml', '.html'].some((candidateExt) => {
-    return filePath !== `${basePath}${candidateExt}` && pathExistsSyncLike(`${basePath}${candidateExt}`)
+  return workspaceHmrSidecarExtensions(platform).some((candidateExt) => {
+    return filePath !== `${basePath}.${candidateExt}` && pathExistsSyncLike(`${basePath}.${candidateExt}`)
   })
 }
 
-function isScriptEntryFile(filePath: string) {
+function isScriptEntryFile(filePath: string, platform: MpPlatform) {
   const basename = path.basename(filePath, path.extname(filePath))
-  return basename === 'index' || isSidecarEntryFile(filePath)
+  return basename === 'index' || isSidecarEntryFile(filePath, platform)
 }
 
-export function isAuditableScriptEntry(sourceRoot: string, filePath: string) {
+export function isAuditableScriptEntry(sourceRoot: string, filePath: string, platform: MpPlatform = 'weapp') {
   if (!isEntryLikeSource(sourceRoot, filePath)) {
     return false
   }
-  if (!isScriptEntryFile(filePath)) {
+  if (!isScriptEntryFile(filePath, platform)) {
     return false
   }
 
   const relative = normalizePath(path.relative(sourceRoot, filePath))
   if (relative.startsWith('components/')) {
-    return isSidecarEntryFile(filePath)
+    return isSidecarEntryFile(filePath, platform)
   }
 
   return true
@@ -1381,14 +1383,6 @@ export function isAuditableScriptEntry(sourceRoot: string, filePath: string) {
 
 function pathExistsSyncLike(filePath: string) {
   return existsSync(filePath)
-}
-
-function isNativeTemplate(filePath: string) {
-  return filePath.endsWith('.wxml') || filePath.endsWith('.html')
-}
-
-function isStyle(filePath: string) {
-  return ['.wxss', '.scss', '.css', '.less'].some(ext => filePath.endsWith(ext))
 }
 
 function isScript(filePath: string) {
@@ -1573,7 +1567,7 @@ async function waitForFileContains(filePath: string, marker: string, timeoutMs: 
     await waitForFile(filePath, timeoutMs, signal)
     return
   }
-  if (isStylesheetOutput(filePath)) {
+  if (isWorkspaceHmrStylesheetOutput(filePath)) {
     await waitForEmittedStylesheet(filePath, marker, { timeoutMs })
     return
   }
@@ -1597,7 +1591,7 @@ async function waitForFileNotContains(filePath: string, marker: string, timeoutM
     await waitForFile(filePath, timeoutMs, signal)
     return
   }
-  if (isStylesheetOutput(filePath)) {
+  if (isWorkspaceHmrStylesheetOutput(filePath)) {
     await waitForEmittedStylesheet(filePath, marker, { absent: true, timeoutMs })
     return
   }
@@ -1614,10 +1608,6 @@ async function waitForFileNotContains(filePath: string, marker: string, timeoutM
     await sleep(250, undefined, { signal })
   }
   throw new Error(`Timed out waiting for ${formatReportPath(filePath)} to remove marker: ${marker}`)
-}
-
-function isStylesheetOutput(filename: string) {
-  return ['.wxss', '.acss'].includes(path.extname(filename))
 }
 
 async function pathExists(filePath: string) {
@@ -2075,7 +2065,7 @@ function renderMarkdown(results: ProjectResult[], summary: WorkspaceHmrReportSum
     ].filter(Boolean)
     lines.push([
       project.id,
-      project.platform,
+      project.platform ?? '-',
       project.startupMs == null ? '-' : project.startupMs.toFixed(1),
       String(project.scenarios.length),
       failures.length ? failures.join('<br>') : '-',

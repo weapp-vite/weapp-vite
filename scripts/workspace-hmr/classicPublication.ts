@@ -1,12 +1,13 @@
+import type { MpPlatform } from '@weapp-core/shared'
 import type { ClassicContentAnalysis } from './classicPublication/analysis'
 import type { StatefulHmrControl } from './scenarios'
 import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
-import { resolveMiniProgramComponent } from '../../mpcore/packages/simulator/src/runtime/componentResolution'
-import { resolveMiniProgramModule } from '../../mpcore/packages/simulator/src/runtime/moduleResolution'
+import { getMiniProgramPlatformDescriptor } from '@weapp-core/shared'
 import { createExtendedLibManager } from '../../packages/weapp-vite/src/plugins/hooks/useLoadEntry/extendedLib'
 import { analyzeClassicContent, classicContentKind } from './classicPublication/analysis'
+import { createClassicPublicationResolver } from './classicPublication/resolution'
 import { snapshotDist } from './output'
 
 function refusedCapturedEndpoint(error: unknown, endpoint: URL): boolean {
@@ -57,18 +58,12 @@ export async function inspectRetiredClassicTransport(control: StatefulHmrControl
   }
 }
 
-async function inspectPublication(root: string, platform: 'weapp' | 'alipay', cache: ReadonlyMap<string, ClassicContentAnalysis>, nextCache: Map<string, ClassicContentAnalysis>) {
+async function inspectPublication(root: string, platform: MpPlatform, cache: ReadonlyMap<string, ClassicContentAnalysis>, nextCache: Map<string, ClassicContentAnalysis>) {
   const before = await snapshotDist(root)
   const checked = new Set<string>()
-  const extensions = platform === 'weapp' ? { template: '.wxml', style: '.wxss', module: '.wxs' } : { template: '.axml', style: '.acss', module: '.sjs' }
-  const resolve = (owner: string, target: string) => {
-    const resolved = path.posix.normalize(target.startsWith('/') ? target.slice(1) : path.posix.join(path.posix.dirname(owner), target))
-    if (resolved === '..' || resolved.startsWith('../')) {
-      throw new Error(`Classic publication dependency escapes its output: ${owner}`)
-    }
-    return resolved
-  }
-  const hasFile = (absolute: string) => before.has(path.relative(root, absolute).split(path.sep).join('/'))
+  const output = getMiniProgramPlatformDescriptor(platform).outputExtensions
+  const extensions = { template: `.${output.wxml}`, style: `.${output.wxss}`, module: `.${output.wxs ?? 'wxs'}` }
+  const { resolveLocal: resolve, resolveModule, resolveComponent } = createClassicPublicationResolver(platform, file => before.has(file))
   const requireFile = (file: string) => {
     if (!before.has(file)) {
       throw new Error(`Classic publication is missing ${file}`)
@@ -88,12 +83,7 @@ async function inspectPublication(root: string, platform: 'weapp' | 'alipay', ca
   }
   const inspectScript = (file: string, imports: readonly string[]) => {
     for (const target of imports) {
-      if (target.startsWith('.') || target.startsWith('/')) {
-        resolve(file, target)
-      }
-      const importer = target.startsWith('/') ? path.join(root, 'app.js') : path.join(root, file)
-      const request = target.startsWith('/') ? `.${target}` : target
-      if (!resolveMiniProgramModule(importer, request, root, hasFile)) {
+      if (!resolveModule(file, target)) {
         throw new Error(`Classic publication is missing script dependency ${target} from ${file}`)
       }
     }
@@ -124,7 +114,7 @@ async function inspectPublication(root: string, platform: 'weapp' | 'alipay', ca
       throw new Error(`Classic publication has an unsupported component scheme: ${target}`)
     }
     if (!extendedLib.shouldIgnoreEntry(target)) {
-      const resolved = resolveMiniProgramComponent(file, target, root, hasFile)
+      const resolved = resolveComponent(file, target)
       requireEntry(resolve('app.json', `/${resolved}`))
     }
   }
@@ -191,7 +181,7 @@ async function inspectPublication(root: string, platform: 'weapp' | 'alipay', ca
 }
 
 /** 一个检查器只属于同一项目的开发会话；缓存不跨会话、项目或平台共享。 */
-export function createClassicPublicationInspector(root: string, platform: 'weapp' | 'alipay' = 'weapp') {
+export function createClassicPublicationInspector(root: string, platform: MpPlatform = 'weapp') {
   let cache = new Map<string, ClassicContentAnalysis>()
   return async () => {
     const nextCache = new Map<string, ClassicContentAnalysis>()
@@ -203,6 +193,6 @@ export function createClassicPublicationInspector(root: string, platform: 'weapp
 }
 
 /** 核对整个发布集合及本地依赖闭合，不以修改文件数量限制一次完整模式转换。 */
-export async function inspectClassicPublication(root: string, platform: 'weapp' | 'alipay' = 'weapp') {
+export async function inspectClassicPublication(root: string, platform: MpPlatform = 'weapp') {
   return createClassicPublicationInspector(root, platform)()
 }

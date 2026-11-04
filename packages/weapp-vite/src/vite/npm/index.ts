@@ -6,7 +6,6 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'pathe'
 import { createPackageBuilder } from '../../runtime/npmPlugin/builder'
-import { settlePackageBuilds } from '../../runtime/npmPlugin/builder/output'
 import { getPackNpmRelationList } from '../../runtime/npmPlugin/relations'
 import {
   resolveMainBuildDependencyPatterns,
@@ -58,7 +57,7 @@ export async function prepareNpmAssets(ctx: CompilerContext): Promise<PreparedNp
   const builder = createPackageBuilder(ctx, createOxcRuntimeSupport().vitePlugin as Plugin | undefined, capture.output)
   try {
     for (const target of targets) {
-      await settlePackageBuilds(target.dependencies.map(dep => builder.buildPackage({
+      await builder.buildPackages(target.dependencies.map(dep => ({
         dep,
         resolveFrom,
         outDir: target.outDir,

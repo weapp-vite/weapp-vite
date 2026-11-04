@@ -4,6 +4,7 @@ import { mkdir, mkdtemp, rm, stat, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { expect, it, vi } from 'vitest'
+import { settlePackageBuilds } from '../runtime/npmPlugin/builder/output'
 import { prepareNpmAssets } from './npm'
 
 const factory = vi.hoisted(() => vi.fn())
@@ -30,7 +31,7 @@ it('waits for every dependency after a failure before deleting the owned staging
   })
   factory.mockImplementation((_ctx, _plugin, capture) => {
     output = capture
-    return { buildPackage: builder }
+    return { buildPackages: (requests: { dep: string, outDir: string }[]) => settlePackageBuilds(requests.map(builder)) }
   })
   const root = await mkdtemp(path.join(os.tmpdir(), 'npm-cleanup-test-'))
   await writeFile(path.join(root, 'package.json'), JSON.stringify({ dependencies: { broken: '*', delayed: '*' } }))

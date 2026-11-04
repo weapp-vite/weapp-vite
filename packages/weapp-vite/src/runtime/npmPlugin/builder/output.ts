@@ -9,9 +9,16 @@ export interface PackageBuildOutput {
 
 /** 等待递归依赖全部退出，失败不能让兄弟任务越过中间目录的生命周期。 */
 export async function settlePackageBuilds(tasks: Promise<unknown>[]) {
-  const results = await Promise.allSettled(tasks)
-  const failure = results.find(result => result.status === 'rejected')
-  if (failure?.status === 'rejected') {
-    throw failure.reason
+  let failure: { error: unknown } | undefined
+  await Promise.all(tasks.map(async (task) => {
+    try {
+      await task
+    }
+    catch (error) {
+      failure ??= { error }
+    }
+  }))
+  if (failure) {
+    throw failure.error
   }
 }

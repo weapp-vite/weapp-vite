@@ -1,4 +1,5 @@
 import type { Mock } from 'vitest'
+import type { CleanupManagedWechatProjectsOptions } from 'weapp-ide-cli'
 import type { WechatDevtoolsHttpCommandOptions } from '../../packages/weapp-ide-cli/src/cli/http'
 import type { DevtoolsSimulatorBootDiagnostic } from '../utils/ide-devtools-logs'
 import fs from 'node:fs'
@@ -25,7 +26,7 @@ const { captureDevtoolsLogBaselineMock, cleanupManagedWechatProjectsMock, cleanu
   }
   return {
     captureDevtoolsLogBaselineMock: vi.fn(() => ({ 'devtools.log': 120 })),
-    cleanupManagedWechatProjectsMock: vi.fn(async () => {}),
+    cleanupManagedWechatProjectsMock: vi.fn<(options?: CleanupManagedWechatProjectsOptions) => Promise<void>>(async () => {}),
     cleanupResidualDevtoolsProcessesMock: vi.fn(async () => {}),
     closeManagedWechatProjectMock: vi.fn(async () => {}),
     connectMock: vi.fn(),
@@ -448,16 +449,16 @@ describe('automator launch resilience', { concurrent: false, timeout: 30_000 }, 
     }
   })
 
-  it('routes a managed direct launch through its owned bridge and closes only the received project', async () => {
+  it('routes a managed direct launch through its owned bridge and retires its attempt owner on close', async () => {
     const parentJournal = await createManagedWechatProjectJournal(path.join(sandboxRoot, 'managed-journals'))
-    vi.stubEnv('WEAPP_IDE_MANAGED_PROJECT_JOURNAL', parentJournal)
+    vi.stubEnv(MANAGED_PROJECT_JOURNAL_ENV, parentJournal)
     process.env.WEAPP_VITE_E2E_BRIDGE_CONNECT_SETTLE_DELAY = '1'
     createProjectFixture(sandboxRoot, { pages: ['pages/index/index'] })
     const miniProgram = createMockMiniProgram()
     const onSessionMetadata = vi.fn()
     let receipt: { id: string, journalPath: string } | undefined
     execaMock.mockImplementationOnce(async (_command, _args, options) => {
-      const journalPath = options.env.WEAPP_IDE_MANAGED_PROJECT_JOURNAL as string
+      const journalPath = options.env[MANAGED_PROJECT_JOURNAL_ENV] as string
       expect(path.dirname(journalPath)).toBe(path.join(parentJournal, 'children'))
       expect(fs.statSync(journalPath).isDirectory()).toBe(true)
       receipt = { id: 'owned-window', journalPath }
@@ -474,9 +475,18 @@ describe('automator launch resilience', { concurrent: false, timeout: 30_000 }, 
     expect(connectMock).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ wsEndpoint: 'ws://127.0.0.1:9420' }))
     expect(onSessionMetadata).toHaveBeenCalledExactlyOnceWith({ projectPath: sandboxRoot, wsEndpoint: 'ws://127.0.0.1:9420', port: 9420, managedProject: receipt })
     expect(miniProgram.__rawCurrentPage).toHaveBeenCalled()
+    expect(receipt).toBeDefined()
+    expect(cleanupManagedWechatProjectsMock).not.toHaveBeenCalled()
     await session.close()
     await session.close()
-    expect(closeManagedWechatProjectMock).toHaveBeenCalledExactlyOnceWith(receipt)
+    expect(cleanupManagedWechatProjectsMock).toHaveBeenCalledExactlyOnceWith({ journalPath: receipt!.journalPath, scope: 'journal' })
+    const { cleanupOwnedDevtoolsProcesses } = await import('../utils/devtoolsProcessOwnership')
+    await cleanupOwnedDevtoolsProcesses({ journalPath: parentJournal, scope: 'journal' })
+    expect(cleanupManagedWechatProjectsMock.mock.calls).toEqual([
+      [{ journalPath: receipt!.journalPath, scope: 'journal' }],
+      [{ journalPath: parentJournal, scope: 'journal' }],
+    ])
+    expect(closeManagedWechatProjectMock).not.toHaveBeenCalled()
     expect(miniProgram.__rawDisconnect).toHaveBeenCalledOnce()
     expect(miniProgram.__rawClose).not.toHaveBeenCalled()
   })
@@ -1219,7 +1229,9 @@ describe('automator launch resilience', { concurrent: false, timeout: 30_000 }, 
     try {
       const firstFailure = await launchAutomator({ projectPath: sandboxRoot, timeout: 1_000, maxLaunchRetries: 1 }).catch((error: unknown) => error)
       expect(firstFailure).toBe(terminal)
-      expect(cleanupManagedWechatProjectsMock).toHaveBeenCalled()
+      const firstAttemptJournal = execaMock.mock.calls[0]![2].env[MANAGED_PROJECT_JOURNAL_ENV] as string
+      expect(path.dirname(firstAttemptJournal)).toBe(path.join(parentJournal, 'children'))
+      expect(cleanupManagedWechatProjectsMock).toHaveBeenCalledExactlyOnceWith({ journalPath: firstAttemptJournal, scope: 'journal' })
       const selectionCalls = vi.mocked(resolveSelectedWechatDevtools).mock.calls.length
       const diagnosticCalls = captureDevtoolsLogBaselineMock.mock.calls.length
       const cleanupCalls = cleanupManagedWechatProjectsMock.mock.calls.length
@@ -1249,12 +1261,32 @@ describe('automator launch resilience', { concurrent: false, timeout: 30_000 }, 
 
       const session = await launchAutomator({ projectPath: sandboxRoot, timeout: 1_000, maxLaunchRetries: 1 })
       expect(execaMock).toHaveBeenCalledTimes(2)
+      const nextAttemptJournal = execaMock.mock.calls[1]![2].env[MANAGED_PROJECT_JOURNAL_ENV] as string
+      expect(path.dirname(nextAttemptJournal)).toBe(path.join(nextJournal, 'children'))
+      expect(nextAttemptJournal).not.toBe(firstAttemptJournal)
+      expect(cleanupManagedWechatProjectsMock.mock.calls).toEqual([
+        [{ journalPath: firstAttemptJournal, scope: 'journal' }],
+      ])
       await session.close()
-      expect(closeManagedWechatProjectMock).toHaveBeenCalledWith(expect.objectContaining({ id: 'next-owned-window' }))
+      await session.close()
+      expect(cleanupManagedWechatProjectsMock.mock.calls).toEqual([
+        [{ journalPath: firstAttemptJournal, scope: 'journal' }],
+        [{ journalPath: nextAttemptJournal, scope: 'journal' }],
+      ])
+      const { cleanupOwnedDevtoolsProcesses } = await import('../utils/devtoolsProcessOwnership')
+      await cleanupOwnedDevtoolsProcesses({ journalPath: nextJournal, scope: 'journal' })
+      const expectedCleanupCalls = [
+        [{ journalPath: firstAttemptJournal, scope: 'journal' }],
+        [{ journalPath: nextAttemptJournal, scope: 'journal' }],
+        [{ journalPath: nextJournal, scope: 'journal' }],
+      ]
+      expect(cleanupManagedWechatProjectsMock.mock.calls).toEqual(expectedCleanupCalls)
+      expect(closeManagedWechatProjectMock).not.toHaveBeenCalled()
 
       vi.stubEnv(MANAGED_PROJECT_JOURNAL_ENV, parentJournal)
       await expect(launchAutomator({ projectPath: sandboxRoot })).rejects.toMatchObject({ cause: firstFailure })
       expect(execaMock).toHaveBeenCalledTimes(2)
+      expect(cleanupManagedWechatProjectsMock.mock.calls).toEqual(expectedCleanupCalls)
     }
     finally {
       stderrWrite.mockRestore()
@@ -1262,7 +1294,8 @@ describe('automator launch resilience', { concurrent: false, timeout: 30_000 }, 
   })
 
   it.each(['E2E_DEVTOOLS_SIMULATOR_BOOT_FAILED', 'E2E_RUNTIME_LOG_SUBSCRIPTION_DEADLINE'])('preserves terminal failure %s when owned bridge cleanup also fails', async (code) => {
-    vi.stubEnv(MANAGED_PROJECT_JOURNAL_ENV, await createManagedWechatProjectJournal(path.join(sandboxRoot, 'managed-journals')))
+    const parentJournal = await createManagedWechatProjectJournal(path.join(sandboxRoot, 'managed-journals'))
+    vi.stubEnv(MANAGED_PROJECT_JOURNAL_ENV, parentJournal)
     process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_PREBUILD = '0'
     process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER = '0'
     createProjectFixture(sandboxRoot, { pages: ['pages/index/index'] })
@@ -1285,6 +1318,12 @@ describe('automator launch resilience', { concurrent: false, timeout: 30_000 }, 
       expect(isLikelyLaunchRetryableError(error)).toBe(false)
       expect(execaMock).toHaveBeenCalledOnce()
       expect(cleanupManagedWechatProjectsMock).toHaveBeenCalledTimes(2)
+      const attemptJournal = execaMock.mock.calls[0]![2].env[MANAGED_PROJECT_JOURNAL_ENV] as string
+      expect(path.dirname(attemptJournal)).toBe(path.join(parentJournal, 'children'))
+      expect(cleanupManagedWechatProjectsMock.mock.calls).toEqual([
+        [{ journalPath: attemptJournal, scope: 'journal' }],
+        [{ journalPath: attemptJournal, scope: 'journal' }],
+      ])
       expect(launchMock).not.toHaveBeenCalled()
       expect(connectMock).not.toHaveBeenCalled()
       expect(cleanupResidualDevtoolsProcessesMock).not.toHaveBeenCalled()
@@ -1297,6 +1336,21 @@ describe('automator launch resilience', { concurrent: false, timeout: 30_000 }, 
       const markerIndex = stderrWrite.mock.calls.findIndex(([chunk]) => String(chunk).startsWith(TERMINAL_RUNTIME_FAILURE_MARKER))
       expect(markerIndex).toBeGreaterThanOrEqual(0)
       expect(cleanupManagedWechatProjectsMock.mock.invocationCallOrder[1]).toBeLessThan(stderrWrite.mock.invocationCallOrder[markerIndex]!)
+      cleanupManagedWechatProjectsMock.mockResolvedValue(undefined)
+      const { cleanupOwnedDevtoolsProcesses } = await import('../utils/devtoolsProcessOwnership')
+      await cleanupOwnedDevtoolsProcesses({ journalPath: parentJournal, scope: 'journal' })
+      const recoveredCalls = [
+        [{ journalPath: attemptJournal, scope: 'journal' }],
+        [{ journalPath: attemptJournal, scope: 'journal' }],
+        [{ journalPath: attemptJournal, scope: 'journal' }],
+        [{ journalPath: parentJournal, scope: 'journal' }],
+      ]
+      expect(cleanupManagedWechatProjectsMock.mock.calls).toEqual(recoveredCalls)
+      await cleanupOwnedDevtoolsProcesses({ journalPath: parentJournal, scope: 'journal' })
+      expect(cleanupManagedWechatProjectsMock.mock.calls).toEqual([
+        ...recoveredCalls,
+        [{ journalPath: parentJournal, scope: 'journal' }],
+      ])
     }
     finally {
       stderrWrite.mockRestore()

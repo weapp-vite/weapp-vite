@@ -23,7 +23,7 @@ export interface NpmBuildServiceOptions {
   ctx: MutableCompilerContext
   builder: {
     isMiniprogramPackage: (pkg: PackageJson) => boolean
-    buildPackage: PackageBuilder['buildPackage']
+    buildPackages: PackageBuilder['buildPackages']
   }
   cache: {
     checkDependenciesCacheOutdate: (root?: string) => Promise<boolean>

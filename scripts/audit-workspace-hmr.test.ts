@@ -1,7 +1,11 @@
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import os from 'node:os'
 import path from 'node:path'
 import { parse } from '@babel/parser'
+import { getMiniProgramPlatformDescriptor, getSupportedMiniProgramPlatforms } from '@weapp-core/shared'
 import { describe, expect, it } from 'vitest'
 import { compileStyle, parse as parseSfc } from 'vue/compiler-sfc'
+import { discoverWorkspaceHmrProjects, isAuditableScriptEntry } from './audit-workspace-hmr'
 import {
   injectReactTemplateMarker,
   injectVueStyleRule,
@@ -12,6 +16,25 @@ import {
   resolveReactTemplateOutputPath,
   resolveWorkspaceHmrRuntime,
 } from './workspace-hmr/scenarios'
+
+it('discovers projects without executing any configuration module or factory', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'workspace-hmr-discovery-'))
+  try {
+    for (const name of ['selected', 'unselected']) {
+      const projectRoot = path.join(root, 'apps', name)
+      await mkdir(path.join(projectRoot, 'src'), { recursive: true })
+      await writeFile(path.join(projectRoot, 'package.json'), JSON.stringify({ scripts: { dev: 'weapp-vite' } }))
+      await writeFile(path.join(projectRoot, 'src/app.json'), '{}')
+      await writeFile(path.join(projectRoot, 'vite.config.mjs'), 'throw new Error("discovery must not execute config resources")')
+    }
+    const projects = await discoverWorkspaceHmrProjects(['apps'], root)
+    expect(projects.map(project => project.id)).toEqual(['apps/selected', 'apps/unselected'])
+    expect(projects.every(project => !('platform' in project) && !('distRoot' in project))).toBe(true)
+  }
+  finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
 
 describe('workspace HMR script output', () => {
   it('detects the runtime from the stateful control artifact', () => {
@@ -64,6 +87,29 @@ describe('workspace HMR script output', () => {
       'export function View() { return <View className="page">hello</View> }',
       'HMR_MARKER',
     )).toContain('<View className="page" data-hmr-marker="HMR_MARKER">')
+  })
+
+  it.each(getSupportedMiniProgramPlatforms())('maps a React view owner to the actual %s template extension', (platform) => {
+    const project = { distRoot: path.join('project', 'dist'), sourceRoot: path.join('project', 'src'), platform }
+    const source = path.join(project.sourceRoot, 'pages/index/view.tsx')
+    const template = getMiniProgramPlatformDescriptor(platform).outputExtensions.wxml
+    expect(resolveReactTemplateOutputPath(project, source)).toBe(path.join(project.distRoot, `pages/index/index.${template}`))
+  })
+
+  it.each(getSupportedMiniProgramPlatforms())('recognizes a native %s sidecar as an auditable component script', async (platform) => {
+    const sourceRoot = await mkdtemp(path.join(os.tmpdir(), 'workspace-hmr-sidecar-'))
+    try {
+      const script = path.join(sourceRoot, 'components/card/card.ts')
+      const template = getMiniProgramPlatformDescriptor(platform).outputExtensions.wxml
+      await mkdir(path.dirname(script), { recursive: true })
+      await writeFile(script, 'Component({});')
+      await writeFile(path.join(path.dirname(script), `card.${template}`), '<view/>')
+      expect(isAuditableScriptEntry(sourceRoot, script, platform)).toBe(true)
+      expect(isAuditableScriptEntry(sourceRoot, script)).toBe(platform === 'weapp')
+    }
+    finally {
+      await rm(sourceRoot, { recursive: true, force: true })
+    }
   })
 })
 

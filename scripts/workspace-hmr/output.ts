@@ -17,7 +17,9 @@ function isReplacedOutput(error: unknown) {
   return error instanceof Error && 'code' in error && (error.code === 'ENOENT' || error.code === 'ENOTDIR')
 }
 
-export async function listFiles(root: string, allowMissingRoot = true): Promise<string[]> {
+const sourceExcludedDirectories = new Set(['node_modules', 'dist', '.weapp-vite', '.turbo', '.tmp'])
+
+async function walkFiles(root: string, allowMissingRoot: boolean, excludedDirectories: ReadonlySet<string>): Promise<string[]> {
   try {
     await access(root)
   }
@@ -32,10 +34,10 @@ export async function listFiles(root: string, allowMissingRoot = true): Promise<
   for (const entry of entries) {
     const filePath = path.join(root, entry.name)
     if (entry.isDirectory()) {
-      if (['node_modules', 'dist', '.weapp-vite', '.turbo', '.tmp'].includes(entry.name)) {
+      if (excludedDirectories.has(entry.name)) {
         continue
       }
-      result.push(...await listFiles(filePath, false))
+      result.push(...await walkFiles(filePath, false, excludedDirectories))
     }
     else if (entry.isFile()) {
       result.push(filePath)
@@ -44,8 +46,13 @@ export async function listFiles(root: string, allowMissingRoot = true): Promise<
   return result.sort((left, right) => left.localeCompare(right))
 }
 
+/** 源码枚举排除依赖和生成目录，不能用于衡量完整发布集合。 */
+export async function listFiles(root: string, allowMissingRoot = true): Promise<string[]> {
+  return walkFiles(root, allowMissingRoot, sourceExcludedDirectories)
+}
+
 export async function snapshotDist(distRoot: string) {
-  const files = await listFiles(distRoot, false)
+  const files = await walkFiles(distRoot, false, new Set())
   const entries = Array.from<[string, DistFileSnapshot] | undefined>({ length: files.length })
   let nextIndex = 0
   let failure: { error: unknown } | undefined

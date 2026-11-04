@@ -1,6 +1,8 @@
+import type { MpPlatform } from '@weapp-core/shared'
 import path from 'node:path'
 import { parse } from '@babel/parser'
 import traverseModule from '@babel/traverse'
+import { getMiniProgramPlatformDescriptor } from '@weapp-core/shared'
 import { parse as parseSfc } from 'vue/compiler-sfc'
 
 const traverse = (traverseModule as unknown as { default?: typeof traverseModule }).default ?? traverseModule
@@ -57,11 +59,13 @@ export function resolveReactTemplateOutputPath(
   project: {
     distRoot: string
     sourceRoot: string
+    platform?: MpPlatform
   },
   sourcePath: string,
 ) {
   const relative = path.relative(project.sourceRoot, sourcePath)
-  return path.join(project.distRoot, path.dirname(relative), 'index.wxml')
+  const extension = getMiniProgramPlatformDescriptor(project.platform ?? 'weapp').outputExtensions.wxml
+  return path.join(project.distRoot, path.dirname(relative), `index.${extension}`)
 }
 
 export function injectReactTemplateMarker(source: string, marker: string) {

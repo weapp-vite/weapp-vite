@@ -1,3 +1,4 @@
+import type { MpPlatform } from '@weapp-core/shared'
 import type { WorkspaceHmrDeliveryContract } from './delivery'
 import type { WorkspaceHmrStageReport } from './stageRecorder'
 
@@ -62,7 +63,7 @@ export interface ProjectResult {
   id: string
   baselineId?: string
   kind: 'apps' | 'templates' | 'e2e-apps'
-  platform: 'weapp' | 'alipay'
+  platform?: MpPlatform
   source: string
   startupMs?: number
   thresholds?: WorkspaceHmrThresholds
