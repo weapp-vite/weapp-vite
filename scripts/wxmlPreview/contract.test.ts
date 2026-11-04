@@ -1,7 +1,7 @@
 import type { Fetcher, PreviewManifest } from './contract.ts'
 import { Buffer } from 'node:buffer'
 import { describe, expect, it } from 'vitest'
-import { archiveIntegrity, confirmRegistry, PACKAGE_NAME, packedFiles, previewVersion, REGISTRY, registryJson, validatePackage } from './contract.ts'
+import { archiveIntegrity, confirmLatestTag, confirmRegistry, PACKAGE_NAME, packedFiles, previewVersion, REGISTRY, registryJson, validatePackage } from './contract.ts'
 
 const manifest: PreviewManifest = {
   schemaVersion: 1,
@@ -61,6 +61,28 @@ describe('WXML preview boundaries', () => {
     expect(() => confirmRegistry(existing, version, metadata)).toThrow('latest changed')
     expect(() => confirmRegistry(manifest, { ...version, dist: { integrity: manifest.integrity } }, metadata)).toThrow()
     expect(() => confirmRegistry(manifest, { ...version, dist: { ...version.dist, attestations: { ...provenance, url: 'https://example.invalid/attestation' } } }, metadata)).toThrow('provenance URL')
+  })
+
+  it('records only the observed bootstrap placeholder promotion to the sole real alpha', () => {
+    const bootstrap = { ...manifest, latestBefore: '0.0.0-stage' }
+    const published = { 'dist-tags': { alpha: manifest.version, latest: manifest.version }, 'versions': { '0.0.0-stage': {}, [manifest.version]: {} } }
+    expect(confirmLatestTag(bootstrap, published)).toEqual({ latestBefore: '0.0.0-stage', latest: manifest.version, latestUnchanged: false, bootstrapLatestPromoted: true })
+    expect(confirmRegistry(bootstrap, version, published).url).toBe(provenance.url)
+    expect(confirmLatestTag(bootstrap, { ...published, versions: { [manifest.version]: {}, '0.0.0-stage': {} } }).bootstrapLatestPromoted).toBe(true)
+    expect(confirmLatestTag(bootstrap, { 'dist-tags': { latest: '0.0.0-stage' } })).toEqual({ latestBefore: '0.0.0-stage', latest: '0.0.0-stage', latestUnchanged: true, bootstrapLatestPromoted: false })
+    for (const latestBefore of [null, '0.0.0-oidc-init', '0.0.0-stage.1', '0.1.0', '0.1.0-alpha.1']) {
+      expect(() => confirmLatestTag({ ...bootstrap, latestBefore }, published)).toThrow('latest changed')
+    }
+    for (const versions of [{ [manifest.version]: {} }, { '0.0.0-stage': {} }, { ...published.versions, '0.0.1': {} }, { ...published.versions, '0.1.0-alpha.2': {} }]) {
+      expect(() => confirmLatestTag(bootstrap, { ...published, versions })).toThrow('latest changed')
+    }
+    expect(() => confirmLatestTag(bootstrap, { ...published, 'dist-tags': { latest: manifest.version, alpha: '0.1.0-alpha.2' } })).toThrow('latest changed')
+    expect(() => confirmLatestTag(bootstrap, { ...published, 'dist-tags': { latest: manifest.version } })).toThrow('latest changed')
+    expect(() => confirmLatestTag(bootstrap, { ...published, 'dist-tags': { latest: '0.1.0-alpha.2', alpha: manifest.version } })).toThrow('latest changed')
+    expect(() => confirmLatestTag(bootstrap, { 'dist-tags': published['dist-tags'] })).toThrow()
+    for (const versions of [null, [], { '0.0.0-stage': null, [manifest.version]: {} }]) {
+      expect(() => confirmLatestTag(bootstrap, { ...published, versions })).toThrow()
+    }
   })
 
   it('treats only an explicitly allowed official 404 as absent', async () => {

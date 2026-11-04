@@ -15,6 +15,7 @@ interface Workflow {
   on: Record<string, unknown>
   permissions: Record<string, string>
   jobs: Record<string, {
+    if?: string
     permissions: Record<string, string>
     concurrency: Record<string, unknown>
     steps: Step[]
@@ -33,6 +34,7 @@ describe('WXML preview publishing boundary', () => {
     expect(Object.keys(workflow.on)).toEqual(['workflow_dispatch'])
     expect(workflow.permissions).toEqual({ contents: 'read' })
     expect(job.permissions).toEqual({ 'contents': 'read', 'id-token': 'write' })
+    expect(job.if).toBe(expression('inputs.verify-run-id == \'\''))
     expect(job.concurrency).toEqual({ 'group': `npm-release-${expression('github.ref')}`, 'cancel-in-progress': false })
     const checkout = job.steps.find(step => step.uses?.startsWith('actions/checkout@'))!
     expect(checkout.with).toEqual({ 'ref': expression('github.sha'), 'persist-credentials': false })
@@ -42,6 +44,19 @@ describe('WXML preview publishing boundary', () => {
       expect(step.env?.NPM_TOKEN).toBeUndefined()
       expect(step.env?.GITHUB_TOKEN).toBeUndefined()
     }
+  })
+
+  it('recovers the original upload without OIDC or publish commands and runs the same consumer', () => {
+    const verify = workflow.jobs.verify!
+    expect(verify.if).toBe(expression('inputs.verify-run-id != \'\''))
+    expect(verify.permissions).toEqual({ contents: 'read', actions: 'read' })
+    expect(verify.concurrency).toEqual(job.concurrency)
+    const recovery = verify.steps.find(step => step.name === 'Recover and confirm the immutable uploaded artifact')!
+    expect(recovery.run).toBe('node --import tsx scripts/wxmlPreview/index.ts recover')
+    expect(recovery.env).toEqual({ GH_TOKEN: expression('github.token') })
+    expect(verify.steps.some(step => /npm publish|index\.ts prepare/.test(step.run ?? ''))).toBe(false)
+    expect(verify.steps.find(step => step.name === 'Verify the published package in an isolated consumer')?.run)
+      .toBe(job.steps.find(step => step.name === 'Verify the published package in an isolated consumer')?.run)
   })
 
   it.runIf(process.platform !== 'win32').each([

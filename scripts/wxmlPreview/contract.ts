@@ -124,12 +124,31 @@ export function latestTag(metadata: Record<string, unknown> | null) {
   return latest ?? null
 }
 
+/** 仅容许 npm 首次真实发布将 bootstrap 占位 latest 提升为唯一 alpha 的已观察行为。 */
+export function confirmLatestTag(manifest: PreviewManifest, metadata: Record<string, unknown>) {
+  const latest = latestTag(metadata)
+  const latestUnchanged = latest === manifest.latestBefore
+  let bootstrapLatestPromoted = false
+  if (!latestUnchanged && manifest.latestBefore === '0.0.0-stage' && latest === manifest.version
+    && record(metadata['dist-tags']).alpha === manifest.version) {
+    const versions = Object.keys(record(metadata.versions)).sort()
+    bootstrapLatestPromoted = versions.length === 2 && versions.includes('0.0.0-stage') && versions.includes(manifest.version)
+    if (bootstrapLatestPromoted) {
+      const entries = record(metadata.versions)
+      record(entries['0.0.0-stage'])
+      record(entries[manifest.version])
+    }
+  }
+  assert.ok(latestUnchanged || bootstrapLatestPromoted, 'latest changed during the alpha preview publish')
+  return { latestBefore: manifest.latestBefore, latest, latestUnchanged, bootstrapLatestPromoted }
+}
+
 export function confirmRegistry(manifest: PreviewManifest, version: Record<string, unknown>, metadata: Record<string, unknown>) {
   assert.equal(version.name, PACKAGE_NAME)
   assert.equal(version.version, manifest.version)
   const dist = record(version.dist)
   assert.equal(dist.integrity, manifest.integrity, 'Published integrity differs from the packed archive')
-  assert.equal(latestTag(metadata), manifest.latestBefore, 'latest changed during the alpha preview publish')
+  confirmLatestTag(manifest, metadata)
   if (record(metadata['dist-tags']).alpha !== manifest.version) {
     throw new RegistryPropagationPending('alpha must resolve to this exact preview')
   }

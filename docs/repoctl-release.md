@@ -35,7 +35,13 @@ gh workflow run wxml-preview.yml --ref main -f version=0.1.0-alpha.0
 npm install @weapp-vite/wxml@0.1.0-alpha.0
 ```
 
-可先传 `-F dry-run=true` 运行检查和打包。实际发布前执行包级 lint、typecheck、unit、build 与 tsd；打包后还原源码 manifest，保留正式 changeset、changelog 与发布账本。发布后核对精确版本的 tarball 完整性、`alpha` 指向、`latest` 未变与 provenance 元数据，并在隔离 consumer 中验证公开入口及 npm 签名。`latest` 的初始化占位版本不包含可用 parser，请明确安装 alpha 精确版本或 `@alpha`。
+可先传 `-F dry-run=true` 运行检查和打包。实际发布前执行包级 lint、typecheck、unit、build 与 tsd；打包后还原源码 manifest，保留正式 changeset、changelog 与发布账本。发布后核对精确版本的 tarball 完整性、`alpha` 指向和 provenance 元数据，并在隔离 consumer 中验证公开入口及 npm 签名。metadata 传播最多等待 120 秒。已有正式版本的 `latest` 必须不变；npm 首次真实发布可能自动将 `latest` 从 `0.0.0-stage` 指向 alpha，仅当 registry 中只有占位版与本次 alpha 时接受并明确记录该变化。预览期请明确安装 alpha 精确版本或 `@alpha`。
+
+如果上传成功、后置确认失败，不要重新发布或递增版本来掩盖失败。传 `-f verify-run-id=<原运行编号>`，复用原运行的 tarball 与 manifest，核对来源提交、完整性、registry 和隔离 consumer；该分支没有 OIDC 写权限，不构建或上传新包。必须保留原运行证据，只有补充验证通过才算发布验收完成。
+
+```bash
+gh workflow run wxml-preview.yml --ref main -f version=0.1.0-alpha.0 -f verify-run-id=<原运行编号>
+```
 
 工作流与常规发布共用 npm 队列，保存 tarball、打包清单和确认报告 14 天。已存在的版本会拒绝覆盖；上传完成而后续确认失败时，应先读取 registry 和运行证据，不可盲目增加版本重发。这个入口不会完成或恢复其他历史发布批次。
 

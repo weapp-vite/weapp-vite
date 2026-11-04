@@ -19,7 +19,7 @@ let env: NodeJS.ProcessEnv
 const archive = Buffer.from('npm pack archive bytes')
 const version = '0.1.0-alpha.0'
 
-function registry(options: { exists?: boolean, latest?: string, published?: boolean, integrity?: string } = {}): Fetcher {
+function registry(options: { exists?: boolean, latest?: string, published?: boolean, integrity?: string, versions?: string[] } = {}): Fetcher {
   return vi.fn(async (input: Parameters<Fetcher>[0]) => {
     const url = String(input)
     if (url === `${PACKAGE_ENDPOINT}/${version}`) {
@@ -29,7 +29,7 @@ function registry(options: { exists?: boolean, latest?: string, published?: bool
       return Response.json({ name: PACKAGE_NAME, version, dist: { integrity: options.integrity ?? archiveIntegrity(archive), attestations: { url: `${REGISTRY}/-/npm/v1/attestations/wxml`, provenance: { predicateType: 'https://slsa.dev/provenance/v1' } } } })
     }
     expect(url).toBe(PACKAGE_ENDPOINT)
-    return Response.json({ 'dist-tags': { ...(options.latest ? { latest: options.latest } : {}), ...(options.published ? { alpha: version } : {}) } })
+    return Response.json({ 'dist-tags': { ...(options.latest ? { latest: options.latest } : {}), ...(options.published ? { alpha: version } : {}) }, ...(options.versions ? { versions: Object.fromEntries(options.versions.map(value => [value, {}])) } : {}) })
   }) as Fetcher
 }
 
@@ -132,15 +132,15 @@ it('waits only for bounded registry propagation without repacking or republishin
   const result = await confirmPreview({ manifest: prepared.manifest, env, fetcher, wait })
   expect(result.confirmation.registryConfirmationAttempts).toBe(4)
   expect(wait).toHaveBeenCalledTimes(3)
-  expect(wait).toHaveBeenCalledWith(5_000)
+  expect(wait).toHaveBeenCalledWith(10_000)
   expect(execute).toHaveBeenCalledTimes(1)
 })
 
 it('fails after the fixed confirmation limit and fails integrity drift immediately', async () => {
   const prepared = await preparePreview({ root, env, fetcher: registry() })
   const wait = vi.fn(async () => {})
-  await expect(confirmPreview({ manifest: prepared.manifest, env, fetcher: registry(), wait })).rejects.toThrow('after 6 attempts')
-  expect(wait).toHaveBeenCalledTimes(5)
+  await expect(confirmPreview({ manifest: prepared.manifest, env, fetcher: registry(), wait })).rejects.toThrow('after 12 attempts')
+  expect(wait).toHaveBeenCalledTimes(11)
   wait.mockClear()
   await expect(confirmPreview({ manifest: prepared.manifest, env, fetcher: registry({ published: true, integrity: archiveIntegrity(Buffer.from('other archive')) }), wait })).rejects.toThrow('integrity')
   expect(wait).not.toHaveBeenCalled()
@@ -152,14 +152,41 @@ it('stops confirmation at its deadline without attempting another publish', asyn
   let now = 0
   const clock = vi.spyOn(performance, 'now').mockImplementation(() => now)
   const wait = vi.fn(async () => {
-    now += 60_000
+    now += 120_000
   })
   try {
-    await expect(confirmPreview({ manifest: prepared.manifest, env, fetcher: registry(), wait })).rejects.toThrow('60-second deadline')
+    await expect(confirmPreview({ manifest: prepared.manifest, env, fetcher: registry(), wait })).rejects.toThrow('120-second deadline')
     expect(wait).toHaveBeenCalledTimes(1)
     expect(execute).toHaveBeenCalledTimes(1)
   }
   finally {
     clock.mockRestore()
   }
+})
+
+it('accepts and reports the server bootstrap latest promotion even while the exact version is propagating', async () => {
+  const prepared = await preparePreview({ root, env, fetcher: registry({ latest: '0.0.0-stage' }) })
+  const ready = registry({ published: true, latest: version, versions: ['0.0.0-stage', version] })
+  let exactRequests = 0
+  const fetcher: Fetcher = async (input, options) => {
+    if (String(input) === `${PACKAGE_ENDPOINT}/${version}` && ++exactRequests === 1) {
+      return new Response('{}', { status: 404 })
+    }
+    return ready(input, options)
+  }
+  const wait = vi.fn(async () => {})
+  const result = await confirmPreview({ manifest: prepared.manifest, env, fetcher, wait })
+  expect(result.confirmation).toMatchObject({ latestBefore: '0.0.0-stage', latest: version, latestUnchanged: false, bootstrapLatestPromoted: true, registryConfirmationAttempts: 2 })
+  expect(result.summary).toContain('服务端默认标签')
+  expect(result.summary).toContain('latestUnchanged=false')
+  expect(wait).toHaveBeenCalledTimes(1)
+  expect(execute).toHaveBeenCalledTimes(1)
+})
+
+it('refuses bootstrap promotion when another real version exists without waiting', async () => {
+  const prepared = await preparePreview({ root, env, fetcher: registry({ latest: '0.0.0-stage' }) })
+  const wait = vi.fn(async () => {})
+  await expect(confirmPreview({ manifest: prepared.manifest, env, fetcher: registry({ published: true, latest: version, versions: ['0.0.0-stage', version, '0.0.1'] }), wait })).rejects.toThrow('latest changed')
+  expect(wait).not.toHaveBeenCalled()
+  expect(execute).toHaveBeenCalledTimes(1)
 })

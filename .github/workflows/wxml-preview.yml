@@ -8,6 +8,11 @@ on:
         required: true
         default: 0.1.0-alpha.0
         type: string
+      verify-run-id:
+        description: Verify an already uploaded version from this completed run (never publish)
+        required: false
+        default: ''
+        type: string
       dry-run:
         description: Check and pack without publishing
         required: false
@@ -23,6 +28,7 @@ env:
 
 jobs:
   preview:
+    if: ${{ inputs.verify-run-id == '' }}
     name: Check and publish WXML alpha
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -115,6 +121,85 @@ jobs:
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: wxml-preview-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/wxml-preview/*
+          if-no-files-found: ignore
+          retention-days: 14
+
+  verify:
+    if: ${{ inputs.verify-run-id != '' }}
+    name: Verify existing WXML alpha upload
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: npm-release-${{ github.ref }}
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      actions: read
+    env:
+      PREVIEW_VERSION: ${{ inputs.version }}
+      PREVIEW_VERIFY_RUN_ID: ${{ inputs.verify-run-id }}
+      DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+    steps:
+      - name: Require the default branch and a verification run
+        env:
+          DRY_RUN: ${{ inputs.dry-run }}
+        run: |
+          if [ -z "$DEFAULT_BRANCH" ] || [ "$GITHUB_REF" != "refs/heads/$DEFAULT_BRANCH" ] || [ "$DRY_RUN" != 'false' ]; then
+            echo '::error::Existing upload verification requires the default branch and dry-run=false.'
+            exit 1
+          fi
+          if [[ ! "$PREVIEW_VERIFY_RUN_ID" =~ ^[1-9][0-9]{0,15}$ ]] || [[ ! "$PREVIEW_VERSION" =~ ^0\.1\.0-alpha\.(0|[1-9][0-9]*)$ ]]; then
+            echo '::error::Provide an explicit completed run id and 0.1.0-alpha.N version.'
+            exit 1
+          fi
+
+      - name: Checkout the frozen verifier
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24.22.1
+
+      - name: Install npm with signature verification support
+        run: npm install --global npm@11.19.1 --registry=https://registry.npmjs.org
+
+      - name: Install frozen dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Recover and confirm the immutable uploaded artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node --import tsx scripts/wxmlPreview/index.ts recover
+
+      - name: Verify the published package in an isolated consumer
+        run: |
+          mkdir "$RUNNER_TEMP/wxml-consumer"
+          cd "$RUNNER_TEMP/wxml-consumer"
+          npm init --yes
+          npm install --ignore-scripts --no-audit --no-fund --registry=https://registry.npmjs.org "@weapp-vite/wxml@$PREVIEW_VERSION"
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { parse, serialize } from '@weapp-vite/wxml';
+          const source = '<view a="&amp;" a disabled>{{ value }}</view>';
+          const result = parse(source);
+          assert.deepEqual(result.diagnostics, []);
+          assert.equal(serialize(result), source);
+          console.log('Published WXML parser/serializer roundtrip passed.');
+          NODE
+          npm audit signatures --registry=https://registry.npmjs.org
+
+      - name: Preserve verification evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: wxml-verification-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/wxml-preview/*
           if-no-files-found: ignore
           retention-days: 14
