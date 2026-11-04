@@ -4,12 +4,23 @@ import { attributeSourceError, attributeSourcePosition, legacyAttributeEnd, lega
 import { TokenContext } from './context'
 import { findLineEnd, isSpaceCode, isWordCode, TemplateLexicalError } from './lexical'
 
+const fastInterpolation = /\{\{[^{}[\]()"'`\x2F&]*\}\}/y
+
 function encodedQuoteAt(source: string, start: number) {
   if (source.charCodeAt(start) !== 38) {
     return undefined
   }
-  const end = source.indexOf(';', start + 1)
-  if (end < 0 || end - start > 15) {
+  const initial = source.charCodeAt(start + 1) | 32
+  if (initial !== 35 && initial !== 97 && initial !== 113) {
+    return undefined
+  }
+  // 实体最长只接受 15 字符，不为普通逻辑运算符重复搜索整段模板后缀。
+  const limit = Math.min(source.length, start + 16)
+  let end = start + 1
+  while (end < limit && source.charCodeAt(end) !== 59) {
+    end++
+  }
+  if (end === limit) {
     return undefined
   }
   const name = source.slice(start + 1, end).toLowerCase()
@@ -91,6 +102,14 @@ function regexpEnd(source: string, start: number, limit: number) {
 }
 
 function scanExpression(source: string, start: number, mustache: boolean, syntax: Syntax, limit = source.length, entityQuotes = true): number {
+  if (mustache) {
+    // 无字符串、运算符或括号的成员路径无需创建 JS 词法上下文。
+    fastInterpolation.lastIndex = start
+    const fast = fastInterpolation.exec(source)
+    if (fast && fast.index + fast[0].length <= limit) {
+      return fast.index + fast[0].length
+    }
+  }
   const context = new TokenContext(true)
   let mismatch: number | undefined
   for (let index = start + (mustache ? 2 : 1); index < limit;) {

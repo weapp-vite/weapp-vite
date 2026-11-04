@@ -36,11 +36,11 @@ const core: LanguageProfile[] = MINI_PROGRAM_PLATFORM_DESCRIPTORS.map(descriptor
   support: 'core',
   templateExtensions: [`.${descriptor.outputExtensions.wxml}`],
   styleExtensions: [`.${descriptor.outputExtensions.wxss}`],
-  scriptExtensions: descriptor.outputExtensions.wxs ? [`.${descriptor.outputExtensions.wxs}`] : ['.sjs'],
+  scriptExtensions: [...(descriptor.outputExtensions.wxs ? [`.${descriptor.outputExtensions.wxs}`] : ['.sjs']), ...(descriptor.nativeScriptModules ?? []).map(module => `.${module.extension}`)],
   scriptModule: descriptor.id === 'alipay' ? { tag: 'import-sjs', sourceAttribute: 'from', moduleAttribute: 'name' } : { tag: descriptor.id === 'swan' ? 'import-sjs' : descriptor.id === 'tt' ? 'sjs' : 'wxs', sourceAttribute: 'src', moduleAttribute: 'module' },
   directives: directives(descriptor.wxml?.directivePrefix ?? 'wx', descriptor.id === 'swan' ? '-' : ':'),
   events: { style: descriptor.wxml?.eventBindingStyle === 'alipay' ? 'alipay' : 'bind' },
-  rawTags: ['wxs', 'sjs', 'filter', 'script', 'import-sjs'],
+  rawTags: ['wxs', 'sjs', 'ks', 'filter', 'script', 'import-sjs', ...(descriptor.nativeScriptModules ?? []).map(module => module.tag)],
   documentation: sources(descriptor.id),
 }))
 
@@ -53,11 +53,11 @@ const additional: LanguageProfile[] = [
   support: 'language-only',
   templateExtensions: [extension],
   styleExtensions: [style],
-  scriptExtensions: [script],
+  scriptExtensions: platform === 'qq' ? [script, '.qs'] : [script],
   scriptModule: { tag: platform === 'ks' ? 'ks' : platform === 'ty' ? 'sjs' : 'wxs', sourceAttribute: 'src', moduleAttribute: 'module' },
   directives: directives(prefix),
   events: { style: 'bind' },
-  rawTags: ['wxs', 'sjs', 'ks', 'filter', 'script', 'import-sjs'],
+  rawTags: ['wxs', 'sjs', 'ks', 'filter', 'script', 'import-sjs', ...(platform === 'qq' ? ['qs'] : [])],
   documentation: sources(platform as LanguagePlatform),
 }))
 

@@ -88,6 +88,22 @@ describe('independent CI preparation with unchanged validation scope', () => {
     expect(child.jobs.types.with.build_artifact_scope).toContain('mpcore/packages/simulator')
   })
 
+  it('runs frozen template acceptance offline with Chromium and the complete source denominator', () => {
+    const job = read('reusable-quality-platform.yml').jobs['template-corpus']
+    expect(job.needs).toEqual(['pr-context', 'build'])
+    expect(job.if).toContain('inputs.runs_on == \'ubuntu-latest\'')
+    expect(job.if).toContain('inputs.node_version == \'24\'')
+    expect(job.with.install_playwright).toBe(true)
+    expect(job.with.build_artifact_scope).toBe('packages/wxml')
+    expect(job.with.main_command.trim().split('\n')).toEqual([
+      'pnpm corpus:check',
+      'pnpm --filter @weapp-vite/wxml test:corpus',
+      'pnpm --filter @weapp-vite/wxml test:fuzz',
+      'pnpm --filter @weapp-vite/wxml test:coverage',
+    ])
+    expect(job.with.main_command).not.toMatch(/corpus:(?:collect|generate|discover)/)
+  })
+
   it('prepares platform type declarations before every standalone Weapi compatibility guard', () => {
     const quality = read('validate-ci.yml')
     for (const name of ['weapi-compat-pr', 'weapi-compat-full']) {

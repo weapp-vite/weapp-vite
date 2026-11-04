@@ -1,5 +1,6 @@
 /* eslint-disable ts/no-use-before-define -- 脚本模板字符串与代码边界互相递归。 */
 import type { ScriptBoundaryCandidates, SourceRange } from './types'
+import { legacyAttributeEnd } from './attributeLayer'
 import { TokenContext } from './context'
 import { findLineEnd, isNameCode, isSpaceCode, isWordCode } from './lexical'
 
@@ -8,16 +9,8 @@ interface ScriptScan extends ScriptBoundaryCandidates {
 }
 
 function quotedEnd(source: string, start: number, quote: number) {
-  for (let index = start + 1; index < source.length; index++) {
-    const code = source.charCodeAt(index)
-    if (code === 92) {
-      index++
-    }
-    else if (code === quote) {
-      return index + 1
-    }
-  }
-  return source.length
+  const end = legacyAttributeEnd(source, start + 1, quote === 34 ? '"' : '\'')
+  return end < 0 ? source.length : end + 1
 }
 
 function regexpEnd(source: string, start: number) {

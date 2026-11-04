@@ -1,0 +1,753 @@
+[
+  {
+    "framework": "uni-vue2",
+    "version": "2.0.2-5030320261023001",
+    "compiler": "@dcloudio/vue-cli-plugin-uni",
+    "targets": [
+      {
+        "target": "mp-weixin",
+        "platform": "weapp",
+        "profileId": "weapp-legacy",
+        "extensions": [
+          ".wxml"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@dcloudio/vue-cli-plugin-uni@2.0.2-5030320261023001/lib/uni-plugins/index.js"
+      },
+      {
+        "target": "mp-alipay",
+        "platform": "alipay",
+        "profileId": "alipay-xml",
+        "extensions": [
+          ".axml"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@dcloudio/vue-cli-plugin-uni@2.0.2-5030320261023001/lib/uni-plugins/index.js"
+      },
+      {
+        "target": "mp-baidu",
+        "platform": "swan",
+        "profileId": "swan-xml",
+        "extensions": [
+          ".swan"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@dcloudio/vue-cli-plugin-uni@2.0.2-5030320261023001/lib/uni-plugins/index.js"
+      },
+      {
+        "target": "mp-toutiao",
+        "platform": "tt",
+        "profileId": "tt-xml",
+        "extensions": [
+          ".ttml"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@dcloudio/vue-cli-plugin-uni@2.0.2-5030320261023001/lib/uni-plugins/index.js"
+      },
+      {
+        "target": "mp-qq",
+        "platform": "qq",
+        "profileId": "qq-xml",
+        "extensions": [
+          ".qml"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@dcloudio/vue-cli-plugin-uni@2.0.2-5030320261023001/lib/uni-plugins/index.js"
+      },
+      {
+        "target": "mp-kuaishou",
+        "platform": "ks",
+        "profileId": "ks-xml",
+        "extensions": [
+          ".ksml"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@dcloudio/vue-cli-plugin-uni@2.0.2-5030320261023001/lib/uni-plugins/index.js"
+      },
+      {
+        "target": "mp-lark",
+        "platform": "lark",
+        "profileId": "lark-xml",
+        "extensions": [
+          ".ttml"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@dcloudio/vue-cli-plugin-uni@2.0.2-5030320261023001/lib/uni-plugins/index.js"
+      },
+      {
+        "target": "mp-jd",
+        "platform": "jd",
+        "profileId": "jd-xml",
+        "extensions": [
+          ".jxml"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@dcloudio/vue-cli-plugin-uni@2.0.2-5030320261023001/lib/uni-plugins/index.js"
+      },
+      {
+        "target": "mp-xhs",
+        "platform": "xhs",
+        "profileId": "xhs-xml",
+        "extensions": [
+          ".xhsml"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@dcloudio/vue-cli-plugin-uni@2.0.2-5030320261023001/lib/uni-plugins/index.js"
+      },
+      {
+        "target": "quickapp-webview",
+        "platform": "quickapp",
+        "profileId": "quickapp-qxml",
+        "extensions": [
+          ".qxml"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@dcloudio/vue-cli-plugin-uni@2.0.2-5030320261023001/lib/uni-plugins/index.js; format=https://unpkg.com/@dcloudio/uni-quickapp-webview@2.0.2-5030320261023001/lib/uni.config.js"
+      },
+      {
+        "target": "quickapp-webview-huawei",
+        "platform": "quickapp",
+        "profileId": "quickapp-qxml",
+        "extensions": [
+          ".qxml"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@dcloudio/vue-cli-plugin-uni@2.0.2-5030320261023001/lib/uni-plugins/index.js; format=https://unpkg.com/@dcloudio/uni-quickapp-webview@2.0.2-5030320261023001/lib/uni.config.js"
+      },
+      {
+        "target": "quickapp-webview-union",
+        "platform": "quickapp",
+        "profileId": "quickapp-qxml",
+        "extensions": [
+          ".qxml"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@dcloudio/vue-cli-plugin-uni@2.0.2-5030320261023001/lib/uni-plugins/index.js; format=https://unpkg.com/@dcloudio/uni-quickapp-webview@2.0.2-5030320261023001/lib/uni.config.js"
+      },
+      {
+        "target": "mp-harmony",
+        "platform": "harmony",
+        "profileId": "harmony-hxml",
+        "extensions": [
+          ".hxml"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@dcloudio/vue-cli-plugin-uni@2.0.2-5030320261023001/lib/uni-plugins/index.js; format=https://unpkg.com/@dcloudio/uni-mp-harmony@2.0.2-5030320261023001/lib/uni.config.js"
+      },
+      {
+        "target": "mp-360",
+        "platform": "360",
+        "profileId": "360-xml",
+        "extensions": [
+          ".wxml"
+        ],
+        "support": "unsupported",
+        "evidence": "https://unpkg.com/@dcloudio/uni-mp-360@2.0.2-5030320261023001/package.json (uni-app.extends=h5); https://unpkg.com/@dcloudio/uni-mp-360@2.0.2-5030320261023001/lib/uni.config.js (app.js/app.css; no native markup template target)"
+      }
+    ]
+  },
+  {
+    "framework": "uni-vue3",
+    "version": "3.0.0-5030420261029002",
+    "compiler": "@dcloudio/vite-plugin-uni",
+    "targets": [
+      {
+        "target": "mp-weixin",
+        "platform": "weapp",
+        "profileId": "weapp-legacy",
+        "extensions": [
+          ".wxml"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@dcloudio/vite-plugin-uni@3.0.0-5030420261029002/dist/cli/utils.js"
+      },
+      {
+        "target": "mp-alipay",
+        "platform": "alipay",
+        "profileId": "alipay-xml",
+        "extensions": [
+          ".axml"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@dcloudio/vite-plugin-uni@3.0.0-5030420261029002/dist/cli/utils.js"
+      },
+      {
+        "target": "mp-baidu",
+        "platform": "swan",
+        "profileId": "swan-xml",
+        "extensions": [
+          ".swan"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@dcloudio/vite-plugin-uni@3.0.0-5030420261029002/dist/cli/utils.js"
+      },
+      {
+        "target": "mp-toutiao",
+        "platform": "tt",
+        "profileId": "tt-xml",
+        "extensions": [
+          ".ttml"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@dcloudio/vite-plugin-uni@3.0.0-5030420261029002/dist/cli/utils.js"
+      },
+      {
+        "target": "mp-qq",
+        "platform": "qq",
+        "profileId": "qq-xml",
+        "extensions": [
+          ".qml"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@dcloudio/vite-plugin-uni@3.0.0-5030420261029002/dist/cli/utils.js"
+      },
+      {
+        "target": "mp-kuaishou",
+        "platform": "ks",
+        "profileId": "ks-xml",
+        "extensions": [
+          ".ksml"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@dcloudio/vite-plugin-uni@3.0.0-5030420261029002/dist/cli/utils.js"
+      },
+      {
+        "target": "mp-lark",
+        "platform": "lark",
+        "profileId": "lark-xml",
+        "extensions": [
+          ".ttml"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@dcloudio/vite-plugin-uni@3.0.0-5030420261029002/dist/cli/utils.js"
+      },
+      {
+        "target": "mp-jd",
+        "platform": "jd",
+        "profileId": "jd-xml",
+        "extensions": [
+          ".jxml"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@dcloudio/vite-plugin-uni@3.0.0-5030420261029002/dist/cli/utils.js"
+      },
+      {
+        "target": "mp-xhs",
+        "platform": "xhs",
+        "profileId": "xhs-xml",
+        "extensions": [
+          ".xhsml"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@dcloudio/vite-plugin-uni@3.0.0-5030420261029002/dist/cli/utils.js"
+      },
+      {
+        "target": "quickapp-webview",
+        "platform": "quickapp",
+        "profileId": "quickapp-qxml",
+        "extensions": [
+          ".qxml"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@dcloudio/vite-plugin-uni@3.0.0-5030420261029002/dist/cli/utils.js; format=https://unpkg.com/@dcloudio/uni-quickapp-webview@3.0.0-5030420261029002/dist/uni.compiler.js"
+      },
+      {
+        "target": "quickapp-webview-huawei",
+        "platform": "quickapp",
+        "profileId": "quickapp-qxml",
+        "extensions": [
+          ".qxml"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@dcloudio/vite-plugin-uni@3.0.0-5030420261029002/dist/cli/utils.js; format=https://unpkg.com/@dcloudio/uni-quickapp-webview@3.0.0-5030420261029002/dist/uni.compiler.js"
+      },
+      {
+        "target": "quickapp-webview-union",
+        "platform": "quickapp",
+        "profileId": "quickapp-qxml",
+        "extensions": [
+          ".qxml"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@dcloudio/vite-plugin-uni@3.0.0-5030420261029002/dist/cli/utils.js; format=https://unpkg.com/@dcloudio/uni-quickapp-webview@3.0.0-5030420261029002/dist/uni.compiler.js"
+      },
+      {
+        "target": "mp-harmony",
+        "platform": "harmony",
+        "profileId": "harmony-hxml",
+        "extensions": [
+          ".hxml"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@dcloudio/vite-plugin-uni@3.0.0-5030420261029002/dist/cli/utils.js; format=https://unpkg.com/@dcloudio/uni-mp-harmony@3.0.0-5030420261029002/dist/uni.compiler.js"
+      },
+      {
+        "target": "mp-360",
+        "platform": "360",
+        "profileId": "360-xml",
+        "extensions": [
+          ".wxml"
+        ],
+        "support": "unsupported",
+        "evidence": "https://unpkg.com/@dcloudio/vite-plugin-uni@3.0.0-5030420261029002/dist/cli/utils.js#initEnv-explicitly-rejects-mp-360"
+      }
+    ]
+  },
+  {
+    "framework": "mpx",
+    "version": "2.11.2",
+    "compiler": "@mpxjs/webpack-plugin",
+    "targets": [
+      {
+        "target": "wx",
+        "platform": "weapp",
+        "profileId": "weapp-legacy",
+        "extensions": [
+          ".wxml"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@mpxjs/webpack-plugin@2.11.2/lib/config.js"
+      },
+      {
+        "target": "ali",
+        "platform": "alipay",
+        "profileId": "alipay-xml",
+        "extensions": [
+          ".axml"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@mpxjs/webpack-plugin@2.11.2/lib/config.js"
+      },
+      {
+        "target": "swan",
+        "platform": "swan",
+        "profileId": "swan-xml",
+        "extensions": [
+          ".swan"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@mpxjs/webpack-plugin@2.11.2/lib/config.js"
+      },
+      {
+        "target": "qq",
+        "platform": "qq",
+        "profileId": "qq-xml",
+        "extensions": [
+          ".qml"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@mpxjs/webpack-plugin@2.11.2/lib/config.js"
+      },
+      {
+        "target": "tt",
+        "platform": "tt",
+        "profileId": "tt-xml",
+        "extensions": [
+          ".ttml"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@mpxjs/webpack-plugin@2.11.2/lib/config.js"
+      },
+      {
+        "target": "jd",
+        "platform": "jd",
+        "profileId": "jd-xml",
+        "extensions": [
+          ".jxml"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@mpxjs/webpack-plugin@2.11.2/lib/config.js"
+      },
+      {
+        "target": "qa",
+        "platform": "qa",
+        "profileId": "qa-xml",
+        "extensions": [
+          ".qxml"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@mpxjs/webpack-plugin@2.11.2/lib/config.js"
+      },
+      {
+        "target": "dd",
+        "platform": "dd",
+        "profileId": "dd-xml",
+        "extensions": [
+          ".ddml"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@mpxjs/webpack-plugin@2.11.2/lib/config.js"
+      },
+      {
+        "target": "ks",
+        "platform": "ks",
+        "profileId": "ks-xml",
+        "extensions": [
+          ".ksml"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@mpxjs/webpack-plugin@2.11.2/lib/config.js"
+      }
+    ]
+  },
+  {
+    "framework": "mpx",
+    "version": "2.8.64",
+    "compiler": "@mpxjs/webpack-plugin",
+    "targets": [
+      {
+        "target": "wx",
+        "platform": "weapp",
+        "profileId": "weapp-legacy",
+        "extensions": [
+          ".wxml"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@mpxjs/webpack-plugin@2.8.64/lib/config.js"
+      },
+      {
+        "target": "ali",
+        "platform": "alipay",
+        "profileId": "alipay-xml",
+        "extensions": [
+          ".axml"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@mpxjs/webpack-plugin@2.8.64/lib/config.js"
+      },
+      {
+        "target": "swan",
+        "platform": "swan",
+        "profileId": "swan-xml",
+        "extensions": [
+          ".swan"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@mpxjs/webpack-plugin@2.8.64/lib/config.js"
+      },
+      {
+        "target": "qq",
+        "platform": "qq",
+        "profileId": "qq-xml",
+        "extensions": [
+          ".qml"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@mpxjs/webpack-plugin@2.8.64/lib/config.js"
+      },
+      {
+        "target": "tt",
+        "platform": "tt",
+        "profileId": "tt-xml",
+        "extensions": [
+          ".ttml"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@mpxjs/webpack-plugin@2.8.64/lib/config.js"
+      },
+      {
+        "target": "jd",
+        "platform": "jd",
+        "profileId": "jd-xml",
+        "extensions": [
+          ".jxml"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@mpxjs/webpack-plugin@2.8.64/lib/config.js"
+      },
+      {
+        "target": "qa",
+        "platform": "qa",
+        "profileId": "qa-xml",
+        "extensions": [
+          ".qxml"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@mpxjs/webpack-plugin@2.8.64/lib/config.js"
+      },
+      {
+        "target": "dd",
+        "platform": "dd",
+        "profileId": "dd-xml",
+        "extensions": [
+          ".ddml"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@mpxjs/webpack-plugin@2.8.64/lib/config.js"
+      }
+    ]
+  },
+  {
+    "framework": "taro",
+    "version": "4.3.2",
+    "compiler": "@tarojs/cli",
+    "targets": [
+      {
+        "target": "weapp",
+        "platform": "weapp",
+        "profileId": "weapp-legacy",
+        "extensions": [
+          ".wxml"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@tarojs/mini-runner@4.3.2/package.json"
+      },
+      {
+        "target": "alipay",
+        "platform": "alipay",
+        "profileId": "alipay-xml",
+        "extensions": [
+          ".axml"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@tarojs/mini-runner@4.3.2/package.json"
+      },
+      {
+        "target": "swan",
+        "platform": "swan",
+        "profileId": "swan-xml",
+        "extensions": [
+          ".swan"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@tarojs/mini-runner@4.3.2/package.json"
+      },
+      {
+        "target": "tt",
+        "platform": "tt",
+        "profileId": "tt-xml",
+        "extensions": [
+          ".ttml"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@tarojs/mini-runner@4.3.2/package.json"
+      },
+      {
+        "target": "qq",
+        "platform": "qq",
+        "profileId": "qq-xml",
+        "extensions": [
+          ".qml"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@tarojs/mini-runner@4.3.2/package.json"
+      },
+      {
+        "target": "jd",
+        "platform": "jd",
+        "profileId": "jd-xml",
+        "extensions": [
+          ".jxml"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@tarojs/mini-runner@4.3.2/package.json"
+      },
+      {
+        "target": "ascf",
+        "platform": "ascf",
+        "profileId": "ascf-xml",
+        "extensions": [
+          ".hxml"
+        ],
+        "support": "candidate",
+        "evidence": "https://github.com/NervJS/taro/blob/be38255a536008698446889927b01e83b39354c1/packages/taro-platform-ascf/src/program.ts; template=https://github.com/NervJS/taro/blob/be38255a536008698446889927b01e83b39354c1/packages/taro-platform-ascf/src/template.ts; package=https://registry.npmjs.org/@tarojs/plugin-platform-ascf/4.3.2"
+      },
+      {
+        "target": "harmony-jsui",
+        "platform": "harmony",
+        "profileId": "harmony-hml",
+        "extensions": [
+          ".hml"
+        ],
+        "support": "candidate",
+        "evidence": "https://github.com/NervJS/taro/blob/be38255a536008698446889927b01e83b39354c1/packages/taro-platform-harmony/src/index.ts#L40; configuration=@tarojs/plugin-platform-harmony-ets@4.3.2 disableArkTS=true; format=https://github.com/NervJS/taro/blob/be38255a536008698446889927b01e83b39354c1/packages/taro-platform-harmony/src/program/jsUI.ts; default ArkTS is a separate non-markup output"
+      }
+    ]
+  },
+  {
+    "framework": "taro",
+    "version": "3.6.40",
+    "compiler": "@tarojs/cli",
+    "targets": [
+      {
+        "target": "weapp",
+        "platform": "weapp",
+        "profileId": "weapp-legacy",
+        "extensions": [
+          ".wxml"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@tarojs/mini-runner@3.6.40/package.json"
+      },
+      {
+        "target": "alipay",
+        "platform": "alipay",
+        "profileId": "alipay-xml",
+        "extensions": [
+          ".axml"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@tarojs/mini-runner@3.6.40/package.json"
+      },
+      {
+        "target": "swan",
+        "platform": "swan",
+        "profileId": "swan-xml",
+        "extensions": [
+          ".swan"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@tarojs/mini-runner@3.6.40/package.json"
+      },
+      {
+        "target": "tt",
+        "platform": "tt",
+        "profileId": "tt-xml",
+        "extensions": [
+          ".ttml"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@tarojs/mini-runner@3.6.40/package.json"
+      },
+      {
+        "target": "qq",
+        "platform": "qq",
+        "profileId": "qq-xml",
+        "extensions": [
+          ".qml"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@tarojs/mini-runner@3.6.40/package.json"
+      },
+      {
+        "target": "jd",
+        "platform": "jd",
+        "profileId": "jd-xml",
+        "extensions": [
+          ".jxml"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@tarojs/mini-runner@3.6.40/package.json"
+      },
+      {
+        "target": "ascf",
+        "platform": "ascf",
+        "profileId": "ascf-xml",
+        "extensions": [
+          ".hxml"
+        ],
+        "support": "candidate",
+        "evidence": "https://github.com/NervJS/taro/blob/38a6a2c89b319053e9893c3967bd0143af02cbe2/packages/taro-platform-ascf/src/program.ts; template=https://github.com/NervJS/taro/blob/38a6a2c89b319053e9893c3967bd0143af02cbe2/packages/taro-platform-ascf/src/template.ts; package=https://registry.npmjs.org/@tarojs/plugin-platform-ascf/3.6.40"
+      }
+    ]
+  },
+  {
+    "framework": "taro",
+    "version": "2.2.22",
+    "compiler": "@tarojs/cli",
+    "targets": [
+      {
+        "target": "weapp",
+        "platform": "weapp",
+        "profileId": "weapp-legacy",
+        "extensions": [
+          ".wxml"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@tarojs/helper@2.2.22/package.json"
+      },
+      {
+        "target": "alipay",
+        "platform": "alipay",
+        "profileId": "alipay-xml",
+        "extensions": [
+          ".axml"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@tarojs/helper@2.2.22/package.json"
+      },
+      {
+        "target": "swan",
+        "platform": "swan",
+        "profileId": "swan-xml",
+        "extensions": [
+          ".swan"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@tarojs/helper@2.2.22/package.json"
+      },
+      {
+        "target": "tt",
+        "platform": "tt",
+        "profileId": "tt-xml",
+        "extensions": [
+          ".ttml"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@tarojs/helper@2.2.22/package.json"
+      },
+      {
+        "target": "qq",
+        "platform": "qq",
+        "profileId": "qq-xml",
+        "extensions": [
+          ".qml"
+        ],
+        "support": "candidate",
+        "evidence": "https://unpkg.com/@tarojs/helper@2.2.22/package.json"
+      },
+      {
+        "target": "jd",
+        "platform": "jd",
+        "profileId": "jd-xml",
+        "extensions": [
+          ".jxml"
+        ],
+        "support": "candidate",
+        "evidence": "https://github.com/NervJS/taro/blob/34c5e8c88902501684d704a252b7fdfaa7da8946/packages/taro-cli/src/presets/platforms/jd.ts; runtime=https://registry.npmjs.org/@tarojs/taro-jd/2.2.22"
+      },
+      {
+        "target": "quickapp",
+        "platform": "quickapp",
+        "profileId": "quickapp-template",
+        "extensions": [
+          ".ux"
+        ],
+        "container": "template",
+        "support": "candidate",
+        "evidence": "https://github.com/NervJS/taro/blob/34c5e8c88902501684d704a252b7fdfaa7da8946/packages/taro-cli/src/presets/platforms/quickapp.ts; official miniRunner isBuildQuickapp=true emits UX before downloading/running the optional container; extract only the template region; runtime=https://registry.npmjs.org/@tarojs/taro-quickapp/2.2.22"
+      }
+    ]
+  },
+  {
+    "framework": "ant-design-mini",
+    "version": "3.4.3",
+    "compiler": "@alipay/axml-transverter",
+    "upstream": {
+      "repository": "ant-design/ant-design-mini",
+      "commit": "08a3cb9ad53573c235ff9ea5f615ce56b5c4de39"
+    },
+    "targets": [
+      {
+        "target": "alipay",
+        "platform": "alipay",
+        "profileId": "alipay-xml",
+        "extensions": [
+          ".axml"
+        ],
+        "support": "candidate",
+        "evidence": "https://github.com/ant-design/ant-design-mini/blob/08a3cb9ad53573c235ff9ea5f615ce56b5c4de39/scripts/mini-compiler.ts"
+      },
+      {
+        "target": "weapp",
+        "platform": "weapp",
+        "profileId": "weapp-legacy",
+        "extensions": [
+          ".wxml"
+        ],
+        "support": "candidate",
+        "evidence": "https://github.com/ant-design/ant-design-mini/blob/08a3cb9ad53573c235ff9ea5f615ce56b5c4de39/scripts/mini-compiler.ts"
+      }
+    ]
+  }
+]

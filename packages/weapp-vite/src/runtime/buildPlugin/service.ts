@@ -314,7 +314,7 @@ const SNAPSHOT_BUILD_BATCH_DELAY_MS = 8
 
 function shouldHandleSnapshotSidecarFile(filePath: string, ctx: MutableCompilerContext) {
   const configService = ctx.configService!
-  if (isSidecarFile(filePath)) {
+  if (isSidecarFile(filePath, configService.platform)) {
     return true
   }
   const normalizedFile = normalizeFsResolvedId(filePath)
@@ -1757,7 +1757,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       if (isLayoutSourcePath(configService.relativeAbsoluteSrcRoot(reason.file))) {
         return 'dependency' as const
       }
-      return isSidecarFile(reason.file) ? 'metadata' as const : 'direct' as const
+      return isSidecarFile(reason.file, configService.platform) ? 'metadata' as const : 'direct' as const
     }
 
     function resolveSnapshotBatchReason(batch: SnapshotBuildBatch) {
@@ -2295,7 +2295,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
 
     function ownsSnapshotPhysicalSidecar(file: string) {
       const id = normalizeFsResolvedId(file)
-      if (!snapshotSidecarReady || !isSidecarFile(id) || isDevOutputFile(id) || snapshotSidecarIgnored?.(id)
+      if (!snapshotSidecarReady || !isSidecarFile(id, configService.platform) || isDevOutputFile(id) || snapshotSidecarIgnored?.(id)
         || isWxmlDependency(ctx, id) || ownsWorkerSource(ctx, id)
         || (configService.configFileDependencies ?? []).some(dependency => normalizeFsResolvedId(dependency) === id)) {
         return false
@@ -2413,7 +2413,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         const isConfigDependency = (configService.configFileDependencies ?? [])
           .some(dependency => normalizeFsResolvedId(dependency) === normalizedId)
         if (event === 'update' && !isConfigDependency && !independentSource) {
-          if (isSidecarFile(id) && ownsSnapshotSidecarUpdate(id)) {
+          if (isSidecarFile(id, configService.platform) && ownsSnapshotSidecarUpdate(id)) {
             onModuleGraphChange({ event: 'update', file: id })
           }
           return
@@ -2566,7 +2566,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
 
       if (snapshotSidecarReady && !devWatcherClosed) {
         claimSidecarDelivery(ctx as CompilerContext, (file, event) => {
-          if (!isSidecarFile(file) || isDevOutputFile(file)) {
+          if (!isSidecarFile(file, configService.platform) || isDevOutputFile(file)) {
             return false
           }
           return ownsSnapshotSidecarUpdate(file)

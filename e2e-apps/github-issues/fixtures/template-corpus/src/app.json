@@ -1,0 +1,9 @@
+{
+  "pages": [
+    "pages/adjacent/index",
+    "pages/bindings/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "Template corpus"
+  }
+}

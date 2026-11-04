@@ -3,7 +3,7 @@ import type { TemplateAnalysis, TemplateTag } from './types'
 import { getLanguageProfile, resolveLanguageProfile } from '../profiles'
 import { collectTemplateExpressions } from './expressions'
 import { collectTemplateMetadata } from './references'
-import { scanTemplate } from './scanner'
+import { scanTemplateWithProfile, templateSyntax } from './scanner'
 import { validateTemplate } from './validate'
 
 export { getTemplateExpressions } from './expressions'
@@ -15,15 +15,16 @@ export type { TemplateAnalysis, TemplateAttribute, TemplateBinding, TemplateExpr
 /** 分析模板结构与平台作用域，不执行脚本、不加载项目配置。 */
 export function analyzeTemplate(input: DocumentInput): TemplateAnalysis {
   const profile = input.platform ? getLanguageProfile(input.platform) : resolveLanguageProfile(input.fileName, input.options)
-  const { tokens, diagnostics } = scanTemplate(input.source)
-  diagnostics.push(...validateTemplate(input.source, tokens, profile))
+  const syntax = templateSyntax(profile, input.options?.syntax)
+  const { tokens, diagnostics } = scanTemplateWithProfile(input.source, profile, syntax)
+  diagnostics.push(...validateTemplate(input.source, tokens, profile, syntax))
   return {
     platform: profile?.platform,
     valid: diagnostics.every(diagnostic => diagnostic.severity !== 'error'),
     diagnostics,
     tokens,
     elements: tokens.filter((token): token is TemplateTag => token.kind === 'tag' && !token.closing),
-    expressions: collectTemplateExpressions(input.source, tokens),
+    expressions: collectTemplateExpressions(input.source, tokens, syntax),
     ...collectTemplateMetadata(input.source, tokens, profile),
   }
 }

@@ -81,7 +81,7 @@ export function createWxmlDependencyService(
       if (isTemplateImportTag(dep.tagName) && !isTemplate(dep.value)) {
         return resolvedDeps
       }
-      if (!isTemplateImportTag(dep.tagName) && !isScriptModuleTagName(dep.tagName)) {
+      if (!isTemplateImportTag(dep.tagName) && !isScriptModuleTagName(dep.tagName, state.ctx.configService?.platform)) {
         return resolvedDeps
       }
       const kind: WxmlDependencyKind = dep.tagName === 'import'

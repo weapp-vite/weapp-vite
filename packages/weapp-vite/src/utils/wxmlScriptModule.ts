@@ -1,5 +1,6 @@
+import type { MiniProgramNativeScriptModule } from '@weapp-core/shared'
 import type { MpPlatform } from '../types'
-import { getMiniProgramScriptModuleOptions } from '@weapp-core/shared'
+import { getMiniProgramNativeScriptModules, getMiniProgramScriptModuleOptions } from '@weapp-core/shared'
 import { getPlatformOutputExtensions, getPlatformScriptModuleTag } from '../platform'
 import { MINI_PROGRAM_PLATFORM_ADAPTERS } from '../platforms/adapters'
 
@@ -20,6 +21,21 @@ const SCRIPT_MODULE_IMPORT_ATTRS = Object.freeze({
 
 type ScriptModuleExtensionKey = keyof typeof DEFAULT_SCRIPT_MODULE_TAG_BY_EXTENSION
 type ScriptModuleImportTagName = keyof typeof SCRIPT_MODULE_IMPORT_ATTRS
+const scriptModuleTagNames = new Map<MpPlatform | undefined, readonly string[]>()
+const nativeScriptModules = new Map<MpPlatform | undefined, ReadonlyMap<string, MiniProgramNativeScriptModule>>()
+
+/** 额外原生脚本身份仅在对应平台内成立，不扩大普通组件的原文边界。 */
+export function getNativeScriptModuleByTag(tagName?: string, platform?: MpPlatform) {
+  if (!tagName) {
+    return undefined
+  }
+  let modules = nativeScriptModules.get(platform)
+  if (!modules) {
+    modules = new Map(getMiniProgramNativeScriptModules(platform).map(module => [module.tag, module]))
+    nativeScriptModules.set(platform, modules)
+  }
+  return modules.get(tagName)
+}
 
 export function resolveScriptModuleTagByPlatform(platform?: MpPlatform, scriptModuleExtension?: string) {
   return getPlatformScriptModuleTag(platform, scriptModuleExtension)
@@ -63,23 +79,32 @@ export function getDerivedScriptModuleTagNames() {
     .filter((value): value is string => typeof value === 'string' && value.length > 0)
 }
 
-export function getScriptModuleTagNames() {
-  return [...new Set([...DEFAULT_SCRIPT_MODULE_TAG_NAMES, ...getDerivedScriptModuleTagNames()])]
+export function getScriptModuleTagNames(platform?: MpPlatform) {
+  let names = scriptModuleTagNames.get(platform)
+  if (!names) {
+    names = Object.freeze([...new Set([...DEFAULT_SCRIPT_MODULE_TAG_NAMES, ...getDerivedScriptModuleTagNames(), ...getMiniProgramNativeScriptModules(platform).map(module => module.tag)])])
+    scriptModuleTagNames.set(platform, names)
+  }
+  return names
 }
 
 /** 最终产物只将目标平台的脚本标签视为原始正文，避免遮蔽同名普通组件。 */
 export function getOutputTemplateRawTags(platform: MpPlatform) {
   const tag = getMiniProgramScriptModuleOptions(platform, getPlatformOutputExtensions(platform).wxs).tag
-  return platform === 'swan' ? [tag, 'filter'] : [tag]
+  return [...new Set([tag, ...(platform === 'swan' ? ['filter'] : []), ...getMiniProgramNativeScriptModules(platform).map(module => module.tag)])]
 }
 
-export function isScriptModuleTagName(tagName?: string) {
-  return typeof tagName === 'string' && getScriptModuleTagNames().includes(tagName)
+export function isScriptModuleTagName(tagName?: string, platform?: MpPlatform) {
+  return typeof tagName === 'string' && getScriptModuleTagNames(platform).includes(tagName)
 }
 
 export function getScriptModuleImportAttrs(tagName?: string, platform?: MpPlatform) {
   if (!tagName) {
     return undefined
+  }
+  const native = getNativeScriptModuleByTag(tagName, platform)
+  if (native) {
+    return [native.sourceAttribute]
   }
   if (!Object.hasOwn(SCRIPT_MODULE_IMPORT_ATTRS, tagName)) {
     return undefined

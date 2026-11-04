@@ -191,6 +191,7 @@ export const MINI_PROGRAM_PLATFORM_DESCRIPTORS: readonly MiniProgramPlatformDesc
     },
     projectConfigFileName: 'project.config.json',
     projectConfigRootKeys: DEFAULT_PROJECT_CONFIG_ROOT_KEYS,
+    nativeScriptModules: [{ extension: 'jds', tag: 'jds', format: 'commonjs', sourceAttribute: 'src', moduleAttribute: 'module' }],
     ide: {},
     build: {
       autoTouchAppStyle: false,

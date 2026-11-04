@@ -1,3 +1,4 @@
+import type { MpPlatform } from '../../types'
 import type { Attribute, Element } from '../template/scan'
 import {
   WEVU_SLOT_NAMES_ATTR,
@@ -6,11 +7,10 @@ import {
   WEVU_TEMPLATE_REF_CLASS_PREFIX,
 } from '@weapp-core/constants'
 import { getSupportedMiniProgramDirectivePrefixes } from '@weapp-core/shared'
-import { getScriptModuleTagNames } from '../../utils/wxmlScriptModule'
+import { isScriptModuleTagName } from '../../utils/wxmlScriptModule'
 import { failAt } from '../template/lexical'
 
-export const scriptTags = new Set(getScriptModuleTagNames())
-export const structuralTags = new Set(['block', 'slot', 'template', 'import', 'include', ...scriptTags])
+const structuralTags = new Set(['block', 'slot', 'template', 'import', 'include'])
 const directivePrefixes = new Set(getSupportedMiniProgramDirectivePrefixes())
 const protectedNames: Record<string, true | undefined> = {
   [WEVU_SLOT_NAMES_ATTR]: true,
@@ -45,7 +45,11 @@ for (const prefix of directivePrefixes) {
   }
 }
 
-export function isProtectedAttribute(code: string, node: Element, attr: Attribute, exact: boolean) {
+export function isStructuralTag(tag: string, platform?: MpPlatform) {
+  return structuralTags.has(tag) || isScriptModuleTagName(tag, platform)
+}
+
+export function isProtectedAttribute(code: string, node: Element, attr: Attribute, exact: boolean, platform?: MpPlatform) {
   const { name } = attr
   // 最终产物无法区分普通宿主属性与 v-show/v-model 等生成属性，通配符采用保守边界。
   if (!exact && broadMatchProtectedNames[name] === true) {
@@ -70,7 +74,7 @@ export function isProtectedAttribute(code: string, node: Element, attr: Attribut
     || name.startsWith('s-') || name === 'wx-if' || name === 'wx-for') {
     return true
   }
-  if (scriptTags.has(node.tag) && (name === 'src' || name === 'from' || name === 'module' || name === 'name' || name === 'lang')) {
+  if (isScriptModuleTagName(node.tag, platform) && (name === 'src' || name === 'from' || name === 'module' || name === 'name' || name === 'lang')) {
     return true
   }
   if ((node.tag === 'import' || node.tag === 'include') && name === 'src') {

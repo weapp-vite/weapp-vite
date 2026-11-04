@@ -7,7 +7,7 @@ import { configExtensions } from '../../../constants'
 import logger from '../../../logger'
 import { createFileWatcher } from '../../../runtime/watch/fileWatcher'
 import { cleanupCssImporterGraph, extractCssImportDependencies } from './cssGraph'
-import { defaultIgnoredDirNames, isSidecarFile, isWatchLimitError, watchedCssExts, watchedScriptModuleSuffixes, watchedTemplateExts } from './shared'
+import { defaultIgnoredDirNames, getWatchedScriptModuleSuffixes, isSidecarFile, isWatchLimitError, watchedCssExts, watchedTemplateExts } from './shared'
 import { invalidateEntryForSidecar } from './sidecar'
 
 export function ensureSidecarWatcher(ctx: CompilerContext, rootDir: string) {
@@ -50,7 +50,7 @@ export function ensureSidecarWatcher(ctx: CompilerContext, rootDir: string) {
   }
 
   const handleSidecarChange = (event: ChangeEvent, filePath: string, ready: boolean) => {
-    if (closed || !isSidecarFile(filePath)) {
+    if (closed || !isSidecarFile(filePath, ctx.configService.platform)) {
       return
     }
 
@@ -58,7 +58,7 @@ export function ensureSidecarWatcher(ctx: CompilerContext, rootDir: string) {
     const isCssFile = Boolean(ext && watchedCssExts.has(ext))
     const isTemplateFile = Boolean(ext && watchedTemplateExts.has(ext))
     const isConfigFile = configExtensions.some(suffix => filePath.endsWith(suffix))
-    const isScriptModuleFile = watchedScriptModuleSuffixes.some(suffix => filePath.endsWith(suffix))
+    const isScriptModuleFile = getWatchedScriptModuleSuffixes(ctx.configService.platform).some(suffix => filePath.endsWith(suffix))
     const hasReverseImporters = Boolean(isTemplateFile || isScriptModuleFile)
       && (ctx.wxmlService?.getImporters(filePath).size ?? 0) > 0
 
@@ -100,7 +100,7 @@ export function ensureSidecarWatcher(ctx: CompilerContext, rootDir: string) {
     persistent: true,
     stability: { threshold: 100, interval: 20 },
     recoverRenames: true,
-    ignored: (file, stat) => ignoredMatcher(file) || Boolean(stat?.isFile() && !isSidecarFile(file)),
+    ignored: (file, stat) => ignoredMatcher(file) || Boolean(stat?.isFile() && !isSidecarFile(file, ctx.configService.platform)),
   })
 
   const forwardChange = (event: ChangeEvent, input: string, options?: { silent?: boolean }) => {

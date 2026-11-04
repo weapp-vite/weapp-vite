@@ -96,7 +96,7 @@ describe('source preserving parser', () => {
     '<view><text></view></text>',
     '<view a="bad>',
     '<view a=>',
-    '<view a="a"b="b"/>',
+    '<view a="a"="b"/>',
     '<view>{{ (a] }}</view>',
     '<!-- bad',
     '<![CDATA[ bad',

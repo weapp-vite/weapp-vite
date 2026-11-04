@@ -92,6 +92,14 @@ export interface MiniProgramRuntimeCapabilities {
 
 export type MiniProgramRuntimeCapabilityName = keyof MiniProgramRuntimeCapabilities
 
+export interface MiniProgramNativeScriptModule {
+  extension: string
+  tag: string
+  format: 'commonjs' | 'esm'
+  sourceAttribute: 'src' | 'from'
+  moduleAttribute: 'module' | 'name'
+}
+
 export interface MiniProgramPlatformDescriptor {
   /**
    * @description 构建流程中使用的标准平台标识。
@@ -133,6 +141,10 @@ export interface MiniProgramPlatformDescriptor {
     sourceAttribute: 'src' | 'from'
     moduleAttribute: 'module' | 'name'
   }
+  /**
+   * @description 平台原生源码的额外脚本契约；不改变跨平台编译的默认输出扩展名。
+   */
+  nativeScriptModules?: readonly MiniProgramNativeScriptModule[]
   /**
    * @description 是否使用项目根目录作为 npm 产物目录基准。
    */

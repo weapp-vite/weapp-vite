@@ -1,7 +1,7 @@
 import type { Diagnostic, ElementNode, Node, ParseOptions, Platform, RawToken, ScanResult, Syntax, TagToken, Token } from './types'
 import { expressionEnd } from './expression'
 import { isTagStartCode, TemplateLexicalError } from './lexical'
-import { defaultRawTags } from './options'
+import { defaultRawTags, defaultRawTagsFor } from './options'
 import { scanScriptBoundaryCandidates } from './script'
 import { scanTag } from './tag'
 
@@ -10,6 +10,8 @@ type MutableElement = { -readonly [K in keyof ElementNode]: ElementNode[K] }
 type TreeResult = ScanResult & { children: Node[], platform: Platform, syntax: Syntax }
 
 const defaultRawTagPattern = new RegExp(`^(?:${defaultRawTags.map(name => name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})$`, 'i')
+const jdRawTagPattern = new RegExp(`^(?:${defaultRawTagsFor('jd').join('|')})$`, 'i')
+const qqRawTagPattern = new RegExp(`^(?:${defaultRawTagsFor('qq').join('|')})$`, 'i')
 const platforms = new Set(['weapp', 'alipay', 'tt', 'swan', 'jd', 'xhs', 'qq', 'ks', 'ty'])
 
 function opaqueEnd(source: string, start: number) {
@@ -68,6 +70,7 @@ export function scanDocument(source: string, options: ParseOptions, buildTree: b
   const platform = options.platform ?? 'weapp'
   const syntax: Syntax = options.syntax ?? (platform === 'weapp' ? 'legacy' : 'xml')
   const rawTags = options.rawTags ? new Set(options.rawTags.map(name => name.toLowerCase())) : undefined
+  const rawTagPattern = platform === 'jd' ? jdRawTagPattern : platform === 'qq' ? qqRawTagPattern : defaultRawTagPattern
   const tokens: Token[] = []
   const diagnostics: Diagnostic[] = []
   const stack: number[] = []
@@ -178,7 +181,7 @@ export function scanDocument(source: string, options: ParseOptions, buildTree: b
         const tag = scanTag(source, cursor, syntax, !commentsOnly, bindings)
         appendTag(tag)
         cursor = tag.end
-        if (!tag.closing && !tag.selfClosing && (rawTags ? rawTags.has(tag.name.toLowerCase()) : defaultRawTagPattern.test(tag.name))) {
+        if (!tag.closing && !tag.selfClosing && (rawTags ? rawTags.has(tag.name.toLowerCase()) : rawTagPattern.test(tag.name))) {
           const candidates = scanScriptBoundaryCandidates(source, cursor, tag.name)
           const close = options.resolveScriptBoundary ? options.resolveScriptBoundary(source, cursor, tag.name, candidates) : candidates.closingTag
           if (!close) {

@@ -10,13 +10,17 @@ CLI、编辑器、Oxlint 项目检查和 Oxfmt 适配层共用的小程序语言
 | 支付宝 | `.axml` | `.acss` | `.sjs` |
 | 百度 | `.swan` | `.css` | `.sjs`、`.filter.js` |
 | 抖音 | `.ttml` | `.ttss` | `.sjs` |
-| 京东 | `.jxml` | `.jxss` | `.wxs` |
+| 京东 | `.jxml` | `.jxss` | `.wxs`、`.jds` |
 | 小红书 | `.xhsml` | `.css` | `.wxs` |
-| QQ | `.qml` | `.qss` | `.wxs` |
+| QQ | `.qml` | `.qss` | `.wxs`、`.qs` |
 | 快手 | `.ksml` | `.css` | `.ks` |
 | 涂鸦 | `.tyml` | `.tyss` | `.sjs` |
 
 实际后缀以 `languageProfiles` 为准。QQ、快手、涂鸦属于语言支持，不会扩展构建目标。脚本支持相应的 `.js`、`.ts` 编译源码后缀；百度 Filter 的编译源码是 `.filter.ts`。共享 `.sjs`、`.wxs` 和 `.css` 无法仅凭后缀确定平台，需要项目配置、文件覆盖规则或模板引用归属。
+
+京东 profile 使用 `<jds>`、QQ profile 使用 `<qs>` 原文脚本标签，分析、引用收集与格式化共享该配置，不会把这两个标签加入其他平台的原文标签集合。这些脚本的 AST 检查使用通用 JavaScript，不借用未经确认的 WXS/SJS 平台限制。
+
+`analyzeTemplate` 与模板格式化按已解析的平台选择方言：微信默认 legacy，其他平台默认 xml；`analyzeTemplate` 的 `input.options.syntax` 和格式化选项 `syntax` 可显式覆盖。两种方言都允许引号值后紧接下一属性，方言选择区分宿主转义与实体行为，不是严格 XML 合规开关。格式化仅补分隔，逐字保留属性原值与脚本正文。公开 `scanTemplate(source)`、`getTemplateExpressions(source)` 无平台上下文，继续固定 xml 方言及原有兼容集合。直接使用基础包时可选择对应平台默认值，显式 `rawTags` 仍替换完整列表，详见 [`@weapp-vite/wxml`](../wxml/README.md)。
 
 `getLanguageSupportMatrix()` 返回平台、后缀、组件快照状态及案例 ID；`languageSupportCases` 将 ID 映射到仓库内可执行测试文件与 suite。固定种子 `0x5eed2026` 在每个平台执行 128 组模板组合，断言受保护片段逐字保留、格式化幂等、无效输入拒绝修改。覆盖结论限定于登记的静态语言契约；宿主渲染和运行时结果由对应平台的集成测试证明。
 

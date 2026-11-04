@@ -1,5 +1,5 @@
 import type { PluginContext } from 'rolldown'
-import type { ChangeEvent, SubPackageMetaValue } from '../../../types'
+import type { ChangeEvent, MpPlatform, SubPackageMetaValue } from '../../../types'
 import type { CorePluginState } from '../helpers'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import { fs } from '@weapp-core/shared/fs'
@@ -27,7 +27,7 @@ import { isReactHmrTemplateSource } from '../../react/hmr'
 import { invalidateFileCache } from '../../utils/cache'
 import { ensureSidecarWatcher, invalidateEntryForSidecar } from '../../utils/invalidateEntry'
 import { extractCssImportDependencies } from '../../utils/invalidateEntry/cssGraph'
-import { configSuffixes, watchedCssExts, watchedScriptModuleSuffixes, watchedTemplateExts } from '../../utils/invalidateEntry/shared'
+import { configSuffixes, getWatchedScriptModuleSuffixes, watchedCssExts, watchedTemplateExts } from '../../utils/invalidateEntry/shared'
 import { isLayoutSourcePath } from '../../utils/layoutSourcePath'
 import { addNormalizedWatchFiles } from '../../utils/watchFiles'
 import { isAppVueFile } from '../../vue/transform/appShell'
@@ -47,7 +47,7 @@ interface WatchPathKind {
   isTemplate: boolean
 }
 
-function resolveWatchPathKind(normalizedId: string): WatchPathKind {
+function resolveWatchPathKind(normalizedId: string, platform?: MpPlatform): WatchPathKind {
   const extension = path.extname(normalizedId)
   let configSuffix: string | undefined
   let isScriptModuleSidecar = false
@@ -59,7 +59,7 @@ function resolveWatchPathKind(normalizedId: string): WatchPathKind {
     }
   }
 
-  for (const suffix of watchedScriptModuleSuffixes) {
+  for (const suffix of getWatchedScriptModuleSuffixes(platform)) {
     if (normalizedId.endsWith(suffix)) {
       isScriptModuleSidecar = true
       break
@@ -324,7 +324,7 @@ async function processChangedFile(
     ctx.moduleGraphService.removeEntryDependencies(normalizedId)
   }
   const isAutoRouteFile = Boolean(ctx.autoRoutesService?.isRouteFile(normalizedId))
-  const pathKind = resolveWatchPathKind(normalizedId)
+  const pathKind = resolveWatchPathKind(normalizedId, state.ctx.configService.platform)
   if (pathKind.isStyle) {
     styleScriptChanges = await collectVueStyleScriptChanges(ctx, normalizedId, configService)
     for (const entryId of styleScriptChanges) {

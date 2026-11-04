@@ -1,4 +1,4 @@
-import type { MiniProgramPlatformDescriptor, MiniProgramTemplatePreset, MpPlatform } from './types'
+import type { MiniProgramNativeScriptModule, MiniProgramPlatformDescriptor, MiniProgramTemplatePreset, MpPlatform } from './types'
 import { MINI_PROGRAM_PLATFORM_DESCRIPTORS } from './descriptors'
 import { getDefaultMiniProgramPlatform } from './runtime/helpers'
 
@@ -6,6 +6,7 @@ export * from './runtime/helpers'
 export { getMiniProgramDirectivePrefix, getSupportedMiniProgramDirectivePrefixes } from './runtime/template'
 
 const MINI_PROGRAM_PLATFORM_DESCRIPTOR_BY_ID = new Map(MINI_PROGRAM_PLATFORM_DESCRIPTORS.map(descriptor => [descriptor.id, descriptor]))
+const emptyNativeScriptModules: readonly MiniProgramNativeScriptModule[] = Object.freeze([])
 
 /**
  * @description 获取平台描述。
@@ -24,12 +25,18 @@ export function getMiniProgramPlatformDescriptor(platform: MpPlatform): MiniProg
 export function getMiniProgramScriptModuleOptions(platform?: MpPlatform, extension = 'wxs') {
   const normalized = extension.replace(/^\./, '')
   const descriptor = platform ? getMiniProgramPlatformDescriptor(platform) : undefined
+  const native = descriptor?.nativeScriptModules?.find(module => module.extension === normalized)
   return {
-    tag: descriptor?.scriptModuleTagByExtension?.[normalized] ?? (normalized === 'sjs' ? 'sjs' : 'wxs'),
-    format: descriptor?.scriptModule?.format ?? (!platform && normalized === 'sjs' ? 'esm' : 'commonjs'),
-    sourceAttribute: descriptor?.scriptModule?.sourceAttribute ?? 'src',
-    moduleAttribute: descriptor?.scriptModule?.moduleAttribute ?? 'module',
+    tag: native?.tag ?? descriptor?.scriptModuleTagByExtension?.[normalized] ?? (normalized === 'sjs' ? 'sjs' : 'wxs'),
+    format: native?.format ?? descriptor?.scriptModule?.format ?? (!platform && normalized === 'sjs' ? 'esm' : 'commonjs'),
+    sourceAttribute: native?.sourceAttribute ?? descriptor?.scriptModule?.sourceAttribute ?? 'src',
+    moduleAttribute: native?.moduleAttribute ?? descriptor?.scriptModule?.moduleAttribute ?? 'module',
   } as const
+}
+
+/** 获取额外原生脚本契约；无平台身份时不将同名组件推断为脚本。 */
+export function getMiniProgramNativeScriptModules(platform?: MpPlatform): readonly MiniProgramNativeScriptModule[] {
+  return platform ? getMiniProgramPlatformDescriptor(platform).nativeScriptModules ?? emptyNativeScriptModules : emptyNativeScriptModules
 }
 
 /**

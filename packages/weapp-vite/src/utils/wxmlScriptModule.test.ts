@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import {
   getDefaultScriptModuleTagByExtension,
   getDerivedScriptModuleTagNames,
+  getNativeScriptModuleByTag,
+  getOutputTemplateRawTags,
   getScriptModuleImportAttrs,
   getScriptModuleTagNames,
   isScriptModuleImportAttr,
@@ -14,6 +16,19 @@ import {
 } from './wxmlScriptModule'
 
 describe('wxmlScriptModule utils', () => {
+  it('recognizes JDS only within the JD native input contract', () => {
+    expect(getNativeScriptModuleByTag('jds', 'jd')?.extension).toBe('jds')
+    expect(getNativeScriptModuleByTag('jds', 'weapp')).toBeUndefined()
+    expect(isScriptModuleTagName('jds', 'jd')).toBe(true)
+    expect(isScriptModuleTagName('jds', 'weapp')).toBe(false)
+    expect(isScriptModuleTagName('jds')).toBe(false)
+    expect(getScriptModuleImportAttrs('jds', 'jd')).toEqual(['src'])
+    expect(getScriptModuleImportAttrs('jds', 'weapp')).toBeUndefined()
+    expect(getOutputTemplateRawTags('jd')).toEqual(['wxs', 'jds'])
+    expect(getOutputTemplateRawTags('weapp')).toEqual(['wxs'])
+    expect(resolveScriptModuleTagName({ platform: 'jd', scriptModuleExtension: 'wxs' })).toBe('wxs')
+  })
+
   it('resolves script module tag names from platform adapters', () => {
     expect(resolveScriptModuleTagByPlatform()).toBeUndefined()
     expect(resolveScriptModuleTagByPlatform('weapp', 'wxs')).toBeUndefined()

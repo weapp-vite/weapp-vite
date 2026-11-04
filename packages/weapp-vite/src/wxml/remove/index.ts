@@ -1,14 +1,15 @@
-import type { WxmlRemoveOptions } from '../../types'
+import type { MpPlatform, WxmlRemoveOptions } from '../../types'
 import type { SourceRange, WxmlSyntax } from '../template/lexical'
 import type { NameMatcher } from './matcher'
+import { getScriptModuleTagNames } from '../../utils/wxmlScriptModule'
 import { failAt } from '../template/lexical'
 import { applySourceEdits } from '../template/ranges'
 import { scanTemplate } from '../template/scan'
 import { compileNames, matches } from './matcher'
-import { assertSafeConditionalRemoval, isInstructionComment, isProtectedAttribute, scriptTags, structuralTags } from './safety'
+import { assertSafeConditionalRemoval, isInstructionComment, isProtectedAttribute, isStructuralTag } from './safety'
 
 /** 编译一次清理规则，在最终产物上仅删除匹配的源码区间。 */
-export function createWxmlRemover(options: WxmlRemoveOptions): (code: string, fileName: string, syntax?: WxmlSyntax) => string {
+export function createWxmlRemover(options: WxmlRemoveOptions, platform?: MpPlatform): (code: string, fileName: string, syntax?: WxmlSyntax) => string {
   if (!options.attr?.length && !options.tag?.length && !options.comment) {
     return code => code
   }
@@ -35,6 +36,7 @@ export function createWxmlRemover(options: WxmlRemoveOptions): (code: string, fi
     return code => code
   }
   const commentOnly = !attributes.length && !removeTags
+  const scriptTags = new Set(getScriptModuleTagNames(platform))
   return (code, fileName, syntax = 'legacy') => {
     if (!code.includes('<') || (!attributes.length && !removeTags && !code.includes('<!--'))) {
       return code
@@ -54,7 +56,7 @@ export function createWxmlRemover(options: WxmlRemoveOptions): (code: string, fi
     let removedElement = false
     for (const node of elements) {
       const matchedTag = removeTags && matches(tags, node.tag)
-      if (matchedTag && structuralTags.has(node.tag)) {
+      if (matchedTag && isStructuralTag(node.tag, platform)) {
         failAt(code, fileName, node.start, `Cannot remove structural tag <${node.tag}>. Use source conditional compilation (#ifdef/#endif) instead.`)
       }
       node.removed = Boolean(node.parent?.removed || matchedTag)
@@ -77,7 +79,7 @@ export function createWxmlRemover(options: WxmlRemoveOptions): (code: string, fi
             }
           }
         }
-        if (matched && !isProtectedAttribute(code, node, attr, exact)) {
+        if (matched && !isProtectedAttribute(code, node, attr, exact, platform)) {
           ranges.push(attr)
         }
       }

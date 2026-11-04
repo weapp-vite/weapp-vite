@@ -1,11 +1,33 @@
 import type { WxmlTransformNode } from '../../types'
 import { describe, expect, it } from 'vitest'
 import { createWxmlRemover } from '../remove'
+import { createValidationNodes } from '../validate/walk'
 import { editWxml } from './editor'
 
 const file = 'pages/editor/index.wxml'
 
 describe('structured WXML editing', () => {
+  it('uses JD native script boundaries consistently for cleanup, editing and validation', async () => {
+    const script = '<jds module="inline">var html="</jds><debug data-test=\'keep\'/><!--keep-->";</jds>'
+    const code = `${script}<view data-test="drop"/>`
+    const visited: string[] = []
+    expect(await editWxml(code, 'page.jxml', 'xml', (node) => {
+      visited.push(node.tagName)
+      if (node.tagName === 'view') {
+        node.setAttribute('title', 'edited')
+      }
+    }, 'jd')).toBe(`${script}<view data-test="drop" title="edited"/>`)
+    expect(visited).toEqual(['jds', 'view'])
+    expect(createValidationNodes(code, 'page.jxml', 'xml', 'jd').map(node => node.tagName)).toEqual(['jds', 'view'])
+    expect(createWxmlRemover({ attr: ['data-test'], comment: true }, 'jd')(code, 'page.jxml', 'xml')).toBe(`${script}<view />`)
+    expect(() => createWxmlRemover({ tag: ['jds'] }, 'jd')('<jds src="./utils.jds"/>', 'page.jxml', 'xml')).toThrow('structural tag')
+    await expect(editWxml('<jds src="./utils.jds"/>', 'page.jxml', 'xml', node => node.removeAttribute('src'), 'jd')).rejects.toThrow('protected attribute')
+    await expect(editWxml('<jds/>', 'page.jxml', 'xml', node => node.remove(), 'jd')).rejects.toThrow('structural tag')
+    const ordinary = '<jds><debug data-test="drop"/></jds>'
+    expect(createWxmlRemover({ tag: ['debug'] }, 'weapp')(ordinary, file, 'xml')).toBe('<jds></jds>')
+    expect(await editWxml('<jds src="ordinary"/>', file, 'xml', node => node.removeAttribute('src'), 'weapp')).toBe('<jds />')
+  })
+
   it('changes only selected attributes and preserves all other bytes', async () => {
     const code = '<!-- keep -->\r\n<view\tdata-test = \'原值\' keep="&quot;" ><text data-test="保留">child</text></view>'
     const output = await editWxml(code, file, 'legacy', (node) => {

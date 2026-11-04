@@ -8,7 +8,7 @@ import { normalizeFsResolvedId } from '../../../utils/resolvedId'
 import { ownsCompilerContentSource } from '../../compilerPlugin/contentSources'
 import { isManagedCompilerEntry } from '../../compilerPluginRegistry'
 import { getManagedTailwindcssEntries, isManagedTailwindcssEntry } from '../../tailwindcssMarker'
-import { configSuffixes, watchedScriptModuleSuffixes, watchedTemplateExts } from '../../utils/invalidateEntry/shared'
+import { configSuffixes, getWatchedScriptModuleSuffixes, watchedScriptModuleSuffixes, watchedTemplateExts } from '../../utils/invalidateEntry/shared'
 import { createVueEntryUpdateInspector } from './vueEntryUpdate'
 
 const compilerContentExtensions = new Set([
@@ -38,6 +38,7 @@ export interface CompilerContentUpdate {
 
 export function isCompilerContentSource(id: string, config?: CompilerContext['configService']) {
   return (compilerContentExtensions.has(path.extname(id)) && !configSuffixes.some(suffix => id.endsWith(suffix)))
+    || getWatchedScriptModuleSuffixes(config?.platform).some(suffix => id.endsWith(suffix))
     || Boolean(config && ownsCompilerContentSource(config, id))
 }
 

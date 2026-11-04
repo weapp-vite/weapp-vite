@@ -39,9 +39,16 @@ describe('Doctor shared template reference scan', () => {
     { target: 'swan', source: '<import-sjs src="module.sjs"/>', file: 'module.sjs' },
     { target: 'swan', source: '<filter src="module.filter.js"/>', file: 'module.filter.js' },
     { target: 'tt', source: '<sjs src="module.sjs"/>', file: 'module.sjs' },
+    { target: 'jd', source: '<jds src="module.jds"/>', file: 'module.jds' },
   ] as const)('uses platform-owned module import attributes for $target: $source', ({ target, source, file }) => {
     expect(check(source, target).diagnostics).toContainEqual(expect.objectContaining({ ruleId: 'doctor/artifact/missing-import', evidence: expect.objectContaining({ actual: file }) }))
     expect(check(source, target, { [`pages/${file}`]: '' }).diagnostics).toEqual([])
+  })
+
+  it('keeps native JD script strings opaque while checking non-JD custom JDS children', () => {
+    const source = '<jds>var html = "</jds><include src=\'missing.jxml\'/>";</jds>'
+    expect(check(source, 'jd').diagnostics).toEqual([])
+    expect(check('<jds><include src="missing.wxml"/></jds>').diagnostics).toContainEqual(expect.objectContaining({ ruleId: 'doctor/artifact/missing-import' }))
   })
 
   it('keeps dynamic and external references explicitly incomplete', () => {

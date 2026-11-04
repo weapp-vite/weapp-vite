@@ -30,6 +30,7 @@ export function scanTag(source: string, start: number, syntax: Syntax, collectAt
     throw new TemplateLexicalError(start, '标签缺少名称')
   }
   let attributes: Attribute[] | undefined
+  let quotedAttribute = false
   while (cursor < source.length) {
     const whitespaceStart = cursor
     cursor = skipSpace(source, cursor)
@@ -44,9 +45,10 @@ export function scanTag(source: string, start: number, syntax: Syntax, collectAt
     if (closing) {
       throw new TemplateLexicalError(cursor, '结束标签不能包含属性')
     }
-    if (whitespaceStart === cursor) {
+    if (whitespaceStart === cursor && !quotedAttribute) {
       throw new TemplateLexicalError(cursor, '属性前缺少空白分隔符')
     }
+    quotedAttribute = false
     const attributeStart = cursor
     if (source.charCodeAt(cursor) === 123 && source.charCodeAt(cursor + 1) === 123) {
       cursor = expressionEnd(source, cursor, true, syntax)
@@ -149,6 +151,7 @@ export function scanTag(source: string, start: number, syntax: Syntax, collectAt
     const valueEnd = cursor
     if (quote) {
       cursor++
+      quotedAttribute = true
     }
     if (collectAttributes) {
       const value = source.slice(valueStart, valueEnd)

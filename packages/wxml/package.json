@@ -10,18 +10,34 @@
     "url": "git+https://github.com/weapp-vite/weapp-vite.git",
     "directory": "packages/wxml"
   },
-  "bugs": { "url": "https://github.com/weapp-vite/weapp-vite/issues" },
-  "keywords": ["weapp-vite", "wxml", "mini-program", "parser", "serializer"],
+  "bugs": {
+    "url": "https://github.com/weapp-vite/weapp-vite/issues"
+  },
+  "keywords": [
+    "weapp-vite",
+    "wxml",
+    "mini-program",
+    "parser",
+    "serializer"
+  ],
   "sideEffects": false,
   "exports": {
-    ".": { "types": "./dist/index.d.mts", "import": "./dist/index.mjs" },
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    },
     "./package.json": "./package.json"
   },
   "main": "./dist/index.mjs",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.mts",
-  "files": ["README.md", "dist"],
-  "engines": { "node": "^22.23.4 || ^24.22.1 || >=26.12.1" },
+  "files": [
+    "README.md",
+    "dist"
+  ],
+  "engines": {
+    "node": "^22.23.4 || ^24.22.1 || >=26.12.1"
+  },
   "scripts": {
     "build": "tsdown",
     "test": "vitest run --config ./vitest.config.ts",
@@ -30,9 +46,14 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint .",
     "bench": "node --stack-size=4096 --expose-gc --import tsx ../../scripts/benchmarkWxmlParser/index.ts --quick --browser --consumer-scanner packages/weapp-vite/src/wxml/scan/parser.ts#parseWxml --consumer-web packages-runtime/web/src/compiler/wxml/parser.ts#parseWxml --consumer-simulator mpcore/packages/simulator/src/view/wxsDocument.ts#parseWxsTemplateDocument",
-    "bench:check": "node --stack-size=4096 --expose-gc --import tsx ../../scripts/benchmarkWxmlParser/index.ts --check --browser --consumer-scanner packages/weapp-vite/src/wxml/scan/parser.ts#parseWxml --consumer-web packages-runtime/web/src/compiler/wxml/parser.ts#parseWxml --consumer-simulator mpcore/packages/simulator/src/view/wxsDocument.ts#parseWxsTemplateDocument"
+    "bench:check": "node --stack-size=4096 --expose-gc --import tsx ../../scripts/benchmarkWxmlParser/index.ts --check --browser --consumer-scanner packages/weapp-vite/src/wxml/scan/parser.ts#parseWxml --consumer-web packages-runtime/web/src/compiler/wxml/parser.ts#parseWxml --consumer-simulator mpcore/packages/simulator/src/view/wxsDocument.ts#parseWxsTemplateDocument",
+    "test:corpus": "node --import tsx ../../scripts/templateCorpus/verify.ts --suite corpus",
+    "test:fuzz": "node --import tsx ../../scripts/templateCorpus/verify.ts --suite fuzz",
+    "test:coverage": "node --import tsx ../../scripts/templateCorpus/coverage/run.ts"
   },
-  "dependencies": { "entities": "^8.1.0" },
+  "dependencies": {
+    "entities": "^8.1.0"
+  },
   "devDependencies": {
     "dom-serializer": "^3.1.1",
     "htmlparser2": "catalog:",
@@ -40,7 +61,15 @@
     "vitest": "~5.0.5"
   },
   "tsd": {
-    "compilerOptions": { "module": "NodeNext", "moduleResolution": "NodeNext", "strict": true, "skipLibCheck": false }
+    "compilerOptions": {
+      "module": "NodeNext",
+      "moduleResolution": "NodeNext",
+      "strict": true,
+      "skipLibCheck": false
+    }
   },
-  "publishConfig": { "access": "public", "registry": "https://registry.npmjs.org" }
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  }
 }

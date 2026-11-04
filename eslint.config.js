@@ -17,6 +17,8 @@ export default await defineEslintConfig({
     // tailwindcss: true,
     ignores: [
       '**/fixtures/**',
+      // 冻结语料与证据按原字节校验，由 corpus:check 验证，不交给格式化器改写。
+      'packages/wxml/test/corpus/**',
       // 独立样式由 Stylelint 校验，生成的路由声明由构建器维护。
       '**/*.{css,scss,less,wxss,acss,ttss,qss,jxss}',
       '**/typed-router.d.ts',
@@ -264,6 +266,12 @@ export default await defineEslintConfig({
       rules: {
         // 构建器、脚手架与上传升版复用 npm 的 semver caret、预发布和版本递增语义。
         'e18e/ban-dependencies': 'off',
+      },
+    }, {
+      files: ['scripts/templateCorpus/collect/github.ts', 'scripts/templateCorpus/generate/run.ts', 'scripts/templateCorpus/generate/input.ts'],
+      rules: {
+        // 受控编译保留跨平台进程语义，冻结源码投影沿用完整 glob 与隐藏文件匹配。
+        'e18e/ban-dependencies': ['warn', { allowed: ['execa', 'micromatch'] }],
       },
     }, {
       files: ['packages-private/dimina-playground/package.json'],

@@ -70,6 +70,14 @@ describe('Class-based platform scoped styles', () => {
     expect(() => normalizeClassScopedTemplate('<view data-v-one><text></view>')).toThrow('[weapp.wxml] 23:')
   })
 
+  it('keeps native JD script bytes opaque without masking ordinary JDS components on other platforms', () => {
+    const script = '<jds>var html = "</jds><view data-v-fake/>";</jds>'
+    expect(normalizeClassScopedTemplate(`${script}<view data-v-real/>`, 'jd'))
+      .toBe(`${script}<view class="data-v-real" data-v-real/>`)
+    expect(normalizeClassScopedTemplate('<jds><view data-v-real/></jds>', 'weapp'))
+      .toBe('<jds><view class="data-v-real" data-v-real/></jds>')
+  })
+
   it.each(['alipay', 'weapp', 'tt'])('normalizes final output for Alipay and Douyin, including style-only updates (%s)', async (platform) => {
     const styleExt = platform === 'alipay' ? 'acss' : platform === 'tt' ? 'ttss' : 'wxss'
     const filename = `pages/index/index.${styleExt}`

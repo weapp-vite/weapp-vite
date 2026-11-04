@@ -7,7 +7,7 @@ import { ownsSidecarDelivery } from '../../../runtime/watch/sidecarDelivery'
 import { findJsEntry, findVueEntry, touch } from '../../../utils/file'
 import { invalidateFileCache } from '../cache'
 import { collectAffectedScriptsAndImporters } from './cssGraph'
-import { configSuffixes, normalizePath, watchedCssExts, watchedScriptModuleSuffixes, watchedTemplateExts } from './shared'
+import { configSuffixes, getWatchedScriptModuleSuffixes, normalizePath, watchedCssExts, watchedTemplateExts } from './shared'
 
 export async function invalidateEntryForSidecar(ctx: CompilerContext, filePath: string, event: ChangeEvent = 'update', options?: { isActive: () => boolean }) {
   const configSuffix = configSuffixes.find(suffix => filePath.endsWith(suffix))
@@ -27,7 +27,7 @@ export async function invalidateEntryForSidecar(ctx: CompilerContext, filePath: 
     scriptBasePath = filePath.slice(0, -ext.length)
   }
 
-  const isScriptModuleSidecar = watchedScriptModuleSuffixes.some(suffix => normalizedPath.endsWith(suffix))
+  const isScriptModuleSidecar = getWatchedScriptModuleSuffixes(ctx.configService.platform).some(suffix => normalizedPath.endsWith(suffix))
 
   if (!scriptBasePath && !isScriptModuleSidecar) {
     return

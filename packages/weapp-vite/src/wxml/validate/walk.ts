@@ -1,13 +1,13 @@
-import type { WxmlElementInfo } from '../../types'
+import type { MpPlatform, WxmlElementInfo } from '../../types'
 import type { WxmlSyntax } from '../template/lexical'
-import { scriptTags } from '../remove/safety'
+import { getScriptModuleTagNames } from '../../utils/wxmlScriptModule'
 import { scanTemplate } from '../template/scan'
 import { indexElementTree } from '../template/tree'
 import { createLocator } from '../transform/encoding'
 
 /** 每份最终模板只在首次遍历时扫描，多个回调共享不可变的观察节点。 */
-export function createValidationNodes(code: string, fileName: string, syntax: WxmlSyntax): readonly WxmlElementInfo[] {
-  const { elements } = scanTemplate(code, fileName, scriptTags, false, syntax)
+export function createValidationNodes(code: string, fileName: string, syntax: WxmlSyntax, platform?: MpPlatform): readonly WxmlElementInfo[] {
+  const { elements } = scanTemplate(code, fileName, new Set(getScriptModuleTagNames(platform)), false, syntax)
   const tree = indexElementTree(elements)
   let locate: ReturnType<typeof createLocator> | undefined
   const nodes = new Map<typeof elements[number], WxmlElementInfo>()

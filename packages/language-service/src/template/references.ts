@@ -1,6 +1,7 @@
 import type { LanguageProfile } from '../profiles'
 import type { TemplateAttribute, TemplateReference, TemplateScope, TemplateScript, TemplateTag, TemplateToken } from './types'
 import { isEventAttribute } from '../profiles'
+import { templateRawTags } from './scanner'
 
 function valueRange(attribute: TemplateAttribute) {
   return { start: attribute.valueStart ?? attribute.start, end: attribute.valueEnd ?? attribute.end }
@@ -52,6 +53,7 @@ export function collectTemplateMetadata(source: string, tokens: TemplateToken[],
   const references: TemplateReference[] = []
   const scopes: TemplateScope[] = []
   const scripts: TemplateScript[] = []
+  const rawTags = templateRawTags(profile)
   for (const [index, token] of tokens.entries()) {
     if (token.kind !== 'tag' || token.closing) {
       continue
@@ -70,7 +72,7 @@ export function collectTemplateMetadata(source: string, tokens: TemplateToken[],
       reference('template-name', attribute('name'))
       reference('template-use', attribute('is'))
     }
-    if (['wxs', 'sjs', 'ks', 'filter', 'import-sjs', 'script'].includes(tag)) {
+    if (rawTags.includes(tag)) {
       const alipayImport = tag === 'import-sjs' && profile?.platform === 'alipay'
       const module = attribute(alipayImport ? 'name' : 'module')
       reference('script-module', module)
@@ -79,7 +81,7 @@ export function collectTemplateMetadata(source: string, tokens: TemplateToken[],
       reference('script-import', sourceFile)
       const lang = attribute('lang')?.value
       const typedFile = /\.tsx?$/.test(sourceFile?.value ?? '')
-      const compiledFile = typedFile || /\.(?:wxs|sjs|ks)\.js$/.test(sourceFile?.value ?? '')
+      const compiledFile = typedFile || /\.(?:wxs|sjs|ks|jds|qs)\.js$/.test(sourceFile?.value ?? '')
       const sourceKind = /^(?:ts|typescript|js|javascript)$/.test(lang ?? '') || compiledFile ? 'compiled' as const : 'native' as const
       const language = /^(?:ts|typescript)$/.test(lang ?? '') || (!lang && typedFile) ? 'typescript' as const : 'javascript' as const
       if (references.length > referenceCount) {

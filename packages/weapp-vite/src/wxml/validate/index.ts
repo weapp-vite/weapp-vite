@@ -68,7 +68,7 @@ export async function validateWxmlBundle(
             if (typeof visitor !== 'function') {
               throw new TypeError('walk expects a visitor function.')
             }
-            nodes ??= createValidationNodes(code, fileName, syntax)
+            nodes ??= createValidationNodes(code, fileName, syntax, config.platform)
             for (const node of nodes) {
               assertActive()
               await visitor(node)

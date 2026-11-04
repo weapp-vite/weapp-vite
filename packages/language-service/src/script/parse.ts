@@ -18,7 +18,7 @@ export function resolveScriptProfile(fileName: string, options: ScriptOptions): 
     : /\.sjs(?:\.[cm]?[jt]s)?$/i.test(cleanName) ? 'sjs' : /\.ks(?:\.[cm]?[jt]s)?$/i.test(cleanName) ? 'ks' : 'javascript')
   return {
     dialect,
-    sourceKind: options.sourceKind ?? (/\.(?:wxs|sjs|ks)$|\.filter\.js$/i.test(cleanName) ? 'native' : 'compiled'),
+    sourceKind: options.sourceKind ?? (/\.(?:wxs|sjs|ks|jds|qs)$|\.filter\.js$/i.test(cleanName) ? 'native' : 'compiled'),
     typed: options.language === 'typescript' || /\.[cm]?tsx?$/i.test(cleanName),
     filter: options.platform === 'swan' && /\.filter\.[jt]s$/i.test(cleanName),
   }

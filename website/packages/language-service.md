@@ -24,10 +24,14 @@ keywords:
 | --- | --- |
 | 模板 | WXML、AXML、TTML、SWAN、JXML、QML、KSML、XHSML、TYML |
 | 样式 | WXSS、ACSS、TTSS、QSS、JXSS、TYSS 和平台原生 CSS |
-| 脚本模块 | 独立与内联 WXS、SJS、快手 KS、百度 filter |
+| 脚本模块 | 独立与内联 WXS、SJS、京东 JDS、QQ QS、快手 KS、百度 filter |
 | 编译源文件 | `lang="ts/js"`、`.wxs.ts` / `.wxs.js`、`.sjs.ts` / `.sjs.js`、`.ks.ts` / `.ks.js`、`.filter.ts` 等 |
 
 核心六平台复用已有构建平台注册信息；QQ、快手和涂鸦维护独立语言 profile，不扩展构建平台联合类型。指令、事件、模块系统和内置组件数据分别记录官方来源。组件快照由仓库脚本生成并离线发布；覆盖范围以清单和来源记录为准，不把微信组件数据当成其他宿主的默认值。
+
+京东 profile 另外识别 `.jds` 和 `<jds>`，QQ profile 另外识别 `.qs` 和 `<qs>`；分析、引用收集和格式化使用同一原文标签配置，平台专有标签不加入其他 profile。JDS/QS 的 AST 检查使用通用 JavaScript，不套用未经确认的 WXS/SJS 平台限制。
+
+`analyzeTemplate` 与模板格式化按平台默认选择微信 legacy、其他平台 xml。分别通过 `input.options.syntax` 或格式化选项 `syntax` 显式覆盖。两种方言都接受带引号属性后紧接下一属性；方言选择区分宿主转义与实体行为，不是严格 XML 合规开关。格式化补齐分隔并保留原值和脚本正文。公开 `scanTemplate`、`getTemplateExpressions` 没有平台上下文，固定 xml 方言与兼容集合保持不变。
 
 “全部覆盖”只表示公开支持矩阵内的场景均已实际执行通过，不表示任意未来语法都正确。矩阵缺项、跳过或未执行都不能记作通过。
 

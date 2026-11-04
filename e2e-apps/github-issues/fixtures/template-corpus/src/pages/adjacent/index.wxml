@@ -1,0 +1,4 @@
+<view id="corpus-adjacent">
+  <view id="adjacent-probe"data-first="one"data-second='two'data-bare data-empty=""bindtap="capture">adjacent</view>
+  <text id="adjacent-result">{{result}}</text>
+</view>

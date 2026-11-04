@@ -5,6 +5,7 @@ export {
   getMiniProgramAppTypesPackage,
   getMiniProgramDefaultBuildTarget,
   getMiniProgramDirectivePrefix,
+  getMiniProgramNativeScriptModules,
   getMiniProgramPlatformByRuntimeGlobalKey,
   getMiniProgramPlatformDescriptor,
   getMiniProgramRouteRuntimeGlobalKeys,
@@ -25,6 +26,7 @@ export {
   supportsMiniProgramRuntimeCapability,
 } from './helpers'
 export type {
+  MiniProgramNativeScriptModule,
   MiniProgramPageIdentityRule,
   MiniProgramPlatformDescriptor,
   MiniProgramPlatformFamily,

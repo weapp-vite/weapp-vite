@@ -83,6 +83,27 @@ it('keeps root-only integration contracts out of the supplemental script partiti
   expect([...inventory.root].every(file => discovered.has(file))).toBe(true)
 })
 
+it('keeps formal template source acceptance in the dedicated coverage entry while preserving fast contract discovery', async () => {
+  const cwd = path.resolve(import.meta.dirname, '../..')
+  const sourceAcceptance = 'scripts/templateCorpus/test/sourceCoverage.coverage.ts'
+  const inventory = await scriptTestInventory(cwd)
+  expect(inventory.all).not.toContain(sourceAcceptance)
+  expect(await glob(ROOT_REPOSITORY_TEST_GLOBS, { cwd })).not.toContain(sourceAcceptance)
+  expect(inventory.all).toContain('scripts/templateCorpus/test/fuzz.test.ts')
+  expect(inventory.all).toContain('scripts/templateCorpus/test/coverage.test.ts')
+
+  const packageRoot = path.join(cwd, 'packages/wxml')
+  const loaded = await loadConfigFromFile({ command: 'serve', mode: 'test' }, path.join(packageRoot, 'vitest.coverage.config.ts'))
+  const config = loaded!.config as { root: string, test: { include: string[], coverage: { include: string[], thresholds: Record<string, number> } } }
+  const included = await glob(config.test.include, { cwd: config.root })
+  expect(included.map(file => path.relative(cwd, path.resolve(config.root, file)).replaceAll('\\', '/'))).toContain(sourceAcceptance)
+  expect(config.test.coverage.include).toEqual(['src/**/*.ts'])
+  expect(config.test.coverage.thresholds).toEqual({ statements: 100, functions: 100, lines: 100, branches: 99 })
+
+  const manifest = JSON.parse(await readFile(path.join(packageRoot, 'package.json'), 'utf8')) as { scripts: Record<string, string> }
+  expect(manifest.scripts['test:coverage']).toBe('node --import tsx ../../scripts/templateCorpus/coverage/run.ts')
+})
+
 it('classifies real Vite and benchmark shutdown contracts without removing root or coverage discovery', async () => {
   const cwd = path.resolve(import.meta.dirname, '../..')
   const managed = ['scripts/dependencyContracts/vite.test.ts', 'scripts/performanceGate/devShutdown.integration.test.ts']

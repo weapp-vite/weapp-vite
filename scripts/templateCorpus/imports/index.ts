@@ -1,0 +1,8 @@
+export { importAdditionalEvidence } from './additional'
+export { freezeAttributionNotices } from './attributionNotices'
+export { importExpectedSnapshots } from './expected'
+export { mergeFrozenResources } from './files'
+export { importGenerations } from './generations'
+export { freezeNativeEvidence } from './native'
+export type { NativeEvidenceSource } from './native'
+export { validateFrozenReferences } from './verify'

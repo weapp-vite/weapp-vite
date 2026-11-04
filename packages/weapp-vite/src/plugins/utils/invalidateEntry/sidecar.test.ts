@@ -114,6 +114,22 @@ describe('invalidateEntryForSidecar', () => {
     expect(findJsEntryMock).not.toHaveBeenCalledWith('/project/src/shared/helper')
   })
 
+  it.each(['jd', 'weapp'] as const)('only invalidates native JDS importers for JD (%s)', async (platform) => {
+    const ctx = createContext()
+    ctx.configService.platform = platform
+    const file = '/project/src/shared/helper.jds'
+    const owner = '/project/src/pages/home/index.jxml'
+    ctx.wxmlService.getImporters.mockReturnValue(new Set([owner]))
+    await invalidateEntryForSidecar(ctx, file, 'update')
+    if (platform === 'jd') {
+      expect(touchMock).toHaveBeenCalledWith(owner)
+    }
+    else {
+      expect(touchMock).not.toHaveBeenCalled()
+      expect(ctx.wxmlService.getImporters).not.toHaveBeenCalled()
+    }
+  })
+
   it.each(['update', 'delete'] as const)('drops cached CSS sidecar source when the file receives a %s event', async (event) => {
     const ctx = createContext()
     ctx.runtimeState.css.transformedSidecarSource.set('/project/src/shared/theme.css', {

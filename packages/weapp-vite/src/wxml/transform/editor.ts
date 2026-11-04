@@ -1,7 +1,8 @@
-import type { WxmlTransformVisitor } from '../../types'
+import type { MpPlatform, WxmlTransformVisitor } from '../../types'
 import type { WxmlSyntax } from '../template/lexical'
 import type { Element } from '../template/scan'
-import { assertSafeConditionalRemoval, scriptTags } from '../remove/safety'
+import { getScriptModuleTagNames } from '../../utils/wxmlScriptModule'
+import { assertSafeConditionalRemoval } from '../remove/safety'
 import { failAt } from '../template/lexical'
 import { applySourceEdits } from '../template/ranges'
 import { scanTemplate } from '../template/scan'
@@ -11,13 +12,13 @@ import { createEditableNode } from './node'
 import { createTraversal } from './traversal'
 
 /** 以一次扫描建立编辑会话；删除父节点后不再访问其子树。 */
-export async function editWxml(code: string, fileName: string, syntax: WxmlSyntax, visitor: WxmlTransformVisitor): Promise<string> {
+export async function editWxml(code: string, fileName: string, syntax: WxmlSyntax, visitor: WxmlTransformVisitor, platform?: MpPlatform): Promise<string> {
   if (typeof code !== 'string' || typeof visitor !== 'function') {
     throw new TypeError('edit expects template source and a visitor function.')
   }
-  const { elements } = scanTemplate(code, fileName, scriptTags, false, syntax)
+  const { elements } = scanTemplate(code, fileName, new Set(getScriptModuleTagNames(platform)), false, syntax)
   let locator: ReturnType<typeof createLocator> | undefined
-  const state = { active: true, code, fileName, syntax, locate: (offset: number) => (locator ??= createLocator(code))(offset) }
+  const state = { active: true, code, fileName, syntax, platform, locate: (offset: number) => (locator ??= createLocator(code))(offset) }
   const editors = new Map<typeof elements[number], ReturnType<typeof createEditableNode>>()
   const tree = indexElementTree(elements)
   // eslint-disable-next-line ts/no-use-before-define -- 节点按需工厂与遍历共享会话，实际调用发生在两者初始化之后。

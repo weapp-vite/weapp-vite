@@ -1,0 +1,6 @@
+<view id="corpus-bindings">
+  <view wx:if="{{visible}}"class="visible-{{count}}"id="binding-probe"data-value="{{count + 1}}"data-label="{{label}}"bindtap="increment">{{label}}:{{count}}</view>
+  <button id="update"bindtap="increment">update</button>
+  <button id="toggle"bindtap="toggle">toggle</button>
+  <text id="binding-state">{{visible ? 'visible' : 'hidden'}}:{{count}}</text>
+</view>

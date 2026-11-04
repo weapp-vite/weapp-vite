@@ -89,7 +89,8 @@ export class TokenContext {
       this.value()
       return
     }
-    const roles = wordRoles.get(source.slice(start, end)) ?? 0
+    const length = end - start
+    const roles = length >= 2 && length <= 10 ? wordRoles.get(source.slice(start, end)) ?? 0 : 0
     if (roles) {
       this.keyword(roles)
       return

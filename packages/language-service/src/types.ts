@@ -17,6 +17,7 @@ export interface Diagnostic extends SourceRange {
 
 export interface LanguageOptions {
   platform?: LanguagePlatform
+  syntax?: 'legacy' | 'xml'
   defaultPlatform?: LanguagePlatform
   overrides?: { files: string[], platform: LanguagePlatform }[]
 }

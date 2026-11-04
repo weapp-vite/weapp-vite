@@ -1,0 +1,24 @@
+{
+  "condition": {
+    "miniprogram": {
+      "list": [
+        {
+          "name": "pages/adjacent/index",
+          "pathName": "pages/adjacent/index",
+          "query": "",
+          "launchMode": "default"
+        },
+        {
+          "name": "pages/bindings/index",
+          "pathName": "pages/bindings/index",
+          "query": "",
+          "launchMode": "default"
+        }
+      ]
+    }
+  },
+  "setting": {
+    "compileHotReLoad": false,
+    "urlCheck": false
+  }
+}

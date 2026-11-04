@@ -2,7 +2,7 @@ import type { SourceEdit } from '../types'
 import type { TemplateFormatOptions, TemplateFormatResult, TemplateTag, TemplateToken } from './types'
 import { resolveLanguageProfile } from '../profiles'
 import { LanguageError } from '../types'
-import { scanTemplate } from './scanner'
+import { scanTemplateWithProfile, templateSyntax } from './scanner'
 import { validateTemplate } from './validate'
 
 function identity(source: string, token: TemplateToken) {
@@ -37,8 +37,10 @@ function formatTag(source: string, tag: TemplateTag, options: TemplateFormatOpti
 
 /** 编辑范围引用原始文档 UTF-16 偏移；无效输入只返回原文及诊断，编辑列表为空。 */
 export function formatTemplateResult(source: string, fileName = 'component.wxml', options: TemplateFormatOptions = {}): TemplateFormatResult {
-  const scanned = scanTemplate(source)
-  scanned.diagnostics.push(...validateTemplate(source, scanned.tokens, resolveLanguageProfile(fileName, options)))
+  const profile = resolveLanguageProfile(fileName, options)
+  const syntax = templateSyntax(profile, options.syntax)
+  const scanned = scanTemplateWithProfile(source, profile, syntax)
+  scanned.diagnostics.push(...validateTemplate(source, scanned.tokens, profile, syntax))
   if (scanned.diagnostics.some(diagnostic => diagnostic.severity === 'error')) {
     return { code: source, changed: false, edits: [], diagnostics: scanned.diagnostics }
   }
@@ -53,7 +55,7 @@ export function formatTemplateResult(source: string, fileName = 'component.wxml'
     linePrefix = lastBreak < 0 ? linePrefix + segment : segment.slice(lastBreak + 1)
     return segment
   }).join('')
-  const output = scanTemplate(formatted)
+  const output = scanTemplateWithProfile(formatted, profile, syntax)
   if (output.diagnostics.length || JSON.stringify(scanned.tokens.map(token => identity(source, token))) !== JSON.stringify(output.tokens.map(token => identity(formatted, token)))) {
     return { code: source, changed: false, edits: [], diagnostics: [{ code: 'template/unsafe-format', severity: 'error', start: 0, end: source.length, message: '格式化改变了受保护的模板结构或文本，拒绝修改' }] }
   }

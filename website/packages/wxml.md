@@ -32,6 +32,10 @@ const output = serialize(updated)
 
 微信默认使用 `legacy`，其余平台默认使用 `xml`；显式 `syntax` 优先。`rawTags` 会替换原始脚本标签的完整列表，默认列表为 `wxs`、`sjs`、`ks`、`filter`、`script` 和 `import-sjs`。知道实际输入平台的使用方应选择对应脚本标签，避免把微信普通 `<filter>` 组件当作百度脚本正文。
 
+`platform: 'jd'` 的默认列表另外包含 `jds`，`platform: 'qq'` 的默认列表另外包含 `qs`；其他平台中的同名自定义组件继续按普通模板节点处理。显式 `rawTags` 会替换这些平台默认值，解析与编辑使用同一配置。
+
+两种方言都接受引号值后紧接下一属性，例如 `<view a="1"b='2'bare />`，与微信、支付宝官方编译器的词法结果一致。`syntax` 区分宿主转义与实体等模板规则，不是严格 XML 合规开关；标签名与第一个属性仍须分隔。preserve 保留原文，canonical 为属性输出统一分隔，不承担缩进或折行规则。
+
 Web 是编译目标，WXML 输入仍遵循自己的语法。Web 编译器负责将模板 AST 转为 Lit 渲染代码和 Web 组件，本包负责源码结构、插值及脚本边界。它不会执行脚本，也不自动把微信指令改成其他平台指令。
 
 ## 诊断与使用方
@@ -44,10 +48,35 @@ Web 是编译目标，WXML 输入仍遵循自己的语法。Web 编译器负责�
 
 2026-11-03 的验收覆盖微信开发者工具 Stable 2.02.2609240（基础库 3.17.2）和 Web runtime；六平台矩阵验证的是构建。各入口与平台的具体结果见[验收报告](https://github.com/weapp-vite/weapp-vite/blob/main/docs/reports/2026-11-03-wxml-parser/README.md)。
 
+## 离线语料验收
+
+仓库的全平台语料工具冻结提交、来源身份、许可、哈希与解析 profile，按微信、支付宝、百度、抖音、京东、小红书、QQ、快手和涂鸦分别检查。uni-app Vue2/Vue3、MPX、Taro 的固定版本与实际支持目标逐格登记，原生模板、静态上游预期和受控构建产物分别统计；额外模板目标另存身份与配置。完整数量门槛、版本和维护配方见[语料维护说明](https://github.com/weapp-vite/weapp-vite/blob/main/scripts/templateCorpus/README.md)。
+
+普通验收离线读取入库分片，不在测试期间搜索 GitHub 或执行采集仓库的脚本。修改生产源码后先重建，再执行：
+
+```sh
+pnpm --filter @weapp-vite/wxml build
+pnpm --filter @weapp-vite/wxml test:corpus
+pnpm --filter @weapp-vite/wxml test:fuzz
+pnpm --filter @weapp-vite/wxml test:coverage
+```
+
+完整冻结语料在 Node 和 headless Chromium 分别检查源码范围、tokens、往返、canonical、遍历和编辑契约；默认边界解析与 resolver 辅助结果分开报告。公共 XML 子集与 htmlparser2 差分，平台语法依据独立上游与编译产物证据判断。固定种子正式组合测试至少执行 100,000 个合法组合、100,000 个明确非法变异及 10,000 条八步编辑序列。源码覆盖率与 built 入口使用相同断言，浏览器结果单独验收。
+
+覆盖率硬门槛是全部生产源码的语句、函数、行 100%，分支至少 99%，按原始命中数判定并核对文件清单。“100%”仅指冻结输入、登记矩阵或代码分母中的枚举集合，不表示穷尽全网或所有可能输入。工具和门槛已经登记不代表结果已通过；数量、许可、框架格子、待调查输入、正确性、覆盖率与性能缺口必须保留，验收以对应清单和报告为准。模板解析结果也不扩大 `weapp-vite` 的构建、上传或 IDE runtime 支持承诺。
+
+**本轮检查点：整体未完成。** `all-platform-v1` 包含 13,558 份真实内容去重模板、26,228 个来源成员、7,075 份具有真实非微信来源的唯一模板，以及 250 个实际拥有模板来源的独立公开上游。269 个 repo@commit、264 个元数据独立身份另行统计，不能把仅提供输入或证据的仓库计入真实模板配额。
+
+Node 与 headless Chromium 的完整语料各通过 14,584 个用例，各完成 100,000 个合法组合、100,000 个明确非法变异和 10,000 条八步编辑序列。源码覆盖包含 24 个生产文件，无 coverage-ignore；语句 1,172/1,172、函数 128/128、行 1,139/1,139 均为 100%，分支 1,164/1,171（99.40%）。当前核心的 464 份正式 v5 性能复验在 Node、Chromium 各通过 140 个速度门禁单元，无错误。新语料独立画像覆盖全部 135 组，在两个环境各完成 10 对预热、40 对正式采样、405 个汇总单元和 22,080 条正式样本；画像完成不表示新增速度门槛通过，不改写旧 464 份门禁的分母。历史失败、等量确认和后续通过报告分别保留。
+
+Taro 4.3.2 Harmony JSUI 开发、生产两个构建格子仍失败，旧 MPX 原始 1,302 字节安装日志附件缺失；解析、fuzz、源码覆盖率通过不代表框架矩阵与整体验收通过。完整冻结身份、逐平台数量及独立报告见[冻结语料与验收状态](https://github.com/weapp-vite/weapp-vite/blob/main/packages/wxml/test/corpus/README.md)。
+
+维护者使用 `pnpm corpus:discover`、`pnpm corpus:collect`、`pnpm corpus:generate`、`pnpm corpus:check` 显式更新语料；冻结、许可审核、断点恢复及报告说明集中在[语料维护说明](https://github.com/weapp-vite/weapp-vite/blob/main/scripts/templateCorpus/README.md)。
+
 ## 性能
 
 独立 benchmark 比较扫描、建树、canonical 序列化、解析编辑输出，以及构建扫描、Web、simulator 三个正式消费入口；基线使用 htmlparser2 和 dom-serializer，原文重放单独统计。
 
-2026-11-03 的正式 v4 基准在 Node 24.22.1 和 headless Chromium 156.0.8078.4 中通过，每个环境的 140 个可比较结果单元全部达标，无错误。`shared` 是双方可直接比较的 354 份真实模板，`real-all` 包含全部 464 份真实模板，不含合成压力用例；两组聚合的候选/基线 P50 比值均要求 ≤1.00，其余分类（含 WXML）要求 ≤1.05。
+本轮正式 v5 基准在 Node 与 headless Chromium 各通过 140 个可比较结果单元，0 错误。此前 Node `wxml-script` 的失败（首次 1.082、等量确认 1.117）与优化后通过的 v5（Node 1.046、Chromium 0.901）分别保留，历史失败未被覆盖。`shared` 是双方可直接比较的 354 份真实模板，`real-all` 包含全部 464 份真实模板，不含合成压力用例；既有分母保持不变，新增全平台语料另设版本和画像。
 
 可在仓库执行 `pnpm --filter @weapp-vite/wxml bench:check`。详细结果见[性能报告](https://github.com/weapp-vite/weapp-vite/blob/main/docs/reports/2026-11-03-wxml-parser/README.md)，采样和门禁见[benchmark 说明](https://github.com/weapp-vite/weapp-vite/blob/main/scripts/benchmarkWxmlParser/README.md)。

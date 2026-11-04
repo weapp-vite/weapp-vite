@@ -3,7 +3,7 @@ import type { CanonicalElement } from './overlay'
 import type { EditSession } from './state'
 import { assertExpressionBoundary } from '../encoding'
 import { TemplateLexicalError } from '../lexical'
-import { defaultRawTags } from '../options'
+import { defaultRawTagsFor } from '../options'
 import { parse } from '../parser'
 import { readTag } from '../tag'
 import { editedAttributes } from './attributes'
@@ -86,7 +86,7 @@ export function createPatchedDocument(session: EditSession): Document | undefine
     }
     if (node.kind === 'element') {
       if (state.replacement !== undefined || (state.name && state.name !== node.name
-        && (original.options.rawTags ?? defaultRawTags).some(name => name.toLowerCase() === node.name.toLowerCase() || name.toLowerCase() === state.name!.toLowerCase()))) {
+        && (original.options.rawTags ?? defaultRawTagsFor(original.platform)).some(name => name.toLowerCase() === node.name.toLowerCase() || name.toLowerCase() === state.name!.toLowerCase()))) {
         return undefined
       }
       if (!state.unvalidatedAttributes?.size) {

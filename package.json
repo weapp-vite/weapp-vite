@@ -273,7 +273,12 @@
     "e2e:hmr:build:diagnostic": "node --import tsx ./e2e/scripts/run-e2e-suite.ts hmr-build",
     "e2e:ide:full:diagnostic": "node --import tsx ./e2e/scripts/run-sleep-inhibited-e2e-suite.ts ide-full",
     "typecheck": "tsc --project tsconfig.tooling.json --noEmit",
-    "docs:build": "node scripts/docs/build.mjs"
+    "docs:build": "node scripts/docs/build.mjs",
+    "corpus:collect": "node --import tsx scripts/templateCorpus/index.ts collect",
+    "corpus:generate": "node --import tsx scripts/templateCorpus/index.ts generate",
+    "corpus:discover": "node --import tsx scripts/templateCorpus/index.ts discover",
+    "corpus:check": "node --import tsx scripts/templateCorpus/index.ts check",
+    "corpus:bench": "node --stack-size=4096 --import tsx scripts/templateCorpus/benchmark/index.ts"
   },
   "devDependencies": {
     "@babel/core": "catalog:",

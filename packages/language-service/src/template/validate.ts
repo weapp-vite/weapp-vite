@@ -1,8 +1,10 @@
+import type { Syntax } from '@weapp-vite/wxml'
 import type { LanguageProfile } from '../profiles'
 import type { Diagnostic } from '../types'
 import type { TemplateAttribute, TemplateTag, TemplateToken } from './types'
 import { parse } from '@weapp-vite/ast'
-import { collectTemplateExpressions } from './expressions'
+import { decodeAttribute } from '@weapp-vite/wxml'
+import { visitTemplateExpressions } from './expressions'
 import { validateScriptModules } from './modules'
 
 function expressionError(source: string): { offset: number, message: string } | undefined {
@@ -23,6 +25,17 @@ function expressionError(source: string): { offset: number, message: string } | 
   }
   const error = first as { pos?: number, message?: string }
   return { offset: Math.max(0, Math.min(source.length, (error.pos ?? 1) - 1)), message: error.message?.replace(/\s*\(\d+:\d+\)$/, '') ?? '无效的表达式' }
+}
+
+function legacyExpressionOffset(source: string, logicalOffset: number) {
+  let offset = 0
+  for (let logical = 0; logical < logicalOffset && offset < source.length; logical++) {
+    if (source[offset] === '\\' && offset + 1 < source.length) {
+      offset++
+    }
+    offset++
+  }
+  return offset
 }
 
 function isBindingName(name: string): boolean {
@@ -117,15 +130,16 @@ function validateDirectives(source: string, tokens: TemplateToken[], profile: La
 }
 
 /** 共用语法校验保留平台指令边界；未知自定义属性和组件不作推测性拒绝。 */
-export function validateTemplate(source: string, tokens: TemplateToken[], profile?: LanguageProfile): Diagnostic[] {
+export function validateTemplate(source: string, tokens: TemplateToken[], profile?: LanguageProfile, syntax: Syntax = 'xml'): Diagnostic[] {
   const diagnostics: Diagnostic[] = []
-  for (const expression of collectTemplateExpressions(source, tokens)) {
-    const error = expressionError(expression.source)
+  visitTemplateExpressions(source, tokens, syntax, (expression, quote) => {
+    const legacyAttribute = syntax === 'legacy' && Boolean(quote)
+    const error = expressionError(legacyAttribute ? decodeAttribute(expression.source, syntax, false, quote) : expression.source)
     if (error) {
-      const start = expression.start + error.offset
+      const start = expression.start + (legacyAttribute ? legacyExpressionOffset(expression.source, error.offset) : error.offset)
       diagnostics.push({ code: 'template/invalid-expression', severity: 'error', start, end: Math.min(start + 1, expression.end), message: error.message })
     }
-  }
+  })
   if (profile) {
     diagnostics.push(...validateDirectives(source, tokens, profile))
     diagnostics.push(...validateScriptModules(source, tokens, profile))

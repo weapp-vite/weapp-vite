@@ -114,3 +114,62 @@ it('builds Baidu native and typed Filter modules without parsing script strings 
     await rm(root, { recursive: true, force: true })
   }
 }, 30_000)
+
+it('preserves native JD JDS modules and recursive require paths beside portable WXS output', async () => {
+  const { root, config } = await scriptFixture('jd')
+  const main = '// JD module\r\nvar peer = require("./peer.jds"); var shared = require("./shared-native.js"); module.exports = { value: peer.value + shared.value }\r\n'
+  const peer = 'var main = require("./native.jds"); module.exports = { value: 42 }\n'
+  const shared = 'module.exports = { value: 1 }\r\n'
+  const inline = '<jds module="inline">var html = "</jds><debug data-test=\'keep\'/><!--keep-->"; module.exports = {};</jds>'
+  const visited: string[] = []
+  config.weapp = {
+    ...config.weapp,
+    wxml: {
+      remove: { attr: ['data-test', 'src'], comment: true },
+      transform: (source, context) => context.edit(source, (node) => {
+        visited.push(`edit:${node.tagName}`)
+        if (node.tagName === 'view') {
+          node.setAttribute('title', 'edited')
+        }
+      }),
+      async validate(_source, context) {
+        await context.walk((node) => {
+          visited.push(`validate:${node.tagName}`)
+        })
+      },
+    },
+  }
+  try {
+    await writeFile(path.join(root, 'src/pages/home/native.jds'), main)
+    await writeFile(path.join(root, 'src/pages/home/peer.jds'), peer)
+    await writeFile(path.join(root, 'src/pages/home/shared-native.js'), shared)
+    await writeFile(path.join(root, 'src/pages/home/index.jxml'), `<jds src="./native.jds" module="native"/>${inline}<wxs src="./helper.wxs.ts" module="portable"/><view data-test="drop">{{native.value}}</view>`)
+    const result = await build(config)
+    if (Array.isArray(result) || !('output' in result)) {
+      throw new Error('Expected one JD platform bundle')
+    }
+    const asset = (name: string) => {
+      const output = result.output.find(output => output.fileName === name)
+      expect(output, name).toBeDefined()
+      return output?.type === 'asset' ? String(output.source) : ''
+    }
+    const template = asset('pages/home/index.jxml')
+    expect(template).toContain('<jds src="./native.jds" module="native"/>')
+    expect(template).toContain(inline)
+    expect(template).toContain('<wxs src="./helper.wxs" module="portable"/>')
+    expect(template).toContain('<view  title="edited">')
+    expect(asset('pages/home/native.jds')).toBe(main)
+    expect(asset('pages/home/peer.jds')).toBe(peer)
+    expect(asset('pages/home/shared-native.js')).toBe(shared)
+    expect(asset('pages/home/helper.wxs')).not.toContain(': string')
+    expect(result.output.filter(output => output.fileName.endsWith('.jds'))).toHaveLength(2)
+    expect(result.output.some(output => output.fileName === 'pages/home/native.wxs')).toBe(false)
+    expect(visited).toContain('edit:jds')
+    expect(visited).toContain('validate:jds')
+    expect(visited).not.toContain('edit:debug')
+    expect(visited).not.toContain('validate:debug')
+  }
+  finally {
+    await rm(root, { recursive: true, force: true })
+  }
+}, 30_000)

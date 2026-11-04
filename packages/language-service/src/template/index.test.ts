@@ -74,6 +74,8 @@ describe('platform template contracts', () => {
     ['filter', undefined, 'native', 'javascript', 'filter.js'],
     ['script', 'typescript', 'compiled', 'javascript', 'ts'],
     ['wxs', 'typescript', 'compiled', 'wxs', 'wxs.ts'],
+    ['jds', undefined, 'native', 'javascript', 'jds'],
+    ['qs', 'typescript', 'compiled', 'javascript', 'qs.ts'],
     ['filter', 'typescript', 'compiled', 'javascript', 'filter.ts'],
   ] as const)('shares virtual input for %s / %s', (tagName, language, sourceKind, dialect, extension) => {
     const input = getTemplateScriptInput('page.wxml', { tagName, source: 'var value = 1', start: 10, end: 23, sourceKind, language }, 'swan')
@@ -91,7 +93,7 @@ describe('lossless layout', () => {
     '\uFEFF<!-- keep  \r\n --><![CDATA[ <view>   text ]]><view/>',
     '<?xml version="1.0"?><!DOCTYPE view [<!ENTITY x "a>b">]><view/>',
     '<view value="{{ { x: [1, 2], nested: { ok: true } } }}"/>',
-    '<view value="{{ /[}]{2}/g.test(value) ? `x${{ x: "}}" }.x}` : a / b }}"/>',
+    '<view value=\'{{ /[}]{2}/g.test(value) ? `x${{ x: "}}" }.x}` : a / b }}\'/>',
     '<view value="{{ counter++ / 2 > 1 ? /}}/.test(value) : 0 }}"/>',
     '<view {{ spread }} class = \'test\' data-object="{{ {a: \'<view>\'} }}"/>',
     '<view foo="line 1\nline 2"/>',
@@ -184,7 +186,7 @@ describe('strict rejection', () => {
     '</view>',
     '<view x="unterminated>',
     '<view x=>',
-    '<view x="ok"y="bad"/>',
+    '<view ="bad"/>',
     '<view x="{{ value }"/>',
     '<view>{{ (a] }}</view>',
     '<view>{{ /unterminated }}</view>',

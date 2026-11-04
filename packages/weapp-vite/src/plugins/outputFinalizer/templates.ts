@@ -90,7 +90,7 @@ export async function normalizeTemplateAssetEntries(
   const transform = typeof wxml === 'object' ? wxml.transform : undefined
   const useTransform = Boolean(transform && (!Array.isArray(transform) || transform.length))
   const removeOptions = resolveWxmlRemoveOptions(wxml)
-  const remove = createWxmlRemover(removeOptions)
+  const remove = createWxmlRemover(removeOptions, configService?.platform)
   const previous = ctx.runtimeState?.wxmlProcessing
   const dependencies = useTransform || previous?.dependencies.size || previous?.pending.size || previous?.failed.size
     ? beginWxmlDependencies(ctx, subPackageMeta ? `independent:${subPackageMeta.subPackage.root}` : 'main', hooks?.partial ?? false)

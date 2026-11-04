@@ -37,7 +37,7 @@ export async function transformWxml(
       subPackageRoot,
       edit(source, visitor) {
         assertActive()
-        return editWxml(source, name, syntax, visitor)
+        return editWxml(source, name, syntax, visitor, config.platform)
       },
       addWatchFile(file) {
         assertActive()

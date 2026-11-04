@@ -5,7 +5,7 @@ import { getSupportedMiniProgramDirectivePrefixes } from '@weapp-core/shared'
 import { findScriptClosingTag } from '@weapp-vite/language-service'
 import { scan } from '@weapp-vite/wxml'
 import { getWxmlPlatformTransformOptions } from '../../platform'
-import { getScriptModuleImportAttrs, isScriptModuleImportAttr, isScriptModuleTagName } from '../../utils/wxmlScriptModule'
+import { getNativeScriptModuleByTag, getScriptModuleImportAttrs, getScriptModuleTagNames, isScriptModuleImportAttr } from '../../utils/wxmlScriptModule'
 import { getTemplateImportAttrs, isTemplateImportAttr, shouldNormalizeTemplateImportSource } from '../shared'
 import { resolveEventDirectiveName } from './events'
 import { decodeBuildAttribute, textTokens } from './tokenViews'
@@ -29,6 +29,7 @@ interface ScanOptions {
 /** 基于共享词法结果分析构建语义，不重新解释模板结构或脚本正文。 */
 export function parseWxmlTokens({ source, platform, excludeComponent }: ScanOptions): { token: WxmlToken } {
   const { directivePrefix, normalizeComponentTagName } = getWxmlPlatformTransformOptions(platform)
+  const scriptTags = new Set(getScriptModuleTagNames(platform))
   // 此消费入口也处理 SFC 生成的 XML，目标平台不决定源码转义层。
   let scanned = scan(source, { platform, syntax: 'xml', resolveScriptBoundary: findScriptClosingTag })
   if (scanned.diagnostics.some(item => item.severity === 'error') && /\\["']/.test(source)) {
@@ -126,9 +127,9 @@ export function parseWxmlTokens({ source, platform, excludeComponent }: ScanOpti
       if (item.matching !== undefined && loops.delete(item.matching)) {
         loopDepth--
       }
-      if (isScriptModuleTagName(name)) {
+      if (scriptTags.has(name)) {
         scriptTag = undefined
-        if (name !== 'filter') {
+        if (name !== 'filter' && !getNativeScriptModuleByTag(name, platform)) {
           token.scriptModuleTagTokens.push({ start: item.nameStart, end: item.nameEnd, value: name })
         }
       }
@@ -145,7 +146,8 @@ export function parseWxmlTokens({ source, platform, excludeComponent }: ScanOpti
     if (normalizeComponentTagName && componentName !== name) {
       token.tagNameTokens!.push({ start: item.nameStart, end: item.nameEnd, value: componentName })
     }
-    const script = isScriptModuleTagName(name)
+    const script = scriptTags.has(name)
+    const nativeScript = getNativeScriptModuleByTag(name, platform)
     const attrs: Record<string, string> = Object.create(null)
     const dependencyAttrs: Record<string, string> = Object.create(null)
     attributes.set(item, dependencyAttrs)
@@ -157,10 +159,14 @@ export function parseWxmlTokens({ source, platform, excludeComponent }: ScanOpti
       dependencyAttrs[attribute.name] = value
     }
     const importAttrs = getScriptModuleImportAttrs(name, platform) ?? getTemplateImportAttrs(name)
+    const nativeSource = nativeScript ? dependencyAttrs[nativeScript.sourceAttribute]?.toLowerCase() ?? '' : ''
+    if (nativeScript && (Object.hasOwn(dependencyAttrs, 'lang') || (nativeSource && !nativeSource.endsWith(`.${nativeScript.extension}`)))) {
+      throw new Error(`[weapp.wxml] ${item.start}: <${name}> only supports native .${nativeScript.extension} scripts without lang; use the portable script module tag for compiled scripts.`)
+    }
     if (script) {
       scriptTag = item.selfClosing ? undefined : item
       token.scriptModules!.push({ attrs, tagName: name })
-      if (name !== 'filter') {
+      if (name !== 'filter' && !nativeScript) {
         token.scriptModuleTagTokens.push({ start: item.nameStart, end: item.nameEnd, value: name })
       }
     }
@@ -203,11 +209,11 @@ export function parseWxmlTokens({ source, platform, excludeComponent }: ScanOpti
       if (directive && directive[1] !== directivePrefix && supportedPrefixes.has(directive[1])) {
         token.directiveTokens!.push({ ...nameRange, value: `${directivePrefix}:${directive[2]}` })
       }
-      if (script && attrName === 'lang' && scriptLanguages.has(value)) {
+      if (script && !nativeScript && attrName === 'lang' && scriptLanguages.has(value)) {
         token.removeWxsLangAttrTokens.push({ start, end, value })
       }
       const scriptSource = attrs[attrName]
-      if (script && isScriptModuleImportAttr(name, attrName, platform) && scriptSource && (scriptExtension.test(scriptSource) || scriptLanguages.has(attrs.lang))) {
+      if (script && !nativeScript && isScriptModuleImportAttr(name, attrName, platform) && scriptSource && (scriptExtension.test(scriptSource) || scriptLanguages.has(attrs.lang))) {
         token.wxsImportNormalizeTokens.push({ start: attribute.valueStart!, end: attribute.valueEnd!, value: scriptSource, ...(name === 'filter' ? { tagName: 'filter' } : {}) })
       }
     }

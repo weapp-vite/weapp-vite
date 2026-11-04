@@ -1,9 +1,9 @@
-import type { WxmlAttribute, WxmlElementInfo, WxmlTransformNode, WxmlTransformVisitor } from '../../types'
+import type { MpPlatform, WxmlAttribute, WxmlElementInfo, WxmlTransformNode, WxmlTransformVisitor } from '../../types'
 import type { WxmlSyntax } from '../template/lexical'
 import type { SourceEdit } from '../template/ranges'
 import type { Attribute, Element } from '../template/scan'
 import type { createLocator } from './encoding'
-import { isProtectedAttribute, structuralTags } from '../remove/safety'
+import { isProtectedAttribute, isStructuralTag } from '../remove/safety'
 import { failAt } from '../template/lexical'
 import { encodeAttribute } from './encoding'
 
@@ -20,6 +20,7 @@ export interface EditorState {
   code: string
   fileName: string
   syntax: WxmlSyntax
+  platform?: MpPlatform
   locate: ReturnType<typeof createLocator>
 }
 
@@ -62,8 +63,8 @@ export function createEditableNode(state: EditorState, node: Element, navigation
     assertActive()
     assertName(name)
     const synthetic: Attribute = { name, nameEnd: 0, start: 0, end: rawValue.length, valueStart: 0, valueEnd: rawValue.length }
-    if (isProtectedAttribute(rawValue, { ...node, tag: tagName }, synthetic, true)
-      || readAttributes().some(attr => !attr.removed && attr.name === name && attr.source && isProtectedAttribute(code, node, attr.source, true))) {
+    if (isProtectedAttribute(rawValue, { ...node, tag: tagName }, synthetic, true, state.platform)
+      || readAttributes().some(attr => !attr.removed && attr.name === name && attr.source && isProtectedAttribute(code, node, attr.source, true, state.platform))) {
       fail(`Cannot modify protected attribute ${name}.`)
     }
   }
@@ -171,14 +172,14 @@ export function createEditableNode(state: EditorState, node: Element, navigation
     renameTag(name) {
       assertActive()
       assertName(name)
-      if (structuralTags.has(node.tag) || structuralTags.has(name)) {
+      if (isStructuralTag(node.tag, state.platform) || isStructuralTag(name, state.platform)) {
         fail(`Cannot rename structural tag <${node.tag}> to <${name}>.`)
       }
       tagName = name
     },
     remove() {
       assertActive()
-      if (structuralTags.has(node.tag)) {
+      if (isStructuralTag(node.tag, state.platform)) {
         fail(`Cannot remove structural tag <${node.tag}>.`)
       }
       navigation.remove()

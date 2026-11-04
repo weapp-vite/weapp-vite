@@ -5,6 +5,7 @@ import {
   getMiniProgramAppTypesPackage,
   getMiniProgramDefaultBuildTarget,
   getMiniProgramDirectivePrefix,
+  getMiniProgramNativeScriptModules,
   getMiniProgramPlatformByRuntimeGlobalKey,
   getMiniProgramPlatformDescriptor,
   getMiniProgramRouteRuntimeGlobalKeys,
@@ -25,6 +26,15 @@ import {
 } from './index'
 
 describe('mini program platform registry', () => {
+  it('keeps native JD script aliases separate from the portable WXS output contract', () => {
+    expect(getMiniProgramNativeScriptModules('jd')).toEqual([{ extension: 'jds', tag: 'jds', format: 'commonjs', sourceAttribute: 'src', moduleAttribute: 'module' }])
+    expect(getMiniProgramNativeScriptModules('weapp')).toEqual([])
+    expect(getMiniProgramNativeScriptModules()).toEqual([])
+    expect(getMiniProgramScriptModuleOptions('jd', '.jds')).toEqual({ tag: 'jds', format: 'commonjs', sourceAttribute: 'src', moduleAttribute: 'module' })
+    expect(getMiniProgramScriptModuleOptions('jd', 'wxs').tag).toBe('wxs')
+    expect(getMiniProgramPlatformDescriptor('jd').outputExtensions.wxs).toBe('wxs')
+  })
+
   it('distinguishes module format and attributes for platforms sharing SJS', () => {
     expect(getMiniProgramScriptModuleOptions('tt', 'sjs')).toEqual({ tag: 'sjs', format: 'commonjs', sourceAttribute: 'src', moduleAttribute: 'module' })
     expect(getMiniProgramScriptModuleOptions('swan', 'sjs')).toEqual({ tag: 'import-sjs', format: 'esm', sourceAttribute: 'src', moduleAttribute: 'module' })

@@ -1,17 +1,17 @@
 import type { LanguageProfile } from '../profiles'
 import type { Diagnostic } from '../types'
 import type { TemplateTag, TemplateToken } from './types'
-
-const scriptTags = new Set(['wxs', 'sjs', 'ks', 'import-sjs', 'filter', 'script'])
+import { templateRawTags } from './scanner'
 
 /** 原生脚本标签遵循所属平台契约；显式编译脚本交给构建链路处理。 */
 export function validateScriptModules(source: string, tokens: TemplateToken[], profile: LanguageProfile): Diagnostic[] {
   const diagnostics: Diagnostic[] = []
   const modules = new Set<string>()
   const filterSources = new Set<string>()
+  const scriptTags = templateRawTags(profile)
   const report = (tag: TemplateTag, code: string, message: string) => diagnostics.push({ code: `template/${code}`, severity: 'error', start: tag.start, end: tag.end, message })
   for (const [position, token] of tokens.entries()) {
-    if (token.kind !== 'tag' || token.closing || !scriptTags.has(token.name)) {
+    if (token.kind !== 'tag' || token.closing || !scriptTags.includes(token.name)) {
       continue
     }
     const attribute = (name: string) => token.attributes.find(attribute => attribute.name === name)
@@ -19,7 +19,8 @@ export function validateScriptModules(source: string, tokens: TemplateToken[], p
       continue
     }
     const isFilter = profile.platform === 'swan' && token.name === 'filter'
-    if (token.name !== profile.scriptModule.tag && !isFilter) {
+    const isAlias = (profile.platform === 'jd' && token.name === 'jds') || (profile.platform === 'qq' && token.name === 'qs')
+    if (token.name !== profile.scriptModule.tag && !isFilter && !isAlias) {
       if (attribute('module') || attribute('name') || attribute('src') || attribute('from')) {
         report(token, 'script-platform-mismatch', `${profile.platform} 的原生脚本模块使用 <${profile.scriptModule.tag}>${profile.platform === 'swan' ? ' 或 <filter>' : ''}，当前为 <${token.name}>`)
       }

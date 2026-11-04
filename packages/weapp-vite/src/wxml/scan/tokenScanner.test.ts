@@ -5,6 +5,22 @@ function scan(source: string) {
 }
 
 describe('shared build token views', () => {
+  it('collects native JD dependencies and keeps JDS scripts out of portable rewrites', () => {
+    const source = '<jds src="./utils.jds" module="utils"/><jds module="inline">var html="</jds><fake/>";</jds><view/>'
+    const token = parseWxmlTokens({ source, platform: 'jd', excludeComponent: () => false }).token
+    expect(token.deps.map(({ tagName, value }) => [tagName, value])).toEqual([['jds', './utils.jds']])
+    expect(token.scriptModules?.map(({ tagName }) => tagName)).toEqual(['jds', 'jds'])
+    expect(token.components.fake).toBeUndefined()
+    expect(token.wxsImportNormalizeTokens).toEqual([])
+    expect(token.scriptModuleTagTokens).toEqual([])
+    expect(scan('<jds src="./ordinary.jds"><child/></jds>').deps).toEqual([])
+    expect(scan('<jds><child/></jds>').components.child).toBeDefined()
+  })
+
+  it.each(['lang="ts"', 'lang="js"', 'lang="typescript"', 'src="./utils.ts"', 'src="./utils.js"', 'src="./utils.jds.ts"', 'src="./utils.jds.mts"'])('rejects unsupported compiled JDS inputs: %s', (attribute) => {
+    expect(() => parseWxmlTokens({ source: `<jds ${attribute}/>`, platform: 'jd', excludeComponent: () => false })).toThrow('only supports native .jds scripts without lang')
+  })
+
   it('preserves close-event component order and legacy range offsets', () => {
     const source = 'lead<Parent><Inner /></Parent>'
     const token = scan(source)

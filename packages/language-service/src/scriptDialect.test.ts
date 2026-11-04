@@ -2,6 +2,12 @@ import { describe, expect, it } from 'vitest'
 import { analyzeScript } from './script'
 
 describe('native WXS and compiled source boundaries', () => {
+  it.each([['jd', 'jds'], ['qq', 'qs']] as const)('keeps %s %s native identity without inventing another platform dialect', (platform, extension) => {
+    const source = 'module.exports = { value: 1 }'
+    expect(analyzeScript(source, `tools.${extension}`, { platform })).toMatchObject({ valid: true, sourceKind: 'native', dialect: 'javascript' })
+    expect(analyzeScript(source, `tools.${extension}.ts`, { platform })).toMatchObject({ valid: true, sourceKind: 'compiled', dialect: 'javascript' })
+  })
+
   it('rejects a native dialect that belongs to another platform instead of borrowing defaults', () => {
     expect(analyzeScript('module.exports = {}', 'tools.sjs', { platform: 'weapp' }).diagnostics.map(diagnostic => diagnostic.code)).toContain('script/platform-dialect')
     expect(analyzeScript('module.exports = {}', 'tools.sjs.ts', { platform: 'weapp' }).diagnostics).toEqual([])

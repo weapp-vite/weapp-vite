@@ -1,10 +1,10 @@
+import type { Syntax } from '@weapp-vite/wxml'
 import type { TemplateExpression, TemplateToken } from './types'
 import { expressionEnd } from '@weapp-vite/wxml'
 import { scanTemplate } from './scanner'
 
-/** 仅提取文本和属性中的插值，不扫描脚本、注释或 CDATA 内的相似字符。 */
-export function collectTemplateExpressions(source: string, tokens: TemplateToken[]): TemplateExpression[] {
-  const expressions: TemplateExpression[] = []
+/** 沿用已扫描的 token 与方言；属性引号仅供内部语义校验使用。 */
+export function visitTemplateExpressions(source: string, tokens: TemplateToken[], syntax: Syntax, visit: (expression: TemplateExpression, quote?: string) => void): void {
   const ranges = tokens.flatMap(token => token.kind === 'text'
     ? [{ start: token.start, end: token.end, quote: undefined }]
     : token.kind === 'tag'
@@ -17,11 +17,17 @@ export function collectTemplateExpressions(source: string, tokens: TemplateToken
       if (start < 0 || start >= range.end) {
         break
       }
-      const end = expressionEnd(source, start, true, 'xml', range.quote)
-      expressions.push({ start: start + 2, end: end - 2, fullStart: start, fullEnd: end, source: source.slice(start + 2, end - 2) })
+      const end = expressionEnd(source, start, true, syntax, range.quote)
+      visit({ start: start + 2, end: end - 2, fullStart: start, fullEnd: end, source: source.slice(start + 2, end - 2) }, range.quote)
       cursor = end
     }
   }
+}
+
+/** 保留原始表达式与 UTF-16 范围，不扫描脚本、注释或 CDATA 中的相似字符。 */
+export function collectTemplateExpressions(source: string, tokens: TemplateToken[], syntax: Syntax = 'xml'): TemplateExpression[] {
+  const expressions: TemplateExpression[] = []
+  visitTemplateExpressions(source, tokens, syntax, expression => expressions.push(expression))
   return expressions.sort((left, right) => left.start - right.start)
 }
 

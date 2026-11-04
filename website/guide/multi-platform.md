@@ -375,6 +375,10 @@ pnpm exec wv build --platform jd
 - 自动转换为 `jxml` / `jxss` 等京东特有的扩展名。
 - 构建完成后可直接导入京东小程序 IDE。
 
+原生 `.jxml` 的 `<jds src="./utils.jds" module="utils" />` 会收集并输出 `.jds` 及其递归依赖，保持模块正文、路径和标签。内联 JDS 的字符串、注释和伪标签同样保持原文，模板编辑、清理、scoped style 和引用检查共享这项平台配置。其他平台的同名 `<jds>` 仍按普通组件处理。
+
+通用脚本编译继续使用既有 WXS 契约；原生 `<jds>` 不接受 `lang="js/ts"` 或 `.jds.ts` / `.jds.js` 编译入口。这项构建回归不代表已经完成京东 IDE Runtime 验收。
+
 ## 小红书小程序 {#platform-xhs}
 
 ```sh
