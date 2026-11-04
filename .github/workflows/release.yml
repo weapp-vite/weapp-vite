@@ -27,21 +27,31 @@ on:
           - reconcile
           - oidc-audit
           - nightly
+          - bootstrap
       package:
-        description: Package used for unpublished-version recovery
+        description: Exact package for recovery, OIDC audit or bootstrap
         required: false
         type: string
       version:
-        description: Version used for unpublished-version recovery
+        description: Exact version for unpublished-version recovery or bootstrap
         required: false
         type: string
       dry-run:
-        description: Preview reconciliation or nightly publication without changes
+        description: Preview reconciliation, nightly or bootstrap without changes
         required: false
         default: false
         type: boolean
       source-sha:
         description: Original main commit to recover (publish modes only)
+        required: false
+        type: string
+      tag:
+        description: Non-latest bootstrap dist-tag
+        required: false
+        default: alpha
+        type: string
+      verify-run-id:
+        description: Verify an existing bootstrap publication without republishing
         required: false
         type: string
 
@@ -57,7 +67,7 @@ permissions:
 
 jobs:
   release:
-    if: ${{ github.event_name != 'schedule' && inputs.mode != 'nightly' && inputs.mode != 'oidc-audit' }}
+    if: ${{ github.event_name != 'schedule' && inputs.mode != 'nightly' && inputs.mode != 'oidc-audit' && inputs.mode != 'bootstrap' }}
     # npm 发布完成即释放互斥，文档部署使用自己的队列。
     concurrency:
       group: npm-release-${{ github.ref }}
@@ -324,10 +334,146 @@ jobs:
       - name: Install Dependencies without lifecycle scripts
         run: pnpm install --frozen-lockfile --ignore-scripts
 
-      - name: Audit every publishable package
+      - name: Audit selected publishable packages
         env:
           REPO_RELEASE_PACKAGE: ${{ inputs.package }}
           REPO_RELEASE_VERSION: ${{ inputs.version }}
           REPO_RELEASE_DRY_RUN: ${{ inputs.dry-run }}
           REPO_RELEASE_RECOVERY_SOURCE_SHA: ${{ inputs.source-sha }}
         run: pnpm exec repo release ci --mode oidc-audit
+  bootstrap-prepare:
+    name: Prepare bootstrap package
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'bootstrap' && inputs.verify-run-id == '' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout bootstrap source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24.22.1
+          cache: pnpm
+
+      - name: Install Dependencies without lifecycle scripts
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Prepare bootstrap package
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          BOOTSTRAP_PACKAGE: ${{ inputs.package }}
+          BOOTSTRAP_VERSION: ${{ inputs.version }}
+          BOOTSTRAP_TAG: ${{ inputs.tag || 'alpha' }}
+          BOOTSTRAP_DRY_RUN: ${{ inputs.dry-run }}
+          BOOTSTRAP_SOURCE_SHA: ${{ inputs.source-sha }}
+        run: |
+          if [ -n "$BOOTSTRAP_SOURCE_SHA" ]; then
+            echo 'Bootstrap does not accept source-sha recovery.' >&2
+            exit 1
+          fi
+          args=(release bootstrap --stage prepare --package "$BOOTSTRAP_PACKAGE" --version "$BOOTSTRAP_VERSION" --tag "$BOOTSTRAP_TAG" --output "$RUNNER_TEMP/repoctl-bootstrap" --json)
+          if [ "$BOOTSTRAP_DRY_RUN" = 'true' ]; then
+            args+=(--dry-run)
+          fi
+          pnpm exec repo "${args[@]}"
+
+      - name: Preserve bootstrap package
+        if: ${{ !inputs.dry-run }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: repoctl-bootstrap-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/repoctl-bootstrap/bootstrap-manifest.json
+            ${{ runner.temp }}/repoctl-bootstrap/tarballs/
+          if-no-files-found: error
+          retention-days: 14
+  bootstrap-publish:
+    name: Publish bootstrap package
+    needs: bootstrap-prepare
+    if: ${{ !cancelled() && github.event_name == 'workflow_dispatch' && inputs.mode == 'bootstrap' && inputs.verify-run-id == '' && !inputs.dry-run && needs.bootstrap-prepare.result == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+    env:
+      REPOCTL_BOOTSTRAP_TOOL_VERSION: 6.4.0
+    steps:
+      - name: Setup Node.js environment
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24.22.1
+
+      - name: Install official bootstrap publisher
+        id: bootstrap-tool
+        run: npm install --prefix "$RUNNER_TEMP/repoctl-bootstrap-tool" --ignore-scripts --no-package-lock --no-audit --no-fund "repoctl@$REPOCTL_BOOTSTRAP_TOOL_VERSION" --registry=https://registry.npmjs.org
+
+      - name: Install npm with trusted publishing support
+        run: npm install --global npm@11.16.0 --registry=https://registry.npmjs.org
+
+      - name: Publish bootstrap package
+        working-directory: ${{ runner.temp }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          BOOTSTRAP_PACKAGE: ${{ inputs.package }}
+          BOOTSTRAP_VERSION: ${{ inputs.version }}
+          BOOTSTRAP_TAG: ${{ inputs.tag || 'alpha' }}
+        run: node "$RUNNER_TEMP/repoctl-bootstrap-tool/node_modules/repoctl/bin/repo.js" release bootstrap --stage publish --package "$BOOTSTRAP_PACKAGE" --version "$BOOTSTRAP_VERSION" --tag "$BOOTSTRAP_TAG" --run-id "$GITHUB_RUN_ID" --run-attempt "$GITHUB_RUN_ATTEMPT" --output "$RUNNER_TEMP/repoctl-bootstrap-publication" --json
+
+      - name: Preserve bootstrap publication evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: repoctl-bootstrap-publication-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/repoctl-bootstrap-publication/
+          if-no-files-found: error
+          retention-days: 14
+    concurrency:
+      group: npm-release-${{ github.ref }}
+      cancel-in-progress: false
+  bootstrap-verify:
+    name: Verify bootstrap publication
+    needs: [bootstrap-prepare, bootstrap-publish]
+    if: ${{ !cancelled() && github.event_name == 'workflow_dispatch' && inputs.mode == 'bootstrap' && !inputs.dry-run && (inputs.verify-run-id != '' || needs.bootstrap-publish.result == 'success') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    env:
+      REPOCTL_BOOTSTRAP_TOOL_VERSION: 6.4.0
+    steps:
+      - name: Setup Node.js environment
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24.22.1
+
+      - name: Install official bootstrap verifier
+        id: bootstrap-tool
+        run: npm install --prefix "$RUNNER_TEMP/repoctl-bootstrap-tool" --ignore-scripts --no-package-lock --no-audit --no-fund "repoctl@$REPOCTL_BOOTSTRAP_TOOL_VERSION" --registry=https://registry.npmjs.org
+
+      - name: Verify existing bootstrap publication
+        working-directory: ${{ runner.temp }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          BOOTSTRAP_PACKAGE: ${{ inputs.package }}
+          BOOTSTRAP_VERSION: ${{ inputs.version }}
+          BOOTSTRAP_TAG: ${{ inputs.tag || 'alpha' }}
+          BOOTSTRAP_VERIFY_RUN_ID: ${{ inputs.verify-run-id || github.run_id }}
+        run: node "$RUNNER_TEMP/repoctl-bootstrap-tool/node_modules/repoctl/bin/repo.js" release bootstrap --stage verify --package "$BOOTSTRAP_PACKAGE" --version "$BOOTSTRAP_VERSION" --tag "$BOOTSTRAP_TAG" --verify-run-id "$BOOTSTRAP_VERIFY_RUN_ID" --output "$RUNNER_TEMP/repoctl-bootstrap-verification" --json
+
+      - name: Preserve bootstrap verification evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: repoctl-bootstrap-verification-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/repoctl-bootstrap-verification/
+          if-no-files-found: error
+          retention-days: 14

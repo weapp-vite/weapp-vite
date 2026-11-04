@@ -1,6 +1,6 @@
 # repoctl 发布流程
 
-仓库使用 `repoctl@6.3.2`。正式版、预发布版、npm nightly 和 OIDC 审计共用 `Release`（`release.yml`），继续使用现有 npm Trusted Publisher 绑定。PR snapshot 使用官方独立构建与发布工作流，只需要内置 GitHub token 和 npm OIDC，无须 GitHub App 或发布 PAT。
+仓库使用正式版 `repoctl@6.4.0`，根 `package.json` 与锁文件保持精确版本。正式版、预发布版、单包 bootstrap、npm nightly 和 OIDC 审计共用 `Release`（`release.yml`），继续使用现有 npm Trusted Publisher 绑定。PR snapshot 使用官方独立构建与发布工作流，只需要内置 GitHub token 和 npm OIDC，无须 GitHub App 或发布 PAT。
 
 ## 正式版与预发布版
 
@@ -17,33 +17,50 @@
 | `publish`             | 发布已经准备的批次                                 |
 | `publish-unpublished` | 恢复指定 `package`、`version`                       |
 | `reconcile`           | 对账发布状态；先用 `dry-run=true` 查看计划           |
-| `oidc-audit`          | 在默认分支审计所有公开包的 npm Trusted Publisher   |
+| `oidc-audit`          | 在默认分支审计全部公开包，或用 `package` 选择一个包 |
+| `bootstrap`           | 在默认分支发布一个公开子包的显式预发布版本          |
 | `nightly`             | 从默认分支生成并发布独立的 npm nightly              |
 
-`source-sha` 只用于原生发布恢复支持的模式，必须指向原始发布来源；不要用它伪造版本首次准备来源或改写已准备的 changelog、ledger。`oidc-audit` 不接受 `package`、`version`、`source-sha`、`dry-run` 的组合。
+`source-sha` 只用于原生发布恢复支持的模式，必须指向原始发布来源；不要用它伪造版本首次准备来源或改写已准备的 changelog、ledger。`oidc-audit` 可用 `package` 精确筛选，不能同时指定 `version`、`source-sha` 或 `dry-run`；它只检查短时凭据交换，不会完成新 Trusted Publisher 所需的首次成功发布。
 
 finalize 成功产生真实 release completion record 后，`main` 才能触发 stable 文档部署。尚无 completion record 时保留现有线上站点，不从当前工作树补造发布记录。文档渠道与修订操作见 [文档部署说明](./website-deployment.md)。
 
-## WXML 首版 alpha 预览
+## 单包 bootstrap
 
-新包 `@weapp-vite/wxml` 在正式 changeset 发布前，使用独立的 **WXML preview**（`wxml-preview.yml`）手动入口。该入口只允许默认分支，固定打包这一个包，版本限定为 `0.1.0-alpha.N`，发布到 `alpha`。正式版仍走 `release.yml`；首个正式版本发布后停止使用这个初始化入口。
+新增公开 workspace 子包在正式 changeset 发布前，通过共享 `Release` 的 `mode=bootstrap` 发布一个显式 semver 预发布版本。`package` 必须是精确包名，`version` 必须包含预发布标识，`tag` 默认 `alpha`；稳定版和维护线保留的 tag 不可使用。该入口只允许默认分支，不消费正式 changeset，不修改源码版本、changelog 或发布账本，也不会完成或恢复其他发布批次。
 
-首次建立 npm 包时，可用 `npm stage publish` 暂存独立的初始化版本。npm 会公开 `0.0.0-stage` 占位版本，暂存内容无需批准。随后在 npm Settings 为仓库 `weapp-vite/weapp-vite` 配置 `release.yml` 与 `wxml-preview.yml` 两个 GitHub Actions Trusted Publisher，Environment 留空，显式允许 `npm publish`。不要批准初始化用暂存版本，也不要将 npm token 写入 GitHub secrets。
+使用前，先等待包含 bootstrap 的 repoctl 正式版本发布到 npm，再升级根依赖与锁文件，通过该正式工具的 `repo upgrade` 预览并应用受管工作流更新。审阅并将生成的 `release.yml` 合入默认分支后，核对 `bootstrap-publish` 和 `bootstrap-verify` 的 `REPOCTL_BOOTSTRAP_TOOL_VERSION` 都精确指向该已发布版本，再调度运行。源码检出、链接本地 CLI 或复制工作流，不能让隔离 job 安装尚未发布的工具。
+
+首次建立 npm 包时，可用 `npm stage publish` 暂存独立的初始化版本。npm 会公开 `0.0.0-stage` 占位版本，暂存内容无需批准。随后在 npm Settings 为仓库 `weapp-vite/weapp-vite` 配置 `release.yml` 的 GitHub Actions Trusted Publisher，Environment 留空，显式允许 `npm publish`。不要批准初始化用暂存版本，也不要将 npm token 写入 GitHub secrets。新连接须在 npm 规定的时限内完成首次成功发布；其他 workflow 的发布和 `oidc-audit` 成功均不能代替此验证。
+
+npm 显示 `Pending` 或“尚未验证”时，须在页面给出的首次发布期限前，由该配置对应的 workflow 完成一次真实发布。按 npm 当前策略，未验证配置通常在创建后 48 小时过期；以页面显示的具体截止时间为准。OIDC 凭据交换成功只证明当前权限，不满足首次发布要求，也不会重置计时；编辑配置同样不延长期限。只有 npm 明确显示 `Expired` 时，才通过正常设置流程删除并重新建立该连接，再在新期限内完成发布，不从单次 HTTP 404 推断过期。
+
+以 WXML 的下一预览版为例，先只读检查冻结计划，再执行发布：
 
 ```sh
-gh workflow run wxml-preview.yml --ref main -f version=0.1.0-alpha.0
-npm install @weapp-vite/wxml@0.1.0-alpha.0
+gh workflow run release.yml --ref main -f mode=bootstrap -f package=@weapp-vite/wxml -f version=0.1.0-alpha.1 -f tag=alpha -F dry-run=true
+gh workflow run release.yml --ref main -f mode=bootstrap -f package=@weapp-vite/wxml -f version=0.1.0-alpha.1 -f tag=alpha
 ```
 
-可先传 `-F dry-run=true` 运行检查和打包。实际发布前执行包级 lint、typecheck、unit、build 与 tsd；打包后还原源码 manifest，保留正式 changeset、changelog 与发布账本。发布后核对精确版本的 tarball 完整性、`alpha` 指向和 provenance 元数据，并在隔离 consumer 中验证公开入口及 npm 签名。metadata 传播最多等待 120 秒。已有正式版本的 `latest` 必须不变；npm 首次真实发布可能自动将 `latest` 从 `0.0.0-stage` 指向 alpha，仅当 registry 中只有占位版与本次 alpha 时接受并明确记录该变化。预览期请明确安装 alpha 精确版本或 `@alpha`。
+`dry-run=true` 只生成计划，不准备隔离候选源码、不安装其依赖，也不构建目标包、打包或上传；工作流仍会安装运行工具所需的依赖。正式执行分为三个独立 job：
 
-如果上传成功、后置确认失败，不要重新发布或递增版本来掩盖失败。传 `-f verify-run-id=<原运行编号>`，复用原运行的 tarball 与 manifest，核对来源提交、完整性、registry 和隔离 consumer；该分支没有 OIDC 写权限，不构建或上传新包。必须保留原运行证据，只有补充验证通过才算发布验收完成。
+1. 准备 job 以只读权限冻结默认分支提交、运行身份、包名、版本和构建依赖闭包，在隔离源码中仅改写目标版本与发布配置。构建依赖闭包后执行目标包已有的 lint、typecheck、test 和公开类型检查，通过原生 pnpm pack 输出一个 tarball，再分析其入口、声明和实际消费结果。非 dev 的内部依赖必须已能从官方 registry 安装，不自动扩大发布范围。
+2. 发布 job 只接受当前 run/attempt 的不可变准备产物，核对来源和摘要，仅对选定包审计 OIDC 并上传原始 tarball；不 checkout、构建或执行候选源码。确认 registry 完整性、目标 tag 和 provenance，provenance 必须绑定同一仓库、`release.yml`、来源提交及运行编号。
+3. 验证 job 没有 OIDC 写权限，从 registry 安装精确版本，核对 tarball、npm 签名、公开入口和声明。上传成功但验证失败时，整次运行仍失败。
 
-```bash
-gh workflow run wxml-preview.yml --ref main -f version=0.1.0-alpha.0 -f verify-run-id=<原运行编号>
+与常规发布共用 npm 队列，保留原始 tarball、manifest、上传 checkpoint、provenance 与 consumer 报告 14 天。已有稳定 `latest` 及其他未选择 tag 必须保持；npm 首次真实发布可能自动将 `latest` 从空值或 `0.0.0-stage` 指向预发布版，只有 registry 中仅含占位版与本次版本时才接受并记录。预览期请安装 `@alpha` 或精确版本。
+
+已存在的版本会拒绝覆盖。如果上传成功、后置确认或 consumer 失败，使用原运行的 `verify-run-id` 只读复验；该入口不构建、不取得 OIDC 写权限，也不会再次上传。不要递增版本来掩盖失败，必须保留原运行与补验结果。
+
+```sh
+gh workflow run release.yml --ref main -f mode=bootstrap -f package=@weapp-vite/wxml -f version=0.1.0-alpha.1 -f tag=alpha -f verify-run-id=<原运行编号>
 ```
 
-工作流与常规发布共用 npm 队列，保存 tarball、打包清单和确认报告 14 天。已存在的版本会拒绝覆盖；上传完成而后续确认失败时，应先读取 registry 和运行证据，不可盲目增加版本重发。这个入口不会完成或恢复其他历史发布批次。
+### WXML 首版记录
+
+`@weapp-vite/wxml@0.1.0-alpha.0` 由已停用的专用 `wxml-preview.yml` 发布。[原上传运行 41757443404](https://github.com/weapp-vite/weapp-vite/actions/runs/41757443404) 的 OIDC 上传成功，但 registry 传播期间后置确认超时，原运行保留失败状态。[只读补验运行 41759065114](https://github.com/weapp-vite/weapp-vite/actions/runs/41759065114) 已核对原 tarball 完整性、registry、隔离 consumer 与 npm 签名，完成该版本的发布验收。npm 首次真实发布将 `latest` 从占位版指向该 alpha，补验记录保留了这一初始化变化。
+
+本次仓库迁移将移除专用 workflow 和 `scripts/wxmlPreview`。必须等共享 `release.yml` 完成 `0.1.0-alpha.1` 的真实发布、registry 确认和隔离消费验收后，才在 npm 设置中删除已退役 workflow 的 Trusted Publisher，并回读核对清理结果。此前保留旧连接，不提前记为已清理。以上记录只证明 alpha.0 通过旧入口完成验收，不证明通用 bootstrap 已完成真实发布。旧产物格式与来源身份不属于通用 bootstrap 合同，不能把这两个历史编号传给新入口的 `verify-run-id`。
 
 ## 自动 changeset
 
@@ -101,7 +118,7 @@ pnpm add wevu@snapshot-nightly
 
 ## PR snapshot
 
-repoctl 6.2.0 已通过 [#1114](https://github.com/icelib/repoctl/pull/1114) 和 [#1116](https://github.com/icelib/repoctl/pull/1116) 提供 prepared snapshot、自动 changeset、正式 Release PR 校验和 hooks 公共入口。本仓库使用官方成对工作流 `.github/workflows/repoctl-snapshot-build.yml` 与 `.github/workflows/repoctl-snapshot-publish.yml`，固定 `repoctl@6.3.2`、pnpm 12.16.1，并复用 `pr-ci-approval`。
+repoctl 6.2.0 已通过 [#1114](https://github.com/icelib/repoctl/pull/1114) 和 [#1116](https://github.com/icelib/repoctl/pull/1116) 提供 prepared snapshot、自动 changeset、正式 Release PR 校验和 hooks 公共入口。本仓库使用官方成对工作流 `.github/workflows/repoctl-snapshot-build.yml` 与 `.github/workflows/repoctl-snapshot-publish.yml`，固定 `repoctl@6.4.0`、pnpm 12.16.1，并复用 `pr-ci-approval`。
 
 启用前，将工作流合入默认分支，并为所有公开包新增允许仓库 `weapp-vite/weapp-vite`、工作流 `repoctl-snapshot-publish.yml` 的 npm Trusted Publisher，保留 `release.yml` 的现有连接。publisher job 没有 Environment，npm 对应字段应留空；`pr-ci-approval` 保护的是 builder freeze。npm 当前允许每包最多 10 个 trusted publisher；新增配置的首次成功发布时限以 npm 页面为准。当前迁移只准备仓库配置，没有修改远端 npm 设置或执行真实发布。
 

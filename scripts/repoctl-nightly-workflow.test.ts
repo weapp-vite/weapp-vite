@@ -93,6 +93,7 @@ describe('repoctl nightly workflow', () => {
       'reconcile',
       'oidc-audit',
       'nightly',
+      'bootstrap',
     ])
     expect(workflow.jobs.nightly?.if).toBe(expression(`(github.event_name == 'schedule' && github.event.schedule == '${nightly.schedule}') || (github.event_name == 'workflow_dispatch' && inputs.mode == 'nightly')`))
     expect(workflow.jobs.nightly?.env).toEqual({
@@ -164,8 +165,8 @@ describe('repoctl nightly workflow', () => {
     expect([...reports, ...dependencies].filter(file => patterns.some(pattern => path.matchesGlob(file, pattern)))).toEqual(reports)
   })
 
-  it('audits every public package and passes recovery inputs to their validation boundary', () => {
-    const audit = workflow.jobs['oidc-audit']!.steps!.find(step => step.name === 'Audit every publishable package')!
+  it('audits selected public packages and passes recovery inputs to their validation boundary', () => {
+    const audit = workflow.jobs['oidc-audit']!.steps!.find(step => step.name === 'Audit selected publishable packages')!
     expect(audit.run).toBe('pnpm exec repo release ci --mode oidc-audit')
     for (const jobName of ['nightly', 'oidc-audit']) {
       const command = workflow.jobs[jobName]!.steps!.find(step => step.run?.includes('pnpm exec repo release'))!

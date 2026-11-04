@@ -56,7 +56,7 @@ it('keeps the repoctl-managed release workflow aligned with the current contract
     'group': `npm-release-${githubExpression('github.ref')}`,
     'cancel-in-progress': false,
   })
-  assert.equal(job?.if, githubExpression('github.event_name != \'schedule\' && inputs.mode != \'nightly\' && inputs.mode != \'oidc-audit\''))
+  assert.equal(job?.if, githubExpression('github.event_name != \'schedule\' && inputs.mode != \'nightly\' && inputs.mode != \'oidc-audit\' && inputs.mode != \'bootstrap\''))
   assert.equal(job?.['runs-on'], 'ubuntu-latest')
   assert.equal(workflow.env?.npm_config_registry, 'https://registry.npmjs.org')
   assert.equal(workflow.env?.pnpm_config_registry, undefined)
