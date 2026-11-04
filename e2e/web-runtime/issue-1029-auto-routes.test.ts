@@ -222,7 +222,7 @@ describe('issue #1029: shared named routes on the Web target', { concurrent: fal
     const errors: string[] = []
     const routeImports: string[] = []
     const reloads: string[] = []
-    let sourceChange = 'initial'
+    let sourceChange: string | undefined
     let loadCount = 0
     page.on('load', () => {
       loadCount++
@@ -236,7 +236,7 @@ describe('issue #1029: shared named routes on the Web target', { concurrent: fal
     })
     page.on('websocket', socket => socket.on('framereceived', ({ payload }) => {
       const message = JSON.parse(payload.toString()) as { type: string }
-      if (message.type === 'full-reload') {
+      if (message.type === 'full-reload' && sourceChange) {
         reloads.push(sourceChange)
       }
     }))

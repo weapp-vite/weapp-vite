@@ -15,6 +15,14 @@ import { aggregateVerificationReports } from './verification/aggregate'
 import { createVerificationIdentity, createVerificationPlan, resolveVerificationTasks } from './verification/plan'
 
 const tasks = fixtureTasks.map(task => ({ ...task, env: { ...task.env } }))
+let originalExitCode: typeof process.exitCode
+let signalHandlers: Record<'SIGINT' | 'SIGTERM', ReturnType<typeof process.listeners>>
+
+function cancelHmr(signal: 'SIGINT' | 'SIGTERM') {
+  const handlers = process.listeners(signal).filter(handler => !signalHandlers[signal].includes(handler))
+  expect(handlers).toHaveLength(1)
+  ;(handlers[0] as () => void)()
+}
 
 vi.mock('../../packages/devtools-runtime/src/lease/machine', () => ({
   withMachineE2ELease: vi.fn(async (work: () => Promise<unknown>) => await work()),
@@ -50,6 +58,8 @@ function machineLease(environment: NodeJS.ProcessEnv = { TEST_MACHINE_LEASE: 'bo
 }
 
 beforeEach(async () => {
+  originalExitCode = process.exitCode
+  signalHandlers = { SIGINT: process.listeners('SIGINT'), SIGTERM: process.listeners('SIGTERM') }
   vi.resetAllMocks()
   vi.mocked(withMachineE2ELease).mockImplementation(async work => await work(machineLease()))
   vi.mocked(createVerificationIdentity).mockReturnValue(identity)
@@ -80,11 +90,61 @@ async function prepareStages(onStage: (stage: string) => void = () => {}) {
 }
 
 afterEach(() => {
+  expect(process.listeners('SIGINT')).toEqual(signalHandlers.SIGINT)
+  expect(process.listeners('SIGTERM')).toEqual(signalHandlers.SIGTERM)
+  process.exitCode = originalExitCode
   vi.clearAllMocks()
   vi.unstubAllEnvs()
 })
 
 describe('independent HMR acceptance entry', () => {
+  it('retains a direct-entry cancellation during asynchronous manifest preflight', async () => {
+    const ready = Promise.withResolvers<void>()
+    const finish = Promise.withResolvers<typeof tasks>()
+    vi.mocked(resolveVerificationTasks).mockImplementation(async () => {
+      ready.resolve()
+      return await finish.promise
+    })
+    const running = runHmrAcceptanceCli(['all'])
+    await ready.promise
+    cancelHmr('SIGTERM')
+    finish.resolve(tasks)
+    await running
+    expect(process.exitCode).toBe(143)
+    expect(withMachineE2ELease).not.toHaveBeenCalled()
+    expect(runHmrUnitValidation).not.toHaveBeenCalled()
+    expect(runE2ESuiteCli).not.toHaveBeenCalled()
+  })
+
+  it('waits for cancelled unit cleanup and does not enter any E2E stage', async () => {
+    const started = Promise.withResolvers<AbortSignal | undefined>()
+    const cleaned = Promise.withResolvers<void>()
+    vi.mocked(runHmrUnitValidation).mockImplementation(async ({ signal }) => {
+      started.resolve(signal)
+      await cleaned.promise
+      signal?.throwIfAborted()
+      return createHmrUnitReceipt()
+    })
+    const running = runHmrAcceptanceCli(['all'])
+    const signal = await started.promise
+    cancelHmr('SIGINT')
+    cancelHmr('SIGTERM')
+    expect(signal?.aborted).toBe(true)
+    expect(runE2ESuiteCli).not.toHaveBeenCalled()
+    cleaned.resolve()
+    await running
+    expect(process.exitCode).toBe(130)
+    expect(runE2ESuiteCli).not.toHaveBeenCalled()
+  })
+
+  it('stops stage aggregation and later stages when the current suite is cancelled', async () => {
+    await prepareStages(() => cancelHmr('SIGINT'))
+    await runHmrAcceptanceCli(['all'])
+    expect(runE2ESuiteCli).toHaveBeenCalledOnce()
+    expect(aggregateVerificationReports).not.toHaveBeenCalled()
+    expect(process.exitCode).toBe(130)
+  })
+
   it('rejects filters and failure suppression before acquiring resources', () => {
     for (const arg of ['--allow-failures', '--filter=native', '--from=2', '--shard-index=1']) {
       expect(() => selectHmrAcceptanceStages('all', [arg], {})).toThrow('ad-hoc')

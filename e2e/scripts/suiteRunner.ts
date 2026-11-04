@@ -72,6 +72,7 @@ export interface SuiteTaskResult {
 }
 
 interface RunSuiteOptions {
+  signal?: AbortSignal
   /** 仅供基础设施集成测试显式隔离租约状态；正常入口沿用全机租约目录。 */
   machineLeaseOptions?: MachineE2ELeaseOptions
   afterAll?: () => Promise<void> | void
@@ -986,7 +987,7 @@ export async function runTaskSuite(
   tasks: SuiteTask[],
   options: RunSuiteOptions = {},
 ) {
-  const signals = createSuiteSignalScope()
+  const signals = createSuiteSignalScope(options.signal)
   const leaseStartedAt = new Date().toISOString()
   const leaseStarted = performance.now()
   try {

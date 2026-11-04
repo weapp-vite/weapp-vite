@@ -1,7 +1,9 @@
 import type { HmrUnitReceipt } from './unit'
+import { EventEmitter } from 'node:events'
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
+import process from 'node:process'
 // eslint-disable-next-line e18e/ban-dependencies -- 模拟生产代码的跨平台启动器并校验原始输出。
 import { execa } from 'execa'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -26,6 +28,8 @@ beforeEach(async () => {
 })
 
 afterEach(async () => {
+  vi.useRealTimers()
+  vi.restoreAllMocks()
   await fs.rm(root, { recursive: true, force: true })
   vi.unstubAllEnvs()
 })
@@ -51,6 +55,59 @@ function reportFromChild(value: unknown = passingVitestJson(), exitCode = 0) {
 }
 
 describe('HMR unit child execution and evidence', () => {
+  it.skipIf(process.platform === 'win32')('waits for silent Unix descendants after the pnpm parent exits during cancellation', async () => {
+    vi.useFakeTimers()
+    const started = Promise.withResolvers<void>()
+    const completion = Promise.withResolvers<Awaited<ReturnType<typeof execa>>>()
+    const nodeChildProcess = Object.assign(new EventEmitter(), { exitCode: null as number | null, signalCode: null })
+    let groupRunning = true
+    vi.spyOn(process, 'kill').mockImplementation(() => {
+      if (groupRunning) {
+        return true
+      }
+      throw Object.assign(new Error('no process group'), { code: 'ESRCH' })
+    })
+    const kill = vi.fn((signal: string) => {
+      if (signal === 'SIGTERM') {
+        nodeChildProcess.exitCode = 0
+        completion.resolve(childResult())
+      }
+      else if (signal === 'SIGKILL') {
+        groupRunning = false
+      }
+      return true
+    })
+    const child = Object.assign(completion.promise, { nodeChildProcess, pid: process.pid, kill })
+    vi.mocked(execa).mockImplementation(((command: string) => {
+      if (command === 'pnpm') {
+        started.resolve()
+        return child
+      }
+      return Promise.resolve({ stdout: `${process.pid} S` })
+    }) as unknown as typeof execa)
+    const controller = new AbortController()
+    const failure = new Error('unit cancelled')
+    const running = runHmrUnitValidation({ ...options(), signal: controller.signal })
+    const rejected = expect(running).rejects.toBe(failure)
+    try {
+      await started.promise
+      controller.abort(failure)
+      await vi.advanceTimersByTimeAsync(9_999)
+      expect(kill.mock.calls).toEqual([['SIGTERM']])
+      await vi.advanceTimersByTimeAsync(1)
+      await rejected
+      expect(kill.mock.calls).toEqual([['SIGTERM'], ['SIGKILL']])
+      expect(await fs.readFile(path.join(root, 'unit/stdout.log'), 'utf8')).toBe('unit stdout\n')
+      expect(JSON.parse(await fs.readFile(path.join(root, 'unit/receipt.json'), 'utf8'))).toMatchObject({ status: 'failed', exitCode: 0, error: 'unit cancelled' })
+    }
+    finally {
+      groupRunning = false
+      completion.resolve(childResult())
+      await vi.advanceTimersByTimeAsync(10_000)
+      await rejected
+    }
+  })
+
   it('runs the pnpm script with a borrowed lease and saves both streams, JSON and matching evidence', async () => {
     vi.stubEnv('WEAPP_VITE_E2E_RUNTIME_PROVIDER', 'headless')
     vi.stubEnv(DOM_ACCEPTANCE_ENV, '1')

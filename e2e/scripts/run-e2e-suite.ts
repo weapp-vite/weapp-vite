@@ -15,6 +15,7 @@ import { createAcceptanceIdentity, isStrictDomAcceptanceSuite } from './domAccep
 import { getSuiteTasks, listE2ESuites, partitionE2ETasks } from './e2e-suite-manifest'
 import { loadBaselineSuiteExecution } from './run-e2e-suite/baselineTelemetry'
 import { isDevtoolsVitestTask, runTaskSuite } from './suiteRunner'
+import { createSuiteSignalScope } from './suiteRunner/signals'
 import { assertVerificationPlan, createVerificationIdentity, taskDefinitionHash } from './verification/plan'
 import { currentVerificationProfile } from './verification/profile'
 import { verificationPlanSchema } from './verification/validation'
@@ -119,6 +120,7 @@ export function orderSuiteTasks(
 }
 
 interface SuiteCallbacks {
+  signal?: AbortSignal
   beforeTaskLaunch?: TaskLaunchHook
   nonInteractive?: boolean
   onUnsafeRuntime?: (reason: string) => void
@@ -126,6 +128,7 @@ interface SuiteCallbacks {
 }
 
 async function runSelectedE2ESuiteCli(args: string[], callbacks: SuiteCallbacks) {
+  callbacks.signal?.throwIfAborted()
   const parsedSelection = splitWechatDevtoolsSelectionArgs(args)
   args = parsedSelection.args
   const selectionEnv = { cliPath: 'WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH', devtoolsChannel: 'WEAPP_VITE_E2E_DEVTOOLS_CHANNEL', devtoolsVersion: 'WEAPP_VITE_E2E_DEVTOOLS_VERSION', requireOfficialLatest: 'WEAPP_VITE_E2E_REQUIRE_OFFICIAL_LATEST' }
@@ -159,10 +162,11 @@ async function runSelectedE2ESuiteCli(args: string[], callbacks: SuiteCallbacks)
       console.log(`${suite.name} (${suite.taskCount})`)
       console.log(`  ${suite.description}`)
     }
-    process.exit(0)
+    return 0
   }
 
   let tasks = await getSuiteTasks(mode, { topology: executionTopology.id })
+  callbacks.signal?.throwIfAborted()
   const excludedProjects = excludedE2EProjects()
   tasks = tasks.map(task => isExcludedE2EProject(task.label, excludedProjects)
     ? { ...task, outOfScopeReason: 'Excluded by WEAPP_VITE_E2E_EXCLUDE_PROJECTS' }
@@ -226,6 +230,7 @@ async function runSelectedE2ESuiteCli(args: string[], callbacks: SuiteCallbacks)
   }
 
   const cleanupHooks = createIdeSuiteCleanupHooks(tasks)
+  callbacks.signal?.throwIfAborted()
   const reportPlan = frozenPlan ?? baseline?.plan
   const execute = (onReport = callbacks.onReport) => runTaskSuite(`e2e:${mode}${shardLabel.replace('/', '-')}`, tasks, {
     ...cleanupHooks,
@@ -257,7 +262,22 @@ async function runSelectedE2ESuiteCli(args: string[], callbacks: SuiteCallbacks)
 
 /** 选择仅在本轮 suite 生效，失败与取消同样恢复调用方环境。 */
 export async function runE2ESuiteCli(args = process.argv.slice(2), callbacks: SuiteCallbacks = {}) {
-  return await withWechatE2ESelectionEnvironment(() => runSelectedE2ESuiteCli(args, callbacks))
+  const scope = createSuiteSignalScope(callbacks.signal)
+  try {
+    return await withWechatE2ESelectionEnvironment(() => runSelectedE2ESuiteCli(args, { ...callbacks, signal: scope.signal }))
+  }
+  catch (error) {
+    if (scope.signal.aborted && error === scope.signal.reason) {
+      return scope.exitCode ?? 1
+    }
+    throw error
+  }
+  finally {
+    if (scope.exitCode !== undefined) {
+      process.exitCode = scope.exitCode
+    }
+    scope.dispose()
+  }
 }
 
 if (isCurrentModuleEntry(process.argv[1], import.meta.url)) {

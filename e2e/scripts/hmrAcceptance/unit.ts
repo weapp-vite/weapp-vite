@@ -5,6 +5,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { execa } from 'execa'
 import { DOM_ACCEPTANCE_ENV, sanitizeAcceptanceValue } from '../domAcceptanceReport/helpers'
+import { waitForOwnedCommand } from '../ownedE2ECommand/shutdown'
 import { createVerificationIdentity } from '../verification/plan'
 
 export interface HmrUnitSummary {
@@ -86,6 +87,7 @@ export async function runHmrUnitValidation(options: {
   directory: string
   identity: AcceptanceIdentity
   environment: NodeJS.ProcessEnv
+  signal?: AbortSignal
 }): Promise<HmrUnitReceipt> {
   const { directory, identity } = options
   const startedAt = new Date().toISOString()
@@ -97,9 +99,11 @@ export async function runHmrUnitValidation(options: {
   let summary: HmrUnitSummary | undefined
   await fs.mkdir(directory, { recursive: true })
   try {
+    options.signal?.throwIfAborted()
     assertCheckout(identity)
     await fs.rm(reportFile, { force: true })
-    const result = await execa('pnpm', [
+    options.signal?.throwIfAborted()
+    const child = execa('pnpm', [
       'test:hmr',
       '--reporter=default',
       '--reporter=json',
@@ -111,10 +115,21 @@ export async function runHmrUnitValidation(options: {
       stdout: 'pipe',
       stderr: 'pipe',
       reject: false,
+      killDescendants: true,
+      killSignal: 'SIGKILL',
+      forceKillAfterDelay: false,
     })
+    void child.then((result) => {
+      stdout = result.stdout
+      stderr = result.stderr
+      exitCode = result.exitCode ?? null
+    }, () => {})
+    await waitForOwnedCommand(child, options.signal)
+    const result = await child
     stdout = result.stdout
     stderr = result.stderr
     exitCode = result.exitCode ?? null
+    options.signal?.throwIfAborted()
     if (exitCode !== 0) {
       throw new Error(`HMR unit validation failed with exit code ${exitCode ?? 'unknown'}`)
     }

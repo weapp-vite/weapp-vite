@@ -112,7 +112,7 @@ describe('issue #1251: source-owned Web development tag diagnostics', { concurre
     try {
       await dev.waitFor(expect.poll(() => resolveWebDevServerUrl(dev.getOutput()), { timeout: 90_000 }).toBeTypeOf('string'), 'Web diagnostic fixture starts')
       await page!.goto(resolveWebDevServerUrl(dev.getOutput())!)
-      await expect.poll(() => page!.locator(`${ACTIVE_PAGE} #ready`).textContent()).toBe('native-ready')
+      await dev.waitFor(expect.poll(() => page!.locator(`${ACTIVE_PAGE} #ready`).textContent(), { timeout: 30_000 }).toBe('native-ready'), 'Web diagnostic fixture renders its initial page')
       expect(await page!.locator(`${ACTIVE_PAGE} #layout-shell`).count()).toBe(1)
       expect(await page!.locator(`${ACTIVE_PAGE} #direct-card #registered-card`).textContent()).toBe('Registered component')
       expect(await page!.locator(`${ACTIVE_PAGE} #raw-unknown`).textContent()).toBe('Original typo')

@@ -12,6 +12,7 @@ import { readHmrRuntimeReceipt } from './hmrAcceptance/runtimeEvidence'
 import { isStableHmrOutOfScopeReason, isStableHmrSuite } from './hmrAcceptance/stableScope'
 import { runHmrUnitValidation } from './hmrAcceptance/unit'
 import { runE2ESuiteCli } from './run-e2e-suite'
+import { createSuiteSignalScope } from './suiteRunner/signals'
 import { aggregateVerificationReports } from './verification/aggregate'
 import { assertVerificationPlan, createVerificationIdentity, createVerificationPlan, resolveVerificationTasks } from './verification/plan'
 import { currentVerificationProfile } from './verification/profile'
@@ -34,7 +35,8 @@ async function writeEvidence(file: string, value: unknown) {
   await fs.writeFile(file, `${JSON.stringify(sanitizeAcceptanceValue(value), null, 2)}\n`)
 }
 
-export async function runHmrAcceptanceCli(args = process.argv.slice(2)) {
+async function runSelectedHmrAcceptanceCli(args: string[], signal: AbortSignal) {
+  signal.throwIfAborted()
   const selection = args[0] ?? 'all'
   const stages = selectHmrAcceptanceStages(selection, args.slice(1))
   const previousProvider = process.env.WEAPP_VITE_E2E_RUNTIME_PROVIDER
@@ -64,13 +66,16 @@ export async function runHmrAcceptanceCli(args = process.argv.slice(2)) {
       }
       return { stage, tasks }
     }))
+    signal?.throwIfAborted()
     const evidence = await withMachineE2ELease(async (lease) => {
+      signal?.throwIfAborted()
       const unit = selection === 'all'
-        ? await runHmrUnitValidation({ repositoryRoot: ACCEPTANCE_ROOT, directory: path.join(output, 'unit'), identity, environment: lease.environment })
+        ? await runHmrUnitValidation({ repositoryRoot: ACCEPTANCE_ROOT, directory: path.join(output, 'unit'), identity, environment: lease.environment, signal })
         : undefined
       const results = []
       const readCases = createPlannedTaskCaseReader()
       for (const { stage, tasks } of requiredStages) {
+        signal?.throwIfAborted()
         process.env[DOM_ACCEPTANCE_ENV] = stage.provider === 'none' ? '0' : '1'
         if (stage.provider === 'none') {
           delete process.env.WEAPP_VITE_E2E_RUNTIME_PROVIDER
@@ -85,8 +90,10 @@ export async function runHmrAcceptanceCli(args = process.argv.slice(2)) {
         await writeEvidence(planFile, plan)
         let report: SuiteReportPayload | undefined
         await runE2ESuiteCli([stage.suite, `--plan=${planFile}`, `--expected-plan-hash=${plan.planHash}`], {
+          signal,
           onReport: (value) => { report = value },
         })
+        signal?.throwIfAborted()
         if (!report) {
           throw new Error(`HMR ${stage.name} did not produce a verification report`)
         }
@@ -136,6 +143,27 @@ export async function runHmrAcceptanceCli(args = process.argv.slice(2)) {
     else {
       process.env.WEAPP_VITE_E2E_RUNTIME_PROVIDER = previousProvider
     }
+  }
+}
+
+/** 预检、独立单测和阶段切换共用取消源，外层入口取消时不再开启后续阶段。 */
+export async function runHmrAcceptanceCli(args = process.argv.slice(2), options: { signal?: AbortSignal } = {}) {
+  const scope = createSuiteSignalScope(options.signal)
+  try {
+    return await runSelectedHmrAcceptanceCli(args, scope.signal)
+  }
+  catch (error) {
+    if (scope.signal.aborted && error === scope.signal.reason) {
+      process.exitCode = scope.exitCode ?? 1
+      return
+    }
+    throw error
+  }
+  finally {
+    if (scope.exitCode !== undefined) {
+      process.exitCode = scope.exitCode
+    }
+    scope.dispose()
   }
 }
 

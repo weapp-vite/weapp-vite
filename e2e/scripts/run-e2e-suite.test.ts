@@ -1,8 +1,9 @@
-import path from 'node:path'
+import process from 'node:process'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { getSuiteTasks } from './e2e-suite-manifest'
 import { createIdeSuiteCleanupHooks, orderSuiteTasks, shouldStopIdeSuiteAfterTaskFailure } from './run-e2e-suite'
-import { createSleepInhibitedE2ECommand } from './run-sleep-inhibited-e2e-suite'
+import { selectSleepInhibitedE2EEntry } from './sleepInhibitedE2E/entry'
+import { createSleepInhibitorCommand } from './sleepInhibitedE2E/inhibitor'
 import { isDevtoolsVitestTask } from './suiteRunner'
 
 beforeEach(() => vi.stubEnv('WEAPP_VITE_E2E_RUNTIME_PROVIDER', 'devtools'))
@@ -11,35 +12,19 @@ afterEach(() => vi.unstubAllEnvs())
 describe('run-e2e-suite ide cleanup hooks', () => {
   it('keeps the complete HMR acceptance and IDE-only entry awake through the shared wrapper', () => {
     for (const stage of ['all', 'ide']) {
-      const invocation = createSleepInhibitedE2ECommand(['hmr-acceptance', stage], 'darwin', 'node-runtime')
-      expect(invocation.command).toBe('caffeinate')
-      expect(path.basename(invocation.args[5]!)).toBe('run-hmr-acceptance.ts')
-      expect(invocation.args.at(-1)).toBe(stage)
-      expect(invocation.args).not.toContain('hmr-acceptance')
+      expect(selectSleepInhibitedE2EEntry(['hmr-acceptance', stage])).toEqual({ name: 'hmr-acceptance', args: [stage] })
     }
   })
 
-  it('wraps IDE full suites with caffeinate on macOS', () => {
-    const invocation = createSleepInhibitedE2ECommand(
-      ['ide-full', '--filter=github-issues'],
-      'darwin',
-      '/runtime/node',
-    )
-
-    expect(invocation.command).toBe('caffeinate')
-    expect(invocation.args.slice(0, 4)).toEqual(['-dimsu', '--', '/runtime/node', '--import'])
-    expect(invocation.args.at(-2)).toBe('ide-full')
-    expect(invocation.args.at(-1)).toBe('--filter=github-issues')
-    expect(path.basename(invocation.args[5]!)).toBe('run-e2e-suite.ts')
+  it('keeps suite arguments intact and gives caffeinate only the owner PID', () => {
+    const args = ['ide-full', '--filter=github-issues']
+    expect(selectSleepInhibitedE2EEntry(args)).toEqual({ name: 'suite', args })
+    expect(selectSleepInhibitedE2EEntry(['devtools-matrix', '--targets=stable'])).toEqual({ name: 'devtools-matrix', args: ['--targets=stable'] })
+    expect(createSleepInhibitorCommand('darwin', process.pid)).toEqual({ command: 'caffeinate', args: ['-dimsu', '-w', String(process.pid)] })
   })
 
-  it.each(['linux', 'win32'] as const)('runs Node directly on %s', (platform) => {
-    const invocation = createSleepInhibitedE2ECommand(['ide-full'], platform, 'node-runtime')
-
-    expect(invocation.command).toBe('node-runtime')
-    expect(invocation.args.slice(0, 2)).toEqual(['--import', 'tsx'])
-    expect(path.basename(invocation.args[2]!)).toBe('run-e2e-suite.ts')
-    expect(invocation.args.at(-1)).toBe('ide-full')
+  it.each(['linux', 'win32'] as const)('uses the same in-process entry without a sidecar on %s', (platform) => {
+    expect(createSleepInhibitorCommand(platform)).toBeUndefined()
   })
 
   it('orders tasks from a rolling start point and then wraps to the beginning', () => {

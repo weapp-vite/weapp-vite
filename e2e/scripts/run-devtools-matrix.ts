@@ -46,19 +46,19 @@ function parseArgs(args: readonly string[]) {
 }
 
 /** 矩阵复用正式 suite runner；全程持有一份租约，每一版本沿用原严格策略。 */
-export async function runDevtoolsMatrixCli(args = process.argv.slice(2)) {
+export async function runDevtoolsMatrixCli(args = process.argv.slice(2), options: { signal?: AbortSignal } = {}) {
   const { requests, suite, passThrough } = parseArgs(args)
-  const tasks = await getSuiteTasks(suite)
-  if (!tasks.length || !suite.startsWith('ide-') || suite.startsWith('ide-headless')) {
-    throw new Error('Matrix suite must be an existing real IDE suite.')
-  }
   const environmentKeys = DEVTOOLS_SELECTION_ENV_KEYS
   const previous = Object.fromEntries(environmentKeys.map(key => [key, process.env[key]]))
   const parsedPassThrough = splitWechatDevtoolsSelectionArgs(passThrough)
   const strict = parsedPassThrough.selection.requireOfficialLatest
     ?? (process.env.WEAPP_VITE_E2E_REQUIRE_OFFICIAL_LATEST ?? process.env.WEAPP_IDE_REQUIRE_OFFICIAL_LATEST) === '1'
-  const scope = createSuiteSignalScope()
+  const scope = createSuiteSignalScope(options.signal)
   try {
+    const tasks = await getSuiteTasks(suite)
+    if (!tasks.length || !suite.startsWith('ide-') || suite.startsWith('ide-headless')) {
+      throw new Error('Matrix suite must be an existing real IDE suite.')
+    }
     const result = await withMachineE2ELease(async () => {
       const matrix = await runDevtoolsMatrix(requests, {
         queryOfficial: async request => ({ channel: request.devtoolsChannel, ...await readOfficialWechatDevtoolsVersion(request.devtoolsChannel) }),
@@ -78,6 +78,7 @@ export async function runDevtoolsMatrixCli(args = process.argv.slice(2)) {
           }
           const observation: DevtoolsMatrixRun = { exitCode: 1, runtimeVersions: [] }
           observation.exitCode = await runE2ESuiteCli([suite, ...parsedPassThrough.args], {
+            signal: scope.signal,
             nonInteractive: true,
             onUnsafeRuntime: (reason) => { observation.unsafeReason ??= reason },
             onReport: (report) => {

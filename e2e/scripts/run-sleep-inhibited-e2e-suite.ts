@@ -1,55 +1,47 @@
 import path from 'node:path'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
-import { runOwnedE2ECommand } from './ownedE2ECommand'
+import { runSleepInhibitedE2EEntry } from './sleepInhibitedE2E/entry'
+import { startSleepInhibitor } from './sleepInhibitedE2E/inhibitor'
 import { createSuiteSignalScope } from './suiteRunner/signals'
 
-const E2E_SUITE_RUNNER_PATH = path.resolve(import.meta.dirname, 'run-e2e-suite.ts')
-
-export interface SleepInhibitedCommand {
-  command: string
-  args: string[]
-}
-
-export function createSleepInhibitedE2ECommand(
-  args: readonly string[],
-  platform: NodeJS.Platform = process.platform,
-  nodePath = process.execPath,
-): SleepInhibitedCommand {
-  const runnerArgs = [
-    '--import',
-    'tsx',
-    args[0] === 'devtools-matrix'
-      ? path.join(import.meta.dirname, 'run-devtools-matrix.ts')
-      : args[0] === 'hmr-acceptance' ? path.join(import.meta.dirname, 'run-hmr-acceptance.ts') : E2E_SUITE_RUNNER_PATH,
-    ...(['devtools-matrix', 'hmr-acceptance'].includes(args[0] ?? '') ? args.slice(1) : args),
-  ]
-
-  if (platform === 'darwin') {
-    return {
-      command: 'caffeinate',
-      args: ['-dimsu', '--', nodePath, ...runnerArgs],
+export async function runSleepInhibitedE2ESuite(args = process.argv.slice(2)) {
+  const scope = createSuiteSignalScope()
+  const errors: unknown[] = []
+  let inhibitor: Awaited<ReturnType<typeof startSleepInhibitor>>
+  try {
+    inhibitor = await startSleepInhibitor()
+    void inhibitor?.failure.then((error) => {
+      if (error) {
+        scope.cancel(error)
+      }
+    })
+    scope.signal.throwIfAborted()
+    const exitCode = await runSleepInhibitedE2EEntry(args, scope.signal)
+    process.exitCode = scope.exitCode ?? exitCode ?? process.exitCode ?? 0
+  }
+  catch (error) {
+    if (!scope.signal.aborted || error !== scope.signal.reason) {
+      errors.push(error)
     }
   }
-
-  return {
-    command: nodePath,
-    args: runnerArgs,
-  }
-}
-
-export async function runSleepInhibitedE2ESuite(args = process.argv.slice(2)) {
-  const invocation = createSleepInhibitedE2ECommand(args)
-  if (invocation.command === 'caffeinate') {
-    console.log('[e2e:sleep-inhibitor] caffeinate -dimsu enabled')
-  }
-  const scope = createSuiteSignalScope()
-  try {
-    const exitCode = await runOwnedE2ECommand(invocation.command, invocation.args, { signal: scope.signal })
-    process.exitCode = scope.exitCode ?? exitCode
-  }
   finally {
+    try {
+      await inhibitor?.close()
+    }
+    catch (error) {
+      errors.push(error)
+    }
+    if (scope.exitCode !== undefined) {
+      process.exitCode = scope.exitCode
+    }
     scope.dispose()
+  }
+  if (errors.length > 1) {
+    throw new AggregateError(errors, 'E2E suite and sleep inhibitor cleanup failed.', { cause: errors[0] })
+  }
+  if (errors.length) {
+    throw errors[0]
   }
 }
 
