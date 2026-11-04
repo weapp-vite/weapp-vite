@@ -1,5 +1,5 @@
 import type { DarwinFrameAbsoluteEvidence, DarwinProcessAbsoluteEvidence } from './processInventory/darwinInspector/types'
-import type { NativeImageEvidence, ProcessIdentityGapObservation, ProcessIdentityMetadata } from './types'
+import type { NativeImageEvidence, ProcessIdentityChangeObservation, ProcessIdentityGapObservation, ProcessIdentityMetadata, ProcessInventoryLocation } from './types'
 
 export interface NativeConfirmationEvidence {
   absolute: DarwinProcessAbsoluteEvidence
@@ -51,4 +51,20 @@ export interface VerifiedAnchorForeignProcess {
   ancestry: ProcessIdentityMetadata[]
   images: Array<{ phase: 'anchor' | 'closure1' | 'closure2', image: NativeImageEvidence }>
   semantics: 'anchor-foreign-only; original-rss-anchor-and-history-preserved'
+}
+
+export interface VerifiedForeignCredentialProcess {
+  process: ProcessIdentityGapObservation
+  proof: 'complete-foreign-main-brackets-after-enumeration-credentials-change'
+  clockDomain: 'mach-absolute-ticks'
+  birthTicks: string
+  previousFrameEndedAtTicks: string | null
+  phases: ProcessInventoryLocation['phase'][]
+  enumerationChange: NonNullable<ProcessIdentityChangeObservation['boundary']>
+  crossFrameGenerationStable: true
+  crossFrameBirthStable: true
+  crossFrameMainCredentialsStable: true
+  ancestry: ProcessIdentityMetadata[]
+  brackets: Array<{ phase: ProcessInventoryLocation['phase'], startedAtTicks: string, endedAtTicks: string, image: NativeImageEvidence }>
+  semantics: 'foreign-main-brackets-only; enumeration-image-unobserved; original-rss-anchor-and-history-preserved'
 }

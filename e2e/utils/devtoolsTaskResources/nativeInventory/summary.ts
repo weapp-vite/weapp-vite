@@ -6,6 +6,8 @@ import { verifiedAnchorForeignProcesses } from './anchorForeign'
 import { verifiedAnchorTerminals } from './anchorTerminals'
 import { nativeRelation } from './closure'
 import { nativeFrameEvidence, textReadEvidence } from './evidence'
+import { createForeignBracketProver } from './foreignBrackets'
+import { verifiedForeignCredentialProcesses } from './foreignCredentials'
 import { verifiedForeignImageTransitions } from './foreignImageTransitions'
 import { verifiedForeignNativeExecs } from './foreignNativeExecs'
 import { insideInstallation, metadata, sameNativeIdentity } from './model'
@@ -29,12 +31,14 @@ export function summarizeNativeInventory(options: SummaryOptions): InstallationP
   if (!anchor || !final || final.phase !== 'closure2') {
     throw new Error('Resource sampling did not complete its fixed native anchor and closure boundaries.')
   }
-  const foreignTransitions = verifiedForeignImageTransitions(inventory, installationRoot)
+  const proveForeignBrackets = createForeignBracketProver(inventory, installationRoot)
+  const foreignTransitions = verifiedForeignImageTransitions(inventory, installationRoot, proveForeignBrackets)
+  const foreignCredentials = verifiedForeignCredentialProcesses(inventory, installationRoot, proveForeignBrackets)
   const foreignNativeExecs = verifiedForeignNativeExecs(inventory, installationRoot)
   const postAnchorForeign = verifiedPostAnchorForeignProcesses(inventory, installationRoot)
   const anchorForeign = verifiedAnchorForeignProcesses(inventory, installationRoot)
-  const anchorForeignProcesses = new Set(anchorForeign.map(proof => proof.process.pid))
-  const verifiedForeignProcesses = new Set([...foreignTransitions, ...foreignNativeExecs, ...postAnchorForeign, ...anchorForeign].map(proof => proof.process.pid))
+  const mainBracketForeignProcesses = new Set([...anchorForeign, ...foreignCredentials].map(proof => proof.process.pid))
+  const verifiedForeignProcesses = new Set([...foreignTransitions, ...foreignNativeExecs, ...postAnchorForeign, ...anchorForeign, ...foreignCredentials].map(proof => proof.process.pid))
   const terminalProofs = [...verifiedTerminalProcesses(inventory, installationRoot), ...verifiedAnchorExits(inventory, installationRoot), ...verifiedAnchorTerminals(inventory, installationRoot)]
   const terminalProcesses = new Set(terminalProofs.map(proof => proof.process.pid))
   const preAnchorExited = new Set<number>()
@@ -46,7 +50,7 @@ export function summarizeNativeInventory(options: SummaryOptions): InstallationP
   }
   const unclassifiedProcesses = [...anchor.rows.values()].filter((row) => {
     const tracked = inventory.tracked.get(row.pid)!
-    return !anchorForeignProcesses.has(row.pid) && !terminalProcesses.has(row.pid) && !(row.identity?.zombie && inventory.selectedSeen.has(row.pid))
+    return !mainBracketForeignProcesses.has(row.pid) && !terminalProcesses.has(row.pid) && !(row.identity?.zombie && inventory.selectedSeen.has(row.pid))
       && (!row.images || (tracked.changed && !verifiedForeignProcesses.has(row.pid)) || tracked.closureIdentityUnverifiable || nativeRelation(anchor, row, installationRoot) === 'unknown')
   }).map(row => inventory.gap(inventory.tracked.get(row.pid)!, !row.images ? 'kernel-path-unverifiable' : undefined))
 
@@ -126,6 +130,8 @@ export function summarizeNativeInventory(options: SummaryOptions): InstallationP
     verifiedPostAnchorForeignProcesses: postAnchorForeign,
     verifiedAnchorForeignProcessCount: anchorForeign.length,
     verifiedAnchorForeignProcesses: anchorForeign,
+    verifiedForeignCredentialProcessCount: foreignCredentials.length,
+    verifiedForeignCredentialProcesses: foreignCredentials,
     verifiedTerminalProcessCount: terminalProofs.length,
     verifiedTerminalProcesses: terminalProofs,
     newProcesses,

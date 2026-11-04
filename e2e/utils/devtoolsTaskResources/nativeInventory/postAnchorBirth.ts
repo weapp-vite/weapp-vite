@@ -11,8 +11,14 @@ export function absoluteTicks(value: string | null | undefined): bigint | null {
   return ticks <= 18446744073709551615n ? ticks : null
 }
 
+/** 原 UID 必须是完整的无符号整数，缺失值不能通过相互等值成为凭据证明。 */
+export function validNativeUid(value: unknown): value is number {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= 0xFFFFFFFF
+}
+
 export function sameCredentials(first: DarwinProcessIdentity | null, next: DarwinProcessIdentity | null) {
-  return sameNativeIdentity(first, next) && first?.uid === next?.uid
+  return sameNativeIdentity(first, next) && validNativeUid(first?.uid) && validNativeUid(next?.uid)
+    && first!.uid === next!.uid
 }
 
 export function absoluteWithin(inner: DarwinAbsoluteInterval | undefined, outer: DarwinAbsoluteInterval | undefined) {

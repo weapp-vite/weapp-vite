@@ -1,9 +1,9 @@
 import type { ManagedWechatProjectRecord } from '../../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/types'
 import type { ResolvedWechatDevtoolsTarget } from '../../../packages/weapp-ide-cli/src/devtoolsTarget'
 import type { DevtoolsHostExitEvidence, DevtoolsHostSnapshot } from '../devtoolsHostLifecycle'
-import type { NativeAbsoluteFrameEvidence, NativeAbsoluteRowEvidence, VerifiedAnchorForeignProcess, VerifiedPostAnchorForeignProcess } from './nativeEvidenceTypes'
+import type { NativeAbsoluteFrameEvidence, NativeAbsoluteRowEvidence, VerifiedAnchorForeignProcess, VerifiedForeignCredentialProcess, VerifiedPostAnchorForeignProcess } from './nativeEvidenceTypes'
 
-export type { VerifiedAnchorForeignProcess, VerifiedPostAnchorForeignProcess } from './nativeEvidenceTypes'
+export type { VerifiedAnchorForeignProcess, VerifiedForeignCredentialProcess, VerifiedPostAnchorForeignProcess } from './nativeEvidenceTypes'
 
 export type ResourceObservation<T> = { status: 'observed', value: T } | { status: 'unavailable', reason: string }
 export type TaskResourcePhase = 'before-task' | 'before-cleanup' | 'after-cleanup'
@@ -165,6 +165,8 @@ export interface InstallationProcessSample {
   verifiedPostAnchorForeignProcesses?: VerifiedPostAnchorForeignProcess[]
   verifiedAnchorForeignProcessCount?: number
   verifiedAnchorForeignProcesses?: VerifiedAnchorForeignProcess[]
+  verifiedForeignCredentialProcessCount?: number
+  verifiedForeignCredentialProcesses?: VerifiedForeignCredentialProcess[]
   verifiedTerminalProcessCount?: number
   verifiedTerminalProcesses?: VerifiedTerminalProcess[]
   newProcesses: NewProcessObservation[]
