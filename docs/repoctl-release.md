@@ -24,6 +24,21 @@
 
 finalize 成功产生真实 release completion record 后，`main` 才能触发 stable 文档部署。尚无 completion record 时保留现有线上站点，不从当前工作树补造发布记录。文档渠道与修订操作见 [文档部署说明](./website-deployment.md)。
 
+## WXML 首版 alpha 预览
+
+新包 `@weapp-vite/wxml` 在正式 changeset 发布前，使用独立的 **WXML preview**（`wxml-preview.yml`）手动入口。该入口只允许默认分支，固定打包这一个包，版本限定为 `0.1.0-alpha.N`，发布到 `alpha`。正式版仍走 `release.yml`；首个正式版本发布后停止使用这个初始化入口。
+
+首次建立 npm 包时，可用 `npm stage publish` 暂存独立的初始化版本。npm 会公开 `0.0.0-stage` 占位版本，暂存内容无需批准。随后在 npm Settings 为仓库 `weapp-vite/weapp-vite` 配置 `release.yml` 与 `wxml-preview.yml` 两个 GitHub Actions Trusted Publisher，Environment 留空，显式允许 `npm publish`。不要批准初始化用暂存版本，也不要将 npm token 写入 GitHub secrets。
+
+```sh
+gh workflow run wxml-preview.yml --ref main -f version=0.1.0-alpha.0
+npm install @weapp-vite/wxml@0.1.0-alpha.0
+```
+
+可先传 `-F dry-run=true` 运行检查和打包。实际发布前执行包级 lint、typecheck、unit、build 与 tsd；打包后还原源码 manifest，保留正式 changeset、changelog 与发布账本。发布后核对精确版本的 tarball 完整性、`alpha` 指向、`latest` 未变与 provenance 元数据，并在隔离 consumer 中验证公开入口及 npm 签名。`latest` 的初始化占位版本不包含可用 parser，请明确安装 alpha 精确版本或 `@alpha`。
+
+工作流与常规发布共用 npm 队列，保存 tarball、打包清单和确认报告 14 天。已存在的版本会拒绝覆盖；上传完成而后续确认失败时，应先读取 registry 和运行证据，不可盲目增加版本重发。这个入口不会完成或恢复其他历史发布批次。
+
 ## 自动 changeset
 
 从默认分支手动运行 `Automatic Release Intent`，选择 PR 编号。它调用 repoctl 的公共自动 changeset 入口，策略来自默认分支的 `.github/repoctl-auto-changeset.json`，支持 `packages-runtime/*`、`mpcore/packages/*` 等实际 pnpm workspace 路径。plan 和 apply 分别等待 `pr-ci-approval`；规划使用只读权限，应用只接受同一次尝试中冻结且仍为当前的 PR、策略和审批身份，再通过原子 head 校验写入。
