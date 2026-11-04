@@ -166,6 +166,10 @@ const projects = [
     extends: false,
     test: {
       name: 'e2e-hmr-infra',
+      // 冷启动外部工具在普通项目和串行构建结束后独占执行，不与其他项目争用预算。
+      sequence: { groupOrder: 300 },
+      maxWorkers: 1,
+      fileParallelism: false,
       // 此项目仅验证模拟会话与 runner 基础设施；不能向其他单测项目传播真实 IDE 日志。
       globalSetup: [path.resolve(ROOT_DIR, 'e2e/vitest.e2e.machine-lease.global-setup.ts')],
       setupFiles: [path.resolve(ROOT_DIR, 'e2e/vitest.e2e.dev-process.setup.ts')],

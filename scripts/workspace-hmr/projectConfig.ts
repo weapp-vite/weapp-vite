@@ -1,5 +1,6 @@
 import type { InlineConfig } from 'vite'
 import type { NativePublicationOptions } from '../../e2e/utils/nativePublication/files'
+import type { WeappVitePluginApi } from '../../packages/weapp-vite/src/types/plugin'
 import path from 'node:path'
 import process from 'node:process'
 import { nativePublicationPlugin } from '../../e2e/utils/nativePublication/plugin'
@@ -26,6 +27,11 @@ export function createWorkspaceHmrProjectConfig(config: InlineConfig, options: {
         apply: (candidate, { command }) => command === 'build' && candidate.build?.write !== false,
         configResolved(resolved) {
           if (resolved.plugins.some(plugin => plugin.name === 'weapp-vite:workers')) {
+            return
+          }
+          const context = resolved.plugins.find(plugin => plugin.name === 'weapp-vite:context')?.api as WeappVitePluginApi | undefined
+          // 插件子构建继承同一观察器，但拥有独立输出根，不能冒充主应用的路径漂移。
+          if (context?.ctx.configService.pluginOnly || context?.ctx.currentBuildTarget === 'plugin') {
             return
           }
           const distRoot = path.resolve(resolved.root, resolved.build.outDir)

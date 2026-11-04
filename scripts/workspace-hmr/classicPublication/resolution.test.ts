@@ -45,17 +45,21 @@ describe('classic publication platform resolution', () => {
     expect(resolver.resolveComponent('pages/index.json', '@scope/ui/card')).toBe('miniprogram_npm/@scope/ui/card')
   })
 
-  it('resolves alipay relative and root component directories after an explicit script stem', () => {
+  it.each(['weapp', 'alipay'] as const)('resolves %s relative and root component directories after an explicit script stem', (platform) => {
     const files = new Set(['node_modules/antd-mini/es/Loading/index.js'])
-    const resolver = createClassicPublicationResolver('alipay', file => files.has(file))
+    const resolver = createClassicPublicationResolver(platform, file => files.has(file))
     const owner = 'node_modules/antd-mini/es/Bubble/index.json'
     expect(resolver.resolveComponent(owner, '../Loading')).toBe('node_modules/antd-mini/es/Loading/index')
     expect(resolver.resolveComponent(owner, '/node_modules/antd-mini/es/Loading')).toBe('node_modules/antd-mini/es/Loading/index')
-    const weapp = createClassicPublicationResolver('weapp', file => files.has(file))
-    expect(weapp.resolveComponent(owner, '../Loading')).toBe('node_modules/antd-mini/es/Loading')
     files.add('node_modules/antd-mini/es/Loading.js')
     expect(resolver.resolveComponent(owner, '../Loading')).toBe('node_modules/antd-mini/es/Loading')
     expect(resolver.resolveComponent(owner, '../Missing')).toBe('node_modules/antd-mini/es/Missing')
+  })
+
+  it.each(['tt', 'swan', 'jd', 'xhs'] as const)('does not infer relative component directory support for %s', (platform) => {
+    const resolver = createClassicPublicationResolver(platform, file => file === 'components/card/index.js')
+    expect(resolver.resolveComponent('pages/index.json', '../components/card')).toBe('components/card')
+    expect(resolver.resolveComponent('pages/index.json', '/components/card')).toBe('components/card')
   })
 })
 

@@ -53,6 +53,7 @@ it.each(['registered', 'missing-binding'] as const)('handles an exiting nested r
       }
     }, 10);
   `)
+  // 本例验证退出后的所有权接管；冷 journal 准备也由外层 10 秒进程与 15 秒测试预算约束。
   fs.writeFileSync(outerScript, `
     import fs from 'node:fs';
     import { runTaskSuite } from ${JSON.stringify(suiteRunnerUrl)};
@@ -63,7 +64,6 @@ it.each(['registered', 'missing-binding'] as const)('handles an exiting nested r
         label: 'exiting-runner',
         command: process.execPath,
         args: ${JSON.stringify(['--import', 'tsx', '--import', preloadUrl, runnerScript])},
-        env: { WEAPP_VITE_E2E_TASK_TIMEOUT_MS: '5000' },
       }, {
         label: 'after-recovery',
         command: process.execPath,

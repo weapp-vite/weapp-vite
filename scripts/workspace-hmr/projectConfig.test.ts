@@ -18,8 +18,23 @@ it('observes only the main native build and emits one receipt across repeated co
   const resolved = { root: path.resolve('project'), build: { outDir: 'output/native' }, plugins: [] } as unknown as ResolvedConfig
   const hook = observer.configResolved as (config: ResolvedConfig) => void
   hook({ ...resolved, plugins: [{ name: 'weapp-vite:workers' }], build: { ...resolved.build, outDir: 'workers' } })
+  const pluginContexts = [
+    { configService: { pluginOnly: true } },
+    { configService: { pluginOnly: false }, currentBuildTarget: 'plugin' },
+  ]
+  const pluginConfigs = pluginContexts.map(ctx => ({
+    ...resolved,
+    plugins: [{ name: 'weapp-vite:context', api: { ctx } }],
+    build: { ...resolved.build, outDir: 'output/plugin' },
+  } as unknown as ResolvedConfig))
+  for (const plugin of pluginConfigs) {
+    hook(plugin)
+  }
   expect(write).not.toHaveBeenCalled()
   hook(resolved)
+  for (const plugin of pluginConfigs) {
+    hook(plugin)
+  }
   hook(resolved)
   expect(write).toHaveBeenCalledOnce()
   expect(readWorkspaceHmrProjectTarget(String(write.mock.calls[0]![0]), { id: 'current', pid: process.pid })).toEqual({ platform: 'tt', distRoot: path.resolve('project/output/native') })

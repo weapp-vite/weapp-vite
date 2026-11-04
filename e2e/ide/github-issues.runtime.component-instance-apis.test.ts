@@ -1,4 +1,4 @@
-import { access } from 'node:fs/promises'
+import { access, readFile } from 'node:fs/promises'
 import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { COMPONENT_INSTANCE_API_INITIAL_TRACE, COMPONENT_INSTANCE_API_REMOVED_TRACE, COMPONENT_INSTANCE_API_RESTORED_TRACE } from '../utils/componentInstanceApiContract'
@@ -12,11 +12,18 @@ const BASELINE_ROUTE = '/pages/component-instance-apis-baseline/index'
 describe('github issues: native component instance APIs', { concurrent: false }, () => {
   beforeAll(async () => {
     await prepareGithubIssuesBuild()
-    for (const route of [ROUTE, BASELINE_ROUTE]) {
+    for (const route of [ROUTE, BASELINE_ROUTE, '/components/component-instance-apis/parent/index', '/components/component-instance-apis/child/index']) {
       for (const extension of ['js', 'json', 'wxml']) {
         await access(path.join(DIST_ROOT, `${route.slice(1)}.${extension}`))
       }
     }
+    const pageConfig: unknown = JSON.parse(await readFile(path.join(DIST_ROOT, `${ROUTE.slice(1)}.json`), 'utf8'))
+    expect(pageConfig).toMatchObject({
+      usingComponents: {
+        'relation-parent': '../../components/component-instance-apis/parent',
+        'relation-child': '/components/component-instance-apis/child',
+      },
+    })
   }, PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT)
   afterAll(async () => {
     await closeSharedMiniProgram()

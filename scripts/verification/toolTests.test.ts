@@ -40,6 +40,9 @@ it('assigns every root contract once while isolating real subprocess tests with 
   ])
   expect(subprocess.test).toMatchObject({ sequence: { groupOrder: 200 }, maxWorkers: 1, fileParallelism: false })
   expect(projects.filter(project => project.test.sequence?.groupOrder === 200)).toEqual([subprocess])
+  const infrastructure = projects.find(project => project.test.name === 'e2e-hmr-infra')!
+  expect(infrastructure.test).toMatchObject({ sequence: { groupOrder: 300 }, maxWorkers: 1, fileParallelism: false, testTimeout: 60_000 })
+  expect(projects.filter(project => project.test.sequence?.groupOrder === 300)).toEqual([infrastructure])
   expect(subprocess.test.setupFiles).toEqual(ordinary.test.setupFiles)
   expect(subprocess.test.setupFiles).toEqual([path.join(cwd, 'e2e/vitest.e2e.dev-process.setup.ts')])
   expect(subprocess.test.hookTimeout).toBe(ordinary.test.hookTimeout)
@@ -49,6 +52,18 @@ it('assigns every root contract once while isolating real subprocess tests with 
     expect(project.plugins?.map(plugin => plugin.name)).toContain('repo-scripts:published-node-conditions')
     expect(project.test.testTimeout ?? config.test.testTimeout ?? 5000).toBe(5000)
   }
+})
+
+it('serializes the standalone infrastructure entry without losing any discovered contract', async () => {
+  const cwd = path.resolve(import.meta.dirname, '../..')
+  const loaded = await loadConfigFromFile({ command: 'serve', mode: 'test' }, path.join(cwd, 'e2e/vitest.e2e.internal.config.ts'))
+  const config = loaded!.config as { test: { include: string[], exclude?: string[], maxWorkers?: number, fileParallelism?: boolean } }
+  expect(config.test).toMatchObject({ maxWorkers: 1, fileParallelism: false })
+  const actual = await glob(config.test.include, { cwd, ignore: config.test.exclude })
+  const expected = await glob(['e2e/ide/runtimeErrors.test.ts', 'e2e/scripts/**/*.test.ts', 'e2e/utils/**/*.test.ts'], { cwd })
+  const relative = actual.map(file => path.relative(cwd, path.resolve(cwd, file)).replaceAll('\\', '/'))
+  expect(relative.sort()).toEqual(expected.sort())
+  expect(new Set(relative).size).toBe(expected.length)
 })
 
 it('discovers every shared Tailwind contract in the root project, including nested helpers', async () => {

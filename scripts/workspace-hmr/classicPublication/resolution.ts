@@ -51,7 +51,7 @@ export function createClassicPublicationResolver(platform: MpPlatform, hasFile: 
     }
     if (request.startsWith('.') || request.startsWith('/')) {
       const index = path.posix.join(local, 'index')
-      return platform === 'alipay' && hasFile(`${index}.js`) ? index : local
+      return (platform === 'weapp' || platform === 'alipay') && hasFile(`${index}.js`) ? index : local
     }
     const resolved = resolveModule(owner, request, file => file.endsWith('.js') && hasFile(file))
     return resolved ? resolved.slice(0, -3) : local
