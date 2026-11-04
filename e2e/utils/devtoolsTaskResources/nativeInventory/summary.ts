@@ -2,6 +2,7 @@ import type { InstallationProcessSample, NativeTextImageObservationEvidence, New
 import type { NativeInventory } from './closure'
 import type { NativeTextImageRead, resolveAnchoredTextImages } from './fallback'
 import { verifiedAnchorExits } from './anchorExits'
+import { verifiedAnchorForeignProcesses } from './anchorForeign'
 import { verifiedAnchorTerminals } from './anchorTerminals'
 import { nativeRelation } from './closure'
 import { nativeFrameEvidence, textReadEvidence } from './evidence'
@@ -31,7 +32,9 @@ export function summarizeNativeInventory(options: SummaryOptions): InstallationP
   const foreignTransitions = verifiedForeignImageTransitions(inventory, installationRoot)
   const foreignNativeExecs = verifiedForeignNativeExecs(inventory, installationRoot)
   const postAnchorForeign = verifiedPostAnchorForeignProcesses(inventory, installationRoot)
-  const verifiedForeignProcesses = new Set([...foreignTransitions, ...foreignNativeExecs, ...postAnchorForeign].map(proof => proof.process.pid))
+  const anchorForeign = verifiedAnchorForeignProcesses(inventory, installationRoot)
+  const anchorForeignProcesses = new Set(anchorForeign.map(proof => proof.process.pid))
+  const verifiedForeignProcesses = new Set([...foreignTransitions, ...foreignNativeExecs, ...postAnchorForeign, ...anchorForeign].map(proof => proof.process.pid))
   const terminalProofs = [...verifiedTerminalProcesses(inventory, installationRoot), ...verifiedAnchorExits(inventory, installationRoot), ...verifiedAnchorTerminals(inventory, installationRoot)]
   const terminalProcesses = new Set(terminalProofs.map(proof => proof.process.pid))
   const preAnchorExited = new Set<number>()
@@ -43,7 +46,7 @@ export function summarizeNativeInventory(options: SummaryOptions): InstallationP
   }
   const unclassifiedProcesses = [...anchor.rows.values()].filter((row) => {
     const tracked = inventory.tracked.get(row.pid)!
-    return !terminalProcesses.has(row.pid) && !(row.identity?.zombie && inventory.selectedSeen.has(row.pid))
+    return !anchorForeignProcesses.has(row.pid) && !terminalProcesses.has(row.pid) && !(row.identity?.zombie && inventory.selectedSeen.has(row.pid))
       && (!row.images || (tracked.changed && !verifiedForeignProcesses.has(row.pid)) || tracked.closureIdentityUnverifiable || nativeRelation(anchor, row, installationRoot) === 'unknown')
   }).map(row => inventory.gap(inventory.tracked.get(row.pid)!, !row.images ? 'kernel-path-unverifiable' : undefined))
 
@@ -121,6 +124,8 @@ export function summarizeNativeInventory(options: SummaryOptions): InstallationP
     verifiedForeignNativeExecs: foreignNativeExecs,
     verifiedPostAnchorForeignProcessCount: postAnchorForeign.length,
     verifiedPostAnchorForeignProcesses: postAnchorForeign,
+    verifiedAnchorForeignProcessCount: anchorForeign.length,
+    verifiedAnchorForeignProcesses: anchorForeign,
     verifiedTerminalProcessCount: terminalProofs.length,
     verifiedTerminalProcesses: terminalProofs,
     newProcesses,

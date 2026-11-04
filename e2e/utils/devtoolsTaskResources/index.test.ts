@@ -12,6 +12,8 @@ import { INHERITED_LEASE_ENV } from '../../../packages/devtools-runtime/src/leas
 import { initializeManagedJournalScope } from '../../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/journal/scope'
 import { quitClaimedDevtoolsHost } from '../devtoolsHostLifecycle'
 import { createTaskResourceRecorder } from './index'
+import { anchorForeignFrames, anchorForeignRows, summarizeAnchorForeignFrames } from './nativeInventory/anchorForeignFixture'
+import { entry, fixtureForeign, fixtureSelected } from './nativeInventory/fixture'
 import { TASK_RESOURCE_EVENTS_ENV } from './wrappers'
 
 const mocks = vi.hoisted(() => ({ journal: vi.fn(), processes: vi.fn(), inspectExited: vi.fn(), quit: vi.fn() }))
@@ -125,6 +127,39 @@ async function observe(ownedLease = lease) {
 }
 
 describe('per-task IDE resource attachment', () => {
+  it.each(['complete', 'unknown-closure', 'selected-history'] as const)('persists anchor foreign evidence with independent %s ownership gates', async (kind) => {
+    const frames = anchorForeignFrames()
+    if (kind === 'unknown-closure') {
+      frames[3]!.rows.push(entry(44, { executable: null, parentPid: 77 }))
+    }
+    else if (kind === 'selected-history') {
+      const anchor = anchorForeignRows(frames)[0]!
+      anchor.pathBefore = anchor.pathAfter = { count: fixtureSelected.length, errno: 0, executable: fixtureSelected }
+    }
+    const clock = vi.spyOn(Date, 'now').mockReturnValue(0)
+    const sample = summarizeAnchorForeignFrames(frames)
+    clock.mockRestore()
+    mocks.processes.mockResolvedValue({ status: 'observed', value: sample })
+    const result = await (await observe()).finish({ hostExit })
+    const report = await readReport(result.indexPath)
+    expect(report.status).toBe(kind === 'complete' ? 'complete' : 'incomplete')
+    expect(report.snapshots.find(snapshot => snapshot.phase === 'before-cleanup')!.processes).toMatchObject({ status: 'observed', value: {
+      verifiedAnchorForeignProcessCount: kind === 'selected-history' ? 0 : 1,
+      verifiedMemberRssBytes: 1000,
+      installationRssBytes: { status: kind === 'complete' ? 'observed' : 'unavailable' },
+      closureOwnership: { status: kind === 'complete' ? 'observed' : 'unavailable' },
+      identityChangedProcesses: [{ pid: 22, reasons: ['credentials-changed'] }],
+    } })
+    if (kind === 'complete') {
+      expect(sample.verifiedAnchorForeignProcesses).toMatchObject([{ crossFrameGenerationStable: true, crossFrameBirthStable: true, crossFrameMainCredentialsStable: true, phases: ['anchor', 'closure1', 'closure2'] }])
+    }
+    else {
+      expect(result.errors.join('; ')).toContain('process closure')
+    }
+    expect(JSON.stringify(report)).not.toContain('"uid"')
+    expect(JSON.stringify(report)).not.toContain(fixtureForeign)
+  })
+
   it.each(['missing', 'unavailable'] as const)('independently blocks %s closure ownership even when anchor RSS is observed', async (kind) => {
     const value = (await mocks.processes()).value as InstallationProcessSample
     if (kind === 'missing') {

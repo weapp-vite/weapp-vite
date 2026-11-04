@@ -35,3 +35,20 @@ export interface VerifiedPostAnchorForeignProcess {
   image: NativeImageEvidence
   semantics: 'closure-ownership-only; no-preparation-or-closure-rss-counted'
 }
+
+export interface VerifiedAnchorForeignProcess {
+  process: ProcessIdentityGapObservation
+  proof: 'complete-anchor-foreign-brackets-after-preparation'
+  clockDomain: 'mach-absolute-ticks'
+  birthTicks: string
+  prepareEndedAtTicks: string
+  anchorRowStartedAtTicks: string
+  phases: ['anchor', 'closure1', 'closure2']
+  crossFrameGenerationStable: true
+  crossFrameBirthStable: true
+  crossFrameMainCredentialsStable: true
+  enumerationCredentialsChanged: true
+  ancestry: ProcessIdentityMetadata[]
+  images: Array<{ phase: 'anchor' | 'closure1' | 'closure2', image: NativeImageEvidence }>
+  semantics: 'anchor-foreign-only; original-rss-anchor-and-history-preserved'
+}

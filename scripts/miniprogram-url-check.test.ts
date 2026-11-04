@@ -11,12 +11,12 @@ const SWAN_PROJECT_CONFIG_RE = /(?:^|\/)project\.swan\.json$/
 const UNSUPPORTED_PROJECT_CONFIG_RE = /\/config\/(?:jd|xhs)\/project\.config\.json$/
 
 function listTrackedFiles() {
-  const result = spawnSync('git', ['ls-files', '-z'], {
+  const result = spawnSync('git', ['ls-files', '-z', '--', ':(glob)**/project.config.json', ':(glob)**/project.private.config.json', ':(glob)**/project.swan.json'], {
     cwd: ROOT_DIR,
     encoding: 'utf8',
   })
 
-  assert.equal(result.status, 0, result.stderr || 'git ls-files failed')
+  assert.equal(result.status, 0, result.error?.message || result.stderr || 'git ls-files failed')
   return result.stdout.split('\0').filter(Boolean)
 }
 
