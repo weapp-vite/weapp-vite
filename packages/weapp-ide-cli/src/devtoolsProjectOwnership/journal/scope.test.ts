@@ -56,7 +56,7 @@ describe('managed journal scope identity', () => {
   it('promotes an explicit legacy parent only once while child creation races', async () => {
     const parent = path.join(directory, 'legacy-task')
     const journals = await Promise.all(Array.from({ length: 4 }, () => child(parent)))
-    const identities = await Promise.all(journals.map(resolveManagedJournalScope))
+    const identities = await Promise.all(journals.map(journal => resolveManagedJournalScope(journal)))
     expect(identities.every(identity => identity.scopeId === identities[0]!.scopeId)).toBe(true)
     expect(new Set(journals).size).toBe(4)
   })

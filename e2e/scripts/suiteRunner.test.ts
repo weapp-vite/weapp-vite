@@ -261,6 +261,43 @@ describe('suiteRunner', () => {
     expect(mocks.quitHost).toHaveBeenCalledWith(hostLease)
   })
 
+  it('blocks later tasks when a host identity failure arrives after the deadline even when ordinary failures are allowed', async () => {
+    vi.useFakeTimers()
+    const entered = Promise.withResolvers<void>()
+    const finish = Promise.withResolvers<void>()
+    const unsafe = Object.assign(new Error('host identity changed'), { code: 'WECHAT_DEVTOOLS_HOST_IDENTITY_MISMATCH' })
+    mocks.claimHost.mockImplementationOnce(async () => {
+      entered.resolve()
+      await finish.promise
+      throw unsafe
+    })
+    const runTask = vi.fn(async () => 0)
+    const onUnsafeRuntime = vi.fn()
+    const task = { label: 'ide/host.test.ts', command: 'pnpm', args: ['vitest', 'run', '-c', 'e2e/vitest.e2e.devtools.config.ts'], env: { WEAPP_VITE_E2E_TASK_TIMEOUT_MS: '1000' } }
+    const running = runTaskSuite('e2e:unsafe-deadline-test', [task, { ...task, label: 'must-not-start' }], {
+      runTask,
+      onUnsafeRuntime,
+      failOnTaskFailure: false,
+      stopOnTaskFailure: false,
+      writeReport: false,
+    })
+    try {
+      await entered.promise
+      await vi.advanceTimersByTimeAsync(1000)
+      finish.resolve()
+      expect(await running).toBe(1)
+      expect(mocks.claimHost).toHaveBeenCalledOnce()
+      expect(runTask).not.toHaveBeenCalled()
+      expect(onUnsafeRuntime).toHaveBeenCalledWith(unsafe.message)
+      expect(mocks.cleanup).toHaveBeenCalledOnce()
+    }
+    finally {
+      finish.resolve()
+      await running
+      vi.useRealTimers()
+    }
+  })
+
   it('can stop running remaining tasks after the first failure', async () => {
     const tasks: SuiteTask[] = [
       { label: 'first', command: 'pnpm', args: ['vitest'] },
@@ -334,6 +371,7 @@ describe('suiteRunner', () => {
 
       expect(consoleLog).toHaveBeenCalledWith('[e2e:test] progress [------------------------] 0/1 0.0% still-running 1/1 slow-task (30.0s)')
       expect(consoleLog).toHaveBeenCalledWith('[e2e:test] still running slow-task (30.0s)')
+      expect(consoleLog).toHaveBeenCalledWith('[e2e:test] task phase slow-task: task-process')
     }
     finally {
       resolveTask(0)

@@ -8,51 +8,69 @@ export const managedJournalPrefix = 'task-scope-'
 const scopeSchema = z.object({ schemaVersion: z.literal(1), rootPath: z.string().min(1), scopeId: z.string().uuid() }).strict()
 type JournalScope = z.infer<typeof scopeSchema>
 
-async function readScope(directory: string) {
+async function readScope(directory: string, signal?: AbortSignal) {
+  signal?.throwIfAborted()
   const file = path.join(directory, markerName)
   const stat = await fs.lstat(file).catch((error: NodeJS.ErrnoException) => {
+    signal?.throwIfAborted()
     if (error.code === 'ENOENT') {
       return undefined
     }
     throw error
   })
+  signal?.throwIfAborted()
   if (!stat) {
     return undefined
   }
   if (!stat.isFile()) {
     throw new Error('Managed DevTools journal scope must be a regular metadata file.')
   }
-  const scope = scopeSchema.parse(JSON.parse(await fs.readFile(file, 'utf8')) as unknown)
+  const content = await fs.readFile(file, signal ? { encoding: 'utf8', signal } : 'utf8').catch((error: unknown) => {
+    signal?.throwIfAborted()
+    throw error
+  })
+  signal?.throwIfAborted()
+  const scope = scopeSchema.parse(JSON.parse(content) as unknown)
   if (!path.isAbsolute(scope.rootPath)) {
     throw new Error('Managed DevTools journal scope root must be absolute.')
   }
   return scope
 }
 
-async function assertDirectory(directory: string) {
-  if (!(await fs.lstat(directory)).isDirectory()) {
+async function assertDirectory(directory: string, signal?: AbortSignal) {
+  signal?.throwIfAborted()
+  const stat = await fs.lstat(directory)
+  signal?.throwIfAborted()
+  if (!stat.isDirectory()) {
     throw new Error('Managed DevTools journal scope must use regular directories.')
   }
 }
 
 /** 只接受创建时登记的根及 children 链；不通过搜索祖先收养未知任务。 */
-export async function resolveManagedJournalScope(directory: string): Promise<{ rootPath: string, scopeId?: string }> {
+export async function resolveManagedJournalScope(directory: string, signal?: AbortSignal): Promise<{ rootPath: string, scopeId?: string }> {
+  signal?.throwIfAborted()
   const selected = path.resolve(directory)
-  await assertDirectory(selected)
-  const scope = await readScope(selected)
+  await assertDirectory(selected, signal)
+  signal?.throwIfAborted()
+  const scope = await readScope(selected, signal)
+  signal?.throwIfAborted()
   if (!scope) {
     if (path.basename(selected).startsWith(managedJournalPrefix)) {
       throw new Error('Managed DevTools journal scope metadata is missing; refusing an isolated fallback.')
     }
     return { rootPath: selected }
   }
-  await assertDirectory(scope.rootPath)
-  const root = await readScope(scope.rootPath)
+  await assertDirectory(scope.rootPath, signal)
+  signal?.throwIfAborted()
+  const root = await readScope(scope.rootPath, signal)
+  signal?.throwIfAborted()
   if (!root || root.scopeId !== scope.scopeId || root.rootPath !== scope.rootPath) {
     throw new Error('Managed DevTools journal scope identity changed; refusing another task boundary.')
   }
   const rootPath = await fs.realpath(scope.rootPath)
+  signal?.throwIfAborted()
   const currentPath = await fs.realpath(selected)
+  signal?.throwIfAborted()
   const relative = path.relative(scope.rootPath, selected)
   if (relative) {
     const parts = relative.split(path.sep)
@@ -61,10 +79,13 @@ export async function resolveManagedJournalScope(directory: string): Promise<{ r
     }
     let current = scope.rootPath
     for (const [index, part] of parts.entries()) {
+      signal?.throwIfAborted()
       current = path.join(current, part)
-      await assertDirectory(current)
+      await assertDirectory(current, signal)
+      signal?.throwIfAborted()
       if (index % 2 === 1) {
-        const registered = await readScope(current)
+        const registered = await readScope(current, signal)
+        signal?.throwIfAborted()
         if (!registered || registered.rootPath !== scope.rootPath || registered.scopeId !== scope.scopeId) {
           throw new Error('Managed DevTools journal scope chain changed; refusing split task locks.')
         }

@@ -36,6 +36,13 @@ export async function prepareTaskLaunch(task: SuiteTask, signal: AbortSignal, ti
     }
     return budget
   }
+  catch (error) {
+    if (launchSignal.aborted && error !== launchSignal.reason && error instanceof Error && error.name === 'AbortError') {
+      const reason: unknown = launchSignal.reason
+      throw new AggregateError([reason, error], reason instanceof Error ? reason.message : 'E2E task preparation cancelled', { cause: reason })
+    }
+    throw error
+  }
   finally {
     clearTimeout(timer)
   }

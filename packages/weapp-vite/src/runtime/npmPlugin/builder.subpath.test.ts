@@ -2,7 +2,7 @@ import type { MutableCompilerContext } from '../../context'
 import type { NpmBuildOptions } from '../../types'
 import { mkdir, mkdtemp, readFile, realpath, rm, utimes, writeFile } from 'node:fs/promises'
 import os from 'node:os'
-import path from 'node:path'
+import path from 'pathe'
 import { afterEach, expect, it, vi } from 'vitest'
 import { createNpmOutput } from '../../vite/npm/output'
 import { createPackageBuilder } from './builder'
@@ -62,13 +62,16 @@ it('merges subpath requests from separate copied packages into one ordinary pack
   expect(scripts.get('node_modules/utility/plugin/second.js')).toContain('second-plugin')
   const calls = buildOptions.mock.calls.filter(([, meta]) => meta.name === 'utility')
   expect(calls).toHaveLength(1)
-  const input = (file: string) => path.join(root, 'node_modules/utility', file).split(path.sep).join('/')
-  expect(calls[0]![0].build?.lib).toMatchObject({
-    entry: {
-      'index': input('index.js'),
-      'plugin/duration': input('plugin/duration.js'),
-      'plugin/second': input('plugin/second.js'),
-    },
+  const input = (file: string) => path.join(root, 'node_modules/utility', file)
+  const lib = calls[0]![0].build?.lib
+  const entries = lib && lib.entry
+  if (!entries || typeof entries !== 'object' || Array.isArray(entries)) {
+    throw new Error('Expected named npm package entries')
+  }
+  expect(Object.fromEntries(Object.entries(entries).map(([name, file]) => [name, path.normalize(file)]))).toMatchObject({
+    'index': input('index.js'),
+    'plugin/duration': input('plugin/duration.js'),
+    'plugin/second': input('plugin/second.js'),
   })
 })
 

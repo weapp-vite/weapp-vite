@@ -61,12 +61,20 @@ export function managedRecordPath(journalPath: string, id: string) {
   return path.join(journalPath, `${idSchema.parse(id)}.json`)
 }
 
-export async function readManagedRecord(journalPath: string, id: string): Promise<ManagedWechatProjectRecord> {
+export async function readManagedRecord(journalPath: string, id: string, signal?: AbortSignal): Promise<ManagedWechatProjectRecord> {
+  signal?.throwIfAborted()
   const file = managedRecordPath(journalPath, id)
-  if (!(await fs.lstat(file)).isFile()) {
+  const stat = await fs.lstat(file)
+  signal?.throwIfAborted()
+  if (!stat.isFile()) {
     throw new Error('Managed DevTools journal record is not a regular file.')
   }
-  const record = recordSchema.parse(JSON.parse(await fs.readFile(file, 'utf8')) as unknown)
+  const content = await fs.readFile(file, signal ? { encoding: 'utf8', signal } : 'utf8').catch((error: unknown) => {
+    signal?.throwIfAborted()
+    throw error
+  })
+  signal?.throwIfAborted()
+  const record = recordSchema.parse(JSON.parse(content) as unknown)
   if (record.id !== id || record.journalPath !== journalPath || !path.isAbsolute(record.projectPath)
     || (record.snapshot && (record.projectPath !== path.join(journalPath, 'snapshots', id)
       || !path.isAbsolute(record.snapshot.sourceProjectPath) || record.snapshot.sourceProjectPath === record.projectPath))) {
@@ -92,40 +100,56 @@ export async function writeManagedRecord(record: ManagedWechatProjectRecord) {
 async function readManagedJournalDirectory(
   directory: string,
   parentScope?: Awaited<ReturnType<typeof resolveManagedJournalScope>>,
+  signal?: AbortSignal,
 ): Promise<ManagedWechatProjectRecord[]> {
-  if (parentScope && !(await fs.lstat(directory)).isDirectory()) {
-    throw new Error('Managed DevTools journal scope must use regular directories.')
+  signal?.throwIfAborted()
+  if (parentScope) {
+    const stat = await fs.lstat(directory)
+    signal?.throwIfAborted()
+    if (!stat.isDirectory()) {
+      throw new Error('Managed DevTools journal scope must use regular directories.')
+    }
   }
   const entries = await fs.readdir(directory, { withFileTypes: true }).catch((error: NodeJS.ErrnoException) => {
+    signal?.throwIfAborted()
     if (error.code === 'ENOENT' && !parentScope) {
       return undefined
     }
     throw error
   })
+  signal?.throwIfAborted()
   if (!entries) {
     return []
   }
-  const scope = await resolveManagedJournalScope(directory)
+  const scope = await resolveManagedJournalScope(directory, signal)
+  signal?.throwIfAborted()
   if (parentScope && (parentScope.scopeId !== undefined || scope.scopeId !== undefined)
     && (parentScope.scopeId !== scope.scopeId || parentScope.rootPath !== scope.rootPath)) {
     throw new Error('Managed DevTools journal scope changed inside its registered children; refusing another task tree.')
   }
   const records: ManagedWechatProjectRecord[] = []
   for (const entry of entries) {
+    signal?.throwIfAborted()
     if (entry.name.endsWith('.json')) {
-      records.push(await readManagedRecord(directory, entry.name.slice(0, -5)))
+      const record = await readManagedRecord(directory, entry.name.slice(0, -5), signal)
+      signal?.throwIfAborted()
+      records.push(record)
     }
     else if (entry.name === 'children') {
       if (!entry.isDirectory()) {
         throw new Error('Managed DevTools child journals must be regular directories.')
       }
       const children = await fs.readdir(path.join(directory, 'children'), { withFileTypes: true })
+      signal?.throwIfAborted()
       for (const child of children) {
+        signal?.throwIfAborted()
         if (!child.isDirectory()) {
           throw new Error('Managed DevTools child journal is not a regular directory.')
         }
         const childPath = path.join(directory, 'children', child.name)
-        records.push(...await readManagedJournalDirectory(childPath, scope))
+        const childRecords = await readManagedJournalDirectory(childPath, scope, signal)
+        signal?.throwIfAborted()
+        records.push(...childRecords)
       }
     }
   }
@@ -133,12 +157,15 @@ async function readManagedJournalDirectory(
 }
 
 /** 仅递归当前任务明确传递的 children；不扫描用户缓存，不跟随符号链接。 */
-export async function readManagedWechatProjectRecords(journalPath?: string): Promise<ManagedWechatProjectRecord[]> {
+export async function readManagedWechatProjectRecords(journalPath?: string, options: { signal?: AbortSignal } = {}): Promise<ManagedWechatProjectRecord[]> {
+  options.signal?.throwIfAborted()
   const directory = resolveManagedJournal(journalPath)
   if (!directory) {
     return []
   }
-  return await readManagedJournalDirectory(directory)
+  const records = await readManagedJournalDirectory(directory, undefined, options.signal)
+  options.signal?.throwIfAborted()
+  return records
 }
 
 const lockOwnerSchema = z.object({ token: idSchema, identity: hostSchema })

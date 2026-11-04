@@ -76,7 +76,7 @@ interface RunSuiteOptions {
   /** 仅供基础设施集成测试显式隔离租约状态；正常入口沿用全机租约目录。 */
   machineLeaseOptions?: MachineE2ELeaseOptions
   afterAll?: () => Promise<void> | void
-  beforeEachTask?: (task: SuiteTask) => Promise<void> | void
+  beforeEachTask?: TaskLaunchHook
   /** 在宿主认领、资源采样与 marker 发布后执行；必须响应取消信号并等待自身活动结束。 */
   beforeTaskLaunch?: TaskLaunchHook
   failOnTaskFailure?: boolean
@@ -316,6 +316,7 @@ function startTaskHeartbeat(
   completedCount: number,
   totalCount: number,
   taskIndex: number,
+  phase: () => string,
 ) {
   const timer = setInterval(() => {
     console.log(formatSuiteProgress(
@@ -328,6 +329,7 @@ function startTaskHeartbeat(
       Date.now() - startedAt,
     ))
     console.log(`[${suiteName}] still running ${label} (${formatDuration(Date.now() - startedAt)})`)
+    console.log(`[${suiteName}] task phase ${label}: ${phase()}`)
   }, TASK_HEARTBEAT_INTERVAL_MS)
 
   return () => {
@@ -697,9 +699,10 @@ async function runOwnedTaskSuite(
       timings.push(timing)
     }
     const timingFile = path.join(ACCEPTANCE_ROOT, '.tmp/e2e-verification-timings', reportContext.runId, `${randomUUID()}.jsonl`)
-    await fs.mkdir(path.dirname(timingFile), { recursive: true })
-    await fs.rm(timingFile, { force: true })
-    const stopHeartbeat = startTaskHeartbeat(suiteName, task.label, startedAt, results.length, tasks.length, taskIndex)
+    let phase = 'timing-preparation'
+    let preparationSignal: AbortSignal | undefined
+    const stopHeartbeat = startTaskHeartbeat(suiteName, task.label, startedAt, results.length, tasks.length, taskIndex, () =>
+      `${phase}${preparationSignal?.aborted ? ' (cancelling/draining)' : ''}`)
     let exitCode = 1
     let reason: string | undefined
     let blocked = false
@@ -710,52 +713,69 @@ async function runOwnedTaskSuite(
     let resources: TaskResourceRecorder | undefined
 
     try {
-      journalPath = await createDevtoolsProjectJournal()
-      childScope = await lease.createChildScope({ cleanupKey: journalPath })
-      task.env = {
-        ...task.env,
-        ...childScope.environment,
-        [MANAGED_PROJECT_JOURNAL_ENV]: journalPath,
-        [ACCEPTANCE_RUN_ID_ENV]: reportContext.runId,
-        [ACCEPTANCE_SHA_ENV]: reportContext.commitSha,
-        [ACCEPTANCE_DIRTY_ENV]: reportContext.workingTreeDirty == null ? 'unknown' : reportContext.workingTreeDirty ? '1' : '0',
-        [ACCEPTANCE_TASK_ENV]: task.label,
-        [ACCEPTANCE_REPORT_DIR_ENV]: path.join(ACCEPTANCE_ROOT, 'docs/reports/dom-acceptance', reportContext.runId),
-        [E2E_TIMING_FILE_ENV]: timingFile,
-        ...(reportContext.strict ? { [DOM_ACCEPTANCE_ENV]: '1' } : {}),
-      }
-      if (ideHmrCompanionSentinelPath && isDevtoolsVitestTask(task)) {
+      const launchBudget = await prepareTaskLaunch(task, signal, resolveTaskTimeoutMs(task), async (_task, launchSignal) => {
+        preparationSignal = launchSignal
+        await fs.mkdir(path.dirname(timingFile), { recursive: true })
+        launchSignal.throwIfAborted()
+        await fs.rm(timingFile, { force: true })
+        launchSignal.throwIfAborted()
+        phase = 'journal-preflight'
+        journalPath = await measureE2EPhase(phase, () => createDevtoolsProjectJournal(undefined, undefined, { signal: launchSignal }), recordTiming)
+        launchSignal.throwIfAborted()
+        phase = 'scope-registration'
+        childScope = await lease.createChildScope({ cleanupKey: journalPath })
+        launchSignal.throwIfAborted()
         task.env = {
           ...task.env,
-          [IDE_HMR_COMPANION_SENTINEL_ENV]: ideHmrCompanionSentinelPath,
+          ...childScope.environment,
+          [MANAGED_PROJECT_JOURNAL_ENV]: journalPath,
+          [ACCEPTANCE_RUN_ID_ENV]: reportContext.runId,
+          [ACCEPTANCE_SHA_ENV]: reportContext.commitSha,
+          [ACCEPTANCE_DIRTY_ENV]: reportContext.workingTreeDirty == null ? 'unknown' : reportContext.workingTreeDirty ? '1' : '0',
+          [ACCEPTANCE_TASK_ENV]: task.label,
+          [ACCEPTANCE_REPORT_DIR_ENV]: path.join(ACCEPTANCE_ROOT, 'docs/reports/dom-acceptance', reportContext.runId),
+          [E2E_TIMING_FILE_ENV]: timingFile,
+          ...(reportContext.strict ? { [DOM_ACCEPTANCE_ENV]: '1' } : {}),
         }
-      }
-      signal.throwIfAborted()
-      await measureE2EPhase('task-preflight', async () => {
-        await options.beforeEachTask?.(task)
-      }, recordTiming)
-      signal.throwIfAborted()
-      if (isDevtoolsVitestTask(task)) {
-        if (writeReport) {
-          resources = createTaskResourceRecorder({ ...reportContext, suiteName, taskLabel: task.label, taskIndex, journalPath, childScope, env: task.env })
-          await resources.initialize()
-          task.env = { ...task.env, ...resources.environment }
-        }
-        // 只在任务启动前认领冷宿主；已有或无法核验的宿主会阻断本 lane，避免继续累积 renderer。
-        // 上一宿主已在 task 收尾退出，新宿主必须执行自己的 global setup 登录预检。
-        devtoolsHostLease = await measureE2EPhase('host-claim', () => claimDevtoolsHost(task.env?.WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH ?? process.env.WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH), recordTiming)
-        if (devtoolsHostLease) {
-          await resources?.beforeTask(devtoolsHostLease)
+        if (ideHmrCompanionSentinelPath && isDevtoolsVitestTask(task)) {
           task.env = {
             ...task.env,
-            [DEVTOOLS_HOST_CLAIMED_ENV]: '1',
+            [IDE_HMR_COMPANION_SENTINEL_ENV]: ideHmrCompanionSentinelPath,
           }
         }
-      }
-      const launchBudget = options.beforeTaskLaunch
-        ? await prepareTaskLaunch(task, signal, resolveTaskTimeoutMs(task), options.beforeTaskLaunch)
-        : undefined
+        phase = 'task-preflight'
+        await measureE2EPhase(phase, async () => {
+          await options.beforeEachTask?.(task, launchSignal)
+        }, recordTiming)
+        launchSignal.throwIfAborted()
+        if (isDevtoolsVitestTask(task)) {
+          if (writeReport) {
+            phase = 'resource-initialization'
+            resources = createTaskResourceRecorder({ ...reportContext, suiteName, taskLabel: task.label, taskIndex, journalPath, childScope, env: task.env })
+            await resources.initialize()
+            launchSignal.throwIfAborted()
+            task.env = { ...task.env, ...resources.environment }
+          }
+          // 只在任务启动前认领冷宿主；已有或无法核验的宿主会阻断本 lane，避免继续累积 renderer。
+          // 上一宿主已在 task 收尾退出，新宿主必须执行自己的 global setup 登录预检。
+          phase = 'host-claim'
+          devtoolsHostLease = await measureE2EPhase(phase, () => claimDevtoolsHost(task.env?.WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH ?? process.env.WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH), recordTiming)
+          launchSignal.throwIfAborted()
+          if (devtoolsHostLease) {
+            phase = 'resource-before-task'
+            await resources?.beforeTask(devtoolsHostLease)
+            launchSignal.throwIfAborted()
+            task.env = {
+              ...task.env,
+              [DEVTOOLS_HOST_CLAIMED_ENV]: '1',
+            }
+          }
+        }
+        phase = 'launch-hook'
+        await options.beforeTaskLaunch?.(task, launchSignal)
+      })
       signal.throwIfAborted()
+      phase = 'task-process'
       await measureE2EPhase('task-process', async () => {
         exitCode = options.runTask
           ? await options.runTask(task, signal)
@@ -772,6 +792,7 @@ async function runOwnedTaskSuite(
       })
       signal.throwIfAborted()
       if (reportContext.strict) {
+        phase = 'acceptance-validation'
         try {
           await measureE2EPhase('acceptance-validation', () => validateTaskAcceptance(task, reportContext, reportContext.plannedCases?.[task.label]), recordTiming)
         }
@@ -800,6 +821,7 @@ async function runOwnedTaskSuite(
     }
     finally {
       if (journalPath) {
+        phase = 'resource-before-cleanup'
         const cleanupErrors: unknown[] = []
         let scopeError: unknown
         let hostError: unknown
@@ -821,6 +843,7 @@ async function runOwnedTaskSuite(
           }
         }
         try {
+          phase = 'project-cleanup'
           await measureE2EPhase('project-cleanup', () => cleanupDevtoolsCommandScope(childScope, journalPath!), recordTiming)
         }
         catch (error) {
@@ -829,6 +852,7 @@ async function runOwnedTaskSuite(
         }
         try {
           if (devtoolsHostLease) {
+            phase = 'host-quit'
             hostExit = await measureE2EPhase('host-quit', () => quitClaimedDevtoolsHost(devtoolsHostLease!), recordTiming)
           }
         }
@@ -847,6 +871,7 @@ async function runOwnedTaskSuite(
         }
         let resourceResult: { indexPath?: string, errors: string[] } | undefined
         try {
+          phase = 'resource-finalization'
           resourceResult = await resources?.finish({ scopeError, hostError, hostExit }, [...observationErrors, ...(task.resourceEvidenceErrors ?? [])])
         }
         catch (error) {

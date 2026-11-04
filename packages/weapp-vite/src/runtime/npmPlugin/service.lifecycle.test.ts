@@ -2,8 +2,8 @@ import type { MutableCompilerContext } from '../../context'
 import type { BuildPackageArgs } from './builder'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
-import path from 'node:path'
 import { fs } from '@weapp-core/shared/fs'
+import path from 'pathe'
 import { expect, it, vi } from 'vitest'
 import { createNpmBuildService } from './service/build'
 
@@ -95,7 +95,7 @@ it('waits for an active mirror copy after another mirror fails', async () => {
   } as unknown as MutableCompilerContext
   let mirrorFinished = false
   const copy = vi.spyOn(fs, 'copy').mockImplementation(async (_source, destination) => {
-    if (String(destination) === path.join(root, 'pending/miniprogram_npm')) {
+    if (path.normalize(String(destination)) === path.join(root, 'pending/miniprogram_npm')) {
       mirrorStarted.resolve()
       await releaseMirror.promise
       mirrorFinished = true

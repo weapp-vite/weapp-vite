@@ -8,24 +8,30 @@ const ownedCleanups = new Set<() => Promise<void>>()
 const JOURNAL_ROOT = path.resolve(import.meta.dirname, '../../.tmp/e2e-managed-devtools-projects')
 
 /** 跨运行检查本仓库登记的任务；只读取本项目 journal，不扫描用户 IDE 缓存或其他 worktree。 */
-export async function assertNoUnreleasedDevtoolsProjects(rootDirectory = JOURNAL_ROOT) {
+export async function assertNoUnreleasedDevtoolsProjects(rootDirectory = JOURNAL_ROOT, options: { signal?: AbortSignal } = {}) {
+  const { signal } = options
+  signal?.throwIfAborted()
   const entries = await fs.readdir(rootDirectory, { withFileTypes: true }).catch((error: NodeJS.ErrnoException) => {
     if (error.code === 'ENOENT') {
       return []
     }
     throw error
   })
+  signal?.throwIfAborted()
   const unresolved: Array<{ journalPath: string, projectPath: string, state: string, port?: number, ownerPid: number }> = []
   for (const entry of entries) {
+    signal?.throwIfAborted()
     if (!entry.name.startsWith('task-scope-')) {
       continue
     }
     const journalPath = path.join(rootDirectory, entry.name)
     const stat = await fs.lstat(journalPath)
+    signal?.throwIfAborted()
     if (!stat.isDirectory() || stat.isSymbolicLink()) {
       throw new Error(`Managed DevTools journal root contains a non-directory task scope: ${journalPath}`)
     }
-    for (const record of await readManagedWechatProjectRecords(journalPath)) {
+    for (const record of await readManagedWechatProjectRecords(journalPath, options)) {
+      signal?.throwIfAborted()
       if (!isManagedWechatProjectFullyReleased(record)) {
         unresolved.push({
           journalPath,
@@ -37,6 +43,7 @@ export async function assertNoUnreleasedDevtoolsProjects(rootDirectory = JOURNAL
       }
     }
   }
+  signal?.throwIfAborted()
   if (unresolved.length) {
     throw new Error(`Managed DevTools has unresolved project ownership from an earlier task; recover it before starting another IDE: ${JSON.stringify(unresolved)}`)
   }
@@ -46,10 +53,14 @@ export async function assertNoUnreleasedDevtoolsProjects(rootDirectory = JOURNAL
 export async function createDevtoolsProjectJournal(
   parentJournalPath = process.env[MANAGED_PROJECT_JOURNAL_ENV],
   rootDirectory = JOURNAL_ROOT,
+  options: { signal?: AbortSignal } = {},
 ) {
+  options.signal?.throwIfAborted()
   if (!parentJournalPath) {
-    await assertNoUnreleasedDevtoolsProjects(rootDirectory)
+    await assertNoUnreleasedDevtoolsProjects(rootDirectory, options)
   }
+  options.signal?.throwIfAborted()
+  // 创建开始后交还真实路径；调用方先保存句柄再响应取消，避免留下无法清理的登记。
   return await createManagedWechatProjectJournal(rootDirectory, parentJournalPath)
 }
 

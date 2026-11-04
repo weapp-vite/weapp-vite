@@ -238,6 +238,91 @@ describe('suite runner cancellation ownership', () => {
     expect(mocks.cleanup).toHaveBeenCalledOnce()
   })
 
+  it('cancels the journal inventory before registering a scope or launching a command', async () => {
+    const entered = Promise.withResolvers<AbortSignal>()
+    mocks.journal.mockImplementationOnce(async (_parent, _root, { signal }: { signal: AbortSignal }) => {
+      entered.resolve(signal)
+      await new Promise<void>((_resolve, reject) => signal.addEventListener('abort', () => reject(signal.reason), { once: true }))
+    })
+    const running = runTaskSuite('e2e:cancel-inventory-test', tasks, options)
+    const signal = await entered.promise
+    signalRunner('SIGINT')
+    expect(signal.aborted).toBe(true)
+    expect(await running).toBe(130)
+    expect(mocks.scope).not.toHaveBeenCalled()
+    expect(mocks.execa).not.toHaveBeenCalled()
+    expect(mocks.cleanup).not.toHaveBeenCalled()
+  })
+
+  it('applies the task deadline to journal inventory without requiring a launch hook', async () => {
+    const entered = Promise.withResolvers<AbortSignal>()
+    const finish = Promise.withResolvers<void>()
+    mocks.journal.mockImplementationOnce(async (_parent, _root, { signal }: { signal: AbortSignal }) => {
+      entered.resolve(signal)
+      await finish.promise
+      signal.throwIfAborted()
+      return 'must-not-be-created'
+    })
+    const timedTask = { ...tasks[0]!, env: { WEAPP_VITE_E2E_TASK_TIMEOUT_MS: '1000' } }
+    let settled = false
+    const running = runTaskSuite('e2e:inventory-budget-test', [timedTask], options).finally(() => {
+      settled = true
+    })
+    try {
+      const signal = await entered.promise
+      await vi.advanceTimersByTimeAsync(1000)
+      expect(signal.aborted).toBe(true)
+      expect(settled).toBe(false)
+      expect(mocks.scope).not.toHaveBeenCalled()
+      expect(mocks.execa).not.toHaveBeenCalled()
+      expect(mocks.cleanup).not.toHaveBeenCalled()
+    }
+    finally {
+      finish.resolve()
+      expect(await running).toBe(1)
+    }
+    expect(console.error).toHaveBeenCalledWith(expect.stringContaining('task timeout after 1.0s before command launch'))
+  })
+
+  it('saves a journal returned after cancellation before cleaning it without starting a scope', async () => {
+    const entered = Promise.withResolvers<void>()
+    const finish = Promise.withResolvers<string>()
+    mocks.journal.mockImplementationOnce(async () => {
+      entered.resolve()
+      return await finish.promise
+    })
+    const running = runTaskSuite('e2e:cancel-journal-creation-test', tasks, options)
+    await entered.promise
+    signalRunner('SIGTERM')
+    expect(mocks.cleanup).not.toHaveBeenCalled()
+    finish.resolve('owned-task-journal')
+    expect(await running).toBe(143)
+    expect(mocks.scope).not.toHaveBeenCalled()
+    expect(mocks.execa).not.toHaveBeenCalled()
+    expect(mocks.cleanup).toHaveBeenCalledOnce()
+    expect(mocks.cleanup).toHaveBeenCalledWith({ journalPath: 'owned-task-journal', scope: 'journal' })
+  })
+
+  it('saves a scope returned after cancellation and waits for its cleanup before finishing', async () => {
+    const entered = Promise.withResolvers<void>()
+    const finish = Promise.withResolvers<Awaited<ReturnType<typeof mocks.scope>>>()
+    const complete = vi.fn(async () => {})
+    mocks.scope.mockImplementationOnce(async () => {
+      entered.resolve()
+      return await finish.promise
+    })
+    const running = runTaskSuite('e2e:cancel-scope-creation-test', tasks, options)
+    await entered.promise
+    signalRunner('SIGTERM')
+    expect(mocks.cleanup).not.toHaveBeenCalled()
+    finish.resolve({ environment: {}, recoverStoppedDescendants: async () => {}, seal: mocks.seal, complete })
+    expect(await running).toBe(143)
+    expect(mocks.seal).toHaveBeenCalledOnce()
+    expect(complete).toHaveBeenCalledOnce()
+    expect(mocks.execa).not.toHaveBeenCalled()
+    expect(mocks.cleanup).toHaveBeenCalledOnce()
+  })
+
   it('waits for an aborted launch hook to settle and refuses its late command launch', async () => {
     const entered = Promise.withResolvers<AbortSignal>()
     const finishHook = Promise.withResolvers<void>()

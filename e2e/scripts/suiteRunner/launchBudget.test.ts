@@ -46,6 +46,33 @@ describe('task launch budget', () => {
     expect(vi.getTimerCount()).toBe(0)
   })
 
+  it('retains the deadline reason and the aborted read error until preparation settles', async () => {
+    const ioError = Object.assign(new Error('read aborted'), { name: 'AbortError' })
+    let failure: AggregateError | undefined
+    const preparing = prepareTaskLaunch(task, new AbortController().signal, 1000, async (_task, signal) => {
+      await new Promise<void>((_resolve, reject) => signal.addEventListener('abort', () => reject(ioError), { once: true }))
+    }).catch((error: AggregateError) => { failure = error })
+    await vi.advanceTimersByTimeAsync(1000)
+    await preparing
+    expect(failure?.message).toContain('task timeout after 1.0s before command launch')
+    expect(failure?.errors).toEqual([failure?.cause, ioError])
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
+  it('preserves a domain failure that arrives after the preparation deadline', async () => {
+    const unsafe = Object.assign(new Error('host identity changed'), { code: 'WECHAT_DEVTOOLS_HOST_IDENTITY_MISMATCH' })
+    const finish = Promise.withResolvers<void>()
+    const preparing = prepareTaskLaunch(task, new AbortController().signal, 1000, async () => {
+      await finish.promise
+      throw unsafe
+    })
+    const rejected = expect(preparing).rejects.toBe(unsafe)
+    await vi.advanceTimersByTimeAsync(1000)
+    finish.resolve()
+    await rejected
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
   it('does not invoke a hook after cancellation', async () => {
     const cancellation = new AbortController()
     const reason = new Error('suite cancelled')

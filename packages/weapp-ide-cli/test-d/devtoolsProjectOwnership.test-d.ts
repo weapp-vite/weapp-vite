@@ -12,6 +12,12 @@ expectType<Promise<void>>(cleanupManagedWechatProjects({ scope: 'process' }))
 expectType<Promise<void>>(cleanupManagedWechatProjects({ journalPath: 'task-journal', scope: 'journal' }))
 expectType<Promise<void>>(closeManagedWechatProject({ journalPath: 'task-journal', id: 'record' }))
 expectType<Promise<ManagedWechatProjectRecord[]>>(readManagedWechatProjectRecords('task-journal'))
+declare const signal: AbortSignal
+expectType<Promise<ManagedWechatProjectRecord[]>>(readManagedWechatProjectRecords('task-journal', { signal }))
+expectType<Promise<ManagedWechatProjectRecord[]>>(readManagedWechatProjectRecords(undefined, { signal }))
+expectType<Promise<ManagedWechatProjectRecord[]>>(readManagedWechatProjectRecords(undefined, {}))
+expectError(readManagedWechatProjectRecords('task-journal', { signal: 'cancelled' }))
+expectError(readManagedWechatProjectRecords('task-journal', { signal: { aborted: true } }))
 declare const intent: ManagedWechatProjectIntent
 expectType<Promise<void>>(intent.confirm({ openedProjectWindow: true, port: 19001 }))
 expectType<Promise<void>>(intent.close())

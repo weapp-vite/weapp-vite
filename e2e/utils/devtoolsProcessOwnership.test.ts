@@ -56,6 +56,37 @@ describe('DevTools process ownership', () => {
     expect(path.dirname(journal)).toBe(root)
   })
 
+  it('does not read inventory or create a journal after cancellation', async () => {
+    const cancellation = new AbortController()
+    const reason = new Error('suite stopped')
+    cancellation.abort(reason)
+    const readDirectory = vi.spyOn(fs, 'readdir')
+    try {
+      await expect(createDevtoolsProjectJournal('', undefined, { signal: cancellation.signal })).rejects.toBe(reason)
+      expect(readDirectory).not.toHaveBeenCalled()
+      expect(readRecords).not.toHaveBeenCalled()
+    }
+    finally {
+      readDirectory.mockRestore()
+    }
+  })
+
+  it('stops after an in-flight inventory read and creates no new task directory', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'devtools-journal-cancel-'))
+    roots.push(root)
+    const previous = 'task-scope-previous'
+    await fs.mkdir(path.join(root, previous))
+    const cancellation = new AbortController()
+    const reason = new Error('inventory deadline')
+    readRecords.mockImplementationOnce(async () => {
+      cancellation.abort(reason)
+      return []
+    })
+    await expect(createDevtoolsProjectJournal('', root, { signal: cancellation.signal })).rejects.toBe(reason)
+    expect(readRecords).toHaveBeenCalledWith(path.join(root, previous), { signal: cancellation.signal })
+    expect(await fs.readdir(root)).toEqual([previous])
+  })
+
   it.each(['reserved', 'ready', 'removed'] as const)('requires a released owner snapshot to be removed before the next task: %s', async (state) => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'devtools-journal-snapshot-'))
     roots.push(root)
