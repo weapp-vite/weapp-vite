@@ -8,6 +8,7 @@ import { nativeFrameEvidence, textReadEvidence } from './evidence'
 import { verifiedForeignImageTransitions } from './foreignImageTransitions'
 import { verifiedForeignNativeExecs } from './foreignNativeExecs'
 import { insideInstallation, metadata, sameNativeIdentity } from './model'
+import { verifiedPostAnchorForeignProcesses } from './postAnchorForeign'
 import { verifiedTerminalProcesses } from './terminalProcesses'
 
 interface SummaryOptions {
@@ -29,7 +30,8 @@ export function summarizeNativeInventory(options: SummaryOptions): InstallationP
   }
   const foreignTransitions = verifiedForeignImageTransitions(inventory, installationRoot)
   const foreignNativeExecs = verifiedForeignNativeExecs(inventory, installationRoot)
-  const verifiedForeignProcesses = new Set([...foreignTransitions, ...foreignNativeExecs].map(proof => proof.process.pid))
+  const postAnchorForeign = verifiedPostAnchorForeignProcesses(inventory, installationRoot)
+  const verifiedForeignProcesses = new Set([...foreignTransitions, ...foreignNativeExecs, ...postAnchorForeign].map(proof => proof.process.pid))
   const terminalProofs = [...verifiedTerminalProcesses(inventory, installationRoot), ...verifiedAnchorExits(inventory, installationRoot), ...verifiedAnchorTerminals(inventory, installationRoot)]
   const terminalProcesses = new Set(terminalProofs.map(proof => proof.process.pid))
   const preAnchorExited = new Set<number>()
@@ -87,15 +89,21 @@ export function summarizeNativeInventory(options: SummaryOptions): InstallationP
   }
   const incomplete = unclassifiedProcesses.length || missingIdentities.length || uninspectedNewProcessCount
     || newSelectedProcessCount || changedCount || inventoryBudgetExhausted
+  // 闭合归属是独立门禁；即使锚点 RSS 可计数，未知后续进程也不能借出生时间获得豁免。
+  const closureIncomplete = incomplete || [...inventory.tracked.values()].some(entry => entry.closureIdentityUnverifiable
+    && !terminalProcesses.has(entry.row.pid) && !verifiedForeignProcesses.has(entry.row.pid))
   return {
     samplingStartedAt: options.samplingStartedAt,
     samplingCompletedAt: new Date().toISOString(),
     installationRoot,
     processes,
     verifiedMemberRssBytes,
-    installationRssBytes: incomplete
+    installationRssBytes: closureIncomplete
       ? { status: 'unavailable', reason: 'The non-atomic installation inventory contains unclassified, changed, or newly appeared process identities.' }
       : { status: 'observed', value: verifiedMemberRssBytes },
+    closureOwnership: closureIncomplete
+      ? { status: 'unavailable', reason: 'The process closure contains unresolved ownership or identity evidence.' }
+      : { status: 'observed', value: 'verified' },
     unclassifiedProcessCount: unclassifiedProcesses.length,
     missingIdentityCount: missingIdentities.length,
     unclassifiedProcesses,
@@ -111,6 +119,8 @@ export function summarizeNativeInventory(options: SummaryOptions): InstallationP
     verifiedForeignImageTransitions: foreignTransitions,
     verifiedForeignNativeExecCount: foreignNativeExecs.length,
     verifiedForeignNativeExecs: foreignNativeExecs,
+    verifiedPostAnchorForeignProcessCount: postAnchorForeign.length,
+    verifiedPostAnchorForeignProcesses: postAnchorForeign,
     verifiedTerminalProcessCount: terminalProofs.length,
     verifiedTerminalProcesses: terminalProofs,
     newProcesses,

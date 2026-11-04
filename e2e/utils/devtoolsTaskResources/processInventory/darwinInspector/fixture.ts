@@ -43,6 +43,47 @@ export function fixtureFrame(requestId = 1): WireFrame {
   return { protocol: 1, requestId, phase: ['prepare', 'anchor', 'closure1', 'closure2'][requestId - 1] as WireFrame['phase'], startedAtNanoseconds: String(requestId * 100), endedAtNanoseconds: String(requestId * 100 + 10), enumeration: { startedAtNanoseconds: String(requestId * 100), endedAtNanoseconds: String(requestId * 100 + 1), complete: true, bytes: 256, recordSize: 128, pidCount: 2, pids: [99, 11], zeroPidCount: 0 }, rows }
 }
 
+export const fixtureAbsoluteReady: DarwinInspectorReady = {
+  ...fixtureReady,
+  absoluteClock: { clockDomain: 'mach-absolute-ticks', timebaseNumerator: 125, timebaseDenominator: 3 },
+}
+
+/** Mach ticks 与纳秒刻意使用不同数值，避免错误的时钟域混用仍能通过。 */
+export function fixtureAbsoluteFrame(requestId = 1): WireFrame {
+  const frame = fixtureFrame(requestId)
+  const start = 9007199254740993n + BigInt(requestId) * 1000n
+  const birth = (tick: bigint) => ({ result: 0, errno: 0, startedAtTicks: String(tick), endedAtTicks: String(tick + 1n), birthTicks: '42', exitTicks: '0' })
+  frame.absolute = {
+    clockDomain: 'mach-absolute-ticks',
+    startedAtTicks: String(start),
+    endedAtTicks: String(start + 100n),
+    startCalibration: { monotonicBeforeNanoseconds: frame.startedAtNanoseconds, absoluteTicks: String(start), monotonicAfterNanoseconds: frame.startedAtNanoseconds },
+    endCalibration: { monotonicBeforeNanoseconds: frame.endedAtNanoseconds, absoluteTicks: String(start + 100n), monotonicAfterNanoseconds: frame.endedAtNanoseconds },
+  }
+  frame.rows.forEach((row, index) => {
+    const rowStart = start + 10n + BigInt(index) * 30n
+    row.absolute = { clockDomain: 'mach-absolute-ticks', startedAtTicks: String(rowStart), endedAtTicks: String(rowStart + 20n), birthBefore: birth(rowStart + 1n), birthAfter: birth(rowStart + 18n) }
+    row.confirmation = null
+  })
+  return frame
+}
+
+export function fixtureConfirmation(row: WireFrame['rows'][number]) {
+  const start = BigInt(row.absolute!.endedAtTicks)
+  const birth = (tick: bigint) => ({ result: 0, errno: 0, startedAtTicks: String(tick), endedAtTicks: String(tick + 1n), birthTicks: row.absolute!.birthAfter.birthTicks, exitTicks: '0' })
+  return {
+    clockDomain: 'mach-absolute-ticks' as const,
+    startedAtTicks: String(start),
+    endedAtTicks: String(start + 20n),
+    before: structuredClone(row.after),
+    after: structuredClone(row.after),
+    pathBefore: structuredClone(row.pathAfter),
+    pathAfter: structuredClone(row.pathAfter),
+    birthBefore: birth(start + 1n),
+    birthAfter: birth(start + 18n),
+  }
+}
+
 /** 只持有内存管道，不执行编译器、helper 或系统进程。 */
 export function createDarwinInspectorFixture(options: {
   ready?: string | null

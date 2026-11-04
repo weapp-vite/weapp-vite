@@ -78,6 +78,7 @@ beforeEach(async () => {
     samplingCompletedAt: '2026-10-20T00:00:00.100Z',
     installationRoot: path.join(directory, 'selected-installation.app'),
     installationRssBytes: { status: 'observed', value: 100 },
+    closureOwnership: { status: 'observed', value: 'verified' },
     verifiedMemberRssBytes: 100,
     processes: [],
     unclassifiedProcessCount: 0,
@@ -124,6 +125,19 @@ async function observe(ownedLease = lease) {
 }
 
 describe('per-task IDE resource attachment', () => {
+  it.each(['missing', 'unavailable'] as const)('independently blocks %s closure ownership even when anchor RSS is observed', async (kind) => {
+    const value = (await mocks.processes()).value as InstallationProcessSample
+    if (kind === 'missing') {
+      Reflect.deleteProperty(value, 'closureOwnership')
+    }
+    else {
+      value.closureOwnership = { status: 'unavailable', reason: 'Unknown closure process' }
+    }
+    const result = await (await observe()).finish({ hostExit })
+    expect(await readReport(result.indexPath)).toMatchObject({ status: 'incomplete' })
+    expect(result.errors.join('; ')).toContain('process closure')
+  })
+
   it('persists three boundaries and reuses existing host exit evidence without exposing lease credentials', async () => {
     const recorder = await observe()
     const result = await recorder.finish({ hostExit })

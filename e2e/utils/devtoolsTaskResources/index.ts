@@ -146,8 +146,14 @@ export function createTaskResourceRecorder(options: ResourceRecorderOptions) {
         if (snapshot.processes.status === 'unavailable') {
           report.errors.push(`before-cleanup process sample: ${snapshot.processes.reason}`)
         }
-        else if (snapshot.processes.value.installationRssBytes.status === 'unavailable') {
-          report.errors.push(`before-cleanup process sample: ${snapshot.processes.value.installationRssBytes.reason}`)
+        else {
+          const sample = snapshot.processes.value
+          if (sample.installationRssBytes.status === 'unavailable') {
+            report.errors.push(`before-cleanup process sample: ${sample.installationRssBytes.reason}`)
+          }
+          if (!sample.closureOwnership || sample.closureOwnership.status === 'unavailable') {
+            report.errors.push(`before-cleanup process closure: ${sample.closureOwnership?.reason ?? 'No independent closure ownership evidence was returned.'}`)
+          }
         }
       }
     }

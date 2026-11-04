@@ -1,28 +1,8 @@
 import type { DarwinIdentityObservation, DarwinInspectorAbi, DarwinInspectorPhase, DarwinInspectorReady, DarwinPathObservation, DarwinProcessEntry, DarwinProcessFrame, DarwinProcessGap, DarwinProcessIdentity, DarwinTaskObservation } from './types'
+import { parseAbsoluteClock, parseConfirmation, parseFrameAbsolute, parseProcessAbsolute, withinAbsoluteInterval } from './absoluteProtocol'
+import { decimal, extendedRecord, integer, invalid, record } from './protocolValues'
 import { DARWIN_INSPECTOR_PHASES } from './types'
 
-const MAX_UINT64 = (1n << 64n) - 1n
-function invalid(message: string): never {
-  throw new Error(`Darwin inspector protocol: ${message}.`)
-}
-function record(value: unknown, keys: string[]) {
-  if (!value || typeof value !== 'object' || Array.isArray(value) || Object.keys(value).length !== keys.length || keys.some(key => !(key in value))) {
-    return invalid('unexpected object shape')
-  }
-  return value as Record<string, unknown>
-}
-function integer(value: unknown, minimum = 0, maximum = Number.MAX_SAFE_INTEGER) {
-  if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < minimum || value > maximum) {
-    return invalid('invalid integer')
-  }
-  return value
-}
-function decimal(value: unknown, maximum = MAX_UINT64) {
-  if (typeof value !== 'string' || !/^(?:0|[1-9]\d*)$/.test(value) || value.length > 20 || BigInt(value) > maximum) {
-    return invalid('invalid precise integer')
-  }
-  return value
-}
 function image(value: unknown) {
   if (typeof value !== 'string' || !value.startsWith('/') || value.includes('\0')) {
     return invalid('invalid executable image')
@@ -70,8 +50,11 @@ function taskObservation(value: unknown, abi: DarwinInspectorAbi): DarwinTaskObs
   }
   return { count, errno, identity: complete ? identity(raw.identity, abi) : null, rssBytes: complete ? decimal(raw.rssBytes) : null }
 }
-function entry(value: unknown, abi: DarwinInspectorAbi): DarwinProcessEntry {
-  const raw = record(value, ['pid', 'enumeratedIdentity', 'startedAtNanoseconds', 'endedAtNanoseconds', 'before', 'pathBefore', 'task', 'pathAfter', 'after'])
+function entry(value: unknown, abi: DarwinInspectorAbi, requireAbsolute: boolean): DarwinProcessEntry {
+  const { raw, extended } = extendedRecord(value, ['pid', 'enumeratedIdentity', 'startedAtNanoseconds', 'endedAtNanoseconds', 'before', 'pathBefore', 'task', 'pathAfter', 'after'], ['absolute', 'confirmation'])
+  if (extended !== requireAbsolute) {
+    return invalid('inconsistent process clock evidence')
+  }
   const pid = integer(raw.pid, 1, 0x7FFFFFFF)
   const enumeratedIdentity = identity(raw.enumeratedIdentity, abi)
   const startedAtNanoseconds = decimal(raw.startedAtNanoseconds)
@@ -118,25 +101,33 @@ function entry(value: unknown, abi: DarwinInspectorAbi): DarwinProcessEntry {
   if ([enumeratedIdentity, before.identity, after.identity, task.identity].some(item => item?.zombie)) {
     gaps.push('zombie')
   }
-  return { pid, enumeratedIdentity, startedAtNanoseconds, endedAtNanoseconds, before, pathBefore, task, pathAfter, after, gaps }
+  const absolute = extended ? parseProcessAbsolute(raw.absolute) : undefined
+  const confirmation = extended ? parseConfirmation(raw.confirmation, abi, pid, { identity: identityObservation, path: pathObservation }) : undefined
+  if (absolute && confirmation && BigInt(confirmation.startedAtTicks) < BigInt(absolute.endedAtTicks)) {
+    return invalid('confirmation precedes original row completion')
+  }
+  return { pid, enumeratedIdentity, startedAtNanoseconds, endedAtNanoseconds, before, pathBefore, task, pathAfter, after, gaps, ...(absolute ? { absolute, confirmation } : {}) }
 }
 /** ready 的身份和映像必须绑定本次 child，不能仅按 helper 名称排除。 */
 export function parseDarwinInspectorReady(line: string, childPid: number, executable: string): DarwinInspectorReady {
-  const raw = record(JSON.parse(line) as unknown, ['protocol', 'phase', 'pid', 'identity', 'executable', 'abi'])
+  const { raw, extended } = extendedRecord(JSON.parse(line) as unknown, ['protocol', 'phase', 'pid', 'identity', 'executable', 'abi'], ['absoluteClock'])
   const abiRaw = record(raw.abi, ['recordSize', 'taskSize', 'pathMax', 'zombieStatus'])
   const abi = { recordSize: integer(abiRaw.recordSize, 1, 65_536), taskSize: integer(abiRaw.taskSize, 1, 65_536), pathMax: integer(abiRaw.pathMax, 1, 65_536), zombieStatus: integer(abiRaw.zombieStatus, 1, 255) }
   const ownIdentity = identity(raw.identity, abi)
   if (raw.protocol !== 1 || raw.phase !== 'ready' || raw.pid !== childPid || ownIdentity.pid !== childPid || ownIdentity.zombie || image(raw.executable) !== executable) {
     return invalid('unverified helper readiness')
   }
-  return { protocol: 1, phase: 'ready', pid: childPid, identity: ownIdentity, executable, abi }
+  return { protocol: 1, phase: 'ready', pid: childPid, identity: ownIdentity, executable, abi, ...(extended ? { absoluteClock: parseAbsoluteClock(raw.absoluteClock) } : {}) }
 }
 /** 清单完整性与每行证据独立校验；缺 RSS 保留为缺口，不在传输层判断归属。 */
 export function parseDarwinProcessFrame(line: string, requestId: number, phase: DarwinInspectorPhase, ready: DarwinInspectorReady): DarwinProcessFrame {
   if (!Number.isSafeInteger(requestId) || requestId < 1 || requestId > 4 || DARWIN_INSPECTOR_PHASES[requestId - 1] !== phase) {
     return invalid('invalid phase/request id pair')
   }
-  const raw = record(JSON.parse(line) as unknown, ['protocol', 'requestId', 'phase', 'startedAtNanoseconds', 'endedAtNanoseconds', 'enumeration', 'rows'])
+  const { raw, extended } = extendedRecord(JSON.parse(line) as unknown, ['protocol', 'requestId', 'phase', 'startedAtNanoseconds', 'endedAtNanoseconds', 'enumeration', 'rows'], ['absolute'])
+  if (extended !== Boolean(ready.absoluteClock)) {
+    return invalid('inconsistent frame clock evidence')
+  }
   if (raw.protocol !== 1 || raw.requestId !== requestId || raw.phase !== phase) {
     return invalid('response does not match request')
   }
@@ -161,7 +152,8 @@ export function parseDarwinProcessFrame(line: string, requestId: number, phase: 
   if (new Set(pids).size !== count) {
     return invalid('duplicate enumerated PID')
   }
-  const rows = raw.rows.map(row => entry(row, ready.abi))
+  const absolute = extended ? parseFrameAbsolute(raw.absolute, startedAtNanoseconds, endedAtNanoseconds) : undefined
+  const rows = raw.rows.map(row => entry(row, ready.abi, extended))
   const pidSet = new Set(pids)
   if (new Set(rows.map(row => row.pid)).size !== count || rows.some(row => !pidSet.has(row.pid))) {
     return invalid('missing or extra process rows')
@@ -169,9 +161,20 @@ export function parseDarwinProcessFrame(line: string, requestId: number, phase: 
   if (rows.some(row => BigInt(row.startedAtNanoseconds) < BigInt(enumerationEnded) || BigInt(row.endedAtNanoseconds) > BigInt(endedAtNanoseconds))) {
     return invalid('process interval outside frame or before enumeration completed')
   }
+  if (absolute) {
+    for (const row of rows) {
+      withinAbsoluteInterval(row.absolute!, absolute)
+      if (row.confirmation) {
+        if (phase !== 'closure2') {
+          return invalid('confirmation outside final closure')
+        }
+        withinAbsoluteInterval(row.confirmation, absolute)
+      }
+    }
+  }
   const own = rows.find(row => row.pid === ready.pid)
   if (!own || own.gaps.length || !own.before.identity || !own.after.identity || !own.task.identity || !sameDarwinIdentity(own.before.identity, ready.identity) || !sameDarwinIdentity(own.after.identity, ready.identity) || !sameDarwinIdentity(own.task.identity, ready.identity) || own.pathBefore.executable !== ready.executable || own.pathAfter.executable !== ready.executable) {
     return invalid('helper ownership changed')
   }
-  return { protocol: 1, requestId, phase, startedAtNanoseconds, endedAtNanoseconds, enumeration: { startedAtNanoseconds: enumerationStarted, endedAtNanoseconds: enumerationEnded, complete: true, bytes, recordSize: ready.abi.recordSize, pidCount: count, pids, zeroPidCount }, rows, ownedHelper: { pid: ready.pid, identity: ready.identity, executable: ready.executable, row: own } }
+  return { protocol: 1, requestId, phase, startedAtNanoseconds, endedAtNanoseconds, enumeration: { startedAtNanoseconds: enumerationStarted, endedAtNanoseconds: enumerationEnded, complete: true, bytes, recordSize: ready.abi.recordSize, pidCount: count, pids, zeroPidCount }, rows, ownedHelper: { pid: ready.pid, identity: ready.identity, executable: ready.executable, row: own }, ...(absolute ? { absolute } : {}) }
 }

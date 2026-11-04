@@ -4,7 +4,9 @@
 #include <sys/sysctl.h>
 #include <sys/proc.h>
 #include <sys/proc_info.h>
+#include <sys/resource.h>
 #include <libproc.h>
+#include <mach/mach_time.h>
 #include <errno.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -25,6 +27,10 @@ static uint64_t nowNs(void) {
 static NSString *precise(uint64_t value) {
   return [NSString stringWithFormat:@"%llu", (unsigned long long)value];
 }
+static NSDictionary *calibrate(void) {
+  uint64_t before = nowNs(), ticks = mach_absolute_time(), after = nowNs();
+  return @{@"monotonicBeforeNanoseconds":precise(before), @"absoluteTicks":precise(ticks), @"monotonicAfterNanoseconds":precise(after)};
+}
 static void budget(uint64_t deadline) {
   if (nowNs() >= deadline) fail(@"Shared inspection deadline exhausted.");
 }
@@ -40,6 +46,13 @@ static NSDictionary *makeIdentity(pid_t pid, pid_t parent, uid_t uid, int status
 static BOOL sameStableIdentity(id left, id right) {
   if (![left isKindOfClass:[NSDictionary class]] || ![right isKindOfClass:[NSDictionary class]]) return NO;
   for (NSString *key in @[@"pid", @"parentPid", @"uid", @"startedSeconds", @"startedMicroseconds", @"zombie"]) {
+    if (![left[key] isEqual:right[key]]) return NO;
+  }
+  return YES;
+}
+static BOOL sameGenerationIdentity(id left, id right) {
+  if (![left isKindOfClass:[NSDictionary class]] || ![right isKindOfClass:[NSDictionary class]]) return NO;
+  for (NSString *key in @[@"pid", @"parentPid", @"startedSeconds", @"startedMicroseconds", @"zombie"]) {
     if (![left[key] isEqual:right[key]]) return NO;
   }
   return YES;
@@ -85,10 +98,34 @@ static NSDictionary *readTask(pid_t pid) {
   }
   return @{@"count":@(count), @"errno":@(error), @"identity":identity, @"rssBytes":rss};
 }
-static NSDictionary *readRow(pid_t pid, NSDictionary *enumeratedIdentity, uint64_t deadline) {
+static NSDictionary *readBirth(pid_t pid) {
+  struct rusage_info_v0 value = {0};
+  uint64_t started = mach_absolute_time();
+  errno = 0;
+  int result = proc_pid_rusage(pid, RUSAGE_INFO_V0, (rusage_info_t *)&value);
+  int error = errno;
+  uint64_t ended = mach_absolute_time();
+  BOOL complete = result == 0 && error == 0;
+  return @{@"result":@(result), @"errno":@(error), @"startedAtTicks":precise(started), @"endedAtTicks":precise(ended), @"birthTicks":complete ? precise(value.ri_proc_start_abstime) : [NSNull null], @"exitTicks":complete ? precise(value.ri_proc_exit_abstime) : [NSNull null]};
+}
+static NSDictionary *readConfirmation(pid_t pid, uint64_t deadline) {
+  budget(deadline);
+  uint64_t started = mach_absolute_time();
+  NSDictionary *before = readIdentity(pid); budget(deadline);
+  NSDictionary *birthBefore = readBirth(pid); budget(deadline);
+  NSDictionary *pathBefore = readPath(pid); budget(deadline);
+  NSDictionary *pathAfter = readPath(pid); budget(deadline);
+  NSDictionary *birthAfter = readBirth(pid); budget(deadline);
+  NSDictionary *after = readIdentity(pid); budget(deadline);
+  return @{@"clockDomain":@"mach-absolute-ticks", @"startedAtTicks":precise(started), @"endedAtTicks":precise(mach_absolute_time()), @"before":before, @"birthBefore":birthBefore, @"pathBefore":pathBefore, @"pathAfter":pathAfter, @"birthAfter":birthAfter, @"after":after};
+}
+static NSDictionary *readRow(pid_t pid, NSDictionary *enumeratedIdentity, uint64_t deadline, BOOL confirmChanges) {
   budget(deadline);
   uint64_t started = nowNs();
+  uint64_t absoluteStarted = mach_absolute_time();
   NSDictionary *before = readIdentity(pid);
+  budget(deadline);
+  NSDictionary *birthBefore = readBirth(pid);
   budget(deadline);
   NSDictionary *pathBefore = readPath(pid);
   budget(deadline);
@@ -96,12 +133,21 @@ static NSDictionary *readRow(pid_t pid, NSDictionary *enumeratedIdentity, uint64
   budget(deadline);
   NSDictionary *pathAfter = readPath(pid);
   budget(deadline);
+  NSDictionary *birthAfter = readBirth(pid);
+  budget(deadline);
   NSDictionary *after = readIdentity(pid);
   budget(deadline);
-  return @{@"pid":@(pid), @"enumeratedIdentity":enumeratedIdentity, @"startedAtNanoseconds":precise(started), @"endedAtNanoseconds":precise(nowNs()), @"before":before, @"pathBefore":pathBefore, @"task":task, @"pathAfter":pathAfter, @"after":after};
+  NSDictionary *absolute = @{@"clockDomain":@"mach-absolute-ticks", @"startedAtTicks":precise(absoluteStarted), @"endedAtTicks":precise(mach_absolute_time()), @"birthBefore":birthBefore, @"birthAfter":birthAfter};
+  BOOL generationStable = sameGenerationIdentity(enumeratedIdentity, before[@"identity"]) && sameStableIdentity(before[@"identity"], task[@"identity"]) && sameStableIdentity(before[@"identity"], after[@"identity"]) && [before[@"identity"][@"zombie"] isEqual:@NO];
+  BOOL imagesAvailable = [pathBefore[@"executable"] isKindOfClass:[NSString class]] && [pathAfter[@"executable"] isKindOfClass:[NSString class]];
+  BOOL imageChanged = imagesAvailable && ![pathBefore[@"executable"] isEqual:pathAfter[@"executable"]];
+  BOOL credentialsChanged = generationStable && ![enumeratedIdentity[@"uid"] isEqual:before[@"identity"][@"uid"]];
+  id confirmation = confirmChanges && generationStable && imagesAvailable && (imageChanged || credentialsChanged) ? readConfirmation(pid, deadline) : [NSNull null];
+  return @{@"pid":@(pid), @"enumeratedIdentity":enumeratedIdentity, @"startedAtNanoseconds":precise(started), @"endedAtNanoseconds":precise(nowNs()), @"before":before, @"pathBefore":pathBefore, @"task":task, @"pathAfter":pathAfter, @"after":after, @"absolute":absolute, @"confirmation":confirmation};
 }
 static NSDictionary *frame(NSUInteger requestId, NSString *phase, uint64_t deadline) {
   uint64_t started = nowNs();
+  NSDictionary *startCalibration = calibrate();
   int mib[] = {CTL_KERN, KERN_PROC, KERN_PROC_ALL, 0};
   size_t bytes = 0;
   budget(deadline);
@@ -128,10 +174,12 @@ static NSDictionary *frame(NSUInteger requestId, NSString *phase, uint64_t deadl
       [identities addObject:kernelIdentity(&values[index])];
     }
     if (zeroCount > 1 || pids.count == 0 || pids.count > 100000) fail(@"Incomplete process enumeration.");
-    for (NSUInteger index = 0; index < pids.count; index++) [rows addObject:readRow([pids[index] intValue], identities[index], deadline)];
+    for (NSUInteger index = 0; index < pids.count; index++) [rows addObject:readRow([pids[index] intValue], identities[index], deadline, [phase isEqual:@"closure2"])];
     budget(deadline);
     NSDictionary *enumeration = @{@"startedAtNanoseconds":precise(enumerationStarted), @"endedAtNanoseconds":precise(enumerationEnded), @"complete":@YES, @"bytes":@(bytes), @"recordSize":@(sizeof(*values)), @"pidCount":@(pids.count), @"pids":pids, @"zeroPidCount":@(zeroCount)};
-    return @{@"protocol":@1, @"requestId":@(requestId), @"phase":phase, @"startedAtNanoseconds":precise(started), @"endedAtNanoseconds":precise(nowNs()), @"enumeration":enumeration, @"rows":rows};
+    NSDictionary *endCalibration = calibrate();
+    NSDictionary *absolute = @{@"clockDomain":@"mach-absolute-ticks", @"startedAtTicks":startCalibration[@"absoluteTicks"], @"endedAtTicks":endCalibration[@"absoluteTicks"], @"startCalibration":startCalibration, @"endCalibration":endCalibration};
+    return @{@"protocol":@1, @"requestId":@(requestId), @"phase":phase, @"startedAtNanoseconds":precise(started), @"endedAtNanoseconds":precise(nowNs()), @"enumeration":enumeration, @"rows":rows, @"absolute":absolute};
   } @finally {
     free(values);
   }
@@ -148,7 +196,10 @@ int main(void) {
       pid_t pid = getpid();
       NSDictionary *before = readIdentity(pid), *pathBefore = readPath(pid), *after = readIdentity(pid), *pathAfter = readPath(pid);
       if (!sameStableIdentity(before[@"identity"], after[@"identity"]) || pathBefore[@"executable"] == [NSNull null] || ![pathBefore[@"executable"] isEqual:pathAfter[@"executable"]]) fail(@"Cannot verify owned helper identity.");
-      sendInspectorResponse(@{@"protocol":@1, @"phase":@"ready", @"pid":@(pid), @"identity":before[@"identity"], @"executable":pathBefore[@"executable"], @"abi":@{@"recordSize":@(sizeof(struct kinfo_proc)), @"taskSize":@(sizeof(struct proc_taskallinfo)), @"pathMax":@(PROC_PIDPATHINFO_MAXSIZE), @"zombieStatus":@(SZOMB)}});
+      mach_timebase_info_data_t timebase;
+      if (mach_timebase_info(&timebase) != KERN_SUCCESS || timebase.numer == 0 || timebase.denom == 0) fail(@"Cannot read Mach absolute timebase.");
+      NSDictionary *absoluteClock = @{@"clockDomain":@"mach-absolute-ticks", @"timebaseNumerator":@(timebase.numer), @"timebaseDenominator":@(timebase.denom)};
+      sendInspectorResponse(@{@"protocol":@1, @"phase":@"ready", @"pid":@(pid), @"identity":before[@"identity"], @"executable":pathBefore[@"executable"], @"abi":@{@"recordSize":@(sizeof(struct kinfo_proc)), @"taskSize":@(sizeof(struct proc_taskallinfo)), @"pathMax":@(PROC_PIDPATHINFO_MAXSIZE), @"zombieStatus":@(SZOMB)}, @"absoluteClock":absoluteClock});
       NSArray *phases = @[@"prepare", @"anchor", @"closure1", @"closure2"];
       NSUInteger completed = 0;
       uint64_t deadline = UINT64_MAX;

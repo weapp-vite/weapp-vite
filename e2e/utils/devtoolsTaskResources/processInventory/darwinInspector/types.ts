@@ -32,6 +32,50 @@ export interface DarwinTaskObservation {
   rssBytes: string | null
 }
 
+export interface DarwinRusageObservation {
+  result: number
+  errno: number
+  startedAtTicks: string
+  endedAtTicks: string
+  birthTicks: string | null
+  exitTicks: string | null
+}
+
+export interface DarwinClockCalibration {
+  monotonicBeforeNanoseconds: string
+  absoluteTicks: string
+  monotonicAfterNanoseconds: string
+}
+
+export interface DarwinAbsoluteInterval {
+  clockDomain: 'mach-absolute-ticks'
+  startedAtTicks: string
+  endedAtTicks: string
+}
+
+export interface DarwinFrameAbsoluteEvidence extends DarwinAbsoluteInterval {
+  startCalibration: DarwinClockCalibration
+  endCalibration: DarwinClockCalibration
+}
+
+export interface DarwinProcessAbsoluteEvidence extends DarwinAbsoluteInterval {
+  birthBefore: DarwinRusageObservation
+  birthAfter: DarwinRusageObservation
+}
+
+export interface DarwinProcessConfirmation extends DarwinProcessAbsoluteEvidence {
+  before: DarwinIdentityObservation
+  pathBefore: DarwinPathObservation
+  pathAfter: DarwinPathObservation
+  after: DarwinIdentityObservation
+}
+
+export interface DarwinAbsoluteClock {
+  clockDomain: 'mach-absolute-ticks'
+  timebaseNumerator: number
+  timebaseDenominator: number
+}
+
 export type DarwinProcessGap = 'identity-before-unavailable' | 'identity-after-unavailable'
   | 'image-before-unavailable' | 'image-after-unavailable' | 'identity-changed'
   | 'enumeration-identity-changed' | 'image-changed' | 'rss-unavailable' | 'rss-identity-mismatch' | 'zombie'
@@ -46,6 +90,8 @@ export interface DarwinProcessEntry {
   task: DarwinTaskObservation
   pathAfter: DarwinPathObservation
   after: DarwinIdentityObservation
+  absolute?: DarwinProcessAbsoluteEvidence
+  confirmation?: DarwinProcessConfirmation | null
   gaps: DarwinProcessGap[]
 }
 
@@ -63,6 +109,7 @@ export interface DarwinInspectorReady {
   identity: DarwinProcessIdentity
   executable: string
   abi: DarwinInspectorAbi
+  absoluteClock?: DarwinAbsoluteClock
 }
 
 export interface DarwinProcessFrame {
@@ -71,6 +118,7 @@ export interface DarwinProcessFrame {
   phase: DarwinInspectorPhase
   startedAtNanoseconds: string
   endedAtNanoseconds: string
+  absolute?: DarwinFrameAbsoluteEvidence
   enumeration: {
     startedAtNanoseconds: string
     endedAtNanoseconds: string

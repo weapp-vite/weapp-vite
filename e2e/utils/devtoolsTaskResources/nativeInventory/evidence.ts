@@ -3,7 +3,9 @@ import type { NativeImageEvidence, NativeProcessFrameEvidence } from '../types'
 import type { metadata, NativeFrame } from './model'
 import { createHash } from 'node:crypto'
 import path from 'node:path'
+import { frameAbsoluteEvidence, processAbsoluteEvidence } from './absoluteEvidence'
 import { insideInstallation } from './model'
+import { sameCredentials } from './postAnchorBirth'
 
 /** 报告保留映像等价性和安装内相对路径，不扩大披露其他应用或临时目录。 */
 export function imageEvidence(image: string, installationRoot: string): NativeImageEvidence {
@@ -32,6 +34,7 @@ export function nativeFrameEvidence(frame: NativeFrame, installationRoot: string
     requestId: frame.wire.requestId,
     startedAtNanoseconds: frame.wire.startedAtNanoseconds,
     endedAtNanoseconds: frame.wire.endedAtNanoseconds,
+    ...(frame.wire.absolute ? { absolute: frameAbsoluteEvidence(frame.wire.absolute) } : {}),
     enumeratedPidCount: frame.wire.enumeration.pidCount,
     enumerationInterval: { startedAtNanoseconds: frame.wire.enumeration.startedAtNanoseconds, endedAtNanoseconds: frame.wire.enumeration.endedAtNanoseconds },
     ownedHelper: { identity: identityEvidence(frame.wire.ownedHelper.identity)!, image: imageEvidence(frame.wire.ownedHelper.executable, installationRoot) },
@@ -48,6 +51,25 @@ export function nativeFrameEvidence(frame: NativeFrame, installationRoot: string
       pathAfter: { count: entry.pathAfter.count, errno: entry.pathAfter.errno, image: entry.pathAfter.executable === null ? null : imageEvidence(entry.pathAfter.executable, installationRoot) },
       rss: { count: entry.task.count, errno: entry.task.errno, identity: identityEvidence(entry.task.identity), bytes: entry.task.rssBytes },
       gaps: [...entry.gaps],
+      ...(entry.absolute ? { absolute: processAbsoluteEvidence(entry.absolute) } : {}),
+      credentials: {
+        mainStable: sameCredentials(entry.before.identity, entry.task.identity) && sameCredentials(entry.before.identity, entry.after.identity),
+        enumerationMatchesMain: sameCredentials(entry.enumeratedIdentity, entry.before.identity),
+      },
+      ...(entry.confirmation === undefined
+        ? {}
+        : { confirmation: entry.confirmation === null
+            ? null
+            : {
+                absolute: processAbsoluteEvidence(entry.confirmation),
+                before: identityEvidence(entry.confirmation.before.identity),
+                after: identityEvidence(entry.confirmation.after.identity),
+                beforeQuery: { result: entry.confirmation.before.result, length: entry.confirmation.before.length, errno: entry.confirmation.before.errno },
+                afterQuery: { result: entry.confirmation.after.result, length: entry.confirmation.after.length, errno: entry.confirmation.after.errno },
+                pathBefore: { count: entry.confirmation.pathBefore.count, errno: entry.confirmation.pathBefore.errno, image: entry.confirmation.pathBefore.executable === null ? null : imageEvidence(entry.confirmation.pathBefore.executable, installationRoot) },
+                pathAfter: { count: entry.confirmation.pathAfter.count, errno: entry.confirmation.pathAfter.errno, image: entry.confirmation.pathAfter.executable === null ? null : imageEvidence(entry.confirmation.pathAfter.executable, installationRoot) },
+                credentialsStable: sameCredentials(entry.before.identity, entry.confirmation.before.identity) && sameCredentials(entry.before.identity, entry.confirmation.after.identity),
+              } }),
     })),
   }
 }

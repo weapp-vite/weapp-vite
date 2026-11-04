@@ -95,7 +95,8 @@ export function createNativeInventory(installationRoot: string) {
 
   function rememberSelected(frame: NativeFrame) {
     for (const row of frame.rows.values()) {
-      const observedPaths = [row.entry.pathBefore.executable, row.entry.pathAfter.executable, ...(row.images ?? [])]
+      const confirmation = row.entry.confirmation
+      const observedPaths = [row.entry.pathBefore.executable, row.entry.pathAfter.executable, ...(row.images ?? []), confirmation?.pathBefore.executable, confirmation?.pathAfter.executable]
       if (observedPaths.some(image => image && insideInstallation(installationRoot, image))) {
         selectedSeen.set(row.pid, row)
       }
@@ -104,7 +105,8 @@ export function createNativeInventory(installationRoot: string) {
     while (added) {
       added = false
       for (const row of frame.rows.values()) {
-        if (!selectedSeen.has(row.pid) && row.identity && selectedSeen.has(row.identity.parentPid)) {
+        const parents = [row.identity?.parentPid, row.entry.confirmation?.before.identity?.parentPid, row.entry.confirmation?.after.identity?.parentPid]
+        if (!selectedSeen.has(row.pid) && parents.some(pid => pid !== undefined && selectedSeen.has(pid))) {
           selectedSeen.set(row.pid, row)
           added = true
         }

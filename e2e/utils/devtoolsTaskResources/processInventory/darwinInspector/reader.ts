@@ -36,6 +36,7 @@ export async function withDarwinInspector<T>(deadline: number, consume: (reader:
   let requesting = false
   let phaseIndex = 0
   let lastEnd = 0n
+  let lastAbsoluteEnd = 0n
   try {
     if (!owner.pid) {
       throw new Error('Darwin inspector did not return an owned child PID.')
@@ -62,7 +63,11 @@ export async function withDarwinInspector<T>(deadline: number, consume: (reader:
           if (BigInt(frame.startedAtNanoseconds) < lastEnd) {
             throw new Error('Darwin inspector returned an old frame interval.')
           }
+          if (frame.absolute && BigInt(frame.absolute.startedAtTicks) < lastAbsoluteEnd) {
+            throw new Error('Darwin inspector returned an old absolute frame interval.')
+          }
           lastEnd = BigInt(frame.endedAtNanoseconds)
+          lastAbsoluteEnd = frame.absolute ? BigInt(frame.absolute.endedAtTicks) : 0n
           lines.assertComplete()
           phaseIndex++
           return frame

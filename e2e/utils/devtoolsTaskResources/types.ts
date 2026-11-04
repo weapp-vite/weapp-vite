@@ -1,6 +1,9 @@
 import type { ManagedWechatProjectRecord } from '../../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/types'
 import type { ResolvedWechatDevtoolsTarget } from '../../../packages/weapp-ide-cli/src/devtoolsTarget'
 import type { DevtoolsHostExitEvidence, DevtoolsHostSnapshot } from '../devtoolsHostLifecycle'
+import type { NativeAbsoluteFrameEvidence, NativeAbsoluteRowEvidence, VerifiedPostAnchorForeignProcess } from './nativeEvidenceTypes'
+
+export type { VerifiedPostAnchorForeignProcess } from './nativeEvidenceTypes'
 
 export type ResourceObservation<T> = { status: 'observed', value: T } | { status: 'unavailable', reason: string }
 export type TaskResourcePhase = 'before-task' | 'before-cleanup' | 'after-cleanup'
@@ -99,7 +102,7 @@ export interface VerifiedTerminalProcess {
   semantics: 'terminated-task-without-executable-or-rss; no-ownership-inference'
 }
 
-export interface NativeProcessFrameEvidence {
+export interface NativeProcessFrameEvidence extends NativeAbsoluteFrameEvidence {
   phase: 'prepare' | 'anchor' | 'closure1' | 'closure2'
   requestId: number
   startedAtNanoseconds: string
@@ -107,7 +110,7 @@ export interface NativeProcessFrameEvidence {
   enumeratedPidCount: number
   enumerationInterval: { startedAtNanoseconds: string, endedAtNanoseconds: string }
   ownedHelper: { identity: ProcessIdentityMetadata, image: NativeImageEvidence }
-  rows: Array<{
+  rows: Array<NativeAbsoluteRowEvidence & {
     pid: number
     enumeratedIdentity: ProcessIdentityMetadata
     enumerationIdentityChange: { from: ProcessIdentityMetadata, to: ProcessIdentityMetadata, position: 'before' | 'task' | 'after' } | null
@@ -146,6 +149,7 @@ export interface InstallationProcessSample {
   installationRoot: string
   verifiedMemberRssBytes: number
   installationRssBytes: ResourceObservation<number>
+  closureOwnership: ResourceObservation<'verified'>
   processes: Array<{ pid: number, parentPid: number, started: string, startedSeconds?: string | null, startedMicroseconds?: string | null, executable: string | null, installationImages: string[], rssBytes: number, membership: 'installation-image' | 'descendant' }>
   unclassifiedProcessCount: number
   missingIdentityCount: number
@@ -157,6 +161,8 @@ export interface InstallationProcessSample {
   verifiedForeignImageTransitions: VerifiedForeignImageTransition[]
   verifiedForeignNativeExecCount: number
   verifiedForeignNativeExecs: VerifiedForeignNativeExec[]
+  verifiedPostAnchorForeignProcessCount?: number
+  verifiedPostAnchorForeignProcesses?: VerifiedPostAnchorForeignProcess[]
   verifiedTerminalProcessCount?: number
   verifiedTerminalProcesses?: VerifiedTerminalProcess[]
   newProcesses: NewProcessObservation[]

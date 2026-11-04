@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createDarwinInspectorFixture, fixturePrepared } from './fixture'
+import { createDarwinInspectorFixture, fixtureAbsoluteFrame, fixtureAbsoluteReady, fixturePrepared } from './fixture'
 import { withDarwinInspector } from './reader'
 
 const mocks = vi.hoisted(() => ({ execute: vi.fn(), verify: vi.fn() }))
@@ -103,5 +103,26 @@ describe('owned Darwin inspector lifecycle', () => {
     expect(fixture.events).toContain('exit')
     expect(fixture.requests).toHaveLength(0)
     expect(mocks.execute).toHaveBeenCalledTimes(1)
+  })
+  it('rejects a regressing absolute frame despite increasing monotonic nanoseconds', async () => {
+    const fixture = createDarwinInspectorFixture({
+      ready: JSON.stringify(fixtureAbsoluteReady),
+      response(legacy) {
+        const frame = fixtureAbsoluteFrame(legacy.requestId)
+        if (legacy.requestId === 2) {
+          const ticks = String(BigInt(fixtureAbsoluteFrame(1).absolute!.endedAtTicks) - 1n)
+          frame.absolute!.startedAtTicks = ticks
+          frame.absolute!.startCalibration.absoluteTicks = ticks
+        }
+        return JSON.stringify(frame)
+      },
+    })
+    mocks.execute.mockReturnValue(fixture.child)
+    await expect(withDarwinInspector(Date.now() + 10_000, async (reader) => {
+      await reader.readFrame('prepare')
+      await reader.readFrame('anchor')
+    }, fixturePrepared)).rejects.toThrow(/old absolute frame interval/)
+    expect(fixture.requests).toHaveLength(2)
+    expect(fixture.owner.exitCode).not.toBeNull()
   })
 })
