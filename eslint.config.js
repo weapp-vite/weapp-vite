@@ -45,6 +45,8 @@ export default await defineEslintConfig({
       '!packages/weapp-vite/src/cli/commands/build/',
       '!packages/weapp-vite/src/cli/commands/build/**',
       '**/coverage/**',
+      '!scripts/templateCorpus/coverage/',
+      '!scripts/templateCorpus/coverage/**',
       '**/miniprogram_npm/**',
       '**/.vite/**',
       '**/.vite-inspect/**',

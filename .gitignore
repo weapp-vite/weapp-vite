@@ -20,6 +20,11 @@ packages/weapp-vite/test/fixtures/asset/src/typed-router.d.ts
 
 # testing
 coverage
+# 覆盖率验收工具与冻结证据属于源码交付，不能被报告目录规则排除。
+!scripts/templateCorpus/coverage/
+!scripts/templateCorpus/coverage/**
+!packages/wxml/test/corpus/validation/reports/coverage/
+!packages/wxml/test/corpus/validation/reports/coverage/**
 
 # Derived DOM coverage reports: generate locally / upload in CI, never commit.
 /e2e/dom-acceptance-inventory.json
