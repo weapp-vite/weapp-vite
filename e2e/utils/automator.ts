@@ -2816,9 +2816,10 @@ async function connectAutomatorViaCliBridge(
   if (process.env[MANAGED_PROJECT_JOURNAL_ENV] && !bridgeResult.managedProject) {
     throw new Error('Managed automator bridge did not return project ownership evidence')
   }
-  const closeProject = bridgeResult.managedProject
+  // 同次启动的会话、失败恢复和最终收尾共用一个 owner，正常关闭后不再遗留 journal 回调。
+  const closeProject = cleanupAttempt ?? (bridgeResult.managedProject
     ? ownDevtoolsCleanup(() => closeManagedWechatProject(bridgeResult.managedProject!))
-    : cleanupAttempt
+    : undefined)
   if (closeProject) {
     lifecycle.own(closeProject, 'project-window')
   }
