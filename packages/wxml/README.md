@@ -2,7 +2,9 @@
 
 保留源码的小程序模板 parser 与 serializer。核心在 Node 和浏览器中运行，不依赖 DOM、文件系统或 JavaScript AST parser。
 
-后续预览通过仓库共享的 `Release`（`release.yml`）单包 bootstrap 入口与 GitHub Actions OIDC 发布到 `alpha`，安装使用 `npm install @weapp-vite/wxml@alpha`；需要固定复现时安装精确版本。npm 初始化产生的 `0.0.0-stage` 只是占位版本；正式版继续使用仓库 changeset 发布流程。维护者入口见[单包 bootstrap](https://github.com/weapp-vite/weapp-vite/blob/main/docs/repoctl-release.md#单包-bootstrap)，首版 `0.1.0-alpha.0` 的独立上传与补验证据见[历史记录](https://github.com/weapp-vite/weapp-vite/blob/main/docs/repoctl-release.md#wxml-首版记录)。
+`0.1.0-alpha.1` 已通过共享 `Release`（`release.yml`）单包 bootstrap 与 GitHub Actions OIDC 发布，registry 确认、原 tarball 核对、隔离入口与严格类型检查、npm 签名验证全部通过。安装使用 `npm install @weapp-vite/wxml@alpha`，固定复现使用 `npm install @weapp-vite/wxml@0.1.0-alpha.1`。`alpha` 指向 alpha.1，`latest` 保持 alpha.0；正式版继续使用仓库 changeset 发布流程。
+
+维护者入口见[单包 bootstrap](https://github.com/weapp-vite/weapp-vite/blob/main/docs/repoctl-release.md#单包-bootstrap)，本次真实发布及来源见[通用入口验收](https://github.com/weapp-vite/weapp-vite/blob/main/docs/repoctl-release.md#通用入口验收)。首版 alpha.0 的确认超时与只读补验证据保留在[历史记录](https://github.com/weapp-vite/weapp-vite/blob/main/docs/repoctl-release.md#wxml-首版记录)。专用 workflow、辅助脚本和旧 npm Trusted Publisher 均已移除，回读确认仅保留状态为 `Valid` 的 `release.yml` 连接；npm 初始化的 `0.0.0-stage` 仅为占位版本。
 
 ```ts
 import { edit, parse, serialize, walk } from '@weapp-vite/wxml'

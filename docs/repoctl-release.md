@@ -35,11 +35,11 @@ finalize 成功产生真实 release completion record 后，`main` 才能触发 
 
 npm 显示 `Pending` 或“尚未验证”时，须在页面给出的首次发布期限前，由该配置对应的 workflow 完成一次真实发布。按 npm 当前策略，未验证配置通常在创建后 48 小时过期；以页面显示的具体截止时间为准。OIDC 凭据交换成功只证明当前权限，不满足首次发布要求，也不会重置计时；编辑配置同样不延长期限。只有 npm 明确显示 `Expired` 时，才通过正常设置流程删除并重新建立该连接，再在新期限内完成发布，不从单次 HTTP 404 推断过期。
 
-以 WXML 的下一预览版为例，先只读检查冻结计划，再执行发布：
+以下 `0.1.0-alpha.2` 仅演示尚未发布版本的参数，执行前须确认 registry 中不存在该版本。`0.1.0-alpha.1` 已完成发布验收，不能重复上传；已有运行失败时使用下文的只读恢复，不递增版本掩盖失败。
 
 ```sh
-gh workflow run release.yml --ref main -f mode=bootstrap -f package=@weapp-vite/wxml -f version=0.1.0-alpha.1 -f tag=alpha -F dry-run=true
-gh workflow run release.yml --ref main -f mode=bootstrap -f package=@weapp-vite/wxml -f version=0.1.0-alpha.1 -f tag=alpha
+gh workflow run release.yml --ref main -f mode=bootstrap -f package=@weapp-vite/wxml -f version=0.1.0-alpha.2 -f tag=alpha -F dry-run=true
+gh workflow run release.yml --ref main -f mode=bootstrap -f package=@weapp-vite/wxml -f version=0.1.0-alpha.2 -f tag=alpha
 ```
 
 `dry-run=true` 只生成计划，不准备隔离候选源码、不安装其依赖，也不构建目标包、打包或上传；工作流仍会安装运行工具所需的依赖。正式执行分为三个独立 job：
@@ -60,7 +60,21 @@ gh workflow run release.yml --ref main -f mode=bootstrap -f package=@weapp-vite/
 
 `@weapp-vite/wxml@0.1.0-alpha.0` 由已停用的专用 `wxml-preview.yml` 发布。[原上传运行 41757443404](https://github.com/weapp-vite/weapp-vite/actions/runs/41757443404) 的 OIDC 上传成功，但 registry 传播期间后置确认超时，原运行保留失败状态。[只读补验运行 41759065114](https://github.com/weapp-vite/weapp-vite/actions/runs/41759065114) 已核对原 tarball 完整性、registry、隔离 consumer 与 npm 签名，完成该版本的发布验收。npm 首次真实发布将 `latest` 从占位版指向该 alpha，补验记录保留了这一初始化变化。
 
-本次仓库迁移将移除专用 workflow 和 `scripts/wxmlPreview`。必须等共享 `release.yml` 完成 `0.1.0-alpha.1` 的真实发布、registry 确认和隔离消费验收后，才在 npm 设置中删除已退役 workflow 的 Trusted Publisher，并回读核对清理结果。此前保留旧连接，不提前记为已清理。以上记录只证明 alpha.0 通过旧入口完成验收，不证明通用 bootstrap 已完成真实发布。旧产物格式与来源身份不属于通用 bootstrap 合同，不能把这两个历史编号传给新入口的 `verify-run-id`。
+专用 workflow 和 `scripts/wxmlPreview` 已移除，alpha.0 的原始失败与补验证据继续保留。旧产物格式与来源身份不属于通用 bootstrap 合同，不能把这两个历史编号传给新入口的 `verify-run-id`。
+
+### 通用入口验收
+
+上游功能 [#1130](https://github.com/icelib/repoctl/pull/1130)、修复 [#1131](https://github.com/icelib/repoctl/pull/1131) 和版本准备 [#1132](https://github.com/icelib/repoctl/pull/1132) 均已合并。[正式 Release 41791559212](https://github.com/icelib/repoctl/actions/runs/41791559212) 全部成功，从来源提交 [`5b3e1867`](https://github.com/icelib/repoctl/commit/5b3e1867b16cd40c77197cb4e3369aaa227bd0b7) 发布 `repoctl@6.4.0`、`@icebreakers/monorepo@6.4.0` 和 `@icebreakers/monorepo-templates@3.2.0`。本仓库在 [`f7d2c27d`](https://github.com/weapp-vite/weapp-vite/commit/f7d2c27d271f0c961d4cf344c7e920996bab3470) 升级精确依赖与锁文件，通过正式工具原生生成 Release 基线、snapshot 配对工作流和自动 changeset 入口。
+
+[只读计划 41795816717](https://github.com/weapp-vite/weapp-vite/actions/runs/41795816717) 成功后，通用 `release.yml` 的 [41796250326](https://github.com/weapp-vite/weapp-vite/actions/runs/41796250326) 从同一冻结提交 `f7d2c27d` 发布 `@weapp-vite/wxml@0.1.0-alpha.1`，prepare、publish、verify 三个 job 全部成功。OIDC 真实上传已 accepted，registry 已 confirmed，独立消费已 verified：
+
+- registry tarball 与准备阶段的原 tarball 一致，完整性为 `sha512-3SzeEmEmZFrF/VyUxDK7FR/2gRgKjmlZGygp+DjXCUpPkKvt81JkF3xgoIN6XT+/45mDX5XNXGVVEBrKNrwNGg==`。
+- 隔离安装的 npm 签名检查（5 个包、2 份 attestations）、公开入口实际 import 与严格类型检查均以退出码 0 完成。
+- `alpha` 更新为 `0.1.0-alpha.1`，`latest` 保持 `0.1.0-alpha.0`，nightly tag 保持原值；`bootstrapPromoted=false`，未再次使用首次发布的占位标签提升例外。
+
+通用入口已完成真实 OIDC 发布、registry 确认和隔离消费验收。已通过 npm 正常流程删除退役的 `wxml-preview.yml` Trusted Publisher；npm 确认删除成功，回读列表仅保留仓库 `weapp-vite/weapp-vite` 的 `release.yml` 连接，状态为 `Valid`。
+
+本仓库的自动正式 [Release 41795628059](https://github.com/weapp-vite/weapp-vite/actions/runs/41795628059) 与升级前 [41773871052](https://github.com/weapp-vite/weapp-vite/actions/runs/41773871052) 均因同一历史 46 包 prepared 批次仍绑定来源 `ad7ffa` 而被来源保护拒绝，保留失败状态。本次 bootstrap 只发布指定 WXML 包，未扩大发布范围或改写该历史批次。
 
 ## 自动 changeset
 
