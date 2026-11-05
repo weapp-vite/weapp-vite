@@ -97,11 +97,17 @@ it('keeps formal template source acceptance in the dedicated coverage entry whil
   const config = loaded!.config as { root: string, test: { include: string[], coverage: { include: string[], thresholds: Record<string, number> } } }
   const included = await glob(config.test.include, { cwd: config.root })
   expect(included.map(file => path.relative(cwd, path.resolve(config.root, file)).replaceAll('\\', '/'))).toContain(sourceAcceptance)
+  expect(config.test.include).toContain('src/**/*.test.ts')
   expect(config.test.coverage.include).toEqual(['src/**/*.ts'])
   expect(config.test.coverage.thresholds).toEqual({ statements: 100, functions: 100, lines: 100, branches: 99 })
 
   const manifest = JSON.parse(await readFile(path.join(packageRoot, 'package.json'), 'utf8')) as { scripts: Record<string, string> }
+  expect(manifest.scripts['test:acceptance']).toBe('node --import tsx ../../scripts/templateCorpus/verify.ts --suite all')
+  expect(manifest.scripts['test:corpus']).toBe('node --import tsx ../../scripts/templateCorpus/verify.ts --suite corpus')
+  expect(manifest.scripts['test:fuzz']).toBe('node --import tsx ../../scripts/templateCorpus/verify.ts --suite fuzz')
   expect(manifest.scripts['test:coverage']).toBe('node --import tsx ../../scripts/templateCorpus/coverage/run.ts')
+  expect(manifest.scripts['bench:regression']).toBe('node --stack-size=4096 --expose-gc --import tsx ../../scripts/templateCorpus/benchmark/regression.ts --quick')
+  expect(manifest.scripts['bench:regression:check']).toBe('node --stack-size=4096 --expose-gc --import tsx ../../scripts/templateCorpus/benchmark/regression.ts --check')
 })
 
 it('classifies real Vite and benchmark shutdown contracts without removing root or coverage discovery', async () => {

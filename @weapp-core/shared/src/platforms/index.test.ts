@@ -42,6 +42,15 @@ describe('mini program platform registry', () => {
     expect(getMiniProgramPlatformDescriptor('tt').outputExtensions.wxs).toBe('sjs')
   })
 
+  it('preserves unprofiled and platform script fallback differences for unknown extensions', () => {
+    expect(getMiniProgramScriptModuleOptions(undefined, '.sjs')).toEqual({ tag: 'sjs', format: 'esm', sourceAttribute: 'src', moduleAttribute: 'module' })
+    expect(getMiniProgramScriptModuleOptions('weapp', '.sjs')).toEqual({ tag: 'sjs', format: 'commonjs', sourceAttribute: 'src', moduleAttribute: 'module' })
+    expect(getMiniProgramScriptModuleOptions()).toEqual({ tag: 'wxs', format: 'commonjs', sourceAttribute: 'src', moduleAttribute: 'module' })
+    expect(getMiniProgramScriptModuleOptions(undefined, 'unknown')).toEqual({ tag: 'wxs', format: 'commonjs', sourceAttribute: 'src', moduleAttribute: 'module' })
+    expect(getMiniProgramScriptModuleOptions('alipay', 'unknown')).toEqual({ tag: 'wxs', format: 'esm', sourceAttribute: 'from', moduleAttribute: 'name' })
+    expect(getMiniProgramScriptModuleOptions('swan', 'unknown')).toEqual({ tag: 'wxs', format: 'esm', sourceAttribute: 'src', moduleAttribute: 'module' })
+  })
+
   it('normalizes and resolves platform aliases', () => {
     expect(normalizeMiniProgramPlatform('  WeChat  ')).toBe('wechat')
     expect(normalizeMiniProgramPlatform('')).toBeUndefined()

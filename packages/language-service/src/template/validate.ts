@@ -1,9 +1,9 @@
-import type { Syntax } from '@weapp-vite/wxml'
+import type { Syntax } from '@weapp-vite/wxml/core'
 import type { LanguageProfile } from '../profiles'
 import type { Diagnostic } from '../types'
 import type { TemplateAttribute, TemplateTag, TemplateToken } from './types'
 import { parse } from '@weapp-vite/ast'
-import { decodeAttribute } from '@weapp-vite/wxml'
+import { decodeAttribute } from '@weapp-vite/wxml/core'
 import { visitTemplateExpressions } from './expressions'
 import { validateScriptModules } from './modules'
 

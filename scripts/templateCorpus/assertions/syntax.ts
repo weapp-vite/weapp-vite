@@ -8,8 +8,8 @@ const directives: Record<string, [string, string, string]> = {
   alipay: ['a:if', 'a:for', 'onTap'],
   swan: ['s-if', 's-for', 'bindtap'],
   tt: ['tt:if', 'tt:for', 'bindtap'],
-  jd: ['jd:if', 'jd:for', 'bindtap'],
-  xhs: ['xhs:if', 'xhs:for', 'bindtap'],
+  jd: ['wx:if', 'wx:for', 'bindtap'],
+  xhs: ['wx:if', 'wx:for', 'bindtap'],
   qq: ['qq:if', 'qq:for', 'bindtap'],
   ks: ['ks:if', 'ks:for', 'bindtap'],
   ty: ['ty:if', 'ty:for', 'bindtap'],
@@ -34,8 +34,13 @@ export function syntaxCases(profile: CorpusProfile): SyntaxCase[] {
     { name: 'diagnostic-attribute', source: '<view title="unterminated', expectation: 'invalid', diagnosticCodes: ['template/invalid-syntax'] },
   ]
   for (const tag of profile.rawTags) {
-    cases.push({ name: `raw-${tag}-pseudo-markup`, source: `<${tag} module="test">const fake="</${tag}><fake/>"; const regexp=/<fake[>]/; module.exports={};</${tag}><view/>`, expectation: 'valid' })
-    cases.push({ name: `raw-${tag}-external-module`, source: `<${tag} module="test" src="./module.js"/><view/>`, expectation: 'valid' })
+    const alipayImport = profile.platform === 'alipay' && tag === 'import-sjs'
+    const moduleAttribute = alipayImport ? 'name' : 'module'
+    const sourceAttribute = alipayImport ? 'from' : 'src'
+    const scriptExtension = alipayImport ? 'sjs' : 'js'
+    const scriptExport = alipayImport ? 'export default {};' : 'module.exports={};'
+    cases.push({ name: `raw-${tag}-pseudo-markup`, source: `<${tag} ${moduleAttribute}="test">const fake="</${tag}><fake/>"; const regexp=/<fake[>]/; ${scriptExport}</${tag}><view/>`, expectation: 'valid' })
+    cases.push({ name: `raw-${tag}-external-module`, source: `<${tag} ${moduleAttribute}="test" ${sourceAttribute}="./module.${scriptExtension}"/><view/>`, expectation: 'valid' })
   }
   cases.push({ name: 'custom-component-is-not-script', source: '<custom-script><view/></custom-script>', expectation: 'valid' })
   return cases

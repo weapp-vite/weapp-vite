@@ -1,6 +1,6 @@
-import type { Syntax } from '@weapp-vite/wxml'
+import type { Syntax } from '@weapp-vite/wxml/core'
 import type { TemplateExpression, TemplateToken } from './types'
-import { expressionEnd } from '@weapp-vite/wxml'
+import { expressionEnd } from '@weapp-vite/wxml/core'
 import { scanTemplate } from './scanner'
 
 /** 沿用已扫描的 token 与方言；属性引号仅供内部语义校验使用。 */

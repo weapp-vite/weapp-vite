@@ -1,6 +1,8 @@
 import type { MiniProgramPlatformDescriptor } from './types'
+import { alipay, jd, swan, tt, weapp, xhs } from '@weapp-vite/wxml/presets'
 import { ALIPAY_RUNTIME_DESCRIPTOR, JD_RUNTIME_DESCRIPTOR, SWAN_RUNTIME_DESCRIPTOR, TT_RUNTIME_DESCRIPTOR, WEAPP_RUNTIME_DESCRIPTOR, XHS_RUNTIME_DESCRIPTOR } from './runtime/descriptors'
 import { MINI_PROGRAM_DIRECTIVE_PREFIXES } from './runtime/template'
+import { templateNativeScriptModules, templateOutputExtensions, templateScriptOptions } from './template'
 
 const DEFAULT_PROJECT_CONFIG_ROOT_KEYS = ['miniprogramRoot', 'srcMiniprogramRoot'] as const
 /**
@@ -12,13 +14,7 @@ export const MINI_PROGRAM_PLATFORM_DESCRIPTORS: readonly MiniProgramPlatformDesc
     displayName: 'WeChat Mini Program',
     family: 'wechat',
     aliases: WEAPP_RUNTIME_DESCRIPTOR.aliases,
-    outputExtensions: {
-      js: 'js',
-      json: 'json',
-      wxml: 'wxml',
-      wxss: 'wxss',
-      wxs: 'wxs',
-    },
+    outputExtensions: templateOutputExtensions(weapp),
     projectConfigFileName: 'project.config.json',
     projectConfigRootKeys: DEFAULT_PROJECT_CONFIG_ROOT_KEYS,
     ide: {},
@@ -32,7 +28,7 @@ export const MINI_PROGRAM_PLATFORM_DESCRIPTORS: readonly MiniProgramPlatformDesc
       distDirName: () => 'miniprogram_npm',
     },
     wxml: {
-      eventBindingStyle: 'default',
+      eventBindingStyle: weapp.eventStyle,
       directivePrefix: MINI_PROGRAM_DIRECTIVE_PREFIXES.weapp,
     },
     compiler: {
@@ -48,19 +44,13 @@ export const MINI_PROGRAM_PLATFORM_DESCRIPTORS: readonly MiniProgramPlatformDesc
     displayName: 'Alipay Mini Program',
     family: 'alipay',
     aliases: ALIPAY_RUNTIME_DESCRIPTOR.aliases,
-    outputExtensions: {
-      js: 'js',
-      json: 'json',
-      wxml: 'axml',
-      wxss: 'acss',
-      wxs: 'sjs',
-    },
+    outputExtensions: templateOutputExtensions(alipay),
     projectConfigFileName: 'mini.project.json',
     projectConfigRootKeys: DEFAULT_PROJECT_CONFIG_ROOT_KEYS,
     scriptModuleTagByExtension: {
-      sjs: 'import-sjs',
+      [alipay.portableScriptModule.extension]: alipay.portableScriptModule.tag,
     },
-    scriptModule: { format: 'esm', sourceAttribute: 'from', moduleAttribute: 'name' },
+    scriptModule: templateScriptOptions(alipay),
     usesProjectRootNpmDir: true,
     ide: {
       requiresOpenPlatformArg: true,
@@ -85,7 +75,7 @@ export const MINI_PROGRAM_PLATFORM_DESCRIPTORS: readonly MiniProgramPlatformDesc
       shouldRebuildCachedPackage: true,
     },
     wxml: {
-      eventBindingStyle: 'alipay',
+      eventBindingStyle: alipay.eventStyle,
       directivePrefix: MINI_PROGRAM_DIRECTIVE_PREFIXES.alipay,
       normalizeComponentTagName: true,
       normalizeVueTemplate: true,
@@ -104,15 +94,9 @@ export const MINI_PROGRAM_PLATFORM_DESCRIPTORS: readonly MiniProgramPlatformDesc
     displayName: 'Baidu Smart Program',
     family: 'swan',
     aliases: SWAN_RUNTIME_DESCRIPTOR.aliases,
-    outputExtensions: {
-      js: 'js',
-      json: 'json',
-      wxml: 'swan',
-      wxss: 'css',
-      wxs: 'sjs',
-    },
-    scriptModuleTagByExtension: { sjs: 'import-sjs' },
-    scriptModule: { format: 'esm', sourceAttribute: 'src', moduleAttribute: 'module' },
+    outputExtensions: templateOutputExtensions(swan),
+    scriptModuleTagByExtension: { [swan.portableScriptModule.extension]: swan.portableScriptModule.tag },
+    scriptModule: templateScriptOptions(swan),
     projectConfigFileName: 'project.swan.json',
     projectConfigRootKeys: ['smartProgramRoot', ...DEFAULT_PROJECT_CONFIG_ROOT_KEYS],
     ide: {},
@@ -125,7 +109,7 @@ export const MINI_PROGRAM_PLATFORM_DESCRIPTORS: readonly MiniProgramPlatformDesc
       distDirName: () => 'miniprogram_npm',
     },
     wxml: {
-      eventBindingStyle: 'default',
+      eventBindingStyle: swan.eventStyle,
       directivePrefix: MINI_PROGRAM_DIRECTIVE_PREFIXES.swan,
     },
     compiler: {
@@ -141,14 +125,8 @@ export const MINI_PROGRAM_PLATFORM_DESCRIPTORS: readonly MiniProgramPlatformDesc
     displayName: 'ByteDance / Douyin Mini Program',
     family: 'tt',
     aliases: TT_RUNTIME_DESCRIPTOR.aliases,
-    outputExtensions: {
-      js: 'js',
-      json: 'json',
-      wxml: 'ttml',
-      wxss: 'ttss',
-      wxs: 'sjs',
-    },
-    scriptModule: { format: 'commonjs', sourceAttribute: 'src', moduleAttribute: 'module' },
+    outputExtensions: templateOutputExtensions(tt),
+    scriptModule: templateScriptOptions(tt),
     projectConfigFileName: 'project.config.json',
     projectConfigRootKeys: DEFAULT_PROJECT_CONFIG_ROOT_KEYS,
     ide: {},
@@ -165,7 +143,7 @@ export const MINI_PROGRAM_PLATFORM_DESCRIPTORS: readonly MiniProgramPlatformDesc
       normalizeImportPath: true,
     },
     wxml: {
-      eventBindingStyle: 'default',
+      eventBindingStyle: tt.eventStyle,
       directivePrefix: MINI_PROGRAM_DIRECTIVE_PREFIXES.tt,
       normalizeComponentTagName: true,
     },
@@ -182,16 +160,10 @@ export const MINI_PROGRAM_PLATFORM_DESCRIPTORS: readonly MiniProgramPlatformDesc
     displayName: 'JD Mini Program',
     family: 'wechat',
     aliases: JD_RUNTIME_DESCRIPTOR.aliases,
-    outputExtensions: {
-      js: 'js',
-      json: 'json',
-      wxml: 'jxml',
-      wxss: 'jxss',
-      wxs: 'wxs',
-    },
+    outputExtensions: templateOutputExtensions(jd),
     projectConfigFileName: 'project.config.json',
     projectConfigRootKeys: DEFAULT_PROJECT_CONFIG_ROOT_KEYS,
-    nativeScriptModules: [{ extension: 'jds', tag: 'jds', format: 'commonjs', sourceAttribute: 'src', moduleAttribute: 'module' }],
+    nativeScriptModules: templateNativeScriptModules(jd),
     ide: {},
     build: {
       autoTouchAppStyle: false,
@@ -202,7 +174,7 @@ export const MINI_PROGRAM_PLATFORM_DESCRIPTORS: readonly MiniProgramPlatformDesc
       distDirName: () => 'miniprogram_npm',
     },
     wxml: {
-      eventBindingStyle: 'default',
+      eventBindingStyle: jd.eventStyle,
       directivePrefix: MINI_PROGRAM_DIRECTIVE_PREFIXES.jd,
     },
     compiler: {
@@ -218,13 +190,7 @@ export const MINI_PROGRAM_PLATFORM_DESCRIPTORS: readonly MiniProgramPlatformDesc
     displayName: 'Xiaohongshu Mini Program',
     family: 'wechat',
     aliases: XHS_RUNTIME_DESCRIPTOR.aliases,
-    outputExtensions: {
-      js: 'js',
-      json: 'json',
-      wxml: 'xhsml',
-      wxss: 'css',
-      wxs: 'wxs',
-    },
+    outputExtensions: templateOutputExtensions(xhs),
     projectConfigFileName: 'project.config.json',
     projectConfigRootKeys: DEFAULT_PROJECT_CONFIG_ROOT_KEYS,
     ide: {},
@@ -237,7 +203,7 @@ export const MINI_PROGRAM_PLATFORM_DESCRIPTORS: readonly MiniProgramPlatformDesc
       distDirName: () => 'miniprogram_npm',
     },
     wxml: {
-      eventBindingStyle: 'default',
+      eventBindingStyle: xhs.eventStyle,
       directivePrefix: MINI_PROGRAM_DIRECTIVE_PREFIXES.xhs,
     },
     compiler: {

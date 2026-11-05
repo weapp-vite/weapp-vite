@@ -1,4 +1,4 @@
-import { expressionEnd, TemplateLexicalError } from '@weapp-vite/wxml'
+import { expressionEnd, TemplateLexicalError } from '@weapp-vite/wxml/core'
 
 /** 共享词法边界，保留历史上不完整绑定按字面量显示、闭合但无效表达式交给求值层的行为。 */
 export function templateInterpolations(source: string) {

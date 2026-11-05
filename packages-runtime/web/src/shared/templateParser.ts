@@ -1,7 +1,7 @@
-import type { Attribute, Diagnostic, Document, ElementNode, InterpolationRecovery, Node, ParseOptions } from '@weapp-vite/wxml'
+import type { Attribute, Diagnostic, ElementNode, InterpolationRecovery, Node, Syntax, TemplateDocument, TemplateParser } from '@weapp-vite/wxml/core'
 import type { TemplateInputOptions } from './templateInput'
-import { getMiniProgramPlatformDescriptor, getMiniProgramScriptModuleOptions } from '@weapp-core/shared/platforms'
-import { decodeAttribute, parse } from '@weapp-vite/wxml'
+import { compileDialect, createParser, decodeAttribute } from '@weapp-vite/wxml/core'
+import { getTemplatePreset, presets } from '@weapp-vite/wxml/presets'
 
 export type SharedTemplateParseOptions = TemplateInputOptions
 
@@ -10,7 +10,7 @@ interface RecoveredInterpolation extends InterpolationRecovery {
 }
 
 export interface SharedTemplateDocument {
-  readonly document: Document
+  readonly document: TemplateDocument
   readonly source: string
   readonly recoveries: readonly RecoveredInterpolation[]
 }
@@ -19,11 +19,25 @@ function templateError(diagnostic: Diagnostic) {
   return new Error(`[web] ${diagnostic.start}: ${diagnostic.message}`)
 }
 
-function resolveOptions(options: SharedTemplateParseOptions): ParseOptions {
-  const platform = options.platform ?? 'weapp'
-  const scriptTag = platform === 'qq' ? 'wxs' : platform === 'ks' ? 'ks' : getMiniProgramScriptModuleOptions(platform, getMiniProgramPlatformDescriptor(platform).outputExtensions.wxs).tag
-  const syntax = options.syntax ?? (options.platform === 'weapp' ? 'legacy' : 'xml')
-  return { platform, syntax, rawTags: options.rawTags ?? [scriptTag, 'script'] }
+const defaultRawTags = new Map(presets.map(preset => [preset.id, Object.freeze([preset.portableScriptModule.tag, 'script'])]))
+const parsers = new WeakMap<readonly string[], { rawTags: readonly string[], bySyntax: Map<Syntax, TemplateParser> }>()
+
+function parserFor(options: SharedTemplateParseOptions): TemplateParser {
+  const preset = getTemplatePreset(options.platform ?? 'weapp')
+  // 无平台的编译入口历史上按 XML 读取；runtime 入口会显式指定微信。
+  const syntax = options.syntax ?? (options.platform ? preset.dialect.syntax : 'xml')
+  const rawTags = options.rawTags ?? defaultRawTags.get(preset.id)!
+  let cached = parsers.get(rawTags)
+  if (!cached || cached.rawTags.length !== rawTags.length || cached.rawTags.some((tag, index) => tag !== rawTags[index])) {
+    cached = { rawTags: [...rawTags], bySyntax: new Map() }
+    parsers.set(rawTags, cached)
+  }
+  let parser = cached.bySyntax.get(syntax)
+  if (!parser) {
+    parser = createParser(compileDialect({ id: `web:${preset.id}:${syntax}`, syntax, rawTags }))
+    cached.bySyntax.set(syntax, parser)
+  }
+  return parser
 }
 
 function acceptRecovery(source: string, diagnostic: Diagnostic, known: readonly RecoveredInterpolation[]): RecoveredInterpolation {
@@ -38,7 +52,7 @@ function acceptRecovery(source: string, diagnostic: Diagnostic, known: readonly 
   return { ...range, diagnostic }
 }
 
-function verifyRecoveryContexts(document: Document, recoveries: readonly RecoveredInterpolation[]) {
+function verifyRecoveryContexts(document: TemplateDocument, recoveries: readonly RecoveredInterpolation[]) {
   const remaining = new Set(recoveries)
   const pending = [...document.children]
   while (pending.length && remaining.size) {
@@ -70,10 +84,10 @@ function verifyRecoveryContexts(document: Document, recoveries: readonly Recover
 
 /** 正常源码只解析一次；仅用明确插值范围建立等长错误消费视图。 */
 export function parseSharedTemplateDocument(source: string, options: SharedTemplateParseOptions = {}): SharedTemplateDocument {
-  const profile = resolveOptions(options)
+  const parser = parserFor(options)
   const recoveries: RecoveredInterpolation[] = []
   let view = source
-  let document = parse(view, profile)
+  let document = parser.parse(view)
   while (true) {
     const errors = document.diagnostics.filter(diagnostic => diagnostic.severity === 'error')
     if (!errors.length) {
@@ -87,7 +101,7 @@ export function parseSharedTemplateDocument(source: string, options: SharedTempl
       recoveries.push(recovery)
       view = view.slice(0, recovery.start) + 'x'.repeat(recovery.end - recovery.start) + view.slice(recovery.end)
     }
-    document = parse(view, profile)
+    document = parser.parse(view)
   }
 }
 

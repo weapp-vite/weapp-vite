@@ -1,8 +1,7 @@
-import type { Token } from '@weapp-vite/wxml'
+import type { Token } from '@weapp-vite/wxml/core'
 import type { SourceRange, WxmlSyntax } from './lexical'
-import { findScriptClosingTag } from '@weapp-vite/language-service'
-import { scan, scanComments } from '@weapp-vite/wxml'
 import { failAt } from './lexical'
+import { configuredTemplateParser } from './parser'
 
 export interface Attribute extends SourceRange {
   name: string
@@ -43,8 +42,8 @@ function containsText(source: string, token: Token) {
 
 /** 将共享词法结果映射为既有编辑视图，不再重复解释源码边界。 */
 export function scanTemplate(code: string, fileName: string, scriptTags: ReadonlySet<string>, collectComments: boolean, syntax: WxmlSyntax, collectElements = true) {
-  const options = { syntax, rawTags: [...scriptTags], resolveScriptBoundary: findScriptClosingTag }
-  const scanned = collectElements ? scan(code, options) : scanComments(code, options)
+  const parser = configuredTemplateParser(scriptTags, syntax)
+  const scanned = collectElements ? parser.scan(code) : parser.scanComments(code)
   const diagnostic = scanned.diagnostics.find(item => item.severity === 'error')
   if (diagnostic) {
     failAt(code, fileName, diagnostic.start, diagnostic.message)

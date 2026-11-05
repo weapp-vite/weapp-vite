@@ -97,8 +97,7 @@ describe('independent CI preparation with unchanged validation scope', () => {
     expect(job.with.build_artifact_scope).toBe('packages/wxml')
     expect(job.with.main_command.trim().split('\n')).toEqual([
       'pnpm corpus:check',
-      'pnpm --filter @weapp-vite/wxml test:corpus',
-      'pnpm --filter @weapp-vite/wxml test:fuzz',
+      'pnpm --filter @weapp-vite/wxml test:acceptance',
       'pnpm --filter @weapp-vite/wxml test:coverage',
     ])
     expect(job.with.main_command).not.toMatch(/corpus:(?:collect|generate|discover)/)

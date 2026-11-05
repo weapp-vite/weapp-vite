@@ -1,4 +1,5 @@
 import type { TemplateApi } from '../assertions'
+import type { CoreTemplateModule } from './coreApi'
 import type { AcceptanceOptions, AcceptanceReport } from './harness'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
@@ -10,22 +11,31 @@ import { runMatrixCases } from '../assertions/matrix'
 import { collectSyntaxMatrix } from '../assertions/syntax'
 import { runFuzz } from '../fuzz'
 import { loadXmlBaseline } from './baseline'
-import { acceptancePaths, assertFrozenIdentity, commandLineOptions, isDirectExecution, repositoryRoot, saveAcceptance, sha256 } from './harness'
+import { createCoreTemplateApi } from './coreApi'
+import { runEntryContracts } from './entryContracts'
+import { acceptanceArtifact, acceptancePaths, assertArtifactIdentity, assertFrozenIdentity, commandLineOptions, isDirectExecution, repositoryRoot, saveAcceptance, sha256 } from './harness'
 import { readMatrixCases } from './matrix'
+import { runPresetContracts } from './presetContracts'
 
 /** 只从已构建的公开入口加载被测实现，不把源码冒充发布产物。 */
 export async function runNodeAcceptance(options: AcceptanceOptions = {}): Promise<AcceptanceReport> {
   const selected = acceptancePaths(options)
-  const report: AcceptanceReport = { schemaVersion: 1, startedAt: new Date().toISOString(), accepted: false, runtime: { kind: 'node', version: process.version, platform: process.platform, arch: process.arch }, artifact: { entry: path.relative(repositoryRoot, selected.builtEntry).split(path.sep).join('/'), sha256: '' } }
+  const report: AcceptanceReport = { schemaVersion: 1, apiVariant: selected.apiVariant, startedAt: new Date().toISOString(), accepted: false, runtime: { kind: 'node', version: process.version, platform: process.platform, arch: process.arch }, artifact: { entry: path.relative(repositoryRoot, selected.builtEntry).split(path.sep).join('/'), sha256: '' } }
   try {
-    report.artifact.sha256 = sha256(await readFile(selected.builtEntry))
+    report.artifact = await acceptanceArtifact(selected.builtEntry)
+    report.presetsArtifact = await acceptanceArtifact(selected.presetsEntry)
     const manifestPath = path.join(selected.corpusDirectory, 'manifest.json')
     const manifestHash = sha256(await readFile(manifestPath))
     const { manifest, documents } = await readCorpusArchive(selected.corpusDirectory)
     report.frozen = { id: manifest.id, manifestSha256: manifestHash, contentSha256: manifest.contentSha256, documents: documents.length, profiles: manifest.profiles.map(profile => profile.id) }
     const entryUrl = pathToFileURL(selected.builtEntry)
     entryUrl.searchParams.set('corpus-artifact', report.artifact.sha256)
-    const api = await import(entryUrl.href) as TemplateApi
+    const module = await import(entryUrl.href) as TemplateApi & CoreTemplateModule
+    const presetsUrl = pathToFileURL(selected.presetsEntry)
+    presetsUrl.searchParams.set('corpus-artifact', report.presetsArtifact.sha256)
+    report.presetContract = runPresetContracts(await import(presetsUrl.href))
+    report.entryContract = runEntryContracts(module, selected.apiVariant)
+    const api = selected.apiVariant === 'core' ? createCoreTemplateApi(module) : module
     const baseline = await loadXmlBaseline()
     report.baseline = { name: 'htmlparser2', version: baseline.version, entrySha256: baseline.entrySha256 }
     if (selected.suite !== 'fuzz') {
@@ -36,11 +46,12 @@ export async function runNodeAcceptance(options: AcceptanceOptions = {}): Promis
     if (selected.suite !== 'corpus') {
       report.fuzz = runFuzz(api, manifest.profiles, options.fuzz, baseline.Parser)
     }
-    await assertFrozenIdentity(manifestPath, manifestHash, selected.builtEntry, report.artifact.sha256)
+    await assertFrozenIdentity(manifestPath, manifestHash, selected.builtEntry, report.artifact.sha256, report.artifact.modules)
+    await assertArtifactIdentity(selected.presetsEntry, report.presetsArtifact)
     if (sha256(await readFile(baseline.entry)) !== baseline.entrySha256) {
       throw new Error('Frozen htmlparser2 baseline changed during acceptance.')
     }
-    report.accepted = (report.corpus ? report.corpus.accepted && report.corpus.cases > 0 : true) && (report.matrix?.accepted ?? true) && (report.syntax?.accepted ?? true) && (report.fuzz?.accepted ?? true)
+    report.accepted = report.entryContract.accepted && report.presetContract.accepted && (report.corpus ? report.corpus.accepted && report.corpus.cases > 0 : true) && (report.matrix?.accepted ?? true) && (report.syntax?.accepted ?? true) && (report.fuzz?.accepted ?? true)
   }
   catch (error) {
     report.error = String(error instanceof Error ? error.stack : error).replaceAll(repositoryRoot, '<repository>/')

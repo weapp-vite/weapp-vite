@@ -1,9 +1,8 @@
 import type { TemplateInputOptions } from './templateInput'
-import { MINI_PROGRAM_PLATFORM_DESCRIPTORS } from '@weapp-core/shared/platforms'
-import { resolveTemplateInput } from './templateInput'
+import { resolveTemplateInput, templateInputPlatforms } from './templateInput'
 
 const INPUT_QUERY = 'weapp-web-input'
-const platforms = new Set<string>([...MINI_PROGRAM_PLATFORM_DESCRIPTORS.map(platform => platform.id), 'qq', 'ks'])
+const platforms = new Set<string>(templateInputPlatforms)
 
 /** 依赖模块身份携带非默认输入规则，避免独立 load 丢失父模板来源。 */
 export function appendTemplateInputQuery(request: string, input: TemplateInputOptions): string {

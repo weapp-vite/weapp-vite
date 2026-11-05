@@ -171,8 +171,7 @@ jobs:
       install_playwright: true
       main_command: |-
         pnpm corpus:check
-        pnpm --filter @weapp-vite/wxml test:corpus
-        pnpm --filter @weapp-vite/wxml test:fuzz
+        pnpm --filter @weapp-vite/wxml test:acceptance
         pnpm --filter @weapp-vite/wxml test:coverage
       artifact_name: template-corpus-${{ inputs.runs_on }}-node-${{ inputs.node_version }}
       artifact_path: .tmp/template-corpus/reports

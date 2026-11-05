@@ -1,12 +1,11 @@
-import type { TagToken } from '@weapp-vite/wxml'
+import type { TagToken } from '@weapp-vite/wxml/core'
 import type { ComponentsMap, MpPlatform, WxmlDep } from '../../types'
 import type { WxmlToken } from './types'
 import { getSupportedMiniProgramDirectivePrefixes } from '@weapp-core/shared'
-import { findScriptClosingTag } from '@weapp-vite/language-service'
-import { scan } from '@weapp-vite/wxml'
 import { getWxmlPlatformTransformOptions } from '../../platform'
 import { getNativeScriptModuleByTag, getScriptModuleImportAttrs, getScriptModuleTagNames, isScriptModuleImportAttr } from '../../utils/wxmlScriptModule'
 import { getTemplateImportAttrs, isTemplateImportAttr, shouldNormalizeTemplateImportSource } from '../shared'
+import { platformTemplateParser } from '../template/parser'
 import { resolveEventDirectiveName } from './events'
 import { decodeBuildAttribute, textTokens } from './tokenViews'
 
@@ -31,10 +30,10 @@ export function parseWxmlTokens({ source, platform, excludeComponent }: ScanOpti
   const { directivePrefix, normalizeComponentTagName } = getWxmlPlatformTransformOptions(platform)
   const scriptTags = new Set(getScriptModuleTagNames(platform))
   // 此消费入口也处理 SFC 生成的 XML，目标平台不决定源码转义层。
-  let scanned = scan(source, { platform, syntax: 'xml', resolveScriptBoundary: findScriptClosingTag })
+  let scanned = platformTemplateParser(platform, 'xml').scan(source)
   if (scanned.diagnostics.some(item => item.severity === 'error') && /\\["']/.test(source)) {
     // 仅为旧转义输入保留 GE004 诊断；合法 XML 始终使用第一次扫描的范围。
-    const legacy = scan(source, { platform, syntax: 'legacy', resolveScriptBoundary: findScriptClosingTag })
+    const legacy = platformTemplateParser(platform, 'legacy').scan(source)
     if (!legacy.diagnostics.some(item => item.severity === 'error')) {
       scanned = legacy
     }

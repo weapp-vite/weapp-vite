@@ -16,6 +16,7 @@ export {
   getMiniProgramRuntimeHostConfigKey,
   getMiniProgramScriptModuleOptions,
   getMiniProgramTemplatePreset,
+  getMiniProgramTemplateProjection,
   getSupportedMiniProgramDirectivePrefixes,
   getSupportedMiniProgramPlatforms,
   MINI_PROGRAM_PLATFORM_ALIASES,
@@ -33,6 +34,7 @@ export type {
   MiniProgramRuntimeCapabilities,
   MiniProgramRuntimeCapabilityName,
   MiniProgramTemplatePreset,
+  MiniProgramTemplateProjection,
   MpPlatform,
   OutputExtensions,
 } from './types'

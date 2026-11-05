@@ -1,9 +1,9 @@
-import type { Document, Node, SourceRange } from '../types'
+import type { Node, SourceRange, TemplateDocument } from '../types'
 import type { EditSession } from './state'
 import { parseCompleteEdits } from './snippets'
 
 /** 原始脚本片段按完整宿主上下文解析，且不能越过原有宿主边界插入结构。 */
-export function parseRawEdits(session: EditSession): Document {
+export function parseRawEdits(session: EditSession): TemplateDocument {
   const ranges = new Map<Node, SourceRange>()
   for (const [node, owner] of session.rawOwners ?? []) {
     if (!owner.isInvalidated()) {

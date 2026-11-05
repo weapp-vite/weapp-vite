@@ -103,14 +103,14 @@ export function profileFixtures(documents: readonly CorpusDocument[], manifest: 
 }
 
 /** 公共 XML 与平台特有输入各自保留整套和交叉分类，不混合成虚假速度比。 */
-export function profileGroups(fixtures: readonly ProfileFixture[]): ProfileGroup[] {
+export function profileGroups(fixtures: readonly ProfileFixture[], allComparable = false): ProfileGroup[] {
   const groups = new Map<string, ProfileGroup>()
   for (const fixture of fixtures) {
     const prefix = `${fixture.quotaEligible ? '' : 'controlled-fixture/'}${fixture.comparison.eligible ? 'shared-xml' : 'platform-specific'}`
     const labels = ['all', `platform:${fixture.profile.platform}`, `profile:${fixture.profile.id}`, `syntax:${fixture.profile.syntax}`, `size:${fixture.size}`, ...fixture.categories.map(category => `category:${category}`), ...fixture.frameworks.map(framework => `framework:${framework}`), ...fixture.features.map(feature => `feature:${feature}`)]
     for (const label of labels) {
       const id = `${prefix}/${label}`
-      const group = groups.get(id) ?? { id, comparable: fixture.comparison.eligible, fixtureIds: [] }
+      const group = groups.get(id) ?? { id, comparable: allComparable || fixture.comparison.eligible, fixtureIds: [] }
       group.fixtureIds.push(fixture.id)
       groups.set(id, group)
     }

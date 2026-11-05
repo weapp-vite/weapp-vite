@@ -1,6 +1,6 @@
 import type { MpPlatform } from '@weapp-core/shared/platforms'
-import type { Syntax } from '@weapp-vite/wxml'
-import { MINI_PROGRAM_PLATFORM_DESCRIPTORS } from '@weapp-core/shared/platforms'
+import type { Syntax } from '@weapp-vite/wxml/core'
+import { getTemplatePreset } from '@weapp-vite/wxml/presets'
 
 export interface TemplateInputOptions {
   /** 模板来源平台；qq 与 ks 保留历史 XML 模板入口，不代表新增宿主 runtime。 */
@@ -11,10 +11,13 @@ export interface TemplateInputOptions {
   readonly rawTags?: readonly string[]
 }
 
+export const templateInputPlatforms: readonly NonNullable<TemplateInputOptions['platform']>[] = Object.freeze(['weapp', 'alipay', 'swan', 'tt', 'jd', 'xhs', 'qq', 'ks'])
+
 const filenameProfiles = new Map<string, TemplateInputOptions>([
-  ...MINI_PROGRAM_PLATFORM_DESCRIPTORS.map(descriptor => [`.${descriptor.outputExtensions.wxml}`, { platform: descriptor.id, syntax: descriptor.id === 'weapp' ? 'legacy' : 'xml' }] as const),
-  ['.qml', { platform: 'qq', syntax: 'xml' }],
-  ['.ksml', { platform: 'ks', syntax: 'xml' }],
+  ...templateInputPlatforms.map((platform) => {
+    const preset = getTemplatePreset(platform)
+    return [preset.templateExtension, { platform, syntax: preset.dialect.syntax }] as const
+  }),
   ['.html', { syntax: 'xml' }],
 ])
 
@@ -24,6 +27,6 @@ export function resolveTemplateInput(filename: string, override: TemplateInputOp
   const extension = clean.slice(Math.max(clean.lastIndexOf('/'), clean.lastIndexOf('\\')) + 1).match(/\.[^.]+$/)?.[0]
   const inherited = (extension ? filenameProfiles.get(extension) : undefined) ?? fallback
   const platform = override.platform ?? inherited.platform
-  const syntax = override.syntax ?? (override.platform ? override.platform === 'weapp' ? 'legacy' : 'xml' : inherited.syntax ?? (platform === 'weapp' ? 'legacy' : 'xml'))
+  const syntax = override.syntax ?? (override.platform ? getTemplatePreset(override.platform).dialect.syntax : inherited.syntax ?? (platform ? getTemplatePreset(platform).dialect.syntax : 'xml'))
   return { platform, syntax, rawTags: override.rawTags ?? inherited.rawTags }
 }

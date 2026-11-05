@@ -1,0 +1,337 @@
+{
+  "schemaVersion": 1,
+  "kind": "template-decoupling-publication-manifest",
+  "currentVerdict": "formal-performance-not-accepted",
+  "archiveFormat": "Deterministic gzip: mtime=0, empty filename; decompressed raw JSON/NDJSON/text bytes unless an explicitly identified publication bundle or derived summary.",
+  "publicationBoundary": "Original and public decompressed SHA-256 values are distinct from compressed archive SHA-256. Raw historical files are unchanged where redactions is empty. Failed, interrupted, truncated and shortened diagnostic evidence remains ineligible for acceptance.",
+  "baseline": {
+    "ref": "739da6b848a47ac44cb567ce643b97ff79da9cc4",
+    "lockSha256": "045a5e5768c86c98bf1220bd469091d518cd07c1e85bc3de0c3b87bbc487c99c",
+    "sourceIdentitySha256": "6050a47e22887ab233f3349f898486c49fcb0af20b9b483e001f45e6bbe0c78c"
+  },
+  "corpus": {
+    "id": "all-platform-v1",
+    "manifestSha256": "085d532ec20ba7e534ecf279600c4130b9a49eb9ab6da6139cf3f4335fde11a1",
+    "contentSha256": "1fe0bf88acffcbb1972b9b91b2596ec073e678f5f6a5efb6d423a3bfb5e516fb"
+  },
+  "inheritedGaps": [
+    "Taro 4.3.2 Harmony JSUI development build failed",
+    "Taro 4.3.2 Harmony JSUI production build failed",
+    "MPX historical 1302-byte installation log attachment missing"
+  ],
+  "runs": {
+    "regression-001": {
+      "eligible": false,
+      "observedStatus": "interrupted",
+      "producerReportStatus": "running",
+      "observedExitCode": 130,
+      "completedNodeCellsInLog": 16,
+      "runtimeSamplesPersisted": false,
+      "reason": "The pre-checkpoint runner was interrupted after sustained early regressions; producer report has no runtime samples."
+    },
+    "regression-003": {
+      "eligible": false,
+      "observedStatus": "interrupted-with-confirmed-regressions",
+      "producerReportStatus": "unparseable-truncated",
+      "producerReportBytes": 8912896,
+      "reason": "Node completed all cells but contains regression and unstable summaries; Chromium was interrupted after 280 cells. Main report is preserved as truncated original bytes; no synthetic completion is appended.",
+      "runtimes": {
+        "node": {
+          "runtime": "node",
+          "records": 847,
+          "completedCells": 845,
+          "totalCells": 845,
+          "checkpointStatus": "complete",
+          "hashChainVerified": true,
+          "lastSha256": "fba089395a61e874b04b59a8fef23748bd63f7cc55c6d533a33be66928754de2",
+          "summaryStatusCounts": {
+            "complete": 762,
+            "regression": 76,
+            "unstable": 7
+          },
+          "incrementalRowCounts": {
+            "samples": 74240,
+            "warmupSamples": 16900,
+            "calibrations": 845,
+            "parity": 77077,
+            "errors": 0
+          },
+          "hasCompletionRecord": true
+        },
+        "chromium": {
+          "runtime": "chromium",
+          "records": 281,
+          "completedCells": 280,
+          "totalCells": 845,
+          "checkpointStatus": "interrupted",
+          "hashChainVerified": true,
+          "lastSha256": "cc9bed9ae9d3d21e14c83ae15ef16726689c8b066d495d87500e1e977c0f5b59",
+          "summaryStatusCounts": {
+            "regression": 117,
+            "complete": 161,
+            "unstable": 2
+          },
+          "incrementalRowCounts": {
+            "samples": 31920,
+            "warmupSamples": 5600,
+            "calibrations": 280,
+            "parity": 4177,
+            "errors": 0
+          },
+          "hasCompletionRecord": false
+        }
+      }
+    }
+  },
+  "archives": [
+    {
+      "archive": "regression-001.report.json.gz",
+      "originalBytes": 28225809,
+      "originalSha256": "a887667fa976196fc04a254111f5db1907325cb6a83851439cd5d65257292447",
+      "publicContentBytes": 28225809,
+      "publicContentSha256": "a887667fa976196fc04a254111f5db1907325cb6a83851439cd5d65257292447",
+      "publicArchiveBytes": 6353624,
+      "publicArchiveSha256": "463ccc056f4c75e7e85d7508c28a988a0a34a7e09882eac4f699d36c5afcf7eb",
+      "redactions": [],
+      "run": "regression-001",
+      "originalFile": "regression-001/report.json",
+      "contentType": "json",
+      "parseStatus": "parseable"
+    },
+    {
+      "archive": "regression-001.interruption.json.gz",
+      "originalBytes": 514,
+      "originalSha256": "ef00ee926028db0c6e927881e331d3efef29cb6d6ba4d5693440953e2df9a539",
+      "publicContentBytes": 514,
+      "publicContentSha256": "ef00ee926028db0c6e927881e331d3efef29cb6d6ba4d5693440953e2df9a539",
+      "publicArchiveBytes": 348,
+      "publicArchiveSha256": "68976a41116a37071aaacd5c3cd34fac8159de873e6bf6d60a0200620de4ffc5",
+      "redactions": [],
+      "run": "regression-001",
+      "originalFile": "regression-001/interruption.json",
+      "contentType": "json",
+      "parseStatus": "parseable"
+    },
+    {
+      "archive": "regression-001.baseline-source-identity.json.gz",
+      "originalBytes": 3425137,
+      "originalSha256": "6050a47e22887ab233f3349f898486c49fcb0af20b9b483e001f45e6bbe0c78c",
+      "publicContentBytes": 3425137,
+      "publicContentSha256": "6050a47e22887ab233f3349f898486c49fcb0af20b9b483e001f45e6bbe0c78c",
+      "publicArchiveBytes": 823176,
+      "publicArchiveSha256": "b2d1539e883e0483ff4bf1171952cceff3ef5d0e8fe8e7651f1a07b4ae227f27",
+      "redactions": [],
+      "run": "regression-001",
+      "originalFile": "regression-001/baseline-source-identity.json",
+      "contentType": "json",
+      "parseStatus": "parseable"
+    },
+    {
+      "archive": "regression-001.log.gz",
+      "originalBytes": 1078,
+      "originalSha256": "46ef1cf98fe080beec5382301e810944fc64156bef5ae92debe90a36b519a43f",
+      "publicContentBytes": 1078,
+      "publicContentSha256": "46ef1cf98fe080beec5382301e810944fc64156bef5ae92debe90a36b519a43f",
+      "publicArchiveBytes": 252,
+      "publicArchiveSha256": "2502b7f1e21a7be26edbe2274208c62bc9f936e201c26b63595a4280d5fbb973",
+      "redactions": [],
+      "run": "regression-001",
+      "originalFile": "regression-001.log",
+      "contentType": "text"
+    },
+    {
+      "archive": "regression-003.report.truncated.json.gz",
+      "originalBytes": 8912896,
+      "originalSha256": "c70355b38a0735da33cfa2f5c096658b9269c6ab2979c4c99fc38566e0cf9ce5",
+      "publicContentBytes": 8912896,
+      "publicContentSha256": "c70355b38a0735da33cfa2f5c096658b9269c6ab2979c4c99fc38566e0cf9ce5",
+      "publicArchiveBytes": 3476562,
+      "publicArchiveSha256": "3e919331101c557718ed8e9c43f9d84608505b5d43f19f15a90996bd768a31d5",
+      "redactions": [],
+      "run": "regression-003",
+      "originalFile": "regression-003/report.json",
+      "contentType": "json",
+      "parseStatus": "unparseable-truncated"
+    },
+    {
+      "archive": "regression-003.baseline-source-identity.json.gz",
+      "originalBytes": 3425137,
+      "originalSha256": "6050a47e22887ab233f3349f898486c49fcb0af20b9b483e001f45e6bbe0c78c",
+      "publicContentBytes": 3425137,
+      "publicContentSha256": "6050a47e22887ab233f3349f898486c49fcb0af20b9b483e001f45e6bbe0c78c",
+      "publicArchiveBytes": 823176,
+      "publicArchiveSha256": "b2d1539e883e0483ff4bf1171952cceff3ef5d0e8fe8e7651f1a07b4ae227f27",
+      "redactions": [],
+      "run": "regression-003",
+      "originalFile": "regression-003/baseline-source-identity.json",
+      "contentType": "json",
+      "parseStatus": "parseable"
+    },
+    {
+      "archive": "regression-003.log.gz",
+      "originalBytes": 163389,
+      "originalSha256": "e2395a524f92ad78dc65e141903e62e6f179a847425fd0aa06cbeb8f61417006",
+      "publicContentBytes": 163389,
+      "publicContentSha256": "e2395a524f92ad78dc65e141903e62e6f179a847425fd0aa06cbeb8f61417006",
+      "publicArchiveBytes": 19570,
+      "publicArchiveSha256": "56f2d5bbacbabfb5b1f07eddf382edc5936d2932311dab510a3f8f6c00e7868e",
+      "redactions": [],
+      "run": "regression-003",
+      "originalFile": "regression-003.log",
+      "contentType": "text"
+    },
+    {
+      "archive": "regression-003.node-cells.ndjson.gz",
+      "originalBytes": 30006449,
+      "originalSha256": "972b9207d5d20fb148ed4b670408f87976442018fc24fdb0242514b3ec1a3ecf",
+      "publicContentBytes": 30006449,
+      "publicContentSha256": "972b9207d5d20fb148ed4b670408f87976442018fc24fdb0242514b3ec1a3ecf",
+      "publicArchiveBytes": 4084991,
+      "publicArchiveSha256": "597eb454a83c498d81ca900c158d8d8227742e6c485c77af507463d7460356fd",
+      "redactions": [],
+      "run": "regression-003",
+      "originalFile": "regression-003/node-cells.ndjson",
+      "contentType": "ndjson",
+      "integrity": {
+        "runtime": "node",
+        "records": 847,
+        "completedCells": 845,
+        "totalCells": 845,
+        "checkpointStatus": "complete",
+        "hashChainVerified": true,
+        "lastSha256": "fba089395a61e874b04b59a8fef23748bd63f7cc55c6d533a33be66928754de2",
+        "summaryStatusCounts": {
+          "complete": 762,
+          "regression": 76,
+          "unstable": 7
+        },
+        "incrementalRowCounts": {
+          "samples": 74240,
+          "warmupSamples": 16900,
+          "calibrations": 845,
+          "parity": 77077,
+          "errors": 0
+        },
+        "hasCompletionRecord": true
+      }
+    },
+    {
+      "archive": "regression-003.node-checkpoint.json.gz",
+      "originalBytes": 471,
+      "originalSha256": "cc9ccff5dd46b4a3c1f8e79bc5e1d53f04a6f73035509f3b07b325cf3ec0bef1",
+      "publicContentBytes": 471,
+      "publicContentSha256": "cc9ccff5dd46b4a3c1f8e79bc5e1d53f04a6f73035509f3b07b325cf3ec0bef1",
+      "publicArchiveBytes": 285,
+      "publicArchiveSha256": "a68d5c18141b164a41c1fee51025de8a327b53d4ea017d446e602f6b4ff0a8b9",
+      "redactions": [],
+      "run": "regression-003",
+      "originalFile": "regression-003/node-checkpoint.json",
+      "contentType": "json",
+      "parseStatus": "parseable"
+    },
+    {
+      "archive": "regression-003.chromium-cells.ndjson.gz",
+      "originalBytes": 8635151,
+      "originalSha256": "863789e89cd655e6d48b7c47d9f0a246ddc1489981d2175ba0a9417713465d70",
+      "publicContentBytes": 8635151,
+      "publicContentSha256": "863789e89cd655e6d48b7c47d9f0a246ddc1489981d2175ba0a9417713465d70",
+      "publicArchiveBytes": 575177,
+      "publicArchiveSha256": "32b921a1eb93464124fdeb2e587b9dc15369de2ee14f227639cd1e7b94fd3b3c",
+      "redactions": [],
+      "run": "regression-003",
+      "originalFile": "regression-003/chromium-cells.ndjson",
+      "contentType": "ndjson",
+      "integrity": {
+        "runtime": "chromium",
+        "records": 281,
+        "completedCells": 280,
+        "totalCells": 845,
+        "checkpointStatus": "interrupted",
+        "hashChainVerified": true,
+        "lastSha256": "cc9bed9ae9d3d21e14c83ae15ef16726689c8b066d495d87500e1e977c0f5b59",
+        "summaryStatusCounts": {
+          "regression": 117,
+          "complete": 161,
+          "unstable": 2
+        },
+        "incrementalRowCounts": {
+          "samples": 31920,
+          "warmupSamples": 5600,
+          "calibrations": 280,
+          "parity": 4177,
+          "errors": 0
+        },
+        "hasCompletionRecord": false
+      }
+    },
+    {
+      "archive": "regression-003.chromium-checkpoint.json.gz",
+      "originalBytes": 427,
+      "originalSha256": "9df5758cf9b91d7fce420e2163262c2adbddb672a5fae135a926dc189cc38143",
+      "publicContentBytes": 427,
+      "publicContentSha256": "9df5758cf9b91d7fce420e2163262c2adbddb672a5fae135a926dc189cc38143",
+      "publicArchiveBytes": 265,
+      "publicArchiveSha256": "d0a85267a2905c75c37fa04f91facc5484339be8fc5af22ff605a84d56b8be84",
+      "redactions": [],
+      "run": "regression-003",
+      "originalFile": "regression-003/chromium-checkpoint.json",
+      "contentType": "json",
+      "parseStatus": "parseable"
+    },
+    {
+      "archive": "correctness-before-factory.json.gz",
+      "originalBytes": 2133636,
+      "originalSha256": "6f06c50b8cf552ee1f48e90aaf63d7fa7fd24a9ac67362d2479de912ea3aa88b",
+      "publicContentBytes": 2133636,
+      "publicContentSha256": "6f06c50b8cf552ee1f48e90aaf63d7fa7fd24a9ac67362d2479de912ea3aa88b",
+      "publicArchiveBytes": 193417,
+      "publicArchiveSha256": "e73420e03905439294e0985e9589fb98595a346daff0c82a4249e359daafd77e",
+      "redactions": [
+        "See publication.originalFiles for per-producer metadata redactions."
+      ],
+      "purpose": "historical-correctness-checkpoint",
+      "originalFile": "derived multi-file publication bundle; see publication.originalFiles",
+      "originalBytesBoundary": "The archive entry hashes identify the publication bundle. Every producer original is identified separately inside publication.originalFiles."
+    },
+    {
+      "archive": "diagnostic-003.summary.json.gz",
+      "originalBytes": 31938,
+      "originalSha256": "1e0146dc480f893f2a7c8081456b5c61dc46580dbbb83a754b86446d8167ef0c",
+      "publicContentBytes": 31938,
+      "publicContentSha256": "1e0146dc480f893f2a7c8081456b5c61dc46580dbbb83a754b86446d8167ef0c",
+      "publicArchiveBytes": 7240,
+      "publicArchiveSha256": "096b299d3ee831be69d781aaaab90a79a737953e3d436b6f46a66f2dfe679bfb",
+      "redactions": [],
+      "purpose": "diagnostic-only",
+      "originalFile": "derived summary; original producer report is identified inside originalReport",
+      "originalBytesBoundary": "Hashes identify the derived summary. The producer report commitment is separate."
+    },
+    {
+      "archive": "regression-003.identity.json.gz",
+      "originalBytes": 278239,
+      "originalSha256": "39ceee6e873f5a67d2c8b05d75ad46a5600e7057351ca34cc783aebd48f1bd13",
+      "publicContentBytes": 278239,
+      "publicContentSha256": "39ceee6e873f5a67d2c8b05d75ad46a5600e7057351ca34cc783aebd48f1bd13",
+      "publicArchiveBytes": 43640,
+      "publicArchiveSha256": "11bf19a588093363a87e7c200b87ec89cc05ff1cba6f0f22e539719f6306b946",
+      "redactions": [],
+      "purpose": "derived-complete-identity-sidecar",
+      "originalFile": "derived from complete identity value in regression-003/report.json",
+      "originalBytesBoundary": "Hashes identify the derived sidecar. Its originalReport identifies the unmodified producer bytes."
+    },
+    {
+      "archive": "test-speed-validation.json.gz",
+      "originalSha256": "ad8b4ad4e897a9b3a7bb6c8caacbc07fa2951a22ccc4b9a60089b3013e42a197",
+      "originalBytes": 53090,
+      "publicContentSha256": "ad8b4ad4e897a9b3a7bb6c8caacbc07fa2951a22ccc4b9a60089b3013e42a197",
+      "publicContentBytes": 53090,
+      "publicArchiveSha256": "8f0ae2fc3232b0cdaf181d7ad64f2c6fc07d33f02f5d628a9545db4fea997409",
+      "publicArchiveBytes": 11897,
+      "redactions": [
+        "See publication.originalFiles for producer-specific redactions."
+      ],
+      "originalFile": "Derived validation checkpoint bundle",
+      "originalBytesBoundary": "Bundle-level hashes identify the publication bundle. Producer source hashes and redactions are recorded inside publication.originalFiles."
+    }
+  ]
+}

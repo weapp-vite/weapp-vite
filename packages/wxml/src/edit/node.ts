@@ -1,7 +1,6 @@
 import type { AttributeValue, EditableNode, Node } from '../types'
 import type { EditSession, NodeEdits } from './state'
 import { encodeAttribute, encodeText } from '../encoding'
-import { defaultRawTagsFor } from '../options'
 import { assertName, stateFor, validateSnippet } from './state'
 
 /** 操作仅在被读取时绑定，普通遍历节点不分配整套编辑闭包。 */
@@ -75,7 +74,7 @@ export class EditableHandle implements EditableNode {
       return false
     }
     const tag = (this.changes?.name ?? this.node.name).toLowerCase()
-    return (this.session.document.options.rawTags ?? defaultRawTagsFor(this.session.document.platform)).some(name => name.toLowerCase() === tag)
+    return this.session.context.dialect.rawTags.some(name => name.toLowerCase() === tag)
   }
 
   private registerRawOwner() {

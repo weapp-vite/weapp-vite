@@ -1,19 +1,7 @@
 import type { LanguagePlatform } from '../types'
-import type { LanguageProfile, TemplateDirectives } from './types'
+import type { LanguageProfile } from './types'
 import { MINI_PROGRAM_PLATFORM_DESCRIPTORS } from '@weapp-core/shared/platforms'
-
-function directives(prefix: string, separator = ':'): TemplateDirectives {
-  const attribute = (name: string) => `${prefix}${separator}${name}`
-  return {
-    if: attribute('if'),
-    elif: attribute('elif'),
-    else: attribute('else'),
-    for: attribute('for'),
-    forItem: attribute('for-item'),
-    forIndex: attribute('for-index'),
-    key: attribute('key'),
-  }
-}
+import { getTemplatePreset } from '@weapp-vite/wxml/presets'
 
 const documentation: Record<LanguagePlatform, string> = {
   weapp: 'https://developers.weixin.qq.com/miniprogram/dev/reference/wxml/',
@@ -31,35 +19,22 @@ function sources(platform: LanguagePlatform): LanguageProfile['documentation'] {
   return [{ url: documentation[platform], version: 'unversioned', retrievedAt: '2026-10-30' }]
 }
 
-const core: LanguageProfile[] = MINI_PROGRAM_PLATFORM_DESCRIPTORS.map(descriptor => ({
-  platform: descriptor.id,
-  support: 'core',
-  templateExtensions: [`.${descriptor.outputExtensions.wxml}`],
-  styleExtensions: [`.${descriptor.outputExtensions.wxss}`],
-  scriptExtensions: [...(descriptor.outputExtensions.wxs ? [`.${descriptor.outputExtensions.wxs}`] : ['.sjs']), ...(descriptor.nativeScriptModules ?? []).map(module => `.${module.extension}`)],
-  scriptModule: descriptor.id === 'alipay' ? { tag: 'import-sjs', sourceAttribute: 'from', moduleAttribute: 'name' } : { tag: descriptor.id === 'swan' ? 'import-sjs' : descriptor.id === 'tt' ? 'sjs' : 'wxs', sourceAttribute: 'src', moduleAttribute: 'module' },
-  directives: directives(descriptor.wxml?.directivePrefix ?? 'wx', descriptor.id === 'swan' ? '-' : ':'),
-  events: { style: descriptor.wxml?.eventBindingStyle === 'alipay' ? 'alipay' : 'bind' },
-  rawTags: ['wxs', 'sjs', 'ks', 'filter', 'script', 'import-sjs', ...(descriptor.nativeScriptModules ?? []).map(module => module.tag)],
-  documentation: sources(descriptor.id),
-}))
+const corePlatforms = new Set<string>(MINI_PROGRAM_PLATFORM_DESCRIPTORS.map(descriptor => descriptor.id))
+const platforms: LanguagePlatform[] = [...MINI_PROGRAM_PLATFORM_DESCRIPTORS.map(descriptor => descriptor.id), 'qq', 'ks', 'ty']
 
-const additional: LanguageProfile[] = [
-  { platform: 'qq', extension: '.qml', style: '.qss', prefix: 'qq', script: '.wxs' },
-  { platform: 'ks', extension: '.ksml', style: '.css', prefix: 'ks', script: '.ks' },
-  { platform: 'ty', extension: '.tyml', style: '.tyss', prefix: 'ty', script: '.sjs' },
-].map(({ platform, extension, style, prefix, script }) => ({
-  platform: platform as LanguagePlatform,
-  support: 'language-only',
-  templateExtensions: [extension],
-  styleExtensions: [style],
-  scriptExtensions: platform === 'qq' ? [script, '.qs'] : [script],
-  scriptModule: { tag: platform === 'ks' ? 'ks' : platform === 'ty' ? 'sjs' : 'wxs', sourceAttribute: 'src', moduleAttribute: 'module' },
-  directives: directives(prefix),
-  events: { style: 'bind' },
-  rawTags: ['wxs', 'sjs', 'ks', 'filter', 'script', 'import-sjs', ...(platform === 'qq' ? ['qs'] : [])],
-  documentation: sources(platform as LanguagePlatform),
-}))
-
-/** 语言能力登记不扩展构建平台；官方文档无统一版本号时明确标记未版本化。 */
-export const languageProfiles: readonly LanguageProfile[] = [...core, ...additional]
+/** 语言能力登记不扩展构建平台；模板语言事实统一来自纯数据预设。 */
+export const languageProfiles: readonly LanguageProfile[] = platforms.map<LanguageProfile>((platform) => {
+  const preset = getTemplatePreset(platform)
+  return {
+    platform,
+    support: corePlatforms.has(platform) ? 'core' : 'language-only',
+    templateExtensions: [preset.templateExtension],
+    styleExtensions: [preset.styleExtension],
+    scriptExtensions: [`.${preset.portableScriptModule.extension}`, ...preset.nativeScriptModules.map(module => `.${module.extension}`)],
+    scriptModule: { tag: preset.portableScriptModule.tag, sourceAttribute: preset.portableScriptModule.sourceAttribute, moduleAttribute: preset.portableScriptModule.moduleAttribute },
+    directives: { ...preset.directives },
+    events: { style: preset.eventStyle === 'alipay' ? 'alipay' : 'bind' },
+    rawTags: preset.compatibilityDialect.rawTags,
+    documentation: sources(platform),
+  }
+})

@@ -62,6 +62,16 @@ describe('shared WXML parsing for Web', () => {
     expect(() => parseSharedWxml(source)).toThrow('[web]')
   })
 
+  it('observes in-place changes to caller-owned raw tags on later parses', () => {
+    const rawTags: string[] = []
+    const source = '<filter><view/></filter>'
+    expect(parseSharedWxml(source, { rawTags })[0]).toMatchObject({ name: 'filter', children: [{ name: 'view' }] })
+    rawTags.push('filter')
+    expect(parseSharedWxml(source, { rawTags })[0]).toMatchObject({ name: 'filter', children: [{ data: '<view/>' }] })
+    rawTags[0] = 'other-script'
+    expect(parseSharedWxml(source, { rawTags })[0]).toMatchObject({ name: 'filter', children: [{ name: 'view' }] })
+  })
+
   it('keeps the compiler XML default and uses the explicitly supplied input syntax', () => {
     const source = String.raw`<view title="a\b" />`
     expect(parseSharedWxml(source)[0]).toMatchObject({ attribs: { title: String.raw`a\b` } })

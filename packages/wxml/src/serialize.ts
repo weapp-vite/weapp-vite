@@ -1,9 +1,9 @@
-import type { Document, Node, SerializeOptions } from './types'
+import type { Node, SerializeOptions, TemplateDocument } from './types'
 import { editOverlays } from './edit/overlay'
 import { canonicalAttribute } from './encoding'
 
 /** 保留模式输出当前文档源码；规范模式逐节点输出并保留所有文本。 */
-export function serialize(document: Document, options: SerializeOptions = {}): string {
+export function serialize(document: TemplateDocument, options: SerializeOptions = {}): string {
   if (document.diagnostics.length && document.diagnostics.some(diagnostic => diagnostic.severity === 'error')) {
     throw new TypeError('Cannot serialize an invalid WXML document.')
   }

@@ -1,13 +1,11 @@
-import type { Attribute } from '@weapp-vite/wxml'
+import type { Attribute } from '@weapp-vite/wxml/core'
 import type { OutputBundle } from 'rolldown'
 import type { MpPlatform } from '../../types'
 import { Buffer } from 'node:buffer'
-import { findScriptClosingTag } from '@weapp-vite/language-service'
-import { scan } from '@weapp-vite/wxml'
 import MagicString from 'magic-string'
 import postcss from 'postcss'
 import selectorParser from 'postcss-selector-parser'
-import { getOutputTemplateRawTags } from '../../utils/wxmlScriptModule'
+import { outputTemplateParser } from '../../wxml/template/parser'
 
 const SCOPE_ATTRIBUTE_RE = /^data-v-[\w-]+$/
 
@@ -16,7 +14,7 @@ export function normalizeClassScopedTemplate(source: string, platform: MpPlatfor
   if (!source.includes('data-v-')) {
     return source
   }
-  const scanned = scan(source, { platform, syntax: 'xml', rawTags: getOutputTemplateRawTags(platform), resolveScriptBoundary: findScriptClosingTag })
+  const scanned = outputTemplateParser(platform, 'xml').scan(source)
   const diagnostic = scanned.diagnostics.find(item => item.severity === 'error')
   if (diagnostic) {
     throw new Error(`[weapp.wxml] ${diagnostic.start}: ${diagnostic.message}`)

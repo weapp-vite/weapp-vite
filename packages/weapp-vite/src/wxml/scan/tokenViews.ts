@@ -1,6 +1,6 @@
-import type { Attribute } from '@weapp-vite/wxml'
+import type { Attribute } from '@weapp-vite/wxml/core'
 import type { Token } from '../shared'
-import { decodeAttribute } from '@weapp-vite/wxml'
+import { decodeAttribute } from '@weapp-vite/wxml/core'
 
 const xmlEntity = /&(?:#(?:x[\da-f]+|\d+)|amp|lt|gt|quot|apos);/gi
 

@@ -1,4 +1,4 @@
-import type { Node } from '@weapp-vite/wxml'
+import type { Node } from '@weapp-vite/wxml/core'
 import type { SharedTemplateParseOptions } from '../../shared/templateParser'
 import type { RenderNode } from './types'
 import { parseSharedTemplateDocument, readSharedTemplateAttributes, readSharedTemplateText } from '../../shared/templateParser'

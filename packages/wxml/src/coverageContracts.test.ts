@@ -11,6 +11,7 @@ import { renderEdits } from './edit/output'
 import { parseRawEdits } from './edit/raw'
 import { expressionEnd, interpolations, validateLegacyAttribute } from './expression'
 import { isSpaceCode, TemplateLexicalError } from './lexical'
+import { compatibilityContext } from './options'
 import { parse } from './parser'
 import { scan, scanComments } from './scanner'
 import { findScriptClosingTag, findTrailingScriptComment, scanScriptBoundaryCandidates } from './script'
@@ -19,7 +20,7 @@ import { readTag } from './tag'
 import { walk } from './walk'
 
 function session(document: Document, node?: ElementNode, changes?: Partial<NodeEdits>): EditSession {
-  return { document, active: true, hasStructuralInvalidations: false, edits: new Map(node ? [[node, { removed: false, ...changes }]] : []) }
+  return { document, context: compatibilityContext(document.options), active: true, hasStructuralInvalidations: false, edits: new Map(node ? [[node, { removed: false, ...changes }]] : []) }
 }
 
 describe('source boundary and defensive contracts', () => {

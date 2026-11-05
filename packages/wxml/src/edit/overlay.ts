@@ -1,5 +1,5 @@
 import type { CanonicalAttribute } from '../encoding'
-import type { Document, ElementNode, Node } from '../types'
+import type { ElementNode, Node, TemplateDocument } from '../types'
 
 export interface CanonicalElement {
   readonly name: string
@@ -7,9 +7,9 @@ export interface CanonicalElement {
 }
 
 export interface EditOverlay {
-  readonly original: Document
+  readonly original: TemplateDocument
   readonly elements: ReadonlyMap<ElementNode, CanonicalElement>
   readonly text: ReadonlyMap<Node, string>
 }
 
-export const editOverlays = new WeakMap<Document, EditOverlay>()
+export const editOverlays = new WeakMap<TemplateDocument, EditOverlay>()

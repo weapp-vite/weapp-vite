@@ -1,0 +1,25 @@
+import type { PlatformPresetId, TemplateDialectDefinition, TemplateInputRecipe, TemplatePreset, TemplateScriptModule, TemplateScriptModuleRecipe, TemplateScriptReferenceRecipe } from '@weapp-vite/wxml/presets'
+import { defaultTemplateInputRecipe, getTemplatePreset, legacyScriptModuleRecipes, portableCompatibilityScriptRecipes, presets, weapp } from '@weapp-vite/wxml/presets'
+import { expectError, expectType } from 'tsd'
+
+expectType<readonly TemplatePreset[]>(presets)
+expectType<TemplatePreset>(weapp)
+expectType<TemplatePreset>(getTemplatePreset('qq'))
+expectType<PlatformPresetId>(weapp.id)
+expectType<TemplateDialectDefinition>(weapp.dialect)
+expectType<TemplateDialectDefinition>(weapp.nativeDialect)
+expectType<TemplateDialectDefinition>(weapp.compatibilityDialect)
+expectType<TemplateScriptModule>(weapp.portableScriptModule)
+expectType<readonly TemplateScriptModule[]>(weapp.nativeScriptModules)
+expectType<TemplateInputRecipe>(defaultTemplateInputRecipe)
+expectType<readonly TemplateScriptReferenceRecipe[]>(portableCompatibilityScriptRecipes)
+expectType<TemplateScriptModuleRecipe>(legacyScriptModuleRecipes.unprofiled)
+expectType<TemplateScriptModuleRecipe>(legacyScriptModuleRecipes.platform)
+expectError(legacyScriptModuleRecipes.unprofiled.scriptModules[0]!.format = 'esm')
+expectError(defaultTemplateInputRecipe.rawTags.push('custom'))
+expectError(defaultTemplateInputRecipe.scriptModules[0]!.tag = 'custom')
+expectError(portableCompatibilityScriptRecipes[0]!.sourceAttributes.push('href'))
+expectError(getTemplatePreset('generic'))
+expectError(weapp.templateExtension = '.html')
+expectError(weapp.dialect.rawTags.push('custom'))
+expectError(weapp.directives.if = 'custom:if')

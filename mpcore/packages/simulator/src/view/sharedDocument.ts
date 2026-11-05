@@ -1,5 +1,6 @@
 import type { TemplateNodeLike } from './templateRuntime'
-import { decodeAttribute, parse } from '@weapp-vite/wxml'
+import { compileDialect, createParser, decodeAttribute } from '@weapp-vite/wxml/core'
+import { weapp } from '@weapp-vite/wxml/presets'
 
 interface SourceTemplateNode extends TemplateNodeLike {
   parent: SourceTemplateNode | null
@@ -17,6 +18,11 @@ interface SourceTemplateDocument extends SourceTemplateContainer {
   type: 'root'
 }
 
+// simulator 继续只执行可移植 WXS，不把兼容集合的其他标签当成脚本。
+const parser = createParser(compileDialect(weapp.dialect), {
+  resolveScriptBoundary: (_source, _start, _tag, candidates) => candidates.closingTag ?? candidates.commentClosings?.at(-1),
+})
+
 /** 元数据属于模板节点，普通 clone/spread 自动保留，不依赖外部 WeakMap。 */
 export function sourceAttributeForms(node: object) {
   return (node as Partial<SourceTemplateNode>).attributeForms
@@ -24,11 +30,7 @@ export function sourceAttributeForms(node: object) {
 
 /** 将共享源码树适配为 simulator 的逻辑模板树，不执行脚本或解析依赖。 */
 export function parseSharedDocument(source: string, stripWhitespace = false): SourceTemplateDocument {
-  const document = parse(source, {
-    syntax: 'legacy',
-    rawTags: ['wxs'],
-    resolveScriptBoundary: (_source, _start, _tag, candidates) => candidates.closingTag ?? candidates.commentClosings?.at(-1),
-  })
+  const document = parser.parse(source)
   const fatal = document.diagnostics.find(item => item.severity === 'error')
   if (fatal) {
     throw new Error(`[simulator] ${fatal.start}: ${fatal.message}`)

@@ -128,7 +128,7 @@ export async function auditCoverage(sourceDirectory: string, reportFile: string)
       report.unexpectedFiles.push(normalized(path.relative(sourceRoot, file)))
     }
   }
-  report.accepted = report.missingFiles.length === 0 && report.ignoredFiles.length === 0 && listed.length > 0
+  report.accepted = report.missingFiles.length === 0 && report.unexpectedFiles.length === 0 && report.ignoredFiles.length === 0 && listed.length > 0
     && (['statements', 'functions', 'lines'] as const).every(metric => report.totals[metric].covered === report.totals[metric].total)
     && report.totals.branches.covered * 100 >= report.totals.branches.total * 99
   return report

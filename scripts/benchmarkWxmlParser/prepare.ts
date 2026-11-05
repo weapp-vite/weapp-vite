@@ -48,7 +48,7 @@ export function argumentsFor(argv: string[]) {
   return { quick, check, browser: argv.includes('--browser'), output: at < 0 ? undefined : argv[at + 1], consumers }
 }
 
-export async function readCorpus(directory = baselineRoot): Promise<{ manifest: BaselineManifest, fixtures: Fixture[] }> {
+export async function readCorpus(directory = baselineRoot, freezeMissing = true): Promise<{ manifest: BaselineManifest, fixtures: Fixture[] }> {
   const policy = await readPolicy()
   let source: string
   try {
@@ -57,6 +57,9 @@ export async function readCorpus(directory = baselineRoot): Promise<{ manifest: 
   catch (error) {
     if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
       throw error
+    }
+    if (!freezeMissing) {
+      throw new Error('Immutable old464 corpus is missing; prepare it with the existing freeze command before sampling.', { cause: error })
     }
     await mkdir(path.dirname(directory), { recursive: true })
     await freezeBaseline(directory, policy.baselineRef)

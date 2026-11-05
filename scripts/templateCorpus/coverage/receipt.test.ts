@@ -15,6 +15,9 @@ async function repository() {
     'packages/wxml/src/index.test.ts': 'test("value", () => {})',
     'packages/wxml/src/types.d.ts': 'export interface PureDeclaration {}',
     'packages/wxml/dist/index.mjs': 'export const value = 1;',
+    'packages/wxml/dist/core/index.mjs': 'export { value } from "../shared.mjs";',
+    'packages/wxml/dist/shared.mjs': 'export const value = 1;',
+    'packages/wxml/test-d/core.test-d.ts': 'expectType<number>(value)',
     'packages/wxml/vitest.coverage.config.ts': 'export default { thresholds: { statements: 100, functions: 100, lines: 100, branches: 99 } }',
     'packages/wxml/tsconfig.json': '{}',
     'packages/wxml/tsdown.config.ts': 'export default {}',
@@ -43,11 +46,13 @@ describe('formal source coverage evidence receipt', () => {
     expect(identity.tests.files.map(file => file.file)).toEqual([
       'packages/wxml/src/index.test.ts',
       'packages/wxml/src/types.d.ts',
+      'packages/wxml/test-d/core.test-d.ts',
       'scripts/templateCorpus/assertions/index.ts',
       'scripts/templateCorpus/frameworks.json',
     ])
     expect(identity.frozen).toMatchObject({ id: 'frozen-corpus', contentSha256: 'a'.repeat(64), manifest: { file: 'packages/wxml/test/corpus/manifest.json' } })
     expect(identity.built.file).toBe('packages/wxml/dist/index.mjs')
+    expect(identity.builtModules.files.map(file => file.file)).toEqual(['packages/wxml/dist/core/index.mjs', 'packages/wxml/dist/index.mjs', 'packages/wxml/dist/shared.mjs'])
     expect(identity.lock.file).toBe('pnpm-lock.yaml')
     await expect(assertCoverageIdentity(identity, root)).resolves.toBeUndefined()
     expect(JSON.stringify(identity)).not.toContain(root)
@@ -58,6 +63,8 @@ describe('formal source coverage evidence receipt', () => {
     for (const file of [
       'packages/wxml/src/index.ts',
       'packages/wxml/dist/index.mjs',
+      'packages/wxml/dist/shared.mjs',
+      'packages/wxml/test-d/core.test-d.ts',
       'packages/wxml/test/corpus/manifest.json',
       'packages/wxml/vitest.coverage.config.ts',
       'scripts/templateCorpus/assertions/index.ts',
@@ -72,10 +79,16 @@ describe('formal source coverage evidence receipt', () => {
 
   it('requires source acceptance to belong to the same invocation and exact final identity', async () => {
     const identity = await captureCoverageIdentity(await repository())
-    const report = { runId: 'current-run', identity, accepted: true }
+    const report = { runId: 'current-run', identity, accepted: true, apiVariant: 'root', entryContract: { accepted: true, checks: ['public-surface'], failures: [] }, presetContract: { accepted: true, checks: ['presets-public-surface'], failures: [] } }
     expect(() => assertSourceCoverageEvidence(report, 'current-run', identity)).not.toThrow()
     expect(() => assertSourceCoverageEvidence(report, 'other-run', identity)).toThrow('another execution')
     expect(() => assertSourceCoverageEvidence({ ...report, identity: { ...identity, built: { ...identity.built, sha256: 'b'.repeat(64) } } }, 'current-run', identity)).toThrow('identity differs')
     expect(() => assertSourceCoverageEvidence({ ...report, accepted: false }, 'current-run', identity)).toThrow('did not pass')
+    expect(() => assertSourceCoverageEvidence(report, 'current-run', identity, 'core')).toThrow('variant')
+    expect(() => assertSourceCoverageEvidence({ ...report, apiVariant: undefined }, 'current-run', identity)).toThrow('variant')
+    expect(() => assertSourceCoverageEvidence({ ...report, entryContract: undefined }, 'current-run', identity)).toThrow('direct entry')
+    expect(() => assertSourceCoverageEvidence({ ...report, entryContract: { ...report.entryContract, accepted: false } }, 'current-run', identity)).toThrow('direct entry')
+    expect(() => assertSourceCoverageEvidence({ ...report, presetContract: undefined }, 'current-run', identity)).toThrow('standalone preset')
+    expect(() => assertSourceCoverageEvidence({ ...report, presetContract: { ...report.presetContract, accepted: false } }, 'current-run', identity)).toThrow('standalone preset')
   })
 })

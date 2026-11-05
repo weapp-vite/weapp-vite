@@ -3,7 +3,8 @@ import type { MatrixCaseReport, MatrixTemplateCase } from '../assertions/matrix'
 import type { collectSyntaxMatrix } from '../assertions/syntax'
 import type { FuzzOptions, FuzzReport } from '../fuzz'
 import type { CorpusDocument, CorpusProfile } from '../types'
-import type { AcceptanceOptions, AcceptanceReport } from './harness'
+import type { EntryContractReport } from './entryContracts'
+import type { AcceptanceOptions, AcceptanceReport, ApiVariant } from './harness'
 import { Buffer } from 'node:buffer'
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
@@ -13,10 +14,12 @@ import { chromium } from 'playwright'
 import { rolldown } from 'rolldown'
 import { readCorpusArchive } from '../archive'
 import { loadXmlBaseline } from './baseline'
-import { acceptancePaths, assertFrozenIdentity, commandLineOptions, isDirectExecution, repositoryRoot, saveAcceptance, sha256 } from './harness'
+import { acceptanceArtifact, acceptancePaths, assertArtifactIdentity, assertFrozenIdentity, commandLineOptions, isDirectExecution, repositoryRoot, saveAcceptance, sha256 } from './harness'
 import { readMatrixCases } from './matrix'
 
 interface BrowserApi {
+  entryContract: () => EntryContractReport
+  presetContract: () => EntryContractReport
   corpus: (documents: CorpusDocument[], profiles: CorpusProfile[]) => CorpusCaseReport
   matrix: (templates: MatrixTemplateCase[], profiles: CorpusProfile[]) => MatrixCaseReport
   syntax: (profiles: CorpusProfile[]) => ReturnType<typeof collectSyntaxMatrix>
@@ -52,16 +55,21 @@ function mergeCorpus(target: CorpusCaseReport | undefined, next: CorpusCaseRepor
   return target
 }
 
-async function bundleRuntime(entry: string, baseline: string, directory: string) {
+async function bundleRuntime(entry: string, presetsEntry: string, baseline: string, directory: string, variant: ApiVariant) {
   const browserEntry = path.join(directory, 'entry.ts')
   const modulePath = (file: string) => JSON.stringify(file.split(path.sep).join('/'))
-  const source = `import * as api from ${modulePath(entry)};
+  const source = `import * as entry from ${modulePath(entry)};
+import * as presets from ${modulePath(presetsEntry)};
+import { createCoreTemplateApi } from ${modulePath(path.join(repositoryRoot, 'scripts/templateCorpus/test/coreApi.ts'))};
+import { runEntryContracts } from ${modulePath(path.join(repositoryRoot, 'scripts/templateCorpus/test/entryContracts.ts'))};
+import { runPresetContracts } from ${modulePath(path.join(repositoryRoot, 'scripts/templateCorpus/test/presetContracts.ts'))};
 import { Parser } from ${modulePath(baseline)};
 import { runCorpusCases } from ${modulePath(path.join(repositoryRoot, 'scripts/templateCorpus/assertions/corpus.ts'))};
 import { runMatrixCases } from ${modulePath(path.join(repositoryRoot, 'scripts/templateCorpus/assertions/matrix.ts'))};
 import { collectSyntaxMatrix } from ${modulePath(path.join(repositoryRoot, 'scripts/templateCorpus/assertions/syntax.ts'))};
 import { runFuzz } from ${modulePath(path.join(repositoryRoot, 'scripts/templateCorpus/fuzz/index.ts'))};
-globalThis.WxmlCorpusRuntime = { corpus: (documents, profiles) => runCorpusCases(api, documents, profiles, undefined, Parser), matrix: (templates, profiles) => runMatrixCases(api, templates, profiles, undefined, Parser), syntax: profiles => collectSyntaxMatrix(api, profiles), fuzz: (profiles, options) => runFuzz(api, profiles, options, Parser) };
+const api = ${variant === 'core' ? 'createCoreTemplateApi(entry)' : 'entry'};
+globalThis.WxmlCorpusRuntime = { entryContract: () => runEntryContracts(entry, ${JSON.stringify(variant)}), presetContract: () => runPresetContracts(presets), corpus: (documents, profiles) => runCorpusCases(api, documents, profiles, undefined, Parser), matrix: (templates, profiles) => runMatrixCases(api, templates, profiles, undefined, Parser), syntax: profiles => collectSyntaxMatrix(api, profiles), fuzz: (profiles, options) => runFuzz(api, profiles, options, Parser) };
 `
   await writeFile(browserEntry, source)
   const bundle = await rolldown({ input: browserEntry, platform: 'browser' })
@@ -78,10 +86,11 @@ globalThis.WxmlCorpusRuntime = { corpus: (documents, profiles) => runCorpusCases
 /** 单个后台 Chromium 会话顺序执行全部冻结语料，资源始终由本入口收尾。 */
 export async function runBrowserAcceptance(options: AcceptanceOptions = {}): Promise<AcceptanceReport> {
   const selected = acceptancePaths(options)
-  const report: AcceptanceReport = { schemaVersion: 1, startedAt: new Date().toISOString(), accepted: false, runtime: { kind: 'chromium', version: '', headless: true, platform: process.platform, arch: process.arch }, artifact: { entry: path.relative(repositoryRoot, selected.builtEntry).split(path.sep).join('/'), sha256: '' } }
+  const report: AcceptanceReport = { schemaVersion: 1, apiVariant: selected.apiVariant, startedAt: new Date().toISOString(), accepted: false, runtime: { kind: 'chromium', version: '', headless: true, platform: process.platform, arch: process.arch }, artifact: { entry: path.relative(repositoryRoot, selected.builtEntry).split(path.sep).join('/'), sha256: '' } }
   const temporary = await mkdtemp(path.join(os.tmpdir(), 'template-corpus-browser-'))
   try {
-    report.artifact.sha256 = sha256(await readFile(selected.builtEntry))
+    report.artifact = await acceptanceArtifact(selected.builtEntry)
+    report.presetsArtifact = await acceptanceArtifact(selected.presetsEntry)
     const manifestPath = path.join(selected.corpusDirectory, 'manifest.json')
     const manifestHash = sha256(await readFile(manifestPath))
     const { manifest, documents } = await readCorpusArchive(selected.corpusDirectory)
@@ -89,7 +98,7 @@ export async function runBrowserAcceptance(options: AcceptanceOptions = {}): Pro
     report.frozen = { id: manifest.id, manifestSha256: manifestHash, contentSha256: manifest.contentSha256, documents: documents.length, profiles: manifest.profiles.map(profile => profile.id) }
     const baseline = await loadXmlBaseline()
     report.baseline = { name: 'htmlparser2', version: baseline.version, entrySha256: baseline.entrySha256 }
-    const code = await bundleRuntime(selected.builtEntry, baseline.entry, temporary)
+    const code = await bundleRuntime(selected.builtEntry, selected.presetsEntry, baseline.entry, temporary, selected.apiVariant)
     report.bundle = { bytes: Buffer.byteLength(code), sha256: sha256(code) }
     const browser = await chromium.launch({ headless: true, args: ['--enable-automation'] })
     try {
@@ -108,6 +117,8 @@ export async function runBrowserAcceptance(options: AcceptanceOptions = {}): Pro
       try {
         const page = await context.newPage()
         await page.addScriptTag({ content: code })
+        report.entryContract = await page.evaluate(() => (Reflect.get(globalThis, 'WxmlCorpusRuntime') as BrowserApi).entryContract())
+        report.presetContract = await page.evaluate(() => (Reflect.get(globalThis, 'WxmlCorpusRuntime') as BrowserApi).presetContract())
         if (selected.suite !== 'fuzz') {
           for (let offset = 0; offset < documents.length; offset += 128) {
             const next = await page.evaluate(({ documents, profiles }) => (Reflect.get(globalThis, 'WxmlCorpusRuntime') as BrowserApi).corpus(documents, profiles), { documents: documents.slice(offset, offset + 128), profiles: manifest.profiles })
@@ -130,11 +141,12 @@ export async function runBrowserAcceptance(options: AcceptanceOptions = {}): Pro
     finally {
       await browser.close()
     }
-    await assertFrozenIdentity(manifestPath, manifestHash, selected.builtEntry, report.artifact.sha256)
+    await assertFrozenIdentity(manifestPath, manifestHash, selected.builtEntry, report.artifact.sha256, report.artifact.modules)
+    await assertArtifactIdentity(selected.presetsEntry, report.presetsArtifact)
     if (sha256(await readFile(baseline.entry)) !== baseline.entrySha256) {
       throw new Error('Frozen htmlparser2 baseline changed during acceptance.')
     }
-    report.accepted = (selected.suite === 'fuzz' || Boolean(report.corpus?.accepted && report.corpus.cases > 0)) && (report.matrix?.accepted ?? true) && (report.syntax?.accepted ?? true) && (report.fuzz?.accepted ?? true)
+    report.accepted = report.entryContract?.accepted === true && report.presetContract?.accepted === true && (selected.suite === 'fuzz' || Boolean(report.corpus?.accepted && report.corpus.cases > 0)) && (report.matrix?.accepted ?? true) && (report.syntax?.accepted ?? true) && (report.fuzz?.accepted ?? true)
   }
   catch (error) {
     report.error = String(error instanceof Error ? error.stack : error).replaceAll(repositoryRoot, '<repository>/').replaceAll(temporary, '<browser-workspace>')

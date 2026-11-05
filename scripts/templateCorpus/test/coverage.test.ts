@@ -1,8 +1,8 @@
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { auditCoverage } from '../coverage'
+import { auditCoverage, productionFiles } from '../coverage'
 
 function fileCoverage(file: string, statementHits: number[], branchHits: number[] = [1, 1]) {
   const location = (line: number) => ({ start: { line, column: 0 }, end: { line, column: 8 } })
@@ -10,6 +10,35 @@ function fileCoverage(file: string, statementHits: number[], branchHits: number[
 }
 
 describe('strict raw coverage audit', () => {
+  it('enumerates nested runtime modules and refuses unexpected coverage records', async () => {
+    const directory = await mkdtemp(path.join(os.tmpdir(), 'template-inventory-'))
+    try {
+      const source = path.join(directory, 'src')
+      const core = path.join(source, 'core.ts')
+      const preset = path.join(source, 'presets', 'index.ts')
+      const report = path.join(directory, 'coverage.json')
+      await mkdir(path.dirname(preset), { recursive: true })
+      await writeFile(core, 'export const core = 1\n')
+      await writeFile(preset, 'export const presets = []\n')
+      for (const name of ['ignored.test.ts', 'ignored.spec.ts', 'types.d.ts']) {
+        await writeFile(path.join(source, name), 'excluded test or declaration')
+      }
+      expect(await productionFiles(source)).toEqual([core, preset])
+      const records = { [core]: fileCoverage(core, [1]), [preset]: fileCoverage(preset, [1]) }
+      await writeFile(report, JSON.stringify(records))
+      expect((await auditCoverage(source, report)).accepted).toBe(true)
+      const unexpected = path.join(source, 'ignored.test.ts')
+      await writeFile(report, JSON.stringify({ ...records, [unexpected]: fileCoverage(unexpected, [1]) }))
+      const result = await auditCoverage(source, report)
+      expect(result.unexpectedFiles).toEqual(['ignored.test.ts'])
+      expect(result.accepted).toBe(false)
+      expect(result.totals.statements).toEqual({ covered: 2, total: 2 })
+    }
+    finally {
+      await rm(directory, { recursive: true, force: true })
+    }
+  })
+
   it('blocks rounded percentages, missing production files and ignore directives', async () => {
     const directory = await mkdtemp(path.join(os.tmpdir(), 'template-coverage-'))
     try {

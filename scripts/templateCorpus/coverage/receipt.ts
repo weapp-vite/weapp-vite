@@ -1,9 +1,12 @@
+import type { EntryContractReport } from '../test/entryContracts'
+import type { ApiVariant } from '../test/harness'
 import type { CorpusFileIdentity, CorpusManifest } from '../types'
 import assert from 'node:assert/strict'
 import { readdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { corpusHash, corpusJson } from '../integrity'
 import { repositoryRoot } from '../paths'
+import { apiVariants } from '../test/harness'
 import { productionFiles } from './index'
 
 interface IdentityGroup {
@@ -16,6 +19,7 @@ export interface CoverageRunIdentity {
   frozen: { id: string, contentSha256: string, manifest: CorpusFileIdentity }
   production: IdentityGroup
   built: CorpusFileIdentity
+  builtModules: IdentityGroup
   tests: IdentityGroup
   configuration: IdentityGroup
   lock: CorpusFileIdentity
@@ -57,12 +61,13 @@ export async function captureCoverageIdentity(root = repositoryRoot): Promise<Co
   assert.ok(manifest.schemaVersion === 1 && typeof manifest.id === 'string' && /^[\da-f]{64}$/.test(manifest.contentSha256), 'Invalid coverage corpus identity')
   const production = (await productionFiles(path.join(root, 'packages/wxml/src'))).map(file => path.relative(root, file).split(path.sep).join('/'))
   const productionSet = new Set(production)
-  const tests = [...await listedFiles('packages/wxml/src', root), ...await listedFiles('scripts/templateCorpus', root)].filter(file => !productionSet.has(file))
+  const tests = [...await listedFiles('packages/wxml/src', root), ...await listedFiles('packages/wxml/test-d', root), ...await listedFiles('scripts/templateCorpus', root)].filter(file => !productionSet.has(file))
   return {
     schemaVersion: 1,
     frozen: { id: manifest.id, contentSha256: manifest.contentSha256, manifest: await coverageFileIdentity(manifestFile, root) },
     production: await group(production, root),
     built: await coverageFileIdentity('packages/wxml/dist/index.mjs', root),
+    builtModules: await group(await listedFiles('packages/wxml/dist', root), root),
     tests: await group(tests, root),
     configuration: await group(['packages/wxml/vitest.coverage.config.ts', 'packages/wxml/tsconfig.json', 'packages/wxml/tsdown.config.ts', 'packages/wxml/package.json', 'package.json'], root),
     lock: await coverageFileIdentity('pnpm-lock.yaml', root),
@@ -78,11 +83,17 @@ export interface SourceCoverageEvidence {
   runId: string
   identity: CoverageRunIdentity
   accepted: boolean
+  apiVariant: ApiVariant
+  entryContract: EntryContractReport
+  presetContract: EntryContractReport
 }
 
 /** 独立运行的旧报告不能成为本轮正式覆盖率的输入证据。 */
-export function assertSourceCoverageEvidence(value: unknown, runId: string, identity: CoverageRunIdentity): asserts value is SourceCoverageEvidence {
+export function assertSourceCoverageEvidence(value: unknown, runId: string, identity: CoverageRunIdentity, apiVariant?: ApiVariant): asserts value is SourceCoverageEvidence {
   assert.ok(value && typeof value === 'object' && 'runId' in value && value.runId === runId, 'Source coverage report belongs to another execution')
   assert.ok('identity' in value && corpusJson(value.identity) === corpusJson(identity), 'Source coverage report identity differs from this execution')
   assert.ok('accepted' in value && value.accepted === true, 'Source coverage acceptance did not pass')
+  assert.ok('apiVariant' in value && apiVariants.includes(value.apiVariant as ApiVariant) && (apiVariant === undefined || value.apiVariant === apiVariant), 'Source coverage API variant is missing or differs from this execution')
+  assert.ok('entryContract' in value && value.entryContract && typeof value.entryContract === 'object' && 'accepted' in value.entryContract && value.entryContract.accepted === true, 'Source coverage direct entry contract did not pass')
+  assert.ok('presetContract' in value && value.presetContract && typeof value.presetContract === 'object' && 'accepted' in value.presetContract && value.presetContract.accepted === true, 'Source coverage standalone preset contract did not pass')
 }

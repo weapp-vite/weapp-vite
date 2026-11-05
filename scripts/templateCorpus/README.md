@@ -4,9 +4,9 @@
 
 当前结果以冻结语料的 `manifest.json`、离线清单和各项验收报告为准。工具已经实现，不代表语料数量、框架矩阵、解析、覆盖率或性能已经全部验收通过。任何缺口都应保留在报告中。
 
-**本轮检查点：整体未完成。** `all-platform-v1` 已冻结 13,558 份真实内容去重模板、26,228 个来源成员、7,075 份具有真实非微信来源的唯一模板，以及 250 个实际拥有模板来源的独立公开上游。元数据中的 269 个 repo@commit、264 个独立身份还包含仅提供输入或证据的来源，不能替代真实模板上游配额。
+**平台解耦前的语料检查点：整体未完成。** `all-platform-v1` 已冻结 13,558 份真实内容去重模板、26,228 个来源成员、7,075 份具有真实非微信来源的唯一模板，以及 250 个实际拥有模板来源的独立公开上游。元数据中的 269 个 repo@commit、264 个独立身份还包含仅提供输入或证据的来源，不能替代真实模板上游配额。
 
-Node 与 headless Chromium 的完整语料各通过 14,584 个用例；各自的正式固定种子运行完成 100,000 个合法组合、100,000 个明确非法变异及 10,000 条八步编辑序列。源码覆盖率检查 24 个生产文件，无 coverage-ignore：语句 1,172/1,172、函数 128/128、行 1,139/1,139 均为 100%，分支 1,164/1,171（99.40%）。当前核心的 464 份正式 v5 性能复验在 Node、Chromium 各通过 140 个速度门禁单元，无错误。新语料独立画像覆盖全部 135 组，在两个环境各完成 10 对预热、40 对正式采样、405 个汇总单元和 22,080 条正式样本；画像完成不表示新增速度门槛通过，不改写旧 464 份门禁的分母。历史失败、等量确认和后续通过报告分别保留。
+Node 与 headless Chromium 的完整语料各通过 14,584 个用例；各自的正式固定种子运行完成 100,000 个合法组合、100,000 个明确非法变异及 10,000 条八步编辑序列。源码覆盖率检查 24 个生产文件，无 coverage-ignore：语句 1,172/1,172、函数 128/128、行 1,139/1,139 均为 100%，分支 1,164/1,171（99.40%）。该历史检查点的 464 份正式 v5 性能复验在 Node、Chromium 各通过 140 个速度门禁单元，无错误。新语料独立画像覆盖全部 135 组，在两个环境各完成 10 对预热、40 对正式采样、405 个汇总单元和 22,080 条正式样本；画像完成不表示新增速度门槛通过，不改写旧 464 份门禁的分母。历史失败、等量确认和后续通过报告分别保留。
 
 源码覆盖率、解析与 fuzz 的通过只描述各自验收范围。Taro 4.3.2 Harmony JSUI 开发、生产两个格子仍失败，旧 MPX 原始 1,302 字节安装日志附件缺失，框架矩阵及整体验收仍未通过。完整清单、逐平台数量、独立报告和原始字节身份见[冻结语料与验收状态](../../packages/wxml/test/corpus/README.md)。
 
@@ -37,12 +37,11 @@ pnpm corpus:discover --queries maintenance/queries.json --reports .tmp/template-
 pnpm corpus:collect --sources maintenance/sources.json --discovery .tmp/template-corpus/discovery/discovery.json
 pnpm corpus:check
 pnpm --filter @weapp-vite/wxml build
-pnpm --filter @weapp-vite/wxml test:corpus
-pnpm --filter @weapp-vite/wxml test:fuzz
+pnpm --filter @weapp-vite/wxml test:acceptance
 pnpm --filter @weapp-vite/wxml test:coverage
 ```
 
-`maintenance/queries.json`、`maintenance/sources.json` 是示例参数位置，维护者须传入本次审核后的实际文件。`corpus:collect` 完成归档后仍可能报告数量不足；只有后续检查全部通过才能验收。`corpus:check` 检查数量、来源完整性与框架矩阵；实际 parser 契约还必须运行 `test:corpus`、`test:fuzz` 和 `test:coverage`。
+`maintenance/queries.json`、`maintenance/sources.json` 是示例参数位置，维护者须传入本次审核后的实际文件。`corpus:collect` 完成归档后仍可能报告数量不足；只有后续检查全部通过才能验收。`corpus:check` 检查数量、来源完整性与框架矩阵；实际 parser 契约还必须运行 `test:acceptance` 和 `test:coverage`。
 
 普通测试离线读取入库分片与证据，不发起 GitHub 搜索或临时下载语料。采集和框架依赖安装只在显式维护流程执行。验证依赖公开包入口时先重建包；修改生产源码后必须重建，再进行下一轮下游验收。
 
@@ -125,13 +124,17 @@ pnpm corpus:generate --framework uni-vue3 --version 3.0.0-5030420261029002 --tar
 
 正式固定种子预算至少 100,000 个合法组合、100,000 个有明确预期的非法变异、10,000 条八步编辑序列；覆盖全部登记 profiles。保留种子、原失败、缩减结果和编辑步骤。小预算调试结果不作为正式验收通过。
 
+`test:acceptance` 使用 `verify.ts --suite all`，默认依次验收根入口与 `/core`，每个入口在 Node 和 headless Chromium 中都执行完整语料及完整正式 fuzz 预算。它把原先独立运行的 `test:corpus`、`test:fuzz` 合在同一轮冻结身份内，Node 验收从四段合为两段，Chromium 从四次启动减为两次；每个 case、profile 和随机预算的执行次数保持不变。CI 使用该组合入口，两个独立命令继续用于定向排障。
+
+`/core` 从冻结 profile 显式编译方言，不从根入口取得默认平台配置；测试消费视图与真实核心 AST 分开保存，编辑仍使用原文档上下文。定向排查可以传 `--api-variant root` 或 `--api-variant core`，单入口结果会标记 `completeVariants: false`，不能代替双入口整体验收。
+
 生产源码的语句、函数、行覆盖率要求 100%，分支要求至少 99%。按原始命中数判定，检查生产文件清单完整性，输出逐文件缺口。不得添加 coverage-ignore、排除复杂模块或删除防御逻辑来抬高数字。
 
-正式 `test:coverage` 另外写出 `coverage/run-receipt.json`。它绑定本轮唯一 `runId`、起止时间、测试进程退出码、最终清单原字节与内容哈希、全部生产源码、built 入口、测试及共享断言、测试配置和依赖锁。生产文件清单继续使用同一覆盖率分母；其余身份只证明执行输入，不加入分母。执行前后重新计算这些身份，变化直接失败。
+正式 `test:coverage` 另外写出 `coverage/run-receipt.json`。它绑定本轮唯一 `runId`、起止时间、测试进程退出码、最终清单原字节与内容哈希、全部生产源码、built 入口及完整 dist 模块、测试与公开类型测试及共享断言、测试配置和依赖锁。生产文件清单继续使用同一覆盖率分母；其余身份只证明执行输入，不加入分母。执行前后重新计算这些身份，变化直接失败。转发入口背后的共享 chunk 也必须保持相同身份。
 
-收据的 `reports` 保存 `coverage-final.json`、`source-corpus.json`、`source-fuzz.json` 和 `strict-verdict.json` 的路径、原始字节数及 SHA-256。两个源码验收报告携带相同 `runId` 与完整 `identity`；旧运行、独立运行或不同源码的成功报告不能补作本轮证据。`strict-verdict` 保留原始覆盖数量与逐文件缺口，`coverageAccepted` 只表示整数覆盖门槛，最终 `accepted` 还要求测试退出码、两个完整源码验收及身份校验全部通过。报告中所有索引路径均为仓库相对路径。
+收据的 `reports` 保存 `coverage-final.json`、`source-corpus-root.json`、`source-corpus-core.json`、`source-fuzz-root.json`、`source-fuzz-core.json` 和 `strict-verdict.json` 的路径、原始字节数及 SHA-256。四份源码验收报告携带相同 `runId`、完整 `identity` 和各自的 `apiVariant`；旧运行、独立运行、不同源码或另一入口的成功报告不能补作本轮证据。`strict-verdict` 保留原始覆盖数量与逐文件缺口，`coverageAccepted` 只表示整数覆盖门槛，最终 `accepted` 还要求测试退出码、四份完整源码验收及身份校验全部通过。报告中所有索引路径均为仓库相对路径。此前冻结的单入口报告原样保留。
 
-源码覆盖率与 built 入口使用相同断言。Node 与 headless Chromium 都执行完整冻结语料；浏览器报告不能由 Node 覆盖率替代。`test:corpus`、`test:fuzz` 会分别保存 Node/Chromium 报告和整体 verdict；`test:coverage` 另输出原始覆盖率和严格 verdict。正式采样、覆盖率、构建、仓库 E2E 按既有规则串行。
+源码覆盖率与 built 入口使用相同断言，两者分别验收，覆盖率不能替代 built 入口结果。Node 与 headless Chromium 都执行完整冻结语料；浏览器报告不能由 Node 覆盖率替代。`test:acceptance`、`test:corpus`、`test:fuzz` 在 `<suite>/<variant>/` 保存 `node-<variant>.json`、`chromium-<variant>.json` 与失败记录，整体 verdict 为 `verdict-<suite>-all.json`；组合入口的 suite 为 `all`。`test:coverage` 另输出原始覆盖率和严格 verdict，已经包含全部包内单测，不必在同一冻结输入下再重复执行 `test`。先构建的流水线使用 `test:types:check` 验证公开类型；`test:types` 保留独立使用时自动构建的行为。每个 built 报告包含入口及完整 dist 模块身份。正式采样、覆盖率、构建、仓库 E2E 按既有规则串行。
 
 ## 缺陷与交付
 
@@ -140,5 +143,7 @@ pnpm corpus:generate --framework uni-vue3 --version 3.0.0-5030420261029002 --tar
 既有 464 份性能语料与历史结果保持独立。新语料另设版本，按平台、框架、尺寸和特征报告，不修改旧分母。核心变化后重建受影响包，再运行 `pnpm --filter @weapp-vite/wxml bench:check`：Node/Chromium 预热 10 对、正式 40 对；真实语料整套主操作中位耗时不得高于基线，单类耗时比不得超过 1.05。越线只接受一次等量确认，持续失败、冲突不稳定或缺样本都阻止验收。
 
 新版本语料的独立画像入口见 [benchmark/README.md](./benchmark/README.md)。它按平台、框架版本、尺寸、方言与特征输出 scan/parse/完整 canonical 的 Node/Chromium 样本与吞吐，公共 XML 才比较 htmlparser2/dom-serializer。画像不改写旧门禁或历史结果。
+
+`bench:regression` 默认带 `--quick`，用于快速定位回退；完整正式验收使用 `bench:regression:check`。快速诊断不替代完整性能预算或正式结论。
 
 更新交付应包含分片、来源/许可/NOTICE、完整证据、框架矩阵、语法矩阵、失败记录、覆盖率和 Node/Chromium 报告。先运行相关 lint、typecheck、类型与回归门禁，再按主线规则提交和推送；本任务不自动发布版本。任一数量、来源、矩阵、正确性、覆盖率或性能门槛尚缺时，报告必须明确写“未完成”。

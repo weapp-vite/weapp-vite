@@ -1,4 +1,4 @@
-import type { Node } from '@weapp-vite/wxml'
+import type { Node } from '@weapp-vite/wxml/core'
 import type { ChildNode, ParentNode } from 'domhandler'
 import type { SharedTemplateDocument, SharedTemplateParseOptions } from '../../shared/templateParser'
 import { CDATA, Comment, Document, Element, ProcessingInstruction, Text } from 'domhandler'

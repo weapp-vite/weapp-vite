@@ -29,7 +29,7 @@ export interface Dependencies {
 const serializeOptions = { xmlMode: true, encodeEntities: 'utf8', selfClosingTags: true }
 const options = (fixture: Fixture) => ({ platform: fixture.platform as 'weapp', syntax: 'xml' as const })
 
-function stable(value: unknown): string {
+export function stable(value: unknown): string {
   const output: string[] = []
   const stack: Array<{ value: unknown } | { raw: string }> = [{ value }]
   while (stack.length) {
@@ -67,7 +67,7 @@ function domRange(node: DomNode): [number, number] {
   return [node.startIndex!, node.endIndex! + 1]
 }
 
-function domProjection(root: DomNode, withRanges = false): unknown {
+export function domProjection(root: DomNode, withRanges = false): unknown {
   const output: unknown[] = []
   const stack: Array<DomNode | null> = [root]
   while (stack.length) {

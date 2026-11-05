@@ -1,5 +1,6 @@
-import type { Document, ElementNode, Node } from '../types'
-import { parse } from '../parser'
+import type { DocumentContext } from '../documentContext'
+import type { ElementNode, Node, TemplateDocument } from '../types'
+import { parseContext } from '../documentContext'
 
 export interface NodeEdits {
   name?: string
@@ -22,7 +23,8 @@ export interface DeferredSnippet {
 export type EditSource = string | DeferredSnippet
 
 export interface EditSession {
-  document: Document
+  document: TemplateDocument
+  readonly context: DocumentContext
   active: boolean
   hasStructuralInvalidations: boolean
   edits: Map<Node, NodeEdits>
@@ -44,7 +46,7 @@ export function assertName(name: string) {
   }
 }
 
-export function assertValid(document: Document) {
+export function assertValid(document: TemplateDocument) {
   const diagnostic = document.diagnostics.find(item => item.severity === 'error')
   if (diagnostic) {
     throw new TypeError(`Invalid WXML document: ${diagnostic.message}`)
@@ -59,10 +61,10 @@ export function validateSnippet(session: EditSession, source: string, raw = fals
     return source
   }
   if (!raw) {
-    if (session.document.options.resolveScriptBoundary) {
+    if (session.context.resolveScriptBoundary) {
       return { kind: 'snippet', source } as const
     }
-    assertValid(parse(source, session.document.options))
+    assertValid(parseContext(source, session.context))
   }
   return source
 }

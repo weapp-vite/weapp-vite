@@ -26,6 +26,14 @@
       "types": "./dist/index.d.mts",
       "import": "./dist/index.mjs"
     },
+    "./presets": {
+      "types": "./dist/presets/index.d.mts",
+      "import": "./dist/presets/index.mjs"
+    },
+    "./core": {
+      "types": "./dist/core/index.d.mts",
+      "import": "./dist/core/index.mjs"
+    },
     "./package.json": "./package.json"
   },
   "main": "./dist/index.mjs",
@@ -47,6 +55,9 @@
     "lint": "eslint .",
     "bench": "node --stack-size=4096 --expose-gc --import tsx ../../scripts/benchmarkWxmlParser/index.ts --quick --browser --consumer-scanner packages/weapp-vite/src/wxml/scan/parser.ts#parseWxml --consumer-web packages-runtime/web/src/compiler/wxml/parser.ts#parseWxml --consumer-simulator mpcore/packages/simulator/src/view/wxsDocument.ts#parseWxsTemplateDocument",
     "bench:check": "node --stack-size=4096 --expose-gc --import tsx ../../scripts/benchmarkWxmlParser/index.ts --check --browser --consumer-scanner packages/weapp-vite/src/wxml/scan/parser.ts#parseWxml --consumer-web packages-runtime/web/src/compiler/wxml/parser.ts#parseWxml --consumer-simulator mpcore/packages/simulator/src/view/wxsDocument.ts#parseWxsTemplateDocument",
+    "bench:regression": "node --stack-size=4096 --expose-gc --import tsx ../../scripts/templateCorpus/benchmark/regression.ts --quick",
+    "bench:regression:check": "node --stack-size=4096 --expose-gc --import tsx ../../scripts/templateCorpus/benchmark/regression.ts --check",
+    "test:acceptance": "node --import tsx ../../scripts/templateCorpus/verify.ts --suite all",
     "test:corpus": "node --import tsx ../../scripts/templateCorpus/verify.ts --suite corpus",
     "test:fuzz": "node --import tsx ../../scripts/templateCorpus/verify.ts --suite fuzz",
     "test:coverage": "node --import tsx ../../scripts/templateCorpus/coverage/run.ts"
@@ -69,6 +80,21 @@
     }
   },
   "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.mts",
+        "import": "./dist/index.mjs"
+      },
+      "./presets": {
+        "types": "./dist/presets/index.d.mts",
+        "import": "./dist/presets/index.mjs"
+      },
+      "./core": {
+        "types": "./dist/core/index.d.mts",
+        "import": "./dist/core/index.mjs"
+      },
+      "./package.json": "./package.json"
+    },
     "access": "public",
     "registry": "https://registry.npmjs.org"
   }

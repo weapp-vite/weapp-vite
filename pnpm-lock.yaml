@@ -835,6 +835,9 @@ importers:
       '@types/set-value':
         specifier: ^4.0.3
         version: 4.0.3
+      '@weapp-vite/wxml':
+        specifier: workspace:*
+        version: link:../../packages/wxml
       domhandler:
         specifier: ^6.0.1
         version: 6.0.1

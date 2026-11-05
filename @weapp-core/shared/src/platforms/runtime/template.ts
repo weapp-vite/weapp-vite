@@ -1,13 +1,14 @@
 import type { MpPlatform } from '../types'
+import { alipay, jd, swan, tt, weapp, xhs } from '@weapp-vite/wxml/presets'
 
 // Web 的兼容模板渲染器也需要这些语法信息，不应因此依赖 CLI、npm 和项目配置元数据。
 export const MINI_PROGRAM_DIRECTIVE_PREFIXES: Readonly<Record<MpPlatform, string>> = Object.freeze({
-  weapp: 'wx',
-  alipay: 'a',
-  swan: 's',
-  tt: 'tt',
-  jd: 'wx',
-  xhs: 'wx',
+  weapp: weapp.directivePrefix,
+  alipay: alipay.directivePrefix,
+  swan: swan.directivePrefix,
+  tt: tt.directivePrefix,
+  jd: jd.directivePrefix,
+  xhs: xhs.directivePrefix,
 })
 
 const SUPPORTED_MINI_PROGRAM_DIRECTIVE_PREFIXES = Object.freeze(

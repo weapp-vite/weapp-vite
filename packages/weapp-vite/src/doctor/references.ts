@@ -2,14 +2,14 @@ import type { MpPlatform } from '../types'
 import type { DoctorArtifactSnapshot, DoctorReport } from './types'
 import { posix as path } from 'node:path'
 import { parseJsLike, traverse } from '@weapp-vite/ast/babel'
-import { findScriptClosingTag } from '@weapp-vite/language-service'
-import { decodeAttribute, scan } from '@weapp-vite/wxml'
+import { decodeAttribute } from '@weapp-vite/wxml/core'
 import postcss from 'postcss'
 import valueParser from 'postcss-value-parser'
 import { classifyPackage } from '../analyze/subpackages/classifier'
 import { getPlatformOutputExtensions } from '../platform'
-import { getOutputTemplateRawTags, getScriptModuleImportAttrs } from '../utils/wxmlScriptModule'
+import { getScriptModuleImportAttrs } from '../utils/wxmlScriptModule'
 import { getTemplateImportAttrs } from '../wxml/shared'
+import { outputTemplateParser } from '../wxml/template/parser'
 import { addDiagnostic } from './report'
 import { incompleteCoverage } from './source'
 
@@ -78,7 +78,7 @@ export function checkArtifactReferences(
         })
       }
       else if (file.path.endsWith(`.${ext.wxml}`)) {
-        const result = scan(file.text, { platform: target, syntax: 'xml', rawTags: getOutputTemplateRawTags(target), resolveScriptBoundary: findScriptClosingTag })
+        const result = outputTemplateParser(target, 'xml').scan(file.text)
         if (result.diagnostics.some(diagnostic => diagnostic.severity === 'error')) {
           throw new TypeError('Invalid artifact template.')
         }

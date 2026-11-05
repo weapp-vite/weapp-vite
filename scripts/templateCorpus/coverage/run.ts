@@ -10,6 +10,7 @@ import { execa } from 'execa'
 import { corpusJson } from '../archive'
 import { corpusHash } from '../integrity'
 import { defaultCorpusReports, repositoryRoot } from '../paths'
+import { apiVariants } from '../test/harness'
 import { auditCoverage } from './index'
 import { assertCoverageIdentity, assertSourceCoverageEvidence, captureCoverageIdentity, coverageFileIdentity } from './receipt'
 
@@ -35,10 +36,10 @@ try {
   reports.raw = await coverageFileIdentity(path.join(output, 'coverage-final.json'))
   coverage = await auditCoverage(path.join(repositoryRoot, 'packages/wxml/src'), path.join(output, 'coverage-final.json'))
   assert.deepEqual(await coverageFileIdentity(path.join(output, 'coverage-final.json')), reports.raw, 'Raw coverage report changed during its audit')
-  for (const [key, file] of [['sourceCorpus', 'source-corpus.json'], ['sourceFuzz', 'source-fuzz.json']] as const) {
+  for (const [key, file, apiVariant] of apiVariants.flatMap(apiVariant => ([['sourceCorpus', 'source-corpus'], ['sourceFuzz', 'source-fuzz']] as const).map(([key, name]) => [`${key}-${apiVariant}`, `${name}-${apiVariant}.json`, apiVariant] as const))) {
     const bytes = await readFile(path.join(output, file))
     const value: unknown = JSON.parse(bytes.toString('utf8'))
-    assertSourceCoverageEvidence(value, runId, identity)
+    assertSourceCoverageEvidence(value, runId, identity, apiVariant)
     reports[key] = await coverageFileIdentity(path.join(output, file))
     assert.equal(reports[key].sha256, corpusHash(bytes), 'Source coverage report changed during its audit')
     assert.equal(reports[key].bytes, bytes.length, 'Source coverage report changed during its audit')
@@ -53,5 +54,5 @@ const accepted = exitCode === 0 && identityUnchanged && coverage?.accepted === t
 await writeFile(path.join(output, 'strict-verdict.json'), `${corpusJson({ ...coverage, schemaVersion: 1, runId, identity, accepted, coverageAccepted: coverage?.accepted ?? false, errors })}\n`)
 reports.verdict = await coverageFileIdentity(path.join(output, 'strict-verdict.json'))
 await writeFile(path.join(output, 'run-receipt.json'), `${corpusJson({ schemaVersion: 1, kind: 'source-coverage', runId, startedAt, finishedAt: new Date().toISOString(), identity, identityUnchanged, exitCode: exitCode ?? null, accepted, reports, errors })}\n`)
-process.stdout.write(`${corpusJson({ accepted, totals: coverage?.totals, missingFiles: coverage?.missingFiles, ignoredFiles: coverage?.ignoredFiles, receipt: path.relative(repositoryRoot, path.join(output, 'run-receipt.json')).split(path.sep).join('/'), errors })}\n`)
+process.stdout.write(`${corpusJson({ accepted, totals: coverage?.totals, missingFiles: coverage?.missingFiles, unexpectedFiles: coverage?.unexpectedFiles, ignoredFiles: coverage?.ignoredFiles, receipt: path.relative(repositoryRoot, path.join(output, 'run-receipt.json')).split(path.sep).join('/'), errors })}\n`)
 process.exitCode = accepted ? 0 : 1

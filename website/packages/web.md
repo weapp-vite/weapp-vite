@@ -18,6 +18,10 @@ keywords:
 
 编译器和浏览器字符串模板入口复用 [`@weapp-vite/wxml`](/packages/wxml) 的解析核心。`web` 决定输出目标，输入模板的方言单独选择；WXML 输入仍按小程序语法读取。组件映射、空白处理、表达式求值和渲染后 DOM 输出继续由 Web 层负责，现有 `renderTemplate(ChildNode[])` 接口保持兼容。
 
+输入扩展名和脚本配方来自 `@weapp-vite/wxml/presets`，编译器与浏览器绑定同一 `/core` 解析器。未明确输入平台的历史 XML 默认行为继续保留；显式 WXML 输入使用微信方言。
+
+这次平台解耦接入属于尚未发布的主线实现，正式性能仍未验收。当前检查点与失败原始证据见[模板平台解耦报告](https://github.com/weapp-vite/weapp-vite/blob/main/docs/reports/2026-11-05-template-decoupling/README.md)；既有 Web 功能验证与新核心的最终回归结论分开记录。
+
 > 当前仍是 POC 阶段，适合技术验证，不建议直接作为生产方案。
 
 ## 何时使用

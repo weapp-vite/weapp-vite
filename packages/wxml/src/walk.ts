@@ -1,8 +1,8 @@
-import type { Document, ElementNode, Node, Visitor } from './types'
+import type { ElementNode, Node, TemplateDocument, Visitor } from './types'
 
 /** 迭代遍历文档，enter 返回 false 时跳过子树，避免深模板递归溢出。 */
-export function walk(document: Document | readonly Node[], visitor: Visitor) {
-  const roots = Array.isArray(document) ? document : (document as Document).children
+export function walk(document: TemplateDocument | readonly Node[], visitor: Visitor) {
+  const roots = Array.isArray(document) ? document : (document as TemplateDocument).children
   const stack: Array<{ node: Node, parent?: ElementNode, leave?: boolean }> = []
   for (let index = roots.length - 1; index >= 0; index--) {
     stack.push({ node: roots[index]! })

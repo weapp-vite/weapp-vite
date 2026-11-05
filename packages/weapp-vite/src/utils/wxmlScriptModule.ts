@@ -1,28 +1,52 @@
 import type { MiniProgramNativeScriptModule } from '@weapp-core/shared'
 import type { MpPlatform } from '../types'
-import { getMiniProgramNativeScriptModules, getMiniProgramScriptModuleOptions } from '@weapp-core/shared'
-import { getPlatformOutputExtensions, getPlatformScriptModuleTag } from '../platform'
+import { getMiniProgramNativeScriptModules } from '@weapp-core/shared'
+import { defaultTemplateInputRecipe, getTemplatePreset } from '@weapp-vite/wxml/presets'
+import { getPlatformScriptModuleTag } from '../platform'
 import { MINI_PROGRAM_PLATFORM_ADAPTERS } from '../platforms/adapters'
 
 const IMPORT_SJS_TAG_RE = /<import-sjs([\s\S]*?)>/g
 const IMPORT_SJS_SRC_RE = /\bsrc\s*=\s*/g
 const IMPORT_SJS_MODULE_RE = /\bmodule\s*=\s*/g
-const DEFAULT_SCRIPT_MODULE_TAG_NAMES = ['wxs', 'sjs', 'filter'] as const
-const DEFAULT_SCRIPT_MODULE_TAG_BY_EXTENSION = Object.freeze({
-  wxs: 'wxs',
-  sjs: 'sjs',
-} as const)
-const SCRIPT_MODULE_IMPORT_ATTRS = Object.freeze({
-  'wxs': ['src'],
-  'sjs': ['src'],
-  'import-sjs': ['from'],
-  'filter': ['src'],
-} satisfies Readonly<Record<string, readonly string[]>>)
-
-type ScriptModuleExtensionKey = keyof typeof DEFAULT_SCRIPT_MODULE_TAG_BY_EXTENSION
-type ScriptModuleImportTagName = keyof typeof SCRIPT_MODULE_IMPORT_ATTRS
 const scriptModuleTagNames = new Map<MpPlatform | undefined, readonly string[]>()
 const nativeScriptModules = new Map<MpPlatform | undefined, ReadonlyMap<string, MiniProgramNativeScriptModule>>()
+/** 纯预设只在模块初始化时建索引，普通标签查询不扫描 recipe 或创建属性数组。 */
+function compileScriptRecipes() {
+  const tags: Record<string, string | undefined> = Object.create(null)
+  const attributes: Record<string, readonly string[] | undefined> = Object.create(null)
+  const singleAttributes: Record<string, readonly string[] | undefined> = Object.create(null)
+  const platforms: Partial<Record<MpPlatform, Readonly<typeof attributes>>> = Object.create(null)
+  const singleAttribute = (name: string) => singleAttributes[name] ??= Object.freeze([name])
+  for (const module of defaultTemplateInputRecipe.scriptModules) {
+    tags[module.extension] = module.tag
+  }
+  for (const recipe of defaultTemplateInputRecipe.scriptReferences) {
+    attributes[recipe.tag] = recipe.sourceAttributes
+    for (const name of recipe.sourceAttributes) {
+      singleAttribute(name)
+    }
+  }
+  for (const adapter of MINI_PROGRAM_PLATFORM_ADAPTERS) {
+    const preset = getTemplatePreset(adapter.id)
+    const portable = preset.portableScriptModule
+    const selected: typeof attributes = Object.assign(Object.create(null), attributes)
+    if (attributes[portable.tag]) {
+      selected[portable.tag] = singleAttribute(portable.sourceAttribute)
+    }
+    for (const native of preset.nativeScriptModules) {
+      singleAttribute(native.sourceAttribute)
+    }
+    platforms[adapter.id] = Object.freeze(selected)
+  }
+  return Object.freeze({
+    tags: Object.freeze(tags),
+    attributes: Object.freeze(attributes),
+    singleAttributes: Object.freeze(singleAttributes),
+    platforms: Object.freeze(platforms),
+  })
+}
+
+const scriptRecipes = compileScriptRecipes()
 
 /** 额外原生脚本身份仅在对应平台内成立，不扩大普通组件的原文边界。 */
 export function getNativeScriptModuleByTag(tagName?: string, platform?: MpPlatform) {
@@ -51,14 +75,9 @@ export function normalizeScriptModuleExtension(scriptModuleExtension?: string) {
 }
 
 export function getDefaultScriptModuleTagByExtension(scriptModuleExtension?: string) {
-  if (!scriptModuleExtension) {
-    return 'wxs'
-  }
   const normalizedExtension = normalizeScriptModuleExtension(scriptModuleExtension)
-  if (!normalizedExtension || !Object.hasOwn(DEFAULT_SCRIPT_MODULE_TAG_BY_EXTENSION, normalizedExtension)) {
-    return 'wxs'
-  }
-  return DEFAULT_SCRIPT_MODULE_TAG_BY_EXTENSION[normalizedExtension as ScriptModuleExtensionKey]
+  return (normalizedExtension ? scriptRecipes.tags[normalizedExtension] : undefined)
+    ?? defaultTemplateInputRecipe.defaultScriptModule.tag
 }
 
 export function resolveScriptModuleTagName(options?: {
@@ -82,7 +101,7 @@ export function getDerivedScriptModuleTagNames() {
 export function getScriptModuleTagNames(platform?: MpPlatform) {
   let names = scriptModuleTagNames.get(platform)
   if (!names) {
-    names = Object.freeze([...new Set([...DEFAULT_SCRIPT_MODULE_TAG_NAMES, ...getDerivedScriptModuleTagNames(), ...getMiniProgramNativeScriptModules(platform).map(module => module.tag)])])
+    names = Object.freeze([...new Set([...defaultTemplateInputRecipe.rawTags, ...getDerivedScriptModuleTagNames(), ...getMiniProgramNativeScriptModules(platform).map(module => module.tag)])])
     scriptModuleTagNames.set(platform, names)
   }
   return names
@@ -90,8 +109,7 @@ export function getScriptModuleTagNames(platform?: MpPlatform) {
 
 /** 最终产物只将目标平台的脚本标签视为原始正文，避免遮蔽同名普通组件。 */
 export function getOutputTemplateRawTags(platform: MpPlatform) {
-  const tag = getMiniProgramScriptModuleOptions(platform, getPlatformOutputExtensions(platform).wxs).tag
-  return [...new Set([tag, ...(platform === 'swan' ? ['filter'] : []), ...getMiniProgramNativeScriptModules(platform).map(module => module.tag)])]
+  return [...getTemplatePreset(platform).dialect.rawTags]
 }
 
 export function isScriptModuleTagName(tagName?: string, platform?: MpPlatform) {
@@ -104,15 +122,9 @@ export function getScriptModuleImportAttrs(tagName?: string, platform?: MpPlatfo
   }
   const native = getNativeScriptModuleByTag(tagName, platform)
   if (native) {
-    return [native.sourceAttribute]
+    return scriptRecipes.singleAttributes[native.sourceAttribute]
   }
-  if (!Object.hasOwn(SCRIPT_MODULE_IMPORT_ATTRS, tagName)) {
-    return undefined
-  }
-  if (platform && tagName === getMiniProgramScriptModuleOptions(platform, 'sjs').tag) {
-    return [getMiniProgramScriptModuleOptions(platform, 'sjs').sourceAttribute]
-  }
-  return SCRIPT_MODULE_IMPORT_ATTRS[tagName as ScriptModuleImportTagName]
+  return (platform ? scriptRecipes.platforms[platform]! : scriptRecipes.attributes)[tagName]
 }
 
 export function isScriptModuleImportAttr(tagName: string | undefined, attrName: string, platform?: MpPlatform) {
@@ -123,7 +135,7 @@ export function isScriptModuleImportAttr(tagName: string | undefined, attrName: 
 }
 
 export function shouldNormalizeScriptModuleAttributes(tagName?: string, platform?: MpPlatform) {
-  return tagName === 'import-sjs' && (!platform || getMiniProgramScriptModuleOptions(platform, 'sjs').sourceAttribute === 'from')
+  return tagName === 'import-sjs' && (!platform || getTemplatePreset(platform).portableScriptModule.sourceAttribute === 'from')
 }
 
 export function normalizeImportSjsAttributes(source: string) {

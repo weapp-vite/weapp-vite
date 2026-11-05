@@ -6,6 +6,20 @@ export interface SourceRange {
 export type Platform = 'weapp' | 'alipay' | 'tt' | 'swan' | 'jd' | 'xhs' | 'qq' | 'ks' | 'ty'
 export type Syntax = 'legacy' | 'xml'
 
+/** 与平台无关的模板方言声明。 */
+export interface DialectDefinition {
+  readonly id: string
+  readonly syntax: Syntax
+  readonly rawTags: readonly string[]
+}
+
+declare const compiledDialectBrand: unique symbol
+
+/** 已校验的不可变方言，供词法核心绑定使用。 */
+export interface CompiledDialect extends DialectDefinition {
+  readonly [compiledDialectBrand]: true
+}
+
 /** 仅在结束边界已确定时提供完整插值的 UTF-16 半开范围，属性外层引号不在范围内。 */
 export interface InterpolationRecovery extends SourceRange {
   readonly kind: 'interpolation'
@@ -82,12 +96,23 @@ export interface RawNode extends RawToken {
 
 export type Node = ElementNode | RawNode
 
-export interface Document extends ScanResult {
-  readonly source: string
+export interface Document extends TemplateDocument {
   readonly platform: Platform
+  readonly options: ParseOptions
+}
+
+/** 核心入口使用的平台无关文档基型。 */
+export interface TemplateDocument extends ScanResult {
+  readonly source: string
   readonly syntax: Syntax
   readonly children: readonly Node[]
-  readonly options: ParseOptions
+}
+
+export interface TemplateParser {
+  readonly dialect: CompiledDialect
+  readonly scan: (source: string) => ScanResult
+  readonly scanComments: (source: string) => ScanResult
+  readonly parse: (source: string) => TemplateDocument
 }
 
 export interface Visitor {

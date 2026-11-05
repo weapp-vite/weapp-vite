@@ -1,0 +1,2 @@
+export { alipay, defaultTemplateInputRecipe, getTemplatePreset, jd, ks, legacyScriptModuleRecipes, portableCompatibilityScriptRecipes, presets, qq, swan, tt, ty, weapp, xhs } from './definitions'
+export type { PlatformPresetId, TemplateDialectDefinition, TemplateDirectives, TemplateInputRecipe, TemplatePreset, TemplateScriptModule, TemplateScriptModuleRecipe, TemplateScriptReferenceRecipe } from './types'

@@ -100,6 +100,22 @@ export interface MiniProgramNativeScriptModule {
   moduleAttribute: 'module' | 'name'
 }
 
+/**
+ * @description 模板消费方需要的轻量平台投影；不包含构建、IDE、npm 或 runtime 能力。
+ */
+export interface MiniProgramTemplateProjection {
+  platform: MpPlatform
+  templateExtension: string
+  styleExtension: string
+  syntax: 'legacy' | 'xml'
+  compatibilityRawTags: readonly string[]
+  portableScriptModule: MiniProgramNativeScriptModule
+  nativeScriptModules: readonly MiniProgramNativeScriptModule[]
+  directivePrefix: string
+  directiveSeparator: ':' | '-'
+  eventStyle: 'default' | 'alipay'
+}
+
 export interface MiniProgramPlatformDescriptor {
   /**
    * @description 构建流程中使用的标准平台标识。

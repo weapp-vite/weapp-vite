@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "measurementProtocol": "exact-workload-v2",
+  "baselineRef": "739da6b848a47ac44cb567ce643b97ff79da9cc4",
+  "baselineLockSha256": "045a5e5768c86c98bf1220bd469091d518cd07c1e85bc3de0c3b87bbc487c99c",
+  "baselineSourceIdentitySha256": "6050a47e22887ab233f3349f898486c49fcb0af20b9b483e001f45e6bbe0c78c",
+  "corpusId": "all-platform-v1",
+  "sampling": {
+    "warmup": 10,
+    "rounds": 40,
+    "confirmation": "one equal-size batch only",
+    "order": "alternating baseline/candidate",
+    "batch": "same calibrated iterations per pair"
+  },
+  "thresholds": {
+    "aggregateMaximumRatio": 1.03,
+    "categoryMaximumRatio": 1.05,
+    "aggregateGroupSuffix": "/all",
+    "aggregateGroups": ["old464/shared", "old464/real-all", "all-platform/real-all", "all-platform/controlled-all"]
+  },
+  "operations": ["scan", "parse", "canonical", "parse-edit-serialize", "preserve-noop", "consumer-scanner", "consumer-web", "consumer-simulator"],
+  "boundary": "Compare a built current entry with a built frozen-main entry using every valid corpus/profile fixture. All valid platform groups are paired; no htmlparser2 exclusion is used. preserve-noop is informational and never gates acceptance."
+}

@@ -16,6 +16,10 @@ keywords:
 
 模板词法、源码范围和脚本边界候选由 [`@weapp-vite/wxml`](/packages/wxml) 提供。语言服务保留原有公开 API，并负责平台语义、作用域分析、格式化与脚本边界的 JS AST 歧义校验；只需要解析和序列化时可以直接使用基础包。
 
+平台模板事实统一来自 `@weapp-vite/wxml/presets`，解析绑定通过 `/core` 复用不可变方言；文档链接、诊断策略和 JS AST resolver 继续属于语言服务。
+
+这次平台解耦接入属于尚未发布的主线实现，正式性能仍未验收。原有语言服务 API 的兼容检查与新核心的最终性能结论分开记录，当前检查点及失败证据见[模板平台解耦报告](https://github.com/weapp-vite/weapp-vite/blob/main/docs/reports/2026-11-05-template-decoupling/README.md)。
+
 公开的 `scanTemplate(source)` 继续固定使用 XML 词法，不随平台 profile 切换为 legacy。tokens、diagnostics 和标签 attributes 数组仍可修改；`TemplateAttribute.quote` 可选字段记录原属性的单引号或双引号，无引号属性为 `undefined`。原有跨平台原始标签集合 `wxs`、`sjs`、`ks`、`filter`、`script`、`import-sjs` 也保持兼容。需要按实际输入平台限制原始标签、或处理 legacy 编码时，可直接配置基础包。
 
 ## 支持范围

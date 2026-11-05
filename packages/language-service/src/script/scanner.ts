@@ -1,9 +1,9 @@
-import type { ScriptBoundaryCandidates } from '@weapp-vite/wxml'
+import type { ScriptBoundaryCandidates } from '@weapp-vite/wxml/core'
 import type { SourceRange } from '../types'
 import { parse } from '@weapp-vite/ast'
-import { scanScriptBoundaryCandidates } from '@weapp-vite/wxml'
+import { scanScriptBoundaryCandidates } from '@weapp-vite/wxml/core'
 
-export { findTrailingScriptComment } from '@weapp-vite/wxml'
+export { findTrailingScriptComment } from '@weapp-vite/wxml/core'
 
 function validPrefix(source: string, start: number, closing: SourceRange, block = false) {
   try {
