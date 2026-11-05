@@ -8,6 +8,8 @@
 
 候选测试契约不包含采样耗时、运行身份或验收工件，更新它不会补齐或重写历史性能证据。正式 CI 采集从该轮不可变 revision 的真实 YAML 与实际 GitHub jobs 建立拓扑，再核对已提交的 benchmark 合约和本轮工件；新的候选契约不能用于宣称旧样本采用了新工具链或新拓扑。
 
+2026-11-05 依赖升级按上述七文件完整 `jobs` 流程同步候选契约，仅更新当前 Node 固定版本及浮动版本下限，并补齐升级前主线已存在的 `template-corpus` job。该 job 的 workflow、命令和依赖未变；`baseline-topology.json`、`optimized-v1-inventory.json`、历史性能数据及采样规则均保持原样，也不重新采样。下述 watcher 专用同步器的范围和拒绝额外漂移的守卫继续保留。
+
 2026-10-29 补入 `validate-ci-e2e.yml` 已加入的 `watcher-comparison-diagnostic`。它在 v1/v2 均只由显式手动诊断选择启动；原 job、命令、matrix、依赖及历史基线保持原样。执行 `node scripts/verificationTelemetry/syncCandidateTopology.mjs` 从既有七个 workflow 同步候选快照：同步器只允许这一个新增 job，任何已有契约变更或额外增删都会停止，测试运行不会重写快照。
 
 启用方式是现有 reusable job 的 `verification_telemetry: true`。没有启用时，root Vitest 配置与 suite 入口不加载证据 reporter 或计划。候选优化流程共享逻辑范围、显式分类、资源核验、基线证据发现和合约生成 helper，其原生四分片 reporter 直接记录真实 case，不使用基线调度入口。

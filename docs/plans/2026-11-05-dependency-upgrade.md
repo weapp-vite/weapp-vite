@@ -154,4 +154,6 @@ native 暖路径 profile 只证明本轮对应输入的对齐与采样完成，�
 
 恢复自动 changeset 官方 pin 后，仅定向重跑 `scripts/prAdmission/local.test.mjs` 与 `cli.test.mjs`：两个文件、56 项全部通过；该工作流和本报告的 ESLint 检查通过。证据记录为 `auto-changeset-admission-regression`、`auto-changeset-template-lint`，最终候选的完整 pre-push 仍需重新完成。
 
-修正后的 main 提交与推送、候选提交的完整 CI、headless/HMR 与真实 DevTools 验收仍待完成，应用、模板和实际消费者的最终矩阵由主验证流程继续登记。本文的局部通过只覆盖对应输入和观察面；真实 IDE 或 CI 未完成、存在失败或环境阻塞时，保留具体状态与证据，不计为最终验收通过。
+修正后的 `b31e9f433` 已通过原生 pre-push 并推送 main。补查独立脚本入口后，四份遗漏的 MJS 合约中 107 项通过，唯一失败来自当前候选 workflow 配置快照。已按仓库文档同步当前候选记录中的三处 Node 配置和升级前主线已有的 template-corpus job；实际 workflow、测试断言、watcher 专用同步守卫、历史 baseline 与测量数据均未修改。快照及同步守卫 20 项回归通过，Vitest 离线 fixture、真实四分片覆盖合并和 telemetry smoke 共八项通过；原有覆盖阈值拒绝、原生 emit 和工件身份检查继续保留。
+
+候选提交的完整 CI、headless/HMR 与真实 DevTools 验收仍待完成，应用、模板和实际消费者的最终矩阵由主验证流程继续登记。本文的局部通过只覆盖对应输入和观察面；真实 IDE 或 CI 未完成、存在失败或环境阻塞时，保留具体状态与证据，不计为最终验收通过。
