@@ -72,16 +72,17 @@ describe('performance reporting workflows', () => {
   })
 
   it('resolves pnpm from the checked-out packageManager instead of a second version pin', async () => {
-    for (const [file, job, manifest] of [
-      ['ci-performance.yml', 'smoke', 'package.json'],
-      ['nightly-performance.yml', 'collect', 'driver/package.json'],
-      ['candidate-performance.yml', 'collect', 'driver/package.json'],
-      ['wevu-runtime-size.yml', 'measure', 'head/package.json'],
+    for (const [file, job, manifest, action] of [
+      ['ci-performance.yml', 'smoke', 'package.json', './.tmp/pr-driver/.github/actions/setup-node-pnpm'],
+      ['nightly-performance.yml', 'collect', 'driver/package.json', './driver/.github/actions/setup-node-pnpm'],
+      ['candidate-performance.yml', 'collect', 'driver/package.json', './driver/.github/actions/setup-node-pnpm'],
+      ['wevu-runtime-size.yml', 'measure', 'head/package.json', './.tmp/pr-validation-driver/.github/actions/setup-node-pnpm'],
     ]) {
       const workflow = readWorkflowFixture(file!)
-      const setup = workflow.jobs[job!].steps.find((step: { uses?: string }) => step.uses?.startsWith('pnpm/action-setup@'))
+      const setup = workflow.jobs[job!].steps.find((step: { uses?: string }) => step.uses === action)
       expect(setup.with?.version).toBeUndefined()
-      expect(setup.with?.package_json_file ?? 'package.json').toBe(manifest)
+      expect(setup.with?.['package-json-file'] ?? 'package.json').toBe(manifest)
+      expect(setup.with).toMatchObject({ 'install-dependencies': 'false', 'freeze-toolchain': 'false' })
     }
   })
 

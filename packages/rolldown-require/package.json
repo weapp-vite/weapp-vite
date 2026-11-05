@@ -81,7 +81,7 @@
   },
   "dependencies": {
     "@rollup/pluginutils": "^5.5.1",
-    "get-tsconfig": "^4.14.3"
+    "get-tsconfig": "catalog:"
   },
   "devDependencies": {
     "@types/pnpapi": "^0.0.5"

@@ -1,0 +1,29 @@
+name: Setup Node
+description: Resolve the shared CI Node policy and install Node without pnpm, dependencies or toolchain environment changes.
+
+inputs:
+  node-version:
+    description: Exact version, floating supported major, or default for the exact .node-version
+    required: false
+    default: default
+
+outputs:
+  node-version:
+    description: Actual full Node.js version installed for this job
+    value: ${{ steps.setup.outputs.node-version }}
+
+runs:
+  using: composite
+  steps:
+    - name: Resolve Node selector
+      id: selector
+      shell: bash
+      env:
+        CI_NODE_VERSION: ${{ inputs.node-version }}
+      run: node "$GITHUB_ACTION_PATH/selector.mjs"
+    - name: Setup Node.js environment
+      id: setup
+      uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      with:
+        node-version: ${{ steps.selector.outputs.node-version }}
+        check-latest: ${{ steps.selector.outputs.check-latest == 'true' }}

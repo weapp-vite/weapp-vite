@@ -9,7 +9,7 @@
   },
   "devDependencies": {
     "@wevu/web-apis": "workspace:*",
-    "eventsource-parser": "4.1.3",
+    "eventsource-parser": "catalog:",
     "weapp-vite": "workspace:*"
   },
   "weappVite": {

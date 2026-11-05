@@ -93,16 +93,17 @@ jobs:
           owner="$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT"
           printf '%s\n' "$owner" > "$root/fixtures/.auto-import-hmr-diagnostic-owner"
           printf 'DIAGNOSTIC_FIXTURE_OWNER=%s\n' "$owner" >> "$GITHUB_ENV"
-      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - name: Setup Node and pnpm
+        uses: ./candidate/.github/actions/setup-node-pnpm
         with:
-          package_json_file: candidate/package.json
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: 24.22.2
-          cache: pnpm
+          node-version: default
+          install-dependencies: 'false'
+          freeze-toolchain: 'false'
+          package-json-file: candidate/package.json
           cache-dependency-path: |
             candidate/pnpm-lock.yaml
             baseline/pnpm-lock.yaml
+
       - name: Install candidate dependencies
         working-directory: candidate
         run: pnpm install --frozen-lockfile

@@ -69,7 +69,7 @@
     "dom-serializer": "^3.1.1",
     "htmlparser2": "catalog:",
     "typescript": "catalog:",
-    "vitest": "~5.1.0"
+    "vitest": "catalog:tilde"
   },
   "tsd": {
     "compilerOptions": {

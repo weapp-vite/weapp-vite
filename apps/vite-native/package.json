@@ -49,7 +49,7 @@
     "clsx": "catalog:",
     "lodash": "catalog:",
     "mini-stores": "^2.3.0",
-    "miniprogram-computed": "^9.0.0",
+    "miniprogram-computed": "catalog:",
     "tdesign-miniprogram": "catalog:"
   },
   "devDependencies": {

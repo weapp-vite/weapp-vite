@@ -42,16 +42,16 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@modelcontextprotocol/client": "^2.4.0",
-    "@modelcontextprotocol/server": "^2.4.0",
+    "@modelcontextprotocol/client": "catalog:",
+    "@modelcontextprotocol/server": "catalog:",
     "@weapp-agent/core": "workspace:*",
     "@weapp-vite/acceptance": "workspace:*",
     "@weapp-vite/mcp": "workspace:*",
-    "execa": "10.2.1",
+    "execa": "catalog:fixed",
     "weapp-ide-cli": "workspace:*",
-    "zod": "4.6.7"
+    "zod": "catalog:fixed"
   },
   "devDependencies": {
-    "@modelcontextprotocol/node": "^2.1.2"
+    "@modelcontextprotocol/node": "catalog:"
   }
 }

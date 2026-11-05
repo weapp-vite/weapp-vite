@@ -46,12 +46,12 @@ jobs:
           ref: main
           persist-credentials: false
 
-      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
-
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      - name: Setup Node and pnpm
+        uses: ./.github/actions/setup-node-pnpm
         with:
-          node-version: 24.22.2
-          cache: pnpm
+          node-version: default
+          install-dependencies: 'false'
+          freeze-toolchain: 'false'
 
       - run: pnpm install --frozen-lockfile
 

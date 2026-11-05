@@ -164,6 +164,15 @@ settings:
 
 catalogs:
   default:
+    '@ai-sdk/anthropic':
+      specifier: 4.0.97
+      version: 4.0.97
+    '@ai-sdk/openai':
+      specifier: 4.0.109
+      version: 4.0.109
+    '@ai-sdk/openai-compatible':
+      specifier: 3.0.85
+      version: 3.0.85
     '@babel/core':
       specifier: ^8.1.0
       version: 8.1.0
@@ -173,12 +182,27 @@ catalogs:
     '@babel/parser':
       specifier: ^8.1.0
       version: 8.1.0
+    '@babel/preset-env':
+      specifier: ^8.0.7
+      version: 8.0.7
+    '@babel/preset-typescript':
+      specifier: ^8.0.7
+      version: 8.0.7
     '@babel/traverse':
       specifier: ^8.1.0
       version: 8.1.0
     '@babel/types':
       specifier: ^8.1.0
       version: 8.1.0
+    '@devframes/agentic':
+      specifier: 1.3.2
+      version: 1.3.2
+    '@devframes/hub':
+      specifier: 1.3.2
+      version: 1.3.2
+    '@devframes/hub-ui':
+      specifier: 1.3.2
+      version: 1.3.2
     '@douyin-microapp/typings':
       specifier: ^1.3.1
       version: 1.3.1
@@ -197,18 +221,45 @@ catalogs:
     '@iconify/tailwind4':
       specifier: ^1.2.3
       version: 1.2.3
+    '@jridgewell/remapping':
+      specifier: ^2.3.5
+      version: 2.3.5
+    '@jridgewell/trace-mapping':
+      specifier: ^0.3.31
+      version: 0.3.31
     '@mini-types/alipay':
       specifier: ^3.0.14
       version: 3.0.14
+    '@modelcontextprotocol/client':
+      specifier: ^2.4.0
+      version: 2.4.0
+    '@modelcontextprotocol/node':
+      specifier: ^2.1.2
+      version: 2.1.2
+    '@modelcontextprotocol/server':
+      specifier: ^2.4.0
+      version: 2.4.0
+    '@swc/core':
+      specifier: ^1.16.21
+      version: 1.16.21
     '@tailwindcss/vite':
       specifier: ^4.3.4
       version: 4.3.4
+    '@tanstack/vue-query':
+      specifier: ^5.106.1
+      version: 5.106.1
     '@types/d3':
       specifier: ^7.4.3
       version: 7.4.3
+    '@types/express':
+      specifier: ^5.0.6
+      version: 5.0.6
     '@types/node':
       specifier: ^26.6.6
       version: 26.6.6
+    '@types/picomatch':
+      specifier: ^4.0.3
+      version: 4.0.3
     '@types/react':
       specifier: 19.3.0
       version: 19.3.0
@@ -218,6 +269,12 @@ catalogs:
     '@types/semver':
       specifier: ^7.8.0
       version: 7.8.0
+    '@types/set-value':
+      specifier: ^4.0.3
+      version: 4.0.3
+    '@typescript-eslint/parser':
+      specifier: ^8.72.1
+      version: 8.72.1
     '@vant/weapp':
       specifier: ^1.11.7
       version: 1.11.7
@@ -248,9 +305,15 @@ catalogs:
     '@vue/shared':
       specifier: ^3.5.45
       version: 3.5.45
+    '@weapp-tailwindcss/engine':
+      specifier: 0.1.6
+      version: 0.1.6
     '@wot-ui/ui':
       specifier: 2.4.0
       version: 2.4.0
+    ai:
+      specifier: 7.0.163
+      version: 7.0.163
     antd-mini:
       specifier: ^3.4.3
       version: 3.4.3
@@ -263,6 +326,12 @@ catalogs:
     bundle-require:
       specifier: ^5.1.0
       version: 5.1.0
+    cac:
+      specifier: ^7.1.0
+      version: 7.1.0
+    cheerio:
+      specifier: ^1.2.0
+      version: 1.2.0
     class-variance-authority:
       specifier: ^0.7.1
       version: 0.7.1
@@ -281,6 +350,12 @@ catalogs:
     devframe:
       specifier: 1.3.2
       version: 1.3.2
+    diff:
+      specifier: 9.0.0
+      version: 9.0.0
+    domhandler:
+      specifier: ^6.0.1
+      version: 6.0.1
     echarts:
       specifier: ^6.1.0
       version: 6.1.0
@@ -293,9 +368,27 @@ catalogs:
     estree-walker:
       specifier: ^3.0.3
       version: 3.0.3
+    eventsource-parser:
+      specifier: 4.1.3
+      version: 4.1.3
+    execa:
+      specifier: ^10.2.1
+      version: 10.2.1
+    express:
+      specifier: ^5.3.0
+      version: 5.3.0
+    fast-glob:
+      specifier: ^3.3.3
+      version: 3.3.3
     fdir:
       specifier: ^6.5.0
       version: 6.5.0
+    get-tsconfig:
+      specifier: ^4.14.3
+      version: 4.14.3
+    get-value:
+      specifier: ^4.1.0
+      version: 4.1.0
     gm-crypto:
       specifier: ^0.1.12
       version: 0.1.12
@@ -323,6 +416,9 @@ catalogs:
     miniprogram-api-typings:
       specifier: ^5.2.3
       version: 5.2.3
+    miniprogram-computed:
+      specifier: ^9.0.0
+      version: 9.0.0
     obug:
       specifier: ^3.0.0
       version: 3.0.0
@@ -338,6 +434,9 @@ catalogs:
     picocolors:
       specifier: ^1.1.1
       version: 1.1.1
+    picomatch:
+      specifier: ^4.0.7
+      version: 4.0.7
     pkg-types:
       specifier: ^2.4.0
       version: 2.4.0
@@ -347,6 +446,9 @@ catalogs:
     postcss-selector-parser:
       specifier: ^7.1.7
       version: 7.1.7
+    postcss-value-parser:
+      specifier: 4.2.0
+      version: 4.2.0
     react:
       specifier: 19.3.1
       version: 19.3.1
@@ -359,9 +461,18 @@ catalogs:
     sass-embedded:
       specifier: ^1.107.1
       version: 1.107.1
+    semver:
+      specifier: ^7.8.6
+      version: 7.8.6
     sharp:
       specifier: ^0.35.5
       version: 0.35.5
+    shiki:
+      specifier: ^4.6.0
+      version: 4.6.0
+    socket.io:
+      specifier: ^4.8.4
+      version: 4.8.4
     socket.io-client:
       specifier: ^4.8.4
       version: 4.8.4
@@ -380,9 +491,18 @@ catalogs:
     tdesign-miniprogram:
       specifier: ^1.17.0
       version: 1.17.0
+    tinyexec:
+      specifier: ^1.3.1
+      version: 1.3.1
     ts-morph:
       specifier: ^28.0.0
       version: 28.0.0
+    tsd:
+      specifier: ^0.33.0
+      version: 0.33.0
+    tsdown:
+      specifier: 0.23.5
+      version: 0.23.5
     tslib:
       specifier: ^2.9.1
       version: 2.9.1
@@ -392,6 +512,9 @@ catalogs:
     typescript:
       specifier: ^6.0.3
       version: 6.0.3
+    unplugin-auto-import:
+      specifier: ^21.1.0
+      version: 21.1.0
     uview-plus:
       specifier: 3.8.138
       version: 3.8.138
@@ -401,17 +524,39 @@ catalogs:
     vite-plugin-inspect:
       specifier: ^12.1.0
       version: 12.1.0
+    vite-plus:
+      specifier: 1.5.0
+      version: 1.5.0
+    vitest:
+      specifier: ^5.1.0
+      version: 5.1.0
     vue:
       specifier: ^3.5.45
       version: 3.5.45
+    vue-eslint-parser:
+      specifier: ^10.4.1
+      version: 10.4.1
+    vue-router:
+      specifier: 5.4.0
+      version: 5.4.0
     vue-tsc:
       specifier: ^3.3.14
       version: 3.3.14
     weapp-tailwindcss:
       specifier: ^5.6.3
       version: 5.6.3
+    yaml:
+      specifier: ^2.9.1
+      version: 2.9.1
     zod:
       specifier: ^4.6.7
+      version: 4.6.7
+  fixed:
+    execa:
+      specifier: 10.2.1
+      version: 10.2.1
+    zod:
+      specifier: 4.6.7
       version: 4.6.7
   latest:
     miniprogram-api-typings:
@@ -428,6 +573,10 @@ catalogs:
     tdesign-miniprogram:
       specifier: 1.17.0
       version: 1.17.0
+  tilde:
+    vitest:
+      specifier: ~5.1.0
+      version: 5.1.0
   weapp-tailwindcss-fixed:
     weapp-tailwindcss:
       specifier: 5.6.3
@@ -451,10 +600,10 @@ importers:
         specifier: 'catalog:'
         version: 8.1.0
       '@babel/preset-env':
-        specifier: ^8.0.7
+        specifier: 'catalog:'
         version: 8.0.7(@babel/core@8.1.0)
       '@babel/preset-typescript':
-        specifier: ^8.0.7
+        specifier: 'catalog:'
         version: 8.0.7(@babel/core@8.1.0)
       '@babel/traverse':
         specifier: 'catalog:'
@@ -466,7 +615,7 @@ importers:
         specifier: ^21.2.4
         version: 21.2.4(conventional-commits-parser@7.1.3)(typescript@6.0.3)
       '@jridgewell/trace-mapping':
-        specifier: ^0.3.31
+        specifier: 'catalog:'
         version: 0.3.31
       '@oxc-node/cli':
         specifier: ^1.0.1
@@ -478,7 +627,7 @@ importers:
         specifier: ^1.12.1
         version: 1.12.1(@swc/core@1.16.21)(@swc/types@0.1.28)(supports-color@10.2.2)(typescript@6.0.3)
       '@swc/core':
-        specifier: ^1.16.21
+        specifier: 'catalog:'
         version: 1.16.21
       '@tailwindcss/vite':
         specifier: 'catalog:'
@@ -493,7 +642,7 @@ importers:
         specifier: ^1.0.10
         version: 1.0.10
       '@types/express':
-        specifier: ^5.0.6
+        specifier: 'catalog:'
         version: 5.0.6
       '@types/lodash':
         specifier: ^4.17.27
@@ -511,13 +660,13 @@ importers:
         specifier: 'catalog:'
         version: 26.6.6
       '@types/picomatch':
-        specifier: ^4.0.3
+        specifier: 'catalog:'
         version: 4.0.3
       '@types/semver':
         specifier: 'catalog:'
         version: 7.8.0
       '@types/set-value':
-        specifier: ^4.0.3
+        specifier: 'catalog:'
         version: 4.0.3
       '@types/supertest':
         specifier: ^7.2.1
@@ -532,7 +681,7 @@ importers:
         specifier: 'catalog:'
         version: 3.3.14
       '@vue/reactivity':
-        specifier: ^3.5.45
+        specifier: 'catalog:'
         version: 3.5.45
       '@vue/runtime-core':
         specifier: ^3.5.45
@@ -553,7 +702,7 @@ importers:
         specifier: 'catalog:'
         version: 5.1.0(esbuild@0.28.2)
       cheerio:
-        specifier: ^1.2.0
+        specifier: 'catalog:'
         version: 1.2.0
       ci-info:
         specifier: ^4.4.0
@@ -589,13 +738,13 @@ importers:
         specifier: 'catalog:'
         version: 3.0.3
       execa:
-        specifier: ^10.2.1
+        specifier: 'catalog:'
         version: 10.2.1
       express:
-        specifier: ^5.3.0
+        specifier: 'catalog:'
         version: 5.3.0(supports-color@10.2.2)
       fast-glob:
-        specifier: ^3.3.3
+        specifier: 'catalog:'
         version: 3.3.3
       fast-sort:
         specifier: ^3.4.1
@@ -604,7 +753,7 @@ importers:
         specifier: 'catalog:'
         version: 6.5.0(picomatch@4.0.7)
       get-value:
-        specifier: ^4.1.0
+        specifier: 'catalog:'
         version: 4.1.0
       hono:
         specifier: ^4.13.16
@@ -712,7 +861,7 @@ importers:
         specifier: ^4.1.0
         version: 4.1.0
       socket.io:
-        specifier: ^4.8.4
+        specifier: 'catalog:'
         version: 4.8.4(bufferutil@4.1.0)(supports-color@10.2.2)
       stylelint:
         specifier: 'catalog:'
@@ -724,7 +873,7 @@ importers:
         specifier: catalog:tailwind4
         version: 4.3.4
       tinyexec:
-        specifier: ^1.3.1
+        specifier: 'catalog:'
         version: 1.3.1
       tinypool:
         specifier: ^2.2.0
@@ -733,10 +882,10 @@ importers:
         specifier: 'catalog:'
         version: 28.0.0
       tsd:
-        specifier: ^0.33.0
+        specifier: 'catalog:'
         version: 0.33.0
       tsdown:
-        specifier: 0.23.5
+        specifier: 'catalog:'
         version: 0.23.5(@arethetypeswrong/core@0.18.5)(@vitejs/devtools@0.8.2)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(oxc-resolver@11.24.2)(publint@0.3.25)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))
       tslib:
         specifier: 'catalog:'
@@ -760,7 +909,7 @@ importers:
         specifier: 'catalog:'
         version: 12.1.0(@devframes/agentic@1.3.2)(cac@7.1.0)(crossws@0.4.17(srvx@1.0.8))(srvx@1.0.8)(vite@8.3.5)
       vitest:
-        specifier: ~5.1.0
+        specifier: catalog:tilde
         version: 5.1.0(@types/node@26.6.6)(@vitest/browser-playwright@5.1.0)(@vitest/browser-preview@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(happy-dom@21.0.4(bufferutil@4.1.0))(vite@8.3.5)
       vue:
         specifier: 'catalog:'
@@ -772,7 +921,7 @@ importers:
         specifier: ^3.2.3
         version: 3.2.3
       yaml:
-        specifier: ^2.9.1
+        specifier: 'catalog:'
         version: 2.9.1
       zigpty:
         specifier: 0.2.1
@@ -826,22 +975,22 @@ importers:
         version: 4.6.7
     devDependencies:
       cheerio:
-        specifier: ^1.2.0
+        specifier: 'catalog:'
         version: 1.2.0
 
   '@weapp-core/shared':
     dependencies:
       '@types/set-value':
-        specifier: ^4.0.3
+        specifier: 'catalog:'
         version: 4.0.3
       '@weapp-vite/wxml':
         specifier: workspace:*
         version: link:../../packages/wxml
       domhandler:
-        specifier: ^6.0.1
+        specifier: 'catalog:'
         version: 6.0.1
       get-value:
-        specifier: ^4.1.0
+        specifier: 'catalog:'
         version: 4.1.0
       htmlparser2:
         specifier: 'catalog:'
@@ -856,10 +1005,10 @@ importers:
         specifier: 'catalog:'
         version: 5.2.3
       tsd:
-        specifier: ^0.33.0
+        specifier: 'catalog:'
         version: 0.33.0
       tsdown:
-        specifier: 0.23.5
+        specifier: 'catalog:'
         version: 0.23.5(@arethetypeswrong/core@0.18.5)(@vitejs/devtools@0.8.2)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(oxc-resolver@11.24.2)(publint@0.3.25)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))
       typescript:
         specifier: 'catalog:'
@@ -1242,7 +1391,7 @@ importers:
         specifier: 'catalog:'
         version: 1.21.0(debug@4.4.3(supports-color@10.2.2))(supports-color@10.2.2)
       express:
-        specifier: ^5.3.0
+        specifier: 'catalog:'
         version: 5.3.0(supports-color@10.2.2)
       graphql:
         specifier: ^17.1.0
@@ -1251,7 +1400,7 @@ importers:
         specifier: 'catalog:'
         version: 7.4.0(graphql@17.1.0)
       socket.io:
-        specifier: ^4.8.4
+        specifier: 'catalog:'
         version: 4.8.4(bufferutil@4.1.0)(supports-color@10.2.2)
       socket.io-client:
         specifier: 'catalog:'
@@ -1260,14 +1409,14 @@ importers:
         specifier: 'catalog:'
         version: 3.5.45(typescript@6.0.3)
       vue-router:
-        specifier: 5.4.0
+        specifier: 'catalog:'
         version: 5.4.0(@rspack/core@2.3.0)(@vue/compiler-sfc@3.5.45)(esbuild@0.28.2)(pinia@4.1.0(@vue/devtools-api@8.2.1)(typescript@6.0.3)(vue@3.5.45(typescript@6.0.3)))(rolldown@1.2.16)(rollup@4.67.5)(vite@8.3.5)(vue@3.5.45(typescript@6.0.3))(webpack@5.105.0(@swc/core@1.16.21)(csso@5.0.5)(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))
     devDependencies:
       '@tailwindcss/vite':
         specifier: 'catalog:'
         version: 4.3.4(vite@8.3.5)
       '@types/express':
-        specifier: ^5.0.6
+        specifier: 'catalog:'
         version: 5.0.6
       '@vitejs/plugin-vue':
         specifier: 'catalog:'
@@ -1364,7 +1513,7 @@ importers:
         specifier: ^2.3.0
         version: 2.3.0
       miniprogram-computed:
-        specifier: ^9.0.0
+        specifier: 'catalog:'
         version: 9.0.0(miniprogram-api-typings@5.2.3)
       tdesign-miniprogram:
         specifier: 'catalog:'
@@ -1658,7 +1807,7 @@ importers:
   apps/wevu-runtime-demo:
     devDependencies:
       '@tanstack/vue-query':
-        specifier: ^5.106.1
+        specifier: 'catalog:'
         version: 5.106.1(vue@3.5.45(typescript@6.0.3))
       '@weapp-vite/dashboard':
         specifier: workspace:*
@@ -1808,7 +1957,7 @@ importers:
   e2e-apps/auto-import-wevu-presets:
     dependencies:
       unplugin-auto-import:
-        specifier: ^21.1.0
+        specifier: 'catalog:'
         version: 21.1.0(@rspack/core@2.3.0)(@vueuse/core@15.0.0(vue@3.5.45(typescript@6.0.3)))(esbuild@0.28.2)(oxc-parser@0.157.0)(rolldown@1.2.16)(rollup@4.67.5)(vite@8.3.5)(webpack@5.105.0(@swc/core@1.16.21)(csso@5.0.5)(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))
     devDependencies:
       weapp-vite:
@@ -1905,7 +2054,7 @@ importers:
         specifier: 'catalog:'
         version: 2.1.1
       miniprogram-computed:
-        specifier: ^9.0.0
+        specifier: 'catalog:'
         version: 9.0.0(miniprogram-api-typings@5.2.3)
       tdesign-miniprogram:
         specifier: 'catalog:'
@@ -2067,7 +2216,7 @@ importers:
   e2e-apps/request-clients-real:
     devDependencies:
       '@tanstack/vue-query':
-        specifier: ^5.106.1
+        specifier: 'catalog:'
         version: 5.106.1(vue@3.5.45(typescript@6.0.3))
       '@weapp-vite/dashboard':
         specifier: workspace:*
@@ -2136,7 +2285,7 @@ importers:
   e2e-apps/stateful-hmr:
     devDependencies:
       vite-plus:
-        specifier: 1.5.0
+        specifier: 'catalog:'
         version: 1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.64.1)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.107.1)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)
       weapp-vite:
         specifier: workspace:*
@@ -2160,7 +2309,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages-runtime/web-apis
       eventsource-parser:
-        specifier: 4.1.3
+        specifier: 'catalog:'
         version: 4.1.3
       weapp-vite:
         specifier: workspace:*
@@ -2491,7 +2640,7 @@ importers:
         specifier: ^4.2.0
         version: 4.2.0
       tinyexec:
-        specifier: ^1.3.1
+        specifier: 'catalog:'
         version: 1.3.1
       weapp-vite:
         specifier: workspace:*
@@ -2534,7 +2683,7 @@ importers:
         specifier: 'catalog:'
         version: 6.0.10(patch_hash=3dcf2983828045bd0fe45880e571cb5605a71b599c074ad79a62636319f52777)(vite@8.3.5)(vue@3.5.45(typescript@6.0.3))
       shiki:
-        specifier: ^4.6.0
+        specifier: 'catalog:'
         version: 4.6.0
       tailwindcss:
         specifier: catalog:tailwind4
@@ -2581,7 +2730,7 @@ importers:
         specifier: 'catalog:'
         version: 8.5.32
       postcss-value-parser:
-        specifier: 4.2.0
+        specifier: 'catalog:'
         version: 4.2.0
     devDependencies:
       htmlparser2:
@@ -2601,7 +2750,7 @@ importers:
         version: link:../test
     devDependencies:
       vitest:
-        specifier: ~5.1.0
+        specifier: catalog:tilde
         version: 5.1.0(@types/node@26.6.6)(@vitest/browser-playwright@5.1.0)(@vitest/browser-preview@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(happy-dom@21.0.4(bufferutil@4.1.0))(vite@8.3.5)
 
   mpcore/packages/weapp-vite:
@@ -2641,13 +2790,13 @@ importers:
         specifier: 'catalog:'
         version: 19.3.0
       execa:
-        specifier: ^10.2.1
+        specifier: 'catalog:'
         version: 10.2.1
       miniprogram-api-typings:
         specifier: 'catalog:'
         version: 5.2.3
       tsx:
-        specifier: ^4.23.15
+        specifier: 'catalog:'
         version: 4.23.15
       typescript:
         specifier: 'catalog:'
@@ -2656,7 +2805,7 @@ importers:
         specifier: 'catalog:'
         version: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.107.1)(sass@1.107.1)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
       vitest:
-        specifier: ~5.1.0
+        specifier: catalog:tilde
         version: 5.1.0(@types/node@26.6.6)(@vitest/browser-playwright@5.1.0)(@vitest/browser-preview@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(happy-dom@21.0.4(bufferutil@4.1.0))(vite@8.3.5)
       weapp-vite:
         specifier: workspace:*
@@ -2686,7 +2835,7 @@ importers:
         specifier: 'catalog:'
         version: 2.0.3
       shiki:
-        specifier: ^4.6.0
+        specifier: 'catalog:'
         version: 4.6.0
       vue:
         specifier: 'catalog:'
@@ -2721,7 +2870,7 @@ importers:
         specifier: 0.33.0
         version: 0.33.0
       tsdown:
-        specifier: 0.23.5
+        specifier: 'catalog:'
         version: 0.23.5(@arethetypeswrong/core@0.18.5)(@vitejs/devtools@0.8.2)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(oxc-resolver@11.24.2)(publint@0.3.25)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))
       tsx:
         specifier: 4.23.15
@@ -2733,7 +2882,7 @@ importers:
         specifier: 'catalog:'
         version: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.107.1)(sass@1.107.1)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
       vitest:
-        specifier: ~5.1.0
+        specifier: catalog:tilde
         version: 5.1.0(@types/node@26.6.6)(@vitest/browser-playwright@5.1.0)(@vitest/browser-preview@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(happy-dom@21.0.4(bufferutil@4.1.0))(vite@8.3.5)
 
   packages-runtime/i18n:
@@ -2838,7 +2987,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/wxml
       domhandler:
-        specifier: ^6.0.1
+        specifier: 'catalog:'
         version: 6.0.1
       esbuild:
         specifier: 'catalog:'
@@ -2894,7 +3043,7 @@ importers:
         version: 4.5.0
     devDependencies:
       eventsource-parser:
-        specifier: 4.1.3
+        specifier: 'catalog:'
         version: 4.1.3
 
   packages-runtime/wevu:
@@ -2940,10 +3089,10 @@ importers:
         specifier: 'catalog:'
         version: 8.1.0
       '@jridgewell/remapping':
-        specifier: ^2.3.5
+        specifier: 'catalog:'
         version: 2.3.5
       '@jridgewell/trace-mapping':
-        specifier: ^0.3.31
+        specifier: 'catalog:'
         version: 0.3.31
       '@vue/babel-plugin-jsx':
         specifier: 'catalog:'
@@ -3026,7 +3175,7 @@ importers:
   packages/acceptance:
     dependencies:
       execa:
-        specifier: 10.2.1
+        specifier: catalog:fixed
         version: 10.2.1
       zod:
         specifier: 'catalog:'
@@ -3039,19 +3188,19 @@ importers:
   packages/agent-cli:
     dependencies:
       '@ai-sdk/anthropic':
-        specifier: 4.0.97
+        specifier: 'catalog:'
         version: 4.0.97(zod@4.6.7)
       '@ai-sdk/openai':
-        specifier: 4.0.109
+        specifier: 'catalog:'
         version: 4.0.109(zod@4.6.7)
       '@ai-sdk/openai-compatible':
-        specifier: 3.0.85
+        specifier: 'catalog:'
         version: 3.0.85(zod@4.6.7)
       '@modelcontextprotocol/client':
-        specifier: ^2.4.0
+        specifier: 'catalog:'
         version: 2.4.0
       '@modelcontextprotocol/server':
-        specifier: ^2.4.0
+        specifier: 'catalog:'
         version: 2.4.0
       '@weapp-vite/acceptance':
         specifier: workspace:*
@@ -3060,16 +3209,16 @@ importers:
         specifier: workspace:*
         version: link:../mcp
       ai:
-        specifier: 7.0.163
+        specifier: 'catalog:'
         version: 7.0.163(zod@4.6.7)
       commander:
         specifier: 15.0.0
         version: 15.0.0
       diff:
-        specifier: 9.0.0
+        specifier: 'catalog:'
         version: 9.0.0
       execa:
-        specifier: 10.2.1
+        specifier: catalog:fixed
         version: 10.2.1
       ink:
         specifier: 8.0.0
@@ -3078,13 +3227,13 @@ importers:
         specifier: 6.0.0
         version: 6.0.0(ink@8.0.0(@types/react@19.3.0)(react@19.3.1))(react@19.3.1)
       react:
-        specifier: 19.3.1
+        specifier: 'catalog:'
         version: 19.3.1
       weapp-ide-cli:
         specifier: workspace:*
         version: link:../weapp-ide-cli
       zod:
-        specifier: 4.6.7
+        specifier: catalog:fixed
         version: 4.6.7
     devDependencies:
       '@types/react':
@@ -3100,28 +3249,28 @@ importers:
         specifier: workspace:*
         version: link:../agent-providers
       tsdown:
-        specifier: 0.23.5
+        specifier: 'catalog:'
         version: 0.23.5(@arethetypeswrong/core@0.18.5)(@vitejs/devtools@0.8.2)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(oxc-resolver@11.24.2)(publint@0.3.25)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))
 
   packages/agent-core:
     dependencies:
       diff:
-        specifier: 9.0.0
+        specifier: 'catalog:'
         version: 9.0.0
       execa:
-        specifier: 10.2.1
+        specifier: catalog:fixed
         version: 10.2.1
       zod:
-        specifier: 4.6.7
+        specifier: catalog:fixed
         version: 4.6.7
 
   packages/agent-mini-program:
     dependencies:
       '@modelcontextprotocol/client':
-        specifier: ^2.4.0
+        specifier: 'catalog:'
         version: 2.4.0
       '@modelcontextprotocol/server':
-        specifier: ^2.4.0
+        specifier: 'catalog:'
         version: 2.4.0
       '@weapp-agent/core':
         specifier: workspace:*
@@ -3133,35 +3282,35 @@ importers:
         specifier: workspace:*
         version: link:../mcp
       execa:
-        specifier: 10.2.1
+        specifier: catalog:fixed
         version: 10.2.1
       weapp-ide-cli:
         specifier: workspace:*
         version: link:../weapp-ide-cli
       zod:
-        specifier: 4.6.7
+        specifier: catalog:fixed
         version: 4.6.7
     devDependencies:
       '@modelcontextprotocol/node':
-        specifier: ^2.1.2
+        specifier: 'catalog:'
         version: 2.1.2(@modelcontextprotocol/server@2.4.0)
 
   packages/agent-providers:
     dependencies:
       '@ai-sdk/anthropic':
-        specifier: 4.0.97
+        specifier: 'catalog:'
         version: 4.0.97(zod@4.6.7)
       '@ai-sdk/openai':
-        specifier: 4.0.109
+        specifier: 'catalog:'
         version: 4.0.109(zod@4.6.7)
       '@ai-sdk/openai-compatible':
-        specifier: 3.0.85
+        specifier: 'catalog:'
         version: 3.0.85(zod@4.6.7)
       '@weapp-agent/core':
         specifier: workspace:*
         version: link:../agent-core
       ai:
-        specifier: 7.0.163
+        specifier: 'catalog:'
         version: 7.0.163(zod@4.6.7)
 
   packages/ast:
@@ -3233,7 +3382,7 @@ importers:
         specifier: workspace:*
         version: link:../language-service
       execa:
-        specifier: ^10.2.1
+        specifier: 'catalog:'
         version: 10.2.1
       jsonc-parser:
         specifier: ^3.3.1
@@ -3248,16 +3397,16 @@ importers:
         specifier: 'catalog:'
         version: 2.0.3
       picomatch:
-        specifier: ^4.0.7
+        specifier: 'catalog:'
         version: 4.0.7
       pkg-types:
         specifier: 'catalog:'
         version: 2.4.0
       semver:
-        specifier: ^7.8.6
+        specifier: 'catalog:'
         version: 7.8.6
       yaml:
-        specifier: ^2.9.1
+        specifier: 'catalog:'
         version: 2.9.1
     devDependencies:
       '@types/make-fetch-happen':
@@ -3279,19 +3428,19 @@ importers:
         specifier: 0.76.0
         version: 0.76.0(vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.64.1)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.107.1)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
       vite-plus:
-        specifier: 1.5.0
+        specifier: 'catalog:'
         version: 1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.64.1)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.107.1)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)
 
   packages/dashboard:
     dependencies:
       '@devframes/agentic':
-        specifier: 1.3.2
+        specifier: 'catalog:'
         version: 1.3.2(crossws@0.4.17(srvx@1.0.8))(devframe@1.3.2)
       '@devframes/hub':
-        specifier: 1.3.2
+        specifier: 'catalog:'
         version: 1.3.2(@devframes/agentic@1.3.2)(crossws@0.4.17(srvx@1.0.8))(devframe@1.3.2)
       '@devframes/hub-ui':
-        specifier: 1.3.2
+        specifier: 'catalog:'
         version: 1.3.2(@devframes/hub@1.3.2(@devframes/agentic@1.3.2)(crossws@0.4.17(srvx@1.0.8))(devframe@1.3.2))(@devframes/json-render@1.3.2(@devframes/hub@1.3.2(@devframes/agentic@1.3.2)(crossws@0.4.17(srvx@1.0.8))(devframe@1.3.2))(devframe@1.3.2))(devframe@1.3.2)
       devframe:
         specifier: 'catalog:'
@@ -3312,7 +3461,7 @@ importers:
         specifier: 'catalog:'
         version: 3.5.45(typescript@6.0.3)
       vue-router:
-        specifier: 5.4.0
+        specifier: 'catalog:'
         version: 5.4.0(@rspack/core@2.3.0)(@vue/compiler-sfc@3.5.45)(esbuild@0.28.2)(pinia@4.1.0(@vue/devtools-api@8.2.1)(typescript@6.0.3)(vue@3.5.45(typescript@6.0.3)))(rolldown@1.2.16)(rollup@4.67.5)(vite@8.3.5)(vue@3.5.45(typescript@6.0.3))(webpack@5.105.0(@swc/core@1.16.21)(csso@5.0.5)(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))
     devDependencies:
       '@iconify-json/mdi':
@@ -3358,7 +3507,7 @@ importers:
   packages/eslint:
     devDependencies:
       '@typescript-eslint/parser':
-        specifier: ^8.72.1
+        specifier: 'catalog:'
         version: 8.72.1(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)
       eslint:
         specifier: 'catalog:'
@@ -3367,16 +3516,16 @@ importers:
         specifier: 'catalog:'
         version: 6.0.3
       vitest:
-        specifier: ^5.1.0
+        specifier: 'catalog:'
         version: 5.1.0(@types/node@26.6.6)(@vitest/browser-playwright@5.1.0)(@vitest/browser-preview@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(happy-dom@21.0.4(bufferutil@4.1.0))(vite@8.3.5)
       vue-eslint-parser:
-        specifier: ^10.4.1
+        specifier: 'catalog:'
         version: 10.4.1(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)
 
   packages/hmr:
     dependencies:
       '@jridgewell/remapping':
-        specifier: ^2.3.5
+        specifier: 'catalog:'
         version: 2.3.5
 
   packages/language-service:
@@ -3391,35 +3540,35 @@ importers:
         specifier: workspace:*
         version: link:../wxml
       fast-glob:
-        specifier: ^3.3.3
+        specifier: 'catalog:'
         version: 3.3.3
       ignore:
         specifier: ^7.0.5
         version: 7.0.14
       picomatch:
-        specifier: ^4.0.7
+        specifier: 'catalog:'
         version: 4.0.7
     devDependencies:
       '@types/picomatch':
-        specifier: ^4.0.3
+        specifier: 'catalog:'
         version: 4.0.3
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
       vite-plus:
-        specifier: 1.5.0
+        specifier: 'catalog:'
         version: 1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.64.1)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.107.1)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)
       vitest:
-        specifier: ^5.1.0
+        specifier: 'catalog:'
         version: 5.1.0(@types/node@26.6.6)(@vitest/browser-playwright@5.1.0)(@vitest/browser-preview@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(happy-dom@21.0.4(bufferutil@4.1.0))(vite@8.3.5)
 
   packages/mcp:
     dependencies:
       '@modelcontextprotocol/node':
-        specifier: ^2.1.2
+        specifier: 'catalog:'
         version: 2.1.2(@modelcontextprotocol/server@2.4.0)
       '@modelcontextprotocol/server':
-        specifier: ^2.4.0
+        specifier: 'catalog:'
         version: 2.4.0
       '@weapp-core/constants':
         specifier: workspace:*
@@ -3438,7 +3587,7 @@ importers:
         version: 4.6.7
     devDependencies:
       '@modelcontextprotocol/client':
-        specifier: ^2.4.0
+        specifier: 'catalog:'
         version: 2.4.0
 
   packages/miniprogram-automator:
@@ -3466,29 +3615,29 @@ importers:
         specifier: workspace:*
         version: link:../language-service
       execa:
-        specifier: ^10.2.1
+        specifier: 'catalog:'
         version: 10.2.1
       picomatch:
-        specifier: ^4.0.7
+        specifier: 'catalog:'
         version: 4.0.7
     devDependencies:
       '@types/picomatch':
-        specifier: ^4.0.3
+        specifier: 'catalog:'
         version: 4.0.3
       postcss:
         specifier: 'catalog:'
         version: 8.5.32
       postcss-value-parser:
-        specifier: 4.2.0
+        specifier: 'catalog:'
         version: 4.2.0
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
       vite-plus:
-        specifier: 1.5.0
+        specifier: 'catalog:'
         version: 1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.64.1)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.107.1)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)
       vitest:
-        specifier: ^5.1.0
+        specifier: 'catalog:'
         version: 5.1.0(@types/node@26.6.6)(@vitest/browser-playwright@5.1.0)(@vitest/browser-preview@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(happy-dom@21.0.4(bufferutil@4.1.0))(vite@8.3.5)
 
   packages/oxlint:
@@ -3503,7 +3652,7 @@ importers:
         specifier: workspace:*
         version: link:../language-service
       execa:
-        specifier: ^10.2.1
+        specifier: 'catalog:'
         version: 10.2.1
     devDependencies:
       eslint:
@@ -3513,10 +3662,10 @@ importers:
         specifier: 'catalog:'
         version: 6.0.3
       vite-plus:
-        specifier: 1.5.0
+        specifier: 'catalog:'
         version: 1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.64.1)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.107.1)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)
       vitest:
-        specifier: ^5.1.0
+        specifier: 'catalog:'
         version: 5.1.0(@types/node@26.6.6)(@vitest/browser-playwright@5.1.0)(@vitest/browser-preview@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(happy-dom@21.0.4(bufferutil@4.1.0))(vite@8.3.5)
 
   packages/qr:
@@ -3531,7 +3680,7 @@ importers:
         specifier: ^5.5.1
         version: 5.5.1(rollup@4.67.5)
       get-tsconfig:
-        specifier: ^4.14.3
+        specifier: 'catalog:'
         version: 4.14.3
       rolldown:
         specifier: 1.2.16
@@ -3544,10 +3693,10 @@ importers:
   packages/tailwindcss:
     dependencies:
       '@types/set-value':
-        specifier: ^4.0.3
+        specifier: 'catalog:'
         version: 4.0.3
       '@weapp-tailwindcss/engine':
-        specifier: 0.1.6
+        specifier: 'catalog:'
         version: 0.1.6(tailwindcss@4.3.4)
       '@weapp-tailwindcss/source-scan':
         specifier: 0.1.2
@@ -3593,7 +3742,7 @@ importers:
   packages/weapp-ide-cli:
     dependencies:
       '@modelcontextprotocol/server':
-        specifier: ^2.4.0
+        specifier: 'catalog:'
         version: 2.4.0
       '@weapp-core/logger':
         specifier: workspace:*
@@ -3608,10 +3757,10 @@ importers:
         specifier: workspace:*
         version: link:../miniprogram-automator
       cac:
-        specifier: ^7.1.0
+        specifier: 'catalog:'
         version: 7.1.0
       execa:
-        specifier: 10.2.1
+        specifier: catalog:fixed
         version: 10.2.1
       pathe:
         specifier: 'catalog:'
@@ -3642,28 +3791,28 @@ importers:
         specifier: ^8.0.1
         version: 8.0.1(@babel/core@8.1.0)
       '@babel/preset-env':
-        specifier: ^8.0.7
+        specifier: 'catalog:'
         version: 8.0.7(@babel/core@8.1.0)
       '@babel/preset-typescript':
-        specifier: ^8.0.7
+        specifier: 'catalog:'
         version: 8.0.7(@babel/core@8.1.0)
       '@jridgewell/remapping':
-        specifier: ^2.3.5
+        specifier: 'catalog:'
         version: 2.3.5
       '@modelcontextprotocol/node':
-        specifier: ^2.1.2
+        specifier: 'catalog:'
         version: 2.1.2(@modelcontextprotocol/server@2.4.0)
       '@modelcontextprotocol/server':
-        specifier: ^2.4.0
+        specifier: 'catalog:'
         version: 2.4.0
       '@types/picomatch':
-        specifier: ^4.0.3
+        specifier: 'catalog:'
         version: 4.0.3
       '@types/set-value':
-        specifier: ^4.0.3
+        specifier: 'catalog:'
         version: 4.0.3
       '@typescript-eslint/parser':
-        specifier: ^8.72.1
+        specifier: 'catalog:'
         version: 8.72.1(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)
       '@vercel/detect-agent':
         specifier: ^1.2.7
@@ -3693,7 +3842,7 @@ importers:
         specifier: workspace:*
         version: link:../../@weapp-core/shared
       '@weapp-tailwindcss/engine':
-        specifier: 0.1.6
+        specifier: 'catalog:'
         version: 0.1.6(tailwindcss@4.3.4)
       '@weapp-vite/acceptance':
         specifier: workspace:*
@@ -3738,7 +3887,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages-runtime/web-apis
       cac:
-        specifier: ^7.1.0
+        specifier: 'catalog:'
         version: 7.1.0
       chokidar:
         specifier: ^6.0.0
@@ -3762,7 +3911,7 @@ importers:
         specifier: 'catalog:'
         version: 6.5.0(picomatch@4.0.7)
       get-tsconfig:
-        specifier: ^4.14.3
+        specifier: 'catalog:'
         version: 4.14.3
       local-pkg:
         specifier: ^1.2.1
@@ -3792,7 +3941,7 @@ importers:
         specifier: 'catalog:'
         version: 1.1.1
       picomatch:
-        specifier: ^4.0.7
+        specifier: 'catalog:'
         version: 4.0.7
       postcss:
         specifier: 'catalog:'
@@ -3801,7 +3950,7 @@ importers:
         specifier: 'catalog:'
         version: 7.1.7
       postcss-value-parser:
-        specifier: 4.2.0
+        specifier: 'catalog:'
         version: 4.2.0
       resolve.exports:
         specifier: 2.0.4
@@ -3816,10 +3965,10 @@ importers:
         specifier: workspace:*
         version: link:../rolldown-require
       semver:
-        specifier: ^7.8.6
+        specifier: 'catalog:'
         version: 7.8.6
       tinyexec:
-        specifier: ^1.3.1
+        specifier: 'catalog:'
         version: 1.3.1
       typescript:
         specifier: 'catalog:'
@@ -3837,7 +3986,7 @@ importers:
         specifier: 'catalog:'
         version: 3.5.45(typescript@6.0.3)
       vue-eslint-parser:
-        specifier: ^10.4.1
+        specifier: 'catalog:'
         version: 10.4.1(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)
       vue-tsc:
         specifier: 'catalog:'
@@ -3856,16 +4005,16 @@ importers:
         version: 4.6.7
     devDependencies:
       '@devframes/agentic':
-        specifier: 1.3.2
+        specifier: 'catalog:'
         version: 1.3.2(crossws@0.4.17(srvx@1.0.8))(devframe@1.3.2)
       '@devframes/hub':
-        specifier: 1.3.2
+        specifier: 'catalog:'
         version: 1.3.2(@devframes/agentic@1.3.2)(crossws@0.4.17(srvx@1.0.8))(devframe@1.3.2)
       '@devframes/hub-ui':
-        specifier: 1.3.2
+        specifier: 'catalog:'
         version: 1.3.2(@devframes/hub@1.3.2(@devframes/agentic@1.3.2)(crossws@0.4.17(srvx@1.0.8))(devframe@1.3.2))(@devframes/json-render@1.3.2(@devframes/hub@1.3.2(@devframes/agentic@1.3.2)(crossws@0.4.17(srvx@1.0.8))(devframe@1.3.2))(devframe@1.3.2))(devframe@1.3.2)
       '@modelcontextprotocol/client':
-        specifier: ^2.4.0
+        specifier: 'catalog:'
         version: 2.4.0
       '@parcel/watcher':
         specifier: 2.6.0
@@ -3893,7 +4042,7 @@ importers:
         version: 28.0.0
     optionalDependencies:
       '@swc/core':
-        specifier: ^1.16.21
+        specifier: 'catalog:'
         version: 1.16.21
 
   packages/wxml:
@@ -3912,7 +4061,7 @@ importers:
         specifier: 'catalog:'
         version: 6.0.3
       vitest:
-        specifier: ~5.1.0
+        specifier: catalog:tilde
         version: 5.1.0(@types/node@26.6.6)(@vitest/browser-playwright@5.1.0)(@vitest/browser-preview@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(happy-dom@21.0.4(bufferutil@4.1.0))(vite@8.3.5)
 
   templates/weapp-vite-lib-template:
@@ -4094,7 +4243,7 @@ importers:
         specifier: 'catalog:'
         version: 5.1.5(postcss@8.5.32)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.32))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(tailwindcss@4.3.4)
       '@swc/core':
-        specifier: ^1.16.21
+        specifier: 'catalog:'
         version: 1.16.21
       '@types/node':
         specifier: 'catalog:'
@@ -4946,7 +5095,7 @@ importers:
         specifier: ^5.0.5
         version: 5.0.5(vue@3.5.45(typescript@6.0.3))
       '@vue/shared':
-        specifier: ^3.5.45
+        specifier: 'catalog:'
         version: 3.5.45
       echarts:
         specifier: 'catalog:'
@@ -4998,7 +5147,7 @@ importers:
         specifier: catalog:tailwind4
         version: 4.3.4
       unplugin-auto-import:
-        specifier: ^21.1.0
+        specifier: 'catalog:'
         version: 21.1.0(@rspack/core@2.3.0)(@vueuse/core@15.0.0(vue@3.5.45(typescript@6.0.3)))(esbuild@0.28.2)(oxc-parser@0.157.0)(rolldown@1.2.16)(rollup@4.67.5)(vite@8.3.5)(webpack@5.105.0(@swc/core@1.16.21)(csso@5.0.5)(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))
       unplugin-vue-components:
         specifier: ^32.1.0

@@ -152,9 +152,8 @@ describe('Windows ordinary npm watcher delivery workflow', () => {
     expect(nodeSupport.strategy.matrix).toEqual({ node: ['22.23.4', '24.22.1', '26.12.1', '22', '24'] })
     expect(nodeSupport['runs-on']).toBe('${{ inputs.runs_on }}')
     expect(nodeSupport.env).toMatchObject({ BUILD_ARTIFACT_EXPECTED_COMMIT: frozenCheckout, BUILD_ARTIFACT_EXPECTED_NODE_MAJOR: '24', WEAPP_VITE_CONSUMER_TARBALLS: '.cache/node-support-tarballs' })
-    expect(nodeSupport.steps.find((item: Step) => item.uses?.startsWith('actions/setup-node@'))?.with).toEqual({
-      'node-version': '${{ matrix.node == \'22\' && \'^22.23.4\' || matrix.node == \'24\' && \'^24.22.2\' || matrix.node == \'26\' && \'^26.13.0\' || matrix.node }}',
-      'check-latest': '${{ matrix.node == \'22\' || matrix.node == \'24\' || matrix.node == \'26\' }}',
+    expect(nodeSupport.steps.find((item: Step) => item.uses === './.github/actions/setup-node')?.with).toEqual({
+      'node-version': '${{ matrix.node }}',
     })
     expect(nodeSupport.steps.find((item: Step) => item.uses?.startsWith('actions/checkout@'))?.with).toMatchObject({ 'ref': frozenCheckout, 'persist-credentials': false })
     expect(nodeSupport.steps.filter((item: Step) => item.uses?.startsWith('actions/download-artifact@')).map((item: Step) => item.with?.name)).toEqual([build, archives])
@@ -300,7 +299,7 @@ describe('Windows ordinary npm watcher delivery workflow', () => {
     expect(job.env.CHOKIDAR_ORIGINAL_BASELINE_SHA).toBe('80d58727ec11fccfc71f1f06edfc993e9ba264aa')
     expect(step('Check out frozen candidate').with).toEqual({ 'ref': frozenCheckout, 'persist-credentials': false })
     expect(step('Check out original unmodified source').with).toEqual({ 'ref': '${{ env.CHOKIDAR_ORIGINAL_BASELINE_SHA }}', 'path': source, 'persist-credentials': false })
-    expect(job.steps.find(item => item.uses === './.github/actions/setup-node-pnpm')?.with).toEqual({ 'node-version': '24.22.2' })
+    expect(job.steps.find(item => item.uses === './.github/actions/setup-node-pnpm')?.with).toEqual({ 'node-version': 'default' })
   })
 
   it('builds and packs the original checkout using its own lockfile, links and output', () => {

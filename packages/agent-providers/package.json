@@ -42,10 +42,10 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "4.0.97",
-    "@ai-sdk/openai": "4.0.109",
-    "@ai-sdk/openai-compatible": "3.0.85",
+    "@ai-sdk/anthropic": "catalog:",
+    "@ai-sdk/openai": "catalog:",
+    "@ai-sdk/openai-compatible": "catalog:",
     "@weapp-agent/core": "workspace:*",
-    "ai": "7.0.163"
+    "ai": "catalog:"
   }
 }

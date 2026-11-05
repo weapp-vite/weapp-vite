@@ -49,8 +49,8 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "diff": "9.0.0",
-    "execa": "10.2.1",
-    "zod": "4.6.7"
+    "diff": "catalog:",
+    "execa": "catalog:fixed",
+    "zod": "catalog:fixed"
   }
 }

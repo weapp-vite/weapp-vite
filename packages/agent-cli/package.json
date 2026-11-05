@@ -41,29 +41,29 @@
     "test:pack": "node ../../scripts/weapp-agent/smoke-pack.mjs"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "4.0.97",
-    "@ai-sdk/openai": "4.0.109",
-    "@ai-sdk/openai-compatible": "3.0.85",
-    "@modelcontextprotocol/client": "^2.4.0",
-    "@modelcontextprotocol/server": "^2.4.0",
+    "@ai-sdk/anthropic": "catalog:",
+    "@ai-sdk/openai": "catalog:",
+    "@ai-sdk/openai-compatible": "catalog:",
+    "@modelcontextprotocol/client": "catalog:",
+    "@modelcontextprotocol/server": "catalog:",
     "@weapp-vite/acceptance": "workspace:*",
     "@weapp-vite/mcp": "workspace:*",
-    "ai": "7.0.163",
+    "ai": "catalog:",
     "commander": "15.0.0",
-    "diff": "9.0.0",
-    "execa": "10.2.1",
+    "diff": "catalog:",
+    "execa": "catalog:fixed",
     "ink": "8.0.0",
     "ink-text-input": "6.0.0",
-    "react": "19.3.1",
+    "react": "catalog:",
     "weapp-ide-cli": "workspace:*",
-    "zod": "4.6.7"
+    "zod": "catalog:fixed"
   },
   "devDependencies": {
     "@types/react": "^19.3.0",
     "@weapp-agent/core": "workspace:*",
     "@weapp-agent/mini-program": "workspace:*",
     "@weapp-agent/providers": "workspace:*",
-    "tsdown": "0.23.5"
+    "tsdown": "catalog:"
   },
   "publishConfig": {
     "access": "public",

@@ -45,16 +45,16 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@devframes/agentic": "1.3.2",
-    "@devframes/hub": "1.3.2",
-    "@devframes/hub-ui": "1.3.2",
+    "@devframes/agentic": "catalog:",
+    "@devframes/hub": "catalog:",
+    "@devframes/hub-ui": "catalog:",
     "devframe": "catalog:",
     "echarts": "catalog:",
     "monaco-editor": "^0.57.0",
     "tailwind-merge": "catalog:",
     "tailwind-variants": "catalog:",
     "vue": "catalog:",
-    "vue-router": "5.4.0"
+    "vue-router": "catalog:"
   },
   "devDependencies": {
     "@iconify-json/mdi": "catalog:",

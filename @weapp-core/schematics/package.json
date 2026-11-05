@@ -87,7 +87,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "cheerio": "^1.2.0"
+    "cheerio": "catalog:"
   },
   "tsd": {
     "compilerOptions": {

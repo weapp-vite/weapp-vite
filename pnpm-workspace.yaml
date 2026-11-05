@@ -32,24 +32,43 @@ versioning:
     storage: repository
 
 catalog:
+  '@ai-sdk/anthropic': 4.0.97
+  '@ai-sdk/openai': 4.0.109
+  '@ai-sdk/openai-compatible': 3.0.85
   '@babel/core': ^8.1.0
   '@babel/generator': ^8.1.0
   '@babel/parser': ^8.1.0
+  '@babel/preset-env': ^8.0.7
+  '@babel/preset-typescript': ^8.0.7
   '@babel/traverse': ^8.1.0
   '@babel/types': ^8.1.0
+  '@devframes/agentic': 1.3.2
+  '@devframes/hub': 1.3.2
+  '@devframes/hub-ui': 1.3.2
   '@douyin-microapp/typings': ^1.3.1
   '@egoist/tailwindcss-icons': ^1.9.2
   '@icebreakers/eslint-config': 8.0.12
   '@icebreakers/stylelint-config': 5.1.5
   '@iconify-json/mdi': ^1.2.3
   '@iconify/tailwind4': ^1.2.3
+  '@jridgewell/remapping': ^2.3.5
+  '@jridgewell/trace-mapping': ^0.3.31
   '@mini-types/alipay': ^3.0.14
+  '@modelcontextprotocol/client': ^2.4.0
+  '@modelcontextprotocol/node': ^2.1.2
+  '@modelcontextprotocol/server': ^2.4.0
+  '@swc/core': ^1.16.21
   '@tailwindcss/vite': ^4.3.4
+  '@tanstack/vue-query': ^5.106.1
   '@types/d3': ^7.4.3
+  '@types/express': ^5.0.6
   '@types/node': ^26.6.6
+  '@types/picomatch': ^4.0.3
   '@types/react': 19.3.0
   '@types/react-reconciler': 0.34.1
   '@types/semver': ^7.8.0
+  '@types/set-value': ^4.0.3
+  '@typescript-eslint/parser': ^8.72.1
   '@vant/weapp': ^1.11.7
   '@vitejs/devtools': 0.8.2
   '@vitejs/devtools-kit': 0.8.2
@@ -59,22 +78,34 @@ catalog:
   '@vue/babel-plugin-jsx': 3.0.0
   '@vue/reactivity': ^3.5.45
   '@vue/language-core': ^3.3.14
+  '@weapp-tailwindcss/engine': 0.1.6
   '@wot-ui/ui': 2.4.0
+  ai: 7.0.163
   antd-mini: ^3.4.3
   autoprefixer: ^10.6.2
   axios: ^1.21.0
   bundle-require: ^5.1.0
+  cac: ^7.1.0
+  cheerio: ^1.2.0
   class-variance-authority: ^0.7.1
   clsx: ^2.1.1
   comment-json: ^5.0.0
   dayjs: ^1.11.23
   d3: ^7.9.2
   devframe: 1.3.2
+  diff: 9.0.0
+  domhandler: ^6.0.1
   echarts: ^6.1.0
   esbuild: ^0.28.2
   eslint: ^10.14.0
   estree-walker: ^3.0.3
+  eventsource-parser: 4.1.3
+  execa: ^10.2.1
+  express: ^5.3.0
+  fast-glob: ^3.3.3
   fdir: ^6.5.0
+  get-tsconfig: ^4.14.3
+  get-value: ^4.1.0
   gm-crypto: ^0.1.12
   graphql-request: ^7.4.0
   happy-dom: ^21.0.4
@@ -84,36 +115,51 @@ catalog:
   magic-string: ^1.4.5
   merge: ^2.1.1
   miniprogram-api-typings: ^5.2.3
+  miniprogram-computed: ^9.0.0
   obug: ^3.0.0
   oxc-parser: ^0.157.0
   oxc-walker: ^1.1.1
   pathe: ^2.0.3
   picocolors: ^1.1.1
+  picomatch: ^4.0.7
   pkg-types: ^2.4.0
   postcss: ^8.5.32
   postcss-selector-parser: ^7.1.7
+  postcss-value-parser: 4.2.0
   react: 19.3.1
   react-reconciler: 0.34.0
   rolldown: 1.2.16
   sass: ^1.107.1
   sass-embedded: ^1.107.1
+  semver: ^7.8.6
   sharp: ^0.35.5
+  shiki: ^4.6.0
+  socket.io: ^4.8.4
   stylelint: ^17.16.0
   socket.io-client: ^4.8.4
   tailwind-merge: ^3.7.0
   tailwind-variants: ^4.0.1
   tailwindcss: ^4.3.4
   tdesign-miniprogram: ^1.17.0
+  tinyexec: ^1.3.1
   ts-morph: ^28.0.0
+  tsd: ^0.33.0
+  tsdown: 0.23.5
   tslib: ^2.9.1
   tsx: ^4.23.15
   typescript: ^6.0.3
+  unplugin-auto-import: ^21.1.0
   uview-plus: 3.8.138
   vite: 8.3.5
   vite-plugin-inspect: ^12.1.0
+  vite-plus: 1.5.0
+  vitest: ^5.1.0
   vue: ^3.5.45
+  vue-eslint-parser: ^10.4.1
+  vue-router: 5.4.0
   vue-tsc: ^3.3.14
   weapp-tailwindcss: ^5.6.3
+  yaml: ^2.9.1
   zod: ^4.6.7
   '@vue/shared': ^3.5.45
 
@@ -127,6 +173,11 @@ catalogs:
     tdesign-miniprogram: 1.17.0
   weapp-tailwindcss-fixed:
     weapp-tailwindcss: 5.6.3
+  fixed:
+    execa: 10.2.1
+    zod: 4.6.7
+  tilde:
+    vitest: ~5.1.0
 
 gitChecks: false
 

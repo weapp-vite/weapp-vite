@@ -62,7 +62,7 @@
     "@mpcore/test": "workspace:*"
   },
   "devDependencies": {
-    "vitest": "~5.1.0"
+    "vitest": "catalog:tilde"
   },
   "publishConfig": {
     "access": "public",

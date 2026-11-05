@@ -45,8 +45,8 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@types/set-value": "^4.0.3",
-    "@weapp-tailwindcss/engine": "0.1.6",
+    "@types/set-value": "catalog:",
+    "@weapp-tailwindcss/engine": "catalog:",
     "@weapp-tailwindcss/source-scan": "0.1.2",
     "@weapp-vite/hmr": "workspace:*",
     "micromatch": "4.0.8",

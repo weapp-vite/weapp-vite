@@ -11,11 +11,11 @@ const baseline = readVerificationTopologyVariant() === 'baseline'
 describe('independent CI preparation with unchanged validation scope', () => {
   it('installs the build actual Node version in every coverage shard and merge', () => {
     const action = parse(readFileSync(new URL('../.github/actions/setup-node-pnpm/action.yml', import.meta.url), 'utf8'))
-    const freeze = action.runs.steps.find(step => step.name === 'Freeze actual toolchain identity')
+    const record = action.runs.steps.find(step => step.name === 'Record actual Node version')
     expect(action.outputs['node-version'].value).toBe(`\${{ steps.toolchain.outputs.node-version }}`)
-    expect(freeze.id).toBe('toolchain')
-    expect(freeze.run).toMatch(/'node-version=' \+ process\.versions\.node/)
-    expect(freeze.run).toContain('"$GITHUB_OUTPUT"')
+    expect(record.id).toBe('toolchain')
+    expect(record.run).toMatch(/'node-version=' \+ process\.versions\.node/)
+    expect(record.run).toContain('"$GITHUB_OUTPUT"')
 
     const command = read('reusable-node-command.yml')
     const setup = command.jobs.run.steps.find(step => step.uses === './.github/actions/setup-node-pnpm')

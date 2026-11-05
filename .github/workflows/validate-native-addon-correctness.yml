@@ -25,7 +25,7 @@ jobs:
   actual-addon:
     if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['native-addon-correctness'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true') }}
     needs: pr-context
-    name: Actual N-API Addon (${{ matrix.os }} / Node 24.22.2)
+    name: Actual N-API Addon (${{ matrix.os }} / default Node)
     runs-on: ${{ matrix.os }}
     timeout-minutes: 25
     env:
@@ -56,13 +56,13 @@ jobs:
           path: .tmp/pr-driver
           persist-credentials: false
 
-      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
-
       - name: Set up Node.js
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        uses: ./.tmp/pr-driver/.github/actions/setup-node-pnpm
         with:
-          node-version: 24.22.2
-          cache: pnpm
+          node-version: default
+          install-dependencies: 'false'
+          freeze-toolchain: 'false'
+          package-json-file: package.json
           cache-dependency-path: pnpm-lock.yaml
 
       - name: Install dependencies without lifecycle builds

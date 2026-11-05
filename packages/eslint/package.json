@@ -68,10 +68,10 @@
     }
   },
   "devDependencies": {
-    "@typescript-eslint/parser": "^8.72.1",
+    "@typescript-eslint/parser": "catalog:",
     "eslint": "catalog:",
     "typescript": "catalog:",
-    "vitest": "^5.1.0",
-    "vue-eslint-parser": "^10.4.1"
+    "vitest": "catalog:",
+    "vue-eslint-parser": "catalog:"
   }
 }

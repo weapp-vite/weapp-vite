@@ -95,15 +95,13 @@ jobs:
           # Git 与发布 API 统一复用内置令牌；自动 PR 的运行仍需要 GitHub 原生审批。
           token: ${{ github.token }}
 
-      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
-
       - name: Setup Node.js environment
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        uses: ./.github/actions/setup-node-pnpm
         with:
-          node-version: ^24.22.2
-          check-latest: true
-          cache: pnpm
-          registry-url: https://registry.npmjs.org
+          node-version: '24'
+          install-dependencies: 'false'
+          freeze-toolchain: 'false'
+          registry-url: 'https://registry.npmjs.org'
 
       - name: Install npm with trusted publishing support
         run: npm install --global npm@11.16.0 --registry=https://registry.npmjs.org
@@ -252,13 +250,12 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
-
       - name: Setup Node.js environment
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        uses: ./.github/actions/setup-node-pnpm
         with:
-          node-version: 24.22.2
-          cache: pnpm
+          node-version: default
+          install-dependencies: 'false'
+          freeze-toolchain: 'false'
 
       - name: Install npm with trusted publishing support
         id: nightly-npm
@@ -323,13 +320,12 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
-
       - name: Setup Node.js environment
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        uses: ./.github/actions/setup-node-pnpm
         with:
-          node-version: 24.22.2
-          cache: pnpm
+          node-version: default
+          install-dependencies: 'false'
+          freeze-toolchain: 'false'
 
       - name: Install Dependencies without lifecycle scripts
         run: pnpm install --frozen-lockfile --ignore-scripts
@@ -355,13 +351,12 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
-
       - name: Setup Node.js environment
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        uses: ./.github/actions/setup-node-pnpm
         with:
-          node-version: 24.22.2
-          cache: pnpm
+          node-version: default
+          install-dependencies: 'false'
+          freeze-toolchain: 'false'
 
       - name: Install Dependencies without lifecycle scripts
         run: pnpm install --frozen-lockfile --ignore-scripts

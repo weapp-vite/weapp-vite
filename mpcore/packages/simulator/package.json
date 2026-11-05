@@ -64,7 +64,7 @@
     "fontoxpath": "^3.34.0",
     "pathe": "catalog:",
     "postcss": "catalog:",
-    "postcss-value-parser": "4.2.0"
+    "postcss-value-parser": "catalog:"
   },
   "publishConfig": {
     "access": "public",

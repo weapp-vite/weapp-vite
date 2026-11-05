@@ -90,16 +90,17 @@ jobs:
             throw new Error('Dispatch requires exact clean baseline and candidate commits')
           }
           NODE
-      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
-        with:
-          package_json_file: candidate/package.json
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      - name: Setup Node and pnpm
+        uses: ./candidate/.github/actions/setup-node-pnpm
         with:
           node-version: 24.18.0
-          cache: pnpm
+          install-dependencies: 'false'
+          freeze-toolchain: 'false'
+          package-json-file: candidate/package.json
           cache-dependency-path: |
             candidate/pnpm-lock.yaml
             baseline/pnpm-lock.yaml
+
       - name: Install candidate dependencies in its own checkout
         working-directory: candidate
         run: pnpm install --frozen-lockfile

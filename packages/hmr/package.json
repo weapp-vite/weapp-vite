@@ -46,7 +46,7 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@jridgewell/remapping": "^2.3.5"
+    "@jridgewell/remapping": "catalog:"
   },
   "publishConfig": {
     "access": "public",

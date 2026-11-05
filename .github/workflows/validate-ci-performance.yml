@@ -45,6 +45,7 @@ jobs:
             scripts/performanceGate
             scripts/verification/documentPolicy.mjs
             .github
+            .node-version
           persist-credentials: false
       - name: Validate frozen head using the approved merge driver
         if: inputs.verification_topology == 'optimized-v2'
@@ -58,14 +59,14 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PERFORMANCE_PR_CONTEXT: ${{ inputs.pr_context }}
         run: node .tmp/pr-driver/scripts/performanceGate/smokeScope.mjs
-      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
-        if: steps.scope.outputs.needed == 'true'
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      - name: Setup Node and pnpm
+        uses: ./.tmp/pr-driver/.github/actions/setup-node-pnpm
         if: steps.scope.outputs.needed == 'true'
         with:
-          node-version: ^24.22.2
-          check-latest: true
-          cache: pnpm
+          node-version: '24'
+          install-dependencies: 'false'
+          freeze-toolchain: 'false'
+
       - name: Install dependencies
         if: steps.scope.outputs.needed == 'true'
         run: pnpm install --frozen-lockfile --prefer-offline

@@ -48,13 +48,13 @@ jobs:
           persist-credentials: false
 
       - name: Check out frozen validation driver independently of the PR head
-        if: inputs.verification_topology == 'optimized-v2'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           ref: ${{ github.sha }}
           path: .tmp/pr-validation-driver
           sparse-checkout: |
             .github
+            .node-version
             scripts/verification/documentPolicy.mjs
           persist-credentials: false
       - name: Validate frozen head using the approved merge driver
@@ -65,16 +65,13 @@ jobs:
           profile: wevu-runtime-size
           working-directory: head
 
-      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
-        with:
-          package_json_file: head/package.json
-
       - name: Setup Node.js environment
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        uses: ./.tmp/pr-validation-driver/.github/actions/setup-node-pnpm
         with:
-          node-version: ^24.22.2
-          check-latest: true
-          cache: pnpm
+          node-version: '24'
+          install-dependencies: 'false'
+          freeze-toolchain: 'false'
+          package-json-file: head/package.json
           cache-dependency-path: |
             head/pnpm-lock.yaml
             baseline/pnpm-lock.yaml

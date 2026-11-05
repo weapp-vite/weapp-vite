@@ -134,8 +134,19 @@ describe('actual-addon CI execution contract', () => {
     expect([...job.strategy.matrix.os].sort()).toEqual(['macos-latest', 'ubuntu-latest', 'windows-latest'])
     // eslint-disable-next-line no-template-curly-in-string -- 验证 GitHub Actions 的表达式原文。
     expect(job['runs-on']).toBe('${{ matrix.os }}')
-    const node = job.steps.find(step => step.uses?.startsWith('actions/setup-node@'))
-    expect(node.with['node-version']).toBe('24.22.2')
+    const node = job.steps.find(step => step.uses === './.tmp/pr-driver/.github/actions/setup-node-pnpm')
+    expect(node.with).toMatchObject({
+      'node-version': 'default',
+      'install-dependencies': 'false',
+      'freeze-toolchain': 'false',
+      'package-json-file': 'package.json',
+      'cache-dependency-path': 'pnpm-lock.yaml',
+    })
+    const driver = job.steps.find(step => step.name === 'Check out the trusted correctness driver')
+    // eslint-disable-next-line no-template-curly-in-string -- 可信 setup 必须来自执行 workflow 的冻结 revision。
+    expect(driver.with).toMatchObject({ 'ref': '${{ github.sha }}', 'path': '.tmp/pr-driver', 'persist-credentials': false })
+    expect(driver.if).toBeUndefined()
+    expect(job.steps.indexOf(driver)).toBeLessThan(job.steps.indexOf(node))
     const rust = job.steps.find(step => step.run?.startsWith('rustup '))
     expect(rust['working-directory']).toBe('packages/ast-native')
     expect(rust.run).toBe('rustup show active-toolchain')

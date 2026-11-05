@@ -81,7 +81,7 @@
     "@weapp-core/constants": "workspace:*",
     "@weapp-core/shared": "workspace:*",
     "@weapp-vite/wxml": "workspace:*",
-    "domhandler": "^6.0.1",
+    "domhandler": "catalog:",
     "esbuild": "catalog:",
     "lit": "^3.3.3",
     "magic-string": "catalog:",

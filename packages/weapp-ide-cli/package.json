@@ -91,13 +91,13 @@
     }
   },
   "dependencies": {
-    "@modelcontextprotocol/server": "^2.4.0",
+    "@modelcontextprotocol/server": "catalog:",
     "@weapp-core/logger": "workspace:*",
     "@weapp-core/shared": "workspace:*",
     "@weapp-vite/devtools-runtime": "workspace:*",
     "@weapp-vite/miniprogram-automator": "workspace:*",
-    "cac": "^7.1.0",
-    "execa": "10.2.1",
+    "cac": "catalog:",
+    "execa": "catalog:fixed",
     "pathe": "catalog:",
     "pixelmatch": "^8.0.0",
     "pngjs": "^7.0.0",

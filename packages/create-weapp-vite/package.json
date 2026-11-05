@@ -90,15 +90,15 @@
     "@weapp-core/logger": "workspace:*",
     "@weapp-core/shared": "workspace:*",
     "@weapp-vite/language-service": "workspace:*",
-    "execa": "^10.2.1",
+    "execa": "catalog:",
     "jsonc-parser": "^3.3.1",
     "make-fetch-happen": "^16.0.1",
     "npm-registry-fetch": "^20.0.1",
     "pathe": "catalog:",
-    "picomatch": "^4.0.7",
+    "picomatch": "catalog:",
     "pkg-types": "catalog:",
-    "semver": "^7.8.6",
-    "yaml": "^2.9.1"
+    "semver": "catalog:",
+    "yaml": "catalog:"
   },
   "devDependencies": {
     "@types/make-fetch-happen": "^10.0.4",
@@ -107,6 +107,6 @@
     "@weapp-vite/oxfmt": "workspace:*",
     "@weapp-vite/oxlint": "workspace:*",
     "oxfmt": "0.76.0",
-    "vite-plus": "1.5.0"
+    "vite-plus": "catalog:"
   }
 }

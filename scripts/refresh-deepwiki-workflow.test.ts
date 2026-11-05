@@ -55,12 +55,12 @@ describe('DeepWiki monitor and explicit refresh workflow', () => {
   })
 
   it('installs ordinary dependencies without browsers and executes only the selected mode', () => {
-    const setup = steps.find(step => step.uses?.startsWith('actions/setup-node@'))
+    const setup = steps.find(step => step.uses === './.github/actions/setup-node-pnpm')
     const monitor = steps.find(step => step.run === 'node .github/scripts/refresh-deepwiki.mjs --mode=monitor')
     const refresh = steps.find(step => step.run === 'node .github/scripts/refresh-deepwiki.mjs --mode=refresh')
     const installation = steps.find(step => step.run === 'pnpm install --frozen-lockfile --ignore-scripts')
     const browsers = steps.filter(step => /playwright\s+install/.test(step.run ?? ''))
-    expect(setup?.with).toEqual({ 'node-version': '^22.23.4', 'check-latest': true, 'cache': 'pnpm', 'cache-dependency-path': 'pnpm-lock.yaml' })
+    expect(setup?.with).toEqual({ 'node-version': '22', 'install-dependencies': 'false', 'freeze-toolchain': 'false', 'cache-dependency-path': 'pnpm-lock.yaml' })
     expect(installation?.run).toBe('pnpm install --frozen-lockfile --ignore-scripts')
     expect(installation?.if).toBeUndefined()
     expect(installation?.run).not.toMatch(/playwright|chromium|browser/i)
@@ -72,7 +72,7 @@ describe('DeepWiki monitor and explicit refresh workflow', () => {
     expect(workflowText).not.toMatch(/secrets\.|DEEPWIKI_REFRESH_EMAIL|dry_run/i)
     expect(workflow.jobs.deepwiki['continue-on-error']).toBeUndefined()
     expect(steps.every(step => step['continue-on-error'] === undefined)).toBe(true)
-    expect(steps.filter(step => step.uses).every(step => /@[0-9a-f]{40}$/.test(step.uses!))).toBe(true)
+    expect(steps.filter(step => step.uses && step !== setup).every(step => /@[0-9a-f]{40}$/.test(step.uses!))).toBe(true)
     expect(steps.findIndex(step => step.name === 'Read current main commit')).toBeLessThan(steps.indexOf(monitor!))
     expect(steps.findIndex(step => step.name === 'Read current main commit')).toBeLessThan(steps.indexOf(refresh!))
     expect(steps.indexOf(installation!)).toBeLessThan(steps.indexOf(monitor!))

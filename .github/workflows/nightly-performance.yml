@@ -54,10 +54,10 @@ jobs:
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      - uses: ./.github/actions/setup-node
         with:
-          node-version: ^24.22.2
-          check-latest: true
+          node-version: '24'
+
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: pr-context
@@ -115,15 +115,15 @@ jobs:
         with:
           name: performance-plan
           path: performance-plan
-      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - name: Setup Node and pnpm
+        uses: ./driver/.github/actions/setup-node-pnpm
         with:
-          package_json_file: driver/package.json
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: ^24.22.2
-          check-latest: true
-          cache: pnpm
+          node-version: '24'
+          install-dependencies: 'false'
+          freeze-toolchain: 'false'
+          package-json-file: driver/package.json
           cache-dependency-path: driver/pnpm-lock.yaml
+
       - name: Install trusted driver dependencies
         working-directory: driver
         run: pnpm install --frozen-lockfile --prefer-offline
@@ -168,10 +168,10 @@ jobs:
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      - uses: ./.github/actions/setup-node
         with:
-          node-version: ^24.22.2
-          check-latest: true
+          node-version: '24'
+
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           pattern: performance-*

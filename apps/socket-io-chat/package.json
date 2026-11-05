@@ -17,17 +17,17 @@
   },
   "dependencies": {
     "axios": "catalog:",
-    "express": "^5.3.0",
+    "express": "catalog:",
     "graphql": "^17.1.0",
     "graphql-request": "catalog:",
-    "socket.io": "^4.8.4",
+    "socket.io": "catalog:",
     "socket.io-client": "catalog:",
     "vue": "catalog:",
-    "vue-router": "5.4.0"
+    "vue-router": "catalog:"
   },
   "devDependencies": {
     "@tailwindcss/vite": "catalog:",
-    "@types/express": "^5.0.6",
+    "@types/express": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
     "miniprogram-api-typings": "catalog:",
     "tailwindcss": "catalog:tailwind4",

@@ -48,12 +48,13 @@ jobs:
         with:
           context: ${{ inputs.pr_context }}
           profile: ci-acceptance
-      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      - name: Setup Node and pnpm
+        uses: ./.github/actions/setup-node-pnpm
         with:
-          node-version: ^24.22.2
-          check-latest: true
-          cache: pnpm
+          node-version: '24'
+          install-dependencies: 'false'
+          freeze-toolchain: 'false'
+
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - run: pnpm --filter weapp-vite... --filter @weapp-agent/cli... -r build
       - run: pnpm --filter @weapp-agent/core --filter @weapp-agent/providers --filter @weapp-agent/mini-program --filter @weapp-agent/cli --filter @weapp-vite/acceptance --filter @weapp-vite/mcp --filter @weapp-vite/devtools-runtime -r typecheck
@@ -64,13 +65,15 @@ jobs:
         run: pnpm --workspace-concurrency=1 --filter @weapp-agent/core --filter @weapp-agent/providers --filter @weapp-agent/mini-program --filter @weapp-agent/cli --filter @weapp-vite/acceptance --filter @weapp-vite/mcp --filter @weapp-vite/devtools-runtime -r test --no-file-parallelism
       - run: pnpm --filter @weapp-agent/core test:types
       - run: node scripts/weapp-agent/smoke-pack.mjs
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      - uses: ./.github/actions/setup-node
         with:
           node-version: 22.23.4
+
       - run: node scripts/weapp-agent/smoke-baseline.mjs
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      - uses: ./.github/actions/setup-node
         with:
-          node-version: 24.22.2
+          node-version: default
+
       - run: node scripts/weapp-agent/smoke-baseline.mjs
 
   windows-runtime-diagnostic:

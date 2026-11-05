@@ -48,7 +48,7 @@ async function readReleaseWorkflow() {
 it('keeps the repoctl-managed release workflow aligned with the current contract', async () => {
   const { content, workflow, job, steps } = await readReleaseWorkflow()
   const checkoutStep = steps.find(step => step.uses?.startsWith('actions/checkout@'))
-  const pnpmSetupStep = steps.find(step => step.uses?.startsWith('pnpm/action-setup@'))
+  const pnpmSetupStep = steps.find(step => step.uses === './.github/actions/setup-node-pnpm')
 
   assert.match(content, /^# repoctl-managed: release\/v2/)
   assert.equal(workflow.concurrency, undefined)
@@ -60,7 +60,11 @@ it('keeps the repoctl-managed release workflow aligned with the current contract
   assert.equal(job?.['runs-on'], 'ubuntu-latest')
   assert.equal(workflow.env?.npm_config_registry, 'https://registry.npmjs.org')
   assert.equal(workflow.env?.pnpm_config_registry, undefined)
-  assert.match(pnpmSetupStep?.uses ?? '', /^pnpm\/action-setup@[\da-f]{40}$/)
+  assert.ok(pnpmSetupStep)
+  assert.equal(pnpmSetupStep.with?.['node-version'], '24')
+  assert.equal(pnpmSetupStep.with?.['install-dependencies'], 'false')
+  assert.equal(pnpmSetupStep.with?.['freeze-toolchain'], 'false')
+  assert.equal(pnpmSetupStep.with?.['registry-url'], 'https://registry.npmjs.org')
   const githubToken = githubExpression('github.token')
   assert.equal(workflow.env?.LEFTHOOK, 0)
   assert.equal(workflow.env?.HUSKY, undefined)
