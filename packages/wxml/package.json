@@ -63,7 +63,7 @@
     "test:coverage": "node --import tsx ../../scripts/templateCorpus/coverage/run.ts"
   },
   "dependencies": {
-    "entities": "^8.1.0"
+    "entities": "^9.0.0"
   },
   "devDependencies": {
     "dom-serializer": "^3.1.1",

@@ -44,11 +44,72 @@ serialize(updated)
 
 `edit` 通过同步编辑句柄登记变化，返回新文档。`serialize` 默认采用 preserve 模式，未修改区域逐字保留；canonical 模式遍历文档并统一标签和属性标点。格式化策略继续由语言服务和格式器负责。
 
+## 路径式转换
+
+`edit(document, visitors, state?)` 提供当前编辑树的路径，适合需要父子导航、退出阶段汇总和继续处理新节点的转换。已有 `edit(document, callback)` 保持快照语义，不改变旧调用的遍历结果。省略状态时回调收到 `undefined`；使用 `EditVisitors<State>` 声明有类型的状态时，必须传入该状态。
+
+```ts
+const state = { buttons: 0 }
+const document = parse('<product-card loading><legacy-button onTap="buy">购买</legacy-button></product-card>')
+const updated = edit(document, {
+  Element: {
+    enter(path, state) {
+      if (!path.isElement('legacy-button')) {
+        return
+      }
+      const card = path.findParent(parent => parent.isElement('product-card'))
+      path.rename('button')
+      path.renameAttribute('onTap', 'bindtap')
+      if (card?.hasAttribute('loading')) {
+        path.setAttribute('disabled', { expression: 'busy' })
+      }
+      state.buttons++
+    },
+    exit(path) {
+      if (path.isElement('product-card')) {
+        const buttons = path.get('children').filter(child => child.isElement('button'))
+        path.setAttribute('data-button-count', buttons.length)
+      }
+    },
+  },
+}, state)
+
+serialize(updated)
+```
+
+`path.node` 立即反映标签、属性和子列表的修改，仍是只读视图。`parentPath`、`findParent`、`get('children')` 和 `getSibling(index)` 返回同一会话的路径，无需自行保存祖先句柄。`getAttribute` 返回当前属性的词法值与引号，`hasAttribute` 可检查裸属性；`renameAttribute` 可直接迁移属性名。
+
+访问器支持全局 `enter/exit` 与 `Element/Text/Comment/Cdata/Declaration/Script` 分型。全局 enter 先于分型 enter，分型 exit 先于全局 exit。`path.traverse(visitors, state?)` 只访问后代，不包含自身；`skip()` 跳过当前遍历帧的后代，仍执行其 exit；`stop()` 立即结束当前这次遍历，已登记的修改继续提交。嵌套遍历的控制不影响外层遍历。
+
+`replaceWith`、`insertBefore`、`insertAfter`、`prepend`、`append` 返回新路径，新节点会进入本轮遍历，也能立刻继续编辑：
+
+```ts
+const updated = edit(parse('<placeholder />'), {
+  Element(path) {
+    if (path.isElement('placeholder')) {
+      const [button] = path.replaceWith('<button />')
+      button!.setAttribute('type', 'primary')
+      button!.append('<text>确认</text>')
+    }
+  },
+})
+```
+
+`requeue()` 可显式要求当前遍历重新访问节点。自动访问和重新入队要求转换规则能够终止：例如将 `placeholder` 转为 `button`，或用当前属性标记处理状态。删除或替换祖先后，旧子树路径立即失效；整个会话结束后，所有路径都不能再修改文档。访问器是同步函数，不接受 Promise。
+
+`replaceWith` 的源码与当前节点输出完全相同时，返回当前路径且不重复访问。会话为自动访问新节点和显式重新入队设置终止保护：单条新结构生成链最多 1024 代，包含新增节点通过祖先路径或嵌套遍历继续生成的结构；单路径显式重新入队最多 10000 次，连续 32 次没有源码修改后再次入队也会失败。原始模板的节点数和深度不受这些生成预算限制。
+
+路径的当前语义节点没有源码坐标。原输入节点的快照和位置分别由 `originalNode`、`originalRange` 提供，新增节点没有原输入位置；提交后返回文档的全部节点、tokens 和范围与新 source 一致。函数回调模式的 `handle.node` 则继续指向原节点，修改后读取仍是原值，插入片段也不会进入该模式的本轮访问。
+
+## 编码与文档契约
+
 字符串 setter 表示字面量，表达式使用 `{ expression: 'value' }` 明确传入，必须完整落在单个绑定内。会话提交时校验最终值，被覆盖或删除的临时值不参与输出。无效文档返回诊断，编辑与序列化拒绝错误输入。
 
 节点、属性和源码范围使用只读 TypeScript 接口，AST 不做运行时深冻结。JavaScript 调用方同样应通过 `edit` 修改；直接改写节点不受支持。
 
 属性 `value` 保留不含外层引号的词法原文；需要解码时调用 `decodeAttribute(value, syntax, true, attribute.quote)`。legacy 带引号属性统一解开一层宿主转义，返回逻辑绑定源码，不执行 JavaScript 字符串转义；无引号属性保留反斜杠。legacy 只解静态片段的实体，XML 则对完整属性值解码实体。输出 quoted legacy 属性时先编码全部反斜杠，再转义外层引号。
+
+实体解码依赖已升级为 `entities@9`，继续使用同步 `decodeXML` 和 XML 实体规则。其 Node `>=20.19.0` 要求低于本包既有支持基线，不改变本包的 Node 环境约束。
 
 ## 多平台与 Web
 

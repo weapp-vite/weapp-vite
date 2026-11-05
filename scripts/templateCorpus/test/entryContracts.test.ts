@@ -9,7 +9,8 @@ describe('direct public entry contracts', () => {
     const report = runEntryContracts(module, variant)
     expect(report.accepted).toBe(true)
     expect(report.failures).toEqual([])
-    expect(report.checks).toHaveLength(3)
+    expect(report.checks).toHaveLength(4)
+    expect(report.checks).toContain('path-editing')
   })
 
   it('rejects compatibility surface and metadata on the core entry', () => {

@@ -3,6 +3,26 @@ import { decodeAttribute } from './decode'
 
 describe('lexical attribute decoding', () => {
   it.each([
+    ['&amp;&lt;&gt;&quot;&apos;', '&<>"\''],
+    ['&#65; &#x41; &#x1F680;', 'A A 🚀'],
+    ['&nbsp; &copy; &unknown;', '&nbsp; &copy; &unknown;'],
+    ['&amp &#65 &#x41 &;', '&amp &#65 &#x41 &;'],
+    ['&#0; &#xD800; &#x110000;', '\uFFFD \uFFFD \uFFFD'],
+    ['&amp;lt;', '&lt;'],
+  ])('preserves XML entity decoding semantics for %s', (source, expected) => {
+    for (const syntax of ['legacy', 'xml'] as const) {
+      expect(decodeAttribute(source, syntax)).toBe(expected)
+      expect(decodeAttribute(source, syntax, false)).toBe(source)
+    }
+  })
+
+  it('keeps entity decoding outside legacy bindings and across the complete XML value', () => {
+    const source = 'pre&amp;{{"&amp;"}}post&#x1F680;'
+    expect(decodeAttribute(source, 'legacy')).toBe('pre&{{"&amp;"}}post🚀')
+    expect(decodeAttribute(source, 'xml')).toBe('pre&{{"&"}}post🚀')
+  })
+
+  it.each([
     String.raw`path\file`,
     String.raw`path\\file`,
     String.raw`pre\path{{name}}post\end`,

@@ -139,6 +139,84 @@ export interface EditableNode {
 
 export type EditVisitor = (node: EditableNode) => void | false
 
+/** 编辑会话中的逻辑属性；源码坐标仅由提交后的文档提供。 */
+export interface EditAttribute {
+  readonly name: string
+  readonly value?: string
+  readonly quote?: '"' | '\''
+}
+
+export interface EditElement {
+  readonly kind: 'element'
+  readonly name: string
+  readonly attributes: readonly EditAttribute[]
+  readonly children: readonly EditNode[]
+  readonly selfClosing: boolean
+}
+
+export interface EditRawNode {
+  readonly kind: RawNode['kind']
+  readonly data: string
+}
+
+export type EditNode = EditElement | EditRawNode
+
+export type EditCallback<State = undefined, Current extends EditNode = EditNode> = (path: EditPath<Current>, state: State) => void | false
+export type EditNodeVisitor<State = undefined, Current extends EditNode = EditNode> = EditCallback<State, Current> | {
+  enter?: EditCallback<State, Current>
+  exit?: EditCallback<State, Current>
+}
+
+export interface EditVisitors<State = undefined> {
+  enter?: EditCallback<State>
+  exit?: EditCallback<State>
+  Element?: EditNodeVisitor<State, EditElement>
+  Text?: EditNodeVisitor<State, EditRawNode & { readonly kind: 'text' }>
+  Comment?: EditNodeVisitor<State, EditRawNode & { readonly kind: 'comment' }>
+  Cdata?: EditNodeVisitor<State, EditRawNode & { readonly kind: 'cdata' }>
+  Declaration?: EditNodeVisitor<State, EditRawNode & { readonly kind: 'declaration' }>
+  Script?: EditNodeVisitor<State, EditRawNode & { readonly kind: 'script' }>
+}
+
+/** 路径身份属于单个编辑会话，所有修改在会话结束后失效。 */
+export interface EditPath<Current extends EditNode = EditNode> {
+  readonly node: Current
+  readonly originalNode: Node | undefined
+  readonly originalRange: SourceRange | undefined
+  readonly parentPath: EditPath | undefined
+  readonly key: number
+  readonly removed: boolean
+  get: (key: 'children') => readonly EditPath[]
+  getSibling: (index: number) => EditPath | undefined
+  findParent: (predicate: (path: EditPath) => boolean) => EditPath | undefined
+  isElement: {
+    (): this is EditPath<EditElement>
+    <Name extends string>(name: Name): this is EditPath<EditElement & { readonly name: Name }>
+  }
+  isText: () => this is EditPath<EditRawNode & { readonly kind: 'text' }>
+  hasAttribute: (name: string) => boolean
+  getAttribute: (name: string) => EditAttribute | undefined
+  rename: (name: string) => void
+  renameAttribute: (name: string, nextName: string) => void
+  setAttribute: (name: string, value: AttributeValue) => void
+  setBooleanAttribute: (name: string) => void
+  removeAttribute: (name: string) => void
+  replaceText: (value: string | { readonly expression: string }) => void
+  remove: () => void
+  replaceWith: (source: string) => readonly EditPath[]
+  insertBefore: (source: string) => readonly EditPath[]
+  insertAfter: (source: string) => readonly EditPath[]
+  prepend: (source: string) => readonly EditPath[]
+  append: (source: string) => readonly EditPath[]
+  traverse: {
+    (visitors: EditVisitors): void
+    <State>(visitors: EditVisitors<State>, state: State): void
+  }
+  skip: () => void
+  stop: () => void
+  requeue: () => void
+}
+
 export interface SerializeOptions {
   readonly mode?: 'preserve' | 'canonical'
 }

@@ -49,7 +49,7 @@ const changed = edit(document, (handle) => {
 - `scan(source, options)` 返回 tokens 与 diagnostics，保留标签、属性、脚本和文本的源码范围。
 - `parse(source, options)` 返回带有 children、tokens、diagnostics 和原始 source 的文档。
 - `walk(document, visitor)` 同步先序遍历；enter 返回 false 时跳过子节点。
-- `edit(document, visitor)` 在同步编辑会话中修改，返回新文档；不会修改输入文档。
+- `edit(document, callback)` 通过原节点快照登记修改；`edit(document, visitors, state?)` 通过路径访问当前编辑树。两者均同步执行、返回新文档，不修改输入文档。
 - `serialize(document, { mode })` 输出模板源码。默认 preserve；canonical 会遍历树并统一标签和属性标点，不处理缩进、折行或压缩。
 
 节点和属性使用只读 TypeScript 接口，AST 不做运行时深冻结。JavaScript 调用方同样应通过 `edit` 修改；直接改写节点不受支持。
@@ -58,7 +58,75 @@ const changed = edit(document, (handle) => {
 
 普通字符串作为字面量编码；`{ expression: 'value' }` 表示单个完整绑定的表达式，不能提前闭合绑定或插入额外节点，number 和 boolean 输出为有类型的绑定值。会话提交时校验最终值，被覆盖或删除的临时值不参与输出。插入或替换的源码片段会按当前文档选项解析校验。非法模板仍可读取诊断，但不能编辑或序列化为可写结果。
 
-编辑同步校验修改。保持结构的属性、普通标签名和非空文本修改复用原树；返回的新文档提供修改后的 source，children/tokens 在首次读取时重建并缓存，walk 和后续 edit 会自动触发。结构、脚本标签或自定义边界 resolver 涉及的修改会立即重新解析完整文档。
+编辑同步校验修改。函数回调模式中，保持结构的属性、普通标签名和非空文本修改复用原树；返回的新文档提供修改后的 source，children/tokens 在首次读取时重建并缓存，walk 和后续 edit 会自动触发。结构、脚本标签或自定义边界 resolver 涉及的修改会立即重新解析完整文档。
+
+## 路径式编辑
+
+复杂转换可以使用 visitor 对象。`Element` 等分型访问器接收 `EditPath`，支持 `enter/exit`，第三个参数用于传递共享状态。省略状态时回调收到 `undefined`；使用 `EditVisitors<State>` 声明有类型的状态时，必须传入该状态：
+
+```ts
+const document = parse('<product-card loading><legacy-button onTap="buy">购买</legacy-button></product-card>')
+const state = { buttons: 0 }
+
+const updated = edit(document, {
+  Element: {
+    enter(path, state) {
+      if (!path.isElement('legacy-button')) {
+        return
+      }
+      const card = path.findParent(parent => parent.isElement('product-card'))
+      path.rename('button')
+      path.renameAttribute('onTap', 'bindtap')
+      if (card?.hasAttribute('loading')) {
+        path.setAttribute('disabled', { expression: 'busy' })
+      }
+      state.buttons++
+    },
+    exit(path) {
+      if (path.isElement('product-card')) {
+        const buttons = path.get('children').filter(child => child.isElement('button'))
+        path.setAttribute('data-button-count', buttons.length)
+      }
+    },
+  },
+}, state)
+
+console.log(serialize(updated), state.buttons)
+```
+
+`path.node` 是当前逻辑树的只读视图，改名、属性修改及子列表变化会立即反映到后续查询；修改仍通过路径方法完成。它不包含源码范围。输入节点的原始快照与位置通过 `originalNode`、`originalRange` 读取，新增节点没有输入文档位置；返回文档的 AST、tokens 和范围统一对应提交后的 source。
+
+| 能力 | 路径接口 |
+| --- | --- |
+| 类型与当前值 | `node`、`isElement(name?)`、`isText()`、`hasAttribute`、`getAttribute` |
+| 树导航 | `parentPath`、`findParent`、`get('children')`、`getSibling(index)`、`key` |
+| 遍历控制 | `traverse`、`skip`、`stop`、`requeue` |
+| 属性与标签 | `rename`、`renameAttribute`、`setAttribute`、`setBooleanAttribute`、`removeAttribute` |
+| 文本与结构 | `replaceText`、`remove`、`replaceWith`、`insertBefore`、`insertAfter`、`prepend`、`append` |
+
+访问器还支持全局 `enter/exit` 及 `Text/Comment/Cdata/Declaration/Script` 分型；分型访问器可直接写函数，或写成 `{ enter, exit }`。`walk` 继续用于只读分析，不需要通过编辑会话才能遍历。
+
+全局 enter 先于分型 enter，分型 exit 先于全局 exit。`traverse` 只访问后代，不包含自身；`skip` 跳过当前遍历帧的后代，仍执行 exit；`stop` 结束当前这次遍历，不再执行后续 exit，但已有修改继续提交。嵌套遍历的控制状态与外层分开。
+
+结构插入和替换返回新路径，可以在同一会话中继续修改：
+
+```ts
+const updated = edit(parse('<placeholder />'), {
+  Element(path) {
+    if (path.isElement('placeholder')) {
+      const [button] = path.replaceWith('<button />')
+      button!.setAttribute('type', 'primary')
+      button!.append('<text>确认</text>')
+    }
+  },
+})
+```
+
+新节点会进入本轮遍历，`requeue()` 可要求当前遍历重新访问节点。转换规则应识别尚未处理的标签或状态，避免反复替换成仍满足同一规则的结构。删除或替换祖先会使旧子树路径失效，并舍弃该子树此前的修改；会话结束后，保留的路径也不能再修改文档。访问器必须同步完成，不能返回 Promise。
+
+`replaceWith` 的源码与当前节点输出完全相同时，返回当前路径且不重复访问。会话为自动访问新节点和显式重新入队设置终止保护：单条新结构生成链最多 1024 代，包含新增节点通过祖先路径或嵌套遍历继续生成的结构；单路径显式重新入队最多 10000 次，连续 32 次没有源码修改后再次入队也会报错。原始模板的节点数和深度不受这些生成预算限制。
+
+原有函数回调继续使用快照语义：`handle.rename()` 不改变 `handle.node.name`，新片段本轮不会自动访问。两种模式的差异是明确的兼容边界，不能将路径式示例中的即时查询假设用于旧句柄。
 
 ## 平台与原文
 
@@ -72,9 +140,11 @@ preserve 模式保留未修改部分，包括 BOM、换行、空白、引号、�
 
 第四个参数应传入原属性的 `quote`。legacy 带引号属性统一解开一层宿主转义，包括绑定中的反斜杠和外层引号；返回逻辑绑定源码，不执行 JavaScript 字符串转义。`undefined` 表示无引号属性，保留反斜杠。legacy 实体解码只处理静态片段，绑定中的 `'&amp;'` 保持原文；XML 方言按完整属性值解码实体。输出 quoted legacy 属性时先编码全部反斜杠，再转义外层引号；未转义的外层引号会产生结构诊断。
 
+实体解码使用 `entities@9` 的同步 `decodeXML`，保持 XML 实体规则，不扩展为 HTML 命名实体解码。该依赖要求 Node `>=20.19.0`，低于本包已有 Node 版本基线；升级不扩大或提高本包的运行环境要求。
+
 脚本正文使用独立词法状态识别字符串、正则和注释。少数注释结束边界存在歧义时，调用方可提供 resolveScriptBoundary；语言服务的兼容层可以注入 JS AST 判定，基础入口不会加载 Babel/Oxc。
 
-默认原文标签为 wxs、sjs、ks、filter、script 和 import-sjs；`platform: 'jd'` 另外默认识别 jds，`platform: 'qq'` 另外默认识别 qs。这两个平台专有标签不会在其他平台自动变成脚本；`rawTags` 显式传入时仍替换完整列表，包括平台默认值。消费者按实际输入平台选择该列表，例如微信自定义 filter 组件与百度 filter 脚本应使用不同配置。边界 resolver 在编辑校验时接收完整最终源码，插入片段另行校验自身的结构平衡。
+默认原文标签为 wxs、sjs、ks、filter、script 和 import-sjs；`platform: 'jd'` 另外默认识别 jds，`platform: 'qq'` 另外默认识别 qs。这两个平台专有标签不会在其他平台自动变成脚本；`rawTags` 显式传入时仍替换完整列表，包括平台默认值。消费者按实际输入平台选择该列表，例如微信自定义 filter 组件与百度 filter 脚本应使用不同配置。路径式编辑在结构操作校验时向边界 resolver 传入当前完整投影源码，提交时传入最终完整源码；旧 callback 保持最终源码校验，插入片段另行校验自身的结构平衡。
 
 当插值已经词法确认结束于 `}}`，但内部括号不匹配时，诊断使用 `template/invalid-interpolation`，并提供只读 `recovery: { kind: 'interpolation', start, end }`，范围包括两侧 mustache。消费者可据此实现自己的错误展示或兼容策略；文档仍有错误，edit 和 serialize 继续拒绝。缺少 `}}`，或字符串、正则、注释、标签结构的边界无法确定时，不提供恢复范围。
 

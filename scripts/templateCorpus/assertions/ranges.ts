@@ -1,4 +1,4 @@
-import type { Attribute, Document, SourceRange, TagToken } from '../../../packages/wxml/src/types'
+import type { Attribute, SourceRange, TagToken, TemplateDocument } from '../../../packages/wxml/src/types'
 import { invariant } from './types'
 
 function range(value: SourceRange, source: string, parent: SourceRange, label: string) {
@@ -31,7 +31,7 @@ function attributes(tag: TagToken, source: string) {
 }
 
 /** 完整 tokens 必须恰好分区源码，标签配对用独立栈验证。 */
-export function assertRanges(document: Document) {
+export function assertRanges(document: TemplateDocument) {
   const { source, tokens } = document
   let cursor = 0
   const stack: number[] = []
