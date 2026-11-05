@@ -81,6 +81,7 @@
     "@weapp-core/constants": "workspace:*",
     "@weapp-core/shared": "workspace:*",
     "@weapp-vite/ast": "workspace:*",
+    "@weapp-vite/wxml": "workspace:*",
     "comment-json": "catalog:",
     "lru-cache": "catalog:",
     "magic-string": "catalog:",

@@ -1,13 +1,11 @@
 import type { CompilerDiagnostic } from '../../../types/diagnostics'
 import type { ResolvedSlotFallbackWrapperConfig, SlotFallbackWrapperComponentAsset, SlotFallbackWrapperStrategy, TemplateCompileOptions, TemplateCompileResult, TransformContext } from './template/types'
 import {
-  parse,
-} from '@vue/compiler-dom'
-import {
   WEVU_SLOT_FALLBACK_VIRTUAL_HOST_BASE,
   WEVU_SLOT_FALLBACK_VIRTUAL_HOST_TAG_NAME,
 } from '@weapp-core/constants'
 import { createWevuRuntimeCapabilityMetadataFromBindingManifest } from '../../../runtimeCapabilities'
+import { parseTemplateWithScriptModules } from '../../../utils/templateScriptModules'
 
 import { createBindingManifest, markBindingManifestIncomplete } from './template/bindingManifest'
 import { buildClassStyleWxsTag } from './template/classStyleRuntime'
@@ -129,15 +127,16 @@ export function compileVueTemplateToWxml(
 
   try {
     // 使用 compiler-dom 解析模板，确保浏览器环境自带 decodeEntities 解析能力。
-    const ast = parse(template, {
+    const { ast, scripts } = parseTemplateWithScriptModules(template, {
       comments: options?.preserveComments ? true : undefined,
       isVoidTag: tag => HTML_VOID_TAGS.has(tag),
       onError: error => warn({ diagnostics, filename }, `模板解析失败：${error.message}`, error.loc, 'template', 'WV2001'),
-    })
+    }, options?.platform?.name ?? 'weapp')
     const sourceTags = collectTemplateSourceTags(ast, filename, htmlTagToWxmlMap)
 
     const context: TransformContext = {
       source: template,
+      rawScriptModules: scripts,
       filename,
       diagnostics,
       bindingManifest: createBindingManifest(filename),
@@ -206,6 +205,10 @@ export function compileVueTemplateToWxml(
     }
     if (context.formatWxml) {
       wxml = formatWxml(wxml)
+    }
+    wxml = scripts.restore(wxml)
+    for (const asset of context.scopedSlotComponents) {
+      asset.template = scripts.restore(asset.template)
     }
 
     retainScopedSlotOwnerBindings(context.bindingManifest, context.scopedSlotComponents)

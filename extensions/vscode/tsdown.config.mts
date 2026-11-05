@@ -22,6 +22,11 @@ export default defineConfig({
           return
         }
 
+        if (log.code === 'UNRESOLVED_IMPORT') {
+          defaultHandler('error', log)
+          return
+        }
+
         previousOnLog?.(level, log, defaultHandler)
 
         if (!previousOnLog) {

@@ -99,6 +99,9 @@ function transformInterpolation(node: any, context: TransformContext): string {
 export function transformNode(node: any, context: TransformContext): string {
   switch (node.type) {
     case NodeTypes.ELEMENT:
+      if (context.rawScriptModules?.byStart.has(node.loc.start.offset)) {
+        return context.rawScriptModules.byStart.get(node.loc.start.offset)!.placeholder
+      }
       return transformElementWithNativeForScope(node, context, transformNode)
 
     case NodeTypes.TEXT:

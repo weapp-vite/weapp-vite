@@ -6,6 +6,8 @@ const extensionRoot = path.resolve(import.meta.dirname, '..')
 export const workspaceSourceAliases: Record<string, string> = {
   '@weapp-core/shared/platforms': path.resolve(extensionRoot, '../../@weapp-core/shared/src/platforms/index.ts'),
   '@weapp-vite/language-service': path.resolve(extensionRoot, '../../packages/language-service/src/index.ts'),
+  '@weapp-vite/wxml/core': path.resolve(extensionRoot, '../../packages/wxml/src/core.ts'),
+  '@weapp-vite/wxml/presets': path.resolve(extensionRoot, '../../packages/wxml/src/presets/index.ts'),
   '@weapp-vite/ast/babelTypes': path.resolve(extensionRoot, '../../packages/ast/src/babelTypes.ts'),
   '@weapp-vite/ast/babel': path.resolve(extensionRoot, 'extension/languages/ast.ts'),
   '@weapp-vite/ast': path.resolve(extensionRoot, 'extension/languages/ast.ts'),

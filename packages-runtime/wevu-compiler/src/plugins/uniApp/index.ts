@@ -1,8 +1,8 @@
 import * as t from '@weapp-vite/ast/babelTypes'
 import MagicString from 'magic-string'
 import path from 'pathe'
-import { parse as parseSfc } from 'vue/compiler-sfc'
 import { parse, traverse } from '../../utils/babel'
+import { parseVueSfc as parseSfc } from '../utils/vueSfc'
 
 export type UniAppCompatibilityTarget = 'h5' | 'mp-weixin'
 

@@ -1,11 +1,12 @@
 import type { CompilerContext } from '../context'
 import type { AutoImportComponents } from '../types'
-import { mkdir, mkdtemp, readFile, realpath, rename, rm, stat, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, realpath, rm, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { setTimeout as delay } from 'node:timers/promises'
 import path from 'pathe'
 import { dev } from 'rolldown/experimental'
 import { describe, expect, it, vi } from 'vitest'
+import { renameAtomicFile } from '../../../../scripts/utils/atomicRename'
 import { normalizeFsResolvedId } from '../utils/resolvedId'
 import { autoImport } from './autoImport'
 
@@ -100,7 +101,7 @@ describe('auto import topology ownership', () => {
         const previous = updates.length
         const pending = `${source}.pending`
         await writeFile(pending, `export const value = ${value}; import.meta.hot.accept();`)
-        await rename(pending, source)
+        await renameAtomicFile(pending, source)
         await vi.waitFor(() => {
           expect(updates.slice(previous).some(update => update.type === 'Patch' && update.files.includes('entry.js'))).toBe(true)
         }, { timeout: 5_000, interval: 20 })
@@ -177,7 +178,7 @@ describe('auto import topology ownership', () => {
         const previous = updates.length
         auto.register.mockClear()
         await writeFile(`${component}.pending`, code(value))
-        await rename(`${component}.pending`, component)
+        await renameAtomicFile(`${component}.pending`, component)
         await vi.waitFor(() => {
           expect(errors).toEqual([])
           expect(updates.length).toBe(previous + 1)

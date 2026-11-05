@@ -1,6 +1,6 @@
 import type { SFCBlock, SFCDescriptor } from 'vue/compiler-sfc'
 import type { TailwindContentPayload } from './tailwindContent'
-import { parse } from 'vue/compiler-sfc'
+import { parseVueSfc as parse } from '../../utils/vueSfc'
 import { splitJsonMacroCallsFromCode } from '../transform/jsonMacros/rewrite'
 import { buildTailwindContentPayload } from './tailwindContent'
 

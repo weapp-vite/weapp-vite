@@ -92,7 +92,7 @@ Vite+ 更新到 1.5.0，内置 Vite 8.3.5 与 Vitest 5.1.0；独立 Vite 保留 
 
 最终锁中仍存在网站开发链引入的 Vite 8.3.6：唯一可达 workspace importer 为 website，经 VitePress 2.0.0-alpha.20 及其 plugin-vue 绑定。公开包的运行时 dependencies、optionalDependencies（含 workspace link）未发现可达该版本；weapp-vite、@weapp-vite/web 与根清单的直接 Vite 均为 8.3.5。保留这条网站传递依赖不表示产品生命周期豁免扩大；该网站链已单独通过本地构建与八项浏览器检查，详见验收状态。
 
-Vitest 升级及 Vite+ 配对仍需复核现有补丁的必要性和行为契约。Chokidar 6.0.0、plugin-vue 6.0.10 与 Rolldown 1.2.16 已是本轮查询时的稳定目标，既有补丁与单版本约束继续受检查。Oxc、oxfmt 和 json-render 的 0.x minor 变化仍需按兼容迁移验证。
+Vitest 5.1.0 官方 ServerModuleRunner 已以 UTF-8 读取磁盘缓存代码，覆盖原 `vitest@5.0.5.patch` 的修正，本轮已删除该补丁及其清单、锁文件登记。Vite+ 的上述官方配对已同步；冷、暖磁盘缓存启动失败回归继续保留，没有以关闭缓存绕过错误。当前仅保留 Chokidar 6.0.0 与 plugin-vue 6.0.10 两份补丁，Rolldown 1.2.16 单版本检查通过。补丁用途和交付边界见 `patches/README.md`；Oxc、oxfmt 和 json-render 的 0.x minor 变化仍按各自消费者范围验收。
 
 ## Rust 与工具链
 
@@ -138,7 +138,7 @@ Node 策略测试已按上述边界修复，`scripts/ci-node-minimum.test.ts` �
 
 | 验收范围 | 已观察结果与边界 |
 | --- | --- |
-| 冻结安装、同步与发布说明 | 最终冻结安装通过；workspace、API 与脚手架同步通过；合并 changeset 保留全部 46 个可发布包的 patch 及 create-weapp-vite 联动，工作树补充覆盖检查通过 |
+| 冻结安装、同步与发布说明 | 冻结安装及 workspace、API、脚手架同步通过；合并 changeset 原有 46 个包的 patch 与 create-weapp-vite 联动继续保留，后续补入私有 VS Code 扩展的 patch 记录，目前共 47 条，不能称为 47 个 npm 可发布包 |
 | 构建与类型 | 包构建通过；公开类型 88/88、19 个包的 typecheck、tooling-typecheck 与 ESLint 通过；后续 Streams 修正完成包构建，weapp-vite 也已重新构建 |
 | 首轮失败文件的最终定向回归 | `final-failed-files` 三个文件、32 项测试全部通过；完整全仓最终结果仍由候选 main CI 补足 |
 | Streams 升级兼容修正 | 四个文件、53 项测试通过，包级类型检查通过并已构建；该组结果与首轮失败文件回归分别保留 |
@@ -152,8 +152,60 @@ native 暖路径 profile 只证明本轮对应输入的对齐与采样完成，�
 
 首个 main 候选 `3dad879264` 的 pre-push 使用隔离冻结快照及新安装依赖，853 项 repo-scripts 中 849 通过、四项 PR admission 检查因上述模板 pin 漂移失败；lint、48 个包构建及该轮全部包类型检查通过。此前根 `pnpm test` 的 `ROOT_REPOSITORY_TEST_GLOBS` 只发现 `.test.ts`，没有执行 `scripts/prAdmission/local.test.mjs`、`cli.test.mjs`；两份文件也未出现在全仓首轮日志中。pre-push 的独立工具入口同时发现 `.test.ts` 与 `.test.mjs` 并包含 PR admission，因此补出了验证范围差异。该遗漏来自入口覆盖范围，未发现 fixture 读取根目录生成或缓存导致假绿的证据。
 
-恢复自动 changeset 官方 pin 后，仅定向重跑 `scripts/prAdmission/local.test.mjs` 与 `cli.test.mjs`：两个文件、56 项全部通过；该工作流和本报告的 ESLint 检查通过。证据记录为 `auto-changeset-admission-regression`、`auto-changeset-template-lint`，最终候选的完整 pre-push 仍需重新完成。
+恢复自动 changeset 官方 pin 后，定向重跑 `scripts/prAdmission/local.test.mjs` 与 `cli.test.mjs`：两个文件、56 项全部通过；该工作流和本报告的 ESLint 检查通过。证据记录为 `auto-changeset-admission-regression`、`auto-changeset-template-lint`。随后 `b31e9f433` 与 `394dad58a` 均已通过原生 pre-push 并推送 main，证据分别为 `push-main-corrected.log`、`push-final-contracts.log`；这些 quick 结果不替代完整 CI、消费者或 runtime 验收。
 
 修正后的 `b31e9f433` 已通过原生 pre-push 并推送 main。补查独立脚本入口后，四份遗漏的 MJS 合约中 107 项通过，唯一失败来自当前候选 workflow 配置快照。已按仓库文档同步当前候选记录中的三处 Node 配置和升级前主线已有的 template-corpus job；实际 workflow、测试断言、watcher 专用同步守卫、历史 baseline 与测量数据均未修改。快照及同步守卫 20 项回归通过，Vitest 离线 fixture、真实四分片覆盖合并和 telemetry smoke 共八项通过；原有覆盖阈值拒绝、原生 emit 和工件身份检查继续保留。
 
-候选提交的完整 CI、headless/HMR 与真实 DevTools 验收仍待完成，应用、模板和实际消费者的最终矩阵由主验证流程继续登记。本文的局部通过只覆盖对应输入和观察面；真实 IDE 或 CI 未完成、存在失败或环境阻塞时，保留具体状态与证据，不计为最终验收通过。
+### 候选 394dad58a 的完整 headless 与 CI
+
+`394dad58a77693b2e3989da1f16a728b2e99bdf7` 从干净 main 执行 `pnpm e2e:ide:headless:full`，时间为 2026-11-05 11:50:09–12:02:30 UTC，退出 0。既定 classic suite 的 107 项清单中，93 项适用任务全部执行并通过，failed、blocked、skipped、notExecuted 均为 0；另外 14 项为原有 experimental 范围外任务，不计为执行通过。报告记录 `acceptance: passed`、`coverage: complete`，并生成 93 份验收工件。该入口按既定配置记录 `strict: false`，本轮未另加失败放行或缩小任务清单。命令、报告分别保存在任务目录的 `headless-full-final.log`、`headless-full-suite-report/index.json`；机器租约已释放，fixture 临时改动已恢复。
+
+以下 CI 状态固定为 2026-11-05 12:16:03 UTC 的已保存快照，均针对上述 SHA。排队或运行中的 workflow 不能记为成功，后续结果继续由主验证流程更新。
+
+| Workflow | Run | 快照结果 |
+| --- | --- | --- |
+| CI | [42022164416](https://github.com/weapp-vite/weapp-vite/actions/runs/42022164416) | 未结束；25 个 job 成功，冻结模板语料 job 失败，其他 job 仍排队或运行 |
+| CI E2E | [42022173970](https://github.com/weapp-vite/weapp-vite/actions/runs/42022173970) | 未结束；24 个 job 成功，七个 job 失败，其他 job 仍排队或运行 |
+| Native Addon Correctness | [42022182424](https://github.com/weapp-vite/weapp-vite/actions/runs/42022182424) | 成功，五个 job 完成，覆盖三种操作系统 |
+| Vite Host Consumer | [42022189512](https://github.com/weapp-vite/weapp-vite/actions/runs/42022189512) | 未结束，已完成的 job 无失败 |
+| Create Weapp Vite Smoke | [42022197271](https://github.com/weapp-vite/weapp-vite/actions/runs/42022197271) | 运行中，已完成的 job 无失败 |
+| Website dry-run | [42022377203](https://github.com/weapp-vite/weapp-vite/actions/runs/42022377203) | 成功，三个 job 完成；未发布网站 |
+| VSCode Extension CI | [42022383570](https://github.com/weapp-vite/weapp-vite/actions/runs/42022383570) | 排队，已完成的 job 无失败；仅打包，不发布扩展 |
+| Tutorial E2E | [42022390519](https://github.com/weapp-vite/weapp-vite/actions/runs/42022390519) | 排队，已完成的 job 无失败 |
+| Acceptance and Agent | [42022397236](https://github.com/weapp-vite/weapp-vite/actions/runs/42022397236) | 运行中，已完成的 job 无失败 |
+
+CI E2E 的原始失败涉及 Firefox/WebKit smoke、三操作系统 Shared Compiler Hosts、Web Project Builds 及 Node 22/24 Web E2E Baseline。已定位两条不同的根因：独立 Vitest global setup 取得机器租约后，在发布父凭证前创建 journal，导致 inventory scanner 的嵌套租约与自身竞争；Vue 模板解析和格式化会压缩或转义内联平台脚本正文，使 uview-plus 中以行注释开头的 WXS 丢失实际导出。前者的父凭证发布修正已通过 20 项定向测试及 lint；另在无继承凭证、无父 journal 的进程中直接运行 Web Vitest 配置，真实 scanner 与三项测试通过，退出后机器租约目录已消失，证据为 `standalone-machine-scanner.log` 与 `standalone-machine-scanner-lease-after.json`。后者已完成下述本地修正和包级回归。原始失败日志按 `ci-job-<job id>.log` 保留，本地通过结果不覆盖或改写原 CI 失败。
+
+### CI 暴露问题的本地修正
+
+WXS/SJS 修正将原始脚本保护收敛到共享 helper：Vue 仍负责标签、属性与所属模板，WXML 的公共 core 入口负责 JavaScript 词法边界；SFC 首次解析、模板编译、uni-app 归一化、native slot 和 HMR 共用该实现。解析期间按原长度遮蔽脚本正文并保留换行，生成及格式化结束后恢复原文，避免行注释吞并导出、XML 转义运算符或误读脚本中的标签字面量。普通不含平台脚本的模板保留原解析快路径，没有新增公共 API。
+
+编译器因此新增 `@wevu/compiler → @weapp-vite/wxml` 的内部 `workspace:*` 链接，已检查依赖无环。锁文件相对 `394dad58a` 仅增加该 importer 链接；`wxs-lock-equivalence.json` 确认 lockfileVersion、settings、catalogs、overrides、patchedDependencies、packages 和 snapshots 全部等价，没有滚动任何 registry 版本。`pnpm install --frozen-lockfile --offline --ignore-scripts` 覆盖 177 个 workspace，退出 0，证据为 `wxs-frozen-install.log`。
+
+| 本地修正验证 | 已观察结果与证据 |
+| --- | --- |
+| compiler 定向回归 | 八个文件、329 项通过，覆盖脚本原文、SFC、native slot、HMR、uni-app 与组件扫描；`wxs-compiler-targeted-final.log` |
+| compiler 全包单测 | 124 个文件、1616 项通过；`wxs-compiler-full.log` |
+| compiler 构建与类型 | build、包级 typecheck、公开类型及修改文件 lint 均通过；`wxs-compiler-build-final.log`、`wxs-compiler-typecheck-final.log`、`wxs-compiler-public-types.log` 及对应 lint 记录 |
+| Web 转换语义 | 四个文件、43 项通过，生成实际模板模块并使用生产 `createRenderContext` 执行 WXS 导出，验证行注释、运算符、标签字面量、导出返回值和两次渲染的模块缓存；`wxs-web-semantics-final.log` |
+| Web 类型与 lint | 包级 typecheck 与新增回归文件 lint 通过；`wxs-web-semantics-typecheck.log`、`wxs-web-test-lint-final.log` |
+
+VS Code 的后续 CI job `127233079512` 首个真实失败为 shared/platforms 源码无法导入 `@weapp-vite/wxml/presets`。新 checkout 没有 WXML dist，而扩展现有 source alias 闭包漏接 WXML 的 `presets`、`core` 子路径。原 CI 的 12 个失败文件、30 个失败用例及 19 个通过文件、140 个通过用例保留在 `ci-job-127233079512.log`。相关 alias、Vitest/tsdown/TypeScript 配置及 shared/language-service 消费源码从基线到 `394dad58a` 均未变化，锁中 workspace links 正确，现有证据支持既有源码闭包缺口，不能归因为 Node 或 Vitest API 变化。
+
+修正涉及扩展的共享 alias、TypeScript paths、tsdown 配置和现有闭包回归四个文件：精确解析两个 WXML 公共子路径，真实 bundle 必须包含对应源码且不得回落到 dist 或外置 workspace 导入；除 `vscode` 宿主模块的既定例外，其余 `UNRESOLVED_IMPORT` 现在会阻断构建。未通过提前构建所有包掩盖新 checkout 的缺口。在 Node 24.22.2 下，扩展定向三个文件、30 项通过，完整 31 个文件、232 项通过，typecheck、lint、扩展构建、隔离 mock smoke 与包检查均通过；证据为 `vscode-source-closure-*.log`。本地 `check:publish` 只执行检查，没有发布扩展或启动真实 VS Code 宿主。
+
+另一个 Windows 回归在 `autoImport.watchOwnership.test.ts` 的 fixture 原子替换阶段遭遇裸 `fs.rename` 的 `EPERM`。该测试现复用已有 `renameAtomicFile` 的有界 Windows 短暂错误重试，保持同一次原子 rename，不删除目标或改用复制；工具原有取消语义保持。具体持锁者尚无证据，不能归因为杀毒软件或产品业务逻辑。工具回归 11 项通过，根任务持有机器租约执行真实 watcher 回归七项通过，证据分别为 `windows-fixture-atomic-rename.log`、`windows-fixture-watch-ownership.log`。本机 watcher 结果不能替代修正后的真实 Windows CI。
+
+WXS 修正后已重新构建 compiler 和 weapp-vite；`wxs-weapp-vite-build.log` 退出 0。随后串行执行 uview-plus Web 实际构建并通过，证据为 `wxs-uview-web-build.log`。真实浏览器回归于 2026-11-05 12:54:26–12:56:17 UTC 退出 0：两个正式测试验证 139 个组件的移动、桌面行为，以及 139×2 个页面的视觉基线比对，全部通过，未更新 baseline。`afterAll` 已关闭本轮创建的 headless Chrome 和 dev server，证据为 `wxs-uview-web-browser.log`。新候选 CI 与正式完整真实 IDE 验收仍待完成，已有消费者及 Workspace HMR 的其他失败继续独立分析，不能据此宣称 CI 全绿。
+
+### 冻结模板语料的既有失败
+
+CI 的 `Frozen template corpus, fuzz and source coverage` 在 `pnpm corpus:check` 阶段失败，尚未进入后续包 acceptance、coverage 命令。该命令读取冻结语料，不会在这轮重新构建 Taro。当前 manifest 的 190 条 generation 原本就是 184 built、四条 unsupported、两条 failed；两条 failed 分别为 `taro-4.3.2-harmony-jsui-199c3efafcceae46-development` 与对应 production。13558 份 document、26228 个 origin 仍保留原始输入。
+
+两种模式保存的构建错误均为 `Cannot call .tap() on a plugin that has not yet been defined`，来自 Harmony 插件注册流程对 `miniPlugin` 的调用。冻结记录采用 Node 22.22.3、Taro 4.3.2，生成配置日期为 2026-11-04；本轮没有用 Node 24 重新生成这些输入。基线到 `394dad58a` 的比对证明，`packages/wxml/test/corpus` 全部档案及 generator/check 实现未变，`scripts/templateCorpus` 仅上述 benchmark entities 边界修正发生变化，证据为任务目录的 `corpus-baseline-comparison.json`。
+
+本轮保留 failed 状态、原始日志和门禁，不改成 built/unsupported，不重采历史语料来消除失败。现有日志尚不能区分上游 Taro 缺陷与 Harmony fixture 配置问题，后续需调查插件注册流程，再通过正式 generate/collect 更新真实证据。包 `test:acceptance` 同样检查该 inventory，因此不能跳过语料门禁后宣称 acceptance 已通过。
+
+以上完整 headless 与远端 CI 快照只覆盖 `394dad58a`。WXS 编译器、测试基础设施、VS Code 及 Windows fixture 修正的本地结果按各自日志登记，新候选仍须补齐受影响消费者、CI 和 runtime 验证，不能沿用旧 SHA 的完整通过。真实 DevTools 完整验收尚未执行，本轮仍未完成最终验收。
+
+代码组织评审：新增原始脚本 helper 独立于 SFC 适配器，避免自动组件扫描依赖重型解析入口而形成回边；普通不含平台脚本的模板保持原解析快路径。既有超过 300 行的 SFC/编译文件仅接入共同 helper，不再复制词法规则。`machineGlobalSetup.test.ts` 保留集中 `vi.hoisted` mock、隔离租约与恢复生命周期，拆分会重复该状态边界，因此本轮保留同一测试文件。

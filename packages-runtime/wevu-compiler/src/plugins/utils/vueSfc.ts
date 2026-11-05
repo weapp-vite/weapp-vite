@@ -12,6 +12,7 @@ import { parse as parseCompilerSfc } from 'vue/compiler-sfc'
 import { CompilerDiagnosticError } from '../../types/diagnostics'
 import { getReadFileCheckMtime } from '../../utils/cachePolicy'
 import { isEncodedSourceMapLike } from '../../utils/sourcemap'
+import { parseTemplateWithScriptModules } from '../../utils/templateScriptModules'
 import { normalizeLineEndings } from '../../utils/text'
 import { readFile as readFileCached } from './cache'
 import { resolveSfcBlockSrc } from './vueSfcBlockSrc'
@@ -176,7 +177,7 @@ function parseSfcAst(
   options: ParserOptions,
   onScriptSrc: (owned: SfcScriptSrcAttribute) => void,
 ) {
-  const ast = compilerDom.parse(source, options)
+  const { ast } = parseTemplateWithScriptModules(source, options)
   for (const child of ast.children) {
     if (child.type !== NodeTypes.ELEMENT || child.tag !== 'script') {
       continue

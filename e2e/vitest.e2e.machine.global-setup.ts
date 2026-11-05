@@ -23,6 +23,8 @@ export default async function setup() {
   let journalPath: string
   let childScope: MachineE2EChildScope
   try {
+    // journal 扫描也会嵌套借用机器租约；先发布父凭证，兼容独立入口与 source/dist 上下文。
+    Object.assign(process.env, lease.environment)
     journalPath = await createDevtoolsProjectJournal()
     childScope = await lease.createChildScope({ cleanupKey: journalPath })
     Object.assign(process.env, childScope.environment, { [MANAGED_PROJECT_JOURNAL_ENV]: journalPath })

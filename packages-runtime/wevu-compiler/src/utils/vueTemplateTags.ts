@@ -1,6 +1,7 @@
 import type { TemplateChildNode } from '@vue/compiler-core'
 import { NodeTypes, baseParse as parseTemplate } from '@vue/compiler-core'
 import { isBuiltinComponent } from '../auto-import-components/builtin'
+import { parseTemplateWithScriptModules } from './templateScriptModules'
 
 export const RESERVED_VUE_COMPONENT_TAGS = new Set([
   'template',
@@ -49,10 +50,13 @@ export function analyzeVueTemplateTags(
 ): VueTemplateTagAnalysis {
   const tags = new Set<string>()
   try {
-    const ast = parseTemplate(template, { onError: () => {} })
+    const { ast, scripts } = parseTemplateWithScriptModules(template, { onError: () => {} }, undefined, parseTemplate)
     const visit = (node: TemplateChildNode) => {
       // baseParse 尚未执行结构指令转换，分支和循环仍是元素节点。
       if (node.type === NodeTypes.ELEMENT) {
+        if (scripts.byStart.has(node.loc.start.offset)) {
+          return
+        }
         const tag = node.tag
         if ((!options || options.shouldCollect(tag)) && !RESERVED_VUE_COMPONENT_TAGS.has(tag) && !isBuiltinComponent(tag)) {
           tags.add(tag)

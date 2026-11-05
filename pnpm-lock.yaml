@@ -2963,6 +2963,9 @@ importers:
       '@weapp-vite/ast':
         specifier: workspace:*
         version: link:../../packages/ast
+      '@weapp-vite/wxml':
+        specifier: workspace:*
+        version: link:../../packages/wxml
       comment-json:
         specifier: 'catalog:'
         version: 5.0.0

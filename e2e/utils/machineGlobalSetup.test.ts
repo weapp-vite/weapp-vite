@@ -5,10 +5,11 @@ import path from 'node:path'
 import process from 'node:process'
 import { withMachineE2ELease as withPublishedMachineLease } from '@weapp-vite/devtools-runtime'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { acquireMachineE2ELease } from '../../packages/devtools-runtime/src/lease/machine'
+import { MANAGED_PROJECT_JOURNAL_ENV } from 'weapp-ide-cli'
+import { acquireMachineE2ELease, withMachineE2ELease } from '../../packages/devtools-runtime/src/lease/machine'
 import { readMachineE2ELeaseSnapshot } from '../../packages/devtools-runtime/src/lease/machineRecovery'
 import { INHERITED_LEASE_ENV, parseMachineCredential } from '../../packages/devtools-runtime/src/lease/machineScope'
-import { createManagedWechatProjectJournal, MANAGED_PROJECT_JOURNAL_ENV } from '../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/journal'
+import { createManagedWechatProjectJournal } from '../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/journal'
 import setupLeaseOnly from '../vitest.e2e.machine-lease.global-setup'
 import setup from '../vitest.e2e.machine.global-setup'
 
@@ -102,6 +103,33 @@ describe('Vitest global setup owns its journal cleanup scope', () => {
     await expect(fs.access(path.join(mocks.directory, 'machine-e2e'))).rejects.toMatchObject({ code: 'ENOENT' })
   })
 
+  it.each([
+    { entry: 'source', withLease: withMachineE2ELease },
+    { entry: 'dist', withLease: withPublishedMachineLease },
+  ])('publishes its parent credential before the $entry inventory scanner borrows it', async ({ withLease }) => {
+    const createJournal = mocks.createJournal.getMockImplementation()!
+    mocks.createJournal.mockImplementation(async (parent) => {
+      const before = await snapshot()
+      expect(before.scopes).toEqual([])
+      await withLease(async (lease) => {
+        expect(lease.borrowed).toBe(true)
+        expect(parseMachineCredential(lease.environment[INHERITED_LEASE_ENV]!).scopes).toEqual([])
+        expect((await snapshot()).borrowers).toHaveLength(1)
+        await expect(acquireMachineE2ELease({ env: {} })).rejects.toThrow('Runtime busy')
+      }, { stateDirectory: mocks.directory, env: process.env })
+      expect(await snapshot()).toEqual(before)
+      return createJournal(parent)
+    })
+
+    const teardown = await setup()
+    expect(mocks.createJournal).toHaveBeenCalledOnce()
+    expect(parseMachineCredential(process.env[INHERITED_LEASE_ENV]!).scopes).toHaveLength(1)
+    await teardown()
+    expect(process.env[INHERITED_LEASE_ENV]).toBeUndefined()
+    expect(process.env[MANAGED_PROJECT_JOURNAL_ENV]).toBeUndefined()
+    await expect(fs.access(path.join(mocks.directory, 'machine-e2e'))).rejects.toMatchObject({ code: 'ENOENT' })
+  })
+
   it.each(['unconfirmed startup', 'native window remains open'])('keeps the root lease and journal bound after %s', async (message) => {
     const failure = new Error(message)
     mocks.cleanupProjects.mockRejectedValue(failure)
@@ -156,7 +184,10 @@ describe('Vitest global setup owns its journal cleanup scope', () => {
   it.each(['journal', 'scope'] as const)('releases an empty lease if %s initialization fails', async (stage) => {
     const failure = new Error(`${stage} initialization failed`)
     if (stage === 'journal') {
-      mocks.createJournal.mockRejectedValue(failure)
+      mocks.createJournal.mockImplementation(() => withPublishedMachineLease(async (lease) => {
+        expect(lease.borrowed).toBe(true)
+        throw failure
+      }, { stateDirectory: mocks.directory, env: process.env }))
     }
     else {
       mocks.scopeFailure = failure

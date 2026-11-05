@@ -12,6 +12,8 @@ import unitConfig from '../vitest.config'
 
 const extensionRoot = path.resolve(import.meta.dirname, '..')
 const platformSource = path.resolve(extensionRoot, '../../@weapp-core/shared/src/platforms/index.ts').replaceAll('\\', '/')
+const wxmlCoreSource = path.resolve(extensionRoot, '../../packages/wxml/src/core.ts').replaceAll('\\', '/')
+const wxmlPresetsSource = path.resolve(extensionRoot, '../../packages/wxml/src/presets/index.ts').replaceAll('\\', '/')
 
 it('transforms config modules with the extension config before unrelated apps have generated theirs', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'weapp-vite-extension-tsconfig-'))
@@ -41,13 +43,19 @@ it('transforms config modules with the extension config before unrelated apps ha
   }
 })
 
-it('resolves platform types from source with the formal TypeScript config', () => {
+it('resolves platform and parser types from source with the formal TypeScript config', () => {
   const config = ts.readConfigFile(path.join(extensionRoot, 'tsconfig.json'), ts.sys.readFile)
   assert.equal(config.error, undefined)
   const parsed = ts.parseJsonConfigFileContent(config.config, ts.sys, extensionRoot)
   const importer = path.resolve(extensionRoot, '../../packages/language-service/src/profiles/data.ts')
-  const resolved = ts.resolveModuleName('@weapp-core/shared/platforms', importer, parsed.options, ts.sys).resolvedModule
-  assert.equal(resolved?.resolvedFileName.replaceAll('\\', '/'), platformSource)
+  for (const [specifier, source] of Object.entries({
+    '@weapp-core/shared/platforms': platformSource,
+    '@weapp-vite/wxml/core': wxmlCoreSource,
+    '@weapp-vite/wxml/presets': wxmlPresetsSource,
+  })) {
+    const resolved = ts.resolveModuleName(specifier, importer, parsed.options, ts.sys).resolvedModule
+    assert.equal(resolved?.resolvedFileName.replaceAll('\\', '/'), source)
+  }
 })
 
 it('resolves the unit source closure with exact package subpaths', async () => {
@@ -57,6 +65,8 @@ it('resolves the unit source closure with exact package subpaths', async () => {
   for (const [specifier, source] of Object.entries({
     '@weapp-core/shared/platforms': '../../@weapp-core/shared/src/platforms/index.ts',
     '@weapp-vite/language-service': '../../packages/language-service/src/index.ts',
+    '@weapp-vite/wxml/core': '../../packages/wxml/src/core.ts',
+    '@weapp-vite/wxml/presets': '../../packages/wxml/src/presets/index.ts',
     '@weapp-vite/ast': 'extension/languages/ast.ts',
     '@weapp-vite/ast/babel': 'extension/languages/ast.ts',
     '@weapp-vite/ast/babelTypes': '../../packages/ast/src/babelTypes.ts',
@@ -68,27 +78,56 @@ it('resolves the unit source closure with exact package subpaths', async () => {
   }
   assert.equal(await resolve('@weapp-core/shared/platforms/runtime', importer, true), undefined)
   assert.equal(await resolve('@weapp-core/shared/platforms-extra', importer, true), undefined)
+  assert.equal(await resolve('@weapp-vite/wxml/core-extra', importer, true), undefined)
+  assert.equal(await resolve('@weapp-vite/wxml/presets/extra', importer, true), undefined)
 })
 
-it('bundles the same platform source with the formal tsdown resolver options', async () => {
+it('bundles the language service and platform parser closure from source with the formal tsdown options', async () => {
   const modules = new Set<string>()
   const virtualEntry = '\0workspace-platform-contract'
   const bundle = await rolldown({
+    ...bundleConfig.inputOptions({}),
     input: virtualEntry,
     resolve: { alias: bundleConfig.alias },
     plugins: [{
       name: 'contract:platform-source-closure',
       resolveId: id => id === virtualEntry ? id : null,
-      load: id => id === virtualEntry ? 'export { MINI_PROGRAM_PLATFORM_DESCRIPTORS } from "@weapp-core/shared/platforms"' : null,
+      load: id => id === virtualEntry
+        ? 'export { MINI_PROGRAM_PLATFORM_DESCRIPTORS } from "@weapp-core/shared/platforms"; export { analyzeTemplate } from "@weapp-vite/language-service"'
+        : null,
       moduleParsed(module) {
         modules.add(module.id.replaceAll('\\', '/'))
       },
     }],
   })
   try {
-    await bundle.generate({ format: 'esm' })
-    assert.equal(modules.has(platformSource), true)
+    const { output } = await bundle.generate({ format: 'esm' })
+    for (const source of [platformSource, wxmlCoreSource, wxmlPresetsSource]) {
+      assert.equal(modules.has(source), true, `missing bundled source: ${path.relative(extensionRoot, source)}`)
+    }
     assert.equal([...modules].some(id => id.includes('/@weapp-core/shared/dist/')), false)
+    assert.equal([...modules].some(id => id.includes('/packages/wxml/dist/')), false)
+    assert.equal(output.some(chunk => chunk.type === 'chunk' && chunk.imports.some(id => id.startsWith('@weapp-'))), false)
+  }
+  finally {
+    await bundle.close()
+  }
+})
+
+it('rejects unresolved imports instead of emitting an incomplete extension bundle', async () => {
+  const virtualEntry = '\0workspace-unresolved-contract'
+  const bundle = await rolldown({
+    ...bundleConfig.inputOptions({}),
+    input: virtualEntry,
+    resolve: { alias: bundleConfig.alias },
+    plugins: [{
+      name: 'contract:unresolved-source',
+      resolveId: id => id === virtualEntry ? id : null,
+      load: id => id === virtualEntry ? 'export { missing } from "@weapp-vite/wxml/missing"' : null,
+    }],
+  })
+  try {
+    await assert.rejects(bundle.generate({ format: 'esm' }), /Could not resolve.*@weapp-vite\/wxml\/missing/su)
   }
   finally {
     await bundle.close()

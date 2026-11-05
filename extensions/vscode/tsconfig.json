@@ -11,6 +11,12 @@
       "@weapp-vite/language-service": [
         "../../packages/language-service/src/index.ts"
       ],
+      "@weapp-vite/wxml/core": [
+        "../../packages/wxml/src/core.ts"
+      ],
+      "@weapp-vite/wxml/presets": [
+        "../../packages/wxml/src/presets/index.ts"
+      ],
       "weapp-vite": [
         "../../packages/weapp-vite/dist/index.d.mts"
       ],

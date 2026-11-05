@@ -3,6 +3,7 @@ import type { WevuRuntimeCapabilityMetadata } from '../../../../runtimeCapabilit
 import type { WevuBindingManifestV1, WevuRuntimeBindingManifestMode } from '../../../../types/bindingManifest'
 import type { CompilerDiagnostic, SourceSpan } from '../../../../types/diagnostics'
 import type { EncodedSourceMapLike } from '../../../../utils/sourcemap'
+import type { TemplateScriptModules } from '../../../../utils/templateScriptModules'
 import type { MiniProgramPlatform } from './platform'
 
 export type FunctionPropNameMatcher = string | RegExp
@@ -95,6 +96,7 @@ export interface TemplateCompileResult {
  */
 export interface TransformContext {
   source: string
+  rawScriptModules?: TemplateScriptModules
   filename: string
   diagnostics: CompilerDiagnostic[]
   bindingManifest: WevuBindingManifestV1

@@ -1,6 +1,7 @@
 import type { SFCDescriptor } from 'vue/compiler-sfc'
 import { afterEach, describe, expect, it } from 'vitest'
-import { parse, parseCache } from 'vue/compiler-sfc'
+import { parseCache } from 'vue/compiler-sfc'
+import { parseVueSfc as parse } from '../../utils/vueSfc'
 import { resolveVueSfcSignaturePayload } from './sfcPayload'
 import { resolveVueSfcHmrSignatures } from './sfcSignature'
 
@@ -31,6 +32,15 @@ afterEach(() => {
 })
 
 describe('SFC signature payload ownership', () => {
+  it('keeps raw script text in the same parser owner used by compilation', () => {
+    const filename = ownFilename('raw-script')
+    const body = `\n// helper\nmodule.exports = { literal: '<view>{{ untouched }}</view>', ready: 1 < 2 && 2 > 1 }\n`
+    const source = `<template><wxs module="handler">${body}</wxs><view>{{ handler.ready }}</view></template>`
+    const payload = resolveVueSfcSignaturePayload(source, filename)
+    expect(payload?.template.template?.content).toContain(body)
+    expect(resolveVueSfcSignaturePayload(source, filename)).toBe(payload)
+  })
+
   it('reuses payload and signatures while their parsed descriptor is cached', () => {
     const filename = ownFilename('reuse')
     const source = '<template><view class="page">hello</view></template>'

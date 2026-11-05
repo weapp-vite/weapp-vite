@@ -2,9 +2,9 @@ import type { File } from '@weapp-vite/ast/babelTypes'
 import type { SFCDescriptor } from 'vue/compiler-sfc'
 import type { ResolveSfcBlockSrcOptions } from '../../../utils/vueSfc'
 import path from 'pathe'
-import { parse as parseSfc } from 'vue/compiler-sfc'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { readFile } from '../../../utils/cache'
+import { parseVueSfc as parseSfc } from '../../../utils/vueSfc'
 
 export interface SourceFacts {
   source: string

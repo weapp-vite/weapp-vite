@@ -4,6 +4,7 @@ import { baseParse, NodeTypes } from '@vue/compiler-core'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { isBuiltinComponent } from '../../../../../auto-import-components/builtin'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse } from '../../../../../utils/babel'
+import { parseTemplateWithScriptModules } from '../../../../../utils/templateScriptModules'
 import { parseForExpression } from '../../../compiler/template/elements/forExpression'
 import { resolveHtmlTagToWxmlMap, resolveTemplateTagName } from '../../../compiler/template/htmlTagMapping'
 
@@ -36,14 +37,17 @@ export function analyzeTemplate(content: string, options?: Pick<TemplateCompileO
     }
   }
   try {
-    const ast = baseParse(content, { onError: () => {
+    const { ast, scripts } = parseTemplateWithScriptModules(content, { onError: () => {
       facts.required = true
-    } })
+    } }, undefined, baseParse)
     const visit = (node: TemplateChildNode): string => {
       if (node.type === NodeTypes.INTERPOLATION && node.content.type === NodeTypes.SIMPLE_EXPRESSION) {
         return expression(node.content.content)
       }
       if (node.type !== NodeTypes.ELEMENT) {
+        return ''
+      }
+      if (scripts.byStart.has(node.loc.start.offset)) {
         return ''
       }
       const tag = resolveTemplateTagName(node.tag, tagContext)
