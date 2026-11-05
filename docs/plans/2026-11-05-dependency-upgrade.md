@@ -100,6 +100,7 @@ Vitest 升级及 Vite+ 配对仍需复核现有补丁的必要性和行为契约
 | --- | --- | --- |
 | 开发及 CI 固定 Node 24 | 24.22.1 | 24.22.2 |
 | repoctl snapshot build/publish 模板 | 24.22.1 | 保留上游固定字节与 builder SHA 对应版本 |
+| repoctl 自动 changeset plan/apply 模板 | 24.22.1 | 保留官方可信执行模板的固定版本 |
 | CI 浮动 Node 26 支持线 | 26.12.1 | 26.13.0 |
 | Node 22 支持线 | 22.23.4 | 保留 |
 | 产品 Node engines 与最低版本兼容矩阵 | ^22.23.4 \|\| ^24.22.1 \|\| >=26.12.1 | 保留最低兼容版本 |
@@ -114,6 +115,8 @@ Vitest 升级及 Vite+ 配对仍需复核现有补丁的必要性和行为契约
 Node 目标来自 nodejs.org 官方发布索引；Rust 来自官方 stable manifest 和发布信息；Cargo 107 个锁定 crate 已逐项查询 crates.io 的 max_stable_version，查询无失败。napi、serde 等直接依赖无需提高版本。GitHub Actions 按官方最新 release 与 tag 对应 commit 回读，除 pnpm/action-setup 外，其余九个外部 Actions 仓库的当前 SHA 已匹配查询时的稳定目标。上述内容是目标核对结果，不能替代构建和运行验收。
 
 `.node-version` 与现行开发、CI 固定版本更新到 Node 24.22.2，Node 26 浮动支持线更新到 26.13.0；产品 engines 与最低兼容矩阵继续使用 `^22.23.4 || ^24.22.1 || >=26.12.1`，Bun 的 1.4.2 与 latest 兼容矩阵也保留。`.github/workflows/repoctl-snapshot-build.yml` 与 `.github/workflows/repoctl-snapshot-publish.yml` 保留 Node 24.22.1：repoctl 6.4 官方模板冻结完整文件字节及 builder SHA，未提供 Node 覆盖入口，本轮不改模板指纹或弱化对应断言。
+
+`.github/workflows/release-intent-auto.yml` 的 plan、apply 也保留 Node 24.22.1。repoctl 6.4.0 的 `getAutoChangesetWorkflow` 类型、实现与 CLI 只支持 Environment、工作流及 job 名称、路径和 policy 配置，没有 Node 版本覆盖；官方 resource 固定该版本，仓库 admission 按完整 job 对照可信模板。本轮曾将两处 pin 一并升级到 24.22.2，首次 pre-push 因该漂移阻断，现已恢复模板 pin，保留审批、权限、命令和完整对照检查。
 
 Rust 检查显式使用已核验的 rustc 1.99.1 与 Cargo 1.99.1，`cargo check --locked --manifest-path packages/ast-native/Cargo.toml`、`cargo test --locked --manifest-path packages/ast-native/Cargo.toml` 均退出 0，测试 20 项通过、0 失败、0 忽略。最初名为 1.99.1 的工具链缺少 rustc，其检查结果未计为正式通过；发现现有完整 stable 工具链后，已用实际 1.99.1 重跑。任务临时下载已定向停止，无残留任务进程。身份、命令和日志保存在 `.tmp/current-run/dependency-upgrade-2026-11-05/toolchain/`。
 
@@ -147,4 +150,8 @@ Node 策略测试已按上述边界修复，`scripts/ci-node-minimum.test.ts` �
 
 native 暖路径 profile 只证明本轮对应输入的对齐与采样完成，不构成整体性能门禁通过。p95 存在波动，本轮不据此宣称稳定提速。
 
-main 提交、候选提交的完整 CI、headless/HMR 与真实 DevTools 验收仍待完成，应用、模板和实际消费者的最终矩阵由主验证流程继续登记。本文的局部通过只覆盖对应输入和观察面；真实 IDE 或 CI 未完成、存在失败或环境阻塞时，保留具体状态与证据，不计为最终验收通过。
+首个 main 候选 `3dad879264` 的 pre-push 使用隔离冻结快照及新安装依赖，853 项 repo-scripts 中 849 通过、四项 PR admission 检查因上述模板 pin 漂移失败；lint、48 个包构建及该轮全部包类型检查通过。此前根 `pnpm test` 的 `ROOT_REPOSITORY_TEST_GLOBS` 只发现 `.test.ts`，没有执行 `scripts/prAdmission/local.test.mjs`、`cli.test.mjs`；两份文件也未出现在全仓首轮日志中。pre-push 的独立工具入口同时发现 `.test.ts` 与 `.test.mjs` 并包含 PR admission，因此补出了验证范围差异。该遗漏来自入口覆盖范围，未发现 fixture 读取根目录生成或缓存导致假绿的证据。
+
+恢复自动 changeset 官方 pin 后，仅定向重跑 `scripts/prAdmission/local.test.mjs` 与 `cli.test.mjs`：两个文件、56 项全部通过；该工作流和本报告的 ESLint 检查通过。证据记录为 `auto-changeset-admission-regression`、`auto-changeset-template-lint`，最终候选的完整 pre-push 仍需重新完成。
+
+修正后的 main 提交与推送、候选提交的完整 CI、headless/HMR 与真实 DevTools 验收仍待完成，应用、模板和实际消费者的最终矩阵由主验证流程继续登记。本文的局部通过只覆盖对应输入和观察面；真实 IDE 或 CI 未完成、存在失败或环境阻塞时，保留具体状态与证据，不计为最终验收通过。
