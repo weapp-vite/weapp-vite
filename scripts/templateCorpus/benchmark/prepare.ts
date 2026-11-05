@@ -1,7 +1,7 @@
 import type { Plugin } from 'esbuild'
 import type { PreparedConsumers } from './regressionConsumers'
 import type { ProfileCheckpoint, ProfileDependencies, ProfileFixture, ProfileGroup, ProfileMeasurement, ProfileOptions } from './types'
-import { readFile } from 'node:fs/promises'
+import { readFile, realpath } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -59,9 +59,24 @@ export const run = (fixtures, groups, options) => measureProfile({api${baselineA
 export const runWithCheckpoint = (fixtures, groups, options, checkpoint) => measureProfileWithCheckpoint({api${baselineArgument},html,render${consumers ? `,consumers:${consumers.expression}` : ''}}, fixtures, groups, options, checkpoint);
 `
   const artifacts: Record<string, string> = { ...consumers?.artifacts }
+  const parserRoots = baselineEntry
+    ? await Promise.all([entry, baselineEntry].map(async file => realpath(path.dirname(file))))
+    : []
   const plugins: Plugin[] = baselineEntry
     ? [{ name: 'paired-locked-entities', setup(builder) {
-        builder.onResolve({ filter: /^entities(?:\/.*)?$/ }, args => ({ path: require.resolve(args.path) }))
+        builder.onResolve({ filter: /^entities(?:\/.*)?$/ }, async (args) => {
+          if (args.namespace !== 'file') {
+            return undefined
+          }
+          const importer = await realpath(args.importer)
+          // 仅锁定两份 parser 产物的依赖，第三方模块保留各自声明的版本边界。
+          const owned = parserRoots.some((root) => {
+            const relative = path.relative(root, importer)
+            return relative !== '..' && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative)
+              && !relative.split(path.sep).includes('node_modules')
+          })
+          return owned ? { path: require.resolve(args.path) } : undefined
+        })
       } }]
     : []
   await recordFiles([entry, ...(baselineEntry ? [baselineEntry] : []), htmlEntry, serializerEntry, path.join(repositoryRoot, 'pnpm-lock.yaml')], artifacts)

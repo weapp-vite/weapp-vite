@@ -40,7 +40,7 @@
 
 ### Streams 与 UTF-8
 
-`@wevu/web-apis/streams` 采用固定版本 `web-streams-polyfill@4.3.0` ponyfill。可用的原生 `ReadableStream`、`WritableStream`、`TransformStream` 作为一组保留；否则一致地使用 ponyfill，避免混合构造器造成品牌检查失败。
+`@wevu/web-apis/streams` 采用固定版本 `web-streams-polyfill@4.5.0` ponyfill。可用的原生 `ReadableStream`、`WritableStream`、`TransformStream` 作为一组保留；否则一致地使用 ponyfill，避免混合构造器造成品牌检查失败。
 
 UTF-8 `TextDecoderPolyfill` 和 `TextDecoderStreamPolyfill` 保存跨块状态，处理中文、emoji、BOM、非法字节、fatal 模式及最终 flush。Fetch 本身只交付字节；解码与 SSE 解析分别位于上层。
 

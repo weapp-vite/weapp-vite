@@ -190,7 +190,7 @@ null body 读取为空且保持未消费；空字符串和零长度二进制属�
 `fetch()` 在收到真实 HTTP 状态码和响应头时返回，后续字节通过 `Response.body` 交付。
 `wevu/fetch` 复用同一实现。普通缓冲请求也提供可读 body，但不表示网络增量交付。
 
-`@wevu/web-apis/streams` 导出作为一组选择的 `ReadableStream`、`WritableStream`、`TransformStream`，保留可用的原生实现，否则使用 `web-streams-polyfill@4.3.0` ponyfill。该入口也导出三个 `*Polyfill` 构造器和 `TextDecoderStreamPolyfill`。
+`@wevu/web-apis/streams` 导出作为一组选择的 `ReadableStream`、`WritableStream`、`TransformStream`，保留可用的原生实现，否则使用 `web-streams-polyfill@4.5.0` ponyfill。该入口也导出三个 `*Polyfill` 构造器和 `TextDecoderStreamPolyfill`。
 `@wevu/web-apis/eventsource` 导出 `EventSourcePolyfill`、其别名 `EventSource` 与 `MessageEventPolyfill`，也可以由构建器注入全局 `EventSource`。
 EventSource 自动启用分块请求，支持 GET、命名事件、`Last-Event-ID`、`retry` 与自动重连。
 POST、自定义鉴权头使用 Fetch；Fetch 不自动重试请求。

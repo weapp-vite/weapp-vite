@@ -1,21 +1,20 @@
 # 依赖补丁与发布维护
 
-当前 `patchedDependencies` 只登记三份补丁：
+当前 `patchedDependencies` 只登记两份补丁：
 
 | 依赖 | 用途 | 发布交付范围 |
 | --- | --- | --- |
 | `chokidar@6.0.0` | 修正文件监听的异步提交、目录恢复和资源关闭边界 | `weapp-vite` 通过 `alwaysBundle` 将修补代码打入 `dist`，普通 npm 消费者也使用该实现 |
-| `vitest@5.0.5` | 以 UTF-8 读取模块缓存，保留测试启动的原始错误 | 仓库测试工具，不修补消费者安装的 Vitest |
 | `@vitejs/plugin-vue@6.0.10` | 向 Oxc 转换补传当前 Vite 配置和 watcher | 仓库 Web UI、文档及相关测试的开发和构建，不修补消费者安装的 Vue 插件 |
 
 工作区的 pnpm 补丁登记不会随 npm 依赖安装自动传播；已打入发布产物的修改代码会交付给消费者。
-当前使用官方 Vite `8.3.5` 和 Rolldown `1.2.16`，不再维护它们的补丁。Vite+ `1.4.0` launcher/core
-使用其配对发行的内置 Vite `8.3.5` / Rolldown `1.2.15`，Vitest 为 `5.0.5`，
-不能将其与工作区独立 Rolldown 的版本混为一谈。
+当前使用官方 Vite `8.3.5` 和 Rolldown `1.2.16`，不再维护它们的补丁。Vite+ `1.5.0` launcher/core
+使用其配对发行的内置 Vite `8.3.5` / Rolldown `1.2.16`，Vitest 为 `5.1.0`；
+内置引擎与工作区独立依赖仍须分别核对实际解析入口和版本。
 
 ## 发布重试与恢复
 
-仓库固定使用 `repoctl@6.3.2`，发布重试、工作区根包识别和发布说明过滤均由上游正式实现负责。
+仓库固定使用 `repoctl@6.4.0`，发布重试、工作区根包识别和发布说明过滤均由上游正式实现负责。
 `@icebreakers/monorepo@6.1.0` 的上游实现包含发布说明分类修正：明确的 Conventional 摘要类型
 优先于整理提交类型及正文关键词，并保留正文中的依赖版本描述；原生 Dependencies 条目仍归维护。
 同一分类规则用于 Release PR、正式发布和发布说明修复，避免合并 intent 后功能、修复和性能被改归维护。
@@ -44,7 +43,7 @@ ESM 文件，并在执行框架或导入 guard 前确认消费者解析结果。
 
 正式发布包消费验证及发布回归通过后，本仓库已删除整份
 `@icebreakers__monorepo@6.3.1.patch`、对应 `patchedDependencies` 和锁文件补丁登记，
-不再维护这两类重复实现。当前保留的三份补丁见上表。升级时继续运行
+不再维护这两类重复实现。当前保留的两份补丁见上表。升级时继续运行
 `scripts/repoctl-nightly-deadline.test.ts`、`scripts/repoctl-consumer-context.test.ts`
 和 `scripts/repoctl-snapshot-workflow.test.ts`，并完成 `pnpm test:release`；
 不能以每命令的新超时配置替代共享截止时间，也不能因移除补丁而删除公共行为回归。
@@ -138,7 +137,8 @@ node --import tsx e2e/scripts/run-e2e-commands.ts node --import tsx packages/wea
 
 PR #1294 按用户授权接受 Web optimizer 关闭残留与连续构建资源增长两项验收例外；两项均未修复。
 例外对固定官方 Vite `8.3.5` / Rolldown `1.2.16` 持续适用至显式移除，不在合并后自动结束，
-版本不符时必需入口失败并要求重新评审或移除，不自动适用于 Vite+ 内置 Rolldown `1.2.15`。
+版本不符时必需入口失败并要求重新评审或移除；Vite+ 使用独立打包的引擎，仍须单独验证，
+不能因其报告相同版本就自动继承工作区的验收记录。
 Web 扫描期间关闭或重启可能留下临时缓存；同一 Node 进程连续构建可能持续保留旧代编译引用、增加内存。
 现有实测不证明增长线性、所有增长同因或 Vite+ 有相同资源表现；风险与证据边界见
 [编译依赖内存说明](./compiler-memory.md)。
@@ -154,10 +154,11 @@ Vite 报告保留六项 `fullInventory`、`waived` 和未执行的 `web-optimize
 
 ## Vitest 模块缓存的文本读取
 
-`vitest@5.0.5.patch` 让 ServerModuleRunner 以 UTF-8 读取磁盘缓存代码。上游默认读取返回 Buffer，
+Vitest `5.1.0` 的官方 ServerModuleRunner 已以 UTF-8 读取磁盘缓存代码，覆盖此前
+`vitest@5.0.5.patch` 的修正，因此本仓库已删除该补丁及其登记。旧版默认读取返回 Buffer，
 错误格式化路径随后把它当作字符串调用 `charCodeAt`，掩盖 global setup 的原始错误。
-补丁只补充文本编码，保留缓存行为；`e2e/scripts/domAcceptanceReport/reporter.startup.test.ts`
-继续通过缓存路径验证原始失败和验收报告，不以关闭缓存绕过问题。
+`e2e/scripts/domAcceptanceReport/reporter.startup.test.ts` 继续显式开启磁盘模块缓存，
+通过冷、暖两轮验证原始失败和验收报告，不以关闭缓存绕过问题。
 
 ## Vue 插件的 Oxc 上下文
 

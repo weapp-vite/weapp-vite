@@ -26,10 +26,11 @@ function workflow(name: string): Workflow {
 
 const manifest = JSON.parse(readFileSync(new URL('../packages/weapp-vite/package.json', import.meta.url), 'utf8')) as { engines: { node: string } }
 const engine = manifest.engines.node
-const minimums = engine.split(' || ').map((range) => {
+const engineMinimums = engine.split(' || ').map((range) => {
   const minimum = minVersion(range)!
   return { major: String(minimum.major), minimum: minimum.version }
 })
+const fixedNodeVersion = readFileSync(new URL('../.node-version', import.meta.url), 'utf8').trim()
 const action = parse(readFileSync(new URL('../.github/actions/setup-node-pnpm/action.yml', import.meta.url), 'utf8')) as { runs: { steps: SetupStep[] } }
 const setup = (steps: SetupStep[]) => steps.find(step => step.uses?.startsWith('actions/setup-node@'))!
 const frozenSetupSources = new Map([
@@ -53,28 +54,47 @@ function selected(value: unknown, requested: string, reference: string): unknown
   return value
 }
 
+const shared = contexts[0]!
+const preferredSelectors = engineMinimums.map(({ major }) => ({
+  major,
+  selector: String(selected(shared.step.with?.['node-version'], major, shared.reference)),
+}))
+
 describe('ordinary CI Node setup before candidate installation', () => {
   for (const context of contexts) {
-    it.each(minimums)(`${context.name} excludes an obsolete cached Node $major and retains latest-major lookup`, ({ major, minimum }) => {
+    it.each(preferredSelectors)(`${context.name} excludes an obsolete cached Node $major and retains latest-major lookup`, ({ major, selector: preferredSelector }) => {
       const selector = String(selected(context.step.with?.['node-version'], major, context.reference))
-      const old = major === '24' ? '24.21.0' : minimum.replace(/\d+$/, patch => String(Number(patch) - 1))
-      const latest = inc(minimum, 'patch')!
+      const preferredFloor = minVersion(selector)!
+      expect(selector).toBe(preferredSelector)
+      expect(selector).toBe(`^${preferredFloor.version}`)
+      expect(preferredFloor.major).toBe(Number(major))
+      expect(satisfies(preferredFloor, engine)).toBe(true)
+      if (major === '24') {
+        expect(preferredFloor.version).toBe(fixedNodeVersion)
+      }
+      let old = `${Number(major) - 1}.0.0`
+      if (preferredFloor.patch > 0) {
+        old = `${major}.${preferredFloor.minor}.${preferredFloor.patch - 1}`
+      }
+      else if (preferredFloor.minor > 0) {
+        old = `${major}.${preferredFloor.minor - 1}.0`
+      }
+      const latest = inc(preferredFloor.version, 'patch')!
       expect(maxSatisfying([old], selector)).toBeNull()
-      expect(maxSatisfying([old, minimum, latest], selector)).toBe(latest)
-      expect(satisfies(minimum, selector)).toBe(true)
+      expect(maxSatisfying([old, preferredFloor.version, latest], selector)).toBe(latest)
+      expect(satisfies(preferredFloor, selector)).toBe(true)
       expect(satisfies(`${Number(major) + 1}.0.0`, selector)).toBe(false)
       expect(selected(context.step.with?.['check-latest'], major, context.reference)).toBe(true)
       expect(satisfies(latest, engine)).toBe(true)
     })
 
-    it.each(minimums)(`${context.name} preserves the independent exact $minimum lane`, ({ minimum }) => {
+    it.each(engineMinimums)(`${context.name} preserves the independent exact $minimum lane`, ({ minimum }) => {
       expect(selected(context.step.with?.['node-version'], minimum, context.reference)).toBe(minimum)
       expect(Boolean(selected(context.step.with?.['check-latest'], minimum, context.reference))).toBe(false)
     })
   }
 
   it('preserves an explicitly fixed historical performance runtime without remapping it', () => {
-    const shared = contexts[0]!
     expect(selected(shared.step.with?.['node-version'], '24.18.0', shared.reference)).toBe('24.18.0')
     expect(Boolean(selected(shared.step.with?.['check-latest'], '24.18.0', shared.reference))).toBe(false)
     for (const name of ['hmr-attribution-acceptance.yml', 'compiler-resource-acceptance.yml']) {
@@ -93,7 +113,7 @@ describe('ordinary CI Node setup before candidate installation', () => {
     for (const major of ['22', '24']) {
       const resolver = run.steps!.find(step => step.id === `support-latest-${major}`)!
       expect(resolver.if).toBe('inputs.resolve_node_support')
-      expect(resolver.with).toEqual({ 'node-version': `^${minimums.find(row => row.major === major)!.minimum}`, 'check-latest': true })
+      expect(resolver.with).toEqual({ 'node-version': preferredSelectors.find(row => row.major === major)!.selector, 'check-latest': true })
     }
     expect(run.steps!.find(step => step.id === 'node-support-plan')).toMatchObject({
       if: 'inputs.resolve_node_support',

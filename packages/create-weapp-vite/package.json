@@ -97,7 +97,7 @@
     "pathe": "catalog:",
     "picomatch": "^4.0.7",
     "pkg-types": "catalog:",
-    "semver": "^7.8.5",
+    "semver": "^7.8.6",
     "yaml": "^2.9.1"
   },
   "devDependencies": {
@@ -106,7 +106,7 @@
     "@types/npmcli__config": "^6.0.4",
     "@weapp-vite/oxfmt": "workspace:*",
     "@weapp-vite/oxlint": "workspace:*",
-    "oxfmt": "0.73.0",
-    "vite-plus": "1.4.0"
+    "oxfmt": "0.76.0",
+    "vite-plus": "1.5.0"
   }
 }

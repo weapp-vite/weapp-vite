@@ -1,7 +1,9 @@
 import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises'
+import { createRequire } from 'node:module'
 import os from 'node:os'
 import path from 'node:path'
 import { afterEach, expect, it } from 'vitest'
+import { repositoryRoot } from '../paths'
 import { assertProfileArtifacts, prepareProfile } from './prepare'
 
 const directories: string[] = []
@@ -50,11 +52,41 @@ it('records and rechecks actual baseline and current chunks behind forwarding ro
   const output = path.join(directory, 'run')
   await mkdir(output)
   const prepared = await prepareProfile(entries[1]!, output, false, entries[0]!)
+  const inputs = await Promise.all(Object.keys(prepared.artifacts).map(file => realpath(path.resolve(repositoryRoot, file))))
   for (const chunk of chunks) {
-    const identity = await realpath(chunk)
-    expect(Object.keys(prepared.artifacts).some(file => path.resolve(process.cwd(), file) === identity)).toBe(true)
+    expect(inputs).toContain(await realpath(chunk))
   }
   await assertProfileArtifacts(prepared.artifacts)
   await writeFile(chunks[0]!, 'export function parse(source) { return { source, changed: true } }\n')
   await expect(assertProfileArtifacts(prepared.artifacts)).rejects.toThrow('artifact changed during measurement')
+})
+
+it('locks paired parser entities while preserving third-party dependency versions in Node and browser bundles', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'corpus-profile-entities-'))
+  directories.push(directory)
+  const entries: string[] = []
+  for (const arm of ['baseline', 'current']) {
+    const root = path.join(directory, arm)
+    await mkdir(path.join(root, 'chunks'), { recursive: true })
+    const entry = path.join(root, 'index.mjs')
+    await writeFile(entry, 'export { parse } from "./chunks/parse.mjs"\n')
+    await writeFile(path.join(root, 'chunks/parse.mjs'), `import { decodeXML } from 'entities'
+if (decodeXML('&#65; &amp; B') !== 'A & B') throw new Error('Parser entity decoding changed')
+export function parse(source) { return { source: decodeXML(source), tokens: [], children: [] } }
+`)
+    entries.push(entry)
+  }
+  const output = path.join(directory, 'run')
+  await mkdir(output)
+  const prepared = await prepareProfile(entries[1]!, output, true, entries[0]!)
+  const require = createRequire(path.join(repositoryRoot, 'packages/wxml/package.json'))
+  const htmlRequire = createRequire(require.resolve('htmlparser2'))
+  const serializerRequire = createRequire(require.resolve('dom-serializer'))
+  const inputs = await Promise.all(Object.keys(prepared.artifacts).map(file => realpath(path.resolve(repositoryRoot, file))))
+  for (const file of [require.resolve('entities'), htmlRequire.resolve('entities/decode'), serializerRequire.resolve('entities')]) {
+    expect(inputs).toContain(await realpath(file))
+  }
+  expect(prepared.browserCode).toBeTypeOf('string')
+  expect(prepared.run([], [], { rounds: 1, warmup: 0, operations: ['parse'] }).errors).toEqual([])
+  await assertProfileArtifacts(prepared.artifacts)
 })

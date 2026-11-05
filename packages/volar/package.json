@@ -67,7 +67,7 @@
     "registry": "https://registry.npmjs.org"
   },
   "dependencies": {
-    "@vue/compiler-sfc": "^3.5.44",
+    "@vue/compiler-sfc": "^3.5.45",
     "@vue/language-core": "catalog:",
     "@weapp-core/schematics": "workspace:*",
     "typescript": "catalog:"

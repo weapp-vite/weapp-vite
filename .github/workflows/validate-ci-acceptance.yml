@@ -48,10 +48,10 @@ jobs:
         with:
           context: ${{ inputs.pr_context }}
           profile: ci-acceptance
-      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: ^24.22.1
+          node-version: ^24.22.2
           check-latest: true
           cache: pnpm
       - run: pnpm install --frozen-lockfile --ignore-scripts
@@ -70,7 +70,7 @@ jobs:
       - run: node scripts/weapp-agent/smoke-baseline.mjs
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 24.22.1
+          node-version: 24.22.2
       - run: node scripts/weapp-agent/smoke-baseline.mjs
 
   windows-runtime-diagnostic:
