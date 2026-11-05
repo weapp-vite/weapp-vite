@@ -5,6 +5,7 @@ import process from 'node:process'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MANAGED_PROJECT_JOURNAL_ENV } from '../../../packages/weapp-ide-cli/src/devtoolsProjectOwnership'
 import { resolveVerificationTopology } from '../../../scripts/verification/topology'
+import { OwnedCommandShutdownError } from '../ownedE2ECommand/shutdown'
 import { runTaskSuite } from '../suiteRunner'
 import { taskDefinitionHash } from '../verification/plan'
 
@@ -104,6 +105,21 @@ afterEach(() => {
 })
 
 describe('suite runner cancellation ownership', () => {
+  it('stops before another task when the inventory scanner shutdown is unconfirmed', async () => {
+    const failure = new OwnedCommandShutdownError('inventory scanner stop is unconfirmed')
+    const runTask = vi.fn(async () => 0)
+    mocks.journal.mockRejectedValueOnce(failure)
+
+    expect(await runTaskSuite('e2e:inventory-stop-test', tasks, { ...options, runTask })).toBe(1)
+    expect(mocks.journal).toHaveBeenCalledOnce()
+    expect(mocks.scope).not.toHaveBeenCalled()
+    expect(mocks.cleanup).not.toHaveBeenCalled()
+    expect(mocks.execa).not.toHaveBeenCalled()
+    expect(runTask).not.toHaveBeenCalled()
+    expect(tasks[0]?.unsafeRuntimeReason).toBe(failure.message)
+    expect(tasks[1]?.unsafeRuntimeReason).toBeUndefined()
+  })
+
   it('uses invocation-owned definitions while retaining observable task state', async () => {
     for (let index = 0; index < 2; index++) {
       const fixture = createFixture()

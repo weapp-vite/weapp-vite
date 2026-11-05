@@ -3,6 +3,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { cleanupManagedWechatProjects, isManagedWechatProjectFullyReleased, MANAGED_PROJECT_JOURNAL_ENV, readManagedWechatProjectRecords } from '../../packages/weapp-ide-cli/src/devtoolsProjectOwnership'
 import { createManagedWechatProjectJournal } from '../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/journal'
+import { scanDevtoolsProjectInventory } from './devtoolsProjectInventory'
 
 const ownedCleanups = new Set<() => Promise<void>>()
 const JOURNAL_ROOT = path.resolve(import.meta.dirname, '../../.tmp/e2e-managed-devtools-projects')
@@ -56,8 +57,8 @@ export async function createDevtoolsProjectJournal(
   options: { signal?: AbortSignal } = {},
 ) {
   options.signal?.throwIfAborted()
-  if (!parentJournalPath) {
-    await assertNoUnreleasedDevtoolsProjects(rootDirectory, options)
+  if (!parentJournalPath?.trim()) {
+    await scanDevtoolsProjectInventory(rootDirectory, options)
   }
   options.signal?.throwIfAborted()
   // 创建开始后交还真实路径；调用方先保存句柄再响应取消，避免留下无法清理的登记。
@@ -66,7 +67,7 @@ export async function createDevtoolsProjectJournal(
 
 /** 直接运行 Vitest 时也为本轮 worker 建立独占窗口日志。 */
 export async function ensureDevtoolsProjectJournal() {
-  if (!process.env[MANAGED_PROJECT_JOURNAL_ENV]) {
+  if (!process.env[MANAGED_PROJECT_JOURNAL_ENV]?.trim()) {
     process.env[MANAGED_PROJECT_JOURNAL_ENV] = await createDevtoolsProjectJournal()
   }
   return process.env[MANAGED_PROJECT_JOURNAL_ENV]!

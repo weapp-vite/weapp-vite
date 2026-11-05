@@ -15,6 +15,13 @@ vi.mock('../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/journal/windo
   // 此处验证真实磁盘 journal 的继承边界；Windows 身份查询由专项契约测试覆盖。
   readWindowsJournalWriterIdentity: async () => ({ pid: process.pid, executable: 'test-host', started: 'test-generation' }),
 }))
+vi.mock('./devtoolsProjectInventory', () => ({
+  // 扫描内容在本进程验证；真实子进程的取消和协议由独立集成测试覆盖。
+  scanDevtoolsProjectInventory: async (...args: Parameters<typeof assertNoUnreleasedDevtoolsProjects>) => {
+    const ownership = await import('./devtoolsProcessOwnership')
+    await ownership.assertNoUnreleasedDevtoolsProjects(...args)
+  },
+}))
 
 const journals: string[] = []
 const roots: string[] = []
@@ -27,7 +34,7 @@ describe('DevTools process ownership', () => {
     vi.unstubAllEnvs()
   })
 
-  it('blocks a new root journal when an older task still owns an IDE project', async () => {
+  it.each(['', ' ', '\t\n'])('blocks a new root journal when an older task still owns an IDE project (parent %j)', async (parent) => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'devtools-journal-inventory-'))
     roots.push(root)
     const stale = path.join(root, 'task-scope-stale')
@@ -40,7 +47,8 @@ describe('DevTools process ownership', () => {
     }] as never)
 
     await expect(assertNoUnreleasedDevtoolsProjects(root)).rejects.toThrow(/unresolved project ownership.*unconfirmed.*58802/)
-    await expect(createDevtoolsProjectJournal('', root)).rejects.toThrow(/unresolved project ownership/)
+    await expect(createDevtoolsProjectJournal(parent, root)).rejects.toThrow(/unresolved project ownership/)
+    expect(await fs.readdir(root)).toEqual(['task-scope-stale'])
   })
 
   it('allows a new root journal when all previous task records are released', async () => {
@@ -158,8 +166,8 @@ describe('DevTools process ownership', () => {
     expect(process.env.WEAPP_IDE_MANAGED_PROJECT_JOURNAL).toBe(parent)
   })
 
-  it('gives a directly invoked worker an independent journal', async () => {
-    vi.stubEnv('WEAPP_IDE_MANAGED_PROJECT_JOURNAL', '')
+  it.each(['', ' ', '\t\n'])('gives a directly invoked worker an independent journal (inherited %j)', async (inherited) => {
+    vi.stubEnv('WEAPP_IDE_MANAGED_PROJECT_JOURNAL', inherited)
     const journal = await ensureDevtoolsProjectJournal()
     journals.push(journal)
 
