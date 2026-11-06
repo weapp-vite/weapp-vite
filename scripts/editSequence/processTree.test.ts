@@ -8,8 +8,7 @@ import { observeProcessTree, parseProcessMemory, summarizeProcessTree } from './
 vi.mock('node:process', () => ({ default: { platform: 'win32' } }))
 vi.mock('tinyexec', () => ({ exec: vi.fn() }))
 beforeAll(async () => {
-  // 真实 Windows 的模块预热含异步读取；先等待公共采样入口就绪，再隔离各测试的调用记录。
-  // 否则预热可能在前几个同步测试之后才调用 exec，被误认成带根 PID 的实际查询。
+  // 先完成首次采样的惰性预热，再隔离查询与诊断测试的调用记录。
   vi.mocked(exec).mockResolvedValue({
     stdout: JSON.stringify([{ ProcessId: 10, ParentProcessId: 1, WorkingSetSize: '2048' }]),
   } as Awaited<ReturnType<typeof exec>>)

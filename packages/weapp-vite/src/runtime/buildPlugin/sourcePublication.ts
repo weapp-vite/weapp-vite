@@ -1,6 +1,5 @@
 import type { HmrProfileProvenance } from '../../utils/hmrProfile/provenance'
 import type { HmrSourcePublicationOwner } from '../hmrRuntimeSession/sourcePublication'
-import { compilerSourceId } from '../../plugins/compilerPlugin/hmr'
 import { compilerNativeScriptVersion, observeCompilerInputs } from '../../plugins/utils/sourceSnapshot'
 
 interface SourcePublicationProfile extends HmrProfileProvenance {
@@ -59,7 +58,8 @@ export function beginClassicSourcePublication(options: SourcePublicationOptions)
         if (outputGenerations.get(outputRoot) !== previousGeneration) {
           return
         }
-        build.recordInput(compilerSourceId(file), compilerNativeScriptVersion(source))
+        // 通知边界已绑定实际输入身份；再次 realpath 会把冻结输入错配到后来改指的目标。
+        build.recordInput(file, compilerNativeScriptVersion(source))
         syncProfile()
       })
       try {

@@ -4,9 +4,10 @@ import path from 'node:path'
 export const ROOT_REPOSITORY_TEST_GLOBS = ['scripts/**/*.test.ts', 'integrations/shared-hmr-tailwind/**/*.test.ts']
 export const SCRIPT_TEST_GLOBS = ['scripts/**/*.test.mjs', 'scripts/**/*.test.ts']
 
-/** 真实构建与隔离类型编译独占串行分组，避免与其他项目争用子进程资源。 */
+/** 真实外部子进程夹具独占串行分组，避免与其他项目争用启动和执行资源。 */
 export const REPOSITORY_SUBPROCESS_TEST_FILES = [
   'scripts/verification/build.test.ts',
+  'scripts/verification/changes.test.ts',
   'scripts/verifyVitePlusTemplates/publicTypes.test.ts',
 ]
 

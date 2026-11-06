@@ -1,3 +1,4 @@
+import { withRealpathScope } from '../../utils/realpathScope'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { compilerSnapshotSourceId, getCompilerSourceSnapshot, hasCompilerInputObservers, notifyCompilerInput } from './sourceSnapshot'
 
@@ -20,14 +21,17 @@ export function observeBundlerScriptInput(owner: BundlerSourceInputOwner, code: 
   if (!sourceId) {
     return
   }
-  const physicalSourceId = compilerSnapshotSourceId(getCompilerSourceSnapshot(configService), sourceId)
-  if (
-    owner.loadedEntrySet?.has(sourceId)
-    || owner.loadedEntrySet?.has(physicalSourceId)
-    || owner.resolvedEntryMap?.has(sourceId)
-    || owner.resolvedEntryMap?.has(physicalSourceId)
-  ) {
-    return
-  }
-  notifyCompilerInput(configService, sourceId, code)
+  // 同步归属检查与输入通知共享本次解析；返回后不保留路径身份。
+  withRealpathScope(() => {
+    const physicalSourceId = compilerSnapshotSourceId(getCompilerSourceSnapshot(configService), sourceId)
+    if (
+      owner.loadedEntrySet?.has(sourceId)
+      || owner.loadedEntrySet?.has(physicalSourceId)
+      || owner.resolvedEntryMap?.has(sourceId)
+      || owner.resolvedEntryMap?.has(physicalSourceId)
+    ) {
+      return
+    }
+    notifyCompilerInput(configService, sourceId, code)
+  })
 }
