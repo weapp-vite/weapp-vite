@@ -1,8 +1,10 @@
 import type { CompilerContext } from '../../../../context'
+import path from 'pathe'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { resolveVueSfcHmrSignatures, resolveVueSfcStyleIndependentSignature } from 'wevu/compiler'
 import { createModuleGraphService } from '../../../../moduleGraph'
 import { createRuntimeState } from '../../../../runtime/runtimeState'
+import { withCompilerSourceSnapshot } from '../../../utils/sourceSnapshot'
 import { compileVueLikeFile, emitBundleVueEntryAssets, emitCompiledEntryBundleAssets, emitFallbackPageBundleAssets, emitSharedFallbackPageAssets, emitSharedVueEntryAssets, emitSharedVueEntryJsonAsset, finalizeCompiledVueLikeResult, getEntryBaseName, getVueBundlePageLayoutPlan, handleCompiledEntryPageLayouts, handleFallbackPageLayouts, refreshCompiledVueEntryCacheInDev, resolveClassStyleWxsAsset, resolveCompiledEntryEmitState, resolveFallbackPageEmitState, resolveFallbackPageEntryFile, resolveVueBundleAssetContext } from './shared'
 
 const emitPlatformTemplateAssetMock = vi.hoisted(() => vi.fn())
@@ -1293,6 +1295,34 @@ describe('emitSharedVueEntryAssets', () => {
     expect(cached.source).toBe('<view />')
   })
 
+  it.each(['missing-file', 'removed-snapshot'] as const)('does not publish cached assets when the current compiler input is %s', async (input) => {
+    const filename = path.resolve('vue-removed-input-fixture/page.vue')
+    const cached = {
+      result: { script: 'Page({ cached: true })' },
+      source: '<view />',
+      isPage: true,
+    } as any
+    const configService = { isDev: true, weappViteConfig: {} } as any
+    readFileMock.mockRejectedValue(Object.assign(new Error('source missing'), { code: 'ENOENT' }))
+    const refresh = () => refreshCompiledVueEntryCacheInDev({
+      filename,
+      cached,
+      ctx: {} as any,
+      pluginCtx: {},
+      configService,
+      compileOptionsState: { reExportResolutionCache: new Map(), classStyleRuntimeWarned: { value: false } },
+    })
+
+    if (input === 'removed-snapshot') {
+      await expect(withCompilerSourceSnapshot(configService, new Map([[filename, null]]), refresh)).rejects.toThrow('Source removed from compiler snapshot')
+    }
+    else {
+      await expect(refresh()).rejects.toMatchObject({ code: 'ENOENT' })
+    }
+    expect(compileVueFileMock).not.toHaveBeenCalled()
+    expect(cached.source).toBe('<view />')
+  })
+
   it('resolves fallback page entry file with compilation-cache short circuit', async () => {
     const pathExists = vi.fn(async (candidate: string) => candidate)
     const compilationCache = new Map([
@@ -1481,6 +1511,26 @@ describe('emitSharedVueEntryAssets', () => {
     expect(emitLayouts).toHaveBeenCalledWith([
       { kind: 'native', file: '/layouts/default/index' },
     ])
+  })
+
+  it('reuses the absence of page layouts without retaining an emit callback', async () => {
+    const result = { template: '<view />' }
+    const firstEmit = vi.fn(async () => {})
+    const nextEmit = vi.fn(async () => {})
+    const options = {
+      source: '<view />',
+      filename: '/project/src/pages/demo/index.vue',
+      result,
+      configService: {} as any,
+    }
+
+    await handleCompiledEntryPageLayouts({ ...options, emitLayouts: firstEmit })
+    await handleCompiledEntryPageLayouts({ ...options, emitLayouts: nextEmit })
+
+    expect(resolvePageLayoutPlanMock).toHaveBeenCalledTimes(1)
+    expect(getVueBundlePageLayoutPlan(result)).toBeNull()
+    expect(firstEmit).toHaveBeenCalledWith(undefined)
+    expect(nextEmit).toHaveBeenCalledWith(undefined)
   })
 
   it('reuses cached compiled entry page layout plan when available', async () => {

@@ -40,6 +40,34 @@ describe('external SFC compilation dependencies', () => {
     expect(entry.styleIndependentSignature).toBe('original')
   })
 
+  it.each(['jsx', 'tsx'])('invalidates shared JSX template input after the %s owner is compiled again', (extension) => {
+    const owner = `src/pages/index.${extension}`
+    const shared = `src/shared.${extension}`
+    const graph = createModuleGraphService()
+    graph.replaceEntryDependencies(owner, 'jsx', [shared])
+    const compile = (marker: string): VueCompilationCacheEntry => ({
+      source: `export default { render(){ return <view>${marker}{sharedFragment}</view> } }`,
+      result: { template: '<view>compiled shared fragment</view>', meta: { jsxDependencies: [shared] } },
+      isPage: true,
+    })
+    const cache = new Map([[owner, compile('initial-page')]])
+    invalidateExternalSfcCompilation(shared, cache, graph)
+    expect(cache.get(owner)?.source).toBeUndefined()
+
+    // 页面自身保存会替换编译副本；随后共享片段恢复仍须撤销新副本。
+    const updated = compile('updated-page')
+    cache.set(owner, updated)
+    graph.replaceEntryDependencies(owner, 'jsx', updated.result.meta!.jsxDependencies!)
+    invalidateExternalSfcCompilation(shared, cache, graph)
+    expect(updated.source).toBeUndefined()
+
+    const detached = compile('without-shared')
+    cache.set(owner, detached)
+    graph.replaceEntryDependencies(owner, 'jsx', [])
+    invalidateExternalSfcCompilation(shared, cache, graph)
+    expect(detached.source).toBeDefined()
+  })
+
   it('normalizes dependencies and follows the latest compiled owner graph', () => {
     const entry = compiled(['D:\\src\\setup.ts'])
     const cache = new Map([['D:/src/component.vue', entry]])

@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import * as uniApp from '../../../uniApp'
 import { SLOT_HOST_SCRIPTLESS_COMPONENT_STUB } from '../../../utils/scriptlessComponent'
+import { withCompilerSourceSnapshot } from '../../../utils/sourceSnapshot'
 import { createBundleLayoutEmitters, emitAppShellAssetsIfNeeded, emitBundlePageLayoutsIfNeeded, emitNativeLayoutAssetsIfNeeded, emitResolvedBundleLayouts, emitResolvedNativeLayoutStaticAssets, emitVueLayoutScriptFallbackIfNeeded, resolveNativeLayoutAssetState, resolveVueLayoutAssetOptions, resolveVueLayoutScriptFallbackState } from './layoutAssets'
 
 const readFileMock = vi.hoisted(() => vi.fn(async () => '<view><slot /></view>'))
@@ -279,7 +281,7 @@ describe('resolveVueLayoutAssetOptions', () => {
       } as any,
     })
 
-    expect(readFileMock).not.toHaveBeenCalledWith('/project/layouts/vue-default/index.vue', 'utf-8')
+    expect(readFileMock).not.toHaveBeenCalledWith('/project/layouts/vue-default/index.vue', 'utf8')
     expect(compileVueLikeFileMock).not.toHaveBeenCalled()
   })
 
@@ -306,7 +308,7 @@ describe('resolveVueLayoutAssetOptions', () => {
       } as any,
     })
 
-    expect(readFileMock).toHaveBeenCalledWith('/project/layouts/vue-default/index.vue', 'utf-8')
+    expect(readFileMock).toHaveBeenCalledWith('/project/layouts/vue-default/index.vue', 'utf8')
     expect(ensureScriptlessComponentAssetMock).not.toHaveBeenCalled()
   })
 
@@ -332,6 +334,68 @@ describe('resolveVueLayoutAssetOptions', () => {
         js: 'mjs',
       } as any,
     })).rejects.toThrow('/project/layouts/vue-default/index.vue 对应的 layout template 必须包含默认 <slot />')
+  })
+
+  it('compiles a scriptless layout from prepared frozen input instead of later disk bytes', async () => {
+    const layoutFilePath = '/project/layouts/vue-default/index.vue'
+    const rawSource = `<template>
+<!-- #ifdef MP-WEIXIN -->
+<view><slot /></view>
+<!-- #endif -->
+<!-- #ifndef MP-WEIXIN -->
+<Child><template #default="{ value }">{{ value }}</template></Child>
+<!-- #endif -->
+</template>`
+    const configService = {
+      absoluteSrcRoot: '/project',
+      platform: 'weapp',
+      weappViteConfig: { uniApp: { include: [] } },
+      relativeOutputPath: (value: string) => `dist/${value}`,
+    } as any
+    readFileMock.mockResolvedValue('<template><view>later disk content</view></template>')
+
+    await withCompilerSourceSnapshot(configService, new Map([[layoutFilePath, rawSource]]), async () => {
+      await emitVueLayoutScriptFallbackIfNeeded({
+        pluginCtx: { emitFile: vi.fn() },
+        bundle: {},
+        layoutFilePath,
+        ctx: {} as any,
+        configService,
+        compileOptionsState: { reExportResolutionCache: new Map(), classStyleRuntimeWarned: { value: false } },
+        outputExtensions: { js: 'js' } as any,
+      })
+    })
+
+    const options = (compileVueLikeFileMock.mock.calls as unknown as Array<{ source: string, rawSource: string }[]>)[0]?.[0]
+    expect(options?.rawSource).toBe(rawSource)
+    expect(options?.source).toContain('<view><slot /></view>')
+    expect(options?.source).not.toContain('<Child>')
+    expect(options?.source).not.toContain('later disk content')
+    expect(readFileMock).not.toHaveBeenCalled()
+    expect(ensureScriptlessComponentAssetMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('propagates scriptless layout compatibility preparation errors', async () => {
+    const failure = new uniApp.UniAppCompatibilityTransformError('invalid layout input', new Error('parse'))
+    const prepare = vi.spyOn(uniApp, 'transformUniAppCompatibilitySource').mockImplementationOnce(() => {
+      throw failure
+    })
+    try {
+      await expect(emitVueLayoutScriptFallbackIfNeeded({
+        pluginCtx: { emitFile: vi.fn() },
+        bundle: {},
+        layoutFilePath: '/project/layouts/vue-default/index.vue',
+        ctx: {} as any,
+        configService: { relativeOutputPath: (value: string) => `dist/${value}` } as any,
+        compileOptionsState: { reExportResolutionCache: new Map(), classStyleRuntimeWarned: { value: false } },
+        outputExtensions: { js: 'js' } as any,
+      })).rejects.toBe(failure)
+      expect(compileVueLikeFileMock).not.toHaveBeenCalled()
+      expect(ensureScriptlessComponentAssetMock).not.toHaveBeenCalled()
+    }
+    finally {
+      prepare.mockRestore()
+    }
   })
 
   it('emits native layout assets including json when present', async () => {
@@ -579,7 +643,7 @@ describe('resolveVueLayoutAssetOptions', () => {
       '<view><slot /></view>',
       'wxml',
     )
-    expect(readFileMock).toHaveBeenCalledWith('/project/layouts/vue-default/index.vue', 'utf-8')
+    expect(readFileMock).toHaveBeenCalledWith('/project/layouts/vue-default/index.vue', 'utf8')
     expect(compileVueLikeFileMock).toHaveBeenCalledTimes(1)
     expect(ensureScriptlessComponentAssetMock).toHaveBeenCalledWith(
       expect.anything(),

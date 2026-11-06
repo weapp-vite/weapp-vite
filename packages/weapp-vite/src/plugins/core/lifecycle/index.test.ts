@@ -4,6 +4,9 @@ import { describe, expect, it, vi } from 'vitest'
 import { createLogicalEntryId } from '../../../moduleGraph/protocol'
 import { createModuleGraphService } from '../../../moduleGraph/service'
 import { beginHmrStyleUpdatePlan, createHmrStyleUpdatePlan, getHmrStyleUpdatePlan, recordHmrStyleUpdate, settleHmrStyleUpdatePlan, withHmrStyleUpdatePlan } from '../../../runtime/hmrStyleUpdate'
+import { EntryChunkLifecycle } from '../../hooks/useLoadEntry/entryChunkLifecycle'
+import { readEntryChunkLifecycle } from '../../hooks/useLoadEntry/entryChunkLifecycleRegistry'
+import { captureNativeEntryAssetOwners, readNativeEntryAssetOwners } from '../../utils/nativeEntryAssetOwners'
 import { createCoreLifecyclePlugin } from './index'
 
 vi.mock('./emit', () => ({
@@ -40,8 +43,50 @@ describe('createCoreLifecyclePlugin', () => {
     } as unknown as CorePluginState
     const plugin = createCoreLifecyclePlugin(state)
     const context = { meta: { watchMode: true }, getModuleIds: () => [] }
-    return { configService, plugin, context }
+    return { configService, plugin, context, state }
   }
+
+  it('clears native ownership before an early build failure and releases each completed generation', async () => {
+    const { plugin, context, state } = createStyleLifecycle()
+    const output = { dir: 'dist' }
+    const environment = {}
+    const nativeBundle = {
+      'page.js': { type: 'chunk', facadeModuleId: createLogicalEntryId('/project/src/page.vue', 'page'), moduleIds: [] },
+    } as never
+    const capture = () => captureNativeEntryAssetOwners(state.ctx, environment, output, nativeBundle)
+    capture()
+    vi.spyOn(state.ctx.moduleGraphService, 'getPendingChanges').mockImplementationOnce(() => {
+      throw new Error('pending changes unavailable')
+    })
+    await expect((plugin.buildStart as () => Promise<void>).call({ ...context, environment })).rejects.toThrow('pending changes unavailable')
+    expect(readNativeEntryAssetOwners(state.ctx, environment, output).size).toBe(0)
+    capture()
+    ;(plugin.closeBundle as () => void).call({ ...context, environment })
+    expect(readNativeEntryAssetOwners(state.ctx, environment, output).size).toBe(0)
+    capture()
+    ;(plugin.closeWatcher as () => void).call({ ...context, environment })
+    expect(readNativeEntryAssetOwners(state.ctx, environment, output).size).toBe(0)
+  })
+
+  it('binds the shared entry registry to the current environment and releases it on close or failure', async () => {
+    const { plugin, context, state } = createStyleLifecycle()
+    const environment = {}
+    const lifecycle = new EntryChunkLifecycle(vi.fn())
+    state.entryChunkLifecycle = lifecycle
+    const hookContext = { ...context, environment }
+    await (plugin.buildStart as () => Promise<void>).call(hookContext)
+    expect(readEntryChunkLifecycle(environment)).toBe(lifecycle)
+    ;(plugin.closeBundle as () => void).call(hookContext)
+    expect(readEntryChunkLifecycle(environment)).toBeUndefined()
+    await (plugin.buildStart as () => Promise<void>).call(hookContext)
+    ;(plugin.closeWatcher as () => void).call(hookContext)
+    expect(readEntryChunkLifecycle(environment)).toBeUndefined()
+    vi.spyOn(state.ctx.moduleGraphService, 'getPendingChanges').mockImplementationOnce(() => {
+      throw new Error('pending changes unavailable')
+    })
+    await expect((plugin.buildStart as () => Promise<void>).call(hookContext)).rejects.toThrow('pending changes unavailable')
+    expect(readEntryChunkLifecycle(environment)).toBeUndefined()
+  })
 
   it('keeps native style facts through write hooks until the watcher settles the whole generation', async () => {
     const { configService, plugin, context } = createStyleLifecycle()

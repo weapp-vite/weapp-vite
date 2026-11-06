@@ -3,6 +3,7 @@ import { originalPositionFor, TraceMap } from '@jridgewell/trace-mapping'
 import MagicString from 'magic-string'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { analyzeScripts } from '../../../../../ast'
+import { ContentAnalysisCache } from './contentAnalysisCache'
 import {
   getChunkScriptAnalysis,
   rewriteBundleDynamicGlobalResolution,
@@ -82,6 +83,49 @@ function expectMarkerMappedToSource(
 describe('bundle script analysis warmup', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+  })
+
+  it('reuses pure content facts across new chunk generations without retaining projections', () => {
+    const contentCache = new ContentAnalysisCache()
+    const profile = {}
+    const code = 'wx.getStorageSync("key")'
+    const first = createChunk('pages/first.js', code)
+    const firstCache = Object.assign(new WeakMap(), { contentCache, profile })
+    warmupBundleScriptAnalysis({ [first.fileName]: first }, { astEngine: 'oxc', cache: firstCache })
+    rewriteBundlePlatformApi({ [first.fileName]: first }, 'wpi', { astEngine: 'oxc', analysisCache: firstCache })
+    expect(first.code).toContain('["wpi"]')
+    expect(first.code).not.toContain('wx.getStorageSync')
+
+    const second = createChunk('pages/first.js', code)
+    const secondCache = Object.assign(new WeakMap(), { contentCache, profile })
+    warmupBundleScriptAnalysis({ [second.fileName]: second }, { astEngine: 'oxc', cache: secondCache })
+    expect(analyzeScripts).toHaveBeenCalledTimes(1)
+    expect(getChunkScriptAnalysis(second, { astEngine: 'oxc', cache: secondCache }).hasPlatformApiAccess).toBe(true)
+    rewriteBundlePlatformApi({ [second.fileName]: second }, 'platform', { astEngine: 'oxc', analysisCache: secondCache })
+    expect(second.code).toContain('["platform"]')
+    expect(second.code).not.toContain('wx.getStorageSync')
+    expect(profile).toMatchObject({ rewriteAnalysisCacheHitCount: 1, rewriteAnalysisCacheMissCount: 1 })
+
+    const changed = createChunk('pages/changed.js', `${code}; require('./dep')`)
+    warmupBundleScriptAnalysis({ [changed.fileName]: changed }, { astEngine: 'oxc', cache: secondCache })
+    const otherEngine = createChunk('pages/other-engine.js', code)
+    warmupBundleScriptAnalysis({ [otherEngine.fileName]: otherEngine }, { astEngine: 'babel', cache: secondCache })
+    expect(analyzeScripts).toHaveBeenCalledTimes(3)
+  })
+
+  it('separates source types for identical chunk bytes', () => {
+    const contentCache = new ContentAnalysisCache()
+    const code = 'await(wx).request()'
+    const cjs = createChunk('shared.cjs', code)
+    const module = createChunk('shared.mjs', code)
+    const firstCache = Object.assign(new WeakMap(), { contentCache })
+    const nextCache = Object.assign(new WeakMap(), { contentCache })
+
+    warmupBundleScriptAnalysis({ [cjs.fileName]: cjs }, { astEngine: 'oxc', cache: firstCache })
+    warmupBundleScriptAnalysis({ [module.fileName]: module }, { astEngine: 'oxc', cache: nextCache })
+
+    expect(analyzeScripts).toHaveBeenCalledTimes(2)
+    expect(analyzeScripts).toHaveBeenNthCalledWith(2, [{ code, filename: 'shared.mjs' }], { engine: 'oxc' })
   })
 
   it('preloads chunk analysis in one batch and reuses the cache', () => {

@@ -7,8 +7,8 @@ export { collectOnPageScrollPerformanceWarnings } from './operations/onPageScrol
 export { mayContainPlatformApiAccess, mayContainPlatformApiIdentifierByText, platformApiIdentifiers } from './operations/platformApi'
 export { collectRequireTokens, mayContainStaticRequireLiteral } from './operations/require'
 export type { DynamicImportToken, RequireCallbackToken, RequireToken } from './operations/require'
-export { collectScriptSetupImportsFromCode } from './operations/scriptSetupImports'
-export type { ScriptSetupImport } from './operations/scriptSetupImports'
+export { analyzeScriptSetupImportsFromCode, collectScriptSetupImportsFromCode } from './operations/scriptSetupImports'
+export type { ScriptSetupImport, ScriptSetupImportAnalysis } from './operations/scriptSetupImports'
 export { analyzeScript, analyzeScripts } from '@weapp-vite/ast'
 export { analyzeNpmChunksWithNative, isPlatformApiIdentifier } from '@weapp-vite/ast'
 export type {

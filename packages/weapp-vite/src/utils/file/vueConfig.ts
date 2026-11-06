@@ -23,11 +23,33 @@ const configMtimeInFlight = new Map<string, Promise<number | undefined>>()
 const NODE_MODULES_RE = /[\\/]node_modules[\\/]/
 const JSON_MACRO_HINT_RE = /\bdefine(?:App|Page|Component|Sitemap|Theme)Json\s*\(/
 
+export interface VueStaticConfigFacts {
+  readonly source: string
+  readonly config?: Record<string, any>
+}
+
+interface VueStaticConfigCache {
+  get: (filename: string) => VueStaticConfigFacts | undefined
+  set: (filename: string, facts: VueStaticConfigFacts) => unknown
+  delete: (filename: string) => unknown
+}
+
 interface ExtractConfigFromVueOptions {
   compilerContext?: MutableCompilerContext
   readSource?: () => Promise<string | undefined>
   source?: string
   force?: boolean
+  staticConfigCache?: VueStaticConfigCache
+}
+
+function freezeJsonValue<T>(value: T): T {
+  if (value && typeof value === 'object') {
+    for (const child of Object.values(value)) {
+      freezeJsonValue(child)
+    }
+    Object.freeze(value)
+  }
+  return value
 }
 
 function getMtimeCached(filePath: string) {
@@ -108,8 +130,14 @@ export async function extractConfigFromVue(
         : snapshotSource ?? await fs.readFile(vueFilePath, 'utf-8')
     )
     if (content === undefined) {
+      options?.staticConfigCache?.delete(vueFilePath)
       return undefined
     }
+    const staticFacts = options?.force ? undefined : options?.staticConfigCache?.get(vueFilePath)
+    if (staticFacts?.source === content) {
+      return staticFacts.config === undefined ? undefined : structuredClone(staticFacts.config)
+    }
+    options?.staticConfigCache?.delete(vueFilePath)
     const { descriptor, errors } = parse(content, { filename: vueFilePath })
 
     if (errors.length > 0) {
@@ -118,6 +146,7 @@ export async function extractConfigFromVue(
 
     const mergedConfig: Record<string, any> = {}
     const macroDependencies: string[] = []
+    let hasJsonParseError = false
     const { parse: parseJson } = await import('comment-json')
 
     const jsonBlocks = descriptor.customBlocks.filter(block => block.type === 'json')
@@ -133,6 +162,7 @@ export async function extractConfigFromVue(
         }
       }
       catch {
+        hasJsonParseError = true
         // 忽略解析错误
       }
     }
@@ -140,6 +170,7 @@ export async function extractConfigFromVue(
     const setupContent = descriptor.scriptSetup?.content
     const hasMacroHint = typeof setupContent === 'string'
       && JSON_MACRO_HINT_RE.test(setupContent)
+    let hasStaticMacroConfig = false
 
     if (hasMacroHint) {
       const { extractJsonMacroFromScriptSetup } = await loadVueCompiler()
@@ -170,6 +201,7 @@ export async function extractConfigFromVue(
         if (extracted.config && typeof extracted.config === 'object' && !Array.isArray(extracted.config)) {
           mergeRecursive(mergedConfig, extracted.config)
         }
+        hasStaticMacroConfig = extracted.isStatic === true
       }
       catch (error) {
         if (jsonBlocks.length === 0) {
@@ -179,6 +211,13 @@ export async function extractConfigFromVue(
     }
 
     const hasConfig = Object.keys(mergedConfig).length > 0
+    // 仅共享普通 JSON 或编译器证明的纯字面量宏；不能把空依赖列表当作静态证明。
+    if ((!hasMacroHint || hasStaticMacroConfig) && !hasJsonParseError) {
+      options?.staticConfigCache?.set(vueFilePath, Object.freeze({
+        source: content,
+        config: hasConfig ? freezeJsonValue(structuredClone(mergedConfig)) : undefined,
+      }))
+    }
     if (useDiskCache) {
       const normalizedDependencies = [...new Set(
         macroDependencies
@@ -207,6 +246,7 @@ export async function extractConfigFromVue(
     return hasConfig ? mergedConfig : undefined
   }
   catch (error) {
+    options?.staticConfigCache?.delete(vueFilePath)
     if (process.env.__WEAPP_VITE_DEBUG_VUE_CONFIG__) {
       // eslint-disable-next-line no-console
       console.error('[extractConfigFromVue] failed:', vueFilePath, error)

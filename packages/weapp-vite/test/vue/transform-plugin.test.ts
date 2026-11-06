@@ -13,7 +13,7 @@ import logger from '../../src/logger'
 import { buildWeappVueStyleRequest, WEAPP_VUE_STYLE_VIRTUAL_PREFIX } from '../../src/plugins/vue/transform/styleRequest'
 import { normalizeWatchPath } from '../../src/utils/path'
 import { callPluginHook } from '../pluginHook'
-import { createTestModuleGraphService, createTestRuntimeState } from './moduleGraph'
+import { captureTestNativeEntryAssetOwners, createTestModuleGraphService, createTestRuntimeState } from './moduleGraph'
 
 const compileVueFileMock = vi.hoisted(() => vi.fn<
   (source: string, filename: string, options?: any) => Promise<any>
@@ -499,6 +499,7 @@ describe('vue transform plugin', () => {
     await callPluginHook(plugin.transform as any, {}, await fs.readFile(nestedVue, 'utf8'), nestedVue)
 
     const bundle: OutputBundle = {}
+    captureTestNativeEntryAssetOwners(ctx, [[nestedVue, 'component']])
     await plugin.generateBundle!.call({} as any, {}, bundle)
 
     expect(emitClassStyleWxsAssetIfMissingMock).toHaveBeenCalledWith(
@@ -550,6 +551,7 @@ describe('vue transform plugin', () => {
     await callPluginHook(plugin.transform as any, {}, await fs.readFile(nestedVue, 'utf8'), nestedVue)
 
     const bundle: OutputBundle = {}
+    captureTestNativeEntryAssetOwners(ctx, [[nestedVue, 'component']])
     await plugin.generateBundle!.call({} as any, {}, bundle)
 
     expect(emitClassStyleWxsAssetIfMissingMock).toHaveBeenCalledWith(
@@ -594,6 +596,7 @@ describe('vue transform plugin', () => {
     await callPluginHook(plugin.transform as any, {}, await fs.readFile(vuePath!, 'utf8'), vuePath!)
 
     const bundle: OutputBundle = {}
+    captureTestNativeEntryAssetOwners(ctx, [[vuePath!, 'component']])
     await plugin.generateBundle!.call({} as any, {}, bundle)
 
     expect(emitClassStyleWxsAssetIfMissingMock).not.toHaveBeenCalled()
@@ -638,6 +641,7 @@ describe('vue transform plugin', () => {
     await callPluginHook(plugin.transform as any, {}, await fs.readFile(nestedVue, 'utf8'), nestedVue)
 
     const bundle: OutputBundle = {}
+    captureTestNativeEntryAssetOwners(ctx, [[nestedVue, 'component']])
     await plugin.generateBundle!.call({} as any, {}, bundle)
 
     expect(emitClassStyleWxsAssetIfMissingMock).toHaveBeenCalledWith(
@@ -939,6 +943,7 @@ onPageScroll(() => {
         throw new Error('chunk emission is not allowed in generateBundle')
       }
     })
+    captureTestNativeEntryAssetOwners(ctx, [[pageFile, 'page'], [`${layoutBase}.ts`, 'layout']])
     await expect(
       plugin.generateBundle!.call(
         { addWatchFile: vi.fn(), emitFile: generateBundleEmitFile } as any,
@@ -1044,6 +1049,7 @@ onPageScroll(() => {
 
     const bundle: OutputBundle = {}
     const addWatchFile = vi.fn()
+    captureTestNativeEntryAssetOwners(ctx, [[appVue, 'app'], [vuePath!, 'component'], [skipVue, 'component'], [fallbackVue, 'page']])
     await plugin.generateBundle!.call({ addWatchFile } as any, {}, bundle)
 
     expect(emitSfcTemplateIfMissingMock).toHaveBeenCalled()
@@ -1092,6 +1098,7 @@ onPageScroll(() => {
     await callPluginHook(plugin.transform as any, { addWatchFile: vi.fn(), emitFile: vi.fn() } as any, await fs.readFile(vuePath!, 'utf8'), vuePath!)
 
     const emitted: Array<{ fileName: string, source: string }> = []
+    captureTestNativeEntryAssetOwners(ctx, [[vuePath!, 'component']])
     await plugin.generateBundle!.call(
       {
         emitFile(payload: any) {
@@ -1159,6 +1166,7 @@ onPageScroll(() => {
     await callPluginHook(plugin.transform as any, { addWatchFile: vi.fn(), emitFile: vi.fn() } as any, await fs.readFile(vuePath!, 'utf8'), vuePath!)
 
     const emitted: Array<{ fileName: string, source: string }> = []
+    captureTestNativeEntryAssetOwners(ctx, [[vuePath!, 'component']])
     await plugin.generateBundle!.call(
       {
         emitFile(payload: any) {
@@ -1222,6 +1230,7 @@ onPageScroll(() => {
     collectFallbackPageEntryIdsMock.mockResolvedValue([okEntry, missingEntry, badEntry])
 
     const bundle: OutputBundle = {}
+    captureTestNativeEntryAssetOwners(ctx, [[okVue, 'page'], [`${badEntry}.vue`, 'page']])
     await expect(plugin.generateBundle!.call({ addWatchFile: vi.fn() } as any, {}, bundle)).resolves.toBeUndefined()
 
     // line coverage: injected.transformed branch should be taken for ok entry

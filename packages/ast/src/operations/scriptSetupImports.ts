@@ -1,12 +1,17 @@
 import type { AstEngineName } from '../types'
+import { parseSync } from 'oxc-parser'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse } from '../babel'
-import { parseJsLikeWithEngine } from '../engine'
 
 export interface ScriptSetupImport {
   localName: string
   importSource: string
   importedName?: string
   kind: 'default' | 'named'
+}
+
+export interface ScriptSetupImportAnalysis {
+  status: 'complete' | 'failed'
+  imports: ScriptSetupImport[]
 }
 
 export function mayContainRelevantScriptSetupImports(
@@ -49,12 +54,13 @@ export function createScriptSetupImport(
   }
 }
 
-export function collectScriptSetupImportsWithOxc(scriptSetup: string, templateComponentNames: Set<string>) {
+function analyzeScriptSetupImportsWithOxc(scriptSetup: string, templateComponentNames: Set<string>): ScriptSetupImportAnalysis {
   const results: ScriptSetupImport[] = []
-  const ast = parseJsLikeWithEngine(scriptSetup, {
-    engine: 'oxc',
-    filename: 'inline.ts',
-  }) as any
+  const parsed = parseSync('inline.ts', scriptSetup)
+  if (parsed.errors.length) {
+    return { status: 'failed', imports: [] }
+  }
+  const ast = parsed.program as any
 
   for (const node of ast.body ?? []) {
     if (node?.type !== 'ImportDeclaration' || node.importKind === 'type') {
@@ -83,7 +89,11 @@ export function collectScriptSetupImportsWithOxc(scriptSetup: string, templateCo
     }
   }
 
-  return results
+  return { status: 'complete', imports: results }
+}
+
+export function collectScriptSetupImportsWithOxc(scriptSetup: string, templateComponentNames: Set<string>) {
+  return analyzeScriptSetupImportsWithOxc(scriptSetup, templateComponentNames).imports
 }
 
 export function collectScriptSetupImportsWithBabel(scriptSetup: string, templateComponentNames: Set<string>) {
@@ -121,8 +131,32 @@ export function collectScriptSetupImportsWithBabel(scriptSetup: string, template
 }
 
 /**
- * 收集 `<script setup>` 中会参与自动 usingComponents 的导入声明。
+ * 分析 `<script setup>` 导入，并区分可复用的成功空结果与解析失败。
  */
+export function analyzeScriptSetupImportsFromCode(
+  scriptSetup: string,
+  templateComponentNames: Set<string>,
+  options?: {
+    astEngine?: AstEngineName
+  },
+): ScriptSetupImportAnalysis {
+  if (!mayContainRelevantScriptSetupImports(scriptSetup, templateComponentNames)) {
+    return { status: 'complete', imports: [] }
+  }
+
+  const engine = options?.astEngine ?? 'babel'
+
+  try {
+    return engine === 'oxc'
+      ? analyzeScriptSetupImportsWithOxc(scriptSetup, templateComponentNames)
+      : { status: 'complete', imports: collectScriptSetupImportsWithBabel(scriptSetup, templateComponentNames) }
+  }
+  catch {
+    return { status: 'failed', imports: [] }
+  }
+}
+
+/** 收集自动 usingComponents 导入，保留失败时返回空数组的兼容契约。 */
 export function collectScriptSetupImportsFromCode(
   scriptSetup: string,
   templateComponentNames: Set<string>,
@@ -130,18 +164,5 @@ export function collectScriptSetupImportsFromCode(
     astEngine?: AstEngineName
   },
 ) {
-  if (!mayContainRelevantScriptSetupImports(scriptSetup, templateComponentNames)) {
-    return []
-  }
-
-  const engine = options?.astEngine ?? 'babel'
-
-  try {
-    return engine === 'oxc'
-      ? collectScriptSetupImportsWithOxc(scriptSetup, templateComponentNames)
-      : collectScriptSetupImportsWithBabel(scriptSetup, templateComponentNames)
-  }
-  catch {
-    return []
-  }
+  return analyzeScriptSetupImportsFromCode(scriptSetup, templateComponentNames, options).imports
 }

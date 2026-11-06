@@ -1,3 +1,4 @@
+import type { OutputBundle } from 'rolldown'
 import type { CompilerContext } from '../../../context'
 import os from 'node:os'
 
@@ -5,9 +6,11 @@ import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createModuleGraphService } from '../../../moduleGraph'
+import { createLogicalEntryId } from '../../../moduleGraph/protocol'
 import { createRuntimeState } from '../../../runtime/runtimeState'
 import { scanWxml } from '../../../wxml'
 import * as wxmlHandleModule from '../../../wxml/handle'
+import { collectNativeEntryAssetOwners } from '../../utils/nativeEntryAssetOwners'
 import { SLOT_HOST_SCRIPTLESS_COMPONENT_STUB } from '../../utils/scriptlessComponent'
 import { emitVueBundleAssets } from './bundle'
 import {
@@ -38,6 +41,16 @@ const compileJsxFileMock = vi.hoisted(() => vi.fn(async () => ({
 })))
 const pathExistsCachedMock = vi.hoisted(() => vi.fn(async () => false))
 const tempDirs: string[] = []
+
+/** 平台 fixture 显式注册其缓存入口，并用逻辑入口图初始化资产归属。 */
+async function emitRegisteredVueBundleAssets(bundle: Parameters<typeof emitVueBundleAssets>[0], state: Parameters<typeof emitVueBundleAssets>[1]) {
+  const logicalBundle = Object.fromEntries([...state.compilationCache].map(([id, cached], index) => [index, {
+    type: 'chunk',
+    facadeModuleId: createLogicalEntryId(id, /[\\/]app\.vue$/.test(id) ? 'app' : cached.isPage ? 'page' : 'component'),
+    moduleIds: [],
+  }])) as OutputBundle
+  return emitVueBundleAssets(bundle, { ...state, nativeEntrySources: collectNativeEntryAssetOwners(logicalBundle) })
+}
 
 vi.mock('./fallbackEntries', () => ({
   collectFallbackPageEntryIds: collectFallbackPageEntryIdsMock,
@@ -154,7 +167,7 @@ describe('emitVueBundleAssets platform output', () => {
       },
     }
 
-    await emitVueBundleAssets(bundle, {
+    await emitRegisteredVueBundleAssets(bundle, {
       ctx,
       pluginCtx: { emitFile },
       compilationCache,
@@ -256,7 +269,7 @@ describe('emitVueBundleAssets platform output', () => {
     const emitFile = vi.fn()
     const bundle: Record<string, any> = {}
 
-    await emitVueBundleAssets(bundle, {
+    await emitRegisteredVueBundleAssets(bundle, {
       ctx,
       pluginCtx: { emitFile },
       compilationCache,
@@ -620,7 +633,7 @@ describe('emitVueBundleAssets platform output', () => {
     const emitFile = vi.fn()
     const bundle: Record<string, any> = {}
 
-    await emitVueBundleAssets(bundle, {
+    await emitRegisteredVueBundleAssets(bundle, {
       ctx,
       pluginCtx: { emitFile },
       compilationCache,
@@ -680,7 +693,7 @@ describe('emitVueBundleAssets platform output', () => {
     const emitFile = vi.fn()
     const bundle: Record<string, any> = {}
 
-    await emitVueBundleAssets(bundle, {
+    await emitRegisteredVueBundleAssets(bundle, {
       ctx,
       pluginCtx: { emitFile },
       compilationCache,
@@ -752,7 +765,7 @@ describe('emitVueBundleAssets platform output', () => {
     const emitFile = vi.fn()
     const bundle: Record<string, any> = {}
 
-    await emitVueBundleAssets(bundle, {
+    await emitRegisteredVueBundleAssets(bundle, {
       ctx,
       pluginCtx: { emitFile },
       compilationCache,
@@ -835,7 +848,7 @@ describe('emitVueBundleAssets platform output', () => {
     const emitFile = vi.fn()
     const bundle: Record<string, any> = {}
 
-    await emitVueBundleAssets(bundle, {
+    await emitRegisteredVueBundleAssets(bundle, {
       ctx,
       pluginCtx: { emitFile },
       compilationCache,
@@ -908,7 +921,7 @@ describe('emitVueBundleAssets platform output', () => {
     const emitFile = vi.fn()
     const bundle: Record<string, any> = {}
 
-    await emitVueBundleAssets(bundle, {
+    await emitRegisteredVueBundleAssets(bundle, {
       ctx,
       pluginCtx: { emitFile },
       compilationCache,
@@ -980,7 +993,7 @@ describe('emitVueBundleAssets platform output', () => {
     const emitFile = vi.fn()
     const bundle: Record<string, any> = {}
 
-    await emitVueBundleAssets(bundle, {
+    await emitRegisteredVueBundleAssets(bundle, {
       ctx,
       pluginCtx: { emitFile },
       compilationCache,
@@ -1064,7 +1077,7 @@ export default {
     const addWatchFile = vi.fn()
     const bundle: Record<string, any> = {}
 
-    await emitVueBundleAssets(bundle, {
+    await emitRegisteredVueBundleAssets(bundle, {
       ctx,
       pluginCtx: { emitFile, addWatchFile },
       compilationCache,
@@ -1119,7 +1132,7 @@ export default {
     const emitFile = vi.fn()
     const bundle: Record<string, any> = {}
 
-    await emitVueBundleAssets(bundle, {
+    await emitRegisteredVueBundleAssets(bundle, {
       ctx,
       pluginCtx: { emitFile },
       compilationCache,
@@ -1179,7 +1192,7 @@ export default {
 
     const emitFile = vi.fn()
     const bundle: Record<string, any> = {}
-    await emitVueBundleAssets(bundle, {
+    await emitRegisteredVueBundleAssets(bundle, {
       ctx,
       pluginCtx: { emitFile },
       compilationCache,
@@ -1243,7 +1256,7 @@ export default {
       },
     }
 
-    await emitVueBundleAssets(bundle, {
+    await emitRegisteredVueBundleAssets(bundle, {
       ctx,
       pluginCtx: { emitFile },
       compilationCache,
@@ -1297,7 +1310,7 @@ export default {
 
     const emitFile = vi.fn()
     const bundle: Record<string, any> = {}
-    await emitVueBundleAssets(bundle, {
+    await emitRegisteredVueBundleAssets(bundle, {
       ctx,
       pluginCtx: { emitFile, addWatchFile: vi.fn() },
       compilationCache: new Map(),
@@ -1397,7 +1410,7 @@ export default {
     const emitFile = vi.fn()
     const bundle: Record<string, any> = {}
 
-    await emitVueBundleAssets(bundle, {
+    await emitRegisteredVueBundleAssets(bundle, {
       ctx,
       pluginCtx: { emitFile, addWatchFile: vi.fn() },
       compilationCache,
@@ -1521,7 +1534,7 @@ export default {
     const emitFile = vi.fn()
     const bundle: Record<string, any> = {}
 
-    await emitVueBundleAssets(bundle, {
+    await emitRegisteredVueBundleAssets(bundle, {
       ctx,
       pluginCtx: { emitFile, addWatchFile: vi.fn() },
       compilationCache,
@@ -1582,7 +1595,7 @@ export default {
     } as unknown as CompilerContext['configService']
 
     const appFile = path.join(srcRoot, 'app.vue')
-    await expect(emitVueBundleAssets({}, {
+    await expect(emitRegisteredVueBundleAssets({}, {
       ctx: {
         configService,
         scanService: {
@@ -1634,7 +1647,7 @@ export default {
     } as unknown as CompilerContext['configService']
 
     const pageFile = path.join(srcRoot, 'pages', 'layout-no-slot', 'index.vue')
-    await expect(emitVueBundleAssets({}, {
+    await expect(emitRegisteredVueBundleAssets({}, {
       ctx: {
         configService,
         moduleGraphService: createModuleGraphService(),
@@ -1712,7 +1725,7 @@ export default {
     const emitFile = vi.fn()
     const bundle: Record<string, any> = {}
 
-    await emitVueBundleAssets(bundle, {
+    await emitRegisteredVueBundleAssets(bundle, {
       ctx,
       pluginCtx: { emitFile, addWatchFile: vi.fn() },
       compilationCache,
@@ -1798,7 +1811,7 @@ export default {
     const emitFile = vi.fn()
     const bundle: Record<string, any> = {}
 
-    await emitVueBundleAssets(bundle, {
+    await emitRegisteredVueBundleAssets(bundle, {
       ctx,
       pluginCtx: { emitFile, addWatchFile: vi.fn() },
       compilationCache,
@@ -1881,7 +1894,7 @@ export default {
     const emitFile = vi.fn()
     const bundle: Record<string, any> = {}
 
-    await emitVueBundleAssets(bundle, {
+    await emitRegisteredVueBundleAssets(bundle, {
       ctx,
       pluginCtx: { emitFile, addWatchFile: vi.fn() },
       compilationCache,
@@ -1961,7 +1974,7 @@ export default {
     const emitFile = vi.fn()
     const bundle: Record<string, any> = {}
 
-    await emitVueBundleAssets(bundle, {
+    await emitRegisteredVueBundleAssets(bundle, {
       ctx,
       pluginCtx: { emitFile, addWatchFile: vi.fn() },
       compilationCache,
@@ -2049,7 +2062,7 @@ export default {
     const emitFile = vi.fn()
     const bundle: Record<string, any> = {}
 
-    await emitVueBundleAssets(bundle, {
+    await emitRegisteredVueBundleAssets(bundle, {
       ctx,
       pluginCtx: { emitFile, addWatchFile: vi.fn() },
       compilationCache,
@@ -2133,7 +2146,7 @@ export default {
     const emitFile = vi.fn()
     const bundle: Record<string, any> = {}
 
-    await emitVueBundleAssets(bundle, {
+    await emitRegisteredVueBundleAssets(bundle, {
       ctx,
       pluginCtx: { emitFile, addWatchFile: vi.fn() },
       compilationCache,

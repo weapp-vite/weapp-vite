@@ -202,6 +202,9 @@ export interface RuntimeState {
         vueCompileMs?: number
         vueFinalizeCompiledMs?: number
         vueFinalizeCodeMs?: number
+        vueGenerateBundleMs?: number
+        vueBundleRefreshMs?: number
+        vueBundleAssetsMs?: number
         coreLoadMs?: number
         entryLoadMs?: number
         entryCodeReadMs?: number
@@ -228,6 +231,13 @@ export interface RuntimeState {
         generateBundleMs?: number
         generateSharedMs?: number
         generateRewriteMs?: number
+        generateRewritePrepareMs?: number
+        generateRewriteAnalysisMs?: number
+        generateRewriteNpmMs?: number
+        generateRewritePlatformMs?: number
+        generateRewriteRequestGlobalsMs?: number
+        generateRewritePreludeMs?: number
+        generateRewriteRuntimeMs?: number
         generateModuleGraphMs?: number
         snapshotResolveMs?: number
         snapshotBuildMs?: number
@@ -258,6 +268,14 @@ export interface RuntimeState {
         dirtyCount?: number
         pendingCount?: number
         emittedCount?: number
+        vueBundleEligibleCount?: number
+        vueBundleEmittedCount?: number
+        vueBundleCacheHitCount?: number
+        vueBundleRecompileCount?: number
+        vueBundleStyleOnlyCount?: number
+        vueBundleFallbackCount?: number
+        rewriteAnalysisCacheHitCount?: number
+        rewriteAnalysisCacheMissCount?: number
         dirtyReasonSummary?: string[]
         pendingReasonSummary?: string[]
       }>
@@ -276,6 +294,9 @@ export interface RuntimeState {
         vueCompileMs?: number
         vueFinalizeCompiledMs?: number
         vueFinalizeCodeMs?: number
+        vueGenerateBundleMs?: number
+        vueBundleRefreshMs?: number
+        vueBundleAssetsMs?: number
         coreLoadMs?: number
         entryLoadMs?: number
         entryCodeReadMs?: number
@@ -302,6 +323,13 @@ export interface RuntimeState {
         generateBundleMs?: number
         generateSharedMs?: number
         generateRewriteMs?: number
+        generateRewritePrepareMs?: number
+        generateRewriteAnalysisMs?: number
+        generateRewriteNpmMs?: number
+        generateRewritePlatformMs?: number
+        generateRewriteRequestGlobalsMs?: number
+        generateRewritePreludeMs?: number
+        generateRewriteRuntimeMs?: number
         generateModuleGraphMs?: number
         snapshotResolveMs?: number
         snapshotBuildMs?: number
@@ -332,6 +360,14 @@ export interface RuntimeState {
         dirtyCount?: number
         pendingCount?: number
         emittedCount?: number
+        vueBundleEligibleCount?: number
+        vueBundleEmittedCount?: number
+        vueBundleCacheHitCount?: number
+        vueBundleRecompileCount?: number
+        vueBundleStyleOnlyCount?: number
+        vueBundleFallbackCount?: number
+        rewriteAnalysisCacheHitCount?: number
+        rewriteAnalysisCacheMissCount?: number
         dirtyReasonSummary?: string[]
         pendingReasonSummary?: string[]
       }

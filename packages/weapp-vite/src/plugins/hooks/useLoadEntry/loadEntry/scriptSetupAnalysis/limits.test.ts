@@ -1,6 +1,6 @@
 import { baseParse } from '@vue/compiler-core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { collectScriptSetupImportsFromCode } from '../../../../../ast'
+import { analyzeScriptSetupImportsFromCode } from '../../../../../ast'
 import { createScriptSetupAnalyzer } from './index'
 
 vi.mock('@vue/compiler-core', async (importOriginal) => {
@@ -8,7 +8,10 @@ vi.mock('@vue/compiler-core', async (importOriginal) => {
   return { ...actual, baseParse: vi.fn(actual.baseParse) }
 })
 vi.mock('../../../../../ast', () => ({
-  collectScriptSetupImportsFromCode: vi.fn(() => [{ localName: 'Card', importSource: './Card.vue', kind: 'default' }]),
+  analyzeScriptSetupImportsFromCode: vi.fn(() => ({
+    status: 'complete',
+    imports: [{ localName: 'Card', importSource: './Card.vue', kind: 'default' }],
+  })),
 }))
 
 const input = { filename: 'src/demo.vue', template: '<Card />', scriptSetup: 'import Card from "./Card.vue"', astEngine: 'babel' as const }
@@ -48,9 +51,9 @@ describe('script setup analysis retention bounds', () => {
     const large = { ...input, scriptSetup: `${input.scriptSetup}\n/*${'x'.repeat(8 * 1024 * 1024)}*/` }
     expect(analyzer.analyze(large).imports).toHaveLength(1)
     expect(analyzer.analyze(large).imports).toHaveLength(1)
-    expect(collectScriptSetupImportsFromCode).toHaveBeenCalledTimes(3)
+    expect(analyzeScriptSetupImportsFromCode).toHaveBeenCalledTimes(3)
     analyzer.analyze(input)
-    expect(collectScriptSetupImportsFromCode).toHaveBeenCalledTimes(4)
+    expect(analyzeScriptSetupImportsFromCode).toHaveBeenCalledTimes(4)
     expect(baseParse).toHaveBeenCalledTimes(3)
   })
 })

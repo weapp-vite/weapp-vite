@@ -680,6 +680,9 @@ export default defineConfig({
 - `logLevel: 'default' | 'concise' | 'verbose'` 控制终端诊断详细程度。
 - `profileJson: boolean | string` 控制是否输出 JSONL profile，字符串表示自定义输出路径。
 - JSONL v1 保留旧字段，增加 `sessionId` / `buildId` / `batchId` / `sourceEvents` 与时钟来源；按来源精确匹配编辑。失败记录只有 `elapsedMs`；无受影响入口的批次以 `incomplete` / `reason: no-affected-entries` 结束观测，不污染后续构建。未知版本、未完成或缺失阶段不能按零耗时统计。`buildCoreMs` 是残差估算，阶段可能重叠。
+- 原始 JSONL 和 `createCompilerContext()` 的 `runtimeState.build.hmr.profile` / `recentProfiles` 提供可选的 Vue 资产与重写诊断字段，尚未进入 `analyze --hmr-profile` 的 `metrics` / `operations` 聚合；未执行或未观测到的字段保持缺失。
+- `vueGenerateBundleMs` 包含逐入口累计的 `vueBundleRefreshMs`、`vueBundleAssetsMs` 和 fallback 页面处理，不能与子项重复相加。`generateRewritePrepareMs`、`generateRewriteAnalysisMs`、`generateRewriteNpmMs`、`generateRewritePlatformMs`、`generateRewriteRequestGlobalsMs`、`generateRewritePreludeMs`、`generateRewriteRuntimeMs` 是 `generateRewriteMs` 内依次记录的连续区间。内部阶段耗时不能替代源文件修改到产物可见的外部 `wallMs`。
+- `vueBundleEligibleCount` 是本轮选中的编译缓存入口数，`vueBundleEmittedCount` 是成功完成资产发布的入口次数（包含 fallback），均不表示产物变化的文件数。`vueBundleCacheHitCount`、`vueBundleRecompileCount`、`vueBundleStyleOnlyCount`、`vueBundleFallbackCount` 分别记录缓存复用、发起重新编译、仅样式刷新和成功 fallback 的路径次数；重新编译计数可包含随后失败的尝试。`rewriteAnalysisCacheHitCount` / `rewriteAnalysisCacheMissCount` 只记录跨 chunk 内容分析缓存，不包含本代 WeakMap 直接复用或无需分析的 chunk，不能直接作为整个 bundle 的缓存命中率。
 - `analyze --hmr-profile --json` 的 `inputCoverage` 提供输入覆盖计数；旧版无版本记录仍兼容，未关联样本不归给当前编辑。
 - stateful JSONL 以 `pipeline: 'stateful'` 区分，记录源通知到批次接收、准备、提交等待、提交及发布阶段。`completionBoundary` 区分客户端交付确认与产物发布；缺失来源、失败或取消不能计为成功耗时。`timelines` 只累加互不重叠的外层时段，未知阶段及负残差保持 `null`，不把嵌套 hook 重复累加。
 - 模板 benchmark 的预算使用外部 `wallMs`，缺失 profile 不再填充 `totalMs`。仓库 `verify:edit-sequence --engine weapp-classic|weapp-stateful` 默认以 512 个真实 SFC 页面比较长期编译宿主和逐步新进程基线，同时记录进程树 RSS、强制 GC 后 heap、GC 开销及资源/转换范围。完整页面 JS 由 mpcore 执行，此结果不能替代真实 IDE 验收；profile 开关语义与开销比较入口为 `scripts/editSequence/compareProfiles.ts`。

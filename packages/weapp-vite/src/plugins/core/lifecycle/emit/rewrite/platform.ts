@@ -1,10 +1,13 @@
 import type { OutputBundle, OutputChunk } from 'rolldown'
 import type { NativeNpmChunkAnalysis, NativeNpmPlatformApiFact, ScriptAnalysisResult } from '../../../../../ast'
 import type { MpPlatform } from '../../../../../types'
+import type { HmrProfileOperationKey } from '../../../../../utils/hmrProfile'
+import type { ContentAnalysisCache } from './contentAnalysisCache'
 import type { NpmChunkTextEdit } from './nativeNpmChunks'
 import MagicString from 'magic-string'
 import { analyzeNpmChunksWithNative, analyzeScript, analyzeScripts, mayContainPlatformApiAccess, mayContainStaticRequireLiteral, platformApiIdentifiers } from '../../../../../ast'
 import { parseJsLike, traverse } from '../../../../../utils/babel'
+import { recordHmrProfileOperation } from '../../../../../utils/hmrProfile'
 import {
   hasNpmDependencyPrefix,
   normalizeNpmImportLookupPath,
@@ -40,7 +43,10 @@ export type ChunkScriptAnalysisCache = WeakMap<OutputChunk, {
   code: string
   npmChunkAnalysis?: NativeNpmChunkAnalysis
   npmPlatformApiRanges?: NativeNpmPlatformApiFact[]
-}>
+}> & {
+  contentCache?: ContentAnalysisCache
+  profile?: Partial<Record<HmrProfileOperationKey, number | undefined>>
+}
 
 export function rememberChunkScriptAnalysis(
   chunk: OutputChunk,
@@ -69,6 +75,13 @@ export function getChunkScriptAnalysis(
     return cached.analysis
   }
 
+  const content = options?.cache?.contentCache?.get(chunk.code, options.astEngine)
+  if (content) {
+    options?.cache?.set(chunk, { ...content, code: chunk.code })
+    recordHmrProfileOperation(options?.cache?.profile, 'rewriteAnalysisCacheHitCount')
+    return content.analysis
+  }
+
   const analysis = mayNeedChunkScriptAnalysis(chunk.code)
     ? analyzeScript(chunk.code, { engine: options?.astEngine })
     : {
@@ -76,6 +89,8 @@ export function getChunkScriptAnalysis(
         hasStaticRequireLiteral: false,
       }
   rememberChunkScriptAnalysis(chunk, analysis, options)
+  options?.cache?.contentCache?.set(chunk.code, options?.astEngine, { analysis })
+  recordHmrProfileOperation(options?.cache?.profile, 'rewriteAnalysisCacheMissCount')
   return analysis
 }
 
@@ -103,6 +118,12 @@ export function warmupBundleScriptAnalysis(
     if (cached?.code === chunk.code) {
       continue
     }
+    const content = cache.contentCache?.get(chunk.code, options?.astEngine, chunk.fileName)
+    if (content) {
+      cache.set(chunk, { ...content, code: chunk.code })
+      recordHmrProfileOperation(cache.profile, 'rewriteAnalysisCacheHitCount')
+      continue
+    }
     if (!mayNeedChunkScriptAnalysis(chunk.code)) {
       rememberChunkScriptAnalysis(chunk, {
         hasPlatformApiAccess: false,
@@ -112,6 +133,7 @@ export function warmupBundleScriptAnalysis(
     }
 
     chunks.push(chunk)
+    recordHmrProfileOperation(cache.profile, 'rewriteAnalysisCacheMissCount')
     inputs.push({
       code: chunk.code,
       filename: chunk.fileName,
@@ -157,6 +179,16 @@ export function warmupBundleScriptAnalysis(
         code: chunk.code,
         npmChunkAnalysis: nativeAnalysis ?? undefined,
       })
+    }
+  }
+
+  for (const chunk of chunks) {
+    const cached = cache.get(chunk)
+    if (cached?.code === chunk.code) {
+      cache.contentCache?.set(chunk.code, options?.astEngine, {
+        analysis: cached.analysis,
+        npmChunkAnalysis: cached.npmChunkAnalysis,
+      }, chunk.fileName)
     }
   }
 }

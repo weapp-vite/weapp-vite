@@ -127,6 +127,7 @@ export {
   mayContainScriptCallOrModuleSyntax,
 } from './operations/scriptLiterals'
 export {
+  analyzeScriptSetupImportsFromCode,
   collectScriptSetupImportsFromCode,
   collectScriptSetupImportsWithBabel,
   collectScriptSetupImportsWithOxc,
@@ -134,7 +135,7 @@ export {
   getScriptSetupImportedName,
   mayContainRelevantScriptSetupImports,
 } from './operations/scriptSetupImports'
-export type { ScriptSetupImport } from './operations/scriptSetupImports'
+export type { ScriptSetupImport, ScriptSetupImportAnalysis } from './operations/scriptSetupImports'
 export {
   collectIdentifiersFromExpression,
   collectIdentifiersFromExpressionWithOxc,

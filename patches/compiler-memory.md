@@ -1,8 +1,8 @@
 # 官方编译依赖的生命周期与资源验收
 
 当前工作区使用官方 Vite `8.3.5` 和 Rolldown `1.2.16`，没有对应补丁文件、
-`patchedDependencies` 登记或锁文件补丁绑定。Vite+ `1.4.0` 的 launcher/core 保持官方配对，
-其内置 Vite 为 `8.3.5`、Rolldown 为 `1.2.15`，Vitest 配对为 `5.0.5`；
+`patchedDependencies` 登记或锁文件补丁绑定。Vite+ `1.5.0` 的 launcher/core 保持官方配对，
+其内置 Vite 为 `8.3.5`，Vitest 配对为 `5.1.0`；
 独立 Rolldown 与 Vite+ 内置引擎分别核对实际版本。
 本说明不代表本轮产品验证、正式资源验收、跨平台矩阵或真实微信 IDE 验收已经通过。
 
@@ -11,9 +11,10 @@
 发布的 `weapp-vite` 继续加载外部官方 `vite` / `rolldown`。此前仅由工作区 pnpm 应用的补丁
 不会自动传递给普通 npm 消费者，现已移除，不能再据此宣称独立安装获得了相同内存修复。
 
-当前仍保留 Chokidar `6.0.0`、Vitest `5.0.5` 和 `@vitejs/plugin-vue` `6.0.10` 三份独立补丁。
+当前仍保留 Chokidar `6.0.0` 和 `@vitejs/plugin-vue` `6.0.10` 两份独立补丁。
 其中 Chokidar 与 `readdirp` 由 `weapp-vite` 的 `alwaysBundle` 打入发布 JavaScript，消费者使用相同修补实现；
-Vitest 与 Vue 插件补丁服务仓库测试及 Web 开发、构建，不会自动修改消费者安装的对应依赖。
+Vue 插件补丁服务仓库 Web 开发、构建，不会自动修改消费者安装的对应依赖。
+Vitest `5.1.0` 已包含原磁盘缓存文本读取修正，对应补丁已移除，冷、暖缓存错误回归继续保留。
 各补丁用途与发布消费检查见[补丁说明](./README.md)。
 
 没有替换平台原生二进制，也不手工改写应用构建产物。普通 npm 安装的消费者仍须独立确认实际
@@ -47,7 +48,7 @@ pnpm test:dependency-contracts
 
 PR #1294 按用户授权引入两项临时验收例外：Web optimizer 关闭残留，以及连续构建的正式资源验收。
 这两项没有修复，也不记录为通过。例外随默认门禁持续生效至显式移除，不因 PR 合并自动结束；
-仅适用于固定官方 Vite `8.3.5` / Rolldown `1.2.16`，不自动扩展到 Vite+ 内置的 `1.2.15`。
+仅适用于固定官方 Vite `8.3.5` / Rolldown `1.2.16`，不自动扩展到 Vite+ 独立打包的内置引擎。
 更换依赖版本时，必需入口明确失败，必须重新评审或移除例外，不能沿用旧版本的接受记录。
 其他 CI、coverage、产品断言、审查及真实 IDE 门禁不因此获得豁免。
 

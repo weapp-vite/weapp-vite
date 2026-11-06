@@ -3,6 +3,8 @@ import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { createLogicalEntryId } from '../../../../moduleGraph/protocol'
+import { collectNativeEntryAssetOwners } from '../../../utils/nativeEntryAssetOwners'
 import { resolveVueBundleEmitState } from './index'
 
 describe('bundle app shell input ownership', () => {
@@ -27,6 +29,10 @@ describe('bundle app shell input ownership', () => {
         scanService: {},
       },
       appShell: hasShell ? shell : undefined,
+      nativeEntrySources: collectNativeEntryAssetOwners({
+        'app.js': { type: 'chunk', facadeModuleId: createLogicalEntryId(path.join(root, 'app.vue'), 'app'), moduleIds: [] },
+        'page.js': { type: 'chunk', facadeModuleId: createLogicalEntryId(path.join(root, 'pages/index/index.vue'), 'page'), moduleIds: [] },
+      } as never),
       compilationCache: new Map([
         [path.join(root, 'app.vue'), { result: { template: hasShell ? undefined : '<view><slot /></view>' }, isPage: false }],
         [path.join(root, 'pages/index/index.vue'), { result: { template: '<view>page</view>' }, isPage: true }],

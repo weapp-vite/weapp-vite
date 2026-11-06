@@ -16,6 +16,8 @@ interface JsonMacroExtractionResult {
   config?: Record<string, any>
   macroHash?: string
   dependencies?: string[]
+  /** 仅在配置完全由静态字面量产生且未调用自定义合并函数时提供。 */
+  isStatic?: true
 }
 
 interface ScriptSetupSourceMapOptions {
@@ -112,7 +114,13 @@ async function extractJsonMacroFromScriptSetupInternal(
 
   const staticConfig = resolveStaticJsonMacroConfig(macroStatements, options)
   if (staticConfig) {
-    return withSourceMap({ stripped, config: staticConfig, macroHash, dependencies: [] }, rewrite)
+    return withSourceMap({
+      stripped,
+      config: Object.keys(staticConfig).length ? staticConfig : undefined,
+      macroHash,
+      dependencies: [],
+      ...(options?.merge ? {} : { isStatic: true as const }),
+    }, rewrite)
   }
 
   const result = await evaluateJsonMacroConfig(content, filename, lang, options)

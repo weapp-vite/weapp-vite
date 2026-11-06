@@ -9,19 +9,17 @@ import { removeExtensionDeep } from '@weapp-core/shared'
 import path from 'pathe'
 import { getMiniProgramTemplatePlatform } from 'wevu/compiler'
 import logger from '../../../logger'
-import { createLogicalEntryId } from '../../../moduleGraph/protocol'
-import { normalizeSourceId } from '../../../moduleGraph/traversal'
 import { resolveHmrRuntimeDecision } from '../../../runtime/hmrRuntime'
 import { getHmrRuntimeSession } from '../../../runtime/hmrRuntimeSession'
 import { createCachedEntryResolveOptions, resolveEntryPath } from '../../../utils/entryResolve'
 import { toPosixPath } from '../../../utils/path'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../utils/resolvedId'
 import { usingComponentFromResolvedFile } from '../../../utils/usingComponentFrom'
-import { resolveRelativeOutputFileNameWithExtension } from '../../utils/outputFileName'
 import { readCompilerInputSync } from '../../utils/sourceSnapshot'
 import { createSfcResolveSrcOptions } from '../../utils/vueSfc'
 import { createCompilerAppShellSignature, toCompilerAppShell } from './appShell'
 import { resolveClassStyleWxsLocationForBase } from './classStyle'
+import { createComponentEntryRegistration } from './componentEntryRegistration'
 import { componentResolutionDependencies } from './componentResolutionDependencies'
 import { createCompilerPageLayoutPlanSignature, toCompilerPageLayoutPlan } from './pageLayout'
 import { createUsingComponentPathResolver } from './usingComponentResolver'
@@ -163,24 +161,15 @@ function buildCompileVueFileOptions(
   const resolutionDependencies = new Set<string>()
   const resolveUsingComponentPath = createUsingComponentPathResolver(pluginCtx, configService, state.reExportResolutionCache, id => resolutionDependencies.add(id))
   const externalComponentEntryMap = ctx.runtimeState?.build?.hmr?.externalComponentEntryMap
+  const registerComponentEntry = externalComponentEntryMap
+    ? createComponentEntryRegistration(ctx, pluginCtx, configService, externalComponentEntryMap, state.emitResolvedComponentEntries !== false)
+    : undefined
   const registerResolvedComponentEntry = externalComponentEntryMap
     ? async (...args: Parameters<typeof resolveUsingComponentPath>) => {
       const [importSource, importerFilename, info] = args
       const resolved = await resolveUsingComponentPath(importSource, importerFilename, info)
       if (typeof resolved !== 'string' && resolved?.from && resolved.resolvedId) {
-        const outputKey = removeExtensionDeep(resolved.from).replace(/^\/+/, '')
-        const sourceId = normalizeSourceId(resolved.resolvedId)
-        const previousSourceId = externalComponentEntryMap.get(outputKey)
-        const isNewEntry = !previousSourceId || normalizeSourceId(previousSourceId) !== sourceId
-        externalComponentEntryMap.set(outputKey, sourceId)
-        if (isNewEntry && state.emitResolvedComponentEntries !== false && typeof pluginCtx.emitFile === 'function') {
-          pluginCtx.emitFile({
-            type: 'chunk',
-            id: createLogicalEntryId(resolved.resolvedId, 'component'),
-            fileName: resolveRelativeOutputFileNameWithExtension(configService, resolved.resolvedId, '.js'),
-            preserveSignature: 'exports-only',
-          })
-        }
+        registerComponentEntry!({ from: resolved.from, resolvedId: resolved.resolvedId })
       }
       return resolved
     }

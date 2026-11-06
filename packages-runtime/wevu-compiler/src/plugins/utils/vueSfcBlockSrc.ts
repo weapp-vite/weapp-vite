@@ -9,8 +9,8 @@ import { readFile as readFileCached } from './cache'
  */
 export interface ResolveSfcBlockSrcOptions {
   resolveId?: (source: string, importer?: string) => Promise<string | undefined>
-  /** 自定义读取器的异常原样传出，保留调用方用于重试或重新同步的控制流。 */
-  readFile?: (id: string, options?: { checkMtime?: boolean }) => Promise<string>
+  /** 声明的 block 类型供宿主准备编译输入；读取异常原样传出，保留重试和重新同步控制流。 */
+  readFile?: (id: string, options?: { checkMtime?: boolean, blockType?: 'template' | 'script' | 'style' }) => Promise<string>
   checkMtime?: boolean
 }
 
@@ -143,12 +143,13 @@ async function resolveBlockSrcPath(
 async function readBlockContent(
   resolvedId: string,
   filename: string,
+  kind: SfcBlockKind,
   options?: ResolveSfcBlockSrcOptions,
 ) {
   const reader = options?.readFile
   const checkMtime = options?.checkMtime
   if (reader) {
-    return await reader(resolvedId, { checkMtime })
+    return await reader(resolvedId, { checkMtime, blockType: kind === 'script setup' ? 'script' : kind })
   }
   try {
     return await readFileCached(resolvedId, { checkMtime })
@@ -209,7 +210,7 @@ export async function resolveSfcBlockSrc(
     else if (kind === 'script setup') {
       scriptSetupResolvedId = resolvedId
     }
-    const content = await readBlockContent(resolvedId, filename, options)
+    const content = await readBlockContent(resolvedId, filename, kind, options)
     if (kind === 'style') {
       hasResolvedStyleSrc = true
     }

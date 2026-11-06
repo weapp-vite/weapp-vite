@@ -1,5 +1,12 @@
+import path from 'pathe'
 import { expect, it, vi } from 'vitest'
+import { createModuleGraphService } from '../../moduleGraph'
+import { recordSfcBlockSource } from '../../plugins/utils/sfcTemplateDependencies'
+import { withCompilerSourceSnapshot } from '../../plugins/utils/sourceSnapshot'
+import { createSfcResolveSrcOptions } from '../../plugins/utils/vueSfc'
+import { createRuntimeState } from '../runtimeState'
 import { captureEntryTopology, entryTopologySignature, hasEntryTopologyChange } from './entryTopology'
+import { resolveVueEntryTopologySignature } from './vueEntryTopology'
 
 it('compares entry references independently from presentation fields and key ordering', () => {
   const before = { usingComponents: { a: '/a', b: '/b' }, navigationBarTitleText: 'before' }
@@ -85,4 +92,112 @@ it('compares against the committed complete scan when an earlier metadata build 
   cache.set(file, {})
   expect(await hasEntryTopologyChange(ctx, [file], committed)).toBe(true)
   expect(await hasEntryTopologyChange(ctx, [file], captureEntryTopology(ctx))).toBe(false)
+})
+
+it('compares changed Vue component references with the committed scan using the frozen prepared input', async () => {
+  const file = path.resolve('entry-topology-fixture/page.vue')
+  const retired = path.resolve('entry-topology-fixture/retired.vue')
+  const before = '<script setup>import Card from "./card.vue"; const marker = "before"</script><template><Card /><view>{{ marker }}</view></template>'
+  const after = '<script setup>const marker = "after"</script><template><view>{{ marker }}</view></template>'
+  const configService = { platform: 'weapp', weappViteConfig: {} } as any
+  const runtimeState = createRuntimeState()
+  runtimeState.build.hmr.resolvedEntryMap.set(file, { id: file })
+  resolveVueEntryTopologySignature(configService, file, before)
+  resolveVueEntryTopologySignature(configService, retired, before)
+  const ctx = { configService, runtimeState } as any
+  const committed = captureEntryTopology(ctx)
+  expect(committed.has(retired)).toBe(false)
+  expect(await hasEntryTopologyChange(ctx, [retired], committed, new Set([retired]))).toBe(false)
+  await withCompilerSourceSnapshot(configService, new Map([[file, after]]), async () => {
+    expect(await hasEntryTopologyChange(ctx, [file], committed)).toBe(true)
+    // 失败或局部构建更新了分析缓存，也不能推进完整扫描的已提交基线。
+    expect(await hasEntryTopologyChange(ctx, [file], committed)).toBe(true)
+  })
+  await withCompilerSourceSnapshot(configService, new Map([[file, before.replace('before', 'new marker')]]), async () => {
+    expect(await hasEntryTopologyChange(ctx, [file], committed)).toBe(false)
+  })
+  expect(await hasEntryTopologyChange(ctx, [file], committed, new Set([file]))).toBe(true)
+})
+
+it('rescans only registered external script or template block inputs while leaving other owner dependencies incremental', async () => {
+  const owner = path.resolve('entry-topology-fixture/page.vue')
+  const script = path.resolve('entry-topology-fixture/logic.ts')
+  const template = path.resolve('entry-topology-fixture/page.html')
+  const props = path.resolve('entry-topology-fixture/props.ts')
+  const style = path.resolve('entry-topology-fixture/page.css')
+  const unrelated = path.resolve('entry-topology-fixture/unrelated.html')
+  const configService = { platform: 'weapp', weappViteConfig: {} } as any
+  resolveVueEntryTopologySignature(configService, owner, '<script src="./logic.ts"></script><template src="./page.html"></template>')
+  recordSfcBlockSource({}, './logic.ts', owner, script, configService)
+  recordSfcBlockSource({}, './page.html', owner, template, configService)
+  const resolve = vi.fn()
+  const graph = {
+    collectAffectedEntries: (file: string, kind: string) => new Set(
+      (kind === 'script' && [script, props].includes(file)) || (kind === 'template' && file === template) ? [owner] : [],
+    ),
+    resolve,
+  }
+  const runtimeState = createRuntimeState()
+  runtimeState.build.hmr.resolvedEntryMap.set(owner, { id: owner })
+  const ctx = { configService, moduleGraphService: graph, runtimeState } as any
+
+  expect(await hasEntryTopologyChange(ctx, [script])).toBe(true)
+  expect(await hasEntryTopologyChange(ctx, [template])).toBe(true)
+  expect(await hasEntryTopologyChange(ctx, [props, style, unrelated])).toBe(false)
+  expect(resolve).not.toHaveBeenCalled()
+  runtimeState.build.hmr.resolvedEntryMap.clear()
+  expect(await hasEntryTopologyChange(ctx, [script, template])).toBe(false)
+})
+
+it('rescans a registered alias block when it resolves to the changed input or its prior target was removed', async () => {
+  const owner = path.resolve('entry-topology-fixture/alias.vue')
+  const template = path.resolve('external-topology-fixture/page.html')
+  const configService = { platform: 'weapp', weappViteConfig: {} } as any
+  resolveVueEntryTopologySignature(configService, owner, '<template src="@templates/page.html"></template>')
+  recordSfcBlockSource({}, '@templates/page.html', owner, template, configService)
+  const resolve = vi.fn()
+  const ctx = {
+    configService,
+    moduleGraphService: { collectAffectedEntries: () => new Set([owner]), resolve },
+  } as any
+  expect(await hasEntryTopologyChange(ctx, [template])).toBe(true)
+  expect(await hasEntryTopologyChange(ctx, [template], undefined, new Set([template]))).toBe(true)
+  expect(resolve).not.toHaveBeenCalled()
+})
+
+it('uses hook-owned block identities between snapshots without resolving transitive template content', async () => {
+  const owner = path.resolve('entry-topology-fixture/external.vue')
+  const template = path.resolve('entry-topology-fixture/body.wxml')
+  const shared = path.resolve('entry-topology-fixture/shared/card.wxml')
+  const configService = { isDev: true, weappViteConfig: {} } as any
+  resolveVueEntryTopologySignature(configService, owner, '<template src="@templates/body"></template>')
+  const options = createSfcResolveSrcOptions({ resolve: async () => ({ id: template }) }, configService)
+  await options.resolveId!('@templates/body', owner)
+  const graph = createModuleGraphService()
+  graph.replaceEntryDependencies(owner, 'template', [template, shared])
+  const runtimeState = createRuntimeState()
+  runtimeState.build.hmr.resolvedEntryMap.set(owner, { id: owner })
+  const ctx = { configService, moduleGraphService: graph, runtimeState } as any
+  await expect(graph.resolve('@templates/body', owner)).rejects.toThrow('尚未绑定')
+  expect(await hasEntryTopologyChange(ctx, [shared])).toBe(false)
+  expect(await hasEntryTopologyChange(ctx, [template])).toBe(true)
+})
+
+it('conservatively rescans an affected external owner after resolution facts are missing or invalidated', async () => {
+  const owner = path.resolve('entry-topology-fixture/configured.vue')
+  const template = path.resolve('entry-topology-fixture/body.wxml')
+  const shared = path.resolve('entry-topology-fixture/shared/card.wxml')
+  const configService = { options: {}, isDev: true, weappViteConfig: {} } as any
+  resolveVueEntryTopologySignature(configService, owner, '<template src="@templates/body"></template>')
+  const graph = createModuleGraphService()
+  graph.replaceEntryDependencies(owner, 'template', [template, shared])
+  const ctx = { configService, moduleGraphService: graph } as any
+  expect(await hasEntryTopologyChange(ctx, [shared])).toBe(true)
+  recordSfcBlockSource({}, '@templates/body', owner, template, configService)
+  expect(await hasEntryTopologyChange(ctx, [shared])).toBe(false)
+  recordSfcBlockSource({}, '@templates/body', owner, undefined, configService)
+  expect(await hasEntryTopologyChange(ctx, [shared])).toBe(true)
+  recordSfcBlockSource({}, '@templates/body', owner, template, configService)
+  configService.options = {}
+  expect(await hasEntryTopologyChange(ctx, [shared])).toBe(true)
 })

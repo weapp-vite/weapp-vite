@@ -12,6 +12,7 @@ import { normalizeSourceId } from '../../../../moduleGraph/traversal'
 import { createHmrProfileEventId, recordHmrProfileDuration, recordHmrProfileOperation } from '../../../../utils/hmrProfile'
 import { withRealpathScope } from '../../../../utils/realpathScope'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
+import { readNativeEntryAssetOwners } from '../../../utils/nativeEntryAssetOwners'
 import { createReadAndParseSfcOptions, readAndParseSfc } from '../../../utils/vueSfc'
 import { VUE_PLUGIN_NAME } from '../../index'
 import { createCompilerAppShellSignature, resolveAppShellForCompilation } from '../appShell'
@@ -78,6 +79,7 @@ export function createVueTransformPlugin(ctx: CompilerContext, options: { react?
   const scopedSlotModules = new Map<string, string>()
   const emittedScopedSlotChunks = new Set<string>()
   const classStyleRuntimeWarned = { value: false }
+  let validatedCompilations = new WeakSet<VueTransformResult>()
 
   function releaseHookContexts() {
     // 编译选项包含 warn/resolve/emitFile，生命周期只能到当前 bundle 结束。
@@ -87,6 +89,7 @@ export function createVueTransformPlugin(ctx: CompilerContext, options: { react?
     reExportResolutionCache.clear()
     pageMatcher = null
     scanDirtySynced = false
+    validatedCompilations = new WeakSet()
   }
 
   function updateAppShell(nextAppShell: ResolvedAppShell | undefined) {
@@ -147,12 +150,19 @@ export function createVueTransformPlugin(ctx: CompilerContext, options: { react?
     },
 
     async buildStart() {
+      if (ctx.runtimeState?.build?.hmr?.fullEntryScan) {
+        // 完整入口扫描重新建立可达图，历史编译结果不能继续作为独立资产入口。
+        compilationCache.clear()
+        styleBlocksCache.clear()
+        styleRefreshTokens.clear()
+      }
       // snapshot 不经过 watchChange；同批源变更必须撤销相同缓存，避免重发已删除 SFC 的产物。
       for (const { file } of ctx.moduleGraphService?.getPendingChanges?.() ?? []) {
         invalidateSourceFile(file)
       }
       scopedSlotModules.clear()
       emittedScopedSlotChunks.clear()
+      validatedCompilations = new WeakSet()
       compileOptionsCache.clear()
       componentMetaCache.clear()
       nativeSlotContextCache.clear()
@@ -224,6 +234,7 @@ export function createVueTransformPlugin(ctx: CompilerContext, options: { react?
           code,
           id,
           compilationCache,
+          validatedCompilations,
           setAppShell: updateAppShell,
           appShell,
           pageMatcher,
@@ -256,6 +267,8 @@ export function createVueTransformPlugin(ctx: CompilerContext, options: { react?
         isBundledDev,
         pluginCtx: this,
         compilationCache,
+        nativeEntrySources: readNativeEntryAssetOwners(ctx, this.environment, _options),
+        validatedCompilations,
         appShell,
         reExportResolutionCache,
         compileOptionsCache,

@@ -807,7 +807,33 @@ describe('createEntryLoader', () => {
     expect(readFileMock.mock.calls.filter(([file]) => file === entryPath)).toHaveLength(1)
   })
 
-  it('reuses cached vue json block config during direct script hmr', async () => {
+  it.each([false, true])('shares one no-JSON component input across config, template, signatures and code while editing/restoring (dev=%s)', async (isDev) => {
+    const { compilerCtx, loader, runtimeState, wxmlService } = createLoader({ isDev, withWxmlService: true })
+    const entryPath = path.resolve('src/components/vendor/index.vue')
+    const pluginCtx = createPluginContext()
+    const sourceFor = (tag: string) => `<script setup>const count = 1</script><template><${tag} /></template>`
+    const unexpected = sourceFor('unexpected-newer-card')
+    mockExtractConfigFromVue.mockImplementation(extractConfigFromVue)
+
+    for (const tag of ['original-card', 'changed-card', 'original-card']) {
+      const source = sourceFor(tag)
+      readFileMock.mockClear()
+      readFileMock.mockResolvedValue(unexpected).mockResolvedValueOnce(source)
+
+      const result = await loader.call(pluginCtx, entryPath, 'component')
+
+      expect(mockExtractConfigFromVue).toHaveBeenLastCalledWith(entryPath, expect.objectContaining({ source, compilerContext: compilerCtx }))
+      expect(Object.keys(wxmlService.getAggregatedAutoImportComponents(entryPath) ?? {})).toEqual([tag])
+      expect(result.code).toBe(source)
+      if (isDev) {
+        expect(runtimeState.build.hmr.vueEntrySfcSignatures.get(entryPath)).toEqual(resolveVueSfcHmrSignatures(source, entryPath).blockSignatures)
+      }
+      expect(readFileMock.mock.calls.filter(([file]) => file === entryPath)).toHaveLength(1)
+      runtimeState.build.hmr.profile = { event: 'update', dirtyReasonSummary: ['entry-direct:1'] }
+    }
+  })
+
+  it('keeps Vue JSON config while reading the current direct-script HMR input', async () => {
     const { compilerCtx, loader, registerJsonAsset, runtimeState } = createLoader({ isDev: true })
     const pluginCtx = createPluginContext()
     const entryPath = '/project/src/pages/home/index.vue'
@@ -824,7 +850,7 @@ describe('createEntryLoader', () => {
     await loader.call(pluginCtx, entryPath, 'page')
 
     expect(mockExtractConfigFromVue).toHaveBeenCalledTimes(1)
-    expect(mockExtractConfigFromVue).toHaveBeenCalledWith(entryPath, { source, compilerContext: compilerCtx })
+    expect(mockExtractConfigFromVue).toHaveBeenCalledWith(entryPath, expect.objectContaining({ source, compilerContext: compilerCtx }))
     mockExtractConfigFromVue.mockClear()
     registerJsonAsset.mockClear()
     readFileMock.mockResolvedValue(source.replace('count = 1', 'count = 2'))
@@ -835,7 +861,10 @@ describe('createEntryLoader', () => {
 
     await loader.call(pluginCtx, entryPath, 'page')
 
-    expect(mockExtractConfigFromVue).not.toHaveBeenCalled()
+    expect(mockExtractConfigFromVue).toHaveBeenCalledWith(entryPath, expect.objectContaining({
+      source: source.replace('count = 1', 'count = 2'),
+      compilerContext: compilerCtx,
+    }))
     expect(registerJsonAsset).toHaveBeenCalledWith(expect.objectContaining({
       jsonPath: '/project/src/pages/home/index.json',
       json: config,
@@ -911,12 +940,12 @@ describe('createEntryLoader', () => {
     }
     await loader.call(pluginCtx, entryPath, 'page')
 
-    expect.soft(mockExtractConfigFromVue).toHaveBeenCalledTimes(dirtyReason.startsWith('entry-direct:') ? 1 : 2)
+    expect.soft(mockExtractConfigFromVue).toHaveBeenCalledTimes(2)
     expect.soft(registerJsonAsset.mock.lastCall?.[0].json).toEqual(sourceConfig)
     expect.soft(await extractConfigFromVue(entryPath, { source, compilerContext: compilerCtx })).toEqual(sourceConfig)
   })
 
-  it('reuses cached vue json block config when direct hmr also updates tailwind content', async () => {
+  it('keeps Vue JSON config while direct HMR also updates Tailwind content', async () => {
     const { loader, registerJsonAsset, runtimeState } = createLoader({ isDev: true })
     const pluginCtx = createPluginContext()
     const entryPath = '/project/src/pages/home/index.vue'
@@ -943,14 +972,16 @@ describe('createEntryLoader', () => {
 
     await loader.call(pluginCtx, entryPath, 'page')
 
-    expect(mockExtractConfigFromVue).not.toHaveBeenCalled()
+    expect(mockExtractConfigFromVue).toHaveBeenCalledWith(entryPath, expect.objectContaining({
+      source: source.replace('p-2', 'p-4').replace('count = 1', 'count = 2'),
+    }))
     expect(registerJsonAsset).toHaveBeenCalledWith(expect.objectContaining({
       jsonPath: '/project/src/pages/home/index.json',
       json: config,
     }))
   })
 
-  it('reuses empty vue config result during direct script hmr', async () => {
+  it('keeps empty Vue config while reading the current direct-script HMR input', async () => {
     const { loader, runtimeState } = createLoader({ isDev: true })
     const pluginCtx = createPluginContext()
     const entryPath = '/project/src/pages/home/index.vue'
@@ -974,7 +1005,9 @@ describe('createEntryLoader', () => {
 
     await loader.call(pluginCtx, entryPath, 'page')
 
-    expect(mockExtractConfigFromVue).not.toHaveBeenCalled()
+    expect(mockExtractConfigFromVue).toHaveBeenCalledWith(entryPath, expect.objectContaining({
+      source: source.replace('count = 1', 'count = 2'),
+    }))
   })
 
   it('extracts vue json block config again when the json block changes during hmr', async () => {
@@ -1003,7 +1036,7 @@ describe('createEntryLoader', () => {
     await loader.call(pluginCtx, entryPath, 'page')
 
     expect(mockExtractConfigFromVue).toHaveBeenCalledTimes(1)
-    expect(mockExtractConfigFromVue).toHaveBeenCalledWith(entryPath, { source: nextSource, compilerContext: compilerCtx })
+    expect(mockExtractConfigFromVue).toHaveBeenCalledWith(entryPath, expect.objectContaining({ source: nextSource, compilerContext: compilerCtx }))
     expect(registerJsonAsset).toHaveBeenCalledWith(expect.objectContaining({
       jsonPath: '/project/src/pages/home/index.json',
       json: nextConfig,
@@ -1036,14 +1069,14 @@ describe('createEntryLoader', () => {
     await loader.call(pluginCtx, entryPath, 'page')
 
     expect(mockExtractConfigFromVue).toHaveBeenCalledTimes(1)
-    expect(mockExtractConfigFromVue).toHaveBeenCalledWith(entryPath, { source: nextSource, compilerContext: compilerCtx })
+    expect(mockExtractConfigFromVue).toHaveBeenCalledWith(entryPath, expect.objectContaining({ source: nextSource, compilerContext: compilerCtx }))
     expect(registerJsonAsset).toHaveBeenCalledWith(expect.objectContaining({
       jsonPath: '/project/src/pages/home/index.json',
       json: nextConfig,
     }))
   })
 
-  it('reuses entry-level vue config cache when only the template changes around a json macro', async () => {
+  it('reevaluates a JSON macro when only the surrounding template changes', async () => {
     const { loader, registerJsonAsset, runtimeState } = createLoader({ isDev: true })
     const pluginCtx = createPluginContext()
     const entryPath = '/project/src/pages/home/index.vue'
@@ -1052,7 +1085,7 @@ describe('createEntryLoader', () => {
     const config = { navigationBarTitleText: 'Home' }
 
     readFileMock.mockResolvedValue(source)
-    mockExtractConfigFromVue.mockResolvedValueOnce(config)
+    mockExtractConfigFromVue.mockResolvedValue(config)
 
     await loader.call(pluginCtx, entryPath, 'page')
 
@@ -1067,7 +1100,7 @@ describe('createEntryLoader', () => {
 
     await loader.call(pluginCtx, entryPath, 'page')
 
-    expect(mockExtractConfigFromVue).not.toHaveBeenCalled()
+    expect(mockExtractConfigFromVue).toHaveBeenCalledWith(entryPath, expect.objectContaining({ source: nextSource }))
     expect(registerJsonAsset).toHaveBeenCalledWith(expect.objectContaining({
       jsonPath: '/project/src/pages/home/index.json',
       json: config,
@@ -1097,7 +1130,7 @@ describe('createEntryLoader', () => {
 
     await loader.call(pluginCtx, entryPath, 'page')
 
-    expect(mockExtractConfigFromVue).toHaveBeenCalledWith(entryPath, { source, compilerContext: compilerCtx })
+    expect(mockExtractConfigFromVue).toHaveBeenCalledWith(entryPath, expect.objectContaining({ source, compilerContext: compilerCtx }))
     expect(registerJsonAsset).toHaveBeenCalledWith(expect.objectContaining({
       jsonPath: '/project/src/pages/home/index.json',
       json: nextConfig,

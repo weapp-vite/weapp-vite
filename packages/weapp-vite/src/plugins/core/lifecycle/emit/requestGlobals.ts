@@ -1,6 +1,7 @@
 import type { MiniProgramNetworkDefaults } from '@wevu/web-apis'
 import type { OutputBundle, OutputChunk } from 'rolldown'
 import type { WeappInjectRequestGlobalsTarget } from '../../../../types'
+import type { RequestGlobalsAnalysisOptions } from './requestGlobals/analysis'
 import {
   REQUEST_GLOBAL_ACTUALS_KEY,
   REQUEST_GLOBAL_BUNDLE_HOST_REF,
@@ -38,6 +39,7 @@ import {
   REQUEST_GLOBAL_REQUIRE_DECLARATOR_RE,
   REQUEST_GLOBAL_RUNTIME_CHUNK_FILE_BASENAME,
 } from './constants'
+import { getRequestGlobalsContentFacts } from './requestGlobals/analysis'
 import { collectTopLevelDeclaredIdentifiers } from './requestGlobals/bindings'
 import { wouldCollapseSupportCreateCycle } from './requestGlobals/chunkGraph'
 import { findRequestGlobalsInstaller } from './requestGlobals/installer'
@@ -51,9 +53,11 @@ function resolveChunkRequestGlobalsTargets(
   code: string,
   targets: WeappInjectRequestGlobalsTarget[],
   mode: 'auto' | 'explicit',
+  analysis?: RequestGlobalsAnalysisOptions,
+  filename = '',
 ) {
   return mode === 'auto'
-    ? resolveAutoRequestGlobalsTargets(code, targets)
+    ? resolveAutoRequestGlobalsTargets(code, targets, getRequestGlobalsContentFacts(code, filename, analysis)?.usage)
     : targets
 }
 
@@ -65,11 +69,12 @@ function resolvePreludeRequestGlobalsTargets(
   return mode === 'auto' ? targets : resolveChunkRequestGlobalsTargets(code, targets, mode)
 }
 
-export function resolveRequestGlobalsInstallerName(code: string) {
-  return findRequestGlobalsInstaller(code)
+export function resolveRequestGlobalsInstallerName(code: string, analysis?: RequestGlobalsAnalysisOptions, filename = '') {
+  const facts = getRequestGlobalsContentFacts(code, filename, analysis)
+  return facts ? facts.installerName : findRequestGlobalsInstaller(code)
 }
 
-export function resolveRequestGlobalsExportName(code: string, installerName = resolveRequestGlobalsInstallerName(code)) {
+export function resolveRequestGlobalsExportName(code: string, installerName = resolveRequestGlobalsInstallerName(code), analysis?: RequestGlobalsAnalysisOptions, filename = '') {
   if (!installerName) {
     return null
   }
@@ -80,6 +85,11 @@ export function resolveRequestGlobalsExportName(code: string, installerName = re
     if (candidateExportName && returnedIdentifier === installerName) {
       return candidateExportName
     }
+  }
+
+  const facts = getRequestGlobalsContentFacts(code, filename, analysis)
+  if (facts) {
+    return facts.exports.find(([local]) => local === installerName)?.[1] ?? null
   }
 
   try {
@@ -146,6 +156,7 @@ export function injectRequestGlobalsBundleRuntime(
   targets: WeappInjectRequestGlobalsTarget[],
   mode: 'auto' | 'explicit',
   networkDefaults?: MiniProgramNetworkDefaults,
+  analysis?: RequestGlobalsAnalysisOptions,
 ) {
   const installerChunks = new Map<string, string>()
   if (targets.length === 0) {
@@ -156,8 +167,8 @@ export function injectRequestGlobalsBundleRuntime(
       continue
     }
     const chunk = output as OutputChunk
-    const installerName = resolveRequestGlobalsInstallerName(chunk.code)
-    const exportName = resolveRequestGlobalsExportName(chunk.code, installerName)
+    const installerName = resolveRequestGlobalsInstallerName(chunk.code, analysis, chunk.fileName)
+    const exportName = resolveRequestGlobalsExportName(chunk.code, installerName, analysis, chunk.fileName)
     if (!installerName) {
       continue
     }
@@ -168,7 +179,7 @@ export function injectRequestGlobalsBundleRuntime(
     if (chunk.code.includes(REQUEST_GLOBAL_BUNDLE_MARKER)) {
       continue
     }
-    const chunkTargets = resolveChunkRequestGlobalsTargets(chunk.code, targets, mode)
+    const chunkTargets = resolveChunkRequestGlobalsTargets(chunk.code, targets, mode, analysis, chunk.fileName)
     if (chunkTargets.length === 0) {
       continue
     }
@@ -177,7 +188,7 @@ export function injectRequestGlobalsBundleRuntime(
     if (bindingTargets.length === 0) {
       continue
     }
-    const topLevelDeclaredIdentifiers = collectTopLevelDeclaredIdentifiers(chunk.code)
+    const topLevelDeclaredIdentifiers = new Set(getRequestGlobalsContentFacts(chunk.code, chunk.fileName, analysis)?.declaredIdentifiers ?? collectTopLevelDeclaredIdentifiers(chunk.code))
     const passiveBindingTargets = bindingTargets.filter(target => !topLevelDeclaredIdentifiers.has(target))
     const passiveBindingsCode = createRequestGlobalsPassiveBindingsCode(chunkTargets, passiveBindingTargets)
     bundlePassiveBindingTargets.set(chunk, new Set(passiveBindingTargets))
@@ -207,6 +218,7 @@ export function injectRequestGlobalsPassiveBindings(
   targets: WeappInjectRequestGlobalsTarget[],
   mode: 'auto' | 'explicit',
   entriesMap: Map<string, { type?: string } | undefined> | undefined,
+  analysis?: RequestGlobalsAnalysisOptions,
 ) {
   if (targets.length === 0) {
     return
@@ -231,12 +243,12 @@ export function injectRequestGlobalsPassiveBindings(
     if (entryType === 'page' || entryType === 'component' || entryType === 'app') {
       continue
     }
-    const chunkTargets = resolveChunkRequestGlobalsTargets(chunk.code, targets, mode)
+    const chunkTargets = resolveChunkRequestGlobalsTargets(chunk.code, targets, mode, analysis, chunk.fileName)
     if (chunkTargets.length === 0) {
       continue
     }
     const bindingTargets = resolveRequestGlobalsBindingTargets(chunkTargets)
-    const declaredBindings = collectTopLevelDeclaredIdentifiers(chunk.code)
+    const declaredBindings = new Set(getRequestGlobalsContentFacts(chunk.code, chunk.fileName, analysis)?.declaredIdentifiers ?? collectTopLevelDeclaredIdentifiers(chunk.code))
     const passiveBindingsCode = createRequestGlobalsPassiveBindingsCode(chunkTargets, bindingTargets.filter(target => !declaredBindings.has(target)))
     if (!passiveBindingsCode) {
       continue
@@ -252,6 +264,7 @@ export function injectRequestGlobalsLocalBindings(
   mode: 'auto' | 'explicit',
   entriesMap: Map<string, { type?: string } | undefined> | undefined,
   networkDefaults?: MiniProgramNetworkDefaults,
+  analysis?: RequestGlobalsAnalysisOptions,
 ) {
   if (targets.length === 0) {
     return
@@ -269,7 +282,7 @@ export function injectRequestGlobalsLocalBindings(
     if (chunk.code.includes(REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER)) {
       continue
     }
-    const chunkTargets = resolveChunkRequestGlobalsTargets(chunk.code, targets, mode)
+    const chunkTargets = resolveChunkRequestGlobalsTargets(chunk.code, targets, mode, analysis, chunk.fileName)
     if (chunkTargets.length === 0) {
       continue
     }
@@ -277,10 +290,10 @@ export function injectRequestGlobalsLocalBindings(
     if (bindingTargets.length === 0) {
       continue
     }
-    const declaredBindings = collectTopLevelDeclaredIdentifiers(chunk.code)
+    const declaredBindings = new Set(getRequestGlobalsContentFacts(chunk.code, chunk.fileName, analysis)?.declaredIdentifiers ?? collectTopLevelDeclaredIdentifiers(chunk.code))
     const generatedBindings = bundlePassiveBindingTargets.get(chunk)
     const localBindingTargets = bindingTargets.filter(target => !declaredBindings.has(target) || generatedBindings?.has(target))
-    const inlineInstallerName = resolveRequestGlobalsInstallerName(chunk.code)
+    const inlineInstallerName = resolveRequestGlobalsInstallerName(chunk.code, analysis, chunk.fileName)
     const firstRequireMatch = chunk.code.matchAll(REQUEST_GLOBAL_REQUIRE_DECLARATOR_RE).next().value
     let requireImportLiteral: string | null = null
     let exportName: string | undefined
@@ -340,7 +353,7 @@ export function injectRequestGlobalsLocalBindings(
   }
 }
 
-export function resolveRequestGlobalsInstallerImport(chunk: OutputChunk, installerChunks: Map<string, string>) {
+export function resolveRequestGlobalsInstallerImport(chunk: OutputChunk, installerChunks: Map<string, string>, analysis?: RequestGlobalsAnalysisOptions) {
   for (const requireMatch of chunk.code.matchAll(REQUEST_GLOBAL_REQUIRE_DECLARATOR_RE)) {
     const importee = requireMatch[3] ?? requireMatch[4] ?? requireMatch[5]
     if (!importee) {
@@ -356,6 +369,18 @@ export function resolveRequestGlobalsInstallerImport(chunk: OutputChunk, install
       exportName,
       installerChunkFileName,
     }
+  }
+
+  const facts = getRequestGlobalsContentFacts(chunk.code, chunk.fileName, analysis)
+  if (facts) {
+    for (const item of facts.staticImports) {
+      const installerChunkFileName = normalizeRelativeChunkImport(chunk.fileName, item.source)
+      const exportName = installerChunks.get(installerChunkFileName)
+      if (exportName) {
+        return { exportName, installerChunkFileName }
+      }
+    }
+    return null
   }
 
   try {
@@ -820,6 +845,7 @@ export function createRequestGlobalsPreludeCode(
   targets: WeappInjectRequestGlobalsTarget[],
   mode: 'auto' | 'explicit',
   networkDefaults?: MiniProgramNetworkDefaults,
+  analysis?: RequestGlobalsAnalysisOptions,
 ) {
   const chunkTargets = resolvePreludeRequestGlobalsTargets(chunk.code, targets, mode)
   if (chunkTargets.length === 0 || chunk.code.includes(REQUEST_GLOBAL_PRELUDE_MARKER)) {
@@ -830,15 +856,15 @@ export function createRequestGlobalsPreludeCode(
     return undefined
   }
 
-  const installerName = resolveRequestGlobalsInstallerName(chunk.code)
-  const exportName = resolveRequestGlobalsExportName(chunk.code, installerName)
+  const installerName = resolveRequestGlobalsInstallerName(chunk.code, analysis, chunk.fileName)
+  const exportName = resolveRequestGlobalsExportName(chunk.code, installerName, analysis, chunk.fileName)
   let installerHostCode: string | undefined
 
   if (installerName && exportName) {
     installerHostCode = `${installerName}(${createRequestGlobalsInstallerOptionsCode(chunkTargets, networkDefaults)}) || globalThis`
   }
   else {
-    const installerImport = resolveRequestGlobalsInstallerImport(chunk, installerChunks)
+    const installerImport = resolveRequestGlobalsInstallerImport(chunk, installerChunks, analysis)
     if (!installerImport?.exportName || !installerImport.installerChunkFileName) {
       return undefined
     }
@@ -867,6 +893,7 @@ export function createRequestGlobalsPreludeAssetCode(
   targets: WeappInjectRequestGlobalsTarget[],
   mode: 'auto' | 'explicit',
   networkDefaults?: MiniProgramNetworkDefaults,
+  analysis?: RequestGlobalsAnalysisOptions,
 ) {
   const chunkTargets = resolvePreludeRequestGlobalsTargets(chunk.code, targets, mode)
   if (chunkTargets.length === 0) {
@@ -877,7 +904,7 @@ export function createRequestGlobalsPreludeAssetCode(
     return undefined
   }
 
-  const installerImport = resolveRequestGlobalsInstallerImport(chunk, installerChunks)
+  const installerImport = resolveRequestGlobalsInstallerImport(chunk, installerChunks, analysis)
   let installerChunkFileName = installerImport?.installerChunkFileName
   let exportName = installerImport?.exportName
   if (!installerChunkFileName || !exportName) {

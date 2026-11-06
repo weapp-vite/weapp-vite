@@ -6,12 +6,13 @@ import path from 'node:path'
 import { expect, it, vi } from 'vitest'
 import logger from '../../../../logger'
 import { compilerSourceId } from '../../../compilerPlugin/hmr'
+import { UniAppCompatibilityTransformError } from '../../../uniApp'
 import { setCompilerSourceSnapshot } from '../../../utils/sourceSnapshot'
 import { createScriptSetupAnalyzer } from './scriptSetupAnalysis'
 import { applyScriptSetupUsingComponents } from './template'
 
 const resolveUsingComponentReference = vi.hoisted(() => vi.fn(async (_plugin: unknown, _config: unknown, _cache: unknown, source: string) => ({
-  from: `/components/${source.includes('Alternate') ? 'alternate' : 'original'}`,
+  from: `/components/${source.includes('Active') ? 'active' : source.includes('Hidden') ? 'hidden' : source.includes('Alternate') ? 'alternate' : 'original'}`,
 })))
 vi.mock('../../../vue/transform/usingComponentResolver', () => ({ resolveUsingComponentReference }))
 vi.mock('../../../../logger', () => ({ default: { warn: vi.fn() } }))
@@ -69,6 +70,53 @@ it('reanalyzes resolved external blocks while preserving every src lookup and mi
     expect(logger.warn).toHaveBeenCalledTimes(2)
     snapshots.set(templateId, '<DemoCard />')
     expect(await apply()).toEqual({ DemoCard: '/components/original' })
+  }
+  finally {
+    await rm(temporaryRoot, { recursive: true, force: true })
+  }
+})
+
+it('prepares external template and script blocks by declaration without changing frozen raw inputs', async () => {
+  const temporaryRoot = await realpath(await mkdtemp(path.join(os.tmpdir(), 'script-setup-uni-src-')))
+  try {
+    const vueEntryPath = compilerSourceId(path.join(temporaryRoot, 'index.vue'))
+    const templateId = compilerSourceId(path.join(temporaryRoot, 'template.ts'))
+    const scriptId = compilerSourceId(path.join(temporaryRoot, 'setup.html'))
+    const template = (condition: string) => `<Active />\n<!-- #${condition} MP-WEIXIN -->\n<Hidden />\n<!-- #endif -->`
+    const script = 'import Active from "./Active.vue"\nimport Hidden from "./Hidden.vue"'
+    const snapshots = new Map<string, string | null>([[templateId, template('ifndef')], [scriptId, script]])
+    const configService = {
+      absoluteSrcRoot: temporaryRoot,
+      platform: 'weapp',
+      isDev: true,
+      weappViteConfig: { uniApp: { include: [] } },
+    } as CompilerContext['configService']
+    setCompilerSourceSnapshot(configService, snapshots)
+    const scriptSetupAnalyzer = createScriptSetupAnalyzer()
+    const source = '<template src="./template.ts"></template><script setup src="./setup.html"></script>'
+    const apply = async () => {
+      const json: { usingComponents?: Record<string, string> } = {}
+      await applyScriptSetupUsingComponents({
+        pluginCtx: { resolve: async (id: string) => ({ id: path.join(temporaryRoot, id) }) } as unknown as PluginContext,
+        vueEntryPath,
+        source,
+        templatePath: '',
+        json,
+        configService,
+        scriptSetupAnalyzer,
+        reExportResolutionCache: new Map(),
+      })
+      return json.usingComponents
+    }
+    expect(await apply()).toEqual({ Active: '/components/active' })
+    expect(snapshots.get(templateId)).toBe(template('ifndef'))
+    expect(snapshots.get(scriptId)).toBe(script)
+    snapshots.set(templateId, template('ifdef'))
+    expect(await apply()).toEqual({ Active: '/components/active', Hidden: '/components/hidden' })
+    snapshots.set(templateId, template('ifndef'))
+    expect(await apply()).toEqual({ Active: '/components/active' })
+    snapshots.set(scriptId, 'const = 1')
+    await expect(apply()).rejects.toBeInstanceOf(UniAppCompatibilityTransformError)
   }
   finally {
     await rm(temporaryRoot, { recursive: true, force: true })

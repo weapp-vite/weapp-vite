@@ -8,6 +8,7 @@ import { createServer } from 'vite'
 import { expect, it, vi } from 'vitest'
 import { logger as buildLogger } from '../context/shared'
 import { getHmrRuntimeSession } from '../runtime/hmrRuntimeSession'
+import { createTargetPublicationGate } from './hmrFallback/publicationGate'
 import { weapp } from './index'
 
 // 模拟具有增量能力的底层宿主，保留 stateful 交接覆盖；真实微信启动准入另测。
@@ -38,8 +39,7 @@ async function fixture() {
   const buildErrors = vi.spyOn(buildLogger, 'error')
   let failClassicPublication = false
   let publications = 0
-  let publicationGate: Promise<void> | undefined
-  let publicationStarted = false
+  let publicationGate: ReturnType<typeof createTargetPublicationGate> | undefined
   let releasePublications = () => {}
   for (const [file, content] of Object.entries({
     'package.json': '{"name":"classic-failure-fixture","type":"module"}',
@@ -89,12 +89,16 @@ async function fixture() {
       phasesAtFailure.push(getHmrRuntimeSession(api.ctx).phase)
       throw failure
     },
-    async writeBundle() {
-      if (publicationGate) {
-        publicationStarted = true
-        await publicationGate
+    async writeBundle(_options, bundle) {
+      const complete = () => {
+        publications += 1
       }
-      publications += 1
+      if (publicationGate) {
+        await publicationGate.publish(this.environment.mode, bundle, complete)
+      }
+      else {
+        complete()
+      }
     },
   }
   return {
@@ -105,15 +109,14 @@ async function fixture() {
     failure,
     phasesAtFailure,
     publications: () => publications,
-    holdPublications() {
-      publicationStarted = false
-      publicationGate = new Promise<void>((resolve) => {
-        releasePublications = () => {
-          publicationGate = undefined
-          resolve()
-        }
-      })
-      return { started: () => publicationStarted, release: () => releasePublications() }
+    holdPublications(marker: string) {
+      const gate = createTargetPublicationGate(marker)
+      publicationGate = gate
+      releasePublications = () => {
+        publicationGate = undefined
+        gate.release()
+      }
+      return { started: gate.started, completed: gate.completed, release: () => releasePublications() }
     },
     read: (file: string) => readFile(path.join(root, 'dist', file), 'utf8'),
     save: (marker: string) => writeFile(path.join(root, 'src/pages/home/index.js'), `Page({ data: { marker: ${JSON.stringify(marker)} } })`),
@@ -240,14 +243,15 @@ it('keeps ordinary classic startup failures recoverable after the source is corr
     expect(project.hosts).toHaveLength(1)
     expectOriginalFailure(project)
     expect(project.hosts[0]!.watcherCloseCalls()).toBe(0)
-    const publication = project.holdPublications()
-    await project.save('ordinary-classic-recovered')
-    await expect.poll(() => project.read('pages/home/index.js').catch(() => ''), { timeout: 15_000 }).toContain('ordinary-classic-recovered')
+    const recoveredMarker = 'ordinary-classic-recovered'
+    const publication = project.holdPublications(recoveredMarker)
+    await project.save(recoveredMarker)
+    await expect.poll(() => project.read('pages/home/index.js').catch(() => ''), { timeout: 15_000 }).toContain(recoveredMarker)
     // 原生写盘先于 writeBundle 完成，固定此时序后等待完整发布，不能把磁盘可见当成回调已完成。
     await expect.poll(() => publication.started(), { timeout: 15_000 }).toBe(true)
-    expect(project.publications()).toBe(0)
+    expect(publication.completed()).toBe(0)
     publication.release()
-    await expect.poll(() => project.publications(), { timeout: 15_000 }).toBeGreaterThan(0)
+    await expect.poll(() => publication.completed(), { timeout: 15_000 }).toBeGreaterThan(0)
     expect(server.config.experimental.bundledDev).toBe(false)
     await server.close()
     expectOwnersClosed(project)

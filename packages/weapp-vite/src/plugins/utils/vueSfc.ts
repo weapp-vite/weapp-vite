@@ -2,8 +2,9 @@ import type { ReadAndParseSfcOptions, ResolveSfcBlockSrcOptions } from 'wevu/com
 import type { CompilerContext } from '../../context'
 import { getSfcCheckMtime, readFile, readAndParseSfc as readSfc } from 'wevu/compiler'
 import { getCompilerHmrHostByConfig } from '../compilerPlugin/hmr'
+import { readVueLikeCompilerInput } from '../vue/transform/sourceInput'
 import { recordSfcBlockSource } from './sfcTemplateDependencies'
-import { compilerSnapshotSourceId, compilerSourceResolutionKey, getCompilerSourceResolutions, getCompilerSourceSnapshot, readCompilerInput, readCompilerSourceSnapshot } from './sourceSnapshot'
+import { compilerSnapshotSourceId, compilerSourceResolutionKey, getCompilerSourceResolutions, getCompilerSourceSnapshot, readCompilerSourceSnapshot } from './sourceSnapshot'
 
 export {
   preprocessScriptSetupSrc,
@@ -34,9 +35,14 @@ export function createSfcResolveSrcOptions(
   const snapshot = getCompilerSourceSnapshot(configService)
   const host = getCompilerHmrHostByConfig(configService)
   const options: ResolveSfcBlockSrcOptions = {
-    ...(snapshot || host?.onDependencyChange
+    ...(snapshot || host?.onDependencyChange || (configService.platform === 'weapp' && configService.weappViteConfig?.uniApp)
       ? {
-          readFile: (id: string, options?: { checkMtime?: boolean }) => readCompilerInput(configService, id, file => readFile(file, options)),
+          readFile: async (id, options) => (await readVueLikeCompilerInput(
+            configService,
+            id,
+            file => readFile(file, options && { checkMtime: options.checkMtime }),
+            options?.blockType,
+          )).source,
         }
       : {}),
     resolveId: async (source, importer) => {
@@ -45,19 +51,19 @@ export function createSfcResolveSrcOptions(
       if (key && resolutions?.has(key)) {
         const resolved = resolutions.get(key)
         if (importer) {
-          recordSfcBlockSource(options, source, importer, resolved)
+          recordSfcBlockSource(options, source, importer, resolved, configService)
         }
         return resolved
       }
       if (typeof pluginCtx.resolve !== 'function') {
         if (importer) {
-          recordSfcBlockSource(options, source, importer)
+          recordSfcBlockSource(options, source, importer, undefined, configService)
         }
         return undefined
       }
       const resolved = await pluginCtx.resolve(source, importer)
       if (importer) {
-        recordSfcBlockSource(options, source, importer, resolved?.id)
+        recordSfcBlockSource(options, source, importer, resolved?.id, configService)
       }
       return resolved?.id
     },

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const collectScriptSetupImportsFromCodeMock = vi.hoisted(() => vi.fn(() => []))
+const analyzeScriptSetupImportsFromCodeMock = vi.hoisted(() => vi.fn<typeof import('../../../../ast').analyzeScriptSetupImportsFromCode>(() => ({ status: 'complete', imports: [] })))
 const readAndParseSfcMock = vi.hoisted(() => vi.fn())
 const resolveUsingComponentReferenceMock = vi.hoisted(() => vi.fn())
 const createReadAndParseSfcOptionsMock = vi.hoisted(() => vi.fn(() => ({
@@ -15,7 +15,7 @@ vi.mock('../../../../ast', async () => {
   const actual = await vi.importActual<typeof import('../../../../ast')>('../../../../ast')
   return {
     ...actual,
-    collectScriptSetupImportsFromCode: collectScriptSetupImportsFromCodeMock,
+    analyzeScriptSetupImportsFromCode: analyzeScriptSetupImportsFromCodeMock,
   }
 })
 
@@ -78,7 +78,7 @@ import TButton from './TButton'
       reExportResolutionCache: new Map(),
     })
 
-    expect(collectScriptSetupImportsFromCodeMock).toHaveBeenCalledWith(
+    expect(analyzeScriptSetupImportsFromCodeMock).toHaveBeenCalledWith(
       expect.stringContaining('import TButton'),
       new Set(['TButton']),
       {
@@ -113,7 +113,7 @@ import TButton from './TButton'
     })
 
     expect(readAndParseSfcMock).not.toHaveBeenCalled()
-    expect(collectScriptSetupImportsFromCodeMock).not.toHaveBeenCalled()
+    expect(analyzeScriptSetupImportsFromCodeMock).not.toHaveBeenCalled()
   })
 
   it('resolves script setup usingComponents concurrently and applies them in import order', async () => {
@@ -142,7 +142,7 @@ import FastCard from './FastCard'
       },
       errors: [],
     })
-    collectScriptSetupImportsFromCodeMock.mockReturnValue([
+    analyzeScriptSetupImportsFromCodeMock.mockReturnValue({ status: 'complete', imports: [
       {
         localName: 'SlowCard',
         importSource: './SlowCard',
@@ -153,7 +153,7 @@ import FastCard from './FastCard'
         importSource: './FastCard',
         kind: 'default',
       },
-    ])
+    ] })
     resolveUsingComponentReferenceMock.mockImplementation(async (_ctx, _configService, _cache, importSource: string) => {
       if (!slowReleased) {
         startedBeforeRelease.push(importSource)

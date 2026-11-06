@@ -32,7 +32,7 @@ describe('SFC block reader error contract', () => {
     })
 
     await expect(resolveSfcBlockSrc(descriptor, filename, { readFile, checkMtime: false })).rejects.toBe(failure)
-    expect(readFile).toHaveBeenCalledExactlyOnceWith(file, { checkMtime: false })
+    expect(readFile).toHaveBeenCalledExactlyOnceWith(file, { checkMtime: false, blockType: 'template' })
   })
 
   it('preserves a synchronous custom reader throw without adding file context', async () => {
@@ -44,6 +44,25 @@ describe('SFC block reader error contract', () => {
         throw failure
       },
     })).rejects.toBe(failure)
+  })
+
+  it('passes the declared block type independently of the external file extension', async () => {
+    const { filename } = await fixture()
+    const { descriptor, errors } = parseVueSfc(`<template src="./template.ts"></template>
+<script src="./script.html"></script>
+<script setup src="./setup.txt"></script>
+<style src="./style.js"></style>`, { filename })
+    expect(errors).toEqual([])
+    const readFile = vi.fn(async () => '')
+
+    await resolveSfcBlockSrc(descriptor, filename, { readFile, checkMtime: false })
+
+    expect(readFile.mock.calls).toEqual([
+      [path.join(path.dirname(filename), 'template.ts'), { checkMtime: false, blockType: 'template' }],
+      [path.join(path.dirname(filename), 'script.html'), { checkMtime: false, blockType: 'script' }],
+      [path.join(path.dirname(filename), 'setup.txt'), { checkMtime: false, blockType: 'script' }],
+      [path.join(path.dirname(filename), 'style.js'), { checkMtime: false, blockType: 'style' }],
+    ])
   })
 
   it('retains Chinese file context and the original cause for a missing default-reader file', async () => {

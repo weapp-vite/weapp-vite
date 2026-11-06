@@ -1,6 +1,7 @@
 import path from 'node:path'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { DEFAULT_MP_PLATFORM } from '../../../../platform'
+import { UniAppCompatibilityTransformError } from '../../../uniApp'
 import { emitFallbackPageAssets, emitResolvedFallbackPageEntryAssets } from './emitFallbackPage'
 
 const DEFAULT_PLATFORM_ASSET_OPTIONS = {
@@ -306,5 +307,26 @@ describe('emitFallbackPage helpers', () => {
 
     expect(resolveVueBundleAssetContextMock).not.toHaveBeenCalled()
     expect(collectFallbackPageEntryIdsMock).not.toHaveBeenCalled()
+  })
+
+  it('fails publication when fallback compatibility input cannot be prepared', async () => {
+    const state = {
+      ctx: { configService: { platform: DEFAULT_MP_PLATFORM }, scanService: {} },
+      pluginCtx: {},
+      compilationCache: new Map(),
+      reExportResolutionCache: new Map(),
+      classStyleRuntimeWarned: { value: false },
+    } as any
+    collectFallbackPageEntryIdsMock.mockResolvedValue(['/pages/index'])
+    resolveFallbackPageEmitStateMock.mockResolvedValue({
+      relativeBase: 'pages/index/index',
+      entryFilePath: '/project/src/pages/index/index.vue',
+    })
+    const failure = new UniAppCompatibilityTransformError('invalid compatibility input', new Error('parse'))
+    loadFallbackPageEntryCompilationMock.mockRejectedValue(failure)
+
+    await expect(emitFallbackPageAssets({}, state)).rejects.toBe(failure)
+    expect(loggerErrorMock).not.toHaveBeenCalled()
+    expect(emitFallbackPageBundleAssetsMock).not.toHaveBeenCalled()
   })
 })

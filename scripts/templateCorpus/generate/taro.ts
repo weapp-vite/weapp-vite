@@ -1,9 +1,13 @@
 import type { ControlledProject, FrameworkRelease, FrameworkTarget } from './types'
-import { taroHarmonyConfig, taroHarmonyHostFiles, taroHarmonyPrepareHost, taroHarmonyVerifyHost } from './taroHarmony'
+import assert from 'node:assert/strict'
+import { taroHarmonyCompiler, taroHarmonyConfig, taroHarmonyHostFiles, taroHarmonyPlugin, taroHarmonyPrepareHost, taroHarmonyRunner, taroHarmonyVerifyHost } from './taroHarmony'
 import { taroLegacyBabel, taroLegacyDependencies, taroQuickappCompile, taroQuickappWebpack } from './taroLegacy'
 
 export function createTaroProject(release: FrameworkRelease, target: FrameworkTarget): ControlledProject {
   const version = release.version
+  if (target.target === 'harmony-jsui') {
+    assert.equal(version, '4.3.2', 'Harmony JSUI compatibility requires the frozen Taro 4.3.2 release.')
+  }
   const legacy = version.startsWith('2.')
   const buildTarget = target.target === 'harmony-jsui' ? 'harmony' : target.target
   const platformPlugin = `@tarojs/plugin-platform-${target.target === 'harmony-jsui' ? 'harmony-ets' : target.target}`
@@ -39,7 +43,9 @@ export function createTaroProject(release: FrameworkRelease, target: FrameworkTa
     environment: legacy ? { NODE_OPTIONS: '--openssl-legacy-provider' } : {},
     command: ['node', 'compile.cjs', '{mode}', buildTarget, '{output}'],
     files: {
-      ...(target.target === 'harmony-jsui' ? taroHarmonyHostFiles : {}),
+      ...(target.target === 'harmony-jsui'
+        ? { ...taroHarmonyHostFiles, 'harmony-jsui-runner.cjs': taroHarmonyRunner, 'harmony-jsui-plugin.cjs': taroHarmonyPlugin }
+        : {}),
       ...(legacy ? {} : { 'babel.config.js': `module.exports = { presets: [['taro', { framework: 'react', ts: true }]] }\n` }),
       'config/index.js': `module.exports = ${legacy ? '() => (' : ''}{
   projectName: 'template-corpus',
@@ -50,8 +56,8 @@ export function createTaroProject(release: FrameworkRelease, target: FrameworkTa
   outputRoot: process.env.CORPUS_OUTPUT,
   framework: 'react',
   ${target.target === 'harmony-jsui' ? taroHarmonyConfig : ''}
-  ${legacy ? taroLegacyBabel : 'compiler: \'webpack5\','}
-  plugins: ${JSON.stringify(legacy ? ['@tarojs/plugin-terser'] : ['@tarojs/plugin-framework-react', target.target === 'harmony-jsui' ? [platformPlugin, { disableArkTS: true }] : platformPlugin])},
+  ${legacy ? taroLegacyBabel : target.target === 'harmony-jsui' ? taroHarmonyCompiler : 'compiler: \'webpack5\','}
+  plugins: [${JSON.stringify(legacy ? ['@tarojs/plugin-terser'] : ['@tarojs/plugin-framework-react', target.target === 'harmony-jsui' ? [platformPlugin, { disableArkTS: true }] : platformPlugin]).slice(1, -1)}${target.target === 'harmony-jsui' ? ', require.resolve(\'../harmony-jsui-plugin.cjs\')' : ''}],
   mini: { ${legacy && target.target === 'quickapp' ? `${taroQuickappWebpack}\n    ` : ''}postcss: { pxtransform: { enable: false }, cssModules: { enable: false } } },
 }${legacy ? ')' : ''}
 `,

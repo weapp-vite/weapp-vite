@@ -463,10 +463,11 @@ function normalizeResolvedRequestGlobalTargets(
   return allowedTargets.filter(target => resolvedSet.has(target))
 }
 
-interface RequestGlobalsUsageAnalysis {
+export interface RequestGlobalsUsageAnalysis {
   hasWebSocketUsageHint: boolean
-  importedTargets: WeappInjectRequestGlobalsTarget[]
-  referencedTargets: WeappInjectRequestGlobalsTarget[]
+  importedTargets: readonly WeappInjectRequestGlobalsTarget[]
+  referencedTargets: readonly WeappInjectRequestGlobalsTarget[]
+  referencedIdentifiers?: readonly string[]
 }
 
 export function mayContainRequestGlobalsUsageByText(
@@ -545,48 +546,34 @@ function resolveFallbackImportedRequestGlobalsSpecifiers(code: string) {
   return matchedSpecifiers
 }
 
-function analyzeRequestGlobalsUsage(
+/** 共享作用域遍历只收集内容事实，允许调用方复用解析结果。 */
+export function createRequestGlobalsUsageCollector(
   code: string,
   allowedTargets: readonly WeappInjectRequestGlobalsTarget[],
-): RequestGlobalsUsageAnalysis {
-  const emptyAnalysis: RequestGlobalsUsageAnalysis = {
-    hasWebSocketUsageHint: false,
-    importedTargets: [],
-    referencedTargets: [],
-  }
-  if (allowedTargets.length === 0) {
-    return emptyAnalysis
-  }
-
-  const usageSource = extractRequestGlobalsUsageSource(code)
+  collectAllReferences = false,
+) {
+  const source = extractRequestGlobalsUsageSource(code)
   const hasWebSocketUsageHint = allowedTargets.includes('WebSocket') && WEBSOCKET_USAGE_HINT_RE.test(code)
-  if (!usageSource.trim()) {
-    return {
-      ...emptyAnalysis,
-      hasWebSocketUsageHint,
-    }
-  }
-
   const allowedTargetSet = new Set(allowedTargets)
-  const mayHaveReferencedTargets = allowedTargets.some(target => new RegExp(`\\b${target}\\b`, 'u').test(usageSource))
-  const mayHaveImportedTargets = REQUEST_GLOBAL_KNOWN_DEPENDENCY_LITERALS.some(specifier => code.includes(specifier))
-  if (!mayHaveReferencedTargets && !mayHaveImportedTargets) {
-    return {
-      ...emptyAnalysis,
-      hasWebSocketUsageHint,
-    }
-  }
   const referencedTargets = new Set<WeappInjectRequestGlobalsTarget>()
+  const referencedIdentifiers = new Set<string>()
   const matchedSpecifiers = new Set<string>()
   const addSpecifier = (specifier: unknown) => {
     if (typeof specifier === 'string' && specifier.length > 0) {
       matchedSpecifiers.add(specifier)
     }
   }
-  try {
-    const ast = parseJsLike(usageSource)
-
-    traverse(ast as any, {
+  return {
+    source,
+    analysis() {
+      return {
+        hasWebSocketUsageHint,
+        importedTargets: resolveImportedRequestGlobalsTargetsFromSpecifiers(matchedSpecifiers, allowedTargets),
+        referencedTargets: [...referencedTargets],
+        ...(collectAllReferences ? { referencedIdentifiers: [...referencedIdentifiers] } : {}),
+      }
+    },
+    visitor: {
       ImportDeclaration(path: any) {
         addSpecifier(path.node?.source?.value)
       },
@@ -610,7 +597,7 @@ function analyzeRequestGlobalsUsage(
       },
       Identifier(path: any) {
         const identifierName = path.node?.name
-        if (!identifierName || !allowedTargetSet.has(identifierName)) {
+        if (!identifierName || (!collectAllReferences && !allowedTargetSet.has(identifierName))) {
           return
         }
         if (typeof path.isReferencedIdentifier === 'function' && !path.isReferencedIdentifier()) {
@@ -619,15 +606,49 @@ function analyzeRequestGlobalsUsage(
         if (path.scope?.hasBinding?.(identifierName)) {
           return
         }
-        referencedTargets.add(identifierName)
+        referencedIdentifiers.add(identifierName)
+        if (allowedTargetSet.has(identifierName)) {
+          referencedTargets.add(identifierName)
+        }
       },
-    })
+    },
+  }
+}
 
+function analyzeRequestGlobalsUsage(
+  code: string,
+  allowedTargets: readonly WeappInjectRequestGlobalsTarget[],
+): RequestGlobalsUsageAnalysis {
+  const emptyAnalysis: RequestGlobalsUsageAnalysis = {
+    hasWebSocketUsageHint: false,
+    importedTargets: [],
+    referencedTargets: [],
+  }
+  if (allowedTargets.length === 0) {
+    return emptyAnalysis
+  }
+
+  const usageSource = extractRequestGlobalsUsageSource(code)
+  const hasWebSocketUsageHint = allowedTargets.includes('WebSocket') && WEBSOCKET_USAGE_HINT_RE.test(code)
+  if (!usageSource.trim()) {
     return {
+      ...emptyAnalysis,
       hasWebSocketUsageHint,
-      importedTargets: resolveImportedRequestGlobalsTargetsFromSpecifiers(matchedSpecifiers, allowedTargets),
-      referencedTargets: [...referencedTargets],
     }
+  }
+
+  const mayHaveReferencedTargets = allowedTargets.some(target => new RegExp(`\\b${target}\\b`, 'u').test(usageSource))
+  const mayHaveImportedTargets = REQUEST_GLOBAL_KNOWN_DEPENDENCY_LITERALS.some(specifier => code.includes(specifier))
+  if (!mayHaveReferencedTargets && !mayHaveImportedTargets) {
+    return {
+      ...emptyAnalysis,
+      hasWebSocketUsageHint,
+    }
+  }
+  const collector = createRequestGlobalsUsageCollector(code, allowedTargets)
+  try {
+    traverse(parseJsLike(usageSource) as any, collector.visitor)
+    return collector.analysis()
   }
   catch {
     return {
@@ -674,6 +695,7 @@ export function resolveManualRequestGlobalsTargets(code: string): WeappInjectReq
 export function resolveAutoRequestGlobalsTargets(
   code: string,
   allowedTargets: readonly WeappInjectRequestGlobalsTarget[],
+  usageAnalysis?: RequestGlobalsUsageAnalysis,
 ): WeappInjectRequestGlobalsTarget[] {
   if (!mayContainRequestGlobalsUsageByText(code, allowedTargets)) {
     return []
@@ -682,7 +704,13 @@ export function resolveAutoRequestGlobalsTargets(
     hasWebSocketUsageHint,
     importedTargets,
     referencedTargets,
-  } = analyzeRequestGlobalsUsage(code, allowedTargets)
+  } = usageAnalysis
+    ? {
+        hasWebSocketUsageHint: allowedTargets.includes('WebSocket') && usageAnalysis.hasWebSocketUsageHint,
+        importedTargets: usageAnalysis.importedTargets.filter(target => allowedTargets.includes(target)),
+        referencedTargets: allowedTargets.filter(target => usageAnalysis.referencedIdentifiers?.includes(target) ?? usageAnalysis.referencedTargets.includes(target)),
+      }
+    : analyzeRequestGlobalsUsage(code, allowedTargets)
   if (referencedTargets.length === 0 && importedTargets.length === 0 && !hasWebSocketUsageHint) {
     return []
   }

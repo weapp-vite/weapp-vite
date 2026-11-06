@@ -10,7 +10,6 @@ import type { ExtendedLibManager } from '../extendedLib'
 import type { JsonEmitFileEntry } from '../jsonEmit'
 import type { AppEntriesCache } from './app'
 import type { ResolvedEntryRecord } from './resolve'
-import { createHash } from 'node:crypto'
 import { performance } from 'node:perf_hooks'
 import { get, isObject, removeExtensionDeep } from '@weapp-core/shared'
 import { fs } from '@weapp-core/shared/fs'
@@ -31,20 +30,17 @@ import { emitScriptlessComponentAsset, resolveScriptlessComponentFileName, SLOT_
 import { shouldEmitScriptlessVueLayoutJs as shouldEmitScriptlessVueLayoutJsFromSource } from '../../../utils/scriptlessVueLayout'
 import { readCompilerInput } from '../../../utils/sourceSnapshot'
 import { resolvePageLayoutPlan } from '../../../vue/transform/pageLayout'
+import { readVueLikeCompilerInput } from '../../../vue/transform/sourceInput'
 import { collectAppEntries } from './app'
 import { materializeVueAutoImportEntries } from './autoImport'
 import { emitEntryOutput, prepareNormalizedEntries } from './emit'
+import { getEntryAnalysisFacts } from './facts'
 import { createNativeLayoutAssetResolver } from './nativeLayoutAssets'
 import { createEntryResolver } from './resolve'
-import { createScriptSetupAnalyzer } from './scriptSetupAnalysis'
 import { applyScriptSetupUsingComponents, scanTemplateEntry } from './template'
 import { addPredictedWatchTargets } from './watch'
 
 const VUE_LIKE_PAGE_ENTRY_RE = /\.(?:vue|jsx|tsx)$/
-const VUE_JSON_BLOCK_RE = /<json\b[^>]*>[\s\S]*?<\/json>/gi
-const VUE_SCRIPT_BLOCK_RE = /<script\b[^>]*>[\s\S]*?<\/script>/gi
-const VUE_JSON_MACRO_HINT_RE = /\bdefine(?:App|Page|Component|Sitemap|Theme)Json\s*\(/
-const NO_VUE_CONFIG_SIGNATURE = 'no-vue-config'
 
 interface EntryLoaderOptions {
   ctx: CompilerContext
@@ -68,36 +64,8 @@ interface EntrySidecarResolution {
   vueEntryPath?: string
 }
 
-interface VueConfigCacheRecord {
-  signature: string
-  config?: Record<string, any>
-}
-
 function hasPageLayoutSourceHint(source: string) {
   return mayContainPageMeta(source) || source.includes('setPageLayout')
-}
-
-function hashText(value: string) {
-  return createHash('sha256')
-    .update(value)
-    .digest('hex')
-    .slice(0, 16)
-}
-
-function collectMatches(source: string, pattern: RegExp) {
-  return source.match(pattern) ?? []
-}
-
-function resolveCacheableVueConfigSignature(source: string) {
-  const jsonBlocks = collectMatches(source, VUE_JSON_BLOCK_RE)
-  const scriptBlocks = VUE_JSON_MACRO_HINT_RE.test(source)
-    ? collectMatches(source, VUE_SCRIPT_BLOCK_RE)
-    : []
-  if (jsonBlocks.length === 0 && scriptBlocks.length === 0) {
-    return NO_VUE_CONFIG_SIGNATURE
-  }
-
-  return hashText([...jsonBlocks, ...scriptBlocks].join('\0'))
 }
 
 function cloneJsonValue<T>(value: T): T {
@@ -160,7 +128,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
   const existsCache = new Map<string, boolean>()
   const pathExistsTtlMs = getPathExistsTtlMs(configService)
   const reExportResolutionCache: ReExportResolutionCache = new Map()
-  const scriptSetupAnalyzer = createScriptSetupAnalyzer()
+  const { scriptSetupAnalyzer, staticVueConfigCache } = getEntryAnalysisFacts(ctx)
   const entryResolver = createEntryResolver(configService, base => path.extname(base) ? undefined : getSelectedAutoRouteSource(ctx, base))
   const appEntriesCache: { current?: AppEntriesCache } = {}
   const appEntryOutputCache: {
@@ -177,7 +145,6 @@ export function createEntryLoader(options: EntryLoaderOptions) {
   const scriptlessVueLayoutDecisionCache = new Map<string, Promise<boolean>>()
   const entrySidecarResolutionCache = new Map<string, EntrySidecarResolution>()
   const entryJsonCache = new Map<string, any>()
-  const vueConfigCache = new Map<string, VueConfigCacheRecord>()
   const staticPageLayoutPlanCache = new Map<string, ResolvedPageLayoutPlan | null>()
   const templateEntryPathCache = new Map<string, string>()
   const styleScannedEntryIds = new Set<string>()
@@ -306,16 +273,16 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     }
 
     // 回退：当不存在 .json 时，尝试从 .vue 的 <json> 块读取配置
-    let vueSource: string | undefined
-    const readVueSource = async () => {
+    let vueInput: Awaited<ReturnType<typeof readVueLikeCompilerInput>> | undefined
+    const readVueInput = async () => {
       if (!vueEntryPath) {
         return undefined
       }
-      if (vueSource !== undefined) {
-        return vueSource
+      if (vueInput !== undefined) {
+        return vueInput
       }
       try {
-        vueSource = await readCompilerInput(configService, vueEntryPath, file => fs.readFile(file, 'utf-8'))
+        vueInput = await readVueLikeCompilerInput(configService, vueEntryPath, file => fs.readFile(file, 'utf-8'))
       }
       catch (error) {
         const missingEntry = error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT'
@@ -323,8 +290,9 @@ export function createEntryLoader(options: EntryLoaderOptions) {
           throw error
         }
       }
-      return vueSource
+      return vueInput
     }
+    const readVueSource = async () => (await readVueInput())?.source
 
     if (!jsonEntry.path) {
       if (vueEntryPath) {
@@ -332,39 +300,13 @@ export function createEntryLoader(options: EntryLoaderOptions) {
         const configFromVue = await (async () => {
           try {
             const source = await readVueSource()
-            const cacheSignature = source === undefined
-              ? undefined
-              : resolveCacheableVueConfigSignature(source)
-            // JSON 宏可能依赖脚本块之外的本地模块。依赖图更新时必须重新执行宏，
-            // 即使当前 SFC 的脚本签名没有变化；普通 <json> 块不受该依赖影响。
-            const macroDependencyChanged = source !== undefined
-              && VUE_JSON_MACRO_HINT_RE.test(source)
-              && ctx.runtimeState.build.hmr.profile.dirtyReasonSummary?.some(reason => reason.startsWith('importer-graph:'))
-            const cachedVueConfig = isJsonStableHmr && cacheSignature && !macroDependencyChanged
-              ? vueConfigCache.get(vueEntryPath)
-              : undefined
-            if (cachedVueConfig && cachedVueConfig.signature === cacheSignature) {
-              return cloneJsonValue(cachedVueConfig.config)
-            }
-            if (isJsonStableHmr && cacheSignature === NO_VUE_CONFIG_SIGNATURE) {
-              vueConfigCache.set(vueEntryPath, {
-                signature: cacheSignature,
-                config: undefined,
-              })
-              return undefined
-            }
             const config = await extractConfigFromVue(vueEntryPath, {
               compilerContext: ctx,
+              staticConfigCache: staticVueConfigCache,
               ...(source === undefined
                 ? { readSource: readVueSource }
                 : { source }),
             })
-            if (cacheSignature) {
-              vueConfigCache.set(vueEntryPath, {
-                signature: cacheSignature,
-                config: cloneJsonValue(config),
-              })
-            }
             // 提取器缓存只保存源码配置，派生字段应写入当前加载独有的副本。
             return cloneJsonValue(config)
           }
@@ -398,9 +340,9 @@ export function createEntryLoader(options: EntryLoaderOptions) {
       ? ctx.autoRoutesService?.getSignature?.()
       : undefined
     const normalizedVueEntryPath = vueEntryPath ? normalizeFsResolvedId(vueEntryPath) : undefined
-    // SFC 的配置、watch 基线和返回给后续 transform 的代码共用本轮物理源码，避免异步期间二次读取到下一次保存。
+    // 元数据消费同一物理输入的预处理视图；watch 基线与后续 transform 继续持有原文。
     if (vueEntryPath) {
-      const source = await readVueSource()
+      const source = (await readVueInput())?.rawSource
       if (id.endsWith('.vue')) {
         entryCodeSource = source
       }
@@ -574,9 +516,8 @@ export function createEntryLoader(options: EntryLoaderOptions) {
 
       // <script setup> 自动 usingComponents：import 后模板使用的组件无需在 <json> 注册
       if (vueEntryPath) {
-        const vueSourceForEntry = type === 'page' || (configService.isDev && hasJsonEntry)
-          ? await readVueSource()
-          : undefined
+        // 配置与签名已读取本轮源码；无 JSON 的组件同样不能再从另一条读取链取下一版字节。
+        const vueSourceForEntry = await readVueSource()
         const scriptSetupStartedAt = performance.now()
         try {
           await applyScriptSetupUsingComponents({
@@ -825,11 +766,9 @@ export function createEntryLoader(options: EntryLoaderOptions) {
   return Object.assign(loadEntry, {
     invalidateResolveCache() {
       entryResolver.invalidate()
-      scriptSetupAnalyzer.clear()
       scriptlessVueLayoutDecisionCache.clear()
       entrySidecarResolutionCache.clear()
       entryJsonCache.clear()
-      vueConfigCache.clear()
       staticPageLayoutPlanCache.clear()
       templateEntryPathCache.clear()
       styleScannedEntryIds.clear()

@@ -2,6 +2,8 @@ import type { Plugin } from 'vite'
 import type { CorePluginState } from '../helpers'
 import { parseSidecarSourceMetadata } from '../../../moduleGraph/protocol'
 import { beginHmrStyleUpdatePlan, clearPendingHmrStyleUpdates } from '../../../runtime/hmrStyleUpdate'
+import { bindEntryChunkLifecycle } from '../../hooks/useLoadEntry/entryChunkLifecycleRegistry'
+import { clearNativeEntryAssetOwners } from '../../utils/nativeEntryAssetOwners'
 import { createGenerateBundleHook, createRenderStartHook } from './emit'
 import { createBuildEndHook } from './end'
 import { createLoadHook, createOptionsHook } from './load'
@@ -19,6 +21,7 @@ export function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
   const buildStart = createBuildStartHook(state)
   let releaseServer: (() => void) | undefined
   let releaseStyleUpdate: ((success?: boolean) => void) | undefined
+  let releaseEntryRegistration: (() => void) | undefined
 
   const releaseStyleGeneration = (success: boolean) => {
     releaseStyleUpdate?.(success)
@@ -43,6 +46,9 @@ export function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
       releaseServer = state.ctx.moduleGraphService.bindDevServer(server)
     },
     async buildStart() {
+      clearNativeEntryAssetOwners(state.ctx, this?.environment)
+      releaseEntryRegistration?.()
+      releaseEntryRegistration = undefined
       releaseStyleGeneration(false)
       releaseStyleUpdate = state.ctx.configService.isDev
         ? beginHmrStyleUpdatePlan(
@@ -52,9 +58,15 @@ export function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
           )
         : undefined
       try {
+        state.entryChunkLifecycle?.beginBuild(state.hmrRootInputIds)
+        releaseEntryRegistration = state.entryChunkLifecycle
+          ? bindEntryChunkLifecycle(this?.environment ?? state.ctx, state.entryChunkLifecycle)
+          : undefined
         return await buildStart.call(this)
       }
       catch (error) {
+        releaseEntryRegistration?.()
+        releaseEntryRegistration = undefined
         releaseStyleGeneration(false)
         throw error
       }
@@ -99,6 +111,9 @@ export function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
       },
     },
     closeBundle() {
+      clearNativeEntryAssetOwners(state.ctx, this?.environment)
+      releaseEntryRegistration?.()
+      releaseEntryRegistration = undefined
       if (state.resolvedConfig?.build?.write === false) {
         releaseStyleGeneration(true)
       }
@@ -108,6 +123,9 @@ export function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
       }
     },
     closeWatcher() {
+      clearNativeEntryAssetOwners(state.ctx, this?.environment)
+      releaseEntryRegistration?.()
+      releaseEntryRegistration = undefined
       releaseStyleGeneration(false)
       clearPendingHmrStyleUpdates(state.ctx.configService)
       releaseScope()

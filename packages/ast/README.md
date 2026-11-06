@@ -63,6 +63,19 @@ const result = collectJsxAutoComponentsFromCode(code, {
 })
 ```
 
+需要区分“没有组件导入”和“解析失败”时，使用带状态的分析结果：
+
+```ts
+import { analyzeScriptSetupImportsFromCode } from '@weapp-vite/ast'
+
+const result = analyzeScriptSetupImportsFromCode(code, new Set(['MyButton']))
+if (result.status === 'complete') {
+  console.log(result.imports)
+}
+```
+
+`complete` 可以返回空导入列表；`failed` 表示本次解析失败，调用方不应将它作为成功结果缓存。原有 `collectScriptSetupImportsFromCode` 继续返回导入数组。
+
 ## 稳定 API
 
 建议优先从根入口导入稳定 API：
@@ -76,6 +89,7 @@ const result = collectJsxAutoComponentsFromCode(code, {
 - `mayContainPlatformApiAccess`
 - `collectRequireTokens`
 - `collectScriptSetupImportsFromCode`
+- `analyzeScriptSetupImportsFromCode`
 - `unwrapTypeScriptExpression`
 - `getObjectPropertyByKey`
 - `getRenderPropertyFromComponentOptions`

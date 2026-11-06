@@ -4,9 +4,11 @@ import type { CorePluginState } from '../helpers'
 import { createContext, runInContext, runInNewContext } from 'node:vm'
 import path from 'pathe'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createLogicalEntryId } from '../../../moduleGraph/protocol'
 import { FULL_REQUEST_GLOBAL_TARGETS } from '../../../runtime/config/internal/injectRequestGlobals'
 import { createRuntimeState } from '../../../runtime/runtimeState'
 import { pruneUnchangedDevHmrOutputs } from '../../outputFinalizer/hmrPrune'
+import { readNativeEntryAssetOwners } from '../../utils/nativeEntryAssetOwners'
 import { collectAffectedSharedChunkEntriesAndChunks } from '../helpers'
 import { createGenerateBundleHook } from './emit/generate'
 
@@ -332,8 +334,28 @@ describe('classic native root publication during incremental generation', () => 
       state.ctx.currentBuildTarget = 'plugin'
     }
     const output = bundle()
-    await createGenerateBundleHook(state, false).call({}, {}, output)
+    const owner = path.resolve('src/current.vue')
+    const current = output['pages/active/index.js'] as OutputChunk
+    current.facadeModuleId = createLogicalEntryId(owner, 'page')
+    const environment = {}
+    const outputOptions = { dir: 'dist' }
+    await createGenerateBundleHook(state, false).call({ environment }, outputOptions, output)
     expect(Object.values(output).some(item => item.type === 'chunk')).toBe(false)
     expect(output['pages/active/index.wxml']).toBeDefined()
+    expect([...readNativeEntryAssetOwners(state.ctx, environment, outputOptions)]).toEqual([owner])
+  })
+
+  it('captures plugin target ownership before metadata pruning and preserves it across plugin output filtering', async () => {
+    const state = fixture()
+    state.ctx.currentBuildTarget = 'plugin'
+    state.ctx.configService.pluginOnly = true
+    const output = bundle()
+    const owner = path.resolve('src/plugin/component.vue')
+    ;(output['pages/active/index.js'] as OutputChunk).facadeModuleId = createLogicalEntryId(owner, 'component')
+    const environment = {}
+    const outputOptions = { dir: 'dist' }
+    await createGenerateBundleHook(state, true).call({ environment }, outputOptions, output)
+    expect(Object.values(output).some(item => item.type === 'chunk')).toBe(false)
+    expect([...readNativeEntryAssetOwners(state.ctx, environment, outputOptions)]).toEqual([owner])
   })
 })

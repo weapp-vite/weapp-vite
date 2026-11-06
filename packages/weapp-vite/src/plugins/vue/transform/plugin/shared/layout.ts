@@ -2,11 +2,13 @@ import type { SFCStyleBlock } from 'vue/compiler-sfc'
 import type { CompilerContext } from '../../../../../context'
 import { compileVueStyleToWxss, generateScopedId } from 'wevu/compiler'
 import { createStyleSourceMeta } from '../../../../css/styleOwnership'
+import { UniAppCompatibilityTransformError } from '../../../../uniApp'
 import { syncVueSfcStyleDependencies } from '../../../../utils/invalidateEntry'
 import { registerResolvedPageLayoutDependencies } from '../../../../utils/pageLayout'
 import { resolveSfcStylePreprocessOptions } from '../../compileOptions'
 import { resolvePageLayoutPlan } from '../../pageLayout'
 import { normalizeComparablePath } from '../../pageLayout/shared'
+import { readVueLikeCompilerInput } from '../../sourceInput'
 import { ensureSfcStyleBlocks, isAppEntry, loadTransformPageEntries } from './state'
 
 export async function handleTransformEntryPageLayoutFlow(options: {
@@ -158,10 +160,13 @@ export async function preloadNativeLayoutEntries(options: {
     }
 
     try {
-      const source = await readFile(entryFilePath, 'utf8')
+      const { source } = await readVueLikeCompilerInput(configService, entryFilePath, file => readFile(file, 'utf8'))
       await registerNativeLayoutChunksForEntry(pluginCtx, ctx, entryFilePath, source)
     }
-    catch {
+    catch (error) {
+      if (error instanceof UniAppCompatibilityTransformError) {
+        throw error
+      }
       // 忽略预扫描失败，交给后续 transform/generateBundle 兜底
     }
   }))

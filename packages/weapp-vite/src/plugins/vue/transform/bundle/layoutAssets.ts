@@ -11,6 +11,7 @@ import {
 import { ensureScriptlessComponentAsset, resolveScriptlessComponentFileName, SLOT_HOST_SCRIPTLESS_COMPONENT_STUB } from '../../../utils/scriptlessComponent'
 import { emitSfcJsonAsset, emitSfcStyleIfMissing, emitSfcTemplateIfMissing } from '../emitAssets'
 import { assertTemplateHasDefaultSlot, collectNativeLayoutAssets } from '../pageLayout'
+import { readVueLikeCompilerInput } from '../sourceInput'
 import { compileVueLikeFile, getEntryBaseName } from './shared'
 import { emitBundleVueEntryAssets, emitSharedVueEntryJsonAsset } from './shared/assets'
 
@@ -207,9 +208,10 @@ export async function emitVueLayoutScriptFallbackIfNeeded(options: {
 
   const { resolvedOptions } = fallbackState
 
-  const source = await fs.readFile(layoutFilePath, 'utf-8')
+  const { rawSource, source } = await readVueLikeCompilerInput(configService, layoutFilePath)
   const result = await compileVueLikeFile({
     source,
+    rawSource,
     filename: layoutFilePath,
     ctx,
     pluginCtx,

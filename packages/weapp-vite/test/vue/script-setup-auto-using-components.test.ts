@@ -2,7 +2,7 @@ import path from 'pathe'
 import logger from '../../src/logger'
 import { createVueTransformPlugin } from '../../src/plugins/vue/transform'
 import { callPluginHook } from '../pluginHook'
-import { createTestModuleGraphService, createTestRuntimeState } from './moduleGraph'
+import { captureTestNativeEntryAssetOwners, createTestModuleGraphService, createTestRuntimeState } from './moduleGraph'
 
 function createCtx(pages: string[] = []) {
   const cwd = '/root'
@@ -43,7 +43,9 @@ function createResolver() {
 
 describe('<script setup> auto usingComponents', () => {
   it('registers imported component into usingComponents and strips import', async () => {
-    const plugin = createVueTransformPlugin(createCtx(['pages/home/index']))
+    const ctx = createCtx(['pages/home/index'])
+    const plugin = createVueTransformPlugin(ctx)
+    const file = '/root/src/components/parent/index.vue'
 
     const sfc = `
 <template>
@@ -54,12 +56,13 @@ import Child from '../child/index.vue'
 </script>
     `.trim()
 
-    const transformed = await callPluginHook(plugin.transform as any, { resolve: createResolver() } as any, sfc, '/root/src/components/parent/index.vue')
+    const transformed = await callPluginHook(plugin.transform as any, { resolve: createResolver() } as any, sfc, file)
 
     expect(transformed?.code).toBeDefined()
     expect(String(transformed!.code)).not.toContain('../child/index.vue')
 
     const emitted: Array<{ fileName: string, source: string }> = []
+    captureTestNativeEntryAssetOwners(ctx, [[file, 'component']])
     await plugin.generateBundle!.call(
       {
         resolve: createResolver(),
@@ -83,7 +86,9 @@ import Child from '../child/index.vue'
 
   it('auto overrides <json>.usingComponents but warns on conflict', async () => {
     const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
-    const plugin = createVueTransformPlugin(createCtx(['pages/home/index']))
+    const ctx = createCtx(['pages/home/index'])
+    const plugin = createVueTransformPlugin(ctx)
+    const file = '/root/src/components/parent2/index.vue'
 
     const sfc = `
 <template>
@@ -101,9 +106,10 @@ import Child from '../child/index.vue'
 </json>
     `.trim()
 
-    await callPluginHook(plugin.transform as any, { resolve: createResolver() } as any, sfc, '/root/src/components/parent2/index.vue')
+    await callPluginHook(plugin.transform as any, { resolve: createResolver() } as any, sfc, file)
 
     const emitted: Array<{ fileName: string, source: string }> = []
+    captureTestNativeEntryAssetOwners(ctx, [[file, 'component']])
     await plugin.generateBundle!.call(
       {
         resolve: createResolver(),

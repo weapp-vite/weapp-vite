@@ -6,11 +6,13 @@ import type { CompileVueFileResolvedOptions } from '../compileOptions'
 import type { VueCompilationCache, VueStyleBlocksCache } from './transformFile/types'
 import { performance } from 'node:perf_hooks'
 import { compileJsxFile, compileVueFile } from 'wevu/compiler'
+import { resolveVueEntryTopologySignature } from '../../../../runtime/buildPlugin/vueEntryTopology'
 import { recordHmrProfileDuration } from '../../../../utils/hmrProfile'
 import { readFile as readFileCached } from '../../../utils/cache'
 import { createPageEntryMatcher } from '../../../wevu'
 import { getSourceFromVirtualId } from '../../resolver'
 import { createCompilerAppShellSignature } from '../appShell'
+import { setVueBundlePageLayoutPlan } from '../bundle/shared/types'
 import { createCompileVueFileOptions, isVueTransformSourceMapEnabled } from '../compileOptions'
 import { createCompilerPageLayoutPlanSignature } from '../pageLayout'
 import { emitScopedSlotChunks } from '../scopedSlot'
@@ -27,6 +29,7 @@ export async function transformVueLikeFile(options: {
   code: string
   id: string
   compilationCache: VueCompilationCache
+  validatedCompilations?: WeakSet<import('wevu/compiler').VueTransformResult>
   appShell?: ResolvedAppShell
   setAppShell: (shell: ResolvedAppShell | undefined) => void
   pageMatcher: ReturnType<typeof createPageEntryMatcher> | null
@@ -117,6 +120,10 @@ export async function transformVueLikeFile(options: {
       isDev: configService.isDev,
       readFileCached,
     }))
+    if (configService.isDev && filename.endsWith('.vue')) {
+      // 与增量构建共用已准备输入；完整扫描提交拓扑时只读取事实，不重新解析整个闭包。
+      resolveVueEntryTopologySignature(configService, filename, source)
+    }
 
     const { isPage, isApp } = await measureStage('matchPageEntry', async () => await resolveTransformEntryFlags({
       pageMatcher,
@@ -201,6 +208,9 @@ export async function transformVueLikeFile(options: {
       if (relativeBase && cachedCompilation) {
         emitScopedSlotChunks(pluginCtx, relativeBase, cachedCompilation.result, scopedSlotModules, emittedScopedSlotChunks, configService.outputExtensions)
       }
+      if (cachedCompilation) {
+        options.validatedCompilations?.add(cachedCompilation.result)
+      }
       return {
         code: reuseResult.returnedCode.code,
         map: reuseResult.returnedCode.map,
@@ -240,6 +250,9 @@ export async function transformVueLikeFile(options: {
       })
     })
     if (jsonOnlyResult) {
+      if (isPage) {
+        setVueBundlePageLayoutPlan(jsonOnlyResult, resolvedPageLayoutPlan)
+      }
       const returnedCode = await finalizeVueTransform({
         ctx,
         pluginCtx,
@@ -269,6 +282,10 @@ export async function transformVueLikeFile(options: {
         measureVueHmrStage,
         reportTiming,
       })
+      const finalized = compilationCache.get(filename)
+      if (finalized) {
+        options.validatedCompilations?.add(finalized.result)
+      }
       return {
         code: returnedCode.code,
         map: returnedCode.map,
@@ -282,6 +299,9 @@ export async function transformVueLikeFile(options: {
       compileVueFile,
       compileJsxFile,
     })))
+    if (isPage) {
+      setVueBundlePageLayoutPlan(result, resolvedPageLayoutPlan)
+    }
     const returnedCode = await finalizeVueTransform({
       ctx,
       pluginCtx,
@@ -311,6 +331,10 @@ export async function transformVueLikeFile(options: {
       measureVueHmrStage,
       reportTiming,
     })
+    const finalized = compilationCache.get(filename)
+    if (finalized) {
+      options.validatedCompilations?.add(finalized.result)
+    }
 
     return {
       code: returnedCode.code,

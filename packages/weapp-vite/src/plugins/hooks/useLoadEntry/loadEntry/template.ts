@@ -8,6 +8,7 @@ import { fs } from '@weapp-core/shared/fs'
 import { collectScriptSetupImportsFromCode, resolveAstEngine } from '../../../../ast'
 import logger from '../../../../logger'
 import { collectVueTemplateTags, isAutoImportCandidateTag, VUE_COMPONENT_TAG_RE } from '../../../../utils/vueTemplateTags'
+import { UniAppCompatibilityTransformError } from '../../../uniApp'
 import { rebaseSfcTemplateDependencies, resolveSfcTemplateSource } from '../../../utils/sfcTemplateDependencies'
 import { collectTemplateDependencySources } from '../../../utils/templateDependencies'
 import { createReadAndParseSfcOptions, readAndParseSfc } from '../../../utils/vueSfc'
@@ -213,6 +214,9 @@ export async function applyScriptSetupUsingComponents(options: {
   }
   catch (error) {
     scriptSetupAnalyzer.discard(vueEntryPath)
+    if (error instanceof UniAppCompatibilityTransformError) {
+      throw error
+    }
     const missingEntry = error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT'
     if (missingEntry && configService?.isDev && !await fs.pathExists(vueEntryPath)) {
       return

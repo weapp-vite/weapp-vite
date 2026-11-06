@@ -574,7 +574,7 @@ export function useLoadEntry(
       loadedEntrySet.delete(entryId)
     },
     async emitDirtyEntries(this: PluginContext) {
-      entryChunkLifecycle.beginBuild()
+      entryChunkLifecycle.beginBuild(rootInputIds)
       ctx.runtimeState.build.hmr.forceEmitUnchangedChunks = false
       if (!options?.isSubPackage && (ctx.runtimeState.build.hmr.fullEntryScan || (this.meta?.watchMode && !ctx.configService.isDev)) && buildTarget === 'app' && !ctx.configService.weappLibConfig?.enabled) {
         // 生产 watch 每轮发布完整目标；模块转换缓存与产物元数据的所有权分开处理。
@@ -733,6 +733,16 @@ export function useLoadEntry(
         pendingReasonSummary.push(`classic-registration:${registrationPending.length}`)
       }
 
+      const readAutoImportComponentNames = (entryId: string) => {
+        const components = ctx.wxmlService.getAggregatedAutoImportComponents?.(removeExtensionDeep(entryId))
+        return Object.keys(components ?? {}).sort()
+      }
+      // 注册图不拥有源元数据失效；只比较本轮组件名，模板位置变化不扩大刷新范围。
+      const autoImportComponentNamesBeforeEmit = new Map(
+        registrationPending.map(({ id }) => [normalizeFsResolvedId(id), readAutoImportComponentNames(id)]),
+      )
+      const autoImportVersionBeforeEmit = ctx.autoImportService.getVersion?.()
+
       for (const resolvedId of registrationPending) {
         const baseName = removeExtensionDeep(resolvedId.id)
         if (!ctx.runtimeState.autoImport?.pendingEntriesByImporter.has(baseName)) {
@@ -754,10 +764,22 @@ export function useLoadEntry(
           )
         }
       }
+      const autoImportVersionChanged = autoImportVersionBeforeEmit !== ctx.autoImportService.getVersion?.()
       for (const resolvedId of registrationPending) {
+        const entryId = normalizeFsResolvedId(resolvedId.id)
         const baseName = removeExtensionDeep(resolvedId.id)
-        const autoImportComponents = ctx.wxmlService.getAggregatedAutoImportComponents?.(baseName)
-        if (!autoImportComponents || Object.keys(autoImportComponents).length === 0) {
+        const previousNames = autoImportComponentNamesBeforeEmit.get(entryId) ?? []
+        const currentNames = readAutoImportComponentNames(resolvedId.id)
+        const componentNamesChanged = previousNames.length !== currentNames.length
+          || previousNames.some((name, index) => name !== currentNames[index])
+        const needsMetadataRefresh = ctx.runtimeState.autoImport?.pendingEntriesByImporter.has(baseName)
+          || componentNamesChanged
+          || (currentNames.length > 0 && (
+            activeDirtyEntrySet.has(entryId)
+            || pendingEntryIds.has(entryId)
+            || autoImportVersionChanged
+          ))
+        if (!needsMetadataRefresh) {
           continue
         }
         await reloadPendingAutoImportEntry(resolvedId)

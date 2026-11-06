@@ -114,6 +114,8 @@ describe('useLoadEntry emitDirtyEntries', () => {
     ctx.scanService.independentSubPackageMap = new Map()
     ctx.scanService.loadSubPackages = vi.fn()
     ctx.scanService.drainIndependentDirtyRoots = vi.fn(() => [])
+    ctx.wxmlService.getAggregatedAutoImportComponents = vi.fn(() => ({ StableCard: [] }))
+    ctx.autoImportService.getVersion = vi.fn(() => 1)
     ctx.runtimeState.build.hmr.fullEntryScan = true
     const hook = useLoadEntry(ctx)
     loadEntryMock.mockImplementationOnce(async () => {
@@ -126,6 +128,8 @@ describe('useLoadEntry emitDirtyEntries', () => {
     await hook.emitDirtyEntries.call(createPluginContext())
     expect(hook.dirtyEntrySet).toEqual(new Set([child]))
     expect(hook.loadedEntrySet.has(child)).toBe(false)
+    expect(ctx.wxmlService.getAggregatedAutoImportComponents).not.toHaveBeenCalled()
+    expect(ctx.autoImportService.getVersion).not.toHaveBeenCalled()
     ctx.runtimeState.build.hmr.fullEntryScan = false
     const next = createPluginContext()
     await hook.emitDirtyEntries.call(next)

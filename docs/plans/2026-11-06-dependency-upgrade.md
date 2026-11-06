@@ -1,0 +1,90 @@
+# 全仓依赖升级与代码迁移（2026-11-06）
+
+本轮从 `main` 的 `0a92cd2647c409a3ce756b303157dca0e8d0e48e` 开始，按已确认计划升级当前维护依赖，并处理上一轮冻结语料、Workspace HMR 与真实 IDE 的验收缺口。本文随实际验证更新；未完成项不计为通过。
+
+## 版本与兼容边界
+
+| 对象 | 升级前 | 本轮目标 |
+| --- | --- | --- |
+| pnpm | 12.16.1 | 12.18.0 |
+| @swc/core | 1.16.21 | 1.16.22 |
+| weapp-tailwindcss | 5.6.3 | 保留 5.6.3，排除 5.7.0 |
+| @weapp-tailwindcss/engine | 0.1.6 | 0.1.7 |
+| sass / sass-embedded | 1.107.1 | 1.108.0 |
+| Playwright | 1.64.1 | 1.65.0 |
+| theme-transition | 2.1.2 | 2.1.3 |
+| Wrangler | 4.157.0 | 4.158.0 |
+
+TypeScript 按用户选择继续使用 6.0.3。Stylelint 保留 17.16.0：现行配置链的 Tailwind、SCSS 与 recess-order 插件尚未全部接受 18。自有直接 local-pkg 保留 1.2.1：2.0.0 发行声明中的 `loadPackageJSON` 仍引用未声明的 `Args`，不通过放宽类型检查绕过。
+
+独立 Vite 8.3.6 本轮仍未通过完整生命周期诊断，继续保留 8.3.5。已核实诊断的模块和清单均为 8.3.6：hooks、resolver、mini-optimizer 通过，web-optimizer 在立即关闭及请求空闲后关闭两种路径均留下新建的 deps_temp 缓存；polling、ready 未执行。原始失败和已确认的资源清理记录均保留。早先诊断隔离器出现模块与清单身份分歧，该次结果没有用于版本决策。
+
+现行 Vite 8.3.5 / Rolldown 1.2.16 的固定版本验收例外不延伸到新组合。Rolldown 1.3.0 超出 Vite 8.3.6 的 `~1.2.16` 官方配套范围，本轮保留 1.2.16。VitePress 与 vite-tsconfig-paths 的现有预发布基线继续保持。
+
+Node、Rust、Bun、独立小程序 CI runner、Cargo 直接依赖和 GitHub Actions 已完成差分核对，无新增升级目标。Cargo 中父范围无法容纳的全局 latest 差异继续保留，不加不兼容 override。历史工具链、性能 baseline、外部 upstream 和兼容夹具维持原用途。
+
+## 迁移说明
+
+pnpm 的根版本和 snapshot 工作流通过同一版本输入同步。两份工作流由 repoctl 官方 `getSnapshotWorkflows` 成对生成，发布端的 builder SHA 随生成结果更新；官方模板中的 Node 24.22.1 固定值保持不变，完整字节校验继续执行。
+
+真实 Core 双 CSS 入口回归已证明不同 `@config` 的主题值、依赖和定向失效相互隔离。Tailwind 5.7.0 的 PostCSS 4 链删除了动态 alpha 识别及占位保护，将 `color-mix(in srgb, #123456 var(--opacity), transparent)` 作为不支持的声明删除，只剩不透明 fallback；5.6.3 正常保留 `rgba(..., var(--opacity))`。默认及原配置、两种模式的官方实体对照一致，公开配置无法恢复等价小程序语义。5.7 的 compiler service key 变化还使普通源码扫描与候选变化不能复用原 engine，插件初始化次数增加。
+
+因此本轮偏离原定 5.7.0 目标，保留 compiler 5.6.3，沿用 `^` 前缀并增加 `<5.7.0` 上限，保护独立安装消费者；不拼装跨主版本 PostCSS、不复制颜色编译器、不放宽契约。直接 engine 仍升级 0.1.7：隔离对照中 5.6.3 搭配 0.1.6 与 0.1.7 的颜色、缓存和插件初始化结果一致。官方 5.6.3 自身精确依赖的 engine 0.1.6 保留正常闭包，不做 override。证据在任务目录 `tailwind-alpha/receipt.md`。按用户授权已提交并回读核验[上游 bug #1332](https://github.com/weapp-tailwindcss/weapp-tailwindcss/issues/1332)，附公开 Core 最小复现与两版输出；未上传含本机信息的完整日志。
+
+Sass 两个实现成对升级。Playwright 浏览器缓存继续由实际版本与 revision 生成，没有新增机器专属缓存路径。
+
+uview 的修复以普通转换和资产刷新使用同一 uni-app 平台预处理输入为边界，保留原始源码签名及错误传播。Vue 入口拓扑变化触发完整入口扫描，当前可达图重新建立资产所有权；只有成功扫描才提交拓扑基线，普通内容更新继续使用局部扫描。最终入口、模板、JSON、样式与 scoped slot 仍由 bundler 负责发射、写出，不补写缺失 bundle。原生 watcher 回归已覆盖首次构建、本地组件和页面修改及恢复、移除 npm 组件 import/tag、删除无引用 SFC，以及 JS/JSON/WXML/WXSS/scoped slot 完整性；定向 uview Workspace HMR 已通过，完整 workspace 仍待验收。
+
+HMR 分别核对 Vue 资产阶段和 core rewrite：补齐各自墙钟、候选与发射数量、缓存命中及重新编译观察。纯内容分析缓存与 hook context 分离；源码、外部 SFC、路由、layout、配置、删除及失败重放继续参与失效。classic 模式、既有阈值和历史 baseline 保持原样。
+
+E2E suite 参数统一处理等号与空格形式，错误选择在启动前失败。真实 IDE 的进程身份、订阅和窗口收尾继续按原资源门禁验收，不扩大超时或忽略未知进程。
+
+## 验证记录
+
+实际命令、候选身份、退出状态及资源记录保存在任务状态索引。顺序为冻结安装与同步、定向单测及类型、包构建、下游与浏览器、完整 CI/HMR/headless，最后从同步且干净的 `main` 执行正式 Stable IDE 验收。进入正式完整验收后冻结源码。
+
+两次冻结安装均通过，第二次离线安装前后的锁文件、workspace、根清单和生成 catalog 哈希一致。Rolldown 单版本及 snapshot 官方模板全文检查已执行。E2E 参数解析的三文件定向回归通过；新增测试已接入根测试发现范围。
+
+升级前后 pnpm 安全审计均退出 1，按 advisory/module 计数为 low 6、moderate 19、high 17、critical 8。5.7 候选图一度降至 2893 个依赖，保留兼容 compiler 后的最终图为 2916；最终审计告警数量保持不变，该结果不记为安全审计通过。peer 检查仍报告 graphql、mermaid、vite、vitepress、webpack 的范围问题，保留上游范围与现有预发布基线，不用不兼容 override 清零。
+
+第一次完整单测为 2614 文件、25427 用例通过，8 文件的 13 用例失败。9 个失败由 Tailwind 5.7 的颜色与缓存回归引起，选回兼容依赖后，所属 5 文件 48 项契约通过。其余边界已分别修正：宏测试提供真实 App 输入；外部 SFC 的跨 snapshot 检测只读取合法钩子记录的有界路径事实，不调用过期 resolver；编译失效器补齐 `jsx` 依赖域，覆盖页面自身修改后共享 JSX 模板再恢复。重建 weapp-vite 后，宏、共享模板、JSX HMR 与 uview 原生产物共 4 文件 14 用例通过，原断言和预算保持不变。
+
+HMR 优化前的全量公开类型矩阵 88/88 任务通过，owning-package typecheck 与 74 个变更文件 ESLint 通过；兼容图的连续两次离线 frozen install 通过。当时源码与兼容图的完整单测重跑退出 0：2622 文件、25446 用例通过，保留原有 13 文件、20 用例跳过，没有新增跳过。后续 HMR 优化需要重新验证受影响范围。新增拓扑签名、路径事实和内容缓存按职责拆分到独立 helper；已有超过 300 行的编排文件保持原入口结构，避免在依赖迁移中同时改动无关生命周期。
+
+最终 HMR 优化候选的完整单测重跑退出 0：2628 文件、25516 用例通过，原有 13 文件、20 用例跳过；113 个候选文件的运行后哈希完全一致。随后修正静态 init fixture 的 Tailwind 范围遗漏，直接校验与 catalog 一致、允许 5.6.3 且拒绝 5.7.0，ESLint 通过。只读审查提出的 script setup 条件编译疑点已通过正规 CLI 构建复现：微信 WXML 正确移除 Hidden，但 lower usingComponents 仍注册 Hidden；该后续修正及相关范围验证单独记录，不追认到此前完整单测。
+
+组件元数据改用统一的平台预处理输入后，8 文件、153 项定向用例、owning package 构建与类型检查通过；最终公开类型入口的 88/88 Turbo 任务通过，包含前置构建，不将其记为 88 个独立类型合约。随后原生 watcher 回归新增外部 script setup 与 template block，暴露空 script block 的零长度覆盖错误；修复后所属 18 项用例、compiler 构建、类型与公开类型检查通过。继续运行原生回归，JSON/WXML 已正确裁剪引用，但 HiddenChild 仍产生没有对应 JS 的 JSON/WXML，确认编译缓存被错误用作资产发射所有权。当前逻辑入口归属修复的 197 项定向用例、128 文件 ESLint、weapp-vite 类型检查及构建已通过；原生回归的首次构建和本地修改/恢复均通过，包括禁止孤立 npm 组件资产的断言。原先外部模板置于 node_modules 不在默认监听范围，保留失败并将可编辑输入移入项目 src；不扩大第三方包监听。新代次随后暴露另一缺口：完整入口重扫后，父 JSON 仍注册 ActiveChild，但 pre-core 图已不含其逻辑入口和任何 JS/JSON/WXML。根因是长期 output→source 映射被同时用于跨代 emit 去重。修复复用现有 EntryChunkLifecycle，让 loader 与 Vue compiler 共享本代入口注册、去重与失败回滚，路径映射继续只保存解析事实；新增 71 项定向用例、owning package 类型与构建通过。最终原生 watcher 回归已完整通过首次构建、本地修改/恢复、项目外部 template block 修改/恢复、页面修改/恢复、移除与删除，以及 scoped slot 和 JS/JSON/WXML/WXSS 完整性检查。全量候选验证仍继续，以上较早通过记录不追认为后续源码验证。
+
+中文 patch changeset 记录实际受影响的 weapp-vite、create-weapp-vite、Tailwind 适配、dashboard、glass-easel web adapter、AST 和 wevu compiler 七包；固定发布组由原生版本流程联动。本轮采用 Conventional Commits，保留提交和推送 hooks。
+
+原 12 场景的第一轮 HMR 优化复测退出 1：9 个已执行场景的更新行为通过，uview 的 3 个场景因日志 JSON 损坏而未执行。runtime demo 的 Vue script 为 1723 ms，高于 1500 ms；wot 为 5487–6136 ms，高于 5000 ms。请求兼容分析缓存跨轮命中 2542 次、未命中 2 次，对应阶段降到约 7–11 ms；剩余入口分析继续定位。uview 的失败已确认是测试采集层将 543 字节 stderr 告警插入跨分块 stdout JSON；修复保留原始分流 trace、追加式游标和严格 JSON 校验。原失败日志未改写。随后统一 lower Vue 本轮输入读取：普通无 JSON 组件也复用已读取的物理源码，避免重复读取；下一轮仍读取新输入，外部 block 继续独立解析。复测原 12 个场景全部执行并通过行为、恢复、receipt 与原性能阈值，实际模式均为 classic：runtime demo 751–802 ms（上限 1500），uview 4191–4419 ms（上限 6000），wot 3695–3972 ms（上限 5000）。完整 workspace 尚未执行。
+
+冻结 Taro 4.3.2 的配置校验不接受 `compiler.runner`。本轮使用正式生命周期插件，在官方 schema 校验后安装 CJS Mini runner 薄包装，并在 webpack-chain 配置分发期间共享同一真实插件构造器及参数，结束后移除临时 hook 入口，最终只应用一个 Mini 插件。官方 STATIC 依赖的私有 key 在 Mini runner 与 JSUI 插件间不一致，兼容视图仅限官方调用期间且只回退唯一的真实依赖。
+
+新身份 `taro-4.3.2-harmony-jsui-0d2275229618d381` 已执行 development、production 两种真实生成。模式、runner 和 STATIC 协议均到达主编译，但两种模式都因官方 Harmony 默认导出与官方 page loader 再次追加默认导出而失败。官方 npm tarball 完整性与安装文件逐字节核对一致；没有通过改写官方输出绕过此发行缺陷。JSUI runtime 另有六个基础 runtime 未发布符号的独立缺陷，预编译回退和主编译 warning 与上述 fatal 分开记录。
+
+旧活跃冻结归档保持原样，离线 check 能读取完整归档，但退出 1：仅剩 Harmony 两种模式的失败记录与两条 expected-built 矩阵缺口。新候选未替换活跃归档，未 collect 为成功。旧 archive 的 inventory 为 13,558 文档、26,228 origins、7,075 非微信文档、250 仓库、pending 0；该库存校验不代表 Harmony 构建通过。证据保存在任务目录的 `corpus/active-check-reports`、`taro-jsui-freeze.json` 及两种模式原始日志。
+
+网站单测通过。最终文档更新后的 build、8 项 headless Chromium 浏览器测试，以及稳定和预览配置的 Wrangler 4.158.0 dry-run 均通过，未执行部署，browser/server 已收尾。glass-easel adapter 浏览器验收与 simulator 的 102 个文件、223 个浏览器用例通过，已释放各自 browser/server。Playwright 1.65 的 Chromium 已安装，Firefox 两轮下载均因官方 CDN 超时失败，WebKit 独立下载 49 分钟后取消，退出 130，避免与性能采样重叠；没有活跃下载。
+
+主线 push 原生触发 Release 和文档 preview 部署。事后取消存在发布抢先执行的竞态，因此本轮提交使用 GitHub 原生 `[skip ci]` 指令阻止本次 push 自动运行，保留全部提交和推送 hooks，不修改或禁用工作流、不批准部署环境。该指令不影响 `workflow_dispatch`；全部适用验证仍按最终候选 SHA 手动派发原生 workflow，逐项记录真实结果。被阻止的 push 工作流记为未执行，不计为验证通过。
+
+第一阶段依赖与 E2E 基础设施已提交为 `a5c297729`，暂存范围 ESLint、DOM 清单、包级类型与原生提交 hooks 通过，尚未推送。首次提交被 changeset 摘要格式门禁拒绝，补齐 Conventional 类型后正常重试通过，未绕过 hooks。
+
+逻辑入口归属修复后的完整单测退出 1：2,622 文件、25,520 用例通过，10 文件、25 用例失败，原有 13 文件、20 用例跳过；运行期间 134 个候选文件哈希没有变化。失败分别暴露独立 hook 测试未提供逻辑入口图、静态 input 被动态编译器重复发射，以及无脚本布局的 JS asset 未被 chunk collector 识别。测试夹具改为显式提供当前逻辑入口；静态与动态入口使用同一代次去重账本；无脚本布局仅在当前合法父入口、layout 依赖和本 output 实际 JS asset 同时存在时发布配套资产。修复后 15 文件、154 用例、weapp-vite 包级类型及 14 文件 ESLint 通过，两个独立分包回归的重复 JS 与缺失 CSS 同时消除；完整单测仍须在后续源码上重新执行。
+
+随后原生发布全生命周期和公开类型回归通过，apps/templates 的 80/80 个 Turbo 任务成功（34 个命中缓存）。第二轮完整单测为 2,631 文件、25,546 用例通过，1 用例失败，142 个候选文件哈希未变。唯一失败来自 classic 启动恢复测试的总发布计数：恢复产物和闸门启动已确认，但此前完成的写出也被计入，导致预期 0、实际 1。保留原失败；独立 trace 运行通过，但不能据此改写完整运行结果。测试探针改为依据原生 build 产物的恢复 marker 持有闸门并记录该次完成，其他关闭场景继续核对总发布数。三项确定性回归覆盖旧回调在闸门前、期间完成及其他宿主写出，包级类型和三文件 ESLint 通过；原生 integration 及完整矩阵仍待重新验收。
+
+恢复门禁修正后的 3 项原生启动失败/恢复回归通过。最终完整单测退出 0：2,633 文件、25,550 用例通过，保留原有 13 文件、20 用例跳过；145 个候选文件在运行前后哈希一致。没有用单次 trace 的通过覆盖较早的完整运行失败。
+
+最终脚手架 smoke 的六组场景均已评估：npmjs 的 wevu、Tailwind 和 npmmirror 的 Tailwind 完成安装、构建及开发更新；npmjs 的 default、npmmirror 的 default/wevu 在原 600,000 ms 安装预算内网络超时。汇总退出 2，记录为环境受限，产品失败为 0；临时目录、开发进程和串行租约已完成收尾。先前状态索引将 npmjs 误记为三组通过，已依据实际报告纠正。
+
+严格单任务 IDE 诊断实际只派发 native-property-delivery，1 个 task、3 个 case、9 个 checkpoint 通过。执行时重新查询官方 Stable，并核对所选安装、CLI 和实际宿主均为 2.02.2609240，基础库为 3.13.2。首次 Tool.getInfo 在原 4 秒预算内超时，既有连接重试随后成功，没有重开窗口；App.CDPEnable 明确返回 unimplemented 后，既有 App.enableLog 精确回退成功。本次没有复现旧订阅阻塞，也没有据此修改源码或追认旧失败。
+
+该诊断的 task 退出 0；外层按严格局部验收规则退出 1，记录 partial / incomplete，余下 27 个适用任务未执行。资源报告 complete，窗口同时具有原生关闭和 webContents 销毁证据，端口与 journal 释放、宿主正常退出及机器租约释放均已核验。受管窗口重叠上界为 1；清理前 RSS 单点为 2,128,953,344 字节，不记作内存峰值。启动 monitor 的实际内存游标未持久化，外层两次日志观察仅作诊断且存在轮换，不能替代该游标；关闭阶段的真实文件身份、offset、anchor 与销毁事件仍保留。生成报告已归档到任务证据目录，未混入源码提交。
+
+最终公开类型矩阵退出 0，88/88 个 Turbo 任务成功，43 个命中缓存，包含前置构建，不记作 88 个独立类型合约。候选文件 ESLint 及 diff 空白检查通过；完整单测后只更新了迁移记录，源码与测试未再变化。
+
+按用户本轮明确要求采用 patch changeset。AST 的新增分析结果和 compiler 的可选静态标记、block 类型用于修复现有条件组件与输入识别，既有公开调用继续兼容，新增公开类型已补 tsd；没有将这些修复扩展为新的产品功能。
+
+本轮尚在实施，完整 CI、HMR、headless 与正式干净主线的完整 IDE 验收未完成，不能据此声明交付完成。

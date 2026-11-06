@@ -24,23 +24,14 @@ function isObjectDefineProperty(node: any) {
     && node.property?.name === 'defineProperty'
 }
 
-/** 通过显式运行时标记或公共导出关联定位 installer，避免依赖打包器生成的局部名字。 */
-export function findRequestGlobalsInstaller(code: string): string | null {
-  // 只排除缺少全部识别线索的源码；保留转义字符串、模板及标识符的完整 AST 识别。
-  if (
-    !code.includes(REQUEST_GLOBAL_INSTALLER_MARKER)
-    && !code.includes('installWebRuntimeGlobals')
-    && !code.includes('\\')
-  ) {
-    return null
-  }
-
-  try {
-    const functions = new Set<string>()
-    const marked = new Set<string>()
-    const publiclyExported = new Set<string>()
-    const ast = parseJsLike(code)
-    traverse(ast as any, {
+/** 将初始化器事实收集并入调用方已有的作用域遍历。 */
+export function createRequestGlobalsInstallerCollector() {
+  const functions = new Set<string>()
+  const marked = new Set<string>()
+  const publiclyExported = new Set<string>()
+  return {
+    installerName: () => [...marked, ...publiclyExported].find(name => functions.has(name)) ?? null,
+    visitor: {
       FunctionDeclaration(path: any) {
         if (path.node.id?.name) {
           functions.add(path.node.id.name)
@@ -94,8 +85,25 @@ export function findRequestGlobalsInstaller(code: string): string | null {
           publiclyExported.add(right.name)
         }
       },
-    })
-    return [...marked, ...publiclyExported].find(name => functions.has(name)) ?? null
+    },
+  }
+}
+
+/** 通过显式运行时标记或公共导出关联定位 installer，避免依赖打包器生成的局部名字。 */
+export function findRequestGlobalsInstaller(code: string): string | null {
+  // 只排除缺少全部识别线索的源码；保留转义字符串、模板及标识符的完整 AST 识别。
+  if (
+    !code.includes(REQUEST_GLOBAL_INSTALLER_MARKER)
+    && !code.includes('installWebRuntimeGlobals')
+    && !code.includes('\\')
+  ) {
+    return null
+  }
+
+  try {
+    const collector = createRequestGlobalsInstallerCollector()
+    traverse(parseJsLike(code) as any, collector.visitor)
+    return collector.installerName()
   }
   catch {
     return null

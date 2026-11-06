@@ -1,11 +1,11 @@
 import type { AstEngineName } from '../../../../../ast'
 import { LRUCache } from 'lru-cache'
-import { collectScriptSetupImportsFromCode } from '../../../../../ast'
+import { analyzeScriptSetupImportsFromCode } from '../../../../../ast'
 import { normalizeFsResolvedId } from '../../../../../utils/resolvedId'
 import { collectVueTemplateTags, isAutoImportCandidateTag, VUE_COMPONENT_TAG_RE } from '../../../../../utils/vueTemplateTags'
 import { collectComponentTagInfo } from './componentTags'
 
-type ScriptSetupImport = Readonly<ReturnType<typeof collectScriptSetupImportsFromCode>[number]>
+type ScriptSetupImport = Readonly<ReturnType<typeof analyzeScriptSetupImportsFromCode>['imports'][number]>
 
 interface TemplateFacts {
   readonly source: string
@@ -84,7 +84,7 @@ function estimateRetainedBytes(record: AnalysisRecord, filename: string) {
 }
 
 /**
- * 每个入口加载器独占纯分析缓存；每个物理源码仅保留最后一版，不保存 AST 或解析路径。
+ * 每个开发会话与配置隔离纯分析缓存；每个物理源码仅保留最后一版，不保存 AST 或解析路径。
  * 上限为 512 个源码、16 MiB 保留字符串与 facts 的 UTF-16 文本估算，并非精确堆内存计量。
  * 超大条目不缓存，失败或 partial result 仍在下一轮重新分析。
  */
@@ -116,16 +116,15 @@ export function createScriptSetupAnalyzer() {
           script = priorScript
         }
         else {
-          const imports = collectScriptSetupImportsFromCode(input.scriptSetup, new Set(template.componentNames), {
+          const analysis = analyzeScriptSetupImportsFromCode(input.scriptSetup, new Set(template.componentNames), {
             astEngine: input.astEngine,
           })
-          // AST 收集器用空数组表示无导入或解析失败，无法证明成功时不缓存该结果。
-          if (imports.length) {
+          if (analysis.status === 'complete') {
             script = Object.freeze({
               source: input.scriptSetup,
               engine: input.astEngine,
               names: template.componentNames,
-              imports: Object.freeze(imports.map(item => Object.freeze({ ...item }))),
+              imports: Object.freeze(analysis.imports.map(item => Object.freeze({ ...item }))),
             })
           }
         }

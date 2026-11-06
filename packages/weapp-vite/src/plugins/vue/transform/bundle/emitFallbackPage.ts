@@ -2,8 +2,10 @@ import type { VueBundleCompileOptionsState, VueBundleState } from './shared'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import logger from '../../../../logger'
 import { getPathExistsTtlMs } from '../../../../utils/cachePolicy'
+import { recordHmrProfileOperation } from '../../../../utils/hmrProfile'
 import { withRealpathScope } from '../../../../utils/realpathScope'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
+import { UniAppCompatibilityTransformError } from '../../../uniApp'
 import { pathExists as pathExistsCached } from '../../../utils/cache'
 import { collectFallbackPageEntryIds } from '../fallbackEntries'
 import { emitBundlePageLayoutsIfNeeded } from './layoutAssets'
@@ -124,7 +126,7 @@ export async function emitFallbackPageAssets(
     jsonExtension,
     scriptModuleExtension,
     platformAssetOptions,
-  } = resolveVueBundleAssetContext(configService)
+  } = state.assetContext ?? resolveVueBundleAssetContext(configService)
 
   const collectedEntries = await collectFallbackPageEntryIds(configService, scanService)
   for (const entryId of collectPendingFallbackEntries(collectedEntries, options?.emittedEntryIds, configService)) {
@@ -160,8 +162,13 @@ export async function emitFallbackPageAssets(
         platformAssetOptions,
         appShell: state.appShell,
       })
+      recordHmrProfileOperation(ctx.runtimeState?.build?.hmr?.profile, 'vueBundleFallbackCount')
+      recordHmrProfileOperation(ctx.runtimeState?.build?.hmr?.profile, 'vueBundleEmittedCount')
     }
     catch (error) {
+      if (error instanceof UniAppCompatibilityTransformError) {
+        throw error
+      }
       const message = error instanceof Error ? error.message : String(error)
       logger.error(`[Vue 编译] 编译 ${entryFilePath} 失败：${message}`)
     }

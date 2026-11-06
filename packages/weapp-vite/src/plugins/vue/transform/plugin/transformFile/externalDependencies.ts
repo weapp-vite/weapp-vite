@@ -4,10 +4,13 @@ import { normalizeSourceId } from '../../../../../moduleGraph/traversal'
 import { withRealpathScope } from '../../../../../utils/realpathScope'
 import { getVueCompilationDependencies } from '../../componentResolutionDependencies'
 
-/** 外部编译输入或静态分析依赖变化时撤销编译副本；仅样式依赖仍交给原有刷新路径。 */
+/** 外部输入、JSX 展开或静态分析依赖变化时撤销编译副本；仅样式依赖仍交给原有刷新路径。 */
 export function invalidateExternalSfcCompilation(file: string, compilationCache: VueCompilationCache, graph: ModuleGraphService) {
   return withRealpathScope(() => {
-    const affected = graph.collectAffectedEntries(file, 'script')
+    const affected = new Set([
+      ...graph.collectAffectedEntries(file, 'script'),
+      ...graph.collectAffectedEntries(file, 'jsx'),
+    ])
     const dependencies = new Set<string>()
     for (const [owner, cached] of compilationCache) {
       if (!affected.has(normalizeSourceId(owner))) {

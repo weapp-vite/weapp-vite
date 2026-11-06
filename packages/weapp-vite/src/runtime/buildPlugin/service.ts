@@ -142,6 +142,9 @@ interface HmrProfileJsonSample extends HmrProfileRecordMetadata {
   vueCompileMs?: number
   vueFinalizeCompiledMs?: number
   vueFinalizeCodeMs?: number
+  vueGenerateBundleMs?: number
+  vueBundleRefreshMs?: number
+  vueBundleAssetsMs?: number
   coreLoadMs?: number
   entryLoadMs?: number
   entryCodeReadMs?: number
@@ -168,6 +171,13 @@ interface HmrProfileJsonSample extends HmrProfileRecordMetadata {
   generateBundleMs?: number
   generateSharedMs?: number
   generateRewriteMs?: number
+  generateRewritePrepareMs?: number
+  generateRewriteAnalysisMs?: number
+  generateRewriteNpmMs?: number
+  generateRewritePlatformMs?: number
+  generateRewriteRequestGlobalsMs?: number
+  generateRewritePreludeMs?: number
+  generateRewriteRuntimeMs?: number
   generateModuleGraphMs?: number
   snapshotResolveMs?: number
   snapshotBuildMs?: number
@@ -198,6 +208,14 @@ interface HmrProfileJsonSample extends HmrProfileRecordMetadata {
   dirtyCount?: number
   pendingCount?: number
   emittedCount?: number
+  vueBundleEligibleCount?: number
+  vueBundleEmittedCount?: number
+  vueBundleCacheHitCount?: number
+  vueBundleRecompileCount?: number
+  vueBundleStyleOnlyCount?: number
+  vueBundleFallbackCount?: number
+  rewriteAnalysisCacheHitCount?: number
+  rewriteAnalysisCacheMissCount?: number
   dirtyReasonSummary?: string[]
   pendingReasonSummary?: string[]
 }
@@ -501,6 +519,9 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       vueCompileMs: profile.vueCompileMs,
       vueFinalizeCompiledMs: profile.vueFinalizeCompiledMs,
       vueFinalizeCodeMs: profile.vueFinalizeCodeMs,
+      vueGenerateBundleMs: profile.vueGenerateBundleMs,
+      vueBundleRefreshMs: profile.vueBundleRefreshMs,
+      vueBundleAssetsMs: profile.vueBundleAssetsMs,
       coreLoadMs: profile.coreLoadMs,
       entryLoadMs: profile.entryLoadMs,
       entryCodeReadMs: profile.entryCodeReadMs,
@@ -527,6 +548,13 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       generateBundleMs: profile.generateBundleMs,
       generateSharedMs: profile.generateSharedMs,
       generateRewriteMs: profile.generateRewriteMs,
+      generateRewritePrepareMs: profile.generateRewritePrepareMs,
+      generateRewriteAnalysisMs: profile.generateRewriteAnalysisMs,
+      generateRewriteNpmMs: profile.generateRewriteNpmMs,
+      generateRewritePlatformMs: profile.generateRewritePlatformMs,
+      generateRewriteRequestGlobalsMs: profile.generateRewriteRequestGlobalsMs,
+      generateRewritePreludeMs: profile.generateRewritePreludeMs,
+      generateRewriteRuntimeMs: profile.generateRewriteRuntimeMs,
       generateModuleGraphMs: profile.generateModuleGraphMs,
       snapshotResolveMs: profile.snapshotResolveMs,
       snapshotBuildMs: profile.snapshotBuildMs,
@@ -555,6 +583,14 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       dirtyCount: profile.dirtyCount,
       pendingCount: profile.pendingCount,
       emittedCount: profile.emittedCount,
+      vueBundleEligibleCount: profile.vueBundleEligibleCount,
+      vueBundleEmittedCount: profile.vueBundleEmittedCount,
+      vueBundleCacheHitCount: profile.vueBundleCacheHitCount,
+      vueBundleRecompileCount: profile.vueBundleRecompileCount,
+      vueBundleStyleOnlyCount: profile.vueBundleStyleOnlyCount,
+      vueBundleFallbackCount: profile.vueBundleFallbackCount,
+      rewriteAnalysisCacheHitCount: profile.rewriteAnalysisCacheHitCount,
+      rewriteAnalysisCacheMissCount: profile.rewriteAnalysisCacheMissCount,
       dirtyReasonSummary: profile.dirtyReasonSummary?.slice(),
       pendingReasonSummary: profile.pendingReasonSummary?.slice(),
     }

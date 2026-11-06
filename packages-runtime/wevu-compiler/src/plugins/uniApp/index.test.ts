@@ -81,6 +81,36 @@ const platform = computed(() => uni.getSystemInfoSync().platform)
     expect(result.code.match(/const uni = __wevuCreateUniAppHost\(wx\)/g)).toHaveLength(1)
   })
 
+  it.each(['script', 'script setup'])('preserves empty external <%s> blocks for the declared block reader', (tag) => {
+    const source = `<template><view /></template><${tag} src="./external.ts"></script>`
+    expect(transformUniAppSource(source, { filename: 'external.vue', target: 'mp-weixin' })).toEqual({
+      changed: false,
+      code: source,
+    })
+  })
+
+  it.each(['script', 'script setup'])('retains an empty <%s> after all conditional statements are excluded', (tag) => {
+    const source = `<template><view /></template><${tag}>/* #ifdef H5 */const web = uni.getSystemInfoSync()/* #endif */</script>`
+    const empty = `<template><view /></template><${tag}></script>`
+    expect(transformUniAppSource(source, { filename: 'conditional.vue', target: 'mp-weixin' })).toEqual({
+      changed: true,
+      code: empty,
+    })
+    expect(transformUniAppSource(empty, { filename: 'conditional.vue', target: 'mp-weixin' })).toEqual({
+      changed: false,
+      code: empty,
+    })
+  })
+
+  it('prepares inline scripts independently of an external script reference', () => {
+    const source = `<template><view /></template><script src="./external.ts"></script>
+<script setup>import { ref } from 'vue'</script>`
+    const result = transformUniAppSource(source, { filename: 'mixed.vue', target: 'mp-weixin' })
+    expect(result.changed).toBe(true)
+    expect(result.code).toContain('<script src="./external.ts"></script>')
+    expect(result.code).toContain('import { ref } from "wevu"')
+  })
+
   it('normalizes auxiliary WXS scripts while analyzing the Vue script block', () => {
     const source = `<template><view /></template>
 <script src="./index.wxs" module="wxs" lang="wxs"></script>

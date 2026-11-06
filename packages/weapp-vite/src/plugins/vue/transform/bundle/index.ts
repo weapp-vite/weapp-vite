@@ -1,8 +1,12 @@
 import type { CompilationCacheEntry, VueBundleState } from './shared'
+import { normalizeSourceId } from '../../../../moduleGraph/traversal'
+import { recordHmrProfileDuration, recordHmrProfileOperation } from '../../../../utils/hmrProfile'
+import { withRealpathScope } from '../../../../utils/realpathScope'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { isAppVueFile } from '../appShell'
 import { emitCompiledVueEntryAssets } from './emitCompiledEntry'
 import { emitFallbackPageAssets } from './emitFallbackPage'
+import { resolveVueBundleAssetContext } from './shared/assets'
 
 export type { CompilationCacheEntry, VueBundleState } from './shared'
 
@@ -42,8 +46,11 @@ export function resolveVueBundleEmitState(state: VueBundleState) {
   const currentAutoRoutesSignature = ctx.autoRoutesService?.getSignature?.()
 
   return {
-    compilationEntries: Array.from(compilationCache.entries()).filter(([id]) => {
+    compilationEntries: withRealpathScope(() => Array.from(compilationCache.entries()).filter(([id]) => {
       const normalizedId = normalizeFsResolvedId(id)
+      if (!state.nativeEntrySources?.has(normalizedId) && !state.nativeEntrySources?.has(normalizeSourceId(id))) {
+        return false
+      }
       const cached = compilationCache.get(id)
       const isStaleAutoRoutesAppEntry = Boolean(
         cached
@@ -57,7 +64,7 @@ export function resolveVueBundleEmitState(state: VueBundleState) {
         || dirtyVueEntryIds?.has(normalizedId)
         || isStaleAutoRoutesAppEntry
         || isAutoRoutesAppRefreshAppEntry
-    }),
+    })),
     emittedEntryIds,
   }
 }
@@ -76,13 +83,25 @@ export async function emitVueBundleAssets(
   bundle: Record<string, any>,
   state: VueBundleState,
 ) {
-  const emitState = resolveVueBundleEmitState(state)
-  if (!emitState) {
-    return
+  const profile = state.ctx.runtimeState?.build?.hmr?.profile
+  const startedAt = performance.now()
+  try {
+    const emitState = resolveVueBundleEmitState(state)
+    if (!emitState) {
+      return
+    }
+    recordHmrProfileOperation(profile, 'vueBundleEligibleCount', emitState.compilationEntries.length)
+    // 平台输出选项属于本轮资产计划，所有入口共享；不跨构建代次保存。
+    const bundleState = {
+      ...state,
+      assetContext: resolveVueBundleAssetContext(state.ctx.configService!),
+    }
+    await emitCompiledBundleEntries(bundle, bundleState, emitState.compilationEntries)
+    await emitFallbackPageAssets(bundle, bundleState, {
+      emittedEntryIds: emitState.emittedEntryIds,
+    })
   }
-
-  await emitCompiledBundleEntries(bundle, state, emitState.compilationEntries)
-  await emitFallbackPageAssets(bundle, state, {
-    emittedEntryIds: emitState.emittedEntryIds,
-  })
+  finally {
+    recordHmrProfileDuration(profile, 'vueGenerateBundleMs', performance.now() - startedAt)
+  }
 }

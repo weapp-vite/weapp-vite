@@ -8,10 +8,14 @@ export class EntryChunkLifecycle {
 
   constructor(private readonly requestFullBuild: (entryId: string) => void) {}
 
-  beginBuild(): void {
+  beginBuild(rootInputIds: Iterable<string> = []): void {
     this.scanning = true
     this.registered.clear()
     this.deferred.clear()
+    // 本代静态 input 已由 bundler 注册，与动态发现共享同一发射去重账本。
+    for (const entryId of rootInputIds) {
+      this.registered.add(entryId)
+    }
   }
 
   endBuild(): void {

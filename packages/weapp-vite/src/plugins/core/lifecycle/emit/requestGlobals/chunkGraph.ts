@@ -1,10 +1,12 @@
 import type { OutputBundle } from 'rolldown'
+import type { RequestGlobalsAnalysisOptions } from './analysis'
 import { parse, traverse } from '../../../../../utils/babel'
 import { REQUEST_GLOBAL_REQUIRE_CALL_RE } from '../constants'
 import { getStaticStringLiteral, normalizeRelativeChunkImport } from '../rewrite'
+import { getRequestGlobalsContentFacts } from './analysis'
 
 /** 初始化器及其同步依赖先于 prelude 执行，不能反向加载 prelude。 */
-export function collectRequestGlobalsInstallerDependencies(bundle: OutputBundle, installerFileNames: Iterable<string>) {
+export function collectRequestGlobalsInstallerDependencies(bundle: OutputBundle, installerFileNames: Iterable<string>, analysis?: RequestGlobalsAnalysisOptions) {
   const pending = [...installerFileNames]
   const dependencies = new Set<string>()
   while (pending.length) {
@@ -19,6 +21,13 @@ export function collectRequestGlobalsInstallerDependencies(bundle: OutputBundle,
     dependencies.add(fileName)
     for (const importee of output.imports ?? []) {
       pending.push(bundle[importee] ? importee : normalizeRelativeChunkImport(fileName, importee))
+    }
+    const facts = getRequestGlobalsContentFacts(output.code, output.fileName, analysis)
+    if (facts) {
+      for (const importee of facts.requires) {
+        pending.push(normalizeRelativeChunkImport(fileName, importee))
+      }
+      continue
     }
     // 产物后处理新增的 require 不一定已同步到 chunk.imports。
     // 这里只解析编译后的 JS；CommonJS 允许 var/function 同名，不能套用 TS module 的绑定规则。

@@ -1,3 +1,4 @@
+import type { VueTransformResult } from 'wevu/compiler'
 import type { CompilerContext } from '../../../../context'
 import type { ChangeEvent } from '../../../../types'
 import type { VueCompilationCache, VueStyleBlocksCache } from './transformFile/types'
@@ -6,6 +7,8 @@ import os from 'node:os'
 import path from 'pathe'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createModuleGraphService } from '../../../../moduleGraph'
+import { createLogicalEntryId } from '../../../../moduleGraph/protocol'
+import { captureNativeEntryAssetOwners } from '../../../utils/nativeEntryAssetOwners'
 import { createVueTransformPlugin } from './index'
 
 const captured = vi.hoisted(() => ({
@@ -13,6 +16,8 @@ const captured = vi.hoisted(() => ({
   styleBlocksCache: undefined as VueStyleBlocksCache | undefined,
   styleRefreshTokens: undefined as Map<string, number | string> | undefined,
   published: [] as string[],
+  transformValidation: undefined as WeakSet<VueTransformResult> | undefined,
+  bundleValidation: undefined as WeakSet<VueTransformResult> | undefined,
 }))
 
 vi.mock('../appShell', () => ({
@@ -31,6 +36,7 @@ vi.mock('./transformFile', () => ({
     captured.compilationCache = options.compilationCache
     captured.styleBlocksCache = options.styleBlocksCache
     captured.styleRefreshTokens = options.styleRefreshTokens
+    captured.transformValidation = options.validatedCompilations
     options.compilationCache.set(options.id, {
       source: options.code,
       isPage: true,
@@ -38,6 +44,7 @@ vi.mock('./transformFile', () => ({
     })
     options.styleBlocksCache.set(options.id, [])
     options.styleRefreshTokens.set(options.id, 1)
+    options.validatedCompilations?.add(options.compilationCache.get(options.id)!.result)
     return { code: 'Page({})', map: null }
   },
 }))
@@ -47,6 +54,7 @@ vi.mock('../bundle', async (importOriginal) => {
   return {
     ...actual,
     emitVueBundleAssets: async (_bundle: unknown, state: Parameters<typeof actual.resolveVueBundleEmitState>[0]) => {
+      captured.bundleValidation = state.validatedCompilations
       captured.published = actual.resolveVueBundleEmitState(state)?.compilationEntries.map(([id]) => id) ?? []
     },
   }
@@ -83,7 +91,10 @@ describe('Vue snapshot source invalidation', () => {
       await writeFile(file, '<template><view>cached page</view></template>')
       await hook(plugin.transform).call({} as never, '<template><view>cached page</view></template>', file)
     }
-    return { plugin, changes, removed, retained }
+    captureNativeEntryAssetOwners(ctx, undefined, {}, {
+      'entries.js': { type: 'chunk', moduleIds: [removed, retained].map(id => createLogicalEntryId(id, 'page')) },
+    } as never)
+    return { ctx, plugin, changes, removed, retained }
   }
 
   it('retires a deleted SFC before a complete snapshot can publish its cached page assets', async () => {
@@ -98,6 +109,43 @@ describe('Vue snapshot source invalidation', () => {
     expect(captured.compilationCache?.has(removed)).toBe(false)
     expect(captured.styleBlocksCache?.has(removed)).toBe(false)
     expect(captured.styleRefreshTokens?.has(removed)).toBe(false)
+  })
+
+  it('rebuilds cached asset ownership from the current reachable entries during a full scan', async () => {
+    const { ctx, plugin, removed, retained } = await setup()
+    ctx.runtimeState.build.hmr.fullEntryScan = true
+
+    await hook(plugin.buildStart).call({} as never, {} as never)
+    expect(captured.compilationCache?.size).toBe(0)
+    expect(captured.styleBlocksCache?.size).toBe(0)
+    expect(captured.styleRefreshTokens?.size).toBe(0)
+    // 文件仍然存在；只有本代重新发现的入口可以重新取得资产归属。
+    await hook(plugin.transform).call({} as never, '<template><view>current page</view></template>', retained)
+    await hook(plugin.generateBundle).call({} as never, {} as never, {}, true)
+
+    expect(captured.published).toEqual([retained])
+    expect(captured.compilationCache?.has(removed)).toBe(false)
+  })
+
+  it.each(['closeBundle', 'closeWatcher'] as const)('scopes validation to a build generation and releases it at %s', async (closeHook) => {
+    const { plugin, retained } = await setup()
+    const previousValidation = captured.transformValidation
+    const previousResult = captured.compilationCache!.get(retained)!.result
+    expect(previousValidation?.has(previousResult)).toBe(true)
+
+    await hook(plugin.buildStart).call({} as never, {} as never)
+    await hook(plugin.generateBundle).call({} as never, {} as never, {}, true)
+    expect(captured.bundleValidation).not.toBe(previousValidation)
+    expect(captured.bundleValidation?.has(previousResult)).toBe(false)
+
+    await hook(plugin.transform).call({} as never, '<template><view>validated</view></template>', retained)
+    const currentValidation = captured.transformValidation
+    const currentResult = captured.compilationCache!.get(retained)!.result
+    expect(currentValidation?.has(currentResult)).toBe(true)
+    await hook(plugin[closeHook]).call({} as never)
+    await hook(plugin.generateBundle).call({} as never, {} as never, {}, true)
+    expect(captured.bundleValidation).not.toBe(currentValidation)
+    expect(captured.bundleValidation?.has(currentResult)).toBe(false)
   })
 
   it('keeps an atomically recreated SFC available and invalidates its style snapshot', async () => {

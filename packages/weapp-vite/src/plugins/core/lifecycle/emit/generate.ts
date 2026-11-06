@@ -10,14 +10,16 @@ import { parseLogicalEntryId } from '../../../../moduleGraph/protocol'
 import { shouldRewriteBundleNpmImports } from '../../../../platform'
 import { applyRuntimeChunkLocalization, applySharedChunkStrategy, DEFAULT_SHARED_CHUNK_STRATEGY } from '../../../../runtime/chunkStrategy'
 import { resolveRequestRuntimeOptions } from '../../../../runtime/config/internal/injectRequestGlobals'
+import { getHmrRuntimeSession } from '../../../../runtime/hmrRuntimeSession'
 import { resolveNpmBuildCandidateDependencyRecordSync } from '../../../../runtime/npmPlugin/service'
 import { isWevuStableVendorFileName } from '../../../../runtime/wevuModules'
 import { toPosixPath } from '../../../../utils'
-import { recordHmrProfileDuration } from '../../../../utils/hmrProfile'
+import { createHmrProfileCheckpoint, recordHmrProfileDuration } from '../../../../utils/hmrProfile'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { emitStyleSidecarAsset } from '../../../css'
 import { normalizePreprocessorStyleAssets, pruneUneventedDevHmrChunks } from '../../../outputFinalizer'
 import { shouldPublishClassicGeneration } from '../../../outputFinalizer/classicGeneration'
+import { captureNativeEntryAssetOwners } from '../../../utils/nativeEntryAssetOwners'
 import {
   createBundleChunkSnapshot,
   filterPluginBundleOutputs,
@@ -41,6 +43,7 @@ import {
   injectRequestGlobalsPassiveBindings,
   inlineRequestGlobalsAppRegisteredInstallerChunks,
 } from './requestGlobals'
+import { getSessionRequestGlobalsAnalysisCache } from './requestGlobals/analysis'
 import {
   rewriteBundleDynamicGlobalResolution,
   rewriteBundleNpmImportsByPlatform,
@@ -50,6 +53,7 @@ import {
   rewriteJsonNpmImportsToLocalRoot,
   warmupBundleScriptAnalysis,
 } from './rewrite'
+import { ContentAnalysisCache } from './rewrite/contentAnalysisCache'
 
 function resolveInjectWeapiGlobalName(state: CorePluginState) {
   const injectWeapi = state.ctx.configService.weappViteConfig?.injectWeapi
@@ -472,6 +476,11 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
   const { ctx, subPackageMeta } = state
   const { scanService, configService } = ctx
   const astEngine = resolveAstEngine(configService.weappViteConfig)
+  // 同一编译 session 复用纯内容事实；容量有界，构建代次仍独立持有 chunk 与 hook。
+  const contentAnalysisCache = configService.isDev ? new ContentAnalysisCache() : undefined
+  const requestGlobalsAnalysisCache = configService.isDev
+    ? getSessionRequestGlobalsAnalysisCache(getHmrRuntimeSession(ctx), configService)
+    : undefined
   const injectRequestGlobalsOptions = resolveRequestRuntimeOptions({
     appPrelude: configService.weappViteConfig?.appPrelude,
     webRuntime: configService.weappViteConfig?.injectWebRuntimeGlobals,
@@ -485,7 +494,17 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
       ctx.moduleGraphService?.bindBuildContext(state, this)
       ctx.moduleGraphService?.bindPluginContext(state, this)
       const rolldownBundle = bundle as unknown as OutputBundle
+      const nativeAssetBundle = isPluginBuild ? { ...rolldownBundle } : rolldownBundle
+      if (isPluginBuild) {
+        filterPluginBundleOutputs(nativeAssetBundle, configService)
+      }
+      captureNativeEntryAssetOwners(ctx, this.environment, _options, nativeAssetBundle)
       const scriptAnalysisCache: ChunkScriptAnalysisCache = new WeakMap()
+      scriptAnalysisCache.contentCache = contentAnalysisCache
+      scriptAnalysisCache.profile = ctx.runtimeState?.build?.hmr?.profile
+      const requestGlobalsAnalysis = requestGlobalsAnalysisCache
+        ? { cache: requestGlobalsAnalysisCache, astEngine, profile: scriptAnalysisCache.profile }
+        : undefined
       const nativeDevBundle = state.resolvedConfig?.experimental?.bundledDev === true
       // 原生 DevEngine 自己管理 patch 与 bundle，不能套用 classic 的局部入口发射计划。
       const hasChunkOutput = nativeDevBundle
@@ -720,7 +739,7 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
         if (!nativeDevBundle) {
           // 共享转换依赖完整 importer 图；先统一最终路径，再按本代发布计划裁剪。
           const publicationDependencies = requiresClassicRootPublication(state)
-            ? collectNativePublicationDependencies(rolldownBundle, { rootFileName: 'app.js', requestGlobalsPrelude: shouldInjectRequestGlobalsPrelude })
+            ? collectNativePublicationDependencies(rolldownBundle, { rootFileName: 'app.js', requestGlobalsPrelude: shouldInjectRequestGlobalsPrelude, analysis: requestGlobalsAnalysis })
             : new Set<string>()
           activeImportedChunkIds = prunePartialHmrStableSharedChunks(rolldownBundle, state, publicationDependencies)
           retainFullEntryHmrChunks(rolldownBundle, state)
@@ -736,6 +755,7 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
       recordHmrProfileDuration(ctx.runtimeState?.build?.hmr?.profile, 'generateSharedMs', performance.now() - sharedStartedAt)
 
       const rewriteStartedAt = performance.now()
+      const checkpointRewrite = createHmrProfileCheckpoint(ctx.runtimeState?.build?.hmr?.profile)
       const rewriteBundle = resolveDevHmrRewriteBundle(rolldownBundle, state, activeImportedChunkIds)
       const subPackageMap = scanService.subPackageMap ?? new Map<string, SubPackageMetaValue>()
       const localSubPackageMetas = [...subPackageMap.values()]
@@ -752,12 +772,14 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
         hasLocalRootNpmRewriteTargets,
         hasPlatformApiRewrite: Boolean(injectWeapiGlobalName),
       })
+      checkpointRewrite('generateRewritePrepareMs')
       if (needsScriptAnalysisWarmup) {
         warmupBundleScriptAnalysis(rewriteBundle, {
           astEngine,
           cache: scriptAnalysisCache,
         })
       }
+      checkpointRewrite('generateRewriteAnalysisMs')
       if (rewritesBundleNpmImports) {
         rewriteBundleNpmImportsByPlatform(
           configService.platform,
@@ -788,6 +810,7 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
         )
       }
 
+      checkpointRewrite('generateRewriteNpmMs')
       if (injectWeapiGlobalName) {
         rewriteBundlePlatformApi(rewriteBundle, injectWeapiGlobalName, {
           analysisCache: scriptAnalysisCache,
@@ -795,6 +818,7 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
         })
       }
       rewriteBundleDynamicGlobalResolution(rewriteBundle)
+      checkpointRewrite('generateRewritePlatformMs')
 
       const installerChunks = injectRequestGlobalsOptions?.targets?.length
         ? injectRequestGlobalsBundleRuntime(
@@ -802,10 +826,11 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
             injectRequestGlobalsOptions.targets,
             injectRequestGlobalsOptions.mode,
             injectRequestGlobalsOptions.networkDefaults,
+            requestGlobalsAnalysis,
           )
         : new Map<string, string>()
       if (injectRequestGlobalsOptions?.targets?.length) {
-        injectRequestGlobalsPassiveBindings(rolldownBundle, installerChunks, injectRequestGlobalsOptions.targets, injectRequestGlobalsOptions.mode, state.entriesMap)
+        injectRequestGlobalsPassiveBindings(rolldownBundle, installerChunks, injectRequestGlobalsOptions.targets, injectRequestGlobalsOptions.mode, state.entriesMap, requestGlobalsAnalysis)
         injectRequestGlobalsLocalBindings(
           rolldownBundle,
           installerChunks,
@@ -813,6 +838,7 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
           injectRequestGlobalsOptions.mode,
           state.entriesMap,
           injectRequestGlobalsOptions.networkDefaults,
+          requestGlobalsAnalysis,
         )
         injectAxiosFetchAdapterEnv(rolldownBundle)
         injectRequestGlobalsAppRegistration(rolldownBundle, installerChunks)
@@ -822,6 +848,7 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
         }
       }
 
+      checkpointRewrite('generateRewriteRequestGlobalsMs')
       const appPreludePath = scanService.appEntry?.preludePath
       const appPreludeOptions = resolveAppPreludeOptions(state)
       const shouldRunAppPrelude = (appPreludeOptions.enabled && Boolean(appPreludePath))
@@ -848,12 +875,14 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
               targets: injectRequestGlobalsOptions?.targets ?? [],
             },
             asset => this.emitFile(asset),
+            requestGlobalsAnalysis,
           )
         : new Set<string>()
       if (injectRequestGlobalsOptions?.targets?.length) {
         inlineRequestGlobalsAppRegisteredInstallerChunks(rolldownBundle, installerChunks, preservedRequestGlobalsInstallerChunks)
       }
 
+      checkpointRewrite('generateRewritePreludeMs')
       const runtimeRewriteBundle = resolveDevHmrRewriteBundle(rolldownBundle, state, activeImportedChunkIds)
       const finalBundleSnapshot = createDevHmrRuntimeRewriteSnapshot(rolldownBundle, runtimeRewriteBundle)
       rewriteWevuInternalRuntimeImports(runtimeRewriteBundle, {
@@ -883,6 +912,7 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
         state.ctx.configService.outputExtensions?.wxss,
         asset => this.emitFile(asset),
       )
+      checkpointRewrite('generateRewriteRuntimeMs')
       recordHmrProfileDuration(ctx.runtimeState?.build?.hmr?.profile, 'generateRewriteMs', performance.now() - rewriteStartedAt)
       state.hmrState.affectedSharedChunkIds?.clear()
 

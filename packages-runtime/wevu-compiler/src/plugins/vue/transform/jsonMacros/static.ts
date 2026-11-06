@@ -93,5 +93,5 @@ export function resolveStaticJsonMacroConfig(
       mergeRecursive(accumulator, next)
     }
   }
-  return Object.keys(accumulator).length ? accumulator : undefined
+  return accumulator
 }

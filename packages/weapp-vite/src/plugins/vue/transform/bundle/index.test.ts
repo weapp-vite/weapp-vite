@@ -1,5 +1,18 @@
+import type { OutputBundle } from 'rolldown'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { emitCompiledBundleEntries, emitVueBundleAssets, resolveVueBundleEmitState } from './index'
+import { createLogicalEntryId } from '../../../../moduleGraph/protocol'
+import { collectNativeEntryAssetOwners } from '../../../utils/nativeEntryAssetOwners'
+import { emitCompiledBundleEntries, emitVueBundleAssets, resolveVueBundleEmitState as resolveOwnedVueBundleEmitState } from './index'
+
+// 既有 HMR fixture 声明全部缓存入口均已注册，并通过真实 logical 协议建立本轮图。
+function resolveVueBundleEmitState(state: Parameters<typeof resolveOwnedVueBundleEmitState>[0]) {
+  const bundle = Object.fromEntries([...state.compilationCache].map(([id, cached], index) => [index, {
+    type: 'chunk',
+    facadeModuleId: createLogicalEntryId(id, cached.isPage ? 'page' : 'component'),
+    moduleIds: [],
+  }])) as OutputBundle
+  return resolveOwnedVueBundleEmitState({ ...state, nativeEntrySources: collectNativeEntryAssetOwners(bundle) })
+}
 
 const emitCompiledVueEntryAssetsMock = vi.hoisted(() => vi.fn(async () => {}))
 const emitFallbackPageAssetsMock = vi.hoisted(() => vi.fn(async () => {}))
@@ -436,15 +449,19 @@ describe('bundle index helpers', () => {
       compilationCache: new Map([
         ['/project/src/pages/index.vue', { result: {}, isPage: true }],
       ]),
+      nativeEntrySources: new Set(['/project/src/pages/index.vue']),
     } as any
 
     await emitVueBundleAssets(bundle, state)
 
     expect(emitCompiledVueEntryAssetsMock).toHaveBeenCalledTimes(1)
     expect(emitFallbackPageAssetsMock).toHaveBeenCalledTimes(1)
-    expect(emitFallbackPageAssetsMock).toHaveBeenCalledWith(bundle, state, {
+    expect(emitFallbackPageAssetsMock).toHaveBeenCalledWith(bundle, expect.objectContaining(state), {
       emittedEntryIds: undefined,
     })
+    const preparedState = (emitCompiledVueEntryAssetsMock.mock.calls as unknown[][])[0]?.[1]
+    expect((emitFallbackPageAssetsMock.mock.calls as unknown[][])[0]?.[1]).toBe(preparedState)
+    expect(preparedState).toHaveProperty('assetContext.platformAssetOptions.platform', 'weapp')
   })
 
   it('returns early from bundle asset emission when required services are missing', async () => {
@@ -455,5 +472,33 @@ describe('bundle index helpers', () => {
 
     expect(emitCompiledVueEntryAssetsMock).not.toHaveBeenCalled()
     expect(emitFallbackPageAssetsMock).not.toHaveBeenCalled()
+  })
+
+  it('requires current native ownership before cache refresh or asset dispatch, including dirty cached imports', async () => {
+    const owner = '/project/src/pages/index.vue'
+    const imported = '/project/src/components/hidden.vue'
+    const shared = '/project/src/components/shared.vue'
+    const state = {
+      ctx: {
+        configService: { isDev: true },
+        scanService: {},
+        runtimeState: { build: { hmr: {
+          didEmitAllEntries: false,
+          lastHmrEntryIds: new Set([owner, imported, shared]),
+          dirtyVueEntryIds: new Set([imported]),
+        } } },
+      },
+      compilationCache: new Map([
+        [owner, { result: {}, isPage: true }],
+        [imported, { result: {}, isPage: false }],
+        [shared, { result: {}, isPage: false }],
+      ]),
+    } as any
+    expect(resolveOwnedVueBundleEmitState(state)?.compilationEntries).toEqual([])
+    state.nativeEntrySources = new Set([owner, shared])
+    await emitVueBundleAssets({}, state)
+    expect(emitCompiledVueEntryAssetsMock.mock.calls.map(call => (call as unknown[])[2])).toEqual([owner, shared])
+    state.nativeEntrySources = new Set([owner])
+    expect(resolveOwnedVueBundleEmitState(state)?.compilationEntries.map(([id]) => id)).toEqual([owner])
   })
 })

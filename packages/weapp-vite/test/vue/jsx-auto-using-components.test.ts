@@ -4,7 +4,7 @@ import path from 'pathe'
 import logger from '../../src/logger'
 import { createVueTransformPlugin } from '../../src/plugins/vue/transform'
 import { callPluginHook } from '../pluginHook'
-import { createTestModuleGraphService, createTestRuntimeState } from './moduleGraph'
+import { captureTestNativeEntryAssetOwners, createTestModuleGraphService, createTestRuntimeState } from './moduleGraph'
 
 function createCtx(root: string, pages: string[] = []) {
   const absoluteSrcRoot = path.join(root, 'src')
@@ -78,7 +78,8 @@ export default defineComponent({
 
       await fs.outputFile(pageFile, source)
 
-      const plugin = createVueTransformPlugin(createCtx(root, ['pages/demo/index']))
+      const ctx = createCtx(root, ['pages/demo/index'])
+      const plugin = createVueTransformPlugin(ctx)
       const resolver = async (request: string, importer?: string) => {
         if (!importer) {
           return { id: request } as any
@@ -94,6 +95,7 @@ export default defineComponent({
       expect(transformed?.code).toBeDefined()
 
       const emitted: Array<{ fileName: string, source: string }> = []
+      captureTestNativeEntryAssetOwners(ctx, [[pageFile, 'page']])
       await plugin.generateBundle!.call(
         {
           addWatchFile() {},
@@ -145,7 +147,8 @@ export default defineComponent({
 
       await fs.outputFile(pageFile, source)
 
-      const plugin = createVueTransformPlugin(createCtx(root, ['pages/demo/conflict']))
+      const ctx = createCtx(root, ['pages/demo/conflict'])
+      const plugin = createVueTransformPlugin(ctx)
       const resolver = async (request: string, importer?: string) => {
         if (!importer) {
           return { id: request } as any
@@ -161,6 +164,7 @@ export default defineComponent({
       expect(transformed?.code).toBeDefined()
 
       const emitted: Array<{ fileName: string, source: string }> = []
+      captureTestNativeEntryAssetOwners(ctx, [[pageFile, 'page']])
       await plugin.generateBundle!.call(
         {
           addWatchFile() {},

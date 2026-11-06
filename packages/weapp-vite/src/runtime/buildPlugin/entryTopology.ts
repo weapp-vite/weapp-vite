@@ -1,23 +1,12 @@
 import type { MutableCompilerContext } from '../../context'
+import { normalizeSourceId } from '../../moduleGraph/traversal'
+import { getRecordedSfcBlockSource } from '../../plugins/utils/sfcTemplateDependencies'
+import { readVueLikeCompilerInput } from '../../plugins/vue/transform/sourceInput'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
+import { entryTopologySignature } from './entryTopologySignature'
+import { getRecordedVueEntryExternalBlockSources, getRecordedVueEntryTopologySignature, resolveVueEntryTopologySignature } from './vueEntryTopology'
 
-const fields = ['pages', 'subPackages', 'subpackages', 'usingComponents', 'componentGenerics', 'component', 'tabBar', 'appBar', 'plugins'] as const
-
-function canonical(value: unknown): unknown {
-  if (Array.isArray(value)) {
-    return value.map(canonical)
-  }
-  if (value && typeof value === 'object') {
-    return Object.fromEntries(Object.entries(value).sort(([left], [right]) => left.localeCompare(right)).map(([key, item]) => [key, canonical(item)]))
-  }
-  return value
-}
-
-/** 只比较决定入口可达性的字段；普通标题等配置仍沿用局部资源更新。 */
-export function entryTopologySignature(value: unknown) {
-  const config = value && typeof value === 'object' ? value as Record<string, unknown> : {}
-  return JSON.stringify(canonical(Object.fromEntries(fields.map(field => [field, config[field]]))))
-}
+export { entryTopologySignature } from './entryTopologySignature'
 
 function collectEntryConfigs(ctx: MutableCompilerContext) {
   const entryConfigs = new Map<string, unknown>()
@@ -41,7 +30,39 @@ function collectEntryConfigs(ctx: MutableCompilerContext) {
 
 /** 冻结已发布完整扫描的入口拓扑，局部资源构建不得推进此基线。 */
 export function captureEntryTopology(ctx: MutableCompilerContext) {
-  return new Map([...collectEntryConfigs(ctx)].map(([file, value]) => [file, entryTopologySignature(value)]))
+  const topology = new Map([...collectEntryConfigs(ctx)].map(([file, value]) => [file, entryTopologySignature(value)]))
+  if (ctx.configService) {
+    for (const file of ctx.runtimeState?.build.hmr.resolvedEntryMap?.keys() ?? []) {
+      const signature = getRecordedVueEntryTopologySignature(ctx.configService, file)
+      if (signature !== undefined) {
+        topology.set(normalizeFsResolvedId(file), signature)
+      }
+    }
+  }
+  return topology
+}
+
+function changesExternalVueBlock(ctx: MutableCompilerContext, file: string) {
+  const graph = ctx.moduleGraphService
+  if (!ctx.configService || !graph?.collectAffectedEntries) {
+    return false
+  }
+  const owners = new Set([...graph.collectAffectedEntries(file, 'script'), ...graph.collectAffectedEntries(file, 'template')])
+  const changedSource = normalizeSourceId(file)
+  for (const owner of owners) {
+    const registered = ctx.runtimeState?.build.hmr.resolvedEntryMap
+    if (registered && !registered.has(normalizeSourceId(owner))) {
+      continue
+    }
+    for (const source of getRecordedVueEntryExternalBlockSources(ctx.configService, owner)) {
+      const resolved = getRecordedSfcBlockSource(ctx.configService, source, owner)
+      // 两次 snapshot 之间没有活动 hook；未知或被删除的输入均不能借旧 resolver 猜测稳定。
+      if (!resolved || normalizeSourceId(resolved) === changedSource) {
+        return true
+      }
+    }
+  }
+  return false
 }
 
 export async function hasEntryTopologyChange(
@@ -50,17 +71,30 @@ export async function hasEntryTopologyChange(
   committed?: ReadonlyMap<string, string>,
   deletedFiles?: ReadonlySet<string>,
 ) {
-  if (!ctx.jsonService) {
-    return false
-  }
   const entryConfigs = collectEntryConfigs(ctx)
   let changed = false
   for (const file of files) {
+    const normalizedFile = normalizeFsResolvedId(file)
+    if (changesExternalVueBlock(ctx, normalizedFile)) {
+      changed = true
+    }
+    if (normalizedFile.endsWith('.vue') && ctx.configService) {
+      const before = committed ? committed.get(normalizedFile) : getRecordedVueEntryTopologySignature(ctx.configService, normalizedFile)
+      if (before !== undefined) {
+        const after = deletedFiles?.has(normalizedFile)
+          ? undefined
+          : resolveVueEntryTopologySignature(ctx.configService, normalizedFile, (await readVueLikeCompilerInput(ctx.configService, normalizedFile)).source)
+        changed ||= before !== after
+      }
+      continue
+    }
+    if (!ctx.jsonService) {
+      continue
+    }
     if (!/\.json(?:\.[jt]s)?$/.test(file)) {
       continue
     }
     const cached = ctx.jsonService.cache.get(file) as unknown
-    const normalizedFile = normalizeFsResolvedId(file)
     const before = cached === undefined ? entryConfigs.get(normalizedFile) : cached
     // 外部转换输入即使是 JSON，也不属于入口配置；解析、错误恢复由声明它的转换器负责。
     if (before === undefined && !entryConfigs.has(normalizedFile) && !committed?.has(normalizedFile)) {

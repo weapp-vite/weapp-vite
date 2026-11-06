@@ -3,7 +3,7 @@ import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { describe, expect, it, vi } from 'vitest'
 import { createVueTransformPlugin } from '../../src/plugins/vue/transform'
-import { createTestModuleGraphService, createTestRuntimeState } from './moduleGraph'
+import { captureTestNativeEntryAssetOwners, createTestModuleGraphService, createTestRuntimeState } from './moduleGraph'
 
 const { compileVueFileMock, compileJsxFileMock } = vi.hoisted(() => {
   return {
@@ -71,9 +71,11 @@ describe('vue fallback compilation', () => {
 
       compileJsxFileMock.mockClear()
 
-      const plugin = createVueTransformPlugin(createCtx(root))
+      const ctx = createCtx(root)
+      const plugin = createVueTransformPlugin(ctx)
 
       const emitted: Array<{ type: string, fileName: string, source?: string }> = []
+      captureTestNativeEntryAssetOwners(ctx, [[file, 'page']])
       await plugin.generateBundle!.call(
         {
           addWatchFile() {},
@@ -104,9 +106,11 @@ describe('vue fallback compilation', () => {
       const file = path.join(root, 'src/pages/demo/index.vue')
       await fs.outputFile(file, '<template><view>demo</view></template>')
 
-      const plugin = createVueTransformPlugin(createCtx(root))
+      const ctx = createCtx(root)
+      const plugin = createVueTransformPlugin(ctx)
 
       const emitted: Array<{ type: string, fileName: string, source?: string }> = []
+      captureTestNativeEntryAssetOwners(ctx, [[file, 'page']])
       await plugin.generateBundle!.call(
         {
           addWatchFile() {},

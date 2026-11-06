@@ -3,7 +3,7 @@ import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { createVueTransformPlugin } from '../../src/plugins/vue/transform'
 import { callPluginHook } from '../pluginHook'
-import { createTestModuleGraphService, createTestRuntimeState } from './moduleGraph'
+import { captureTestNativeEntryAssetOwners, createTestModuleGraphService, createTestRuntimeState } from './moduleGraph'
 
 function createCtx(root: string, pages: string[] = []) {
   const absoluteSrcRoot = path.join(root, 'src')
@@ -44,7 +44,8 @@ describe('<script setup> auto usingComponents (barrel exports)', () => {
         `<template><view>card</view></template><script setup>const a = 1</script>`,
       )
 
-      const plugin = createVueTransformPlugin(createCtx(root, ['pages/demo/index']))
+      const ctx = createCtx(root, ['pages/demo/index'])
+      const plugin = createVueTransformPlugin(ctx)
       const resolver = async (source: string, importer?: string) => {
         if (!importer) {
           return { id: source } as any
@@ -72,6 +73,7 @@ import { VueCard } from '../../components'
       expect(js).not.toContain('../../components')
 
       const emitted: Array<{ fileName: string, source: string }> = []
+      captureTestNativeEntryAssetOwners(ctx, [[pageFile, 'page']])
       await plugin.generateBundle!.call(
         {
           resolve: resolver,

@@ -6,6 +6,7 @@ import type {
 } from '../../../../types'
 import type { ImportMetaDefineRegistry } from '../../../../utils/importMeta'
 import type { CorePluginState } from '../../helpers'
+import type { RequestGlobalsAnalysisOptions } from './requestGlobals/analysis'
 import { readFile } from 'node:fs/promises'
 import MagicString from 'magic-string'
 import path from 'pathe'
@@ -149,6 +150,7 @@ function hasRequestGlobalsPreludeDependency(
     enabled: boolean
     installerChunks: Map<string, string>
   },
+  analysis?: RequestGlobalsAnalysisOptions,
 ) {
   if (!requestGlobalsPreludeOptions.enabled) {
     return false
@@ -158,7 +160,7 @@ function hasRequestGlobalsPreludeDependency(
     || chunk.code.includes(REQUEST_GLOBAL_BUNDLE_MARKER)
     || chunk.code.includes(REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER)
     || chunk.code.includes(REQUEST_GLOBAL_PASSIVE_BINDINGS_MARKER)
-    || Boolean(resolveRequestGlobalsInstallerImport(chunk, requestGlobalsPreludeOptions.installerChunks))
+    || Boolean(resolveRequestGlobalsInstallerImport(chunk, requestGlobalsPreludeOptions.installerChunks, analysis))
 }
 
 export function emitAppPreludeRequireAssets(
@@ -173,6 +175,7 @@ export function emitAppPreludeRequireAssets(
     targets: WeappInjectRequestGlobalsTarget[]
   },
   emitFile?: (asset: { type: 'asset', fileName: string, source: string }) => void,
+  analysis?: RequestGlobalsAnalysisOptions,
 ) {
   const preservedRequestGlobalsInstallerChunks = new Set<string>()
   if (!appPreludeCode && !requestGlobalsPreludeOptions.enabled) {
@@ -217,12 +220,13 @@ export function emitAppPreludeRequireAssets(
           requestGlobalsPreludeOptions.targets,
           requestGlobalsPreludeOptions.mode,
           requestGlobalsPreludeOptions.networkDefaults,
+          analysis,
         )
         if (!code) {
           continue
         }
         requestGlobalsPreludeCode = code
-        const installerImport = resolveRequestGlobalsInstallerImport(chunk, requestGlobalsPreludeOptions.installerChunks)
+        const installerImport = resolveRequestGlobalsInstallerImport(chunk, requestGlobalsPreludeOptions.installerChunks, analysis)
         const installerChunkFileName = installerImport?.installerChunkFileName
           ?? (requestGlobalsPreludeOptions.installerChunks.has(toPosixPath(chunk.fileName))
             ? toPosixPath(chunk.fileName)
@@ -252,17 +256,18 @@ export function injectAppPreludeCode(
     targets: WeappInjectRequestGlobalsTarget[]
   },
   emitFile?: (asset: { type: 'asset', fileName: string, source: string }) => void,
+  analysis?: RequestGlobalsAnalysisOptions,
 ) {
   let preservedRequestGlobalsInstallerChunks = new Set<string>()
   if (!options.enabled) {
     return preservedRequestGlobalsInstallerChunks
   }
   const installerDependencies = requestGlobalsPreludeOptions.enabled
-    ? collectRequestGlobalsInstallerDependencies(bundle, requestGlobalsPreludeOptions.installerChunks.keys())
+    ? collectRequestGlobalsInstallerDependencies(bundle, requestGlobalsPreludeOptions.installerChunks.keys(), analysis)
     : new Set<string>()
   const entryChunkFileNames = options.mode === 'entry' ? collectAppPreludeEntryChunkFileNames(state) : undefined
   if (options.mode === 'require' && (appPreludeCode || requestGlobalsPreludeOptions.enabled)) {
-    preservedRequestGlobalsInstallerChunks = emitAppPreludeRequireAssets(bundle, appPreludeCode, state, requestGlobalsPreludeOptions, emitFile)
+    preservedRequestGlobalsInstallerChunks = emitAppPreludeRequireAssets(bundle, appPreludeCode, state, requestGlobalsPreludeOptions, emitFile, analysis)
   }
   for (const output of Object.values(bundle)) {
     if (output?.type !== 'chunk') {
@@ -286,10 +291,11 @@ export function injectAppPreludeCode(
           requestGlobalsPreludeOptions.targets,
           requestGlobalsPreludeOptions.mode,
           requestGlobalsPreludeOptions.networkDefaults,
+          analysis,
         )
       : undefined
     const shouldInjectRequirePrelude = appPreludeCode
-      || hasRequestGlobalsPreludeDependency(chunk, requestGlobalsPreludeOptions)
+      || hasRequestGlobalsPreludeDependency(chunk, requestGlobalsPreludeOptions, analysis)
     const injectedCode = [
       requestGlobalsPreludeCode,
       options.mode === 'require'

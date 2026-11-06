@@ -210,6 +210,13 @@ weapp-vite 的 `weapp.hmr`、`weapp.tailwindcss` 和可选 `prepareHmr` 类型�
 
 阶段可能相互包含，不能相加当作总时间。`buildCoreMs` 保留旧口径，但由 `estimates.buildCoreMs` 明确标记为残差估算，不是独立计时；`snapshotBuildMs` 包含 snapshot 准备与构建。外部产物可见时间单独记录，不能冒充内部编译时间。
 
+原始 JSONL 和 `createCompilerContext()` 的 `runtimeState.build.hmr.profile`、`recentProfiles` 还提供以下可选诊断字段；未执行或未观测到的字段保持缺失。这些字段目前不进入 `analyze --hmr-profile` 的 `metrics` / `operations` 聚合：
+
+- `vueGenerateBundleMs` 是 Vue 资产阶段的整体耗时，包含逐入口累计的 `vueBundleRefreshMs`、`vueBundleAssetsMs` 以及 fallback 页面处理，不能把它与子项再次相加。
+- `generateRewritePrepareMs`、`generateRewriteAnalysisMs`、`generateRewriteNpmMs`、`generateRewritePlatformMs`、`generateRewriteRequestGlobalsMs`、`generateRewritePreludeMs`、`generateRewriteRuntimeMs` 是 `generateRewriteMs` 内依次记录的连续区间；它们仍是内部阶段，不能替代源文件修改到产物可见的外部 `wallMs`。
+- `vueBundleEligibleCount` 记录本轮选中的编译缓存入口数，`vueBundleEmittedCount` 记录成功完成资产发布的入口次数（包含 fallback）；它们不表示产物发生变化的文件数。`vueBundleCacheHitCount`、`vueBundleRecompileCount`、`vueBundleStyleOnlyCount`、`vueBundleFallbackCount` 分别记录缓存复用、发起重新编译、仅样式刷新和成功 fallback 的路径次数，重新编译计数也可能包含随后失败的尝试。
+- `rewriteAnalysisCacheHitCount` / `rewriteAnalysisCacheMissCount` 记录跨 chunk 内容分析缓存的命中与未命中；不包含本代 WeakMap 直接复用和无需分析的 chunk，因此不能直接作为整个 bundle 的缓存命中率。
+
 stateful 记录带有 `pipeline: 'stateful'`。`sourceToBatchMs` 只表示源通知到批次接收的已观察间隔，不假称原生 bundler 的全部耗时。core 转交源事件时保留原始 `eventId`、`event` 和 `receivedAtMs`，异步失效处理计入源通知到批次的间隔，不在 stateful 接收回调时重置时钟。交付批次依次记录 `deliveryQueueMs`、`prepareMs`、`commitQueueMs`、`commitMs`、`publishMs`，快照批次记录 `snapshotBuildMs`、`snapshotPublishMs`。`completionBoundary` 区分 `delivery-acknowledged` 与 `output-published`；发布包含客户端确认等待时，不能直接拿来替代更早发生的产物可见时间。失败、取消和未完成的批次不会进入成功统计。
 
 分析 JSON 的 `timelines` 提供各批次互不重叠的外层阶段、残差和归因状态。standard 的批次等待、队列等待已包含在 `watchToDirtyMs`，因此其他构建前时间为三者差值，不能重复相加。stateful 与 standard 分别解释；无法匹配唯一源事件、阶段缺失或出现负残差时保留 `null` / `partial`，不以零填补。benchmark 的预算和编辑/恢复样本选择统一使用 `wallMs`，内部 `totalMs` 仅保留实际 profile 值。

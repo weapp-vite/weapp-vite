@@ -1,4 +1,5 @@
 import type { OutputBundle, OutputChunk } from 'rolldown'
+import type { RequestGlobalsAnalysisOptions } from './requestGlobals/analysis'
 import path from 'pathe'
 import { toPosixPath } from '../../../../utils'
 import { resolveRequestGlobalsInstallerName } from './requestGlobals'
@@ -6,7 +7,7 @@ import { resolveRequestGlobalsInstallerName } from './requestGlobals'
 /** 原生局部发布保留当前根入口和将要生成的 prelude 所需依赖，不借用历史发布图。 */
 export function collectNativePublicationDependencies(
   bundle: OutputBundle,
-  options: { rootFileName: string, requestGlobalsPrelude: boolean },
+  options: { rootFileName: string, requestGlobalsPrelude: boolean, analysis?: RequestGlobalsAnalysisOptions },
 ) {
   const chunks = new Map<string, OutputChunk>()
   const pending: string[] = []
@@ -17,7 +18,7 @@ export function collectNativePublicationDependencies(
     chunks.set(toPosixPath(fileName), output)
     chunks.set(toPosixPath(output.fileName), output)
     if ((fileName === options.rootFileName && output.isEntry)
-      || (options.requestGlobalsPrelude && resolveRequestGlobalsInstallerName(output.code))) {
+      || (options.requestGlobalsPrelude && resolveRequestGlobalsInstallerName(output.code, options.analysis, output.fileName))) {
       pending.push(toPosixPath(output.fileName))
     }
   }

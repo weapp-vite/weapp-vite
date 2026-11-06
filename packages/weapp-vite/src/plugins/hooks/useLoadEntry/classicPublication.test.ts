@@ -1,4 +1,5 @@
 import { removeExtensionDeep } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/fs'
 import { relative, resolve } from 'pathe'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { parseLogicalEntryId } from '../../../moduleGraph/protocol'
@@ -49,6 +50,16 @@ function seedEntries(hook: ReturnType<typeof useLoadEntry>, ids: string[]) {
 
 function emittedSources(pluginCtx: ReturnType<typeof createPluginContext>) {
   return new Set(pluginCtx.emitFile.mock.calls.map(([asset]: [{ id: string }]) => parseLogicalEntryId(asset.id)?.sourceId ?? asset.id))
+}
+
+async function emitWithExistingSources(hook: ReturnType<typeof useLoadEntry>, pluginCtx: ReturnType<typeof createPluginContext>) {
+  const pathExists = vi.spyOn(fs, 'pathExists').mockResolvedValue(true)
+  try {
+    await hook.emitDirtyEntries.call(pluginCtx)
+  }
+  finally {
+    pathExists.mockRestore()
+  }
 }
 
 describe('classic registration and HMR entry ownership', () => {
@@ -218,5 +229,146 @@ describe('classic registration and HMR entry ownership', () => {
       emittedCount: 1,
       pendingReasonSummary: ['classic-registration:1'],
     })
+  })
+
+  it('keeps unchanged auto-import registrations emitted without reloading their source metadata', async () => {
+    const ctx = createContext()
+    const current = sourceId('pages/current.ts')
+    const retained = sourceId('pages/retained.ts')
+    const ids = [current, retained]
+    let components = { FirstCard: [{ start: 0, end: 10 }], SecondCard: [{ start: 12, end: 20 }] }
+    ctx.wxmlService.getAggregatedAutoImportComponents = vi.fn(() => components)
+    const hook = useLoadEntry(ctx, { hmr: { requiredPublicationEntryIds: new Set(ids) } })
+    seedEntries(hook, ids)
+    for (const id of ids) {
+      hook.loadedEntrySet.add(id)
+    }
+    hook.markEntryDirty(current, 'direct')
+    const pluginCtx = createPluginContext()
+    pluginCtx.emitFile.mockImplementation(() => {
+      components = { SecondCard: [{ start: 30, end: 40 }], FirstCard: [{ start: 42, end: 50 }] }
+    })
+
+    await emitWithExistingSources(hook, pluginCtx)
+
+    expect(emittedSources(pluginCtx)).toEqual(new Set(ids))
+    expect(pluginCtx.load).toHaveBeenCalledTimes(1)
+    expect(loadEntryMock.mock.calls).toEqual([[current, 'page']])
+  })
+
+  it('refreshes each affected auto-import owner behind one registration representative', async () => {
+    const ctx = createContext()
+    const affected = ['pages/a.ts', 'pages/b.ts', 'pages/c.ts'].map(sourceId)
+    const ids = [...affected, sourceId('pages/retained.ts')]
+    ctx.wxmlService.getAggregatedAutoImportComponents = vi.fn(() => ({ StableCard: [] }))
+    ctx.runtimeState.build.hmr.profile.dirtyReasonSummary = ['wxml-importer-import:3']
+    const hook = useLoadEntry(ctx, { hmr: { requiredPublicationEntryIds: new Set(ids) } })
+    seedEntries(hook, ids)
+    for (const id of affected) {
+      hook.markEntryDirty(id, 'metadata')
+    }
+
+    await emitWithExistingSources(hook, createPluginContext())
+
+    expect(loadEntryMock.mock.calls).toEqual(affected.map(id => [id, 'page']))
+    expect(ctx.runtimeState.build.hmr.profile.pendingCount).toBe(1)
+  })
+
+  it.each([
+    ['added', [], ['NewCard']],
+    ['replaced', ['OldCard'], ['NewCard']],
+    ['removed', ['OldCard'], []],
+  ] as const)('refreshes a registered owner when auto-import names are %s during emit', async (_change, previousNames, nextNames) => {
+    const ctx = createContext()
+    const current = sourceId('pages/current.ts')
+    const owner = sourceId('pages/auto-import.ts')
+    const ids = [current, owner]
+    let names: readonly string[] = previousNames
+    ctx.wxmlService.getAggregatedAutoImportComponents = vi.fn((baseName: string) => {
+      return baseName === removeExtensionDeep(owner)
+        ? Object.fromEntries(names.map(name => [name, []]))
+        : undefined
+    })
+    const hook = useLoadEntry(ctx, { hmr: { requiredPublicationEntryIds: new Set(ids) } })
+    seedEntries(hook, ids)
+    hook.markEntryDirty(current, 'direct')
+    const pluginCtx = createPluginContext()
+    pluginCtx.emitFile.mockImplementation(() => {
+      names = nextNames
+    })
+
+    await emitWithExistingSources(hook, pluginCtx)
+
+    expect(emittedSources(pluginCtx)).toEqual(new Set(ids))
+    expect(loadEntryMock.mock.calls).toEqual([[owner, 'page']])
+  })
+
+  it.each(['before', 'during'])('drains explicit pending auto-import metadata %s emit without component names', async (stage) => {
+    const ctx = createContext()
+    const current = sourceId('pages/current.ts')
+    const owner = sourceId('pages/auto-import.ts')
+    const ids = [current, owner]
+    const markPending = () => ctx.runtimeState.autoImport.pendingEntriesByImporter.set(removeExtensionDeep(owner), new Set(['components/new-card']))
+    const hook = useLoadEntry(ctx, { hmr: { requiredPublicationEntryIds: new Set(ids) } })
+    seedEntries(hook, ids)
+    hook.markEntryDirty(current, 'direct')
+    if (stage === 'before') {
+      markPending()
+    }
+    const pluginCtx = createPluginContext()
+    pluginCtx.emitFile.mockImplementation(() => {
+      if (stage === 'during') {
+        markPending()
+      }
+    })
+
+    await emitWithExistingSources(hook, pluginCtx)
+
+    expect(emittedSources(pluginCtx)).toEqual(new Set(ids))
+    expect(loadEntryMock.mock.calls).toEqual([[owner, 'page']])
+  })
+
+  it.each([false, true])('refreshes retained auto-import metadata only when the resolver version changes (changed=%s)', async (changed) => {
+    const ctx = createContext()
+    const current = sourceId('pages/current.ts')
+    const owner = sourceId('pages/auto-import.ts')
+    const ids = [current, owner]
+    let version = 1
+    ctx.autoImportService.getVersion = vi.fn(() => version)
+    ctx.wxmlService.getAggregatedAutoImportComponents = vi.fn((baseName: string) => {
+      return baseName === removeExtensionDeep(owner) ? { StableCard: [] } : undefined
+    })
+    const hook = useLoadEntry(ctx, { hmr: { requiredPublicationEntryIds: new Set(ids) } })
+    seedEntries(hook, ids)
+    hook.markEntryDirty(current, 'direct')
+    const pluginCtx = createPluginContext()
+    pluginCtx.emitFile.mockImplementation(() => {
+      version = changed ? 2 : 1
+    })
+
+    await emitWithExistingSources(hook, pluginCtx)
+
+    expect(emittedSources(pluginCtx)).toEqual(new Set(ids))
+    expect(loadEntryMock.mock.calls).toEqual(changed ? [[owner, 'page']] : [])
+  })
+
+  it('keeps source metadata from a later save outside the current refresh ownership', async () => {
+    const ctx = createContext()
+    const current = sourceId('pages/current.ts')
+    const next = sourceId('pages/next.ts')
+    const ids = [current, next]
+    ctx.wxmlService.getAggregatedAutoImportComponents = vi.fn(() => ({ StableCard: [] }))
+    const hook = useLoadEntry(ctx, { hmr: { requiredPublicationEntryIds: new Set(ids) } })
+    seedEntries(hook, ids)
+    ctx.runtimeState.build.hmr.profile.eventId = 'current'
+    hook.markEntryDirty(current, 'direct')
+    ctx.runtimeState.build.hmr.profile.eventId = 'next'
+    hook.markEntryDirty(next, 'direct')
+    ctx.runtimeState.build.hmr.profile.eventId = 'current'
+
+    await emitWithExistingSources(hook, createPluginContext())
+
+    expect(loadEntryMock.mock.calls).toEqual([[current, 'page']])
+    expect(hook.dirtyEntrySet).toEqual(new Set([next]))
   })
 })

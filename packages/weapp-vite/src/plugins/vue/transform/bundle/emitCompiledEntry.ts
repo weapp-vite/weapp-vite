@@ -1,4 +1,5 @@
 import type { CompilationCacheEntry, VueBundleCompileOptionsState, VueBundleState } from './shared'
+import { recordHmrProfileDuration, recordHmrProfileOperation } from '../../../../utils/hmrProfile'
 import { hasAppShellTemplate, isAppVueFile, resolveAppShellRelativeBase } from '../appShell'
 import { assertTemplateHasDefaultSlot, isLayoutFile } from '../pageLayout'
 import {
@@ -137,8 +138,10 @@ export async function emitCompiledVueEntryAssets(
     scriptExtension,
     scriptModuleExtension,
     platformAssetOptions,
-  } = resolveVueBundleAssetContext(configService)
+  } = state.assetContext ?? resolveVueBundleAssetContext(configService)
 
+  const profile = ctx.runtimeState?.build?.hmr?.profile
+  const refreshStartedAt = performance.now()
   const emitState = await resolveCompiledEntryEmitState({
     filename,
     cached,
@@ -147,10 +150,13 @@ export async function emitCompiledVueEntryAssets(
     configService,
     compileOptionsState,
     appShell: state.appShell,
+    validatedCompilations: state.validatedCompilations,
   })
+  recordHmrProfileDuration(profile, 'vueBundleRefreshMs', performance.now() - refreshStartedAt)
   if (!emitState) {
     return
   }
+  const assetsStartedAt = performance.now()
   await emitResolvedCompiledVueEntryAssets({
     bundle,
     state,
@@ -166,4 +172,6 @@ export async function emitCompiledVueEntryAssets(
     scriptModuleExtension,
     platformAssetOptions,
   })
+  recordHmrProfileDuration(profile, 'vueBundleAssetsMs', performance.now() - assetsStartedAt)
+  recordHmrProfileOperation(profile, 'vueBundleEmittedCount')
 }

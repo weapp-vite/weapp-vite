@@ -283,7 +283,8 @@ function transformVueSfc(source: string, filename: string, target: UniAppCompati
     throw new Error(`[uni-app] 解析 ${filename} 失败：${error.message}`)
   }
 
-  const blocks = [descriptor.script, descriptor.scriptSetup].filter(Boolean)
+  // src 块由声明类型的外部读取边界准备，当前 SFC 只拥有内联内容。
+  const blocks = [descriptor.script, descriptor.scriptSetup].filter(block => block && !block.src)
   const analyses = blocks.map((block) => {
     const lang = block!.lang ?? 'js'
     return analyzeScript(block!.content, `${filename}.${lang}`)
@@ -295,7 +296,9 @@ function transformVueSfc(source: string, filename: string, target: UniAppCompati
     const block = blocks[index]!
     const analysis = analyses[index]
     const code = renderScript(analysis, index === injectIndex, target === 'mp-weixin')
-    output.overwrite(block.loc.start.offset, block.loc.end.offset, code)
+    if (code !== block.content) {
+      output.overwrite(block.loc.start.offset, block.loc.end.offset, code)
+    }
   }
   return output.toString()
 }

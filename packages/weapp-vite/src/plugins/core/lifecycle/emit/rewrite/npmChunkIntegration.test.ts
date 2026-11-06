@@ -7,6 +7,7 @@ import MagicString from 'magic-string'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { analyzeNpmChunksWithNative, analyzeScripts } from '../../../../../ast'
 import { parseJsLike } from '../../../../../utils/babel'
+import { ContentAnalysisCache } from './contentAnalysisCache'
 import { rewriteBundleNpmImportsToLocalRoots } from './localRoot'
 import { getChunkNpmChunkAnalysis, getChunkNpmPlatformApiRanges } from './npmChunkCache'
 import { rewriteBundleNpmImportsByPlatform, rewriteBundlePlatformApi, warmupBundleScriptAnalysis } from './platform'
@@ -94,6 +95,37 @@ describe.each(Object.entries(npmRewriters))('%s native chunk summary integration
     rewriteNpm(bundle, cache)
     rewriteBundlePlatformApi(bundle, 'wpi', { analysisCache: cache })
   }
+
+  it('isolates native parser source types and reuses only the matching generation input', () => {
+    const contentCache = new ContentAnalysisCache()
+    const source = 'await(wx).request()'
+    const apiStart = source.indexOf('wx')
+    const apiRanges = [{ start: apiStart, end: apiStart + 2 }]
+    vi.mocked(analyzeNpmChunksWithNative).mockImplementation(inputs => inputs.map(input => ({
+      requires: [],
+      localRootFacts: [],
+      platformApiRanges: input.filename?.endsWith('.mjs') ? apiRanges : [],
+    })))
+    const cjs = createChunk(source)
+    cjs.fileName = 'shared.cjs'
+    const module = createChunk(source)
+    module.fileName = 'shared.mjs'
+    const firstCache = Object.assign(new WeakMap(), { contentCache })
+    const nextCache = Object.assign(new WeakMap(), { contentCache })
+
+    warmupBundleScriptAnalysis({ [cjs.fileName]: cjs }, { cache: firstCache })
+    warmupBundleScriptAnalysis({ [module.fileName]: module }, { cache: nextCache })
+
+    expect(analyzeNpmChunksWithNative).toHaveBeenCalledTimes(2)
+    expect(getChunkNpmPlatformApiRanges(cjs, firstCache)).toEqual([])
+    expect(getChunkNpmPlatformApiRanges(module, nextCache)).toEqual(apiRanges)
+    const rebuiltModule = createChunk(source)
+    rebuiltModule.fileName = 'shared.mjs'
+    const rebuiltCache = Object.assign(new WeakMap(), { contentCache })
+    warmupBundleScriptAnalysis({ [rebuiltModule.fileName]: rebuiltModule }, { cache: rebuiltCache })
+    expect(analyzeNpmChunksWithNative).toHaveBeenCalledTimes(2)
+    expect(getChunkNpmPlatformApiRanges(rebuiltModule, rebuiltCache)).toEqual(apiRanges)
+  })
 
   it.each(['none', 'external', 'inline'])('matches complete JS output and %s map through one batch', (mode) => {
     const expected = createChunk(code, mode)

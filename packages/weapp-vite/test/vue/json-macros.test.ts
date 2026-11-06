@@ -4,7 +4,7 @@ import path from 'pathe'
 import { compileVueFile } from 'wevu/compiler'
 import { createVueTransformPlugin } from '../../src/plugins/vue/transform'
 import { callPluginHook } from '../pluginHook'
-import { createTestModuleGraphService, createTestRuntimeState } from './moduleGraph'
+import { captureTestNativeEntryAssetOwners, createTestModuleGraphService, createTestRuntimeState } from './moduleGraph'
 
 function createCtx(root: string, pages: string[] = []) {
   const absoluteSrcRoot = path.join(root, 'src')
@@ -108,7 +108,8 @@ definePageJson({
     const srcRoot = path.join(root, 'src')
 
     try {
-      const plugin = createVueTransformPlugin(createCtx(root, ['pages/home/index']))
+      const ctx = createCtx(root, ['pages/home/index'])
+      const plugin = createVueTransformPlugin(ctx)
 
       const file = path.join(srcRoot, 'components/foo/index.vue')
       const transformed = await callPluginHook(plugin.transform as any, {}, `
@@ -135,6 +136,7 @@ defineComponentJson({
       expect(transformed?.code).not.toContain('defineComponentJson')
 
       const emitted: Array<{ fileName: string, source: string }> = []
+      captureTestNativeEntryAssetOwners(ctx, [[file, 'component']])
       await plugin.generateBundle!.call(
         {
           emitFile(payload: any) {
@@ -166,7 +168,8 @@ defineComponentJson({
     const srcRoot = path.join(root, 'src')
 
     try {
-      const plugin = createVueTransformPlugin(createCtx(root, ['pages/home/index']))
+      const ctx = createCtx(root, ['pages/home/index'])
+      const plugin = createVueTransformPlugin(ctx)
       const file = path.join(srcRoot, 'components/hello/index.vue')
       const bundle: Record<string, any> = {}
 
@@ -187,6 +190,7 @@ defineComponentJson({
       `.trim()
 
       await callPluginHook(plugin.transform as any, {}, withMacro, file)
+      captureTestNativeEntryAssetOwners(ctx, [[file, 'component']])
       await plugin.generateBundle!.call({ emitFile }, {}, bundle)
 
       const first = JSON.parse(bundle['components/hello/index.json'].source)
@@ -201,6 +205,7 @@ const foo = 1
       `.trim()
 
       await callPluginHook(plugin.transform as any, {}, withoutMacro, file)
+      captureTestNativeEntryAssetOwners(ctx, [[file, 'component']])
       await plugin.generateBundle!.call({ emitFile }, {}, bundle)
 
       const next = JSON.parse(bundle['components/hello/index.json'].source)
@@ -217,16 +222,19 @@ const foo = 1
     const srcRoot = path.join(root, 'src')
 
     try {
-      const plugin = createVueTransformPlugin(createCtx(root, ['pages/home/index']))
+      const ctx = createCtx(root, ['pages/home/index'])
+      const plugin = createVueTransformPlugin(ctx)
       const file = path.join(srcRoot, 'app.vue')
 
-      await callPluginHook(plugin.transform as any, {}, `
+      const source = `
 <script setup lang="ts">
 defineAppJson({
   style: 'v3'
 })
 </script>
-        `.trim(), file)
+        `.trim()
+      await fs.outputFile(file, source)
+      await callPluginHook(plugin.transform as any, {}, source, file)
 
       const bundle: Record<string, any> = {
         'app.json': {
@@ -235,6 +243,7 @@ defineAppJson({
         },
       }
 
+      captureTestNativeEntryAssetOwners(ctx, [[file, 'app']])
       await plugin.generateBundle!.call(
         {
           emitFile() {},
@@ -249,6 +258,9 @@ defineAppJson({
         pages: ['pages/home/index'],
         subPackages: [],
       })
+      await fs.remove(file)
+      captureTestNativeEntryAssetOwners(ctx, [[file, 'app']])
+      await expect(plugin.generateBundle!.call({ emitFile() {} }, {}, bundle)).rejects.toMatchObject({ code: 'ENOENT' })
     }
     finally {
       await fs.remove(root)
@@ -265,7 +277,8 @@ defineAppJson({
         `export const prefix = '/from-import'\n`,
       )
 
-      const plugin = createVueTransformPlugin(createCtx(root, ['pages/demo/index']))
+      const ctx = createCtx(root, ['pages/demo/index'])
+      const plugin = createVueTransformPlugin(ctx)
       const file = path.join(srcRoot, 'pages/demo/index.vue')
       const sfc = `
 <template><view>demo</view></template>
@@ -283,6 +296,7 @@ definePageJson({
       await callPluginHook(plugin.transform as any, {}, sfc, file)
 
       const emitted: Array<{ fileName: string, source: string }> = []
+      captureTestNativeEntryAssetOwners(ctx, [[file, 'page']])
       await plugin.generateBundle!.call(
         {
           emitFile(payload: any) {
@@ -311,7 +325,8 @@ definePageJson({
     const srcRoot = path.join(root, 'src')
 
     try {
-      const plugin = createVueTransformPlugin(createCtx(root, ['pages/index/index']))
+      const ctx = createCtx(root, ['pages/index/index'])
+      const plugin = createVueTransformPlugin(ctx)
 
       const file = path.join(srcRoot, 'pages/index/index.vue')
       await fs.outputFile(
@@ -337,6 +352,7 @@ definePageJson({
         },
       }
 
+      captureTestNativeEntryAssetOwners(ctx, [[file, 'page']])
       await plugin.generateBundle!.call(
         {
           emitFile() {},

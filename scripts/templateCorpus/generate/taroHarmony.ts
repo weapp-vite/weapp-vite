@@ -1,3 +1,11 @@
+import { readFileSync } from 'node:fs'
+
+/** 薄包装作为生成配置参与输入哈希；固定版本漂移时直接拒绝，避免替换冻结工具链。 */
+export const taroHarmonyRunner = readFileSync(new URL('./taroHarmony/runner.cjs', import.meta.url), 'utf8')
+
+/** 官方生命周期插件在配置校验后安装本轮 runner，并在平台执行前选定真实构建模式。 */
+export const taroHarmonyPlugin = readFileSync(new URL('./taroHarmony/plugin.cjs', import.meta.url), 'utf8')
+
 /** 仅提供官方 JSUI 编译所需的宿主源码配置，不构建或伪造 HAP/ArkTS 产物。 */
 export const taroHarmonyHostFiles: Record<string, string> = {
   'harmony-host/entry/src/main/config.json': `${JSON.stringify({
@@ -21,10 +29,15 @@ export const taroHarmonyConfig = `harmony: {
     projectPath: require('path').resolve(process.env.CORPUS_OUTPUT, 'harmony-host'),
     hapName: 'entry',
     name: 'default',
+    debugReact: true,
   },`
 
+/** 初始配置只包含冻结版 schema 已声明的字段，运行时入口由正式插件生命周期安装。 */
+export const taroHarmonyCompiler = `compiler: { type: 'webpack5' },`
+
 /** 在官方编译前准备独立宿主源码；后续路由与 HML 均由官方插件生成。 */
-export const taroHarmonyPrepareHost = `const fs = require('fs')
+export const taroHarmonyPrepareHost = `process.env.CORPUS_BUILD_MODE = process.argv[2]
+const fs = require('fs')
 const harmonySeed = path.resolve('harmony-host/entry/src/main/config.json')
 const harmonyHostConfig = path.resolve(process.env.CORPUS_OUTPUT, 'harmony-host/entry/src/main/config.json')
 fs.mkdirSync(path.dirname(harmonyHostConfig), { recursive: true })

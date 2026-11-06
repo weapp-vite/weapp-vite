@@ -1,6 +1,6 @@
 import { createVueTransformPlugin } from '../../src/plugins/vue/transform'
 import { callPluginHook } from '../pluginHook'
-import { createTestModuleGraphService, createTestRuntimeState } from './moduleGraph'
+import { captureTestNativeEntryAssetOwners, createTestModuleGraphService, createTestRuntimeState } from './moduleGraph'
 
 function createCtx(pages: string[] = []) {
   const cwd = '/root'
@@ -29,11 +29,14 @@ function createCtx(pages: string[] = []) {
 
 describe('vue transform emits default component json', () => {
   it('emits { component: true } for Vue SFC components without config', async () => {
-    const plugin = createVueTransformPlugin(createCtx(['pages/home/index']))
+    const ctx = createCtx(['pages/home/index'])
+    const plugin = createVueTransformPlugin(ctx)
+    const file = '/root/src/components/foo/index.vue'
 
-    await callPluginHook(plugin.transform as any, {}, `<template><view>ok</view></template><script setup>const a = 1</script>`, '/root/src/components/foo/index.vue')
+    await callPluginHook(plugin.transform as any, {}, `<template><view>ok</view></template><script setup>const a = 1</script>`, file)
 
     const emitted: Array<{ fileName: string, source: string }> = []
+    captureTestNativeEntryAssetOwners(ctx, [[file, 'component']])
     await plugin.generateBundle!.call(
       {
         emitFile(payload: any) {
@@ -50,11 +53,14 @@ describe('vue transform emits default component json', () => {
   })
 
   it('emits { component: true } for template-only Vue components', async () => {
-    const plugin = createVueTransformPlugin(createCtx(['pages/home/index']))
+    const ctx = createCtx(['pages/home/index'])
+    const plugin = createVueTransformPlugin(ctx)
+    const file = '/root/src/components/pure/index.vue'
 
-    await callPluginHook(plugin.transform as any, {}, `<template><view>ok</view></template>`, '/root/src/components/pure/index.vue')
+    await callPluginHook(plugin.transform as any, {}, `<template><view>ok</view></template>`, file)
 
     const emitted: Array<{ fileName: string, source: string }> = []
+    captureTestNativeEntryAssetOwners(ctx, [[file, 'component']])
     await plugin.generateBundle!.call(
       {
         emitFile(payload: any) {
@@ -71,11 +77,14 @@ describe('vue transform emits default component json', () => {
   })
 
   it('emits { component: true } when script contains Component(...)', async () => {
-    const plugin = createVueTransformPlugin(createCtx(['pages/home/index']))
+    const ctx = createCtx(['pages/home/index'])
+    const plugin = createVueTransformPlugin(ctx)
+    const file = '/root/src/components/mp/index.vue'
 
-    await callPluginHook(plugin.transform as any, {}, `<template><view>ok</view></template><script>export default Component({})</script>`, '/root/src/components/mp/index.vue')
+    await callPluginHook(plugin.transform as any, {}, `<template><view>ok</view></template><script>export default Component({})</script>`, file)
 
     const emitted: Array<{ fileName: string, source: string }> = []
+    captureTestNativeEntryAssetOwners(ctx, [[file, 'component']])
     await plugin.generateBundle!.call(
       {
         emitFile(payload: any) {
@@ -92,7 +101,9 @@ describe('vue transform emits default component json', () => {
   })
 
   it('merges <json> blocks with { component: true } for components', async () => {
-    const plugin = createVueTransformPlugin(createCtx(['pages/home/index']))
+    const ctx = createCtx(['pages/home/index'])
+    const plugin = createVueTransformPlugin(ctx)
+    const file = '/root/src/components/bar/index.vue'
 
     await callPluginHook(plugin.transform as any, {}, `
 <template><view>ok</view></template>
@@ -104,9 +115,10 @@ describe('vue transform emits default component json', () => {
   }
 }
 </json>
-      `.trim(), '/root/src/components/bar/index.vue')
+      `.trim(), file)
 
     const emitted: Array<{ fileName: string, source: string }> = []
+    captureTestNativeEntryAssetOwners(ctx, [[file, 'component']])
     await plugin.generateBundle!.call(
       {
         emitFile(payload: any) {
@@ -128,11 +140,14 @@ describe('vue transform emits default component json', () => {
   })
 
   it('emits empty page json without component flags for declared pages', async () => {
-    const plugin = createVueTransformPlugin(createCtx(['pages/home/index']))
+    const ctx = createCtx(['pages/home/index'])
+    const plugin = createVueTransformPlugin(ctx)
+    const file = '/root/src/pages/home/index.vue'
 
-    await callPluginHook(plugin.transform as any, {}, `<template><view>page</view></template><script>export default Component({})</script>`, '/root/src/pages/home/index.vue')
+    await callPluginHook(plugin.transform as any, {}, `<template><view>page</view></template><script>export default Component({})</script>`, file)
 
     const emitted: Array<{ fileName: string, source: string }> = []
+    captureTestNativeEntryAssetOwners(ctx, [[file, 'page']])
     await plugin.generateBundle!.call(
       {
         emitFile(payload: any) {

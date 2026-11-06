@@ -2,8 +2,10 @@ import type { PluginContext } from 'rolldown'
 import type { CompilerContext } from '../../../../context'
 import { baseParse } from '@vue/compiler-core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { collectScriptSetupImportsFromCode } from '../../../../ast'
+import { analyzeScriptSetupImportsFromCode } from '../../../../ast'
 import logger from '../../../../logger'
+import { attachHmrRuntimeSession, getHmrRuntimeSession } from '../../../../runtime/hmrRuntimeSession'
+import { getEntryAnalysisFacts } from './facts'
 import { createScriptSetupAnalyzer } from './scriptSetupAnalysis'
 import { applyScriptSetupUsingComponents } from './template'
 
@@ -21,7 +23,7 @@ vi.mock('../../../utils/vueSfc', () => ({
 vi.mock('../../../vue/transform/usingComponentResolver', () => ({ resolveUsingComponentReference }))
 vi.mock('../../../../ast', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../../ast')>()
-  return { ...actual, collectScriptSetupImportsFromCode: vi.fn(actual.collectScriptSetupImportsFromCode) }
+  return { ...actual, analyzeScriptSetupImportsFromCode: vi.fn(actual.analyzeScriptSetupImportsFromCode) }
 })
 vi.mock('../../../../logger', () => ({ default: { warn: vi.fn() } }))
 
@@ -66,18 +68,32 @@ describe('script setup entry analysis', () => {
     expect(resolveUsingComponentReference).toHaveBeenCalledTimes(1)
   })
 
-  it('repeats resolution, publication, JSON conflicts and entry registration on cache hits', async () => {
-    const scriptSetupAnalyzer = createScriptSetupAnalyzer()
+  it('repeats resolution, publication, JSON conflicts and registration with shared snapshot facts', async () => {
+    const sourceConfig = {}
+    const owner = {} as CompilerContext
     const setWxmlComponentsMap = vi.fn()
+    const replaceEntryDependencies = vi.fn()
     const externalComponentEntryMap = new Map<string, string>()
     for (let index = 0; index < 4; index += 1) {
+      const configService = {
+        options: { sourceConfig },
+        cwd: 'project',
+        absoluteSrcRoot: 'src',
+        platform: 'weapp',
+        isDev: true,
+        weappViteConfig: {},
+      } as CompilerContext['configService']
+      const snapshot = { configService } as CompilerContext
+      attachHmrRuntimeSession(snapshot, getHmrRuntimeSession(owner))
       const from = `/components/version-${index}`
       const resolvedId = `src/components/version-${index}.vue`
       resolveUsingComponentReference.mockResolvedValueOnce({ from, resolvedId })
       const json = { usingComponents: { DemoCard: '/legacy', unrelated: '/preserved' } }
       await apply('<template><DemoCard /><demo-card /></template>', {
-        scriptSetupAnalyzer,
+        scriptSetupAnalyzer: getEntryAnalysisFacts(snapshot).scriptSetupAnalyzer,
+        configService,
         wxmlService: { setWxmlComponentsMap } as unknown as CompilerContext['wxmlService'],
+        moduleGraphService: { replaceEntryDependencies } as unknown as CompilerContext['moduleGraphService'],
         externalComponentEntryMap,
         json,
       })
@@ -85,10 +101,11 @@ describe('script setup entry analysis', () => {
       expect(externalComponentEntryMap.get(`components/version-${index}`)).toBe(resolvedId)
     }
     expect(baseParse).toHaveBeenCalledTimes(1)
-    expect(collectScriptSetupImportsFromCode).toHaveBeenCalledTimes(1)
+    expect(analyzeScriptSetupImportsFromCode).toHaveBeenCalledTimes(1)
     expect(readAndParseSfc).toHaveBeenCalledTimes(4)
     expect(resolveUsingComponentReference).toHaveBeenCalledTimes(4)
     expect(setWxmlComponentsMap).toHaveBeenCalledTimes(4)
+    expect(replaceEntryDependencies).toHaveBeenCalledTimes(8)
     expect(logger.warn).toHaveBeenCalledTimes(4)
   })
 
@@ -116,7 +133,32 @@ describe('script setup entry analysis', () => {
     expect(newJson.usingComponents).toEqual({ 'DemoCard': '/components/demo-card', 'demo-card': '/components/demo-card' })
     expect(restoredJson).toEqual(newJson)
     expect(baseParse).toHaveBeenCalledTimes(3)
-    expect(collectScriptSetupImportsFromCode).toHaveBeenCalledTimes(3)
+    expect(analyzeScriptSetupImportsFromCode).toHaveBeenCalledTimes(3)
+  })
+
+  it('reuses successful empty import facts while republishing template dependencies', async () => {
+    const scriptSetupAnalyzer = createScriptSetupAnalyzer()
+    const setWxmlComponentsMap = vi.fn()
+    const replaceEntryDependencies = vi.fn()
+    readAndParseSfc.mockResolvedValue({
+      descriptor: {
+        template: { content: '<DemoCard />' },
+        scriptSetup: { content: 'import type DemoCard from "./DemoCard.vue"' },
+      },
+      errors: [],
+    })
+    for (let index = 0; index < 3; index += 1) {
+      await apply('<template><DemoCard /></template>', {
+        scriptSetupAnalyzer,
+        wxmlService: { setWxmlComponentsMap } as unknown as CompilerContext['wxmlService'],
+        moduleGraphService: { replaceEntryDependencies } as unknown as CompilerContext['moduleGraphService'],
+      })
+    }
+    expect(analyzeScriptSetupImportsFromCode).toHaveBeenCalledTimes(1)
+    expect(readAndParseSfc).toHaveBeenCalledTimes(3)
+    expect(setWxmlComponentsMap).toHaveBeenCalledTimes(3)
+    expect(replaceEntryDependencies).toHaveBeenCalledTimes(6)
+    expect(resolveUsingComponentReference).not.toHaveBeenCalled()
   })
 
   it('keeps failed SFC reads observable on every attempt', async () => {
@@ -136,7 +178,7 @@ describe('script setup entry analysis', () => {
     await apply('<template><view>plain</view></template>', { scriptSetupAnalyzer })
     await apply(source, { scriptSetupAnalyzer })
     expect(baseParse).toHaveBeenCalledTimes(2)
-    expect(collectScriptSetupImportsFromCode).toHaveBeenCalledTimes(2)
+    expect(analyzeScriptSetupImportsFromCode).toHaveBeenCalledTimes(2)
   })
 
   it('awaits import-only template scanning and replaces transitive ownership after removal', async () => {
