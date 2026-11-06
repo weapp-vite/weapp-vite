@@ -6,8 +6,10 @@ export const SCRIPT_TEST_GLOBS = ['scripts/**/*.test.mjs', 'scripts/**/*.test.ts
 
 /** 真实外部子进程夹具独占串行分组，避免与其他项目争用启动和执行资源。 */
 export const REPOSITORY_SUBPROCESS_TEST_FILES = [
+  'scripts/check-changeset-frontmatter.test.ts',
   'scripts/verification/build.test.ts',
   'scripts/verification/changes.test.ts',
+  'scripts/verification/prePush/snapshot.test.ts',
   'scripts/verifyVitePlusTemplates/publicTypes.test.ts',
 ]
 

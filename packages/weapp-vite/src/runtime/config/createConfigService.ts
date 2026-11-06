@@ -16,7 +16,7 @@ import { DEFAULT_MP_PLATFORM } from '../../platform'
 import { readCompilerInput } from '../../plugins/utils/sourceSnapshot'
 import { createImportMetaDefineRegistry, pickImportMetaEnvDefineEntries } from '../../utils/importMeta'
 import { normalizeRelativePath, toPosixPath } from '../../utils/path'
-import { resolveRealpath } from '../../utils/realpathScope'
+import { resolveRealpath, withRealpathScope } from '../../utils/realpathScope'
 import { SUB_PACKAGE_SHARED_DIR } from '../chunkStrategy/constants'
 import { bindRequestedIdeConfigReader, readRequestedIdeConfig } from '../classicIdeConfig/reader'
 import { getHmrRuntimeSession } from '../hmrRuntimeSession'
@@ -474,24 +474,27 @@ function createConfigService(ctx: MutableCompilerContext, oxcRuntimeSupport: Oxc
       return relativeFromCwd
     },
     relativeOutputPath(p: string) {
-      const relative = this.relativeAbsoluteSrcRoot(p)
-      if (!relative) {
-        return relative
-      }
-      if (relative.startsWith('..') || relative === 'node_modules' || relative.startsWith('node_modules/')) {
-        return remapOutputPath(resolveExternalOutputPath(p))
-      }
-      const libOutputMap = options.weappLibOutputMap
-      if (libOutputMap && libOutputMap.size > 0) {
-        const base = normalizeRelativePath(removeExtensionDeep(relative))
-        const mapped = libOutputMap.get(base)
-        if (mapped) {
-          const ext = path.extname(relative)
-          const fileName = ext ? `${mapped}${ext}` : mapped
-          return remapOutputPath(fileName)
+      // 同步输出规划复用成功的路径身份；作用域结束后仍重新核验根与符号链接。
+      return withRealpathScope(() => {
+        const relative = this.relativeAbsoluteSrcRoot(p)
+        if (!relative) {
+          return relative
         }
-      }
-      return remapOutputPath(relative)
+        if (relative.startsWith('..') || relative === 'node_modules' || relative.startsWith('node_modules/')) {
+          return remapOutputPath(resolveExternalOutputPath(p))
+        }
+        const libOutputMap = options.weappLibOutputMap
+        if (libOutputMap && libOutputMap.size > 0) {
+          const base = normalizeRelativePath(removeExtensionDeep(relative))
+          const mapped = libOutputMap.get(base)
+          if (mapped) {
+            const ext = path.extname(relative)
+            const fileName = ext ? `${mapped}${ext}` : mapped
+            return remapOutputPath(fileName)
+          }
+        }
+        return remapOutputPath(relative)
+      })
     },
   }
   bindRequestedIdeConfigReader(service, (file, read) => getHmrRuntimeSession(ctx).classicIdeConfig.readRequested(file, read))

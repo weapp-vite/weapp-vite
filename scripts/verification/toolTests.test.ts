@@ -35,8 +35,10 @@ it('assigns every root contract once while isolating real subprocess tests with 
   expect(new Set(discovered.flat()).size).toBe(expected.length)
   expect(discovered[1]!.sort()).toEqual([...REPOSITORY_SUBPROCESS_TEST_FILES].sort())
   expect(discovered[1]).toEqual([
+    'scripts/check-changeset-frontmatter.test.ts',
     'scripts/verification/build.test.ts',
     'scripts/verification/changes.test.ts',
+    'scripts/verification/prePush/snapshot.test.ts',
     'scripts/verifyVitePlusTemplates/publicTypes.test.ts',
   ])
   expect(subprocess.test).toMatchObject({ sequence: { groupOrder: 200 }, maxWorkers: 1, fileParallelism: false })
