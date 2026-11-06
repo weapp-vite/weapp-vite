@@ -106,7 +106,7 @@
     "@types/npmcli__config": "^6.0.4",
     "@weapp-vite/oxfmt": "workspace:*",
     "@weapp-vite/oxlint": "workspace:*",
-    "oxfmt": "0.76.0",
+    "oxfmt": "0.77.0",
     "vite-plus": "catalog:"
   }
 }

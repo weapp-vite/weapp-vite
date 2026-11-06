@@ -28,7 +28,7 @@ export const TEMPLATE_CATALOG = {
   '@modelcontextprotocol/node': '^2.1.2',
   '@modelcontextprotocol/server': '^2.4.0',
   '@swc/core': '^1.16.22',
-  '@tailwindcss/vite': '^4.3.4',
+  '@tailwindcss/vite': '^4.3.5',
   '@tanstack/vue-query': '^5.106.1',
   '@types/d3': '^7.4.3',
   '@types/express': '^5.0.6',
@@ -84,7 +84,7 @@ export const TEMPLATE_CATALOG = {
   'uview-plus': '3.8.138',
   'vite-plugin-inspect': '^12.1.0',
   'vite-plus': '1.5.0',
-  'vue-eslint-parser': '^10.4.1',
+  'vue-eslint-parser': '^10.4.2',
   'vue-router': '5.4.0',
   'vue-tsc': '^3.3.14',
   'weapp-tailwindcss': '^5.7.1',
@@ -120,10 +120,10 @@ export const TEMPLATE_CATALOG = {
   sharp: '^0.35.5',
   shiki: '^4.6.0',
   stylelint: '^17.16.0',
-  tailwindcss: '^4.3.4',
+  tailwindcss: '^4.3.5',
   tinyexec: '^1.3.1',
   tsd: '^0.33.0',
-  tsdown: '0.23.5',
+  tsdown: '0.23.7',
   tslib: '^2.9.1',
   tsx: '^4.23.15',
   typescript: '^6.0.3',
@@ -150,7 +150,7 @@ export const TEMPLATE_NAMED_CATALOG = {
     typescript: '^6.0.3'
   },
   tailwind4: {
-    tailwindcss: '^4.3.4'
+    tailwindcss: '^4.3.5'
   },
   tilde: {
     vitest: '~5.1.0'

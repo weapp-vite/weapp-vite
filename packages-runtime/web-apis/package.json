@@ -102,7 +102,7 @@
     "@weapp-core/api": "workspace:*",
     "@weapp-core/constants": "workspace:*",
     "@wevu/api": "workspace:*",
-    "web-streams-polyfill": "4.5.0"
+    "web-streams-polyfill": "4.5.1"
   },
   "publishConfig": {
     "access": "public",
