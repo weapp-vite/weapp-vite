@@ -176,6 +176,23 @@ describe('published Tailwind Core compatibility', () => {
     expect(cssDeclarations(updated.css, 'padding')).not.toContain('13px')
   })
 
+  it.each([
+    ['var(--opacity)', 'var(--opacity)'],
+    ['var(--opacity, 50%)', 'var(--opacity, 50%)'],
+    ['50%', '0.5'],
+  ])('preserves color-mix alpha %s consistently in generated and finalized CSS', async (alpha, expectedAlpha) => {
+    const { compiler, entry, request } = await fixture()
+    await writeFile(entry, `@import "tailwindcss/utilities" source(none); .alpha { background-color: #123456; background-color: color-mix(in srgb, #123456 ${alpha}, transparent); }`)
+
+    const generated = await compiler.generate(request)
+    const finalized = await compiler.transformCss(generated.rawCss, generated.snapshot)
+    const generatedColors = cssDeclarations(generated.css, 'background-color')
+    const finalizedColors = cssDeclarations(finalized.css, 'background-color')
+    expect(generatedColors).toContain(`rgba(18, 52, 86, ${expectedAlpha})`)
+    expect(finalizedColors).toEqual(generatedColors)
+    expect(finalized.css).not.toContain('color-mix(')
+  })
+
   it('decodes escaped source paths before scanning utilities', async () => {
     const { root, compiler, entry, request } = await fixture()
     const sourceDirectory = path.join(root, 'source pages')

@@ -87,7 +87,9 @@ it('inspects standard output without fallback or ready only after its receipt, E
   await vi.waitFor(() => expect(capture.stable).toHaveBeenCalledOnce())
   expect(run.options.inspect).not.toHaveBeenCalled()
   run.stable.resolve(new Map())
-  await expect(inspection).resolves.toEqual({ snapshot: run.snapshot })
+  const inspected = await inspection
+  expect(inspected).toEqual({ snapshot: run.snapshot, nativePublication: { outputOffset: 20, profileCursor: run.receipt.profileCursor } })
+  expect(inspected.nativePublication?.profileCursor).toBe(run.completionWait.mock.calls[0]![1])
   expect(run.options.inspect).toHaveBeenCalledOnce()
   expect(run.completionWait).toHaveBeenCalledWith(expect.any(Number), run.receipt.profileCursor)
   expect(capture.native.mock.calls[0]![2]!.allowSourceFreePublication).toBeUndefined()
@@ -110,7 +112,7 @@ it('checks the delivered classic entry when fallback remaps the stateful scenari
   run.native.resolve(run.receipt)
   run.complete.resolve()
   run.stable.resolve(new Map())
-  await expect(inspectWorkspaceScenarioPublication({ ...run.options, outputPath: path.join(run.options.project.distRoot, '__weapp_vite_hmr/update.js'), deliveredOutput: 'pages/index.js' })).resolves.toEqual({ snapshot })
+  await expect(inspectWorkspaceScenarioPublication({ ...run.options, outputPath: path.join(run.options.project.distRoot, '__weapp_vite_hmr/update.js'), deliveredOutput: 'pages/index.js' })).resolves.toMatchObject({ snapshot, nativePublication: { outputOffset: 20 } })
   expect(run.options.inspect).toHaveBeenCalledOnce()
 })
 
@@ -184,5 +186,6 @@ it('checks unchanged restored bytes without inventing a new source publication',
   expect(run.options.inspect).not.toHaveBeenCalled()
   run.stable.resolve(new Map())
   await expect(inspection).resolves.toMatchObject({ snapshot: expect.any(Map) })
+  expect(await inspection).not.toHaveProperty('nativePublication')
   expect(run.options.inspect).toHaveBeenCalledOnce()
 })

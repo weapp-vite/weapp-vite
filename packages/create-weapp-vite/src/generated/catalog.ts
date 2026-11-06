@@ -87,7 +87,7 @@ export const TEMPLATE_CATALOG = {
   'vue-eslint-parser': '^10.4.1',
   'vue-router': '5.4.0',
   'vue-tsc': '^3.3.14',
-  'weapp-tailwindcss': '^5.6.3 <5.7.0',
+  'weapp-tailwindcss': '^5.7.1',
   ai: '7.0.163',
   autoprefixer: '^10.6.2',
   axios: '^1.21.0',
@@ -139,7 +139,7 @@ export const TEMPLATE_NAMED_CATALOG = {
     'tdesign-miniprogram': '1.17.0'
   },
   'weapp-tailwindcss-fixed': {
-    'weapp-tailwindcss': '5.6.3'
+    'weapp-tailwindcss': '5.7.1'
   },
   fixed: {
     execa: '10.2.1',

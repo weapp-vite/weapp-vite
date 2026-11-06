@@ -8,7 +8,7 @@
 | --- | --- | --- |
 | pnpm | 12.16.1 | 12.18.0 |
 | @swc/core | 1.16.21 | 1.16.22 |
-| weapp-tailwindcss | 5.6.3 | 保留 5.6.3，排除 5.7.0 |
+| weapp-tailwindcss | 5.6.3 | 5.7.1，缓存合约缺口见下文 |
 | @weapp-tailwindcss/engine | 0.1.6 | 0.1.7 |
 | sass | 1.107.1 | 1.108.0 |
 | sass-embedded | 1.107.1 | 保留 1.107.1，排除 1.108.0 |
@@ -30,7 +30,19 @@ pnpm 的根版本和 snapshot 工作流通过同一版本输入同步。两份�
 
 真实 Core 双 CSS 入口回归已证明不同 `@config` 的主题值、依赖和定向失效相互隔离。Tailwind 5.7.0 的 PostCSS 4 链删除了动态 alpha 识别及占位保护，将 `color-mix(in srgb, #123456 var(--opacity), transparent)` 作为不支持的声明删除，只剩不透明 fallback；5.6.3 正常保留 `rgba(..., var(--opacity))`。默认及原配置、两种模式的官方实体对照一致，公开配置无法恢复等价小程序语义。5.7 的 compiler service key 变化还使普通源码扫描与候选变化不能复用原 engine，插件初始化次数增加。
 
-因此本轮偏离原定 5.7.0 目标，保留 compiler 5.6.3，沿用 `^` 前缀并增加 `<5.7.0` 上限，保护独立安装消费者；不拼装跨主版本 PostCSS、不复制颜色编译器、不放宽契约。直接 engine 仍升级 0.1.7：隔离对照中 5.6.3 搭配 0.1.6 与 0.1.7 的颜色、缓存和插件初始化结果一致。官方 5.6.3 自身精确依赖的 engine 0.1.6 保留正常闭包，不做 override。证据在任务目录 `tailwind-alpha/receipt.md`。按用户授权已提交并回读核验[上游 bug #1332](https://github.com/weapp-tailwindcss/weapp-tailwindcss/issues/1332)，附公开 Core 最小复现与两版输出；未上传含本机信息的完整日志。
+第一至四阶段因此偏离原定 5.7.0 目标，保留 compiler 5.6.3，沿用 `^` 前缀并增加 `<5.7.0` 上限，保护独立安装消费者；不拼装跨主版本 PostCSS、不复制颜色编译器、不放宽契约。直接 engine 升级 0.1.7：隔离对照中 5.6.3 搭配 0.1.6 与 0.1.7 的颜色、缓存和插件初始化结果一致。官方 5.6.3 自身精确依赖的 engine 0.1.6 保留正常闭包，不做 override。证据在任务目录 `tailwind-alpha/receipt.md`。按用户授权已提交并回读核验[上游 bug #1332](https://github.com/weapp-tailwindcss/weapp-tailwindcss/issues/1332)，附公开 Core 最小复现与两版输出；未上传含本机信息的完整日志。
+
+用户随后要求采用新发布的 latest。本轮已将 catalog、固定 catalog、静态 init fixture、生成的脚手架 catalog 和锁文件更新为 5.7.1；官方依赖闭包为 engine 0.1.7、PostCSS 4.0.1。原颜色复现的动态 alpha、变量 fallback 和静态 50% 均恢复，`generate().css` 与 `rawCss -> transformCss()` 结果一致。连续两次离线冻结安装、catalog 同步、锁文件闭包和 Rolldown 单版本检查通过；适配器 64 项测试、所属类型、公开类型与构建通过。
+
+5.7.1 的真实集成范围为 40 文件、356 用例，351 通过、5 失败。失败仍是缓存合约：普通持久构建将 `scanSources:true` 切成已解析规则数组后，未变输入的插件初始化从 2 次增加为 4 次；封存内存 HMR 从 `true` 切到 `false` 时 `cache.engine` 为 false。官方服务键只排除显式 candidates，扫描模式与完整内存 sources 仍属于身份；不能从独立 candidates 实验推断真实 HMR 复用。原断言、冻结来源、配置失效与性能阈值保留，公开 generator 和 Core snapshot API 的隔离对照结果见下文；未采用新适配层，也未判定兼容升级完成。完整日志见任务目录 `tailwind-571-integration-all.log`，旧失败证据继续保留。
+
+5.7.1 后续评估已完成本地定向范围：应用及模板 80/80 构建任务成功，全部实际执行、没有命中缓存；weapp-vite 重建及类型检查通过；网站重建和 8 项后台 Chromium 测试通过。新增三项颜色参数化回归覆盖动态变量、变量 fallback、静态 50%，同时校验生成与收尾结果，所属单文件 9 项通过。上游 #1332 已关闭，关闭时间为 2026-11-06 15:05 UTC；这是颜色问题的修复状态，不覆盖缓存限制。
+
+源码冻结、暂停本任务其他 shell 与代理之后，按原 baseline 和原阈值运行 8 个 Tailwind 项目的定向 Workspace HMR：19/19 场景通过，实际全部为 classic，19 项 profile 均有当前原生发布身份，性能超限为 0。总耗时 P95 与最大值均为 1466.87 ms；37,986 个源码文件运行后哈希无变化，验证进程及本轮资源已退出。报告为任务目录 `tailwind-571-hmr/report.json`。这是所选项目的证据，不能替代 76 项目全量 HMR、完整 headless 或干净同步 main 的完整 Stable IDE 验收。
+
+缓存迁移评估没有采用额外适配层。固定 Node 24.22.2 的公开 generator + Core snapshot POC 在 12 阶段与独立新 Core 的 CSS、候选、snapshot、模板、JS 与 sourcemap 等价，全部实例释放；但落到产品需要自行维护 owner、失效、撤销和清理。更小的“取消扫描规则缓存、每次交给 Core 自动扫描”对照也保持输出等价，却在 TS/Vue 更新、创建、删除和恢复时每轮重新执行真实 config/helper，破坏已有配置复用边界。因此保留原集成、原缓存断言和原阈值。用户在获知 5 项缓存合约失败后，于 2026-11-07 明确要求提交并推送全部当前改动；按该授权推进提交和推送，保留原生 hooks 与全部失败记录，不将此操作记为兼容升级或全仓交付验收通过。
+
+候选的 weapp-vite 公开类型和 create-weapp-vite 类型检查也已通过。依赖审计单独记录：2894 项依赖，low 6、moderate 19、high 17、critical 8，退出 1；告警数量分布与上一候选一致，不据此推断每项 advisory 身份未变，也没有增加不兼容 override。原候选和此次定向范围的证据各自保留，未对尚未通过的缓存合约启动发布、部署或正式完整 IDE 验收。
 
 独立 Sass 升级到 1.108.0。sass-embedded 的官方 Windows x64 1.108.0 发行包缺少 `sass.snapshot` 与 `sass.bat`，host 因而回退到不支持 `--embedded` 的纯 JS 实现，使 Windows 构建、HMR、headless 和 Dimina 在进入业务断言前失败。官方 tarball 的 SHA-512 与 registry 及锁文件一致，host 的编译器定位逻辑与 1.107.1 逐字节相同；核验时没有稳定修正版。因此 embedded 保留完整官方 1.107.1 闭包，沿用 `^` 前缀并增加 `<1.108.0` 上限，不覆盖单个平台包或改写 vendor。Playwright 浏览器缓存继续由实际版本与 revision 生成，没有新增机器专属缓存路径。
 

@@ -42,6 +42,7 @@ import { collectWorkspaceHmrCleanupErrors, isWorkspaceHmrScenarioRetryable, read
 import { assertWorkspaceHmrDelivery, expectedWorkspaceHmrDelivery, orderWorkspaceHmrScenarios, planWorkspaceHmrScenarios, workspaceHmrFallbackReason } from './workspace-hmr/delivery'
 import { createWorkspaceNativePublicationConfig } from './workspace-hmr/nativePublicationConfig'
 import { listFiles, snapshotDist, waitForInitialDistSnapshot, waitForStableDistSnapshot } from './workspace-hmr/output'
+import { waitForWorkspaceHmrProfileSample } from './workspace-hmr/profile'
 import { isWorkspaceHmrStylesheetOutput, readWorkspaceHmrProjectTarget, selectWorkspaceHmrSourceFiles, WORKSPACE_HMR_TARGET_PREFIX, workspaceHmrSidecarExtensions } from './workspace-hmr/projectTarget'
 import { isDynamicReactTemplateOutput, resolveReactTemplateScenarioCapability, waitForReactTemplateScriptOutput } from './workspace-hmr/reactTemplate'
 import { renderWorkspaceHmrExecution, summarizeWorkspaceHmrExecution } from './workspace-hmr/report'
@@ -729,7 +730,6 @@ async function warmupProjectHmr(
 
   const expectedDelivery = expectedWorkspaceHmrDelivery(project.hmrRuntime, false, Boolean(workspaceHmrFallbackReason(scenario)))
   await prepareScenarioMutation(project, scenario)
-  const profileLineCount = await countJsonlLines(profilePath)
   let delivery: WorkspaceHmrDeliveryEvidence | undefined
   let restore: WorkspaceHmrDeliveryEvidence | undefined
   try {
@@ -741,9 +741,6 @@ async function warmupProjectHmr(
     await acknowledgeScenarioArtifact(project, scenario, budget)
     if (isWorkspaceClassicPublication(project.hmrRuntime, classicFallbacks.get(project.root)?.actualMode)) {
       await inspectScenarioClassicPublication(project, scenario, budget, publication, delivery?.output)
-    }
-    if (project.hmrRuntime === 'standard') {
-      await waitForHmrProfileSample(project, profilePath, profileLineCount, scenario.sourcePath, 5_000).catch(() => {})
     }
   }
   finally {
@@ -813,7 +810,6 @@ async function auditScenario(
     const previousControl = result.expectedDelivery === 'classic-fallback'
       ? parseStatefulHmrControlSource(await preparation('read-control', () => readFile(path.join(distRoot, '__weapp_vite_hmr/control.js'), 'utf8')))
       : undefined
-    const profileLineCount = await preparation('profile-cursor', () => countJsonlLines(profilePath))
     const before = await preparation('snapshot-baseline', () => snapshotDist(distRoot))
     const budget = createScenarioBudget()
     const update = stages.phase('update', budget)
@@ -843,7 +839,7 @@ async function auditScenario(
     }
     const after = await update('snapshot-output', () => classicPublication?.snapshot ?? snapshotDist(distRoot))
     if (project.hmrRuntime === 'standard') {
-      result.profile = await update('profile-sample', () => waitForHmrProfileSample(project, profilePath, profileLineCount, scenario.sourcePath, 5_000))
+      result.profile = await update('profile-sample', () => waitForWorkspaceHmrProfileSample(profilePath, scenario.sourcePath, classicPublication?.nativePublication, 5_000))
     }
     result.totalMs = project.hmrRuntime === 'standard'
       ? result.profile?.totalMs ?? result.observedMs
@@ -910,7 +906,6 @@ async function auditScenario(
   }
   finally {
     const cleanup = stages.phase('cleanup')
-    const restoreProfileLineCount = await countJsonlLines(profilePath).catch(() => 0)
     const cleanupErrors = await collectWorkspaceHmrCleanupErrors([
       {
         label: 'Failed to restore source and verify delivered output',
@@ -926,9 +921,6 @@ async function auditScenario(
     if (cleanupErrors.length) {
       result.cleanupErrors = cleanupErrors.map(error => sanitizeAcceptanceText(error))
       result.error = [result.error, ...result.cleanupErrors].filter(Boolean).join('\n')
-    }
-    if (project.hmrRuntime === 'standard') {
-      await waitForHmrProfileSample(project, profilePath, restoreProfileLineCount, scenario.sourcePath, 5_000).catch(() => {})
     }
     await sleep(settleMs)
   }
@@ -1251,7 +1243,7 @@ async function restoreScenarioMutation(
   }
   const delivery = await observe('delivery', () => waitForScenarioMutation(project, scenario, marker, false, undefined, undefined, budget))
   await observe('acknowledge', () => acknowledgeScenarioArtifact(project, scenario, budget))
-  let inspection: Awaited<ReturnType<ReturnType<typeof createClassicPublicationInspector>>> | undefined
+  let inspection: Awaited<ReturnType<typeof inspectScenarioClassicPublication>> | undefined
   if (isWorkspaceClassicPublication(project.hmrRuntime, classicFallbacks.get(project.root)?.actualMode)) {
     inspection = await observe('publication', () => inspectScenarioClassicPublication(project, scenario, budget, publication, delivery?.output, observation))
   }
@@ -1450,104 +1442,6 @@ function diffDistSnapshots(before: Map<string, DistFileSnapshot>, after: Map<str
     }
   }
   return result
-}
-
-async function waitForHmrProfileSample(
-  project: ProjectCase,
-  profilePath: string,
-  previousLineCount: number,
-  sourcePath: string,
-  timeoutMs: number,
-) {
-  const startedAt = Date.now()
-  while (Date.now() - startedAt < timeoutMs) {
-    const candidates = await readHmrProfileSamplesSince(profilePath, previousLineCount)
-    const matched = candidates.find(item => isProfileSampleForSource(project, item, sourcePath))
-    if (matched) {
-      return matched
-    }
-    const unattributed = candidates.find(isUnattributedProfileSample)
-    if (candidates.length === 1 && unattributed) {
-      return withScenarioProfileFallback(project, unattributed, sourcePath)
-    }
-    if (candidates.length > 0 && candidates.every(isUnattributedProfileSample)) {
-      return withScenarioProfileFallback(project, candidates[candidates.length - 1]!, sourcePath)
-    }
-    await sleep(100)
-  }
-  const candidates = await readHmrProfileSamplesSince(profilePath, previousLineCount)
-  const files = candidates.map((item) => {
-    return item.sourceRootFile ?? item.relativeFile ?? item.file ?? '<unknown>'
-  }).join(', ')
-  throw new Error(`Timed out waiting for matching hmr profile sample: ${formatProjectPath(sourcePath)}; candidates: ${files || '<none>'}`)
-}
-
-async function readHmrProfileSamplesSince(profilePath: string, previousLineCount: number) {
-  const lines = await readJsonlLines(profilePath)
-  return lines.slice(previousLineCount).map((line) => {
-    try {
-      return JSON.parse(line) as HmrProfileSample
-    }
-    catch {
-      return undefined
-    }
-  }).filter((item): item is HmrProfileSample => item != null)
-}
-
-function isUnattributedProfileSample(sample: HmrProfileSample) {
-  return !sample.file && !sample.relativeFile && !sample.sourceRootFile
-}
-
-function withScenarioProfileFallback(project: ProjectCase, sample: HmrProfileSample, sourcePath: string): HmrProfileSample {
-  return {
-    ...sample,
-    event: sample.event ?? 'update',
-    file: sample.file ?? normalizePath(sourcePath),
-    relativeFile: sample.relativeFile ?? normalizePath(path.relative(project.root, sourcePath)),
-    sourceRootFile: sample.sourceRootFile ?? normalizePath(path.relative(project.sourceRoot, sourcePath)),
-    dirtyCount: sample.dirtyCount ?? 1,
-    pendingCount: sample.pendingCount ?? 1,
-    emittedCount: sample.emittedCount ?? 1,
-    dirtyReasonSummary: sample.dirtyReasonSummary ?? ['audit-unattributed:1'],
-  }
-}
-
-function isProfileSampleForSource(project: ProjectCase, sample: HmrProfileSample, sourcePath: string) {
-  const expected = new Set([
-    normalizePath(sourcePath),
-    formatProjectPath(sourcePath),
-    normalizePath(path.relative(project.root, sourcePath)),
-    normalizePath(path.relative(project.sourceRoot, sourcePath)),
-  ])
-  const candidates = [
-    sample.file,
-    sample.relativeFile,
-    sample.sourceRootFile,
-  ]
-    .filter((value): value is string => typeof value === 'string' && value.length > 0)
-    .map(normalizePath)
-  const expectedBases = new Set([...expected].map(removeFileExtension))
-
-  return candidates.some((candidate) => {
-    return expected.has(candidate)
-      || expectedBases.has(removeFileExtension(candidate))
-      || [...expected].some(item => item.endsWith(`/${candidate}`))
-      || [...expected].some(item => candidate.endsWith(`/${item}`))
-  })
-}
-
-function removeFileExtension(filePath: string) {
-  const ext = path.extname(filePath)
-  return ext ? filePath.slice(0, -ext.length) : filePath
-}
-
-async function countJsonlLines(filePath: string) {
-  return (await readJsonlLines(filePath)).length
-}
-
-async function readJsonlLines(filePath: string) {
-  const content = await readFile(filePath, 'utf8').catch(() => '')
-  return content.split(/\r?\n/).filter(Boolean)
 }
 
 async function waitForFile(filePath: string, timeoutMs: number, signal?: AbortSignal) {

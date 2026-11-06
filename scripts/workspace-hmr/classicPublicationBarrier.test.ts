@@ -89,6 +89,35 @@ describe('workspace classic publication inspection barrier', () => {
     expect(run.options.inspect).toHaveBeenCalledOnce()
   })
 
+  it('keeps the selected native identity frozen through END, stability and inspection', async () => {
+    const run = fixture('classic')
+    const cursor = {
+      ...profileCursor,
+      identity: { buildId: 'update-build', batchId: 'update-batch', sourceEvents: [{ eventId: 'update-event', file: 'src/page.vue' }] },
+    }
+    const sourcePublications = [{ cursor, files: ['src/page.vue'] }]
+    run.native.resolve({ outputOffset: 20, profileCursor: cursor, sourcePublications })
+    const inspection = inspectSettledClassicPublication(run.options, { deadline: Date.now() + 1_000 })
+    await vi.waitFor(() => expect(run.options.completion.wait).toHaveBeenCalledOnce())
+    cursor.offset = 99
+    cursor.identity.buildId = 'restore-build'
+    cursor.identity.sourceEvents[0]!.eventId = 'restore-event'
+    sourcePublications[0]!.files[0] = 'src/other.vue'
+    run.complete.resolve()
+    run.stable.resolve()
+    await inspection
+    const publication = vi.mocked(run.options.inspect).mock.calls[0]![0]
+    expect(publication).toMatchObject({
+      outputOffset: 20,
+      profileCursor: { offset: 12, identity: { buildId: 'update-build', sourceEvents: [{ eventId: 'update-event', file: 'src/page.vue' }] } },
+      sourcePublications: [{ files: ['src/page.vue'] }],
+    })
+    expect(publication.sourcePublications).toBe(vi.mocked(run.options.completion.wait).mock.calls[0]![1])
+    for (const value of [publication, publication.profileCursor, publication.profileCursor?.identity, publication.profileCursor?.identity?.sourceEvents, publication.sourcePublications, publication.sourcePublications?.[0]?.files]) {
+      expect(Object.isFrozen(value)).toBe(true)
+    }
+  })
+
   it('retains post-write completion errors and never starts complete output inspection', async () => {
     const run = fixture('classic')
     const error = new Error('native style finalization failed')

@@ -3,7 +3,7 @@ import type { WorkspaceHmrAuditBudget } from './auditDeadline'
 import type { WorkspaceHmrStageObserver } from './stageRecorder'
 import { assertHmrAuditBudget } from './auditDeadline'
 
-interface ClassicPublicationObservation {
+export interface ClassicPublicationObservation {
   outputOffset: number
   profileCursor?: NativePublicationProfileCursor
   sourcePublications?: readonly NativePublicationSourceEvidence[]
@@ -15,8 +15,31 @@ export interface ClassicPublicationBarrierOptions<T> {
   completion: { wait: (timeoutMs: number, cursor?: NativePublicationCompletionEvidence) => Promise<void> }
   ready: () => Promise<number>
   stable: (timeoutMs: number, signal?: AbortSignal) => Promise<unknown>
-  inspect: () => Promise<T>
+  inspect: (publication: ClassicPublicationObservation) => Promise<T>
   observe?: WorkspaceHmrStageObserver
+}
+
+function freezePublication(observation: ClassicPublicationObservation): ClassicPublicationObservation {
+  const cursor = (value: NativePublicationProfileCursor) => {
+    const identity = value.identity && {
+      ...value.identity,
+      sourceEvents: value.identity.sourceEvents.map(event => Object.freeze({ ...event })),
+    }
+    if (identity) {
+      Object.freeze(identity.sourceEvents)
+      Object.freeze(identity)
+    }
+    return Object.freeze({ ...value, ...(identity ? { identity } : {}) })
+  }
+  const sourcePublications = observation.sourcePublications?.map(source => Object.freeze({
+    cursor: cursor(source.cursor) as NativePublicationSourceEvidence['cursor'],
+    files: Object.freeze([...source.files]),
+  }))
+  return Object.freeze({
+    outputOffset: observation.outputOffset,
+    ...(observation.profileCursor ? { profileCursor: cursor(observation.profileCursor) } : {}),
+    ...(sourcePublications ? { sourcePublications: Object.freeze(sourcePublications) } : {}),
+  })
 }
 
 /** 原生字节收据不等于正式 END；完整产物检查只在同一预算内的当前发布完成后执行一次。 */
@@ -26,7 +49,7 @@ export async function inspectSettledClassicPublication<T>(options: ClassicPublic
     assertHmrAuditBudget(budget, 'Classic publication inspection deadline exceeded.')
     return budget.deadline - Date.now()
   }
-  const receipt = await observe('native-receipt', () => options.native.wait(remaining()))
+  const receipt = freezePublication(await observe('native-receipt', () => options.native.wait(remaining())))
   remaining()
   let needsSourceCompletion = options.mode === 'classic'
   if (!needsSourceCompletion) {
@@ -44,7 +67,7 @@ export async function inspectSettledClassicPublication<T>(options: ClassicPublic
   }
   await observe('stable-output', () => options.stable(remaining(), budget.signal))
   remaining()
-  const result = await observe('inspect-output', () => options.inspect())
+  const result = await observe('inspect-output', () => options.inspect(receipt))
   remaining()
   return result
 }

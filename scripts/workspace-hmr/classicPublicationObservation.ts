@@ -1,5 +1,6 @@
 import type { startDevProcess } from '../../e2e/utils/dev-process'
 import type { WorkspaceHmrAuditBudget } from './auditDeadline'
+import type { ClassicPublicationObservation } from './classicPublicationBarrier'
 import type { WorkspaceHmrRuntime } from './scenarios'
 import type { WorkspaceHmrStageObserver } from './stageRecorder'
 import path from 'node:path'
@@ -35,7 +36,7 @@ export function captureWorkspaceClassicPublication(options: {
   })
   const completion = createDevBuildCompletion(dev, { source: { files: [options.sourceFile], profilePath: options.profilePath } })
   return {
-    inspect<T>(budget: WorkspaceHmrAuditBudget, inspect: () => Promise<T>) {
+    inspect<T extends object>(budget: WorkspaceHmrAuditBudget, inspect: () => Promise<T>) {
       return inspectSettledClassicPublication({
         observe: options.observe,
         mode: options.mode,
@@ -50,7 +51,7 @@ export function captureWorkspaceClassicPublication(options: {
           return ready
         },
         stable: (timeoutMs, signal) => waitForStableDistSnapshot(project.distRoot, options.stableMs, timeoutMs, signal),
-        inspect,
+        inspect: async nativePublication => ({ ...await inspect(), nativePublication }),
       }, budget)
     },
   }
@@ -66,7 +67,7 @@ export async function inspectWorkspaceScenarioPublication<T extends { snapshot: 
   stableMs: number
   budget: WorkspaceHmrAuditBudget
   observe?: WorkspaceHmrStageObserver
-}) {
+}): Promise<T & { nativePublication?: ClassicPublicationObservation }> {
   const observe: WorkspaceHmrStageObserver = options.observe ?? (async (_step, action) => await action())
   const remaining = () => {
     assertHmrAuditBudget(options.budget, 'Workspace scenario publication deadline exceeded.')
