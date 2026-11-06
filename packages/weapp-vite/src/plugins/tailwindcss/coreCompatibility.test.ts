@@ -1,5 +1,5 @@
 import type { Compiler, CompilerGenerateRequest } from 'weapp-tailwindcss/core'
-import { mkdir, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, realpath, rm, symlink, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import os from 'node:os'
 import path from 'node:path'
@@ -77,6 +77,41 @@ describe('published Tailwind Core compatibility', () => {
     const generated = await assertTransforms(compiler, request, 'w-[37px]', '37px')
     expect(generated.classSet.has('text-white')).toBe(true)
     expect(generated.classSet.has('w-[99px]')).toBe(false)
+  })
+
+  it('keeps separate CSS entry configs isolated while refreshing one root', async () => {
+    const { root, compiler, request } = await fixture()
+    const names = ['first', 'second'] as const
+    const widths = [37, 83]
+    const configSource = (width: number) => `module.exports = { theme: { extend: { spacing: { probe: '${width}px' } } } }`
+    const requests: CompilerGenerateRequest[] = []
+    const configs: string[] = []
+    for (const [index, name] of names.entries()) {
+      const directory = path.join(root, name)
+      const entry = path.join(directory, 'app.css')
+      const config = path.join(directory, 'tailwind.config.cjs')
+      await mkdir(directory)
+      await writeFile(config, configSource(widths[index]!))
+      await writeFile(entry, '@import "tailwindcss" source(none); @config "./tailwind.config.cjs"; @source inline("w-probe");')
+      configs.push(await realpath(config))
+      requests.push({ ...request, id: name, sourceOptions: { projectRoot: root, cssEntries: [entry] }, incrementalCache: false })
+    }
+
+    const first = await compiler.generate(requests[0]!)
+    const second = await compiler.generate(requests[1]!)
+    for (const [index, result] of [first, second].entries()) {
+      expect(cssDeclarations(result.css, 'width')).toEqual([`${widths[index]}px`])
+      expect(result.dependencies).toContain(configs[index])
+      expect(result.dependencies).not.toContain(configs[1 - index])
+    }
+
+    await writeFile(configs[0]!, configSource(53))
+    expect(compiler.invalidate([configs[0]!])).toEqual(['first'])
+    const refreshedFirst = await compiler.generate(requests[0]!)
+    const unchangedSecond = await compiler.generate(requests[1]!)
+    expect(cssDeclarations(refreshedFirst.css, 'width')).toEqual(['53px'])
+    expect(unchangedSecond.css).toBe(second.css)
+    expect(cssDeclarations(first.css, 'width')).toEqual(['37px'])
   })
 
   it('finalizes complete raw CSS without the generator-only pruning of author selectors', async () => {

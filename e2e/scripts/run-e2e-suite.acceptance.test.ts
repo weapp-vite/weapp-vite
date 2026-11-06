@@ -105,4 +105,52 @@ describe('IDE full CLI acceptance policy', () => {
       reportContext: { strict: true, partial: false },
     })
   })
+
+  it.each(['equals', 'separate'] as const)('dispatches only the selected runtime task with %s filter syntax', async (format) => {
+    const label = 'ide/native-property-delivery.runtime.test.ts'
+    const args = format === 'equals' ? [`--filter=${label}`] : ['--filter', label]
+    await runE2ESuiteCli(['ide-full', ...args])
+    expect(runTaskSuite).toHaveBeenCalledOnce()
+    const [, tasks, options] = vi.mocked(runTaskSuite).mock.calls[0]!
+    expect(tasks.map(task => task.label)).toEqual([label])
+    expect(options?.reportContext).toMatchObject({ strict: true, partial: true })
+    expect(options?.reportContext?.plannedTasks.length).toBeGreaterThan(1)
+  })
+
+  it.each([
+    ['--fitler=runtime'],
+    ['--filter'],
+    ['--filter='],
+    ['--filter', '--allow-failures'],
+    ['--topology'],
+    ['--plan='],
+    ['--shard-index'],
+  ])('does not dispatch tasks for malformed options: %j', async (...args) => {
+    vi.stubEnv('WEAPP_VITE_E2E_TASK_FILTER', 'native-property')
+    await expect(runE2ESuiteCli(['ide-full', ...args])).rejects.toThrow(/Unknown e2e suite option|requires a value/)
+    expect(runTaskSuite).not.toHaveBeenCalled()
+  })
+
+  it('does not dispatch tasks when the filter matches no runtime task', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    await runE2ESuiteCli(['ide-full', '--filter', 'nonexistent-runtime-fixture'])
+    expect(process.exitCode).toBe(1)
+    expect(runTaskSuite).not.toHaveBeenCalled()
+  })
+
+  it('applies an explicit DevTools selection only while dispatching the selected task', async () => {
+    vi.stubEnv('WEAPP_VITE_E2E_DEVTOOLS_CHANNEL', 'nightly')
+    vi.stubEnv('WEAPP_IDE_DEVTOOLS_CHANNEL', 'rc')
+    vi.mocked(runTaskSuite).mockImplementationOnce(async () => {
+      expect(process.env.WEAPP_VITE_E2E_DEVTOOLS_CHANNEL).toBe('stable')
+      expect(process.env.WEAPP_IDE_DEVTOOLS_CHANNEL).toBeUndefined()
+      expect(process.env.WEAPP_VITE_E2E_REQUIRE_OFFICIAL_LATEST).toBe('0')
+      expect(process.env.WEAPP_IDE_REQUIRE_OFFICIAL_LATEST).toBe('0')
+      return 0
+    })
+    await runE2ESuiteCli(['ide-full', '--filter', 'native-property-delivery.runtime.test.ts', '--devtools-channel', 'stable', '--require-official-latest', 'false'])
+    expect(runTaskSuite).toHaveBeenCalledOnce()
+    expect(process.env.WEAPP_VITE_E2E_DEVTOOLS_CHANNEL).toBe('nightly')
+    expect(process.env.WEAPP_IDE_DEVTOOLS_CHANNEL).toBe('rc')
+  })
 })

@@ -1,7 +1,6 @@
 /* eslint-disable e18e/ban-dependencies -- e2e dev 进程控制需要 execa 驱动子进程并清理残留 watcher。 */
 import type { Options } from 'execa'
 import type { DevProcessExitInfo, DevProcessForcedShutdown, DevProcessStopOptions } from './devProcessCleanup/shutdown'
-import { Buffer } from 'node:buffer'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { execa } from 'execa'
@@ -12,6 +11,7 @@ import { createDevProcessShutdownFailure, DEV_PROCESS_GRACEFUL_TIMEOUT_MS } from
 import { assertWindowsKernelInspectorReady } from './devProcessCleanup/windowsKernelArtifact'
 import { currentWindowsKernelQueryScope, holdWindowsKernelOwner, inWindowsKernelOwnerRecovery, recordWindowsKernelOwnerFailure, registerWindowsKernelOperation, releaseWindowsKernelOwner } from './devProcessCleanup/windowsKernelQueryScope'
 import { createDevProcessDiagnostics } from './devProcessDiagnostics'
+import { createDevProcessOutput } from './devProcessOutput'
 import { captureDevProcessOutput } from './devProcessStdio'
 import { createDevProcessTrace } from './devProcessTrace'
 import { resolveReportProjectPath } from './ideWarningReport'
@@ -124,6 +124,8 @@ export function startDevProcess(
     try {
       return execa(command, args, {
         ...captureDevProcessOutput(spawnOptions),
+        // 结构化收据跨多个 stdout 分块，必须保留流身份，不能提前混入 stderr。
+        all: false,
         // Windows 没有可捕获的 SIGTERM；直接 Node 入口通过 IPC 正常释放开发会话。
         ipc: options?.ipc ?? (!gracefulShutdown && (command === process.execPath || /(?:^|[/\\])node(?:\.exe)?$/i.test(command))),
         env: options?.env ?? process.env,
@@ -146,27 +148,27 @@ export function startDevProcess(
   let crashRequested = false
   const outputChunks: string[] = []
   const diagnostics = createDevProcessDiagnostics(project)
+  const output = createDevProcessOutput((text) => {
+    outputChunks.push(text)
+    diagnostics.write(text)
+  })
 
   const appendOutput = (stream: 'all' | 'stdout' | 'stderr', chunk: unknown) => {
-    if (typeof chunk === 'string') {
+    if (typeof chunk === 'string' || chunk instanceof Uint8Array) {
       trace?.write(stream, chunk)
-      outputChunks.push(chunk)
-      diagnostics.write(chunk)
-      return
-    }
-    if (chunk instanceof Uint8Array) {
-      trace?.write(stream, chunk)
-      outputChunks.push(Buffer.from(chunk).toString('utf8'))
-      diagnostics.write(chunk)
+      output.write(stream, chunk)
     }
   }
 
-  if (child.all) {
+  if (!child.stdout && !child.stderr && child.all) {
     child.all.on('data', chunk => appendOutput('all', chunk))
+    child.all.on('end', () => output.end('all'))
   }
   else {
     child.stdout?.on('data', chunk => appendOutput('stdout', chunk))
     child.stderr?.on('data', chunk => appendOutput('stderr', chunk))
+    child.stdout?.on('end', () => output.end('stdout'))
+    child.stderr?.on('end', () => output.end('stderr'))
   }
 
   const settledExit: Promise<DevProcessExitInfo> = child
@@ -348,6 +350,7 @@ export function startDevProcess(
 
   void settledExit.then((info) => {
     try {
+      output.flush()
       diagnostics.flush()
     }
     finally {

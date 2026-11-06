@@ -24,7 +24,9 @@ pnpm create weapp-vite
 
 ## 手动集成
 
-`weapp-vite` 已内置 `weapp-tailwindcss@5.5.2` 的 compiler 集成，不需要安装或注册 `weapp-tailwindcss/vite`。
+`weapp-vite` 已内置 `weapp-tailwindcss@5.6.3` 的 compiler 集成，不需要安装或注册 `weapp-tailwindcss/vite`。
+
+当前依赖范围限制为 `<5.7.0`：5.7.0 会删除含动态透明度的颜色声明，已提交[上游回归报告](https://github.com/weapp-tailwindcss/weapp-tailwindcss/issues/1332)。
 
 第三方 CSS 编译器可以通过 `weapp.compilerPlugins` 接入，内置 Tailwind 保留 `weapp.tailwindcss` 配置；两者的状态保持 HMR 使用同一批次交付接口。
 

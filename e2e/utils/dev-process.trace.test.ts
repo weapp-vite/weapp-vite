@@ -71,16 +71,18 @@ describe('dev process output trace lifecycle', () => {
     return { child, finish }
   }
 
-  it('observes all once and flushes natural exit before repeated stop without recording argv or env', async () => {
+  it('observes separate streams once and flushes natural exit before repeated stop without recording argv or env', async () => {
     const { child, finish } = createChild(true)
     const dev = startDevProcess('fixture-cli', ['--token', 'fixture-secret'], {
       all: true,
       env: { FIXTURE_TOKEN: 'fixture-secret' },
     })
-    child.all!.emit('data', 'first chunk')
-    child.all!.emit('data', 'last chunk')
-    expect(child.stdout.listenerCount('data')).toBe(0)
-    expect(child.stderr.listenerCount('data')).toBe(0)
+    child.stdout.emit('data', 'first chunk')
+    child.stdout.emit('data', 'last chunk')
+    expect(child.all!.listenerCount('data')).toBe(0)
+    expect(child.stdout.listenerCount('data')).toBe(1)
+    expect(child.stderr.listenerCount('data')).toBe(1)
+    expect(execaMock.mock.calls.at(-1)?.[2].all).toBe(false)
     finish({ exitCode: 0 })
     await Promise.all([dev.stop(0), dev.stop(0)])
     expect(dev.getOutput()).toBe('first chunklast chunk')
@@ -91,14 +93,14 @@ describe('dev process output trace lifecycle', () => {
     expect(JSON.stringify(events)).not.toContain('fixture-secret')
   })
 
-  it('retains separate stream names without changing the in-memory output', async () => {
+  it('retains separate stream names and frames unfinished tails in the in-memory output', async () => {
     const { child, finish } = createChild(false)
     const dev = startDevProcess('fixture-cli', [])
     child.stdout.emit('data', 'stdout')
     child.stderr.emit('data', Buffer.from('stderr'))
     finish({ exitCode: 1 })
     await dev.stop(0)
-    expect(dev.getOutput()).toBe('stdoutstderr')
+    expect(dev.getOutput()).toBe('stdout\nstderr')
     expect(readEvents().filter(event => event.kind === 'chunk').map(event => event.stream)).toEqual(['stdout', 'stderr'])
   })
 
@@ -144,7 +146,7 @@ describe('dev process output trace lifecycle', () => {
     const firstStop = dev.stop(0)
     await firstStop
     const late = Buffer.from([255, 0, 10])
-    child.all!.emit('data', late)
+    child.stdout.emit('data', late)
     const nextStop = dev.stop(0)
     expect(nextStop).not.toBe(firstStop)
     expect(dev.stop(0)).toBe(nextStop)
@@ -163,7 +165,7 @@ describe('dev process output trace lifecycle', () => {
     const write = vi.spyOn(fs, 'writeFileSync').mockImplementationOnce(() => {
       throw new Error('fixture sink failed')
     })
-    child.all!.emit('data', 'unavailable chunk')
+    child.stdout.emit('data', 'unavailable chunk')
     write.mockRestore()
     const original = new Error('original runtime assertion')
     const error = await dev.waitFor(Promise.reject(original), 'fixture assertion').catch(error => error as unknown)
@@ -181,7 +183,7 @@ describe('dev process output trace lifecycle', () => {
     const dev = startDevProcess('fixture-cli', [], { all: true })
     finish({ exitCode: 0 })
     await expect(dev.waitFor(new Promise<never>(() => {}), 'fixture exit')).rejects.toThrow('Dev process exited')
-    child.all!.emit('data', 'late output')
+    child.stdout.emit('data', 'late output')
     const original = new Error('fixture cleanup failure')
     cleanupRun.mockImplementationOnce(() => {
       throw original

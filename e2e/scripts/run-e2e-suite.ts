@@ -6,25 +6,19 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
-import { splitWechatDevtoolsSelectionArgs } from 'weapp-ide-cli'
 import { excludedE2EProjects, isExcludedE2EProject } from '../../scripts/e2eProjectScope'
 import { resolveVerificationTopology } from '../../scripts/verification/topology.ts'
 import { withWechatE2ESelectionEnvironment } from '../utils/devtoolsCli'
 import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { createAcceptanceIdentity, isStrictDomAcceptanceSuite } from './domAcceptanceReport/helpers'
 import { getSuiteTasks, listE2ESuites, partitionE2ETasks } from './e2e-suite-manifest'
+import { parseE2ESuiteArguments } from './run-e2e-suite/arguments'
 import { loadBaselineSuiteExecution } from './run-e2e-suite/baselineTelemetry'
 import { isDevtoolsVitestTask, runTaskSuite } from './suiteRunner'
 import { createSuiteSignalScope } from './suiteRunner/signals'
 import { assertVerificationPlan, createVerificationIdentity, taskDefinitionHash } from './verification/plan'
 import { currentVerificationProfile } from './verification/profile'
 import { verificationPlanSchema } from './verification/validation'
-
-const TASK_FILTER_ENV = 'WEAPP_VITE_E2E_TASK_FILTER'
-const TASK_FROM_ENV = 'WEAPP_VITE_E2E_TASK_FROM'
-const TASK_ROLL_FROM_ENV = 'WEAPP_VITE_E2E_TASK_ROLL_FROM'
-const TASK_SHARD_INDEX_ENV = 'WEAPP_VITE_E2E_SHARD_INDEX'
-const TASK_SHARD_TOTAL_ENV = 'WEAPP_VITE_E2E_SHARD_TOTAL'
 
 function isCurrentModuleEntry(entryArg: string | undefined, moduleUrl: string) {
   if (!entryArg) {
@@ -64,12 +58,6 @@ export function createIdeSuiteCleanupHooks(
     },
     afterAll: cleanup,
   }
-}
-
-function readOption(args: string[], name: string, envName: string) {
-  const prefix = `--${name}=`
-  const option = args.find(arg => arg.startsWith(prefix))
-  return option?.slice(prefix.length) || process.env[envName] || ''
 }
 
 function resolveTaskStartIndex(
@@ -129,32 +117,25 @@ interface SuiteCallbacks {
 
 async function runSelectedE2ESuiteCli(args: string[], callbacks: SuiteCallbacks) {
   callbacks.signal?.throwIfAborted()
-  const parsedSelection = splitWechatDevtoolsSelectionArgs(args)
-  args = parsedSelection.args
+  const parsed = parseE2ESuiteArguments(args)
+  const { selection } = parsed
   const selectionEnv = { cliPath: 'WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH', devtoolsChannel: 'WEAPP_VITE_E2E_DEVTOOLS_CHANNEL', devtoolsVersion: 'WEAPP_VITE_E2E_DEVTOOLS_VERSION', requireOfficialLatest: 'WEAPP_VITE_E2E_REQUIRE_OFFICIAL_LATEST' }
-  if (parsedSelection.selection.cliPath || parsedSelection.selection.devtoolsChannel || parsedSelection.selection.devtoolsVersion) {
+  if (selection.cliPath || selection.devtoolsChannel || selection.devtoolsVersion) {
     for (const key of ['WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH', 'WEAPP_VITE_E2E_DEVTOOLS_CHANNEL', 'WEAPP_VITE_E2E_DEVTOOLS_VERSION', 'WEAPP_VITE_E2E_ACCEPTED_DEVTOOLS_CHANNEL', 'WEAPP_VITE_E2E_ACCEPTED_DEVTOOLS_VERSION', 'WEAPP_IDE_CLI_PATH', 'WEAPP_IDE_DEVTOOLS_CHANNEL', 'WEAPP_IDE_DEVTOOLS_VERSION']) {
       delete process.env[key]
     }
   }
-  for (const [key, value] of Object.entries(parsedSelection.selection)) {
+  for (const [key, value] of Object.entries(selection)) {
     process.env[selectionEnv[key as keyof typeof selectionEnv]] = typeof value === 'boolean' ? value ? '1' : '0' : value
   }
-  if (parsedSelection.selection.requireOfficialLatest !== undefined) {
-    process.env.WEAPP_IDE_REQUIRE_OFFICIAL_LATEST = parsedSelection.selection.requireOfficialLatest ? '1' : '0'
+  if (selection.requireOfficialLatest !== undefined) {
+    process.env.WEAPP_IDE_REQUIRE_OFFICIAL_LATEST = selection.requireOfficialLatest ? '1' : '0'
   }
-  const allowFailures = args.includes('--allow-failures')
-  const filter = readOption(args, 'filter', TASK_FILTER_ENV)
-  const from = readOption(args, 'from', TASK_FROM_ENV)
-  const rollFrom = readOption(args, 'roll-from', TASK_ROLL_FROM_ENV)
-  let shardIndex = readOption(args, 'shard-index', TASK_SHARD_INDEX_ENV)
-  let shardTotal = readOption(args, 'shard-total', TASK_SHARD_TOTAL_ENV)
-  const executionTopology = resolveVerificationTopology(args.find(arg => arg.startsWith('--topology='))?.slice('--topology='.length))
-  const planFile = args.find(arg => arg.startsWith('--plan='))?.slice('--plan='.length)
-  const expectedPlanHash = args.find(arg => arg.startsWith('--expected-plan-hash='))?.slice('--expected-plan-hash='.length)
+  const { allowFailures, filter, from, rollFrom, planFile, expectedPlanHash, mode } = parsed
+  let { shardIndex, shardTotal } = parsed
+  const executionTopology = resolveVerificationTopology(parsed.topology)
   let frozenPlan: VerificationPlan | undefined
   let baseline: Awaited<ReturnType<typeof loadBaselineSuiteExecution>>
-  const mode = args.find(arg => !arg.startsWith('--')) ?? 'full'
 
   if (mode === 'list') {
     const suites = await listE2ESuites()

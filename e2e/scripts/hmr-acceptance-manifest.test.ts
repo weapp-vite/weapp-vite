@@ -309,6 +309,8 @@ describe('HMR semantic acceptance inventory', () => {
       'packages/weapp-vite/src/plugins/vue/transform/plugin/transformFile.test.ts',
       'packages/weapp-vite/src/plugins/vue/transform/scopedSlot.test.ts',
       'e2e/utils/devProcessShutdownTrace.test.ts',
+      'e2e/utils/devProcessOutput.test.ts',
+      'e2e/utils/dev-process.trace.test.ts',
       'e2e/utils/domAcceptance/scopeTrace.test.ts',
       'mpcore/packages/simulator/test/esmModuleSyntax.test.ts',
       'mpcore/packages/simulator/test/componentPropertyDelivery.test.ts',
@@ -359,6 +361,8 @@ describe('HMR semantic acceptance inventory', () => {
     expect(include).toBeTruthy()
     const patterns = [...include!.matchAll(/['"]([^'"]+)['"]/g)].map(match => match[1]!)
     const files = [
+      'e2e/utils/devProcessOutput.test.ts',
+      'e2e/utils/dev-process.trace.test.ts',
       'e2e/utils/automator.reconnect-logs.test.ts',
       'e2e/utils/runtimeLogSubscription.test.ts',
       'e2e/utils/runtimeLogDiagnostics.test.ts',
