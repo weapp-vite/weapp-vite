@@ -19,6 +19,7 @@ import { createExtendedLibManager } from './extendedLib'
 import { createJsonEmitManager } from './jsonEmit'
 import { createEntryLoader } from './loadEntry'
 import { createEntryNormalizer } from './normalizer'
+import { addChunkEmitStats, createChunkEmitStats, recordEntryEmissionProfile, resetChunkEmitStats } from './profile'
 import { createTemplateScanner } from './template'
 
 export { type JsonEmitFileEntry } from './jsonEmit'
@@ -45,14 +46,6 @@ interface PendingEntryResolution {
   pendingReasonSummary?: string[]
   shouldEmitAllEntries?: boolean
   forceFullSharedChunkRefresh?: boolean
-}
-
-interface ChunkEmitStatsSummary {
-  chunkEmitCount: number
-  emitFileMs: number
-  loadCount: number
-  loadMs: number
-  skippedLoadedCount: number
 }
 
 function shouldExpandStableSharedChunk(chunkId: string, importers?: Set<string>) {
@@ -393,27 +386,6 @@ function resolveCurrentStyleOutputFileName(ctx: CompilerContext) {
   )
 }
 
-function createChunkEmitStatsSummary(): ChunkEmitStatsSummary {
-  return {
-    chunkEmitCount: 0,
-    emitFileMs: 0,
-    loadCount: 0,
-    loadMs: 0,
-    skippedLoadedCount: 0,
-  }
-}
-
-function addChunkEmitStatsSummary(
-  target: ChunkEmitStatsSummary,
-  source: ChunkEmitStatsSummary,
-) {
-  target.chunkEmitCount += source.chunkEmitCount
-  target.emitFileMs += source.emitFileMs
-  target.loadCount += source.loadCount
-  target.loadMs += source.loadMs
-  target.skippedLoadedCount += source.skippedLoadedCount
-}
-
 export function useLoadEntry(
   ctx: CompilerContext,
   options?: {
@@ -437,7 +409,7 @@ export function useLoadEntry(
   const lastEmittedChunkFileNames = ctx.runtimeState.build.hmr.lastEmittedChunkFileNames ??= new Set<string>()
   const metadataEntryIds = new Set<string>()
   const rootInputIds = options?.hmr?.rootInputIds
-  const chunkEmitStats = createChunkEmitStatsSummary()
+  const chunkEmitStats = createChunkEmitStats()
   const entryChunkLifecycle = new EntryChunkLifecycle((entryId) => {
     if (!ctx.onStatefulHmrSourceChange) {
       throw new Error('Cannot register a new mini-program entry outside a full build scan')
@@ -499,7 +471,7 @@ export function useLoadEntry(
     (fileName) => {
       lastEmittedChunkFileNames.add(fileName)
     },
-    stats => addChunkEmitStatsSummary(chunkEmitStats, stats),
+    stats => addChunkEmitStats(chunkEmitStats, stats),
     (entryId) => {
       const relativeBase = removeExtensionDeep(ctx.configService.relativeAbsoluteSrcRoot(entryId))
       const entryType = ctx.moduleGraphService?.isLogicalLayoutEntry?.(entryId)
@@ -575,8 +547,14 @@ export function useLoadEntry(
     },
     async emitDirtyEntries(this: PluginContext) {
       entryChunkLifecycle.beginBuild(rootInputIds)
+      applyAutoImports.invalidateLocalCandidates()
+      resetChunkEmitStats(chunkEmitStats)
       ctx.runtimeState.build.hmr.forceEmitUnchangedChunks = false
       if (!options?.isSubPackage && (ctx.runtimeState.build.hmr.fullEntryScan || (this.meta?.watchMode && !ctx.configService.isDev)) && buildTarget === 'app' && !ctx.configService.weappLibConfig?.enabled) {
+        const emitStartedAt = performance.now()
+        const emissionProfile = ctx.runtimeState.build.hmr.profile
+        const dirtyCount = dirtyEntrySet.size
+        const pendingReasonSummary = ['full-rebuild', ...resolveUpstreamPendingReasonSummary(emissionProfile.dirtyReasonSummary)]
         // 生产 watch 每轮发布完整目标；模块转换缓存与产物元数据的所有权分开处理。
         resetEmittedOutputCaches(ctx.runtimeState)
         ctx.runtimeState.css.sidecarImports.clear()
@@ -613,6 +591,17 @@ export function useLoadEntry(
         }
         options?.hmr?.setDidEmitAllEntries?.(true)
         options?.hmr?.setSkipSharedChunkRefresh?.(false)
+        recordEntryEmissionProfile(emissionProfile, chunkEmitStats, {
+          startedAt: emitStartedAt,
+          dirtyCount,
+          resolvedCount: resolvedEntryMap.size,
+          pendingCount: resolvedEntryMap.size,
+          emittedCount: lastActualEmittedEntryIds.size,
+          registrationCount: resolvedEntryMap.size,
+          emitAll: true,
+          fullScan: true,
+          pendingReasonSummary,
+        }, debug)
         return
       }
       if (!dirtyEntrySet.size) {
@@ -624,7 +613,8 @@ export function useLoadEntry(
       }
 
       const emitStartedAt = performance.now()
-      const currentEventId = ctx.runtimeState.build.hmr.profile.eventId
+      const emissionProfile = ctx.runtimeState.build.hmr.profile
+      const currentEventId = emissionProfile.eventId
       const activeDirtyEntrySet = currentEventId
         ? new Set([...dirtyEntrySet].filter((entryId) => {
             const eventId = dirtyEntryEventIds.get(entryId)
@@ -653,7 +643,7 @@ export function useLoadEntry(
         resolvedEntryMap,
         dirtyEntrySet: activeDirtyEntrySet,
         dirtyEntryReasons,
-        dirtyReasonSummary: ctx.runtimeState.build.hmr.profile.dirtyReasonSummary,
+        dirtyReasonSummary: emissionProfile.dirtyReasonSummary,
         sharedChunkImporters: hmrSharedChunkImporters,
         sharedChunksByEntry: hmrSharedChunksByEntry,
         sourceSharedChunks: options?.hmr?.sourceSharedChunks,
@@ -674,11 +664,6 @@ export function useLoadEntry(
         && [...pendingEntryIds].some(entryId => dirtyEntryReasons.get(entryId) !== 'metadata')
       const pending: ResolvedId[] = []
       const registrationPending: ResolvedId[] = []
-      chunkEmitStats.chunkEmitCount = 0
-      chunkEmitStats.emitFileMs = 0
-      chunkEmitStats.loadCount = 0
-      chunkEmitStats.loadMs = 0
-      chunkEmitStats.skippedLoadedCount = 0
       lastActualEmittedEntryIds.clear()
       lastChunkEmittedEntryIds.clear()
       lastEmittedChunkFileNames.clear()
@@ -758,7 +743,7 @@ export function useLoadEntry(
         }
         finally {
           recordHmrProfileDuration(
-            ctx.runtimeState?.build?.hmr?.profile,
+            emissionProfile,
             'entryChunkEmitMs',
             performance.now() - entryChunkEmitStartedAt,
           )
@@ -804,7 +789,7 @@ export function useLoadEntry(
         }
         addLastEmittedChunkFileName(entryId)
       }
-      if (isEntryAutoRoutesRefresh(ctx.runtimeState.build.hmr.profile.dirtyReasonSummary)) {
+      if (isEntryAutoRoutesRefresh(emissionProfile.dirtyReasonSummary)) {
         for (const entryId of actualChunkEmittedEntryIds) {
           addLastEmittedChunkFileName(entryId)
         }
@@ -815,8 +800,8 @@ export function useLoadEntry(
       if (pendingResolution.hmrEntries) {
         hmrEntryIds = pendingResolution.hmrEntries
       }
-      if (shouldPreloadEntryAssetOnly(ctx.runtimeState.build.hmr.profile.dirtyReasonSummary)) {
-        if (!isWxmlImportOnlyRefresh(ctx.runtimeState.build.hmr.profile.dirtyReasonSummary) || !pendingResolution.hmrEntries) {
+      if (shouldPreloadEntryAssetOnly(emissionProfile.dirtyReasonSummary)) {
+        if (!isWxmlImportOnlyRefresh(emissionProfile.dirtyReasonSummary) || !pendingResolution.hmrEntries) {
           hmrEntryIds = new Set(pendingMetadataEntryIds)
           for (const entryId of actualChunkEmittedEntryIds) {
             if (pendingEntryIds.has(entryId) && !metadataEntryIds.has(entryId)) {
@@ -843,24 +828,17 @@ export function useLoadEntry(
       )
       options?.hmr?.setLastHmrEntries?.(hmrEntryIds)
       options?.hmr?.setSkipSharedChunkRefresh?.(skipSharedChunkRefresh)
-      ctx.runtimeState.build.hmr.profile = {
-        ...ctx.runtimeState.build.hmr.profile,
-        emitMs: performance.now() - emitStartedAt,
+      recordEntryEmissionProfile(emissionProfile, chunkEmitStats, {
+        startedAt: emitStartedAt,
         sharedChunkResolveMs: pendingResolution.sharedChunkResolveMs,
-        entryChunkLoadMs: chunkEmitStats.loadMs,
-        entryChunkEmitFileMs: chunkEmitStats.emitFileMs,
-        chunkEmitCount: chunkEmitStats.chunkEmitCount,
-        loadCount: chunkEmitStats.loadCount,
-        skippedLoadedCount: chunkEmitStats.skippedLoadedCount,
         dirtyCount,
+        resolvedCount: resolvedEntryMap.size,
         pendingCount: pending.length,
         emittedCount: hmrEntryIds.size,
+        registrationCount: registrationPending.length,
+        emitAll: shouldEmitAllEntries,
         pendingReasonSummary,
-      }
-
-      if (debug) {
-        debug(`hmr emit dirty=${dirtyCount} resolved=${resolvedEntryMap.size} emitAll=${shouldEmitAllEntries} pending=${pending.length} registration=${registrationPending.length}`)
-      }
+      }, debug)
     },
   }
 }

@@ -4,6 +4,7 @@ import { beforeEach, expect, it, vi } from 'vitest'
 import { holdRemoveEntries, verifyRemoveCooldown } from './removeCooldown.mjs'
 
 const io = vi.hoisted(() => ({
+  mkdir: vi.fn(),
   rename: vi.fn(),
   rm: vi.fn(),
   stat: vi.fn(),
@@ -19,19 +20,20 @@ vi.mock('node:fs/promises', async importOriginal => ({
   ...io,
 }))
 
-function fixture(root = path.resolve('atomic-registration-fixture')) {
+function fixture(root = path.resolve('atomic-registration-fixture'), entryType: 'atomic' | 'directory' | 'file' = 'atomic') {
   const barrier = Promise.withResolvers<void>()
   void barrier.promise.catch(() => {})
   const watcher = Object.assign(new EventEmitter(), {
     _pendingUnlinks: new Map(),
     _throttled: new Map(),
   })
-  const owner = { watcher, events: [], errors: [], event: vi.fn() }
+  const events: { event: string, path: string }[] = []
+  const owner = { watcher, events, errors: [], event: vi.fn() }
   const open = vi.fn(() => owner)
   const ready = vi.fn().mockResolvedValue(undefined)
   const instrumentation = { settleDirectoryRegistration: vi.fn(() => barrier.promise) }
   const run = () => verifyRemoveCooldown({
-    entryType: 'atomic',
+    entryType,
     chokidar: {},
     root,
     watched: path.join(root, 'src'),
@@ -44,14 +46,65 @@ function fixture(root = path.resolve('atomic-registration-fixture')) {
   return { root, barrier, owner, open, ready, instrumentation, run }
 }
 
+function directoryFixture() {
+  const ctx = fixture(undefined, 'directory')
+  const directory = path.join(ctx.root, 'src/cooldown-directory')
+  const leaf = path.join(directory, 'leaf.txt')
+  const tracked = new Set([directory, leaf])
+  const observed = new Map([directory, leaf].map(file => [file.replaceAll('\\', '/'), {}]))
+  const recreated = Promise.withResolvers<void>()
+  void recreated.promise.catch(() => {})
+  Object.assign(ctx.owner.watcher, {
+    tree: {
+      observed,
+      peekDirectory: (parent: string) => ({ has: (name: string) => tracked.has(path.join(parent, name)) }),
+    },
+  })
+  const publish = (event: string, file: string) => {
+    if (event === 'add' || event === 'addDir') {
+      tracked.add(file)
+      observed.set(file.replaceAll('\\', '/'), {})
+    }
+    else { tracked.delete(file) }
+    ctx.owner.events.push({ event, path: path.relative(ctx.root, file).replaceAll('\\', '/') })
+    ctx.owner.watcher.emit('all', event, file)
+  }
+  ctx.owner.event.mockImplementation((event: string, file: string) => new Promise<void>((resolve) => {
+    const listener = (received: string, target: string) => {
+      if (received === event && target === file) {
+        ctx.owner.watcher.off('all', listener)
+        resolve()
+      }
+    }
+    ctx.owner.watcher.on('all', listener)
+  }))
+  ctx.instrumentation.settleDirectoryRegistration.mockReturnValueOnce(ctx.barrier.promise).mockReturnValueOnce(recreated.promise)
+  io.mkdir.mockImplementation(async (file: string) => {
+    if (ctx.open.mock.calls.length) {
+      publish('addDir', file)
+    }
+  })
+  io.writeFile.mockImplementation(async (file: string) => {
+    if (ctx.open.mock.calls.length) {
+      publish('add', file)
+    }
+  })
+  io.rm.mockImplementation(async () => {
+    publish('unlink', leaf)
+    publish('unlinkDir', directory)
+  })
+  return { ...ctx, directory, leaf, tracked, recreated }
+}
+
 beforeEach(() => {
   vi.resetAllMocks()
+  io.mkdir.mockResolvedValue(undefined)
   io.writeFile.mockResolvedValue(undefined)
   io.stat.mockResolvedValue({})
 })
 
-it('awaits exact directory registration after public ready and before removing the atomic source', async () => {
-  const ctx = fixture()
+it.each(['atomic', 'directory', 'file'] as const)('awaits exact directory registration after public ready and before removing the %s source', async (entryType) => {
+  const ctx = fixture(undefined, entryType)
   const original = new Error('stop after the first owned removal')
   io.rm.mockRejectedValue(original)
   const result = ctx.run()
@@ -66,8 +119,8 @@ it('awaits exact directory registration after public ready and before removing t
   expect(io.rm).toHaveBeenCalledOnce()
 })
 
-it('preserves a failed native registration barrier and leaves the source intact', async () => {
-  const ctx = fixture()
+it.each(['atomic', 'directory', 'file'] as const)('preserves a failed native registration barrier and leaves the %s source intact', async (entryType) => {
+  const ctx = fixture(undefined, entryType)
   const original = new Error('exact native registration failed')
   const unexpected = new Error('the source was removed before registration')
   io.rm.mockRejectedValue(unexpected)
@@ -77,6 +130,38 @@ it('preserves a failed native registration barrier and leaves the source intact'
   expect(await result).toBe(original)
   expect(io.rm).not.toHaveBeenCalled()
   expect(ctx.owner.events).toEqual([])
+})
+
+it('awaits the recreated directory subscription before removing its new generation', async () => {
+  const ctx = directoryFixture()
+  const result = ctx.run()
+  ctx.barrier.resolve()
+  try {
+    await new Promise(resolve => setImmediate(resolve))
+    expect(ctx.instrumentation.settleDirectoryRegistration).toHaveBeenCalledTimes(2)
+    expect(ctx.instrumentation.settleDirectoryRegistration).toHaveBeenNthCalledWith(2, 1000)
+    expect(io.rm).toHaveBeenCalledExactlyOnceWith(ctx.directory, { recursive: true })
+    expect(ctx.tracked.has(ctx.directory)).toBe(true)
+    expect(ctx.tracked.has(ctx.leaf)).toBe(true)
+  }
+  finally { ctx.recreated.resolve() }
+  expect(await result).toBeUndefined()
+  expect(io.rm).toHaveBeenCalledTimes(2)
+  expect(ctx.owner.watcher.listenerCount('all')).toBe(0)
+})
+
+it('preserves a failed recreated-directory barrier without removing the new generation', async () => {
+  const ctx = directoryFixture()
+  const original = new Error('the recreated native directory registration failed')
+  const result = ctx.run()
+  ctx.barrier.resolve()
+  await new Promise(resolve => setImmediate(resolve))
+  ctx.recreated.reject(original)
+  expect(await result).toBe(original)
+  expect(io.rm).toHaveBeenCalledOnce()
+  expect(ctx.tracked.has(ctx.directory)).toBe(true)
+  expect(ctx.tracked.has(ctx.leaf)).toBe(true)
+  expect(ctx.owner.watcher.listenerCount('all')).toBe(0)
 })
 
 it('publishes a fully written replacement from outside the watch root after holding the exact unlink', async () => {

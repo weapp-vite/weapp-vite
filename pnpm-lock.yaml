@@ -459,8 +459,8 @@ catalogs:
       specifier: ^1.108.0
       version: 1.108.0
     sass-embedded:
-      specifier: ^1.108.0
-      version: 1.108.0
+      specifier: ^1.107.1 <1.108.0
+      version: 1.107.1
     semver:
       specifier: ^7.8.6
       version: 7.8.6
@@ -841,7 +841,7 @@ importers:
         version: 3.9.10
       repoctl:
         specifier: 6.4.0
-        version: 6.4.0(8f0ad0f9fcbe74b3d6f45d8419c55876)
+        version: 6.4.0(17ad86af0af1add98ced8022f71bd170)
       rolldown:
         specifier: 1.2.16
         version: 1.2.16
@@ -856,7 +856,7 @@ importers:
         version: 7.1.2(rolldown@1.2.16)(rollup@4.67.5)
       sass-embedded:
         specifier: 'catalog:'
-        version: 1.108.0
+        version: 1.107.1
       set-value:
         specifier: ^4.1.0
         version: 4.1.0
@@ -904,7 +904,7 @@ importers:
         version: 6.0.3
       vite:
         specifier: 'catalog:'
-        version: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
+        version: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
       vite-plugin-inspect:
         specifier: 'catalog:'
         version: 12.1.0(@devframes/agentic@1.3.2)(cac@7.1.0)(crossws@0.4.17(srvx@1.0.8))(srvx@1.0.8)(vite@8.3.5)
@@ -1071,7 +1071,7 @@ importers:
         version: 6.0.3
       vite:
         specifier: 'catalog:'
-        version: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
+        version: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1117,7 +1117,7 @@ importers:
         version: 5.2.3
       sass-embedded:
         specifier: 'catalog:'
-        version: 1.108.0
+        version: 1.107.1
       typescript:
         specifier: catalog:latest
         version: 6.0.3
@@ -1435,7 +1435,7 @@ importers:
         version: 6.0.3
       vite:
         specifier: 'catalog:'
-        version: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
+        version: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
       vue-tsc:
         specifier: 'catalog:'
         version: 3.3.14(typescript@6.0.3)
@@ -1554,7 +1554,7 @@ importers:
         version: 8.5.32
       sass-embedded:
         specifier: 'catalog:'
-        version: 1.108.0
+        version: 1.107.1
       sharp:
         specifier: 'catalog:'
         version: 0.35.5(@types/node@26.6.6)
@@ -2205,7 +2205,7 @@ importers:
         version: 4.23.15
       vite:
         specifier: 'catalog:'
-        version: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
+        version: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
       vue-tsc:
         specifier: 'catalog:'
         version: 3.3.14(typescript@6.0.3)
@@ -2286,7 +2286,7 @@ importers:
     devDependencies:
       vite-plus:
         specifier: 'catalog:'
-        version: 1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)
+        version: 1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -2374,7 +2374,7 @@ importers:
     devDependencies:
       '@icebreakers/eslint-config':
         specifier: 'catalog:'
-        version: 8.0.12(eslint-plugin-pnpm@1.9.1(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.91.0(oxlint-tsgolint@7.0.2005)(vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))(postcss@8.5.32)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.32))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(supports-color@10.2.2)(tailwindcss@4.3.4)(typescript@6.0.3)(vitest@5.1.0)
+        version: 8.0.12(eslint-plugin-pnpm@1.9.1(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.91.0(oxlint-tsgolint@7.0.2005)(vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))(postcss@8.5.32)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.32))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(supports-color@10.2.2)(tailwindcss@4.3.4)(typescript@6.0.3)(vitest@5.1.0)
       '@icebreakers/stylelint-config':
         specifier: 'catalog:'
         version: 5.1.5(postcss@8.5.32)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.32))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(tailwindcss@4.3.4)
@@ -2417,7 +2417,7 @@ importers:
         version: 1.9.2(tailwindcss@4.3.4)
       '@icebreakers/eslint-config':
         specifier: 'catalog:'
-        version: 8.0.12(eslint-plugin-pnpm@1.9.1(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.91.0(oxlint-tsgolint@7.0.2005)(vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))(postcss@8.5.32)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.32))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(supports-color@10.2.2)(tailwindcss@4.3.4)(typescript@6.0.3)(vitest@5.1.0)
+        version: 8.0.12(eslint-plugin-pnpm@1.9.1(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.91.0(oxlint-tsgolint@7.0.2005)(vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))(postcss@8.5.32)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.32))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(supports-color@10.2.2)(tailwindcss@4.3.4)(typescript@6.0.3)(vitest@5.1.0)
       '@icebreakers/stylelint-config':
         specifier: 'catalog:'
         version: 5.1.5(postcss@8.5.32)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.32))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(tailwindcss@4.3.4)
@@ -2478,7 +2478,7 @@ importers:
         version: 8.1.0
       '@icebreakers/eslint-config':
         specifier: 'catalog:'
-        version: 8.0.12(eslint-plugin-pnpm@1.9.1(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.91.0(oxlint-tsgolint@7.0.2005)(vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))(postcss@8.5.32)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.32))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(supports-color@10.2.2)(tailwindcss@4.3.4)(typescript@6.0.3)(vitest@5.1.0)
+        version: 8.0.12(eslint-plugin-pnpm@1.9.1(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.91.0(oxlint-tsgolint@7.0.2005)(vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))(postcss@8.5.32)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.32))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(supports-color@10.2.2)(tailwindcss@4.3.4)(typescript@6.0.3)(vitest@5.1.0)
       '@icebreakers/stylelint-config':
         specifier: 'catalog:'
         version: 5.1.5(postcss@8.5.32)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.32))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(tailwindcss@4.3.4)
@@ -2578,7 +2578,7 @@ importers:
     devDependencies:
       '@icebreakers/eslint-config':
         specifier: 'catalog:'
-        version: 8.0.12(eslint-plugin-pnpm@1.9.1(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.91.0(oxlint-tsgolint@7.0.2005)(vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))(postcss@8.5.32)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.32))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(supports-color@10.2.2)(tailwindcss@4.3.4)(typescript@6.0.3)(vitest@5.1.0)
+        version: 8.0.12(eslint-plugin-pnpm@1.9.1(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.91.0(oxlint-tsgolint@7.0.2005)(vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))(postcss@8.5.32)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.32))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(supports-color@10.2.2)(tailwindcss@4.3.4)(typescript@6.0.3)(vitest@5.1.0)
       '@icebreakers/stylelint-config':
         specifier: 'catalog:'
         version: 5.1.5(postcss@8.5.32)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.32))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(tailwindcss@4.3.4)
@@ -2693,7 +2693,7 @@ importers:
         version: 6.0.3
       vite:
         specifier: 'catalog:'
-        version: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
+        version: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
       vue-tsc:
         specifier: 'catalog:'
         version: 3.3.14(typescript@6.0.3)
@@ -2803,7 +2803,7 @@ importers:
         version: 6.0.3
       vite:
         specifier: 'catalog:'
-        version: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
+        version: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
       vitest:
         specifier: catalog:tilde
         version: 5.1.0(@types/node@26.6.6)(@vitest/browser-playwright@5.1.0)(@vitest/browser-preview@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(happy-dom@21.0.4(bufferutil@4.1.0))(vite@8.3.5)
@@ -2849,7 +2849,7 @@ importers:
         version: 6.0.3
       vite:
         specifier: 'catalog:'
-        version: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
+        version: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
 
   packages-runtime/glass-easel-web-adapter:
     dependencies:
@@ -2880,7 +2880,7 @@ importers:
         version: 6.0.3
       vite:
         specifier: 'catalog:'
-        version: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
+        version: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
       vitest:
         specifier: catalog:tilde
         version: 5.1.0(@types/node@26.6.6)(@vitest/browser-playwright@5.1.0)(@vitest/browser-preview@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(happy-dom@21.0.4(bufferutil@4.1.0))(vite@8.3.5)
@@ -3015,7 +3015,7 @@ importers:
         version: link:../../packages/rolldown-require
       vite:
         specifier: 'catalog:'
-        version: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
+        version: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
       wevu:
         specifier: workspace:*
         version: link:../wevu
@@ -3426,10 +3426,10 @@ importers:
         version: link:../oxlint
       oxfmt:
         specifier: 0.76.0
-        version: 0.76.0(vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
+        version: 0.76.0(vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
       vite-plus:
         specifier: 'catalog:'
-        version: 1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)
+        version: 1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)
 
   packages/dashboard:
     dependencies:
@@ -3487,7 +3487,7 @@ importers:
         version: 6.0.3
       vite:
         specifier: 'catalog:'
-        version: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
+        version: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
       vue-tsc:
         specifier: 'catalog:'
         version: 3.3.14(typescript@6.0.3)
@@ -3557,7 +3557,7 @@ importers:
         version: 6.0.3
       vite-plus:
         specifier: 'catalog:'
-        version: 1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)
+        version: 1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)
       vitest:
         specifier: 'catalog:'
         version: 5.1.0(@types/node@26.6.6)(@vitest/browser-playwright@5.1.0)(@vitest/browser-preview@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(happy-dom@21.0.4(bufferutil@4.1.0))(vite@8.3.5)
@@ -3635,7 +3635,7 @@ importers:
         version: 6.0.3
       vite-plus:
         specifier: 'catalog:'
-        version: 1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)
+        version: 1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)
       vitest:
         specifier: 'catalog:'
         version: 5.1.0(@types/node@26.6.6)(@vitest/browser-playwright@5.1.0)(@vitest/browser-preview@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(happy-dom@21.0.4(bufferutil@4.1.0))(vite@8.3.5)
@@ -3663,7 +3663,7 @@ importers:
         version: 6.0.3
       vite-plus:
         specifier: 'catalog:'
-        version: 1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)
+        version: 1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)
       vitest:
         specifier: 'catalog:'
         version: 5.1.0(@types/node@26.6.6)(@vitest/browser-playwright@5.1.0)(@vitest/browser-preview@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(happy-dom@21.0.4(bufferutil@4.1.0))(vite@8.3.5)
@@ -3722,7 +3722,7 @@ importers:
     dependencies:
       vite:
         specifier: 'catalog:'
-        version: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
+        version: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
 
   packages/volar:
     dependencies:
@@ -3975,7 +3975,7 @@ importers:
         version: 6.0.3
       vite:
         specifier: 'catalog:'
-        version: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
+        version: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
       vite-plugin-performance:
         specifier: workspace:*
         version: link:../vite-plugin-performance
@@ -4068,7 +4068,7 @@ importers:
     devDependencies:
       '@icebreakers/eslint-config':
         specifier: 'catalog:'
-        version: 8.0.12(eslint-plugin-pnpm@1.9.1(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.91.0(oxlint-tsgolint@7.0.2005)(vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))(postcss@8.5.32)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.32))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(supports-color@10.2.2)(tailwindcss@4.3.4)(typescript@6.0.3)(vitest@5.1.0)
+        version: 8.0.12(eslint-plugin-pnpm@1.9.1(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.91.0(oxlint-tsgolint@7.0.2005)(vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))(postcss@8.5.32)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.32))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(supports-color@10.2.2)(tailwindcss@4.3.4)(typescript@6.0.3)(vitest@5.1.0)
       '@icebreakers/stylelint-config':
         specifier: 'catalog:'
         version: 5.1.5(postcss@8.5.32)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.32))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(tailwindcss@4.3.4)
@@ -4107,7 +4107,7 @@ importers:
         version: 1.3.1
       '@icebreakers/eslint-config':
         specifier: 'catalog:'
-        version: 8.0.12(eslint-plugin-pnpm@1.9.1(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.91.0(oxlint-tsgolint@7.0.2005)(vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))(postcss@8.5.32)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.32))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(supports-color@10.2.2)(tailwindcss@4.3.4)(typescript@6.0.3)(vitest@5.1.0)
+        version: 8.0.12(eslint-plugin-pnpm@1.9.1(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.91.0(oxlint-tsgolint@7.0.2005)(vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))(postcss@8.5.32)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.32))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(supports-color@10.2.2)(tailwindcss@4.3.4)(typescript@6.0.3)(vitest@5.1.0)
       '@icebreakers/stylelint-config':
         specifier: 'catalog:'
         version: 5.1.5(postcss@8.5.32)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.32))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(tailwindcss@4.3.4)
@@ -4149,7 +4149,7 @@ importers:
         version: 1.3.1
       '@icebreakers/eslint-config':
         specifier: 'catalog:'
-        version: 8.0.12(eslint-plugin-pnpm@1.9.1(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.91.0(oxlint-tsgolint@7.0.2005)(vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))(postcss@8.5.32)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.32))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(supports-color@10.2.2)(tailwindcss@4.3.4)(typescript@6.0.3)(vitest@5.1.0)
+        version: 8.0.12(eslint-plugin-pnpm@1.9.1(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.91.0(oxlint-tsgolint@7.0.2005)(vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))(postcss@8.5.32)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.32))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(supports-color@10.2.2)(tailwindcss@4.3.4)(typescript@6.0.3)(vitest@5.1.0)
       '@icebreakers/stylelint-config':
         specifier: 'catalog:'
         version: 5.1.5(postcss@8.5.32)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.32))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(tailwindcss@4.3.4)
@@ -4189,7 +4189,7 @@ importers:
     devDependencies:
       '@icebreakers/eslint-config':
         specifier: 'catalog:'
-        version: 8.0.12(eslint-plugin-pnpm@1.9.1(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.91.0(oxlint-tsgolint@7.0.2005)(vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))(postcss@8.5.32)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.32))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(supports-color@10.2.2)(tailwindcss@4.3.4)(typescript@6.0.3)(vitest@5.1.0)
+        version: 8.0.12(eslint-plugin-pnpm@1.9.1(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.91.0(oxlint-tsgolint@7.0.2005)(vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))(postcss@8.5.32)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.32))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(supports-color@10.2.2)(tailwindcss@4.3.4)(typescript@6.0.3)(vitest@5.1.0)
       '@icebreakers/stylelint-config':
         specifier: 'catalog:'
         version: 5.1.5(postcss@8.5.32)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.32))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(tailwindcss@4.3.4)
@@ -4238,7 +4238,7 @@ importers:
     devDependencies:
       '@icebreakers/eslint-config':
         specifier: 'catalog:'
-        version: 8.0.12(eslint-plugin-pnpm@1.9.1(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.91.0(oxlint-tsgolint@7.0.2005)(vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))(postcss@8.5.32)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.32))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(supports-color@10.2.2)(tailwindcss@4.3.4)(typescript@6.0.3)(vitest@5.1.0)
+        version: 8.0.12(eslint-plugin-pnpm@1.9.1(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.91.0(oxlint-tsgolint@7.0.2005)(vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))(postcss@8.5.32)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.32))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(supports-color@10.2.2)(tailwindcss@4.3.4)(typescript@6.0.3)(vitest@5.1.0)
       '@icebreakers/stylelint-config':
         specifier: 'catalog:'
         version: 5.1.5(postcss@8.5.32)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.32))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(tailwindcss@4.3.4)
@@ -4268,7 +4268,7 @@ importers:
         version: 6.0.3
       vite:
         specifier: 'catalog:'
-        version: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
+        version: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
       vue-tsc:
         specifier: 'catalog:'
         version: 3.3.14(typescript@6.0.3)
@@ -4284,7 +4284,7 @@ importers:
     devDependencies:
       '@icebreakers/eslint-config':
         specifier: 'catalog:'
-        version: 8.0.12(eslint-plugin-pnpm@1.9.1(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.91.0(oxlint-tsgolint@7.0.2005)(vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))(postcss@8.5.32)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.32))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(supports-color@10.2.2)(tailwindcss@4.3.4)(typescript@6.0.3)(vitest@5.1.0)
+        version: 8.0.12(eslint-plugin-pnpm@1.9.1(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.91.0(oxlint-tsgolint@7.0.2005)(vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))(postcss@8.5.32)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.32))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(supports-color@10.2.2)(tailwindcss@4.3.4)(typescript@6.0.3)(vitest@5.1.0)
       '@icebreakers/stylelint-config':
         specifier: 'catalog:'
         version: 5.1.5(postcss@8.5.32)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.32))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(tailwindcss@4.3.4)
@@ -4332,7 +4332,7 @@ importers:
     devDependencies:
       '@icebreakers/eslint-config':
         specifier: 'catalog:'
-        version: 8.0.12(eslint-plugin-pnpm@1.9.1(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.91.0(oxlint-tsgolint@7.0.2005)(vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))(postcss@8.5.32)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.32))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(supports-color@10.2.2)(tailwindcss@4.3.4)(typescript@6.0.3)(vitest@5.1.0)
+        version: 8.0.12(eslint-plugin-pnpm@1.9.1(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.91.0(oxlint-tsgolint@7.0.2005)(vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))(postcss@8.5.32)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.32))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(supports-color@10.2.2)(tailwindcss@4.3.4)(typescript@6.0.3)(vitest@5.1.0)
       '@icebreakers/stylelint-config':
         specifier: 'catalog:'
         version: 5.1.5(postcss@8.5.32)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.32))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(tailwindcss@4.3.4)
@@ -4384,7 +4384,7 @@ importers:
     devDependencies:
       '@icebreakers/eslint-config':
         specifier: 'catalog:'
-        version: 8.0.12(eslint-plugin-pnpm@1.9.1(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.91.0(oxlint-tsgolint@7.0.2005)(vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))(postcss@8.5.32)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.32))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(supports-color@10.2.2)(tailwindcss@4.3.4)(typescript@6.0.3)(vitest@5.1.0)
+        version: 8.0.12(eslint-plugin-pnpm@1.9.1(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.91.0(oxlint-tsgolint@7.0.2005)(vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))(postcss@8.5.32)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.32))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(supports-color@10.2.2)(tailwindcss@4.3.4)(typescript@6.0.3)(vitest@5.1.0)
       '@icebreakers/stylelint-config':
         specifier: 'catalog:'
         version: 5.1.5(postcss@8.5.32)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.32))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(tailwindcss@4.3.4)
@@ -4432,7 +4432,7 @@ importers:
     devDependencies:
       '@icebreakers/eslint-config':
         specifier: 'catalog:'
-        version: 8.0.12(eslint-plugin-pnpm@1.9.1(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.91.0(oxlint-tsgolint@7.0.2005)(vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))(postcss@8.5.32)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.32))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(supports-color@10.2.2)(tailwindcss@4.3.4)(typescript@6.0.3)(vitest@5.1.0)
+        version: 8.0.12(eslint-plugin-pnpm@1.9.1(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.91.0(oxlint-tsgolint@7.0.2005)(vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))(postcss@8.5.32)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.32))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(supports-color@10.2.2)(tailwindcss@4.3.4)(typescript@6.0.3)(vitest@5.1.0)
       '@icebreakers/stylelint-config':
         specifier: 'catalog:'
         version: 5.1.5(postcss@8.5.32)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.32))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(tailwindcss@4.3.4)
@@ -4481,7 +4481,7 @@ importers:
     devDependencies:
       '@icebreakers/eslint-config':
         specifier: 'catalog:'
-        version: 8.0.12(eslint-plugin-pnpm@1.9.1(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.91.0(oxlint-tsgolint@7.0.2005)(vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))(postcss@8.5.32)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.32))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(supports-color@10.2.2)(tailwindcss@4.3.4)(typescript@6.0.3)(vitest@5.1.0)
+        version: 8.0.12(eslint-plugin-pnpm@1.9.1(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.91.0(oxlint-tsgolint@7.0.2005)(vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))(postcss@8.5.32)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.32))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(supports-color@10.2.2)(tailwindcss@4.3.4)(typescript@6.0.3)(vitest@5.1.0)
       '@icebreakers/stylelint-config':
         specifier: 'catalog:'
         version: 5.1.5(postcss@8.5.32)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.32))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(tailwindcss@4.3.4)
@@ -4524,7 +4524,7 @@ importers:
     devDependencies:
       '@icebreakers/eslint-config':
         specifier: 'catalog:'
-        version: 8.0.12(eslint-plugin-pnpm@1.9.1(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.91.0(oxlint-tsgolint@7.0.2005)(vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))(postcss@8.5.32)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.32))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(supports-color@10.2.2)(tailwindcss@4.3.4)(typescript@6.0.3)(vitest@5.1.0)
+        version: 8.0.12(eslint-plugin-pnpm@1.9.1(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.91.0(oxlint-tsgolint@7.0.2005)(vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))(postcss@8.5.32)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.32))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(supports-color@10.2.2)(tailwindcss@4.3.4)(typescript@6.0.3)(vitest@5.1.0)
       '@icebreakers/stylelint-config':
         specifier: 'catalog:'
         version: 5.1.5(postcss@8.5.32)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.32))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(tailwindcss@4.3.4)
@@ -4575,7 +4575,7 @@ importers:
     devDependencies:
       '@icebreakers/eslint-config':
         specifier: 'catalog:'
-        version: 8.0.12(eslint-plugin-pnpm@1.9.1(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.91.0(oxlint-tsgolint@7.0.2005)(vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))(postcss@8.5.32)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.32))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(supports-color@10.2.2)(tailwindcss@4.3.4)(typescript@6.0.3)(vitest@5.1.0)
+        version: 8.0.12(eslint-plugin-pnpm@1.9.1(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.91.0(oxlint-tsgolint@7.0.2005)(vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))(postcss@8.5.32)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.32))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(supports-color@10.2.2)(tailwindcss@4.3.4)(typescript@6.0.3)(vitest@5.1.0)
       '@icebreakers/stylelint-config':
         specifier: 'catalog:'
         version: 5.1.5(postcss@8.5.32)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.32))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(tailwindcss@4.3.4)
@@ -5154,7 +5154,7 @@ importers:
         version: 32.1.0(@rspack/core@2.3.0)(esbuild@0.28.2)(rolldown@1.2.16)(rollup@4.67.5)(vite@8.3.5)(vue@3.5.45(typescript@6.0.3))(webpack@5.105.0(@swc/core@1.16.22)(csso@5.0.5)(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))
       vitepress:
         specifier: 2.0.0-alpha.20
-        version: 2.0.0-alpha.20(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(async-validator@4.2.5)(axios@1.21.0(debug@4.4.3(supports-color@10.2.2))(supports-color@10.2.2))(change-case@5.4.4)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(postcss@8.5.32)(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(yaml@2.9.1)
+        version: 2.0.0-alpha.20(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(async-validator@4.2.5)(axios@1.21.0(debug@4.4.3(supports-color@10.2.2))(supports-color@10.2.2))(change-case@5.4.4)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(postcss@8.5.32)(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(yaml@2.9.1)
       vitepress-plugin-group-icons:
         specifier: ^1.8.1
         version: 1.8.1(vite@8.3.5)
@@ -5163,7 +5163,7 @@ importers:
         version: 1.14.0(supports-color@10.2.2)
       vitepress-plugin-mermaid:
         specifier: ^2.0.17
-        version: 2.0.17(mermaid@12.3.0)(vitepress@2.0.0-alpha.20(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(async-validator@4.2.5)(axios@1.21.0(debug@4.4.3(supports-color@10.2.2))(supports-color@10.2.2))(change-case@5.4.4)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(postcss@8.5.32)(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(yaml@2.9.1))
+        version: 2.0.17(mermaid@12.3.0)(vitepress@2.0.0-alpha.20(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(async-validator@4.2.5)(axios@1.21.0(debug@4.4.3(supports-color@10.2.2))(supports-color@10.2.2))(change-case@5.4.4)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(postcss@8.5.32)(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(yaml@2.9.1))
       weapp-vite:
         specifier: workspace:*
         version: link:../packages/weapp-vite
@@ -16982,120 +16982,125 @@ packages:
   safer-buffer@2.1.2:
     resolution: {integrity: sha512-YZo3K82SD7Riyi0E1EQPojLz7kpepnSQI9IyPbHHg1XXXevb5dJI7tpyN2ADxGcQbHG7vcyRHk0cbwqcQriUtg==}
 
-  sass-embedded-all-unknown@1.108.0:
-    resolution: {integrity: sha512-QJXGw8zPjuWgvo5ASY15xldo/ZWB/aKDFb/0OMj57hUNMb6dvL6xEihn8Jc1xWLscQH7BWc7q3Vs3fOOwUsx2w==}
+  sass-embedded-all-unknown@1.107.1:
+    resolution: {integrity: sha512-8JVe87KQHSu/uMmcbcRa33AVDdwf0FSCR1tqA9fTaLrsqpgApD2YgqFr7KKCYTNRVSwzqAKdDaD2YJgx/siuVQ==}
     cpu: ['!arm', '!arm64', '!riscv64', '!x64']
 
-  sass-embedded-android-arm64@1.108.0:
-    resolution: {integrity: sha512-+yCynl1pBAEfv80Vc51KAlGwPVeu4rrNO8vhTWLBvT3nhkA4yzZqHRfWIKRhpiyeWbfJyKbePj9e3ko1y918Tw==}
+  sass-embedded-android-arm64@1.107.1:
+    resolution: {integrity: sha512-tk1uq03Jqba2OuktUuIVQ0eSERB4oCcYiZ88wdzX1edWT/Yc7c4x6ECl2+7zqXec6SGIUDZlI86nurN5fTJLHA==}
     engines: {node: '>=14.0.0'}
     cpu: [arm64]
     os: [android]
 
-  sass-embedded-android-arm@1.108.0:
-    resolution: {integrity: sha512-dsuky1EE7wvvIl02S9xTuEEY9+Mc1ypuZbPxy2XfBGHapgPh43k5Sg632HJZ3H84FOCAWHZ/zyFmhDkMvRdwIA==}
+  sass-embedded-android-arm@1.107.1:
+    resolution: {integrity: sha512-qst7MmgqFwAHjbDN9Z+zjwMqmPM6RGu5ynXJFZmEmkkjCoQQX8DHUZhNCc2bASeLk/wyz1/9RCziUcJ6kn+E5w==}
     engines: {node: '>=14.0.0'}
     cpu: [arm]
     os: [android]
 
-  sass-embedded-android-riscv64@1.108.0:
-    resolution: {integrity: sha512-UI3m/tKz9aXcaWBWLWyVj503GsCYI1NSMzXtaWzfjB2hGAhd6D5kdExFoBn4LggX6X4if6PbOBZx6bed9T0kug==}
+  sass-embedded-android-riscv64@1.107.1:
+    resolution: {integrity: sha512-WzBSIg44+XP15kc+G2qtpfYBm0BtxjuC/X11eEg2L5Ihw45DoBtSLkpkSpLd9tvxDJOiTK3AHd1/iv5oGNvibg==}
     engines: {node: '>=14.0.0'}
     cpu: [riscv64]
     os: [android]
 
-  sass-embedded-android-x64@1.108.0:
-    resolution: {integrity: sha512-dUZZ8CnBBbhXsyZ5wd9hBzIriNZ7Ifff4+YE9+AZ+B09v4elhStPS7AlOT14JeYVJjGbNXhbxCfe3T7KZ6gGhw==}
+  sass-embedded-android-x64@1.107.1:
+    resolution: {integrity: sha512-K6YN7kqj9aBLmraVDiPIHF7U8qoD9E/6AJIVwj1Y5H0EgPjGOsv1sYu9Uy6SBLvWGg4dsydhbPU7VC+hTGWk9A==}
     engines: {node: '>=14.0.0'}
     cpu: [x64]
     os: [android]
 
-  sass-embedded-darwin-arm64@1.108.0:
-    resolution: {integrity: sha512-Szzt9gF7x4IENOW7qslyCciXipKNk9YSesLqhJr79LZMrRIMpkPo9BeDfQDJlZ9WMDGHCL2JXfxR10BKWX4+Hw==}
+  sass-embedded-darwin-arm64@1.107.1:
+    resolution: {integrity: sha512-okhyzPI4cLNwa/xRIWbpkRGKmebaNp1+15V5PxVsQbzd8c+dn7eZje2Vf5CWxv9jRZ0nJgM1K/F61Wwb0w8Tyg==}
     engines: {node: '>=14.0.0'}
     cpu: [arm64]
     os: [darwin]
 
-  sass-embedded-darwin-x64@1.108.0:
-    resolution: {integrity: sha512-DWNGSd7yHD0zg4esDQk5cwaJef85SeVXZBINt/63UvaYRhzMcUYB/E1mBcGv+wV/bN9cWI7YHILZrrbgkOQDsw==}
+  sass-embedded-darwin-x64@1.107.1:
+    resolution: {integrity: sha512-hMMcxMxTiWoMaCfEvZqofN2l/yW++S0ANdVA3uHbVYO1LeRf9MrOWlOkJCjsbJO5FvfZdKGUxq/hc/5FKX9PXQ==}
     engines: {node: '>=14.0.0'}
     cpu: [x64]
     os: [darwin]
 
-  sass-embedded-linux-arm64@1.108.0:
-    resolution: {integrity: sha512-GE6oESJuGtLYbifeK7r0AJ2LKOiM8doCmI1hYfVbyG2SqGV0vdEEo1P156PJy07TaDoal4zOLViQ4a+S1VgTkA==}
+  sass-embedded-linux-arm64@1.107.1:
+    resolution: {integrity: sha512-cDeuJi63cL2cfr9OZoB2z1jd7Omhdgbj7zBxawZ62NFLe/gYVgeUsHbkB0rh1xbsuMJ9nOu9Mu6bkw8N0XnigQ==}
     engines: {node: '>=14.0.0'}
     cpu: [arm64]
     os: [linux]
     libc: glibc
 
-  sass-embedded-linux-arm@1.108.0:
-    resolution: {integrity: sha512-6ReA1J1WJl0WjN+ffmfh1qtJt7phF5r8rkyQzWy06NK8aunJRnb+Syd2Wx2N+0LbEXqqYKmyILnEeiXkAsuqRQ==}
+  sass-embedded-linux-arm@1.107.1:
+    resolution: {integrity: sha512-k/UIsseDf63xo5qwV1kZgTmJtFlBAKLQf3xb++NmQPv7zvdOZxJ/MVUd1cuDx7vuanVKhM+U6R1mW2GuQxEGHA==}
     engines: {node: '>=14.0.0'}
     cpu: [arm]
     os: [linux]
     libc: glibc
 
-  sass-embedded-linux-musl-arm64@1.108.0:
-    resolution: {integrity: sha512-VqTP2WROzT1qtHP08YV4JYebA/N9KYRWTWp42MRnpvZu7ZrPlsIWV0whLY/XHhOOvtQOj6nKP+X9QXi+FEU+yA==}
+  sass-embedded-linux-musl-arm64@1.107.1:
+    resolution: {integrity: sha512-Pr7kApBThIJjKG7FkGIsFvYrhj8aCu7kEuov7WiK3ExUiv5m+Vz8eYzjqIEGGCAyVIGMuuvHCvPmuMUynPZ1CA==}
     engines: {node: '>=14.0.0'}
     cpu: [arm64]
     os: [linux]
     libc: musl
 
-  sass-embedded-linux-musl-arm@1.108.0:
-    resolution: {integrity: sha512-oOWV5mlrmk54/7tluqifbPQUkNcJ/A7Zp0wVFTvrPu6mu5QVks5yWHyT4uNkk8MNNdvPqHr3OvKg4qGDbXXxgw==}
+  sass-embedded-linux-musl-arm@1.107.1:
+    resolution: {integrity: sha512-jshFSmPp7/tq3zV5l7KEDWuZKN6aewTnKMkWzgXN4oiBvRKFWAeQqG2Acn+gjMwtrvY0aRGZxrgreJGwRmFZlg==}
     engines: {node: '>=14.0.0'}
     cpu: [arm]
     os: [linux]
     libc: musl
 
-  sass-embedded-linux-musl-riscv64@1.108.0:
-    resolution: {integrity: sha512-8z0jeVucmMj3a5RG0yDHfdfnQtC260XHsuRybNTFUNgrTk7SZksCvECS7f3NvFkqLXHVizonzBJbQwjSnRGbIw==}
+  sass-embedded-linux-musl-riscv64@1.107.1:
+    resolution: {integrity: sha512-5oJVR7xt0yQnIlW/1Xz+H5Bl2Tix5Gl4qrlrVvUCzfdFUWBwLSZi6KlabjC41UjRisandO3nxHXPZeI1T99krQ==}
     engines: {node: '>=14.0.0'}
     cpu: [riscv64]
     os: [linux]
     libc: musl
 
-  sass-embedded-linux-musl-x64@1.108.0:
-    resolution: {integrity: sha512-zRy5k4IACKRsElljiuJ/5ZDXgIe2TI5B3lEe16XgfZvbfdPAsBrrtm735CbVeWn5Unnwdo8PatHbZG7qH2QBpQ==}
+  sass-embedded-linux-musl-x64@1.107.1:
+    resolution: {integrity: sha512-ntHvwls0ImF6p9qgZBuIF+BKIZ+6FqrRKZn0JhiFzb48y5o/V0mre6YEmdq8YcYVxPrGaU+Ajk96lpTE7gUC8w==}
     engines: {node: '>=14.0.0'}
     cpu: [x64]
     os: [linux]
     libc: musl
 
-  sass-embedded-linux-riscv64@1.108.0:
-    resolution: {integrity: sha512-ioEI9Kjeq7r0bXOYvwdoiV2viu8kSgWgF/Z7eEHWuYPBG+hHgvO8L2FqVIeTcVLDawVjtIjRB1ND5m41HKjisw==}
+  sass-embedded-linux-riscv64@1.107.1:
+    resolution: {integrity: sha512-m8zLEdUPafxCAXtqx5FgBylIlPaUcb4eBx1lE8ENp/kaqqTMmaapofl+YWFI8xII3id+4rePZBipR142vHnNpQ==}
     engines: {node: '>=14.0.0'}
     cpu: [riscv64]
     os: [linux]
     libc: glibc
 
-  sass-embedded-linux-x64@1.108.0:
-    resolution: {integrity: sha512-bf1UD1+Nl9yoyjPWIsNKx6Q+5TM7IKSb3LGKkI/GGbkkI7dtfXDuEX4K8raAe7vyl6YwsOuk5CIqLC8keJGGiQ==}
+  sass-embedded-linux-x64@1.107.1:
+    resolution: {integrity: sha512-ix29w9TrUrvpzjOir+Ndx3RH5VLJncjq6CMystVUVbx5rpYyyaSzciOm5NKF227ifivhuhWYOFPCkq1NedmXfQ==}
     engines: {node: '>=14.0.0'}
     cpu: [x64]
     os: [linux]
     libc: glibc
 
-  sass-embedded-unknown-all@1.108.0:
-    resolution: {integrity: sha512-8LekO+SieJSup8RR4iZlXEPiIC5+LAla6qdbezTgnEiFeE6TlnRUJC4ymwlgNVSuW439lIZxzEslE1gdQMlluw==}
+  sass-embedded-unknown-all@1.107.1:
+    resolution: {integrity: sha512-7JKs9q+V/kyVBesAjMa8hXx/qk6/cGKq/7cPSZoAWGu6oHx41wiJVfkZVAYt+fOFRHFXQunIKxIR9ZV7nA63PA==}
     os: ['!android', '!darwin', '!linux', '!win32']
 
-  sass-embedded-win32-arm64@1.108.0:
-    resolution: {integrity: sha512-thH2piu717tsswAUNzR5oUvCN99F1JhjgOposze0xD5RfVNrNZk91FKokOJS04raf564x0JieOe7zF7iwsemIA==}
+  sass-embedded-win32-arm64@1.107.1:
+    resolution: {integrity: sha512-/DmYPuToDvhsT4Oz1RQuOvQuYFzhcjzAfxjwhRPdWXxGO1OR8+BhbxyXqOUMpMLwgFT9Du3GPjD1yvy8BXnTZQ==}
     engines: {node: '>=14.0.0'}
     cpu: [arm64]
     os: [win32]
 
-  sass-embedded-win32-x64@1.108.0:
-    resolution: {integrity: sha512-zrkPoApM8srP2ZStPxy9S/+LFfRpbxGsCSKNQMNUSXNfntQhMApejlSmcqryS3tJnp65RE/VnOEfLQIYy4c8nw==}
+  sass-embedded-win32-x64@1.107.1:
+    resolution: {integrity: sha512-B25UYFtuhnYiqvfLNlJZyDp2xV7T0aT9nueE2w+QhDPM/wCZyeQfj1dgMgq0HYBwEybgx0oLuxomgTqplmQ+eg==}
     engines: {node: '>=14.0.0'}
     cpu: [x64]
     os: [win32]
 
-  sass-embedded@1.108.0:
-    resolution: {integrity: sha512-F72wK29zJaTGjrwZogHDi+nRMYe8lEOtWzok9CVDjVdnBhbDu5TLFJ1a52/en3EDdFGj1HjrI/wwFT3E3u4eTQ==}
+  sass-embedded@1.107.1:
+    resolution: {integrity: sha512-DpU0lgDxNE2H7iycTfvvmig1NZ92SqO63D1PPRI8sBniHdpEOzxQno71YRXvEDQgPkaJ7mnljwX16s80AqydaQ==}
+    engines: {node: '>=20.19.0'}
+    hasBin: true
+
+  sass@1.107.1:
+    resolution: {integrity: sha512-aJ1/LvxOOb04YhmiBjzZn3jVwdHKol+OVhoMV6fFl02fF9T3i+5Mg9l/CnzqtM+NX5Jn5o3lAbs/ZJivTCLHfQ==}
     engines: {node: '>=20.19.0'}
     hasBin: true
 
@@ -18997,11 +19002,11 @@ snapshots:
 
   '@andrewbranch/untar.js@1.0.4': {}
 
-  '@antfu/eslint-config@9.5.1(85eedc56dbce9c2d55b4aa9fc4d6a550)':
+  '@antfu/eslint-config@9.5.1(b1ca7720b9ee1fa527789c186dc87c3f)':
     dependencies:
       '@antfu/install-pkg': 2.1.0
       '@clack/prompts': 1.8.1
-      '@e18e/eslint-plugin': 0.8.1(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.91.0(oxlint-tsgolint@7.0.2005)(vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))
+      '@e18e/eslint-plugin': 0.8.1(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.91.0(oxlint-tsgolint@7.0.2005)(vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))
       '@eslint-community/eslint-plugin-eslint-comments': 4.8.1(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2))
       '@eslint/markdown': 8.0.3(supports-color@10.2.2)
       '@stylistic/eslint-plugin': 5.10.0(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2))
@@ -20402,7 +20407,7 @@ snapshots:
       cac: 7.1.0
       devframe: 1.3.2(@devframes/agentic@1.3.2)(cac@7.1.0)(srvx@1.0.8)
     optionalDependencies:
-      vite: '@voidzero-dev/vite-plus-core@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(publint@0.3.25)(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)'
+      vite: '@voidzero-dev/vite-plus-core@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)'
     optional: true
 
   '@devframes/plugin-inspect@1.3.2(devframe@1.3.2)(vite@8.3.5)':
@@ -20410,7 +20415,7 @@ snapshots:
       cac: 7.1.0
       devframe: 1.3.2(@devframes/agentic@1.3.2)(cac@7.1.0)(srvx@1.0.8)
     optionalDependencies:
-      vite: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
+      vite: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
 
   '@devframes/plugin-messages@1.3.2(@devframes/hub@1.3.2(@devframes/agentic@1.3.2)(crossws@0.4.17(srvx@1.0.8))(devframe@1.3.2))(@voidzero-dev/vite-plus-core@1.5.0)(devframe@1.3.2)':
     dependencies:
@@ -20419,7 +20424,7 @@ snapshots:
       cac: 7.1.0
       devframe: 1.3.2(@devframes/agentic@1.3.2)(cac@7.1.0)(srvx@1.0.8)
     optionalDependencies:
-      vite: '@voidzero-dev/vite-plus-core@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(publint@0.3.25)(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)'
+      vite: '@voidzero-dev/vite-plus-core@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)'
     optional: true
 
   '@devframes/plugin-messages@1.3.2(@devframes/hub@1.3.2(@devframes/agentic@1.3.2)(crossws@0.4.17(srvx@1.0.8))(devframe@1.3.2))(devframe@1.3.2)(vite@8.3.5)':
@@ -20429,7 +20434,7 @@ snapshots:
       cac: 7.1.0
       devframe: 1.3.2(@devframes/agentic@1.3.2)(cac@7.1.0)(srvx@1.0.8)
     optionalDependencies:
-      vite: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
+      vite: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
 
   '@devframes/plugin-terminals@1.3.2(@devframes/hub-ui@1.3.2(@devframes/hub@1.3.2(@devframes/agentic@1.3.2)(crossws@0.4.17(srvx@1.0.8))(devframe@1.3.2))(@devframes/json-render@1.3.2(@devframes/hub@1.3.2(@devframes/agentic@1.3.2)(crossws@0.4.17(srvx@1.0.8))(devframe@1.3.2))(devframe@1.3.2))(devframe@1.3.2))(@devframes/hub@1.3.2(@devframes/agentic@1.3.2)(crossws@0.4.17(srvx@1.0.8))(devframe@1.3.2))(@voidzero-dev/vite-plus-core@1.5.0)(devframe@1.3.2)':
     dependencies:
@@ -20438,7 +20443,7 @@ snapshots:
       devframe: 1.3.2(@devframes/agentic@1.3.2)(cac@7.1.0)(srvx@1.0.8)
       zigpty: 0.2.1
     optionalDependencies:
-      vite: '@voidzero-dev/vite-plus-core@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(publint@0.3.25)(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)'
+      vite: '@voidzero-dev/vite-plus-core@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)'
     transitivePeerDependencies:
       - '@devframes/hub'
       - '@devframes/hub-ui'
@@ -20451,7 +20456,7 @@ snapshots:
       devframe: 1.3.2(@devframes/agentic@1.3.2)(cac@7.1.0)(srvx@1.0.8)
       zigpty: 0.2.1
     optionalDependencies:
-      vite: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
+      vite: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
     transitivePeerDependencies:
       - '@devframes/hub'
       - '@devframes/hub-ui'
@@ -20468,7 +20473,7 @@ snapshots:
     optionalDependencies:
       '@devframes/hub': 1.3.2(@devframes/agentic@1.3.2)(crossws@0.4.17(srvx@1.0.8))(devframe@1.3.2)
       '@devframes/hub-ui': 1.3.2(@devframes/hub@1.3.2(@devframes/agentic@1.3.2)(crossws@0.4.17(srvx@1.0.8))(devframe@1.3.2))(@devframes/json-render@1.3.2(@devframes/hub@1.3.2(@devframes/agentic@1.3.2)(crossws@0.4.17(srvx@1.0.8))(devframe@1.3.2))(devframe@1.3.2))(devframe@1.3.2)
-      vite: '@voidzero-dev/vite-plus-core@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(publint@0.3.25)(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)'
+      vite: '@voidzero-dev/vite-plus-core@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)'
     optional: true
 
   '@devframes/vite@1.3.2(@devframes/hub-ui@1.3.2(@devframes/hub@1.3.2(@devframes/agentic@1.3.2)(crossws@0.4.17(srvx@1.0.8))(devframe@1.3.2))(@devframes/json-render@1.3.2(@devframes/hub@1.3.2(@devframes/agentic@1.3.2)(crossws@0.4.17(srvx@1.0.8))(devframe@1.3.2))(devframe@1.3.2))(devframe@1.3.2))(@devframes/hub@1.3.2(@devframes/agentic@1.3.2)(crossws@0.4.17(srvx@1.0.8))(devframe@1.3.2))(devframe@1.3.2)(vite@8.3.5)':
@@ -20478,7 +20483,7 @@ snapshots:
     optionalDependencies:
       '@devframes/hub': 1.3.2(@devframes/agentic@1.3.2)(crossws@0.4.17(srvx@1.0.8))(devframe@1.3.2)
       '@devframes/hub-ui': 1.3.2(@devframes/hub@1.3.2(@devframes/agentic@1.3.2)(crossws@0.4.17(srvx@1.0.8))(devframe@1.3.2))(@devframes/json-render@1.3.2(@devframes/hub@1.3.2(@devframes/agentic@1.3.2)(crossws@0.4.17(srvx@1.0.8))(devframe@1.3.2))(devframe@1.3.2))(devframe@1.3.2)
-      vite: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
+      vite: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
 
   '@docsearch/css@4.7.1': {}
 
@@ -20496,14 +20501,14 @@ snapshots:
 
   '@dual-bundle/import-meta-resolve@4.2.1': {}
 
-  '@e18e/eslint-plugin@0.8.1(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.91.0(oxlint-tsgolint@7.0.2005)(vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))':
+  '@e18e/eslint-plugin@0.8.1(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.91.0(oxlint-tsgolint@7.0.2005)(vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))':
     dependencies:
       empathic: 2.1.0
       module-replacements: 3.4.0
       verkit: 0.4.1
     optionalDependencies:
       eslint: 10.14.0(jiti@2.7.0)(supports-color@10.2.2)
-      oxlint: 1.91.0(oxlint-tsgolint@7.0.2005)(vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
+      oxlint: 1.91.0(oxlint-tsgolint@7.0.2005)(vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
 
   '@eggjs/yauzl@2.11.0':
     dependencies:
@@ -21028,9 +21033,9 @@ snapshots:
       '@commitlint/types': 21.2.3
       conventional-changelog-conventionalcommits: 10.4.1
 
-  ? '@icebreakers/eslint-config@8.0.12(eslint-plugin-pnpm@1.9.1(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.91.0(oxlint-tsgolint@7.0.2005)(vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))(postcss@8.5.32)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.32))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(supports-color@10.2.2)(tailwindcss@4.3.4)(typescript@6.0.3)(vitest@5.1.0)'
+  ? '@icebreakers/eslint-config@8.0.12(eslint-plugin-pnpm@1.9.1(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.91.0(oxlint-tsgolint@7.0.2005)(vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))(postcss@8.5.32)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.32))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(supports-color@10.2.2)(tailwindcss@4.3.4)(typescript@6.0.3)(vitest@5.1.0)'
   : dependencies:
-      '@antfu/eslint-config': 9.5.1(85eedc56dbce9c2d55b4aa9fc4d6a550)
+      '@antfu/eslint-config': 9.5.1(b1ca7720b9ee1fa527789c186dc87c3f)
       '@eslint-react/eslint-plugin': 5.28.8(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)
       '@icebreakers/stylelint-config': 5.1.5(postcss@8.5.32)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.32))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(tailwindcss@4.3.4)
       '@stylistic/eslint-plugin': 5.10.0(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2))
@@ -21044,7 +21049,7 @@ snapshots:
       eslint: 10.14.0(jiti@2.7.0)(supports-color@10.2.2)
       eslint-config-flat-gitignore: 2.4.0(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2))
       eslint-flat-config-utils: 3.2.0
-      eslint-plugin-better-tailwindcss: 4.10.0(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.91.0(oxlint-tsgolint@7.0.2005)(vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))(tailwindcss@4.3.4)(typescript@6.0.3)
+      eslint-plugin-better-tailwindcss: 4.10.0(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.91.0(oxlint-tsgolint@7.0.2005)(vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))(tailwindcss@4.3.4)(typescript@6.0.3)
       eslint-plugin-format: 2.0.1(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2))
       eslint-plugin-react-hooks: 7.1.1(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)
       eslint-plugin-react-refresh: 0.5.7(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2))
@@ -21095,12 +21100,12 @@ snapshots:
     transitivePeerDependencies:
       - '@types/node'
 
-  '@icebreakers/monorepo@6.4.0(c700b86abe4c8f1df83e44037a23e279)':
+  '@icebreakers/monorepo@6.4.0(4c775a0f4c83e20d0b6eff55e5125d1d)':
     dependencies:
       '@arethetypeswrong/core': 0.18.5
       '@babel/parser': 7.29.12
       '@icebreakers/commitlint-config': 4.1.5(conventional-changelog-conventionalcommits@10.4.1)
-      '@icebreakers/eslint-config': 8.0.12(eslint-plugin-pnpm@1.9.1(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.91.0(oxlint-tsgolint@7.0.2005)(vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))(postcss@8.5.32)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.32))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(supports-color@10.2.2)(tailwindcss@4.3.4)(typescript@6.0.3)(vitest@5.1.0)
+      '@icebreakers/eslint-config': 8.0.12(eslint-plugin-pnpm@1.9.1(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.91.0(oxlint-tsgolint@7.0.2005)(vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))(postcss@8.5.32)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.32))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(supports-color@10.2.2)(tailwindcss@4.3.4)(typescript@6.0.3)(vitest@5.1.0)
       '@icebreakers/monorepo-templates': 3.2.0(@types/node@22.20.5)
       '@icebreakers/stylelint-config': 5.1.5(postcss@8.5.32)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.32))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(tailwindcss@4.3.4)
       '@npmcli/config': 10.14.0
@@ -23938,7 +23943,7 @@ snapshots:
       '@tailwindcss/node': 4.3.4
       '@tailwindcss/oxide': 4.3.4
       tailwindcss: 4.3.4
-      vite: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
+      vite: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
 
   '@tanstack/match-sorter-utils@9.2.6':
     dependencies:
@@ -24561,7 +24566,7 @@ snapshots:
       local-pkg: 1.2.1
       nostics: 1.3.0
       package-manager-detector: 1.9.0
-      vite: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
+      vite: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
     transitivePeerDependencies:
       - '@devframes/agentic'
       - cac
@@ -24576,7 +24581,7 @@ snapshots:
       local-pkg: 2.0.0
       nostics: 1.3.0
       package-manager-detector: 1.9.0
-      vite: '@voidzero-dev/vite-plus-core@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(publint@0.3.25)(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)'
+      vite: '@voidzero-dev/vite-plus-core@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)'
     transitivePeerDependencies:
       - '@devframes/agentic'
       - cac
@@ -24592,7 +24597,7 @@ snapshots:
       local-pkg: 2.0.0
       nostics: 1.3.0
       package-manager-detector: 1.9.0
-      vite: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
+      vite: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
     transitivePeerDependencies:
       - '@devframes/agentic'
       - cac
@@ -24618,7 +24623,7 @@ snapshots:
       nostics: 1.3.0
       obug: 3.0.0
       pathe: 2.0.3
-      vite: '@voidzero-dev/vite-plus-core@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(publint@0.3.25)(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)'
+      vite: '@voidzero-dev/vite-plus-core@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)'
     transitivePeerDependencies:
       - '@devframes/plugin-inspect--assets'
       - '@devframes/plugin-messages--assets'
@@ -24646,7 +24651,7 @@ snapshots:
       nostics: 1.3.0
       obug: 3.0.0
       pathe: 2.0.3
-      vite: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
+      vite: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
     transitivePeerDependencies:
       - '@devframes/plugin-inspect--assets'
       - '@devframes/plugin-messages--assets'
@@ -24658,7 +24663,7 @@ snapshots:
   '@vitejs/plugin-vue@6.0.10(patch_hash=3dcf2983828045bd0fe45880e571cb5605a71b599c074ad79a62636319f52777)(vite@8.3.5)(vue@3.5.45(typescript@6.0.3))':
     dependencies:
       '@rolldown/pluginutils': 1.0.1
-      vite: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
+      vite: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
       vue: 3.5.45(typescript@6.0.3)
 
   '@vitest/browser-playwright@5.1.0(@voidzero-dev/vite-plus-core@1.5.0)(bufferutil@4.1.0)(playwright@1.65.0)(vitest@5.1.0)':
@@ -24787,7 +24792,7 @@ snapshots:
       estree-walker: 3.0.3
       magic-string: 1.4.5
     optionalDependencies:
-      vite: '@voidzero-dev/vite-plus-core@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(publint@0.3.25)(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)'
+      vite: '@voidzero-dev/vite-plus-core@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)'
 
   '@vitest/mocker@5.1.0(vite@8.3.5)':
     dependencies:
@@ -24796,7 +24801,7 @@ snapshots:
       estree-walker: 3.0.3
       magic-string: 1.4.5
     optionalDependencies:
-      vite: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
+      vite: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
 
   '@vitest/pretty-format@5.1.0':
     dependencies:
@@ -24827,7 +24832,7 @@ snapshots:
       convert-source-map: 2.0.0
       tinyrainbow: 3.2.0
 
-  '@voidzero-dev/vite-plus-core@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(publint@0.3.25)(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)':
+  '@voidzero-dev/vite-plus-core@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)':
     dependencies:
       '@oxc-project/runtime': 0.157.0
       '@oxc-project/types': 0.157.0
@@ -24854,7 +24859,7 @@ snapshots:
       less: 4.9.1(supports-color@10.2.2)
       publint: 0.3.25
       sass: 1.108.0
-      sass-embedded: 1.108.0
+      sass-embedded: 1.107.1
       terser: 5.51.2
       tsx: 4.23.15
       typescript: 6.0.3
@@ -27044,7 +27049,7 @@ snapshots:
     dependencies:
       eslint: 10.14.0(jiti@2.7.0)(supports-color@10.2.2)
 
-  eslint-plugin-better-tailwindcss@4.10.0(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.91.0(oxlint-tsgolint@7.0.2005)(vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))(tailwindcss@4.3.4)(typescript@6.0.3):
+  eslint-plugin-better-tailwindcss@4.10.0(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.91.0(oxlint-tsgolint@7.0.2005)(vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))(tailwindcss@4.3.4)(typescript@6.0.3):
     dependencies:
       '@eslint/css-tree': 4.1.2
       '@valibot/to-json-schema': 1.8.0(valibot@1.5.0(typescript@6.0.3))
@@ -27057,7 +27062,7 @@ snapshots:
       valibot: 1.5.0(typescript@6.0.3)
     optionalDependencies:
       eslint: 10.14.0(jiti@2.7.0)(supports-color@10.2.2)
-      oxlint: 1.91.0(oxlint-tsgolint@7.0.2005)(vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
+      oxlint: 1.91.0(oxlint-tsgolint@7.0.2005)(vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
     transitivePeerDependencies:
       - '@eslint/css'
       - typescript
@@ -30169,7 +30174,7 @@ snapshots:
       '@oxfmt/binding-win32-ia32-msvc': 0.35.0
       '@oxfmt/binding-win32-x64-msvc': 0.35.0
 
-  oxfmt@0.76.0(vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)):
+  oxfmt@0.76.0(vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)):
     dependencies:
       tinypool: 2.2.0
     optionalDependencies:
@@ -30192,7 +30197,7 @@ snapshots:
       '@oxfmt/binding-win32-arm64-msvc': 0.76.0
       '@oxfmt/binding-win32-ia32-msvc': 0.76.0
       '@oxfmt/binding-win32-x64-msvc': 0.76.0
-      vite-plus: 1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)
+      vite-plus: 1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)
 
   oxlint-tsgolint@7.0.2005:
     optionalDependencies:
@@ -30203,7 +30208,7 @@ snapshots:
       '@oxlint-tsgolint/win32-arm64': 7.0.2005
       '@oxlint-tsgolint/win32-x64': 7.0.2005
 
-  oxlint@1.91.0(oxlint-tsgolint@7.0.2005)(vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)):
+  oxlint@1.91.0(oxlint-tsgolint@7.0.2005)(vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)):
     optionalDependencies:
       '@oxlint/binding-android-arm-eabi': 1.91.0
       '@oxlint/binding-android-arm64': 1.91.0
@@ -30225,7 +30230,7 @@ snapshots:
       '@oxlint/binding-win32-ia32-msvc': 1.91.0
       '@oxlint/binding-win32-x64-msvc': 1.91.0
       oxlint-tsgolint: 7.0.2005
-      vite-plus: 1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)
+      vite-plus: 1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)
 
   p-cancelable@0.4.1: {}
 
@@ -31180,9 +31185,9 @@ snapshots:
 
   remove-accents@0.5.0: {}
 
-  repoctl@6.4.0(8f0ad0f9fcbe74b3d6f45d8419c55876):
+  repoctl@6.4.0(17ad86af0af1add98ced8022f71bd170):
     dependencies:
-      '@icebreakers/monorepo': 6.4.0(c700b86abe4c8f1df83e44037a23e279)
+      '@icebreakers/monorepo': 6.4.0(4c775a0f4c83e20d0b6eff55e5125d1d)
     optionalDependencies:
       '@commitlint/cli': 21.2.4(conventional-commits-parser@7.1.3)(typescript@6.0.3)
       eslint: 10.14.0(jiti@2.7.0)(supports-color@10.2.2)
@@ -31442,65 +31447,65 @@ snapshots:
 
   safer-buffer@2.1.2: {}
 
-  sass-embedded-all-unknown@1.108.0:
+  sass-embedded-all-unknown@1.107.1:
     dependencies:
-      sass: 1.108.0
+      sass: 1.107.1
     optional: true
 
-  sass-embedded-android-arm64@1.108.0:
+  sass-embedded-android-arm64@1.107.1:
     optional: true
 
-  sass-embedded-android-arm@1.108.0:
+  sass-embedded-android-arm@1.107.1:
     optional: true
 
-  sass-embedded-android-riscv64@1.108.0:
+  sass-embedded-android-riscv64@1.107.1:
     optional: true
 
-  sass-embedded-android-x64@1.108.0:
+  sass-embedded-android-x64@1.107.1:
     optional: true
 
-  sass-embedded-darwin-arm64@1.108.0:
+  sass-embedded-darwin-arm64@1.107.1:
     optional: true
 
-  sass-embedded-darwin-x64@1.108.0:
+  sass-embedded-darwin-x64@1.107.1:
     optional: true
 
-  sass-embedded-linux-arm64@1.108.0:
+  sass-embedded-linux-arm64@1.107.1:
     optional: true
 
-  sass-embedded-linux-arm@1.108.0:
+  sass-embedded-linux-arm@1.107.1:
     optional: true
 
-  sass-embedded-linux-musl-arm64@1.108.0:
+  sass-embedded-linux-musl-arm64@1.107.1:
     optional: true
 
-  sass-embedded-linux-musl-arm@1.108.0:
+  sass-embedded-linux-musl-arm@1.107.1:
     optional: true
 
-  sass-embedded-linux-musl-riscv64@1.108.0:
+  sass-embedded-linux-musl-riscv64@1.107.1:
     optional: true
 
-  sass-embedded-linux-musl-x64@1.108.0:
+  sass-embedded-linux-musl-x64@1.107.1:
     optional: true
 
-  sass-embedded-linux-riscv64@1.108.0:
+  sass-embedded-linux-riscv64@1.107.1:
     optional: true
 
-  sass-embedded-linux-x64@1.108.0:
+  sass-embedded-linux-x64@1.107.1:
     optional: true
 
-  sass-embedded-unknown-all@1.108.0:
+  sass-embedded-unknown-all@1.107.1:
     dependencies:
-      sass: 1.108.0
+      sass: 1.107.1
     optional: true
 
-  sass-embedded-win32-arm64@1.108.0:
+  sass-embedded-win32-arm64@1.107.1:
     optional: true
 
-  sass-embedded-win32-x64@1.108.0:
+  sass-embedded-win32-x64@1.107.1:
     optional: true
 
-  sass-embedded@1.108.0:
+  sass-embedded@1.107.1:
     dependencies:
       '@bufbuild/protobuf': 2.16.0
       colorjs.io: 0.7.1
@@ -31510,24 +31515,33 @@ snapshots:
       sync-child-process: 1.1.1
       varint: 6.0.0
     optionalDependencies:
-      sass-embedded-all-unknown: 1.108.0
-      sass-embedded-android-arm: 1.108.0
-      sass-embedded-android-arm64: 1.108.0
-      sass-embedded-android-riscv64: 1.108.0
-      sass-embedded-android-x64: 1.108.0
-      sass-embedded-darwin-arm64: 1.108.0
-      sass-embedded-darwin-x64: 1.108.0
-      sass-embedded-linux-arm: 1.108.0
-      sass-embedded-linux-arm64: 1.108.0
-      sass-embedded-linux-musl-arm: 1.108.0
-      sass-embedded-linux-musl-arm64: 1.108.0
-      sass-embedded-linux-musl-riscv64: 1.108.0
-      sass-embedded-linux-musl-x64: 1.108.0
-      sass-embedded-linux-riscv64: 1.108.0
-      sass-embedded-linux-x64: 1.108.0
-      sass-embedded-unknown-all: 1.108.0
-      sass-embedded-win32-arm64: 1.108.0
-      sass-embedded-win32-x64: 1.108.0
+      sass-embedded-all-unknown: 1.107.1
+      sass-embedded-android-arm: 1.107.1
+      sass-embedded-android-arm64: 1.107.1
+      sass-embedded-android-riscv64: 1.107.1
+      sass-embedded-android-x64: 1.107.1
+      sass-embedded-darwin-arm64: 1.107.1
+      sass-embedded-darwin-x64: 1.107.1
+      sass-embedded-linux-arm: 1.107.1
+      sass-embedded-linux-arm64: 1.107.1
+      sass-embedded-linux-musl-arm: 1.107.1
+      sass-embedded-linux-musl-arm64: 1.107.1
+      sass-embedded-linux-musl-riscv64: 1.107.1
+      sass-embedded-linux-musl-x64: 1.107.1
+      sass-embedded-linux-riscv64: 1.107.1
+      sass-embedded-linux-x64: 1.107.1
+      sass-embedded-unknown-all: 1.107.1
+      sass-embedded-win32-arm64: 1.107.1
+      sass-embedded-win32-x64: 1.107.1
+
+  sass@1.107.1:
+    dependencies:
+      chokidar: 5.0.0
+      immutable: 5.1.9
+      source-map-js: 1.2.2
+    optionalDependencies:
+      '@parcel/watcher': 2.6.0
+    optional: true
 
   sass@1.108.0:
     dependencies:
@@ -32840,7 +32854,7 @@ snapshots:
       esbuild: 0.28.2
       rolldown: 1.2.16
       rollup: 4.67.5
-      vite: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
+      vite: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
       webpack: 5.105.0(@swc/core@1.16.22)(csso@5.0.5)(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)
 
   unrun@0.3.1(synckit@0.11.13):
@@ -32926,7 +32940,7 @@ snapshots:
       '@rollup/pluginutils': 5.5.1(rollup@4.67.5)
       imagetools-core: 12.0.0
       sharp: 0.35.5(@types/node@26.6.6)
-      vite: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
+      vite: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
     transitivePeerDependencies:
       - '@types/node'
       - rollup
@@ -32935,7 +32949,7 @@ snapshots:
     dependencies:
       ansi-colors: 4.1.3
       pathe: 2.0.3
-      vite: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
+      vite: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
     optionalDependencies:
       sharp: 0.35.5(@types/node@26.6.6)
       svgo: 4.1.0
@@ -32951,7 +32965,7 @@ snapshots:
       perfect-debounce: 2.1.0
       sirv: 3.0.2
       unplugin-utils: 0.3.2
-      vite: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
+      vite: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
     transitivePeerDependencies:
       - '@devframes/agentic'
       - cac
@@ -32959,7 +32973,7 @@ snapshots:
       - ocache
       - srvx
 
-  vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1):
+  vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1):
     dependencies:
       '@oxc-project/runtime': 0.157.0
       '@oxc-project/types': 0.157.0
@@ -32971,10 +32985,10 @@ snapshots:
       '@vitest/snapshot': 5.1.0
       '@vitest/spy': 5.1.0
       '@vitest/utils': 5.1.0
-      oxfmt: 0.76.0(vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
-      oxlint: 1.91.0(oxlint-tsgolint@7.0.2005)(vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
+      oxfmt: 0.76.0(vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
+      oxlint: 1.91.0(oxlint-tsgolint@7.0.2005)(vite-plus@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@vitest/browser-playwright@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(bufferutil@4.1.0)(esbuild@0.28.2)(happy-dom@21.0.4(bufferutil@4.1.0))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(playwright@1.65.0)(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
       oxlint-tsgolint: 7.0.2005
-      vite: '@voidzero-dev/vite-plus-core@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(publint@0.3.25)(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)'
+      vite: '@voidzero-dev/vite-plus-core@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)'
       vitest: 5.1.0(@types/node@26.6.6)(@vitest/browser-playwright@5.1.0)(@vitest/browser-preview@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@voidzero-dev/vite-plus-core@1.5.0)(happy-dom@21.0.4(bufferutil@4.1.0))
     optionalDependencies:
       '@vitest/browser-playwright': 5.1.0(bufferutil@4.1.0)(playwright@1.65.0)(vite@8.3.5)(vitest@5.1.0)
@@ -33027,11 +33041,11 @@ snapshots:
       debug: 4.4.3(supports-color@10.2.2)
       get-tsconfig: 5.0.0-beta.6
       oxc-resolver: 11.24.2
-      vite: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
+      vite: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
     transitivePeerDependencies:
       - supports-color
 
-  vite@8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1):
+  vite@8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1):
     dependencies:
       lightningcss: 1.33.0
       picomatch: 4.0.7
@@ -33046,7 +33060,7 @@ snapshots:
       jiti: 2.7.0
       less: 4.9.1(supports-color@10.2.2)
       sass: 1.108.0
-      sass-embedded: 1.108.0
+      sass-embedded: 1.107.1
       terser: 5.51.2
       tsx: 4.23.15
       yaml: 2.9.1
@@ -33057,7 +33071,7 @@ snapshots:
       '@iconify-json/vscode-icons': 1.2.96
       '@iconify/utils': 3.1.7
     optionalDependencies:
-      vite: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
+      vite: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
 
   vitepress-plugin-llms@1.14.0(supports-color@10.2.2):
     dependencies:
@@ -33078,14 +33092,14 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  vitepress-plugin-mermaid@2.0.17(mermaid@12.3.0)(vitepress@2.0.0-alpha.20(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(async-validator@4.2.5)(axios@1.21.0(debug@4.4.3(supports-color@10.2.2))(supports-color@10.2.2))(change-case@5.4.4)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(postcss@8.5.32)(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(yaml@2.9.1)):
+  vitepress-plugin-mermaid@2.0.17(mermaid@12.3.0)(vitepress@2.0.0-alpha.20(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(async-validator@4.2.5)(axios@1.21.0(debug@4.4.3(supports-color@10.2.2))(supports-color@10.2.2))(change-case@5.4.4)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(postcss@8.5.32)(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(yaml@2.9.1)):
     dependencies:
       mermaid: 12.3.0
-      vitepress: 2.0.0-alpha.20(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(async-validator@4.2.5)(axios@1.21.0(debug@4.4.3(supports-color@10.2.2))(supports-color@10.2.2))(change-case@5.4.4)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(postcss@8.5.32)(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(yaml@2.9.1)
+      vitepress: 2.0.0-alpha.20(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(async-validator@4.2.5)(axios@1.21.0(debug@4.4.3(supports-color@10.2.2))(supports-color@10.2.2))(change-case@5.4.4)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(postcss@8.5.32)(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(yaml@2.9.1)
     optionalDependencies:
       '@mermaid-js/mermaid-mindmap': 9.3.0
 
-  vitepress@2.0.0-alpha.20(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(async-validator@4.2.5)(axios@1.21.0(debug@4.4.3(supports-color@10.2.2))(supports-color@10.2.2))(change-case@5.4.4)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(postcss@8.5.32)(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(yaml@2.9.1):
+  vitepress@2.0.0-alpha.20(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(async-validator@4.2.5)(axios@1.21.0(debug@4.4.3(supports-color@10.2.2))(supports-color@10.2.2))(change-case@5.4.4)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(postcss@8.5.32)(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(yaml@2.9.1):
     dependencies:
       '@docsearch/css': 4.7.1
       '@docsearch/js': 4.7.1
@@ -33102,7 +33116,7 @@ snapshots:
       mark.js: 8.11.1
       minisearch: 7.2.0
       shiki: 4.6.0
-      vite: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
+      vite: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
       vue: 3.5.45(typescript@6.0.3)
     optionalDependencies:
       postcss: 8.5.32
@@ -33146,7 +33160,7 @@ snapshots:
       tinybench: 6.2.2
       tinyexec: 1.3.1
       tinyglobby: 0.2.17
-      vite: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
+      vite: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
       why-is-node-running: 3.2.1
     optionalDependencies:
       '@types/node': 22.20.5
@@ -33172,7 +33186,7 @@ snapshots:
       tinybench: 6.2.2
       tinyexec: 1.3.1
       tinyglobby: 0.2.17
-      vite: '@voidzero-dev/vite-plus-core@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(publint@0.3.25)(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)'
+      vite: '@voidzero-dev/vite-plus-core@1.5.0(@arethetypeswrong/core@0.18.5)(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(publint@0.3.25)(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)'
       why-is-node-running: 3.2.1
     optionalDependencies:
       '@types/node': 26.6.6
@@ -33198,7 +33212,7 @@ snapshots:
       tinybench: 6.2.2
       tinyexec: 1.3.1
       tinyglobby: 0.2.17
-      vite: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
+      vite: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
       why-is-node-running: 3.2.1
     optionalDependencies:
       '@types/node': 26.6.6
@@ -33273,7 +33287,7 @@ snapshots:
     optionalDependencies:
       '@vue/compiler-sfc': 3.5.45
       pinia: 4.1.0(@vue/devtools-api@8.2.1)(typescript@6.0.3)(vue@3.5.45(typescript@6.0.3))
-      vite: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
+      vite: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
     transitivePeerDependencies:
       - '@farmfe/core'
       - '@rsbuild/core'
@@ -33350,7 +33364,7 @@ snapshots:
       '@weapp-tailwindcss/native-win32-arm64-msvc': 5.6.3
       '@weapp-tailwindcss/native-win32-x64-msvc': 5.6.3
       tailwindcss: 4.3.4
-      vite: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.108.0)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
+      vite: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.107.1)(sass@1.108.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
     transitivePeerDependencies:
       - '@oxc-project/types'
       - jiti

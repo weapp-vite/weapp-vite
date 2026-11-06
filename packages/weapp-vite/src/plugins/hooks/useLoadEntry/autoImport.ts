@@ -2,104 +2,12 @@ import type { ResolvedValue } from '../../../auto-import-components/resolvers/ty
 import type { CompilerContext } from '../../../context'
 import type { AutoImportMatch } from '../../../runtime/autoImport/service/types'
 import { get, isObject, set } from '@weapp-core/shared'
-import { fs } from '@weapp-core/shared/fs'
-import path from 'pathe'
-import { getAutoImportConfig } from '../../../runtime/autoImport/config/defaults'
-import { toKebabCaseComponentName } from '../../../utils/json'
-
-const GLOB_WILDCARD_RE = /[*?[{]/
-const AUTO_IMPORT_LOCAL_EXTENSIONS = ['vue', 'wxml', 'js', 'ts', 'json'] as const
+import { createLocalCandidateRegistrar } from './autoImport/localCandidates'
 
 export interface ResolvedAutoImportComponent extends Pick<ResolvedValue, 'from' | 'resolvedId' | 'sourceType'> {
   kind: AutoImportMatch['kind']
 }
 type ResolvedAutoImportComponents = Record<string, ResolvedAutoImportComponent>
-
-function toPascalTagName(name: string) {
-  if (!name.includes('-')) {
-    return name
-  }
-  return name
-    .split('-')
-    .filter(Boolean)
-    .map(part => `${part.charAt(0).toUpperCase()}${part.slice(1)}`)
-    .join('')
-}
-
-function resolveAutoImportGlobBase(glob: string, absoluteSrcRoot: string) {
-  const wildcardIndex = glob.search(GLOB_WILDCARD_RE)
-  const staticPart = wildcardIndex >= 0 ? glob.slice(0, wildcardIndex) : glob
-  const trimmed = staticPart.replace(/\/+$/, '')
-  const base = path.extname(trimmed) ? path.dirname(trimmed) : trimmed
-  if (!base || base === '.') {
-    return absoluteSrcRoot
-  }
-  return path.isAbsolute(base) ? base : path.resolve(absoluteSrcRoot, base)
-}
-
-function collectAutoImportGlobExtensions(glob: string) {
-  return AUTO_IMPORT_LOCAL_EXTENSIONS.filter(ext => glob.includes(`.${ext}`))
-}
-
-function collectLocalCandidatePaths(
-  componentName: string,
-  globs: string[],
-  absoluteSrcRoot: string,
-) {
-  const names = new Set([
-    componentName,
-    toPascalTagName(componentName),
-    toKebabCaseComponentName(componentName),
-  ])
-  const candidates = new Set<string>()
-  for (const glob of globs) {
-    const extensions = collectAutoImportGlobExtensions(glob)
-    if (!extensions.length) {
-      continue
-    }
-    const base = resolveAutoImportGlobBase(glob, absoluteSrcRoot)
-    for (const name of names) {
-      for (const ext of extensions) {
-        candidates.add(path.join(base, name, `index.${ext}`))
-        candidates.add(path.join(base, `${name}.${ext}`))
-      }
-    }
-  }
-  return [...candidates]
-}
-
-async function registerExistingLocalCandidates(options: {
-  autoImportService: NonNullable<CompilerContext['autoImportService']>
-  configService: CompilerContext['configService']
-  componentNames: string[]
-}) {
-  const { autoImportService, configService, componentNames } = options
-  if (!configService || typeof autoImportService.registerPotentialComponent !== 'function') {
-    return false
-  }
-  const globs = getAutoImportConfig(configService)?.globs
-  if (!globs?.length) {
-    return false
-  }
-
-  let registered = false
-  const candidates = new Set<string>()
-  for (const componentName of componentNames) {
-    for (const candidate of collectLocalCandidatePaths(componentName, globs, configService.absoluteSrcRoot)) {
-      candidates.add(candidate)
-    }
-  }
-
-  for (const candidate of candidates) {
-    if (!await fs.pathExists(candidate)) {
-      continue
-    }
-    await autoImportService.registerPotentialComponent(candidate)
-    registered = true
-  }
-
-  return registered
-}
 
 export function createAutoImportAugmenter(
   autoImportService: CompilerContext['autoImportService'],
@@ -107,11 +15,12 @@ export function createAutoImportAugmenter(
   externalComponentEntryMap?: Map<string, string>,
   configService?: CompilerContext['configService'],
 ) {
-  const cache = new Map<string, {
+  let cache = new Map<string, {
     hit: Record<string, unknown>
     version: number
     resolvedComponents: ResolvedAutoImportComponents
   }>()
+  const localCandidates = createLocalCandidateRegistrar(autoImportService, configService)
 
   function injectResolvedComponents(
     json: any,
@@ -140,7 +49,8 @@ export function createAutoImportAugmenter(
     return injectedEntries
   }
 
-  return function applyAutoImports(baseName: string, json: any, retryMissing = true): ResolvedAutoImportComponent[] | Promise<ResolvedAutoImportComponent[]> {
+  function applyAutoImports(baseName: string, json: any, retryMissing = true): ResolvedAutoImportComponent[] | Promise<ResolvedAutoImportComponent[]> {
+    const currentCache = cache
     const hit = wxmlService.getAggregatedAutoImportComponents?.(baseName)
       ?? wxmlService.getAggregatedComponents(baseName)
     if (!hit) {
@@ -148,7 +58,7 @@ export function createAutoImportAugmenter(
     }
 
     const version = autoImportService.getVersion()
-    const cached = cache.get(baseName)
+    const cached = currentCache.get(baseName)
     if (cached && cached.hit === hit && cached.version === version) {
       return injectResolvedComponents(json, cached.resolvedComponents)
     }
@@ -169,30 +79,29 @@ export function createAutoImportAugmenter(
         sourceType: match.value.sourceType,
       }
     }
-    cache.set(baseName, {
-      hit,
-      version,
-      resolvedComponents,
-    })
-
     if (
       missingComponentNames.length
       && retryMissing
       && configService
       && typeof autoImportService.registerPotentialComponent === 'function'
     ) {
-      return registerExistingLocalCandidates({
-        autoImportService,
-        configService,
-        componentNames: missingComponentNames,
-      }).then((registered) => {
+      return localCandidates.register(missingComponentNames).then((registered) => {
         if (!registered) {
+          currentCache.set(baseName, { hit, version, resolvedComponents })
           return injectResolvedComponents(json, resolvedComponents)
         }
         return applyAutoImports(baseName, json, false)
       })
     }
 
+    currentCache.set(baseName, { hit, version, resolvedComponents })
     return injectResolvedComponents(json, resolvedComponents)
   }
+
+  return Object.assign(applyAutoImports, {
+    invalidateLocalCandidates() {
+      localCandidates.clear()
+      cache = new Map()
+    },
+  })
 }

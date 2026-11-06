@@ -77,11 +77,13 @@ export function holdRemoveEntries(owner, root, expected) {
   }
 }
 
-async function verifyFile({ chokidar, root, watched, timeoutMs, open, ready, evidence }) {
+async function verifyFile({ chokidar, root, watched, timeoutMs, open, ready, instrumentation, evidence }) {
   const file = path.join(watched, 'cooldown-file.txt')
   await writeFile(file, 'first generation')
   const owner = open(chokidar, watched, { atomic: false })
   await ready(owner)
+  await instrumentation.settleDirectoryRegistration(timeoutMs)
+  assert.deepEqual(owner.errors, [], 'native registration errors cannot count as a completed file preparation barrier')
   const boundary = owner.events.length
   const gate = holdRemoveEntries(owner, root, new Map([[file, 'unlink']]))
   let afterAdd
@@ -110,13 +112,15 @@ async function verifyFile({ chokidar, root, watched, timeoutMs, open, ready, evi
   }
 }
 
-async function verifyDirectory({ chokidar, root, watched, timeoutMs, open, ready, evidence }) {
+async function verifyDirectory({ chokidar, root, watched, timeoutMs, open, ready, instrumentation, evidence }) {
   const directory = path.join(watched, 'cooldown-directory')
   const leaf = path.join(directory, 'leaf.txt')
   await mkdir(directory)
   await writeFile(leaf, 'first nested generation')
   const owner = open(chokidar, watched, { atomic: false })
   await ready(owner)
+  await instrumentation.settleDirectoryRegistration(timeoutMs)
+  assert.deepEqual(owner.errors, [], 'native registration errors cannot count as a completed directory preparation barrier')
   const boundary = owner.events.length
   const gate = holdRemoveEntries(owner, root, new Map([[directory, 'unlinkDir'], [leaf, 'unlink']]))
   let afterAdd
@@ -130,6 +134,8 @@ async function verifyDirectory({ chokidar, root, watched, timeoutMs, open, ready
     await mkdir(directory)
     await writeFile(leaf, 'second nested generation at the same paths')
     await adds
+    await instrumentation.settleDirectoryRegistration(timeoutMs)
+    assert.deepEqual(owner.errors, [], 'a recreated directory subscription needs its own completed native preparation barrier')
     afterAdd = gate.snapshot('after-new-directory-and-leaf-add-before-second-remove')
     const secondUnlinks = Promise.all([owner.event('unlinkDir', directory, timeoutMs), owner.event('unlink', leaf, timeoutMs)])
     await rm(directory, { recursive: true })

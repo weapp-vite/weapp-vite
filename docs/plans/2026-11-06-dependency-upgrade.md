@@ -10,7 +10,8 @@
 | @swc/core | 1.16.21 | 1.16.22 |
 | weapp-tailwindcss | 5.6.3 | 保留 5.6.3，排除 5.7.0 |
 | @weapp-tailwindcss/engine | 0.1.6 | 0.1.7 |
-| sass / sass-embedded | 1.107.1 | 1.108.0 |
+| sass | 1.107.1 | 1.108.0 |
+| sass-embedded | 1.107.1 | 保留 1.107.1，排除 1.108.0 |
 | Playwright | 1.64.1 | 1.65.0 |
 | theme-transition | 2.1.2 | 2.1.3 |
 | Wrangler | 4.157.0 | 4.158.0 |
@@ -31,11 +32,13 @@ pnpm 的根版本和 snapshot 工作流通过同一版本输入同步。两份�
 
 因此本轮偏离原定 5.7.0 目标，保留 compiler 5.6.3，沿用 `^` 前缀并增加 `<5.7.0` 上限，保护独立安装消费者；不拼装跨主版本 PostCSS、不复制颜色编译器、不放宽契约。直接 engine 仍升级 0.1.7：隔离对照中 5.6.3 搭配 0.1.6 与 0.1.7 的颜色、缓存和插件初始化结果一致。官方 5.6.3 自身精确依赖的 engine 0.1.6 保留正常闭包，不做 override。证据在任务目录 `tailwind-alpha/receipt.md`。按用户授权已提交并回读核验[上游 bug #1332](https://github.com/weapp-tailwindcss/weapp-tailwindcss/issues/1332)，附公开 Core 最小复现与两版输出；未上传含本机信息的完整日志。
 
-Sass 两个实现成对升级。Playwright 浏览器缓存继续由实际版本与 revision 生成，没有新增机器专属缓存路径。
+独立 Sass 升级到 1.108.0。sass-embedded 的官方 Windows x64 1.108.0 发行包缺少 `sass.snapshot` 与 `sass.bat`，host 因而回退到不支持 `--embedded` 的纯 JS 实现，使 Windows 构建、HMR、headless 和 Dimina 在进入业务断言前失败。官方 tarball 的 SHA-512 与 registry 及锁文件一致，host 的编译器定位逻辑与 1.107.1 逐字节相同；核验时没有稳定修正版。因此 embedded 保留完整官方 1.107.1 闭包，沿用 `^` 前缀并增加 `<1.108.0` 上限，不覆盖单个平台包或改写 vendor。Playwright 浏览器缓存继续由实际版本与 revision 生成，没有新增机器专属缓存路径。
 
 uview 的修复以普通转换和资产刷新使用同一 uni-app 平台预处理输入为边界，保留原始源码签名及错误传播。Vue 入口拓扑变化触发完整入口扫描，当前可达图重新建立资产所有权；只有成功扫描才提交拓扑基线，普通内容更新继续使用局部扫描。最终入口、模板、JSON、样式与 scoped slot 仍由 bundler 负责发射、写出，不补写缺失 bundle。原生 watcher 回归已覆盖首次构建、本地组件和页面修改及恢复、移除 npm 组件 import/tag、删除无引用 SFC，以及 JS/JSON/WXML/WXSS/scoped slot 完整性；定向 uview Workspace HMR 已通过，完整 workspace 仍待验收。
 
 HMR 分别核对 Vue 资产阶段和 core rewrite：补齐各自墙钟、候选与发射数量、缓存命中及重新编译观察。纯内容分析缓存与 hook context 分离；源码、外部 SFC、路由、layout、配置、删除及失败重放继续参与失效。classic 模式、既有阈值和历史 baseline 保持原样。
+
+远端 CI 进一步暴露完整入口扫描提前返回而没有记录发射统计的问题。完整扫描现在与局部计划共用本代计数和诊断，异步保存产生的新 profile 不被旧代覆盖；组件引用增删明确验证完整扫描与 JS/JSON/模板资产，同拓扑文本修改继续验证局部计划。uni-app 兼容转换在读取当前原文后复用会话内纯字符串结果，缓存上限为 2048 项、32 MiB，完整模块身份、声明块类型、平台和配置均参与键；不保存 AST 或 hook context，错误不缓存，命令终结即使前段资源清理失败也释放纯缓存，restart、旧 owner 和借用子会话保留正确归属。本地组件候选检查按构建代次合并同路径 Promise，仍支持与内置标签同名的组件，注册变化、失败和新代均失效，旧代异步结果不能写入新代。
 
 E2E suite 参数统一处理等号与空格形式，错误选择在启动前失败。真实 IDE 的进程身份、订阅和窗口收尾继续按原资源门禁验收，不扩大超时或忽略未知进程。
 
@@ -45,7 +48,7 @@ E2E suite 参数统一处理等号与空格形式，错误选择在启动前失�
 
 两次冻结安装均通过，第二次离线安装前后的锁文件、workspace、根清单和生成 catalog 哈希一致。Rolldown 单版本及 snapshot 官方模板全文检查已执行。E2E 参数解析的三文件定向回归通过；新增测试已接入根测试发现范围。
 
-升级前后 pnpm 安全审计均退出 1，按 advisory/module 计数为 low 6、moderate 19、high 17、critical 8。5.7 候选图一度降至 2893 个依赖，保留兼容 compiler 后的最终图为 2916；最终审计告警数量保持不变，该结果不记为安全审计通过。peer 检查仍报告 graphql、mermaid、vite、vitepress、webpack 的范围问题，保留上游范围与现有预发布基线，不用不兼容 override 清零。
+升级前后 pnpm 安全审计均退出 1，按 advisory/module 计数为 low 6、moderate 19、high 17、critical 8。5.7 候选图一度降至 2893 个依赖，保留兼容 compiler 后当时的图为 2916，随后保留完整 Sass 兼容闭包后为 2917；最终审计告警数量保持不变，该结果不记为安全审计通过。peer 检查仍报告 graphql、mermaid、vite、vitepress、webpack 的范围问题，保留上游范围与现有预发布基线，不用不兼容 override 清零。
 
 第一次完整单测为 2614 文件、25427 用例通过，8 文件的 13 用例失败。9 个失败由 Tailwind 5.7 的颜色与缓存回归引起，选回兼容依赖后，所属 5 文件 48 项契约通过。其余边界已分别修正：宏测试提供真实 App 输入；外部 SFC 的跨 snapshot 检测只读取合法钩子记录的有界路径事实，不调用过期 resolver；编译失效器补齐 `jsx` 依赖域，覆盖页面自身修改后共享 JSX 模板再恢复。重建 weapp-vite 后，宏、共享模板、JSX HMR 与 uview 原生产物共 4 文件 14 用例通过，原断言和预算保持不变。
 
@@ -69,7 +72,7 @@ HMR 优化前的全量公开类型矩阵 88/88 任务通过，owning-package typ
 
 主线 push 原生触发 Release 和文档 preview 部署。事后取消存在发布抢先执行的竞态，因此本轮提交使用 GitHub 原生 `[skip ci]` 指令阻止本次 push 自动运行，保留全部提交和推送 hooks，不修改或禁用工作流、不批准部署环境。该指令不影响 `workflow_dispatch`；全部适用验证仍按最终候选 SHA 手动派发原生 workflow，逐项记录真实结果。被阻止的 push 工作流记为未执行，不计为验证通过。
 
-第一阶段依赖与 E2E 基础设施已提交为 `a5c297729`，暂存范围 ESLint、DOM 清单、包级类型与原生提交 hooks 通过，尚未推送。首次提交被 changeset 摘要格式门禁拒绝，补齐 Conventional 类型后正常重试通过，未绕过 hooks。
+第一阶段依赖与 E2E 基础设施已提交为 `a5c297729`，暂存范围 ESLint、DOM 清单、包级类型与原生提交 hooks 通过，当时尚未推送。首次提交被 changeset 摘要格式门禁拒绝，补齐 Conventional 类型后正常重试通过，未绕过 hooks。
 
 逻辑入口归属修复后的完整单测退出 1：2,622 文件、25,520 用例通过，10 文件、25 用例失败，原有 13 文件、20 用例跳过；运行期间 134 个候选文件哈希没有变化。失败分别暴露独立 hook 测试未提供逻辑入口图、静态 input 被动态编译器重复发射，以及无脚本布局的 JS asset 未被 chunk collector 识别。测试夹具改为显式提供当前逻辑入口；静态与动态入口使用同一代次去重账本；无脚本布局仅在当前合法父入口、layout 依赖和本 output 实际 JS asset 同时存在时发布配套资产。修复后 15 文件、154 用例、weapp-vite 包级类型及 14 文件 ESLint 通过，两个独立分包回归的重复 JS 与缺失 CSS 同时消除；完整单测仍须在后续源码上重新执行。
 
@@ -88,3 +91,14 @@ HMR 优化前的全量公开类型矩阵 88/88 任务通过，owning-package typ
 按用户本轮明确要求采用 patch changeset。AST 的新增分析结果和 compiler 的可选静态标记、block 类型用于修复现有条件组件与输入识别，既有公开调用继续兼容，新增公开类型已补 tsd；没有将这些修复扩展为新的产品功能。
 
 本轮尚在实施，完整 CI、HMR、headless 与正式干净主线的完整 IDE 验收未完成，不能据此声明交付完成。
+
+
+第三阶段针对远端候选 `8b5953d590900be613dafec921675e196e0d138d` 的失败继续修复。该候选的完整 Workspace HMR 已完成 233/233 项行为检查，但原性能阈值有 13 项超限，不能记为验收通过；Windows 的构建、HMR、headless 和 Dimina 失败已定位到上述 Sass embedded 官方包缺件。另两类失败分别来自完整入口扫描缺少诊断，以及环境单测仍要求合并 stdout/stderr。当前实现保留完整扫描语义和分流收据，迁移对应断言，没有放宽性能或产品完整性检查。两阶段提交均已通过原生 hooks 并推送 `main`，远端身份已回读。
+
+本阶段 owning-package 类型检查、构建及公开类型检查通过；完整公开类型矩阵为 88/88 个 Turbo 任务成功、0 个命中缓存，包含前置构建。uni-app 兼容缓存及终结路径的 33 项回归、本地候选的 28 项回归、完整扫描与惰性构造的 105 项定向回归，以及真实 auto-import watch 的 5 项回归均通过。下游 apps/templates 构建为 80/80 个任务成功、37 个命中缓存；网站使用实际 `website-weapp-vite` 选择构建通过。一次错误的 `website` 选择没有匹配任何项目，虽命令退出 0，未计为通过；随后使用 `--fail-if-no-match` 和正确包名重跑。
+
+原 12 场景的 HMR 复测在本阶段源码上全部执行并通过：runtime demo 745–767 ms、uview 3707–3814 ms、wot 3104–3181 ms，实际均为 classic，原 baseline 和阈值没有变化。161 个候选文件在额外 CPU 诊断前后哈希一致。该诊断在单进程预热后完成 runtime native/Vue 与 wot Vue 各三个采样窗口，保留 V8 profile 和整个进程 CPU 记录；诊断不计入正式性能门禁，也不把主 isolate profile 当作 Rust 工作线程证据。临时脚本首轮漏传独立 profile 输出路径，停在预热、没有采样；原失败保留，通过精确恢复 API 核验源码、CLI、Inspector、配置及空 IDE journal 后释放租约。修正路径后的整轮诊断退出 0，源码、连接、进程与租约均正常收尾。
+
+本阶段依赖生命周期首轮的 Vite 与 Rolldown 均通过既定适用合约，Chokidar 为 28/29 项通过。唯一失败在第一次删除目录后未收到原生事件，尚未进入冷却或第二代检查，全部资源已完整清理。该场景仅等待公开 ready，漏用了仓库已有的 Darwin 原生目录注册屏障；修复在首次准备和重建目录之后等待精确屏障，文件重建继续使用既有父订阅。三文件 18 项定向回归通过，保留全部 29 场景、原预算、精确事件链和屏障失败传播，首错报告单独封存。随后完整生命周期合约复验退出 0：Vite 与 Rolldown 的既定适用合约、Chokidar 全部 29/29 场景均通过，清理已确认；原固定版本例外没有扩大。新候选完整门禁继续记录。
+
+最新依赖审计图为 2917 项，仍有 low 6、moderate 19、high 17、critical 8，审计退出 1；未通过不兼容 override 消除告警。较早的完整单测、完整 headless、局部 IDE 和浏览器结果保留各自候选身份，本阶段源码变化后的正式完整验证仍待完成。根工作树完整 HMR 曾有一个项目因历史未知归属的 IDE asset journal 未启动，旧记录不删除或改写；新候选改在干净隔离工作树执行完整 HMR，正式 IDE 继续仅从同步且干净的根 main 启动。

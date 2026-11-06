@@ -73,7 +73,7 @@ export const TEMPLATE_CATALOG = {
   'postcss-selector-parser': '^7.1.7',
   'postcss-value-parser': '4.2.0',
   'react-reconciler': '0.34.0',
-  'sass-embedded': '^1.108.0',
+  'sass-embedded': '^1.107.1 <1.108.0',
   'socket.io': '^4.8.4',
   'socket.io-client': '^4.8.4',
   'tailwind-merge': '^3.7.0',

@@ -2,6 +2,8 @@ import type { Plugin } from 'vite'
 import type { CompilerContext, ConfigService } from '../context'
 import { isUniAppCompatibilityFile, transformUniAppSource } from 'wevu/compiler'
 import { parseSidecarSourceMetadata } from '../moduleGraph/protocol'
+import { getHmrRuntimeSession } from '../runtime/hmrRuntimeSession'
+import { bindUniAppCompatibilitySession, cacheUniAppCompatibilitySource } from './uniApp/cache'
 
 const SUPPORTED_SOURCE_RE = /(?:\.vue|\.[cm]?[jt]sx?|\.(?:css|less|sass|scss|styl|stylus))(?:\?.*)?$/i
 
@@ -55,12 +57,14 @@ export function transformUniAppCompatibilitySource(
     return code
   }
   try {
-    const result = transformUniAppSource(code, {
-      blockType: blockType ?? undefined,
-      filename: id,
-      target: 'mp-weixin',
+    return cacheUniAppCompatibilitySource(configService, code, id, blockType ?? undefined, () => {
+      const result = transformUniAppSource(code, {
+        blockType: blockType ?? undefined,
+        filename: id,
+        target: 'mp-weixin',
+      })
+      return result.changed ? result.code : code
     })
-    return result.changed ? result.code : code
   }
   catch (error) {
     const packageName = resolveIncludedPackage(id, config.include) ?? '<project-source>'
@@ -78,10 +82,21 @@ export function uniAppCompatibility(ctx: CompilerContext): Plugin[] {
   if (!configService.weappViteConfig?.uniApp || configService.platform !== 'weapp') {
     return []
   }
+  const release = bindUniAppCompatibilitySession(configService, getHmrRuntimeSession(ctx))
+  let command: 'build' | 'serve' | undefined
 
   return [{
     name: 'weapp-vite:uni-app-compatibility',
     enforce: 'pre',
+    configResolved(config) {
+      command = config.command
+    },
+    closeBundle() {
+      if (!this.meta.watchMode || command === 'serve') {
+        release()
+      }
+    },
+    closeWatcher: release,
     transform(code, id) {
       const source = transformUniAppCompatibilitySource(configService, code, id)
       return source === code ? null : { code: source, map: null }

@@ -2,6 +2,7 @@ import type { InlineConfig, ViteDevServer } from 'vite'
 import type { HmrRuntimeSession } from '../runtime/hmrRuntimeSession'
 import type { PreparedNpmOutput } from './npm'
 import { attachDevModuleGraphHost } from '../moduleGraph/host'
+import { clearUniAppCompatibilitySession } from '../plugins/uniApp/cache'
 import { getInitialBuildInputObservation } from '../runtime/buildPlugin/initialBuildChanges'
 import { linkClassicSettlement } from '../runtime/buildPlugin/settlement'
 import { checkAppWorkersOptions } from '../runtime/buildPlugin/workers'
@@ -120,26 +121,51 @@ export class WeappBuildSession extends CompilerSession {
 
   /** 无宿主的构建或首次配置失败可直接释放，已绑定宿主必须走其关闭门禁。 */
   override close(reason: 'restart' | 'close' = 'close'): Promise<void> {
-    return reason === 'restart'
-      ? this.closeHostGeneration(reason)
-      : this.terminalClosing ??= this.closeHostGeneration(reason).then(() => this.releaseClassicIdeConfig())
+    if (reason === 'restart') {
+      return this.closeHostGeneration(reason)
+    }
+    return this.terminalClosing ??= (async () => {
+      try {
+        await this.closeHostGeneration(reason)
+        await this.releaseClassicIdeConfig()
+      }
+      finally {
+        if (runtimeOwners.get(this.hmrRuntimeSession) === this) {
+          clearUniAppCompatibilitySession(this.hmrRuntimeSession)
+        }
+      }
+    })()
   }
 
   /** 只释放仍未被替换宿主接管的 owner，初始化失败和遗弃交接使用同一关闭门禁。 */
   async releaseClassicIdeConfig(): Promise<void> {
-    await super.close()
-    if (runtimeOwners.get(this.hmrRuntimeSession) === this) {
-      this.hmrRuntimeSession.sourcePublication.close()
-      await this.hmrRuntimeSession.classicIdeConfig.close()
+    try {
+      await super.close()
+      if (runtimeOwners.get(this.hmrRuntimeSession) === this) {
+        this.hmrRuntimeSession.sourcePublication.close()
+        await this.hmrRuntimeSession.classicIdeConfig.close()
+      }
+    }
+    finally {
+      if (runtimeOwners.get(this.hmrRuntimeSession) === this) {
+        clearUniAppCompatibilitySession(this.hmrRuntimeSession)
+      }
     }
   }
 
   /** 原生宿主链已完全退出后，连同尚未绑定宿主的失败替换代一起释放。 */
   async releaseHostClassicIdeConfig(): Promise<void> {
     const current = runtimeOwners.get(this.hmrRuntimeSession)
-    await current?.closeHostGeneration('close')
-    this.hmrRuntimeSession.sourcePublication.close()
-    await this.hmrRuntimeSession.classicIdeConfig.close()
+    try {
+      await current?.closeHostGeneration('close')
+      this.hmrRuntimeSession.sourcePublication.close()
+      await this.hmrRuntimeSession.classicIdeConfig.close()
+    }
+    finally {
+      if (runtimeOwners.get(this.hmrRuntimeSession) === current) {
+        clearUniAppCompatibilitySession(this.hmrRuntimeSession)
+      }
+    }
   }
 
   validateEntries(): Promise<void> {

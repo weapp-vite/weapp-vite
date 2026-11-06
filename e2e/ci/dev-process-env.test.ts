@@ -192,7 +192,6 @@ describe('dev process env isolation', () => {
     })
 
     expect(execaMock).toHaveBeenCalledWith('node', ['script.js'], expect.objectContaining({
-      all: true,
       env,
       extendEnv: false,
     }))
