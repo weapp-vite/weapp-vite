@@ -1,3 +1,4 @@
+import { WEVU_APP_SHELL_VIRTUAL_PREFIX } from '@weapp-core/constants'
 import { describe, expect, it } from 'vitest'
 import { createLogicalEntryId } from '../../../moduleGraph/protocol'
 import { createRuntimeState } from '../../../runtime/runtimeState'
@@ -848,6 +849,41 @@ describe('core lifecycle emit HMR import graph', () => {
       createLogicalEntryId(layoutEntry, 'layout'),
       new Set([layoutEntry]),
     )).toBe(true)
+  })
+
+  it('matches an App shell virtual facade only while its physical App owner is active', () => {
+    const appEntry = '/src/app.vue'
+    const shellId = `${WEVU_APP_SHELL_VIRTUAL_PREFIX}${appEntry}`
+
+    expect(isActiveHmrEntryFacade(shellId, new Set([appEntry]))).toBe(true)
+    expect(isActiveHmrEntryFacade(shellId, new Set(['/src/pages/index.vue']))).toBe(false)
+    expect(isActiveHmrEntryFacade(shellId, new Set())).toBe(false)
+    expect(isActiveHmrEntryFacade(WEVU_APP_SHELL_VIRTUAL_PREFIX, new Set([appEntry]))).toBe(false)
+  })
+
+  it('retains the active App shell runtime imports without retaining another App owner', () => {
+    const appEntry = '/src/app.vue'
+    const bundle = {
+      '__weapp_vite_app_shell.js': {
+        type: 'chunk',
+        fileName: '__weapp_vite_app_shell.js',
+        facadeModuleId: `${WEVU_APP_SHELL_VIRTUAL_PREFIX}${appEntry}`,
+        imports: ['./weapp-vendors/runtime.js'],
+        dynamicImports: ['./weapp-vendors/slot-owner.js'],
+      },
+      'other-shell.js': {
+        type: 'chunk',
+        fileName: 'other-shell.js',
+        facadeModuleId: `${WEVU_APP_SHELL_VIRTUAL_PREFIX}/other/app.vue`,
+        imports: ['./unused.js'],
+        dynamicImports: [],
+      },
+    } as any
+
+    expect(collectActiveHmrImportedChunkIds(bundle, new Set([appEntry]))).toEqual(new Set([
+      'weapp-vendors/runtime.js',
+      'weapp-vendors/slot-owner.js',
+    ]))
   })
 
   it('collects normalized direct and dynamic imports for active HMR entries once', () => {

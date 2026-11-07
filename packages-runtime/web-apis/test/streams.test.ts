@@ -10,7 +10,7 @@ afterEach(() => {
 
 describe('Web Streams compatibility', () => {
   it('pins the dependency version used by the isolated disturbed-state adapter', () => {
-    expect(streamsPackage.version).toBe('4.5.0')
+    expect(streamsPackage.version).toBe('4.5.1')
   })
   it('provides compatible readable, writable and transform ponyfills', async () => {
     const values: number[] = []

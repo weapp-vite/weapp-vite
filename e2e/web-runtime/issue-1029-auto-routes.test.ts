@@ -133,7 +133,8 @@ describe('issue #1029: shared named routes on the Web target', { concurrent: fal
     try {
       await dev.waitFor(expect.poll(() => resolveWebDevServerUrl(dev.getOutput()), { timeout: 90_000 }).toBeTypeOf('string'), 'Web server starts')
       await page.goto(new URL(ISSUE_1029_HOME, resolveWebDevServerUrl(dev.getOutput())!).href)
-      await expect.poll(() => activePage.locator('#route-title').textContent()).toBe('首页')
+      // 服务开始监听后，首屏模块加载与页面挂载仍需独立完成。
+      await dev.waitFor(expect.poll(() => activePage.locator('#route-title').textContent(), { timeout: 30_000 }).toBe('首页'), 'Web initial route mounts')
       await activePage.locator('#open-profile').click()
       await expect.poll(() => activePage.locator('#route-title').textContent()).toBe('个人资料')
       await activePage.locator('#go-back').click()
@@ -248,7 +249,7 @@ describe('issue #1029: shared named routes on the Web target', { concurrent: fal
     try {
       await dev.waitFor(expect.poll(() => resolveWebDevServerUrl(dev.getOutput()), { timeout: 90_000 }).toBeTypeOf('string'), 'Web discovery server starts')
       await page.goto(new URL(ISSUE_1029_HOME, resolveWebDevServerUrl(dev.getOutput())!).href)
-      await expect.poll(() => activePage.locator('#plain-home').textContent()).toBe('home')
+      await dev.waitFor(expect.poll(() => activePage.locator('#plain-home').textContent(), { timeout: 30_000 }).toBe('home'), 'Web discovery initial route mounts')
       const initialLoads = loadCount
       sourceChange = 'create'
       await mkdir(newDirectory, { recursive: true })

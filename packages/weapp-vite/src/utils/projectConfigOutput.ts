@@ -4,12 +4,35 @@ import path from 'pathe'
 import { pruneOwnedAssetFiles } from '../plugins/asset/prune'
 import { loadHostRolldownBuild } from '../runtime/viteHost/engine'
 
+/** 已枚举的子项可能被监听中的删除操作撤销，根目录和其他读取错误仍须报告。 */
+async function readCollectedPath<T>(read: () => Promise<T>, required: boolean): Promise<T | undefined> {
+  try {
+    return await read()
+  }
+  catch (error) {
+    if (!required && error !== null && typeof error === 'object' && 'code' in error && (error.code === 'ENOENT' || error.code === 'ENOTDIR')) {
+      return undefined
+    }
+    throw error
+  }
+}
+
 /** 平台项目目录独立发布，禁止覆盖由主编译持有的小程序目录。 */
 export async function collectProjectConfigAssets(sourceDir: string, outputRoot: string, outDir: string, watch?: (file: string) => void) {
   const assets: Array<Pick<OutputAsset, 'fileName' | 'source'>> = []
-  async function visit(dir: string) {
-    watch?.(path.normalize(await realpath(dir)))
-    for (const entry of await readdir(dir, { withFileTypes: true })) {
+  async function visit(dir: string, required = false) {
+    if (watch) {
+      const watched = await readCollectedPath(() => realpath(dir), required)
+      if (watched === undefined) {
+        return
+      }
+      watch(path.normalize(watched))
+    }
+    const entries = await readCollectedPath(() => readdir(dir, { withFileTypes: true }), required)
+    if (entries === undefined) {
+      return
+    }
+    for (const entry of entries) {
       const file = path.join(dir, entry.name)
       if (entry.isSymbolicLink()) {
         throw new Error(`[weapp-vite] 平台项目配置目录不支持符号链接：${path.relative(sourceDir, file)}`)
@@ -24,12 +47,21 @@ export async function collectProjectConfigAssets(sourceDir: string, outputRoot: 
         await visit(file)
       }
       else if (entry.isFile()) {
-        watch?.(path.normalize(await realpath(file)))
-        assets.push({ fileName, source: await readFile(file) })
+        if (watch) {
+          const watched = await readCollectedPath(() => realpath(file), false)
+          if (watched === undefined) {
+            continue
+          }
+          watch(path.normalize(watched))
+        }
+        const source = await readCollectedPath(() => readFile(file), false)
+        if (source !== undefined) {
+          assets.push({ fileName, source })
+        }
       }
     }
   }
-  await visit(sourceDir)
+  await visit(sourceDir, true)
   return assets
 }
 

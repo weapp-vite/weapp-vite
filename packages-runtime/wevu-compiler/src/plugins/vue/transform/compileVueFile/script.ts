@@ -10,7 +10,7 @@ import type { ComponentSourceInfo } from './componentSources'
 import type { AutoUsingComponentsOptions, CompileVueFileOptions } from './types'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { compileScript } from 'vue/compiler-sfc'
-import { createWevuRuntimeCapabilityMetadataFromBindingManifest } from '../../../../runtimeCapabilities'
+import { createWevuRuntimeCapabilityMetadata, createWevuRuntimeCapabilityMetadataFromBindingManifest, mergeWevuRuntimeCapabilityMetadata } from '../../../../runtimeCapabilities'
 import { parseJsLike, traverse } from '../../../../utils/babel'
 import { composeSourceMaps } from '../../../../utils/sourcemap'
 import { createJsxDiagnostics } from '../../../jsx/compileJsx/diagnostics'
@@ -368,9 +368,18 @@ export async function compileScriptPhase(
     const effectiveInlineExpressions = jsxTemplate?.template
       ? jsxTemplate.inlineExpressions
       : templateCompiled?.inlineExpressions
-    const runtimeCapabilities = bindingManifest
+    const templateRuntimeCapabilities = bindingManifest
       ? createWevuRuntimeCapabilityMetadataFromBindingManifest(bindingManifest)
       : templateCompiled?.runtimeCapabilities
+    const nativeSlotContext = !isAppFile && usesNativeDeclarationContext({
+      platform: options?.template?.platform ?? getMiniProgramTemplatePlatform(),
+      scopedSlotsRequireProps: options?.template?.scopedSlotsRequireProps ?? options?.template?.scopedSlotsCompiler !== 'augmented',
+      nativeSlotContext: options?.template?.nativeSlotContext === true,
+    })
+    const runtimeCapabilities = mergeWevuRuntimeCapabilityMetadata(
+      templateRuntimeCapabilities,
+      nativeSlotContext ? createWevuRuntimeCapabilityMetadata(['scopedSlots']) : undefined,
+    )
     const transformed = transformScript(jsxTransformed.code, {
       isTypeScript: descriptor.script?.lang === 'ts'
         || descriptor.script?.lang === 'tsx'
@@ -400,11 +409,7 @@ export async function compileScriptPhase(
       cssModules: precomputedScriptPhaseInfo?.cssModules,
       stabilizeCssVarsRuntime: options?.stabilizeCssVarsRuntime,
       relaxStructuredTypeOnlyProps,
-      nativeSlotContext: !isAppFile && usesNativeDeclarationContext({
-        platform: options?.template?.platform ?? getMiniProgramTemplatePlatform(),
-        scopedSlotsRequireProps: options?.template?.scopedSlotsRequireProps ?? options?.template?.scopedSlotsCompiler !== 'augmented',
-        nativeSlotContext: options?.template?.nativeSlotContext === true,
-      }),
+      nativeSlotContext,
       scopedSlotHostProperties: !isAppFile
         && options?.isPage !== true
         && Boolean(

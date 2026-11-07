@@ -110,6 +110,8 @@ export const WEVU_PAGE_LAYOUT_NAME_KEY = '__wv_page_layout_name'
 export const WEVU_PAGE_LAYOUT_PROPS_KEY = '__wv_page_layout_props'
 export const WEVU_APP_SHELL_COMPONENT_BASE = '__weapp_vite_app_shell'
 export const WEVU_APP_SHELL_TAG_NAME = 'weapp-app-shell'
+/** 应用外壳的独立组件脚本入口，后缀保留其真实 App 源码所有者。 */
+export const WEVU_APP_SHELL_VIRTUAL_PREFIX = '\0weapp-vite:app-shell:'
 
 export const WEVU_INLINE_HANDLER = '__weapp_vite_inline'
 export const WEVU_MODEL_HANDLER = '__weapp_vite_model'

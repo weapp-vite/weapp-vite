@@ -1,9 +1,14 @@
+import type { OxcOptions } from 'vite'
 import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vitest/config'
 import { defaultCorpusReports } from '../../scripts/templateCorpus/paths'
 
+// 跨目录源码验收不加载 workspace 应用的受管 TypeScript 配置。
+const sourceCoverageTransform: OxcOptions & { tsconfig: false } = { tsconfig: false }
+
 export default defineConfig({
   root: fileURLToPath(new URL('.', import.meta.url)),
+  oxc: sourceCoverageTransform,
   test: {
     globals: true,
     include: ['src/**/*.test.ts', '../../scripts/templateCorpus/test/sourceCoverage.coverage.ts'],

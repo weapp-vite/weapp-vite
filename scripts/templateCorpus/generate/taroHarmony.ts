@@ -6,6 +6,15 @@ export const taroHarmonyRunner = readFileSync(new URL('./taroHarmony/runner.cjs'
 /** 官方生命周期插件在配置校验后安装本轮 runner，并在平台执行前选定真实构建模式。 */
 export const taroHarmonyPlugin = readFileSync(new URL('./taroHarmony/plugin.cjs', import.meta.url), 'utf8')
 
+/** 仅在官方 CLI 子进程内适配冻结包的资源源路径，官方 writer 继续负责复制原始文件。 */
+export const taroHarmonyAssets = readFileSync(new URL('./taroHarmony/assets.cjs', import.meta.url), 'utf8')
+
+/** 页面兼容层在模块解析前衔接冻结版协议，源码作为受控配置进入生成身份。 */
+export const taroHarmonyPageFiles = Object.fromEntries(['plugin', 'loader', 'source'].map(name => [
+  `harmony-jsui-page/${name}.cjs`,
+  readFileSync(new URL(`./taroHarmony/page/${name}.cjs`, import.meta.url), 'utf8'),
+]))
+
 /** 仅提供官方 JSUI 编译所需的宿主源码配置，不构建或伪造 HAP/ArkTS 产物。 */
 export const taroHarmonyHostFiles: Record<string, string> = {
   'harmony-host/entry/src/main/config.json': `${JSON.stringify({
@@ -30,6 +39,10 @@ export const taroHarmonyConfig = `harmony: {
     hapName: 'entry',
     name: 'default',
     debugReact: true,
+    webpackChain(chain) {
+      const presetRequire = require('node:module').createRequire(require.resolve('babel-preset-taro/package.json'))
+      chain.resolve.alias.set('@babel/runtime', require('path').dirname(presetRequire.resolve('@babel/runtime/package.json')))
+    },
   },`
 
 /** 初始配置只包含冻结版 schema 已声明的字段，运行时入口由正式插件生命周期安装。 */
