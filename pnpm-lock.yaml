@@ -2039,6 +2039,9 @@ importers:
 
   e2e-apps/github-issues:
     dependencies:
+      '@weapp-sqlite/weapp-vite':
+        specifier: 0.3.2
+        version: 0.3.2(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.107.1)(sass@1.108.1)(terser@5.51.2)(tsx@4.23.15)(weapp-vite@packages+weapp-vite)(yaml@2.9.1)
       '@wevu/web-apis':
         specifier: workspace:*
         version: link:../../packages-runtime/web-apis
@@ -11452,6 +11455,40 @@ packages:
     peerDependencies:
       vue: ^3.5.0
 
+  '@weapp-sqlite/core@0.2.1':
+    resolution: {integrity: sha512-LXcc+84JLc0YXFSgTHyAmPyyDUvwIqBHo/sEKOSbSSq47CwgZCA1qFsEI9Sm914t6IcOlQd7Ss2L8zJrm/oegA==}
+    engines: {node: '>=18.0.0'}
+
+  '@weapp-sqlite/debug@0.2.1':
+    resolution: {integrity: sha512-L3nL8efMRNQp+NFSCvvJNWqEiSWGFSF3zSYUmv4M80a3giDdJwoRkW+ede7Q6Y3PK1aD79+ljkE6n2mDokgeEA==}
+    engines: {node: '>=18.0.0'}
+
+  '@weapp-sqlite/miniprogram@0.2.1':
+    resolution: {integrity: sha512-uPnKglnNhWabOKR6kkmt021S05A/a/VSy+AEvfcQjhpZ4c6gX6NVKpxY7V5IfqJzmxPLXa+DGP41LyujdyxToQ==}
+    engines: {node: '>=18.0.0'}
+
+  '@weapp-sqlite/sqljs@0.3.1':
+    resolution: {integrity: sha512-W+JtYUNLD7PsRr+oGrFt3QF9Mhne5AiuC6lSRfqEOYtOKSs+JwRJcnoaaQtOyYfQQMXGEbMCks73nuHWXOjcAw==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+
+  '@weapp-sqlite/wasm@0.2.1':
+    resolution: {integrity: sha512-wzizroXnarLDTTIeG1Fi/kxro8nJ+8FPb2yyiuFN5OjlN6kXA6ReNs++e0rxQuaO/JNDOAs4sgoRYK8O57r08w==}
+    engines: {node: '>=18.0.0'}
+
+  '@weapp-sqlite/weapp-vite@0.3.2':
+    resolution: {integrity: sha512-aBjiDjpwLDxGaGL44YC65nV3GsaSf/iZmfgQZ117fAqaoheu5UCfSdz31eKV0txLzvz1cezE78NCYtsVRMK8ig==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    peerDependencies:
+      '@weapp-sqlite/devtools': 0.1.1
+      weapp-vite: '>=6.22.0'
+    peerDependenciesMeta:
+      '@weapp-sqlite/devtools':
+        optional: true
+
+  '@weapp-sqlite/web@0.2.1':
+    resolution: {integrity: sha512-iZ78gxJEQH3wTafVqxhLJrSNQDc/eKKpXBwxvxqc8EgH1HcIlbtSB8M3oJlbmzReAuRAzlRpowBCAHI63tmpMQ==}
+    engines: {node: '>=18.0.0'}
+
   '@weapp-tailwindcss/css-compat@0.1.3':
     resolution: {integrity: sha512-mfbT2UiuYM9W8PyAaQ9LeRWERMMllKJ9O8fTEL6KtdJ1fyk8azEF0EAKXlCFCgsF2sCglhrn4CN7qKeuVrXf3Q==}
     engines: {node: ^22.18.0 || >=24.11.0}
@@ -18429,6 +18466,49 @@ packages:
     peerDependencies:
       vite: '>=5.0.0'
 
+  vite@8.3.2:
+    resolution: {integrity: sha512-SQr1x6W5vVSbROg7vsyXIaxK9b0G7zsT68acdWWRmnBUsgDieLCRG+Rep9WdZgcposvv/GSnr4GUUBqB3vXq6w==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    hasBin: true
+    peerDependencies:
+      '@types/node': ^20.19.0 || >=22.12.0
+      '@vitejs/devtools': ^0.7.1
+      esbuild: ^0.27.0 || ^0.28.0
+      jiti: '>=1.21.0'
+      less: ^4.0.0
+      sass: ^1.70.0
+      sass-embedded: ^1.70.0
+      stylus: '>=0.54.8'
+      sugarss: ^5.0.0
+      terser: ^5.16.0
+      tsx: ^4.8.1
+      yaml: ^2.4.2
+    peerDependenciesMeta:
+      '@types/node':
+        optional: true
+      '@vitejs/devtools':
+        optional: true
+      esbuild:
+        optional: true
+      jiti:
+        optional: true
+      less:
+        optional: true
+      sass:
+        optional: true
+      sass-embedded:
+        optional: true
+      stylus:
+        optional: true
+      sugarss:
+        optional: true
+      terser:
+        optional: true
+      tsx:
+        optional: true
+      yaml:
+        optional: true
+
   vite@8.3.5:
     resolution: {integrity: sha512-z1YpjieJ9g0ebTmQpLBv/oq9E3F9EIlOe+7LahW8SrE3LTiG3udBRUXQOlYXP9b+IC2q2phHeVxj9xGlw34OEQ==}
     engines: {node: ^20.19.0 || >=22.12.0}
@@ -24696,19 +24776,6 @@ snapshots:
       vite: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.107.1)(sass@1.108.1)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
       vue: 3.5.45(typescript@6.0.3)
 
-  '@vitest/browser-playwright@5.1.0(@voidzero-dev/vite-plus-core@1.5.0)(bufferutil@4.1.0)(playwright@1.65.0)(vitest@5.1.0)':
-    dependencies:
-      '@vitest/browser': 5.1.0(@voidzero-dev/vite-plus-core@1.5.0)(bufferutil@4.1.0)(vitest@5.1.0)
-      '@vitest/mocker': 5.1.0(@voidzero-dev/vite-plus-core@1.5.0)
-      playwright: 1.65.0
-      tinyrainbow: 3.2.0
-      vitest: 5.1.0(@types/node@26.6.6)(@vitest/browser-playwright@5.1.0)(@vitest/browser-preview@5.1.0)(@vitest/coverage-v8@5.1.0)(@vitest/ui@5.1.0)(@voidzero-dev/vite-plus-core@1.5.0)(happy-dom@21.0.4(bufferutil@4.1.0))
-    transitivePeerDependencies:
-      - bufferutil
-      - msw
-      - utf-8-validate
-      - vite
-
   '@vitest/browser-playwright@5.1.0(bufferutil@4.1.0)(playwright@1.65.0)(vite@8.3.5)(vitest@5.1.0)':
     dependencies:
       '@vitest/browser': 5.1.0(bufferutil@4.1.0)(vite@8.3.5)(vitest@5.1.0)
@@ -25138,6 +25205,53 @@ snapshots:
   '@vueuse/shared@15.0.0(vue@3.5.45(typescript@6.0.3))':
     dependencies:
       vue: 3.5.45(typescript@6.0.3)
+
+  '@weapp-sqlite/core@0.2.1': {}
+
+  '@weapp-sqlite/debug@0.2.1':
+    dependencies:
+      '@weapp-sqlite/core': 0.2.1
+      '@weapp-sqlite/wasm': 0.2.1
+
+  '@weapp-sqlite/miniprogram@0.2.1':
+    dependencies:
+      '@weapp-sqlite/wasm': 0.2.1
+
+  '@weapp-sqlite/sqljs@0.3.1':
+    dependencies:
+      '@weapp-sqlite/wasm': 0.2.1
+
+  '@weapp-sqlite/wasm@0.2.1':
+    dependencies:
+      '@weapp-sqlite/core': 0.2.1
+
+  '@weapp-sqlite/weapp-vite@0.3.2(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.107.1)(sass@1.108.1)(terser@5.51.2)(tsx@4.23.15)(weapp-vite@packages+weapp-vite)(yaml@2.9.1)':
+    dependencies:
+      '@weapp-sqlite/core': 0.2.1
+      '@weapp-sqlite/debug': 0.2.1
+      '@weapp-sqlite/miniprogram': 0.2.1
+      '@weapp-sqlite/sqljs': 0.3.1
+      '@weapp-sqlite/wasm': 0.2.1
+      '@weapp-sqlite/web': 0.2.1
+      vite: 8.3.2(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.107.1)(sass@1.108.1)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
+      weapp-vite: link:packages/weapp-vite
+    transitivePeerDependencies:
+      - '@types/node'
+      - '@vitejs/devtools'
+      - esbuild
+      - jiti
+      - less
+      - sass
+      - sass-embedded
+      - stylus
+      - sugarss
+      - terser
+      - tsx
+      - yaml
+
+  '@weapp-sqlite/web@0.2.1':
+    dependencies:
+      '@weapp-sqlite/wasm': 0.2.1
 
   '@weapp-tailwindcss/css-compat@0.1.3(postcss@8.5.32)':
     dependencies:
@@ -33098,6 +33212,26 @@ snapshots:
       vite: 8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.107.1)(sass@1.108.1)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
     transitivePeerDependencies:
       - supports-color
+
+  vite@8.3.2(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.107.1)(sass@1.108.1)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1):
+    dependencies:
+      lightningcss: 1.33.0
+      picomatch: 4.0.7
+      postcss: 8.5.32
+      rolldown: 1.2.16
+      tinyglobby: 0.2.17
+    optionalDependencies:
+      '@types/node': 26.6.6
+      '@vitejs/devtools': 0.8.2(crossws@0.4.17(srvx@1.0.8))(srvx@1.0.8)(vite@8.3.5)
+      esbuild: 0.28.2
+      fsevents: 2.3.3
+      jiti: 2.7.0
+      less: 4.9.1(supports-color@10.2.2)
+      sass: 1.108.1
+      sass-embedded: 1.107.1
+      terser: 5.51.2
+      tsx: 4.23.15
+      yaml: 2.9.1
 
   vite@8.3.5(@types/node@26.6.6)(@vitejs/devtools@0.8.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.107.1)(sass@1.108.1)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1):
     dependencies:

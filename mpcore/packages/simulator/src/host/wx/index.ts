@@ -169,6 +169,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver, runtimeConsole: Pick<
 
   return {
     ...eventBus,
+    env: { USER_DATA_PATH: 'headless://wxfile/user' },
     [WEVU_ROUTE_EVENT_CONTRACT_KEY]: 1,
     [WEVU_PAGE_SCROLL_EVENT_CONTRACT_KEY]: 1,
     arrayBufferToBase64,

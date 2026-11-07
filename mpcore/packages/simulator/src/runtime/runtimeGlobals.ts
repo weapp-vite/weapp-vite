@@ -15,6 +15,7 @@ const MINI_PROGRAM_UNAVAILABLE_GLOBAL_NAMES = [
   'AbortSignal',
   'XMLHttpRequest',
   'WebSocket',
+  'WebAssembly',
   'URLSearchParams',
   'Blob',
   'File',

@@ -62,5 +62,6 @@ export function createPluginArtifactSource(
   return {
     has: filePath => fallback.has(resolvePhysicalPath(filePath)),
     readText: filePath => fallback.readText(resolvePhysicalPath(filePath)),
+    readBinary: filePath => fallback.readBinary?.(resolvePhysicalPath(filePath)),
   }
 }

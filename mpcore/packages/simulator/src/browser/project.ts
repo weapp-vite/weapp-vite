@@ -9,6 +9,7 @@ import { createPluginVirtualRoot } from '../project/plugins'
 import {
 
   hasBrowserVirtualFile,
+  readBrowserVirtualBinary,
   readBrowserVirtualFile,
 } from './virtualFiles'
 
@@ -93,6 +94,7 @@ export function createBrowserProject(
     artifactSource: {
       has: filePath => hasBrowserVirtualFile(files, filePath),
       readText: filePath => readBrowserVirtualFile(files, filePath),
+      readBinary: filePath => readBrowserVirtualBinary(files, filePath),
     },
     miniprogramRoot: options.miniprogramRoot ?? '.',
     miniprogramRootPath: options.miniprogramRootPath ?? '/',

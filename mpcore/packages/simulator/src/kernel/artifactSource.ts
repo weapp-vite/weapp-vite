@@ -1,9 +1,12 @@
+import type { ArtifactContent } from './artifactContent'
 import fs from 'node:fs'
 import path from 'node:path'
+import { copyArtifactBinary, readArtifactText } from './artifactContent'
 
 export interface ArtifactSource {
   /** 判断产物文件是否存在，目录不属于产物。 */
   has: (filePath: string) => boolean
+  readBinary?: (filePath: string) => ArrayBuffer | undefined
   readText: (filePath: string) => string | undefined
 }
 
@@ -30,17 +33,32 @@ export function createFileSystemArtifactSource(): ArtifactSource {
         return undefined
       }
     },
+    readBinary(filePath) {
+      try {
+        return new Uint8Array(fs.readFileSync(filePath)).buffer
+      }
+      catch {
+        return undefined
+      }
+    },
   }
 }
 
-export function createMemoryArtifactSource(entries: Iterable<[string, string]>): ArtifactSource {
-  const files = new Map<string, string>()
+export function createMemoryArtifactSource(entries: Iterable<[string, ArtifactContent]>): ArtifactSource {
+  const files = new Map<string, ArtifactContent>()
   for (const [filePath, content] of entries) {
-    files.set(normalizeArtifactPath(filePath), content)
+    files.set(normalizeArtifactPath(filePath), typeof content === 'string' ? content : copyArtifactBinary(content))
   }
   return {
     has: filePath => files.has(normalizeArtifactPath(filePath)),
-    readText: filePath => files.get(normalizeArtifactPath(filePath)),
+    readText(filePath) {
+      const content = files.get(normalizeArtifactPath(filePath))
+      return content === undefined ? undefined : readArtifactText(content)
+    },
+    readBinary(filePath) {
+      const content = files.get(normalizeArtifactPath(filePath))
+      return content === undefined ? undefined : copyArtifactBinary(content)
+    },
   }
 }
 
@@ -54,6 +72,10 @@ export function createOverlayArtifactSource(
       return overlay.has(filePath)
         ? overlay.readText(filePath)
         : fallback.readText(filePath)
+    },
+    readBinary(filePath) {
+      const source = overlay.has(filePath) ? overlay : fallback
+      return source.readBinary?.(filePath)
     },
   }
 }

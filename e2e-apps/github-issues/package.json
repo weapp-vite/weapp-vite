@@ -13,6 +13,7 @@
     "postinstall": "wv prepare"
   },
   "dependencies": {
+    "@weapp-sqlite/weapp-vite": "0.3.2",
     "@wevu/web-apis": "workspace:*",
     "axios": "catalog:",
     "camelcase": "^10.0.0",

@@ -1,4 +1,4 @@
-import type { HeadlessWx } from '..'
+import type { HeadlessWx, HeadlessWxFileSystemError } from '..'
 import { expectType } from 'tsd'
 import {
   createBrowserHeadlessSession,
@@ -19,7 +19,7 @@ declare const browserWx: HeadlessWx
 
 expectType<{ errMsg: string } | undefined>(browserWx.getFileSystemManager().rmdir({ dirPath: 'headless://saved/archive', recursive: true }))
 expectType<void>(browserWx.getFileSystemManager().rmdirSync('headless://saved/archive', true))
-expectType<string>(browserWx.getFileSystemManager().readFileSync('headless://wxfile/temp/0001') ?? '')
+expectType<ArrayBuffer>(browserWx.getFileSystemManager().readFileSync('headless://wxfile/temp/0001'))
 expectType<string>(browserWx.getFileSystemManager().readFileSync('resources/image.png', 'utf8'))
 
 browserWx.getFileSystemManager().access({
@@ -28,23 +28,23 @@ browserWx.getFileSystemManager().access({
     expectType<{ errMsg: string }>(result)
   },
   fail: (error) => {
-    expectType<Error>(error)
+    expectType<HeadlessWxFileSystemError>(error)
   },
   complete: (result) => {
-    expectType<{ errMsg: string } | undefined>(result)
+    expectType<{ errMsg: string } | HeadlessWxFileSystemError | undefined>(result)
   },
 })
 
 browserWx.getFileSystemManager().readFile({
   filePath: 'headless://wxfile/temp/0001',
   success: (result) => {
-    expectType<{ data: string, errMsg: string }>(result)
+    expectType<{ data: string | ArrayBuffer, errMsg: string }>(result)
   },
   fail: (error) => {
-    expectType<Error>(error)
+    expectType<HeadlessWxFileSystemError>(error)
   },
   complete: (result) => {
-    expectType<{ data: string, errMsg: string } | undefined>(result)
+    expectType<{ data: string | ArrayBuffer, errMsg: string } | HeadlessWxFileSystemError | undefined>(result)
   },
 })
 
@@ -54,10 +54,10 @@ browserWx.getFileSystemManager().stat({
     expectType<{ errMsg: string, stats: { isDirectory: () => boolean, isFile: () => boolean, size: number } }>(result)
   },
   fail: (error) => {
-    expectType<Error>(error)
+    expectType<HeadlessWxFileSystemError>(error)
   },
   complete: (result) => {
-    expectType<{ errMsg: string, stats: { isDirectory: () => boolean, isFile: () => boolean, size: number } } | undefined>(result)
+    expectType<{ errMsg: string, stats: { isDirectory: () => boolean, isFile: () => boolean, size: number } } | HeadlessWxFileSystemError | undefined>(result)
   },
 })
 
@@ -67,10 +67,10 @@ browserWx.getFileSystemManager().readdir({
     expectType<{ errMsg: string, files: string[] }>(result)
   },
   fail: (error) => {
-    expectType<Error>(error)
+    expectType<HeadlessWxFileSystemError>(error)
   },
   complete: (result) => {
-    expectType<{ errMsg: string, files: string[] } | undefined>(result)
+    expectType<{ errMsg: string, files: string[] } | HeadlessWxFileSystemError | undefined>(result)
   },
 })
 
@@ -81,10 +81,10 @@ browserWx.getFileSystemManager().rename({
     expectType<{ errMsg: string }>(result)
   },
   fail: (error) => {
-    expectType<Error>(error)
+    expectType<HeadlessWxFileSystemError>(error)
   },
   complete: (result) => {
-    expectType<{ errMsg: string } | undefined>(result)
+    expectType<{ errMsg: string } | HeadlessWxFileSystemError | undefined>(result)
   },
 })
 
@@ -95,10 +95,10 @@ browserWx.getFileSystemManager().copyFile({
     expectType<{ errMsg: string }>(result)
   },
   fail: (error) => {
-    expectType<Error>(error)
+    expectType<HeadlessWxFileSystemError>(error)
   },
   complete: (result) => {
-    expectType<{ errMsg: string } | undefined>(result)
+    expectType<{ errMsg: string } | HeadlessWxFileSystemError | undefined>(result)
   },
 })
 
@@ -108,10 +108,10 @@ browserWx.getFileSystemManager().unlink({
     expectType<{ errMsg: string }>(result)
   },
   fail: (error) => {
-    expectType<Error>(error)
+    expectType<HeadlessWxFileSystemError>(error)
   },
   complete: (result) => {
-    expectType<{ errMsg: string } | undefined>(result)
+    expectType<{ errMsg: string } | HeadlessWxFileSystemError | undefined>(result)
   },
 })
 
@@ -122,10 +122,10 @@ browserWx.getFileSystemManager().writeFile({
     expectType<{ errMsg: string }>(result)
   },
   fail: (error) => {
-    expectType<Error>(error)
+    expectType<HeadlessWxFileSystemError>(error)
   },
   complete: (result) => {
-    expectType<{ errMsg: string } | undefined>(result)
+    expectType<{ errMsg: string } | HeadlessWxFileSystemError | undefined>(result)
   },
 })
 
@@ -136,10 +136,10 @@ browserWx.getFileSystemManager().appendFile({
     expectType<{ errMsg: string }>(result)
   },
   fail: (error) => {
-    expectType<Error>(error)
+    expectType<HeadlessWxFileSystemError>(error)
   },
   complete: (result) => {
-    expectType<{ errMsg: string } | undefined>(result)
+    expectType<{ errMsg: string } | HeadlessWxFileSystemError | undefined>(result)
   },
 })
 
@@ -150,10 +150,10 @@ browserWx.getFileSystemManager().mkdir({
     expectType<{ errMsg: string }>(result)
   },
   fail: (error) => {
-    expectType<Error>(error)
+    expectType<HeadlessWxFileSystemError>(error)
   },
   complete: (result) => {
-    expectType<{ errMsg: string } | undefined>(result)
+    expectType<{ errMsg: string } | HeadlessWxFileSystemError | undefined>(result)
   },
 })
 
@@ -164,10 +164,10 @@ browserWx.getFileSystemManager().rmdir({
     expectType<{ errMsg: string }>(result)
   },
   fail: (error) => {
-    expectType<Error>(error)
+    expectType<HeadlessWxFileSystemError>(error)
   },
   complete: (result) => {
-    expectType<{ errMsg: string } | undefined>(result)
+    expectType<{ errMsg: string } | HeadlessWxFileSystemError | undefined>(result)
   },
 })
 
@@ -175,7 +175,7 @@ const headlessSession = createHeadlessSession({ projectPath: '/tmp/project' })
 
 expectType<{ errMsg: string } | undefined>(headlessSession.getWx().getFileSystemManager().rmdir({ dirPath: 'headless://saved/archive', recursive: true }))
 expectType<void>(headlessSession.getWx().getFileSystemManager().rmdirSync('headless://saved/archive', true))
-expectType<string>(headlessSession.getWx().getFileSystemManager().readFileSync('headless://wxfile/temp/0001') ?? '')
+expectType<ArrayBuffer>(headlessSession.getWx().getFileSystemManager().readFileSync('headless://wxfile/temp/0001'))
 
 headlessSession.getWx().getFileSystemManager().access({
   path: 'headless://wxfile/temp/0001',
@@ -183,23 +183,23 @@ headlessSession.getWx().getFileSystemManager().access({
     expectType<{ errMsg: string }>(result)
   },
   fail: (error) => {
-    expectType<Error>(error)
+    expectType<HeadlessWxFileSystemError>(error)
   },
   complete: (result) => {
-    expectType<{ errMsg: string } | undefined>(result)
+    expectType<{ errMsg: string } | HeadlessWxFileSystemError | undefined>(result)
   },
 })
 
 headlessSession.getWx().getFileSystemManager().readFile({
   filePath: 'headless://wxfile/temp/0001',
   success: (result) => {
-    expectType<{ data: string, errMsg: string }>(result)
+    expectType<{ data: string | ArrayBuffer, errMsg: string }>(result)
   },
   fail: (error) => {
-    expectType<Error>(error)
+    expectType<HeadlessWxFileSystemError>(error)
   },
   complete: (result) => {
-    expectType<{ data: string, errMsg: string } | undefined>(result)
+    expectType<{ data: string | ArrayBuffer, errMsg: string } | HeadlessWxFileSystemError | undefined>(result)
   },
 })
 
@@ -209,10 +209,10 @@ headlessSession.getWx().getFileSystemManager().stat({
     expectType<{ errMsg: string, stats: { isDirectory: () => boolean, isFile: () => boolean, size: number } }>(result)
   },
   fail: (error) => {
-    expectType<Error>(error)
+    expectType<HeadlessWxFileSystemError>(error)
   },
   complete: (result) => {
-    expectType<{ errMsg: string, stats: { isDirectory: () => boolean, isFile: () => boolean, size: number } } | undefined>(result)
+    expectType<{ errMsg: string, stats: { isDirectory: () => boolean, isFile: () => boolean, size: number } } | HeadlessWxFileSystemError | undefined>(result)
   },
 })
 
@@ -222,10 +222,10 @@ headlessSession.getWx().getFileSystemManager().readdir({
     expectType<{ errMsg: string, files: string[] }>(result)
   },
   fail: (error) => {
-    expectType<Error>(error)
+    expectType<HeadlessWxFileSystemError>(error)
   },
   complete: (result) => {
-    expectType<{ errMsg: string, files: string[] } | undefined>(result)
+    expectType<{ errMsg: string, files: string[] } | HeadlessWxFileSystemError | undefined>(result)
   },
 })
 
@@ -236,10 +236,10 @@ headlessSession.getWx().getFileSystemManager().rename({
     expectType<{ errMsg: string }>(result)
   },
   fail: (error) => {
-    expectType<Error>(error)
+    expectType<HeadlessWxFileSystemError>(error)
   },
   complete: (result) => {
-    expectType<{ errMsg: string } | undefined>(result)
+    expectType<{ errMsg: string } | HeadlessWxFileSystemError | undefined>(result)
   },
 })
 
@@ -250,10 +250,10 @@ headlessSession.getWx().getFileSystemManager().copyFile({
     expectType<{ errMsg: string }>(result)
   },
   fail: (error) => {
-    expectType<Error>(error)
+    expectType<HeadlessWxFileSystemError>(error)
   },
   complete: (result) => {
-    expectType<{ errMsg: string } | undefined>(result)
+    expectType<{ errMsg: string } | HeadlessWxFileSystemError | undefined>(result)
   },
 })
 
@@ -263,10 +263,10 @@ headlessSession.getWx().getFileSystemManager().unlink({
     expectType<{ errMsg: string }>(result)
   },
   fail: (error) => {
-    expectType<Error>(error)
+    expectType<HeadlessWxFileSystemError>(error)
   },
   complete: (result) => {
-    expectType<{ errMsg: string } | undefined>(result)
+    expectType<{ errMsg: string } | HeadlessWxFileSystemError | undefined>(result)
   },
 })
 
@@ -277,10 +277,10 @@ headlessSession.getWx().getFileSystemManager().writeFile({
     expectType<{ errMsg: string }>(result)
   },
   fail: (error) => {
-    expectType<Error>(error)
+    expectType<HeadlessWxFileSystemError>(error)
   },
   complete: (result) => {
-    expectType<{ errMsg: string } | undefined>(result)
+    expectType<{ errMsg: string } | HeadlessWxFileSystemError | undefined>(result)
   },
 })
 
@@ -291,10 +291,10 @@ headlessSession.getWx().getFileSystemManager().appendFile({
     expectType<{ errMsg: string }>(result)
   },
   fail: (error) => {
-    expectType<Error>(error)
+    expectType<HeadlessWxFileSystemError>(error)
   },
   complete: (result) => {
-    expectType<{ errMsg: string } | undefined>(result)
+    expectType<{ errMsg: string } | HeadlessWxFileSystemError | undefined>(result)
   },
 })
 
@@ -305,10 +305,10 @@ headlessSession.getWx().getFileSystemManager().mkdir({
     expectType<{ errMsg: string }>(result)
   },
   fail: (error) => {
-    expectType<Error>(error)
+    expectType<HeadlessWxFileSystemError>(error)
   },
   complete: (result) => {
-    expectType<{ errMsg: string } | undefined>(result)
+    expectType<{ errMsg: string } | HeadlessWxFileSystemError | undefined>(result)
   },
 })
 
@@ -319,9 +319,9 @@ headlessSession.getWx().getFileSystemManager().rmdir({
     expectType<{ errMsg: string }>(result)
   },
   fail: (error) => {
-    expectType<Error>(error)
+    expectType<HeadlessWxFileSystemError>(error)
   },
   complete: (result) => {
-    expectType<{ errMsg: string } | undefined>(result)
+    expectType<{ errMsg: string } | HeadlessWxFileSystemError | undefined>(result)
   },
 })

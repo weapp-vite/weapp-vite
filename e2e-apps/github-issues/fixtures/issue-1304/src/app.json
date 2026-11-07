@@ -1,0 +1,18 @@
+{
+  "pages": [
+    "pages/index/index"
+  ],
+  "subPackages": [
+    {
+      "root": "shared",
+      "pages": [
+        "pages/engine/index"
+      ]
+    }
+  ],
+  "window": {
+    "navigationBarTitleText": "Issue 1304"
+  },
+  "style": "v2",
+  "renderer": "webview"
+}

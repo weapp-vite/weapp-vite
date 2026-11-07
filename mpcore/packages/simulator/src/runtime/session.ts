@@ -277,7 +277,8 @@ export class HeadlessSession {
     this.wxState = createHeadlessWxState(this.kernel.scheduler, {
       accountInfo: createDefaultAccountInfo(this.project),
       strictMocks: options.strictHostMocks,
-      readPackageFile: createPackageAssetReader(relative => this.project.artifactSource.readText(path.join(this.project.miniprogramRootPath, relative))),
+      readPackageFile: createPackageAssetReader(relative => this.project.artifactSource.readBinary?.(path.join(this.project.miniprogramRootPath, relative))
+        ?? this.project.artifactSource.readText(path.join(this.project.miniprogramRootPath, relative))),
     })
     this.registries = createHostRegistries()
     const rawTabBarList = Array.isArray(this.project.appConfig.tabBar?.list)

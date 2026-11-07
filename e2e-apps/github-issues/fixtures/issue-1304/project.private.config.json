@@ -1,0 +1,25 @@
+{
+  "libVersion": "3.17.3",
+  "setting": {
+    "compileHotReLoad": false,
+    "urlCheck": false
+  },
+  "condition": {
+    "miniprogram": {
+      "list": [
+        {
+          "name": "issue-1304-main",
+          "pathName": "pages/index/index",
+          "query": "",
+          "launchMode": "default"
+        },
+        {
+          "name": "issue-1304-subpackage",
+          "pathName": "shared/pages/engine/index",
+          "query": "",
+          "launchMode": "default"
+        }
+      ]
+    }
+  }
+}

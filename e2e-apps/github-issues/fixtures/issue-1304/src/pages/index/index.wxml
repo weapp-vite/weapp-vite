@@ -1,0 +1,5 @@
+<view id="issue1304-page">
+  <text id="lazy-value">{{value}}</text>
+  <text id="lazy-count">{{count}}</text>
+  <button id="load-lazy" bindtap="loadLazy">Load lazy module</button>
+</view>

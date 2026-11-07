@@ -22,10 +22,11 @@ import {
 } from '../host'
 import { resolveMiniProgramModule } from '../runtime/moduleResolution'
 import { transformMiniProgramModule } from '../runtime/moduleSyntax'
+import { createPackageWebAssembly } from '../runtime/packageWebAssembly'
 import { reloadPageModuleDefinition } from '../runtime/pageDefinitionReload'
 import { createMiniProgramRuntimeGlobals } from '../runtime/runtimeGlobals'
 import { createWorkerHost } from '../runtime/workerHost'
-import { readBrowserVirtualFile } from './virtualFiles'
+import { readBrowserVirtualBinary, readBrowserVirtualFile } from './virtualFiles'
 import { closeBrowserWxsLoader } from './wxs'
 
 export interface BrowserModuleLoader {
@@ -125,7 +126,10 @@ export function createBrowserModuleLoader(
     getApp,
     wxDriver,
     options.kernel,
-    options.globals ?? {},
+    {
+      WXWebAssembly: createPackageWebAssembly(file => readBrowserVirtualBinary(files, join(options.miniprogramRootPath, file))),
+      ...options.globals,
+    },
     workers.apis,
   )
   executionContext.globalThis = executionContext

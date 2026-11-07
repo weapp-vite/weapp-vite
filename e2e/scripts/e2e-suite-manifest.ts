@@ -44,6 +44,7 @@ export const IDE_GITHUB_ISSUES_AGGREGATE_LABELS = [
 ] as const
 const IDE_TASK_TIMEOUT_MS_BY_LABEL = new Map([
   ['ide/issue-1015-css-hmr.runtime.test.ts', '900000'],
+  ['ide/issue-1303-sqlite.runtime.test.ts', '1260000'],
   // 两个模式各保留 300 秒运行与 300 秒清理预算，额外预留 worker 启停。
   ['ide/issue-1140-mode-cache.runtime.test.ts', '1260000'],
   ['ide/devtools-cli-workflow.runtime.test.ts', '900000'],
@@ -164,6 +165,8 @@ const IDE_GITHUB_ISSUES_PATTERNS = [
   'ide/issue-1278-classic-lease-recovery.runtime.test.ts',
   'ide/issue-1295-props-projection.runtime.test.ts',
   'ide/issue-1299-slot-owner.runtime.test.ts',
+  'ide/issue-1303-sqlite.runtime.test.ts',
+  'ide/issue-1304-require-async.runtime.test.ts',
   'ide/issue-1029-auto-routes.runtime.test.ts',
   'ide/issue-1034-auto-routes.runtime.test.ts',
   'ide/issue-1034-auto-routes-hmr.runtime.test.ts',
@@ -353,6 +356,8 @@ const IDE_DOM_HEADLESS_PATTERNS = [...new Set([
   'ide/issue-1278-classic-lease-recovery.runtime.test.ts',
   'ide/issue-1295-props-projection.runtime.test.ts',
   'ide/issue-1299-slot-owner.runtime.test.ts',
+  'ide/issue-1303-sqlite.runtime.test.ts',
+  'ide/issue-1304-require-async.runtime.test.ts',
   'ide/issue-1029-auto-routes.runtime.test.ts',
   'ide/issue-1034-auto-routes.runtime.test.ts',
   'ide/issue-1034-auto-routes-hmr.runtime.test.ts',
@@ -417,6 +422,8 @@ const CI_PR_PATTERNS = [
   'ci/issue-1295-props-projection.build.test.ts',
   'ci/issue-1299-slot-owner.build.test.ts',
   'ci/issue-1299-slot-owner.watch.test.ts',
+  'ci/issue-1303-sqlite.watch.test.ts',
+  'ci/issue-1304-require-async.watch.test.ts',
   'ci/issue-1072-json-context.test.ts',
   'ci/headless-automator-provider.test.ts',
   'ci/platform-build.test.ts',

@@ -284,7 +284,8 @@ export class BrowserHeadlessSession {
     this.wxState = createHeadlessWxState(this.kernel.scheduler, {
       accountInfo: createDefaultAccountInfo(this.project),
       strictMocks: options.strictHostMocks,
-      readPackageFile: createPackageAssetReader(relative => readBrowserVirtualFile(this.files, join(this.project.miniprogramRootPath, relative))),
+      readPackageFile: createPackageAssetReader(relative => this.project.artifactSource.readBinary?.(join(this.project.miniprogramRootPath, relative))
+        ?? readBrowserVirtualFile(this.files, join(this.project.miniprogramRootPath, relative))),
     })
     this.onRender = options.onRender
     this.templateRegistration = createTemplateRegistration(this.project.artifactSource, this.project.miniprogramRootPath, options.compiledTemplatePaths)

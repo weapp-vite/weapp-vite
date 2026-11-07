@@ -2,7 +2,6 @@ import type { OutputBundle, OutputChunk } from 'rolldown'
 import type { Plugin } from 'vite'
 import type { DynamicImportToken, RequireCallbackToken, RequireToken } from '../utils/ast'
 import type { CorePluginState } from './helpers'
-import { Buffer } from 'node:buffer'
 import MagicString from 'magic-string'
 import path from 'pathe'
 import logger from '../../logger'
@@ -10,18 +9,12 @@ import { resolveSubPackagePrefix } from '../../runtime/chunkStrategy/collector'
 import { applyOutputChunkTransform } from '../../utils/outputChunk'
 import { collectRequireTokens } from '../utils/ast'
 import { resolveRelativeOutputFileNameWithExtension } from '../utils/outputFileName'
+import { createRequireAsyncTargetMarker, rewriteRequireAsyncChunkPaths } from './requireAsyncTarget'
+
+export { rewriteRequireAsyncChunkPaths } from './requireAsyncTarget'
 
 const REQUIRE_ANALYSIS_FILTER_RE = /\.[jt]s$/
 const URL_SUFFIX_RE = /[?#].*$/
-const REQUIRE_ASYNC_TARGET_MARKER_PREFIX = '__weapp_vite_require_async_target__'
-const REQUIRE_ASYNC_TARGET_MARKER_RE = new RegExp(
-  [
-    `\\brequire\\s*\\.\\s*async\\(\\s*([${String.fromCharCode(39, 34, 96)}])`,
-    REQUIRE_ASYNC_TARGET_MARKER_PREFIX,
-    '([\\w-]+)\\1\\s*\\)',
-  ].join(''),
-  'g',
-)
 
 interface ResolvedAsyncDependency {
   fileName: string
@@ -51,70 +44,6 @@ interface NativeImportEligibilityOptions {
 
 function cleanModuleId(id: string) {
   return id.replace(URL_SUFFIX_RE, '')
-}
-
-function createRelativeModuleSpecifier(importerFileName: string, targetFileName: string) {
-  const relativePath = path.relative(path.dirname(importerFileName), targetFileName)
-  return relativePath.startsWith('.') ? relativePath : `./${relativePath}`
-}
-
-function createRequireAsyncTargetMarker(fileName: string) {
-  return `${REQUIRE_ASYNC_TARGET_MARKER_PREFIX}${Buffer.from(fileName).toString('base64url')}`
-}
-
-function decodeRequireAsyncTargetMarker(value: string) {
-  if (!value.startsWith(REQUIRE_ASYNC_TARGET_MARKER_PREFIX)) {
-    return null
-  }
-
-  try {
-    return Buffer.from(value.slice(REQUIRE_ASYNC_TARGET_MARKER_PREFIX.length), 'base64url').toString('utf8')
-  }
-  catch {
-    return null
-  }
-}
-
-/**
- * 按最终 chunk 文件名修正异步分包加载路径。
- */
-export function rewriteRequireAsyncChunkPaths(code: string, importerFileName: string) {
-  const source = new MagicString(code)
-  let changed = false
-
-  for (const match of code.matchAll(REQUIRE_ASYNC_TARGET_MARKER_RE)) {
-    if (typeof match.index !== 'number') {
-      continue
-    }
-
-    const targetFileName = decodeRequireAsyncTargetMarker(
-      `${REQUIRE_ASYNC_TARGET_MARKER_PREFIX}${match[2]}`,
-    )
-    if (!targetFileName) {
-      continue
-    }
-
-    const literalStart = match.index + match[0].indexOf(match[1])
-    const literalEnd = literalStart
-      + REQUIRE_ASYNC_TARGET_MARKER_PREFIX.length
-      + match[2].length
-      + 2
-    source.overwrite(
-      literalStart,
-      literalEnd,
-      JSON.stringify(createRelativeModuleSpecifier(importerFileName, targetFileName)),
-    )
-    changed = true
-  }
-
-  if (!changed) {
-    return null
-  }
-
-  return {
-    code: source.toString(),
-    map: source.generateMap({ hires: 'boundary' }),
-  }
 }
 
 function resolveModulePackageRoot(
@@ -190,12 +119,18 @@ export function createRequireAnalysisPlugin(state: CorePluginState): Plugin {
     name: 'weapp-vite:post',
     enforce: 'post',
 
-    buildStart() {
-      const dynamicImports = resolveDynamicImports()
-      if (dynamicImports === 'inline' && state.buildTarget === 'app' && !warnedInlineFallback) {
-        warnedInlineFallback = true
-        logger.warn('`weapp.chunks.dynamicImports: "inline"` 已废弃，当前会回退为 `preserve`；请改用 `preserve`，或在微信分包场景使用 `native`。')
-      }
+    buildStart: {
+      order: 'pre',
+      sequential: true,
+      handler() {
+        // classic 快照复用插件闭包；发射身份只属于当前原生构建，必须先于入口预加载重置。
+        requireAsyncEmittedChunks.clear()
+        const dynamicImports = resolveDynamicImports()
+        if (dynamicImports === 'inline' && state.buildTarget === 'app' && !warnedInlineFallback) {
+          warnedInlineFallback = true
+          logger.warn('`weapp.chunks.dynamicImports: "inline"` 已废弃，当前会回退为 `preserve`；请改用 `preserve`，或在微信分包场景使用 `native`。')
+        }
+      },
     },
 
     transform: {
@@ -331,18 +266,24 @@ export function createRequireAnalysisPlugin(state: CorePluginState): Plugin {
       }
 
       for (const dependency of dependencies) {
-        await this.load({ id: dependency.id })
         if (requireAsyncEmittedChunks.has(dependency.id)) {
           continue
         }
 
         requireAsyncEmittedChunks.add(dependency.id)
-        this.emitFile({
-          type: 'chunk',
-          id: dependency.id,
-          fileName: dependency.fileName,
-          preserveSignature: 'exports-only',
-        })
+        try {
+          await this.load({ id: dependency.id })
+          this.emitFile({
+            type: 'chunk',
+            id: dependency.id,
+            fileName: dependency.fileName,
+            preserveSignature: 'exports-only',
+          })
+        }
+        catch (error) {
+          requireAsyncEmittedChunks.delete(dependency.id)
+          throw error
+        }
       }
     },
   }

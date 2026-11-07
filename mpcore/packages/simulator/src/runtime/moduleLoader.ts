@@ -24,6 +24,7 @@ import {
 import { createWorkerHost } from '../runtime/workerHost'
 import { resolveMiniProgramModule } from './moduleResolution'
 import { transformMiniProgramModule } from './moduleSyntax'
+import { createPackageWebAssembly } from './packageWebAssembly'
 import { reloadPageModuleDefinition } from './pageDefinitionReload'
 import { createMiniProgramRuntimeGlobals } from './runtimeGlobals'
 import { closeRuntimeWxsLoader } from './wxs'
@@ -131,7 +132,10 @@ export function createModuleLoader(
     getApp,
     wxDriver,
     options.kernel,
-    options.globals ?? {},
+    {
+      WXWebAssembly: createPackageWebAssembly(file => options.artifactSource.readBinary?.(path.join(options.miniprogramRootPath, file))),
+      ...options.globals,
+    },
     options.onConsole,
     workers.apis,
   )
