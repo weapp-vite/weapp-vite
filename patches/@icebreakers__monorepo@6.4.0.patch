@@ -1,8 +1,115 @@
 diff --git a/dist/commands-1ApnhvJF.mjs b/dist/commands-1ApnhvJF.mjs
-index d231a8f2145b90c458eade110d0b4a4620815403..bec4e37d89968ce654aec80d9c784e0bffd23741 100644
+index d231a8f2145b90c458eade110d0b4a4620815403..80bec1147f2055fb42cd19ad8e437c4845e7856c 100644
 --- a/dist/commands-1ApnhvJF.mjs
 +++ b/dist/commands-1ApnhvJF.mjs
-@@ -10900,10 +10900,17 @@ async function readSourceCandidates(options, source) {
+@@ -5876,6 +5876,65 @@ function renderReleasePullRequest(document, metadata = {}) {
+ 	sections.push("", "", ...formatContributors(document.contributors, metadata));
+ 	return sections.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+ }
++const releasePullRequestBodyLimit = 65536;
++/** 超长发布说明只省略完整条目，所有包版本和不可变 changelog 链接始终保留。 */
++function renderReleasePullRequestSummary(document, metadata, packages, entries) {
++	const sections = [
++		`# ${localized(metadata, "Release Notes (Summary)", "发布说明（摘要）")}`,
++		"",
++		localized(metadata, "The complete release notes exceed GitHub's pull request body limit. Full notes remain in each package's CHANGELOG linked below.", "完整发布说明超过 GitHub PR 正文限制。各包的完整变更保留在下方链接的 CHANGELOG 中。"),
++		"",
++		...packages,
++		"",
++		localized(metadata, `Showing ${entries.length} of ${document.entries.length} changes. Read the complete CHANGELOG links above for all changes.`, `已展示 ${entries.length} / ${document.entries.length} 项变更；全部变更请查看上方各包的完整 CHANGELOG。`)
++	];
++	for (const category of categoryOrder) {
++		const section = formatCategoryEntries(entries, category, metadata, 2, false);
++		if (section.length) sections.push("", ...section);
++	}
++	sections.push("", ...formatContributors(document.contributors, metadata));
++	return sections.join("\n").replace(/\n{3,}/g, "\n\n").trim();
++}
++/** 普通正文保持原样；摘要在推送前完成预算校验，避免远端留下不可创建 PR 的版本分支。 */
++async function renderBoundedReleasePullRequest(document, metadata, options) {
++	const fullBody = renderReleasePullRequest(document, metadata);
++	if (fullBody.length <= releasePullRequestBodyLimit) return fullBody;
++	if (!metadata.repository || !/^[^/]+\/[^/]+$/.test(metadata.repository)) throw new ReleaseCommandError("Oversized release PR notes require GITHUB_REPOSITORY for complete changelog links; no PR pushed");
++	const commit = capture("git", ["rev-parse", "HEAD"], options);
++	if (!/^[0-9a-f]{40}(?:[0-9a-f]{24})?$/i.test(commit)) throw new ReleaseCommandError("Cannot resolve the version commit for complete release changelog links; no PR pushed");
++	const workspace = await getWorkspacePackages(options.cwd, {
++		ignorePrivatePackage: false,
++		ignoreRootPackage: false
++	});
++	const roots = new Map(workspace.map((pkg) => [pkg.manifest.name, pkg.rootDir]));
++	const baseUrl = `${(metadata.serverUrl || "https://github.com").replace(/\/$/, "")}/${metadata.repository}/blob/${commit}`;
++	const packages = [
++		`## ${localized(metadata, "Packages", "包")}`,
++		"",
++		`| ${localized(metadata, "Package", "包")} | ${localized(metadata, "From", "原版本")} | ${localized(metadata, "To", "新版本")} | ${localized(metadata, "Complete notes", "完整变更")} |`,
++		"| --- | --- | --- | --- |",
++		...document.packages.map((pkg) => {
++			const root = roots.get(pkg.name);
++			if (!root) throw new ReleaseCommandError(`Cannot resolve complete changelog for ${pkg.name}; no PR pushed`);
++			const relative = path.relative(path.resolve(options.cwd), path.resolve(root));
++			if (relative === ".." || relative.startsWith("../") || path.isAbsolute(relative)) throw new ReleaseCommandError(`Release changelog for ${pkg.name} must stay inside the repository; no PR pushed`);
++			const changelog = [...relative ? relative.split("/") : [], "CHANGELOG.md"].map(encodeURIComponent).join("/");
++			const previous = pkg.previousVersion ? formatVersion(pkg.previousVersion, pkg.previousNpmUrl) : "—";
++			return `| \`${pkg.name}\` | ${previous} | ${formatVersion(pkg.version)} | [${localized(metadata, "Complete notes", "完整变更")}](${baseUrl}/${changelog}) |`;
++		})
++	];
++	const selected = [];
++	let body = renderReleasePullRequestSummary(document, metadata, packages, selected);
++	if (body.length > releasePullRequestBodyLimit) throw new ReleaseCommandError("Complete package/version/changelog summary exceeds GitHub's 65536-character PR body limit; no PR pushed");
++	for (const category of categoryOrder) for (const entry of document.entries.filter((entry) => entry.category === category)) {
++		const candidate = renderReleasePullRequestSummary(document, metadata, packages, [...selected, entry]);
++		if (candidate.length <= releasePullRequestBodyLimit) {
++			selected.push(entry);
++			body = candidate;
++		}
++	}
++	return body;
++}
+ function renderGitHubRelease(document, metadata = {}) {
+ 	if (!document.entries.length) return localized(metadata, "No significant changes.", "没有显著变更。");
+ 	const sections = [];
+@@ -9427,6 +9486,31 @@ var GitHubApiError = class extends ReleaseCommandError {
+ };
+ //#endregion
+ //#region src/commands/release/github/client/transport.ts
++/** 错误诊断只记录有界白名单字段，并隐藏凭证和提交正文，原始响应仍留在错误对象内。 */
++function formatGitHubApiErrorMessage(data, statusText, token, body) {
++	const submittedBody = typeof body === "string" ? body : body && typeof body === "object" && typeof body.body === "string" ? body.body : void 0;
++	const normalizeWhitespace = (value) => value.replace(/\s+/g, " ").trim();
++	const sensitive = [...new Set([token, submittedBody].filter((value) => typeof value === "string" && value.length > 0).flatMap((value) => [value, normalizeWhitespace(value)]).flatMap((value) => [value, JSON.stringify(value).slice(1, -1)]))].filter(Boolean).sort((a, b) => b.length - a.length);
++	function safe(value, limit) {
++		if (typeof value !== "string") return "";
++		let redacted = value;
++		for (const secret of sensitive) redacted = redacted.replaceAll(secret, "[redacted]");
++		redacted = normalizeWhitespace(redacted);
++		for (const secret of sensitive) redacted = redacted.replaceAll(secret, "[redacted]");
++		return Array.from(redacted).slice(0, limit).join("");
++	}
++	const record = data && typeof data === "object" && !Array.isArray(data) ? data : {};
++	const message = safe(record.message, 240) || safe(statusText, 240) || "Request failed";
++	const details = (Array.isArray(record.errors) ? record.errors : []).slice(0, 4).flatMap((error) => {
++		if (!error || typeof error !== "object" || Array.isArray(error)) return [];
++		const fields = ["resource", "field", "code", "message"].flatMap((field) => {
++			const value = safe(error[field], 120);
++			return value ? [`${field}=${value}`] : [];
++		});
++		return fields.length ? [fields.join(", ")] : [];
++	});
++	return details.length ? `${message} [${details.join("; ")}]` : message;
++}
+ /** Shared authenticated transport; mutation callers own reconciliation. */
+ var GitHubTransport = class {
+ 	token;
+@@ -9494,7 +9578,7 @@ var GitHubTransport = class {
+ 				throw new GitHubApiError(`GitHub API returned invalid JSON for ${method} ${endpoint}`, method === "POST" || method === "PUT" ? 0 : response.status, text);
+ 			}
+ 			if (!response.ok) {
+-				const message = typeof data === "object" && data !== null && "message" in data ? String(data.message) : text || response.statusText;
++				const message = formatGitHubApiErrorMessage(data, response.statusText, this.token, body);
+ 				if (method !== "POST" && method !== "PUT" && (response.status === 429 || response.status >= 500) && attempt < this.retryAttempts) {
+ 					const retryAfter = response.headers.get("retry-after");
+ 					const reset = response.headers.get("x-ratelimit-reset");
+@@ -10900,10 +10984,17 @@ async function readSourceCandidates(options, source) {
  }
  //#endregion
  //#region src/commands/release/recovery/environment.ts
@@ -22,7 +129,7 @@ index d231a8f2145b90c458eade110d0b4a4620815403..bec4e37d89968ce654aec80d9c784e0b
  	run("corepack", [
  		"enable",
  		"--install-directory",
-@@ -11283,6 +11290,20 @@ async function reportStage(receipt, options, stage, started, status, progressCwd
+@@ -11283,6 +11374,20 @@ async function reportStage(receipt, options, stage, started, status, progressCwd
  }
  //#endregion
  //#region src/commands/release/stages/source.ts
@@ -43,7 +150,7 @@ index d231a8f2145b90c458eade110d0b4a4620815403..bec4e37d89968ce654aec80d9c784e0b
  async function stagedSource(options, create = false, install = false) {
  	const source = options.sourceSha ?? getReleaseEnv(options)["REPO_RELEASE_RECOVERY_SOURCE_SHA"]?.trim();
  	if (!source) return {
-@@ -11299,7 +11320,7 @@ async function stagedSource(options, create = false, install = false) {
+@@ -11299,7 +11404,7 @@ async function stagedSource(options, create = false, install = false) {
  		source,
  		`refs/remotes/origin/${rule.branch}`
  	], options);
@@ -52,7 +159,7 @@ index d231a8f2145b90c458eade110d0b4a4620815403..bec4e37d89968ce654aec80d9c784e0b
  	const cwd = path.join(root, "checkout");
  	const env = {
  		...getReleaseEnv(options),
-@@ -11340,6 +11361,7 @@ async function stagedSource(options, create = false, install = false) {
+@@ -11340,6 +11445,7 @@ async function stagedSource(options, create = false, install = false) {
  			source
  		], recovery);
  	}
@@ -60,7 +167,7 @@ index d231a8f2145b90c458eade110d0b4a4620815403..bec4e37d89968ce654aec80d9c784e0b
  	if (capture("git", ["rev-parse", "HEAD"], recovery) !== source || capture("git", [
  		"diff",
  		"--binary",
-@@ -11460,6 +11482,7 @@ async function releaseCiStage(options) {
+@@ -11460,6 +11566,7 @@ async function releaseCiStage(options) {
  	}
  	await saveReceipt(receipt, options);
  	let effective = options;
@@ -68,7 +175,7 @@ index d231a8f2145b90c458eade110d0b4a4620815403..bec4e37d89968ce654aec80d9c784e0b
  	try {
  		if (receipt.action !== "skip") {
  			const source = stage === "plan" ? void 0 : await stagedSource(options, false, stage === "verify");
-@@ -11520,6 +11543,7 @@ async function releaseCiStage(options) {
+@@ -11520,6 +11627,7 @@ async function releaseCiStage(options) {
  		receipt.identity = await stageIdentity(options);
  		receipt.effectiveIdentity = await stageIdentity(effective);
  		await reportStage(receipt, options, stage, started, "complete", effective.cwd);
@@ -76,7 +183,7 @@ index d231a8f2145b90c458eade110d0b4a4620815403..bec4e37d89968ce654aec80d9c784e0b
  	} catch (error) {
  		await reportStage(receipt, options, stage, started, "failed", effective.cwd);
  		throw error;
-@@ -11532,7 +11556,7 @@ async function releaseCiStage(options) {
+@@ -11532,7 +11640,7 @@ async function releaseCiStage(options) {
  			]) await copyFile(path.join(effective.cwd, file), path.join(options.cwd, file)).catch((error) => {
  				if (error.code !== "ENOENT") throw error;
  			});
@@ -85,3 +192,20 @@ index d231a8f2145b90c458eade110d0b4a4620815403..bec4e37d89968ce654aec80d9c784e0b
  				recursive: true,
  				force: true
  			});
+@@ -11594,6 +11702,7 @@ async function createReleasePullRequest(options) {
+ 		"-m",
+ 		"chore(release): version packages"
+ 	], options);
++	const pullRequestBody = await renderBoundedReleasePullRequest(noteDocument, metadata, options);
+ 	run("git", [
+ 		"push",
+ 		"--force",
+@@ -11604,7 +11713,7 @@ async function createReleasePullRequest(options) {
+ 		head: releaseBranch,
+ 		base: rule.branch,
+ 		title: resolveReleaseLocale(options) === "zh-CN" ? "chore(release): 更新包版本" : "chore(release): version packages",
+-		body: renderReleasePullRequest(noteDocument, metadata)
++		body: pullRequestBody
+ 	});
+ 	await github.closeLegacyReleasePullRequests?.({
+ 		head: `changeset-release/${rule.branch}`,

@@ -1,4 +1,4 @@
-import { GitHubClient } from 'repoctl'
+import { GitHubApiError, GitHubClient } from 'repoctl'
 import { describe, expect, it, vi } from 'vitest'
 
 interface GitHubRequest {
@@ -161,5 +161,48 @@ describe('repoctl GitHub release pull request upsert', () => {
     await expect(client.ensurePullRequest(options)).rejects.toThrow('failed (403): Forbidden')
 
     expect(requests.map(request => request.method)).toEqual(['GET', 'POST'])
+  })
+
+  it.each([false, true])('reports bounded validation fields without logging the submitted body, token or unlisted values when whitespace is folded=%s', async (folded) => {
+    const submittedBody = '私有正文包含 fixture-token 和换行\n完整保密内容。'
+    const echoedBody = folded ? submittedBody.replace(/\s+/g, ' ').trim() : submittedBody
+    const ignoredValue = 'UNLISTED_PRIVATE_RESPONSE_VALUE'
+    const { client, requests } = createClient([
+      { body: [] },
+      {
+        status: 422,
+        body: {
+          message: `Validation Failed: ${echoedBody}`,
+          errors: Array.from({ length: 10 }, (_, index) => ({
+            resource: 'PullRequest',
+            field: 'body',
+            code: 'custom',
+            message: `body is too long (maximum is 65536 characters); ${JSON.stringify(echoedBody)}; token=fixture-token; ${'界🧩'.repeat(500)}; detail-${index}`,
+            value: ignoredValue,
+            body: ignoredValue,
+            token: ignoredValue,
+          })),
+        },
+      },
+      { body: [] },
+    ])
+
+    const error: unknown = await client.ensurePullRequest({ ...options, body: submittedBody }).catch((reason: unknown) => reason)
+
+    expect(error).toBeInstanceOf(GitHubApiError)
+    if (!(error instanceof GitHubApiError)) {
+      throw new TypeError('Expected a GitHub validation error')
+    }
+    expect(error.status).toBe(422)
+    expect(error.message).toContain('Validation Failed')
+    expect(error.message).toContain('resource=PullRequest, field=body, code=custom')
+    expect(error.message).toContain('body is too long (maximum is 65536 characters)')
+    expect(error.message).toContain('[redacted]')
+    expect(error.message).not.toContain('fixture-token')
+    expect(error.message).not.toContain('私有正文')
+    expect(error.message).not.toContain(ignoredValue)
+    expect(error.message.length).toBeLessThan(3_000)
+    expect(error.responseBody).toContain(ignoredValue)
+    expect(requests.map(request => request.method)).toEqual(['GET', 'POST', 'GET'])
   })
 })
