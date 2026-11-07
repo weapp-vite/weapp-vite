@@ -37,6 +37,12 @@ description: 面向小程序中 wevu 运行时的实践手册，覆盖生命周�
 
 ## 核心流程
 
+先确定只读诊断或实施、允许写入与观察目标。读取页面/组件、模板、状态与事件入口、项目 scripts；记录已安装 `wevu`、实际构建工具、Node、包管理器、目标平台及实际 IDE/基础库/renderer 版本，不用声明范围代替安装版本，未取得项明确缺失。按问题选入口，不为独立 runtime 任务引入构建器：
+- 状态/事件/hook：带上同步 setup、触发动作与预期文本/payload，进入 `references/component-patterns.md`；检查可序列化状态、注册时序及目标页面交互。缺目标宿主时只给静态诊断，不宣称运行通过。
+- `setData`/卡顿：带上更新序列、采样条件与相同输入，进入 `references/runtime-perf-matrix.md`、`references/tuning-recipes.md`；按 observer/revision 关联、物理 dispatch 去重，并另查真实视图。样本容器保持非响应式，按实例/轮次限量收集与清理，避免清空丢掉迟到记录；明确回调、记录和导出本身有观测开销，比较时固定采样配置并保留关闭采样的对照。没有基线先测量，不同时改业务和 runtime；缺测量边界保留缺口。
+- store/layout/router：带上状态所有者、调用者、导航或卸载路径，进入 `references/store-patterns.md`、`references/router-runtime-matrix.md`；按所需能力选根入口 helpers 或 router，检查响应性、导航结果和清理，不套 Web 挂载假设。
+- JSX/平台能力：先确认现有编译 owner 与已安装依赖；只有接入对应编译链时才判断编译优化。检查目标模板与真实宿主 API；缺编译器或超出目标能力时停止对应结论，不为诊断安装新工具链。
+
 1. 运行时 API 从 `wevu` 导入，页面和组件边界明确；选项式 `data` 若存在，保持函数形式。
 2. 生命周期和 hook 必须在同步 `setup()` 中注册，不要在 `await` 之后注册。
    - Fetch SSE 与 EventSource 在同步 setup 注册 `onUnload`，回调执行 `controller.abort()` 或 `source.close()`；不要等请求返回后才注册，也不要把 `onHide` 当成卸载。Response 返回后的流错误仍需处理，reader 使用结束释放锁，异常路径中止请求；controller、reader 和 source 不进入模板状态。`wevu/fetch` 复用 `@wevu/web-apis`，项目级分块、GET/POST 分工及严格能力边界见 [Wevu Fetch SSE](https://vite.weapp.dev/wevu/fetch.html#sse-与响应流)。
@@ -51,7 +57,7 @@ description: 面向小程序中 wevu 运行时的实践手册，覆盖生命周�
    - 区分原生 router helpers 与 `wevu/router`
 6. 性能问题先分层：
    - `setData` 路径：是否高频整对象回写；使用 `weapp-vite` 编译时再检查 `autoSetDataPick`，独立运行时优化见 `references/tuning-recipes.md`。
-   - 阶段测量：显式开启 `debugPhases`，按 observer/revision 关联，按物理 `dispatch.id` 去重；callback、Promise 和同步返回不代表可见视图，缺少边界保持未知，参见 `references/runtime-perf-matrix.md` 的阶段观测。保持既有 `nextTick` 语义，独立执行真实视图断言。
+   - 阶段测量：显式开启 `debugPhases`，按 observer/revision 关联，按物理 `dispatch.id` 去重；callback、Promise 和同步返回不代表可见视图，缺少边界保留未验证，但已观察到的失败仍是失败，参见 `references/runtime-perf-matrix.md` 的阶段观测。保持既有 `nextTick` 语义，独立执行真实视图断言。
    - render 路径：是否把重逻辑放进 `onPageScroll`
    - navigation 路径：`onHide/onUnload` 是否阻塞
    - resource / memory：图片尺寸、缓存、监听与定时器是否清理
@@ -87,20 +93,19 @@ Router 选择和迁移见 `references/router-runtime-matrix.md`。
 
 ## 输出
 
-应用本 skill 时，输出必须包含：
+只输出本次运行时风险、实际版本/平台、文件级改动或只读建议、相关兼容边界与最小检查；不要求每次解释 Vue Web、store 或 router。命令必须来自项目已有 scripts/工具，无对应 script 就说明缺口，不编造 `wv` 或框架仓库测试命令。
 
-- 运行时风险摘要。
-- 文件级改动建议。
-- 相对 Vue Web runtime 的兼容说明。
-- 最小验证命令。
+每项结论用短记录关联：`对象/版本 → 实际命令或动作 → 观察/产物 → 方法、结果、限制`；同一结论可并列记录多种方法，各自结果互不覆盖，建议与已执行分开。缺前提仅阻塞依赖它的操作/验证，继续可达的只读诊断：
+- 自动验证 `passed`：实际命令/断言通过，仅覆盖检查到的状态、事件、调度或视图。
+- AI 评估 `passed`：列评估者、判据与材料；不等同自动验证，未实际隔离不得称独立。
+- 人工确认 `passed`：引用该具体结果及版本的确认，不把计划批准当结果/示例批准。
+- 未验证 `not-run`：未执行或前提不足，说明原因；已执行失败按实际方法记 `failed` 并保留证据。类型、构建、`setData` callback/Promise、commit 或 `nextTick` 均不单独证明可见更新；静态结构检查也不证明证据真实或任务执行。
 
 ## 完成标记
 
-- API 导入来自 `wevu`。
-- 页面 / 组件边界清晰。
-- hook 注册时序正确。
-- layout、router、store 选择有明确理由。
-- 与项目 `AGENTS.md` 约定一致。
+仅判断本次涉及的 API 来源、页面/组件边界、hook 时序与状态所有权；layout/router/store 未涉及则不适用。遵循已有 `AGENTS.md`，分别列已检查、失败与未验证项，不宣称全部 runtime 能力通过。
+- 反馈记录期望/实际、复现与采样前提、证据和限定范围的提议；确定性调度/API 错误优先进入工具或检查，语义/风格先形成候选示例交人工审阅。一次偏好留本次记录；确有复发及具体人工规则决定后才提议长期规则，不自动改源码/全局规则或上传业务数据。
+- Skill 永久修订只在获授权的作者检出目录进行，不修改包管理器受管的安装副本（如 `node_modules` 内 Skill 或 `.agents/skills` 指向它的链接）；维护用例留在作者仓库，不随消费包提供，也不是运行时使用前提。
 
 ## 参考资料
 

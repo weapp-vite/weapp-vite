@@ -38,13 +38,12 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
 
 ## 核心流程
 
-1. 先收集上下文：
-   - `vite.config.ts`
-   - `app.json` / `app.json.ts`
-   - 分包、组件、页面目录
-   - package scripts
-   - 根 `AGENTS.md`
-   - 本地 `node_modules/weapp-vite/dist/docs/`
+1. 先确定是只读诊断还是实施、允许写入范围与目标平台，再收集相关输入：`vite.config.ts`、`app.json` / `app.json.ts`、页面/组件/分包目录、消费项目的 package scripts、已有 `AGENTS.md` 和 `node_modules/weapp-vite/dist/docs/`。记录已安装 `weapp-vite`、相关 runtime、Node、包管理器与构建宿主的实际版本，不把依赖范围当安装版本；涉及运行时再记录实际 IDE、基础库和 renderer，未取得的版本明确缺失。
+   按本次问题选入口，不为普通页面任务展开全部能力：
+   - 页面/路由/输出：从源目录、手工 `pages/subPackages` 或 `autoRoutes` 分支进入 `references/config-playbook.md`、`references/debug-playbook.md`；先确认路由所有者并解释遗漏原因。已有手工清单时优先最小登记，保留首页与条目顺序，不为补页切换路由模式；已采用自动发现时再查扫描和排除配置。检查目标 app JSON、页面配套产物与路径；实际可导航另需目标宿主观察。
+   - 构建/平台/类型：从项目 scripts、目标平台配置与已安装工具链进入下列基础配置和 `prepare` 步骤；一次只选一个目标。工具或配置缺失时停下依赖它的检查，输出具体缺口；检查目标扩展名、输出根与受管声明，不把声明生成当运行成功。
+   - 分包/体积/HMR：先给出相同输入的产物或 profile，再进入分包分析或 `references/stateful-hmr-playbook.md`；没有基线先测量，不先改 chunk。输出实际体积、更新行为及同场景对比；插件任务另查双产物。
+   - IDE/AI/上传：从具体操作、已安装 CLI、宿主状态和授权进入 `references/cli-dispatch-playbook.md`、`references/ide-command-playbook.md`；缺凭据或授权停止对应外部动作。检查实际退出码、日志、截图或官方回执，不把 dry-run 当上传或发布成功。
 2. 区分顶层 Vite 字段和小程序专属 `weapp.*`，先理顺基础项：
    - `weapp.srcRoot`
    - `weapp.platform`
@@ -99,7 +98,7 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
    - 状态保持 HMR 不生效：先确认生成的应用/页面 JSON 未使用 Skyline；WebView 项目再确认平台为微信、DevTools 开启服务端口与热重载、`compileHotReLoad: true`，并区分安全 JS/Vue 补丁与 CSS/资源/配置的完整重载回退
    - sourcemap 漂移：检查 CLI `--sourcemap` 透传和构建后 npm、平台 API、shared chunk 重写是否组合原 map，不接受只保留旧 map
 6. 性能问题先比较项目自身相同输入下的 build/HMR profile，再调整已有配置。native AST 扩展属于构建器或插件维护，不是业务项目默认修复路径；相关边界见 `references/native-ast-performance-checklist.md`。
-7. 验证只使用当前消费项目 `package.json` 中已存在的 scripts：优先项目的 typecheck、目标平台 build 和相关测试；没有对应 script 时，已安装 `weapp-vite` 的项目可用 `pnpm exec wv prepare`、`pnpm exec wv build -p <platform>`。不要运行框架仓库的包构建、发布或 E2E 命令。
+7. 验证优先使用当前消费项目 `package.json` 中已存在的 typecheck、目标平台 build 和相关测试 scripts。没有对应 script 时，仅在本地工具与包管理器可用后选择其实际支持的调用方式；已安装 `weapp-vite` 的 pnpm 项目例如可用 `pnpm exec wv prepare`、`pnpm exec wv build -p <platform>`。其他包管理器沿用项目方式，不要求切换；缺少测试 script 就报告缺口，不编造命令，也不运行框架仓库的包构建、发布或 E2E。
 8. 新增小程序 runtime API 前，先在目标真实 IDE AppService、基础库和 renderer 中验证存在性与最小调用语义；不要用浏览器、Node、类型声明或 headless 结果替代。若项目选择静态兼容检查，先显式安装 `@weapp-vite/eslint`，再在项目自身 ESLint 配置启用 `miniProgramRuntimeRecommended`；不要假定微信运行时存在 `queueMicrotask`。
 
 ## 近期能力决策
@@ -134,21 +133,22 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
 
 ## 输出
 
-应用本 skill 时，输出必须包含：
+只输出本次任务相关内容：配置/代码导致问题的原因、目标平台、实际包版本、最小改动（只读任务列建议）、实际检查与剩余前提。构建结论至少注明实际 `weapp-vite` 版本、沿用的命令和目标产物；失败或撤回的尝试也用一句保留，不只报最终成功。分包/chunk、AI 或 Rust/native 取舍仅在涉及时说明；native 性能结论需跨边界调用与真实 profile 依据。
 
-- 诊断摘要。
-- 最小改动列表。
-- 推荐验证命令。
-- 分包 / chunk / AI 工作流的取舍说明。
-- 若涉及 Rust/native 加速，说明是否减少跨边界调用次数，以及真实 profile 是否支持继续扩大迁移。
+每项结论用短记录关联：`对象/版本 → 实际命令或动作 → 观察/产物 → 方法、结果、限制`；同一结论可并列记录多种方法，各自结果互不覆盖，建议与已执行分开。缺前提仅阻塞依赖它的操作/验证，继续可达的只读诊断：
+- 自动验证 `passed`：实际命令/断言通过，仅覆盖检查到的配置、类型、产物或运行行为。
+- AI 评估 `passed`：写明评估者、判据和所看材料；不是自动验证，未实际隔离不得称独立评估。
+- 人工确认 `passed`：引用对该具体结果及版本的确认；批准计划不等于确认结果或示例。
+- 未验证 `not-run`：未执行或缺少前提，说明原因。执行过的失败按实际方法记 `failed` 并保留证据，不能改写成未知。构建、类型声明、宿主 callback 均不单独证明页面已显示；静态结构检查也不证明证据真实或任务已执行。
 
 ## 完成标记
 
-- `weapp` 配置结构清晰。
-- 路由和组件来源明确。
-- `.weapp-vite` 支持文件流程已考虑。
-- CLI 原生命令、IDE 透传和 AI 路由不冲突。
-- 项目已有的 `AGENTS.md`、包内文档、MCP、截图和日志入口保持一致；不要求为普通构建接入 AI 工具。
+按本次范围逐项判断，不宣称全能力已验收；未涉及项不适用，失败或未验证项保留：
+- 涉及的 `weapp` 配置、路由/组件来源与输出根明确，既有手工配置保留。
+- 涉及类型时，说明 `.weapp-vite` 支持文件的实际同步结果。
+- 涉及 CLI/IDE/AI 时，命令归属与项目已有入口一致；普通构建不要求接入 AI 工具。
+- 反馈只记录期望/实际、复现与前提、证据和限定范围的提议：确定性错误优先修工具/检查，语义或风格先形成候选示例并交人工审阅。一次偏好留在本次记录；确有复发且取得具体人工规则决定后才提议长期规则，不自动修改源码/全局规则或上传业务数据。
+- Skill 永久修订仅在获授权的作者检出目录进行，不修改包管理器受管的安装副本（如 `node_modules` 内 Skill 或 `.agents/skills` 指向它的链接）。维护用例留在作者仓库，不是消费包内容或使用前提。
 
 ## 参考资料
 

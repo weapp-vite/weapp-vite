@@ -4,6 +4,10 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import YAML from 'yaml'
+import skillCases from '../../maintainers/skillValidation/cases.json' with { type: 'json' }
+import skillFeedback from '../../maintainers/skillValidation/feedback.json' with { type: 'json' }
+import { validateCaseCatalog, validateEvidenceReport, validateFeedbackCatalog } from '../../scripts/skillValidation/contracts.mjs'
+import { hashSkillTree } from '../../scripts/skillValidation/fixtures.mjs'
 import { distribution } from './distribution.mjs'
 
 const SKILLS_ROOT = 'skills'
@@ -206,6 +210,43 @@ async function validateDistribution(skills, issues) {
   }
 }
 
+async function validateMaintenanceContracts(issues) {
+  const caseIssues = validateCaseCatalog(skillCases, distribution.packages)
+  issues.push(...caseIssues.map(issue => `skill cases: ${issue.path}: ${issue.code}`))
+  if (caseIssues.length) {
+    return
+  }
+  issues.push(...validateFeedbackCatalog(skillFeedback, skillCases).map(issue => `skill feedback: ${issue.path}: ${issue.code}`))
+  const args = process.argv.slice(2)
+  if (!args.length) {
+    return
+  }
+  if (args.length !== 2 || args[0] !== '--evidence' || !args[1]) {
+    issues.push('Usage: check-public-skill-sync.mjs [--evidence <report.json>]')
+    return
+  }
+  const report = JSON.parse(await fs.readFile(args[1], 'utf8'))
+  const digests = Object.fromEntries(await Promise.all(Object.values(distribution.packages).flatMap(config => config.skills).map(async name => [name, await hashSkillTree(path.join(SKILLS_ROOT, name))])))
+  const recordIssues = validateEvidenceReport(report, skillCases, digests)
+  issues.push(...recordIssues.map(issue => `skill evidence: ${issue.path}: ${issue.code}`))
+  if (recordIssues.length) {
+    return
+  }
+  const counts = { automaticPassed: 0, aiPassed: 0, humanPassed: 0, failed: 0, unverified: 0 }
+  for (const record of report.records) {
+    if (record.result === 'failed') {
+      counts.failed++
+    }
+    else if (record.result === 'not-run') {
+      counts.unverified++
+    }
+    else {
+      counts[`${record.method}Passed`]++
+    }
+  }
+  return counts
+}
+
 async function main() {
   const skills = await discoverPublicSkills()
   const issues = []
@@ -217,6 +258,7 @@ async function main() {
   await Promise.all(skills.map(name => validateSkill(name, issues)))
   await validateScoringMap(skills, issues)
   await validateDistribution(skills, issues)
+  const evidence = await validateMaintenanceContracts(issues)
 
   if (issues.length > 0) {
     console.error('[public-skills] contract validation failed:')
@@ -228,6 +270,11 @@ async function main() {
   }
 
   console.log(`[public-skills] validated ${skills.length} public skills, ${Object.keys(distribution.packages).length} package owners and scoped template contracts`)
+  console.log(`[skill-cases] checked ${skillCases.cases.length} candidate/approved case contracts; no task executed`)
+  if (evidence) {
+    console.log(`[skill-evidence] record consistency only, not evidence authenticity: ${JSON.stringify(evidence)}`)
+    process.exitCode = evidence.failed ? 1 : evidence.unverified ? 2 : 0
+  }
 }
 
 await main()

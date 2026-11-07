@@ -1,0 +1,104 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "native-inventory-route",
+      "skill": "weapp-vite-best-practices",
+      "mode": "edit-build",
+      "dependencies": ["weapp-vite"],
+      "task": "这是一个原生微信小程序。src/pages/inventory/index 的库存页已经写好，但没有进入构建路由。请让它能被构建出来，保留原来手工维护的首页和帮助页路由，不要改写页面内容。使用项目现有的构建入口即可，不需要打开开发者工具、登录或安装额外依赖。",
+      "files": {
+        "weapp-vite.config.mjs": "import { defineConfig } from 'weapp-vite/config'\n\nexport default defineConfig({\n  weapp: { srcRoot: 'src', autoRoutes: false, vue: { enable: false }, tailwindcss: false, mcp: false },\n  build: { outDir: 'dist' },\n})\n",
+        "project.config.json": "{\"appid\":\"touristappid\",\"compileType\":\"miniprogram\",\"miniprogramRoot\":\"dist/\",\"srcMiniprogramRoot\":\"src/\"}\n",
+        "src/app.js": "App({})\n",
+        "src/app.json": "{\"pages\":[\"pages/home/index\",\"manual/help\"],\"window\":{\"navigationBarTitleText\":\"商品管理\"}}\n",
+        "src/pages/home/index.js": "Page({})\n",
+        "src/pages/home/index.json": "{}\n",
+        "src/pages/home/index.wxml": "<view>首页</view>\n",
+        "src/manual/help.js": "Page({})\n",
+        "src/manual/help.json": "{}\n",
+        "src/manual/help.wxml": "<view>帮助</view>\n",
+        "src/pages/inventory/index.js": "Page({ data: { stock: 12 } })\n",
+        "src/pages/inventory/index.json": "{\"navigationBarTitleText\":\"库存\"}\n",
+        "src/pages/inventory/index.wxml": "<view>库存：{{stock}}</view>\n"
+      },
+      "criteria": [
+        { "id": "route-artifacts", "description": "实际执行现有 build，退出码为 0；检查 dist/app.json 同时含 pages/home/index、manual/help、pages/inventory/index，原有手工路由顺序保留，并检查三页对应非空 .js/.json/.wxml 产物。仅命令退出成功不够。", "verification": "automatic" },
+        { "id": "write-boundary", "description": "比较前后文件与依赖快照：页面源文件、原有手工路由和 dependency 集合未被改写，没有安装、IDE/登录操作或受管 .agents/skills 改动；只为路由发现修改项目配置并产生正常构建输出。", "verification": "automatic" },
+        { "id": "routing-explanation", "description": "解释遗漏路由的配置原因及路由发现与手工清单的关系，建议与实际修改一致；不把直接重写产物当作修复。", "verification": "ai" },
+        { "id": "evidence-boundary", "description": "回答注明实际依赖版本、所用命令与可定位产物，区分构建、AI 判断与未执行的 runtime/人工验收；失败如实保留，单次偏好不升级规则。", "verification": "ai" }
+      ],
+      "review": { "state": "candidate" }
+    },
+    {
+      "id": "scriptless-inventory-title",
+      "skill": "weapp-vite-vue-sfc-best-practices",
+      "mode": "edit-build",
+      "dependencies": ["weapp-vite"],
+      "task": "把库存页的导航栏标题改成“库存”，配置仍放在 src/pages/inventory/index.vue 同一个文件里。这个页面现在只是静态模板，不要为了改标题加脚本或安装依赖。请构建一下；另外说明以后想用 ref 写交互时需要什么依赖，这次先不要安装，也不需要开开发者工具。",
+      "files": {
+        "weapp-vite.config.mjs": "import { defineConfig } from 'weapp-vite/config'\n\nexport default defineConfig({\n  weapp: { srcRoot: 'src', autoRoutes: false, vue: { enable: true }, tailwindcss: false, mcp: false },\n  build: { outDir: 'dist' },\n})\n",
+        "project.config.json": "{\"appid\":\"touristappid\",\"compileType\":\"miniprogram\",\"miniprogramRoot\":\"dist/\",\"srcMiniprogramRoot\":\"src/\"}\n",
+        "src/app.js": "App({})\n",
+        "src/app.json": "{\"pages\":[\"pages/inventory/index\"]}\n",
+        "src/pages/inventory/index.vue": "<template>\n  <view>现有库存：12</view>\n</template>\n\n<json>\n{\n  \"navigationBarTitleText\": \"商品\"\n}\n</json>\n"
+      },
+      "criteria": [
+        { "id": "title-artifacts", "description": "实际 build 退出码为 0，dist/pages/inventory/index.json 的 navigationBarTitleText 为 库存，且对应 .js/.wxml 非空、模板静态库存内容保留。", "verification": "automatic" },
+        { "id": "scriptless-boundary", "description": "比较文件和依赖快照：标题只在原 .vue 的同文件 JSON 中修改，仍无 script block，没有新增侧边 JSON、wevu 等依赖、安装、IDE 操作或受管 Skill 改动。", "verification": "automatic" },
+        { "id": "future-ref-advice", "description": "区分当前纯模板编译与未来响应式 runtime：ref 应从显式安装的 wevu 导入；阅读公共资料不等于已安装，也不要求 vue、其他 Skill 或仓库源码作为当前前置。", "verification": "ai" },
+        { "id": "evidence-boundary", "description": "注明实际版本、命令与产物；构建结果不冒充 runtime 或人工批准，未执行项明确未验证，失败不隐去，个别建议不自动成为长期规则。", "verification": "ai" }
+      ],
+      "review": { "state": "candidate" }
+    },
+    {
+      "id": "wevu-count-array-measurement",
+      "skill": "wevu-best-practices",
+      "mode": "diagnose",
+      "dependencies": ["wevu"],
+      "task": "这个 Wevu 组件在一次点击里同时增加 count 和数组条目。我们用 samples.length 当 setData 次数、把每条样本的 payloadBytes 相加，再在 await nextTick() 后记录“已经显示”。请只读诊断这种测量是否可靠，给出如何区分调度、宿主提交和真正可见的最小检查建议。不要改源码、安装包或调用构建器；项目目前没有测试或构建脚本，也没有提供 IDE 会话和实测日志。",
+      "files": {
+        "src/app.js": "App({})\n",
+        "src/app.json": "{\"pages\":[\"pages/index/index\"]}\n",
+        "src/pages/index/index.js": "Page({})\n",
+        "src/pages/index/index.json": "{\"usingComponents\":{\"inventory-counter\":\"/components/inventory-counter/index\"}}\n",
+        "src/pages/index/index.wxml": "<inventory-counter />\n",
+        "src/components/inventory-counter/index.js": "import { defineComponent, nextTick, ref } from 'wevu'\n\nconst samples = []\n\ndefineComponent({\n  setData: {\n    debugPhases: true,\n    debugWhen: 'always',\n    debugSampleRate: 1,\n    debug(info) { samples.push(info) },\n  },\n  setup() {\n    const count = ref(0)\n    const items = ref([])\n    async function increment() {\n      samples.length = 0\n      count.value++\n      items.value.push({ id: count.value, label: `库存 ${count.value}` })\n      await nextTick()\n      console.log('已经显示', {\n        setDataCalls: samples.length,\n        payloadBytes: samples.reduce((sum, info) => sum + (info.payloadBytes ?? 0), 0),\n      })\n    }\n    return { count, items, increment }\n  },\n})\n",
+        "src/components/inventory-counter/index.json": "{\"component\":true}\n",
+        "src/components/inventory-counter/index.wxml": "<view>{{count}}</view>\n<view wx:for=\"{{items}}\" wx:key=\"id\">{{item.label}}</view>\n<button bindtap=\"increment\">增加库存</button>\n"
+      },
+      "criteria": [
+        { "id": "readonly-boundary", "description": "比较完整项目前后快照和工具轨迹：所有文件与依赖不变，没有安装、构建器/仓库测试/IDE 调用或受管 Skill 改动。", "verification": "automatic" },
+        { "id": "measurement-diagnosis", "description": "按实际公共 API 解释 observerId/revision 关联与 dispatch.id 物理调用去重，不能把 prepare/dispatch/commit 直接相加，字节未知不算零；指出非响应式样本容器须有采集/清空边界和观测开销。", "verification": "ai" },
+        { "id": "visibility-and-updates", "description": "说明同轮 count 与数组更新需同时核对，nextTick 只等待 JS/响应式队列，宿主 callback/Promise/return/commit 均不证明可见；建议在目标 runtime 用独有 marker 检查文本/数组节点，缺少日志时不虚构丢更新或成功结论。", "verification": "ai" },
+        { "id": "evidence-boundary", "description": "回答记录实际 wevu 版本和静态资料依据，建议不变成已执行检查；没有项目脚本或宿主时明确未运行、未获人工结果确认，不默认添加 weapp-vite、执行 wv 或升级一次性偏好为规则。", "verification": "ai" }
+      ],
+      "review": { "state": "candidate" }
+    },
+    {
+      "id": "react-shared-root",
+      "skill": "weapp-vite-react-best-practices",
+      "mode": "diagnose",
+      "dependencies": ["@weapp-vite/react"],
+      "task": "两个原生页面共用 src/shared/root.js。页面切换后偶尔出现事件进错页面、卸载一个页面影响另一个页面的情况。请只读分析 root 的归属与生命周期，给出文件级修改建议和最小验证思路；不要实际修改或安装依赖。项目只接入了 React runtime 和它的 peer dependencies，没有构建/测试脚本，也没有提供 IDE 会话，不要假定有 weapp-vite 或 react-dom。",
+      "files": {
+        "src/app.js": "App({})\n",
+        "src/app.json": "{\"pages\":[\"pages/inventory/index\",\"pages/detail/index\"]}\n",
+        "src/shared/root.js": "import { createReactMiniProgramRoot } from '@weapp-vite/react'\nimport { createElement } from 'react'\n\nlet root\n\nexport function mount(page, title) {\n  root = createReactMiniProgramRoot(page)\n  root.render(createElement('view', null, title))\n}\n\nexport function forward(event) {\n  root?.dispatchEvent(event)\n}\n\nexport function unmount() {\n  root?.unmount()\n  root = undefined\n}\n",
+        "src/pages/inventory/index.js": "import { forward, mount, unmount } from '../../shared/root.js'\n\nPage({\n  onLoad() { mount(this, '库存') },\n  __weapp_vite_react_event(event) { forward(event) },\n  onUnload() { unmount() },\n})\n",
+        "src/pages/inventory/index.json": "{}\n",
+        "src/pages/inventory/index.wxml": "<view />\n",
+        "src/pages/detail/index.js": "import { forward, mount, unmount } from '../../shared/root.js'\n\nPage({\n  onLoad() { mount(this, '明细') },\n  __weapp_vite_react_event(event) { forward(event) },\n  onUnload() { unmount() },\n})\n",
+        "src/pages/detail/index.json": "{}\n",
+        "src/pages/detail/index.wxml": "<view />\n"
+      },
+      "criteria": [
+        { "id": "readonly-boundary", "description": "比较完整项目前后快照和工具轨迹：源码、配置与依赖不变，没有安装、调用 wv/框架仓库测试/IDE 或改写受管 Skill。", "verification": "automatic" },
+        { "id": "root-ownership", "description": "定位共享模块单个可变 root 被多页面实例覆盖，说明事件与卸载串页风险；建议每个原生页面实例持有自己的 root，onLoad 创建、当前实例事件转发、onUnload unmount 并清理，不以另一个模块级单例替代。", "verification": "ai" },
+        { "id": "public-api-and-scope", "description": "建议使用 createReactMiniProgramRoot/render/dispatchEvent/unmount 公共契约；核对实际 runtime 与 peers，不引入 react-dom、Wevu、编译器或无依据 render-mode 修复；没有构建器时不要求 weapp.react 配置。", "verification": "ai" },
+        { "id": "evidence-boundary", "description": "记录实际版本与静态依据，给出双实例创建、独立事件、逐个卸载的最小验证思路；明确无脚本/宿主所以没有运行证明，不把诊断、计划同意或 AI 结论写成人工结果批准，不自动沉淀新规则。", "verification": "ai" }
+      ],
+      "review": { "state": "candidate" }
+    }
+  ]
+}
