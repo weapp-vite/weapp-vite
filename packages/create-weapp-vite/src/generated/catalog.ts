@@ -49,7 +49,7 @@ export const TEMPLATE_CATALOG = {
   '@vue/language-core': '^3.3.14',
   '@vue/reactivity': '^3.5.45',
   '@vue/shared': '^3.5.45',
-  '@weapp-tailwindcss/engine': '0.1.7',
+  '@weapp-tailwindcss/engine': '0.1.8',
   '@wot-ui/ui': '2.4.0',
   'antd-mini': '^3.4.3',
   'bundle-require': '^5.1.0',
@@ -65,7 +65,7 @@ export const TEMPLATE_CATALOG = {
   'happy-dom': '^21.0.4',
   'lru-cache': '^11.5.3',
   'magic-string': '^1.4.5',
-  'miniprogram-api-typings': '^5.2.3',
+  'miniprogram-api-typings': '^5.3.1',
   'miniprogram-computed': '^9.0.0',
   'oxc-parser': '^0.157.0',
   'oxc-walker': '^1.1.1',
@@ -73,7 +73,7 @@ export const TEMPLATE_CATALOG = {
   'postcss-selector-parser': '^7.1.7',
   'postcss-value-parser': '4.2.0',
   'react-reconciler': '0.34.0',
-  'sass-embedded': '^1.107.1 <1.108.0',
+  'sass-embedded': '^1.108.1',
   'socket.io': '^4.8.4',
   'socket.io-client': '^4.8.4',
   'tailwind-merge': '^3.7.0',
@@ -87,7 +87,7 @@ export const TEMPLATE_CATALOG = {
   'vue-eslint-parser': '^10.4.2',
   'vue-router': '5.4.0',
   'vue-tsc': '^3.3.14',
-  'weapp-tailwindcss': '^5.7.1',
+  'weapp-tailwindcss': '^5.7.2',
   ai: '7.0.164',
   autoprefixer: '^10.6.2',
   axios: '^1.21.0',
@@ -139,14 +139,14 @@ export const TEMPLATE_NAMED_CATALOG = {
     'tdesign-miniprogram': '1.17.0'
   },
   'weapp-tailwindcss-fixed': {
-    'weapp-tailwindcss': '5.7.1'
+    'weapp-tailwindcss': '5.7.2'
   },
   fixed: {
     execa: '10.2.1',
     zod: '4.6.7'
   },
   latest: {
-    'miniprogram-api-typings': '^5.2.3',
+    'miniprogram-api-typings': '^5.3.1',
     typescript: '^6.0.3'
   },
   tailwind4: {

@@ -14,7 +14,7 @@ export interface ScrollPage extends MiniProgramPageLike {
   [WEVU_READY_CALLED_KEY]?: boolean
   [WEVU_HOOKS_KEY]?: Record<string, ScrollHook | ScrollHook[]>
   $?: ScrollPage
-  selectOwnerComponent?: () => ScrollPage | undefined
+  selectOwnerComponent?: () => ScrollPage | null | undefined
   onPageScroll?: (event: { scrollTop: number }) => unknown
 }
 
@@ -88,7 +88,7 @@ export function currentScrollPage(): ScrollPage | undefined {
 export function resolveScrollPage(instance: ScrollPage): ScrollPage | undefined {
   const pages = getCurrentMiniProgramPages()
   const visited = new Set<object>()
-  let owner: ScrollPage | undefined = instance
+  let owner: ScrollPage | null | undefined = instance
   while (owner && !visited.has(owner)) {
     visited.add(owner)
     if (pages.includes(owner)) {

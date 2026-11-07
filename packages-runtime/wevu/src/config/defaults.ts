@@ -14,9 +14,13 @@ export type WevuConfigSetDataOptions = Omit<SetDataSnapshotOptions, 'debug'> & {
 /** 可写入编译产物的组件静态选项，不包含 RegExp 纯数据匹配器。 */
 export interface WevuConfigComponentOptions {
   multipleSlots?: boolean
+  dynamicSlots?: boolean
   addGlobalClass?: boolean
   styleIsolation?: 'isolated' | 'apply-shared' | 'shared' | 'page-isolated' | 'page-apply-shared' | 'page-shared'
   virtualHost?: boolean
+  dataDeepCopy?: 'simple' | 'simple-recursion' | 'none'
+  propertyPassingDeepCopy?: 'simple' | 'simple-recursion' | 'none'
+  propertyEarlyInit?: boolean
   pureDataPattern?: never
 }
 
