@@ -16,30 +16,17 @@ keywords:
 
 `Skills` 负责给 AI 注入稳定的工程流程，减少“回答看起来对、执行却跑偏”的情况。
 
-直接使用公开技能仓库时，安装推荐 skills：
+手动安装项目所需的 skills，例如原生项目：
 
 ```bash
-npx skills add sonofmagic/skills
+npx skills add sonofmagic/skills --skill weapp-vite-best-practices
 ```
 
-如果项目是通过 `create-weapp-vite` 初始化的，交互模式会询问你是否安装推荐的 AI skills（默认跳过）；即使你当时跳过，也可以后续手动执行同一条命令。
-
-公开 skills（`skills/*`）里当前常用的有：
-
-```text
-$weapp-vite-best-practices
-$docs-and-website-sync
-$release-and-changeset-best-practices
-$weapp-devtools-e2e-best-practices
-$weapp-vite-vue-sfc-best-practices
-$weapp-vite-react-best-practices
-$wevu-best-practices
-$native-to-weapp-vite-wevu-migration
-```
+也可选择 pnpm 随依赖安装。Wevu / SFC、React 的命令和配置见 [AI Skills 使用指南](/guide/skills)。`create-weapp-vite` 默认跳过可选安装，启用后只安装当前模板的 skills。
 
 如果你需要按任务快速选择 skill，可以直接看 [AI Skills 使用指南](/guide/skills)。如果你希望把 issue 修复、文档同步、DevTools e2e、SFC 排障和原生迁移串成可验收流程，可以看 [AI 任务工作流](/guide/ai-workflows)。
 
-建议：
+以下是按任务选用的能力建议，不是默认安装清单；贡献本仓库时才需要其中的文档、发布和 E2E 维护流程：
 
 1. 面向用户公开分发的流程优先沉淀到 `skills/*`。
 2. 项目架构、分包、构建编排问题优先用 `weapp-vite-best-practices`。

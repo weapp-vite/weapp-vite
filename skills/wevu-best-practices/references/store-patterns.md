@@ -4,18 +4,20 @@ wevu Store 面向小程序，公开用法和主要行为以 Pinia 4.0.3 为参�
 
 ## 初始化
 
-在小程序 `app.vue` 中安装一次：
+只安装 `wevu` 也可显式创建并传入 Pinia，不依赖 SFC 或构建器：
 
-```vue
-<script setup lang="ts">
-import { createPinia, use } from 'wevu'
+```ts
+import { createPinia, defineStore } from 'wevu'
 
 const pinia = createPinia()
-use(pinia)
-</script>
+const useCounter = defineStore('counter', {
+  state: () => ({ count: 0 }),
+})
+const counter = useCounter(pinia)
+counter.count++
 ```
 
-使用 `createApp()` 时调用 `app.use(pinia)`。组件外可调用 `useCounter(pinia)`；测试可用 `setActivePinia(createPinia())`。`createStore()` 保留为 `createPinia()` 的同实现兼容别名，不新增弃用警告；既有应用无需仅为改名而修改。未安装、未传入且无活动实例时，`useStore()` 会报错。不同 Pinia 的实例和状态隔离，同一个 Pinia 中相同 ID 复用实例。
+在应用初始化时持有一个 Pinia，并将它传给需要的 Store；不要每次调用时新建 manager。使用 Wevu `createApp()` 时可调用 `app.use(pinia)`；使用 `app.vue` 的项目需额外安装 `weapp-vite`，并在 app 的同步 setup 中调用 `use(pinia)`（从 `wevu` 导入）。组件外可调用 `useCounter(pinia)`；测试可用 `setActivePinia(createPinia())`。`createStore()` 保留为 `createPinia()` 的同实现兼容别名，不新增弃用警告；既有应用无需仅为改名而修改。未安装、未传入且无活动实例时，`useStore()` 会报错。不同 Pinia 的实例和状态隔离，同一个 Pinia 中相同 ID 复用实例。
 
 ## 定义与使用
 
@@ -123,7 +125,7 @@ pinia.use(({ store, pinia, app, options }) => {
   console.log(store.$id, pinia, app, options.actions)
   return { lastUpdated: ref(0) }
 })
-// app.vue 用 use(pinia)，createApp 场景用 app.use(pinia)
+// 应用安装时也可用 app.use(pinia)；组件外显式传给 useStore(pinia)
 ```
 
 插件在安装后作用于新创建的 Store，可以返回扩展属性。`PiniaCustomProperties` 和 `PiniaCustomStateProperties` 支持类型声明合并。不要假定依赖 Vue Devtools、Web SSR 或 Vue 响应式内部对象的第三方插件能直接运行。

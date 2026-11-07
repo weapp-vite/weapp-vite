@@ -9,6 +9,14 @@ description: 面向使用 `weapp-vite` 与 `@weapp-vite/react` 开发 React 19 �
 
 在微信小程序中建立可预测的 React 19 编译、渲染和组件互操作边界，并用真实构建与 runtime 信号验证结果。
 
+## 包与资料边界
+
+- 本 skill 随 `@weapp-vite/react` 提供，负责 React runtime、root 生命周期和原生组件 bridge；本文 `references/` 均相对本 skill，不要求框架源码、仓库 E2E 或其他 skill。
+- 先确认项目满足所安装 `@weapp-vite/react` 的 peer dependencies：`react`、`react-reconciler`、`miniprogram-api-typings`。这些是运行时/类型契约，不代表构建器已经安装；不使用 `react-dom`。
+- `weapp.react`、render mode 选择、TSX 转换和 WXML 生成属于 `weapp-vite`；只有需要该编译工作流时才显式安装 `weapp-vite`。单独安装 `@weapp-vite/react` 不提供 `wv` CLI 或 SFC 编译器。
+- Wevu SFC 互操作还需显式安装 `wevu`；React Compiler 还需可选 `@swc/core`。不为仅排查 React root/事件的任务默认添加这些包。
+- 独立消费者先读本 skill references、已安装包的公开类型与 README；完整接入可查 [React 小程序接入](https://vite.weapp.dev/integration/react)，构建配置可查 [React 配置](https://vite.weapp.dev/config/react)。其他 skill 仅在已安装时可选。
+
 ## 不适用场景
 
 - 通用构建、分包、多平台或 CLI：使用 `weapp-vite-best-practices`。
@@ -18,15 +26,15 @@ description: 面向使用 `weapp-vite` 与 `@weapp-vite/react` 开发 React 19 �
 
 ## 核心流程
 
-1. 当前工作区验证组合为 React 19.3.x、`react-reconciler` 0.34.x 和 `@weapp-vite/react`，不要引入 `react-dom`。
-2. 在项目级 `weapp.react` 启用 React owner；同一构建中的 `.jsx` / `.tsx` 全部归 React 编译链，不要与 Wevu JSX 混用。
-3. 从 `auto` 建立基线：稳定结构生成原生 WXML/binding slots，无法静态证明且不含 bridge 的结构进入 dynamic tree。
+1. 检查项目实际安装的 `@weapp-vite/react` 版本及其 peer dependencies；React 19.3.x / `react-reconciler` 0.34.x 是当前文档的验证组合，不是任意版本的兼容承诺，不引入 `react-dom`。
+2. 若使用 `weapp-vite` 编译，在项目级 `weapp.react` 启用 React owner；同一构建中的 `.jsx` / `.tsx` 全部归 React 编译链，不要与 Wevu JSX 混用。仅有 runtime 包时先沿用项目已有编译产物，不假定 `weapp.*` 可用。
+3. 使用该编译链时从 `auto` 建立基线：稳定结构生成原生 WXML/binding slots，无法静态证明且不含 bridge 的结构进入 dynamic tree。
 4. 页面原生入口负责创建 root、转发宿主事件和卸载；React 视图放在相邻 TSX 模块，避免把 Page 生命周期藏进组件树。
 5. 需要原生或 Wevu 自定义组件时，先在 JSON `usingComponents` 注册，再在当前 TSX 顶层用字符串字面量调用 `createNativeComponent`。
 6. 需要 React-backed 小程序组件的默认插槽时使用 `Slot`；不要假设 scoped slot、model 或动态 tag 已受支持。
 7. React Compiler 默认保持关闭；只有安装 `@swc/core` 并准备验证 fallback warning、sourcemap 和运行时行为时再启用。
-8. 按“runtime 单测 -> weapp-vite 编译测试 -> 构建 e2e -> DevTools runtime”逐层验证。
-9. WebView glass-easel 默认保持关闭；仅在开发者工具与真机基础库均不低于 `3.8.12` 时由用户在宿主 JSON 中成对配置 `componentFramework` 与 `glassEaselWebview`，再用 `wv analyze --glass-easel-check` 检查 static/dynamic WXML 和 SelectorQuery；React 静态模板沿用共享 WXML 实体转义契约。
+8. 使用消费项目自己的 typecheck、相关测试和目标构建 scripts，再在目标微信 IDE/真机检查 Hooks、事件与卸载。没有脚本时先确认工具链；仅已安装 `weapp-vite` 的项目可用 `pnpm exec wv build -p weapp`，不运行框架仓库单测或 E2E。
+9. WebView glass-easel 默认保持关闭；仅在开发者工具与真机基础库均不低于 `3.8.12` 时由用户在宿主 JSON 中成对配置 `componentFramework` 与 `glassEaselWebview`。项目已安装 `weapp-vite` 时可再用 `wv analyze --glass-easel-check` 辅助检查 static/dynamic WXML 和 SelectorQuery；React 静态模板沿用标准 WXML 实体转义。
 
 ## 关键边界
 

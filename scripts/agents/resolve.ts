@@ -5,6 +5,8 @@ import type {
 import fs from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
+import { recommendedSkillsInstallation } from '../../packages/create-weapp-vite/src/skills'
+import { TEMPLATE_DEFINITIONS } from '../../packages/create-weapp-vite/src/templates'
 
 export class AgentManifestError extends Error {
   constructor(message: string) {
@@ -30,7 +32,19 @@ function readSection(manifest: AgentManifest, id: string) {
   if (!fs.existsSync(filePath)) {
     throw new AgentManifestError(`section ${id} content file does not exist: ${sectionFileLabel(filePath)}`)
   }
-  return fs.readFileSync(filePath, 'utf8').replace(/\r\n/g, '\n').trim()
+  const content = fs.readFileSync(filePath, 'utf8').replace(/\r\n/g, '\n').trim()
+  const template = TEMPLATE_DEFINITIONS.find(template => id === `template.${template.id}`)
+  if (!template) {
+    return content
+  }
+  return content.replace('{{ TEMPLATE_SKILLS }}', [
+    `- Manual installation: \`${recommendedSkillsInstallation(template.id).command}\` (npm, Yarn, or any pnpm version). Selected skills:`,
+    ...template.skills.map(skill => `  - \`$${skill}\``),
+    '- Optional dependency installation (pnpm >=12.11.0): add `skills: { dirs: [".agents/skills"] }` to `pnpm-workspace.yaml` while preserving team settings.',
+    '- Run `pnpm install`, then interactive `pnpm approve`; keep approval manual and leave native links to pnpm, not consumer postinstall scripts.',
+    '- Native skills come from included direct dependencies and the highest resolved package version per workspace. Preserve manual entries; see the [AI Skills guide](https://vite.weapp.dev/guide/skills) for version-specific approval, names and cleanup.',
+    '- Optional migration: `npx skills add sonofmagic/skills --skill native-to-weapp-vite-wevu-migration`. Repository maintenance skills are not consumer defaults.',
+  ].join('\n'))
 }
 
 function applyLayer(

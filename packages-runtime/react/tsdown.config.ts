@@ -1,4 +1,5 @@
 import { defineConfig } from 'tsdown'
+import { syncPackageSkills } from '../../skills/scripts/distribution.mjs'
 
 const entry = {
   index: './src/index.ts',
@@ -22,6 +23,9 @@ export default defineConfig([
     },
     sourcemap: false,
     failOnWarn: false,
+    hooks: {
+      'build:done': () => syncPackageSkills('@weapp-vite/react'),
+    },
   },
   {
     entry,

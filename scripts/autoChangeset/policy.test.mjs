@@ -15,6 +15,11 @@ describe('weapp-vite policy through the public repoctl engine', () => {
     expect(names(await plan({ files: ['mpcore/packages/test/src/index.ts'] }))).toEqual(['@mpcore/test'])
   })
 
+  it('releases published skill content but not contributor-only guidance', async () => {
+    expect(names(await plan({ files: ['skills/wevu-best-practices/references/store-patterns.md'] }))).toEqual(['create-weapp-vite', 'wevu'])
+    expect(names(await plan({ files: ['skills/release-and-changeset-best-practices/SKILL.md'] }))).toEqual([])
+  })
+
   it('links constants dependents through workspace and npm aliases, including dev dependencies', async () => {
     expect(names(await plan({ files: ['@weapp-core/constants/src/index.ts'] }))).toEqual([
       '@weapp-core/constants',

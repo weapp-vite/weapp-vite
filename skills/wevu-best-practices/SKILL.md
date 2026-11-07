@@ -9,6 +9,13 @@ description: 面向小程序中 wevu 运行时的实践手册，覆盖生命周�
 
 在小程序运行时里用 `wevu` 写出边界清晰、更新可控、契约明确的页面、组件和 store。
 
+## 包与资料边界
+
+- 本 skill 随 `wevu` 提供，运行时 API、响应式、生命周期、事件、store 与 router 由该包负责；只使用这些能力不要求安装 `weapp-vite`、克隆框架仓库或加载其他 skill。本文 `references/` 均相对本 skill，运行时入门也可查 [Wevu 文档](https://vite.weapp.dev/wevu/)。
+- 构建沿用消费项目自己的工具链。使用 `weapp.*` 配置、`wv` CLI、SFC 宏/模板编译、编译期 layout 或自动类型生成时，才需显式安装 `weapp-vite`；编译器优化不等于仅安装 `wevu` 就会自动生效。
+- React 互操作另需 `@weapp-vite/react` 及其 peer dependencies，TDesign/Vant 等 UI 示例另需对应组件库；相关 skill 仅在已安装时可选，不是运行时 API 的前提。
+- 验证先读取消费项目 `package.json`，只运行其已有 typecheck、build 与相关测试 scripts，并在目标小程序 IDE/真机检查页面行为。没有 `weapp-vite` 时不运行 `wv prepare/analyze`；不要求框架仓库测试、包构建或发布命令。
+
 ## 何时使用
 
 - 用户问 `wevu` 页面或组件应该怎么写。
@@ -43,20 +50,20 @@ description: 面向小程序中 wevu 运行时的实践手册，覆盖生命周�
    - 运行时 layout 变化走 `setPageLayout` / `usePageLayout`
    - 区分原生 router helpers 与 `wevu/router`
 6. 性能问题先分层：
-   - `setData` 路径：是否高频整对象回写、是否启用 `autoSetDataPick`
-   - 阶段测量：显式开启 `debugPhases`，按 observer/revision 关联，按物理 `dispatch.id` 去重；callback、Promise 和同步返回不代表可见视图，缺少边界保持未知，参见 `docs/wevu/setdata-observation.md`。保持既有 `nextTick` 语义，独立执行真实视图断言。
+   - `setData` 路径：是否高频整对象回写；使用 `weapp-vite` 编译时再检查 `autoSetDataPick`，独立运行时优化见 `references/tuning-recipes.md`。
+   - 阶段测量：显式开启 `debugPhases`，按 observer/revision 关联，按物理 `dispatch.id` 去重；callback、Promise 和同步返回不代表可见视图，缺少边界保持未知，参见 `references/runtime-perf-matrix.md` 的阶段观测。保持既有 `nextTick` 语义，独立执行真实视图断言。
    - render 路径：是否把重逻辑放进 `onPageScroll`
    - navigation 路径：`onHide/onUnload` 是否阻塞
    - resource / memory：图片尺寸、缓存、监听与定时器是否清理
 7. store 以小 domain 为先，解构 state/getters 用 `storeToRefs`，避免巨大跨页 store。
-   - 平台分支直接判断编译期常量 `import.meta.env.PLATFORM`（`weapp/alipay/tt/swan/jd/xhs/web`）；现有 `--platform` / `weapp.platform` 自动注入目标值，无需额外裁剪配置。
+   - 使用 `weapp-vite` 的项目可直接判断编译期常量 `import.meta.env.PLATFORM`（`weapp/alipay/tt/swan/jd/xhs/web`），由 `--platform` / `weapp.platform` 注入目标值；不要假定其他工具链具有这些配置或自动替换。
    - Wevu 发布包保留平台表达式供消费构建替换并删除非目标分支；独立工具链未提供目标时保留动态宿主探测。
-   - 能力裁剪取决于实际使用与具名导入，不新增能力开关；SFC/JSX 由 Binding Manifest 安装所需能力，没有创建 router 时不引入首航 guard 状态机。
-   - 区分编译器精简入口与公开动态工厂的保守兼容安装；未使用 API/fetch 时可整体移除，使用后仍保留动态跨平台 adapter。
-8. 写法同时对照项目根 `AGENTS.md` 和本地 `dist/docs/wevu-authoring.md`。
+   - 能力裁剪取决于实际使用与具名导入，不新增能力开关；接入对应 SFC/JSX 编译链后，由 Binding Manifest 安装所需能力，没有创建 router 时不引入首航 guard 状态机。
+   - 区分编译器精简入口与公开动态工厂的保守兼容安装；未使用 API/fetch 时可整体移除，已使用的 API/fetch 保留动态跨平台 adapter。
+8. 项目已有 `AGENTS.md` 时遵循它；独立运行时写法对照本 skill 的组件、store、router 和性能 references，不依赖其他包的 `dist/docs`。
 9. JSX/TSX 中保持小程序事件、class 和组件 tag 语义；编译后的自定义组件标签应为 kebab-case，可选链/空值合并不得残留为目标模板不支持的表达式。
-10. Wevu 项目通过共享 ESLint 配置统一启用 `@weapp-vite/eslint` 的 `wevuCompatibilityRecommended` 与 `miniProgramRuntimeRecommended`，模板不要单独增加 workspace 依赖；后者限制 DOM/Node 全局、现代内建和隐式 polyfill。不要假定微信 runtime 存在 `queueMicrotask`，新增宿主 API 前先在目标真实 IDE AppService 中探测。旧项目可继续从 `weapp-vite/eslint` 兼容入口导入。
-11. glass-easel 项目保持静态文本、属性和 Mustache 边界使用标准 WXML 实体转义；迁移时运行 `wv analyze --glass-easel-check`，循环内 `<include>` 和旧式反斜杠引号转义需人工确认语义。
+10. 若项目选择静态兼容检查，需显式安装 `@weapp-vite/eslint`，在项目自己的 ESLint 配置启用 `wevuCompatibilityRecommended` 与 `miniProgramRuntimeRecommended`；后者限制 DOM/Node 全局、现代内建和隐式 polyfill。不要假定微信 runtime 存在 `queueMicrotask`，新增宿主 API 前先在目标真实 IDE AppService 中探测。已安装 `weapp-vite` 的旧项目可继续从 `weapp-vite/eslint` 兼容入口导入，不为此默认添加构建器。
+11. glass-easel 项目保持静态文本、属性和 Mustache 边界使用标准 WXML 实体转义；仅在项目已安装 `weapp-vite` 时使用 `wv analyze --glass-easel-check` 辅助检查，循环内 `<include>` 和旧式反斜杠引号转义需人工确认语义。
 
 ## Router 与平台边界
 

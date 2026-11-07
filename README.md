@@ -90,6 +90,16 @@ pnpm create weapp-vite my-app wevu --dependency-versions=compatible --registry=h
 
 查询会读取 npm registry、作用域源、代理和 CA 配置，核心依赖与 Tailwind 共用最多 5 秒的网络预算；失败保留随包版本。`--registry` 只作用于脚手架启动后的查询及安装提示，首次下载脚手架仍由 pnpm 的配置决定。国内镜像可能延迟同步，网络异常、发布冷却期、旧脚手架缓存与精确版本恢复步骤见[脚手架文档](https://vite.weapp.dev/packages/create-weapp-vite)。离线生成不等于离线安装，依赖安装仍需要可用的 registry 或完整本地缓存。
 
+### 项目级 AI skills
+
+手动安装项目所需的 skills，例如原生项目：
+
+```bash
+npx skills add sonofmagic/skills --skill weapp-vite-best-practices
+```
+
+也可用支持原生 skills 的 pnpm 随依赖安装。Wevu / SFC、React 的安装命令，以及随依赖安装的配置与审批步骤，见 [AI Skills 使用指南](https://vite.weapp.dev/guide/skills)。
+
 ### 本地开发当前仓库
 
 ```bash

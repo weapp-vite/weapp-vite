@@ -38,6 +38,7 @@
     "**/build/**",
     "**/coverage/**",
     "**/dist/**",
+    "**/{packages,packages-runtime}/*/skills/**",
     "**/dist-*/**",
     "**/dist-plugin/**",
     "**/dist-web/**",
@@ -170,6 +171,7 @@
     "**/.git/**": true,
     "**/node_modules/**": true,
     "**/dist/**": true,
+    "**/{packages,packages-runtime}/*/skills/**": true,
     "**/dist-*/**": true,
     "**/dist-plugin/**": true,
     "**/dist-web/**": true,
@@ -199,6 +201,7 @@
     "**/packages/ast-native/target/**": true
   },
   "files.exclude": {
+    "**/{packages,packages-runtime}/*/skills": true,
     "node_modules": true,
     "**/build": true,
     "**/coverage": true,
@@ -229,6 +232,7 @@
   "search.exclude": {
     "**/node_modules/**": true,
     "**/dist/**": true,
+    "**/{packages,packages-runtime}/*/skills/**": true,
     "**/dist-*/**": true,
     "**/dist-plugin/**": true,
     "**/dist-web/**": true,
@@ -280,6 +284,7 @@
     "**/.wevu-config/**",
     "**/.wrangler/**",
     "**/dist/**",
+    "**/{packages,packages-runtime}/*/skills/**",
     "**/dist-*/**",
     "**/dist-plugin/**",
     "**/dist-web/**",
@@ -322,6 +327,7 @@
     "**/.wevu-config/**",
     "**/.wrangler/**",
     "**/dist/**",
+    "**/{packages,packages-runtime}/*/skills/**",
     "**/dist-*/**",
     "**/dist-plugin/**",
     "**/dist-web/**",

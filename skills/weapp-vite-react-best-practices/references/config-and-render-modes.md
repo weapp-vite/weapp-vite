@@ -1,16 +1,15 @@
 # React 配置与渲染模式
 
-## 事实来源
+## 消费项目资料与前提
 
-- `packages/weapp-vite/src/types/config/**`
-- `packages/weapp-vite/src/plugins/react/**`
-- `website/config/react.md`
-- `docs/integration/react.md`
+- runtime 和 bridge 的公开 API 查已安装 `@weapp-vite/react` 的 README 与类型；完整用法见 [React 小程序接入](https://vite.weapp.dev/integration/react)。不要求读取框架源码目录。
+- 下方 `weapp.react` 配置由 `weapp-vite` 持有，需项目显式安装该构建器；完整字段见 [React 配置](https://vite.weapp.dev/config/react)。仅安装 runtime 时，不新增或假定存在此配置文件。
+- 先核对当前 runtime 的 peer dependencies，再使用项目已有的 build/typecheck scripts；不把仓库验证依赖版本当作所有版本的安装约束。
 
-## 配置基线
+## 配置基线（需要 weapp-vite）
 
 ```ts
-import { defineConfig } from 'weapp-vite'
+import { defineConfig } from 'weapp-vite/config'
 
 export default defineConfig({
   weapp: {

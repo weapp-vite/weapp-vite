@@ -35,13 +35,13 @@ pnpm create weapp-vite
 # 或 npx create-weapp-vite
 ```
 
-交互模式先选择模板，再选择独立的构建工具链（默认 `wv`），最后询问是否安装推荐的 AI skills（默认“否”）。显式安装时执行：
+交互模式先选择模板，再选择构建工具链（默认 `wv`），最后询问是否安装当前模板的 AI skills（默认跳过）。也可在项目中手动安装，例如原生模板：
 
 ```bash
-npx --yes skills add sonofmagic/skills
+npx --yes skills add sonofmagic/skills --skill weapp-vite-best-practices
 ```
 
-如果你选择跳过，也可以在项目创建完成后手动执行该命令。
+也可选择 pnpm 随依赖安装。Wevu / SFC、React 的完整命令和配置见 [AI Skills 使用指南](/guide/skills)。
 
 同时，脚手架还会在项目根目录生成 `AGENTS.md`，把当前模板推荐的 AI 工作流、命令入口与约束一起写进去。
 
@@ -240,7 +240,7 @@ pnpm --config.registry=https://registry.npmmirror.com/ dlx create-weapp-vite@<ve
 - 自动整理 `gitignore` / `.gitignore`
 - 按选定策略对齐模板使用的 `weapp-vite`、`wevu`、`@weapp-vite/dashboard`，并解析模板中的 workspace/catalog 依赖
 - 在项目根目录生成 `AGENTS.md`
-- 按需执行 `npx --yes skills add sonofmagic/skills`
+- 仅显式启用 skills 安装时执行当前模板的 `npx --yes skills add sonofmagic/skills --skill <选定列表>`
 
 AI skills 安装失败或超过 60 秒时会清理进程、保留项目，并提示稍后手动重试。
 

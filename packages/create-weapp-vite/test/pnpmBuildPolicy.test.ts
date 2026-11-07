@@ -26,6 +26,8 @@ describe('pnpm dependency build policy', () => {
     const policy = parse(await readFile(path.join(root, 'pnpm-workspace.yaml'), 'utf8')) as Record<string, unknown>
 
     expect(policy.packages).toEqual([])
+    expect(policy.skills).toEqual({ dirs: ['.agents/skills'] })
+    expect(policy).not.toHaveProperty('permissions')
     expect(policy.allowBuilds).toEqual({
       '@swc/core': true,
       '@weapp-tailwindcss/merge': true,
@@ -98,7 +100,7 @@ describe('pnpm dependency build policy', () => {
 
   it('preserves existing workspace packages, comments and team approval rules byte for byte', async () => {
     const configPath = path.join(root, 'pnpm-workspace.yaml')
-    const existing = '# Team rules\r\npackages:\r\n  - apps/*\r\nallowBuilds:\r\n  esbuild: true\r\n'
+    const existing = '# Team rules\r\npackages:\r\n  - apps/*\r\nskills:\r\n  dirs: [.claude/skills]\r\npermissions:\r\n  weapp-vite:\r\n    skills: false\r\nallowBuilds:\r\n  esbuild: true\r\n'
     await writeFile(configPath, existing)
 
     await ensurePnpmBuildPolicy(root)

@@ -9,6 +9,14 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
 
 用稳定默认值先把 weapp-vite 项目跑顺，再按目标逐步接入分包、AI、Web runtime、库模式和性能优化。
 
+## 包与资料边界
+
+- 本 skill 随 `weapp-vite` 提供；原生小程序构建、配置、CLI 与 SFC 编译由该包负责，不要求克隆框架仓库或安装其他 skill。
+- 本文 `references/` 路径相对本 skill；包文档统一从项目的 `node_modules/weapp-vite/dist/docs/` 读取。项目已有 `AGENTS.md` 时遵循它，不把生成该文件作为使用前提。
+- Wevu 运行时、响应式、生命周期、事件、store 和 router 需要项目显式依赖 `wevu`；React runtime/bridge 需要 `@weapp-vite/react` 及其 peer dependencies。仅安装 `weapp-vite` 不代表这些运行时可用。
+- Web 目标由 `weapp-vite` 的 Web 构建链提供；第三方 UI 库、`@mpcore/*` 测试工具和各平台上传 SDK 是按任务选用的额外依赖。使用前确认对应包已安装，不为普通构建默认添加。
+- 下列其他 skill 仅是已安装时的可选分流，不是本 skill 的必读依赖；原生迁移也可按业务模块逐步接入，不依赖额外迁移 skill。
+
 ## 何时使用
 
 - 用户要配置 `vite.config.ts` 里的 `weapp`。
@@ -66,7 +74,7 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
    - `weapp-ide-cli` 只在 catalog 命中后透传
    - 原生命令包含 `dev` / `serve` / `build` / `upload` / `preview` / `close` / `analyze` / `init` / `open` / `npm` / `generate` / `prepare` / `mcp`
    - `analyze` 支持 `--json`、`--markdown`、`--report pr`、`--budget-check`、`--hmr-profile`、`--preload`、`--glass-easel-check`；分包预算来自 `weapp.analyze.budgets`，增量归因来自 `weapp.analyze.history`，预下载审计按触发包汇总实际分包体积与共享的 2 MB 额度
-   - `wv build --upload -p <平台>` 复用本次构建并在产物校验通过后上传；普通 build/dev/HMR 不启用上传。`weapp.upload` 仅提供版本和说明，AppID 与凭据配置先读 `dist/docs/upload.md` 及[分平台上传指南](https://vite.weapp.dev/guide/upload.html)，不要把支付宝当作淘宝支持。
+   - `wv build --upload -p <平台>` 复用本次构建并在产物校验通过后上传；普通 build/dev/HMR 不启用上传。`weapp.upload` 仅提供版本和说明，AppID 与凭据配置先读 `node_modules/weapp-vite/dist/docs/upload.md` 及[分平台上传指南](https://vite.weapp.dev/guide/upload.html)，不要把支付宝当作淘宝支持。
    - SDK `wv upload/preview -p <weapp|alipay|tt|xhs|jd|swan>` 自行构建后调用按需安装的官方工具；多目标用逗号分隔或显式 `all`，与 `build -p all` 的“小程序 + Web”含义不同。`--dry-run` 不调用 SDK；upload 只上传开发版本，preview 只生成官方预览结果，均不提审、不正式上线。顶层 preview 不在旧语法兼容范围内，IDE 预览用 `wv ide preview`。
    - 独立 `upload --json` 的 stdout 只输出单个结构化汇总，日志与官方进度进入 stderr；批量遇错停止，保留前序成功及后续 `not-run`。`--timeout <秒>` 仅限制各平台 SDK worker，不含构建；SDK 开始后超时／中断标记远端结果未确认，不等于远端取消，禁止自动重试。结果字段只取官方实际返回信息，不推断版本或统一百分比。这两个选项不用于 `build --upload`、`preview`、IDE 或 `weapp.upload` 配置。
    - 旧顶层 `wv upload --project ./dist --version 1.2.3 --desc "release"` 与 `wv upload -p ./dist -v 1.2.3 -d "release"` 保留原始参数、IDE 分发及退出行为，不额外触发构建；每次仅警告一次未来移除。显式 `wv ide upload` 不弃用、不警告，不能把原生所有权断言写成“所有 upload 都禁止 IDE 分发”。
@@ -90,13 +98,9 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
    - glass-easel 迁移：WebView glass-easel 默认不启用；开发者工具与真机基础库均不低于 `3.8.12` 时，才由用户在宿主 JSON 成对配置 `componentFramework: 'glass-easel'` 与 `glassEaselWebview: true`，再跑 `wv analyze --glass-easel-check`；低版本保持回退，不要新增重复的 `weapp.glassEasel` 配置
    - 状态保持 HMR 不生效：先确认生成的应用/页面 JSON 未使用 Skyline；WebView 项目再确认平台为微信、DevTools 开启服务端口与热重载、`compileHotReLoad: true`，并区分安全 JS/Vue 补丁与 CSS/资源/配置的完整重载回退
    - sourcemap 漂移：检查 CLI `--sourcemap` 透传和构建后 npm、平台 API、shared chunk 重写是否组合原 map，不接受只保留旧 map
-6. 评估 Rust/native 加速时，先看真实 profile 和跨边界调用次数：
-   - 默认把 JS ↔ Rust 往返、序列化/反序列化和 AST 数据搬运视为热路径成本。
-   - 优先 batch analysis，一次传源码、一次 parse、一次返回多个分析结果。
-   - 避免把同一份源码上的多个小 AST 查询拆成多个 N-API 调用；如果必须细粒度调用，先证明真实 HMR/build 热路径有净收益。
-   - native fast path 必须显式启用、可选依赖、失败回退 Babel/Oxc/Vue compiler，并配 correctness 对齐测试与 profile。
-7. 验证按最小范围进行；若改了 `packages/*/src/**`，下游验证前先重建对应包，并明确 `dist sync: rebuilt weapp-vite before downstream validation`。
-8. 新增小程序 runtime API 前，先在目标真实 IDE AppService、基础库和 renderer 中验证存在性与最小调用语义；不要用浏览器、Node、类型声明或 headless 结果替代。项目源码通过共享 ESLint 配置统一接入 `@weapp-vite/eslint` 的 `miniProgramRuntimeRecommended`，模板不要单独增加 workspace 依赖，且不要假定微信运行时存在 `queueMicrotask`。
+6. 性能问题先比较项目自身相同输入下的 build/HMR profile，再调整已有配置。native AST 扩展属于构建器或插件维护，不是业务项目默认修复路径；相关边界见 `references/native-ast-performance-checklist.md`。
+7. 验证只使用当前消费项目 `package.json` 中已存在的 scripts：优先项目的 typecheck、目标平台 build 和相关测试；没有对应 script 时，已安装 `weapp-vite` 的项目可用 `pnpm exec wv prepare`、`pnpm exec wv build -p <platform>`。不要运行框架仓库的包构建、发布或 E2E 命令。
+8. 新增小程序 runtime API 前，先在目标真实 IDE AppService、基础库和 renderer 中验证存在性与最小调用语义；不要用浏览器、Node、类型声明或 headless 结果替代。若项目选择静态兼容检查，先显式安装 `@weapp-vite/eslint`，再在项目自身 ESLint 配置启用 `miniProgramRuntimeRecommended`；不要假定微信运行时存在 `queueMicrotask`。
 
 ## 近期能力决策
 
@@ -123,7 +127,7 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
 
 - 不要在 `srcRoot` 和页面来源没确认前先调 chunk 策略。
 - 不要把 Web runtime 当作小程序真机等价运行时。
-- 不要忽略 `AGENTS.md` 和 `dist/docs`，它们是当前 AI 合约的一部分。
+- 项目已有 `AGENTS.md` 时遵循它；版本相关配置优先查 `node_modules/weapp-vite/dist/docs/`，不要要求消费项目具有框架仓库目录。
 - 不要让 `weapp-vite` 和 `weapp-ide-cli` 命令名单分裂。
 - 不要让 `screenshot` / `compare` / `ide logs` 的文件和 JSON 合约漂移。
 - 不要用大量细粒度 JS ↔ Rust 调用替代原本一次 JS AST 遍历；native 加速要先合并通信边界，再用真实 profile 扩大覆盖。
@@ -144,7 +148,7 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
 - 路由和组件来源明确。
 - `.weapp-vite` 支持文件流程已考虑。
 - CLI 原生命令、IDE 透传和 AI 路由不冲突。
-- `AGENTS.md`、`dist/docs`、MCP、截图和日志入口保持一致。
+- 项目已有的 `AGENTS.md`、包内文档、MCP、截图和日志入口保持一致；不要求为普通构建接入 AI 工具。
 
 ## 参考资料
 
@@ -166,4 +170,4 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
 - 脚手架的 `--toolchain=wv|vite|vite-plus` 与业务模板独立。生成的 `vite*.config.ts` 显式导入共享配置，按目标单独启用 Web；`prepare/open/upload/mcp` 仍由 `wv` 提供，不能把 `wv --platform` 传给普通宿主。已有 pnpm workspace 必须先统一 Vite+ core 与配套 Vitest override；严格 peer 检查只为固定 core 的 Vite alias 声明版本兼容，脚手架不修改上级工作区。
 - `npm.buildOptions` 的回调接收最终路径，可返回 `false` 跳过包；手工 npm 映射共用 CLI 的主 manifest/镜像语义。产物仍交给原生 emit/write，外部映射保存精确文件归属；`build.write: false` 仅支持宿主输出目录内的 npm 产物。
 - Vitest 配置加载不启动小程序编译。`vp preview`、`vp pack` 不能分别解释为微信预览或小程序组件库构建。
-- 使用前优先读取当前包 `dist/docs/vite-plugin.md` 的支持矩阵，不把后续路线图当成已发布能力。
+- 使用前优先读取 `node_modules/weapp-vite/dist/docs/vite-plugin.md` 的支持矩阵，不把后续路线图当成已发布能力。
