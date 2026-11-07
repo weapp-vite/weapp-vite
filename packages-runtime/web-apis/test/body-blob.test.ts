@@ -118,6 +118,15 @@ describe('Body conversion and ownership boundaries', () => {
 })
 
 describe('Blob slicing and byte contracts', () => {
+  it('keeps borrowed conversion and slicing methods empty for an unregistered receiver', async () => {
+    const receiver = { size: 0 } as BlobPolyfill
+    await expect(BlobPolyfill.prototype.arrayBuffer.call(receiver)).resolves.toEqual(new ArrayBuffer(0))
+    const slice = BlobPolyfill.prototype.slice.call(receiver, 0, 0, 'TEXT/PLAIN')
+    expect(slice.size).toBe(0)
+    expect(slice.type).toBe('text/plain')
+    await expect(slice.text()).resolves.toBe('')
+  })
+
   it.each([
     [0, undefined, 'abcdef'],
     [1, 4, 'bcd'],

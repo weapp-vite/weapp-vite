@@ -11,7 +11,8 @@ export function buildTemplateDataSources(raw: string, wxsVar: string) {
     return fallback()
   }
   try {
-    const source = (value: Node) => expression.slice(value.start ?? 0, value.end ?? expression.length)
+    // 节点均来自本次 parseExpression，位置始终对应同一份 expression。
+    const source = (value: Node) => expression.slice(value.start!, value.end!)
     const structured = (node: Node) => ['ObjectExpression', 'ConditionalExpression', 'LogicalExpression', 'ArrayExpression'].includes(node.type)
     const build = (node: Node): string => {
       if (node.type === 'ConditionalExpression') {
@@ -38,7 +39,7 @@ export function buildTemplateDataSources(raw: string, wxsVar: string) {
         else if (property.type === 'ObjectProperty') {
           const key = property.computed
             ? reader(source(property.key))
-            : JSON.stringify(property.key.type === 'Identifier' ? property.key.name : 'value' in property.key ? String(property.key.value) : '')
+            : JSON.stringify(property.key.type === 'Identifier' ? property.key.name : String((property.key as { value: unknown }).value))
           entries.push(entry(key, property.value))
         }
         else {

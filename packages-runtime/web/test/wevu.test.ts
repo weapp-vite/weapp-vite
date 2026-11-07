@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   installWebModuleRegistration,
   registerWebWevuApp,
+  registerWebWevuComponentFactory,
 } from '../src/runtime/wevu'
 
 const createAppMock = vi.hoisted(() => vi.fn((options: Record<string, any>) => {
@@ -112,5 +113,20 @@ describe('wevu web registration bridge', () => {
     restore()
 
     expect(target.Component).toBe(replacement)
+  })
+
+  it.each(['page', 'component'] as const)('preserves %s factory arguments, results and the previous host', (kind) => {
+    const previous = vi.fn()
+    ;(globalThis as any).Component = previous
+    const definition = { methods: { ready: vi.fn() } }
+    const factory = vi.fn((value: string, count: number) => {
+      ;(globalThis as any).Component(definition)
+      return { value, count }
+    })
+    const meta = { kind, id: kind === 'page' ? 'pages/factory' : 'factory-card' }
+    expect(registerWebWevuComponentFactory(factory, meta, 'argument', 2)).toEqual({ value: 'argument', count: 2 })
+    expect(factory).toHaveBeenCalledExactlyOnceWith('argument', 2)
+    expect(kind === 'page' ? registerPageMock : registerComponentMock).toHaveBeenCalledWith(definition, meta)
+    expect((globalThis as any).Component).toBe(previous)
   })
 })

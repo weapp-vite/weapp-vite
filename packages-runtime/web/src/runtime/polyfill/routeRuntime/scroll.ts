@@ -27,7 +27,8 @@ export function claimPageScrollRestoration(page: object): () => void {
       return
     }
     released = true
-    const remaining = (restorationClaims.get(page) ?? 1) - 1
+    // 活跃释放闭包始终对应一次尚未扣除的认领，最后一次扣除后才删除计数。
+    const remaining = restorationClaims.get(page)! - 1
     if (remaining > 0) {
       restorationClaims.set(page, remaining)
     }

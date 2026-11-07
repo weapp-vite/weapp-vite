@@ -72,6 +72,7 @@ describe('Web Streams compatibility', () => {
 
   it('decodes streamed UTF-8 and flushes incomplete sequences through TextDecoderStream', async () => {
     const stream = new TextDecoderStreamPolyfill()
+    expect(Object.prototype.toString.call(stream)).toBe('[object TextDecoderStream]')
     const chunks: string[] = []
     const reading = stream.readable.pipeTo(new WritableStream<string>({ write(value) {
       chunks.push(value)

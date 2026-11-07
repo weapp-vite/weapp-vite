@@ -4,7 +4,7 @@ import { join, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { compileWxml } from '../src/compiler/wxml/compile'
 import { parseWxml } from '../src/compiler/wxml/parser'
-import { collectUnknownTags, formatTagDiagnostic, formatUnknownTagWarning } from '../src/compiler/wxml/unknownTags'
+import { collectTagDiagnostics, collectUnknownTags, formatTagDiagnostic, formatUnknownTagWarning } from '../src/compiler/wxml/unknownTags'
 
 function tagsOf(source: string, componentTags?: Record<string, string>) {
   return collectUnknownTags(parseWxml(source), componentTags)
@@ -22,6 +22,12 @@ function warningsOf(source: string, componentTags?: Record<string, string>) {
 }
 
 describe('collectUnknownTags', () => {
+  it('handles synthetic nodes without location or child metadata and absent roots', () => {
+    const diagnostics = collectTagDiagnostics([{ type: 'element', name: 'missing-card', attribs: {} }], '', 'part.wxml')
+    expect(diagnostics).toEqual([{ tag: 'missing-card', reason: 'unknown', filename: 'part.wxml', line: undefined, column: undefined }])
+    expect(collectUnknownTags(undefined)).toEqual([])
+    expect(formatTagDiagnostic({ tag: 'missing-card', reason: 'unknown', filename: 'part.wxml', line: 2 })).toContain('part.wxml:2）')
+  })
   it('accepts builtin and html tags', () => {
     expect(tagsOf('<view><text>hi</text><image src="x" /><div><span>y</span></div></view>')).toEqual([])
   })

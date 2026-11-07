@@ -131,14 +131,12 @@ function getSfcFactoryName(kind: ModuleMeta['kind']) {
   return kind === 'app' ? 'createApp' : 'createWevuComponent'
 }
 
-function createRegisterMetaCode(meta: ModuleMeta, templateIdent?: string, styleIdent?: string) {
+function createRegisterMetaCode(meta: ModuleMeta, templateIdent: string | undefined, styleIdent: string) {
   const parts = [`id: ${JSON.stringify(meta.id)}`, `kind: ${JSON.stringify(meta.kind)}`]
   if (templateIdent) {
     parts.push(`template: ${templateIdent}`)
   }
-  if (styleIdent) {
-    parts.push(`style: ${styleIdent}`)
-  }
+  parts.push(`style: ${styleIdent}`)
   if (meta.navigationBar) {
     parts.push(`navigationBar: ${JSON.stringify(meta.navigationBar)}`)
   }

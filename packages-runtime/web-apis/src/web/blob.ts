@@ -32,7 +32,7 @@ function segmentSize(segment: Segment) {
 
 function normalizePart(part: BlobPart): readonly Segment[] {
   if (typeof part === 'object' && part !== null && segments.has(part as BlobPolyfill)) {
-    return segments.get(part as BlobPolyfill) ?? []
+    return segments.get(part as BlobPolyfill)!
   }
   if (isBlobLike(part)) {
     const size = typeof part.size === 'number' && Number.isFinite(part.size) && part.size >= 0 ? Math.trunc(part.size) : undefined

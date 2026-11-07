@@ -67,7 +67,7 @@ class RuntimeEventBindingDirective extends AsyncDirective {
     if (!this.isConnected || this.#listening || !this.#element || !this.#eventName || !this.#listener) {
       return
     }
-    this.#dispose = listenRuntimeEvent(this.#element, this.#eventName, nameRuntimeEventHandler(this.#dispatch, this.#logicalName ?? this.#eventName), this.#capture)
+    this.#dispose = listenRuntimeEvent(this.#element, this.#eventName, nameRuntimeEventHandler(this.#dispatch, this.#logicalName!), this.#capture)
     this.#listening = true
   }
 

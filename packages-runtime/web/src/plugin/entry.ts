@@ -109,7 +109,7 @@ export function generateEntryModule(
     initOptions.runtime = runtimeOptions
   }
 
-  const initOptionsCode = Object.keys(initOptions).length > 0 ? `, ${JSON.stringify(initOptions)}` : ''
+  const initOptionsCode = `, ${JSON.stringify(initOptions)}`
   bodyLines.push(`initializePageRoutes(${JSON.stringify(pageOrder)}${initOptionsCode})`)
   return [...importLines, ...bodyLines].join('\n')
 }

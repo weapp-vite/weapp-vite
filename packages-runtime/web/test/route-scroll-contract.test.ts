@@ -108,4 +108,25 @@ describe('route scroll ownership contract', () => {
     expect(second.removeEventListener).toHaveBeenCalledWith('scroll', expect.any(Function))
     disposePageScrollOwner()
   })
+
+  it('reports zero without a container and stops reach-bottom work when a page callback removes the container', () => {
+    const onPageScroll = vi.fn(() => {
+      runtime.container = undefined
+    })
+    const onReachBottom = vi.fn()
+    const entry: PageStackEntry = {
+      active: true,
+      id: 'pages/container-removed',
+      query: {},
+      instance: { onPageScroll, onReachBottom } as unknown as NonNullable<PageStackEntry['instance']>,
+    }
+    setEntryScrollOwner(entry, true)
+    recordActiveEntryScrollPosition()
+    expect(onPageScroll).toHaveBeenCalledExactlyOnceWith({ scrollTop: 0 })
+    runtime.container = { ...createContainer(100), clientHeight: 100, scrollHeight: 200 }
+    recordActiveEntryScrollPosition()
+    expect(onPageScroll).toHaveBeenLastCalledWith({ scrollTop: 100 })
+    expect(onReachBottom).not.toHaveBeenCalled()
+    setEntryScrollOwner(entry, false)
+  })
 })

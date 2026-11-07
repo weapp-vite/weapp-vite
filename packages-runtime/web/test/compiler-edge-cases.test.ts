@@ -169,7 +169,7 @@ describe('compiler and plugin edge cases', () => {
       { type: 'element', name: 'wxs', attribs: { module: 'missing', src: './missing.wxs' } },
       { type: 'element', name: 'wxs', attribs: { module: 'inline' }, children: [{ type: 'text', data: 'module.exports = 1' }, { type: 'element', name: 'view' }] },
       { type: 'element', name: 'wxs', attribs: { module: 'empty-inline' }, children: [{ type: 'text' }] },
-      { type: 'element', name: 'wxs', attribs: { module: ' duplicate ' }, children: [] },
+      { type: 'element', name: 'wxs', attribs: { module: ' duplicate ' } },
       { type: 'element', name: 'wxs', attribs: {} },
       { type: 'element', name: 'view', children: [{ type: 'element', name: 'audio', children: [] }] },
     ] as any[]

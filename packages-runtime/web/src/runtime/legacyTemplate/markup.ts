@@ -27,7 +27,7 @@ function captureEntries(nodes: Node[], context: object): MarkupEntry[] {
     const node = nodes[index]!
     const entry: MarkupEntry = { node }
     if (node.nodeType === Node.COMMENT_NODE) {
-      const info = resolveLegacyMarkupKey(context, node.nodeValue ?? '')
+      const info = resolveLegacyMarkupKey(context, (node as Comment).data)
       precedingKey = info?.key
       sourceAttributes = info?.attributes
       if (info?.fragment) {
@@ -39,7 +39,7 @@ function captureEntries(nodes: Node[], context: object): MarkupEntry[] {
             if (current.nodeValue === WEAPP_VITE_WEB_LEGACY_FRAGMENT_END_COMMENT) {
               depth--
             }
-            else if (resolveLegacyMarkupKey(context, current.nodeValue ?? '')?.fragment) {
+            else if (resolveLegacyMarkupKey(context, (current as Comment).data)?.fragment) {
               depth++
             }
           }

@@ -16,6 +16,7 @@ const webTestFiles = [
   'src/backends/miniprogram.test.ts',
   'src/cli/commands/analyze.test.ts',
   'src/cli/commands/build.test.ts',
+  'src/cli/commands/buildUpload.test.ts',
   'src/cli/commands/open.test.ts',
   'src/cli/commands/serve.test.ts',
   'src/runtime/config/internal/merge/web.test.ts',

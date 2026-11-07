@@ -52,6 +52,7 @@ const startAnalyzeDashboardMock = vi.hoisted(() => vi.fn())
 const logBuildPackageSizeReportMock = vi.hoisted(() => vi.fn())
 const logBuildAppFinishMock = vi.hoisted(() => vi.fn())
 const openIdeMock = vi.hoisted(() => vi.fn())
+const resolveIdeProjectPathMock = vi.hoisted(() => vi.fn((input: string) => input))
 const loggerSuccessMock = vi.hoisted(() => vi.fn())
 const loggerErrorMock = vi.hoisted(() => vi.fn())
 
@@ -125,7 +126,7 @@ vi.mock('../logBuildAppFinish', () => ({
 
 vi.mock('../openIde', () => ({
   openIde: openIdeMock,
-  resolveIdeProjectPath: vi.fn((input: string) => input),
+  resolveIdeProjectPath: resolveIdeProjectPathMock,
 }))
 
 function createBuildActionHandler() {
@@ -273,6 +274,36 @@ describe('build cli command', () => {
 
     expect(openIdeMock).toHaveBeenCalledWith('weapp', '/project/dist', {
       trustProject: false,
+    })
+  })
+
+  it.each(['true', 'false'])('normalizes string boolean build options %s', async (value) => {
+    await createBuildActionHandler()(undefined as any, { minify: value, sourcemap: value })
+
+    expect(createInlineConfigMock).toHaveBeenCalledWith(expect.anything(), {
+      inlineConfig: { build: { minify: value === 'true', sourcemap: value === 'true' } },
+      scope: undefined,
+    })
+    expect(initializeSessionMock).toHaveBeenLastCalledWith(expect.objectContaining({ cwd: process.cwd() }))
+  })
+
+  it('opens the generated project config root with the requested IDE strategy', async () => {
+    const context = await initializeSessionMock()
+    context.configService.multiPlatform.projectConfigs = {}
+    context.configService.mpDistRoot = `${context.configService.outDir}/miniprogram`
+
+    await createBuildActionHandler()(context.configService.cwd, {
+      open: true,
+      openRecovery: false,
+      ideOpenStrategy: 'automator',
+      trustProject: true,
+    })
+
+    expect(resolveIdeProjectPathMock).toHaveBeenCalledWith(context.configService.outDir, true)
+    expect(openIdeMock).toHaveBeenCalledWith(context.configService.platform, context.configService.outDir, {
+      openRecovery: false,
+      openStrategy: 'automator',
+      trustProject: true,
     })
   })
 

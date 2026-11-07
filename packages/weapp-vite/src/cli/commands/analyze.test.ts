@@ -1,5 +1,6 @@
 import type * as OptionsModule from '../options'
 import process from 'node:process'
+import path from 'pathe'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { analyzeHmrProfile } from '../../analyze/hmr'
 import { analyzeSubpackages } from '../../analyze/subpackages'
@@ -309,6 +310,167 @@ describe('analyze cli command', () => {
     expect(terminateStaleSassEmbeddedProcessMock).toHaveBeenCalledTimes(1)
     expect(writeSpy).toHaveBeenCalledWith(expect.stringContaining('"kind": "preload"'))
     writeSpy.mockRestore()
+  })
+
+  it('prints preload evidence, existing rules and each budget status', async () => {
+    const result = await analyzePreloadRulesMock()
+    analyzePreloadRulesMock.mockClear()
+    analyzePreloadRulesMock.mockResolvedValueOnce({
+      ...result,
+      suggestions: [
+        ...result.suggestions,
+        { ...result.suggestions[0], alreadyConfigured: ['packages/order'] },
+      ],
+      uncoveredPages: ['pages/missing/index'],
+      budgets: [
+        { sourcePackage: 'packages/large', estimatedBytes: 2048, limitBytes: 1024, unknownPackages: [], status: 'exceeded' },
+        { sourcePackage: 'packages/unmeasured', estimatedBytes: 0, limitBytes: 1024, unknownPackages: ['packages/remote'], status: 'unknown' },
+        { sourcePackage: 'packages/small', estimatedBytes: 512, limitBytes: 1024, unknownPackages: [], status: 'ok' },
+      ],
+    })
+
+    await createAnalyzeActionHandler()(process.cwd(), { preload: true })
+
+    expect(loggerMock.success).toHaveBeenCalledWith('preloadRule 静态分析完成')
+    expect(loggerMock.info).toHaveBeenCalledWith('- pages/index/index -> packages/order')
+    expect(loggerMock.info).toHaveBeenCalledWith('- pages/index/index -> packages/order，已配置：packages/order')
+    expect(loggerMock.info).toHaveBeenCalledWith('  - script：packages/order/index')
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringMatching(/packages\/large.*超限/))
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringMatching(/packages\/unmeasured.*待确认，未知：packages\/remote/))
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringMatching(/packages\/small.*正常/))
+    expect(loggerMock.warn).toHaveBeenCalledWith('- 未找到可扫描源码的页面：pages/missing/index')
+    expect(loggerMock.warn).toHaveBeenCalledWith('- 限制：静态分析限制')
+    expect(startAnalyzeDashboardMock).not.toHaveBeenCalled()
+    expect(process.exitCode).toBeUndefined()
+  })
+
+  it('reports an empty preload scan without budget or limitation noise', async () => {
+    const result = await analyzePreloadRulesMock()
+    analyzePreloadRulesMock.mockResolvedValueOnce({ ...result, suggestions: [], limitations: [] })
+
+    await createAnalyzeActionHandler()(process.cwd(), { preload: true })
+
+    expect(loggerMock.info).toHaveBeenCalledWith('未检测到可以证明的跨分包静态跳转。')
+    expect(loggerMock.info).not.toHaveBeenCalledWith('预下载额度：')
+    expect(loggerMock.warn).not.toHaveBeenCalled()
+    expect(startAnalyzeDashboardMock).not.toHaveBeenCalled()
+  })
+
+  it.each([false, true])('writes preload results without stdout or a summary (json=%s)', async (json) => {
+    const context = await createCompilerContextMock()
+    const output = path.join('reports', 'preload.json')
+    const writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
+    try {
+      await createAnalyzeActionHandler()(context.configService.cwd, { preload: true, json, output })
+
+      expect(writeFileMock).toHaveBeenCalledWith(
+        path.join(context.configService.cwd, output),
+        expect.stringContaining('"kind": "preload"'),
+        'utf8',
+      )
+      expect(writeSpy).not.toHaveBeenCalled()
+      expect(loggerMock.success).not.toHaveBeenCalledWith('preloadRule 静态分析完成')
+      expect(startAnalyzeDashboardMock).not.toHaveBeenCalled()
+    }
+    finally {
+      writeSpy.mockRestore()
+    }
+  })
+
+  it.each([false, true])('fails the budget check when runtime attribution is unavailable (json=%s)', async (json) => {
+    const result = await analyzeSubpackagesMock()
+    analyzeSubpackagesMock.mockResolvedValueOnce({
+      ...result,
+      metadata: {
+        budgets: {
+          totalBytes: 10_000,
+          mainBytes: 1_000,
+          subPackageBytes: 1_000,
+          independentBytes: 1_000,
+          runtimeBytes: 1_000,
+          warningRatio: 0.85,
+          source: 'config',
+        },
+      },
+    })
+    const writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
+    try {
+      await createAnalyzeActionHandler()(process.cwd(), { budgetCheck: true, json })
+
+      expect(process.exitCode).toBe(1)
+      expect(startAnalyzeDashboardMock).not.toHaveBeenCalled()
+      if (json) {
+        expect(writeSpy).toHaveBeenCalledWith(expect.stringContaining('"runtimeBytes": 1000'))
+      }
+      else {
+        expect(loggerMock.error).toHaveBeenCalledWith('  产物字节或 runtime 归因不足，无法验收预算。')
+        expect(loggerMock.error).toHaveBeenCalledWith('  文件：未知')
+      }
+    }
+    finally {
+      writeSpy.mockRestore()
+    }
+  })
+
+  it.each([false, true])('accepts a glass-easel check without diagnostics (detected=%s)', async (detected) => {
+    const result = await analyzeSubpackagesMock()
+    analyzeSubpackagesMock.mockResolvedValueOnce({ ...result, glassEasel: { ...result.glassEasel, detected } })
+
+    await createAnalyzeActionHandler()(process.cwd(), { glassEaselCheck: true })
+
+    if (detected) {
+      expect(loggerMock.success).toHaveBeenCalledWith('glass-easel 迁移检查通过')
+    }
+    else {
+      expect(loggerMock.info).toHaveBeenCalledWith('未检测到 glass-easel 配置。')
+    }
+    expect(process.exitCode).toBeUndefined()
+    expect(startAnalyzeDashboardMock).not.toHaveBeenCalled()
+  })
+
+  it('prints a located glass-easel warning while preserving a successful exit status', async () => {
+    const result = await analyzeSubpackagesMock()
+    analyzeSubpackagesMock.mockResolvedValueOnce({
+      ...result,
+      glassEasel: {
+        ...result.glassEasel,
+        detected: true,
+        diagnostics: [{ code: 'GE002', severity: 'warning', file: 'app.json', line: 3, column: 5, message: 'migration advice' }],
+        summary: { errors: 0, warnings: 1 },
+      },
+    })
+
+    await createAnalyzeActionHandler()(process.cwd(), { glassEaselCheck: true })
+
+    expect(loggerMock.warn).toHaveBeenCalledWith('[GE002] app.json:3:5 migration advice')
+    expect(process.exitCode).toBeUndefined()
+    expect(startAnalyzeDashboardMock).not.toHaveBeenCalled()
+  })
+
+  it.each([0, 1])('sets the JSON glass-easel exit status from %s reported errors', async (errors) => {
+    const result = await analyzeSubpackagesMock()
+    analyzeSubpackagesMock.mockResolvedValueOnce({
+      ...result,
+      glassEasel: {
+        ...result.glassEasel,
+        detected: true,
+        diagnostics: errors ? [{ code: 'GE001', severity: 'error', file: 'app.json', message: 'missing paired config' }] : [],
+        summary: { errors, warnings: 0 },
+      },
+    })
+    const writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
+    try {
+      await createAnalyzeActionHandler()(process.cwd(), { glassEaselCheck: true, json: true })
+
+      expect(writeSpy).toHaveBeenCalledWith(expect.stringContaining(`"errors": ${errors}`))
+      expect(process.exitCode).toBe(errors ? 1 : undefined)
+      expect(loggerMock.info).not.toHaveBeenCalled()
+      expect(loggerMock.error).not.toHaveBeenCalled()
+      expect(startAnalyzeDashboardMock).not.toHaveBeenCalled()
+    }
+    finally {
+      writeSpy.mockRestore()
+    }
   })
 
   it('closes analyze backends in reverse order and always runs process cleanup', async () => {

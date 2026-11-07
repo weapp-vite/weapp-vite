@@ -1,10 +1,27 @@
-import { mkdir, mkdtemp, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createMiniProgramPackageResolver, getAncestorNodeModulesPaths } from '../src/plugin/packageResolution'
 
 describe('Web package resolution', () => {
+  it.each([null, false, 42, 'invalid', {}, { miniprogram: '' }, { miniprogram: false }])('declines invalid miniprogram metadata %j and caches that result', async (manifest) => {
+    const packageRoot = await mkdtemp(join(tmpdir(), 'weapp-web-invalid-package-'))
+    try {
+      const manifestPath = join(packageRoot, 'package.json')
+      await writeFile(manifestPath, JSON.stringify(manifest))
+      const resolvePackage = vi.fn(() => manifestPath)
+      const resolveModule = createMiniProgramPackageResolver(resolvePackage)
+
+      expect(await resolveModule('component-library/button')).toBeUndefined()
+      expect(await resolveModule('component-library/dialog')).toBeUndefined()
+      expect(resolvePackage).toHaveBeenCalledExactlyOnceWith('component-library/package.json')
+    }
+    finally {
+      await rm(packageRoot, { recursive: true, force: true })
+    }
+  })
+
   it('includes hoisted ancestor node_modules directories for Sass resolution', async () => {
     const workspaceRoot = await mkdtemp(join(tmpdir(), 'weapp-web-workspace-'))
     const appRoot = join(workspaceRoot, 'packages/app')

@@ -5,6 +5,7 @@ import { createProjectCoverage } from '../../vitest.coverage.ts'
 const packageDir = import.meta.dirname
 
 export default defineProject({
+  root: packageDir,
   name: '@weapp-vite/web',
   test: {
     globals: true,
@@ -21,7 +22,7 @@ export default defineProject({
     ],
     coverage: createProjectCoverage('packages-runtime/web', {
       all: true,
-      include: [path.resolve(packageDir, './src/**/*.ts')],
+      include: ['src/**/*.ts'],
       exclude: [
         '**/dist/**',
         '**/*.test.ts',
