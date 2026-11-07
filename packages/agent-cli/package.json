@@ -49,7 +49,7 @@
     "@weapp-vite/acceptance": "workspace:*",
     "@weapp-vite/mcp": "workspace:*",
     "ai": "catalog:",
-    "commander": "15.0.0",
+    "commander": "15.1.0",
     "diff": "catalog:",
     "execa": "catalog:fixed",
     "ink": "8.0.0",
