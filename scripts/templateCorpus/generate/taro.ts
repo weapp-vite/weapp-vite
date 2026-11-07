@@ -1,6 +1,6 @@
 import type { ControlledProject, FrameworkRelease, FrameworkTarget } from './types'
 import assert from 'node:assert/strict'
-import { taroHarmonyCompiler, taroHarmonyConfig, taroHarmonyHostFiles, taroHarmonyPlugin, taroHarmonyPrepareHost, taroHarmonyRunner, taroHarmonyVerifyHost } from './taroHarmony'
+import { taroHarmonyAssets, taroHarmonyCompiler, taroHarmonyConfig, taroHarmonyHostFiles, taroHarmonyPageFiles, taroHarmonyPlugin, taroHarmonyPrepareHost, taroHarmonyRunner, taroHarmonyVerifyHost } from './taroHarmony'
 import { taroLegacyBabel, taroLegacyDependencies, taroQuickappCompile, taroQuickappWebpack } from './taroLegacy'
 
 export function createTaroProject(release: FrameworkRelease, target: FrameworkTarget): ControlledProject {
@@ -44,9 +44,9 @@ export function createTaroProject(release: FrameworkRelease, target: FrameworkTa
     command: ['node', 'compile.cjs', '{mode}', buildTarget, '{output}'],
     files: {
       ...(target.target === 'harmony-jsui'
-        ? { ...taroHarmonyHostFiles, 'harmony-jsui-runner.cjs': taroHarmonyRunner, 'harmony-jsui-plugin.cjs': taroHarmonyPlugin }
+        ? { ...taroHarmonyHostFiles, ...taroHarmonyPageFiles, 'harmony-jsui-runner.cjs': taroHarmonyRunner, 'harmony-jsui-plugin.cjs': taroHarmonyPlugin, 'harmony-jsui-assets.cjs': taroHarmonyAssets }
         : {}),
-      ...(legacy ? {} : { 'babel.config.js': `module.exports = { presets: [['taro', { framework: 'react', ts: true }]] }\n` }),
+      ...(legacy ? {} : { 'babel.config.js': `module.exports = { presets: [['taro', { framework: 'react', ts: true${target.target === 'harmony-jsui' ? ', absoluteRuntime: false' : ''} }]] }\n` }),
       'config/index.js': `module.exports = ${legacy ? '() => (' : ''}{
   projectName: 'template-corpus',
   date: '2026-11-04',
@@ -70,7 +70,7 @@ const { spawnSync } = require('child_process')
 const path = require('path')
 ${target.target === 'harmony-jsui' ? taroHarmonyPrepareHost : ''}
 const entry = path.join(path.dirname(require.resolve('@tarojs/cli/package.json')), 'bin/taro')
-const result = spawnSync(process.execPath, [entry, 'build', '--type', process.argv[3]], {
+const result = spawnSync(process.execPath, [${target.target === 'harmony-jsui' ? '\'--require\', path.resolve(\'harmony-jsui-assets.cjs\'), ' : ''}entry, 'build', '--type', process.argv[3]], {
   stdio: 'inherit', env: process.env,
 })
 if (result.error) throw result.error

@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { readFrameworkCatalog, selectFrameworkTarget } from './catalog'
 import { createControlledProject, generationInputKey } from './project'
 import { createTaroProject } from './taro'
-import { taroHarmonyRunner } from './taroHarmony'
+import { taroHarmonyPageFiles, taroHarmonyRunner } from './taroHarmony'
 
 import { frameworkHook, platformHook, runnerHarness } from './taroHarmony/testHarness'
 
@@ -35,6 +35,8 @@ describe('frozen Taro Harmony JSUI runner configuration', () => {
       expect(harness.args[0].loaderMeta!.modifyInstantiate!('var inst = App(createApp(')).toBe('export default (createApp.bind(null, ')
       expect(ready).toHaveBeenCalledOnce()
       expect(harness.applied).toHaveBeenCalledOnce()
+      expect(harness.chain.plugin('corpusHarmonyPageCompatibility').get('plugin')).toBe(harness.PageCompatibilityPlugin)
+      expect(harness.chain.plugin('corpusHarmonyPageCompatibility').get('args')).toEqual([{ loaderMeta: harness.args[0].loaderMeta, mode }])
       expect(JSON.parse(harness.report.mock.calls[0]![0] as string)).toEqual({ event: 'template-corpus-harmony-jsui-mode', requestedMode: mode, nodeEnv: mode, runnerMode: mode, webpackMode: mode, isWatch: false })
     }
   })
@@ -114,6 +116,9 @@ describe('frozen Taro Harmony JSUI runner configuration', () => {
     const selected = selectFrameworkTarget(catalog, 'taro', '4.3.2', 'harmony-jsui')
     const project = createControlledProject(selected.release, selected.target)
     expect(project.files['harmony-jsui-runner.cjs']).toBe(taroHarmonyRunner)
+    for (const [file, source] of Object.entries(taroHarmonyPageFiles)) {
+      expect(project.files[file]).toBe(source)
+    }
     expect(project.dependencies['@tarojs/webpack5-runner']).toBe('4.3.2')
     const configuration = { exports: {} as { compiler: object, harmony: object, plugins: unknown[] } }
     const resolve = vi.fn(() => 'harmony-jsui-plugin.cjs')
@@ -129,8 +134,12 @@ describe('frozen Taro Harmony JSUI runner configuration', () => {
     const identity = { repository: 'example/templates', commit: 'a'.repeat(40), licenseId: 'confirmed' }
     const changed = { ...project, files: { ...project.files, 'harmony-jsui-runner.cjs': `${taroHarmonyRunner}\n` } }
     expect(generationInputKey(identity, project)).not.toBe(generationInputKey(identity, changed))
+    for (const [file, source] of Object.entries(taroHarmonyPageFiles)) {
+      expect(generationInputKey(identity, project)).not.toBe(generationInputKey(identity, { ...project, files: { ...project.files, [file]: `${source}\n` } }))
+    }
     expect(() => createTaroProject({ ...selected.release, version: '4.3.3' }, selected.target)).toThrow('frozen Taro 4.3.2')
     const weapp = selectFrameworkTarget(catalog, 'taro', '4.3.2', 'weapp')
     expect(createControlledProject(weapp.release, weapp.target).files).not.toHaveProperty('harmony-jsui-runner.cjs')
+    expect(Object.keys(createControlledProject(weapp.release, weapp.target).files).some(file => file.startsWith('harmony-jsui-page/'))).toBe(false)
   })
 })
