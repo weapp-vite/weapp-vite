@@ -5,15 +5,28 @@ import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { afterEach, describe, expect, it } from 'vitest'
+import { FixtureLifecycle } from './verification/fixtureLifecycle'
 
 const helper = fileURLToPath(new URL('../.github/scripts/prepare-release-timeout.sh', import.meta.url))
-const temporaryDirectories: string[] = []
+interface TimeoutFixtureRecord {
+  lifecycle: FixtureLifecycle
+  root?: string
+}
+
+const fixtures = new Set<TimeoutFixtureRecord>()
 const gnuVersion = 'timeout (GNU coreutils) fixture'
 const uutilsVersion = 'timeout (uutils coreutils) fixture'
 type TimeoutCommand = 'timeout' | 'gtimeout' | 'gnutimeout'
 
 afterEach(async () => {
-  await Promise.all(temporaryDirectories.splice(0).map(directory => fs.rm(directory, { recursive: true, force: true })))
+  const active = [...fixtures]
+  await Promise.all(active.map(fixture => fixture.lifecycle.close()))
+  await Promise.all(active.map(async (fixture) => {
+    if (fixture.root) {
+      await fs.rm(fixture.root, { recursive: true, force: true })
+    }
+    fixtures.delete(fixture)
+  }))
 })
 
 function resolveCommand(command: string) {
@@ -37,9 +50,10 @@ function historicalTimeoutProbe(bash: string, env: NodeJS.ProcessEnv, cwd: strin
   }
 }
 
-async function createTimeoutFixture(relativePath = false) {
-  const root = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'release timeout compatibility ')))
-  temporaryDirectories.push(root)
+async function createTimeoutFixture(record: TimeoutFixtureRecord, relativePath: boolean) {
+  record.root = await fs.mkdtemp(path.join(os.tmpdir(), 'release timeout compatibility '))
+  const root = await fs.realpath(record.root)
+  record.root = root
   const bin = path.join(root, 'installed tools')
   const runnerTemp = path.join(root, 'runner temp')
   await fs.mkdir(bin)
@@ -86,10 +100,15 @@ printf '%s\\0' "$@" > "$FIXTURE_TIMEOUT_ARGS"
   }
 }
 
+function withTimeoutFixture<T>(signal: AbortSignal, work: (fixture: Awaited<ReturnType<typeof createTimeoutFixture>>) => Promise<T>, relativePath = false) {
+  const record = { lifecycle: new FixtureLifecycle(signal) }
+  fixtures.add(record)
+  return record.lifecycle.run(async () => work(await createTimeoutFixture(record, relativePath)))
+}
+
 describe.skipIf(process.platform === 'win32')('task-scoped GNU timeout compatibility', () => {
-  it('makes the historical timeout/gtimeout probe work when only gnutimeout is GNU, including paths with spaces', async () => {
+  it('makes the historical timeout/gtimeout probe work when only gnutimeout is GNU, including paths with spaces', ({ signal }) => withTimeoutFixture(signal, async (fixture) => {
     const originalPath = process.env.PATH
-    const fixture = await createTimeoutFixture()
     await fixture.setCommand('gnutimeout', true)
     expect(historicalTimeoutProbe(fixture.bash, fixture.env, fixture.root)).toBeUndefined()
 
@@ -111,38 +130,39 @@ describe.skipIf(process.platform === 'win32')('task-scoped GNU timeout compatibi
     expect(executed.status, executed.stderr).toBe(0)
     expect((await fs.readFile(fixture.trace, 'utf8')).split('\0').slice(0, -1)).toEqual(['--signal=TERM', '--kill-after=5s', '9s', 'fixture-command'])
     expect(process.env.PATH).toBe(originalPath)
-  })
+  }), 30_000)
 
-  it.each(['timeout', 'gtimeout'] as const)('retains the strict resolver preference for GNU %s', async (command) => {
-    const fixture = await createTimeoutFixture()
-    await fixture.setCommand(command, true)
-    await fixture.setCommand('gnutimeout', true)
-    const prepared = fixture.run()
-    expect(prepared.status, prepared.stderr).toBe(0)
-    const taskBin = (await fs.readFile(fixture.githubPath, 'utf8')).trimEnd().split('\n').at(-1)!
-    expect(await fs.readlink(path.join(taskBin, 'timeout'))).toBe(path.join(fixture.bin, command))
-  })
+  for (const command of ['timeout', 'gtimeout'] as const) {
+    it(`retains the strict resolver preference for GNU ${command}`, ({ signal }) => withTimeoutFixture(signal, async (fixture) => {
+      await fixture.setCommand(command, true)
+      await fixture.setCommand('gnutimeout', true)
+      const prepared = fixture.run()
+      expect(prepared.status, prepared.stderr).toBe(0)
+      const taskBin = (await fs.readFile(fixture.githubPath, 'utf8')).trimEnd().split('\n').at(-1)!
+      expect(await fs.readlink(path.join(taskBin, 'timeout'))).toBe(path.join(fixture.bin, command))
+    }))
+  }
 
-  it('uses an absolute symlink target when the selected GNU command came from a relative PATH entry', async () => {
-    const fixture = await createTimeoutFixture(true)
+  it('uses an absolute symlink target when the selected GNU command came from a relative PATH entry', ({ signal }) => withTimeoutFixture(signal, async (fixture) => {
     await fixture.setCommand('gnutimeout', true)
     const prepared = fixture.run()
     expect(prepared.status, prepared.stderr).toBe(0)
     const taskBin = (await fs.readFile(fixture.githubPath, 'utf8')).trimEnd().split('\n').at(-1)!
     expect(await fs.readlink(path.join(taskBin, 'timeout'))).toBe(path.join(fixture.bin, 'gnutimeout'))
     expect(historicalTimeoutProbe(fixture.bash, { ...fixture.env, PATH: `${taskBin}${path.delimiter}${fixture.env.PATH}` }, fixture.root)).toBe(path.join(taskBin, 'timeout'))
-  })
+  }, true))
 
-  it.each([false, true])('rejects unavailable GNU timeout without changing GITHUB_PATH (unsuccessful version probe: %s)', async (failedProbe) => {
-    const fixture = await createTimeoutFixture()
-    if (failedProbe) {
-      await fixture.setCommand('gnutimeout', true, 17)
-    }
-    const prepared = fixture.run()
-    expect(prepared.status).toBe(2)
-    expect(prepared.stderr).toContain('GNU timeout is required')
-    expect(await fs.readFile(fixture.githubPath, 'utf8')).toBe(fixture.previousPath)
-    expect(await fs.readdir(fixture.runnerTemp)).toEqual([])
-    expect(historicalTimeoutProbe(fixture.bash, fixture.env, fixture.root)).toBeUndefined()
-  })
+  for (const failedProbe of [false, true]) {
+    it(`rejects unavailable GNU timeout without changing GITHUB_PATH (unsuccessful version probe: ${failedProbe})`, ({ signal }) => withTimeoutFixture(signal, async (fixture) => {
+      if (failedProbe) {
+        await fixture.setCommand('gnutimeout', true, 17)
+      }
+      const prepared = fixture.run()
+      expect(prepared.status).toBe(2)
+      expect(prepared.stderr).toContain('GNU timeout is required')
+      expect(await fs.readFile(fixture.githubPath, 'utf8')).toBe(fixture.previousPath)
+      expect(await fs.readdir(fixture.runnerTemp)).toEqual([])
+      expect(historicalTimeoutProbe(fixture.bash, fixture.env, fixture.root)).toBeUndefined()
+    }))
+  }
 })

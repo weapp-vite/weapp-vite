@@ -1,13 +1,87 @@
 diff --git a/dist/commands-1ApnhvJF.mjs b/dist/commands-1ApnhvJF.mjs
-index d231a8f2145b90c458eade110d0b4a4620815403..695250fc1da5e061676f962ca9ab92f58c5ab189 100644
+index d231a8f2145b90c458eade110d0b4a4620815403..bec4e37d89968ce654aec80d9c784e0bffd23741 100644
 --- a/dist/commands-1ApnhvJF.mjs
 +++ b/dist/commands-1ApnhvJF.mjs
-@@ -10903,7 +10903,7 @@ async function readSourceCandidates(options, source) {
- /** Resolve pnpm from the historical checkout for installs and nested lifecycle scripts. */
+@@ -10900,10 +10900,17 @@ async function readSourceCandidates(options, source) {
+ }
+ //#endregion
+ //#region src/commands/release/recovery/environment.ts
+-/** Resolve pnpm from the historical checkout for installs and nested lifecycle scripts. */
++async function assertRecoveryDirectory(directory) {
++	const entry = await lstat(directory).catch((error) => {
++		if (error.code !== "ENOENT") throw error;
++	});
++	if (entry && !entry.isDirectory()) throw new ReleaseCommandError("Recovery directory is invalid: expected a directory without a symlink");
++}
++/** 从历史 checkout 解析 pnpm，供安装和嵌套生命周期脚本使用。 */
  async function sourcePackageManagerEnvironment(options, root) {
  	const directory = path$1.join(root, "package-manager");
 -	await mkdir(directory);
++	await assertRecoveryDirectory(directory);
 +	await mkdir(directory, { recursive: true });
  	run("corepack", [
  		"enable",
  		"--install-directory",
+@@ -11283,6 +11290,20 @@ async function reportStage(receipt, options, stage, started, status, progressCwd
+ }
+ //#endregion
+ //#region src/commands/release/stages/source.ts
++async function stagedSourceDirectory(options) {
++	const env = getReleaseEnv(options);
++	const identity = JSON.stringify([
++		stageDirectory(options),
++		options.sourceSha ?? env["REPO_RELEASE_RECOVERY_SOURCE_SHA"]?.trim(),
++		env["GITHUB_RUN_ID"],
++		env["GITHUB_RUN_ATTEMPT"]
++	]);
++	const key = createHash("sha256").update(identity).digest("hex");
++	// TypeScript 忽略 .git 下的符号链接缓存，执行目录必须位于 Git 元数据之外。
++	const root = path.join(await realpath(tmpdir()), `repoctl-release-source-${key}`);
++	await assertRecoveryDirectory(root);
++	return root;
++}
+ async function stagedSource(options, create = false, install = false) {
+ 	const source = options.sourceSha ?? getReleaseEnv(options)["REPO_RELEASE_RECOVERY_SOURCE_SHA"]?.trim();
+ 	if (!source) return {
+@@ -11299,7 +11320,7 @@ async function stagedSource(options, create = false, install = false) {
+ 		source,
+ 		`refs/remotes/origin/${rule.branch}`
+ 	], options);
+-	const root = path.join(stageDirectory(options), "source");
++	const root = await stagedSourceDirectory(options);
+ 	const cwd = path.join(root, "checkout");
+ 	const env = {
+ 		...getReleaseEnv(options),
+@@ -11340,6 +11361,7 @@ async function stagedSource(options, create = false, install = false) {
+ 			source
+ 		], recovery);
+ 	}
++	await assertRecoveryDirectory(cwd);
+ 	if (capture("git", ["rev-parse", "HEAD"], recovery) !== source || capture("git", [
+ 		"diff",
+ 		"--binary",
+@@ -11460,6 +11482,7 @@ async function releaseCiStage(options) {
+ 	}
+ 	await saveReceipt(receipt, options);
+ 	let effective = options;
++	let completed = false;
+ 	try {
+ 		if (receipt.action !== "skip") {
+ 			const source = stage === "plan" ? void 0 : await stagedSource(options, false, stage === "verify");
+@@ -11520,6 +11543,7 @@ async function releaseCiStage(options) {
+ 		receipt.identity = await stageIdentity(options);
+ 		receipt.effectiveIdentity = await stageIdentity(effective);
+ 		await reportStage(receipt, options, stage, started, "complete", effective.cwd);
++		completed = true;
+ 	} catch (error) {
+ 		await reportStage(receipt, options, stage, started, "failed", effective.cwd);
+ 		throw error;
+@@ -11532,7 +11556,7 @@ async function releaseCiStage(options) {
+ 			]) await copyFile(path.join(effective.cwd, file), path.join(options.cwd, file)).catch((error) => {
+ 				if (error.code !== "ENOENT") throw error;
+ 			});
+-			if (stage === "finalize" && receipt.done.includes("finalize")) await rm(path.join(stageDirectory(options), "source"), {
++			if (stage === "finalize" && completed) await rm(await stagedSourceDirectory(options), {
+ 				recursive: true,
+ 				force: true
+ 			});

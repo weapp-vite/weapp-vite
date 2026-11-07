@@ -8,7 +8,13 @@ import { releaseCi } from 'repoctl'
 import { vi } from 'vitest'
 import { FixtureLifecycle } from '../verification/fixtureLifecycle.ts'
 
-const fixtures = new Set<{ lifecycle: FixtureLifecycle, root?: string }>()
+interface SourceRecoveryFixtureRecord {
+  lifecycle: FixtureLifecycle
+  root?: string
+  recoveryRoots: Set<string>
+}
+
+const fixtures = new Set<SourceRecoveryFixtureRecord>()
 export const releasedPackage = { name: '@release-source-fixture/library', version: '1.0.1' }
 export const marketplaceHook = 'marketplace:publish'
 export const mirrorHook = 'mirror:sync'
@@ -17,6 +23,7 @@ export async function cleanupSourceRecoveryFixtures() {
   const active = [...fixtures]
   await Promise.all(active.map(fixture => fixture.lifecycle.close()))
   await Promise.all(active.map(async (fixture) => {
+    await Promise.all([...fixture.recoveryRoots].map(root => rm(root, { recursive: true, force: true })))
     if (fixture.root) {
       await rm(fixture.root, { recursive: true, force: true })
     }
@@ -24,7 +31,7 @@ export async function cleanupSourceRecoveryFixtures() {
   }))
 }
 
-async function initializeFixture(record: { lifecycle: FixtureLifecycle, root?: string }, acknowledgeHooks: string) {
+async function initializeFixture(record: SourceRecoveryFixtureRecord, acknowledgeHooks: string) {
   const root = await realpath(await mkdtemp(path.join(tmpdir(), 'repoctl-source-recovery-')))
   record.root = root
   const cwd = path.join(root, 'main')
@@ -62,6 +69,7 @@ async function initializeFixture(record: { lifecycle: FixtureLifecycle, root?: s
     patchPaths: ['website/**'],
   }
   await writeFile(path.join(cwd, 'package.json'), JSON.stringify({ private: true, packageManager: manifest.packageManager }))
+  await writeFile(path.join(cwd, '.gitignore'), '/node_modules/\n/.type-probe/\n')
   await writeFile(path.join(cwd, 'pnpm-workspace.yaml'), 'packages:\n  - packages/*\n')
   await writeFile(path.join(cwd, 'repoctl.config.mjs'), `export default ${JSON.stringify({ commands: { release: config, docs: { sites: { website: site } } } })}\n`)
   const packageFile = path.join(cwd, 'packages/library/package.json')
@@ -103,6 +111,8 @@ async function initializeFixture(record: { lifecycle: FixtureLifecycle, root?: s
   const publishes: string[][] = []
   const installs: string[] = []
   const toolchains: string[] = []
+  const checkouts: string[] = []
+  let quality: ((cwd: string) => void) | undefined
   const automation = new Map<string, { revision: string, value: unknown }>()
   const github = {
     ensurePullRequest: vi.fn(),
@@ -126,6 +136,11 @@ async function initializeFixture(record: { lifecycle: FixtureLifecycle, root?: s
   }
   const spawn = ((command: string, args: string[], options: { cwd: string, env: NodeJS.ProcessEnv }) => {
     if (command === 'git') {
+      if (args[0] === 'clone') {
+        const checkout = args.at(-1)!
+        checkouts.push(checkout)
+        record.recoveryRoots.add(path.dirname(checkout))
+      }
       return spawnSync(command, args, { ...options, encoding: 'utf8' })
     }
     if (command === 'corepack' && args[0] === 'enable') {
@@ -140,6 +155,9 @@ async function initializeFixture(record: { lifecycle: FixtureLifecycle, root?: s
         throw new Error('Cannot read the hook checkout identity')
       }
       hooks.push({ script: args[1], cwd: options.cwd, head: head.stdout.trim(), source: options.env.REPO_RELEASE_SOURCE_SHA })
+      if (args[1] === 'quality') {
+        quality?.(options.cwd)
+      }
     }
     else if (command === 'pnpm' && args[0] === 'publish') {
       publishes.push(args)
@@ -181,6 +199,7 @@ async function initializeFixture(record: { lifecycle: FixtureLifecycle, root?: s
     publishes,
     installs,
     toolchains,
+    checkouts,
     github,
     automation,
     checkpoint: () => structuredClone(checkpoint),
@@ -188,9 +207,25 @@ async function initializeFixture(record: { lifecycle: FixtureLifecycle, root?: s
     originalIntent: intent,
     output: () => readFile(output, 'utf8'),
     git,
-    recoveryRoot: path.join(cwd, '.git/repoctl-release-ci/source'),
-    runStage: (stage: ReleaseCiStage) => record.lifecycle.run(async () => {
-      const result = await releaseCi({ ...options, stage })
+    setQuality: (callback: (cwd: string) => void) => { quality = callback },
+    get recoveryRoot() {
+      const checkout = checkouts.at(-1)
+      if (!checkout) {
+        throw new Error('No source recovery checkout has been observed')
+      }
+      return path.dirname(checkout)
+    },
+    runStage: (stage: ReleaseCiStage, identity: { runId?: string, attempt?: string, summary?: string } = {}) => record.lifecycle.run(async () => {
+      const result = await releaseCi({
+        ...options,
+        stage,
+        env: {
+          ...options.env,
+          GITHUB_RUN_ID: identity.runId ?? options.env?.GITHUB_RUN_ID,
+          GITHUB_RUN_ATTEMPT: identity.attempt ?? options.env?.GITHUB_RUN_ATTEMPT,
+          GITHUB_STEP_SUMMARY: identity.summary,
+        },
+      })
       if (!result || !('done' in result)) {
         throw new Error(`Expected a receipt for release stage ${stage}`)
       }
@@ -200,7 +235,7 @@ async function initializeFixture(record: { lifecycle: FixtureLifecycle, root?: s
 }
 
 export function withSourceRecoveryFixture<T>(signal: AbortSignal, work: (fixture: Awaited<ReturnType<typeof initializeFixture>>) => Promise<T>, acknowledgeHooks = marketplaceHook): Promise<T> {
-  const record = { lifecycle: new FixtureLifecycle(signal) }
+  const record = { lifecycle: new FixtureLifecycle(signal), recoveryRoots: new Set<string>() }
   fixtures.add(record)
   return record.lifecycle.run(async () => work(await initializeFixture(record, acknowledgeHooks)))
 }
