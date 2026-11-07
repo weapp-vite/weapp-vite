@@ -1,6 +1,6 @@
 # 02 小程序基准 API 全量清单
 
-总计：495
+总计：501
 
 - `addCard`
 - `addFileToFavorites`
@@ -56,6 +56,7 @@
 - `compressVideo`
 - `connectSocket`
 - `connectWifi`
+- `copyRealname`
 - `createAnimation`
 - `createAudioContext`
 - `createBLEConnection`
@@ -161,6 +162,7 @@
 - `getStorageInfo`
 - `getStorageInfoSync`
 - `getStorageSync`
+- `getStoreTraceId`
 - `getSystemInfo`
 - `getSystemInfoAsync`
 - `getSystemInfoSync`
@@ -356,6 +358,7 @@
 - `openOfficialAccountArticle`
 - `openOfficialAccountChat`
 - `openOfficialAccountProfile`
+- `openPhotoTopicView`
 - `openPrivacyContract`
 - `openSetting`
 - `openSingleStickerView`
@@ -393,6 +396,7 @@
 - `reportPerformance`
 - `request`
 - `requestAppleSubscribeSign`
+- `requestAutomaticRepayment`
 - `requestCommonPayment`
 - `requestDeviceVoIP`
 - `requestFacialVerify`
@@ -412,6 +416,7 @@
 - `rewriteRoute`
 - `saveFileToDisk`
 - `saveImageToPhotosAlbum`
+- `saveMediaToPhotosAlbum`
 - `saveVideoToPhotosAlbum`
 - `scanCode`
 - `seekBackgroundAudio`
@@ -494,6 +499,7 @@
 - `updateVoIPChatMuteConfig`
 - `updateWeChatApp`
 - `uploadFile`
+- `verifyHKPaymentPassword`
 - `vibrateLong`
 - `vibrateShort`
 - `writeBLECharacteristicValue`

@@ -1,6 +1,6 @@
 # 04 抖音兼容矩阵（按小程序基准命名）
 
-总计：495，支持：133，不支持：362
+总计：501，支持：133，不支持：368
 
 | 小程序基准 API                                | 抖音目标 API                                  | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -58,6 +58,7 @@
 | `compressVideo`                               | `compressVideo`                               | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `connectSocket`                               | `connectSocket`                               | ✅   | `native`      | ✅       | 直连 `tt.connectSocket`                                                           |
 | `connectWifi`                                 | `connectWifi`                                 | ❌   | `unsupported` | ❌       | 未提供 tt.connectWifi，调用时将返回 not supported                                 |
+| `copyRealname`                                | `copyRealname`                                | ❌   | `unsupported` | ❌       | 未提供 tt.copyRealname，调用时将返回 not supported                                |
 | `createAnimation`                             | `createAnimation`                             | ✅   | `native`      | ✅       | 直连 `tt.createAnimation`                                                         |
 | `createAudioContext`                          | `createAudioContext`                          | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `createBLEConnection`                         | `createBLEConnection`                         | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
@@ -163,6 +164,7 @@
 | `getStorageInfo`                              | `getStorageInfo`                              | ✅   | `native`      | ✅       | 直连 `tt.getStorageInfo`                                                          |
 | `getStorageInfoSync`                          | `getStorageInfoSync`                          | ✅   | `native`      | ✅       | 直连 `tt.getStorageInfoSync`                                                      |
 | `getStorageSync`                              | `getStorageSync`                              | ✅   | `native`      | ✅       | 直连 `tt.getStorageSync`                                                          |
+| `getStoreTraceId`                             | `getStoreTraceId`                             | ❌   | `unsupported` | ❌       | 未提供 tt.getStoreTraceId，调用时将返回 not supported                             |
 | `getSystemInfo`                               | `getSystemInfo`                               | ✅   | `native`      | ✅       | 直连 `tt.getSystemInfo`                                                           |
 | `getSystemInfoAsync`                          | `getSystemInfo`                               | ✅   | `mapped`      | ✅       | 映射到 `tt.getSystemInfo`                                                         |
 | `getSystemInfoSync`                           | `getSystemInfoSync`                           | ✅   | `native`      | ✅       | 直连 `tt.getSystemInfoSync`                                                       |
@@ -358,6 +360,7 @@
 | `openOfficialAccountArticle`                  | `openOfficialAccountArticle`                  | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `openOfficialAccountChat`                     | `openOfficialAccountChat`                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `openOfficialAccountProfile`                  | `openOfficialAccountProfile`                  | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `openPhotoTopicView`                          | `openPhotoTopicView`                          | ❌   | `unsupported` | ❌       | 未提供 tt.openPhotoTopicView，调用时将返回 not supported                          |
 | `openPrivacyContract`                         | `openPrivacyContract`                         | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `openSetting`                                 | `openSetting`                                 | ✅   | `native`      | ✅       | 直连 `tt.openSetting`                                                             |
 | `openSingleStickerView`                       | `openSingleStickerView`                       | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
@@ -395,6 +398,7 @@
 | `reportPerformance`                           | `reportPerformance`                           | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `request`                                     | `request`                                     | ✅   | `native`      | ✅       | 直连 `tt.request`                                                                 |
 | `requestAppleSubscribeSign`                   | `requestAppleSubscribeSign`                   | ❌   | `unsupported` | ❌       | 未提供 tt.requestAppleSubscribeSign，调用时将返回 not supported                   |
+| `requestAutomaticRepayment`                   | `requestAutomaticRepayment`                   | ❌   | `unsupported` | ❌       | 未提供 tt.requestAutomaticRepayment，调用时将返回 not supported                   |
 | `requestCommonPayment`                        | `requestCommonPayment`                        | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `requestDeviceVoIP`                           | `requestDeviceVoIP`                           | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `requestFacialVerify`                         | `requestFacialVerify`                         | ❌   | `unsupported` | ❌       | 未提供 tt.requestFacialVerify，调用时将返回 not supported                         |
@@ -414,6 +418,7 @@
 | `rewriteRoute`                                | `rewriteRoute`                                | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `saveFileToDisk`                              | `saveFileToDisk`                              | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `saveImageToPhotosAlbum`                      | `saveImageToPhotosAlbum`                      | ✅   | `native`      | ✅       | 直连 `tt.saveImageToPhotosAlbum`                                                  |
+| `saveMediaToPhotosAlbum`                      | `saveMediaToPhotosAlbum`                      | ❌   | `unsupported` | ❌       | 未提供 tt.saveMediaToPhotosAlbum，调用时将返回 not supported                      |
 | `saveVideoToPhotosAlbum`                      | `saveVideoToPhotosAlbum`                      | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `scanCode`                                    | `scanCode`                                    | ✅   | `mapped`      | ✅       | 直连 `tt.scanCode`                                                                |
 | `seekBackgroundAudio`                         | `seekBackgroundAudio`                         | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
@@ -496,6 +501,7 @@
 | `updateVoIPChatMuteConfig`                    | `updateVoIPChatMuteConfig`                    | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `updateWeChatApp`                             | `updateWeChatApp`                             | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `uploadFile`                                  | `uploadFile`                                  | ✅   | `native`      | ✅       | 直连 `tt.uploadFile`                                                              |
+| `verifyHKPaymentPassword`                     | `verifyHKPaymentPassword`                     | ❌   | `unsupported` | ❌       | 未提供 tt.verifyHKPaymentPassword，调用时将返回 not supported                     |
 | `vibrateLong`                                 | `vibrateLong`                                 | ✅   | `native`      | ✅       | 直连 `tt.vibrateLong`                                                             |
 | `vibrateShort`                                | `vibrateShort`                                | ✅   | `native`      | ✅       | 直连 `tt.vibrateShort`                                                            |
 | `writeBLECharacteristicValue`                 | `writeBLECharacteristicValue`                 | ❌   | `unsupported` | ❌       | 未提供 tt.writeBLECharacteristicValue，调用时将返回 not supported                 |

@@ -2,7 +2,7 @@
 
 ## 覆盖结论
 
-- 小程序基准命名方法总数：495
+- 小程序基准命名方法总数：501
 - 支付宝可调用兼容方法数：201
 - 支付宝语义对齐方法数：201
 - 支付宝 fallback 方法数：0
@@ -19,8 +19,8 @@
 
 ## 不兼容规模
 
-- 支付宝侧不兼容（按小程序基准命名调用失败）方法：294
-- 抖音侧不兼容（按小程序基准命名调用失败）方法：362
+- 支付宝侧不兼容（按小程序基准命名调用失败）方法：300
+- 抖音侧不兼容（按小程序基准命名调用失败）方法：368
 
 ## 不兼容示例（前 40 项）
 
@@ -61,11 +61,11 @@
 - `chooseMessageFile` -> 目标 `chooseMessageFile`（unsupported）
 - `choosePoi` -> 目标 `choosePoi`（unsupported）
 - `compressVideo` -> 目标 `compressVideo`（unsupported）
+- `copyRealname` -> 目标 `copyRealname`（unsupported）
 - `createAudioContext` -> 目标 `createAudioContext`（unsupported）
 - `createBLEPeripheralServer` -> 目标 `createBLEPeripheralServer`（unsupported）
 - `createBufferURL` -> 目标 `createBufferURL`（unsupported）
 - `createCacheManager` -> 目标 `createCacheManager`（unsupported）
-- `createCameraContext` -> 目标 `createCameraContext`（unsupported）
 
 ### 抖音不兼容示例
 
