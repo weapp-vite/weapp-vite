@@ -14,64 +14,87 @@ date: 2026-05-03
 
 # AI Skills 使用指南
 
-`Skills` 用来把仓库里的工程约束、验证路径和交付规则注入给 AI。它解决的不是“让 AI 多知道一个名词”，而是让 AI 在具体任务里按稳定流程工作。
+按项目需要选择构建、Vue SFC、Wevu 或 React 技能。
 
-项目级 `AGENTS.md` 由 `scripts/agents/` 的结构化规则生成。修改规则后运行 `pnpm agents:generate`，提交前运行 `pnpm agents:check`；用户定制内容放在 `AGENTS.local.md`。
+## 手动安装
 
-## 什么时候需要安装
-
-| 场景                                | 推荐动作                                    |
-| ----------------------------------- | ------------------------------------------- |
-| 新项目通过 `create-weapp-vite` 创建 | 在脚手架交互提示里选择安装推荐 skills       |
-| 已有项目接入 `weapp-vite`           | 手动执行 `npx skills add sonofmagic/skills` |
+适用于 npm、Yarn 和各版本 pnpm，无需为安装 skills 升级包管理器。按项目模板选择一条命令：
 
 ```sh
-npx skills add sonofmagic/skills
+# 原生（包括 TailwindCSS、TDesign、Vant、原生多平台）
+npx --yes skills add sonofmagic/skills --skill weapp-vite-best-practices
+
+# Wevu / Vue SFC（包括 Wevu TDesign、插件、组件库、多平台 SFC）
+npx --yes skills add sonofmagic/skills --skill weapp-vite-best-practices weapp-vite-vue-sfc-best-practices wevu-best-practices
+
+# React
+npx --yes skills add sonofmagic/skills --skill weapp-vite-best-practices weapp-vite-react-best-practices
 ```
+
+`--yes` 只确认 npx 下载命令包，agent 和安装目录仍由 skills 安装器询问。`create-weapp-vite` 默认跳过 skills 安装；启用后只执行当前模板对应的列表。
+
+迁移项目时可额外安装：`npx skills add sonofmagic/skills --skill native-to-weapp-vite-wevu-migration`。文档、发布和 E2E 维护技能不是普通项目的默认项；本仓库贡献者可用 `pnpm skills:link` 链接本地维护技能。
+
+## 随依赖安装
+
+pnpm 从 12.11.0 支持随直接依赖安装 skills，让技能内容跟随依赖版本更新。手动安装和随依赖安装使用同一份技能正文，但手动安装的版本由原安装器管理。
+
+| 直接依赖包 | 随包 skills |
+| --- | --- |
+| `weapp-vite` | `weapp-vite-best-practices`、`weapp-vite-vue-sfc-best-practices` |
+| `wevu` | `wevu-best-practices` |
+| `@weapp-vite/react` | `weapp-vite-react-best-practices` |
+
+这三个包不携带文档、发布或 E2E 维护技能；`@weapp-agent/cli` 另行发布 `weapp-acceptance`。
+
+在项目或 workspace 根的 `pnpm-workspace.yaml` 中指定目录，再安装并审批：
+
+```yaml
+skills:
+  dirs:
+    - .agents/skills
+```
+
+```sh
+pnpm install
+pnpm approve
+```
+
+在交互式 `pnpm approve` 中审阅所需 skills 和构建脚本等权限。链接由 pnpm 管理；脚手架不会自动审批，也不通过 consumer `postinstall` 复制 skills。新建独立项目已预设 `.agents/skills`，不预授权；已有项目和团队 workspace 的配置保持不变。
+
+**版本差异：**本仓库固定的 pnpm 12.18.0 支持交互选择 skill 名称，默认链接名不带包名前缀，冲突时回退为 `pnpm-<package>-<skill>`；12.11.0 / 12.16.1 使用包级审批和固定前缀。请在 AI 客户端使用实际链接名。
+
+`permissions.<package>.skills: true` 允许该包全部及以后新增的 skills；带包名的 `pnpm approve <package>` 会批准该包全部能力和 skills，不等同于交互选择。
+
+- 只发现本次安装包含的直接依赖，不扫描传递依赖；`pnpm install --prod` 不包含开发依赖中的 skills。
+- workspace 内同一包统一使用最高版本的 skills，不按项目分别链接；最高版本不携带 skills 时，也不会使用旧版的 skills。
+- 手工条目不会被覆盖。若链接名无法避开冲突，安装会停止。随包目录保持平铺，兼容上述版本。
+
+自定义目录、发现深度、非本地安装限制见 [pnpm Agent Skills 文档](https://raw.githubusercontent.com/pnpm/pnpm/v12.18.0/pnpm/docs/agent-skills.md)；tarball / git 依赖需按来源审批，详见 [permissions 文档](https://raw.githubusercontent.com/pnpm/pnpm/v12.18.0/pnpm/docs/cli/permissions.md)。
+
+### 撤销与清理
+
+将对应包的 `permissions.<package>.skills` 改为 `false`，保留其他权限，再运行 `pnpm install`；不再使用的依赖可用 `pnpm remove <package>` 移除。审批撤销、依赖移除或新版不再提供该 skill 时，pnpm 只清理自建链接，保留手工内容。手动安装的 skills 仍由原安装器管理；不要批量删除 `.agents/skills`、`.claude/skills` 或自定义目录。
 
 ## 公开 Skills 速查
 
-当前公开分发的 skill 以仓库 `skills/*/SKILL.md` 为准：
+下面包含消费项目和仓库维护技能，按任务选用，不必全部安装。
 
 | Skill                                   | 适用任务                                                                            | 优先读取                                                                     |
 | --------------------------------------- | ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| `$weapp-vite-best-practices`            | `vite.config.ts`、分包、chunk、自动路由、CLI、MCP、DevTools 命令归属                | 根 `AGENTS.md`、`node_modules/weapp-vite/dist/docs/`、`website/config/**`    |
+| `$weapp-vite-best-practices` | 配置、构建、分包、路由和 CLI | `node_modules/weapp-vite/dist/docs/` |
 | `$docs-and-website-sync`                | 根据真实实现同步 `website`、README、skills、AI 指南和随包 `dist/docs`               | 源码、CLI、类型定义、`packages/weapp-vite/docs/**`、`website/.vitepress/**`  |
 | `$release-and-changeset-best-practices` | pnpm change intent、repoctl 发布检查、GitHub issue 修复、worktree 与 PR 闭环        | `repoctl.config.ts`、`.changeset/**`、`e2e-apps/github-issues`、发布检查脚本 |
 | `$weapp-devtools-e2e-best-practices`    | `e2e/ide/**`、automator 复用、`miniProgram.reLaunch(...)`、真实运行时截图和日志验收 | `e2e/ide/**`、`e2e/scripts/**`、DevTools 配置                                |
 | `$weapp-vite-vue-sfc-best-practices`    | 小程序 `.vue`、JSON 宏、`definePageMeta`、layout、`v-model`、模板兼容               | `.weapp-vite` 类型文件、Vue SFC 文档、模板兼容清单                           |
-| `$weapp-vite-react-best-practices`      | React 19、JSX/TSX、render mode、React Compiler、原生/Wevu 组件 bridge               | React 配置类型、`@weapp-vite/react`、React 模板与 runtime e2e                |
-| `$wevu-best-practices`                  | wevu 生命周期、事件、store、router、layout、运行时性能治理                          | `packages-runtime/wevu`、wevu 文档、运行时排障清单                           |
+| `$weapp-vite-react-best-practices` | React 渲染、事件和原生组件桥接 | 技能内 `references/`、`@weapp-vite/react` 公开类型 |
+| `$wevu-best-practices` | 生命周期、响应式、事件、store 和 router | 技能内 `references/`、Wevu 文档 |
 | `$native-to-weapp-vite-wevu-migration`  | 原生小程序迁移到 `weapp-vite + 原生`，或继续升级到 `weapp-vite + wevu + Vue SFC`    | 路线选择、迁移清单、API 映射、回滚与验收计划                                 |
 
-近期能力按主题归入现有 skill：stateful HMR、pluginRoot/dist-plugin、Web runtime、native AST 与六平台单目标构建归 `$weapp-vite-best-practices`；React 19 JSX/TSX 和组件 bridge 归 `$weapp-vite-react-best-practices`；Wevu JSX/TSX 与 `wevu/router` 归 `$wevu-best-practices`；DevTools/headless parity 归 `$weapp-devtools-e2e-best-practices`。
-
-## 任务路由建议
-
-| 用户意图                                                 | 主 skill                                | 常见次 skill                                           |
-| -------------------------------------------------------- | --------------------------------------- | ------------------------------------------------------ |
-| “帮我调分包、chunk、自动路由或 CLI”                      | `$weapp-vite-best-practices`            | `$weapp-vite-vue-sfc-best-practices`                   |
-| “根据当前实现更新 website / skills / README”             | `$docs-and-website-sync`                | `$weapp-vite-best-practices`                           |
-| “这个 issue 要按仓库流程修完并开 PR”                     | `$release-and-changeset-best-practices` | `$wevu-best-practices` 或 `$weapp-vite-best-practices` |
-| “添加 pnpm change intent 或用 repoctl 准备、恢复发布”    | `$release-and-changeset-best-practices` | `$docs-and-website-sync`                               |
-| “新增 DevTools runtime e2e 或截图验收”                   | `$weapp-devtools-e2e-best-practices`    | `$weapp-vite-best-practices`                           |
-| “`.vue` 宏、模板或 `usingComponents` 不生效”             | `$weapp-vite-vue-sfc-best-practices`    | `$weapp-vite-best-practices`                           |
-| “React TSX、render mode 或原生组件 bridge 不生效”        | `$weapp-vite-react-best-practices`      | `$weapp-vite-best-practices`                           |
-| “wevu 生命周期、store 或页面切换行为异常”                | `$wevu-best-practices`                  | `$weapp-vite-vue-sfc-best-practices`                   |
-| “原生项目先接入 weapp-vite，或逐步迁移到 Vue SFC / wevu” | `$native-to-weapp-vite-wevu-migration`  | `$weapp-vite-best-practices` 或 `$wevu-best-practices` |
-| “微信状态保持 HMR、插件双产物或 native AST profile”      | `$weapp-vite-best-practices`            | `$weapp-devtools-e2e-best-practices`                   |
-| “wevu/router 导航、前进失败或 layout host”               | `$wevu-best-practices`                  | `$weapp-vite-vue-sfc-best-practices`                   |
-
-## 给 AI 的推荐提示词
-
-```text
-请先判断本任务应该使用哪个 weapp-vite skill。
-如果任务涉及当前安装版本，请优先读取 node_modules/weapp-vite/dist/docs/。
-如果任务涉及真实小程序运行时截图、截图对比或日志，请优先使用 wv screenshot、wv compare、wv ide logs --open 或对应 MCP tools。
-最后请给出：使用的 skill、改动文件、验证命令和结论。
-```
 
 ## 维护公开 Skills
+
+项目级 `AGENTS.md` 的规则源在 `scripts/agents/`；修改后运行 `pnpm agents:generate` 和 `pnpm agents:check`。用户定制规则放在 `AGENTS.local.md`。
 
 新增、删除或合并 skill 时，需要同步这些入口：
 
@@ -79,6 +102,7 @@ npx skills add sonofmagic/skills
 | --------------------------------------------------- | --------------------------------------------- |
 | `skills/<name>/SKILL.md`                            | skill 正文、触发场景、输出要求                |
 | `skills/<name>/agents/openai.yaml`                  | display name、short description、隐式触发提示 |
+| `skills/distribution.json`                         | 唯一消费包 owner，以及不随三个消费包发布的按需/贡献者分类 |
 | `skills/skill-trigger-regression-checklist.md`      | 主用例、边界用例、冲突场景                    |
 | `skills/scripts/score-skill-trigger-regression.mjs` | 预期 skill 映射与统计分组                     |
 | `skills/scripts/check-public-skill-sync.mjs`        | 公开目录、元数据、评分映射与入口一致性检查    |
@@ -93,6 +117,15 @@ pnpm skills:check
 pnpm skills:score:json
 pnpm seo-quality-check
 ```
+
+随包内容或归属变化时，还需运行真实打包与消费验收：
+
+```sh
+pnpm exec turbo run build --filter=weapp-vite... --filter=wevu... --filter=@weapp-vite/react...
+node skills/scripts/verify-package-skills.mjs
+```
+
+验收使用真实 npm tarball 和独立消费目录；可通过 `PNPM_SKILLS_BIN` 指定 pnpm 版本。脚手架模板验收单独运行。
 
 ## 关联阅读
 

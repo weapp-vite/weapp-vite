@@ -123,13 +123,13 @@ bun create weapp-vite
 
 脚手架当前会根据你选择的模板，生成原生小程序、Wevu、TailwindCSS、TDesign 等不同组合。新项目建议优先用脚手架，而不是手动拷模板。
 
-交互模式下，脚手架还会询问是否安装推荐的 AI skills（默认跳过），并提示将执行：
+脚手架可选安装当前模板的 AI skills，默认跳过。也可在项目中手动安装，例如原生模板：
 
 ```sh
-npx skills add sonofmagic/skills
+npx --yes skills add sonofmagic/skills --skill weapp-vite-best-practices
 ```
 
-同时会在项目根目录生成 `AGENTS.md`，把当前模板推荐的 AI 工作流一并带上。如果你先跳过 skills 安装，后续也可以手动执行这条命令。
+也可选择 pnpm 随依赖安装。Wevu / SFC、React 的命令和配置见 [AI Skills 使用指南](/guide/skills)。
 
 脚手架生成的 `AGENTS.md` 带有可识别的生成标记，项目定制规则请放在 `AGENTS.local.md`，这样后续重新生成时不会被覆盖。
 

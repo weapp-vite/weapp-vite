@@ -27,7 +27,8 @@ export function requiredDocumentContracts(files) {
       || file === 'packages/create-weapp-vite/src/generated/agents.ts') {
       checks.add('agents')
     }
-    if (PUBLIC_SKILL_CONTRACT_FILES.has(file) || file.startsWith('skills/')) {
+    if (PUBLIC_SKILL_CONTRACT_FILES.has(file) || file.startsWith('skills/')
+      || file.startsWith('maintainers/skillValidation/') || file.startsWith('scripts/skillValidation/')) {
       checks.add('skills')
     }
   }

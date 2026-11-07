@@ -40,9 +40,9 @@ export default defineComponent({
 
 ## JSX / TSX ownership
 
-- 纯 `.jsx/.tsx`、Vue 风格 TSX 和 SFC 内 JSX/TSX 在 Wevu 项目中由 Wevu compiler 处理。
+- Wevu JSX/TSX 与 SFC 内 JSX/TSX 需要项目现有工具链接入对应编译器；使用 weapp-vite 的 SFC/JSX 工作流时，须显式安装 `weapp-vite`，不能把 `wevu` 运行时包当作 CLI。
 - 保持小程序事件名和 class 语义，确认自定义组件 tag 输出为 kebab-case。
-- 项目启用 `weapp.react` 后，不再让 Wevu 拥有独立 `.jsx/.tsx`；React 与 Wevu 通过小程序自定义组件 bridge 互操作。
+- 项目同时安装 `weapp-vite` 与 `@weapp-vite/react` 并启用 `weapp.react` 后，独立 `.jsx/.tsx` 归 React；React 与 Wevu 通过小程序自定义组件 bridge 互操作。
 
 ## Host composables
 
@@ -75,6 +75,8 @@ export default defineComponent({
 - 自定义导航栏优先使用 `useNavigationBarMetrics`
 
 ## Layout feedback host
+
+以下 `layout-host` 模板示例要求 `weapp-vite` 的 layout/SFC 编译链与 `wevu` 运行时；`t-toast` / `t-dialog` 还需项目已安装并注册 TDesign 小程序组件。仅使用 Wevu 原生页面时，不为这个可选模式引入构建器或 UI 库。
 
 把 Toast、Dialog、全局反馈层这类天然属于页面壳的组件放在 layout 内，再通过 `layout-host` 暴露给页面或子组件。
 

@@ -30,6 +30,13 @@ it('retains only applicable generated document and public skill contracts', () =
   expect(requiredDocumentContracts(['website/guide/skills.md'])).toEqual(['skills'])
 })
 
+it.each([
+  'maintainers/skillValidation/feedback.json',
+  'scripts/skillValidation/contracts.mjs',
+])('retains the skill contract for an isolated maintenance change: %s', (file) => {
+  expect(requiredDocumentContracts([file])).toEqual(['skills'])
+})
+
 it('checks deleted or renamed generated targets even when no lint path survives', async () => {
   const calls = []
   const run = async (command, args) => {

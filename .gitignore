@@ -63,6 +63,10 @@ yarn-error.log*
 
 dist
 dist-plugin
+# Generated package-owned skills; authored only under root skills/.
+/packages/weapp-vite/skills/
+/packages-runtime/wevu/skills/
+/packages-runtime/react/skills/
 packages/ast-native/target/
 packages/ast-native/*.node
 .wevu

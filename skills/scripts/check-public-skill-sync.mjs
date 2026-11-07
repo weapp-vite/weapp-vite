@@ -4,29 +4,25 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import YAML from 'yaml'
+import skillCases from '../../maintainers/skillValidation/cases.json' with { type: 'json' }
+import skillFeedback from '../../maintainers/skillValidation/feedback.json' with { type: 'json' }
+import { validateCaseCatalog, validateEvidenceReport, validateFeedbackCatalog } from '../../scripts/skillValidation/contracts.mjs'
+import { hashSkillTree } from '../../scripts/skillValidation/fixtures.mjs'
+import { distribution } from './distribution.mjs'
 
 const SKILLS_ROOT = 'skills'
-const FULL_CONTRACT_FILES = [
-  'AGENTS.md',
-  'CLAUDE.md',
-  'packages/create-weapp-vite/src/agents.ts',
-  'skills/scripts/score-skill-trigger-regression.mjs',
-  'skills/skill-trigger-regression-checklist.md',
-  'website/.vitepress/components/AiLearningPage.vue',
-  'website/guide/ai-workflows.md',
-  'website/guide/ai.md',
-  'website/guide/skills.md',
-]
-const SCOPED_CONTRACTS = new Map([
-  ['website/packages/create-weapp-vite.md', ['weapp-vite-react-best-practices']],
-])
-const CONTRACT_FILES = [...FULL_CONTRACT_FILES, ...SCOPED_CONTRACTS.keys()]
+const CONSUMER_GUIDE = 'website/guide/skills.md'
 const FRONTMATTER_REGEX = /^---\r?\n([\s\S]*?)\r?\n---/
 const MAIN_SKILL_CASES_REGEX = /const MAIN_SKILL_CASES = \{([\s\S]*?)\n\}/
 const SCORING_SKILL_KEY_REGEX = /^\s{2}'([^']+)':/gm
 const QUOTED_INTERFACE_REGEX = /^\s+(display_name|short_description|default_prompt):\s+(['"]).*\2$/gm
 const SCORING_MAP_FILE = 'skills/scripts/score-skill-trigger-regression.mjs'
 const NON_PUBLIC_SCORING_GROUPS = new Set(['recent-capability-routing'])
+const TEMPLATE_SKILLS_BY_FRAMEWORK = {
+  native: ['weapp-vite-best-practices'],
+  wevu: ['weapp-vite-best-practices', 'weapp-vite-vue-sfc-best-practices', 'wevu-best-practices'],
+  react: ['weapp-vite-best-practices', 'weapp-vite-react-best-practices'],
+}
 
 async function discoverPublicSkills() {
   const entries = await fs.readdir(SKILLS_ROOT, { withFileTypes: true })
@@ -128,6 +124,128 @@ async function validateSkill(name, issues) {
     issues.push(`${agentFile}: policy.allow_implicit_invocation must be true`)
   }
 }
+async function validateDistribution(skills, issues) {
+  const categories = [...distribution.optional, ...distribution.contributor]
+  const turbo = JSON.parse(await fs.readFile('turbo.json', 'utf8'))
+  const policy = JSON.parse(await fs.readFile('.github/repoctl-auto-changeset.json', 'utf8'))
+  const guide = await fs.readFile(CONSUMER_GUIDE, 'utf8')
+  const sharedInputs = ['skills/distribution.json', 'skills/scripts/distribution.mjs', 'skills/scripts/sync-package-skills.mjs']
+  for (const [owner, config] of Object.entries(distribution.packages)) {
+    categories.push(...config.skills)
+    const pkg = JSON.parse(await fs.readFile(`${config.directory}/package.json`, 'utf8'))
+    if (pkg.name !== owner || !pkg.files.includes('skills') || !pkg.scripts.prepack?.includes('sync-package-skills.mjs')) {
+      issues.push(`${owner}: package name, files or prepack does not include owned skills`)
+    }
+    const task = turbo.tasks[`${owner}#build`]
+    for (const input of [...sharedInputs, ...config.skills.map(name => `skills/${name}/**`)]) {
+      if (!task?.inputs?.includes(`$TURBO_ROOT$/${input}`)) {
+        issues.push(`${owner}: build cache missing ${input}`)
+      }
+    }
+    if (!task?.outputs?.includes('skills/**')) {
+      issues.push(`${owner}: build cache does not restore skills`)
+    }
+    for (const name of config.skills) {
+      if (!guide.includes(name)) {
+        issues.push(`${CONSUMER_GUIDE}: missing package skill ${name}`)
+      }
+      if (!policy.paths.some(entry => entry.packages.includes(owner) && entry.patterns.includes(`skills/${name}/**`))) {
+        issues.push(`${owner}: release policy missing ${name}`)
+      }
+      for await (const file of fs.glob(`skills/${name}/**/*.md`)) {
+        const source = await fs.readFile(file, 'utf8')
+        const links = [...source.matchAll(/\]\(([^\s)#]+)(?:#[^)]*)?\)/g)].map(match => match[1])
+        const references = [...source.matchAll(/`(references\/[^`#]+)(?:#[^`]*)?`/g)].map(match => match[1])
+        for (const reference of [...links, ...references]) {
+          if (/^(?:[a-z]+:|\/|#)/i.test(reference)) {
+            continue
+          }
+          const target = path.resolve(path.dirname(file), reference)
+          const root = path.resolve('skills', name)
+          if (!target.startsWith(`${root}${path.sep}`)) {
+            issues.push(`${file}: reference escapes its skill: ${reference}`)
+            continue
+          }
+          try {
+            await fs.access(target)
+          }
+          catch {
+            issues.push(`${file}: missing reference ${reference}`)
+          }
+        }
+      }
+    }
+  }
+  for (const input of sharedInputs) {
+    if (!policy.paths.some(entry => entry.patterns.includes(input) && Object.keys(distribution.packages).every(owner => entry.packages.includes(owner)))) {
+      issues.push(`release policy missing shared skills input ${input}`)
+    }
+  }
+  if (new Set(categories).size !== categories.length || [...categories].sort().join('\n') !== skills.join('\n')) {
+    issues.push('distribution.json: every public skill must have exactly one package owner or explicit optional/contributor category')
+  }
+  const templates = JSON.parse(await fs.readFile('packages/create-weapp-vite/src/templateDefinitions.json', 'utf8'))
+  const { generatedAgentGuidelines } = await import('../../packages/create-weapp-vite/src/generated/agents.ts')
+  const consumerSkills = Object.values(distribution.packages).flatMap(config => config.skills)
+  for (const template of templates) {
+    const selected = template.skills
+    if (!Array.isArray(selected) || selected.some(name => !consumerSkills.includes(name))) {
+      issues.push(`${template.id}: skills must be an array containing only package-owned consumer guidance`)
+      continue
+    }
+    const required = Object.hasOwn(TEMPLATE_SKILLS_BY_FRAMEWORK, template.framework) ? TEMPLATE_SKILLS_BY_FRAMEWORK[template.framework] : undefined
+    const selectedSkills = new Set(selected)
+    if (!required) {
+      issues.push(`${template.id}: unsupported template framework ${template.framework}`)
+    }
+    else if (selectedSkills.size !== selected.length || selectedSkills.size !== required.length || required.some(name => !selectedSkills.has(name))) {
+      issues.push(`${template.id}: ${template.framework} templates must select exactly ${required.join(', ')} without duplicates`)
+    }
+    const guidance = generatedAgentGuidelines[template.id] ?? ''
+    for (const name of skills) {
+      if (guidance.includes(`$${name}`) !== selected.includes(name)) {
+        issues.push(`${template.id}: template guidance differs from selected skills: ${name}`)
+      }
+    }
+  }
+}
+
+async function validateMaintenanceContracts(issues) {
+  const caseIssues = validateCaseCatalog(skillCases, distribution.packages)
+  issues.push(...caseIssues.map(issue => `skill cases: ${issue.path}: ${issue.code}`))
+  if (caseIssues.length) {
+    return
+  }
+  issues.push(...validateFeedbackCatalog(skillFeedback, skillCases).map(issue => `skill feedback: ${issue.path}: ${issue.code}`))
+  const args = process.argv.slice(2)
+  if (!args.length) {
+    return
+  }
+  if (args.length !== 2 || args[0] !== '--evidence' || !args[1]) {
+    issues.push('Usage: check-public-skill-sync.mjs [--evidence <report.json>]')
+    return
+  }
+  const report = JSON.parse(await fs.readFile(args[1], 'utf8'))
+  const digests = Object.fromEntries(await Promise.all(Object.values(distribution.packages).flatMap(config => config.skills).map(async name => [name, await hashSkillTree(path.join(SKILLS_ROOT, name))])))
+  const recordIssues = validateEvidenceReport(report, skillCases, digests)
+  issues.push(...recordIssues.map(issue => `skill evidence: ${issue.path}: ${issue.code}`))
+  if (recordIssues.length) {
+    return
+  }
+  const counts = { automaticPassed: 0, aiPassed: 0, humanPassed: 0, failed: 0, unverified: 0 }
+  for (const record of report.records) {
+    if (record.result === 'failed') {
+      counts.failed++
+    }
+    else if (record.result === 'not-run') {
+      counts.unverified++
+    }
+    else {
+      counts[`${record.method}Passed`]++
+    }
+  }
+  return counts
+}
 
 async function main() {
   const skills = await discoverPublicSkills()
@@ -139,16 +257,8 @@ async function main() {
 
   await Promise.all(skills.map(name => validateSkill(name, issues)))
   await validateScoringMap(skills, issues)
-
-  for (const file of CONTRACT_FILES) {
-    const source = await fs.readFile(file, 'utf8')
-    const requiredSkills = SCOPED_CONTRACTS.get(file) ?? skills
-    for (const name of requiredSkills) {
-      if (!source.includes(name)) {
-        issues.push(`${file}: missing public skill ${name}`)
-      }
-    }
-  }
+  await validateDistribution(skills, issues)
+  const evidence = await validateMaintenanceContracts(issues)
 
   if (issues.length > 0) {
     console.error('[public-skills] contract validation failed:')
@@ -159,7 +269,12 @@ async function main() {
     return
   }
 
-  console.log(`[public-skills] validated ${skills.length} public skill(s) across ${CONTRACT_FILES.length} contract file(s)`)
+  console.log(`[public-skills] validated ${skills.length} public skills, ${Object.keys(distribution.packages).length} package owners and scoped template contracts`)
+  console.log(`[skill-cases] checked ${skillCases.cases.length} candidate/approved case contracts; no task executed`)
+  if (evidence) {
+    console.log(`[skill-evidence] record consistency only, not evidence authenticity: ${JSON.stringify(evidence)}`)
+    process.exitCode = evidence.failed ? 1 : evidence.unverified ? 2 : 0
+  }
 }
 
 await main()

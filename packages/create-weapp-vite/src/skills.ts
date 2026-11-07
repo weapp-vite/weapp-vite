@@ -1,10 +1,17 @@
 import type { ChildProcess } from 'node:child_process'
+import type { TemplateName } from './enums'
 import process from 'node:process'
 // eslint-disable-next-line e18e/ban-dependencies -- skills 安装需要跨平台命令解析和进程超时控制。
 import { execa } from 'execa'
+import { getTemplateDefinition } from './templates'
 
-export const RECOMMENDED_SKILLS_SOURCE = 'sonofmagic/skills'
-export const RECOMMENDED_SKILLS_INSTALL_COMMAND = `npx --yes skills add ${RECOMMENDED_SKILLS_SOURCE}`
+const RECOMMENDED_SKILLS_SOURCE = 'sonofmagic/skills'
+
+/** 让提示、执行参数和失败后的手动命令使用同一份模板选择。 */
+export function recommendedSkillsInstallation(templateName: TemplateName) {
+  const args = ['--yes', 'skills', 'add', RECOMMENDED_SKILLS_SOURCE, '--skill', ...getTemplateDefinition(templateName).skills]
+  return { args, command: `npx ${args.join(' ')}` }
+}
 
 const SKILLS_INSTALL_TIMEOUT_MS = 60_000
 
@@ -46,8 +53,8 @@ async function terminateSkillsProcessTree(child: Pick<ChildProcess, 'pid' | 'kil
 /**
  * @description 安装推荐的 AI skills。
  */
-export async function installRecommendedSkills(cwd: string, options: SkillsInstallOptions = {}) {
-  const child = execa('npx', ['--yes', 'skills', 'add', RECOMMENDED_SKILLS_SOURCE], {
+export async function installRecommendedSkills(cwd: string, templateName: TemplateName, options: SkillsInstallOptions = {}) {
+  const child = execa('npx', recommendedSkillsInstallation(templateName).args, {
     cwd,
     env: { ...process.env, ...options.env },
     stdio: 'inherit',

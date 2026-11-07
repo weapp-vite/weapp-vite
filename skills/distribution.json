@@ -1,0 +1,18 @@
+{
+  "packages": {
+    "weapp-vite": {
+      "directory": "packages/weapp-vite",
+      "skills": ["weapp-vite-best-practices", "weapp-vite-vue-sfc-best-practices"]
+    },
+    "wevu": {
+      "directory": "packages-runtime/wevu",
+      "skills": ["wevu-best-practices"]
+    },
+    "@weapp-vite/react": {
+      "directory": "packages-runtime/react",
+      "skills": ["weapp-vite-react-best-practices"]
+    }
+  },
+  "optional": ["native-to-weapp-vite-wevu-migration"],
+  "contributor": ["weapp-acceptance", "weapp-devtools-e2e-best-practices", "docs-and-website-sync", "release-and-changeset-best-practices"]
+}

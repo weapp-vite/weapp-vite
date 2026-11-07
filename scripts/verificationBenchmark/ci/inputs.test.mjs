@@ -14,6 +14,8 @@ function sources() {
     'packages/framework/src/index.ts': 'export const value = 1',
     'packages/framework/test/fixtures/native/index.js': 'Page({})',
     'templates/new-app/src/index.ts': 'App({})',
+    'skills/wevu-best-practices/SKILL.md': '# Runtime guidance',
+    'skills/distribution.json': '{"packages":{}}',
     '@weapp-core/constants/package.json': JSON.stringify({ scripts: { 'build': 'compile', 'test:pure': 'test' } }),
     'packages/hmr/package.json': JSON.stringify({ scripts: { 'build': 'compile', 'test:pure': 'test' } }),
     'scripts/verification/plan.ts': 'verification implementation',
@@ -40,7 +42,7 @@ it('automatically expands all framework/fixture files and records the versioned 
   expect((await collect(files)).inputDigest).not.toBe(initial.inputDigest)
 })
 
-it.each(['packages/framework/src/index.ts', 'packages/framework/test/fixtures/native/index.js', 'templates/new-app/src/index.ts', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'vitest.coverage.ts'])(
+it.each(['packages/framework/src/index.ts', 'packages/framework/test/fixtures/native/index.js', 'templates/new-app/src/index.ts', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'vitest.coverage.ts', 'skills/wevu-best-practices/SKILL.md', 'skills/distribution.json'])(
   'binds actual immutable input changes in %s',
   async (file) => {
     const files = sources()

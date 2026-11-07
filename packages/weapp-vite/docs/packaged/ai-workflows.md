@@ -22,6 +22,43 @@
 2. `node_modules/weapp-vite/dist/docs/*.md`
 3. 当前仓库实际代码与 `vite.config.ts`
 
+## Skills
+
+### 手动安装
+
+在项目根运行对应命令，适用于 npm、Yarn 和各版本 pnpm：
+
+```sh
+# 原生
+npx skills add sonofmagic/skills --skill weapp-vite-best-practices
+# Wevu / Vue SFC（含多平台 SFC）
+npx skills add sonofmagic/skills --skill weapp-vite-best-practices weapp-vite-vue-sfc-best-practices wevu-best-practices
+# React
+npx skills add sonofmagic/skills --skill weapp-vite-best-practices weapp-vite-react-best-practices
+```
+
+迁移时可额外安装：
+
+```sh
+npx skills add sonofmagic/skills --skill native-to-weapp-vite-wevu-migration
+```
+
+文档、发布和 E2E 维护技能用于贡献本仓库，不是消费项目的默认项。
+
+### 随依赖安装
+
+pnpm >=12.11.0 可从项目依赖安装 skills。在 `pnpm-workspace.yaml` 合并以下设置，保留团队已有配置：
+
+```yaml
+skills:
+  dirs:
+    - .agents/skills
+```
+
+依次运行 `pnpm install`、交互式 `pnpm approve`，手动选择需要的能力。由 pnpm 管理链接，无需 consumer postinstall。
+
+各包提供的 skills、版本差异、workspace 选择和手工内容保护见 [AI Skills 指南](https://vite.weapp.dev/guide/skills)。
+
 ## 小程序宿主能力验证
 
 不要根据浏览器、Node.js、类型声明或 headless simulator 推断 AppService 能力。新增 `queueMicrotask`、Web API、DOM/Node 全局或现代内建前，先在目标平台真实 IDE、目标基础库和 renderer 中验证存在性及最小调用语义。

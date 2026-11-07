@@ -59,22 +59,18 @@ const mcpCommands = [
 ]
 
 const directSkills = [
-  'weapp-acceptance',
   'weapp-vite-best-practices',
-  'docs-and-website-sync',
-  'release-and-changeset-best-practices',
-  'weapp-devtools-e2e-best-practices',
   'weapp-vite-vue-sfc-best-practices',
-  'weapp-vite-react-best-practices',
   'wevu-best-practices',
-  'native-to-weapp-vite-wevu-migration',
+  'weapp-vite-react-best-practices',
 ]
 const localProjectSkills = [
   'playwright-cli',
 ]
 
-const skillInstallCommand = 'npx skills add sonofmagic/skills'
-const skillLinkCommand = 'pnpm skills:link'
+const skillDirectoriesConfig = 'skills:\n  dirs:\n    - .agents/skills'
+const skillInstallCommand = 'pnpm install\npnpm approve'
+const manualSkillInstallCommand = 'npx skills add sonofmagic/skills --skill weapp-vite-best-practices'
 const skillDirectCommand = computed(() => directSkills.map(skill => `$${skill}`).join('\n'))
 const localSkillDirectCommand = computed(() => localProjectSkills.map(skill => `$${skill}`).join('\n'))
 const DIRECT_SKILL_PREFIX_REGEX = /^\$/gm
@@ -210,14 +206,34 @@ function copyText(text: string, key: string) {
             <p class="pillar-kicker">
               Skill
             </p>
-            <h2>给 AI 挂载工程化工作流</h2>
-            <p>区分公开 skills 与项目本地附加 skills，让团队在稳定边界下协作与交付。</p>
+            <h2>安装项目需要的 Skills</h2>
+            <p>手动安装适用于 npm、Yarn 和各版本 pnpm；也可用 pnpm 12.11+ 随依赖安装。其他模板的命令见 Skills 指南。</p>
           </header>
 
           <div class="command-stack">
             <article class="command-card">
               <header>
-                <h3>安装 Skills（推荐）</h3>
+                <h3>手动安装：npm / Yarn / pnpm</h3>
+                <button type="button" @click="copyText(manualSkillInstallCommand, 'skill-manual')">
+                  {{ copiedKey === 'skill-manual' ? '已复制' : '复制命令' }}
+                </button>
+              </header>
+              <pre><code>{{ manualSkillInstallCommand }}</code></pre>
+            </article>
+
+            <article class="command-card">
+              <header>
+                <h3>随依赖安装：配置目录</h3>
+                <button type="button" @click="copyText(skillDirectoriesConfig, 'skill-config')">
+                  {{ copiedKey === 'skill-config' ? '已复制' : '复制配置' }}
+                </button>
+              </header>
+              <pre><code>{{ skillDirectoriesConfig }}</code></pre>
+            </article>
+
+            <article class="command-card">
+              <header>
+                <h3>安装依赖并审批</h3>
                 <button type="button" @click="copyText(skillInstallCommand, 'skill-install')">
                   {{ copiedKey === 'skill-install' ? '已复制' : '复制命令' }}
                 </button>
@@ -227,17 +243,7 @@ function copyText(text: string, key: string) {
 
             <article class="command-card">
               <header>
-                <h3>本仓库开发时链接本地 Skills</h3>
-                <button type="button" @click="copyText(skillLinkCommand, 'skill-link')">
-                  {{ copiedKey === 'skill-link' ? '已复制' : '复制命令' }}
-                </button>
-              </header>
-              <pre><code>{{ skillLinkCommand }}</code></pre>
-            </article>
-
-            <article class="command-card">
-              <header>
-                <h3>公开 Skills 安装后可直接调用</h3>
+                <h3>Skills 调用示例</h3>
                 <button type="button" @click="copyText(skillDirectCommand, 'skill-direct')">
                   {{ copiedKey === 'skill-direct' ? '已复制' : '复制命令' }}
                 </button>
@@ -257,7 +263,7 @@ function copyText(text: string, key: string) {
           </div>
 
           <p class="skill-note">
-            `skills/*` 面向公开分发；`.claude/skills/*` 面向这个仓库的本地附加能力，并通过 `pnpm skills:link` 一起同步。
+            按项目需要选择 skills，并在客户端使用实际安装的名称。安装方式、pnpm 版本差异和清理步骤见 AI Skills 使用指南。pnpm skills:link 仅供本仓库贡献者使用。
           </p>
 
           <div class="link-grid">
@@ -287,8 +293,8 @@ function copyText(text: string, key: string) {
           </ul>
 
           <ol class="flow-list">
-            <li>公开分发场景先安装 `sonofmagic/skills`，拿到 `skills/*` 里的公共能力。</li>
-            <li>仓库开发场景再执行 `pnpm skills:link`，把 `skills/*` 和 `.claude/skills/*` 一起同步到本地环境。</li>
+            <li>选择手动安装或随依赖安装，只安装项目需要的 skills。</li>
+            <li>迁移技能按需安装；文档、发布和 E2E 维护技能供仓库贡献者使用。</li>
             <li>让 AI 明确调用对应 Skill，减少自由发挥偏差。</li>
             <li>配合 MCP 让结果从“建议”变成“可执行 + 可验收”。</li>
           </ol>

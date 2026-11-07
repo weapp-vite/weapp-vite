@@ -145,6 +145,7 @@
     "client.d.ts",
     "dist",
     "modules/__weapp-vite-workers.js",
+    "skills",
     "volar.cjs",
     "volar.d.cts"
   ],
@@ -154,6 +155,7 @@
   "scripts": {
     "dev": "tsdown -w --sourcemap",
     "build": "tsdown",
+    "prepack": "node ../../skills/scripts/sync-package-skills.mjs weapp-vite",
     "release": "tsx scripts/release.ts",
     "bench": "vitest bench -c vitest.bench.config.ts",
     "benchmark:auto-import": "node --import tsx scripts/benchmark-auto-import-resolver.ts",

@@ -49,11 +49,13 @@ my-app/
 └─ AGENTS.md
 ```
 
-脚手架还会问你要不要装推荐的 AI skills，如果跳过了，后面可以手动装：
+需要 AI skills 时，可在项目中手动安装这个 Wevu 模板对应的技能：
 
 ```bash
-npx skills add sonofmagic/skills
+npx --yes skills add sonofmagic/skills --skill weapp-vite-best-practices weapp-vite-vue-sfc-best-practices wevu-best-practices
 ```
+
+也可选择 pnpm 随依赖安装，配置与审批步骤见 [AI Skills 使用指南](/guide/skills)。
 
 ## 写第一个页面
 

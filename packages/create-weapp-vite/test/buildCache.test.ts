@@ -1,8 +1,13 @@
 import os from 'node:os'
 import path from 'node:path'
+import process from 'node:process'
+import { fileURLToPath } from 'node:url'
 import { fs } from '@weapp-core/shared/fs'
 // eslint-disable-next-line e18e/ban-dependencies
 import { execa } from 'execa'
+import turboPackage from 'turbo/package.json' with { type: 'json' }
+
+const turboCli = fileURLToPath(new URL(turboPackage.bin.turbo, import.meta.resolve('turbo/package.json')))
 
 const packageManifests = {
   'weapp-vite': 'packages/weapp-vite/package.json',
@@ -27,10 +32,8 @@ describe('create-weapp-vite build cache', () => {
     const workspaceConfig = 'packages:\n  - packages/*\n  - packages-runtime/*\n'
 
     async function buildHash() {
-      const { stdout } = await execa('turbo', ['run', 'build', '--filter=create-weapp-vite', '--dry=json'], {
+      const { stdout } = await execa(process.execPath, [turboCli, 'run', 'build', '--filter=create-weapp-vite', '--dry=json'], {
         cwd: tempRoot,
-        preferLocal: true,
-        localDir: repoRoot,
         env: { TURBO_TELEMETRY_DISABLED: '1' },
       })
       const dryRun = JSON.parse(stdout) as TurboDryRun

@@ -7,7 +7,7 @@
 
 ## 状态不更新
 
-- 确认 runtime API 来自 `wevu`
+- 确认项目显式安装 `wevu`，runtime API 来自 `wevu`；仅有 `weapp-vite` 不提供响应式运行时
 - 确认模板真正消费了变化的响应式状态
 
 ## Hook 不触发

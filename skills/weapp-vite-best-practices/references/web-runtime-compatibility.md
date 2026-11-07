@@ -2,7 +2,7 @@
 
 - Web runtime 用来验证跨平台渲染和 Web API 适配，不等价于微信 DevTools 或真机。
 - 项目根目录准备引用 `/@weapp-vite/web/entry` 的 `index.html`，并统一提供 `dev:web: wv dev -p web --host` 与 `build:web: wv build -p web`；`web` 是规范平台名，`h5` 仅作为向后兼容别名保留。
-- 仓库级兼容改动同时运行 `pnpm e2e:web:build-projects` 与 `pnpm e2e:web`：前者覆盖所有 `e2e-apps/*` / `templates/*` 的生产构建，后者使用 Playwright 逐项目验证宿主 API、首屏页面和当前路由。新增项目不应依赖手工维护清单，矩阵会自动发现带 `package.json` 的目录。
+- 使用消费项目自己的 `dev:web` / `build:web` scripts；若无脚本，已安装 `weapp-vite` 时可用本地 CLI `pnpm exec wv dev -p web --host` / `pnpm exec wv build -p web`。`/@weapp-vite/web/entry` 由构建链解析，不要求业务为此重复安装传递依赖；若业务直接从 `@weapp-vite/web` 导入 API，再显式声明该包。构建后用项目已有浏览器测试或手动检查宿主 API、首屏页面和当前路由，不要求框架仓库的 E2E 矩阵。
 - Web 入口必须先求值 App，再求值页面和组件；依赖 `defineAppSetup()`、`createRouter()`、`provide()` 或 `getApp()` 的首屏代码都以这一顺序为前提。
 - 默认 `runtime.viewport.mode` 为 `mini-program`：移动宽度下铺满，600px 以上使用 375px 居中容器；旧全宽行为显式使用 `responsive`。
 - `runtime.seo` 会在页面栈切换后同步 `document.title`、description 和 canonical；标题默认取页面 `navigationBarTitleText`，`titleTemplate` 用 `%s` 表示页面标题，`enabled: false` 可关闭。
@@ -24,16 +24,16 @@
 - `showTabBar` / `hideTabBar` 会同步页面 inset；`setTabBarItem`、`setTabBarStyle`、badge 与 red-dot API 会更新 shell。`tabBar.custom: true` 只保留路由语义，不会自动渲染业务自定义组件。
 - `swiper` 的 current、autoplay、pointer drag 和事件 source 由容器统一管理。视觉用例保持 autoplay 关闭；行为用例应分别验证 programmatic、touch、autoplay，并确认断开 DOM 时计时器停止、重新连接后恢复。
 - WXSS 的 `page` 映射到页面 Shadow DOM 的 `:host`，原生组件类型选择器同步映射到 `weapp-*`；class、attribute、pseudo 与组合结构应保持稳定。
-- 微信 DevTools 视觉基线只通过 `pnpm e2e:web:update-baselines` 显式更新。普通 `pnpm e2e:web` 只消费 manifest 与已提交 PNG，并把 current/diff 写入 `.tmp/web-runtime-visual/`。DevTools 截图只包含页面 WebView，manifest 必须按 case 记录实际 viewport；宿主原生 tabBar 不进入 PNG，对应 Web shell 通过浏览器尺寸、边界、选中态和 API 行为断言验收。
+- 视觉对比使用消费项目自己保存的基线与截图流程，只有明确授权时才更新基线。微信 DevTools 截图只包含页面 WebView，需记录实际 viewport；宿主原生 tabBar 不进入 PNG，Web shell 另以浏览器尺寸、边界、选中态和 API 行为验收。
 - URL、URLSearchParams、fetch/request globals 需要在目标 runtime 做最小验证；浏览器通过不代表宿主通过。
 - 第三方请求客户端若只在 DevTools 失败，先缩小到宿主构造器兼容问题，再决定 skip、polyfill 或业务修复。
 
 ## 小程序 Web API 注入与 SSE
 
-- `weapp.appPrelude.webRuntime` 为小程序注入兼容对象，与浏览器预览的 `weapp.web` 分开。先读本地 `dist/docs/weapp-config.md`，完整配置见 [Web Runtime 全局对象注入配置](https://vite.weapp.dev/config/web-runtime-globals.html)。
+- `weapp.appPrelude.webRuntime` 为小程序注入兼容对象，与浏览器预览的 `weapp.web` 分开。先读 `node_modules/weapp-vite/dist/docs/weapp-config.md`，完整配置见 [Web Runtime 全局对象注入配置](https://vite.weapp.dev/config/web-runtime-globals.html)。
 - Fetch 响应流通过 `webRuntime.networkDefaults.request.enableChunked: true` 开启；普通缓冲 Fetch 继续可用。使用标准 `Response.body`、`pipeThrough()`、`getReader()` 和 `AbortSignal`，业务不直接管理 `onChunkReceived`。
 - `ReadableStream`、`WritableStream`、`TransformStream` 作为一致的一组安装；`TextDecoderStream` 补齐 UTF-8 跨块状态。构建器识别 `eventsource-parser/stream`，其模块初始化会继承 `TransformStream`，必须核对最终 prelude 和 chunk 局部绑定在依赖求值前已就绪。
-- `EventSource` 自动开启分块，支持标准 GET、事件监听、`Last-Event-ID`、`retry` 和重连。POST、自定义鉴权头使用 Fetch，Fetch 不自动重试；`wevu/fetch` 复用 `@wevu/web-apis`，独立入口为 `@wevu/web-apis/streams` 和 `/eventsource`。
+- `EventSource` 自动开启分块，支持标准 GET、事件监听、`Last-Event-ID`、`retry` 和重连。POST、自定义鉴权头使用 Fetch，Fetch 不自动重试。若选择 `wevu/fetch`，需显式安装 `wevu`；若直接使用 `@wevu/web-apis/streams` 或 `/eventsource`，需显式安装 `@wevu/web-apis`，不要依赖传递依赖可导入。
 - 微信流式请求要求 chunk 监听和响应结束前的真实状态码。缺失时 Fetch 以 `NotSupportedError` 失败，EventSource 触发 error 并关闭；不得假定 HTTP 200 或静默退回缓冲，也不能用最终 `success.statusCode` 冒充早期元数据。
 - 首版不模拟浏览器 Cookie/CORS，不支持 `EventSource` 的 `withCredentials: true`、流式请求上传或 `Blob.stream()`。JS 流消费不等于网络级反压；不静默丢块，慢消费者和 clone 分支可能增加内存。域名白名单、TLS、超时、后台限制仍属宿主边界。
 - 正路径必须证明服务端仍保持响应打开时页面已显示首条消息，并覆盖 POST 鉴权、断线重连和卸载清理。headless、真实 Stable 与真机结果分开记录；缺失状态码的拒绝路径通过不能写成 SSE 正路径通过。示例见 [复用 Web SSE 写法](https://vite.weapp.dev/guide/web-runtime-globals.html#复用-web-sse-写法)。

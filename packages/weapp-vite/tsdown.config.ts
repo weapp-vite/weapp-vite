@@ -1,4 +1,5 @@
 import { defineConfig } from 'tsdown'
+import { syncPackageSkills } from '../../skills/scripts/distribution.mjs'
 
 export default defineConfig({
   entry: {
@@ -91,6 +92,7 @@ export default defineConfig({
     'build:done': async () => {
       const { syncPackageDocs } = await import('./scripts/sync-package-docs.mjs')
       await syncPackageDocs()
+      await syncPackageSkills('weapp-vite')
     },
   },
 })

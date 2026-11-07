@@ -82,7 +82,7 @@ pnpm release:pre:exit       # Exit prerelease mode
 
 ## Project Skills (Codex + Claude Code)
 
-This repo includes installable user-facing skills in `./skills`:
+This repo maintains consumer, optional and contributor skill source in `./skills`; this is an index, not a default installation list:
 
 - `weapp-vite-best-practices`
 - `weapp-acceptance`
@@ -95,15 +95,23 @@ This repo includes installable user-facing skills in `./skills`:
 - `native-to-weapp-vite-wevu-migration`
 - Project-specific Claude skills can also live in `./.claude/skills` (for example: `playwright-cli`).
 
-Recommended remote install source for all public skills:
+### Consumer projects
+
+For a native project, install the source skill with npm, Yarn or any pnpm version:
 
 ```bash
-npx skills add sonofmagic/skills
+npx skills add sonofmagic/skills --skill weapp-vite-best-practices
 ```
+
+For Wevu / SFC, select core + SFC + Wevu skills; for React, core + React. Migration is optional.
+
+pnpm >=12.11.0 also supports dependency installation: merge `skills: { dirs: [".agents/skills"] }` into `pnpm-workspace.yaml`, preserving team settings; run `pnpm install`, then interactive `pnpm approve`. Keep approval manual and let pnpm manage its links. Full commands, version differences and manual-entry safety: [AI Skills guide](https://vite.weapp.dev/guide/skills).
+
+### Repository contributors
 
 项目级 `AGENTS.md` 由 `scripts/agents/` 的结构化规则生成。修改规则后运行 `pnpm agents:generate`，提交前运行 `pnpm agents:check`；项目定制约束放在 `AGENTS.local.md`，不要直接修改带生成标记的 `AGENTS.md`。
 
-To make this repository's latest local skills directly available in local CLI environments:
+To use this checkout's skills in local CLI environments (no global package install):
 
 ```bash
 pnpm skills:link

@@ -98,13 +98,15 @@ net.Socket.prototype.connect = () => { throw new Error('Default scaffolding must
 
   // 安装目录中不存在源码仓库的模板回退路径，必须使用 tarball 自带模板。
   expect(await fs.pathExists(path.resolve(packedPackageRoot, '../../templates'))).toBe(false)
-  for (const templateName of Object.values(TemplateName)) {
-    const projectName = `packed-${templateName}`
+  const projects = Object.values(TemplateName).flatMap(templateName => ['wv', 'vite-plus'].map(toolchain => ({ templateName, toolchain })))
+  for (const { templateName, toolchain } of projects) {
+    const projectName = `packed-${templateName}-${toolchain}`
     await execa(process.execPath, [
       path.join(packedPackageRoot, 'bin/create-weapp-vite.js'),
       projectName,
       templateName,
       '--no-install-skills',
+      `--toolchain=${toolchain}`,
     ], {
       cwd: projectsRoot,
       env: { CI: 'true', NODE_OPTIONS: `--import=${pathToFileURL(networkGuard).href}` },
@@ -113,7 +115,7 @@ net.Socket.prototype.connect = () => { throw new Error('Default scaffolding must
 
     const projectRoot = path.join(projectsRoot, projectName)
     const generated = await readPackageManifest(path.join(projectRoot, 'package.json'))
-    const template = await readPackageManifest(path.join(packedPackageRoot, 'templates', templateName, 'package.json'))
+    const template = await readPackageManifest(path.join(packedPackageRoot, 'templates', ...(toolchain === 'vite-plus' ? ['vite-plus'] : []), templateName, 'package.json'))
     for (const field of dependencyFields) {
       for (const [name, expectedVersion] of Object.entries(bundledVersions)) {
         if (template[field]?.[name]) {
@@ -174,7 +176,10 @@ describe('create-weapp-vite release pack', () => {
 
       for (const templateName of Object.values(TemplateName)) {
         expect(packedFiles.has(`templates/${templateName}/package.json`)).toBe(true)
+        expect(packedFiles.has(`templates/vite-plus/${templateName}/package.json`)).toBe(true)
+        expect(packedFiles.has(`templates/vite-plus/${templateName}/AGENTS.md`)).toBe(true)
       }
+      expect(packedFiles.has('templates/vite-plus/manifest.json')).toBe(true)
 
       expect(packedFiles.has('templates/default/project.config.json')).toBe(true)
       expect(packedFiles.has('templates/multi-platform/config/weapp/project.config.json')).toBe(true)

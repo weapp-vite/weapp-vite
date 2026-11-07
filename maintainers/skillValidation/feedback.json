@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "items": [
+    {
+      "id": "manual-install-compatibility",
+      "category": "compatibility",
+      "scope": "repository",
+      "summary": "随包分发不能挤掉原手动安装入口；npm、Yarn 和旧版 pnpm 用户仍应按所选技术栈安装，不被要求升级或接受全部技能。优先维护安装器与兼容检查。",
+      "sourceRefs": ["https://github.com/weapp-vite/weapp-vite/issues/1298", "packages/create-weapp-vite/test/skills.test.ts"],
+      "nextAction": "check",
+      "review": { "state": "candidate" }
+    },
+    {
+      "id": "concise-docs-preference",
+      "category": "style-preference",
+      "scope": "run",
+      "summary": "本轮文档偏好是删去重复说明、避免为轻量改动堆叠整套流程。它是单次表达偏好，不是所有项目或后续任务的长期规则。",
+      "sourceRefs": ["https://github.com/weapp-vite/weapp-vite/issues/1298"],
+      "nextAction": "note",
+      "review": { "state": "candidate" }
+    },
+    {
+      "id": "false-positive-verification",
+      "category": "verification-gap",
+      "scope": "repository",
+      "summary": "验证器必须拒绝意外成功和错误类型不符的失败；仅命令存在、没有报错或得到其他错误不能证明目标契约。优先补充会拒绝错误结果的检查。",
+      "sourceRefs": ["scripts/repoctl-consumer-context.test.ts"],
+      "nextAction": "check",
+      "review": { "state": "candidate" }
+    },
+    {
+      "id": "ancestor-cli-resolution",
+      "category": "tool-defect",
+      "scope": "repository",
+      "summary": "模板准备曾选中祖先 PATH 中的旧格式工具。工具入口应绑定当前依赖公开清单，并以影子 CLI 的真实进程反例保护；不通过修改合法配置或跳过门禁消除报错。",
+      "sourceRefs": ["packages/create-weapp-vite/test/vitePlusTemplates.test.ts"],
+      "nextAction": "tool",
+      "review": { "state": "candidate" }
+    }
+  ]
+}
