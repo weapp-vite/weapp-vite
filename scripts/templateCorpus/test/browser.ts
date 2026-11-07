@@ -6,14 +6,14 @@ import type { CorpusDocument, CorpusProfile } from '../types'
 import type { EntryContractReport } from './entryContracts'
 import type { AcceptanceOptions, AcceptanceReport, ApiVariant } from './harness'
 import { Buffer } from 'node:buffer'
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, readFile, rm } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
 import { chromium } from 'playwright'
-import { rolldown } from 'rolldown'
 import { readCorpusArchive } from '../archive'
 import { loadXmlBaseline } from './baseline'
+import { bundleBrowserRuntime } from './bundle'
 import { acceptanceArtifact, acceptancePaths, assertArtifactIdentity, assertFrozenIdentity, commandLineOptions, isDirectExecution, repositoryRoot, saveAcceptance, sha256 } from './harness'
 import { readMatrixCases } from './matrix'
 
@@ -56,7 +56,6 @@ function mergeCorpus(target: CorpusCaseReport | undefined, next: CorpusCaseRepor
 }
 
 async function bundleRuntime(entry: string, presetsEntry: string, baseline: string, directory: string, variant: ApiVariant) {
-  const browserEntry = path.join(directory, 'entry.ts')
   const modulePath = (file: string) => JSON.stringify(file.split(path.sep).join('/'))
   const source = `import * as entry from ${modulePath(entry)};
 import * as presets from ${modulePath(presetsEntry)};
@@ -71,16 +70,7 @@ import { runFuzz } from ${modulePath(path.join(repositoryRoot, 'scripts/template
 const api = ${variant === 'core' ? 'createCoreTemplateApi(entry)' : 'entry'};
 globalThis.WxmlCorpusRuntime = { entryContract: () => runEntryContracts(entry, ${JSON.stringify(variant)}), presetContract: () => runPresetContracts(presets), corpus: (documents, profiles) => runCorpusCases(api, documents, profiles, undefined, Parser), matrix: (templates, profiles) => runMatrixCases(api, templates, profiles, undefined, Parser), syntax: profiles => collectSyntaxMatrix(api, profiles), fuzz: (profiles, options) => runFuzz(api, profiles, options, Parser) };
 `
-  await writeFile(browserEntry, source)
-  const bundle = await rolldown({ input: browserEntry, platform: 'browser' })
-  try {
-    const file = path.join(directory, 'corpus.js')
-    await bundle.write({ file, format: 'iife' })
-    return await readFile(file, 'utf8')
-  }
-  finally {
-    await bundle.close()
-  }
+  return await bundleBrowserRuntime(source, directory)
 }
 
 /** 单个后台 Chromium 会话顺序执行全部冻结语料，资源始终由本入口收尾。 */
