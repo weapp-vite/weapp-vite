@@ -19,6 +19,7 @@ import '../../../demos/web/src/styles.css'
 interface SimulatorE2EApi {
   callComponentMethod: (scopeId: string, method: string, ...args: any[]) => unknown
   findComponentScopeIds: (selector: string) => string[]
+  getFileText: (filePath: string) => string | null
   getState: () => {
     appData: string
     currentRoute: string
@@ -1446,7 +1447,7 @@ describe('simulator browser e2e', { concurrent: false }, () => {
     expect(parseJsonString<Record<string, unknown> | null>(state.toastData)).toEqual(sessionSnapshot.toast)
     expect(parseJsonString<unknown[]>(state.requestLogData)).toEqual(sessionSnapshot.requestLogs)
     expect(Object.values(sessionSnapshot.fileSnapshot)).toContain('component-lab report')
-    expect(Object.values(sessionSnapshot.fileSnapshot)).toContain('component-lab')
+    expect(bridge.getFileText('headless://saved/component-lab/reports/daily/report.txt')).toBe('component-lab')
     expect(sessionSnapshot.fileSnapshot['headless://saved/component-lab/removals/report.txt']).toBeUndefined()
     expect(sessionSnapshot.fileSnapshot['headless://temp/component-lab-download-no-mock.txt']).toBeUndefined()
     expect(sessionSnapshot.fileSnapshot['headless://temp/component-lab-renamed.txt']).toBe('rename-out')

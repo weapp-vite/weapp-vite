@@ -64,6 +64,7 @@ export function useWorkbench() {
           .map(component => sessionState.session.value?.getScopeIdForComponent(component))
           .filter((scopeId): scopeId is string => Boolean(scopeId))
       },
+      getFileText: (filePath: string) => sessionState.session.value?.getFileText(filePath) ?? null,
       callComponentMethod: (scopeId: string, method: string, ...args: any[]) => {
         return sessionState.run(() => sessionState.session.value?.callScopeMethodDirect(scopeId, method, ...args))
       },
