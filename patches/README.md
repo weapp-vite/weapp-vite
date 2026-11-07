@@ -61,6 +61,11 @@ Release job 使用固定 Git bot 环境身份创建 annotated tag，不修改 ru
 扩展 tag 后，才能在 source recovery 中显式选择 `acknowledge-marketplace-hook`。
 该输入只确认已完成的 Marketplace hook，不确认其他 hook，也不跳过质量、registry 确认或完成记录。
 
+历史源码的质量检查可能只识别 `timeout` / `gtimeout`，而新 Ubuntu runner 将 GNU 实现命名为
+`gnutimeout`。Release job 通过现有解析器核验 GNU 实现，在任务临时目录提供同名 `timeout`
+入口并追加到本轮 `GITHUB_PATH`，同时记录实际路径和版本。此适配保留历史源码与全部断言，
+不修改系统命令；找不到 GNU 实现时仍在发布前失败。
+
 官方 Vite/Rolldown 的产品适配、内部诊断和资源验收边界见[编译依赖内存说明](./compiler-memory.md)。
 
 此前 [Release 35973791530](https://github.com/weapp-vite/weapp-vite/actions/runs/35973791530)

@@ -116,6 +116,9 @@ jobs:
       - name: Validate release recovery inputs
         run: node .github/scripts/release-recovery-inputs.mjs
 
+      - name: Prepare GNU timeout for current and historical release checks
+        run: bash .github/scripts/prepare-release-timeout.sh
+
       - name: Install npm with trusted publishing support
         run: npm install --global npm@11.16.0 --registry=https://registry.npmjs.org
 
