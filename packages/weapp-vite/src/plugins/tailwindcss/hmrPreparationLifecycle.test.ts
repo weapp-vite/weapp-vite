@@ -137,7 +137,16 @@ it('keeps signature caches across ordinary content and same-owner registration r
   const app = await fixture()
   const root = app.roots[0]!
   await app.adapter.prepare(app.host.freeze([root.source]))
-  expect((await app.generate.mock.results[0]!.value).cache.engine).toBe(true)
+  const firstRequest = app.generate.mock.calls[0]![0]
+  const firstResult = await app.generate.mock.results[0]!.value
+  // 普通扫描与冻结内存属于不同服务配置；重复同一配置才应复用 core 引擎。
+  expect(firstRequest.scanSources).toBe(false)
+  expect(firstRequest.scanMode).toBe('compiled')
+  expect(firstResult.cache.engine).toBe(false)
+  const repeated = await app.rawGenerate(firstRequest)
+  expect(repeated.cache.engine).toBe(true)
+  expect(repeated.css).toBe(firstResult.css)
+  expect([...repeated.classSet]).toEqual([...firstResult.classSet])
   await app.adapter.prepare(app.host.freeze([root.source]))
   expect(app.generate).toHaveBeenCalledOnce()
   const frozen = app.host.freeze([root.source])
@@ -157,10 +166,16 @@ it('keeps signature caches across ordinary content and same-owner registration r
     expect(error).toBeInstanceOf(CompilerHmrResyncError)
   })
   expect(app.generate).toHaveBeenCalledTimes(count + 1)
+  const changedRequest = app.generate.mock.calls.at(-1)![0]
   const result = await app.generate.mock.results.at(-1)!.value
-  expect(result.cache.engine).toBe(true)
+  expect(changedRequest.sources).not.toEqual(firstRequest.sources)
+  expect(result.cache.engine).toBe(false)
   expect(result.classSet.has('w-[53px]')).toBe(true)
   expect(result.classSet.has('w-[37px]')).toBe(false)
+  const repeatedChanged = await app.rawGenerate(changedRequest)
+  expect(repeatedChanged.cache.engine).toBe(true)
+  expect(repeatedChanged.css).toBe(result.css)
+  expect([...repeatedChanged.classSet]).toEqual([...result.classSet])
 })
 
 it('rejects a preparation revoked by disposal while waiting for a compiler', async () => {
