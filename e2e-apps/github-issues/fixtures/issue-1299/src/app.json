@@ -1,0 +1,4 @@
+{
+  "pages": ["pages/index/index", "pages/without-layout/index"],
+  "window": { "navigationStyle": "custom" }
+}

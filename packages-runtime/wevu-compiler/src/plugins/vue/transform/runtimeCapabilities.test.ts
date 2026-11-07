@@ -8,7 +8,7 @@ import {
 } from '../../../runtimeCapabilities'
 import { parseJsLike } from '../../../utils/babel'
 import { compileJsxFile } from '../../jsx/compileJsxFile'
-import { compileVueTemplateToWxml } from '../compiler/template'
+import { compileVueTemplateToWxml, getMiniProgramTemplatePlatform } from '../compiler/template'
 import { compileVueFile } from './compileVueFile'
 import { transformScript } from './script'
 import { analyzeWevuRuntimeCalls } from './transformScript/runtimeCapabilities'
@@ -378,6 +378,26 @@ export default {}
 
     expect(result.meta?.runtimeCapabilities).toBeUndefined()
     expect(result.script).not.toContain(WEVU_SCOPED_SLOT_OWNER_REQUIRED_KEY)
+  })
+
+  it('merges native slot owner requirements with existing template capabilities', async () => {
+    const result = await compileVueFile(
+      '<template><view ref="root" @tap="count++"><slot /></view></template>',
+      '/project/src/components/native-slot-owner.vue',
+      {
+        sourceMap: false,
+        template: {
+          platform: getMiniProgramTemplatePlatform('weapp'),
+          scopedSlotsRequireProps: true,
+          nativeSlotContext: true,
+        },
+      },
+    )
+
+    expect(result.bindingManifest?.features.scopedSlots).not.toBe(true)
+    expect(result.meta?.runtimeCapabilities).toEqual({ required: ['templateRefs', 'inlineEvents', 'scopedSlots'] })
+    expect(result.script).toContain(WEVU_SCOPED_SLOT_OWNER_REQUIRED_KEY)
+    expectCanonicalCalls(result.script ?? '', ['templateRefs', 'inlineEvents', 'scopedSlots'])
   })
 
   it('derives runtime capabilities after applying page layout wrappers', async () => {

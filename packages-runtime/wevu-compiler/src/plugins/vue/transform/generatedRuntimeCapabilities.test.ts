@@ -1,6 +1,6 @@
-import type { RuntimeApp } from '../../../../../wevu/src/runtime/types'
+import type { InternalRuntimeState, RuntimeApp } from '../../../../../wevu/src/runtime/types'
 import { runInNewContext } from 'node:vm'
-import { WEVU_SCOPED_SLOT_CREATOR_KEY } from '@weapp-core/constants'
+import { WEVU_NATIVE_DECLARATION_METHOD, WEVU_NATIVE_SLOT_PARENT_METHOD, WEVU_SCOPED_SLOT_CREATOR_KEY } from '@weapp-core/constants'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
@@ -8,13 +8,17 @@ import {
   WE_VU_COMPILER_RUNTIME_MODULE_ID,
 } from '../../../constants'
 import { generate, parseJsLike } from '../../../utils/babel'
-import { compileVueTemplateToWxml } from '../compiler/template'
+import { compileVueTemplateToWxml, getMiniProgramTemplatePlatform } from '../compiler/template'
+import { compileVueFile } from './compileVueFile'
 import { transformScript } from './script'
 
 function executeRuntimeScript(code: string, modules: Record<string, object>): unknown {
   const ast = parseJsLike(code)
   const globals: Record<string, unknown> = {}
   ast.program.body = ast.program.body.filter((statement) => {
+    if (t.isExportDefaultDeclaration(statement)) {
+      return false
+    }
     if (!t.isImportDeclaration(statement)) {
       return true
     }
@@ -46,6 +50,57 @@ afterEach(() => {
 })
 
 describe('generated capability scripts with the internal runtime', () => {
+  it.each([
+    ['scriptless', ''],
+    ['JSON-only', '<script setup>defineComponentJson({ options: { virtualHost: true } })</script>'],
+  ])('installs and mounts native slot owners from a %s component', async (_kind, script) => {
+    const runtime = await import('../../../../../wevu/src/internal-runtime')
+    const { getScopedSlotMountState, runtimeCapabilityRegistry } = await import('../../../../../wevu/src/runtime/capabilities')
+    const { getOwnerProxy } = await import('../../../../../wevu/src/runtime/scopedSlots')
+    expect(runtimeCapabilityRegistry.scopedSlots).toBeUndefined()
+    const result = await compileVueFile(`${script}<template><view><slot /></view></template>`, 'src/layouts/default.vue', {
+      sourceMap: false,
+      template: {
+        platform: getMiniProgramTemplatePlatform('weapp'),
+        scopedSlotsRequireProps: true,
+        nativeSlotContext: true,
+      },
+    })
+    const register = vi.fn<(definition: Record<string, any>) => void>()
+    vi.stubGlobal('Component', register)
+    executeRuntimeScript(result.script!, { [WE_VU_COMPILER_RUNTIME_MODULE_ID]: runtime })
+    expect(register).toHaveBeenCalledOnce()
+    const definition = register.mock.calls[0]![0]
+    expect(definition.methods[WEVU_NATIVE_SLOT_PARENT_METHOD]).toBeTypeOf('function')
+    expect(definition.methods[WEVU_NATIVE_DECLARATION_METHOD]).toBeTypeOf('function')
+    const instances = Array.from({ length: 2 }, () => ({
+      data: { ...definition.data },
+      properties: {},
+      ...definition.methods,
+      setData(value: Record<string, unknown>) {
+        Object.assign(this.data, value)
+      },
+    } as InternalRuntimeState))
+    const ownerIds: string[] = []
+    try {
+      for (const instance of instances) {
+        definition.lifetimes.created.call(instance)
+        definition.lifetimes.attached.call(instance)
+        const state = getScopedSlotMountState(instance)
+        expect(state?.ownerId).toBeTypeOf('string')
+        expect(getOwnerProxy(state!.ownerId)).toBe(instance.__wevu!.proxy)
+        ownerIds.push(state!.ownerId)
+      }
+      expect(new Set(ownerIds).size).toBe(2)
+    }
+    finally {
+      for (const instance of instances) {
+        definition.lifetimes.detached.call(instance)
+      }
+    }
+    expect(ownerIds.map(getOwnerProxy)).toEqual([undefined, undefined])
+  })
+
   it('mounts and patches outer options despite shadowed factory locals', async () => {
     const runtime = await import('../../../../../wevu/src/internal-runtime')
     const { nextTick } = await import('../../../../../wevu/src/scheduler')

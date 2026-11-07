@@ -5,7 +5,9 @@ import type { CompilerContext } from '../../../../context'
 import type { ReExportResolutionCache } from '../../../../utils/reExport'
 import type { createPageEntryMatcher } from '../../../wevu'
 import type { ResolvedAppShell } from '../appShell'
+import type { AppShellRuntimeModule } from '../appShellRuntime'
 import type { CompileVueFileResolvedOptions } from '../compileOptions'
+import { WEVU_APP_SHELL_VIRTUAL_PREFIX } from '@weapp-core/constants'
 import { fs } from '@weapp-core/shared/fs'
 import { parseSidecarSourceMetadata } from '../../../../moduleGraph/protocol'
 import { normalizeSourceId } from '../../../../moduleGraph/traversal'
@@ -16,6 +18,7 @@ import { readNativeEntryAssetOwners } from '../../../utils/nativeEntryAssetOwner
 import { createReadAndParseSfcOptions, readAndParseSfc } from '../../../utils/vueSfc'
 import { VUE_PLUGIN_NAME } from '../../index'
 import { createCompilerAppShellSignature, resolveAppShellForCompilation } from '../appShell'
+import { compileAppShellRuntime } from '../appShellRuntime'
 import { emitVueBundleAssets } from '../bundle'
 import { collectFallbackPageEntryIds } from '../fallbackEntries'
 import { invalidateResolvedPageLayoutsCache, isLayoutFile } from '../pageLayout'
@@ -67,6 +70,7 @@ export function invalidateComponentMetaCache(
 export function createVueTransformPlugin(ctx: CompilerContext, options: { react?: boolean } = {}): Plugin {
   const compilationCache = new Map<string, { result: VueTransformResult, source?: string, isPage: boolean, autoRoutesSignature?: string, styleIndependentSignature?: string, pageLayoutSignature?: string, appShellSignature?: string }>()
   let appShell: ResolvedAppShell | undefined
+  let appShellRuntimeModule: AppShellRuntimeModule | undefined
   let pageMatcher: ReturnType<typeof createPageEntryMatcher> | null = null
   let scanDirtySynced = false
   let isBundledDev = false
@@ -150,6 +154,7 @@ export function createVueTransformPlugin(ctx: CompilerContext, options: { react?
     },
 
     async buildStart() {
+      appShellRuntimeModule = undefined
       if (ctx.runtimeState?.build?.hmr?.fullEntryScan) {
         // 完整入口扫描重新建立可达图，历史编译结果不能继续作为独立资产入口。
         compilationCache.clear()
@@ -168,6 +173,15 @@ export function createVueTransformPlugin(ctx: CompilerContext, options: { react?
       nativeSlotContextCache.clear()
 
       updateAppShell(await resolveAppShellForCompilation(ctx, this))
+      appShellRuntimeModule = await compileAppShellRuntime({
+        ctx,
+        pluginCtx: this,
+        appShell,
+        compileOptionsState: { reExportResolutionCache, classStyleRuntimeWarned, compileOptionsCache, componentMetaCache, nativeSlotContextCache },
+      })
+      if (appShellRuntimeModule) {
+        this.emitFile({ type: 'chunk', id: appShellRuntimeModule.id, fileName: appShellRuntimeModule.fileName, preserveSignature: 'exports-only' })
+      }
       await preloadNativeLayoutEntries({
         pluginCtx: this,
         ctx,
@@ -183,6 +197,9 @@ export function createVueTransformPlugin(ctx: CompilerContext, options: { react?
     },
 
     resolveId(id) {
+      if (id.startsWith(WEVU_APP_SHELL_VIRTUAL_PREFIX)) {
+        return id
+      }
       if (!SCOPED_SLOT_VIRTUAL_ID_RE.test(id)) {
         return null
       }
@@ -198,6 +215,12 @@ export function createVueTransformPlugin(ctx: CompilerContext, options: { react?
     },
 
     async load(id) {
+      if (id === appShellRuntimeModule?.id) {
+        for (const dependency of appShellRuntimeModule.dependencies) {
+          this.addWatchFile(dependency)
+        }
+        return { code: appShellRuntimeModule.code, map: null }
+      }
       if (!VUE_LOAD_FILTER_RE.test(id)) {
         return null
       }
