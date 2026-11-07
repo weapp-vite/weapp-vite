@@ -11,6 +11,7 @@ describe('auxiliary graph resolver ownership', () => {
       handler(this: { owner: string }) { return this.owner },
     }
     const lifecycle = vi.fn()
+    const hotUpdate = vi.fn()
     const plugin: Plugin = {
       name: 'third-party',
       enforce: 'pre',
@@ -24,11 +25,14 @@ describe('auxiliary graph resolver ownership', () => {
       writeBundle: lifecycle,
       closeBundle: lifecycle,
       closeWatcher: lifecycle,
+      hotUpdate,
     }
     const plugins = await collectResolverPlugins({ plugins: [false, [Promise.resolve(plugin)], { name: 'weapp-vite:context' }, Promise.resolve([{ name: 'weapp-runtime:owner' }])] })
     expect(plugins).toHaveLength(1)
     const projected = plugins[0]!
     expect(projected).toMatchObject({ name: 'third-party', enforce: 'pre', resolveId: { order: 'post', filter } })
+    expect(projected.hotUpdate).toEqual(expect.any(Function))
+    expect(projected.hotUpdate).not.toBe(hotUpdate)
     expect(projected).not.toBe(plugin)
     const hook = projected.resolveId as typeof resolveId
     expect(hook).not.toBe(resolveId)

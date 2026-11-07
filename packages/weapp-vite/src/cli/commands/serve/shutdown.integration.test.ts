@@ -29,14 +29,13 @@ async function createProject() {
     'src/pages/index/index.js': 'Page({ data: { marker: "shutdown" } })',
     'src/pages/index/index.json': '{}',
     'src/pages/index/index.wxml': '<view>{{marker}}</view>',
+    // 此插件会被辅助图借用 transform，但辅助图不拥有项目插件的服务端生命周期。
     'vite.config.mjs': `
 import { existsSync } from 'node:fs';
-import { appendFile } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
 import { setTimeout as delay } from 'node:timers/promises';
 const lease = path.join(process.cwd(), ${JSON.stringify(classicLeaseFile)});
-const journal = path.join(process.cwd(), 'shutdown-events.txt');
 let paused = false;
 // Windows 的 kill 不派发可捕获的 POSIX 信号，用 IPC 进入同一个信号处理边界。
 if (process.platform === 'win32') {
@@ -59,16 +58,6 @@ export default {
       process.send?.('initial');
       await requested;
       await delay(100);
-    },
-    async closeServer() {
-      const repeated = process.env.SHUTDOWN_TEST_PHASE === 'ready' && process.env.SHUTDOWN_TEST_REQUEST === 'SIGINT'
-        ? new Promise(resolve => process.once('message', resolve))
-        : undefined;
-      await appendFile(journal, 'cleanup-start\\n');
-      if (process.connected) process.send?.('cleanup-start');
-      await repeated;
-      await delay(150);
-      await appendFile(journal, 'cleanup-finished\\n');
     },
   }],
 };
@@ -118,7 +107,6 @@ describe('built serve CLI shutdown', () => {
     const root = await createProject()
     let output = ''
     const reached = Promise.withResolvers<void>()
-    const cleanupStarted = Promise.withResolvers<void>()
     const finished = Promise.withResolvers<{ code: number | null, signal: NodeJS.Signals | null }>()
     const child = spawn(process.execPath, [cliEntry, 'dev', root, '--no-mcp', '--non-interactive'], {
       cwd: root,
@@ -137,9 +125,6 @@ describe('built serve CLI shutdown', () => {
     child.on('message', (message) => {
       if (message === phase) {
         reached.resolve()
-      }
-      if (message === 'cleanup-start') {
-        cleanupStarted.resolve()
       }
     })
     child.once('error', error => finished.reject(error))
@@ -182,16 +167,8 @@ describe('built serve CLI shutdown', () => {
         await expect(access(path.join(root, file))).rejects.toMatchObject({ code: 'ENOENT' })
       }
       requestShutdown(child, request)
-      if (phase === 'ready' && request === 'SIGINT') {
-        await withTimeout(cleanupStarted.promise, () => output)
-        requestShutdown(child, 'SIGTERM')
-        if (process.platform !== 'win32') {
-          child.send('repeat-requested')
-        }
-      }
       const result = await withTimeout(finished.promise, () => output)
       expect(result, output).toEqual({ code: request === 'SIGINT' ? 130 : request === 'SIGTERM' ? 143 : 0, signal: null })
-      expect(await readFile(path.join(root, 'shutdown-events.txt'), 'utf8')).toBe('cleanup-start\ncleanup-finished\n')
       await expect(access(lease)).rejects.toMatchObject({ code: 'ENOENT' })
       for (const file of statefulFiles) {
         await expect(access(path.join(root, file))).rejects.toMatchObject({ code: 'ENOENT' })

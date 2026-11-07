@@ -35,6 +35,8 @@ export async function collectResolverPlugins(config: InlineConfig): Promise<Plug
       resolveDynamicImport: candidate.resolveDynamicImport,
       load: candidate.load,
       transform: candidate.transform,
+      // 辅助图需要接收真实文件保存，以便把变更交给主构建的快照调度器。
+      hotUpdate: candidate.hotUpdate,
     })))
   }
   await collect(config.plugins)
