@@ -1,11 +1,12 @@
 # 依赖补丁与发布维护
 
-当前 `patchedDependencies` 只登记两份补丁：
+当前 `patchedDependencies` 登记三份补丁：
 
 | 依赖 | 用途 | 发布交付范围 |
 | --- | --- | --- |
 | `chokidar@6.0.0` | 修正文件监听的异步提交、目录恢复和资源关闭边界 | `weapp-vite` 通过 `alwaysBundle` 将修补代码打入 `dist`，普通 npm 消费者也使用该实现 |
 | `@vitejs/plugin-vue@6.0.10` | 向 Oxc 转换补传当前 Vite 配置和 watcher | 仓库 Web UI、文档及相关测试的开发和构建，不修补消费者安装的 Vue 插件 |
+| `@icebreakers/monorepo@6.4.0` | 允许六阶段 source recovery 重用包管理器目录 | 仓库发布工具，不进入小程序运行时产物 |
 
 工作区的 pnpm 补丁登记不会随 npm 依赖安装自动传播；已打入发布产物的修改代码会交付给消费者。
 当前使用官方 Vite `8.3.5` 和 Rolldown `1.2.16`，不再维护它们的补丁。Vite+ `1.5.0` launcher/core
@@ -43,10 +44,22 @@ ESM 文件，并在执行框架或导入 guard 前确认消费者解析结果。
 
 正式发布包消费验证及发布回归通过后，本仓库已删除整份
 `@icebreakers__monorepo@6.3.1.patch`、对应 `patchedDependencies` 和锁文件补丁登记，
-不再维护这两类重复实现。当前保留的两份补丁见上表。升级时继续运行
+不再维护这两类重复实现。当前保留的补丁见上表。升级时继续运行
 `scripts/repoctl-nightly-deadline.test.ts`、`scripts/repoctl-consumer-context.test.ts`
 和 `scripts/repoctl-snapshot-workflow.test.ts`，并完成 `pnpm test:release`；
 不能以每命令的新超时配置替代共享截止时间，也不能因移除补丁而删除公共行为回归。
+
+`@icebreakers/monorepo@6.4.0` 的 source recovery 会在六个阶段中重复准备同一包管理器目录。
+当前补丁仅让该目录的 `mkdir` 使用 `recursive: true`，避免 plan 成功后 verify 遇到 `EEXIST`。
+源码身份、原始版本提交、质量检查、确认、hook 和发布完成记录仍由上游原生六阶段流程负责，
+并由 `scripts/repoctl-release-source-recovery.test.ts` 的真实文件系统回归覆盖。升级时须先确认
+上游能完整执行同一 source 的六阶段恢复，再移除这条补丁。发行文件超过 300 行，保留原结构
+使补丁能直接对应上游的一行变更，不拆分上游 bundle。
+
+Release job 使用固定 Git bot 环境身份创建 annotated tag，不修改 runner 的全局 Git 配置。
+历史 Marketplace hook 结果不明时仍拒绝继续；只有核验线上精确版本并补齐指向原发布提交的
+扩展 tag 后，才能在 source recovery 中显式选择 `acknowledge-marketplace-hook`。
+该输入只确认已完成的 Marketplace hook，不确认其他 hook，也不跳过质量、registry 确认或完成记录。
 
 官方 Vite/Rolldown 的产品适配、内部诊断和资源验收边界见[编译依赖内存说明](./compiler-memory.md)。
 

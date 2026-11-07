@@ -1,0 +1,13 @@
+diff --git a/dist/commands-1ApnhvJF.mjs b/dist/commands-1ApnhvJF.mjs
+index d231a8f2145b90c458eade110d0b4a4620815403..695250fc1da5e061676f962ca9ab92f58c5ab189 100644
+--- a/dist/commands-1ApnhvJF.mjs
++++ b/dist/commands-1ApnhvJF.mjs
+@@ -10903,7 +10903,7 @@ async function readSourceCandidates(options, source) {
+ /** Resolve pnpm from the historical checkout for installs and nested lifecycle scripts. */
+ async function sourcePackageManagerEnvironment(options, root) {
+ 	const directory = path$1.join(root, "package-manager");
+-	await mkdir(directory);
++	await mkdir(directory, { recursive: true });
+ 	run("corepack", [
+ 		"enable",
+ 		"--install-directory",

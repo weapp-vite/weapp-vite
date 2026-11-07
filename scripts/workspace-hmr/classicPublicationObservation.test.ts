@@ -56,7 +56,7 @@ function scenarioPublication() {
   const complete = Promise.withResolvers<void>()
   const stable = Promise.withResolvers<Map<string, DistFileSnapshot>>()
   const nativeWait = vi.fn(() => native.promise)
-  const completionWait = vi.fn(() => complete.promise)
+  const completionWait = vi.fn<ReturnType<typeof createDevBuildCompletion>['wait']>(() => complete.promise)
   capture.native.mockReturnValue({ wait: nativeWait })
   capture.completion.mockReturnValue({ wait: completionWait })
   capture.stable.mockImplementation(() => stable.promise)

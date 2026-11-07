@@ -81,6 +81,11 @@ it('keeps the repoctl-managed release workflow aligned with the current contract
   assert.equal(job?.env?.REPO_RELEASE_VERSION, githubExpression('inputs.version'))
   assert.equal(job?.env?.REPO_RELEASE_DRY_RUN, githubExpression('inputs.dry-run'))
   assert.equal(job?.env?.REPO_RELEASE_RECOVERY_SOURCE_SHA, githubExpression('inputs.source-sha'))
+  assert.equal(job?.env?.REPO_RELEASE_ACKNOWLEDGE_HOOKS, githubExpression('inputs.acknowledge-marketplace-hook && \'release:vscode-marketplace\' || \'\''))
+
+  const recoveryValidation = steps.find(step => step.name === 'Validate release recovery inputs')
+  assert.equal(recoveryValidation?.run, 'node .github/scripts/release-recovery-inputs.mjs')
+  assert.ok(steps.indexOf(recoveryValidation!) < steps.findIndex(step => step.name === 'Install Dependencies'))
 
   const stages = ['plan', 'verify', 'prepare', 'upload', 'confirm', 'finalize']
   const releaseSteps = steps.filter(step => step.id?.startsWith('release-') && stages.some(stage => step.id === `release-${stage}`))
