@@ -35,10 +35,10 @@ export function nativeRefreshPinsFromRun(run) {
   return { prNumber: Number(match[1]), headSha: match[2], baseSha: match[3], checkoutSha: match[4] }
 }
 
-/** 仅做路由分类；实际使用前仍必须验证审批、控制来源与目标身份。 */
+/** run.name 随显示标题变化，按服务端路径路由；使用前仍核对审批、控制来源及目标。 */
 export function isNativePrRun(run) {
   const match = titlePattern.exec(run?.display_title ?? '')
-  return run?.name === 'PR CI' && run.path === '.github/workflows/ci-pr.yml'
+  return run?.path === '.github/workflows/ci-pr.yml'
     && (run.event === 'pull_request' || (run.event === 'workflow_dispatch' && Boolean(match && positive(Number(match[1])))))
 }
 

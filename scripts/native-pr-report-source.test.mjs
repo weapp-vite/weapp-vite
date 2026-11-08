@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { nativeReportRunId, resolveNativeReportSource } from '../.github/scripts/publish-native-pr-report.mjs'
 
 const repository = 'example/project'
-const run = { id: 123, name: 'PR CI', path: '.github/workflows/ci-pr.yml', event: 'pull_request', status: 'completed', conclusion: 'failure', repository: { full_name: repository } }
+const run = { id: 123, name: 'feat: refine consumer skills', path: '.github/workflows/ci-pr.yml', event: 'pull_request', status: 'completed', conclusion: 'failure', repository: { full_name: repository } }
 const approvedJobs = [{ name: 'Approve PR checks', conclusion: 'success' }, { name: 'Freeze approved PR target', conclusion: 'success' }]
 const headSha = 'a'.repeat(40)
 const baseSha = 'b'.repeat(40)
@@ -10,7 +10,8 @@ const mergeSha = 'c'.repeat(40)
 const controlSha = 'd'.repeat(40)
 
 function refreshRun() {
-  return { ...run, event: 'workflow_dispatch', run_attempt: 1, display_title: `PR CI refresh #42 head=${headSha} base=${baseSha} merge=${mergeSha}`, head_sha: controlSha, head_branch: 'main', repository: { id: 1, full_name: repository }, head_repository: { id: 1, full_name: repository }, referenced_workflows: [{ path: `${repository}/.github/workflows/validate-ci.yml@${controlSha}`, sha: controlSha, ref: 'refs/heads/main' }] }
+  const title = `PR CI refresh #42 head=${headSha} base=${baseSha} merge=${mergeSha}`
+  return { ...run, name: title, event: 'workflow_dispatch', run_attempt: 1, display_title: title, head_sha: controlSha, head_branch: 'main', repository: { id: 1, full_name: repository }, head_repository: { id: 1, full_name: repository }, referenced_workflows: [{ path: `${repository}/.github/workflows/validate-ci.yml@${controlSha}`, sha: controlSha, ref: 'refs/heads/main' }] }
 }
 
 function sourceRequest(source, jobs = approvedJobs, metadata = { id: 1, full_name: repository, default_branch: 'main' }) {
@@ -57,14 +58,13 @@ describe('native report invocation', () => {
     expect(() => nativeReportRunId('workflow_dispatch', { repository: { default_branch: 'main' }, inputs: { 'run-id': id } }, 'refs/heads/main')).toThrow('run ID')
   })
 
-  it.each([{ name: 'Other' }, { event: 'pull_request_target' }])('rejects unrelated automatic runs: %j', (change) => {
+  it.each([{ path: '.github/workflows/other.yml' }, { event: 'pull_request_target' }])('rejects unrelated automatic runs: %j', (change) => {
     expect(() => nativeReportRunId('workflow_run', { workflow_run: { ...run, conclusion: 'success', ...change } }, 'refs/heads/main')).toThrow('successful workflow_run')
   })
 })
 
 describe('native report source before artifact downloads', () => {
   it.each([
-    { name: 'Other' },
     { path: '.github/workflows/ci.yml' },
     { event: 'pull_request_target' },
     { status: 'in_progress' },

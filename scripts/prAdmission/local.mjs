@@ -17,9 +17,13 @@ function expression(value) {
 // 只核对已约定的保护表达式，不执行仓库 YAML 中的代码。
 const reportGuards = {
   'comment': `contains(fromJSON('["CI Performance","Wevu Runtime Size"]'), github.event.workflow_run.name) && github.event.workflow_run.event == 'workflow_dispatch'`,
-  'report-v2': `contains(fromJSON('["Performance Smoke","Nightly Performance"]'), github.event.workflow_run.name)`,
+  'report-v2': `github.event_name == 'workflow_run'
+    && ((github.event.workflow_run.path == '.github/workflows/ci-performance.yml'
+    && github.event.workflow_run.event == 'workflow_dispatch')
+    || (github.event.workflow_run.path == '.github/workflows/nightly-performance.yml'
+    && (github.event.workflow_run.event == 'workflow_dispatch' || github.event.workflow_run.event == 'schedule')))`,
   'native-pr-report': `(github.event_name == 'workflow_run'
-    && github.event.workflow_run.name == 'PR CI'
+    && github.event.workflow_run.path == '.github/workflows/ci-pr.yml'
     && (github.event.workflow_run.event == 'pull_request' || github.event.workflow_run.event == 'workflow_dispatch')
     && github.event.workflow_run.conclusion == 'success')
     || (github.event_name == 'workflow_dispatch'

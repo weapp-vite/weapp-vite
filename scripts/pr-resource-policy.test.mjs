@@ -18,19 +18,40 @@ function condition(expression, github, extra = {}) {
 describe('PR resource admission before allocating runners', () => {
   it.each(['failure', 'cancelled', 'timed_out', 'action_required', 'skipped', 'neutral', 'stale', 'startup_failure'])('starts no report jobs for a native PR CI %s event', async (conclusion) => {
     const workflow = await read('ci-performance-comment.yml')
-    const github = { event_name: 'workflow_run', ref_name: 'main', ref_type: 'branch', event: { repository: { default_branch: 'main' }, workflow_run: { name: 'PR CI', event: 'pull_request', conclusion } } }
+    const github = { event_name: 'workflow_run', ref_name: 'main', ref_type: 'branch', event: { repository: { default_branch: 'main' }, workflow_run: { name: 'feat: refine consumer skills', path: '.github/workflows/ci-pr.yml', event: 'pull_request', conclusion } } }
     expect(Object.values(workflow.jobs).filter(job => condition(job.if, github))).toEqual([])
   })
 
   it('runs one automatic report for success and allows explicit default-branch recovery', async () => {
     const workflow = await read('ci-performance-comment.yml')
     expect(workflow.on.workflow_dispatch.inputs['run-id']).toMatchObject({ required: true, type: 'string' })
-    const event = { repository: { default_branch: 'main' }, workflow_run: { name: 'PR CI', event: 'pull_request', conclusion: 'success' } }
+    const event = { repository: { default_branch: 'main' }, workflow_run: { name: 'feat: refine consumer skills', path: '.github/workflows/ci-pr.yml', event: 'pull_request', conclusion: 'success' } }
     const jobs = github => Object.entries(workflow.jobs).filter(([, job]) => condition(job.if, github)).map(([name]) => name)
     expect(jobs({ event_name: 'workflow_run', ref_name: 'main', ref_type: 'branch', event })).toEqual(['native-pr-report'])
+    expect(jobs({ event_name: 'workflow_run', event: { ...event, workflow_run: { ...event.workflow_run, name: 'PR CI refresh #42', event: 'workflow_dispatch' } } })).toEqual(['native-pr-report'])
+    expect(jobs({ event_name: 'workflow_run', event: { ...event, workflow_run: { ...event.workflow_run, path: '.github/workflows/ci-performance.yml' } } })).toEqual([])
     expect(jobs({ event_name: 'workflow_dispatch', ref_name: 'main', ref_type: 'branch', event: { ...event, workflow_run: {} } })).toEqual(['native-pr-report'])
     expect(jobs({ event_name: 'workflow_dispatch', ref_name: 'feature', ref_type: 'branch', event: { ...event, workflow_run: {} } })).toEqual([])
     expect(jobs({ event_name: 'workflow_dispatch', ref_name: 'main', ref_type: 'tag', event: { ...event, workflow_run: {} } })).toEqual([])
+  })
+
+  it.each(['Performance Smoke', 'Nightly Performance'].flatMap(name => ['cancelled', 'failure', 'success'].map(conclusion => ({ name, conclusion }))))('does not route native title $name ($conclusion) to a sibling reporter', async ({ name, conclusion }) => {
+    const workflow = await read('ci-performance-comment.yml')
+    const github = { event_name: 'workflow_run', event: { workflow_run: { name, path: '.github/workflows/ci-pr.yml', event: 'pull_request', conclusion } } }
+    const jobs = Object.entries(workflow.jobs).filter(([, job]) => condition(job.if, github)).map(([name]) => name)
+    expect(jobs).toEqual(conclusion === 'success' ? ['native-pr-report'] : [])
+  })
+
+  it.each([
+    ['ci-performance.yml', 'workflow_dispatch', true],
+    ['nightly-performance.yml', 'workflow_dispatch', true],
+    ['nightly-performance.yml', 'schedule', true],
+    ['ci-performance.yml', 'schedule', false],
+    ['nightly-performance.yml', 'pull_request', false],
+  ])('routes report-v2 only for %s / %s', async (file, event, admitted) => {
+    const workflow = await read('ci-performance-comment.yml')
+    const github = { event_name: 'workflow_run', event: { workflow_run: { name: 'Custom display title', path: `.github/workflows/${file}`, event, conclusion: 'failure' } } }
+    expect(condition(workflow.jobs['report-v2'].if, github)).toBe(admitted)
   })
 
   it('uses closing a PR only to cancel its concurrency group with every job skipped', async () => {
@@ -46,7 +67,7 @@ describe('PR resource admission before allocating runners', () => {
       expect(job.if ?? '').not.toMatch(/always\(|cancelled\(|failure\(/u)
     }
     const report = await read('ci-performance-comment.yml')
-    const closingRun = { event_name: 'workflow_run', event: { workflow_run: { name: 'PR CI', event: 'pull_request_target', conclusion: 'success' } } }
+    const closingRun = { event_name: 'workflow_run', event: { workflow_run: { name: 'feat: refine consumer skills', path: '.github/workflows/ci-pr.yml', event: 'pull_request_target', conclusion: 'success' } } }
     expect(condition(report.jobs['native-pr-report'].if, closingRun)).toBe(false)
   })
 })

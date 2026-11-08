@@ -6,7 +6,7 @@ function sourceRunMatches(run, context) {
   const owned = run.referenced_workflows?.filter(item => item.path?.startsWith(`${context.repository}/`)) ?? []
   const merge = owned[0]?.sha
   return positive(run.id) && positive(run.run_attempt) && run.event === 'pull_request'
-    && run.name === 'PR CI' && run.path === '.github/workflows/ci-pr.yml'
+    && run.path === '.github/workflows/ci-pr.yml'
     && run.repository?.id === context.baseRepositoryId && run.repository.full_name === context.repository
     && run.head_repository?.id === context.headRepositoryId && run.head_repository.full_name === context.headRepository
     && run.head_sha === context.headSha && run.head_branch === context.headRef

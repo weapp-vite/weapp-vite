@@ -63,10 +63,10 @@ describe('offline PR admission contract', () => {
     })).toContainEqual(expect.objectContaining({ name: '关闭事件跳过审批' }))
   })
 
-  it.each(['CI Performance', 'Wevu Runtime Size'])('does not promote %s diagnostics to native reports', (name) => {
+  it.each(['ci-performance.yml', 'wevu-runtime-size.yml'])('does not promote %s diagnostics to native reports', (name) => {
     expect(failures(({ workflows }) => {
       const job = workflows['ci-performance-comment.yml'].jobs['native-pr-report']
-      job.if = job.if.replace('name == \'PR CI\'', `name == '${name}'`)
+      job.if = job.if.replace('path == \'.github/workflows/ci-pr.yml\'', `path == '.github/workflows/${name}'`)
     })).toContainEqual(expect.objectContaining({ name: 'native-pr-report 报告准入条件' }))
   })
 

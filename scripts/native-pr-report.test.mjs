@@ -36,11 +36,11 @@ function sizeReport() {
 }
 
 function fixture(refresh = false) {
-  const run = { id: 123, run_attempt: 1, head_branch: pull.head.ref, head_repository: pull.head.repo, name: 'PR CI', event: 'pull_request', path: '.github/workflows/ci-pr.yml', status: 'completed', conclusion: 'failure', head_sha: headSha, pull_requests: [pull], repository: { id: 1, full_name: repository } }
+  const run = { id: 123, run_attempt: 1, head_branch: pull.head.ref, head_repository: pull.head.repo, name: 'feat: refine consumer skills', event: 'pull_request', path: '.github/workflows/ci-pr.yml', status: 'completed', conclusion: 'failure', head_sha: headSha, pull_requests: [pull], repository: { id: 1, full_name: repository } }
   run.referenced_workflows = [{ path: `${repository}/.github/workflows/validate-ci.yml@${driverSha}`, sha: driverSha, ref: 'refs/pull/42/merge' }]
   const context = { schemaVersion: 1, event: 'pull_request', repository, runId: '123', runAttempt: 1, driverSha, isPr: true, shouldRun: true, prNumber: 42, headSha, baseSha, headRef: 'feature', baseRef: 'main', headRepository: 'contributor/project', checkoutMode: 'merge', checkoutSha: driverSha, selections: { 'ci-performance': true, 'wevu-runtime-size': true } }
   if (refresh) {
-    Object.assign(run, { event: 'workflow_dispatch', display_title: refreshTitle(), head_sha: controlSha, head_branch: 'main', head_repository: { id: 1, full_name: repository }, pull_requests: [], referenced_workflows: [{ path: `${repository}/.github/workflows/validate-ci.yml@${controlSha}`, sha: controlSha, ref: 'refs/heads/main' }] })
+    Object.assign(run, { name: refreshTitle(), event: 'workflow_dispatch', display_title: refreshTitle(), head_sha: controlSha, head_branch: 'main', head_repository: { id: 1, full_name: repository }, pull_requests: [], referenced_workflows: [{ path: `${repository}/.github/workflows/validate-ci.yml@${controlSha}`, sha: controlSha, ref: 'refs/heads/main' }] })
     Object.assign(context, { event: 'native_refresh', driverSha: controlSha, controlRef: 'main', headRepository: repository, headRepositoryId: 1, baseRepositoryId: 1 })
   }
   const jobs = [
@@ -332,7 +332,7 @@ describe('native PR completion reporting', () => {
     state.runs.push(
       { ...options.run, id: 124, display_title: refreshTitle({ headSha: 'e'.repeat(40) }) },
       { ...options.run, id: 125, display_title: 'Manual diagnostics', head_sha: headSha },
-      { ...options.run, id: 126, name: 'Other', head_sha: headSha },
+      { ...options.run, id: 126, path: '.github/workflows/other.yml', head_sha: headSha },
     )
     expect(await publishNativePrReport(options)).toEqual({ published: true })
     expect(state.writes).toHaveLength(2)
