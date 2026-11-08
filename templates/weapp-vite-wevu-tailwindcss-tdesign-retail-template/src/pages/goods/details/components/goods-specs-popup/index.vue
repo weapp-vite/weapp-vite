@@ -305,7 +305,7 @@ defineComponentJson({
             </view>
             <block v-for="valuesItem in item.specValueList" :key="valuesItem.specValueId">
               <view
-                :class="`popup-sku-row__item ${valuesItem.isSelected ? 'popup-sku-row__item--active' : ''} ${!valuesItem.hasStockObj?.hasStock || !isStock ? 'disabled-sku-selected' : ''}`"
+                class="popup-sku-row__item" :class="`${valuesItem.isSelected ? 'popup-sku-row__item--active' : ''} ${!valuesItem.hasStockObj?.hasStock || !isStock ? 'disabled-sku-selected' : ''}`"
                 :data-specid="item.specId"
                 :data-id="valuesItem.specValueId"
                 :data-val="valuesItem.specValue"
@@ -329,20 +329,20 @@ defineComponentJson({
           </view>
         </view>
       </view>
-      <view v-if="outOperateStatus" :class="`single-confirm-btn ${!isStock ? 'disabled' : ''}`" @tap="specsConfirm">
+      <view v-if="outOperateStatus" class="single-confirm-btn" :class="`${!isStock ? 'disabled' : ''}`" @tap="specsConfirm">
         确定
       </view>
       <view
         v-if="!outOperateStatus"
-        :class="`popup-sku-actions flex flex-between ${!isStock ? 'popup-sku-disabled' : ''} text-[32rpx] h-[80rpx] text-center leading-[80rpx] p-[0_20rpx] [&_.sku-operate]:h-[80rpx] [&_.sku-operate]:w-[50%] [&_.sku-operate]:text-white [&_.sku-operate]:rounded-[48rpx] [&_.sku-operate_.sku-operate-addCart]:bg-[#ffece9] [&_.sku-operate_.sku-operate-addCart]:text-[#fa4126] [&_.sku-operate_.sku-operate-addCart]:rounded-[48rpx_0_0_48rpx] [&_.sku-operate_.sku-operate-addCart_.disabled]:[background:rgb(221,221,221)] [&_.sku-operate_.sku-operate-addCart_.disabled]:text-white [&_.sku-operate_.sku-operate-buyNow]:bg-[#fa4126] [&_.sku-operate_.sku-operate-buyNow]:rounded-[0_48rpx_48rpx_0] [&_.sku-operate_.sku-operate-buyNow_.disabled]:text-white [&_.sku-operate_.sku-operate-buyNow_.disabled]:[background:rgb(198,198,198)] [&_.sku-operate_.selected-sku-btn]:w-full`"
+        class="popup-sku-actions flex flex-between text-[32rpx] h-[80rpx] text-center leading-[80rpx] p-[0_20rpx] [&_.sku-operate]:h-[80rpx] [&_.sku-operate]:w-[50%] [&_.sku-operate]:text-white [&_.sku-operate]:rounded-[48rpx] [&_.sku-operate_.sku-operate-addCart]:bg-[#ffece9] [&_.sku-operate_.sku-operate-addCart]:text-[#fa4126] [&_.sku-operate_.sku-operate-addCart]:rounded-[48rpx_0_0_48rpx] [&_.sku-operate_.sku-operate-addCart_.disabled]:[background:rgb(221,221,221)] [&_.sku-operate_.sku-operate-addCart_.disabled]:text-white [&_.sku-operate_.sku-operate-buyNow]:bg-[#fa4126] [&_.sku-operate_.sku-operate-buyNow]:rounded-[0_48rpx_48rpx_0] [&_.sku-operate_.sku-operate-buyNow_.disabled]:text-white [&_.sku-operate_.sku-operate-buyNow_.disabled]:[background:rgb(198,198,198)] [&_.sku-operate_.selected-sku-btn]:w-full" :class="`${!isStock ? 'popup-sku-disabled' : ''}`"
       >
         <view class="sku-operate">
-          <view :class="`selected-sku-btn sku-operate-addCart ${!isStock ? 'disabled' : ''}`" @tap="addCart">
+          <view class="selected-sku-btn sku-operate-addCart" :class="`${!isStock ? 'disabled' : ''}`" @tap="addCart">
             加入购物车
           </view>
         </view>
         <view class="sku-operate">
-          <view :class="`selected-sku-btn sku-operate-buyNow ${!isStock ? 'disabled' : ''}`" @tap="buyNow">
+          <view class="selected-sku-btn sku-operate-buyNow" :class="`${!isStock ? 'disabled' : ''}`" @tap="buyNow">
             立即购买
           </view>
         </view>

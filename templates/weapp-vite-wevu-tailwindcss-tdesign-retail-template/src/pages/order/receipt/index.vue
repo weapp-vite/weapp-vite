@@ -277,7 +277,7 @@ definePageJson({
               :id="item.id === 0 ? 'receipt-none' : 'receipt-electronic'"
               :key="index"
               :data-item="item"
-              :class="`btn ${receiptIndex === index ? 'active-btn' : ''}`"
+              class="btn" :class="`${receiptIndex === index ? 'active-btn' : ''}`"
               @tap="onLabels"
             >
               {{ item.title }}
@@ -293,7 +293,7 @@ definePageJson({
             <view
               v-for="(tag, index) in addressTags"
               :key="index"
-              :class="`btn ${addressTagsIndex === index ? 'active-btn' : ''}`"
+              class="btn" :class="`${addressTagsIndex === index ? 'active-btn' : ''}`"
               :data-item="tag"
               @tap="onLabels"
             >
@@ -367,7 +367,7 @@ definePageJson({
               <view
                 v-for="(good, index) in goodsClasses"
                 :key="index"
-                :class="`btn ${goodsClassesIndex === index ? 'active-btn' : ''}`"
+                class="btn" :class="`${goodsClassesIndex === index ? 'active-btn' : ''}`"
                 :data-item="good"
                 @tap="onLabels"
               >

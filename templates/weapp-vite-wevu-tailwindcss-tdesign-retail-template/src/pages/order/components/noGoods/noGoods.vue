@@ -198,7 +198,7 @@ defineComponentJson({
       </view>
     </scroll-view>
     <view class="goods-fail-btn">
-      <view data-item="cart" :class="`btn ${isOnlyBack(settleDetailData) ? 'limit' : ''}`" @tap="onCard">
+      <view data-item="cart" class="btn" :class="`${isOnlyBack(settleDetailData) ? 'limit' : ''}`" @tap="onCard">
         返回购物车
       </view>
       <view v-if="isShowChangeAddress(settleDetailData)" class="btn origin" @tap="onDelive">

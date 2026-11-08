@@ -1,12 +1,11 @@
 # 依赖补丁与发布维护
 
-当前 `patchedDependencies` 登记三份补丁：
+当前 `patchedDependencies` 登记两份补丁：
 
 | 依赖 | 用途 | 发布交付范围 |
 | --- | --- | --- |
 | `chokidar@6.0.0` | 修正文件监听的异步提交、目录恢复和资源关闭边界 | `weapp-vite` 通过 `alwaysBundle` 将修补代码打入 `dist`，普通 npm 消费者也使用该实现 |
 | `@vitejs/plugin-vue@6.0.10` | 向 Oxc 转换补传当前 Vite 配置和 watcher | 仓库 Web UI、文档及相关测试的开发和构建，不修补消费者安装的 Vue 插件 |
-| `@icebreakers/monorepo@6.4.0` | 修复六阶段 source recovery 的执行目录和包管理器目录复用 | 仓库发布工具，不进入小程序运行时产物 |
 
 工作区的 pnpm 补丁登记不会随 npm 依赖安装自动传播；已打入发布产物的修改代码会交付给消费者。
 当前使用官方 Vite `8.3.5` 和 Rolldown `1.2.16`，不再维护它们的补丁。Vite+ `1.5.0` launcher/core
@@ -15,7 +14,7 @@
 
 ## 发布重试与恢复
 
-仓库固定使用 `repoctl@6.4.0`，发布重试、工作区根包识别和发布说明过滤均由上游正式实现负责。
+仓库固定使用 `repoctl@6.4.4`，发布重试、工作区根包识别和发布说明过滤均由上游正式实现负责。
 `@icebreakers/monorepo@6.1.0` 的上游实现包含发布说明分类修正：明确的 Conventional 摘要类型
 优先于整理提交类型及正文关键词，并保留正文中的依赖版本描述；原生 Dependencies 条目仍归维护。
 同一分类规则用于 Release PR、正式发布和发布说明修复，避免合并 intent 后功能、修复和性能被改归维护。
@@ -49,16 +48,15 @@ ESM 文件，并在执行框架或导入 guard 前确认消费者解析结果。
 和 `scripts/repoctl-snapshot-workflow.test.ts`，并完成 `pnpm test:release`；
 不能以每命令的新超时配置替代共享截止时间，也不能因移除补丁而删除公共行为回归。
 
-`@icebreakers/monorepo@6.4.0` 的 source recovery 会在六个阶段中重复准备同一包管理器目录。
-补丁让该目录的 `mkdir` 使用 `recursive: true`，避免 plan 成功后 verify 遇到 `EEXIST`。
-TypeScript 不记录 `.git` 下的目录符号链接，恢复 checkout 原先放在 Git 元数据内，导致 pnpm
-依赖的声明生成报 `TS2883`。补丁保留 `.git` 中的阶段记录，将执行目录迁至系统临时目录，
-按仓库 Git 路径、原 source、运行及 attempt 派生固定路径供六个阶段复用；拒绝文件或符号链接
-替换恢复目录。只有 finalize 的输出和阶段记录全部成功后才清理本轮目录，失败保留以便诊断。
-源码身份、原始版本提交、质量检查、确认、hook 和发布完成记录仍由上游原生六阶段流程负责，
-并由 `scripts/repoctl-release-source-recovery.test.ts` 的真实文件系统回归覆盖。升级时须先确认
-上游能完整执行同一 source 的六阶段恢复，再移除补丁。发行文件超过 300 行，保留原结构
-使补丁能直接对应上游函数，不拆分上游 bundle。
+上游 [#1153](https://github.com/icelib/repoctl/pull/1153) 已将本仓库
+`@icebreakers/monorepo@6.4.0` 补丁的完整语义吸收到 `6.4.4`：六阶段复用包管理器目录，
+将恢复 checkout 放在 Git 元数据之外，按仓库、原 source、运行及 attempt 隔离，拒绝冲突文件
+和符号链接，并在成功 finalize 后清理、失败时保留现场。上游同时覆盖超长发布 PR 的完整版本
+摘要和不可变 changelog 链接，以及有界、隐藏凭证与提交正文的 GitHub 错误诊断。
+
+正式发布包的严格 peer 安装和公共入口验证通过后，本仓库删除整份补丁及其登记，保留
+`scripts/repoctl-release-source-recovery.test.ts` 等公共行为回归。源码身份、原始版本提交、
+质量检查、确认、hook 和发布完成记录继续由上游原生六阶段流程负责，不维护重复的 bundle 修改。
 
 Release job 使用固定 Git bot 环境身份创建 annotated tag，不修改 runner 的全局 Git 配置。
 历史 Marketplace hook 结果不明时仍拒绝继续；只有核验线上精确版本并补齐指向原发布提交的

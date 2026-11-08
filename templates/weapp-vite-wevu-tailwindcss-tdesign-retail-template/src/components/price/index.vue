@@ -86,7 +86,7 @@ defineComponentJson({
 </script>
 
 <template>
-  <view :class="`price ${type} wr-class inline text-inherit [font-size:inherit] [text-decoration:inherit] whitespace-nowrap`">
+  <view class="price wr-class inline text-inherit [font-size:inherit] [text-decoration:inherit] whitespace-nowrap" :class="`${type}`">
     <view v-if="type === 'delthrough'" class="line" :style="`height:${addUnit(lineThroughWidth)};`" />
     <view class="symbol symbol-class inline text-inherit text-[0.8em] whitespace-nowrap">
       {{ symbol }}
@@ -95,7 +95,7 @@ defineComponentJson({
       <view class="integer inline whitespace-nowrap text-inherit [font-size:inherit]">
         {{ pArr[0] }}
       </view>
-      <view v-if="pArr[1]" :class="`decimal inline ${decimalSmaller ? 'smaller' : ''} decimal-class whitespace-nowrap text-inherit [font-size:inherit] [&_.smaller]:text-[0.8em] [&_.smaller]:align-baseline`">
+      <view v-if="pArr[1]" class="decimal inline decimal-class whitespace-nowrap text-inherit [font-size:inherit] [&_.smaller]:text-[0.8em] [&_.smaller]:align-baseline" :class="`${decimalSmaller ? 'smaller' : ''}`">
         .{{ pArr[1] }}
       </view>
     </view>

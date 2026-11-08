@@ -4,6 +4,8 @@
 
 交付前快进同步主线 `3b8620fc3c36cb242142570f7fbb4fa2fdb7da6d` 的 classic HMR 修复，未覆盖该提交；重新构建 weapp-vite 并验证对应回归。
 
+共享工具链正式发布后，继续快进同步 `d3b5ae5c97f00d46572aad175cd131cca4c2ea7c` 的 simulator 文件文本断言修正，再进行本轮最终升级。
+
 版本冻结于 2026-11-07 19:13 UTC。验收末次查询时，AI SDK 又发布了 `ai@7.0.165`、`@ai-sdk/openai@4.0.111`、`@ai-sdk/anthropic@4.0.99` 和 `@ai-sdk/openai-compatible@3.0.87`；它们晚于本轮冻结查询，本轮保留已冻结并验证的版本，不在验收期间追逐持续发布。
 
 ## 接受的升级
@@ -16,6 +18,10 @@
 | sass-embedded | 1.107.1 | 1.108.1 |
 | hono | 4.13.16 | 4.13.17 |
 | supertest | 7.3.1 | 7.3.2 |
+| repoctl / @icebreakers/monorepo | 6.4.0 | 6.4.4 |
+| @icebreakers/eslint-config | 8.0.12 | 8.0.15 |
+| @icebreakers/stylelint-config | 5.1.5 | 6.0.1 |
+| stylelint | 17.16.0 | 18.0.0 |
 
 保留 catalog、精确版本、`^`、`~` 与公开 peer 下限的声明形式。同步锁文件、脚手架内置 catalog、现行 vite-native fixture 的 Tailwind 4.3.5 / weapp-tailwindcss 5.7.2，以及中文 changeset。
 
@@ -35,12 +41,24 @@
 | Vite 8.3.5 | 沿用已有生命周期兼容边界；8.3.6 的 web optimizer 关闭后临时缓存问题仍未解决，历史验收例外不扩展到新版本。 |
 | Rolldown 1.2.16 | 1.3.0 超出 Vite 8.3.6 官方 `~1.2.16` 配对范围；保持单版本。 |
 | local-pkg 1.2.1 | 2.0.0 官方声明仍引用未声明的 `Args`，不放宽类型检查。 |
-| repoctl 6.4.0 / Stylelint 17.16.0 / 样式配置 5.1.5 | 联合候选 6.4.1 / 18 / 6 在隔离项目、TypeScript 6.0.3 和严格 peer 安装下失败：recess-order、SCSS 与 recommended 配置尚不全部接受 Stylelint 18。repoctl 6.4.1 也未包含现行发布恢复、发布 PR 与安全错误处理补丁的完整语义，保留原补丁链。 |
-| ESLint 配置 8.0.12 | 8.0.13 直接依赖样式配置 6，后者及 recommended 19 / standard 41 要求 Stylelint 18；独立严格 peer 安装确认无法与现行 Stylelint 17 共存，因此与样式工具链一并保留。 |
 | 工具链与 Actions | Node、pnpm、Rust、Bun、12 个 Cargo 直接依赖和 12 个 Actions 引用未发现适用新增目标。固定工具链与教程兼容下限保持原用途。 |
 | 历史和外部内容 | 历史 fixture、外部 upstream、性能基线及公开 peer 最低版本不按 latest 改写。 |
 
-Stylelint 联合候选在严格 peer 门禁即失败，因此没有将未经兼容证明的配置带入工作区，也没有声称候选 CSS、SCSS、Vue 或 WXSS 规则验收通过。
+## 共享工具链上游发布
+
+按用户要求，先在 repoctl 仓库完成 [#1153](https://github.com/icelib/repoctl/pull/1153)：将本仓库发布恢复、超长 PR 与安全错误诊断补丁迁入源代码，并修复 Stylelint 18 的严格消费兼容。该 PR 通过九组 OS/Node 矩阵、两组开发容器及全部适用原生门禁后 squash 合并。[版本 PR #1160](https://github.com/icelib/repoctl/pull/1160) 再次通过九组矩阵和原生门禁，发布源码为 `248d96857f3f841136360e093957eecb164d094c`；[文档 PR #1161](https://github.com/icelib/repoctl/pull/1161) 同步恢复目录说明。
+
+[正式发布运行](https://github.com/icelib/repoctl/actions/runs/42425952816) 的 plan、verify、prepare、upload、confirm、finalize 六阶段全部成功。四个公开包的精确版本、latest 标签、integrity、内部依赖和 GitHub tag/release 来源均已核对。私有 mock 应用的版本传播不属于 npm 发布目标。
+
+使用正式 npm 包在隔离项目安装 repoctl 6.4.4、两份配置、ESLint 10.14.0、Stylelint 18.0.0、TypeScript 6.0.3，严格 peer 安装通过；没有消费端 peer override 或源码 tarball 替换。CSS、SCSS、Vue、WXSS 正反例、属性排序修复、ESLint 样式桥接、原生 ESLint、repoctl 公共 API 与 CLI 均通过。
+
+样式配置在构建时打包固定的 SCSS 插件及不兼容的预设实现，保留许可证与兼容的运行时依赖；SCSS 指令交由专用规则校验，并关闭不能理解 Sass 组合表达式的 CSS `value-no-invalid` 规则，其他单位、颜色、命名和指令规则继续验证。最初失败的严格 peer 组合已由上述正式版本解决。
+
+本仓库移除 `@icebreakers/monorepo@6.4.0` 补丁和登记，保留发布公共行为回归；同步 bootstrap、自动 changeset、snapshot build/publish 的精确工具版本与 builder 哈希。零售模板 21 个 Vue 文件将 49 段完整静态 class 移到静态属性，保留动态表达式及动态类名前缀，适配新 ESLint 规则。已有大型 SFC 仅调整 class 声明，不增加职责，保留原组件边界。
+
+正式版本消费后，48 项包构建、80 项应用和模板构建、319 项 class/style 编译测试、381 项脚手架测试，以及 1884 份受管样式扫描通过；脚手架源码类型、冻结安装、Rolldown 单版本、catalog 和 74 项 workflow/changeset 定向检查通过。发布消费上下文测试适配新版 bundle 的模块边界注释，20 项原有行为断言全部保留并通过。
+
+本地发布回归另有一项升级前已存在的失败：公开类型清单将历史忽略目录 `test-d/.tmp-tsd/` 计入真实契约。工作流检查有 782 项通过、7 项既定跳过，一项基础设施 suite 被旧机器租约阻断；不把这些入口记录为全量通过。首次主线 CI 中的 Windows 发布路径断言、Bun 退出日志缺失和 HMR request 示例退出清理问题，均保留升级前对照证据；最终版本仍需核对本轮主线检查。
 
 ## 本地验证
 

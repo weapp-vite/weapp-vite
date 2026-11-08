@@ -416,7 +416,7 @@ jobs:
       actions: read
       id-token: write
     env:
-      REPOCTL_BOOTSTRAP_TOOL_VERSION: 6.4.0
+      REPOCTL_BOOTSTRAP_TOOL_VERSION: 6.4.4
     steps:
       - name: Setup Node.js environment
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -459,7 +459,7 @@ jobs:
       contents: read
       actions: read
     env:
-      REPOCTL_BOOTSTRAP_TOOL_VERSION: 6.4.0
+      REPOCTL_BOOTSTRAP_TOOL_VERSION: 6.4.4
     steps:
       - name: Setup Node.js environment
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0

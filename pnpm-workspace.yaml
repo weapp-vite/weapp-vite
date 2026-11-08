@@ -47,8 +47,8 @@ catalog:
   '@devframes/hub-ui': 1.3.2
   '@douyin-microapp/typings': ^1.3.1
   '@egoist/tailwindcss-icons': ^1.9.2
-  '@icebreakers/eslint-config': 8.0.12
-  '@icebreakers/stylelint-config': 5.1.5
+  '@icebreakers/eslint-config': 8.0.15
+  '@icebreakers/stylelint-config': 6.0.1
   '@iconify-json/mdi': ^1.2.3
   '@iconify/tailwind4': ^1.2.3
   '@jridgewell/remapping': ^2.3.5
@@ -135,7 +135,7 @@ catalog:
   sharp: ^0.35.5
   shiki: ^4.6.0
   socket.io: ^4.8.4
-  stylelint: ^17.16.0
+  stylelint: ^18.0.0
   socket.io-client: ^4.8.4
   tailwind-merge: ^3.7.0
   tailwind-variants: ^4.0.1
@@ -208,4 +208,3 @@ shamefullyHoist: true
 patchedDependencies:
   chokidar@6.0.0: patches/chokidar@6.0.0.patch
   '@vitejs/plugin-vue@6.0.10': patches/@vitejs__plugin-vue@6.0.10.patch
-  '@icebreakers/monorepo@6.4.0': patches/@icebreakers__monorepo@6.4.0.patch

@@ -37,11 +37,11 @@ defineComponentJson({
 </script>
 
 <template>
-  <view :class="`images-videos-container container-${classType} flex flex-wrap`">
+  <view class="flex flex-wrap" :class="`images-videos-container container-${classType}`">
     <view
       v-for="resource in resources"
       :key="resource.src"
-      :class="`resource-container resource-container-${classType} flex`"
+      class="flex" :class="`resource-container resource-container-${classType}`"
     >
       <t-image v-if="resource.type === 'image'" :t-class="`resource-item-${classType}`" :src="resource.src" />
       <my-video v-else :videoSrc="resource.src" :my-video="`resource-item-${classType}`">

@@ -62,7 +62,7 @@ defineComponentJson({
 <template>
   <view class="c-sidebar-item-container bg-white">
     <view
-      :class="`c-sidebar-item ${selected ? 'active' : ''} ${disabled ? 'disabled' : ''} ${topRightRadius ? 'top-right-radius' : ''} ${bottomRightRadius ? 'bottom-right-radius' : ''} custom-class flex justify-center text-center bg-[#f5f5f5] text-[#222427] p-[20rpx_0] text-[26rpx] [&_.active]:relative [&_.active]:[background:white] [&_.active_.c-sidebar-item__text]:bg-white [&_.active_.c-sidebar-item__text]:rounded-[36rpx] [&_.active_.c-sidebar-item__text]:text-[#fa4126] rounded-r-[16rpx]`"
+      class="c-sidebar-item custom-class flex justify-center text-center bg-[#f5f5f5] text-[#222427] p-[20rpx_0] text-[26rpx] [&_.active]:relative [&_.active]:[background:white] [&_.active_.c-sidebar-item__text]:bg-white [&_.active_.c-sidebar-item__text]:rounded-[36rpx] [&_.active_.c-sidebar-item__text]:text-[#fa4126] rounded-r-[16rpx]" :class="`${selected ? 'active' : ''} ${disabled ? 'disabled' : ''} ${topRightRadius ? 'top-right-radius' : ''} ${bottomRightRadius ? 'bottom-right-radius' : ''}`"
       hover-class="c-sidebar-item--hover"
       :hover-stay-time="70"
       @tap="onClick"

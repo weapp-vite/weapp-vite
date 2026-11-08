@@ -43,7 +43,7 @@ defineComponentJson({
 <template>
   <goods-card
     v-if="!hidden"
-    :class="`order-goods-card ${step ? 'order-goods-card--step' : ''}`"
+    class="order-goods-card" :class="`${step ? 'order-goods-card--step' : ''}`"
     :data="goods"
     :thumb-width="thumbWidth"
     :thumb-height="thumbHeight"
