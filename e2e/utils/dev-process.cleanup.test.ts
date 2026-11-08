@@ -401,6 +401,28 @@ describe('dev process cleanup ownership', () => {
     expect(execaMock).toHaveBeenCalledWith('node', ['native-vite-cli.js'], expect.objectContaining({ ipc: false }))
   })
 
+  it('waits for a late native exit after a failed shutdown request', async () => {
+    vi.useFakeTimers()
+    const fixture = mockProcessTree()
+    fixture.ignoreTermPids.clear()
+    const failure = new Error('native host cleanup receipt failed')
+    const request = vi.fn(async () => {
+      throw failure
+    })
+    const dev = startDevProcess('node', ['native-vite-cli.js'], { gracefulShutdown: request })
+    const stopping = dev.stop(100, { gracefulTimeoutMs: 1_000 })
+    await vi.advanceTimersByTimeAsync(0)
+    expect(fixture.signals).toEqual([])
+    fixture.finish()
+    await vi.runAllTimersAsync()
+    await expect(stopping).rejects.toMatchObject({
+      name: 'DevProcessGracefulShutdownError',
+      cause: failure,
+      evidence: { requestError: failure },
+    })
+    expect(fixture.signals).toEqual([])
+  })
+
   it('fails an acknowledged native shutdown that still needs forced termination', async () => {
     vi.useFakeTimers()
     const fixture = mockProcessTree()

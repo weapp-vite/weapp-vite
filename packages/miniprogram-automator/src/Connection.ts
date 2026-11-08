@@ -49,6 +49,7 @@ const COMPONENT_CALLER_BRIDGE_COMBINATIONS: ReadonlyMap<string, ReadonlySet<stri
   ['2.02.2608080', new Set(['3.17.5'])],
   ['2.02.2609231', new Set(['3.17.5', '3.17.6'])],
   ['2.02.2609240', new Set(['3.17.6'])],
+  ['2.02.2609250', new Set(['3.18.0'])],
 ])
 /** Connection 的实现。 */
 export default class Connection extends EventEmitter {
