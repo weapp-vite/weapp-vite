@@ -26,6 +26,21 @@ function exited(pid = 33, parentPid = 1): DarwinProcessEntry {
   }
 }
 
+function exitedWithReadableIdentity(pid = 33, parentPid = 1): DarwinProcessEntry {
+  const row = entry(pid, { parentPid })
+  row.pathBefore = row.pathAfter = { count: 0, errno: 3, executable: null }
+  row.task = { count: 0, errno: 3, identity: null, rssBytes: null }
+  row.gaps = ['image-before-unavailable', 'image-after-unavailable', 'rss-unavailable']
+  row.absolute = {
+    clockDomain: 'mach-absolute-ticks',
+    startedAtTicks: '1000',
+    endedAtTicks: '2000',
+    birthBefore: { result: 0, errno: 0, startedAtTicks: '1100', endedAtTicks: '1110', birthTicks: '500', exitTicks: '1050' },
+    birthAfter: { result: 0, errno: 0, startedAtTicks: '1200', endedAtTicks: '1210', birthTicks: '500', exitTicks: '1050' },
+  }
+  return row
+}
+
 function frames(...rows: DarwinProcessEntry[][]) {
   mocks.read.mockImplementation(async (phase: typeof phases[number]) => {
     const observed = rows[phases.indexOf(phase)]!
@@ -106,6 +121,31 @@ describe('complete native exit at the RSS anchor', () => {
     expect(report).toMatchObject({ installationRssBytes: { status: 'observed', value: 1000 }, verifiedTerminalProcessCount: 1, identityChangedProcessCount: 1 })
     expect(report.verifiedTerminalProcesses?.[0]?.terminalIdentity.startedSeconds).toBeNull()
     expect(report.nativeFrames?.slice(1).map(value => value.rows.find(row => row.pid === 33)?.before)).toEqual([null, null, null])
+  })
+
+  it('accepts stable identity reads bracketed around a confirmed kernel exit', async () => {
+    frames([entry(33)], [exitedWithReadableIdentity()], [], [])
+    const report = await sample()
+    expect(report).toMatchObject({
+      installationRssBytes: { status: 'observed', value: 1000 },
+      verifiedTerminalProcessCount: 1,
+      unclassifiedProcessCount: 0,
+      verifiedTerminalProcesses: [{ process: { pid: 33 }, proof: 'prepare-proven-foreign-then-anchor-exit' }],
+    })
+    expect(report.identityChangedProcessCount).toBe(0)
+  })
+
+  it.each([
+    ['birth drift', (row: DarwinProcessEntry) => { row.absolute!.birthAfter.birthTicks = '501' }],
+    ['exit drift', (row: DarwinProcessEntry) => { row.absolute!.birthAfter.exitTicks = '1051' }],
+    ['live exit marker', (row: DarwinProcessEntry) => { row.absolute!.birthBefore.exitTicks = row.absolute!.birthAfter.exitTicks = '0' }],
+    ['identity drift', (row: DarwinProcessEntry) => { row.after.identity!.startedMicroseconds = '123457' }],
+    ['path permission failure', (row: DarwinProcessEntry) => { row.pathAfter.errno = 1 }],
+    ['task permission failure', (row: DarwinProcessEntry) => { row.task.errno = 1 }],
+  ] as const)('rejects readable-identity exit evidence with %s', async (_name, mutate) => {
+    const gone = exitedWithReadableIdentity()
+    mutate(gone)
+    await rejected([entry(33)], [gone], [], [])
   })
 
   it.each(['before', 'after', 'pathBefore', 'pathAfter', 'task'] as const)('rejects an anchor %s permission failure', async (field) => {
