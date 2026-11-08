@@ -772,7 +772,7 @@ definePageJson({
     <view class="wx-pay-cover">
       <view class="wx-pay">
         <price decimalSmaller fill class="price" :price="settleDetailData.totalPayAmount || '0'" />
-        <view :class="`submit-btn ${settleDetailData.settleType === 1 ? '' : 'btn-gray'}`" @tap="submitOrder">
+        <view class="submit-btn" :class="`${settleDetailData.settleType === 1 ? '' : 'btn-gray'}`" @tap="submitOrder">
           提交订单
         </view>
       </view>

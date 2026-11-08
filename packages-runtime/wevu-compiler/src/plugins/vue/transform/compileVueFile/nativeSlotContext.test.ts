@@ -11,6 +11,7 @@ import {
   WEVU_NATIVE_SLOT_PARENT_EVENT,
   WEVU_NATIVE_SLOT_PARENT_METHOD,
   WEVU_SCOPED_SLOT_CREATOR_KEY,
+  WEVU_SCOPED_SLOT_OWNER_REQUIRED_KEY,
   WEVU_SLOT_NAMES_PROP,
   WEVU_SLOT_OWNER_ID_ATTR,
   WEVU_SLOT_OWNER_ID_KEY,
@@ -127,6 +128,8 @@ describe('native slot context compilation', () => {
     })
     const options = evaluateOptions(result.script!)
     expect(options[WEVU_NATIVE_SLOT_CONTEXT_KEY]).toBeUndefined()
+    expect(options[WEVU_SCOPED_SLOT_OWNER_REQUIRED_KEY]).toBeUndefined()
+    expect(result.meta?.runtimeCapabilities?.required ?? []).not.toContain('scopedSlots')
     const register = vi.fn()
     vi.stubGlobal('Component', register)
     runtime.createWevuComponent(options)
@@ -271,7 +274,11 @@ describe('native slot context compilation', () => {
       sourceMap: false,
       template,
     })
-    expect(evaluateOptions(result.script!)[WEVU_NATIVE_SLOT_CONTEXT_KEY]).toBe(enabled ? true : undefined)
+    const options = evaluateOptions(result.script!)
+    const needsOwnerRuntime = enabled || result.bindingManifest?.features.scopedSlots === true
+    expect(options[WEVU_NATIVE_SLOT_CONTEXT_KEY]).toBe(enabled ? true : undefined)
+    expect(options[WEVU_SCOPED_SLOT_OWNER_REQUIRED_KEY]).toBe(needsOwnerRuntime ? true : undefined)
+    expect(result.meta?.runtimeCapabilities?.required.includes('scopedSlots') ?? false).toBe(needsOwnerRuntime)
     expect(readElements(result.template!)).toEqual([{
       tag: 'slot',
       attrs: { name: 'body', ...(enabled ? { [listener]: WEVU_NATIVE_SLOT_PARENT_METHOD, [WEVU_NATIVE_SLOT_PARENT_DATASET_ATTR]: '' } : {}) },

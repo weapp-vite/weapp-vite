@@ -17,8 +17,8 @@ export const TEMPLATE_CATALOG = {
   '@devframes/hub-ui': '1.3.2',
   '@douyin-microapp/typings': '^1.3.1',
   '@egoist/tailwindcss-icons': '^1.9.2',
-  '@icebreakers/eslint-config': '8.0.12',
-  '@icebreakers/stylelint-config': '5.1.5',
+  '@icebreakers/eslint-config': '8.0.15',
+  '@icebreakers/stylelint-config': '6.0.1',
   '@iconify-json/mdi': '^1.2.3',
   '@iconify/tailwind4': '^1.2.3',
   '@jridgewell/remapping': '^2.3.5',
@@ -49,7 +49,7 @@ export const TEMPLATE_CATALOG = {
   '@vue/language-core': '^3.3.14',
   '@vue/reactivity': '^3.5.45',
   '@vue/shared': '^3.5.45',
-  '@weapp-tailwindcss/engine': '0.1.7',
+  '@weapp-tailwindcss/engine': '0.1.8',
   '@wot-ui/ui': '2.4.0',
   'antd-mini': '^3.4.3',
   'bundle-require': '^5.1.0',
@@ -65,7 +65,7 @@ export const TEMPLATE_CATALOG = {
   'happy-dom': '^21.0.4',
   'lru-cache': '^11.5.3',
   'magic-string': '^1.4.5',
-  'miniprogram-api-typings': '^5.2.3',
+  'miniprogram-api-typings': '^5.3.1',
   'miniprogram-computed': '^9.0.0',
   'oxc-parser': '^0.157.0',
   'oxc-walker': '^1.1.1',
@@ -73,7 +73,7 @@ export const TEMPLATE_CATALOG = {
   'postcss-selector-parser': '^7.1.7',
   'postcss-value-parser': '4.2.0',
   'react-reconciler': '0.34.0',
-  'sass-embedded': '^1.107.1 <1.108.0',
+  'sass-embedded': '^1.108.1',
   'socket.io': '^4.8.4',
   'socket.io-client': '^4.8.4',
   'tailwind-merge': '^3.7.0',
@@ -87,7 +87,7 @@ export const TEMPLATE_CATALOG = {
   'vue-eslint-parser': '^10.4.2',
   'vue-router': '5.4.0',
   'vue-tsc': '^3.3.14',
-  'weapp-tailwindcss': '^5.7.1',
+  'weapp-tailwindcss': '^5.7.2',
   ai: '7.0.164',
   autoprefixer: '^10.6.2',
   axios: '^1.21.0',
@@ -119,7 +119,7 @@ export const TEMPLATE_CATALOG = {
   semver: '^7.8.6',
   sharp: '^0.35.5',
   shiki: '^4.6.0',
-  stylelint: '^17.16.0',
+  stylelint: '^18.0.0',
   tailwindcss: '^4.3.5',
   tinyexec: '^1.3.1',
   tsd: '^0.33.0',
@@ -139,14 +139,14 @@ export const TEMPLATE_NAMED_CATALOG = {
     'tdesign-miniprogram': '1.17.0'
   },
   'weapp-tailwindcss-fixed': {
-    'weapp-tailwindcss': '5.7.1'
+    'weapp-tailwindcss': '5.7.2'
   },
   fixed: {
     execa: '10.2.1',
     zod: '4.6.7'
   },
   latest: {
-    'miniprogram-api-typings': '^5.2.3',
+    'miniprogram-api-typings': '^5.3.1',
     typescript: '^6.0.3'
   },
   tailwind4: {

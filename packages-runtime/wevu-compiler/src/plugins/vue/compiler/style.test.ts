@@ -1,4 +1,5 @@
 import type { SFCStyleBlock } from 'vue/compiler-sfc'
+import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { compileVueStyleToWxss } from './style'
 
@@ -18,6 +19,21 @@ function createStyleBlock(content: string, overrides: Partial<SFCStyleBlock> = {
 }
 
 describe('compileVueStyleToWxss', () => {
+  it.each(['sass', 'scss'] as const)('compiles %s syntax while preserving caller preprocess options', async (lang) => {
+    const preprocessOptions = {
+      additionalData: lang === 'sass' ? '$accent: #345678\n' : '$accent: #345678;',
+    }
+    const originalOptions = { ...preprocessOptions }
+    const result = await compileVueStyleToWxss(
+      createStyleBlock(lang === 'sass' ? '.card\n  color: $accent' : '.card { color: $accent; }', { lang }),
+      { id: 'sass-syntax', filename: path.resolve('src/components/card.vue'), preprocessOptions },
+    )
+
+    expect(result.code).toContain('.card')
+    expect(result.code).toContain('color: #345678')
+    expect(preprocessOptions).toEqual(originalOptions)
+  })
+
   it('keeps source code when no scoped/modules option is enabled', async () => {
     const result = await compileVueStyleToWxss(
       createStyleBlock('.card { color: red; }'),

@@ -79,6 +79,10 @@ export function runnerHarness(options: { version?: string, environment?: Record<
   class SingleEntryDependency {
     constructor(public request: string, public name: string, public miniType: string) {}
   }
+  class PageCompatibilityPlugin {
+    constructor(public options: { loaderMeta: LoaderMeta, mode: string }) {}
+    apply() {}
+  }
   const META_TYPE = { STATIC: 'STATIC', PAGE: 'PAGE' }
   const chain = new Chain(MiniPlugin)
   const args = chain.plugin('miniPlugin').get('args')
@@ -120,6 +124,9 @@ export function runnerHarness(options: { version?: string, environment?: Record<
     if (name === '@tarojs/helper') {
       return { META_TYPE }
     }
+    if (name === './harmony-jsui-page/plugin.cjs') {
+      return PageCompatibilityPlugin
+    }
     throw new Error(`Unexpected compiler dependency: ${name}`)
   }
   runInNewContext(taroHarmonyRunner, { Map, require: requireModule, module, process: { env: environment }, console: { log: report } })
@@ -132,7 +139,7 @@ export function runnerHarness(options: { version?: string, environment?: Record<
     modifyWebpackChain: async () => {},
     onCompilerMake: async () => {},
   }
-  return { MiniPlugin, SingleEntryDependency, META_TYPE, chain, args, webpack, data, result, runner, applied, appPath, config, environment, report, run: () => module.exports(appPath, config) }
+  return { MiniPlugin, SingleEntryDependency, PageCompatibilityPlugin, META_TYPE, chain, args, webpack, data, result, runner, applied, appPath, config, environment, report, run: () => module.exports(appPath, config) }
 }
 
 export function frameworkHook(chain: Chain) {

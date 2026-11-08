@@ -138,17 +138,28 @@ async function fresh(record: Observation, generation = record.generations.at(-1)
   }
 }
 
-it('reuses the first memory engine while retaining fresh output through disk fallback', async () => {
+async function assertFrozenEngineReuse(record: Observation, generation: Observation['generations'][number]) {
+  const repeated = await record.compiler.generate(generation.request)
+  expect(repeated.cache.engine).toBe(true)
+  expect(repeated.cache.source).toBe(true)
+  expect(repeated.css).toBe(generation.result.css)
+  expect([...repeated.classSet].sort()).toEqual([...generation.result.classSet].sort())
+}
+
+it('separates disk and memory scan engines while reusing an unchanged frozen request', async () => {
   const app = await fixture()
   await writeFile(app.source, 'export const utility = "w-[53px]"')
   await app.change()
   await app.memory()
   const memory = app.record.generations.at(-1)!
   expect.soft(memory.request.scanSources).toBe(false)
-  expect.soft(memory.result.cache.engine).toBe(true)
+  expect.soft(memory.request.scanMode).toBe('compiled')
+  // core 5.7 的服务身份包含完整扫描配置；磁盘与冻结内存请求不能共享引擎。
+  expect.soft(memory.result.cache.engine).toBe(false)
   expect.soft(app.record.invalidations).toEqual([])
   await fresh(app.record, memory)
   expect(memory.result.classSet.has('w-[53px]')).toBe(true)
+  await assertFrozenEngineReuse(app.record, memory)
   await app.disk()
   expect(app.record.invalidations.flat().map(compilerSourceId)).toContain(memory.request.id)
   await fresh(app.record)
@@ -195,11 +206,12 @@ it('flushes every matched root and keeps a frozen request independent of later c
   await app.change()
   await preparing
   const memory = app.record.generations.filter(generation => generation.request.scanSources === false)
-  expect.soft(memory.map(generation => generation.result.cache.engine)).toEqual([true, true])
+  expect.soft(memory.map(generation => generation.result.cache.engine)).toEqual([false, false])
   for (const generation of memory) {
     expect(generation.result.classSet.has('w-[53px]')).toBe(true)
     expect(generation.result.classSet.has('w-[71px]')).toBe(false)
     await fresh(app.record, generation)
+    await assertFrozenEngineReuse(app.record, generation)
   }
   await app.disk()
   expect(app.record.invalidations.flat().map(compilerSourceId)).toEqual(expect.arrayContaining(memory.map(generation => generation.request.id)))

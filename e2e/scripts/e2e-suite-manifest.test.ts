@@ -17,6 +17,37 @@ function withFrozenTopology<T extends SuiteTask>(tasks: T[]) {
 useIsolatedTopologyTestEnvironment()
 
 describe('e2e suite manifest', () => {
+  it('keeps classic SQLite and lazy subpackage regressions in CI and both runtime providers', async () => {
+    for (const label of ['ci/issue-1303-sqlite.watch.test.ts', 'ci/issue-1304-require-async.watch.test.ts']) {
+      expect((await getCiPrTasks()).filter(task => task.label === label)).toHaveLength(1)
+      expect((await getCiFullTasks()).filter(task => task.label === label)).toHaveLength(1)
+    }
+    for (const [label, count] of [['ide/issue-1303-sqlite.runtime.test.ts', 2], ['ide/issue-1304-require-async.runtime.test.ts', 1]] as const) {
+      for (const suite of ['ide-full:github-issues', 'ide-full:exhaustive', 'ide-dom-headless', 'ide-headless-full']) {
+        expect((await getSuiteTasks(suite)).filter(task => task.label === label)).toHaveLength(1)
+      }
+      const cases = readTaskCases(path.resolve(import.meta.dirname, '../..'), label)
+      expect(cases).toHaveLength(count)
+      expect(cases.every(item => item.plans.length === 1 && item.notes.length === 0)).toBe(true)
+      expect(cases.flatMap(item => item.operations.filter(operation => operation.startsWith('check(')))).toHaveLength(count * 4)
+    }
+  })
+
+  it('keeps scriptless slot owner build and both runtime cases in their acceptance suites', async () => {
+    for (const label of ['ci/issue-1299-slot-owner.build.test.ts', 'ci/issue-1299-slot-owner.watch.test.ts']) {
+      expect((await getCiPrTasks()).filter(task => task.label === label)).toHaveLength(1)
+      expect((await getCiFullTasks()).filter(task => task.label === label)).toHaveLength(1)
+    }
+    const label = 'ide/issue-1299-slot-owner.runtime.test.ts'
+    for (const suite of ['ide-full:github-issues', 'ide-full:exhaustive', 'ide-dom-headless', 'ide-headless-full']) {
+      expect((await getSuiteTasks(suite)).filter(task => task.label === label)).toHaveLength(1)
+    }
+    const cases = readTaskCases(path.resolve(import.meta.dirname, '../..'), label)
+    expect(cases).toHaveLength(2)
+    expect(cases.every(item => item.plans.length === 1 && item.notes.length === 0)).toBe(true)
+    expect(cases.flatMap(item => item.operations.filter(operation => operation.startsWith('check(')))).toHaveLength(7)
+  })
+
   it('keeps the programmatic refresher contract in both providers with complete DOM plans', async () => {
     const label = 'ide/issue-1252-refresher.runtime.test.ts'
     for (const suite of ['ide-full:github-issues', 'ide-full', 'ide-full:exhaustive', 'ide-dom-headless', 'ide-headless-full']) {
@@ -199,6 +230,7 @@ describe('e2e suite manifest', () => {
     'ide/issue-1264-basic-wx-apis.runtime.test.ts',
     'ide/issue-1278-classic-lease-recovery.runtime.test.ts',
     'ide/issue-1295-props-projection.runtime.test.ts',
+    'ide/issue-1299-slot-owner.runtime.test.ts',
     'ide/issue-997-rebuild.runtime.test.ts',
     'ide/issue-1029-auto-routes.runtime.test.ts',
     'ide/issue-1082-confirmation.runtime.test.ts',

@@ -30,7 +30,8 @@ function createMouseTouchCoordinator(owner: Document, view: Window) {
         return
       }
       active = false
-      const count = targets.get(element) ?? 0
+      // 每次登记先增加计数；闭包只释放一次，最后一次释放读取 1 后才删除。
+      const count = targets.get(element)!
       if (count <= 1) {
         targets.delete(element)
       }

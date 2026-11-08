@@ -80,10 +80,19 @@ function createOptions(user: Plugin): InlineConfig {
   }
 }
 
-async function expectRawGraph(server: ViteDevServer, user: Plugin) {
+async function expectRawGraph(server: ViteDevServer, user: Plugin, placement: 'host' | 'independent') {
   expect(server.config.server.watch).toBeNull()
   expect(server.config.server.hmr).toBe(false)
-  expect(server.config.plugins.find(plugin => plugin.name === user.name)).toBe(user)
+  const resolver = server.config.plugins.find(plugin => plugin.name === user.name)!
+  if (placement === 'host') {
+    expect(resolver).toBe(user)
+  }
+  else {
+    expect(resolver).not.toBe(user)
+    expect(resolver.resolveId).toMatchObject({ order: 'post', filter: { id: /third-party-only/ } })
+    expect(resolver.configResolved).toBeUndefined()
+    expect(resolver.buildStart).toBeUndefined()
+  }
   const environment = server.environments.client
   const resolved = await environment.pluginContainer.resolveId('#wild/value?raw', entry)
   expect(resolved?.id).toBe(`${normalizePath(rawFile)}?raw`)
@@ -114,7 +123,7 @@ it.each(['host', 'independent'] as const)('keeps wildcard raw imports as source 
       const provider = await createDevModuleGraphProvider(ctx, options, () => {})
       close = provider.close
     }
-    await expectRawGraph(captured.servers.at(-1)!, user)
+    await expectRawGraph(captured.servers.at(-1)!, user, placement)
     expect(user.resolveId).toMatchObject({ order: 'post', filter })
   }
   finally {

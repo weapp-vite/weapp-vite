@@ -209,7 +209,7 @@ definePageJson({
           :isCustomStyle="true"
           @navigate="waitForNewAddress"
         />
-        <view :class="`address-btn ${addressList.length >= 20 ? 'btn-default' : ''}`" @tap="createHandle">
+        <view class="address-btn" :class="`${addressList.length >= 20 ? 'btn-default' : ''}`" @tap="createHandle">
           <t-icon name="add" size="48rpx" color="#fff" t-class="custom-class" />
           <text>新建收货地址</text>
         </view>

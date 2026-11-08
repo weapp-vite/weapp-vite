@@ -1,6 +1,6 @@
 # 03 支付宝兼容矩阵（按小程序基准命名）
 
-总计：495，支持：201，不支持：294
+总计：501，支持：201，不支持：300
 
 | 小程序基准 API                                | 支付宝目标 API                                | 支持 | 支持级别      | 语义对齐 | 策略                                                                                                          |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | ------------------------------------------------------------------------------------------------------------- |
@@ -58,6 +58,7 @@
 | `compressVideo`                               | `compressVideo`                               | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
 | `connectSocket`                               | `connectSocket`                               | ✅   | `native`      | ✅       | 直连 `my.connectSocket`                                                                                       |
 | `connectWifi`                                 | `connectWifi`                                 | ✅   | `native`      | ✅       | 直连 `my.connectWifi`                                                                                         |
+| `copyRealname`                                | `copyRealname`                                | ❌   | `unsupported` | ❌       | 未提供 my.copyRealname，调用时将返回 not supported                                                            |
 | `createAnimation`                             | `createAnimation`                             | ✅   | `native`      | ✅       | 直连 `my.createAnimation`                                                                                     |
 | `createAudioContext`                          | `createAudioContext`                          | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
 | `createBLEConnection`                         | `connectBLEDevice`                            | ✅   | `mapped`      | ✅       | `deviceId/timeout` 对齐后映射到 `my.connectBLEDevice`，并将 `error/errorMessage` 映射为 `errCode/errMsg`      |
@@ -163,6 +164,7 @@
 | `getStorageInfo`                              | `getStorageInfo`                              | ✅   | `native`      | ✅       | 直连 `my.getStorageInfo`                                                                                      |
 | `getStorageInfoSync`                          | `getStorageInfoSync`                          | ✅   | `native`      | ✅       | 直连 `my.getStorageInfoSync`                                                                                  |
 | `getStorageSync`                              | `getStorageSync`                              | ✅   | `native`      | ✅       | 直连 `my.getStorageSync`                                                                                      |
+| `getStoreTraceId`                             | `getStoreTraceId`                             | ❌   | `unsupported` | ❌       | 未提供 my.getStoreTraceId，调用时将返回 not supported                                                         |
 | `getSystemInfo`                               | `getSystemInfo`                               | ✅   | `native`      | ✅       | 直连 `my.getSystemInfo`                                                                                       |
 | `getSystemInfoAsync`                          | `getSystemInfo`                               | ✅   | `mapped`      | ✅       | 映射到 `my.getSystemInfo`                                                                                     |
 | `getSystemInfoSync`                           | `getSystemInfoSync`                           | ✅   | `native`      | ✅       | 直连 `my.getSystemInfoSync`                                                                                   |
@@ -358,6 +360,7 @@
 | `openOfficialAccountArticle`                  | `openOfficialAccountArticle`                  | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
 | `openOfficialAccountChat`                     | `openOfficialAccountChat`                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
 | `openOfficialAccountProfile`                  | `openOfficialAccountProfile`                  | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
+| `openPhotoTopicView`                          | `openPhotoTopicView`                          | ❌   | `unsupported` | ❌       | 未提供 my.openPhotoTopicView，调用时将返回 not supported                                                      |
 | `openPrivacyContract`                         | `openPrivacyContract`                         | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
 | `openSetting`                                 | `openSetting`                                 | ✅   | `native`      | ✅       | 直连 `my.openSetting`                                                                                         |
 | `openSingleStickerView`                       | `openSingleStickerView`                       | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
@@ -395,6 +398,7 @@
 | `reportPerformance`                           | `reportPerformance`                           | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
 | `request`                                     | `request`                                     | ✅   | `native`      | ✅       | 直连 `my.request`                                                                                             |
 | `requestAppleSubscribeSign`                   | `requestAppleSubscribeSign`                   | ❌   | `unsupported` | ❌       | 未提供 my.requestAppleSubscribeSign，调用时将返回 not supported                                               |
+| `requestAutomaticRepayment`                   | `requestAutomaticRepayment`                   | ❌   | `unsupported` | ❌       | 未提供 my.requestAutomaticRepayment，调用时将返回 not supported                                               |
 | `requestCommonPayment`                        | `requestCommonPayment`                        | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
 | `requestDeviceVoIP`                           | `requestDeviceVoIP`                           | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
 | `requestFacialVerify`                         | `requestFacialVerify`                         | ❌   | `unsupported` | ❌       | 未提供 my.requestFacialVerify，调用时将返回 not supported                                                     |
@@ -414,6 +418,7 @@
 | `rewriteRoute`                                | `rewriteRoute`                                | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
 | `saveFileToDisk`                              | `saveFileToDisk`                              | ✅   | `mapped`      | ✅       | 直连 `my.saveFileToDisk`                                                                                      |
 | `saveImageToPhotosAlbum`                      | `saveImageToPhotosAlbum`                      | ✅   | `native`      | ✅       | 直连 `my.saveImageToPhotosAlbum`                                                                              |
+| `saveMediaToPhotosAlbum`                      | `saveMediaToPhotosAlbum`                      | ❌   | `unsupported` | ❌       | 未提供 my.saveMediaToPhotosAlbum，调用时将返回 not supported                                                  |
 | `saveVideoToPhotosAlbum`                      | `saveVideoToPhotosAlbum`                      | ✅   | `mapped`      | ✅       | 直连 `my.saveVideoToPhotosAlbum`                                                                              |
 | `scanCode`                                    | `scanCode`                                    | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
 | `seekBackgroundAudio`                         | `seekBackgroundAudio`                         | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
@@ -496,6 +501,7 @@
 | `updateVoIPChatMuteConfig`                    | `updateVoIPChatMuteConfig`                    | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
 | `updateWeChatApp`                             | `updateWeChatApp`                             | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
 | `uploadFile`                                  | `uploadFile`                                  | ✅   | `native`      | ✅       | 直连 `my.uploadFile`                                                                                          |
+| `verifyHKPaymentPassword`                     | `verifyHKPaymentPassword`                     | ❌   | `unsupported` | ❌       | 未提供 my.verifyHKPaymentPassword，调用时将返回 not supported                                                 |
 | `vibrateLong`                                 | `vibrateLong`                                 | ✅   | `native`      | ✅       | 直连 `my.vibrateLong`                                                                                         |
 | `vibrateShort`                                | `vibrateShort`                                | ✅   | `native`      | ✅       | 直连 `my.vibrateShort`                                                                                        |
 | `writeBLECharacteristicValue`                 | `writeBLECharacteristicValue`                 | ✅   | `native`      | ✅       | 直连 `my.writeBLECharacteristicValue`                                                                         |

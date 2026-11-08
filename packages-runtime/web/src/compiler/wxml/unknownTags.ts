@@ -53,7 +53,7 @@ export function collectTagDiagnostics(nodes: RenderNode[], source: string, filen
           }
         }
         const line = offset === undefined ? undefined : low + 1
-        diagnostics.push({ tag: node.name, reason, filename, line, column: offset === undefined || line === undefined ? undefined : offset - lineStarts[line - 1] + 1 })
+        diagnostics.push({ tag: node.name, reason, filename, line, column: offset === undefined ? undefined : offset - lineStarts[low] + 1 })
       }
       if (node.name !== 'wxs' && !(node.attribs?.src && (TEMPLATE_IMPORT_TAG_NAMES.includes(node.name) || TEMPLATE_INCLUDE_TAG_NAMES.includes(node.name)))) {
         visit(node.children ?? [])

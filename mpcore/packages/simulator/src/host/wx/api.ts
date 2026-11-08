@@ -167,6 +167,7 @@ export interface HeadlessWxDriver extends HeadlessWxDriverCapabilities, Headless
 }
 
 export interface HeadlessWx extends HeadlessUniEventBus, HeadlessWxRouteListeners, HeadlessWorkerApis {
+  env: { USER_DATA_PATH: string }
   [WEVU_ROUTE_EVENT_CONTRACT_KEY]: 1
   [WEVU_PAGE_SCROLL_EVENT_CONTRACT_KEY]: 1
   arrayBufferToBase64: (buffer: ArrayBuffer) => string

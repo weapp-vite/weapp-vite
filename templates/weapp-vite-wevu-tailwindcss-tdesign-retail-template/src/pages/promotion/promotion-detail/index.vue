@@ -115,7 +115,7 @@ definePageJson({
           class="count-down-wrap in-banner-count-down-wrap"
         >
           <block v-if="statusTag === 'finish'">
-            <view :class="`status-tag ${statusTag}`">
+            <view class="status-tag" :class="`${statusTag}`">
               已结束
             </view>
             <text class="count-down-label">
@@ -123,7 +123,7 @@ definePageJson({
             </text>
           </block>
           <block v-else>
-            <view v-if="statusTag === 'before'" :class="`status-tag ${statusTag}`">
+            <view v-if="statusTag === 'before'" class="status-tag" :class="`${statusTag}`">
               未开始
             </view>
             <text class="count-down-label">
@@ -154,7 +154,7 @@ definePageJson({
           <block v-else>
             <view class="count-down-wrap after-banner-count-down-wrap">
               <block v-if="statusTag === 'finish'">
-                <view :class="`status-tag ${statusTag}`">
+                <view class="status-tag" :class="`${statusTag}`">
                   已结束
                 </view>
                 <text class="count-down-label">
@@ -162,7 +162,7 @@ definePageJson({
                 </text>
               </block>
               <block v-else>
-                <view v-if="statusTag === 'before'" :class="`status-tag ${statusTag}`">
+                <view v-if="statusTag === 'before'" class="status-tag" :class="`${statusTag}`">
                   未开始
                 </view>
                 <text class="count-down-label">

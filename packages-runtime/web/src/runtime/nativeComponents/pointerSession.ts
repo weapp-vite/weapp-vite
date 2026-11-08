@@ -17,10 +17,9 @@ export function watchNativePointerSession(element: Element, pointer: PointerEven
     }
   }
   function cancel() {
-    if (active) {
-      dispose()
-      onCancel()
-    }
+    // dispose 先解绑全部取消入口，再通知业务；失效会话无法再次进入此回调。
+    dispose()
+    onCancel()
   }
   function matches(event: Event) {
     const current = (event as PointerEvent).pointerId

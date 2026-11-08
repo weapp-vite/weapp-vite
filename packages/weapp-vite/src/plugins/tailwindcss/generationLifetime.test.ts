@@ -1,7 +1,31 @@
+import type { CompilerGenerateRequest, CompilerGenerateResult, CreateCompilerOptions } from 'weapp-tailwindcss/core'
 import { rm } from 'node:fs/promises'
 import path from 'node:path'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createGenerationFixture, declarations } from './generationLifetime/fixture'
+
+const observed = vi.hoisted(() => ({ generations: [] as { request: CompilerGenerateRequest, result: CompilerGenerateResult }[] }))
+
+vi.mock('weapp-tailwindcss/core', async (original) => {
+  const core = await original<typeof import('weapp-tailwindcss/core')>()
+  return {
+    ...core,
+    createCompiler(options: CreateCompilerOptions) {
+      const compiler = core.createCompiler(options)
+      const generate = compiler.generate
+      compiler.generate = async (request) => {
+        const result = await generate(request)
+        observed.generations.push({ request, result })
+        return result
+      }
+      return compiler
+    },
+  }
+})
+
+afterEach(() => {
+  observed.generations.length = 0
+})
 
 function assertCompleteOutput(output: { css: string, script: string, template: string, map: unknown }) {
   expect(declarations(output.css, 'width')).toContain('37px')
@@ -34,13 +58,26 @@ describe('Tailwind generation follows compiler lifetime', () => {
     const owner = fixture.owner(command, watch)
     const output = await owner.render()
     assertCompleteOutput(output)
+    const initial = observed.generations.at(-1)!
+    expect(initial.request.scanSources).toBe(true)
+    expect(initial.result.cache.engine).toBe(false)
     expect(fixture.probe.initializations).toBe(initializations)
     expect(owner.watched).toContain(path.join(fixture.root, 'src/probe.cjs'))
     expect(owner.watched).toContain(path.join(fixture.root, 'src/tailwind.css'))
     await owner.closeBundle()
     if (command === 'serve' || watch) {
       expect(await owner.render()).toEqual(output)
-      expect(fixture.probe.initializations).toBe(initializations)
+      const planned = observed.generations.at(-1)!
+      expect(planned.request.source).toEqual(initial.request.source)
+      expect(planned.request.scanSources).toEqual(initial.result.sources)
+      expect(planned.result.cache.engine).toBe(false)
+      // 首次切换为已解析扫描规则会建立新服务；相同规则的后续生成才复用。
+      expect(fixture.probe.initializations).toBe(initializations * 2)
+      expect(await owner.render()).toEqual(output)
+      const repeated = observed.generations.at(-1)!
+      expect(repeated.request).toEqual(planned.request)
+      expect(repeated.result.cache.engine).toBe(true)
+      expect(fixture.probe.initializations).toBe(initializations * 2)
     }
     else {
       await expect(owner.render()).rejects.toThrow('Compiler 已释放')

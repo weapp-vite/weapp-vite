@@ -1,3 +1,4 @@
+import path from 'node:path'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { registerOpenCommand } from './open'
 
@@ -28,11 +29,12 @@ const resolveRuntimeTargetsMock = vi.hoisted(() => {
 const readLatestHmrProfileSummaryMock = vi.hoisted(() => vi.fn())
 const maybeStartDetachedMcpServerMock = vi.hoisted(() => vi.fn())
 const detectAiDevelopmentEnvironmentMock = vi.hoisted(() => vi.fn())
+const withWechatDevtoolsSelectionMock = vi.hoisted(() => vi.fn(async (_: unknown, run: () => Promise<unknown>) => run()))
 const loggerMock = vi.hoisted(() => ({
   info: vi.fn(),
 }))
 
-vi.mock('weapp-ide-cli', () => ({ withWechatDevtoolsSelection: async (_: unknown, run: () => Promise<unknown>) => run() }))
+vi.mock('weapp-ide-cli', () => ({ withWechatDevtoolsSelection: withWechatDevtoolsSelectionMock }))
 
 vi.mock('../../aiEnvironment', () => ({
   detectAiDevelopmentEnvironment: detectAiDevelopmentEnvironmentMock,
@@ -201,6 +203,35 @@ describe('open cli command', () => {
 
     await expect(action(undefined, { platform: 'web' })).rejects.toThrow('`weapp-vite open` 当前仅支持小程序平台。')
     expect(resolveIdeCommandContextMock).not.toHaveBeenCalled()
+  })
+
+  it('opens another mini-program IDE without selecting WeChat DevTools', async () => {
+    const cwd = process.cwd()
+    const projectPath = path.join(cwd, 'dist', 'alipay')
+    const backend = {
+      descriptor: { id: 'miniprogram', capabilities: { ide: true } },
+      platform: 'alipay',
+    }
+    resolveRuntimeTargetsMock.mockReturnValueOnce({
+      kind: 'miniprogram',
+      label: 'alipay',
+      entries: [backend],
+      rawPlatform: 'alipay',
+      get: (id: string) => id === 'miniprogram' ? backend : undefined,
+    })
+    resolveIdeCommandContextMock.mockResolvedValueOnce({ cwd, platform: 'alipay', projectPath, weappViteConfig: {} })
+
+    await createOpenActionHandler()(cwd, { platform: 'alipay', mode: 'staging' })
+
+    expect(resolveIdeCommandContextMock).toHaveBeenCalledWith(expect.objectContaining({
+      mode: 'staging',
+      platform: 'alipay',
+      cliPlatform: 'alipay',
+      projectPath: cwd,
+    }))
+    expect(withWechatDevtoolsSelectionMock).not.toHaveBeenCalled()
+    expect(maybeStartDetachedMcpServerMock).toHaveBeenCalledWith(expect.objectContaining({ cwd }))
+    expect(openIdeMock).toHaveBeenCalledWith('alipay', projectPath, expect.any(Object))
   })
 
   it('falls back to the process cwd and resolved project root', async () => {

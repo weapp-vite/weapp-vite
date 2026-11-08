@@ -12,6 +12,9 @@ import { BlobPolyfill, FormDataPolyfill } from '../web'
 
 export type RequestBodyLike = string | ArrayBuffer | ArrayBufferView | Blob | RequestGlobalsBlobLike | FormData | FormDataPolyfill | ReadableStream<Uint8Array<ArrayBuffer>> | null | undefined
 
+type BufferedBodyValue = string | ArrayBuffer | Blob | RequestGlobalsBlobLike | FormData | FormDataPolyfill
+type NormalizedBodyValue = BufferedBodyValue | ReadableStream<Uint8Array<ArrayBuffer>> | null
+
 interface BodyState {
   value: RequestBodyLike
   stream: ReadableStream<Uint8Array<ArrayBuffer>> | null
@@ -33,18 +36,13 @@ function isFormData(value: unknown): value is FormData | FormDataPolyfill {
   return value instanceof FormDataPolyfill || (typeof FormData === 'function' && value instanceof FormData)
 }
 
-async function bodyBytes(value: RequestBodyLike, multipartBoundary?: string): Promise<ArrayBuffer> {
-  if (value == null) {
-    return new ArrayBuffer(0)
-  }
+/** 转换初始化时归类为缓冲的非空值，并兼容外部 BlobLike 别名在拉取前换形为流。 */
+async function bodyBytes(value: BufferedBodyValue, multipartBoundary?: string): Promise<ArrayBuffer> {
   if (typeof value === 'string') {
     return encodeText(value)
   }
   if (isArrayBufferLike(value)) {
     return cloneArrayBuffer(value)
-  }
-  if (ArrayBuffer.isView(value)) {
-    return cloneArrayBufferView(value)
   }
   if (isBlobLike(value)) {
     return cloneArrayBuffer(await value.arrayBuffer())
@@ -56,7 +54,7 @@ async function bodyBytes(value: RequestBodyLike, multipartBoundary?: string): Pr
 }
 
 export function initializeBody(owner: HttpBody, input: unknown) {
-  let value: RequestBodyLike
+  let value: NormalizedBodyValue
   let contentType = ''
   let multipartBoundary: string | undefined
   if (input == null) {

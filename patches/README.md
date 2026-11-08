@@ -1,6 +1,6 @@
 # 依赖补丁与发布维护
 
-当前 `patchedDependencies` 只登记两份补丁：
+当前 `patchedDependencies` 登记两份补丁：
 
 | 依赖 | 用途 | 发布交付范围 |
 | --- | --- | --- |
@@ -14,7 +14,7 @@
 
 ## 发布重试与恢复
 
-仓库固定使用 `repoctl@6.4.0`，发布重试、工作区根包识别和发布说明过滤均由上游正式实现负责。
+仓库固定使用 `repoctl@6.4.4`，发布重试、工作区根包识别和发布说明过滤均由上游正式实现负责。
 `@icebreakers/monorepo@6.1.0` 的上游实现包含发布说明分类修正：明确的 Conventional 摘要类型
 优先于整理提交类型及正文关键词，并保留正文中的依赖版本描述；原生 Dependencies 条目仍归维护。
 同一分类规则用于 Release PR、正式发布和发布说明修复，避免合并 intent 后功能、修复和性能被改归维护。
@@ -43,10 +43,30 @@ ESM 文件，并在执行框架或导入 guard 前确认消费者解析结果。
 
 正式发布包消费验证及发布回归通过后，本仓库已删除整份
 `@icebreakers__monorepo@6.3.1.patch`、对应 `patchedDependencies` 和锁文件补丁登记，
-不再维护这两类重复实现。当前保留的两份补丁见上表。升级时继续运行
+不再维护这两类重复实现。当前保留的补丁见上表。升级时继续运行
 `scripts/repoctl-nightly-deadline.test.ts`、`scripts/repoctl-consumer-context.test.ts`
 和 `scripts/repoctl-snapshot-workflow.test.ts`，并完成 `pnpm test:release`；
 不能以每命令的新超时配置替代共享截止时间，也不能因移除补丁而删除公共行为回归。
+
+上游 [#1153](https://github.com/icelib/repoctl/pull/1153) 已将本仓库
+`@icebreakers/monorepo@6.4.0` 补丁的完整语义吸收到 `6.4.4`：六阶段复用包管理器目录，
+将恢复 checkout 放在 Git 元数据之外，按仓库、原 source、运行及 attempt 隔离，拒绝冲突文件
+和符号链接，并在成功 finalize 后清理、失败时保留现场。上游同时覆盖超长发布 PR 的完整版本
+摘要和不可变 changelog 链接，以及有界、隐藏凭证与提交正文的 GitHub 错误诊断。
+
+正式发布包的严格 peer 安装和公共入口验证通过后，本仓库删除整份补丁及其登记，保留
+`scripts/repoctl-release-source-recovery.test.ts` 等公共行为回归。源码身份、原始版本提交、
+质量检查、确认、hook 和发布完成记录继续由上游原生六阶段流程负责，不维护重复的 bundle 修改。
+
+Release job 使用固定 Git bot 环境身份创建 annotated tag，不修改 runner 的全局 Git 配置。
+历史 Marketplace hook 结果不明时仍拒绝继续；只有核验线上精确版本并补齐指向原发布提交的
+扩展 tag 后，才能在 source recovery 中显式选择 `acknowledge-marketplace-hook`。
+该输入只确认已完成的 Marketplace hook，不确认其他 hook，也不跳过质量、registry 确认或完成记录。
+
+历史源码的质量检查可能只识别 `timeout` / `gtimeout`，而新 Ubuntu runner 将 GNU 实现命名为
+`gnutimeout`。Release job 通过现有解析器核验 GNU 实现，在任务临时目录提供同名 `timeout`
+入口并追加到本轮 `GITHUB_PATH`，同时记录实际路径和版本。此适配保留历史源码与全部断言，
+不修改系统命令；找不到 GNU 实现时仍在发布前失败。
 
 官方 Vite/Rolldown 的产品适配、内部诊断和资源验收边界见[编译依赖内存说明](./compiler-memory.md)。
 

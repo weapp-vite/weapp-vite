@@ -1,3 +1,4 @@
+import path from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import {
   resolveBabelTraverse,
@@ -13,6 +14,34 @@ function createMeta(kind: 'app' | 'page' | 'component') {
 }
 
 describe('web script registration transform contract', () => {
+  it('registers a zero-argument Wevu factory without adding a trailing argument', () => {
+    const filename = path.resolve('src/components/empty.ts')
+    const result = transformScriptModule({
+      cleanId: filename,
+      code: 'import { defineComponent } from "wevu"; defineComponent()',
+      enableHmr: false,
+      meta: { id: 'components/empty', kind: 'component', scriptPath: filename },
+      runtimeModuleId: 'virtual:web-runtime',
+    })!
+
+    expect(result.code).toContain('registerWebWevuComponentFactory(defineComponent, { id: "components/empty", kind: "component" })')
+    expect(result.map).toBeDefined()
+  })
+
+  it('preserves string literals that only resemble page declaration macros', () => {
+    const filename = path.resolve('src/pages/quoted.ts')
+    const result = transformScriptModule({
+      cleanId: filename,
+      code: 'const text = "definePage({})"; Page({ data: { text } })',
+      enableHmr: false,
+      meta: { id: 'pages/quoted', kind: 'page', scriptPath: filename },
+      runtimeModuleId: 'virtual:web-runtime',
+    })!
+
+    expect(result.code).toContain('const text = "definePage({})"')
+    expect(result.code).toContain('registerPage({ data: { text } }, { id: "pages/quoted" })')
+  })
+
   it('resolves supported Babel traverse module shapes', () => {
     const direct = vi.fn()
     const defaultExport = vi.fn()

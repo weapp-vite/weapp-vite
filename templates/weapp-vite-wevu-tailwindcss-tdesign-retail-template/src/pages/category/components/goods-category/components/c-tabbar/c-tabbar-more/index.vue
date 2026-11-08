@@ -61,7 +61,7 @@ defineComponentJson({
 <template>
   <view class="c-tabbar-more w-full h-[calc(100%-var(--tabbar-height,100rpx))] absolute top-(--tabbar-height,100rpx)">
     <view class="c-tabbar-more__btn absolute top-[calc(0-var(--tabbar-height,100rpx))] right-0 w-[80rpx] h-(--tabbar-height,100rpx) leading-(--tabbar-height,100rpx) bg-(--tabbar-background-color,white) [box-shadow:-20rpx_0_20rpx_-10rpx_var(--tabbar-background-color,white)] text-center [&_.market]:text-[20rpx]" @tap="changeFold">
-      <view :class="`wr ${unfolded ? 'wr-arrow-up' : 'wr-arrow-down'}`" />
+      <view class="wr" :class="`${unfolded ? 'wr-arrow-up' : 'wr-arrow-down'}`" />
     </view>
     <view v-if="unfolded" class="t-tabbar-more__boardwrapper absolute top-0 left-0 size-full">
       <view class="t-tabbar-more__mask size-full bg-[rgba(0,0,0,0.5)]" />

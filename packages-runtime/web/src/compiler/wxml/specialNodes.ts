@@ -89,7 +89,7 @@ export function collectSpecialNodes(nodes: RenderNode[], context: CollectSpecial
           else {
             const inlineCode = (node.children ?? [])
               .filter(child => child.type === 'text')
-              .map(child => child.data ?? '')
+              .map(child => child.data)
               .join('')
             context.wxs.push({
               module: moduleName,

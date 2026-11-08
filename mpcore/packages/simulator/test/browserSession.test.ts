@@ -1219,7 +1219,7 @@ Page({
               }
             })
             this.setData({
-              readSummary: fsManager.readFileSync(saveResult.savedFilePath)
+              readSummary: fsManager.readFileSync(saveResult.savedFilePath, 'utf8')
             })
             fsManager.writeFileSync(saveResult.savedFilePath, 'browser rewritten payload')
             this.setData({
@@ -1277,8 +1277,8 @@ Page({
       success: (result) => {
         this.setData({
           copiedSummary: 'copyFileSync:ok',
-          originalSummary: fsManager.readFileSync('headless://saved/browser-source.txt'),
-          renamedSummary: result.errMsg + ':' + fsManager.readFileSync('headless://saved/browser-renamed.txt')
+          originalSummary: fsManager.readFileSync('headless://saved/browser-source.txt', 'utf8'),
+          renamedSummary: result.errMsg + ':' + fsManager.readFileSync('headless://saved/browser-renamed.txt', 'utf8')
         })
       }
     })
@@ -1616,7 +1616,7 @@ Page({
       success: (result) => {
         this.setData({
           appendSummary: result.errMsg,
-          fileSummary: fsManager.readFileSync('headless://saved/browser-log.txt')
+          fileSummary: fsManager.readFileSync('headless://saved/browser-log.txt', 'utf8')
         })
       }
     })
@@ -2058,7 +2058,7 @@ Page({
               filePath: saveResult.savedFilePath,
               success: () => {
                 try {
-                  fsManager.readFileSync(saveResult.savedFilePath)
+                  fsManager.readFileSync(saveResult.savedFilePath, 'utf8')
                 }
                 catch (error) {
                   this.setData({

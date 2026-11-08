@@ -82,12 +82,12 @@ defineComponentJson({
       scroll-x="true"
       :scroll-into-view="`id-${currentActive}`"
     >
-      <view :class="`c-tabbar__inner ${showMore && tabList.length > 4 ? 'c-tabbar__inner_more' : ''} flex [flex-flow:row_nowrap]`">
+      <view class="c-tabbar__inner flex [flex-flow:row_nowrap]" :class="`${showMore && tabList.length > 4 ? 'c-tabbar__inner_more' : ''}`">
         <view
           v-for="(item, index) in tabList"
           :id="`id-${index}`"
           :key="index"
-          :class="`c-tabbar-item ${currentActive === index ? 'active' : ''} ${item.disabled ? 'disabled' : ''} flex-none h-[100rpx] text-[#282828] text-[28rpx] p-[0_20rpx] [&_.disabled]:text-[#ccc]`"
+          class="c-tabbar-item flex-none h-[100rpx] text-[#282828] text-[28rpx] p-[0_20rpx] [&_.disabled]:text-[#ccc]" :class="`${currentActive === index ? 'active' : ''} ${item.disabled ? 'disabled' : ''}`"
           :data-index="index"
           @tap="onClick"
         >

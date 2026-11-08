@@ -12,9 +12,6 @@ function isUsableConstructor(value: unknown) {
 /** 安全捕获同一组宿主构造器；缺失全局或惰性属性抛错时整组回退，不重复触发宿主 getter。 */
 function resolveNativeStreams(): NativeStreams | undefined {
   try {
-    if (typeof globalThis === 'undefined') {
-      return
-    }
     const { ReadableStream, WritableStream, TransformStream } = globalThis
     if (![ReadableStream, WritableStream, TransformStream].every(isUsableConstructor)) {
       return

@@ -61,6 +61,42 @@ function taroConfiguration(name: string) {
 }
 
 describe('redistributable development compiler evidence', () => {
+  it('keeps Harmony Babel runtime imports independent of the controlled workspace path', () => {
+    const project = createTaroProject(release('taro', '4.3.2'), target('harmony-jsui'))
+    const module = { exports: undefined as unknown }
+    runInNewContext(project.files['babel.config.js']!, { module })
+    expect(module.exports).toEqual({ presets: [['taro', { framework: 'react', ts: true, absoluteRuntime: false }]] })
+    const weapp = createTaroProject(release('taro', '4.3.2'), target('weapp'))
+    const unchanged = { exports: undefined as unknown }
+    runInNewContext(weapp.files['babel.config.js']!, { module: unchanged })
+    expect(unchanged.exports).toEqual({ presets: [['taro', { framework: 'react', ts: true }]] })
+  })
+
+  it('resolves relative Harmony helpers from the frozen preset dependency instead of an ancestor workspace', () => {
+    const project = createTaroProject(release('taro', '4.3.2'), target('harmony-jsui'))
+    const preset = path.resolve('controlled/node_modules/babel-preset-taro/package.json')
+    const runtime = path.resolve('controlled/node_modules/.pnpm/runtime/node_modules/@babel/runtime/package.json')
+    const presetRequire = { resolve: vi.fn(() => runtime) }
+    const createRequire = vi.fn(() => presetRequire)
+    const requireModule = Object.assign((name: string) => {
+      if (name === 'node:module') {
+        return { createRequire }
+      }
+      if (name === 'path') {
+        return path
+      }
+      throw new Error(`Unexpected configuration dependency: ${name}`)
+    }, { resolve: vi.fn((name: string) => name === 'babel-preset-taro/package.json' ? preset : name) })
+    const module = { exports: undefined as unknown as { harmony: { webpackChain: (chain: { resolve: { alias: Map<string, string> } }) => void }, mini: { webpackChain?: unknown } } }
+    runInNewContext(project.files['config/index.js']!, { module, require: requireModule, process: { env: { CORPUS_OUTPUT: 'out/development' } } })
+    const alias = new Map<string, string>()
+    module.exports.harmony.webpackChain({ resolve: { alias } })
+    expect(createRequire).toHaveBeenCalledExactlyOnceWith(preset)
+    expect(presetRequire.resolve).toHaveBeenCalledExactlyOnceWith('@babel/runtime/package.json')
+    expect(alias.get('@babel/runtime')).toBe(path.dirname(runtime))
+    expect(module.exports.mini.webpackChain).toBeUndefined()
+  })
+
   it.each(['2.11.2', '2.8.64'])('disables MPX eval source URLs while keeping both real modes at %s', (version) => {
     for (const mode of ['development', 'production'] as const) {
       const result = mpxConfiguration(mode, version)

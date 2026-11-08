@@ -9,15 +9,18 @@ describe('incremental UTF-8 decoder', () => {
     expect(hasUsableTextDecoderConstructor(class PartialDecoder {
       decode() { return 'broken' }
     })).toBe(false)
+    expect(hasUsableTextDecoderConstructor(class ThrowingDecoder {
+      constructor() { throw new Error('decoder unavailable') }
+    })).toBe(false)
   })
   it('matches native decoding across every split of UTF-8, BOM and supplementary characters', () => {
-    const bytes = new TextEncoder().encode('\uFEFFA中文🙂\uFEFFZ')
+    const bytes = new TextEncoder().encode('\uFEFFA¢é中文🙂\uFEFFZ')
     for (let first = 0; first <= bytes.length; first++) {
       for (let second = first; second <= bytes.length; second++) {
         const decoder = new TextDecoderPolyfill()
         const chunks = [bytes.subarray(0, first), bytes.subarray(first, second), bytes.subarray(second)]
         const result = chunks.map(chunk => decoder.decode(chunk, { stream: true })).join('') + decoder.decode()
-        expect(result).toBe('A中文🙂\uFEFFZ')
+        expect(result).toBe('A¢é中文🙂\uFEFFZ')
       }
     }
   })
@@ -51,6 +54,7 @@ describe('incremental UTF-8 decoder', () => {
     expect(fatal.decode(new Uint8Array([65]))).toBe('A')
     const bom = new Uint8Array([0xEF, 0xBB, 0xBF, 65])
     const decoder = new TextDecoderPolyfill()
+    expect(Object.prototype.toString.call(decoder)).toBe('[object TextDecoder]')
     expect(decoder.decode(bom)).toBe('A')
     expect(decoder.decode(bom)).toBe('A')
     expect(new TextDecoderPolyfill('utf-8', { ignoreBOM: true }).decode(bom)).toBe('\uFEFFA')

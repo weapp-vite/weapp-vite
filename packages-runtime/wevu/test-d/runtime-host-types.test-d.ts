@@ -33,6 +33,9 @@ import { useSelectorQuery } from 'wevu'
 expectType<WechatMiniprogram.SelectorQuery | null>(useSelectorQuery()())
 expectType<WechatMiniprogram.SelectorQuery>({} as HostMiniProgramSelectorQuery)
 expectType<WechatMiniprogram.Component.TrivialInstance>({} as HostMiniProgramComponentTrivialInstance)
+declare const component: HostMiniProgramComponentTrivialInstance
+expectType<WechatMiniprogram.Component.TrivialInstance | null>(component.selectOwnerComponent())
+expectType<WechatMiniprogram.Component.TrivialInstance | null>(component.selectComponent('#child'))
 expectType<WechatMiniprogram.Behavior.Identifier>({} as HostMiniProgramBehaviorIdentifier)
 expectType<typeof Behavior>({} as WechatMiniProgramHostNamespace.Behavior.Constructor)
 expectType<typeof Component>({} as WechatMiniProgramHostNamespace.Component.Constructor)

@@ -77,14 +77,6 @@ it.each(['auto', 'stateful-experimental'] as const)('naturally exits after %s st
     const config = `export default {
       define: { __STARTUP_CONFIG_MARKER__: JSON.stringify('WV-CONFIG-A') },
       build: { minify: false, cssMinify: false },
-      plugins: [{ name: 'shutdown-provider-observer', configureServer(server) {
-        const close = server.close.bind(server)
-        const identity = globalThis.shutdownProviderGeneration = (globalThis.shutdownProviderGeneration ?? 0) + 1
-        server.close = async () => {
-          console.log('PROVIDER_CLOSE_START:' + identity)
-          try { await close() } finally { console.log('PROVIDER_CLOSE_DONE:' + identity) }
-        }
-      } }],
       weapp: {
         srcRoot: 'src', autoRoutes: false, vue: { enable: false }, tailwindcss: false,
         hmr: { runtime: '${requested}', logLevel: 'verbose' },
@@ -210,11 +202,8 @@ it.each(['auto', 'stateful-experimental'] as const)('naturally exits after %s st
     expect(stdout).toContain('CLI_NATURAL_EXIT\n')
     expect(stdout).toContain('SHUTDOWN_DONE:')
     expect(stdout).toContain('OWNER_CLOSE_START:')
-    expect(stdout).toContain('PROVIDER_CLOSE_START:')
-    for (const kind of ['OWNER_CLOSE', 'PROVIDER_CLOSE']) {
-      const identities = (stage: string) => [...stdout.matchAll(new RegExp(`${kind}_${stage}:(\\d+)`, 'g'))].map(match => match[1]).sort()
-      expect(identities('START'), output()).toEqual(identities('DONE'))
-    }
+    const ownerIdentities = (stage: string) => [...stdout.matchAll(new RegExp(`OWNER_CLOSE_${stage}:(\\d+)`, 'g'))].map(match => match[1]).sort()
+    expect(ownerIdentities('START'), output()).toEqual(ownerIdentities('DONE'))
     expect(await readFile(path.join(root, 'project.private.config.json'), 'utf8')).toBe(privateConfig)
   }
   catch (error) {

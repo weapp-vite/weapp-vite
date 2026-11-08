@@ -173,9 +173,7 @@ function renderElement(
     if (datasets) {
       const token = new Map<string, unknown>()
       recordLegacyElementKey(token, node, scope, true)
-      if (hasLegacyElementKey(token)) {
-        return `${createLegacyDatasetAnchor(datasets, token)}${children}<!--${WEAPP_VITE_WEB_LEGACY_FRAGMENT_END_COMMENT}-->`
-      }
+      return `${createLegacyDatasetAnchor(datasets, token)}${children}<!--${WEAPP_VITE_WEB_LEGACY_FRAGMENT_END_COMMENT}-->`
     }
     return children
   }

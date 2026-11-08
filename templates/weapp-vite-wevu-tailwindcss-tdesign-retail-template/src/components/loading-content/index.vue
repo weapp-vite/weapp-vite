@@ -42,7 +42,7 @@ defineComponentJson({
 </script>
 
 <template>
-  <view :class="`t-class loading-content ${position} ${(position === 'static' || noMask) ? 'invisible' : ''} size-full bg-[rgba(0,0,0,0.6)] relative [&_.absolute]:absolute [&_.absolute]:z-1 [&_.absolute]:left-0 [&_.absolute]:top-0 [&_.fixed]:fixed [&_.fixed]:z-1 [&_.fixed]:left-0 [&_.fixed]:top-0 [&_.loading]:size-full [&_.loading]:visible`" :style="`background-color: ${backgroundColor};`">
+  <view class="t-class loading-content size-full bg-[rgba(0,0,0,0.6)] relative [&_.absolute]:absolute [&_.absolute]:z-1 [&_.absolute]:left-0 [&_.absolute]:top-0 [&_.fixed]:fixed [&_.fixed]:z-1 [&_.fixed]:left-0 [&_.fixed]:top-0 [&_.loading]:size-full [&_.loading]:visible" :class="`${position} ${(position === 'static' || noMask) ? 'invisible' : ''}`" :style="`background-color: ${backgroundColor};`">
     <t-loading
       t-class="loading"
       :theme="type"

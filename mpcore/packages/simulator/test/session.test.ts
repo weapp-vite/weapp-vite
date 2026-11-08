@@ -1368,7 +1368,7 @@ Page({
               }
             })
             this.setData({
-              readSummary: fsManager.readFileSync(saveResult.savedFilePath)
+              readSummary: fsManager.readFileSync(saveResult.savedFilePath, 'utf8')
             })
             fsManager.unlink({
               filePath: saveResult.savedFilePath,
@@ -1435,11 +1435,11 @@ Page({
       }
     })
     this.setData({
-      originalSummary: fsManager.readFileSync('headless://saved/source.txt')
+      originalSummary: fsManager.readFileSync('headless://saved/source.txt', 'utf8')
     })
     fsManager.renameSync('headless://saved/copied.txt', 'headless://saved/renamed.txt')
     this.setData({
-      renamedSummary: fsManager.readFileSync('headless://saved/renamed.txt')
+      renamedSummary: fsManager.readFileSync('headless://saved/renamed.txt', 'utf8')
     })
   }
 })
@@ -1834,7 +1834,7 @@ Page({
     })
     fsManager.appendFileSync('headless://saved/log.txt', '-gamma')
     this.setData({
-      fileSummary: fsManager.readFileSync('headless://saved/log.txt')
+      fileSummary: fsManager.readFileSync('headless://saved/log.txt', 'utf8')
     })
   }
 })
@@ -2373,7 +2373,7 @@ Page({
               filePath: saveResult.savedFilePath,
               success: () => {
                 try {
-                  fsManager.readFileSync(saveResult.savedFilePath)
+                  fsManager.readFileSync(saveResult.savedFilePath, 'utf8')
                 }
                 catch (error) {
                   this.setData({

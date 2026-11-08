@@ -10,7 +10,7 @@ afterEach(() => {
 
 describe('Web Streams compatibility', () => {
   it('pins the dependency version used by the isolated disturbed-state adapter', () => {
-    expect(streamsPackage.version).toBe('4.5.0')
+    expect(streamsPackage.version).toBe('4.5.1')
   })
   it('provides compatible readable, writable and transform ponyfills', async () => {
     const values: number[] = []
@@ -72,6 +72,7 @@ describe('Web Streams compatibility', () => {
 
   it('decodes streamed UTF-8 and flushes incomplete sequences through TextDecoderStream', async () => {
     const stream = new TextDecoderStreamPolyfill()
+    expect(Object.prototype.toString.call(stream)).toBe('[object TextDecoderStream]')
     const chunks: string[] = []
     const reading = stream.readable.pipeTo(new WritableStream<string>({ write(value) {
       chunks.push(value)

@@ -1260,7 +1260,7 @@ Page({
         this.setData({
           savedRenameOutInfo: JSON.stringify({
             hasSavedRegistration: remainingSavedFiles.some(file => file.filePath === saveResult.savedFilePath),
-            movedText: fsManager.readFileSync('headless://temp/component-lab-renamed.txt'),
+            movedText: fsManager.readFileSync('headless://temp/component-lab-renamed.txt', 'utf8'),
             remainingSavedFiles,
           }),
         }, () => {
@@ -1582,7 +1582,7 @@ Page({
         archiveRemoved,
         isDirectory: fsManager.statSync('headless://saved/component-lab/reports/daily').isDirectory(),
         isFile: fsManager.statSync('headless://saved/component-lab/reports/daily/report.txt').isFile(),
-        text: fsManager.readFileSync('headless://saved/component-lab/reports/daily/report.txt'),
+        text: fsManager.readFileSync('headless://saved/component-lab/reports/daily/report.txt', 'utf8'),
       }),
     }, () => {
       this.push('lab:runFileManagerLab')

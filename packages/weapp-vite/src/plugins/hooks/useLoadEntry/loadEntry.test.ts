@@ -3966,6 +3966,69 @@ import { VueCard } from '../../components'
     )
   })
 
+  it.each([
+    { kind: 'scriptless', source: '<template><view><slot /></view></template>' },
+    { kind: 'JSON-only', source: '<script setup>defineComponentJson({ component: true })</script><template><view><slot /></view></template>' },
+  ].flatMap(layout => [
+    { platform: 'weapp', nativeSlotContext: true, scopedSlotsRequireProps: true, emitsStub: false },
+    { platform: 'weapp', nativeSlotContext: false, scopedSlotsRequireProps: true, emitsStub: true },
+    { platform: 'weapp', nativeSlotContext: true, scopedSlotsRequireProps: false, emitsStub: true },
+    { platform: 'alipay', nativeSlotContext: true, scopedSlotsRequireProps: true, emitsStub: true },
+  ].map(options => ({ ...layout, ...options }))))('keeps $kind layout chunk emission with native slot options ($platform, native=$nativeSlotContext, scoped=$scopedSlotsRequireProps)', async ({ source, platform, nativeSlotContext, scopedSlotsRequireProps, emitsStub }) => {
+    mockFindVueEntry.mockResolvedValue('/project/src/pages/index/index.vue')
+    mockFindTemplateEntry.mockResolvedValue({
+      path: '/project/src/pages/index/index.wxml',
+      predictions: ['/project/src/pages/index/index.wxml'],
+    })
+    const layout = {
+      kind: 'vue',
+      file: '/project/src/layouts/default.vue',
+      importPath: '/layouts/default',
+      layoutName: 'default',
+      tagName: 'weapp-layout-default',
+    }
+    mockResolvePageLayoutPlan.mockResolvedValue({
+      currentLayout: layout,
+      layouts: [layout],
+      dynamicSwitch: false,
+      dynamicPropKeys: [],
+    })
+    readFileMock.mockImplementation(async (target: string) => {
+      if (target === '/project/src/pages/index/index.vue') {
+        return '<template><view>home</view></template>'
+      }
+      if (target === layout.file) {
+        return source
+      }
+      return 'console.log("page-entry")'
+    })
+    const { loader, configService, emitEntriesChunks } = createLoader({
+      weappViteConfig: {
+        vue: { template: { nativeSlotContext, scopedSlotsRequireProps } },
+      },
+    })
+    configService.platform = platform
+    const pluginCtx = createPluginContext()
+
+    await loader.call(pluginCtx, '/project/src/pages/index/index.ts', 'page')
+
+    const stubAsset = {
+      type: 'asset',
+      fileName: 'layouts/default.js',
+      source: SLOT_HOST_SCRIPTLESS_COMPONENT_STUB,
+    }
+    if (emitsStub) {
+      expect(pluginCtx.emitFile).toHaveBeenCalledWith(stubAsset)
+    }
+    else {
+      expect(pluginCtx.emitFile).not.toHaveBeenCalledWith(expect.objectContaining(stubAsset))
+    }
+    const emittedResolvedIds = emitEntriesChunks.mock.calls[0]?.[0] ?? []
+    expect(emittedResolvedIds).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: layout.file }),
+    ]))
+  })
+
   it('bundles vue layout scripts with imports through chunk emission', async () => {
     mockFindVueEntry.mockResolvedValue('/project/src/pages/index/index.vue')
     mockFindTemplateEntry.mockResolvedValue({

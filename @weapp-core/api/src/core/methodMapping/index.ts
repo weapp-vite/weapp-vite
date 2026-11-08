@@ -3,7 +3,6 @@ import type {
   WeapiApiCoveragePlatformItem,
   WeapiApiCoverageReport,
   WeapiMethodCompatibilityItem,
-  WeapiMethodMappingRule,
   WeapiMethodSupportMatrixItem,
   WeapiResolvedMethodMapping,
 } from './types'
@@ -37,53 +36,26 @@ export {
   WEAPI_PLATFORM_SUPPORT_MATRIX,
 }
 
-const WEAPI_MINIPROGRAM_METHOD_SET = new Set<string>(WEAPI_MINIPROGRAM_METHODS)
-const WEAPI_ALIPAY_METHOD_SET = new Set<string>(WEAPI_ALIPAY_METHODS)
-const WEAPI_DOUYIN_METHOD_SET = new Set<string>(WEAPI_DOUYIN_METHODS)
+const WEAPI_MINIPROGRAM_METHOD_SET = /* @__PURE__ */ new Set<string>(WEAPI_MINIPROGRAM_METHODS)
+const WEAPI_ALIPAY_METHOD_SET = /* @__PURE__ */ new Set<string>(WEAPI_ALIPAY_METHODS)
+const WEAPI_DOUYIN_METHOD_SET = /* @__PURE__ */ new Set<string>(WEAPI_DOUYIN_METHODS)
 
 const PLATFORM_METHOD_SET: Readonly<Record<'my' | 'tt', Set<string>>> = {
   my: WEAPI_ALIPAY_METHOD_SET,
   tt: WEAPI_DOUYIN_METHOD_SET,
 }
 
-function createFallbackMappingRule(platform: 'my' | 'tt', methodName: string): WeapiMethodMappingRule | undefined {
-  void platform
-  void methodName
-  return undefined
-}
-
 function resolveMappingRule(
   platform: 'my' | 'tt',
   methodName: string,
-  options: ResolveMethodMappingOptions = {},
+  _options: ResolveMethodMappingOptions = {},
 ): WeapiResolvedMethodMapping {
-  const methodSet = PLATFORM_METHOD_SET[platform]
   const explicitRule = METHOD_MAPPINGS[platform]?.[methodName]
   if (explicitRule) {
     return {
       target: explicitRule.target,
       source: 'explicit',
       rule: explicitRule,
-    }
-  }
-  if (methodSet.has(methodName)) {
-    return {
-      target: methodName,
-      source: 'identity',
-    }
-  }
-  if (options.allowFallback === false) {
-    return {
-      target: methodName,
-      source: 'identity',
-    }
-  }
-  const fallbackRule = createFallbackMappingRule(platform, methodName)
-  if (fallbackRule) {
-    return {
-      target: fallbackRule.target,
-      source: 'fallback',
-      rule: fallbackRule,
     }
   }
   return {

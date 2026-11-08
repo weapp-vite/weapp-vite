@@ -93,6 +93,11 @@ export async function compileVueStyleToWxss(
       ? options.modules
       : '$style'
   const modules = Boolean(options.modules || styleBlock.module)
+  // Vue 的 Sass 适配器仍使用旧 indentedSyntax，现代 compileString 需要显式 syntax。
+  // 保留其余预处理选项；旧 renderSync 路径仍由 Vue 设置 indentedSyntax。
+  const preprocessOptions = styleBlock.lang === 'sass'
+    ? { ...options.preprocessOptions, syntax: 'indented' }
+    : options.preprocessOptions
   const result = await compileStyleAsync({
     filename,
     id: `data-v-${options.id}`,
@@ -103,7 +108,7 @@ export async function compileVueStyleToWxss(
       ? { generateScopedName: (name: string) => `${name}_${options.id}` }
       : undefined,
     preprocessLang: styleBlock.lang as SFCStyleCompileOptions['preprocessLang'],
-    preprocessOptions: options.preprocessOptions,
+    preprocessOptions,
   })
 
   if (result.errors.length) {

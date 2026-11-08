@@ -14,6 +14,19 @@ afterEach(() => {
 })
 
 describe('shared Web interpolation recovery', () => {
+  it('decodes unrelated legacy attributes normally beside a recovered attribute', () => {
+    const source = String.raw`<view title="before\x &amp; after" other="{{ broken( }}" />`
+    expect(parseSharedTemplateNodes(source)[0]).toMatchObject({
+      attribs: { title: 'beforex & after', other: '{{ broken( }}' },
+    })
+  })
+
+  it('restores multiple invalid ranges within the same legacy attribute in source order', () => {
+    const source = '<view title="{{ first( }} &amp; {{ second( }}" />'
+    expect(parseSharedTemplateNodes(source)[0]).toMatchObject({
+      attribs: { title: '{{ first( }} & {{ second( }}' },
+    })
+  })
   it('restores invalid expression text before filtering and keeps original UTF-16 positions', () => {
     const source = '😀<view>{{ adapterText( }}</view><text>tail</text>'
     const compiler = parseSharedWxml(source)

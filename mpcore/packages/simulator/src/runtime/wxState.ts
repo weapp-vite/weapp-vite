@@ -53,7 +53,10 @@ import type {
   HeadlessWxWriteFileOption,
 } from '../host'
 import type { RuntimeScheduler } from '../kernel'
+import type { ArtifactContent } from '../kernel/artifactContent'
+import { copyArtifactBinary, readArtifactText } from '../kernel/artifactContent'
 import { createHeadlessAccountState } from './accountState'
+import { runFileSystemOperation } from './fileSystemCallbacks'
 import { createChunkedMockRequest } from './request/mock'
 import { createRequestTask } from './request/task'
 
@@ -240,8 +243,12 @@ interface HeadlessChosenVideoTempFilePayload {
 
 type HeadlessChooseMediaKind = 'image' | 'video'
 
-function byteLength(input: string) {
-  return textEncoder.encode(input).byteLength
+function fileBytes(input: ArtifactContent) {
+  return typeof input === 'string' ? textEncoder.encode(input) : new Uint8Array(input)
+}
+
+function byteLength(input: ArtifactContent) {
+  return fileBytes(input).byteLength
 }
 
 function rotateLeft(value: number, bits: number) {
@@ -260,8 +267,8 @@ function toHexWordBigEndian(value: number) {
   return value.toString(16).padStart(8, '0')
 }
 
-function computeMd5Digest(input: string) {
-  const bytes = Array.from(textEncoder.encode(input))
+function computeMd5Digest(input: ArtifactContent) {
+  const bytes = Array.from(fileBytes(input))
   const bitLength = bytes.length * 8
   const lowBits = bitLength >>> 0
   const highBits = Math.floor(bitLength / 0x1_0000_0000) >>> 0
@@ -407,8 +414,8 @@ function computeMd5Digest(input: string) {
   ].join('')
 }
 
-function computeSha1Digest(input: string) {
-  const bytes = Array.from(textEncoder.encode(input))
+function computeSha1Digest(input: ArtifactContent) {
+  const bytes = Array.from(fileBytes(input))
   const bitLength = bytes.length * 8
   const lowBits = bitLength >>> 0
   const highBits = Math.floor(bitLength / 0x1_0000_0000) >>> 0
@@ -896,7 +903,7 @@ const nativeScheduler: Pick<RuntimeScheduler, 'clearTimeout' | 'setTimeout'> = {
 export interface HeadlessWxStateOptions {
   accountInfo?: HeadlessWxAccountInfo
   strictMocks?: boolean
-  readPackageFile?: (filePath: string) => string | undefined
+  readPackageFile?: (filePath: string) => ArtifactContent | undefined
 }
 
 export function createHeadlessWxState(
@@ -916,7 +923,7 @@ export function createHeadlessWxState(
   const storage = new Map<string, unknown>()
   const uploadFileLogs: HeadlessWxUploadFileLogEntry[] = []
   const uploadFileMocks: HeadlessWxUploadFileMockDefinition[] = []
-  const files = new Map<string, string>()
+  const files = new Map<string, ArtifactContent>()
   const savedFiles = new Map<string, HeadlessWxSavedFileInfo>()
   const directories = new Set<string>()
   let fileId = 0
@@ -985,22 +992,22 @@ export function createHeadlessWxState(
     size,
   })
 
-  const updateSavedFileMetadata = (normalizedPath: string, fileContent: string) => {
+  const updateSavedFileMetadata = (normalizedPath: string, fileContent: ArtifactContent) => {
     const savedFile = savedFiles.get(normalizedPath)
     if (!savedFile) {
       return
     }
     savedFiles.set(normalizedPath, {
       ...savedFile,
-      size: fileContent.length,
+      size: byteLength(fileContent),
     })
   }
 
-  const setSavedFileMetadata = (normalizedPath: string, fileContent: string, createTime = Date.now()) => {
+  const setSavedFileMetadata = (normalizedPath: string, fileContent: ArtifactContent, createTime = Date.now()) => {
     savedFiles.set(normalizedPath, {
       createTime,
       filePath: normalizedPath,
-      size: fileContent.length,
+      size: byteLength(fileContent),
     })
   }
 
@@ -1022,16 +1029,16 @@ export function createHeadlessWxState(
       throw new Error(`readFile:fail no such file or directory, open '${normalizedPath}'`)
     }
     return {
-      data: fileContent,
+      data: encoding ? readArtifactText(fileContent) : copyArtifactBinary(fileContent),
       errMsg: 'readFile:ok',
     }
   }
 
-  const writeFile = (filePath: string, data: string, encoding?: string): HeadlessWxFileSystemResult => {
+  const writeFile = (filePath: string, data: ArtifactContent, encoding?: string): HeadlessWxFileSystemResult => {
     const normalizedPath = normalizeFsPath(filePath)
     normalizeEncoding(encoding)
     ensureDirectoryTree(normalizedPath)
-    const fileContent = String(data)
+    const fileContent = typeof data === 'string' ? data : copyArtifactBinary(data)
     files.set(normalizedPath, fileContent)
     updateSavedFileMetadata(normalizedPath, fileContent)
     return {
@@ -1039,12 +1046,17 @@ export function createHeadlessWxState(
     }
   }
 
-  const appendFile = (filePath: string, data: string, encoding?: string): HeadlessWxFileSystemResult => {
+  const appendFile = (filePath: string, data: ArtifactContent, encoding?: string): HeadlessWxFileSystemResult => {
     const normalizedPath = normalizeFsPath(filePath)
     normalizeEncoding(encoding)
     ensureDirectoryTree(normalizedPath)
     const currentContent = files.get(normalizedPath) ?? ''
-    const nextFileContent = `${currentContent}${String(data)}`
+    const currentBytes = fileBytes(currentContent)
+    const appendedBytes = fileBytes(data)
+    const nextBytes = new Uint8Array(currentBytes.length + appendedBytes.length)
+    nextBytes.set(currentBytes)
+    nextBytes.set(appendedBytes, currentBytes.length)
+    const nextFileContent = nextBytes.buffer
     files.set(normalizedPath, nextFileContent)
     updateSavedFileMetadata(normalizedPath, nextFileContent)
     return {
@@ -1091,14 +1103,14 @@ export function createHeadlessWxState(
     if (targetSavedFile) {
       savedFiles.set(normalizedNewPath, {
         ...targetSavedFile,
-        size: fileContent.length,
+        size: byteLength(fileContent),
       })
     }
     else if (savedFile && isSavedFilePath(normalizedNewPath)) {
       savedFiles.set(normalizedNewPath, {
         ...savedFile,
         filePath: normalizedNewPath,
-        size: fileContent.length,
+        size: byteLength(fileContent),
       })
     }
     return {
@@ -1208,7 +1220,7 @@ export function createHeadlessWxState(
     if (files.has(normalizedPath)) {
       return {
         errMsg: 'stat:ok',
-        stats: createStats(false, files.get(normalizedPath)?.length ?? 0),
+        stats: createStats(false, byteLength(files.get(normalizedPath)!)),
       }
     }
     if (directories.has(normalizedPath)) {
@@ -1271,181 +1283,76 @@ export function createHeadlessWxState(
     }
   }
 
+  function readFileSync(filePath: string, encoding?: undefined): ArrayBuffer
+  function readFileSync(filePath: string, encoding: string): string
+  function readFileSync(filePath: string, encoding?: string): string | ArrayBuffer
+  function readFileSync(filePath: string, encoding?: string) {
+    return readFile(filePath, encoding).data
+  }
+
   const fileSystemManager: HeadlessWxFileSystemManager = {
     access(option: HeadlessWxAccessFileOption) {
-      try {
-        const result = accessFile(option.path)
-        option.success?.(result)
-        option.complete?.(result)
-        return result
-      }
-      catch (error) {
-        option.fail?.(error as Error)
-        option.complete?.()
-        return undefined
-      }
+      return runFileSystemOperation(() => accessFile(option.path), option)
     },
     accessSync(path: string) {
       accessFile(path)
     },
     appendFile(option: HeadlessWxAppendFileOption) {
-      try {
-        const result = appendFile(option.filePath, option.data, option.encoding)
-        option.success?.(result)
-        option.complete?.(result)
-        return result
-      }
-      catch (error) {
-        option.fail?.(error as Error)
-        option.complete?.()
-        return undefined
-      }
+      return runFileSystemOperation(() => appendFile(option.filePath, option.data, option.encoding), option)
     },
-    appendFileSync(filePath: string, data: string, encoding?: string) {
+    appendFileSync(filePath: string, data: ArtifactContent, encoding?: string) {
       appendFile(filePath, data, encoding)
     },
     copyFile(option: HeadlessWxCopyFileOption) {
-      try {
-        const result = copyFile(option.srcPath, option.destPath)
-        option.success?.(result)
-        option.complete?.(result)
-        return result
-      }
-      catch (error) {
-        option.fail?.(error as Error)
-        option.complete?.()
-        return undefined
-      }
+      return runFileSystemOperation(() => copyFile(option.srcPath, option.destPath), option)
     },
     copyFileSync(srcPath: string, destPath: string) {
       copyFile(srcPath, destPath)
     },
     mkdir(option: HeadlessWxMkdirOption) {
-      try {
-        const result = mkdir(option.dirPath, option.recursive)
-        option.success?.(result)
-        option.complete?.(result)
-        return result
-      }
-      catch (error) {
-        option.fail?.(error as Error)
-        option.complete?.()
-        return undefined
-      }
+      return runFileSystemOperation(() => mkdir(option.dirPath, option.recursive), option)
     },
     mkdirSync(dirPath: string, recursive?: boolean) {
       mkdir(dirPath, recursive)
     },
     readFile(option: HeadlessWxReadFileOption) {
-      try {
-        const result = readFile(option.filePath, option.encoding)
-        option.success?.(result)
-        option.complete?.(result)
-        return result
-      }
-      catch (error) {
-        option.fail?.(error as Error)
-        option.complete?.()
-        return undefined
-      }
+      return runFileSystemOperation(() => readFile(option.filePath, option.encoding), option)
     },
-    readFileSync(filePath: string, encoding?: string) {
-      return readFile(filePath, encoding).data
-    },
+    readFileSync,
     readdir(option: HeadlessWxReadDirOption) {
-      try {
-        const result = readdir(option.dirPath)
-        option.success?.(result)
-        option.complete?.(result)
-        return result
-      }
-      catch (error) {
-        option.fail?.(error as Error)
-        option.complete?.()
-        return undefined
-      }
+      return runFileSystemOperation(() => readdir(option.dirPath), option)
     },
     readdirSync(dirPath: string) {
       return readdir(dirPath).files
     },
     rmdir(option: HeadlessWxRmdirOption) {
-      try {
-        const result = rmdir(option.dirPath, option.recursive)
-        option.success?.(result)
-        option.complete?.(result)
-        return result
-      }
-      catch (error) {
-        option.fail?.(error as Error)
-        option.complete?.()
-        return undefined
-      }
+      return runFileSystemOperation(() => rmdir(option.dirPath, option.recursive), option)
     },
     rmdirSync(dirPath: string, recursive?: boolean) {
       rmdir(dirPath, recursive)
     },
     rename(option: HeadlessWxRenameOption) {
-      try {
-        const result = renameFile(option.oldPath, option.newPath)
-        option.success?.(result)
-        option.complete?.(result)
-        return result
-      }
-      catch (error) {
-        option.fail?.(error as Error)
-        option.complete?.()
-        return undefined
-      }
+      return runFileSystemOperation(() => renameFile(option.oldPath, option.newPath), option)
     },
     renameSync(oldPath: string, newPath: string) {
       renameFile(oldPath, newPath)
     },
     stat(option: HeadlessWxStatOption) {
-      try {
-        const result = stat(option.path)
-        option.success?.(result)
-        option.complete?.(result)
-        return result
-      }
-      catch (error) {
-        option.fail?.(error as Error)
-        option.complete?.()
-        return undefined
-      }
+      return runFileSystemOperation(() => stat(option.path), option)
     },
     statSync(path: string) {
       return stat(path).stats
     },
     unlink(option: HeadlessWxUnlinkOption) {
-      try {
-        const result = unlinkFile(option.filePath)
-        option.success?.(result)
-        option.complete?.(result)
-        return result
-      }
-      catch (error) {
-        option.fail?.(error as Error)
-        option.complete?.()
-        return undefined
-      }
+      return runFileSystemOperation(() => unlinkFile(option.filePath), option)
     },
     unlinkSync(filePath: string) {
       unlinkFile(filePath)
     },
     writeFile(option: HeadlessWxWriteFileOption) {
-      try {
-        const result = writeFile(option.filePath, option.data, option.encoding)
-        option.success?.(result)
-        option.complete?.(result)
-        return result
-      }
-      catch (error) {
-        option.fail?.(error as Error)
-        option.complete?.()
-        return undefined
-      }
+      return runFileSystemOperation(() => writeFile(option.filePath, option.data, option.encoding), option)
     },
-    writeFileSync(filePath: string, data: string, encoding?: string) {
+    writeFileSync(filePath: string, data: ArtifactContent, encoding?: string) {
       writeFile(filePath, data, encoding)
     },
   }
@@ -1531,7 +1438,7 @@ export function createHeadlessWxState(
       }))
     },
     getFileSnapshot() {
-      return Object.fromEntries(files.entries())
+      return Object.fromEntries([...files].map(([file, content]) => [file, typeof content === 'string' ? content : copyArtifactBinary(content)]))
     },
     getDirectorySnapshot() {
       return Array.from(directories.values()).sort((a, b) => a.localeCompare(b))
@@ -1549,7 +1456,8 @@ export function createHeadlessWxState(
       return getSavedFileList()
     },
     getFileText(filePath: string) {
-      return files.get(filePath) ?? null
+      const content = files.get(filePath)
+      return content === undefined ? null : readArtifactText(content)
     },
     createTempFile(fileContent: string, preferredPath?: string) {
       const tempFilePath = allocateFilePath('temp', preferredPath)
@@ -1741,8 +1649,8 @@ export function createHeadlessWxState(
       if (fileContent == null) {
         throw new Error(`compressImage:fail file not found: ${option.src}`)
       }
-      const sourceSize = inferImageSize(fileContent)
-      const sourceType = inferImageType(option.src, fileContent)
+      const sourceSize = inferImageSize(readArtifactText(fileContent))
+      const sourceType = inferImageType(option.src, readArtifactText(fileContent))
       const width = Number.isFinite(option.compressedWidth)
         ? Math.max(1, Math.trunc(option.compressedWidth ?? sourceSize.width))
         : Math.max(1, sourceSize.width)
@@ -1771,13 +1679,13 @@ export function createHeadlessWxState(
       if (fileContent == null) {
         throw new Error(`getImageInfo:fail file not found: ${option.src}`)
       }
-      const size = inferImageSize(fileContent)
+      const size = inferImageSize(readArtifactText(fileContent))
       return {
         errMsg: 'getImageInfo:ok',
         height: size.height,
         orientation: 'up',
         path: option.src,
-        type: inferImageType(option.src, fileContent),
+        type: inferImageType(option.src, readArtifactText(fileContent)),
         width: size.width,
       }
     },
@@ -1786,7 +1694,7 @@ export function createHeadlessWxState(
       if (fileContent == null) {
         throw new Error(`getVideoInfo:fail file not found: ${option.src}`)
       }
-      const info = inferVideoInfo(option.src, fileContent)
+      const info = inferVideoInfo(option.src, readArtifactText(fileContent))
       return {
         bitrate: info.bitrate,
         duration: info.duration,
@@ -2231,7 +2139,7 @@ export function createHeadlessWxState(
 
       const matchedMock = uploadFileMocks.find(mock => matchesSimpleUrlMock(mock, option.url))
       const logEntry: HeadlessWxUploadFileLogEntry = {
-        fileContent,
+        fileContent: readArtifactText(fileContent),
         fileName: option.fileName,
         filePath: option.filePath,
         formData: cloneValue(option.formData ?? {}),
@@ -2252,7 +2160,7 @@ export function createHeadlessWxState(
         return createNoopTask()
       }
 
-      const response = resolveUploadFileResponse(matchedMock, option, fileContent)
+      const response = resolveUploadFileResponse(matchedMock, option, readArtifactText(fileContent))
       const delay = normalizeDelay(matchedMock.delay)
 
       const commit = () => {

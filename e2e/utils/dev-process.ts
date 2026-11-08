@@ -1,5 +1,5 @@
 /* eslint-disable e18e/ban-dependencies -- e2e dev 进程控制需要 execa 驱动子进程并清理残留 watcher。 */
-import type { Options } from 'execa'
+import type { Options, Subprocess } from 'execa'
 import type { DevProcessExitInfo, DevProcessForcedShutdown, DevProcessStopOptions } from './devProcessCleanup/shutdown'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
@@ -160,16 +160,19 @@ export function startDevProcess(
     }
   }
 
-  if (!child.stdout && !child.stderr && child.all) {
-    child.all.on('data', chunk => appendOutput('all', chunk))
-    child.all.on('end', () => output.end('all'))
+  const observeOutput = (streams: Pick<Subprocess, 'all' | 'stdout' | 'stderr'>) => {
+    if (!streams.stdout && !streams.stderr && streams.all) {
+      streams.all.on('data', chunk => appendOutput('all', chunk))
+      streams.all.on('end', () => output.end('all'))
+    }
+    else {
+      streams.stdout?.on('data', chunk => appendOutput('stdout', chunk))
+      streams.stderr?.on('data', chunk => appendOutput('stderr', chunk))
+      streams.stdout?.on('end', () => output.end('stdout'))
+      streams.stderr?.on('end', () => output.end('stderr'))
+    }
   }
-  else {
-    child.stdout?.on('data', chunk => appendOutput('stdout', chunk))
-    child.stderr?.on('data', chunk => appendOutput('stderr', chunk))
-    child.stdout?.on('end', () => output.end('stdout'))
-    child.stderr?.on('end', () => output.end('stderr'))
-  }
+  observeOutput(child)
 
   const settledExit: Promise<DevProcessExitInfo> = child
     .then(result => ({

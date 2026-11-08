@@ -17,6 +17,7 @@ import { createViteWatchIgnored, resolvePollingWatchOptions } from '../runtime/w
 import { deduplicateCleanupErrors } from '../runtime/watcher/cleanupErrors'
 import { isCSSRequest } from '../utils/regexp'
 import { bindWxmlDependencyWatch, ownsExternalWxmlWatch } from '../wxml/processing/watch'
+import { appendNativeAsyncImports } from './asyncDependencies'
 import { connectDevModuleGraphHost } from './host'
 import { createLogicalEntryModuleCode, createSidecarModuleCode } from './logicalEntry'
 import { createProfileOutputMatcher } from './profileOutput'
@@ -28,6 +29,7 @@ import {
   parseSidecarSourceRequest,
   resolveVirtualModuleId,
 } from './protocol'
+import { collectResolverPlugins } from './resolverPlugins'
 import { getDevModuleGraphSourceObservation } from './sourceObservation'
 import { normalizeSourceId } from './traversal'
 
@@ -52,20 +54,6 @@ export interface DevModuleGraphObservedChange extends DevModuleGraphChange {
 }
 
 export type DevModuleGraphObserver = (change: DevModuleGraphChange) => DevModuleGraphObservedChange
-
-function isInternalPlugin(plugin: unknown): plugin is { name: string } {
-  if (!plugin || typeof plugin !== 'object' || !('name' in plugin)) {
-    return false
-  }
-  const name = (plugin as { name?: unknown }).name
-  return typeof name === 'string'
-    && (name.startsWith('weapp-vite:') || name.startsWith('weapp-runtime:'))
-}
-
-function collectResolverPlugins(config: InlineConfig) {
-  const plugins = Array.isArray(config.plugins) ? config.plugins : config.plugins ? [config.plugins] : []
-  return plugins.filter(plugin => !isInternalPlugin(plugin))
-}
 
 async function transformVueSource(code: string, id: string, config?: ResolvedConfig) {
   const { descriptor, errors } = await readAndParseSfc(id, { source: code })
@@ -217,10 +205,16 @@ export function createDevModuleGraphPlugin(
       for (const dependency of ctx.moduleGraphService.getTransformDependencies?.(id) ?? []) {
         this.addWatchFile(dependency)
       }
-      if (!id.endsWith('.vue')) {
-        return null
+      const transformed = id.endsWith('.vue')
+        ? await transformVueSource(code, id, this?.environment?.config)
+        : undefined
+      const source = transformed?.code ?? code
+      if (!/\.(?:[cm]?[jt]sx?|vue)(?:\?|$)/.test(id) || !/\brequire\s*(?:\.|\()/.test(source)) {
+        return transformed ?? null
       }
-      return await transformVueSource(code, id, this?.environment?.config)
+      const lang = /\.[cm]?tsx(?:\?|$)/.test(id) ? 'tsx' : /\.[cm]?ts(?:\?|$)/.test(id) ? 'ts' : /\.[cm]?jsx(?:\?|$)/.test(id) ? 'jsx' : 'js'
+      const withAsyncImports = appendNativeAsyncImports(source, this.parse(source, { lang }))
+      return withAsyncImports ? { code: withAsyncImports, map: null } : transformed ?? null
     },
     async hotUpdate({ type, file, read }) {
       if (this.environment.name !== 'client' || isProfileOutput(file) || ownsExternalWxmlWatch(ctx, file)) {
@@ -276,7 +270,7 @@ export async function createDevModuleGraphProvider(
     plugins: [
       createDevModuleGraphPlugin(ctx, buildConfig, onChange, observe),
       createPackageImportsQueryPlugin(),
-      ...collectResolverPlugins(buildConfig),
+      ...await collectResolverPlugins(buildConfig),
     ],
     server: {
       ...(buildConfig.server ?? {}),

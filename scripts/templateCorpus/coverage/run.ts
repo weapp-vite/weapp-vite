@@ -51,6 +51,8 @@ catch (error) {
   errors.push((error instanceof Error ? error.message : String(error)).split(repositoryRoot).join('<repository>'))
 }
 const accepted = exitCode === 0 && identityUnchanged && coverage?.accepted === true && errors.length === 0
+// 覆盖率子进程可能清理空报告目录，失败收据仍须保留本轮退出码与原始错误。
+await mkdir(output, { recursive: true })
 await writeFile(path.join(output, 'strict-verdict.json'), `${corpusJson({ ...coverage, schemaVersion: 1, runId, identity, accepted, coverageAccepted: coverage?.accepted ?? false, errors })}\n`)
 reports.verdict = await coverageFileIdentity(path.join(output, 'strict-verdict.json'))
 await writeFile(path.join(output, 'run-receipt.json'), `${corpusJson({ schemaVersion: 1, kind: 'source-coverage', runId, startedAt, finishedAt: new Date().toISOString(), identity, identityUnchanged, exitCode: exitCode ?? null, accepted, reports, errors })}\n`)

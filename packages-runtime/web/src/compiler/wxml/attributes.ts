@@ -96,11 +96,12 @@ export function renderAttributes(
   let buffer = ''
   let controlled = ''
   for (const [rawName, rawValue] of Object.entries(attribs)) {
+    const value = rawValue ?? ''
     if (options?.skipControl && CONTROL_ATTRS.has(rawName)) {
       continue
     }
     if (options?.controlledAttributes?.includes(rawName)) {
-      const expression = buildExpression(parseInterpolations(rawValue ?? ''), '__controlledScope', wxsVar)
+      const expression = buildExpression(parseInterpolations(value), '__controlledScope', wxsVar)
       controlled += ` \${ctx.controlledAttribute(${JSON.stringify(rawName)}, __controlledScope => ${expression}, ${scopeVar})}`
       continue
     }
@@ -110,7 +111,7 @@ export function renderAttributes(
       const aliasedEvent = EVENT_KIND_ALIAS[normalizedEvent]
       const event = aliasedEvent ? normalizedEvent : eventInfo.rawEvent
       const domEvent = aliasedEvent ?? eventInfo.rawEvent
-      const handlerExpr = buildExpression(parseInterpolations(rawValue ?? ''), scopeVar, wxsVar)
+      const handlerExpr = buildExpression(parseInterpolations(value), scopeVar, wxsVar)
       const flags = {
         catch: eventInfo.prefix.includes('catch'),
         capture: eventInfo.prefix.includes('capture'),
@@ -123,12 +124,12 @@ export function renderAttributes(
     const name = useProperty ? normalizePropertyName(rawName) : normalizeAttributeName(rawName)
     // DOM 属性保留字符串，完整表达式的值类型由运行时单独保存。
     if (!useProperty && name.startsWith('data-')) {
-      const expr = buildDatasetExpression(rawValue ?? '', scopeVar, wxsVar)
+      const expr = buildDatasetExpression(value, scopeVar, wxsVar)
       buffer += ` \${bindRuntimeDataset(${JSON.stringify(name)}, ${expr})}`
       continue
     }
-    const parts = parseInterpolations(rawValue ?? '')
-    const trimmedParts = name === 'style' ? parseInterpolations((rawValue ?? '').trim()) : parts
+    const parts = parseInterpolations(value)
+    const trimmedParts = name === 'style' ? parseInterpolations(value.trim()) : parts
     const valueParts = trimmedParts.length === 1 && trimmedParts[0]?.type === 'expr' ? trimmedParts : parts
     const rawExpr = buildExpression(valueParts, scopeVar, wxsVar)
     // WXML 内联 style 不经过 postcss 链路，rpx / vw / vh 需要在运行时换算，

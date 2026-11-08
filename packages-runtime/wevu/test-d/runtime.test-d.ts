@@ -54,7 +54,10 @@ defineComponent({
     moved() {},
     detached() {},
     error(err) {
-      expectType<Error>(err)
+      expectType<unknown>(err)
+      if (err instanceof Error) {
+        expectType<Error>(err)
+      }
     },
   },
   pageLifetimes: {

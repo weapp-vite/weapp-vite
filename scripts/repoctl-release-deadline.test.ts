@@ -5,8 +5,10 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterEach, describe, expect, it } from 'vitest'
 import { readLinuxProcessState, waitForProcessExit } from './repoctlReleaseDeadline/processState'
+import { FixtureLifecycle } from './verification/fixtureLifecycle'
 
 const temporaryDirectories: string[] = []
+const fixtureLifecycles = new Set<FixtureLifecycle>()
 const helper = fileURLToPath(new URL('../.github/scripts/release-stage.sh', import.meta.url))
 const timeoutResolver = fileURLToPath(new URL('../.github/scripts/release-timeout.sh', import.meta.url))
 
@@ -21,6 +23,8 @@ function findGnuTimeout() {
 const gnuTimeout = findGnuTimeout()
 
 afterEach(async () => {
+  await Promise.all([...fixtureLifecycles].map(lifecycle => lifecycle.close()))
+  fixtureLifecycles.clear()
   await Promise.all(temporaryDirectories.splice(0).map(directory => fs.rm(directory, { recursive: true, force: true })))
 })
 
@@ -60,6 +64,12 @@ exit "\${FIXTURE_EXIT_CODE:-0}"
       return { exitCode: result.status, stderr: result.stderr }
     },
   }
+}
+
+function withDeadlineFixture<T>(signal: AbortSignal, work: (fixture: Awaited<ReturnType<typeof createDeadlineFixture>>) => Promise<T>) {
+  const lifecycle = new FixtureLifecycle(signal)
+  fixtureLifecycles.add(lifecycle)
+  return lifecycle.run(async () => work(await createDeadlineFixture()))
 }
 
 async function createTimeoutFixture() {
@@ -159,8 +169,7 @@ describe.skipIf(process.platform === 'win32')('Ubuntu release stage deadline', (
     await expect(readLinuxProcessState(17, 'owned', readProcessFile)).resolves.toBe('gone')
   })
 
-  it('uses the remaining shared budget for later stages and reserves forced termination time', async () => {
-    const fixture = await createDeadlineFixture()
+  it('uses the remaining shared budget for later stages and reserves forced termination time', ({ signal }) => withDeadlineFixture(signal, async (fixture) => {
     expect((await fixture.run('verify', 1000)).exitCode).toBe(0)
     const initialArgs = await readTimeoutArgs(fixture.trace)
     expect(initialArgs.slice(0, 5)).toEqual([
@@ -176,7 +185,7 @@ describe.skipIf(process.platform === 'win32')('Ubuntu release stage deadline', (
     expect(args[2]).toBe('45s')
     expect(args.at(-1)).toBe('prepare')
     expect(args).not.toContain('--foreground')
-  })
+  }), 30_000)
 
   it.each([1095, 1100, 1105])('does not start a release process when the remaining budget cannot cover teardown at %s', async (now) => {
     const fixture = await createDeadlineFixture()

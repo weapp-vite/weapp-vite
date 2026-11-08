@@ -9,6 +9,10 @@ const runtime = vi.hoisted(() => ({
     getEnterOptions: vi.fn(() => ({ path: 'enter' })),
     getLaunchOptions: vi.fn(() => ({ path: 'launch' })),
     instance: { app: true } as unknown,
+    offAppHide: vi.fn(),
+    offAppShow: vi.fn(),
+    onAppHide: vi.fn(),
+    onAppShow: vi.fn(),
     register: vi.fn((options: unknown) => options),
   },
   configureRouting: vi.fn(),
@@ -83,6 +87,13 @@ class FakePageStack {
     return true
   }
 
+  forward(targets: Array<{ id: string, query: Record<string, string> }>) {
+    for (const target of targets) {
+      this.push(target.id, { ...target.query })
+    }
+    return true
+  }
+
   relaunch(id: string, query: Record<string, string>) {
     if (!this.registry.has(id)) {
       return false
@@ -148,6 +159,10 @@ vi.mock('../src/runtime/polyfill/routeRuntime/appLifecycle', () => ({
     ensureLaunched = runtime.app.ensureLaunched
     getEnterOptions = runtime.app.getEnterOptions
     getLaunchOptions = runtime.app.getLaunchOptions
+    offAppHide = runtime.app.offAppHide
+    offAppShow = runtime.app.offAppShow
+    onAppHide = runtime.app.onAppHide
+    onAppShow = runtime.app.onAppShow
     register = runtime.app.register
     instance = runtime.app.instance
   },
@@ -409,5 +424,60 @@ describe('web route runtime orchestration', () => {
 
     stack.entries.length = 0
     expect(routes.getCurrentPageInstance()).toBeUndefined()
+  })
+
+  it('preserves identical routes, restores multiple forward layers and replaces divergent non-tab targets', async () => {
+    await import('../src/runtime/polyfill/routeRuntime')
+    const reconcile = runtime.popState!
+    const stack = runtime.pageStack!
+    stack.entries.splice(0, stack.entries.length, { active: true, id: 'pages/home/index', query: { entry: 'first' } })
+    runtime.syncRouting.mockClear()
+    reconcile(undefined, { stack: [{ id: 'pages/home/index', query: { entry: 'first' } }] })
+    expect(runtime.syncRouting).not.toHaveBeenCalled()
+    reconcile(undefined, { stack: [
+      { id: 'pages/home/index', query: { entry: 'first' } },
+      { id: 'pages/detail/index', query: { layer: '1' } },
+      { id: 'pages/detail/index', query: { layer: '2' } },
+    ] })
+    expect(stack.entries.map(entry => [entry.id, entry.query])).toEqual([
+      ['pages/home/index', { entry: 'first' }],
+      ['pages/detail/index', { layer: '1' }],
+      ['pages/detail/index', { layer: '2' }],
+    ])
+    reconcile(undefined, { stack: [{ id: 'pages/detail/index', query: { reset: '1' } }] })
+    expect(stack.entries).toEqual([expect.objectContaining({ id: 'pages/detail/index', query: { reset: '1' } })])
+    runtime.syncRouting.mockClear()
+    reconcile({ id: 'pages/detail/index', query: { reset: '1' } }, undefined)
+    expect(runtime.syncRouting).not.toHaveBeenCalled()
+    reconcile({ id: 'pages/detail/index', query: { reset: '2' } }, undefined)
+    expect(stack.entries).toEqual([expect.objectContaining({ id: 'pages/detail/index', query: { reset: '2' } })])
+    reconcile({ id: 'pages/detail/index', query: {} }, undefined)
+    expect(stack.entries).toEqual([expect.objectContaining({ id: 'pages/detail/index', query: {} })])
+    reconcile({ id: 'pages/settings/index', query: {} }, undefined)
+    expect(stack.entries).toEqual([expect.objectContaining({ id: 'pages/settings/index' })])
+    reconcile(undefined, { stack: [{ id: 'pages/settings/index', query: {}, webviewId: -1 }] })
+    expect(stack.entries).toHaveLength(1)
+    stack.entries.splice(0, stack.entries.length, { active: true, id: 'pages/home/index', query: {} }, { active: true, id: 'pages/detail/index', query: {} })
+    const back = vi.spyOn(stack, 'back').mockImplementationOnce(() => {
+      stack.entries.length = 0
+      return true
+    })
+    reconcile(undefined, { stack: [{ id: 'pages/home/index', query: {} }] })
+    expect(runtime.syncTabBarRoute).toHaveBeenLastCalledWith('')
+    back.mockRestore()
+  })
+
+  it('forwards app visibility subscriptions and exact removals to the lifecycle owner', async () => {
+    const routes = await import('../src/runtime/polyfill/routeRuntime')
+    const hide = vi.fn()
+    const show = vi.fn()
+    routes.onAppHide(hide)
+    routes.onAppShow(show)
+    routes.offAppHide(hide)
+    routes.offAppShow(show)
+    expect(runtime.app.onAppHide).toHaveBeenCalledExactlyOnceWith(hide)
+    expect(runtime.app.onAppShow).toHaveBeenCalledExactlyOnceWith(show)
+    expect(runtime.app.offAppHide).toHaveBeenCalledExactlyOnceWith(hide)
+    expect(runtime.app.offAppShow).toHaveBeenCalledExactlyOnceWith(show)
   })
 })

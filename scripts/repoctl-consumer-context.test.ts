@@ -38,17 +38,20 @@ const toolkit = createRequire(require.resolve('repoctl')).resolve('@icebreakers/
 async function installedConsumerContracts(): Promise<RuntimeContextModule> {
   const directory = path.dirname(toolkit)
   const sources = await Promise.all((await readdir(directory)).filter(name => name.endsWith('.mjs')).map(name => readFile(path.join(directory, name), 'utf8')))
-  const candidates = sources.filter(source => source.includes('//#region src/commands/package-check/consumer/runtime-contexts/index.ts'))
+  const boundaries = (source: string) => [...source.matchAll(/^\/\/(?:#region | )(src\/[^\r\n]+\.ts)\r?$/gmu)]
+  const contextModule = 'src/commands/package-check/consumer/runtime-contexts/index.ts'
+  const candidates = sources.filter(source => boundaries(source).some(marker => marker[1] === contextModule))
   expect(candidates).toHaveLength(1)
   const source = candidates[0]!
+  const modules = boundaries(source)
   const regions = ['package-check/consumer/runtime-assets', 'package-check/consumer/runtime-contexts/source', 'package-check/consumer/runtime-contexts/vitest', 'package-check/consumer/runtime-contexts/index', 'package-check/entries', 'package-check/consumer/optional-peers', 'release/nightly/consumer/entries']
   const code = regions.map((region) => {
-    const marker = `//#region src/commands/${region}.ts\n`
-    const start = source.indexOf(marker)
-    const end = source.indexOf('//#endregion', start + marker.length)
-    expect(start, `Installed repoctl contract boundary: ${region}`).toBeGreaterThanOrEqual(0)
-    expect(end).toBeGreaterThan(start)
-    return source.slice(start + marker.length, end)
+    const index = modules.findIndex(marker => marker[1] === `src/commands/${region}.ts`)
+    expect(index, `Installed repoctl contract boundary: ${region}`).toBeGreaterThanOrEqual(0)
+    const marker = modules[index]!
+    const next = modules[index + 1]
+    expect(next, `Installed repoctl contract end: ${region}`).toBeDefined()
+    return source.slice(marker.index + marker[0].length, next!.index)
   }).join('\n')
   const globals: Record<string, unknown> = {}
   const parsed = ts.createSourceFile('installed.mjs', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS)

@@ -1,0 +1,5 @@
+{
+  "name": "issue-1299-scriptless-slot-owner",
+  "type": "module",
+  "private": true
+}

@@ -101,7 +101,7 @@ defineComponentJson({
 </script>
 
 <template>
-  <view :class="`wr-coupon coupon-class theme-${theme} flex bg-[url(https://tdesign.gtimg.com/miniprogram/template/retail/coupon/coupon-bg-nocorners.png)] bg-size-[100%_100%] bg-no-repeat relative mb-[24rpx] overflow-hidden`">
+  <view class="flex bg-[url(https://tdesign.gtimg.com/miniprogram/template/retail/coupon/coupon-bg-nocorners.png)] bg-size-[100%_100%] bg-no-repeat relative mb-[24rpx] overflow-hidden" :class="`wr-coupon coupon-class theme-${theme}`">
     <view class="wr-coupon__left w-[200rpx] h-[180rpx] flex flex-col justify-center text-center text-[#fa4126] overflow-hidden relative">
       <view v-if="type == CouponType.ZK_COUPON || type === CouponType.MERCHANT_ZK_COUPON">
         <text class="wr-coupon__left--value text-[64rpx] leading-[88rpx] [font-weight:bold] font-['DIN_Alternate',cursive]">

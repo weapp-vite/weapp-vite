@@ -34,7 +34,11 @@
 
 **总体未完成。** 数量已由本冻结输入重算；解析、覆盖率、浏览器、消费者 runtime 与性能各有独立边界，不能由数量或探索性解析结果替代。
 
-Taro 4.3.2 Harmony JSUI 是上游实际登记的模板候选；当前真实构建尚未通过，保留 candidate 和原始失败，阻断最终矩阵验收，未改写为 unsupported。
+Taro 4.3.2 Harmony JSUI 的 development、production 两个候选目标已完成真实构建。当前 generation 为 `taro-4.3.2-harmony-jsui-3075bb2db3ec67a1-development`、`taro-4.3.2-harmony-jsui-3075bb2db3ec67a1-production`。旧失败 generation、原始报告、锁文件与日志继续保存在冻结证据中。受控配置包含固定版本与 SHA-256 校验的页面模块兼容层和资源源路径预载；官方包文件保持原样，模板及静态资源仍由官方编译与写出链路生成。
+
+官方 Harmony runtime 的六项缺失导出诊断仍原样保留，本次只验证模板生成，不宣称 Harmony runtime 通过。
+
+当前 manifest 原始字节 SHA-256：`f11a70e9dabdfaf18bf8453af1de0a1a7dab600514f001004b118e590e080c38`。本目录的解析、fuzz 与覆盖率报告保留了同一内容 SHA-256 的历史通过事实；这些报告绑定旧 manifest，未覆盖新增的 Harmony JSUI 矩阵产物。本轮矩阵与 CI 验证另存于任务证据。
 
 历史 MPX 安装日志附件另有不可恢复缺口。
 
@@ -42,11 +46,11 @@ Taro 4.3.2 Harmony JSUI 是上游实际登记的模板候选；当前真实构�
 
 | 验证范围 | 当前记录 |
 | --- | --- |
-| corpus/node | passed |
-| corpus/chromium | passed |
-| fuzz/node | passed |
-| fuzz/chromium | passed |
-| sourceCoverage | passed |
+| corpus/node | historical-unbound（历史通过，未绑定当前 manifest） |
+| corpus/chromium | historical-unbound（历史通过，未绑定当前 manifest） |
+| fuzz/node | historical-unbound（历史通过，未绑定当前 manifest） |
+| fuzz/chromium | historical-unbound（历史通过，未绑定当前 manifest） |
+| sourceCoverage | historical-unbound（历史通过，未绑定当前 manifest） |
 | consumerScanner | passed |
 | nativeScriptBuilds | passed |
 | nativeScriptWatchers | passed |
@@ -62,10 +66,8 @@ Taro 4.3.2 Harmony JSUI 是上游实际登记的模板候选；当前真实构�
 
 消费者与宿主结果来自 validation/consumer-runtime-receipt.json.gz 的独立证据索引：构建与原生模块/HMR 回归 361 项、原生脚本实际 Vite 构建 8 项、watch/lifecycle 回归 412 项、Web 107 项、Chromium Web 两个交互模板、simulator Node 进程 3 项、真实浏览器 1 项、provider-compatible headless 2 项及真实 Stable IDE 2 项分别登记原日志身份；六平台与 Web 构建另有 exitCode 汇总。未单独持久化进程退出码的 Vitest 日志只报告其完整通过摘要。真实 IDE 记录官方查询、实际连接版本和基础库；这些局部夹具结果不表示全量语料在宿主中执行，也不声称绑定后来仅修订来源证据的 manifest。
 
-- framework cell taro-4.3.2-harmony-jsui-199c3efafcceae46-development: failed
-- framework cell taro-4.3.2-harmony-jsui-199c3efafcceae46-production: failed
-- framework cell taro@4.3.2/harmony-jsui/development: failed, expected built
-- framework cell taro@4.3.2/harmony-jsui/production: failed, expected built
+- framework cell taro-4.3.2-harmony-jsui-3075bb2db3ec67a1-development: built
+- framework cell taro-4.3.2-harmony-jsui-3075bb2db3ec67a1-production: built
 - 历史 MPX 2.8.64 首轮安装日志原始 1302 字节附件缺失；原报告 SHA-256 和现存 1412 字节日志分别保留，未替换原身份。
 
 本目录 delivery-status.json.gz 仅登记冻结状态与可见报告身份，不宣称最终验收通过。既有 464 份性能语料与历史结果保持独立；新语料版本不改写旧分母。

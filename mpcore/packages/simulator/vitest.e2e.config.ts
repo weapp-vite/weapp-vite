@@ -13,6 +13,7 @@ import { createRuntimePruningFiles } from './test/helpers/runtimePruning'
 import { createRuntimePublicFactoryFiles } from './test/helpers/runtimePublicFactory'
 import { createRuntimeValueSnapshotFiles } from './test/helpers/runtimeValueSnapshot'
 import { createSetDataPhaseFiles } from './test/helpers/setDataPhases'
+import { createSqliteWasmFiles } from './test/helpers/sqliteWasmFiles'
 import { createStatefulAppBootstrapFiles } from './test/helpers/statefulAppBootstrap'
 import { createStatefulBatchDeliveryFiles } from './test/helpers/statefulBatchDelivery'
 import { createStatefulNativeComponentFiles } from './test/helpers/statefulNativeComponent'
@@ -53,6 +54,9 @@ export default defineConfig({
   plugins: [vue(), tailwindcss(), {
     name: 'stateful-native-component-fixture',
     resolveId(id) {
+      if (id === 'virtual:sqlite-wasm-fixture') {
+        return `\0${id}`
+      }
       if (id === 'virtual:formatting-semantics-fixture') {
         return `\0${id}`
       }
@@ -88,6 +92,10 @@ export default defineConfig({
       }
     },
     async load(id) {
+      if (id === '\0virtual:sqlite-wasm-fixture') {
+        const files = (await createSqliteWasmFiles()).map(([file, content]) => [file, typeof content === 'string' ? content : [...new Uint8Array(content)]])
+        return `export default ${JSON.stringify(files)}`
+      }
       if (id === '\0virtual:formatting-semantics-fixture') {
         return `export default ${JSON.stringify(await createFormattingFiles())}`
       }

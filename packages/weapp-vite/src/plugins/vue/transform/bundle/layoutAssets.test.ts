@@ -568,6 +568,97 @@ describe('resolveVueLayoutAssetOptions', () => {
     }))
   })
 
+  it.each([
+    { platform: 'weapp', nativeSlotContext: true, scopedSlotsRequireProps: true, emitsStub: false },
+    { platform: 'weapp', nativeSlotContext: false, scopedSlotsRequireProps: true, emitsStub: true },
+    { platform: 'weapp', nativeSlotContext: true, scopedSlotsRequireProps: false, emitsStub: true },
+    { platform: 'alipay', nativeSlotContext: true, scopedSlotsRequireProps: true, emitsStub: true },
+  ])('preserves app shell runtime and assets with native slot options ($platform, native=$nativeSlotContext, scoped=$scopedSlotsRequireProps)', ({ platform, nativeSlotContext, scopedSlotsRequireProps, emitsStub }) => {
+    const relativeBase = '__weapp_vite_app_shell'
+    const shellChunk = {
+      type: 'chunk',
+      fileName: `${relativeBase}.js`,
+      code: 'Component({ methods: { __weapp_vite_nativeSlotParent() {} } })',
+    }
+    const bundle = { [`${relativeBase}.js`]: shellChunk }
+    const pluginCtx = { emitFile: vi.fn() }
+    const result = {
+      template: '<app-shell-card class="happy"><slot /></app-shell-card>',
+      style: '.happy{padding:8px;}',
+      config: JSON.stringify({
+        pages: ['pages/index/index'],
+        window: { navigationBarTitleText: 'Home' },
+        usingComponents: {
+          'app-shell-card': '/components/app-shell-card/index',
+          'custom-tab-bar': '/custom-tab-bar/index',
+        },
+        componentGenerics: { card: true },
+      }),
+      classStyleWxs: undefined,
+      scopedSlotComponents: [],
+    }
+
+    emitAppShellAssetsIfNeeded({
+      pluginCtx,
+      bundle,
+      ctx: {} as any,
+      filename: '/project/src/app.vue',
+      relativeBase,
+      result,
+      configService: {
+        platform,
+        weappViteConfig: {
+          vue: { template: { nativeSlotContext, scopedSlotsRequireProps } },
+        },
+      } as any,
+      templateExtension: 'wxml',
+      jsonExtension: 'json',
+      scriptExtension: 'js',
+      outputExtensions: { wxss: 'wxss' } as any,
+      platformAssetOptions: {
+        platform,
+        templateExtension: 'wxml',
+      },
+    })
+
+    if (emitsStub) {
+      expect(ensureScriptlessComponentAssetMock).toHaveBeenCalledWith(
+        pluginCtx,
+        bundle,
+        relativeBase,
+        'js',
+        SLOT_HOST_SCRIPTLESS_COMPONENT_STUB,
+      )
+    }
+    else {
+      expect(ensureScriptlessComponentAssetMock).not.toHaveBeenCalled()
+    }
+    expect(bundle[`${relativeBase}.js`]).toBe(shellChunk)
+    expect(shellChunk.code).toContain('__weapp_vite_nativeSlotParent')
+    expect(emitBundleVueEntryAssetsMock).toHaveBeenCalledWith(expect.objectContaining({
+      bundle,
+      filename: relativeBase,
+      relativeBase,
+      result,
+    }))
+    expect(emitSfcStyleIfMissingMock).not.toHaveBeenCalled()
+    expect(emitSharedVueEntryJsonAssetMock).toHaveBeenCalledWith(expect.objectContaining({
+      relativeBase,
+      config: JSON.stringify({
+        styleIsolation: 'apply-shared',
+        usingComponents: {
+          'app-shell-card': '/components/app-shell-card/index',
+        },
+        componentGenerics: { card: true },
+      }, null, 2),
+      jsonOptions: {
+        defaultConfig: { component: true },
+        kind: 'component',
+        extension: 'json',
+      },
+    }))
+  })
+
   it('keeps only components referenced by the app shell template', () => {
     emitAppShellAssetsIfNeeded({
       pluginCtx: { emitFile: vi.fn() },

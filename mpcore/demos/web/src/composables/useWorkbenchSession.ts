@@ -6,6 +6,7 @@ import {
   createBrowserHeadlessSession,
   createBrowserVirtualFilesFromDirectory,
 } from '../../../../packages/simulator/src/browser'
+import { readArtifactText } from '../../../../packages/simulator/src/kernel/artifactContent'
 import { querySelectorAll } from '../../../../packages/simulator/src/view/selectors'
 import { collectCallableMethods, stringify } from '../lib/workbench'
 import { builtInScenarios } from '../scenarios'
@@ -76,7 +77,7 @@ export function useWorkbenchSession(viewportSize: Ref<{ height: number, width: n
   const fileEntries = computed(() => {
     void revision.value
     return Array.from(session.value?.files.entries() ?? [])
-      .map(([path, content]) => ({ content, path }))
+      .map(([path, content]) => ({ content: readArtifactText(content), path }))
       .sort((a, b) => a.path.localeCompare(b.path))
   })
   const selectedScope = computed(() => {

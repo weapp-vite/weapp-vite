@@ -101,10 +101,10 @@ defineComponentJson({
     </view>
     <block v-if="buttonType === 1">
       <view class="flex buy-buttons [display:-webkit-flex]">
-        <view :class="`bar-separately ${soldout || !isStock ? 'bar-addCart-disabled' : ''} w-[254rpx] h-[80rpx] text-white flex items-center justify-center [background:#ffece9] text-[#fa4126] rounded-[40rpx_0_0_40rpx] [background:rgba(170,170,170,1)] w-full [background:rgba(221,221,221,1)] text-[28rpx] [display:-webkit-flex]`" @tap="toAddCart">
+        <view class="bar-separately w-[254rpx] h-[80rpx] text-white flex items-center justify-center [background:#ffece9] text-[#fa4126] rounded-[40rpx_0_0_40rpx] [background:rgba(170,170,170,1)] w-full [background:rgba(221,221,221,1)] text-[28rpx] [display:-webkit-flex]" :class="`${soldout || !isStock ? 'bar-addCart-disabled' : ''}`" @tap="toAddCart">
           加入购物车
         </view>
-        <view :class="`bar-buy ${soldout || !isStock ? 'bar-buyNow-disabled' : ''} w-[254rpx] h-[80rpx] text-white flex items-center justify-center bg-[#fa4126] rounded-[0rpx_40rpx_40rpx_0rpx] [background:rgba(170,170,170,1)] w-full [background:rgba(198,198,198,1)] text-[28rpx] [display:-webkit-flex]`" @tap="toBuyNow">
+        <view class="bar-buy w-[254rpx] h-[80rpx] text-white flex items-center justify-center bg-[#fa4126] rounded-[0rpx_40rpx_40rpx_0rpx] [background:rgba(170,170,170,1)] w-full [background:rgba(198,198,198,1)] text-[28rpx] [display:-webkit-flex]" :class="`${soldout || !isStock ? 'bar-buyNow-disabled' : ''}`" @tap="toBuyNow">
           立即购买
         </view>
       </view>

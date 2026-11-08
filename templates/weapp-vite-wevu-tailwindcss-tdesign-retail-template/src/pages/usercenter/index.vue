@@ -322,7 +322,7 @@ definePageJson({
       <view v-if="customerServiceInfo.serviceTimeDuration" class="popup-title border-bottom-1px relative">
         服务时间: {{ customerServiceInfo.serviceTimeDuration }}
       </view>
-      <view :class="`popup-phone ${showKefu ? 'border-bottom-1px' : ''} relative`" @tap="call">
+      <view class="popup-phone relative" :class="`${showKefu ? 'border-bottom-1px' : ''}`" @tap="call">
         电话客服
       </view>
       <button v-if="showKefu" class="popup-phone border-bottom-1px online relative" open-type="contact">

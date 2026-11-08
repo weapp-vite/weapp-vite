@@ -29,6 +29,7 @@ import { registerResolvedPageLayoutDependencies } from '../../../utils/pageLayou
 import { emitScriptlessComponentAsset, resolveScriptlessComponentFileName, SLOT_HOST_SCRIPTLESS_COMPONENT_STUB } from '../../../utils/scriptlessComponent'
 import { shouldEmitScriptlessVueLayoutJs as shouldEmitScriptlessVueLayoutJsFromSource } from '../../../utils/scriptlessVueLayout'
 import { readCompilerInput } from '../../../utils/sourceSnapshot'
+import { usesNativeSlotOwnerRuntime } from '../../../vue/transform/appShellRuntime/options'
 import { resolvePageLayoutPlan } from '../../../vue/transform/pageLayout'
 import { readVueLikeCompilerInput } from '../../../vue/transform/sourceInput'
 import { collectAppEntries } from './app'
@@ -151,6 +152,9 @@ export function createEntryLoader(options: EntryLoaderOptions) {
   let resolveCacheVersion = 0
 
   const shouldEmitScriptlessVueLayoutJs = async (layoutFile: string) => {
+    if (usesNativeSlotOwnerRuntime(configService)) {
+      return false
+    }
     const cached = scriptlessVueLayoutDecisionCache.get(layoutFile)
     if (cached) {
       return await cached

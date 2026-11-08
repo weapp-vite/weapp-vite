@@ -9,6 +9,7 @@ import {
   resolveNativeLayoutStaticAssetEntries,
 } from '../../../utils/nativeLayout'
 import { ensureScriptlessComponentAsset, resolveScriptlessComponentFileName, SLOT_HOST_SCRIPTLESS_COMPONENT_STUB } from '../../../utils/scriptlessComponent'
+import { usesNativeSlotOwnerRuntime } from '../appShellRuntime/options'
 import { emitSfcJsonAsset, emitSfcStyleIfMissing, emitSfcTemplateIfMissing } from '../emitAssets'
 import { assertTemplateHasDefaultSlot, collectNativeLayoutAssets } from '../pageLayout'
 import { readVueLikeCompilerInput } from '../sourceInput'
@@ -399,11 +400,13 @@ export function emitAppShellAssetsIfNeeded(options: {
     },
   })
 
-  emitScriptlessComponentJsFallbackIfMissing({
-    pluginCtx: options.pluginCtx,
-    bundle: options.bundle,
-    relativeBase,
-    scriptExtension: options.scriptExtension,
-    source: SLOT_HOST_SCRIPTLESS_COMPONENT_STUB,
-  })
+  if (!usesNativeSlotOwnerRuntime(options.configService)) {
+    emitScriptlessComponentJsFallbackIfMissing({
+      pluginCtx: options.pluginCtx,
+      bundle: options.bundle,
+      relativeBase,
+      scriptExtension: options.scriptExtension,
+      source: SLOT_HOST_SCRIPTLESS_COMPONENT_STUB,
+    })
+  }
 }

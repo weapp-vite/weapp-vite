@@ -1,3 +1,4 @@
+export * from './artifactContent'
 export * from './artifactSource'
 export * from './diagnostics'
 export * from './platform'

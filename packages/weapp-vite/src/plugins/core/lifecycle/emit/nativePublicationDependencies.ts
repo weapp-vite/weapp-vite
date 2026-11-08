@@ -2,9 +2,10 @@ import type { OutputBundle, OutputChunk } from 'rolldown'
 import type { RequestGlobalsAnalysisOptions } from './requestGlobals/analysis'
 import path from 'pathe'
 import { toPosixPath } from '../../../../utils'
+import { collectRequireAsyncChunkTargets } from '../../requireAsyncTarget'
 import { resolveRequestGlobalsInstallerName } from './requestGlobals'
 
-/** 原生局部发布保留当前根入口和将要生成的 prelude 所需依赖，不借用历史发布图。 */
+/** 原生局部发布保留当前根入口、prelude 和原生异步加载所需依赖，不借用历史发布图。 */
 export function collectNativePublicationDependencies(
   bundle: OutputBundle,
   options: { rootFileName: string, requestGlobalsPrelude: boolean, analysis?: RequestGlobalsAnalysisOptions },
@@ -17,6 +18,8 @@ export function collectNativePublicationDependencies(
     }
     chunks.set(toPosixPath(fileName), output)
     chunks.set(toPosixPath(output.fileName), output)
+    // 原生异步加载不属于 bundler 的 import 图，但仍是当前活跃产物的发布依赖。
+    pending.push(...collectRequireAsyncChunkTargets(output.code))
     if ((fileName === options.rootFileName && output.isEntry)
       || (options.requestGlobalsPrelude && resolveRequestGlobalsInstallerName(output.code, options.analysis, output.fileName))) {
       pending.push(toPosixPath(output.fileName))

@@ -1,0 +1,7 @@
+<view id="issue1303-page">
+  <text id="sqlite-status">{{status}}</text>
+  <text id="sqlite-value">{{value}}</text>
+  <text id="sqlite-engine">{{engine}}</text>
+  <text id="sqlite-count">{{count}}</text>
+  <button id="query-sqlite" bindtap="runQuery">Query SQLite</button>
+</view>

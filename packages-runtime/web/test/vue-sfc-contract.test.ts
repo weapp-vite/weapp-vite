@@ -2,7 +2,7 @@ import type { VueTransformResult } from 'wevu/compiler'
 import type { ModuleMeta } from '../src/plugin/types'
 import { mkdir, mkdtemp, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { dirname, join } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import { createEmptyScanState } from '../src/plugin/state'
 import {
@@ -29,6 +29,25 @@ function createMeta(kind: ModuleMeta['kind'], filename: string): ModuleMeta {
 }
 
 describe('web Vue SFC contracts', () => {
+  it('registers an app SFC with navigation and style metadata without a page template or HMR', async () => {
+    const filename = resolve('src/app.vue')
+    const result = await transformWebVueSfcScript({
+      code: 'createApp({})',
+      filename,
+      meta: { ...createMeta('app', filename), navigationBar: { title: 'Application' } },
+      runtimeModuleId: 'virtual:runtime',
+      styleLanguage: 'css',
+      enableHmr: false,
+      hmrAcceptCode: 'acceptApplication()',
+    })
+
+    expect(result.code).toContain('registerWebWevuApp')
+    expect(result.code).toMatch(/navigationBar:\s*\{\s*"?title"?:\s*"Application"/)
+    expect(result.code).toContain('app.vue.css?weapp-web-sfc-style&inline')
+    expect(result.code).not.toContain('weapp-web-sfc-template')
+    expect(result.code).not.toContain('acceptApplication()')
+  })
+
   it('rejects a missing component registration factory', async () => {
     await expect(transformWebVueSfcScript({
       code: 'export const missing = true',

@@ -4,6 +4,7 @@ import type { SubPackageMetaValue } from '../../../../types'
 import type { CorePluginState } from '../../helpers'
 import type { BundleChunkSnapshot } from '../../helpers/bundle'
 import type { ChunkScriptAnalysisCache } from './rewrite'
+import { WEVU_APP_SHELL_VIRTUAL_PREFIX } from '@weapp-core/constants'
 import { resolveAstEngine } from '../../../../ast'
 import logger from '../../../../logger'
 import { parseLogicalEntryId } from '../../../../moduleGraph/protocol'
@@ -222,7 +223,9 @@ export function isActiveHmrEntryFacade(
   if (activeEntryIds.has(facadeModuleId)) {
     return true
   }
-  const sourceId = parseLogicalEntryId(facadeModuleId)?.sourceId
+  const sourceId = facadeModuleId.startsWith(WEVU_APP_SHELL_VIRTUAL_PREFIX)
+    ? facadeModuleId.slice(WEVU_APP_SHELL_VIRTUAL_PREFIX.length)
+    : parseLogicalEntryId(facadeModuleId)?.sourceId
   return sourceId ? activeEntryIds.has(normalizeFsResolvedId(sourceId)) : false
 }
 

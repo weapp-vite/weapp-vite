@@ -1,3 +1,4 @@
+import type { ViteDevServer } from 'vite'
 import type { MutableCompilerContext } from '../context'
 import { mkdir, mkdtemp, realpath, rename, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -147,7 +148,7 @@ describe('dev module graph provider integration', () => {
     const moduleGraphService = createModuleGraphService()
     moduleGraphService.replaceEntryDependencies(pageId, 'style', [styleId])
     const onChange = vi.fn()
-    const ready = Promise.withResolvers<void>()
+    const bindServer = vi.spyOn(moduleGraphService, 'bindDevServer')
     const outDir = path.join(root, 'dist')
     const provider = await createDevModuleGraphProvider({
       runtimeState: createRuntimeState(),
@@ -159,10 +160,10 @@ describe('dev module graph provider integration', () => {
       moduleGraphService,
     } as unknown as MutableCompilerContext, {
       root,
-      plugins: [{ name: 'test:watch-ready', configureServer(server) { server.watcher.once('ready', () => ready.resolve()) } }],
     }, onChange)
     try {
-      await ready.promise
+      const server = bindServer.mock.calls[0]![0] as unknown as ViteDevServer
+      await vi.waitFor(() => expect(server.watcher.getWatched()[root]).toContain('page.ts'))
       await moduleGraphService.syncDevGraph({ getModuleIds: () => [createLogicalEntryId(pageId, 'page')] })
       // 独立会话内先验证输出忽略，避免前一次源码变更的延迟通知进入负断言窗口。
       const generatedVantConfig = path.join(outDir, 'miniprogram_npm/@vant/weapp/field/index.json')
@@ -193,17 +194,17 @@ describe('dev module graph provider integration', () => {
     runtimeState.wxmlProcessing.references.set(normalizeSourceId(dependency), 1)
     const moduleGraphService = createModuleGraphService()
     const onChange = vi.fn()
-    const ready = Promise.withResolvers<void>()
+    const bindServer = vi.spyOn(moduleGraphService, 'bindDevServer')
     const provider = await createDevModuleGraphProvider({
       runtimeState,
       configService: { cwd: project, outDir: path.join(project, 'dist') },
       moduleGraphService,
     } as unknown as MutableCompilerContext, {
       root: project,
-      plugins: [{ name: 'test:watch-ready', configureServer(server) { server.watcher.once('ready', () => ready.resolve()) } }],
     }, onChange)
     try {
-      await ready.promise
+      const server = bindServer.mock.calls[0]![0] as unknown as ViteDevServer
+      await vi.waitFor(() => expect(server.watcher.getWatched()[project]).toBeDefined())
       expect(moduleGraphService.hasModule(dependency)).toBe(false)
       await writeFile(dependency, '{"label":"changed"}')
       await vi.waitFor(() => expect(onChange).toHaveBeenCalledWith({ event: 'update', file: normalizeSourceId(dependency) }))

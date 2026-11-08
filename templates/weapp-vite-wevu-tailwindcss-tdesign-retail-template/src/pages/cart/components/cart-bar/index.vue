@@ -83,7 +83,7 @@ defineComponentJson({
 
 <template>
   <view v-if="fixed" class="cart-bar__placeholder h-[100rpx]" />
-  <view :class="`cart-bar ${fixed ? 'cart-bar--fixed' : ''} flex flex-v-center items-center h-[112rpx] bg-white [border-top:1rpx_solid_#e5e5e5] p-[16rpx_32rpx] box-border text-[24rpx] leading-[36rpx] text-[#333] fixed inset-x-0 z-99 bottom-[calc(100rpx+env(safe-area-inset-bottom))] [&_.cart-bar__check]:mr-[12rpx] [&_.cart-bar__total]:ml-[24rpx] [&_.account-btn]:w-[192rpx] [&_.account-btn]:h-[80rpx] [&_.account-btn]:rounded-[40rpx] [&_.account-btn]:bg-[#fa4126] [&_.account-btn]:text-[28rpx] [&_.account-btn]:[font-weight:bold] [&_.account-btn]:leading-[80rpx] [&_.account-btn]:text-[#ffffff] [&_.account-btn]:text-center [&_.disabled-btn]:bg-[#cccccc] [&_.hover-btn]:opacity-50`" :style="`bottom: ${fixed ? `calc(${bottomHeight}rpx + env(safe-area-inset-bottom))` : ''};`">
+  <view class="cart-bar flex flex-v-center items-center h-[112rpx] bg-white [border-top:1rpx_solid_#e5e5e5] p-[16rpx_32rpx] box-border text-[24rpx] leading-[36rpx] text-[#333] fixed inset-x-0 z-99 bottom-[calc(100rpx+env(safe-area-inset-bottom))] [&_.cart-bar__check]:mr-[12rpx] [&_.cart-bar__total]:ml-[24rpx] [&_.account-btn]:w-[192rpx] [&_.account-btn]:h-[80rpx] [&_.account-btn]:rounded-[40rpx] [&_.account-btn]:bg-[#fa4126] [&_.account-btn]:text-[28rpx] [&_.account-btn]:[font-weight:bold] [&_.account-btn]:leading-[80rpx] [&_.account-btn]:text-[#ffffff] [&_.account-btn]:text-center [&_.disabled-btn]:bg-[#cccccc] [&_.hover-btn]:opacity-50" :class="`${fixed ? 'cart-bar--fixed' : ''}`" :style="`bottom: ${fixed ? `calc(${bottomHeight}rpx + env(safe-area-inset-bottom))` : ''};`">
     <t-icon
       size="40rpx"
       :color="isAllSelected ? '#FA4126' : '#BBBBBB'"
@@ -114,7 +114,7 @@ defineComponentJson({
         <price class="cart-bar__total--normal" :price="totalDiscountAmount || '0'" :fill="false" />
       </view>
     </view>
-    <view :class="`${!isDisabled ? '' : 'disabled-btn'} account-btn`" :hover-class="!isDisabled ? '' : 'hover-btn'" @tap.stop="handleToSettle">
+    <view class="account-btn" :class="`${!isDisabled ? '' : 'disabled-btn'}`" :hover-class="!isDisabled ? '' : 'hover-btn'" @tap.stop="handleToSettle">
       去结算({{ totalGoodsNum }})
     </view>
   </view>

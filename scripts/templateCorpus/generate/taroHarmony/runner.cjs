@@ -9,6 +9,7 @@ const runner = require('@tarojs/webpack5-runner/dist/index.mini.js').default
 const MiniPlugin = require('@tarojs/webpack5-runner/dist/plugins/MiniPlugin.js').default
 const SingleEntryDependency = require('@tarojs/webpack5-runner/dist/dependencies/TaroSingleEntryDependency.js').default
 const { META_TYPE } = require('@tarojs/helper')
+const PageCompatibilityPlugin = require('./harmony-jsui-page/plugin.cjs')
 
 assert.equal(typeof runner, 'function', 'The frozen official Mini runner must expose its default function.')
 
@@ -87,6 +88,7 @@ module.exports = function harmonyJsuiRunner(appPath, config) {
         assert.equal(loaderMeta.creator, 'createReactApp', 'The official React loader metadata must remain installed.')
         assert.equal(loaderMeta.creatorLocation, '@tarojs/plugin-framework-react/dist/runtime', 'The official React runtime must remain installed.')
         assert.equal(typeof loaderMeta.modifyInstantiate, 'function', 'The official JSUI instantiation transform must remain installed.')
+        chain.plugin('corpusHarmonyPageCompatibility').use(PageCompatibilityPlugin, [{ loaderMeta, mode: requestedMode }])
         expectedArgs = args
       }
       finally {

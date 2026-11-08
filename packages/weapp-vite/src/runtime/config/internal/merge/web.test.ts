@@ -1,5 +1,6 @@
 import type { MutableCompilerContext } from '../../../../context'
 import type { ConfigService } from '../../types'
+import path from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import {
   mergeWeb,
@@ -176,6 +177,34 @@ describe('runtime config merge web', () => {
       injectBuiltinAliases: vi.fn(),
       getDefineImportMetaEnv: () => ({}),
     })).toBeUndefined()
+  })
+
+  it.each(['inline', 'web'])('preserves an explicit %s watch disable over lower-priority defaults', async (source) => {
+    const disabled = { server: { watch: null } }
+    const defaults = { server: { watch: { usePolling: true } } }
+    const config = source === 'inline' ? disabled : {}
+    const userConfig = source === 'web' ? disabled : defaults
+    const root = path.resolve('web-watch-fixture')
+    const result = mergeWeb({
+      config,
+      web: {
+        enabled: true,
+        root,
+        outDir: path.join(root, 'dist'),
+        pluginOptions: {},
+        userConfig,
+      },
+      mode: 'development',
+      isDev: true,
+      applyRuntimePlatform: vi.fn(),
+      injectBuiltinAliases: vi.fn(),
+      getDefineImportMetaEnv: () => ({}),
+    }, defaults)
+    await Promise.all(result?.plugins ?? [])
+
+    expect(result?.server?.watch).toBeNull()
+    expect(disabled.server.watch).toBeNull()
+    expect(defaults.server.watch).toEqual({ usePolling: true })
   })
 
   it('normalizes object aliases and removes the existing runtime alias', async () => {
