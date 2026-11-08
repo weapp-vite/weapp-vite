@@ -31,6 +31,66 @@ describe('offline PR admission contract', () => {
     }).some(row => row.name.includes(event) || row.name === '唯一关闭事件入口')).toBe(true)
   })
 
+  it.each(['pr-number', 'head-sha', 'base-sha', 'merge-sha'])('requires the pinned string input %s', (name) => {
+    for (const change of [(input) => {
+      input.required = false
+    }, (input) => {
+      input.type = 'number'
+    }]) {
+      expect(failures(({ workflows }) => {
+        change(workflows['ci-pr.yml'].on.workflow_dispatch.inputs[name])
+      })).toContainEqual(expect.objectContaining({ name: '原生触发事件' }))
+    }
+    expect(failures(({ workflows }) => {
+      delete workflows['ci-pr.yml'].on.workflow_dispatch.inputs[name]
+    })).toContainEqual(expect.objectContaining({ name: '原生触发事件' }))
+  })
+
+  it('rejects extra dispatch inputs and an unbound refresh title', () => {
+    expect(failures(({ workflows }) => {
+      workflows['ci-pr.yml'].on.workflow_dispatch.inputs.bypass = { required: false, type: 'boolean' }
+      workflows['ci-pr.yml']['run-name'] = 'PR CI refresh'
+    })).toEqual(expect.arrayContaining([
+      expect.objectContaining({ name: '原生触发事件' }),
+      expect.objectContaining({ name: '原生重验标题绑定全部 pins' }),
+    ]))
+  })
+
+  it.each([' && github.ref_type == \'branch\'', ' && github.ref_name == github.event.repository.default_branch'])('rejects removing dispatch ref restriction %s', (restriction) => {
+    expect(failures(({ workflows }) => {
+      const approval = workflows['ci-pr.yml'].jobs.approval
+      approval.if = approval.if.replace(restriction, '')
+    })).toContainEqual(expect.objectContaining({ name: '关闭事件跳过审批' }))
+  })
+
+  it.each(['CI Performance', 'Wevu Runtime Size'])('does not promote %s diagnostics to native reports', (name) => {
+    expect(failures(({ workflows }) => {
+      const job = workflows['ci-performance-comment.yml'].jobs['native-pr-report']
+      job.if = job.if.replace('name == \'PR CI\'', `name == '${name}'`)
+    })).toContainEqual(expect.objectContaining({ name: 'native-pr-report 报告准入条件' }))
+  })
+
+  it.each(['checkout', 'discovery', 'environment'])('rejects preapproval %s execution', (change) => {
+    expect(failures(({ workflows }) => {
+      const step = workflows['ci-pr.yml'].jobs.approval.steps[0]
+      if (change === 'checkout') {
+        step.uses = 'actions/checkout@head'
+      }
+      else if (change === 'discovery') {
+        step.run = 'node .github/scripts/native-pr-context.mjs'
+      }
+      else {
+        step.env = { INPUT: '${{ inputs.head-sha }}' }
+      }
+    })).toContainEqual(expect.objectContaining({ name: '审批前不执行候选或发现逻辑' }))
+  })
+
+  it('rejects freezing target from a candidate instead of the control source', () => {
+    expect(failures(({ workflows }) => {
+      workflows['ci-pr.yml'].jobs.plan.steps.find(step => step.uses?.startsWith('actions/checkout@')).with.ref = '${{ inputs.merge-sha }}'
+    })).toContainEqual(expect.objectContaining({ name: '冻结目标使用触发控制 SHA' }))
+  })
+
   it('does not accept an unrelated Environment name', () => {
     expect(failures(({ workflows }) => {
       workflows['ci-pr.yml'].jobs.approval.environment = 'unprotected'
@@ -201,7 +261,8 @@ describe('offline PR admission contract', () => {
 
   it('accepts whitespace and expression wrappers without evaluating YAML code', () => {
     const state = localFixture()
-    state.workflows['ci-pr.yml'].jobs.approval.if = '${{  github.event_name\n == \'pull_request\' }}'
+    const approval = state.workflows['ci-pr.yml'].jobs.approval
+    approval.if = `\${{  ${approval.if.replaceAll(' && ', '\n && ')} }}`
     expect(exitCode(checkLocalAdmission(state))).toBe(0)
     expect(failures(({ workflows }) => {
       workflows['ci-pr.yml'].jobs.approval.if = 'process.exit(42)'

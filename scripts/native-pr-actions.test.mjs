@@ -254,16 +254,19 @@ describe('native approval workflow graph', () => {
 
   it('holds every validation behind exactly one protected approval with no checkout before approval', async () => {
     const workflow = await read('ci-pr.yml')
-    expect(workflow.on).toEqual({ pull_request: { types: ['opened', 'synchronize', 'reopened'] }, pull_request_target: { types: ['closed'] } })
-    expect(workflow.concurrency).toEqual({ 'group': 'pr-ci-${{ github.event.pull_request.number }}', 'cancel-in-progress': true })
+    expect(workflow.on.pull_request).toEqual({ types: ['opened', 'synchronize', 'reopened'] })
+    expect(workflow.on.pull_request_target).toEqual({ types: ['closed'] })
+    expect(workflow.on.workflow_dispatch.inputs).toEqual(Object.fromEntries(['pr-number', 'head-sha', 'base-sha', 'merge-sha'].map(name => [name, { required: true, type: 'string' }])))
+    expect(workflow.concurrency).toEqual({ 'group': 'pr-ci-${{ github.event.pull_request.number || inputs.pr-number }}', 'cancel-in-progress': true })
     expect(workflow.permissions).toEqual({ 'contents': 'read', 'pull-requests': 'read', 'actions': 'read' })
     const { approval, plan, documentation, ...checks } = workflow.jobs
     expect(approval.environment).toBe(admissionPolicy.environment)
-    expect(approval.if).toBe('github.event_name == \'pull_request\'')
+    expect(approval.if).toBe('github.event_name == \'pull_request\' || (github.event_name == \'workflow_dispatch\' && github.ref_type == \'branch\' && github.ref_name == github.event.repository.default_branch)')
     expect(approval.needs).toBeUndefined()
     expect(approval.steps).toHaveLength(1)
     expect(approval.steps[0].uses).toBeUndefined()
     expect(plan.needs).toBe('approval')
+    expect(plan.steps.find(step => step.uses?.startsWith('actions/checkout@')).with).toMatchObject({ 'ref': '${{ github.sha }}', 'persist-credentials': false })
     expect(plan.steps.filter(step => step.uses?.startsWith('actions/upload-artifact@')).map(step => step.with.name)).toEqual(['pr-context'])
     const profiles = JSON.parse(await readFile(new URL('../.github/pr-checks.json', import.meta.url), 'utf8'))
     expect(Object.keys(checks)).toEqual(Object.keys(profiles))

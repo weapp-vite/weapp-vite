@@ -20,7 +20,7 @@ const reportGuards = {
   'report-v2': `contains(fromJSON('["Performance Smoke","Nightly Performance"]'), github.event.workflow_run.name)`,
   'native-pr-report': `(github.event_name == 'workflow_run'
     && github.event.workflow_run.name == 'PR CI'
-    && github.event.workflow_run.event == 'pull_request'
+    && (github.event.workflow_run.event == 'pull_request' || github.event.workflow_run.event == 'workflow_dispatch')
     && github.event.workflow_run.conclusion == 'success')
     || (github.event_name == 'workflow_dispatch'
     && github.ref_type == 'branch'
@@ -75,21 +75,28 @@ export function checkLocalAdmission({ policy, profiles, workflows }) {
   }
   const pr = workflows['ci-pr.yml'] ?? {}
   add('原生入口名称', 'PR CI', pr.name)
+  add('原生重验标题绑定全部 pins', '${{ github.event_name == \'workflow_dispatch\' && format(\'PR CI refresh #{0} head={1} base={2} merge={3}\', inputs.pr-number, inputs.head-sha, inputs.base-sha, inputs.merge-sha) || github.event.pull_request.title }}', pr['run-name'])
   add('原生触发事件', {
     pull_request: { types: ['opened', 'synchronize', 'reopened'] },
     pull_request_target: { types: ['closed'] },
+    workflow_dispatch: { inputs: Object.fromEntries(['pr-number', 'head-sha', 'base-sha', 'merge-sha'].map(name => [name, { required: true, type: 'string' }])) },
   }, triggers['ci-pr.yml'])
   add('PR 并发隔离与旧运行取消', {
-    'group': 'pr-ci-${{ github.event.pull_request.number }}',
+    'group': 'pr-ci-${{ github.event.pull_request.number || inputs.pr-number }}',
     'cancel-in-progress': true,
   }, pr.concurrency)
   const jobs = pr.jobs ?? {}
   const { approval = {}, plan = {}, ...validations } = jobs
   add('单一审批后的任务清单', sorted([...Object.keys(profiles), 'documentation']), sorted(Object.keys(validations)))
   add('审批 Environment', policy.environment, typeof approval.environment === 'object' ? approval.environment?.name : approval.environment)
-  add('关闭事件跳过审批', expression('github.event_name == \'pull_request\''), expression(approval.if))
+  add('关闭事件跳过审批', expression('github.event_name == \'pull_request\' || (github.event_name == \'workflow_dispatch\' && github.ref_type == \'branch\' && github.ref_name == github.event.repository.default_branch)'), expression(approval.if))
   add('审批为唯一根任务', [], list(approval.needs))
   add('审批任务不调用其他 workflow', undefined, approval.uses)
+  add('审批前不执行候选或发现逻辑', true, Array.isArray(approval.steps) && approval.steps.length === 1
+  && !approval.steps[0].uses && /^echo "[^"\r\n$`]*"$/u.test(approval.steps[0].run ?? '')
+  && Object.keys(approval.steps[0]).every(key => ['name', 'run'].includes(key)))
+  const controlCheckout = plan.steps?.find(step => step.uses?.startsWith('actions/checkout@'))
+  add('冻结目标使用触发控制 SHA', { 'ref': '${{ github.sha }}', 'persist-credentials': false }, controlCheckout?.with)
   add('冻结目标等待审批', ['approval'], list(plan.needs))
   add('冻结目标不覆盖默认依赖条件', undefined, plan.if)
   for (const [name, job] of Object.entries(jobs)) {

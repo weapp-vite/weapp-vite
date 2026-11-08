@@ -1,3 +1,5 @@
+import { verifyNativeRefreshForkAdmission } from './native-pr-refresh-fork.mjs'
+import { isNativePrContext, validateNativeRefreshRun } from './native-pr-refresh.mjs'
 import { matchesMergeParents, samePullIdentity } from './pr-target-identity.mjs'
 
 const positive = value => Number.isSafeInteger(value) && value > 0
@@ -21,7 +23,11 @@ function validateInvocationProof(context, run, repository) {
 }
 
 /** 运行本身的仓库、源仓库与分支不可由 artifact 补造，事件驱动规划器另核对引用。 */
-export function validateNativeRunIdentity(context, run, repository, allowUnassociated = false) {
+export function validateNativeRunIdentity(context, run, repository, allowUnassociated = false, defaultBranch) {
+  if (context.event === 'native_refresh') {
+    validateNativeRefreshRun(context, run, repository, defaultBranch)
+    return
+  }
   const pull = run.pull_requests?.find(pull => pull.number === context.prNumber)
   if (run.event !== 'pull_request' || run.path !== '.github/workflows/ci-pr.yml'
     || !['headRef', 'baseRef', 'headRepository'].every(key => typeof context[key] === 'string' && context[key])
@@ -45,11 +51,14 @@ export function validateNativeRunIdentity(context, run, repository, allowUnassoc
 }
 
 export function validateNativeContextShape(context) {
-  if (context?.event !== 'pull_request' || context.schemaVersion !== 1 || context.isPr !== true
+  if (!isNativePrContext(context) || context.schemaVersion !== 1 || context.isPr !== true
     || !positive(context.prNumber) || !positive(Number(context.runAttempt))
     || !['headRef', 'baseRef', 'headRepository'].every(key => typeof context[key] === 'string' && context[key])
     || !['headSha', 'baseSha', 'driverSha', 'checkoutSha'].every(key => /^[a-f\d]{40}$/u.test(context[key] ?? ''))
-    || context.checkoutMode !== 'merge' || context.checkoutSha !== context.driverSha
+    || context.checkoutMode !== 'merge' || (context.event === 'pull_request' && context.checkoutSha !== context.driverSha)
+    || (context.event === 'native_refresh' && (typeof context.controlRef !== 'string' || !context.controlRef
+      || !positive(context.headRepositoryId) || !positive(context.baseRepositoryId)
+      || (context.headRepositoryId !== context.baseRepositoryId && !positive(context.forkSourceRunId))))
     || typeof context.selections !== 'object' || !context.selections) {
     throw new Error('Untrusted native PR context')
   }
@@ -61,12 +70,24 @@ export async function verifyNativePrContext(context, run, repository, get) {
   if (context.repository !== repository) {
     throw new Error('Untrusted native PR context repository')
   }
-  validateNativeRunIdentity(context, run, repository, true)
-  if (!run.pull_requests.length) {
+  if (context.event === 'native_refresh') {
+    const repo = await get('')
+    if (repo.full_name !== repository || repo.id !== context.baseRepositoryId || repo.id !== run.repository?.id) {
+      throw new Error('Untrusted native refresh control repository')
+    }
+    validateNativeRunIdentity(context, run, repository, false, repo.default_branch)
+    await verifyNativeRefreshForkAdmission(context, get)
+  }
+  else {
+    validateNativeRunIdentity(context, run, repository, true)
+  }
+  if (context.event === 'pull_request' && !run.pull_requests.length) {
     return { valid: false, reason: 'unassociated-pr' }
   }
   const pull = await get(`/pulls/${context.prNumber}`)
-  const identities = { baseRepositoryId: run.repository.id, headRepositoryId: run.head_repository.id }
+  const identities = context.event === 'native_refresh'
+    ? { baseRepositoryId: context.baseRepositoryId, headRepositoryId: context.headRepositoryId }
+    : { baseRepositoryId: run.repository.id, headRepositoryId: run.head_repository.id }
   if (!samePullIdentity(pull, context, identities)) {
     return { valid: false, reason: 'stale-pr' }
   }
@@ -76,7 +97,7 @@ export async function verifyNativePrContext(context, run, repository, get) {
   }
   const mergeRef = await get(`/git/ref/pull/${context.prNumber}/merge`)
   if (mergeRef.ref !== `refs/pull/${context.prNumber}/merge` || mergeRef.object?.sha !== context.checkoutSha
-    || pull.merge_commit_sha !== context.checkoutSha) {
+    || (context.event === 'pull_request' && pull.merge_commit_sha !== context.checkoutSha)) {
     return { valid: false, reason: 'stale-merge' }
   }
   const merge = await get(`/git/commits/${context.checkoutSha}`)
@@ -85,8 +106,15 @@ export async function verifyNativePrContext(context, run, repository, get) {
   }
   const current = await get(`/pulls/${context.prNumber}`)
   const currentBase = await get(`/git/ref/heads/${encodeURIComponent(context.baseRef)}`)
-  if (!samePullIdentity(current, context, identities) || current.merge_commit_sha !== context.checkoutSha) {
+  if (!samePullIdentity(current, context, identities)
+    || (context.event === 'pull_request' && current.merge_commit_sha !== context.checkoutSha)) {
     return { valid: false, reason: 'stale-pr' }
+  }
+  if (context.event === 'native_refresh') {
+    const currentMerge = await get(`/git/ref/pull/${context.prNumber}/merge`)
+    if (currentMerge.ref !== `refs/pull/${context.prNumber}/merge` || currentMerge.object?.sha !== context.checkoutSha) {
+      return { valid: false, reason: 'stale-merge' }
+    }
   }
   if (currentBase.object?.sha !== context.baseSha) {
     return { valid: false, reason: 'stale-base' }

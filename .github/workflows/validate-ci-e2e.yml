@@ -35,7 +35,7 @@ jobs:
       profile: ci-e2e
   watcher-comparison-diagnostic:
     needs: pr-context
-    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-e2e'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'watcher-comparison')) }}
+    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).selections['ci-e2e'] || !contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'watcher-comparison')) }}
     name: Watcher Backend Comparison (${{ matrix.os }} / Node 24)
     strategy:
       fail-fast: false
@@ -69,7 +69,7 @@ jobs:
     secrets: inherit
   native-compiler-batch-diagnostic:
     needs: pr-context
-    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-e2e'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'native-compiler-batch')) }}
+    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).selections['ci-e2e'] || !contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'native-compiler-batch')) }}
     name: Native Compiler Batch Diagnostic (${{ matrix.os }} / Node 24)
     strategy:
       fail-fast: false
@@ -101,7 +101,7 @@ jobs:
     secrets: inherit
   windows-dev-cleanup-diagnostic:
     needs: pr-context
-    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-e2e'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'windows-dev-cleanup')) }}
+    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).selections['ci-e2e'] || !contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'windows-dev-cleanup')) }}
     name: Dev Process Cleanup Shard Diagnostic (Windows / Node ${{ matrix.node-version }} / shard ${{ matrix.shard }})
     strategy:
       fail-fast: false
@@ -137,7 +137,7 @@ jobs:
     secrets: inherit
   windows-process-narrow-diagnostic:
     needs: pr-context
-    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-e2e'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'windows-process-narrow')) }}
+    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).selections['ci-e2e'] || !contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'windows-process-narrow')) }}
     name: Suite Runner Process Diagnostic (Windows / Node ${{ matrix.node-version }})
     strategy:
       fail-fast: false
@@ -167,7 +167,7 @@ jobs:
     secrets: inherit
   windows-native-runtime-cleanup-diagnostic:
     needs: pr-context
-    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-e2e'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'windows-native-runtime-cleanup')) }}
+    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).selections['ci-e2e'] || !contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'windows-native-runtime-cleanup')) }}
     name: Native Runtime Cleanup Diagnostic (Windows / Node ${{ matrix.node-version }})
     strategy:
       fail-fast: false
@@ -198,7 +198,7 @@ jobs:
     secrets: inherit
   windows-startup-fallback-diagnostic:
     needs: pr-context
-    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-e2e'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'windows-startup-fallback')) }}
+    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).selections['ci-e2e'] || !contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'windows-startup-fallback')) }}
     name: Startup Fallback Cleanup Diagnostic (Windows / Node ${{ matrix.node-version }})
     strategy:
       fail-fast: false
@@ -230,7 +230,7 @@ jobs:
     secrets: inherit
   plugin-watch-readiness-diagnostic:
     needs: pr-context
-    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-e2e'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'plugin-watch-readiness')) }}
+    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).selections['ci-e2e'] || !contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'plugin-watch-readiness')) }}
     name: Plugin Watch Readiness (${{ matrix.os }} / Node ${{ matrix.node-version }})
     strategy:
       fail-fast: false
@@ -265,7 +265,7 @@ jobs:
     secrets: inherit
   runtime-publication-diagnostic:
     needs: pr-context
-    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-e2e'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'runtime-publication')) }}
+    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).selections['ci-e2e'] || !contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'runtime-publication')) }}
     name: Runtime Publication Regression (${{ matrix.os }} / Node ${{ matrix.node-version }})
     strategy:
       fail-fast: false
@@ -306,7 +306,7 @@ jobs:
     secrets: inherit
   lifecycle-diagnostic:
     needs: pr-context
-    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-e2e'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'lifecycle')) }}
+    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).selections['ci-e2e'] || !contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'lifecycle')) }}
     name: HMR Lifecycle Regression (${{ matrix.os }} / Node ${{ matrix.node-version }})
     strategy:
       fail-fast: false
@@ -345,7 +345,7 @@ jobs:
     secrets: inherit
   shared-layout-windows-diagnostic:
     needs: pr-context
-    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-e2e'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'shared-layout-windows')) }}
+    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).selections['ci-e2e'] || !contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'shared-layout-windows')) }}
     name: Shared Layout HMR Diagnostic (Windows / Node ${{ matrix.node-version }})
     strategy:
       fail-fast: false
@@ -375,7 +375,7 @@ jobs:
     secrets: inherit
   shared-compiler-hosts:
     needs: pr-context
-    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-e2e'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && (((inputs.verification_topology == 'optimized-v2' && (fromJSON(inputs.pr_context).isPr && 'true' || 'false') || needs.pr-context.outputs.is_pr) == 'true' || github.event_name == 'workflow_dispatch') && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))) }}
+    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).selections['ci-e2e'] || !contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && (((inputs.verification_topology == 'optimized-v2' && (fromJSON(inputs.pr_context).isPr && 'true' || 'false') || needs.pr-context.outputs.is_pr) == 'true' || github.event_name == 'workflow_dispatch') && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))) }}
     name: Shared Compiler Hosts (${{ matrix.os }} / Node 24)
     strategy:
       fail-fast: false
@@ -414,7 +414,7 @@ jobs:
     secrets: inherit
   miniapp-platform-build-gate:
     needs: pr-context
-    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-e2e'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && ((inputs.verification_topology == 'optimized-v2' && (fromJSON(inputs.pr_context).isPr && 'true' || 'false') || needs.pr-context.outputs.is_pr) == 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))) }}
+    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).selections['ci-e2e'] || !contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && ((inputs.verification_topology == 'optimized-v2' && (fromJSON(inputs.pr_context).isPr && 'true' || 'false') || needs.pr-context.outputs.is_pr) == 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))) }}
     name: Miniapp Platform Build Gate (Ubuntu / Node 22)
     uses: ./.github/workflows/reusable-node-command.yml
     with:
@@ -436,7 +436,7 @@ jobs:
     secrets: inherit
   bun-build-diagnostic:
     needs: pr-context
-    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-e2e'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'bun-cli')) }}
+    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).selections['ci-e2e'] || !contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'bun-cli')) }}
     name: Bun Build Artifact (${{ matrix.os }} / Node 22)
     strategy:
       fail-fast: false
@@ -470,7 +470,7 @@ jobs:
     secrets: inherit
   web-e2e-baseline-pr:
     needs: pr-context
-    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-e2e'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && ((inputs.verification_topology == 'optimized-v2' && (fromJSON(inputs.pr_context).isPr && 'true' || 'false') || needs.pr-context.outputs.is_pr) == 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))) }}
+    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).selections['ci-e2e'] || !contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && ((inputs.verification_topology == 'optimized-v2' && (fromJSON(inputs.pr_context).isPr && 'true' || 'false') || needs.pr-context.outputs.is_pr) == 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))) }}
     name: Web E2E Baseline (Node 24)
     uses: ./.github/workflows/reusable-node-command.yml
     with:
@@ -499,7 +499,7 @@ jobs:
     secrets: inherit
   web-project-builds:
     needs: pr-context
-    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-e2e'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && ((!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))) }}
+    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).selections['ci-e2e'] || !contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && ((!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))) }}
     name: Web Project Builds (Node 24)
     uses: ./.github/workflows/reusable-node-command.yml
     with:
@@ -521,7 +521,7 @@ jobs:
     secrets: inherit
   web-browser-smoke:
     needs: pr-context
-    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-e2e'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && ((!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))) }}
+    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).selections['ci-e2e'] || !contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && ((!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))) }}
     name: Web Browser Smoke (Firefox / WebKit / Node 24)
     uses: ./.github/workflows/reusable-node-command.yml
     with:
@@ -545,7 +545,7 @@ jobs:
     secrets: inherit
   workspace-hmr-pr:
     needs: pr-context
-    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-e2e'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && ((inputs.verification_topology == 'optimized-v2' && (fromJSON(inputs.pr_context).isPr && 'true' || 'false') || needs.pr-context.outputs.is_pr) == 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full' || inputs.hmr-diagnostic == 'workspace-hmr') && !startsWith((inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref), 'release/pnpm-version'))) }}
+    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).selections['ci-e2e'] || !contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && ((inputs.verification_topology == 'optimized-v2' && (fromJSON(inputs.pr_context).isPr && 'true' || 'false') || needs.pr-context.outputs.is_pr) == 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full' || inputs.hmr-diagnostic == 'workspace-hmr') && !startsWith((inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref), 'release/pnpm-version'))) }}
     name: Workspace HMR Changed Projects (Node 24)
     uses: ./.github/workflows/reusable-node-command.yml
     with:
@@ -571,7 +571,7 @@ jobs:
     secrets: inherit
   workspace-hmr-nightly:
     needs: pr-context
-    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-e2e'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && ((inputs.verification_topology == 'optimized-v2' && (fromJSON(inputs.pr_context).isPr && 'true' || 'false') || needs.pr-context.outputs.is_pr) != 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full' || inputs.hmr-diagnostic == 'workspace-hmr'))) }}
+    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).selections['ci-e2e'] || !contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && ((inputs.verification_topology == 'optimized-v2' && (fromJSON(inputs.pr_context).isPr && 'true' || 'false') || needs.pr-context.outputs.is_pr) != 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full' || inputs.hmr-diagnostic == 'workspace-hmr'))) }}
     name: ${{ inputs.workspace-hmr-audit == 'functional-only' && 'Workspace HMR Functional (Node 24)' || 'Workspace HMR Nightly Full (Node 24)' }}
     uses: ./.github/workflows/reusable-node-command.yml
     with:
@@ -597,7 +597,7 @@ jobs:
     secrets: inherit
   web-e2e-baseline-full:
     needs: pr-context
-    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-e2e'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && ((inputs.verification_topology == 'optimized-v2' && (fromJSON(inputs.pr_context).isPr && 'true' || 'false') || needs.pr-context.outputs.is_pr) != 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))) }}
+    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).selections['ci-e2e'] || !contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && ((inputs.verification_topology == 'optimized-v2' && (fromJSON(inputs.pr_context).isPr && 'true' || 'false') || needs.pr-context.outputs.is_pr) != 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))) }}
     name: Web E2E Baseline (Node ${{ matrix.node-version }})
     strategy:
       fail-fast: false
@@ -634,7 +634,7 @@ jobs:
   miniapp-platform-pr:
     name: Miniapp (${{ matrix.os }} / Node ${{ matrix.node-version }})
     needs: pr-context
-    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-e2e'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && ((inputs.verification_topology == 'optimized-v2' && (fromJSON(inputs.pr_context).isPr && 'true' || 'false') || needs.pr-context.outputs.is_pr) == 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))) }}
+    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).selections['ci-e2e'] || !contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && ((inputs.verification_topology == 'optimized-v2' && (fromJSON(inputs.pr_context).isPr && 'true' || 'false') || needs.pr-context.outputs.is_pr) == 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))) }}
     strategy:
       fail-fast: false
       matrix:
@@ -664,7 +664,7 @@ jobs:
   miniapp-platform-full:
     name: Miniapp (${{ matrix.os }} / Node ${{ matrix.node-version }})
     needs: pr-context
-    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-e2e'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && ((inputs.verification_topology == 'optimized-v2' && (fromJSON(inputs.pr_context).isPr && 'true' || 'false') || needs.pr-context.outputs.is_pr) != 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))) }}
+    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).selections['ci-e2e'] || !contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && ((inputs.verification_topology == 'optimized-v2' && (fromJSON(inputs.pr_context).isPr && 'true' || 'false') || needs.pr-context.outputs.is_pr) != 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))) }}
     strategy:
       fail-fast: false
       matrix:
@@ -704,7 +704,7 @@ jobs:
       exclude_projects: ${{ inputs.exclude-e2e-projects }}
     secrets: inherit
   bun-cli:
-    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-e2e'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && needs.bun-build-diagnostic.result == 'success' }}
+    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' && ((contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).selections['ci-e2e'] || !contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && needs.bun-build-diagnostic.result == 'success' }}
     needs:
       - pr-context
       - bun-build-diagnostic
