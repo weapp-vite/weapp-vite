@@ -34,6 +34,7 @@ describe('manual PR workflow entry points', () => {
       expect(Boolean(workflow.on.pull_request), name).toBe(name === 'ci-pr.yml')
       if (name === 'ci-pr.yml') {
         expect(workflow.on.pull_request_target).toEqual({ types: ['closed'] })
+        expect(workflow.on.workflow_dispatch.inputs).toEqual(Object.fromEntries(['pr-number', 'head-sha', 'base-sha', 'merge-sha'].map(input => [input, { required: true, type: 'string' }])))
       }
       else if (name === 'release-intent-auto.yml') {
         expect(workflow.on).not.toHaveProperty('pull_request_target')

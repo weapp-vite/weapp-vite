@@ -8,6 +8,8 @@ const repository = 'example/project'
 const headSha = 'a'.repeat(40)
 const baseSha = 'b'.repeat(40)
 const driverSha = 'c'.repeat(40)
+const controlSha = 'd'.repeat(40)
+const refreshTitle = (pins = {}) => `PR CI refresh #${pins.prNumber ?? 42} head=${pins.headSha ?? headSha} base=${pins.baseSha ?? baseSha} merge=${pins.checkoutSha ?? driverSha}`
 const pull = { number: 42, state: 'open', merge_commit_sha: driverSha, head: { sha: headSha, ref: 'feature', repo: { id: 2, full_name: 'contributor/project' } }, base: { sha: baseSha, ref: 'main', repo: { id: 1, full_name: repository } } }
 
 function smokeReport() {
@@ -33,10 +35,14 @@ function sizeReport() {
   return { version: 2, kind: 'wevu-runtime-size-pr-report', repository, prNumber: 42, headSha, baseSha, current: report(headSha), baseline: report(baseSha) }
 }
 
-function fixture() {
-  const run = { id: 123, run_attempt: 1, head_branch: pull.head.ref, head_repository: pull.head.repo, name: 'PR CI', event: 'pull_request', path: '.github/workflows/ci-pr.yml', status: 'completed', conclusion: 'failure', head_sha: headSha, pull_requests: [pull], repository: { id: 1, full_name: repository } }
+function fixture(refresh = false) {
+  const run = { id: 123, run_attempt: 1, head_branch: pull.head.ref, head_repository: pull.head.repo, name: 'feat: refine consumer skills', event: 'pull_request', path: '.github/workflows/ci-pr.yml', status: 'completed', conclusion: 'failure', head_sha: headSha, pull_requests: [pull], repository: { id: 1, full_name: repository } }
   run.referenced_workflows = [{ path: `${repository}/.github/workflows/validate-ci.yml@${driverSha}`, sha: driverSha, ref: 'refs/pull/42/merge' }]
   const context = { schemaVersion: 1, event: 'pull_request', repository, runId: '123', runAttempt: 1, driverSha, isPr: true, shouldRun: true, prNumber: 42, headSha, baseSha, headRef: 'feature', baseRef: 'main', headRepository: 'contributor/project', checkoutMode: 'merge', checkoutSha: driverSha, selections: { 'ci-performance': true, 'wevu-runtime-size': true } }
+  if (refresh) {
+    Object.assign(run, { name: refreshTitle(), event: 'workflow_dispatch', display_title: refreshTitle(), head_sha: controlSha, head_branch: 'main', head_repository: { id: 1, full_name: repository }, pull_requests: [], referenced_workflows: [{ path: `${repository}/.github/workflows/validate-ci.yml@${controlSha}`, sha: controlSha, ref: 'refs/heads/main' }] })
+    Object.assign(context, { event: 'native_refresh', driverSha: controlSha, controlRef: 'main', headRepository: repository, headRepositoryId: 1, baseRepositoryId: 1 })
+  }
   const jobs = [
     { name: 'CI / Build and Test (windows-latest / Node 22)', conclusion: 'failure', steps: [] },
     { name: 'Performance Smoke / Performance Smoke', conclusion: 'success', html_url: 'https://example.test/smoke', steps: [{ name: 'Run correctness smoke', conclusion: 'success' }] },
@@ -44,14 +50,20 @@ function fixture() {
     { name: 'Approve PR checks', conclusion: 'success' },
     { name: 'Freeze approved PR target', conclusion: 'success' },
   ]
-  const state = { pull, baseSha, runs: [run], comments: [], files: [{ filename: 'README.md' }], writes: [], artifacts: { 'performance-smoke-report/smoke.json': smokeReport(), 'wevu-runtime-size-report/report-full.json': sizeReport() } }
+  const state = { pull, baseSha, mergeSha: driverSha, runs: [run], comments: [], files: [{ filename: 'README.md' }], writes: [], artifacts: { 'performance-smoke-report/smoke.json': smokeReport(), 'wevu-runtime-size-report/report-full.json': sizeReport() } }
+  if (refresh) {
+    state.pull = { ...pull, head: { ...pull.head, repo: { id: 1, full_name: repository } } }
+  }
   const request = vi.fn(async (endpoint, body) => {
     if (body) {
       state.writes.push({ endpoint, body })
       return {}
     }
+    if (endpoint === '') {
+      return { id: 1, full_name: repository, default_branch: 'main' }
+    }
     if (endpoint === '/git/ref/pull/42/merge') {
-      return { ref: 'refs/pull/42/merge', object: { sha: driverSha } }
+      return { ref: 'refs/pull/42/merge', object: { sha: state.mergeSha } }
     }
     if (endpoint === `/git/commits/${driverSha}`) {
       return { sha: driverSha, parents: [{ sha: baseSha }, { sha: headSha }] }
@@ -63,7 +75,12 @@ function fixture() {
       return { object: { sha: state.baseSha } }
     }
     if (endpoint.includes('/actions/workflows/')) {
-      return { workflow_runs: state.runs }
+      const page = Number(new URL(endpoint, 'https://api.example.test').searchParams.get('page')) || 1
+      return { workflow_runs: state.runs.slice((page - 1) * 100, page * 100) }
+    }
+    if (endpoint.startsWith(`/actions/runs/${run.id}/jobs`)) {
+      const page = Number(new URL(endpoint, 'https://api.example.test').searchParams.get('page')) || 1
+      return { jobs: jobs.slice((page - 1) * 100, page * 100) }
     }
     if (endpoint.startsWith('/pulls/42/files')) {
       return state.files
@@ -86,8 +103,8 @@ function fixture() {
 }
 
 describe('native PR completion reporting', () => {
-  it.each(['Approve PR checks', 'Freeze approved PR target'])('does not read artifacts or publish without successful %s', async (name) => {
-    const { state, options } = fixture()
+  it.each([false, true].flatMap(refresh => ['Approve PR checks', 'Freeze approved PR target'].map(name => ({ refresh, name }))))('does not read artifacts or publish without successful $name (refresh=$refresh)', async ({ refresh, name }) => {
+    const { state, options } = fixture(refresh)
     options.jobs.find(job => job.name === name).conclusion = 'failure'
     expect(await publishNativePrReport(options)).toEqual({ published: false, reason: 'unapproved-run' })
     expect(state.writes).toHaveLength(0)
@@ -228,6 +245,108 @@ describe('native PR completion reporting', () => {
     const jobs = [{ name: 'Other / Build', conclusion: 'success', steps: [{ name: 'Run correctness smoke' }] }]
     expect(nativeReportJobs(jobs)).toEqual({ smoke: undefined, runtime: undefined })
   })
+
+  it('publishes an approved refresh with distinct control and tested merge despite a stale REST merge snapshot', async () => {
+    const { state, options } = fixture(true)
+    state.pull = { ...state.pull, merge_commit_sha: 'e'.repeat(40) }
+    expect(options.run.head_sha).not.toBe(options.context.checkoutSha)
+    expect(await publishNativePrReport(options)).toEqual({ published: true })
+    expect(state.writes).toHaveLength(2)
+    expect(state.writes[0].body.body).toContain(`HEAD: \`${headSha}\``)
+    expect(state.writes[1].body.body).toContain('完整 Provider')
+  })
+
+  it.each(['prNumber', 'headSha', 'baseSha', 'checkoutSha'])('rejects a refresh artifact that substitutes title-bound %s', async (key) => {
+    const { state, options } = fixture(true)
+    options.context[key] = key === 'prNumber' ? 43 : 'e'.repeat(40)
+    await expect(publishNativePrReport(options)).rejects.toThrow()
+    expect(state.writes).toHaveLength(0)
+    expect(options.readArtifact).not.toHaveBeenCalled()
+  })
+
+  it.each(['driverSha', 'runId', 'runAttempt'])('rejects refresh artifact substitution of %s', async (key) => {
+    const { state, options } = fixture(true)
+    options.context[key] = key === 'driverSha' ? driverSha : key === 'runId' ? '124' : 2
+    await expect(publishNativePrReport(options)).rejects.toThrow()
+    expect(state.writes).toHaveLength(0)
+    expect(options.readArtifact).not.toHaveBeenCalled()
+  })
+
+  it.each(['headSha', 'baseSha', 'checkoutSha'])('rejects a canonical but forged refresh title %s instead of trusting its artifact', async (key) => {
+    const { state, options } = fixture(true)
+    options.run.display_title = refreshTitle({ [key]: 'e'.repeat(40) })
+    await expect(publishNativePrReport(options)).rejects.toThrow()
+    expect(state.writes).toHaveLength(0)
+    expect(options.readArtifact).not.toHaveBeenCalled()
+  })
+
+  it.each(['head', 'base', 'canonical-merge'])('rejects an approved refresh after live %s changes', async (change) => {
+    const { state, options } = fixture(true)
+    if (change === 'head') {
+      state.pull = { ...state.pull, head: { ...state.pull.head, sha: 'e'.repeat(40) } }
+    }
+    if (change === 'base') {
+      state.baseSha = 'e'.repeat(40)
+    }
+    if (change === 'canonical-merge') {
+      state.mergeSha = 'e'.repeat(40)
+    }
+    expect((await publishNativePrReport(options)).published).toBe(false)
+    expect(state.writes).toHaveLength(0)
+    expect(options.readArtifact).not.toHaveBeenCalled()
+  })
+
+  it.each(['smoke', 'size'].flatMap(kind => ['head', 'base', 'canonical-merge'].map(change => ({ kind, change }))))('rechecks refresh $change after listing $kind comments', async ({ kind, change }) => {
+    const { state, options } = fixture(true)
+    options.context.selections[kind === 'smoke' ? 'wevu-runtime-size' : 'ci-performance'] = false
+    const request = options.request
+    options.request = async (endpoint, ...args) => {
+      const result = await request(endpoint, ...args)
+      if (endpoint.startsWith('/issues/42/comments') && args[0] === undefined) {
+        if (change === 'head') {
+          state.pull = { ...state.pull, head: { ...state.pull.head, sha: 'e'.repeat(40) } }
+        }
+        if (change === 'base') {
+          state.baseSha = 'e'.repeat(40)
+        }
+        if (change === 'canonical-merge') {
+          state.mergeSha = 'e'.repeat(40)
+        }
+      }
+      return result
+    }
+    expect((await publishNativePrReport(options)).published).toBe(false)
+    expect(state.writes).toHaveLength(0)
+  })
+
+  it.each([false, true].flatMap(refresh => [false, true].map(newerRefresh => ({ refresh, newerRefresh }))))('supersedes only the same head across native entries (refresh=$refresh, newerRefresh=$newerRefresh)', async ({ refresh, newerRefresh }) => {
+    const { state, options } = fixture(refresh)
+    state.runs.push({ ...fixture(newerRefresh).options.run, id: 124 })
+    expect(await publishNativePrReport(options)).toEqual({ published: false, reason: 'newer-run' })
+    expect(state.writes).toHaveLength(0)
+    expect(options.readArtifact).not.toHaveBeenCalled()
+  })
+
+  it('ignores unrelated refresh target heads and unpinned diagnostic dispatches during supersession', async () => {
+    const { state, options } = fixture(true)
+    state.runs.push(
+      { ...options.run, id: 124, display_title: refreshTitle({ headSha: 'e'.repeat(40) }) },
+      { ...options.run, id: 125, display_title: 'Manual diagnostics', head_sha: headSha },
+      { ...options.run, id: 126, path: '.github/workflows/other.yml', head_sha: headSha },
+    )
+    expect(await publishNativePrReport(options)).toEqual({ published: true })
+    expect(state.writes).toHaveLength(2)
+  })
+
+  it('finds a newer same-head refresh after a full page of unrelated runs', async () => {
+    const { state, options } = fixture()
+    const refresh = fixture(true).options.run
+    state.runs = [...Array.from({ length: 100 }, (_, index) => ({ ...refresh, id: 200 + index, display_title: refreshTitle({ headSha: 'e'.repeat(40) }) })), { ...refresh, id: 124 }]
+    expect(await publishNativePrReport(options)).toEqual({ published: false, reason: 'newer-run' })
+    expect(state.writes).toHaveLength(0)
+    expect(options.readArtifact).not.toHaveBeenCalled()
+    expect(options.request.mock.calls.some(([endpoint]) => endpoint.startsWith('/actions/workflows/ci-pr.yml/runs') && endpoint.includes('page=2'))).toBe(true)
+  })
 })
 
 describe('Nightly feedback for native PR smoke', () => {
@@ -237,7 +356,7 @@ describe('Nightly feedback for native PR smoke', () => {
       options.run.pull_requests = []
     }
     const manual = { id: scenario === 'manual-newer' ? 124 : 122, name: 'Performance Smoke', path: '.github/workflows/ci-performance.yml', event: 'workflow_dispatch', head_sha: driverSha, head_branch: 'main', head_repository: { full_name: repository }, status: 'completed', conclusion: 'failure' }
-    const lateJobs = [...Array.from({ length: 100 }).fill(options.jobs[0]), { ...options.jobs[1], status: 'completed' }]
+    const lateJobs = [...Array.from({ length: 100 }).fill(options.jobs[0]), { ...options.jobs[1], status: 'completed' }, ...options.jobs.slice(3)]
     const get = vi.fn(async (endpoint) => {
       if (endpoint === '') {
         return { default_branch: 'main' }
@@ -268,5 +387,50 @@ describe('Nightly feedback for native PR smoke', () => {
     if (scenario === 'native-newer') {
       expect(get.mock.calls.some(([endpoint]) => endpoint.includes('/jobs?') && endpoint.includes('page=2'))).toBe(true)
     }
+  })
+})
+
+describe('Nightly feedback for protected native refreshes', () => {
+  it.each(['current', 'stale-base', 'stale-merge', 'unapproved', 'unfrozen', 'forged-title', 'foreign-control'])('uses only the approved current frozen target: %s', async (scenario) => {
+    const { state, options } = fixture(true)
+    options.jobs[1].status = 'completed'
+    if (scenario === 'stale-base') {
+      state.baseSha = 'e'.repeat(40)
+    }
+    if (scenario === 'stale-merge') {
+      state.mergeSha = 'e'.repeat(40)
+    }
+    if (scenario === 'unapproved' || scenario === 'unfrozen') {
+      options.jobs.find(job => job.name === (scenario === 'unapproved' ? 'Approve PR checks' : 'Freeze approved PR target')).conclusion = 'skipped'
+    }
+    if (scenario === 'forged-title') {
+      options.run.display_title = refreshTitle({ headSha: 'e'.repeat(40) })
+    }
+    if (scenario === 'foreign-control') {
+      options.run.referenced_workflows[0].ref = 'refs/pull/42/merge'
+    }
+    const get = vi.fn(async endpoint => endpoint.startsWith('/actions/workflows/ci-performance.yml/runs') ? { workflow_runs: [] } : options.request(endpoint))
+    const readContext = vi.fn(async () => options.context)
+    expect(await smokeStatus({ prNumber: 42, headSha, baseSha }, { get, readContext, repository })).toBe(scenario === 'current' ? '通过或无需冒烟' : '未运行')
+    if (['unapproved', 'unfrozen', 'foreign-control'].includes(scenario)) {
+      expect(readContext).not.toHaveBeenCalled()
+    }
+    expect(state.writes).toHaveLength(0)
+  })
+
+  it('discovers an approved refresh beyond the first native run page without accepting an unrelated newer dispatch', async () => {
+    const { state, options } = fixture(true)
+    options.jobs[1].status = 'completed'
+    state.runs = [...Array.from({ length: 100 }, (_, index) => ({ ...options.run, id: 200 + index, display_title: refreshTitle({ headSha: 'e'.repeat(40) }) })), options.run]
+    const get = vi.fn(async endpoint => endpoint.startsWith('/actions/workflows/ci-performance.yml/runs') ? { workflow_runs: [] } : options.request(endpoint))
+    const readContext = vi.fn(async ({ run }) => {
+      if (run.id !== options.run.id) {
+        throw new Error('Unrelated dispatch has no target context')
+      }
+      return options.context
+    })
+    expect(await smokeStatus({ prNumber: 42, headSha, baseSha }, { get, readContext, repository })).toBe('通过或无需冒烟')
+    expect(get.mock.calls.some(([endpoint]) => endpoint.startsWith('/actions/workflows/ci-pr.yml/runs') && endpoint.includes('page=2'))).toBe(true)
+    expect(state.writes).toHaveLength(0)
   })
 })

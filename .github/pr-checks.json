@@ -32,6 +32,8 @@
       ".github/workflows/reusable-frozen-pr-context.yml",
       ".github/scripts/native-pr-context.mjs",
       ".github/scripts/native-pr-workload.mjs",
+      ".github/scripts/native-pr-refresh.mjs",
+      ".github/scripts/native-pr-refresh-fork.mjs",
       ".github/verification-workload.json",
       ".github/pr-checks.json",
       ".github/workflows/validate-ci-create-weapp-vite.yml"
@@ -51,6 +53,8 @@
       ".github/workflows/reusable-frozen-pr-context.yml",
       ".github/scripts/native-pr-context.mjs",
       ".github/scripts/native-pr-workload.mjs",
+      ".github/scripts/native-pr-refresh.mjs",
+      ".github/scripts/native-pr-refresh-fork.mjs",
       ".github/verification-workload.json",
       ".github/pr-checks.json",
       ".github/workflows/validate-ci-acceptance-http.yml"
@@ -76,6 +80,8 @@
       ".github/workflows/reusable-frozen-pr-context.yml",
       ".github/scripts/native-pr-context.mjs",
       ".github/scripts/native-pr-workload.mjs",
+      ".github/scripts/native-pr-refresh.mjs",
+      ".github/scripts/native-pr-refresh-fork.mjs",
       ".github/verification-workload.json",
       ".github/pr-checks.json",
       ".github/workflows/validate-ci-acceptance.yml"
@@ -104,6 +110,8 @@
       ".github/workflows/reusable-frozen-pr-context.yml",
       ".github/scripts/native-pr-context.mjs",
       ".github/scripts/native-pr-workload.mjs",
+      ".github/scripts/native-pr-refresh.mjs",
+      ".github/scripts/native-pr-refresh-fork.mjs",
       ".github/verification-workload.json",
       ".github/pr-checks.json",
       ".github/workflows/validate-ci-dimina.yml"
@@ -164,6 +172,8 @@
       ".github/workflows/reusable-frozen-pr-context.yml",
       ".github/scripts/native-pr-context.mjs",
       ".github/scripts/native-pr-workload.mjs",
+      ".github/scripts/native-pr-refresh.mjs",
+      ".github/scripts/native-pr-refresh-fork.mjs",
       ".github/verification-workload.json",
       ".github/pr-checks.json",
       ".github/workflows/validate-ci-vite-host-consumer.yml"
@@ -185,6 +195,8 @@
       ".github/workflows/reusable-frozen-pr-context.yml",
       ".github/scripts/native-pr-context.mjs",
       ".github/scripts/native-pr-workload.mjs",
+      ".github/scripts/native-pr-refresh.mjs",
+      ".github/scripts/native-pr-refresh-fork.mjs",
       ".github/verification-workload.json",
       ".github/pr-checks.json",
       ".github/workflows/validate-ci-vscode-extension.yml"
@@ -212,6 +224,8 @@
       ".github/workflows/reusable-frozen-pr-context.yml",
       ".github/scripts/native-pr-context.mjs",
       ".github/scripts/native-pr-workload.mjs",
+      ".github/scripts/native-pr-refresh.mjs",
+      ".github/scripts/native-pr-refresh-fork.mjs",
       ".github/verification-workload.json",
       ".github/pr-checks.json",
       ".github/workflows/validate-ci-tutorial-e2e.yml"
@@ -242,6 +256,8 @@
       ".github/workflows/reusable-frozen-pr-context.yml",
       ".github/scripts/native-pr-context.mjs",
       ".github/scripts/native-pr-workload.mjs",
+      ".github/scripts/native-pr-refresh.mjs",
+      ".github/scripts/native-pr-refresh-fork.mjs",
       ".github/verification-workload.json",
       ".github/pr-checks.json",
       ".github/workflows/validate-native-addon-correctness.yml"

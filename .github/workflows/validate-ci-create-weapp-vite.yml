@@ -55,7 +55,7 @@ jobs:
       profile: ci-create-weapp-vite
 
   source-network-regression:
-    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-create-weapp-vite'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true') }}
+    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).selections['ci-create-weapp-vite'] || !contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true') }}
     needs: pr-context
     name: Scaffold Network Regression (${{ matrix.os }} / Node 22)
     strategy:
@@ -86,7 +86,7 @@ jobs:
 
   prepare:
     needs: pr-context
-    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-create-weapp-vite'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && ((inputs.verification_topology == 'optimized-v2' && (fromJSON(inputs.pr_context).isPr && 'true' || 'false') || needs.pr-context.outputs.is_pr) != 'true')) }}
+    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).selections['ci-create-weapp-vite'] || !contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && ((inputs.verification_topology == 'optimized-v2' && (fromJSON(inputs.pr_context).isPr && 'true' || 'false') || needs.pr-context.outputs.is_pr) != 'true')) }}
     name: Prepare Smoke Matrix
     runs-on: ubuntu-latest
     outputs:
@@ -177,7 +177,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
   smoke:
-    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.prepare.result == 'success' && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-create-weapp-vite'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true') }}
+    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.prepare.result == 'success' && ((inputs.verification_topology == 'optimized-v2' && ((contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).selections['ci-create-weapp-vite'] || !contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true') }}
     needs: [pr-context, prepare]
     name: Create Smoke (${{ needs.prepare.outputs.source }} / ${{ matrix.os }} / Node ${{ matrix.node-version }} / ${{ matrix.scope }})
     timeout-minutes: 90
@@ -282,7 +282,7 @@ jobs:
 
   report:
     name: Smoke Report
-    if: (inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-create-weapp-vite'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && (!cancelled() && (inputs.verification_topology == 'optimized-v2' && (fromJSON(inputs.pr_context).isPr && 'true' || 'false') || needs.pr-context.outputs.is_pr) != 'true')
+    if: (inputs.verification_topology == 'optimized-v2' && ((contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).selections['ci-create-weapp-vite'] || !contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && (!cancelled() && (inputs.verification_topology == 'optimized-v2' && (fromJSON(inputs.pr_context).isPr && 'true' || 'false') || needs.pr-context.outputs.is_pr) != 'true')
     needs: [pr-context, prepare, smoke]
     runs-on: ubuntu-latest
 

@@ -39,7 +39,7 @@ export function frozenWorkflowText(value, profile) {
   return value.replace(/needs\.pr-context\.outputs\.([a-z_]+)/gu, (original, output) => {
     let selected
     if (output === 'should_run') {
-      selected = `((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['${profile}'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false')`
+      selected = `((contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).selections['${profile}'] || !contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false')`
     }
     else if (output === 'is_pr') {
       selected = '(fromJSON(inputs.pr_context).isPr && \'true\' || \'false\')'
@@ -48,7 +48,7 @@ export function frozenWorkflowText(value, profile) {
       selected = 'format(\'{0}\', fromJSON(inputs.pr_context).prNumber || \'\')'
     }
     else if (output === 'checkout_sha' && ['ci-performance', 'wevu-runtime-size'].includes(profile)) {
-      selected = '(fromJSON(inputs.pr_context).event == \'pull_request\' && fromJSON(inputs.pr_context).headSha || fromJSON(inputs.pr_context).checkoutSha)'
+      selected = '(contains(fromJSON(\'["pull_request","native_refresh"]\'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).headSha || fromJSON(inputs.pr_context).checkoutSha)'
     }
     else {
       if (!Object.hasOwn(fields, output)) {

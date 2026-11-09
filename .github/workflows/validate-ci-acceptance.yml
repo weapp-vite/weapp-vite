@@ -28,7 +28,7 @@ jobs:
 
   compatibility:
     needs: pr-context
-    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-acceptance'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && (github.event_name != 'workflow_dispatch' || inputs.scope == 'full')) }}
+    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).selections['ci-acceptance'] || !contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && (github.event_name != 'workflow_dispatch' || inputs.scope == 'full')) }}
     strategy:
       fail-fast: false
       matrix:
@@ -78,7 +78,7 @@ jobs:
 
   windows-runtime-diagnostic:
     needs: pr-context
-    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-acceptance'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && (github.event_name == 'workflow_dispatch' && inputs.scope == 'windows-runtime-diagnostic')) }}
+    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).selections['ci-acceptance'] || !contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && (github.event_name == 'workflow_dispatch' && inputs.scope == 'windows-runtime-diagnostic')) }}
     name: Windows acceptance runtime (Node ${{ matrix.node-version }})
     strategy:
       fail-fast: false

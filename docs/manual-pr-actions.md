@@ -12,6 +12,24 @@
 
 关闭 PR 会通过默认分支的 `pull_request_target: closed` 入口取消同一并发组中的旧运行；该入口全部 job 跳过，不执行候选代码、不占 runner。重新打开后需要重新批准。GitHub 取消运行和必要进程清理可能需要短暂收尾；常规检查取消后不再启动后续验证、报告或 artifact 上传，普通失败仍保留日志和产物，完整 Nightly Performance 的证据策略保持原样。
 
+## 受保护的原生重验入口
+
+入口必须先落到默认分支 `main` 才能使用。基线变化后，可从默认分支为当前 PR 创建新的原生 `PR CI` 运行，而不是重跑旧运行或用独立诊断替代原生验证。请求必须固定四个字符串：PR 编号、当前 head SHA、当前 base 分支 tip SHA、GitHub 当前 canonical merge ref SHA；SHA 必须是完整的小写 40 位值。
+
+```bash
+gh workflow run ci-pr.yml --ref main -f pr-number=<PR编号> -f head-sha=<当前headSHA> -f base-sha=<当前baseSHA> -f merge-sha=<当前mergeSHA>
+```
+
+必须先读取并核对当前 PR、实际 base tip 和 canonical merge ref，且 merge 的有序父提交必须恰为 `[base, head]`。GitHub 尚未生成符合当前基线的候选时，请求不可准入；不会使用旧 base、祖先替代或自行合成候选。base/head/ref 再次变化时，重新读取全部 pins 并新建请求。
+
+调度仅允许默认分支的 branch ref，不允许其他分支或 tag；新运行仍需自己的一次 `pr-ci-approval` 审批，批准前没有 checkout、解析或候选任务。主线控制 SHA 与被测 merge SHA 分开记录，运行标题绑定全部 pins，artifact 不能替代这些绑定。新请求与普通 PR 运行共享 PR 并发组；旧运行保持原有失败记录，不复用旧批准。成功后走同一可信原生完成报告，不发布独立诊断状态。
+
+设置 `run-name` 后，GitHub REST 的 `run.name` 也会随显示标题变化，不是固定的 workflow 名称。原生消费者按服务端的 `.github/workflows/ci-pr.yml` 路径分类，再核对事件、仓库、run/attempt、控制 ref 及标题 pins；不能用固定的 `run.name === 'PR CI'` 拒绝合法运行。静态 `workflow_run.workflows` 仍选择 YAML 中的 workflow 名称。
+
+fork PR 还必须先通过 GitHub 原生外部贡献者 workflow 审核：系统会查找并核验与当前 head 精确绑定的原始 `pull_request` 原生运行，其服务端调用 ref 必须证明对应 PR，且已有真实的 `Approve PR checks` job（等待、运行或完成）。没有该准入凭据时不能通过默认分支调度绕过 `all_external_contributors`；无需增加第五个输入。同仓库 PR 不需要这份额外凭据。该凭据仅证明 GitHub 原生审核已放行，不复用原运行的 Environment 批准；重验仍需自己的一次审批，完成报告也会重新核验凭据。
+
+以上命令仅说明入口，不授权实际调度、审批、合并或发布。
+
 ## 审批 Environment
 
 启用入口前，在仓库 **Settings → Environments** 配置 `pr-ci-approval`：required reviewers 为 `sonofmagic` 和 `daguanren21`，允许 self review，关闭管理员绕过，不配置 secrets、等待计时器或分支限制。仅创建同名空 Environment 不会强制人工审批，必须核验 required reviewers 保护规则。当前配置任意一位指定维护者批准即可。

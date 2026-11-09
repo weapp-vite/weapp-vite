@@ -23,7 +23,7 @@ jobs:
       profile: ci-vscode-extension
 
   vscode-extension:
-    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-vscode-extension'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true') }}
+    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).selections['ci-vscode-extension'] || !contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true') }}
     needs: pr-context
     name: VSCode Extension Checks (Node 24)
     uses: ./.github/workflows/reusable-node-command.yml
@@ -45,7 +45,7 @@ jobs:
     secrets: inherit
 
   vscode-extension-package:
-    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.vscode-extension.result == 'success' && needs.vscode-extension-host-smoke.result == 'success' && needs.vscode-extension-vsix-e2e.result == 'success' && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-vscode-extension'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true') }}
+    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.vscode-extension.result == 'success' && needs.vscode-extension-host-smoke.result == 'success' && needs.vscode-extension-vsix-e2e.result == 'success' && ((inputs.verification_topology == 'optimized-v2' && ((contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).selections['ci-vscode-extension'] || !contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true') }}
     name: VSCode Extension Package Dry Run (Node 24)
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -85,7 +85,7 @@ jobs:
           include-hidden-files: true
 
   vscode-extension-host-smoke:
-    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.vscode-extension.result == 'success' && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-vscode-extension'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true') }}
+    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.vscode-extension.result == 'success' && ((inputs.verification_topology == 'optimized-v2' && ((contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).selections['ci-vscode-extension'] || !contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true') }}
     name: VSCode Extension Host Smoke (Node 24)
     runs-on: macos-latest
     timeout-minutes: 15
@@ -113,7 +113,7 @@ jobs:
         run: pnpm --dir extensions/vscode run test:host:smoke
 
   vscode-extension-vsix-e2e:
-    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.vscode-extension.result == 'success' && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-vscode-extension'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true') }}
+    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.vscode-extension.result == 'success' && ((inputs.verification_topology == 'optimized-v2' && ((contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).selections['ci-vscode-extension'] || !contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true') }}
     name: VSCode Extension VSIX E2E (Node 24)
     runs-on: macos-latest
     timeout-minutes: 20
