@@ -230,6 +230,10 @@ describe('offline PR admission contract', () => {
     ['terminal-result', 'verdict 仅执行静态裁决脚本'],
     ['terminal-status', 'verdict 仅执行静态裁决脚本'],
     ['terminal-swallow', 'verdict 仅执行静态裁决脚本'],
+    ['terminal-env-status', 'verdict 仅执行静态裁决脚本'],
+    ['cancel-status', 'verdict 仅执行静态裁决脚本'],
+    ['cancel-swallow', 'verdict 仅执行静态裁决脚本'],
+    ['cancel-step-missing', 'verdict 仅执行静态裁决脚本'],
     ['continue-job', 'verdict 不接受额外执行配置'],
     ['alternate-workflow', 'verdict 不接受额外执行配置'],
     ['environment', 'verdict 不接受额外执行配置'],
@@ -238,7 +242,8 @@ describe('offline PR admission contract', () => {
       const job = workflows['ci-pr.yml'].jobs.verdict
       const checkout = job.steps[0]
       const verify = job.steps.find(step => step.id === 'snapshot')
-      const terminal = job.steps.at(-1)
+      const terminal = job.steps.find(step => step.name === 'Require successful terminal result')
+      const cancellation = job.steps.at(-1)
       if (field === 'name') {
         job.name = 'Other snapshot check'
       }
@@ -279,7 +284,7 @@ describe('offline PR admission contract', () => {
         terminal.if = 'false'
       }
       if (field === 'terminal-cancel') {
-        delete terminal.env.PR_CANCELLED
+        cancellation.if = 'false'
       }
       if (field === 'terminal-result') {
         terminal.env.PR_VERDICT_RESULT = 'success'
@@ -289,6 +294,18 @@ describe('offline PR admission contract', () => {
       }
       if (field === 'terminal-swallow') {
         terminal['continue-on-error'] = true
+      }
+      if (field === 'terminal-env-status') {
+        terminal.env.PR_CANCELLED = '${{ cancelled() }}'
+      }
+      if (field === 'cancel-status') {
+        cancellation.run = 'exit 0'
+      }
+      if (field === 'cancel-swallow') {
+        cancellation['continue-on-error'] = true
+      }
+      if (field === 'cancel-step-missing') {
+        job.steps.pop()
       }
       if (field === 'continue-job') {
         job['continue-on-error'] = true

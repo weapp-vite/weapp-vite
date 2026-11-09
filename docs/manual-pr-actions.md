@@ -16,6 +16,8 @@
 
 普通 CI 成功只证明本轮已批准的 `[base, head, merge]` 快照，不证明它仍基于最新 main。终端 **PR snapshot checks** 汇总本轮冻结选择：批准及 plan 必须成功，选中的 profile 必须成功，未选中的 profile 必须按条件跳过；缺失、失败、取消或意外跳过不能产生成功裁决。文档专用切片也使用同一裁决。GitHub 将按条件 skipped 的必需 job 视为通过，因此失败、拒绝或取消路径不能跳过这个必需检查；终态 job 始终收尾，只有批准且成功规划、未取消的路径才执行 checkout 和完整快照脚本，异常路径只以固定状态检查返回失败。关闭事件仍全部跳过，不分配 runner。
 
+终态取消检测使用 GitHub 支持的 `if: cancelled()` 固定失败步骤，不在 `env` 中调用状态函数。修改此 workflow 时必须验证 Actions 的表达式可用位置；YAML 能解析或合成状态测试通过，不代表 GitHub 能接受 workflow。
+
 仓库管理员必须在 main 的分支保护中，将 **PR snapshot checks** 设置为必需检查，来源固定为 **GitHub Actions**（App ID `15368`），启用 **Require branches to be up to date before merging**（`required_status_checks.strict: true`），并将规则同样应用于管理员，不允许绕过。也可使用覆盖 main、实际处于 active 状态且无 bypass actors 的等价 ruleset；仅有 evaluate、disabled 或名称相同的普通 check 不足以证明强制生效。不要覆盖仓库已有的其它保护规则或必需检查。
 
 预期值记录在 `.github/pr-admission.json` 的 `mergeProtection`。`pnpm check:pr-admission --live` 独立读取真实保护配置并核对必需检查名称、App、严格新鲜度及管理员／bypass 边界。配置缺失或较弱返回失败；权限、网络或响应不完整时返回未完成，不得写成通过。本地 YAML、测试通过或 PR 中新增了 job 都不代表线上规则已经启用。没有管理权限时，由管理员完成设置后重新只读核验；门禁生效前不宣称该策略完整落地或 PR 可合并。

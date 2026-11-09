@@ -93,9 +93,10 @@ function checkVerdictAdmission(job, profiles, add) {
     {
       name: 'Require successful terminal result',
       if: 'always()',
-      env: { PR_CANCELLED: '${{ cancelled() }}', PR_APPROVAL_RESULT: '${{ needs.approval.result }}', PR_PLAN_RESULT: '${{ needs.plan.result }}', PR_VERDICT_RESULT: '${{ steps.snapshot.outcome }}' },
-      run: 'test "$PR_CANCELLED" = false\ntest "$PR_APPROVAL_RESULT" = success\ntest "$PR_PLAN_RESULT" = success\ntest "$PR_VERDICT_RESULT" = success\n',
+      env: { PR_APPROVAL_RESULT: '${{ needs.approval.result }}', PR_PLAN_RESULT: '${{ needs.plan.result }}', PR_VERDICT_RESULT: '${{ steps.snapshot.outcome }}' },
+      run: 'test "$PR_APPROVAL_RESULT" = success\ntest "$PR_PLAN_RESULT" = success\ntest "$PR_VERDICT_RESULT" = success\n',
     },
+    { name: 'Reject cancelled run', if: 'cancelled()', run: 'exit 1' },
   ], job.steps)
 }
 
