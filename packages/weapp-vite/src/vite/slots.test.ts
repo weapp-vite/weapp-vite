@@ -16,4 +16,13 @@ describe('createPluginSlots', () => {
       enforce: wasmPlugin.enforce,
     })
   })
+
+  it('rejects a WASM initializer with an incompatible enforce phase', () => {
+    const slots = createPluginSlots(() => true)
+
+    expect(() => slots.bind([{
+      name: 'weapp-vite:wasm-init',
+      enforce: 'post',
+    }])).toThrow(/插件槽不匹配/u)
+  })
 })
