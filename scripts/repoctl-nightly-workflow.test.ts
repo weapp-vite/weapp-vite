@@ -142,12 +142,12 @@ describe('repoctl nightly workflow', () => {
     expect(diagnostics.with?.['retention-days']).toBe(14)
   })
 
-  it('keeps snapshot preparation on the core build scope without private playgrounds', () => {
+  it('keeps private packages in the nightly snapshot build scope', () => {
     const packageJson = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as {
       scripts: Record<string, string>
     }
     expect(packageJson.scripts.build).toMatch(/^pnpm run build:core\b/u)
-    expect(packageJson.scripts['build:core']).toMatch(/--filter=!@weapp-vite\/sfc-playground(?:\s|$)/u)
+    expect(packageJson.scripts['build:core']).toContain('--filter=./packages-private/*')
     expect(packageJson.scripts['build:core']).toContain('--filter=./extensions/*')
   })
 
