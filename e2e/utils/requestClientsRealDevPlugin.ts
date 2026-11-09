@@ -149,15 +149,23 @@ async function startDevRuntime(options: RequestClientsRealDevPluginOptions): Pro
     restoreSnapshotsSync()
     // 配置文件还在写入时也必须先等待初始化结束，再恢复原始内容。
     const setup = requestClientsRealDevRuntimeStateMap.get(options.projectRoot)?.setup
-    void Promise.resolve(setup).catch(() => {}).then(cleanup).finally(() => process.exit(0))
+    void Promise.resolve(setup)
+      .catch(() => {})
+      .then(cleanup)
+      .catch((error: unknown) => {
+        process.exitCode = 1
+        process.stderr?.write?.(`request-clients-real-dev cleanup failed: ${String(error)}\n`)
+      })
   }
 
   process.once('SIGINT', handleSignal)
   process.once('SIGTERM', handleSignal)
+  process.once('disconnect', handleSignal)
   process.once('exit', restoreSnapshotsSync)
   removeCleanupListeners.push(
     () => { process.removeListener('SIGINT', handleSignal) },
     () => { process.removeListener('SIGTERM', handleSignal) },
+    () => { process.removeListener('disconnect', handleSignal) },
     () => { process.removeListener('exit', restoreSnapshotsSync) },
   )
 
