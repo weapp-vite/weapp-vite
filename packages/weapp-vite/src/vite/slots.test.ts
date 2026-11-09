@@ -1,0 +1,19 @@
+import type { Plugin } from 'vite'
+import { describe, expect, it } from 'vitest'
+import { createPluginSlots } from './slots'
+
+describe('createPluginSlots', () => {
+  it('accepts the built-in WASM initializer plugin', () => {
+    const slots = createPluginSlots(() => true)
+    const wasmPlugin: Plugin = {
+      name: 'weapp-vite:wasm-init',
+      enforce: 'pre',
+    }
+
+    expect(() => slots.bind([wasmPlugin])).not.toThrow()
+    expect(slots.plugins.find(plugin => plugin.name === wasmPlugin.name)).toMatchObject({
+      name: wasmPlugin.name,
+      enforce: wasmPlugin.enforce,
+    })
+  })
+})
