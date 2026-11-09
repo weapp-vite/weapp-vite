@@ -1,5 +1,6 @@
 import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { MANAGED_PROJECT_JOURNAL_ENV } from 'weapp-ide-cli'
 
 const runWechatCliCommandMock = vi.hoisted(() => vi.fn())
 const openWechatIdeProjectByHttpMock = vi.hoisted(() => vi.fn())
@@ -481,6 +482,17 @@ describe('wechat command helpers', () => {
     await clearWechatIdeCache({ clean: 'network' })
 
     expect(runWechatCliCommandMock).toHaveBeenCalledWith(['cache', '--clean', 'network'])
+  })
+
+  it('blocks account cache clearing through automator in a managed IDE E2E scope', async () => {
+    vi.stubEnv(MANAGED_PROJECT_JOURNAL_ENV, 'managed-task-journal')
+    const { clearWechatIdeCacheByAutomator } = await import('../src/cli/wechat-commands')
+
+    await expect(clearWechatIdeCacheByAutomator({ clean: 'all', projectPath: '/tmp/project' }))
+      .rejects
+      .toThrow('DEVTOOLS_ACCOUNT_STATE_PROTECTED')
+
+    expect(withMiniProgramMock).not.toHaveBeenCalled()
   })
 
   it('runs open-other through official cli wrapper', async () => {

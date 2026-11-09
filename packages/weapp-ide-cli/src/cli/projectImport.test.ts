@@ -49,6 +49,19 @@ describe('official managed project initialization', () => {
     expect(run).toHaveBeenCalledOnce()
   })
 
+  it('retains official failure codes without logging project paths', async () => {
+    run.mockResolvedValue({ stdout: JSON.stringify({
+      ok: false,
+      tool: 'project_import',
+      clientName: 'weapp-vite-e2e',
+      error: { code: 'APPID_ERROR', message: `Project is unavailable: ${projectPath}` },
+    }) })
+    await expect(
+      importManagedDevtoolsProject(options()),
+    ).rejects.toThrow('receipt={"responseKeys":["clientName","error","ok","tool"],"resultKeys":[],"code":"APPID_ERROR","projectPathMatches":false,"alreadyImportedType":"undefined"}')
+    expect(run).toHaveBeenCalledOnce()
+  })
+
   it('preserves command failures without retrying or opening a window', async () => {
     const failure = new Error('official import failed')
     run.mockRejectedValue(failure)

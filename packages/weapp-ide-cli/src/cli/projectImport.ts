@@ -18,6 +18,44 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
+function readErrorCode(value: unknown): string | number | undefined {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value
+  }
+  if (typeof value === 'string') {
+    return value.match(/\b[A-Z][A-Z0-9_]{2,}\b/)?.[0]
+  }
+  if (isRecord(value)) {
+    for (const key of ['code', 'errcode', 'error', 'message', 'reason']) {
+      const code = readErrorCode(value[key])
+      if (code !== undefined) {
+        return code
+      }
+    }
+  }
+}
+
+function describeProjectImportFailure(payload: unknown, projectPath: string) {
+  const response = isRecord(payload) ? payload : undefined
+  const result = response && isRecord(response.result) ? response.result : undefined
+  const code = readErrorCode(response?.error)
+    ?? readErrorCode(response?.code)
+    ?? readErrorCode(response?.message)
+    ?? readErrorCode(result?.error)
+    ?? readErrorCode(result?.code)
+    ?? readErrorCode(result?.message)
+  const details = {
+    responseKeys: response ? Object.keys(response).sort() : [],
+    resultKeys: result ? Object.keys(result).sort() : [],
+    ...(code === undefined ? {} : { code }),
+    ...(typeof result?.status === 'string' ? { status: result.status } : {}),
+    ...(typeof result?.success === 'boolean' ? { success: result.success } : {}),
+    projectPathMatches: result?.projectPath === projectPath,
+    alreadyImportedType: typeof result?.alreadyImported,
+  }
+  return JSON.stringify(details)
+}
+
 /** 使用同一安装的 skill 入口；Windows 由 execa 处理官方 cmd 包装器。 */
 export function resolveProjectImportCli(cliPath: string, platform = process.platform) {
   const paths = platform === 'win32' ? path.win32 : path.posix
@@ -94,7 +132,7 @@ export async function importManagedDevtoolsProject(options: ProjectImportOptions
       || payload.clientName !== 'weapp-vite-e2e' || result?.success !== true
       || result.projectPath !== projectPath || typeof result.alreadyImported !== 'boolean'
       || result.taskId !== undefined || result.status !== undefined || result.error !== undefined) {
-      throw new Error('DEVTOOLS_PROJECT_IMPORT_INCOMPLETE: 官方项目导入未完成；请检查本地 weapp-vite-e2e 客户端授权与导入结果，未启动项目窗口。')
+      throw new Error(`DEVTOOLS_PROJECT_IMPORT_INCOMPLETE: 官方项目导入未完成；receipt=${describeProjectImportFailure(payload, projectPath)}`)
     }
     options.signal.throwIfAborted()
   })))
