@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process'
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { createJiti } from 'jiti'
@@ -140,6 +140,15 @@ describe('repoctl nightly workflow', () => {
     const diagnostics = steps.find(step => step.name === 'Preserve nightly diagnostics')!
     expect(diagnostics.if).toBe(expression('always()'))
     expect(diagnostics.with?.['retention-days']).toBe(14)
+  })
+
+  it('keeps snapshot preparation on the core build scope without private playgrounds', () => {
+    const packageJson = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as {
+      scripts: Record<string, string>
+    }
+    expect(packageJson.scripts.build).toMatch(/^pnpm run build:core\b/u)
+    expect(packageJson.scripts['build:core']).toMatch(/--filter=!@weapp-vite\/sfc-playground(?:\s|$)/u)
+    expect(packageJson.scripts['build:core']).toContain('--filter=./extensions/*')
   })
 
   it('archives native reports and tarballs without recursively scanning isolated dependency trees', () => {
