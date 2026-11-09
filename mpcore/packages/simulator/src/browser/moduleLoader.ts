@@ -110,6 +110,9 @@ export function createBrowserModuleLoader(
   const workers = createWorkerHost({
     root: options.miniprogramRootPath,
     read: file => readBrowserVirtualFile(files, file),
+    globals: {
+      WXWebAssembly: createPackageWebAssembly(file => readBrowserVirtualBinary(files, join(options.miniprogramRootPath, file))),
+    },
     console: options.kernel.diagnostics.createConsole(),
     createExecutor(globals) {
       return (source, _file, module, require) => {

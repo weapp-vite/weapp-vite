@@ -17,6 +17,19 @@ function withFrozenTopology<T extends SuiteTask>(tasks: T[]) {
 useIsolatedTopologyTestEnvironment()
 
 describe('e2e suite manifest', () => {
+  it('includes the generated WASM initializer runtime case in real and headless acceptance', async () => {
+    const label = 'ide/issue-1202-wasm.runtime.test.ts'
+    for (const suite of ['ide-full:github-issues', 'ide-full:exhaustive', 'ide-dom-headless', 'ide-headless-full']) {
+      expect((await getSuiteTasks(suite)).filter(task => task.label === label)).toHaveLength(1)
+    }
+    const cases = readTaskCases(path.resolve(import.meta.dirname, '../..'), label)
+    expect(cases).toHaveLength(1)
+    expect(cases[0]?.plans).toHaveLength(1)
+    expect(cases[0]?.notes).toEqual([])
+    expect(cases[0]?.plans[0]?.checkpoints).toContain('ready')
+    expect(cases[0]?.plans[0]?.checkpoints).toContain('initialized')
+  })
+
   it('keeps classic SQLite and lazy subpackage regressions in CI and both runtime providers', async () => {
     for (const label of ['ci/issue-1303-sqlite.watch.test.ts', 'ci/issue-1304-require-async.watch.test.ts']) {
       expect((await getCiPrTasks()).filter(task => task.label === label)).toHaveLength(1)

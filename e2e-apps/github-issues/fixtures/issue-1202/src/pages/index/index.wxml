@@ -1,0 +1,6 @@
+<view id="issue1202-page">
+  <view id="wasm-status">{{status}}</view>
+  <view id="wasm-value">{{value}}</view>
+  <button id="run-wasm" bindtap="run">Run WASM</button>
+  <button id="run-worker-wasm" bindtap="runWorker">Run Worker WASM</button>
+</view>

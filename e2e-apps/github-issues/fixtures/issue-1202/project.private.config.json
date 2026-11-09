@@ -1,0 +1,31 @@
+{
+  "libVersion": "3.17.3",
+  "setting": {
+    "compileHotReLoad": false,
+    "urlCheck": false
+  },
+  "condition": {
+    "miniprogram": {
+      "list": [
+        {
+          "name": "issue-1202-wasm-init",
+          "pathName": "pages/index/index",
+          "query": "",
+          "launchMode": "default"
+        },
+        {
+          "name": "issue-1202-regular-wasm",
+          "pathName": "regular/pages/engine/index",
+          "query": "",
+          "launchMode": "default"
+        },
+        {
+          "name": "issue-1202-independent-wasm",
+          "pathName": "isolated/pages/engine/index",
+          "query": "",
+          "launchMode": "default"
+        }
+      ]
+    }
+  }
+}

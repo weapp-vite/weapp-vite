@@ -1,0 +1,5 @@
+{
+  "name": "issue-1202-wasm-init",
+  "type": "module",
+  "private": true
+}

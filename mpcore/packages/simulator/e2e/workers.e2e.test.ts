@@ -13,6 +13,7 @@ it('renders worker startup, cloned messages and a fresh worker after reentry', a
   try {
     session.reLaunch('/pages/index')
     await expect.poll(() => text('.message')).toBe('worker hello')
+    await expect(session.callScopeMethod(null, 'runWasm', {})).resolves.toEqual({ value: 42 })
     const button = preview.querySelector<HTMLButtonElement>('button')!
     await session.callScopeMethod(button.dataset.simScope!, button.dataset.simTap!)
     await expect.poll(() => text('.message')).toBe('echo')

@@ -22,6 +22,12 @@ export default defineConfig({
 
 插件没有第二套配置参数。配置文件由宿主加载，插件不会自动发现或合并另一份 `weapp-vite.config.*`。迁移时把配置收敛到一个入口；需要拆文件时，在该入口显式导入。不要重复调用 `weapp()`，也不要把同一插件实例共享给两个活动宿主。
 
+## 微信 WASM `?init`
+
+微信小程序项目可以在源码或 npm 包中使用 Vite 标准入口 `import init from './encoder.wasm?init'`。微信构建会输出非内联 WASM 文件，并由异步初始化器调用 `WXWebAssembly.instantiate(path, imports)`，返回可访问 `exports` 的实例。主包/普通分包、独立分包和 Worker 使用各自可访问的包内路径；Web 构建继续使用 Vite 原生行为。
+
+该兼容入口不支持 `publicDir`、小程序插件项目、lib mode、`?raw`/`?url`/`?inline` 组合或 stateful `bundledDev`；开发模式请使用 `weapp.hmr.runtime: 'classic'`。它不会生成 wasm-bindgen/Emscripten glue，也不扩展微信运行时对 WASM 指令、Global、SIMD 或导入能力的支持。
+
 ```sh
 vite build
 vite dev

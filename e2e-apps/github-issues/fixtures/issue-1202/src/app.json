@@ -1,0 +1,10 @@
+{
+  "pages": ["pages/index/index"],
+  "workers": "workers",
+  "subPackages": [
+    { "root": "regular", "pages": ["pages/engine/index"] },
+    { "root": "isolated", "independent": true, "pages": ["pages/engine/index"] }
+  ],
+  "window": { "navigationBarTitleText": "Issue 1202 WASM" },
+  "renderer": "webview"
+}

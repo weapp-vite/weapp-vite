@@ -1,0 +1,13 @@
+{
+  "appid": "wx6ffee4673b257014",
+  "projectname": "issue-1202-wasm-init",
+  "compileType": "miniprogram",
+  "miniprogramRoot": "dist/",
+  "libVersion": "3.17.3",
+  "setting": {
+    "es6": false,
+    "enhance": false,
+    "minified": false,
+    "urlCheck": false
+  }
+}
