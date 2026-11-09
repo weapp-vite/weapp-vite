@@ -22,7 +22,7 @@ function validateInvocationProof(context, run, repository) {
   }
 }
 
-/** 运行本身的仓库、源仓库与分支不可由 artifact 补造，事件驱动规划器另核对引用。 */
+/** 运行与归档统一认证不可变 invocation；关联 PR 的 base 元数据不拥有冻结基线。 */
 export function validateNativeRunIdentity(context, run, repository, allowUnassociated = false, defaultBranch) {
   if (context.event === 'native_refresh') {
     validateNativeRefreshRun(context, run, repository, defaultBranch)
@@ -40,14 +40,11 @@ export function validateNativeRunIdentity(context, run, repository, allowUnassoc
     || !Array.isArray(run.pull_requests) || (!allowUnassociated && !pull)
     || (run.pull_requests.length > 0 && (!pull || pull.head?.sha !== context.headSha
       || pull.head.ref !== context.headRef || pull.base?.ref !== context.baseRef
-      || (!allowUnassociated && pull.base.sha !== context.baseSha)
       || (pull.head.repo?.id !== undefined && pull.head.repo.id !== run.head_repository.id)
       || (pull.base.repo?.id !== undefined && pull.base.repo.id !== run.repository.id)))) {
     throw new Error('Untrusted native PR run identity')
   }
-  if (allowUnassociated) {
-    validateInvocationProof(context, run, repository)
-  }
+  validateInvocationProof(context, run, repository)
 }
 
 export function validateNativeContextShape(context) {

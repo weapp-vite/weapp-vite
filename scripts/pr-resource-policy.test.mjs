@@ -61,6 +61,10 @@ describe('PR resource admission before allocating runners', () => {
     expect(condition(workflow.jobs.approval.if, github)).toBe(false)
     expect(workflow.jobs.plan.needs).toBe('approval')
     for (const [name, job] of Object.entries(workflow.jobs)) {
+      if (name === 'verdict') {
+        expect(condition(job.if, github, { always: () => true, cancelled: () => false, needs: { plan: { result: 'skipped' } } })).toBe(false)
+        continue
+      }
       if (name !== 'approval' && name !== 'plan') {
         expect(job.needs).toBe('plan')
       }
@@ -69,6 +73,25 @@ describe('PR resource admission before allocating runners', () => {
     const report = await read('ci-performance-comment.yml')
     const closingRun = { event_name: 'workflow_run', event: { workflow_run: { name: 'feat: refine consumer skills', path: '.github/workflows/ci-pr.yml', event: 'pull_request_target', conclusion: 'success' } } }
     expect(condition(report.jobs['native-pr-report'].if, closingRun)).toBe(false)
+  })
+
+  it.each([
+    ['approved slice', 'success', 'success', false],
+    ['rejected approval', 'failure', 'skipped', false],
+    ['failed planning', 'success', 'failure', false],
+    ['cancelled approval', 'cancelled', 'skipped', true],
+    ['cancelled after planning', 'success', 'success', true],
+  ])('keeps the required terminal result runnable for %s without running candidate steps on rejected paths', async (_scenario, approval, plan, cancelled) => {
+    const workflow = await read('ci-pr.yml')
+    const needs = { approval: { result: approval }, plan: { result: plan }, ci: { result: 'failure' } }
+    const github = { event_name: 'pull_request' }
+    const status = { needs, always: () => true, success: () => true, cancelled: () => cancelled }
+    expect(condition(workflow.jobs.verdict.if, github, status)).toBe(true)
+    const candidateAllowed = approval === 'success' && plan === 'success' && !cancelled
+    for (const step of workflow.jobs.verdict.steps.filter(step => step.uses || step.id === 'snapshot')) {
+      expect(condition(step.if ?? 'true', github, status)).toBe(candidateAllowed)
+      expect(condition(step.if ?? 'true', github, { ...status, success: () => false })).toBe(false)
+    }
   })
 })
 

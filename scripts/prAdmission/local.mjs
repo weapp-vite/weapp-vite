@@ -3,6 +3,7 @@ import { readdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { parse } from 'yaml'
 import { checkDocumentationAdmission } from './documentation.mjs'
+import { validateMergeProtectionPolicy } from './mergeProtection.mjs'
 import { checkReleaseIntentAdmission } from './releaseIntent.mjs'
 import { check } from './report.mjs'
 
@@ -53,6 +54,7 @@ export async function readLocalAdmission(root) {
     || policy.deploymentBranchPolicy !== null || typeof policy.forkApprovalPolicy !== 'string') {
     throw new TypeError('无效的 .github/pr-admission.json 审批配置')
   }
+  validateMergeProtectionPolicy(policy.mergeProtection)
   const profiles = JSON.parse(await readFile(path.join(github, 'pr-checks.json'), 'utf8'))
   if (!profiles || typeof profiles !== 'object' || Array.isArray(profiles) || Object.keys(profiles).length === 0) {
     throw new TypeError('无效的 .github/pr-checks.json 检查清单')
@@ -63,6 +65,38 @@ export async function readLocalAdmission(root) {
     workflows[name] = parse(await readFile(path.join(directory, name), 'utf8'))
   }
   return { policy, profiles, workflows }
+}
+
+/** 必需检查始终给出终态；只有批准且成功规划、未取消的路径能执行候选步骤。 */
+function checkVerdictAdmission(job, profiles, add) {
+  const admitted = 'github.event_name == \'pull_request\' || (github.event_name == \'workflow_dispatch\' && github.ref_type == \'branch\' && github.ref_name == github.event.repository.default_branch)'
+  const candidate = '${{ success() && !cancelled() && needs.approval.result == \'success\' && needs.plan.result == \'success\' }}'
+  add('verdict 绑定唯一汇总检查', 'PR snapshot checks', job.name)
+  add('verdict 等待全部冻结检查', sorted(['approval', 'plan', ...Object.keys(profiles), 'documentation']), sorted(list(job.needs)))
+  add('verdict 在所有准入终态运行且跳过关闭事件', expression(`always() && (${admitted})`), expression(job.if))
+  add('verdict 保持静态只读任务', {
+    runner: 'ubuntu-latest',
+    minutes: 5,
+    permissions: { contents: 'read' },
+  }, { runner: job['runs-on'], minutes: job['timeout-minutes'], permissions: job.permissions })
+  add('verdict 不接受额外执行配置', sorted(['name', 'needs', 'if', 'runs-on', 'timeout-minutes', 'permissions', 'steps']), sorted(Object.keys(job)))
+  add('verdict 仅执行静态裁决脚本', [
+    { uses: 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1', if: candidate, with: { 'ref': '${{ github.sha }}', 'persist-credentials': false } },
+    { uses: './.github/actions/setup-node', if: candidate, with: { 'node-version': '24' } },
+    {
+      id: 'snapshot',
+      name: 'Check frozen snapshot results',
+      if: candidate,
+      env: { PR_FROZEN_CONTEXT: '${{ needs.plan.outputs.pr_context }}', PR_NEEDS_JSON: '${{ toJSON(needs) }}' },
+      run: 'node .github/scripts/native-pr-verdict.mjs',
+    },
+    {
+      name: 'Require successful terminal result',
+      if: 'always()',
+      env: { PR_CANCELLED: '${{ cancelled() }}', PR_APPROVAL_RESULT: '${{ needs.approval.result }}', PR_PLAN_RESULT: '${{ needs.plan.result }}', PR_VERDICT_RESULT: '${{ steps.snapshot.outcome }}' },
+      run: 'test "$PR_CANCELLED" = false\ntest "$PR_APPROVAL_RESULT" = success\ntest "$PR_PLAN_RESULT" = success\ntest "$PR_VERDICT_RESULT" = success\n',
+    },
+  ], job.steps)
 }
 
 /** 核对审批入口及依赖边界；新增任务必须显式登记，不能成为审批前的独立根节点。 */
@@ -91,7 +125,7 @@ export function checkLocalAdmission({ policy, profiles, workflows }) {
   }, pr.concurrency)
   const jobs = pr.jobs ?? {}
   const { approval = {}, plan = {}, ...validations } = jobs
-  add('单一审批后的任务清单', sorted([...Object.keys(profiles), 'documentation']), sorted(Object.keys(validations)))
+  add('单一审批后的任务清单', sorted([...Object.keys(profiles), 'documentation', 'verdict']), sorted(Object.keys(validations)))
   add('审批 Environment', policy.environment, typeof approval.environment === 'object' ? approval.environment?.name : approval.environment)
   add('关闭事件跳过审批', expression('github.event_name == \'pull_request\' || (github.event_name == \'workflow_dispatch\' && github.ref_type == \'branch\' && github.ref_name == github.event.repository.default_branch)'), expression(approval.if))
   add('审批为唯一根任务', [], list(approval.needs))
@@ -103,7 +137,11 @@ export function checkLocalAdmission({ policy, profiles, workflows }) {
   add('冻结目标使用触发控制 SHA', { 'ref': '${{ github.sha }}', 'persist-credentials': false }, controlCheckout?.with)
   add('冻结目标等待审批', ['approval'], list(plan.needs))
   add('冻结目标不覆盖默认依赖条件', undefined, plan.if)
+  checkVerdictAdmission(jobs.verdict ?? {}, profiles, add)
   for (const [name, job] of Object.entries(jobs)) {
+    if (name === 'verdict') {
+      continue
+    }
     add(`${name} 不绕过跳过或取消的依赖`, false, /\b(?:always|cancelled|failure)\s*\(/u.test(job.if ?? ''))
     if (name === 'approval' || name === 'plan') {
       continue

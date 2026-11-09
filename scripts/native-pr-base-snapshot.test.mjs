@@ -69,8 +69,8 @@ function fixture() {
     if (endpoint === `/git/commits/${mergeSha}`) {
       return { sha: mergeSha, parents: state.parents }
     }
-    if (endpoint.startsWith('/pulls/42/files?')) {
-      return [{ filename: 'packages/example/index.ts' }]
+    if (endpoint === `/compare/${baseSha}...${headSha}?per_page=100`) {
+      return { base_commit: { sha: baseSha }, files: [{ filename: 'packages/example/index.ts', status: 'modified' }] }
     }
     if (endpoint.startsWith('/contents/')) {
       const bytes = Buffer.from(JSON.stringify({ schemaVersion: 1, draft: false, id: 'identity-test-v1', pullRequests: [43], baseBranch: 'main', profiles: ['ci'] }))
@@ -87,7 +87,7 @@ function fixture() {
 }
 
 describe('native PR base snapshot regression', () => {
-  it('freezes the live base and actual merge despite stale REST and event base metadata', async () => {
+  it('freezes actual approved merge parents despite stale REST and event base metadata', async () => {
     const { state, get, options } = fixture()
     state.run.pull_requests = []
     await expect(resolveNativePrContext(options, get)).resolves.toMatchObject(context)
@@ -99,10 +99,14 @@ describe('native PR base snapshot regression', () => {
     await expect(resolveNativePrContext(options, get)).resolves.toMatchObject(context)
   })
 
-  it('rejects a live merge candidate whose driver is stale even if event and invocation match', async () => {
-    const { state, get, options } = fixture()
+  it('keeps the approved snapshot after the main tip and canonical merge advance', async () => {
+    const { state, get, options, report } = fixture()
+    state.baseSha = staleSha
+    state.mergeSha = staleSha
     state.pull.merge_commit_sha = staleSha
-    await expect(resolveNativePrContext(options, get)).rejects.toThrow()
+    await expect(resolveNativePrContext(options, get)).resolves.toMatchObject(context)
+    await expect(publishNativePrReport(report)).resolves.toEqual({ published: false, reason: 'stale-base' })
+    expect(report.readArtifact).not.toHaveBeenCalled()
   })
 
   it('does not accept an unassociated fork artifact on matching live evidence alone', async () => {
@@ -148,14 +152,11 @@ describe('native PR base snapshot regression', () => {
     await expect(resolveNativePrContext(options, get)).rejects.toThrow()
   })
 
-  it.each(['base', 'head', 'head-ref', 'head-repository', 'base-ref', 'base-repository', 'merge'])('rejects %s movement during profile selection', async (changed) => {
+  it.each(['head', 'head-ref', 'head-repository', 'base-ref', 'base-repository'])('rejects %s movement during profile selection', async (changed) => {
     const { state, get, options } = fixture()
     const moving = async (endpoint) => {
       const response = await get(endpoint)
-      if (endpoint.startsWith('/pulls/42/files?')) {
-        if (changed === 'base') {
-          state.baseSha = staleSha
-        }
+      if (endpoint.startsWith('/compare/')) {
         if (changed === 'head') {
           state.pull.head.sha = staleSha
         }
@@ -170,9 +171,6 @@ describe('native PR base snapshot regression', () => {
         }
         if (changed === 'base-repository') {
           state.pull.base.repo.id = 3
-        }
-        if (changed === 'merge') {
-          state.mergeSha = staleSha
         }
       }
       return response

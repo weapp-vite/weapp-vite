@@ -16,7 +16,6 @@ it.each([
 ])('selects frozen PR smoke paths while its base snapshot is older than the actual ref: %j', async (filenames, expected) => {
   const get = vi.fn(async (endpoint: string) => endpoint === baseEndpoint ? { object: { sha: target.baseSha } } : endpoint.includes('/files') ? (filenames as string[]).map(filename => ({ filename })) : pull)
   expect(await selectSmokeScope(target, get)).toBe(expected)
-  expect(get.mock.calls.map(([endpoint]) => endpoint)).toEqual(['/pulls/7', baseEndpoint, '/pulls/7/files?per_page=100&page=1', '/pulls/7', baseEndpoint])
 })
 
 it.each([
@@ -61,4 +60,44 @@ it.each(['before', 'during'])('rejects actual base ref drift %s selecting paths 
   })
   await expect(selectSmokeScope(target, get)).rejects.toThrow('PR changed')
   expect(get.mock.calls.some(([endpoint]) => endpoint.includes('/files'))).toBe(phase === 'during')
+})
+
+const nativeSnapshot = {
+  ...target,
+  schemaVersion: 1,
+  event: 'pull_request',
+  runId: '123',
+  runAttempt: 1,
+  isPr: true,
+  shouldRun: true,
+  driverSha: 'c'.repeat(40),
+  checkoutSha: 'c'.repeat(40),
+  checkoutMode: 'merge',
+  selections: { 'ci-performance': true },
+}
+
+it.each([
+  [['README.md'], false],
+  [['packages/weapp-vite/src/index.ts'], true],
+])('uses the fixed native smoke diff after main advances: %j', async (filenames, needed) => {
+  const get = vi.fn(async (endpoint: string) => {
+    if (endpoint === '/pulls/7') {
+      return { ...pull, base: { ...pull.base, sha: 'd'.repeat(40) } }
+    }
+    if (endpoint === `/compare/${target.baseSha}...${target.headSha}?per_page=100`) {
+      return { base_commit: { sha: target.baseSha }, files: (filenames as string[]).map(filename => ({ filename, status: 'modified' })) }
+    }
+    throw new Error(`Mutable target must not replace the snapshot: ${endpoint}`)
+  })
+  expect(await selectSmokeScope(nativeSnapshot, get)).toBe(needed)
+})
+
+it('keeps the native smoke check when the fixed comparison may be truncated', async () => {
+  const get = async (endpoint: string) => endpoint === '/pulls/7'
+    ? pull
+    : {
+        base_commit: { sha: target.baseSha },
+        files: Array.from({ length: 300 }, () => ({ filename: 'README.md', status: 'modified' })),
+      }
+  expect(await selectSmokeScope(nativeSnapshot, get)).toBe(true)
 })

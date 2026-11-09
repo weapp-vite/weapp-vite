@@ -21,7 +21,15 @@ export function liveFixture() {
       reviewers: policy.reviewers.map(login => ({ type: 'User', reviewer: { login } })),
     }],
   }
-  return { policy, environment, fork: { approval_policy: policy.forkApprovalPolicy } }
+  const protection = {
+    required_status_checks: {
+      strict: policy.mergeProtection.strict,
+      contexts: [policy.mergeProtection.requiredStatusCheck],
+      checks: [{ context: policy.mergeProtection.requiredStatusCheck, app_id: policy.mergeProtection.integrationId }],
+    },
+    enforce_admins: { enabled: policy.mergeProtection.enforceAdmins },
+  }
+  return { policy, environment, protection, fork: { approval_policy: policy.forkApprovalPolicy } }
 }
 
 export async function writeLocalFixture() {

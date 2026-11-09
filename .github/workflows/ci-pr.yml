@@ -209,3 +209,57 @@ jobs:
           PR_DOCUMENTATION_CHECKS: ${{ toJSON(fromJSON(needs.plan.outputs.pr_context).documentationChecks) }}
           PR_DOCUMENTATION_PATHS: ${{ toJSON(fromJSON(needs.plan.outputs.pr_context).documentationPaths) }}
         run: node .github/scripts/lint-frozen-documentation.mjs
+  verdict:
+    name: PR snapshot checks
+    needs:
+      - approval
+      - plan
+      - ci
+      - ci-policy
+      - ci-e2e
+      - ci-create-weapp-vite
+      - ci-acceptance-http
+      - ci-acceptance
+      - ci-dimina
+      - ci-vite-host-consumer
+      - ci-vscode-extension
+      - ci-tutorial-e2e
+      - deploy-website
+      - native-addon-correctness
+      - ci-performance
+      - wevu-runtime-size
+      - documentation
+    if: ${{ always() && (github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && github.ref_type == 'branch' && github.ref_name == github.event.repository.default_branch)) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        if: ${{ success() && !cancelled() && needs.approval.result == 'success' && needs.plan.result == 'success' }}
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node
+        if: ${{ success() && !cancelled() && needs.approval.result == 'success' && needs.plan.result == 'success' }}
+        with:
+          node-version: '24'
+      - id: snapshot
+        name: Check frozen snapshot results
+        if: ${{ success() && !cancelled() && needs.approval.result == 'success' && needs.plan.result == 'success' }}
+        env:
+          PR_FROZEN_CONTEXT: ${{ needs.plan.outputs.pr_context }}
+          PR_NEEDS_JSON: ${{ toJSON(needs) }}
+        run: node .github/scripts/native-pr-verdict.mjs
+      - name: Require successful terminal result
+        if: always()
+        env:
+          PR_CANCELLED: ${{ cancelled() }}
+          PR_APPROVAL_RESULT: ${{ needs.approval.result }}
+          PR_PLAN_RESULT: ${{ needs.plan.result }}
+          PR_VERDICT_RESULT: ${{ steps.snapshot.outcome }}
+        run: |
+          test "$PR_CANCELLED" = false
+          test "$PR_APPROVAL_RESULT" = success
+          test "$PR_PLAN_RESULT" = success
+          test "$PR_VERDICT_RESULT" = success

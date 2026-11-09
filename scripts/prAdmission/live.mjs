@@ -1,5 +1,6 @@
 // eslint-disable-next-line e18e/ban-dependencies -- 沿用仓库的跨平台 CLI 启动、超时与错误传播约定。
 import { execa } from 'execa'
+import { checkLiveMergeProtection } from './mergeProtection.mjs'
 import { check, incomplete } from './report.mjs'
 
 /** 使用参数数组调用原生 gh 可执行文件，兼容三系统，禁止 shell 拼接与交互等待。 */
@@ -73,5 +74,6 @@ export async function checkLiveAdmission(policy, { repository, root, gh = runGh 
       results.push(incomplete(`${repository}: ${name}`, error instanceof SyntaxError ? 'GitHub API 响应不是有效 JSON' : error.message))
     }
   }
+  results.push(...await checkLiveMergeProtection(policy.mergeProtection, { repository, root, gh }))
   return results
 }
