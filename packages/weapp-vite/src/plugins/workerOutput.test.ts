@@ -1,4 +1,4 @@
-import type { EmittedAsset } from 'rolldown'
+import type { EmittedAsset, OutputBundle } from 'rolldown'
 import type { Plugin } from 'vite'
 import type { CompilerContext } from '../context'
 import path from 'node:path'
@@ -20,7 +20,7 @@ vi.mock('../runtime/buildPlugin/workerPlan', () => ({
 }))
 vi.mock('./asset/prune', () => ({ pruneOwnedAssetFiles: mocks.pruneOwnedAssetFiles }))
 
-function asset(fileName: string, source = 'worker source'): WorkerAsset {
+function asset(fileName: string, source: string | Uint8Array = 'worker source'): WorkerAsset {
   return { type: 'asset', fileName, source }
 }
 
@@ -38,6 +38,7 @@ async function fixture(command: 'build' | 'serve' = 'build', bundledDev = false)
     meta: { watchMode: true },
     addWatchFile: vi.fn<(file: string) => void>(),
     emitFile: vi.fn<(output: WorkerAsset) => string>(() => 'worker-reference'),
+    error: vi.fn((message: string): never => { throw new Error(message) }),
   }
   mocks.getWorkerSources.mockReturnValue(sources)
   const plugin = createWorkerOutputPlugin(ctx)
@@ -56,7 +57,7 @@ async function fixture(command: 'build' | 'serve' = 'build', bundledDev = false)
     sources,
     outDir,
     start: () => run('buildStart', {}),
-    generate: () => run('generateBundle', {}, {}, true),
+    generate: (bundle: OutputBundle = {} as OutputBundle) => run('generateBundle', {}, bundle, true),
     write: () => run('writeBundle', {}, {}),
   }
 }
@@ -123,6 +124,33 @@ describe('worker input preparation and output ownership', () => {
       preparing.resolve(assets)
       await starting
     }
+  })
+
+  it('reuses an identical asset already emitted by the main bundle', async () => {
+    const { context, start, generate } = await fixture()
+    const worker = asset('add.wasm', new Uint8Array([0, 97, 115, 109]))
+    mocks.buildWorkerAssets.mockResolvedValueOnce([worker])
+
+    await start()
+    await generate({
+      'add.wasm': { type: 'asset', fileName: 'add.wasm', source: new Uint8Array([0, 97, 115, 109]) },
+    } as OutputBundle)
+
+    expect(context.emitFile).not.toHaveBeenCalled()
+    expect(context.error).not.toHaveBeenCalled()
+  })
+
+  it('rejects a worker asset that collides with different existing output', async () => {
+    const { context, start, generate } = await fixture()
+    const worker = asset('add.wasm', new Uint8Array([0, 97, 115, 109]))
+    mocks.buildWorkerAssets.mockResolvedValueOnce([worker])
+
+    await start()
+    await expect(generate({
+      'add.wasm': { type: 'asset', fileName: 'add.wasm', source: new Uint8Array([1, 2, 3]) },
+    } as OutputBundle)).rejects.toThrow('Worker asset conflicts')
+
+    expect(context.emitFile).not.toHaveBeenCalled()
   })
 
   it.each([

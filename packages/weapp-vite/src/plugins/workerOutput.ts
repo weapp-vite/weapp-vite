@@ -1,7 +1,36 @@
+import type { OutputBundle, PluginContext } from 'rolldown'
 import type { Plugin } from 'vite'
 import type { CompilerContext } from '../context'
 import { buildWorkerAssets, getWorkerSources } from '../runtime/buildPlugin/workerPlan'
 import { pruneOwnedAssetFiles } from './asset/prune'
+
+function sameAssetSource(left: string | Uint8Array, right: string | Uint8Array) {
+  if (typeof left === 'string' || typeof right === 'string') {
+    return left === right
+  }
+  if (left.byteLength !== right.byteLength) {
+    return false
+  }
+  return left.every((value, index) => value === right[index])
+}
+
+function emitWorkerAsset(
+  context: Pick<PluginContext, 'emitFile' | 'error'>,
+  bundle: OutputBundle,
+  asset: Awaited<ReturnType<typeof buildWorkerAssets>>[number],
+) {
+  const existing = bundle[asset.fileName]
+  if (!existing) {
+    context.emitFile(asset)
+    return
+  }
+
+  if (existing.type === 'asset' && sameAssetSource(existing.source, asset.source)) {
+    return
+  }
+
+  context.error(`[weapp-vite] Worker asset conflicts with an existing output: ${asset.fileName}`)
+}
 
 /** 主应用和 worker 共用发布事务；子目标自身不持有 watcher 或输出目录。 */
 export function createWorkerOutputPlugin(ctx: CompilerContext): Plugin {
@@ -49,8 +78,9 @@ export function createWorkerOutputPlugin(ctx: CompilerContext): Plugin {
       },
     },
     generateBundle: {
-      order: 'pre',
-      handler() {
+      // 主图先完成资产解析，Worker 才能复用同名且同字节的 WASM 资产。
+      order: 'post',
+      handler(_options, bundle) {
         if (!prepared) {
           return
         }
@@ -59,7 +89,7 @@ export function createWorkerOutputPlugin(ctx: CompilerContext): Plugin {
         }
         pendingWorkerFiles = new Set(prepared.assets.map(asset => asset.fileName))
         for (const asset of prepared.assets) {
-          this.emitFile(asset)
+          emitWorkerAsset(this, bundle, asset)
         }
       },
     },
