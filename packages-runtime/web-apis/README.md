@@ -155,6 +155,8 @@ pnpm --filter @wevu/web-apis typecheck
 - 新项目建议使用 `installWebRuntimeGlobals()`
 - `installRequestGlobals()` 仍保留为兼容别名，后续会逐步淡出文档主叙事
 
+`crypto.getRandomValues()` 同步填充并返回原 TypedArray，优先使用原生 Web Crypto。微信等小程序宿主的同名接口接收 options 并异步返回结果，兼容层不会调用它来完成同步填充。缺少原生 Web Crypto 时沿用 `Math.random()` fallback；该 fallback 不提供密码学安全保证，不能用于密钥或认证令牌。
+
 ## 11. Body 与 Blob 契约
 
 `RequestPolyfill` 和 `ResponsePolyfill` 提供可读 `body`，以及 `bytes()`、`arrayBuffer()`、`text()`、`json()`、`blob()`。非 null body 只能消费一次；调用消费方法或开始读取、取消 body 流时，`bodyUsed` 会变成 `true`。仅获取 reader 会锁定流，但不改变 `bodyUsed`。body 已消费或锁定时，重复读取和 `clone()` 都会以 `TypeError` 失败。需要多种读取方式时，请在消费前 clone：

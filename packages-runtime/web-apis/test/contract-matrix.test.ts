@@ -421,13 +421,19 @@ describe('web API contract matrix', () => {
     })).toEqual({ enableHttp2: true })
   })
 
-  it('uses host crypto, native crypto and math fallback with validation', () => {
-    const hostRandom = vi.fn((target: Uint8Array) => target.fill(7))
+  it('does not confuse asynchronous mini-program random APIs with Web Crypto', () => {
+    const hostRandom = vi.fn(async (_option: { length: number }) => ({ randomValues: new ArrayBuffer(4) }))
     setGlobal('crypto', undefined)
     setGlobal('wx', { getRandomValues: hostRandom })
-    expect([...cryptoPolyfill.getRandomValues(new Uint8Array(3))]).toEqual([7, 7, 7])
-    expect(hostRandom).toHaveBeenCalled()
+    vi.spyOn(Math, 'random').mockReturnValue(0.5)
+    const target = new Uint8Array([7, 7, 7])
+    expect(cryptoPolyfill.getRandomValues(target)).toBe(target)
+    expect([...target]).toEqual([128, 128, 128])
+    expect(hostRandom).not.toHaveBeenCalled()
+    vi.restoreAllMocks()
+  })
 
+  it('uses native crypto and math fallback with validation', () => {
     const nativeRandom = vi.fn((target: Uint8Array) => target.fill(8))
     setGlobal('crypto', { getRandomValues: nativeRandom })
     expect([...cryptoPolyfill.getRandomValues(new Uint8Array(2))]).toEqual([8, 8])
@@ -454,10 +460,9 @@ describe('web API contract matrix', () => {
       expect(sample).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)
     }
 
-    setGlobal('crypto', undefined)
-    setGlobal('wx', { getRandomValues: (target: Uint8Array) => target.fill(1) })
-    const hostUuid = cryptoPolyfill.randomUUID()
-    expect(hostUuid).toBe('01010101-0101-4101-8101-010101010101')
+    setGlobal('crypto', { getRandomValues: (target: Uint8Array) => target.fill(1) })
+    const nativeUuid = cryptoPolyfill.randomUUID()
+    expect(nativeUuid).toBe('01010101-0101-4101-8101-010101010101')
   })
 
   it('uses native performance, host performance and monotonic fallback', () => {

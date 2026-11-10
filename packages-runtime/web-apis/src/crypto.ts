@@ -1,5 +1,3 @@
-import { getMiniProgramRuntimeGlobalKeys } from '@weapp-core/shared/platforms/runtime'
-
 const MAX_RANDOM_VALUES_BYTE_LENGTH = 65536
 
 type IntegerTypedArray
@@ -40,24 +38,6 @@ function fillArrayWithMathRandom(target: IntegerTypedArray) {
   }
 }
 
-function fillArrayWithHostRandomValues(target: IntegerTypedArray) {
-  for (const hostKey of getMiniProgramRuntimeGlobalKeys()) {
-    const host = (globalThis as Record<string, any>)[hostKey]
-    if (!host || typeof host.getRandomValues !== 'function') {
-      continue
-    }
-
-    try {
-      host.getRandomValues(target)
-      return true
-    }
-    catch {
-    }
-  }
-
-  return false
-}
-
 export function getRandomValuesPolyfill<T extends IntegerTypedArray>(typedArray: T) {
   if (!isIntegerTypedArray(typedArray)) {
     throw new TypeError('Failed to execute \'getRandomValues\': input must be an integer TypedArray')
@@ -72,9 +52,8 @@ export function getRandomValuesPolyfill<T extends IntegerTypedArray>(typedArray:
     return nativeCrypto.getRandomValues(typedArray as never)
   }
 
-  if (!fillArrayWithHostRandomValues(typedArray)) {
-    fillArrayWithMathRandom(typedArray)
-  }
+  // wx 等小程序的同名接口接收 options 并异步返回，不能用于同步填充。
+  fillArrayWithMathRandom(typedArray)
 
   return typedArray
 }

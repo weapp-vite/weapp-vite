@@ -15,7 +15,7 @@ import { startRequestClientsRealServer } from '../utils/requestClientsRealServer
 
 const utilityPath = path.resolve(import.meta.dirname, '../utils/requestClientsRealDevPlugin.ts')
 const cliEntry = path.resolve(import.meta.dirname, '../../packages/weapp-vite/dist/cli.mjs')
-const tsxLoader = createRequire(import.meta.url).resolve('tsx')
+const tsxLoader = pathToFileURL(createRequire(import.meta.url).resolve('tsx')).href
 const originalConfig = JSON.stringify({ condition: { miniprogram: { list: [{ pathName: 'pages/index/index', query: 'fixture=original' }] } } })
 const originalModule = 'export const REQUEST_CLIENTS_REAL_DEV_BASE_URL = ""\n'
 const cleanups: Array<() => Promise<void>> = []

@@ -1031,10 +1031,7 @@ describe('request globals runtime', () => {
       getPerformance: () => ({
         now: () => 321.5,
       }),
-      getRandomValues: (typedArray: Uint8Array) => {
-        typedArray.set([1, 2, 3, 4].slice(0, typedArray.length))
-        return typedArray
-      },
+      getRandomValues: vi.fn(async (_option: { length: number }) => ({ randomValues: new ArrayBuffer(4) })),
     }
 
     const { installWebRuntimeGlobals } = await import('../src')
@@ -1046,8 +1043,11 @@ describe('request globals runtime', () => {
     expect(globalThis.atob('QUI=')).toBe('AB')
     expect(globalThis.performance.now()).toBe(321.5)
 
+    vi.spyOn(Math, 'random').mockReturnValue(0.5)
     const bytes = globalThis.crypto.getRandomValues(new Uint8Array(4))
-    expect([...bytes]).toEqual([1, 2, 3, 4])
+    expect([...bytes]).toEqual([128, 128, 128, 128])
+    expect((globalThis as Record<string, any>).wx.getRandomValues).not.toHaveBeenCalled()
+    vi.restoreAllMocks()
 
     const microtaskSpy = vi.fn()
     globalThis.queueMicrotask(microtaskSpy)
@@ -1284,13 +1284,10 @@ describe('request globals runtime', () => {
     }
   })
 
-  it('falls back to additional mini-program host getRandomValues implementations', async () => {
+  it('does not call asynchronous random APIs on additional mini-program hosts', async () => {
     setGlobalValue('crypto', undefined)
     ;(globalThis as Record<string, any>).swan = {
-      getRandomValues: (typedArray: Uint8Array) => {
-        typedArray.set([9, 8, 7, 6].slice(0, typedArray.length))
-        return typedArray
-      },
+      getRandomValues: vi.fn(async (_option: { length: number }) => ({ randomValues: new ArrayBuffer(4) })),
     }
 
     const { installWebRuntimeGlobals } = await import('../src')
@@ -1298,8 +1295,11 @@ describe('request globals runtime', () => {
       targets: ['crypto'],
     })
 
+    vi.spyOn(Math, 'random').mockReturnValue(0.25)
     const bytes = globalThis.crypto.getRandomValues(new Uint8Array(4))
-    expect([...bytes]).toEqual([9, 8, 7, 6])
+    expect([...bytes]).toEqual([64, 64, 64, 64])
+    expect((globalThis as Record<string, any>).swan.getRandomValues).not.toHaveBeenCalled()
+    vi.restoreAllMocks()
   })
 
   it('falls back to additional mini-program host performance implementations', async () => {

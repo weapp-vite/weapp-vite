@@ -24,6 +24,7 @@ import { createStatefulVueComponentFiles } from './test/helpers/statefulVueCompo
 import { createStoreDefinitionReloadFiles } from './test/helpers/storeDefinitionReload'
 import { createStoreHmrFiles } from './test/helpers/storeHmr'
 import { createStoreLifecycleFiles } from './test/helpers/storeLifecycle'
+import { createWebCryptoFiles } from './test/helpers/webCrypto'
 
 const simulatorRoot = import.meta.dirname
 const demoWebRoot = path.resolve(simulatorRoot, '../../demos/web')
@@ -54,6 +55,9 @@ export default defineConfig({
   plugins: [vue(), tailwindcss(), {
     name: 'stateful-native-component-fixture',
     resolveId(id) {
+      if (id === 'virtual:web-crypto-fixture') {
+        return `\0${id}`
+      }
       if (id === 'virtual:sqlite-wasm-fixture') {
         return `\0${id}`
       }
@@ -92,6 +96,9 @@ export default defineConfig({
       }
     },
     async load(id) {
+      if (id === '\0virtual:web-crypto-fixture') {
+        return `export default ${JSON.stringify(await createWebCryptoFiles())}`
+      }
       if (id === '\0virtual:sqlite-wasm-fixture') {
         const files = (await createSqliteWasmFiles()).map(([file, content]) => [file, typeof content === 'string' ? content : [...new Uint8Array(content)]])
         return `export default ${JSON.stringify(files)}`
