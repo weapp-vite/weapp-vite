@@ -46,7 +46,8 @@
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.mts",
   "files": [
-    "dist"
+    "dist",
+    "skills"
   ],
   "engines": {
     "node": "^22.23.4 || ^24.22.1 || >=26.12.1"
@@ -54,6 +55,7 @@
   "scripts": {
     "dev": "tsdown -w",
     "build": "tsdown",
+    "prepack": "node ../../skills/scripts/sync-package-skills.mjs @weapp-vite/react",
     "build:types": "tsdown --dts",
     "test": "vitest run",
     "test:types": "pnpm run test:types:check",

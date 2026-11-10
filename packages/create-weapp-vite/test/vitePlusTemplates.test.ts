@@ -1,5 +1,8 @@
 import type { PackageJson } from 'pkg-types'
 import os from 'node:os'
+import nativePath from 'node:path'
+import process from 'node:process'
+import { fileURLToPath } from 'node:url'
 import { fs } from '@weapp-core/shared/fs'
 import { recommended } from '@weapp-vite/oxfmt'
 import { formatDocument } from '@weapp-vite/oxfmt/languages'
@@ -7,14 +10,16 @@ import { formatWxml } from '@weapp-vite/oxfmt/wxml'
 // eslint-disable-next-line e18e/ban-dependencies -- 使用与发布准备一致的跨平台 CLI 启动方式。
 import { execa } from 'execa'
 import path from 'pathe'
+import stylelintPackage from 'stylelint/package.json' with { type: 'json' }
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { prepareVitePlusTemplates } from '../scripts/vitePlusTemplates'
+import { checkPreparedTemplateFormatting, prepareVitePlusTemplates } from '../scripts/vitePlusTemplates'
 import { __internal } from '../src/createProject'
 import { createProject, TemplateName } from '../src/index'
 import { TEMPLATE_DEFINITIONS } from '../src/templates'
 
 const roots: string[] = []
 const packageRoot = path.resolve(import.meta.dirname, '..')
+const stylelintCli = fileURLToPath(new URL(stylelintPackage.bin.stylelint, import.meta.resolve('stylelint/package.json')))
 
 async function temporaryRoot() {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-plus-generated-'))
@@ -24,6 +29,7 @@ async function temporaryRoot() {
 
 afterEach(async () => {
   vi.restoreAllMocks()
+  vi.unstubAllEnvs()
   await Promise.all(roots.splice(0).map(root => fs.remove(root)))
 })
 
@@ -57,18 +63,45 @@ describe('prepared Vite Plus templates', () => {
     expect(agents).toContain('@weapp-vite/oxlint')
     expect(agents).toContain('pnpm format:check')
     expect(agents).not.toContain('项目 ESLint 配置应接入')
-    const { stdout } = await execa('oxfmt', ['--config', config, '--check', '.'], {
-      cwd: root,
-      preferLocal: true,
-      localDir: packageRoot,
-    })
-    expect(stdout).toContain('All matched files use the correct format')
+    await checkPreparedTemplateFormatting(root, config)
     for (const file of await fs.readdir(root, { recursive: true })) {
       if (String(file).endsWith('.wxml')) {
         const content = await fs.readFile(path.join(root, String(file)), 'utf8')
         expect(await formatWxml(content, String(file), recommended)).toBe(content)
       }
     }
+  })
+
+  it('checks formatting with the owning CLI even when PATH provides another formatter', async () => {
+    const parent = await temporaryRoot()
+    const root = path.join(parent, 'app')
+    const shadowBin = nativePath.join(parent, 'shadow-bin')
+    await fs.ensureDir(root)
+    await fs.ensureDir(shadowBin)
+    await fs.writeFile(nativePath.join(shadowBin, 'oxfmt'), '#!/bin/sh\nexit 73\n', { mode: 0o755 })
+    await fs.writeFile(nativePath.join(shadowBin, 'oxfmt.cmd'), '@echo off\r\nexit /b 73\r\n')
+    const localBins: string[] = []
+    let directory = nativePath.resolve(packageRoot)
+    while (true) {
+      localBins.push(nativePath.join(directory, 'node_modules', '.bin'))
+      const parentDirectory = nativePath.dirname(directory)
+      if (parentDirectory === directory) {
+        break
+      }
+      directory = parentDirectory
+    }
+    vi.stubEnv('PATH', [shadowBin, ...localBins, process.env.PATH ?? ''].join(nativePath.delimiter))
+    const shadowed = await execa('oxfmt', [], { cwd: root, preferLocal: true, localDir: packageRoot, reject: false })
+    expect(shadowed.exitCode).toBe(73)
+    const config = path.join(parent, 'formatter.json')
+    await fs.writeJSON(config, recommended)
+    const sourceFile = path.join(root, 'example.ts')
+    await fs.writeFile(sourceFile, 'const value = 1\n')
+    await checkPreparedTemplateFormatting(root, config)
+    const unformatted = 'const value=1\n'
+    await fs.writeFile(sourceFile, unformatted)
+    await expect(checkPreparedTemplateFormatting(root, config)).rejects.toMatchObject({ exitCode: 1 })
+    expect(await fs.readFile(sourceFile, 'utf8')).toBe(unformatted)
   })
 
   it.each([TemplateName.wevu, TemplateName.react, TemplateName.plugin, TemplateName.lib])('retains Vue template checks for %s including mixed projects', async (template) => {
@@ -86,9 +119,9 @@ describe('prepared Vite Plus templates', () => {
     const config = path.join(preferredTemplateDir, 'stylelint.config.js')
     const source = '@import url("./shared.wxss");page{width:120rpx;--spacing:4rpx}/* #ifdef MP-WEIXIN */\n@media (max-width:10rpx){view:before{content:"x"}}/* #endif */'
     const formatted = await formatDocument(source, 'app.wxss')
-    const options = { preferLocal: true, localDir: packageRoot, cwd: packageRoot }
-    await expect(execa('stylelint', ['--config', config, '--stdin', '--stdin-filename', 'app.wxss'], { ...options, input: formatted })).resolves.toMatchObject({ exitCode: 0 })
-    const invalid = await execa('stylelint', ['--config', config, '--stdin', '--stdin-filename', 'app.wxss'], { ...options, input: 'page { color: #xyz; }', reject: false })
+    const options = { cwd: packageRoot }
+    await expect(execa(process.execPath, [stylelintCli, '--config', config, '--stdin', '--stdin-filename', 'app.wxss'], { ...options, input: formatted })).resolves.toMatchObject({ exitCode: 0 })
+    const invalid = await execa(process.execPath, [stylelintCli, '--config', config, '--stdin', '--stdin-filename', 'app.wxss'], { ...options, input: 'page { color: #xyz; }', reject: false })
     expect(invalid.exitCode).toBe(2)
     expect(`${invalid.stdout}\n${invalid.stderr}`).toContain('color-no-invalid-hex')
   })

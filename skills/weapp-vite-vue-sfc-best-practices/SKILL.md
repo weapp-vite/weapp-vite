@@ -9,6 +9,13 @@ description: 面向使用 weapp-vite 的小程序项目的 Vue SFC 实践手册�
 
 在小程序项目里用 Vue SFC 写出“编译可预测、运行时可验证、类型可跟上”的页面和组件。
 
+## 包与资料边界
+
+- 本 skill 随 `weapp-vite` 提供，负责 SFC 编译、宏、模板和类型支持；本地资料为 `node_modules/weapp-vite/dist/docs/vue-sfc.md`，本文 `references/` 相对本 skill。无需框架源码仓库或其他 skill。
+- 纯模板 SFC 可先检查编译与声明；使用 `<script setup>` 中的响应式、生命周期、事件、store、router、`useCssModule()` 等 Wevu runtime API 时，项目须显式安装 `wevu`，这些运行时能力不由 `weapp-vite` 包替代。
+- React 项目需要显式安装 `@weapp-vite/react` 及其 peer dependencies；Wot UI、uview-plus、原生 UI 库和 Web runtime 只在相应工作流中安装。其他 skill 仅在已安装时作为可选分流。
+- 验证先读消费项目的 `package.json`，使用其已有 typecheck、build 和相关测试 scripts；CLI 示例中的 `wv` 指本地 `weapp-vite`（可用 `pnpm exec wv`）。不要求框架包构建、仓库 E2E 或发布流程。
+
 ## 何时使用
 
 - 用户问 `.vue` 文件应该怎么写。
@@ -30,14 +37,15 @@ description: 面向使用 weapp-vite 的小程序项目的 Vue SFC 实践手册�
 
 ## 核心流程
 
-1. 先判定问题阶段：
-   - 编译期：宏、模板、`usingComponents`
-   - 运行期：事件、hooks、响应式
-   - 工具层：Volar、`.weapp-vite`、typed outputs
+1. 先确定只读诊断或实施范围，读取目标 SFC、同文件 JSON、组件注册、相关配置与项目 scripts；记录已安装 `weapp-vite`、实际使用的 runtime/组件库、Node、包管理器和构建工具版本。选定单一平台；需要运行观察时再记录实际 IDE、基础库与 renderer，缺失项不猜测。按问题阶段进入：
+   - 模板/JSON/宏：先确认 App/Page/Component 角色及现有写法，按 `references/macro-config-checklist.md`、`references/template-compat-matrix.md` 修改；纯模板不因将来可能用 `ref` 就安装 runtime。检查同文件配置生成的 JSON、目标模板与路由归属。
+   - 组件/插槽/多平台：带上真实 `usingComponents`、resolver 结果和目标配置，对照模板兼容规则；依赖未安装或目标能力未确认时停止对应接入。检查注册路径、slot 产物，再在该目标观察内容、事件与样式，不由其他平台外推。
+   - 类型/prepare/HMR：带上 `.weapp-vite`、Volar/TypeScript 版本及诊断，进入 `references/tooling-and-hmr-matrix.md`；检查 prepare 声明和已有 typecheck，JSON-only 与完整 SFC 更新分开观察，声明成功不代表页面更新。
+   - 响应式/生命周期/事件：先核对实际 `wevu` 依赖与同步 setup；缺 runtime 仍可依据源码和可读公开资料作静态诊断，注明 API 版本限制，只停止需要该依赖的执行与宿主验证。不要为只读诊断安装依赖，也不把编译器当作 runtime。
 2. 默认使用 `<script setup lang="ts">`。
    - 纯模板 SFC 允许没有 script block；`wv prepare` 必须按 SFC 模板扫描，不能把模板文本误交给 JSX parser。
    - Wevu JSX/TSX 与 SFC 内 JSX/TSX 归 Wevu compiler；项目级 `weapp.react` 启用后，独立 `.jsx/.tsx` 归 React owner。
-3. JSON 优先走宏：`defineAppJson`、`definePageJson`、`defineComponentJson`；页面元信息走 `definePageMeta`。
+3. 有脚本时 JSON 优先走宏：`defineAppJson`、`definePageJson`、`defineComponentJson`；页面元信息走 `definePageMeta`。已有纯模板 SFC 可保留同文件 `<json>`，不只为配置强加 runtime 或脚本。
 4. 套用模板兼容规则：
    - `v-model` 只能作用于可赋值左值
    - 不要假设 Web Vue 的所有模板特性都可用
@@ -53,7 +61,7 @@ description: 面向使用 weapp-vite 的小程序项目的 Vue SFC 实践手册�
    - 微信目标支持 scoped CSS、默认/命名 CSS Modules、同步 setup 中的 `useCssModule()` 与 CSS `v-bind()`；CSS vars 会合并到每个模板根节点已有 style
    - `:deep()` / `:global()` / `:slotted()` 只使用可映射到小程序选择器的形式；其他平台在对应 IDE/真机验证前按实验性处理
 5. 若 `typed-router.d.ts`、`typed-components.d.ts`、`components.d.ts` 漂移，先跑 `wv prepare`。
-6. 若项目有根 `AGENTS.md` 或本地 `dist/docs/vue-sfc.md`，SFC 写法要与其约束一致。
+6. 项目已有 `AGENTS.md` 时遵循它；版本相关 SFC 写法对照 `node_modules/weapp-vite/dist/docs/vue-sfc.md`，不把项目根 `dist/docs` 或框架仓库文件当作前提。
 7. 多平台 SFC 每次只验证一个 `-p <platform>` 目标；Web runtime 用于浏览器兼容联调，不替代目标小程序 IDE/真机。
 
 ## 工具链与热更新边界
@@ -69,7 +77,7 @@ description: 面向使用 weapp-vite 的小程序项目的 Vue SFC 实践手册�
 
 - 不要在一个 SFC 里混多套 JSON 宏。
 - 不要把小程序组件注册当成 Web Vue 组件注册。
-- 不要只配置 Wot UI 或 uview-plus resolver 而遗漏 `weapp.uniApp.include`，也不要把 npm 依赖自动加入转换范围。uview-plus 应调用 `mount$u()` 并同步 `$u`，不要走 Web 全局组件注册流程。
+- 不要只配置 Wot UI 或 uview-plus resolver 而遗漏 `weapp.uniApp.include`，也不要把 npm 依赖自动加入转换范围。使用这些库须显式安装对应依赖；uview-plus 应调用 `mount$u()` 并同步 `$u`，不要走 Web 全局组件注册流程。
 - 不要把 `t-*`、`van-*` 等 kebab-case 第三方原生组件的普通默认插槽误判为增强作用域插槽。
 - 不要忽略 `prepare` 和 `.weapp-vite` 产物。
 - 不要在修 SFC 语法时顺手做无关运行时重构。
@@ -77,19 +85,19 @@ description: 面向使用 weapp-vite 的小程序项目的 Vue SFC 实践手册�
 
 ## 输出
 
-应用本 skill 时，输出必须包含：
+只输出本次问题阶段、实际版本/平台、SFC 级改动或只读建议、相关模板限制与最小检查。先确认 scripts/工具存在，再给出适合项目包管理器的命令；没有测试 script 就列覆盖缺口，不编造测试命令。未涉及 runtime、组件库或 HMR 时不展开其接入。
 
-- 问题阶段诊断。
-- SFC 级改动建议。
-- 模板兼容注意点。
-- 最小验证命令。
+每项结论用短记录关联：`对象/版本 → 实际命令或动作 → 观察/产物 → 方法、结果、限制`；同一结论可并列记录多种方法，各自结果互不覆盖，建议与已执行分开。缺前提仅阻塞依赖它的操作/验证，继续可达的只读诊断：
+- 自动验证 `passed`：实际命令/断言通过，仅证明所检查的模板、JSON、类型或运行行为。
+- AI 评估 `passed`：列评估者、判据和材料，不称自动验证；只有实际隔离过才可称独立。
+- 人工确认 `passed`：确认须针对该结果及版本，不能用计划获批代替结果/示例获批。
+- 未验证 `not-run`：未运行或前提不足，写明原因；已执行失败按实际方法保留 `failed` 与证据。构建、声明和 callback 不单独证明实际显示，静态结构检查不证明证据真实或任务执行。
 
 ## 完成标记
 
-- 宏使用清晰且单一。
-- 模板没有踩不支持语法。
-- `usingComponents` 路径安全、来源明确。
-- `.weapp-vite` 支持文件和类型输出已同步。
+只判断本次涉及的宏、模板、注册路径与类型同步；未涉及项不适用，失败/未验证项不得写成完成。运行时内容、事件和样式需另有目标 IDE/真机观察，不因编译成功而一并通过。
+- 反馈保留期望/实际、复现前提、证据与限定范围的提议；确定性编译/类型错误优先进入工具或检查，语义/风格先作候选示例交人工审阅。一次偏好只留本次记录，确有复发及具体人工规则决定后才提议长期规则，不自动改源码/全局规则或上传业务数据。
+- Skill 永久修订只在获授权的作者检出目录进行，不编辑包管理器受管的安装副本（如 `node_modules` 内 Skill 或 `.agents/skills` 指向它的链接）；维护用例留在作者仓库，不随消费包提供，也不是使用前提。
 
 ## 参考资料
 

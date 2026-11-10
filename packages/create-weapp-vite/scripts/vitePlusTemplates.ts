@@ -1,11 +1,14 @@
 import type { PackageJson } from 'pkg-types'
 import { createHash } from 'node:crypto'
 import os from 'node:os'
+import process from 'node:process'
+import { fileURLToPath } from 'node:url'
 import { fs } from '@weapp-core/shared/fs'
 import { recommended } from '@weapp-vite/oxfmt'
 import { prepareProjectFormatting } from '@weapp-vite/oxfmt/project'
 // eslint-disable-next-line e18e/ban-dependencies -- 保持发布脚本的 Windows 命令解析与进程退出契约。
 import { execa } from 'execa'
+import oxfmtPackage from 'oxfmt/package.json' with { type: 'json' }
 import path from 'pathe'
 import { createAgentsGuidelines } from '../src/agents'
 import { __internal } from '../src/createProject'
@@ -21,6 +24,12 @@ import { publishPreparedTemplates, withPreparationLock } from './templatePrepara
 const packageRoot = path.resolve(import.meta.dirname, '..')
 const templatesRoot = path.join(packageRoot, 'templates')
 const destination = path.join(templatesRoot, 'vite-plus')
+const oxfmtCli = fileURLToPath(new URL(oxfmtPackage.bin.oxfmt, import.meta.resolve('oxfmt/package.json')))
+
+/** 直接执行所属依赖声明的 CLI，不让祖先工作树的 PATH 覆盖已锁定版本。 */
+export function checkPreparedTemplateFormatting(root: string, configFile: string) {
+  return execa(process.execPath, [oxfmtCli, '--config', configFile, '--check', '.'], { cwd: root })
+}
 
 async function inputSignature() {
   const hash = createHash('sha256')
@@ -96,7 +105,6 @@ export async function prepareVitePlusTemplates() {
         await writeJsonFile(path.join(root, 'package.json'), pkg)
         await __internal.rewriteProjectConfigAppId(root)
         await fs.writeFile(path.join(root, 'AGENTS.md'), createAgentsGuidelines(template.id, 'vite-plus'))
-        const options = { cwd: root, preferLocal: true, localDir: packageRoot }
         const candidates = await prepareProjectFormatting(root, ['.'], recommended, { defaultPlatform: 'weapp' })
         for (const candidate of candidates) {
           await fs.writeFile(candidate.file, candidate.formatted)
@@ -105,7 +113,7 @@ export async function prepareVitePlusTemplates() {
         if (checked.some(candidate => candidate.source !== candidate.formatted)) {
           throw new Error(`模板格式化不幂等：${template.id}`)
         }
-        await execa('oxfmt', ['--config', configFile, '--check', '.'], options)
+        await checkPreparedTemplateFormatting(root, configFile)
         manifest.templates[template.id] = await digestDirectory(root)
       }
       await fs.remove(configFile)

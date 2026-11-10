@@ -8,7 +8,11 @@
     "**/{README.md,CHANGELOG.md,LICENSE,LICENSE.md,tsconfig.json,vitest.config.*,vitest.setup.ts}"
   ],
   "paths": [
-    { "patterns": ["templates/**"], "packages": ["create-weapp-vite"] }
+    { "patterns": ["templates/**"], "packages": ["create-weapp-vite"] },
+    { "patterns": ["skills/weapp-vite-best-practices/**", "skills/weapp-vite-vue-sfc-best-practices/**"], "packages": ["weapp-vite"] },
+    { "patterns": ["skills/wevu-best-practices/**"], "packages": ["wevu"] },
+    { "patterns": ["skills/weapp-vite-react-best-practices/**"], "packages": ["@weapp-vite/react"] },
+    { "patterns": ["skills/distribution.json", "skills/scripts/distribution.mjs", "skills/scripts/sync-package-skills.mjs"], "packages": ["weapp-vite", "wevu", "@weapp-vite/react"] }
   ],
   "links": [
     { "from": ["weapp-vite", "wevu"], "to": ["create-weapp-vite"], "level": "same" },

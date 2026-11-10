@@ -176,13 +176,13 @@ VS Code 里装了 Vue 官方插件（Vue - Official / Volar）的话，Weapp-vit
 
 如果你准备用 AI 来协作开发，我自己的顺序一直很固定：先把 `skills` 装好，再起 `MCP`，最后按需喂 `llms` 语料。
 
-先装 skills：
+按本文 Wevu / Vue SFC 写法，手动安装这三个 skills：
 
 ```bash
-npx skills add sonofmagic/skills
+npx skills add sonofmagic/skills --skill weapp-vite-best-practices weapp-vite-vue-sfc-best-practices wevu-best-practices
 ```
 
-常用的几个：`weapp-vite-best-practices`、`docs-and-website-sync`、`weapp-vite-vue-sfc-best-practices`、`wevu-best-practices`。
+也可选择 pnpm 随依赖安装，配置与审批步骤见 [AI Skills 使用指南](/guide/skills)。
 
 然后启动 MCP：
 

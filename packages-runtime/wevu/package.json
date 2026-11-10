@@ -271,7 +271,8 @@
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.mts",
   "files": [
-    "dist"
+    "dist",
+    "skills"
   ],
   "repoctl": {
     "packageCheck": {
@@ -301,6 +302,7 @@
   "scripts": {
     "dev": "tsdown -w",
     "build": "tsdown",
+    "prepack": "node ../../skills/scripts/sync-package-skills.mjs wevu",
     "build:types": "tsdown --dts",
     "test": "vitest run",
     "test:dev": "vitest",

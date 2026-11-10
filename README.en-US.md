@@ -60,6 +60,16 @@ pnpm create weapp-vite
 
 You can also use `yarn create weapp-vite` or `npm create weapp-vite@latest`.
 
+### Project-local AI skills
+
+Install the skills your project needs manually. For a native project:
+
+```bash
+npx skills add sonofmagic/skills --skill weapp-vite-best-practices
+```
+
+You can also use pnpm's native skills support to install them with dependencies. See the [skills guide](https://vite.weapp.dev/guide/skills) for Wevu / Vue SFC and React commands, package-based installation, and approval settings.
+
 ### Work on this monorepo locally
 
 ```bash

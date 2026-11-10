@@ -1,20 +1,9 @@
 import type { AgentManifest } from './types'
 import path from 'node:path'
+import { TEMPLATE_DEFINITIONS } from '../../packages/create-weapp-vite/src/templates'
 
 const content = (name: string) => path.join('scripts/agents/content', name)
-const templateNames = [
-  'default',
-  'multi-platform',
-  'multi-platform-sfc',
-  'plugin',
-  'wevu',
-  'tailwindcss',
-  'vant',
-  'tdesign',
-  'wevu-tdesign',
-  'react',
-  'lib',
-]
+const templateNames = TEMPLATE_DEFINITIONS.map(template => template.id)
 
 export const agentManifest: AgentManifest = {
   version: 1,

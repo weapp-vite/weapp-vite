@@ -13,7 +13,7 @@ import { TemplateName } from './enums'
 import { installationCommand } from './installationCommand'
 import { displayRegistry, registryEnvironment, resolveRegistryOptions } from './npm'
 import { ensurePnpmBuildPolicy, findPnpmWorkspaceRoot } from './pnpmBuildPolicy'
-import { installRecommendedSkills, RECOMMENDED_SKILLS_INSTALL_COMMAND } from './skills'
+import { installRecommendedSkills, recommendedSkillsInstallation } from './skills'
 import { ensureManagedTypeScriptDevDependencies, normalizeTemplateDependencySpecs } from './templateDependencies'
 import { getTemplateDefinition, TEMPLATE_DIR_MAP } from './templates'
 import { assertPreparedTemplate } from './templates/prepared'
@@ -156,17 +156,18 @@ export async function createProject(
   await updateGitIgnore({ root: targetDir, write: true })
 
   if (options.installSkills) {
-    logger.info(`🤖 即将安装 AI skills：${RECOMMENDED_SKILLS_INSTALL_COMMAND}`)
+    const { command } = recommendedSkillsInstallation(templateName)
+    logger.info(`🤖 即将安装 AI skills：${command}`)
     logger.info('如果你更想手动执行，也可以在项目创建后自行运行上面的命令。')
     try {
-      await installRecommendedSkills(targetDir, {
+      await installRecommendedSkills(targetDir, templateName, {
         env: registryEnvironment(network),
       })
       logger.log('✨ 已安装推荐的 AI skills!')
     }
     catch {
       logger.warn('安装 AI skills 未完成（网络错误、取消或超时），项目已保留。')
-      logger.warn(`你可以稍后手动执行：${RECOMMENDED_SKILLS_INSTALL_COMMAND}`)
+      logger.warn(`你可以稍后手动执行：${command}`)
     }
   }
 

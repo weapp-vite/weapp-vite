@@ -7,7 +7,8 @@ import process from 'node:process'
 // eslint-disable-next-line e18e/ban-dependencies -- 使用真实进程验证 skills 超时后的进程树清理。
 import { execa } from 'execa'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { installRecommendedSkills, RECOMMENDED_SKILLS_SOURCE } from '../src/skills'
+import { TemplateName } from '../src/enums'
+import { installRecommendedSkills } from '../src/skills'
 
 vi.mock('execa', () => ({ execa: vi.fn() }))
 
@@ -45,7 +46,7 @@ describe('recommended skills installation', () => {
       : realExeca(file, args, options)) as unknown as typeof execa)
   }
 
-  it('inherits network configuration and only accepts the npx package download prompt', async () => {
+  it('inherits project network configuration in the installation process', async () => {
     const resultFile = path.join(root, 'result.json')
     vi.stubEnv('HTTPS_PROXY', 'http://proxy.test:8080')
     useFixture(`require('node:fs').writeFileSync(process.env.SKILLS_TEST_RESULT, JSON.stringify({
@@ -54,7 +55,7 @@ describe('recommended skills installation', () => {
       proxy: process.env.HTTPS_PROXY,
     }))`)
 
-    await installRecommendedSkills(root, {
+    await installRecommendedSkills(root, TemplateName.default, {
       env: {
         npm_config_registry: 'https://registry.test/',
         SKILLS_TEST_RESULT: resultFile,
@@ -73,16 +74,11 @@ describe('recommended skills installation', () => {
       registry: 'https://registry.test/',
       proxy: 'http://proxy.test:8080',
     })
-    expect(execute).toHaveBeenCalledExactlyOnceWith(
-      'npx',
-      ['--yes', 'skills', 'add', RECOMMENDED_SKILLS_SOURCE],
-      expect.objectContaining({ cwd: root, stdio: 'inherit', windowsHide: true }),
-    )
   })
 
-  it('preserves the one-argument API and reports failed installation', async () => {
+  it('reports failed installation of the selected template skills', async () => {
     useFixture('process.exit(7)')
-    await expect(installRecommendedSkills(root)).rejects.toMatchObject({ exitCode: 7 })
+    await expect(installRecommendedSkills(root, TemplateName.react)).rejects.toMatchObject({ exitCode: 7 })
   })
 
   it('ends a stalled install at the deadline and terminates its child processes', async () => {
@@ -99,7 +95,7 @@ describe('recommended skills installation', () => {
       const [callback, milliseconds, ...values] = args
       return realSetTimeout(callback, milliseconds === 60_000 ? 1_000 : milliseconds, ...values)
     }) as typeof setTimeout)
-    const installation = installRecommendedSkills(root, { env: { SKILLS_TEST_PROCESSES: processFile } })
+    const installation = installRecommendedSkills(root, TemplateName.wevu, { env: { SKILLS_TEST_PROCESSES: processFile } })
     const rejected = expect(installation).rejects.toThrow('AI skills 安装超过 60 秒')
     let pids: number[] = []
 

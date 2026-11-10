@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { generatedAgentGuidelines } from '../../packages/create-weapp-vite/src/generated/agents'
+import { recommendedSkillsInstallation } from '../../packages/create-weapp-vite/src/skills'
+import { TEMPLATE_DEFINITIONS } from '../../packages/create-weapp-vite/src/templates'
 import { agentManifest } from './manifest'
 import { AGENTS_GENERATED_MARKER, renderAgentDocument } from './render'
 import { AgentManifestError, resolveLayer, validateManifest } from './resolve'
@@ -20,6 +22,15 @@ describe('agent manifest', () => {
       expect(content).toContain('agents-generated: v1')
       expect(content).toContain('## Local Overlay')
     }
+  })
+
+  it.each(TEMPLATE_DEFINITIONS)('derives $id recommendations from the same metadata as installation', (template) => {
+    const sections = resolveLayer(agentManifest, `template:${template.id}`)
+    const content = sections.map(section => section.content).join('\n')
+    expect(content).toContain(recommendedSkillsInstallation(template.id).command)
+    const recommendedNames = [...content.matchAll(/`\$([^`]+)`/g)].map(match => match[1])
+    expect(recommendedNames).toEqual(template.skills)
+    expect(content).not.toContain('{{ TEMPLATE_SKILLS }}')
   })
 
   it('detects duplicate sections and inheritance cycles', () => {

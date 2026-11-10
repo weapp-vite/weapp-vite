@@ -201,7 +201,6 @@ describe('createProject', () => {
     expect(agents).toContain('weapp-vite screenshot')
     expect(agents).toContain('wv screenshot')
     expect(agents).toContain('node_modules/weapp-vite/dist/docs/')
-    expect(agents).toContain('npx skills add sonofmagic/skills')
     expect(agents).toContain('$weapp-vite-best-practices')
 
     const files = await scanFiles(root)
@@ -290,33 +289,33 @@ describe('createProject', () => {
     })
   })
 
-  it('installs recommended local skills when enabled', async () => {
+  it.each([TemplateName.default, TemplateName.wevu, TemplateName.react, TemplateName.multiPlatformSfc])('installs only the selected %s template skills when enabled', async (template) => {
     const root = await createTmpRoot('install-skills')
 
     vi.spyOn(npm, 'latestVersion').mockResolvedValue(null)
     const installSpy = vi.spyOn(skills, 'installRecommendedSkills').mockResolvedValue()
 
-    await createProject(root, TemplateName.default, {
+    await createProject(root, template, {
       installSkills: true,
     })
 
-    expect(installSpy).toHaveBeenCalledWith(root, { env: expect.objectContaining({ npm_config_registry: expect.any(String) }) })
-    expect(logger.info).toHaveBeenCalledWith(expect.stringContaining('npx --yes skills add sonofmagic/skills'))
-    expect(logger.log).toHaveBeenCalledWith('✨ 已安装推荐的 AI skills!')
+    const { command } = skills.recommendedSkillsInstallation(template)
+    expect(installSpy).toHaveBeenCalledWith(root, template, { env: expect.objectContaining({ npm_config_registry: expect.any(String) }) })
+    expect(logger.info).toHaveBeenCalledWith(`🤖 即将安装 AI skills：${command}`)
   })
 
-  it('warns and keeps manual command when local skills install fails', async () => {
+  it.each([TemplateName.default, TemplateName.wevu, TemplateName.react, TemplateName.multiPlatformSfc])('keeps the selected %s manual command when skills installation fails', async (template) => {
     const root = await createTmpRoot('install-skills-fail')
 
     vi.spyOn(npm, 'latestVersion').mockResolvedValue(null)
     vi.spyOn(skills, 'installRecommendedSkills').mockRejectedValue(new Error('boom'))
 
-    await createProject(root, TemplateName.default, {
+    await createProject(root, template, {
       installSkills: true,
     })
 
     expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('安装 AI skills 未完成'))
-    expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('npx --yes skills add sonofmagic/skills'))
+    expect(logger.warn).toHaveBeenCalledWith(`你可以稍后手动执行：${skills.recommendedSkillsInstallation(template).command}`)
     expect(logger.log).toHaveBeenCalledWith('✨ 创建模板成功!')
   })
 

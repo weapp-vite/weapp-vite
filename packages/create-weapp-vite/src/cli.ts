@@ -7,7 +7,7 @@ import logger from '@weapp-core/logger'
 import { fs } from '@weapp-core/shared/fs'
 import { validateDependencyVersionStrategy } from './dependencyVersions'
 import { createProject, TemplateName } from './index'
-import { RECOMMENDED_SKILLS_INSTALL_COMMAND } from './skills'
+import { recommendedSkillsInstallation } from './skills'
 import { TEMPLATE_DEFINITIONS } from './templates'
 import { validateToolchain } from './toolchain'
 
@@ -149,7 +149,7 @@ export async function run() {
   const installSkills = argInstallSkills ?? (isArgMode
     ? false
     : await confirm({
-        message: `是否安装推荐的 AI skills？将执行 \`${RECOMMENDED_SKILLS_INSTALL_COMMAND}\`，也可稍后手动执行`,
+        message: `是否安装推荐的 AI skills？将执行 \`${recommendedSkillsInstallation(templateName).command}\`，也可稍后手动执行`,
         default: false,
       }))
 

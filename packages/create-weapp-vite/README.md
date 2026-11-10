@@ -12,7 +12,7 @@
 - Vite+ 项目内置小程序 Oxlint 规则与 Oxfmt 格式预设
 - 默认不联网查询版本，使用随包依赖；可显式按用户 registry 查询兼容稳定版
 - 自动处理 `.gitignore` 写入
-- 可选安装推荐的 AI skills（`sonofmagic/skills`）
+- 可选安装当前模板所需的 AI skills（`sonofmagic/skills --skill ...`）
 - 生成带来源标记的项目级 `AGENTS.md`，并保留用户维护的 `AGENTS.local.md`
 
 ## 安装
@@ -39,13 +39,13 @@ npx create-weapp-vite
 pnpm create weapp-vite
 ```
 
-交互流程依次选择模板、工具链，再询问是否安装推荐的 AI skills；工具链默认 `wv`，AI skills 默认选择“否”。显式安装时执行：
+交互流程依次选择模板、工具链，再询问是否安装当前模板的 AI skills；工具链默认 `wv`，skills 默认跳过。也可在项目中手动安装，例如原生模板：
 
 ```bash
-npx --yes skills add sonofmagic/skills
+npx --yes skills add sonofmagic/skills --skill weapp-vite-best-practices
 ```
 
-如果你暂时不想安装，也可以先跳过，后面再手动执行上面的命令。
+也可选择 pnpm 随依赖安装。Wevu / SFC、React 的完整命令和配置见 [AI Skills 使用指南](https://vite.weapp.dev/guide/skills)。新建独立项目预设 `.agents/skills` 目录但不预授权；已有团队 workspace 的目录和权限保持不变。
 
 非交互式创建：
 

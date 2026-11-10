@@ -8,7 +8,7 @@ const hash = value => createHash('sha256').update(value).digest('hex')
 export const frameworkInputPolicy = {
   version: 'framework-tree-v2',
   algorithm: 'sha256-of-git-blob-sha1-and-explicit-json-projections-v1',
-  roots: ['@weapp-core/', 'packages/', 'packages-runtime/', 'packages-private/', 'apps/', 'templates/', 'e2e-apps/', 'test/fixture-projects/', 'mpcore/packages/', 'mpcore/demos/', 'extensions/', 'patches/', 'scripts/'],
+  roots: ['@weapp-core/', 'packages/', 'packages-runtime/', 'packages-private/', 'apps/', 'templates/', 'e2e-apps/', 'test/fixture-projects/', 'mpcore/packages/', 'mpcore/demos/', 'extensions/', 'patches/', 'scripts/', 'skills/'],
   rootFiles: ['package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', '.npmrc', 'turbo.json', 'vitest.coverage.ts'],
   rootPatterns: ['tsconfig*.json'],
   excludedDirectories: ['scripts/verification/', 'scripts/verificationBenchmark/', 'scripts/verificationE2E/', 'scripts/verificationTelemetry/', 'scripts/coverageShards/', 'scripts/consumerArtifacts/', 'scripts/turboCacheContract/'],

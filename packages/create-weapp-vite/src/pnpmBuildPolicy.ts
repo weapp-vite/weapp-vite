@@ -5,6 +5,11 @@ import { parse } from 'yaml'
 
 const WORKSPACE_CONFIG = `packages: []
 
+# 只选择项目本地链接目录；包级 skills 权限仍由用户通过 pnpm approve 审阅。
+skills:
+  dirs:
+    - .agents/skills
+
 # 仅允许模板依赖中需要的安装脚本，新增依赖仍需单独审批。
 allowBuilds:
   '@swc/core': true
@@ -49,7 +54,7 @@ export async function findPnpmWorkspaceRoot(root: string): Promise<string | unde
   }
 }
 
-/** 为独立新项目生成 pnpm 构建审批，原样保留已有团队配置。 */
+/** 为独立新项目生成 pnpm 构建审批和 skills 目录，原样保留已有团队配置。 */
 export async function ensurePnpmBuildPolicy(root: string) {
   if (await findPnpmWorkspaceRoot(root)) {
     return
