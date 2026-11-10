@@ -233,6 +233,8 @@ export function createDevProcessCleanup(options: DevProcessCleanupOptions) {
         // 同步 IPC 错误与晚到的控制回执错误同样不能跳过登记资源收尾。
         disconnected = true
         forcedShutdown = { gracefulTimeoutMs, requestError }
+        // 关闭请求可能已把 SIGINT 送入宿主，只是其异步收尾回执失败；先等待同一有界窗口，避免立即终止截断收尾产物。
+        await traceCleanupStage('dev-ipc-exit-after-error', () => waitForGracefulExit(options.settledExit, { ...stopOptions, gracefulTimeoutMs }), { timeoutMs: gracefulTimeoutMs })
       }
     }
     forgetExitedRoot()

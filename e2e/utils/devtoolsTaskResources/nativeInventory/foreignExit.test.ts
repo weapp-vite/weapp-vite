@@ -26,6 +26,21 @@ function exited(pid: number): DarwinProcessEntry {
   }
 }
 
+function exitedWithReadableIdentity(pid: number): DarwinProcessEntry {
+  const row = entry(pid)
+  row.pathBefore = row.pathAfter = { count: 0, errno: 3, executable: null }
+  row.task = { count: 0, errno: 3, identity: null, rssBytes: null }
+  row.gaps = ['image-before-unavailable', 'image-after-unavailable', 'rss-unavailable']
+  row.absolute = {
+    clockDomain: 'mach-absolute-ticks',
+    startedAtTicks: '1000',
+    endedAtTicks: '2000',
+    birthBefore: { result: 0, errno: 0, startedAtTicks: '1100', endedAtTicks: '1110', birthTicks: '500', exitTicks: '1050' },
+    birthAfter: { result: 0, errno: 0, startedAtTicks: '1200', endedAtTicks: '1210', birthTicks: '500', exitTicks: '1050' },
+  }
+  return row
+}
+
 function frames(...rows: DarwinProcessEntry[][]) {
   mocks.read.mockImplementation(async (phase: typeof phases[number]) => frame(phase, structuredClone(rows[phases.indexOf(phase)]!)))
 }
@@ -74,6 +89,12 @@ describe('anchor-proven foreign process exits during closure enumeration', () =>
     gone.before = gone.after = { result: -1, length: 648, errno: 3, identity: null }
     frames(baseline, baseline, [entry(11), gone], [entry(11), gone])
     expect(await sample()).toMatchObject({ installationRssBytes: { status: 'observed', value: 1000 }, identityChangedProcessCount: 0 })
+  })
+
+  it('accepts a stable readable identity with a double-read kernel exit time during closure', async () => {
+    const baseline = [entry(11), entry(22)]
+    frames(baseline, baseline, [entry(11), exitedWithReadableIdentity(22)], [entry(11)])
+    expect(await sample()).toMatchObject({ installationRssBytes: { status: 'observed', value: 1000 }, identityChangedProcessCount: 0, unclassifiedProcessCount: 0 })
   })
 
   it.each(['installation-image', 'descendant', 'unknown'] as const)('keeps an exiting %s blocking', async (relation) => {

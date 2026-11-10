@@ -1,5 +1,62 @@
 # @weapp-vite/ast
 
+## 7.9.0
+
+## 7.8.1
+
+### Patch Changes
+
+- chore(deps): 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@tailwindcss/vite, tailwindcss, tsdown, vue-eslint-parser。命名 catalog 变更键：tailwind4(tailwindcss)。
+
+- chore(deps): 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@ai-sdk/anthropic, @ai-sdk/openai, @ai-sdk/openai-compatible, @tanstack/vue-query, ai, sass。命名 catalog 变更键：无。
+
+- chore(deps): 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@weapp-tailwindcss/engine, miniprogram-api-typings, sass-embedded, weapp-tailwindcss。命名 catalog 变更键：latest(miniprogram-api-typings)；weapp-tailwindcss-fixed(weapp-tailwindcss)。
+
+  同步脚手架默认依赖和微信 API 清单，支持 typings 5.3.1 新增的六个接口。
+  wevu 同步宿主实例查找的可空返回值、glass-easel 静态组件选项及生命周期错误参数类型，并补充公开类型契约验证。
+
+- chore(deps): 升级编译、运行时与开发工具依赖并同步脚手架版本。
+
+  本轮接受 58 个 npm 直接依赖升级目标，同步包内版本声明、默认 catalog、tailwind4 catalog 与脚手架模板，更新 Babel、Vue、Tailwind CSS、Oxc、AI SDK、Devframes、Vite+、Vitest 等编译、运行时和开发工具依赖。Rust Oxc 依赖与 JavaScript parser/types 同步到 0.157，保留原有版本前缀及公开 peer 兼容下限。
+
+  将多包共用的依赖声明归并到 workspace catalog，并同步脚手架内置映射；精确版本、`^`、`~` 的原有范围和锁定结果保持一致，减少后续升级时的重复维护。
+
+  Vite+ 更新到 1.5.0，内置 Vite 8.3.5 与 Vitest 5.1.0。独立 Vite 8.3.6 未通过优化器关闭生命周期诊断，本轮保留 8.3.5；TypeScript 及其余兼容保留项继续沿用原基线。
+
+  修复内联 WXS/SJS 在 Vue SFC、Web 转换和 HMR 解析中的原始脚本保护，保留行注释、运算符与标签字面量，避免组件扫描误读脚本正文。复用统一脚本边界解析，不增加公共 API。
+
+  补齐 VS Code 扩展构建中的 WXML 源码解析依赖，缺失的模块会阻断构建，避免生成不完整的扩展包。
+
+- chore(deps): 自动补充依赖升级发布记录。
+  涉及包：
+  - @wevu/web-apis：dependencies.web-streams-polyfill
+  - create-weapp-vite：devDependencies.oxfmt
+  - weapp-vite：dependencies.rolldown-plugin-dts
+
+- chore(deps): 自动补充依赖升级发布记录。
+  涉及包：
+  - @weapp-agent/cli：dependencies.commander
+  - weapp-vite：dependencies.@volar/language-service
+  - create-weapp-vite：基于 weapp-vite / wevu 的依赖升级联动更新脚手架模板
+
+- fix(compiler): 统一 uni-app 条件编译在普通转换、组件元数据和开发资产刷新的输入，按声明的块类型处理外部 SFC 模板、脚本和样式，避免被平台裁剪的组件残留引用导致发布产物缺件。补充 Vue 资产阶段和代码重写的 HMR 观察数据，复用会话内的纯内容分析，减少未变化组件的重复工作。
+
+  区分组件导入分析的成功空结果与解析失败，并为 JSON 宏提供明确的静态分析标记；开发构建仅复用已证明静态的配置事实，动态配置继续逐轮求值。
+
+  原生组件资产按当前逻辑入口图发布，避免普通脚本导入残留孤立模板和 JSON；组件路径映射与构建代次的入口发射分开管理，静态与动态入口共享本代去重账本，完整重扫后仍保留所需的共享组件产物。无脚本布局依据当前父入口、布局依赖和实际 JS 资产确认归属，保留模板、JSON 和样式的完整发布。
+
+  完整入口扫描与局部扫描分别记录本代发射统计，避免异步新事件污染上一代的观察值。uni-app 的纯兼容转换结果使用会话内有界缓存，实际源码仍逐代读取；本地组件候选路径的存在性检查在单代合并，下一代、注册变化和失败继续重新观察，不跳过与内置标签同名的本地组件。
+
+  普通脚本的归属检查与同步输入通知共享本次真实路径解析，发布阶段沿用通知捕获的输入身份，避免冻结输入因符号链接随后改指而错配。路径事实不跨操作或异步边界保留。
+
+  外部组件的输出路径规划在同一同步作用域内复用成功的目标、父目录及配置根解析，保留缺失路径的重新探测、相对路径 override 和作用域结束后的符号链接、配置更新。
+
+- Updated dependencies:
+  - @weapp-core/shared@3.4.2
+
 ## 7.8.0
 
 ### Patch Changes

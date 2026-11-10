@@ -1,7 +1,8 @@
 import type { Plugin } from 'vite'
 import type { RequestClientsRealDevSetupResult } from '../utils/requestClientsRealDevPlugin'
-import { execFile } from 'node:child_process'
+import { execFile, spawn } from 'node:child_process'
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
@@ -13,6 +14,8 @@ import { requestClientsRealDevPlugin } from '../utils/requestClientsRealDevPlugi
 import { startRequestClientsRealServer } from '../utils/requestClientsRealServer'
 
 const utilityPath = path.resolve(import.meta.dirname, '../utils/requestClientsRealDevPlugin.ts')
+const cliEntry = path.resolve(import.meta.dirname, '../../packages/weapp-vite/dist/cli.mjs')
+const tsxLoader = createRequire(import.meta.url).resolve('tsx')
 const originalConfig = JSON.stringify({ condition: { miniprogram: { list: [{ pathName: 'pages/index/index', query: 'fixture=original' }] } } })
 const originalModule = 'export const REQUEST_CLIENTS_REAL_DEV_BASE_URL = ""\n'
 const cleanups: Array<() => Promise<void>> = []
@@ -47,6 +50,54 @@ async function availableServerPort() {
 async function requestCount(baseUrl: string) {
   const response = await fetch(`${baseUrl}/fetch`, { method: 'POST', body: '{}' })
   return (await response.json() as { requestCount: number }).requestCount
+}
+
+async function waitForOutput(child: ReturnType<typeof spawn>, matcher: string, output: { value: string }, timeoutMs = 60_000) {
+  if (output.value.includes(matcher)) {
+    return
+  }
+
+  await new Promise<void>((resolve, reject) => {
+    let timer: ReturnType<typeof setTimeout> | undefined
+    let cleanup = () => {}
+    const onData = (chunk: unknown) => {
+      output.value += String(chunk)
+      if (output.value.includes(matcher)) {
+        cleanup()
+        resolve()
+      }
+    }
+    const onExit = (code: number | null, signal: NodeJS.Signals | null) => {
+      cleanup()
+      reject(new Error(`CLI exited before ${matcher}: code=${code}, signal=${signal}\n${output.value}`))
+    }
+    cleanup = () => {
+      clearTimeout(timer)
+      child.stdout?.off('data', onData)
+      child.stderr?.off('data', onData)
+      child.off('exit', onExit)
+    }
+    timer = setTimeout(() => {
+      cleanup()
+      reject(new Error(`Timed out waiting for child output: ${matcher}\n${output.value}`))
+    }, timeoutMs)
+    child.stdout?.on('data', onData)
+    child.stderr?.on('data', onData)
+    child.once('exit', onExit)
+  })
+}
+
+async function waitForExit(child: ReturnType<typeof spawn>, output: { value: string }, timeoutMs = 30_000) {
+  return await new Promise<{ code: number | null, signal: NodeJS.Signals | null }>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      child.kill('SIGKILL')
+      reject(new Error(`Timed out waiting for CLI exit.\n${output.value}`))
+    }, timeoutMs)
+    child.once('exit', (code, signal) => {
+      clearTimeout(timer)
+      resolve({ code, signal })
+    })
+  })
 }
 
 describe('request client dev server ownership across config runners', () => {
@@ -171,5 +222,70 @@ describe('request client dev server ownership across config runners', () => {
     const retry = await requestClientsRealDevPlugin({ projectRoot, serverPort })
     cleanups.push(retry.stop)
     expect(await requestCount(retry.baseUrl)).toBe(1)
+  })
+
+  it.each(['SIGTERM', 'disconnect'] as const)('lets the built CLI finish %s cleanup without forcing a zero exit', async (request) => {
+    const projectRoot = await createProject()
+    const serverPort = await availableServerPort()
+    await mkdir(path.join(projectRoot, 'src/pages/index'), { recursive: true })
+    await writeFile(path.join(projectRoot, 'package.json'), JSON.stringify({ name: 'request-clients-real-signal', private: true, type: 'module' }))
+    await writeFile(path.join(projectRoot, 'project.config.json'), JSON.stringify({
+      appid: 'wxb3d842a4a7e3440d',
+      compileType: 'miniprogram',
+      miniprogramRoot: 'dist/',
+      srcMiniprogramRoot: 'src/',
+    }))
+    await writeFile(path.join(projectRoot, 'src/app.js'), 'App({})')
+    await writeFile(path.join(projectRoot, 'src/app.json'), JSON.stringify({ pages: ['pages/index/index'] }))
+    await writeFile(path.join(projectRoot, 'src/pages/index/index.js'), 'Page({})')
+    await writeFile(path.join(projectRoot, 'src/pages/index/index.json'), '{}')
+    await writeFile(path.join(projectRoot, 'src/pages/index/index.wxml'), '<view>signal</view>')
+    await writeFile(path.join(projectRoot, 'vite.config.mjs'), [
+      'import process from \'node:process\'',
+      `import { requestClientsRealDevPlugin } from ${JSON.stringify(pathToFileURL(utilityPath).href)}`,
+      'if (process.platform === \'win32\') {',
+      '  process.on(\'message\', message => { if (message === \'SIGTERM\') process.emit(\'SIGTERM\') })',
+      '}',
+      `const runtime = await requestClientsRealDevPlugin(${JSON.stringify({ projectRoot, serverPort })})`,
+      'export default {',
+      `  weapp: { srcRoot: 'src', autoRoutes: false, vue: { enable: false }, npm: { enable: false }, mcp: false },`,
+      '  plugins: [runtime.plugin],',
+      '}',
+    ].join('\n'))
+
+    const output = { value: '' }
+    const child = spawn(process.execPath, ['--import', tsxLoader, cliEntry, 'dev', projectRoot, '--no-mcp', '--non-interactive'], {
+      cwd: projectRoot,
+      env: { ...process.env, NODE_ENV: 'development', CONSOLA_LEVEL: '3' },
+      stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
+    })
+    cleanups.push(async () => {
+      if (child.exitCode === null && child.signalCode === null) {
+        child.kill('SIGKILL')
+      }
+      await expectOriginalFiles(projectRoot)
+    })
+
+    try {
+      await waitForOutput(child, '小程序初次构建完成', output)
+      if (request === 'disconnect') {
+        child.disconnect()
+      }
+      else if (process.platform === 'win32') {
+        child.send(request)
+      }
+      else {
+        child.kill(request)
+      }
+      await expect(await waitForExit(child, output)).toEqual({ code: request === 'SIGTERM' ? 143 : 0, signal: null })
+      await expectOriginalFiles(projectRoot)
+      const restarted = await startRequestClientsRealServer({ port: serverPort })
+      await restarted.stop()
+    }
+    finally {
+      if (child.exitCode === null && child.signalCode === null) {
+        child.kill('SIGKILL')
+      }
+    }
   })
 })

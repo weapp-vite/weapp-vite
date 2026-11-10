@@ -1,7 +1,7 @@
 {
   "name": "@weapp-vite/oxlint",
   "type": "module",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "Oxlint presets and mini-program compatibility rules for weapp-vite",
   "license": "MIT",
   "homepage": "https://vite.weapp.dev/packages/oxlint",

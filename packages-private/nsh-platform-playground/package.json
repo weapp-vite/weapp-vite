@@ -1,0 +1,20 @@
+{
+  "name": "@weapp-vite/nsh-platform-playground",
+  "type": "module",
+  "version": "0.0.0",
+  "private": true,
+  "description": "A private Vite plugin playground for the NSH Mini Program runtime",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite",
+    "lint": "eslint . --ignore-pattern \"**/fixtures/**\" --ignore-pattern \"**/node_modules/**\" --ignore-pattern \"**/dist/**\"",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:tilde"
+  }
+}

@@ -23,6 +23,7 @@ import { createReactPlugin, isReactEnabled } from './react'
 import { createTailwindcssPlugin } from './tailwindcss'
 import { uniAppCompatibility } from './uniApp'
 import { vue } from './vue'
+import { createWasmPlugin, resolveWasmScope } from './wasm'
 import { wevu } from './wevu'
 import { createWorkerOutputPlugin } from './workerOutput'
 import { workers } from './workers'
@@ -93,6 +94,7 @@ export function vitePluginWeapp(
   const runtimeProvider = resolveRuntimeProvider('miniprogram', vueRuntimeEnabled ? 'vue' : 'native')
   const groups: Plugin[][] = [
     [createContextPlugin(ctx), createPackageImportsQueryPlugin(), createSelectedRuntimeProviderPlugin(runtimeProvider, ctx.configService.isDev)],
+    [createWasmPlugin(ctx, resolveWasmScope(ctx, subPackageMeta?.subPackage.independent ? subPackageMeta.subPackage.root : undefined))],
     preflight(ctx),
     uniAppCompatibility(ctx),
     createReactPlugin(ctx),
@@ -146,7 +148,7 @@ export function vitePluginWeapp(
 }
 
 export function vitePluginWeappWorkers(ctx: CompilerContext): Plugin<WeappVitePluginApi>[] {
-  const groups = [[createContextPlugin(ctx), createPackageImportsQueryPlugin()], preflight(ctx), workers(ctx)]
+  const groups = [[createContextPlugin(ctx), createPackageImportsQueryPlugin(), createWasmPlugin(ctx, resolveWasmScope(ctx, undefined, true))], preflight(ctx), workers(ctx)]
   const assembled = attachRuntimePlugins(ctx, flatten(groups))
   return markInternalPlugins(applyInspect(ctx, assembled))
 }

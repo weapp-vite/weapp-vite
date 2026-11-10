@@ -156,6 +156,11 @@ jobs:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
         run: bash .github/scripts/release-stage.sh plan
 
+      - name: Release preflight
+        id: release-preflight
+        if: ${{ steps.release-plan.outputs.run == 'true' }}
+        run: pnpm check:weapp-core-constants-changeset --release
+
       - name: Release verify
         id: release-verify
         if: ${{ steps.release-plan.outputs.run == 'true' }}

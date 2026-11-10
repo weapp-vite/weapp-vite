@@ -1,7 +1,9 @@
 /* eslint-disable no-template-curly-in-string -- fixture 需要保留 GitHub Actions 表达式字面量。 */
+import { rm, writeFile } from 'node:fs/promises'
+import path from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { localFixture } from './fixtures.mjs'
-import { checkLocalAdmission } from './local.mjs'
+import { localFixture, writeLocalFixture } from './fixtures.mjs'
+import { checkLocalAdmission, readLocalAdmission } from './local.mjs'
 import { exitCode } from './report.mjs'
 
 function failures(change) {
@@ -17,6 +19,19 @@ describe('offline PR admission contract', () => {
     const results = checkLocalAdmission(localFixture())
     expect(results.length).toBeGreaterThan(50)
     expect(results.filter(row => row.status !== 'pass')).toEqual([])
+  })
+
+  it('validates merge protection after reading the base admission policy', async () => {
+    const root = await writeLocalFixture()
+    try {
+      const { policy } = localFixture()
+      delete policy.mergeProtection
+      await writeFile(path.join(root, '.github', 'pr-admission.json'), JSON.stringify(policy))
+      await expect(readLocalAdmission(root)).rejects.toBeInstanceOf(TypeError)
+    }
+    finally {
+      await rm(root, { recursive: true, force: true })
+    }
   })
 
   it.each(['pull_request', ['pull_request'], { pull_request: null }])('detects another PR entry using on: %j', (on) => {
@@ -141,6 +156,175 @@ describe('offline PR admission contract', () => {
     expect(failures(({ workflows }) => {
       workflows['ci-pr.yml'].jobs[job].if = '!cancelled()'
     })).toContainEqual(expect.objectContaining({ name: `${job} 不绕过跳过或取消的依赖` }))
+  })
+
+  it('requires the exact terminal verdict node rather than another named always job', () => {
+    expect(failures(({ workflows }) => {
+      delete workflows['ci-pr.yml'].jobs.verdict
+    })).toContainEqual(expect.objectContaining({ name: '单一审批后的任务清单' }))
+    expect(failures(({ workflows }) => {
+      const jobs = workflows['ci-pr.yml'].jobs
+      jobs['alternate-verdict'] = jobs.verdict
+      delete jobs.verdict
+    })).toEqual(expect.arrayContaining([
+      expect.objectContaining({ name: '单一审批后的任务清单' }),
+      expect.objectContaining({ name: 'alternate-verdict 不绕过跳过或取消的依赖' }),
+    ]))
+  })
+
+  it('requires every frozen dependency exactly once on the terminal verdict', () => {
+    for (const name of ['approval', 'plan', ...Object.keys(localFixture().profiles), 'documentation']) {
+      expect(failures(({ workflows }) => {
+        const job = workflows['ci-pr.yml'].jobs.verdict
+        job.needs = job.needs.filter(dependency => dependency !== name)
+      })).toContainEqual(expect.objectContaining({ name: 'verdict 等待全部冻结检查' }))
+    }
+    for (const extra of ['approval', 'unknown', 'ci']) {
+      expect(failures(({ workflows }) => {
+        workflows['ci-pr.yml'].jobs.verdict.needs.push(extra)
+      })).toContainEqual(expect.objectContaining({ name: 'verdict 等待全部冻结检查' }))
+    }
+    expect(failures(({ workflows }) => {
+      delete workflows['ci-pr.yml'].jobs.verdict.needs
+    })).toContainEqual(expect.objectContaining({ name: 'verdict 等待全部冻结检查' }))
+  })
+
+  it.each([
+    undefined,
+    'always()',
+    'always() && !cancelled()',
+    'always() && needs.plan.result == \'success\'',
+    '!cancelled() && needs.plan.result == \'success\'',
+    'always() && !cancelled() && needs.plan.result != \'failure\'',
+    'always() && !cancelled() && (needs.plan.result == \'success\' || true)',
+    'always() && !cancelled() && needs.plan.result == \'success\'',
+    'success()',
+  ])('rejects a verdict condition that skips failed results or runs for a closing event: %s', (condition) => {
+    expect(failures(({ workflows }) => {
+      workflows['ci-pr.yml'].jobs.verdict.if = condition
+    })).toContainEqual(expect.objectContaining({ name: 'verdict 在所有准入终态运行且跳过关闭事件' }))
+  })
+
+  it.each(['approval', 'plan', 'ci', 'documentation'])('does not extend the verdict status-function exception to %s', (name) => {
+    expect(failures(({ workflows }) => {
+      const jobs = workflows['ci-pr.yml'].jobs
+      jobs[name].if = jobs.verdict.if
+    })).toContainEqual(expect.objectContaining({ name: `${name} 不绕过跳过或取消的依赖` }))
+  })
+
+  it.each([
+    ['name', 'verdict 绑定唯一汇总检查'],
+    ['permissions', 'verdict 保持静态只读任务'],
+    ['permission-inheritance', 'verdict 保持静态只读任务'],
+    ['checkout', 'verdict 仅执行静态裁决脚本'],
+    ['credentials', 'verdict 仅执行静态裁决脚本'],
+    ['script', 'verdict 仅执行静态裁决脚本'],
+    ['context', 'verdict 仅执行静态裁决脚本'],
+    ['results', 'verdict 仅执行静态裁决脚本'],
+    ['skip-step', 'verdict 仅执行静态裁决脚本'],
+    ['continue-step', 'verdict 仅执行静态裁决脚本'],
+    ['extra-step', 'verdict 仅执行静态裁决脚本'],
+    ['checkout-unconditional', 'verdict 仅执行静态裁决脚本'],
+    ['terminal-skip', 'verdict 仅执行静态裁决脚本'],
+    ['terminal-cancel', 'verdict 仅执行静态裁决脚本'],
+    ['terminal-result', 'verdict 仅执行静态裁决脚本'],
+    ['terminal-status', 'verdict 仅执行静态裁决脚本'],
+    ['terminal-swallow', 'verdict 仅执行静态裁决脚本'],
+    ['terminal-env-status', 'verdict 仅执行静态裁决脚本'],
+    ['cancel-status', 'verdict 仅执行静态裁决脚本'],
+    ['cancel-swallow', 'verdict 仅执行静态裁决脚本'],
+    ['cancel-step-missing', 'verdict 仅执行静态裁决脚本'],
+    ['continue-job', 'verdict 不接受额外执行配置'],
+    ['alternate-workflow', 'verdict 不接受额外执行配置'],
+    ['environment', 'verdict 不接受额外执行配置'],
+  ])('rejects weakened terminal verdict %s boundaries', (field, expected) => {
+    expect(failures(({ workflows }) => {
+      const job = workflows['ci-pr.yml'].jobs.verdict
+      const checkout = job.steps[0]
+      const verify = job.steps.find(step => step.id === 'snapshot')
+      const terminal = job.steps.find(step => step.name === 'Require successful terminal result')
+      const cancellation = job.steps.at(-1)
+      if (field === 'name') {
+        job.name = 'Other snapshot check'
+      }
+      if (field === 'permissions') {
+        job.permissions = { contents: 'write' }
+      }
+      if (field === 'permission-inheritance') {
+        delete job.permissions
+      }
+      if (field === 'checkout') {
+        checkout.with.ref = '${{ fromJSON(needs.plan.outputs.pr_context).checkoutSha }}'
+      }
+      if (field === 'credentials') {
+        checkout.with['persist-credentials'] = true
+      }
+      if (field === 'script') {
+        verify.run = 'node .github/scripts/native-pr-context.mjs'
+      }
+      if (field === 'context') {
+        verify.env.PR_FROZEN_CONTEXT = '{}'
+      }
+      if (field === 'results') {
+        verify.env.PR_NEEDS_JSON = '{"ci":{"result":"success"}}'
+      }
+      if (field === 'skip-step') {
+        verify.if = 'false'
+      }
+      if (field === 'continue-step') {
+        verify['continue-on-error'] = true
+      }
+      if (field === 'extra-step') {
+        job.steps.push({ run: 'echo bypass' })
+      }
+      if (field === 'checkout-unconditional') {
+        delete checkout.if
+      }
+      if (field === 'terminal-skip') {
+        terminal.if = 'false'
+      }
+      if (field === 'terminal-cancel') {
+        cancellation.if = 'false'
+      }
+      if (field === 'terminal-result') {
+        terminal.env.PR_VERDICT_RESULT = 'success'
+      }
+      if (field === 'terminal-status') {
+        terminal.run = 'exit 0'
+      }
+      if (field === 'terminal-swallow') {
+        terminal['continue-on-error'] = true
+      }
+      if (field === 'terminal-env-status') {
+        terminal.env.PR_CANCELLED = '${{ cancelled() }}'
+      }
+      if (field === 'cancel-status') {
+        cancellation.run = 'exit 0'
+      }
+      if (field === 'cancel-swallow') {
+        cancellation['continue-on-error'] = true
+      }
+      if (field === 'cancel-step-missing') {
+        job.steps.pop()
+      }
+      if (field === 'continue-job') {
+        job['continue-on-error'] = true
+      }
+      if (field === 'alternate-workflow') {
+        job.uses = './.github/workflows/validate-ci.yml'
+      }
+      if (field === 'environment') {
+        job.environment = 'another-approval'
+      }
+    })).toContainEqual(expect.objectContaining({ name: expected }))
+  })
+
+  it('normalizes harmless verdict condition wrappers and dependency ordering', () => {
+    const state = localFixture()
+    const job = state.workflows['ci-pr.yml'].jobs.verdict
+    job.if = `\${{ ${job.if.slice(3, -2).replaceAll(' && ', '\n && ')} }}`
+    job.needs.reverse()
+    expect(exitCode(checkLocalAdmission(state))).toBe(0)
   })
 
   it.each([

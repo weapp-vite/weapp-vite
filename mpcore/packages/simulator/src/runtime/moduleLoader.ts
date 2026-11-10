@@ -116,6 +116,9 @@ export function createModuleLoader(
   const workers = createWorkerHost({
     root: options.miniprogramRootPath,
     read: file => options.artifactSource.readText(file),
+    globals: {
+      WXWebAssembly: createPackageWebAssembly(file => options.artifactSource.readBinary?.(path.join(options.miniprogramRootPath, file))),
+    },
     console: options.kernel.diagnostics.createConsole(console, options.onConsole),
     createExecutor(globals) {
       const realm = vm.createContext(globals)

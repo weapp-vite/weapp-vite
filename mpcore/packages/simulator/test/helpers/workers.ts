@@ -1,4 +1,6 @@
-export const workerFiles: Array<[string, string]> = [
+import { addWasmBytes } from './packageWasmFiles'
+
+export const workerFiles: Array<[string, string | ArrayBuffer]> = [
   ['project.config.json', JSON.stringify({ miniprogramRoot: './' })],
   ['app.json', JSON.stringify({ pages: ['pages/index'], workers: { path: 'workers', isSubpackage: true } })],
   ['app.js', 'globalThis.workerScope = \"main\"; App({})'],
@@ -10,6 +12,14 @@ export const workerFiles: Array<[string, string]> = [
         this.worker.onMessage(value => this.setData({ message: value.message, count: value.count, mainScope: globalThis.workerScope, workerScope: value.scope }));
       }});
     },
+    runWasm() {
+      return new Promise((resolve, reject) => {
+        const worker = wx.createWorker('workers/wasm.js');
+        worker.onMessage(value => { worker.terminate(); resolve(value); });
+        worker.onError(reject);
+        worker.postMessage('run');
+      });
+    },
     send() { const value = { message: 'echo' }; this.worker.postMessage(value); value.message = 'mutated'; },
     onUnload() { this.worker?.terminate(); },
   })`],
@@ -20,4 +30,9 @@ export const workerFiles: Array<[string, string]> = [
     worker.onMessage(value => worker.postMessage({ message: value.message, count: ++count, scope: globalThis.workerScope }));
     worker.postMessage({ message: hello, count, scope: globalThis.workerScope });`],
   ['workers/shared.js', 'exports.hello = "worker hello";'],
+  ['assets/add.wasm', addWasmBytes.slice().buffer],
+  ['workers/wasm.js', `worker.onMessage(async () => {
+    const { instance } = await WXWebAssembly.instantiate('/assets/add.wasm', {});
+    worker.postMessage({ value: instance.exports.add(20, 22) });
+  });`],
 ]

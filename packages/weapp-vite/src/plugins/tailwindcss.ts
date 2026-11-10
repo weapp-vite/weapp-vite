@@ -771,7 +771,9 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
       checkRuntimeRequirements(resolved, (message) => {
         if (!nodeRuntimeWarningReported) {
           nodeRuntimeWarningReported = true
-          this.warn(message)
+          // Rollup always supplies `warn`; optional invocation keeps direct hook
+          // fixtures and lightweight plugin consumers from failing on diagnostics.
+          this.warn?.(message)
         }
       })
       if (ctx.configService.isDev) {

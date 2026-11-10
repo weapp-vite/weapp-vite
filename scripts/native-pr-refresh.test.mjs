@@ -50,8 +50,8 @@ function fixture() {
     if (endpoint === `/git/commits/${merge}`) {
       return { sha: merge, parents: state.parents }
     }
-    if (endpoint.startsWith('/pulls/42/files?')) {
-      return structuredClone(state.files)
+    if (endpoint === `/compare/${base}...${head}?per_page=100`) {
+      return { base_commit: { sha: base }, files: structuredClone(state.files) }
     }
     if (endpoint === `/contents/.github/verification-workload.json?ref=${merge}`) {
       const bytes = Buffer.from(JSON.stringify({ schemaVersion: 1, draft: false, id: 'refresh-test', pullRequests: [99], baseBranch: 'main', profiles: ['ci'] }))
@@ -139,7 +139,7 @@ describe('protected native refresh admission', () => {
     const { state, get, options } = fixture()
     const moving = async (endpoint) => {
       const response = await get(endpoint)
-      if (endpoint.includes('/files?')) {
+      if (endpoint.startsWith('/compare/')) {
         if (key === 'base') {
           state.base = other
         }

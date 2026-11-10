@@ -7,6 +7,7 @@ import { assertWechatDevtoolsHost, resolveWechatDevtoolsTarget } from '../devtoo
 import { i18nText } from '../i18n'
 import logger from '../logger'
 import { execute } from '../utils'
+import { assertDevtoolsAccountStatePreserved } from './accountStateGuard'
 import { runWithSuspendedSharedInput } from './inputCoordinator'
 import {
   createWechatIdeLoginRequiredExitError,
@@ -165,5 +166,6 @@ async function executeWechatCliWithRetry(cliPath: string, argv: string[], option
 
 /** 原生 CLI 可能启动或改变共享宿主，完整命令与有限重试共用机器租约。 */
 export async function runWechatCliWithRetry(cliPath: string, argv: string[], options: RunWechatCliWithRetryOptions = {}) {
+  assertDevtoolsAccountStatePreserved(argv)
   return await withMachineE2ELease(() => executeWechatCliWithRetry(cliPath, argv, options))
 }

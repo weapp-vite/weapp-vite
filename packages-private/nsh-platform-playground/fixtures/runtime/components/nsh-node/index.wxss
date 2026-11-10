@@ -1,0 +1,41 @@
+/* Every view sits at the frame NSH laid it out at, in its parent. */
+.n {
+  position: absolute;
+  box-sizing: border-box;
+}
+
+.content {
+  position: relative;
+}
+
+/* Lines are placed where NSH measured them: the render layer never wraps. */
+.line {
+  position: absolute;
+  white-space: pre;
+}
+
+/* An input's field sits in its content box (inside padding and border). */
+.field {
+  position: absolute;
+  min-height: 0;
+  padding: 0;
+}
+
+/* A canvas's picture fills its view, under the view's children. */
+.cv {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+/* Keyframe animations (`animation`: Tailwind's `animate-*`). */
+@keyframes nsh-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+@keyframes nsh-ping { 0% { opacity: 1; transform: scale(1); } 75%, 100% { opacity: 0; transform: scale(2); } }
+
+@keyframes nsh-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+
+@keyframes nsh-bounce {
+  0%, 100% { transform: translateY(-25%); animation-timing-function: cubic-bezier(0.8,0,1,1); }
+  50% { transform: translateY(0); animation-timing-function: cubic-bezier(0,0,0.2,1); }
+}

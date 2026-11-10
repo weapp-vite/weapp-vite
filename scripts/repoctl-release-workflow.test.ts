@@ -91,6 +91,14 @@ it('keeps the repoctl-managed release workflow aligned with the current contract
   assert.equal(timeoutPreparation?.run, 'bash .github/scripts/prepare-release-timeout.sh')
   assert.ok(steps.indexOf(timeoutPreparation!) < steps.findIndex(step => step.name === 'Release plan'))
 
+  const preflight = steps.find(step => step.name === 'Release preflight')
+  const verify = steps.find(step => step.id === 'release-verify')
+  assert.equal(preflight?.id, 'release-preflight')
+  assert.equal(preflight?.run, 'pnpm check:weapp-core-constants-changeset --release')
+  assert.equal(preflight?.if, githubExpression('steps.release-plan.outputs.run == \'true\''))
+  assert.ok(steps.indexOf(preflight!) < steps.indexOf(verify!))
+  assert.equal(preflight?.env, undefined)
+
   const stages = ['plan', 'verify', 'prepare', 'upload', 'confirm', 'finalize']
   const releaseSteps = steps.filter(step => step.id?.startsWith('release-') && stages.some(stage => step.id === `release-${stage}`))
   assert.deepEqual(releaseSteps.map(step => step.id), stages.map(stage => `release-${stage}`))

@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { getMiniProgramPlatformDescriptor } from '@weapp-core/shared/platforms'
 import templateDefinitions from '../../packages/create-weapp-vite/src/templateDefinitions.json' with { type: 'json' }
+import { MINI_PROGRAM_PROJECT_CONFIGS } from './platforms.mjs'
 
 export const TEMPLATE_DIR_MAP = Object.fromEntries(templateDefinitions.map(template => [template.id, template.directory]))
 export const DEFAULT_TEMPLATE_NAMES = Object.keys(TEMPLATE_DIR_MAP)
@@ -16,16 +16,19 @@ export function outputDirectory(templateName) {
 
 /** 按 IDE 工程配置解析小程序产物根目录，避免将多平台工程目录误认为产物目录。 */
 export async function resolveMiniProgramDirectory(projectDir, templateName, platform = 'weapp') {
-  const descriptor = getMiniProgramPlatformDescriptor(platform)
+  const projectConfig = MINI_PROGRAM_PROJECT_CONFIGS[platform]
+  if (!projectConfig) {
+    throw new Error(`不支持的小程序平台 "${platform}"。`)
+  }
   const projectRoot = templateName === 'multi-platform' || templateName === 'multi-platform-sfc'
-    ? path.join(projectDir, 'dist', descriptor.id)
+    ? path.join(projectDir, 'dist', platform)
     : projectDir
-  const configPath = path.join(projectRoot, descriptor.projectConfigFileName)
+  const configPath = path.join(projectRoot, projectConfig.fileName)
   if (!await isFilePresent(configPath)) {
     return null
   }
   const config = JSON.parse(await fs.readFile(configPath, 'utf8'))
-  const root = descriptor.projectConfigRootKeys.map(key => config[key]).find(value => typeof value === 'string' && value.trim())
+  const root = projectConfig.rootKeys.map(key => config[key]).find(value => typeof value === 'string' && value.trim())
   return path.resolve(projectRoot, (root ?? '.').replaceAll('\\', '/'))
 }
 

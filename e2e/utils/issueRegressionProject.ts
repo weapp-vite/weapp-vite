@@ -7,7 +7,7 @@ import { sanitizeBuildCommandEnv } from './buildLog'
 
 const ROOT = path.resolve(import.meta.dirname, '../..')
 
-export async function createIssueRegressionProject(issueId: 1126 | 1127 | 1128 | 1172 | 1182 | 1235 | 1248 | 1249 | 1250 | 1251 | 1252 | 1261 | 1263 | 1264 | 1278 | 1295 | 1299 | 1303 | 1304) {
+export async function createIssueRegressionProject(issueId: 1126 | 1127 | 1128 | 1172 | 1182 | 1202 | 1235 | 1248 | 1249 | 1250 | 1251 | 1252 | 1261 | 1263 | 1264 | 1278 | 1295 | 1299 | 1303 | 1304) {
   const parent = path.join(ROOT, '.tmp/e2e-projects')
   await mkdir(parent, { recursive: true })
   const project = await mkdtemp(path.join(parent, `issue-${issueId}-`))
@@ -27,6 +27,12 @@ export async function createIssueRegressionProject(issueId: 1126 | 1127 | 1128 |
       path.join(project, 'node_modules/@weapp-sqlite/weapp-vite'),
       'junction',
     )
+  }
+  if (issueId === 1202) {
+    const { addWasmBytes } = await import('../../mpcore/packages/simulator/test/helpers/packageWasmFiles')
+    const wasm = path.join(project, 'src/assets/add.wasm')
+    await mkdir(path.dirname(wasm), { recursive: true })
+    await writeFile(wasm, addWasmBytes)
   }
   return project
 }

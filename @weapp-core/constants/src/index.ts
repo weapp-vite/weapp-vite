@@ -29,6 +29,12 @@ export const REQUEST_GLOBAL_SYNTHETIC_EXPORT_NAME = '__wvRGI__'
 
 export const WEAPP_VITE_IMPORT_META_ENV_KEY = '__weappViteImportMetaEnv'
 export const WEAPP_VITE_EXTERNAL_OUTPUT_DIRECTORY = 'weapp_vite_external'
+/** Vite WASM 初始化器内部 URL 引用的保留 query 标记。 */
+export const WEAPP_VITE_WASM_INIT_QUERY_MARKER = 'weapp-vite-wasm-init'
+/** 微信 WXWebAssembly 主线程初始化入口最低基础库版本。 */
+export const WX_WEBASSEMBLY_MIN_BASE_LIB_VERSION = '2.13.0'
+/** 微信 WXWebAssembly Worker 初始化入口最低基础库版本。 */
+export const WX_WEBASSEMBLY_WORKER_MIN_BASE_LIB_VERSION = '2.15.0'
 
 /** 无头测试后端不支持所请求的自动化协议。 */
 export const HEADLESS_PROTOCOL_UNSUPPORTED = 'HEADLESS_PROTOCOL_UNSUPPORTED'

@@ -89,3 +89,18 @@ const { a, b, c } = apple
 - **保持文件后缀明确**：在导入本地文件时保留 `.ts`/`.js` 后缀可以减少构建器的解析工作，但不是必需；保持团队一致即可。
 - **避免动态 `require`**：这会导致打包时无法静态分析依赖，推荐改用 `import()` 动态导入或显式列出需要的模块。
 - **导出命名更清晰**：优先使用命名导出（`export const foo = ...`），默认导出保留给“文件只提供一个核心实体”的场景。
+
+## 微信小程序中的 WebAssembly
+
+微信小程序项目可以使用 Vite 的 `?init` 入口加载源码或 npm 包中的 `.wasm` 文件：
+
+```ts
+import init from './encoder.wasm?init'
+
+const instance = await init({})
+instance.exports.compute(42)
+```
+
+微信构建会将文件作为非内联代码包资源发布，并让初始化器调用 `WXWebAssembly.instantiate`。主包和普通分包的资源放在主包可访问的位置；独立分包的资源留在对应包内；Worker 的资源不放入 Worker 脚本目录。Web 构建仍使用 Vite 自身的 WASM 行为。
+
+该入口仅支持微信小程序源码/npm 文件，不支持 `publicDir`、小程序插件项目、lib mode、`?raw`、`?url`、`?inline` 组合或 stateful `bundledDev`。stateful 开发请切换 `weapp.hmr.runtime: 'classic'`。它只提供加载入口，不包含 wasm-bindgen、Emscripten 等 glue 代码，也不保证微信与浏览器支持相同的 WASM 指令、Global、SIMD 或编译选项。主线程与 Worker 的最低基础库要求不同，具体程序能力仍由微信运行环境决定。

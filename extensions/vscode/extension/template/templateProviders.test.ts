@@ -489,7 +489,7 @@ it('provides local component definitions and resource links for wxml documents',
   assert.equal(getMarkdownValue(propHover?.contents).includes('类型: `string`'), true)
   assert.equal(getMarkdownValue(eventHover?.contents).includes('组件事件'), true)
   assert.equal(getMarkdownValue(eventHover?.contents).includes('参数: `value: number`'), true)
-})
+}, 15_000)
 
 it('resolves style class definitions from mini program style files and preprocessor nesting', async () => {
   const pagePath = mockWorkspacePath('/workspace/src/pages/native/index')

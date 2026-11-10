@@ -5,8 +5,9 @@ import { pathToFileURL } from 'node:url'
 import { requiredDocumentContracts, rootDocumentationChanges } from '../../scripts/verification/documentPolicy.mjs'
 import { validateNativeContextShape, validateNativeRunIdentity } from './native-pr-identity.mjs'
 import { isNativePrContext, resolveNativeRefreshContext } from './native-pr-refresh.mjs'
+import { readNativeSnapshotFiles, resolveNativeSnapshotContext } from './native-pr-snapshot.mjs'
 import { readNativePrWorkload, selectNativePrWorkload } from './native-pr-workload.mjs'
-import { matchesFilters, resolvePrContext } from './pr-context.mjs'
+import { matchesFilters } from './pr-context.mjs'
 import { samePullIdentity } from './pr-target-identity.mjs'
 
 /** 原生 PR 运行绑定触发事件中的提交，审批等待不能把旧运行改测新提交。 */
@@ -28,49 +29,30 @@ export async function resolveNativePrContext({ repository, runId, runAttempt = 1
     identities = { baseRepositoryId: context.baseRepositoryId, headRepositoryId: context.headRepositoryId }
   }
   else {
-    const pull = event.pull_request
-    if (eventName !== 'pull_request' || !pull || pull.base?.repo?.full_name !== repository || !pull.head?.repo?.full_name
-      || !Number.isSafeInteger(event.number) || event.number !== pull.number
-      || !Number.isSafeInteger(pull.head.repo.id) || !Number.isSafeInteger(pull.base.repo.id)
-      || pull.head.repo.id <= 0 || pull.base.repo.id <= 0) {
-      throw new Error('Expected a pull_request event for this repository')
-    }
-    const run = await get(`/actions/runs/${runId}`)
-    validateNativeRunIdentity({ runId, runAttempt, driverSha, prNumber: event.number, headSha: pull.head.sha, headRef: pull.head.ref, baseRef: pull.base.ref, headRepository: pull.head.repo.full_name }, run, repository, true)
-    context = await resolvePrContext({ repository, runId, runAttempt, driverSha, refName: pull.head.ref, prNumber: event.number }, get)
-    identities = { baseRepositoryId: run.repository.id, headRepositoryId: run.head_repository.id }
-    if (!samePullIdentity(pull, context, identities) || context.checkoutSha !== driverSha) {
-      throw new Error('PR changed while waiting for approval; approve the new run')
-    }
+    assert.equal(eventName, 'pull_request', 'Expected a pull_request event for this repository')
+    const snapshot = await resolveNativeSnapshotContext({ repository, runId, runAttempt, driverSha, event }, get)
+    context = snapshot.context
+    identities = snapshot.identities
   }
-  context.event ??= 'pull_request'
   const workload = await readNativePrWorkload(context.checkoutSha, profiles, get)
-  const files = []
-  for (let page = 1; ; page++) {
-    const rows = await get(`/pulls/${context.prNumber}/files?per_page=100&page=${page}`)
-    if (!Array.isArray(rows)) {
-      throw new TypeError('Invalid PR changed-files response')
-    }
-    files.push(...rows)
-    if (rows.length < 100 || files.length >= 3000) {
-      break
-    }
-  }
+  const { files, truncated } = await readNativeSnapshotFiles(context, get)
   const paths = files.flatMap(file => [file.filename, file.previous_filename].filter(Boolean))
-  const documentationPaths = workload.value.pullRequests.includes(context.prNumber) ? null : rootDocumentationChanges(files)
+  const documentationPaths = truncated || workload.value.pullRequests.includes(context.prNumber) ? null : rootDocumentationChanges(files)
   const documentationOnly = documentationPaths !== null
   const pathSelections = Object.fromEntries(Object.entries(profiles).map(([name, profile]) => [name, matchesFilters([context.baseRef], profile.baseBranches)
-    && !documentationOnly && (files.length >= 3000 || matchesFilters(paths, profile.paths))]))
+    && !documentationOnly && (truncated || matchesFilters(paths, profile.paths))]))
   const selection = selectNativePrWorkload(context, profiles, pathSelections, workload)
   const current = await get(`/pulls/${context.prNumber}`)
-  const base = await get(`/git/ref/heads/${encodeURIComponent(context.baseRef)}`)
-  const mergeRef = await get(`/git/ref/pull/${context.prNumber}/merge`)
-  if (!samePullIdentity(current, context, identities) || base.object?.sha !== context.baseSha
-    || (context.event === 'pull_request' && current.merge_commit_sha !== driverSha)
-    || mergeRef.ref !== `refs/pull/${context.prNumber}/merge` || mergeRef.object?.sha !== context.checkoutSha) {
+  if (!samePullIdentity(current, context, identities)) {
     throw new Error('PR changed while selecting checks; approve the new run')
   }
-  return { ...context, event: context.event ?? 'pull_request', ...selection, documentationOnly, documentationPaths: documentationPaths ?? [], documentationChecks: documentationOnly ? requiredDocumentContracts(paths) : [] }
+  if (context.event === 'native_refresh') {
+    const base = await get(`/git/ref/heads/${encodeURIComponent(context.baseRef)}`)
+    const mergeRef = await get(`/git/ref/pull/${context.prNumber}/merge`)
+    assert(base.object?.sha === context.baseSha && mergeRef.ref === `refs/pull/${context.prNumber}/merge`
+      && mergeRef.object?.sha === context.checkoutSha, 'PR changed while selecting checks; approve the new run')
+  }
+  return { ...context, ...selection, documentationOnly, documentationPaths: documentationPaths ?? [], documentationChecks: documentationOnly ? requiredDocumentContracts(paths) : [] }
 }
 
 /** 拓扑选择与审批后冻结上下文一致，调用层不能把候选偷偷改回默认。 */
@@ -146,7 +128,10 @@ async function main() {
   const rows = Object.entries(profiles).map(([name, profile]) => `| ${profile.name} | ${context.selections[name] ? 'Selected' : 'Skipped by path/branch filters'} | ${context.selectionSources[name]} |`)
   const benchmark = context.benchmarkWorkload
   const receipt = benchmark ? `\n\nBenchmark workload: \`${benchmark.id}\`\n\nManifest SHA-256: \`${benchmark.manifest.sha256}\`` : ''
-  await appendFile(process.env.GITHUB_STEP_SUMMARY, `## Approved PR #${context.prNumber}\n\nTopology: \`${context.verificationTopology}\`\n\nHEAD: \`${context.headSha}\`\n\nBASE: \`${context.baseSha}\`\n\nMERGE: \`${context.checkoutSha}\`${receipt}\n\n| Check | Selection | Source |\n| --- | --- | --- |\n${rows.join('\n')}\n`)
+  const scope = context.event === 'pull_request'
+    ? 'This run validates only the approved immutable snapshot. A strict required status check must enforce up-to-date branches before merge.'
+    : 'This run validates its independently approved pinned refresh target.'
+  await appendFile(process.env.GITHUB_STEP_SUMMARY, `## Approved PR #${context.prNumber}\n\n${scope}\n\nTopology: \`${context.verificationTopology}\`\n\nHEAD: \`${context.headSha}\`\n\nBASE: \`${context.baseSha}\`\n\nMERGE: \`${context.checkoutSha}\`${receipt}\n\n| Check | Selection | Source |\n| --- | --- | --- |\n${rows.join('\n')}\n`)
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

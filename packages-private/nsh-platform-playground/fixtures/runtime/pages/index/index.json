@@ -1,0 +1,5 @@
+{
+  "usingComponents": {
+    "nsh-node": "/components/nsh-node/index"
+  }
+}

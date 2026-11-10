@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { MANAGED_PROJECT_JOURNAL_ENV } from 'weapp-ide-cli'
 
 const withMachineLease = vi.hoisted(() => vi.fn(async (run: () => Promise<unknown>) => run()))
 vi.mock('@weapp-vite/devtools-runtime', () => ({ withMachineE2ELease: withMachineLease }))
@@ -131,6 +132,22 @@ describe('runWechatCliWithRetry', () => {
     withMachineLease.mockRejectedValue(new Error('Runtime busy'))
     const { runWechatCliWithRetry } = await import('../src/cli/run-login')
     await expect(runWechatCliWithRetry('fixture-cli', ['quit'])).rejects.toThrow('Runtime busy')
+    expect(hostGuard).not.toHaveBeenCalled()
+    expect(executeMock).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ['logout'],
+    ['account', 'logout'],
+    ['cache', '--clean', 'auth'],
+    ['cache', '--clean=session'],
+  ])('blocks account-state changes inside managed IDE E2E: %j', async (...argv) => {
+    vi.stubEnv(MANAGED_PROJECT_JOURNAL_ENV, 'managed-task-journal')
+    const { runWechatCliWithRetry } = await import('../src/cli/run-login')
+
+    await expect(runWechatCliWithRetry('fixture-cli', argv)).rejects.toThrow('DEVTOOLS_ACCOUNT_STATE_PROTECTED')
+
+    expect(withMachineLease).not.toHaveBeenCalled()
     expect(hostGuard).not.toHaveBeenCalled()
     expect(executeMock).not.toHaveBeenCalled()
   })

@@ -16,7 +16,7 @@ it.each(['node', 'browser'] as const)('runs worker messages, structured copies a
   for (const [file, source] of workerFiles) {
     const target = path.join(projectPath, file)
     fs.mkdirSync(path.dirname(target), { recursive: true })
-    fs.writeFileSync(target, source)
+    fs.writeFileSync(target, typeof source === 'string' ? source : new Uint8Array(source))
   }
   const session = provider === 'node'
     ? createHeadlessSession({ projectPath })
@@ -24,6 +24,7 @@ it.each(['node', 'browser'] as const)('runs worker messages, structured copies a
   try {
     const first = session.reLaunch('/pages/index')
     await expect.poll(() => first.data).toMatchObject({ message: 'worker hello', mainScope: 'main', workerScope: 'worker' })
+    await expect(first.runWasm()).resolves.toEqual({ value: 42 })
     first.send()
     await expect.poll(() => first.data).toMatchObject({ message: 'echo', count: 1 })
     first.send()

@@ -1,7 +1,9 @@
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { afterEach, describe, expect, it } from 'vitest'
+import { MINI_PROGRAM_PROJECT_CONFIGS } from './platforms.mjs'
 import { resolveMiniProgramDirectory } from './templates.mjs'
 
 const roots: string[] = []
@@ -20,6 +22,33 @@ afterEach(async () => {
 })
 
 describe('template IDE output directory resolution', () => {
+  it('loads and validates template structure without workspace packages', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'smoke-isolated-modules-'))
+    roots.push(root)
+    const smokeDirectory = path.join(root, 'scripts', 'createWeappViteSmoke')
+    const definitionsDirectory = path.join(root, 'packages', 'create-weapp-vite', 'src')
+    const packageRoot = path.join(root, 'package')
+    const projectRoot = path.join(root, 'project')
+    await Promise.all([
+      fs.mkdir(smokeDirectory, { recursive: true }),
+      fs.mkdir(definitionsDirectory, { recursive: true }),
+      fs.mkdir(path.join(packageRoot, 'templates', 'default'), { recursive: true }),
+      fs.mkdir(projectRoot, { recursive: true }),
+    ])
+    await Promise.all([
+      fs.copyFile(new URL('./templates.mjs', import.meta.url), path.join(smokeDirectory, 'templates.mjs')),
+      fs.copyFile(new URL('./platforms.mjs', import.meta.url), path.join(smokeDirectory, 'platforms.mjs')),
+      fs.copyFile(new URL('../../packages/create-weapp-vite/src/templateDefinitions.json', import.meta.url), path.join(definitionsDirectory, 'templateDefinitions.json')),
+      fs.writeFile(path.join(packageRoot, 'templates', 'default', 'package.json'), '{}'),
+      fs.writeFile(path.join(projectRoot, 'package.json'), '{}'),
+      fs.writeFile(path.join(projectRoot, 'AGENTS.md'), ''),
+    ])
+
+    const isolatedTemplates = await import(pathToFileURL(path.join(smokeDirectory, 'templates.mjs')).href)
+    await expect(isolatedTemplates.validateCreatedProjectStructure(projectRoot, 'default', 'isolated', packageRoot)).resolves.toBeUndefined()
+    expect(Object.keys(MINI_PROGRAM_PROJECT_CONFIGS)).toEqual(['weapp', 'alipay', 'swan', 'tt', 'jd', 'xhs'])
+  })
+
   it.each([
     ['weapp', 'project.config.json', 'miniprogramRoot'],
     ['alipay', 'mini.project.json', 'miniprogramRoot'],

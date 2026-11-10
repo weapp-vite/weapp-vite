@@ -73,7 +73,7 @@ jobs:
 
       - name: Build compiler for snapshot tests
         if: steps.changes.outputs.has_changes == 'true'
-        run: pnpm --filter @wevu/compiler build
+        run: pnpm exec turbo run build --filter=@wevu/compiler...
 
       - name: Update unit test snapshots
         if: steps.changes.outputs.has_changes == 'true'

@@ -1,5 +1,51 @@
 # @weapp-vite/dashboard
 
+## 7.9.0
+
+## 7.8.1
+
+### Patch Changes
+
+- chore(deps): 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@tailwindcss/vite, tailwindcss, tsdown, vue-eslint-parser。命名 catalog 变更键：tailwind4(tailwindcss)。
+
+- chore(deps): 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@ai-sdk/anthropic, @ai-sdk/openai, @ai-sdk/openai-compatible, @tanstack/vue-query, ai, sass。命名 catalog 变更键：无。
+
+- chore(deps): 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@weapp-tailwindcss/engine, miniprogram-api-typings, sass-embedded, weapp-tailwindcss。命名 catalog 变更键：latest(miniprogram-api-typings)；weapp-tailwindcss-fixed(weapp-tailwindcss)。
+
+  同步脚手架默认依赖和微信 API 清单，支持 typings 5.3.1 新增的六个接口。
+  wevu 同步宿主实例查找的可空返回值、glass-easel 静态组件选项及生命周期错误参数类型，并补充公开类型契约验证。
+
+- chore(deps): 升级小程序样式引擎、SWC 和浏览器测试依赖，同步脚手架生成的依赖版本。Tailwind compiler 升级到 5.7.1，采用上游动态透明度修复，并同步普通及固定版本配置。
+
+  独立 Sass 升级到 1.108.0；sass-embedded 暂保留 1.107.1 并限制低于 1.108.0，避免官方 Windows 发行包缺少编译器文件导致构建失败。
+
+- chore(deps): 升级编译、运行时与开发工具依赖并同步脚手架版本。
+
+  本轮接受 58 个 npm 直接依赖升级目标，同步包内版本声明、默认 catalog、tailwind4 catalog 与脚手架模板，更新 Babel、Vue、Tailwind CSS、Oxc、AI SDK、Devframes、Vite+、Vitest 等编译、运行时和开发工具依赖。Rust Oxc 依赖与 JavaScript parser/types 同步到 0.157，保留原有版本前缀及公开 peer 兼容下限。
+
+  将多包共用的依赖声明归并到 workspace catalog，并同步脚手架内置映射；精确版本、`^`、`~` 的原有范围和锁定结果保持一致，减少后续升级时的重复维护。
+
+  Vite+ 更新到 1.5.0，内置 Vite 8.3.5 与 Vitest 5.1.0。独立 Vite 8.3.6 未通过优化器关闭生命周期诊断，本轮保留 8.3.5；TypeScript 及其余兼容保留项继续沿用原基线。
+
+  修复内联 WXS/SJS 在 Vue SFC、Web 转换和 HMR 解析中的原始脚本保护，保留行注释、运算符与标签字面量，避免组件扫描误读脚本正文。复用统一脚本边界解析，不增加公共 API。
+
+  补齐 VS Code 扩展构建中的 WXML 源码解析依赖，缺失的模块会阻断构建，避免生成不完整的扩展包。
+
+- chore(deps): 自动补充依赖升级发布记录。
+  涉及包：
+  - @wevu/web-apis：dependencies.web-streams-polyfill
+  - create-weapp-vite：devDependencies.oxfmt
+  - weapp-vite：dependencies.rolldown-plugin-dts
+
+- chore(deps): 自动补充依赖升级发布记录。
+  涉及包：
+  - @weapp-agent/cli：dependencies.commander
+  - weapp-vite：dependencies.@volar/language-service
+  - create-weapp-vite：基于 weapp-vite / wevu 的依赖升级联动更新脚手架模板
+
 ## 7.8.0
 
 ### Patch Changes

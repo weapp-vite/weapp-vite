@@ -13,7 +13,14 @@ function fixture() {
     if (args[0] === 'repo') {
       return 'example/project\n'
     }
-    return JSON.stringify(args.at(-1).includes('/environments/') ? state.environment : state.fork)
+    const endpoint = args.at(-1)
+    if (endpoint.includes('/environments/')) {
+      return JSON.stringify(state.environment)
+    }
+    if (endpoint.endsWith('/protection')) {
+      return JSON.stringify(state.protection)
+    }
+    return JSON.stringify(state.fork)
   })
   return { ...state, gh, options: { root: '.', gh } }
 }
@@ -26,13 +33,14 @@ describe('read-only live approval audit', () => {
       ['repo', 'view', '--json', 'nameWithOwner', '--jq', '.nameWithOwner'],
       ['api', '--method', 'GET', `repos/example/project/environments/${policy.environment}`],
       ['api', '--method', 'GET', 'repos/example/project/actions/permissions/fork-pr-contributor-approval'],
+      ['api', '--method', 'GET', 'repos/example/project/branches/main/protection'],
     ])
   })
 
   it('uses --repo without consulting the current repository', async () => {
     const { policy, options, gh } = fixture()
     expect(exitCode(await checkLiveAdmission(policy, { ...options, repository: 'chosen/project' }))).toBe(0)
-    expect(gh.mock.calls).toHaveLength(2)
+    expect(gh.mock.calls).toHaveLength(3)
     expect(gh.mock.calls.every(([args]) => args.at(-1).startsWith('repos/chosen/project/'))).toBe(true)
   })
 
@@ -83,10 +91,27 @@ describe('read-only live approval audit', () => {
     gh.mockRejectedValueOnce(new Error('HTTP 403'))
     const results = await checkLiveAdmission(policy, { ...options, repository: 'example/project' })
     expect(exitCode(results)).toBe(2)
-    expect(results).toEqual([
+    expect(results.slice(0, 2)).toEqual([
       expect.objectContaining({ status: 'error', actual: 'HTTP 403' }),
       expect.objectContaining({ name: 'fork 审核策略', status: 'pass' }),
     ])
+    expect(results.slice(2).every(result => result.status === 'pass')).toBe(true)
+  })
+
+  it.each(['HTTP 403', 'not JSON'])('keeps Environment and fork results when merge protection is incomplete: %s', async (failure) => {
+    const { policy, environment, fork, options, gh } = fixture()
+    gh.mockResolvedValueOnce(JSON.stringify(environment)).mockResolvedValueOnce(JSON.stringify(fork))
+    if (failure === 'HTTP 403') {
+      gh.mockRejectedValueOnce(new Error(failure))
+    }
+    else {
+      gh.mockResolvedValueOnce(failure)
+    }
+    const results = await checkLiveAdmission(policy, { ...options, repository: 'example/project' })
+    expect(exitCode(results)).toBe(2)
+    expect(results).toContainEqual(expect.objectContaining({ name: '线上审批 Environment', status: 'pass' }))
+    expect(results).toContainEqual(expect.objectContaining({ name: 'fork 审核策略', status: 'pass' }))
+    expect(results.at(-1)).toMatchObject({ name: 'example/project: 合并新鲜度保护', status: 'error' })
   })
 
   it('marks invalid JSON as incomplete and still checks the other endpoint', async () => {
@@ -103,6 +128,13 @@ describe('read-only live approval audit', () => {
     vi.mocked(execa).mockResolvedValueOnce({ stdout: '{}' })
     expect(await runGh(args, '.')).toBe('{}')
     expect(execa).toHaveBeenCalledWith('gh', args, { cwd: '.', shell: false, timeout: 30_000, env: { GH_PROMPT_DISABLED: '1' } })
+  })
+
+  it('preserves the HTTP status needed to distinguish absent protection from denied reads', async () => {
+    vi.mocked(execa).mockRejectedValueOnce({ stderr: 'sensitive process detail (HTTP 404)' })
+    await expect(runGh(['api', '--method', 'GET', 'repos/example/project/branches/main/protection'], '.'))
+      .rejects
+      .toThrow('GitHub CLI HTTP 404；请检查 gh 安装、登录、网络和仓库管理配置的读取权限')
   })
 
   it('does not print raw process output when gh fails', async () => {

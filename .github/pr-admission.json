@@ -5,5 +5,12 @@
   "canAdminsBypass": false,
   "waitTimer": 0,
   "deploymentBranchPolicy": null,
-  "forkApprovalPolicy": "all_external_contributors"
+  "forkApprovalPolicy": "all_external_contributors",
+  "mergeProtection": {
+    "branch": "main",
+    "requiredStatusCheck": "PR snapshot checks",
+    "integrationId": 15368,
+    "strict": true,
+    "enforceAdmins": true
+  }
 }

@@ -4,6 +4,7 @@ import process from 'node:process'
 import { withMachineE2ELease } from '@weapp-vite/devtools-runtime'
 import { MANAGED_PROJECT_JOURNAL_ENV } from '../devtoolsProjectOwnership'
 import { resolveWechatDevtoolsTarget } from '../devtoolsTarget'
+import { assertDevtoolsAccountStatePreserved } from './accountStateGuard'
 import { withMiniProgram } from './automator-session'
 import { openWechatIdeProjectByHttp, resetWechatIdeFileUtilsByHttp } from './http'
 import { ensureManagedWechatProject } from './managedProjectGate'
@@ -505,6 +506,7 @@ export async function compileWechatIdeByAutomator(options: CompileWechatIdeByAut
  * @description 通过已打开或新建的 automator 会话清理开发者工具缓存。
  */
 export async function clearWechatIdeCacheByAutomator(options: ClearWechatIdeCacheByAutomatorOptions) {
+  assertDevtoolsAccountStatePreserved(['cache', '--clean', options.clean])
   return await withMiniProgram(createAutomatorSessionOptions(options), async (miniProgram) => {
     return await miniProgram.clearCache({
       clean: options.clean,

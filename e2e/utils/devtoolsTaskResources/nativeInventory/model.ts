@@ -42,14 +42,58 @@ function sameFrameIdentity(first: DarwinProcessIdentity | null, second: DarwinPr
   return first !== null && second !== null && sameDarwinIdentity(first, second)
 }
 
+function nativeTicks(value: string | null | undefined): bigint | null {
+  if (typeof value !== 'string' || !/^(?:0|[1-9]\d*)$/.test(value)) {
+    return null
+  }
+  const ticks = BigInt(value)
+  return ticks <= 18446744073709551615n ? ticks : null
+}
+
+function hasRusageExitEvidence(row: NativeRow) {
+  const { absolute, before, after, pathBefore, pathAfter, task, enumeratedIdentity, gaps } = row.entry
+  const firstIdentity = before.identity
+  const lastIdentity = after.identity
+  const expectedGaps = ['image-before-unavailable', 'image-after-unavailable', 'rss-unavailable'] as const
+  if (!absolute || absolute.clockDomain !== 'mach-absolute-ticks' || row.identityChanged || row.imageChanged
+    || !firstIdentity || !lastIdentity || firstIdentity.zombie
+    || ![before, after].every(read => read.result === 0 && read.length > 0 && read.errno === 0)
+    || !sameDarwinIdentity(enumeratedIdentity, firstIdentity) || !sameDarwinIdentity(firstIdentity, lastIdentity)
+    || ![pathBefore, pathAfter].every(read => read.count === 0 && read.errno === 3 && read.executable === null)
+    || task.count !== 0 || task.errno !== 3 || task.identity !== null || task.rssBytes !== null
+    || gaps.length !== expectedGaps.length || expectedGaps.some(gap => !gaps.includes(gap))) {
+    return false
+  }
+
+  const processStart = nativeTicks(absolute.startedAtTicks)
+  const processEnd = nativeTicks(absolute.endedAtTicks)
+  const observations = [absolute.birthBefore, absolute.birthAfter]
+  const intervals = observations.map(read => [nativeTicks(read.startedAtTicks), nativeTicks(read.endedAtTicks)] as const)
+  const births = observations.map(read => nativeTicks(read.birthTicks))
+  const exits = observations.map(read => nativeTicks(read.exitTicks))
+  const [firstStart, firstEnd] = intervals[0]!
+  const [lastStart, lastEnd] = intervals[1]!
+  const birth = births[0]
+  const exit = exits[0]
+
+  return observations.every(read => read.result === 0 && read.errno === 0)
+    && processStart !== null && processEnd !== null && processStart <= processEnd
+    && firstStart !== null && firstEnd !== null && lastStart !== null && lastEnd !== null
+    && processStart <= firstStart && firstStart <= firstEnd && firstEnd <= lastStart && lastStart <= lastEnd && lastEnd <= processEnd
+    && birth !== null && birth > 0n && births.every(value => value === birth)
+    && exit !== null && exit > birth && exits.every(value => value === exit)
+    && exit <= firstEnd && exit <= lastEnd
+}
+
 /** PID 枚举后已退出必须由全部相邻查询共同证明，权限失败或部分成功不能冒充退出。 */
 export function hasNativeExitEvidence(row: NativeRow) {
   const { before, after, pathBefore, pathAfter, task } = row.entry
   const absentIdentity = (read: typeof before) => read.identity === null
     && ((read.result === 0 && read.length === 0 && read.errno === 0) || (read.result === -1 && read.errno === 3))
-  return absentIdentity(before) && absentIdentity(after)
+  const absentReads = absentIdentity(before) && absentIdentity(after)
     && [pathBefore, pathAfter].every(read => read.count === 0 && read.errno === 3 && read.executable === null)
     && task.count === 0 && task.errno === 3 && task.identity === null && task.rssBytes === null
+  return absentReads || hasRusageExitEvidence(row)
 }
 
 /** 活体证据必须来自完整原生调用，路径文本或部分成功不能替代。 */

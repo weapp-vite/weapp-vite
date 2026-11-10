@@ -28,7 +28,7 @@ function workloadBlob(value) {
 function fixture() {
   const run = { id: 123, run_attempt: 1, event: 'pull_request', path: '.github/workflows/ci-pr.yml', head_sha: headSha, head_branch: pull.head.ref, repository: pull.base.repo, head_repository: pull.head.repo, pull_requests: [pull] }
   run.referenced_workflows = [{ path: `${repository}/.github/workflows/validate-ci.yml@${driverSha}`, sha: driverSha, ref: 'refs/pull/42/merge' }]
-  const state = { run, pull, files: [{ filename: 'docs/renamed.md', previous_filename: 'packages/old.ts' }], baseSha, workload }
+  const state = structuredClone({ run, pull, files: [{ filename: 'docs/renamed.md', previous_filename: 'packages/old.ts', status: 'renamed' }], baseSha, workload })
   const get = vi.fn(async (pathname) => {
     if (pathname === '/actions/runs/123') {
       return state.run
@@ -48,21 +48,19 @@ function fixture() {
     if (pathname === `/git/commits/${driverSha}`) {
       return { sha: driverSha, parents: [{ sha: baseSha }, { sha: headSha }] }
     }
-    if (pathname.includes('/files?')) {
-      const page = Number(new URL(pathname, 'https://api.example.test').searchParams.get('page'))
-      return state.files.slice((page - 1) * 100, page * 100)
+    if (pathname === `/compare/${baseSha}...${headSha}?per_page=100`) {
+      return { base_commit: { sha: baseSha }, files: structuredClone(state.files.slice(0, 300)) }
     }
     throw new Error(`Unexpected request: ${pathname}`)
   })
-  return { state, get, run, options: { repository, runId: 123, runAttempt: 1, driverSha, event: { number: 42, pull_request: pull }, profiles } }
+  return { state, get, run: state.run, options: { repository, runId: 123, runAttempt: 1, driverSha, event: { number: 42, pull_request: structuredClone(pull) }, profiles } }
 }
 
 describe('native PR approval context', () => {
-  it('freezes fork HEAD, base and merge and shares one changed-files listing', async () => {
+  it('freezes the approved fork merge while preserving downstream head projection', async () => {
     const { options, get } = fixture()
     const context = await resolveNativePrContext(options, get)
     expect(context).toMatchObject({ event: 'pull_request', headSha, baseSha, driverSha, checkoutSha: driverSha, headRepository: 'contributor/project', selections: { ci: true, smoke: true, excluded: false } })
-    expect(get.mock.calls.filter(([pathname]) => pathname.includes('/files?'))).toHaveLength(1)
     expect(projectPrContext(context, profiles.smoke, 'smoke')).toMatchObject({ checkoutMode: 'head', checkoutSha: headSha })
     expect(projectPrContext(context, profiles.excluded, 'excluded').shouldRun).toBe(false)
     expect(projectPrContext(context, profiles.ci, 'ci').checkoutSha).toBe(driverSha)
@@ -127,10 +125,10 @@ describe('native PR approval context', () => {
     await expect(resolveNativePrContext(options, get)).rejects.toThrow(/waiting for approval|run identity/u)
   })
 
-  it('refuses a changed base and mismatched merge instead of running the wrong revision', async () => {
+  it('keeps the approved snapshot after the base tip advances and rejects driver substitution', async () => {
     const first = fixture()
     first.state.baseSha = 'd'.repeat(40)
-    await expect(resolveNativePrContext(first.options, first.get)).rejects.toThrow('merge candidate does not match')
+    await expect(resolveNativePrContext(first.options, first.get)).resolves.toMatchObject({ baseSha, checkoutSha: driverSha })
     const second = fixture()
     second.options.driverSha = 'd'.repeat(40)
     await expect(resolveNativePrContext(second.options, second.get)).rejects.toThrow('invocation proof')
@@ -140,7 +138,7 @@ describe('native PR approval context', () => {
     const { options, get, state } = fixture()
     const moving = async (pathname) => {
       const response = await get(pathname)
-      if (pathname.includes('/files?')) {
+      if (pathname.startsWith('/compare/')) {
         state.pull = { ...pull, head: { ...pull.head, sha: 'd'.repeat(40) } }
       }
       return response
@@ -157,7 +155,7 @@ describe('native PR approval context', () => {
 
   it('keeps all path checks when the changed-files API reaches its truncation boundary', async () => {
     const { options, get, state } = fixture()
-    state.files = Array.from({ length: 3000 }, (_, index) => ({ filename: `docs/page-${index}.md` }))
+    state.files = Array.from({ length: 300 }, (_, index) => ({ filename: `docs/page-${index}.md`, status: 'modified' }))
     expect((await resolveNativePrContext(options, get)).selections).toEqual({ ci: true, smoke: true, excluded: false })
   })
 
@@ -172,7 +170,7 @@ describe('native PR approval context', () => {
 
   it('keeps ordinary PR selections unchanged and adds only explicitly approved workload profiles', async () => {
     const { options, get, state } = fixture()
-    state.files = [{ filename: 'docs/guide.md' }]
+    state.files = [{ filename: 'docs/guide.md', status: 'modified' }]
     const ordinary = await resolveNativePrContext(options, get)
     expect(ordinary).not.toHaveProperty('benchmarkWorkload')
     expect(ordinary.pathSelections).toEqual(ordinary.selections)
@@ -259,7 +257,7 @@ describe('native approval workflow graph', () => {
     expect(workflow.on.workflow_dispatch.inputs).toEqual(Object.fromEntries(['pr-number', 'head-sha', 'base-sha', 'merge-sha'].map(name => [name, { required: true, type: 'string' }])))
     expect(workflow.concurrency).toEqual({ 'group': 'pr-ci-${{ github.event.pull_request.number || inputs.pr-number }}', 'cancel-in-progress': true })
     expect(workflow.permissions).toEqual({ 'contents': 'read', 'pull-requests': 'read', 'actions': 'read' })
-    const { approval, plan, documentation, ...checks } = workflow.jobs
+    const { approval, plan, documentation, verdict, ...checks } = workflow.jobs
     expect(approval.environment).toBe(admissionPolicy.environment)
     expect(approval.if).toBe('github.event_name == \'pull_request\' || (github.event_name == \'workflow_dispatch\' && github.ref_type == \'branch\' && github.ref_name == github.event.repository.default_branch)')
     expect(approval.needs).toBeUndefined()
@@ -270,6 +268,7 @@ describe('native approval workflow graph', () => {
     expect(plan.steps.filter(step => step.uses?.startsWith('actions/upload-artifact@')).map(step => step.with.name)).toEqual(['pr-context'])
     const profiles = JSON.parse(await readFile(new URL('../.github/pr-checks.json', import.meta.url), 'utf8'))
     expect(Object.keys(checks)).toEqual(Object.keys(profiles))
+    expect(verdict.name).toBe(admissionPolicy.mergeProtection.requiredStatusCheck)
     for (const [name, check] of Object.entries(checks)) {
       expect(check.needs).toBe('plan')
       expect(check.if).toContain(`selections['${name}']`)

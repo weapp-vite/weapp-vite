@@ -9,6 +9,7 @@ type Execute = (source: string, file: string, module: WorkerModule, require: (id
 interface WorkerHostOptions {
   root: string
   read: (file: string) => string | undefined
+  globals?: Record<string, unknown>
   createExecutor: (globals: Record<string, any>) => Execute
   console: Console
 }
@@ -92,6 +93,7 @@ export function createWorkerHost(options: WorkerHostOptions) {
         clearTimeout: scheduler.clearTimeout.bind(scheduler),
         setInterval: scheduler.setInterval.bind(scheduler),
         clearInterval: scheduler.clearInterval.bind(scheduler),
+        ...options.globals,
       }
       globals.globalThis = globals
       const execute = options.createExecutor(globals)

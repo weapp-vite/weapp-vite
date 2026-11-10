@@ -1,5 +1,4 @@
-import { appendFile } from 'node:fs/promises'
-import { unwatchFile, watchFile } from 'node:fs'
+import { appendFileSync, unwatchFile, watchFile } from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
 import { defineConfig } from 'weapp-vite'
@@ -18,6 +17,12 @@ if (process.argv.includes('dev') && process.platform === 'win32') {
     }
   })
 }
+if (process.argv.includes('dev')) {
+  process.once('exit', () => {
+    unwatchFile(shutdownRequest)
+    appendFileSync(path.join(process.cwd(), 'cleanup.log'), 'closed\n')
+  })
+}
 
 export default defineConfig({
   weapp: {
@@ -28,11 +33,4 @@ export default defineConfig({
     mcp: false,
     hmr: { runtime: process.env.BUN_TEST_HMR_RUNTIME || 'classic' },
   },
-  plugins: [{
-    name: 'issue-1222-shutdown-evidence',
-    async closeServer() {
-      unwatchFile(shutdownRequest)
-      await appendFile(path.join(process.cwd(), 'cleanup.log'), 'closed\n')
-    },
-  }],
 })
