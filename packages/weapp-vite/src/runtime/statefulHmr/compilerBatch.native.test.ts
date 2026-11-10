@@ -70,10 +70,14 @@ it.each([false, true])('pins actual DevEngine inputs for virtual source ownershi
         }
         record('generateBundle', { extraDependency })
       },
-      transform(code, _id) {
+      transform(code, id) {
+        // 只有入口模块映射到 entry，不能让 Rolldown 内部 runtime 覆盖同一源码身份。
+        if (id !== '\0entry') {
+          return
+        }
         host.capture(entry, code)
         captures += 1
-        record('capture', { virtualEntry: _id === '\0entry' })
+        record('capture', { virtualEntry: true })
       },
     }],
   }, { format: 'esm', entryFileNames: 'app.js', sourcemap: true }, {
