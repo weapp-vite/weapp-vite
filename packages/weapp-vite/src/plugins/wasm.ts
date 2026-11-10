@@ -40,7 +40,7 @@ function normalizeRuntimePath(options: WasmPluginOptions, fileName: string) {
     }
   }
   if (scope === 'app') {
-    for (const reservedRoot of options.reservedRoots ?? []) {
+    for (const reservedRoot of [...(options.reservedRoots ?? []), ...(workerRoot ? [workerRoot] : [])]) {
       const root = reservedRoot.replaceAll('\\', '/').replace(/^\/+|\/+$/g, '')
       if (root && (posixFileName === root || posixFileName.startsWith(`${root}/`))) {
         throw new Error(`[weapp-vite] Main package WASM assets cannot be emitted inside package or Worker root: ${posixFileName}`)

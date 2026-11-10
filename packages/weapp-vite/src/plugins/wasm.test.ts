@@ -108,6 +108,11 @@ describe('WASM init plugin', () => {
     expect(previous).toHaveBeenCalledTimes(1)
     expect(resolveWasmScope({ ...createContext(), scanService: {} } as CompilerContext, undefined, true)).toEqual({ scope: 'worker', workerRoot: undefined })
 
+    const appPlugin = createWasmPlugin(createContext(), { scope: 'app', workerRoot: 'workers' })
+    const appConfig = hook<typeof config>(appPlugin.config)({}, { command: 'build' })
+    expect(() => appConfig.experimental.renderBuiltUrl(`workers/add.wasm?${WEAPP_VITE_WASM_INIT_QUERY_MARKER}`, { hostType: 'js', type: 'asset', ssr: false, hostId: 'entry.js' }))
+      .toThrow('cannot be emitted inside package or Worker root')
+
     const webPlugin = createWasmPlugin(createContext('web'), { scope: 'app' })
     const webOutput = hook<(options: { assetFileNames?: string }) => unknown>(webPlugin.outputOptions)
     expect(webOutput({ assetFileNames: 'custom/[name].wasm' })).toBeNull()
