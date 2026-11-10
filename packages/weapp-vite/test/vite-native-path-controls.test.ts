@@ -85,6 +85,15 @@ it('observes a native filesystem event using the canonical temporary path', asyn
   })
 }, 15_000)
 
+it('counts missing env paths once before declaring the root watcher ready', async () => {
+  const result = await execa(process.execPath, [path.resolve(import.meta.dirname, 'viteNativeReadiness/fixture.mjs')], {
+    reject: false,
+    timeout: 10_000,
+  })
+  expect({ exitCode: result.exitCode, stderr: result.stderr }).toEqual({ exitCode: 0, stderr: '' })
+  expect(JSON.parse(result.stdout)).toEqual({ missingCount: 4, readyBeforeRelease: false, registeredAtReady: true })
+}, 15_000)
+
 // Vite 对照使用框架 watcher 的真实 ready 边界，不以原始 fs.watch 注册事件替代。
 it('observes one native Vite file creation after readiness using the canonical temporary path', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'vite-native-watch-'))
