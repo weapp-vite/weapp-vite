@@ -2,6 +2,10 @@ name: Independent Quality Platform
 on:
   workflow_call:
     inputs:
+      e2e_exclude_projects:
+        required: false
+        type: string
+        default: ''
       verification_topology:
         required: false
         type: string
@@ -47,6 +51,7 @@ jobs:
     needs: pr-context
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      e2e_exclude_projects: ${{ inputs.e2e_exclude_projects }}
       pr_context: ${{ inputs.pr_context }}
       pr_profile: ci
       verification_topology: ${{ inputs.verification_topology }}
@@ -73,6 +78,7 @@ jobs:
     if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && (inputs.lint_command != '') }}
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      e2e_exclude_projects: ${{ inputs.e2e_exclude_projects }}
       pr_context: ${{ inputs.pr_context }}
       pr_profile: ci
       verification_topology: ${{ inputs.verification_topology }}
@@ -97,6 +103,7 @@ jobs:
       - build
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      e2e_exclude_projects: ${{ inputs.e2e_exclude_projects }}
       pr_context: ${{ inputs.pr_context }}
       pr_profile: ci
       verification_topology: ${{ inputs.verification_topology }}
@@ -127,6 +134,7 @@ jobs:
     if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.build.result == 'success' && (inputs.run_types) }}
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      e2e_exclude_projects: ${{ inputs.e2e_exclude_projects }}
       pr_context: ${{ inputs.pr_context }}
       pr_profile: ci
       verification_topology: ${{ inputs.verification_topology }}
@@ -154,6 +162,7 @@ jobs:
     if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.build.result == 'success' && inputs.runs_on == 'ubuntu-latest' && inputs.node_version == '24' }}
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      e2e_exclude_projects: ${{ inputs.e2e_exclude_projects }}
       pr_context: ${{ inputs.pr_context }}
       pr_profile: ci
       verification_topology: ${{ inputs.verification_topology }}
@@ -193,6 +202,7 @@ jobs:
           - 4
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      e2e_exclude_projects: ${{ inputs.e2e_exclude_projects }}
       pr_context: ${{ inputs.pr_context }}
       pr_profile: ci
       verification_topology: ${{ inputs.verification_topology }}

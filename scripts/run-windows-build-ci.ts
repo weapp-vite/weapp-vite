@@ -4,6 +4,7 @@ import { createRequire } from 'node:module'
 import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
+import { EXCLUDED_PROJECTS_ENV, scopedTurboArguments } from './e2eProjectScope'
 
 interface SpawnResult {
   error?: Error
@@ -47,12 +48,13 @@ function resolveTurboEntry() {
  * 在同一个 Node 进程内串联 Windows 全量构建与体积报告，避免构建后再次初始化 Node。
  */
 export async function runWindowsBuildCi(options: WindowsBuildCiOptions = {}) {
+  const env = options.env ?? process.env
   const result = (options.spawn ?? spawnSync)(
     options.execPath ?? process.execPath,
-    [options.turboEntry ?? resolveTurboEntry(), ...WINDOWS_TURBO_BUILD_ARGS],
+    [options.turboEntry ?? resolveTurboEntry(), ...scopedTurboArguments(WINDOWS_TURBO_BUILD_ARGS, env[EXCLUDED_PROJECTS_ENV] ?? '')],
     {
       cwd: options.cwd ?? ROOT,
-      env: options.env ?? process.env,
+      env,
       stdio: 'inherit',
     },
   )

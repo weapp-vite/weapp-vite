@@ -21,6 +21,28 @@ async function readWorkflow(name: string) {
 }
 
 describe('manual CI E2E project scope', () => {
+  it('forwards optional workspace exclusions through all general CI quality jobs', async () => {
+    const wrapper = await readWorkflow('ci.yml')
+    const shared = await readWorkflow('validate-ci.yml')
+    const platform = await readWorkflow('reusable-quality-platform.yml')
+    expect(wrapper.on.workflow_dispatch?.inputs['exclude-e2e-projects']).toMatchObject({ default: '', required: false, type: 'string' })
+    expect(shared.on.workflow_call?.inputs['exclude-e2e-projects']).toMatchObject({ default: '', required: false, type: 'string' })
+    expect(platform.on.workflow_call?.inputs.e2e_exclude_projects).toMatchObject({ default: '', required: false, type: 'string' })
+    expect(wrapper.jobs.validation?.with?.['exclude-e2e-projects']).toBe('${{ inputs.exclude-e2e-projects || \'\' }}')
+    const qualityJobs = Object.values(shared.jobs).filter(job => job.uses === './.github/workflows/reusable-quality-platform.yml')
+    expect(qualityJobs).toHaveLength(3)
+    for (const job of qualityJobs) {
+      expect(job.with?.e2e_exclude_projects).toBe('${{ inputs.exclude-e2e-projects }}')
+    }
+    const children = Object.values(platform.jobs).filter(job => job.uses === './.github/workflows/reusable-node-command.yml')
+    expect(children.length).toBeGreaterThan(0)
+    for (const job of children) {
+      expect(job.with?.e2e_exclude_projects).toBe('${{ inputs.e2e_exclude_projects }}')
+    }
+    const native = await readWorkflow('ci-pr.yml')
+    expect(native.jobs.ci?.with).not.toHaveProperty('exclude-e2e-projects')
+  })
+
   it('defaults workspace HMR to full while forwarding an explicit functional-only selection', async () => {
     const wrapper = await readWorkflow('ci-e2e.yml')
     const shared = await readWorkflow('validate-ci-e2e.yml')

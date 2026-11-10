@@ -2,6 +2,10 @@ name: Validate CI
 on:
   workflow_call:
     inputs:
+      exclude-e2e-projects:
+        required: false
+        type: string
+        default: ''
       verification_topology:
         required: false
         type: string
@@ -55,6 +59,7 @@ jobs:
       max-parallel: 4
     uses: ./.github/workflows/reusable-quality-platform.yml
     with:
+      e2e_exclude_projects: ${{ inputs.exclude-e2e-projects }}
       verification_topology: ${{ inputs.verification_topology }}
       pr_context: ${{ inputs.pr_context }}
       runs_on: ${{ matrix.os }}
@@ -87,6 +92,7 @@ jobs:
       max-parallel: 2
     uses: ./.github/workflows/reusable-quality-platform.yml
     with:
+      e2e_exclude_projects: ${{ inputs.exclude-e2e-projects }}
       verification_topology: ${{ inputs.verification_topology }}
       pr_context: ${{ inputs.pr_context }}
       runs_on: ${{ matrix.os }}
@@ -143,6 +149,7 @@ jobs:
             run_coverage: true
     uses: ./.github/workflows/reusable-quality-platform.yml
     with:
+      e2e_exclude_projects: ${{ inputs.exclude-e2e-projects }}
       verification_topology: ${{ inputs.verification_topology }}
       pr_context: ${{ inputs.pr_context }}
       runs_on: ${{ matrix.os }}

@@ -1,7 +1,7 @@
 import path from 'node:path'
 import { globSync } from 'tinyglobby'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { EXCLUDED_PROJECTS_ENV, excludedE2EProjects, excludedE2ETestPatterns, isExcludedE2EProject } from './e2eProjectScope'
+import { EXCLUDED_PROJECTS_ENV, excludedE2EProjects, excludedE2ETestPatterns, isExcludedE2EProject, scopedTurboArguments } from './e2eProjectScope'
 import { discoverWebProjects } from './web-project-matrix'
 
 afterEach(() => vi.unstubAllEnvs())
@@ -13,6 +13,18 @@ describe('explicit E2E project scope', () => {
       .toEqual(['uview-plus-compat', 'wot-ui-compat'])
     expect(() => excludedE2EProjects('../runtime')).toThrow('invalid project name')
     expect(() => excludedE2EProjects('*')).toThrow('invalid project name')
+  })
+
+  it('keeps workspace exclusions before package arguments without changing the default command', () => {
+    const args = ['run', 'build', '--filter=./packages/*', '--', '--sourcemap']
+    expect(scopedTurboArguments(args, '')).toEqual(args)
+    expect(scopedTurboArguments(args, 'uview-plus-compat,wot-ui-compat')).toEqual([
+      ...args.slice(0, 3),
+      '--filter=!./e2e-apps/uview-plus-compat',
+      '--filter=!./e2e-apps/wot-ui-compat',
+      ...args.slice(3),
+    ])
+    expect(args).toHaveLength(5)
   })
 
   it('excludes only dedicated projects across path separators', () => {

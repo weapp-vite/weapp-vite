@@ -24,3 +24,11 @@ export function isExcludedE2EProject(label: string, projects = excludedE2EProjec
 export function excludedE2ETestPatterns() {
   return excludedE2EProjects().flatMap(project => [`**/${project}/**`, `**/${project}.test.ts`, `**/${project}.*.test.ts`])
 }
+
+/** 仅排除独立专项 workspace；过滤参数必须位于传给包脚本的分隔符之前。 */
+export function scopedTurboArguments(args: string[], value = process.env[EXCLUDED_PROJECTS_ENV]): string[] {
+  const filters = excludedE2EProjects(value).map(project => `--filter=!./e2e-apps/${project}`)
+  const separator = args.indexOf('--')
+  const index = separator < 0 ? args.length : separator
+  return [...args.slice(0, index), ...filters, ...args.slice(index)]
+}

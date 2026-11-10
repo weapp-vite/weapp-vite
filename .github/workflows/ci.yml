@@ -7,6 +7,11 @@ on:
     - cron: '20 1 * * *'
   workflow_dispatch:
     inputs:
+      exclude-e2e-projects:
+        description: 排除的 E2E 专项 workspace，逗号分隔；留空运行完整范围
+        required: false
+        default: ''
+        type: string
       pr-number:
         description: PR 编号；留空保留当前分支或定时验证
         required: false
@@ -38,4 +43,5 @@ jobs:
     uses: ./.github/workflows/validate-ci.yml
     with:
       pr_context: ${{ needs.pr-context.outputs.pr_context }}
+      exclude-e2e-projects: ${{ inputs.exclude-e2e-projects || '' }}
     secrets: inherit
