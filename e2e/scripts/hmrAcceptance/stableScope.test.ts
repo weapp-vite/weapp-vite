@@ -31,9 +31,9 @@ describe('supported WeChat startup classic inventory', () => {
     ['hmr-build', 45, 3],
     ['ide-hmr-headless', 28, 14],
     ['ide-hmr', 34, 19],
-    ['ide-full:exhaustive', 165, 22],
-    ['ide-dom-headless', 99, 14],
-    ['ide-headless-full', 110, 14],
+    ['ide-full:exhaustive', 166, 22],
+    ['ide-dom-headless', 100, 14],
+    ['ide-headless-full', 111, 14],
   ] as const)('preserves the complete %s task inventory and explicit experimental exclusions', async (suite, total, excluded) => {
     const original = await getSuiteTasks(suite, { topology: 'optimized-v1' })
     const supported = await getSuiteTasks(`${suite}:classic`, { topology: 'optimized-v1' })
