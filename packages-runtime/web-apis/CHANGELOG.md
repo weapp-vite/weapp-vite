@@ -1,5 +1,12 @@
 # @wevu/web-apis
 
+## 1.4.3
+
+### Patch Changes
+
+- Updated dependencies:
+  - @weapp-core/constants@0.5.3
+
 ## 1.4.2
 
 ### Patch Changes

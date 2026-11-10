@@ -1,5 +1,12 @@
 # @weapp-vite/language-service
 
+## 0.1.2
+
+### Patch Changes
+
+- Updated dependencies:
+  - @weapp-vite/ast@7.9.0
+
 ## 0.1.1
 
 ### Patch Changes

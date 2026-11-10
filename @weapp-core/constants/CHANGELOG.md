@@ -1,5 +1,11 @@
 # @weapp-core/constants
 
+## 0.5.3
+
+### Patch Changes
+
+- fix(ci): 补齐 WASM `?init` 初始化所需常量的发布版本，确保运行时依赖与源码同步。
+
 ## 0.5.2
 
 ### Patch Changes

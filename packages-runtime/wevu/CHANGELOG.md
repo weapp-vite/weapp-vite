@@ -1,5 +1,14 @@
 # wevu
 
+## 7.9.0
+
+### Patch Changes
+
+- Updated dependencies:
+  - @weapp-core/constants@0.5.3
+  - @wevu/compiler@7.9.0
+  - @wevu/web-apis@1.4.3
+
 ## 7.8.1
 
 ### Patch Changes
