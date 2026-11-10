@@ -113,6 +113,8 @@ pnpm --filter weapp-vite build
 4. 先跑 headless/provider-compatible runtime，具备真实 IDE 基础设施时再跑 WeChat DevTools；同一 e2e-app 在一个 suite 内只启动一次 automator，通过 `miniProgram.reLaunch(...)` 切换场景。
 5. macOS 长时间 IDE suite 使用 `caffeinate -dimsu -- ...`，避免休眠造成假失败。
 
+登录态保护适用于测试准备、故障注入、诊断、恢复和 teardown：禁止向真实 IDE 发送 `logout` / `signout`、切换账号，或删除、覆盖、复制账号凭据、认证配置与登录 session。未登录和凭据失效分支只用 mock 或独立临时假数据验证。自动缓存恢复仅允许编译缓存，不调用 `cache --clean all/auth/session`。正常关闭项目或退出 IDE 进程须保留登录数据；遇到自然失效时保留错误并交由用户登录，不先清空状态再重试。现有 CLI 保护和启动重试单测必须在调用宿主前拒绝注销与账号缓存清理。
+
 真实 DevTools 的可观察 runtime 结果是最终验收标准。模拟器、服务端口、登录、协议连接失败等宿主能力或基础设施限制必须单独记录，不得改写成产品通过；headless 只能用于缩小问题范围和保持 provider-compatible 覆盖。
 
 ## 断言边界
