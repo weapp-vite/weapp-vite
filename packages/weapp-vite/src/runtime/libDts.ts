@@ -80,7 +80,7 @@ export async function generateLibDts(configService: ConfigService, onWatchFile?:
         },
         compilerOptions,
         cwd: resolveRealpath(configService.cwd),
-        emitDtsOnly: true,
+        dtsOnly: true,
       }), {
         name: 'weapp-vite:lib-dts-inputs',
         buildEnd() {

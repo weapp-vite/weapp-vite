@@ -22,8 +22,10 @@ describe('lib mode', () => {
         },
       },
     })
+    const warn = vi.spyOn(console, 'warn')
     try {
       await ctx.buildService.build()
+      expect(warn.mock.calls.flat().join('\n')).not.toContain('emitDtsOnly')
       const files = await scanFiles(outDir)
       const componentCases = [
         { base: 'components/button/index', hasTemplate: true, hasStyle: true },
@@ -71,6 +73,7 @@ describe('lib mode', () => {
       expect(scriptWxss).not.toMatch(/^[ \t]*\r?\n/)
     }
     finally {
+      warn.mockRestore()
       await fs.remove(outDir)
       await dispose()
     }

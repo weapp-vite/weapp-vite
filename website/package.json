@@ -44,7 +44,7 @@
     "@iconify-json/bi": "^1.2.7",
     "@iconify-json/logos": "^1.2.19",
     "@iconify-json/mdi": "catalog:",
-    "@iconify-json/vscode-icons": "^1.2.96",
+    "@iconify-json/vscode-icons": "^1.2.97",
     "@shikijs/vitepress-twoslash": "^4.6.0",
     "@tailwindcss/vite": "catalog:",
     "create-weapp-vite": "workspace:*",
@@ -57,6 +57,6 @@
     "vitepress-plugin-llms": "1.14.0",
     "vitepress-plugin-mermaid": "^2.0.17",
     "weapp-vite": "workspace:*",
-    "wrangler": "^4.158.0"
+    "wrangler": "^4.160.0"
   }
 }
