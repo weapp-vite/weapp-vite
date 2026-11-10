@@ -4,11 +4,71 @@ import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { expect, it } from 'vitest'
 import { createTurboFixture } from '../turboCacheContract/fixture.ts'
-import { splitCliBuild, usePreparedTypeChecks } from './build.ts'
+import { sharedBuildPackages, splitCliBuild, usePreparedTypeChecks } from './build.ts'
 import { createVerificationPlan } from './plan.ts'
 import { getResourceBudget } from './resources.ts'
 import { createTaskExecutor } from './run.ts'
 import { readWorkspace } from './workspace.ts'
+
+it('resolves the scoped Turbo entry with the execution environment and preserves generic packages', async () => {
+  const fixture = await createTurboFixture()
+  try {
+    const manifest = JSON.parse(await fixture.read('package.json')) as { scripts?: Record<string, string> }
+    manifest.scripts = {
+      'build:pkgs': 'node --import tsx scripts/run-scoped-turbo.ts run build --filter=./packages/*',
+    }
+    await fixture.write('package.json', JSON.stringify(manifest))
+    const workspace = await fixture.read('pnpm-workspace.yaml')
+    await fixture.write('pnpm-workspace.yaml', `${workspace}  - e2e-apps/*\n`)
+    for (const project of ['uview-plus-compat', 'wot-ui-compat']) {
+      await fixture.write(`e2e-apps/${project}/package.json`, JSON.stringify({
+        name: `e2e-app-${project}`,
+        scripts: { 'build': 'node --version', 'test:types:check': 'node --version' },
+      }))
+    }
+    expect(await sharedBuildPackages(fixture.root, [])).toContain('@cache-fixture/library')
+    const task: VerificationTask = {
+      id: 'types',
+      kind: 'types',
+      command: 'pnpm',
+      args: ['run', 'scoped-types'],
+      directory: '.',
+      dependencies: [],
+      reason: 'fixture',
+      env: { WEAPP_VITE_E2E_EXCLUDE_PROJECTS: 'uview-plus-compat' },
+    }
+    manifest.scripts['scoped-types'] = 'node --import tsx scripts/run-scoped-turbo.ts run test:types:check'
+    await fixture.write('package.json', JSON.stringify(manifest))
+    const unscoped = { ...task, args: [...task.args], env: { WEAPP_VITE_E2E_EXCLUDE_PROJECTS: '' } }
+    await usePreparedTypeChecks(fixture.root, unscoped)
+    expect(unscoped.args).toContain('--filter=e2e-app-uview-plus-compat')
+    await usePreparedTypeChecks(fixture.root, task)
+    expect(task.args).toContain('--filter=@cache-fixture/library')
+    expect(task.args).toContain('--filter=@mpcore/simulator')
+    expect(task.args).not.toContain('--filter=e2e-app-uview-plus-compat')
+  }
+  finally {
+    await fixture.cleanup()
+  }
+})
+
+it.each([
+  'node --import tsx scripts/other-wrapper.ts run build',
+  'node --import tsx scripts/run-scoped-turbo.ts run build && node after.mjs',
+  'node --import tsx scripts/run-scoped-turbo.ts run build > output.log',
+  'node --import tsx scripts/run-scoped-turbo.ts run build --filter=$PACKAGE',
+])('refuses to infer a graph from unsupported shell or wrapper syntax: %s', async (script) => {
+  const fixture = await createTurboFixture()
+  try {
+    const manifest = JSON.parse(await fixture.read('package.json')) as { scripts?: Record<string, string> }
+    manifest.scripts = { 'build:pkgs': script }
+    await fixture.write('package.json', JSON.stringify(manifest))
+    await expect(sharedBuildPackages(fixture.root, [])).rejects.toThrow('不能安全转换')
+  }
+  finally {
+    await fixture.cleanup()
+  }
+})
 
 it('uses the real Turbo graph and builds the CLI exactly once between its dependencies and consumers', async () => {
   const fixture = await createTurboFixture()

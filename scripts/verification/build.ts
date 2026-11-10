@@ -6,6 +6,7 @@ import path from 'node:path'
 import process from 'node:process'
 // eslint-disable-next-line e18e/ban-dependencies -- 从真实 Turbo dry graph 推导顺序，保留跨平台命令处理。
 import { execa } from 'execa'
+import { EXCLUDED_PROJECTS_ENV, scopedTurboArguments } from '../e2eProjectScope.ts'
 
 interface BuildNode {
   taskId: string
@@ -20,11 +21,15 @@ async function dryBuild(root: string, task: VerificationTask): Promise<BuildNode
   let args = task.args.slice(2)
   if (task.args[0] === 'run') {
     const manifest = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8')) as { scripts: Record<string, string> }
-    const script = manifest.scripts[task.args[1]!]!
-    if (!/^turbo\s/.test(script) || /[;&|]/.test(script)) {
+    const tokens = manifest.scripts[task.args[1]!]?.trim().split(/\s+/) ?? []
+    const scoped = tokens.slice(0, 4).join(' ') === 'node --import tsx scripts/run-scoped-turbo.ts'
+    if ((!scoped && tokens[0] !== 'turbo') || tokens.some(token => !/^[\w./@*!=:,+^~-]+$/.test(token))) {
       throw new Error('构建包装命令不能安全转换为 Turbo 任务图')
     }
-    args = [...script.trim().split(/\s+/).slice(1), ...task.args.slice(2)]
+    args = [...tokens.slice(scoped ? 4 : 1), ...task.args.slice(2)]
+    if (scoped) {
+      args = scopedTurboArguments(args, { ...process.env, ...task.env }[EXCLUDED_PROJECTS_ENV])
+    }
   }
   const result = await execa(process.execPath, [createRequire(import.meta.url).resolve('turbo/bin/turbo'), ...args, '--dry=json'], { cwd: root, env: task.env })
   const parsed: unknown = JSON.parse(result.stdout)
