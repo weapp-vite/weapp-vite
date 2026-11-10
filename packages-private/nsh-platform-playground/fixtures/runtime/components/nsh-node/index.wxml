@@ -1,0 +1,101 @@
+<!-- What the frame, decoration, drawing and text of a node look like; its
+     children follow in drawing order. Handlers are bound only where the
+     node takes the event, so a tap reaches the innermost view that takes
+     presses; the events bubble to the page by themselves (`composed`). -->
+<scroll-view
+  wx:if="{{node.k === 'scroll'}}"
+  class="n"
+  style="left:{{page ? 0 : node.f[0]}}px;top:{{page ? 0 : node.f[1]}}px;width:{{node.f[2]}}px;height:{{node.f[3]}}px;{{node.s}}{{node.a || ''}}"
+  scroll-x="{{node.h}}"
+  scroll-y="{{!node.h}}"
+  scroll-top="{{node.so ? node.so[1] : ''}}"
+  scroll-left="{{node.so ? node.so[0] : ''}}"
+  scroll-with-animation="{{node.so ? node.so[2] : false}}"
+  bindscroll="onScroll"
+>
+  <view class="content" style="width:{{node.cs ? node.cs[0] : node.f[2]}}px;height:{{node.cs ? node.cs[1] : node.f[3]}}px">
+    <nsh-node wx:for="{{node.c}}" wx:key="id" node="{{item}}" />
+  </view>
+</scroll-view>
+<image
+  wx:elif="{{node.k === 'image'}}"
+  class="n"
+  style="left:{{page ? 0 : node.f[0]}}px;top:{{page ? 0 : node.f[1]}}px;width:{{node.f[2]}}px;height:{{node.f[3]}}px;{{node.s}}{{node.a || ''}}"
+  src="{{node.im ? node.im.src : ''}}"
+  mode="{{node.im ? node.im.mode : 'aspectFill'}}"
+  catchtap="{{node.p ? 'onTap' : ''}}"
+/>
+<view
+  wx:elif="{{node.k === 'input'}}"
+  class="n"
+  style="left:{{page ? 0 : node.f[0]}}px;top:{{page ? 0 : node.f[1]}}px;width:{{node.f[2]}}px;height:{{node.f[3]}}px;{{node.s}}{{node.a || ''}}"
+>
+  <block wx:if="{{node.in}}">
+    <textarea
+      wx:if="{{node.in.ml}}"
+      class="field"
+      style="left:{{node.ic ? node.ic[0] : 0}}px;top:{{node.ic ? node.ic[1] : 0}}px;width:{{node.ic ? node.ic[2] : node.f[2]}}px;height:{{node.ic ? node.ic[3] : node.f[3]}}px;{{node.in.css}}"
+      value="{{node.v}}"
+      placeholder="{{node.in.ph}}"
+      placeholder-style="{{node.in.phs}}"
+      maxlength="{{node.in.max}}"
+      disabled="{{node.in.off}}"
+      focus="{{node.fo}}"
+      auto-focus="{{node.in.auto}}"
+      confirm-type="{{node.in.confirm}}"
+      confirm-hold="{{node.in.hold}}"
+      show-confirm-bar="{{false}}"
+      disable-default-padding="{{true}}"
+      bindinput="onInput"
+      bindconfirm="onConfirm"
+      bindfocus="onFocus"
+      bindblur="onBlur"
+    />
+    <input
+      wx:else
+      class="field"
+      style="left:{{node.ic ? node.ic[0] : 0}}px;top:{{node.ic ? node.ic[1] : 0}}px;width:{{node.ic ? node.ic[2] : node.f[2]}}px;height:{{node.ic ? node.ic[3] : node.f[3]}}px;{{node.in.css}}"
+      value="{{node.v}}"
+      type="{{node.in.type}}"
+      password="{{node.in.pw}}"
+      placeholder="{{node.in.ph}}"
+      placeholder-style="{{node.in.phs}}"
+      maxlength="{{node.in.max}}"
+      disabled="{{node.in.off}}"
+      focus="{{node.fo}}"
+      auto-focus="{{node.in.auto}}"
+      confirm-type="{{node.in.confirm}}"
+      confirm-hold="{{node.in.hold}}"
+      bindinput="onInput"
+      bindconfirm="onConfirm"
+      bindfocus="onFocus"
+      bindblur="onBlur"
+    />
+  </block>
+  <nsh-node wx:for="{{node.c}}" wx:key="id" node="{{item}}" />
+</view>
+<view
+  wx:else
+  class="n"
+  style="left:{{page ? 0 : node.f[0]}}px;top:{{page ? 0 : node.f[1]}}px;width:{{node.f[2]}}px;height:{{node.f[3]}}px;{{node.s}}{{node.a || ''}}"
+  catchtap="{{node.p ? 'onTap' : ''}}"
+  catchlongpress="{{node.lp ? 'onLongPress' : ''}}"
+  bindtouchstart="{{node.io || node.tp ? 'onTouchStart' : ''}}"
+  bindtouchend="{{node.io || node.tp ? 'onTouchEnd' : ''}}"
+  bindtouchcancel="{{node.io || node.tp ? 'onTouchEnd' : ''}}"
+>
+  <image
+    wx:if="{{node.cv}}"
+    class="cv"
+    src="{{node.cv}}"
+    style="width:{{node.f[2]}}px;height:{{node.f[3]}}px"
+  />
+  <text
+    wx:for="{{node.t ? node.t.runs : []}}"
+    wx:for-item="run"
+    wx:key="index"
+    class="line"
+    style="left:{{node.t.x + run[1]}}px;top:{{node.t.y + run[2]}}px;line-height:{{run[3]}}px;{{node.t.styles[run[4]]}}"
+  >{{run[0]}}</text>
+  <nsh-node wx:for="{{node.c}}" wx:key="id" node="{{item}}" />
+</view>

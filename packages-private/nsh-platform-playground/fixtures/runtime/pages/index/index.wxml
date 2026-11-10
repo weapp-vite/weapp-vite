@@ -1,0 +1,7 @@
+<view class="nsh-root">
+  <nsh-node wx:if="{{screen}}" node="{{root}}" page="{{true}}" bind:nsh="onNsh" />
+  <block wx:else>
+    <nsh-node wx:for="{{root.c}}" wx:key="id" node="{{item}}" bind:nsh="onNsh" />
+  </block>
+  <nsh-node wx:for="{{ov}}" wx:key="id" node="{{item}}" bind:nsh="onNsh" />
+</view>
