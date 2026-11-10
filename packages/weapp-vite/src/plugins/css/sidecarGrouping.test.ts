@@ -26,7 +26,8 @@ it('bounds sidecar path resolution across owners and refreshes ownership for the
       platform: 'weapp',
       outputExtensions: { wxss: 'wxss', wxml: 'wxml' },
       relativeOutputPath(file: string) {
-        resolutions.set(file, (resolutions.get(file) ?? 0) + 1)
+        const normalized = path.normalize(file)
+        resolutions.set(normalized, (resolutions.get(normalized) ?? 0) + 1)
         return path.relative(src, file).replaceAll('\\', '/')
       },
       relativeAbsoluteSrcRoot: (file: string) => path.relative(src, file).replaceAll('\\', '/'),
@@ -68,7 +69,9 @@ it('bounds sidecar path resolution across owners and refreshes ownership for the
       expect(content).toContain(`.imported-${index}`)
       expect(content?.match(new RegExp(`\\.native-${index}`, 'g'))).toHaveLength(1)
       // 每个 sidecar 的路径处理应有固定上界，不能随页面数量重复扫描。
-      expect(resolutions.get(path.join(src, `pages/page-${index}/index.wxss`))).toBeLessThanOrEqual(4)
+      const sidecarResolutions = resolutions.get(path.join(src, `pages/page-${index}/index.wxss`))
+      expect(sidecarResolutions).toBeGreaterThan(0)
+      expect(sidecarResolutions).toBeLessThanOrEqual(4)
     }
     const retiredOwner = path.join(src, 'pages/page-0/index.js')
     replaceEntryStyleImports(runtimeState.css, retiredOwner, [])
