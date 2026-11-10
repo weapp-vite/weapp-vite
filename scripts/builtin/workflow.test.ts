@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
+import { parseCLI } from 'vitest/node'
 import { parse } from 'yaml'
 
 interface Step {
@@ -16,6 +17,17 @@ const workflow = parse(readFileSync(new URL('../../.github/workflows/update-wech
 }
 
 describe('builtin generation workflow gates', () => {
+  it('passes both resolver tests to Vitest without consuming a path as the snapshot update mode', () => {
+    const command = workflow.jobs.update.steps.find(step => step.name === 'Update unit test snapshots')?.run
+    expect(command).toBeDefined()
+    const { filter, options } = parseCLI(command!.replace(/^pnpm /, ''))
+    expect(options.update).toBe('all')
+    expect(filter).toEqual([
+      'packages/weapp-vite/test/resolvers/tdesign.test.ts',
+      'packages/weapp-vite/test/resolvers/vant.test.ts',
+    ])
+  })
+
   it('tests the generator before writing and its consumers after rebuilding, before creating a PR', () => {
     const steps = workflow.jobs.update.steps
     const generatorTest = steps.findIndex(step => step.name === 'Test builtin component generator')
