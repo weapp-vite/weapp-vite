@@ -83,7 +83,12 @@ jobs:
         run: node .github/scripts/upsert-performance-comment.mjs
 
   report-v2:
-    if: contains(fromJSON('["Performance Smoke","Nightly Performance"]'), github.event.workflow_run.name)
+    if: >-
+      github.event_name == 'workflow_run'
+      && ((github.event.workflow_run.path == '.github/workflows/ci-performance.yml'
+      && github.event.workflow_run.event == 'workflow_dispatch')
+      || (github.event.workflow_run.path == '.github/workflows/nightly-performance.yml'
+      && (github.event.workflow_run.event == 'workflow_dispatch' || github.event.workflow_run.event == 'schedule')))
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -135,8 +140,8 @@ jobs:
   native-pr-report:
     if: >-
       (github.event_name == 'workflow_run'
-      && github.event.workflow_run.name == 'PR CI'
-      && github.event.workflow_run.event == 'pull_request'
+      && github.event.workflow_run.path == '.github/workflows/ci-pr.yml'
+      && (github.event.workflow_run.event == 'pull_request' || github.event.workflow_run.event == 'workflow_dispatch')
       && github.event.workflow_run.conclusion == 'success')
       || (github.event_name == 'workflow_dispatch'
       && github.ref_type == 'branch'

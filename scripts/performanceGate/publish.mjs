@@ -3,6 +3,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
 import { verifyNativePrContext } from '../../.github/scripts/native-pr-identity.mjs'
+import { isNativePrRun, nativeRefreshPinsFromRun, validateNativeRefreshRun } from '../../.github/scripts/native-pr-refresh.mjs'
 import { downloadPrContext, validatePerformancePrContext } from '../../.github/scripts/resolve-performance-runs.mjs'
 import { aggregatePlan } from './aggregate.mjs'
 import { assertSha, createMatrix, frozenManifest, isReportSamplingContract, needsSmoke, policy, statusContext, targetKey } from './contract.mjs'
@@ -84,18 +85,28 @@ export async function smokeStatus(target, { get = request, readContext = downloa
   }
   const repo = await get('')
   const [manual, native] = await Promise.all([
-    get('/actions/workflows/ci-performance.yml/runs?event=workflow_dispatch&per_page=100'),
-    get(`/actions/workflows/ci-pr.yml/runs?event=pull_request&head_sha=${target.headSha}&per_page=100`),
+    pages('/actions/workflows/ci-performance.yml/runs?event=workflow_dispatch', get, 'workflow_runs'),
+    pages('/actions/workflows/ci-pr.yml/runs', get, 'workflow_runs'),
   ])
-  const runs = [...(manual.workflow_runs ?? []), ...(native.workflow_runs ?? [])].sort((a, b) => b.id - a.id)
+  const runs = [...manual, ...native].sort((a, b) => b.id - a.id)
   for (const run of runs) {
-    const isNative = run.name === 'PR CI' && run.path === '.github/workflows/ci-pr.yml' && run.event === 'pull_request'
+    const isNative = isNativePrRun(run)
     const isManual = run.name === 'Performance Smoke' && run.path === '.github/workflows/ci-performance.yml'
       && run.event === 'workflow_dispatch' && run.head_branch === repo.default_branch && run.head_repository?.full_name === repository
     if (!isNative && !isManual) {
       continue
     }
     try {
+      let jobs
+      if (isNative) {
+        if (run.event === 'workflow_dispatch') {
+          validateNativeRefreshRun({ ...nativeRefreshPinsFromRun(run), runId: run.id, runAttempt: run.run_attempt, driverSha: run.head_sha, controlRef: repo.default_branch }, run, repository, repo.default_branch)
+        }
+        jobs = await pages(`/actions/runs/${run.id}/jobs?filter=latest`, get, 'jobs')
+        if (!['Approve PR checks', 'Freeze approved PR target'].every(name => jobs.some(job => job.name === name && job.conclusion === 'success'))) {
+          continue
+        }
+      }
       const input = await readContext({ apiUrl: process.env.GITHUB_API_URL ?? 'https://api.github.com', token: process.env.GITHUB_TOKEN, repository, run })
       if (isNative && !(await verifyNativePrContext(input, run, repository, get)).valid) {
         continue
@@ -107,7 +118,6 @@ export async function smokeStatus(target, { get = request, readContext = downloa
       if (isManual) {
         return run.status !== 'completed' ? '运行中' : run.conclusion === 'success' ? '通过或无需冒烟' : '🔴 未通过'
       }
-      const jobs = await pages(`/actions/runs/${run.id}/jobs?filter=latest`, get, 'jobs')
       const smoke = jobs.find(job => job.name.startsWith('Performance Smoke /') && job.steps?.some(step => step.name === 'Run correctness smoke'))
       return !smoke || smoke.status !== 'completed' ? '运行中' : smoke.conclusion === 'success' ? '通过或无需冒烟' : '🔴 未通过'
     }

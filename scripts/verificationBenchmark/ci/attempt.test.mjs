@@ -101,6 +101,25 @@ it('accepts a fully fresh second attempt and retains the same committed source i
   expect(second.evidence.context.runAttempt).toBe(2)
 })
 
+it('archives the verified frozen merge after associated PR base metadata advances', async () => {
+  const value = fixture()
+  value.run.pull_requests[0].base.sha = 'e'.repeat(40)
+  const result = await collectCiEvidence(value.repository, 123, value.configuration, value.execute)
+  expect(result.sample.revision).toBe(value.configuration.identity.checkoutSha)
+  expect(result.evidence.context.baseSha).toBe(value.configuration.identity.baseSha)
+})
+
+it.each(['missing', 'substituted'])('rejects %s invocation proof when archiving a snapshot', async (change) => {
+  const value = fixture()
+  if (change === 'missing') {
+    delete value.run.referenced_workflows
+  }
+  else {
+    value.run.referenced_workflows[0].sha = 'e'.repeat(40)
+  }
+  await expect(collectCiEvidence(value.repository, 123, value.configuration, value.execute)).rejects.toThrow(/invocation proof/u)
+})
+
 it('removes partial binary downloads when the exact-ID HTTP request fails', async () => {
   const value = fixture()
   const archives = []

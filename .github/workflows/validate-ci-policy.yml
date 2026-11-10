@@ -24,7 +24,7 @@ jobs:
 
   policy-pr:
     needs: pr-context
-    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-policy'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && ((inputs.verification_topology == 'optimized-v2' && (fromJSON(inputs.pr_context).isPr && 'true' || 'false') || needs.pr-context.outputs.is_pr) == 'true')) }}
+    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).selections['ci-policy'] || !contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && ((inputs.verification_topology == 'optimized-v2' && (fromJSON(inputs.pr_context).isPr && 'true' || 'false') || needs.pr-context.outputs.is_pr) == 'true')) }}
     name: Policy Checks (Node 24)
     uses: ./.github/workflows/reusable-node-command.yml
     with:
@@ -68,7 +68,7 @@ jobs:
 
   policy-full:
     needs: pr-context
-    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((fromJSON(inputs.pr_context).event == 'pull_request' && fromJSON(inputs.pr_context).selections['ci-policy'] || fromJSON(inputs.pr_context).event != 'pull_request' && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && ((inputs.verification_topology == 'optimized-v2' && (fromJSON(inputs.pr_context).isPr && 'true' || 'false') || needs.pr-context.outputs.is_pr) != 'true')) }}
+    if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).selections['ci-policy'] || !contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && ((inputs.verification_topology == 'optimized-v2' && (fromJSON(inputs.pr_context).isPr && 'true' || 'false') || needs.pr-context.outputs.is_pr) != 'true')) }}
     name: Policy Checks (Node ${{ matrix.node-version }})
     strategy:
       fail-fast: false

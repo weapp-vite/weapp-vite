@@ -7,6 +7,7 @@ import { request as githubRequest, pages } from '../../scripts/performanceGate/g
 import { publishComment } from '../../scripts/performanceGate/publish.mjs'
 import { verifySmoke } from '../../scripts/performanceGate/smokeReport.mjs'
 import { verifyNativePrContext } from './native-pr-identity.mjs'
+import { isNativePrRun, nativeRefreshPinsFromRun, validateNativeRefreshRun } from './native-pr-refresh.mjs'
 import { renderFailureComment, renderSuccessComment, upsertComment, validateArtifact } from './upsert-runtime-size-comment.mjs'
 
 /** 汇总运行中只读取对应子 job 的结论，不能让其他矩阵失败冒充性能检查失败。 */
@@ -23,8 +24,8 @@ export function nativeReportRunId(eventName, event, ref) {
   if (eventName === 'workflow_dispatch' && ref === `refs/heads/${event.repository?.default_branch}`) {
     runId = event.inputs?.['run-id']
   }
-  else if (eventName === 'workflow_run' && event.workflow_run?.name === 'PR CI'
-    && event.workflow_run.event === 'pull_request' && event.workflow_run.conclusion === 'success') {
+  else if (eventName === 'workflow_run' && isNativePrRun(event.workflow_run)
+    && event.workflow_run.conclusion === 'success') {
     runId = event.workflow_run.id
   }
   else {
@@ -37,7 +38,7 @@ export function nativeReportRunId(eventName, event, ref) {
 }
 
 function validateNativeReportRun(run, repository) {
-  if (run.name !== 'PR CI' || run.path !== '.github/workflows/ci-pr.yml' || run.event !== 'pull_request'
+  if (!isNativePrRun(run)
     || run.status !== 'completed' || run.repository?.full_name !== repository) {
     throw new Error('Native reporting requires a completed PR CI run in this repository')
   }
@@ -54,6 +55,10 @@ export async function resolveNativeReportSource(repository, runId, request = git
   if (String(run.id) !== String(runId)) {
     throw new Error('Native PR report run ID mismatch')
   }
+  if (run.event === 'workflow_dispatch') {
+    const metadata = await request('')
+    validateNativeRefreshRun({ ...nativeRefreshPinsFromRun(run), runId: run.id, runAttempt: run.run_attempt, driverSha: run.head_sha, controlRef: metadata.default_branch }, run, repository, metadata.default_branch)
+  }
   const jobs = await pages(`/actions/runs/${run.id}/jobs?filter=latest`, request, 'jobs')
   return { run, jobs, shouldReport: hasApprovedContext(jobs) }
 }
@@ -68,8 +73,10 @@ export async function publishNativePrReport({ repository, run, context, jobs, re
   if (!identity.valid) {
     return { published: false, reason: identity.reason }
   }
-  const recent = await request(`/actions/workflows/ci-pr.yml/runs?event=pull_request&head_sha=${context.headSha}&per_page=100`)
-  if (recent.workflow_runs.some(candidate => BigInt(candidate.id) > BigInt(run.id))) {
+  const recent = await pages('/actions/workflows/ci-pr.yml/runs', request, 'workflow_runs')
+  if (recent.some(candidate => isNativePrRun(candidate)
+    && (candidate.event === 'workflow_dispatch' ? nativeRefreshPinsFromRun(candidate).headSha : candidate.head_sha) === context.headSha
+    && BigInt(candidate.id) > BigInt(run.id))) {
     return { published: false, reason: 'newer-run' }
   }
   const { smoke, runtime } = nativeReportJobs(jobs)

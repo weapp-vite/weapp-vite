@@ -30,6 +30,7 @@ export function fixture() {
     run_started_at: time(0),
     updated_at: time(30),
     pull_requests: [{ number: 42, head: { sha: headSha, ref: 'candidate' }, base: { sha: baseSha, ref: 'main' } }],
+    referenced_workflows: [{ path: `${repository}/.github/workflows/validate-ci.yml@${checkoutSha}`, sha: checkoutSha, ref: 'refs/pull/42/merge' }],
   }
   const identity = { repository, prNumber: 42, runId: 123, runAttempt: 1, event: 'pull_request', workflow: run.path, headSha, baseSha, driverSha: checkoutSha, checkoutSha, checkoutMode: 'merge' }
   const context = { schemaVersion: 1, ...identity, isPr: true, headRepository: repository, headRef: 'candidate', baseRef: 'main', selections: { ci: true } }

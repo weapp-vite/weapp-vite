@@ -52,6 +52,20 @@ describe('frozen context inside actual jobs', () => {
     expect(() => assertFrozenJobContext(context, undefined, 'documentation', sha('c'), env)).toThrow('Unselected')
   })
 
+  it('keeps refresh control identity separate from merge, head and documentation checkouts', () => {
+    const refresh = { ...context, event: 'native_refresh', driverSha: sha('d'), controlRef: 'main', headRepository: context.repository, headRepositoryId: 1, baseRepositoryId: 1, documentationOnly: true }
+    const environment = { ...env, GITHUB_SHA: sha('d') }
+    expect(assertFrozenJobContext(refresh, { checkoutMode: 'merge' }, 'ci', sha('c'), environment).checkoutSha).toBe(sha('c'))
+    expect(assertFrozenJobContext(refresh, { checkoutMode: 'head' }, 'smoke', sha('a'), environment).checkoutSha).toBe(sha('a'))
+    expect(assertFrozenJobContext(refresh, undefined, 'documentation', sha('c'), environment).shouldRun).toBe(true)
+    expect(() => assertFrozenJobContext(refresh, { checkoutMode: 'merge' }, 'ci', sha('d'), environment)).toThrow('checkout mismatch')
+    expect(() => assertFrozenJobContext(refresh, { checkoutMode: 'merge' }, 'ci', sha('c'), env)).toThrow('driver mismatch')
+    expect(() => assertFrozenJobContext(refresh, undefined, 'documentation', sha('d'), environment)).toThrow('checkout mismatch')
+    expect(() => assertFrozenJobContext({ ...refresh, selections: {} }, { checkoutMode: 'merge' }, 'ci', sha('c'), environment)).toThrow()
+    expect(() => assertFrozenJobContext({ ...refresh, headRepositoryId: 0 }, { checkoutMode: 'merge' }, 'ci', sha('c'), environment)).toThrow()
+    expect(() => assertFrozenJobContext({ ...refresh, headRepository: context.headRepository, headRepositoryId: 2 }, { checkoutMode: 'merge' }, 'ci', sha('c'), environment)).toThrow()
+  })
+
   it('refuses unselected profiles and preserves manual reference contexts', () => {
     expect(() => assertFrozenJobContext(context, { checkoutMode: 'merge' }, 'skipped', sha('c'), env)).toThrow('Unselected')
     const manual = { ...context, event: undefined, isPr: false, checkoutMode: 'ref', selections: undefined }

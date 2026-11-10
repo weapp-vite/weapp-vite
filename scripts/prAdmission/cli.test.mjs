@@ -64,12 +64,18 @@ describe('PR admission command', () => {
 
   it('runs live queries only when requested and honors an explicit repository', async () => {
     const options = await fixture()
-    const { environment, fork } = liveFixture()
-    options.gh.mockResolvedValueOnce(JSON.stringify(environment)).mockResolvedValueOnce(JSON.stringify(fork))
+    const { environment, fork, protection } = liveFixture()
+    options.gh.mockResolvedValueOnce(JSON.stringify(environment)).mockResolvedValueOnce(JSON.stringify(fork)).mockResolvedValueOnce(JSON.stringify(protection))
     expect(await runPrAdmission(['--live', '--repo', 'example/project'], options)).toBe(0)
     expect(options.gh.mock.calls.map(([args]) => args.slice(0, 3))).toEqual([
       ['api', '--method', 'GET'],
       ['api', '--method', 'GET'],
+      ['api', '--method', 'GET'],
+    ])
+    expect(options.gh.mock.calls.map(([args]) => args.at(-1))).toEqual([
+      'repos/example/project/environments/pr-ci-approval',
+      'repos/example/project/actions/permissions/fork-pr-contributor-approval',
+      'repos/example/project/branches/main/protection',
     ])
   })
 

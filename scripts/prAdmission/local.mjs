@@ -3,6 +3,7 @@ import { readdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { parse } from 'yaml'
 import { checkDocumentationAdmission } from './documentation.mjs'
+import { validateMergeProtectionPolicy } from './mergeProtection.mjs'
 import { checkReleaseIntentAdmission } from './releaseIntent.mjs'
 import { check } from './report.mjs'
 
@@ -17,10 +18,14 @@ function expression(value) {
 // 只核对已约定的保护表达式，不执行仓库 YAML 中的代码。
 const reportGuards = {
   'comment': `contains(fromJSON('["CI Performance","Wevu Runtime Size"]'), github.event.workflow_run.name) && github.event.workflow_run.event == 'workflow_dispatch'`,
-  'report-v2': `contains(fromJSON('["Performance Smoke","Nightly Performance"]'), github.event.workflow_run.name)`,
+  'report-v2': `github.event_name == 'workflow_run'
+    && ((github.event.workflow_run.path == '.github/workflows/ci-performance.yml'
+    && github.event.workflow_run.event == 'workflow_dispatch')
+    || (github.event.workflow_run.path == '.github/workflows/nightly-performance.yml'
+    && (github.event.workflow_run.event == 'workflow_dispatch' || github.event.workflow_run.event == 'schedule')))`,
   'native-pr-report': `(github.event_name == 'workflow_run'
-    && github.event.workflow_run.name == 'PR CI'
-    && github.event.workflow_run.event == 'pull_request'
+    && github.event.workflow_run.path == '.github/workflows/ci-pr.yml'
+    && (github.event.workflow_run.event == 'pull_request' || github.event.workflow_run.event == 'workflow_dispatch')
     && github.event.workflow_run.conclusion == 'success')
     || (github.event_name == 'workflow_dispatch'
     && github.ref_type == 'branch'
@@ -49,6 +54,7 @@ export async function readLocalAdmission(root) {
     || policy.deploymentBranchPolicy !== null || typeof policy.forkApprovalPolicy !== 'string') {
     throw new TypeError('无效的 .github/pr-admission.json 审批配置')
   }
+  validateMergeProtectionPolicy(policy.mergeProtection)
   const profiles = JSON.parse(await readFile(path.join(github, 'pr-checks.json'), 'utf8'))
   if (!profiles || typeof profiles !== 'object' || Array.isArray(profiles) || Object.keys(profiles).length === 0) {
     throw new TypeError('无效的 .github/pr-checks.json 检查清单')
@@ -59,6 +65,39 @@ export async function readLocalAdmission(root) {
     workflows[name] = parse(await readFile(path.join(directory, name), 'utf8'))
   }
   return { policy, profiles, workflows }
+}
+
+/** 必需检查始终给出终态；只有批准且成功规划、未取消的路径能执行候选步骤。 */
+function checkVerdictAdmission(job, profiles, add) {
+  const admitted = 'github.event_name == \'pull_request\' || (github.event_name == \'workflow_dispatch\' && github.ref_type == \'branch\' && github.ref_name == github.event.repository.default_branch)'
+  const candidate = '${{ success() && !cancelled() && needs.approval.result == \'success\' && needs.plan.result == \'success\' }}'
+  add('verdict 绑定唯一汇总检查', 'PR snapshot checks', job.name)
+  add('verdict 等待全部冻结检查', sorted(['approval', 'plan', ...Object.keys(profiles), 'documentation']), sorted(list(job.needs)))
+  add('verdict 在所有准入终态运行且跳过关闭事件', expression(`always() && (${admitted})`), expression(job.if))
+  add('verdict 保持静态只读任务', {
+    runner: 'ubuntu-latest',
+    minutes: 5,
+    permissions: { contents: 'read' },
+  }, { runner: job['runs-on'], minutes: job['timeout-minutes'], permissions: job.permissions })
+  add('verdict 不接受额外执行配置', sorted(['name', 'needs', 'if', 'runs-on', 'timeout-minutes', 'permissions', 'steps']), sorted(Object.keys(job)))
+  add('verdict 仅执行静态裁决脚本', [
+    { uses: 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1', if: candidate, with: { 'ref': '${{ github.sha }}', 'persist-credentials': false } },
+    { uses: './.github/actions/setup-node', if: candidate, with: { 'node-version': '24' } },
+    {
+      id: 'snapshot',
+      name: 'Check frozen snapshot results',
+      if: candidate,
+      env: { PR_FROZEN_CONTEXT: '${{ needs.plan.outputs.pr_context }}', PR_NEEDS_JSON: '${{ toJSON(needs) }}' },
+      run: 'node .github/scripts/native-pr-verdict.mjs',
+    },
+    {
+      name: 'Require successful terminal result',
+      if: 'always()',
+      env: { PR_APPROVAL_RESULT: '${{ needs.approval.result }}', PR_PLAN_RESULT: '${{ needs.plan.result }}', PR_VERDICT_RESULT: '${{ steps.snapshot.outcome }}' },
+      run: 'test "$PR_APPROVAL_RESULT" = success\ntest "$PR_PLAN_RESULT" = success\ntest "$PR_VERDICT_RESULT" = success\n',
+    },
+    { name: 'Reject cancelled run', if: 'cancelled()', run: 'exit 1' },
+  ], job.steps)
 }
 
 /** 核对审批入口及依赖边界；新增任务必须显式登记，不能成为审批前的独立根节点。 */
@@ -75,24 +114,35 @@ export function checkLocalAdmission({ policy, profiles, workflows }) {
   }
   const pr = workflows['ci-pr.yml'] ?? {}
   add('原生入口名称', 'PR CI', pr.name)
+  add('原生重验标题绑定全部 pins', '${{ github.event_name == \'workflow_dispatch\' && format(\'PR CI refresh #{0} head={1} base={2} merge={3}\', inputs.pr-number, inputs.head-sha, inputs.base-sha, inputs.merge-sha) || github.event.pull_request.title }}', pr['run-name'])
   add('原生触发事件', {
     pull_request: { types: ['opened', 'synchronize', 'reopened'] },
     pull_request_target: { types: ['closed'] },
+    workflow_dispatch: { inputs: Object.fromEntries(['pr-number', 'head-sha', 'base-sha', 'merge-sha'].map(name => [name, { required: true, type: 'string' }])) },
   }, triggers['ci-pr.yml'])
   add('PR 并发隔离与旧运行取消', {
-    'group': 'pr-ci-${{ github.event.pull_request.number }}',
+    'group': 'pr-ci-${{ github.event.pull_request.number || inputs.pr-number }}',
     'cancel-in-progress': true,
   }, pr.concurrency)
   const jobs = pr.jobs ?? {}
   const { approval = {}, plan = {}, ...validations } = jobs
-  add('单一审批后的任务清单', sorted([...Object.keys(profiles), 'documentation']), sorted(Object.keys(validations)))
+  add('单一审批后的任务清单', sorted([...Object.keys(profiles), 'documentation', 'verdict']), sorted(Object.keys(validations)))
   add('审批 Environment', policy.environment, typeof approval.environment === 'object' ? approval.environment?.name : approval.environment)
-  add('关闭事件跳过审批', expression('github.event_name == \'pull_request\''), expression(approval.if))
+  add('关闭事件跳过审批', expression('github.event_name == \'pull_request\' || (github.event_name == \'workflow_dispatch\' && github.ref_type == \'branch\' && github.ref_name == github.event.repository.default_branch)'), expression(approval.if))
   add('审批为唯一根任务', [], list(approval.needs))
   add('审批任务不调用其他 workflow', undefined, approval.uses)
+  add('审批前不执行候选或发现逻辑', true, Array.isArray(approval.steps) && approval.steps.length === 1
+  && !approval.steps[0].uses && /^echo "[^"\r\n$`]*"$/u.test(approval.steps[0].run ?? '')
+  && Object.keys(approval.steps[0]).every(key => ['name', 'run'].includes(key)))
+  const controlCheckout = plan.steps?.find(step => step.uses?.startsWith('actions/checkout@'))
+  add('冻结目标使用触发控制 SHA', { 'ref': '${{ github.sha }}', 'persist-credentials': false }, controlCheckout?.with)
   add('冻结目标等待审批', ['approval'], list(plan.needs))
   add('冻结目标不覆盖默认依赖条件', undefined, plan.if)
+  checkVerdictAdmission(jobs.verdict ?? {}, profiles, add)
   for (const [name, job] of Object.entries(jobs)) {
+    if (name === 'verdict') {
+      continue
+    }
     add(`${name} 不绕过跳过或取消的依赖`, false, /\b(?:always|cancelled|failure)\s*\(/u.test(job.if ?? ''))
     if (name === 'approval' || name === 'plan') {
       continue
