@@ -37,7 +37,7 @@
 最终主线已完成 74 项全仓 lint、50 项包构建、88 项公开类型任务及 80 项应用/模板构建。内部声明选项修正后显式重建 weapp-vite，网站与 lib 模板的 37 项构建任务、lib 消费者与关联公开类型的 59 项任务再次通过；默认弃用告警已消除。
 
 - 最终冻结源码完整单测（`pnpm test`）：2701 个文件通过，26182 项测试通过；13 个文件、20 项测试按既有规则跳过。
-- 包构建：49 项任务通过；应用与模板构建：80 项任务通过，包含 TDesign 模板。
+- 最终包构建：50 项任务通过；应用与模板构建：80 项任务通过，包含 TDesign 模板。
 - 公开类型：`pnpm test:types` 的 88 项任务通过；8 个直接相关包的源码类型检查通过。
 - AST、Tailwind 动态颜色与缓存、语言服务、automator：133 文件、1459 项定向测试通过。
 - 脚手架、初始化器、Dashboard：72 文件、664 项测试通过；保留 Vite+ 后另跑 66 项版本与模板配对测试通过。
@@ -63,4 +63,21 @@
 
 ## Runtime 与交付状态
 
-依赖生命周期、完整 headless 和最终冻结本地验证已通过，repoctl 原生 hooks 安装成功。接下来由原生 hooks 执行提交与推送检查，并跟踪主线提交的跨平台 CI，再从同步、干净根 `main` 启动正式完整 IDE 验收；在结果落定前，本记录不宣称最终 runtime 验收完成。
+依赖升级提交 `56325c030cf8efbdfbe29ac540bcda1d9f0f82d4` 已通过原生 pre-commit、commit-msg 和 pre-push，推送至 `main`。pre-push 使用隔离的冻结提交快照完成 quick 检查，未绕过 hooks。登录态保护规范随后以 `2c8653b4e` 提交并推送，原生 hooks 同样通过。
+
+| 验证 | 已观察结果 |
+| --- | --- |
+| [Native Addon Correctness](https://github.com/weapp-vite/weapp-vite/actions/runs/42842374075) | 升级提交的 Windows、macOS、Linux 实际 addon 检查全部通过。 |
+| [跨平台 CI](https://github.com/weapp-vite/weapp-vite/actions/runs/42842370678) | 六组 OS / Node 22、24 构建与 lint，以及 Weapi guard 通过。Windows 两组 coverage shard 3 失败，其覆盖汇总随之失败；部分 macOS 检查仍排队、运行或已取消。本轮未通过，不记为全绿。 |
+| 正式完整 IDE 首轮 | 从同步、干净根 `main` 启动，HEAD 与远端均为升级提交。首个任务在登录预检返回 `needs-login`，目标 case 未执行；0/28 项通过、27 项未执行、2 项按既定策略范围外。原始 strict DOM 失败和完整资源记录保留。 |
+| 登录恢复 | Computer Use 核对同一 Stable 的登录二维码，用户扫码后确认已登录。用户授权关闭自动恢复的历史项目后，通过正常菜单关闭项目并退出 IDE，应用清单及进程核对确认退出；没有执行注销、切换账号或清理登录数据。 |
+
+IDE 使用 Stable 2.02.2609250；官方版本查询时间为 2026-11-10 15:17:30 UTC，结果匹配所选安装。首轮因登录阻断，没有取得目标 runtime 的基础库版本，不能用安装元数据代替 runtime 观测。runner 的 scope、宿主退出和登记资源收尾均成功，选定安装回到冷宿主。恢复后另一全面回归运行接续使用同机租约，避免并行启动第二轮验收；它的局部结果不计为本记录的完整 IDE 通过。
+
+Windows 失败分别记录，保留原断言：四项发布恢复测试的实际路径为 POSIX 分隔符，期望值使用 Windows 分隔符。升级前 [CI 42782467035](https://github.com/weapp-vite/weapp-vite/actions/runs/42782467035) 的 Windows Node 24 shard 3 已有相同四项失败，属于历史失败。当前 Node 24 另有一项原生 Vite watcher 在 ready 后未观察到单次文件创建；当前 Node 22 和 Linux Node 24 对应用例通过，唯一根因尚未确定，不能直接归因为依赖升级，也未通过延长超时、重复写入或跳过断言消除失败。
+
+首次自动状态汇总遇到 GitHub artifact API 503，保留为服务端失败；后续状态汇总成功不替代产品检查。Documentation 已通过；Release 当时仍运行，按仓库规范只记录状态，不作为本批交付门禁。
+
+按用户追加要求，将登录态保护写入 `AGENTS.local.md` 和 `e2e/HMR-GUARD.md`：覆盖测试准备、故障注入、诊断、恢复和 teardown；真实登录态不得主动注销，未登录分支仅用 mock 或临时假数据验证。既有 CLI 账号保护及登录重试的 25 项测试通过，规范文件 ESLint 通过。源码搜索未发现测试向真实 IDE 发起注销的调用；命中项是保护逻辑和使用 mock 的拒绝测试。本次登录失效原因没有充分证据，不推断由测试注销导致。另一个清理边界复验被全面回归任务的机器租约拒绝，尚未执行，不计为通过。
+
+依赖生命周期、完整 headless、最终冻结本地检查和三平台 native 已通过；跨平台 CI 尚未全部通过，正式完整 IDE 仍未完成。**未完成最终验收**。后续须保留失败证据，完成 CI 问题闭环，再从同步、干净根 `main` 串行执行原完整 IDE 门禁。
