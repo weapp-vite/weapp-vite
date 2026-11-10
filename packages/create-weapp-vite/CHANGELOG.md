@@ -1,5 +1,18 @@
 # create-weapp-vite
 
+## 3.5.0
+
+### Minor Changes
+
+- feat(weapp-vite): 支持微信小程序通过 `?init` 初始化 WASM 模块。
+
+### Patch Changes
+
+- fix(weapp-vite): 修复微信小程序 WASM `?init` 插件的 host 插件槽绑定。
+
+- Updated dependencies:
+  - @weapp-vite/language-service@0.1.2
+
 ## 3.4.1
 
 ### Patch Changes

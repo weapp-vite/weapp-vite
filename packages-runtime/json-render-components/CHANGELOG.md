@@ -1,5 +1,12 @@
 # @wevu/json-render-components
 
+## 0.2.3
+
+### Patch Changes
+
+- Updated dependencies:
+  - wevu@7.9.0
+
 ## 0.2.2
 
 ### Patch Changes

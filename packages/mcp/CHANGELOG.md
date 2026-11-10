@@ -1,5 +1,12 @@
 # @weapp-vite/mcp
 
+## 2.2.3
+
+### Patch Changes
+
+- Updated dependencies:
+  - @weapp-core/constants@0.5.3
+
 ## 2.2.2
 
 ### Patch Changes

@@ -647,6 +647,10 @@
     - dependency-upgrade-20261107-013801
     - dependency-upgrade-20261107-102200
     - issue-1299-slot-owner
+"@weapp-core/constants@0.5.3":
+  dir: "@weapp-core/constants"
+  intents:
+    - constants-wasm-init-release
 "@weapp-core/init@6.0.16":
   dir: "@weapp-core/init"
   intents:
@@ -3387,6 +3391,11 @@ create-weapp-vite@3.4.1:
     - template-corpus-parser-boundaries
     - template-dialects-core-presets
     - web-coverage-sass-runtime
+create-weapp-vite@3.5.0:
+  dir: packages/create-weapp-vite
+  intents:
+    - fix-wasm-init-slot
+    - issue-1202-wechat-wasm-init
 rolldown-require@2.0.26:
   dir: packages/rolldown-require
   intents:
@@ -4107,6 +4116,11 @@ weapp-vite@7.8.1:
     - tailwind-hook-warning
     - template-corpus-parser-boundaries
     - template-dialects-core-presets
+weapp-vite@7.9.0:
+  dir: packages/weapp-vite
+  intents:
+    - fix-wasm-init-slot
+    - issue-1202-wechat-wasm-init
 wevu@6.20.5:
   dir: packages-runtime/wevu
   intents:

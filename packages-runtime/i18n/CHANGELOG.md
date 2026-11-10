@@ -1,5 +1,12 @@
 # @weapp-vite/i18n
 
+## 0.3.3
+
+### Patch Changes
+
+- Updated dependencies:
+  - @weapp-core/constants@0.5.3
+
 ## 0.3.2
 
 ### Patch Changes

@@ -1,5 +1,25 @@
 # weapp-vite
 
+## 7.9.0
+
+### Minor Changes
+
+- feat(weapp-vite): 支持微信小程序通过 `?init` 初始化 WASM 模块。
+
+### Patch Changes
+
+- fix(weapp-vite): 修复微信小程序 WASM `?init` 插件的 host 插件槽绑定。
+
+- Updated dependencies:
+  - @weapp-core/constants@0.5.3
+  - @weapp-vite/ast@7.9.0
+  - @weapp-vite/i18n@0.3.3
+  - @weapp-vite/language-service@0.1.2
+  - @weapp-vite/mcp@2.2.3
+  - @weapp-vite/web@2.2.2
+  - @wevu/web-apis@1.4.3
+  - wevu@7.9.0
+
 ## 7.8.1
 
 ### Patch Changes
