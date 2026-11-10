@@ -105,15 +105,6 @@ function constrainAssetFileName(options: WasmPluginOptions, fileName: string) {
     return `${root}/${normalized}`
   }
 
-  if (options.scope === 'app') {
-    for (const reservedRoot of options.reservedRoots ?? []) {
-      const root = reservedRoot.replaceAll('\\', '/').replace(/^\/+|\/+$/g, '')
-      if (root && (normalized === root || normalized.startsWith(`${root}/`))) {
-        throw new Error(`[weapp-vite] Main package WASM assets cannot be emitted inside package or Worker root: ${normalized}`)
-      }
-    }
-  }
-
   if (options.scope === 'worker') {
     const workerRoot = options.workerRoot?.replaceAll('\\', '/').replace(/^\/+|\/+$/g, '')
     if (workerRoot && (normalized === workerRoot || normalized.startsWith(`${workerRoot}/`))) {
@@ -201,7 +192,7 @@ export function createWasmPlugin(ctx: CompilerContext, options: WasmPluginOption
       }
     },
     outputOptions(outputOptions) {
-      if (ctx.configService.platform !== 'weapp' || command !== 'build') {
+      if (ctx.configService.platform !== 'weapp' || command !== 'build' || options.scope === 'app') {
         return null
       }
       const original = outputOptions.assetFileNames as AssetFileNames | undefined

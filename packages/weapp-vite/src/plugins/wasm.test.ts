@@ -113,27 +113,27 @@ describe('WASM init plugin', () => {
     expect(webOutput({ assetFileNames: 'custom/[name].wasm' })).toBeNull()
   })
 
-  it('constrains independent and Worker WASM asset names while preserving custom name rules', () => {
+  it('constrains independent and Worker WASM assets and leaves main-package naming to Vite', () => {
     const plugin = createWasmPlugin(createContext(), { scope: 'independent', packageRoot: 'isolated' })
-    hook<(config: ResolvedConfig) => void>(plugin.configResolved)({ command: 'build', publicDir: false, experimental: {} } as ResolvedConfig)
-    const outputOptions = hook<(options: { assetFileNames?: string | ((asset: { name?: string }) => string) }) => { assetFileNames: (asset: { name?: string }) => string }>(plugin.outputOptions)
+    hook<(config: ResolvedConfig) => void>(plugin.configResolved)({ command: 'build', root: '/project', publicDir: false, experimental: {} } as ResolvedConfig)
+    const outputOptions = hook<(options: { assetFileNames?: string | ((asset: { originalFileNames?: string[] }) => string) }) => { assetFileNames: (asset: { originalFileNames?: string[] }) => string }>(plugin.outputOptions)
     const naming = vi.fn(() => 'assets/engine-[hash].wasm')
     const independent = outputOptions({ assetFileNames: naming })
-    expect(independent.assetFileNames({ name: 'engine.wasm' })).toBe('isolated/assets/engine-[hash].wasm')
-    expect(independent.assetFileNames({ name: 'image.png' })).toBe('assets/engine-[hash].wasm')
-    expect(naming).toHaveBeenCalledTimes(2)
+    expect(independent.assetFileNames({ originalFileNames: ['src/engine.wasm'] })).toBe('isolated/assets/engine-[hash].wasm')
+    expect(independent.assetFileNames({ originalFileNames: ['src/ordinary.wasm'] })).toBe('isolated/assets/engine-[hash].wasm')
+    expect(independent.assetFileNames({ originalFileNames: ['src/image.png'] })).toBe('assets/engine-[hash].wasm')
+    expect(naming).toHaveBeenCalledTimes(3)
 
     const worker = createWasmPlugin(createContext(), { scope: 'worker', workerRoot: 'workers' })
-    hook<(config: ResolvedConfig) => void>(worker.configResolved)({ command: 'build', publicDir: false, experimental: {} } as ResolvedConfig)
-    const workerOptions = hook<(options: { assetFileNames?: string }) => { assetFileNames: (asset: { name?: string }) => string }>(worker.outputOptions)
-    expect(workerOptions({ assetFileNames: 'workers/[name]-[hash][extname]' }).assetFileNames({ name: 'engine.wasm' }))
+    hook<(config: ResolvedConfig) => void>(worker.configResolved)({ command: 'build', root: '/project', publicDir: false, experimental: {} } as ResolvedConfig)
+    const workerOptions = hook<(options: { assetFileNames?: string }) => { assetFileNames: (asset: { originalFileNames?: string[] }) => string }>(worker.outputOptions)
+    expect(workerOptions({ assetFileNames: 'workers/[name]-[hash][extname]' }).assetFileNames({ originalFileNames: ['src/engine.wasm'] }))
       .toBe('assets/[name]-[hash][extname]')
 
     const app = createWasmPlugin(createContext(), { scope: 'app', reservedRoots: ['subpackage', 'workers'] })
-    hook<(config: ResolvedConfig) => void>(app.configResolved)({ command: 'build', publicDir: false, experimental: {} } as ResolvedConfig)
-    const appOptions = hook<(options: { assetFileNames?: string }) => { assetFileNames: (asset: { name?: string }) => string }>(app.outputOptions)
-    expect(() => appOptions({ assetFileNames: 'subpackage/[name].wasm' }).assetFileNames({ name: 'engine.wasm' }))
-      .toThrow('cannot be emitted inside package or Worker root')
+    hook<(config: ResolvedConfig) => void>(app.configResolved)({ command: 'build', root: '/project', publicDir: false, experimental: {} } as ResolvedConfig)
+    const appOptions = hook<(options: { assetFileNames?: string }) => null>(app.outputOptions)
+    expect(appOptions({ assetFileNames: 'subpackage/[name].wasm' })).toBeNull()
   })
 
   it('forwards imports, adapts host instance results, and preserves host rejections', async () => {
@@ -227,6 +227,47 @@ describe('WASM init plugin', () => {
     }
   })
 
+  it.each(['url', 'init'])('preserves URL naming and validates init paths for ?%s', async (query) => {
+    const root = await mkdtemp(path.join(os.tmpdir(), 'weapp-vite-wasm-url-'))
+    const outDir = path.join(root, 'dist')
+    await mkdir(path.join(root, 'src'))
+    await writeFile(path.join(root, 'src/main.js'), `import wasmValue from "./add.wasm?${query}"; globalThis.__wasmValue = wasmValue`)
+    await writeFile(path.join(root, 'src/add.wasm'), new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0]))
+    try {
+      const building = build({
+        configFile: false,
+        root,
+        logLevel: 'silent',
+        publicDir: false,
+        plugins: [createWasmPlugin(createContext() as CompilerContext, { scope: 'app', reservedRoots: ['regular'] })],
+        build: {
+          outDir,
+          assetsInlineLimit: 0,
+          rolldownOptions: {
+            input: path.join(root, 'src/main.js'),
+            output: {
+              assetFileNames: () => 'regular/[name]-[hash][extname]',
+            },
+          },
+        },
+      })
+      if (query === 'init') {
+        await expect(building).rejects.toThrow('cannot be emitted inside package or Worker root')
+        return
+      }
+      const output = await building
+      const outputs = Array.isArray(output) ? output : [output]
+      const asset = outputs.flatMap(result => result.output).find(item => item.type === 'asset' && item.fileName.endsWith('.wasm'))
+
+      expect(asset?.type).toBe('asset')
+      expect(asset?.fileName).toMatch(/^regular\/add-.+\.wasm$/)
+      expect([...await readFile(path.join(outDir, asset!.fileName))]).toEqual([0, 97, 115, 109, 1, 0, 0, 0])
+    }
+    finally {
+      await rm(root, { recursive: true, force: true })
+    }
+  })
+
   it('emits independent WASM under its package root and references the emitted file', async () => {
     const root = await mkdtemp(path.join(os.tmpdir(), 'weapp-vite-wasm-independent-'))
     const outDir = path.join(root, 'dist')
@@ -311,14 +352,15 @@ describe('WASM init plugin', () => {
     }
   })
 
-  it('shares the emitted file for mixed init and URL imports with encoded source names', async () => {
+  it.each(['app', 'independent'] as const)('shares mixed init/URL assets in %s scope with encoded source names', async (scope) => {
     const root = await mkdtemp(path.join(os.tmpdir(), 'weapp-vite-wasm-mixed-'))
     const outDir = path.join(root, 'dist')
     const assetName = 'space % 中文.wasm'
     await mkdir(path.join(root, 'src'))
-    await writeFile(path.join(root, 'src/main.js'), `import init from ${JSON.stringify(`./${assetName}?init`)}; import url from ${JSON.stringify(`./${assetName}?url`)}; globalThis.__wasm = [init, url]`)
+    await writeFile(path.join(root, 'src/main.js'), `import url from ${JSON.stringify(`./${assetName}?url`)}; import init from "./initializer.js"; globalThis.__wasm = [init, url]`)
+    await writeFile(path.join(root, 'src/initializer.js'), `export { default } from ${JSON.stringify(`./${assetName}?init`)}`)
     await writeFile(path.join(root, 'src', assetName), new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0]))
-    const plugin = createWasmPlugin(createContext() as CompilerContext, { scope: 'app' })
+    const plugin = createWasmPlugin(createContext() as CompilerContext, { scope, packageRoot: 'isolated' })
 
     try {
       const output = await build({
@@ -326,7 +368,16 @@ describe('WASM init plugin', () => {
         root,
         logLevel: 'silent',
         publicDir: false,
-        plugins: [plugin],
+        plugins: [{
+          name: 'delay-init-resolution',
+          enforce: 'pre',
+          async load(id) {
+            if (id.endsWith('/initializer.js')) {
+              await new Promise(resolve => setTimeout(resolve, 50))
+            }
+            return null
+          },
+        }, plugin],
         build: {
           outDir,
           assetsDir: 'assets',
@@ -341,6 +392,9 @@ describe('WASM init plugin', () => {
       expect(assets).toHaveLength(1)
       const asset = assets[0]
       expect(asset?.type).toBe('asset')
+      if (scope === 'independent') {
+        expect(asset?.fileName).toMatch(/^isolated\//)
+      }
       expect(chunks.map(chunk => chunk.code).join('\n')).toContain(`/${asset?.fileName}`)
       expect([...await readFile(path.join(outDir, asset!.fileName))]).toEqual([0, 97, 115, 109, 1, 0, 0, 0])
     }
