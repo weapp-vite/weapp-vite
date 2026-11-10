@@ -13,7 +13,7 @@ import {
   resolveUrlConstructor,
   resolveUrlSearchParamsConstructor,
 } from '../src/constructors'
-import { cryptoPolyfill } from '../src/crypto'
+import { cryptoPolyfill, randomUUIDPolyfill } from '../src/crypto'
 import { CustomEventPolyfill, EventPolyfill } from '../src/events'
 import { HeadersPolyfill, RequestPolyfill, ResponsePolyfill } from '../src/http'
 import { encodeMultipartFormData } from '../src/multipart'
@@ -440,6 +440,24 @@ describe('web API contract matrix', () => {
     vi.restoreAllMocks()
     expect(() => cryptoPolyfill.getRandomValues(new Float32Array(1) as never)).toThrow('integer TypedArray')
     expect(() => cryptoPolyfill.getRandomValues(new Uint8Array(65537))).toThrow('65536')
+  })
+
+  it('generates RFC 4122 v4 UUIDs with the expected shape and uniqueness', () => {
+    setGlobal('crypto', undefined)
+    setGlobal('wx', undefined)
+    const uuid = randomUUIDPolyfill()
+    expect(uuid).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)
+
+    const samples = Array.from({ length: 200 }, () => randomUUIDPolyfill())
+    expect(new Set(samples).size).toBe(200)
+    for (const sample of samples) {
+      expect(sample).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)
+    }
+
+    setGlobal('crypto', undefined)
+    setGlobal('wx', { getRandomValues: (target: Uint8Array) => target.fill(1) })
+    const hostUuid = cryptoPolyfill.randomUUID()
+    expect(hostUuid).toBe('01010101-0101-4101-8101-010101010101')
   })
 
   it('uses native performance, host performance and monotonic fallback', () => {

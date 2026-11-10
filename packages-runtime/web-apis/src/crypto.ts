@@ -79,6 +79,29 @@ export function getRandomValuesPolyfill<T extends IntegerTypedArray>(typedArray:
   return typedArray
 }
 
+function bytesToHex(bytes: Uint8Array): string {
+  let result = ''
+  for (let index = 0; index < bytes.length; index++) {
+    result += bytes[index].toString(16).padStart(2, '0')
+  }
+  return result
+}
+
+/**
+ * @description 基于 `getRandomValues` 生成符合 RFC 4122 version 4 的 UUID。
+ */
+export function randomUUIDPolyfill(): string {
+  const bytes = new Uint8Array(16)
+  getRandomValuesPolyfill(bytes)
+  // RFC 4122 version 4：字节 6 高 4 位固定为 0x4
+  bytes[6] = (bytes[6] & 0x0F) | 0x40
+  // RFC 4122 variant 10xx：字节 8 高 2 位固定为 0b10
+  bytes[8] = (bytes[8] & 0x3F) | 0x80
+  const hex = bytesToHex(bytes)
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`
+}
+
 export const cryptoPolyfill = {
   getRandomValues: getRandomValuesPolyfill,
+  randomUUID: randomUUIDPolyfill,
 }
