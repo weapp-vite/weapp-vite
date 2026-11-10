@@ -3,7 +3,7 @@ import type { MiniProgramNetworkDefaults } from './networkDefaults'
 import { REQUEST_GLOBAL_ACTUALS_KEY, REQUEST_GLOBAL_INSTALLER_MARKER, REQUEST_GLOBAL_PLACEHOLDER_KEY, resolveWebRuntimeGlobalTargetDependencies, WEB_RUNTIME_GLOBAL_TARGETS } from '@weapp-core/constants'
 import { AbortControllerPolyfill, AbortSignalPolyfill } from './abort'
 import { atobPolyfill, btoaPolyfill } from './base64'
-import { cryptoPolyfill } from './crypto'
+import { cryptoPolyfill, randomUUIDPolyfill } from './crypto'
 import { CustomEventPolyfill, EventPolyfill } from './events'
 import { EventSourcePolyfill } from './eventsource'
 import { fetch as requestGlobalsFetch } from './fetch'
@@ -522,6 +522,7 @@ export {
   HeadersPolyfill,
   performancePolyfill,
   queueMicrotaskPolyfill,
+  randomUUIDPolyfill,
   ReadableStreamPolyfill,
   RequestGlobalsEventTarget,
   RequestPolyfill,

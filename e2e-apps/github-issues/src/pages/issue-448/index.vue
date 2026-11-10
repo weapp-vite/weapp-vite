@@ -13,6 +13,9 @@ const encoded = btoa('AB')
 const decoded = atob(encoded)
 const duration = Number(performance.now().toFixed(2))
 const randomBytes = Array.from(crypto.getRandomValues(new Uint8Array(4))).join(',')
+const randomUuid = crypto.randomUUID()
+const randomUuidValid = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(randomUuid)
+const uniqueUuids = new Set(Array.from({ length: 5 }, () => crypto.randomUUID())).size === 5
 const eventType = new Event('tick').type
 const customEventType = new CustomEvent('payload', {
   detail: {
@@ -377,6 +380,9 @@ function _runE2E() {
     decoded,
     duration,
     randomBytes,
+    randomUuid,
+    randomUuidValid,
+    uniqueUuids,
     eventType,
     customEventType,
     parsedUrl: parsedUrlHref,
@@ -409,6 +415,9 @@ function _runE2E() {
     <text id="issue448-decoded" class="issue448-line">decoded = {{ decoded }}</text>
     <text class="issue448-line">duration = {{ duration }}</text>
     <text class="issue448-line">random = {{ randomBytes }}</text>
+    <text id="issue448-randomUuid" class="issue448-line">randomUuid = {{ randomUuid }}</text>
+    <text id="issue448-randomUuidValid" class="issue448-line">randomUuidValid = {{ randomUuidValid }}</text>
+    <text id="issue448-randomUuidUnique" class="issue448-line">randomUuidUnique = {{ uniqueUuids }}</text>
     <text id="issue448-event" class="issue448-line">event = {{ eventType }}</text>
     <text id="issue448-custom" class="issue448-line">custom = {{ customEventType }}</text>
     <text id="issue448-url" class="issue448-line">url = {{ parsedUrlHref }}</text>

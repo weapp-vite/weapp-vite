@@ -11,8 +11,8 @@ export const WEB_API_PLANS = {
   ] }],
   issue448: [{ id: 'initial', route: '/pages/issue-448/index', action: '检查实际 Web API 执行结果和微任务刷新', nodes: [
     text('.issue448-title', 'issue-448 next web runtime globals'),
-    ...Object.entries({ encoded: 'QUI=', decoded: 'AB', event: 'tick', custom: 'payload', url: 'fake://abc/123', canParse: 'true', params: 'a=1&a=0&b=2', cookies: '2', json: 'application/json', error: '0:error', microtask: 'flushed' }).map(([key, value]) => text(`#issue448-${key}`, `${key} = ${value}`)),
-    { selector: '.issue448-line', count: 18 },
+    ...Object.entries({ encoded: 'QUI=', decoded: 'AB', event: 'tick', custom: 'payload', url: 'fake://abc/123', canParse: 'true', params: 'a=1&a=0&b=2', cookies: '2', json: 'application/json', error: '0:error', microtask: 'flushed', randomUuidValid: 'true', randomUuidUnique: 'true' }).map(([key, value]) => text(`#issue448-${key}`, `${key} = ${value}`)),
+    { selector: '.issue448-line', count: 21 },
   ] }],
   issue459: [{ id: 'initial', route: '/pages/issue-459/index', action: '检查直接导入 polyfill 的 URL、属性隔离和文本编解码结果', nodes: [
     text('.issue459-title', 'issue-459 web-apis polyfill compatibility'),

@@ -48,7 +48,7 @@ describe('github-issues runtime web runtime globals', { concurrent: false }, () 
 
     expect(pageWxml).toContain('class="issue448-page"')
     expect(pageWxml).toContain('class="issue448-title"')
-    expect(pageWxml.match(/class="issue448-line"/g)?.length).toBe(18)
+    expect(pageWxml.match(/class="issue448-line"/g)?.length).toBe(21)
     expect(pageJs).toContain('installWebRuntimeGlobals')
     expect(pageJs).toContain('"fetch"')
     expect(pageJs).toContain('"CustomEvent"')
