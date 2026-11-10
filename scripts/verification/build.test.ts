@@ -1,5 +1,8 @@
 import type { VerificationTask } from './types.ts'
+import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { expect, it } from 'vitest'
@@ -10,8 +13,40 @@ import { getResourceBudget } from './resources.ts'
 import { createTaskExecutor } from './run.ts'
 import { readWorkspace } from './workspace.ts'
 
+async function createBuildGraphFixture() {
+  const root = await realpath(await mkdtemp(path.join(tmpdir(), 'verification-build-graph-')))
+  const repositoryRoot = fileURLToPath(new URL('../../', import.meta.url))
+  const manifest = JSON.parse(await readFile(path.join(repositoryRoot, 'package.json'), 'utf8')) as { packageManager: string }
+  const write = async (file: string, content: string) => {
+    const target = path.join(root, file)
+    await mkdir(path.dirname(target), { recursive: true })
+    await writeFile(target, content)
+  }
+  const cleanup = () => rm(root, { recursive: true, force: true })
+  try {
+    // 图解析不执行任务；只保留真实依赖关系与仓库任务配置，避免创建缓存产物和 Git 索引。
+    await write('package.json', JSON.stringify({ private: true, packageManager: manifest.packageManager }))
+    await write('pnpm-workspace.yaml', 'packages:\n  - packages/*\n  - mpcore/packages/*\n')
+    await write('pnpm-lock.yaml', 'lockfileVersion: "9.0"\nimporters:\n  .: {}\n')
+    await write('turbo.json', await readFile(path.join(repositoryRoot, 'turbo.json'), 'utf8'))
+    for (const [directory, name] of [['packages/library', '@cache-fixture/library'], ['mpcore/packages/simulator', '@mpcore/simulator']]) {
+      await write(`${directory}/package.json`, JSON.stringify({
+        name,
+        version: '1.0.0',
+        ...(name === '@mpcore/simulator' ? { dependencies: { '@cache-fixture/library': 'workspace:*' } } : {}),
+        scripts: { 'build': 'node --version', 'test:types:check': 'node --version' },
+      }))
+    }
+    return { root, read: (file: string) => readFile(path.join(root, file), 'utf8'), write, cleanup }
+  }
+  catch (error) {
+    await cleanup()
+    throw error
+  }
+}
+
 it('resolves the scoped Turbo entry with the execution environment and preserves generic packages', async () => {
-  const fixture = await createTurboFixture()
+  const fixture = await createBuildGraphFixture()
   try {
     const manifest = JSON.parse(await fixture.read('package.json')) as { scripts?: Record<string, string> }
     manifest.scripts = {
@@ -45,6 +80,7 @@ it('resolves the scoped Turbo entry with the execution environment and preserves
     await usePreparedTypeChecks(fixture.root, task)
     expect(task.args).toContain('--filter=@cache-fixture/library')
     expect(task.args).toContain('--filter=@mpcore/simulator')
+    expect(task.args).toContain('--filter=e2e-app-wot-ui-compat')
     expect(task.args).not.toContain('--filter=e2e-app-uview-plus-compat')
   }
   finally {
@@ -58,7 +94,7 @@ it.each([
   'node --import tsx scripts/run-scoped-turbo.ts run build > output.log',
   'node --import tsx scripts/run-scoped-turbo.ts run build --filter=$PACKAGE',
 ])('refuses to infer a graph from unsupported shell or wrapper syntax: %s', async (script) => {
-  const fixture = await createTurboFixture()
+  const fixture = await createBuildGraphFixture()
   try {
     const manifest = JSON.parse(await fixture.read('package.json')) as { scripts?: Record<string, string> }
     manifest.scripts = { 'build:pkgs': script }
@@ -205,7 +241,7 @@ it.each([false, true])('keeps cached quick preparation for test-only edits and e
 })
 
 it('refuses to discard an additional type prerequisite when reusing prepared builds', async () => {
-  const fixture = await createTurboFixture()
+  const fixture = await createBuildGraphFixture()
   try {
     const turbo = JSON.parse(await fixture.read('turbo.json')) as { tasks: Record<string, { dependsOn?: string[] }> }
     turbo.tasks['prepare:types'] = {}

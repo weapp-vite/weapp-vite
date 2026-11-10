@@ -1,9 +1,32 @@
-import { describe, expect, it } from 'vitest'
+import fs from 'node:fs'
+import path from 'node:path'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { assertVerificationPlan, createVerificationIdentity, createVerificationPlan, fallbackTaskDuration } from '../../e2e/scripts/verification/plan'
 import { assertVerificationProfile } from '../../e2e/scripts/verification/profile'
 import { resolveVerificationTopology } from '../verification/topology.ts'
 import { useIsolatedTopologyTestEnvironment } from '../verification/topologyTestFixture.ts'
 import { freeze, identity, now, profile, rehash, tasks } from './fixtures'
+
+const sourceFixture = await vi.hoisted(async () => {
+  const fs = await import('node:fs')
+  const os = await import('node:os')
+  const path = await import('node:path')
+  return { root: fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'verification-plan-source-'))) }
+})
+
+vi.mock('../../e2e/scripts/domAcceptanceReport/helpers', async importOriginal => ({
+  ...await importOriginal<typeof import('../../e2e/scripts/domAcceptanceReport/helpers')>(),
+  ACCEPTANCE_ROOT: sourceFixture.root,
+}))
+
+beforeAll(() => {
+  // 计划契约仍读取和解析真实源码，只用最小导入图替代无关的整仓任务清单。
+  fs.mkdirSync(path.join(sourceFixture.root, 'e2e/scripts'), { recursive: true })
+  fs.writeFileSync(path.join(sourceFixture.root, 'e2e/scripts/e2e-suite-manifest.ts'), 'export { value } from \'./dependency\'\n')
+  fs.writeFileSync(path.join(sourceFixture.root, 'e2e/scripts/dependency.ts'), 'export const value = 1\n')
+})
+
+afterAll(() => fs.rmSync(sourceFixture.root, { recursive: true, force: true }))
 
 useIsolatedTopologyTestEnvironment()
 
@@ -62,6 +85,26 @@ describe('frozen E2E verification plans', () => {
     const readGit = (args: string[]) => args[0] === 'rev-parse' ? identity.commitSha : args[0] === 'status' ? ' M packages/runtime/src/index.ts' : ''
     expect(createVerificationIdentity(environment, readGit).workingTreeDirty).toBe(true)
     expect(createVerificationIdentity(environment, args => args[0] === 'rev-parse' ? identity.commitSha : args[0] === 'ls-files' ? 'e2e-apps/example/src/index.ts\0' : '').workingTreeDirty).toBe(true)
+  })
+
+  it('rechecks imported source bytes even when their length and timestamps are unchanged', async () => {
+    const plan = await freeze({ sourceDigest: undefined })
+    const options = { suite: 'ci-full', profile, tasks, identity }
+    const dependency = path.join(sourceFixture.root, 'e2e/scripts/dependency.ts')
+    const original = fs.readFileSync(dependency, 'utf8')
+    const { atime, mtime } = fs.statSync(dependency)
+    expect(() => assertVerificationPlan(plan, options)).not.toThrow()
+    try {
+      fs.writeFileSync(dependency, original.replace('= 1', '= 2'))
+      fs.utimesSync(dependency, atime, mtime)
+      const { details } = mismatchDiagnostics(() => assertVerificationPlan(plan, options))
+      expect(details).toMatchObject({ mismatches: ['sourceDigest'], taskDefinitionChanges: [] })
+    }
+    finally {
+      fs.writeFileSync(dependency, original)
+      fs.utimesSync(dependency, atime, mtime)
+    }
+    expect(() => assertVerificationPlan(plan, options)).not.toThrow()
   })
 
   it('reports dirty repository paths from the original identity reads without changing the frozen plan', async () => {
