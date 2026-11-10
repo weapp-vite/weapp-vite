@@ -8,6 +8,7 @@ interface Step {
   'uses'?: string
   'if'?: string
   'continue-on-error'?: boolean
+  'with'?: { 'add-paths'?: string }
 }
 
 const workflow = parse(readFileSync(new URL('../../.github/workflows/update-wechat-components.yml', import.meta.url), 'utf8')) as {
@@ -22,12 +23,17 @@ describe('builtin generation workflow gates', () => {
     const build = steps.findIndex(step => step.name === 'Build compiler for snapshot tests')
     const consumers = steps.findIndex(step => step.name === 'Test generated builtin component consumers')
     const createPr = steps.findIndex(step => step.name === 'Create pull request')
+    const releaseIntent = steps.findIndex(step => step.name === 'Generate component update changeset')
     expect(generatorTest).toBeGreaterThanOrEqual(0)
     expect(generate).toBeGreaterThan(generatorTest)
     expect(build).toBeGreaterThan(generate)
     expect(consumers).toBeGreaterThan(build)
-    expect(createPr).toBeGreaterThan(consumers)
-    expect(steps[generatorTest]?.run).toContain('scripts/builtin/index.test.ts')
+    expect(releaseIntent).toBeGreaterThan(consumers)
+    expect(createPr).toBeGreaterThan(releaseIntent)
+    expect(steps[releaseIntent]?.run).toBe('node --import tsx scripts/builtinChangeset.ts')
+    expect(steps[releaseIntent]?.if).toBe(steps[createPr]?.if)
+    expect(steps[createPr]?.with?.['add-paths']).toContain('.changeset/wechat-components-*.md')
+    expect(steps[generatorTest]?.run).toContain('scripts/builtin')
     expect(steps[generatorTest]?.if).toBeUndefined()
     expect(steps[consumers]?.run).toContain('auto-import-components/builtin.test.ts')
     expect(steps[consumers]?.run).toContain('vueTemplateTags.test.ts')

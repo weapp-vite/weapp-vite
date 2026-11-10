@@ -43,7 +43,7 @@ jobs:
         run: pnpm --filter @weapp-core/shared --filter @weapp-core/constants build
 
       - name: Test builtin component generator
-        run: pnpm vitest run --config scripts/vitest.config.mjs scripts/builtin/index.test.ts scripts/builtin/workflow.test.ts
+        run: pnpm vitest run --config scripts/vitest.config.mjs scripts/builtin
 
       - name: Update WeChat builtins
         run: pnpm builtin
@@ -86,6 +86,10 @@ jobs:
         if: steps.changes.outputs.has_changes == 'true'
         run: pnpm vitest run -u packages/weapp-vite/test/resolvers/tdesign.test.ts packages/weapp-vite/test/resolvers/vant.test.ts
 
+      - name: Generate component update changeset
+        if: steps.changes.outputs.has_changes == 'true'
+        run: node --import tsx scripts/builtinChangeset.ts
+
       - name: Create pull request
         if: steps.changes.outputs.has_changes == 'true'
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
@@ -101,11 +105,13 @@ jobs:
             - 执行 `pnpm auto-import:components`
             - 更新已有单元测试快照
             - 更新微信内置组件和自动导入组件生成产物
+            - 为变化的发布包补充 changeset，并按需联动脚手架
 
             ## 说明
             - 该 PR 由 GitHub Actions 每日任务自动创建或更新
             - 仅在生成文件发生变化时才会提交
           add-paths: |
+            .changeset/wechat-components-*.md
             packages-runtime/wevu-compiler/src/auto-import-components/builtin.auto.ts
             packages/weapp-vite/src/auto-import-components/resolvers/json/tdesign.json
             packages/weapp-vite/src/auto-import-components/resolvers/json/vant.json
