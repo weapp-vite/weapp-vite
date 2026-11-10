@@ -3,6 +3,7 @@ import type { Plugin, ResolvedConfig } from 'vite'
 import type { CompilerContext } from '../context'
 import type { StyleEntry } from '../types'
 import type { StylePreprocessorHookContext } from './css/preprocessorLifecycle'
+import type { StyleSidecarGroup } from './css/sidecarGrouping'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { resolveGraphOutputOwner } from '../moduleGraph/outputMetadata'
@@ -43,6 +44,7 @@ import {
   toPosixPath,
 } from './css/shared/sharedStyles'
 import { replaceSharedStyleDependencies } from './css/shared/sourceDependencies'
+import { groupStyleSidecars } from './css/sidecarGrouping'
 import { collectRenderedStyleSources } from './css/styleOwnership'
 import {
   findManagedTailwindcssEntryMarker,
@@ -932,10 +934,10 @@ async function emitCollectedStyleSidecars(
   bundle: OutputBundle,
   emittedOwners: Set<string>,
   updatingOwners: ReadonlySet<string> | undefined,
+  sidecarGroups: ReadonlyMap<string, StyleSidecarGroup>,
   resolvedConfig?: ResolvedConfig,
 ) {
-  const sidecarImports = ctx.runtimeState?.css?.sidecarImports
-  if (!sidecarImports?.size) {
+  if (!sidecarGroups.size) {
     return
   }
   const ownerSidecars = new Map<string, {
@@ -943,12 +945,7 @@ async function emitCollectedStyleSidecars(
     originalFileName: string
     sources: Map<string, string>
   }>()
-  for (const stylePath of sidecarImports) {
-    const fileName = resolveOutputStyleFileName(ctx.configService, stylePath)
-    if (!fileName) {
-      continue
-    }
-    const owner = toPosixPath(fileName)
+  for (const [owner, sidecars] of sidecarGroups) {
     // 本轮 owner 产物已包含真实导入和独立原生 sidecar，仅补尚未生成的目标。
     if (emittedOwners.has(owner)) {
       continue
@@ -958,12 +955,11 @@ async function emitCollectedStyleSidecars(
     if (updatingOwners && !updatingOwners.has(owner)) {
       continue
     }
-    let group = ownerSidecars.get(owner)
-    if (!group) {
-      group = { fileName, originalFileName: stylePath, sources: new Map() }
-      ownerSidecars.set(owner, group)
-    }
-    group.sources.set(compilerSourceId(stylePath), stylePath)
+    ownerSidecars.set(owner, {
+      fileName: sidecars.fileName,
+      originalFileName: sidecars.sidecars[0]!.path,
+      sources: new Map(sidecars.sidecars.map(sidecar => [sidecar.sourceId, sidecar.path])),
+    })
   }
   await Promise.all(Array.from(ownerSidecars.values(), async (group) => {
     const sidecars = await Promise.all(Array.from(group.sources.values(), stylePath =>
@@ -1025,6 +1021,7 @@ async function generateBundleSharedCss(
       group.sources.add(compilerSourceId(source))
     }
   }
+  const sidecarGroups = groupStyleSidecars(ctx.runtimeState?.css?.sidecarImports ?? [], file => resolveOutputStyleFileName(configService, file))
   for (const [normalizedFileName, group] of ownerStyleGroups) {
     const mergedCss = group.fragments.join('\n')
     let cssWithImports = injectSharedStyleImportsCached(
@@ -1035,10 +1032,9 @@ async function generateBundleSharedCss(
       configService,
       sharedStyleImportCache,
     )
-    const independentSidecars = Array.from(ctx.runtimeState?.css?.sidecarImports ?? []).filter((stylePath) => {
-      const output = resolveOutputStyleFileName(configService, stylePath)
-      return output && toPosixPath(output) === normalizedFileName && !group.sources.has(compilerSourceId(stylePath))
-    })
+    const independentSidecars = (sidecarGroups.get(normalizedFileName)?.sidecars ?? [])
+      .filter(sidecar => !group.sources.has(sidecar.sourceId))
+      .map(sidecar => sidecar.path)
     const sidecarStyles = await Promise.all(independentSidecars.map(stylePath =>
       prepareStyleSidecarAsset(ctx, this, stylePath, bundle, resolvedConfig),
     ))
@@ -1066,7 +1062,7 @@ async function generateBundleSharedCss(
     emitted.add(normalizedFileName)
   }
   // 最终资产、真实 CSS 和独立 sidecar 共用本轮输出归属；共享导入只补尚未生成的 owner。
-  await emitCollectedStyleSidecars.call(this, ctx, bundle, emitted, updatingSidecarOwners, resolvedConfig)
+  await emitCollectedStyleSidecars.call(this, ctx, bundle, emitted, updatingSidecarOwners, sidecarGroups, resolvedConfig)
   await emitSharedStyleEntries.call(this, ctx, sharedStyles, emitted, configService, bundle, resolvedConfig)
   await emitSharedStyleImportsForChunks.call(this, ctx, sharedStyles, emitted, configService, bundle, facadeChunks, sharedStyleImportCache)
 }
