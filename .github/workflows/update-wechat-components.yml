@@ -42,6 +42,9 @@ jobs:
       - name: Build shared workspace dependency
         run: pnpm --filter @weapp-core/shared --filter @weapp-core/constants build
 
+      - name: Test builtin component generator
+        run: pnpm vitest run --config scripts/vitest.config.mjs scripts/builtin/index.test.ts scripts/builtin/workflow.test.ts
+
       - name: Update WeChat builtins
         run: pnpm builtin
 
@@ -74,6 +77,10 @@ jobs:
       - name: Build compiler for snapshot tests
         if: steps.changes.outputs.has_changes == 'true'
         run: pnpm exec turbo run build --filter=@wevu/compiler...
+
+      - name: Test generated builtin component consumers
+        if: steps.changes.outputs.has_changes == 'true'
+        run: pnpm vitest run packages-runtime/wevu-compiler/src/auto-import-components/builtin.test.ts packages-runtime/wevu-compiler/src/utils/vueTemplateTags.test.ts
 
       - name: Update unit test snapshots
         if: steps.changes.outputs.has_changes == 'true'
