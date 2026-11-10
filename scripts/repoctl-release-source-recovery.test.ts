@@ -19,10 +19,10 @@ it('resumes all six source recovery stages without duplicate publication or cons
 
   expect(final.done).toEqual(['plan', 'verify', 'prepare', 'upload', 'confirm', 'finalize'])
   expect(final.stages.every(stage => stage.status === 'complete')).toBe(true)
-  expect(fixture.installs).toEqual([path.join(fixture.recoveryRoot, 'checkout')])
+  expect(fixture.installs.map(cwd => path.normalize(cwd))).toEqual([path.join(fixture.recoveryRoot, 'checkout')])
   expect(fixture.toolchains).toHaveLength(6)
   expect(new Set(fixture.toolchains).size).toBe(1)
-  expect(fixture.hooks.map(({ script, cwd, head }) => ({ script, cwd, head }))).toEqual([
+  expect(fixture.hooks.map(({ script, cwd, head }) => ({ script, cwd: path.normalize(cwd), head }))).toEqual([
     { script: 'quality', cwd: path.join(fixture.recoveryRoot, 'checkout'), head: fixture.sourceSha },
     { script: mirrorHook, cwd: path.join(fixture.recoveryRoot, 'checkout'), head: fixture.sourceSha },
   ])
@@ -57,7 +57,7 @@ it('emits portable declarations in the recovered quality checkout while reproduc
   expect(new Set(legacy.diagnostics)).toEqual(new Set([2883]))
   let compiled = false
   fixture.setQuality((cwd) => {
-    expect(cwd.split(path.sep)).not.toContain('.git')
+    expect(path.normalize(cwd).split(path.sep)).not.toContain('.git')
     const result = emitFixtureDeclarations(cwd)
     expect(result.diagnostics).toEqual([])
     expect(result.declarations).toContain('import("@fixture/parser").ParseResult')
@@ -81,7 +81,7 @@ it('replans only its existing recovery root', ({ signal }) => withSourceRecovery
   await fixture.runStage('plan')
 
   expect(fixture.recoveryRoot).toBe(recoveryRoot)
-  expect(fixture.checkouts).toEqual([path.join(recoveryRoot, 'checkout'), path.join(recoveryRoot, 'checkout')])
+  expect(fixture.checkouts.map(cwd => path.normalize(cwd))).toEqual([path.join(recoveryRoot, 'checkout'), path.join(recoveryRoot, 'checkout')])
   await expect(stat(marker)).rejects.toMatchObject({ code: 'ENOENT' })
   expect(fixture.git('rev-parse', 'HEAD')).toBe(fixture.mainSha)
 }), 30_000)
@@ -98,7 +98,7 @@ for (const identity of [{ runId: 'another-fixture-run' }, { attempt: '2' }]) {
     expect(fixture.recoveryRoot).not.toBe(originalRoot)
     expect(await readFile(marker, 'utf8')).toBe('preserved earlier run')
     await fixture.runStage('verify', identity)
-    expect(fixture.installs).toEqual([path.join(fixture.recoveryRoot, 'checkout')])
+    expect(fixture.installs.map(cwd => path.normalize(cwd))).toEqual([path.join(fixture.recoveryRoot, 'checkout')])
     expect(fixture.hooks.at(-1)?.head).toBe(fixture.sourceSha)
   }), 30_000)
 }

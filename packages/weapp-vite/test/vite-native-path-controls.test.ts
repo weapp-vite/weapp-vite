@@ -94,6 +94,7 @@ it('observes one native Vite file creation after readiness using the canonical t
   const ready = Promise.withResolvers<void>()
   const observed: string[] = []
   const errors: unknown[] = []
+  const rawEvents: { event: string, file: string }[] = []
   const pendingServer = createServer({
     root: watchedRoot,
     configFile: false,
@@ -108,14 +109,33 @@ it('observes one native Vite file creation after readiness using the canonical t
           ready.reject(error)
         })
         server.watcher.on('add', file => observed.push(path.resolve(file)))
+        server.watcher.on('raw', (event, file) => {
+          if (rawEvents.length < 20) {
+            rawEvents.push({ event, file })
+          }
+        })
       },
     }],
   })
   try {
-    await Promise.all([pendingServer, ready.promise])
+    const [server] = await Promise.all([pendingServer, ready.promise])
     // ready 后只写入一次；不增加等待时长、不重复保存，也不退回轮询文件系统。
     await writeFile(probe, 'changed')
-    await expect.poll(() => observed, { timeout: 5000 }).toContain(probe)
+    try {
+      await expect.poll(() => observed, { timeout: 5000 }).toContain(probe)
+    }
+    catch (error) {
+      // eslint-disable-next-line no-console -- 仅失败时保留原生事件与框架订阅，区分系统丢事件和 watcher 过滤。
+      console.error('Native Vite watcher delivery failed', {
+        node: process.version,
+        platform: process.platform,
+        watched: server.watcher.getWatched(),
+        rawEvents,
+        observed,
+        errors,
+      })
+      throw error
+    }
     expect(await readFile(probe, 'utf8')).toBe('changed')
     expect(errors).toEqual([])
   }
