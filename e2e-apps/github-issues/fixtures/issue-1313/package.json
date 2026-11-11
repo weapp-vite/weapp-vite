@@ -1,0 +1,5 @@
+{
+  "name": "issue-1313-reactive-inline",
+  "type": "module",
+  "private": true
+}

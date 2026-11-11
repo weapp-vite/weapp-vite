@@ -420,7 +420,7 @@ export function rewriteDefaultExport(
   const inlineExpressions = options?.inlineExpressions ?? []
   if (inlineExpressions.length) {
     if (componentOptionsObject) {
-      const injected = injectInlineExpressions(componentOptionsObject, inlineExpressions)
+      const injected = injectInlineExpressions(componentOptionsObject, inlineExpressions, ast.program)
       if (!injected) {
         warn('无法自动注入内联表达式元数据：methods 不是对象字面量。')
       }

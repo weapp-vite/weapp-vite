@@ -5,6 +5,7 @@ import * as t from '@weapp-vite/ast/babelTypes'
 import path from 'pathe'
 import { describe, expect, it, vi } from 'vitest'
 import { compileVueFile } from 'wevu/compiler'
+import { ref, unref } from 'wevu/internal-reactivity'
 import { getWxmlDirectivePrefix } from '../../../platform'
 import { generate, parse, traverse } from '../../../utils/babel'
 
@@ -26,8 +27,16 @@ interface EvaluatedInlineEntry {
 
 function evaluateInlineEntries(script: string, template: string) {
   const ast = parse(script, { sourceType: 'module', plugins: ['typescript'] })
+  const helpers: Record<string, unknown> = {}
   let inlineMap: t.ObjectExpression | undefined
   traverse(ast, {
+    ImportDeclaration(path) {
+      for (const specifier of path.node.specifiers) {
+        if (t.isImportSpecifier(specifier) && t.isIdentifier(specifier.imported, { name: 'unref' })) {
+          helpers[specifier.local.name] = unref
+        }
+      }
+    },
     ObjectProperty(path) {
       let key: string | undefined
       if (t.isIdentifier(path.node.key)) {
@@ -47,7 +56,7 @@ function evaluateInlineEntries(script: string, template: string) {
   }
 
   const code = generate(inlineMap, { compact: true }).code
-  const entries = runInNewContext(`(${code})`) as Record<string, EvaluatedInlineEntry>
+  const entries = runInNewContext(`(${code})`, helpers) as Record<string, EvaluatedInlineEntry>
   const ids = [...template.matchAll(/\bdata-wi-[\w-]+="([^"]+)"/g)].map(match => match[1]!)
   return ids.map((id) => {
     const entry = entries[id]
@@ -332,7 +341,7 @@ function handle(value: number, state: { count: number }) {
     expect(result.template).toContain('bindtap="__weapp_vite_inline"')
     expect(result.template).toContain('bindlongpress="__weapp_vite_inline"')
     expect(result.template).toContain('bindtouchstart="__weapp_vite_inline"')
-    const count = { value: 0 }
+    const count = ref(0)
     const handle = vi.fn((value: number, state: { count: number }) => value + state.count)
     const entries = evaluateInlineEntries(result.script, result.template)
     expect(entries).toHaveLength(7)

@@ -1,14 +1,14 @@
 # 本地工程约束
 
 - weapp-vite 的正常安装、构建与开发不得以用户修改系统配置、重启系统服务或使用管理员权限修复监听环境为前提。文件监听和 IDE 联调故障先在工具自身的监听、发布与受支持接口内定位和修复；外部宿主或系统事件链异常必须如实记录边界，不要求用户修改系统来换取验收通过，也不弱化测试或追加测试专用编译来掩盖问题。
-- 用户已授权后续代码修改、测试与修复直接基于同步后的最新 `main` 执行，完成必要验证后直接提交并推送 `main`，不再新建 PR。提交前 lint、原生 hooks、源码变更后的包构建、相关类型与回归检查，以及全机 E2E 串行和正式完整验收继续适用；正式完整测试运行期间不得修改源码。
+- Issue 修复和功能实现默认从同步后的最新 `origin/main` 创建独立 worktree，完成复现、实现及必要验证后创建 PR；只有当前 head 的全部适用 CI/CD 与审查门槛通过后才可 squash 合并，合并后清理任务 worktree。提交前 lint、原生 hooks、源码变更后的包构建、相关类型与回归检查，以及全机 E2E 串行和正式完整验收继续适用。
 - 所有 PR（包括发布和依赖升级 PR）统一使用 Squash merge，在目标分支形成一个提交；通过 GitHub CLI 合并时必须显式使用 `gh pr merge <编号> --squash`。合并提交信息沿用仓库当前默认设置，已有合并历史不改写。
 - PR 合并后的自动 Release 工作流（包括 `Release verify`）无需等待，不作为推进后续 PR、启动主线统一 E2E 或本批交付的门槛。记录实际合并提交、workflow/run 和已观察状态；未完成的运行不得记为成功。合入前当前候选的全部适用原生 CI/CD 与审查门槛保持不变，无需为此取消或禁用远端 Release 工作流。
 - 本地 `verify` 检查真实工作区；`pre-push` 必须使用 Git 原生 stdin 的待推 refs/SHA，按对应提交快照执行 quick 检查。dirty 或非当前提交须使用独立工作树与冻结依赖，不以提交文件清单配合 dirty 工作树执行，也不得 stash/reset 用户工作或共享指回原工作区的依赖链接。未知输入、真实提交的锁文件和全局配置继续保守扩大范围，删除及 rename 两端保持归属。
 - quick 只承担静态与适用配置/生成契约、直接变更和相邻单测、包级源码类型；`test:pure` 同样只运行直接相关范围。完整包测试、消费者、公开类型和 E2E 工具/runtime 通过 review / CI 的既有入口完成，不由 pre-push 扩大启动。生成 `AGENTS.md`、public skill 合约及其规则输入仍须执行对应 `agents:check` / `skills:check`，包含删除和 rename 旧端点。
 - 推送重试仅复用候选 SHA、基线、工具链、环境、拓扑和策略均一致且全部适用 quick 任务成功的本地回执；失败、取消、未执行或缺少适用 quick 任务结果的回执不可复用为成功。该回执不替代原生 CI 审批、完整消费者/公开类型检查及目标 runtime 验收；保留全部适用 CI 与后置汇总，不以 `--no-verify`、通用 skip 或本地 `partial` 宣称充分验证。
-- GitHub issue 或 runtime 回归默认在同步后的最新 `main` 先建立最小复现，再定位根因、修改源码并直接验证、提交和推送。确有需要时可使用临时 worktree 做隔离诊断，最终修改仍按用户授权的直接主线流程交付。
-- 全面真实 IDE E2E（包括 `pnpm e2e:ide:gate`、`pnpm e2e:ide:full`、`pnpm e2e:ide:full:exhaustive` 及直接调用 DevTools 的完整 Vitest suite）必须从仓库根目录的 `main` 工作树启动：运行前先 `git fetch origin main`、`git switch main`、`git pull --ff-only origin main`，确认 `HEAD == origin/main` 且工作树干净；运行期间不得切换分支或修改源码。`.codex-tmp` 和其他分支只用于修复、最小复现、headless 或局部诊断，修复进入 `main`、重建产物后才做正式 IDE 验收。主工作树要求不会放宽全机同用户串行、机器租约、宿主身份、端口归属和项目清理门禁。
+- 只有专门执行全面测试时发现的修复，才沿用直接在同步后的最新 `main` 验证、提交和推送的授权；不得据此将独立 Issue 或功能任务改为主线直推。Issue 或功能任务自身的回归测试不触发此例外，仍须通过 worktree 和 PR 交付。
+- 全仓正式全面真实 IDE 验收（包括 `pnpm e2e:ide:gate`、`pnpm e2e:ide:full`、`pnpm e2e:ide:full:exhaustive` 及直接覆盖既定完整清单的 Vitest 运行）必须从仓库根目录的 `main` 工作树启动：运行前先 `git fetch origin main`、`git switch main`、`git pull --ff-only origin main`，确认 `HEAD == origin/main` 且工作树干净；运行期间不得切换分支或修改源码。PR 合并前的专项真实 IDE 验证允许在任务 worktree 执行，包括完整运行目标 Issue suite；专项结果不得计为全仓全面验收。两种验证均保留全机同用户串行、机器租约、宿主身份、端口归属和项目清理门禁。
 - 修改 `packages/*/src/**` 或 `packages-runtime/*/src/**` 后，运行下游 app、headless 或 IDE 验证前必须先重建受影响 package 的 `dist`。
 - 任何 E2E 入口都全机、同用户、跨 worktree 串行运行。启动前检查 DevTools、automator、dev-watch 和验证 server；只释放本任务明确登记且仍持有的资源。其他任务等待，手动项目和归属未知的实例保留；已核验的空闲共享宿主可按下述恢复条件正常重启。禁止按进程名、命令行子串或镜像名全局清理。发现问题时可先用 `--allow-failures`；最终验收保留每个正式 suite 的既定策略，要求全部计划内 task、case、checkpoint 完成，严格 suite 必须保持严格模式。局部筛选、partial 或未执行任务不能计为全量通过。
 - 真实 IDE E2E 默认使用本机已安装的最新 Stable，渠道和产品版本以实际应用元数据为准。启动前自动解析并固定具体 CLI，预检、启动、构建、连接和恢复共用同一安装；保留 `WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH`、公共路径环境变量及旧 `cliPath` 固定行为。显式渠道或版本参数可覆盖继承配置，同层路径、渠道、版本冲突必须停止。

@@ -63,6 +63,8 @@ export interface InlineExpressionAsset {
   scopeKeys: string[]
   /** @internal */
   parameterNames: InlineExpressionParameterNames
+  /** 编译器生成的 helper 局部名称，由脚本生成器绑定到对应运行时导入。@internal */
+  runtimeHelpers?: { unref?: string }
   indexBindings?: InlineExpressionIndexBindingAsset[]
   scopeResolvers?: InlineExpressionScopeResolverAsset[]
 }
