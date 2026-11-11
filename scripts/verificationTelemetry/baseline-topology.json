@@ -57,6 +57,7 @@
       },
       "uses": "./.github/workflows/reusable-node-command.yml",
       "with": {
+        "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
         "verification_topology": "legacy-v1",
         "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
         "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
@@ -104,6 +105,7 @@
       },
       "uses": "./.github/workflows/reusable-node-command.yml",
       "with": {
+        "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
         "verification_topology": "legacy-v1",
         "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
         "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
@@ -185,6 +187,7 @@
       },
       "uses": "./.github/workflows/reusable-node-command.yml",
       "with": {
+        "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
         "verification_topology": "legacy-v1",
         "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
         "base_sha": "${{ needs.pr-context.outputs.base_sha }}",

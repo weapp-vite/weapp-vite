@@ -51,6 +51,7 @@
         "max-parallel": 4
       },
       "with": {
+        "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
         "verification_topology": "${{ inputs.verification_topology }}",
         "pr_context": "${{ inputs.pr_context }}",
         "runs_on": "${{ matrix.os }}",
@@ -90,6 +91,7 @@
         "max-parallel": 2
       },
       "with": {
+        "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
         "verification_topology": "${{ inputs.verification_topology }}",
         "pr_context": "${{ inputs.pr_context }}",
         "runs_on": "${{ matrix.os }}",
@@ -161,6 +163,7 @@
         }
       },
       "with": {
+        "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
         "verification_topology": "${{ inputs.verification_topology }}",
         "pr_context": "${{ inputs.pr_context }}",
         "runs_on": "${{ matrix.os }}",
@@ -1003,6 +1006,7 @@
       "uses": "./.github/workflows/reusable-node-command.yml",
       "needs": "pr-context",
       "with": {
+        "e2e_exclude_projects": "${{ inputs.e2e_exclude_projects }}",
         "verification_topology": "${{ inputs.verification_topology }}",
         "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
         "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
@@ -1026,6 +1030,7 @@
       "uses": "./.github/workflows/reusable-node-command.yml",
       "needs": "pr-context",
       "with": {
+        "e2e_exclude_projects": "${{ inputs.e2e_exclude_projects }}",
         "verification_topology": "${{ inputs.verification_topology }}",
         "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
         "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
@@ -1049,6 +1054,7 @@
         "build"
       ],
       "with": {
+        "e2e_exclude_projects": "${{ inputs.e2e_exclude_projects }}",
         "verification_topology": "${{ inputs.verification_topology }}",
         "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
         "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
@@ -1073,6 +1079,7 @@
         "build"
       ],
       "with": {
+        "e2e_exclude_projects": "${{ inputs.e2e_exclude_projects }}",
         "verification_topology": "${{ inputs.verification_topology }}",
         "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
         "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
@@ -1110,6 +1117,7 @@
         }
       },
       "with": {
+        "e2e_exclude_projects": "${{ inputs.e2e_exclude_projects }}",
         "verification_topology": "${{ inputs.verification_topology }}",
         "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
         "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
