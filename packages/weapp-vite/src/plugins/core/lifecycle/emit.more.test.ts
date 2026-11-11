@@ -2128,9 +2128,11 @@ describe('core lifecycle emit hook extra branches', () => {
 
     const code = bundle['pages/request-globals/fetch.js'].code
     expect(code).toContain(REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER)
-    expect(code.indexOf('const e=require("../../common.js");')).toBeLessThan(code.indexOf(`const ${REQUEST_GLOBAL_CHUNK_HOST_REF} = vn(`))
+    const commonRequireIndex = code.indexOf('const e=require("../../common.js");')
+    const chunkHostIndex = code.indexOf(`const ${REQUEST_GLOBAL_CHUNK_HOST_REF} = vn(`)
+    expect(commonRequireIndex).toBeGreaterThanOrEqual(0)
+    expect(chunkHostIndex).toBeGreaterThan(commonRequireIndex)
     expect(code).toContain(REQUEST_GLOBAL_BUNDLE_MARKER)
-    expect(code).toContain(`const ${REQUEST_GLOBAL_CHUNK_HOST_REF} = vn({ targets: ["TextEncoder","TextDecoder","WebSocket"] }) || globalThis`)
     expect(code).toContain(`var WebSocket = ${REQUEST_GLOBAL_CHUNK_HOST_REF}.WebSocket`)
     expect(code).toContain('console.log(fetch, URL);')
   })

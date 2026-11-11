@@ -1,5 +1,6 @@
 import type { OutputBundle, OutputChunk } from 'rolldown'
 import vm from 'node:vm'
+import { REQUEST_GLOBAL_INSTALLER_MARKER, REQUEST_GLOBAL_PASSIVE_BINDINGS_MARKER } from '@weapp-core/constants'
 import { describe, expect, it } from 'vitest'
 import { createRequestGlobalsPassiveBindingsCode, FULL_REQUEST_GLOBAL_TARGETS } from '../../../../../runtime/config/internal/injectRequestGlobals'
 import { injectRequestGlobalsBundleRuntime, injectRequestGlobalsLocalBindings, injectRequestGlobalsPassiveBindings } from '../requestGlobals'
@@ -70,6 +71,65 @@ describe('request globals preserve output bindings', () => {
 
   it('does not turn an explicitly empty passive selection into all targets', () => {
     expect(createRequestGlobalsPassiveBindingsCode(['fetch'], [])).toBe('')
+  })
+
+  it('makes atob/btoa callable while a third-party dependency initializes before the installer', () => {
+    const bundle = fixture(`exports.decoded = atob("QQ=="); exports.encoded = btoa("AB");`)
+    injectRequestGlobalsPassiveBindings(bundle, new Map(), ['atob', 'btoa'], 'explicit', undefined)
+    const result = execute((bundle['support.js'] as OutputChunk).code)
+    expect(result.exports.decoded).toBe('A')
+    expect(result.exports.encoded).toBe('QUI=')
+  })
+
+  it('installs base64 globals before an installer chunk evaluates its own module code', () => {
+    const bundle = fixture(`exports.decoded = atob("QQ==");
+      function installWebRuntimeGlobals() { return { atob: globalThis.atob, btoa: globalThis.btoa }; }
+      Object.defineProperty(installWebRuntimeGlobals, ${JSON.stringify(REQUEST_GLOBAL_INSTALLER_MARKER)}, { value: true });
+      exports.installWebRuntimeGlobals = installWebRuntimeGlobals;`)
+    injectRequestGlobalsBundleRuntime(bundle, ['atob', 'btoa'], 'explicit')
+    const result = execute((bundle['support.js'] as OutputChunk).code)
+    expect(result.exports.decoded).toBe('A')
+  })
+
+  it('injects passive bindings into ky-style globalThis capability probes', () => {
+    const bundle = fixture(`exports.supportsRequest = typeof globalThis.Request === "function";
+      exports.supportsAbortController = typeof globalThis.AbortController === "function";
+      exports.supportsResponseStreams = typeof globalThis.ReadableStream === "function";`)
+    injectRequestGlobalsPassiveBindings(bundle, new Map(), FULL_REQUEST_GLOBAL_TARGETS, 'auto', undefined)
+    const code = (bundle['support.js'] as OutputChunk).code
+
+    expect(code).toContain(REQUEST_GLOBAL_PASSIVE_BINDINGS_MARKER)
+    expect(code).toContain('var Request =')
+    expect(code).toContain('var AbortController =')
+    expect(code).toContain('var ReadableStream =')
+  })
+
+  it('lets ky-style capability probes finish in a dependency chunk before the installer runs', () => {
+    const bundle = fixture(`exports.streamError = (() => {
+      try { new globalThis.ReadableStream(); return null } catch (error) { return String(error) }
+    })();
+    exports.supportsRequestStreams = (() => {
+      let duplexAccessed = false
+      try {
+        const request = new globalThis.Request("https://empty.invalid", {
+          body: new globalThis.ReadableStream(),
+          method: "POST",
+          get duplex() { duplexAccessed = true; return "half" },
+        })
+        return duplexAccessed && !request.headers.has("Content-Type")
+      } catch { return false }
+    })();
+    exports.abortSignalAborted = (() => {
+      const controller = new globalThis.AbortController()
+      controller.abort()
+      return controller.signal.aborted
+    })();`)
+    injectRequestGlobalsPassiveBindings(bundle, new Map(), FULL_REQUEST_GLOBAL_TARGETS, 'explicit', undefined)
+    const result = execute((bundle['support.js'] as OutputChunk).code)
+
+    expect(result.exports.streamError).toBeNull()
+    expect(result.exports.supportsRequestStreams).toBe(false)
+    expect(result.exports.abortSignalAborted).toBe(true)
   })
 
   it('initializes streaming constructors before a dependency evaluates its superclass', () => {

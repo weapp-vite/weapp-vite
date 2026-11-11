@@ -24,6 +24,13 @@ import { parse as parseSfc } from 'vue/compiler-sfc'
 import { parseJsLike, traverse } from '../../../utils/babel'
 import { hasOwn } from '../../utils/object'
 
+import { createBase64PolyfillHelperCode, REQUEST_GLOBAL_BASE64_HELPER } from './injectRequestGlobals/base64'
+import {
+  createEarlyCapabilityHelperCode,
+  EARLY_CAPABILITY_REQUEST_GLOBAL_TARGETS,
+  REQUEST_GLOBAL_EARLY_CAPABILITY_FALLBACKS,
+  REQUEST_GLOBAL_EARLY_CAPABILITY_HELPER,
+} from './injectRequestGlobals/earlyCapabilities'
 import {
   ABORT_REQUEST_GLOBAL_TARGETS,
   FULL_REQUEST_GLOBAL_TARGETS,
@@ -42,10 +49,13 @@ const REQUEST_RUNTIME_CORE_USAGE_TARGETS = new Set<WeappInjectWebRuntimeGlobalsT
   'XMLHttpRequest',
 ])
 
-const DEFAULT_REQUEST_GLOBAL_DEPENDENCIES = ['axios', 'graphql-request', 'socket.io-client', 'engine.io-client']
+// ky 与 stream-markdown-parser 会在模块初始化期读取 Web 能力，必须参与自动识别。
+const DEFAULT_REQUEST_GLOBAL_DEPENDENCIES = ['axios', 'graphql-request', 'socket.io-client', 'engine.io-client', 'ky', 'stream-markdown-parser']
 const DEFAULT_STREAM_GLOBAL_DEPENDENCIES = ['eventsource-parser']
 const DEFAULT_ABORT_GLOBAL_DEPENDENCIES = ['@tanstack/query-core', '@tanstack/vue-query']
 const WEBSOCKET_USAGE_HINT_RE = /\bwebsocket\b/iu
+// 短包名不能用裸 includes 做文本判定，否则容易把无关字符串误判为依赖引用。
+const REQUEST_GLOBAL_KNOWN_DEPENDENCY_SPECIFIER_RE = /['"](?:ky|stream-markdown-parser)(?:\/[^'"]*)?['"]/u
 type WeappRequestGlobalFreeBindingTarget = WeappInjectRequestGlobalsTarget | 'URL' | 'URLSearchParams' | 'Blob' | 'File' | 'FormData'
 
 const REQUEST_GLOBAL_FREE_BINDING_TARGETS = new Set<WeappRequestGlobalFreeBindingTarget>([
@@ -82,7 +92,11 @@ const CODE_USAGE_AUTO_RULES: InjectRequestGlobalsAutoRule[] = [
     targets: [...STREAM_REQUEST_GLOBAL_TARGETS],
   },
   {
-    dependencyPatterns: ['axios', 'graphql-request'],
+    dependencyPatterns: ['stream-markdown-parser'],
+    targets: [...FULL_REQUEST_GLOBAL_TARGETS],
+  },
+  {
+    dependencyPatterns: ['axios', 'graphql-request', 'ky'],
     targets: [...REQUEST_RUNTIME_REQUEST_TARGETS],
   },
   {
@@ -360,6 +374,7 @@ export function createRequestGlobalsInstallerOptionsCode(
  * @description 2. 在各自 chunk 作用域里执行 `typeof XMLHttpRequest` / `typeof fetch` / `new URL()`;
  * @description 3. 在全局对象完成安装前就完成环境探测并缓存结果。
  * @description 因此这里必须把 fetch / XMLHttpRequest / WebSocket / URL 等名字绑定到实际使用它们的产物作用域内。
+ * @description atob / btoa 是无宿主状态的纯函数，installer 可能晚于依赖的模块初始化，必须在 chunk 顶部就落地真实实现。
  */
 export function createRequestGlobalsPassiveBindingsCode(
   targets: WeappInjectRequestGlobalsTarget[],
@@ -370,9 +385,13 @@ export function createRequestGlobalsPassiveBindingsCode(
     return ''
   }
 
+  const needsBase64Polyfill = bindingTargets.includes('atob') || bindingTargets.includes('btoa')
+  const needsEarlyCapabilities = bindingTargets.some(target => (EARLY_CAPABILITY_REQUEST_GLOBAL_TARGETS as readonly string[]).includes(target))
   const helperCode = [
     `const ${REQUEST_GLOBAL_ACTUALS_KEY} = globalThis[${JSON.stringify(REQUEST_GLOBAL_ACTUALS_KEY)}] || (globalThis[${JSON.stringify(REQUEST_GLOBAL_ACTUALS_KEY)}] = Object.create(null))`,
+    ...(needsBase64Polyfill ? [createBase64PolyfillHelperCode()] : []),
     `function ${REQUEST_GLOBAL_MARK_PLACEHOLDER_HELPER}(value){try{Object.defineProperty(value,${JSON.stringify(REQUEST_GLOBAL_PLACEHOLDER_KEY)},{value:true,configurable:true})}catch{value[${JSON.stringify(REQUEST_GLOBAL_PLACEHOLDER_KEY)}]=true}return value}`,
+    ...(needsEarlyCapabilities ? [createEarlyCapabilityHelperCode()] : []),
     `function ${REQUEST_GLOBAL_LAZY_FUNCTION_HELPER}(name){const placeholder=function(...args){const actual=${REQUEST_GLOBAL_ACTUALS_KEY}[name];if(typeof actual!=="function"){throw new Error(name+" is not initialized")}return actual.apply(this,args)};return ${REQUEST_GLOBAL_MARK_PLACEHOLDER_HELPER}(placeholder)}`,
     `function ${REQUEST_GLOBAL_LAZY_CONSTRUCTOR_HELPER}(name){const placeholder=function(...args){const actual=${REQUEST_GLOBAL_ACTUALS_KEY}[name];if(typeof actual!=="function"){throw new Error(name+" is not initialized")}return Reflect.construct(actual,args)};return ${REQUEST_GLOBAL_MARK_PLACEHOLDER_HELPER}(placeholder)}`,
     `function __weappViteRequestGlobalsLazyObject(name,keys){const placeholder=Object.create(null);for(const key of keys){placeholder[key]=function(...args){const actual=${REQUEST_GLOBAL_ACTUALS_KEY}[name];const actualValue=actual?.[key];if(typeof actualValue!=="function"){throw new Error(name+"."+key+" is not initialized")}return actualValue.apply(actual,args)}}return ${REQUEST_GLOBAL_MARK_PLACEHOLDER_HELPER}(placeholder)}`,
@@ -384,12 +403,18 @@ export function createRequestGlobalsPassiveBindingsCode(
       return `var fetch = ${REQUEST_GLOBAL_EXPOSE_HELPER}("fetch",typeof ${REQUEST_GLOBAL_ACTUALS_KEY}["fetch"]==="function"&&${REQUEST_GLOBAL_ACTUALS_KEY}["fetch"]?.[${JSON.stringify(REQUEST_GLOBAL_PLACEHOLDER_KEY)}]!==true?${REQUEST_GLOBAL_ACTUALS_KEY}["fetch"]:typeof globalThis.fetch==="function"&&globalThis.fetch?.[${JSON.stringify(REQUEST_GLOBAL_PLACEHOLDER_KEY)}]!==true?globalThis.fetch:${REQUEST_GLOBAL_LAZY_FUNCTION_HELPER}("fetch"))`
     }
 
-    if (target === 'atob') {
-      return `var atob = ${REQUEST_GLOBAL_EXPOSE_HELPER}("atob",typeof ${REQUEST_GLOBAL_ACTUALS_KEY}["atob"]==="function"&&${REQUEST_GLOBAL_ACTUALS_KEY}["atob"]?.[${JSON.stringify(REQUEST_GLOBAL_PLACEHOLDER_KEY)}]!==true?${REQUEST_GLOBAL_ACTUALS_KEY}["atob"]:typeof globalThis.atob==="function"&&globalThis.atob?.[${JSON.stringify(REQUEST_GLOBAL_PLACEHOLDER_KEY)}]!==true?globalThis.atob:${REQUEST_GLOBAL_LAZY_FUNCTION_HELPER}("atob"))`
+    if (target === 'atob' || target === 'btoa') {
+      const key = JSON.stringify(target)
+      const actualRef = `${REQUEST_GLOBAL_ACTUALS_KEY}[${key}]`
+      const placeholderKey = JSON.stringify(REQUEST_GLOBAL_PLACEHOLDER_KEY)
+      return `var ${target} = ${REQUEST_GLOBAL_EXPOSE_HELPER}(${key},typeof ${actualRef}==="function"&&${actualRef}?.[${placeholderKey}]!==true?${actualRef}:typeof globalThis.${target}==="function"&&globalThis.${target}?.[${placeholderKey}]!==true?globalThis.${target}:${REQUEST_GLOBAL_BASE64_HELPER}.${target})`
     }
 
-    if (target === 'btoa') {
-      return `var btoa = ${REQUEST_GLOBAL_EXPOSE_HELPER}("btoa",typeof ${REQUEST_GLOBAL_ACTUALS_KEY}["btoa"]==="function"&&${REQUEST_GLOBAL_ACTUALS_KEY}["btoa"]?.[${JSON.stringify(REQUEST_GLOBAL_PLACEHOLDER_KEY)}]!==true?${REQUEST_GLOBAL_ACTUALS_KEY}["btoa"]:typeof globalThis.btoa==="function"&&globalThis.btoa?.[${JSON.stringify(REQUEST_GLOBAL_PLACEHOLDER_KEY)}]!==true?globalThis.btoa:${REQUEST_GLOBAL_LAZY_FUNCTION_HELPER}("btoa"))`
+    if ((EARLY_CAPABILITY_REQUEST_GLOBAL_TARGETS as readonly string[]).includes(target)) {
+      const key = JSON.stringify(target)
+      const actualRef = `${REQUEST_GLOBAL_ACTUALS_KEY}[${key}]`
+      const placeholderKey = JSON.stringify(REQUEST_GLOBAL_PLACEHOLDER_KEY)
+      return `var ${target} = ${REQUEST_GLOBAL_EXPOSE_HELPER}(${key},typeof ${actualRef}==="function"&&${actualRef}?.[${placeholderKey}]!==true?${actualRef}:typeof globalThis.${target}==="function"&&globalThis.${target}?.[${placeholderKey}]!==true?globalThis.${target}:${REQUEST_GLOBAL_EARLY_CAPABILITY_HELPER}(${key},${REQUEST_GLOBAL_EARLY_CAPABILITY_FALLBACKS}.${target}))`
     }
 
     if (target === 'queueMicrotask') {
@@ -425,7 +450,14 @@ const REQUEST_GLOBAL_KNOWN_DEPENDENCY_LITERALS = [
   '@tanstack/vue-query',
   'eventsource-parser/stream',
   'eventsource-parser',
+  'stream-markdown-parser',
 ]
+
+/** 短包名只接受被字符串字面量包裹的 specifier，避免裸 includes 误命中。 */
+function mayContainKnownRequestGlobalDependencyByText(code: string) {
+  return REQUEST_GLOBAL_KNOWN_DEPENDENCY_LITERALS.some(specifier => code.includes(specifier))
+    || REQUEST_GLOBAL_KNOWN_DEPENDENCY_SPECIFIER_RE.test(code)
+}
 
 function isIdentifierBoundary(char: string | undefined) {
   if (char === undefined) {
@@ -475,7 +507,7 @@ export function mayContainRequestGlobalsUsageByText(
   allowedTargets: readonly WeappInjectRequestGlobalsTarget[],
 ) {
   return allowedTargets.some(target => containsIdentifierByText(code, target))
-    || REQUEST_GLOBAL_KNOWN_DEPENDENCY_LITERALS.some(specifier => code.includes(specifier))
+    || mayContainKnownRequestGlobalDependencyByText(code)
     || (allowedTargets.includes('WebSocket') && WEBSOCKET_USAGE_HINT_RE.test(code))
 }
 
@@ -540,6 +572,12 @@ function resolveFallbackImportedRequestGlobalsSpecifiers(code: string) {
   const matchedSpecifiers = new Set<string>()
   for (const specifier of REQUEST_GLOBAL_KNOWN_DEPENDENCY_LITERALS) {
     if (code.includes(specifier)) {
+      matchedSpecifiers.add(specifier)
+    }
+  }
+  for (const match of code.matchAll(new RegExp(REQUEST_GLOBAL_KNOWN_DEPENDENCY_SPECIFIER_RE.source, 'gu'))) {
+    const specifier = match[0]?.slice(1, -1).split('/')[0]
+    if (specifier) {
       matchedSpecifiers.add(specifier)
     }
   }
@@ -611,6 +649,26 @@ export function createRequestGlobalsUsageCollector(
           referencedTargets.add(identifierName)
         }
       },
+      MemberExpression(path: any) {
+        const node = path.node
+        if (node?.computed || node?.property?.type !== 'Identifier') {
+          return
+        }
+        const objectName = node.object?.type === 'Identifier' ? node.object.name : undefined
+        if (
+          !objectName
+          || !['globalThis', 'global', 'self', 'window'].includes(objectName)
+          || path.scope?.getBinding?.(objectName)
+        ) {
+          return
+        }
+        const identifierName = node.property.name
+        if (!allowedTargetSet.has(identifierName)) {
+          return
+        }
+        referencedIdentifiers.add(identifierName)
+        referencedTargets.add(identifierName)
+      },
     },
   }
 }
@@ -638,7 +696,7 @@ function analyzeRequestGlobalsUsage(
   }
 
   const mayHaveReferencedTargets = allowedTargets.some(target => new RegExp(`\\b${target}\\b`, 'u').test(usageSource))
-  const mayHaveImportedTargets = REQUEST_GLOBAL_KNOWN_DEPENDENCY_LITERALS.some(specifier => code.includes(specifier))
+  const mayHaveImportedTargets = mayContainKnownRequestGlobalDependencyByText(code)
   if (!mayHaveReferencedTargets && !mayHaveImportedTargets) {
     return {
       ...emptyAnalysis,
