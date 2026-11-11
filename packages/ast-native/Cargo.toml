@@ -8,8 +8,8 @@ publish = false
 crate-type = [ "cdylib" ]
 
 [dependencies]
-napi = { version = "3.16.1", default-features = false, features = [ "napi4" ] }
-napi-derive = "3.7.0"
+napi = { version = "3.16.2", default-features = false, features = [ "napi4" ] }
+napi-derive = "3.7.1"
 oxc_allocator = "0.158.0"
 oxc_ast = "0.158.0"
 oxc_ast_visit = "0.158.0"
