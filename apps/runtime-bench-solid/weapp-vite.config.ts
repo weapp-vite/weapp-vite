@@ -1,5 +1,5 @@
 import { defineConfig } from 'weapp-vite/config'
-import { solidTemplatePlugin } from './solidTemplatePlugin'
+import { solidTemplatePlugin } from './solidTemplatePlugin.ts'
 
 export default defineConfig({
   build: {
