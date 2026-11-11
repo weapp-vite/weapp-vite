@@ -141,7 +141,7 @@ exports[`wevu runtime platform outputs > builds and snapshots alipay outputs > w
 `;
 
 exports[`wevu runtime platform outputs > builds and snapshots alipay outputs > wevu-runtime::alipay::pages/layouts/index 1`] = `
-"<block a:if="{{__wv_page_layout_name === 'admin'}}"><weapp-layout-admin __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}" title="{{(__wv_page_layout_props&&__wv_page_layout_props.title)}}" subtitle="{{(__wv_page_layout_props&&__wv_page_layout_props.subtitle)}}"><view class="page">
+"<block a:if="{{__wv_page_layout_name === 'admin'}}"><weapp-layout-admin __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}" title="{{(__wv_page_layout_props&amp;&amp;__wv_page_layout_props.title)}}" subtitle="{{(__wv_page_layout_props&amp;&amp;__wv_page_layout_props.subtitle)}}"><view class="page">
   <e2e-template-probe marker="LAYOUTS-PAGE-TEMPLATE-BASE" storage-key="__weapp_vite_core_hmr_layout_template_probe__"/>
   <view class="hero">
     <view class="hero__eyebrow">LAYOUTS-PAGE-TEMPLATE-BASE</view>
@@ -161,7 +161,7 @@ exports[`wevu runtime platform outputs > builds and snapshots alipay outputs > w
     <button class="action-btn action-btn--ghost" onTap="clearLayout">none</button>
   </view>
 </view>
-</weapp-layout-admin></block><block a:elif="{{!__wv_page_layout_name || __wv_page_layout_name === 'default'}}"><weapp-layout-default __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}" title="{{(__wv_page_layout_props&&__wv_page_layout_props.title)}}" subtitle="{{(__wv_page_layout_props&&__wv_page_layout_props.subtitle)}}"><view class="page">
+</weapp-layout-admin></block><block a:elif="{{!__wv_page_layout_name || __wv_page_layout_name === 'default'}}"><weapp-layout-default __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}" title="{{(__wv_page_layout_props&amp;&amp;__wv_page_layout_props.title)}}" subtitle="{{(__wv_page_layout_props&amp;&amp;__wv_page_layout_props.subtitle)}}"><view class="page">
   <e2e-template-probe marker="LAYOUTS-PAGE-TEMPLATE-BASE" storage-key="__weapp_vite_core_hmr_layout_template_probe__"/>
   <view class="hero">
     <view class="hero__eyebrow">LAYOUTS-PAGE-TEMPLATE-BASE</view>
