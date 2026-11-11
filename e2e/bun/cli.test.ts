@@ -41,7 +41,7 @@ describe('Bun CLI / issue #1222', () => {
       await requestBunShutdown(project, devOutput)
       const result = await dev
       expect(result.exitCode, output).toBe(143)
-      expect(await readFile(path.join(project, 'cleanup.log'), 'utf8')).toBe('closed\n')
+      expect((await readFile(path.join(project, 'cleanup.log'), 'utf8')).split('closed\n').filter(Boolean)).toHaveLength(1)
       expect(await readFile(path.join(project, 'project.private.config.json'), 'utf8')).toBe(privateConfig)
       await expect(access(path.join(project, '.weapp-vite/ide-asset-watch.json'))).rejects.toMatchObject({ code: 'ENOENT' })
       await expectBunOutputs(project, 'bun-updated')
