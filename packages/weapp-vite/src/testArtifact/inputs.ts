@@ -37,8 +37,9 @@ export async function fingerprintPaths(paths: Iterable<string>, excluded: string
   const hash = createHash('sha256')
   const visited = new Set<string>()
   const ignored = excluded.map(file => path.resolve(file))
+  const isIgnored = (file: string) => ignored.some(root => file === root || file.startsWith(`${root}${path.sep}`))
   const visit = async (file: string) => {
-    if (ignored.some(root => file === root || file.startsWith(`${root}${path.sep}`))) {
+    if (isIgnored(file)) {
       return
     }
     hash.update(`${file}\0`)
@@ -51,9 +52,17 @@ export async function fingerprintPaths(paths: Iterable<string>, excluded: string
         }
         visited.add(real)
         const entries = await fs.readdir(file, { withFileTypes: true })
+        // 解析器可能监听盘符或文件系统根目录；只记录其成员，显式源码依赖仍递归取内容摘要。
+        const filesystemRoot = real === path.parse(real).root
         for (const entry of entries.sort((a, b) => a.name.localeCompare(b.name))) {
-          if (!excludedDirectories.has(entry.name)) {
-            await visit(path.join(file, entry.name))
+          const child = path.join(file, entry.name)
+          if (!excludedDirectories.has(entry.name) && !isIgnored(child)) {
+            if (filesystemRoot) {
+              hash.update(`${entry.name}\0`)
+            }
+            else {
+              await visit(child)
+            }
           }
         }
       }

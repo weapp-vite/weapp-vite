@@ -7,7 +7,7 @@ import { expect, it } from 'vitest'
 import { isTestArtifactCurrent } from 'weapp-vite/test'
 import { buildWeappViteTestArtifact, clearWeappViteTestArtifactCache, watchWeappViteTestArtifact } from './index'
 
-async function createFixture() {
+async function createFixture(rootWatch = false) {
   const cwd = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-test-artifact-'))
   await fs.mkdir(path.join(cwd, 'src/pages/home'), { recursive: true })
   await fs.mkdir(path.join(cwd, 'node_modules'))
@@ -27,6 +27,7 @@ export default defineConfig({
   weapp: { srcRoot: 'src' }, define: { __LABEL__: JSON.stringify(label) },
   plugins: [{
     name: 'third-party-external-input',
+    buildStart() { ${rootWatch ? 'this.addWatchFile(path.parse(process.cwd()).root)' : ''} },
     resolveId(id) { if (id === 'virtual:artifact-data') return '\\0artifact-data' },
     load: { order: 'pre', handler: async function(id) {
       if (id !== '\\0artifact-data') return
@@ -48,8 +49,8 @@ Page({ data: { label: __LABEL__, value, external, count: 0 }, tap() { this.setDa
   return cwd
 }
 
-it('invalidates changed inputs and missing outputs without overwriting a running test generation', async () => {
-  const cwd = await createFixture()
+it('bounds resolver root watches while invalidating inputs and outputs without overwriting a running generation (issue #1316)', async () => {
+  const cwd = await createFixture(true)
   const options = { cwd, skipNpm: true }
   try {
     const first = await buildWeappViteTestArtifact(options)
