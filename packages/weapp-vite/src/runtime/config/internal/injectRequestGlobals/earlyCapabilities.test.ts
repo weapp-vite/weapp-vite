@@ -94,6 +94,9 @@ describe('early constructable web runtime capabilities', () => {
     for (const name of EARLY_CAPABILITY_REQUEST_GLOBAL_TARGETS) {
       expect(sandbox.context[name]?.[REQUEST_GLOBAL_PLACEHOLDER_KEY], name).toBe(true)
     }
+    expect(sandbox.run(`new Request('https://empty.invalid') instanceof Request`)).toBe(true)
+    expect(sandbox.run(`new ReadableStream() instanceof ReadableStream`)).toBe(true)
+    expect(sandbox.run(`new AbortController() instanceof AbortController`)).toBe(true)
   })
 
   it('forwards to the real implementations once the installer writes actuals', () => {
