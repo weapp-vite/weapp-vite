@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto'
 import { mkdir, mkdtemp, rename, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
+import process from 'node:process'
 import { setTimeout as sleep } from 'node:timers/promises'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { listFiles, snapshotDist, waitForInitialDistSnapshot, waitForStableDistSnapshot } from './output'
@@ -47,6 +48,29 @@ async function createOutput() {
   roots.push(root)
   await writeFile(path.join(root, 'app.json'), '{"pages":[]}')
   return root
+}
+
+async function replaceExistingFile(source: string, destination: string) {
+  try {
+    await rename(source, destination)
+    return
+  }
+  catch (error) {
+    const code = (error as NodeJS.ErrnoException).code
+    if (process.platform !== 'win32' || !['EPERM', 'EACCES', 'EBUSY'].includes(code ?? '')) {
+      throw error
+    }
+  }
+
+  // Windows 不允许 rename 覆盖现有文件；先移走旧目标再完成同目录发布，保持夹具的最终目录变化。
+  const displaced = `${destination}.displaced`
+  await rename(destination, displaced)
+  try {
+    await rename(source, destination)
+  }
+  finally {
+    await rm(displaced, { force: true })
+  }
 }
 
 function createPublication() {
@@ -255,7 +279,7 @@ describe('workspace HMR output snapshot races', () => {
     fsHooks.beforeStat = async (filename) => {
       if (filename === staged && !renamed) {
         renamed = true
-        await rename(staged, output)
+        await replaceExistingFile(staged, output)
       }
     }
     const snapshot = await waitForStableDistSnapshot(root, 20, 2_000)
