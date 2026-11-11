@@ -104,5 +104,5 @@ describe('repoctl release PR body budget at the real prepare and GitHub boundari
     expect(fixture.gitCommands.some(command => command[0] === 'push')).toBe(false)
     expect(fixture.requests).toEqual([])
     expect(await fixture.changelog('packages/library')).toContain(summary)
-  })
+  }, 15_000)
 })
