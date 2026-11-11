@@ -87,7 +87,7 @@ export const HMR_ACCEPTANCE_SCENARIOS: HmrAcceptanceScenario[] = [
   },
   {
     id: 'native-css-and-tailwind',
-    expectations: ['classic', 'classic-fallback'],
+    expectations: ['stateful', 'classic', 'classic-fallback'],
     capabilityIds: ['script-patch', 'visual-assets', 'stylesheet-output'],
     ide: ['ide/issue-1015-css-hmr.runtime.test.ts', 'ide/issue-998-tailwind.runtime.test.ts', 'ide/template-tailwindcss-tdesign-hmr.runtime.test.ts'],
     headless: ['ide/issue-1015-css-hmr.runtime.test.ts', 'ide/issue-998-tailwind.runtime.test.ts'],

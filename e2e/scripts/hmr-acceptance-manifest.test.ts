@@ -292,7 +292,7 @@ describe('HMR semantic acceptance inventory', () => {
       expect(cases.some(item => item.name.startsWith(`issue #1015 external CSS HMR: ${runtime} > `))).toBe(true)
     }
     expect(HMR_ACCEPTANCE_SCENARIOS.find(item => item.id === 'native-css-and-tailwind')).toMatchObject({
-      expectations: ['classic', 'classic-fallback'],
+      expectations: ['stateful', 'classic', 'classic-fallback'],
       capabilityIds: ['script-patch', 'visual-assets', 'stylesheet-output'],
     })
   })
