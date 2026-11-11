@@ -63,6 +63,7 @@ async function transport(status: number, body: string, location?: string) {
 describe('packed consumer stylesheet classic evidence', () => {
   it('checks classic handoff after stylesheet edits and restores both repeated edit cycles without requesting control output', async () => {
     const evidence = await fixture()
+    evidence.output = fallback
     const template = '<view class="w-[37px]">{{message}}</view>'
     await mkdir(path.join(evidence.root, 'src/pages/native'), { recursive: true })
     const fetch = vi.spyOn(globalThis, 'fetch')
@@ -77,9 +78,14 @@ describe('packed consumer stylesheet classic evidence', () => {
       expect(source).toContain(expected)
       publications.push(source)
     })
-    await verifyStylesheetHmr({ ...evidence, originalTemplate: template, waitForOutput, readOutput: () => evidence.output })
+    const waitForClassicReady = vi.fn(async () => {
+      await Promise.resolve()
+      evidence.output = fallback + ready
+    })
+    await verifyStylesheetHmr({ ...evidence, originalTemplate: template, waitForOutput, waitForClassicReady, readOutput: () => evidence.output })
     expect(publications).toEqual([53, 37, 61, 37].map(width => template.replace('37px', `${width}px`)))
     expect(waitForOutput).toHaveBeenCalledTimes(9)
+    expect(waitForClassicReady).toHaveBeenCalledTimes(4)
     expect(fetch).not.toHaveBeenCalled()
   })
 

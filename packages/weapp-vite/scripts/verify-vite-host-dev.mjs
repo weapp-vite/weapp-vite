@@ -93,19 +93,19 @@ async function waitForWatchRound(count) {
   assert(rounds() >= count, `Native watch did not finish round ${count}: ${logs}`)
 }
 
-async function waitForDevReady() {
+async function waitForDevReady(pattern = /开发服务已就绪|小程序开发产物已就绪/, stage = 'dev') {
   if (operation === 'build-watch') {
     return
   }
   const deadline = Date.now() + 20_000
-  const ready = () => /开发服务已就绪|小程序开发产物已就绪/.test(logs)
+  const ready = () => pattern.test(logs)
   while (!ready() && Date.now() < deadline) {
     if (exited) {
       break
     }
     await delay(50)
   }
-  assert(ready(), `Native ${toolchain} dev did not become ready: ${logs}`)
+  assert(ready(), `Native ${toolchain} ${stage} did not become ready: ${logs}`)
 }
 
 const errors = []
@@ -147,6 +147,7 @@ try {
       operation,
       originalTemplate: originals.get('src/pages/native/index.wxml'),
       waitForOutput,
+      waitForClassicReady: () => waitForDevReady(/\[weapp-vite\] HMR classic ready /, 'classic handoff'),
       readOutput: () => logs,
     })
     console.log(`${toolchain}: native ${operation} stylesheet updates and restorations passed with the expected configuration handoff`)

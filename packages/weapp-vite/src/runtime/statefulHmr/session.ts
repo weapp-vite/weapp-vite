@@ -631,6 +631,13 @@ class StatefulHmrSession {
       this.requestFullBuild([normalizedFile])
       return
     }
+    if (!this.transport.hasCurrentClient && /\.(?:vue|[cm]?[jt]sx?)$/.test(normalizedFile)
+      && (this.entryIds.has(normalizedFile) || isEmittedDependency || hasTrackedModule)) {
+      // DevEngine 在初始模块执行确认前不产生脚本 Patch；无客户端时仍须由原生完整构建发布最新源码。
+      logger.info('HMR 更新：IDE 尚未连接，正在发布完整开发产物（等待 runtime）。')
+      this.requestFullBuild([normalizedFile])
+      return
+    }
     if (/\.[cm]?[jt]s$/.test(normalizedFile) && (this.entryIds.has(normalizedFile) || isEmittedDependency)) {
       this.unpersistedNativeScripts.set(normalizedFile, {})
       if (this.snapshotScheduler.isPending() || this.nativeScriptInputs.needsFullBuild(normalizedFile)) {

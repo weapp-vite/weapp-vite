@@ -101,8 +101,9 @@ vi.mock('./viteAdapter', () => ({
 }))
 
 const route = 'pages/shared/index'
-const contentFile = 'snapshot-content.wxml'
-const pageContentFile = 'pages/shared/snapshot-content.wxml'
+// 事务测试使用普通资产，避免把模拟的内容变化冒充宿主可安全应用的模板更新。
+const contentFile = 'snapshot-content.txt'
+const pageContentFile = 'pages/shared/snapshot-content.txt'
 const root = path.join(realpathSync.native(tmpdir()), 'stateful-session-snapshots')
 const watchers: Array<{ close: () => Promise<void> }> = []
 const temporaryDirectories: string[] = []
@@ -800,6 +801,7 @@ describe('stateful snapshot output transactions', () => {
     ['pages/shared/index.wxml', '<view>updated</view>'],
     ['pages/shared/index.wxss', '.native-updated { color: blue; }'],
   ])('admits native %s output by compiled capability when a compiler also scans that source', async (fileName, source) => {
+    vi.spyOn(StatefulHmrTransport.prototype, 'hasCurrentClient', 'get').mockReturnValue(false)
     const session = await start()
     const file = path.join(root, 'src', fileName)
     const compiler = getCompilerHmrHost(session.ctx)
@@ -1220,6 +1222,8 @@ describe('stateful snapshot output transactions', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     vi.clearAllMocks()
+    // Patch harness 模拟已连接客户端；无 IDE 场景在用例内显式覆盖。
+    vi.spyOn(StatefulHmrTransport.prototype, 'hasCurrentClient', 'get').mockReturnValue(true)
     harness.nativeOutput = []
     harness.initialOutput = true
     harness.nativeSettlement.mockReset().mockResolvedValue()
@@ -1268,12 +1272,37 @@ describe('stateful snapshot output transactions', () => {
     expect(harness.createServer.mock.calls.at(-1)?.[0].server.watch).toMatchObject({ usePolling: true, interval: 50 })
   })
 
+  it.each(['ts', 'vue'])('publishes script edits and restoration before any IDE connects (%s)', async (extension) => {
+    vi.spyOn(StatefulHmrTransport.prototype, 'hasCurrentClient', 'get').mockReturnValue(false)
+    const file = path.join(root, `src/page.${extension}`)
+    const original = extension === 'ts' ? 'Page({ data: { message: "initial" } })' : '<script setup>const message = "initial"</script><template><view>{{ message }}</view></template>'
+    const output = (source: string): StatefulHmrOutputFile[] => [{ type: 'chunk', fileName: 'pages/page.js', code: `void ${JSON.stringify(source)}`, modules: { [file]: {} } }]
+    harness.nativeOutput = output(original)
+    const session = await start(snapshot('red'), [file], {}, new Map([[file, original]]))
+    await session.whenSettled()
+    const delta = vi.spyOn(StatefulHmrTransport.prototype, 'addDelta')
+    const host = getCompilerHmrHost(session.ctx)
+    for (const source of [original.replace('initial', 'updated'), original]) {
+      harness.writeOutput.mockClear()
+      harness.nativeOutput = output(source)
+      host.captureNative(file, source)
+      session.sourceChange(file)
+      await vi.advanceTimersByTimeAsync(50)
+      await session.whenSettled()
+      expect(harness.writeOutput.mock.calls.flatMap(([, files]) => files)).toContainEqual(expect.objectContaining({ fileName: 'pages/page.js', code: expect.stringContaining(source.includes('updated') ? 'updated' : 'initial') }))
+    }
+    expect(harness.fullBuild).toHaveBeenCalledTimes(2)
+    expect(delta).not.toHaveBeenCalled()
+    expect(session.runtime.fallback).toBeUndefined()
+  })
+
   it('hands connected template byte changes to classic before native writes or script delivery', async () => {
-    const session = await start(snapshot('red'))
+    const template = (color: string): StatefulHmrSnapshot => ({ ...snapshot(color), output: [{ type: 'asset', fileName: 'pages/shared/index.wxml', source: `<view data-color="${color}"></view>` }] })
+    const session = await start(template('red'))
     await session.whenSettled()
     vi.spyOn(StatefulHmrTransport.prototype, 'hasCurrentClient', 'get').mockReturnValue(true)
     const delta = vi.spyOn(StatefulHmrTransport.prototype, 'addDelta').mockResolvedValue()
-    session.rebuild.mockResolvedValue(snapshot('blue'))
+    session.rebuild.mockResolvedValue(template('blue'))
     session.classic.mockImplementation(async () => {
       await session.close()
       session.runtime.markClassic()
@@ -1285,7 +1314,7 @@ describe('stateful snapshot output transactions', () => {
     await vi.advanceTimersByTimeAsync(100)
     await session.runtime.whenSettled()
 
-    expect(session.runtime.fallback).toMatchObject({ code: 'template-output', files: [pageContentFile, contentFile].sort() })
+    expect(session.runtime.fallback).toMatchObject({ code: 'template-output', files: ['pages/shared/index.wxml'] })
     expect(session.classic).toHaveBeenCalledOnce()
     expect(harness.writeOutput).not.toHaveBeenCalled()
     expect(delta).not.toHaveBeenCalled()
@@ -2326,7 +2355,9 @@ describe('stateful snapshot output transactions', () => {
     host.captureNative(component, changed)
     expect(host.hasVisualChanges([component])).toBe(true)
     const next = registeredSnapshot(kind === 'style' ? compiledStylesheetSnapshot('blue') : snapshot('blue'), [component], kind === 'style' ? 'synthetic-template-registration' : 'changed-template-registration')
-    next.output.push({ type: 'asset', fileName: `${route}.wxml`, source: '<view>after</view>' })
+    if (kind === 'template') {
+      next.output.push({ type: 'asset', fileName: `${route}.wxml`, source: '<view>after</view>' })
+    }
     session.rebuild.mockResolvedValueOnce(next)
     session.sourceChange(component, 'update', [kind === 'style' ? 'entry-style-only:1' : 'entry-local-asset:1'])
     session.sourceChange(component, 'update', ['entry-direct:1'])

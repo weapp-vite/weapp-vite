@@ -100,6 +100,7 @@ export default defineConfig(async () => ({
 `,
   'weapp-vite.config.mjs': 'throw new Error("must not implicitly merge another configuration")',
   'project.config.json': JSON.stringify({ miniprogramRoot: 'dist' }),
+  'project.private.config.json': JSON.stringify({ setting: { compileHotReLoad: true } }),
   'src/app.ts': 'App({})',
   'src/app.json': JSON.stringify({ pages: ['pages/native/index', 'pages/vue/index'], subPackages: [{ root: 'extra', pages: ['detail/index'] }] }),
   'src/pages/native/index.ts': 'Page({ data: { message: "native-host" } })',

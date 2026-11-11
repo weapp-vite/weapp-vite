@@ -7,6 +7,7 @@ import process from 'node:process'
 import { promisify } from 'node:util'
 import { afterEach, expect, it } from 'vitest'
 import { createDevProcessEnv } from '../../e2e/utils/dev-process-env'
+import { NATIVE_PUBLICATION_PREFIX } from '../../e2e/utils/nativePublication/files'
 import { loadViteConfigFile } from '../../packages/weapp-vite/src/utils/loadViteConfigFile'
 import { createWorkspaceNativePublicationConfig } from './nativePublicationConfig'
 import { readWorkspaceHmrProjectTarget } from './projectTarget'
@@ -67,7 +68,7 @@ it('preserves factory errors and never substitutes project metadata', async () =
   await expect(load(root, wrapper.configFile)).rejects.toThrow('target-config-rejected')
 })
 
-it('does not execute config resources in the parent and lets the actual child release them naturally', async () => {
+it.each([true, false])('observes the actual child target and releases config resources with native write=%s', async (write) => {
   const { root, wrapper } = await fixture({
     'vite.config.mjs': `import { appendFileSync } from 'node:fs'
 import { createServer } from 'node:http'
@@ -89,7 +90,7 @@ export default async env => {
   const source = `import { build, loadConfigFromFile } from ${JSON.stringify(import.meta.resolve('vite'))}
 const root = ${JSON.stringify(root)}
 const loaded = await loadConfigFromFile({ command: 'serve', mode: 'development' }, ${JSON.stringify(wrapper.configFile)}, root, 'silent', undefined, 'runner')
-await build({ ...loaded.config, root, configFile: false, logLevel: 'silent', build: { outDir: 'output/native', lib: { entry: root + '/miniprogram/entry.js', formats: ['es'] } } })
+await build({ ...loaded.config, root, configFile: false, logLevel: 'silent', build: { write: ${write}, outDir: 'output/native', lib: { entry: root + '/miniprogram/entry.js', formats: ['es'] } } })
 `
   const { stdout } = await execFile(process.execPath, ['--input-type=module', '--eval', source], {
     cwd: root,
@@ -115,5 +116,9 @@ await build({ ...loaded.config, root, configFile: false, logLevel: 'silent', bui
   expect(portStatus).toBe('ECONNREFUSED')
   expect(await readFile(path.join(root, 'miniprogram/entry.js'), 'utf8')).toBe('export const value = 1')
   expect(readWorkspaceHmrProjectTarget(stdout, { id: wrapper.id, pid: childPid })).toEqual({ platform: 'tt', distRoot: path.join(await realpath(root), 'output/native') })
+  if (!write) {
+    expect(stdout).not.toContain(NATIVE_PUBLICATION_PREFIX)
+    await expect(access(path.join(root, 'output/native'))).rejects.toMatchObject({ code: 'ENOENT' })
+  }
   await wrapper.dispose()
 }, 30_000)
