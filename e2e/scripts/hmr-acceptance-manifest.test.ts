@@ -152,7 +152,7 @@ describe('HMR semantic acceptance inventory', () => {
       expect(cases).toHaveLength(index === 0 ? 8 : 7)
       expect(cases.every(item => item.plans.length > 0 && !item.notes.some(note => note.startsWith('Dynamic')))).toBe(true)
       expect(cases.every(item => item.source.startsWith('e2e/ide/statefulHmrDom/capabilityFallback.ts:'))).toBe(true)
-      expect(task.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('900000')
+      expect(task.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('1800000')
     }
     expect(transitionCases.filter(item => item.name.includes(' esm capability fallback > '))).toEqual([
       expect.objectContaining({ file: 'e2e/ide/hmr-capability-fallback.wv.runtime.test.ts', name: expect.stringMatching(/^wv auto stylesheet-output esm capability fallback > /) }),

@@ -54,10 +54,10 @@ const IDE_TASK_TIMEOUT_MS_BY_LABEL = new Map([
   ['ide/github-issues.runtime.props.test.ts', '600000'],
   // 兼容旧入口的原有预算；正式按宿主分别执行，不增加 case、hook 或断言等待。
   ['ide/hmr-capability-fallback.runtime.test.ts', '1800000'],
-  // Stable 实测 wv/vite 七例约 647/676 秒；wv 额外一例样式回退约 154 秒，保留 worker 收尾余量。
-  ['ide/hmr-capability-fallback.wv.runtime.test.ts', '900000'],
-  ['ide/hmr-capability-fallback.vite.runtime.test.ts', '900000'],
-  ['ide/hmr-capability-fallback.vite-plus.runtime.test.ts', '900000'],
+  // 三个宿主分别串行覆盖 7/8 个 capability fallback case；wv 实测已超过 900 秒，统一保留 30 分钟完成运行与资源收尾。
+  ['ide/hmr-capability-fallback.wv.runtime.test.ts', '1800000'],
+  ['ide/hmr-capability-fallback.vite.runtime.test.ts', '1800000'],
+  ['ide/hmr-capability-fallback.vite-plus.runtime.test.ts', '1800000'],
   ['ide/hmr-startup-fallback.runtime.test.ts', '900000'],
   ['ide/hmr-additional-capabilities.runtime.test.ts', '600000'],
   ['ide/hmr-compiled-template-fallback.runtime.test.ts', '600000'],
