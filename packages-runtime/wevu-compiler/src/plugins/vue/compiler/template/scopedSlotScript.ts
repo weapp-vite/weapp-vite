@@ -2,6 +2,7 @@ import type { WevuRuntimeCapabilityMetadata } from '../../../../runtimeCapabilit
 import type { WevuBindingManifestV1, WevuRuntimeBindingManifestMode } from '../../../../types/bindingManifest'
 import type { ClassStyleBinding, InlineExpressionAsset, LayoutHostBinding, TemplateRefBinding } from './types'
 import { WEVU_BINDING_MANIFEST_KEY, WEVU_NATIVE_SLOT_CONTEXT_KEY, WEVU_SCOPED_SLOT_CREATOR_KEY } from '@weapp-core/constants'
+import * as t from '@weapp-vite/ast/babelTypes'
 import { createRuntimeBindingManifest } from '../../../../bindingManifest'
 import {
   WE_VU_COMPILER_REACTIVITY_MODULE_ID,
@@ -15,17 +16,13 @@ import {
 } from '../../../../runtimeCapabilities'
 import { generate } from '../../../../utils/babel'
 import { buildClassStyleComputedCode } from '../../transform/classStyleComputed'
+import { buildInlineExpressionMap } from './inlineExpressionMap'
 
 function buildInlineExpressionMapCode(inlineExpressions: InlineExpressionAsset[]) {
   if (!inlineExpressions.length) {
     return null
   }
-  const entries = inlineExpressions.map((entry) => {
-    const keys = JSON.stringify(entry.scopeKeys)
-    const { parameterNames } = entry
-    return `${JSON.stringify(entry.id)}:{keys:${keys},fn:(${parameterNames.context},${parameterNames.scope},${parameterNames.event})=>${entry.expression}}`
-  })
-  return `{${entries.join(',')}}`
+  return generate(buildInlineExpressionMap(inlineExpressions, t.identifier('__wevuUnref')), { compact: true }).code
 }
 
 function buildTemplateRefsCode(templateRefs: TemplateRefBinding[]) {
@@ -90,7 +87,7 @@ export function buildScopedSlotComponentScript(options: {
   if (computedCode) {
     lines.push(`import { normalizeClass as __wevuNormalizeClass, normalizeStyle as __wevuNormalizeStyle } from '${WE_VU_COMPILER_TEMPLATE_MODULE_ID}';`)
   }
-  if (computedCode || templateRefsCode) {
+  if (computedCode || templateRefsCode || options.inlineExpressions.some(entry => entry.runtimeHelpers?.unref)) {
     lines.push(`import { unref as __wevuUnref } from '${WE_VU_COMPILER_REACTIVITY_MODULE_ID}';`)
   }
   lines.push(...installerNames.map(installerName => `_${installerName}();`))

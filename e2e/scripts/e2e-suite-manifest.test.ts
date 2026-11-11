@@ -244,6 +244,7 @@ describe('e2e suite manifest', () => {
     'ide/issue-1278-classic-lease-recovery.runtime.test.ts',
     'ide/issue-1295-props-projection.runtime.test.ts',
     'ide/issue-1299-slot-owner.runtime.test.ts',
+    'ide/issue-1313-reactive-inline.runtime.test.ts',
     'ide/issue-997-rebuild.runtime.test.ts',
     'ide/issue-1029-auto-routes.runtime.test.ts',
     'ide/issue-1082-confirmation.runtime.test.ts',
