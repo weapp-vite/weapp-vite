@@ -158,10 +158,10 @@ for (const host of hosts) {
           env: createDevProcessEnv(),
           reject: false,
         })
-        publication = createNativeHmrPublication(app, dev, requested, ['ide-classic-handoff'])
+        publication = createNativeHmrPublication(app, dev, requested, ['compiler-provider'])
         await dev.waitForOutput('[weapp-vite] HMR classic ready ', 'startup classic fallback completion')
         await dev.waitFor(waitForFileContains(outputFile, 'STATEFUL-NATIVE-BASE'), 'initial classic native output')
-        expect(dev.getOutput()).toContain('"reason":"ide-classic-handoff"')
+        expect(dev.getOutput()).toContain('"reason":"compiler-provider"')
         await assertClassicArtifacts()
         for (const extension of ['js', 'json', 'wxml']) {
           expect(await fs.pathExists(path.join(app, `dist/pages/native/index.${extension}`))).toBe(true)
@@ -255,7 +255,7 @@ for (const host of hosts) {
         await observeClassic('CONFIG-B')
         await dom.check('config-after', miniProgram, await miniProgram.currentPage())
         expect(dev!.getOutput().match(/\[weapp-vite\] HMR fallback /g)).toHaveLength(1)
-        expect(dev!.getOutput()).toContain('"reason":"ide-classic-handoff"')
+        expect(dev!.getOutput()).toContain('"reason":"compiler-provider"')
       }, 600_000)
     })
   }

@@ -21,6 +21,10 @@ const launchDelegates: Record<string, { module: string, factory: string }> = {
     module: './statefulHmrDom/jsxSession',
     factory: 'createJsxHmrSession',
   },
+  'hmr-native-template-fallback.runtime.test.ts': {
+    module: './statefulHmrDom/templateFallbackSession',
+    factory: 'createTemplateFallbackSession',
+  },
   'hmr-compiled-template-fallback.runtime.test.ts': {
     module: './statefulHmrDom/templateFallbackSession',
     factory: 'createTemplateFallbackSession',

@@ -6,13 +6,13 @@ import { resolveStatefulHmrStartupFallback } from '../packages/weapp-vite/src/ru
 const fallback = {
   from: 'stateful-experimental',
   to: 'classic',
-  reason: 'ide-classic-handoff',
-  message: '当前微信宿主在安装 stateful 资源前交接到 classic。',
+  reason: 'stylesheet-output',
+  message: '样式更新不具备可靠的状态保持应用确认。',
   requested: 'stateful-experimental',
   actual: 'classic',
   phase: 'switching',
 }
-const ready = { reason: 'ide-classic-handoff', requested: 'stateful-experimental', actual: 'classic', phase: 'classic' }
+const ready = { reason: 'stylesheet-output', requested: 'stateful-experimental', actual: 'classic', phase: 'classic' }
 const fallbackLog = (record = fallback) => `[weapp-vite] HMR fallback ${JSON.stringify(record)}\n`
 const readyLog = (record = ready) => `[weapp-vite] HMR classic ready ${JSON.stringify(record)}\n`
 
@@ -21,15 +21,15 @@ function publication(output: string, runtime: 'classic' | 'stateful-experimental
   return createIssue1015HmrPublication('contract-fixture', dev, runtime, 'profile.jsonl')
 }
 
-describe('issue1015 startup and checkpoint contracts without an IDE', () => {
-  it('accepts the required WeChat startup handoff before connecting a requested stateful runtime', () => {
+describe('issue1015 capability and checkpoint contracts without an IDE', () => {
+  it('admits WeChat stateful startup and accepts a later stylesheet handoff', () => {
     expect(resolveStatefulHmrStartupFallback({ platform: 'weapp', runtime: 'stateful-experimental' }))
-      .toMatchObject({ code: 'ide-classic-handoff' })
+      .toBeUndefined()
     expect(publication(fallbackLog() + readyLog()).stateful).toBe(false)
   })
 
-  it.each(['stylesheet-output', 'runtime-contract', 'entry-topology'] satisfies HmrRuntimeFallbackCode[])(
-    'rejects %s as a substitute for the required startup handoff',
+  it.each(['compiler-provider', 'runtime-contract', 'entry-topology'] satisfies HmrRuntimeFallbackCode[])(
+    'rejects %s as a substitute for the stylesheet handoff',
     (reason) => {
       const output = fallbackLog({ ...fallback, reason }) + readyLog({ ...ready, reason })
       expect(() => publication(output).stateful).toThrow()
@@ -37,7 +37,7 @@ describe('issue1015 startup and checkpoint contracts without an IDE', () => {
   )
 
   it.each([
-    ['reason', 'stylesheet-output'],
+    ['reason', 'compiler-provider'],
     ['requested', 'auto'],
     ['phase', 'switching'],
   ])('rejects a classic ready event with inconsistent %s', (field, value) => {

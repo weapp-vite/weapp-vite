@@ -1268,6 +1268,31 @@ describe('stateful snapshot output transactions', () => {
     expect(harness.createServer.mock.calls.at(-1)?.[0].server.watch).toMatchObject({ usePolling: true, interval: 50 })
   })
 
+  it('hands connected template byte changes to classic before native writes or script delivery', async () => {
+    const session = await start(snapshot('red'))
+    await session.whenSettled()
+    vi.spyOn(StatefulHmrTransport.prototype, 'hasCurrentClient', 'get').mockReturnValue(true)
+    const delta = vi.spyOn(StatefulHmrTransport.prototype, 'addDelta').mockResolvedValue()
+    session.rebuild.mockResolvedValue(snapshot('blue'))
+    session.classic.mockImplementation(async () => {
+      await session.close()
+      session.runtime.markClassic()
+    })
+    harness.writeOutput.mockClear()
+    harness.registerPatchModules.mockClear()
+    harness.markPayloadDelivered.mockClear()
+    session.refresh()
+    await vi.advanceTimersByTimeAsync(100)
+    await session.runtime.whenSettled()
+
+    expect(session.runtime.fallback).toMatchObject({ code: 'template-output', files: [pageContentFile, contentFile].sort() })
+    expect(session.classic).toHaveBeenCalledOnce()
+    expect(harness.writeOutput).not.toHaveBeenCalled()
+    expect(delta).not.toHaveBeenCalled()
+    expect(harness.registerPatchModules).not.toHaveBeenCalled()
+    expect(harness.markPayloadDelivered).not.toHaveBeenCalled()
+  })
+
   it('retains the core ingress event across the session listener and snapshot publication', async () => {
     const samples: HmrProfileJsonSample[] = []
     vi.spyOn(StatefulHmrProfile.prototype, 'record').mockImplementation(sample => samples.push(sample))
@@ -2485,7 +2510,7 @@ describe('stateful snapshot output transactions', () => {
     expect(harness.writeOutput).not.toHaveBeenCalled()
   })
 
-  it.each(['prepare', 'syntax', 'write'] as const)('preserves a native Vue Noop %s error and invalidates its failed comparison baseline', async (stage) => {
+  it.each(['prepare', 'syntax', 'write'] as const)('preserves a native Vue Noop %s error and retains only proven publication evidence', async (stage) => {
     const component = path.join(root, 'src/native.vue')
     const previous = '<script setup>const count = 1</script><template><view>before</view></template>'
     const session = await start(registeredSnapshot(snapshot('red'), [component]), [component], {}, new Map([[component, previous]]))
@@ -2519,6 +2544,21 @@ describe('stateful snapshot output transactions', () => {
     expect(events).toHaveBeenCalledWith(expect.objectContaining({ code: 'ERROR', error: failure }))
     expect(session.classic).not.toHaveBeenCalled()
     expect(session.runtime.fallback).toBeUndefined()
+    if (stage !== 'write') {
+      // 编译失败没有改写宿主产物；修正源码后仍以最后成功发布的注册作为证明。
+      host.captureNative(component, previous.replace('count = 1', 'count = 3'))
+      session.rebuild.mockResolvedValueOnce(registeredSnapshot(snapshot('red'), [component]))
+      vi.spyOn(StatefulHmrTransport.prototype, 'addDelta').mockResolvedValue()
+      session.sourceChange(component, 'update', ['compiler-content:1'])
+      expect(harness.callbacks!.onPatch([component], { type: 'Patch', code: 'void 0', filename: 'recovered.js', changedIds: [component] })).toBe(true)
+      const recovered = session.whenSettled()
+      await vi.advanceTimersByTimeAsync(40)
+      await recovered
+      expect(freeze).toHaveBeenCalledTimes(2)
+      expect(session.classic).not.toHaveBeenCalled()
+      expect(session.runtime.fallback).toBeUndefined()
+      return
+    }
     session.sourceChange(component, 'update', ['entry-local-asset:1'])
     expect(harness.callbacks!.onPatch([component], { type: 'Noop' })).toBe(false)
     await vi.advanceTimersByTimeAsync(40)
@@ -2530,6 +2570,36 @@ describe('stateful snapshot output transactions', () => {
     expect(prepare).toHaveBeenCalledOnce()
     expect(session.classic).toHaveBeenCalledOnce()
     expect(session.runtime.fallback).toMatchObject({ code: 'native-registration', files: [component] })
+  })
+
+  it('keeps published Vue registration evidence after an unrelated asset snapshot fails', async () => {
+    const component = path.join(root, 'src/native.vue')
+    const original = '<script setup>const count = 1</script><template><view>before</view></template>'
+    const initial = registeredSnapshot(snapshot('red'), [component])
+    const session = await start(initial, [component], {}, new Map([[component, original]]))
+    const failure = new SyntaxError('asset snapshot failed before publication')
+    session.rebuild.mockRejectedValueOnce(failure)
+    session.refresh()
+    const rejected = expect(session.whenSettled()).rejects.toBe(failure)
+    await vi.advanceTimersByTimeAsync(40)
+    await rejected
+
+    session.rebuild.mockResolvedValueOnce(initial)
+    session.refresh()
+    const restored = session.whenSettled()
+    await vi.advanceTimersByTimeAsync(40)
+    await restored
+
+    const host = getCompilerHmrHost(session.ctx)
+    host.captureNative(component, original.replace('count = 1', 'count = 2'))
+    vi.spyOn(StatefulHmrTransport.prototype, 'addDelta').mockResolvedValue()
+    session.sourceChange(component, 'update', ['entry-direct:1'])
+    expect(harness.callbacks!.onPatch([component], { type: 'Patch', code: 'void 0', filename: 'next.js', changedIds: [component] })).toBe(true)
+    const recovered = session.whenSettled()
+    await vi.advanceTimersByTimeAsync(40)
+    await recovered
+    expect(session.classic).not.toHaveBeenCalled()
+    expect(session.runtime.fallback).toBeUndefined()
   })
 
   const nativeTemplateAdmissionCases = (['Noop', 'Patch'] as const).flatMap(type =>

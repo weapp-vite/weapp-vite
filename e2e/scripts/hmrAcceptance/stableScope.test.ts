@@ -29,11 +29,11 @@ useIsolatedTopologyTestEnvironment()
 describe('supported WeChat startup classic inventory', () => {
   it.each([
     ['hmr-build', 45, 3],
-    ['ide-hmr-headless', 28, 14],
-    ['ide-hmr', 34, 19],
-    ['ide-full:exhaustive', 168, 22],
-    ['ide-dom-headless', 102, 14],
-    ['ide-headless-full', 113, 14],
+    ['ide-hmr-headless', 29, 15],
+    ['ide-hmr', 35, 20],
+    ['ide-full:exhaustive', 169, 23],
+    ['ide-dom-headless', 103, 15],
+    ['ide-headless-full', 114, 15],
   ] as const)('preserves the complete %s task inventory and explicit experimental exclusions', async (suite, total, excluded) => {
     const original = await getSuiteTasks(suite, { topology: 'optimized-v1' })
     const supported = await getSuiteTasks(`${suite}:classic`, { topology: 'optimized-v1' })

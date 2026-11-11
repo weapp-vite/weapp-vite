@@ -8,7 +8,7 @@ import { setTimeout as delay } from 'node:timers/promises'
 import { readEmittedStylesheet } from '../../../e2e/utils/emittedStylesheet.ts'
 import { createNativeHostControl } from './consumerHmr/hostControl/index.mjs'
 import { assertConsumerPrivateConfigRestored, consumerProcessEnvironment, readConsumerPrivateConfig, stopConsumerProcess } from './consumerHmr/shutdown.mjs'
-import { assertConsumerStartupClassic, classicReadyPrefix } from './consumerHmr/startupClassic.mjs'
+import { assertConsumerStatefulStartup } from './consumerHmr/startupClassic.mjs'
 import { verifyStylesheetHmr } from './consumerHmr/stylesheet.mjs'
 
 const root = path.resolve(process.argv[2])
@@ -98,7 +98,7 @@ async function waitForDevReady() {
     return
   }
   const deadline = Date.now() + 20_000
-  const ready = () => /开发服务已就绪|小程序开发产物已就绪/.test(logs) && (operation !== 'stateful-dev' || logs.includes(classicReadyPrefix))
+  const ready = () => /开发服务已就绪|小程序开发产物已就绪/.test(logs)
   while (!ready() && Date.now() < deadline) {
     if (exited) {
       break
@@ -139,7 +139,7 @@ try {
   await waitForWatchRound(1)
   await waitForDevReady()
   if (operation === 'stateful-dev') {
-    await assertConsumerStartupClassic({ root, operation, output: logs })
+    await assertConsumerStatefulStartup({ root, output: logs })
   }
   if (profile === 'tailwind') {
     await verifyStylesheetHmr({
@@ -149,7 +149,7 @@ try {
       waitForOutput,
       readOutput: () => logs,
     })
-    console.log(`${toolchain}: native ${operation} stylesheet updates and restorations passed with one config evaluation`)
+    console.log(`${toolchain}: native ${operation} stylesheet updates and restorations passed with the expected configuration handoff`)
   }
   else if (profile === 'platform') {
     const file = 'src/pages/index/index.vue'
@@ -196,7 +196,7 @@ try {
     await waitForOutput('../dist-plugin/pages/hello-page/index.wxml', '插件页直接使用 Vue SFC')
     await waitForOutput('../dist-plugin/pages/hello-page/index.js', /\S/)
     assert.equal(await readFile(path.join(root, 'config-calls.txt'), 'utf8'), 'loaded\n')
-    console.log(`${toolchain}: native plugin ${operation} shared import update, page removal and restoration passed with one config evaluation`)
+    console.log(`${toolchain}: native plugin ${operation} shared import update, page removal and restoration passed with the expected configuration handoff`)
   }
   else if (profile === 'react') {
     const source = path.join(root, 'src/pages/static/view.tsx')
@@ -215,7 +215,7 @@ try {
     await waitForOutput('workers/messages/index.js', 'worker hello')
     await waitForWatchRound(3)
     assert.equal(await readFile(path.join(root, 'config-calls.txt'), 'utf8'), 'loaded\n')
-    console.log(`${toolchain}: native worker ${operation} import update and restore passed with one config evaluation`)
+    console.log(`${toolchain}: native worker ${operation} import update and restore passed with the expected configuration handoff`)
   }
   else if (profile === 'independent') {
     await writeFile(path.join(root, independentSource), originals.get(independentSource).replace('__WSP_INDEPENDENT_ENTRY__', 'independent host updated template'))
@@ -225,7 +225,7 @@ try {
     await waitForOutput(independentOutput, '__WSP_INDEPENDENT_ENTRY__')
     await waitForWatchRound(3)
     assert.equal(await readFile(path.join(root, 'config-calls.txt'), 'utf8'), 'loaded\n')
-    console.log(`${toolchain}: native independent ${operation} template update and restore passed with one config evaluation`)
+    console.log(`${toolchain}: native independent ${operation} template update and restore passed with the expected configuration handoff`)
   }
   else if (operation === 'stateful-dev') {
     const template = path.join(root, 'src/pages/native/index.wxml')
@@ -234,17 +234,17 @@ try {
     await writeFile(template, originals.get('src/pages/native/index.wxml'))
     await waitForOutput('pages/native/index.wxml', '<view>{{message}}</view>')
     const script = path.join(root, 'src/pages/native/index.ts')
-    await writeFile(script, originals.get('src/pages/native/index.ts').replace('native-host', 'native-startup-classic-update'))
-    await waitForOutput('pages/native/index.js', 'native-startup-classic-update')
+    await writeFile(script, originals.get('src/pages/native/index.ts').replace('native-host', 'native-stateful-update'))
+    await waitForOutput('pages/native/index.js', 'native-stateful-update')
     await writeFile(script, originals.get('src/pages/native/index.ts'))
     await waitForOutput('pages/native/index.js', 'native-host')
     const vue = path.join(root, 'src/pages/vue/index.vue')
-    await writeFile(vue, originals.get('src/pages/vue/index.vue').replace('vue-host', 'vue-startup-classic-update'))
-    await waitForOutput('pages/vue/index.js', 'vue-startup-classic-update')
+    await writeFile(vue, originals.get('src/pages/vue/index.vue').replace('vue-host', 'vue-stateful-update'))
+    await waitForOutput('pages/vue/index.js', 'vue-stateful-update')
     await writeFile(vue, originals.get('src/pages/vue/index.vue'))
     await waitForOutput('pages/vue/index.js', 'vue-host')
     assert.equal(await readFile(path.join(root, 'config-calls.txt'), 'utf8'), 'loaded\n')
-    console.log(`${toolchain}: explicit stateful request starts in classic and retains native/Vue edits and restoration`)
+    console.log(`${toolchain}: stateful without a connected IDE publishes native/Vue edits and restoration`)
   }
   else {
     const script = path.join(root, 'src/pages/native/index.ts')
@@ -257,10 +257,10 @@ try {
     await waitForOutput('pages/vue/index.js', 'vue-dev-update')
     await waitForWatchRound(3)
     assert.equal(await readFile(path.join(root, 'config-calls.txt'), 'utf8'), 'loaded\n')
-    console.log(`${toolchain}: native ${operation} initial output and TS/Vue updates passed with one config evaluation`)
+    console.log(`${toolchain}: native ${operation} initial output and TS/Vue updates passed with the expected configuration handoff`)
   }
-  if (operation === 'stateful-dev') {
-    await assertConsumerStartupClassic({ root, operation, output: logs })
+  if (operation === 'stateful-dev' && profile !== 'tailwind') {
+    await assertConsumerStatefulStartup({ root, output: logs })
   }
 }
 catch (error) {

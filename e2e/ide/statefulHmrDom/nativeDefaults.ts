@@ -12,7 +12,7 @@ export function nativeDefaultCheckpoints(): DomCheckpoint[] {
         { selector: '.count', text: '0' },
       ],
     }))),
-    ...([['new-defaults', 7], ['incremented', 8], ['active-restored', 8], ['restored-defaults', 0]] as const).map(([id, count]) => ({
+    ...([['new-defaults', 7], ['incremented', 8], ['active-restored', 0], ['restored-defaults', 0]] as const).map(([id, count]) => ({
       id,
       route: '/pages/native/index',
       action: `验证 ${id} 时默认值及原生点击渲染`,

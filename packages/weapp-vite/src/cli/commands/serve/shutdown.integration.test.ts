@@ -48,6 +48,7 @@ export default {
     srcRoot: 'src', autoRoutes: false,
     vue: { enable: false }, npm: { enable: false }, mcp: false,
     hmr: { runtime: 'stateful-experimental' },
+    compilerPlugins: [{ name: 'legacy-compiler', capabilities: { content: true }, create() { return {} } }],
   },
   plugins: [{
     name: 'serve-shutdown-observer',
@@ -141,7 +142,7 @@ describe('built serve CLI shutdown', () => {
       expect(JSON.parse(fallback![0]!.slice('[weapp-vite] HMR fallback '.length)) as unknown).toEqual({
         from: 'stateful-experimental',
         to: 'classic',
-        reason: 'ide-classic-handoff',
+        reason: 'compiler-provider',
         message: expect.any(String),
         requested: 'stateful-experimental',
         actual: 'classic',
@@ -151,7 +152,7 @@ describe('built serve CLI shutdown', () => {
       expect(ready, output).toHaveLength(phase === 'ready' ? 1 : 0)
       if (phase === 'ready') {
         expect(JSON.parse(ready[0]!.slice('[weapp-vite] HMR classic ready '.length)) as unknown).toEqual({
-          reason: 'ide-classic-handoff',
+          reason: 'compiler-provider',
           requested: 'stateful-experimental',
           actual: 'classic',
           phase: 'classic',

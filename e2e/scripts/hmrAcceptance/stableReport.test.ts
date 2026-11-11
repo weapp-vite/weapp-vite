@@ -28,7 +28,7 @@ describe('classic HMR acceptance boundaries', () => {
     expect(summary).toMatchObject({ acceptance: 'passed', coverage: 'complete', acceptanceScope: 'wechat-classic-runtime-and-cross-platform-build' })
     expect(summary.capabilityAcceptance.status).toBe('passed-for-scope')
     expect(summary.capabilityAcceptance.globalRuntimeStatus).toBe('incomplete')
-    expect(summary.capabilityAcceptance.missingRuntimeCoverage).not.toContain('ide-classic-handoff')
+    expect(summary.capabilityAcceptance.missingRuntimeCoverage).not.toContain('compiler-provider')
     for (const [index, stage] of stages.entries()) {
       const supported = stage.plan.tasks.filter(task => !task.outOfScopeReason)
       expect(stage.report.summary.passedCount).toBe(supported.length)

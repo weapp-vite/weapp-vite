@@ -5,23 +5,24 @@ import { expect, it } from 'vitest'
 const root = path.resolve(import.meta.dirname, '..')
 const { scripts } = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8')) as { scripts: Record<string, string> }
 
-it('routes public CI and full IDE acceptance to the frozen classic support scope', () => {
+it('routes public CI and full IDE acceptance to the complete stateful and fallback inventory', () => {
   for (const [command, suite] of Object.entries({
-    'e2e:ci': 'ci:classic',
-    'e2e:ci:pr': 'ci-pr:classic',
-    'e2e:ci:non-hmr': 'ci-non-hmr:classic',
-    'e2e:ci:full': 'ci-full:classic',
-    'e2e:ide:headless:full': 'ide-headless-full:classic',
-    'e2e:ide:dom:headless': 'ide-dom-headless:classic',
-    'e2e:ide:full': 'ide-full:classic',
-    'e2e:ide:full:exhaustive': 'ide-full:exhaustive:classic',
+    'e2e:ci': 'ci',
+    'e2e:ci:pr': 'ci-pr',
+    'e2e:ci:non-hmr': 'ci-non-hmr',
+    'e2e:ci:full': 'ci-full',
+    'e2e:ide:headless:full': 'ide-headless-full',
+    'e2e:ide:dom:headless': 'ide-dom-headless',
+    'e2e:ide:full': 'ide-full',
+    'e2e:ide:full:exhaustive': 'ide-full:exhaustive',
   })) {
-    expect(scripts[command]).toContain(suite)
+    expect(scripts[command]?.split(/\s+/).at(-1)?.replaceAll('"', '')).toBe(suite)
+    expect(scripts[command]).not.toContain(':classic')
     expect(scripts[command]).not.toMatch(/--allow-failures|--filter|--from/)
   }
 })
 
-it('keeps legacy inventories reachable through visibly separate diagnostic commands', () => {
+it('keeps existing diagnostic aliases compatible without narrowing public acceptance', () => {
   for (const [command, suite] of Object.entries({
     'e2e:ci:diagnostic': 'ci',
     'e2e:hmr:build:diagnostic': 'hmr-build',

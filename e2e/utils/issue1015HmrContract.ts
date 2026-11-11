@@ -9,7 +9,7 @@ export function createIssue1015HmrPublication(
   runtime: Issue1015HmrRuntime,
   profilePath: string,
 ) {
-  return createNativeHmrPublication(project, dev, runtime, ['ide-classic-handoff'], profilePath)
+  return createNativeHmrPublication(project, dev, runtime, ['stylesheet-output'], profilePath)
 }
 
 /** 身份比较始终针对首屏记录的 App/Page，区分首次观察与后续编辑。 */

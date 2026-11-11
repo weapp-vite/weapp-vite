@@ -189,7 +189,7 @@ describe('HMR semantic acceptance inventory', () => {
     })
     expect(HMR_ACCEPTANCE_SCENARIOS.find(item => item.id === 'unsupported-compiler-startup-classic')).toMatchObject({
       expectations: ['classic-fallback'],
-      capabilityIds: ['compiler-provider', 'ide-classic-handoff'],
+      capabilityIds: ['compiler-provider'],
       ide: ['ide/hmr-startup-fallback.runtime.test.ts'],
       headless: ['ide/hmr-startup-fallback.runtime.test.ts'],
     })
@@ -208,7 +208,7 @@ describe('HMR semantic acceptance inventory', () => {
         expect(scenario?.ide).toContain(failure.regressionTaskLabel ?? failure.taskLabel)
       }
     }
-    expect(HMR_HISTORICAL_IDE_FAILURES.filter(item => item.regressionTaskLabel).map(item => item.caseId)).toEqual(['51224417_0_3', '51224417_0_7', '51224417_0_10'])
+    expect(HMR_HISTORICAL_IDE_FAILURES.filter(item => item.regressionTaskLabel).map(item => item.caseId)).toEqual(['51224417_0_3', '51224417_0_7', '51224417_0_9', '51224417_0_10'])
   })
 
   it('keeps unproven runtime transitions pending while retaining their unit and build coverage', () => {

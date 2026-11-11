@@ -55,6 +55,10 @@ export class StatefulHmrTransport {
     private readonly reportError?: (error: Error) => void,
   ) {}
 
+  get hasCurrentClient(): boolean {
+    return !this.closed && !this.retired && this.state.activeSessionId !== undefined
+  }
+
   get retainedDeltaBytes(): number {
     return this.state.retainedDeltaBytes
   }
@@ -100,7 +104,7 @@ export class StatefulHmrTransport {
   }
 
   private async acknowledge(body: ClientReport): Promise<void> {
-    if (body.buildId !== this.state.buildId || body.sessionId !== this.state.activeSessionId
+    if (!this.isCurrentClient(body)
       || !Number.isInteger(body.version) || body.version < 0 || body.version > this.publishedVersion) {
       return
     }
@@ -111,12 +115,13 @@ export class StatefulHmrTransport {
         break
       }
       await execution.delivered()
-      if (this.state.buildId !== buildId || this.executions.get(version) !== execution) {
+      if (!this.isCurrentClient(body) || this.state.buildId !== buildId || this.executions.get(version) !== execution) {
         return
       }
       this.executions.delete(version)
       this.executedVersion = Math.max(this.executedVersion, version)
       execution.resolve()
+      this.reportStage('script-executed', body.sessionId, version)
     }
     if (body.sessionId === this.state.activeSessionId) {
       this.clientExecutedVersion = Math.max(this.clientExecutedVersion, body.version)
@@ -129,18 +134,24 @@ export class StatefulHmrTransport {
   }
 
   private async acknowledgeInitial(body: ClientReport): Promise<void> {
-    if (body.buildId !== this.state.buildId || body.sessionId !== this.state.activeSessionId || !Array.isArray(body.payloads)) {
+    if (!this.isCurrentClient(body) || !Array.isArray(body.payloads)) {
       return
     }
+    const payloads = this.initialPayloads
     for (const file of body.payloads) {
-      const delivered = this.initialPayloads.get(file)
+      const delivered = payloads.get(file)
       if (delivered) {
         await delivered()
-        this.initialPayloads.delete(file)
+        // 等待原生确认期间可切换构建或客户端，旧回调不能消费新一代同名文件。
+        if (!this.isCurrentClient(body) || this.initialPayloads !== payloads) {
+          return
+        }
+        payloads.delete(file)
       }
     }
-    if (body.payloads.includes('app.js')) {
+    if (body.payloads.includes('app.js') && !this.initializedSessions.has(body.sessionId)) {
       this.initializedSessions.add(body.sessionId)
+      this.reportStage('script-executed', body.sessionId, 0)
     }
   }
 
@@ -152,11 +163,21 @@ export class StatefulHmrTransport {
     this.cancelPendingDeliveries()
     this.apply({ type: 'full-build-committed', buildId })
     this.suspended = false
+    this.reportStage('output-published')
     this.respondToAll({ type: 'rebuilding' })
   }
 
   isCurrentBuild(buildId: string): boolean {
     return !this.suspended && this.state.buildId === buildId
+  }
+
+  private reportStage(stage: 'output-published' | 'script-executed', sessionId?: string, version = 0): void {
+    this.server.config.logger.info?.(`[weapp-vite] HMR stage ${JSON.stringify({ actual: 'stateful-experimental', stage, buildId: this.state.buildId, sessionId, version, ...(stage === 'output-published' ? { runtime: 'waiting' } : {}) })}`)
+  }
+
+  private isCurrentClient(body: ClientReport): boolean {
+    return !this.closed && !this.retired && this.isCurrentBuild(body.buildId)
+      && body.sessionId === this.state.activeSessionId
   }
 
   createControl() {
@@ -195,6 +216,12 @@ export class StatefulHmrTransport {
       return
     }
     if (body.action === 'rebuild') {
+      if (body.buildId !== this.state.buildId || !Number.isInteger(body.version) || body.version < 0
+        || body.version > this.state.hostVersion || this.state.retiredSessionIds.includes(body.sessionId)
+        || (this.state.activeSessionId !== undefined && body.sessionId !== this.state.activeSessionId)) {
+        respond(response, 409, { type: 'rebuilding', buildId: this.state.buildId })
+        return
+      }
       const failure = body.failure
       let reportedFailure = false
       if (failure && typeof failure === 'object' && 'reason' in failure) {
@@ -241,8 +268,14 @@ export class StatefulHmrTransport {
       if (this.state.activeSessionId !== previousSession) {
         this.clientExecutedVersion = 0
       }
+      if (commands.some(command => command.type === 'ignore-client')) {
+        respond(response, 409, { type: 'rebuilding', buildId: this.state.buildId })
+        return
+      }
       if (commands.some(command => command.type === 'request-full-build')) {
         this.requestFullBuild()
+        respond(response, 202, { type: 'rebuilding' })
+        return
       }
       try {
         const confirmation = this.confirmationChain.then(() => this.acknowledgeInitial(body))
@@ -251,6 +284,10 @@ export class StatefulHmrTransport {
       }
       catch {
         respond(response, 500, { type: 'confirmation-failed' })
+        return
+      }
+      if (!this.isCurrentClient(body)) {
+        respond(response, 409, { type: 'rebuilding', buildId: this.state.buildId })
         return
       }
       respond(response, 200, {

@@ -10,12 +10,13 @@ import {
   WEAPP_VITE_STATEFUL_HMR_UPDATE_FILE,
 } from '@weapp-core/constants'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { assertConsumerStatefulStartup } from './startupClassic.mjs'
 import { assertRetiredStatefulTransport, assertStylesheetClassic, verifyStylesheetHmr } from './stylesheet.mjs'
 
 const endpointPath = '/__weapp_vite_stateful_hmr__'
 const endpoint = new URL(endpointPath, 'http://localhost').href
-const fallback = '[weapp-vite] HMR fallback {"from":"stateful-experimental","to":"classic","reason":"ide-classic-handoff","message":"startup host capability","requested":"stateful-experimental","actual":"classic","phase":"switching"}\n'
-const ready = '[weapp-vite] HMR classic ready {"reason":"ide-classic-handoff","requested":"stateful-experimental","actual":"classic","phase":"classic"}\n'
+const fallback = '[weapp-vite] HMR fallback {"from":"stateful-experimental","to":"classic","reason":"stylesheet-output","message":"startup host capability","requested":"stateful-experimental","actual":"classic","phase":"switching"}\n'
+const ready = '[weapp-vite] HMR classic ready {"reason":"stylesheet-output","requested":"stateful-experimental","actual":"classic","phase":"classic"}\n'
 const cleanups: (() => Promise<unknown>)[] = []
 
 afterEach(async () => {
@@ -30,7 +31,7 @@ async function fixture(operation = 'stateful-dev') {
   cleanups.push(() => rm(root, { recursive: true, force: true }))
   await mkdir(path.join(root, 'dist'), { recursive: true })
   await writeFile(path.join(root, 'dist/app.js'), 'App({})')
-  await writeFile(path.join(root, 'config-calls.txt'), 'loaded\n')
+  await writeFile(path.join(root, 'config-calls.txt'), operation === 'stateful-dev' ? 'loaded\nloaded\n' : 'loaded\n')
   await writeFile(path.join(root, 'project.private.config.json'), '{"setting":{"compileHotReLoad":false}}')
   return { root, operation, output: operation === 'stateful-dev' ? fallback + ready : '', endpoint }
 }
@@ -60,7 +61,7 @@ async function transport(status: number, body: string, location?: string) {
 }
 
 describe('packed consumer stylesheet classic evidence', () => {
-  it('checks startup classic before stylesheet edits and restores both repeated edit cycles without requesting control output', async () => {
+  it('checks classic handoff after stylesheet edits and restores both repeated edit cycles without requesting control output', async () => {
     const evidence = await fixture()
     const template = '<view class="w-[37px]">{{message}}</view>'
     await mkdir(path.join(evidence.root, 'src/pages/native'), { recursive: true })
@@ -82,7 +83,7 @@ describe('packed consumer stylesheet classic evidence', () => {
     expect(fetch).not.toHaveBeenCalled()
   })
 
-  it('requires startup classic with one config evaluation across later publications', async () => {
+  it('requires one classic handoff with exactly two config evaluations across later publications', async () => {
     const evidence = await fixture()
     const fetch = retiredResponse()
     for (const source of ['App({})', 'App({ changed: true })', 'App({})']) {
@@ -101,7 +102,7 @@ describe('packed consumer stylesheet classic evidence', () => {
     await expect(assertStylesheetClassic(evidence)).rejects.toThrow()
   })
 
-  it.each([0, 2, 3])('rejects %s config evaluations for startup classic', async (count) => {
+  it.each([0, 1, 3])('rejects %s config evaluations for online classic handoff', async (count) => {
     const evidence = await fixture()
     retiredResponse()
     await writeFile(path.join(evidence.root, 'config-calls.txt'), 'loaded\n'.repeat(count))
@@ -113,7 +114,7 @@ describe('packed consumer stylesheet classic evidence', () => {
     ['missing readiness', fallback],
     ['repeated decision', fallback + fallback + ready],
     ['repeated readiness', fallback + ready + ready],
-    ['wrong capability', (fallback + ready).replaceAll('ide-classic-handoff', 'config-json')],
+    ['wrong capability', (fallback + ready).replaceAll('stylesheet-output', 'config-json')],
     ['wrong effective mode', (fallback + ready).replace('"to":"classic"', '"to":"stateful-experimental"')],
     ['missing configured request', (fallback + ready).replaceAll(',"requested":"stateful-experimental"', '')],
     ['different configured request', (fallback + ready).replaceAll('"requested":"stateful-experimental"', '"requested":"auto"')],
@@ -160,6 +161,21 @@ describe('packed consumer stylesheet classic evidence', () => {
     retiredResponse()
     await rm(path.join(evidence.root, 'dist/app.js'))
     await expect(assertStylesheetClassic(evidence)).rejects.toThrow('actual emitted JavaScript')
+  })
+})
+
+describe('packed consumer stateful startup evidence', () => {
+  it('requires a real control endpoint and one config evaluation without claiming runtime delivery', async () => {
+    const evidence = await fixture()
+    const control = path.join(evidence.root, 'dist', WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE)
+    await mkdir(path.dirname(control), { recursive: true })
+    await writeFile(control, `globalThis.control = ${JSON.stringify({ url: endpoint })}`)
+    await writeFile(path.join(evidence.root, 'config-calls.txt'), 'loaded\n')
+    await writeFile(path.join(evidence.root, 'project.private.config.json'), '{"setting":{"compileHotReLoad":true}}')
+    await assertConsumerStatefulStartup({ ...evidence, output: '' })
+    await expect(assertConsumerStatefulStartup(evidence)).rejects.toThrow()
+    await writeFile(control, 'void 0;')
+    await expect(assertConsumerStatefulStartup({ ...evidence, output: '' })).rejects.toThrow('real transport control')
   })
 })
 

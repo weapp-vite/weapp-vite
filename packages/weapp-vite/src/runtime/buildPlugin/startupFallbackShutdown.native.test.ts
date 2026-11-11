@@ -182,7 +182,7 @@ it.each(['auto', 'stateful-experimental'] as const)('naturally exits after %s st
     await waitFor(() => stdout.includes('[weapp-vite] HMR classic ready '), exited, 'startup classic readiness', output, startupTimeout)
     expect(stdout).toContain('STARTUP_PHASE:node-preload\n')
     expect(stdout).toContain('STARTUP_PHASE:observer-ready\n')
-    expect(output()).toContain('"reason":"ide-classic-handoff"')
+    expect(output()).toContain('"reason":"compiler-provider"')
     await writeFile(source, original.replace('WV-STARTUP-BASE', 'WV-STARTUP-EDITED'))
     await waitFor(async () => (await readTarget()).includes('WV-STARTUP-EDITED'), exited, 'script edit publication', output)
     await writeFile(source, original.replace('"WV-STARTUP-BASE"', '__STARTUP_CONFIG_MARKER__'))

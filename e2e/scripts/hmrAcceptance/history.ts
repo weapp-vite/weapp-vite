@@ -179,7 +179,8 @@ export const HMR_HISTORICAL_IDE_FAILURES: HistoricalIdeFailure[] = [
     caseName: 'stateful HMR in real WeChat DevTools > preserves component page state across two template edit and restore cycles',
     category: '产品/API契约断言表面',
     observation: 'component page template cycle 节点缺失。',
-    scenarioId: 'native-wevu-state-and-template-boundaries',
+    scenarioId: 'native-template-publication-fallback',
+    regressionTaskLabel: 'ide/hmr-native-template-fallback.runtime.test.ts',
   },
   {
     taskLabel: 'ide/stateful-hmr.runtime.test.ts',

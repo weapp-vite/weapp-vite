@@ -28,52 +28,40 @@ keywords:
 
 - **类型**：`'auto' | 'classic' | 'stateful-experimental'`
 - **默认值**：`'auto'`
-- **当前微信目标行为**：三种配置均在开发服务启动时使用 `classic`，由完整构建产物和微信 IDE 刷新应用更新。
+- **微信 WebView**：`auto` 在项目热重载设置开启且编译器能力满足时启用状态保持；否则使用 `classic`。显式 `classic` 始终完整发布，`stateful-experimental` 仍受能力检查约束。
 
-```ts
-import { defineConfig } from 'weapp-vite/config'
+安全的原生 Page、Component 和 Wevu/Vue 脚本更新保留当前实例、页面 data、输入、交互及 store 状态。JSX/TSX 和 React 更新遵循对应编译器的注册与模块边界，不能仅凭文件扩展名判断安全。
 
-export default defineConfig({
-  weapp: {
-    hmr: {
-      runtime: 'classic',
-    },
-  },
-})
-```
+模板字节变化、编译后样式变化、JSON 配置、入口拓扑或不兼容注册会自动切换到 classic。最新 Stable 尚未提供可靠的状态保持模板和样式应用确认契约：写出 WXML/WXSS 不代表页面已应用，因此这类更新使用完整发布。classic 重置运行状态；后续编辑、撤销和配置重启继续使用 classic，本次 dev 命令不再尝试切回，重新启动后再检测。
 
-配置名称继续兼容现有项目。启动日志分别记录请求模式、实际模式和选择原因；显式填写 `stateful-experimental` 也不会在当前微信目标启动状态保持协议。页面和 App 实例身份、输入、计数等状态保持，以及运行中的 stateful→classic 交接目前不在稳定支持范围内。需要验证内部实验机制时使用下方诊断入口，其结果不能作为微信 IDE 支持证明。
+普通编译或业务异常保留原始诊断，不视为能力降级，也不推进成功交付版本。修复源码后的下一次保存继续重试。旧 build 或旧客户端的确认不能完成新批次。
 
-classic 模式保留脚本、Vue SFC、模板、样式、静态资源、JSON 配置、页面及依赖拓扑的更新检查。修改与源码恢复都必须经过正常构建流程；最终产物由 Vite/Rolldown emit/write 写出。页面更新完成需要实际 runtime 和渲染结果确认，文件写出成功或协议重连成功不能代替 IDE 已完成刷新。
+开发日志分别记录请求模式、实际模式和降级原因。构建发布、脚本执行确认与 IDE 完整刷新是不同阶段；文件写出成功或协议重连成功不能代替真实页面内容和计算样式已更新。未连接 IDE 时仍可正常构建，不能把构建完成解释为 runtime 通过。
 
-开发服务会临时将当前项目私有配置的 `setting.compileHotReLoad` 设为 `false`，避免 IDE 局部脚本热重载与 classic 完整刷新竞争。正常关闭并成功释放构建器和 watcher 后，恢复原请求值，同时保留用户修改的其他字段。该流程保留 `weapp.hmr.runtime` 配置及开发者登录状态；不会注销微信账号，也不会删除登录数据或用户缓存。配置租约身份不明或资源释放失败时仍报告错误。
+classic 会临时将当前项目私有配置的 `setting.compileHotReLoad` 设为 `false`，避免局部脚本热重载与完整刷新竞争。正常关闭并成功释放构建器和 watcher 后恢复原请求值，保留其他用户字段及登录态。配置和资产租约在原生发布阶段交接；产物始终由 Vite/Rolldown emit/write 写出。
 
-内置 Tailwind 每次保存继续按当前源码生成候选和最终样式；配置、样式或其依赖变化会重新解析扫描规则。Vue `<style module>` 的样式和脚本类名映射一起编译。样式删除、重建、连续保存、局部优先级和完整源码恢复继续纳入 classic 功能验收。
+内置 Tailwind 按当前源码生成候选和样式；CSS Modules 同时编译类名映射和样式。普通 WXSS、外部样式、CSS 变量、局部优先级、样式删除及恢复都需要验证最终页面效果。
 
-非微信平台和 Skyline 同样使用 classic。当前真实 runtime 验收范围为微信 IDE；其他平台只统计已执行的构建回归，不宣称通过对应平台真实 IDE。
+非微信平台和 Skyline 使用 classic。真实 runtime 验收范围为微信 IDE；其他平台只统计已执行的构建回归。
 
 ### 独立 HMR 回归命令
 
-正式入口使用版本化的 classic 支持清单。清单保留实验任务及原始 case 名称和范围外原因；这些任务不计入通过数。范围内任务、case 和 checkpoint 必须完整完成，不能用筛选、跳过或重建 headless VM 替代真实 IDE 自动刷新。
+正式清单包含 stateful、事务交付、classic 及在线降级，覆盖 `wv`、Vite 和 Vite+ 宿主。所有计划内 task、case 和 checkpoint 必须完成；不能通过排除失败场景或重开 headless VM 声称真实 IDE 已自动刷新。
 
 | 命令 | 覆盖范围 |
 | --- | --- |
-| `pnpm test:hmr` | 模式选择、classic 构建和 watcher、编译器、simulator 与验收基础设施单测；模拟宿主的内部机制测试不代表真实 IDE 能力 |
-| `pnpm e2e:hmr:build` | classic 构建、watch、自动路由、共享依赖及源码恢复 |
-| `pnpm e2e:hmr:headless` | 支持范围内产物可运行及完整 case/checkpoint |
-| `pnpm e2e:ide:hmr` | 真实微信 IDE 的 classic 更新、页面内容、事件及渲染结果 |
-| `pnpm e2e:hmr:acceptance` | 先运行 `test:hmr`，再串行运行以上三个层，汇总同一提交的范围内完整证据 |
-| `pnpm e2e:ide:full:exhaustive` | classic 支持范围内的完整 IDE 功能验收，包括非 HMR 场景 |
+| `pnpm test:hmr` | 模式、watcher、编译事务、交付确认、降级、simulator 与验收基础设施单测 |
+| `pnpm e2e:hmr:build` | 完整 HMR 构建、watch、共享依赖、多平台降级及源码恢复 |
+| `pnpm e2e:hmr:headless` | provider-compatible runtime 场景及完整 checkpoint |
+| `pnpm e2e:ide:hmr` | 真实微信 IDE 状态保持、完整刷新、页面数据、节点、样式及交互 |
+| `pnpm e2e:hmr:acceptance` | 同一干净提交下先单测，再串行运行以上三层并汇总证据 |
+| `pnpm e2e:ide:full:exhaustive` | 全仓完整 IDE 功能验收，包括非 HMR 场景；按仓库规则在合入后的干净最新 main 执行 |
 
-`pnpm e2e:hmr:regression` 保留为综合验收兼容入口。HMR 专项不能代替完整 IDE 功能验收。历史失败的原始任务与 case 映射仍保存在[回归历史](./hmr-regression-history.md)，范围调整不会将历史失败改写为通过。
+`pnpm e2e:hmr:regression` 是综合验收兼容入口。HMR 专项不能代替全仓完整 IDE 验收。原 `:diagnostic` 命令继续可用；历史 classic 清单也保留供对照。[历史失败记录](./hmr-regression-history.md)不因本轮范围调整改写为通过。
 
-旧实验清单通过 `pnpm e2e:ide:hmr:diagnostic`、`pnpm e2e:hmr:headless:diagnostic` 和 `pnpm e2e:ide:full:exhaustive:diagnostic` 单独执行。它们保留原状态保持及在线交接断言，可能因当前微信启动策略而失败；诊断结果不参与 classic 正式验收汇总。
+修改源码后先重建受影响包。正式验收要求已提交且干净的工作树，冻结任务与用例清单，独立记录 provider；单独运行某层只证明该层。综合入口保存单测 stdout、stderr、Vitest JSON 和收据。
 
-修改源码后先重建受影响包，再运行下游测试。正式 E2E 要求源码已提交且工作树干净；每层冻结任务和用例清单，独立记录 provider。综合入口保存真实单测的 stdout、stderr、Vitest JSON 和收据，三个 E2E 层不能替代缺失或失败的单测收据。单独运行某层只证明该层，不证明真实 IDE 通过。
-
-所有本机 E2E 共用机器串行租约，真实 IDE 阶段保持系统唤醒。环境故障、资源清理失败、范围内未执行或局部筛选都使正式验收失败。入口拒绝 `--allow-failures`、`--filter`、`--from`、shard 和模板筛选。报告写入 `.tmp/e2e-hmr-acceptance/<runId>/`，保留范围外清单和原始分层失败证据；租约清理完成且重新确认提交及工作区后才写最终汇总。
-
-需要排除独立组件库时，在运行前统一设置 `WEAPP_VITE_E2E_EXCLUDE_PROJECTS=uview-plus-compat,wot-ui-compat`。微信 IDE 安装通过 `WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH` 显式固定；任何测试或恢复流程都不得主动注销开发者账号。
+所有本机 E2E 共用机器串行租约，IDE 阶段保持系统唤醒并记录实际安装、基础库及资源释放证据。通过 `WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH` 固定安装。环境失败、资源清理失败、筛选或未执行都不能计为完整通过。正式入口拒绝 `--allow-failures`、`--filter`、`--from`、shard 和模板筛选，证据写入 `.tmp/e2e-hmr-acceptance/<runId>/`。
 
 ## `weapp.hmr.sharedChunks` {#weapp-hmr-sharedchunks}
 - **类型**：`'full' | 'auto' | 'off'`
@@ -127,7 +115,7 @@ export default defineConfig({
 该选项不会创建缺失的 `app.wxss`，也不会改写构建器生成的内容；除文件不存在以外的刷新错误会输出到开发日志。
 
 适用建议：
-- 一般保持默认值；`touchAppWxss` 不改变当前微信目标使用 classic 的启动策略。
+- 一般保持默认值；`touchAppWxss` 不改变 `weapp.hmr.runtime` 的能力判断；无法可靠应用的样式更新仍自动切换 classic。
 - 只有确认需要每轮全局重载的旧集成才显式开启 `true`。
 
 ## `weapp.hmr.logLevel` {#weapp-hmr-loglevel}

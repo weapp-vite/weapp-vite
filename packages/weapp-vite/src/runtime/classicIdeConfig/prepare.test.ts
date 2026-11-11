@@ -46,7 +46,7 @@ it.each(['classic', 'auto', 'stateful-experimental'] as const)('recovers a start
   cleanup.push(() => runtime.classicIdeConfig.close())
   ctx.configService.projectPrivateConfig.setting = JSON.parse(await runtime.classicIdeConfig.readRequested(file)).setting
   await prepareClassicIdeConfig(ctx)
-  expect(runtime.fallback?.code).toBe(mode === 'classic' ? undefined : 'ide-classic-handoff')
+  expect(runtime.fallback).toBeUndefined()
   expect(await runtime.classicIdeConfig.readRequested(file)).toBe(original)
   await runtime.classicIdeConfig.close()
   expect(await fs.readFile(file, 'utf8')).toBe(original)
@@ -138,9 +138,9 @@ it.each(['changed', 'missing'] as const)('rejects %s private config paths while 
 it.each([
   { mode: 'classic', requested: true, fallback: false, reason: undefined },
   { mode: 'auto', requested: false, fallback: false, reason: undefined },
-  { mode: 'auto', requested: true, fallback: false, reason: 'ide-classic-handoff' },
-  { mode: 'stateful-experimental', requested: true, fallback: false, reason: 'ide-classic-handoff' },
-  { mode: 'stateful-experimental', requested: false, fallback: false, reason: 'ide-classic-handoff' },
+  { mode: 'auto', requested: true, fallback: false, reason: undefined },
+  { mode: 'stateful-experimental', requested: true, fallback: false, reason: undefined },
+  { mode: 'stateful-experimental', requested: false, fallback: false, reason: undefined },
   { mode: 'stateful-experimental', requested: true, fallback: true, reason: 'runtime-contract' },
 ] as const)('prepares classic before startup while preserving the $mode request ($requested / existing fallback $fallback)', async ({ mode, requested, fallback, reason }) => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'prepare-classic-ide-'))
@@ -166,7 +166,7 @@ it.each([
     runtime.requestClassic({ code: 'runtime-contract', message: 'test unsupported update' })
   }
   await prepareClassicIdeConfig(ctx)
-  expect((await fs.readJSON(file) as { setting: { compileHotReLoad: boolean } }).setting.compileHotReLoad).toBe(false)
+  expect((await fs.readJSON(file) as { setting: { compileHotReLoad: boolean } }).setting.compileHotReLoad).toBe(mode === 'classic' || fallback ? false : requested)
   expect(runtime.fallback?.code).toBe(reason)
   if (reason) {
     expect(runtime.phase).toBe('switching')

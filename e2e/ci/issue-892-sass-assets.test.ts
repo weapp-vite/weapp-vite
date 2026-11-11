@@ -82,8 +82,8 @@ describe('issue #892 Sass asset placeholders', { concurrent: false }, () => {
         ]),
         devProcess.waitForInitialBuild(60_000),
       ]), 'initial Sass output and classic readiness')
-      expect(initialOutput).toContain('HMR 模式：classic')
-      expect(initialOutput).toContain('ide-classic-handoff')
+      expect(initialOutput).toContain('HMR 模式：stateful-experimental')
+      expect(initialOutput).not.toContain('[weapp-vite] HMR fallback ')
       expect(initialOutput).not.toMatch(/Parse failed|Undefined variable|Build failed|Build error/)
       const app = await fs.readJSON(path.join(project.distRoot, 'app.json')) as {
         pages?: string[]
