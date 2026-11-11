@@ -2863,6 +2863,9 @@ importers:
       '@vitejs/plugin-vue':
         specifier: 'catalog:'
         version: 6.0.10(patch_hash=3dcf2983828045bd0fe45880e571cb5605a71b599c074ad79a62636319f52777)(vite@8.3.5)(vue@3.5.45(typescript@6.0.3))
+      '@wevu/compiler':
+        specifier: workspace:*
+        version: link:../../packages-runtime/wevu-compiler
       typescript:
         specifier: 'catalog:'
         version: 6.0.3

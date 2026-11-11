@@ -1,4 +1,6 @@
 import type { ResolveSfcBlockSrcOptions } from '@wevu/compiler'
+import type { SFCParseResult } from 'vue/compiler-sfc'
+import { parseVueSfc } from '@wevu/compiler'
 import { expectAssignable, expectError, expectType } from 'tsd'
 
 type Reader = NonNullable<ResolveSfcBlockSrcOptions['readFile']>
@@ -14,3 +16,6 @@ expectType<Promise<string>>(reader('template.ts', { checkMtime: false, blockType
 expectError(reader('template.ts', { blockType: 'json' }))
 expectAssignable<Reader>(async (_id: string, _options?: { checkMtime?: boolean }) => '')
 expectAssignable<Reader>(async (_id: string) => '')
+
+expectType<SFCParseResult>(parseVueSfc('<template><input></template>', { filename: 'page.vue' }))
+expectError(parseVueSfc(123))

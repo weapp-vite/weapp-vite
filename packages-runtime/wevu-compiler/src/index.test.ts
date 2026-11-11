@@ -26,6 +26,7 @@ describe('compiler package entry', () => {
       isBuiltinComponent: expect.any(Function),
       resolveVueSfcHmrSignatures: expect.any(Function),
       loadCache: expect.any(Object),
+      parseVueSfc: expect.any(Function),
       transformScript: expect.any(Function),
       transformSfcScript: expect.any(Function),
     })

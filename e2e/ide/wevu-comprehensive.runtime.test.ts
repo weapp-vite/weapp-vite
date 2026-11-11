@@ -17,6 +17,9 @@ describe('comprehensive demo public runtime contracts', { concurrent: false }, (
       platform: 'weapp',
       cwd: APP_ROOT,
       label: 'ide:wevu-comprehensive',
+      onOutput(output) {
+        expect(output).not.toMatch(/\[自动 usingComponents\] 解析失败[^\n]*pages\/(?:vue-v-model|vue-template|wevu-hooks)\//)
+      },
     })
     const config = JSON.parse(await readFile(path.join(APP_ROOT, 'dist/app.json'), 'utf8')) as { pages: string[] }
     for (const page of config.pages) {

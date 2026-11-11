@@ -66,7 +66,11 @@ function buildDynamicLayoutTemplate(
   const blocks = layouts.map((layout, index) => {
     const attrs = [LAYOUT_SLOT_OWNER_ATTR]
     for (const key of propKeys) {
-      attrs.push(`${toKebabCase(key)}="{{${serializeFallbackLayoutValue(currentLayout?.props?.[key], key)}}}"`)
+      const expression = serializeFallbackLayoutValue(currentLayout?.props?.[key], key)
+      const encoded = platform.name === 'wechat' && platform.nativeSlotContext !== false
+        ? expression.replaceAll('\\', '\\\\').replaceAll('"', '\\"')
+        : escapeWxmlAttribute(expression)
+      attrs.push(`${toKebabCase(key)}="{{${encoded}}}"`)
     }
     const condition = currentLayout?.layoutName === layout.layoutName
       ? `{{!${WEVU_PAGE_LAYOUT_NAME_KEY} || ${WEVU_PAGE_LAYOUT_NAME_KEY} === '${layout.layoutName}'}}`

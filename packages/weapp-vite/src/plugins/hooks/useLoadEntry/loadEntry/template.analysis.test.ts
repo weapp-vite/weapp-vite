@@ -2,9 +2,11 @@ import type { PluginContext } from 'rolldown'
 import type { CompilerContext } from '../../../../context'
 import { baseParse } from '@vue/compiler-core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { parse } from 'vue/compiler-sfc'
 import { analyzeScriptSetupImportsFromCode } from '../../../../ast'
 import logger from '../../../../logger'
 import { attachHmrRuntimeSession, getHmrRuntimeSession } from '../../../../runtime/hmrRuntimeSession'
+import { scanWxml } from '../../../../wxml'
 import { getEntryAnalysisFacts } from './facts'
 import { createScriptSetupAnalyzer } from './scriptSetupAnalysis'
 import { applyScriptSetupUsingComponents } from './template'
@@ -58,6 +60,23 @@ describe('script setup entry analysis', () => {
 
     expect(baseParse).toHaveBeenCalledTimes(1)
     expect(resolveUsingComponentReference).toHaveBeenCalledTimes(1)
+  })
+
+  it('publishes native dependencies and imported components beside Vue void elements', async () => {
+    const source = '<script setup>import DemoCard from "./DemoCard.vue"</script><template><view><input><img src="icon.png"><DemoCard /><include src="./card.wxml" /></view></template>'
+    readAndParseSfc.mockResolvedValue(parse(source))
+    const json: Record<string, unknown> = {}
+    const setTokenDeps = vi.fn(async () => {})
+    const compiledToken = scanWxml('<view><input /></view>')
+    const tokenMap = new Map([['src/pages/demo.vue', compiledToken]])
+    await apply(source, {
+      json,
+      wxmlService: { analyze: scanWxml, tokenMap, setTokenDeps, setWxmlComponentsMap: vi.fn() } as unknown as CompilerContext['wxmlService'],
+    })
+    expect(json.usingComponents).toEqual({ DemoCard: '/components/demo-card' })
+    expect(setTokenDeps).toHaveBeenCalledWith('src/pages/demo.vue', [expect.objectContaining({ tagName: 'include', value: './card.wxml' })])
+    expect(tokenMap.get('src/pages/demo.vue')).toBe(compiledToken)
+    expect(logger.warn).not.toHaveBeenCalled()
   })
 
   it('resolves an external template when the supplied SFC has no inline component tag', async () => {
