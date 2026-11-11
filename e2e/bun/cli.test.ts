@@ -41,7 +41,7 @@ describe('Bun CLI / issue #1222', () => {
       await requestBunShutdown(project, devOutput)
       const result = await dev
       expect(result.exitCode, output).toBe(143)
-      expect((await readFile(path.join(project, 'cleanup.log'), 'utf8')).split('closed\n').filter(Boolean)).toHaveLength(1)
+      expect(await readFile(path.join(project, 'cleanup.log'), 'utf8')).toBe('closed\n')
       expect(await readFile(path.join(project, 'project.private.config.json'), 'utf8')).toBe(privateConfig)
       await expect(access(path.join(project, '.weapp-vite/ide-asset-watch.json'))).rejects.toMatchObject({ code: 'ENOENT' })
       await expectBunOutputs(project, 'bun-updated')
@@ -78,6 +78,8 @@ describe('Bun CLI / issue #1222', () => {
       const appConfig = path.join(project, 'src/app.json')
       await writeFile(appConfig, JSON.stringify({ pages: ['pages/index/index'], window: { navigationBarTitleText: 'Bun classic handoff' } }))
       await expect.poll(() => output.includes('[weapp-vite] HMR classic ready '), { timeout: 90_000 }).toBe(true)
+      // 配置在单次在线交接中求值两次；fixture 每轮各注册一个 exit 观察者。
+      expect(output.split(/\r?\n/).filter(line => line.startsWith('BUN_RUNTIME '))).toHaveLength(2)
       const ready = output.match(/\[weapp-vite\] HMR classic ready (\{[^\r\n]*\})/g) ?? []
       expect(ready, output).toHaveLength(1)
       expect(JSON.parse(ready[0]!.slice('[weapp-vite] HMR classic ready '.length)) as unknown).toEqual({
@@ -111,7 +113,7 @@ describe('Bun CLI / issue #1222', () => {
       await requestBunShutdown(project, output)
       const result = await dev
       expect(result.exitCode, output).toBe(143)
-      expect(await readFile(path.join(project, 'cleanup.log'), 'utf8')).toBe('closed\n')
+      expect(await readFile(path.join(project, 'cleanup.log'), 'utf8')).toBe('closed\nclosed\n')
       expect(await readFile(path.join(project, 'project.private.config.json'), 'utf8')).toBe(privateConfig)
       await expect(access(lease)).rejects.toMatchObject({ code: 'ENOENT' })
       for (const file of statefulFiles) {
