@@ -2,6 +2,8 @@ import {
   REQUEST_GLOBAL_ACTUALS_KEY,
   REQUEST_GLOBAL_EXPOSE_HELPER,
   REQUEST_GLOBAL_INSTALLER_HOST_REF,
+  REQUEST_GLOBAL_LAZY_CONSTRUCTOR_HELPER,
+  REQUEST_GLOBAL_LAZY_FUNCTION_HELPER,
   REQUEST_GLOBAL_PASSIVE_BINDINGS_MARKER,
   REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER,
 } from '@weapp-core/constants'
@@ -16,6 +18,12 @@ import {
   resolveManualRequestGlobalsTargets,
   resolveRequestRuntimeOptions,
 } from './injectRequestGlobals'
+import { REQUEST_GLOBAL_BASE64_HELPER } from './injectRequestGlobals/base64'
+import {
+  EARLY_CAPABILITY_REQUEST_GLOBAL_TARGETS,
+  REQUEST_GLOBAL_EARLY_CAPABILITY_FALLBACKS,
+  REQUEST_GLOBAL_EARLY_CAPABILITY_HELPER,
+} from './injectRequestGlobals/earlyCapabilities'
 
 describe('injectRequestGlobals helpers', () => {
   const fullWebRuntimeTargets = [
@@ -47,6 +55,30 @@ describe('injectRequestGlobals helpers', () => {
     expect(resolveInjectRequestGlobalsOptions(undefined, {
       dependencies: {
         axios: '^1.0.0',
+      },
+    })).toEqual({
+      mode: 'auto',
+      prelude: true,
+      targets: [...fullWebRuntimeTargets],
+    })
+  })
+
+  it('enables auto injection for ky projects', () => {
+    expect(resolveInjectRequestGlobalsOptions(undefined, {
+      dependencies: {
+        ky: '^2.2.0',
+      },
+    })).toEqual({
+      mode: 'auto',
+      prelude: true,
+      targets: [...fullWebRuntimeTargets],
+    })
+  })
+
+  it('enables auto injection for stream-markdown-parser projects', () => {
+    expect(resolveInjectRequestGlobalsOptions(undefined, {
+      dependencies: {
+        'stream-markdown-parser': '^1.2.25',
       },
     })).toEqual({
       mode: 'auto',
@@ -114,7 +146,7 @@ describe('injectRequestGlobals helpers', () => {
       },
     })).toEqual({
       mode: 'explicit',
-      dependencyPatterns: ['axios', 'graphql-request', 'socket.io-client', 'engine.io-client'],
+      dependencyPatterns: ['axios', 'graphql-request', 'socket.io-client', 'engine.io-client', 'ky', 'stream-markdown-parser'],
       prelude: false,
       targets: ['fetch', 'AbortController'],
     })
@@ -147,7 +179,7 @@ describe('injectRequestGlobals helpers', () => {
       },
     })).toEqual({
       mode: 'explicit',
-      dependencyPatterns: ['axios', 'graphql-request', 'socket.io-client', 'engine.io-client'],
+      dependencyPatterns: ['axios', 'graphql-request', 'socket.io-client', 'engine.io-client', 'ky', 'stream-markdown-parser'],
       prelude: true,
       targets: [...fullWebRuntimeTargets],
     })
@@ -174,7 +206,7 @@ describe('injectRequestGlobals helpers', () => {
       },
     })).toEqual({
       mode: 'explicit',
-      dependencyPatterns: ['axios', 'graphql-request', 'socket.io-client', 'engine.io-client'],
+      dependencyPatterns: ['axios', 'graphql-request', 'socket.io-client', 'engine.io-client', 'ky', 'stream-markdown-parser'],
       networkDefaults: {
         request: {
           enableHttp2: true,
@@ -209,7 +241,7 @@ describe('injectRequestGlobals helpers', () => {
       },
     }, warn)).toEqual({
       mode: 'explicit',
-      dependencyPatterns: ['axios', 'graphql-request', 'socket.io-client', 'engine.io-client'],
+      dependencyPatterns: ['axios', 'graphql-request', 'socket.io-client', 'engine.io-client', 'ky', 'stream-markdown-parser'],
       prelude: true,
       targets: ['fetch'],
     })
@@ -236,7 +268,7 @@ describe('injectRequestGlobals helpers', () => {
       },
     }, warn)).toEqual({
       mode: 'explicit',
-      dependencyPatterns: ['axios', 'graphql-request', 'socket.io-client', 'engine.io-client'],
+      dependencyPatterns: ['axios', 'graphql-request', 'socket.io-client', 'engine.io-client', 'ky', 'stream-markdown-parser'],
       prelude: true,
       targets: ['fetch'],
     })
@@ -257,7 +289,7 @@ describe('injectRequestGlobals helpers', () => {
       },
     }, warn)).toEqual({
       mode: 'explicit',
-      dependencyPatterns: ['axios', 'graphql-request', 'socket.io-client', 'engine.io-client'],
+      dependencyPatterns: ['axios', 'graphql-request', 'socket.io-client', 'engine.io-client', 'ky', 'stream-markdown-parser'],
       prelude: false,
       targets: ['fetch'],
     })
@@ -276,7 +308,7 @@ describe('injectRequestGlobals helpers', () => {
       },
     })).toEqual({
       mode: 'explicit',
-      dependencyPatterns: ['axios', 'graphql-request', 'socket.io-client', 'engine.io-client'],
+      dependencyPatterns: ['axios', 'graphql-request', 'socket.io-client', 'engine.io-client', 'ky', 'stream-markdown-parser'],
       prelude: false,
       targets: ['fetch'],
     })
@@ -300,7 +332,7 @@ describe('injectRequestGlobals helpers', () => {
       },
     }, warn)).toEqual({
       mode: 'explicit',
-      dependencyPatterns: ['axios', 'graphql-request', 'socket.io-client', 'engine.io-client'],
+      dependencyPatterns: ['axios', 'graphql-request', 'socket.io-client', 'engine.io-client', 'ky', 'stream-markdown-parser'],
       prelude: false,
       targets: ['fetch'],
     })
@@ -400,6 +432,47 @@ describe('injectRequestGlobals helpers', () => {
     expect(code).toContain(`var CustomEvent = ${REQUEST_GLOBAL_EXPOSE_HELPER}("CustomEvent"`)
   })
 
+  it('uses an inline base64 polyfill instead of a lazy placeholder for atob/btoa', () => {
+    const code = createInjectRequestGlobalsCode(['atob', 'btoa'], {
+      passiveLocalBindings: true,
+    })
+
+    expect(code).toContain(`const ${REQUEST_GLOBAL_BASE64_HELPER} = (() =>`)
+    expect(code).toContain(`:${REQUEST_GLOBAL_BASE64_HELPER}.atob)`)
+    expect(code).toContain(`:${REQUEST_GLOBAL_BASE64_HELPER}.btoa)`)
+    expect(code).not.toContain(`${REQUEST_GLOBAL_LAZY_FUNCTION_HELPER}("atob")`)
+    expect(code).not.toContain(`${REQUEST_GLOBAL_LAZY_FUNCTION_HELPER}("btoa")`)
+  })
+
+  it('does not emit the inline base64 helper when only other targets are requested', () => {
+    const code = createInjectRequestGlobalsCode(['fetch'], {
+      passiveLocalBindings: true,
+    })
+
+    expect(code).not.toContain(REQUEST_GLOBAL_BASE64_HELPER)
+  })
+
+  it('uses early constructable fallbacks for the capability globals probed by ky', () => {
+    const code = createInjectRequestGlobalsCode(['Request', 'ReadableStream', 'AbortController'], {
+      passiveLocalBindings: true,
+    })
+
+    expect(code).toContain(REQUEST_GLOBAL_EARLY_CAPABILITY_FALLBACKS)
+    for (const name of EARLY_CAPABILITY_REQUEST_GLOBAL_TARGETS) {
+      expect(code).toContain(`${REQUEST_GLOBAL_EARLY_CAPABILITY_HELPER}("${name}",`)
+      expect(code).not.toContain(`${REQUEST_GLOBAL_LAZY_CONSTRUCTOR_HELPER}("${name}")`)
+    }
+  })
+
+  it('does not emit early capability helpers when only base64 targets are requested', () => {
+    const code = createInjectRequestGlobalsCode(['atob', 'btoa'], {
+      passiveLocalBindings: true,
+    })
+
+    expect(code).not.toContain(REQUEST_GLOBAL_EARLY_CAPABILITY_FALLBACKS)
+    expect(code).not.toContain(REQUEST_GLOBAL_EARLY_CAPABILITY_HELPER)
+  })
+
   it('can create a valid sfc injection block', () => {
     const code = createInjectRequestGlobalsSfcCode(['fetch'], {
       localBindings: true,
@@ -410,6 +483,27 @@ describe('injectRequestGlobals helpers', () => {
     expect(code).toContain(`var fetch = ${REQUEST_GLOBAL_INSTALLER_HOST_REF}.fetch`)
     expect(code).toContain(`var TextDecoder = ${REQUEST_GLOBAL_INSTALLER_HOST_REF}.TextDecoder`)
     expect(code).toContain('</script>')
+  })
+
+  it('recognizes ky imports without false positives from the short package name', () => {
+    const targets = resolveAutoRequestGlobalsTargets(`
+      import ky from 'ky'
+      export const run = () => ky.get('https://example.invalid')
+    `, [...fullWebRuntimeTargets])
+
+    expect(targets).toEqual(expect.arrayContaining(['fetch', 'Request', 'AbortController']))
+    expect(resolveAutoRequestGlobalsTargets(`const sky = 'ky'; export { sky }`, [...fullWebRuntimeTargets])).toEqual([])
+  })
+
+  it('recognizes globalThis capability probes cached by ky at module initialization', () => {
+    const targets = resolveAutoRequestGlobalsTargets(`
+      export const supportsRequest = typeof globalThis.Request === 'function'
+      export const supportsAbortController = typeof globalThis.AbortController === 'function'
+      export const supportsResponseStreams = typeof globalThis.ReadableStream === 'function'
+      const defaultFetch = globalThis.fetch.bind(globalThis)
+    `, [...fullWebRuntimeTargets])
+
+    expect(targets).toEqual(expect.arrayContaining(['fetch', 'Request', 'AbortController', 'AbortSignal', 'ReadableStream']))
   })
 
   it('resolves direct TextDecoder references in auto mode without requiring request dependencies', () => {
