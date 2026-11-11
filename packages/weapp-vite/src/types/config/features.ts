@@ -396,6 +396,7 @@ export interface WeappReactCompilerConfig {
 export interface WeappReactConfig {
   compiler?: boolean | WeappReactCompilerConfig
   renderMode?: 'auto' | 'dynamic' | 'static'
+  renderer?: 'legacy' | 'auto' | 'native-dom'
   devWarnings?: boolean
 }
 

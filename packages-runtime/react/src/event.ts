@@ -7,8 +7,23 @@ interface EventHostRoot {
   getNode: (sid: string) => unknown
 }
 
-function toEventPropName(type: string) {
-  return `on${type.charAt(0).toUpperCase()}${type.slice(1)}`
+function normalizeEventType(type: string) {
+  return type
+    .replace(/^(?:capture[-:]*)?(?:bind|catch)[-:]*/i, '')
+    .replace(/[-_:]/g, '')
+    .toLowerCase()
+}
+
+function findEventProp(props: Record<string, unknown>, type: string, capture: boolean) {
+  const suffix = capture ? 'Capture' : ''
+  const normalizedType = normalizeEventType(type)
+  return Object.keys(props).find((name) => {
+    if (!name.startsWith('on') || (capture ? !name.endsWith(suffix) : name.endsWith('Capture'))) {
+      return false
+    }
+    const eventName = name.slice(2, suffix ? -suffix.length : undefined)
+    return normalizeEventType(eventName) === normalizedType
+  })
 }
 
 export function dispatchHostEvent(root: EventHostRoot, nativeEvent: MiniProgramEventLike) {
@@ -36,14 +51,17 @@ export function dispatchHostEvent(root: EventHostRoot, nativeEvent: MiniProgramE
     nativeEvent,
     stopPropagation: () => {
       stopped = true
+      nativeEvent.stopPropagation?.()
     },
     target,
     type: nativeEvent.type,
   }
-  const propName = toEventPropName(nativeEvent.type)
-
   for (const node of path.slice().reverse()) {
-    const handler = node.props[`${propName}Capture`]
+    const propName = findEventProp(node.props, nativeEvent.type, true)
+    if (!propName) {
+      continue
+    }
+    const handler = node.props[propName]
     if (typeof handler === 'function') {
       event.currentTarget = node
       ;(handler as HostEventHandler)(event)
@@ -55,6 +73,10 @@ export function dispatchHostEvent(root: EventHostRoot, nativeEvent: MiniProgramE
   }
 
   for (const node of path) {
+    const propName = findEventProp(node.props, nativeEvent.type, false)
+    if (!propName) {
+      continue
+    }
     const handler = node.props[propName]
     if (typeof handler === 'function') {
       event.currentTarget = node

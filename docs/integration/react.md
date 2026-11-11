@@ -9,6 +9,7 @@ export default defineConfig({
   weapp: {
     react: {
       renderMode: 'auto',
+      renderer: 'legacy',
       compiler: false,
     },
   },
@@ -16,6 +17,23 @@ export default defineConfig({
 ```
 
 React 项目中的 `.jsx` 和 `.tsx` 会由 React 编译链统一处理，不能与同一构建中的 Wevu JSX 混用。当前工作区验证组合为 React 19.3.x 和 `react-reconciler` 0.34.x，不依赖 `react-dom`。
+
+## 原生 DOM renderer
+
+`weapp.react.renderer` 控制 React runtime 的宿主后端：`legacy`（默认）继续使用现有 host tree 和 `setData`；`auto` 仅在抖音 Render Mode V2 且 `tt.appDocument`、当前页面文档和 `__webviewId__` 均可用时选择原生 DOM，其他情况回退到 `legacy`；`native-dom` 在抖音以外或能力缺失时直接报告错误。该选项不改变 `renderMode` 的模板语义，也不提供逐 root 覆盖。
+
+```ts
+export default defineConfig({
+  weapp: {
+    platform: 'tt',
+    react: {
+      renderer: 'auto',
+    },
+  },
+})
+```
+
+原生后端使用 `tt.appDocument` 创建和更新内置节点、文本、属性、样式、原生组件 bridge 及事件监听器，并在卸载时解绑事件。当前仓库没有抖音开发者工具，TT 真机/runtime 验收需要在目标环境补充；mock、构建和微信 runtime 结果不替代该验收。
 
 ## 原生与 Wevu 组件
 
@@ -90,4 +108,4 @@ export default defineConfig({
 
 Compiler 依赖可选的 `@swc/core`。native transform 不可用时会回退到 Oxc JSX transform，并输出带文件位置的 warning。
 
-首版目标平台为微信小程序；支付宝和抖音平台暂不在 React runtime 兼容范围内。
+legacy renderer 的既有目标平台和兼容范围保持不变；本次仅为抖音 Render Mode V2 增加可选原生 DOM 后端，支付宝不在 React runtime 兼容范围内。

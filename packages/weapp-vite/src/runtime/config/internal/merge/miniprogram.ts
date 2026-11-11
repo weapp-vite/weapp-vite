@@ -4,6 +4,7 @@ import type { MutableCompilerContext } from '../../../../context'
 import type { WeappVitePlatform } from '../../../../runtimeTarget'
 import type { SubPackageMetaValue } from '../../../../types'
 import { existsSync, readFileSync } from 'node:fs'
+import { WEAPP_VITE_REACT_RENDERER_DEFINE } from '@weapp-core/constants'
 import { defu } from '@weapp-core/shared'
 import { parse as parseJson } from 'comment-json'
 import path from 'pathe'
@@ -125,6 +126,16 @@ function normalizeInlineConfigAfterDefu(
   applyWeappViteHostMeta(inline, 'miniprogram', platform)
   stripRollupOptions(inline)
   arrangePlugins(inline, ctx, subPackageMeta)
+}
+
+function resolveReactRendererDefine(ctx: MutableCompilerContext) {
+  const platform = ctx.configService?.platform
+  const react = ctx.configService?.weappViteConfig?.react
+  const mode = typeof react === 'object' && react ? react.renderer ?? 'legacy' : 'legacy'
+  if (mode === 'native-dom' && platform !== 'tt') {
+    throw new Error(`[react] renderer: 'native-dom' 仅支持 tt 平台，当前目标为 ${platform ?? 'unknown'}`)
+  }
+  return JSON.stringify({ mode, platform })
 }
 
 interface MergeMiniprogramOptions {
@@ -264,6 +275,7 @@ export function mergeMiniprogram(options: MergeMiniprogramOptions, ...configs: P
 
   const miniprogramDefines = {
     ...getDefineImportMetaEnv(),
+    [WEAPP_VITE_REACT_RENDERER_DEFINE]: resolveReactRendererDefine(ctx),
     // Vite 动态导入预加载 helper 依赖该标记，miniprogram 构建需稳定替换为 false。
     __VITE_IS_MODERN__: 'false',
   }

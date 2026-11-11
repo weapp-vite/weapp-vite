@@ -239,6 +239,7 @@ export const WEAPP_REACT_EVENT_DATASET_KEY = 'sid'
 export const WEAPP_REACT_EVENT_METHOD_NAME = '__weapp_vite_react_event'
 export const WEAPP_REACT_RUNTIME_MARKER = '__weapp_vite_react_runtime__'
 export const WEAPP_REACT_SLOT_PREFIX = 'react-slot-'
+export const WEAPP_VITE_REACT_RENDERER_DEFINE = '__WEAPP_VITE_REACT_RENDERER__'
 
 export const WEAPP_VITE_INJECTED_API_IDENTIFIER = '__weappViteInjectedApi__'
 export const WEAPP_VITE_WEB_AUTHORIZE_DECISION_KEY = '__weappViteWebAuthorizeDecision'

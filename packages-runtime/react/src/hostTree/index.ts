@@ -1,10 +1,12 @@
 import type { HostProps, MiniProgramPageAdapter } from '../types'
+import type { HostRendererBackend } from './backend'
 import type { HostNode, HostParent } from './nodes'
 import { WEAPP_REACT_ROOT_DATA_KEY, WEAPP_REACT_SLOTS_DATA_KEY } from '@weapp-core/constants'
 import { attachHostNode, HostElement } from './nodes'
 import { hasSerializedPropChanges } from './serialization'
 import { hasStaticBindingChanges, readStaticSlot, StaticBindingState } from './staticBindings'
 
+export type { HostRendererBackend } from './backend'
 export { HostElement, HostText } from './nodes'
 export type { HostNode, HostParent } from './nodes'
 export { hasSerializedPropChanges } from './serialization'
@@ -20,13 +22,48 @@ export class HostRoot {
   private nodes = new Map<string, HostNode>()
   private pendingFlush = false
   private readonly adapter: MiniProgramPageAdapter
+  readonly backend: HostRendererBackend | undefined
   private readonly staticBindings = new StaticBindingState()
   private staticMismatch: Error | undefined
   private unmounting = false
 
-  constructor(adapter: MiniProgramPageAdapter, renderMode: HostRenderMode = 'tree') {
+  constructor(adapter: MiniProgramPageAdapter, renderMode: HostRenderMode = 'tree', backend?: HostRendererBackend) {
     this.adapter = adapter
     this.renderMode = renderMode
+    this.backend = backend
+  }
+
+  createElement(type: string) {
+    return this.backend?.createElement(type)
+  }
+
+  createText(value: string) {
+    return this.backend?.createText(value)
+  }
+
+  private nativeParent(parent: HostParent) {
+    return parent instanceof HostRoot ? this.backend?.container : parent.nativeNode
+  }
+
+  appendNativeChild(parent: HostParent, child: HostNode) {
+    const nativeParent = this.nativeParent(parent)
+    if (nativeParent && child.nativeNode) {
+      this.backend?.appendChild(nativeParent, child.nativeNode)
+    }
+  }
+
+  insertNativeChild(parent: HostParent, child: HostNode, before: HostNode) {
+    const nativeParent = this.nativeParent(parent)
+    if (nativeParent && child.nativeNode && before.nativeNode) {
+      this.backend?.insertBefore(nativeParent, child.nativeNode, before.nativeNode)
+    }
+  }
+
+  removeNativeChild(parent: HostParent, child: HostNode) {
+    const nativeParent = this.nativeParent(parent)
+    if (nativeParent && child.nativeNode) {
+      this.backend?.removeChild(nativeParent, child.nativeNode)
+    }
   }
 
   beginUnmount() {
@@ -43,7 +80,7 @@ export class HostRoot {
   }
 
   createElementSid(props: HostProps) {
-    return this.renderMode === 'static-bindings' ? readStaticSlot(props) : this.nextSid()
+    return this.renderMode === 'static-bindings' && !this.backend ? readStaticSlot(props) : this.nextSid()
   }
 
   nextSid() {
@@ -52,7 +89,7 @@ export class HostRoot {
   }
 
   register(node: HostNode) {
-    if (this.renderMode === 'static-bindings' && node instanceof HostElement && this.nodes.has(node.sid)) {
+    if (!this.backend && this.renderMode === 'static-bindings' && node instanceof HostElement && this.nodes.has(node.sid)) {
       throw new Error(`static template slot 冲突：${node.sid}`)
     }
     this.nodes.set(node.sid, node)
@@ -60,6 +97,9 @@ export class HostRoot {
 
   unregisterTree(node: HostNode) {
     this.nodes.delete(node.sid)
+    if (node.nativeNode) {
+      this.backend?.disposeNode(node.nativeNode)
+    }
     if (node instanceof HostElement) {
       node.children.forEach(child => this.unregisterTree(child))
     }
@@ -71,12 +111,19 @@ export class HostRoot {
 
   append(child: HostNode) {
     attachHostNode(this, child)
+    this.appendNativeChild(this, child)
     this.markStructure(this)
   }
 
   insertBefore(child: HostNode, before: HostNode) {
     const index = this.children.indexOf(before)
     attachHostNode(this, child, index < 0 ? undefined : index)
+    if (index < 0) {
+      this.appendNativeChild(this, child)
+    }
+    else {
+      this.insertNativeChild(this, child, before)
+    }
     this.markStructure(this)
   }
 
@@ -87,22 +134,32 @@ export class HostRoot {
     }
     this.children.splice(index, 1)
     child.parent = null
+    this.removeNativeChild(this, child)
     this.unregisterTree(child)
     this.markStructure(this)
   }
 
   clear() {
-    this.children.forEach(child => this.unregisterTree(child))
+    for (const child of this.children) {
+      this.removeNativeChild(this, child)
+      this.unregisterTree(child)
+    }
     this.children.length = 0
     this.markStructure(this)
   }
 
   markNode(node: HostNode) {
+    if (this.backend) {
+      return
+    }
     this.dirtyNodes.add(node)
     this.scheduleFlush()
   }
 
   markElementProps(element: HostElement, previous: HostProps, next: HostProps) {
+    if (this.backend) {
+      return
+    }
     if (this.renderMode === 'static-bindings') {
       this.staticBindings.markProps(element, previous, next)
       this.scheduleFlush()
@@ -112,11 +169,17 @@ export class HostRoot {
   }
 
   markStaticText(element: HostElement) {
+    if (this.backend) {
+      return
+    }
     this.staticBindings.markField(element, 'text')
     this.scheduleFlush()
   }
 
   markStructure(parent: HostParent) {
+    if (this.backend) {
+      return
+    }
     if (this.renderMode === 'static-bindings') {
       if (this.mounted && !this.unmounting) {
         this.staticMismatch = new Error('static template 运行时结构发生变化，需要切换 dynamic island fallback')
@@ -166,6 +229,9 @@ export class HostRoot {
   }
 
   shouldNotifyPropUpdate(previous: HostProps, next: HostProps) {
+    if (this.backend) {
+      return true
+    }
     return this.renderMode === 'static-bindings'
       ? hasStaticBindingChanges(previous, next)
       : hasSerializedPropChanges(previous, next)
@@ -194,6 +260,10 @@ export class HostRoot {
 
   flush() {
     this.pendingFlush = false
+    if (this.backend) {
+      this.backend.flush()
+      return
+    }
     if (this.renderMode === 'static-bindings') {
       this.flushStaticBindings()
       return

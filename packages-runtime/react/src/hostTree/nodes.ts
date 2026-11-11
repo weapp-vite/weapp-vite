@@ -23,6 +23,7 @@ function attach(parent: HostParent, child: HostNode, index?: number) {
 
 export class HostText {
   parent: HostParent | null = null
+  readonly nativeNode: object | undefined
   readonly root: HostRoot
   readonly sid: string
   value: string
@@ -31,6 +32,7 @@ export class HostText {
     this.root = root
     this.sid = sid
     this.value = value
+    this.nativeNode = root.createText(value)
     root.register(this)
   }
 
@@ -47,6 +49,9 @@ export class HostText {
       return
     }
     this.value = value
+    if (this.nativeNode) {
+      this.root.backend?.setText(this.nativeNode, value)
+    }
     if (this.root.renderMode === 'static-bindings' && this.parent && 'props' in this.parent) {
       this.root.markStaticText(this.parent)
     }
@@ -58,6 +63,7 @@ export class HostText {
 
 export class HostElement {
   readonly children: HostNode[] = []
+  readonly nativeNode: object | undefined
   parent: HostParent | null = null
   props: HostProps
   readonly root: HostRoot
@@ -69,11 +75,16 @@ export class HostElement {
     this.root = root
     this.sid = sid
     this.type = type
+    this.nativeNode = root.createElement(type)
     root.register(this)
+    if (this.nativeNode) {
+      root.backend?.setElementProps(this, {}, props)
+    }
   }
 
   append(child: HostNode, notify = true) {
     attach(this, child)
+    this.root.appendNativeChild(this, child)
     if (notify) {
       this.root.markStructure(this)
     }
@@ -82,6 +93,12 @@ export class HostElement {
   insertBefore(child: HostNode, before: HostNode) {
     const index = this.children.indexOf(before)
     attach(this, child, index < 0 ? undefined : index)
+    if (index < 0) {
+      this.root.appendNativeChild(this, child)
+    }
+    else {
+      this.root.insertNativeChild(this, child, before)
+    }
     this.root.markStructure(this)
   }
 
@@ -92,6 +109,7 @@ export class HostElement {
     }
     this.children.splice(index, 1)
     child.parent = null
+    this.root.removeNativeChild(this, child)
     this.root.unregisterTree(child)
     this.root.markStructure(this)
   }
@@ -123,6 +141,7 @@ export class HostElement {
     const previous = this.props
     this.props = props
     if (notify) {
+      this.root.backend?.setElementProps(this, previous, props)
       this.root.markElementProps(this, previous, props)
     }
   }

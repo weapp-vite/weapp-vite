@@ -7,6 +7,7 @@ import { DefaultEventPriority, NoEventPriority } from 'react-reconciler/constant
 import { name as rendererPackageName, version as rendererVersion } from '../package.json'
 import { dispatchHostEvent } from './event'
 import { HostElement, HostRoot, HostText } from './hostTree'
+import { createNativeDomBackend } from './nativeDom'
 
 function propsChanged(previous: HostProps, next: HostProps) {
   const previousKeys = Object.keys(previous).filter(key => key !== 'children')
@@ -247,7 +248,17 @@ export function createReactMiniProgramRoot(
   adapter: MiniProgramPageAdapter,
   options: ReactMiniProgramRootOptions = {},
 ): ReactMiniProgramRoot {
-  const root = new HostRoot(adapter, options.renderMode)
+  let root: HostRoot
+  const backend = createNativeDomBackend(adapter, (target, event) => {
+    renderer.flushSyncFromReconciler(() => dispatchHostEvent(root, {
+      currentTarget: { dataset: { sid: target.sid } },
+      detail: event.detail,
+      stopPropagation: event.stopPropagation,
+      target,
+      type: event.type,
+    }))
+  })
+  root = new HostRoot(adapter, options.renderMode, backend)
   const container = createContainer(root)
 
   return {
