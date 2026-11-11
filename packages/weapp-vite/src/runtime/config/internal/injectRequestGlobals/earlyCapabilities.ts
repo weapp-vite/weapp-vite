@@ -84,6 +84,6 @@ const FALLBACK_SOURCE = `(() => {
 export function createEarlyCapabilityHelperCode() {
   return [
     `const ${REQUEST_GLOBAL_EARLY_CAPABILITY_FALLBACKS} = ${FALLBACK_SOURCE}`,
-    `function ${REQUEST_GLOBAL_EARLY_CAPABILITY_HELPER}(name,makeFallback){const placeholder=function(...args){const actual=${REQUEST_GLOBAL_ACTUALS_KEY}[name];if(typeof actual==="function"&&actual!==placeholder&&actual?.[${JSON.stringify(REQUEST_GLOBAL_PLACEHOLDER_KEY)}]!==true){return Reflect.construct(actual,args)}return makeFallback(args)};return ${REQUEST_GLOBAL_MARK_PLACEHOLDER_HELPER}(placeholder)}`,
+    `function ${REQUEST_GLOBAL_EARLY_CAPABILITY_HELPER}(name,makeFallback){let placeholder;const getActual=()=>{const actual=${REQUEST_GLOBAL_ACTUALS_KEY}[name];return typeof actual==="function"&&actual!==placeholder&&actual?.[${JSON.stringify(REQUEST_GLOBAL_PLACEHOLDER_KEY)}]!==true?actual:undefined};const target=function(...args){return makeFallback(args)};placeholder=new Proxy(target,{apply(target,thisArg,args){const actual=getActual();return actual?Reflect.apply(actual,thisArg,args):makeFallback(args)},construct(target,args,newTarget){const actual=getActual();return actual?Reflect.construct(actual,args,newTarget===placeholder?actual:newTarget):makeFallback(args)},get(target,key,receiver){if(key==="prototype"){const actual=getActual();if(actual?.prototype)return actual.prototype}return Reflect.get(target,key,receiver)}});return ${REQUEST_GLOBAL_MARK_PLACEHOLDER_HELPER}(placeholder)}`,
   ].join(';')
 }

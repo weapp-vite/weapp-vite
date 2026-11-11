@@ -110,7 +110,9 @@ describe('early constructable web runtime capabilities', () => {
 
     expect(sandbox.run(`typeof new Request('https://empty.invalid').clone`)).toBe('function')
     expect(sandbox.run(`new Request('https://empty.invalid').constructor.__earlyCapabilityMarker`)).toBe(true)
+    expect(sandbox.run(`new Request('https://empty.invalid') instanceof Request`)).toBe(true)
     expect(sandbox.run(`new AbortController().constructor.__earlyCapabilityMarker`)).toBe(true)
+    expect(sandbox.run(`new AbortController() instanceof AbortController`)).toBe(true)
     expect(sandbox.run(`(() => { const controller = new AbortController(); controller.abort(); return controller.signal.aborted })()`)).toBe(true)
   })
 })
