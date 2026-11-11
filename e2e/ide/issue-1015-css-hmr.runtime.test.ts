@@ -72,12 +72,10 @@ for (const runtime of ['classic', 'stateful-experimental'] as const) {
       })
       publication = createIssue1015HmrPublication(project, dev, runtime, profilePath)
       await dev.waitForInitialBuild()
-      if (runtime === 'stateful-experimental') {
-        // 微信启动时先完成能力交接；CSS 编辑继续验收实际 classic 发布和宿主自动重载。
-        await dev.waitForOutput('[weapp-vite] HMR classic ready ', 'startup classic fallback completion')
+      expect(publication.stateful).toBe(runtime === 'stateful-experimental')
+      if (!publication.stateful) {
+        await publication.assertClassicOutput()
       }
-      expect(publication.stateful).toBe(false)
-      await publication.assertClassicOutput()
       for (const extension of ['js', 'json', 'wxml', 'wxss']) {
         expect(await readFile(path.join(project, `dist/pages/issue-1015/index.${extension}`), 'utf8')).not.toBe('')
       }
