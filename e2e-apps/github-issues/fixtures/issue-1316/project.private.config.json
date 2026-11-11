@@ -1,4 +1,7 @@
 {
+  "setting": {
+    "urlCheck": false
+  },
   "condition": {
     "miniprogram": {
       "list": [
