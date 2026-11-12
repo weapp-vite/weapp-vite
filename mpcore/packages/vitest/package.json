@@ -62,6 +62,7 @@
     "@mpcore/test": "workspace:*"
   },
   "devDependencies": {
+    "@vitest/browser": "5.1.0",
     "vitest": "catalog:tilde"
   },
   "publishConfig": {

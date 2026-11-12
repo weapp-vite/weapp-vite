@@ -155,6 +155,8 @@ pnpm add wevu@snapshot-nightly
 
 上游诊断修复 [#1171](https://github.com/icelib/repoctl/pull/1171) 随 `6.6.1` [正式运行 43271060614](https://github.com/icelib/repoctl/actions/runs/43271060614) 发布，已完成 registry 确认、记账与文档部署。静默 JSON 上传错误保留退出码、终止信号和末尾最多 8,000 字符的命令输出，先脱敏凭证再写入报告，JSON stdout 仍保持完整。发生上传失败时检查报告的 `error` 和 publication 进度，再核对 registry；不能仅凭命令参数推断网络或权限原因，也不能把打包阶段的 consumer 通过当成整批发布后消费验证成功。
 
+[验收运行 43276575545](https://github.com/weapp-vite/weapp-vite/actions/runs/43276575545) 已上传并确认全部 46 包，registry 的版本、来源身份、integrity 和 nightly tag 均匹配，所有 `latest` 未变化。consumer 安装成功后，严格类型检查发现 `@mpcore/vitest` 的同名 matcher 与 Vitest browser 的 `Assertion` 扩展冲突（TS2320）。共享 matcher 改在 `Assertion` 中声明兼容签名，小程序专用 matcher 继续保留接收值约束；补充同时加载 browser matcher 的 `tsd` 合约与文本参数运行时回归，不关闭 `skipLibCheck=false` 检查。该批次仍保留失败状态，不能将已完成的上传视为消费验收通过；修复后由新源码的 Nightly 完成整批验收。
+
 pnpm 12.18 安装新发布依赖时会追加精确 `minimumReleaseAgeExclude`，配置必须可原位修改。旧 repoctl 的 nightly 和 prepared snapshot consumer 用多行 JSON 写入 `pnpm-workspace.yaml`，虽能读取，但 pnpm 追加配置时报 `ERR_PNPM_WORKSPACE_MANIFEST_WRITER_UNSUPPORTED_INLINE_BLOCK`。上游修复 [#1170](https://github.com/icelib/repoctl/pull/1170) 统一使用内部 YAML block 生成器，保留本轮精确版本例外及默认安装安全策略；两条路径均用真实 pnpm 12.18、本地 registry 覆盖旧格式失败、新格式成功和外部 peer 例外追加。修复的 patch changeset 随已有的 [6.6.0 版本批次 #1168](https://github.com/icelib/repoctl/pull/1168) 发布，[正式运行 43203606792](https://github.com/icelib/repoctl/actions/runs/43203606792) 已完成 registry 确认、发布记账及文档部署。本仓库升级正式工具后移除临时 `@icebreakers__monorepo@6.5.4.patch`，继续保留已安装包的消费契约回归。
 
 ## PR snapshot

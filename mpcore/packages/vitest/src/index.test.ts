@@ -35,6 +35,9 @@ describe('@mpcore/vitest', () => {
 
     expect(node).toBeInTheMiniProgram()
     expect(node).toHaveTextContent('count: 2')
+    expect(node).toHaveTextContent(2)
+    expect(node).toHaveTextContent()
+    expect(node).toHaveTextContent('count: 2', { normalizeWhitespace: true })
     expect(node).toHaveAttribute('data-kind', 'counter')
     expect(node).toHaveDataset({ kind: 'counter' })
     expect(emissions).toHaveEmitted('change', { value: 2 })
