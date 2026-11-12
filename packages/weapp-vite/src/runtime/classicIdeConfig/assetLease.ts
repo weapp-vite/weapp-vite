@@ -38,6 +38,9 @@ export function restoreRequestedAssetWatch(source: string | null, saved: IdeAsse
   if (isDeepStrictEqual(current, saved.installed)) {
     return saved.original
   }
+  if (saved.original !== null && isDeepStrictEqual(current, parseIdeConfig(saved.original))) {
+    return source
+  }
   if (!current.watchOptions) {
     return source
   }

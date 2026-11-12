@@ -52,7 +52,7 @@ it.each(['classic', 'auto', 'stateful-experimental'] as const)('recovers a start
   expect(await fs.readFile(file, 'utf8')).toBe(original)
 })
 
-it.each([false, true])('defers a pending asset handoff only when the same output root has a published stateful baseline: %s', async (published) => {
+it.each([false, true])('disables native script hot reload before classic compilation while protecting a published stateful baseline: %s', async (published) => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'prepare-pending-classic-'))
   cleanup.push(() => fs.remove(root))
   const file = path.join(root, 'project.private.config.json')
@@ -83,11 +83,15 @@ it.each([false, true])('defers a pending asset handoff only when the same output
   await prepareClassicIdeConfig(ctx)
   expect(runtime.classicIdeConfig.hasPendingAssetHandoff(file)).toBe(published)
   if (published) {
-    expect(await fs.readFile(file, 'utf8')).toBe(installed)
+    const protectedConfig = JSON.parse(installed) as Record<string, unknown>
+    expect(await fs.readJSON(file)).toEqual({ ...protectedConfig, setting: { compileHotReLoad: false } })
+    expect(runtime.classicIdeConfig.preservesPendingOutput(outDir)).toBe(true)
+    expect(await fs.pathExists(ideAssetWatchLeasePath(file))).toBe(true)
   }
   else {
     expect(await fs.readJSON(file)).toEqual({ setting: { compileHotReLoad: false } })
   }
+  expect(await runtime.classicIdeConfig.readRequested(file)).toBe(original)
   await runtime.classicIdeConfig.close()
   expect(await fs.readFile(file, 'utf8')).toBe(original)
 })

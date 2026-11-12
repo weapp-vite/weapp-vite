@@ -66,7 +66,9 @@ export class ClassicIdeConfigOwner {
         return disk ? requestedClassicIdeConfig(source, disk) ?? '{}' : source
       }
       await this.assertOwnership(configPath)
-      return requestedClassicIdeConfig(source, saved) ?? '{}'
+      const requested = requestedClassicIdeConfig(source, saved)
+      const handoff = this.assetHandoffs.get(configPath)
+      return (handoff ? restoreRequestedAssetWatch(requested, await readIdeAssetWatchLease(configPath, handoff.assetOwner)) : requested) ?? '{}'
     }, false)
   }
 
@@ -95,12 +97,12 @@ export class ClassicIdeConfigOwner {
     })
   }
 
-  private async activateOwned(file: string, handoff?: { source: string | null, assetOwner?: string }, pendingAssetOwner?: string, isActive?: () => boolean): Promise<boolean> {
+  private async activateOwned(file: string, handoff?: { source: string | null, assetOwner?: string }, pendingAssetOwner?: string, isActive?: () => boolean, preserveAssetWatch = false): Promise<boolean> {
     const configPath = path.resolve(file)
-    return withClassicIdeConfigLock(configPath, () => this.activateLocked(configPath, handoff, pendingAssetOwner, isActive))
+    return withClassicIdeConfigLock(configPath, () => this.activateLocked(configPath, handoff, pendingAssetOwner, isActive, preserveAssetWatch))
   }
 
-  private async activateLocked(configPath: string, handoff?: { source: string | null, assetOwner?: string }, pendingAssetOwner?: string, isActive?: () => boolean): Promise<boolean> {
+  private async activateLocked(configPath: string, handoff?: { source: string | null, assetOwner?: string }, pendingAssetOwner?: string, isActive?: () => boolean, preserveAssetWatch = false): Promise<boolean> {
     const assetOwner = pendingAssetOwner ?? handoff?.assetOwner
     await assertIdeAssetHandoff(configPath, assetOwner)
     const asset = pendingAssetOwner ? await readIdeAssetWatchLease(configPath, pendingAssetOwner) : undefined
@@ -112,11 +114,15 @@ export class ClassicIdeConfigOwner {
       await recoverClassicLease(configPath, assetOwner)
     }
     const current = await readIdeConfig(configPath)
+    const requested = previous && current !== null ? requestedClassicIdeConfig(current, previous) : current
     const original = asset
-      ? restoreRequestedAssetWatch(current, asset)
-      : handoff ? handoff.source : previous && current !== null ? requestedClassicIdeConfig(current, previous) : current
+      ? restoreRequestedAssetWatch(requested, asset)
+      : handoff ? handoff.source : requested
     const config = parseIdeConfig(original)
     config.setting = { ...config.setting, compileHotReLoad: false }
+    if (preserveAssetWatch && current !== null) {
+      config.watchOptions = parseIdeConfig(current).watchOptions
+    }
     const installed = formatIdeConfig(config, original)
     const saved: ClassicLease = { schemaVersion: 1, pid: process.pid, owner: this.identity, original, installed }
     const journal = classicIdeConfigLeasePath(configPath)
@@ -202,6 +208,18 @@ export class ClassicIdeConfigOwner {
     return [...this.assetHandoffs.values()].some(handoff => handoff.outDir === root)
   }
 
+  /** 先停止 IDE 局部脚本热载；资产 ignore 与旧产物仍保护到完整原生发布。 */
+  preparePendingAssetHandoff(file: string, outDir: string): Promise<void> {
+    return this.enqueue(async () => {
+      const configPath = path.resolve(file)
+      const handoff = this.assetHandoffs.get(configPath)
+      if (!handoff || handoff.outDir !== path.resolve(outDir)) {
+        throw new Error('[weapp-vite] classic 编译准备与待交接资产输出根不匹配。')
+      }
+      await this.activateOwned(configPath, undefined, handoff.assetOwner, undefined, true)
+    })
+  }
+
   /** 完整原生写出前重读用户配置，在同一 owner 内一次交接 ignore 与重载开关。 */
   activatePendingAssetHandoff(file: string, outDir: string, isActive?: () => boolean): Promise<boolean> {
     return this.enqueue(async () => {
@@ -264,10 +282,17 @@ export class ClassicIdeConfigOwner {
     return this.closing ??= (async () => {
       await this.pending
       const errors: unknown[] = this.failure ? [this.failure.error] : []
-      for (const [configPath, handoff] of this.assetHandoffs) {
+      // 先恢复仍持有资产保护时接管的热载开关，再撤销资产 ignore，保留请求原文。
+      for (const [configPath, saved] of this.leases) {
         try {
-          await restoreOwnedIdeAssetWatch(configPath, handoff.assetOwner)
-          this.assetHandoffs.delete(configPath)
+          await withClassicIdeConfigLock(configPath, async () => {
+            await this.assertOwnership(configPath)
+            await assertIdeAssetHandoff(configPath, this.assetHandoffs.get(configPath)?.assetOwner)
+            await restoreClassicIdeConfig(configPath, saved)
+            await fs.remove(classicIdeConfigLeasePath(configPath))
+            this.leases.delete(configPath)
+            owners.delete(configPath)
+          })
         }
         catch (error) {
           if (!errors.includes(error)) {
@@ -275,16 +300,10 @@ export class ClassicIdeConfigOwner {
           }
         }
       }
-      for (const [configPath, saved] of this.leases) {
+      for (const [configPath, handoff] of this.assetHandoffs) {
         try {
-          await withClassicIdeConfigLock(configPath, async () => {
-            await this.assertOwnership(configPath)
-            await assertIdeAssetHandoff(configPath)
-            await restoreClassicIdeConfig(configPath, saved)
-            await fs.remove(classicIdeConfigLeasePath(configPath))
-            this.leases.delete(configPath)
-            owners.delete(configPath)
-          })
+          await restoreOwnedIdeAssetWatch(configPath, handoff.assetOwner)
+          this.assetHandoffs.delete(configPath)
         }
         catch (error) {
           if (!errors.includes(error)) {
