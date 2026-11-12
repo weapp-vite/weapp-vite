@@ -1,9 +1,7 @@
 import assert from 'node:assert/strict'
 import { writeFile } from 'node:fs/promises'
 import path from 'node:path'
-import { assertConsumerStartupClassic } from './startupClassic.mjs'
-
-export { assertConsumerStartupClassic as assertStylesheetClassic } from './startupClassic.mjs'
+import { assertConsumerClassicSession } from './startupClassic.mjs'
 
 const endpointPath = '/__weapp_vite_stateful_hmr__'
 
@@ -71,6 +69,6 @@ export async function verifyStylesheetHmr({ root, operation, originalTemplate, w
       // 单个文件可先于完整 classic 发布回调可见，交接完成必须等待原生完成信号。
       await waitForClassicReady()
     }
-    await assertConsumerStartupClassic({ root, operation, output: readOutput() })
+    await assertConsumerClassicSession({ root, operation, output: readOutput() })
   }
 }

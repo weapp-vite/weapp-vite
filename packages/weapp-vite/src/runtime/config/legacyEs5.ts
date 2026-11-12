@@ -1,4 +1,6 @@
 import type { NormalizedOutputOptions, RenderedChunk, RolldownPluginOption } from 'rolldown'
+import { applyOutputChunkTransform, resolveOutputChunkTransformCode, syncOutputChunkSourceMapAssets } from '../../utils/outputChunk'
+import { normalizeEncodedSourceMapLike } from '../../utils/sourcemap'
 
 interface SwcTransformResult {
   code: string
@@ -12,6 +14,7 @@ interface SwcTransformOptions {
     type: string
   }
   jsc: {
+    preserveAllComments?: boolean
     parser: {
       syntax: string
       jsx?: boolean
@@ -71,6 +74,7 @@ export async function transformWithSwc(
       type: 'commonjs',
     },
     jsc: {
+      preserveAllComments: true,
       parser: {
         syntax: 'ecmascript',
         jsx: true,
@@ -93,11 +97,30 @@ export async function transformWithSwc(
 export function createLegacyEs5Plugin(): RolldownPluginOption<any> {
   return {
     name: 'weapp-runtime:swc-es5-transform',
-    async renderChunk(code, chunk, outputOptions) {
-      if (!code) {
-        return null
-      }
-      return await transformWithSwc(code, chunk, outputOptions)
+    generateBundle: {
+      order: 'post',
+      async handler(outputOptions, bundle) {
+        // 最终注入和 JS asset 同样属于降级范围；只转换最终代码，避免重复执行 SWC。
+        for (const output of Object.values(bundle)) {
+          if (output.type === 'chunk') {
+            const code = resolveOutputChunkTransformCode(output)
+            if (!code) {
+              continue
+            }
+            const result = await transformWithSwc(code, output, { ...outputOptions, sourcemap: Boolean(output.map) || outputOptions.sourcemap })
+            applyOutputChunkTransform(output, result.code, normalizeEncodedSourceMapLike(result.map))
+          }
+          else if (output.fileName.endsWith('.js')) {
+            const code = typeof output.source === 'string' ? output.source : new TextDecoder().decode(output.source)
+            if (!code) {
+              continue
+            }
+            const result = await transformWithSwc(code, { fileName: output.fileName } as RenderedChunk, { ...outputOptions, sourcemap: false })
+            output.source = result.code
+          }
+        }
+        syncOutputChunkSourceMapAssets(bundle)
+      },
     },
   }
 }

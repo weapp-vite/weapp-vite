@@ -11,8 +11,8 @@ import { assertNoStatefulInstallations } from './installedRuntime.mjs'
 export const classicReadyPrefix = '[weapp-vite] HMR classic ready '
 const fallbackPrefix = '[weapp-vite] HMR fallback '
 
-/** 核验消费者在指定能力边界后的完整 classic 交付。 */
-export async function assertConsumerStartupClassic({ root, operation, output, expectedReason = 'stylesheet-output' }) {
+/** 在线核验 classic 交接与配置；活动 writer 的输出目录不具备快照语义。 */
+export async function assertConsumerClassicSession({ root, operation, output, expectedReason = 'stylesheet-output' }) {
   assert.doesNotMatch(output, /Build failed|delivery failed|patch transform failed|classic HMR 切换失败|classic 回退失败|stateful HMR 旧引擎停止失败/)
   const stateful = operation === 'stateful-dev'
   assert.equal(output.split(fallbackPrefix).length - 1, stateful ? 1 : 0, 'The capability boundary must select classic exactly once')
@@ -44,6 +44,10 @@ export async function assertConsumerStartupClassic({ root, operation, output, ex
     const privateConfig = JSON.parse(await readFile(path.join(root, 'project.private.config.json'), 'utf8'))
     assert.equal(privateConfig.setting?.compileHotReLoad, false, 'Effective classic IDE mode must disable script hot reload')
   }
+}
+
+/** 原生宿主完成关闭后核验最终输出，避免跨轮次枚举及读取文件。 */
+export async function assertConsumerClassicOutput(root) {
   const outDir = path.join(root, 'dist')
   for (const file of [WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE, WEAPP_VITE_STATEFUL_HMR_PRELOAD_FILE, WEAPP_VITE_STATEFUL_HMR_UPDATE_FILE]) {
     await assert.rejects(access(path.join(outDir, file)), { code: 'ENOENT' }, `Classic output must remove ${file}`)
