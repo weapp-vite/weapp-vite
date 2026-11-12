@@ -4,6 +4,7 @@ import { createRequestGlobalsUsageCollector, FULL_REQUEST_GLOBAL_TARGETS } from 
 import { parseJsLike, traverse } from '../../../../../utils/babel'
 import { recordHmrProfileOperation } from '../../../../../utils/hmrProfile'
 import { getStaticStringLiteral } from '../rewrite/literals'
+import { createTopLevelCallCollector } from './bindings'
 import { createRequestGlobalsInstallerCollector } from './installer'
 
 interface StaticImportFact {
@@ -16,6 +17,7 @@ export interface RequestGlobalsContentFacts {
   readonly declaredIdentifiers: readonly string[]
   readonly staticImports: readonly StaticImportFact[]
   readonly requires: readonly string[]
+  readonly topLevelCalls: readonly { name: string, start: number, end: number, binding?: string }[]
   readonly usage: RequestGlobalsUsageAnalysis | undefined
 }
 
@@ -42,6 +44,7 @@ function mergeVisitors(...visitors: Visitor[]): Visitor {
 /** 一次解析和作用域遍历聚合请求全局安装所需的纯内容事实。 */
 function analyzeContent(code: string): RequestGlobalsContentFacts {
   const installer = createRequestGlobalsInstallerCollector()
+  const calls = createTopLevelCallCollector()
   const usage = createRequestGlobalsUsageCollector(code, FULL_REQUEST_GLOBAL_TARGETS, true)
   const declaredIdentifiers: string[] = []
   const exports: Array<readonly [string, string]> = []
@@ -88,7 +91,7 @@ function analyzeContent(code: string): RequestGlobalsContentFacts {
       }
     },
   }
-  traverse(parseJsLike(code) as any, mergeVisitors(installer.visitor, usage.source === code ? usage.visitor : {}, visitor))
+  traverse(parseJsLike(code) as any, mergeVisitors(installer.visitor, calls.visitor, usage.source === code ? usage.visitor : {}, visitor))
   const usageFacts = usage.source === code ? usage.analysis() : undefined
   return Object.freeze({
     installerName: installer.installerName(),
@@ -96,6 +99,7 @@ function analyzeContent(code: string): RequestGlobalsContentFacts {
     declaredIdentifiers: Object.freeze(declaredIdentifiers),
     staticImports: Object.freeze(staticImports),
     requires: Object.freeze(requires),
+    topLevelCalls: Object.freeze(calls.calls),
     usage: usageFacts && Object.freeze({
       ...usageFacts,
       importedTargets: Object.freeze(usageFacts.importedTargets),

@@ -1,4 +1,4 @@
-import type { NormalizedOutputOptions, RenderedChunk, RolldownPluginOption } from 'rolldown'
+import type { NormalizedOutputOptions, OutputOptions, RenderedChunk, RolldownPluginOption } from 'rolldown'
 import { applyOutputChunkTransform, resolveOutputChunkTransformCode, syncOutputChunkSourceMapAssets } from '../../utils/outputChunk'
 import { normalizeEncodedSourceMapLike } from '../../utils/sourcemap'
 
@@ -9,6 +9,7 @@ interface SwcTransformResult {
 
 interface SwcTransformOptions {
   filename?: string
+  minify?: boolean
   sourceMaps?: boolean | 'inline'
   module?: {
     type: string
@@ -49,7 +50,20 @@ export async function loadSwcTransformModule(importer: SwcModuleImporter = impor
   }
 }
 
-function resolveSourceMapOption(outputOptions: NormalizedOutputOptions) {
+type SwcOutputOptions = Pick<OutputOptions, 'minify' | 'sourcemap'>
+
+function resolveCompactOutput(minify: OutputOptions['minify']) {
+  if (!minify || minify === 'dce-only') {
+    return false
+  }
+  if (typeof minify === 'object') {
+    return minify.codegen !== false
+      && (typeof minify.codegen !== 'object' || minify.codegen.removeWhitespace !== false)
+  }
+  return true
+}
+
+function resolveSourceMapOption(outputOptions: SwcOutputOptions) {
   const sourcemap = outputOptions.sourcemap
   if (sourcemap === false || sourcemap === undefined) {
     return false as const
@@ -63,12 +77,14 @@ function resolveSourceMapOption(outputOptions: NormalizedOutputOptions) {
 export async function transformWithSwc(
   code: string,
   chunk: RenderedChunk,
-  outputOptions: NormalizedOutputOptions,
+  outputOptions: SwcOutputOptions,
   importer?: SwcModuleImporter,
 ) {
   const swc = await loadSwcTransformModule(importer)
   const result = await swc.transform(code, {
     filename: chunk.fileName,
+    // 只控制本轮打印的紧凑程度；压缩与变量重命名仍由原生 bundler 负责。
+    minify: resolveCompactOutput(outputOptions.minify),
     sourceMaps: resolveSourceMapOption(outputOptions),
     module: {
       type: 'commonjs',
@@ -95,11 +111,30 @@ export async function transformWithSwc(
 }
 
 export function createLegacyEs5Plugin(): RolldownPluginOption<any> {
+  const outputMinification = new WeakMap<NormalizedOutputOptions, boolean>()
   return {
     name: 'weapp-runtime:swc-es5-transform',
+    outputOptions: {
+      order: 'post',
+      handler(options) {
+        // 规范化选项会省略 codegen；用每个 output 独立的 hook 传递原始打印策略。
+        const compact = resolveCompactOutput(options.minify)
+        return {
+          ...options,
+          plugins: [options.plugins, {
+            name: 'weapp-runtime:swc-es5-output-options',
+            renderStart(normalizedOptions) {
+              outputMinification.set(normalizedOptions, compact)
+            },
+          }],
+        }
+      },
+    },
     generateBundle: {
       order: 'post',
       async handler(outputOptions, bundle) {
+        const minify = outputMinification.get(outputOptions) ?? resolveCompactOutput(outputOptions.minify)
+        outputMinification.delete(outputOptions)
         // 最终注入和 JS asset 同样属于降级范围；只转换最终代码，避免重复执行 SWC。
         for (const output of Object.values(bundle)) {
           if (output.type === 'chunk') {
@@ -107,7 +142,7 @@ export function createLegacyEs5Plugin(): RolldownPluginOption<any> {
             if (!code) {
               continue
             }
-            const result = await transformWithSwc(code, output, { ...outputOptions, sourcemap: Boolean(output.map) || outputOptions.sourcemap })
+            const result = await transformWithSwc(code, output, { minify, sourcemap: Boolean(output.map) || outputOptions.sourcemap })
             applyOutputChunkTransform(output, result.code, normalizeEncodedSourceMapLike(result.map))
           }
           else if (output.fileName.endsWith('.js')) {
@@ -115,7 +150,7 @@ export function createLegacyEs5Plugin(): RolldownPluginOption<any> {
             if (!code) {
               continue
             }
-            const result = await transformWithSwc(code, { fileName: output.fileName } as RenderedChunk, { ...outputOptions, sourcemap: false })
+            const result = await transformWithSwc(code, { fileName: output.fileName } as RenderedChunk, { minify, sourcemap: false })
             output.source = result.code
           }
         }
