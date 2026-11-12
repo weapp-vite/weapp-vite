@@ -104,6 +104,8 @@ export interface TransformContext {
   bindingManifest: WevuBindingManifestV1
   runtimeBindingManifest: WevuRuntimeBindingManifestMode
   platform: MiniProgramPlatform
+  /** Vue Teleport 映射配置，已在编译入口归一化为必填。 */
+  teleport: Required<TeleportCompileOptions>
   isPage?: boolean
   /**
    * Vue `<script setup>` props 解构重命名映射，key 为模板中使用的本地别名，value 为原始 prop 名。
@@ -201,11 +203,28 @@ export interface ForParseResult {
 export type TransformNode = (node: any, context: TransformContext) => string
 
 /**
+ * 不可映射 Teleport 时的诊断级别。
+ */
+export type TeleportUnsupportedMode = 'warn' | 'error'
+
+/**
+ * Vue Teleport 映射为 root-portal 的编译选项。
+ */
+export interface TeleportCompileOptions {
+  /** 不可映射时的诊断级别，默认 `warn`。 */
+  unsupported?: TeleportUnsupportedMode
+  /** 是否启用 Teleport → root-portal 映射，默认 `true`。 */
+  enabled?: boolean
+}
+
+/**
  * 模板编译选项。
  */
 export interface TemplateCompileOptions {
   platform?: MiniProgramPlatform
   isPage?: boolean
+  /** Vue Teleport 映射为小程序 root-portal 的编译配置。 */
+  teleport?: TeleportCompileOptions
   /**
    * Vue `<script setup>` props 解构重命名映射，key 为模板中使用的本地别名，value 为原始 prop 名。
    */

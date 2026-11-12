@@ -1063,6 +1063,13 @@
           "query": "",
           "scene": null,
           "launchMode": "default"
+        },
+        {
+          "name": "teleport root portal",
+          "pathName": "pages/teleport-root-portal/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
         }
       ]
     }

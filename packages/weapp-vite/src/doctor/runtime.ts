@@ -9,7 +9,7 @@ import { inspectDoctorCli, inspectDoctorListener, readDoctorHostVersions, readDo
 interface DoctorSession {
   currentPage: () => Promise<{ path: string } | null>
   toolInfo: () => Promise<unknown>
-  disconnect: () => Promise<void>
+  disconnect: () => void | Promise<void>
 }
 
 const stages: DoctorRuntimeStage[] = ['cli-executable', 'service-listener', 'login-query', 'login-state', 'project-connection', 'tool-info', 'host-version', 'sdk-version', 'current-page', 'session-release']

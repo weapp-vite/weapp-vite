@@ -47,6 +47,8 @@ export interface JsxCompileContext {
   dynamicIslands?: JsxDynamicIslandMetadata[]
   dynamicIslandSeed?: number
   dynamicIslandMode?: 'auto' | 'static' | 'dynamic'
+  /** 是否启用 Teleport → root-portal 映射，默认 `true`。 */
+  teleportEnabled: boolean
 }
 
 export interface JsxImportedComponent {

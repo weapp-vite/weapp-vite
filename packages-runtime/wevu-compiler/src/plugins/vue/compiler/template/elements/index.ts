@@ -7,6 +7,7 @@ import { transformComponentElement } from './tag-component'
 import { transformNormalElement } from './tag-normal'
 import { transformSlotElement } from './tag-slot'
 import { transformForElement, transformIfElement } from './tag-structural'
+import { isTeleportTag, transformTeleportElement } from './tag-teleport'
 
 export function transformElement(node: ElementNode, context: TransformContext, transformNode: TransformNode): string {
   const compatibleNode = omitUnsupportedDynamicDirectiveNames(node, context)
@@ -14,6 +15,10 @@ export function transformElement(node: ElementNode, context: TransformContext, t
 
   if (tag === 'template') {
     return transformTemplateElement(compatibleNode, context, transformNode)
+  }
+
+  if (isTeleportTag(tag)) {
+    return transformTeleportElement(compatibleNode, context, transformNode)
   }
 
   if (tag === 'slot') {

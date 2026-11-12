@@ -2,7 +2,7 @@ import { connectOpenedAutomator, launchAutomator, promptRetryKeypress, resolvePr
 import logger, { colors } from '../../logger'
 
 interface DisconnectableMiniProgram {
-  disconnect: () => Promise<void>
+  disconnect: () => void | Promise<void>
   screenshot?: (options?: { timeout?: number }) => Promise<unknown>
 }
 

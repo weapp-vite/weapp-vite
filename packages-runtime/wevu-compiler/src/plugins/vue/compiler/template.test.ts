@@ -3433,6 +3433,313 @@ describe('compileVueTemplateToWxml', () => {
     expect(transition.diagnostics.some(message => message.message.includes('<transition>'))).toBe(true)
   })
 
+  it('maps Teleport to root-portal on WeChat', () => {
+    const mapped = compileVueTemplateToWxml(
+      `<Teleport to="body"><view class="modal">A</view></Teleport>`,
+      '/project/src/pages/index/index.vue',
+    )
+    expect(mapped.code).toContain('<root-portal enable="{{true}}">')
+    expect(mapped.code).toContain('<view class="modal">A</view>')
+    expect(mapped.code).not.toContain('to="body"')
+    expect(mapped.code).not.toContain('Teleport')
+    expect(mapped.diagnostics).toHaveLength(0)
+
+    const lowercase = compileVueTemplateToWxml(
+      `<teleport to="#app" defer><view>B</view></teleport>`,
+      '/project/src/pages/index/index.vue',
+    )
+    expect(lowercase.code).toContain('<root-portal enable="{{true}}">')
+    expect(lowercase.code).not.toContain('defer')
+
+    for (const target of ['html', '#root', 'BODY']) {
+      const result = compileVueTemplateToWxml(
+        `<Teleport to="${target}"><view>C</view></Teleport>`,
+        '/project/src/pages/index/index.vue',
+      )
+      expect(result.code).toBe('<root-portal enable="{{true}}"><view>C</view></root-portal>')
+      expect(result.diagnostics).toHaveLength(0)
+    }
+  })
+
+  it('maps Teleport disabled to reversed root-portal enable', () => {
+    const staticDisabled = compileVueTemplateToWxml(
+      `<Teleport to="body" disabled><view>A</view></Teleport>`,
+      '/project/src/pages/index/index.vue',
+    )
+    expect(staticDisabled.code).toContain('<root-portal enable="{{false}}">')
+
+    const literalTrue = compileVueTemplateToWxml(
+      `<Teleport to="body" :disabled="true"><view>A</view></Teleport>`,
+      '/project/src/pages/index/index.vue',
+    )
+    expect(literalTrue.code).toContain('<root-portal enable="{{false}}">')
+
+    const literalFalse = compileVueTemplateToWxml(
+      `<Teleport to="body" :disabled="false"><view>A</view></Teleport>`,
+      '/project/src/pages/index/index.vue',
+    )
+    expect(literalFalse.code).toContain('<root-portal enable="{{true}}">')
+
+    const dynamic = compileVueTemplateToWxml(
+      `<Teleport to="body" :disabled="isInline"><view>A</view></Teleport>`,
+      '/project/src/pages/index/index.vue',
+    )
+    expect(dynamic.code).toContain('<root-portal enable="{{!(isInline)}}">')
+
+    const compound = compileVueTemplateToWxml(
+      `<Teleport to="body" :disabled="a && !b"><view>A</view></Teleport>`,
+      '/project/src/pages/index/index.vue',
+    )
+    expect(compound.code).toContain('enable="{{!(a && !b)}}"')
+  })
+
+  it('falls back to runtime binding for Teleport disabled expressions', () => {
+    const { code } = compileVueTemplateToWxml(
+      `<Teleport to="body" :disabled="check(value)"><view>A</view></Teleport>`,
+      '/project/src/pages/index/index.vue',
+    )
+    expect(code).toMatch(/enable="\{\{__wv_bind_\d+\}\}"/)
+  })
+
+  it('keeps structural directives when mapping Teleport', () => {
+    const conditional = compileVueTemplateToWxml(
+      `<Teleport v-if="show" to="body"><view>A</view></Teleport>`,
+      '/project/src/pages/index/index.vue',
+    )
+    expect(conditional.code).toContain(`${DEFAULT_TEMPLATE_PLATFORM.directives.ifAttr}="{{show}}"`)
+    expect(conditional.code).toContain('<root-portal enable="{{true}}">')
+
+    const loop = compileVueTemplateToWxml(
+      `<Teleport v-for="item in list" :key="item.id" to="body" :disabled="item.hidden"><view>{{ item.name }}</view></Teleport>`,
+      '/project/src/pages/index/index.vue',
+    )
+    expect(loop.code).toContain(`${DEFAULT_TEMPLATE_PLATFORM.directives.forAttr}="{{list}}"`)
+    expect(loop.code).toContain('enable="{{!(item.hidden)}}"')
+    expect(loop.code).toContain('<root-portal')
+  })
+
+  it('degrades Teleport when target or platform is unsupported', () => {
+    const anchorTarget = compileVueTemplateToWxml(
+      `<Teleport to="#inner-target"><view>A</view></Teleport>`,
+      '/project/src/pages/index/index.vue',
+    )
+    expect(anchorTarget.code).toBe('<view>A</view>')
+    const anchorDiagnostic = anchorTarget.diagnostics.find(message => message.message.includes('#inner-target'))
+    expect(anchorDiagnostic).toMatchObject({
+      code: 'WV1007',
+      filename: '/project/src/pages/index/index.vue',
+      severity: 'warning',
+      source: 'template',
+    })
+    expect(anchorDiagnostic?.loc).toBeDefined()
+
+    const dynamicTarget = compileVueTemplateToWxml(
+      `<Teleport :to="target"><view>A</view></Teleport>`,
+      '/project/src/pages/index/index.vue',
+    )
+    expect(dynamicTarget.code).toBe('<view>A</view>')
+    expect(dynamicTarget.diagnostics.some(message => message.message.includes('动态 :to'))).toBe(true)
+
+    const missingTarget = compileVueTemplateToWxml(
+      `<Teleport><view>A</view></Teleport>`,
+      '/project/src/pages/index/index.vue',
+    )
+    expect(missingTarget.code).toBe('<view>A</view>')
+    expect(missingTarget.diagnostics.some(message => message.message.includes('缺少必需的 to'))).toBe(true)
+
+    const conditionalDegrade = compileVueTemplateToWxml(
+      `<Teleport v-if="show" to="#inner-target"><view>A</view></Teleport>`,
+      '/project/src/pages/index/index.vue',
+    )
+    expect(conditionalDegrade.code).toContain(`${DEFAULT_TEMPLATE_PLATFORM.directives.ifAttr}="{{show}}"`)
+    expect(conditionalDegrade.code).toContain('<view>A</view>')
+    expect(conditionalDegrade.code).not.toContain('root-portal')
+
+    const alipay = compileVueTemplateToWxml(
+      `<Teleport to="body"><view>A</view></Teleport>`,
+      '/project/src/pages/index/index.vue',
+      { platform: getMiniProgramTemplatePlatform('alipay') },
+    )
+    expect(alipay.code).toBe('<view>A</view>')
+    expect(alipay.diagnostics.some(message => message.message.includes('仅在微信平台'))).toBe(true)
+
+    const jd = compileVueTemplateToWxml(
+      `<Teleport to="body"><view>A</view></Teleport>`,
+      '/project/src/pages/index/index.vue',
+      { platform: getMiniProgramTemplatePlatform('jd') },
+    )
+    expect(jd.code).toBe('<view>A</view>')
+    expect(jd.diagnostics.some(message => message.message.includes('仅在微信平台'))).toBe(true)
+
+    for (const platform of ['tt', 'swan'] as const) {
+      const result = compileVueTemplateToWxml(
+        `<Teleport to="body"><view>A</view></Teleport>`,
+        '/project/src/pages/index/index.vue',
+        { platform: getMiniProgramTemplatePlatform(platform) },
+      )
+      expect(result.code).toBe('<view>A</view>')
+      expect(result.diagnostics.some(message => message.message.includes('仅在微信平台'))).toBe(true)
+    }
+  })
+
+  it('matches Teleport tags case-insensitively and reports unsupported errors', () => {
+    const upperCase = compileVueTemplateToWxml(
+      `<TELEPORT to="body"><view>A</view></TELEPORT>`,
+      '/project/src/pages/index/index.vue',
+    )
+    expect(upperCase.code).toBe('<root-portal enable="{{true}}"><view>A</view></root-portal>')
+    expect(upperCase.diagnostics).toHaveLength(0)
+
+    const mixedCase = compileVueTemplateToWxml(
+      `<tElEpOrT to="#app"><view>B</view></tElEpOrT>`,
+      '/project/src/pages/index/index.vue',
+    )
+    expect(mixedCase.code).toBe('<root-portal enable="{{true}}"><view>B</view></root-portal>')
+    expect(mixedCase.diagnostics).toHaveLength(0)
+
+    const unsupportedError = compileVueTemplateToWxml(
+      `<Teleport to="#inner"><view>A</view></Teleport>`,
+      '/project/src/pages/index/index.vue',
+      { teleport: { unsupported: 'error' } },
+    )
+    expect(unsupportedError.code).toBe('<view>A</view>')
+    expect(unsupportedError.diagnostics[0]).toMatchObject({
+      code: 'WV1007',
+      severity: 'error',
+      source: 'template',
+    })
+    expect(unsupportedError.diagnostics[0]?.loc).toBeDefined()
+  })
+
+  it('keeps degraded Teleport children inside the outer root-portal', () => {
+    const { code, diagnostics } = compileVueTemplateToWxml(
+      `<Teleport to="body"><view class="outer"><Teleport to="#inner"><view>inner</view></Teleport></view></Teleport>`,
+      '/project/src/pages/index/index.vue',
+    )
+    expect(code).toContain('<root-portal enable="{{true}}">')
+    expect(code).toContain('<view class="outer"><view>inner</view></view>')
+    expect(diagnostics.some(message => message.message.includes('#inner'))).toBe(true)
+  })
+
+  it('degrades Teleport spread v-bind with a dedicated diagnostic', () => {
+    const objectLiteral = compileVueTemplateToWxml(
+      `<Teleport v-bind="{ to: 'body' }"><view>A</view></Teleport>`,
+      '/project/src/pages/index/index.vue',
+    )
+    expect(objectLiteral.code).toBe('<view>A</view>')
+    expect(objectLiteral.diagnostics).toHaveLength(1)
+    expect(objectLiteral.diagnostics[0]?.message).toContain('v-bind')
+    expect(objectLiteral.diagnostics[0]?.message).not.toContain('缺少必需的 to')
+
+    const spreadAttrs = compileVueTemplateToWxml(
+      `<Teleport v-bind="attrs"><view>A</view></Teleport>`,
+      '/project/src/pages/index/index.vue',
+    )
+    expect(spreadAttrs.code).toBe('<view>A</view>')
+    expect(spreadAttrs.diagnostics[0]?.message).toContain('v-bind')
+    expect(spreadAttrs.diagnostics[0]?.message).not.toContain('缺少必需的 to')
+  })
+
+  it('emits stable Teleport diagnostic codes for every degrade reason', () => {
+    const cases: Array<[string, string]> = [
+      ['<Teleport><view>A</view></Teleport>', 'WV1004'],
+      ['<Teleport :to="target"><view>A</view></Teleport>', 'WV1005'],
+      ['<Teleport v-bind="attrs"><view>A</view></Teleport>', 'WV1006'],
+      ['<Teleport to=""><view>A</view></Teleport>', 'WV1007'],
+      ['<Teleport to="#inner"><view>A</view></Teleport>', 'WV1007'],
+    ]
+    for (const [template, code] of cases) {
+      const { diagnostics } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
+      expect(diagnostics[0]?.code).toBe(code)
+      expect(diagnostics[0]?.severity).toBe('warning')
+    }
+
+    const alipay = compileVueTemplateToWxml(
+      `<Teleport to="body"><view>A</view></Teleport>`,
+      '/project/src/pages/index/index.vue',
+      { platform: getMiniProgramTemplatePlatform('alipay') },
+    )
+    expect(alipay.diagnostics[0]?.code).toBe('WV1008')
+  })
+
+  it('warns when Teleport class/style lands on the root-portal host', () => {
+    const withClass = compileVueTemplateToWxml(
+      `<Teleport to="body" class="overlay" :style="{ zIndex: 2 }"><view>A</view></Teleport>`,
+      '/project/src/pages/index/index.vue',
+    )
+    expect(withClass.code).toContain('class="overlay"')
+    expect(withClass.diagnostics.find(message => message.code === 'WV1009')).toMatchObject({
+      severity: 'warning',
+      source: 'template',
+    })
+
+    const withoutClass = compileVueTemplateToWxml(
+      `<Teleport to="body"><view>A</view></Teleport>`,
+      '/project/src/pages/index/index.vue',
+    )
+    expect(withoutClass.diagnostics).toHaveLength(0)
+  })
+
+  it('disables Teleport mapping globally and per file', () => {
+    const globalOff = compileVueTemplateToWxml(
+      `<Teleport to="body"><view>A</view></Teleport>`,
+      '/project/src/pages/index/index.vue',
+      { teleport: { enabled: false } },
+    )
+    expect(globalOff.code).toBe('<view>A</view>')
+    expect(globalOff.diagnostics).toHaveLength(0)
+    expect(globalOff.bindingManifest.features.rootPortal).toBeUndefined()
+
+    const fileOff = compileVueTemplateToWxml(
+      `<!-- weapp-vite:disable-teleport --><Teleport to="body"><view>A</view></Teleport>`,
+      '/project/src/pages/index/index.vue',
+    )
+    expect(fileOff.code).toBe('<view>A</view>')
+    expect(fileOff.diagnostics).toHaveLength(0)
+    expect(fileOff.bindingManifest.features.rootPortal).toBeUndefined()
+  })
+
+  it('maps Teleport edge cases at the root node and with passthrough attributes', () => {
+    const root = compileVueTemplateToWxml(
+      `<Teleport to="body"><view>A</view></Teleport>`,
+      '/project/src/pages/index/index.vue',
+    )
+    expect(root.code).toBe('<root-portal enable="{{true}}"><view>A</view></root-portal>')
+
+    const padded = compileVueTemplateToWxml(
+      `<Teleport to=" body "><view>B</view></Teleport>`,
+      '/project/src/pages/index/index.vue',
+    )
+    expect(padded.code).toBe('<root-portal enable="{{true}}"><view>B</view></root-portal>')
+
+    const deferDisabled = compileVueTemplateToWxml(
+      `<Teleport to="body" defer disabled><view>C</view></Teleport>`,
+      '/project/src/pages/index/index.vue',
+    )
+    expect(deferDisabled.code).toContain('<root-portal enable="{{false}}">')
+    expect(deferDisabled.code).not.toContain('defer')
+
+    const externalClass = compileVueTemplateToWxml(
+      `<Teleport to="body" external-class="teleport-external"><view>D</view></Teleport>`,
+      '/project/src/pages/index/index.vue',
+    )
+    expect(externalClass.code).toContain('external-class="teleport-external"')
+  })
+
+  it('marks root-portal usage in the runtime binding manifest', () => {
+    const mapped = compileVueTemplateToWxml(
+      `<Teleport to="body"><view>{{ msg }}</view></Teleport>`,
+      '/project/src/pages/index/index.vue',
+    )
+    expect(mapped.bindingManifest.features.rootPortal).toBe(true)
+
+    const degraded = compileVueTemplateToWxml(
+      `<Teleport to="#inner"><view>{{ msg }}</view></Teleport>`,
+      '/project/src/pages/index/index.vue',
+    )
+    expect(degraded.bindingManifest.features.rootPortal).toBeUndefined()
+  })
+
   it('normalizes class/style object-array bindings and warns on spread syntax', () => {
     const template = `
 <view

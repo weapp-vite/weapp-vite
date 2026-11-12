@@ -71,7 +71,7 @@ export const wevuElementSeeds: WevuApiSeed[] = [
   element('<Transition>', 'vue-different', '仅渲染子节点并警告，不提供 Vue 过渡运行时。', 'element-transition', 'built-in-components'),
   element('<TransitionGroup>', 'unsupported', '当前不提供 Vue 列表过渡运行时。', 'element-transition-group', 'built-in-components'),
   element('<KeepAlive>', 'vue-different', '输出标记容器，不提供完整实例缓存语义。', 'element-keep-alive', 'built-in-components'),
-  element('<Teleport>', 'unsupported', '小程序模板不支持 Vue Teleport 目标挂载。', 'element-teleport', 'built-in-components'),
+  element('<Teleport>', 'vue-different', '仅微信顶层目标映射为 root-portal，其余原位渲染并提示，可关闭。', 'element-teleport', 'built-in-components'),
   element('<Suspense>', 'unsupported', '当前不提供 Vue Suspense 边界。', 'element-suspense', 'built-in-components'),
   {
     name: 'key',

@@ -1,12 +1,14 @@
 /* eslint-disable ts/no-use-before-define -- JSX 渲染器存在递归与互相调用的编译 helper，按阅读顺序组织更稳定。 */
 import type {
   Expression,
+  JSXAttribute,
   JSXElement,
   JSXExpressionContainer,
   JSXFragment,
   JSXSpreadChild,
   JSXText,
 } from '@weapp-vite/ast/babelTypes'
+import type { TeleportTargetInput } from '../../vue/compiler/template/teleport'
 import type { JsxCompileContext, JsxDynamicIslandReason } from './types'
 import {
   WEVU_JSX_ISLAND_DATA_KEY,
@@ -17,6 +19,7 @@ import * as t from '@weapp-vite/ast/babelTypes'
 import { isBuiltinComponent } from '../../../auto-import-components/builtin'
 import { traverse } from '../../../utils/babel'
 import { hyphenate } from '../../../utils/text'
+import { resolveTeleportDecision } from '../../vue/compiler/template/teleport'
 import {
   escapeText,
   normalizeInterpolationExpression,
@@ -32,6 +35,8 @@ import { recordJsxBinding } from './bindingManifest'
 
 type JSXChild = JSXText | JSXExpressionContainer | JSXSpreadChild | JSXElement | JSXFragment
 const DYNAMIC_ISLAND_TEMPLATE_DEPTH = 8
+const ROOT_PORTAL_TAG = 'root-portal'
+const TELEPORT_REMOVED_ATTRIBUTES = new Set(['to', 'defer', 'disabled', 'key'])
 
 function resolveDynamicIslandTemplateName(depth: number) {
   return depth === 0
@@ -416,10 +421,157 @@ function compileJsxFragment(node: JSXFragment, context: JsxCompileContext): stri
   return compileJsxChildren(node.children, context)
 }
 
+function collectJsxDirectives(node: JSXElement): Map<string, Expression> {
+  const directives = new Map<string, Expression>()
+  for (const attribute of node.openingElement.attributes) {
+    if (!t.isJSXAttribute(attribute)) {
+      continue
+    }
+    const name = t.isJSXIdentifier(attribute.name)
+      ? attribute.name.name
+      : t.isJSXNamespacedName(attribute.name)
+        ? attribute.name.namespace.name
+        : undefined
+    if (!name?.startsWith('v-')) {
+      continue
+    }
+    const expression = readJsxAttributeExpression(attribute.value)
+    if (expression) {
+      directives.set(name, expression)
+    }
+  }
+  return directives
+}
+
+function findJsxAttribute(node: JSXElement, name: string): JSXAttribute | undefined {
+  return node.openingElement.attributes.find(
+    (attribute): attribute is JSXAttribute => t.isJSXAttribute(attribute)
+      && t.isJSXIdentifier(attribute.name)
+      && attribute.name.name === name,
+  )
+}
+
+/**
+ * 读取 JSX Teleport 的 to 输入：静态字符串可直接映射，其余形式一律降级。
+ */
+function resolveTeleportTarget(node: JSXElement): TeleportTargetInput {
+  const attribute = findJsxAttribute(node, 'to')
+  if (!attribute) {
+    return { kind: 'missing' }
+  }
+  const expression = readJsxAttributeExpression(attribute.value)
+  if (expression && t.isStringLiteral(expression)) {
+    return { kind: 'static', value: expression.value }
+  }
+  return { kind: 'dynamic' }
+}
+
+/**
+ * JSX `disabled` 与 root-portal `enable` 语义相反，需要整体取反。
+ */
+function resolveTeleportEnable(node: JSXElement, context: JsxCompileContext): string {
+  const attribute = findJsxAttribute(node, 'disabled')
+  if (!attribute) {
+    return renderMustache('true', context)
+  }
+  const expression = readJsxAttributeExpression(attribute.value)
+  if (!expression || (t.isBooleanLiteral(expression) && expression.value)) {
+    return renderMustache('false', context)
+  }
+  if (t.isBooleanLiteral(expression)) {
+    return renderMustache('true', context)
+  }
+  recordJsxBinding(context, expression, 'attribute')
+  return renderMustache(`!(${normalizeInterpolationExpression(expression, context)})`, context)
+}
+
+function resolveTeleportPassthroughAttributes(node: JSXElement): JSXAttribute[] {
+  const attributes: JSXAttribute[] = []
+  for (const attribute of node.openingElement.attributes) {
+    if (!t.isJSXAttribute(attribute) || !t.isJSXIdentifier(attribute.name)) {
+      continue
+    }
+    const name = attribute.name.name
+    if (name.startsWith('v-') || TELEPORT_REMOVED_ATTRIBUTES.has(name)) {
+      continue
+    }
+    attributes.push(attribute)
+  }
+  return attributes
+}
+
+function hasTeleportClassOrStyle(attributes: JSXAttribute[]): boolean {
+  return attributes.some(attribute => t.isJSXIdentifier(attribute.name)
+    && (attribute.name.name === 'class' || attribute.name.name === 'className' || attribute.name.name === 'style'))
+}
+
+function compileJsxTeleport(node: JSXElement, context: JsxCompileContext): string {
+  if (!context.teleportEnabled) {
+    return compileJsxChildren(node.children, context)
+  }
+
+  const decision = resolveTeleportDecision({
+    supportsRootPortal: context.platform.supportsRootPortal === true,
+    to: resolveTeleportTarget(node),
+    spread: node.openingElement.attributes.some(attribute => t.isJSXSpreadAttribute(attribute)),
+  })
+  if (decision.kind === 'degrade') {
+    context.warnings.push(decision.message)
+    return compileJsxChildren(node.children, context)
+  }
+
+  const directives = collectJsxDirectives(node)
+  const dynamicDirective = ['v-for', 'v-slots', 'v-model', 'v-models'].find(name => directives.has(name))
+  if (dynamicDirective) {
+    if (dynamicDirective === 'v-model' || dynamicDirective === 'v-models') {
+      context.bindingManifest.features.model = true
+    }
+    context.warnings.push(`JSX ${dynamicDirective} 无法直接映射当前静态 WXML，已生成 dynamic island。`)
+    return registerDynamicIsland(node as unknown as Expression, context, 'closure')
+  }
+
+  // 运行时据此在基础库过低时提示 root-portal / enable 能力缺口，只标记 Teleport 映射结果。
+  context.bindingManifest.features.rootPortal = true
+
+  const passthroughAttributes = resolveTeleportPassthroughAttributes(node)
+  if (hasTeleportClassOrStyle(passthroughAttributes)) {
+    context.warnings.push('<Teleport> 的 class/style 会落在 root-portal 宿主节点上，可能无法按预期作用于内部弹层，建议把样式写在内层节点。')
+  }
+
+  const attrs = [
+    `enable="${resolveTeleportEnable(node, context)}"`,
+    ...compileJsxAttributes(passthroughAttributes, context, { isComponent: false, tagName: ROOT_PORTAL_TAG }),
+  ]
+  const showExpression = directives.get('v-show')
+  if (showExpression) {
+    recordJsxBinding(context, showExpression, 'style')
+    attrs.push(`hidden="${renderMustache(`!(${normalizeInterpolationExpression(showExpression, context)})`, context)}"`)
+  }
+  const attrsSegment = attrs.length ? ` ${attrs.join(' ')}` : ''
+  const content = compileJsxChildren(node.children, context)
+  const element = content
+    ? `<${ROOT_PORTAL_TAG}${attrsSegment}>${content}</${ROOT_PORTAL_TAG}>`
+    : `<${ROOT_PORTAL_TAG}${attrsSegment} />`
+  const ifExpression = directives.get('v-if')
+  if (ifExpression) {
+    recordJsxBinding(context, ifExpression, 'if')
+    return context.platform.wrapIf(
+      normalizeInterpolationExpression(ifExpression, context),
+      element,
+      expression => renderMustache(expression, context),
+    )
+  }
+  return element
+}
+
 function compileJsxElement(node: JSXElement, context: JsxCompileContext): string {
   if (t.isJSXMemberExpression(node.openingElement.name)) {
     context.warnings.push('JSX 成员标签（如 <Foo.Bar />）无法映射为小程序 WXML 组件标签，已生成 dynamic island。')
     return registerDynamicIsland(node as unknown as Expression, context, 'dynamic-component')
+  }
+  const rawTag = toJsxTagName(node.openingElement.name, context)
+  if (rawTag === 'Teleport') {
+    return compileJsxTeleport(node, context)
   }
   const dynamicSpread = node.openingElement.attributes.find((attr) => {
     if (!t.isJSXSpreadAttribute(attr)) {
@@ -437,13 +589,8 @@ function compileJsxElement(node: JSXElement, context: JsxCompileContext): string
     context.warnings.push('动态 JSX spread attributes 无法映射为静态 WXML，已生成 dynamic island。')
     return registerDynamicIsland(node as unknown as Expression, context, 'dynamic-spread')
   }
-  const rawTag = toJsxTagName(node.openingElement.name, context)
   if (rawTag === 'component') {
     context.warnings.push('JSX 动态 component 无法映射为静态 WXML，已生成 dynamic island。')
-    return registerDynamicIsland(node as unknown as Expression, context, 'dynamic-component')
-  }
-  if (rawTag === 'Teleport') {
-    context.warnings.push('小程序不支持 JSX <Teleport>，已生成 dynamic island。')
     return registerDynamicIsland(node as unknown as Expression, context, 'dynamic-component')
   }
   if (rawTag === 'Transition') {
@@ -483,24 +630,7 @@ function compileJsxElement(node: JSXElement, context: JsxCompileContext): string
     context.warnings.push('动态 JSX class/style 数组或对象需要运行时合并，已生成 dynamic island。')
     return registerDynamicIsland(node as unknown as Expression, context, 'closure')
   }
-  const directives = new Map<string, Expression>()
-  for (const attribute of node.openingElement.attributes) {
-    if (!t.isJSXAttribute(attribute)) {
-      continue
-    }
-    const name = t.isJSXIdentifier(attribute.name)
-      ? attribute.name.name
-      : t.isJSXNamespacedName(attribute.name)
-        ? attribute.name.namespace.name
-        : undefined
-    if (!name?.startsWith('v-')) {
-      continue
-    }
-    const expression = readJsxAttributeExpression(attribute.value)
-    if (expression) {
-      directives.set(name, expression)
-    }
-  }
+  const directives = collectJsxDirectives(node)
   if (directives.has('v-for') || directives.has('v-slots') || directives.has('v-model') || directives.has('v-models')) {
     const directive = ['v-for', 'v-slots', 'v-model', 'v-models'].find(name => directives.has(name))!
     if (directive === 'v-model' || directive === 'v-models') {

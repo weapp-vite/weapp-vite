@@ -96,7 +96,7 @@
 
 #### `<Teleport>` {#element-teleport}
 
-**不支持。** 小程序模板没有 Vue Teleport 的任意目标挂载模型。
+**兼容有说明。** 仅微信平台在 `to` 为顶层目标（`body`、`html`、`#app`、`#root`）时映射为原生 `root-portal`，`disabled` 取反输出 `enable`，要求基础库 `>= 2.26.1`；模板与 JSX 共用同一套规则。动态 `:to`、`v-bind` 对象展开、缺少/空 `to` 或非顶层目标会原位渲染子节点并给出编译提示；`class` / `style` 透传会提示落在宿主节点。可通过 `weapp.vue.template.teleport.enabled: false` 或文件内 `weapp-vite:disable-teleport` 注释关闭映射。
 
 #### `<Suspense>` {#element-suspense}
 

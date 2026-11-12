@@ -30,6 +30,15 @@ export function createJsxCompileContext(options?: CompileVueFileOptions): JsxCom
     dynamicIslands: [],
     dynamicIslandSeed: 0,
     dynamicIslandMode: 'auto',
+    teleportEnabled: options?.template?.teleport?.enabled ?? true,
+  }
+}
+
+const TELEPORT_DISABLE_COMMENT_RE = /weapp-vite:disable-teleport/
+
+function applyTeleportFileDirective(context: JsxCompileContext, source: string) {
+  if (TELEPORT_DISABLE_COMMENT_RE.test(source)) {
+    context.teleportEnabled = false
   }
 }
 
@@ -64,6 +73,7 @@ export function compileJsxTemplate(source: string, filename: string, options?: C
   context.bindingManifest.sourceFile = options?.bindingManifestSourceFile ?? filename
   context.moduleResolver = createJsxModuleResolver(context.warnings, options?.jsx?.readFile)
   collectImportedBindings(ast, context)
+  applyTeleportFileDirective(context, source)
 
   const { renderExpression } = analysis.analyzeJsxAst(ast, context)
   if (!renderExpression) {
@@ -117,6 +127,7 @@ export function compileJsxTemplateAndCollectComponents(source: string, filename:
   context.bindingManifest.sourceFile = options?.bindingManifestSourceFile ?? filename
   context.moduleResolver = createJsxModuleResolver(context.warnings, options?.jsx?.readFile)
   collectImportedBindings(ast, context)
+  applyTeleportFileDirective(context, source)
 
   const { renderExpression, autoComponentContext } = analysis.analyzeJsxAst(ast, context)
 

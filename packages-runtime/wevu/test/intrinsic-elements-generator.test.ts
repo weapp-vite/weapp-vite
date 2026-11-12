@@ -4,8 +4,9 @@ import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 interface ComponentCatalogEntry {
-  attrs?: Array<{ name: string, jsxName?: string }>
+  attrs?: Array<{ name: string, jsxName?: string, defaultValue?: string, since?: string }>
   name: string
+  since?: string
 }
 
 const COMMON_TAGS = [
@@ -95,5 +96,23 @@ describe('intrinsic element generator', () => {
     expect(button).not.toMatch(/\bbind[a-z]/)
     expect(map).not.toMatch(/\b(?:div|span|img|a):/)
     expect(map).not.toContain('[name: string]')
+  })
+
+  it('keeps the weapp root-portal catalog and declarations aligned with host docs', async () => {
+    const weappCatalog = await readCatalog('components.weapp.json')
+    const rootPortal = weappCatalog.find(component => component.name === 'root-portal')
+    expect(rootPortal?.since).toBe('2.25.2')
+    expect(rootPortal?.attrs).toEqual([
+      expect.objectContaining({ defaultValue: 'true', name: 'enable', since: '2.26.1' }),
+      expect.objectContaining({ name: 'externalClass', since: '3.9.2' }),
+    ])
+
+    const declaration = await readFile(
+      path.resolve(packageRoot, '../../@weapp-core/types/src/weappIntrinsicElements/elements/root-portal.ts'),
+      'utf8',
+    )
+    expect(declaration).toContain('enable?: boolean')
+    expect(declaration).toContain('externalClass?: string')
+    expect(declaration).toContain('root-portal.html')
   })
 })

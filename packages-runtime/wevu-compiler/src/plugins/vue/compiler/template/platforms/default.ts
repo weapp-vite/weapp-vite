@@ -59,6 +59,7 @@ const directives = createMiniProgramDirectiveAttrs('wx')
  */
 export const defaultMiniProgramPlatform: MiniProgramPlatform = {
   name: 'wechat',
+  supportsRootPortal: true,
   directives,
 
   wrapIf: (exp, content, renderMustache) => `<block ${directives.ifAttr}="${renderMustache(exp)}">${content}</block>`,

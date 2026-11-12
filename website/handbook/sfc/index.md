@@ -188,7 +188,7 @@ const products = ref([
 
 > 这个东西最终会落到模板、JSON、事件还是样式产物上？
 
-如果会，就要考虑小程序的限制。比如你想用 `<teleport>`，这在小程序里是没有的，因为 WXML 没有这个概念。
+如果会，就要考虑小程序的限制。比如 `<Teleport to="body">` 在微信小程序里会映射成原生 `root-portal`；只有顶层目标（`body`、`html`、`#app`、`#root`）可以映射，动态 `:to` 或非顶层目标会原位渲染子节点并给出编译提示。模板与 JSX 的规则一致；需要关闭映射时，可设置 `weapp.vue.template.teleport.enabled: false`，或在文件内加入 `weapp-vite:disable-teleport` 注释。
 
 ## 接下来
 
