@@ -88,7 +88,6 @@ export default {
         beforePublish: ['check:weapp-core-constants-release-version'],
         afterPublish: [
           { script: 'release:vscode-marketplace' },
-          { script: 'release:sync-npmmirror', continueOnError: true, idempotent: true },
         ],
       },
     },

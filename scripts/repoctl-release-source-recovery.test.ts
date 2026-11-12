@@ -19,6 +19,8 @@ it('finishes an interrupted optional mirror without republishing or consuming ne
     hooks: { [marketplaceHook]: 'complete', [mirrorHook]: 'ignored' },
   })
   expect(await fixture.output()).toMatch(/release-record=[a-f0-9]{64}/)
+  const summary = JSON.parse(await readFile(path.join(fixture.cwd, 'pnpm-publish-summary.json'), 'utf8')) as { publishedPackages: { name: string, version: string }[] }
+  expect(summary.publishedPackages).toEqual([releasedPackage])
   expect(await fixture.intent()).toBe(fixture.originalIntent)
 }), 30_000)
 

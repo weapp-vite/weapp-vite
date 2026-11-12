@@ -94,7 +94,7 @@ it('keeps the repoctl-managed release workflow aligned with the current contract
   const preflight = steps.find(step => step.name === 'Release preflight')
   const verify = steps.find(step => step.id === 'release-verify')
   assert.equal(preflight?.id, 'release-preflight')
-  assert.equal(preflight?.run, 'pnpm check:weapp-core-constants-changeset --release')
+  assert.equal(preflight?.run, 'bash .github/scripts/release-stage.sh preflight')
   assert.equal(preflight?.if, githubExpression('steps.release-plan.outputs.run == \'true\''))
   assert.ok(steps.indexOf(preflight!) < steps.indexOf(verify!))
   assert.equal(preflight?.env, undefined)
@@ -145,26 +145,22 @@ it('keeps the repoctl-managed release workflow aligned with the current contract
   assert.equal(repoctlConfig.commands.upgrade.noOverwrite, true)
 })
 
-it('shares a 90-minute release budget while leaving ten minutes for setup and diagnostics', async () => {
+it('gives quality and publication separate 45-minute shared budgets within a 120-minute job', async () => {
   const { job, steps } = await readReleaseWorkflow()
-  const deadline = steps.find(step => step.name === 'Start shared release deadline')
-  const firstStage = steps.find(step => step.id === 'release-plan')
-  const restore = steps.find(step => step.id === 'release-cache')
-  assert.equal(job?.['timeout-minutes'], 100)
-  assert.equal(job?.env?.REPOCTL_RELEASE_BUDGET_SECONDS, 5400)
-  assert.match(deadline?.run ?? '', /REPOCTL_RELEASE_DEADLINE_EPOCH=.*date \+%s.*REPOCTL_RELEASE_BUDGET_SECONDS/)
-  assert.match(deadline?.run ?? '', />> "\$GITHUB_ENV"/)
-  assert.ok(steps.indexOf(restore!) < steps.indexOf(deadline!))
-  assert.equal(steps.indexOf(deadline!) + 1, steps.indexOf(firstStage!))
-  assert.equal(steps.filter(step => step.run?.includes('REPOCTL_RELEASE_DEADLINE_EPOCH=')).length, 1)
-})
-
-it('bounds the optional mirror hook so native failure handling can persist completion', async () => {
-  const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
-  const manifest = JSON.parse(await fs.readFile(path.join(rootDir, 'package.json'), 'utf8')) as { scripts: Record<string, string> }
-  assert.equal(manifest.scripts['release:sync-npmmirror'], 'repo release sync-npmmirror --published --timeout 60')
-  const config = await createJiti(import.meta.url).import<typeof import('../repoctl.config').default>('../repoctl.config.ts', { default: true })
-  assert.ok(config.commands.release.hooks.afterPublish.some(hook => hook.script === 'release:sync-npmmirror' && hook.continueOnError === true && hook.idempotent === true))
+  const quality = steps.find(step => step.name === 'Start quality deadline')!
+  const publication = steps.find(step => step.name === 'Start publication deadline')!
+  assert.equal(job?.['timeout-minutes'], 120)
+  assert.equal(job?.env?.REPOCTL_RELEASE_BUDGET_SECONDS, 2700)
+  for (const deadline of [quality, publication]) {
+    assert.match(deadline.run ?? '', /REPOCTL_RELEASE_DEADLINE_EPOCH=.*date \+%s.*REPOCTL_RELEASE_BUDGET_SECONDS/)
+    assert.match(deadline.run ?? '', />> "\$GITHUB_ENV"/)
+  }
+  assert.equal(quality.if, undefined)
+  assert.equal(publication.if, githubExpression('steps.release-plan.outputs.run == \'true\''))
+  assert.equal(steps.indexOf(quality) + 1, steps.findIndex(step => step.id === 'release-plan'))
+  assert.equal(steps.indexOf(publication) - 1, steps.findIndex(step => step.id === 'release-verify'))
+  assert.equal(steps.indexOf(publication) + 1, steps.findIndex(step => step.id === 'release-prepare'))
+  assert.equal(steps.filter(step => step.run?.includes('REPOCTL_RELEASE_DEADLINE_EPOCH=')).length, 2)
 })
 
 it('keeps release caches optional and scoped to a frozen toolchain and lockfile identity', async () => {

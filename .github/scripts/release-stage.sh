@@ -4,7 +4,7 @@ set -euo pipefail
 # 仅供 Ubuntu Release workflow 使用；GNU timeout 管理本阶段整个子进程组。
 release_stage="${1:?Release stage is required}"
 case "$release_stage" in
-  plan|verify|prepare|upload|confirm|finalize) ;;
+  plan|preflight|verify|prepare|upload|confirm|finalize) ;;
   *) echo "Unknown release stage: $release_stage" >&2; exit 2 ;;
 esac
 
@@ -24,13 +24,6 @@ if ((release_remaining <= release_kill_grace)); then
   exit 124
 fi
 
-# 上传具有外部副作用；预留上传 10 分钟、确认上限 15 分钟及收尾 5 分钟。
-# 恢复模式仍通过原生检查点判定已上传版本，不能跳过身份及质量检查。
-if [[ "$release_stage" == upload ]] && ((release_remaining < 1800 + release_kill_grace)); then
-  echo "Insufficient release budget before upload: reserve 1800 seconds for upload, confirmation and finalization" >&2
-  exit 124
-fi
-
 # 终止宽限也计入共享预算，不能给每个阶段重新分配完整时限。
 exec "$release_timeout" --signal=TERM --kill-after="${release_kill_grace}s" \
   "$((release_remaining - release_kill_grace))s" \
@@ -38,6 +31,10 @@ exec "$release_timeout" --signal=TERM --kill-after="${release_kill_grace}s" \
     set -euo pipefail
     # 主命令可能先响应 TERM 退出；监督进程须保留到整个进程组被 KILL。
     trap '\''trap "" TERM; while :; do sleep 1; done'\'' TERM
-    pnpm exec repo release ci --stage "$1" &
+    if [[ "$1" == preflight ]]; then
+      pnpm check:weapp-core-constants-changeset --release &
+    else
+      pnpm exec repo release ci --stage "$1" &
+    fi
     wait "$!"
   ' release-stage "$release_stage"

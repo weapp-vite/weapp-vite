@@ -49,9 +49,20 @@ async function workspaceSource(region: string, provider = 'npm') {
         }
       }
     }
+    const functionSources: string[] = []
+    const workspaceModule = markers.findIndex(marker => marker[1] === 'src/commands/release/consumer/workspace.ts')
+    if (workspaceModule >= 0) {
+      const moduleStart = markers[workspaceModule]!.index!
+      const moduleEnd = markers[workspaceModule + 1]?.index ?? source.length
+      for (const statement of parsed.statements) {
+        if (ts.isFunctionDeclaration(statement) && statement.name && statement.getStart(parsed) >= moduleStart && statement.getEnd() <= moduleEnd) {
+          functionSources.push(statement.getText(parsed))
+        }
+      }
+    }
     const visit = (node: ts.Node) => {
       if (node.getStart(parsed) >= start && node.getEnd() <= end && ts.isCallExpression(node) && node.arguments.length >= 2 && node.arguments[0]!.getText(parsed).includes('"pnpm-workspace.yaml"')) {
-        expressions.push({ source: node.arguments[1]!.getText(parsed), globals })
+        expressions.push({ source: `(() => { ${functionSources.join('\n')} return (${node.arguments[1]!.getText(parsed)}); })()`, globals })
       }
       ts.forEachChild(node, visit)
     }

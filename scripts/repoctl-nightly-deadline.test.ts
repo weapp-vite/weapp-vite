@@ -117,6 +117,12 @@ async function createNightlyFixture(options: FixtureOptions = {}) {
     if (url.pathname.endsWith('/dist-tags')) {
       return Response.json({ latest: '1.0.0' })
     }
+    if (decodeURIComponent(url.pathname).replace(/^\//u, '') === '@nightly-fixture/library') {
+      return Response.json({
+        name: '@nightly-fixture/library',
+        versions: { '1.0.0': { name: '@nightly-fixture/library', version: '1.0.0' } },
+      })
+    }
     throw new Error(`Unexpected registry request: ${url.pathname}`)
   })
 

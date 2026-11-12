@@ -1,12 +1,33 @@
 # repoctl 发布流程
 
-仓库使用正式版 `repoctl@6.5.4`，根 `package.json` 与锁文件保持精确版本。正式版、预发布版、单包 bootstrap、npm nightly 和 OIDC 审计共用 `Release`（`release.yml`），继续使用现有 npm Trusted Publisher 绑定。PR snapshot 使用官方独立构建与发布工作流，只需要内置 GitHub token 和 npm OIDC，无须 GitHub App 或发布 PAT。
+仓库使用正式版 `repoctl@6.6.0`，根 `package.json` 与锁文件保持精确版本。正式版、预发布版、单包 bootstrap、npm nightly 和 OIDC 审计共用 `Release`（`release.yml`），继续使用现有 npm Trusted Publisher 绑定。PR snapshot 使用官方独立构建与发布工作流，只需要内置 GitHub token 和 npm OIDC，无须 GitHub App 或发布 PAT。
 
 ## 正式版与预发布版
 
-`main`、`alpha`、`beta`、`rc`、`next` 的推送继续进入六个原生阶段：plan、verify、prepare、upload、confirm、finalize。六阶段共享 90 分钟，job 总上限为 100 分钟；安装、缓存与诊断归档另计。上传前至少剩余 30 分钟及终止宽限，用于上传、最长 15 分钟的 registry 确认和收尾；不足时在上传前失败。保留全部质量脚本、版本联动及 Marketplace hook。非关键 npmmirror hook 使用原生 `--timeout 60`，失败后由 `continueOnError` 保存忽略状态并继续生成完成记录。
+`main`、`alpha`、`beta`、`rc`、`next` 的推送继续进入六个原生阶段：plan、verify、prepare、upload、confirm、finalize。plan、仓库 preflight、verify 共用 45 分钟；verify 成功后仅重置一次截止时间，prepare、upload、confirm、finalize 另共用完整 45 分钟。后续阶段不会逐阶段续期，GNU timeout 的 TERM/KILL 宽限也计入预算。job 上限为 120 分钟，其余时间留给安装、缓存、归档与清理。全部质量脚本、版本联动、进程组终止和 Marketplace hook 保留。
 
-2026-11-11 的 46 包批次完成上传、确认和 metadata 后，npmmirror 尚未返回，旧的 50 分钟共享预算耗尽，导致 finalize 被终止。后续存在新 intent 的自动运行按设计拒绝继续。恢复时先核对原运行的进度 artifact、远端 checkpoint、精确 registry 版本及 provenance，再从 `main` 调度 `mode=publish` 和原 `source-sha`；原生流程仍执行质量检查，跳过已确认上传及已完成 hooks，保留新 intent。不要修改原版本、changelog、ledger，也不要以重跑的绿色状态替代原失败证据。
+npmmirror 已从 `afterPublish` 移出。只有 finalize 生成真实 completion record 后，独立 `mirror` job 才下载本次 run/attempt 的 `pnpm-publish-summary.json`，通过 `REPO_RELEASE_PUBLISH_SUMMARY` 同步精确包版本。原生同步共享 240 秒，步骤上限 5 分钟；镜像失败保留逐包警告、task ID 和重试命令，job 失败也不阻塞发布记账、npm 队列或文档部署。需要重试时下载该运行的 `npm-publish-progress-<run>-<attempt>` artifact，再执行：
+
+```sh
+REPO_RELEASE_PUBLISH_SUMMARY=<下载的精确摘要> pnpm release:sync-npmmirror
+```
+
+不要用 `--all`、当前 workspace 版本或重新上传代替镜像重试。
+
+2026-11-11 的 [46 包批次](https://github.com/weapp-vite/weapp-vite/actions/runs/43068926251) 已完成上传、确认、metadata 和 Marketplace，但 npmmirror 尚未返回时耗尽旧的 50 分钟共享预算，finalize 被终止。后续含新 intent 的自动运行按保护规则拒绝继续。恢复顺序是：
+
+1. 核对原运行 artifact、远端 checkpoint、registry 中的精确版本与 provenance；已确认包不得再次上传。
+2. 从当前 `main` 调度 `mode=publish`，`source-sha` 固定为原始提交。工具使用当前正式版本与阶段预算，在隔离的原始源码上继续原生质量检查、确认与 finalize；已完成的 hook 不重复执行，当前 main 的新 changeset 不会被历史恢复消费。
+3. 回读远端 checkpoint、completion record、registry 与文档部署，再对当前 main 运行 `mode=auto`，允许新 intent 正常准备版本。
+
+```sh
+gh workflow run release.yml --ref main -f mode=publish -f source-sha=9462f9ed995eb81a4287b0d01fccc1d6d467d35c
+gh workflow run release.yml --ref main -f mode=auto
+```
+
+历史恢复仍使用冻结来源的配置；若来源中有旧镜像 hook，它由新的发布阶段预算和原生幂等 checkpoint 管理，不手改账本移除。finalize 中断时按同一来源继续，不修改原版本、changelog、ledger，也不把重跑绿色状态当作原失败已消失。只有 hook 结果无法自动确认、且人工核实外部副作用后，才使用相应显式 acknowledgement；已完成的 Marketplace 无须重复确认。
+
+原批次已由 [恢复运行 43185180343](https://github.com/weapp-vite/weapp-vite/actions/runs/43185180343) 完成。回读远端 checkpoint：npm、46 条 metadata、Marketplace、镜像及整体状态均为 complete；completion record 为 `1592e2af789b38e876226f9271bfd138fc8a23b98213e35875bed67b913d6f9b`，来源仍为 `9462f9ed995eb81a4287b0d01fccc1d6d467d35c`。恢复 upload 阶段实际上传数量为 0，confirm 为 46，stable website 文档部署也已成功；原始失败记录保留。随后 [自动发布 43186462013](https://github.com/weapp-vite/weapp-vite/actions/runs/43186462013) 成功准备了包含新 changeset 的 [Release PR #1324](https://github.com/weapp-vite/weapp-vite/pull/1324)，证明旧批次保护已正常解除。
 
 版本准备使用 `GITHUB_TOKEN` 创建或更新 Release PR。当前 GitHub 对该令牌产生的 `pull_request` opened、synchronize、reopened 事件会创建需要批准的运行；维护者先在 GitHub 批准自动化运行，再按仓库原有规则批准当前提交的 `pr-ci-approval` Environment。每次提交都重新核对与审批，不通过手动诊断入口绕过门禁。
 
@@ -102,7 +123,7 @@ CI Policy 在既有审批后检查公开包与 changeset 的完整对应，测�
 
 正式执行由 repoctl 原生 nightly 管线完成：
 
-1. 冻结默认分支提交与运行身份，检查完整包计划的 OIDC 权限。
+1. 冻结默认分支提交与运行身份，检查完整包计划的 OIDC 权限。6.6.0 起默认采用 `<基础版本>-dev.<UTC 日期>.<同日序号>`；版本在质量检查前冻结，同一来源的部分上传按原身份恢复，dist-tag 仍为 `snapshot-nightly`。
 2. 执行现有质量脚本，禁用质量缓存，隔离 archive、安装、构建和打包。
 3. 发布到 `snapshot-nightly`，确认 registry 可见性与完整性。
 4. 使用独立 consumer 安装完整批次，验证内部依赖与消费结果。
@@ -132,11 +153,11 @@ pnpm add wevu@snapshot-nightly
 
 运行保留 `nightly-report.json`、`snapshot-report.json`、`consumer-report.json` 与 tarball 14 天。附件按原生输出目录的固定层级匹配，避免递归扫描隔离源码和 consumer 的依赖树。上传确认成功但 consumer 失败时，整次运行仍失败；先检查报告，修正问题后手动运行新的 nightly。不能把定时去重后的跳过当成 consumer 已通过。
 
-pnpm 12 的安装器会追加新发布依赖的 `minimumReleaseAgeExclude`，配置必须可原位修改。repoctl 6.5.4 的 nightly 和 prepared snapshot consumer 原先用多行 JSON 写入 `pnpm-workspace.yaml`，虽能读取，但 pnpm 写入时会拒绝多行 flow collection。本仓库通过受管依赖补丁将这两处改为 YAML block collection，保留精确版本例外和隔离设置；`scripts/repoctl-consumer-workspace.test.ts` 从实际安装包读取生成表达式，再调用真实 pnpm 项目配置写入器验证。升级上游后须先确认两条消费路径均已覆盖，再删除补丁。
+pnpm 12.18 安装新发布依赖时会追加精确 `minimumReleaseAgeExclude`，配置必须可原位修改。旧 repoctl 的 nightly 和 prepared snapshot consumer 用多行 JSON 写入 `pnpm-workspace.yaml`，虽能读取，但 pnpm 追加配置时报 `ERR_PNPM_WORKSPACE_MANIFEST_WRITER_UNSUPPORTED_INLINE_BLOCK`。上游修复 [#1170](https://github.com/icelib/repoctl/pull/1170) 统一使用内部 YAML block 生成器，保留本轮精确版本例外及默认安装安全策略；两条路径均用真实 pnpm 12.18、本地 registry 覆盖旧格式失败、新格式成功和外部 peer 例外追加。修复的 patch changeset 随已有的 [6.6.0 版本批次 #1168](https://github.com/icelib/repoctl/pull/1168) 发布，[正式运行 43203606792](https://github.com/icelib/repoctl/actions/runs/43203606792) 已完成 registry 确认、发布记账及文档部署。本仓库升级正式工具后移除临时 `@icebreakers__monorepo@6.5.4.patch`，继续保留已安装包的消费契约回归。
 
 ## PR snapshot
 
-repoctl 6.2.0 已通过 [#1114](https://github.com/icelib/repoctl/pull/1114) 和 [#1116](https://github.com/icelib/repoctl/pull/1116) 提供 prepared snapshot、自动 changeset、正式 Release PR 校验和 hooks 公共入口。本仓库使用官方成对工作流 `.github/workflows/repoctl-snapshot-build.yml` 与 `.github/workflows/repoctl-snapshot-publish.yml`，固定 `repoctl@6.4.0`、pnpm 12.16.1，并复用 `pr-ci-approval`。
+repoctl 6.2.0 已通过 [#1114](https://github.com/icelib/repoctl/pull/1114) 和 [#1116](https://github.com/icelib/repoctl/pull/1116) 提供 prepared snapshot、自动 changeset、正式 Release PR 校验和 hooks 公共入口。本仓库使用官方成对工作流 `.github/workflows/repoctl-snapshot-build.yml` 与 `.github/workflows/repoctl-snapshot-publish.yml`，固定 `repoctl@6.6.0`、pnpm 12.18.0，并复用 `pr-ci-approval`。
 
 启用前，将工作流合入默认分支，并为所有公开包新增允许仓库 `weapp-vite/weapp-vite`、工作流 `repoctl-snapshot-publish.yml` 的 npm Trusted Publisher，保留 `release.yml` 的现有连接。publisher job 没有 Environment，npm 对应字段应留空；`pr-ci-approval` 保护的是 builder freeze。npm 当前允许每包最多 10 个 trusted publisher；新增配置的首次成功发布时限以 npm 页面为准。当前迁移只准备仓库配置，没有修改远端 npm 设置或执行真实发布。
 
