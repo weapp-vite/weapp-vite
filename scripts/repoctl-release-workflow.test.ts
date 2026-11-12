@@ -145,18 +145,26 @@ it('keeps the repoctl-managed release workflow aligned with the current contract
   assert.equal(repoctlConfig.commands.upgrade.noOverwrite, true)
 })
 
-it('shares the original 50-minute release budget across all six stages', async () => {
+it('shares a 90-minute release budget while leaving ten minutes for setup and diagnostics', async () => {
   const { job, steps } = await readReleaseWorkflow()
   const deadline = steps.find(step => step.name === 'Start shared release deadline')
   const firstStage = steps.find(step => step.id === 'release-plan')
   const restore = steps.find(step => step.id === 'release-cache')
-  assert.equal(job?.['timeout-minutes'], 60)
-  assert.equal(job?.env?.REPOCTL_RELEASE_BUDGET_SECONDS, 3000)
+  assert.equal(job?.['timeout-minutes'], 100)
+  assert.equal(job?.env?.REPOCTL_RELEASE_BUDGET_SECONDS, 5400)
   assert.match(deadline?.run ?? '', /REPOCTL_RELEASE_DEADLINE_EPOCH=.*date \+%s.*REPOCTL_RELEASE_BUDGET_SECONDS/)
   assert.match(deadline?.run ?? '', />> "\$GITHUB_ENV"/)
   assert.ok(steps.indexOf(restore!) < steps.indexOf(deadline!))
   assert.equal(steps.indexOf(deadline!) + 1, steps.indexOf(firstStage!))
   assert.equal(steps.filter(step => step.run?.includes('REPOCTL_RELEASE_DEADLINE_EPOCH=')).length, 1)
+})
+
+it('bounds the optional mirror hook so native failure handling can persist completion', async () => {
+  const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const manifest = JSON.parse(await fs.readFile(path.join(rootDir, 'package.json'), 'utf8')) as { scripts: Record<string, string> }
+  assert.equal(manifest.scripts['release:sync-npmmirror'], 'repo release sync-npmmirror --published --timeout 60')
+  const config = await createJiti(import.meta.url).import<typeof import('../repoctl.config').default>('../repoctl.config.ts', { default: true })
+  assert.ok(config.commands.release.hooks.afterPublish.some(hook => hook.script === 'release:sync-npmmirror' && hook.continueOnError === true && hook.idempotent === true))
 })
 
 it('keeps release caches optional and scoped to a frozen toolchain and lockfile identity', async () => {

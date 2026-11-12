@@ -209,3 +209,4 @@ patchedDependencies:
   chokidar@6.0.0: patches/chokidar@6.0.0.patch
   '@vitejs/plugin-vue@6.0.10': patches/@vitejs__plugin-vue@6.0.10.patch
   vite@8.3.5: patches/vite@8.3.5.patch
+  '@icebreakers/monorepo@6.5.4': patches/@icebreakers__monorepo@6.5.4.patch

@@ -200,6 +200,24 @@ describe.skipIf(process.platform === 'win32')('Ubuntu release stage deadline', (
     expect((await fixture.run('confirm', 1000, '1100', '124')).exitCode).toBe(124)
   })
 
+  it.each([1799, 1804])('refuses upload before side effects when only %s seconds remain', async (remaining) => {
+    const fixture = await createDeadlineFixture()
+    const result = fixture.run('upload', 1000, String(1000 + remaining))
+    expect(result.exitCode).toBe(124)
+    expect(result.stderr).toContain('reserve 1800 seconds for upload, confirmation and finalization')
+    await expect(fs.stat(fixture.trace)).rejects.toMatchObject({ code: 'ENOENT' })
+  })
+
+  it('allows upload with its full reserve and keeps subsequent stages on the same deadline', async () => {
+    const fixture = await createDeadlineFixture()
+    expect(fixture.run('upload', 1000, '2805').exitCode).toBe(0)
+    expect((await readTimeoutArgs(fixture.trace))[2]).toBe('1800s')
+    expect(fixture.run('confirm', 1600, '2805').exitCode).toBe(0)
+    expect((await readTimeoutArgs(fixture.trace))[2]).toBe('1200s')
+    expect(fixture.run('finalize', 2500, '2805').exitCode).toBe(0)
+    expect((await readTimeoutArgs(fixture.trace))[2]).toBe('300s')
+  })
+
   it.each([0, 17])('preserves the real release command exit status %s through the supervisor', async (exitCode) => {
     const fixture = await createDeadlineFixture()
     await fs.writeFile(path.join(fixture.directory, 'pnpm'), '#!/bin/sh\nexit "$FIXTURE_EXIT_CODE"\n', { mode: 0o755 })

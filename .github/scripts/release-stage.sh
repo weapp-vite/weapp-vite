@@ -20,11 +20,18 @@ release_timeout="$(resolve_release_timeout)"
 release_remaining=$((release_deadline - $(date +%s)))
 release_kill_grace=5
 if ((release_remaining <= release_kill_grace)); then
-  echo "Shared 50-minute release budget exhausted before $release_stage" >&2
+  echo "Shared release budget exhausted before $release_stage" >&2
   exit 124
 fi
 
-# 终止宽限也计入共享预算，不能给每个阶段重新分配 50 分钟。
+# 上传具有外部副作用；预留上传 10 分钟、确认上限 15 分钟及收尾 5 分钟。
+# 恢复模式仍通过原生检查点判定已上传版本，不能跳过身份及质量检查。
+if [[ "$release_stage" == upload ]] && ((release_remaining < 1800 + release_kill_grace)); then
+  echo "Insufficient release budget before upload: reserve 1800 seconds for upload, confirmation and finalization" >&2
+  exit 124
+fi
+
+# 终止宽限也计入共享预算，不能给每个阶段重新分配完整时限。
 exec "$release_timeout" --signal=TERM --kill-after="${release_kill_grace}s" \
   "$((release_remaining - release_kill_grace))s" \
   bash -c '

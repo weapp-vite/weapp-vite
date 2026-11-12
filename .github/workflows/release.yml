@@ -82,8 +82,9 @@ jobs:
       docs-sites: ${{ steps.release-finalize.outputs.docs-sites }}
     name: Release
     runs-on: ubuntu-latest
-    # 六个发布阶段共享 50 分钟，为安装、缓存、归档和清理保留其余预算。
-    timeout-minutes: 60
+    # 六阶段共享 90 分钟；全量质量检查后仍须留足上传、确认及收尾预算。
+    # 安装、缓存、归档和清理另留 10 分钟。
+    timeout-minutes: 100
     env:
       GIT_AUTHOR_NAME: github-actions[bot]
       GIT_AUTHOR_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
@@ -95,7 +96,7 @@ jobs:
       REPO_RELEASE_DRY_RUN: ${{ inputs.dry-run }}
       REPO_RELEASE_RECOVERY_SOURCE_SHA: ${{ inputs.source-sha }}
       REPO_RELEASE_ACKNOWLEDGE_HOOKS: ${{ inputs.acknowledge-marketplace-hook && 'release:vscode-marketplace' || '' }}
-      REPOCTL_RELEASE_BUDGET_SECONDS: 3000
+      REPOCTL_RELEASE_BUDGET_SECONDS: 5400
       TURBO_CACHE: local:rw
     steps:
       - name: Checkout Repo

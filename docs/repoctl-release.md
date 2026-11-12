@@ -1,10 +1,12 @@
 # repoctl 发布流程
 
-仓库使用正式版 `repoctl@6.4.0`，根 `package.json` 与锁文件保持精确版本。正式版、预发布版、单包 bootstrap、npm nightly 和 OIDC 审计共用 `Release`（`release.yml`），继续使用现有 npm Trusted Publisher 绑定。PR snapshot 使用官方独立构建与发布工作流，只需要内置 GitHub token 和 npm OIDC，无须 GitHub App 或发布 PAT。
+仓库使用正式版 `repoctl@6.5.4`，根 `package.json` 与锁文件保持精确版本。正式版、预发布版、单包 bootstrap、npm nightly 和 OIDC 审计共用 `Release`（`release.yml`），继续使用现有 npm Trusted Publisher 绑定。PR snapshot 使用官方独立构建与发布工作流，只需要内置 GitHub token 和 npm OIDC，无须 GitHub App 或发布 PAT。
 
 ## 正式版与预发布版
 
-`main`、`alpha`、`beta`、`rc`、`next` 的推送继续进入六个原生阶段：plan、verify、prepare、upload、confirm、finalize。阶段共享 50 分钟预算，安装、缓存与诊断归档另计；保留现有质量脚本、版本联动、VS Code Marketplace 和 npmmirror hooks。
+`main`、`alpha`、`beta`、`rc`、`next` 的推送继续进入六个原生阶段：plan、verify、prepare、upload、confirm、finalize。六阶段共享 90 分钟，job 总上限为 100 分钟；安装、缓存与诊断归档另计。上传前至少剩余 30 分钟及终止宽限，用于上传、最长 15 分钟的 registry 确认和收尾；不足时在上传前失败。保留全部质量脚本、版本联动及 Marketplace hook。非关键 npmmirror hook 使用原生 `--timeout 60`，失败后由 `continueOnError` 保存忽略状态并继续生成完成记录。
+
+2026-11-11 的 46 包批次完成上传、确认和 metadata 后，npmmirror 尚未返回，旧的 50 分钟共享预算耗尽，导致 finalize 被终止。后续存在新 intent 的自动运行按设计拒绝继续。恢复时先核对原运行的进度 artifact、远端 checkpoint、精确 registry 版本及 provenance，再从 `main` 调度 `mode=publish` 和原 `source-sha`；原生流程仍执行质量检查，跳过已确认上传及已完成 hooks，保留新 intent。不要修改原版本、changelog、ledger，也不要以重跑的绿色状态替代原失败证据。
 
 版本准备使用 `GITHUB_TOKEN` 创建或更新 Release PR。当前 GitHub 对该令牌产生的 `pull_request` opened、synchronize、reopened 事件会创建需要批准的运行；维护者先在 GitHub 批准自动化运行，再按仓库原有规则批准当前提交的 `pr-ci-approval` Environment。每次提交都重新核对与审批，不通过手动诊断入口绕过门禁。
 
@@ -129,6 +131,8 @@ pnpm add wevu@snapshot-nightly
 带内部 peer 依赖的组合以成功运行 Summary 中的完整批次安装命令为准。需要固定复现时使用报告中的精确 snapshot 版本，避免浮动 tag 后续更新。
 
 运行保留 `nightly-report.json`、`snapshot-report.json`、`consumer-report.json` 与 tarball 14 天。附件按原生输出目录的固定层级匹配，避免递归扫描隔离源码和 consumer 的依赖树。上传确认成功但 consumer 失败时，整次运行仍失败；先检查报告，修正问题后手动运行新的 nightly。不能把定时去重后的跳过当成 consumer 已通过。
+
+pnpm 12 的安装器会追加新发布依赖的 `minimumReleaseAgeExclude`，配置必须可原位修改。repoctl 6.5.4 的 nightly 和 prepared snapshot consumer 原先用多行 JSON 写入 `pnpm-workspace.yaml`，虽能读取，但 pnpm 写入时会拒绝多行 flow collection。本仓库通过受管依赖补丁将这两处改为 YAML block collection，保留精确版本例外和隔离设置；`scripts/repoctl-consumer-workspace.test.ts` 从实际安装包读取生成表达式，再调用真实 pnpm 项目配置写入器验证。升级上游后须先确认两条消费路径均已覆盖，再删除补丁。
 
 ## PR snapshot
 
