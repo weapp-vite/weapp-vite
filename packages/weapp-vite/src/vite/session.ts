@@ -31,6 +31,7 @@ export class WeappBuildSession extends CompilerSession {
   private hostClosing?: Promise<void>
   private terminalClosing?: Promise<void>
   private inputRegistration?: ReturnType<typeof createViteInputRegistration>
+  private onHostControlReady?: () => void
   isWeb = false
   statefulController?: ReturnType<typeof createStatefulHmrHostPlugins>
 
@@ -222,8 +223,9 @@ export class WeappBuildSession extends CompilerSession {
     let started = false
     let successful = false
     let reportedReady = false
+    let controlReady = !this.statefulController
     const reportReady = () => {
-      if (started && successful && !reportedReady && !this.isClosing) {
+      if (started && successful && controlReady && !reportedReady && !this.isClosing) {
         if (this.statefulController && this.hmrRuntimeSession.phase === 'switching') {
           return
         }
@@ -236,6 +238,13 @@ export class WeappBuildSession extends CompilerSession {
     }
     if (this.statefulController) {
       this.onClose(attachStatefulHmrHost(this.context, { server, controller: this.statefulController }))
+      this.onHostControlReady = () => {
+        controlReady = true
+        reportReady()
+      }
+      this.onClose(() => {
+        this.onHostControlReady = undefined
+      })
     }
     else {
       this.onClose(linkClassicSettlement(this.context, server))
@@ -259,6 +268,8 @@ export class WeappBuildSession extends CompilerSession {
 
   async refreshHostControl() {
     await getStatefulHmrHost(this.context)?.refreshControl?.()
+    // 原生 listen 后才有最终端口；该轮写出完成前不能宣布控制文件可供消费者读取。
+    this.onHostControlReady?.()
   }
 
   buildDependencies() {
