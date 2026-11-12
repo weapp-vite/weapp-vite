@@ -106,6 +106,8 @@ export interface TransformContext {
   platform: MiniProgramPlatform
   /** Vue Teleport 映射配置，已在编译入口归一化为必填。 */
   teleport: Required<TeleportCompileOptions>
+  /** 当前文件是否已输出 root-portal 基础库要求提示，避免同一文件重复告警。 */
+  teleportBaseLibraryHinted?: boolean
   isPage?: boolean
   /**
    * Vue `<script setup>` props 解构重命名映射，key 为模板中使用的本地别名，value 为原始 prop 名。

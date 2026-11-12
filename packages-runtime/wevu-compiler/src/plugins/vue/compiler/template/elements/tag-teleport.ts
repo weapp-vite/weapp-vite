@@ -3,6 +3,7 @@ import type { CompilerDiagnosticCode } from '../../../../../types/diagnostics'
 import type { TeleportDegradeReason, TeleportTargetInput } from '../teleport'
 import type { TransformContext, TransformNode } from '../types'
 import { ConstantTypes, NodeTypes } from '@vue/compiler-core'
+import { ROOT_PORTAL_ENABLE_MIN_SDK_VERSION, ROOT_PORTAL_MIN_SDK_VERSION } from '@weapp-core/constants'
 import { warn } from '../diagnostics'
 import { renderMustache } from '../mustache'
 import { supportsRootPortal } from '../platforms'
@@ -241,8 +242,17 @@ export function transformTeleportElement(
     context,
   )
 
-  // 运行时据此在基础库过低时提示 root-portal / enable 能力缺口，只标记 Teleport 映射结果。
-  context.bindingManifest.features.rootPortal = true
+  // 编译期只能确认映射结果，无法获知运行时基础库，因此提示一次版本门槛。
+  if (!context.teleportBaseLibraryHinted) {
+    context.teleportBaseLibraryHinted = true
+    warn(
+      context,
+      `<Teleport> 已映射为 root-portal，需要微信基础库 ≥ ${ROOT_PORTAL_MIN_SDK_VERSION}，其中 enable 属性需要 ≥ ${ROOT_PORTAL_ENABLE_MIN_SDK_VERSION}。`,
+      node.loc,
+      'template',
+      { code: 'WV1010' },
+    )
+  }
 
   const mappedNode = mapTeleportNode(node, enableProp)
   const { type } = isStructuralDirective(mappedNode)

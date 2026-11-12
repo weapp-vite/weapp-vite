@@ -362,8 +362,7 @@ describe('compileJsx render helpers', () => {
     )
 
     expect(rendered).toBe('<root-portal enable="{{true}}"><view>A</view></root-portal>')
-    expect(context.bindingManifest.features.rootPortal).toBe(true)
-    expect(context.warnings).toHaveLength(0)
+    expect(context.warnings.some(warning => warning.includes('基础库'))).toBe(true)
   })
 
   it('inverts JSX Teleport disabled semantics for root-portal enable', () => {
@@ -490,6 +489,5 @@ describe('compileJsx render helpers', () => {
 
     expect(rendered).toBe('<view>A</view>')
     expect(context.warnings).toHaveLength(0)
-    expect(context.bindingManifest.features.rootPortal).toBeUndefined()
   })
 })

@@ -8,6 +8,7 @@ export type CompilerDiagnosticCode
     | 'WV1007'
     | 'WV1008'
     | 'WV1009'
+    | 'WV1010'
     | 'WV2001'
     | 'WV2002'
     | 'WV2003'

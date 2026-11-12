@@ -11,6 +11,8 @@ import type {
 import type { TeleportTargetInput } from '../../vue/compiler/template/teleport'
 import type { JsxCompileContext, JsxDynamicIslandReason } from './types'
 import {
+  ROOT_PORTAL_ENABLE_MIN_SDK_VERSION,
+  ROOT_PORTAL_MIN_SDK_VERSION,
   WEVU_JSX_ISLAND_DATA_KEY,
   WEVU_JSX_ISLAND_HANDLER,
   WEVU_JSX_ISLAND_TEMPLATE_NAME,
@@ -530,8 +532,11 @@ function compileJsxTeleport(node: JSXElement, context: JsxCompileContext): strin
     return registerDynamicIsland(node as unknown as Expression, context, 'closure')
   }
 
-  // 运行时据此在基础库过低时提示 root-portal / enable 能力缺口，只标记 Teleport 映射结果。
-  context.bindingManifest.features.rootPortal = true
+  // 编译期只能确认映射结果，无法获知运行时基础库，因此提示一次版本门槛。
+  if (!context.teleportBaseLibraryHinted) {
+    context.teleportBaseLibraryHinted = true
+    context.warnings.push(`<Teleport> 已映射为 root-portal，需要微信基础库 ≥ ${ROOT_PORTAL_MIN_SDK_VERSION}，其中 enable 属性需要 ≥ ${ROOT_PORTAL_ENABLE_MIN_SDK_VERSION}。`)
+  }
 
   const passthroughAttributes = resolveTeleportPassthroughAttributes(node)
   if (hasTeleportClassOrStyle(passthroughAttributes)) {

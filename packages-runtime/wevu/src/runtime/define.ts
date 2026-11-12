@@ -34,7 +34,6 @@ import { resolveVueComponentOptions } from './define/options'
 import { applyOptionsApiProvide, resolveOptionsApiInjections } from './define/optionsApi'
 import { normalizeProps } from './define/props'
 import { applySetupResult, mergeSetupResultDescriptors } from './define/setupResult'
-import { warnRootPortalBaseLibraryRequirement } from './features/rootPortal'
 import { runSetupFunction } from './register'
 
 const componentLifecycleDefinitions = new WeakMap<object, Record<string, any>>()
@@ -250,7 +249,6 @@ function createComponentDefinition(
     ...mpOptions
   } = resolvedOptions as typeof resolvedOptions & { [WEVU_SCOPED_SLOT_OWNER_REQUIRED_KEY]?: boolean }
   const bindingManifest = resolveBindingManifest(rawBindingManifest)
-  warnRootPortalBaseLibraryRequirement(bindingManifest)
 
   const rawFunctionPropPaths = (mpOptions as any)[WEVU_FUNCTION_PROP_PATHS_KEY]
   const functionPropPaths: string[] = Array.isArray(rawFunctionPropPaths)

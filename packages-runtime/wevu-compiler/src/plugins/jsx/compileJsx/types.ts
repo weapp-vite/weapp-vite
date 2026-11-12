@@ -49,6 +49,8 @@ export interface JsxCompileContext {
   dynamicIslandMode?: 'auto' | 'static' | 'dynamic'
   /** 是否启用 Teleport → root-portal 映射，默认 `true`。 */
   teleportEnabled: boolean
+  /** 当前文件是否已输出 root-portal 基础库要求提示，避免同一文件重复告警。 */
+  teleportBaseLibraryHinted?: boolean
 }
 
 export interface JsxImportedComponent {

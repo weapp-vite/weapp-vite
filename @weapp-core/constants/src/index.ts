@@ -312,7 +312,5 @@ export interface WevuRuntimeBindingManifestV1 {
   bindings: WevuRuntimeBindingRecordV1[]
   features?: {
     scopedSlots?: true
-    /** 模板中有 Vue Teleport 映射为 root-portal，运行时据此校验基础库版本。 */
-    rootPortal?: true
   }
 }

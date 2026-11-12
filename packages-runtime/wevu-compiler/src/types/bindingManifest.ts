@@ -65,8 +65,6 @@ export interface WevuBindingManifestFeaturesV1 {
   layout?: true
   functionProps?: true
   jsxIslands?: true
-  /** 存在 Vue Teleport 到 root-portal 的映射。 */
-  rootPortal?: true
 }
 
 /**

@@ -28,9 +28,6 @@ export function createRuntimeBindingManifest(
   if (manifest.features.scopedSlots) {
     features.scopedSlots = true
   }
-  if (manifest.features.rootPortal) {
-    features.rootPortal = true
-  }
 
   return {
     version: 1,

@@ -3442,7 +3442,8 @@ describe('compileVueTemplateToWxml', () => {
     expect(mapped.code).toContain('<view class="modal">A</view>')
     expect(mapped.code).not.toContain('to="body"')
     expect(mapped.code).not.toContain('Teleport')
-    expect(mapped.diagnostics).toHaveLength(0)
+    expect(mapped.diagnostics).toHaveLength(1)
+    expect(mapped.diagnostics[0]).toMatchObject({ code: 'WV1010', severity: 'warning', source: 'template' })
 
     const lowercase = compileVueTemplateToWxml(
       `<teleport to="#app" defer><view>B</view></teleport>`,
@@ -3457,7 +3458,7 @@ describe('compileVueTemplateToWxml', () => {
         '/project/src/pages/index/index.vue',
       )
       expect(result.code).toBe('<root-portal enable="{{true}}"><view>C</view></root-portal>')
-      expect(result.diagnostics).toHaveLength(0)
+      expect(result.diagnostics[0]?.code).toBe('WV1010')
     }
   })
 
@@ -3588,14 +3589,14 @@ describe('compileVueTemplateToWxml', () => {
       '/project/src/pages/index/index.vue',
     )
     expect(upperCase.code).toBe('<root-portal enable="{{true}}"><view>A</view></root-portal>')
-    expect(upperCase.diagnostics).toHaveLength(0)
+    expect(upperCase.diagnostics[0]?.code).toBe('WV1010')
 
     const mixedCase = compileVueTemplateToWxml(
       `<tElEpOrT to="#app"><view>B</view></tElEpOrT>`,
       '/project/src/pages/index/index.vue',
     )
     expect(mixedCase.code).toBe('<root-portal enable="{{true}}"><view>B</view></root-portal>')
-    expect(mixedCase.diagnostics).toHaveLength(0)
+    expect(mixedCase.diagnostics[0]?.code).toBe('WV1010')
 
     const unsupportedError = compileVueTemplateToWxml(
       `<Teleport to="#inner"><view>A</view></Teleport>`,
@@ -3677,7 +3678,7 @@ describe('compileVueTemplateToWxml', () => {
       `<Teleport to="body"><view>A</view></Teleport>`,
       '/project/src/pages/index/index.vue',
     )
-    expect(withoutClass.diagnostics).toHaveLength(0)
+    expect(withoutClass.diagnostics.some(message => message.code === 'WV1009')).toBe(false)
   })
 
   it('disables Teleport mapping globally', () => {
@@ -3688,7 +3689,6 @@ describe('compileVueTemplateToWxml', () => {
     )
     expect(globalOff.code).toBe('<view>A</view>')
     expect(globalOff.diagnostics).toHaveLength(0)
-    expect(globalOff.bindingManifest.features.rootPortal).toBeUndefined()
   })
 
   it('maps Teleport edge cases at the root node and with passthrough attributes', () => {
@@ -3716,20 +3716,6 @@ describe('compileVueTemplateToWxml', () => {
       '/project/src/pages/index/index.vue',
     )
     expect(externalClass.code).toContain('external-class="teleport-external"')
-  })
-
-  it('marks root-portal usage in the runtime binding manifest', () => {
-    const mapped = compileVueTemplateToWxml(
-      `<Teleport to="body"><view>{{ msg }}</view></Teleport>`,
-      '/project/src/pages/index/index.vue',
-    )
-    expect(mapped.bindingManifest.features.rootPortal).toBe(true)
-
-    const degraded = compileVueTemplateToWxml(
-      `<Teleport to="#inner"><view>{{ msg }}</view></Teleport>`,
-      '/project/src/pages/index/index.vue',
-    )
-    expect(degraded.bindingManifest.features.rootPortal).toBeUndefined()
   })
 
   it('normalizes class/style object-array bindings and warns on spread syntax', () => {
