@@ -32,8 +32,15 @@ describe('IDE diagnostics protocol boundary', () => {
       env: { ...process.env, CI: ci, TERM: term, NO_COLOR: '1', FORCE_COLOR: '0', CONSOLA_LEVEL: '3' },
     })
     expect(JSON.parse(stdout)).toEqual({ cliPath })
-    expect(stderr).toContain(`CLI 路径： ${linked ? pathToFileURL(cliPath).href : cliPath}`)
-    expect(stderr).not.toContain('\u001B')
+    if (linked) {
+      expect(stderr).toContain(`CLI 路径： \u001B]8;;${pathToFileURL(cliPath).href}\u001B\\${cliPath}\u001B]8;;\u001B\\`)
+      expect(stderr.replaceAll(`\u001B]8;;${pathToFileURL(cliPath).href}\u001B\\`, '').replaceAll('\u001B]8;;\u001B\\', '')).not.toContain('file://')
+    }
+    else {
+      expect(stderr).toContain(`CLI 路径： ${cliPath}`)
+      expect(stderr).not.toContain('\u001B')
+    }
+    expect(stderr).not.toContain('\u001B[')
   })
 
   it('keeps JSON stdout parseable and preserves diagnostics on stderr', async () => {

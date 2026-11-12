@@ -216,7 +216,7 @@ weapp compare --baseline .screenshots/baseline/home.png --max-diff-pixels 100 --
 - macOS / Linux: `~/.weapp-ide-cli/config.json`
 - Windows: `C:\Users\<用户名>\.weapp-ide-cli\config.json`
 
-交互式终端中的配置文件、CLI 和配置导入/导出路径显示为 `file://` 地址，空格、中文和特殊字符会自动编码。在 macOS 自带 Terminal 中，按住 **Command 并双击地址**，由系统关联的程序打开对应文件。`NO_COLOR` 只关闭上色，不影响文件地址。诊断流重定向、CI 或 `TERM=dumb` 时显示原始路径；JSON、`config get` 和配置文件中的路径始终保持原值。
+交互式终端中的配置文件、CLI 和配置导入/导出路径保留原始文字，通过 OSC 8 超链接关联文件地址，不显示 `file:///` 或 URL 编码。在支持超链接的 macOS Terminal 中，按住 **Command 并双击路径**，由系统关联的程序打开对应文件；其他终端按自身的链接打开手势操作，不支持 OSC 8 时仅显示路径。`NO_COLOR` 只关闭上色，不影响超链接。诊断流重定向、CI 或 `TERM=dumb` 时不添加超链接控制序列；JSON、`config get` 和配置文件中的路径始终保持原值。
 
 配置示例：
 

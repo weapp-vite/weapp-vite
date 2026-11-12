@@ -155,7 +155,7 @@ describe('config helpers', () => {
     expect(loggerMock.info).toHaveBeenCalledWith('自定义 CLI 路径： /custom/cli')
   })
 
-  it('shows file URLs in a terminal without changing the resolved CLI path', async () => {
+  it('links the original terminal paths without changing the resolved CLI path', async () => {
     Object.defineProperty(process.stderr, 'isTTY', { configurable: true, value: true })
     vi.stubEnv('CI', '')
     vi.stubEnv('TERM', 'xterm-256color')
@@ -165,8 +165,8 @@ describe('config helpers', () => {
 
     const { getConfig, defaultCustomConfigFilePath } = await loadConfigModule()
     expect(await getConfig()).toMatchObject({ cliPath, source: 'custom' })
-    expect(loggerMock.info).toHaveBeenCalledWith(`全局配置文件路径： ${pathToFileURL(defaultCustomConfigFilePath).href}`)
-    expect(loggerMock.info).toHaveBeenCalledWith(`自定义 CLI 路径： ${pathToFileURL(cliPath).href}`)
+    expect(loggerMock.info).toHaveBeenCalledWith(`全局配置文件路径： \u001B]8;;${pathToFileURL(defaultCustomConfigFilePath).href}\u001B\\${defaultCustomConfigFilePath}\u001B]8;;\u001B\\`)
+    expect(loggerMock.info).toHaveBeenCalledWith(`自定义 CLI 路径： \u001B]8;;${pathToFileURL(cliPath).href}\u001B\\${cliPath}\u001B]8;;\u001B\\`)
     expect(fsMock.writeJSON).not.toHaveBeenCalled()
   })
 

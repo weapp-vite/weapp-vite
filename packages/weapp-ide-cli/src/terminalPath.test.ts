@@ -31,21 +31,26 @@ describe('terminal diagnostic paths', () => {
     vi.unstubAllEnvs()
   })
 
-  it('resolves relative paths and encodes characters that would split a URL', () => {
+  it('keeps the original label and encodes the hidden absolute file target', () => {
     const input = path.join('fixtures', '微信 tools #%?', 'cli')
     const result = formatTerminalPath(input)
-    expect(result).toMatch(/^file:\/\//)
-    expect(result).toContain('%20')
-    expect(result).toContain('%23')
-    expect(result).toContain('%25')
-    expect(result).toContain('%3F')
-    expect(result).not.toContain('微信')
-    expect(fileURLToPath(result)).toBe(path.resolve(input))
+    const [opening, label, tail] = result.split('\u001B\\')
+    expect(opening?.startsWith('\u001B]8;;file://')).toBe(true)
+    const target = opening!.slice('\u001B]8;;'.length)
+    expect(target).toContain('%20')
+    expect(target).toContain('%23')
+    expect(target).toContain('%25')
+    expect(target).toContain('%3F')
+    expect(target).not.toContain('微信')
+    expect(fileURLToPath(target)).toBe(path.resolve(input))
+    expect(label).toBe(`${input}\u001B]8;;`)
+    expect(tail).toBe('')
   })
 
   it('uses stderr terminal status even when stdout is redirected', () => {
     const input = path.resolve('fixtures', 'config.json')
-    expect(fileURLToPath(formatTerminalPath(input))).toBe(input)
+    const target = formatTerminalPath(input).split('\u001B\\')[0]!.slice('\u001B]8;;'.length)
+    expect(fileURLToPath(target)).toBe(input)
   })
 
   it('keeps redirected diagnostics as raw paths even when stdout is a terminal', () => {

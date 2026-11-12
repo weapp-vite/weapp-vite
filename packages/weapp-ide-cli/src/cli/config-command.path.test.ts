@@ -57,7 +57,7 @@ describe('configuration diagnostic paths', () => {
   it('links the config file while keeping JSON path values unchanged', async () => {
     const output = vi.spyOn(console, 'log').mockImplementation(() => {})
     await handleConfigCommand(['show'])
-    expect(mocks.info).toHaveBeenCalledWith(`配置文件路径： ${pathToFileURL(defaultCustomConfigFilePath).href}`)
+    expect(mocks.info).toHaveBeenCalledWith(`配置文件路径： \u001B]8;;${pathToFileURL(defaultCustomConfigFilePath).href}\u001B\\${defaultCustomConfigFilePath}\u001B]8;;\u001B\\`)
     expect(JSON.parse(output.mock.calls[0]![0] as string)).toMatchObject({ cliPath })
   })
 
@@ -72,7 +72,7 @@ describe('configuration diagnostic paths', () => {
     const outputPath = path.join('exports', '微信 config #%?.json')
     await handleConfigCommand(['export', outputPath])
     expect(mocks.writeJSON).toHaveBeenCalledExactlyOnceWith(outputPath, { cliPath }, { spaces: 2, encoding: 'utf8' })
-    expect(mocks.info).toHaveBeenCalledWith(`配置已导出到： ${pathToFileURL(path.resolve(outputPath)).href}`)
+    expect(mocks.info).toHaveBeenCalledWith(`配置已导出到： \u001B]8;;${pathToFileURL(path.resolve(outputPath)).href}\u001B\\${outputPath}\u001B]8;;\u001B\\`)
   })
 
   it('keeps JSON exports free of diagnostic formatting', async () => {
@@ -87,6 +87,6 @@ describe('configuration diagnostic paths', () => {
     await handleConfigCommand(['import', inputPath])
     expect(mocks.readJSON).toHaveBeenCalledExactlyOnceWith(inputPath)
     expect(mocks.overwriteConfig).toHaveBeenCalledWith(expect.objectContaining({ cliPath }))
-    expect(mocks.info).toHaveBeenCalledWith(`配置已从 ${pathToFileURL(path.resolve(inputPath)).href} 导入`)
+    expect(mocks.info).toHaveBeenCalledWith(`配置已从 \u001B]8;;${pathToFileURL(path.resolve(inputPath)).href}\u001B\\${inputPath}\u001B]8;;\u001B\\ 导入`)
   })
 })
