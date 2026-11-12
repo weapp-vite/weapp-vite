@@ -5,11 +5,13 @@ export interface MiniProgramEventLike {
     dataset?: Record<string, unknown>
   }
   detail?: Record<string, unknown>
+  stopPropagation?: () => void
   target?: unknown
   type: string
 }
 
 export interface MiniProgramPageAdapter {
+  __webviewId__?: number
   setData: (payload: Record<string, unknown>, callback?: () => void) => void
 }
 

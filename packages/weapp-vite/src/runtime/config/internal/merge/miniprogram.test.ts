@@ -1,5 +1,6 @@
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
+import { WEAPP_VITE_REACT_RENDERER_DEFINE } from '@weapp-core/constants'
 import path from 'pathe'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
@@ -29,12 +30,19 @@ async function createTempProject(prefix: string) {
   return root
 }
 
-function mergeMiniprogramForTsconfig(cwd: string, config: Record<string, unknown> = {}, configFilePath?: string) {
+function mergeMiniprogramForTsconfig(
+  cwd: string,
+  config: Record<string, unknown> = {},
+  configFilePath?: string,
+  platform = 'weapp',
+  reactConfig?: { renderer?: 'legacy' | 'auto' | 'native-dom' },
+) {
   return mergeMiniprogram(
     {
       ctx: {
         configService: {
-          platform: 'weapp',
+          platform,
+          weappViteConfig: { react: reactConfig },
         },
       } as any,
       subPackageMeta: undefined,
@@ -65,6 +73,17 @@ afterEach(async () => {
 })
 
 describe('runtime config merge miniprogram', () => {
+  it('injects React renderer mode and target platform into the runtime define', () => {
+    const result = mergeMiniprogramForTsconfig('/project', {}, undefined, 'tt', { renderer: 'native-dom' })
+
+    expect(result.define?.[WEAPP_VITE_REACT_RENDERER_DEFINE]).toBe(JSON.stringify({
+      mode: 'native-dom',
+      platform: 'tt',
+    }))
+    expect(() => mergeMiniprogramForTsconfig('/project', {}, undefined, 'weapp', { renderer: 'native-dom' }))
+      .toThrow(/仅支持 tt 平台/)
+  })
+
   it('resolves miniprogram watch include patterns for src and plugin roots', () => {
     expect(resolveMiniprogramWatchInclude({
       cwd: '/project',
