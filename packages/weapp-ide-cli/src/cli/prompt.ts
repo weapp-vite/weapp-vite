@@ -4,6 +4,7 @@ import { fs } from '@weapp-core/shared/fs'
 import { createCustomConfig } from '../config/custom'
 import { defaultCustomConfigFilePath } from '../config/paths'
 import logger, { colors } from '../logger'
+import { formatTerminalPath } from '../terminalPath'
 import { runWithSuspendedSharedInput } from './inputCoordinator'
 
 /**
@@ -28,7 +29,7 @@ export async function promptForCliPath() {
 
       try {
         const normalizedPath = await createCustomConfig({ cliPath })
-        logger.info(`全局配置存储位置：${colors.green(defaultCustomConfigFilePath)}`)
+        logger.info(`全局配置存储位置： ${formatTerminalPath(defaultCustomConfigFilePath)}`)
 
         if (!(await fs.pathExists(normalizedPath))) {
           logger.warn('在当前路径未找到微信web开发者命令行工具，请确认路径是否正确。')

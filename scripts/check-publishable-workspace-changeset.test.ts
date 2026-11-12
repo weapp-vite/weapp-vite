@@ -310,7 +310,6 @@ it('repoctl release lifecycle keeps PR-only intent guards outside main push chec
     beforePublish: ['check:weapp-core-constants-release-version'],
     afterPublish: [
       { script: 'release:vscode-marketplace' },
-      { script: 'release:sync-npmmirror', continueOnError: true, idempotent: true },
     ],
   })
 })

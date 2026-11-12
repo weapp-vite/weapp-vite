@@ -46,13 +46,13 @@ it.each(['classic', 'auto', 'stateful-experimental'] as const)('recovers a start
   cleanup.push(() => runtime.classicIdeConfig.close())
   ctx.configService.projectPrivateConfig.setting = JSON.parse(await runtime.classicIdeConfig.readRequested(file)).setting
   await prepareClassicIdeConfig(ctx)
-  expect(runtime.fallback?.code).toBe(mode === 'classic' ? undefined : 'ide-classic-handoff')
+  expect(runtime.fallback).toBeUndefined()
   expect(await runtime.classicIdeConfig.readRequested(file)).toBe(original)
   await runtime.classicIdeConfig.close()
   expect(await fs.readFile(file, 'utf8')).toBe(original)
 })
 
-it.each([false, true])('defers a pending asset handoff only when the same output root has a published stateful baseline: %s', async (published) => {
+it.each([false, true])('disables native script hot reload before classic compilation while protecting a published stateful baseline: %s', async (published) => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'prepare-pending-classic-'))
   cleanup.push(() => fs.remove(root))
   const file = path.join(root, 'project.private.config.json')
@@ -83,11 +83,15 @@ it.each([false, true])('defers a pending asset handoff only when the same output
   await prepareClassicIdeConfig(ctx)
   expect(runtime.classicIdeConfig.hasPendingAssetHandoff(file)).toBe(published)
   if (published) {
-    expect(await fs.readFile(file, 'utf8')).toBe(installed)
+    const protectedConfig = JSON.parse(installed) as Record<string, unknown>
+    expect(await fs.readJSON(file)).toEqual({ ...protectedConfig, setting: { compileHotReLoad: false } })
+    expect(runtime.classicIdeConfig.preservesPendingOutput(outDir)).toBe(true)
+    expect(await fs.pathExists(ideAssetWatchLeasePath(file))).toBe(true)
   }
   else {
     expect(await fs.readJSON(file)).toEqual({ setting: { compileHotReLoad: false } })
   }
+  expect(await runtime.classicIdeConfig.readRequested(file)).toBe(original)
   await runtime.classicIdeConfig.close()
   expect(await fs.readFile(file, 'utf8')).toBe(original)
 })
@@ -138,9 +142,9 @@ it.each(['changed', 'missing'] as const)('rejects %s private config paths while 
 it.each([
   { mode: 'classic', requested: true, fallback: false, reason: undefined },
   { mode: 'auto', requested: false, fallback: false, reason: undefined },
-  { mode: 'auto', requested: true, fallback: false, reason: 'ide-classic-handoff' },
-  { mode: 'stateful-experimental', requested: true, fallback: false, reason: 'ide-classic-handoff' },
-  { mode: 'stateful-experimental', requested: false, fallback: false, reason: 'ide-classic-handoff' },
+  { mode: 'auto', requested: true, fallback: false, reason: undefined },
+  { mode: 'stateful-experimental', requested: true, fallback: false, reason: undefined },
+  { mode: 'stateful-experimental', requested: false, fallback: false, reason: undefined },
   { mode: 'stateful-experimental', requested: true, fallback: true, reason: 'runtime-contract' },
 ] as const)('prepares classic before startup while preserving the $mode request ($requested / existing fallback $fallback)', async ({ mode, requested, fallback, reason }) => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'prepare-classic-ide-'))
@@ -166,7 +170,7 @@ it.each([
     runtime.requestClassic({ code: 'runtime-contract', message: 'test unsupported update' })
   }
   await prepareClassicIdeConfig(ctx)
-  expect((await fs.readJSON(file) as { setting: { compileHotReLoad: boolean } }).setting.compileHotReLoad).toBe(false)
+  expect((await fs.readJSON(file) as { setting: { compileHotReLoad: boolean } }).setting.compileHotReLoad).toBe(mode === 'classic' || fallback ? false : requested)
   expect(runtime.fallback?.code).toBe(reason)
   if (reason) {
     expect(runtime.phase).toBe('switching')

@@ -1,5 +1,54 @@
 # create-weapp-vite
 
+## 3.6.0
+
+### Minor Changes
+
+- feat(skills): 按 npm 包职责分发消费项目 skills，保留仓库单一正文源并随包携带完整引用；支持 pnpm 原生按直接依赖发现、批准与受管链接生命周期。脚手架、兼容安装入口和文档改为按模板选择技能，不再默认全量安装，并校验技能归属、构建缓存及发布变更检测。
+
+  补齐四个消费技能的精简任务入口、输入输出和缺依赖时的可达诊断；逐项区分自动验证、AI 评估、人工确认与未验证，保留执行失败及授权边界。维护侧新增受控候选案例、反馈与证据契约，接入既有检查，不向消费包发布维护用例或新增统一 CLI。
+
+### Patch Changes
+
+- chore(deps): 同步工程配置、AI SDK、Dashboard、Tailwind 与组件依赖。
+
+  更新工作区与脚手架内置 catalog，采用 TDesign 1.18.0、weapp-tailwindcss 5.7.3 和 devframe 配套包 1.3.3，同步 ESLint、Stylelint、AI SDK、axios 及相关解析器。保持 TypeScript 6.0.3、Vite 8.3.5、Rolldown 1.2.16 和 Vite+ 1.5.0，保留原版本声明形式及公开 peer 最低兼容范围。
+
+- chore(deps): 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@ai-sdk/anthropic, @ai-sdk/openai, @ai-sdk/openai-compatible, ai, sass, sass-embedded, vue-router, weapp-tailwindcss。命名 catalog 变更键：weapp-tailwindcss-fixed(weapp-tailwindcss)。
+
+- chore(deps): 升级 AST、构建声明、脚手架和请求传输依赖。
+
+  同步 Oxc JS 类型与可选 Rust 分析器至 0.158.0，更新 oxfmt 0.78.0、ignore 7.0.14、ws 8.22.2、dotenv 18.0.10 和 rolldown-plugin-dts 0.30.1。保留现有公开 API、类型契约及 native 的 JS fallback。
+
+  声明构建改用 rolldown-plugin-dts 的 `dtsOnly`，消除默认构建中的弃用告警，保持声明产物契约。
+
+- chore(deps): 自动补充依赖升级发布记录。
+  涉及包：
+  - create-weapp-vite：dependencies.@inquirer/prompts
+
+- fix(weapp-vite): 保留普通 WASM `?url` 的自定义资产命名规则，并校验主包初始化资源不能落入 Worker 目录。
+
+- fix(weapp-vite): 消除 Worker 与主包共享 WASM 资产时的重复发布警告。
+
+- fix(wevu): 修复模板内联事件错误读取 reactive 对象的 `.value`，恢复独立区域的展开和收起，并保留 ref 赋值与作用域插槽事件行为。
+
+- fix(weapp-vite): 修复测试产物遇到解析器注册文件系统根目录监听时递归扫描整盘的问题，避免 Windows 受保护目录触发 EPERM，同时保留显式源码依赖的内容失效检测。
+
+- fix(weapp-vite): 修复第三方依赖在模块初始化期调用 `atob` / `btoa` 时的 polyfill 注入时序问题。
+
+  引入 `stream-markdown-parser` 等依赖后，其内联的 `entities` 会在模块顶层同步调用 `atob` 解码常量。此前这类纯函数要等 Web runtime installer 在 chunk 末尾执行后才可用，模块初始化期会抛出 `atob is not initialized`。现在 `atob` / `btoa` 在 chunk 顶部即落地真实 polyfill，行为与 `@wevu/web-apis` 的实现对齐，installer 不会覆盖已可用的实现。自动注入的依赖识别同时补充了 `stream-markdown-parser`，仅依赖该包也能启用 Web runtime globals。
+
+- fix(create-weapp-vite): 从当前依赖清单定位校验工具，避免工作树中的模板准备误用祖先目录的旧版 CLI。
+
+- fix: 更新微信内置组件识别清单。更新组件库自动导入清单，并同步脚手架依赖版本。
+
+- Updated dependencies:
+  - @weapp-core/init@6.1.3
+  - @weapp-core/logger@3.2.3
+  - @weapp-core/shared@3.4.3
+  - @weapp-vite/language-service@0.1.3
+
 ## 3.5.0
 
 ### Minor Changes

@@ -5,6 +5,7 @@ import { feedbackRoundCheckpoints, INDEX_ROUTE, LAYOUT_POWER_FIXTURE, layoutStat
 import { prepareLayoutPowerSession, startLayoutPowerSession } from './layoutPowerDom/session'
 
 const TD_MESSAGE_DUPLICATE_SLOT_RE = /More than one slot named .*tdesign-miniprogram\/message\/message/
+const DEFAULT_LAYOUT_PROPERTY_WARNING_RE = /property "(?:mode|title)" of "layouts\/default\/index" received type-uncompatible value/
 
 describe('layout-power-demo message feedback in real WeChat DevTools', { concurrent: false }, () => {
   let session: LayoutPowerSession | undefined
@@ -28,5 +29,6 @@ describe('layout-power-demo message feedback in real WeChat DevTools', { concurr
     expect(await page.data('runtimeEvents')).toBe(25)
     expect(collector.getSince(0)).toEqual([])
     expect(collector.getLogsSince(0)).not.toEqual(expect.arrayContaining([expect.stringMatching(TD_MESSAGE_DUPLICATE_SLOT_RE)]))
+    expect(collector.getLogsSince(0)).not.toEqual(expect.arrayContaining([expect.stringMatching(DEFAULT_LAYOUT_PROPERTY_WARNING_RE)]))
   }, 480_000)
 })

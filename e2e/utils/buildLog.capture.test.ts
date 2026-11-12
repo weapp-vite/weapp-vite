@@ -48,7 +48,7 @@ describe('build log capture', () => {
     })
   }
 
-  function build(skipNpm = false) {
+  function build(skipNpm = false, onOutput?: (output: string) => void) {
     return runWeappViteBuildWithLogCapture({
       cliPath: 'fixture-cli.js',
       projectRoot,
@@ -56,6 +56,7 @@ describe('build log capture', () => {
       platform: 'weapp',
       label: 'fixture',
       skipNpm,
+      onOutput,
     })
   }
 
@@ -73,8 +74,10 @@ describe('build log capture', () => {
 
   it('counts bracket severity once per complete or flushed line', async () => {
     mockBuild(['[wa', 'rn] first\r', '\n[error] failed\n[warn] final'])
+    const onOutput = vi.fn()
 
-    expect(await build()).toEqual({ warn: 2, error: 1 })
+    expect(await build(false, onOutput)).toEqual({ warn: 2, error: 1 })
+    expect(onOutput).toHaveBeenCalledExactlyOnceWith('[warn] first\r\n[error] failed\n[warn] final')
     expect(appendReportEventMock.mock.calls.map(([event]) => event)).toEqual([
       expect.objectContaining({ kind: 'message', level: 'warn', text: '[warn] first' }),
       expect.objectContaining({ kind: 'message', level: 'error', text: '[error] failed' }),

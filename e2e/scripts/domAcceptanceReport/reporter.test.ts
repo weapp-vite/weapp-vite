@@ -24,6 +24,23 @@ import { assertAcceptanceReportPassed, createAcceptanceIdentity } from './helper
 import DomAcceptanceReporter from './reporter'
 import { validateTaskAcceptance } from './task'
 
+vi.mock('./helpers', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./helpers')>()
+  return {
+    ...actual,
+    // 生命周期单测不重复扫描真实仓库；Git 身份与 fsmonitor 契约由专用测试覆盖。
+    createAcceptanceIdentity: (env = process.env) => actual.createAcceptanceIdentity(env, (args) => {
+      if (args.join(' ') === 'rev-parse HEAD') {
+        return 'a'.repeat(40)
+      }
+      if (args[0] === 'status' || args[0] === 'ls-files') {
+        return ''
+      }
+      throw new Error(`Unexpected reporter Git read: ${args.join(' ')}`)
+    }),
+  }
+})
+
 let reportDir = ''
 let commitSha = ''
 

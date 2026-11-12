@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { rebaseSfcTemplateDependencies, recordSfcBlockSource, resolveSfcTemplateSource } from './sfcTemplateDependencies'
+import { rebaseSfcTemplateDependencies, rebaseSfcTemplateDependency, recordSfcBlockSource, resolveSfcTemplateSource } from './sfcTemplateDependencies'
+import { collectSfcTemplateDependencies } from './vueTemplateDependencies'
 
 describe('SFC template dependency identity', () => {
   it('keeps the resolver-selected identity scoped to its options and importer', () => {
@@ -24,6 +25,12 @@ describe('SFC template dependency identity', () => {
 })
 
 describe('external SFC template dependency paths', () => {
+  it('retains Vue void elements, expressions and raw scripts while rebasing native dependencies', () => {
+    const template = '<view><input v-model="value"><wxs module="helpers">const text = "<fake-card />";</wxs><include src="./part.wxml" /></view>'
+    expect(rebaseSfcTemplateDependencies(template, '/project/src/parts/body.html', '/project/src/index.vue'))
+      .toBe(template.replace('./part.wxml', './parts/part.wxml'))
+  })
+
   it('rebases native import/include/WXS paths while retaining template content', () => {
     const template = [
       '<import src="../../../shared/card.wxml" />',
@@ -46,6 +53,12 @@ describe('external SFC template dependency paths', () => {
       '<include src="{{templatePath}}" />',
     ].join('\n')
     expect(rebaseSfcTemplateDependencies(template, '/project/src/parts/body.html', '/project/src/index.vue')).toBe(template)
+  })
+
+  it('rebases dependencies beside Vue void elements in an external template', () => {
+    const template = '<view><input><include src="./included.wxml" /></view>'
+    const deps = collectSfcTemplateDependencies({ content: template, src: './parts/body.html' })
+    expect(deps.map(dep => rebaseSfcTemplateDependency(dep, '/project/src/parts/body.html', '/project/src/index.vue').value)).toEqual(['./parts/included.wxml'])
   })
 
   it('does not rewrite inline or same-directory templates', () => {

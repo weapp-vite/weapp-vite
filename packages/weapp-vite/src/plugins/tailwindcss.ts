@@ -36,6 +36,7 @@ import { createCompilerContentSourceOwner } from './compilerPlugin/contentSource
 import { CompilerHmrResyncError, compilerSourceId, getCompilerHmrHost } from './compilerPlugin/hmr'
 import { processCssWithCache } from './css/shared/preprocessor'
 import { createStyleSourceMeta } from './css/styleOwnership'
+import { captureTailwindDiskInputs } from './tailwindcss/diskInputs'
 import { freezeTailwindSourceRules, takeTailwindSnapshotGeneration } from './tailwindcss/generation'
 import { createTailwindHmrAdapter } from './tailwindcss/hmr'
 import { takeImportedTailwindGeneration } from './tailwindcss/importedPreparation'
@@ -363,9 +364,11 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
     const source = request.source ?? await resolveTailwindV4Source(sourceOptions)
     const input: CompilerGenerateRequest = { ...requestFields, source }
     checkpoint('tailwindSourceResolveMs')
+    const confirmInputs = captureTailwindDiskInputs(ctx)
     const generated = await scanPlans.generate(input, effective => generation
       ? hmr.generateDiskRoot(compiler, effective, index, generation)
       : hmr.generateDisk(compiler, effective))
+    await confirmInputs(generated)
     checkpoint('tailwindDiskGenerateMs')
     const rules = resolveTailwindContentSourceRules(generated, ctx.configService.outDir)
     return { ...generated, sourceRules: freezeTailwindSourceRules(rules) }

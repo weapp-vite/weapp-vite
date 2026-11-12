@@ -4,7 +4,8 @@ import { fs } from '@weapp-core/shared/fs'
 import { resolveWechatDevtoolsTarget } from '../devtoolsTarget'
 import { wechatDevtoolsSelectionContext } from '../devtoolsTarget/context'
 import { selectInstalledWechatDevtools } from '../devtoolsTarget/discovery'
-import logger, { colors } from '../logger'
+import logger from '../logger'
+import { formatTerminalPath } from '../terminalPath'
 import { readCustomConfig } from './custom'
 import { defaultCustomConfigFilePath } from './paths'
 
@@ -59,8 +60,8 @@ export async function getConfig(): Promise<ResolvedConfig> {
         : undefined
 
       if (selectedCliPath || cliPath) {
-        logger.info(`全局配置文件路径：${colors.green(defaultCustomConfigFilePath)}`)
-        logger.info(`${selectedCliPath ? '进程指定' : '自定义'} CLI 路径：${colors.green(selectedCliPath || cliPath)}`)
+        logger.info(`全局配置文件路径： ${formatTerminalPath(defaultCustomConfigFilePath)}`)
+        logger.info(`${selectedCliPath ? '进程指定' : '自定义'} CLI 路径： ${formatTerminalPath(selectedCliPath || cliPath)}`)
         return {
           cliPath: selectedCliPath || cliPath,
           locale,

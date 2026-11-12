@@ -152,7 +152,7 @@ describe('HMR semantic acceptance inventory', () => {
       expect(cases).toHaveLength(index === 0 ? 8 : 7)
       expect(cases.every(item => item.plans.length > 0 && !item.notes.some(note => note.startsWith('Dynamic')))).toBe(true)
       expect(cases.every(item => item.source.startsWith('e2e/ide/statefulHmrDom/capabilityFallback.ts:'))).toBe(true)
-      expect(task.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('900000')
+      expect(task.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('1800000')
     }
     expect(transitionCases.filter(item => item.name.includes(' esm capability fallback > '))).toEqual([
       expect.objectContaining({ file: 'e2e/ide/hmr-capability-fallback.wv.runtime.test.ts', name: expect.stringMatching(/^wv auto stylesheet-output esm capability fallback > /) }),
@@ -189,7 +189,7 @@ describe('HMR semantic acceptance inventory', () => {
     })
     expect(HMR_ACCEPTANCE_SCENARIOS.find(item => item.id === 'unsupported-compiler-startup-classic')).toMatchObject({
       expectations: ['classic-fallback'],
-      capabilityIds: ['compiler-provider', 'ide-classic-handoff'],
+      capabilityIds: ['compiler-provider'],
       ide: ['ide/hmr-startup-fallback.runtime.test.ts'],
       headless: ['ide/hmr-startup-fallback.runtime.test.ts'],
     })
@@ -208,7 +208,7 @@ describe('HMR semantic acceptance inventory', () => {
         expect(scenario?.ide).toContain(failure.regressionTaskLabel ?? failure.taskLabel)
       }
     }
-    expect(HMR_HISTORICAL_IDE_FAILURES.filter(item => item.regressionTaskLabel).map(item => item.caseId)).toEqual(['51224417_0_3', '51224417_0_7', '51224417_0_10'])
+    expect(HMR_HISTORICAL_IDE_FAILURES.filter(item => item.regressionTaskLabel).map(item => item.caseId)).toEqual(['51224417_0_3', '51224417_0_7', '51224417_0_9', '51224417_0_10'])
   })
 
   it('keeps unproven runtime transitions pending while retaining their unit and build coverage', () => {
@@ -292,7 +292,7 @@ describe('HMR semantic acceptance inventory', () => {
       expect(cases.some(item => item.name.startsWith(`issue #1015 external CSS HMR: ${runtime} > `))).toBe(true)
     }
     expect(HMR_ACCEPTANCE_SCENARIOS.find(item => item.id === 'native-css-and-tailwind')).toMatchObject({
-      expectations: ['classic', 'classic-fallback'],
+      expectations: ['stateful', 'classic', 'classic-fallback'],
       capabilityIds: ['script-patch', 'visual-assets', 'stylesheet-output'],
     })
   })

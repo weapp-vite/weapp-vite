@@ -1,6 +1,7 @@
 import type { PluginContext } from 'rolldown'
 import type { AstEngineName } from '../../../../ast'
 import type { CompilerContext } from '../../../../context'
+import type { WxmlDep } from '../../../../types'
 import type { ReExportResolutionCache } from '../../../../utils/reExport'
 import type { ScriptSetupAnalyzer } from './scriptSetupAnalysis'
 import { removeExtensionDeep } from '@weapp-core/shared'
@@ -9,9 +10,10 @@ import { collectScriptSetupImportsFromCode, resolveAstEngine } from '../../../..
 import logger from '../../../../logger'
 import { collectVueTemplateTags, isAutoImportCandidateTag, VUE_COMPONENT_TAG_RE } from '../../../../utils/vueTemplateTags'
 import { UniAppCompatibilityTransformError } from '../../../uniApp'
-import { rebaseSfcTemplateDependencies, resolveSfcTemplateSource } from '../../../utils/sfcTemplateDependencies'
+import { rebaseSfcTemplateDependency, resolveSfcTemplateSource } from '../../../utils/sfcTemplateDependencies'
 import { collectTemplateDependencySources } from '../../../utils/templateDependencies'
 import { createReadAndParseSfcOptions, readAndParseSfc } from '../../../utils/vueSfc'
+import { collectSfcTemplateDependencies } from '../../../utils/vueTemplateDependencies'
 import { resolveUsingComponentReference } from '../../../vue/transform/usingComponentResolver'
 import { createScriptSetupAnalyzer } from './scriptSetupAnalysis'
 import { collectComponentTagInfo } from './scriptSetupAnalysis/componentTags'
@@ -106,16 +108,13 @@ export async function applyScriptSetupUsingComponents(options: {
     scriptSetupAnalyzer = createScriptSetupAnalyzer(),
   } = options
 
-  async function publishTemplateDependencies(template: string, components: Record<string, { start: number, end: number }[]>) {
+  async function publishTemplateDependencies(deps: WxmlDep[], components: Record<string, { start: number, end: number }[]>) {
     if (templatePath || !wxmlService) {
       return
     }
-    const token = wxmlService.analyze?.(template)
-    if (token) {
-      wxmlService.tokenMap?.set(vueEntryPath, token)
-      // 冷构建的自动组件合成必须等待 import/include 的递归扫描完成。
-      await wxmlService.setTokenDeps?.(vueEntryPath, token.deps)
-    }
+    // XML token 只归编译后模板所有；原始 Vue 入口只发布依赖与组件事实。
+    // 冷构建的自动组件合成必须等待 import/include 的递归扫描完成。
+    await wxmlService.setTokenDeps?.(vueEntryPath, deps)
     wxmlService.setWxmlComponentsMap(vueEntryPath, components)
     const dependencies = collectTemplateDependencySources(wxmlService, vueEntryPath)
     moduleGraphService?.replaceEntryDependencies(ownerId, 'template', dependencies.template)
@@ -125,7 +124,7 @@ export async function applyScriptSetupUsingComponents(options: {
   try {
     if (source !== undefined && !hasTemplateComponentTagHint(source)) {
       scriptSetupAnalyzer.discard(vueEntryPath)
-      await publishTemplateDependencies('', {})
+      await publishTemplateDependencies([], {})
       return
     }
 
@@ -133,15 +132,13 @@ export async function applyScriptSetupUsingComponents(options: {
     const { descriptor, errors } = await readAndParseSfc(vueEntryPath, parseOptions)
     if (errors?.length || !descriptor?.template) {
       scriptSetupAnalyzer.discard(vueEntryPath)
-      await publishTemplateDependencies('', {})
+      await publishTemplateDependencies([], {})
       return
     }
-    const template = rebaseSfcTemplateDependencies(
-      descriptor.template.content,
-      resolveSfcTemplateSource(parseOptions?.resolveSrc, descriptor.template.src ?? undefined, vueEntryPath),
-      vueEntryPath,
-      configService.platform,
-    )
+    const template = descriptor.template.content
+    const templateSource = resolveSfcTemplateSource(parseOptions?.resolveSrc, descriptor.template.src ?? undefined, vueEntryPath)
+    const deps = collectSfcTemplateDependencies(descriptor.template, configService.platform)
+      .map(dep => rebaseSfcTemplateDependency(dep, templateSource, vueEntryPath))
     const analysis = scriptSetupAnalyzer.analyze({
       filename: vueEntryPath,
       template,
@@ -151,7 +148,7 @@ export async function applyScriptSetupUsingComponents(options: {
     const components = Object.fromEntries(
       analysis.autoImportTags.map(tag => [tag, [{ start: 0, end: 0 }]]),
     )
-    await publishTemplateDependencies(template, components)
+    await publishTemplateDependencies(deps, components)
 
     const imports = analysis.imports
     if (imports.length) {

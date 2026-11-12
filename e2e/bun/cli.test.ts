@@ -63,7 +63,7 @@ describe('Bun CLI / issue #1222', () => {
     }
   }, 150_000)
 
-  it('restores startup classic ownership for an explicit stateful request on shutdown', async () => {
+  it('hands an explicit stateful request to classic after config edits and restores ownership on shutdown', async () => {
     const project = await createBunProject()
     const privateConfig = await readFile(path.join(project, 'project.private.config.json'), 'utf8')
     const dev = runBunScript(project, 'dev', 'stateful-experimental')
@@ -74,10 +74,16 @@ describe('Bun CLI / issue #1222', () => {
         expect.poll(() => output.includes('开发服务已就绪'), { timeout: 90_000 }).toBe(true),
         dev.then((result) => { throw new Error(`Bun dev exited before ready: ${result.exitCode}\n${output}`) }),
       ])
+      expect(output).not.toContain('[weapp-vite] HMR fallback ')
+      const appConfig = path.join(project, 'src/app.json')
+      await writeFile(appConfig, JSON.stringify({ pages: ['pages/index/index'], window: { navigationBarTitleText: 'Bun classic handoff' } }))
+      await expect.poll(() => output.includes('[weapp-vite] HMR classic ready '), { timeout: 90_000 }).toBe(true)
+      // 配置在单次在线交接中求值两次；fixture 每轮各注册一个 exit 观察者。
+      expect(output.split(/\r?\n/).filter(line => line.startsWith('BUN_RUNTIME '))).toHaveLength(2)
       const ready = output.match(/\[weapp-vite\] HMR classic ready (\{[^\r\n]*\})/g) ?? []
       expect(ready, output).toHaveLength(1)
       expect(JSON.parse(ready[0]!.slice('[weapp-vite] HMR classic ready '.length)) as unknown).toEqual({
-        reason: 'ide-classic-handoff',
+        reason: 'config-json',
         requested: 'stateful-experimental',
         actual: 'classic',
         phase: 'classic',
@@ -107,7 +113,7 @@ describe('Bun CLI / issue #1222', () => {
       await requestBunShutdown(project, output)
       const result = await dev
       expect(result.exitCode, output).toBe(143)
-      expect(await readFile(path.join(project, 'cleanup.log'), 'utf8')).toBe('closed\n')
+      expect(await readFile(path.join(project, 'cleanup.log'), 'utf8')).toBe('closed\nclosed\n')
       expect(await readFile(path.join(project, 'project.private.config.json'), 'utf8')).toBe(privateConfig)
       await expect(access(lease)).rejects.toMatchObject({ code: 'ENOENT' })
       for (const file of statefulFiles) {

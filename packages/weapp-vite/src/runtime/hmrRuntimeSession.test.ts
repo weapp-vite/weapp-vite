@@ -45,7 +45,8 @@ describe('HMR runtime command session', () => {
       await session.whenSettled()
       expect(warn).toHaveBeenCalledOnce()
       expect(restart).toHaveBeenCalledOnce()
-      expect(info).toHaveBeenCalledOnce()
+      expect(info).toHaveBeenCalledTimes(2)
+      expect(String(info.mock.calls[1]?.[0])).toContain('"runtime":"unconfirmed"')
       const readyPrefix = '[weapp-vite] HMR classic ready '
       expect(info.mock.calls[0]?.[0]).toEqual(expect.stringContaining(readyPrefix))
       const readyLog: unknown = JSON.parse(String(info.mock.calls[0]?.[0]).slice(readyPrefix.length))

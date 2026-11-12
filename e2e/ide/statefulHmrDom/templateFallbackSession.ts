@@ -16,11 +16,13 @@ import { captureScopedSlotDiagnostics } from './scopedSlotDiagnostic'
 import { installStatefulHmrTransport } from './transport'
 
 const ROOT = path.resolve(import.meta.dirname, '../../..')
-const ROUTE = '/pages/wevu/index?source=compiled-template'
 const provider = resolveRuntimeProviderName()
 
 /** 同一 fixture 复用唯一宿主；真实 IDE 更新后只重连，headless 重开单独作为 companion。 */
-export function createTemplateFallbackSession(external: boolean, options: { scopedSlots?: boolean } = {}) {
+export function createTemplateFallbackSession(external: boolean, options: { scopedSlots?: boolean, runtime?: 'native' | 'component' } = {}) {
+  const runtime = options.runtime ?? 'wevu'
+  const route = `/pages/${runtime}/index?source=compiled-template`
+  const baselineMarker = `STATEFUL-${runtime.toUpperCase()}-BASE`
   let fixture: Awaited<ReturnType<typeof createStatefulHmrProject>> | undefined
   let dev: ReturnType<typeof startDevProcess> | undefined
   let publication: ReturnType<typeof createNativeHmrPublication> | undefined
@@ -59,7 +61,7 @@ export function createTemplateFallbackSession(external: boolean, options: { scop
       launchMode: 'bridge',
       trustProject: true,
       timeout: 120_000,
-      warmupRoute: ROUTE,
+      warmupRoute: route,
       warmupRootSelectors: ['.page'],
       projectConfig: { setting: { urlCheck: false, useIsolateContext: false, useMultiFrameRuntime: false } },
       ...(stateful
@@ -88,10 +90,10 @@ export function createTemplateFallbackSession(external: boolean, options: { scop
     }, [WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY, WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY, WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY])
     const page = await miniProgram.currentPage()
     const data = await page.data(undefined, { fallback: false })
-    return { ...runtime, count: Number(data.count), storeCount: Number(data.storeCount), input: String(data.input ?? ''), marker: String(data.marker) }
+    return { ...runtime, count: Number(data.count), storeCount: Number(data.storeCount ?? 0), input: String(data.input ?? ''), marker: String(data.marker) }
   }
 
-  async function observeReload(marker: string) {
+  async function observeReload(marker: string, count = 0) {
     if (provider === 'headless') {
       // 退役响应必须先由原客户端消费，测试 cleanup 不能制造“已停止轮询”的证据。
       await expect.poll(async () => (await state()).pollingStopped, { timeout: 30_000 }).toBe(true)
@@ -106,11 +108,11 @@ export function createTemplateFallbackSession(external: boolean, options: { scop
     }
     await expect.poll(() => state().catch(() => null), { timeout: 90_000 }).toMatchObject({
       marker,
-      count: 0,
+      count,
       storeCount: 0,
       input: '',
       identity: '',
-      route: 'pages/wevu/index',
+      route: `pages/${runtime}/index`,
       pollingStopped: true,
       statefulKeys: [false, false, false],
     })
@@ -122,6 +124,7 @@ export function createTemplateFallbackSession(external: boolean, options: { scop
     get miniProgram() { return miniProgram },
     get original() { return original },
     get external() { return external },
+    get scriptFile() { return path.join(fixture!.projectRoot, `src/pages/${runtime}/index.ts`) },
     state,
     async start() {
       const host = process.env.WEAPP_VITE_E2E_COMPILER_HOST ?? 'wv'
@@ -130,7 +133,7 @@ export function createTemplateFallbackSession(external: boolean, options: { scop
       }
       fixture = await createStatefulHmrProject(ROOT, { compilerHost: host })
       const project = fixture.projectRoot
-      source = path.join(project, 'src/pages/wevu/index.vue')
+      source = path.join(project, `src/pages/${runtime}/index.${options.runtime ? 'wxml' : 'vue'}`)
       original = await fs.readFile(source, 'utf8')
       if (options.scopedSlots) {
         const component = path.join(project, 'src/components/scoped-host/index.vue')
@@ -150,7 +153,7 @@ export function createTemplateFallbackSession(external: boolean, options: { scop
       // 该独立 fixture 的默认页即被验收页，classic 自动重载无需测试导航修正页面。
       const appFile = path.join(project, 'src/app.json')
       const app = await fs.readJson(appFile) as { pages: string[], [key: string]: unknown }
-      app.pages = ['pages/wevu/index', ...app.pages.filter(page => page !== 'pages/wevu/index')]
+      app.pages = [`pages/${runtime}/index`, ...app.pages.filter(page => page !== `pages/${runtime}/index`)]
       await fs.writeJson(appFile, app, { spaces: 2 })
       const config = path.join(project, 'weapp-vite.config.ts')
       const observer = path.relative(project, path.join(ROOT, 'e2e/utils/nativePublication/plugin.ts')).replaceAll('\\', '/')
@@ -172,11 +175,14 @@ export function createTemplateFallbackSession(external: boolean, options: { scop
         env: { ...createDevProcessEnv(), WEAPP_VITE_HMR_PROFILE_JSON: profilePath },
         reject: false,
       })
-      publication = createNativeHmrPublication(project, dev, external ? 'stateful-experimental' : 'auto', ['native-registration'], profilePath)
+      publication = createNativeHmrPublication(project, dev, external ? 'stateful-experimental' : 'auto', [options.runtime ? 'template-output' : 'native-registration'], profilePath)
       await dev.waitFor(waitForStatefulHmrControl(path.join(project, 'dist/__weapp_vite_hmr/control.js')), 'initial compiled template stateful control')
       await dev.waitForInitialBuild(90_000)
       for (const extension of ['js', 'json', 'wxml']) {
-        expect(await fs.pathExists(path.join(project, `dist/pages/wevu/index.${extension}`))).toBe(true)
+        expect(await fs.pathExists(path.join(project, `dist/pages/${runtime}/index.${extension}`))).toBe(true)
+      }
+      for (const extension of ['js', 'json', 'wxml']) {
+        expect(await fs.pathExists(path.join(project, `dist/components/native-counter/index.${extension}`))).toBe(true)
       }
       await assertScopedSlotOutputs()
       miniProgram = await connect(true)
@@ -186,7 +192,7 @@ export function createTemplateFallbackSession(external: boolean, options: { scop
     },
     async begin() {
       expect(await fs.readFile(source, 'utf8'), 'previous compiled template case must restore its source').toBe(original)
-      await miniProgram.reLaunch(ROUTE)
+      await miniProgram.reLaunch(route)
       await expect.poll(async () => (await state()).count).toBe(0)
     },
     async diagnoseScopedSlot(stage: string) {
@@ -208,7 +214,7 @@ export function createTemplateFallbackSession(external: boolean, options: { scop
     async tap(selector = '.increment') {
       await (await (await miniProgram.currentPage()).$(selector, { fallback: false })).tap()
     },
-    async save(content: string, marker = 'STATEFUL-WEVU-BASE') {
+    async save(content: string, marker = baselineMarker, file = source, count = 0) {
       await miniProgram.evaluate((identity: string) => {
         const pages = getCurrentPages()
         ;(pages[pages.length - 1] as any).__compiledTemplateIdentity = identity
@@ -217,14 +223,14 @@ export function createTemplateFallbackSession(external: boolean, options: { scop
       if (options.scopedSlots) {
         await captureScopedSlotDiagnostics(fixture!.projectRoot, miniProgram, `before-publication-${saveGeneration}`)
       }
-      const pending = publication!.capture(source)
-      await replaceFileByRename(source, content)
+      const pending = publication!.capture(file)
+      await replaceFileByRename(file, content)
       await pending.wait()
       if (stateful) {
         expect(publication!.stateful, 'compiled template registration must complete the classic handoff').toBe(false)
       }
       try {
-        await observeReload(marker)
+        await observeReload(marker, count)
       }
       catch (error) {
         if (options.scopedSlots) {

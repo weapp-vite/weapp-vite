@@ -1,11 +1,11 @@
 import type { CompilerContext } from '../../context'
-import type { ScanWxmlOptions } from '../../types'
+import type { ScanWxmlOptions, WxmlDep } from '../../types'
 import type { ResolveSfcBlockSrcOptions } from './vueSfc'
 import { LRUCache } from 'lru-cache'
 import MagicString from 'magic-string'
 import path from 'pathe'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
-import { scanWxml } from '../../wxml'
+import { scanSfcTemplateDependencies } from './sfcTemplateDependencies/scan'
 
 const resolutionsByOptions = new WeakMap<ResolveSfcBlockSrcOptions, Map<string, string>>()
 const resolutionsByConfig = new WeakMap<object, LRUCache<string, string>>()
@@ -51,23 +51,29 @@ export function resolveSfcTemplateSource(options: ResolveSfcBlockSrcOptions | un
   return options && source ? resolutionsByOptions.get(options)?.get(sourceKey(source, importer)) : undefined
 }
 
+/** 原始 Vue 模板与编译后模板共用外部依赖的路径定位规则。 */
+export function rebaseSfcTemplateDependency(dependency: WxmlDep, source: string | undefined, owner: string, preserveScriptModules?: ReadonlySet<string>) {
+  const value = dependency.value
+  const compilerOwnedScript = (dependency.tagName === 'wxs' || dependency.tagName === 'sjs') && preserveScriptModules?.has(dependency.attrs.module)
+  if (!source || path.dirname(source) === path.dirname(owner) || !value || value.startsWith('/') || value.includes('://') || value.includes('{{') || compilerOwnedScript) {
+    return dependency
+  }
+  const resolved = path.resolve(path.dirname(source), value)
+  const relative = path.relative(path.dirname(owner), resolved)
+  return { ...dependency, value: relative.startsWith('.') ? relative : `./${relative}` }
+}
+
 /** 外部模板编入 SFC 输出后，原生 import/include/WXS 仍指向其原始文件。 */
 export function rebaseSfcTemplateDependencies(template: string, source: string | undefined, owner: string, platform?: ScanWxmlOptions['platform'], preserveScriptModules?: ReadonlySet<string>) {
   if (!source || path.dirname(source) === path.dirname(owner)) {
     return template
   }
-  const token = scanWxml(template, { platform })
   const rewritten = new MagicString(template)
-  for (const dependency of token.deps) {
-    const value = dependency.value
-    const compilerOwnedScript = (dependency.tagName === 'wxs' || dependency.tagName === 'sjs') && preserveScriptModules?.has(dependency.attrs.module)
-    if (!value || value.startsWith('/') || value.includes('://') || value.includes('{{') || compilerOwnedScript) {
-      continue
+  for (const dependency of scanSfcTemplateDependencies(template, platform)) {
+    const rebased = rebaseSfcTemplateDependency(dependency, source, owner, preserveScriptModules)
+    if (rebased !== dependency) {
+      rewritten.overwrite(dependency.start, dependency.end, `${dependency.name}=${JSON.stringify(rebased.value)}`)
     }
-    const resolved = path.resolve(path.dirname(source), value)
-    const relative = path.relative(path.dirname(owner), resolved)
-    const rebased = relative.startsWith('.') ? relative : `./${relative}`
-    rewritten.overwrite(dependency.start, dependency.end, `${dependency.name}=${JSON.stringify(rebased)}`)
   }
   return rewritten.toString()
 }

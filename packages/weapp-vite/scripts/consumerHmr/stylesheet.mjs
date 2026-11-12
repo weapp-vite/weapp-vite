@@ -60,14 +60,17 @@ export async function assertRetiredStatefulTransport(endpoint) {
   )
 }
 
-/** 启动即选择 classic；样式修改、恢复及再次保存都沿用同一原生交付会话。 */
-export async function verifyStylesheetHmr({ root, operation, originalTemplate, waitForOutput, readOutput }) {
+/** 首次样式变化交接 classic；恢复及再次保存沿用该原生发布会话。 */
+export async function verifyStylesheetHmr({ root, operation, originalTemplate, waitForOutput, waitForClassicReady, readOutput }) {
   await waitForOutput('app.wxss', /width:\s*37px/)
-  await assertConsumerStartupClassic({ root, operation, output: readOutput() })
   for (const width of [53, 37, 61, 37]) {
     await writeFile(path.join(root, 'src/pages/native/index.wxml'), originalTemplate.replace('37px', `${width}px`))
     await waitForOutput('pages/native/index.wxml', `${width}px`)
     await waitForOutput('app.wxss', new RegExp(`width:\\s*${width}px`))
+    if (operation === 'stateful-dev') {
+      // 单个文件可先于完整 classic 发布回调可见，交接完成必须等待原生完成信号。
+      await waitForClassicReady()
+    }
     await assertConsumerStartupClassic({ root, operation, output: readOutput() })
   }
 }

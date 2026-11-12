@@ -1,5 +1,12 @@
 # wevu-comprehensive-demo
 
+## 0.0.183
+
+### Patch Changes
+
+- Updated dependencies:
+  - wevu@7.10.0
+
 ## 0.0.182
 
 ### Patch Changes

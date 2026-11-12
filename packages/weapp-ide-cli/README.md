@@ -436,6 +436,8 @@ weapp config import ./weapp-ide-cli.config.json
 
 可以直接编辑该文件或重新运行 `weapp config` 来更新路径。当配置文件缺失或留空时，CLI 会尝试按系统默认安装位置自动寻找。
 
+交互式终端中的配置文件、CLI 和配置导入/导出路径保留原始文字，通过 OSC 8 超链接关联文件地址，不显示 `file:///` 或 URL 编码。在支持超链接的 macOS Terminal 中，按住 **Command 并双击路径**，由系统关联的程序打开对应文件；其他终端按自身的链接打开手势操作，不支持 OSC 8 时仅显示路径。`NO_COLOR` 只关闭上色，不影响超链接。诊断流重定向、CI 或 `TERM=dumb` 时不添加超链接控制序列；JSON、`config get` 和配置文件中的路径始终保持原值。
+
 配置文件示例：
 
 ```json

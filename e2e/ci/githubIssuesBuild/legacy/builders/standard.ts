@@ -2,6 +2,7 @@ import { fs } from '@weapp-core/shared/node'
 // eslint-disable-next-line e18e/ban-dependencies -- 保留历史构建命令的跨平台启动与环境语义。
 import { execa } from 'execa'
 import path from 'pathe'
+import { expect } from 'vitest'
 import { runWeappViteBuildWithLogCapture, sanitizeBuildCommandEnv } from '../../../../utils/buildLog'
 import { APP_ROOT, CLI_PATH, DIST_ROOT } from '../constants'
 import { buildState } from './state'
@@ -21,6 +22,9 @@ export async function runBuild() {
       cwd: APP_ROOT,
       label: 'ci:github-issues',
       skipNpm: true,
+      onOutput(output) {
+        expect(output).not.toMatch(/\[自动 usingComponents\] 解析失败[^\n]*pages\/issue-(?:322|494)\//)
+      },
     })
   })()
 

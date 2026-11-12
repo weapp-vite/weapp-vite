@@ -24,6 +24,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "catalog:",
+    "@wevu/compiler": "workspace:*",
     "typescript": "catalog:",
     "vite": "catalog:"
   }

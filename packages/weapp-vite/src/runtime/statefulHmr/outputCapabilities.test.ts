@@ -9,6 +9,19 @@ function style(source: string | Uint8Array, fileName = 'app.wxss'): Extract<Stat
 }
 
 describe('stateful compiled output capabilities', () => {
+  it('hands changed templates to classic before publication while permitting builds without a runtime', () => {
+    const capabilities = new StatefulHmrOutputCapabilities('wxss', 'wxml')
+    const template = (source: string) => style(source, 'pages/home/index.wxml')
+    capabilities.published([template('<view>A</view>')], [], true)
+    expect(capabilities.fallback([template('<view>A</view>')])).toBeUndefined()
+    expect(capabilities.fallback([template('<view>B</view>')], [], false)).toBeUndefined()
+    expect(capabilities.fallback([template('<view>B</view>')])).toMatchObject({ code: 'template-output', files: ['pages/home/index.wxml'] })
+    expect(capabilities.fallback([], ['pages/home/index.wxml'])).toMatchObject({ code: 'template-output' })
+    // 未连接 IDE 的原生写出同样推进字节基线，后续连接不能回读旧模板。
+    capabilities.published([template('<view>B</view>')], [], false)
+    expect(capabilities.fallback([template('<view>B</view>')])).toBeUndefined()
+  })
+
   it('allows initial styles and establishes admission only after the first successful full publication', () => {
     const capabilities = new StatefulHmrOutputCapabilities('wxss')
     expect(capabilities.fallback([style('red')])).toBeUndefined()

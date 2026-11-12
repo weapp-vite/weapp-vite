@@ -93,9 +93,9 @@ export function createWevuTailwindHmrSession(repositoryRoot: string, fixture: Aw
 
   async function page() {
     await vi.waitFor(async () => {
-      expect((await app().currentPage({ retries: 1, timeout: 6_000 }))?.path).toBe(WEVU_TAILWIND_ROUTE.slice(1))
+      expect((await app().currentPage({ retries: 1, timeout: 6_000, appFunctionFallback: false }))?.path).toBe(WEVU_TAILWIND_ROUTE.slice(1))
     }, { timeout: 45_000 })
-    const current = await app().currentPage({ retries: 1, timeout: 6_000 })
+    const current = await app().currentPage({ retries: 1, timeout: 6_000, appFunctionFallback: false })
     if (!current) {
       throw new Error('Wevu Tailwind current page is unavailable')
     }

@@ -57,6 +57,8 @@ jobs:
 
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - run: pnpm --filter weapp-vite... --filter @weapp-agent/cli... -r build
+      - name: Verify native CLI paths and diagnostic streams
+        run: pnpm --filter weapp-ide-cli exec vitest run --config vitest.config.ts --coverage.enabled=false src/terminalPath.test.ts src/cli/config-command.path.test.ts test/config.test.ts test/logger-protocol.test.ts test/cli.run.test.ts
       - run: pnpm --filter @weapp-agent/core --filter @weapp-agent/providers --filter @weapp-agent/mini-program --filter @weapp-agent/cli --filter @weapp-vite/acceptance --filter @weapp-vite/mcp --filter @weapp-vite/devtools-runtime -r typecheck
       - if: matrix.os != 'windows-latest'
         run: pnpm --filter @weapp-agent/core --filter @weapp-agent/providers --filter @weapp-agent/mini-program --filter @weapp-agent/cli --filter @weapp-vite/acceptance --filter @weapp-vite/mcp --filter @weapp-vite/devtools-runtime -r test

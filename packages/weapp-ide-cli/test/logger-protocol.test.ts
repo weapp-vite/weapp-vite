@@ -1,10 +1,48 @@
 import { execFile } from 'node:child_process'
-import { fileURLToPath } from 'node:url'
+import path from 'node:path'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { promisify } from 'node:util'
 import { describe, expect, it } from 'vitest'
 
 // 通过独立进程验证真实流输出，避免 logger mock 隐藏 stdout 污染。
 describe('IDE diagnostics protocol boundary', () => {
+  it.each([
+    { tty: true, ci: '', term: 'xterm-256color', linked: true },
+    { tty: false, ci: '', term: 'xterm-256color', linked: false },
+    { tty: true, ci: 'true', term: 'xterm-256color', linked: false },
+    { tty: true, ci: '', term: 'dumb', linked: false },
+  ])('preserves paths and JSON with $tty TTY, CI=$ci, TERM=$term', async ({ tty, ci, term, linked }) => {
+    const loggerUrl = new URL('../src/logger.ts', import.meta.url).href
+    const formatterUrl = new URL('../src/terminalPath.ts', import.meta.url).href
+    const cliPath = path.resolve('fixtures', '微信 tools #%?', 'cli')
+    const { stdout, stderr } = await promisify(execFile)(process.execPath, [
+      '--import',
+      'tsx',
+      '--input-type=module',
+      '-e',
+      `Object.defineProperty(process.stderr, 'isTTY', { value: ${tty} });
+       const { default: logger } = await import(${JSON.stringify(loggerUrl)});
+       const { formatTerminalPath } = await import(${JSON.stringify(formatterUrl)});
+       const cliPath = process.argv[1];
+       logger.info('CLI 路径： ' + formatTerminalPath(cliPath));
+       process.stdout.write(JSON.stringify({ cliPath }));`,
+      cliPath,
+    ], {
+      cwd: fileURLToPath(new URL('../', import.meta.url)),
+      env: { ...process.env, CI: ci, TERM: term, NO_COLOR: '1', FORCE_COLOR: '0', CONSOLA_LEVEL: '3' },
+    })
+    expect(JSON.parse(stdout)).toEqual({ cliPath })
+    if (linked) {
+      expect(stderr).toContain(`CLI 路径： \u001B]8;;${pathToFileURL(cliPath).href}\u001B\\${cliPath}\u001B]8;;\u001B\\`)
+      expect(stderr.replaceAll(`\u001B]8;;${pathToFileURL(cliPath).href}\u001B\\`, '').replaceAll('\u001B]8;;\u001B\\', '')).not.toContain('file://')
+    }
+    else {
+      expect(stderr).toContain(`CLI 路径： ${cliPath}`)
+      expect(stderr).not.toContain('\u001B')
+    }
+    expect(stderr).not.toContain('\u001B[')
+  })
+
   it('keeps JSON stdout parseable and preserves diagnostics on stderr', async () => {
     const loggerUrl = new URL('../src/logger.ts', import.meta.url).href
     const { stdout, stderr } = await promisify(execFile)(process.execPath, [

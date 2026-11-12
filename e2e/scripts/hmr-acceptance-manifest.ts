@@ -27,6 +27,14 @@ export const HMR_ACCEPTANCE_SCENARIOS: HmrAcceptanceScenario[] = [
     headless: ['ide/stateful-hmr.runtime.test.ts'],
   },
   {
+    id: 'native-template-publication-fallback',
+    expectations: ['classic-fallback'],
+    configuredModes: ['auto'],
+    capabilityIds: ['template-output'],
+    ide: ['ide/hmr-native-template-fallback.runtime.test.ts'],
+    headless: ['ide/hmr-native-template-fallback.runtime.test.ts'],
+  },
+  {
     id: 'jsx-and-sibling-script-updates',
     expectations: ['stateful', 'classic-fallback'],
     capabilityIds: ['script-patch', 'native-registration'],
@@ -50,7 +58,7 @@ export const HMR_ACCEPTANCE_SCENARIOS: HmrAcceptanceScenario[] = [
   {
     id: 'unsupported-compiler-startup-classic',
     expectations: ['classic-fallback'],
-    capabilityIds: ['compiler-provider', 'ide-classic-handoff'],
+    capabilityIds: ['compiler-provider'],
     ide: ['ide/hmr-startup-fallback.runtime.test.ts'],
     headless: ['ide/hmr-startup-fallback.runtime.test.ts'],
   },
@@ -79,7 +87,7 @@ export const HMR_ACCEPTANCE_SCENARIOS: HmrAcceptanceScenario[] = [
   },
   {
     id: 'native-css-and-tailwind',
-    expectations: ['classic', 'classic-fallback'],
+    expectations: ['stateful', 'classic', 'classic-fallback'],
     capabilityIds: ['script-patch', 'visual-assets', 'stylesheet-output'],
     ide: ['ide/issue-1015-css-hmr.runtime.test.ts', 'ide/issue-998-tailwind.runtime.test.ts', 'ide/template-tailwindcss-tdesign-hmr.runtime.test.ts'],
     headless: ['ide/issue-1015-css-hmr.runtime.test.ts', 'ide/issue-998-tailwind.runtime.test.ts'],
@@ -207,7 +215,7 @@ export const HMR_ACCEPTANCE_STAGES = [
   { name: 'ide', suite: 'ide-hmr', provider: 'devtools' },
 ] as const
 
-/** 正式支持范围独立命名，旧 stateful 套件继续保留诊断与历史失败语义。 */
+/** 保留旧 classic 验收范围供历史结果比较；正式入口使用完整 HMR_ACCEPTANCE_STAGES。 */
 export const HMR_CLASSIC_ACCEPTANCE_STAGES = [
   { name: 'build', suite: 'hmr-build:classic', provider: 'none' },
   { name: 'headless', suite: 'ide-hmr-headless:classic', provider: 'headless' },

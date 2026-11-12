@@ -30,6 +30,7 @@ export {
 } from './plugins/utils/cache'
 export {
   getSfcCheckMtime,
+  parseVueSfc,
   preprocessScriptSetupSrc,
   preprocessScriptSrc,
   readAndParseSfc,

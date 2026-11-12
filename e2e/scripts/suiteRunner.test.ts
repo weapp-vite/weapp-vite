@@ -107,10 +107,13 @@ describe('suiteRunner', () => {
     expect(selected.some(name => name.includes('ignores unowned editor files'))).toBe(true)
     expect(selected.some(name => name.includes('copied and public asset lifecycle'))).toBe(true)
     expect(selected.some(name => name.includes('isolated script updates and restoration'))).toBe(true)
-    expect(selected.some(name => name.includes('initializes updated native defaults'))).toBe(true)
-    for (const runtime of ['native', 'component']) {
-      expect(selected.some(name => name.includes(`preserves ${runtime} page state across two template`))).toBe(true)
-    }
+    const nativeTemplates = tasks.find(task => task.label === 'ide/hmr-native-template-fallback.runtime.test.ts')!
+    expect(nativeTemplates).toBeDefined()
+    expect(nativeTemplates.args).not.toContain('--testNamePattern')
+    const nativeCases = readTaskCases(path.resolve(import.meta.dirname, '../..'), nativeTemplates.label, nativeTemplates.acceptanceTemplates)
+    expect(nativeCases).toHaveLength(4)
+    expect(nativeCases.some(item => item.name.includes('both restoration cycles'))).toBe(true)
+    expect(nativeCases.some(item => item.name.includes('new script defaults'))).toBe(true)
     const fallback = tasks.find(task => task.label === 'ide/hmr-compiled-template-fallback.runtime.test.ts')!
     expect(fallback).toBeDefined()
     expect(fallback.args).not.toContain('-t')

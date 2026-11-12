@@ -6,6 +6,24 @@ import { cleanupSourceRecoveryFixtures, marketplaceHook, mirrorHook, releasedPac
 
 afterEach(cleanupSourceRecoveryFixtures)
 
+it('finishes an interrupted optional mirror without republishing or consuming newer intents', ({ signal }) => withSourceRecoveryFixture(signal, async (fixture) => {
+  fixture.interruptMirror()
+  for (const stage of ['plan', 'verify', 'prepare', 'upload', 'confirm', 'finalize'] as const) {
+    await fixture.runStage(stage)
+  }
+  expect(fixture.publishes).toEqual([])
+  expect(fixture.hooks.map(hook => hook.script)).toEqual(['quality', mirrorHook])
+  expect(fixture.checkpoint().state).toMatchObject({
+    npm: 'complete',
+    complete: true,
+    hooks: { [marketplaceHook]: 'complete', [mirrorHook]: 'ignored' },
+  })
+  expect(await fixture.output()).toMatch(/release-record=[a-f0-9]{64}/)
+  const summary = JSON.parse(await readFile(path.join(fixture.cwd, 'pnpm-publish-summary.json'), 'utf8')) as { publishedPackages: { name: string, version: string }[] }
+  expect(summary.publishedPackages).toEqual([releasedPackage])
+  expect(await fixture.intent()).toBe(fixture.originalIntent)
+}), 30_000)
+
 it('resumes all six source recovery stages without duplicate publication or consuming current intents', ({ signal }) => withSourceRecoveryFixture(signal, async (fixture) => {
   const planned = await fixture.runStage('plan')
   expect(planned.done).toEqual(['plan'])

@@ -98,6 +98,34 @@ it('restores an unpublished pending lease on terminal close without creating a c
   expect(await fs.readFile(project.configPath, 'utf8')).toBe(project.original)
 })
 
+it.each([false, true])('protects assets while disabling script hot reload before compilation, then restores the request: publish=%s', async (publish) => {
+  const project = await fixture()
+  await project.owner.preparePendingAssetHandoff(project.configPath, project.outDir)
+  const installed = await fs.readJSON(project.configPath) as { setting: { compileHotReLoad: boolean }, watchOptions: { ignore: string[] }, description?: string }
+  expect(installed.setting.compileHotReLoad).toBe(false)
+  expect(installed.watchOptions).toEqual(JSON.parse(project.installed).watchOptions)
+  expect(await project.owner.readRequested(project.configPath)).toBe(project.original)
+  expect(await fs.readFile(project.assetJournal, 'utf8')).toBe(project.assetLease)
+  expect(project.owner.preservesPendingOutput(project.outDir)).toBe(true)
+  expect(await project.owner.preparePublication(project.configPath, '{}')).toEqual({ source: '{}', deferred: true })
+  installed.description = 'edited while compiling'
+  installed.watchOptions.ignore.push('user-added/**')
+  await fs.writeJSON(project.configPath, installed)
+  const requested = JSON.parse(await project.owner.readRequested(project.configPath)) as Record<string, unknown>
+  expect(requested).toEqual({ setting: { compileHotReLoad: true }, description: installed.description, watchOptions: { ignore: ['user/**', 'user-added/**'] } })
+  await project.owner.preparePendingAssetHandoff(project.configPath, project.outDir)
+  expect(await fs.readJSON(project.configPath)).toEqual(installed)
+  if (publish) {
+    await project.owner.activatePendingAssetHandoff(project.configPath, project.outDir)
+    expect(await fs.readJSON(project.configPath)).toEqual({ ...requested, setting: { compileHotReLoad: false } })
+    expect(await fs.pathExists(project.assetJournal)).toBe(false)
+  }
+  await project.owner.close()
+  expect(await fs.readJSON(project.configPath)).toEqual(requested)
+  expect(await fs.pathExists(project.assetJournal)).toBe(false)
+  expect(await fs.pathExists(project.classicJournal)).toBe(false)
+})
+
 it.each([false, true])('preserves a user-deleted config through pending cleanup: activate=%s', async (activate) => {
   const project = await fixture()
   await fs.remove(project.configPath)

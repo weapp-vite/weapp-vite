@@ -4,6 +4,15 @@ export default defineConfig({
   weapp: {
     srcRoot: 'src',
     routeRules: {
+      '/pages/index/index': {
+        appLayout: {
+          name: 'default',
+          props: {
+            mode: '原生页面',
+            title: '默认外壳',
+          },
+        },
+      },
       '/pages/rules/index': {
         appLayout: {
           name: 'command',

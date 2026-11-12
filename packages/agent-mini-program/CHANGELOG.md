@@ -1,5 +1,14 @@
 # @weapp-agent/mini-program
 
+## 0.0.7
+
+### Patch Changes
+
+- Updated dependencies:
+  - @weapp-vite/acceptance@0.2.3
+  - @weapp-vite/mcp@2.2.4
+  - weapp-ide-cli@6.4.3
+
 ## 0.0.6
 
 ### Patch Changes

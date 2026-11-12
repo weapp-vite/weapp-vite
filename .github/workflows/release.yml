@@ -82,8 +82,9 @@ jobs:
       docs-sites: ${{ steps.release-finalize.outputs.docs-sites }}
     name: Release
     runs-on: ubuntu-latest
-    # 六个发布阶段共享 50 分钟，为安装、缓存、归档和清理保留其余预算。
-    timeout-minutes: 60
+    # plan/preflight/verify 共享 45 分钟，成功后发布四阶段另共享 45 分钟。
+    # 安装、缓存、归档和清理另留 30 分钟。
+    timeout-minutes: 120
     env:
       GIT_AUTHOR_NAME: github-actions[bot]
       GIT_AUTHOR_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
@@ -95,7 +96,7 @@ jobs:
       REPO_RELEASE_DRY_RUN: ${{ inputs.dry-run }}
       REPO_RELEASE_RECOVERY_SOURCE_SHA: ${{ inputs.source-sha }}
       REPO_RELEASE_ACKNOWLEDGE_HOOKS: ${{ inputs.acknowledge-marketplace-hook && 'release:vscode-marketplace' || '' }}
-      REPOCTL_RELEASE_BUDGET_SECONDS: 3000
+      REPOCTL_RELEASE_BUDGET_SECONDS: 2700
       TURBO_CACHE: local:rw
     steps:
       - name: Checkout Repo
@@ -146,7 +147,7 @@ jobs:
           restore-keys: |
             release-turbo-v2-${{ env.REPOCTL_RELEASE_PLATFORM }}-${{ env.REPOCTL_RELEASE_ARCH }}-node-${{ env.REPOCTL_RELEASE_NODE_VERSION }}-pnpm-${{ env.REPOCTL_RELEASE_PNPM_VERSION }}-${{ hashFiles('pnpm-lock.yaml') }}-
 
-      - name: Start shared release deadline
+      - name: Start quality deadline
         run: echo "REPOCTL_RELEASE_DEADLINE_EPOCH=$(($(date +%s) + REPOCTL_RELEASE_BUDGET_SECONDS))" >> "$GITHUB_ENV"
 
       - name: Release plan
@@ -159,7 +160,7 @@ jobs:
       - name: Release preflight
         id: release-preflight
         if: ${{ steps.release-plan.outputs.run == 'true' }}
-        run: pnpm check:weapp-core-constants-changeset --release
+        run: bash .github/scripts/release-stage.sh preflight
 
       - name: Release verify
         id: release-verify
@@ -168,6 +169,10 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
         run: bash .github/scripts/release-stage.sh verify
+
+      - name: Start publication deadline
+        if: ${{ steps.release-plan.outputs.run == 'true' }}
+        run: echo "REPOCTL_RELEASE_DEADLINE_EPOCH=$(($(date +%s) + REPOCTL_RELEASE_BUDGET_SECONDS))" >> "$GITHUB_ENV"
 
       - name: Release prepare
         id: release-prepare
@@ -222,6 +227,58 @@ jobs:
             repoctl-ci-progress.json
           if-no-files-found: ignore
           retention-days: 14
+
+  mirror:
+    name: Sync confirmed release to npmmirror
+    needs: release
+    if: ${{ !cancelled() && needs.release.outputs.release-record != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    continue-on-error: true
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - name: Checkout frozen release tooling
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Setup Node.js environment
+        uses: ./.github/actions/setup-node-pnpm
+        with:
+          node-version: '24'
+          install-dependencies: 'false'
+          freeze-toolchain: 'false'
+
+      - name: Install release tooling without lifecycle scripts
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Download this attempt's confirmed publication summary
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: npm-publish-progress-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/confirmed-release
+
+      - name: Sync only the confirmed publication
+        timeout-minutes: 5
+        env:
+          REPO_RELEASE_PUBLISH_SUMMARY: ${{ runner.temp }}/confirmed-release/pnpm-publish-summary.json
+        run: |
+          test -s "$REPO_RELEASE_PUBLISH_SUMMARY"
+          pnpm release:sync-npmmirror
+
+      - name: Record mirror retry instructions
+        if: ${{ !cancelled() && failure() }}
+        run: |
+          echo '::warning::npmmirror synchronization failed or timed out. Release completion and documentation deployment remain valid.'
+          {
+            echo '### npmmirror retry'
+            echo 'Download npm-publish-progress-${{ github.run_id }}-${{ github.run_attempt }} from this run, then use its pnpm-publish-summary.json:'
+            echo '`REPO_RELEASE_PUBLISH_SUMMARY=<downloaded-summary> pnpm release:sync-npmmirror`'
+            echo 'Retry mirror synchronization only; do not republish npm packages or edit release records.'
+          } >> "$GITHUB_STEP_SUMMARY"
 
   docs:
     needs: release
@@ -421,7 +478,7 @@ jobs:
       actions: read
       id-token: write
     env:
-      REPOCTL_BOOTSTRAP_TOOL_VERSION: 6.5.4
+      REPOCTL_BOOTSTRAP_TOOL_VERSION: 6.6.0
     steps:
       - name: Setup Node.js environment
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -464,7 +521,7 @@ jobs:
       contents: read
       actions: read
     env:
-      REPOCTL_BOOTSTRAP_TOOL_VERSION: 6.5.4
+      REPOCTL_BOOTSTRAP_TOOL_VERSION: 6.6.0
     steps:
       - name: Setup Node.js environment
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0

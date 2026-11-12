@@ -113,6 +113,7 @@ async function initializeFixture(record: SourceRecoveryFixtureRecord, acknowledg
   const toolchains: string[] = []
   const checkouts: string[] = []
   let quality: ((cwd: string) => void) | undefined
+  let mirrorFails = false
   const automation = new Map<string, { revision: string, value: unknown }>()
   const github = {
     ensurePullRequest: vi.fn(),
@@ -157,6 +158,9 @@ async function initializeFixture(record: SourceRecoveryFixtureRecord, acknowledg
       hooks.push({ script: args[1], cwd: options.cwd, head: head.stdout.trim(), source: options.env.REPO_RELEASE_SOURCE_SHA })
       if (args[1] === 'quality') {
         quality?.(options.cwd)
+      }
+      if (args[1] === mirrorHook && mirrorFails) {
+        return { status: 1, stdout: '', stderr: 'Mirror synchronization timed out' }
       }
     }
     else if (command === 'pnpm' && args[0] === 'publish') {
@@ -208,6 +212,10 @@ async function initializeFixture(record: SourceRecoveryFixtureRecord, acknowledg
     output: () => readFile(output, 'utf8'),
     git,
     setQuality: (callback: (cwd: string) => void) => { quality = callback },
+    interruptMirror: () => {
+      checkpoint.state.hooks = { [marketplaceHook]: 'complete', [mirrorHook]: 'running' }
+      mirrorFails = true
+    },
     get recoveryRoot() {
       const checkout = checkouts.at(-1)
       if (!checkout) {

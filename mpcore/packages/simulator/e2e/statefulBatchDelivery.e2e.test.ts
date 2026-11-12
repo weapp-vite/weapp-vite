@@ -31,3 +31,21 @@ it('renders the applied batch and retains its version when the next batch fails'
     preview.remove()
   }
 })
+
+it('keeps a retired client from applying delayed batches or scheduling more work', () => {
+  const session = createBrowserHeadlessSession({ files: createBrowserVirtualFiles(sources as Array<[string, string]>) })
+  try {
+    const page = session.reLaunch('/pages/index/index')
+    page.retireClient()
+    const reports = page.reports().length
+    page.stalePatch()
+    page.patch()
+    expect(page.data).toMatchObject({ utility: 'initial', count: 0 })
+    expect(session.renderCurrentPage().wxml).toContain('initial')
+    expect(page.reports()).toHaveLength(reports)
+    expect(page.pendingTimers()).toEqual([])
+  }
+  finally {
+    session.close()
+  }
+})

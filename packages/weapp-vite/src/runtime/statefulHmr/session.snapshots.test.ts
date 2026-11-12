@@ -101,8 +101,9 @@ vi.mock('./viteAdapter', () => ({
 }))
 
 const route = 'pages/shared/index'
-const contentFile = 'snapshot-content.wxml'
-const pageContentFile = 'pages/shared/snapshot-content.wxml'
+// 事务测试使用普通资产，避免把模拟的内容变化冒充宿主可安全应用的模板更新。
+const contentFile = 'snapshot-content.txt'
+const pageContentFile = 'pages/shared/snapshot-content.txt'
 const root = path.join(realpathSync.native(tmpdir()), 'stateful-session-snapshots')
 const watchers: Array<{ close: () => Promise<void> }> = []
 const temporaryDirectories: string[] = []
@@ -697,6 +698,26 @@ describe('stateful snapshot output transactions', () => {
     expect(session.runtime.fallback?.code).toBe('entry-topology')
   })
 
+  it.each(['create', 'delete', 'replace'] as const)('reports only changed entries when a full snapshot detects topology %s before the route watcher', async (event) => {
+    const page = path.join(root, 'src/page.js')
+    const previous = path.join(root, 'src/previous.js')
+    const added = path.join(root, 'src/added.js')
+    const initialEntries = event === 'create' ? [page] : [page, previous]
+    const nextEntries = event === 'delete' ? [page] : [page, added]
+    const changedEntries = event === 'create' ? [added] : event === 'delete' ? [previous] : [previous, added]
+    const session = await start(snapshot('red'), initialEntries)
+    session.rebuild.mockResolvedValueOnce({ ...snapshot('blue'), entryIds: nextEntries })
+    harness.writeOutput.mockClear()
+
+    await session.full()
+    await vi.advanceTimersByTimeAsync(40)
+
+    expect(session.runtime.fallback).toMatchObject({ code: 'entry-topology', files: changedEntries })
+    expect(session.classic).toHaveBeenCalledOnce()
+    expect(harness.fullBuild).not.toHaveBeenCalled()
+    expect(harness.writeOutput).not.toHaveBeenCalled()
+  })
+
   it('does not let an old session release a newer host settlement binding', async () => {
     const controller = createStatefulHmrHostPlugins({} as CompilerContext)
     const plugin = controller.plugins.find(plugin => plugin.name === 'weapp-vite:stateful-hmr-session')!
@@ -800,6 +821,7 @@ describe('stateful snapshot output transactions', () => {
     ['pages/shared/index.wxml', '<view>updated</view>'],
     ['pages/shared/index.wxss', '.native-updated { color: blue; }'],
   ])('admits native %s output by compiled capability when a compiler also scans that source', async (fileName, source) => {
+    vi.spyOn(StatefulHmrTransport.prototype, 'hasCurrentClient', 'get').mockReturnValue(false)
     const session = await start()
     const file = path.join(root, 'src', fileName)
     const compiler = getCompilerHmrHost(session.ctx)
@@ -1220,6 +1242,8 @@ describe('stateful snapshot output transactions', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     vi.clearAllMocks()
+    // Patch harness 模拟已连接客户端；无 IDE 场景在用例内显式覆盖。
+    vi.spyOn(StatefulHmrTransport.prototype, 'hasCurrentClient', 'get').mockReturnValue(true)
     harness.nativeOutput = []
     harness.initialOutput = true
     harness.nativeSettlement.mockReset().mockResolvedValue()
@@ -1266,6 +1290,56 @@ describe('stateful snapshot output transactions', () => {
   it('applies configured build polling to the Vite source watcher', async () => {
     await start(snapshot('red'), [], { build: { watch: { chokidar: { usePolling: true, interval: 50 } } } })
     expect(harness.createServer.mock.calls.at(-1)?.[0].server.watch).toMatchObject({ usePolling: true, interval: 50 })
+  })
+
+  it.each(['ts', 'vue'])('publishes script edits and restoration before any IDE connects (%s)', async (extension) => {
+    vi.spyOn(StatefulHmrTransport.prototype, 'hasCurrentClient', 'get').mockReturnValue(false)
+    const file = path.join(root, `src/page.${extension}`)
+    const original = extension === 'ts' ? 'Page({ data: { message: "initial" } })' : '<script setup>const message = "initial"</script><template><view>{{ message }}</view></template>'
+    const output = (source: string): StatefulHmrOutputFile[] => [{ type: 'chunk', fileName: 'pages/page.js', code: `void ${JSON.stringify(source)}`, modules: { [file]: {} } }]
+    harness.nativeOutput = output(original)
+    const session = await start(snapshot('red'), [file], {}, new Map([[file, original]]))
+    await session.whenSettled()
+    const delta = vi.spyOn(StatefulHmrTransport.prototype, 'addDelta')
+    const host = getCompilerHmrHost(session.ctx)
+    for (const source of [original.replace('initial', 'updated'), original]) {
+      harness.writeOutput.mockClear()
+      harness.nativeOutput = output(source)
+      host.captureNative(file, source)
+      session.sourceChange(file)
+      await vi.advanceTimersByTimeAsync(50)
+      await session.whenSettled()
+      expect(harness.writeOutput.mock.calls.flatMap(([, files]) => files)).toContainEqual(expect.objectContaining({ fileName: 'pages/page.js', code: expect.stringContaining(source.includes('updated') ? 'updated' : 'initial') }))
+    }
+    expect(harness.fullBuild).toHaveBeenCalledTimes(2)
+    expect(delta).not.toHaveBeenCalled()
+    expect(session.runtime.fallback).toBeUndefined()
+  })
+
+  it('hands connected template byte changes to classic before native writes or script delivery', async () => {
+    const template = (color: string): StatefulHmrSnapshot => ({ ...snapshot(color), output: [{ type: 'asset', fileName: 'pages/shared/index.wxml', source: `<view data-color="${color}"></view>` }] })
+    const session = await start(template('red'))
+    await session.whenSettled()
+    vi.spyOn(StatefulHmrTransport.prototype, 'hasCurrentClient', 'get').mockReturnValue(true)
+    const delta = vi.spyOn(StatefulHmrTransport.prototype, 'addDelta').mockResolvedValue()
+    session.rebuild.mockResolvedValue(template('blue'))
+    session.classic.mockImplementation(async () => {
+      await session.close()
+      session.runtime.markClassic()
+    })
+    harness.writeOutput.mockClear()
+    harness.registerPatchModules.mockClear()
+    harness.markPayloadDelivered.mockClear()
+    session.refresh()
+    await vi.advanceTimersByTimeAsync(100)
+    await session.runtime.whenSettled()
+
+    expect(session.runtime.fallback).toMatchObject({ code: 'template-output', files: ['pages/shared/index.wxml'] })
+    expect(session.classic).toHaveBeenCalledOnce()
+    expect(harness.writeOutput).not.toHaveBeenCalled()
+    expect(delta).not.toHaveBeenCalled()
+    expect(harness.registerPatchModules).not.toHaveBeenCalled()
+    expect(harness.markPayloadDelivered).not.toHaveBeenCalled()
   })
 
   it('retains the core ingress event across the session listener and snapshot publication', async () => {
@@ -2301,7 +2375,9 @@ describe('stateful snapshot output transactions', () => {
     host.captureNative(component, changed)
     expect(host.hasVisualChanges([component])).toBe(true)
     const next = registeredSnapshot(kind === 'style' ? compiledStylesheetSnapshot('blue') : snapshot('blue'), [component], kind === 'style' ? 'synthetic-template-registration' : 'changed-template-registration')
-    next.output.push({ type: 'asset', fileName: `${route}.wxml`, source: '<view>after</view>' })
+    if (kind === 'template') {
+      next.output.push({ type: 'asset', fileName: `${route}.wxml`, source: '<view>after</view>' })
+    }
     session.rebuild.mockResolvedValueOnce(next)
     session.sourceChange(component, 'update', [kind === 'style' ? 'entry-style-only:1' : 'entry-local-asset:1'])
     session.sourceChange(component, 'update', ['entry-direct:1'])
@@ -2485,7 +2561,7 @@ describe('stateful snapshot output transactions', () => {
     expect(harness.writeOutput).not.toHaveBeenCalled()
   })
 
-  it.each(['prepare', 'syntax', 'write'] as const)('preserves a native Vue Noop %s error and invalidates its failed comparison baseline', async (stage) => {
+  it.each(['prepare', 'syntax', 'write'] as const)('preserves a native Vue Noop %s error and retains only proven publication evidence', async (stage) => {
     const component = path.join(root, 'src/native.vue')
     const previous = '<script setup>const count = 1</script><template><view>before</view></template>'
     const session = await start(registeredSnapshot(snapshot('red'), [component]), [component], {}, new Map([[component, previous]]))
@@ -2519,6 +2595,21 @@ describe('stateful snapshot output transactions', () => {
     expect(events).toHaveBeenCalledWith(expect.objectContaining({ code: 'ERROR', error: failure }))
     expect(session.classic).not.toHaveBeenCalled()
     expect(session.runtime.fallback).toBeUndefined()
+    if (stage !== 'write') {
+      // 编译失败没有改写宿主产物；修正源码后仍以最后成功发布的注册作为证明。
+      host.captureNative(component, previous.replace('count = 1', 'count = 3'))
+      session.rebuild.mockResolvedValueOnce(registeredSnapshot(snapshot('red'), [component]))
+      vi.spyOn(StatefulHmrTransport.prototype, 'addDelta').mockResolvedValue()
+      session.sourceChange(component, 'update', ['compiler-content:1'])
+      expect(harness.callbacks!.onPatch([component], { type: 'Patch', code: 'void 0', filename: 'recovered.js', changedIds: [component] })).toBe(true)
+      const recovered = session.whenSettled()
+      await vi.advanceTimersByTimeAsync(40)
+      await recovered
+      expect(freeze).toHaveBeenCalledTimes(2)
+      expect(session.classic).not.toHaveBeenCalled()
+      expect(session.runtime.fallback).toBeUndefined()
+      return
+    }
     session.sourceChange(component, 'update', ['entry-local-asset:1'])
     expect(harness.callbacks!.onPatch([component], { type: 'Noop' })).toBe(false)
     await vi.advanceTimersByTimeAsync(40)
@@ -2530,6 +2621,36 @@ describe('stateful snapshot output transactions', () => {
     expect(prepare).toHaveBeenCalledOnce()
     expect(session.classic).toHaveBeenCalledOnce()
     expect(session.runtime.fallback).toMatchObject({ code: 'native-registration', files: [component] })
+  })
+
+  it('keeps published Vue registration evidence after an unrelated asset snapshot fails', async () => {
+    const component = path.join(root, 'src/native.vue')
+    const original = '<script setup>const count = 1</script><template><view>before</view></template>'
+    const initial = registeredSnapshot(snapshot('red'), [component])
+    const session = await start(initial, [component], {}, new Map([[component, original]]))
+    const failure = new SyntaxError('asset snapshot failed before publication')
+    session.rebuild.mockRejectedValueOnce(failure)
+    session.refresh()
+    const rejected = expect(session.whenSettled()).rejects.toBe(failure)
+    await vi.advanceTimersByTimeAsync(40)
+    await rejected
+
+    session.rebuild.mockResolvedValueOnce(initial)
+    session.refresh()
+    const restored = session.whenSettled()
+    await vi.advanceTimersByTimeAsync(40)
+    await restored
+
+    const host = getCompilerHmrHost(session.ctx)
+    host.captureNative(component, original.replace('count = 1', 'count = 2'))
+    vi.spyOn(StatefulHmrTransport.prototype, 'addDelta').mockResolvedValue()
+    session.sourceChange(component, 'update', ['entry-direct:1'])
+    expect(harness.callbacks!.onPatch([component], { type: 'Patch', code: 'void 0', filename: 'next.js', changedIds: [component] })).toBe(true)
+    const recovered = session.whenSettled()
+    await vi.advanceTimersByTimeAsync(40)
+    await recovered
+    expect(session.classic).not.toHaveBeenCalled()
+    expect(session.runtime.fallback).toBeUndefined()
   })
 
   const nativeTemplateAdmissionCases = (['Noop', 'Patch'] as const).flatMap(type =>

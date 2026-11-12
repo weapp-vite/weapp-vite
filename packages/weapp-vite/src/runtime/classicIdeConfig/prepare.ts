@@ -41,6 +41,9 @@ export async function prepareClassicIdeConfig(ctx: MutableCompilerContext): Prom
       if (!runtime.outputOwnership.has(path.resolve(config.outDir))) {
         await runtime.classicIdeConfig.activatePendingAssetHandoff(configPath, config.outDir)
       }
+      else {
+        await runtime.classicIdeConfig.preparePendingAssetHandoff(configPath, config.outDir)
+      }
       return
     }
     await runtime.classicIdeConfig.activate(configPath)

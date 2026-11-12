@@ -141,6 +141,9 @@ export async function verifyStylesheetFallback(options: StylesheetFallbackOption
     await replaceFileByRename(style, colored('#dbeafe'))
     await dev.waitForOutput('[weapp-vite] HMR fallback ', 'compiled stylesheet capability decision')
     await dev.waitFor(gate.waitEntered(90_000, entering.signal), 'classic native prewrite gate')
+    const privateConfig = await fs.readJSON(path.join(project, 'project.private.config.json')) as { setting?: { compileHotReLoad?: boolean }, watchOptions?: { ignore?: string[] } }
+    expect(privateConfig.setting?.compileHotReLoad, 'native script hot reload must stop before classic compilation publishes').toBe(false)
+    expect(privateConfig.watchOptions?.ignore?.length, 'asset protection remains owned while classic output is withheld').toBeGreaterThan(0)
     const transition = () => dev.getOutput().slice(transitionOffset)
     expect(transition()).toContain('"reason":"stylesheet-output"')
     expect(transition().split('[weapp-vite] HMR fallback ')).toHaveLength(2)

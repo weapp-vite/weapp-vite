@@ -13,7 +13,7 @@ defaults:
     shell: bash
 
 env:
-  SNAPSHOT_BUILDER_SHA256: bd2523c802d6d767d5437c840cb9237a43baa81b5a814fd2f42b460c3e624cdf
+  SNAPSHOT_BUILDER_SHA256: 54db26ea0ce9a7ad64eb335877a831a8ed63737764adec4f3acce9a8d5a0a1fa
   SNAPSHOT_BUILDER_WORKFLOW: ".github/workflows/repoctl-snapshot-build.yml"
   SNAPSHOT_PUBLISHER_WORKFLOW: ".github/workflows/repoctl-snapshot-publish.yml"
   SNAPSHOT_BUILD_ENVIRONMENT: "pr-ci-approval"
@@ -37,7 +37,7 @@ jobs:
           node-version: 24.22.1
       - name: Install the pinned verifier without candidate code
         working-directory: ${{ runner.temp }}
-        run: npm install --prefix "$RUNNER_TEMP/repoctl-tools" --ignore-scripts --no-audit --no-fund --package-lock=false repoctl@6.5.4 pnpm@12.18.0
+        run: npm install --prefix "$RUNNER_TEMP/repoctl-tools" --ignore-scripts --no-audit --no-fund --package-lock=false repoctl@6.6.0 pnpm@12.18.0
       - name: Verify GitHub approval, frozen plan, current revision and artifact bytes
         id: verify
         env:
@@ -75,7 +75,7 @@ jobs:
       - name: Install only the pinned trusted publisher
         working-directory: ${{ runner.temp }}
         run: |
-          npm install --prefix "$RUNNER_TEMP/repoctl-tools" --ignore-scripts --no-audit --no-fund --package-lock=false repoctl@6.5.4 pnpm@12.18.0
+          npm install --prefix "$RUNNER_TEMP/repoctl-tools" --ignore-scripts --no-audit --no-fund --package-lock=false repoctl@6.6.0 pnpm@12.18.0
           echo "$RUNNER_TEMP/repoctl-tools/node_modules/.bin" >> "$GITHUB_PATH"
       - name: Recheck all evidence, audit npm OIDC and publish without package scripts
         env:
@@ -112,7 +112,7 @@ jobs:
       - name: Install the pinned consumer verifier
         working-directory: ${{ runner.temp }}
         run: |
-          npm install --prefix "$RUNNER_TEMP/repoctl-tools" --ignore-scripts --no-audit --no-fund --package-lock=false repoctl@6.5.4 pnpm@12.18.0
+          npm install --prefix "$RUNNER_TEMP/repoctl-tools" --ignore-scripts --no-audit --no-fund --package-lock=false repoctl@6.6.0 pnpm@12.18.0
           echo "$RUNNER_TEMP/repoctl-tools/node_modules/.bin" >> "$GITHUB_PATH"
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:

@@ -671,13 +671,14 @@ const showHeader = true
         importPath: '/layouts/default',
         layoutName: 'default',
         tagName: 'layout-default',
+        props: { title: '默认外壳' },
       },
       dynamicSwitch: true,
       layouts: [
         { importPath: '/layouts/default', layoutName: 'default', tagName: 'layout-default' },
         { importPath: '/layouts/admin', layoutName: 'admin', tagName: 'layout-admin' },
       ],
-      dynamicPropKeys: [],
+      dynamicPropKeys: ['title'],
     }
     const manifest = createBindingManifest('src/pages/dynamic-layout.vue')
     const first = applyCompilerTemplateWrappers({
@@ -693,6 +694,7 @@ const showHeader = true
       pageLayout: dynamicPlan,
     })
     expect(second).toBe(first)
+    expect(first).toContain(String.raw`title="{{(__wv_page_layout_props&&__wv_page_layout_props.title)!==undefined?__wv_page_layout_props.title:\"默认外壳\"}}"`)
 
     const appShell = {
       importPath: '/app-shell',

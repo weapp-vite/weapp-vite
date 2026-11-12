@@ -2,9 +2,11 @@ import type { PluginContext } from 'rolldown'
 import type { CompilerContext } from '../../../../context'
 import { baseParse } from '@vue/compiler-core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { parse } from 'vue/compiler-sfc'
 import { analyzeScriptSetupImportsFromCode } from '../../../../ast'
 import logger from '../../../../logger'
 import { attachHmrRuntimeSession, getHmrRuntimeSession } from '../../../../runtime/hmrRuntimeSession'
+import { scanWxml } from '../../../../wxml'
 import { getEntryAnalysisFacts } from './facts'
 import { createScriptSetupAnalyzer } from './scriptSetupAnalysis'
 import { applyScriptSetupUsingComponents } from './template'
@@ -60,12 +62,55 @@ describe('script setup entry analysis', () => {
     expect(resolveUsingComponentReference).toHaveBeenCalledTimes(1)
   })
 
+  it('publishes native dependencies and imported components beside Vue void elements', async () => {
+    const source = '<script setup>import DemoCard from "./DemoCard.vue"</script><template><view><input><img src="icon.png"><DemoCard /><include src="./card.wxml" /></view></template>'
+    readAndParseSfc.mockResolvedValue(parse(source))
+    const json: Record<string, unknown> = {}
+    const setTokenDeps = vi.fn(async () => {})
+    const compiledToken = scanWxml('<view><input /></view>')
+    const tokenMap = new Map([['src/pages/demo.vue', compiledToken]])
+    await apply(source, {
+      json,
+      wxmlService: { analyze: scanWxml, tokenMap, setTokenDeps, setWxmlComponentsMap: vi.fn() } as unknown as CompilerContext['wxmlService'],
+    })
+    expect(json.usingComponents).toEqual({ DemoCard: '/components/demo-card' })
+    expect(setTokenDeps).toHaveBeenCalledWith('src/pages/demo.vue', [expect.objectContaining({ tagName: 'include', value: './card.wxml' })])
+    expect(tokenMap.get('src/pages/demo.vue')).toBe(compiledToken)
+    expect(logger.warn).not.toHaveBeenCalled()
+  })
+
   it('resolves an external template when the supplied SFC has no inline component tag', async () => {
     const source = '<template data-label="a > b" src="./template.html"></template><script setup src="./setup.ts"></script>'
     await apply(source)
 
     expect(readAndParseSfc).toHaveBeenCalledWith('src/pages/demo.vue', { source })
     expect(resolveUsingComponentReference).toHaveBeenCalledTimes(1)
+  })
+
+  it('publishes components and native dependencies from Vue HTML without XML structure validation', async () => {
+    const template = '<view><DemoCard /><input v-model="value"><include src="./part.wxml"/><wxs module="helpers" src="./helpers.wxs" /></view>'
+    readAndParseSfc.mockResolvedValue({ descriptor: {
+      template: { content: template },
+      scriptSetup: { content: 'import DemoCard from "./DemoCard.vue"' },
+    }, errors: [] })
+    const setTokenDeps = vi.fn()
+    const setWxmlComponentsMap = vi.fn()
+    const analyze = vi.fn(() => {
+      throw new Error('raw Vue must not be validated as XML')
+    })
+    const json: { usingComponents?: Record<string, string> } = {}
+    await apply(`<template>${template}</template>`, {
+      json,
+      wxmlService: { analyze, setTokenDeps, setWxmlComponentsMap } as unknown as CompilerContext['wxmlService'],
+    })
+    expect(analyze).not.toHaveBeenCalled()
+    expect(logger.warn).not.toHaveBeenCalled()
+    expect(json.usingComponents).toEqual({ DemoCard: '/components/demo-card' })
+    expect(setWxmlComponentsMap).toHaveBeenCalledWith('src/pages/demo.vue', { DemoCard: [{ start: 0, end: 0 }] })
+    expect(setTokenDeps).toHaveBeenCalledWith('src/pages/demo.vue', [
+      expect.objectContaining({ tagName: 'include', value: './part.wxml' }),
+      expect.objectContaining({ tagName: 'wxs', value: './helpers.wxs' }),
+    ])
   })
 
   it('repeats resolution, publication, JSON conflicts and registration with shared snapshot facts', async () => {

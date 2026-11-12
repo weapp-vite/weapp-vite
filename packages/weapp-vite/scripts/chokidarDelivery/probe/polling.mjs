@@ -51,14 +51,14 @@ function assertStartupClassic(server, output) {
   assert.deepEqual(reason, {
     from: 'stateful-experimental',
     to: 'classic',
-    reason: 'ide-classic-handoff',
+    reason: 'compiler-provider',
     message: reason.message,
     requested: 'stateful-experimental',
     actual: 'classic',
     phase: 'switching',
   })
   assert.deepEqual(JSON.parse(ready[0].slice('[weapp-vite] HMR classic ready '.length)), {
-    reason: 'ide-classic-handoff',
+    reason: 'compiler-provider',
     requested: 'stateful-experimental',
     actual: 'classic',
     phase: 'classic',
@@ -119,7 +119,7 @@ async function exerciseStartupClassicPolling(ctx, output) {
     root,
     configFile: false,
     logLevel: 'silent',
-    weapp: { ...weappOptions, vue: { enable: false }, hmr: { runtime: 'stateful-experimental' } },
+    weapp: { ...weappOptions, vue: { enable: false }, compilerPlugins: [{ name: 'legacy-compiler', capabilities: { content: true }, create() { return {} } }], hmr: { runtime: 'stateful-experimental' } },
     plugins: [weapp(), {
       name: 'consumer:observe-host-polling-errors',
       configureServer(host) {

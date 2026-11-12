@@ -8,6 +8,7 @@ import {
   WEVU_SLOT_OWNER_ID_KEY,
   WEVU_SLOT_OWNER_ID_PROP,
 } from '@weapp-core/constants'
+import { encodeAttribute } from '../../../../wxml/transform/encoding'
 import {
   escapeDoubleQuotedAttr,
   getPlatformLayoutConditionalDirective,
@@ -83,6 +84,7 @@ function serializeFallbackLayoutValue(value: LayoutPropValue | undefined, keyNam
 function buildDynamicLayoutAttrs(
   propKeys: string[],
   currentLayout: ResolvedPageLayout | undefined,
+  platform?: MpPlatform,
 ) {
   const attrs = [LAYOUT_SLOT_OWNER_ATTR]
   if (propKeys.length === 0) {
@@ -91,7 +93,9 @@ function buildDynamicLayoutAttrs(
 
   attrs.push(...propKeys.map((key) => {
     const attrName = toKebabAttrName(key)
-    return `${attrName}="{{${serializeFallbackLayoutValue(currentLayout?.props?.[key], key)}}}"`
+    const expression = serializeFallbackLayoutValue(currentLayout?.props?.[key], key)
+    const value = encodeAttribute({ expression }, (platform ?? 'weapp') === 'weapp' ? 'legacy' : 'xml')
+    return `${attrName}="${value}"`
   }))
   return ` ${attrs.join(' ')}`
 }
@@ -104,7 +108,7 @@ export function buildDynamicLayoutTemplate(
   platform?: MpPlatform,
 ) {
   const blocks = layouts.map((layout, index) => {
-    const attrs = buildDynamicLayoutAttrs(propKeys, currentLayout)
+    const attrs = buildDynamicLayoutAttrs(propKeys, currentLayout, platform)
     const condition = currentLayout?.layoutName === layout.layoutName
       ? `{{!${WEVU_PAGE_LAYOUT_NAME_KEY} || ${WEVU_PAGE_LAYOUT_NAME_KEY} === '${layout.layoutName}'}}`
       : `{{${WEVU_PAGE_LAYOUT_NAME_KEY} === '${layout.layoutName}'}}`

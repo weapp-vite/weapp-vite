@@ -39,6 +39,7 @@ interface BuildCommandOptions {
   skipNpm?: boolean
   sourcemap?: boolean
   env?: Record<string, string | undefined>
+  onOutput?: (output: string) => void
 }
 
 interface DependencyMeta {
@@ -269,6 +270,7 @@ async function runBuildWithLogCapture(options: BuildCommandOptions) {
       exit: result.exitCode ?? 1,
     })
 
+    options.onOutput?.(fullOutput)
     return stats
   }
   finally {
