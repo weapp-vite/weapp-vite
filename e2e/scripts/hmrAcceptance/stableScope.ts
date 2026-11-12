@@ -26,6 +26,7 @@ export const CLASSIC_HMR_OUT_OF_SCOPE_TASKS: Record<string, string> = {
   'ide/hmr-capability-fallback.vite.runtime.test.ts': handoff,
   'ide/hmr-capability-fallback.vite-plus.runtime.test.ts': handoff,
   'ide/hmr-compiled-template-fallback.runtime.test.ts': handoff,
+  'ide/hmr-native-template-fallback.runtime.test.ts': handoff,
   'ide/app-vue-hmr-alias.runtime.test.ts': stateful,
   'ide/issue-998-tailwind.runtime.test.ts': handoff,
   'ide/template-tailwindcss-tdesign-hmr.runtime.test.ts': framework,

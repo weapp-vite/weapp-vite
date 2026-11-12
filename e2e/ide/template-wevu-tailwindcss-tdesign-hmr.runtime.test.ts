@@ -120,7 +120,10 @@ describe('template wevu TailwindCSS TDesign HMR in real WeChat DevTools', { conc
     }
 
     async function interact(id: string) {
-      await (await host.page()).callMethodWithOptions('handleCountTap', { routeOnly: true })
+      // 原生节点派发当前事件；AppService 路由包装可能仍引用 HMR 前的 setup 闭包。
+      const button = await (await host.page()).$('.count-button-control', { fallback: false })
+      expect(button).not.toBeNull()
+      await button!.tap()
       await check(id)
     }
 

@@ -60,6 +60,8 @@ const cleanups: Array<() => Promise<void>> = []
 
 beforeEach(() => {
   vi.useFakeTimers()
+  // 此 harness 注入 Patch 与执行确认，显式模拟在线客户端。
+  vi.spyOn(StatefulHmrTransport.prototype, 'hasCurrentClient', 'get').mockReturnValue(true)
   harness.readBeforeOutput = undefined
   harness.writeOutput.mockReset().mockResolvedValue()
   harness.createServer.mockReset().mockImplementation(async (options: InlineConfig) => ({

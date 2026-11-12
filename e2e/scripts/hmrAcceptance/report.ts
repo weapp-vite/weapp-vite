@@ -40,14 +40,14 @@ export function evaluateHmrCapabilityCoverage(evidence: HmrStageEvidence[], capa
   const stable = evidence.length > 0 && evidence.every(item => isStableHmrSuite(item.plan.suite))
   if (stable) {
     const known = new Set(HMR_ACCEPTANCE_CAPABILITIES.map(item => item.id as string))
-    const startupPassed = hasRuntime('ide-classic-handoff')
+    const startupPassed = hasRuntime('compiler-provider')
     return {
-      missingRuntimeCoverage: capabilities.filter(item => item.id !== 'ide-classic-handoff' || !startupPassed).map(item => item.id),
-      missingRequiredCoverage: capabilities.filter(item => !known.has(item.id) || (item.id === 'ide-classic-handoff' && !startupPassed)).map(item => item.id),
-      scopeBoundaries: capabilities.filter(item => known.has(item.id) && item.id !== 'ide-classic-handoff').map(item => ({
+      missingRuntimeCoverage: capabilities.filter(item => item.id !== 'compiler-provider' || !startupPassed).map(item => item.id),
+      missingRequiredCoverage: capabilities.filter(item => !known.has(item.id) || (item.id === 'compiler-provider' && !startupPassed)).map(item => item.id),
+      scopeBoundaries: capabilities.filter(item => known.has(item.id) && item.id !== 'compiler-provider').map(item => ({
         capabilityId: item.id,
         target: 'wechat-stateful-experimental',
-        reason: '微信目标仅验收启动即 classic；状态保持及在线交接保留独立实验诊断。',
+        reason: '历史 classic 范围仅验证启动降级；当前正式清单另外要求状态保持及在线交接的完整覆盖。',
         buildCoverage: 'not-evaluated',
         runtimeCoverage: 'out-of-scope',
       })),

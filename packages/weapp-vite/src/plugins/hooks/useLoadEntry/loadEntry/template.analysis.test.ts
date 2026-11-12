@@ -87,6 +87,32 @@ describe('script setup entry analysis', () => {
     expect(resolveUsingComponentReference).toHaveBeenCalledTimes(1)
   })
 
+  it('publishes components and native dependencies from Vue HTML without XML structure validation', async () => {
+    const template = '<view><DemoCard /><input v-model="value"><include src="./part.wxml"/><wxs module="helpers" src="./helpers.wxs" /></view>'
+    readAndParseSfc.mockResolvedValue({ descriptor: {
+      template: { content: template },
+      scriptSetup: { content: 'import DemoCard from "./DemoCard.vue"' },
+    }, errors: [] })
+    const setTokenDeps = vi.fn()
+    const setWxmlComponentsMap = vi.fn()
+    const analyze = vi.fn(() => {
+      throw new Error('raw Vue must not be validated as XML')
+    })
+    const json: { usingComponents?: Record<string, string> } = {}
+    await apply(`<template>${template}</template>`, {
+      json,
+      wxmlService: { analyze, setTokenDeps, setWxmlComponentsMap } as unknown as CompilerContext['wxmlService'],
+    })
+    expect(analyze).not.toHaveBeenCalled()
+    expect(logger.warn).not.toHaveBeenCalled()
+    expect(json.usingComponents).toEqual({ DemoCard: '/components/demo-card' })
+    expect(setWxmlComponentsMap).toHaveBeenCalledWith('src/pages/demo.vue', { DemoCard: [{ start: 0, end: 0 }] })
+    expect(setTokenDeps).toHaveBeenCalledWith('src/pages/demo.vue', [
+      expect.objectContaining({ tagName: 'include', value: './part.wxml' }),
+      expect.objectContaining({ tagName: 'wxs', value: './helpers.wxs' }),
+    ])
+  })
+
   it('repeats resolution, publication, JSON conflicts and registration with shared snapshot facts', async () => {
     const sourceConfig = {}
     const owner = {} as CompilerContext

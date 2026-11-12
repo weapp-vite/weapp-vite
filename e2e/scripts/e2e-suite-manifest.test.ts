@@ -167,9 +167,9 @@ describe('e2e suite manifest', () => {
   })
 
   it.each([
-    ['ide/hmr-capability-fallback.wv.runtime.test.ts', '900000'],
-    ['ide/hmr-capability-fallback.vite.runtime.test.ts', '900000'],
-    ['ide/hmr-capability-fallback.vite-plus.runtime.test.ts', '900000'],
+    ['ide/hmr-capability-fallback.wv.runtime.test.ts', '1800000'],
+    ['ide/hmr-capability-fallback.vite.runtime.test.ts', '1800000'],
+    ['ide/hmr-capability-fallback.vite-plus.runtime.test.ts', '1800000'],
     ['ide/hmr-startup-fallback.runtime.test.ts', '900000'],
     ['ide/hmr-additional-capabilities.runtime.test.ts', '600000'],
     ['ide/hmr-compiled-template-fallback.runtime.test.ts', '600000'],

@@ -63,6 +63,7 @@ export function createNativeHmrPublication(
         requested,
         actual: 'classic',
         phase: 'switching',
+        ...(reason.files ? { files: expect.any(Array) } : {}),
       })
       expect(fallbackReasons).toContain(reason.reason)
       expect(JSON.parse(ready![1]!) as unknown).toEqual({ reason: reason.reason, requested, actual: 'classic', phase: 'classic' })

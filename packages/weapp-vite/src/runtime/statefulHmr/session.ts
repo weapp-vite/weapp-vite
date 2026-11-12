@@ -308,7 +308,8 @@ class StatefulHmrSession {
     this.emittedSourceIds = collectStatefulHmrEmittedSourceIds(snapshots.initial.output, server.config.root)
     this.directoryUpdates.seedSources([...this.entryIds, ...this.emittedSourceIds])
     this.initialSnapshot = snapshots.initial
-    this.outputCapabilities = new StatefulHmrOutputCapabilities(resolveOutputExtensions(ctx.configService?.outputExtensions).styleExtension)
+    const extensions = resolveOutputExtensions(ctx.configService?.outputExtensions)
+    this.outputCapabilities = new StatefulHmrOutputCapabilities(extensions.styleExtension, extensions.templateExtension)
     setTailwindStyleOwners(ctx, snapshots.initial.tailwindStyleOwners)
     this.transport = new StatefulHmrTransport(
       server,
@@ -331,8 +332,6 @@ class StatefulHmrSession {
       },
     )
     this.delivery = new HmrDeliveryCoordinator((error) => {
-      // freeze 已推进比较输入；失败交付不能继续作为已发布视觉基线的证明。
-      this.nativeVueBaselines.clear()
       const fallback = getHmrRuntimeCapabilityFallback(error)
       if (fallback) {
         this.requestClassic(fallback, error)
@@ -357,7 +356,6 @@ class StatefulHmrSession {
     this.snapshotScheduler = new StatefulHmrSnapshotScheduler({
       execute: batch => this.profileSnapshotBatch(batch),
       onError: (error) => {
-        this.nativeVueBaselines.clear()
         const fallback = getHmrRuntimeCapabilityFallback(error)
         if (fallback) {
           this.requestClassic(fallback, error)
@@ -370,7 +368,7 @@ class StatefulHmrSession {
         }
         const failure = error instanceof Error ? error : new Error(String(error))
         this.buildEvents.emitEvent({ code: 'ERROR', error: failure, result: undefined as never })
-        this.server.config.logger.error('[weapp-vite] stateful HMR snapshot refresh failed', { error: failure })
+        this.server.config.logger.error(`[weapp-vite] stateful HMR snapshot refresh failed: ${formatStatefulHmrError(failure)}`)
       },
     })
     this.initialProfile = snapshots.profile && this.profile?.adopt(snapshots.profile)
@@ -630,6 +628,13 @@ class StatefulHmrSession {
     const hasTrackedModule = (this.server.moduleGraph.getModulesByFile(normalizedFile)?.size ?? 0) > 0
     const isEmittedDependency = this.emittedSourceIds.has(normalizedFile)
     if (!getCompilerHmrHost(this.ctx).ownsDependency(normalizedFile) && shouldRebuildStatefulDependency(normalizedFile, this.entryIds, affectedEntries, hasTrackedModule, isEmittedDependency)) {
+      this.requestFullBuild([normalizedFile])
+      return
+    }
+    if (!this.transport.hasCurrentClient && /\.(?:vue|[cm]?[jt]sx?)$/.test(normalizedFile)
+      && (this.entryIds.has(normalizedFile) || isEmittedDependency || hasTrackedModule)) {
+      // DevEngine 在初始模块执行确认前不产生脚本 Patch；无客户端时仍须由原生完整构建发布最新源码。
+      logger.info('HMR 更新：IDE 尚未连接，正在发布完整开发产物（等待 runtime）。')
       this.requestFullBuild([normalizedFile])
       return
     }
@@ -1119,7 +1124,12 @@ class StatefulHmrSession {
     if (!nextEntryIds || (nextEntryIds.length === this.entryIds.size && nextEntryIds.every(id => this.entryIds.has(id)))) {
       return false
     }
-    this.requestClassic({ code: 'entry-topology', message: '快照发现入口拓扑变化，需要重新建立完整构建图。', files: nextEntryIds })
+    const nextEntries = new Set(nextEntryIds)
+    const changedEntries = [
+      ...[...this.entryIds].filter(id => !nextEntries.has(id)),
+      ...nextEntryIds.filter(id => !this.entryIds.has(id)),
+    ]
+    this.requestClassic({ code: 'entry-topology', message: '快照发现入口拓扑变化，需要重新建立完整构建图。', files: changedEntries })
     return true
   }
 
@@ -1199,6 +1209,8 @@ class StatefulHmrSession {
     return pending.catch((error) => {
       // 原生写盘失败可能已有部分输出落盘，不能继续用旧字节快照省略下一次写入。
       this.snapshotAssets.invalidate()
+      // 编译输入与已发布注册分别记账；只有实际写出失败才撤销发布证明。
+      this.nativeVueBaselines.clear()
       throw error
     })
   }
@@ -1355,7 +1367,7 @@ class StatefulHmrSession {
   }
 
   private assertOutputCapabilities(output: readonly StatefulHmrOutputFile[], removed: readonly string[] = []): void {
-    const fallback = this.outputCapabilities.fallback(output, removed)
+    const fallback = this.outputCapabilities.fallback(output, removed, this.transport.hasCurrentClient)
     if (fallback) {
       throw new HmrRuntimeCapabilityError(fallback)
     }

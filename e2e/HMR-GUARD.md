@@ -32,9 +32,9 @@ pnpm run e2e:hmr:guard:config
 
 ## 稳定验收与实验诊断
 
-微信目标的 `auto`、`classic` 和 `stateful-experimental` 目前均在启动时使用 classic。正式 `pnpm test:hmr`、`pnpm e2e:hmr:build`、`pnpm e2e:hmr:headless`、`pnpm e2e:ide:hmr` 和 `pnpm e2e:hmr:acceptance` 验证版本化支持清单；完整功能验收使用 `pnpm e2e:ide:full:exhaustive`。范围内仍要求原有更新、事件、DOM 和源码恢复断言全部通过。
+微信目标的 `auto` 在热重载开启且能力满足时使用状态保持模式，`stateful-experimental` 显式请求该模式，`classic` 保持完整重载。安全脚本更新保留实例；模板、样式、配置、拓扑和不兼容注册在当前 dev 会话内切换并保持 classic，重启后重新检测。正式 `pnpm test:hmr`、`pnpm e2e:hmr:build`、`pnpm e2e:hmr:headless`、`pnpm e2e:ide:hmr` 和 `pnpm e2e:hmr:acceptance` 验证版本化支持清单；完整功能验收使用 `pnpm e2e:ide:full:exhaustive`。范围内仍要求原有更新、事件、DOM 和源码恢复断言全部通过。
 
-状态保持身份和在线 stateful→classic 交接保留在独立 `:diagnostic` 入口，清单保留原任务、case 名称与范围外原因，范围外不计入通过数。低级单测可显式模拟具备能力的宿主以验证内部机制，不能据此宣称真实微信 IDE 支持。构建和 headless 通过也不能代替真实 IDE 自动刷新验收。
+状态保持身份、事务交付和在线 stateful→classic 交接纳入正式支持清单；旧 `:diagnostic` 入口保留兼容。完整发布仍须以新 runtime、实际页面数据、DOM、样式和后续交互验收，文件写出和重连不能替代完成。产品 classic 日志只报告 `output-published` / `runtime-unconfirmed`，不提供完整重载的自动 runtime ACK。构建和 headless 通过也不能代替真实 IDE 自动刷新验收。
 
 ## 覆盖范围
 
@@ -102,7 +102,7 @@ pnpm --filter weapp-vite build
 - 对单页直接编辑场景，优先补日志级断言，防止退化成全量 HMR。
 - 新增 HMR 回归时，先决定它属于稳定子集、smoke 子集，还是像 `auto-import-vue-sfc` / `shared-chunks-auto` 一样必须作为特例独立运行；然后更新 `e2e/scripts/hmr-guard-manifest.ts`，让入口、清单和文档保持同源。
 - `pnpm e2e:ci` 会显式串行执行 `hmr-guard:full`、`hmr-guard:auto-import-vue-sfc`、`hmr-guard:auto-routes-hmr`、`hmr-guard:shared-chunks-auto`；若新增 HMR case 没被这四条入口覆盖，应视为 CI 漏挂。
-- 完整 CI workflow 会把常规小程序 E2E 与 HMR guard 拆成独立 job：常规 job 使用 `ci-full:classic` 清单，HMR job 使用 `pnpm e2e:ci:hmr`，后者调用 `pnpm e2e:hmr:build` 的版本化 classic 支持清单。两者没有重复文件，并集与 `pnpm e2e:ci` 的完整清单一致，保留跨平台覆盖。旧 `e2e:ci:hmr:core` 和 `e2e:ci:hmr:all` 保留为诊断兼容入口。
+- 完整 CI workflow 会把常规小程序 E2E 与 HMR guard 拆成独立 job：常规 job 使用 `ci-full:classic` 清单，HMR job 使用 `pnpm e2e:ci:hmr`，后者调用 `pnpm e2e:hmr:build` 的版本化支持清单。两者没有重复文件，并集与 `pnpm e2e:ci` 的完整清单一致，保留跨平台覆盖。旧 `e2e:ci:hmr:core` 和 `e2e:ci:hmr:all` 保留为诊断兼容入口。
 - `e2e:hmr:guard` 与 `e2e:hmr:guard:smoke` 由 `e2e/scripts/run-hmr-guard-suite.ts` 统一驱动，采用“单文件 `vitest run` 串行 + 每段前显式 cleanup”的方式执行；不要把整组 HMR dev-watch 用例直接塞进同一个 Vitest 进程，否则不同文件的清理逻辑容易互相污染。
 
 ## 执行顺序与环境治理
@@ -123,7 +123,7 @@ pnpm --filter weapp-vite build
 - alias 依赖必须进入 Rolldown/module graph，初始构建和 app/layout/page/dependency HMR 后都不能留下可执行的 `require("@/...")` 或 alias import。
 - 旧 marker 必须在更新后的 emitted 输出中清除，避免 stale shared chunk 被误认为通过。
 - `fetch`、`queueMicrotask`、`URL` 等能力通过 DevTools/SDK 探针记录。缺失宿主能力、服务端口、模拟器或协议连接失败单独记录为环境限制，不弱化真实 runtime 断言。
-- 旧 `app-vue-hmr-alias` 的 stateful transport 场景归入实验诊断；其首屏、构建产物和已声明的 classic 场景按各自支持清单验收，不能以诊断场景跳过或 headless VM 重建证明真实 IDE 在线交接。
+- `app-vue-hmr-alias` 的 stateful transport 场景与 classic 交接均由正式清单覆盖；headless VM 重建只证明 companion 行为，真实 IDE 必须在既有 owner 中自动刷新。
 
 ## 运行建议
 

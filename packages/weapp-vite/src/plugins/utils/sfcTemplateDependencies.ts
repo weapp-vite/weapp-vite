@@ -5,7 +5,7 @@ import { LRUCache } from 'lru-cache'
 import MagicString from 'magic-string'
 import path from 'pathe'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
-import { scanWxml } from '../../wxml'
+import { scanSfcTemplateDependencies } from './sfcTemplateDependencies/scan'
 
 const resolutionsByOptions = new WeakMap<ResolveSfcBlockSrcOptions, Map<string, string>>()
 const resolutionsByConfig = new WeakMap<object, LRUCache<string, string>>()
@@ -68,9 +68,8 @@ export function rebaseSfcTemplateDependencies(template: string, source: string |
   if (!source || path.dirname(source) === path.dirname(owner)) {
     return template
   }
-  const token = scanWxml(template, { platform })
   const rewritten = new MagicString(template)
-  for (const dependency of token.deps) {
+  for (const dependency of scanSfcTemplateDependencies(template, platform)) {
     const rebased = rebaseSfcTemplateDependency(dependency, source, owner, preserveScriptModules)
     if (rebased !== dependency) {
       rewritten.overwrite(dependency.start, dependency.end, `${dependency.name}=${JSON.stringify(rebased.value)}`)

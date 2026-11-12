@@ -12,6 +12,7 @@ import { getCompilerHmrHost } from '../../plugins/compilerPlugin/hmr'
 import { initializeCompilerContext } from '../compilerSession/context'
 import { getHmrRuntimeSession } from '../hmrRuntimeSession'
 import { StatefulHmrOutputCapabilities } from './outputCapabilities'
+import { StatefulHmrTransport } from './transport'
 import { StatefulHmrViteAdapter } from './viteAdapter'
 
 // 模拟具有增量能力的底层宿主，保留 stateful 交接覆盖；真实微信启动准入另测。
@@ -122,8 +123,9 @@ async function fixture(root: string) {
   return files
 }
 
-// 此用例只检验真实编译候选与发布字节；没有执行或确认 runtime Patch，不声明客户端状态保持通过。
+// 此用例模拟客户端在线，只检验真实编译候选与发布字节；没有执行或确认 runtime Patch，不声明客户端状态保持通过。
 it('compares compiled Tailwind stylesheet bytes after a native script save with independent packages and workers', async () => {
+  const connected = vi.spyOn(StatefulHmrTransport.prototype, 'hasCurrentClient', 'get').mockReturnValue(true)
   const root = await realpath(await mkdtemp(path.join(tmpdir(), 'native-tailwind-script-')))
   const observation = observeStyles()
   const ctx: CompilerContext = createCompilerContextInstance()
@@ -228,6 +230,7 @@ it('compares compiled Tailwind stylesheet bytes after a native script save with 
     finally {
       batchSpy.mockRestore()
       prepareSpy.mockRestore()
+      connected.mockRestore()
       observation.restore()
       if (closed) {
         await rm(root, { recursive: true, force: true })

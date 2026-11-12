@@ -93,7 +93,7 @@ export function createHmrRuntimeSession(): HmrRuntimeSession {
       // 宿主会在自己的错误通道报告失败；提前订阅避免未观察的拒绝。
       void settled.promise.catch(() => {})
       // actual 记录已选择的交付模式；phase 区分切换决策与 classic 产物就绪。
-      logger.warn(`[weapp-vite] HMR fallback ${JSON.stringify({ from: 'stateful-experimental', to: 'classic', reason: reason.code, message: reason.message, requested, actual: 'classic', phase })}`)
+      logger.warn(`[weapp-vite] HMR fallback ${JSON.stringify({ from: 'stateful-experimental', to: 'classic', reason: reason.code, message: reason.message, requested, actual: 'classic', phase, ...(reason.files?.length ? { files: reason.files } : {}) })}`)
       scheduleRequest()
     },
     bindRequest(handler) {
@@ -112,6 +112,7 @@ export function createHmrRuntimeSession(): HmrRuntimeSession {
       }
       phase = 'classic'
       logger.info(`[weapp-vite] HMR classic ready ${JSON.stringify({ reason: fallback.code, requested, actual: 'classic', phase })}`)
+      logger.info(`[weapp-vite] HMR stage ${JSON.stringify({ actual: 'classic', stage: 'output-published', runtime: 'unconfirmed', message: 'classic 产物已发布，等待 IDE 完整刷新；页面数据、节点和样式需由 runtime 确认。' })}`)
       if (!dispatched || handlerSucceeded) {
         settled?.resolve()
       }

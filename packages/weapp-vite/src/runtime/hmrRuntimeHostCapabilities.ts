@@ -2,15 +2,15 @@ import type { MpPlatform } from '../types'
 import type { HmrRuntime } from './hmrRuntime'
 import type { HmrRuntimeFallbackReason } from './hmrRuntimeCapabilities'
 
-/** 当前微信宿主尚未证明完整重载交接能力，必须在安装 stateful 资源前选择 classic。 */
+/** 共享启动边界只限制平台；微信的模板、样式及注册变化由实际输入输出判定。 */
 export function resolveStatefulHmrStartupFallback(options: {
   platform: MpPlatform
   runtime: HmrRuntime
 }): HmrRuntimeFallbackReason | undefined {
-  if (options.platform === 'weapp' && options.runtime === 'stateful-experimental') {
+  if (options.platform !== 'weapp' && options.runtime === 'stateful-experimental') {
     return {
-      code: 'ide-classic-handoff',
-      message: '当前微信开发者工具缺少可确认的 classic 完整重载交接能力，启动时使用 classic HMR。',
+      code: 'platform',
+      message: '当前小程序平台不支持状态保持 HMR，使用 classic 完整发布。',
     }
   }
 }

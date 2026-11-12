@@ -640,7 +640,7 @@ export default defineConfig({
 })
 ```
 
-安全的 JavaScript/Vue 更新会保留当前 Page/Component 实例、route/query、输入和可序列化 data/setup ref，并替换原生 Page、原生 Component 与 wevu 方法。CSS、资源、JSON/配置、不兼容模块图或补丁失败会回退完整构建与当前路由重载。
+安全的 JavaScript/Vue 更新会保留当前 Page/Component 实例、route/query、输入和可序列化 data/setup ref，并替换原生 Page、原生 Component 与 wevu 方法。模板字节、编译后样式、JSON/配置和不兼容模块图变化会自动切换 classic 完整发布，本次 dev 命令保持 classic，重启后重新检测。静态资源更新按实际产物判断；普通编译或业务异常保留原始诊断，不冒充能力降级，失败批次不推进交付版本，修复源码后的下一次保存继续重试。classic 完整刷新会重置运行状态。
 
 入口拓扑更新先验证完整快照，再把仍符合源目录和声明依赖内容版本的快照一次性交给新宿主，避免重复编译。输入变化、依赖覆盖不足或固定输入批次无法验证时重新构建；快照失败时保留旧宿主，修复尚未进入旧图的新文件也能触发重试。会话关闭会取消未交接的候选。
 
@@ -650,7 +650,7 @@ Vue `<style module>` 会生成脚本中的类名映射，因此其内容、模�
 
 回退时，同一输出当前收集到的多个 sidecar 按收集顺序合并后一次发布，不会相互覆盖；指向同一真实文件的重复路径只保留一份。常规 HMR 更新按完整合并内容去重，而不是分别缓存每个片段。
 
-上述保证不涵盖原生样式文件删除事件对历史登记集合的清理；本次修复没有验证或改变该上游生命周期。
+模板和样式写出不代表 IDE 已应用；当前宿主缺少可靠状态保持应用确认时走 classic。构建发布、脚本执行确认和完整重载分别验收；旧 build/client 的异步确认不能完成新一代同名产物。
 
 `auto` 在 `project.private.config.json` 的 `setting.compileHotReLoad` 严格为 `true` 时选择 `stateful-experimental`，否则选择 `classic`；非微信平台也会回退到 `classic`。该判断只在启动时执行，修改开发者工具设置后需要重启 `wv dev`。启动日志会以 `HMR 模式` 和 `HMR 切换` 两行显示最终模式、选择来源，以及通过 DevTools 热重载开关或 `weapp.hmr.runtime` 切换模式的方法。显式配置通常优先，但 Skyline 兼容降级不受显式配置覆盖。
 

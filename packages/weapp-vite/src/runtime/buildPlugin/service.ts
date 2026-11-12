@@ -1541,7 +1541,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           if (hmrRuntimeSession.fallback) {
             hmrRuntimeSession.markClassic()
           }
-          logger.success('小程序 HMR 构建已完成完整重载。')
+          logger.success('小程序 HMR 构建已完成发布，等待 runtime 确认。')
         }
       })
       nativeBuildEvents.emitEvent({ code: 'START' })

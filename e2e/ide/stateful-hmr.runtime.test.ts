@@ -26,9 +26,7 @@ import { assetLifecycleCheckpoints, verifyAssetLifecycle } from './statefulHmrDo
 import { editorFileCheckpoints } from './statefulHmrDom/editorFiles'
 import { nativeChildCheckpoints } from './statefulHmrDom/nativeChild'
 import { verifyNativeChildHmr } from './statefulHmrDom/nativeChildCase'
-import { nativeDefaultCheckpoints } from './statefulHmrDom/nativeDefaults'
 import { scriptStateCheckpoints } from './statefulHmrDom/scriptState'
-import { templateCycleCheckpoints } from './statefulHmrDom/templates'
 import { installStatefulHmrTransport } from './statefulHmrDom/transport'
 import { vueChildCheckpoints } from './statefulHmrDom/vueChild'
 
@@ -645,49 +643,7 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
     })
   })
 
-  for (const runtime of ['native', 'component'] as const) {
-    it(`preserves ${runtime} page state across two template edit and restore cycles`, async (ctx) => {
-      const dom = createDomAcceptance(ctx, 'e2e-apps/stateful-hmr', templateCycleCheckpoints(runtime))
-      const source = path.join(fixture.projectRoot, `src/pages/${runtime}/index.wxml`)
-      const output = path.join(fixture.distRoot, `pages/${runtime}/index.wxml`)
-      const original = await fs.readFile(source, 'utf8')
-      const route = `/pages/${runtime}/index?source=e2e`
-      const page = await relaunchStatefulRoute(route)
-      try {
-        await dom.check('initial', miniProgram, page)
-        await prepareRuntimeState(`template-${runtime}`)
-        await triggerIncrement()
-        await triggerIncrement()
-        const expected = await waitForPatchedBehavior(2, page)
-        await dom.check('prepared', miniProgram, page)
-        expect(original).toContain('<input')
-        for (const cycle of [0, 1]) {
-          const marker = `TEMPLATE-CYCLE-${cycle}`
-          const updated = original.replace('<input', `<view class="template-cycle">${marker}</view>\n    <input`)
-          await replaceFileByRename(source, updated)
-          await devProcess!.waitFor(waitForFileContains(output, marker), 'template edit emitted')
-          for (const extension of ['js', 'json', 'wxml']) {
-            expect(await fs.pathExists(path.join(fixture.distRoot, `components/native-counter/index.${extension}`)), `native component ${extension} after template edit`).toBe(true)
-          }
-          await dom.check(`edit-${cycle}`, miniProgram, await miniProgram.currentPage())
-          expect(await readRuntimeState(page)).toEqual(expected)
-          await replaceFileByRename(source, original)
-          await devProcess!.waitFor(expect.poll(async () => (await fs.readFile(output, 'utf8')).includes(marker), { timeout: 90_000 }).toBe(false), 'template restore emitted')
-          await dom.check(`restore-${cycle}`, miniProgram, await miniProgram.currentPage())
-          expect(await readRuntimeState(page)).toEqual(expected)
-        }
-      }
-      finally {
-        // 成功路径已恢复并验收；再次原子替换会把无变化的 WXML 带入下一场景的补丁批次。
-        if (await fs.readFile(source, 'utf8') !== original) {
-          await replaceFileByRename(source, original)
-          await devProcess!.waitFor(expect.poll(async () => await fs.readFile(output, 'utf8'), { timeout: 90_000 }).not.toContain('TEMPLATE-CYCLE-'), 'failed template case source restored')
-        }
-      }
-    })
-  }
-
-  // 放在首次模板用例之后；单选执行也不依赖任何模板预热。
+  // 安全脚本更新不依赖模板预热；模板交接在独立的 fallback suite 验证。
   it('preserves Wevu local and store state across isolated script updates and restoration', async (ctx) => {
     const dom = createDomAcceptance(ctx, 'e2e-apps/stateful-hmr', scriptStateCheckpoints())
     const page = await relaunchStatefulRoute(WEVU_ROUTE)
@@ -787,47 +743,6 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
         if (await fs.readFile(fixture.wevuSource, 'utf8') !== originalWevuSource) {
           await replaceFileByRename(fixture.wevuSource, originalWevuSource)
         }
-      }
-    }
-  })
-
-  it('initializes updated native defaults after cross-page template HMR', async (ctx) => {
-    const dom = createDomAcceptance(ctx, 'e2e-apps/stateful-hmr', nativeDefaultCheckpoints())
-    const patch = async (updated: boolean) => {
-      const version = await readClientVersion()
-      await replaceFileByRename(fixture.nativeSource, updated ? originalNativeSource.replace('count: 0', 'count: 7') : originalNativeSource)
-      await waitForClientVersion(version + 1)
-    }
-    try {
-      for (const runtime of ['native', 'component'] as const) {
-        const source = path.join(fixture.projectRoot, `src/pages/${runtime}/index.wxml`)
-        const original = await fs.readFile(source, 'utf8')
-        await relaunchStatefulRoute(`/pages/${runtime}/index?source=e2e`)
-        try {
-          await replaceFileByRename(source, original.replace('<input', '<view class="default-template">changed</view><input'))
-          await dom.check(`${runtime}-edited`, miniProgram, await miniProgram.currentPage())
-          await replaceFileByRename(source, original)
-          await dom.check(`${runtime}-restored`, miniProgram, await miniProgram.currentPage())
-        }
-        finally {
-          if (await fs.readFile(source, 'utf8') !== original) {
-            await replaceFileByRename(source, original)
-          }
-        }
-      }
-      await patch(true)
-      await relaunchStatefulRoute(NATIVE_ROUTE)
-      await dom.check('new-defaults', miniProgram, await miniProgram.currentPage())
-      await triggerIncrement()
-      await dom.check('incremented', miniProgram, await miniProgram.currentPage())
-      await patch(false)
-      await dom.check('active-restored', miniProgram, await miniProgram.currentPage())
-      await relaunchStatefulRoute(NATIVE_ROUTE)
-      await dom.check('restored-defaults', miniProgram, await miniProgram.currentPage())
-    }
-    finally {
-      if (await fs.readFile(fixture.nativeSource, 'utf8') !== originalNativeSource) {
-        await patch(false)
       }
     }
   })

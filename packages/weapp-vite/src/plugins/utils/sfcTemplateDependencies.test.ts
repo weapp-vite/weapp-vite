@@ -25,6 +25,12 @@ describe('SFC template dependency identity', () => {
 })
 
 describe('external SFC template dependency paths', () => {
+  it('retains Vue void elements, expressions and raw scripts while rebasing native dependencies', () => {
+    const template = '<view><input v-model="value"><wxs module="helpers">const text = "<fake-card />";</wxs><include src="./part.wxml" /></view>'
+    expect(rebaseSfcTemplateDependencies(template, '/project/src/parts/body.html', '/project/src/index.vue'))
+      .toBe(template.replace('./part.wxml', './parts/part.wxml'))
+  })
+
   it('rebases native import/include/WXS paths while retaining template content', () => {
     const template = [
       '<import src="../../../shared/card.wxml" />',

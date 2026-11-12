@@ -41,6 +41,14 @@ export function createStatefulBatchDeliveryFiles(): Array<[string, string]> {
           globalThis.pendingPoll.success({ statusCode: 200, data: { type: 'batch-published' } });
         },
         pendingTimers() { return [...globalThis.clientTimers.values()]; },
+        retireClient() {
+          globalThis.pendingPoll.success({ statusCode: 410, data: { type: 'retired' } });
+        },
+        stalePatch() {
+          globalThis.__WEAPP_VITE_STATEFUL_HMR_CLIENT__.receiveBatch({
+            buildId: 'old-build', fromVersion: 0, targetVersion: 1, changedIds: []
+          }, () => this.setData({ utility: 'stale', count: 99 }));
+        },
         stopClient() { globalThis.__WEAPP_VITE_STATEFUL_HMR_CLIENT__.stop(); },
         patch() {
           globalThis.__WEAPP_VITE_STATEFUL_HMR_CLIENT__.receiveBatch({

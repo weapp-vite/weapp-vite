@@ -1255,6 +1255,7 @@ describe('runtime buildPlugin service', () => {
     ctx.configService.weappViteConfig.hmr = { runtime: configured }
     ctx.configService.projectPrivateConfig = { setting: { compileHotReLoad: true } }
     const runtime = getHmrRuntimeSession(ctx)
+    runtime.requestClassic({ code: 'compiler-provider', message: 'legacy provider cannot prepare transactional HMR' })
     const entered = Promise.withResolvers<void>()
     const release = Promise.withResolvers<void>()
     const failure = new Error('initial classic publication failed')
@@ -1273,7 +1274,7 @@ describe('runtime buildPlugin service', () => {
     try {
       await entered.promise
       expect(runtime.phase).toBe('switching')
-      expect(runtime.fallback?.code).toBe('ide-classic-handoff')
+      expect(runtime.fallback?.code).toBe('compiler-provider')
       expect(await runtime.classicIdeConfig.readRequested(file)).toBe(original)
       expect(await fs.readJSON(file)).toEqual({ setting: { compileHotReLoad: false } })
       expect(runStatefulHmrDevMock).not.toHaveBeenCalled()

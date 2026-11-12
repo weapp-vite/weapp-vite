@@ -59,8 +59,8 @@ vi.mock('node:fs/promises', async importOriginal => ({
 const privateFile = path.join(root, 'project.private.config.json')
 const classicLease = path.join(root, '.weapp-vite/ide-classic-project.private.config.json')
 const originalConfig = '{"setting":{"compileHotReLoad":true}}'
-const fallback = '[weapp-vite] HMR fallback {"from":"stateful-experimental","to":"classic","reason":"ide-classic-handoff","message":"startup host capability","requested":"stateful-experimental","actual":"classic","phase":"switching"}\n'
-const ready = '[weapp-vite] HMR classic ready {"reason":"ide-classic-handoff","requested":"stateful-experimental","actual":"classic","phase":"classic"}\n'
+const fallback = '[weapp-vite] HMR fallback {"from":"stateful-experimental","to":"classic","reason":"compiler-provider","message":"startup host capability","requested":"stateful-experimental","actual":"classic","phase":"switching"}\n'
+const ready = '[weapp-vite] HMR classic ready {"reason":"compiler-provider","requested":"stateful-experimental","actual":"classic","phase":"classic"}\n'
 
 function acquire() {
   harness.handles.push({ path: 'src/pages/index/index.json', acquiredSequence: ++harness.sequence, stopEvents: 0 })
@@ -130,7 +130,7 @@ beforeEach(() => {
       harness.files.set(path.join(root, harness.staleFile), 'stale stateful resource')
     }
     acquire()
-    process.stdout.write(harness.failure === 'wrong-reason' ? fallback.replace('ide-classic-handoff', 'stylesheet-output') : fallback)
+    process.stdout.write(harness.failure === 'wrong-reason' ? fallback.replace('compiler-provider', 'stylesheet-output') : fallback)
     if (harness.failure !== 'missing-readiness') {
       process.stderr.write(ready)
     }
@@ -170,7 +170,7 @@ it('启动 classic 后保留 polling 编辑、恢复与两次有序配置重启�
   expect(ctx.evidence).toMatchObject({
     requestedRuntime: 'stateful-experimental',
     actualRuntime: 'classic',
-    startupFallbackReason: 'ide-classic-handoff',
+    startupFallbackReason: 'compiler-provider',
     actualStatefulStarted: false,
     statefulArtifactsAbsent: true,
     hostGenerations: Array.from({ length: 3 }, () => ({ actualRuntime: 'classic' })),
@@ -198,7 +198,7 @@ it('启动 classic 后保留 polling 编辑、恢复与两次有序配置重启�
 it.each([
   ['stateful', 'No stateful host watcher'],
   ['stateful-restart', 'cannot install a stateful host watcher'],
-  ['wrong-reason', 'ide-classic-handoff'],
+  ['wrong-reason', 'compiler-provider'],
   ['missing-readiness', 'ready exactly once'],
   ['overlapping-restart', 'Old host polling must fully stop'],
   ['repeated-fallback', 'exactly one startup capability decision'],
