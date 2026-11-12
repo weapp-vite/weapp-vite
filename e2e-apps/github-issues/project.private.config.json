@@ -1070,6 +1070,13 @@
           "query": "",
           "scene": null,
           "launchMode": "default"
+        },
+        {
+          "name": "teleport root portal JSX",
+          "pathName": "pages/teleport-root-portal-jsx/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
         }
       ]
     }

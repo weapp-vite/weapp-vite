@@ -204,7 +204,7 @@ describe('compiler diagnostics', () => {
     const result = await compileJsxFile(source, '/project/src/pages/diagnostics/index.tsx')
 
     expect(result.diagnostics).toContainEqual(expect.objectContaining({
-      code: 'WV1003',
+      code: 'WV1004',
       severity: 'warning',
       filename: '/project/src/pages/diagnostics/index.tsx',
       source: 'jsx',

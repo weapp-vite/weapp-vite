@@ -1,13 +1,12 @@
 import type { AttributeNode, DirectiveNode, ElementNode, SimpleExpressionNode } from '@vue/compiler-core'
-import type { CompilerDiagnosticCode } from '../../../../../types/diagnostics'
-import type { TeleportDegradeReason, TeleportTargetInput } from '../teleport'
+import type { TeleportTargetInput } from '../teleport'
 import type { TransformContext, TransformNode } from '../types'
 import { ConstantTypes, NodeTypes } from '@vue/compiler-core'
 import { ROOT_PORTAL_ENABLE_MIN_SDK_VERSION, ROOT_PORTAL_MIN_SDK_VERSION } from '@weapp-core/constants'
 import { warn } from '../diagnostics'
 import { renderMustache } from '../mustache'
 import { supportsRootPortal } from '../platforms'
-import { resolveTeleportDecision } from '../teleport'
+import { resolveTeleportDecision, TELEPORT_DEGRADE_CODES } from '../teleport'
 import { isStructuralDirective } from './helpers'
 import { transformNormalElement } from './tag-normal'
 import { transformForElement, transformIfElement } from './tag-structural'
@@ -16,15 +15,6 @@ const TELEPORT_TAGS = new Set(['teleport'])
 const ROOT_PORTAL_TAG = 'root-portal'
 const TELEPORT_REMOVED_ATTRIBUTES = new Set(['to', 'defer', 'disabled'])
 const TELEPORT_REMOVED_DIRECTIVE_ARGS = new Set(['to', 'defer', 'disabled'])
-
-const TELEPORT_DEGRADE_CODES: Record<TeleportDegradeReason, CompilerDiagnosticCode> = {
-  'platform': 'WV1008',
-  'dynamic-to': 'WV1005',
-  'spread': 'WV1006',
-  'missing-to': 'WV1004',
-  'empty-target': 'WV1007',
-  'target': 'WV1007',
-}
 
 /**
  * 判断模板标签是否为 Vue Teleport，标签匹配不区分大小写。

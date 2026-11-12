@@ -1,3 +1,4 @@
+import type { CompilerDiagnosticCode } from '../../../../types/diagnostics'
 import { ROOT_PORTAL_TOP_LEVEL_TARGETS } from '@weapp-core/constants'
 
 const ROOT_PORTAL_TOP_LEVEL_TARGET_SET = new Set<string>(ROOT_PORTAL_TOP_LEVEL_TARGETS)
@@ -14,6 +15,15 @@ export type TeleportDegradeReason
     | 'missing-to'
     | 'empty-target'
     | 'target'
+
+export const TELEPORT_DEGRADE_CODES: Record<TeleportDegradeReason, CompilerDiagnosticCode> = {
+  'platform': 'WV1008',
+  'dynamic-to': 'WV1005',
+  'spread': 'WV1006',
+  'missing-to': 'WV1004',
+  'empty-target': 'WV1007',
+  'target': 'WV1007',
+}
 
 export type TeleportDecision
   = | { kind: 'map', target: string }
@@ -37,6 +47,14 @@ export function resolveTeleportDecision(input: TeleportDecisionInput): TeleportD
     }
   }
 
+  if (input.spread) {
+    return {
+      kind: 'degrade',
+      reason: 'spread',
+      message: '<Teleport> 使用了 v-bind/JSX 对象展开，无法静态确定最终的 to/disabled 属性，已移除 Teleport 标签并原位渲染子节点。',
+    }
+  }
+
   if (input.to.kind === 'dynamic') {
     return {
       kind: 'degrade',
@@ -46,13 +64,6 @@ export function resolveTeleportDecision(input: TeleportDecisionInput): TeleportD
   }
 
   if (input.to.kind === 'missing') {
-    if (input.spread) {
-      return {
-        kind: 'degrade',
-        reason: 'spread',
-        message: '<Teleport> 使用了 v-bind 对象展开，无法静态读取 to 目标，已移除 Teleport 标签并原位渲染子节点。',
-      }
-    }
     return {
       kind: 'degrade',
       reason: 'missing-to',

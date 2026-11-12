@@ -11,10 +11,22 @@ import { runGithubDom } from './githubIssuesDom'
 import { githubText as text } from './githubIssuesDom/nodes'
 
 const route = '/pages/teleport-root-portal/index'
+const jsxRoute = '/pages/teleport-root-portal-jsx/index'
 
 describe('e2e app: github-issues / teleport root-portal', { concurrent: false }, () => {
   beforeAll(async () => {
     await prepareGithubIssuesBuild()
+
+    const jsxRoot = path.join(DIST_ROOT, 'pages/teleport-root-portal-jsx/index')
+    for (const extension of ['js', 'json', 'wxml']) {
+      expect(await fs.pathExists(`${jsxRoot}.${extension}`)).toBe(true)
+    }
+    const jsxTemplate = await fs.readFile(`${jsxRoot}.wxml`, 'utf8')
+    expect([...jsxTemplate.matchAll(/<root-portal\b/g)]).toHaveLength(1)
+    expect(jsxTemplate).toContain('<block wx:if="{{visible}}"><root-portal enable="{{true}}">')
+    for (const id of ['teleport-jsx-degraded', 'teleport-jsx-spread']) {
+      expect(jsxTemplate).toContain(`<block wx:if="{{visible}}"><view id="${id}">`)
+    }
 
     const pageRoot = path.join(DIST_ROOT, 'pages/teleport-root-portal/index')
     for (const extension of ['js', 'json', 'wxml']) {
@@ -22,7 +34,7 @@ describe('e2e app: github-issues / teleport root-portal', { concurrent: false },
     }
 
     const appJson = await fs.readJSON(path.join(DIST_ROOT, 'app.json')) as { pages?: string[] }
-    expect(appJson.pages).toContain('pages/teleport-root-portal/index')
+    expect(appJson.pages).toEqual(expect.arrayContaining(['pages/teleport-root-portal/index', 'pages/teleport-root-portal-jsx/index']))
 
     const pageJson = await fs.readJSON(`${pageRoot}.json`) as { usingComponents?: Record<string, string> }
     expect(Object.keys(pageJson.usingComponents ?? {})).not.toContain('teleport')
@@ -89,6 +101,39 @@ describe('e2e app: github-issues / teleport root-portal', { concurrent: false },
       nodes: [
         text('#teleport-conditional-status', 'hidden'),
         { selector: '#teleport-conditional-content', count: 0 },
+      ],
+    }])
+  })
+
+  it('preserves conditional JSX portal and inline fallback content across toggles', async (ctx) => {
+    await runGithubDom(ctx, jsxRoute, [{
+      id: 'initial',
+      action: '首屏检查 JSX portal、无效目标与 spread 降级内容',
+      nodes: [
+        text('#teleport-jsx-status', 'shown'),
+        text('#teleport-jsx-mapped', 'mapped'),
+        text('#teleport-jsx-degraded', 'degraded'),
+        text('#teleport-jsx-spread', 'spread'),
+      ],
+    }, {
+      id: 'hidden',
+      action: '关闭 v-if 后同时移除 JSX portal 与所有降级内容',
+      method: '_toggleVisible',
+      nodes: [
+        text('#teleport-jsx-status', 'hidden'),
+        { selector: '#teleport-jsx-mapped', count: 0 },
+        { selector: '#teleport-jsx-degraded', count: 0 },
+        { selector: '#teleport-jsx-spread', count: 0 },
+      ],
+    }, {
+      id: 'shown-again',
+      action: '再次开启 v-if 后恢复映射与降级内容',
+      method: '_toggleVisible',
+      nodes: [
+        text('#teleport-jsx-status', 'shown'),
+        text('#teleport-jsx-mapped', 'mapped'),
+        text('#teleport-jsx-degraded', 'degraded'),
+        text('#teleport-jsx-spread', 'spread'),
       ],
     }])
   })

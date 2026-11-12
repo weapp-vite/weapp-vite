@@ -17,6 +17,19 @@ function withFrozenTopology<T extends SuiteTask>(tasks: T[]) {
 useIsolatedTopologyTestEnvironment()
 
 describe('e2e suite manifest', () => {
+  it('retains Teleport template and JSX regressions in real and headless runtime inventories', async () => {
+    const label = 'ide/github-issues.runtime.teleport-root-portal.test.ts'
+    for (const suite of ['ide-full:github-issues', 'ide-full:exhaustive', 'ide-dom-headless', 'ide-headless-full']) {
+      const tasks = (await getSuiteTasks(suite)).filter(task => task.label === label)
+      expect(tasks).toHaveLength(1)
+      expect(tasks[0]!.args.some(arg => arg === '-t' || arg.startsWith('--testNamePattern'))).toBe(false)
+    }
+    const cases = readTaskCases(path.resolve(import.meta.dirname, '../..'), label)
+    expect(cases).toHaveLength(2)
+    expect(cases.every(item => item.plans.length === 1 && item.notes.length === 0)).toBe(true)
+    expect(cases[1]?.routes).toContain('/pages/teleport-root-portal-jsx/index')
+  })
+
   it('includes the generated WASM initializer runtime case in real and headless acceptance', async () => {
     const label = 'ide/issue-1202-wasm.runtime.test.ts'
     for (const suite of ['ide-full:github-issues', 'ide-full:exhaustive', 'ide-dom-headless', 'ide-headless-full']) {
