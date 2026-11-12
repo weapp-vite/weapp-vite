@@ -436,6 +436,8 @@ weapp config import ./weapp-ide-cli.config.json
 
 可以直接编辑该文件或重新运行 `weapp config` 来更新路径。当配置文件缺失或留空时，CLI 会尝试按系统默认安装位置自动寻找。
 
+交互式终端中的配置文件、CLI 和配置导入/导出路径显示为 `file://` 地址，空格、中文和特殊字符会自动编码。在 macOS 自带 Terminal 中，按住 **Command 并双击地址**，由系统关联的程序打开对应文件。`NO_COLOR` 只关闭上色，不影响文件地址。诊断流重定向、CI 或 `TERM=dumb` 时显示原始路径；JSON、`config get` 和配置文件中的路径始终保持原值。
+
 配置文件示例：
 
 ```json

@@ -12,7 +12,8 @@ import { defaultCustomConfigFilePath } from '../config/paths'
 import { resolveDevtoolsAutomationDefaults } from '../config/resolver'
 import { resolveWechatDevtoolsTarget } from '../devtoolsTarget'
 import { i18nText } from '../i18n'
-import logger, { colors } from '../logger'
+import logger from '../logger'
+import { formatTerminalPath } from '../terminalPath'
 import { promptForCliPath } from './prompt'
 import { resolveCliPath } from './resolver'
 
@@ -62,8 +63,8 @@ export async function handleConfigCommand(argv: string[]) {
     const config = await readCustomConfig()
     const effectiveDevtoolsDefaults = resolveDevtoolsAutomationDefaults(config)
     logger.info(i18nText(
-      `配置文件路径：${colors.green(defaultCustomConfigFilePath)}`,
-      `Config file: ${colors.green(defaultCustomConfigFilePath)}`,
+      `配置文件路径： ${formatTerminalPath(defaultCustomConfigFilePath)}`,
+      `Config file: ${formatTerminalPath(defaultCustomConfigFilePath)}`,
     ))
     console.log(JSON.stringify({
       ...config,
@@ -231,8 +232,8 @@ export async function handleConfigCommand(argv: string[]) {
     if (outputPath) {
       await fs.writeJSON(outputPath, config, { spaces: 2, encoding: 'utf8' })
       logger.info(i18nText(
-        `配置已导出到：${colors.green(outputPath)}`,
-        `Config exported to: ${colors.green(outputPath)}`,
+        `配置已导出到： ${formatTerminalPath(outputPath)}`,
+        `Config exported to: ${formatTerminalPath(outputPath)}`,
       ))
       return
     }
@@ -275,8 +276,8 @@ export async function handleConfigCommand(argv: string[]) {
 
     await overwriteCustomConfig({ cliPath, locale, autoBootstrapDevtools, autoTrustProject })
     logger.info(i18nText(
-      `配置已从 ${colors.green(inputPath)} 导入`,
-      `Config imported from ${colors.green(inputPath)}`,
+      `配置已从 ${formatTerminalPath(inputPath)} 导入`,
+      `Config imported from ${formatTerminalPath(inputPath)}`,
     ))
     return
   }
