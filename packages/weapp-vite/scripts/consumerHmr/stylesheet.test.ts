@@ -10,8 +10,8 @@ import {
   WEAPP_VITE_STATEFUL_HMR_UPDATE_FILE,
 } from '@weapp-core/constants'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { assertConsumerStatefulStartup } from './startupClassic.mjs'
-import { assertRetiredStatefulTransport, assertStylesheetClassic, verifyStylesheetHmr } from './stylesheet.mjs'
+import { assertConsumerClassicOutput, assertConsumerStatefulStartup, assertConsumerClassicSession as assertStylesheetClassic } from './startupClassic.mjs'
+import { assertRetiredStatefulTransport, verifyStylesheetHmr } from './stylesheet.mjs'
 
 const endpointPath = '/__weapp_vite_stateful_hmr__'
 const endpoint = new URL(endpointPath, 'http://localhost').href
@@ -151,7 +151,7 @@ describe('packed consumer stylesheet classic evidence', () => {
     const target = path.join(evidence.root, 'dist', file)
     await mkdir(path.dirname(target), { recursive: true })
     await writeFile(target, 'void 0;')
-    await expect(assertStylesheetClassic(evidence)).rejects.toThrow('Classic output must remove')
+    await expect(assertConsumerClassicOutput(evidence.root)).rejects.toThrow('Classic output must remove')
   })
 
   it.each([WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY, WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY])('rejects stateful client control remaining in any emitted script: %s', async (key) => {
@@ -159,14 +159,14 @@ describe('packed consumer stylesheet classic evidence', () => {
     retiredResponse()
     await mkdir(path.join(evidence.root, 'dist/vendor'), { recursive: true })
     await writeFile(path.join(evidence.root, 'dist/vendor/runtime.js'), `globalThis[${JSON.stringify(key)}] = {}`)
-    await expect(assertStylesheetClassic(evidence)).rejects.toThrow(`must remove ${key}`)
+    await expect(assertConsumerClassicOutput(evidence.root)).rejects.toThrow(`must remove ${key}`)
   })
 
   it('does not accept an empty output directory as classic output', async () => {
     const evidence = await fixture()
     retiredResponse()
     await rm(path.join(evidence.root, 'dist/app.js'))
-    await expect(assertStylesheetClassic(evidence)).rejects.toThrow('actual emitted JavaScript')
+    await expect(assertConsumerClassicOutput(evidence.root)).rejects.toThrow('actual emitted JavaScript')
   })
 })
 

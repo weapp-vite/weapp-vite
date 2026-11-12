@@ -1,6 +1,6 @@
 import { writeFile } from 'node:fs/promises'
 import path from 'node:path'
-import { assertConsumerStartupClassic } from './startupClassic.mjs'
+import { assertConsumerClassicSession } from './startupClassic.mjs'
 
 /** React 静态模板越过 patch-shape 边界后，更新与恢复均由同一 classic 会话发布。 */
 export async function verifyReactTemplateHmr({ root, operation, original, waitForOutput, waitForWatchRound, waitForClassicReady, readOutput }) {
@@ -11,6 +11,6 @@ export async function verifyReactTemplateHmr({ root, operation, original, waitFo
     if (operation === 'stateful-dev') {
       await waitForClassicReady()
     }
-    await assertConsumerStartupClassic({ root, operation, output: readOutput(), expectedReason: 'patch-shape' })
+    await assertConsumerClassicSession({ root, operation, output: readOutput(), expectedReason: 'patch-shape' })
   }
 }

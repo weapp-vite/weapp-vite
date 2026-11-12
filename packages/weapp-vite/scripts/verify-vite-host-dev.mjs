@@ -9,7 +9,7 @@ import { readEmittedStylesheet } from '../../../e2e/utils/emittedStylesheet.ts'
 import { createNativeHostControl } from './consumerHmr/hostControl/index.mjs'
 import { verifyReactTemplateHmr } from './consumerHmr/reactTemplate.mjs'
 import { assertConsumerPrivateConfigRestored, consumerProcessEnvironment, readConsumerPrivateConfig, stopConsumerProcess } from './consumerHmr/shutdown.mjs'
-import { assertConsumerStatefulStartup } from './consumerHmr/startupClassic.mjs'
+import { assertConsumerClassicOutput, assertConsumerStatefulStartup } from './consumerHmr/startupClassic.mjs'
 import { verifyStylesheetHmr } from './consumerHmr/stylesheet.mjs'
 
 const root = path.resolve(process.argv[2])
@@ -293,6 +293,9 @@ finally {
     await assertConsumerPrivateConfigRestored(root, originalPrivateConfig).catch(error => errors.push(error))
   }
   if (stopped) {
+    if (profile === 'react' || profile === 'tailwind') {
+      await assertConsumerClassicOutput(root).catch(error => errors.push(new Error(`Consumer final classic output failed: ${logs}`, { cause: error })))
+    }
     for (const [file, content] of originals) {
       await writeFile(path.join(root, file), content).catch(error => errors.push(error))
     }

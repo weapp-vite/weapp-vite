@@ -1,8 +1,10 @@
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
+import { WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY } from '@weapp-core/constants'
 import { afterEach, expect, it, vi } from 'vitest'
 import { verifyReactTemplateHmr } from './reactTemplate.mjs'
+import { assertConsumerClassicOutput } from './startupClassic.mjs'
 
 const roots: string[] = []
 const original = '<view>weapp-vite React static bindings</view>'
@@ -51,6 +53,25 @@ it.each(['dev', 'build-watch', 'stateful-dev'])('verifies React static update an
   expect(evidence.sources).toEqual(['<view>React host updated template</view>', original])
   expect(evidence.waitForClassicReady).toHaveBeenCalledTimes(operation === 'stateful-dev' ? 2 : 0)
   expect(await readFile(path.join(evidence.root, 'src/pages/static/view.tsx'), 'utf8')).toBe(original)
+  await assertConsumerClassicOutput(evidence.root)
+})
+
+it('checks each live update without scanning a rebuilding directory, then rejects stale stateful code in final output', async () => {
+  const evidence = await fixture('build-watch')
+  evidence.waitForWatchRound.mockImplementation(async () => {
+    // 模板已可见时，另一轮原生构建仍可能正在清空并重写 JS。
+    await rm(path.join(evidence.root, 'dist'), { recursive: true, force: true })
+  })
+  await verifyReactTemplateHmr(evidence)
+  expect(evidence.sources).toHaveLength(2)
+  // 同一宿主关闭回执之后才读取最终文件；不能把缺失文件当成已验证。
+  await expect(assertConsumerClassicOutput(evidence.root)).rejects.toMatchObject({ code: 'ENOENT' })
+  await mkdir(path.join(evidence.root, 'dist/vendor'), { recursive: true })
+  const script = path.join(evidence.root, 'dist/vendor/runtime.js')
+  await writeFile(script, `globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY)}] = {}`)
+  await expect(assertConsumerClassicOutput(evidence.root)).rejects.toThrow(`must remove ${WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY}`)
+  await writeFile(script, 'App({})')
+  await assertConsumerClassicOutput(evidence.root)
 })
 
 it.each(['wrong-reason', 'duplicate-handoff', 'extra-config-reload', 'publication-error'])('rejects %s instead of accepting arbitrary classic output', async (failure) => {
