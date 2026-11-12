@@ -1124,7 +1124,12 @@ class StatefulHmrSession {
     if (!nextEntryIds || (nextEntryIds.length === this.entryIds.size && nextEntryIds.every(id => this.entryIds.has(id)))) {
       return false
     }
-    this.requestClassic({ code: 'entry-topology', message: '快照发现入口拓扑变化，需要重新建立完整构建图。', files: nextEntryIds })
+    const nextEntries = new Set(nextEntryIds)
+    const changedEntries = [
+      ...[...this.entryIds].filter(id => !nextEntries.has(id)),
+      ...nextEntryIds.filter(id => !this.entryIds.has(id)),
+    ]
+    this.requestClassic({ code: 'entry-topology', message: '快照发现入口拓扑变化，需要重新建立完整构建图。', files: changedEntries })
     return true
   }
 

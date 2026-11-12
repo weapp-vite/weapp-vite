@@ -698,6 +698,26 @@ describe('stateful snapshot output transactions', () => {
     expect(session.runtime.fallback?.code).toBe('entry-topology')
   })
 
+  it.each(['create', 'delete', 'replace'] as const)('reports only changed entries when a full snapshot detects topology %s before the route watcher', async (event) => {
+    const page = path.join(root, 'src/page.js')
+    const previous = path.join(root, 'src/previous.js')
+    const added = path.join(root, 'src/added.js')
+    const initialEntries = event === 'create' ? [page] : [page, previous]
+    const nextEntries = event === 'delete' ? [page] : [page, added]
+    const changedEntries = event === 'create' ? [added] : event === 'delete' ? [previous] : [previous, added]
+    const session = await start(snapshot('red'), initialEntries)
+    session.rebuild.mockResolvedValueOnce({ ...snapshot('blue'), entryIds: nextEntries })
+    harness.writeOutput.mockClear()
+
+    await session.full()
+    await vi.advanceTimersByTimeAsync(40)
+
+    expect(session.runtime.fallback).toMatchObject({ code: 'entry-topology', files: changedEntries })
+    expect(session.classic).toHaveBeenCalledOnce()
+    expect(harness.fullBuild).not.toHaveBeenCalled()
+    expect(harness.writeOutput).not.toHaveBeenCalled()
+  })
+
   it('does not let an old session release a newer host settlement binding', async () => {
     const controller = createStatefulHmrHostPlugins({} as CompilerContext)
     const plugin = controller.plugins.find(plugin => plugin.name === 'weapp-vite:stateful-hmr-session')!
