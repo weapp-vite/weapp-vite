@@ -77,6 +77,7 @@ export function createDashboardViteConfig(tailwindPlugins: PluginOption) {
           codeSplitting: {
             groups: [
               {
+                debugName: 'dashboard-vendor',
                 name: resolveDashboardChunk,
               },
             ],
