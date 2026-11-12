@@ -7,6 +7,7 @@ import process from 'node:process'
 import { setTimeout as delay } from 'node:timers/promises'
 import { readEmittedStylesheet } from '../../../e2e/utils/emittedStylesheet.ts'
 import { createNativeHostControl } from './consumerHmr/hostControl/index.mjs'
+import { verifyReactTemplateHmr } from './consumerHmr/reactTemplate.mjs'
 import { assertConsumerPrivateConfigRestored, consumerProcessEnvironment, readConsumerPrivateConfig, stopConsumerProcess } from './consumerHmr/shutdown.mjs'
 import { assertConsumerStatefulStartup } from './consumerHmr/startupClassic.mjs'
 import { verifyStylesheetHmr } from './consumerHmr/stylesheet.mjs'
@@ -200,12 +201,16 @@ try {
     console.log(`${toolchain}: native plugin ${operation} shared import update, page removal and restoration passed with the expected configuration handoff`)
   }
   else if (profile === 'react') {
-    const source = path.join(root, 'src/pages/static/view.tsx')
-    await writeFile(source, originals.get('src/pages/static/view.tsx').replace('weapp-vite React static bindings', 'React host updated template'))
-    await waitForOutput('pages/static/index.wxml', 'React host updated template')
-    await waitForWatchRound(2)
-    assert.equal(await readFile(path.join(root, 'config-calls.txt'), 'utf8'), 'loaded\n')
-    console.log(`${toolchain}: native React ${operation} initial template and TSX update passed`)
+    await verifyReactTemplateHmr({
+      root,
+      operation,
+      original: originals.get('src/pages/static/view.tsx'),
+      waitForOutput,
+      waitForWatchRound,
+      waitForClassicReady: () => waitForDevReady(/\[weapp-vite\] HMR classic ready /, 'React classic handoff'),
+      readOutput: () => logs,
+    })
+    console.log(`${toolchain}: native React ${operation} template update and restore passed with the expected configuration handoff`)
   }
   else if (profile === 'worker') {
     const file = 'src/workers/messages/message.ts'
@@ -260,11 +265,12 @@ try {
     assert.equal(await readFile(path.join(root, 'config-calls.txt'), 'utf8'), 'loaded\n')
     console.log(`${toolchain}: native ${operation} initial output and TS/Vue updates passed with the expected configuration handoff`)
   }
-  if (operation === 'stateful-dev' && profile !== 'tailwind') {
+  if (operation === 'stateful-dev' && profile !== 'tailwind' && profile !== 'react') {
     await assertConsumerStatefulStartup({ root, output: logs })
   }
 }
 catch (error) {
+  process.stderr.write(logs)
   errors.push(error)
 }
 finally {

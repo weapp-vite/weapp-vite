@@ -11,11 +11,11 @@ import { assertNoStatefulInstallations } from './installedRuntime.mjs'
 export const classicReadyPrefix = '[weapp-vite] HMR classic ready '
 const fallbackPrefix = '[weapp-vite] HMR fallback '
 
-/** 核验消费者的 classic 交付；显式 stateful 只在样式能力边界后切换。 */
-export async function assertConsumerStartupClassic({ root, operation, output }) {
+/** 核验消费者在指定能力边界后的完整 classic 交付。 */
+export async function assertConsumerStartupClassic({ root, operation, output, expectedReason = 'stylesheet-output' }) {
   assert.doesNotMatch(output, /Build failed|delivery failed|patch transform failed|classic HMR 切换失败|classic 回退失败|stateful HMR 旧引擎停止失败/)
   const stateful = operation === 'stateful-dev'
-  assert.equal(output.split(fallbackPrefix).length - 1, stateful ? 1 : 0, 'The stylesheet boundary must select classic exactly once')
+  assert.equal(output.split(fallbackPrefix).length - 1, stateful ? 1 : 0, 'The capability boundary must select classic exactly once')
   assert.equal(output.split(classicReadyPrefix).length - 1, stateful ? 1 : 0, 'Classic publication must finish exactly once')
   if (stateful) {
     const fallback = output.match(/\[weapp-vite\] HMR fallback (\{[^\r\n]*\})/)
@@ -29,14 +29,14 @@ export async function assertConsumerStartupClassic({ root, operation, output }) 
     assert.deepEqual(reason, {
       from: 'stateful-experimental',
       to: 'classic',
-      reason: 'stylesheet-output',
+      reason: expectedReason,
       message: reason.message,
       requested: 'stateful-experimental',
       actual: 'classic',
       phase: 'switching',
       ...(reason.files !== undefined ? { files: reason.files } : {}),
     })
-    assert.deepEqual(JSON.parse(ready[1]), { reason: 'stylesheet-output', requested: 'stateful-experimental', actual: 'classic', phase: 'classic' })
+    assert.deepEqual(JSON.parse(ready[1]), { reason: expectedReason, requested: 'stateful-experimental', actual: 'classic', phase: 'classic' })
     assert(fallback.index < ready.index, 'Classic readiness must follow its capability decision')
   }
   assert.equal(await readFile(path.join(root, 'config-calls.txt'), 'utf8'), stateful ? 'loaded\nloaded\n' : 'loaded\n', 'Only the capability handoff may restart the configuration')
