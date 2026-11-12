@@ -1,6 +1,8 @@
 /* eslint-disable ts/no-use-before-define -- 后端工厂与宿主辅助函数按能力探针、操作实现的阅读顺序组织。 */
+import type { NativeDomEvent, NativeDomNode, NativeDomSelection } from '@weapp-core/shared/native-dom'
 import type { HostElement, HostRendererBackend } from './hostTree'
 import type { HostProps, MiniProgramEventLike, MiniProgramPageAdapter } from './types'
+import { createNativeDomElement, selectNativeDom } from '@weapp-core/shared/native-dom'
 import { serializeStyle } from './hostTree/serialization'
 
 export type ReactRendererMode = 'legacy' | 'auto' | 'native-dom'
@@ -8,37 +10,6 @@ export type ReactRendererMode = 'legacy' | 'auto' | 'native-dom'
 interface ReactRendererBuildConfig {
   mode?: ReactRendererMode
   platform?: string
-}
-
-interface NativeDomEvent {
-  detail?: unknown
-  stopPropagation?: () => void
-  target?: unknown
-  type?: string
-}
-
-interface NativeDomNode {
-  addEventListener: (type: string, listener: (event: NativeDomEvent) => void, capture?: boolean) => void
-  appendChild: (node: NativeDomNode) => unknown
-  insertBefore: (node: NativeDomNode, before: NativeDomNode | null) => unknown
-  nodeValue?: string | null
-  removeAttribute: (name: string) => void
-  removeChild: (node: NativeDomNode) => unknown
-  removeEventListener: (type: string, listener: (event: NativeDomEvent) => void, capture?: boolean) => void
-  setAttribute: (name: string, value: unknown) => void
-}
-
-interface NativeDomDocument {
-  createElement: (type: string) => NativeDomNode
-  createNativeComponent: (type: string, options: Record<string, unknown>) => NativeDomNode
-  createTextNode: (value: string) => NativeDomNode
-  getPageDocumentById: (webviewId: number) => NativeDomNode | undefined
-}
-
-interface TtRuntime {
-  appDocument?: NativeDomDocument
-  getBuiltInComponents?: () => Set<string> | string[]
-  getRenderMode?: () => number
 }
 
 interface NativeEventBinding {
@@ -50,52 +21,6 @@ interface NativeEventBinding {
 export type NativeDomEventDispatcher = (target: HostElement, event: MiniProgramEventLike) => void
 
 declare const __WEAPP_VITE_REACT_RENDERER__: ReactRendererBuildConfig | undefined
-
-const DEFAULT_BUILT_IN_COMPONENTS = new Set([
-  'ad',
-  'audio',
-  'block',
-  'button',
-  'camera',
-  'canvas',
-  'checkbox',
-  'checkbox-group',
-  'cover-image',
-  'cover-view',
-  'editor',
-  'form',
-  'functional-page-navigator',
-  'icon',
-  'image',
-  'input',
-  'label',
-  'live-player',
-  'live-pusher',
-  'map',
-  'movable-area',
-  'movable-view',
-  'navigator',
-  'official-account',
-  'open-data',
-  'picker',
-  'picker-view',
-  'picker-view-column',
-  'progress',
-  'radio',
-  'radio-group',
-  'rich-text',
-  'scroll-view',
-  'slot',
-  'slider',
-  'swiper',
-  'swiper-item',
-  'switch',
-  'textarea',
-  'text',
-  'video',
-  'view',
-  'web-view',
-])
 
 const BOOLEAN_ATTRIBUTES = new Set(['checked', 'disabled', 'hidden'])
 
@@ -109,107 +34,34 @@ function readBuildConfig(): Required<ReactRendererBuildConfig> {
   }
 }
 
-function capabilityError(reason: string, cause?: unknown) {
-  const error = new Error(`[react] renderer: 'native-dom' 需要抖音 Render Mode V2、tt.appDocument 与当前页面 __webviewId__ (${reason})`)
-  if (cause !== undefined) {
-    ;(error as Error & { cause?: unknown }).cause = cause
-  }
-  return error
-}
-
 export function createNativeDomBackend(
   adapter: MiniProgramPageAdapter,
   dispatchEvent: NativeDomEventDispatcher,
 ): HostRendererBackend | undefined {
-  const config = readBuildConfig()
-  if (config.mode === 'legacy' || (config.mode === 'auto' && config.platform !== 'tt')) {
-    return undefined
-  }
-  if (config.mode === 'native-dom' && config.platform !== 'tt') {
-    throw new Error(`[react] renderer: 'native-dom' 仅支持 tt 平台，当前目标为 ${config.platform || 'unknown'}`)
-  }
-
-  const fallback = (reason: string, cause?: unknown): undefined => {
-    if (config.mode === 'auto') {
-      return undefined
-    }
-    throw capabilityError(reason, cause)
-  }
-
-  let ttRuntime: TtRuntime | undefined
-  let appDocument: NativeDomDocument | undefined
-  let container: NativeDomNode | undefined
-  let renderMode: number | undefined
-  try {
-    ttRuntime = (globalThis as typeof globalThis & { tt?: TtRuntime }).tt
-    appDocument = ttRuntime?.appDocument
-    renderMode = ttRuntime?.getRenderMode?.()
-  }
-  catch (error) {
-    return fallback('读取 Render Mode V2 能力失败', error)
-  }
-
-  const webviewId = adapter.__webviewId__
-  if (
-    !ttRuntime
-    || renderMode !== 2
-    || !appDocument
-    || typeof appDocument.createElement !== 'function'
-    || typeof appDocument.createNativeComponent !== 'function'
-    || typeof appDocument.createTextNode !== 'function'
-    || typeof appDocument.getPageDocumentById !== 'function'
-    || typeof webviewId !== 'number'
-  ) {
-    return fallback('Render Mode V2 API 不可用')
-  }
-
-  try {
-    container = appDocument.getPageDocumentById(webviewId)
-  }
-  catch (error) {
-    return fallback('读取 Render Mode V2 页面文档失败', error)
-  }
-
-  if (!container || !ttRuntime || !appDocument) {
-    return fallback('页面文档尚不可用')
-  }
-
-  return new TtDomBackend(ttRuntime, appDocument, container, dispatchEvent)
+  const selection = selectNativeDom(readBuildConfig(), adapter, 'react')
+  return selection ? new TtDomBackend(selection, dispatchEvent) : undefined
 }
 
 class TtDomBackend implements HostRendererBackend {
   readonly container: NativeDomNode
-  private readonly appDocument: NativeDomDocument
-  private readonly builtInComponents: Set<string>
+  private readonly selection: NativeDomSelection
   private readonly dispatchedEvents = new WeakSet<object>()
   private readonly dispatchEvent: NativeDomEventDispatcher
   private readonly eventBindings = new WeakMap<NativeDomNode, Map<string, NativeEventBinding>>()
   private readonly hostNodes = new WeakMap<object, HostElement>()
 
-  constructor(
-    ttRuntime: TtRuntime,
-    appDocument: NativeDomDocument,
-    container: NativeDomNode,
-    dispatchEvent: NativeDomEventDispatcher,
-  ) {
-    this.appDocument = appDocument
-    this.container = container
+  constructor(selection: NativeDomSelection, dispatchEvent: NativeDomEventDispatcher) {
+    this.selection = selection
+    this.container = selection.container
     this.dispatchEvent = dispatchEvent
-    const builtIn = ttRuntime.getBuiltInComponents?.()
-    this.builtInComponents = builtIn instanceof Set
-      ? builtIn
-      : Array.isArray(builtIn) ? new Set(builtIn) : DEFAULT_BUILT_IN_COMPONENTS
   }
 
   createElement(type: string) {
-    if (this.builtInComponents.has(type)) {
-      return this.appDocument.createElement(type)
-    }
-    return this.appDocument.createNativeComponent(type, { __tt__inner__options__: { name: type } })
+    return createNativeDomElement(this.selection, type)
   }
 
   createText(value: string) {
-    return this.appDocument.createTextNode(value)
+    return this.selection.appDocument.createTextNode(value)
   }
 
   setElementProps(element: HostElement, previous: HostProps, next: HostProps) {

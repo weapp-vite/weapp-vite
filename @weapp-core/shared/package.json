@@ -55,6 +55,10 @@
       "./platforms/runtime": {
         "types": "./src/platforms/runtime/index.ts",
         "default": "./src/platforms/runtime/index.ts"
+      },
+      "./native-dom": {
+        "types": "./src/native-dom.ts",
+        "default": "./src/native-dom.ts"
       }
     },
     "main": "./src/index.ts",
@@ -85,6 +89,10 @@
     "./platforms/runtime": {
       "types": "./dist/platforms/runtime/index.d.ts",
       "import": "./dist/platforms/runtime/index.js"
+    },
+    "./native-dom": {
+      "types": "./dist/native-dom.d.ts",
+      "import": "./dist/native-dom.js"
     }
   },
   "main": "./dist/index.js",
@@ -141,6 +149,10 @@
       "./platforms/runtime": {
         "types": "./dist/platforms/runtime/index.d.ts",
         "import": "./dist/platforms/runtime/index.js"
+      },
+      "./native-dom": {
+        "types": "./dist/native-dom.d.ts",
+        "import": "./dist/native-dom.js"
       }
     },
     "main": "./dist/index.js",

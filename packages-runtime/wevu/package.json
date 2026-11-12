@@ -265,6 +265,21 @@
     },
     "./types": {
       "types": "./dist/types.d.mts"
+    },
+    "./native-dom": {
+      "types": "./dist/native-dom.d.mts",
+      "import": {
+        "types": "./dist/native-dom.d.mts",
+        "development": "./dist/dev/native-dom.mjs",
+        "default": "./dist/native-dom.mjs"
+      }
+    },
+    "./dev/native-dom": {
+      "types": "./dist/native-dom.d.mts",
+      "import": {
+        "types": "./dist/native-dom.d.mts",
+        "default": "./dist/dev/native-dom.mjs"
+      }
     }
   },
   "main": "./dist/index.mjs",
@@ -332,6 +347,7 @@
   },
   "dependencies": {
     "@vue/reactivity": "catalog:",
+    "@vue/runtime-core": "catalog:",
     "@weapp-core/constants": "workspace:*",
     "@weapp-core/shared": "workspace:*",
     "@weapp-core/types": "workspace:*",

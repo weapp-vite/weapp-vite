@@ -1,6 +1,6 @@
 ---
 title: Wevu 编译期配置
-description: 说明 weapp.wevu.defaults、preset 与 autoSetDataPick 的作用、默认行为和适用场景。
+description: 说明 weapp.wevu.renderer、defaults、preset 与 autoSetDataPick 的作用、默认行为和适用场景。
 keywords:
   - 配置
   - config
@@ -27,6 +27,33 @@ keywords:
 > Wevu 在执行 `defineAppJson()`、`definePageJson()` 等 JSON 宏时，临时配置缓存默认写入项目内的 `.weapp-vite/wevu-config`，并会在首次使用时按需创建该目录；只有无法定位有效项目目录时才会回退到系统临时目录。
 
 [[toc]]
+
+## `weapp.wevu.renderer` {#weapp-wevu-renderer}
+
+默认值为 `legacy`，继续编译小程序模板并通过快照 diff 与 `setData` 更新。实验性的 `auto` / `native-dom` 支持抖音 Render Mode V2：编译器静态生成 render，运行时使用 `tt.appDocument` 和当前页面文档创建、移动、更新及删除节点。
+
+```ts
+export default defineConfig({
+  weapp: {
+    platform: 'tt',
+    wevu: { renderer: 'auto' },
+  },
+})
+```
+
+| 值 | 行为 |
+| --- | --- |
+| `legacy` | 默认，保持现有模板与 `setData` 路径 |
+| `auto` | TT 首次 setup 前检测 V2、文档 API、页面标识及页面文档；缺失时启用 legacy，其他平台保留原编译结果 |
+| `native-dom` | 仅允许 TT，运行时能力缺失则报错 |
+
+TT 的两个 opt-in 模式均保留 legacy 模板，初始隐藏，在 `onLoad` 选择后端；因此 setup 最早在 `onLoad` 执行，默认 legacy 的时机不变。选定原生后端后，宿主操作错误会报告，不会在部分挂载后回退或重跑 setup。框架原生分支不调用 `setData`，Wevu `nextTick` 等待已排队的结构更新完成，更新和卸载 hooks 对应节点提交边界。
+
+首版支持带 `<template>` 和同步 `setup` / `<script setup>` 的 SFC，覆盖条件、keyed 列表、SFC props/slots/emit/model、内置节点和原生组件 bridge。组件事件保留小程序 `event.detail`；表单 model 读取 `detail.value`，组件 model 读取 `detail`。
+
+以下组合暂不支持，需保留 `legacy`：JSX/TSX 入口、异步 setup、Options API 的 data/computed/watch/methods/mixins/extends/behaviors、pageLayout/appShell、模板脚本与 include/import/平台指令、CSS Modules/样式 `v-bind`、Teleport/Suspense/Transition/KeepAlive 和 `v-html`。虚拟 SFC 不提供独立的小程序原生实例；依赖原生实例方法、原生 selector、组件事件跨边界 bubbles/capturePhase/composed 的代码也应继续使用 legacy。模板事件使用 `@tap` 等 Vue 指令。
+
+当前自动验证覆盖编译到 fake TT DOM 的行为及 legacy 回归，真实 TT 开发者工具/真机验收仍待补。性能收益需要在真实 TT 环境对比测量，不能从 mock、构建或微信结果推断。
 
 ## `weapp.wevu.defaults` {#weapp-wevu-defaults}
 - **类型**：`WevuDefaults`

@@ -308,3 +308,10 @@ export interface WevuRuntimeBindingManifestV1 {
     scopedSlots?: true
   }
 }
+
+/** Wevu 原生编译结果携带的注册委托。 */
+export const WEVU_NATIVE_DOM_COMPONENT_KEY = '__wevuNativeDomComponent'
+/** auto 模式的模板分支可见性，仅由后端选择写入。 */
+export const WEVU_LEGACY_RENDERER_KEY = '__wevuLegacyRenderer'
+/** 原生编译结果的静态运行时入口。 */
+export const WEVU_NATIVE_DOM_MODULE_ID = 'wevu/native-dom'

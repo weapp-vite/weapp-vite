@@ -77,6 +77,7 @@ catalog:
   '@vue/compiler-dom': ^3.5.45
   '@vue/babel-plugin-jsx': 3.0.0
   '@vue/reactivity': ^3.5.45
+  '@vue/runtime-core': ^3.5.45
   '@vue/language-core': ^3.3.14
   '@weapp-tailwindcss/engine': 0.1.8
   '@wot-ui/ui': 2.4.0

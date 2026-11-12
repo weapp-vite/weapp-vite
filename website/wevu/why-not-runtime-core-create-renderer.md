@@ -12,6 +12,8 @@ keywords:
 
 # 为什么没有使用 @vue/runtime-core 的 createRenderer 来实现
 
+本文讨论默认的 `legacy` 路径。实验性的 [TT V2 原生 DOM renderer](/config/wevu#weapp-wevu-renderer) 已为具备命令式节点 API 的抖音宿主接入 `@vue/runtime-core` 的结构 diff，并由 Wevu 响应式与调度器驱动更新；默认架构和其他平台继续使用模板与 `setData`。该 opt-in 路径的真实 TT runtime 验收和性能对比仍待补。
+
 这个问题可以拆成两层：
 
 1. **技术上能不能做**：可以做。

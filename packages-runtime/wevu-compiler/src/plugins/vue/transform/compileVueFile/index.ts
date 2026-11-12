@@ -1,5 +1,6 @@
 import type { CompilerDiagnostic } from '../../../../types/diagnostics'
 import type { CompileVueFileOptions, VueTransformResult } from './types'
+import { WEVU_LEGACY_RENDERER_KEY } from '@weapp-core/constants'
 import { compileScript } from 'vue/compiler-sfc'
 import { createWevuRuntimeCapabilityMetadataFromBindingManifest } from '../../../../runtimeCapabilities'
 import { CompilerDiagnosticError } from '../../../../types/diagnostics'
@@ -10,6 +11,7 @@ import { generateScopedId } from '../scopedId'
 import { collectComponentSourceInfo } from './componentSources'
 import { compileConfigPhase } from './config'
 import { finalizeResult } from './finalize'
+import { isNativeDomCompilation } from './nativeDom'
 import { analyzeNativeSlotContext } from './nativeSlotContext/index'
 import { applyCompilerTemplateWrappers, mergeCompilerLayoutUsingComponents } from './pageLayout'
 import { parseVueFile } from './parse'
@@ -271,6 +273,10 @@ export async function compileVueFile(
     scriptSetupMacroHash: parsed.scriptSetupMacroHash,
     defineOptionsHash: parsed.defineOptionsHash,
   })
+
+  if (!parsed.isAppFile && isNativeDomCompilation(options) && options?.isPage && result.template) {
+    result.template = `<block tt:if="{{${WEVU_LEGACY_RENDERER_KEY}}}">${result.template}</block>`
+  }
 
   result.meta!.templateRegistrationSignature = createTemplateRegistrationSignature(parsed.descriptor, result.template)
 

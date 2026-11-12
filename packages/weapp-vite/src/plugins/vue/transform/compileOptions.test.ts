@@ -61,6 +61,25 @@ vi.mock('./wevuPreset', () => ({
   isAutoSetDataPickEnabledWithPreset: isAutoSetDataPickEnabledWithPresetMock,
 }))
 
+it('把 Wevu renderer 选择传入 SFC 编译器', () => {
+  const configService = {
+    cwd: '/project',
+    absoluteSrcRoot: '/project/src',
+    platform: 'tt',
+    isDev: false,
+    inlineConfig: {},
+    weappViteConfig: { wevu: { renderer: 'auto' } },
+    outputExtensions: {},
+    relativeOutputPath: () => 'pages/index',
+  } as any
+  const options = createCompileVueFileOptions({} as CompilerContext, {}, '/project/src/pages/index.vue', true, false, configService, {
+    reExportResolutionCache: new Map(),
+    classStyleRuntimeWarned: { value: false },
+  })
+  expect(options.renderer).toBe('auto')
+  expect(options.template.platform.name).toBe('tt')
+})
+
 describe('resolveVueTemplatePlatformOptions', () => {
   beforeEach(() => {
     isWevuMinifyEnabledMock.mockClear()

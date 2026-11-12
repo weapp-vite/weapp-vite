@@ -31,7 +31,7 @@ it('resolves each project package once while checking every distinct alias entry
 
   const aliases = resolveBuiltinPackageAliases({ cwd, isDev: true })
 
-  expect(aliases).toHaveLength(14)
+  expect(aliases).toHaveLength(15)
   expect(packageReads('@weapp-core/shared')).toHaveLength(1)
   expect(packageReads('wevu')).toHaveLength(1)
   for (const { replacement } of aliases) {
@@ -95,7 +95,7 @@ it('keeps the compatible builder copy separate from the project package lookup',
 
   const aliases = resolveBuiltinPackageAliases({ cwd })
 
-  expect(aliases).toHaveLength(11)
+  expect(aliases).toHaveLength(12)
   expect(aliases.every(alias => alias.replacement.startsWith(`${bundledRoot}/dist/`))).toBe(true)
   expect(packageReads('wevu')).toEqual([
     ['wevu', { paths: [builderSearch] }],

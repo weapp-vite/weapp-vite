@@ -123,6 +123,8 @@ export interface VueSfcStaticComponentMeta {
  * 编译 Vue SFC 的选项集合。
  */
 export interface CompileVueFileOptions {
+  /** 页面首次 setup 前选择渲染后端；默认 legacy，首版原生目标为 TT V2。 */
+  renderer?: 'legacy' | 'auto' | 'native-dom'
   astEngine?: AstEngineName
   isPage?: boolean
   isApp?: boolean
