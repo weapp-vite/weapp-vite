@@ -1,4 +1,5 @@
 import path from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const fsMock = vi.hoisted(() => {
@@ -55,7 +56,10 @@ async function loadConfigModule() {
 }
 
 describe('config helpers', () => {
+  let stderrIsTTY: PropertyDescriptor | undefined
+
   beforeEach(() => {
+    stderrIsTTY = Object.getOwnPropertyDescriptor(process.stderr, 'isTTY')
     for (const key of ['WEAPP_IDE_CLI_PATH', 'WEAPP_IDE_DEVTOOLS_CHANNEL', 'WEAPP_IDE_DEVTOOLS_VERSION', 'WEAPP_IDE_REQUIRE_OFFICIAL_LATEST']) {
       vi.stubEnv(key, undefined)
     }
@@ -73,7 +77,15 @@ describe('config helpers', () => {
     platformMock.getDefaultCliPath.mockResolvedValue('/default/cli')
   })
 
-  afterEach(() => vi.unstubAllEnvs())
+  afterEach(() => {
+    if (stderrIsTTY) {
+      Object.defineProperty(process.stderr, 'isTTY', stderrIsTTY)
+    }
+    else {
+      Reflect.deleteProperty(process.stderr, 'isTTY')
+    }
+    vi.unstubAllEnvs()
+  })
 
   it('uses a process selection without changing persisted preferences', async () => {
     fsMock.pathExists.mockResolvedValue(true)
@@ -140,7 +152,22 @@ describe('config helpers', () => {
       autoTrustProject: undefined,
       source: 'custom',
     })
-    expect(loggerMock.info).toHaveBeenCalledWith('自定义 CLI 路径：/custom/cli')
+    expect(loggerMock.info).toHaveBeenCalledWith('自定义 CLI 路径： /custom/cli')
+  })
+
+  it('links the original terminal paths without changing the resolved CLI path', async () => {
+    Object.defineProperty(process.stderr, 'isTTY', { configurable: true, value: true })
+    vi.stubEnv('CI', '')
+    vi.stubEnv('TERM', 'xterm-256color')
+    const cliPath = path.resolve('fixtures', '微信 tools #%?', 'cli')
+    fsMock.pathExists.mockResolvedValue(true)
+    fsMock.readJSON.mockResolvedValue({ cliPath })
+
+    const { getConfig, defaultCustomConfigFilePath } = await loadConfigModule()
+    expect(await getConfig()).toMatchObject({ cliPath, source: 'custom' })
+    expect(loggerMock.info).toHaveBeenCalledWith(`全局配置文件路径： \u001B]8;;${pathToFileURL(defaultCustomConfigFilePath).href}\u001B\\${defaultCustomConfigFilePath}\u001B]8;;\u001B\\`)
+    expect(loggerMock.info).toHaveBeenCalledWith(`自定义 CLI 路径： \u001B]8;;${pathToFileURL(cliPath).href}\u001B\\${cliPath}\u001B]8;;\u001B\\`)
+    expect(fsMock.writeJSON).not.toHaveBeenCalled()
   })
 
   it('falls back to default config when custom file missing', async () => {
