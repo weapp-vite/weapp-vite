@@ -3680,7 +3680,7 @@ describe('compileVueTemplateToWxml', () => {
     expect(withoutClass.diagnostics).toHaveLength(0)
   })
 
-  it('disables Teleport mapping globally and per file', () => {
+  it('disables Teleport mapping globally', () => {
     const globalOff = compileVueTemplateToWxml(
       `<Teleport to="body"><view>A</view></Teleport>`,
       '/project/src/pages/index/index.vue',
@@ -3689,14 +3689,6 @@ describe('compileVueTemplateToWxml', () => {
     expect(globalOff.code).toBe('<view>A</view>')
     expect(globalOff.diagnostics).toHaveLength(0)
     expect(globalOff.bindingManifest.features.rootPortal).toBeUndefined()
-
-    const fileOff = compileVueTemplateToWxml(
-      `<!-- weapp-vite:disable-teleport --><Teleport to="body"><view>A</view></Teleport>`,
-      '/project/src/pages/index/index.vue',
-    )
-    expect(fileOff.code).toBe('<view>A</view>')
-    expect(fileOff.diagnostics).toHaveLength(0)
-    expect(fileOff.bindingManifest.features.rootPortal).toBeUndefined()
   })
 
   it('maps Teleport edge cases at the root node and with passthrough attributes', () => {

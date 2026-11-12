@@ -182,7 +182,7 @@ export default defineConfig({
   - 字符串按 prop 名称精确匹配；正则表达式按 prop 名称测试。
   - 例如 `functionPropNames: ['handler', /^on[A-Z]/]` 会让 `&lt;Comp :handler="callbacks[id]" /&gt;` 生成运行时绑定；普通值绑定如 `&lt;Comp :selected="data.userId" /&gt;` 仍直接输出 `selected` 对 `data.userId` 的 Mustache 绑定，不会生成 `__wv_bind_*`。
 - `teleport`：Vue `<Teleport>` 到微信原生 `root-portal` 的映射配置。
-  - `enabled`：是否启用映射，默认 `true`。关闭后剥掉 Teleport 标签并原位渲染子节点，不产生诊断；也可在模板或 JSX 文件内加入 `weapp-vite:disable-teleport` 注释按文件关闭。
+  - `enabled`：是否启用映射，默认 `true`。关闭后剥掉 Teleport 标签并原位渲染子节点，不产生诊断。
   - `unsupported`：不可映射场景的诊断级别，默认 `warn`；设为 `error` 时构建中断。各场景使用稳定子码 `WV1004`–`WV1009`。
   - 仅微信平台生效；只有静态 `to` 为顶层目标（`body`、`html`、`#app`、`#root`）时映射，`disabled` 取反输出 `enable`。
   - 基础库门槛：`root-portal` 标签需 `>= 2.25.2`，`enable` 需 `>= 2.26.1`，`externalClass` 需 `>= 3.9.2`。编译期不读取 `minSdkVersion`；微信端 `wevu` 运行时会在 `defineComponent` 阶段读取宿主 `SDKVersion`，低于门槛时只提示一次，不改变产物。

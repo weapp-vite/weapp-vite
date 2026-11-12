@@ -213,21 +213,4 @@ export default {
       collectJsxAutoComponents(source, '/project/src/pages/jsx/a.tsx', { astEngine: 'oxc' }),
     )
   })
-
-  it('honors the per-file Teleport disable directive', async () => {
-    const { compileJsxTemplate } = await import('./template')
-    const result = compileJsxTemplate(
-      `// weapp-vite:disable-teleport
-export default {
-  render() {
-    return <Teleport to="body"><view>A</view></Teleport>
-  },
-}`,
-      '/project/src/pages/teleport/index.tsx',
-    )
-
-    expect(result.template).not.toContain('root-portal')
-    expect(result.template).toContain('<view>A</view>')
-    expect(result.warnings).toHaveLength(0)
-  })
 })

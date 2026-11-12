@@ -167,7 +167,7 @@ defineComponent({
 - 动态 `:to`、`v-bind` 对象展开、缺少/空 `to`、非顶层目标会剥掉标签并原位渲染子节点，同时给出编译提示；模板与 JSX 共用同一套判定与文案。
 - `class` / `style` 会落在 `root-portal` 宿主节点上，编译器给出 `WV1009` 提示，应把样式写在内层节点。
 - 已知限制：`root-portal` 会断开组件 `wxss` 与 CSS 自定义属性（`--var`）的继承，不要依赖祖先变量；可用 `externalClass`（`>= 3.9.2`）或 `app.wxss` 全局类补救。层级隔离、不受父级 `transform` / `z-index` 影响是 `root-portal` 的预期收益。
-- 需要关闭映射时，可设置 `weapp.vue.template.teleport.enabled: false`，或在文件内加入 `weapp-vite:disable-teleport` 注释（模板使用 `<!-- ... -->`）。关闭后按普通子节点原位渲染，不产生诊断。
+- 需要关闭映射时，可设置 `weapp.vue.template.teleport.enabled: false`。关闭后按普通子节点原位渲染，不产生诊断。
 - 诊断码：`WV1004` 缺少 `to`、`WV1005` 动态 `:to`、`WV1006` 对象展开、`WV1007` 空或非顶层目标、`WV1008` 平台不支持、`WV1009` class/style 透传；`teleport.unsupported: 'error'` 会把可映射性诊断升级为构建错误。
 
 ## ❌ 小程序不适用的 Vue 3 API

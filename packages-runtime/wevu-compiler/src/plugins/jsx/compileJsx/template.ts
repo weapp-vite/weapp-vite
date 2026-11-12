@@ -34,14 +34,6 @@ export function createJsxCompileContext(options?: CompileVueFileOptions): JsxCom
   }
 }
 
-const TELEPORT_DISABLE_COMMENT_RE = /weapp-vite:disable-teleport/
-
-function applyTeleportFileDirective(context: JsxCompileContext, source: string) {
-  if (TELEPORT_DISABLE_COMMENT_RE.test(source)) {
-    context.teleportEnabled = false
-  }
-}
-
 function collectImportedBindings(ast: File, context: JsxCompileContext) {
   for (const statement of ast.program.body) {
     if (!t.isImportDeclaration(statement)) {
@@ -73,7 +65,6 @@ export function compileJsxTemplate(source: string, filename: string, options?: C
   context.bindingManifest.sourceFile = options?.bindingManifestSourceFile ?? filename
   context.moduleResolver = createJsxModuleResolver(context.warnings, options?.jsx?.readFile)
   collectImportedBindings(ast, context)
-  applyTeleportFileDirective(context, source)
 
   const { renderExpression } = analysis.analyzeJsxAst(ast, context)
   if (!renderExpression) {
@@ -127,7 +118,6 @@ export function compileJsxTemplateAndCollectComponents(source: string, filename:
   context.bindingManifest.sourceFile = options?.bindingManifestSourceFile ?? filename
   context.moduleResolver = createJsxModuleResolver(context.warnings, options?.jsx?.readFile)
   collectImportedBindings(ast, context)
-  applyTeleportFileDirective(context, source)
 
   const { renderExpression, autoComponentContext } = analysis.analyzeJsxAst(ast, context)
 

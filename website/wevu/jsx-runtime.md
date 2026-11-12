@@ -37,7 +37,7 @@ Wevu 提供五个 `jsxImportSource` 前缀。它们都是**纯类型入口**：�
 
 ## 组件映射
 
-类型入口只管类型；编译阶段的组件映射与模板共用同一套规则。例如 JSX `<Teleport to="body">` 在微信平台会映射为原生 `root-portal`，`disabled` 取反输出 `enable`；动态 `to`、spread 或非顶层目标会原位渲染子节点并给出 warning。`<Teleport>` 已在 `wevu/jsx-runtime` 中提供全局类型声明（`to` 必填，`disabled` / `defer` 可选），可直接在 TSX 中使用，无需运行时导入。需要关闭映射时，可设置 `weapp.vue.template.teleport.enabled: false`，或在文件内加入 `weapp-vite:disable-teleport` 注释。完整规则见 [Vue 3 兼容性](/wevu/vue3-compat)。
+类型入口只管类型；编译阶段的组件映射与模板共用同一套规则。例如 JSX `<Teleport to="body">` 在微信平台会映射为原生 `root-portal`，`disabled` 取反输出 `enable`；动态 `to`、spread 或非顶层目标会原位渲染子节点并给出 warning。`<Teleport>` 已在 `wevu/jsx-runtime` 中提供全局类型声明（`to` 必填，`disabled` / `defer` 可选），可直接在 TSX 中使用，无需运行时导入。需要关闭映射时，可设置 `weapp.vue.template.teleport.enabled: false`。完整规则见 [Vue 3 兼容性](/wevu/vue3-compat)。
 
 ## 配置与选择规则
 

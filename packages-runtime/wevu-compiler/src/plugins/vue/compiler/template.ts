@@ -35,18 +35,6 @@ const HTML_VOID_TAGS = new Set([
   'wbr',
 ])
 
-const TELEPORT_DISABLE_COMMENT_RE = /<!--\s*weapp-vite:disable-teleport\s*-->/
-
-/**
- * Teleport 映射默认启用，可通过全局配置或模板内注释按文件关闭。
- */
-function resolveTeleportEnabled(template: string, options?: TemplateCompileOptions) {
-  if (options?.teleport?.enabled === false) {
-    return false
-  }
-  return !TELEPORT_DISABLE_COMMENT_RE.test(template)
-}
-
 function resolveTemplateIsPage(filename: string, options?: TemplateCompileOptions) {
   if (options?.isPage !== true) {
     return false
@@ -158,7 +146,7 @@ export function compileVueTemplateToWxml(
       platform: options?.platform ?? getMiniProgramTemplatePlatform(),
       teleport: {
         unsupported: options?.teleport?.unsupported ?? 'warn',
-        enabled: resolveTeleportEnabled(template, options),
+        enabled: options?.teleport?.enabled !== false,
       },
       isPage: resolveTemplateIsPage(filename, options),
       propsAliases: options?.propsAliases,
