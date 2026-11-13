@@ -30,7 +30,9 @@ describe.each(['node', 'browser'] as const)('%s package asset reads', (provider)
           fs.writeFileSync(path.join(projectPath, file), content)
         }
         page.read()
+        page.readImage()
         expect(page.data).toMatchObject({ count: 2, content: content ?? 'missing' })
+        expect(page.data.imageInfo).toBe(content === undefined ? 'missing' : 'png')
         expect(session.getCurrentPages()[0]).toBe(page)
       }
     }

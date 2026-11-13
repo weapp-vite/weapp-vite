@@ -13,6 +13,18 @@ expectError(defineConfig({ plugins: [weapp()], weapp: { srcRot: 'src' } }))
 
 defineConfig({ plugins: [weapp()], weapp: { platform: 'web' } })
 
+defineConfig({
+  plugins: [weapp()],
+  build: {
+    assetsDir: '[subpackage]/assets',
+    rolldownOptions: {
+      output: {
+        chunkFileNames: chunk => `[subpackage]/chunks/${chunk.name}-[hash].js`,
+      },
+    },
+  },
+})
+
 // 构建配置不得把小程序模板标签合入原生 DOM 元素表。
 declare const tags: HTMLElementTagNameMap
 expectType<HTMLCanvasElement>(tags.canvas)

@@ -278,6 +278,7 @@ describe('e2e suite manifest', () => {
     'ide/lib-host.runtime.test.ts',
     'ide/platform-host.runtime.test.ts',
     'ide/wevu-json-render.runtime.test.ts',
+    'ide/subpackage-output.runtime.test.ts',
   ])('runs the same %s case in strict headless and exhaustive IDE acceptance', async (label) => {
     const headless = (await getSuiteTasks('ide-dom-headless')).find(task => task.label === label)
     expect(headless?.env).toMatchObject({
@@ -294,6 +295,7 @@ describe('e2e suite manifest', () => {
   })
 
   it.each([
+    'ide/subpackage-output.runtime.test.ts',
     'ide/stream-capability.runtime.test.ts',
     'ide/sse-stream.runtime.test.ts',
   ])('keeps %s in the ordinary full IDE suites', async (label) => {
