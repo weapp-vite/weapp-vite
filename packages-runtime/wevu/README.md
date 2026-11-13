@@ -1,5 +1,7 @@
 # wevu
 
+实验性的 TT Render Mode V2 原生 DOM 路径可通过 `weapp.wevu.renderer: 'auto' | 'native-dom'` 启用，默认仍为 `legacy`。首版面向同步 setup 的 SFC，由编译器生成静态 render，复用 Wevu 响应式、调度和 hooks；能力选择与原生组件创建契约和 React 共享。支持范围、生命周期差异与待补的真实 TT 验收见 [renderer 配置](https://vite.weapp.dev/config/wevu#weapp-wevu-renderer)。
+
 Vue 3 风格的小程序运行时，复用同款响应式与调度器，通过快照 diff 最小化 `setData`，并内置 Pinia 风格的状态管理。
 
 ## 特性

@@ -73,6 +73,8 @@ description: 面向小程序中 wevu 运行时的实践手册，覆盖生命周�
 
 ## Router 与平台边界
 
+实验性的 `weapp.wevu.renderer` 需要已安装的 weapp-vite 编译链；默认 `legacy`，TT 的 `auto` 在 onLoad、首次 setup 前检测 V2 文档能力并允许 legacy 回退，显式 `native-dom` 缺失能力时报错。首版支持同步 setup 的 SFC，保留组件事件的 `event.detail` 与表单 model 的 `detail.value`，原生提交不调用 setData。虚拟 SFC 无独立原生组件实例；JSX/TSX、Options API、layout/shell 和其他未适配组合保留 legacy。真实 TT runtime 与性能验收待补，不以 mock、构建或微信结果替代。完整限制见 [renderer 配置](https://vite.weapp.dev/config/wevu#weapp-wevu-renderer)。
+
 - 只需要宿主 `navigateTo/redirectTo` 时使用根入口 native router helpers；需要统一 route records、guards、`resolve` 和导航结果时使用 `wevu/router`。
 - 小程序路由栈不提供标准前进语义；`router.forward()` 返回预期的 aborted failure，不应当按浏览器 bug 处理。
 - `currentRoute` 不是 `Ref`，`isReady()` 立即完成；不要引入 `RouterView` / `RouterLink` 或 Web history。

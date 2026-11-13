@@ -22,6 +22,12 @@ export default defineConfig({
 
 ## 高频配置项
 
+### `wevu.renderer`
+
+默认 `legacy`，保留模板与 `setData`。实验性的 `auto` 在 TT 的 `onLoad`、首次 setup 前检测 Render Mode V2 与当前页面文档，能力缺失时回退 legacy；非 TT 的 auto 保留原编译结果。`native-dom` 仅支持 TT，能力缺失则报错，挂载后错误不静默切换。
+
+首版支持同步 setup 的 SFC、条件/列表、props/slots/emit/model、事件/style 清理和原生组件 bridge，原生分支不调用 `setData`。TT opt-in 页面的 setup 最早在 onLoad 执行；JSX/TSX、异步 setup、Options API、layout/shell 和其他未适配组合需继续使用 legacy。真实 TT runtime 验收与性能对比待补，完整边界见 [Wevu renderer 配置](https://vite.weapp.dev/config/wevu#weapp-wevu-renderer)。
+
 ### `srcRoot`
 
 源码根目录。排查输出缺页、找不到入口、自动路由异常时先确认它。

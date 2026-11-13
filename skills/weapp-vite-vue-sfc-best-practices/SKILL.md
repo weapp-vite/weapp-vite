@@ -63,6 +63,7 @@ description: 面向使用 weapp-vite 的小程序项目的 Vue SFC 实践手册�
 5. 若 `typed-router.d.ts`、`typed-components.d.ts`、`components.d.ts` 漂移，先跑 `wv prepare`。
 6. 项目已有 `AGENTS.md` 时遵循它；版本相关 SFC 写法对照 `node_modules/weapp-vite/dist/docs/vue-sfc.md`，不把项目根 `dist/docs` 或框架仓库文件当作前提。
 7. 多平台 SFC 每次只验证一个 `-p <platform>` 目标；Web runtime 用于浏览器兼容联调，不替代目标小程序 IDE/真机。
+8. TT V2 的实验性 `weapp.wevu.renderer: 'auto' | 'native-dom'` 编译静态原生 render，默认仍为 legacy。仅使用同步 setup 的 template SFC；模板事件写 `@tap`，组件事件保留 `event.detail`。JSX/TSX、Options API、layout/shell、平台模板指令、模板脚本与 CSS Modules/样式 v-bind 暂不支持；auto 的能力回退不能消除编译边界。TT opt-in 的 setup 最早在 onLoad 执行。真实 TT runtime 与性能验收待补，见 [renderer 配置](https://vite.weapp.dev/config/wevu#weapp-wevu-renderer)。
 
 ## 工具链与热更新边界
 

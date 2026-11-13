@@ -3,6 +3,7 @@ import { syncPackageSkills } from '../../skills/scripts/distribution.mjs'
 
 const entry = {
   'index': './src/index.ts',
+  'native-dom': './src/nativeDom/index.ts',
   'compiler': './src/compiler',
   'internal-reactivity': './src/internal-reactivity',
   'internal-runtime': './src/internal-runtime',

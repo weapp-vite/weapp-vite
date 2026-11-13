@@ -61,6 +61,13 @@ const PACKAGE_ALIASES: PackageAliasTarget[] = [
     fallbackWorkspacePackagePath: WEVU_WORKSPACE_PACKAGE_PATH,
   },
   {
+    find: 'wevu/native-dom',
+    packageName: 'wevu',
+    distEntry: 'dist/native-dom.mjs',
+    devDistEntry: 'dist/dev/native-dom.mjs',
+    fallbackWorkspacePackagePath: WEVU_WORKSPACE_PACKAGE_PATH,
+  },
+  {
     find: 'wevu/compiler',
     packageName: 'wevu',
     distEntry: 'dist/compiler.mjs',

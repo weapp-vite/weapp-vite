@@ -17,6 +17,7 @@ import {
   WEVU_BINDING_MANIFEST_KEY,
   WEVU_CSS_MODULES_KEY,
   WEVU_FUNCTION_PROP_PATHS_KEY,
+  WEVU_NATIVE_DOM_COMPONENT_KEY,
   WEVU_SCOPED_SLOT_OWNER_REQUIRED_KEY,
   WEVU_SLOT_OWNER_ID_KEY,
   WEVU_SLOT_OWNER_ID_PROP,
@@ -401,6 +402,11 @@ export function createWevuComponent<
 >(
   options: DefineComponentOptions<P, D, C, M> & { properties?: MiniProgramComponentPropertyOption },
 ): void {
+  const nativeRegistration = (options as Record<string, any>)[WEVU_NATIVE_DOM_COMPONENT_KEY]
+  if (typeof nativeRegistration === 'function') {
+    nativeRegistration()
+    return
+  }
   const allowNullPropInput = options.allowNullPropInput ?? true
   defineComponent({
     ...options,

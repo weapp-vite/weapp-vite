@@ -37,6 +37,7 @@ function mergeMiniprogramForTsconfig(
   configFilePath?: string,
   platform = 'weapp',
   reactConfig?: { renderer?: 'legacy' | 'auto' | 'native-dom' },
+  wevuConfig?: { renderer?: 'legacy' | 'auto' | 'native-dom' },
   oxcRolldownPlugin?: { name: string },
   isDev = true,
 ) {
@@ -45,7 +46,7 @@ function mergeMiniprogramForTsconfig(
       ctx: {
         configService: {
           platform,
-          weappViteConfig: { react: reactConfig },
+          weappViteConfig: { react: reactConfig, wevu: wevuConfig },
         },
       } as any,
       subPackageMeta: undefined,
@@ -76,6 +77,11 @@ afterEach(async () => {
 })
 
 describe('runtime config merge miniprogram', () => {
+  it('仅允许 TT 显式启用 Wevu 原生 DOM，其他平台 auto 保留 legacy', () => {
+    expect(() => mergeMiniprogramForTsconfig('/project', {}, undefined, 'tt', undefined, { renderer: 'native-dom' })).not.toThrow()
+    expect(() => mergeMiniprogramForTsconfig('/project', {}, undefined, 'weapp', undefined, { renderer: 'auto' })).not.toThrow()
+    expect(() => mergeMiniprogramForTsconfig('/project', {}, undefined, 'weapp', undefined, { renderer: 'native-dom' })).toThrow('[wevu] renderer:')
+  })
   it('injects React renderer mode and target platform into the runtime define', () => {
     const result = mergeMiniprogramForTsconfig('/project', {}, undefined, 'tt', { renderer: 'native-dom' })
 
@@ -95,7 +101,7 @@ describe('runtime config merge miniprogram', () => {
     for (const builtin of [undefined, oxc]) {
       const result = mergeMiniprogramForTsconfig(root, {
         build: { rolldownOptions: { plugins: [builtin, [legacy, false, user]] } },
-      }, undefined, 'weapp', undefined, builtin, isDev)
+      }, undefined, 'weapp', undefined, undefined, builtin, isDev)
       const plugins = result.build?.rolldownOptions?.plugins
       expect(plugins).toEqual(builtin ? [oxc, legacy, user] : [legacy, user])
     }

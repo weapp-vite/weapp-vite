@@ -203,7 +203,7 @@ type WevuInternalModuleId
     | 'wevu/internal-reactivity'
     | 'wevu/internal-template'
 const WEVU_RUNTIME_MODULE_ID_PATTERN = [
-  'wevu(?:\\/(?:router|store|api|fetch|web-apis|internal-(?:runtime|reactivity|template)))?',
+  'wevu(?:\\/(?:router|store|api|fetch|web-apis|native-dom|internal-(?:runtime|reactivity|template)))?',
   ...Object.values(WEAPP_VITE_RUNTIME_VIRTUAL_IDS)
     .map(id => id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')),
 ].join('|')
@@ -257,6 +257,7 @@ const WEVU_RUNTIME_MODULE_EXPORT_MARKERS: Record<WevuRuntimeModuleId, readonly s
     'createFetch',
     'useFetch',
   ],
+  'wevu/native-dom': ['withNativeDom', 'createElementVNode', 'openBlock', 'createElementBlock'],
   'wevu/web-apis': [
     'installWebApis',
     'createWebApis',

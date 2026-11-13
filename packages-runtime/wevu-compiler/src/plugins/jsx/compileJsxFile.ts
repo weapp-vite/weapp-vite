@@ -5,6 +5,7 @@ import { mayContainPageDeclaration, stripPageDeclaration } from '../../pageDecla
 import { createWevuRuntimeCapabilityMetadataFromBindingManifest } from '../../runtimeCapabilities'
 import { isAutoImportCandidateTag } from '../../utils/vueTemplateTags'
 import { getMiniProgramTemplatePlatform } from '../vue/compiler/template'
+import { isNativeDomCompilation } from '../vue/transform/compileVueFile/nativeDom'
 import { applyCompilerTemplateWrappers, mergeCompilerLayoutUsingComponents } from '../vue/transform/compileVueFile/pageLayout'
 import { extractJsonMacroFromScriptSetup, mayContainJsonMacro } from '../vue/transform/jsonMacros'
 import { createJsonMerger } from '../vue/transform/jsonMerge'
@@ -39,6 +40,9 @@ export async function compileJsxFile(
   filename: string,
   options?: CompileVueFileOptions,
 ): Promise<VueTransformResult> {
+  if (isNativeDomCompilation(options)) {
+    throw new Error('[wevu] native-dom 暂只支持带 template 的 Vue SFC，不支持 JSX/TSX 入口')
+  }
   if (options?.isPage && mayContainPageDeclaration(source)) {
     source = stripPageDeclaration(source, filename)?.code ?? source
   }

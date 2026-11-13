@@ -23,6 +23,7 @@ import { generateScopedId } from '../scopedId'
 import { transformScript } from '../script'
 import { remapJsxBindingManifestLocations } from './bindingManifestLocations'
 import { hasDefaultExport } from './defaultExport'
+import { attachNativeDom, isNativeDomCompilation } from './nativeDom'
 import { applyCompilerTemplateWrappers } from './pageLayout'
 import { warnReservedScriptSetupProps } from './reservedProps'
 
@@ -260,6 +261,7 @@ export async function compileScriptPhase(
     scriptSetup?: NativeCompilerScriptAnalysis
   },
 ): Promise<ScriptPhaseResult> {
+  const nativeDom = !isAppFile && isNativeDomCompilation(options)
   const autoUsingComponentsMap: Record<string, string> = { ...(componentSourceInfo?.autoUsingComponentsMap ?? {}) }
   const autoComponentMeta: Record<string, string> = { ...(componentSourceInfo?.autoComponentMeta ?? {}) }
   const relaxStructuredTypeOnlyProps = Boolean(
@@ -384,13 +386,15 @@ export async function compileScriptPhase(
         || descriptor.script?.lang === 'tsx'
         || descriptor.scriptSetup?.lang === 'ts'
         || descriptor.scriptSetup?.lang === 'tsx',
-      skipComponentTransform: options?.skipComponentTransform ?? isAppFile,
+      skipComponentTransform: nativeDom || (options?.skipComponentTransform ?? isAppFile),
       isApp: isAppFile,
       isPage: options?.isPage === true,
       minify: options?.minify,
       sourceMap: options?.sourceMap,
       warn: options?.warn,
-      templateComponentMeta: Object.keys(autoComponentMeta).length ? autoComponentMeta : undefined,
+      templateComponentMeta: Object.keys(autoComponentMeta).length
+        ? Object.fromEntries(Object.entries(autoComponentMeta).filter(([name]) => !nativeDom || !componentSourceInfo?.wevuComponentTags.has(name)))
+        : undefined,
       wevuDefaults: options?.wevuDefaults,
       classStyleRuntime: templateCompiled?.classStyleRuntime,
       classStyleBindings: templateCompiled?.classStyleBindings,
@@ -416,9 +420,21 @@ export async function compileScriptPhase(
           || (templateCompiled?.componentGenerics && Object.keys(templateCompiled.componentGenerics).length > 0),
         ),
     })
+    const nativeResult = nativeDom
+      ? attachNativeDom({
+          script: transformed.code,
+          filename,
+          descriptor: descriptorForCompile,
+          bindings: precompiledScript?.bindings,
+          components: componentSourceInfo,
+          templateComputedBindings: templateCompiled?.classStyleBindings?.map(binding => binding.name),
+          options: options!,
+          scopeId: descriptorForCompile.styles.some(style => style.scoped) ? `data-v-${generateScopedId(filename)}` : undefined,
+        })
+      : undefined
     return {
-      script: transformed.code,
-      scriptMap: composeSourceMaps(transformed.map ?? jsxTransformed.map, scriptMap),
+      script: nativeResult?.code ?? transformed.code,
+      scriptMap: composeSourceMaps(nativeResult?.map, composeSourceMaps(transformed.map ?? jsxTransformed.map, scriptMap)),
       template: jsxTemplate?.template,
       diagnostics: jsxDiagnostics,
       bindingManifest,

@@ -10,6 +10,7 @@ export const WEVU_RUNTIME_MODULE_IDS = [
   'wevu/internal-runtime',
   'wevu/internal-reactivity',
   'wevu/internal-template',
+  'wevu/native-dom',
 ] as const
 
 export type WevuRuntimeModuleId = (typeof WEVU_RUNTIME_MODULE_IDS)[number]
@@ -23,6 +24,7 @@ export type WevuRuntimeModuleFamily
     | 'runtime'
     | 'store'
     | 'template'
+    | 'native-dom'
     | 'vue-demi'
     | 'web-apis'
 
@@ -33,6 +35,7 @@ const WEVU_ENTRY_MODULE_IDS: Record<string, WevuRuntimeModuleId> = {
   'internal-reactivity': 'wevu/internal-reactivity',
   'internal-runtime': 'wevu/internal-runtime',
   'internal-template': 'wevu/internal-template',
+  'native-dom': 'wevu/native-dom',
   'router': 'wevu/router',
   'store': 'wevu/store',
   'web-apis': 'wevu/web-apis',
@@ -48,6 +51,7 @@ const WEVU_RUNTIME_MODULE_ID_BY_FAMILY: Partial<Record<WevuRuntimeModuleFamily, 
   'runtime': 'wevu/internal-runtime',
   'store': 'wevu/store',
   'template': 'wevu/internal-template',
+  'native-dom': 'wevu/native-dom',
   'web-apis': 'wevu/web-apis',
 }
 
@@ -157,6 +161,9 @@ export function resolveWevuRuntimeModuleFamily(id: string): WevuRuntimeModuleFam
   }
   if (modulePath === 'runtime/template') {
     return 'template'
+  }
+  if (modulePath.startsWith('nativeDom/')) {
+    return 'native-dom'
   }
   if (modulePath.startsWith('router/') || modulePath.startsWith('routerInternal/')) {
     return 'router'

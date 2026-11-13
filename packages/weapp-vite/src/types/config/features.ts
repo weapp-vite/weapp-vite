@@ -383,6 +383,8 @@ export interface WeappVueConfig {
  * @description wevu 编译期默认值配置
  */
 export interface WeappWevuConfig {
+  /** 可选原生 DOM renderer，默认 legacy；auto 仅在 TT V2 能力命中时启用。 */
+  renderer?: 'legacy' | 'auto' | 'native-dom'
   preset?: 'performance'
   defaults?: WevuConfigDefaults
   autoSetDataPick?: boolean

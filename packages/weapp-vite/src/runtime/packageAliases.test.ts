@@ -50,7 +50,11 @@ describe('runtime package aliases', () => {
     const aliases = resolveBuiltinPackageAliases({ cwd: '/project/app' })
     const wevuAliases = aliases.filter(alias => alias.find === 'wevu' || alias.find.startsWith('wevu/'))
 
-    expect(wevuAliases).toHaveLength(10)
+    expect(wevuAliases).toHaveLength(11)
+    expect(wevuAliases).toContainEqual({
+      find: 'wevu/native-dom',
+      replacement: '/project/node_modules/weapp-vite/node_modules/wevu/dist/native-dom.mjs',
+    })
     expect(wevuAliases.every(alias => alias.replacement.startsWith('/project/node_modules/weapp-vite/node_modules/wevu/'))).toBe(true)
     expect(loggerWarnMock).toHaveBeenCalledTimes(1)
     expect(loggerWarnMock).toHaveBeenCalledWith(expect.stringContaining('wevu@7.1.4'))
@@ -239,7 +243,7 @@ describe('runtime package aliases', () => {
 
     const aliases = resolveBuiltinPackageAliases()
 
-    expect(aliases).toHaveLength(14)
+    expect(aliases).toHaveLength(15)
     expect(aliases).toEqual(expect.arrayContaining([
       {
         find: '@weapp-core/shared/platforms',
@@ -298,6 +302,11 @@ describe('runtime package aliases', () => {
       typeof alias.find === 'string' && (runtimeImport === alias.find || runtimeImport.startsWith(`${alias.find}/`)),
     )
     expect(matched?.replacement).toBe('/project/node_modules/@weapp-core/shared/dist/platforms/runtime/index.js')
+    const nativeDomImport = 'wevu/native-dom'
+    const nativeDomAlias = normalizeAliasOptions(config.resolve?.alias).find(alias =>
+      typeof alias.find === 'string' && (nativeDomImport === alias.find || nativeDomImport.startsWith(`${alias.find}/`)),
+    )
+    expect(nativeDomAlias?.replacement).toBe('/project/node_modules/wevu/dist/native-dom.mjs')
   })
 
   it('uses development wevu entries in dev mode by default', () => {

@@ -302,6 +302,9 @@ catalogs:
     '@vue/reactivity':
       specifier: ^3.5.45
       version: 3.5.45
+    '@vue/runtime-core':
+      specifier: ^3.5.45
+      version: 3.5.45
     '@vue/shared':
       specifier: ^3.5.45
       version: 3.5.45
@@ -2962,6 +2965,9 @@ importers:
       '@weapp-core/constants':
         specifier: workspace:*
         version: link:../../@weapp-core/constants
+      '@weapp-core/shared':
+        specifier: workspace:*
+        version: link:../../@weapp-core/shared
     devDependencies:
       '@types/react-reconciler':
         specifier: 'catalog:'
@@ -3074,6 +3080,9 @@ importers:
   packages-runtime/wevu:
     dependencies:
       '@vue/reactivity':
+        specifier: 'catalog:'
+        version: 3.5.45
+      '@vue/runtime-core':
         specifier: 'catalog:'
         version: 3.5.45
       '@weapp-core/constants':

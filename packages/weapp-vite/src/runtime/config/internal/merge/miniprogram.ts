@@ -132,6 +132,9 @@ function normalizeInlineConfigAfterDefu(
 
 function resolveReactRendererDefine(ctx: MutableCompilerContext) {
   const platform = ctx.configService?.platform
+  if (ctx.configService?.weappViteConfig?.wevu?.renderer === 'native-dom' && platform !== 'tt') {
+    throw new Error(`[wevu] renderer: 'native-dom' 仅支持 tt 平台，当前目标为 ${platform ?? 'unknown'}`)
+  }
   const react = ctx.configService?.weappViteConfig?.react
   const mode = typeof react === 'object' && react ? react.renderer ?? 'legacy' : 'legacy'
   if (mode === 'native-dom' && platform !== 'tt') {
@@ -277,6 +280,9 @@ export function mergeMiniprogram(options: MergeMiniprogramOptions, ...configs: P
 
   const miniprogramDefines = {
     ...getDefineImportMetaEnv(),
+    ...(ctx.configService?.platform === 'tt' && ['auto', 'native-dom'].includes(ctx.configService?.weappViteConfig?.wevu?.renderer ?? 'legacy')
+      ? { __VUE_OPTIONS_API__: 'false', __VUE_PROD_DEVTOOLS__: 'false', __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: 'false' }
+      : {}),
     [WEAPP_VITE_REACT_RENDERER_DEFINE]: resolveReactRendererDefine(ctx),
     // Vite 动态导入预加载 helper 依赖该标记，miniprogram 构建需稳定替换为 false。
     __VITE_IS_MODERN__: 'false',
