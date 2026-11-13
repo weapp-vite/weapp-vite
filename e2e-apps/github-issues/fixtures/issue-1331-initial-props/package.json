@@ -1,0 +1,14 @@
+{
+  "name": "repro-initial-props",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "wv build"
+  },
+  "dependencies": {
+    "wevu": "7.10.0"
+  },
+  "devDependencies": {
+    "weapp-vite": "7.10.0"
+  }
+}

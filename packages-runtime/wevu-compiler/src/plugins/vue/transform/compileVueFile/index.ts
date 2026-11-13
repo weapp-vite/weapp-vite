@@ -11,6 +11,7 @@ import { generateScopedId } from '../scopedId'
 import { collectComponentSourceInfo } from './componentSources'
 import { compileConfigPhase } from './config'
 import { finalizeResult } from './finalize'
+import { guardInitialSetupRender, wrapInitialSetupTemplate } from './initialRender'
 import { isNativeDomCompilation } from './nativeDom'
 import { analyzeNativeSlotContext } from './nativeSlotContext/index'
 import { applyCompilerTemplateWrappers, mergeCompilerLayoutUsingComponents } from './pageLayout'
@@ -206,6 +207,8 @@ export async function compileVueFile(
       templateCompiled.bindingManifest,
     )
   }
+  const deferInitialRender = !parsed.isAppFile && !isNativeDomCompilation(options)
+    && templateCompiled && guardInitialSetupRender(templateCompiled, scriptCompiled?.bindings)
   const scriptPhase = await compileScriptPhase(
     parsed.descriptor,
     parsed.descriptorForCompile,
@@ -276,6 +279,11 @@ export async function compileVueFile(
 
   if (!parsed.isAppFile && isNativeDomCompilation(options) && options?.isPage && result.template) {
     result.template = `<block tt:if="{{${WEVU_LEGACY_RENDERER_KEY}}}">${result.template}</block>`
+  }
+
+  if (deferInitialRender && result.template) {
+    const platform = templateOptions.platform ?? getMiniProgramTemplatePlatform()
+    result.template = wrapInitialSetupTemplate(result.template, platform)
   }
 
   result.meta!.templateRegistrationSignature = createTemplateRegistrationSignature(parsed.descriptor, result.template)

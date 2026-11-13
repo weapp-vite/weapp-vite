@@ -194,6 +194,8 @@ export const WEVU_TEMPLATE_REFS_KEY = '__wevuTemplateRefs'
 export const WEVU_LAYOUT_HOSTS_KEY = '__wevuLayoutHosts'
 export const WEVU_FUNCTION_PROP_PATHS_KEY = '__wevuFunctionPropPaths'
 export const WEVU_IS_PAGE_KEY = '__wevu_isPage'
+/** 编译模板等待首份 setup 快照的内部标记。 */
+export const WEVU_SETUP_READY_KEY = '__wevuSetupReady'
 export const WEVU_SETUP_CONTEXT_INSTANCE_KEY = '__wevuSetupContextInstance'
 export const WEVU_PROP_KEYS_KEY = '__wevuPropKeys'
 export const WEVU_READY_CALLED_KEY = '__wevuReadyCalled'

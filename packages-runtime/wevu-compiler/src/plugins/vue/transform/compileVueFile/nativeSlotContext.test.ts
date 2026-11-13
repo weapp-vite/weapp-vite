@@ -481,7 +481,8 @@ const rows = [{ id: 'a', show: false }, { id: 'b', show: false }]
     const options = evaluateOptions(result.script!)
     const rows = [{ id: 'a', show: false }, { id: 'b', show: false }]
     const state = { rows, __wevuProps: { fallback: { id: 'shared' } } }
-    const [provider, label] = readElements(result.template!)
+    const [barrier] = readElements(result.template!)
+    const [provider, label] = barrier.children.filter((child): child is TemplateElement => typeof child === 'object')
     const findLeaf = (element: TemplateElement): TemplateElement | undefined => {
       if (element.tag === 'leaf') {
         return element

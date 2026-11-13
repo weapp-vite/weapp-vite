@@ -10,7 +10,7 @@ import { collectScriptSetupImportsFromCode, resolveAstEngine } from '../../../..
 import logger from '../../../../logger'
 import { collectVueTemplateTags, isAutoImportCandidateTag, VUE_COMPONENT_TAG_RE } from '../../../../utils/vueTemplateTags'
 import { UniAppCompatibilityTransformError } from '../../../uniApp'
-import { rebaseSfcTemplateDependency, resolveSfcTemplateSource } from '../../../utils/sfcTemplateDependencies'
+import { rebaseSfcTemplateDependency, resolveSfcBlockSource } from '../../../utils/sfcTemplateDependencies'
 import { collectTemplateDependencySources } from '../../../utils/templateDependencies'
 import { createReadAndParseSfcOptions, readAndParseSfc } from '../../../utils/vueSfc'
 import { collectSfcTemplateDependencies } from '../../../utils/vueTemplateDependencies'
@@ -135,8 +135,9 @@ export async function applyScriptSetupUsingComponents(options: {
       await publishTemplateDependencies([], {})
       return
     }
+    const scriptSource = resolveSfcBlockSource(parseOptions?.resolveSrc, descriptor.scriptSetup?.src, vueEntryPath) ?? vueEntryPath
     const template = descriptor.template.content
-    const templateSource = resolveSfcTemplateSource(parseOptions?.resolveSrc, descriptor.template.src ?? undefined, vueEntryPath)
+    const templateSource = resolveSfcBlockSource(parseOptions?.resolveSrc, descriptor.template.src ?? undefined, vueEntryPath)
     const deps = collectSfcTemplateDependencies(descriptor.template, configService.platform)
       .map(dep => rebaseSfcTemplateDependency(dep, templateSource, vueEntryPath))
     const analysis = scriptSetupAnalyzer.analyze({
@@ -164,7 +165,7 @@ export async function applyScriptSetupUsingComponents(options: {
           configService,
           reExportResolutionCache,
           importSource,
-          vueEntryPath,
+          scriptSource,
           {
             localName,
             kind,

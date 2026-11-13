@@ -1,0 +1,16 @@
+{
+  "name": "repro-format-wxml",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:formatted": "wv build --mode formatted",
+    "build:compact": "wv build --mode compact",
+    "repro": "pnpm run build:formatted && pnpm run build:compact && node verify.mjs"
+  },
+  "dependencies": {
+    "wevu": "7.10.0"
+  },
+  "devDependencies": {
+    "weapp-vite": "7.10.0"
+  }
+}

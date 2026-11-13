@@ -15,6 +15,8 @@ import {
 import { beginComponentConstruction, discardComponentConstruction, finishComponentConstruction } from '../../runtime/componentInstance/construction'
 import { resolveComponentPropertyDefinitions } from '../../runtime/componentInstance/properties'
 import { syncComponentProperties } from '../../runtime/componentInstance/propertyBindings'
+import { attachComponentPropertyDiagnostics } from '../../runtime/componentInstance/propertyDiagnostics'
+import { resolveComponentViewData } from '../../runtime/componentInstance/pureData'
 import { resolveNativeComponentSelection } from '../../runtime/componentInstance/selection'
 import { resolveMiniProgramComponent } from '../../runtime/componentResolution'
 import { bindComponentEventHost, buildComponentTrigger } from '../../view/componentEvent'
@@ -155,7 +157,7 @@ export function createComponentScope(
       .split(CLASS_SPLIT_RE)
       .map(item => item.trim())
       .filter(Boolean),
-    data: { ...componentInstance.data },
+    data: resolveComponentViewData(componentInstance),
     dataOwner: componentInstance,
     dataset: collectDataset(clonedNode, wxsScopeData(scope)),
     ...bindComponentEventHost(clonedNode),
@@ -214,6 +216,7 @@ export function createBrowserComponentInstance(
     requestRender: callback => context.session.requestRender(callback),
   }
   const componentInstance = createComponentInstance(instanceOptions)
+  attachComponentPropertyDiagnostics(componentInstance, componentEntry.filePath.replace(/^\/+/, '').replace(JS_FILE_RE, ''), context.moduleLoader.warn)
   bindAttachmentBindingScope(componentInstance, context)
   setSelectorQueryScopeId(componentInstance, componentScopeId)
   componentInstance.is = componentEntry.filePath.replace(JS_FILE_RE, '')

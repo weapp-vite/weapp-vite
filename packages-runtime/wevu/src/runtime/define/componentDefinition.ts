@@ -9,6 +9,7 @@ import type {
 import {
   WEVU_BINDING_MANIFEST_KEY,
   WEVU_SCOPED_SLOT_OWNER_REQUIRED_KEY,
+  WEVU_SETUP_READY_KEY,
 } from '@weapp-core/constants'
 import { createApp } from '../app'
 import { INTERNAL_DEFAULTS_SCOPE_KEY } from '../defaults'
@@ -33,11 +34,29 @@ export function createRuntimeComponentDefinition(
   options: RuntimeComponentDefinitionOptions,
   registerNative = false,
 ) {
+  const hasSetupBarrier = (options.mpOptions as Record<string, unknown>)[WEVU_SETUP_READY_KEY] === false
+  // 首帧标记只属于编译组件，不能让最小应用携带组件专用快照逻辑。
+  const setData = hasSetupBarrier && options.setData
+    ? {
+        ...options.setData,
+        pick: options.setData.pick?.length ? [...options.setData.pick, WEVU_SETUP_READY_KEY] : undefined,
+        omit: options.setData.omit?.filter(key => key !== WEVU_SETUP_READY_KEY),
+      }
+    : options.setData
+  const setup = hasSetupBarrier
+    ? (props: any, context: any) => {
+        const result = options.setup?.(props, context)
+        // 普通 setup 绑定沿用现有的首快照和原生状态恢复规则，不改写用户返回值的访问器。
+        context.state[WEVU_SETUP_READY_KEY] = true
+        context.runtime.setupState[WEVU_SETUP_READY_KEY] = true
+        return result
+      }
+    : options.setup
   const runtimeApp = createApp({
     data: options.data,
     computed: options.computed,
     methods: options.methods,
-    setData: options.setData,
+    setData,
     [WEVU_BINDING_MANIFEST_KEY]: options.bindingManifest,
     [WEVU_SCOPED_SLOT_OWNER_REQUIRED_KEY]: options.scopedSlotOwnerRequired,
     [INTERNAL_DEFAULTS_SCOPE_KEY]: 'component',
@@ -46,7 +65,7 @@ export function createRuntimeComponentDefinition(
     runtimeApp as any,
     options.methods,
     options.watch,
-    options.setup,
+    setup,
     options.mpOptions,
     { registerNative },
   )

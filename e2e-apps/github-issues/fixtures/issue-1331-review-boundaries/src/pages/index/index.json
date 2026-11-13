@@ -1,0 +1,7 @@
+{
+  "usingComponents": {
+    "pure-host": "/components/PureHost",
+    "plain-host": "/components/PlainHost",
+    "pure-contract": "/components/PureContract"
+  }
+}

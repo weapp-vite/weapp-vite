@@ -2,7 +2,7 @@ import type { CompilerContext } from '../../context'
 import path from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import { compilerSourceId } from '../compilerPlugin/hmr'
-import { getRecordedSfcBlockSource, resolveSfcTemplateSource } from './sfcTemplateDependencies'
+import { getRecordedSfcBlockSource, resolveSfcBlockSource } from './sfcTemplateDependencies'
 import { setCompilerSourceSnapshot } from './sourceSnapshot'
 import { createReadAndParseSfcOptions, createSfcResolveSrcOptions, readAndParseSfc } from './vueSfc'
 
@@ -22,7 +22,7 @@ describe('readAndParseSfc', () => {
       const result = await readAndParseSfc(filename, options)
       expect(result.errors).toEqual([])
       expect(result.descriptor.template?.content).toBe(template)
-      expect(resolveSfcTemplateSource(options.resolveSrc, result.descriptor.template?.src ?? undefined, filename)).toBe(resolvedId.replaceAll('\\', '/'))
+      expect(resolveSfcBlockSource(options.resolveSrc, result.descriptor.template?.src ?? undefined, filename)).toBe(resolvedId.replaceAll('\\', '/'))
       expect(getRecordedSfcBlockSource(configService, '@templates/body', filename)).toBe(resolvedId.replaceAll('\\', '/'))
     }
     expect(resolve).toHaveBeenCalledTimes(3)
@@ -53,7 +53,7 @@ describe('readAndParseSfc', () => {
     const options = createSfcResolveSrcOptions({ resolve: async () => undefined }, configService)
     await options.resolveId!(source, filename)
     expect(getRecordedSfcBlockSource(configService, source, filename)).toBeUndefined()
-    expect(resolveSfcTemplateSource(options, source, filename)).toBe(path.resolve(path.dirname(filename), source).replaceAll('\\', '/'))
+    expect(resolveSfcBlockSource(options, source, filename)).toBe(path.resolve(path.dirname(filename), source).replaceAll('\\', '/'))
     await options.resolveId!('./body.html', filename)
     expect(getRecordedSfcBlockSource(configService, './body.html', filename)).toBe(path.resolve(path.dirname(filename), 'body.html').replaceAll('\\', '/'))
   })

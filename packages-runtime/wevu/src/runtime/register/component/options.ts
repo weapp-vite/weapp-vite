@@ -1,7 +1,8 @@
 import type { LayoutHostBinding, TemplateRefBinding } from '../../capabilities'
 import type { InternalRuntimeState, MiniProgramComponentRawOptions, PageFeatures } from '../../types'
-import { WEVU_COMPONENT_NAME_KEY, WEVU_PROPS_ALIASES_KEY, WEVU_PROPS_DERIVED_KEYS_KEY } from '@weapp-core/constants'
+import { WEVU_COMPONENT_NAME_KEY, WEVU_PROPS_ALIASES_KEY, WEVU_PROPS_DERIVED_KEYS_KEY, WEVU_SETUP_READY_KEY } from '@weapp-core/constants'
 import { hasOwn } from '../../../utils'
+import { preserveSetupReadyInView } from './pureData'
 
 interface PreparedComponentOptions {
   userMethods: Record<string, (...args: any[]) => any>
@@ -77,9 +78,16 @@ export function prepareComponentOptions(mpOptions: MiniProgramComponentRawOption
     methods: userMethods = {},
     lifetimes: userLifetimes = {},
     pageLifetimes: userPageLifetimes = {},
-    options: userOptions = {},
+    options: originalUserOptions = {},
     ...rest
   } = mpOptions
+  let userOptions = originalUserOptions
+
+  if ((rest as Record<string, unknown>)[WEVU_SETUP_READY_KEY] === false) {
+    userOptions = preserveSetupReadyInView(originalUserOptions)
+    rest.data = { ...rest.data, [WEVU_SETUP_READY_KEY]: false }
+    delete (rest as Record<string, unknown>)[WEVU_SETUP_READY_KEY]
+  }
 
   const userOnLoad = (rest as any).onLoad
   const userOnUnload = (rest as any).onUnload

@@ -37,6 +37,7 @@ export interface HeadlessModuleLoader {
   executePageModule: (filePath: string, route: string) => HeadlessPageDefinition
   reloadPageModule: (filePath: string, route: string) => boolean
   wx: HeadlessWx
+  warn: (message: string) => void
 }
 
 interface ModuleCacheEntry {
@@ -286,6 +287,7 @@ export function createModuleLoader(
       return definition
     },
     wx: executionContext.wx,
+    warn: message => executionContext.console.warn(message),
   }
   return loader
 }

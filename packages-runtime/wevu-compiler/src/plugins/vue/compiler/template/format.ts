@@ -74,9 +74,26 @@ function isWhitespaceText(token: WxmlFormatToken) {
 }
 
 function shouldKeepInline(tokens: WxmlFormatToken[], openIndex: number, closeIndex: number) {
-  const inner = tokens.slice(openIndex + 1, closeIndex)
-  return inner.some(token => token.type === 'text' && token.value.trim().length > 0)
-    && inner.every(token => token.type !== 'tag' || isSelfClosingTag(token.value))
+  // text 的空白本身可见；混排容器只检查直属文本，避免整棵结构树停止缩进。
+  if (/^<text(?:\s|>)/i.test(tokens[openIndex]!.value)) {
+    return true
+  }
+  let depth = 0
+  for (let index = openIndex + 1; index < closeIndex; index++) {
+    const token = tokens[index]!
+    if (token.type === 'tag') {
+      if (isClosingTag(token.value)) {
+        depth -= 1
+      }
+      else if (isOpeningTag(token.value)) {
+        depth += 1
+      }
+    }
+    else if (token.type === 'text' && depth === 0 && (token.value.trim() || !/[\r\n]/.test(token.value))) {
+      return true
+    }
+  }
+  return false
 }
 
 function findMatchingClosingTag(tokens: WxmlFormatToken[], openIndex: number) {
@@ -114,7 +131,7 @@ function appendLine(lines: string[], level: number, value: string, indent: strin
  * 轻量格式化 WXML，只调整标签层级缩进，不重排文本内容。
  */
 export function formatWxml(source: string, options: { indent?: string } = {}) {
-  const tokens = tokenizeWxml(source).filter(token => !isWhitespaceText(token))
+  const tokens = tokenizeWxml(source)
   const indent = options.indent ?? '  '
   const lines: string[] = []
   let level = 0
@@ -128,9 +145,8 @@ export function formatWxml(source: string, options: { indent?: string } = {}) {
     }
 
     if (token.type === 'text') {
-      const value = token.value.trim()
-      if (value) {
-        appendLine(lines, level, value, indent)
+      if (!isWhitespaceText(token)) {
+        appendLine(lines, level, token.value, indent)
       }
       index += 1
       continue

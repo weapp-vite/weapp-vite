@@ -1,0 +1,9 @@
+{
+  "condition": {
+    "miniprogram": {
+      "list": [
+        { "name": "review boundaries", "pathName": "pages/index/index", "query": "", "scene": null, "launchMode": "default" }
+      ]
+    }
+  }
+}

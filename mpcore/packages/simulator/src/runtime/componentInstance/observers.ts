@@ -1,4 +1,5 @@
 import type { HeadlessComponentDefinition, HeadlessComponentInstance } from './types'
+import { isPureDataField } from './pureData'
 import { isArrayIndexSegment, parseDataPath } from './shared'
 
 function runPropertyObservers(
@@ -14,7 +15,7 @@ function runPropertyObservers(
 
   const changedRoots = new Set(changedKeys.map(key => parseDataPath(key)[0]!))
   for (const changedKey of Object.keys(propOptions)) {
-    if (!changedRoots.has(changedKey)) {
+    if (!changedRoots.has(changedKey) || isPureDataField(definition, changedKey)) {
       continue
     }
     const value = instance.properties[changedKey]

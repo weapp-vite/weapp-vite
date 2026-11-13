@@ -46,8 +46,8 @@ export function getRecordedSfcBlockSource(configService: CompilerContext['config
   return configService && resolutionsByConfig.get(configService.options ?? configService)?.get(sourceKey(source, importer))
 }
 
-/** 使用 descriptor 或编译器 manifest 的模板身份获取真实 src 文件。 */
-export function resolveSfcTemplateSource(options: ResolveSfcBlockSrcOptions | undefined, source: string | undefined, importer: string) {
+/** 使用本次 src 解析事实获取任意外部块的真实文件身份。 */
+export function resolveSfcBlockSource(options: ResolveSfcBlockSrcOptions | undefined, source: string | undefined, importer: string) {
   return options && source ? resolutionsByOptions.get(options)?.get(sourceKey(source, importer)) : undefined
 }
 

@@ -1,0 +1,6 @@
+<view id="boundary-root">
+  <text>initial property boundaries</text>
+  <pure-host id="pure" />
+  <plain-host id="plain" />
+  <pure-contract _text="incoming" />
+</view>

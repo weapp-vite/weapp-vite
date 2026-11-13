@@ -18,6 +18,8 @@ import {
 import { beginComponentConstruction, discardComponentConstruction, finishComponentConstruction } from '../componentInstance/construction'
 import { resolveComponentPropertyDefinitions } from '../componentInstance/properties'
 import { syncComponentProperties } from '../componentInstance/propertyBindings'
+import { attachComponentPropertyDiagnostics } from '../componentInstance/propertyDiagnostics'
+import { resolveComponentViewData } from '../componentInstance/pureData'
 import { resolveNativeComponentSelection } from '../componentInstance/selection'
 import { getRuntimeWxsLoader } from '../wxs'
 import { readComponentConfig, resolveUsingComponent } from './registry'
@@ -113,7 +115,7 @@ export function createComponentScope(
       .split(CLASS_SPLIT_RE)
       .map(item => item.trim())
       .filter(Boolean),
-    data: { ...componentInstance.data },
+    data: resolveComponentViewData(componentInstance),
     dataOwner: componentInstance,
     dataset: collectDataset(clonedNode, wxsScopeData(scope)),
     ...bindComponentEventHost(clonedNode),
@@ -172,6 +174,7 @@ export function createRuntimeComponentInstance(
     requestRender: callback => context.session.requestRender(callback),
   }
   const componentInstance = createComponentInstance(instanceOptions)
+  attachComponentPropertyDiagnostics(componentInstance, componentEntry.filePath.replaceAll('\\', '/').replace(/^\/+/, '').replace(JS_FILE_RE, ''), context.moduleLoader.warn)
   bindAttachmentBindingScope(componentInstance, context)
   setSelectorQueryScopeId(componentInstance, componentScopeId)
   componentInstance.is = componentEntry.filePath.replace(JS_FILE_RE, '')

@@ -1,5 +1,7 @@
+import { WEVU_SETUP_READY_KEY } from '@weapp-core/constants'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+  computed,
   defineComponent,
   onAttached,
   onDetached,
@@ -11,6 +13,7 @@ import {
   onRouteDone,
   onShow,
   onTabItemTap,
+  reactive,
   ref,
   resetWevuDefaults,
   setWevuDefaults,
@@ -317,6 +320,7 @@ describe('runtime: component lifetimes/pageLifetimes mapping', () => {
 
     defineComponent({
       __wevu_isPage: true,
+      [WEVU_SETUP_READY_KEY]: false,
       setupLifecycle: 'created',
       beforeCreate() {
         order.push('beforeCreate')
@@ -330,7 +334,8 @@ describe('runtime: component lifetimes/pageLifetimes mapping', () => {
     const opts = registeredComponents[0]
     const instance: any = {
       route: 'pages/home/index',
-      setData() {},
+      data: { ...opts.data },
+      setData(patch: Record<string, unknown>) { Object.assign(this.data, patch) },
     }
     opts.lifetimes.created.call(instance)
     expect(order).toEqual([])
@@ -342,6 +347,7 @@ describe('runtime: component lifetimes/pageLifetimes mapping', () => {
     await expect(pending).resolves.toBe(false)
     await Promise.resolve()
     expect(order).toEqual(['guard'])
+    expect(instance.data[WEVU_SETUP_READY_KEY]).toBe(false)
     expect((instance as any).__wevu).toBeUndefined()
   })
 
@@ -379,6 +385,7 @@ describe('runtime: component lifetimes/pageLifetimes mapping', () => {
 
     defineComponent({
       __wevu_isPage: true,
+      [WEVU_SETUP_READY_KEY]: false,
       setup() {
         order.push('setup')
         return {}
@@ -388,7 +395,8 @@ describe('runtime: component lifetimes/pageLifetimes mapping', () => {
     const opts = registeredComponents[0]
     const instance: any = {
       route: 'pages/home/index',
-      setData() {},
+      data: { ...opts.data },
+      setData(patch: Record<string, unknown>) { Object.assign(this.data, patch) },
     }
     opts.lifetimes.created.call(instance)
     opts.lifetimes.attached.call(instance)
@@ -397,12 +405,14 @@ describe('runtime: component lifetimes/pageLifetimes mapping', () => {
     await Promise.resolve()
     expect(guard).toHaveBeenCalledTimes(1)
     expect(order).toEqual(['guard-start'])
+    expect(instance.data[WEVU_SETUP_READY_KEY]).toBe(false)
 
     resolveGuard()
     await expect(pending).resolves.toBe(true)
     await Promise.resolve()
     await Promise.resolve()
     expect(order).toContain('setup')
+    expect(instance.data[WEVU_SETUP_READY_KEY]).toBe(true)
     expect(order.indexOf('guard-done')).toBeLessThan(order.indexOf('setup'))
     expect(guard).toHaveBeenCalledTimes(1)
   })
@@ -429,6 +439,41 @@ describe('runtime: component lifetimes/pageLifetimes mapping', () => {
     await Promise.resolve()
     expect(setData).toHaveBeenCalled()
     expect(setData.mock.calls[0]?.[0]).toMatchObject({ count: 1 })
+  })
+
+  it.each(['created', 'attached'] as const)('opens the compiled render barrier atomically after %s setup', async (setupLifecycle) => {
+    const factory = vi.fn(() => ({ label: 'factory' }))
+    defineComponent({
+      [WEVU_SETUP_READY_KEY]: false,
+      setData: { pick: ['label', 'state'], omit: [WEVU_SETUP_READY_KEY] },
+      setupLifecycle,
+      setup() {
+        return { label: computed(() => 'ready'), state: reactive(factory()) }
+      },
+    } as any)
+    const opts = registeredComponents[0]!
+    expect(opts.data[WEVU_SETUP_READY_KEY]).toBe(false)
+    const commits: Record<string, unknown>[] = []
+    const inst: any = {
+      data: { ...opts.data },
+      setData(payload: Record<string, unknown>, callback?: () => void) {
+        commits.push(payload)
+        Object.assign(this.data, payload)
+        callback?.()
+      },
+    }
+    opts.lifetimes.created.call(inst)
+    expect(commits).toEqual([])
+    opts.lifetimes.attached.call(inst)
+    await Promise.resolve()
+    expect(factory).toHaveBeenCalledTimes(1)
+    expect(commits[0]).toMatchObject({ [WEVU_SETUP_READY_KEY]: true, label: 'ready', state: { label: 'factory' } })
+    expect(inst.data[WEVU_SETUP_READY_KEY]).toBe(true)
+    inst.__wevu.proxy.state.label = null
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(commits.slice(1)).toContainEqual(expect.objectContaining({ 'state.label': null }))
+    opts.lifetimes.detached.call(inst)
   })
 
   it('keeps synchronous setup ref mutations over native initial data when attached', async () => {
