@@ -1,5 +1,5 @@
 import type { MiniProgramPlatform, TemplateCompileResult } from '../../compiler/template'
-import { NodeTypes } from '@vue/compiler-core'
+import { ErrorCodes, NodeTypes } from '@vue/compiler-core'
 import { WEVU_SETUP_READY_KEY } from '@weapp-core/constants'
 import { parseTemplateWithScriptModules } from '../../../../utils/templateScriptModules'
 import { recordSyntheticBindingExpression } from '../../compiler/template/bindingManifest'
@@ -19,7 +19,15 @@ export function guardInitialSetupRender(compiled: TemplateCompileResult, binding
 
 /** 保留模块、import 和具名模板的顶层归属，仅延迟可渲染内容。 */
 export function wrapInitialSetupTemplate(template: string, platform: MiniProgramPlatform) {
-  const { ast } = parseTemplateWithScriptModules(template, { comments: true }, platform.name)
+  const { ast } = parseTemplateWithScriptModules(template, {
+    comments: true,
+    onError(error) {
+      // 此处只读取已生成模板的元素边界；宿主允许的重复属性不影响声明归属。
+      if (error.code !== ErrorCodes.DUPLICATE_ATTRIBUTE) {
+        throw error
+      }
+    },
+  }, platform.name)
   const declarations = new Set(['wxs', 'sjs', 'qs', 'jds', 'filter', 'import'])
   let prelude = ''
   let content = ''

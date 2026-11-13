@@ -1,5 +1,4 @@
 import type { SetDataSnapshotOptions } from '../types'
-import { WEVU_SETUP_READY_KEY } from '@weapp-core/constants'
 
 export interface ResolvedSetDataOptions {
   includeComputed: boolean
@@ -111,10 +110,6 @@ export function resolveSetDataOptions(
     ? new Set(setDataOptions!.omit)
     : undefined
   const shouldIncludeKey = (key: string) => {
-    // 编译器的首帧屏障不受业务字段筛选影响。
-    if (key === WEVU_SETUP_READY_KEY) {
-      return true
-    }
     if (pickSet && !pickSet.has(key)) {
       return false
     }

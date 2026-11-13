@@ -5,6 +5,13 @@ import { compileVueFile } from './index'
 import { wrapInitialSetupTemplate } from './initialRender'
 
 describe('setup initial render barrier', () => {
+  it('preserves repeated emitted attributes without hiding invalid element boundaries', () => {
+    const template = '<view class="static" class="{{dynamic}}"><status-label text="{{value}}" /></view>'
+    expect(wrapInitialSetupTemplate(template, wechatPlatform))
+      .toBe(`<block wx:if="{{${WEVU_SETUP_READY_KEY}}}">${template}</block>`)
+    expect(() => wrapInitialSetupTemplate('<view><text></view>', wechatPlatform)).toThrow()
+  })
+
   it('keeps raw modules and named declarations outside the render condition', () => {
     const module = '<wxs module="m">module.exports = { compare: function(a,b) { return a < b } }</wxs>'
     const declarations = `${module}<import src="./other.wxml" /><template name="named"><text>named</text></template>`
