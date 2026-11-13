@@ -1,5 +1,6 @@
 import type { OutputChunk } from 'rolldown'
 import type { CorePluginState } from '../../plugins/core/helpers'
+import { Buffer } from 'node:buffer'
 import { mkdtemp, readFile, rm } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
@@ -11,7 +12,7 @@ import { injectAppPreludeCode } from '../../plugins/core/lifecycle/emit/appPrelu
 import { REQUEST_GLOBAL_PRELUDE_MARKER } from '../../plugins/core/lifecycle/emit/constants'
 import { createLegacyEs5Plugin } from './legacyEs5'
 
-describe('legacy ES5 final output', () => {
+describe.each([false, true])('legacy ES5 final output, minify=%s', (minify) => {
   it.each([true, 'inline', 'hidden'] as const)('preserves final source maps: %s', async (sourcemap) => {
     const source = 'globalThis.result = globalThis.input?.value;'
     const build = await rolldown({
@@ -19,7 +20,7 @@ describe('legacy ES5 final output', () => {
       plugins: [{ name: 'source', resolveId: id => id, load: () => source }, createLegacyEs5Plugin()],
     })
     try {
-      const { output } = await build.generate({ format: 'cjs', sourcemap })
+      const { output } = await build.generate({ format: 'cjs', sourcemap, minify })
       const chunk = output.find(item => item.type === 'chunk') as OutputChunk
       expect(chunk.code).not.toContain('?.')
       const lines = chunk.code.split('\n')
@@ -29,6 +30,8 @@ describe('legacy ES5 final output', () => {
       expect(position.line).toBe(1)
       if (sourcemap === 'inline') {
         expect(chunk.code).toContain('sourceMappingURL=data:application/json')
+        const payload = chunk.code.slice(chunk.code.lastIndexOf('base64,') + 'base64,'.length).trim()
+        expect(JSON.parse(Buffer.from(payload, 'base64').toString('utf8'))).toEqual(JSON.parse(JSON.stringify(chunk.map)))
       }
       else {
         const asset = output.find(item => item.type === 'asset' && item.fileName.endsWith('.map'))
@@ -56,6 +59,7 @@ describe('legacy ES5 final output', () => {
           generateBundle(_options, bundle) {
             const installer = 'weapp-vendors/request-globals-runtime.js'
             this.emitFile({ type: 'asset', fileName: 'fixture.json', source: '{"untouched":true}' })
+            this.emitFile({ type: 'asset', fileName: 'binary.js', source: new TextEncoder().encode('globalThis.binaryPreludeValue = (() => ({ value: 42 }))()?.value;') })
             const app = bundle['app.js'] as OutputChunk
             app.code = `const runtime = require('./${installer}');\n${app.code}`
             const installers = new Map([[installer, 'installWebRuntimeGlobals']])
@@ -65,11 +69,14 @@ describe('legacy ES5 final output', () => {
       ],
     })
     try {
-      const { output } = await build.write({ dir: directory, format: 'cjs', entryFileNames: '[name].js' })
+      const { output } = await build.write({ dir: directory, format: 'cjs', entryFileNames: '[name].js', minify })
       const files = new Map(await Promise.all(output.map(async item => [item.fileName, await readFile(path.join(directory, item.fileName), 'utf8')] as const)))
       for (const [name, source] of files) {
         if (name.endsWith('.js')) {
           expect(source).not.toMatch(/\?\.|=>|\b(?:const|let)\s/u)
+          if (minify) {
+            expect(source).not.toMatch(/\n[ \t]+\S/u)
+          }
         }
       }
       expect(files.get('fixture.json')).toBe('{"untouched":true}')
@@ -89,7 +96,9 @@ describe('legacy ES5 final output', () => {
         return module.exports
       }
       load('app.js')
+      vm.runInContext(files.get('binary.js')!, context)
       expect(context.result).toBe(42)
+      expect(context.binaryPreludeValue).toBe(42)
       expect(typeof context.URL).toBe('function')
     }
     finally {

@@ -1,4 +1,5 @@
 import type { TestContext } from 'vitest'
+import { APP_PRELUDE_CHUNK_MARKER } from '@weapp-core/constants'
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
@@ -27,7 +28,7 @@ const REQUEST_RUNTIME = {
   blob: 'function',
   formData: 'function',
 }
-type Mode = 'default' | 'inline' | 'default-request-runtime'
+type Mode = 'default' | 'inline' | 'default-request-runtime' | 'legacy-es5-request-runtime'
 
 async function launchMode(mode: Mode) {
   // 每种 prelude 构建拓扑必须独立冷启动，避免模块缓存掩盖重复副作用。
@@ -45,7 +46,8 @@ async function launchMode(mode: Mode) {
     skipNpm: true,
     env: {
       ...(mode === 'inline' ? { APP_PRELUDE_MODE: 'inline' } : {}),
-      ...(mode === 'default-request-runtime' ? { APP_PRELUDE_REQUEST_GLOBALS: '1' } : {}),
+      ...(['default-request-runtime', 'legacy-es5-request-runtime'].includes(mode) ? { APP_PRELUDE_REQUEST_GLOBALS: '1' } : {}),
+      ...(mode === 'legacy-es5-request-runtime' ? { APP_PRELUDE_ES5_MINIFY: '1' } : {}),
     },
   })
   for (const { route } of ROUTES) {
@@ -53,10 +55,22 @@ async function launchMode(mode: Mode) {
       expect(await fs.pathExists(path.join(projectRoot, 'dist', `${route.slice(1)}.${extension}`))).toBe(true)
     }
   }
+  if (mode === 'legacy-es5-request-runtime') {
+    const distRoot = path.join(projectRoot, 'dist')
+    const jsFiles = (await fs.readdir(distRoot, { recursive: true }))
+      .filter((file): file is string => typeof file === 'string' && file.endsWith('.js'))
+    expect(jsFiles.length).toBeGreaterThan(0)
+    for (const file of jsFiles) {
+      const code = await fs.readFile(path.join(distRoot, file), 'utf8')
+      expect(code, file).not.toMatch(/\?\.|=>|\b(?:const|let)\s/u)
+      expect(code, file).not.toMatch(/\n[ \t]+\S/u)
+    }
+    expect(await fs.readFile(path.join(distRoot, 'app.prelude.js'), 'utf8')).toContain(APP_PRELUDE_CHUNK_MARKER)
+  }
   return launchAutomator({ projectPath: projectRoot, timeout: 180_000, warmupRoute: ROUTES[0]!.route, warmupRootSelectors: ['#route'] })
 }
 
-async function verifyPrelude(context: TestContext, mode: 'default' | 'inline') {
+async function verifyPrelude(context: TestContext, mode: 'default' | 'inline' | 'legacy-es5-request-runtime') {
   const acceptance = createDomAcceptance(context, 'e2e-apps/app-prelude-native', ROUTES.map(({ route, label }) => ({
     id: label,
     route,
@@ -65,6 +79,9 @@ async function verifyPrelude(context: TestContext, mode: 'default' | 'inline') {
       { selector: '#route', text: label },
       { selector: '#prelude-log-count', text: '1' },
       { selector: '.prelude-log-item', count: 1, text: 'app.prelude.ts:/app.prelude.ts' },
+      ...(mode === 'legacy-es5-request-runtime' && label === 'main'
+        ? Object.entries(REQUEST_RUNTIME).map(([name, type]) => ({ selector: `#runtime-${name}`, text: `${name}=${type}` }))
+        : []),
     ],
   })))
   const miniProgram = await launchMode(mode)
@@ -72,6 +89,9 @@ async function verifyPrelude(context: TestContext, mode: 'default' | 'inline') {
     for (const { route, label } of ROUTES) {
       const page = await miniProgram.reLaunch(route)
       await acceptance.check(label, miniProgram, page)
+      if (mode === 'legacy-es5-request-runtime' && label === 'main') {
+        expect(await page.data('requestRuntime')).toEqual(REQUEST_RUNTIME)
+      }
       expect(await miniProgram.evaluate(() => getApp<{ getPreludeLog: () => string[] }>().getPreludeLog()))
         .toEqual(['app.prelude.ts:/app.prelude.ts'])
     }
@@ -88,6 +108,10 @@ describe('e2e app: app-prelude-native runtime', { concurrent: false }, () => {
 
   it('keeps one prelude side effect per package scope under default require mode', async (context) => {
     await verifyPrelude(context, 'default')
+  })
+
+  it('keeps minified ES5 request runtime and prelude side effects across package scopes', async (context) => {
+    await verifyPrelude(context, 'legacy-es5-request-runtime')
   })
 
   it('installs request runtime globals through app.prelude.js under default require mode', async (context) => {

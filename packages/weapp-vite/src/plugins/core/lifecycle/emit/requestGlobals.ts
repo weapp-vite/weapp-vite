@@ -42,6 +42,7 @@ import {
 import { getRequestGlobalsContentFacts } from './requestGlobals/analysis'
 import { collectTopLevelDeclaredIdentifiers } from './requestGlobals/bindings'
 import { wouldCollapseSupportCreateCycle } from './requestGlobals/chunkGraph'
+import { synchronizeInlineInstallerBindings } from './requestGlobals/inlineBindings'
 import { findRequestGlobalsInstaller } from './requestGlobals/installer'
 import { getStaticStringLiteral, normalizeRelativeChunkImport } from './rewrite'
 
@@ -294,6 +295,9 @@ export function injectRequestGlobalsLocalBindings(
     const generatedBindings = bundlePassiveBindingTargets.get(chunk)
     const localBindingTargets = bindingTargets.filter(target => !declaredBindings.has(target) || generatedBindings?.has(target))
     const inlineInstallerName = resolveRequestGlobalsInstallerName(chunk.code, analysis, chunk.fileName)
+    if (inlineInstallerName && synchronizeInlineInstallerBindings(chunk, inlineInstallerName, bindingTargets, localBindingTargets, analysis)) {
+      continue
+    }
     const firstRequireMatch = chunk.code.matchAll(REQUEST_GLOBAL_REQUIRE_DECLARATOR_RE).next().value
     let requireImportLiteral: string | null = null
     let exportName: string | undefined
