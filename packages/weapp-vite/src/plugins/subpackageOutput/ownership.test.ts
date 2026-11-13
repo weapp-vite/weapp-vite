@@ -1,4 +1,6 @@
 import type { PreRenderedChunk } from 'rolldown'
+import { mkdir, mkdtemp, realpath, rm, symlink, writeFile } from 'node:fs/promises'
+import os from 'node:os'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 import { createLogicalEntryId, createSidecarModuleId } from '../../moduleGraph/protocol'
@@ -13,6 +15,24 @@ function chunk(ids: string[], facadeModuleId: string | null = null): PreRendered
 }
 
 describe('subpackage naming ownership', () => {
+  it.each([false, true])('uses the host symlink identity policy, preserveSymlinks=%s', async (preserveSymlinks) => {
+    const temporary = await realpath(await mkdtemp(path.join(os.tmpdir(), 'subpackage-identity-')))
+    try {
+      const actual = path.join(temporary, 'actual')
+      const alias = path.join(temporary, 'alias')
+      await mkdir(path.join(actual, 'src/packages/feature'), { recursive: true })
+      await writeFile(path.join(actual, 'src/packages/feature/value.js'), 'export const value = 1')
+      await symlink(actual, alias, 'junction')
+      const source = path.join(preserveSymlinks ? alias : actual, 'src/packages/feature/value.js')
+      const linkedContext = { ...context, root: alias, srcRoot: path.join(alias, 'src'), preserveSymlinks }
+      expect(resolveChunkPackage(chunk([source], source), linkedContext)).toBe('packages/feature')
+      expect(resolveAssetPackage({ originalFileNames: [source] }, linkedContext)).toBe('packages/feature')
+      expect(resolveAssetPackage({ originalFileNames: ['src/packages/feature/value.js'] }, linkedContext)).toBe('packages/feature')
+    }
+    finally {
+      await rm(temporary, { recursive: true, force: true })
+    }
+  })
   it('uses the full most-specific root and maps main files to empty', () => {
     expect(resolveChunkPackage(chunk([path.join(srcRoot, 'packages/feature/nested/value.ts')]), context)).toBe('packages/feature/nested')
     expect(resolveChunkPackage(chunk([path.join(srcRoot, 'main.ts')]), context)).toBe('')

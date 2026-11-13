@@ -1,6 +1,6 @@
 import type { OutputChunk, RolldownOutput } from 'rolldown'
 import type { Plugin, UserConfig } from 'vite'
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'pathe'
 import { build } from 'vite'
@@ -9,7 +9,7 @@ import { createSubpackageOutputPlugin } from './index'
 import { expandSubpackageTemplate } from './template'
 
 async function fixture(run: (root: string) => Promise<void>) {
-  const root = await mkdtemp(path.join(os.tmpdir(), 'subpackage-output-'))
+  const root = await realpath(await mkdtemp(path.join(os.tmpdir(), 'subpackage-output-')))
   try {
     await mkdir(path.join(root, 'src/packages/feature'), { recursive: true })
     await writeFile(path.join(root, 'src/main.js'), 'export const load = () => import("./packages/feature/lazy.js")')
@@ -44,6 +44,20 @@ async function compile(root: string, options: NonNullable<UserConfig['build']> =
 }
 
 describe('subpackage naming through Vite', () => {
+  it.each([false, true])('resolves CSS URLs with explicit assetFileNames only, function=%s', async (callback) => {
+    await fixture(async (root) => {
+      const template = '[subpackage]/assets/[name]-[hash][extname]'
+      const result = await compile(root, {
+        assetsDir: 'assets',
+        rolldownOptions: { output: { assetFileNames: callback ? () => template : template } },
+      })
+      const names = result.output.map(item => item.fileName)
+      const css = result.output.find(item => item.fileName.endsWith('.css'))!
+      const content = await readFile(path.join(root, 'dist', css.fileName), 'utf8')
+      const url = content.match(/url\(["']?([^"')]+)["']?\)/)![1]!
+      expect(names).toContain(path.normalize(path.join(path.dirname(css.fileName), url)))
+    })
+  })
   it('uses assetsDir for chunks, CSS and URLs without leaking placeholders', async () => {
     await fixture(async (root) => {
       const result = await compile(root, { assetsDir: '[subpackage]/assets' })
@@ -126,21 +140,26 @@ describe('subpackage naming through Vite', () => {
     })
   })
 
-  it('keeps one shared resource when different packages emit identical content', async () => {
+  it('rejects inaccessible deduplicated assets and accepts a shared main-package directory', async () => {
     await fixture(async (root) => {
       await mkdir(path.join(root, 'src/packages/other'))
       await writeFile(path.join(root, 'src/packages/other/image.svg'), await readFile(path.join(root, 'src/packages/feature/image.svg')))
-      await writeFile(path.join(root, 'src/packages/other/lazy.js'), 'import image from "./image.svg"; export const value = image')
+      await writeFile(path.join(root, 'src/packages/other/style.css'), '.other { background: url("./image.svg"); }')
+      await writeFile(path.join(root, 'src/packages/other/lazy.js'), 'import "./style.css"; import image from "./image.svg"; export const value = image')
       await writeFile(path.join(root, 'src/main.js'), 'export const load = () => import("./packages/feature/lazy.js"); export const other = () => import("./packages/other/lazy.js")')
-      const result = await compile(root, { assetsDir: '[subpackage]/assets' })
+      await expect(compile(root, { assetsDir: '[subpackage]/assets' })).rejects.toThrow('跨分包资源')
+      const result = await compile(root, {
+        assetsDir: '[subpackage]/assets',
+        rolldownOptions: { output: { assetFileNames: 'assets/[name]-[hash][extname]' } },
+      })
       const images = result.output.filter(item => item.fileName.endsWith('.svg'))
       expect(images).toHaveLength(1)
-      // 原生内容去重选择其中一个命名候选，不在输出阶段搬移或再发射。
-      expect(images[0]!.fileName).toMatch(/^packages\/(feature|other)\/assets\/image-.*\.svg$/)
-      const css = result.output.find(item => item.fileName.endsWith('.css'))!
-      const content = await readFile(path.join(root, 'dist', css.fileName), 'utf8')
-      const url = content.match(/url\(["']?([^"')]+)["']?\)/)![1]!
-      expect(path.normalize(path.join(path.dirname(css.fileName), url))).toBe(images[0]!.fileName)
+      expect(images[0]!.fileName).toMatch(/^assets\/image-.*\.svg$/)
+      for (const css of result.output.filter(item => item.fileName.endsWith('.css'))) {
+        const content = await readFile(path.join(root, 'dist', css.fileName), 'utf8')
+        const url = content.match(/url\(["']?([^"')]+)["']?\)/)![1]!
+        expect(path.normalize(path.join(path.dirname(css.fileName), url))).toBe(images[0]!.fileName)
+      }
     })
   })
 
