@@ -53,7 +53,7 @@ pnpm exec eslint scripts/verificationTelemetry vitest.config.mts e2e/scripts/run
 
 `optimized-v2` 通过审批后读取的 `.github/verification-workload.json` 显式选择：可选字段 `verificationTopology` 只接受 `optimized-v1`、`optimized-v2`，仅对 `pullRequests` 点名的 PR 生效；默认继续使用 v1。拓扑进入冻结上下文，入口和实际任务核对同一字段，不能在下游换成另一种拓扑。已有 PR 审批、只读权限与原始覆盖率阈值保留。
 
-v2 将 Ubuntu 的 35 个独立消费者场景调度为四个确定性批次，每个场景仍各自安装和运行原消费者入口，保留原 DOM/Web 证据。三个 imports 场景使用独立 npm 安装，并保存官方依赖原始字节核验及构建、开发更新、配置重启证据，wv 还验证 headless runtime。权重是 `static-relative-v1` 静态相对值，报告另存真实耗时；失败或取消后剩余场景明确记录为未执行，完整汇总拒绝缺失、重复、篡改、跨 attempt 或非成功退出的证据。Node 支持保留五个逻辑角色，当最低版与当轮解析的最新版完整版本一致时共享实际执行，汇总逐角色核对原始 consumer 与 Dashboard 字节。
+v2 将 Ubuntu 的 35 个独立消费者场景调度为四个确定性批次，每个场景仍各自安装和运行原消费者入口，保留原 DOM/Web 证据。三个 imports 场景使用独立 npm 安装，并保存官方依赖原始字节核验及构建、开发更新、配置重启证据，wv 还验证 headless runtime。权重是 `static-relative-v1` 静态相对值，报告另存真实耗时；失败或取消后剩余场景明确记录为未执行，完整汇总拒绝缺失、重复、篡改、跨 attempt 或非成功退出的证据。Node 支持覆盖 22/24/26 的最低版与当轮最新版，共六个逻辑角色，当最低版与当轮解析的最新版完整版本一致时共享实际执行，汇总逐角色核对原始 consumer 与 Dashboard 字节。
 
 v2 的产物消费者先恢复 dist 后执行一次完整安装，生产者保留原生构建后的链接刷新；miniapp/headless 汇总从 plan job 生成的固定 bundle 执行，不安装 workspace。bundle、plan、源码 SHA 及完整原始 case/checkpoint 证据继续核对。Playwright 缓存按 OS、架构、包版本和 browser revision 精确匹配，PR 只读，可信默认分支可写；Linux 的系统依赖安装始终保留。浅 checkout 是默认，HMR 审计等明确依赖历史的 job 保留完整历史。
 

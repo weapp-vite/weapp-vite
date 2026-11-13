@@ -1,13 +1,12 @@
 # 依赖补丁与发布维护
 
-当前 `patchedDependencies` 登记四份补丁：
+当前 `patchedDependencies` 登记三份补丁：
 
 | 依赖 | 用途 | 发布交付范围 |
 | --- | --- | --- |
 | `chokidar@6.0.0` | 修正文件监听的异步提交、目录恢复和资源关闭边界 | `weapp-vite` 通过 `alwaysBundle` 将修补代码打入 `dist`，普通 npm 消费者也使用该实现 |
-| `@vitejs/plugin-vue@6.0.10` | 向 Oxc 转换补传当前 Vite 配置和 watcher | 仓库 Web UI、文档及相关测试的开发和构建，不修补消费者安装的 Vue 插件 |
+| `@vitejs/plugin-vue@6.0.11` | 向 Oxc 转换补传当前 Vite 配置和 watcher | 仓库 Web UI、文档及相关测试的开发和构建，不修补消费者安装的 Vue 插件 |
 | `vite@8.3.5` | 修正内置 Chokidar 对不存在路径重复发送 ready 的计数 | 工作区官方 Vite 的开发、构建及产品契约；不修改 Vite+ 的独立内置引擎 |
-| `@icebreakers/monorepo@6.5.4` | 为 nightly 和 prepared snapshot consumer 生成可由 pnpm 12 原位修改的 YAML block collection | 仓库发布工具，不进入 npm 产品包 |
 
 工作区的 pnpm 补丁登记不会随 npm 依赖安装自动传播；已打入发布产物的修改代码会交付给消费者。
 当前使用官方 Vite `8.3.5` 和 Rolldown `1.2.16`，其中 Vite 保留上述 ready 补丁，Rolldown 没有补丁。Vite+ `1.5.0` launcher/core
@@ -16,13 +15,13 @@
 
 ## 发布重试与恢复
 
-6.5.4 新补丁只修正 consumer 的两处 workspace 序列化。多行 JSON 是合法 YAML，但 pnpm 12
+此前 6.5.4 补丁只修正 consumer 的两处 workspace 序列化。多行 JSON 是合法 YAML，但 pnpm 12
 追加 `minimumReleaseAgeExclude` 时无法原位修改该 flow collection；改用已有 `yaml.stringify`
 的 block collection，保留精确版本例外和消费门禁。`scripts/repoctl-consumer-workspace.test.ts`
 通过实际安装产物和真实 pnpm 写入验证两条路径，随 `pnpm test:release` 执行。升级上游后确认
-两条路径均已覆盖，才能删除补丁。
+两条路径均已覆盖，才能删除补丁。当前上游 6.6.1 已覆盖该行为，补丁已移除；回归继续验证实际安装产物。
 
-仓库固定使用 `repoctl@6.5.4`，发布重试、工作区根包识别和发布说明过滤均由上游正式实现负责。
+仓库固定使用 `repoctl@6.6.1`，发布重试、工作区根包识别和发布说明过滤均由上游正式实现负责。
 `@icebreakers/monorepo@6.1.0` 的上游实现包含发布说明分类修正：明确的 Conventional 摘要类型
 优先于整理提交类型及正文关键词，并保留正文中的依赖版本描述；原生 Dependencies 条目仍归维护。
 同一分类规则用于 Release PR、正式发布和发布说明修复，避免合并 intent 后功能、修复和性能被改归维护。
@@ -154,7 +153,8 @@ node --import tsx e2e/scripts/run-e2e-commands.ts node --import tsx packages/wea
 
 ## 官方 Vite/Rolldown 与产品监听
 
-当前没有 Vite 或 Rolldown 补丁文件、`patchedDependencies` 登记或锁文件补丁绑定。
+当前保留 `vite@8.3.5.patch`，修正内置 Chokidar 对不存在路径重复发送 ready 的计数；
+Rolldown 没有补丁。该补丁不覆盖 Web optimizer 临时缓存或连续构建引用增长问题。
 自有插件钩子容器、package imports 兼容及会话释放由 `weapp-vite` 自身代码负责；这不表示上游
 全部引用生命周期问题已修复。
 
@@ -190,6 +190,8 @@ Vitest `5.1.0` 的官方 ServerModuleRunner 已以 UTF-8 读取磁盘缓存代�
 
 ## Vue 插件的 Oxc 上下文
 
-`@vitejs/plugin-vue@6.0.10.patch` 为 `transformWithOxc` 补传 `devServer.config` 和 `devServer.watcher`，
+`@vitejs/plugin-vue@6.0.11.patch` 为 `transformWithOxc` 补传 `devServer.config` 和 `devServer.watcher`，
 让 Vue 中的 TypeScript 转换使用当前 Vite 配置及其监听上下文，避免遗漏显式 tsconfig 后转而扫描无关项目引用。
 仓库 Web 构建的既有 tsconfig guard 继续保留；补丁不作为 `weapp-vite` 对外 Vue 编译器的运行时依赖交付。
+
+本轮升级核对：plugin-vue 6.0.11 仍缺少上述 Oxc 上下文，补丁原样迁移；Chokidar 6.0.0 的监听生命周期补丁和 Vite 8.3.5 的 ready 补丁继续保留。Vite 8.3.8 / Rolldown 1.2.19 与 Vite+ 1.6.0 均未通过 Web optimizer 关闭清理契约，未迁移既有验收例外，详见[本轮升级记录](../docs/plans/2026-11-13-dependency-upgrade.md)。

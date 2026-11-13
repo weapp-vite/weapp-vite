@@ -890,7 +890,7 @@
     "@babel/parser": "catalog:",
     "@babel/traverse": "catalog:",
     "@types/node": "catalog:",
-    "@types/vscode": "^1.145.0",
+    "@types/vscode": "^1.146.0",
     "@vscode/test-electron": "^3.1.0",
     "@weapp-vite/ast": "workspace:*",
     "@weapp-vite/language-service": "workspace:*",

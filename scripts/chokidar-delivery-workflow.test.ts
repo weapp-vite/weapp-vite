@@ -149,7 +149,7 @@ describe('Windows ordinary npm watcher delivery workflow', () => {
       artifact_path: '.cache/node-support-tarballs',
     })
     const nodeSupport = child.jobs['node-support']
-    expect(nodeSupport.strategy.matrix).toEqual({ node: ['22.23.4', '24.22.1', '26.12.1', '22', '24'] })
+    expect(nodeSupport.strategy.matrix).toEqual({ node: ['22.23.4', '24.22.1', '26.12.1', '22', '24', '26'] })
     expect(nodeSupport['runs-on']).toBe('${{ inputs.runs_on }}')
     expect(nodeSupport.env).toMatchObject({ BUILD_ARTIFACT_EXPECTED_COMMIT: frozenCheckout, BUILD_ARTIFACT_EXPECTED_NODE_MAJOR: '24', WEAPP_VITE_CONSUMER_TARBALLS: '.cache/node-support-tarballs' })
     expect(nodeSupport.steps.find((item: Step) => item.uses === './.github/actions/setup-node')?.with).toEqual({

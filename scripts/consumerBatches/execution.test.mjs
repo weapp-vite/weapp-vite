@@ -121,7 +121,7 @@ it('rereads Node role evidence and refuses missing or mutated consumer and Dashb
     await writeFile(path.join(output, 'dashboard-public-types.json'), dashboard)
     await writeFile(path.join(output, 'node-support.json'), json({ schemaVersion: 1, identity, planHash: plan.planHash, node: row.node, roles: row.roles, status: 'passed', consumerHash: digest(consumer), dashboardHash: digest(dashboard) }))
   }
-  expect((await aggregateNodeSupportDirectory(plan, directory, identity.commit)).logicalRoles).toHaveLength(5)
+  expect((await aggregateNodeSupportDirectory(plan, directory, identity.commit)).logicalRoles).toHaveLength(6)
   const target = path.join(directory, plan.matrix[0].id, 'dashboard-public-types.json')
   await writeFile(target, json({ node: `v${plan.matrix[0].node}`, passed: false }))
   await expect(aggregateNodeSupportDirectory(plan, directory, identity.commit)).rejects.toThrow('digest')

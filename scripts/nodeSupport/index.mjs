@@ -35,10 +35,10 @@ export async function recordNodeSupport(plan, version, consumerFile, dashboardFi
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const [command, ...args] = process.argv.slice(2)
   if (command === 'plan') {
-    const [provenanceFile, output, latest22, latest24] = args
+    const [provenanceFile, output, latest22, latest24, latest26] = args
     const provenance = JSON.parse(await readFile(provenanceFile, 'utf8'))
     const manifest = JSON.parse(await readFile('package.json', 'utf8'))
-    const plan = createNodeSupportPlan(freezeConsumerIdentity(provenance.identity), minimumNodeVersions(manifest.engines.node), { 22: latest22, 24: latest24 })
+    const plan = createNodeSupportPlan(freezeConsumerIdentity(provenance.identity), minimumNodeVersions(manifest.engines.node), { 22: latest22, 24: latest24, 26: latest26 })
     await writeJson(output, plan)
     if (process.env.GITHUB_OUTPUT) {
       await appendFile(process.env.GITHUB_OUTPUT, `matrix=${JSON.stringify(plan.matrix)}\n`)

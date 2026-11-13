@@ -387,6 +387,13 @@ jobs:
         with:
           node-version: '24'
 
+      - name: Resolve floating Node 26 support version
+        uses: ./.github/actions/setup-node
+        id: support-latest-26
+        if: inputs.resolve_node_support
+        with:
+          node-version: '26'
+
       - name: Restore the immutable artifact builder Node
         uses: ./.github/actions/setup-node
         if: inputs.resolve_node_support
@@ -400,7 +407,8 @@ jobs:
         env:
           SUPPORT_LATEST_22: ${{ steps.support-latest-22.outputs.node-version }}
           SUPPORT_LATEST_24: ${{ steps.support-latest-24.outputs.node-version }}
-        run: node scripts/nodeSupport/index.mjs plan .cache/node-support-tarballs/ci-provenance.json .tmp/consumer-plan/node-support.json "$SUPPORT_LATEST_22" "$SUPPORT_LATEST_24"
+          SUPPORT_LATEST_26: ${{ steps.support-latest-26.outputs.node-version }}
+        run: node scripts/nodeSupport/index.mjs plan .cache/node-support-tarballs/ci-provenance.json .tmp/consumer-plan/node-support.json "$SUPPORT_LATEST_22" "$SUPPORT_LATEST_24" "$SUPPORT_LATEST_26"
       - name: Freeze all consumer scenarios into four deterministic batches
         if: inputs.prepare_consumer_batches
         id: consumer-batch-plan

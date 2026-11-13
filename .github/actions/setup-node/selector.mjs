@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 
 /** 固定版本来自当前 action 所属 checkout，不能读取被测工程的工作目录。 */
 export function resolveNodeSelector(requested = '', fixed = readFileSync(new URL('../../../.node-version', import.meta.url), 'utf8').trim()) {
-  const preferred = { 22: '22.23.4', 24: fixed, 26: '26.13.0' }
+  const preferred = { 22: '22.23.5', 24: '24.22.3', 26: '26.13.1' }
   const selector = String(requested).trim()
   if (!selector || selector === 'default') {
     return { version: fixed, checkLatest: false }

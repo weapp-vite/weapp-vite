@@ -56,7 +56,7 @@ describe('ordinary CI Node setup before candidate installation', () => {
     expect(selector).toBe(`^${preferredFloor.version}`)
     expect(preferredFloor.major).toBe(Number(major))
     expect(satisfies(preferredFloor, engine)).toBe(true)
-    if (major === '24') {
+    if (major === fixedNodeVersion.split('.')[0]) {
       expect(preferredFloor.version).toBe(fixedNodeVersion)
     }
     let old = `${Number(major) - 1}.0.0`
@@ -87,6 +87,13 @@ describe('ordinary CI Node setup before candidate installation', () => {
     expect(() => resolveNodeSelector('24\ncheck-latest=true')).toThrow('one line')
   })
 
+  it('keeps floating majors independent when the default moves to another major', () => {
+    for (const major of ['22', '24', '26']) {
+      expect(minVersion(resolveNodeSelector(major, '28.0.0').version)!.major).toBe(Number(major))
+    }
+    expect(resolveNodeSelector('default', '28.0.0')).toEqual({ version: '28.0.0', checkLatest: false })
+  })
+
   it('reads the fixed version from the action checkout rather than the measured working directory', () => {
     const root = mkdtempSync(join(tmpdir(), 'ci-node-selector-'))
     try {
@@ -100,9 +107,9 @@ describe('ordinary CI Node setup before candidate installation', () => {
       const output = join(root, 'output')
       execFileSync(process.execPath, [join(actionDirectory, 'selector.mjs')], {
         cwd: measuredDirectory,
-        env: { ...process.env, CI_NODE_VERSION: '24', GITHUB_OUTPUT: output },
+        env: { ...process.env, CI_NODE_VERSION: 'default', GITHUB_OUTPUT: output },
       })
-      expect(readFileSync(output, 'utf8')).toBe('node-version=^24.99.0\ncheck-latest=true\n')
+      expect(readFileSync(output, 'utf8')).toBe('node-version=24.99.0\ncheck-latest=false\n')
     }
     finally {
       rmSync(root, { recursive: true, force: true })
@@ -151,7 +158,7 @@ describe('ordinary CI Node setup before candidate installation', () => {
     expect(consumer.jobs.prepare!.with).toMatchObject({ node_version: '24', resolve_node_support: '${{ inputs.verification_topology == \'optimized-v2\' }}' })
     expect(run.outputs).toMatchObject({ node_version: '${{ steps.toolchain.outputs.node-version }}', node_support_matrix: '${{ steps.node-support-plan.outputs.matrix }}' })
     expect(consumer.jobs['node-support-v2']!.strategy?.matrix).toEqual({ include: '${{ fromJSON(needs.prepare.outputs.node_support_matrix) }}' })
-    for (const major of ['22', '24']) {
+    for (const major of ['22', '24', '26']) {
       const resolver = run.steps!.find(step => step.id === `support-latest-${major}`)!
       expect(resolver.if).toBe('inputs.resolve_node_support')
       expect(resolver.uses).toBe('./.github/actions/setup-node')
@@ -159,8 +166,8 @@ describe('ordinary CI Node setup before candidate installation', () => {
     }
     expect(run.steps!.find(step => step.id === 'node-support-plan')).toMatchObject({
       if: 'inputs.resolve_node_support',
-      env: { SUPPORT_LATEST_22: '${{ steps.support-latest-22.outputs.node-version }}', SUPPORT_LATEST_24: '${{ steps.support-latest-24.outputs.node-version }}' },
-      run: 'node scripts/nodeSupport/index.mjs plan .cache/node-support-tarballs/ci-provenance.json .tmp/consumer-plan/node-support.json "$SUPPORT_LATEST_22" "$SUPPORT_LATEST_24"',
+      env: { SUPPORT_LATEST_22: '${{ steps.support-latest-22.outputs.node-version }}', SUPPORT_LATEST_24: '${{ steps.support-latest-24.outputs.node-version }}', SUPPORT_LATEST_26: '${{ steps.support-latest-26.outputs.node-version }}' },
+      run: 'node scripts/nodeSupport/index.mjs plan .cache/node-support-tarballs/ci-provenance.json .tmp/consumer-plan/node-support.json "$SUPPORT_LATEST_22" "$SUPPORT_LATEST_24" "$SUPPORT_LATEST_26"',
     })
     for (const [source, version] of frozenSetupSources) {
       const [file, job] = source.split('/')

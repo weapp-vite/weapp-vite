@@ -21,7 +21,7 @@ export function minimumNodeVersions(engines) {
 export function createNodeSupportPlan(identity, minimums, latest) {
   assertFrozenConsumerIdentity(identity)
   const roles = [22, 24, 26].map(major => ({ id: `minimum-${major}`, node: normalizedNodeVersion(minimums[major]) }))
-  for (const major of [22, 24]) {
+  for (const major of [22, 24, 26]) {
     const node = normalizedNodeVersion(latest[major])
     assert.equal(Number(node.split('.')[0]), major, 'Floating Node major mismatch')
     const comparison = (left, right) => left.split('.').map(Number).reduce((result, part, index) => result || part - Number(right.split('.')[index]), 0)
