@@ -198,6 +198,7 @@
     "@vercel/detect-agent": "^1.2.7",
     "@volar/language-service": "^2.4.31",
     "@volar/typescript": "^2.4.31",
+    "@vue/compiler-core": "catalog:",
     "@vue/language-core": "catalog:",
     "@weapp-core/constants": "workspace:*",
     "@weapp-core/init": "workspace:*",
