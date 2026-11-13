@@ -1,10 +1,16 @@
 import type { BenchmarkOutputChanges } from './outputChanges'
+import { watch } from 'node:fs'
 import { mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { waitForBenchmarkOutput } from './emittedOutput'
 import { createBenchmarkOutputChanges } from './outputChanges'
+
+vi.mock('node:fs', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:fs')>()
+  return { ...actual, watch: vi.fn(actual.watch) }
+})
 
 describe('event assisted complete output observation', () => {
   let root: string
@@ -46,6 +52,12 @@ describe('event assisted complete output observation', () => {
   })
 
   it('retains a hint received while an asynchronous read was in flight', async () => {
+    let notify!: () => void
+    const watcher = { on: vi.fn().mockReturnThis(), close: vi.fn() }
+    vi.mocked(watch).mockImplementationOnce((...args) => {
+      notify = args.at(-1) as () => void
+      return watcher as unknown as ReturnType<typeof watch>
+    })
     const changes = observe()
     let firstRead = true
     await expect(waitForBenchmarkOutput(async () => {
@@ -54,9 +66,9 @@ describe('event assisted complete output observation', () => {
       }
       firstRead = false
       const before = changes.revision
-      const event = changes.wait(before, 2_000)
       await writeFile(path.join(root, 'index.wxml'), '<view>target</view>')
-      await event
+      // 本例只锁定读取与提示的顺序，真实目录事件由上面的原子替换用例覆盖。
+      notify()
       expect(changes.revision).toBeGreaterThan(before)
       return '<view>old</view>'
     }, 'target', { timeoutMs: 3_000, intervalMs: 60_000, changes }))
