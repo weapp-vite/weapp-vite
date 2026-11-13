@@ -1,8 +1,21 @@
 import type { ProcessIdentityMetadata, VerifiedTerminalProcess } from '../types'
 import type { NativeInventory } from './closure'
-import type { NativeFrame } from './model'
+import type { NativeFrame, NativeRow } from './model'
 import { DARWIN_INSPECTOR_PHASES } from '../processInventory/darwinInspector/types'
 import { completeNativeLiveRow, hasNativeExitEvidence, insideInstallation, metadata, sameNativeIdentity } from './model'
+
+/** 外来退出证明只需身份与映像；仅 RSS 的明确 EPERM 不影响归属，原始拒绝仍保留。 */
+function completePreparedForeignRow(row: NativeRow) {
+  const { before, after, pathBefore, pathAfter, task, gaps } = row.entry
+  if (completeNativeLiveRow(row)) {
+    return row.identity?.uid === task.identity?.uid && sameNativeIdentity(row.identity, task.identity)
+  }
+  return [before, after].every(read => read.result === 0 && read.length > 0 && read.errno === 0)
+    && [pathBefore, pathAfter].every(read => read.count > 0 && read.errno === 0)
+    && row.imageSource === 'kernel-path' && row.images?.length === 1
+    && task.count === 0 && task.errno === 1 && task.identity === null && task.rssBytes === null
+    && row.rssBytes === null && gaps.length === 1 && gaps[0] === 'rss-unavailable'
+}
 
 /** 准备帧中的外部活体及祖先均须完整核验；此证明不能提供锚点的映像或 RSS。 */
 export function preparedForeignAncestry(inventory: NativeInventory, frame: NativeFrame, pid: number, installationRoot: string) {
@@ -14,10 +27,9 @@ export function preparedForeignAncestry(inventory: NativeInventory, frame: Nativ
     const tracked = inventory.tracked.get(current)
     if (!row || !tracked || visiting.has(current) || inventory.selectedSeen.has(current)
       || tracked.imageEvidenceConflict || tracked.textImageEvidenceConflict
-      || !completeNativeLiveRow(row) || row.identityChanged || row.imageChanged || !row.identity || row.identity.zombie
+      || !completePreparedForeignRow(row) || row.identityChanged || row.imageChanged || !row.identity || row.identity.zombie
       || row.identity.pid !== current || !sameNativeIdentity(row.identity, row.finalIdentity)
-      || row.identity.uid !== row.finalIdentity?.uid || row.identity.uid !== row.entry.task.identity?.uid
-      || !sameNativeIdentity(row.identity, row.entry.task.identity)
+      || row.identity.uid !== row.finalIdentity?.uid
       || row.images!.some(image => insideInstallation(installationRoot, image))) {
       return null
     }

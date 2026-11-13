@@ -123,6 +123,43 @@ describe('complete native exit at the RSS anchor', () => {
     expect(report.nativeFrames?.slice(1).map(value => value.rows.find(row => row.pid === 33)?.before)).toEqual([null, null, null])
   })
 
+  it('proves a foreign anchor exit when prepare RSS alone was denied', async () => {
+    const live = entry(33, { rssBytes: null, identity: { uid: 0 } })
+    live.gaps = ['rss-unavailable']
+    frames([live], [exited()], [], [])
+    const report = await sample()
+    expect(report).toMatchObject({
+      installationRssBytes: { status: 'observed', value: 1000 },
+      closureOwnership: { status: 'observed', value: 'verified' },
+      verifiedTerminalProcessCount: 1,
+      identityChangedProcessCount: 1,
+      verifiedTerminalProcesses: [{ process: { pid: 33 }, proof: 'prepare-proven-foreign-then-anchor-exit' }],
+    })
+    expect(report.processes).toEqual([expect.objectContaining({ pid: 11, rssBytes: 1000 })])
+    expect(report.nativeFrames?.[0]?.rows.find(row => row.pid === 33)?.rss).toEqual({ count: 0, errno: 1, identity: null, bytes: null })
+    expect(report.nativeFrames?.[1]?.rows.find(row => row.pid === 33)?.before).toBeNull()
+  })
+
+  it.each([
+    ['task errno', (row: DarwinProcessEntry) => { row.task.errno = 3 }],
+    ['task count', (row: DarwinProcessEntry) => { row.task.count = 232 }],
+    ['task identity', (row: DarwinProcessEntry) => { row.task.identity = row.before.identity }],
+    ['task RSS', (row: DarwinProcessEntry) => { row.task.rssBytes = '1000' }],
+    ['missing RSS gap', (row: DarwinProcessEntry) => { row.gaps = [] }],
+    ['extra gap', (row: DarwinProcessEntry) => { row.gaps.push('identity-before-unavailable') }],
+    ['path denial', (row: DarwinProcessEntry) => { row.pathBefore.errno = 1 }],
+    ['identity denial', (row: DarwinProcessEntry) => { row.before.errno = 1 }],
+    ['UID drift', (row: DarwinProcessEntry) => { row.after.identity!.uid = 502 }],
+    ['selected image', (row: DarwinProcessEntry) => { row.pathBefore.executable = row.pathAfter.executable = fixtureSelected }],
+    ['selected ancestor', (row: DarwinProcessEntry) => { row.enumeratedIdentity.parentPid = row.before.identity!.parentPid = row.after.identity!.parentPid = 11 }],
+    ['unknown ancestor', (row: DarwinProcessEntry) => { row.enumeratedIdentity.parentPid = row.before.identity!.parentPid = row.after.identity!.parentPid = 77 }],
+  ] as const)('keeps RSS-denied preparation blocking for %s', async (_name, mutate) => {
+    const live = entry(33, { rssBytes: null })
+    live.gaps = ['rss-unavailable']
+    mutate(live)
+    await rejected([live], [exited(33, live.enumeratedIdentity.parentPid)], [], [])
+  })
+
   it('accepts stable identity reads bracketed around a confirmed kernel exit', async () => {
     frames([entry(33)], [exitedWithReadableIdentity()], [], [])
     const report = await sample()
