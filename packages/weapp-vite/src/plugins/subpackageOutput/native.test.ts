@@ -23,7 +23,7 @@ it('rejects inaccessible physical assets in a native host and preserves public o
     })
     await expect(compile(false)).rejects.toThrow('跨分包资源')
     await compile(true)
-    const files = await readdir(path.join(fixture.root, 'dist'), { recursive: true })
+    const files = (await readdir(path.join(fixture.root, 'dist'), { recursive: true })).map(file => path.normalize(file))
     for (const route of fixture.routes) {
       for (const extension of ['js', 'json', 'wxml', 'wxss']) {
         expect(files).toContain(`${route}.${extension}`)
