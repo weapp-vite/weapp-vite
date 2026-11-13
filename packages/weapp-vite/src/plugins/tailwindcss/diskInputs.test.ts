@@ -2,7 +2,7 @@ import type { CompilerGenerateResult } from 'weapp-tailwindcss/core'
 import type { CompilerContext } from '../../context'
 import { mkdtemp, realpath, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
-import path from 'node:path'
+import path from 'pathe'
 import { expect, it, vi } from 'vitest'
 import { getHmrRuntimeSession } from '../../runtime/hmrRuntimeSession'
 import { CompilerHmrResyncError } from '../compilerPlugin/hmr'
@@ -10,7 +10,7 @@ import { compilerNativeScriptVersion, observeCompilerInputs } from '../utils/sou
 import { captureTailwindDiskInputs } from './diskInputs'
 
 async function fixture(run: (ctx: CompilerContext, file: string, root: string) => Promise<void>) {
-  const root = await realpath(await mkdtemp(path.join(os.tmpdir(), 'tailwind-disk-input-')))
+  const root = path.normalize(await realpath(await mkdtemp(path.join(os.tmpdir(), 'tailwind-disk-input-'))))
   const file = path.join(root, 'new-source.ts')
   const ctx = { configService: { outDir: path.join(root, 'dist'), isDev: true } } as CompilerContext
   try {

@@ -167,7 +167,7 @@ describe('independent CI preparation with unchanged validation scope', () => {
   it('packs once per OS on Node24 and retains every consumer host, profile and supported Node version', () => {
     const consumer = read('validate-ci-vite-host-consumer.yml')
     if (baseline) {
-      expect(consumer.jobs['node-support'].strategy.matrix).toEqual({ os: systems, node: ['22.23.4', '24.22.1', '26.12.1', '22', '24'] })
+      expect(consumer.jobs['node-support'].strategy.matrix).toEqual({ os: systems, node: ['22.23.4', '24.22.1', '26.12.1', '22', '24', '26'] })
       expect(consumer.jobs['dependency-compatibility'].strategy.matrix).toEqual({ os: systems, manager: ['pnpm', 'npm'] })
       for (const [name, files] of Object.entries(consumerContractGroups)) {
         const job = consumer.jobs[name]
@@ -187,7 +187,7 @@ describe('independent CI preparation with unchanged validation scope', () => {
     const child = read('reusable-consumer-platform.yml')
     expect(child.jobs.prepare.with.node_version).toBe('24')
     expect(child.jobs.prepare.with.main_command).toBe('node scripts/consumerArtifacts/manifest.mjs pack .cache/node-support-tarballs')
-    expect(child.jobs['node-support'].strategy.matrix.node).toEqual(['22.23.4', '24.22.1', '26.12.1', '22', '24'])
+    expect(child.jobs['node-support'].strategy.matrix.node).toEqual(['22.23.4', '24.22.1', '26.12.1', '22', '24', '26'])
     expect(child.jobs['dependency-compatibility'].strategy.matrix.manager).toEqual(['pnpm', 'npm'])
     expect(child.jobs.consumer.strategy.matrix.toolchain).toEqual(['wv', 'vite', 'vite-plus'])
     for (const profile of ['stateful', 'classic', 'react', 'independent', 'worker', 'plugin', 'lib', 'platform', 'web']) {

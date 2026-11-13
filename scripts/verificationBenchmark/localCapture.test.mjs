@@ -3,7 +3,10 @@ import { mkdir, mkdtemp, readdir, readFile, realpath, rm, symlink, writeFile } f
 import os from 'node:os'
 import path from 'node:path'
 import { afterEach, expect, it, vi } from 'vitest'
+import { useIsolatedCaptureTestEnvironment } from './captureTestFixture.ts'
 import { captureVerificationSample } from './localCapture.mjs'
+
+useIsolatedCaptureTestEnvironment()
 
 const mocks = vi.hoisted(() => ({ run: vi.fn(), identity: vi.fn(), inputs: vi.fn() }))
 vi.mock('execa', () => ({ execa: mocks.run }))

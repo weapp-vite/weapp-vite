@@ -1,12 +1,30 @@
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
-import { expect, it, vi } from 'vitest'
+import { afterEach, expect, it, vi } from 'vitest'
 import { consumerEntryPackages, createConsumerArtifact, verifyConsumerArtifact } from './manifest.mjs'
 
 const packConsumerTarballs = vi.hoisted(() => vi.fn())
+const environment = vi.hoisted(() => ({ nodeVersion: '24.22.1' }))
 
 vi.mock('../../packages/weapp-vite/scripts/consumerTarballs.mjs', () => ({ packConsumerTarballs }))
+vi.mock('node:process', async (importOriginal) => {
+  const original = await importOriginal()
+  return {
+    default: {
+      ...original.default,
+      versions: {
+        ...original.default.versions,
+        get node() { return environment.nodeVersion },
+      },
+    },
+  }
+})
+
+afterEach(() => {
+  environment.nodeVersion = '24.22.1'
+  vi.resetAllMocks()
+})
 
 it('binds every candidate archive to the builder identity and detects tampering', async () => {
   const directory = await mkdtemp(path.join(os.tmpdir(), 'consumer-artifact-'))
@@ -50,4 +68,10 @@ it('packs every declared consumer entry package before validating the closure', 
   finally {
     await rm(root, { recursive: true, force: true })
   }
+})
+
+it.each(['22.23.4', '26.13.1'])('rejects packing on Node %s before creating archives', async (nodeVersion) => {
+  environment.nodeVersion = nodeVersion
+  await expect(createConsumerArtifact('unused-root', 'unused-output')).rejects.toThrow('Consumer artifacts must be built on Node 24')
+  expect(packConsumerTarballs).not.toHaveBeenCalled()
 })

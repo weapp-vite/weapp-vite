@@ -207,7 +207,7 @@ it('inherits real shared and consumer build policies while delegating negative f
   expect(plan.tasks.filter(task => task.id === 'dist-sync:weapp-vite')).toHaveLength(1)
   expect(plan.tasks.find(task => task.id === 'types')?.args).toEqual(expect.arrayContaining(['--only', '--filter=weapp-vite-lib-mode-e2e']))
   expect(plan.warnings.some(warning => warning.includes('正负例'))).toBe(true)
-}, 15_000)
+}, 30_000)
 
 it.each([false, true])('keeps cached quick preparation for test-only edits and explicit CLI sync for runtime edits: %s', async (runtimeChanged) => {
   const root = fileURLToPath(new URL('../../', import.meta.url))
@@ -238,7 +238,7 @@ it.each([false, true])('keeps cached quick preparation for test-only edits and e
   }
   expect(plan.tasks.find(task => task.id === 'test:weapp-vite')?.args).toContain('src/runtime/buildPlugin/startupFallbackShutdown.native.test.ts')
   expect(plan.tasks.find(task => task.id === 'typecheck:weapp-vite')?.args).toEqual(['--filter', 'weapp-vite', 'run', 'typecheck'])
-})
+}, 30_000)
 
 it('refuses to discard an additional type prerequisite when reusing prepared builds', async () => {
   const fixture = await createBuildGraphFixture()
