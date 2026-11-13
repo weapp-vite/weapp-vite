@@ -19,7 +19,7 @@ for (const kind of ['native', 'wevu']) {
       const projectPath = path.join(repository, '.cache/acceptance-fixtures', kind)
       execFileSync(process.execPath, [path.join(repository, 'packages/weapp-vite/bin/weapp-vite.js'), 'build'], { cwd: projectPath, stdio: 'pipe', timeout: 60_000 })
       // 构建和启动各自有界，外层钩子必须等待启动完成，不能超时后与下一项目重叠。
-      pendingProgram = launchAutomator({ projectPath, skipWarmup: true, timeout: 90_000, maxLaunchRetries: 1 })
+      pendingProgram = launchAutomator({ projectPath, trustProject: true, skipWarmup: true, timeout: 90_000, maxLaunchRetries: 1 })
       program = await pendingProgram
     }, 180_000)
     afterAll(async () => {

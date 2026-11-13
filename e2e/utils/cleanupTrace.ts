@@ -15,6 +15,7 @@ type CleanupTraceStage
     | 'dev-kernel-identities'
     | 'dev-taskkill'
     | 'dev-ipc-exit'
+    | 'dev-ipc-exit-after-error'
     | 'dev-owned-exit'
     | 'dev-stdio-drain'
 
