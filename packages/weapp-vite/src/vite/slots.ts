@@ -14,6 +14,7 @@ const descriptors: Array<[string, Plugin['enforce']?]> = [
   ['weapp-vite:context', 'pre'],
   ['weapp-vite:package-imports-query', 'pre'],
   ['weapp-vite:wasm-init', 'pre'],
+  ['weapp-vite:subpackage-output', 'post'],
   ['weapp-vite:runtime-provider:native-miniprogram', 'pre'],
   ['weapp-vite:runtime-provider:wevu-miniprogram', 'pre'],
   ['weapp-vite:preflight', 'pre'],

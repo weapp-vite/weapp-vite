@@ -18,9 +18,11 @@ it('renders current packaged asset content without resetting the page during ass
         files.set(file, content)
       }
       page.read()
+      page.readImage()
       preview.innerHTML = session.renderCurrentPage().wxml
       expect(preview.querySelector('#content')?.textContent).toBe(content ?? 'missing')
       expect(preview.querySelector('#count')?.textContent).toBe('2')
+      expect(preview.querySelector('#image-info')?.textContent).toBe(content === undefined ? 'missing' : 'png')
       expect(session.getCurrentPages()[0]).toBe(page)
     }
   }
