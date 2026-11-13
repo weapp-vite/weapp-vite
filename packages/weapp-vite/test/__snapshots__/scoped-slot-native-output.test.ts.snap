@@ -81,7 +81,7 @@ exports[`scoped slot native output snapshots > locks the emitted file tree and a
   }
 }
 ",
-  "pages/index/index.wxml": "<van-tabbar class="van-safe-area-bottom fixed z-10" fixed="{{true}}" route generic:scoped-slots-default="scoped-slot-hash-default-0" vue-slots="{{ {default:true} }}" __wvSlotOwnerId="{{__wvOwnerId || ''}}" />",
+  "pages/index/index.wxml": "<block wx:if="{{__wevuSetupReady}}"><van-tabbar class="van-safe-area-bottom fixed z-10" fixed="{{true}}" route generic:scoped-slots-default="scoped-slot-hash-default-0" vue-slots="{{ {default:true} }}" __wvSlotOwnerId="{{__wvOwnerId || ''}}" /></block>",
   "sitemap.json": "{
   "rules": []
 }
