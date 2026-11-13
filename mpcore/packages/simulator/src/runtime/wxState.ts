@@ -1675,7 +1675,7 @@ export function createHeadlessWxState(
       }
     },
     getImageInfo(option: HeadlessWxGetImageInfoOption): HeadlessWxGetImageInfoResult {
-      const fileContent = files.get(option.src)
+      const fileContent = files.get(normalizeFsPath(option.src)) ?? options.readPackageFile?.(option.src)
       if (fileContent == null) {
         throw new Error(`getImageInfo:fail file not found: ${option.src}`)
       }

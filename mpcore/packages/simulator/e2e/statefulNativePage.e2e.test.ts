@@ -170,6 +170,56 @@ it('renders mode changes from external CommonJS modules after native Page update
   }
 })
 
+it('resets state in fresh classic realms while keeping updated templates, vendor methods and computed styles', () => {
+  const files = createBrowserVirtualFiles(sources as Array<[string, string]>)
+  const host = document.createElement('div')
+  document.body.append(host)
+  const shadow = host.attachShadow({ mode: 'open' })
+  const style = document.createElement('style')
+  const preview = document.createElement('div')
+  shadow.append(style, preview)
+  let session = createBrowserHeadlessSession({ files })
+  const check = (text: string, count: number, color?: string) => {
+    const rendered = session.renderCurrentPage()
+    style.textContent = rendered.styles.cssText
+    preview.innerHTML = rendered.wxml
+    const node = preview.querySelector('#mode')!
+    expect(node.textContent).toBe(text)
+    expect(preview.querySelector('#vendor-calls')?.textContent).toBe(String(count))
+    expect(session.getCurrentPages()[0]!.data.vendorCalls).toBe(count)
+    if (color) {
+      expect(getComputedStyle(node).color).toBe(color)
+    }
+    return node
+  }
+  const tap = (node: Element) => session.callScopeMethod(node.getAttribute('data-sim-scope')!, node.getAttribute('data-sim-tap')!, {})
+  try {
+    session.reLaunch('/pages/external/index')
+    tap(check('当前模式 light 切换模式', 0))
+    check('当前模式 dark 切换模式', 1)
+    session.close()
+    const script = 'pages/external/index.js'
+    const template = 'pages/external/index.wxml'
+    files.set(script, files.get(script)!.replace('register(false);', 'register(true);'))
+    files.set(template, files.get(template)!.replace('当前模式', '模板已更新'))
+    session = createBrowserHeadlessSession({ files })
+    const fresh = session.reLaunch('/pages/external/index')
+    expect(fresh.readVendorState()).toMatchObject({ calls: 0, marker: 'runtime-vendor-hmr-updated', definitionMarker: 'runtime-vendor-hmr-updated' })
+    tap(check('模板已更新 light 切换模式', 0))
+    check('模板已更新 npm-light 切换模式', 1)
+    session.close()
+    files.set('pages/external/index.wxss', '#mode { color: #119977; }')
+    session = createBrowserHeadlessSession({ files })
+    session.reLaunch('/pages/external/index')
+    tap(check('模板已更新 light 切换模式', 0, 'rgb(17, 153, 119)'))
+    check('模板已更新 npm-light 切换模式', 1, 'rgb(17, 153, 119)')
+  }
+  finally {
+    session.close()
+    host.remove()
+  }
+})
+
 it('computes native batch styles alongside updated templates and script handlers', () => {
   const files = createBrowserVirtualFiles(sources as Array<[string, string]>)
   const initial = new Map(files)

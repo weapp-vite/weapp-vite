@@ -247,6 +247,7 @@ const IDE_TEMPLATES_PATTERNS = [
   'ide/template-wevu-features-app.test.ts',
 ]
 const IDE_FULL_CORE_PATTERNS = [
+  'ide/subpackage-output.runtime.test.ts',
   'ide/stateful-host-format.runtime.test.ts',
   'ide/native-property-delivery.runtime.test.ts',
   'ide/issue-1252-refresher.runtime.test.ts',
@@ -311,6 +312,7 @@ const IDE_GATE_TESTS = [
 ].map(testPath => path.resolve(ROOT, testPath))
 // #779 的计算样式由真实 IDE 与 simulator 的 pageStyleImports browser companion 验收；逻辑树不提供颜色证据。
 const IDE_DOM_HEADLESS_PATTERNS = [...new Set([
+  'ide/subpackage-output.runtime.test.ts',
   'ide/template-formatting.runtime.test.ts',
   'ide/template-corpus.runtime.test.ts',
   'ide/stateful-host-format.runtime.test.ts',

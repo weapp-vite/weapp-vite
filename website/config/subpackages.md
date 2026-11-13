@@ -21,6 +21,43 @@ keywords:
 
 [[toc]]
 
+## 输出路径中的 `[subpackage]` {#subpackage-output-placeholder}
+
+`build.assetsDir` 和 `build.rolldownOptions.output.chunkFileNames` 支持可选目录占位符 `[subpackage]`。它使用产物命名归属的完整分包 `root`，例如 `packages/feature`，不使用分包可选的 `name`。主包展开为空，并移除空目录段的分隔符。
+
+```ts
+export default defineConfig({
+  build: {
+    assetsDir: '[subpackage]/assets',
+  },
+})
+```
+
+参与默认命名的主包资源输出到 `assets/`，分包专属资源输出到 `packages/feature/assets/`。JS、CSS、图片和字体继续由 Vite/Rolldown 发射并维护引用与 hash。页面、组件等固定文件名入口及 `publicDir` 原样复制文件保持原有路径。
+
+需要单独指定 JS chunk 路径时，可以设置：
+
+```ts
+export default defineConfig({
+  build: {
+    assetsDir: '[subpackage]/assets',
+    rolldownOptions: {
+      output: {
+        chunkFileNames: '[subpackage]/chunks/[name]-[hash].js',
+      },
+    },
+  },
+})
+```
+
+显式 `chunkFileNames` 完整覆盖默认 chunk 模板，不再拼接 `assetsDir`；函数返回的模板也支持占位符。不使用 `[subpackage]` 时，保持普通的 `outDir` 相对路径语义，不自动添加分包前缀。`[name]`、`[hash]` 等原生占位符仍由 bundler 展开。
+
+占位符必须作为完整目录段且最多出现一次。对跨多个分包的混合 chunk 或缺少来源信息的资源，使用占位符时会给出明确诊断；可拆分分组、为插件资源提供 `originalFileName`，或显式采用不含占位符的命名模板。
+
+同内容资源继续遵循 bundler 原生去重。如果资源落在某个分包，而合并来源或实际引用方还包含主包或其他分包，构建会报错，避免生成跨分包访问资源的产物。同一份物理源文件被多个包引用时也会校验；同步共享 chunk 的间接资产依赖和聚合 CSS 的资源引用同样受此约束。此时可显式设置不含占位符的 `assetFileNames`，让共享资源输出到主包公共目录；不会在输出阶段搬移文件或复制资源。库模式等原本不消费 `assetsDir` 的场景保持 Vite 的既有行为。
+
+此能力只扩展命名，不改变动态导入模式、分块策略或宿主分包加载能力。
+
 ## `weapp.styles` {#weapp-styles}
 
 - **类型**：`StyleConfigEntry | StyleConfigEntry[]`
@@ -162,7 +199,7 @@ export default defineConfig({
 对象结构为：
 
 ```ts
-{
+interface StyleConfigEntry {
   source: string
   scope?: 'all' | 'pages' | 'components'
   include?: string | string[]
