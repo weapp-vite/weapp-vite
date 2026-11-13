@@ -3,7 +3,10 @@ import picomatch from 'picomatch'
 import { expect, it, vi } from 'vitest'
 import { mergeMiniprogram } from './miniprogram'
 
-vi.mock('./plugins', () => ({ arrangePlugins: vi.fn() }))
+vi.mock('./plugins', async importOriginal => ({
+  ...await importOriginal<typeof import('./plugins')>(),
+  arrangePlugins: vi.fn(),
+}))
 
 it.each([
   { cwd: '/project', output: undefined, emitted: '/project/dist/index.js' },

@@ -291,7 +291,8 @@ export async function collectMarkdownPaths() {
 }
 
 export function isPartialDocument(relativePath: string) {
-  return path.posix.basename(relativePath).startsWith('_')
+  return relativePath.split('/').includes('.partials')
+    || path.posix.basename(relativePath).startsWith('_')
 }
 
 async function resolveMarkdownIncludes(absolutePath: string, seen = new Set<string>()): Promise<string> {

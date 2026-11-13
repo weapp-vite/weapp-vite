@@ -9,6 +9,7 @@ export type {
   WevuJsxEventHandler,
   WevuJsxGlobalComponents,
   WevuJsxHostAttributes,
+  WevuJsxTeleportProps,
 } from 'wevu/jsx-runtime'
 
 // eslint-disable-next-line ts/no-namespace -- JSX 命名空间用于 jsxImportSource 类型推导。

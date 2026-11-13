@@ -12,8 +12,9 @@ const arrangePluginsMock = vi.hoisted(() => vi.fn())
 const resolveBuiltinPackageAliasesMock = vi.hoisted(() => vi.fn(() => []))
 const cleanupTargets = new Set<string>()
 
-vi.mock('./plugins', () => {
+vi.mock('./plugins', async (importOriginal) => {
   return {
+    ...await importOriginal<typeof import('./plugins')>(),
     arrangePlugins: arrangePluginsMock,
   }
 })
@@ -37,6 +38,8 @@ function mergeMiniprogramForTsconfig(
   platform = 'weapp',
   reactConfig?: { renderer?: 'legacy' | 'auto' | 'native-dom' },
   wevuConfig?: { renderer?: 'legacy' | 'auto' | 'native-dom' },
+  oxcRolldownPlugin?: { name: string },
+  isDev = true,
 ) {
   return mergeMiniprogram(
     {
@@ -53,12 +56,12 @@ function mergeMiniprogramForTsconfig(
       configFilePath,
       configFileDependencies: [],
       packageJson: undefined,
-      isDev: true,
+      isDev,
       applyRuntimePlatform: vi.fn(),
       injectBuiltinAliases: vi.fn(),
       getDefineImportMetaEnv: () => ({}),
       setOptions: vi.fn(),
-      oxcRolldownPlugin: undefined,
+      oxcRolldownPlugin,
     },
     undefined,
   )
@@ -88,6 +91,20 @@ describe('runtime config merge miniprogram', () => {
     }))
     expect(() => mergeMiniprogramForTsconfig('/project', {}, undefined, 'weapp', { renderer: 'native-dom' }))
       .toThrow(/仅支持 tt 平台/)
+  })
+
+  it.each([true, false])('preserves configured Rolldown plugins in dev=%s', async (isDev) => {
+    const root = await createTempProject('weapp-merge-plugins-')
+    const legacy = { name: 'weapp-runtime:swc-es5-transform' }
+    const user = { name: 'user-output-transform' }
+    const oxc = { name: 'oxc' }
+    for (const builtin of [undefined, oxc]) {
+      const result = mergeMiniprogramForTsconfig(root, {
+        build: { rolldownOptions: { plugins: [builtin, [legacy, false, user]] } },
+      }, undefined, 'weapp', undefined, undefined, builtin, isDev)
+      const plugins = result.build?.rolldownOptions?.plugins
+      expect(plugins).toEqual(builtin ? [oxc, legacy, user] : [legacy, user])
+    }
   })
 
   it('resolves miniprogram watch include patterns for src and plugin roots', () => {

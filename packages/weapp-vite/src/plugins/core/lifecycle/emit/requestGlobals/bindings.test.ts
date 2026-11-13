@@ -4,6 +4,7 @@ import { REQUEST_GLOBAL_INSTALLER_MARKER, REQUEST_GLOBAL_PASSIVE_BINDINGS_MARKER
 import { describe, expect, it } from 'vitest'
 import { createRequestGlobalsPassiveBindingsCode, FULL_REQUEST_GLOBAL_TARGETS } from '../../../../../runtime/config/internal/injectRequestGlobals'
 import { injectRequestGlobalsBundleRuntime, injectRequestGlobalsLocalBindings, injectRequestGlobalsPassiveBindings } from '../requestGlobals'
+import { RequestGlobalsAnalysisCache } from './analysis'
 
 function execute(code: string) {
   const context = vm.createContext({ module: { exports: {} }, exports: {} })
@@ -23,6 +24,31 @@ const declarations = [
 ]
 
 describe('request globals preserve output bindings', () => {
+  it.each([false, true])('reuses inline installation after its constants initialize, cached=%s', (cached) => {
+    for (const dependency of ['', 'const dependency = require(\'./base.js\');']) {
+      const bundle = fixture(`${dependency}
+        const targets = ['URL'];
+        function fetch() { return 'own-fetch'; }
+        function installWebRuntimeGlobals() {
+          if (!targets.some(target => target === 'URL')) throw new Error('missing target');
+          return { URL: class { value() { return 'ready'; } }, fetch };
+        }
+        exports.installWebRuntimeGlobals = installWebRuntimeGlobals;
+        const host = installWebRuntimeGlobals(installWebRuntimeGlobals());
+        exports.host = host;
+        exports.value = new URL().value();
+        exports.fetchValue = fetch();`)
+      const analysis = cached ? { cache: new RequestGlobalsAnalysisCache() } : undefined
+      const installers = injectRequestGlobalsBundleRuntime(bundle, ['URL', 'fetch'], 'explicit', undefined, analysis)
+      injectRequestGlobalsLocalBindings(bundle, installers, ['URL', 'fetch'], 'explicit', new Map([['support', { type: 'page' }]]), undefined, analysis)
+      const context = vm.createContext({ exports: {}, require: () => ({}) })
+      vm.runInContext(`(function(exports, require) {${(bundle['support.js'] as OutputChunk).code}\n})(exports, require)`, context)
+      expect(context.exports.value).toBe('ready')
+      expect(context.exports.fetchValue).toBe('own-fetch')
+      expect(new context.exports.host.URL().value()).toBe('ready')
+    }
+  })
+
   it.each(declarations)('preserves existing declarations in passive chunks: %s', (declaration) => {
     const bundle = fixture(`${declaration}\nexports.value = fetch();`)
     injectRequestGlobalsPassiveBindings(bundle, new Map(), ['fetch'], 'explicit', undefined)

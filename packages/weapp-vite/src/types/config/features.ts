@@ -357,6 +357,15 @@ export interface WeappVueTemplateConfig {
   classStyleRuntime?: 'auto' | 'wxs' | 'js'
   objectLiteralBindMode?: 'runtime' | 'inline'
   mustacheInterpolation?: 'compact' | 'spaced'
+  /**
+   * @description Vue `<Teleport>` 映射为小程序 `root-portal` 的配置；`unsupported` 默认 `warn`。
+   */
+  teleport?: {
+    /** @description 是否启用映射，默认 `true`；关闭后剥掉 Teleport 标签并原位渲染子节点。 */
+    enabled?: boolean
+    /** @description 不可映射时的诊断级别，默认 `warn`。 */
+    unsupported?: 'warn' | 'error'
+  }
   classStyleWxsShared?: boolean
   functionPropNames?: Array<string | RegExp>
 }

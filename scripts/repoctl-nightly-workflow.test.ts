@@ -162,6 +162,8 @@ describe('repoctl nightly workflow', () => {
       `${nightly}/nightly-report.json`,
       `${nightly}/consumer-report.json`,
       `${snapshot}/snapshot-report.json`,
+      `${snapshot}/publication/repoctl-publish-progress.json`,
+      `${snapshot}/publication/pnpm-publish-summary.json`,
       `${snapshot}/tarballs/0/package.tgz`,
       `${snapshot}/tarballs/41/package.tgz`,
     ]

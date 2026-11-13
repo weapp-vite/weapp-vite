@@ -10,7 +10,7 @@ import { applyCompilerTemplateWrappers, mergeCompilerLayoutUsingComponents } fro
 import { extractJsonMacroFromScriptSetup, mayContainJsonMacro } from '../vue/transform/jsonMacros'
 import { createJsonMerger } from '../vue/transform/jsonMerge'
 import { transformScript } from '../vue/transform/script'
-import { createJsxDiagnostics } from './compileJsx/diagnostics'
+import { createJsxDiagnostics, reportJsxDiagnostics } from './compileJsx/diagnostics'
 import { injectDynamicIslandRuntime, stripRenderOptionFromScript } from './compileJsx/script'
 import { compileJsxTemplateAndCollectComponents } from './compileJsx/template'
 import { createJsxTemplateRegistrationSignature } from './templateRegistration'
@@ -74,6 +74,7 @@ export async function compileJsxFile(
   const {
     template: rawTemplate,
     warnings: templateWarnings,
+    warningDiagnostics,
     bindingManifest,
     inlineExpressions,
     classStyleBindings,
@@ -183,11 +184,9 @@ export async function compileJsxFile(
   })
 
   const diagnostics = templateWarnings.length
-    ? createJsxDiagnostics(templateWarnings, filename)
+    ? createJsxDiagnostics(templateWarnings, filename, warningDiagnostics)
     : undefined
-  if (diagnostics && options?.warn) {
-    diagnostics.forEach(diagnostic => options.warn?.(diagnostic.message))
-  }
+  reportJsxDiagnostics(diagnostics, options?.warn)
 
   let configObj: Record<string, any> | undefined
 

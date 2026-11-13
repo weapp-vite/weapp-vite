@@ -1,6 +1,6 @@
 # repoctl 发布流程
 
-仓库使用正式版 `repoctl@6.6.0`，根 `package.json` 与锁文件保持精确版本。正式版、预发布版、单包 bootstrap、npm nightly 和 OIDC 审计共用 `Release`（`release.yml`），继续使用现有 npm Trusted Publisher 绑定。PR snapshot 使用官方独立构建与发布工作流，只需要内置 GitHub token 和 npm OIDC，无须 GitHub App 或发布 PAT。
+仓库使用正式版 `repoctl@6.6.1`，根 `package.json` 与锁文件保持精确版本。正式版、预发布版、单包 bootstrap、npm nightly 和 OIDC 审计共用 `Release`（`release.yml`），继续使用现有 npm Trusted Publisher 绑定。PR snapshot 使用官方独立构建与发布工作流，只需要内置 GitHub token 和 npm OIDC，无须 GitHub App 或发布 PAT。
 
 ## 正式版与预发布版
 
@@ -132,7 +132,7 @@ CI Policy 在既有审批后检查公开包与 changeset 的完整对应，测�
 
 正式发布包消费验证与发布回归通过后，本仓库已移除整份 `@icebreakers__monorepo@6.3.1.patch` 及对应登记，直接消费上游实现。公共 deadline、consumer 和工作流回归继续保留，`pnpm test:release` 仍为完整发布门禁；本次仅升级发布工具，不添加 changeset，也不联动 `create-weapp-vite` 版本。
 
-42 个公开包按顺序打包、上传和消费验证，原 90 分钟 job 上限曾在最后一个包上传时终止；现将整个 job 上限设为 240 分钟，为发布确认、严格入口检查与诊断保留时间。该上限是作业容量预算，不代表覆盖所有网络故障的最坏耗时。
+全部公开包按顺序打包、上传和消费验证，原 90 分钟 job 上限曾在最后一个包上传时终止；现将整个 job 上限设为 240 分钟，为发布确认、严格入口检查与诊断保留时间。该上限是作业容量预算，不代表覆盖所有网络故障的最坏耗时。
 
 Vitest setup 导出通过 `repoctl.packageCheck.runtimeContexts` 显式声明测试框架上下文。打包检查和发布后的 consumer 均使用隔离安装的真实 Vitest CLI 执行 setup。自动路由的占位入口声明 `expected-error` 契约，实际导入必须抛出精确的平台保护错误；意外成功或其他错误都会失败。其他导出继续直接验证 Node 导入，所有声明仍使用 `--strict --skipLibCheck false` 检查。
 
@@ -151,13 +151,17 @@ pnpm add wevu@snapshot-nightly
 
 带内部 peer 依赖的组合以成功运行 Summary 中的完整批次安装命令为准。需要固定复现时使用报告中的精确 snapshot 版本，避免浮动 tag 后续更新。
 
-运行保留 `nightly-report.json`、`snapshot-report.json`、`consumer-report.json` 与 tarball 14 天。附件按原生输出目录的固定层级匹配，避免递归扫描隔离源码和 consumer 的依赖树。上传确认成功但 consumer 失败时，整次运行仍失败；先检查报告，修正问题后手动运行新的 nightly。不能把定时去重后的跳过当成 consumer 已通过。
+运行保留 `nightly-report.json`、`snapshot-report.json`、`consumer-report.json`、publication 目录中的上传进度和摘要，以及 tarball 14 天。附件按原生输出目录的固定层级匹配，避免递归扫描隔离源码和 consumer 的依赖树。上传失败时先按精确版本回读 registry，区分已确认与尚未上传的包；上传确认成功但 consumer 失败时，整次运行仍失败。先检查报告，修正问题后手动运行新的 nightly，不能把定时去重后的跳过当成 consumer 已通过。
+
+上游诊断修复 [#1171](https://github.com/icelib/repoctl/pull/1171) 随 `6.6.1` [正式运行 43271060614](https://github.com/icelib/repoctl/actions/runs/43271060614) 发布，已完成 registry 确认、记账与文档部署。静默 JSON 上传错误保留退出码、终止信号和末尾最多 8,000 字符的命令输出，先脱敏凭证再写入报告，JSON stdout 仍保持完整。发生上传失败时检查报告的 `error` 和 publication 进度，再核对 registry；不能仅凭命令参数推断网络或权限原因，也不能把打包阶段的 consumer 通过当成整批发布后消费验证成功。
+
+[验收运行 43276575545](https://github.com/weapp-vite/weapp-vite/actions/runs/43276575545) 已上传并确认全部 46 包，registry 的版本、来源身份、integrity 和 nightly tag 均匹配，所有 `latest` 未变化。consumer 安装成功后，严格类型检查发现 `@mpcore/vitest` 的同名 matcher 与 Vitest browser 的 `Assertion` 扩展冲突（TS2320）。共享 matcher 改在 `Assertion` 中声明兼容签名，小程序专用 matcher 继续保留接收值约束；补充同时加载 browser matcher 的 `tsd` 合约与文本参数运行时回归，不关闭 `skipLibCheck=false` 检查。该批次仍保留失败状态，不能将已完成的上传视为消费验收通过；修复后由新源码的 Nightly 完成整批验收。
 
 pnpm 12.18 安装新发布依赖时会追加精确 `minimumReleaseAgeExclude`，配置必须可原位修改。旧 repoctl 的 nightly 和 prepared snapshot consumer 用多行 JSON 写入 `pnpm-workspace.yaml`，虽能读取，但 pnpm 追加配置时报 `ERR_PNPM_WORKSPACE_MANIFEST_WRITER_UNSUPPORTED_INLINE_BLOCK`。上游修复 [#1170](https://github.com/icelib/repoctl/pull/1170) 统一使用内部 YAML block 生成器，保留本轮精确版本例外及默认安装安全策略；两条路径均用真实 pnpm 12.18、本地 registry 覆盖旧格式失败、新格式成功和外部 peer 例外追加。修复的 patch changeset 随已有的 [6.6.0 版本批次 #1168](https://github.com/icelib/repoctl/pull/1168) 发布，[正式运行 43203606792](https://github.com/icelib/repoctl/actions/runs/43203606792) 已完成 registry 确认、发布记账及文档部署。本仓库升级正式工具后移除临时 `@icebreakers__monorepo@6.5.4.patch`，继续保留已安装包的消费契约回归。
 
 ## PR snapshot
 
-repoctl 6.2.0 已通过 [#1114](https://github.com/icelib/repoctl/pull/1114) 和 [#1116](https://github.com/icelib/repoctl/pull/1116) 提供 prepared snapshot、自动 changeset、正式 Release PR 校验和 hooks 公共入口。本仓库使用官方成对工作流 `.github/workflows/repoctl-snapshot-build.yml` 与 `.github/workflows/repoctl-snapshot-publish.yml`，固定 `repoctl@6.6.0`、pnpm 12.18.0，并复用 `pr-ci-approval`。
+repoctl 6.2.0 已通过 [#1114](https://github.com/icelib/repoctl/pull/1114) 和 [#1116](https://github.com/icelib/repoctl/pull/1116) 提供 prepared snapshot、自动 changeset、正式 Release PR 校验和 hooks 公共入口。本仓库使用官方成对工作流 `.github/workflows/repoctl-snapshot-build.yml` 与 `.github/workflows/repoctl-snapshot-publish.yml`，固定 `repoctl@6.6.1`、pnpm 12.18.0，并复用 `pr-ci-approval`。
 
 启用前，将工作流合入默认分支，并为所有公开包新增允许仓库 `weapp-vite/weapp-vite`、工作流 `repoctl-snapshot-publish.yml` 的 npm Trusted Publisher，保留 `release.yml` 的现有连接。publisher job 没有 Environment，npm 对应字段应留空；`pr-ci-approval` 保护的是 builder freeze。npm 当前允许每包最多 10 个 trusted publisher；新增配置的首次成功发布时限以 npm 页面为准。当前迁移只准备仓库配置，没有修改远端 npm 设置或执行真实发布。
 

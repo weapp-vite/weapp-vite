@@ -41,6 +41,7 @@ import type { WeappIntrinsicElementProgress } from './weappIntrinsicElements/ele
 import type { WeappIntrinsicElementRadio } from './weappIntrinsicElements/elements/radio'
 import type { WeappIntrinsicElementRadioGroup } from './weappIntrinsicElements/elements/radio-group'
 import type { WeappIntrinsicElementRichText } from './weappIntrinsicElements/elements/rich-text'
+import type { WeappIntrinsicElementRootPortal } from './weappIntrinsicElements/elements/root-portal'
 import type { WeappIntrinsicElementScrollView } from './weappIntrinsicElements/elements/scroll-view'
 import type { WeappIntrinsicElementShareElement } from './weappIntrinsicElements/elements/share-element'
 import type { WeappIntrinsicElementSlider } from './weappIntrinsicElements/elements/slider'
@@ -97,6 +98,7 @@ export type { WeappIntrinsicElementProgress } from './weappIntrinsicElements/ele
 export type { WeappIntrinsicElementRadio } from './weappIntrinsicElements/elements/radio'
 export type { WeappIntrinsicElementRadioGroup } from './weappIntrinsicElements/elements/radio-group'
 export type { WeappIntrinsicElementRichText } from './weappIntrinsicElements/elements/rich-text'
+export type { WeappIntrinsicElementRootPortal } from './weappIntrinsicElements/elements/root-portal'
 export type { WeappIntrinsicElementScrollView } from './weappIntrinsicElements/elements/scroll-view'
 export type { WeappIntrinsicElementShareElement } from './weappIntrinsicElements/elements/share-element'
 export type { WeappIntrinsicElementSlider } from './weappIntrinsicElements/elements/slider'
@@ -153,6 +155,7 @@ export interface WeappIntrinsicElements {
   radio: WeappIntrinsicElementRadio
   'radio-group': WeappIntrinsicElementRadioGroup
   'rich-text': WeappIntrinsicElementRichText
+  'root-portal': WeappIntrinsicElementRootPortal
   'scroll-view': WeappIntrinsicElementScrollView
   'share-element': WeappIntrinsicElementShareElement
   slider: WeappIntrinsicElementSlider

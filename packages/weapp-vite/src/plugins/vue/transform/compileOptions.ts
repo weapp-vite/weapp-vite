@@ -188,6 +188,7 @@ function buildCompileVueFileOptions(
   const classStyleRuntimeConfig = configService.weappViteConfig?.vue?.template?.classStyleRuntime ?? 'js'
   const objectLiteralBindMode = configService.weappViteConfig?.vue?.template?.objectLiteralBindMode ?? 'runtime'
   const mustacheInterpolation = configService.weappViteConfig?.vue?.template?.mustacheInterpolation ?? 'compact'
+  const teleport = configService.weappViteConfig?.vue?.template?.teleport
   const functionPropNames = configService.weappViteConfig?.vue?.template?.functionPropNames
   const i18nConfig = configService.platform === 'weapp'
     ? configService.weappViteConfig?.i18n
@@ -398,6 +399,7 @@ function buildCompileVueFileOptions(
       classStyleRuntime: templatePlatformOptions.classStyleRuntime,
       objectLiteralBindMode,
       mustacheInterpolation,
+      teleport,
       functionPropNames,
       templateSafeCallNames,
       formatWxml,

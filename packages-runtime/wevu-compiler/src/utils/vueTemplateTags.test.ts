@@ -64,7 +64,7 @@ describe('vueTemplateTags', () => {
 <view><text /><scroll-view />
   <TButton /><t-button /><TButton /><month /><Month /><month />
   <Foo$Bar /><ns:panel /><Widget.Part />
-  <template><slot /><component /><transition /><keep-alive /><teleport /><suspense /></template>
+  <template><slot /><component /><transition /><keep-alive /><teleport /><Teleport /><suspense /></template>
 </view>`
     expect([...collectVueTemplateTags(template, { shouldCollect: () => true })]).toEqual([
       'TButton',

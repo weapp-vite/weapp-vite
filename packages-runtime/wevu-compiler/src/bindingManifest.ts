@@ -24,14 +24,15 @@ export function createRuntimeBindingManifest(
       ? { sourceLocation: binding.sourceLocation }
       : {}),
   }))
-  const features = manifest.features.scopedSlots
-    ? { scopedSlots: true as const }
-    : undefined
+  const features: WevuRuntimeBindingManifestV1['features'] = {}
+  if (manifest.features.scopedSlots) {
+    features.scopedSlots = true
+  }
 
   return {
     version: 1,
     sourceFile: manifest.sourceFile,
     bindings,
-    ...(features ? { features } : {}),
+    ...(Object.keys(features).length ? { features } : {}),
   }
 }

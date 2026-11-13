@@ -11,12 +11,14 @@ export function toBeInTheMiniProgram(node: MiniProgramNode): MiniProgramMatcherR
   }
 }
 
-export function toHaveTextContent(node: MiniProgramNode, expected: string | RegExp): MiniProgramMatcherResult {
-  const actual = node.textContent
+export function toHaveTextContent(node: MiniProgramNode, expected?: string | number | RegExp, options?: { normalizeWhitespace: boolean }): MiniProgramMatcherResult {
+  const actual = options?.normalizeWhitespace ? node.textContent.replace(/\s+/gu, ' ').trim() : node.textContent
   if (expected instanceof RegExp) {
     expected.lastIndex = 0
   }
-  const pass = typeof expected === 'string' ? actual.includes(expected) : expected.test(actual)
+  const pass = expected === undefined
+    ? actual.length > 0
+    : expected instanceof RegExp ? expected.test(actual) : actual.includes(String(expected))
   return {
     message: () => `Expected mini-program node text ${JSON.stringify(actual)} to match ${String(expected)}.`,
     pass,
@@ -38,7 +40,7 @@ export function toHaveEmitted(
   }
 }
 
-export function toHaveAttribute(node: MiniProgramNode, name: string, expected?: string): MiniProgramMatcherResult {
+export function toHaveAttribute(node: MiniProgramNode, name: string, expected?: unknown): MiniProgramMatcherResult {
   const actual = node.getAttribute(name)
   const pass = expected === undefined ? actual !== undefined : actual === expected
   return {

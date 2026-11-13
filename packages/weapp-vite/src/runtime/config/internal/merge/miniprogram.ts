@@ -16,7 +16,7 @@ import { resolveNpmBuildCandidateDependenciesSync } from '../../../npmPlugin/ser
 import { resolveBuiltinPackageAliases } from '../../../packageAliases'
 import { normalizePreserveModulesRolldownOptions } from '../../../preserveModules'
 import { stripRollupOptions } from './inline'
-import { arrangePlugins } from './plugins'
+import { arrangePlugins, normalizePluginOptions } from './plugins'
 
 const PACKAGE_NAME_REGEX = /[-/\\^$*+?.()|[\]{}]/g
 const PATH_SEPARATOR_SPLIT_REGEX = /[/\\]+/
@@ -94,6 +94,8 @@ function normalizeInlineConfigAfterDefu(
   const mergedRolldownOptions: Record<string, any> = {
     ...(userRolldownOptions ?? {}),
     ...rolldownOptions,
+    // defu 已合入内置插件；保留降级和用户插件，并去掉重复的同实例插件。
+    plugins: [...new Set(normalizePluginOptions(userRolldownOptions?.plugins ?? rolldownOptions.plugins))],
     output: {
       ...(rolldownOptions.output as Record<string, unknown> | undefined),
       ...(userRolldownOptions?.output ?? {}),

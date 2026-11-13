@@ -301,7 +301,7 @@ jobs:
       group: npm-release-${{ github.ref }}
       cancel-in-progress: false
     runs-on: ubuntu-latest
-    # 42 个包逐个打包、上传及消费检查；90 分钟曾在最后一个包上传时终止。
+    # 全部公开包逐个打包、上传及消费检查；90 分钟曾在最后一个包上传时终止。
     # 质量门禁仍共享 45 分钟，其余时间覆盖发布确认、消费检查与诊断。
     timeout-minutes: 240
     env:
@@ -372,6 +372,7 @@ jobs:
             ${{ runner.temp }}/repoctl-nightly/*.json
             ${{ runner.temp }}/repoctl-nightly/repoctl-nightly-*/*.json
             ${{ runner.temp }}/repoctl-nightly/repoctl-nightly-*/repoctl-snapshot-*/*.json
+            ${{ runner.temp }}/repoctl-nightly/repoctl-nightly-*/repoctl-snapshot-*/publication/*.json
             ${{ runner.temp }}/repoctl-nightly/repoctl-nightly-*/repoctl-snapshot-*/tarballs/*/*.tgz
           if-no-files-found: ignore
           retention-days: 14
@@ -478,7 +479,7 @@ jobs:
       actions: read
       id-token: write
     env:
-      REPOCTL_BOOTSTRAP_TOOL_VERSION: 6.6.0
+      REPOCTL_BOOTSTRAP_TOOL_VERSION: 6.6.1
     steps:
       - name: Setup Node.js environment
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -521,7 +522,7 @@ jobs:
       contents: read
       actions: read
     env:
-      REPOCTL_BOOTSTRAP_TOOL_VERSION: 6.6.0
+      REPOCTL_BOOTSTRAP_TOOL_VERSION: 6.6.1
     steps:
       - name: Setup Node.js environment
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0

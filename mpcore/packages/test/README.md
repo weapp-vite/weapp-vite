@@ -31,6 +31,8 @@ finally {
 
 查询支持 text、role、test id、attribute、`within()` 及 `get/query/find/getAll/findAll` 变体，并保留 `$` / `$$` 选择器逃生口。`tap/input/change/blur/trigger` 会等待同步更新和 microtask 稳定后刷新逻辑树。保留的 `within()` 查询共享最新快照，并按原 runtime `nodeId` 确定范围；该 ID 缺失时查询报错，不会按相同 test id 重定位。runtime 可能在条件节点恢复等情况下复用同一路径的 `nodeId`，此时保留的节点和作用域会解析到当前快照中该 ID 对应的节点。
 
+`mpcoreMatchers.toHaveTextContent(node, expected)` 保留部分字符串与正则匹配，数字按文本比较；省略 `expected` 检查文本非空。第三个参数 `{ normalizeWhitespace: true }` 显式合并连续空白并去除首尾空白，默认保持原文本。`@mpcore/vitest` 将这些 matcher 注册到 `expect`，类型可与 Vitest browser 的 DOM matcher 同时加载。
+
 事件需要显式订阅：`events: ['change']` 从挂载阶段开始收集，`on: { change(detail, event) {} }` 同时收集并回调。挂载后可调用 `result.on('change', listener)`，返回取消订阅函数；省略 listener 时只收集。`off()` 取消对应订阅，已收集的 `emitted()` 历史保留。动态订阅复用组件实例。
 
 子组件可按标签名递归替换：

@@ -59,6 +59,8 @@ export {
 export type {
   SlotFallbackWrapperComponentAsset,
   SlotFallbackWrapperStrategy,
+  TeleportCompileOptions,
+  TeleportUnsupportedMode,
   TemplateCompileOptions,
   TemplateCompileResult,
 } from './template/types'
@@ -142,6 +144,10 @@ export function compileVueTemplateToWxml(
       bindingManifest: createBindingManifest(filename),
       runtimeBindingManifest: options?.runtimeBindingManifest ?? 'compact',
       platform: options?.platform ?? getMiniProgramTemplatePlatform(),
+      teleport: {
+        unsupported: options?.teleport?.unsupported ?? 'warn',
+        enabled: options?.teleport?.enabled !== false,
+      },
       isPage: resolveTemplateIsPage(filename, options),
       propsAliases: options?.propsAliases,
       propsDerivedKeys: options?.propsDerivedKeys,

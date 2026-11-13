@@ -29,6 +29,8 @@ import {
 } from './ast'
 import { compileJsxAttributes, extractJsxKeyExpression, isStaticClassStyleExpression, readJsxAttributeExpression } from './attributes'
 import { recordJsxBinding } from './bindingManifest'
+import { collectJsxDirectives } from './directives'
+import { compileJsxTeleport } from './teleport'
 
 type JSXChild = JSXText | JSXExpressionContainer | JSXSpreadChild | JSXElement | JSXFragment
 const DYNAMIC_ISLAND_TEMPLATE_DEPTH = 8
@@ -421,6 +423,10 @@ function compileJsxElement(node: JSXElement, context: JsxCompileContext): string
     context.warnings.push('JSX 成员标签（如 <Foo.Bar />）无法映射为小程序 WXML 组件标签，已生成 dynamic island。')
     return registerDynamicIsland(node as unknown as Expression, context, 'dynamic-component')
   }
+  const rawTag = toJsxTagName(node.openingElement.name, context)
+  if (rawTag === 'Teleport') {
+    return compileJsxTeleport(node, context, compileJsxChildren, registerDynamicIsland)
+  }
   const dynamicSpread = node.openingElement.attributes.find((attr) => {
     if (!t.isJSXSpreadAttribute(attr)) {
       return false
@@ -437,13 +443,8 @@ function compileJsxElement(node: JSXElement, context: JsxCompileContext): string
     context.warnings.push('动态 JSX spread attributes 无法映射为静态 WXML，已生成 dynamic island。')
     return registerDynamicIsland(node as unknown as Expression, context, 'dynamic-spread')
   }
-  const rawTag = toJsxTagName(node.openingElement.name, context)
   if (rawTag === 'component') {
     context.warnings.push('JSX 动态 component 无法映射为静态 WXML，已生成 dynamic island。')
-    return registerDynamicIsland(node as unknown as Expression, context, 'dynamic-component')
-  }
-  if (rawTag === 'Teleport') {
-    context.warnings.push('小程序不支持 JSX <Teleport>，已生成 dynamic island。')
     return registerDynamicIsland(node as unknown as Expression, context, 'dynamic-component')
   }
   if (rawTag === 'Transition') {
@@ -483,24 +484,7 @@ function compileJsxElement(node: JSXElement, context: JsxCompileContext): string
     context.warnings.push('动态 JSX class/style 数组或对象需要运行时合并，已生成 dynamic island。')
     return registerDynamicIsland(node as unknown as Expression, context, 'closure')
   }
-  const directives = new Map<string, Expression>()
-  for (const attribute of node.openingElement.attributes) {
-    if (!t.isJSXAttribute(attribute)) {
-      continue
-    }
-    const name = t.isJSXIdentifier(attribute.name)
-      ? attribute.name.name
-      : t.isJSXNamespacedName(attribute.name)
-        ? attribute.name.namespace.name
-        : undefined
-    if (!name?.startsWith('v-')) {
-      continue
-    }
-    const expression = readJsxAttributeExpression(attribute.value)
-    if (expression) {
-      directives.set(name, expression)
-    }
-  }
+  const directives = collectJsxDirectives(node)
   if (directives.has('v-for') || directives.has('v-slots') || directives.has('v-model') || directives.has('v-models')) {
     const directive = ['v-for', 'v-slots', 'v-model', 'v-models'].find(name => directives.has(name))!
     if (directive === 'v-model' || directive === 'v-models') {

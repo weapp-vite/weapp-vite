@@ -35,6 +35,10 @@ Wevu 提供五个 `jsxImportSource` 前缀。它们都是**纯类型入口**：�
 
 微信 `worklet:*` 命名属性目前不会进入 JSX 类型映射，因为 Wevu JSX 编译器尚不支持命名属性；类型声明不会把它们伪装成普通 `on*` 事件。
 
+## 组件映射
+
+类型入口只管类型；编译阶段的组件映射与模板共用同一套规则。例如 JSX `<Teleport to="body">` 在微信平台会映射为原生 `root-portal`，`disabled` 取反输出 `enable`；动态 `to`、spread 或非顶层目标会原位渲染子节点并给出 warning。`<Teleport>` 已在 `wevu/jsx-runtime` 中提供全局类型声明（`to` 必填，`disabled` / `defer` 可选），可直接在 TSX 中使用，无需运行时导入。需要关闭映射时，可设置 `weapp.vue.template.teleport.enabled: false`。完整规则见 [Vue 3 兼容性](/wevu/vue3-compat)。
+
 ## 配置与选择规则
 
 Weapp-vite 生成受管 TypeScript 配置时，会保持 `jsx: "preserve"`。只有项目声明了 `wevu` 依赖，才会按目标平台选择 `wevu/weapp`、`wevu/alipay` 或 `wevu/tt`；未建模的平台使用中立的 `wevu`，不会静默获得微信标签类型。

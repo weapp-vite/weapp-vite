@@ -333,4 +333,161 @@ describe('compileJsx render helpers', () => {
     expect(compileRenderableExpression(conditionalExpression, alipayContext)).toContain('a:if="{{ready}}"')
     expect(compileRenderableExpression(conditionalExpression, swanContext)).toContain('s-if="{{ready}}"')
   })
+
+  function viewChild(text: string) {
+    return t.jsxElement(
+      t.jsxOpeningElement(t.jsxIdentifier('view'), [], false),
+      t.jsxClosingElement(t.jsxIdentifier('view')),
+      [t.jsxText(text)],
+    )
+  }
+
+  function jsxTeleport(attributes: any[], children: any[] = []) {
+    const selfClosing = children.length === 0
+    return t.jsxElement(
+      t.jsxOpeningElement(t.jsxIdentifier('Teleport'), attributes, selfClosing),
+      selfClosing ? null : t.jsxClosingElement(t.jsxIdentifier('Teleport')),
+      children,
+    )
+  }
+
+  it('maps JSX Teleport with a static target to root-portal', () => {
+    const context = createJsxCompileContext()
+    const rendered = compileRenderableExpression(
+      jsxTeleport(
+        [t.jsxAttribute(t.jsxIdentifier('to'), t.stringLiteral('body'))],
+        [viewChild('A')],
+      ),
+      context,
+    )
+
+    expect(rendered).toBe('<root-portal enable="{{true}}"><view>A</view></root-portal>')
+    expect(context.warnings.some(warning => warning.includes('基础库'))).toBe(true)
+  })
+
+  it('inverts JSX Teleport disabled semantics for root-portal enable', () => {
+    const bare = compileRenderableExpression(
+      jsxTeleport([
+        t.jsxAttribute(t.jsxIdentifier('to'), t.stringLiteral('body')),
+        t.jsxAttribute(t.jsxIdentifier('disabled'), null),
+      ]),
+      createJsxCompileContext(),
+    )
+    const falseLiteral = compileRenderableExpression(
+      jsxTeleport([
+        t.jsxAttribute(t.jsxIdentifier('to'), t.stringLiteral('body')),
+        t.jsxAttribute(t.jsxIdentifier('disabled'), t.jsxExpressionContainer(t.booleanLiteral(false))),
+      ]),
+      createJsxCompileContext(),
+    )
+    const dynamic = compileRenderableExpression(
+      jsxTeleport([
+        t.jsxAttribute(t.jsxIdentifier('to'), t.stringLiteral('body')),
+        t.jsxAttribute(t.jsxIdentifier('disabled'), t.jsxExpressionContainer(t.identifier('isDisabled'))),
+      ]),
+      createJsxCompileContext(),
+    )
+
+    expect(bare).toContain('enable="{{false}}"')
+    expect(falseLiteral).toContain('enable="{{true}}"')
+    expect(dynamic).toContain('enable="{{!(isDisabled)}}"')
+  })
+
+  it('degrades JSX Teleport without a static target and keeps children', () => {
+    const dynamicContext = createJsxCompileContext()
+    const dynamic = compileRenderableExpression(
+      jsxTeleport(
+        [t.jsxAttribute(t.jsxIdentifier('to'), t.jsxExpressionContainer(t.identifier('target')))],
+        [viewChild('A')],
+      ),
+      dynamicContext,
+    )
+    expect(dynamic).toBe('<view>A</view>')
+    expect(dynamicContext.warnings.some(warning => warning.includes('动态 :to'))).toBe(true)
+
+    const missingContext = createJsxCompileContext()
+    const missing = compileRenderableExpression(jsxTeleport([], [viewChild('A')]), missingContext)
+    expect(missing).toBe('<view>A</view>')
+    expect(missingContext.warnings.some(warning => warning.includes('缺少必需的 to'))).toBe(true)
+
+    const spreadContext = createJsxCompileContext()
+    const spread = compileRenderableExpression(
+      jsxTeleport([t.jsxSpreadAttribute(t.identifier('attrs'))], [viewChild('A')]),
+      spreadContext,
+    )
+    expect(spread).toBe('<view>A</view>')
+    expect(spreadContext.warnings.some(warning => warning.includes('v-bind'))).toBe(true)
+  })
+
+  it('degrades JSX Teleport on platforms without root-portal support', () => {
+    const context = createJsxCompileContext({
+      template: {
+        platform: getMiniProgramTemplatePlatform('alipay'),
+      },
+    } as any)
+    const rendered = compileRenderableExpression(
+      jsxTeleport(
+        [t.jsxAttribute(t.jsxIdentifier('to'), t.stringLiteral('body'))],
+        [viewChild('A')],
+      ),
+      context,
+    )
+
+    expect(rendered).toBe('<view>A</view>')
+    expect(context.warnings.some(warning => warning.includes('仅在微信平台'))).toBe(true)
+  })
+
+  it('keeps v-if and v-show semantics when mapping JSX Teleport', () => {
+    const context = createJsxCompileContext()
+    const rendered = compileRenderableExpression(
+      jsxTeleport(
+        [
+          t.jsxAttribute(t.jsxIdentifier('to'), t.stringLiteral('body')),
+          t.jsxAttribute(t.jsxIdentifier('v-if'), t.jsxExpressionContainer(t.identifier('show'))),
+          t.jsxAttribute(t.jsxIdentifier('v-show'), t.jsxExpressionContainer(t.identifier('visible'))),
+        ],
+        [viewChild('A')],
+      ),
+      context,
+    )
+
+    expect(rendered).toContain(`${defaultPlatform.directives.ifAttr}="{{show}}"`)
+    expect(rendered).toContain('hidden="{{!(visible)}}"')
+    expect(rendered).toContain('<root-portal')
+  })
+
+  it('warns when JSX Teleport class/style is attached to the root-portal host', () => {
+    const context = createJsxCompileContext()
+    const rendered = compileRenderableExpression(
+      jsxTeleport(
+        [
+          t.jsxAttribute(t.jsxIdentifier('to'), t.stringLiteral('body')),
+          t.jsxAttribute(t.jsxIdentifier('class'), t.stringLiteral('overlay')),
+        ],
+        [viewChild('A')],
+      ),
+      context,
+    )
+
+    expect(rendered).toContain('class="overlay"')
+    expect(context.warnings.some(warning => warning.includes('class/style'))).toBe(true)
+  })
+
+  it('disables JSX Teleport mapping through compiler options', () => {
+    const context = createJsxCompileContext({
+      template: {
+        teleport: { enabled: false },
+      },
+    } as any)
+    const rendered = compileRenderableExpression(
+      jsxTeleport(
+        [t.jsxAttribute(t.jsxIdentifier('to'), t.stringLiteral('body'))],
+        [viewChild('A')],
+      ),
+      context,
+    )
+
+    expect(rendered).toBe('<view>A</view>')
+    expect(context.warnings).toHaveLength(0)
+  })
 })
