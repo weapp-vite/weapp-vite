@@ -15,6 +15,7 @@ import {
 import { beginComponentConstruction, discardComponentConstruction, finishComponentConstruction } from '../../runtime/componentInstance/construction'
 import { resolveComponentPropertyDefinitions } from '../../runtime/componentInstance/properties'
 import { syncComponentProperties } from '../../runtime/componentInstance/propertyBindings'
+import { attachComponentPropertyDiagnostics } from '../../runtime/componentInstance/propertyDiagnostics'
 import { resolveNativeComponentSelection } from '../../runtime/componentInstance/selection'
 import { resolveMiniProgramComponent } from '../../runtime/componentResolution'
 import { bindComponentEventHost, buildComponentTrigger } from '../../view/componentEvent'
@@ -214,6 +215,7 @@ export function createBrowserComponentInstance(
     requestRender: callback => context.session.requestRender(callback),
   }
   const componentInstance = createComponentInstance(instanceOptions)
+  attachComponentPropertyDiagnostics(componentInstance, componentEntry.filePath.replace(/^\/+/, '').replace(JS_FILE_RE, ''), context.moduleLoader.warn)
   bindAttachmentBindingScope(componentInstance, context)
   setSelectorQueryScopeId(componentInstance, componentScopeId)
   componentInstance.is = componentEntry.filePath.replace(JS_FILE_RE, '')

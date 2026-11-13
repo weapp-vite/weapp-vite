@@ -297,3 +297,9 @@ export function resolveInitialProperties(
 
   return resolved
 }
+
+/** 与真实宿主对齐：显式传入空值与未声明属性不同，String 空值会产生类型警告。 */
+export function isInvalidStringPropertyNull(definition: HeadlessComponentDefinition, key: string, value: unknown) {
+  const candidates = resolvePropertyTypeCandidates(definition.properties?.[key])
+  return value == null && candidates[0] === String && !candidates.includes(null)
+}

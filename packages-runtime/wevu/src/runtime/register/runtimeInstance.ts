@@ -28,6 +28,7 @@ import {
   WEVU_PUBLIC_RUNTIME_KEY,
   WEVU_RUNTIME_APP_KEY,
   WEVU_SETUP_CONTEXT_INSTANCE_KEY,
+  WEVU_SETUP_READY_KEY,
   WEVU_SLOT_OWNER_ID_KEY,
   WEVU_WATCH_STOPS_KEY,
 } from '@weapp-core/constants'
@@ -790,6 +791,11 @@ function mountRuntimeInstanceWithContext<D extends object, C extends ComputedDef
     })
   }
 
+  if (Object.prototype.hasOwnProperty.call((target as any).data ?? {}, WEVU_SETUP_READY_KEY)) {
+    // 与 setup 数据共用同一快照，确保原生条件分支不会先于属性数据打开。
+    ;(runtimeState as Record<string, any>)[WEVU_SETUP_READY_KEY] = true
+  }
+
   const watchStops = watchMap
     ? registerWatches(runtimeWithDefaults, watchMap, target)
     : []
@@ -913,7 +919,7 @@ function syncRuntimeStateFromNativeData(
   }
   const initialRuntimeSnapshot = (runtime as any)?.__wevu_initialRuntimeSnapshot as Record<string, any> | undefined
   for (const [key, value] of Object.entries(nativeData)) {
-    if (!key || key === 'undefined') {
+    if (!key || key === 'undefined' || key === WEVU_SETUP_READY_KEY) {
       continue
     }
     if (Object.prototype.hasOwnProperty.call(runtimeState, key)) {

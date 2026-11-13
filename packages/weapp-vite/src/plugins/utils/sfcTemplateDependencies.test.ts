@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { rebaseSfcTemplateDependencies, rebaseSfcTemplateDependency, recordSfcBlockSource, resolveSfcTemplateSource } from './sfcTemplateDependencies'
+import { rebaseSfcTemplateDependencies, rebaseSfcTemplateDependency, recordSfcBlockSource, resolveSfcBlockSource } from './sfcTemplateDependencies'
 import { collectSfcTemplateDependencies } from './vueTemplateDependencies'
 
 describe('SFC template dependency identity', () => {
@@ -10,17 +10,17 @@ describe('SFC template dependency identity', () => {
     recordSfcBlockSource(options, '@templates/body', importer, '/project/templates/body.html?raw')
     recordSfcBlockSource(options, '@templates/body', otherImporter, './other.html')
 
-    expect(resolveSfcTemplateSource(options, '@templates/body', importer)).toBe('/project/templates/body.html')
-    expect(resolveSfcTemplateSource(options, '@templates/body', otherImporter)).toBe('/project/src/components/other.html')
-    expect(resolveSfcTemplateSource({}, '@templates/body', importer)).toBeUndefined()
-    expect(resolveSfcTemplateSource(options, './body.html', importer)).toBeUndefined()
-    expect(resolveSfcTemplateSource(undefined, '@templates/body', importer)).toBeUndefined()
+    expect(resolveSfcBlockSource(options, '@templates/body', importer)).toBe('/project/templates/body.html')
+    expect(resolveSfcBlockSource(options, '@templates/body', otherImporter)).toBe('/project/src/components/other.html')
+    expect(resolveSfcBlockSource({}, '@templates/body', importer)).toBeUndefined()
+    expect(resolveSfcBlockSource(options, './body.html', importer)).toBeUndefined()
+    expect(resolveSfcBlockSource(undefined, '@templates/body', importer)).toBeUndefined()
   })
 
   it('uses the compiler relative-source fallback without guessing the block extension', () => {
     const options = {}
     recordSfcBlockSource(options, './parts/body.custom', '/project/src/pages/index.vue')
-    expect(resolveSfcTemplateSource(options, './parts/body.custom', '/project/src/pages/index.vue')).toBe('/project/src/pages/parts/body.custom')
+    expect(resolveSfcBlockSource(options, './parts/body.custom', '/project/src/pages/index.vue')).toBe('/project/src/pages/parts/body.custom')
   })
 })
 

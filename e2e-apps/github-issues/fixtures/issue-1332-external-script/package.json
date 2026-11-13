@@ -1,0 +1,16 @@
+{
+  "name": "repro-external-script",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "wv build",
+    "build:workaround": "wv build --mode workaround",
+    "repro": "node verify.mjs"
+  },
+  "dependencies": {
+    "wevu": "7.10.0"
+  },
+  "devDependencies": {
+    "weapp-vite": "7.10.0"
+  }
+}

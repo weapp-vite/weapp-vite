@@ -17,6 +17,36 @@ const resolveUsingComponentReference = vi.hoisted(() => vi.fn(async (_plugin: un
 vi.mock('../../../vue/transform/usingComponentResolver', () => ({ resolveUsingComponentReference }))
 vi.mock('../../../../logger', () => ({ default: { warn: vi.fn() } }))
 
+it.each(['../../../shared/pages/index/index.ts', '@shared/setup', 'shared-package/setup'])('resolves component imports from the selected external script source: %s', async (src) => {
+  const temporaryRoot = await realpath(await mkdtemp(path.join(os.tmpdir(), 'script-setup-origin-')))
+  try {
+    const vueEntryPath = compilerSourceId(path.join(temporaryRoot, 'src/pages/index/index.vue'))
+    const scriptId = compilerSourceId(path.join(temporaryRoot, 'shared/pages/index/index.ts'))
+    const configService = { isDev: true, weappViteConfig: {} } as CompilerContext['configService']
+    setCompilerSourceSnapshot(configService, new Map([[scriptId, 'import ReproLabel from "../../components/ReproLabel.vue";']]))
+    await applyScriptSetupUsingComponents({
+      pluginCtx: { resolve: vi.fn(async () => ({ id: scriptId })) } as unknown as PluginContext,
+      vueEntryPath,
+      source: `<script setup lang="ts" src="${src}"></script><template><ReproLabel /></template>`,
+      templatePath: '',
+      json: {},
+      configService,
+      reExportResolutionCache: new Map(),
+    })
+    expect(resolveUsingComponentReference).toHaveBeenLastCalledWith(
+      expect.anything(),
+      configService,
+      expect.any(Map),
+      '../../components/ReproLabel.vue',
+      scriptId,
+      expect.objectContaining({ localName: 'ReproLabel', fallbackRelativeImporterDir: true }),
+    )
+  }
+  finally {
+    await rm(temporaryRoot, { recursive: true, force: true })
+  }
+})
+
 it('reanalyzes resolved external blocks while preserving every src lookup and missing-source warning', async () => {
   const temporaryRoot = await realpath(await mkdtemp(path.join(os.tmpdir(), 'script-setup-src-')))
   try {

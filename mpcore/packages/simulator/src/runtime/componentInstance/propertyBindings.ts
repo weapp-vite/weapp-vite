@@ -2,6 +2,7 @@ import type { HeadlessComponentDefinition, HeadlessComponentInstance } from './t
 import { syncNativePropertyCommits } from '../../view/nativeBindings/properties'
 import { runComponentObservers } from './observers'
 import { normalizeComponentPropertyValue } from './properties'
+import { reportComponentPropertyValue } from './propertyDiagnostics'
 import { cloneValue, hasComponentPropertyValueChanged } from './shared'
 
 const consumedPageChanges = new WeakMap<HeadlessComponentInstance, string[]>()
@@ -26,6 +27,7 @@ export function syncComponentProperties(
     if (!Object.hasOwn(definition.properties ?? {}, key)) {
       continue
     }
+    reportComponentPropertyValue(instance, definition, key, value)
     const nextValue = normalizeComponentPropertyValue(definition, key, value)
     const bindingExpression = bindingExpressions[key]
     const bindingAffected = freshPageChanges && !!bindingExpression && changedPageKeys.some((changedKey) => {

@@ -6,7 +6,7 @@ import { compileVueFile } from 'wevu/compiler'
 import { extractConfigFromVue } from '../../../../utils/file/vueConfig'
 import { resolveCompilerOutputExtensions } from '../../../../utils/outputExtensions'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
-import { resolveSfcTemplateSource } from '../../../utils/sfcTemplateDependencies'
+import { resolveSfcBlockSource } from '../../../utils/sfcTemplateDependencies'
 import { createReadAndParseSfcOptions, readAndParseSfc } from '../../../utils/vueSfc'
 import { createCompileVueFileOptions } from '../compileOptions'
 import { applyComponentResolutionDependencies, getVueCompilationDependencies } from '../componentResolutionDependencies'
@@ -59,7 +59,7 @@ export async function compileAppShellRuntime(options: {
     throw new Error('应用外壳的原生插槽上下文缺少组件脚本。')
   }
   const { scriptExtension } = resolveCompilerOutputExtensions(configService.outputExtensions)
-  const templateDependency = resolveSfcTemplateSource(readOptions.resolveSrc, descriptor.template.src, sourceId)
+  const templateDependency = resolveSfcBlockSource(readOptions.resolveSrc, descriptor.template.src, sourceId)
   return {
     id: `${WEVU_APP_SHELL_VIRTUAL_PREFIX}${sourceId}`,
     sourceId,

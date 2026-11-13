@@ -17,6 +17,16 @@ function withFrozenTopology<T extends SuiteTask>(tasks: T[]) {
 useIsolatedTopologyTestEnvironment()
 
 describe('e2e suite manifest', () => {
+  it.each([1330, 1331, 1332])('runs author reproduction #%s with both runtime providers', async (issue) => {
+    const label = `ide/issue-${issue}.runtime.test.ts`
+    for (const suite of ['ide-full:github-issues', 'ide-full:exhaustive', 'ide-dom-headless', 'ide-headless-full']) {
+      const tasks = (await getSuiteTasks(suite)).filter(task => task.label === label)
+      expect(tasks).toHaveLength(1)
+      expect(tasks[0]!.args.some(arg => arg === '-t' || arg.startsWith('--testNamePattern'))).toBe(false)
+    }
+    expect(readTaskCases(path.resolve(import.meta.dirname, '../..'), label)).toHaveLength(1)
+  })
+
   it('retains Teleport template and JSX regressions in real and headless runtime inventories', async () => {
     const label = 'ide/github-issues.runtime.teleport-root-portal.test.ts'
     for (const suite of ['ide-full:github-issues', 'ide-full:exhaustive', 'ide-dom-headless', 'ide-headless-full']) {

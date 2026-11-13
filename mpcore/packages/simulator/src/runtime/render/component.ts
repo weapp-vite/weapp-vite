@@ -18,6 +18,7 @@ import {
 import { beginComponentConstruction, discardComponentConstruction, finishComponentConstruction } from '../componentInstance/construction'
 import { resolveComponentPropertyDefinitions } from '../componentInstance/properties'
 import { syncComponentProperties } from '../componentInstance/propertyBindings'
+import { attachComponentPropertyDiagnostics } from '../componentInstance/propertyDiagnostics'
 import { resolveNativeComponentSelection } from '../componentInstance/selection'
 import { getRuntimeWxsLoader } from '../wxs'
 import { readComponentConfig, resolveUsingComponent } from './registry'
@@ -172,6 +173,7 @@ export function createRuntimeComponentInstance(
     requestRender: callback => context.session.requestRender(callback),
   }
   const componentInstance = createComponentInstance(instanceOptions)
+  attachComponentPropertyDiagnostics(componentInstance, componentEntry.filePath.replaceAll('\\', '/').replace(/^\/+/, '').replace(JS_FILE_RE, ''), context.moduleLoader.warn)
   bindAttachmentBindingScope(componentInstance, context)
   setSelectorQueryScopeId(componentInstance, componentScopeId)
   componentInstance.is = componentEntry.filePath.replace(JS_FILE_RE, '')

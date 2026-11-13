@@ -5,7 +5,7 @@ import { WEVU_CLASS_STYLE_RUNTIME_MODULE } from '@weapp-core/constants'
 import { resolveMiniPlatform } from '../../../platform'
 import { normalizeFsResolvedId } from '../../../utils/resolvedId'
 import { syncVueSfcStyleDependencies } from '../../utils/invalidateEntry'
-import { rebaseSfcTemplateDependencies, resolveSfcTemplateSource } from '../../utils/sfcTemplateDependencies'
+import { rebaseSfcTemplateDependencies, resolveSfcBlockSource } from '../../utils/sfcTemplateDependencies'
 import { compilerSnapshotSourceId, getCompilerSourceSnapshot } from '../../utils/sourceSnapshot'
 import { addNormalizedWatchFiles } from '../../utils/watchFiles'
 
@@ -25,7 +25,7 @@ export function applyComponentResolutionDependencies(result: VueTransformResult,
     const meta: HostCompilationMeta = result.meta ??= {}
     meta.componentResolutionDeps = [...resolved]
   }
-  const source = resolveSfcTemplateSource(options.sfcSrc, result.bindingManifest?.sourceFile, filename)
+  const source = resolveSfcBlockSource(options.sfcSrc, result.bindingManifest?.sourceFile, filename)
   if (!source) {
     return
   }
