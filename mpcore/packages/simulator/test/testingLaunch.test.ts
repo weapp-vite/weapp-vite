@@ -77,7 +77,8 @@ Page({ data: { greeting: 'ready' }, onLoad() { console.info('page:load') } })
     })`
     const script = path.join(projectPath, 'dist/pages/index/index.js')
     fs.writeFileSync(script, source('initial', 1))
-    fs.writeFileSync(path.join(projectPath, 'dist/pages/index/index.wxml'), '<text id="result">{{marker}}:{{count}}</text>')
+    const template = path.join(projectPath, 'dist/pages/index/index.wxml')
+    fs.writeFileSync(template, '<text id="result">{{marker}}:{{count}}</text>')
     const previous = await launch({ projectPath })
     try {
       const page = (await previous.currentPage())!
@@ -89,15 +90,28 @@ Page({ data: { greeting: 'ready' }, onLoad() { console.info('page:load') } })
     }
     await expect(previous.currentPage()).rejects.toThrow(/closed/i)
     fs.writeFileSync(script, source('updated', 2))
+    fs.writeFileSync(template, '<text id="result">template:{{marker}}:{{count}}</text>')
     const next = await launch({ projectPath })
     try {
       const page = (await next.currentPage())!
-      expect(await (await page.$('#result'))!.text()).toBe('updated:0')
+      expect(await page.data()).toMatchObject({ marker: 'updated', count: 0 })
+      expect(await (await page.$('#result'))!.text()).toBe('template:updated:0')
       await page.callMethod('increment')
-      expect(await (await page.$('#result'))!.text()).toBe('updated:2')
+      expect(await (await page.$('#result'))!.text()).toBe('template:updated:2')
     }
     finally {
       await next.close()
+    }
+    fs.writeFileSync(path.join(projectPath, 'dist/pages/index/index.wxss'), '#result { color: #119977; }')
+    const styled = await launch({ projectPath })
+    try {
+      const page = (await styled.currentPage())!
+      expect(await page.data()).toMatchObject({ marker: 'updated', count: 0 })
+      await page.callMethod('increment')
+      expect(await (await page.$('#result'))!.text()).toBe('template:updated:2')
+    }
+    finally {
+      await styled.close()
     }
   })
 

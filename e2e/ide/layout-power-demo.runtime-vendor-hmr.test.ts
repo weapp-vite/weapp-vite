@@ -61,18 +61,19 @@ describe('layout-power-demo runtime vendor HMR in real WeChat DevTools', { concu
       layoutStateCheckpoint('script-new-title', '切回海报读取新脚本定义并保留累计交互', 'poster', 7, { posterTitle: UPDATED_POSTER_TITLE }),
       layoutStateCheckpoint('new-page', '重新进入页面检查更新后的定义用于新实例', 'default', 1),
       ...feedbackRoundCheckpoints('after-script', 1, { posterTitle: UPDATED_POSTER_TITLE }),
-      layoutStateCheckpoint('template-updated', '模板热更新后检查新文案及保留的海报布局计数', 'poster', 5, { posterTitle: UPDATED_POSTER_TITLE, description: UPDATED_DESCRIPTION }),
+      layoutStateCheckpoint('template-updated', '模板触发 classic 刷新后检查新文案及重置的默认布局', 'default', 1, { description: UPDATED_DESCRIPTION }),
       {
-        ...layoutStateCheckpoint('style-before', '切到命令布局检查样式更新前的真实标题颜色', 'command', 6, { description: UPDATED_DESCRIPTION }),
+        ...layoutStateCheckpoint('style-before', '刷新后切到命令布局检查交互及样式更新前的真实颜色', 'command', 2, { description: UPDATED_DESCRIPTION }),
         nodes: [
-          ...layoutStateCheckpoint('style-before-state', '样式更新前状态', 'command', 6, { description: UPDATED_DESCRIPTION }).nodes,
+          ...layoutStateCheckpoint('style-before-state', '样式更新前状态', 'command', 2, { description: UPDATED_DESCRIPTION }).nodes,
           { selector: commandTitleSelector, query: 'xpath', text: '命令外壳', styles: { color: 'rgb(255, 255, 255)' }, visible: true },
         ],
       },
+      layoutStateCheckpoint('style-reloaded', '样式触发 classic 刷新后检查状态再次重置', 'default', 1, { description: UPDATED_DESCRIPTION }),
       {
-        ...layoutStateCheckpoint('style-updated', '样式热更新后检查真实颜色变化及布局计数保留', 'command', 6, { description: UPDATED_DESCRIPTION }),
+        ...layoutStateCheckpoint('style-updated', '样式刷新后切回命令布局检查真实颜色及交互', 'command', 2, { description: UPDATED_DESCRIPTION }),
         nodes: [
-          ...layoutStateCheckpoint('style-updated-state', '样式更新后状态', 'command', 6, { description: UPDATED_DESCRIPTION }).nodes,
+          ...layoutStateCheckpoint('style-updated-state', '样式更新后状态', 'command', 2, { description: UPDATED_DESCRIPTION }).nodes,
           { selector: commandTitleSelector, query: 'xpath', text: '命令外壳', styles: { color: 'rgb(17, 153, 119)' }, visible: true },
         ],
       },
@@ -125,12 +126,16 @@ describe('layout-power-demo runtime vendor HMR in real WeChat DevTools', { concu
     await acceptance.check('template-updated', miniProgram, page, 30_000)
     await assertRuntimeVendorOutputs()
 
+    page = await miniProgram.currentPage({ appFunctionFallback: false })
     await switchRenderedLayout(page, 'command')
     await acceptance.check('style-before', miniProgram, page)
     const nextStyle = `${originalCommandLayoutStyle}\n/* ${STYLE_MARKER} */\n.theme-layout--command .theme-layout__title {\n  color: #119977;\n}\n`
     await replaceFileByRename(COMMAND_LAYOUT_WXSS, nextStyle)
     await devProcess.waitFor(waitForFileContains(path.join(DIST_ROOT, 'layouts/command/index.wxss'), STYLE_MARKER, 30_000), 'layout-power style update')
     page = await miniProgram.currentPage({ appFunctionFallback: false })
+    await acceptance.check('style-reloaded', miniProgram, page, 30_000)
+    page = await miniProgram.currentPage({ appFunctionFallback: false })
+    await switchRenderedLayout(page, 'command')
     await acceptance.check('style-updated', miniProgram, page, 30_000)
     await assertRuntimeVendorOutputs()
     expect(devProcess.getOutput()).not.toMatch(MODULE_MISSING_RE)

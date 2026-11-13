@@ -1,6 +1,6 @@
 import type { CompilerGenerateResult } from 'weapp-tailwindcss/core'
 import type { CompilerContext } from '../../context'
-import { mkdtemp, realpath, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, realpath, rm, stat, utimes, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'pathe'
 import { expect, it, vi } from 'vitest'
@@ -64,6 +64,9 @@ it.each(['changed', 'deleted', 'ABA'] as const)('rejects %s content during disk 
         await writeFile(file, 'export const utility = "h-[31px]"')
         if (change === 'ABA') {
           await writeFile(file, 'export const utility = "h-[23px]"')
+          // 显式改变版本，避免连续等长写入落在同一文件系统时间粒度。
+          const current = await stat(file)
+          await utimes(file, current.atime, new Date(current.mtimeMs + 5_000))
         }
       }
       await expect(confirm(generated(root))).rejects.toBeInstanceOf(CompilerHmrResyncError)
