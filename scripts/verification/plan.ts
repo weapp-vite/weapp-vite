@@ -4,6 +4,7 @@ import { access } from 'node:fs/promises'
 import path from 'node:path'
 import { sharedBuildPackages, splitCliBuild, usePreparedTypeChecks } from './build.ts'
 import { DOCUMENT_CONTRACTS, isRootPolicyDocument, requiredDocumentContracts } from './classification.ts'
+import { createFileCheckTasks } from './fileChecks.ts'
 import { DEFAULT_SELECTION } from './policy.ts'
 import { isLibraryPackage, isQuickUnitTest, needsConsumerPrepare, quickBuildRoots, quickCheckPackages } from './quickScope.ts'
 import { isRootToolingInput, rootToolingContractTests } from './rootTooling.ts'
@@ -93,10 +94,10 @@ export async function createVerificationPlan(options: PlanOptions): Promise<Veri
     tasks.push(task('lint', 'lint', ['exec', 'eslint', '.'], '正式全量静态检查'))
   }
   else if (lint.length) {
-    tasks.push(task('lint', 'lint', ['exec', 'eslint', '--no-warn-ignored', ...lint], '只检查实际变更且仍存在的文件'))
+    tasks.push(...createFileCheckTasks('lint', lint))
   }
   if (styles.length) {
-    tasks.push(task('stylelint', 'stylelint', ['exec', 'stylelint', ...styles], '独立样式及 Vue style block'))
+    tasks.push(...createFileCheckTasks('stylelint', styles))
   }
   for (const check of requiredDocumentContracts(changes.files)) {
     tasks.push(task(`policy:${check}`, 'test', ['run', DOCUMENT_CONTRACTS[check]], '生成目标或规则输入保留对应最小同步契约'))
