@@ -20,6 +20,7 @@ import { createPluginProjectOutputPlugin } from './pluginProjectOutput'
 import { preflight } from './preflight'
 import { createProjectConfigDirectoryPlugin } from './projectConfig/directory'
 import { createReactPlugin, isReactEnabled } from './react'
+import { createSubpackageOutputPlugin } from './subpackageOutput'
 import { createTailwindcssPlugin } from './tailwindcss'
 import { uniAppCompatibility } from './uniApp'
 import { vue } from './vue'
@@ -94,7 +95,10 @@ export function vitePluginWeapp(
   const runtimeProvider = resolveRuntimeProvider('miniprogram', vueRuntimeEnabled ? 'vue' : 'native')
   const groups: Plugin[][] = [
     [createContextPlugin(ctx), createPackageImportsQueryPlugin(), createSelectedRuntimeProviderPlugin(runtimeProvider, ctx.configService.isDev)],
-    [createWasmPlugin(ctx, resolveWasmScope(ctx, subPackageMeta?.subPackage.independent ? subPackageMeta.subPackage.root : undefined))],
+    [createWasmPlugin(ctx, resolveWasmScope(ctx, subPackageMeta?.subPackage.independent ? subPackageMeta.subPackage.root : undefined)), createSubpackageOutputPlugin({
+      srcRoot: ctx.configService.absoluteSrcRoot,
+      roots: () => ctx.scanService.subPackageMap.keys(),
+    })],
     preflight(ctx),
     uniAppCompatibility(ctx),
     createReactPlugin(ctx),
