@@ -16,6 +16,7 @@ export function createJsxCompileContext(options?: CompileVueFileOptions): JsxCom
     mustacheInterpolation: options?.template?.mustacheInterpolation ?? 'compact',
     formatWxml: options?.template?.formatWxml ?? false,
     warnings: [],
+    warningDiagnostics: new Map(),
     bindingManifest: createBindingManifest(options?.bindingManifestSourceFile ?? ''),
     inlineExpressions: [],
     classStyleBindings: [],
@@ -30,6 +31,8 @@ export function createJsxCompileContext(options?: CompileVueFileOptions): JsxCom
     dynamicIslands: [],
     dynamicIslandSeed: 0,
     dynamicIslandMode: 'auto',
+    teleportUnsupported: options?.template?.teleport?.unsupported === 'error' ? 'error' : 'warning',
+    teleportEnabled: options?.template?.teleport?.enabled ?? true,
   }
 }
 
@@ -75,6 +78,7 @@ export function compileJsxTemplate(source: string, filename: string, options?: C
     return {
       template: undefined,
       warnings: context.warnings,
+      warningDiagnostics: context.warningDiagnostics,
       bindingManifest: context.bindingManifest,
       inlineExpressions: context.inlineExpressions,
       classStyleBindings: context.classStyleBindings,
@@ -89,6 +93,7 @@ export function compileJsxTemplate(source: string, filename: string, options?: C
   return {
     template: context.formatWxml ? formatWxml(template) : template,
     warnings: context.warnings,
+    warningDiagnostics: context.warningDiagnostics,
     bindingManifest: context.bindingManifest,
     inlineExpressions: context.inlineExpressions,
     classStyleBindings: context.classStyleBindings,
@@ -141,6 +146,7 @@ export function compileJsxTemplateAndCollectComponents(source: string, filename:
   return {
     template,
     warnings: context.warnings,
+    warningDiagnostics: context.warningDiagnostics,
     bindingManifest: context.bindingManifest,
     inlineExpressions: context.inlineExpressions,
     classStyleBindings: context.classStyleBindings,

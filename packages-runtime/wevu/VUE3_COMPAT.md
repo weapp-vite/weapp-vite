@@ -209,12 +209,24 @@ Mini-programs have different lifecycles than web:
 - `onBeforeMount()` executes immediately during setup in mini-programs
 - `onBeforeUnmount()` runs during unload, before template refs, effects and exposed methods are cleared
 
+### Teleport (Templates and JSX)
+
+`<Teleport>` does not fully emulate Web DOM target semantics; it only maps the "escape the parent stacking context" capability:
+
+- Only on WeChat, and only when `to` is a static top-level target (`body`, `html`, `#app`, `#root`), it maps to the native `root-portal`; `disabled` is inverted into `enable`.
+- Base library requirements: the `root-portal` tag needs `>= 2.25.2`, `enable` needs `>= 2.26.1` (`disabled` is silently ignored on 2.25.2–2.26.0), and `externalClass` needs `>= 3.9.2`. The compiler does not read `minSdkVersion`; the WeChat `wevu` runtime reads the host `SDKVersion` during `defineComponent`, warns once below these thresholds, and does not change the output.
+- Dynamic `:to`, `v-bind` object spread, missing/empty `to`, and non-top-level targets strip the tag and render children in place with a compile warning. Templates and JSX share the same decision logic and messages.
+- `class` / `style` land on the `root-portal` host node; the compiler emits `WV1009` and asks you to move styles to an inner node.
+- Known limitation: `root-portal` breaks `wxss` and CSS custom property (`--var`) inheritance from ancestors; do not rely on ancestor variables, and use `externalClass` (`>= 3.9.2`) or global classes in `app.wxss` as a remedy. Layer isolation from parent `transform` / `z-index` is the intended benefit.
+- To disable the mapping, set `weapp.vue.template.teleport.enabled: false`, or add a `weapp-vite:disable-teleport` comment in the file (use `<!-- ... -->` in templates). Disabled mapping renders children in place without diagnostics.
+- Diagnostic codes: `WV1004` missing `to`, `WV1005` dynamic `:to`, `WV1006` object spread, `WV1007` empty or non-top-level target, `WV1008` unsupported platform, `WV1009` class/style passthrough; `teleport.unsupported: 'error'` promotes mapping diagnostics to build errors.
+
 ### ❌ Not Applicable for Mini-Programs
 
 These Vue 3 APIs don't apply to mini-programs:
 
 - `h()` / `createElement()` - No virtual DOM in mini-programs
-- `Transition`, `KeepAlive`, `Teleport` - Built-in components
+- `Transition`, `KeepAlive` - Built-in components with no mini-program equivalent
 - `onServerPrefetch()` - No server-side rendering
 - `onRenderTracked()` / `onRenderTriggered()` - No render tracking
 

@@ -9010,5 +9010,36 @@
     "name": "page-meta",
     "docLink": "https://developers.weixin.qq.com/miniprogram/dev/component/page-meta.html",
     "since": "2.9.0"
+  },
+  {
+    "desc": [
+      "使整个子树从页面中脱离出来，类似于在 CSS 中使用 fixed position 的效果。主要用于制作弹窗、弹出层等。"
+    ],
+    "attrs": [
+      {
+        "name": "enable",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "是否从页面中脱离出来"
+        ],
+        "defaultValue": "true",
+        "since": "2.26.1"
+      },
+      {
+        "name": "externalClass",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "外部样式类"
+        ],
+        "since": "3.9.2"
+      }
+    ],
+    "name": "root-portal",
+    "docLink": "https://developers.weixin.qq.com/miniprogram/dev/component/root-portal.html",
+    "since": "2.25.2"
   }
 ]

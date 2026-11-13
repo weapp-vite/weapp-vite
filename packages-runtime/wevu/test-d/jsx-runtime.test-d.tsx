@@ -17,3 +17,10 @@ expectError(<Panel count={count} />)
 expectError(<view />)
 expectError(<arbitrary-native-tag />)
 expectNotAssignable<WevuJsxElement>(Symbol('invalid'))
+
+export const teleport = <Teleport to="body" disabled={false}>content</Teleport>
+
+expectAssignable<WevuJsxElement>(teleport)
+expectType<WevuJsxElement>(teleport)
+expectError(<Teleport />)
+expectError(<Teleport to={123} />)

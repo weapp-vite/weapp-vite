@@ -13,7 +13,21 @@ const TEMPLATE_PRESET_PLATFORMS: Record<ReturnType<typeof getMiniProgramTemplate
   swan: swanPlatform,
 }
 
-const compatibleWechatPlatform: MiniProgramPlatform = { ...defaultMiniProgramPlatform, nativeSlotContext: false }
+const compatibleWechatPlatform: MiniProgramPlatform = {
+  ...defaultMiniProgramPlatform,
+  nativeSlotContext: false,
+  supportsRootPortal: false,
+}
+
+/**
+ * 判断模板平台是否支持原生 root-portal 能力。
+ *
+ * 京东、小红书等复用微信 WXML 语法的宿主会命中兼容适配器，但同样没有 root-portal，
+ * 因此不能只凭适配器名称判断。
+ */
+export function supportsRootPortal(platform: MiniProgramPlatform): boolean {
+  return platform.supportsRootPortal === true
+}
 
 /**
  * 获取默认模板适配器。

@@ -109,6 +109,7 @@ import type {
   WevuJsxEventHandler,
   WevuJsxGlobalComponents,
   WevuJsxHostAttributes,
+  WevuJsxTeleportProps,
 } from 'wevu/jsx-runtime'
 import type { MiniProgramIntrinsicElementBaseAttributes, MiniProgramIntrinsicElements } from 'wevu/miniprogram/jsx-runtime'
 import type { TtIntrinsicElementBaseAttributes, TtIntrinsicElements } from 'wevu/tt/jsx-runtime'
@@ -411,6 +412,7 @@ type _TypeCoverage = [
   WevuJsxEventHandler,
   WevuJsxGlobalComponents,
   WevuJsxHostAttributes,
+  WevuJsxTeleportProps,
   WevuTypedRouterRouteMap,
   WevuPlugin,
 ]

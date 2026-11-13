@@ -17,6 +17,8 @@ export interface MiniProgramPlatform {
   name: string
   /** 非微信宿主复用 WXML 语法时，显式关闭原生插槽上下文协议。 */
   nativeSlotContext?: boolean
+  /** 是否支持把 Vue Teleport 映射为原生 root-portal（当前仅微信真机支持）。 */
+  supportsRootPortal?: boolean
   directives: MiniProgramDirectiveAttrs
 
   wrapIf: (exp: string, content: string, renderMustache: (exp: string) => string) => string

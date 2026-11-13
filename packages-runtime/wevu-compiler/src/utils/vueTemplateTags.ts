@@ -58,7 +58,9 @@ export function analyzeVueTemplateTags(
           return
         }
         const tag = node.tag
-        if ((!options || options.shouldCollect(tag)) && !RESERVED_VUE_COMPONENT_TAGS.has(tag) && !isBuiltinComponent(tag)) {
+        // compiler-dom 会保留 <Teleport> 这类 PascalCase 写法，保留集合统一按小写查询。
+        const normalizedTag = tag.toLowerCase()
+        if ((!options || options.shouldCollect(tag)) && !RESERVED_VUE_COMPONENT_TAGS.has(normalizedTag) && !isBuiltinComponent(tag)) {
           tags.add(tag)
         }
         node.children.forEach(visit)

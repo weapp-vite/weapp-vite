@@ -1,5 +1,6 @@
 import type { InvalidOriginalMapping, OriginalMapping } from '@jridgewell/trace-mapping'
 import type { WevuBindingManifestV1 } from '../../../../types/bindingManifest'
+import type { CompilerDiagnostic } from '../../../../types/diagnostics'
 import { originalPositionFor, TraceMap } from '@jridgewell/trace-mapping'
 import { isEncodedSourceMapLike } from '../../../../utils/sourcemap'
 
@@ -57,19 +58,28 @@ function resolveMappedSource(
 }
 
 /**
- * 将生成脚本中的 JSX binding 坐标映射回各自的原始源码。
+ * 将生成脚本中的 JSX binding 与诊断坐标映射回各自的原始源码。
  */
 export function remapJsxBindingManifestLocations(
   manifest: WevuBindingManifestV1,
   sourceMap: unknown,
   source: string | undefined,
   sourceFile?: string,
+  diagnostics: Iterable<CompilerDiagnostic> = [],
 ) {
+  const compiledSourceFile = manifest.sourceFile
+  const ownedDiagnostics = [...diagnostics].filter(item => sourceFilesMatch(item.filename, compiledSourceFile))
+  const clearLocations = () => {
+    clearBindingManifestLocations(manifest)
+    for (const diagnostic of ownedDiagnostics) {
+      diagnostic.loc = undefined
+    }
+  }
   if (sourceFile) {
     manifest.sourceFile = sourceFile
   }
   if (!source || !sourceMap) {
-    clearBindingManifestLocations(manifest)
+    clearLocations()
     return
   }
   let traceMap: TraceMap
@@ -79,7 +89,7 @@ export function remapJsxBindingManifestLocations(
     traceMap = new TraceMap(traceMapInput)
   }
   catch {
-    clearBindingManifestLocations(manifest)
+    clearLocations()
     return
   }
   const lineStartsCache = new Map<string, number[]>()
@@ -136,5 +146,21 @@ export function remapJsxBindingManifestLocations(
     }
     binding.sourceFile = start.sourceFile
     binding.sourceLocation = { start: start.position, end: end.position }
+  }
+  for (const diagnostic of ownedDiagnostics) {
+    if (!diagnostic.loc) {
+      continue
+    }
+    const start = remap(diagnostic.loc.start.line, diagnostic.loc.start.column)
+    // source map 将结束标记映射到最后一个字符，诊断区间仍须保持半开语义。
+    const last = remap(diagnostic.loc.end.line, Math.max(1, diagnostic.loc.end.column - 1))
+    const end = last && {
+      sourceFile: last.sourceFile,
+      position: { ...last.position, offset: last.position.offset + 1, column: last.position.column + 1 },
+    }
+    diagnostic.loc = start && end && start.sourceFile === end.sourceFile
+      ? { start: start.position, end: end.position }
+      : undefined
+    diagnostic.filename = start?.sourceFile ?? sourceFile ?? diagnostic.filename
   }
 }

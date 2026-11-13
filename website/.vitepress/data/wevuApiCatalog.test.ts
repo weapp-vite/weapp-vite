@@ -235,12 +235,19 @@ describe('wevu API catalog', () => {
   })
 
   it('records Vue gaps as unsupported official references', () => {
-    for (const name of ['createSSRApp()', 'app.component()', 'app.directive()', 'app.mixin()', 'app.runWithContext()', 'onWatcherCleanup()', 'useId()', '<Teleport>', 'h()', 'defineCustomElement()', 'renderToString()', 'createRenderer()']) {
+    for (const name of ['createSSRApp()', 'app.component()', 'app.directive()', 'app.mixin()', 'app.runWithContext()', 'onWatcherCleanup()', 'useId()', 'h()', 'defineCustomElement()', 'renderToString()', 'createRenderer()']) {
       const item = wevuApiCatalog.find(candidate => candidate.name === name)
       expect(item, `missing Vue baseline entry ${name}`).toBeDefined()
       expect(item?.compatibility).toBe('unsupported')
       expect(item?.vueHref).toMatch(/^https:\/\/cn\.vuejs\.org\/api\//)
     }
+  })
+
+  it('marks Teleport as a WeChat root-portal mapping instead of an unsupported gap', () => {
+    const teleport = wevuApiCatalog.find(candidate => candidate.name === '<Teleport>')
+    expect(teleport, 'missing Teleport entry').toBeDefined()
+    expect(teleport?.compatibility).toBe('vue-different')
+    expect(teleport?.vueHref).toMatch(/^https:\/\/cn\.vuejs\.org\/api\//)
   })
 
   it('covers the cataloged Router surface, including its compile-time macro', () => {

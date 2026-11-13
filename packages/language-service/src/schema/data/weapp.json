@@ -1,7 +1,7 @@
 {
   "platform": "weapp",
   "availability": "snapshot",
-  "version": "sha256:4742b305f55eea871d3469df60d48ea89d9424b80d09b732c592d2ea212ed5ba",
+  "version": "sha256:496b7aa83f88df440e5d2b23b89528c96d21cf2104616ea831df96a00e060924",
   "source": "packages-runtime/wevu/components.weapp.json",
   "snapshotDate": "2026-10-30",
   "upstreamRetrievedAt": null,
@@ -8576,6 +8576,36 @@
             "如果通过改变 `scroll-top` 属性来使页面滚动，页面滚动结束后会触发 `scrolldone` 事件"
           ],
           "since": "2.9.0"
+        }
+      ]
+    },
+    {
+      "name": "root-portal",
+      "docLink": "https://developers.weixin.qq.com/miniprogram/dev/component/root-portal.html",
+      "desc": [
+        "使整个子树从页面中脱离出来，类似于在 CSS 中使用 fixed position 的效果。主要用于制作弹窗、弹出层等。"
+      ],
+      "attrs": [
+        {
+          "name": "enable",
+          "type": {
+            "name": "boolean"
+          },
+          "desc": [
+            "是否从页面中脱离出来"
+          ],
+          "defaultValue": "true",
+          "since": "2.26.1"
+        },
+        {
+          "name": "externalClass",
+          "type": {
+            "name": "string"
+          },
+          "desc": [
+            "外部样式类"
+          ],
+          "since": "3.9.2"
         }
       ]
     }

@@ -13,7 +13,7 @@ import { compileScript } from 'vue/compiler-sfc'
 import { createWevuRuntimeCapabilityMetadata, createWevuRuntimeCapabilityMetadataFromBindingManifest, mergeWevuRuntimeCapabilityMetadata } from '../../../../runtimeCapabilities'
 import { parseJsLike, traverse } from '../../../../utils/babel'
 import { composeSourceMaps } from '../../../../utils/sourcemap'
-import { createJsxDiagnostics } from '../../../jsx/compileJsx/diagnostics'
+import { createJsxDiagnostics, reportJsxDiagnostics } from '../../../jsx/compileJsx/diagnostics'
 import { injectDynamicIslandRuntime, stripRenderOptionFromScript } from '../../../jsx/compileJsx/script'
 import { compileJsxTemplateAndCollectComponents } from '../../../jsx/compileJsx/template'
 import { getMiniProgramTemplatePlatform } from '../../compiler/template'
@@ -333,6 +333,7 @@ export async function compileScriptPhase(
         scriptMap,
         externalScriptBlock?.content ?? originalSource,
         externalScriptBlock?.src,
+        jsxTemplate.warningDiagnostics.values(),
       )
       if (jsxTemplate.template && (options?.pageLayout || options?.appShell)) {
         jsxTemplate.template = applyCompilerTemplateWrappers({
@@ -353,10 +354,8 @@ export async function compileScriptPhase(
         jsxTemplate.dynamicIslands,
       )
       if (reportJsxWarnings && jsxTemplate.warnings.length) {
-        jsxDiagnostics = createJsxDiagnostics(jsxTemplate.warnings, filename)
-        if (options?.warn) {
-          jsxDiagnostics.forEach(diagnostic => options.warn?.(diagnostic.message))
-        }
+        jsxDiagnostics = createJsxDiagnostics(jsxTemplate.warnings, filename, jsxTemplate.warningDiagnostics)
+        reportJsxDiagnostics(jsxDiagnostics, options?.warn)
       }
     }
     const jsxTransformed = isJsxScript

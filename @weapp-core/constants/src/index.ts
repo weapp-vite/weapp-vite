@@ -36,6 +36,13 @@ export const WX_WEBASSEMBLY_MIN_BASE_LIB_VERSION = '2.13.0'
 /** 微信 WXWebAssembly Worker 初始化入口最低基础库版本。 */
 export const WX_WEBASSEMBLY_WORKER_MIN_BASE_LIB_VERSION = '2.15.0'
 
+/** root-portal 标签在微信小程序中的最低基础库版本。 */
+export const ROOT_PORTAL_MIN_SDK_VERSION = '2.25.2'
+/** root-portal 的 enable 属性最低基础库版本。 */
+export const ROOT_PORTAL_ENABLE_MIN_SDK_VERSION = '2.26.1'
+/** Vue Teleport 顶层目标在小程序中的等价目标。 */
+export const ROOT_PORTAL_TOP_LEVEL_TARGETS = ['body', 'html', '#app', '#root'] as const
+
 /** 无头测试后端不支持所请求的自动化协议。 */
 export const HEADLESS_PROTOCOL_UNSUPPORTED = 'HEADLESS_PROTOCOL_UNSUPPORTED'
 
