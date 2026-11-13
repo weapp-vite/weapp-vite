@@ -1,0 +1,4 @@
+{
+  "pages": ["pages/index/index"],
+  "window": { "navigationBarTitleText": "#1331 review boundaries" }
+}

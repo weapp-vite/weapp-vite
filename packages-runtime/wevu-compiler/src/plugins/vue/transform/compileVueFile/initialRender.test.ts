@@ -5,6 +5,15 @@ import { compileVueFile } from './index'
 import { wrapInitialSetupTemplate } from './initialRender'
 
 describe('setup initial render barrier', () => {
+  it('shares the first snapshot barrier with ordinary setup return bindings', async () => {
+    const result = await compileVueFile(`<script>
+      import { computed } from 'wevu'
+      defineComponentJson({ usingComponents: { 'status-label': './StatusLabel' } })
+      export default { setup() { return { label: computed(() => 'ready') } } }
+    </script><template><StatusLabel :text="label" /></template>`, 'src/components/Host.vue')
+    expect(result.template).toContain(`wx:if="{{${WEVU_SETUP_READY_KEY}}}"`)
+    expect(result.script).toContain(`${WEVU_SETUP_READY_KEY}: false`)
+  })
   it('preserves repeated emitted attributes without hiding invalid element boundaries', () => {
     const template = '<view class="static" class="{{dynamic}}"><status-label text="{{value}}" /></view>'
     expect(wrapInitialSetupTemplate(template, wechatPlatform))

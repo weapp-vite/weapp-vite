@@ -207,7 +207,7 @@ export async function compileVueFile(
       templateCompiled.bindingManifest,
     )
   }
-  const deferInitialRender = !parsed.isAppFile && !isNativeDomCompilation(options) && parsed.descriptor.scriptSetup
+  const deferInitialRender = !parsed.isAppFile && !isNativeDomCompilation(options)
     && templateCompiled && guardInitialSetupRender(templateCompiled, scriptCompiled?.bindings)
   const scriptPhase = await compileScriptPhase(
     parsed.descriptor,

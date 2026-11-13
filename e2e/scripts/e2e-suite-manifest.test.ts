@@ -17,6 +17,17 @@ function withFrozenTopology<T extends SuiteTask>(tasks: T[]) {
 useIsolatedTopologyTestEnvironment()
 
 describe('e2e suite manifest', () => {
+  it('keeps review initialization boundaries in both providers with complete DOM plans', async () => {
+    const label = 'ide/issue-1331-boundaries.runtime.test.ts'
+    for (const suite of ['ide-full:github-issues', 'ide-full:exhaustive', 'ide-dom-headless', 'ide-headless-full']) {
+      expect((await getSuiteTasks(suite)).filter(task => task.label === label)).toHaveLength(1)
+    }
+    const cases = readTaskCases(path.resolve(import.meta.dirname, '../..'), label)
+    expect(cases).toHaveLength(1)
+    expect(cases[0]?.plans[0]?.checkpoints).toContain('id: \'initial\'')
+    expect(cases[0]?.plans[0]?.checkpoints).toContain('id: \'reentry\'')
+    expect(cases[0]?.notes).toEqual([])
+  })
   it.each([1330, 1331, 1332])('runs author reproduction #%s with both runtime providers', async (issue) => {
     const label = `ide/issue-${issue}.runtime.test.ts`
     for (const suite of ['ide-full:github-issues', 'ide-full:exhaustive', 'ide-dom-headless', 'ide-headless-full']) {

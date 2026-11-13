@@ -19,6 +19,7 @@ import { beginComponentConstruction, discardComponentConstruction, finishCompone
 import { resolveComponentPropertyDefinitions } from '../componentInstance/properties'
 import { syncComponentProperties } from '../componentInstance/propertyBindings'
 import { attachComponentPropertyDiagnostics } from '../componentInstance/propertyDiagnostics'
+import { resolveComponentViewData } from '../componentInstance/pureData'
 import { resolveNativeComponentSelection } from '../componentInstance/selection'
 import { getRuntimeWxsLoader } from '../wxs'
 import { readComponentConfig, resolveUsingComponent } from './registry'
@@ -114,7 +115,7 @@ export function createComponentScope(
       .split(CLASS_SPLIT_RE)
       .map(item => item.trim())
       .filter(Boolean),
-    data: { ...componentInstance.data },
+    data: resolveComponentViewData(componentInstance),
     dataOwner: componentInstance,
     dataset: collectDataset(clonedNode, wxsScopeData(scope)),
     ...bindComponentEventHost(clonedNode),
