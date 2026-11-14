@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useIsolatedTopologyTestEnvironment } from '../../../scripts/verification/topologyTestFixture.ts'
 import { freeze, profile } from '../../../scripts/verificationE2E/fixtures'
 import { createTaskCaseReader } from './inventory'
-import { analyzeCaseSource, importedTestSources, readFactoryTitle } from './inventoryAnalyzer'
+import { analyzeCaseSource, importedSuiteInvocations, importedTestSources, readFactoryTitle } from './inventoryAnalyzer'
 import { createInventorySourceReader, parseInventorySource } from './inventorySourceReader'
 import { createPlannedTaskCaseReader } from './taskCases'
 
@@ -73,6 +73,33 @@ describe('operation-scoped DOM source and case reuse', () => {
     expect(readCases('ide/sibling.test.ts').map(item => item.name)).toEqual(['sibling', 'leaf'])
     expect(readCases(label).map(item => item.name)).toEqual(['leaf', 'sibling'])
     expect(parse).toHaveBeenCalledTimes(3)
+  })
+
+  it('analyzes statically invoked imported suite factories from their helper source', () => {
+    write('aggregate.test.ts', [
+      'import { describeAgentAcceptanceCounter } from \'./agentAcceptanceSuite\'',
+      'describeAgentAcceptanceCounter(\'agent acceptance counter (native)\')',
+    ].join('\n'))
+    write('agentAcceptanceSuite.ts', [
+      'import { describe, it } from \'vitest\'',
+      'import { createDomAcceptance } from \'../utils/domAcceptance\'',
+      'export function describeAgentAcceptanceCounter(name: string) {',
+      '  describe(name, () => {',
+      '    it(\'observes the counter\', ctx => {',
+      '      const dom = createDomAcceptance(ctx, \'fixture\', [{ id: \'initial\', route: \'/pages/index/index\', action: \'mount\', nodes: [] }])',
+      '      dom.check(\'initial\', program, page)',
+      '    })',
+      '  })',
+      '}',
+    ].join('\n'))
+
+    expect(importedSuiteInvocations(fs.readFileSync(path.join(root, `e2e/${label}`), 'utf8'), `e2e/${label}`)).toEqual([
+      { file: 'e2e/ide/agentAcceptanceSuite.ts', call: 'describeAgentAcceptanceCounter(\'agent acceptance counter (native)\')' },
+    ])
+    const cases = createTaskCaseReader(root)(label)
+    expect(cases.map(item => item.name)).toEqual(['agent acceptance counter (native) > observes the counter'])
+    expect(cases[0]?.plans[0]).toMatchObject({ registration: 'createDomAcceptance', fixture: 'fixture' })
+    expect(cases[0]?.operations).toEqual(['check(initial)'])
   })
 
   it('freezes complete independent provider plans while sharing raw cases and observing later imported edits', async () => {

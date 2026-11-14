@@ -414,6 +414,50 @@ export function importedTestSources(content: string | ts.SourceFile, file: strin
     .map(specifier => path.posix.normalize(path.posix.join(path.posix.dirname(file), specifier.endsWith('.ts') ? specifier : `${specifier}.ts`)))
 }
 
+export function importedSuiteInvocations(content: string | ts.SourceFile, file: string) {
+  const source = typeof content === 'string' ? parseInventorySource(content, file) : content
+  const imports = new Map<string, { original: string, source: string }>()
+  for (const statement of source.statements) {
+    if (!ts.isImportDeclaration(statement) || !ts.isStringLiteral(statement.moduleSpecifier)
+      || !statement.moduleSpecifier.text.startsWith('.') || !statement.importClause?.namedBindings
+      || !ts.isNamedImports(statement.importClause.namedBindings)) {
+      continue
+    }
+    const specifier = statement.moduleSpecifier.text
+    const extension = path.posix.extname(specifier)
+    if (specifier.endsWith('.test.ts') || (extension && extension !== '.ts')) {
+      continue
+    }
+    for (const binding of statement.importClause.namedBindings.elements) {
+      imports.set(binding.name.text, { original: binding.propertyName?.text ?? binding.name.text, source: specifier })
+    }
+  }
+  const invocations: Array<{ file: string, call: string }> = []
+  for (const statement of source.statements) {
+    if (!ts.isExpressionStatement(statement) || !ts.isCallExpression(statement.expression)
+      || !ts.isIdentifier(statement.expression.expression)) {
+      continue
+    }
+    const imported = imports.get(statement.expression.expression.text)
+    if (!imported || !statement.expression.arguments.every(argument => (
+      ts.isStringLiteral(argument) || ts.isNoSubstitutionTemplateLiteral(argument)
+      || ts.isNumericLiteral(argument) || argument.kind === ts.SyntaxKind.TrueKeyword
+      || argument.kind === ts.SyntaxKind.FalseKeyword
+    ))) {
+      continue
+    }
+    const helperPath = imported.source.endsWith('.ts')
+      ? imported.source
+      : `${imported.source}.ts`
+    const args = statement.expression.arguments.map(argument => argument.getText(source)).join(', ')
+    invocations.push({
+      file: path.posix.normalize(path.posix.join(path.posix.dirname(file), helperPath)),
+      call: `${imported.original}(${args})`,
+    })
+  }
+  return invocations
+}
+
 export function readFactoryTitle(content: string | ts.SourceFile, file: string, factory: string) {
   const source = typeof content === 'string' ? parseInventorySource(content, file) : content
   for (const statement of source.statements) {

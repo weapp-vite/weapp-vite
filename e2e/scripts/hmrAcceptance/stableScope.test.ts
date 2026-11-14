@@ -31,7 +31,7 @@ describe('supported WeChat startup classic inventory', () => {
     ['hmr-build', 45, 3],
     ['ide-hmr-headless', 29, 15],
     ['ide-hmr', 35, 20],
-    ['ide-full:exhaustive', 176, 23],
+    ['ide-full:exhaustive', 177, 23],
     ['ide-dom-headless', 110, 15],
     ['ide-headless-full', 121, 15],
   ] as const)('preserves the complete %s task inventory and explicit experimental exclusions', async (suite, total, excluded) => {

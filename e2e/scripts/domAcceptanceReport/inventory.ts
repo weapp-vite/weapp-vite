@@ -10,7 +10,7 @@ import { chunkExtraCases, chunkMatrixCases, runtimeBaseRoutes, selectIdeRuntimeC
 import { CAPABILITY_FALLBACK_HOSTS, capabilityFallbackScenarios } from '../../ide/statefulHmrDom/capabilityFallbackCases'
 import { getIdeExhaustiveTasks, getIdeHeadlessTasks } from '../e2e-suite-manifest'
 import { ACCEPTANCE_ROOT } from './helpers'
-import { analyzeCaseSource, readCaseInventory, readFactoryTitle } from './inventoryAnalyzer'
+import { analyzeCaseSource, importedSuiteInvocations, readCaseInventory, readFactoryTitle } from './inventoryAnalyzer'
 import { formatDomAcceptanceInventory } from './inventoryFormatting'
 import { createInventorySourceReader } from './inventorySourceReader'
 import { collectInventorySources } from './inventorySources'
@@ -33,6 +33,11 @@ function readTaskCaseSources(root: string, label: string, templates: string[] | 
     })
   }
   const cases = readCaseInventory(root, file, templates, new Set(), readSource)
+  const importedSuites = importedSuiteInvocations(source, file).flatMap(({ file: helperFile, call }) => {
+    const helperSource = readSource(helperFile)
+    return analyzeCaseSource(`${helperSource.getFullText()}\n${call}`, helperFile)
+  })
+  cases.push(...importedSuites)
   const title = readFactoryTitle(source, file, 'createChunkModesRuntimeSuite')
   if (typeof title !== 'string') {
     return cases
