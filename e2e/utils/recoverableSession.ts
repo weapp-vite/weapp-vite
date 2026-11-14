@@ -36,6 +36,9 @@ export function createRecoverableSession<T extends object>(initial: T) {
   })
   return {
     session,
+    current() {
+      return current
+    },
     replace(next: T) {
       current = next
     },

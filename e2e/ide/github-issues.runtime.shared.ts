@@ -1172,8 +1172,16 @@ export async function releaseSharedMiniProgram(miniProgram: any) {
     return
   }
   const owner = sharedSessionOwners.get(miniProgram)
-  await closeMiniProgramSafely(owner ? owner.session : miniProgram)
-  owner?.clear()
+  if (owner) {
+    const current = owner.current()
+    if (!current) {
+      return
+    }
+    await closeMiniProgramSafely(current)
+    owner.clear()
+    return
+  }
+  await closeMiniProgramSafely(miniProgram)
 }
 
 export async function callCurrentPageMethod<T = any>(miniProgram: any, methodName: string, ...args: any[]): Promise<T> {

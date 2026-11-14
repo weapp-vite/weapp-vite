@@ -117,6 +117,28 @@ describe.each(['devtools', 'headless'])('github issues shared launch integration
     expect(next.close).toHaveBeenCalledTimes(1)
   })
 
+  it('keeps release idempotent after a failed recovery cleared the shared session', async () => {
+    const runtime = await import('../ide/github-issues.runtime.shared')
+    const miniProgram = Object.assign(createMiniProgram(), {
+      currentPage: vi.fn(async () => ({ path: '/pages/other/index' })),
+      reLaunch: vi.fn(async () => {
+        throw new Error('Connection closed, check if wechat web devTools is still running')
+      }),
+    })
+    const recoveryFailure = new Error('Automator recovery failed')
+    mocks.launch.mockResolvedValueOnce(miniProgram).mockRejectedValueOnce(recoveryFailure)
+
+    const session = await runtime.getSharedMiniProgram()
+    await expect(runtime.relaunchPage(session, '/pages/missing/index', undefined, 1, {
+      readiness: 'route',
+    })).rejects.toBe(recoveryFailure)
+
+    await expect(runtime.releaseSharedMiniProgram(session)).resolves.toBeUndefined()
+    expect(miniProgram.close).toHaveBeenCalledTimes(1)
+    expect(miniProgram.disconnect).not.toHaveBeenCalled()
+    expect(mocks.launch).toHaveBeenCalledTimes(2)
+  })
+
   it('waits for the owned close beyond the former timeout before clearing or cleaning the session', async () => {
     const runtime = await import('../ide/github-issues.runtime.shared')
     const first = createMiniProgram()

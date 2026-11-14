@@ -22,12 +22,15 @@ describe('recoverable runtime session', () => {
     const recovered = runtime('after')
     const owner = createRecoverableSession(original)
     const caller = owner.session
+    expect(owner.current()).toBe(original)
     const toolInfo = caller.toolInfo
     expect(toolInfo()).toEqual({ version: 'before' })
 
     // 旧页面连接关闭后，DOM 验收和后续导航仍使用原调用方引用。
     owner.clear()?.close()
+    expect(owner.current()).toBeUndefined()
     owner.replace(recovered)
+    expect(owner.current()).toBe(recovered)
     expect(owner.session).toBe(caller)
     expect(toolInfo()).toEqual({ version: 'after' })
     expect(caller.toolInfo()).toEqual({ version: 'after' })
