@@ -46,6 +46,7 @@ async function collectVueHmrSequence(repoRoot: string, source: string, updates: 
   let nextUpdate: PromiseWithResolvers<StatefulHmrDevEngineUpdate> | undefined
   let sourceLoads = 0
   let phase: 'initializing' | 'baseline' | 'editing' | 'idle' = 'initializing'
+  let targetPatchAwaitingDuplicateNoop = false
   const fail = (error: unknown) => {
     record('engine-failure', { phase, error: trace.error(error) })
     buildError ??= error instanceof Error ? error : new Error('Vue companion native engine failed', { cause: error })
@@ -148,10 +149,16 @@ async function collectVueHmrSequence(repoRoot: string, source: string, updates: 
           record('onHmrUpdates:initial-no-client')
           return
         }
+        const targetChange = result.changedFiles.some(file => path.resolve(root, file).replaceAll('\\', '/') === sourceId)
+        if (targetPatchAwaitingDuplicateNoop && targetChange && result.updates.length === 1 && result.updates[0]!.update.type === 'Noop') {
+          record('onHmrUpdates:duplicate-target-noop')
+          return
+        }
         assert(phase === 'editing' && nextUpdate, 'Unexpected native update outside an active Vue source edit')
-        assert(result.changedFiles.some(file => path.resolve(root, file).replaceAll('\\', '/') === sourceId), 'Vue target update must include the real edited source')
+        assert(targetChange, 'Vue target update must include the real edited source')
         assert.equal(result.updates.length, 1, 'Vue target edit requires exactly one registered client update')
         assert.equal(result.updates[0]!.update.type, 'Patch', 'Vue target edit requires a registered client Patch')
+        targetPatchAwaitingDuplicateNoop = true
         nextUpdate.resolve(result.updates[0]!.update as StatefulHmrDevEngineUpdate)
       }
       catch (error) {
@@ -245,6 +252,7 @@ async function collectVueHmrSequence(repoRoot: string, source: string, updates: 
         record('patch:coordinator-start')
         await engine.ensureCurrentBuildFinish()
         record('patch:coordinator-end', { ...await engine.getBundleState() })
+        targetPatchAwaitingDuplicateNoop = false
         if (buildError) {
           throw buildError
         }
