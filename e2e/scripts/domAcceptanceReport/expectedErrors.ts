@@ -1,5 +1,6 @@
+import type { DomExpectedError } from '../../utils/domAcceptance/types'
 import type { RuntimeDiagnostic } from './runtimeDiagnostics'
-import type { AcceptanceCaseInput, DomExpectedError } from './types'
+import type { AcceptanceCaseInput } from './types'
 
 function matchesDiagnosticMessage(event: RuntimeDiagnostic['event'], expected: DomExpectedError) {
   if (event.text === expected.text && expected.dynamicIdentifier === undefined) {
