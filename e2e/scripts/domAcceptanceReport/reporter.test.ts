@@ -339,14 +339,14 @@ describe('Vitest DOM reporter lifecycle', () => {
     expect(readReports()[0]?.runtimeDiagnostics).toMatchObject([{ caseId: null, phase: 'outside-case', event: { text: 'Startup exception' } }])
   })
 
-  it('retains and revalidates exact expected errors bound to a rendered checkpoint', () => {
+  it('retains and revalidates optional exact errors bound to a rendered checkpoint', () => {
     const journalPath = path.join(reportDir, 'runtime.jsonl')
     vi.stubEnv('WEAPP_VITE_E2E_REPORT_EVENT_LOG_FILE', journalPath)
     const reporter = new DomAcceptanceReporter()
     reporter.onTestRunStart()
     const test = createTest('passed')
     const plan = (test.meta() as { domAcceptance: DomAcceptance }).domAcceptance
-    plan.checkpoints[0]!.expectedErrors = [{ source: 'runtime', level: 'error', channel: 'runtime', text: 'Expected rejection', count: 1 }]
+    plan.checkpoints[0]!.expectedErrors = [{ source: 'runtime', level: 'error', channel: 'runtime', text: 'Expected rejection', optional: true, count: 1 }]
     plan.errorScopes = [{ checkpoint: 'mount', id: 'scope-a' }]
     reporter.onTestCaseReady(test)
     const boundary = (phase: 'start' | 'end') => ({ source: 'runtime', kind: 'message', project: 'base', level: 'debug', acceptanceScope: { id: 'scope-a', caseId: test.id, checkpointId: 'mount', boundary: phase } })
@@ -356,6 +356,7 @@ describe('Vitest DOM reporter lifecycle', () => {
     const report = readReports()[0]!
     const identity = { runId: 'test-run', commitSha }
     expect(report.errors).toEqual([])
+    expect(report.cases[0]!.acceptance!.checkpoints[0]!.expectedErrors).toEqual([{ source: 'runtime', level: 'error', channel: 'runtime', text: 'Expected rejection', optional: true, count: 1 }])
     expect(report.runtimeDiagnostics?.[1]).toMatchObject({ caseId: test.id, checkpointId: 'mount', scopeId: 'scope-a' })
     expect(() => assertAcceptanceReportPassed(report, identity)).not.toThrow()
     report.cases[0]!.acceptance!.checkpoints[0]!.expectedErrors![0]!.count = 2

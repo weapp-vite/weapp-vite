@@ -308,10 +308,33 @@ export function createHmrCapabilityFallbackSuite(
           ['config-before', 'CONFIG-A', 0, ''],
           ['config-after', 'CONFIG-B', 0, ''],
         ] as const
+        const routeDoneExpectedErrors = provider === 'devtools' && host === 'vite-plus' && reason === 'entry-topology'
+          ? [
+              {
+                source: 'runtime' as const,
+                level: 'error' as const,
+                channel: 'runtime',
+                text: 'routeDone with a webviewId {webviewId} is not found',
+                dynamicIdentifier: 'webviewId' as const,
+                optional: true,
+                count: 2,
+              },
+              {
+                source: 'runtime' as const,
+                level: 'error' as const,
+                channel: 'runtime',
+                text: 'Error: SystemError (appServiceSDKScriptError) | "[Page route 错误(system error)] routeDone with a webviewId {webviewId} is not found"',
+                dynamicIdentifier: 'webviewId' as const,
+                optional: true,
+                count: 2,
+              },
+            ]
+          : undefined
         const dom = createDomAcceptance(ctx, 'e2e-apps/stateful-hmr', stages.map<DomCheckpoint>(([id, marker, count, input]) => ({
           id,
           route: '/pages/native/index',
           action: `验收 classic 回退 ${id} 阶段的真实页面`,
+          ...(id === 'fallback' && routeDoneExpectedErrors ? { expectedErrors: routeDoneExpectedErrors } : {}),
           nodes: [
             { selector: '.marker', text: marker },
             { selector: '.count', text: String(count) },
@@ -382,7 +405,7 @@ export function createHmrCapabilityFallbackSuite(
           }
           await observeClassic('FALLBACK-A')
         }
-        await handoff()
+        await dom.act('fallback', handoff)
         page = await miniProgram.currentPage()
         await dom.check('fallback', miniProgram, page)
         await (await page.$('.increment', { fallback: false })).tap()

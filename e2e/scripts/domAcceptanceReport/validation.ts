@@ -32,6 +32,21 @@ const node = z.object({
   styles: z.record(z.string(), z.string().nullable()).optional(),
   size: z.object({ width: z.number().finite().nonnegative(), height: z.number().finite().nonnegative() }).optional(),
 })
+const expectedError = z.object({
+  source: z.enum(['build', 'runtime']),
+  level: z.enum(['error', 'exception']),
+  channel: z.string().min(1),
+  text: z.string().min(1),
+  dynamicIdentifier: z.enum(['webviewId']).optional(),
+  optional: z.boolean().optional(),
+  count: z.number().int().positive(),
+}).superRefine((error, context) => {
+  const hasWebviewId = error.text.split('{webviewId}').length === 2
+  if (hasWebviewId !== (error.dynamicIdentifier === 'webviewId')
+    || (error.dynamicIdentifier === 'webviewId' && (error.source !== 'runtime' || error.channel !== 'runtime'))) {
+    context.addIssue({ code: 'custom', message: 'Invalid dynamic IDE error identifier' })
+  }
+})
 export const serializedPlan = z.object({
   fixture: z.string().min(1),
   provider: z.enum(['devtools', 'headless']),
@@ -42,7 +57,7 @@ export const serializedPlan = z.object({
     route: z.string().min(1),
     action: z.string().min(1),
     nodes: z.array(expectation).min(1),
-    expectedErrors: z.array(z.object({ source: z.enum(['build', 'runtime']), level: z.enum(['error', 'exception']), channel: z.string().min(1), text: z.string().min(1), count: z.number().int().positive() })).optional(),
+    expectedErrors: z.array(expectedError).optional(),
   })).min(1),
   evidence: z.array(z.object({
     id: z.string().min(1),

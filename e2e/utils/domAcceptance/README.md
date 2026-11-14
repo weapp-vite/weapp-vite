@@ -34,6 +34,10 @@ const tabbarNode = {
 
 预期错误必须在测试开始时与检查点一起登记。只接受精确的来源、级别、通道、文本和正整数次数，不接受正则、子串、全局 allowlist 或从本次日志反向生成期望。
 
+宿主已知但低频的错误可以标记 `optional: true`。这只允许该检查点内完整的错误组出现指定次数，错误组完全缺失也通过；部分出现、超量、越过操作边界或文本不一致仍失败。
+
+宿主错误中若包含动态数字 webview 标识，可在 `text` 中写 `{webviewId}` 并声明 `dynamicIdentifier: 'webviewId'`；只有该位置为十进制数字且其他字符完全一致时才匹配，不接受任意正则。
+
 ```ts
 const acceptance = createDomAcceptance(context, 'e2e-apps/example', [{
   id: 'rejected',

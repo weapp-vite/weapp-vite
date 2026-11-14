@@ -1,13 +1,22 @@
 import type { RuntimeDiagnostic } from './runtimeDiagnostics'
-import type { AcceptanceCaseInput } from './types'
+import type { AcceptanceCaseInput, DomExpectedError } from './types'
 
-function matchesDiagnosticMessage(event: RuntimeDiagnostic['event'], expected: string) {
-  if (event.text === expected) {
+function matchesDiagnosticMessage(event: RuntimeDiagnostic['event'], expected: DomExpectedError) {
+  if (event.text === expected.text && expected.dynamicIdentifier === undefined) {
     return true
+  }
+  if (expected.dynamicIdentifier === 'webviewId' && event.text) {
+    const [prefix, suffix] = expected.text.split('{webviewId}')
+    if (prefix !== undefined && suffix !== undefined && event.text.startsWith(prefix) && event.text.endsWith(suffix)) {
+      const identifier = event.text.slice(prefix.length, event.text.length - suffix.length)
+      if (identifier.length && [...identifier].every(character => character >= '0' && character <= '9')) {
+        return true
+      }
+    }
   }
   // 本地与 CI 的 reporter 只改变级别前缀；保留原始日志，正文仍完整精确匹配。
   return event.source === 'build' && event.channel === 'dev-process' && event.level === 'error'
-    && event.text?.replace(/^(?:\[error\]|ERROR)[ \t]+/, '') === expected
+    && event.text?.replace(/^(?:\[error\]|ERROR)[ \t]+/, '') === expected.text
 }
 
 export function evaluateExpectedErrors(cases: AcceptanceCaseInput[], diagnostics: RuntimeDiagnostic[]) {
@@ -39,12 +48,19 @@ export function evaluateExpectedErrors(cases: AcceptanceCaseInput[], diagnostics
       }
       const startIndex = diagnostics.indexOf(boundaries[0]!)
       const endIndex = diagnostics.indexOf(boundaries[1]!)
+      const matchedErrors = new Map<DomExpectedError, RuntimeDiagnostic[]>()
       for (const expected of checkpoint.expectedErrors) {
         const matches = remaining.filter(actual => actual.caseId === item.id && actual.checkpointId === checkpoint.id
           && actual.scopeId === scopes[0]!.id && actual.event.source === expected.source && actual.event.level === expected.level
-          && actual.event.channel === expected.channel && matchesDiagnosticMessage(actual.event, expected.text)
+          && actual.event.channel === expected.channel && matchesDiagnosticMessage(actual.event, expected)
           && diagnostics.indexOf(actual) > startIndex && diagnostics.indexOf(actual) < endIndex)
-        if (matches.length !== expected.count) {
+        matchedErrors.set(expected, matches)
+      }
+      const optionalGroupPresent = checkpoint.expectedErrors.some(expected => expected.optional && matchedErrors.get(expected)!.length > 0)
+      for (const expected of checkpoint.expectedErrors) {
+        const matches = matchedErrors.get(expected)!
+        const optionalGroupAbsent = expected.optional && !optionalGroupPresent && matches.length === 0
+        if (matches.length !== expected.count && !optionalGroupAbsent) {
           violations.push(`Expected error count mismatch: ${item.id}/${checkpoint.id}: expected ${expected.count}, received ${matches.length}: ${expected.text}`)
         }
         else {

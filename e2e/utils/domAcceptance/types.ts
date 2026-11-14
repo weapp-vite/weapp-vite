@@ -33,6 +33,8 @@ export interface DomExpectedError {
   level: 'error' | 'exception'
   channel: string
   text: string
+  dynamicIdentifier?: 'webviewId'
+  optional?: boolean
   count: number
 }
 

@@ -28,6 +28,11 @@ export function validateDomPlan(plan: DomAcceptance) {
     const keys = errors.map(error => JSON.stringify([error.source, error.level, error.channel, error.text]))
     if (new Set(keys).size !== keys.length || errors.some(error => !['build', 'runtime'].includes(error.source)
       || !['error', 'exception'].includes(error.level) || !error.channel.trim() || !error.text.trim()
+      || (error.dynamicIdentifier !== undefined && (error.dynamicIdentifier !== 'webviewId'
+        || error.source !== 'runtime' || error.channel !== 'runtime'
+        || error.text.split('{webviewId}').length !== 2))
+      || (error.text.includes('{webviewId}') && error.dynamicIdentifier !== 'webviewId')
+      || (error.optional !== undefined && typeof error.optional !== 'boolean')
       || !Number.isInteger(error.count) || error.count < 1)) {
       throw new Error(`Expected DOM errors must have unique exact matches and positive counts: ${checkpoint.id}`)
     }

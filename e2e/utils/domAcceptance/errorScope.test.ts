@@ -102,6 +102,8 @@ describe('DOM checkpoint diagnostic scopes', () => {
   it('rejects broad, duplicate or nonpositive expected-error declarations', () => {
     for (const mutate of [
       (plan: DomAcceptance) => { plan.checkpoints[0]!.expectedErrors![0]!.text = '' },
+      (plan: DomAcceptance) => { Object.assign(plan.checkpoints[0]!.expectedErrors![0]!, { text: 'routeDone with a webviewId {webviewId} is not found' }) },
+      (plan: DomAcceptance) => { Object.assign(plan.checkpoints[0]!.expectedErrors![0]!, { optional: 'sometimes' }) },
       (plan: DomAcceptance) => { plan.checkpoints[0]!.expectedErrors![0]!.count = 0 },
       (plan: DomAcceptance) => { plan.checkpoints[0]!.expectedErrors!.push(plan.checkpoints[0]!.expectedErrors![0]!) },
     ]) {

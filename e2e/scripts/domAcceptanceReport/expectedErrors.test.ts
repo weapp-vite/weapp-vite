@@ -56,6 +56,60 @@ describe('exact expected IDE errors', () => {
     expect(evaluateExpectedErrors(cases, diagnostics)).toEqual([])
   })
 
+  it('classifies the known routeDone host error only with its exact message', () => {
+    const { cases, plan, diagnostics } = fixture()
+    plan.checkpoints[0]!.expectedErrors = [{
+      source: 'runtime',
+      level: 'error',
+      channel: 'runtime',
+      text: 'routeDone with a webviewId {webviewId} is not found',
+      dynamicIdentifier: 'webviewId',
+      count: 1,
+    }]
+    diagnostics[1]!.event = { ...diagnostics[1]!.event, text: 'routeDone with a webviewId 8 is not found' }
+    expect(evaluateExpectedErrors(cases, diagnostics)).toEqual([])
+    diagnostics[1]!.event.text = 'routeDone with a webviewId 009 is not found'
+    expect(evaluateExpectedErrors(cases, diagnostics)).toEqual([])
+    diagnostics[1]!.event.text = 'routeDone with a webviewId 9 is not found'
+    expect(evaluateExpectedErrors(cases, diagnostics)).toEqual([])
+    diagnostics[1]!.event.text = 'routeDone with a webviewId unknown is not found'
+    expect(evaluateExpectedErrors(cases, diagnostics).some(error => error.startsWith('Unclassified'))).toBe(true)
+    diagnostics[1]!.event.text = 'routeDone with a webviewId {webviewId} is not found'
+    expect(evaluateExpectedErrors(cases, diagnostics).some(error => error.startsWith('Unclassified'))).toBe(true)
+    diagnostics[1]!.event.text = 'routeDone with a webviewId 9 is not found (late)'
+    expect(evaluateExpectedErrors(cases, diagnostics).some(error => error.startsWith('Unclassified'))).toBe(true)
+  })
+
+  it('allows an optional host error group to be absent but rejects incomplete groups', () => {
+    const texts = ['routeDone with a webviewId {webviewId} is not found', 'wrapped routeDone with a webviewId {webviewId} is not found']
+    const createFixture = () => {
+      const value = fixture()
+      value.plan.checkpoints[0]!.expectedErrors = texts.map(text => ({
+        source: 'runtime' as const,
+        level: 'error' as const,
+        channel: 'runtime',
+        text,
+        dynamicIdentifier: 'webviewId' as const,
+        optional: true,
+        count: 2,
+      }))
+      const template = value.diagnostics.splice(1, 1)[0]!
+      value.diagnostics.splice(1, 0, ...texts.flatMap(text => Array.from({ length: 2 }, () => ({
+        ...structuredClone(template),
+        event: { ...structuredClone(template.event), text: text.replace('{webviewId}', '8') },
+      }))))
+      return value
+    }
+    const complete = createFixture()
+    expect(evaluateExpectedErrors(complete.cases, complete.diagnostics)).toEqual([])
+    complete.diagnostics.splice(1, 4)
+    expect(evaluateExpectedErrors(complete.cases, complete.diagnostics)).toEqual([])
+
+    const incomplete = createFixture()
+    incomplete.diagnostics.splice(3, 2)
+    expect(evaluateExpectedErrors(incomplete.cases, incomplete.diagnostics).some(error => error.includes('count mismatch'))).toBe(true)
+  })
+
   it.each(['text', 'channel', 'caseId', 'checkpointId', 'scopeId'] as const)('does not broaden matching for a different %s', (key) => {
     const { cases, diagnostics } = fixture()
     if (key === 'text' || key === 'channel') {
