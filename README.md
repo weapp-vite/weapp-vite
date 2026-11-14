@@ -14,14 +14,15 @@
   <a href="https://atomgit.com/sonofmagic/weapp-vite"><img src="https://atomgit.com/sonofmagic/weapp-vite/star/badge.svg" alt="GitCode Star"></a>
 </p>
 
-<p align="center"><strong>给小程序现代化的开发体验</strong></p>
+<p align="center"><strong>AI 时代，原生小程序研发的默认基线</strong></p>
 <p align="center"><a href="https://vite.weapp.dev">中文文档</a> · <a href="./README.en-US.md">English README</a></p>
 
-`weapp-vite` 面向正在维护小程序的团队：既保留原生小程序的目录、语法和平台能力，又把 TypeScript、Vite/Rolldown、Vue SFC、自动化调试和 AI 协作带进日常研发。你可以从一个新模板开始，也可以把已有项目渐进接入进来。
+`weapp-vite` 面向正在维护原生小程序的团队：保留 Page、Component、WXML、WXSS 和平台 API，同时把现代工程化、多端构建和可验证的 AI 工作流带进日常研发。它既适合从模板开始的新项目，也适合存量项目渐进接入。
 
 ## 目录
 
-- [为什么选择 weapp-vite](#为什么选择-weapp-vite)
+- [为什么选择默认基线](#为什么选择默认基线)
+- [AI 可执行闭环](#ai-可执行闭环)
 - [特性亮点](#特性亮点)
 - [快速开始](#快速开始)
 - [仓库结构](#仓库结构)
@@ -32,14 +33,27 @@
 - [Star History](#star-history)
 - [许可证](#许可证)
 
-## 为什么选择 weapp-vite
+## 为什么选择默认基线
 
-- **不必推翻现有小程序**：可以继续写原生 `Page` / `Component`、WXML、WXSS 和 JSON 配置；存量项目也能按目录迁移、配置补齐、依赖安装的方式渐进接入。
-- **把日常开发效率补齐**：TypeScript、ESM、Sass/Less、PostCSS、Tailwind CSS、JSONC、路径别名和 Vite 插件生态可以直接进入小程序工程，不再靠零散脚本拼维护体验。
-- **减少小程序工程的重复劳动**：自动构建 `miniprogram_npm`、分包依赖分析、自动导入组件、自动路由、布局、生成页面/组件等能力，适合页面多、分包多、组件多的项目。
-- **保留原生能力，同时可逐步升级写法**：团队可以先用 `weapp-vite + 原生` 稳定构建链路，再在新页面或局部模块中引入 Vue SFC 与 Wevu，而不是一次性重写业务。
-- **更适合真实小程序调试和验收**：`wv dev --open`、DevTools 配置预热、日志桥接、截图、截图对比、`preview/upload` 透传和 `analyze` 能覆盖从开发到上传前检查的常见链路。
-- **让 AI 协作落到真实运行时**：脚手架会生成 `AGENTS.md`，并可接入 MCP、DevTools 日志、运行时截图和截图对比，让 AI 不只改代码，还能按小程序环境做验证。
+- **不必推翻现有小程序**：继续写原生 `Page` / `Component`、WXML、WXSS 和 JSON 配置，按目录和模块渐进接入。
+- **现代工程能力成为默认行为**：TypeScript、ESM、Sass/Less、PostCSS、Tailwind CSS、JSONC、路径别名和 Vite 插件生态直接进入小程序工程。
+- **一次维护，多端构建**：用单目标构建覆盖微信、支付宝、抖音、百度、京东、小红书与 Web，同时保留平台边界。
+- **复杂项目有人托管**：自动构建 `miniprogram_npm`、分包依赖分析、自动导入组件、自动路由、布局和产物分析，减少重复维护。
+- **真实运行时可观察、可验收**：从 `wv dev --open` 到 DevTools 日志、截图对比、`preview/upload` 和 `analyze`，开发结果有证据可追踪。
+
+## AI 可执行闭环
+
+weapp-vite 不把 AI 当成一个聊天入口，而是把它接到真实项目的研发链路：
+
+```text
+项目上下文（AGENTS + 本地文档）
+        ↓
+MCP 工具（构建 / 日志 / 截图 / 对比）
+        ↓
+运行时证据（页面状态、控制台、视觉 diff）
+```
+
+AI 可以基于项目约定完成修改，再通过小程序运行时检查结果。查看[AI 工作流文档](https://vite.weapp.dev/guide/ai-workflows)和[统一 AI 入口](https://vite.weapp.dev/ai)。
 
 ## 特性亮点
 
@@ -47,9 +61,9 @@
 - 存量项目：通过手动集成或 `wv init` 接入现有小程序，保留原有页面结构和平台能力。
 - Vue SFC：在小程序里使用 `.vue`、`<script setup>`、JSON 宏、class/style 绑定和 Wevu 响应式运行时。
 - uni-app 组件库：通过 `WotUiResolver()` 或 `UviewPlusResolver()` 在微信小程序与 Web 中使用经过全组件矩阵验证的 Wot UI、uview-plus Vue SFC。
-- 工程体验：支持构建、开发监听、HMR、组件自动导入、自动路由、分包策略、npm 构建和产物分析。
+- 工程化：支持构建、开发监听、HMR、组件自动导入、自动路由、分包策略、npm 构建和产物分析。
 - IDE 与验收：集成 WeChat DevTools 打开、日志、截图、截图对比、预览和上传等工作流。
-- AI 友好：提供 MCP、packaged docs、skills 指引和面向真实小程序运行时的检查入口。
+- AI 可执行验证：提供 MCP、packaged docs、skills 指引和面向真实小程序运行时的检查入口。
 
 ## 快速开始
 
