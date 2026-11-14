@@ -317,6 +317,15 @@ describe('compileVueTemplateToWxml', () => {
     expect(classStyleBindings).toBeUndefined()
   })
 
+  it('separates trailing object braces from compact mustache delimiters in component bindings', () => {
+    const template = `<ResultPreview :preview="preview || { rawValueText: '—', valueText: '—' }" />`
+
+    const { code } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
+
+    expect(code).toContain(`preview="{{preview || { rawValueText: '—', valueText: '—' } }}"`)
+    expect(code).not.toContain(`preview="{{preview || { rawValueText: '—', valueText: '—' }}}"`)
+  })
+
   it('compacts multiline static object literals for WXML attributes', () => {
     const template = `
 <InfoBanner
