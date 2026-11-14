@@ -1,0 +1,5 @@
+{
+  "name": "issue-1334-mustache-object-fallback",
+  "private": true,
+  "type": "module"
+}

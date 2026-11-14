@@ -31,9 +31,9 @@ describe('supported WeChat startup classic inventory', () => {
     ['hmr-build', 45, 3],
     ['ide-hmr-headless', 29, 15],
     ['ide-hmr', 35, 20],
-    ['ide-full:exhaustive', 175, 23],
-    ['ide-dom-headless', 109, 15],
-    ['ide-headless-full', 120, 15],
+    ['ide-full:exhaustive', 176, 23],
+    ['ide-dom-headless', 110, 15],
+    ['ide-headless-full', 121, 15],
   ] as const)('preserves the complete %s task inventory and explicit experimental exclusions', async (suite, total, excluded) => {
     const original = await getSuiteTasks(suite, { topology: 'optimized-v1' })
     const supported = await getSuiteTasks(`${suite}:classic`, { topology: 'optimized-v1' })
@@ -54,7 +54,7 @@ describe('supported WeChat startup classic inventory', () => {
   it.each(['ide-full:exhaustive', 'ide-dom-headless', 'ide-headless-full'])('retains issue regression runtime tasks without classic exclusions in %s', async (suite) => {
     const original = await getSuiteTasks(suite, { topology: 'optimized-v1' })
     const supported = await getSuiteTasks(`${suite}:classic`, { topology: 'optimized-v1' })
-    for (const label of ['ide/issue-969-launch.runtime.test.ts', 'ide/issue-1249-dataset.runtime.test.ts', 'ide/issue-1252-refresher.runtime.test.ts', 'ide/issue-1263-chunk-debug-name.runtime.test.ts', 'ide/issue-1264-basic-wx-apis.runtime.test.ts', 'ide/issue-1278-classic-lease-recovery.runtime.test.ts', 'ide/issue-1295-props-projection.runtime.test.ts', 'ide/issue-1299-slot-owner.runtime.test.ts', 'ide/issue-1303-sqlite.runtime.test.ts', 'ide/issue-1304-require-async.runtime.test.ts', 'ide/issue-1313-reactive-inline.runtime.test.ts', 'ide/issue-1316-root-watch.runtime.test.ts', 'ide/issue-1330.runtime.test.ts', 'ide/issue-1331.runtime.test.ts', 'ide/issue-1331-boundaries.runtime.test.ts', 'ide/issue-1332.runtime.test.ts']) {
+    for (const label of ['ide/issue-969-launch.runtime.test.ts', 'ide/issue-1249-dataset.runtime.test.ts', 'ide/issue-1252-refresher.runtime.test.ts', 'ide/issue-1263-chunk-debug-name.runtime.test.ts', 'ide/issue-1264-basic-wx-apis.runtime.test.ts', 'ide/issue-1278-classic-lease-recovery.runtime.test.ts', 'ide/issue-1295-props-projection.runtime.test.ts', 'ide/issue-1299-slot-owner.runtime.test.ts', 'ide/issue-1303-sqlite.runtime.test.ts', 'ide/issue-1304-require-async.runtime.test.ts', 'ide/issue-1313-reactive-inline.runtime.test.ts', 'ide/issue-1316-root-watch.runtime.test.ts', 'ide/issue-1330.runtime.test.ts', 'ide/issue-1331.runtime.test.ts', 'ide/issue-1331-boundaries.runtime.test.ts', 'ide/issue-1332.runtime.test.ts', 'ide/issue-1334.runtime.test.ts']) {
       const tasks = supported.filter(task => task.label === label)
       expect(tasks).toHaveLength(1)
       expect(tasks[0]?.outOfScopeReason).toBeUndefined()

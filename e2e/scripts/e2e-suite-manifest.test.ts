@@ -28,7 +28,7 @@ describe('e2e suite manifest', () => {
     expect(cases[0]?.plans[0]?.checkpoints).toContain('id: \'reentry\'')
     expect(cases[0]?.notes).toEqual([])
   })
-  it.each([1330, 1331, 1332])('runs author reproduction #%s with both runtime providers', async (issue) => {
+  it.each([1330, 1331, 1332, 1334])('runs author reproduction #%s with both runtime providers', async (issue) => {
     const label = `ide/issue-${issue}.runtime.test.ts`
     for (const suite of ['ide-full:github-issues', 'ide-full:exhaustive', 'ide-dom-headless', 'ide-headless-full']) {
       const tasks = (await getSuiteTasks(suite)).filter(task => task.label === label)
