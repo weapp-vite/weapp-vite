@@ -1,5 +1,90 @@
 # weapp-vite
 
+## 7.11.0
+
+### Minor Changes
+
+- feat(react): 增加抖音 Render Mode V2 原生 DOM renderer 配置与后端，保留 legacy 默认行为。
+
+  同步发布共享 constants 的公开直接依赖包，确保依赖范围随新增 renderer 常量一起更新。
+
+- feat(weapp-vite): 为构建输出路径增加 [subpackage] 占位符，支持根据资源或代码所属分包自动生成分包目录，并让 build.assetsDir 与 chunkFileNames 参与该路径解析。
+
+  同步更新 create-weapp-vite 的模板依赖，保持与 weapp-vite 发布版本一致。
+
+  提前解析显式 assetFileNames 模板以保持 CSS 资源引用正确；遵循 preserveSymlinks 统一来源路径身份，并拒绝去重资源落入其他消费者无法访问的分包。
+
+  按最终 JS/CSS 消费者校验同一物理资源的跨包引用，覆盖静态共享 chunk、聚合样式与独立分包访问边界；公共资源配置继续由 bundler 原生发射。
+
+  同步补齐 headless 的 getImageInfo 包内资源读取，使同一运行场景与真实微信 IDE 一致。
+
+- feat(wevu): 为 SFC 增加可选的抖音 Render Mode V2 原生 DOM 编译与渲染，默认保持 legacy。
+
+  通过 `weapp.wevu.renderer` 选择 `legacy`、`auto` 或 `native-dom`。TT 的 auto 在首次 setup 前检测文档能力，缺失时使用原模板；原生路径使用 Wevu 响应式与调度器驱动节点更新，不调用 setData。React 与 Wevu 共享平台能力探针和原生组件创建契约。
+
+  首版支持同步 setup 的 SFC、条件、列表、插槽、组件 props/emit/model、style 清理、事件与卸载；未适配的组合明确报错。真实 TT runtime 验收待补。
+
+### Patch Changes
+
+- chore(deps): 升级 AI SDK、Babel、Vue 插件、通信依赖及构建工具，并同步工作区 catalog 和 create-weapp-vite 内置模板数据。
+
+  weapp-vite 使用 Babel 8.1.2 与 rolldown-plugin-dts 0.30.2；automator 使用 ws 8.23.0，VS Code 扩展同步 1.146.0 类型声明。迁移 plugin-vue 6.0.11 的 Oxc 上下文补丁，并刷新父依赖允许范围内的 @hono/node-server 至 2.1.8，消除两条新增安全通告。
+
+  验证默认环境更新为 Node 26.13.1 与 Rust 1.100.0，保留公开 Node 支持下限；Node 支持矩阵补齐 latest-26 并修复 Node 24 selector 与默认版本的耦合。TypeScript、local-pkg 和 Vite/Rolldown/Vite+ 保留已验证组合，兼容性决策见本轮升级记录。
+
+- fix(weapp-vite): 修复启用 `weapp.es5` 时，`appPrelude.webRuntime` 和用户 prelude 注入代码仍包含现代 JavaScript 语法的问题。
+
+  将 ES5 降级统一放到最终产物处理阶段，覆盖 `require`、`entry` 和 `inline` 三种 prelude 模式，以及以 asset 发出的 `app.prelude.js`，避免可选链、箭头函数和块级变量声明遗漏转换。同时保留 sourcemap 和增量构建所需的标记注释。
+
+- fix(weapp-vite): 补齐模板依赖分析直接使用的 @vue/compiler-core 运行时依赖，避免依赖提升缺失时 CLI 和下游构建无法启动。
+
+- fix(weapp-vite): 修复 ES5 最终产物压缩及请求 runtime 初始化顺序
+
+  修复启用 `weapp.es5` 时最终 SWC 降级重新展开压缩代码的问题，并保留小程序配置合并中的降级及用户插件；保留每个输出的紧凑打印配置，覆盖 prelude、JS asset、源码映射及多轮构建。
+
+  修复独立分包将请求 runtime 与页面合并时 installer 提前执行的问题，复用源码安装时机同步局部绑定。
+
+- fix: 修复嵌套文本格式化引入可见空白、setup 初值到达前创建子组件产生属性类型警告，以及外部 script setup 导入组件时路径解析错误的问题。覆盖普通 setup 和纯数据规则下的首帧交付，同步 headless 的宿主属性语义，并补充作者复现与审查边界的真实 DevTools、headless 回归验证。
+
+- fix(hmr): 恢复微信 WebView 安全脚本的状态保持 HMR，隔离旧构建与旧客户端的交付确认，并保留编译失败后的已发布基线。模板或样式无法可靠应用时自动切换 classic，支持后续编辑、源码恢复及配置重启；同步完整 HMR 验收入口和公开指引。
+
+  修复外部 Vue 模板与原生 XML 扫描的语法归属，保留合法 void 元素和组件依赖；将 Tailwind 新增内容文件的稳定扫描输入纳入发布身份，防止字节写出与来源确认脱节。
+
+  IDE 尚未连接时，脚本保存及源码恢复仍发布完整开发产物，不再等待不存在的初始模块执行确认；连接后继续使用状态保持更新。
+
+  在线降级先关闭 IDE 局部脚本热载，同时保留资产保护至完整发布，避免 ESM 模块交接期间读取旧导出；退出与取消仍恢复用户请求配置。
+
+  原生 Vite 与 Vite+ 宿主在监听端口确定、最终控制文件发布后才报告开发产物就绪，避免首次连接或消费者读取与控制文件重写竞争。
+
+- fix(weapp-vite): 修复合法 Vue void 标签导致自动组件登记中断的问题，保留原生模板依赖、脚本限制与外部模板路径定位；修复动态布局字符串默认值的属性转义，并补齐布局示例的首屏属性配置。
+
+- fix: 同步发布 Teleport 配置支持及依赖 `@weapp-core/constants` 的公开包，确保发布后的依赖版本范围保持一致。
+
+- Updated dependencies:
+  - @weapp-core/constants@0.6.0
+  - @weapp-core/init@6.1.4
+  - @weapp-core/logger@3.2.4
+  - @weapp-core/schematics@6.3.4
+  - @weapp-core/shared@3.5.0
+  - @weapp-vite/acceptance@0.2.4
+  - @weapp-vite/ast@7.11.0
+  - @weapp-vite/eslint@0.3.4
+  - @weapp-vite/hmr@0.3.4
+  - @weapp-vite/i18n@0.3.5
+  - @weapp-vite/language-service@0.1.4
+  - @weapp-vite/mcp@2.2.5
+  - @weapp-vite/miniprogram-automator@1.5.4
+  - @weapp-vite/tailwindcss@1.1.4
+  - @weapp-vite/volar@2.2.4
+  - @weapp-vite/web@2.2.4
+  - @weapp-vite/wxml@0.0.2
+  - @wevu/api@0.4.4
+  - @wevu/web-apis@1.5.1
+  - rolldown-require@2.1.4
+  - vite-plugin-performance@2.1.4
+  - weapp-ide-cli@6.4.4
+  - wevu@7.11.0
+
 ## 7.10.0
 
 ### Minor Changes
