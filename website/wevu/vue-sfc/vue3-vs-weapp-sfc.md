@@ -67,7 +67,7 @@ SFC 运行时基于 **Wevu**，不是浏览器 DOM：
 ### 5. 样式输出是 WXSS，scoped 规则不同
 
 - `<style>` 会编译为 WXSS，支持 `lang` 与 `scoped` / CSS Modules，但输出受 WXSS 规则限制。
-- `scoped` 通过注入属性选择器实现（`data-v-xxx`），不是 DOM 级别的作用域计算。
+- `scoped` 通过模板和样式中的 `data-v-xxx` 标记实现。微信、支付宝和抖音的构建产物使用同名 class 作为作用域选择器。
 - class/style 绑定会注入运行时代码（JS/WXS）以适配小程序模板能力。
 
 ## 快速对照示例

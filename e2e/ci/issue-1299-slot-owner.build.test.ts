@@ -67,7 +67,8 @@ appSetupProbe.issue1299SetupRuns = (appSetupProbe.issue1299SetupRuns ?? 0) + 1
     const scope = /\b(data-v-[\w-]+)=""/.exec(template)?.[1]
     expect(scope).toBeTruthy()
     expect(template).toContain('issue1299-shell-style')
-    expect(style).toContain(`.issue1299-shell-style[${scope}]`)
+    expect(template).toMatch(new RegExp(`class="[^"]*issue1299-shell-style ${scope}"`))
+    expect(style).toContain(`.issue1299-shell-style.${scope}`)
     expect(style).toContain('#123456')
     const session = createHeadlessSession({ projectPath: project })
     try {

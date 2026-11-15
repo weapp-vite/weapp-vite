@@ -54,6 +54,7 @@ describe('e2e app: wevu-features (build)', { concurrent: false }, () => {
     const useAttrsPageWxml = await fs.readFile(useAttrsPageWxmlPath, 'utf8')
     const useAttrsPageJs = await fs.readFile(useAttrsPageJsPath, 'utf8')
     const useAttrsFeatureWxml = await fs.readFile(useAttrsFeatureWxmlPath, 'utf8')
+    const useAttrsFeatureWxss = await fs.readFile(path.join(DIST_ROOT, 'components/use-attrs-feature/index.wxss'), 'utf8')
     const sfcStylesPageWxml = await fs.readFile(sfcStylesPageWxmlPath, 'utf8')
     const sfcStylesPageWxss = await fs.readFile(sfcStylesPageWxssPath, 'utf8')
     const sfcStylesPageJs = await fs.readFile(sfcStylesPageJsPath, 'utf8')
@@ -150,7 +151,13 @@ describe('e2e app: wevu-features (build)', { concurrent: false }, () => {
       attribs: { 'wx:if': expect.stringMatching(/^\{\{\s*[\w$]+\s*\}\}$/) },
     })
     expect(useAttrsFeatureWxml).toContain('wx:for="{{attrRows}}"')
-    expect(useAttrsFeatureWxml).toMatch(/class="\{\{__wv_cls_\d+\}\}"/)
+    const scope = /\b(data-v-[\w-]+)=""/.exec(useAttrsFeatureWxml)?.[1]
+    expect(scope).toBeTruthy()
+    const flag = DomUtils.findAll(node => node.attribs.id === 'attrs-flag', useAttrsTemplate.children)[0]
+    expect(flag?.attribs.class).toMatch(/\{\{__wv_cls_\d+\}\}/)
+    expect(flag?.attribs.class.split(/\s+/)).toContain(scope)
+    expect(useAttrsFeatureWxss).toContain(`.use-attrs-feature.${scope}`)
+    expect(useAttrsFeatureWxss).not.toContain(`[${scope}]`)
 
     expect(sfcStylesPageWxml).toContain('id="sfc-style-probe"')
     expect(sfcStylesPageWxml).toMatch(/data-v-[a-z0-9]+=""/)

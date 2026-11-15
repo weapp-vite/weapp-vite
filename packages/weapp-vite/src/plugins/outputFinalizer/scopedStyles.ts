@@ -9,12 +9,17 @@ import { outputTemplateParser } from '../../wxml/template/parser'
 
 const SCOPE_ATTRIBUTE_RE = /^data-v-[\w-]+$/
 
-/** 支付宝和抖音不支持 scoped 属性选择器，使用同等优先级的 class 保留作用域。 */
+/** 微信、支付宝和抖音的组件样式使用同等优先级的 class 保留作用域。 */
 export function normalizeClassScopedTemplate(source: string, platform: MpPlatform = 'alipay') {
   if (!source.includes('data-v-')) {
     return source
   }
-  const scanned = outputTemplateParser(platform, 'xml').scan(source)
+  const syntax = platform === 'weapp' ? 'legacy' : 'xml'
+  let scanned = outputTemplateParser(platform, syntax).scan(source)
+  // 微信还允许插值内部直接使用与外层属性相同的引号。
+  if (syntax === 'legacy' && scanned.diagnostics.some(item => item.severity === 'error')) {
+    scanned = outputTemplateParser(platform, 'xml').scan(source)
+  }
   const diagnostic = scanned.diagnostics.find(item => item.severity === 'error')
   if (diagnostic) {
     throw new Error(`[weapp.wxml] ${diagnostic.start}: ${diagnostic.message}`)
