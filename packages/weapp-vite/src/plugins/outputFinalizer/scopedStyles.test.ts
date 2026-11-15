@@ -49,6 +49,20 @@ describe('Class-based platform scoped styles', () => {
     expect(normalizeClassScopedTemplate(source)).toBe(String.raw`<view title="tail\" class='a &quot;b&quot; data-v-one data-v-two' data-v-one data-v-two=""/>`)
   })
 
+  it('preserves escaped quotes in WeChat template attributes and expressions', () => {
+    const source = String.raw`<view data-v-owner="" class="tile" title="\"test\"" probe="{{ value === \"a\" ? 1 : 2 }}"/>`
+    expect(normalizeClassScopedTemplate(source, 'weapp'))
+      .toBe(source.replace('class="tile"', 'class="tile data-v-owner"'))
+  })
+
+  it('preserves unescaped quotes inside WeChat interpolations', () => {
+    const source = '<view class="{{flag?"a":"b"}}" data-v-owner=""/>'
+    expect(normalizeClassScopedTemplate(source, 'weapp'))
+      .toBe('<view class="{{flag?"a":"b"}} data-v-owner" data-v-owner=""/>')
+    const text = '<view class="{{flag?"a":"b"}}">data-v-example</view>'
+    expect(normalizeClassScopedTemplate(text, 'weapp')).toBe(text)
+  })
+
   it('uses the last class attribute independently of earlier quoted or unquoted duplicates', () => {
     expect(normalizeClassScopedTemplate('<view class=first class="last" data-v-one/>'))
       .toBe('<view class=first class="last data-v-one" data-v-one/>')
@@ -58,8 +72,11 @@ describe('Class-based platform scoped styles', () => {
       .toBe('<view class=" data-v-one" data-v-one/>')
   })
 
-  it.each(['alipay', 'tt'] as const)('keeps target %s scripts opaque while traversing ordinary filter components', (platform) => {
-    const tag = platform === 'alipay' ? 'import-sjs' : 'sjs'
+  it.each([
+    ['alipay', 'import-sjs'],
+    ['tt', 'sjs'],
+    ['weapp', 'wxs'],
+  ] as const)('keeps target %s scripts opaque while traversing ordinary filter components', (platform, tag) => {
     const script = `<${tag}>var html = '<view data-v-fake=""/>';</${tag}>`
     const template = `${script}<!-- <view data-v-comment/> --><filter><view data-v-real=""/></filter>`
     expect(normalizeClassScopedTemplate(template, platform))
@@ -78,7 +95,7 @@ describe('Class-based platform scoped styles', () => {
       .toBe('<jds><view class="data-v-real" data-v-real/></jds>')
   })
 
-  it.each(['alipay', 'weapp', 'tt'])('normalizes final output for Alipay and Douyin, including style-only updates (%s)', async (platform) => {
+  it.each(['alipay', 'weapp', 'tt'])('normalizes final output, including style-only updates (%s)', async (platform) => {
     const styleExt = platform === 'alipay' ? 'acss' : platform === 'tt' ? 'ttss' : 'wxss'
     const filename = `pages/index/index.${styleExt}`
     const runtimeState = createRuntimeState()
@@ -95,9 +112,7 @@ describe('Class-based platform scoped styles', () => {
         [filename]: { type: 'asset', fileName: filename, source: `.panel[data-v-owner]{color:${color}}` },
       } as unknown as OutputBundle
       await handler?.call({ emitFile() {} } as any, {} as any, bundle, false)
-      expect((bundle[filename] as any).source).toBe(platform !== 'weapp'
-        ? `.panel.data-v-owner{color:${color}}`
-        : `.panel[data-v-owner]{color:${color}}`)
+      expect((bundle[filename] as any).source).toBe(`.panel.data-v-owner{color:${color}}`)
       runtimeState.build.hmr.isRebuild = true
     }
   })
