@@ -65,12 +65,20 @@ export class FormDataPolyfill {
   set(name: string, value: string): void
   set(name: string, value: BlobLikePart, filename?: string): void
   set(name: string, value: BlobLikePart | string, filename?: string) {
-    this.delete(name)
-    if (typeof value === 'string') {
-      this.append(name, value)
+    const normalizedName = String(name)
+    const normalizedValue = normalizeFormDataValue(value, filename)
+    const firstIndex = this.entriesList.findIndex(([entryName]) => entryName === normalizedName)
+    if (firstIndex === -1) {
+      this.entriesList.push([normalizedName, normalizedValue])
       return
     }
-    this.append(name, value, filename)
+
+    this.entriesList[firstIndex]![1] = normalizedValue
+    for (let i = this.entriesList.length - 1; i > firstIndex; i--) {
+      if (this.entriesList[i]?.[0] === normalizedName) {
+        this.entriesList.splice(i, 1)
+      }
+    }
   }
 
   forEach(callback: (value: FormDataEntryValue, key: string, parent: FormDataPolyfill) => void) {
