@@ -1,5 +1,6 @@
 ---
 "weapp-vite": patch
+"create-weapp-vite": patch
 ---
 
 fix(weapp-vite): 修复微信小程序组件的 scoped 样式失效
