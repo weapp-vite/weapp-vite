@@ -4,6 +4,7 @@ import { expect, it } from 'vitest'
 import { findMarkupElements } from '../../markup'
 import { runIssue564AugmentedBuild } from '../builders/issue564AugmentedBuild'
 import { DIST_ROOT } from '../constants'
+import { stripGeneratedScopeAttrs } from '../helpers'
 
 export const group = 'issue564'
 export const order = 54
@@ -24,7 +25,7 @@ export function registerGithubIssuesBuildCase() {
 
     const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
     const pageJson = await fs.readJson(pageJsonPath) as { usingComponents?: Record<string, string> }
-    const scopedSlotWxml = await fs.readFile(scopedSlotWxmlPath, 'utf-8')
+    const scopedSlotWxml = stripGeneratedScopeAttrs(await fs.readFile(scopedSlotWxmlPath, 'utf-8'))
     const scopedSlotJson = await fs.readJson(scopedSlotJsonPath) as { usingComponents?: Record<string, string> }
     const nativeTabbarWxml = await fs.readFile(nativeTabbarWxmlPath, 'utf-8')
     const nativeTabbarJs = await fs.readFile(nativeTabbarJsPath, 'utf-8')

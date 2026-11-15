@@ -3,7 +3,7 @@ import path from 'pathe'
 import { expect, it } from 'vitest'
 import { runIssue615AugmentedBuild } from '../builders/issue615AugmentedBuild'
 import { DIST_ROOT } from '../constants'
-import { scanFiles } from '../helpers'
+import { scanFiles, stripGeneratedScopeAttrs } from '../helpers'
 
 export const group = 'issue615'
 export const order = 24
@@ -19,7 +19,7 @@ export function registerGithubIssuesBuildCase() {
       .sort()
     const scopedSlotJsPath = path.join(DIST_ROOT, 'pages/issue-615/index.__scoped-slot-default-0.js')
     const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
-    const scopedSlotWxml = (await Promise.all(scopedSlotWxmlFiles.map(file => fs.readFile(path.join(DIST_ROOT, file), 'utf-8')))).join('\n')
+    const scopedSlotWxml = stripGeneratedScopeAttrs((await Promise.all(scopedSlotWxmlFiles.map(file => fs.readFile(path.join(DIST_ROOT, file), 'utf-8')))).join('\n'))
     const scopedSlotJs = await fs.readFile(scopedSlotJsPath, 'utf-8')
 
     expect(pageWxml).toContain('generic:scoped-slots-default=')
