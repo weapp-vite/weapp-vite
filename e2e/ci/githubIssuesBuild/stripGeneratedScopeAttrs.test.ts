@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { stripGeneratedScopeAttrs } from './helpers'
+import { stripGeneratedScopeAttrs } from './stripGeneratedScopeAttrs'
 
 it('removes generated scope classes and attributes without changing WXML expressions', () => {
   const source = String.raw`<view class="{{flag?"a":"b"}} data-v-one data-v-two" data-v-one="" data-v-two="" />`
