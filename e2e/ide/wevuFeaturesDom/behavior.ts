@@ -51,17 +51,23 @@ export async function tapControl(page: any, selector: string, scope: string[] = 
 }
 
 export function attrsNodes(updated: boolean): DomNodeExpectation[] {
-  return [
+  const nodes: DomNodeExpectation[] = [
     textNode('#ctrl-cycle-tone', `切换 tone：${updated ? 'tone-green' : 'tone-blue'}`),
     textNode('#ctrl-toggle-visible', `切换 visible：${updated ? 'false' : 'true'}`),
     textNode('#ctrl-toggle-border', `边框模式：${updated ? 'strong' : 'dash'}`),
     textNode('#ctrl-bump-seed', `递增 seed：${updated ? 2 : 1}`),
     textNode('#attrs-badge', `state-class = ${updated ? 'tone-green' : 'tone-blue'}`, ['#attrs-feature']),
-    textNode('#attrs-flag', `visible = ${updated ? 'false' : 'true'}`, ['#attrs-feature']),
+    {
+      ...textNode('#attrs-flag', `visible = ${updated ? 'false' : 'true'}`, ['#attrs-feature']),
+      ...(resolveRuntimeProviderName() === 'devtools'
+        ? { styles: { color: updated ? 'rgb(100, 116, 139)' : 'rgb(4, 120, 87)' } }
+        : {}),
+    },
     updated
       ? { scope: ['#attrs-feature'], selector: '#attrs-extra', count: 0 }
       : textNode('#attrs-extra', 'extra-label = seed-1', ['#attrs-feature']),
   ]
+  return nodes
 }
 
 export function modelNodes(value: string, logs: number, title = '组件内 useModel()') {
