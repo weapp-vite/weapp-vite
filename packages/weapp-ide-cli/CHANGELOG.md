@@ -1,5 +1,23 @@
 # weapp-ide-cli
 
+## 6.4.4
+
+### Patch Changes
+
+- chore(deps): 升级 AI SDK、Babel、Vue 插件、通信依赖及构建工具，并同步工作区 catalog 和 create-weapp-vite 内置模板数据。
+
+  weapp-vite 使用 Babel 8.1.2 与 rolldown-plugin-dts 0.30.2；automator 使用 ws 8.23.0，VS Code 扩展同步 1.146.0 类型声明。迁移 plugin-vue 6.0.11 的 Oxc 上下文补丁，并刷新父依赖允许范围内的 @hono/node-server 至 2.1.8，消除两条新增安全通告。
+
+  验证默认环境更新为 Node 26.13.1 与 Rust 1.100.0，保留公开 Node 支持下限；Node 支持矩阵补齐 latest-26 并修复 Node 24 selector 与默认版本的耦合。TypeScript、local-pkg 和 Vite/Rolldown/Vite+ 保留已验证组合，兼容性决策见本轮升级记录。
+
+- fix(weapp-ide-cli): 为交互式终端中的配置文件和 CLI 路径提示添加超链接，显示文字保留原始路径，文件地址及特殊字符编码隐藏在链接目标中。在支持 OSC 8 的 macOS Terminal 中可按 Command 双击打开对应文件，重定向日志与配置数据不添加超链接控制序列。
+
+- Updated dependencies:
+  - @weapp-core/logger@3.2.4
+  - @weapp-core/shared@3.5.0
+  - @weapp-vite/devtools-runtime@0.7.4
+  - @weapp-vite/miniprogram-automator@1.5.4
+
 ## 6.4.3
 
 ### Patch Changes

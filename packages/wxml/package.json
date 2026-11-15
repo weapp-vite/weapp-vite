@@ -1,7 +1,7 @@
 {
   "name": "@weapp-vite/wxml",
   "type": "module",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Source-preserving multi-platform mini-program template parser and serializer",
   "license": "MIT",
   "homepage": "https://vite.weapp.dev/packages/wxml",

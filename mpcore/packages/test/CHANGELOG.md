@@ -1,5 +1,20 @@
 # @mpcore/test
 
+## 1.2.5
+
+### Patch Changes
+
+- chore(deps): 升级 AI SDK、Babel、Vue 插件、通信依赖及构建工具，并同步工作区 catalog 和 create-weapp-vite 内置模板数据。
+
+  weapp-vite 使用 Babel 8.1.2 与 rolldown-plugin-dts 0.30.2；automator 使用 ws 8.23.0，VS Code 扩展同步 1.146.0 类型声明。迁移 plugin-vue 6.0.11 的 Oxc 上下文补丁，并刷新父依赖允许范围内的 @hono/node-server 至 2.1.8，消除两条新增安全通告。
+
+  验证默认环境更新为 Node 26.13.1 与 Rust 1.100.0，保留公开 Node 支持下限；Node 支持矩阵补齐 latest-26 并修复 Node 24 selector 与默认版本的耦合。TypeScript、local-pkg 和 Vite/Rolldown/Vite+ 保留已验证组合，兼容性决策见本轮升级记录。
+
+- fix(vitest): 修复小程序 matcher 与 Vitest browser matcher 同时加载时的类型冲突，保留 DOM 断言与异步断言的返回类型，并支持文本数字、非空和显式空白归一化检查。
+
+- Updated dependencies:
+  - @mpcore/simulator@1.3.4
+
 ## 1.2.4
 
 ### Patch Changes
