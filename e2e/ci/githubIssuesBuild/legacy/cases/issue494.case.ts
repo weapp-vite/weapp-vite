@@ -3,6 +3,7 @@ import path from 'pathe'
 import { expect, it } from 'vitest'
 import { runBuild } from '../builders/standard'
 import { DIST_ROOT } from '../constants'
+import { stripGeneratedScopeAttrs } from '../helpers'
 
 export const group = 'standard'
 export const order = 38
@@ -15,7 +16,7 @@ export function registerGithubIssuesBuildCase() {
     const pageJsPath = path.join(DIST_ROOT, 'pages/issue-494/index.js')
     const componentWxmlPath = path.join(DIST_ROOT, 'components/issue-494/SlotHost/index.wxml')
 
-    const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
+    const pageWxml = stripGeneratedScopeAttrs(await fs.readFile(pageWxmlPath, 'utf-8'))
     const pageJs = await fs.readFile(pageJsPath, 'utf-8')
     const componentWxml = await fs.readFile(componentWxmlPath, 'utf-8')
 

@@ -3,6 +3,7 @@ import path from 'pathe'
 import { expect, it } from 'vitest'
 import { runBuild } from '../builders/standard'
 import { DIST_ROOT } from '../constants'
+import { stripGeneratedScopeAttrs } from '../helpers'
 
 export const group = 'standard'
 export const order = 49
@@ -13,7 +14,7 @@ export function registerGithubIssuesBuildCase() {
 
     const pageWxmlPath = path.join(DIST_ROOT, 'pages/issue-502/index.wxml')
     const pageJsPath = path.join(DIST_ROOT, 'pages/issue-502/index.js')
-    const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
+    const pageWxml = stripGeneratedScopeAttrs(await fs.readFile(pageWxmlPath, 'utf-8'))
     const pageJs = await fs.readFile(pageJsPath, 'utf-8')
 
     expect(pageWxml).toContain('issue-502 slot condition outlet')

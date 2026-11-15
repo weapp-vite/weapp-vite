@@ -3,6 +3,7 @@ import path from 'pathe'
 import { expect, it } from 'vitest'
 import { runBuild } from '../builders/standard'
 import { DIST_ROOT } from '../constants'
+import { stripGeneratedScopeAttrs } from '../helpers'
 
 export const group = 'standard'
 export const order = 44
@@ -25,7 +26,7 @@ export function registerGithubIssuesBuildCase() {
     const nativeComponentWxmlPath = path.join(DIST_ROOT, 'components/issue-627/native-props-probe/index.wxml')
     const nativeComponentJsPath = path.join(DIST_ROOT, 'components/issue-627/native-props-probe/index.js')
 
-    const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
+    const pageWxml = stripGeneratedScopeAttrs(await fs.readFile(pageWxmlPath, 'utf-8'))
     const pageJs = await fs.readFile(pageJsPath, 'utf-8')
     const pageJson = await fs.readJSON(pageJsonPath) as {
       usingComponents?: Record<string, string>
@@ -35,7 +36,7 @@ export function registerGithubIssuesBuildCase() {
     const nativePageJson = await fs.readJSON(nativePageJsonPath) as {
       usingComponents?: Record<string, string>
     }
-    const sfcHostPageWxml = await fs.readFile(sfcHostPageWxmlPath, 'utf-8')
+    const sfcHostPageWxml = stripGeneratedScopeAttrs(await fs.readFile(sfcHostPageWxmlPath, 'utf-8'))
     const sfcHostPageJs = await fs.readFile(sfcHostPageJsPath, 'utf-8')
     const sfcHostPageJson = await fs.readJSON(sfcHostPageJsonPath) as {
       usingComponents?: Record<string, string>

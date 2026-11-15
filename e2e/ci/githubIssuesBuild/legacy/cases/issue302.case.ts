@@ -3,6 +3,7 @@ import path from 'pathe'
 import { expect, it } from 'vitest'
 import { runBuild } from '../builders/standard'
 import { DIST_ROOT } from '../constants'
+import { stripGeneratedScopeAttrs } from '../helpers'
 
 export const group = 'standard'
 export const order = 73
@@ -14,7 +15,7 @@ export function registerGithubIssuesBuildCase() {
     const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-302/index.wxml')
     const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-302/index.js')
 
-    const issuePageWxml = await fs.readFile(issuePageWxmlPath, 'utf-8')
+    const issuePageWxml = stripGeneratedScopeAttrs(await fs.readFile(issuePageWxmlPath, 'utf-8'))
     const issuePageJs = await fs.readFile(issuePageJsPath, 'utf-8')
 
     expect(issuePageWxml).toContain('issue-302 v-for class binding update')

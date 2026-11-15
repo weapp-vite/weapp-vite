@@ -3,6 +3,7 @@ import path from 'pathe'
 import { expect, it } from 'vitest'
 import { runBuild } from '../builders/standard'
 import { DIST_ROOT } from '../constants'
+import { stripGeneratedScopeAttrs } from '../helpers'
 
 export const group = 'standard'
 export const order = 69
@@ -46,9 +47,9 @@ export function registerGithubIssuesBuildCase() {
     const objectLiteralJs = await fs.readFile(objectLiteralJsPath, 'utf-8')
     const mapClassWxml = await fs.readFile(mapClassWxmlPath, 'utf-8')
     const mapClassJs = await fs.readFile(mapClassJsPath, 'utf-8')
-    const rootClassWxml = await fs.readFile(rootClassWxmlPath, 'utf-8')
+    const rootClassWxml = stripGeneratedScopeAttrs(await fs.readFile(rootClassWxmlPath, 'utf-8'))
     const rootClassJs = await fs.readFile(rootClassJsPath, 'utf-8')
-    const computedClassWxml = await fs.readFile(computedClassWxmlPath, 'utf-8')
+    const computedClassWxml = stripGeneratedScopeAttrs(await fs.readFile(computedClassWxmlPath, 'utf-8'))
     const computedClassJs = await fs.readFile(computedClassJsPath, 'utf-8')
 
     expect(navPageWxml).toContain('wx:for="{{sceneLinks}}"')
