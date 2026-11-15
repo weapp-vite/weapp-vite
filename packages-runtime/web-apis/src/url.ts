@@ -5,7 +5,19 @@ const LEADING_QUERY_REGEXP = /^\?/
 const ABSOLUTE_URL_REGEXP = /^([a-z][a-z\d+.-]*:)?\/\/([^/?#]+)(\/[^?#]*)?(\?[^#]*)?(#.*)?$/i
 const ABSOLUTE_URL_PREFIX_REGEXP = /^[a-z][a-z\d+.-]*:\/\//i
 const ENCODED_SPACE_REGEXP = /%20/g
-const HOST_WITH_PORT_REGEXP = /^([^:]*)(?::(.*))?$/
+
+interface ParsedUrl {
+  protocol: string
+  username: string
+  password: string
+  host: string
+  hostname: string
+  port: string
+  pathname: string
+  search: string
+  hash: string
+  origin: string
+}
 
 function encodeSearchParam(value: string) {
   return encodeURIComponent(value).replace(ENCODED_SPACE_REGEXP, '+')
@@ -41,32 +53,110 @@ function serializeSearchEntries(entries: Array<[string, string]>) {
     .join('&')
 }
 
-function parseAbsoluteUrl(input: string) {
+function normalizePathname(pathname: string) {
+  const segments: string[] = []
+  const hasTrailingSlash = pathname.endsWith('/') || pathname.endsWith('/.') || pathname.endsWith('/..')
+  for (const segment of pathname.split('/')) {
+    if (!segment || segment === '.') {
+      continue
+    }
+    if (segment === '..') {
+      segments.pop()
+      continue
+    }
+    segments.push(segment)
+  }
+
+  let normalized = `/${segments.join('/')}`
+  if (hasTrailingSlash && normalized !== '/' && !normalized.endsWith('/')) {
+    normalized += '/'
+  }
+  return normalized
+}
+
+function getDefaultPort(protocol: string) {
+  return {
+    'http:': '80',
+    'https:': '443',
+    'ws:': '80',
+    'wss:': '443',
+  }[protocol]
+}
+
+function parseAuthority(authority: string, protocol: string) {
+  const atIndex = authority.lastIndexOf('@')
+  const userInfo = atIndex === -1 ? '' : authority.slice(0, atIndex)
+  const hostSource = atIndex === -1 ? authority : authority.slice(atIndex + 1)
+  const userInfoSeparator = userInfo.indexOf(':')
+  const username = userInfoSeparator === -1 ? userInfo : userInfo.slice(0, userInfoSeparator)
+  const password = userInfoSeparator === -1 ? '' : userInfo.slice(userInfoSeparator + 1)
+
+  let hostname = hostSource
+  let port = ''
+  if (hostSource.startsWith('[')) {
+    const closingBracket = hostSource.indexOf(']')
+    if (closingBracket === -1) {
+      return null
+    }
+    hostname = hostSource.slice(0, closingBracket + 1)
+    if (hostSource[closingBracket + 1] === ':') {
+      port = hostSource.slice(closingBracket + 2)
+    }
+  }
+  else {
+    const portSeparator = hostSource.lastIndexOf(':')
+    if (portSeparator !== -1 && /^\d*$/.test(hostSource.slice(portSeparator + 1))) {
+      hostname = hostSource.slice(0, portSeparator)
+      port = hostSource.slice(portSeparator + 1)
+    }
+  }
+
+  const normalizedProtocol = protocol.toLowerCase()
+  if (port === getDefaultPort(normalizedProtocol)) {
+    port = ''
+  }
+  const host = `${hostname}${port ? `:${port}` : ''}`
+  return {
+    username,
+    password,
+    hostname,
+    port,
+    host,
+  }
+}
+
+function parseAbsoluteUrl(input: string): ParsedUrl | null {
   const match = input.match(ABSOLUTE_URL_REGEXP)
   if (!match) {
     return null
   }
 
-  const protocol = match[1] ?? ''
-  const host = match[2]
-  const pathname = match[3] || '/'
+  const protocol = (match[1] ?? '').toLowerCase()
+  const authority = match[2]
+  const parsedAuthority = parseAuthority(authority, protocol)
+  if (!parsedAuthority) {
+    return null
+  }
+  const pathname = normalizePathname(match[3] || '/')
   const search = match[4] ?? ''
   const hash = match[5] ?? ''
-  const hostnameMatch = host.match(HOST_WITH_PORT_REGEXP)
-  const hostname = hostnameMatch![1]
-  const port = hostnameMatch?.[2] ?? ''
+  const origin = protocol && parsedAuthority.host ? `${protocol}//${parsedAuthority.host}` : ''
 
   return {
     protocol,
-    host,
-    hostname,
-    port,
+    ...parsedAuthority,
     pathname,
     search,
     hash,
-    origin: protocol && host ? `${protocol}//${host}` : '',
-    href: `${protocol}//${host}${pathname}${search}${hash}`,
+    origin,
   }
+}
+
+function serializeAuthority(parsed: ParsedUrl) {
+  const userInfo = parsed.username || parsed.password
+    ? `${parsed.username}${parsed.password ? `:${parsed.password}` : ''}@`
+    : ''
+  return `${userInfo}${parsed.host}`
 }
 
 function resolveRelativeUrl(input: string, base: string) {
@@ -79,25 +169,21 @@ function resolveRelativeUrl(input: string, base: string) {
     return `${parsedBase.protocol}${input}`
   }
   if (input.startsWith('/')) {
-    return `${parsedBase.origin}${input}`
+    return `${parsedBase.protocol}//${serializeAuthority(parsedBase)}${input}`
   }
-  if (input.startsWith('?') || input.startsWith('#')) {
-    const prefix = `${parsedBase.origin}${parsedBase.pathname}`
-    return `${prefix}${input}`
+  if (input.startsWith('?')) {
+    return `${parsedBase.protocol}//${serializeAuthority(parsedBase)}${parsedBase.pathname}${input}`
+  }
+  if (input.startsWith('#')) {
+    return `${parsedBase.protocol}//${serializeAuthority(parsedBase)}${parsedBase.pathname}${input}`
   }
 
-  const basePathSegments = parsedBase.pathname.split('/').slice(0, -1)
-  for (const segment of input.split('/')) {
-    if (!segment || segment === '.') {
-      continue
-    }
-    if (segment === '..') {
-      basePathSegments.pop()
-      continue
-    }
-    basePathSegments.push(segment)
-  }
-  return `${parsedBase.origin}${basePathSegments.join('/')}`
+  const queryStart = input.search(/[?#]/)
+  const inputPathname = queryStart === -1 ? input : input.slice(0, queryStart)
+  const inputSuffix = queryStart === -1 ? '' : input.slice(queryStart)
+  const baseDirectory = parsedBase.pathname.slice(0, parsedBase.pathname.lastIndexOf('/') + 1)
+  const pathname = normalizePathname(`${baseDirectory}${inputPathname}`)
+  return `${parsedBase.protocol}//${serializeAuthority(parsedBase)}${pathname}${inputSuffix}`
 }
 
 export class URLSearchParamsPolyfill {
@@ -139,11 +225,15 @@ export class URLSearchParamsPolyfill {
     this.onChange?.()
   }
 
-  delete(key: string) {
+  delete(key: string, value?: string) {
     const normalizedKey = String(key)
+    const normalizedValue = value === undefined ? undefined : String(value)
     let changed = false
     for (let i = this.entriesStore.length - 1; i >= 0; i--) {
-      if (this.entriesStore[i]?.[0] === normalizedKey) {
+      if (
+        this.entriesStore[i]?.[0] === normalizedKey
+        && (normalizedValue === undefined || this.entriesStore[i]?.[1] === normalizedValue)
+      ) {
         this.entriesStore.splice(i, 1)
         changed = true
       }
@@ -175,8 +265,22 @@ export class URLSearchParamsPolyfill {
   }
 
   set(key: string, value: string) {
-    this.delete(key)
-    this.append(key, value)
+    const normalizedKey = String(key)
+    const normalizedValue = String(value)
+    const firstIndex = this.entriesStore.findIndex(([entryKey]) => entryKey === normalizedKey)
+    if (firstIndex === -1) {
+      this.entriesStore.push([normalizedKey, normalizedValue])
+      this.onChange?.()
+      return
+    }
+
+    this.entriesStore[firstIndex]![1] = normalizedValue
+    for (let i = this.entriesStore.length - 1; i > firstIndex; i--) {
+      if (this.entriesStore[i]?.[0] === normalizedKey) {
+        this.entriesStore.splice(i, 1)
+      }
+    }
+    this.onChange?.()
   }
 
   sort() {
@@ -268,6 +372,8 @@ export class URLPolyfill {
     this.host = parsed.host
     this.hostname = parsed.hostname
     this.port = parsed.port
+    this.username = parsed.username
+    this.password = parsed.password
     this.pathname = parsed.pathname
     this.searchValue = parsed.search
     this.hashValue = parsed.hash
@@ -318,7 +424,10 @@ export class URLPolyfill {
   }
 
   private updateHref() {
-    this.hrefValue = `${this.protocol}//${this.host}${this.pathname}${this.searchValue}${this.hashValue}`
+    const userInfo = this.username || this.password
+      ? `${this.username}${this.password ? `:${this.password}` : ''}@`
+      : ''
+    this.hrefValue = `${this.protocol}//${userInfo}${this.host}${this.pathname}${this.searchValue}${this.hashValue}`
   }
 
   private syncSearchFromParams() {

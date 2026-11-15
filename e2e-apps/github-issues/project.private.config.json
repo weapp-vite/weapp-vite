@@ -1065,6 +1065,13 @@
           "launchMode": "default"
         },
         {
+          "name": "issue-1338 Web API compatibility",
+          "pathName": "pages/issue-1338/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
           "name": "teleport root portal",
           "pathName": "pages/teleport-root-portal/index",
           "query": "",
