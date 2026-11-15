@@ -32,8 +32,8 @@ async function sourceCases() {
       visit(source)
     }
   }
-  expect(cases).toHaveLength(99)
-  expect(new Set(cases.map(item => item.name)).size).toBe(99)
+  expect(cases).toHaveLength(100)
+  expect(new Set(cases.map(item => item.name)).size).toBe(100)
   return cases
 }
 
@@ -92,13 +92,13 @@ async function githubIssuesFixture(topology) {
 
 const collect = value => collectLocalEvidence(value.root, value.directory, value.plan, value.inventories, value.identity, value.start, value.end, value.raw)
 
-it('normalizes all 99 actual case identities across 24 groups while preserving the physical raw evidence', async () => {
+it('normalizes all 100 actual case identities across 24 groups while preserving the physical raw evidence', async () => {
   const baseline = await githubIssuesFixture('optimized-v1')
   const candidate = await githubIssuesFixture('optimized-v2')
   const before = await collect(baseline)
   const after = await collect(candidate)
   expect(candidate.documents).toHaveLength(24)
-  expect(after.scope.cases.filter(([file]) => file === `e2e/${GITHUB_ISSUES_BUILD_BASELINE_LABEL}`)).toHaveLength(99)
+  expect(after.scope.cases.filter(([file]) => file === `e2e/${GITHUB_ISSUES_BUILD_BASELINE_LABEL}`)).toHaveLength(100)
   expect(after.scope).toEqual(before.scope)
   expect(localDigest(after.scope)).toBe(localDigest(before.scope))
   expect(candidate.raw.vitest.filter(item => GITHUB_ISSUES_BUILD_TASK_LABELS.includes(item.value.runtimeTaskLabel))).toHaveLength(24)
