@@ -72,6 +72,20 @@ describe('stateful compiled output capabilities', () => {
     expect(capabilities.fallback([style('red')])).toBeUndefined()
   })
 
+  it('retains content fingerprints instead of compiled asset bytes', () => {
+    const capabilities = new StatefulHmrOutputCapabilities('wxss', 'wxml')
+    const fileName = 'pages/home/index.wxml'
+    const source = `<view>${'x'.repeat(1024 * 1024)}</view>`
+    capabilities.published([style(source, fileName)], [], true)
+
+    const visuals = Reflect.get(capabilities, 'visuals') as HmrAssetStore<{ fileName: string, source: string }>
+    const stored = visuals.values().next().value!
+    expect(stored).toEqual({ fileName, source: expect.stringMatching(/^[a-f0-9]{64}$/) })
+    expect(stored.source).not.toContain('x')
+    expect(capabilities.fallback([style(source, fileName)])).toBeUndefined()
+    expect(capabilities.fallback([style(`${source}!`, fileName)])).toMatchObject({ code: 'template-output', files: [fileName] })
+  })
+
   it('does not infer stylesheet changes from script, Vue, JSON provider or asset source names', () => {
     const capabilities = new StatefulHmrOutputCapabilities('wxss')
     capabilities.published([style('red')], [], true)

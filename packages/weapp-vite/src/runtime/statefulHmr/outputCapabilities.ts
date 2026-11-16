@@ -1,13 +1,19 @@
 import type { HmrRuntimeFallbackReason } from '../hmrRuntimeCapabilities'
 import type { StatefulHmrOutputFile } from './outputWriter'
+import { createHash } from 'node:crypto'
 import { HmrAssetStore } from '@weapp-vite/hmr'
 import { resolveStatefulHmrOutputFallback } from '../hmrRuntimeCapabilities'
 
 type VisualAsset = Extract<StatefulHmrOutputFile, { type: 'asset' }>
+type FingerprintedVisualAsset = Pick<VisualAsset, 'fileName'> & { source: string }
 
-/** 仅记录原生写出成功的模板与样式字节，独立于快照失败后的强制重放状态。 */
+function fingerprint(source: VisualAsset['source']): string {
+  return createHash('sha256').update(source).digest('hex')
+}
+
+/** 仅记录原生写出成功的模板与样式内容指纹，独立于快照失败后的强制重放状态。 */
 export class StatefulHmrOutputCapabilities {
-  private readonly visuals = new HmrAssetStore<VisualAsset>()
+  private readonly visuals = new HmrAssetStore<FingerprintedVisualAsset>()
   private initialized = false
   private readonly suffixes: string[]
 
@@ -50,7 +56,9 @@ export class StatefulHmrOutputCapabilities {
     return this.suffixes.some(suffix => file.toLowerCase().endsWith(suffix))
   }
 
-  private select(output: readonly StatefulHmrOutputFile[]): VisualAsset[] {
-    return output.filter((item): item is VisualAsset => item.type === 'asset' && this.matches(item.fileName))
+  private select(output: readonly StatefulHmrOutputFile[]): FingerprintedVisualAsset[] {
+    return output
+      .filter((item): item is VisualAsset => item.type === 'asset' && this.matches(item.fileName))
+      .map(({ fileName, source }) => ({ fileName, source: fingerprint(source) }))
   }
 }
