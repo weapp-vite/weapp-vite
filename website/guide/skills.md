@@ -62,7 +62,7 @@ pnpm approve
 
 在交互式 `pnpm approve` 中审阅所需 skills 和构建脚本等权限。链接由 pnpm 管理；脚手架不会自动审批，也不通过 consumer `postinstall` 复制 skills。新建独立项目已预设 `.agents/skills`，不预授权；已有项目和团队 workspace 的配置保持不变。
 
-**版本差异：**本仓库固定的 pnpm 12.18.0 支持交互选择 skill 名称，默认链接名不带包名前缀，冲突时回退为 `pnpm-<package>-<skill>`；12.11.0 / 12.16.1 使用包级审批和固定前缀。请在 AI 客户端使用实际链接名。
+**版本差异：**本仓库固定的 pnpm 12.21.0 支持交互选择 skill 名称，默认链接名不带包名前缀，冲突时回退为 `pnpm-<package>-<skill>`；12.11.0 / 12.16.1 使用包级审批和固定前缀。请在 AI 客户端使用实际链接名。
 
 `permissions.<package>.skills: true` 允许该包全部及以后新增的 skills；带包名的 `pnpm approve <package>` 会批准该包全部能力和 skills，不等同于交互选择。
 
@@ -70,7 +70,7 @@ pnpm approve
 - workspace 内同一包统一使用最高版本的 skills，不按项目分别链接；最高版本不携带 skills 时，也不会使用旧版的 skills。
 - 手工条目不会被覆盖。若链接名无法避开冲突，安装会停止。随包目录保持平铺，兼容上述版本。
 
-自定义目录、发现深度、非本地安装限制见 [pnpm Agent Skills 文档](https://raw.githubusercontent.com/pnpm/pnpm/v12.18.0/pnpm/docs/agent-skills.md)；tarball / git 依赖需按来源审批，详见 [permissions 文档](https://raw.githubusercontent.com/pnpm/pnpm/v12.18.0/pnpm/docs/cli/permissions.md)。
+自定义目录、发现深度、非本地安装限制见 [pnpm Agent Skills 文档](https://raw.githubusercontent.com/pnpm/pnpm/v12.21.0/pnpm/docs/agent-skills.md)；tarball / git 依赖需按来源审批，详见 [permissions 文档](https://raw.githubusercontent.com/pnpm/pnpm/v12.21.0/pnpm/docs/cli/permissions.md)。
 
 ### 撤销与清理
 

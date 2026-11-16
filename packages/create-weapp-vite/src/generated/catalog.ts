@@ -140,7 +140,7 @@ export const TEMPLATE_NAMED_CATALOG = {
     'tdesign-miniprogram': '1.18.0'
   },
   'weapp-tailwindcss-fixed': {
-    'weapp-tailwindcss': '5.7.4'
+    'weapp-tailwindcss': '5.7.5'
   },
   fixed: {
     execa: '10.2.1',
