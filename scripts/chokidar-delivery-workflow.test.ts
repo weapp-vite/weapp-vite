@@ -2,6 +2,7 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { parse } from 'yaml'
+import { readCiToolchain } from '../.github/scripts/ci-toolchain.mjs'
 import { frozenJobCondition, frozenWorkflowText, readWorkflowFixture } from './workflowFixture.mjs'
 
 interface Step {
@@ -32,6 +33,13 @@ const profile = 'ci-vite-host-consumer'
 const frozenCheckout = frozenWorkflowText('${{ needs.pr-context.outputs.checkout_sha }}', profile)
 const frozenIdentity = Object.fromEntries(Object.entries({ checkout_ref: 'checkout_sha', base_sha: 'base_sha', head_sha: 'head_sha', pr_number: 'pr_number', head_ref: 'head_ref', base_ref: 'base_ref' })
   .map(([input, output]) => [input, frozenWorkflowText(`\${{ needs.pr-context.outputs.${output} }}`, profile)]))
+const ciToolchain = readCiToolchain()
+const expression = (value: string) => `$${'{{'} ${value} }}`
+const systems = [ciToolchain.runners.ubuntu, ciToolchain.runners.windows, expression('fromJSON(inputs.ci_toolchain).runners.macos')]
+const ciNode = expression('fromJSON(inputs.ci_toolchain).node.ci')
+const supportMajors = ciToolchain.node.supportMajors.map((_, index) => expression(`fromJSON(inputs.ci_toolchain).node.supportMajors[${index}]`))
+const minimumNodes = ciToolchain.node.supportMajors.map(major => expression(`fromJSON(inputs.ci_toolchain).node.minimum['${major}']`))
+const nodeSupportMatrix = [...minimumNodes, ...supportMajors]
 const childGate = '!cancelled() && (inputs.verification_topology == \'optimized-v2\' || needs.pr-context.result == \'success\') && needs.prepare.result == \'success\''
 const v2Jobs = ['node-support-v2', 'consumer-batches-v2', 'node-support-aggregate-v2', 'consumer-aggregate-v2']
 const independentStore = {
@@ -68,7 +76,11 @@ describe('Windows ordinary npm watcher delivery workflow', () => {
     expect(entry.on.workflow_dispatch.inputs['chokidar-delivery-diagnostic']).toMatchObject({ required: false, default: false, type: 'boolean' })
     expect(entry.jobs.validation.with.chokidar_delivery_diagnostic).toBe('${{ inputs.chokidar-delivery-diagnostic || false }}')
     expect(reusable.on.workflow_call.inputs.chokidar_delivery_diagnostic).toEqual({ required: false, type: 'boolean', default: false })
-    expect(native.jobs['ci-vite-host-consumer'].with).toEqual({ pr_context: '${{ needs.plan.outputs.pr_context }}', verification_topology: '${{ fromJSON(needs.plan.outputs.pr_context).verificationTopology }}' })
+    expect(native.jobs['ci-vite-host-consumer'].with).toEqual({
+      pr_context: '${{ needs.plan.outputs.pr_context }}',
+      ci_toolchain: '${{ needs.plan.outputs.ci_toolchain }}',
+      verification_topology: '${{ fromJSON(needs.plan.outputs.pr_context).verificationTopology }}',
+    })
     const validationJobs = Object.entries(reusable.jobs).filter(([name]) => name !== 'pr-context')
     const platform = reusable.jobs['consumer-platform']
     expect(validationJobs.map(([name]) => name).sort()).toEqual((platform
@@ -84,10 +96,10 @@ describe('Windows ordinary npm watcher delivery workflow', () => {
       expect(platform).toMatchObject({
         needs: 'pr-context',
         uses: './.github/workflows/reusable-consumer-platform.yml',
-        with: { verification_topology: '${{ inputs.verification_topology }}', pr_context: '${{ inputs.pr_context }}', runs_on: '${{ matrix.os }}' },
+        with: { verification_topology: '${{ inputs.verification_topology }}', pr_context: '${{ inputs.pr_context }}', ci_toolchain: '${{ inputs.ci_toolchain }}', runs_on: '${{ matrix.os }}' },
         secrets: 'inherit',
       })
-      expect(platform.strategy.matrix).toEqual({ os: ['ubuntu-latest', 'windows-latest', 'macos-latest'] })
+      expect(platform.strategy.matrix).toEqual({ os: systems })
     }
     expect(step('Verify ordinary npm delivery and original negative control under the machine lease').env).toEqual({
       WEAPP_VITE_DELIVERY_TRACE: '${{ inputs.chokidar_delivery_diagnostic && \'1\' || \'0\' }}',
@@ -111,13 +123,13 @@ describe('Windows ordinary npm watcher delivery workflow', () => {
     if (!reusable.jobs['consumer-platform']) {
       for (const [name, files] of Object.entries(consumerContractGroups)) {
         const expanded = reusable.jobs[name]
-        expect(expanded.strategy.matrix.os).toEqual(['ubuntu-latest', 'windows-latest', 'macos-latest'])
+        expect(expanded.strategy.matrix.os).toEqual(systems)
         expect(expanded.with.checkout_ref).toBe('${{ needs.pr-context.outputs.checkout_sha }}')
         for (const file of files) {
           expect(expanded.with.main_command).toContain(file.replace('packages/weapp-vite/', ''))
         }
       }
-      expect(reusable.jobs['node-support'].strategy.matrix.node).toEqual(['22.23.4', '24.22.1', '26.12.1', '22', '24'])
+      expect(reusable.jobs['node-support'].strategy.matrix.node).toEqual(nodeSupportMatrix.slice(0, 5))
       expect(reusable.jobs['node-support'].steps.find((item: Step) => item.name === 'Verify immutable locally built consumer archives').run).toBe('node scripts/consumerArtifacts/manifest.mjs verify .cache/node-support-tarballs')
       for (const name of runtimeJobs) {
         const expanded = reusable.jobs[name]
@@ -140,7 +152,7 @@ describe('Windows ordinary npm watcher delivery workflow', () => {
     expect(prepare.uses).toBe('./.github/workflows/reusable-node-command.yml')
     expect(prepare.with).toMatchObject({
       ...frozenIdentity,
-      node_version: '24',
+      node_version: ciNode,
       runs_on: '${{ inputs.runs_on }}',
       build_command: 'pnpm exec turbo run build --filter=weapp-vite... --filter=@weapp-vite/react... --filter=rolldown-require... --filter=@mpcore/simulator...',
       main_command: 'node scripts/consumerArtifacts/manifest.mjs pack .cache/node-support-tarballs',
@@ -149,7 +161,7 @@ describe('Windows ordinary npm watcher delivery workflow', () => {
       artifact_path: '.cache/node-support-tarballs',
     })
     const nodeSupport = child.jobs['node-support']
-    expect(nodeSupport.strategy.matrix).toEqual({ node: ['22.23.4', '24.22.1', '26.12.1', '22', '24', '26'] })
+    expect(nodeSupport.strategy.matrix).toEqual({ node: nodeSupportMatrix })
     expect(nodeSupport['runs-on']).toBe('${{ inputs.runs_on }}')
     expect(nodeSupport.env).toMatchObject({ BUILD_ARTIFACT_EXPECTED_COMMIT: frozenCheckout, BUILD_ARTIFACT_EXPECTED_NODE_MAJOR: '24', WEAPP_VITE_CONSUMER_TARBALLS: '.cache/node-support-tarballs' })
     expect(nodeSupport.steps.find((item: Step) => item.uses === './.github/actions/setup-node')?.with).toEqual({
@@ -191,7 +203,7 @@ describe('Windows ordinary npm watcher delivery workflow', () => {
         expect(candidate.with).toMatchObject({
           ...frozenIdentity,
           runs_on: '${{ inputs.runs_on }}',
-          node_version: '24',
+          node_version: ciNode,
           consume_build_artifact: build,
           build_artifact_node_major: '24',
           consume_aux_artifact: archives,
@@ -233,7 +245,7 @@ describe('Windows ordinary npm watcher delivery workflow', () => {
       verification_topology: '${{ inputs.verification_topology }}',
       ...frozenIdentity,
       runs_on: '${{ inputs.runs_on }}',
-      node_version: '24',
+      node_version: ciNode,
       timeout_minutes: 30,
       build_command: '',
       main_command: 'node scripts/consumerBatches/imports.mjs ${{ matrix.host }}',

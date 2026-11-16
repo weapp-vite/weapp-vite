@@ -1,5 +1,6 @@
 /* eslint-disable no-template-curly-in-string -- GitHub Actions 表达式必须按字面量核验。 */
 import { describe, expect, it } from 'vitest'
+import { readCiToolchain } from '../../../.github/scripts/ci-toolchain.mjs'
 import { DEFAULT_TEMPLATE_NAMES } from '../../../scripts/createWeappViteSmoke/templates.mjs'
 import { frozenWorkflowText, readWorkflowGraph } from '../../../scripts/workflowFixture.mjs'
 
@@ -28,6 +29,10 @@ const graph = readWorkflowGraph('ci-create-weapp-vite.yml')
 const entry = graph.get('ci-create-weapp-vite.yml') as Workflow
 const shared = graph.get('validate-ci-create-weapp-vite.yml') as Workflow
 const frozenCheckout = frozenWorkflowText('${{ needs.pr-context.outputs.checkout_sha }}', 'ci-create-weapp-vite')
+const ciToolchain = readCiToolchain()
+const expression = (value: string) => `$${'{{'} ${value} }}`
+const systems = [ciToolchain.runners.ubuntu, ciToolchain.runners.windows, expression('fromJSON(inputs.ci_toolchain).runners.macos')]
+const coreNodeMajors: string[] = (ciToolchain.node.supportMajors as number[]).slice(0, 2).map(String)
 
 function step(job: string, name: string) {
   const found = shared.jobs[job]!.steps?.find(candidate => candidate.name === name)
@@ -51,7 +56,7 @@ describe('scaffold source workflow contract', () => {
     expect(encoded).toBeDefined()
     const matrix = JSON.parse(encoded!) as { include: { 'os': string, 'node-version': string, 'scope': string, 'templates'?: string }[] }
     expect(matrix.include.filter(row => row.scope === 'core')).toEqual(expect.arrayContaining(
-      ['ubuntu-latest', 'windows-latest', 'macos-latest'].flatMap(os => ['22', '24'].map(node => ({ os, 'node-version': node, 'scope': 'core' }))),
+      systems.flatMap(os => coreNodeMajors.map(node => ({ os, 'node-version': node, 'scope': 'core' }))),
     ))
     expect(matrix.include.filter(row => row.scope === 'core')).toHaveLength(6)
     expect(matrix.include.filter(row => row.scope === 'all-templates')).toHaveLength(1)
