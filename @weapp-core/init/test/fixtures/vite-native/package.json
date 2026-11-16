@@ -33,10 +33,10 @@
   "devDependencies": {
     "autoprefixer": "^10.6.2",
     "miniprogram-api-typings": "latest",
-    "postcss": "^8.5.32",
+    "postcss": "^8.5.33",
     "tailwindcss": "^4.3.5",
     "typescript": "latest",
-    "weapp-tailwindcss": "^5.7.4",
+    "weapp-tailwindcss": "^5.7.5",
     "weapp-vite": "latest"
   }
 }

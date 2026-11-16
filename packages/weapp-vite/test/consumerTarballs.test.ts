@@ -1,7 +1,9 @@
 import { mkdir, mkdtemp, realpath, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { afterEach, describe, expect, it } from 'vitest'
+import { consumerClosure } from '../../../scripts/consumerArtifacts/manifest.mjs'
 import { createConsumerTemporaryRoot, readConsumerTarballs, verifyConsumerTarballProvenance } from '../scripts/consumerTarballs.mjs'
 
 const directories: string[] = []
@@ -18,6 +20,14 @@ afterEach(async () => {
 })
 
 describe('prepacked consumer dependencies', () => {
+  it('resolves only the selected workspace entry closure', async () => {
+    const root = fileURLToPath(new URL('../../../', import.meta.url))
+    const closure = await consumerClosure(root, ['weapp-vite', 'wevu'])
+    expect(closure).toHaveProperty('weapp-vite')
+    expect(closure).toHaveProperty('wevu')
+    expect(closure).not.toHaveProperty('@weapp-vite/react')
+  })
+
   it('uses one physical path for the consumer when the temporary parent is an alias', async () => {
     const root = await fixture({})
     const physical = path.join(root, 'physical')
