@@ -40,3 +40,22 @@ it('resolves every migrated legacy import to a Git-visible source file without l
   expect(unresolved).toEqual([])
   expect(hidden).toEqual([])
 })
+
+it('keeps legacy fixtures independent from package source internals', async () => {
+  const violations: string[] = []
+  const files = await Array.fromAsync(fs.glob('**/*.ts', { cwd: path.join(buildRoot, 'legacy') }))
+  for (const file of files) {
+    const filename = path.join(buildRoot, 'legacy', file)
+    const source = ts.preProcessFile(await fs.readFile(filename, 'utf8'))
+    for (const imported of source.importedFiles) {
+      if (!imported.fileName.startsWith('.')) {
+        continue
+      }
+      const resolved = path.relative(root, path.resolve(path.dirname(filename), imported.fileName)).replaceAll('\\', '/')
+      if (resolved.startsWith('packages/weapp-vite/src/')) {
+        violations.push(`${path.relative(root, filename).replaceAll('\\', '/')} -> ${resolved}`)
+      }
+    }
+  }
+  expect(violations).toEqual([])
+})
