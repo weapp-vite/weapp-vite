@@ -6,6 +6,7 @@ import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 // eslint-disable-next-line e18e/ban-dependencies -- 消费安装需在各平台正确解析 npm/pnpm 启动器。
 import { execa } from 'execa'
+import { consumerClosure } from '../../../scripts/consumerArtifacts/manifest.mjs'
 import { readPackedPackageJsonFromTarball } from '../../../scripts/print-rolldown-versions.mjs'
 import { inspectConsumerInstallation, profileConsumerStartup, verifyConsumerExports, verifyConsumerNegativeControls } from './consumerEvidence.mjs'
 import { createConsumerRuntimeEnvironment } from './consumerRuntimeEnvironment.mjs'
@@ -36,9 +37,15 @@ try {
   await mkdir(consumerRoot)
   const entryPackages = ['weapp-vite', 'wevu', ...(runtimeSuite === 'react' ? ['@weapp-vite/react'] : [])]
   const packedDirectory = process.env.WEAPP_VITE_CONSUMER_TARBALLS
-  const dependencies = packedDirectory
+  const archivedDependencies = packedDirectory
     ? await readConsumerTarballs(packedDirectory, entryPackages)
     : await packConsumerTarballs(repoRoot, temporaryRoot, entryPackages)
+  const selectedClosure = packedDirectory
+    ? await consumerClosure(repoRoot, entryPackages)
+    : undefined
+  const dependencies = packedDirectory
+    ? Object.fromEntries(Object.entries(archivedDependencies).filter(([name]) => name in selectedClosure))
+    : archivedDependencies
   const candidates = { ...dependencies }
   // 所有候选已是直接 tarball 依赖；额外覆盖整个闭包会触发 npm 11.6 的 override-set 冲突。
   const toolchainSelection = resolveConsumerToolchain(toolchain, readPackedPackageJsonFromTarball(dependencies['weapp-vite'].slice(5)))

@@ -37,10 +37,10 @@ async function packedFiles(directory) {
 }
 
 /** 从源码清单重新计算完整发布闭包，避免产物自身的清单遗漏运行时依赖。 */
-export async function consumerClosure(root) {
+export async function consumerClosure(root, entryPackages = consumerEntryPackages) {
   const listing = await execa('pnpm', ['--recursive', 'list', '--depth', '-1', '--json'], { cwd: root })
   const projects = new Map(JSON.parse(listing.stdout).map(project => [project.name, project.path]))
-  const pending = [...consumerEntryPackages]
+  const pending = [...entryPackages]
   const closure = {}
   while (pending.length) {
     const name = pending.pop()
