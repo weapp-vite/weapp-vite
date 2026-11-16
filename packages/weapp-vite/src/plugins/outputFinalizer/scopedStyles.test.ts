@@ -30,6 +30,15 @@ describe('Class-based platform scoped styles', () => {
     expect(normalizeClassScopedStyle(style)).toBe('.panel.odd.data-v-owner > text.data-v-child-s{color:red}.panel.data-v-owner .deep{color:blue}.global{color:green}')
   })
 
+  it('removes leading charset declarations before normalizing WXSS', () => {
+    expect(normalizeClassScopedStyle('@charset "UTF-8";\n.a{color:red}'))
+      .toBe('.a{color:red}')
+    expect(normalizeClassScopedStyle('@CHARSET "utf-8";\n@charset "UTF-8";\n[data-v-owner]{color:red}'))
+      .toBe('.data-v-owner{color:red}')
+    expect(normalizeClassScopedStyle('/* @charset "UTF-8"; */\n.a{color:red}'))
+      .toBe('/* @charset "UTF-8"; */\n.a{color:red}')
+  })
+
   it('does not rewrite text, comments, declaration strings or unrelated attribute selectors', () => {
     const template = '<!-- data-v-example --><text class="a" data-value="data-v-example">data-v-example</text>'
     expect(normalizeClassScopedTemplate(template)).toBe(template)

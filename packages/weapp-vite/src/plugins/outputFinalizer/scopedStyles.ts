@@ -8,6 +8,7 @@ import selectorParser from 'postcss-selector-parser'
 import { outputTemplateParser } from '../../wxml/template/parser'
 
 const SCOPE_ATTRIBUTE_RE = /^data-v-[\w-]+$/
+const LEADING_CSS_CHARSET_RE = /^(?:@charset\s+['"][^'"]+['"];\s*)+/i
 
 /** 微信、支付宝和抖音的组件样式使用同等优先级的 class 保留作用域。 */
 export function normalizeClassScopedTemplate(source: string, platform: MpPlatform = 'alipay') {
@@ -59,10 +60,11 @@ export function normalizeClassScopedTemplate(source: string, platform: MpPlatfor
 }
 
 export function normalizeClassScopedStyle(source: string) {
-  if (!source.includes('data-v-')) {
-    return source
+  const normalizedSource = source.replace(LEADING_CSS_CHARSET_RE, '')
+  if (!normalizedSource.includes('data-v-')) {
+    return normalizedSource
   }
-  const root = postcss.parse(source)
+  const root = postcss.parse(normalizedSource)
   root.walkRules((rule) => {
     if (!rule.selector.includes('data-v-')) {
       return
