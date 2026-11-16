@@ -15,12 +15,13 @@ interface WorkflowJob {
   needs?: string[]
   if?: string
   env?: Record<string, string>
-  strategy?: { 'fail-fast': boolean, 'matrix': { shard: number[] } }
+  strategy?: { 'fail-fast': boolean, 'max-parallel'?: string, 'matrix': { shard: number[] } }
   with?: Record<string, unknown>
   steps?: WorkflowStep[]
 }
 
 const frozenCheckout = '${{ (inputs.verification_topology == \'optimized-v2\' && fromJSON(inputs.pr_context).checkoutSha || needs.pr-context.outputs.checkout_sha) }}'
+const macosParallel = '${{ inputs.runs_on == fromJSON(inputs.ci_toolchain).runners.macos && fromJSON(inputs.ci_toolchain).parallel.macos || fromJSON(inputs.ci_toolchain).parallel.default }}'
 
 function workflow() {
   return readWorkflowFixture('reusable-miniapp-platform.yml') as { jobs: Record<string, WorkflowJob> }
@@ -50,7 +51,7 @@ describe('complete headless DOM workflow sharding', () => {
     const { jobs } = workflow()
     const job = jobs['ide-dom-headless']!
     expect(job.needs).toEqual(['pr-context', 'build', 'plan'])
-    expect(job.strategy).toEqual({ 'fail-fast': false, 'matrix': { shard: [1, 2] } })
+    expect(job.strategy).toEqual({ 'fail-fast': false, 'max-parallel': macosParallel, 'matrix': { shard: [1, 2] } })
     expect(job.with).toMatchObject({
       timeout_minutes: 30,
       checkout_ref: frozenCheckout,
