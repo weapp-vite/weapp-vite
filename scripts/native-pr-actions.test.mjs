@@ -272,7 +272,11 @@ describe('native approval workflow graph', () => {
     for (const [name, check] of Object.entries(checks)) {
       expect(check.needs).toBe('plan')
       expect(check.if).toContain(`selections['${name}']`)
-      expect(check.with).toEqual({ pr_context: '${{ needs.plan.outputs.pr_context }}', verification_topology: '${{ fromJSON(needs.plan.outputs.pr_context).verificationTopology }}' })
+      expect(check.with).toEqual({
+        pr_context: '${{ needs.plan.outputs.pr_context }}',
+        ci_toolchain: '${{ needs.plan.outputs.ci_toolchain }}',
+        verification_topology: '${{ fromJSON(needs.plan.outputs.pr_context).verificationTopology }}',
+      })
       expect(check.secrets).toBeUndefined()
       const shared = await read(`validate-${name}.yml`)
       expect(shared.on.workflow_call.inputs.pr_context).toEqual({ type: 'string', required: true })

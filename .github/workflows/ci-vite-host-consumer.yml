@@ -34,6 +34,8 @@ jobs:
       pr_number: ${{ inputs.pr-number || '' }}
       profile: ci-vite-host-consumer
   toolchain:
+    needs: pr-context
+    if: needs.pr-context.outputs.should_run == 'true'
     uses: ./.github/workflows/reusable-ci-toolchain.yml
   validation:
     needs: [pr-context, toolchain]

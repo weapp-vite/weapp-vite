@@ -32,6 +32,8 @@ jobs:
       pr_number: ${{ inputs.pr-number || '' }}
       profile: ci-acceptance
   toolchain:
+    needs: pr-context
+    if: needs.pr-context.outputs.should_run == 'true'
     uses: ./.github/workflows/reusable-ci-toolchain.yml
   validation:
     needs: [pr-context, toolchain]
