@@ -1,0 +1,9 @@
+{
+  "name": "issue-1345-wxss-charset",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "weapp-vite": "workspace:*",
+    "wevu": "workspace:*"
+  }
+}

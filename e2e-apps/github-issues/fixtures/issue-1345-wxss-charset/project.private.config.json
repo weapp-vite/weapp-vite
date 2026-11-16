@@ -1,0 +1,17 @@
+{
+  "setting": {
+    "urlCheck": false
+  },
+  "condition": {
+    "miniprogram": {
+      "list": [
+        {
+          "name": "issue-1345-wxss-charset",
+          "pathName": "pages/index/index",
+          "query": "",
+          "launchMode": "default"
+        }
+      ]
+    }
+  }
+}
