@@ -1,9 +1,6 @@
 import { RequestGlobalsEventTarget } from './shared'
 
-function createAbortError(reason?: unknown) {
-  if (reason instanceof Error) {
-    return reason
-  }
+function createAbortError() {
   if (typeof DOMException === 'function') {
     return new DOMException('The operation was aborted.', 'AbortError')
   }
@@ -19,7 +16,7 @@ export class AbortSignalPolyfill extends RequestGlobalsEventTarget {
 
   throwIfAborted() {
     if (this.aborted) {
-      throw createAbortError(this.reason)
+      throw this.reason === undefined ? createAbortError() : this.reason
     }
   }
 }
@@ -32,7 +29,7 @@ export class AbortControllerPolyfill {
       return
     }
     this.signal.aborted = true
-    this.signal.reason = reason
+    this.signal.reason = reason === undefined ? createAbortError() : reason
     this.signal.dispatchEvent({ type: 'abort' })
   }
 }
