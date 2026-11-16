@@ -47,6 +47,7 @@ jobs:
     timeout-minutes: 5
     outputs:
       pr_context: ${{ steps.context.outputs.pr_context }}
+      ci_toolchain: ${{ steps.ci-toolchain.outputs.policy }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -60,6 +61,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: node .github/scripts/native-pr-context.mjs
+      - id: ci-toolchain
+        name: Validate and export shared CI toolchain
+        shell: bash
+        run: node .github/scripts/ci-toolchain.mjs export >> "$GITHUB_OUTPUT"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: pr-context
@@ -72,6 +77,7 @@ jobs:
     uses: ./.github/workflows/validate-ci.yml
     with:
       pr_context: ${{ needs.plan.outputs.pr_context }}
+      ci_toolchain: ${{ needs.plan.outputs.ci_toolchain }}
       verification_topology: ${{ fromJSON(needs.plan.outputs.pr_context).verificationTopology }}
   ci-policy:
     name: CI Policy
@@ -80,6 +86,7 @@ jobs:
     uses: ./.github/workflows/validate-ci-policy.yml
     with:
       pr_context: ${{ needs.plan.outputs.pr_context }}
+      ci_toolchain: ${{ needs.plan.outputs.ci_toolchain }}
       verification_topology: ${{ fromJSON(needs.plan.outputs.pr_context).verificationTopology }}
   ci-e2e:
     name: CI E2E
@@ -88,6 +95,7 @@ jobs:
     uses: ./.github/workflows/validate-ci-e2e.yml
     with:
       pr_context: ${{ needs.plan.outputs.pr_context }}
+      ci_toolchain: ${{ needs.plan.outputs.ci_toolchain }}
       verification_topology: ${{ fromJSON(needs.plan.outputs.pr_context).verificationTopology }}
   ci-create-weapp-vite:
     name: Create Weapp Vite Smoke
@@ -96,6 +104,7 @@ jobs:
     uses: ./.github/workflows/validate-ci-create-weapp-vite.yml
     with:
       pr_context: ${{ needs.plan.outputs.pr_context }}
+      ci_toolchain: ${{ needs.plan.outputs.ci_toolchain }}
       verification_topology: ${{ fromJSON(needs.plan.outputs.pr_context).verificationTopology }}
   ci-acceptance-http:
     name: Acceptance HTTP
@@ -104,6 +113,7 @@ jobs:
     uses: ./.github/workflows/validate-ci-acceptance-http.yml
     with:
       pr_context: ${{ needs.plan.outputs.pr_context }}
+      ci_toolchain: ${{ needs.plan.outputs.ci_toolchain }}
       verification_topology: ${{ fromJSON(needs.plan.outputs.pr_context).verificationTopology }}
   ci-acceptance:
     name: Acceptance and Agent
@@ -112,6 +122,7 @@ jobs:
     uses: ./.github/workflows/validate-ci-acceptance.yml
     with:
       pr_context: ${{ needs.plan.outputs.pr_context }}
+      ci_toolchain: ${{ needs.plan.outputs.ci_toolchain }}
       verification_topology: ${{ fromJSON(needs.plan.outputs.pr_context).verificationTopology }}
   ci-dimina:
     name: Dimina Web Experiment
@@ -120,6 +131,7 @@ jobs:
     uses: ./.github/workflows/validate-ci-dimina.yml
     with:
       pr_context: ${{ needs.plan.outputs.pr_context }}
+      ci_toolchain: ${{ needs.plan.outputs.ci_toolchain }}
       verification_topology: ${{ fromJSON(needs.plan.outputs.pr_context).verificationTopology }}
   ci-vite-host-consumer:
     name: Vite Host Consumer
@@ -128,6 +140,7 @@ jobs:
     uses: ./.github/workflows/validate-ci-vite-host-consumer.yml
     with:
       pr_context: ${{ needs.plan.outputs.pr_context }}
+      ci_toolchain: ${{ needs.plan.outputs.ci_toolchain }}
       verification_topology: ${{ fromJSON(needs.plan.outputs.pr_context).verificationTopology }}
   ci-vscode-extension:
     name: VSCode Extension CI
@@ -136,6 +149,7 @@ jobs:
     uses: ./.github/workflows/validate-ci-vscode-extension.yml
     with:
       pr_context: ${{ needs.plan.outputs.pr_context }}
+      ci_toolchain: ${{ needs.plan.outputs.ci_toolchain }}
       verification_topology: ${{ fromJSON(needs.plan.outputs.pr_context).verificationTopology }}
   ci-tutorial-e2e:
     name: Tutorial E2E
@@ -144,6 +158,7 @@ jobs:
     uses: ./.github/workflows/validate-ci-tutorial-e2e.yml
     with:
       pr_context: ${{ needs.plan.outputs.pr_context }}
+      ci_toolchain: ${{ needs.plan.outputs.ci_toolchain }}
       verification_topology: ${{ fromJSON(needs.plan.outputs.pr_context).verificationTopology }}
   deploy-website:
     name: Deploy Website
@@ -152,6 +167,7 @@ jobs:
     uses: ./.github/workflows/validate-deploy-website.yml
     with:
       pr_context: ${{ needs.plan.outputs.pr_context }}
+      ci_toolchain: ${{ needs.plan.outputs.ci_toolchain }}
       verification_topology: ${{ fromJSON(needs.plan.outputs.pr_context).verificationTopology }}
   native-addon-correctness:
     name: Native Addon Correctness
@@ -160,6 +176,7 @@ jobs:
     uses: ./.github/workflows/validate-native-addon-correctness.yml
     with:
       pr_context: ${{ needs.plan.outputs.pr_context }}
+      ci_toolchain: ${{ needs.plan.outputs.ci_toolchain }}
       verification_topology: ${{ fromJSON(needs.plan.outputs.pr_context).verificationTopology }}
   ci-performance:
     name: Performance Smoke
@@ -168,6 +185,7 @@ jobs:
     uses: ./.github/workflows/validate-ci-performance.yml
     with:
       pr_context: ${{ needs.plan.outputs.pr_context }}
+      ci_toolchain: ${{ needs.plan.outputs.ci_toolchain }}
       verification_topology: ${{ fromJSON(needs.plan.outputs.pr_context).verificationTopology }}
   wevu-runtime-size:
     name: Wevu Runtime Size
@@ -176,6 +194,7 @@ jobs:
     uses: ./.github/workflows/validate-wevu-runtime-size.yml
     with:
       pr_context: ${{ needs.plan.outputs.pr_context }}
+      ci_toolchain: ${{ needs.plan.outputs.ci_toolchain }}
       verification_topology: ${{ fromJSON(needs.plan.outputs.pr_context).verificationTopology }}
   documentation:
     name: Root documentation policy

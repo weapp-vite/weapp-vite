@@ -9,6 +9,9 @@ on:
       pr_context:
         required: true
         type: string
+      ci_toolchain:
+        required: true
+        type: string
 permissions:
   contents: read
   pull-requests: read

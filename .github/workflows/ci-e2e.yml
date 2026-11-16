@@ -63,12 +63,15 @@ jobs:
     with:
       pr_number: ${{ inputs.pr-number || '' }}
       profile: ci-e2e
+  toolchain:
+    uses: ./.github/workflows/reusable-ci-toolchain.yml
   validation:
-    needs: pr-context
+    needs: [pr-context, toolchain]
     if: needs.pr-context.outputs.should_run == 'true'
     uses: ./.github/workflows/validate-ci-e2e.yml
     with:
       pr_context: ${{ needs.pr-context.outputs.pr_context }}
+      ci_toolchain: ${{ needs.toolchain.outputs.policy }}
       hmr-diagnostic: ${{ inputs.hmr-diagnostic || 'full' }}
       exclude-e2e-projects: ${{ inputs.exclude-e2e-projects || '' }}
       workspace-hmr-audit: ${{ inputs.workspace-hmr-audit || 'full' }}

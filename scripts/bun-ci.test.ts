@@ -2,10 +2,14 @@ import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { expect, it, vi } from 'vitest'
 import { parse } from 'yaml'
+import { readCiToolchain } from '../.github/scripts/ci-toolchain.mjs'
 import { frozenJobCondition, frozenWorkflowText, readVerificationTopologyVariant, readWorkflowFixture } from './workflowFixture.mjs'
 
 const ROOT = path.resolve(import.meta.dirname, '..')
 const expression = (value: string) => `$${'{{'} ${value} }}`
+const ciToolchain = readCiToolchain()
+const systems = [ciToolchain.runners.ubuntu, ciToolchain.runners.windows, expression('fromJSON(inputs.ci_toolchain).runners.macos')]
+const bunMatrix = expression('fromJSON(inputs.ci_toolchain).bun.matrix')
 
 it('normalizes Bun test globs for Windows test discovery', async () => {
   vi.doMock('node:path', () => ({
@@ -26,8 +30,8 @@ it('runs Bun CLI on all three systems against frozen workspace artifacts', async
   const workflow = readWorkflowFixture('ci-e2e.yml')
   const job = workflow.jobs['bun-cli']
   expect(job.strategy.matrix).toEqual({
-    'os': ['ubuntu-latest', 'windows-latest', 'macos-latest'],
-    'bun-version': ['1.4.2', 'latest'],
+    'os': systems,
+    'bun-version': bunMatrix,
   })
   const baseline = readVerificationTopologyVariant() === 'baseline'
   expect(job.needs).toEqual(baseline ? ['pr-context', 'miniapp-e2e-build-pr', 'miniapp-e2e-build-full', 'bun-build-diagnostic'] : ['pr-context', 'bun-build-diagnostic'])
@@ -48,7 +52,7 @@ it('runs Bun CLI on all three systems against frozen workspace artifacts', async
   const standard = platform.jobs['bun-cli']
   expect(standard.if).toBe(frozenJobCondition('inputs.node_version == \'22\'', 'ci-e2e', ['pr-context', 'build']))
   expect(standard.needs).toEqual(['pr-context', 'build'])
-  expect(standard.strategy.matrix).toEqual({ 'bun-version': ['1.4.2', 'latest'] })
+  expect(standard.strategy.matrix).toEqual({ 'bun-version': bunMatrix })
   expect(standard.with.consume_build_artifact).toBe(platform.jobs.build.with.build_artifact_name)
   expect(standard.with.main_command).toContain('pnpm e2e:bun')
   for (const name of baseline ? ['miniapp-e2e-build-pr', 'miniapp-e2e-build-full'] : ['miniapp-platform-pr', 'miniapp-platform-full']) {

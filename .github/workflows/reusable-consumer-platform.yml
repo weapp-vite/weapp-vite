@@ -9,6 +9,9 @@ on:
       pr_context:
         type: string
         required: true
+      ci_toolchain:
+        type: string
+        required: true
       runs_on:
         type: string
         required: true
@@ -39,7 +42,7 @@ jobs:
       head_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}
       base_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}
       runs_on: ${{ inputs.runs_on }}
-      node_version: '24'
+      node_version: ${{ fromJSON(inputs.ci_toolchain).node.ci }}
       timeout_minutes: 30
       build_command: pnpm exec turbo run build --filter=weapp-vite... --filter=@weapp-vite/react... --filter=rolldown-require... --filter=@mpcore/simulator...
       main_command: node scripts/consumerArtifacts/manifest.mjs pack .cache/node-support-tarballs
@@ -59,14 +62,15 @@ jobs:
     name: Published Node support (${{ matrix.node }})
     strategy:
       fail-fast: false
+      max-parallel: ${{ inputs.runs_on == fromJSON(inputs.ci_toolchain).runners.macos && fromJSON(inputs.ci_toolchain).parallel.macos || fromJSON(inputs.ci_toolchain).parallel.default }}
       matrix:
         node:
-          - 22.23.4
-          - 24.22.1
-          - 26.12.1
-          - '22'
-          - '24'
-          - '26'
+          - ${{ fromJSON(inputs.ci_toolchain).node.minimum['22'] }}
+          - ${{ fromJSON(inputs.ci_toolchain).node.minimum['24'] }}
+          - ${{ fromJSON(inputs.ci_toolchain).node.minimum['26'] }}
+          - ${{ fromJSON(inputs.ci_toolchain).node.supportMajors[0] }}
+          - ${{ fromJSON(inputs.ci_toolchain).node.supportMajors[1] }}
+          - ${{ fromJSON(inputs.ci_toolchain).node.supportMajors[2] }}
     runs-on: ${{ inputs.runs_on }}
     timeout-minutes: 40
     steps:
@@ -82,7 +86,7 @@ jobs:
           profile: ci-vite-host-consumer
       - uses: ./.github/actions/setup-node-pnpm
         with:
-          node-version: '24'
+          node-version: ${{ fromJSON(inputs.ci_toolchain).node.ci }}
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
           name: consumer-${{ inputs.runs_on }}-node-24-build
@@ -160,7 +164,7 @@ jobs:
       head_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}
       base_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}
       runs_on: ${{ inputs.runs_on }}
-      node_version: '24'
+      node_version: ${{ fromJSON(inputs.ci_toolchain).node.ci }}
       timeout_minutes: 30
       consume_build_artifact: consumer-${{ inputs.runs_on }}-node-24-build
       build_artifact_node_major: '24'
@@ -195,7 +199,7 @@ jobs:
       head_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}
       base_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}
       runs_on: ${{ inputs.runs_on }}
-      node_version: '24'
+      node_version: ${{ fromJSON(inputs.ci_toolchain).node.ci }}
       timeout_minutes: 30
       build_command: ''
       main_command: pnpm exec cross-env WEAPP_VITE_DEPENDENCY_EVIDENCE=.cache/dependency-compatibility.json node packages/weapp-vite/scripts/verify-dependency-install.mjs ${{ matrix.manager }}
@@ -234,7 +238,7 @@ jobs:
       head_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}
       base_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}
       runs_on: ${{ inputs.runs_on }}
-      node_version: '24'
+      node_version: ${{ fromJSON(inputs.ci_toolchain).node.ci }}
       timeout_minutes: 30
       build_command: ''
       main_command: node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.toolchain }}
@@ -271,7 +275,7 @@ jobs:
       head_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}
       base_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}
       runs_on: ${{ inputs.runs_on }}
-      node_version: '24'
+      node_version: ${{ fromJSON(inputs.ci_toolchain).node.ci }}
       timeout_minutes: 30
       build_command: ''
       main_command: node scripts/consumerBatches/imports.mjs ${{ matrix.host }}
@@ -312,7 +316,7 @@ jobs:
       head_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}
       base_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}
       runs_on: ${{ inputs.runs_on }}
-      node_version: '24'
+      node_version: ${{ fromJSON(inputs.ci_toolchain).node.ci }}
       timeout_minutes: 30
       build_command: ''
       main_command: node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.host }} headless stateful
@@ -357,7 +361,7 @@ jobs:
       head_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}
       base_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}
       runs_on: ${{ inputs.runs_on }}
-      node_version: '24'
+      node_version: ${{ fromJSON(inputs.ci_toolchain).node.ci }}
       timeout_minutes: 30
       build_command: ''
       main_command: node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.host }} headless ${{ matrix.profile }}
@@ -396,7 +400,7 @@ jobs:
       head_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}
       base_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}
       runs_on: ${{ inputs.runs_on }}
-      node_version: '24'
+      node_version: ${{ fromJSON(inputs.ci_toolchain).node.ci }}
       timeout_minutes: 30
       build_command: ''
       main_command: node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.host }} headless react
@@ -435,7 +439,7 @@ jobs:
       head_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}
       base_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}
       runs_on: ${{ inputs.runs_on }}
-      node_version: '24'
+      node_version: ${{ fromJSON(inputs.ci_toolchain).node.ci }}
       timeout_minutes: 30
       build_command: ''
       main_command: node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.host }} headless independent
@@ -474,7 +478,7 @@ jobs:
       head_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}
       base_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}
       runs_on: ${{ inputs.runs_on }}
-      node_version: '24'
+      node_version: ${{ fromJSON(inputs.ci_toolchain).node.ci }}
       timeout_minutes: 30
       build_command: ''
       main_command: node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.host }} headless worker
@@ -513,7 +517,7 @@ jobs:
       head_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}
       base_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}
       runs_on: ${{ inputs.runs_on }}
-      node_version: '24'
+      node_version: ${{ fromJSON(inputs.ci_toolchain).node.ci }}
       timeout_minutes: 30
       build_command: ''
       main_command: node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.host }} headless plugin
@@ -552,7 +556,7 @@ jobs:
       head_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}
       base_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}
       runs_on: ${{ inputs.runs_on }}
-      node_version: '24'
+      node_version: ${{ fromJSON(inputs.ci_toolchain).node.ci }}
       timeout_minutes: 30
       build_command: ''
       main_command: node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.host }} headless lib
@@ -591,7 +595,7 @@ jobs:
       head_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}
       base_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}
       runs_on: ${{ inputs.runs_on }}
-      node_version: '24'
+      node_version: ${{ fromJSON(inputs.ci_toolchain).node.ci }}
       timeout_minutes: 30
       build_command: ''
       main_command: node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.host }} headless platform
@@ -630,7 +634,7 @@ jobs:
       head_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}
       base_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}
       runs_on: ${{ inputs.runs_on }}
-      node_version: '24'
+      node_version: ${{ fromJSON(inputs.ci_toolchain).node.ci }}
       timeout_minutes: 30
       build_command: ''
       install_playwright: true

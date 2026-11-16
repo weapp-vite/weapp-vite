@@ -9,6 +9,9 @@ on:
       pr_context:
         required: true
         type: string
+      ci_toolchain:
+        required: true
+        type: string
       chokidar_delivery_diagnostic:
         required: false
         type: boolean
@@ -117,10 +120,11 @@ jobs:
         os:
           - ubuntu-latest
           - windows-latest
-          - macos-latest
+          - ${{ fromJSON(inputs.ci_toolchain).runners.macos }}
     uses: ./.github/workflows/reusable-consumer-platform.yml
     with:
       verification_topology: ${{ inputs.verification_topology }}
       pr_context: ${{ inputs.pr_context }}
+      ci_toolchain: ${{ inputs.ci_toolchain }}
       runs_on: ${{ matrix.os }}
     secrets: inherit

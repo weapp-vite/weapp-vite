@@ -13,6 +13,9 @@ on:
       pr_context:
         required: true
         type: string
+      ci_toolchain:
+        required: true
+        type: string
 permissions:
   contents: read
   pull-requests: read
@@ -50,13 +53,13 @@ jobs:
             lint_command: ''
             run_types: false
             run_coverage: false
-          - os: macos-latest
-            node-version: 22
+          - os: ${{ fromJSON(inputs.ci_toolchain).runners.macos }}
+            node-version: ${{ fromJSON(inputs.ci_toolchain).node.supportMajors[0] }}
             build_command: pnpm build:ci:macos
             lint_command: ''
             run_types: false
             run_coverage: false
-      max-parallel: 4
+      max-parallel: ${{ fromJSON(inputs.ci_toolchain).parallel.macos }}
     uses: ./.github/workflows/reusable-quality-platform.yml
     with:
       e2e_exclude_projects: ${{ inputs.exclude-e2e-projects }}
@@ -89,7 +92,7 @@ jobs:
             lint_command: pnpm lint
             run_types: false
             run_coverage: true
-      max-parallel: 2
+      max-parallel: ${{ fromJSON(inputs.ci_toolchain).parallel.default }}
     uses: ./.github/workflows/reusable-quality-platform.yml
     with:
       e2e_exclude_projects: ${{ inputs.exclude-e2e-projects }}
@@ -108,7 +111,7 @@ jobs:
     name: Build and Test (${{ matrix.os }} / Node ${{ matrix.node-version }})
     strategy:
       fail-fast: false
-      max-parallel: 6
+      max-parallel: ${{ fromJSON(inputs.ci_toolchain).parallel.macos }}
       matrix:
         include:
           - os: ubuntu-latest
@@ -135,14 +138,14 @@ jobs:
             lint_command: pnpm lint:ci:windows
             run_types: false
             run_coverage: true
-          - os: macos-latest
-            node-version: 22
+          - os: ${{ fromJSON(inputs.ci_toolchain).runners.macos }}
+            node-version: ${{ fromJSON(inputs.ci_toolchain).node.supportMajors[0] }}
             build_command: pnpm build:ci:macos
             lint_command: pnpm lint
             run_types: false
             run_coverage: true
-          - os: macos-latest
-            node-version: 24
+          - os: ${{ fromJSON(inputs.ci_toolchain).runners.macos }}
+            node-version: ${{ fromJSON(inputs.ci_toolchain).node.supportMajors[1] }}
             build_command: pnpm build:ci:macos
             lint_command: pnpm lint
             run_types: false
@@ -210,7 +213,7 @@ jobs:
     name: Weapi Compatibility Guard (Node ${{ matrix.node-version }})
     strategy:
       fail-fast: false
-      max-parallel: 3
+      max-parallel: ${{ fromJSON(inputs.ci_toolchain).parallel.default }}
       matrix:
         node-version:
           - 22

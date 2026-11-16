@@ -28,10 +28,13 @@ jobs:
     with:
       pr_number: ${{ inputs.pr-number || '' }}
       profile: native-addon-correctness
+  toolchain:
+    uses: ./.github/workflows/reusable-ci-toolchain.yml
   validation:
-    needs: pr-context
+    needs: [pr-context, toolchain]
     if: needs.pr-context.outputs.should_run == 'true'
     uses: ./.github/workflows/validate-native-addon-correctness.yml
     with:
       pr_context: ${{ needs.pr-context.outputs.pr_context }}
+      ci_toolchain: ${{ needs.toolchain.outputs.policy }}
     secrets: inherit

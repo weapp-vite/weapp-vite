@@ -28,9 +28,12 @@ jobs:
     with:
       pr_number: ${{ inputs.pr-number || '' }}
       profile: deploy-website
+  toolchain:
+    uses: ./.github/workflows/reusable-ci-toolchain.yml
   validation:
-    needs: pr-context
+    needs: [pr-context, toolchain]
     if: needs.pr-context.outputs.should_run == 'true'
     uses: ./.github/workflows/validate-deploy-website.yml
     with:
       pr_context: ${{ needs.pr-context.outputs.pr_context }}
+      ci_toolchain: ${{ needs.toolchain.outputs.policy }}

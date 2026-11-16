@@ -9,6 +9,9 @@ on:
       pr_context:
         required: true
         type: string
+      ci_toolchain:
+        required: true
+        type: string
       package-spec:
         type: string
         required: false
@@ -60,9 +63,12 @@ jobs:
     name: Scaffold Network Regression (${{ matrix.os }} / Node 22)
     strategy:
       fail-fast: false
-      max-parallel: 3
+      max-parallel: ${{ fromJSON(inputs.ci_toolchain).parallel.macos }}
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os:
+          - ubuntu-latest
+          - windows-latest
+          - ${{ fromJSON(inputs.ci_toolchain).runners.macos }}
     uses: ./.github/workflows/reusable-node-command.yml
     with:
       verification_topology: ${{ inputs.verification_topology }}
@@ -77,7 +83,7 @@ jobs:
       runs_on: ${{ matrix.os }}
       node_version: '22'
       timeout_minutes: 45
-      build_command: ${{ matrix.os == 'windows-latest' && 'pnpm build:pkgs:ci:windows' || matrix.os == 'macos-latest' && 'pnpm build:pkgs:ci:macos' || 'pnpm build:pkgs:ci' }}
+      build_command: ${{ matrix.os == 'windows-latest' && 'pnpm build:pkgs:ci:windows' || matrix.os == fromJSON(inputs.ci_toolchain).runners.macos && 'pnpm build:pkgs:ci:macos' || 'pnpm build:pkgs:ci' }}
       main_command: |
         pnpm --filter create-weapp-vite typecheck
         pnpm --filter create-weapp-vite test:types
@@ -145,10 +151,10 @@ jobs:
           full_matrix='{"include":[
             {"os":"ubuntu-latest","node-version":"22","scope":"core"},
             {"os":"windows-latest","node-version":"22","scope":"core"},
-            {"os":"macos-latest","node-version":"22","scope":"core"},
+            {"os":"${{ fromJSON(inputs.ci_toolchain).runners.macos }}","node-version":"22","scope":"core"},
             {"os":"ubuntu-latest","node-version":"24","scope":"core"},
             {"os":"windows-latest","node-version":"24","scope":"core"},
-            {"os":"macos-latest","node-version":"24","scope":"core"},
+            {"os":"${{ fromJSON(inputs.ci_toolchain).runners.macos }}","node-version":"24","scope":"core"},
             {"os":"ubuntu-latest","node-version":"24","scope":"all-templates","templates":"default,multi-platform,multi-platform-sfc,plugin,lib,wevu,react,wevu-tdesign,tailwindcss,tdesign,vant"}
           ]}'
 
@@ -184,7 +190,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
-      max-parallel: 3
+      max-parallel: ${{ fromJSON(inputs.ci_toolchain).parallel.macos }}
       matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
 
     env:

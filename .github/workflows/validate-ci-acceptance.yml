@@ -9,6 +9,9 @@ on:
       pr_context:
         required: true
         type: string
+      ci_toolchain:
+        required: true
+        type: string
       scope:
         type: string
         required: false
@@ -32,7 +35,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os:
+          - ubuntu-latest
+          - windows-latest
+          - ${{ fromJSON(inputs.ci_toolchain).runners.macos }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     env:

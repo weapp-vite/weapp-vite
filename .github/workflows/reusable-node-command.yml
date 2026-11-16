@@ -239,6 +239,10 @@ jobs:
         with:
           node-version: ${{ inputs.node_version }}
           install-dependencies: ${{ inputs.verification_topology != 'optimized-v2' || inputs.consume_build_artifact == '' }}
+      - name: Record runner identity
+        shell: bash
+        run: |
+          node -e "require('node:fs').mkdirSync('.tmp', { recursive: true }); require('node:fs').writeFileSync('.tmp/runner-metadata.json', JSON.stringify({ name: process.env.RUNNER_NAME, os: process.env.RUNNER_OS, arch: process.env.RUNNER_ARCH, imageOs: process.env.ImageOS || '', imageVersion: process.env.ImageVersion || '' }, null, 2) + '\\n')"
       - name: Restore trusted workspace task cache
         if: inputs.verification_topology != 'optimized-v2' || inputs.build_command != '' || inputs.lint_command != ''
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -469,6 +473,13 @@ jobs:
         with:
           name: ${{ inputs.timing_artifact_name }}
           path: .tmp/ci-timings.json
+          if-no-files-found: error
+      - name: Upload runner metadata
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: runner-metadata-${{ runner.name }}
+          path: .tmp/runner-metadata.json
           if-no-files-found: error
       - name: Upload baseline coverage plan
         if: success() && inputs.verification_telemetry && contains(inputs.main_command, 'pnpm test:coverage')

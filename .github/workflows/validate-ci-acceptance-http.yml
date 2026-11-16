@@ -9,6 +9,9 @@ on:
       pr_context:
         required: true
         type: string
+      ci_toolchain:
+        required: true
+        type: string
 permissions:
   contents: read
   pull-requests: read
@@ -29,7 +32,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os:
+          - ubuntu-latest
+          - windows-latest
+          - ${{ fromJSON(inputs.ci_toolchain).runners.macos }}
     uses: ./.github/workflows/reusable-node-command.yml
     with:
       verification_topology: ${{ inputs.verification_topology }}

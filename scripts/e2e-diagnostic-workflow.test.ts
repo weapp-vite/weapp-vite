@@ -2,6 +2,7 @@
 import { readFile } from 'node:fs/promises'
 import { describe, expect, it } from 'vitest'
 import { parse } from 'yaml'
+import { readCiToolchain } from '../.github/scripts/ci-toolchain.mjs'
 import { frozenJobCondition, frozenWorkflowText, readVerificationTopologyVariant, readWorkflowFixture } from './workflowFixture.mjs'
 
 interface WorkflowJob {
@@ -11,6 +12,10 @@ interface WorkflowJob {
   strategy?: { 'fail-fast'?: boolean, 'matrix': { 'os'?: string[], 'node-version'?: number[], 'shard'?: number[], 'include'?: Array<{ 'os'?: string, 'node-version': number, 'shard'?: number }> } }
   with?: Record<string, unknown>
 }
+
+const ciToolchain = readCiToolchain()
+const expression = (value: string) => `$${'{{'} ${value} }}`
+const systems = [ciToolchain.runners.ubuntu, ciToolchain.runners.windows, expression('fromJSON(inputs.ci_toolchain).runners.macos')]
 
 async function workflow() {
   return readWorkflowFixture('ci-e2e.yml') as {
@@ -86,7 +91,7 @@ describe('bounded HMR workflow diagnosis', () => {
     expect(job.needs).toBe('pr-context')
     expect(job.uses).toBe('./.github/workflows/reusable-node-command.yml')
     expect(job.strategy?.['fail-fast']).toBe(false)
-    expect(job.strategy?.matrix).toEqual({ os: ['ubuntu-latest', 'windows-latest', 'macos-latest'] })
+    expect(job.strategy?.matrix).toEqual({ os: systems })
     expect(job.with).toMatchObject({
       checkout_ref: frozenWorkflowText(`\${{ needs.pr-context.outputs.checkout_sha }}`, 'ci-e2e'),
       node_version: '24',
@@ -104,7 +109,7 @@ describe('bounded HMR workflow diagnosis', () => {
     expect(job.needs).toBe('pr-context')
     expect(job.uses).toBe('./.github/workflows/reusable-node-command.yml')
     expect(job.strategy?.['fail-fast']).toBe(false)
-    expect(job.strategy?.matrix).toEqual({ os: ['ubuntu-latest', 'windows-latest', 'macos-latest'] })
+    expect(job.strategy?.matrix).toEqual({ os: systems })
     expect(job.with).toEqual({
       pr_context: '${{ inputs.pr_context }}',
       pr_profile: 'ci-e2e',
@@ -224,7 +229,7 @@ describe('bounded HMR workflow diagnosis', () => {
     expect(job.if).toBe(diagnosticCondition('plugin-watch-readiness'))
     expect(job.needs).toBe('pr-context')
     expect(job.strategy?.['fail-fast']).toBe(false)
-    expect(job.strategy?.matrix).toEqual({ 'os': ['ubuntu-latest', 'windows-latest', 'macos-latest'], 'node-version': [22, 24] })
+    expect(job.strategy?.matrix).toEqual({ 'os': systems, 'node-version': [22, 24] })
     expect(job.with).toMatchObject({
       build_command: 'pnpm exec turbo run build --filter=weapp-vite...',
       main_command: 'pnpm vitest run packages/weapp-vite/test/vite-plugin-project.test.ts --reporter=default --reporter=json --outputFile=.tmp/plugin-watch-readiness-report.json',
@@ -238,7 +243,7 @@ describe('bounded HMR workflow diagnosis', () => {
     const { jobs } = await workflow()
     const job = jobs['lifecycle-diagnostic']!
     expect(job.if).toBe(diagnosticCondition('lifecycle'))
-    expect(job.strategy?.matrix).toEqual({ 'os': ['ubuntu-latest', 'windows-latest', 'macos-latest'], 'node-version': [22, 24] })
+    expect(job.strategy?.matrix).toEqual({ 'os': systems, 'node-version': [22, 24] })
     const commands = String(job.with?.main_command).trim().split('\n')
     expect(commands).toHaveLength(2)
     expect(commands[0]).toContain('snapshotBuild.integration.test.ts')
@@ -257,7 +262,7 @@ describe('bounded HMR workflow diagnosis', () => {
     const { jobs } = await workflow()
     const job = jobs['runtime-publication-diagnostic']!
     expect(job.if).toBe(diagnosticCondition('runtime-publication'))
-    expect(job.strategy?.matrix).toEqual({ 'os': ['ubuntu-latest', 'windows-latest', 'macos-latest'], 'node-version': [22, 24] })
+    expect(job.strategy?.matrix).toEqual({ 'os': systems, 'node-version': [22, 24] })
     const commands = String(job.with?.main_command)
     for (const file of ['scripts/utils/atomicRename.test.ts', 'scripts/editSequence/buildSources.test.ts', 'scripts/editSequence/frameworkSources.test.ts', 'devBuildCompletion.test.ts', 'hmrOutputDiagnostics.test.ts', 'statefulArtifactMeasurement.deadline.test.ts', 'auto-import-vue-sfc.test.ts', 'external-linked-vue-component.hmr.test.ts', 'issue-1134-native-topology.runtime.test.ts', 'script-setup-external-src.runtime.test.ts', 'issue-1015-css-hmr.runtime.test.ts', 'issue-1140-mode-cache.runtime.test.ts', 'issue-1058-template-tags.runtime.test.ts']) {
       expect(commands).toContain(file)
@@ -271,10 +276,10 @@ describe('bounded HMR workflow diagnosis', () => {
     const { jobs } = await workflow()
     const child = readWorkflowFixture('reusable-miniapp-platform.yml')
     expect(child.jobs.miniapp.strategy.matrix).toEqual({ shard: [1, 2, 3, 4] })
-    const expected = ['macos-latest/22', 'macos-latest/24', 'ubuntu-latest/22', 'ubuntu-latest/24', 'windows-latest/22', 'windows-latest/24']
+    const expected = systems.flatMap(os => [22, 24].map(node => `${os}/${node}`)).sort()
     const baseline = readVerificationTopologyVariant() === 'baseline'
     if (baseline) {
-      expect(jobs['miniapp-e2e-ci-full']?.strategy?.matrix).toEqual({ 'os': ['ubuntu-latest', 'windows-latest', 'macos-latest'], 'node-version': [22, 24], 'shard': [1, 2, 3, 4] })
+      expect(jobs['miniapp-e2e-ci-full']?.strategy?.matrix).toEqual({ 'os': systems, 'node-version': [22, 24], 'shard': [1, 2, 3, 4] })
     }
     for (const name of baseline ? ['miniapp-e2e-build-full', 'miniapp-hmr-ci-full'] : ['miniapp-platform-full']) {
       expect(jobs[name]?.strategy?.matrix.include?.map(row => `${row.os}/${row['node-version']}`).sort()).toEqual(expected)

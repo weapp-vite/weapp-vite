@@ -9,6 +9,9 @@ on:
       pr_context:
         type: string
         required: true
+      ci_toolchain:
+        type: string
+        required: true
       runs_on:
         type: string
         required: true
@@ -153,6 +156,7 @@ jobs:
     name: IDE DOM Headless shard ${{ matrix.shard }} (${{ inputs.runs_on }} / Node ${{ inputs.node_version }})
     strategy:
       fail-fast: false
+      max-parallel: ${{ inputs.runs_on == fromJSON(inputs.ci_toolchain).runners.macos && fromJSON(inputs.ci_toolchain).parallel.macos || fromJSON(inputs.ci_toolchain).parallel.default }}
       matrix:
         shard:
           - 1
@@ -284,6 +288,7 @@ jobs:
       - plan
     strategy:
       fail-fast: false
+      max-parallel: ${{ inputs.runs_on == fromJSON(inputs.ci_toolchain).runners.macos && fromJSON(inputs.ci_toolchain).parallel.macos || fromJSON(inputs.ci_toolchain).parallel.default }}
       matrix:
         shard:
           - 1
@@ -354,10 +359,9 @@ jobs:
     name: Bun CLI (${{ matrix.bun-version }})
     strategy:
       fail-fast: false
+      max-parallel: ${{ inputs.runs_on == fromJSON(inputs.ci_toolchain).runners.macos && fromJSON(inputs.ci_toolchain).parallel.macos || fromJSON(inputs.ci_toolchain).parallel.default }}
       matrix:
-        bun-version:
-          - 1.4.2
-          - latest
+        bun-version: ${{ fromJSON(inputs.ci_toolchain).bun.matrix }}
     uses: ./.github/workflows/reusable-node-command.yml
     with:
       pr_context: ${{ inputs.pr_context }}

@@ -37,11 +37,14 @@ jobs:
     with:
       pr_number: ${{ inputs.pr-number || '' }}
       profile: ci
+  toolchain:
+    uses: ./.github/workflows/reusable-ci-toolchain.yml
   validation:
-    needs: pr-context
+    needs: [pr-context, toolchain]
     if: needs.pr-context.outputs.should_run == 'true'
     uses: ./.github/workflows/validate-ci.yml
     with:
       pr_context: ${{ needs.pr-context.outputs.pr_context }}
+      ci_toolchain: ${{ needs.toolchain.outputs.policy }}
       exclude-e2e-projects: ${{ inputs.exclude-e2e-projects || '' }}
     secrets: inherit

@@ -34,7 +34,7 @@ on:
         options:
           - ubuntu-latest
           - windows-latest
-          - macos-latest
+          - macos-15
       node-version:
         description: target Node.js version when full matrix is disabled
         required: false
@@ -80,12 +80,15 @@ jobs:
     with:
       pr_number: ${{ inputs.pr-number || '' }}
       profile: ci-create-weapp-vite
+  toolchain:
+    uses: ./.github/workflows/reusable-ci-toolchain.yml
   validation:
-    needs: pr-context
+    needs: [pr-context, toolchain]
     if: needs.pr-context.outputs.should_run == 'true'
     uses: ./.github/workflows/validate-ci-create-weapp-vite.yml
     with:
       pr_context: ${{ needs.pr-context.outputs.pr_context }}
+      ci_toolchain: ${{ needs.toolchain.outputs.policy }}
       package-spec: ${{ inputs.package-spec || 'latest' }}
       source: ${{ inputs.source || 'published' }}
       full-matrix: ${{ inputs.full-matrix || false }}

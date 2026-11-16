@@ -102,6 +102,7 @@ describe('ordinary CI Node setup before candidate installation', () => {
       mkdirSync(actionDirectory, { recursive: true })
       mkdirSync(measuredDirectory)
       cpSync(new URL('../.github/actions/setup-node/selector.mjs', import.meta.url), join(actionDirectory, 'selector.mjs'))
+      cpSync(new URL('../.github/ci-toolchain.json', import.meta.url), join(root, 'driver/.github/ci-toolchain.json'))
       writeFileSync(join(root, 'driver/.node-version'), '24.99.0\n')
       writeFileSync(join(measuredDirectory, '.node-version'), '24.1.0\n')
       const output = join(root, 'output')
@@ -155,7 +156,7 @@ describe('ordinary CI Node setup before candidate installation', () => {
   it('resolves floating support versions before freezing the exact v2 matrix and builder runtime', () => {
     const consumer = workflow('reusable-consumer-platform.yml')
     const run = workflow('reusable-node-command.yml').jobs.run!
-    expect(consumer.jobs.prepare!.with).toMatchObject({ node_version: '24', resolve_node_support: '${{ inputs.verification_topology == \'optimized-v2\' }}' })
+    expect(consumer.jobs.prepare!.with).toMatchObject({ node_version: `\${{ fromJSON(inputs.ci_toolchain).node.ci }}`, resolve_node_support: '${{ inputs.verification_topology == \'optimized-v2\' }}' })
     expect(run.outputs).toMatchObject({ node_version: '${{ steps.toolchain.outputs.node-version }}', node_support_matrix: '${{ steps.node-support-plan.outputs.matrix }}' })
     expect(consumer.jobs['node-support-v2']!.strategy?.matrix).toEqual({ include: '${{ fromJSON(needs.prepare.outputs.node_support_matrix) }}' })
     for (const major of ['22', '24', '26']) {

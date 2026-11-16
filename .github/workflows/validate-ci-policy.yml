@@ -9,6 +9,9 @@ on:
       pr_context:
         required: true
         type: string
+      ci_toolchain:
+        required: true
+        type: string
 permissions:
   contents: read
   pull-requests: read
@@ -25,7 +28,7 @@ jobs:
   policy-pr:
     needs: pr-context
     if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && ((inputs.verification_topology == 'optimized-v2' && ((contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).selections['ci-policy'] || !contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true' && ((inputs.verification_topology == 'optimized-v2' && (fromJSON(inputs.pr_context).isPr && 'true' || 'false') || needs.pr-context.outputs.is_pr) == 'true')) }}
-    name: Policy Checks (Node 24)
+    name: Policy Checks (Node ${{ fromJSON(inputs.ci_toolchain).node.ci }})
     uses: ./.github/workflows/reusable-node-command.yml
     with:
       verification_topology: ${{ inputs.verification_topology }}
@@ -39,7 +42,7 @@ jobs:
       head_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}
       base_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}
       runs_on: ubuntu-latest
-      node_version: '24'
+      node_version: ${{ fromJSON(inputs.ci_toolchain).node.ci }}
       timeout_minutes: 10
       build_command: pnpm exec turbo run build --filter=weapp-ide-cli...
       main_command: |
@@ -72,9 +75,11 @@ jobs:
     name: Policy Checks (Node ${{ matrix.node-version }})
     strategy:
       fail-fast: false
-      max-parallel: 3
+      max-parallel: ${{ fromJSON(inputs.ci_toolchain).parallel.default }}
       matrix:
-        node-version: [22, 24]
+        node-version:
+          - ${{ fromJSON(inputs.ci_toolchain).node.supportMajors[0] }}
+          - ${{ fromJSON(inputs.ci_toolchain).node.supportMajors[1] }}
     uses: ./.github/workflows/reusable-node-command.yml
     with:
       verification_topology: ${{ inputs.verification_topology }}

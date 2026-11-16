@@ -9,6 +9,9 @@ on:
       pr_context:
         required: true
         type: string
+      ci_toolchain:
+        required: true
+        type: string
       hmr-diagnostic:
         type: string
         required: false
@@ -39,12 +42,12 @@ jobs:
     name: Watcher Backend Comparison (${{ matrix.os }} / Node 24)
     strategy:
       fail-fast: false
-      max-parallel: 3
+      max-parallel: ${{ fromJSON(inputs.ci_toolchain).parallel.macos }}
       matrix:
         os:
           - ubuntu-latest
           - windows-latest
-          - macos-latest
+          - ${{ fromJSON(inputs.ci_toolchain).runners.macos }}
     uses: ./.github/workflows/reusable-node-command.yml
     with:
       pr_context: ${{ inputs.pr_context }}
@@ -73,12 +76,12 @@ jobs:
     name: Native Compiler Batch Diagnostic (${{ matrix.os }} / Node 24)
     strategy:
       fail-fast: false
-      max-parallel: 3
+      max-parallel: ${{ fromJSON(inputs.ci_toolchain).parallel.macos }}
       matrix:
         os:
           - ubuntu-latest
           - windows-latest
-          - macos-latest
+          - ${{ fromJSON(inputs.ci_toolchain).runners.macos }}
     uses: ./.github/workflows/reusable-node-command.yml
     with:
       pr_context: ${{ inputs.pr_context }}
@@ -234,12 +237,12 @@ jobs:
     name: Plugin Watch Readiness (${{ matrix.os }} / Node ${{ matrix.node-version }})
     strategy:
       fail-fast: false
-      max-parallel: 3
+      max-parallel: ${{ fromJSON(inputs.ci_toolchain).parallel.macos }}
       matrix:
         os:
           - ubuntu-latest
           - windows-latest
-          - macos-latest
+          - ${{ fromJSON(inputs.ci_toolchain).runners.macos }}
         node-version:
           - 22
           - 24
@@ -269,12 +272,12 @@ jobs:
     name: Runtime Publication Regression (${{ matrix.os }} / Node ${{ matrix.node-version }})
     strategy:
       fail-fast: false
-      max-parallel: 3
+      max-parallel: ${{ fromJSON(inputs.ci_toolchain).parallel.macos }}
       matrix:
         os:
           - ubuntu-latest
           - windows-latest
-          - macos-latest
+          - ${{ fromJSON(inputs.ci_toolchain).runners.macos }}
         node-version:
           - 22
           - 24
@@ -310,12 +313,12 @@ jobs:
     name: HMR Lifecycle Regression (${{ matrix.os }} / Node ${{ matrix.node-version }})
     strategy:
       fail-fast: false
-      max-parallel: 3
+      max-parallel: ${{ fromJSON(inputs.ci_toolchain).parallel.macos }}
       matrix:
         os:
           - ubuntu-latest
           - windows-latest
-          - macos-latest
+          - ${{ fromJSON(inputs.ci_toolchain).runners.macos }}
         node-version:
           - 22
           - 24
@@ -383,7 +386,7 @@ jobs:
         os:
           - ubuntu-latest
           - windows-latest
-          - macos-latest
+          - ${{ fromJSON(inputs.ci_toolchain).runners.macos }}
     uses: ./.github/workflows/reusable-node-command.yml
     with:
       pr_context: ${{ inputs.pr_context }}
@@ -446,7 +449,7 @@ jobs:
             build-command: pnpm build:pkgs:ci
           - os: windows-latest
             build-command: pnpm build:pkgs:ci:windows
-          - os: macos-latest
+          - os: ${{ fromJSON(inputs.ci_toolchain).runners.macos }}
             build-command: pnpm build:pkgs:ci:macos
     uses: ./.github/workflows/reusable-node-command.yml
     with:
@@ -484,7 +487,7 @@ jobs:
       head_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}
       base_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}
       e2e_exclude_projects: ${{ inputs.exclude-e2e-projects }}
-      runs_on: macos-latest
+      runs_on: ${{ fromJSON(inputs.ci_toolchain).runners.macos }}
       node_version: '24'
       timeout_minutes: 35
       build_command: pnpm build:pkgs:ci
@@ -601,7 +604,7 @@ jobs:
     name: Web E2E Baseline (Node ${{ matrix.node-version }})
     strategy:
       fail-fast: false
-      max-parallel: 3
+      max-parallel: ${{ fromJSON(inputs.ci_toolchain).parallel.default }}
       matrix:
         node-version:
           - 22
@@ -618,7 +621,7 @@ jobs:
       head_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}
       base_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}
       e2e_exclude_projects: ${{ inputs.exclude-e2e-projects }}
-      runs_on: macos-latest
+      runs_on: ${{ fromJSON(inputs.ci_toolchain).runners.macos }}
       node_version: ${{ format('{0}', matrix.node-version) }}
       timeout_minutes: 35
       build_command: pnpm build:pkgs:ci
@@ -648,13 +651,14 @@ jobs:
             build-command: pnpm build:pkgs:ci:windows
             node-version: 22
           - platform: weapp
-            os: macos-latest
+            os: ${{ fromJSON(inputs.ci_toolchain).runners.macos }}
             build-command: pnpm build:pkgs:ci:macos
             node-version: 22
     uses: ./.github/workflows/reusable-miniapp-platform.yml
     with:
       verification_topology: ${{ inputs.verification_topology }}
       pr_context: ${{ inputs.pr_context }}
+      ci_toolchain: ${{ inputs.ci_toolchain }}
       runs_on: ${{ matrix.os }}
       node_version: ${{ format('{0}', matrix.node-version) }}
       build_command: ${{ matrix.build-command }}
@@ -678,7 +682,7 @@ jobs:
             node-version: 22
             build-command: pnpm build:pkgs:ci:windows
           - platform: weapp
-            os: macos-latest
+            os: ${{ fromJSON(inputs.ci_toolchain).runners.macos }}
             node-version: 22
             build-command: pnpm build:pkgs:ci:macos
           - platform: weapp
@@ -690,13 +694,14 @@ jobs:
             node-version: 24
             build-command: pnpm build:pkgs:ci:windows
           - platform: weapp
-            os: macos-latest
+            os: ${{ fromJSON(inputs.ci_toolchain).runners.macos }}
             node-version: 24
             build-command: pnpm build:pkgs:ci:macos
     uses: ./.github/workflows/reusable-miniapp-platform.yml
     with:
       verification_topology: ${{ inputs.verification_topology }}
       pr_context: ${{ inputs.pr_context }}
+      ci_toolchain: ${{ inputs.ci_toolchain }}
       runs_on: ${{ matrix.os }}
       node_version: ${{ format('{0}', matrix.node-version) }}
       build_command: ${{ matrix.build-command }}
@@ -715,10 +720,8 @@ jobs:
         os:
           - ubuntu-latest
           - windows-latest
-          - macos-latest
-        bun-version:
-          - 1.4.2
-          - latest
+          - ${{ fromJSON(inputs.ci_toolchain).runners.macos }}
+        bun-version: ${{ fromJSON(inputs.ci_toolchain).bun.matrix }}
     uses: ./.github/workflows/reusable-node-command.yml
     with:
       pr_context: ${{ inputs.pr_context }}

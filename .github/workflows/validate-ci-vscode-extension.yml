@@ -9,6 +9,9 @@ on:
       pr_context:
         required: true
         type: string
+      ci_toolchain:
+        required: true
+        type: string
 permissions:
   contents: read
   pull-requests: read
@@ -38,7 +41,7 @@ jobs:
       head_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}
       base_ref: ${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}
       runs_on: ubuntu-latest
-      node_version: '24'
+      node_version: ${{ fromJSON(inputs.ci_toolchain).node.ci }}
       timeout_minutes: 10
       main_command: |
         pnpm --dir extensions/vscode run check:publish
@@ -87,7 +90,7 @@ jobs:
   vscode-extension-host-smoke:
     if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.vscode-extension.result == 'success' && ((inputs.verification_topology == 'optimized-v2' && ((contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).selections['ci-vscode-extension'] || !contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true') }}
     name: VSCode Extension Host Smoke (Node 24)
-    runs-on: macos-latest
+    runs-on: ${{ fromJSON(inputs.ci_toolchain).runners.macos }}
     timeout-minutes: 15
     needs: [pr-context, vscode-extension]
     env:
@@ -107,7 +110,7 @@ jobs:
           profile: ci-vscode-extension
       - uses: ./.github/actions/setup-node-pnpm
         with:
-          node-version: 24
+          node-version: ${{ fromJSON(inputs.ci_toolchain).node.ci }}
 
       - name: Run VS Code host smoke test
         run: pnpm --dir extensions/vscode run test:host:smoke
@@ -115,9 +118,9 @@ jobs:
   vscode-extension-vsix-e2e:
     if: ${{ !cancelled() && (inputs.verification_topology == 'optimized-v2' || needs.pr-context.result == 'success') && needs.vscode-extension.result == 'success' && ((inputs.verification_topology == 'optimized-v2' && ((contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).selections['ci-vscode-extension'] || !contains(fromJSON('["pull_request","native_refresh"]'), fromJSON(inputs.pr_context).event) && fromJSON(inputs.pr_context).shouldRun) && 'true' || 'false') || needs.pr-context.outputs.should_run) == 'true') }}
     name: VSCode Extension VSIX E2E (Node 24)
-    runs-on: macos-latest
+    runs-on: ${{ fromJSON(inputs.ci_toolchain).runners.macos }}
     timeout-minutes: 20
-    needs: [pr-context, vscode-extension]
+    needs: [pr-context, vscode-extension, vscode-extension-host-smoke]
     env:
       WEAPP_VITE_VERIFICATION_TOPOLOGY: ${{ inputs.verification_topology }}
     steps:
@@ -135,7 +138,7 @@ jobs:
           profile: ci-vscode-extension
       - uses: ./.github/actions/setup-node-pnpm
         with:
-          node-version: 24
+          node-version: ${{ fromJSON(inputs.ci_toolchain).node.ci }}
 
       - name: Run VSIX install-mode e2e
         run: pnpm --dir extensions/vscode run test:vsix:e2e

@@ -1,0 +1,28 @@
+name: Resolve CI Toolchain
+
+on:
+  workflow_call:
+    outputs:
+      policy:
+        description: Shared CI runner, runtime and matrix policy
+        value: ${{ jobs.resolve.outputs.policy }}
+
+permissions:
+  contents: read
+
+jobs:
+  resolve:
+    name: Resolve shared CI toolchain
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      policy: ${{ steps.policy.outputs.policy }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - id: policy
+        name: Validate and export policy
+        shell: bash
+        run: node .github/scripts/ci-toolchain.mjs export >> "$GITHUB_OUTPUT"

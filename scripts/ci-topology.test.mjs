@@ -1,10 +1,17 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { parse } from 'yaml'
+import { readCiToolchain } from '../.github/scripts/ci-toolchain.mjs'
 import { consumerContractGroups } from './consumerArtifacts/contracts.mjs'
 import { readVerificationTopologyVariant, readWorkflowFixture, readWorkflowGraph } from './workflowFixture.mjs'
 
-const systems = ['ubuntu-latest', 'windows-latest', 'macos-latest']
+const ciToolchain = readCiToolchain()
+const expression = value => `\${{ ${value} }}`
+const systems = [ciToolchain.runners.ubuntu, ciToolchain.runners.windows, expression('fromJSON(inputs.ci_toolchain).runners.macos')]
+const ciNode = expression('fromJSON(inputs.ci_toolchain).node.ci')
+const supportMajors = ciToolchain.node.supportMajors.map((_, index) => expression(`fromJSON(inputs.ci_toolchain).node.supportMajors[${index}]`))
+const minimumNodes = ciToolchain.node.supportMajors.map(major => expression(`fromJSON(inputs.ci_toolchain).node.minimum['${major}']`))
+const nodeSupportMatrix = [...minimumNodes, ...supportMajors]
 const read = name => readWorkflowFixture(name)
 const baseline = readVerificationTopologyVariant() === 'baseline'
 
@@ -38,7 +45,7 @@ describe('independent CI preparation with unchanged validation scope', () => {
         ['ubuntu-latest', 22],
         ['ubuntu-latest', 24],
         ['windows-latest', 22],
-        ['macos-latest', 22],
+        [systems[2], supportMajors[0]],
       ])
       expect(rows.map(row => row.main_command.trim().split('\n').slice(0, 2))).toEqual([
         ['pnpm lint', 'pnpm build:ci'],
@@ -61,7 +68,7 @@ describe('independent CI preparation with unchanged validation scope', () => {
         ['ubuntu-latest', 22, false, true],
         ['ubuntu-latest', 24, true, false],
         ['windows-latest', 22, false, false],
-        ['macos-latest', 22, false, false],
+        [systems[2], supportMajors[0], false, false],
       ])
       expect(quality.jobs['build-pr'].strategy.matrix.include[1].build_command).toBe('pnpm build:pkgs:ci')
       expect(quality.jobs['build-release-pr'].strategy.matrix.include).toHaveLength(2)
@@ -167,7 +174,7 @@ describe('independent CI preparation with unchanged validation scope', () => {
   it('packs once per OS on Node24 and retains every consumer host, profile and supported Node version', () => {
     const consumer = read('validate-ci-vite-host-consumer.yml')
     if (baseline) {
-      expect(consumer.jobs['node-support'].strategy.matrix).toEqual({ os: systems, node: ['22.23.4', '24.22.1', '26.12.1', '22', '24', '26'] })
+      expect(consumer.jobs['node-support'].strategy.matrix).toEqual({ os: systems, node: nodeSupportMatrix })
       expect(consumer.jobs['dependency-compatibility'].strategy.matrix).toEqual({ os: systems, manager: ['pnpm', 'npm'] })
       for (const [name, files] of Object.entries(consumerContractGroups)) {
         const job = consumer.jobs[name]
@@ -185,9 +192,9 @@ describe('independent CI preparation with unchanged validation scope', () => {
       expect(consumer.jobs['consumer-platform'].strategy.matrix.os).toEqual(systems)
     }
     const child = read('reusable-consumer-platform.yml')
-    expect(child.jobs.prepare.with.node_version).toBe('24')
+    expect(child.jobs.prepare.with.node_version).toBe(ciNode)
     expect(child.jobs.prepare.with.main_command).toBe('node scripts/consumerArtifacts/manifest.mjs pack .cache/node-support-tarballs')
-    expect(child.jobs['node-support'].strategy.matrix.node).toEqual(['22.23.4', '24.22.1', '26.12.1', '22', '24', '26'])
+    expect(child.jobs['node-support'].strategy.matrix.node).toEqual(nodeSupportMatrix)
     expect(child.jobs['dependency-compatibility'].strategy.matrix.manager).toEqual(['pnpm', 'npm'])
     expect(child.jobs.consumer.strategy.matrix.toolchain).toEqual(['wv', 'vite', 'vite-plus'])
     for (const profile of ['stateful', 'classic', 'react', 'independent', 'worker', 'plugin', 'lib', 'platform', 'web']) {
@@ -217,7 +224,7 @@ describe('independent CI preparation with unchanged validation scope', () => {
       pr_profile: 'ci-vite-host-consumer',
       verification_topology: `\${{ inputs.verification_topology }}`,
       runs_on: `\${{ inputs.runs_on }}`,
-      node_version: '24',
+      node_version: ciNode,
       timeout_minutes: 30,
       build_command: '',
       main_command: `node scripts/consumerBatches/imports.mjs \${{ matrix.host }}`,
