@@ -36,6 +36,28 @@ describe('legacyEs5 runtime transform', () => {
     expect(pluginResult.code).toBe('transformed-code')
   })
 
+  it('enables compact mangling only for compact output', async () => {
+    const transform = vi.fn(async (
+      _code: string,
+      _options: { minify?: boolean, jsc: { minify?: { mangle?: boolean } } },
+    ) => ({
+      code: 'transformed-code',
+      map: null,
+    }))
+    const importer = vi.fn(async () => ({
+      transform,
+    }))
+
+    const { transformWithSwc } = await import('./legacyEs5')
+    await transformWithSwc('const a = 1', { fileName: 'compact.js' } as any, { minify: true } as any, importer)
+    expect(transform.mock.calls[0]![1].minify).toBe(true)
+    expect(transform.mock.calls[0]![1].jsc.minify).toEqual({ mangle: true })
+
+    await transformWithSwc('const a = 1', { fileName: 'readable.js' } as any, { minify: false } as any, importer)
+    expect(transform.mock.calls[1]![1].minify).toBe(false)
+    expect(transform.mock.calls[1]![1].jsc.minify).toBeUndefined()
+  })
+
   it('throws installation hint when swc module is invalid', async () => {
     const { loadSwcTransformModule } = await import('./legacyEs5')
 
