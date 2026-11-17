@@ -135,6 +135,19 @@ describe('bridge snapshot failure cleanup', () => {
     expect(fs.existsSync(snapshot.path)).toBe(false)
   })
 
+  it('retries transient filesystem contention while removing the owned snapshot', async () => {
+    const remove = vi.spyOn(fs.promises, 'rm')
+    const session = attachBridgeWrapperSyncCleanup({ close: vi.fn(async () => {}) }, snapshot)
+    await session.close()
+    expect(remove).toHaveBeenCalledWith(snapshot.path, {
+      recursive: true,
+      force: true,
+      maxRetries: 8,
+      retryDelay: 100,
+    })
+    expect(fs.existsSync(snapshot.path)).toBe(false)
+  })
+
   it('makes concurrent session closes both wait for the same snapshot removal', async () => {
     const barrier = Promise.withResolvers<void>()
     const originalRemove = fs.promises.rm.bind(fs.promises)

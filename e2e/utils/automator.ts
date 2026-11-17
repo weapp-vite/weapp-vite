@@ -1353,7 +1353,12 @@ export function prepareAutomatorBridgeWrapperProject(
   const cleanup = createRetryableCleanup(async () => {
     stopSync()
     try {
-      await fs.promises.rm(wrapperRoot, { recursive: true, force: true })
+      await fs.promises.rm(wrapperRoot, {
+        recursive: true,
+        force: true,
+        maxRetries: 8,
+        retryDelay: 100,
+      })
       recordWrapperResourceEvent('snapshot-deleted', wrapperRoot)
     }
     catch (error) {
