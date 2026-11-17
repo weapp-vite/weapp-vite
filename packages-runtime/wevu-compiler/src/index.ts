@@ -158,6 +158,9 @@ export type {
 export type { MpPlatform } from './types/platform'
 
 export type { WevuDefaults } from './types/wevu'
+export { createBaseLibraryHintState } from './utils/baseLibrary'
+export type { BaseLibraryHintState } from './utils/baseLibrary'
+
 export {
   collectVueTemplateTags,
   isAutoImportCandidateTag,

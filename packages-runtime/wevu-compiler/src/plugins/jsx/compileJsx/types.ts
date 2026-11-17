@@ -1,7 +1,8 @@
 import type { Expression, JSXElement, JSXFragment } from '@weapp-vite/ast/babelTypes'
 import type { WevuBindingManifestV1 } from '../../../types/bindingManifest'
 import type { CompilerDiagnostic } from '../../../types/diagnostics'
-import type { ClassStyleBinding, ForParseResult, InlineExpressionAsset, TemplateCompileOptions } from '../../vue/compiler/template/types'
+import type { BaseLibraryCompileContext } from '../../../utils/baseLibrary'
+import type { ClassStyleBinding, ForParseResult, InlineExpressionAsset, ResolvedTeleportCompileOptions, TemplateCompileOptions } from '../../vue/compiler/template/types'
 
 export interface JsxModuleExport {
   expression: Expression | JSXElement | JSXFragment
@@ -49,11 +50,10 @@ export interface JsxCompileContext {
   dynamicIslands?: JsxDynamicIslandMetadata[]
   dynamicIslandSeed?: number
   dynamicIslandMode?: 'auto' | 'static' | 'dynamic'
-  /** 是否启用 Teleport → root-portal 映射，默认 `true`。 */
-  teleportEnabled: boolean
-  teleportUnsupported: 'warning' | 'error'
-  /** 当前文件是否已输出 root-portal 基础库要求提示，避免同一文件重复告警。 */
-  teleportBaseLibraryHinted?: boolean
+  /** 已归一化的 Teleport 编译配置，与模板编译上下文共用同一结构。 */
+  teleport: ResolvedTeleportCompileOptions
+  /** 基础库版本与提示去重上下文，各功能按主题复用。 */
+  baseLibrary: BaseLibraryCompileContext
 }
 
 export interface JsxImportedComponent {

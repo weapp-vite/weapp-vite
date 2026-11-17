@@ -18,6 +18,7 @@ import { usingComponentFromResolvedFile } from '../../../utils/usingComponentFro
 import { readCompilerInputSync } from '../../utils/sourceSnapshot'
 import { createSfcResolveSrcOptions } from '../../utils/vueSfc'
 import { createCompilerAppShellSignature, toCompilerAppShell } from './appShell'
+import { resolveBaseLibraryHintState, resolveProjectBaseLibraryVersion } from './baseLibrary'
 import { resolveClassStyleWxsLocationForBase } from './classStyle'
 import { createComponentEntryRegistration } from './componentEntryRegistration'
 import { componentResolutionDependencies } from './componentResolutionDependencies'
@@ -400,6 +401,8 @@ function buildCompileVueFileOptions(
       objectLiteralBindMode,
       mustacheInterpolation,
       teleport,
+      baseLibraryVersion: resolveProjectBaseLibraryVersion(configService),
+      baseLibraryHintState: resolveBaseLibraryHintState(configService),
       functionPropNames,
       templateSafeCallNames,
       formatWxml,

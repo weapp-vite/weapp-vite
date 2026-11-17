@@ -65,6 +65,23 @@ describe('Teleport compiler parity', () => {
     }
   })
 
+  it('skips and de-duplicates the root-portal base library hint', async () => {
+    const source = jsxSource('<Teleport to="body"><view>A</view></Teleport>')
+    const satisfied = await compileJsxFile(source, filename, {
+      template: { baseLibraryVersion: '2.26.1' },
+    })
+    expect((satisfied.diagnostics ?? []).some(item => item.code === 'WV1010')).toBe(false)
+
+    const hintState = { reported: new Set<string>() }
+    const options: CompileVueFileOptions = {
+      template: { baseLibraryVersion: '2.25.2', baseLibraryHintState: hintState },
+    }
+    const first = await compileJsxFile(source, filename, options)
+    const second = await compileJsxFile(source, filename, options)
+    expect((first.diagnostics ?? []).filter(item => item.code === 'WV1010')).toHaveLength(1)
+    expect((second.diagnostics ?? []).filter(item => item.code === 'WV1010')).toHaveLength(0)
+  })
+
   it('keeps version and class warnings nonfatal in strict mode', async () => {
     const result = await compileJsxFile(jsxSource('<Teleport to="body" class="overlay"><view>A</view></Teleport>'), filename, {
       template: { teleport: { unsupported: 'error' } },

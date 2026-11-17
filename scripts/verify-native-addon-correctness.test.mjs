@@ -131,7 +131,12 @@ describe('actual-addon correctness evidence gate', () => {
 describe('actual-addon CI execution contract', () => {
   it('builds on all three hosts with a fixed Node version and the package-owned Rust toolchain', async () => {
     const job = await addonJob()
-    expect([...job.strategy.matrix.os].sort()).toEqual(['macos-latest', 'ubuntu-latest', 'windows-latest'])
+    expect([...job.strategy.matrix.os].sort()).toEqual([
+      // eslint-disable-next-line no-template-curly-in-string -- runner 版本由共享 CI toolchain policy 决定。
+      '${{ fromJSON(inputs.ci_toolchain).runners.macos }}',
+      'ubuntu-latest',
+      'windows-latest',
+    ])
     // eslint-disable-next-line no-template-curly-in-string -- 验证 GitHub Actions 的表达式原文。
     expect(job['runs-on']).toBe('${{ matrix.os }}')
     const node = job.steps.find(step => step.uses === './.tmp/pr-driver/.github/actions/setup-node-pnpm')

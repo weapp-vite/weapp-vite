@@ -2,11 +2,12 @@ import type { AttributeNode, DirectiveNode, ElementNode, SimpleExpressionNode } 
 import type { TeleportTargetInput } from '../teleport'
 import type { TransformContext, TransformNode } from '../types'
 import { ConstantTypes, NodeTypes } from '@vue/compiler-core'
-import { ROOT_PORTAL_ENABLE_MIN_SDK_VERSION, ROOT_PORTAL_MIN_SDK_VERSION } from '@weapp-core/constants'
+import { ROOT_PORTAL_ENABLE_MIN_SDK_VERSION } from '@weapp-core/constants'
+import { consumeBaseLibraryHint } from '../../../../../utils/baseLibrary'
 import { warn } from '../diagnostics'
 import { renderMustache } from '../mustache'
 import { supportsRootPortal } from '../platforms'
-import { resolveTeleportDecision, TELEPORT_DEGRADE_CODES } from '../teleport'
+import { resolveTeleportDecision, ROOT_PORTAL_BASE_LIBRARY_HINT_MESSAGE, ROOT_PORTAL_BASE_LIBRARY_HINT_TOPIC, TELEPORT_DEGRADE_CODES } from '../teleport'
 import { isStructuralDirective } from './helpers'
 import { transformNormalElement } from './tag-normal'
 import { transformForElement, transformIfElement } from './tag-structural'
@@ -232,12 +233,14 @@ export function transformTeleportElement(
     context,
   )
 
-  // 编译期只能确认映射结果，无法获知运行时基础库，因此提示一次版本门槛。
-  if (!context.teleportBaseLibraryHinted) {
-    context.teleportBaseLibraryHinted = true
+  // 版本满足时不提示；无法确认版本时同一次构建只提示一次门槛。
+  if (consumeBaseLibraryHint(context.baseLibrary, {
+    topic: ROOT_PORTAL_BASE_LIBRARY_HINT_TOPIC,
+    minimum: ROOT_PORTAL_ENABLE_MIN_SDK_VERSION,
+  })) {
     warn(
       context,
-      `<Teleport> 已映射为 root-portal，需要微信基础库 ≥ ${ROOT_PORTAL_MIN_SDK_VERSION}，其中 enable 属性需要 ≥ ${ROOT_PORTAL_ENABLE_MIN_SDK_VERSION}。`,
+      ROOT_PORTAL_BASE_LIBRARY_HINT_MESSAGE,
       node.loc,
       'template',
       { code: 'WV1010' },
