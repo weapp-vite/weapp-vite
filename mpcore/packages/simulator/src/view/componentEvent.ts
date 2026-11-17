@@ -2,12 +2,18 @@ import type { HeadlessComponentInstance } from '../runtime/componentInstance'
 import type { DomNodeLike, RuntimeRenderScope } from '../runtime/render/types'
 import type { MiniProgramEventBinding } from './eventBinding'
 import type { MiniProgramEventPhases } from './eventBindingParser'
+import type { NativeBooleanSnapshot } from './nativeBoolean'
 import { collectEventBindings, resolveEventBindingPhases } from './eventBindingParser'
+import { getNativeBooleanSnapshot } from './nativeBoolean'
 import { collectNodeDataset } from './nodeDataset'
+
+interface ComponentEventTarget extends Pick<DomNodeLike, 'attribs' | 'dataset'> {
+  nativeBooleanValues?: NativeBooleanSnapshot
+}
 
 interface ComponentEventNode {
   scope: RuntimeRenderScope
-  target: Pick<DomNodeLike, 'attribs' | 'dataset'>
+  target: ComponentEventTarget
   hosts?: DomNodeLike[]
   bindings?: Pick<RuntimeRenderScope, 'eventBindings' | 'captureEventBindings'>
 }
@@ -71,7 +77,11 @@ export function bindComponentEventHost(node: DomNodeLike) {
 export function mergeComponentEventRoot(root: DomNodeLike, host: DomNodeLike) {
   const entry = eventNodes.get(root)!
   if (entry.target === root) {
-    entry.target = { attribs: root.attribs, dataset: root.dataset }
+    entry.target = {
+      attribs: root.attribs,
+      dataset: root.dataset,
+      nativeBooleanValues: getNativeBooleanSnapshot(root),
+    }
   }
   entry.hosts ??= []
   entry.hosts.push(host)

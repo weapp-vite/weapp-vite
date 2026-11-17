@@ -5,14 +5,14 @@ import { glob } from 'tinyglobby'
 import { describe, expect, it } from 'vitest'
 import { readVerificationTopologyVariant, readWorkflowFixture, readWorkflowGraph } from './workflowFixture.mjs'
 
-interface WorkflowStep {
+type WorkflowStep = {
   name?: string
   uses?: string
   if?: string
   run?: string
   with?: Record<string, unknown>
   env?: Record<string, unknown>
-}
+} & Partial<Record<'continue-on-error', boolean>>
 
 interface Workflow {
   on?: { workflow_call?: { inputs?: Record<string, unknown> } }
@@ -80,6 +80,17 @@ describe('CI artifact coverage', () => {
       '.tmp/build-artifact-manifest.json',
       '.tmp/verification-telemetry/plans/**',
     ])
+  })
+
+  it('keeps diagnostic uploads best-effort while quality artifacts remain blocking', async () => {
+    const workflow = await readWorkflow('reusable-node-command.yml')
+    const steps = Object.values(workflow.jobs).flatMap(job => job.steps ?? [])
+    for (const name of ['Upload CI stage timings', 'Upload runner metadata']) {
+      expect(steps.find(step => step.name === name)?.['continue-on-error'], name).toBe(true)
+    }
+    for (const name of ['Upload artifact', 'Upload workspace build artifact', 'Upload frozen consumer verification plans']) {
+      expect(steps.find(step => step.name === name)?.['continue-on-error'], name).toBeUndefined()
+    }
   })
 
   it('builds Windows E2E tools explicitly before publishing and only verifies restored tools', async () => {

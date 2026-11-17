@@ -14,6 +14,7 @@ import { analyzeCaseSource, importedSuiteInvocations, readCaseInventory, readFac
 import { formatDomAcceptanceInventory } from './inventoryFormatting'
 import { createInventorySourceReader } from './inventorySourceReader'
 import { collectInventorySources } from './inventorySources'
+import { readSelectedAcceptanceCases } from './selectedCases'
 
 export { formatDomAcceptanceInventory } from './inventoryFormatting'
 
@@ -84,14 +85,32 @@ export function createDomAcceptanceInventory(root = ACCEPTANCE_ROOT, topology?: 
   const executionTopology = resolveVerificationTopology(topology)
   const headlessLabels = new Set(getIdeHeadlessTasks().map(task => task.label))
   const readCases = createTaskCaseReader(root)
-  const tasks = getIdeExhaustiveTasks({ topology: executionTopology.id }).map(task => ({
-    task: task.label,
-    scope: task.outOfScopeReason ? 'out-of-scope' : 'wechat',
-    reason: task.outOfScopeReason ?? null,
-    providers: task.outOfScopeReason ? ['swan'] : headlessLabels.has(task.label) ? ['devtools', 'headless'] : ['devtools'],
-    templates: task.acceptanceTemplates ?? [],
-    cases: readCases(task.label, task.acceptanceTemplates),
-  }))
+  const tasks = getIdeExhaustiveTasks({ topology: executionTopology.id }).map((task) => {
+    const acceptanceSource = task.acceptanceSource ?? task.label
+    const cases = readCases(acceptanceSource, task.acceptanceTemplates)
+    const selected = readSelectedAcceptanceCases({ ...process.env, ...task.env })
+    const plannedCases = selected
+      ? selected.map((item) => {
+          if (item.file !== `e2e/${acceptanceSource}`) {
+            throw new Error(`Selected DOM case source does not match ${task.label}`)
+          }
+          const match = cases.find(candidate => candidate.name === item.name)
+          if (!match) {
+            throw new Error(`Selected DOM case is not declared in ${acceptanceSource}: ${item.name}`)
+          }
+          return match
+        })
+      : cases
+    return {
+      task: task.label,
+      acceptanceSource: task.acceptanceSource,
+      scope: task.outOfScopeReason ? 'out-of-scope' : 'wechat',
+      reason: task.outOfScopeReason ?? null,
+      providers: task.outOfScopeReason ? ['swan'] : headlessLabels.has(task.label) ? ['devtools', 'headless'] : ['devtools'],
+      templates: task.acceptanceTemplates ?? [],
+      cases: plannedCases,
+    }
+  })
   const wechat = tasks.filter(task => task.scope === 'wechat')
   const cases = wechat.flatMap(task => task.cases)
   return {
@@ -110,7 +129,7 @@ export function createDomAcceptanceInventory(root = ACCEPTANCE_ROOT, topology?: 
     },
     tasks,
     sources: collectInventorySources(root, [
-      ...tasks.map(task => `e2e/${task.task}`),
+      ...tasks.map(task => `e2e/${task.acceptanceSource ?? task.task}`),
       'e2e/scripts/e2e-suite-manifest.ts',
       'e2e/scripts/domAcceptanceReport/inventory.ts',
     ]),

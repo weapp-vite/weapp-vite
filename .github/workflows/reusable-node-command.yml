@@ -469,6 +469,7 @@ jobs:
           if-no-files-found: error
       - name: Upload CI stage timings
         if: ${{ !cancelled() && inputs.timing_artifact_name != '' }}
+        continue-on-error: true
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ${{ inputs.timing_artifact_name }}
@@ -476,6 +477,7 @@ jobs:
           if-no-files-found: error
       - name: Upload runner metadata
         if: ${{ !cancelled() }}
+        continue-on-error: true
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: runner-metadata-${{ runner.name }}

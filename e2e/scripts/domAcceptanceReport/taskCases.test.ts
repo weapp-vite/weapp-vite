@@ -1,5 +1,6 @@
 import type { AcceptanceReport } from './types'
 import { describe, expect, it } from 'vitest'
+import { getSuiteTasks } from '../e2e-suite-manifest'
 import { assertTaskCaseCoverage, freezeProviderCaseScope, readPlannedTaskCases } from './taskCases'
 
 const first = { file: 'e2e/ide/aggregate.test.ts', name: 'first suite > first case' }
@@ -73,11 +74,31 @@ describe('planned DOM cases versus actual collection', () => {
     expect(() => assertTaskCaseCoverage([first, scoped], [report([first, second])], false, 'devtools')).toThrow('Planned DOM case did not pass')
   })
 
-  it('enumerates both compiler entrypoints with the same names as runtime collection', async () => {
+  it('enumerates the native Vite compiler entrypoint with the runtime collection', async () => {
     const cases = await readPlannedTaskCases({ label: 'ide/vite-plugin.runtime.test.ts', command: 'node', args: [] }, 'headless')
     expect(cases.map(item => item.name)).toEqual([
       'vite shared compiler session runtime (weapp e2e) > renders Vue routes and navigates to an ordinary subpackage after build',
+    ])
+  })
+
+  it('enumerates the wv compiler entrypoint with the runtime collection', async () => {
+    const cases = await readPlannedTaskCases({ label: 'ide/vite-plugin-wv.runtime.test.ts', command: 'node', args: [] }, 'headless')
+    expect(cases.map(item => item.name)).toEqual([
       'wv shared compiler session runtime (weapp e2e) > renders Vue routes and navigates to an ordinary subpackage after build',
+    ])
+  })
+
+  it('keeps split IDE tasks tied to the selected cases in their shared source file', async () => {
+    const tasks = await getSuiteTasks('ide-full')
+    const lifecycle = tasks.find(task => task.label === 'ide/app-lifecycle.native.test.ts')!
+    const routes = tasks.find(task => task.label === 'ide/auto-routes-define-app-json.topology.runtime.test.ts')!
+    expect(lifecycle.acceptanceSource).toBe('ide/app-lifecycle.test.ts')
+    expect(routes.acceptanceSource).toBe('ide/auto-routes-define-app-json.runtime.test.ts')
+    await expect(readPlannedTaskCases(lifecycle, 'devtools')).resolves.toMatchObject([
+      { file: 'e2e/ide/app-lifecycle.test.ts', name: 'app lifecycle compare (e2e) > compares wevu app lifecycle logs against native' },
+    ])
+    await expect(readPlannedTaskCases(routes, 'devtools')).resolves.toMatchObject([
+      { file: 'e2e/ide/auto-routes-define-app-json.runtime.test.ts', name: 'classic automatic route topology output runtime > renders the restored page and keeps the original page reachable' },
     ])
   })
 

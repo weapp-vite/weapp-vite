@@ -14,9 +14,12 @@ export const nativeFormFiles: Array<[string, string]> = [
     'field-group': '/components/field-group',
     'private-field': '/components/private-field',
     'button-shell': '/components/button-shell',
+    'custom-field': '/components/custom-field',
+    'native-submit-button': '/components/native-submit-button',
+    'nested-field': '/components/nested-field',
   } })],
   ['pages/index/index.js', `Page({
-    data: { visible: true, action: '', inputValue: 'initial', submissions: 0, taps: 0 },
+    data: { visible: true, action: '', inputValue: 'initial', customObject: { nested: true }, customBoolean: false, customZero: 0, customNull: null, submissions: 0, taps: 0 },
     onLoad() { this.identity = ++getApp().globalData.nextPage },
     onTap(event) {
       getApp().globalData.events.push({ owner: 'page', identity: this.identity, type: event.type, target: event.target.id, currentTarget: event.currentTarget.id })
@@ -28,6 +31,9 @@ export const nativeFormFiles: Array<[string, string]> = [
     },
     onShellHostTap(event) {
       getApp().globalData.events.push({ owner: 'page-host', type: event.type, target: event.target.id, currentTarget: event.currentTarget.id })
+    },
+    onCustomTap() {
+      this.selectComponent('#custom-object').properties.value.nested = false
     },
     onInput(event) { this.setData({ inputValue: event.detail.value }) },
     onSubmit(event) {
@@ -53,6 +59,8 @@ export const nativeFormFiles: Array<[string, string]> = [
         <textarea name="notes" value="memo" />
         <switch name="enabled" checked="{{true}}" />
         <switch name="off" checked="{{false}}" />
+        <switch name="nullChecked" checked="{{customNull}}" />
+        <switch name="missingChecked" checked="{{missingChecked}}" />
         <slider name="amount" value="42" />
         <picker name="choice" value="2"><text>pick</text></picker>
         <picker name="date" mode="date" value="2026-10-12" />
@@ -65,6 +73,9 @@ export const nativeFormFiles: Array<[string, string]> = [
         <input name="__proto__" value="safe" />
         <button id="submit" form-type="submit" bindtap="onTap"><text id="nested">send</text></button>
         <button id="disabled" form-type="submit" disabled="{{true}}" bindtap="onTap">disabled</button>
+        <button id="disabled-caught" form-type="submit" disabled="{{true}}"><text id="disabled-caught-child" catchtap="onTap">disabled child</text></button>
+        <button id="disabled-null" form-type="submit" disabled="{{customNull}}" bindtap="onTap">null disabled</button>
+        <button id="disabled-missing" form-type="submit" disabled="{{missingDisabled}}" bindtap="onTap">missing disabled</button>
         <button id="enabled-false" form-type="submit" disabled="{{false}}" bindtap="onTap">enabled</button>
         <button id="ordinary" bindtap="onTap">ordinary</button>
         <button id="caught-button" form-type="submit" catchtap="onTap"><text id="caught-child">caught button</text></button>
@@ -82,6 +93,20 @@ export const nativeFormFiles: Array<[string, string]> = [
         <private-button />
         <submit-button label="direct" />
         <button-shell id="shell-host" bindtap="onShellHostTap" />
+      </form>
+      <form id="collapsed-form" bindsubmit="onSubmit">
+        <native-submit-button disabled="{{customNull}}" />
+      </form>
+      <form id="nested-form" bindsubmit="onSubmit">
+        <nested-field name="nested" value="{{customObject}}" />
+        <button id="nested-submit" form-type="submit">nested field</button>
+      </form>
+      <form id="custom-form" bindsubmit="onSubmit">
+        <custom-field id="custom-object" name="object" value="{{customObject}}" />
+        <custom-field name="boolean" value="{{customBoolean}}" />
+        <custom-field name="zero" value="{{customZero}}" />
+        <custom-field name="null" value="{{customNull}}" />
+        <button id="custom-submit" form-type="submit" bindtap="onCustomTap">submit custom fields</button>
       </form>
       <native-form wx:if="{{visible}}" id="wrapped-form" bindremove="onRemove" action="{{action}}">
         <input name="slotted" value="in form slot" />
@@ -137,6 +162,30 @@ export const nativeFormFiles: Array<[string, string]> = [
     },
   })`],
   ['components/button-shell.wxml', '<submit-button id="inner-host" label="encapsulated" bindtap="onShellTap" />'],
+  ['components/custom-field.json', componentConfig],
+  ['components/custom-field.js', `Component({
+    behaviors: ['wx://form-field'],
+    properties: {
+      name: String,
+      value: { type: null },
+    },
+  })`],
+  ['components/custom-field.wxml', '<view class="custom-field" />'],
+  ['components/native-submit-button.json', componentConfig],
+  ['components/native-submit-button.js', `Component({
+    behaviors: ['wx://form-field-button'],
+    properties: { disabled: { type: null } },
+  })`],
+  ['components/native-submit-button.wxml', '<button id="collapsed-submit" form-type="submit" disabled="{{disabled}}">collapsed submit</button>'],
+  ['components/nested-field.json', JSON.stringify({ component: true, usingComponents: { 'plain-root': '/components/plain-slot' } })],
+  ['components/nested-field.js', `Component({
+    behaviors: ['wx://form-field'],
+    properties: {
+      name: String,
+      value: { type: null },
+    },
+  })`],
+  ['components/nested-field.wxml', '<plain-root />'],
 ]
 
 export const nativeFormValue = {
@@ -144,6 +193,8 @@ export const nativeFormValue = {
   notes: 'memo',
   enabled: true,
   off: false,
+  nullChecked: false,
+  missingChecked: false,
   amount: 42,
   choice: 2,
   date: '2026-10-12',

@@ -55,6 +55,7 @@ export interface SuiteTask {
   label: string
   command: string
   args: string[]
+  acceptanceSource?: string
   outOfScopeReason?: string
   acceptanceTemplates?: string[]
 }

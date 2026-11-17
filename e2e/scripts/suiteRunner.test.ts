@@ -415,8 +415,8 @@ describe('suiteRunner', () => {
     const ideGithubIssuesLabels = ideGithubIssuesTasks.map(task => task.label)
     const ideWevuJsxLabels = ideWevuJsxTasks.map(task => task.label)
     const ideWevuFeaturesLabels = ideWevuFeaturesTasks.map(task => task.label)
-    const appLifecycleTask = ideFullTasks.find(task => task.label === 'ide/app-lifecycle.test.ts')
-    const autoRoutesDefineAppJsonTask = ideFullTasks.find(task => task.label === 'ide/auto-routes-define-app-json.runtime.test.ts')
+    const appLifecycleTasks = ideFullTasks.filter(task => task.label.startsWith('ide/app-lifecycle.'))
+    const autoRoutesDefineAppJsonTasks = ideFullTasks.filter(task => task.label.startsWith('ide/auto-routes-define-app-json.'))
     const coreHmrTask = ideExhaustiveTasks.find(task => task.label === 'ide/wevu-runtime.core-hmr.test.ts')
     const devtoolsCliWorkflowTask = ideFullTasks.find(task => task.label === 'ide/devtools-cli-workflow.runtime.test.ts')
     const githubIssuesAggregateTasks = ideFullTasks.filter(task => (IDE_GITHUB_ISSUES_AGGREGATE_LABELS as readonly string[]).includes(task.label))
@@ -445,7 +445,17 @@ describe('suiteRunner', () => {
     expect(ideGateLabels).toContain('ide/wevu-runtime.weapp.test.ts')
     expect(ideGateLabels).toContain('ide/wevu-features.runtime.behavior.test.ts')
     expect(ideFullLabels).toContain('ide/wevu-query.runtime.test.ts')
-    expect(ideFullLabels).toContain('ide/app-lifecycle.test.ts')
+    expect(appLifecycleTasks.map(task => task.label)).toEqual([
+      'ide/app-lifecycle.native.test.ts',
+      'ide/app-lifecycle.wevu-ts.test.ts',
+      'ide/app-lifecycle.wevu-vue.test.ts',
+    ])
+    expect(appLifecycleTasks.map(task => task.env?.WEAPP_VITE_E2E_APP_LIFECYCLE_VARIANT)).toEqual(['native', 'wevu-ts', 'wevu-vue'])
+    expect(autoRoutesDefineAppJsonTasks.map(task => task.label)).toEqual([
+      'ide/auto-routes-define-app-json.route-links.runtime.test.ts',
+      'ide/auto-routes-define-app-json.topology.runtime.test.ts',
+    ])
+    expect(autoRoutesDefineAppJsonTasks.map(task => task.env?.WEAPP_VITE_E2E_AUTO_ROUTES_VARIANT)).toEqual(['route-links', 'topology'])
     expect(ideExhaustiveLabels).toContain('ide/wevu-runtime.pruning.test.ts')
     expect(ideHeadlessFullLabels).toContain('ide/wevu-query.runtime.test.ts')
     expect(ideHeadlessFullLabels).toContain('ide/wevu-runtime.pruning.test.ts')
@@ -526,8 +536,8 @@ describe('suiteRunner', () => {
     ])
     expect(ideExhaustiveLabels.slice(-3)).toEqual(ideChunkModesLabels)
     expect(ideExhaustiveTasks.find(task => task.env?.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE === 'direct')).toBeUndefined()
-    expect(appLifecycleTask?.env?.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER).toBeUndefined()
-    expect(autoRoutesDefineAppJsonTask?.env?.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER).toBeUndefined()
+    expect(appLifecycleTasks.every(task => task.env?.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER === undefined)).toBe(true)
+    expect(autoRoutesDefineAppJsonTasks.every(task => task.env?.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER === undefined)).toBe(true)
     expect(devtoolsCliWorkflowTask?.env?.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER).toBeUndefined()
     expect(githubIssuesIssue621Task?.env).toMatchObject({
       WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER: '1',

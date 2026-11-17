@@ -65,6 +65,7 @@ export function taskDefinitionHash(task: SuiteTask) {
     command: task.command,
     args: task.args.map(normalizeTaskValue),
     env: Object.fromEntries(Object.entries(task.env ?? {}).map(([key, value]) => [key, normalizeTaskValue(value)])),
+    acceptanceSource: task.acceptanceSource,
     outOfScopeReason: task.outOfScopeReason,
     acceptanceTemplates: task.acceptanceTemplates,
   })
@@ -72,7 +73,7 @@ export function taskDefinitionHash(task: SuiteTask) {
 
 export function verificationSourceDigest(tasks: SuiteTask[]) {
   const files = ['e2e/scripts/e2e-suite-manifest.ts', ...tasks.flatMap(task => [
-    ...(fs.existsSync(path.join(ACCEPTANCE_ROOT, 'e2e', task.label)) ? [`e2e/${task.label}`] : []),
+    ...(fs.existsSync(path.join(ACCEPTANCE_ROOT, 'e2e', task.acceptanceSource ?? task.label)) ? [`e2e/${task.acceptanceSource ?? task.label}`] : []),
     ...task.args.filter(arg => arg.endsWith('.ts') && arg.startsWith(`${ACCEPTANCE_ROOT}${path.sep}e2e${path.sep}`)).map(arg => path.relative(ACCEPTANCE_ROOT, arg).replaceAll('\\', '/')),
   ])]
   return verificationHash({ sources: collectInventorySources(ACCEPTANCE_ROOT, files), hmrCapabilities: HMR_ACCEPTANCE_CAPABILITIES })
@@ -193,6 +194,7 @@ export async function createVerificationPlan(options: {
     estimatedDurationMs: options.history?.tasks[task.label]?.durationMs ?? fallbackTaskDuration(task.label),
     shardIndex: 0,
     ...(task.outOfScopeReason ? { outOfScopeReason: task.outOfScopeReason } : {}),
+    ...(task.acceptanceSource ? { acceptanceSource: task.acceptanceSource } : {}),
     ...(strict && !task.outOfScopeReason ? { cases: await readCases(task, options.profile.provider === 'headless' ? 'headless' : 'devtools') } : {}),
     ...(task.acceptanceTemplates ? { acceptanceTemplates: task.acceptanceTemplates } : {}),
   })))

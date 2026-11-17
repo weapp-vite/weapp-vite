@@ -9,7 +9,7 @@ import { launch } from '../src/testing'
 import { createLogicalNode } from '../src/testing/logicalSnapshot'
 import { HeadlessTestingNodeHandle, renderPageTree } from '../src/view'
 import { cleanupTempDirs } from './helpers'
-import { richTextFiles, richTextHtmlText, untrustedRichText, untrustedRichTextContent, untrustedRichTextHtml, untrustedRichTextHtmlContent } from './helpers/richText'
+import { invalidRichTextNodes, nativeRichText, nativeRichTextContent, nativeRichTextHtml, richTextFiles, richTextHtmlText, untrustedRichText, untrustedRichTextContent, untrustedRichTextHtml, untrustedRichTextHtmlContent } from './helpers/richText'
 
 const directories: string[] = []
 afterEach(() => cleanupTempDirs(directories))
@@ -59,10 +59,10 @@ describe.each(['node', 'browser', 'testing-fallback'] as const)('%s rich-text re
       expect(await structured.attr('nodes')).toBe('[object Object]')
       expect(session.getApp()!.globalData.attached).toBe(0)
 
-      page.setData({ nodes: [{ name: 'div', children: [{ type: 'text', text: 'Updated ' }, { name: 'strong', children: [{ text: '&amp;<literal>' }] }] }] })
-      await check('#structured', 'Updated &amp;<literal>')
+      page.setData({ nodes: [{ name: 'div', children: [{ type: 'text', text: 'Updated ' }, { name: 'strong', children: [{ type: 'text', text: '&amp;<literal>' }] }] }] })
+      await check('#structured', 'Updated &<literal>')
       page.setData({ 'nodes[0].children[0].text': 'Patched ' })
-      await check('#structured', 'Patched &amp;<literal>')
+      await check('#structured', 'Patched &<literal>')
       page.setData({ nodes: '<p>Replaced &amp; decoded</p>' })
       await check('#structured', 'Replaced & decoded')
 
@@ -71,8 +71,14 @@ describe.each(['node', 'browser', 'testing-fallback'] as const)('%s rich-text re
         await check('#structured', '')
         expect(await (await new HeadlessTestingNodeHandle(render().root).$('#structured'))!.wxml()).not.toContain('Replaced')
       }
-      page.setData({ nodes: { name: 'unknown', children: [{ text: 'Restored' }] } })
+      page.setData({ nodes: [{ name: 'p', children: [{ type: 'text', text: 'Restored' }] }] })
       await check('#structured', 'Restored')
+      for (const invalid of invalidRichTextNodes) {
+        page.setData({ nodes: [invalid] })
+        await check('#structured', '')
+        page.setData({ nodes: [{ type: 'node', name: 'p', children: [invalid, { type: 'text', text: 'Valid &amp;amp;' }] }] })
+        await check('#structured', 'Valid &amp;')
+      }
     }
     finally {
       session.close()
@@ -95,11 +101,10 @@ describe.each(['node', 'browser', 'testing-fallback'] as const)('%s rich-text re
         const rich = (await root.$('#structured'))!
         expect(await rich.text()).toBe(expected)
         // 富文本不是 WXML 声明节点；XPath 检查渲染内容，不伪造声明作用域来绕过 CSS 查询边界。
-        const child = (await root.getElementsByXpath('//*[@id="untrusted-rich-child"]'))[0]!
+        const child = (await root.getElementsByXpath('//*[@id="structured"]/p'))[0]!
         expect(await child.tagName()).toBe('p')
-        expect(await child.attr('title')).toBe('{{secret}}')
-        expect(await child.attr('data-state')).toBe('{{secret}}')
-        for (const attribute of ['onclick', 'bindtap', 'wx:for', 'wx:if', 'data-sim-tap', 'data-sim-scope', 'data-sim-node', 'data-sim-component']) {
+        expect(await child.attr('class')).toBe('{{secret}}')
+        for (const attribute of ['id', 'title', 'data-state', 'onclick', 'bindtap', 'wx:for', 'wx:if', 'data-sim-tap', 'data-sim-scope', 'data-sim-node', 'data-sim-component']) {
           expect(await child.attr(attribute)).toBeUndefined()
         }
         expect(await root.getElementsByXpath('//*[@id="structured"]//*[self::script or self::style or self::wxs or self::unsafe-card]')).toHaveLength(0)
@@ -114,6 +119,38 @@ describe.each(['node', 'browser', 'testing-fallback'] as const)('%s rich-text re
         await rich.tap()
       }
       expect(page.data.outerTaps).toBe(2)
+    }
+    finally {
+      session.close()
+    }
+  })
+
+  it('uses native tags and attributes while decoding each text payload once', async () => {
+    const session = createSession()
+    try {
+      const page = session.reLaunch('/pages/index/index')
+      for (const nodes of [nativeRichText, nativeRichTextHtml]) {
+        page.setData({ nodes })
+        const tree = provider === 'testing-fallback' ? renderPageTree(session.project, page) : session.renderCurrentPage()
+        const root = new HeadlessTestingNodeHandle(tree.root)
+        expect(await (await root.$('#structured'))!.text()).toBe(nativeRichTextContent)
+        expect(createLogicalNode(tree.root).text).toContain(nativeRichTextContent)
+        const serialized = new HeadlessTestingNodeHandle(parseDocument(tree.wxml))
+        expect(await (await serialized.$('#structured'))!.text()).toBe(nativeRichTextContent)
+        const child = (await root.getElementsByXpath('//*[@id="structured"]/div'))[0]!
+        expect(await child.attr('class')).toBe('safe')
+        expect(await child.attr('id')).toBeUndefined()
+        expect(await child.attr('bindtap')).toBeUndefined()
+        expect(await root.getElementsByXpath('//*[@id="structured"]//b')).toHaveLength(1)
+        expect(await (await root.getElementsByXpath('//*[@id="structured"]//nav'))[0]!.text()).toBe(' navigation')
+        expect(await (await root.getElementsByXpath('//*[@id="structured"]//footer'))[0]!.text()).toBe(' footer')
+        const anchor = (await root.getElementsByXpath('//*[@id="structured"]//a'))[0]!
+        for (const attribute of ['href', 'target', 'rel']) {
+          expect(await anchor.attr(attribute)).toBeUndefined()
+        }
+        expect(await root.getElementsByXpath('//*[@id="structured"]//*[self::script or self::wxs or self::unknown]')).toHaveLength(0)
+        expect(session.getApp()!.globalData.attached).toBe(0)
+      }
     }
     finally {
       session.close()

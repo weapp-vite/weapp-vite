@@ -30,7 +30,7 @@ export function assertVerificationPlanContract(plan: VerificationPlan) {
       || (plan.strict && !task.outOfScopeReason && (!task.cases?.length
         || new Set(task.cases.map(item => JSON.stringify([item.file, item.name]))).size !== task.cases.length
         || task.cases.every(item => item.providerScope?.scope === 'out-of-scope')
-        || task.cases.some(item => item.file !== `e2e/${task.label}`
+        || task.cases.some(item => item.file !== `e2e/${task.acceptanceSource ?? task.label}`
           || !isValidProviderCaseScope(item.providerScope, plan.profile.provider === 'headless' ? 'headless' : 'devtools')))))) {
     throw new Error('Invalid or modified frozen verification plan')
   }

@@ -76,13 +76,15 @@ Node/browser 宿主提供 `BeforeAppRoute`、`BeforePageUnload`、`AppRoute`、`
 
 Node/browser 的原生 tap 到达未禁用的 `button form-type="submit"` 时，在 tap 回调之后提交最近的参与表单。提交目标、字段值与方法所有者在回调前固定；组件销毁、重渲染或同路由重建不会把提交转交给新实例。`tap()` 等待 tap 与 submit 的异步处理，继续传递结果或错误。普通插槽按声明归属参与；跨私有组件边界的按钮需要 `wx://form-field-button`，原生字段分组需要 `wx://form-field-group`。WXML 按 XML 节点结构解析，不应用 HTML 对嵌套 `form` 的隐式修复。
 
+`checked` / `disabled` 在序列化前保留原始绑定值，裸属性为 true，空值或缺失绑定为 false。禁用按钮不派发 tap 或 submit。保留的 tap 句柄在激活前按节点身份重新定位到当前渲染树，节点已移除时拒绝分发，不能调用旧回调。
+
 后续监听器同步抛错时，测试句柄仍观察并等待此前已启动的异步处理。只有该同步错误时原样抛出；异步处理也失败时，抛出包含全部已收集失败的 `AggregateError`，并以原同步错误作为 `cause`，避免遗留未处理的 Promise 拒绝。
 
-`submit.detail.value` 来自参与表单的具名原生控件当前渲染绑定，包含 input/textarea、switch、slider、picker、radio-group 与 checkbox-group；picker 数组保留原始绑定类型，不从逗号字符串猜测值。此能力不补齐未绑定输入的宿主状态、`wx://form-field` 自定义值导出、reset 或真实 `formId` 上报，也不把任意页面数据当作原生字段值。
+`submit.detail.value` 来自参与表单的具名原生控件当前渲染绑定，包含 input/textarea、switch、slider、picker、radio-group 与 checkbox-group；picker 数组保留原始绑定类型，不从逗号字符串猜测值。参与的 `wx://form-field` 组件按自己的当前 name/value 收集，保留对象、false、0 和 null，并在 tap 回调前克隆值。私有组件内部字段仍被隔离。此能力不补齐未绑定输入的宿主状态、reset 或真实 `formId` 上报，也不把任意页面数据当作原生字段值。
 
-`rich-text` 的结构化 `nodes` 与 HTML 字符串通过 `@weapp-core/shared/rich-text` 的共同安全规则生成实际渲染子树，支持更新和清空。内容不会再次解释为 WXML 表达式、事件或自定义组件；外部内容不能伪造 `data-sim-*` 元数据。通用 `text()`、快照和序列化观察同一份渲染内容，`attr('nodes')` 仍是既有字符串属性，不是结构化属性 API。富文本内部不获得 WXML 声明作用域；需要检查内部渲染节点时使用 XPath，而不是放宽声明作用域内的 CSS 查询。
+`rich-text` 的结构化 `nodes` 与 HTML 字符串通过 `@weapp-core/shared/rich-text` 的 `normalizeNativeRichTextNodes` 生成实际渲染子树，支持更新和清空。仅保留微信原生支持的节点和逐标签属性，未知节点及子树被移除；文本实体仅解码一次，内容不会再次解释为 WXML 表达式、事件或自定义组件，也不能伪造 `data-sim-*` 元数据。`normalizeRichTextNodes` 保持独立的 Web 规范化策略，不携带原生策略及其额外解码代码。通用 `text()`、快照和序列化观察同一份渲染内容，`attr('nodes')` 仍是既有字符串属性，不是结构化属性 API。富文本内部不获得 WXML 声明作用域；需要检查内部渲染节点时使用 XPath，而不是放宽声明作用域内的 CSS 查询。
 
-浏览器预览取消富文本链接的普通/辅助点击导航和 HTML 表单默认提交；业务 tap 与原生表单动作仍由模拟器分发，不能让浏览器额外导航或再次提交。
+浏览器预览取消富文本链接的普通/辅助点击导航和 HTML 表单默认提交；富文本链接与表单按钮的中键按下阶段也取消 Windows 自动滚动等宿主默认动作，不影响主键按下。业务 tap 与原生表单动作仍由模拟器分发，不能让浏览器额外导航或再次提交。
 
 上述能力属于模拟器模型，不代表真实微信 IDE 或设备验收。
 

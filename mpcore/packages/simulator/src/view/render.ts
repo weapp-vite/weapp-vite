@@ -1,10 +1,12 @@
 import type { HeadlessProjectDescriptor } from '../project'
 import type { HeadlessPageInstance } from '../runtime'
 import path from 'node:path'
+import { setNativeBooleanValue } from './nativeBoolean'
 import { setNativePickerValue } from './nativeForm'
 import { isDatasetAttribute, toDatasetKey } from './nodeDataset'
 import { linkRenderedParents } from './renderedTree'
 import { renderRichTextNodes } from './richText'
+import { isValuelessTemplateAttribute } from './templateAttributes'
 import { interpolateTemplateText } from './templateText'
 import { parseWxsTemplateDocument } from './wxsDocument'
 
@@ -77,6 +79,7 @@ function interpolateDomTree(root: DomNodeLike, data: Record<string, unknown>) {
         const resolvedValue = isMustacheOnly(value)
           ? resolveRawValueByPath(data, value.trim().slice(2, -2))
           : interpolateTemplate(value, data)
+        setNativeBooleanValue(node, key, resolvedValue, isValuelessTemplateAttribute(node, key))
         if (key === 'value') {
           setNativePickerValue(node, resolvedValue)
         }

@@ -6,10 +6,11 @@ import type { BrowserRenderScope, DomNodeLike } from './types'
 import { dirname, join, normalize } from 'pathe'
 import { resolveNativeAttributeValue } from '../../view/nativeBindings'
 import { createNativeLoopData } from '../../view/nativeBindings/scopes'
+import { getNativeBooleanValue, setNativeBooleanValue } from '../../view/nativeBoolean'
 import { setNativePickerValue } from '../../view/nativeForm'
 import { collectNodeDataset, isDatasetAttribute, toDatasetKey } from '../../view/nodeDataset'
 import { renderRichTextNodes } from '../../view/richText'
-import { copyTemplateAttributeMetadata } from '../../view/templateAttributes'
+import { copyTemplateAttributeMetadata, isValuelessTemplateAttribute } from '../../view/templateAttributes'
 import { resolveTemplateExpression } from '../../view/templateExpression'
 import { createImportedTemplateState } from '../../view/templateImports'
 import { isTemplateExpression } from '../../view/templateInterpolation'
@@ -127,6 +128,7 @@ export function serializeDomNode(node: DomNodeLike): string {
   }
 
   const attrs = Object.entries(node.attribs ?? {})
+    .filter(([key]) => (key !== 'disabled' && key !== 'checked') || getNativeBooleanValue(node, key))
     .map(([key, value]) => ` ${key}="${escapeAttribute(value)}"`)
     .join('')
   const children = (node.children ?? []).map(serializeDomNode).join('')
@@ -185,6 +187,7 @@ export function applyNodeBindings(node: DomNodeLike, scope: BrowserRenderScope, 
     const resolvedValue = resolveNativeAttributeValue(node, key, scope, source => typeof value === 'string'
       ? resolveAttributeValue(value, source)
       : value)
+    setNativeBooleanValue(node, key, resolvedValue, isValuelessTemplateAttribute(node, key))
     if (key === 'value') {
       setNativePickerValue(node, resolvedValue)
     }
