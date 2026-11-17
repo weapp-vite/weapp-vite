@@ -1,3 +1,9 @@
+---
+title: '@weapp-vite/wxml'
+description: 保留源码的小程序模板解析、遍历、受控编辑和序列化工具。
+keywords: [weapp-vite, wxml, axml, template, parser]
+---
+
 # @weapp-vite/wxml
 
 `@weapp-vite/wxml` 提供保留源码的小程序模板解析、遍历、受控编辑和序列化，在 Node 和浏览器中使用相同核心。
