@@ -16,6 +16,9 @@ interface SwcTransformOptions {
   }
   jsc: {
     preserveAllComments?: boolean
+    minify?: {
+      mangle?: boolean
+    }
     parser: {
       syntax: string
       jsx?: boolean
@@ -81,15 +84,17 @@ export async function transformWithSwc(
   importer?: SwcModuleImporter,
 ) {
   const swc = await loadSwcTransformModule(importer)
+  const compact = resolveCompactOutput(outputOptions.minify)
   const result = await swc.transform(code, {
     filename: chunk.fileName,
-    // 只控制本轮打印的紧凑程度；压缩与变量重命名仍由原生 bundler 负责。
-    minify: resolveCompactOutput(outputOptions.minify),
+    // 降级在 bundler 压缩之后执行，SWC 注入的 helper 和 ES5 重写产生的标识符不会再被外部压缩，紧凑输出须在同一次 transform 内完成重命名。
+    minify: compact,
     sourceMaps: resolveSourceMapOption(outputOptions),
     module: {
       type: 'commonjs',
     },
     jsc: {
+      ...(compact ? { minify: { mangle: true } } : {}),
       preserveAllComments: true,
       parser: {
         syntax: 'ecmascript',
