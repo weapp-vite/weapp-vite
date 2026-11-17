@@ -36,6 +36,12 @@ export function usePreviewShadow(
     }
   }
 
+  function preventMiddleButtonDefaults(event: Event) {
+    if (event instanceof MouseEvent && event.button === 1) {
+      preventBrowserDefaults(event)
+    }
+  }
+
   function handleScreenClick(event: Event) {
     preventBrowserDefaults(event)
     const target = resolveTapTarget(event.target)
@@ -106,6 +112,7 @@ export function usePreviewShadow(
     }
 
     previewShadowRoot = previewHost.value.attachShadow({ mode: 'open' })
+    previewShadowRoot.addEventListener('mousedown', preventMiddleButtonDefaults)
     previewShadowRoot.addEventListener('click', handleScreenClick)
     previewShadowRoot.addEventListener('auxclick', preventBrowserDefaults)
     previewShadowRoot.addEventListener('submit', preventBrowserDefaults)
@@ -133,6 +140,7 @@ export function usePreviewShadow(
   })
 
   onBeforeUnmount(() => {
+    previewShadowRoot?.removeEventListener('mousedown', preventMiddleButtonDefaults)
     previewShadowRoot?.removeEventListener('click', handleScreenClick)
     previewShadowRoot?.removeEventListener('auxclick', preventBrowserDefaults)
     previewShadowRoot?.removeEventListener('submit', preventBrowserDefaults)

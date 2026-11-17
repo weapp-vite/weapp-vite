@@ -44,7 +44,7 @@ import { normalizeRichTextNodes } from '@weapp-core/shared/rich-text'
 const nodes = normalizeRichTextNodes('<p>Hello <strong>world</strong></p>')
 ```
 
-该子入口接受 HTML 字符串或结构化节点，返回命名的 `SafeRichTextNode` 文本/元素联合类型。默认保留 Web 的安全规范化策略。传入 `{ native: true }` 使用微信原生富文本规则：未知元素及子树被移除，数组文本实体仅解码一次，属性仅保留官方逐标签允许项及安全 class/style，不保留 id、href、事件或 `data-sim-*`。两个策略复用解析和安全检查；输出均为惰性内容树，不执行脚本或模板。
+该子入口接受 HTML 字符串或结构化节点，返回命名的 `SafeRichTextNode` 文本/元素联合类型。`normalizeRichTextNodes` 保留 Web 的安全规范化策略；`normalizeNativeRichTextNodes` 和 `sanitizeNativeRichTextAttributes` 使用微信原生富文本规则：未知元素及子树被移除，数组文本实体仅解码一次，属性仅保留官方逐标签允许项及安全 class/style，不保留 id、href、事件或 `data-sim-*`。两个策略共用节点类型、HTML 解析器和安全样式检查，但具有独立的规范化函数，Web bundle 无需保留原生策略及其额外解码逻辑。输出均为惰性内容树，不执行脚本或模板。
 
 ## 配置
 

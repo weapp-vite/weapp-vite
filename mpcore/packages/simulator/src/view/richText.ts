@@ -1,5 +1,5 @@
 import type { SafeRichTextNode } from '@weapp-core/shared/rich-text'
-import { normalizeRichTextNodes } from '@weapp-core/shared/rich-text'
+import { normalizeNativeRichTextNodes } from '@weapp-core/shared/rich-text'
 
 interface RichTextRenderedNode {
   type: 'tag' | 'text'
@@ -23,5 +23,5 @@ function materializeNode(node: SafeRichTextNode): RichTextRenderedNode {
 
 /** 富文本直接成为已渲染节点，不能再进入 WXML 表达式或组件处理流程。 */
 export function renderRichTextNodes(value: unknown): RichTextRenderedNode[] {
-  return normalizeRichTextNodes(value, { native: true }).map(materializeNode)
+  return normalizeNativeRichTextNodes(value).map(materializeNode)
 }

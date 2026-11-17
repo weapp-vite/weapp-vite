@@ -82,9 +82,9 @@ Node/browser 的原生 tap 到达未禁用的 `button form-type="submit"` 时，
 
 `submit.detail.value` 来自参与表单的具名原生控件当前渲染绑定，包含 input/textarea、switch、slider、picker、radio-group 与 checkbox-group；picker 数组保留原始绑定类型，不从逗号字符串猜测值。参与的 `wx://form-field` 组件按自己的当前 name/value 收集，保留对象、false、0 和 null，并在 tap 回调前克隆值。私有组件内部字段仍被隔离。此能力不补齐未绑定输入的宿主状态、reset 或真实 `formId` 上报，也不把任意页面数据当作原生字段值。
 
-`rich-text` 的结构化 `nodes` 与 HTML 字符串通过 `@weapp-core/shared/rich-text` 的显式 `{ native: true }` 策略生成实际渲染子树，支持更新和清空。仅保留微信原生支持的节点和逐标签属性，未知节点及子树被移除；文本实体仅解码一次，内容不会再次解释为 WXML 表达式、事件或自定义组件，也不能伪造 `data-sim-*` 元数据。默认 Web 规范化策略不变。通用 `text()`、快照和序列化观察同一份渲染内容，`attr('nodes')` 仍是既有字符串属性，不是结构化属性 API。富文本内部不获得 WXML 声明作用域；需要检查内部渲染节点时使用 XPath，而不是放宽声明作用域内的 CSS 查询。
+`rich-text` 的结构化 `nodes` 与 HTML 字符串通过 `@weapp-core/shared/rich-text` 的 `normalizeNativeRichTextNodes` 生成实际渲染子树，支持更新和清空。仅保留微信原生支持的节点和逐标签属性，未知节点及子树被移除；文本实体仅解码一次，内容不会再次解释为 WXML 表达式、事件或自定义组件，也不能伪造 `data-sim-*` 元数据。`normalizeRichTextNodes` 保持独立的 Web 规范化策略，不携带原生策略及其额外解码代码。通用 `text()`、快照和序列化观察同一份渲染内容，`attr('nodes')` 仍是既有字符串属性，不是结构化属性 API。富文本内部不获得 WXML 声明作用域；需要检查内部渲染节点时使用 XPath，而不是放宽声明作用域内的 CSS 查询。
 
-浏览器预览取消富文本链接的普通/辅助点击导航和 HTML 表单默认提交；业务 tap 与原生表单动作仍由模拟器分发，不能让浏览器额外导航或再次提交。
+浏览器预览取消富文本链接的普通/辅助点击导航和 HTML 表单默认提交；富文本链接与表单按钮的中键按下阶段也取消 Windows 自动滚动等宿主默认动作，不影响主键按下。业务 tap 与原生表单动作仍由模拟器分发，不能让浏览器额外导航或再次提交。
 
 上述能力属于模拟器模型，不代表真实微信 IDE 或设备验收。
 

@@ -153,6 +153,7 @@ it('strips native rich-text link destinations in the real preview while preservi
       prevented: event.defaultPrevented,
       trusted: event.isTrusted,
     })
+    shadow.addEventListener('mousedown', observe)
     shadow.addEventListener('click', observe)
     shadow.addEventListener('auxclick', observe)
     let taps = 0
@@ -164,10 +165,12 @@ it('strips native rich-text link destinations in the real preview while preservi
       expect(shadow.querySelector('#structured a')?.hasAttribute('target')).toBe(false)
       await browserPage.getByText(text, { exact: true }).click()
       expect(location.href).toBe(initialUrl)
+      expect(activations.at(-2)).toEqual({ type: 'mousedown', prevented: false, trusted: true })
       expect(activations.at(-1)).toEqual({ type: 'click', prevented: true, trusted: true })
       expect(page.data.outerTaps).toBe(++taps)
       await browserPage.getByText(text, { exact: true }).click({ button: 'middle' })
       expect(location.href).toBe(initialUrl)
+      expect(activations.at(-2)).toEqual({ type: 'mousedown', prevented: true, trusted: true })
       expect(activations.at(-1)).toEqual({ type: 'auxclick', prevented: true, trusted: true })
       expect(page.data.outerTaps).toBe(taps)
     }

@@ -1,5 +1,5 @@
-import type { RichTextOptions, RichTextSourceNode, SafeRichTextNode } from '@weapp-core/shared/rich-text'
-import { normalizeRichTextNodes, sanitizeRichTextAttributes, sanitizeRichTextStyle } from '@weapp-core/shared/rich-text'
+import type { RichTextSourceNode, SafeRichTextNode } from '@weapp-core/shared/rich-text'
+import { normalizeNativeRichTextNodes, normalizeRichTextNodes, sanitizeNativeRichTextAttributes, sanitizeRichTextAttributes, sanitizeRichTextStyle } from '@weapp-core/shared/rich-text'
 import { expectAssignable, expectError, expectType } from 'tsd'
 
 const source: RichTextSourceNode = {
@@ -13,14 +13,12 @@ expectType<SafeRichTextNode[]>(normalizeRichTextNodes(null))
 expectType<string>(sanitizeRichTextStyle({ color: 'red' }))
 expectAssignable<Record<string, string>>(sanitizeRichTextAttributes({ onclick: 'unsafe()', title: 'safe' }, 'p'))
 
-const native: RichTextOptions = { native: true }
-expectType<SafeRichTextNode[]>(normalizeRichTextNodes([source], native))
-expectType<SafeRichTextNode[]>(normalizeRichTextNodes('<NAV>&amp;amp;</NAV>', native))
-expectType<SafeRichTextNode[]>(normalizeRichTextNodes(null, native))
-expectType<SafeRichTextNode[]>(normalizeRichTextNodes(source, { native: false }))
-expectAssignable<Record<string, string>>(sanitizeRichTextAttributes({ class: 'safe', id: 'rejected' }, 'p', native))
-expectError(normalizeRichTextNodes(source, { native: 'true' }))
-expectError(sanitizeRichTextAttributes({}, 'p', { native: 'true' }))
+expectType<SafeRichTextNode[]>(normalizeNativeRichTextNodes([source]))
+expectType<SafeRichTextNode[]>(normalizeNativeRichTextNodes('<NAV>&amp;amp;</NAV>'))
+expectType<SafeRichTextNode[]>(normalizeNativeRichTextNodes(null))
+expectAssignable<Record<string, string>>(sanitizeNativeRichTextAttributes({ class: 'safe', id: 'rejected' }, 'p'))
+expectError(normalizeRichTextNodes(source, { native: true }))
+expectError(sanitizeRichTextAttributes({}, 'p', { native: true }))
 
 for (const node of normalizeRichTextNodes(source)) {
   if (node.type === 'text') {
