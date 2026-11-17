@@ -171,6 +171,23 @@ describe('e2e suite manifest', () => {
     expect(devtoolsConfig.test?.fileParallelism).toBe(false)
   })
 
+  it('runs each template module format in a separate IDE task for both providers', async () => {
+    const labels = [
+      'ide/template-weapp-vite-template.cjs.test.ts',
+      'ide/template-weapp-vite-template.test.ts',
+      'ide/template-weapp-vite-wevu-template.cjs.test.ts',
+      'ide/template-weapp-vite-wevu-template.test.ts',
+    ]
+
+    for (const suite of ['ide-gate', 'ide-full:templates', 'ide-full:exhaustive', 'ide-dom-headless', 'ide-headless-gate', 'ide-headless-full']) {
+      const tasks = (await getSuiteTasks(suite))
+        .filter(task => labels.includes(task.label))
+        .map(task => task.label)
+        .toSorted()
+      expect(tasks, suite).toEqual(labels.toSorted())
+    }
+  })
+
   it('collects both automatic-route runtime cases and all topology checkpoints', () => {
     const cases = readTaskCases(path.resolve(import.meta.dirname, '../..'), 'ide/auto-routes-define-app-json.runtime.test.ts')
     expect(cases).toHaveLength(2)

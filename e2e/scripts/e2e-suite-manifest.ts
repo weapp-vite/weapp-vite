@@ -254,6 +254,7 @@ const IDE_TEMPLATES_PATTERNS = [
   'ide/template-weapp-vite-multi-platform-template.test.ts',
   'ide/template-weapp-vite-multi-platform-sfc-template.test.ts',
   'ide/template-weapp-vite-template.test.ts',
+  'ide/template-weapp-vite-template.cjs.test.ts',
   'ide/template-weapp-vite-wevu-tailwindcss-tdesign-retail-template.feedback-runtime.test.ts',
   'ide/template-weapp-vite-wevu-tailwindcss-tdesign-retail-template.test.ts',
   IDE_TDESIGN_AGGREGATE_LABEL,
@@ -261,6 +262,7 @@ const IDE_TEMPLATES_PATTERNS = [
   'ide/template-weapp-vite-wevu-template.dynamic-bindings.test.ts',
   'ide/template-weapp-vite-wevu-template.layouts.runtime.test.ts',
   'ide/template-weapp-vite-wevu-template.test.ts',
+  'ide/template-weapp-vite-wevu-template.cjs.test.ts',
   'ide/template-wevu-features-app.test.ts',
 ]
 const IDE_FULL_CORE_PATTERNS = [
@@ -320,7 +322,9 @@ const IDE_SMOKE_TESTS = [
   'ide/app-lifecycle.test.ts',
   'ide/auto-routes-define-app-json.runtime.test.ts',
   'ide/template-weapp-vite-template.test.ts',
+  'ide/template-weapp-vite-template.cjs.test.ts',
   'ide/template-weapp-vite-wevu-template.test.ts',
+  'ide/template-weapp-vite-wevu-template.cjs.test.ts',
   'ide/wevu-runtime.weapp.test.ts',
 ].map(testPath => path.resolve(ROOT, testPath))
 const IDE_GATE_TESTS = [
@@ -410,7 +414,9 @@ const IDE_DOM_HEADLESS_PATTERNS = [...new Set([
   'ide/wevu-features.runtime.behavior.test.ts',
   'ide/wevu-features.runtime.router.test.ts',
   'ide/template-weapp-vite-template.test.ts',
+  'ide/template-weapp-vite-template.cjs.test.ts',
   'ide/template-weapp-vite-wevu-template.test.ts',
+  'ide/template-weapp-vite-wevu-template.cjs.test.ts',
   'ide/template-weapp-vite-multi-platform-template.test.ts',
   'ide/template-weapp-vite-multi-platform-sfc-template.test.ts',
   'ide/template-weapp-vite-wevu-template.layouts.runtime.test.ts',
@@ -827,6 +833,7 @@ export function getIdeHeadlessSmokeTasks() {
   return getHeadlessPatternTasks([
     'ide/index.test.ts',
     'ide/template-weapp-vite-template.test.ts',
+    'ide/template-weapp-vite-template.cjs.test.ts',
   ])
 }
 
@@ -836,7 +843,9 @@ export function getIdeHeadlessGateTasks() {
     'ide/app-lifecycle.test.ts',
     'ide/auto-routes-define-app-json.runtime.test.ts',
     'ide/template-weapp-vite-template.test.ts',
+    'ide/template-weapp-vite-template.cjs.test.ts',
     'ide/template-weapp-vite-wevu-template.test.ts',
+    'ide/template-weapp-vite-wevu-template.cjs.test.ts',
     'ide/wevu-runtime.weapp.test.ts',
   ])
 }
