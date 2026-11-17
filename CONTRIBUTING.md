@@ -19,6 +19,8 @@ gh pr merge <编号> --squash
 
 本地 `pnpm verify --mode quick` 检查当前工作区，包含暂存、未暂存及未跟踪文件。Git `pre-push` 使用原生引用输入执行 `verify:push`，按实际待推 SHA 和远端旧 SHA 选择 quick 检查；新分支使用主线共同祖先，基线对象缺失时保守扩大范围。存在未提交改动或推送其他提交时，在独立工作树中按候选锁文件安装依赖后验证，不借用当前工作区的依赖链接或改动。
 
+提 PR 前若修改了 `.github/`、工作流或 CI 验证脚本，先依次运行 `pnpm check:pr-admission`、`pnpm test:pr-actions` 和 `pnpm verify --mode quick`。前两项核对线上准入结构与工作流契约，quick 验证候选提交自身；`pre-push` 仍会按实际引用再次执行适用检查。
+
 quick 运行本地静态检查、适用配置与生成契约、直接变更和相邻单测、包级源码类型检查；缺少可证明直接相关的存续单测时，将完整包测试明确留给 review / CI。`test:pure` 也遵守相同筛选，不因工具或 E2E 文件变更启动整包测试或 runtime suite。review 保留完整包测试、消费者、公开类型及受管 E2E 入口，CI 继续承担全部适用矩阵与汇总。
 
 根贡献指南、README、许可证和代理约定运行适用的静态检查；生成的 `AGENTS.md` 及其规则输入继续运行 `agents:check`，public skill 合约文件与规则输入继续运行 `skills:check`。包文档、显式构建输入、锁文件、全局配置及未知输入保留各自验证归属。删除和重命名仍检查受影响路径，不按新文件名忽略原有影响。
