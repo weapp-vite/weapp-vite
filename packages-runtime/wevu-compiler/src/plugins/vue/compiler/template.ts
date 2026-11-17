@@ -5,6 +5,7 @@ import {
   WEVU_SLOT_FALLBACK_VIRTUAL_HOST_TAG_NAME,
 } from '@weapp-core/constants'
 import { createWevuRuntimeCapabilityMetadataFromBindingManifest } from '../../../runtimeCapabilities'
+import { createBaseLibraryCompileContext } from '../../../utils/baseLibrary'
 import { parseTemplateWithScriptModules } from '../../../utils/templateScriptModules'
 
 import { createBindingManifest, markBindingManifestIncomplete } from './template/bindingManifest'
@@ -148,6 +149,10 @@ export function compileVueTemplateToWxml(
         unsupported: options?.teleport?.unsupported ?? 'warn',
         enabled: options?.teleport?.enabled !== false,
       },
+      baseLibrary: createBaseLibraryCompileContext({
+        version: options?.baseLibraryVersion,
+        hintState: options?.baseLibraryHintState,
+      }),
       isPage: resolveTemplateIsPage(filename, options),
       propsAliases: options?.propsAliases,
       propsDerivedKeys: options?.propsDerivedKeys,

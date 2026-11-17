@@ -1,9 +1,10 @@
 import type { Expression, JSXAttribute, JSXElement } from '@weapp-vite/ast/babelTypes'
 import type { TeleportTargetInput } from '../../vue/compiler/template/teleport'
 import type { JsxCompileContext, JsxDynamicIslandReason } from './types'
-import { ROOT_PORTAL_ENABLE_MIN_SDK_VERSION, ROOT_PORTAL_MIN_SDK_VERSION } from '@weapp-core/constants'
+import { ROOT_PORTAL_ENABLE_MIN_SDK_VERSION } from '@weapp-core/constants'
 import * as t from '@weapp-vite/ast/babelTypes'
-import { resolveTeleportDecision, TELEPORT_DEGRADE_CODES } from '../../vue/compiler/template/teleport'
+import { consumeBaseLibraryHint } from '../../../utils/baseLibrary'
+import { resolveTeleportDecision, ROOT_PORTAL_BASE_LIBRARY_HINT_MESSAGE, ROOT_PORTAL_BASE_LIBRARY_HINT_TOPIC, TELEPORT_DEGRADE_CODES } from '../../vue/compiler/template/teleport'
 import { normalizeInterpolationExpression, renderMustache } from './ast'
 import { compileJsxAttributes, readJsxAttributeExpression } from './attributes'
 import { recordJsxBinding } from './bindingManifest'
@@ -94,7 +95,7 @@ export function compileJsxTeleport(
       value => renderMustache(value, context),
     )
   }
-  if (!context.teleportEnabled) {
+  if (!context.teleport.enabled) {
     return wrapIf(compileJsxChildren(node.children, context))
   }
 
@@ -104,7 +105,7 @@ export function compileJsxTeleport(
     spread: node.openingElement.attributes.some(attribute => t.isJSXSpreadAttribute(attribute)),
   })
   if (decision.kind === 'degrade') {
-    addJsxDiagnostic(context, node, TELEPORT_DEGRADE_CODES[decision.reason], decision.message, context.teleportUnsupported)
+    addJsxDiagnostic(context, node, TELEPORT_DEGRADE_CODES[decision.reason], decision.message, context.teleport.unsupported === 'error' ? 'error' : 'warning')
     return wrapIf(compileJsxChildren(node.children, context))
   }
 
@@ -117,10 +118,12 @@ export function compileJsxTeleport(
     return registerDynamicIsland(node as unknown as Expression, context, 'closure')
   }
 
-  // 编译期只能确认映射结果，无法获知运行时基础库，因此提示一次版本门槛。
-  if (!context.teleportBaseLibraryHinted) {
-    context.teleportBaseLibraryHinted = true
-    addJsxDiagnostic(context, node, 'WV1010', `<Teleport> 已映射为 root-portal，需要微信基础库 ≥ ${ROOT_PORTAL_MIN_SDK_VERSION}，其中 enable 属性需要 ≥ ${ROOT_PORTAL_ENABLE_MIN_SDK_VERSION}。`)
+  // 版本满足时不提示；无法确认版本时同一次构建只提示一次门槛。
+  if (consumeBaseLibraryHint(context.baseLibrary, {
+    topic: ROOT_PORTAL_BASE_LIBRARY_HINT_TOPIC,
+    minimum: ROOT_PORTAL_ENABLE_MIN_SDK_VERSION,
+  })) {
+    addJsxDiagnostic(context, node, 'WV1010', ROOT_PORTAL_BASE_LIBRARY_HINT_MESSAGE)
   }
 
   const passthroughAttributes = resolveTeleportPassthroughAttributes(node)

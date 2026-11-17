@@ -2,6 +2,7 @@ import type { Expression } from '@weapp-vite/ast/babelTypes'
 import type { WevuRuntimeCapabilityMetadata } from '../../../../runtimeCapabilities'
 import type { WevuBindingManifestV1, WevuRuntimeBindingManifestMode } from '../../../../types/bindingManifest'
 import type { CompilerDiagnostic, SourceSpan } from '../../../../types/diagnostics'
+import type { BaseLibraryCompileContext, BaseLibraryHintState } from '../../../../utils/baseLibrary'
 import type { EncodedSourceMapLike } from '../../../../utils/sourcemap'
 import type { TemplateScriptModules } from '../../../../utils/templateScriptModules'
 import type { MiniProgramPlatform } from './platform'
@@ -105,9 +106,9 @@ export interface TransformContext {
   runtimeBindingManifest: WevuRuntimeBindingManifestMode
   platform: MiniProgramPlatform
   /** Vue Teleport 映射配置，已在编译入口归一化为必填。 */
-  teleport: Required<TeleportCompileOptions>
-  /** 当前文件是否已输出 root-portal 基础库要求提示，避免同一文件重复告警。 */
-  teleportBaseLibraryHinted?: boolean
+  teleport: ResolvedTeleportCompileOptions
+  /** 基础库版本与提示去重上下文，各功能按主题复用。 */
+  baseLibrary: BaseLibraryCompileContext
   isPage?: boolean
   /**
    * Vue `<script setup>` props 解构重命名映射，key 为模板中使用的本地别名，value 为原始 prop 名。
@@ -220,6 +221,14 @@ export interface TeleportCompileOptions {
 }
 
 /**
+ * 归一化后的 Teleport 编译选项；`unsupported` 与 `enabled` 始终有值。
+ */
+export interface ResolvedTeleportCompileOptions {
+  unsupported: TeleportUnsupportedMode
+  enabled: boolean
+}
+
+/**
  * 模板编译选项。
  */
 export interface TemplateCompileOptions {
@@ -227,6 +236,13 @@ export interface TemplateCompileOptions {
   isPage?: boolean
   /** Vue Teleport 映射为小程序 root-portal 的编译配置。 */
   teleport?: TeleportCompileOptions
+  /**
+   * 项目配置的微信基础库版本，供编译器判断各功能的基础库门槛。
+   * `latest` / `trial` 等无法静态判断的别名视为无法确认。
+   */
+  baseLibraryVersion?: string
+  /** 跨文件共享的基础库提示状态，同一次构建中每个主题只提示一次。@internal */
+  baseLibraryHintState?: BaseLibraryHintState
   /**
    * Vue `<script setup>` props 解构重命名映射，key 为模板中使用的本地别名，value 为原始 prop 名。
    */

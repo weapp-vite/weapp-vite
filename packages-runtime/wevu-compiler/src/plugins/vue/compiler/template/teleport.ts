@@ -1,7 +1,17 @@
 import type { CompilerDiagnosticCode } from '../../../../types/diagnostics'
-import { ROOT_PORTAL_TOP_LEVEL_TARGETS } from '@weapp-core/constants'
+import { ROOT_PORTAL_ENABLE_MIN_SDK_VERSION, ROOT_PORTAL_MIN_SDK_VERSION, ROOT_PORTAL_TOP_LEVEL_TARGETS } from '@weapp-core/constants'
 
 const ROOT_PORTAL_TOP_LEVEL_TARGET_SET = new Set<string>(ROOT_PORTAL_TOP_LEVEL_TARGETS)
+
+/**
+ * root-portal 基础库提示在共享去重状态中的稳定主题键。
+ */
+export const ROOT_PORTAL_BASE_LIBRARY_HINT_TOPIC = 'root-portal'
+
+/**
+ * root-portal 基础库门槛提示文案，模板与 JSX 共用。
+ */
+export const ROOT_PORTAL_BASE_LIBRARY_HINT_MESSAGE = `<Teleport> 已映射为 root-portal，需要微信基础库 ≥ ${ROOT_PORTAL_MIN_SDK_VERSION}，其中 enable 属性需要 ≥ ${ROOT_PORTAL_ENABLE_MIN_SDK_VERSION}。`
 
 export type TeleportTargetInput
   = | { kind: 'static', value: string }

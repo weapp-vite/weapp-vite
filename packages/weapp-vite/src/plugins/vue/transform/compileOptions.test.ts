@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { compileVueFile } from 'wevu/compiler'
 import { createLogicalEntryId } from '../../../moduleGraph/protocol'
 import { getHmrRuntimeSession } from '../../../runtime/hmrRuntimeSession'
+import { resolveBaseLibraryHintState } from './baseLibrary'
 import { normalizeVueTemplateForPlatform } from './bundle/platform'
 import { createCompileVueFileOptions, isVueTransformSourceMapEnabled, resolveSfcStylePreprocessOptions, resolveVueTemplatePlatformOptions } from './compileOptions'
 
@@ -78,6 +79,26 @@ it('把 Wevu renderer 选择传入 SFC 编译器', () => {
   })
   expect(options.renderer).toBe('auto')
   expect(options.template.platform.name).toBe('tt')
+})
+
+it('把项目基础库版本与共享提示状态传入模板编译选项', () => {
+  const configService = {
+    cwd: '/project',
+    absoluteSrcRoot: '/project/src',
+    platform: 'weapp',
+    isDev: false,
+    inlineConfig: {},
+    projectConfig: { libVersion: '3.17.2' },
+    weappViteConfig: {},
+    outputExtensions: {},
+    relativeOutputPath: () => 'pages/index',
+  } as any
+  const options = createCompileVueFileOptions({} as CompilerContext, {}, '/project/src/pages/index.vue', true, false, configService, {
+    reExportResolutionCache: new Map(),
+    classStyleRuntimeWarned: { value: false },
+  })
+  expect(options.template.baseLibraryVersion).toBe('3.17.2')
+  expect(options.template.baseLibraryHintState).toBe(resolveBaseLibraryHintState(configService))
 })
 
 describe('resolveVueTemplatePlatformOptions', () => {

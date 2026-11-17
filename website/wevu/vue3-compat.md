@@ -163,7 +163,7 @@ defineComponent({
 `<Teleport>` 不做 Web DOM 目标语义的完整模拟，只映射「脱离父级层级」这一能力：
 
 - 仅在微信平台、且 `to` 为静态顶层目标（`body`、`html`、`#app`、`#root`）时映射为原生 `root-portal`；`disabled` 会取反输出 `enable`。
-- 基础库门槛：`root-portal` 标签需 `>= 2.25.2`，`enable` 属性需 `>= 2.26.1`（2.25.2–2.26.0 区间内 `disabled` 语义会被忽略），`externalClass` 需 `>= 3.9.2`。编译器不读取运行时基础库，映射成功时会给出一次 `WV1010` 提示，使用方需自行保证版本。
+- 基础库门槛：`root-portal` 标签需 `>= 2.25.2`，`enable` 属性需 `>= 2.26.1`（2.25.2–2.26.0 区间内 `disabled` 语义会被忽略），`externalClass` 需 `>= 3.9.2`。编译器会读取 `project.config.json` / `project.private.config.json` 的 `libVersion`（私有配置优先）：满足 `>= 2.26.1` 时不再提示；低于门槛或 `latest` / `trial` 等无法静态判断的别名，同一次构建只提示一次 `WV1010`，使用方仍需保证真机版本。
 - 动态 `:to`、`v-bind` 对象展开、缺少/空 `to`、非顶层目标会剥掉标签并原位渲染子节点，同时给出编译提示；模板与 JSX 共用同一套判定与文案。
 - `class` / `style` 会落在 `root-portal` 宿主节点上，编译器给出 `WV1009` 提示，应把样式写在内层节点。
 - 已知限制：`root-portal` 会断开组件 `wxss` 与 CSS 自定义属性（`--var`）的继承，不要依赖祖先变量；可用 `externalClass`（`>= 3.9.2`）或 `app.wxss` 全局类补救。层级隔离、不受父级 `transform` / `z-index` 影响是 `root-portal` 的预期收益。

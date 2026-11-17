@@ -185,7 +185,7 @@ export default defineConfig({
   - `enabled`：是否启用映射，默认 `true`。关闭后剥掉 Teleport 标签并原位渲染子节点，不产生诊断。
   - `unsupported`：不可映射场景的诊断级别，默认 `warn`；设为 `error` 时构建中断。各场景使用稳定子码 `WV1004`–`WV1009`，映射成功时的基础库版本提示使用 `WV1010`。
   - 仅微信平台生效；只有静态 `to` 为顶层目标（`body`、`html`、`#app`、`#root`）时映射，`disabled` 取反输出 `enable`。
-  - 基础库门槛：`root-portal` 标签需 `>= 2.25.2`，`enable` 需 `>= 2.26.1`，`externalClass` 需 `>= 3.9.2`。编译器不读取运行时基础库，映射成功时会给出一次 `WV1010` 提示，使用方需自行保证版本。
+  - 基础库门槛：`root-portal` 标签需 `>= 2.25.2`，`enable` 需 `>= 2.26.1`，`externalClass` 需 `>= 3.9.2`。编译器会读取 `project.config.json` / `project.private.config.json` 的 `libVersion`（私有配置优先）：满足 `>= 2.26.1` 时不再提示；低于门槛或 `latest` / `trial` 等无法静态判断的别名，同一次构建只提示一次 `WV1010`，使用方仍需保证真机版本。
   - `class` / `style` 会透传到 `root-portal` 宿主节点，编译器会给出 `WV1009` 提示；`root-portal` 会断开组件 `wxss` 与 CSS 自定义属性（`--var`）的继承，可用 `externalClass`（`>= 3.9.2`）或 `app.wxss` 全局类补救。
 
 示例：关闭 HTML 标签映射

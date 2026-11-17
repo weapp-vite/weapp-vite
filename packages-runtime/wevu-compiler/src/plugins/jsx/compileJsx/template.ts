@@ -3,6 +3,7 @@ import type { CompileVueFileOptions } from '../../vue/transform/compileVueFile/t
 import type { JsxCompileContext } from './types'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse } from '../../../utils/babel'
+import { createBaseLibraryCompileContext } from '../../../utils/baseLibrary'
 import { createBindingManifest } from '../../vue/compiler/template/bindingManifest'
 import { formatWxml } from '../../vue/compiler/template/format'
 import { getMiniProgramTemplatePlatform } from '../../vue/compiler/template/platforms'
@@ -31,8 +32,14 @@ export function createJsxCompileContext(options?: CompileVueFileOptions): JsxCom
     dynamicIslands: [],
     dynamicIslandSeed: 0,
     dynamicIslandMode: 'auto',
-    teleportUnsupported: options?.template?.teleport?.unsupported === 'error' ? 'error' : 'warning',
-    teleportEnabled: options?.template?.teleport?.enabled ?? true,
+    baseLibrary: createBaseLibraryCompileContext({
+      version: options?.template?.baseLibraryVersion,
+      hintState: options?.template?.baseLibraryHintState,
+    }),
+    teleport: {
+      enabled: options?.template?.teleport?.enabled ?? true,
+      unsupported: options?.template?.teleport?.unsupported === 'error' ? 'error' : 'warn',
+    },
   }
 }
 

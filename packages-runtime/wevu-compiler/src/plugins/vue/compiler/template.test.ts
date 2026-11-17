@@ -3700,6 +3700,45 @@ describe('compileVueTemplateToWxml', () => {
     expect(globalOff.diagnostics).toHaveLength(0)
   })
 
+  it('skips the root-portal base library hint when the configured version satisfies it', () => {
+    for (const version of ['2.26.1', '2.32.3', '3.10.2', ' v2.26.1 ', 'V3.17.2']) {
+      const satisfied = compileVueTemplateToWxml(
+        `<Teleport to="body"><view>A</view></Teleport>`,
+        '/project/src/pages/index/index.vue',
+        { baseLibraryVersion: version },
+      )
+      expect(satisfied.code).toBe('<root-portal enable="{{true}}"><view>A</view></root-portal>')
+      expect(satisfied.diagnostics.filter(item => item.code === 'WV1010')).toHaveLength(0)
+    }
+  })
+
+  it('reports the root-portal base library hint once per shared hint state', () => {
+    const hintState = { reported: new Set<string>() }
+    const first = compileVueTemplateToWxml(
+      `<Teleport to="body"><view>A</view></Teleport>`,
+      '/project/src/pages/first/index.vue',
+      { baseLibraryVersion: '2.25.2', baseLibraryHintState: hintState },
+    )
+    const second = compileVueTemplateToWxml(
+      `<Teleport to="body"><view>B</view></Teleport>`,
+      '/project/src/pages/second/index.vue',
+      { baseLibraryVersion: '2.25.2', baseLibraryHintState: hintState },
+    )
+    expect(first.diagnostics.filter(item => item.code === 'WV1010')).toHaveLength(1)
+    expect(second.diagnostics.filter(item => item.code === 'WV1010')).toHaveLength(0)
+  })
+
+  it('keeps the root-portal hint for aliases or versions below the enable requirement', () => {
+    for (const version of [undefined, 'latest', 'trial', 'widelyUsed', '2.26.1-beta', '2.25.2', '2.26.0']) {
+      const result = compileVueTemplateToWxml(
+        `<Teleport to="body"><view>A</view></Teleport>`,
+        '/project/src/pages/index/index.vue',
+        version ? { baseLibraryVersion: version } : undefined,
+      )
+      expect(result.diagnostics.filter(item => item.code === 'WV1010')).toHaveLength(1)
+    }
+  })
+
   it('maps Teleport edge cases at the root node and with passthrough attributes', () => {
     const root = compileVueTemplateToWxml(
       `<Teleport to="body"><view>A</view></Teleport>`,
