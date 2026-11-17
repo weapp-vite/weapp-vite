@@ -119,7 +119,7 @@ CI Policy 在既有审批后检查公开包与 changeset 的完整对应，测�
 
 每天北京时间 06:17（UTC 22:17）运行，也可以在默认分支手动选择 `mode=nightly`。它发布全部公开 workspace 包，不能用恢复参数筛选包或换成历史来源；`dry-run=true` 只检查来源、候选版本与 registry 状态，不构建、上传或验证 consumer。
 
-正式版和 nightly 的 npm job 共用按分支划分的 `npm-release` 队列，发布完成即释放互斥。后续文档部署使用自己的站点及渠道队列，不占用 npm 发布锁。
+正式版使用按分支划分的 `npm-release` 队列，nightly 使用独立的 `npm-nightly` 队列；两类 job 各自串行，nightly 的质量、构建和 consumer 阶段不会把正式 Release 排队。nightly 发布仍使用 `snapshot-nightly`，repoctl 会在上传前后检查 `latest` 未被并发正式发布改变；发生冲突时本次 nightly 失败并保留可恢复诊断。后续文档部署使用自己的站点及渠道队列，不占用 npm 发布锁。
 
 正式执行由 repoctl 原生 nightly 管线完成：
 
@@ -132,7 +132,7 @@ CI Policy 在既有审批后检查公开包与 changeset 的完整对应，测�
 
 正式发布包消费验证与发布回归通过后，本仓库已移除整份 `@icebreakers__monorepo@6.3.1.patch` 及对应登记，直接消费上游实现。公共 deadline、consumer 和工作流回归继续保留，`pnpm test:release` 仍为完整发布门禁；本次仅升级发布工具，不添加 changeset，也不联动 `create-weapp-vite` 版本。
 
-全部公开包按顺序打包、上传和消费验证，原 90 分钟 job 上限曾在最后一个包上传时终止；现将整个 job 上限设为 240 分钟，为发布确认、严格入口检查与诊断保留时间。该上限是作业容量预算，不代表覆盖所有网络故障的最坏耗时。
+全部公开包按顺序打包、上传和消费验证，原 90 分钟 job 上限曾在最后一个包上传时终止；现将整个 job 上限设为 240 分钟，为发布确认、严格入口检查与诊断保留时间。该上限是作业容量预算，不代表覆盖所有网络故障的最坏耗时。当前锁定的 repoctl 6.6.3 仅为 PR snapshot 提供 prepared artifact publisher，nightly 仍由单个原生管线完成质量、构建、逐包发布和 consumer 检查；因此本次先隔离并发锁，避免长 nightly 阻塞正式发布，后续若 repoctl 提供 nightly prepared publisher 再拆分构建与发布 job。
 
 Vitest setup 导出通过 `repoctl.packageCheck.runtimeContexts` 显式声明测试框架上下文。打包检查和发布后的 consumer 均使用隔离安装的真实 Vitest CLI 执行 setup。自动路由的占位入口声明 `expected-error` 契约，实际导入必须抛出精确的平台保护错误；意外成功或其他错误都会失败。其他导出继续直接验证 Node 导入，所有声明仍使用 `--strict --skipLibCheck false` 检查。
 

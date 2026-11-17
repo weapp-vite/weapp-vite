@@ -64,11 +64,13 @@ function runNightlyInputRejection(name: string, parentEnv = process.env) {
 }
 
 describe('repoctl nightly workflow', () => {
-  it('serializes npm publishers without holding their lock during documentation deployment', () => {
+  it('serializes nightly runs without blocking formal npm releases or documentation deployment', () => {
     expect(workflow.concurrency).toBeUndefined()
-    const publishers = { 'group': `npm-release-${expression('github.ref')}`, 'cancel-in-progress': false }
-    expect(workflow.jobs.release?.concurrency).toEqual(publishers)
-    expect(workflow.jobs.nightly?.concurrency).toEqual(publishers)
+    const releasePublishers = { 'group': `npm-release-${expression('github.ref')}`, 'cancel-in-progress': false }
+    const nightlyPublishers = { 'group': `npm-nightly-${expression('github.ref')}`, 'cancel-in-progress': false }
+    expect(workflow.jobs.release?.concurrency).toEqual(releasePublishers)
+    expect(workflow.jobs.nightly?.concurrency).toEqual(nightlyPublishers)
+    expect(workflow.jobs.release?.concurrency?.group).not.toBe(workflow.jobs.nightly?.concurrency?.group)
     expect(workflow.jobs.docs?.concurrency).toBeUndefined()
     expect(workflow.jobs['oidc-audit']?.concurrency).toBeUndefined()
     const docs = readWorkflowFixture('repoctl-docs-deploy.yml') as { concurrency: Record<string, unknown> }

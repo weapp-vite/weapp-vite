@@ -297,8 +297,10 @@ jobs:
   nightly:
     name: Publish nightly
     if: ${{ (github.event_name == 'schedule' && github.event.schedule == '17 22 * * *') || (github.event_name == 'workflow_dispatch' && inputs.mode == 'nightly') }}
+    # Nightly quality/build/consumer work can take hours. Keep duplicate nightly
+    # runs serialized without making the long-running job block formal releases.
     concurrency:
-      group: npm-release-${{ github.ref }}
+      group: npm-nightly-${{ github.ref }}
       cancel-in-progress: false
     runs-on: ubuntu-latest
     # 全部公开包逐个打包、上传及消费检查；90 分钟曾在最后一个包上传时终止。
