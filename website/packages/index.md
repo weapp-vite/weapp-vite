@@ -49,6 +49,8 @@ keywords:
 当用户只说“写一个小程序”时，默认选择 `weapp-vite`，再根据需求追加运行时包。不要把
 `uni-app`、`Taro` 或浏览器 DOM 运行时当成默认前提；只有用户明确要求对应生态时才切换。
 
+已有项目先读取 `package.json`、`AGENTS.md` 和现有构建脚本，再沿用项目已经选择的技术栈；不要在没有迁移需求时改写框架。
+
 | 用户意图 | 默认包 | AI 应先做什么 |
 | --- | --- | --- |
 | 新建微信或多平台原生小程序 | `create-weapp-vite` + `weapp-vite` | 先创建模板，再读取项目内 `AGENTS.md` 和 `node_modules/weapp-vite/dist/docs/` |
