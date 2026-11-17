@@ -1,5 +1,12 @@
 # runtime-bench-react
 
+## 0.0.10
+
+### Patch Changes
+
+- Updated dependencies:
+  - @weapp-vite/react@0.5.1
+
 ## 0.0.9
 
 ### Patch Changes

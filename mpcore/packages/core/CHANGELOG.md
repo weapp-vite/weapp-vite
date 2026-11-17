@@ -1,5 +1,31 @@
 # @mpcore/core
 
+## 0.0.14
+
+### Patch Changes
+
+- chore(deps): 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@ai-sdk/anthropic, @ai-sdk/openai, @ai-sdk/openai-compatible, @devframes/agentic, @devframes/hub, @devframes/hub-ui, @icebreakers/eslint-config, @icebreakers/stylelint-config, @vitejs/devtools, @vitejs/devtools-kit, ai, devframe, eslint, postcss, vue-router, weapp-tailwindcss。命名 catalog 变更键：无。
+
+- chore(deps): 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：无。命名 catalog 变更键：weapp-tailwindcss-fixed(weapp-tailwindcss)。
+
+- chore(deps): 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@icebreakers/eslint-config, @icebreakers/stylelint-config。命名 catalog 变更键：无。
+
+- chore(deps): 自动补充依赖升级发布记录。
+  涉及包：
+  - @weapp-vite/glass-easel-web-adapter：devDependencies.playwright
+  - @wevu/json-render：dependencies.@json-render/core
+
+- chore(deps): 自动补充依赖升级发布记录。
+  涉及包：
+  - @weapp-vite/ast：dependencies.@oxc-project/types
+
+- chore(deps): 自动补充依赖升级发布记录。
+  涉及包：
+  - create-weapp-vite：devDependencies.oxfmt
+
 ## 0.0.13
 
 ### Patch Changes
