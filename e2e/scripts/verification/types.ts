@@ -16,6 +16,7 @@ export interface VerificationProfile {
 
 export interface PlannedVerificationTask {
   label: string
+  acceptanceSource?: string
   definitionHash: string
   estimatedDurationMs: number
   shardIndex: number

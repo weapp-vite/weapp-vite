@@ -11,6 +11,10 @@ export type { PlannedTaskCase, ProviderCaseScope } from './caseCoverage'
 
 export type PlannedTaskCaseReader = (task: SuiteTask, provider: AcceptanceReport['provider']) => Promise<PlannedTaskCase[]>
 
+function acceptanceSource(task: SuiteTask) {
+  return task.acceptanceSource ?? task.label
+}
+
 /** 延迟加载 AST 模块；复用静态清单后仍为每个 provider 独立冻结名称与范围。 */
 export function createPlannedTaskCaseReader(root = ACCEPTANCE_ROOT): PlannedTaskCaseReader {
   let inventory: Promise<ReturnType<typeof import('./inventory')['createTaskCaseReader']>> | undefined
@@ -21,7 +25,8 @@ export function createPlannedTaskCaseReader(root = ACCEPTANCE_ROOT): PlannedTask
     }
     inventory ??= import('./inventory').then(({ createTaskCaseReader }) => createTaskCaseReader(root))
     const readCases = await inventory
-    const cases = readCases(task.label, task.acceptanceTemplates)
+    const source = acceptanceSource(task)
+    const cases = readCases(source, task.acceptanceTemplates)
     if (!cases.length || cases.some(item => item.notes.some(note => note.startsWith('Dynamic')))) {
       throw new Error(`Cannot resolve complete DOM case inventory for ${task.label}`)
     }
@@ -30,7 +35,7 @@ export function createPlannedTaskCaseReader(root = ACCEPTANCE_ROOT): PlannedTask
       if (/\$\{[^}]+\}/.test(name)) {
         throw new Error(`Unresolved DOM case name in ${task.label}: ${name}`)
       }
-      return { file: `e2e/${task.label}`, name, ...(item.providerApplicability ? { providerScope: freezeProviderCaseScope(item.providerApplicability, provider) } : {}) }
+      return { file: `e2e/${source}`, name, ...(item.providerApplicability ? { providerScope: freezeProviderCaseScope(item.providerApplicability, provider) } : {}) }
     })
   }
 }

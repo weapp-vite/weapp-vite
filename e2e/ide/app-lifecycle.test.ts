@@ -3,6 +3,7 @@ import process from 'node:process'
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
+import { APP_HOOKS } from '../../e2e-apps/shared/appLifecycle/observer'
 import { assertHostLifecycleForwarding, lifecycleStructure } from '../utils/appLifecycleEvidence'
 import { launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
@@ -17,8 +18,23 @@ const APP_NATIVE_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/app-li
 const APP_WEVU_TS_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/app-lifecycle-wevu-ts')
 const APP_WEVU_VUE_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/app-lifecycle-wevu-vue')
 const AUTOMATOR_SKIP_WARMUP_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_SKIP_WARMUP'
+export const APP_LIFECYCLE_VARIANT_ENV = 'WEAPP_VITE_E2E_APP_LIFECYCLE_VARIANT'
 const INDEX_ROUTE = '/pages/index/index'
 const INDEX_ROUTE_MARKER_SELECTOR = '#app-lifecycle-route'
+
+export const APP_LIFECYCLE_VARIANTS = ['native', 'wevu-ts', 'wevu-vue'] as const
+type AppLifecycleVariant = typeof APP_LIFECYCLE_VARIANTS[number]
+
+const APP_LIFECYCLE_ROOTS: Record<AppLifecycleVariant, string> = {
+  'native': APP_NATIVE_ROOT,
+  'wevu-ts': APP_WEVU_TS_ROOT,
+  'wevu-vue': APP_WEVU_VUE_ROOT,
+}
+
+const requestedVariant = process.env[APP_LIFECYCLE_VARIANT_ENV]
+if (requestedVariant !== undefined && !(APP_LIFECYCLE_VARIANTS as readonly string[]).includes(requestedVariant)) {
+  throw new Error(`Unknown app lifecycle variant: ${requestedVariant}`)
+}
 
 async function runBuild(root: string) {
   const distRoot = path.join(root, 'dist')
@@ -245,42 +261,67 @@ async function collectAppSnapshot(root: string, variant: string, dom: ReturnType
   }
 }
 
+function lifecycleCheckpoints(variant: AppLifecycleVariant) {
+  return [
+    {
+      id: `${variant}:initial`,
+      route: INDEX_ROUTE,
+      action: `冷启动 e2e-apps/app-lifecycle-${variant} 并检查实际启动 hook 状态`,
+      nodes: [
+        { selector: '#app-lifecycle-route', text: variant === 'native' ? 'App lifecycle native' : 'App lifecycle wevu' },
+        { selector: '#app-hook-onLaunch', text: 'onLaunch: observed' },
+        { selector: '#app-hook-onShow', text: 'onShow: observed' },
+        { selector: '#app-hook-onError', text: 'onError: pending' },
+        { selector: '.app-hook-status', count: 7 },
+        { selector: '.app-host-input', count: 2 },
+        { selector: '.app-hook-input', count: 2 },
+      ],
+    },
+    {
+      id: `${variant}:finalized`,
+      route: INDEX_ROUTE,
+      action: `归档 e2e-apps/app-lifecycle-${variant} 日志并刷新实际 hook 状态`,
+      nodes: [
+        { selector: '#app-hook-onLaunch', text: 'onLaunch: observed' },
+        { selector: '#app-hook-onShow', text: 'onShow: observed' },
+        { selector: '#app-hook-onError', text: 'onError: skipped' },
+        { selector: '#app-hook-onUnhandledRejection', text: 'onUnhandledRejection: skipped' },
+        { selector: '.app-hook-status', count: 7 },
+        { selector: '.app-host-input', count: 2 },
+        { selector: '.app-hook-input', count: 2 },
+      ],
+    },
+  ]
+}
+
+function assertSingleVariantLifecycle(variant: AppLifecycleVariant, snapshot: { logs: Array<Record<string, any>> }) {
+  expect(snapshot.logs.length, `${variant}: lifecycle log count`).toBe(APP_HOOKS.length)
+  expect(snapshot.logs.map(entry => ({
+    hook: entry.hook,
+    order: entry.order,
+    skipped: entry.skipped,
+  }))).toEqual(APP_HOOKS.map((hook, index) => ({
+    hook,
+    order: index + 1,
+    skipped: index >= 2,
+  })))
+}
+
 describe('app lifecycle compare (e2e)', { concurrent: false }, () => {
   afterAll(async () => {
     await closeSharedMiniPrograms()
   })
 
   it('compares wevu app lifecycle logs against native', async (ctx) => {
-    const dom = createDomAcceptance(ctx, 'e2e-apps', ['native', 'wevu-ts', 'wevu-vue'].flatMap(variant => [
-      {
-        id: `${variant}:initial`,
-        route: INDEX_ROUTE,
-        action: `冷启动 e2e-apps/app-lifecycle-${variant} 并检查实际启动 hook 状态`,
-        nodes: [
-          { selector: '#app-lifecycle-route', text: variant === 'native' ? 'App lifecycle native' : 'App lifecycle wevu' },
-          { selector: '#app-hook-onLaunch', text: 'onLaunch: observed' },
-          { selector: '#app-hook-onShow', text: 'onShow: observed' },
-          { selector: '#app-hook-onError', text: 'onError: pending' },
-          { selector: '.app-hook-status', count: 7 },
-          { selector: '.app-host-input', count: 2 },
-          { selector: '.app-hook-input', count: 2 },
-        ],
-      },
-      {
-        id: `${variant}:finalized`,
-        route: INDEX_ROUTE,
-        action: `归档 e2e-apps/app-lifecycle-${variant} 日志并刷新实际 hook 状态`,
-        nodes: [
-          { selector: '#app-hook-onLaunch', text: 'onLaunch: observed' },
-          { selector: '#app-hook-onShow', text: 'onShow: observed' },
-          { selector: '#app-hook-onError', text: 'onError: skipped' },
-          { selector: '#app-hook-onUnhandledRejection', text: 'onUnhandledRejection: skipped' },
-          { selector: '.app-hook-status', count: 7 },
-          { selector: '.app-host-input', count: 2 },
-          { selector: '.app-hook-input', count: 2 },
-        ],
-      },
-    ]))
+    const variants = requestedVariant ? [requestedVariant as AppLifecycleVariant] : APP_LIFECYCLE_VARIANTS
+    const dom = createDomAcceptance(ctx, 'e2e-apps', variants.flatMap(lifecycleCheckpoints))
+
+    if (requestedVariant) {
+      const snapshot = await collectAppSnapshot(APP_LIFECYCLE_ROOTS[requestedVariant as AppLifecycleVariant], requestedVariant, dom)
+      assertSingleVariantLifecycle(requestedVariant as AppLifecycleVariant, snapshot)
+      return
+    }
+
     const native = await collectAppSnapshot(APP_NATIVE_ROOT, 'native', dom)
     const wevuTs = await collectAppSnapshot(APP_WEVU_TS_ROOT, 'wevu-ts', dom)
     const wevuVue = await collectAppSnapshot(APP_WEVU_VUE_ROOT, 'wevu-vue', dom)

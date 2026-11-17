@@ -184,6 +184,26 @@ describe('e2e suite manifest', () => {
     ])
   })
 
+  it('isolates automatic-route runtime cases into separate real IDE tasks while retaining the aggregate headless task', async () => {
+    const variants = [
+      'ide/auto-routes-define-app-json.route-links.runtime.test.ts',
+      'ide/auto-routes-define-app-json.topology.runtime.test.ts',
+    ]
+    const full = (await getSuiteTasks('ide-full')).filter(task => task.label.startsWith('ide/auto-routes-define-app-json.'))
+    const exhaustive = getIdeExhaustiveTasks().filter(task => task.label.startsWith('ide/auto-routes-define-app-json.'))
+    expect(full.map(task => task.label)).toEqual(variants)
+    expect(exhaustive.map(task => task.label)).toEqual(variants)
+    expect(full.map(task => task.env?.WEAPP_VITE_E2E_AUTO_ROUTES_VARIANT)).toEqual(['route-links', 'topology'])
+    expect(full.map(task => task.env?.WEAPP_VITE_E2E_ACCEPTANCE_CASES)).toEqual([
+      JSON.stringify([{ file: 'e2e/ide/auto-routes-define-app-json.runtime.test.ts', name: 'auto-routes define app json runtime (weapp e2e) > renders routeLinks for home page with main package and subpackage routes' }]),
+      JSON.stringify([{ file: 'e2e/ide/auto-routes-define-app-json.runtime.test.ts', name: 'classic automatic route topology output runtime > renders the restored page and keeps the original page reachable' }]),
+    ])
+    for (const suite of ['ide-dom-headless', 'ide-headless-full'] as const) {
+      const tasks = (await getSuiteTasks(suite)).filter(task => task.label === 'ide/auto-routes-define-app-json.runtime.test.ts')
+      expect(tasks).toHaveLength(1)
+    }
+  })
+
   it('collects the native Tailwind snapshot case with one complete DOM plan', () => {
     const cases = readTaskCases(path.resolve(import.meta.dirname, '../..'), 'ide/issue-1081-tailwind-snapshot.runtime.test.ts')
     expect(cases).toHaveLength(1)
@@ -244,11 +264,11 @@ describe('e2e suite manifest', () => {
     'ide/native-property-delivery.runtime.test.ts',
     'ide/template-corpus.runtime.test.ts',
     'ide/issue-1234-automator.runtime.test.ts',
-    'ide/auto-routes-define-app-json.runtime.test.ts',
     'ide/script-setup-external-src.runtime.test.ts',
     'ide/issue-1058-template-tags.runtime.test.ts',
     'ide/issue-1065-provider.runtime.test.ts',
     'ide/vite-plugin.runtime.test.ts',
+    'ide/vite-plugin-wv.runtime.test.ts',
     'ide/vite-plugin-npm.runtime.test.ts',
     'ide/wevu-runtime.pruning.test.ts',
     'ide/github-issues.runtime.issue1035.test.ts',
@@ -262,7 +282,6 @@ describe('e2e suite manifest', () => {
     'ide/body-blob.runtime.test.ts',
     'ide/stream-capability.runtime.test.ts',
     'ide/sse-stream.runtime.test.ts',
-    'ide/app-lifecycle.test.ts',
     'ide/github-issues.runtime.issue1015.test.ts',
     'ide/issue-1126-1128.test.ts',
     'ide/issue-1172.test.ts',
@@ -308,6 +327,23 @@ describe('e2e suite manifest', () => {
     })
     expect(getIdeExhaustiveTasks().filter(task => task.label === label)).toHaveLength(1)
     expect((await getSuiteTasks('ide-headless-full')).filter(task => task.label === label)).toHaveLength(1)
+  })
+
+  it('isolates app lifecycle variants into separate real IDE tasks while keeping the headless comparison aggregate', async () => {
+    const variants = [
+      'ide/app-lifecycle.native.test.ts',
+      'ide/app-lifecycle.wevu-ts.test.ts',
+      'ide/app-lifecycle.wevu-vue.test.ts',
+    ]
+    const full = (await getSuiteTasks('ide-full')).filter(task => task.label.startsWith('ide/app-lifecycle.'))
+    const exhaustive = getIdeExhaustiveTasks().filter(task => task.label.startsWith('ide/app-lifecycle.'))
+    expect(full.map(task => task.label)).toEqual(variants)
+    expect(exhaustive.map(task => task.label)).toEqual(variants)
+    expect(full.map(task => task.env?.WEAPP_VITE_E2E_APP_LIFECYCLE_VARIANT)).toEqual(['native', 'wevu-ts', 'wevu-vue'])
+    for (const suite of ['ide-dom-headless', 'ide-headless-full'] as const) {
+      const tasks = (await getSuiteTasks(suite)).filter(task => task.label === 'ide/app-lifecycle.test.ts')
+      expect(tasks).toHaveLength(1)
+    }
   })
 
   it('keeps native property delivery parity in the ordinary full IDE suite', async () => {

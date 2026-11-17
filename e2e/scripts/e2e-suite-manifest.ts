@@ -10,6 +10,7 @@ import { resolveVerificationTopology, TDESIGN_AGGREGATE_LABEL, TDESIGN_SOURCE_LA
 import { GITHUB_ISSUES_BUILD_BASELINE_LABEL, GITHUB_ISSUES_BUILD_TASK_LABELS, includesGithubIssuesBuildTask } from '../ci/githubIssuesBuild/groups'
 import { TEMPLATE_DEV_OPEN_CASES } from '../ide/template-dev-open-cases'
 import { E2E_TARGET_FILE_ENV } from '../utils/vitestTargetFile'
+import { SELECTED_CASES_ENV } from './domAcceptanceReport/selectedCases'
 import { HMR_ACCEPTANCE_BUILD_TESTS, hmrAcceptanceRuntimeFiles } from './hmr-acceptance-manifest'
 import { HMR_GUARD_ALL_TESTS, HMR_GUARD_SPECIAL_CASES, HMR_GUARD_UTILITIES_ALREADY_RUN_OPTION, HMR_GUARD_UTILITY_TESTS } from './hmr-guard-manifest'
 import { applyClassicSupportScope } from './hmrAcceptance/stableScope'
@@ -31,6 +32,17 @@ const IDE_TWO_WINDOW_TEST_LABELS = new Set([
   // 保留另一项目，验证共享宿主内的断开、关闭和重连隔离。
   'ide/devtools-shared-host.runtime.test.ts',
 ])
+const APP_LIFECYCLE_TEST_LABEL = 'ide/app-lifecycle.test.ts'
+const APP_LIFECYCLE_VARIANT_ENV = 'WEAPP_VITE_E2E_APP_LIFECYCLE_VARIANT'
+const APP_LIFECYCLE_VARIANTS = ['native', 'wevu-ts', 'wevu-vue'] as const
+const APP_LIFECYCLE_CASE = 'app lifecycle compare (e2e) > compares wevu app lifecycle logs against native'
+const AUTO_ROUTES_TEST_LABEL = 'ide/auto-routes-define-app-json.runtime.test.ts'
+const AUTO_ROUTES_VARIANT_ENV = 'WEAPP_VITE_E2E_AUTO_ROUTES_VARIANT'
+const AUTO_ROUTES_VARIANTS = ['route-links', 'topology'] as const
+const AUTO_ROUTES_CASES = {
+  'route-links': 'auto-routes define app json runtime (weapp e2e) > renders routeLinks for home page with main package and subpackage routes',
+  'topology': 'classic automatic route topology output runtime > renders the restored page and keeps the original page reachable',
+} as const
 export const IDE_GITHUB_ISSUES_AGGREGATE_LABEL = 'ide/github-issues.runtime.aggregate.test.ts'
 export const IDE_TDESIGN_AGGREGATE_LABEL = TDESIGN_AGGREGATE_LABEL
 export const IDE_TDESIGN_AGGREGATED_PATTERNS = TDESIGN_SOURCE_LABELS
@@ -260,6 +272,7 @@ const IDE_FULL_CORE_PATTERNS = [
   'ide/sse-stream.runtime.test.ts',
   'ide/app-shell-presence.hmr.runtime.test.ts',
   'ide/vite-plugin.runtime.test.ts',
+  'ide/vite-plugin-wv.runtime.test.ts',
   'ide/vite-plugin-npm.runtime.test.ts',
   'ide/app-lifecycle.test.ts',
   'ide/auto-routes-define-app-json.runtime.test.ts',
@@ -331,6 +344,7 @@ const IDE_DOM_HEADLESS_PATTERNS = [...new Set([
   'ide/github-issues.runtime.issue1138.test.ts',
   'ide/github-issues.runtime.issue1338.test.ts',
   'ide/vite-plugin.runtime.test.ts',
+  'ide/vite-plugin-wv.runtime.test.ts',
   'ide/vite-plugin-npm.runtime.test.ts',
   'ide/wevu-runtime.pruning.test.ts',
   'ide/github-issues.runtime.issue1035.test.ts',
@@ -558,6 +572,7 @@ function createVitestTask(configPath: string, filePath: string, label = toRelati
   const targetFile = toRelativeLabel(filePath)
   return {
     label,
+    ...(label === targetFile ? {} : { acceptanceSource: targetFile }),
     command: 'pnpm',
     args: ['vitest', 'run', '-c', configPath],
     env: {
@@ -566,8 +581,8 @@ function createVitestTask(configPath: string, filePath: string, label = toRelati
   }
 }
 
-function createIdeVitestTask(filePath: string) {
-  const task = createVitestTask(DEVTOOLS_CONFIG_PATH, filePath)
+function createIdeVitestTask(filePath: string, label?: string) {
+  const task = createVitestTask(DEVTOOLS_CONFIG_PATH, filePath, label)
   if (TEMPLATE_DEV_OPEN_RUNNER_LABELS.has(task.label)) {
     task.command = 'node'
     task.args = ['--import', 'tsx', path.resolve(ROOT, 'scripts/run-template-dev-open-suite.ts')]
@@ -600,6 +615,42 @@ function createIdeVitestTask(filePath: string) {
     }
   }
   return task
+}
+
+function createAppLifecycleIdeTasks() {
+  const filePath = path.resolve(ROOT, APP_LIFECYCLE_TEST_LABEL)
+  return APP_LIFECYCLE_VARIANTS.map((variant) => {
+    const task = createIdeVitestTask(filePath, `ide/app-lifecycle.${variant}.test.ts`)
+    task.env = {
+      ...task.env,
+      [APP_LIFECYCLE_VARIANT_ENV]: variant,
+      [SELECTED_CASES_ENV]: JSON.stringify([{ file: `e2e/${APP_LIFECYCLE_TEST_LABEL}`, name: APP_LIFECYCLE_CASE }]),
+    }
+    return task
+  })
+}
+
+function createAutoRoutesIdeTasks() {
+  const filePath = path.resolve(ROOT, AUTO_ROUTES_TEST_LABEL)
+  return AUTO_ROUTES_VARIANTS.map((variant) => {
+    const task = createIdeVitestTask(filePath, `ide/auto-routes-define-app-json.${variant}.runtime.test.ts`)
+    task.env = {
+      ...task.env,
+      [AUTO_ROUTES_VARIANT_ENV]: variant,
+      [SELECTED_CASES_ENV]: JSON.stringify([{ file: `e2e/${AUTO_ROUTES_TEST_LABEL}`, name: AUTO_ROUTES_CASES[variant] }]),
+    }
+    return task
+  })
+}
+
+function expandAppLifecycleTask(task: SuiteTask) {
+  if (task.label === APP_LIFECYCLE_TEST_LABEL) {
+    return createAppLifecycleIdeTasks()
+  }
+  if (task.label === AUTO_ROUTES_TEST_LABEL) {
+    return createAutoRoutesIdeTasks()
+  }
+  return [task]
 }
 
 function isIdeHelperTest(label: string) {
@@ -728,12 +779,18 @@ export function getIdeExhaustiveTasks(options: SuiteTaskFactoryOptions = {}) {
       return topology.id === 'legacy-v1' ? label !== IDE_TDESIGN_AGGREGATE_LABEL : !(IDE_TDESIGN_AGGREGATED_PATTERNS as readonly string[]).includes(label)
     })
     .filter(filePath => !IDE_COMPONENT_LIBRARY_PATTERN_SET.has(toRelativeLabel(filePath)))
-    .map((filePath) => {
+    .flatMap((filePath) => {
+      if (toRelativeLabel(filePath) === APP_LIFECYCLE_TEST_LABEL) {
+        return createAppLifecycleIdeTasks()
+      }
+      if (toRelativeLabel(filePath) === AUTO_ROUTES_TEST_LABEL) {
+        return createAutoRoutesIdeTasks()
+      }
       const task = createIdeVitestTask(filePath)
       if (IDE_EXHAUSTIVE_OUT_OF_SCOPE_LABELS.has(task.label)) {
         task.outOfScopeReason = 'Optional Baidu host runtime is outside WeChat DOM acceptance'
       }
-      return task
+      return [task]
     })
 
   return tasks.sort((left, right) => {
@@ -755,15 +812,15 @@ function getIdePatternTasks(patterns: string[], env: Record<string, string> = {}
 }
 
 export function getIdeTasks() {
-  return getIdePatternTasks(IDE_FULL_CORE_PATTERNS)
+  return getIdePatternTasks(IDE_FULL_CORE_PATTERNS).flatMap(expandAppLifecycleTask)
 }
 
 export function getIdeGateTasks() {
-  return IDE_GATE_TESTS.map(filePath => createVitestTask(DEVTOOLS_CONFIG_PATH, filePath))
+  return IDE_GATE_TESTS.map(filePath => createVitestTask(DEVTOOLS_CONFIG_PATH, filePath)).flatMap(expandAppLifecycleTask)
 }
 
 export function getIdeSmokeTasks() {
-  return IDE_SMOKE_TESTS.map(filePath => createVitestTask(DEVTOOLS_CONFIG_PATH, filePath))
+  return IDE_SMOKE_TESTS.map(filePath => createVitestTask(DEVTOOLS_CONFIG_PATH, filePath)).flatMap(expandAppLifecycleTask)
 }
 
 export function getIdeHeadlessSmokeTasks() {

@@ -44,6 +44,7 @@ export const verificationPlanSchema = z.object({
   historySources: z.array(z.string()),
   tasks: z.array(z.object({
     label: z.string().min(1),
+    acceptanceSource: z.string().min(1).optional(),
     definitionHash: z.string().regex(/^[a-f0-9]{64}$/),
     estimatedDurationMs: z.number().finite().positive(),
     shardIndex: z.number().int().nonnegative(),

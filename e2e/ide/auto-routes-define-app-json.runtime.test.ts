@@ -15,6 +15,11 @@ import { createIssue1015Project } from '../utils/issue1015Project'
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/auto-routes-define-app-json')
 const HOME_ROUTE = '/pages/home/index'
+export const AUTO_ROUTES_VARIANT_ENV = 'WEAPP_VITE_E2E_AUTO_ROUTES_VARIANT'
+const requestedVariant = process.env[AUTO_ROUTES_VARIANT_ENV]
+if (requestedVariant !== undefined && requestedVariant !== 'route-links' && requestedVariant !== 'topology') {
+  throw new Error(`Unknown auto-routes variant: ${requestedVariant}`)
+}
 const ROUTES = [
   'pages/dashboard/index',
   'pages/detail/index',
@@ -39,7 +44,7 @@ async function getSharedMiniProgram() {
   return miniProgram
 }
 
-describe('auto-routes define app json runtime (weapp e2e)', { concurrent: false }, () => {
+describe.skipIf(requestedVariant === 'topology')('auto-routes define app json runtime (weapp e2e)', { concurrent: false }, () => {
   afterAll(async () => {
     await miniProgram?.close()
   })
@@ -67,7 +72,7 @@ describe('auto-routes define app json runtime (weapp e2e)', { concurrent: false 
   })
 })
 
-describe('classic automatic route topology output runtime', { concurrent: false }, () => {
+describe.skipIf(requestedVariant === 'route-links')('classic automatic route topology output runtime', { concurrent: false }, () => {
   const route = 'pages/topology-added/index'
   const vueRoute = 'pages/topology-vue/index'
   let project: string
