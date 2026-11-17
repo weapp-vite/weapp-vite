@@ -1,11 +1,15 @@
 import type { HeadlessNativeNode } from './nativeNode'
 import type { HeadlessTestingNodeEventInit } from './nodeHandle'
+import { cloneProtocolValue } from '../testing/sessionHandle/shared'
 import { getNativeNodeOwner } from './componentEvent'
 import { createMiniProgramEventPayload, resolveMiniProgramEventBinding } from './eventBinding'
+import { getNativeBooleanValue } from './nativeBoolean'
 
 export interface NativeFormComponent {
   definition: { behaviors?: unknown }
   ownerScopeId: string | null
+  name?: string
+  value?: unknown
 }
 
 export type ResolveNativeFormComponent = (scopeId: string) => NativeFormComponent | undefined
@@ -60,9 +64,42 @@ function participates(scopeId: string | null, formScopes: ReadonlySet<string | n
   return true
 }
 
-function checked(attributes: Record<string, string> | undefined, name: string) {
-  const value = attributes?.[name]
-  return value !== undefined && value !== 'false' && value !== '0'
+function participatesFormField(scopeId: string | null, formScopes: ReadonlySet<string | null>, resolveComponent?: ResolveNativeFormComponent): boolean {
+  const visited = new Set<string>()
+  while (!formScopes.has(scopeId)) {
+    if (!scopeId || visited.has(scopeId)) {
+      return false
+    }
+    visited.add(scopeId)
+    const component = resolveComponent?.(scopeId)
+    if (!component || (!includesBehavior(component.definition, 'wx://form-field')
+      && !includesBehavior(component.definition, 'wx://form-field-group'))) {
+      return false
+    }
+    scopeId = component.ownerScopeId
+  }
+
+  return true
+}
+function resolveFormFieldComponent(scopeId: string | null, resolveComponent?: ResolveNativeFormComponent) {
+  const visited = new Set<string>()
+  let current = scopeId
+  while (current && !visited.has(current)) {
+    visited.add(current)
+    const component = resolveComponent?.(current)
+    if (!component) {
+      return undefined
+    }
+    if (includesBehavior(component.definition, 'wx://form-field')) {
+      return { scopeId: current, component }
+    }
+    current = component.ownerScopeId
+  }
+  return undefined
+}
+
+function checked(node: HeadlessNativeNode, name: string) {
+  return getNativeBooleanValue(node, name)
 }
 
 function choiceValues(group: HeadlessNativeNode, pageScope: string, resolveComponent?: ResolveNativeFormComponent) {
@@ -75,7 +112,7 @@ function choiceValues(group: HeadlessNativeNode, pageScope: string, resolveCompo
     }
     if (node.name === choice) {
       const owner = nativeOwner(node)
-      if (checked(owner.target.attribs, 'checked') && participates(owner.scopeId, scopes, 'wx://form-field-group', resolveComponent)) {
+      if (checked(owner.target, 'checked') && participates(owner.scopeId, scopes, 'wx://form-field-group', resolveComponent)) {
         values.push(owner.target.attribs?.value ?? '')
       }
     }
@@ -97,6 +134,13 @@ function collectFormValues(form: HeadlessNativeNode, scopes: ReadonlySet<string 
     }
     const owner = nativeOwner(node)
     const attributes = owner.target.attribs
+    const field = resolveFormFieldComponent(owner.scopeId, resolveComponent)
+    const componentName = field?.component.name
+    if (typeof componentName === 'string' && componentName && node.attribs?.['data-sim-component']
+      && field && participatesFormField(field.scopeId, scopes, resolveComponent)) {
+      values[componentName] = cloneProtocolValue(field.component.value)
+      return
+    }
     const name = attributes?.name
     if (attributes && name && participates(owner.scopeId, scopes, 'wx://form-field-group', resolveComponent)) {
       switch (node.name) {
@@ -105,7 +149,7 @@ function collectFormValues(form: HeadlessNativeNode, scopes: ReadonlySet<string 
           values[name] = attributes.value ?? ''
           break
         case 'switch':
-          values[name] = checked(attributes, 'checked')
+          values[name] = checked(owner.target, 'checked')
           break
         case 'slider':
           values[name] = Number(attributes.value ?? 0)
@@ -148,7 +192,7 @@ export function prepareNativeFormSubmit(
   resolveComponent?: ResolveNativeFormComponent,
 ) {
   const owner = nativeOwner(button)
-  if (owner.target.attribs?.['form-type'] !== 'submit' || checked(owner.target.attribs, 'disabled')) {
+  if (owner.target.attribs?.['form-type'] !== 'submit' || checked(owner.target, 'disabled')) {
     return undefined
   }
   let form = button.parent

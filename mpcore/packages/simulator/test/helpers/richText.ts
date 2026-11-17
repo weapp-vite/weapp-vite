@@ -5,6 +5,7 @@ export const untrustedRichText = [{
   name: 'p',
   attrs: {
     'id': 'untrusted-rich-child',
+    'class': '{{secret}}',
     'title': '{{secret}}',
     'data-state': '{{secret}}',
     'data-sim-tap': 'trap',
@@ -19,17 +20,49 @@ export const untrustedRichText = [{
   },
   children: [
     { type: 'text', text: '{{secret}}<script>trap()</script>' },
-    { name: 'unsafe-card', children: [{ type: 'text', text: 'kept' }] },
+    { name: 'unsafe-card', children: [{ name: 'b', children: [{ type: 'text', text: 'removed' }] }] },
     { name: 'script', children: [{ type: 'text', text: 'script text' }] },
     { name: 'wxs', children: [{ type: 'text', text: 'wxs text' }] },
-    { name: 'a', attrs: { href: 'java\nscript:trap()', onclick: 'trap()' }, children: [{ text: 'link' }] },
+    { name: 'a', attrs: { href: 'java\nscript:trap()', onclick: 'trap()' }, children: [{ type: 'text', text: 'link' }] },
     { name: 'img', attrs: { src: 'javascript:trap()', onerror: 'trap()', alt: 'safe image' } },
   ],
 }]
-export const untrustedRichTextContent = '{{secret}}<script>trap()</script>keptscript textwxs textlink'
+export const untrustedRichTextContent = '{{secret}}<script>trap()</script>link'
 
-export const untrustedRichTextHtml = '<p id="untrusted-rich-child" title="{{secret}}" data-state="{{secret}}" data-sim-tap="trap" data-sim-scope="pages/index/index" bindtap="trap" onclick="globalThis.richTextExecuted = true" wx:for="{{items}}" wx:if="{{false}}">{{secret}}&lt;script&gt;trap()&lt;/script&gt;<unsafe-card>kept</unsafe-card><script>globalThis.richTextExecuted = true</script><style>body { display:none }</style><a href="javascript:trap()">link</a><img src="javascript:trap()" onerror="globalThis.richTextExecuted = true"></p>'
-export const untrustedRichTextHtmlContent = '{{secret}}<script>trap()</script>keptlink'
+export const untrustedRichTextHtml = '<p id="untrusted-rich-child" class="{{secret}}" title="{{secret}}" data-state="{{secret}}" data-sim-tap="trap" data-sim-scope="pages/index/index" bindtap="trap" onclick="globalThis.richTextExecuted = true" wx:for="{{items}}" wx:if="{{false}}">{{secret}}&lt;script&gt;trap()&lt;/script&gt;<unsafe-card><b>removed</b></unsafe-card><script>globalThis.richTextExecuted = true</script><style>body { display:none }</style><a href="javascript:trap()">link</a><img src="javascript:trap()" onerror="globalThis.richTextExecuted = true"></p>'
+export const untrustedRichTextHtmlContent = '{{secret}}<script>trap()</script>link'
+
+export const nativeRichText = [{
+  name: 'DIV',
+  attrs: { id: 'rejected', class: 'safe', bindtap: 'trap' },
+  children: [
+    { type: 'text', text: 'Hello &amp; <b>literal</b> {{secret}} &amp;amp; &#38;amp; &lt;b&gt; ' },
+    { name: 'b', children: [{ type: 'text', text: 'world' }] },
+    { name: 'NaV', children: [{ type: 'text', text: ' navigation' }] },
+    { name: 'FOOTER', children: [{ type: 'text', text: ' footer' }] },
+    { name: 'a', attrs: { href: 'https://example.com', target: '_blank' }, children: [{ type: 'text', text: ' link' }] },
+    { name: 'unknown', children: [{ name: 'b', children: [{ type: 'text', text: 'removed' }] }] },
+    { name: 'script', children: [{ type: 'text', text: 'untrusted' }] },
+    { name: 'wxs', children: [{ type: 'text', text: 'throw new Error("executed")' }] },
+  ],
+}]
+export const nativeRichTextContent = 'Hello & <b>literal</b> {{secret}} &amp; &amp; <b> world navigation footer link'
+export const nativeRichTextHtml = '<DIV id="rejected" class="safe" bindtap="trap">Hello &amp; &lt;b&gt;literal&lt;/b&gt; {{secret}} &amp;amp; &#38;amp; &lt;b&gt; <b>world</b><NaV> navigation</NaV><FOOTER> footer</FOOTER><a href="https://example.com" target="_blank"> link</a><unknown><b>removed</b></unknown><script>untrusted</script><wxs>throw new Error("executed")</wxs></DIV>'
+
+export const invalidRichTextNodes = [
+  { type: 'node', text: 'missing element name' },
+  { text: 'missing text type' },
+  { type: 'unknown', name: 'p', children: [{ type: 'text', text: 'unknown type subtree' }] },
+  { type: null, name: 'p', children: [{ type: 'text', text: 'null type subtree' }] },
+  { name: ['p'], children: [{ type: 'text', text: 'nonstring name subtree' }] },
+  { name: 42, children: [{ type: 'text', text: 'numeric name subtree' }] },
+  { type: 'text' },
+  { type: 'text', text: 42 },
+  { type: 'text', text: false },
+  { type: 'text', text: null },
+  { type: 'text', text: ['not a string'] },
+  { type: 'text', name: 'p', text: {}, children: [{ type: 'text', text: 'invalid text subtree' }] },
+]
 
 export const richTextFiles: Array<[string, string]> = [
   ['project.config.json', '{"miniprogramRoot":"."}'],

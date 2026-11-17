@@ -27,8 +27,8 @@ it('renders direct navigation bindings and keeps projected local state independe
       await vi.waitFor(() => {
         render()
         expect(preview.querySelector('#nav-position')?.textContent).toBe(`${current}/${max}`)
-        expect(preview.querySelector('#next')?.getAttribute('disabled')).toBe(String(current >= max))
-        expect(preview.querySelector('#previous')?.getAttribute('disabled')).toBe(String(current <= 1))
+        expect(preview.querySelector<HTMLButtonElement>('#next')?.disabled).toBe(current >= max)
+        expect(preview.querySelector<HTMLButtonElement>('#previous')?.disabled).toBe(current <= 1)
       })
     }
     const checkCanvas = async (local: string, parent: string) => {

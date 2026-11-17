@@ -5,6 +5,7 @@ import type { ResolveNativeFormComponent } from './nativeForm'
 import type { HeadlessTestingNodeEventInit } from './nodeHandle'
 import { getNativeNodeOwner, visitNativeNodeEventBindings } from './componentEvent'
 import { createMiniProgramEventPayload, resolveMiniProgramEventBinding } from './eventBinding'
+import { getNativeBooleanValue } from './nativeBoolean'
 import { prepareNativeFormSubmit } from './nativeForm'
 import { dispatchNativeRefresherEvent } from './nativeRefresher'
 import { collectNodeDataset } from './nodeDataset'
@@ -38,6 +39,28 @@ function coordinate(value: unknown) {
 
 function nodeKey(node: HeadlessNativeNode) {
   return node.attribs?.['data-sim-node'] ?? ''
+}
+
+/** 按稳定渲染键把保留的测试节点句柄映射到当前树；有键但已移除时返回 undefined。 */
+export function resolveNativeNode(root: HeadlessNativeNode, node: HeadlessNativeNode): HeadlessNativeNode | undefined {
+  const key = nodeKey(node)
+  if (!key) {
+    return node
+  }
+  let match: HeadlessNativeNode | undefined
+  const visit = (current: HeadlessNativeNode) => {
+    if (current.attribs?.['data-sim-node'] === key) {
+      match = current
+      return
+    }
+    for (const child of current.children ?? []) {
+      if (!match) {
+        visit(child)
+      }
+    }
+  }
+  visit(root)
+  return match
 }
 
 /** 原生滚动位置独立于绑定值；未改变的绑定不能覆盖用户滚动。 */
@@ -161,6 +184,17 @@ export function dispatchNativeNodeEvent(
   const origin = getNativeNodeOwner(node)?.target ?? node
   let handlers: Array<{ event: Record<string, unknown>, call: (event: Record<string, unknown>) => unknown }> | undefined
   let handled = false
+  let eligibility: HeadlessNativeNode | null | undefined = node
+  while (eligibility) {
+    if (eligibility.name === 'button') {
+      const owner = getNativeNodeOwner(eligibility)?.target ?? eligibility
+      if (getNativeBooleanValue(owner, 'disabled')) {
+        return true
+      }
+      break
+    }
+    eligibility = eligibility.parent
+  }
   const collectHandler = (scopeId: string | null, target: Pick<HeadlessNativeNode, 'attribs' | 'dataset'>, binding: MiniProgramEventBinding) => {
     if (binding.method) {
       const call = resolveMethod(scopeId, binding.method)

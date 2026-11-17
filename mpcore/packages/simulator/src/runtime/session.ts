@@ -43,7 +43,7 @@ import { createHeadlessCanvasContext } from '../view/canvasContext'
 import { customTabBarScopeId } from '../view/customTabBar'
 import { createHeadlessIntersectionObserver } from '../view/intersectionObserver'
 import { createHeadlessMediaQueryObserver } from '../view/mediaQueryObserver'
-import { dispatchNativeNodeEvent, syncNativeScrollViews } from '../view/nativeNode'
+import { dispatchNativeNodeEvent, resolveNativeNode, syncNativeScrollViews } from '../view/nativeNode'
 import { releaseNativeRefreshers, syncNativeRefreshers } from '../view/nativeRefresher'
 import { resolveSelectorScrollTop } from '../view/selectorQuery'
 import { resolveSelectorQueryNativeScope, resolveSelectorQueryScopeId, resolveSelectorQueryScopeSnapshot } from '../view/selectorQueryScope'
@@ -637,12 +637,14 @@ export class HeadlessSession {
 
   dispatchNativeNodeEvent(node: HeadlessNativeNode, eventName: string, event: HeadlessTestingNodeEventInit, onHandlerResult?: (result: unknown) => void) {
     const current = this.requireCurrentPage('dispatchNativeNodeEvent()')
-    if (eventName === 'tap') {
-      this.renderCurrentPage()
+    const rendered = eventName === 'tap' ? this.renderCurrentPage() : undefined
+    const currentNode = rendered ? resolveNativeNode(rendered.root, node) : node
+    if (!currentNode) {
+      throw new Error('Native testing node is no longer present in the current page.')
     }
-    return dispatchNativeNodeEvent(
+    const handled = dispatchNativeNodeEvent(
       current,
-      node,
+      currentNode,
       eventName,
       event,
       this.moduleLoader.wx,
@@ -652,10 +654,16 @@ export class HeadlessSession {
         const instance = this.componentCache.get(scopeId)
         const scope = this.componentScopes.get(scopeId)
         return instance?.__definition__ && scope
-          ? { definition: instance.__definition__, ownerScopeId: scope.ownerScopeId ?? null }
+          ? {
+              definition: instance.__definition__,
+              ownerScopeId: scope.ownerScopeId ?? null,
+              name: typeof instance.properties?.name === 'string' ? instance.properties.name : undefined,
+              value: instance.properties && Object.hasOwn(instance.properties, 'value') ? instance.properties.value : undefined,
+            }
           : undefined
       },
     )
+    return eventName === 'tap' && Boolean(node.attribs?.['data-sim-node']) ? true : handled
   }
 
   requestRender(callback?: () => void) {

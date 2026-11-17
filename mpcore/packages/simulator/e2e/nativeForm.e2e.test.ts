@@ -34,8 +34,21 @@ it('dispatches native form activation once through real preview clicks and slot 
 
     click('#private-button')
     click('#encapsulated-label')
+    const tapsBeforeDisabled = events.filter(event => event.type === 'tap').length
     click('#disabled')
+    click('#disabled-caught-child')
+    expect(events.filter(event => event.type === 'tap')).toHaveLength(tapsBeforeDisabled)
     expect(events.filter(event => event.type === 'submit')).toHaveLength(1)
+    click('#disabled-null')
+    click('#disabled-missing')
+    await vi.waitFor(() => expect(shadow.querySelector('#status')?.textContent).toBe('3/3'))
+    expect(events.filter(event => event.type === 'tap').slice(tapsBeforeDisabled).map(event => [event.target, event.currentTarget])).toEqual([
+      ['disabled-null', 'disabled-null'],
+      ['disabled-null', 'raw-form'],
+      ['disabled-missing', 'disabled-missing'],
+      ['disabled-missing', 'raw-form'],
+    ])
+    expect(events.filter(event => event.type === 'submit')).toHaveLength(3)
     click('#slotted-label')
     expect(events.filter(event => event.type === 'submit').at(-1)).toMatchObject({
       owner: 'form-component',
@@ -48,7 +61,13 @@ it('dispatches native form activation once through real preview clicks and slot 
       target: 'boundary-form',
       detail: { value: { outside: 'public', grouped: 'group value', projected: 'slot value' } },
     })
-    expect(events.filter(event => event.type === 'submit')).toHaveLength(3)
+    click('#custom-submit')
+    expect(events.filter(event => event.type === 'submit').at(-1)).toMatchObject({
+      owner: 'page',
+      target: 'custom-form',
+      detail: { value: { object: { nested: true }, boolean: false, zero: 0, null: null } },
+    })
+    expect(events.filter(event => event.type === 'submit')).toHaveLength(6)
   }
   finally {
     workbench.session.value?.close()

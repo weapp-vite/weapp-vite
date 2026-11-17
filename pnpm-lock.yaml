@@ -1005,6 +1005,9 @@ importers:
       domhandler:
         specifier: 'catalog:'
         version: 6.0.1
+      entities:
+        specifier: ^8.1.0
+        version: 8.1.0
       get-value:
         specifier: 'catalog:'
         version: 4.1.0
