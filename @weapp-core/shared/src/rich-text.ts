@@ -1,4 +1,5 @@
 import type { DataNode, Element, Node } from 'domhandler'
+import { decodeHTML } from 'entities'
 import { parseDocument } from 'htmlparser2'
 
 export interface RichTextSourceNode {
@@ -12,6 +13,11 @@ export interface RichTextSourceNode {
 export type SafeRichTextNode
   = | { type: 'text', text: string }
     | { type: 'element', name: string, attrs: Record<string, string>, children: SafeRichTextNode[] }
+
+export interface RichTextOptions {
+  /** 启用微信原生富文本规则；默认保留 Web 的属性及未知标签展开行为。 */
+  native?: boolean
+}
 
 const ALLOWED_TAGS = new Set([
   'a',
@@ -78,6 +84,19 @@ const ALLOWED_TAGS = new Set([
   'u',
   'ul',
 ])
+
+const NATIVE_ALLOWED_TAGS = new Set([...ALLOWED_TAGS, 'footer', 'nav'])
+const NATIVE_TAG_ATTRIBUTES: Record<string, readonly string[]> = {
+  bdo: ['dir'],
+  col: ['span', 'width'],
+  colgroup: ['span', 'width'],
+  img: ['alt', 'src', 'height', 'width'],
+  ol: ['start', 'type'],
+  table: ['width'],
+  td: ['colspan', 'height', 'rowspan', 'width'],
+  th: ['colspan', 'height', 'rowspan', 'width'],
+  tr: ['colspan', 'height', 'rowspan', 'width'],
+}
 
 const ALLOWED_ATTRIBUTES = new Set([
   'abbr',
@@ -207,17 +226,20 @@ export function sanitizeRichTextStyle(value: unknown) {
   return declarations.join('; ')
 }
 
-export function sanitizeRichTextAttributes(value: unknown, tagName: string) {
+export function sanitizeRichTextAttributes(value: unknown, tagName: string, options?: RichTextOptions) {
   if (!isRecord(value)) {
     return {}
   }
   const attributes: Record<string, string> = {}
+  const nativeAttributes = Object.prototype.hasOwnProperty.call(NATIVE_TAG_ATTRIBUTES, tagName) ? NATIVE_TAG_ATTRIBUTES[tagName] : undefined
   for (const [rawName, rawValue] of Object.entries(value)) {
     const name = rawName.trim().toLowerCase()
     if (name.startsWith('on') || name === 'srcdoc') {
       continue
     }
-    if (!ALLOWED_ATTRIBUTES.has(name) && name !== 'src' && !name.startsWith('aria-') && !name.startsWith('data-')) {
+    if (options?.native
+      ? name !== 'class' && name !== 'style' && !nativeAttributes?.includes(name)
+      : !ALLOWED_ATTRIBUTES.has(name) && name !== 'src' && !name.startsWith('aria-') && !name.startsWith('data-')) {
       continue
     }
     if (name === 'src' && tagName !== 'img') {
@@ -227,37 +249,52 @@ export function sanitizeRichTextAttributes(value: unknown, tagName: string) {
     if (!serialized || (URL_ATTRIBUTES.has(name) && !isSafeUrl(serialized, name))) {
       continue
     }
+    if (options?.native && name === 'src' && !/^(?:https?:)?\/\//i.test(serialized.trim())) {
+      continue
+    }
     attributes[name] = serialized
   }
-  if (tagName === 'a') {
+  if (tagName === 'a' && !options?.native) {
     attributes.rel = 'noopener noreferrer'
   }
   return attributes
 }
 
-function convertSourceNode(value: unknown): SafeRichTextNode[] {
+function convertSourceNode(value: unknown, options?: RichTextOptions): SafeRichTextNode[] {
   if (!isRecord(value)) {
     return []
   }
-  if (value.type === 'text' || (!value.name && typeof value.text === 'string')) {
+  if (options?.native) {
+    if (value.type === 'text') {
+      return typeof value.text === 'string' ? [{ type: 'text', text: decodeHTML(value.text) }] : []
+    }
+    if ((value.type !== undefined && value.type !== 'node') || typeof value.name !== 'string') {
+      return []
+    }
+  }
+  else if (value.type === 'text' || (!value.name && typeof value.text === 'string')) {
     return [{ type: 'text', text: String(value.text ?? '') }]
   }
-  const children = Array.isArray(value.children)
-    ? value.children.flatMap(convertSourceNode)
-    : []
   const name = String(value.name ?? '').toLowerCase()
-  if (!ALLOWED_TAGS.has(name)) {
+  const allowed = (options?.native ? NATIVE_ALLOWED_TAGS : ALLOWED_TAGS).has(name)
+  if (options?.native && !allowed) {
+    return []
+  }
+  const children = Array.isArray(value.children)
+    ? value.children.flatMap(child => convertSourceNode(child, options))
+    : []
+  if (!allowed) {
     return children
   }
   return [{
     type: 'element',
     name,
-    attrs: sanitizeRichTextAttributes(value.attrs, name),
+    attrs: sanitizeRichTextAttributes(value.attrs, name, options),
     children,
   }]
 }
 
-function convertParsedNode(node: Node): SafeRichTextNode[] {
+function convertParsedNode(node: Node, options?: RichTextOptions): SafeRichTextNode[] {
   if (node.type === 'text') {
     return [{ type: 'text', text: (node as DataNode).data }]
   }
@@ -265,28 +302,32 @@ function convertParsedNode(node: Node): SafeRichTextNode[] {
     return []
   }
   const element = node as Element
-  const children = element.children.flatMap(convertParsedNode)
   const name = element.name.toLowerCase()
-  if (!ALLOWED_TAGS.has(name)) {
+  const allowed = (options?.native ? NATIVE_ALLOWED_TAGS : ALLOWED_TAGS).has(name)
+  if (options?.native && !allowed) {
+    return []
+  }
+  const children = element.children.flatMap(child => convertParsedNode(child, options))
+  if (!allowed) {
     return children
   }
   return [{
     type: 'element',
     name,
-    attrs: sanitizeRichTextAttributes(element.attribs, name),
+    attrs: sanitizeRichTextAttributes(element.attribs, name, options),
     children,
   }]
 }
 
-export function normalizeRichTextNodes(value: unknown): SafeRichTextNode[] {
+export function normalizeRichTextNodes(value: unknown, options?: RichTextOptions): SafeRichTextNode[] {
   if (typeof value === 'string') {
     const document = parseDocument(value, {
       decodeEntities: true,
       lowerCaseAttributeNames: true,
       lowerCaseTags: true,
     })
-    return document.children.flatMap(convertParsedNode)
+    return document.children.flatMap(node => convertParsedNode(node, options))
   }
   const values = Array.isArray(value) ? value : [value]
-  return values.flatMap(convertSourceNode)
+  return values.flatMap(node => convertSourceNode(node, options))
 }

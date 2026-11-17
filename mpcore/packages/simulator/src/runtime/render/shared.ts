@@ -5,10 +5,11 @@ import type { DomNodeLike, RuntimeRenderScope } from './types'
 import path from 'node:path'
 import { resolveNativeAttributeValue } from '../../view/nativeBindings'
 import { createNativeLoopData } from '../../view/nativeBindings/scopes'
+import { setNativeBooleanValue } from '../../view/nativeBoolean'
 import { setNativePickerValue } from '../../view/nativeForm'
 import { collectNodeDataset, isDatasetAttribute, toDatasetKey } from '../../view/nodeDataset'
 import { renderRichTextNodes } from '../../view/richText'
-import { copyTemplateAttributeMetadata } from '../../view/templateAttributes'
+import { copyTemplateAttributeMetadata, isValuelessTemplateAttribute } from '../../view/templateAttributes'
 import { resolveTemplateExpression } from '../../view/templateExpression'
 import { createImportedTemplateState } from '../../view/templateImports'
 import { isTemplateExpression } from '../../view/templateInterpolation'
@@ -183,6 +184,7 @@ export function applyNodeBindings(node: DomNodeLike, scope: RuntimeRenderScope, 
     const resolvedValue = resolveNativeAttributeValue(node, key, scope, source => typeof value === 'string'
       ? resolveAttributeValue(value, source)
       : value)
+    setNativeBooleanValue(node, key, resolvedValue, isValuelessTemplateAttribute(node, key))
     if (key === 'value') {
       setNativePickerValue(node, resolvedValue)
     }

@@ -73,11 +73,27 @@ describe.each(['node', 'browser'] as const)('%s native form activation', (provid
     expect(events[2]!.detail.value.notAField).toBeUndefined()
   })
 
-  it.each(['#disabled', '#orphan', '#ordinary'])('does not submit for %s while preserving tap dispatch', async (selector) => {
+  it.each(['#orphan', '#ordinary'])('does not submit for %s while preserving tap dispatch', async (selector) => {
     const { page, events, handle } = await createSession()
     expect(await handle(selector).tap()).toBe('tap-result')
     expect(page.data.taps).toBe(1)
     expect(events.filter(event => event.type === 'submit')).toEqual([])
+  })
+
+  it.each(['#disabled', '#disabled-caught-child'])('does not dispatch tap or submit for a disabled native button %s', async (selector) => {
+    const { page, events, handle } = await createSession()
+    await expect(handle(selector).tap()).resolves.toBeUndefined()
+    expect(page.data.taps).toBe(0)
+    expect(events).toEqual([])
+  })
+
+  it.each(['#disabled-null', '#disabled-missing'])('treats null and missing disabled bindings as enabled controls %s', async (selector) => {
+    const { page, events, handle } = await createSession()
+    await expect(handle(selector).tap()).resolves.toBe('tap-result')
+    expect(page.data.taps).toBe(1)
+    expect(page.data.submissions).toBe(1)
+    expect(events[0]).toMatchObject({ target: selector.slice(1), currentTarget: selector.slice(1) })
+    expect(events.filter(event => event.type === 'submit')).toHaveLength(1)
   })
 
   it('handles an unbound native submit default without demanding a tap binding', async () => {
@@ -154,6 +170,53 @@ describe.each(['node', 'browser'] as const)('%s native form activation', (provid
     if (action === 'reLaunch') {
       await vi.waitFor(() => expect(session.getCurrentPages().at(-1)).not.toBe(page))
     }
+  })
+
+  it('preserves custom wx form-field component values without stringification', async () => {
+    const { events, handle } = await createSession()
+    await handle('#custom-submit').tap()
+    expect(events.filter(event => event.type === 'submit')).toEqual([
+      {
+        owner: 'page',
+        identity: 1,
+        type: 'submit',
+        target: 'custom-form',
+        currentTarget: 'custom-form',
+        detail: { value: { object: { nested: true }, boolean: false, zero: 0, null: null } },
+      },
+    ])
+  })
+
+  it('preserves null disabled state through a collapsed native component root', async () => {
+    const { events, handle } = await createSession()
+    await handle('#collapsed-submit').tap()
+    expect(events.filter(event => event.type === 'submit')).toMatchObject([
+      { target: 'collapsed-form', currentTarget: 'collapsed-form', detail: { value: {} } },
+    ])
+  })
+
+  it('submits the outer field value through a nested component root', async () => {
+    const { events, handle } = await createSession()
+    await handle('#nested-submit').tap()
+    expect(events.filter(event => event.type === 'submit')).toMatchObject([
+      { target: 'nested-form', currentTarget: 'nested-form', detail: { value: { nested: { nested: true } } } },
+    ])
+  })
+
+  it('resolves a retained keyed handle against the current node after rerender', async () => {
+    const { page, events, handle } = await createSession()
+    const retained = handle('#submit')
+    await setDataAndCommit(page, { inputValue: 'retained' })
+    await retained.tap()
+    expect(events.at(-1)!.detail.value.text).toBe('retained')
+  })
+
+  it('rejects a retained handle after its keyed node is removed', async () => {
+    const { page, events, handle } = await createSession()
+    const retained = handle('#slotted-label')
+    await setDataAndCommit(page, { visible: false })
+    await expect(retained.tap()).rejects.toThrow('no longer present')
+    expect(events).toEqual([])
   })
 
   it('collects updated rendered field bindings rather than unrelated page data', async () => {

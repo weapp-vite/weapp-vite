@@ -1,6 +1,6 @@
-import type { RichTextSourceNode, SafeRichTextNode } from '@weapp-core/shared/rich-text'
+import type { RichTextOptions, RichTextSourceNode, SafeRichTextNode } from '@weapp-core/shared/rich-text'
 import { normalizeRichTextNodes, sanitizeRichTextAttributes, sanitizeRichTextStyle } from '@weapp-core/shared/rich-text'
-import { expectAssignable, expectType } from 'tsd'
+import { expectAssignable, expectError, expectType } from 'tsd'
 
 const source: RichTextSourceNode = {
   name: 'p',
@@ -12,6 +12,15 @@ expectType<SafeRichTextNode[]>(normalizeRichTextNodes('<p>Rendered content</p>')
 expectType<SafeRichTextNode[]>(normalizeRichTextNodes(null))
 expectType<string>(sanitizeRichTextStyle({ color: 'red' }))
 expectAssignable<Record<string, string>>(sanitizeRichTextAttributes({ onclick: 'unsafe()', title: 'safe' }, 'p'))
+
+const native: RichTextOptions = { native: true }
+expectType<SafeRichTextNode[]>(normalizeRichTextNodes([source], native))
+expectType<SafeRichTextNode[]>(normalizeRichTextNodes('<NAV>&amp;amp;</NAV>', native))
+expectType<SafeRichTextNode[]>(normalizeRichTextNodes(null, native))
+expectType<SafeRichTextNode[]>(normalizeRichTextNodes(source, { native: false }))
+expectAssignable<Record<string, string>>(sanitizeRichTextAttributes({ class: 'safe', id: 'rejected' }, 'p', native))
+expectError(normalizeRichTextNodes(source, { native: 'true' }))
+expectError(sanitizeRichTextAttributes({}, 'p', { native: 'true' }))
 
 for (const node of normalizeRichTextNodes(source)) {
   if (node.type === 'text') {
