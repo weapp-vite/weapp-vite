@@ -440,7 +440,13 @@ describe('DevTools CLI workflow runtime', { concurrent: false }, () => {
   }
 
   async function ensureCliWorkflowDomReady() {
-    await startMiniProgram()
+    if (!miniProgram) {
+      miniProgram = (await waitForOpenedAutomator(TEMPLATE_ROOT, {
+        readyRoute: INDEX_ROUTE,
+        timeoutMs: 60_000,
+      })).miniProgram
+    }
+    automatorPort = AUTOMATOR_PORT
     await runWithMiniProgramRecovery(async () => {
       await waitForCurrentRoute(miniProgram, INDEX_ROUTE)
       await waitForRenderedSelector(miniProgram, COUNT_LABEL_SELECTOR)
@@ -464,6 +470,40 @@ describe('DevTools CLI workflow runtime', { concurrent: false }, () => {
     })
     const appWxss = await fs.readFile(path.join(TEMPLATE_ROOT, 'dist/app.wxss'), 'utf8')
     expect(appWxss).not.toMatch(/@(plugin|source)\b/)
+  }, 480_000)
+
+  afterAll(async () => {
+    if (miniProgram) {
+      await miniProgram.close().catch(() => {})
+      miniProgram = undefined
+    }
+    await closeSharedMiniProgram(TEMPLATE_ROOT).catch(() => {})
+    await fs.rm(SCREENSHOT_OUTPUT, { force: true }).catch(() => {})
+    await cleanupResidualIdeProcesses()
+  }, 60_000)
+
+  it('captures screenshots from the dev hotkey after dev -o opens the project', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'templates/weapp-vite-wevu-tailwindcss-tdesign-template', CLI_HOTKEY_CHECKPOINTS)
+    if (loginRequiredOutput || protocolTimeoutOutput || ideInfraOutput) {
+      throw new Error(`DevTools startup blocks hotkey DOM acceptance:\n${loginRequiredOutput || protocolTimeoutOutput || ideInfraOutput}`)
+    }
+
+    // 每个 suite 只执行一次官方 project_import；后续 CLI open 复用本任务登记的窗口。
+    await runDevHotkeyScreenshotSmoke({
+      beforeScreenshot: async () => {
+        miniProgram = (await waitForOpenedAutomator(TEMPLATE_ROOT, { timeoutMs: 60_000 })).miniProgram
+        const page = await waitForCurrentRoute(miniProgram, INDEX_ROUTE)
+        await dom.check('dev-opened', miniProgram, page)
+      },
+      afterScreenshot: async () => {
+        const page = await waitForCurrentRoute(miniProgram, INDEX_ROUTE)
+        await dom.check('screenshot', miniProgram, page)
+      },
+    })
+  }, 240_000)
+
+  it('opens with weapp-vite and weapp-ide-cli, screenshots, taps DOM, and exposes helpful diagnostics', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'templates/weapp-vite-wevu-tailwindcss-tdesign-template', CLI_WORKFLOW_CHECKPOINTS)
     const wvOpen = await runWeappViteCli([
       'open',
       TEMPLATE_ROOT,
@@ -517,7 +557,6 @@ describe('DevTools CLI workflow runtime', { concurrent: false }, () => {
     }
     weappIdeOpenExitCode = weappOpen.exitCode
 
-    await cleanupResidualIdeProcesses()
     await ensureCliWorkflowDomReady()
 
     const screenshot = await runWeappIdeCli([
@@ -554,20 +593,6 @@ describe('DevTools CLI workflow runtime', { concurrent: false }, () => {
     screenshotExitCode = screenshot.exitCode
     const screenshotStats = await fs.stat(SCREENSHOT_OUTPUT)
     expect(screenshotStats.size).toBeGreaterThan(0)
-  }, 480_000)
-
-  afterAll(async () => {
-    if (miniProgram) {
-      await miniProgram.close().catch(() => {})
-      miniProgram = undefined
-    }
-    await closeSharedMiniProgram(TEMPLATE_ROOT).catch(() => {})
-    await fs.rm(SCREENSHOT_OUTPUT, { force: true }).catch(() => {})
-    await cleanupResidualIdeProcesses()
-  }, 60_000)
-
-  it('opens with weapp-vite and weapp-ide-cli, screenshots, taps DOM, and exposes helpful diagnostics', async (ctx) => {
-    const dom = createDomAcceptance(ctx, 'templates/weapp-vite-wevu-tailwindcss-tdesign-template', CLI_WORKFLOW_CHECKPOINTS)
     if (loginRequiredOutput) {
       const output = normalizeTerminalOutput(loginRequiredOutput)
       expect(output).toMatch(/登录状态失效|re-login|需要重新登录|Wechat DevTools login has expired/i)
@@ -690,27 +715,4 @@ describe('DevTools CLI workflow runtime', { concurrent: false }, () => {
       /请确认当前打开的是目标项目|Please confirm the current DevTools window is the target project|close the previous owned project|existing endpoint in connect-only mode/,
     ])
   })
-
-  it('captures screenshots from the dev hotkey after dev -o opens the project', async (ctx) => {
-    const dom = createDomAcceptance(ctx, 'templates/weapp-vite-wevu-tailwindcss-tdesign-template', CLI_HOTKEY_CHECKPOINTS)
-    if (loginRequiredOutput || protocolTimeoutOutput || ideInfraOutput) {
-      throw new Error(`DevTools startup blocks hotkey DOM acceptance:\n${loginRequiredOutput || protocolTimeoutOutput || ideInfraOutput}`)
-    }
-
-    // dev -o 自身打开项目是本 case 的验收目标，必须关闭上一 case 的 bridge 会话。
-    await miniProgram?.close()
-    miniProgram = undefined
-    await closeSharedMiniProgram(TEMPLATE_ROOT)
-    await runDevHotkeyScreenshotSmoke({
-      beforeScreenshot: async () => {
-        miniProgram = (await waitForOpenedAutomator(TEMPLATE_ROOT, { timeoutMs: 60_000 })).miniProgram
-        const page = await waitForCurrentRoute(miniProgram, INDEX_ROUTE)
-        await dom.check('dev-opened', miniProgram, page)
-      },
-      afterScreenshot: async () => {
-        const page = await waitForCurrentRoute(miniProgram, INDEX_ROUTE)
-        await dom.check('screenshot', miniProgram, page)
-      },
-    })
-  }, 240_000)
 })
