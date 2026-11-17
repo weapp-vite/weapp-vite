@@ -515,6 +515,7 @@ describe('suiteRunner', () => {
     expect(ideHeadlessSmokeLabels).toEqual([
       'ide/index.test.ts',
       'ide/template-weapp-vite-template.test.ts',
+      'ide/template-weapp-vite-template.cjs.test.ts',
     ])
     expect(ideHeadlessGateLabels).toContain('ide/app-lifecycle.test.ts')
     expect(ideHeadlessGateLabels).toContain('ide/wevu-runtime.weapp.test.ts')
