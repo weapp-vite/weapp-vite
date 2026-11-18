@@ -1,54 +1,49 @@
-import type { SetupContextRouter } from '../runtime/types/props'
+import type { RouterHistoryAdapter } from './history'
+import type { BackNavigationContext } from './navigationContext'
 import type { NavigationRunResult } from './navigationResult'
 import type {
-  NavigationGuard,
   RouteLocationNormalizedLoaded,
   RouteLocationRaw,
 } from './types'
-import { resolvePageRoute } from '../routerInternal/shared'
 import { getCurrentMiniProgramPages } from '../runtime/platform'
 import { createNavigationFailure, runNavigationGuards } from './navigationCore'
 import { createNavigationRunResult } from './navigationResult'
 import { NavigationFailureType } from './types'
 
-interface RunBackNavigationGuardsOptions {
-  target?: RouteLocationNormalizedLoaded
-  from: RouteLocationNormalizedLoaded
-  nativeRouter: SetupContextRouter
-  beforeEachGuards: ReadonlySet<NavigationGuard>
-  beforeResolveGuards: ReadonlySet<NavigationGuard>
-  resolveWithCodec: (to: RouteLocationRaw, currentPath: string) => RouteLocationNormalizedLoaded
-}
-
 export function resolveBackNavigationTarget(
   delta: number,
   from: RouteLocationNormalizedLoaded,
   resolveWithCodec: (to: RouteLocationRaw, currentPath: string) => RouteLocationNormalizedLoaded,
+  readLocation: RouterHistoryAdapter['readLocation'],
 ): RouteLocationNormalizedLoaded | undefined {
   const pages = getCurrentMiniProgramPages()
   const targetPage = pages[pages.length - 1 - delta]
   if (!targetPage) {
     return undefined
   }
-  const target = resolvePageRoute(targetPage)
+  const target = readLocation(targetPage)
   return resolveWithCodec(target.fullPath, from.path)
 }
 
 export async function runBackNavigationGuards(
-  options: RunBackNavigationGuardsOptions,
+  context: BackNavigationContext,
+  options: {
+    target?: RouteLocationNormalizedLoaded
+    from: RouteLocationNormalizedLoaded
+  },
 ): Promise<NavigationRunResult> {
+  const { target, from } = options
   const {
-    target,
-    from,
     nativeRouter,
     beforeEachGuards,
     beforeResolveGuards,
     resolveWithCodec,
-  } = options
+    readGuardTarget,
+  } = context
   const guardContext = {
     mode: 'back' as const,
-    to: target,
-    from,
+    to: target && readGuardTarget(target),
+    from: readGuardTarget(from),
     nativeRouter,
   }
 

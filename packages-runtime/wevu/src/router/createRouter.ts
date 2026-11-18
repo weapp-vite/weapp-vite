@@ -1,9 +1,9 @@
 import type { WevuNamedRouteMap } from '../router'
-import type { RouteResolveCodec } from '../routerInternal/shared'
+import type { RouterHistoryAdapter } from './history'
+import type { BackNavigationContext, RouterNavigationContext } from './navigationContext'
 import type { NavigationRunResult } from './navigationResult'
 import type { RouteStateSyncPayload } from './routeSync'
 import type {
-  InitialNavigationMode,
   LocationQueryRaw,
   NavigationAfterEach,
   NavigationErrorHandler,
@@ -13,37 +13,27 @@ import type {
   RouterNavigation,
   UseRouterOptions,
 } from './types'
+import { getCurrentMiniProgramPage } from '../routerInternal/location'
 import {
-  cloneRouteMeta,
-  cloneRouteParams,
-  createNamedRouteLookup,
-  createNativeRouteUrl,
-  createRouterOptionsSnapshot,
-  mergeMatchedRouteMeta,
-  normalizeRouteRecordMatched,
-  parseQuery,
   resolveCurrentRoute,
-  resolveMatchedRouteRecord,
-  resolveNamedRouteLocation,
-  resolvePath,
-  resolveRouteOptionEntries,
+  resolvePageRoute,
   snapshotRouteLocation,
-  stringifyQuery,
-  warnDuplicateRouteEntries,
 } from '../routerInternal/shared'
-import { getCurrentMiniProgramGlobalObject, getCurrentMiniProgramTabBarPagePaths } from '../runtime/platform'
-import { resolveBackNavigationTarget, runBackNavigationGuards } from './backNavigation'
-import { DEFAULT_INITIAL_NAVIGATION_TIMEOUT, registerInitialNavigationRunner } from './initialNavigation'
-import { setActiveRouter } from './instance'
+import { getCurrentMiniProgramGlobalObject } from '../runtime/platform'
+import { runBackNavigationGuards } from './backNavigation'
+import { resolveHistory } from './historyDriver'
+import { registerInitialNavigationRunner } from './initialNavigation'
+import { registerRouterHistory, setActiveRouter } from './instance'
 import { createNavigationApi } from './navigationApi'
-import { createNavigationFailure, executeNavigationMethod } from './navigationCore'
+import { createNavigationFailure, isNavigationFailure } from './navigationCore'
 import { createNavigationResultController } from './navigationResult'
+import { createNavigationScope } from './navigationScope'
 import { navigateWithTarget } from './navigationTarget'
-import { resolveRouteLocation } from './resolve'
-import { createRouteRegistry } from './routeRegistry'
-import { installRouteStateSyncOnNativeRouter, notifyRouteStateSync } from './routeSync'
+import { createRouterRuntime } from './routerRuntime'
+import { createRouteStateController } from './routeStateController'
+import { installRouteStateSyncOnNativeRouter, publishRouteState } from './routeSync'
 import { NavigationFailureType } from './types'
-import { createRouteStateController, useNativeRouter } from './useRoute'
+import { useNativeRouter } from './useRoute'
 
 /**
  * @description 创建高阶路由导航器（对齐 Vue Router 的 createRouter 心智）
@@ -53,189 +43,153 @@ export function createRouter<TRouteMap extends object = WevuNamedRouteMap>(
 ): RouterNavigation<TRouteMap> {
   // 路由表泛型只约束公开类型；运行时继续使用同一套名称无关的导航引擎。
   const options = optionsInput as unknown as UseRouterOptions
-  const nativeRouter = useNativeRouter()
+  const runtime = createRouterRuntime(options)
+  const {
+    history,
+    syncWithNative,
+    maxRedirects,
+    initialNavigationMode,
+    initialNavigationTimeout,
+    rejectOnError,
+    routeResolveCodec,
+    tabBarPaths,
+    namedRouteLookup,
+    routeRegistry,
+    enrich: enrichRouteRecordState,
+    resolveWithCodec: resolveWithCodecBase,
+  } = runtime
   installRouteStateSyncOnNativeRouter(getCurrentMiniProgramGlobalObject())
+  const nativeRouter = useNativeRouter()
   const beforeEachGuards = new Set<NavigationGuard>()
   const beforeResolveGuards = new Set<NavigationGuard>()
   const afterEachHooks = new Set<NavigationAfterEach>()
   const errorHandlers = new Set<NavigationErrorHandler>()
-  const maxRedirects = options.maxRedirects ?? 10
-  const initialNavigationMode: InitialNavigationMode = options.initialNavigationMode === 'blocking' ? 'blocking' : 'eager'
-  const initialNavigationTimeout = Number.isFinite(options.initialNavigationTimeout) && (options.initialNavigationTimeout ?? 0) > 0
-    ? Math.max(1, Math.trunc(options.initialNavigationTimeout!))
-    : DEFAULT_INITIAL_NAVIGATION_TIMEOUT
-  const paramsMode = options.paramsMode ?? 'loose'
-  const rejectOnError = options.rejectOnError ?? true
-  const routeResolveCodec: RouteResolveCodec = {
-    parseQuery: options.parseQuery ?? parseQuery,
-    stringifyQuery: options.stringifyQuery ?? stringifyQuery,
-  }
   const readyPromise = Promise.resolve()
-  const routeEntries = resolveRouteOptionEntries(options)
-  warnDuplicateRouteEntries(routeEntries)
-  const namedRouteLookup = createNamedRouteLookup(routeEntries)
-  const tabBarEntrySource = options.tabBarEntries ?? getCurrentMiniProgramTabBarPagePaths()
-  const normalizedTabBarEntries = tabBarEntrySource
-    .map(path => resolvePath(path, ''))
-    .filter(Boolean)
-  const tabBarPathSet = new Set(normalizedTabBarEntries)
-  const routeRegistry = createRouteRegistry(namedRouteLookup)
-  let managedNavigationCount = 0
-  let activeManagedRoutePath: string | undefined
-  let pendingManagedRouteSyncPath: string | undefined
-  let pendingExternalRouteSyncPath: string | undefined
-  const routerOptions = createRouterOptionsSnapshot(
-    normalizedTabBarEntries,
-    routeRegistry.getRoutes(),
-    paramsMode,
-    maxRedirects,
-    initialNavigationMode,
-    initialNavigationTimeout,
-    routeResolveCodec,
-    rejectOnError,
-  )
+  // 受管导航与外部同步的判定集中在这里，装配代码不再维护散落的可变标记。
+  const navigationScope = createNavigationScope()
+  const routerOptions = Object.freeze({ ...runtime.snapshot, history })
 
-  function enrichRouteRecordState(routeLocation: RouteLocationNormalizedLoaded): RouteLocationNormalizedLoaded {
-    const resolved = { ...routeLocation }
-    resolved.href = resolved.fullPath
-    const matchedResult = resolveMatchedRouteRecord(resolved, namedRouteLookup)
-    if (matchedResult) {
-      const matchedRecord = matchedResult.record
-      if (resolved.name === undefined) {
-        resolved.name = matchedRecord.name
-      }
-      const mergedRouteMeta = mergeMatchedRouteMeta(matchedResult.matchedRecords)
-      if (mergedRouteMeta !== undefined) {
-        resolved.meta = cloneRouteMeta(mergedRouteMeta)
-      }
-      if (matchedResult.params && Object.keys(resolved.params).length === 0) {
-        resolved.params = cloneRouteParams(matchedResult.params)
-      }
-      resolved.matched = matchedResult.matchedRecords.map((record, index, records) => {
-        const leafMatchedPath = index === records.length - 1
-          ? matchedResult.matchedPath
-          : undefined
-        return normalizeRouteRecordMatched(record, leafMatchedPath)
-      })
-    }
-    else {
-      resolved.matched = []
+  let route: Readonly<RouteLocationNormalizedLoaded>
+  let emitObservedNavigationAfterEach: ((result: NavigationRunResult) => Promise<void>) | undefined
+  let locationHistory: RouterHistoryAdapter | undefined
+  const explicitQueryTargets = new WeakSet<RouteLocationNormalizedLoaded>()
+
+  /** 原始位置显式带 query 时以调用方为准；未带 query 才读回自定义存储。 */
+  function resolveWithCodec(to: RouteLocationRaw, currentPath: string): RouteLocationNormalizedLoaded {
+    const resolved = resolveWithCodecBase(to, currentPath)
+    if (typeof to === 'string' ? to.includes('?') : to.query !== undefined) {
+      explicitQueryTargets.add(resolved)
     }
     return resolved
   }
 
-  function resolveWithCodec(to: RouteLocationRaw, currentPath: string): RouteLocationNormalizedLoaded {
-    const rawTo = typeof to === 'string'
-      ? to
-      : resolveNamedRouteLocation(to, namedRouteLookup, paramsMode)
-    return enrichRouteRecordState(resolveRouteLocation(rawTo, currentPath, routeResolveCodec))
+  function readGuardTarget(location: RouteLocationNormalizedLoaded): RouteLocationNormalizedLoaded {
+    return explicitQueryTargets.has(location)
+      ? location
+      : locationHistory?.readResolvedLocation(location) ?? location
   }
 
-  let route: Readonly<RouteLocationNormalizedLoaded>
-  let emitObservedNavigationAfterEach: ((result: NavigationRunResult) => Promise<void>) | undefined
-
-  function isExternalBackSync(payload: RouteStateSyncPayload): boolean {
-    return payload.source === 'page'
-      || (payload.source === 'native' && payload.method === 'navigateBack')
+  /** 返回导航守卫链所需的最小依赖。 */
+  const backGuardContext: BackNavigationContext = {
+    nativeRouter,
+    beforeEachGuards,
+    beforeResolveGuards,
+    resolveWithCodec,
+    readGuardTarget,
   }
 
+  /**
+   * 宿主 / 页面触发的外部同步：不属于本 router 主动发起的导航，重新走一次返回守卫。
+   */
   function beforeRouteStateSync(
     nextRoute: RouteLocationNormalizedLoaded,
     payload: RouteStateSyncPayload,
   ) {
-    if (managedNavigationCount > 0 || !isExternalBackSync(payload)) {
+    if (!navigationScope.acceptExternalSync(nextRoute, payload, route.fullPath)) {
       return
     }
-
-    if (pendingExternalRouteSyncPath !== undefined) {
-      return
-    }
-
-    if (pendingManagedRouteSyncPath !== undefined) {
-      const expectedPath = pendingManagedRouteSyncPath
-      pendingManagedRouteSyncPath = undefined
-      if (nextRoute.fullPath === expectedPath) {
-        return
-      }
-    }
-
-    if (nextRoute.fullPath === route.fullPath) {
-      return
-    }
-
-    pendingExternalRouteSyncPath = nextRoute.fullPath
     const from = snapshotRouteLocation(route)
-    void runBackNavigationGuards({
+    void runBackNavigationGuards(backGuardContext, {
       target: nextRoute,
       from,
-      nativeRouter,
-      beforeEachGuards,
-      beforeResolveGuards,
-      resolveWithCodec,
     }).then((result) => {
       return emitObservedNavigationAfterEach?.(result)
     }).finally(() => {
-      pendingExternalRouteSyncPath = undefined
+      navigationScope.completeExternalSync()
     })
   }
 
   const routeController = createRouteStateController({
+    readLocation: (page, query) => locationHistory?.readLocation(page, query) ?? resolvePageRoute(page, query),
+    isolated: !syncWithNative,
     beforeRouteStateSync,
     resolveRoute: enrichRouteRecordState,
   })
   route = routeController.route
 
+  // 公开解析与历史钩子沿用原始解析，避免自定义 readLocation 在自身内部递归。
   const resolve = (to: RouteLocationRaw): RouteLocationNormalizedLoaded =>
-    resolveWithCodec(to, route.path)
+    resolveWithCodecBase(to, route.path)
+
+  // 位置发布策略集中在这里：与原生同步时广播，独立逻辑路由状态时只更新本 router 快照。
+  const publishRoute = (next?: RouteLocationNormalizedLoaded) => {
+    publishRouteState({ syncWithNative, updateRoute: routeController.update, route: next })
+  }
+
+  const historyContext = {
+    nativeRouter,
+    tabBarPaths,
+    stringifyQuery: routeResolveCodec.stringifyQuery,
+    resolve,
+    getCurrentPage: getCurrentMiniProgramPage,
+    notifyLocationChange: (to?: RouteLocationRaw) => {
+      publishRoute(to === undefined ? undefined : resolve(to))
+    },
+  }
+  const historyAdapter = resolveHistory(history, historyContext)
+  locationHistory = historyAdapter
+  routeController.update(historyAdapter.readLocation(getCurrentMiniProgramPage()))
+
+  // 导航内核共享依赖：守卫、解析器与历史驱动在一次 createRouter 中固定。
+  const navigationContext: RouterNavigationContext = {
+    history: historyAdapter,
+    nativeRouter,
+    namedRouteLookup,
+    beforeEachGuards,
+    beforeResolveGuards,
+    maxRedirects,
+    resolveWithCodec,
+    readGuardTarget,
+  }
 
   const navigationResultController = createNavigationResultController({
     afterEachHooks,
     errorHandlers,
     nativeRouter,
     rejectOnError,
+    publish: publishRoute,
   })
   emitObservedNavigationAfterEach = navigationResultController.emitNavigationAfterEach
 
   const navigationApi = createNavigationApi({
-    nativeRouter,
-    route,
-    routeResolveCodec,
-    namedRouteLookup,
-    beforeEachGuards,
-    beforeResolveGuards,
-    maxRedirects,
-    tabBarPathSet,
-    resolveWithCodec,
+    context: navigationContext,
+    getRoute: () => route,
+    onTarget: (target) => { navigationScope.setActiveTarget(target?.fullPath) },
     settleNavigationResult: navigationResultController.settleNavigationResult,
   })
 
-  async function runManagedNavigation<T>(navigation: () => Promise<T>, targetPath?: string): Promise<T> {
+  async function runManagedNavigation<T>(navigation: () => Promise<T>): Promise<T> {
     const previousRoutePath = route.fullPath
-    if (targetPath) {
-      activeManagedRoutePath = targetPath
-    }
-    managedNavigationCount += 1
+    navigationScope.beginManaged()
     try {
       const result = await navigation()
       if (route.fullPath !== previousRoutePath) {
-        pendingManagedRouteSyncPath = route.fullPath
+        navigationScope.markManagedEcho(route.fullPath)
       }
       return result
     }
     finally {
-      managedNavigationCount -= 1
-      if (managedNavigationCount <= 0) {
-        activeManagedRoutePath = undefined
-      }
-    }
-  }
-
-  function resolveManagedRoutePath(to: RouteLocationRaw): string | undefined {
-    try {
-      return resolveWithCodec(to, route.path).fullPath
-    }
-    catch {
-      return undefined
+      navigationScope.endManaged()
     }
   }
 
@@ -250,25 +204,14 @@ export function createRouter<TRouteMap extends object = WevuNamedRouteMap>(
       if (!target.path) {
         return undefined
       }
-      if (activeManagedRoutePath === target.fullPath) {
-        notifyRouteStateSync({
-          route: target,
-          source: 'router',
-        })
+      if (navigationScope.activeTargetPath === target.fullPath) {
+        publishRoute(target)
         return undefined
       }
-      const result = await navigateWithTarget({
+      const result = await navigateWithTarget(navigationContext, {
         mode: 'push',
         target,
         from,
-        nativeRouter,
-        routeResolveCodec,
-        namedRouteLookup,
-        beforeEachGuards,
-        beforeResolveGuards,
-        maxRedirects,
-        tabBarPathSet,
-        resolveWithCodec,
         executeNative: false,
         allowSameLocation: true,
       })
@@ -277,21 +220,11 @@ export function createRouter<TRouteMap extends object = WevuNamedRouteMap>(
       }
       if (initialNavigationMode === 'blocking' && result.to && result.to.fullPath !== target.fullPath) {
         const redirectedTarget = result.to
-        const isTabBarTarget = tabBarPathSet.has(redirectedTarget.path)
-        const method = isTabBarTarget ? nativeRouter.switchTab : nativeRouter.redirectTo
-        const nativeResult = await executeNavigationMethod(
-          method as (options: Record<string, any>) => unknown,
-          { url: createNativeRouteUrl(redirectedTarget, routeResolveCodec.stringifyQuery) },
-          redirectedTarget,
-          from,
-        )
-        if (nativeResult) {
+        const nativeResult = await historyAdapter.replace(redirectedTarget, from)
+        if (isNavigationFailure(nativeResult)) {
           return nativeResult
         }
-        notifyRouteStateSync({
-          route: redirectedTarget,
-          source: 'router',
-        })
+        publishRoute(redirectedTarget)
         return createNavigationFailure(NavigationFailureType.cancelled, redirectedTarget, from)
       }
       return navigationResultController.settleNavigationResult(result)
@@ -341,18 +274,10 @@ export function createRouter<TRouteMap extends object = WevuNamedRouteMap>(
     isReady(): Promise<void> {
       return readyPromise
     },
-    push: to => runManagedNavigation(() => navigationApi.push(to), resolveManagedRoutePath(to)),
-    replace: to => runManagedNavigation(() => navigationApi.replace(to), resolveManagedRoutePath(to)),
-    back: delta => runManagedNavigation(
-      () => navigationApi.back(delta),
-      resolveBackNavigationTarget(delta ?? 1, route, resolveWithCodec)?.fullPath,
-    ),
-    go: delta => runManagedNavigation(
-      () => navigationApi.go(delta),
-      delta < 0
-        ? resolveBackNavigationTarget(Math.abs(delta), route, resolveWithCodec)?.fullPath
-        : undefined,
-    ),
+    push: to => runManagedNavigation(() => navigationApi.push(to)),
+    replace: to => runManagedNavigation(() => navigationApi.replace(to)),
+    back: delta => runManagedNavigation(() => navigationApi.back(delta)),
+    go: delta => runManagedNavigation(() => navigationApi.go(delta)),
     forward: () => runManagedNavigation(() => navigationApi.forward()),
     hasRoute: routeRegistry.hasRoute,
     getRoutes: routeRegistry.getRoutes,
@@ -365,8 +290,11 @@ export function createRouter<TRouteMap extends object = WevuNamedRouteMap>(
     onError,
   }
 
+  registerRouterHistory(router, historyAdapter)
   setActiveRouter(router)
-  registerInitialNavigationRunner(router, runInitialNavigation, initialNavigationTimeout, initialNavigationMode)
+  if (syncWithNative) {
+    registerInitialNavigationRunner(router, runInitialNavigation, initialNavigationTimeout, initialNavigationMode)
+  }
   const typedRouter = router as unknown as RouterNavigation<TRouteMap>
   return typedRouter
 }

@@ -1,5 +1,6 @@
 import type { MiniProgramAdapter, SetDataDebugInfo } from '../../types'
 import type { PhysicalSetDataObserver, SetDataRevisionObservation } from './observation'
+import { isThenable } from '../../../utils'
 import { observePhysicalDispatch } from './observation'
 import { cloneSnapshotValue } from './snapshot'
 
@@ -83,14 +84,6 @@ interface RevisionRecord {
 }
 
 const resolvedCommitPromise = Promise.resolve()
-
-function isThenable(value: unknown): value is PromiseLike<unknown> {
-  return Boolean(
-    value
-    && (typeof value === 'object' || typeof value === 'function')
-    && typeof (value as PromiseLike<unknown>).then === 'function',
-  )
-}
 
 function formatCommitFailureCause(cause: unknown): string {
   try {

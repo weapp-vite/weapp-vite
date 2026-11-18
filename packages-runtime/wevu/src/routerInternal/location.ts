@@ -72,7 +72,7 @@ function hasPageRoute(page: MiniProgramPageLike | undefined): page is MiniProgra
     || (typeof page?.__route__ === 'string' && page.__route__.length > 0)
 }
 
-function getCurrentMiniProgramPage(fallbackPage?: MiniProgramPageLike): MiniProgramPageLike | undefined {
+export function getCurrentMiniProgramPage(fallbackPage?: MiniProgramPageLike): MiniProgramPageLike | undefined {
   const pages = getCurrentMiniProgramPages() as MiniProgramPageLike[]
   if (Array.isArray(pages) && pages.length > 0) {
     const currentPage = pages[pages.length - 1]

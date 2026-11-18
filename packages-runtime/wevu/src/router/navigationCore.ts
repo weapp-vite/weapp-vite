@@ -12,6 +12,7 @@ import type {
   RouteLocationNormalizedLoaded,
   RouteLocationRaw,
 } from './types'
+import { hasOwn, isThenable } from '../utils'
 import { NavigationFailureType } from './types'
 
 const DUPLICATED_RE = /already|same|duplicat|重复/
@@ -102,23 +103,116 @@ export function isNavigationRedirectCandidate(value: unknown): value is Navigati
   if (!value || typeof value !== 'object') {
     return false
   }
-  return 'to' in (value as Record<string, unknown>)
+  return hasOwn(value, 'to')
 }
 
-function isRouteLocationRawCandidate(value: unknown): value is RouteLocationRaw {
+/**
+ * 判断守卫/校验返回值是否为普通 Error（非 NavigationFailure）。
+ *
+ * 对齐 Vue Router：守卫返回 Error 表示以该错误中止导航。
+ * 必须排除 NavigationFailure——它是 Error 子类且携带内部标记与 type，
+ * 应原样透传而不是被降级成 unknown 中止。
+ */
+export function isNavigationError(value: unknown): value is Error {
+  return value instanceof Error && !isNavigationFailure(value)
+}
+
+/**
+ * 判断校验/守卫返回值是否为原始位置。
+ *
+ * 字符串与含位置字段的对象都算原始位置：它们必须交给框架解析，
+ * 直接当成已解析位置使用会得到没有 `fullPath` 的畸形位置。
+ *
+ * 只认自有字段：用 `in` 会把原型链上的字段算进来，
+ * 普通 Error 的原型链带 `name`（值为 "Error"）会被误判为具名路由。
+ */
+export function isRouteLocationRawCandidate(value: unknown): value is RouteLocationRaw {
   if (typeof value === 'string') {
     return true
   }
   if (!value || typeof value !== 'object') {
     return false
   }
-  const candidate = value as Record<string, unknown>
-  return 'path' in candidate
-    || 'fullPath' in candidate
-    || 'query' in candidate
-    || 'hash' in candidate
-    || 'name' in candidate
-    || 'params' in candidate
+  return hasOwn(value, 'path')
+    || hasOwn(value, 'fullPath')
+    || hasOwn(value, 'query')
+    || hasOwn(value, 'hash')
+    || hasOwn(value, 'name')
+    || hasOwn(value, 'params')
+}
+
+/** 判定一份「拦截返回值」所需的共性依赖。 */
+export interface GuardResolutionContext {
+  readonly to: RouteLocationNormalizedLoaded | undefined
+  readonly from: RouteLocationNormalizedLoaded
+  readonly resolveRoute: (to: RouteLocationRaw, currentPath: string) => RouteLocationNormalizedLoaded
+}
+
+/**
+ * 把改道返回值归一化为「目标位置 + replace」。
+ *
+ * `{ to, replace }` 取 `to` 与三态 replace；裸原始位置直接解析、不声明 replace。
+ * 相对路径以导航起点为基准，避免对象形态与字符串形态落进两条解析路径。
+ */
+export function resolveRedirectTarget(
+  value: unknown,
+  from: RouteLocationNormalizedLoaded,
+  resolveRoute: (to: RouteLocationRaw, currentPath: string) => RouteLocationNormalizedLoaded,
+): { target: RouteLocationNormalizedLoaded, replace?: boolean } | undefined {
+  if (isNavigationRedirectCandidate(value)) {
+    return { target: resolveRoute(value.to, from.path), replace: value.replace }
+  }
+  if (isRouteLocationRawCandidate(value)) {
+    return { target: resolveRoute(value, from.path) }
+  }
+  return undefined
+}
+
+/**
+ * 把守卫 / 驱动校验的返回值归一化为流水线走向。
+ *
+ * 两类拦截共用同一份返回契约（NavigationGuardResult），判定必须只有一处：
+ * failure 透传、Error 保留 message 中止、false 中止、raw / NavigationRedirect 改道。
+ * 中止文案与「是否禁止改道」由 context 决定——校验发生在前进导航、守卫可能发生在返回导航。
+ *
+ * 相对路径以导航起点 `from.path` 为基准，与 router.resolve、驱动改道、路由记录改道同源。
+ */
+export function resolveGuardResult(
+  result: unknown,
+  context: GuardResolutionContext,
+  abortMessage: string,
+): GuardPipelineResult {
+  if (isNavigationFailure(result)) {
+    return { status: 'failure', failure: result }
+  }
+  if (isNavigationError(result)) {
+    return {
+      status: 'failure',
+      failure: createNavigationFailure(NavigationFailureType.aborted, context.to, context.from, result),
+    }
+  }
+  if (result === false) {
+    return {
+      status: 'failure',
+      failure: createNavigationFailure(NavigationFailureType.aborted, context.to, context.from, abortMessage),
+    }
+  }
+  const redirect = resolveRedirectTarget(result, context.from, context.resolveRoute)
+  if (redirect) {
+    if (!context.to) {
+      return {
+        status: 'failure',
+        failure: createNavigationFailure(
+          NavigationFailureType.aborted,
+          context.to,
+          context.from,
+          'Redirect is not supported in back navigation guards',
+        ),
+      }
+    }
+    return { status: 'redirect', target: redirect.target, replace: redirect.replace }
+  }
+  return { status: 'continue' }
 }
 
 export async function runNavigationGuards(
@@ -126,60 +220,17 @@ export async function runNavigationGuards(
   context: NavigationGuardContext,
   resolveRoute: (to: RouteLocationRaw, currentPath: string) => RouteLocationNormalizedLoaded,
 ): Promise<GuardPipelineResult> {
+  const resolutionContext: GuardResolutionContext = {
+    to: context.to,
+    from: context.from,
+    resolveRoute,
+  }
   for (const guard of guards) {
     try {
       const result = await guard(context.to, context.from, context)
-      if (isNavigationFailure(result)) {
-        return {
-          status: 'failure',
-          failure: result,
-        }
-      }
-      if (result === false) {
-        return {
-          status: 'failure',
-          failure: createNavigationFailure(
-            NavigationFailureType.aborted,
-            context.to,
-            context.from,
-            'Navigation aborted by guard',
-          ),
-        }
-      }
-      if (isNavigationRedirectCandidate(result)) {
-        if (!context.to) {
-          return {
-            status: 'failure',
-            failure: createNavigationFailure(
-              NavigationFailureType.aborted,
-              context.to,
-              context.from,
-              'Redirect is not supported in back navigation guards',
-            ),
-          }
-        }
-        return {
-          status: 'redirect',
-          target: resolveRoute(result.to, context.to.path),
-          replace: result.replace,
-        }
-      }
-      if (isRouteLocationRawCandidate(result)) {
-        if (!context.to) {
-          return {
-            status: 'failure',
-            failure: createNavigationFailure(
-              NavigationFailureType.aborted,
-              context.to,
-              context.from,
-              'Redirect is not supported in back navigation guards',
-            ),
-          }
-        }
-        return {
-          status: 'redirect',
-          target: resolveRoute(result, context.to.path),
-        }
+      const outcome = resolveGuardResult(result, resolutionContext, 'Navigation aborted by guard')
+      if (outcome.status !== 'continue') {
+        return outcome
       }
     }
     catch (error) {
@@ -217,8 +268,8 @@ export function executeNavigationMethod(
         },
       })
 
-      if (maybePromise && typeof (maybePromise as PromiseLike<unknown>).then === 'function') {
-        ;(maybePromise as PromiseLike<unknown>).then(
+      if (isThenable(maybePromise)) {
+        maybePromise.then(
           () => finalize(),
           error => finalize(createNavigationFailure(resolveNavigationFailureType(error), to, from, error)),
         )
