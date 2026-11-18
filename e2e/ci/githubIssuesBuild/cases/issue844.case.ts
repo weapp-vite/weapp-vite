@@ -14,7 +14,9 @@ async function listFiles(root: string): Promise<string[]> {
       if (entry.isDirectory()) {
         await visit(file)
       }
-      else { result.push(file) }
+      else {
+        result.push(path.relative(root, file).split(path.sep).join('/'))
+      }
     }
   }
   await visit(root)
@@ -41,10 +43,10 @@ export function registerGithubIssuesBuildCase(context: GithubIssuesBuildCaseCont
       'subpackages/issue-844-independent/miniprogram_npm/tdesign-miniprogram',
     ]) {
       const files = await listFiles(path.join(outDir, root))
-      expect(files.some(file => file.endsWith('/button/button.js'))).toBe(true)
-      expect(files.some(file => file.endsWith('/common/style/index.wxss'))).toBe(true)
-      expect(files.some(file => file.endsWith('/dialog/index.js'))).toBe(false)
-      expect(files.some(file => file.endsWith('/calendar/index.js'))).toBe(false)
+      expect(files).toContain('button/button.js')
+      expect(files).toContain('common/style/index.wxss')
+      expect(files).not.toContain('dialog/index.js')
+      expect(files).not.toContain('calendar/index.js')
       expect(files.some(file => file.endsWith('.d.ts'))).toBe(false)
     }
   })
