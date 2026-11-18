@@ -1,0 +1,5 @@
+@import "tdesign-miniprogram/common/style/index.wxss";
+
+.issue-844-page {
+  padding: 16px;
+}

@@ -1,0 +1,3 @@
+<view class="issue-844-independent">
+  <t-button theme="primary">Independent</t-button>
+</view>

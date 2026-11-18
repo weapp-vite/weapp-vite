@@ -3133,17 +3133,18 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
   async function runProd(target: BuildTarget) {
     debug?.(`[${target}] prod build start`)
     checkWorkersOptions(target, configService, scanService)
-    const bundlerPromise = build(
-      // eslint-disable-next-line ts/no-use-before-define
-      applyTargetBuildOverride(
-        configService.merge(
-          undefined,
-          createSharedBuildConfig(configService, scanService),
-          // eslint-disable-next-line ts/no-use-before-define
-          resolveTargetBuildOverride(target),
-        ),
-        target,
+    // eslint-disable-next-line ts/no-use-before-define
+    const buildConfig = applyTargetBuildOverride(
+      configService.merge(
+        undefined,
+        createSharedBuildConfig(configService, scanService),
+        // eslint-disable-next-line ts/no-use-before-define
+        resolveTargetBuildOverride(target),
       ),
+      target,
+    )
+    const bundlerPromise = build(
+      buildConfig,
     )
     const output = await bundlerPromise
 
@@ -3278,7 +3279,11 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       scanService.loadSubPackages()
     }
     debug?.('build start')
-    const npmBuildTask = isLibMode ? Promise.resolve() : scheduleNpmBuild(options)
+    const pruneNpm = !options?.skipNpm
+      && !pluginOnly
+      && !isLibMode
+      && configService.weappViteConfig.npm?.pruneUnusedFiles === true
+    const npmBuildTask = isLibMode || pruneNpm ? Promise.resolve() : scheduleNpmBuild(options)
     const [result] = await waitForBuildTasks([
       runBuildTarget(pluginOnly ? 'plugin' : 'app'),
       npmBuildTask,

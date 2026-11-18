@@ -10,6 +10,8 @@ import { relocateNpmSourcemap } from './sourcemap'
 export interface PreparedNpmOutput {
   assets: EmittedAsset[]
   external: Map<string, EmittedAsset[]>
+  /** 外部目录相对于宿主输出的逻辑根，用于在裁剪阶段保持分包/插件边界。 */
+  externalRoots?: Map<string, string>
   watchFiles: string[]
 }
 
@@ -123,7 +125,8 @@ export function createNpmOutput(temporaryRoot: string, targetRoots: string[]) {
           addFile(mirroredFile, relocateNpmSourcemap(source, fileName, mirroredFile))
         }
       }
-      const result: PreparedNpmOutput = { assets: [], external: new Map(), watchFiles: [...watchFiles] }
+      const externalRoots = new Map<string, string>()
+      const result: PreparedNpmOutput = { assets: [], external: new Map(), externalRoots, watchFiles: [...watchFiles] }
       for (const [absolutePath, source] of files) {
         const relative = relativeOutput(hostOutDir, absolutePath)
         if (relative !== undefined) {
@@ -136,6 +139,7 @@ export function createNpmOutput(temporaryRoot: string, targetRoots: string[]) {
         const assets = result.external.get(directory) ?? []
         assets.push({ type: 'asset', fileName: relativeOutput(directory, absolutePath)!, source })
         result.external.set(directory, assets)
+        externalRoots.set(directory, relativeOutput(hostOutDir, directory) ?? path.basename(directory))
       }
       return result
     },

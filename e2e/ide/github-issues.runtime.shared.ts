@@ -309,6 +309,9 @@ async function runBuild() {
     cwd: APP_ROOT,
     env: {
       [E2E_TARGET_FILE_ENV]: scopedTargetFile,
+      ...(targetFile.endsWith('github-issues.runtime.issue844.test.ts')
+        ? { WEAPP_GITHUB_ISSUE_844_PRUNE: 'true' }
+        : {}),
     },
     label: 'ide:github-issues',
   })

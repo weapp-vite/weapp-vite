@@ -10,7 +10,7 @@ vi.mock('weapp-vite', () => ({ defineConfig: (config: unknown) => config }))
 interface FixtureConfig {
   weapp: {
     autoRoutes: boolean | { include: string[] }
-    npm: { enable?: boolean }
+    npm: { enable?: boolean, pruneUnusedFiles?: boolean }
   }
 }
 
@@ -67,6 +67,24 @@ describe('github-issues targeted fixture route scope', () => {
     const config = await readFixtureConfig('ide/github-issues.runtime.issue1035.test.ts')
     expect(config.weapp.autoRoutes).toEqual({ include: ['pages/issue-1035/**', 'pages/issue-1035-next/**'] })
     expect(config.weapp.npm.enable).toBe(false)
+  })
+
+  it('enables issue 844 npm pruning for main, normal and independent subpackages', async () => {
+    const config = await readFixtureConfig('ide/github-issues.runtime.issue844.test.ts')
+    expect(config.weapp.autoRoutes).toEqual({ include: [
+      'pages/issue-844/**',
+      'subpackages/issue-844-normal/**',
+      'subpackages/issue-844-independent/**',
+    ] })
+    expect(config.weapp.npm).toMatchObject({
+      enable: true,
+      pruneUnusedFiles: true,
+      mainPackage: { dependencies: [/^tdesign-miniprogram$/] },
+      subPackages: {
+        'subpackages/issue-844-normal': { dependencies: [/^tdesign-miniprogram$/] },
+        'subpackages/issue-844-independent': { dependencies: [/^tdesign-miniprogram$/] },
+      },
+    })
   })
 
   it('builds the automator compatibility fixture with its shared warmup route', async () => {

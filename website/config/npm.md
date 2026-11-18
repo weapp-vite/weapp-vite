@@ -43,6 +43,7 @@ keywords:
     enable?: boolean
     cache?: boolean
     strategy?: 'explicit' | 'legacy'
+    pruneUnusedFiles?: boolean
     include?: (string | RegExp)[]
     mainPackage?: {
       dependencies?: false | (string | RegExp)[]
@@ -125,6 +126,16 @@ export default defineConfig({
 
 - 日常开发保留 `true`
 - 如果怀疑 npm 构建结果陈旧，再临时设 `false` 或手动清缓存
+
+### `pruneUnusedFiles`
+
+- **类型**：`boolean`
+
+是否按最终小程序产物中的实际引用裁剪 npm 包内未使用的文件。默认关闭。
+
+开启后，weapp-vite 会分析 JSON 组件声明、JavaScript 模块引用、WXML/WXS、WXSS 以及静态资源，保留引用闭包和包元数据，并分别处理主包、分包、独立分包与插件输出。无法静态确定的动态引用会按对应 npm 边界保守保留，避免运行时加载失败。
+
+该选项只影响构建磁盘中的 npm 文件，不代表微信上传包体积；建议先在 CI 和目标运行时验证后再启用。
 
 ### `strategy`
 

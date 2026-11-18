@@ -943,6 +943,27 @@
           "launchMode": "default"
         },
         {
+          "name": "pages/issue-844/index",
+          "pathName": "pages/issue-844/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "subpackages/issue-844-normal/index",
+          "pathName": "subpackages/issue-844-normal/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "subpackages/issue-844-independent/index",
+          "pathName": "subpackages/issue-844-independent/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
           "name": "pages/issue-850/index",
           "pathName": "pages/issue-850/index",
           "query": "",

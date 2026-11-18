@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "issue-844",
+  "usingComponents": {
+    "t-button": "tdesign-miniprogram/button/button"
+  }
+}
