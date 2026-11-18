@@ -4411,7 +4411,7 @@ Component({
     expect(page.data.summary).toContain('"size":1')
   })
 
-  it('passes class and style host attributes into component properties', () => {
+  it('keeps reserved host attributes out while passing style into component properties', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/lab/index'] })],
       ['app.js', 'App({})'],
@@ -4433,18 +4433,22 @@ Page({
   }
 })
 `],
-      ['pages/lab/index.wxml', '<props-probe id="props-probe" class="native-class-prop" style="color: rgb(22, 119, 255);" />'],
+      ['pages/lab/index.wxml', '<props-probe id="props-probe" class="native-class-prop" slot="native-slot-prop" style="color: rgb(22, 119, 255);" />'],
       ['components/props-probe/index.json', '{}'],
       ['components/props-probe/index.js', `
 Component({
   properties: {
+    id: String,
     class: String,
+    slot: String,
     style: String
   },
   methods: {
     snapshot() {
       return {
+        id: this.properties.id ?? '',
         class: this.properties.class ?? '',
+        slot: this.properties.slot ?? '',
         style: this.properties.style ?? ''
       }
     }
@@ -4460,7 +4464,9 @@ Component({
     page.inspect()
 
     expect(page.data.snapshot).toBe(JSON.stringify({
-      class: 'native-class-prop',
+      id: '',
+      class: '',
+      slot: '',
       style: 'color: rgb(22, 119, 255);',
     }))
   })

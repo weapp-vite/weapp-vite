@@ -2,6 +2,19 @@ import type { HeadlessComponentDefinition, HeadlessComponentInstance } from './t
 import { isPureDataField } from './pureData'
 import { isArrayIndexSegment, parseDataPath } from './shared'
 
+interface PendingObserverRun {
+  changedKeys: string[]
+  previousProperties: Record<string, any>
+  includePropertyObservers: boolean
+}
+
+interface ObserverRunState {
+  running: boolean
+  pending: PendingObserverRun[]
+}
+
+const observerRunStates = new WeakMap<HeadlessComponentInstance, ObserverRunState>()
+
 function runPropertyObservers(
   definition: HeadlessComponentDefinition,
   instance: HeadlessComponentInstance,
@@ -87,11 +100,12 @@ function matchObserverPattern(pattern: string, changedKeys: string[]) {
   })
 }
 
-export function runComponentObservers(
+function runComponentObserversOnce(
   definition: HeadlessComponentDefinition,
   instance: HeadlessComponentInstance,
   changedKeys: string[],
   previousProperties: Record<string, any> = {},
+  includePropertyObservers = true,
 ) {
   if (changedKeys.length === 0) {
     return
@@ -108,5 +122,42 @@ export function runComponentObservers(
     }
   }
 
-  runPropertyObservers(definition, instance, changedKeys, previousProperties)
+  if (includePropertyObservers) {
+    runPropertyObservers(definition, instance, changedKeys, previousProperties)
+  }
+}
+
+export function runComponentObservers(
+  definition: HeadlessComponentDefinition,
+  instance: HeadlessComponentInstance,
+  changedKeys: string[],
+  previousProperties: Record<string, any> = {},
+) {
+  if (changedKeys.length === 0) {
+    return
+  }
+
+  const state = observerRunStates.get(instance) ?? { running: false, pending: [] }
+  observerRunStates.set(instance, state)
+  if (state.running) {
+    runPropertyObservers(definition, instance, changedKeys, previousProperties)
+    state.pending.push({ changedKeys: [...changedKeys], previousProperties, includePropertyObservers: false })
+    return
+  }
+
+  state.pending.push({ changedKeys: [...changedKeys], previousProperties, includePropertyObservers: true })
+  state.running = true
+  try {
+    while (state.pending.length > 0) {
+      const next = state.pending.shift()!
+      runComponentObserversOnce(definition, instance, next.changedKeys, next.previousProperties, next.includePropertyObservers)
+    }
+  }
+  catch (error) {
+    state.pending.length = 0
+    throw error
+  }
+  finally {
+    state.running = false
+  }
 }

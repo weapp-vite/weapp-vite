@@ -13,7 +13,7 @@ import {
   runComponentLifecycle,
 } from '../../runtime/componentInstance'
 import { beginComponentConstruction, discardComponentConstruction, finishComponentConstruction } from '../../runtime/componentInstance/construction'
-import { resolveComponentPropertyDefinitions } from '../../runtime/componentInstance/properties'
+import { isReservedComponentHostProperty, resolveComponentPropertyDefinitions } from '../../runtime/componentInstance/properties'
 import { syncComponentProperties } from '../../runtime/componentInstance/propertyBindings'
 import { attachComponentPropertyDiagnostics } from '../../runtime/componentInstance/propertyDiagnostics'
 import { resolveComponentViewData } from '../../runtime/componentInstance/pureData'
@@ -185,7 +185,7 @@ export function resolveComponentProperties(
   const bindingExpressions: Record<string, string | undefined> = {}
   const declaredProperties = resolveComponentPropertyDefinitions(definition)
   for (const [key, value] of Object.entries(clonedNode.attribs ?? {})) {
-    if (key.startsWith('bind') || key.startsWith('generic:')) {
+    if (key.startsWith('bind') || key.startsWith('generic:') || key.startsWith('wx:') || isReservedComponentHostProperty(key)) {
       continue
     }
     const camelizedKey = key.replace(/-([a-z])/g, (_match, char: string) => char.toUpperCase())

@@ -32,8 +32,33 @@ function flattenBehaviors(definition: HeadlessComponentDefinition) {
   return flattened
 }
 
+function applyBehaviorDefinitionFilters(definition: HeadlessComponentDefinition, behaviors: HeadlessBehaviorDefinition[]) {
+  if (!behaviors.some(behavior => typeof behavior.definitionFilter === 'function')) {
+    return definition
+  }
+
+  const filteredDefinition: HeadlessComponentDefinition = {
+    ...definition,
+    ...(definition.observers && typeof definition.observers === 'object' && !Array.isArray(definition.observers)
+      ? { observers: { ...definition.observers } }
+      : {}),
+  }
+  for (const behavior of behaviors) {
+    if (typeof behavior.definitionFilter === 'function') {
+      behavior.definitionFilter(filteredDefinition)
+    }
+  }
+  return filteredDefinition
+}
+
 export function resolveComponentPropertyDefinitions(definition: HeadlessComponentDefinition, behaviors = flattenBehaviors(definition)) {
   return behaviors.length === 0 ? definition.properties ?? {} : mergeRecord(...behaviors.map(item => item.properties), definition.properties)
+}
+
+const RESERVED_COMPONENT_HOST_PROPERTIES = new Set(['id', 'class', 'slot'])
+
+export function isReservedComponentHostProperty(key: string) {
+  return RESERVED_COMPONENT_HOST_PROPERTIES.has(key)
 }
 
 export function normalizeComponentDefinition(definition: HeadlessComponentDefinition): HeadlessComponentDefinition {
@@ -42,21 +67,23 @@ export function normalizeComponentDefinition(definition: HeadlessComponentDefini
     return definition
   }
 
+  const filteredDefinition = applyBehaviorDefinitionFilters(definition, behaviors)
+
   const mergedDataEntries = behaviors
     .map(item => item.data)
     .filter(Boolean)
 
   const mergedDefinition: HeadlessComponentDefinition = {
-    ...mergeRecord(...behaviors, definition),
-    methods: mergeRecord(...behaviors.map(item => item.methods), definition.methods),
-    observers: mergeRecord(...behaviors.map(item => item.observers), definition.observers),
-    pageLifetimes: mergeRecord(...behaviors.map(item => item.pageLifetimes), definition.pageLifetimes),
-    properties: resolveComponentPropertyDefinitions(definition, behaviors),
-    relations: mergeRecord(...behaviors.map(item => item.relations), definition.relations),
-    lifetimes: mergeComponentLifetimes(behaviors, definition),
+    ...mergeRecord(...behaviors, filteredDefinition),
+    methods: mergeRecord(...behaviors.map(item => item.methods), filteredDefinition.methods),
+    observers: mergeRecord(...behaviors.map(item => item.observers), filteredDefinition.observers),
+    pageLifetimes: mergeRecord(...behaviors.map(item => item.pageLifetimes), filteredDefinition.pageLifetimes),
+    properties: resolveComponentPropertyDefinitions(filteredDefinition, behaviors),
+    relations: mergeRecord(...behaviors.map(item => item.relations), filteredDefinition.relations),
+    lifetimes: mergeComponentLifetimes(behaviors, filteredDefinition),
   }
 
-  if (mergedDataEntries.length > 0 || definition.data) {
+  if (mergedDataEntries.length > 0 || filteredDefinition.data) {
     mergedDefinition.data = function mergedComponentData(this: unknown) {
       const merged = mergeRecord(
         ...mergedDataEntries.map((entry) => {
@@ -66,9 +93,9 @@ export function normalizeComponentDefinition(definition: HeadlessComponentDefini
           return entry
         }),
       )
-      const ownData = typeof definition.data === 'function'
-        ? definition.data.call(this)
-        : definition.data
+      const ownData = typeof filteredDefinition.data === 'function'
+        ? filteredDefinition.data.call(this)
+        : filteredDefinition.data
       return mergeRecord(merged, ownData)
     }
   }

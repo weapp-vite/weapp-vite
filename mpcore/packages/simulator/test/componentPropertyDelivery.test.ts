@@ -102,4 +102,83 @@ describe.each(['node', 'browser'] as const)('%s component property delivery pari
       session.close()
     }
   })
+
+  it('applies behavior definition filters before delivering property observers', () => {
+    const session = createSession([
+      ['project.config.json', JSON.stringify({ appid: 'wx1234567890abcdef', miniprogramRoot: '.' })],
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.json', JSON.stringify({ usingComponents: { 'computed-probe': '../../components/computed-probe/index' } })],
+      ['pages/index/index.js', `Page({
+        data: { a: 1, b: 2 },
+        update() { this.setData({ a: 3, b: 4 }) },
+      })`],
+      ['pages/index/index.wxml', '<computed-probe a="{{a}}" b="{{b}}" />'],
+      ['components/computed-probe/index.json', '{}'],
+      ['components/computed-probe/index.js', `const computedBehavior = Behavior({
+        definitionFilter(definition) {
+          definition.observers ||= {}
+          definition.observers['a, b'] = function (a, b) {
+            this.setData({ sum: a + b })
+          }
+        },
+      })
+      Component({
+        behaviors: [computedBehavior],
+        properties: { a: Number, b: Number },
+        data: { sum: 0 },
+      })`],
+      ['components/computed-probe/index.wxml', '<view id="sum">{{sum}}</view>'],
+    ])
+    try {
+      const page = session.reLaunch('/pages/index/index')
+      expect(session.renderCurrentPage().wxml).toContain('>3<')
+      page.update()
+      expect(session.renderCurrentPage().wxml).toContain('>7<')
+    }
+    finally {
+      session.close()
+    }
+  })
+
+  it('queues observer writes that reenter before an observer commits its snapshot', () => {
+    const session = createSession([
+      ['project.config.json', JSON.stringify({ appid: 'wx1234567890abcdef', miniprogramRoot: '.' })],
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.json', JSON.stringify({ usingComponents: { 'reentry-probe': '../../components/reentry-probe/index' } })],
+      ['pages/index/index.js', `Page({
+        data: { source: 1 },
+        update() { this.setData({ source: 2 }) },
+      })`],
+      ['pages/index/index.wxml', '<reentry-probe source="{{source}}" />'],
+      ['components/reentry-probe/index.json', '{}'],
+      ['components/reentry-probe/index.js', `const behavior = Behavior({
+        definitionFilter(definition) {
+          let previousSource = 0
+          definition.observers ||= {}
+          definition.observers['**'] = function () {
+            if (this.data.source === previousSource) return
+            this.setData({ doubled: this.data.source * 2 })
+            previousSource = this.data.source
+          }
+        },
+      })
+      Component({
+        behaviors: [behavior],
+        properties: { source: Number },
+        data: { doubled: 0 },
+      })`],
+      ['components/reentry-probe/index.wxml', '<view id="doubled">{{doubled}}</view>'],
+    ])
+    try {
+      const page = session.reLaunch('/pages/index/index')
+      expect(session.renderCurrentPage().wxml).toContain('>2<')
+      page.update()
+      expect(session.renderCurrentPage().wxml).toContain('>4<')
+    }
+    finally {
+      session.close()
+    }
+  })
 })
