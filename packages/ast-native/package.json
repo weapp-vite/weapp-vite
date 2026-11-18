@@ -56,7 +56,7 @@
     "@napi-rs/cli": "^3.10.12",
     "@types/node": "catalog:",
     "eslint": "catalog:",
-    "vitest": "5.1.0"
+    "vitest": "5.1.1"
   },
   "napi": {
     "binaryName": "weapp_vite_ast_native",
