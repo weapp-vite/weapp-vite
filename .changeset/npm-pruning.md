@@ -1,5 +1,6 @@
 ---
 "weapp-vite": minor
+"create-weapp-vite": patch
 ---
 
 feat(weapp-vite): 支持按引用裁剪小程序 npm 产物
