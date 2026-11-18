@@ -82,6 +82,13 @@ describe('native rich-text normalization', () => {
     }])
   })
 
+  it('preserves named and numeric HTML entity decoding without decoding unknown entities', () => {
+    expect(normalizeNativeRichTextNodes([{ type: 'text', text: '&amp;amp; &unknown; &#65; &nbsp;' }])).toEqual([{
+      type: 'text',
+      text: '&amp; &unknown; A \u00A0',
+    }])
+  })
+
   it('decodes HTML text and attributes once without reinterpreting decoded content', () => {
     expect(normalizeNativeRichTextNodes('<p class="&amp;amp; {{secret}}">&lt;b&gt;literal&lt;/b&gt; {{secret}} &amp;amp; &#38;amp; &#x26;lt; &nbsp; &#65; &#x1D11E;</p>')).toEqual([
       element('p', { class: '&amp; {{secret}}' }, [{
