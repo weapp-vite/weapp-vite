@@ -8,7 +8,6 @@ keywords:
   - defaults
   - preset
   - autoSetDataPick
-  - setupInitialRenderBarrier
 ---
 
 # Wevu 编译期配置 {#wevu-config}
