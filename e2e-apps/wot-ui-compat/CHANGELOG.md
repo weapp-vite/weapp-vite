@@ -1,5 +1,12 @@
 # e2e-app-wot-ui-compat
 
+## 0.0.18
+
+### Patch Changes
+
+- Updated dependencies:
+  - wevu@7.11.1
+
 ## 0.0.17
 
 ### Patch Changes

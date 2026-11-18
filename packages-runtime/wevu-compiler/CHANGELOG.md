@@ -1,5 +1,42 @@
 # @wevu/compiler
 
+## 7.11.1
+
+### Patch Changes
+
+- chore(deps): 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@ai-sdk/anthropic, @ai-sdk/openai, @ai-sdk/openai-compatible, @devframes/agentic, @devframes/hub, @devframes/hub-ui, @icebreakers/eslint-config, @icebreakers/stylelint-config, @vitejs/devtools, @vitejs/devtools-kit, ai, devframe, eslint, postcss, vue-router, weapp-tailwindcss。命名 catalog 变更键：无。
+
+- chore(deps): 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：无。命名 catalog 变更键：weapp-tailwindcss-fixed(weapp-tailwindcss)。
+
+- chore(deps): 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@icebreakers/eslint-config, @icebreakers/stylelint-config。命名 catalog 变更键：无。
+
+- chore(deps): 自动补充依赖升级发布记录。
+  涉及包：
+  - @weapp-vite/glass-easel-web-adapter：devDependencies.playwright
+  - @wevu/json-render：dependencies.@json-render/core
+
+- chore(deps): 自动补充依赖升级发布记录。
+  涉及包：
+  - @weapp-vite/ast：dependencies.@oxc-project/types
+
+- chore(deps): 自动补充依赖升级发布记录。
+  涉及包：
+  - create-weapp-vite：devDependencies.oxfmt
+
+- fix: Teleport 基础库版本提示改为按项目配置判断并只提示一次。
+
+  编译器现在读取 `project.config.json` / `project.private.config.json` 的 `libVersion`（私有配置优先）：满足 `>= 2.26.1` 时不再输出 `WV1010`；低于门槛或 `latest` / `trial` 等无法静态判断的别名，同一次构建只提示一次。
+
+- Updated dependencies:
+  - @weapp-core/constants@0.6.1
+  - @weapp-core/shared@3.5.1
+  - @weapp-vite/ast@7.11.1
+  - @weapp-vite/wxml@0.0.3
+  - rolldown-require@2.1.5
+
 ## 7.11.0
 
 ### Minor Changes

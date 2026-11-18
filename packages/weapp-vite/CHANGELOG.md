@@ -1,5 +1,70 @@
 # weapp-vite
 
+## 7.11.1
+
+### Patch Changes
+
+- chore(deps): 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@ai-sdk/anthropic, @ai-sdk/openai, @ai-sdk/openai-compatible, @devframes/agentic, @devframes/hub, @devframes/hub-ui, @icebreakers/eslint-config, @icebreakers/stylelint-config, @vitejs/devtools, @vitejs/devtools-kit, ai, devframe, eslint, postcss, vue-router, weapp-tailwindcss。命名 catalog 变更键：无。
+
+- chore(deps): 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：无。命名 catalog 变更键：weapp-tailwindcss-fixed(weapp-tailwindcss)。
+
+- chore(deps): 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@icebreakers/eslint-config, @icebreakers/stylelint-config。命名 catalog 变更键：无。
+
+- chore(deps): 自动补充依赖升级发布记录。
+  涉及包：
+  - @weapp-vite/glass-easel-web-adapter：devDependencies.playwright
+  - @wevu/json-render：dependencies.@json-render/core
+
+- chore(deps): 自动补充依赖升级发布记录。
+  涉及包：
+  - @weapp-vite/ast：dependencies.@oxc-project/types
+
+- chore(deps): 自动补充依赖升级发布记录。
+  涉及包：
+  - create-weapp-vite：devDependencies.oxfmt
+
+- fix(weapp-vite): 状态保持 HMR 只保留模板和样式产物的内容指纹，避免缓存完整编译产物导致首次 HMR 内存占用异常增长。
+
+- fix(weapp-vite): 移除 WXSS 产物顶部微信 iOS 不兼容的 charset 声明。
+
+- fix(weapp-vite): 压缩 ES5 最终产物时在同一次 SWC 降级中启用标识符重命名，避免压缩后注入的 helper 与 ES5 重写产生的标识符以完整名称逐 chunk 保留，导致 `weapp.es5` 产物明显膨胀。
+
+- fix: Teleport 基础库版本提示改为按项目配置判断并只提示一次。
+
+  编译器现在读取 `project.config.json` / `project.private.config.json` 的 `libVersion`（私有配置优先）：满足 `>= 2.26.1` 时不再输出 `WV1010`；低于门槛或 `latest` / `trial` 等无法静态判断的别名，同一次构建只提示一次。
+
+- fix(weapp-vite): 修复微信小程序组件的 scoped 样式失效
+
+  构建微信小程序时，模板和 WXSS 使用同一个作用域 class，避免生成微信组件不支持的属性选择器。
+
+- Updated dependencies:
+  - @weapp-core/constants@0.6.1
+  - @weapp-core/init@6.1.5
+  - @weapp-core/logger@3.2.5
+  - @weapp-core/schematics@6.3.5
+  - @weapp-core/shared@3.5.1
+  - @weapp-vite/acceptance@0.2.5
+  - @weapp-vite/ast@7.11.1
+  - @weapp-vite/eslint@0.3.5
+  - @weapp-vite/hmr@0.3.5
+  - @weapp-vite/i18n@0.3.6
+  - @weapp-vite/language-service@0.1.5
+  - @weapp-vite/mcp@2.2.6
+  - @weapp-vite/miniprogram-automator@1.5.5
+  - @weapp-vite/tailwindcss@1.1.5
+  - @weapp-vite/volar@2.2.5
+  - @weapp-vite/web@2.2.5
+  - @weapp-vite/wxml@0.0.3
+  - @wevu/api@0.4.5
+  - @wevu/web-apis@1.5.2
+  - rolldown-require@2.1.5
+  - vite-plugin-performance@2.1.5
+  - weapp-ide-cli@6.4.5
+  - wevu@7.11.1
+
 ## 7.11.0
 
 ### Minor Changes

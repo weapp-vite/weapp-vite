@@ -26,6 +26,15 @@
   dir: mpcore/packages/core
   intents:
     - dependency-upgrade-20261113-113050
+"@mpcore/core@0.0.14":
+  dir: mpcore/packages/core
+  intents:
+    - catalog-upgrade-20261116-165504
+    - catalog-upgrade-20261116-203206
+    - catalog-upgrade-20261116-223245
+    - dependency-upgrade-20261116-165504
+    - dependency-upgrade-20261116-203205
+    - dependency-upgrade-20261116-223244
 "@mpcore/core@0.0.2":
   dir: mpcore/packages/core
   intents:
@@ -249,6 +258,16 @@
     - subpackage-output-placeholder
     - teleport-release-dependency-sync
     - wevu-native-dom-renderer
+"@mpcore/simulator@1.3.5":
+  dir: mpcore/packages/simulator
+  intents:
+    - catalog-upgrade-20261116-165504
+    - catalog-upgrade-20261116-203206
+    - catalog-upgrade-20261116-223245
+    - dependency-upgrade-20261116-165504
+    - dependency-upgrade-20261116-203205
+    - dependency-upgrade-20261116-223244
+    - native-host-parity
 "@mpcore/test@0.1.10":
   dir: mpcore/packages/test
   intents:
@@ -331,6 +350,15 @@
   intents:
     - dependency-upgrade-20261113-113050
     - quiet-matcher-browser-compatibility
+"@mpcore/test@1.2.6":
+  dir: mpcore/packages/test
+  intents:
+    - catalog-upgrade-20261116-165504
+    - catalog-upgrade-20261116-203206
+    - catalog-upgrade-20261116-223245
+    - dependency-upgrade-20261116-165504
+    - dependency-upgrade-20261116-203205
+    - dependency-upgrade-20261116-223244
 "@mpcore/vitest@0.1.3":
   dir: mpcore/packages/vitest
   intents:
@@ -419,6 +447,15 @@
   intents:
     - dependency-upgrade-20261113-113050
     - quiet-matcher-browser-compatibility
+"@mpcore/vitest@1.2.6":
+  dir: mpcore/packages/vitest
+  intents:
+    - catalog-upgrade-20261116-165504
+    - catalog-upgrade-20261116-203206
+    - catalog-upgrade-20261116-223245
+    - dependency-upgrade-20261116-165504
+    - dependency-upgrade-20261116-203205
+    - dependency-upgrade-20261116-223244
 "@mpcore/weapp-vite@0.1.10":
   dir: mpcore/packages/weapp-vite
   intents:
@@ -500,6 +537,15 @@
   dir: mpcore/packages/weapp-vite
   intents:
     - dependency-upgrade-20261113-113050
+"@mpcore/weapp-vite@1.1.6":
+  dir: mpcore/packages/weapp-vite
+  intents:
+    - catalog-upgrade-20261116-165504
+    - catalog-upgrade-20261116-203206
+    - catalog-upgrade-20261116-223245
+    - dependency-upgrade-20261116-165504
+    - dependency-upgrade-20261116-203205
+    - dependency-upgrade-20261116-223244
 "@weapp-agent/cli@0.1.0":
   dir: packages/agent-cli
   intents:
@@ -541,6 +587,15 @@
   dir: packages/agent-cli
   intents:
     - dependency-upgrade-20261113-113050
+"@weapp-agent/cli@0.2.6":
+  dir: packages/agent-cli
+  intents:
+    - catalog-upgrade-20261116-165504
+    - catalog-upgrade-20261116-203206
+    - catalog-upgrade-20261116-223245
+    - dependency-upgrade-20261116-165504
+    - dependency-upgrade-20261116-203205
+    - dependency-upgrade-20261116-223244
 "@weapp-core/api@0.2.0":
   dir: "@weapp-core/api"
   intents:
@@ -632,6 +687,15 @@
   dir: "@weapp-core/api"
   intents:
     - dependency-upgrade-20261113-113050
+"@weapp-core/api@0.4.5":
+  dir: "@weapp-core/api"
+  intents:
+    - catalog-upgrade-20261116-165504
+    - catalog-upgrade-20261116-203206
+    - catalog-upgrade-20261116-223245
+    - dependency-upgrade-20261116-165504
+    - dependency-upgrade-20261116-203205
+    - dependency-upgrade-20261116-223244
 "@weapp-core/constants@0.2.0":
   dir: "@weapp-core/constants"
   intents:
@@ -750,6 +814,15 @@
     - react-native-dom-renderer
     - teleport-root-portal-wechat
     - wevu-native-dom-renderer
+"@weapp-core/constants@0.6.1":
+  dir: "@weapp-core/constants"
+  intents:
+    - catalog-upgrade-20261116-165504
+    - catalog-upgrade-20261116-203206
+    - catalog-upgrade-20261116-223245
+    - dependency-upgrade-20261116-165504
+    - dependency-upgrade-20261116-203205
+    - dependency-upgrade-20261116-223244
 "@weapp-core/init@6.0.16":
   dir: "@weapp-core/init"
   intents:
@@ -833,6 +906,15 @@
   dir: "@weapp-core/init"
   intents:
     - dependency-upgrade-20261113-113050
+"@weapp-core/init@6.1.5":
+  dir: "@weapp-core/init"
+  intents:
+    - catalog-upgrade-20261116-165504
+    - catalog-upgrade-20261116-203206
+    - catalog-upgrade-20261116-223245
+    - dependency-upgrade-20261116-165504
+    - dependency-upgrade-20261116-203205
+    - dependency-upgrade-20261116-223244
 "@weapp-core/logger@3.1.10":
   dir: "@weapp-core/logger"
   intents:
@@ -913,6 +995,15 @@
   dir: "@weapp-core/logger"
   intents:
     - dependency-upgrade-20261113-113050
+"@weapp-core/logger@3.2.5":
+  dir: "@weapp-core/logger"
+  intents:
+    - catalog-upgrade-20261116-165504
+    - catalog-upgrade-20261116-203206
+    - catalog-upgrade-20261116-223245
+    - dependency-upgrade-20261116-165504
+    - dependency-upgrade-20261116-203205
+    - dependency-upgrade-20261116-223244
 "@weapp-core/schematics@6.2.0":
   dir: "@weapp-core/schematics"
   intents:
@@ -1002,6 +1093,15 @@
   dir: "@weapp-core/schematics"
   intents:
     - dependency-upgrade-20261113-113050
+"@weapp-core/schematics@6.3.5":
+  dir: "@weapp-core/schematics"
+  intents:
+    - catalog-upgrade-20261116-165504
+    - catalog-upgrade-20261116-203206
+    - catalog-upgrade-20261116-223245
+    - dependency-upgrade-20261116-165504
+    - dependency-upgrade-20261116-203205
+    - dependency-upgrade-20261116-223244
 "@weapp-core/shared@3.2.0":
   dir: "@weapp-core/shared"
   intents:
@@ -1094,6 +1194,16 @@
   intents:
     - dependency-upgrade-20261113-113050
     - wevu-native-dom-renderer
+"@weapp-core/shared@3.5.1":
+  dir: "@weapp-core/shared"
+  intents:
+    - catalog-upgrade-20261116-165504
+    - catalog-upgrade-20261116-203206
+    - catalog-upgrade-20261116-223245
+    - dependency-upgrade-20261116-165504
+    - dependency-upgrade-20261116-203205
+    - dependency-upgrade-20261116-223244
+    - native-host-parity
 "@weapp-core/types@1.1.0":
   dir: "@weapp-core/types"
   intents:
@@ -1172,6 +1282,15 @@
   intents:
     - dependency-upgrade-20261113-113050
     - teleport-root-portal-wechat
+"@weapp-core/types@1.2.5":
+  dir: "@weapp-core/types"
+  intents:
+    - catalog-upgrade-20261116-165504
+    - catalog-upgrade-20261116-203206
+    - catalog-upgrade-20261116-223245
+    - dependency-upgrade-20261116-165504
+    - dependency-upgrade-20261116-203205
+    - dependency-upgrade-20261116-223244
 "@weapp-vite/acceptance@0.1.0":
   dir: packages/acceptance
   intents:
@@ -1215,6 +1334,15 @@
   dir: packages/acceptance
   intents:
     - dependency-upgrade-20261113-113050
+"@weapp-vite/acceptance@0.2.5":
+  dir: packages/acceptance
+  intents:
+    - catalog-upgrade-20261116-165504
+    - catalog-upgrade-20261116-203206
+    - catalog-upgrade-20261116-223245
+    - dependency-upgrade-20261116-165504
+    - dependency-upgrade-20261116-203205
+    - dependency-upgrade-20261116-223244
 "@weapp-vite/ast-native@0.0.6":
   dir: packages/ast-native
   intents:
@@ -1316,6 +1444,15 @@
   dir: packages/ast-native
   intents:
     - dependency-upgrade-20261113-113050
+"@weapp-vite/ast-native@0.2.5":
+  dir: packages/ast-native
+  intents:
+    - catalog-upgrade-20261116-165504
+    - catalog-upgrade-20261116-203206
+    - catalog-upgrade-20261116-223245
+    - dependency-upgrade-20261116-165504
+    - dependency-upgrade-20261116-203205
+    - dependency-upgrade-20261116-223244
 "@weapp-vite/ast@6.20.5":
   dir: packages/ast
   intents:
@@ -1357,6 +1494,15 @@
   dir: packages/ast
   intents:
     - dependency-upgrade-20261113-113050
+"@weapp-vite/ast@7.11.1":
+  dir: packages/ast
+  intents:
+    - catalog-upgrade-20261116-165504
+    - catalog-upgrade-20261116-203206
+    - catalog-upgrade-20261116-223245
+    - dependency-upgrade-20261116-165504
+    - dependency-upgrade-20261116-203205
+    - dependency-upgrade-20261116-223244
 "@weapp-vite/ast@7.2.0":
   dir: packages/ast
   intents:
@@ -1446,6 +1592,15 @@
   dir: packages/dashboard
   intents:
     - dependency-upgrade-20261113-113050
+"@weapp-vite/dashboard@7.11.1":
+  dir: packages/dashboard
+  intents:
+    - catalog-upgrade-20261116-165504
+    - catalog-upgrade-20261116-203206
+    - catalog-upgrade-20261116-223245
+    - dependency-upgrade-20261116-165504
+    - dependency-upgrade-20261116-203205
+    - dependency-upgrade-20261116-223244
 "@weapp-vite/dashboard@7.2.0":
   dir: packages/dashboard
   intents:
@@ -1583,6 +1738,15 @@
   dir: packages/devtools-runtime
   intents:
     - dependency-upgrade-20261113-113050
+"@weapp-vite/devtools-runtime@0.7.5":
+  dir: packages/devtools-runtime
+  intents:
+    - catalog-upgrade-20261116-165504
+    - catalog-upgrade-20261116-203206
+    - catalog-upgrade-20261116-223245
+    - dependency-upgrade-20261116-165504
+    - dependency-upgrade-20261116-203205
+    - dependency-upgrade-20261116-223244
 "@weapp-vite/eslint@0.2.0":
   dir: packages/eslint
   intents:
@@ -1676,6 +1840,15 @@
   dir: packages/eslint
   intents:
     - dependency-upgrade-20261113-113050
+"@weapp-vite/eslint@0.3.5":
+  dir: packages/eslint
+  intents:
+    - catalog-upgrade-20261116-165504
+    - catalog-upgrade-20261116-203206
+    - catalog-upgrade-20261116-223245
+    - dependency-upgrade-20261116-165504
+    - dependency-upgrade-20261116-203205
+    - dependency-upgrade-20261116-223244
 "@weapp-vite/glass-easel-web-adapter@0.1.1":
   dir: packages-runtime/glass-easel-web-adapter
   intents:
@@ -1751,6 +1924,15 @@
   dir: packages-runtime/glass-easel-web-adapter
   intents:
     - dependency-upgrade-20261113-113050
+"@weapp-vite/glass-easel-web-adapter@0.2.5":
+  dir: packages-runtime/glass-easel-web-adapter
+  intents:
+    - catalog-upgrade-20261116-165504
+    - catalog-upgrade-20261116-203206
+    - catalog-upgrade-20261116-223245
+    - dependency-upgrade-20261116-165504
+    - dependency-upgrade-20261116-203205
+    - dependency-upgrade-20261116-223244
 "@weapp-vite/hmr@0.2.0":
   dir: packages/hmr
   intents:
@@ -1801,6 +1983,15 @@
   dir: packages/hmr
   intents:
     - dependency-upgrade-20261113-113050
+"@weapp-vite/hmr@0.3.5":
+  dir: packages/hmr
+  intents:
+    - catalog-upgrade-20261116-165504
+    - catalog-upgrade-20261116-203206
+    - catalog-upgrade-20261116-223245
+    - dependency-upgrade-20261116-165504
+    - dependency-upgrade-20261116-203205
+    - dependency-upgrade-20261116-223244
 "@weapp-vite/i18n@0.2.0":
   dir: packages-runtime/i18n
   intents:
@@ -1899,6 +2090,15 @@
     - react-native-dom-renderer
     - teleport-release-dependency-sync
     - wevu-native-dom-renderer
+"@weapp-vite/i18n@0.3.6":
+  dir: packages-runtime/i18n
+  intents:
+    - catalog-upgrade-20261116-165504
+    - catalog-upgrade-20261116-203206
+    - catalog-upgrade-20261116-223245
+    - dependency-upgrade-20261116-165504
+    - dependency-upgrade-20261116-203205
+    - dependency-upgrade-20261116-223244
 "@weapp-vite/language-service@0.1.0":
   dir: packages/language-service
   intents:
@@ -1927,6 +2127,15 @@
   intents:
     - dependency-upgrade-20261113-113050
     - teleport-root-portal-wechat
+"@weapp-vite/language-service@0.1.5":
+  dir: packages/language-service
+  intents:
+    - catalog-upgrade-20261116-165504
+    - catalog-upgrade-20261116-203206
+    - catalog-upgrade-20261116-223245
+    - dependency-upgrade-20261116-165504
+    - dependency-upgrade-20261116-203205
+    - dependency-upgrade-20261116-223244
 "@weapp-vite/mcp@1.5.0":
   dir: packages/mcp
   intents:
@@ -2028,6 +2237,15 @@
     - react-native-dom-renderer
     - teleport-release-dependency-sync
     - wevu-native-dom-renderer
+"@weapp-vite/mcp@2.2.6":
+  dir: packages/mcp
+  intents:
+    - catalog-upgrade-20261116-165504
+    - catalog-upgrade-20261116-203206
+    - catalog-upgrade-20261116-223245
+    - dependency-upgrade-20261116-165504
+    - dependency-upgrade-20261116-203205
+    - dependency-upgrade-20261116-223244
 "@weapp-vite/miniprogram-automator@1.2.14":
   dir: packages/miniprogram-automator
   intents:
@@ -2148,6 +2366,16 @@
   dir: packages/miniprogram-automator
   intents:
     - dependency-upgrade-20261113-113050
+"@weapp-vite/miniprogram-automator@1.5.5":
+  dir: packages/miniprogram-automator
+  intents:
+    - catalog-upgrade-20261116-165504
+    - catalog-upgrade-20261116-203206
+    - catalog-upgrade-20261116-223245
+    - dependency-upgrade-20261116-165504
+    - dependency-upgrade-20261116-203205
+    - dependency-upgrade-20261116-223244
+    - native-host-parity
 "@weapp-vite/oxfmt@0.1.0":
   dir: packages/oxfmt
   intents:
@@ -2173,6 +2401,15 @@
   dir: packages/oxfmt
   intents:
     - dependency-upgrade-20261113-113050
+"@weapp-vite/oxfmt@0.1.5":
+  dir: packages/oxfmt
+  intents:
+    - catalog-upgrade-20261116-165504
+    - catalog-upgrade-20261116-203206
+    - catalog-upgrade-20261116-223245
+    - dependency-upgrade-20261116-165504
+    - dependency-upgrade-20261116-203205
+    - dependency-upgrade-20261116-223244
 "@weapp-vite/oxlint@0.1.0":
   dir: packages/oxlint
   intents:
@@ -2198,6 +2435,15 @@
   dir: packages/oxlint
   intents:
     - dependency-upgrade-20261113-113050
+"@weapp-vite/oxlint@0.1.5":
+  dir: packages/oxlint
+  intents:
+    - catalog-upgrade-20261116-165504
+    - catalog-upgrade-20261116-203206
+    - catalog-upgrade-20261116-223245
+    - dependency-upgrade-20261116-165504
+    - dependency-upgrade-20261116-203205
+    - dependency-upgrade-20261116-223244
 "@weapp-vite/qr@1.1.10":
   dir: packages/qr
   intents:
@@ -2278,6 +2524,15 @@
   dir: packages/qr
   intents:
     - dependency-upgrade-20261113-113050
+"@weapp-vite/qr@1.2.5":
+  dir: packages/qr
+  intents:
+    - catalog-upgrade-20261116-165504
+    - catalog-upgrade-20261116-203206
+    - catalog-upgrade-20261116-223245
+    - dependency-upgrade-20261116-165504
+    - dependency-upgrade-20261116-203205
+    - dependency-upgrade-20261116-223244
 "@weapp-vite/react@0.2.1":
   dir: packages-runtime/react
   intents:
@@ -2384,6 +2639,15 @@
     - react-native-dom-renderer
     - teleport-release-dependency-sync
     - wevu-native-dom-renderer
+"@weapp-vite/react@0.5.1":
+  dir: packages-runtime/react
+  intents:
+    - catalog-upgrade-20261116-165504
+    - catalog-upgrade-20261116-203206
+    - catalog-upgrade-20261116-223245
+    - dependency-upgrade-20261116-165504
+    - dependency-upgrade-20261116-203205
+    - dependency-upgrade-20261116-223244
 "@weapp-vite/tailwindcss@0.2.0":
   dir: packages/tailwindcss
   intents:
@@ -2441,6 +2705,15 @@
   dir: packages/tailwindcss
   intents:
     - dependency-upgrade-20261113-113050
+"@weapp-vite/tailwindcss@1.1.5":
+  dir: packages/tailwindcss
+  intents:
+    - catalog-upgrade-20261116-165504
+    - catalog-upgrade-20261116-203206
+    - catalog-upgrade-20261116-223245
+    - dependency-upgrade-20261116-165504
+    - dependency-upgrade-20261116-203205
+    - dependency-upgrade-20261116-223244
 "@weapp-vite/volar@2.1.10":
   dir: packages/volar
   intents:
@@ -2524,6 +2797,15 @@
   dir: packages/volar
   intents:
     - dependency-upgrade-20261113-113050
+"@weapp-vite/volar@2.2.5":
+  dir: packages/volar
+  intents:
+    - catalog-upgrade-20261116-165504
+    - catalog-upgrade-20261116-203206
+    - catalog-upgrade-20261116-223245
+    - dependency-upgrade-20261116-165504
+    - dependency-upgrade-20261116-203205
+    - dependency-upgrade-20261116-223244
 "@weapp-vite/vscode@0.5.3":
   dir: extensions/vscode
   intents:
@@ -2688,6 +2970,15 @@
     - react-native-dom-renderer
     - teleport-release-dependency-sync
     - wevu-native-dom-renderer
+"@weapp-vite/web@2.2.5":
+  dir: packages-runtime/web
+  intents:
+    - catalog-upgrade-20261116-165504
+    - catalog-upgrade-20261116-203206
+    - catalog-upgrade-20261116-223245
+    - dependency-upgrade-20261116-165504
+    - dependency-upgrade-20261116-203205
+    - dependency-upgrade-20261116-223244
 "@weapp-vite/wxml@0.0.0":
   dir: packages/wxml
   intents:
@@ -2712,6 +3003,15 @@
   dir: packages/wxml
   intents:
     - dependency-upgrade-20261113-113050
+"@weapp-vite/wxml@0.0.3":
+  dir: packages/wxml
+  intents:
+    - catalog-upgrade-20261116-165504
+    - catalog-upgrade-20261116-203206
+    - catalog-upgrade-20261116-223245
+    - dependency-upgrade-20261116-165504
+    - dependency-upgrade-20261116-203205
+    - dependency-upgrade-20261116-223244
 "@wevu/api@0.2.17":
   dir: packages-runtime/weapi
   intents:
@@ -2805,6 +3105,15 @@
   dir: packages-runtime/weapi
   intents:
     - dependency-upgrade-20261113-113050
+"@wevu/api@0.4.5":
+  dir: packages-runtime/weapi
+  intents:
+    - catalog-upgrade-20261116-165504
+    - catalog-upgrade-20261116-203206
+    - catalog-upgrade-20261116-223245
+    - dependency-upgrade-20261116-165504
+    - dependency-upgrade-20261116-203205
+    - dependency-upgrade-20261116-223244
 "@wevu/compiler@6.20.5":
   dir: packages-runtime/wevu-compiler
   intents:
@@ -2901,6 +3210,16 @@
     - react-native-dom-renderer
     - teleport-root-portal-wechat
     - wevu-native-dom-renderer
+"@wevu/compiler@7.11.1":
+  dir: packages-runtime/wevu-compiler
+  intents:
+    - catalog-upgrade-20261116-165504
+    - catalog-upgrade-20261116-203206
+    - catalog-upgrade-20261116-223245
+    - dependency-upgrade-20261116-165504
+    - dependency-upgrade-20261116-203205
+    - dependency-upgrade-20261116-223244
+    - teleport-base-library-hint
 "@wevu/compiler@7.2.0":
   dir: packages-runtime/wevu-compiler
   intents:
@@ -3027,6 +3346,15 @@
   dir: packages-runtime/json-render-components
   intents:
     - dependency-upgrade-20261113-113050
+"@wevu/json-render-components@0.2.6":
+  dir: packages-runtime/json-render-components
+  intents:
+    - catalog-upgrade-20261116-165504
+    - catalog-upgrade-20261116-203206
+    - catalog-upgrade-20261116-223245
+    - dependency-upgrade-20261116-165504
+    - dependency-upgrade-20261116-203205
+    - dependency-upgrade-20261116-223244
 "@wevu/json-render@0.1.0":
   dir: packages-runtime/json-render
   intents:
@@ -3073,6 +3401,15 @@
   dir: packages-runtime/json-render
   intents:
     - dependency-upgrade-20261113-113050
+"@wevu/json-render@0.2.6":
+  dir: packages-runtime/json-render
+  intents:
+    - catalog-upgrade-20261116-165504
+    - catalog-upgrade-20261116-203206
+    - catalog-upgrade-20261116-223245
+    - dependency-upgrade-20261116-165504
+    - dependency-upgrade-20261116-203205
+    - dependency-upgrade-20261116-223244
 "@wevu/query@0.0.0":
   dir: packages-runtime/wevu-query
   intents:
@@ -3152,6 +3489,15 @@
   dir: packages-runtime/wevu-query
   intents:
     - dependency-upgrade-20261113-113050
+"@wevu/query@0.1.6":
+  dir: packages-runtime/wevu-query
+  intents:
+    - catalog-upgrade-20261116-165504
+    - catalog-upgrade-20261116-203206
+    - catalog-upgrade-20261116-223245
+    - dependency-upgrade-20261116-165504
+    - dependency-upgrade-20261116-203205
+    - dependency-upgrade-20261116-223244
 "@wevu/test-utils@0.2.0":
   dir: packages-runtime/wevu-test-utils
   intents:
@@ -3258,6 +3604,15 @@
     - react-native-dom-renderer
     - teleport-release-dependency-sync
     - wevu-native-dom-renderer
+"@wevu/test-utils@1.1.6":
+  dir: packages-runtime/wevu-test-utils
+  intents:
+    - catalog-upgrade-20261116-165504
+    - catalog-upgrade-20261116-203206
+    - catalog-upgrade-20261116-223245
+    - dependency-upgrade-20261116-165504
+    - dependency-upgrade-20261116-203205
+    - dependency-upgrade-20261116-223244
 "@wevu/web-apis@1.2.35":
   dir: packages-runtime/web-apis
   intents:
@@ -3366,6 +3721,16 @@
     - react-native-dom-renderer
     - teleport-release-dependency-sync
     - wevu-native-dom-renderer
+"@wevu/web-apis@1.5.2":
+  dir: packages-runtime/web-apis
+  intents:
+    - catalog-upgrade-20261116-165504
+    - catalog-upgrade-20261116-203206
+    - catalog-upgrade-20261116-223245
+    - dependency-upgrade-20261116-165504
+    - dependency-upgrade-20261116-203205
+    - dependency-upgrade-20261116-223244
+    - fix-issue-1338
 create-weapp-vite@2.8.0:
   dir: packages/create-weapp-vite
   intents:
@@ -3916,6 +4281,20 @@ create-weapp-vite@3.6.1:
     - subpackage-output-placeholder
     - sync-create-wevu-release
     - wevu-native-dom-renderer
+create-weapp-vite@3.6.2:
+  dir: packages/create-weapp-vite
+  intents:
+    - catalog-upgrade-20261116-165504
+    - catalog-upgrade-20261116-203206
+    - catalog-upgrade-20261116-223245
+    - dependency-upgrade-20261116-165504
+    - dependency-upgrade-20261116-203205
+    - dependency-upgrade-20261116-223244
+    - fix-issue-1343-hmr-memory
+    - fix-issue-1345-wxss-charset
+    - fix-legacy-es5-mangle
+    - teleport-base-library-hint
+    - wechat-scoped-style-class
 rolldown-require@2.0.26:
   dir: packages/rolldown-require
   intents:
@@ -4005,6 +4384,15 @@ rolldown-require@2.1.4:
   dir: packages/rolldown-require
   intents:
     - dependency-upgrade-20261113-113050
+rolldown-require@2.1.5:
+  dir: packages/rolldown-require
+  intents:
+    - catalog-upgrade-20261116-165504
+    - catalog-upgrade-20261116-203206
+    - catalog-upgrade-20261116-223245
+    - dependency-upgrade-20261116-165504
+    - dependency-upgrade-20261116-203205
+    - dependency-upgrade-20261116-223244
 vite-plugin-performance@2.0.2:
   dir: packages/vite-plugin-performance
   intents:
@@ -4081,6 +4469,15 @@ vite-plugin-performance@2.1.4:
   dir: packages/vite-plugin-performance
   intents:
     - dependency-upgrade-20261113-113050
+vite-plugin-performance@2.1.5:
+  dir: packages/vite-plugin-performance
+  intents:
+    - catalog-upgrade-20261116-165504
+    - catalog-upgrade-20261116-203206
+    - catalog-upgrade-20261116-223245
+    - dependency-upgrade-20261116-165504
+    - dependency-upgrade-20261116-203205
+    - dependency-upgrade-20261116-223244
 weapp-ide-cli@6.0.8:
   dir: packages/weapp-ide-cli
   intents:
@@ -4197,6 +4594,15 @@ weapp-ide-cli@6.4.4:
   intents:
     - dependency-upgrade-20261113-113050
     - fix-terminal-file-links
+weapp-ide-cli@6.4.5:
+  dir: packages/weapp-ide-cli
+  intents:
+    - catalog-upgrade-20261116-165504
+    - catalog-upgrade-20261116-203206
+    - catalog-upgrade-20261116-223245
+    - dependency-upgrade-20261116-165504
+    - dependency-upgrade-20261116-203205
+    - dependency-upgrade-20261116-223244
 weapp-vite-plugin-template@1.0.0:
   dir: templates/weapp-vite-plugin-template
   intents:
@@ -4429,6 +4835,20 @@ weapp-vite@7.11.0:
     - subpackage-output-placeholder
     - teleport-release-dependency-sync
     - wevu-native-dom-renderer
+weapp-vite@7.11.1:
+  dir: packages/weapp-vite
+  intents:
+    - catalog-upgrade-20261116-165504
+    - catalog-upgrade-20261116-203206
+    - catalog-upgrade-20261116-223245
+    - dependency-upgrade-20261116-165504
+    - dependency-upgrade-20261116-203205
+    - dependency-upgrade-20261116-223244
+    - fix-issue-1343-hmr-memory
+    - fix-issue-1345-wxss-charset
+    - fix-legacy-es5-mangle
+    - teleport-base-library-hint
+    - wechat-scoped-style-class
 weapp-vite@7.2.0:
   dir: packages/weapp-vite
   intents:
@@ -4817,6 +5237,15 @@ wevu@7.11.0:
     - react-native-dom-renderer
     - teleport-root-portal-wechat
     - wevu-native-dom-renderer
+wevu@7.11.1:
+  dir: packages-runtime/wevu
+  intents:
+    - catalog-upgrade-20261116-165504
+    - catalog-upgrade-20261116-203206
+    - catalog-upgrade-20261116-223245
+    - dependency-upgrade-20261116-165504
+    - dependency-upgrade-20261116-203205
+    - dependency-upgrade-20261116-223244
 wevu@7.2.0:
   dir: packages-runtime/wevu
   intents:
