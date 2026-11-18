@@ -8,8 +8,8 @@ import {
 } from '@/router'
 import { getInitialNavigationRunner } from '@/router/initialNavigation'
 import { clearActiveRouter } from '@/router/instance'
+import { createRouteStateController } from '@/router/routeStateController'
 import { notifyRouteStateSync } from '@/router/routeSync'
-import { createRouteStateController } from '@/router/useRoute'
 import { callHookList, setCurrentInstance, setCurrentSetupContext } from '@/runtime/hooks'
 
 describe('router navigation helpers', () => {

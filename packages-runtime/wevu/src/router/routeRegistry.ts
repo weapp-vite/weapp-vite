@@ -14,6 +14,20 @@ import {
   warnRouteConfig,
 } from '../routerInternal/shared'
 
+/** 可动态增删的路由表。 */
+export interface RouteRegistry {
+  /** 判断命名路由是否存在。 */
+  hasRoute: (name: string) => boolean
+  /** 导出当前全部命名路由。 */
+  getRoutes: () => readonly RouteRecordRaw[]
+  /** 注册路由，返回注销函数。 */
+  addRoute: AddRoute
+  /** 移除命名路由。 */
+  removeRoute: (name: string) => void
+  /** 清空命名路由。 */
+  clearRoutes: () => void
+}
+
 function normalizeRouteRecordForOutput(record: RouteRecordNormalized): RouteRecordRaw {
   const normalizedRoute: RouteRecordRaw = {
     name: record.name,
@@ -40,7 +54,7 @@ function normalizeRouteRecordForOutput(record: RouteRecordNormalized): RouteReco
   return normalizedRoute
 }
 
-export function createRouteRegistry(namedRouteLookup: NamedRouteLookup) {
+export function createRouteRegistry(namedRouteLookup: NamedRouteLookup): RouteRegistry {
   const hasRoute = (name: string) => namedRouteLookup.recordByName.has(name)
   const getRoutes = (): readonly RouteRecordRaw[] =>
     Array.from(namedRouteLookup.recordByName.values(), normalizeRouteRecordForOutput)

@@ -1,6 +1,8 @@
 import type { MiniProgramPageLike } from '../routerInternal/shared'
 import type { RouteLocationNormalizedLoaded } from './types'
 import { getCurrentMiniProgramPages } from '../runtime/platform'
+import { isThenable } from '../utils'
+import { resetPageLocation } from './instance'
 
 export interface RouteStateSyncPayload {
   page?: MiniProgramPageLike
@@ -33,6 +35,27 @@ export function notifyRouteStateSync(payload?: RouteStateSyncPayload) {
       // 忽略单个 route 订阅者异常，避免阻塞原生导航成功回调。
     }
   }
+}
+
+/**
+ * 位置发布策略。
+ *
+ * 与原生同步的驱动走全局广播，页面与组件订阅者都能收到；
+ * 独立逻辑路由状态的驱动只更新本 router 的快照，不污染原生广播。
+ */
+export function publishRouteState(options: {
+  /** 是否与原生同步。 */
+  syncWithNative: boolean
+  /** 更新本 router 的路由状态快照。 */
+  updateRoute: (route?: RouteLocationNormalizedLoaded) => void
+  /** 目标位置；省略时由订阅者按当前位置重读。 */
+  route?: RouteLocationNormalizedLoaded
+}): void {
+  if (!options.syncWithNative) {
+    options.updateRoute(options.route)
+    return
+  }
+  notifyRouteStateSync(options.route ? { route: options.route, source: 'router' } : undefined)
 }
 
 function createNativeRouteStateSyncPayload(
@@ -89,6 +112,10 @@ export function installRouteStateSyncOnNativeRouter(nativeRouter: unknown) {
           return
         }
         synced = true
+        if (methodName !== 'navigateBack') {
+          const currentPages = getCurrentMiniProgramPages()
+          resetPageLocation(currentPages[currentPages.length - 1])
+        }
         notifyRouteStateSync(createNativeRouteStateSyncPayload(methodName, option, sourcePage))
       }
 
@@ -106,8 +133,8 @@ export function installRouteStateSyncOnNativeRouter(nativeRouter: unknown) {
         : option
 
       const result = original.call(this, nextOption, ...args)
-      if (result && typeof (result as PromiseLike<unknown>).then === 'function') {
-        ;(result as PromiseLike<unknown>).then(syncRouteState, () => {})
+      if (isThenable(result)) {
+        result.then(syncRouteState, () => {})
       }
       return result
     }

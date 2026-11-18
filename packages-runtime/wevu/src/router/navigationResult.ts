@@ -7,7 +7,6 @@ import type {
   RouteLocationNormalizedLoaded,
 } from './types'
 import { runAfterEachHooks, runNavigationErrorHooks, shouldEmitNavigationError } from './navigationCore'
-import { notifyRouteStateSync } from './routeSync'
 
 export interface NavigationRunResult {
   mode: NavigationMode
@@ -35,6 +34,8 @@ export function createNavigationResultController(options: {
   errorHandlers: ReadonlySet<NavigationErrorHandler>
   nativeRouter: SetupContextRouter
   rejectOnError: boolean
+  /** 发布目标位置：与原生同步时广播，独立逻辑路由状态时只更新本 router 快照。 */
+  publish: (route?: RouteLocationNormalizedLoaded) => void
 }) {
   const {
     afterEachHooks,
@@ -73,12 +74,7 @@ export function createNavigationResultController(options: {
 
   async function settleNavigationResult(result: NavigationRunResult): Promise<void | NavigationFailure> {
     if (!result.failure) {
-      notifyRouteStateSync(result.to
-        ? {
-            route: result.to,
-            source: 'router',
-          }
-        : undefined)
+      options.publish(result.to)
     }
     await emitNavigationAfterEach(result)
     if (result.failure && shouldRejectNavigationFailure(result.failure)) {

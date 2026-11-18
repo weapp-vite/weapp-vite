@@ -3,6 +3,7 @@ import type {
   SetupContextRouter,
   TypedRouterTabBarUrl,
 } from '../runtime/types/props'
+import type { RouterHistory } from './history'
 
 export type LocationQueryValue = string | null
 export type LocationQueryValueRaw = LocationQueryValue | number | boolean | undefined
@@ -299,9 +300,20 @@ export type RouteRecordMatched<TRouteMap extends object = WevuNamedRouteMap>
         }
       }[WevuRouteName<TRouteMap>]
 
+/**
+ * 守卫 / 驱动校验的返回值。
+ *
+ * - `void` / `true`：放行；
+ * - `false`：中止，产出 aborted 失败；
+ * - `Error`：以该错误中止（对齐 Vue Router；`message` 保留在失败原因里）；
+ * - `NavigationFailure`：以携带 type 的失败中止（原样透传）；
+ * - 原始位置：改道，交框架解析；
+ * - `NavigationRedirect`：改道并显式声明 replace。
+ */
 export type NavigationGuardResult<TRouteMap extends object = WevuNamedRouteMap>
   = | void
     | boolean
+    | Error
     | NavigationFailure<TRouteMap>
     | RouteLocationRaw<TRouteMap>
     | NavigationRedirect<TRouteMap>
@@ -347,7 +359,18 @@ export type NavigationErrorHandler<TRouteMap extends object = WevuNamedRouteMap>
   context: NavigationErrorContext<TRouteMap>,
 ) => void | Promise<void>
 
+export interface UseRouteOptions<TRouteMap extends object = WevuNamedRouteMap> {
+  /**
+   * 解析路由快照：在框架解析结果之上做一次收窄或补充。
+   */
+  resolveRoute?: (
+    route: RouteLocationNormalizedLoaded<TRouteMap>,
+  ) => RouteLocationNormalizedLoaded<TRouteMap>
+}
+
 export interface UseRouterOptions<TRouteMap extends object = WevuNamedRouteMap> {
+  /** 历史模式；默认使用小程序原生页面栈。 */
+  history?: RouterHistory
   tabBarEntries?: readonly (TypedRouterTabBarUrl | string)[]
   /**
    * Vue Router 对齐入口：推荐使用 `routes`

@@ -1,160 +1,88 @@
-import type {
-  NamedRouteLookup,
-  RouteResolveCodec,
-} from '../routerInternal/shared'
+import type { RouterNavigationContext } from './navigationContext'
 import type { NavigationRunResult } from './navigationResult'
 import type {
   NavigationFailure,
-  NavigationGuard,
   RouteLocationNormalizedLoaded,
   RouteLocationRaw,
 } from './types'
 import { snapshotRouteLocation } from '../routerInternal/shared'
-import { resolveBackNavigationTarget, runBackNavigationGuards } from './backNavigation'
+import { runBackNavigationGuards } from './backNavigation'
 import {
   createNavigationFailure,
-  executeNavigationMethod,
   isNavigationFailure,
 } from './navigationCore'
 import { createNavigationRunResult } from './navigationResult'
 import { navigateWithTarget } from './navigationTarget'
-import { createForwardNotSupportedFailure } from './navigationTargetHelpers'
 import { NavigationFailureType } from './types'
 
 interface CreateNavigationApiOptions {
-  nativeRouter: Record<string, any>
-  route: Readonly<RouteLocationNormalizedLoaded>
-  routeResolveCodec: RouteResolveCodec
-  namedRouteLookup: NamedRouteLookup
-  beforeEachGuards: ReadonlySet<NavigationGuard>
-  beforeResolveGuards: ReadonlySet<NavigationGuard>
-  maxRedirects: number
-  tabBarPathSet: ReadonlySet<string>
-  resolveWithCodec: (to: RouteLocationRaw, currentPath: string) => RouteLocationNormalizedLoaded
+  /** 导航内核共享依赖。 */
+  context: RouterNavigationContext
+  /** 读取当前路由快照。 */
+  getRoute: () => Readonly<RouteLocationNormalizedLoaded>
+  /** 目标位置确定后回调；前后退与前进后退共用同一个上报口。 */
+  onTarget?: (target: RouteLocationNormalizedLoaded | undefined) => void
+  /** 统一结算导航结果。 */
   settleNavigationResult: (result: NavigationRunResult) => Promise<void | NavigationFailure>
 }
 
 export function createNavigationApi(options: CreateNavigationApiOptions) {
   const {
-    nativeRouter,
-    route,
-    routeResolveCodec,
-    namedRouteLookup,
-    beforeEachGuards,
-    beforeResolveGuards,
-    maxRedirects,
-    tabBarPathSet,
-    resolveWithCodec,
+    context,
+    getRoute,
+    onTarget,
     settleNavigationResult,
   } = options
 
-  async function push(to: RouteLocationRaw): Promise<void | NavigationFailure> {
-    const from = snapshotRouteLocation(route)
+  async function navigate(mode: 'push' | 'replace', to: RouteLocationRaw): Promise<void | NavigationFailure> {
+    const from = snapshotRouteLocation(getRoute())
     let target: RouteLocationNormalizedLoaded
     try {
-      target = resolveWithCodec(to, from.path)
+      target = context.resolveWithCodec(to, from.path)
     }
     catch (error) {
-      return settleNavigationResult(
-        createNavigationRunResult(
-          'push',
-          from,
-          undefined,
-          createNavigationFailure(NavigationFailureType.unknown, undefined, from, error),
-        ),
-      )
+      return settleNavigationResult(createNavigationRunResult(mode, from, undefined, createNavigationFailure(NavigationFailureType.unknown, undefined, from, error)))
     }
-    const result = await navigateWithTarget({
-      mode: 'push',
+    // 目标位置只在这里解析一次：受管导航的目标路径由这里统一上报，避免上层重复解析。
+    onTarget?.(target)
+    const result = await navigateWithTarget(context, {
+      mode,
       target,
       from,
-      nativeRouter,
-      routeResolveCodec,
-      namedRouteLookup,
-      beforeEachGuards,
-      beforeResolveGuards,
-      maxRedirects,
-      tabBarPathSet,
-      resolveWithCodec,
     })
     return settleNavigationResult(result)
-  }
-
-  async function replace(to: RouteLocationRaw): Promise<void | NavigationFailure> {
-    const from = snapshotRouteLocation(route)
-    let target: RouteLocationNormalizedLoaded
-    try {
-      target = resolveWithCodec(to, from.path)
-    }
-    catch (error) {
-      return settleNavigationResult(
-        createNavigationRunResult(
-          'replace',
-          from,
-          undefined,
-          createNavigationFailure(NavigationFailureType.unknown, undefined, from, error),
-        ),
-      )
-    }
-    const result = await navigateWithTarget({
-      mode: 'replace',
-      target,
-      from,
-      nativeRouter,
-      routeResolveCodec,
-      namedRouteLookup,
-      beforeEachGuards,
-      beforeResolveGuards,
-      maxRedirects,
-      tabBarPathSet,
-      resolveWithCodec,
-    })
-    return settleNavigationResult(result)
-  }
-
-  async function back(delta = 1): Promise<void | NavigationFailure> {
-    const from = snapshotRouteLocation(route)
-    const target = resolveBackNavigationTarget(delta, from, resolveWithCodec)
-    const guardResult = await runBackNavigationGuards({
-      target,
-      from,
-      nativeRouter: nativeRouter as any,
-      beforeEachGuards,
-      beforeResolveGuards,
-      resolveWithCodec,
-    })
-    if (guardResult.failure) {
-      return settleNavigationResult(guardResult)
-    }
-
-    const result = await executeNavigationMethod(
-      nativeRouter.navigateBack as (options: Record<string, any>) => unknown,
-      { delta },
-      target,
-      from,
-    )
-    const runResult = isNavigationFailure(result)
-      ? createNavigationRunResult('back', from, target, result)
-      : guardResult
-    return settleNavigationResult(runResult)
   }
 
   async function go(delta: number): Promise<void | NavigationFailure> {
-    if (delta < 0) {
-      return back(Math.abs(delta))
-    }
-    if (delta === 0) {
-      return undefined
-    }
-    const from = snapshotRouteLocation(route)
-    return settleNavigationResult(
-      createNavigationRunResult(
-        'back',
+    const from = snapshotRouteLocation(getRoute())
+    try {
+      const plan = context.history.resolveGo(delta, from)
+      if (plan.noop) {
+        return undefined
+      }
+      if (plan.failure) {
+        return settleNavigationResult(createNavigationRunResult('back', from, plan.target, plan.failure))
+      }
+      onTarget?.(plan.target)
+      const guardResult = await runBackNavigationGuards(context, {
+        target: plan.target,
         from,
-        undefined,
-        createForwardNotSupportedFailure(from),
-      ),
-    )
+      })
+      if (guardResult.failure) {
+        return settleNavigationResult(guardResult)
+      }
+      const failure = await context.history.go(delta, plan.target, from)
+      return settleNavigationResult(isNavigationFailure(failure)
+        ? createNavigationRunResult('back', from, plan.target, failure)
+        : guardResult)
+    }
+    catch (error) {
+      return settleNavigationResult(createNavigationRunResult('back', from, undefined, createNavigationFailure(NavigationFailureType.unknown, undefined, from, error)))
+    }
+  }
+
+  async function back(delta = 1): Promise<void | NavigationFailure> {
+    return go(-delta)
   }
 
   async function forward(): Promise<void | NavigationFailure> {
@@ -162,8 +90,8 @@ export function createNavigationApi(options: CreateNavigationApiOptions) {
   }
 
   return {
-    push,
-    replace,
+    push: (to: RouteLocationRaw) => navigate('push', to),
+    replace: (to: RouteLocationRaw) => navigate('replace', to),
     back,
     go,
     forward,

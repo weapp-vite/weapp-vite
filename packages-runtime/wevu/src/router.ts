@@ -15,10 +15,13 @@ export interface WevuNamedRouteMap {}
  */
 export declare function definePage(route: StaticPageDeclaration): void
 
-export { parseQuery, stringifyQuery }
 export {
   createRouter,
 } from './router/createRouter'
+export type { RouterHistory, RouterHistoryAdapter, RouterHistoryCheck, RouterHistoryCheckResult, RouterHistoryContext, RouterHistoryContextBase, RouterHistoryHooks, RouterHistoryPage, RouterHistoryTraversal } from './router/history'
+export { parseQuery, stringifyQuery }
+export { createMiniProgramHistory } from './router/historyDriver'
+export type { MiniProgramHistory } from './router/historyDriver'
 export {
   createNavigationFailure,
   isNavigationFailure,
@@ -83,12 +86,14 @@ export type {
   WevuNamedRoutePath,
   WevuRouteName,
 } from './router/types'
+export type {
+  UseRouteOptions,
+} from './router/types'
 export {
   useNativePageRouter,
   useNativeRouter,
   useRoute,
 } from './router/useRoute'
-export type { UseRouteOptions } from './router/useRoute'
 
 export { useRouter } from './router/useRouter'
 export type {

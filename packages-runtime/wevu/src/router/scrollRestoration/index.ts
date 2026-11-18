@@ -4,6 +4,7 @@ import type { ScrollRestorationContext, ScrollRestorationHandle, UseScrollRestor
 import { WEVU_READY_CALLED_KEY } from '@weapp-core/constants'
 import { onScopeDispose } from '../../reactivity'
 import { assertInSetup, getCurrentSetupContext } from '../../runtime/hooks/base'
+import { isThenable } from '../../utils'
 import { getInitialNavigationPromise } from '../initialNavigation'
 import { resolveScrollController } from './controller'
 import { addScrollHook, currentScrollPage, resolveScrollPage } from './host'
@@ -121,7 +122,7 @@ export function registerScrollRestoration<T extends object>(
       captured = true
       try {
         const snapshot = options.capture()
-        if (snapshot !== null && 'then' in snapshot && typeof snapshot.then === 'function') {
+        if (isThenable(snapshot)) {
           throw new TypeError('scroll restoration capture 必须同步返回快照，不能返回 Promise。')
         }
         state.save(registration.key, registration.id, snapshot)
