@@ -52,6 +52,15 @@ describe('auto routes scan helpers', () => {
   })
 
   it('decides whether scan candidates should be included', () => {
+    for (const pagePath of ['custom-tab-bar/index', 'app-bar/index']) {
+      expect(shouldIncludeScanCandidate({
+        files: new Set([`/project/src/${pagePath}.js`]),
+        hasScript: true,
+        hasTemplate: true,
+        jsonPath: `/project/src/${pagePath}.json`,
+      }, {}, { pagePath })).toBe(false)
+    }
+
     expect(shouldIncludeScanCandidate({
       files: new Set(['/project/src/pages/home/index.ts']),
       hasScript: false,

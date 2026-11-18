@@ -68,6 +68,10 @@ export function shouldIncludeScanCandidate(
   json: Record<string, any> | undefined,
   route?: { pagePath: string, root?: string },
 ) {
+  if (route && (route.pagePath === 'custom-tab-bar/index' || route.pagePath === 'app-bar/index')) {
+    return false
+  }
+
   if (candidate.jsonPath && json === undefined) {
     return false
   }
