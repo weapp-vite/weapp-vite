@@ -145,7 +145,7 @@ export default defineConfig(env => ({
 | [JSON 配置](./json.md) | `jsonAlias` / `json.defaults` / `json.mergeStrategy` |
 | [JS 配置](./js.md) | `tsconfigPaths` / `ast` 与顶层 `resolve.alias` 的边界 |
 | [Vue SFC 配置](./vue.md) | `weapp.vue.template`、模板编译开关、自动导入保留字段 |
-| [Wevu 编译期配置](./wevu.md) | `weapp.wevu.preset` / `defaults` / `autoSetDataPick` |
+| [Wevu 编译期配置](./wevu.md) | `weapp.wevu.preset` / `defaults` / `autoSetDataPick` / `setupInitialRenderBarrier` |
 | [i18n 配置](./i18n.md) | `weapp.i18n`、locale JSON、WXS 模板翻译与运行时切换 |
 | [开发态 HMR 配置](./hmr.md) | `weapp.hmr.runtime` / `sharedChunks` / `touchAppWxss` / `logLevel` / `profileJson` |
 | [分包与共享样式配置](./subpackages.md) | `weapp.styles`、`weapp.subPackages`、共享样式、分包级 `inlineConfig` |

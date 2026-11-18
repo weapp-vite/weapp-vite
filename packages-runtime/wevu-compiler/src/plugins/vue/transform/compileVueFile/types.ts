@@ -125,6 +125,11 @@ export interface VueSfcStaticComponentMeta {
 export interface CompileVueFileOptions {
   /** 页面首次 setup 前选择渲染后端；默认 legacy，首版原生目标为 TT V2。 */
   renderer?: 'legacy' | 'auto' | 'native-dom'
+  /**
+   * 是否启用 setup 首帧渲染屏障；默认开启。
+   * 关闭后退回静态初值直接渲染，依赖 setup 的组件属性可能在首帧传入空值。
+   */
+  setupInitialRenderBarrier?: boolean
   astEngine?: AstEngineName
   isPage?: boolean
   isApp?: boolean

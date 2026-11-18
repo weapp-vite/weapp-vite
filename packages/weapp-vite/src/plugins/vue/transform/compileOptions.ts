@@ -331,6 +331,7 @@ function buildCompileVueFileOptions(
     isApp,
     skipComponentTransform: delegatesComponentRegistration,
     renderer: configService.weappViteConfig?.wevu?.renderer,
+    setupInitialRenderBarrier: configService.weappViteConfig?.wevu?.setupInitialRenderBarrier,
     autoSetDataPick: isAutoSetDataPickEnabledWithPreset(configService.weappViteConfig),
     stabilizeCssVarsRuntime,
     bindingManifestSourceFile: resolveBindingManifestSourceFile(vuePath, configService),

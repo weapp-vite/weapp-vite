@@ -81,6 +81,24 @@ it('把 Wevu renderer 选择传入 SFC 编译器', () => {
   expect(options.template.platform.name).toBe('tt')
 })
 
+it('把 setup 首帧屏障总开关传入 SFC 编译器', () => {
+  const configService = {
+    cwd: '/project',
+    absoluteSrcRoot: '/project/src',
+    platform: 'weapp',
+    isDev: false,
+    inlineConfig: {},
+    weappViteConfig: { wevu: { setupInitialRenderBarrier: false } },
+    outputExtensions: {},
+    relativeOutputPath: () => 'pages/index',
+  } as any
+  const options = createCompileVueFileOptions({} as CompilerContext, {}, '/project/src/pages/index.vue', true, false, configService, {
+    reExportResolutionCache: new Map(),
+    classStyleRuntimeWarned: { value: false },
+  })
+  expect(options.setupInitialRenderBarrier).toBe(false)
+})
+
 it('把项目基础库版本与共享提示状态传入模板编译选项', () => {
   const configService = {
     cwd: '/project',
