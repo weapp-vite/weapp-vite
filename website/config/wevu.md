@@ -1,6 +1,6 @@
 ---
 title: Wevu 编译期配置
-description: 说明 weapp.wevu.renderer、defaults、preset 与 autoSetDataPick 的作用、默认行为和适用场景。
+description: 说明 weapp.wevu.renderer、setupInitialRenderBarrier、defaults、preset 与 autoSetDataPick 的作用、默认行为和适用场景。
 keywords:
   - 配置
   - config
@@ -17,6 +17,7 @@ keywords:
 - `app.vue` 编译时是否自动注入 `setWevuDefaults()`
 - 组件 / 页面默认 `setData` 策略
 - 是否自动从模板推导 `setData.pick`
+- 是否为依赖 setup 的组件属性启用首帧渲染屏障
 
 > [!NOTE]
 > 这里讨论的是 `weapp-vite` 在编译阶段帮你做什么，不是 `wevu` 运行时 API 的完整手册。运行时能力请继续阅读 [/wevu/runtime](/wevu/runtime)。
@@ -388,6 +389,33 @@ export default defineConfig({
 
 #### Q: 怎么快速确认它是否生效？
 先执行一次构建，然后检查页面/组件产物 JS 中是否同时包含 `version: 1` 的 binding manifest 与 `setData.pick`。模板调用表达式对应的 `__wv_bind_*` 会直接来自编译器 manifest，不再由构建工具解析 WXML 后补写。
+
+## `weapp.wevu.setupInitialRenderBarrier` {#weapp-wevu-setup-initial-render-barrier}
+- **类型**：`boolean`
+- **默认值**：`true`
+- **作用**：控制 setup 首帧渲染屏障。开启时，若模板把 setup 运行结果传给子组件属性，编译产物会先用条件块隐藏内容，等 setup 完成后的首个快照把真实值下发后才创建子组件；关闭后恢复首帧按静态初值直接渲染。
+
+### 配置示例
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    wevu: {
+      setupInitialRenderBarrier: false,
+    },
+  },
+})
+```
+
+### 行为说明
+
+- 屏障只在子组件属性依赖 setup 绑定时注入；纯静态属性、纯文本插值不受影响。
+- `app.vue` 不会注入；TT 的 `native-dom` / `auto` 渲染后端也不经过该编译路径。
+- 关闭后，依赖 `computed()`、`reactive()`、工厂初值等 setup 运行结果的组件属性可能在首帧收到 `null`，宿主会输出属性类型不兼容警告，子组件也可能以错误初值初始化。
+- 开关只影响编译期注入。已经包含首帧标记的旧产物仍由运行时按原逻辑执行。
+- 适合首屏时延敏感、且已确认相关属性有安全兜底的项目；默认保持开启以避免首帧空值。
 
 ## 关联阅读
 

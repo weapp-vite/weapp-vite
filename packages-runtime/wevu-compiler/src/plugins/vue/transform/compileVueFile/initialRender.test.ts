@@ -47,4 +47,19 @@ describe('setup initial render barrier', () => {
     expect(result.template).not.toContain(WEVU_SETUP_READY_KEY)
     expect(result.script).not.toContain(WEVU_SETUP_READY_KEY)
   })
+
+  it('lets the master switch restore the legacy eager render', async () => {
+    const result = await compileVueFile(`<script setup lang="ts">
+      import { computed } from 'wevu'
+      import StatusLabel from './StatusLabel.vue'
+      const label = computed(() => 'ready')
+    </script><template><StatusLabel :text="label" /></template>`, 'src/pages/index.vue', {
+      isPage: true,
+      setupInitialRenderBarrier: false,
+    })
+    expect(result.template).toContain('<status-label')
+    expect(result.template).not.toContain(WEVU_SETUP_READY_KEY)
+    expect(result.script).not.toContain(WEVU_SETUP_READY_KEY)
+    expect(result.bindingManifest?.bindings.some(binding => binding.outputPath === WEVU_SETUP_READY_KEY)).toBe(false)
+  })
 })

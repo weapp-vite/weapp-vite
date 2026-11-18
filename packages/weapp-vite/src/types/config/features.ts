@@ -385,6 +385,11 @@ export interface WeappVueConfig {
 export interface WeappWevuConfig {
   /** 可选原生 DOM renderer，默认 legacy；auto 仅在 TT V2 能力命中时启用。 */
   renderer?: 'legacy' | 'auto' | 'native-dom'
+  /**
+   * @description 是否启用 setup 首帧渲染屏障，默认 `true`。
+   * @description 关闭后按静态初值直接渲染首帧，依赖 setup 的组件属性可能提前收到空值。
+   */
+  setupInitialRenderBarrier?: boolean
   preset?: 'performance'
   defaults?: WevuConfigDefaults
   autoSetDataPick?: boolean
