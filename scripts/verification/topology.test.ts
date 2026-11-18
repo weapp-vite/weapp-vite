@@ -88,7 +88,7 @@ it('maps every real v2 build group to the original logical task and case file', 
   const baseline = await getSuiteTasks('ci-full', { topology: 'optimized-v1' })
   const candidate = await getSuiteTasks('ci-full', { topology: 'optimized-v2' })
   expect(logicalRuntimeTaskInventory(candidate)).toEqual(logicalRuntimeTaskInventory(baseline))
-  expect(candidate.filter(task => GITHUB_ISSUES_BUILD_TASK_LABELS.includes(task.label))).toHaveLength(24)
+  expect(candidate.filter(task => GITHUB_ISSUES_BUILD_TASK_LABELS.includes(task.label))).toHaveLength(25)
   for (const label of GITHUB_ISSUES_BUILD_TASK_LABELS) {
     expect(logicalTopologyCaseFile(`e2e/${label}`)).toBe('e2e/ci/github-issues.build.test.ts')
   }

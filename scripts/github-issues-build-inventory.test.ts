@@ -56,9 +56,9 @@ describe('GitHub issues build task inventory', () => {
     const current = await readCaseInventory(path.join(buildRoot, 'cases'))
     const legacy = await readCaseInventory(path.join(buildRoot, 'legacy/cases'))
     const inventory = [...current, ...legacy]
-    expect(inventory).toHaveLength(100)
-    expect(inventory.flatMap(item => item.names)).toHaveLength(100)
-    expect(new Set(inventory.flatMap(item => item.names)).size).toBe(100)
+    expect(inventory).toHaveLength(101)
+    expect(inventory.flatMap(item => item.names)).toHaveLength(101)
+    expect(new Set(inventory.flatMap(item => item.names)).size).toBe(101)
     expect(new Set(inventory.map(item => item.group))).toEqual(new Set(GITHUB_ISSUES_BUILD_GROUPS))
     expect(inventory.filter(item => item.group === 'standard')).toHaveLength(75)
     expect(inventory.filter(item => item.group === 'sourcemap')).toHaveLength(3)
