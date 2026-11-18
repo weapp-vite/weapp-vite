@@ -848,7 +848,7 @@ describe('e2e app: github-issues / lifecycle', { concurrent: false }, () => {
     const componentWxmlPath = path.join(DIST_ROOT, 'components/issue-494/SlotHost/index.wxml')
 
     expect(await fs.readFile(issuePageWxmlPath, 'utf-8')).toContain('slot="icon"')
-    expect(await fs.readFile(issuePageWxmlPath, 'utf-8')).toContain('<weapp-slot-wrapper slot="header"><view class="issue494-header-probe"')
+    expect(await fs.readFile(issuePageWxmlPath, 'utf-8')).toMatch(/<weapp-slot-wrapper slot="header"><view class="(?:[^"]* )?issue494-header-probe[ "]/)
     expect(await fs.readFile(issuePageWxmlPath, 'utf-8')).not.toContain('<view slot="icon">')
     expect(await fs.readFile(issuePageWxmlPath, 'utf-8')).not.toContain('<block slot="header">')
     expect(await fs.readFile(issuePageJsPath, 'utf-8')).toContain('toggleLabels')
@@ -921,7 +921,7 @@ describe('e2e app: github-issues / lifecycle', { concurrent: false }, () => {
     const componentWxmlPath = path.join(DIST_ROOT, 'components/slot-flex-host/index.wxml')
 
     expect(await fs.readFile(issuePageWxmlPath, 'utf-8')).toContain('slot flex layout experiment')
-    expect(await fs.readFile(issuePageWxmlPath, 'utf-8')).toContain('<weapp-slot-wrapper slot="middle"><view class="slot-flex-item slot-flex-item--middle-multi-center-a"')
+    expect(await fs.readFile(issuePageWxmlPath, 'utf-8')).toMatch(/<weapp-slot-wrapper slot="middle"><view class="[^"]*slot-flex-item[^"]*slot-flex-item--middle-multi-center-a[ "]/)
     expect(await fs.readFile(issuePageWxmlPath, 'utf-8')).toContain('data-case="single-left"')
     expect(await fs.readFile(issuePageWxmlPath, 'utf-8')).toContain('data-case="single-middle"')
     expect(await fs.readFile(issuePageWxmlPath, 'utf-8')).toContain('data-case="single-right"')

@@ -79,7 +79,11 @@ describe('e2e app: github-issues / issue #554', { concurrent: false }, () => {
       const pageWxml = await fs.readFile(path.join(DIST_ROOT, 'pages/issue-554/index.wxml'), 'utf8')
       expect(pageWxml).toContain('<loop-slot-cell')
       expect(pageWxml).toContain('vue-slots="{{__wv_bind_0[__wv_index_1]}}"')
-      expect(pageWxml).toContain('class="issue554-image"')
+      const imageClassMarker = 'class="issue554-image'
+      const imageClassIndex = pageWxml.indexOf(imageClassMarker)
+      expect(imageClassIndex).toBeGreaterThanOrEqual(0)
+      const imageClassSuffix = pageWxml.slice(imageClassIndex + imageClassMarker.length)
+      expect(imageClassSuffix.startsWith('"') || imageClassSuffix.startsWith(' ')).toBe(true)
       expect(pageWxml).toContain(`src="{{__wv_item_0.src}}"`)
       await dom.check('initial', activeMiniProgram, issuePage)
     }

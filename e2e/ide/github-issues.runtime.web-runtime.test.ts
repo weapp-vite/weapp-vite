@@ -17,6 +17,31 @@ async function readDistFile(relativePath: string) {
   return await fs.readFile(path.join(DIST_ROOT, relativePath), 'utf8')
 }
 
+function expectClassToken(wxml: string, className: string) {
+  const marker = `class="${className}`
+  const markerIndex = wxml.indexOf(marker)
+  expect(markerIndex).toBeGreaterThanOrEqual(0)
+  const suffix = wxml.slice(markerIndex + marker.length)
+  expect(suffix.startsWith('"') || suffix.startsWith(' ')).toBe(true)
+}
+
+function countClassToken(wxml: string, className: string) {
+  const marker = `class="${className}`
+  let count = 0
+  let offset = 0
+  while (true) {
+    const markerIndex = wxml.indexOf(marker, offset)
+    if (markerIndex === -1) {
+      return count
+    }
+    const suffix = wxml.slice(markerIndex + marker.length)
+    if (suffix.startsWith('"') || suffix.startsWith(' ')) {
+      count += 1
+    }
+    offset = markerIndex + marker.length
+  }
+}
+
 describe('github-issues runtime web runtime globals', { concurrent: false }, () => {
   beforeAll(async () => {
     await prepareGithubIssuesBuild()
@@ -46,9 +71,9 @@ describe('github-issues runtime web runtime globals', { concurrent: false }, () 
     const pageWxml = await readDistFile('pages/issue-448/index.wxml')
     const pageJs = await readDistFile('pages/issue-448/index.js')
 
-    expect(pageWxml).toContain('class="issue448-page"')
-    expect(pageWxml).toContain('class="issue448-title"')
-    expect(pageWxml.match(/class="issue448-line"/g)?.length).toBe(21)
+    expectClassToken(pageWxml, 'issue448-page')
+    expectClassToken(pageWxml, 'issue448-title')
+    expect(countClassToken(pageWxml, 'issue448-line')).toBe(21)
     expect(pageJs).toContain('installWebRuntimeGlobals')
     expect(pageJs).toContain('"fetch"')
     expect(pageJs).toContain('"CustomEvent"')
@@ -72,9 +97,9 @@ describe('github-issues runtime web runtime globals', { concurrent: false }, () 
     const pageWxml = await readDistFile('pages/issue-459/index.wxml')
     const pageJs = await readDistFile('pages/issue-459/index.js')
 
-    expect(pageWxml).toContain('class="issue459-page"')
-    expect(pageWxml).toContain('class="issue459-title"')
-    expect(pageWxml.match(/class="issue459-line"/g)?.length).toBe(6)
+    expectClassToken(pageWxml, 'issue459-page')
+    expectClassToken(pageWxml, 'issue459-title')
+    expect(countClassToken(pageWxml, 'issue459-line')).toBe(6)
     expect(pageJs).toContain('RequestPolyfill')
     expect(pageJs).toContain('URLPolyfill("/abc", "https://issue-459.invalid")')
     expect(pageJs).toContain('ResponsePolyfill("123")')

@@ -59,6 +59,46 @@ const githubIssuesAggregateTargets = {
     'github-issues.runtime.slot-fallback.test.ts',
     'github-issues.runtime.issue1014.test.ts',
   ],
+  'github-issues.runtime.aggregate.core.test.ts': [
+    'github-issues.runtime.aggregate.core.bindings.test.ts',
+    'github-issues.runtime.aggregate.core.class.test.ts',
+    'github-issues.runtime.aggregate.core.components.test.ts',
+  ],
+  'github-issues.runtime.aggregate.core.bindings.test.ts': [
+    'github-issues.runtime.issue1008.test.ts',
+    'github-issues.runtime.app-shell.test.ts',
+  ],
+  'github-issues.runtime.aggregate.core.class.test.ts': [
+    'github-issues.runtime.issue289.test.ts',
+    'github-issues.runtime.issue297-302.test.ts',
+  ],
+  'github-issues.runtime.aggregate.core.components.test.ts': [
+    'github-issues.runtime.issue553-555.test.ts',
+    'github-issues.runtime.issue554.test.ts',
+    'github-issues.runtime.issue564.test.ts',
+    'github-issues.runtime.issue581.test.ts',
+    'github-issues.runtime.issue627.test.ts',
+  ],
+  'github-issues.runtime.aggregate.runtime.test.ts': [
+    'github-issues.runtime.web-runtime.test.ts',
+    'github-issues.runtime.import-meta.test.ts',
+    'github-issues.runtime.issue466.test.ts',
+    'github-issues.runtime.issue642.test.ts',
+    'github-issues.runtime.issue705.test.ts',
+    'github-issues.runtime.issue706.test.ts',
+    'github-issues.runtime.issue829.test.ts',
+    'github-issues.runtime.issue930.test.ts',
+    'github-issues.runtime.issue1013.test.ts',
+  ],
+  'github-issues.runtime.aggregate.lifecycle.test.ts': [
+    'github-issues.runtime.lifecycle.test.ts',
+    'github-issues.runtime.issue1014.test.ts',
+  ],
+  'github-issues.runtime.aggregate.components.test.ts': [
+    'github-issues.runtime.miniprogram-computed.test.ts',
+    'github-issues.runtime.props.test.ts',
+    'github-issues.runtime.slot-fallback.test.ts',
+  ],
 } as const
 const issue547AugmentedEnabled = issue547AugmentedEnvEnabled || e2eTargetFile.endsWith('github-issues.runtime.issue547.test.ts')
 const issue558AugmentedEnabled = issue558AugmentedEnvEnabled || e2eTargetFile.endsWith('github-issues.runtime.issue558.test.ts')
@@ -535,7 +575,7 @@ function resolveGithubIssuesNpm(): NonNullable<WeappViteConfig['npm']> {
     }
   }
 
-  if (matchedGithubIssuesTestFile === 'github-issues.runtime.aggregate.test.ts') {
+  if (matchedGithubIssuesTestFile && Object.hasOwn(githubIssuesAggregateTargets, matchedGithubIssuesTestFile)) {
     return fullNpmConfig
   }
 

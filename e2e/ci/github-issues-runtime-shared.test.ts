@@ -1,7 +1,7 @@
 import os from 'node:os'
 import path from 'node:path'
 import { fs } from '@weapp-core/shared/node'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
   callRoutePageMethod,
   createGithubIssuesLaunchAutomatorOptions,
@@ -79,17 +79,33 @@ describe('github issues runtime shared relaunch helper', () => {
   })
 
   it('defers aggregate suite cleanup while preserving explicit runtime restarts', () => {
-    const aggregateTarget = 'ide/github-issues.runtime.aggregate.test.ts'
+    const aggregateTargets = [
+      'ide/github-issues.runtime.aggregate.test.ts',
+      'ide/github-issues.runtime.aggregate.core.test.ts',
+      'ide/github-issues.runtime.aggregate.runtime.test.ts',
+      'ide/github-issues.runtime.aggregate.lifecycle.test.ts',
+      'ide/github-issues.runtime.aggregate.components.test.ts',
+    ]
 
-    expect(shouldDeferSharedMiniProgramClose({}, aggregateTarget)).toBe(true)
-    expect(shouldDeferSharedMiniProgramClose({ force: true }, aggregateTarget)).toBe(false)
+    for (const target of aggregateTargets) {
+      expect(shouldDeferSharedMiniProgramClose({}, target)).toBe(true)
+      expect(shouldDeferSharedMiniProgramClose({ force: true }, target)).toBe(false)
+    }
     expect(shouldDeferSharedMiniProgramClose({}, 'ide/github-issues.runtime.props.test.ts')).toBe(false)
   })
 
-  it('keeps aggregate runtime restarts on the stable launch route', () => {
-    const aggregateTarget = 'ide/github-issues.runtime.aggregate.test.ts'
+  it('keeps aggregate runtime restarts on a route included by the selected build', () => {
+    const aggregateTargets = [
+      'ide/github-issues.runtime.aggregate.core.test.ts',
+      'ide/github-issues.runtime.aggregate.runtime.test.ts',
+      'ide/github-issues.runtime.aggregate.lifecycle.test.ts',
+      'ide/github-issues.runtime.aggregate.components.test.ts',
+    ]
 
-    expect(resolveSharedMiniProgramRestartRoute('/pages/issue-642/index', aggregateTarget)).toBe('/pages/issue-431/index')
+    for (const target of aggregateTargets) {
+      expect(resolveSharedMiniProgramRestartRoute('/pages/issue-642/index', target)).toBe('/pages/block-slot/index')
+    }
+    expect(resolveSharedMiniProgramRestartRoute('/pages/issue-642/index', 'ide/github-issues.runtime.aggregate.test.ts')).toBe('/pages/issue-431/index')
     expect(resolveSharedMiniProgramRestartRoute('/pages/issue-642/index', 'ide/github-issues.runtime.issue642.test.ts')).toBe('/pages/issue-642/index')
   })
 

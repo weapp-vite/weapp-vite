@@ -43,7 +43,6 @@ const AUTO_ROUTES_CASES = {
   'route-links': 'auto-routes define app json runtime (weapp e2e) > renders routeLinks for home page with main package and subpackage routes',
   'topology': 'classic automatic route topology output runtime > renders the restored page and keeps the original page reachable',
 } as const
-export const IDE_GITHUB_ISSUES_AGGREGATE_LABEL = 'ide/github-issues.runtime.aggregate.test.ts'
 export const IDE_TDESIGN_AGGREGATE_LABEL = TDESIGN_AGGREGATE_LABEL
 export const IDE_TDESIGN_AGGREGATED_PATTERNS = TDESIGN_SOURCE_LABELS
 export const IDE_EXHAUSTIVE_OUT_OF_SCOPE_LABELS = new Set([
@@ -51,8 +50,65 @@ export const IDE_EXHAUSTIVE_OUT_OF_SCOPE_LABELS = new Set([
   'ide/template-multi-platform.swan.optional.test.ts',
   'ide/template-multi-platform-sfc.swan.optional.test.ts',
 ])
-export const IDE_GITHUB_ISSUES_AGGREGATE_LABELS = [
-  IDE_GITHUB_ISSUES_AGGREGATE_LABEL,
+export const IDE_GITHUB_ISSUES_AGGREGATE_GROUPS = [
+  {
+    label: 'ide/github-issues.runtime.aggregate.core.bindings.test.ts',
+    patterns: [
+      'ide/github-issues.runtime.issue1008.test.ts',
+      'ide/github-issues.runtime.app-shell.test.ts',
+    ],
+  },
+  {
+    label: 'ide/github-issues.runtime.aggregate.core.class.test.ts',
+    patterns: [
+      'ide/github-issues.runtime.issue289.test.ts',
+      'ide/github-issues.runtime.issue297-302.test.ts',
+    ],
+  },
+  {
+    label: 'ide/github-issues.runtime.aggregate.core.components.test.ts',
+    patterns: [
+      'ide/github-issues.runtime.issue553-555.test.ts',
+      'ide/github-issues.runtime.issue554.test.ts',
+      'ide/github-issues.runtime.issue564.test.ts',
+      'ide/github-issues.runtime.issue581.test.ts',
+      'ide/github-issues.runtime.issue627.test.ts',
+    ],
+  },
+  {
+    label: 'ide/github-issues.runtime.aggregate.runtime.test.ts',
+    patterns: [
+      'ide/github-issues.runtime.web-runtime.test.ts',
+      'ide/github-issues.runtime.import-meta.test.ts',
+      'ide/github-issues.runtime.issue466.test.ts',
+      'ide/github-issues.runtime.issue642.test.ts',
+      'ide/github-issues.runtime.issue705.test.ts',
+      'ide/github-issues.runtime.issue706.test.ts',
+      'ide/github-issues.runtime.issue829.test.ts',
+      'ide/github-issues.runtime.issue930.test.ts',
+      'ide/github-issues.runtime.issue1013.test.ts',
+    ],
+  },
+  {
+    label: 'ide/github-issues.runtime.aggregate.lifecycle.test.ts',
+    patterns: [
+      'ide/github-issues.runtime.lifecycle.test.ts',
+      'ide/github-issues.runtime.issue1014.test.ts',
+    ],
+  },
+  {
+    label: 'ide/github-issues.runtime.aggregate.components.test.ts',
+    patterns: [
+      'ide/github-issues.runtime.miniprogram-computed.test.ts',
+      'ide/github-issues.runtime.props.test.ts',
+      'ide/github-issues.runtime.slot-fallback.test.ts',
+    ],
+  },
+] as const
+export const IDE_GITHUB_ISSUES_AGGREGATE_LABELS = IDE_GITHUB_ISSUES_AGGREGATE_GROUPS.map(group => group.label)
+export const IDE_GITHUB_ISSUES_BUILD_ONLY_LABELS = [
+  'ide/github-issues.runtime.aggregate.test.ts',
+  'ide/github-issues.runtime.aggregate.core.test.ts',
 ] as const
 const IDE_TASK_TIMEOUT_MS_BY_LABEL = new Map([
   ['ide/issue-1015-css-hmr.runtime.test.ts', '900000'],
@@ -60,7 +116,7 @@ const IDE_TASK_TIMEOUT_MS_BY_LABEL = new Map([
   // 两个模式各保留 300 秒运行与 300 秒清理预算，额外预留 worker 启停。
   ['ide/issue-1140-mode-cache.runtime.test.ts', '1260000'],
   ['ide/devtools-cli-workflow.runtime.test.ts', '900000'],
-  ['ide/github-issues.runtime.aggregate.test.ts', '3600000'],
+  ...IDE_GITHUB_ISSUES_AGGREGATE_LABELS.map(label => [label, '1800000'] as const),
   [IDE_TDESIGN_AGGREGATE_LABEL, '900000'],
   ['ide/github-issues.runtime.lifecycle.test.ts', '600000'],
   ['ide/github-issues.runtime.props.test.ts', '600000'],
@@ -116,32 +172,9 @@ const IDE_BRIDGE_WRAPPER_TEST_LABELS = new Set([
   'ide/wevu-runtime.core-hmr.test.ts',
   'ide/wevu-runtime.layout-shared-template-wxs.hmr.test.ts',
 ])
-export const IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS = [
-  'ide/github-issues.runtime.issue1008.test.ts',
-  'ide/github-issues.runtime.app-shell.test.ts',
-  'ide/github-issues.runtime.import-meta.test.ts',
-  'ide/github-issues.runtime.issue289.test.ts',
-  'ide/github-issues.runtime.issue297-302.test.ts',
-  'ide/github-issues.runtime.issue466.test.ts',
-  'ide/github-issues.runtime.issue553-555.test.ts',
-  'ide/github-issues.runtime.issue554.test.ts',
-  'ide/github-issues.runtime.issue564.test.ts',
-  'ide/github-issues.runtime.issue581.test.ts',
-  'ide/github-issues.runtime.issue627.test.ts',
-  'ide/github-issues.runtime.issue642.test.ts',
-  'ide/github-issues.runtime.issue705.test.ts',
-  'ide/github-issues.runtime.issue706.test.ts',
-  'ide/github-issues.runtime.issue829.test.ts',
-  'ide/github-issues.runtime.issue930.test.ts',
-  'ide/github-issues.runtime.issue1013.test.ts',
-  'ide/github-issues.runtime.issue1014.test.ts',
-  'ide/github-issues.runtime.lifecycle.test.ts',
-  'ide/github-issues.runtime.miniprogram-computed.test.ts',
-  'ide/github-issues.runtime.props.test.ts',
-  'ide/github-issues.runtime.slot-fallback.test.ts',
-  'ide/github-issues.runtime.web-runtime.test.ts',
-] as const
+export const IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS = IDE_GITHUB_ISSUES_AGGREGATE_GROUPS.flatMap(group => group.patterns)
 const IDE_GITHUB_ISSUES_AGGREGATED_PATTERN_SET = new Set<string>(IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS)
+const IDE_GITHUB_ISSUES_BUILD_ONLY_LABEL_SET = new Set<string>(IDE_GITHUB_ISSUES_BUILD_ONLY_LABELS)
 const IDE_GITHUB_ISSUES_PATTERNS = [
   'ide/issue-1234-automator.runtime.test.ts',
   'ide/template-corpus.runtime.test.ts',
@@ -437,6 +470,7 @@ const IDE_DOM_HEADLESS_PATTERNS = [...new Set([
 ])]
 const IDE_HEADLESS_FULL_TESTS = [...new Set([
   ...IDE_GATE_TESTS,
+  ...IDE_GITHUB_ISSUES_AGGREGATE_LABELS.map(label => path.resolve(ROOT, label)),
   ...IDE_DOM_HEADLESS_PATTERNS.map(filePath => path.resolve(ROOT, filePath)),
   path.resolve(ROOT, 'ide/github-issues.runtime.issue705.test.ts'),
   path.resolve(ROOT, 'ide/github-issues.runtime.issue826.test.ts'),
@@ -779,6 +813,7 @@ export function getIdeExhaustiveTasks(options: SuiteTaskFactoryOptions = {}) {
     .sort()
     .filter(filePath => !isIdeHelperTest(toRelativeLabel(filePath)))
     .filter(filePath => !IDE_MANUAL_DEVTOOLS_TEST_PATTERNS.has(toRelativeLabel(filePath)))
+    .filter(filePath => !IDE_GITHUB_ISSUES_BUILD_ONLY_LABEL_SET.has(toRelativeLabel(filePath)))
     .filter(filePath => !IDE_GITHUB_ISSUES_AGGREGATED_PATTERN_SET.has(toRelativeLabel(filePath)))
     .filter((filePath) => {
       const label = toRelativeLabel(filePath)

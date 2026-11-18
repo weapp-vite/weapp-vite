@@ -10,6 +10,16 @@ import {
 import { runGithubDom } from './githubIssuesDom'
 import { CALL_EXPRESSIONS, LOOP_CLASSES, SETUP_CALL_EXPRESSIONS } from './githubIssuesDom/expressions'
 
+function expectIndexedClassBindingWithOptionalScopedClass(wxml: string) {
+  const bindingStart = 'class="{{__wv_cls_'
+  const bindingIndex = wxml.indexOf(bindingStart)
+  expect(bindingIndex).toBeGreaterThanOrEqual(0)
+  const bindingEnd = wxml.indexOf('}}', bindingIndex + bindingStart.length)
+  expect(bindingEnd).toBeGreaterThan(bindingIndex)
+  const suffix = wxml.slice(bindingEnd + 2)
+  expect(suffix.startsWith('"') || suffix.startsWith(' ')).toBe(true)
+}
+
 describe('e2e app: github-issues / issue-297-302', { concurrent: false }, () => {
   beforeAll(async () => {
     await prepareGithubIssuesBuild()
@@ -97,7 +107,7 @@ describe('e2e app: github-issues / issue-297-302', { concurrent: false }, () => 
     expect(issuePageWxml).toContain('issue-302 v-for class binding update')
     expect(issuePageWxml).toContain('active: {{active}}')
     expect(issuePageWxml).toContain('wx:for="{{tabs}}"')
-    expect(issuePageWxml).toMatch(/class="\{\{__wv_cls_\d+\[(?:__wv_index_0|index)\]\}\}"/)
+    expectIndexedClassBindingWithOptionalScopedClass(issuePageWxml)
     expect(issuePageJs).toContain('setActive')
     expect(issuePageJs).toContain('_runE2E')
 

@@ -10,6 +10,7 @@ import { E2E_TARGET_FILE_ENV } from '../utils/vitestTargetFile'
 import { readTaskCases } from './domAcceptanceReport/inventory'
 import {
   getSuiteTasks,
+  IDE_GITHUB_ISSUES_AGGREGATE_GROUPS,
   IDE_GITHUB_ISSUES_AGGREGATE_LABELS,
   IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS,
   listE2ESuites,
@@ -486,7 +487,7 @@ describe('suiteRunner', () => {
     expect(ideComponentLibraryVisualFullTasks.map(task => task.env?.WEAPP_VITE_COMPONENT_LIBRARY_MODE)).toEqual(['visual-full', 'visual-full'])
     expect(headlessQueryTask?.env?.WEAPP_VITE_E2E_RUNTIME_PROVIDER).toBe('headless')
     expect(devtoolsCliWorkflowTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('900000')
-    expect(githubIssuesAggregateTasks.map(task => task.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS)).toEqual(['3600000'])
+    expect(githubIssuesAggregateTasks.map(task => task.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS)).toEqual(IDE_GITHUB_ISSUES_AGGREGATE_LABELS.map(() => '1800000'))
     expect(statefulHmrTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('900000')
     expect(subpackageSharedStrategyComplexTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('600000')
     expect(templateDevOpenAllTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('1800000')
@@ -521,6 +522,7 @@ describe('suiteRunner', () => {
     expect(ideHeadlessGateLabels).toContain('ide/wevu-runtime.weapp.test.ts')
     expect(ideHeadlessFullLabels).toContain('ide/lifecycle-compare.test.ts')
     expect(ideHeadlessFullLabels).toContain('ide/github-issues.runtime.issue705.test.ts')
+    expect(IDE_GITHUB_ISSUES_AGGREGATE_LABELS.every(label => ideHeadlessFullLabels.includes(label))).toBe(true)
     expect(ideHeadlessFullLabels).toContain('ide/github-issues.runtime.issue1009.test.ts')
     expect(ideHeadlessFullLabels).toContain('ide/github-issues.runtime.issue1010.test.ts')
     expect(ideHeadlessFullLabels).toContain('ide/github-issues.runtime.issue1012.test.ts')
@@ -581,17 +583,14 @@ describe('suiteRunner', () => {
       expect(ideFullLabels).not.toContain(sourceLabel)
       expect(ideGithubIssuesLabels).not.toContain(sourceLabel)
     }
-    const aggregateSource = IDE_GITHUB_ISSUES_AGGREGATE_LABELS.map(label => fs.readFileSync(
-      path.resolve(import.meta.dirname, `../${label}`),
-      'utf8',
-    )).join('\n')
-    for (const sourceLabel of IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS) {
-      const importPath = `./${path.posix.basename(sourceLabel, '.ts')}`
-      expect(aggregateSource).toContain(`import '${importPath}'`)
+    for (const group of IDE_GITHUB_ISSUES_AGGREGATE_GROUPS) {
+      const aggregateSource = fs.readFileSync(path.resolve(import.meta.dirname, `../${group.label}`), 'utf8')
+      const importedTests = aggregateSource.match(/^import '\.\/github-issues\.runtime\..+\.test'$/gm)?.map((line) => {
+        const importPath = line.match(/^import '(.+)'$/)?.[1] ?? ''
+        return `ide/${path.posix.basename(importPath)}.ts`
+      }) ?? []
+      expect(importedTests).toEqual(group.patterns)
     }
-    expect(aggregateSource.match(/^import '\.\/github-issues\.runtime\..+\.test'$/gm)).toHaveLength(
-      IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS.length,
-    )
     expect(ideGithubIssuesTasks.find(task => task.env?.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE === 'direct')).toBeUndefined()
   })
 

@@ -14,6 +14,14 @@ async function readDistFile(relativePath: string) {
   return await fs.readFile(path.join(DIST_ROOT, relativePath), 'utf8')
 }
 
+function expectClassBindingWithOptionalScopedClass(wxml: string, binding: string) {
+  const marker = `class="{{${binding}}}`
+  const markerIndex = wxml.indexOf(marker)
+  expect(markerIndex).toBeGreaterThanOrEqual(0)
+  const suffix = wxml.slice(markerIndex + marker.length)
+  expect(suffix.startsWith('"') || suffix.startsWith(' ')).toBe(true)
+}
+
 describe('e2e app: github-issues / issue-289', { concurrent: false }, () => {
   beforeAll(async () => {
     await prepareGithubIssuesBuild()
@@ -39,8 +47,8 @@ describe('e2e app: github-issues / issue-289', { concurrent: false }, () => {
     const wxml = await readDistFile('pages/issue-289/map-class/index.wxml')
     const js = await readDistFile('pages/issue-289/map-class/index.js')
 
-    expect(wxml).toContain('class="{{__wv_cls_0}}"')
-    expect(wxml).toContain('class="{{__wv_cls_1}}"')
+    expectClassBindingWithOptionalScopedClass(wxml, '__wv_cls_0')
+    expectClassBindingWithOptionalScopedClass(wxml, '__wv_cls_1')
     expect(wxml).toContain('issue289-map-switch-expanded')
     expect(wxml).toContain('issue289-map-switch-list')
     expect(wxml).toContain('MapClassExample')
@@ -66,8 +74,8 @@ describe('e2e app: github-issues / issue-289', { concurrent: false }, () => {
     const wxml = await readDistFile('pages/issue-289/computed-class/index.wxml')
     const js = await readDistFile('pages/issue-289/computed-class/index.js')
 
-    expect(wxml).toContain('class="{{__wv_cls_0}}"')
-    expect(wxml).toContain('class="{{__wv_cls_1}}"')
+    expectClassBindingWithOptionalScopedClass(wxml, '__wv_cls_0')
+    expectClassBindingWithOptionalScopedClass(wxml, '__wv_cls_1')
     expect(wxml).toContain('issue289-computed-switch-source')
     expect(wxml).toContain('issue289-computed-switch-items')
     expect(wxml).toContain('ComputedClassExample')

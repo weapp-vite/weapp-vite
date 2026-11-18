@@ -7,7 +7,7 @@ import process from 'node:process'
 import ts from 'typescript'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createIsolatedMachineLease } from '../../utils/testSupport/machineLease'
-import { getIdeExhaustiveTasks, IDE_EXHAUSTIVE_OUT_OF_SCOPE_LABELS, IDE_GITHUB_ISSUES_AGGREGATE_LABEL, IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS, IDE_TDESIGN_AGGREGATE_LABEL, IDE_TDESIGN_AGGREGATED_PATTERNS } from '../e2e-suite-manifest'
+import { getIdeExhaustiveTasks, IDE_EXHAUSTIVE_OUT_OF_SCOPE_LABELS, IDE_GITHUB_ISSUES_AGGREGATE_GROUPS, IDE_TDESIGN_AGGREGATE_LABEL, IDE_TDESIGN_AGGREGATED_PATTERNS } from '../e2e-suite-manifest'
 import { createSuiteReport } from '../suiteReport'
 import { runTaskSuite as runTaskSuiteWithOptions } from '../suiteRunner'
 import { currentVerificationProfile } from '../verification/profile'
@@ -197,10 +197,12 @@ describe('strict IDE suite acceptance', () => {
     expect(new Set(templateTask?.acceptanceTemplates).size).toBe(templateTask?.acceptanceTemplates?.length)
   })
 
-  it.each([
-    [IDE_GITHUB_ISSUES_AGGREGATE_LABEL, IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS],
+  const aggregateImportCases: Array<[string, readonly string[]]> = [
+    ...IDE_GITHUB_ISSUES_AGGREGATE_GROUPS.map(group => [group.label, group.patterns] as [string, readonly string[]]),
     [IDE_TDESIGN_AGGREGATE_LABEL, IDE_TDESIGN_AGGREGATED_PATTERNS],
-  ])('requires %s imports to match every manifest child', (label, children) => {
+  ]
+
+  it.each(aggregateImportCases)('requires %s imports to match every manifest child', (label, children) => {
     const e2eRoot = path.resolve(import.meta.dirname, '../..')
     const aggregate = path.resolve(e2eRoot, label)
     const ast = ts.createSourceFile(aggregate, fs.readFileSync(aggregate, 'utf8'), ts.ScriptTarget.Latest, true)

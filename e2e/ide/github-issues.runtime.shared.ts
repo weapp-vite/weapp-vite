@@ -28,6 +28,13 @@ const SOURCE_APP_ROOT = path.join(REPO_ROOT, 'e2e-apps/github-issues')
 const SOURCE_NODE_MODULES = path.join(SOURCE_APP_ROOT, 'node_modules')
 const AGGREGATE_STABLE_LAUNCH_ROUTES = new Map([
   ['github-issues.runtime.aggregate.test.ts', '/pages/issue-431/index'],
+  ['github-issues.runtime.aggregate.core.test.ts', '/pages/block-slot/index'],
+  ['github-issues.runtime.aggregate.core.bindings.test.ts', '/pages/block-slot/index'],
+  ['github-issues.runtime.aggregate.core.class.test.ts', '/pages/block-slot/index'],
+  ['github-issues.runtime.aggregate.core.components.test.ts', '/pages/block-slot/index'],
+  ['github-issues.runtime.aggregate.runtime.test.ts', '/pages/block-slot/index'],
+  ['github-issues.runtime.aggregate.lifecycle.test.ts', '/pages/block-slot/index'],
+  ['github-issues.runtime.aggregate.components.test.ts', '/pages/block-slot/index'],
 ])
 const DEVTOOLS_UNUSED_BUILD_ENTRIES = [
   '.weapp-vite',

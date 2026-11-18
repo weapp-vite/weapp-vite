@@ -2,7 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { getIdeExhaustiveTasks, IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS } from './e2e-suite-manifest'
+import { getIdeExhaustiveTasks, IDE_GITHUB_ISSUES_AGGREGATE_LABELS, IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS, IDE_GITHUB_ISSUES_BUILD_ONLY_LABELS } from './e2e-suite-manifest'
 
 // 只验证 fixture 配置，不加载构建器或启动 IDE。
 vi.mock('weapp-vite', () => ({ defineConfig: (config: unknown) => config }))
@@ -22,6 +22,8 @@ async function readFixtureConfig(target?: string) {
 
 const sharedBuildTargets = [...new Set([
   ...getIdeExhaustiveTasks().map(task => task.label),
+  ...IDE_GITHUB_ISSUES_AGGREGATE_LABELS,
+  ...IDE_GITHUB_ISSUES_BUILD_ONLY_LABELS,
   ...IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS,
 ])].filter((label) => {
   if (!label.startsWith('ide/github-issues.runtime.')) {
@@ -29,7 +31,8 @@ const sharedBuildTargets = [...new Set([
   }
   const source = fs.readFileSync(path.resolve(import.meta.dirname, '..', label), 'utf8')
   return source.includes('prepareGithubIssuesBuild(')
-    || label === 'ide/github-issues.runtime.aggregate.test.ts'
+    || IDE_GITHUB_ISSUES_AGGREGATE_LABELS.includes(label as typeof IDE_GITHUB_ISSUES_AGGREGATE_LABELS[number])
+    || IDE_GITHUB_ISSUES_BUILD_ONLY_LABELS.includes(label as typeof IDE_GITHUB_ISSUES_BUILD_ONLY_LABELS[number])
 })
 
 describe('github-issues targeted fixture route scope', () => {

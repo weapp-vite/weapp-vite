@@ -8,7 +8,7 @@ import { isolateTopologyTestEnvironment, useIsolatedTopologyTestEnvironment } fr
 import devtoolsConfig from '../vitest.e2e.devtools.config'
 import parallelConfig from '../vitest.e2e.parallel.config'
 import { readTaskCases } from './domAcceptanceReport/inventory'
-import { getCiFullTasks, getCiPrTasks, getCiTasks, getDiminaTasks, getFullRegressionTasks, getFullTasks, getIdeComponentLibraryTasks, getIdeComponentLibraryVisualFullTasks, getIdeComponentLibraryVisualTasks, getIdeExhaustiveTasks, getIdeTasks, getSuiteTasks, getWebTasks, IDE_GITHUB_ISSUES_AGGREGATE_LABELS, IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS, IDE_TDESIGN_AGGREGATE_LABEL, IDE_TDESIGN_AGGREGATED_PATTERNS, partitionE2ETasks } from './e2e-suite-manifest'
+import { getCiFullTasks, getCiPrTasks, getCiTasks, getDiminaTasks, getFullRegressionTasks, getFullTasks, getIdeComponentLibraryTasks, getIdeComponentLibraryVisualFullTasks, getIdeComponentLibraryVisualTasks, getIdeExhaustiveTasks, getIdeTasks, getSuiteTasks, getWebTasks, IDE_GITHUB_ISSUES_AGGREGATE_GROUPS, IDE_GITHUB_ISSUES_AGGREGATE_LABELS, IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS, IDE_GITHUB_ISSUES_BUILD_ONLY_LABELS, IDE_TDESIGN_AGGREGATE_LABEL, IDE_TDESIGN_AGGREGATED_PATTERNS, partitionE2ETasks } from './e2e-suite-manifest'
 
 function withFrozenTopology<T extends SuiteTask>(tasks: T[]) {
   return tasks.map(task => ({ ...task, env: { ...task.env, ...topologyEnvironment(resolveVerificationTopology()) } }))
@@ -427,16 +427,20 @@ describe('e2e suite manifest', () => {
     expect(await getSuiteTasks('ide-component-libraries')).toEqual(withFrozenTopology(getIdeComponentLibraryTasks()))
   })
 
-  it('runs the github issue aggregate once with a bridge wrapper', () => {
+  it('splits github issue runtime coverage into route-scoped aggregate tasks', () => {
     const tasks = getIdeExhaustiveTasks()
     const aggregateLabels: readonly string[] = IDE_GITHUB_ISSUES_AGGREGATE_LABELS
     const aggregateTasks = tasks.filter(task => aggregateLabels.includes(task.label))
     const labels = new Set(tasks.map(task => task.label))
 
-    expect(aggregateTasks).toHaveLength(1)
+    expect(aggregateTasks.map(task => task.label).sort()).toEqual([...aggregateLabels].sort())
+    expect(IDE_GITHUB_ISSUES_AGGREGATE_GROUPS.flatMap(group => group.patterns)).toEqual(IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS)
+    expect(IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS).toHaveLength(new Set(IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS).size)
     expect(IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS).toContain('ide/github-issues.runtime.issue1008.test.ts')
     expect(aggregateTasks.every(task => task.env?.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER === '1')).toBe(true)
+    expect(aggregateTasks.map(task => task.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS)).toEqual(aggregateLabels.map(() => '1800000'))
     expect(IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS.every(pattern => !labels.has(pattern))).toBe(true)
+    expect(IDE_GITHUB_ISSUES_BUILD_ONLY_LABELS.every(label => !labels.has(label))).toBe(true)
   })
 
   it('keeps the PR CI suite as a stable subset of the full CI suite', async () => {
