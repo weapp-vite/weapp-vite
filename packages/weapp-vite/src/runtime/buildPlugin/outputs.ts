@@ -81,12 +81,14 @@ export async function cleanOutputs(
   configService: NonNullable<MutableCompilerContext['configService']>,
 ) {
   if (configService.mpDistRoot) {
-    const preservedNpmDirNames = resolvePreservedNpmDirNames(configService)
+    const preservedNpmDirNames = !configService.isDev && !configService.pluginOnly && !configService.weappLibConfig?.enabled
+      ? undefined
+      : resolvePreservedNpmDirNames(configService)
     const deletedFilePaths = await removeDirectoryEntries(configService.outDir, {
       preserveDirNames: preservedNpmDirNames,
     })
     debug?.('deletedFilePaths', deletedFilePaths)
-    logger.success(`已清空 ${configService.mpDistRoot} 目录`)
+    logger.success(`已清空 ${configService.relativeCwd(configService.outDir)} 目录`)
   }
   const pluginOutputRoot = configService.absolutePluginOutputRoot
   if (pluginOutputRoot) {

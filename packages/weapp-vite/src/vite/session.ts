@@ -1,6 +1,5 @@
 import type { InlineConfig, ViteDevServer } from 'vite'
 import type { HmrRuntimeSession } from '../runtime/hmrRuntimeSession'
-import type { PreparedNpmOutput } from './npm'
 import { attachDevModuleGraphHost } from '../moduleGraph/host'
 import { clearUniAppCompatibilitySession } from '../plugins/uniApp/cache'
 import { getInitialBuildInputObservation } from '../runtime/buildPlugin/initialBuildChanges'
@@ -19,14 +18,11 @@ import { clearStatefulHmrSnapshot, offerStatefulHmrSnapshot, StatefulHmrSnapshot
 import { syncManagedTsconfigFiles } from '../runtime/tsconfigSupport'
 import { createViteInputRegistration } from '../runtime/watch/viteRegistration'
 import { resolveRealpath } from '../utils/realpathScope'
-import { prepareNpmAssets } from './npm'
-import { publishOwnedNpmAssets } from './npm/ownership'
 
 const runtimeOwners = new WeakMap<HmrRuntimeSession, WeappBuildSession>()
 
 /** 标准插件的目标校验和依赖准备，共享底层编译会话生命周期。 */
 export class WeappBuildSession extends CompilerSession {
-  private dependencyBuild?: Promise<PreparedNpmOutput>
   private validating?: Promise<void>
   private hostClosing?: Promise<void>
   private terminalClosing?: Promise<void>
@@ -176,7 +172,6 @@ export class WeappBuildSession extends CompilerSession {
     if (this.state !== 'ready' && this.state !== 'building') {
       return Promise.reject(new Error(`[weapp-vite] 无法从 ${this.state} 状态开始构建。`))
     }
-    this.dependencyBuild = undefined
     return this.validating = this.run(async () => {
       if (!this.isWeb && !this.context.configService.weappLibConfig?.enabled) {
         const app = await this.context.scanService.loadAppEntry()
@@ -270,24 +265,5 @@ export class WeappBuildSession extends CompilerSession {
     await getStatefulHmrHost(this.context)?.refreshControl?.()
     // 原生 listen 后才有最终端口；该轮写出完成前不能宣布控制文件可供消费者读取。
     this.onHostControlReady?.()
-  }
-
-  buildDependencies() {
-    if (this.isWeb) {
-      return Promise.resolve({ assets: [], external: new Map(), watchFiles: [] })
-    }
-    if (this.state !== 'building') {
-      throw new Error('[weapp-vite] 依赖构建需要活动的构建会话。')
-    }
-    return this.dependencyBuild ??= this.run(() => prepareNpmAssets(this.context))
-  }
-
-  async publishDependencies() {
-    if (!this.dependencyBuild) {
-      return
-    }
-    const { external } = await this.dependencyBuild
-    const { cwd, outDir } = this.context.configService
-    await this.run(() => publishOwnedNpmAssets(cwd, outDir, external))
   }
 }

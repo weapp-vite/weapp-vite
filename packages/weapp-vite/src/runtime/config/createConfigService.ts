@@ -368,7 +368,7 @@ function createConfigService(ctx: MutableCompilerContext, oxcRuntimeSupport: Oxc
       return options.mpDistRoot
     },
     get outDir() {
-      return path.resolve(options.cwd, options.mpDistRoot ?? '')
+      return path.resolve(options.cwd, options.config.build?.outDir ?? options.mpDistRoot ?? '')
     },
     get multiPlatform() {
       return options.multiPlatform

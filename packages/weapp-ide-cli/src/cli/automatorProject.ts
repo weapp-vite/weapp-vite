@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
+import { readAutomatorProjectConfig } from './projectConfigValidation'
 
 const WRAPPER_ROOT = path.join(os.tmpdir(), 'weapp-ide-cli-automator-projects')
 
@@ -115,7 +116,7 @@ export interface AutomatorProjectPlan {
 /** 只读解析布局，受管路径必须先通过窗口预算再创建快照。 */
 export async function readAutomatorProjectPlan(projectPath: string): Promise<AutomatorProjectPlan | undefined> {
   const sourceProjectPath = path.resolve(projectPath)
-  const projectConfig = await readJsonObject(path.join(sourceProjectPath, 'project.config.json'))
+  const projectConfig = await readAutomatorProjectConfig(sourceProjectPath)
   const miniprogramRoot = normalizeProjectRelativeRoot(projectConfig?.miniprogramRoot)
   if (!miniprogramRoot) {
     return

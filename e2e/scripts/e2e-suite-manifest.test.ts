@@ -66,6 +66,18 @@ describe('e2e suite manifest', () => {
     expect(cases[0]?.notes).toEqual([])
   })
 
+  it('keeps npm artifact output regressions in DevTools and headless runtime suites', async () => {
+    const label = 'ide/issues-1355-1356.runtime.test.ts'
+    for (const suite of ['ide-full:github-issues', 'ide-full:exhaustive', 'ide-dom-headless', 'ide-headless-full']) {
+      expect((await getSuiteTasks(suite)).filter(task => task.label === label)).toHaveLength(1)
+    }
+    const cases = readTaskCases(path.resolve(import.meta.dirname, '../..'), label)
+    expect(cases).toHaveLength(1)
+    expect(cases[0]?.plans).toHaveLength(1)
+    expect(cases[0]?.notes).toEqual([])
+    expect(cases[0]?.routes).toEqual(['/pages/index/index'])
+  })
+
   it('includes the generated WASM initializer runtime case in real and headless acceptance', async () => {
     const label = 'ide/issue-1202-wasm.runtime.test.ts'
     for (const suite of ['ide-full:github-issues', 'ide-full:exhaustive', 'ide-dom-headless', 'ide-headless-full']) {

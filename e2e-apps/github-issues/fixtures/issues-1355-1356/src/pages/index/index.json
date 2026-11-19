@@ -1,0 +1,5 @@
+{
+  "usingComponents": {
+    "artifact-icon": "../../miniprogram_npm/mini-lib/icon/index"
+  }
+}

@@ -22,6 +22,9 @@ const mkdirMock = vi.hoisted(() => vi.fn())
 const writeFileMock = vi.hoisted(() => vi.fn())
 const readFileMock = vi.hoisted(() => vi.fn())
 const rmMock = vi.hoisted(() => vi.fn())
+const validateProjectMock = vi.hoisted(() => vi.fn())
+
+vi.mock('../src/cli/projectConfigValidation', () => ({ readAutomatorProjectConfig: validateProjectMock }))
 
 vi.mock('@weapp-vite/miniprogram-automator', async importOriginal => ({
   ...await importOriginal<typeof import('@weapp-vite/miniprogram-automator')>(),
@@ -68,6 +71,7 @@ describe('automator helpers', () => {
     writeFileMock.mockReset()
     readFileMock.mockReset()
     rmMock.mockReset()
+    validateProjectMock.mockReset().mockResolvedValue({})
     resolveTargetMock.mockImplementation(async ({ cliPath }: { cliPath?: string }) => ({ cliPath: cliPath ?? '/Applications/wechat-cli', installationId: 'test-installation', appPath: 'app', profileDir: 'profile' }))
     readCustomConfigMock.mockResolvedValue({})
     bootstrapWechatDevtoolsSettingsMock.mockResolvedValue({
@@ -273,6 +277,14 @@ describe('automator helpers', () => {
   })
 
   describe('launchAutomator', () => {
+    it('rejects invalid project configuration before bootstrap or IDE launch, including preserved roots', async () => {
+      const failure = new Error('missing project.config.json; set miniprogramRoot')
+      validateProjectMock.mockRejectedValueOnce(failure)
+      await expect(launchAutomator({ projectPath: mockProjectPath, preserveProjectRoot: true })).rejects.toBe(failure)
+      expect(bootstrapWechatDevtoolsSettingsMock).not.toHaveBeenCalled()
+      expect(launchMock).not.toHaveBeenCalled()
+      expect(connectMock).not.toHaveBeenCalled()
+    })
     it('keeps headless launches outside IDE configuration and machine host operations', async () => {
       await launchAutomator({ projectPath: 'headless-project', runtimeProvider: 'headless' })
       expect(launchMock).toHaveBeenCalledWith(expect.objectContaining({ projectPath: 'headless-project', runtimeProvider: 'headless' }))

@@ -87,6 +87,20 @@ export function getPackNpmRelationList(ctx: MutableCompilerContext, options: { d
     ]
   }
 
+  if (hasManualRelations && options.defaultOutputRoot) {
+    const originalRoot = path.resolve(configService.cwd, resolvePlatformProjectRoot(configService))
+    return packNpmRelationList.map((entry) => {
+      if (path.isAbsolute(entry.miniprogramNpmDistDir)) {
+        return entry
+      }
+      const relative = path.relative(originalRoot, path.resolve(configService.cwd, normalizeRelativeDir(entry.miniprogramNpmDistDir)))
+      if (relative === '..' || relative.startsWith('../') || path.isAbsolute(relative)) {
+        return entry
+      }
+      return { ...entry, miniprogramNpmDistDir: path.resolve(options.defaultOutputRoot!, relative) }
+    })
+  }
+
   // 原生宿主已解析最终输出根；项目元信息中的相对根不能再次用于推导输出目录。
   if (!hasManualRelations && options.defaultOutputRoot) {
     return [{

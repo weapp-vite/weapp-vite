@@ -32,41 +32,6 @@ export function createSessionEnvironmentPlugin(session: WeappBuildSession, serve
         if (this.meta.watchMode) {
           await session.validateEntries()
         }
-        const npmConfig = session.context?.configService?.weappViteConfig?.npm
-        if (npmConfig?.pruneUnusedFiles !== true) {
-          // 在扫描前登记 npm 输入，避免首次成功写出后新增监听目标重启事件流。
-          const dependencies = await session.buildDependencies()
-          for (const file of dependencies.watchFiles) {
-            this.addWatchFile(file)
-          }
-        }
-      },
-    },
-    generateBundle: {
-      order: 'post',
-      async handler() {
-        if (!serve) {
-          const npmConfig = session.context?.configService?.weappViteConfig?.npm
-          if (npmConfig?.pruneUnusedFiles === true) {
-            return
-          }
-          const dependencies = await session.buildDependencies()
-          for (const asset of dependencies.assets) {
-            this.emitFile(asset)
-          }
-        }
-      },
-    },
-    writeBundle: {
-      order: 'post',
-      sequential: true,
-      async handler() {
-        if (!serve) {
-          if (session.context?.configService?.weappViteConfig?.npm?.pruneUnusedFiles === true) {
-            return
-          }
-          await session.publishDependencies()
-        }
       },
     },
     closeBundle: {

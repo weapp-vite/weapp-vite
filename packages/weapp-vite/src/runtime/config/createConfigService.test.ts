@@ -198,6 +198,19 @@ describe('createConfigService', () => {
     })
   })
 
+  it('uses the actual build output for services while retaining the configured project root', async () => {
+    const cwd = path.resolve('output-root-fixture')
+    loadConfigImplMock.mockResolvedValueOnce(createBaseOptions({
+      cwd,
+      mpDistRoot: 'dist',
+      config: { build: { outDir: 'dist-demo' }, weapp: {} },
+    }))
+    const service = createConfigService(createCtx())
+    await service.load({ cwd, isDev: false, mode: 'production' })
+    expect(service.outDir).toBe(path.join(cwd, 'dist-demo'))
+    expect(service.mpDistRoot).toBe('dist')
+  })
+
   it('feeds the requested IDE bytes into config parsing and compiler input observations across owned writes', async () => {
     const root = fs.mkdtempSync(path.join(tmpdir(), 'requested-ide-config-'))
     const file = path.join(root, 'project.private.config.json')

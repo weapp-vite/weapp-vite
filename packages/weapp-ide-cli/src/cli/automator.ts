@@ -12,6 +12,7 @@ import { resolveAutomatorSessionOptions } from './automator/context'
 import { isRetryableAutomatorLaunchError } from './automator/errors'
 import { persistAutomatorSession, readPersistedAutomatorSession } from './automator/sessionStore'
 import { resolveAutomatorProjectPath } from './automatorProject'
+import { readAutomatorProjectConfig } from './projectConfigValidation'
 import { bootstrapWechatDevtoolsSettings } from './wechatDevtoolsSettings'
 
 export * from './automator/errors'
@@ -53,6 +54,7 @@ async function launchSelectedAutomator(options: AutomatorOptions) {
       if (runtimeProvider === 'headless') {
         return await scope.step(() => new Launcher().launch({ projectPath, runtimeProvider, timeout: scope.remainingMs(), signal: scope.signal }), { stage: 'launch', disposeLate: program => program.disconnect() })
       }
+      await scope.step(() => readAutomatorProjectConfig(projectPath), { stage: 'project' })
       await scope.step(() => assertWechatDevtoolsHost(target!, { signal: scope.signal, timeout: scope.remainingMs() }), { stage: 'host-identity' })
       const config = await scope.step(() => readCustomConfig(), { stage: 'configuration' })
       const resolvedTrustProject = options.trustProject ?? config.autoTrustProject ?? false

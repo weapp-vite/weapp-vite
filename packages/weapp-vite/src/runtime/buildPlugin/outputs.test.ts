@@ -114,7 +114,7 @@ describe('buildPlugin outputs', () => {
       recursive: true,
       force: true,
     })
-    expect(loggerMock.success).toHaveBeenCalledWith('已清空 /project/dist 目录')
+    expect(loggerMock.success).toHaveBeenCalledWith('已清空 dist 目录')
   })
 
   it('uses alipay npm dist dir name when platform is alipay', async () => {
@@ -142,6 +142,12 @@ describe('buildPlugin outputs', () => {
       recursive: true,
       force: true,
     })
+  })
+
+  it('cleans legacy npm leftovers before production emission while preserving development caches', async () => {
+    readdirMock.mockResolvedValue([{ name: 'miniprogram_npm' }])
+    await cleanOutputs(createConfigService({ isDev: false }))
+    expect(rmMock).toHaveBeenCalledWith('/project/dist/miniprogram_npm', { recursive: true, force: true })
   })
 
   it('cleans plugin output only when plugin output root is outside outDir', async () => {
@@ -281,7 +287,7 @@ describe('buildPlugin outputs', () => {
 
     await cleanOutputs(configService)
 
-    expect(loggerMock.success).toHaveBeenCalledWith('已清空 /project/dist 目录')
+    expect(loggerMock.success).toHaveBeenCalledWith('已清空 dist 目录')
     expect(rmMock).not.toHaveBeenCalled()
   })
 

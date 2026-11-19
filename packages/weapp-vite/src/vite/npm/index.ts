@@ -13,6 +13,7 @@ import {
   resolveNpmDistDirName,
   resolveTargetDependencies,
 } from '../../runtime/npmPlugin/service/dependencies'
+import { resolvePackageDependencyClosure } from '../../runtime/npmPlugin/service/dependencyClosure'
 import { createOxcRuntimeSupport } from '../../runtime/oxcRuntime'
 import { createNpmOutput } from './output'
 
@@ -51,6 +52,12 @@ export async function prepareNpmAssets(ctx: CompilerContext): Promise<PreparedNp
       .filter(entry => entry.subPackage.dependencies?.length)
       .map(entry => ({ outDir: path.join(config.outDir, entry.subPackage.root, npmDirName), dependencies: resolveTargetDependencies(candidates, entry.subPackage.dependencies) })),
   ]
+  if (typeof config.weappViteConfig.npm?.buildOptions !== 'function') {
+    for (const target of targets.slice(1)) {
+      const closure = await resolvePackageDependencyClosure(target.dependencies, resolveFrom)
+      target.dependencies = closure.filter(dep => candidates.includes(dep) || target.dependencies.includes(dep))
+    }
+  }
   const temporaryRoot = await mkdtemp(path.join(os.tmpdir(), 'weapp-vite-npm-'))
   const capture = createNpmOutput(temporaryRoot, targets.map(target => target.outDir))
   capture.output.watchFile?.(packageJsonPath)

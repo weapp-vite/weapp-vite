@@ -14,6 +14,12 @@ export default defineConfig({
 })
 ```
 
+## npm 产物与独立输出目录
+
+生产应用的 `miniprogram_npm` 与应用产物一同由 bundler 输出，在用户 `writeBundle` / `closeBundle` 钩子中可读取最终文件。`--outDir dist-demo` 会迁移默认 npm 输出，以及原 `miniprogramRoot` 内的相对 `packNpmRelationList` 映射；输出树外的相对映射和绝对映射保持固定。npm 文件过滤后不会生成空目录，构建完成后没有并行 npm 拷贝覆盖用户的钩子后处理。
+
+小程序产物目录不等于开发者工具项目根。automator 需要目标目录包含有效的 `project.config.json`；独立产物应继承源码项目的真实 AppID 和基础库版本，并设置 `miniprogramRoot: "./"`。缺少或损坏的项目配置会在 IDE 启动前报告。
+
 ## 构建语法目标
 
 顶层 `build.target` 沿用 Vite 标准语义。若关闭 IDE 的 ES6 转 ES5 和增强编译后，真机调试上传在可选链（`?.`）处报 `Unexpected token .`，可设置 `build: { target: 'es2019' }` 并重新构建，由 Vite 降级语法。IDE 模拟器可运行不代表上传解析器支持相同语法；生成二维码也不代替目标设备上的功能验证。

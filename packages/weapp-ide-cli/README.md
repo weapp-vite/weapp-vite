@@ -187,6 +187,8 @@ weapp cache --clean all
 
 `weapp-ide-cli` 内置 automator 子命令：
 
+`--project` 指向包含有效 `project.config.json` 的微信开发者工具项目根。仅含 `app.json` 的构建目录不能直接作为项目根；若需打开 `dist-demo` 等独立产物，请在该目录提供配置，继承源码项目的真实 `appid`、`libVersion`，并设置 `compileType: "miniprogram"`、`miniprogramRoot: "./"`。automator 和 acceptance 会在启动 IDE 前检查缺失或损坏的项目配置，并给出修复指引。
+
 `weapp compare` 使用 pixelmatch 8 的 OKLab/HyAB 感知色差算法，默认 `threshold` 为 `0.1`，抗锯齿像素不计入差异。新版的 `diffPixels`、`diffRatio` 可能与旧算法不同；升级时应使用同一张当前截图重新审核既有容差，保留基准图片和原有门限。
 
 | 命令                             | 说明                           |

@@ -1,0 +1,14 @@
+{
+  "condition": {
+    "miniprogram": {
+      "list": [
+        {
+          "name": "npm artifact",
+          "pathName": "pages/index/index",
+          "query": "",
+          "launchMode": "default"
+        }
+      ]
+    }
+  }
+}
