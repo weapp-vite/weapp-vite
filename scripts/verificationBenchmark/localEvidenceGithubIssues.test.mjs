@@ -32,8 +32,9 @@ async function sourceCases() {
       visit(source)
     }
   }
-  expect(cases).toHaveLength(100)
-  expect(new Set(cases.map(item => item.name)).size).toBe(100)
+  expect(cases.length).toBeGreaterThan(0)
+  expect(new Set(cases.map(item => item.name)).size).toBe(cases.length)
+  expect([...new Set(cases.map(item => item.group))].sort()).toEqual([...GITHUB_ISSUES_BUILD_GROUPS].sort())
   return cases
 }
 
@@ -87,21 +88,22 @@ async function githubIssuesFixture(topology) {
   const receipt = JSON.parse(await readFile(receiptFile, 'utf8'))
   receipt.stdout.digest = localDigest(stdout)
   await localSave(receiptFile, receipt)
-  return { ...value, documents }
+  return { ...value, documents, inventory }
 }
 
 const collect = value => collectLocalEvidence(value.root, value.directory, value.plan, value.inventories, value.identity, value.start, value.end, value.raw)
 
-it('normalizes all 100 actual case identities across 24 groups while preserving the physical raw evidence', async () => {
+it('normalizes every actual case identity and build group while preserving the physical raw evidence', async () => {
   const baseline = await githubIssuesFixture('optimized-v1')
   const candidate = await githubIssuesFixture('optimized-v2')
   const before = await collect(baseline)
   const after = await collect(candidate)
-  expect(candidate.documents).toHaveLength(24)
-  expect(after.scope.cases.filter(([file]) => file === `e2e/${GITHUB_ISSUES_BUILD_BASELINE_LABEL}`)).toHaveLength(100)
+  expect(candidate.documents).toHaveLength(GITHUB_ISSUES_BUILD_GROUPS.length)
+  expect(after.scope.cases.filter(([file]) => file === `e2e/${GITHUB_ISSUES_BUILD_BASELINE_LABEL}`))
+    .toEqual(candidate.inventory.map(item => [`e2e/${GITHUB_ISSUES_BUILD_BASELINE_LABEL}`, 'runtime:full', item.name, 'run', 'passed', null]).sort())
   expect(after.scope).toEqual(before.scope)
   expect(localDigest(after.scope)).toBe(localDigest(before.scope))
-  expect(candidate.raw.vitest.filter(item => GITHUB_ISSUES_BUILD_TASK_LABELS.includes(item.value.runtimeTaskLabel))).toHaveLength(24)
+  expect(candidate.raw.vitest.filter(item => GITHUB_ISSUES_BUILD_TASK_LABELS.includes(item.value.runtimeTaskLabel))).toHaveLength(GITHUB_ISSUES_BUILD_TASK_LABELS.length)
 })
 
 it.each(['missing', 'duplicate', 'mode', 'state', 'note'])(

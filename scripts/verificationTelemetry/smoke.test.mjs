@@ -1,8 +1,6 @@
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
-// eslint-disable-next-line e18e/ban-dependencies -- 验证真实原命令与 reporter 生命周期，不启动任何 E2E 或浏览器。
-import { execa } from 'execa'
 import { afterEach, expect, it } from 'vitest'
 import { preparePnpmVitestFixture } from '../testFixtures/pnpmVitestWorkspace.mjs'
 import { finalizeBaselineCoverage, readJson } from './coverage.mjs'
@@ -17,18 +15,18 @@ afterEach(async () => {
 async function fixture(extraSource = '') {
   const directory = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'coverage-telemetry-smoke-')))
   roots.push(directory)
-  await preparePnpmVitestFixture(directory, { private: true, type: 'module', scripts: { 'test:coverage': 'vitest run --configLoader bundle --coverage.enabled --exclude \'**/.codex-tmp/**\'' } })
+  const { runPnpm } = await preparePnpmVitestFixture(directory, { private: true, type: 'module', scripts: { 'test:coverage': 'vitest run --configLoader bundle --coverage.enabled --exclude \'**/.codex-tmp/**\'' } })
   await fs.writeFile(path.join(directory, 'vitest.coverage.ts'), 'export const originalThreshold = 100\n')
   const helper = new URL('./vitest.mjs', import.meta.url).href
   await fs.writeFile(path.join(directory, 'vitest.config.mts'), `import { baselineVitestTelemetry } from ${JSON.stringify(helper)}\nexport default { test: { ...baselineVitestTelemetry(${JSON.stringify(directory)}), include: ['math.test.js'], coverage: { include: ['math.js'], thresholds: { functions: 100 } } } }\n`)
   await fs.writeFile(path.join(directory, 'math.js'), `export const double = value => value * 2\n${extraSource}`)
   await fs.writeFile(path.join(directory, 'math.test.js'), 'import { it, expect } from \'vitest\'\nimport { double } from \'./math.js\'\nit(\'doubles\', () => expect(double(2)).toBe(4))\n')
-  return { directory, output: path.join(directory, '.tmp/verification-telemetry/coverage') }
+  return { directory, runPnpm, output: path.join(directory, '.tmp/verification-telemetry/coverage') }
 }
 
 it('records real native Vitest blob, actual cases and the successful unchanged threshold command', async () => {
-  const { directory, output } = await fixture()
-  const result = await execa('pnpm', ['test:coverage'], { cwd: directory, env, reject: false })
+  const { directory, runPnpm, output } = await fixture()
+  const result = await runPnpm(['test:coverage'], { env, reject: false })
   expect(result.exitCode, result.all ?? result.stdout + result.stderr).toBe(0)
   const observed = await readJson(path.join(output, 'observed.json'))
   expect(observed.cases.map(item => [item.file, item.name, item.state])).toEqual([['math.test.js', 'doubles', 'passed']])
@@ -38,8 +36,8 @@ it('records real native Vitest blob, actual cases and the successful unchanged t
 }, 30_000)
 
 it('keeps a real threshold failure failed after all test cases have passed', async () => {
-  const { directory, output } = await fixture('export const unused = () => 1\n')
-  const result = await execa('pnpm', ['test:coverage'], { cwd: directory, env, reject: false })
+  const { runPnpm, output } = await fixture('export const unused = () => 1\n')
+  const result = await runPnpm(['test:coverage'], { env, reject: false })
   expect(result.exitCode).not.toBe(0)
   expect((await readJson(path.join(output, 'observed.json'))).passed).toBe(true)
   expect(result.stdout + result.stderr).toMatch(/threshold/iu)

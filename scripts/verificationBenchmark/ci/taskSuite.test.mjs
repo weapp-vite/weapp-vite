@@ -124,7 +124,7 @@ it('compares the complete reviewed v2 logical task set while checking each physi
   expect(results[0].sample.scopeDigest).toBe(results[1].sample.scopeDigest)
   expect(results[1].evidence.execution.inventories.find(entry => entry.id === 'ordinary-suite').scope)
     .toEqual([[GITHUB_ISSUES_BUILD_BASELINE_LABEL, null, null], ['unrelated', null, null]])
-  expect(candidate.plan.tasks).toHaveLength(25)
+  expect(candidate.plan.tasks.map(task => task.label)).toEqual(['unrelated', ...GITHUB_ISSUES_BUILD_TASK_LABELS])
   candidate.reports[0].tasks[0].definitionHash = 'f'.repeat(64)
   expect((await collectCiEvidence(candidate.repository, 123, candidate.configuration, candidate.execute)).sample).toBeNull()
 })

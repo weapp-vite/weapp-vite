@@ -2,6 +2,8 @@ import { lstat, mkdir, mkdtemp, readdir, readFile, realpath, rm, writeFile } fro
 import { createRequire } from 'node:module'
 import os from 'node:os'
 import path from 'node:path'
+// eslint-disable-next-line e18e/ban-dependencies -- 校验独立 fixture 的子进程使用已冻结的 pnpm。
+import { execa } from 'execa'
 import { afterEach, expect, it, vi } from 'vitest'
 import { parseAllDocuments, stringify } from 'yaml'
 import { createPnpmVitestFixtureLock, preparePnpmVitestFixture } from './pnpmVitestWorkspace.mjs'
@@ -24,8 +26,7 @@ async function fixture() {
   }
   vi.stubEnv('CI', 'true')
   vi.stubEnv('PNPM_CONFIG_OFFLINE', 'true')
-  const runPnpm = await preparePnpmVitestFixture(directory, { private: true, type: 'module' })
-  return { directory, root, runPnpm }
+  return { directory, root, ...await preparePnpmVitestFixture(directory, { private: true, type: 'module' }) }
 }
 
 it('isolates root configuration and project dependencies while retaining the locked package-manager resolution', () => {
@@ -50,7 +51,7 @@ it('isolates root configuration and project dependencies while retaining the loc
 })
 
 it('prepares and executes real Vitest in CI with an empty offline cache and the frozen package-manager identity', async () => {
-  const { directory, root, runPnpm } = await fixture()
+  const { directory, root, runPnpm, env } = await fixture()
   const result = await runPnpm(['exec', 'vitest', '--version'])
   const { version } = JSON.parse(await readFile(require.resolve('vitest/package.json'), 'utf8'))
   expect(result.stdout).toContain(`vitest/${version}`)
@@ -59,6 +60,7 @@ it('prepares and executes real Vitest in CI with an empty offline cache and the 
   const manifest = JSON.parse(await readFile(path.join(directory, 'package.json'), 'utf8'))
   expect(manifest.packageManager).toBe(repository.packageManager)
   expect((await runPnpm(['--version'])).stdout.trim()).toBe(repository.packageManager.slice('pnpm@'.length))
+  expect((await execa('pnpm', ['--version'], { cwd: directory, env })).stdout.trim()).toBe(repository.packageManager.slice('pnpm@'.length))
   const metadata = await readdir(path.join(root, 'cache'), { recursive: true }).catch((error) => {
     if (error.code === 'ENOENT') {
       return []

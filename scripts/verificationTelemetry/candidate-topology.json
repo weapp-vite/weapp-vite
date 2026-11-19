@@ -42,8 +42,8 @@
               "run_coverage": false
             },
             {
-              "os": "macos-latest",
-              "node-version": 22,
+              "os": "${{ fromJSON(inputs.ci_toolchain).runners.macos }}",
+              "node-version": "${{ fromJSON(inputs.ci_toolchain).node.supportMajors[0] }}",
               "build_command": "pnpm build:ci:macos",
               "lint_command": "",
               "run_types": false,
@@ -51,7 +51,7 @@
             }
           ]
         },
-        "max-parallel": 4
+        "max-parallel": "${{ fromJSON(inputs.ci_toolchain).parallel.macos }}"
       },
       "uses": "./.github/workflows/reusable-quality-platform.yml",
       "with": {
@@ -93,7 +93,7 @@
             }
           ]
         },
-        "max-parallel": 2
+        "max-parallel": "${{ fromJSON(inputs.ci_toolchain).parallel.default }}"
       },
       "uses": "./.github/workflows/reusable-quality-platform.yml",
       "with": {
@@ -115,7 +115,7 @@
       "name": "Build and Test (${{ matrix.os }} / Node ${{ matrix.node-version }})",
       "strategy": {
         "fail-fast": false,
-        "max-parallel": 6,
+        "max-parallel": "${{ fromJSON(inputs.ci_toolchain).parallel.macos }}",
         "matrix": {
           "include": [
             {
@@ -151,16 +151,16 @@
               "run_coverage": true
             },
             {
-              "os": "macos-latest",
-              "node-version": 22,
+              "os": "${{ fromJSON(inputs.ci_toolchain).runners.macos }}",
+              "node-version": "${{ fromJSON(inputs.ci_toolchain).node.supportMajors[0] }}",
               "build_command": "pnpm build:ci:macos",
               "lint_command": "pnpm lint",
               "run_types": false,
               "run_coverage": true
             },
             {
-              "os": "macos-latest",
-              "node-version": 24,
+              "os": "${{ fromJSON(inputs.ci_toolchain).runners.macos }}",
+              "node-version": "${{ fromJSON(inputs.ci_toolchain).node.supportMajors[1] }}",
               "build_command": "pnpm build:ci:macos",
               "lint_command": "pnpm lint",
               "run_types": false,
@@ -212,7 +212,7 @@
       "name": "Weapi Compatibility Guard (Node ${{ matrix.node-version }})",
       "strategy": {
         "fail-fast": false,
-        "max-parallel": 3,
+        "max-parallel": "${{ fromJSON(inputs.ci_toolchain).parallel.default }}",
         "matrix": {
           "node-version": [
             22,
@@ -256,12 +256,12 @@
       "name": "Watcher Backend Comparison (${{ matrix.os }} / Node 24)",
       "strategy": {
         "fail-fast": false,
-        "max-parallel": 3,
+        "max-parallel": "${{ fromJSON(inputs.ci_toolchain).parallel.macos }}",
         "matrix": {
           "os": [
             "ubuntu-latest",
             "windows-latest",
-            "macos-latest"
+            "${{ fromJSON(inputs.ci_toolchain).runners.macos }}"
           ]
         }
       },
@@ -295,12 +295,12 @@
       "name": "Native Compiler Batch Diagnostic (${{ matrix.os }} / Node 24)",
       "strategy": {
         "fail-fast": false,
-        "max-parallel": 3,
+        "max-parallel": "${{ fromJSON(inputs.ci_toolchain).parallel.macos }}",
         "matrix": {
           "os": [
             "ubuntu-latest",
             "windows-latest",
-            "macos-latest"
+            "${{ fromJSON(inputs.ci_toolchain).runners.macos }}"
           ]
         }
       },
@@ -487,12 +487,12 @@
       "name": "Plugin Watch Readiness (${{ matrix.os }} / Node ${{ matrix.node-version }})",
       "strategy": {
         "fail-fast": false,
-        "max-parallel": 3,
+        "max-parallel": "${{ fromJSON(inputs.ci_toolchain).parallel.macos }}",
         "matrix": {
           "os": [
             "ubuntu-latest",
             "windows-latest",
-            "macos-latest"
+            "${{ fromJSON(inputs.ci_toolchain).runners.macos }}"
           ],
           "node-version": [
             22,
@@ -528,12 +528,12 @@
       "name": "Runtime Publication Regression (${{ matrix.os }} / Node ${{ matrix.node-version }})",
       "strategy": {
         "fail-fast": false,
-        "max-parallel": 3,
+        "max-parallel": "${{ fromJSON(inputs.ci_toolchain).parallel.macos }}",
         "matrix": {
           "os": [
             "ubuntu-latest",
             "windows-latest",
-            "macos-latest"
+            "${{ fromJSON(inputs.ci_toolchain).runners.macos }}"
           ],
           "node-version": [
             22,
@@ -571,12 +571,12 @@
       "name": "HMR Lifecycle Regression (${{ matrix.os }} / Node ${{ matrix.node-version }})",
       "strategy": {
         "fail-fast": false,
-        "max-parallel": 3,
+        "max-parallel": "${{ fromJSON(inputs.ci_toolchain).parallel.macos }}",
         "matrix": {
           "os": [
             "ubuntu-latest",
             "windows-latest",
-            "macos-latest"
+            "${{ fromJSON(inputs.ci_toolchain).runners.macos }}"
           ],
           "node-version": [
             22,
@@ -653,7 +653,7 @@
           "os": [
             "ubuntu-latest",
             "windows-latest",
-            "macos-latest"
+            "${{ fromJSON(inputs.ci_toolchain).runners.macos }}"
           ]
         }
       },
@@ -721,7 +721,7 @@
               "build-command": "pnpm build:pkgs:ci:windows"
             },
             {
-              "os": "macos-latest",
+              "os": "${{ fromJSON(inputs.ci_toolchain).runners.macos }}",
               "build-command": "pnpm build:pkgs:ci:macos"
             }
           ]
@@ -765,7 +765,7 @@
         "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
         "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
-        "runs_on": "macos-latest",
+        "runs_on": "${{ fromJSON(inputs.ci_toolchain).runners.macos }}",
         "node_version": "24",
         "timeout_minutes": 35,
         "build_command": "pnpm build:pkgs:ci",
@@ -888,7 +888,7 @@
       "name": "Web E2E Baseline (Node ${{ matrix.node-version }})",
       "strategy": {
         "fail-fast": false,
-        "max-parallel": 3,
+        "max-parallel": "${{ fromJSON(inputs.ci_toolchain).parallel.default }}",
         "matrix": {
           "node-version": [
             22,
@@ -908,7 +908,7 @@
         "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
         "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
-        "runs_on": "macos-latest",
+        "runs_on": "${{ fromJSON(inputs.ci_toolchain).runners.macos }}",
         "node_version": "${{ format('{0}', matrix.node-version) }}",
         "timeout_minutes": 35,
         "build_command": "pnpm build:pkgs:ci",
@@ -941,7 +941,7 @@
             },
             {
               "platform": "weapp",
-              "os": "macos-latest",
+              "os": "${{ fromJSON(inputs.ci_toolchain).runners.macos }}",
               "build-command": "pnpm build:pkgs:ci:macos",
               "node-version": 22
             }
@@ -952,6 +952,7 @@
       "with": {
         "verification_topology": "${{ inputs.verification_topology }}",
         "pr_context": "${{ inputs.pr_context }}",
+        "ci_toolchain": "${{ inputs.ci_toolchain }}",
         "runs_on": "${{ matrix.os }}",
         "node_version": "${{ format('{0}', matrix.node-version) }}",
         "build_command": "${{ matrix.build-command }}",
@@ -982,7 +983,7 @@
             },
             {
               "platform": "weapp",
-              "os": "macos-latest",
+              "os": "${{ fromJSON(inputs.ci_toolchain).runners.macos }}",
               "node-version": 22,
               "build-command": "pnpm build:pkgs:ci:macos"
             },
@@ -1000,7 +1001,7 @@
             },
             {
               "platform": "weapp",
-              "os": "macos-latest",
+              "os": "${{ fromJSON(inputs.ci_toolchain).runners.macos }}",
               "node-version": 24,
               "build-command": "pnpm build:pkgs:ci:macos"
             }
@@ -1011,6 +1012,7 @@
       "with": {
         "verification_topology": "${{ inputs.verification_topology }}",
         "pr_context": "${{ inputs.pr_context }}",
+        "ci_toolchain": "${{ inputs.ci_toolchain }}",
         "runs_on": "${{ matrix.os }}",
         "node_version": "${{ format('{0}', matrix.node-version) }}",
         "build_command": "${{ matrix.build-command }}",
@@ -1032,12 +1034,9 @@
           "os": [
             "ubuntu-latest",
             "windows-latest",
-            "macos-latest"
+            "${{ fromJSON(inputs.ci_toolchain).runners.macos }}"
           ],
-          "bun-version": [
-            "1.4.2",
-            "latest"
-          ]
+          "bun-version": "${{ fromJSON(inputs.ci_toolchain).bun.matrix }}"
         }
       },
       "uses": "./.github/workflows/reusable-node-command.yml",
@@ -1205,7 +1204,7 @@
           "os": [
             "ubuntu-latest",
             "windows-latest",
-            "macos-latest"
+            "${{ fromJSON(inputs.ci_toolchain).runners.macos }}"
           ]
         }
       },
@@ -1213,6 +1212,7 @@
       "with": {
         "verification_topology": "${{ inputs.verification_topology }}",
         "pr_context": "${{ inputs.pr_context }}",
+        "ci_toolchain": "${{ inputs.ci_toolchain }}",
         "runs_on": "${{ matrix.os }}"
       },
       "secrets": "inherit"
@@ -1289,6 +1289,11 @@
             "node-version": "${{ inputs.node_version }}",
             "install-dependencies": "${{ inputs.verification_topology != 'optimized-v2' || inputs.consume_build_artifact == '' }}"
           }
+        },
+        {
+          "name": "Record runner identity",
+          "shell": "bash",
+          "run": "node -e \"require('node:fs').mkdirSync('.tmp', { recursive: true }); require('node:fs').writeFileSync('.tmp/runner-metadata.json', JSON.stringify({ name: process.env.RUNNER_NAME, os: process.env.RUNNER_OS, arch: process.env.RUNNER_ARCH, imageOs: process.env.ImageOS || '', imageVersion: process.env.ImageVersion || '' }, null, 2) + '\\\\n')\"\n"
         },
         {
           "name": "Restore trusted workspace task cache",
@@ -1559,10 +1564,22 @@
         {
           "name": "Upload CI stage timings",
           "if": "${{ !cancelled() && inputs.timing_artifact_name != '' }}",
+          "continue-on-error": true,
           "uses": "actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9",
           "with": {
             "name": "${{ inputs.timing_artifact_name }}",
             "path": ".tmp/ci-timings.json",
+            "if-no-files-found": "error"
+          }
+        },
+        {
+          "name": "Upload runner metadata",
+          "if": "${{ !cancelled() }}",
+          "continue-on-error": true,
+          "uses": "actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9",
+          "with": {
+            "name": "runner-metadata-${{ runner.name }}",
+            "path": ".tmp/runner-metadata.json",
             "if-no-files-found": "error"
           }
         },
@@ -2086,6 +2103,7 @@
       "name": "IDE DOM Headless shard ${{ matrix.shard }} (${{ inputs.runs_on }} / Node ${{ inputs.node_version }})",
       "strategy": {
         "fail-fast": false,
+        "max-parallel": "${{ inputs.runs_on == fromJSON(inputs.ci_toolchain).runners.macos && fromJSON(inputs.ci_toolchain).parallel.macos || fromJSON(inputs.ci_toolchain).parallel.default }}",
         "matrix": {
           "shard": [
             1,
@@ -2238,6 +2256,7 @@
       ],
       "strategy": {
         "fail-fast": false,
+        "max-parallel": "${{ inputs.runs_on == fromJSON(inputs.ci_toolchain).runners.macos && fromJSON(inputs.ci_toolchain).parallel.macos || fromJSON(inputs.ci_toolchain).parallel.default }}",
         "matrix": {
           "shard": [
             1,
@@ -2317,11 +2336,9 @@
       "name": "Bun CLI (${{ matrix.bun-version }})",
       "strategy": {
         "fail-fast": false,
+        "max-parallel": "${{ inputs.runs_on == fromJSON(inputs.ci_toolchain).runners.macos && fromJSON(inputs.ci_toolchain).parallel.macos || fromJSON(inputs.ci_toolchain).parallel.default }}",
         "matrix": {
-          "bun-version": [
-            "1.4.2",
-            "latest"
-          ]
+          "bun-version": "${{ fromJSON(inputs.ci_toolchain).bun.matrix }}"
         }
       },
       "uses": "./.github/workflows/reusable-node-command.yml",
@@ -2453,7 +2470,7 @@
         "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
         "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "runs_on": "${{ inputs.runs_on }}",
-        "node_version": "24",
+        "node_version": "${{ fromJSON(inputs.ci_toolchain).node.ci }}",
         "timeout_minutes": 30,
         "build_command": "pnpm exec turbo run build --filter=weapp-vite... --filter=@weapp-vite/react... --filter=rolldown-require... --filter=@mpcore/simulator...",
         "main_command": "node scripts/consumerArtifacts/manifest.mjs pack .cache/node-support-tarballs",
@@ -2476,14 +2493,15 @@
       "name": "Published Node support (${{ matrix.node }})",
       "strategy": {
         "fail-fast": false,
+        "max-parallel": "${{ inputs.runs_on == fromJSON(inputs.ci_toolchain).runners.macos && fromJSON(inputs.ci_toolchain).parallel.macos || fromJSON(inputs.ci_toolchain).parallel.default }}",
         "matrix": {
           "node": [
-            "22.23.4",
-            "24.22.1",
-            "26.12.1",
-            "22",
-            "24",
-            "26"
+            "${{ fromJSON(inputs.ci_toolchain).node.minimum['22'] }}",
+            "${{ fromJSON(inputs.ci_toolchain).node.minimum['24'] }}",
+            "${{ fromJSON(inputs.ci_toolchain).node.minimum['26'] }}",
+            "${{ fromJSON(inputs.ci_toolchain).node.supportMajors[0] }}",
+            "${{ fromJSON(inputs.ci_toolchain).node.supportMajors[1] }}",
+            "${{ fromJSON(inputs.ci_toolchain).node.supportMajors[2] }}"
           ]
         }
       },
@@ -2509,7 +2527,7 @@
         {
           "uses": "./.github/actions/setup-node-pnpm",
           "with": {
-            "node-version": "24"
+            "node-version": "${{ fromJSON(inputs.ci_toolchain).node.ci }}"
           }
         },
         {
@@ -2611,7 +2629,7 @@
         "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
         "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "runs_on": "${{ inputs.runs_on }}",
-        "node_version": "24",
+        "node_version": "${{ fromJSON(inputs.ci_toolchain).node.ci }}",
         "timeout_minutes": 30,
         "consume_build_artifact": "consumer-${{ inputs.runs_on }}-node-24-build",
         "build_artifact_node_major": "24",
@@ -2652,7 +2670,7 @@
         "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
         "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "runs_on": "${{ inputs.runs_on }}",
-        "node_version": "24",
+        "node_version": "${{ fromJSON(inputs.ci_toolchain).node.ci }}",
         "timeout_minutes": 30,
         "build_command": "",
         "main_command": "pnpm exec cross-env WEAPP_VITE_DEPENDENCY_EVIDENCE=.cache/dependency-compatibility.json node packages/weapp-vite/scripts/verify-dependency-install.mjs ${{ matrix.manager }}",
@@ -2697,7 +2715,7 @@
         "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
         "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "runs_on": "${{ inputs.runs_on }}",
-        "node_version": "24",
+        "node_version": "${{ fromJSON(inputs.ci_toolchain).node.ci }}",
         "timeout_minutes": 30,
         "build_command": "",
         "main_command": "node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.toolchain }}",
@@ -2740,7 +2758,7 @@
         "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
         "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "runs_on": "${{ inputs.runs_on }}",
-        "node_version": "24",
+        "node_version": "${{ fromJSON(inputs.ci_toolchain).node.ci }}",
         "timeout_minutes": 30,
         "build_command": "",
         "main_command": "node scripts/consumerBatches/imports.mjs ${{ matrix.host }}",
@@ -2785,7 +2803,7 @@
         "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
         "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "runs_on": "${{ inputs.runs_on }}",
-        "node_version": "24",
+        "node_version": "${{ fromJSON(inputs.ci_toolchain).node.ci }}",
         "timeout_minutes": 30,
         "build_command": "",
         "main_command": "node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.host }} headless stateful",
@@ -2840,7 +2858,7 @@
         "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
         "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "runs_on": "${{ inputs.runs_on }}",
-        "node_version": "24",
+        "node_version": "${{ fromJSON(inputs.ci_toolchain).node.ci }}",
         "timeout_minutes": 30,
         "build_command": "",
         "main_command": "node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.host }} headless ${{ matrix.profile }}",
@@ -2885,7 +2903,7 @@
         "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
         "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "runs_on": "${{ inputs.runs_on }}",
-        "node_version": "24",
+        "node_version": "${{ fromJSON(inputs.ci_toolchain).node.ci }}",
         "timeout_minutes": 30,
         "build_command": "",
         "main_command": "node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.host }} headless react",
@@ -2930,7 +2948,7 @@
         "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
         "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "runs_on": "${{ inputs.runs_on }}",
-        "node_version": "24",
+        "node_version": "${{ fromJSON(inputs.ci_toolchain).node.ci }}",
         "timeout_minutes": 30,
         "build_command": "",
         "main_command": "node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.host }} headless independent",
@@ -2975,7 +2993,7 @@
         "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
         "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "runs_on": "${{ inputs.runs_on }}",
-        "node_version": "24",
+        "node_version": "${{ fromJSON(inputs.ci_toolchain).node.ci }}",
         "timeout_minutes": 30,
         "build_command": "",
         "main_command": "node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.host }} headless worker",
@@ -3020,7 +3038,7 @@
         "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
         "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "runs_on": "${{ inputs.runs_on }}",
-        "node_version": "24",
+        "node_version": "${{ fromJSON(inputs.ci_toolchain).node.ci }}",
         "timeout_minutes": 30,
         "build_command": "",
         "main_command": "node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.host }} headless plugin",
@@ -3065,7 +3083,7 @@
         "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
         "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "runs_on": "${{ inputs.runs_on }}",
-        "node_version": "24",
+        "node_version": "${{ fromJSON(inputs.ci_toolchain).node.ci }}",
         "timeout_minutes": 30,
         "build_command": "",
         "main_command": "node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.host }} headless lib",
@@ -3110,7 +3128,7 @@
         "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
         "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "runs_on": "${{ inputs.runs_on }}",
-        "node_version": "24",
+        "node_version": "${{ fromJSON(inputs.ci_toolchain).node.ci }}",
         "timeout_minutes": 30,
         "build_command": "",
         "main_command": "node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.host }} headless platform",
@@ -3155,7 +3173,7 @@
         "head_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).headRef || needs.pr-context.outputs.head_ref) }}",
         "base_ref": "${{ (inputs.verification_topology == 'optimized-v2' && fromJSON(inputs.pr_context).baseRef || needs.pr-context.outputs.base_ref) }}",
         "runs_on": "${{ inputs.runs_on }}",
-        "node_version": "24",
+        "node_version": "${{ fromJSON(inputs.ci_toolchain).node.ci }}",
         "timeout_minutes": 30,
         "build_command": "",
         "install_playwright": true,
