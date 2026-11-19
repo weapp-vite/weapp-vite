@@ -25,7 +25,10 @@ async function listFiles(root: string): Promise<string[]> {
 
 export function registerGithubIssuesBuildCase(context: GithubIssuesBuildCaseContext) {
   it('issue #844: prunes npm files from the final component closure', async () => {
-    const outDir = path.join(context.appRoot, 'dist')
+    await context.runStandardBuild()
+    const standardApp = await fs.readFile(path.join(context.distRoot, 'app.json'), 'utf8')
+    const outputName = 'dist-issue-844'
+    const outDir = path.join(context.appRoot, outputName)
     await fs.rm(outDir, { recursive: true, force: true })
     await runWeappViteBuildWithLogCapture({
       cliPath: context.cliPath,
@@ -33,8 +36,8 @@ export function registerGithubIssuesBuildCase(context: GithubIssuesBuildCaseCont
       platform: 'weapp',
       cwd: context.appRoot,
       label: 'ci:github-issues:issue844',
-      env: { WEAPP_GITHUB_ISSUE_844_PRUNE: 'true' },
-      outDir: 'dist',
+      env: { WEAPP_GITHUB_ISSUE_844_PRUNE: 'true', WEAPP_GITHUB_ISSUE_844_OUT_DIR: outputName },
+      outDir: outputName,
     })
 
     for (const root of [
@@ -49,5 +52,6 @@ export function registerGithubIssuesBuildCase(context: GithubIssuesBuildCaseCont
       expect(files).not.toContain('calendar/index.js')
       expect(files.some(file => file.endsWith('.d.ts'))).toBe(false)
     }
+    expect(await fs.readFile(path.join(context.distRoot, 'app.json'), 'utf8')).toBe(standardApp)
   })
 }
