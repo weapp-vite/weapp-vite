@@ -36,6 +36,14 @@ const APP_LIFECYCLE_TEST_LABEL = 'ide/app-lifecycle.test.ts'
 const APP_LIFECYCLE_VARIANT_ENV = 'WEAPP_VITE_E2E_APP_LIFECYCLE_VARIANT'
 const APP_LIFECYCLE_VARIANTS = ['native', 'wevu-ts', 'wevu-vue'] as const
 const APP_LIFECYCLE_CASE = 'app lifecycle compare (e2e) > compares wevu app lifecycle logs against native'
+const APP_PRELUDE_TEST_LABEL = 'ide/app-prelude-native.runtime.test.ts'
+const APP_PRELUDE_MODE_ENV = 'WEAPP_VITE_E2E_APP_PRELUDE_MODE'
+const APP_PRELUDE_CASES = {
+  'inline': 'e2e app: app-prelude-native runtime > executes inline app prelude once even after relaunching main and subpackage pages',
+  'default': 'e2e app: app-prelude-native runtime > keeps one prelude side effect per package scope under default require mode',
+  'legacy-es5-request-runtime': 'e2e app: app-prelude-native runtime > keeps minified ES5 request runtime and prelude side effects across package scopes',
+  'default-request-runtime': 'e2e app: app-prelude-native runtime > installs request runtime globals through app.prelude.js under default require mode',
+} as const
 const AUTO_ROUTES_TEST_LABEL = 'ide/auto-routes-define-app-json.runtime.test.ts'
 const AUTO_ROUTES_VARIANT_ENV = 'WEAPP_VITE_E2E_AUTO_ROUTES_VARIANT'
 const AUTO_ROUTES_VARIANTS = ['route-links', 'topology'] as const
@@ -689,12 +697,29 @@ function createAutoRoutesIdeTasks() {
   })
 }
 
-function expandAppLifecycleTask(task: SuiteTask) {
+function createAppPreludeIdeTasks() {
+  const filePath = path.resolve(ROOT, APP_PRELUDE_TEST_LABEL)
+  // 每种拓扑由 runner 独立认领和释放冷宿主，避免关窗后在旧宿主中再次导入。
+  return Object.entries(APP_PRELUDE_CASES).map(([mode, name]) => {
+    const task = createIdeVitestTask(filePath, `ide/app-prelude-native.${mode}.runtime.test.ts`)
+    task.env = {
+      ...task.env,
+      [APP_PRELUDE_MODE_ENV]: mode,
+      [SELECTED_CASES_ENV]: JSON.stringify([{ file: `e2e/${APP_PRELUDE_TEST_LABEL}`, name }]),
+    }
+    return task
+  })
+}
+
+function expandIsolatedIdeTask(task: SuiteTask) {
   if (task.label === APP_LIFECYCLE_TEST_LABEL) {
     return createAppLifecycleIdeTasks()
   }
   if (task.label === AUTO_ROUTES_TEST_LABEL) {
     return createAutoRoutesIdeTasks()
+  }
+  if (task.label === APP_PRELUDE_TEST_LABEL) {
+    return createAppPreludeIdeTasks()
   }
   return [task]
 }
@@ -833,6 +858,9 @@ export function getIdeExhaustiveTasks(options: SuiteTaskFactoryOptions = {}) {
       if (toRelativeLabel(filePath) === AUTO_ROUTES_TEST_LABEL) {
         return createAutoRoutesIdeTasks()
       }
+      if (toRelativeLabel(filePath) === APP_PRELUDE_TEST_LABEL) {
+        return createAppPreludeIdeTasks()
+      }
       const task = createIdeVitestTask(filePath)
       if (IDE_EXHAUSTIVE_OUT_OF_SCOPE_LABELS.has(task.label)) {
         task.outOfScopeReason = 'Optional Baidu host runtime is outside WeChat DOM acceptance'
@@ -859,15 +887,15 @@ function getIdePatternTasks(patterns: string[], env: Record<string, string> = {}
 }
 
 export function getIdeTasks() {
-  return getIdePatternTasks(IDE_FULL_CORE_PATTERNS).flatMap(expandAppLifecycleTask)
+  return getIdePatternTasks(IDE_FULL_CORE_PATTERNS).flatMap(expandIsolatedIdeTask)
 }
 
 export function getIdeGateTasks() {
-  return IDE_GATE_TESTS.map(filePath => createVitestTask(DEVTOOLS_CONFIG_PATH, filePath)).flatMap(expandAppLifecycleTask)
+  return IDE_GATE_TESTS.map(filePath => createVitestTask(DEVTOOLS_CONFIG_PATH, filePath)).flatMap(expandIsolatedIdeTask)
 }
 
 export function getIdeSmokeTasks() {
-  return IDE_SMOKE_TESTS.map(filePath => createVitestTask(DEVTOOLS_CONFIG_PATH, filePath)).flatMap(expandAppLifecycleTask)
+  return IDE_SMOKE_TESTS.map(filePath => createVitestTask(DEVTOOLS_CONFIG_PATH, filePath)).flatMap(expandIsolatedIdeTask)
 }
 
 export function getIdeHeadlessSmokeTasks() {

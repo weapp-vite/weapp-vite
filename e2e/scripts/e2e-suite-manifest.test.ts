@@ -8,6 +8,7 @@ import { isolateTopologyTestEnvironment, useIsolatedTopologyTestEnvironment } fr
 import devtoolsConfig from '../vitest.e2e.devtools.config'
 import parallelConfig from '../vitest.e2e.parallel.config'
 import { readTaskCases } from './domAcceptanceReport/inventory'
+import { readPlannedTaskCases } from './domAcceptanceReport/taskCases'
 import { getCiFullTasks, getCiPrTasks, getCiTasks, getDiminaTasks, getFullRegressionTasks, getFullTasks, getIdeComponentLibraryTasks, getIdeComponentLibraryVisualFullTasks, getIdeComponentLibraryVisualTasks, getIdeExhaustiveTasks, getIdeTasks, getSuiteTasks, getWebTasks, IDE_GITHUB_ISSUES_AGGREGATE_GROUPS, IDE_GITHUB_ISSUES_AGGREGATE_LABELS, IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS, IDE_GITHUB_ISSUES_BUILD_ONLY_LABELS, IDE_TDESIGN_AGGREGATE_LABEL, IDE_TDESIGN_AGGREGATED_PATTERNS, partitionE2ETasks } from './e2e-suite-manifest'
 
 function withFrozenTopology<T extends SuiteTask>(tasks: T[]) {
@@ -393,6 +394,36 @@ describe('e2e suite manifest', () => {
   it('keeps native property delivery parity in the ordinary full IDE suite', async () => {
     const tasks = await getSuiteTasks('ide-full')
     expect(tasks.filter(task => task.label === 'ide/native-property-delivery.runtime.test.ts')).toHaveLength(1)
+  })
+
+  it('gives every prelude topology a cold IDE task without losing or duplicating source cases', async () => {
+    const source = 'ide/app-prelude-native.runtime.test.ts'
+    const tasks = (await getSuiteTasks('ide-full:exhaustive')).filter(task => task.acceptanceSource === source)
+    expect(tasks.map(task => task.env?.WEAPP_VITE_E2E_APP_PRELUDE_MODE).sort()).toEqual([
+      'default',
+      'default-request-runtime',
+      'inline',
+      'legacy-es5-request-runtime',
+    ])
+    expect(new Set(tasks.map(task => task.label)).size).toBe(4)
+    const planned = await Promise.all(tasks.map(task => readPlannedTaskCases(task, 'devtools')))
+    expect(planned.every(cases => cases.length === 1)).toBe(true)
+    const sourceCases = readTaskCases(path.resolve(import.meta.dirname, '../..'), source)
+      .map(({ name }) => ({ file: `e2e/${source}`, name }))
+    expect(sourceCases).toHaveLength(4)
+    expect(planned.flat().sort((a, b) => a.name.localeCompare(b.name)))
+      .toEqual(sourceCases.sort((a, b) => a.name.localeCompare(b.name)))
+    for (const task of tasks) {
+      expect(task.env?.WEAPP_VITE_E2E_TARGET_FILE).toBe(source)
+      expect(task.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBeUndefined()
+      expect(task.env?.WEAPP_IDE_MANAGED_PROJECT_MAX_WINDOWS).toBeUndefined()
+    }
+    for (const suite of ['ide-dom-headless', 'ide-headless-full']) {
+      const headless = (await getSuiteTasks(suite)).filter(task => task.label === source)
+      expect(headless).toHaveLength(1)
+      expect(headless[0]?.env?.WEAPP_VITE_E2E_APP_PRELUDE_MODE).toBeUndefined()
+      await expect(readPlannedTaskCases(headless[0]!, 'headless')).resolves.toHaveLength(4)
+    }
   })
 
   it.each([
