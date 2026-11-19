@@ -1,0 +1,17 @@
+{
+  "appid": "wx6ffee4673b257014",
+  "projectname": "issues-1355-1356",
+  "compileType": "miniprogram",
+  "miniprogramRoot": "dist/",
+  "setting": {
+    "es6": false,
+    "urlCheck": false,
+    "packNpmManually": true,
+    "packNpmRelationList": [
+      {
+        "packageJsonPath": "./package.json",
+        "miniprogramNpmDistDir": "./dist"
+      }
+    ]
+  }
+}

@@ -48,6 +48,7 @@ const descriptors: Array<[string, Plugin['enforce']?]> = [
   ['weapp-vite:tailwindcss:output', 'post'],
   ['weapp-vite:compiler:output', 'post'],
   ['weapp-vite:lib-dts', 'post'],
+  ['weapp-vite:npm-pruning', 'post'],
   ['weapp-vite:output-publication', 'post'],
 ]
 

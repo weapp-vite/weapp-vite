@@ -6,6 +6,7 @@ import { resolveWeappAutoRoutesConfig } from '@/autoRoutesConfig'
 import { createSelectedRuntimeProviderPlugin, resolveRuntimeProvider } from '@/runtimeProviders'
 import { createAppBuilderPlugin } from '../runtime/buildPlugin/appBuilder'
 import { createNpmPruningPlugin } from '../runtime/buildPlugin/npmPruning'
+import { usesBundlerNpmPublication } from '../runtime/buildPlugin/npmPublication'
 import { asset } from './asset'
 import { autoImport } from './autoImport'
 import { autoRoutes } from './autoRoutes'
@@ -143,7 +144,7 @@ export function vitePluginWeapp(
   if (!subPackageMeta && libModeEnabled) {
     groups.push([createLibDtsPlugin(ctx)])
   }
-  if (!subPackageMeta && !libModeEnabled && ctx.configService.weappViteConfig.npm?.pruneUnusedFiles === true) {
+  if (!subPackageMeta && usesBundlerNpmPublication(ctx)) {
     groups.push([createNpmPruningPlugin(ctx)])
   }
   groups.push([createOutputPublicationPlugin(ctx, subPackageMeta)])

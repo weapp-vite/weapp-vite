@@ -137,6 +137,14 @@ export default defineConfig({
 
 该选项只影响构建磁盘中的 npm 文件，不代表微信上传包体积；建议先在 CI 和目标运行时验证后再启用。
 
+### 生产应用的输出目录与构建钩子
+
+生产应用构建会将 npm 文件作为 bundler assets 写入最终产物，与是否开启 `pruneUnusedFiles` 无关。用户插件可在 `writeBundle` 中读取已落盘的 `miniprogram_npm`，也可在 `closeBundle` 中完成后处理；构建结束后不会再有并行 npm 拷贝覆盖这些修改。只有文件会被输出，过滤后不会留下空目录。
+
+使用 `wv build --mode demo --outDir dist-demo` 时，默认 npm 输出跟随 `dist-demo`。若在 `project.config.json` 中设置了 `packNpmRelationList`，位于原 `miniprogramRoot` 内的相对映射也会保留相对层级迁移，例如 `./dist/subdir` 变为 `dist-demo/subdir`；原输出树外的相对映射与绝对映射保持原位置。第二次构建不会改写第一份产物内的 npm 文件。
+
+`--outDir` 只指定小程序产物目录。若要让 automator 直接打开该目录，还需要有效的 `project.config.json`，继承源码项目的真实 AppID 和基础库版本，并将 `miniprogramRoot` 设为 `"./"`。也可以继续向 automator 传入包含项目配置的项目根。
+
 ### `strategy`
 
 - **类型**：`'explicit' | 'legacy'`

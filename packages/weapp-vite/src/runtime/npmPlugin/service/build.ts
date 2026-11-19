@@ -20,6 +20,7 @@ import {
   resolveNpmStrategyMode,
   resolveTargetDependencies,
 } from './dependencies'
+import { resolvePackageDependencyClosure } from './dependencyClosure'
 import { matchDependencyCopyPath, resolveCopyFilterRelativePath, resolveNpmSourceCacheOutDir } from './paths'
 
 function hasSameDependencySet(source: string[], target: string[]) {
@@ -37,31 +38,6 @@ async function loadPackageInfo(dep: string, cwd?: string) {
   catch {
     return null
   }
-}
-
-async function resolvePackageDependencyClosure(
-  dependencies: string[],
-  cwd?: string,
-  resolvePackageInfo: (dep: string, cwd?: string) => Promise<Awaited<ReturnType<typeof getPackageInfo>> | null> = loadPackageInfo,
-) {
-  const visited = new Set<string>()
-  const names = new Set<string>()
-
-  async function visit(dep: string, resolveFrom?: string) {
-    const packageInfo = await resolvePackageInfo(dep, resolveFrom)
-    const identity = `${packageInfo?.rootPath ?? resolveFrom ?? ''}\0${dep}`
-    if (visited.has(identity)) {
-      return
-    }
-    visited.add(identity)
-    names.add(dep)
-
-    const transitiveDependencies = Object.keys(packageInfo?.packageJson.dependencies ?? {})
-    await Promise.all(transitiveDependencies.map(childDep => visit(childDep, packageInfo?.rootPath ?? resolveFrom)))
-  }
-
-  await Promise.all(dependencies.map(dep => visit(dep, cwd)))
-  return [...names]
 }
 
 export function createNpmBuildService(options: NpmBuildServiceOptions) {

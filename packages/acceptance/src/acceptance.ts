@@ -21,6 +21,7 @@ import {
 } from '@weapp-agent/core/project'
 import { atomicJson } from './persistence.js'
 import { defaultVerification, detectProject } from './project.js'
+import { readRuntimeProjectConfig } from './projectConfig.js'
 import { runScenario, runtimeInvoker, scenarioSchema } from './scenario.js'
 import { sourceSnapshot } from './snapshot.js'
 import { verifyProject } from './verify.js'
@@ -145,12 +146,13 @@ export class AcceptanceService {
     }
     const missingChecks = config.acceptance.requiredChecks.filter(kind => kind !== 'devtools' && !config.verification.some(c => c.kind === kind))
     let hasTestAppId = false
+    let projectConfigProblem: string | undefined
     try {
-      const app = JSON.parse(await readFile(await safePath(this.root, 'project.config.json'), 'utf8'))
+      const app = await readRuntimeProjectConfig(this.root)
       hasTestAppId = Boolean(app.appid && app.appid !== 'touristappid')
     }
-    catch {
-      // Inspection reports missing prerequisites without launching the runtime.
+    catch (error) {
+      projectConfigProblem = error instanceof Error ? error.message : String(error)
     }
     return {
       version: 2,
@@ -171,7 +173,7 @@ export class AcceptanceService {
         ...(!trusted ? ['Review project scripts/configuration, then explicitly run wv accept --trust.'] : []),
         ...(!localMcp ? ['Install the project dependencies to provide the local weapp-vite MCP.'] : []),
         ...(!config.acceptance.scenarios.length ? ['Add acceptance.scenarios to the selected acceptance configuration for runtime assertions.'] : []),
-        ...(!hasTestAppId ? ['Configure a real test AppID in project.config.json before runtime checks.'] : []),
+        ...(projectConfigProblem ? [projectConfigProblem] : !hasTestAppId ? ['Configure a real test AppID in project.config.json before runtime checks.'] : []),
         'Runtime checks require logged-in WeChat DevTools, its service port enabled, and a real test AppID. Connection has not been probed.',
       ],
     }
@@ -312,7 +314,9 @@ export class AcceptanceService {
         if (!connect) {
           throw new ApprovalRequired('DevTools runtime adapter is unavailable. Use wv accept or the weapp-vite MCP.')
         }
-        const app = JSON.parse(await readFile(await safePath(this.root, 'project.config.json'), 'utf8'))
+        const app = await readRuntimeProjectConfig(this.root).catch((error: unknown) => {
+          throw new ApprovalRequired(error instanceof Error ? error.message : String(error))
+        })
         if (!app.appid || app.appid === 'touristappid') {
           throw new ApprovalRequired('Configure a real test AppID in project.config.json and log into WeChat DevTools.')
         }

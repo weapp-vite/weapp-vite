@@ -5,7 +5,8 @@ import { bounded, safePath } from '@weapp-agent/core/project'
 
 async function json(file: string): Promise<Record<string, any>> {
   try {
-    return JSON.parse(await readFile(file, 'utf8'))
+    const value: unknown = JSON.parse(await readFile(file, 'utf8'))
+    return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, any> : {}
   }
   catch {
     return {}

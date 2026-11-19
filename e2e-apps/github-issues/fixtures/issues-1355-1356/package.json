@@ -1,0 +1,9 @@
+{
+  "name": "issues-1355-1356",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "mini-lib": "file:./mini-lib",
+    "weapp-vite": "workspace:*"
+  }
+}

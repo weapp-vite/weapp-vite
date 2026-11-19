@@ -614,9 +614,10 @@ async function waitForMockCalls(mock: { mock: { calls: unknown[] } }, count: num
 }
 
 describe('runtime buildPlugin service', () => {
-  it('waits for npm output work before propagating a failed production build', async () => {
+  it('waits for legacy npm output work before propagating a failed standalone plugin build', async () => {
     const ctx = createMockContext()
     ctx.configService.isDev = false
+    ctx.configService.pluginOnly = true
     let finishNpm!: () => void
     const pendingNpm = new Promise<void>((resolve) => {
       finishNpm = resolve
@@ -5811,7 +5812,7 @@ describe('runtime buildPlugin service', () => {
     expect(ctx.watcherService.setRollupWatcher).not.toHaveBeenCalled()
   })
 
-  it('runs prod app and plugin builds with workers and npm scheduling', async () => {
+  it('runs prod app builds with workers and delegates npm publication to the bundler', async () => {
     process.env.VITEST = 'false'
     process.env.NODE_ENV = 'production'
 
@@ -5855,15 +5856,14 @@ describe('runtime buildPlugin service', () => {
     expect(buildMock).toHaveBeenNthCalledWith(1, {})
     expect(createPluginProjectSessionMock).not.toHaveBeenCalled()
     expect(setPluginProjectBuildOptionsMock).toHaveBeenCalledWith(ctx, {})
-    expect(queueStartSpy).toHaveBeenCalled()
-    expect(ctx.npmService.build).toHaveBeenCalledTimes(1)
+    expect(queueStartSpy).not.toHaveBeenCalled()
+    expect(ctx.npmService.build).not.toHaveBeenCalled()
     expect(syncProjectConfigToOutputMock).not.toHaveBeenCalled()
   })
 
-  it('runs prod bundler without waiting for local subpackage npm preload', async () => {
+  it('does not schedule a parallel npm copy for production subpackages', async () => {
     process.env.NODE_ENV = 'production'
     buildMock.mockResolvedValueOnce({ output: [] })
-    let releaseNpmBuild: (() => void) | undefined
 
     const baseCtx = createMockContext()
     const ctx = createMockContext({
@@ -5882,33 +5882,13 @@ describe('runtime buildPlugin service', () => {
         },
       },
     })
-    ctx.npmService.build.mockImplementationOnce(async () => {
-      await ctx.scanService.loadAppEntry()
-      ctx.scanService.loadSubPackages()
-      await new Promise<void>((resolve) => {
-        releaseNpmBuild = resolve
-      })
-    })
     const service = createBuildService(ctx)
-
-    const buildPromise = service.build()
-    await waitForMockCalls(buildMock, 1)
+    await service.build()
 
     expect(buildMock).toHaveBeenCalledTimes(1)
-    expect(ctx.scanService.loadAppEntry).toHaveBeenCalledTimes(1)
-    expect(ctx.scanService.loadSubPackages).toHaveBeenCalledTimes(1)
-    expect(ctx.npmService.build).toHaveBeenCalledTimes(1)
-
-    let resolved = false
-    buildPromise.then(() => {
-      resolved = true
-    }).catch(() => {})
-    await new Promise(resolve => setTimeout(resolve, 0))
-    expect(resolved).toBe(false)
-
-    releaseNpmBuild?.()
-    await buildPromise
-    expect(resolved).toBe(true)
+    expect(ctx.scanService.loadAppEntry).not.toHaveBeenCalled()
+    expect(ctx.scanService.loadSubPackages).not.toHaveBeenCalled()
+    expect(ctx.npmService.build).not.toHaveBeenCalled()
   })
 
   it('preloads app entry before prod build when worker entry config needs workersDir', async () => {

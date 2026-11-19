@@ -86,6 +86,7 @@ import { captureEntryTopology } from './entryTopology'
 import { createHmrProfileMetricsPlugin } from './hmrProfileMetricsPlugin'
 import { createIndependentBuilder } from './independent'
 import { getInitialBuildInputObservation } from './initialBuildChanges'
+import { configureNpmPublication, usesBundlerNpmPublication } from './npmPublication'
 import { cleanOutputs, isOutputRootInsideOutDir, resetEmittedOutputCaches, shouldCleanOutputs } from './outputs'
 import { assertPluginProjectOutput, createPluginProjectSession, isPluginProjectClosing, runPluginProjectRestart, setPluginProjectBuildOptions } from './pluginProject'
 import { bindClassicSettlement } from './settlement'
@@ -3254,6 +3255,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
   }
 
   async function buildEntry(options?: BuildOptions) {
+    configureNpmPublication(ctx as CompilerContext, options ?? {})
     assertPluginProjectOutput(ctx as CompilerContext)
     setPluginProjectBuildOptions(ctx as CompilerContext, options ?? {})
     await prepareClassicIdeConfig(ctx)
@@ -3279,11 +3281,9 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       scanService.loadSubPackages()
     }
     debug?.('build start')
-    const pruneNpm = !options?.skipNpm
-      && !pluginOnly
-      && !isLibMode
-      && configService.weappViteConfig.npm?.pruneUnusedFiles === true
-    const npmBuildTask = isLibMode || pruneNpm ? Promise.resolve() : scheduleNpmBuild(options)
+    const npmBuildTask = isLibMode || usesBundlerNpmPublication(ctx as CompilerContext)
+      ? Promise.resolve()
+      : scheduleNpmBuild(options)
     const [result] = await waitForBuildTasks([
       runBuildTarget(pluginOnly ? 'plugin' : 'app'),
       npmBuildTask,

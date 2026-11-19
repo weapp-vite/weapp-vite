@@ -1,0 +1,5 @@
+<view id="npm-artifact-page">
+  <artifact-icon />
+  <button id="increment" bindtap="increment">Increment</button>
+  <text id="count">count: {{count}}</text>
+</view>

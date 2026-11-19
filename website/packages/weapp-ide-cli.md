@@ -127,6 +127,8 @@ weapp cache --clean all
 
 ### 2) automator 增强命令
 
+`--project` 指向包含有效 `project.config.json` 的微信开发者工具项目根。仅含 `app.json` 的构建目录不能直接作为项目根；若需打开 `dist-demo` 等独立产物，请在该目录提供配置，继承源码项目的真实 `appid`、`libVersion`，并设置 `compileType: "miniprogram"`、`miniprogramRoot: "./"`。automator 和 acceptance 会在启动 IDE 前检查缺失或损坏的项目配置，并给出修复指引。
+
 | 命令                             | 说明                      |
 | -------------------------------- | ------------------------- |
 | `weapp screenshot`               | 截图（base64 / 文件输出） |

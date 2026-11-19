@@ -745,7 +745,7 @@ const devtoolsSingleSubpackagePlugin = devtoolsRuntimeSubpackageRoot
 
 function resolveGithubIssuesBuildConfig() {
   if (issue844PruneEnabled) {
-    return { outDir: 'dist', minify: false }
+    return { outDir: process.env.WEAPP_GITHUB_ISSUE_844_OUT_DIR ?? 'dist', minify: false }
   }
   if (issue850OutputReplayEnabled) {
     return { outDir: 'dist-issue-850', minify: false }

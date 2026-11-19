@@ -14,6 +14,8 @@ const resolveTarget = vi.hoisted(() => vi.fn())
 const assertHost = vi.hoisted(() => vi.fn())
 const ensureManagedProject = vi.hoisted(() => vi.fn())
 const selectedTarget = vi.hoisted(() => ({ cliPath: 'selected-cli', installationId: 'selected', appPath: 'selected-app', profileDir: 'selected-profile' }))
+const validateProject = vi.hoisted(() => vi.fn(async () => ({})))
+vi.mock('../src/cli/projectConfigValidation', () => ({ readAutomatorProjectConfig: validateProject }))
 vi.mock('../src/devtoolsTarget', () => ({ resolveWechatDevtoolsTarget: resolveTarget, assertWechatDevtoolsHost: assertHost }))
 
 vi.mock('execa', () => ({
@@ -97,6 +99,15 @@ describe('runWechatIdeEngineBuildByHttp', () => {
     expect(startWechatIdeEngineBuildByHttpMock).not.toHaveBeenCalled()
     expect(execaMock).not.toHaveBeenCalled()
     expect(ensureManagedProject).not.toHaveBeenCalled()
+  })
+
+  it('rejects missing project configuration before acceptance creates a managed project', async () => {
+    const failure = new Error('missing project.config.json')
+    validateProject.mockRejectedValueOnce(failure)
+    const { prepareAcceptanceProject } = await import('../src/cli/engine')
+    await expect(prepareAcceptanceProject('artifact', new AbortController().signal)).rejects.toBe(failure)
+    expect(ensureManagedProject).not.toHaveBeenCalled()
+    expect(startWechatIdeEngineBuildByHttpMock).not.toHaveBeenCalled()
   })
 
   it('blocks acceptance preparation before its first HTTP open when project ownership is unresolved', async () => {
