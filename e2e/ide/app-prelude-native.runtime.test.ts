@@ -1,4 +1,5 @@
 import type { TestContext } from 'vitest'
+import process from 'node:process'
 import { APP_PRELUDE_CHUNK_MARKER } from '@weapp-core/constants'
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
@@ -29,6 +30,10 @@ const REQUEST_RUNTIME = {
   formData: 'function',
 }
 type Mode = 'default' | 'inline' | 'default-request-runtime' | 'legacy-es5-request-runtime'
+const requestedMode = process.env.WEAPP_VITE_E2E_APP_PRELUDE_MODE
+if (requestedMode !== undefined && !['default', 'inline', 'default-request-runtime', 'legacy-es5-request-runtime'].includes(requestedMode)) {
+  throw new Error(`Unknown app prelude mode: ${requestedMode}`)
+}
 
 async function launchMode(mode: Mode) {
   // 每种 prelude 构建拓扑必须独立冷启动，避免模块缓存掩盖重复副作用。
@@ -102,19 +107,19 @@ async function verifyPrelude(context: TestContext, mode: 'default' | 'inline' | 
 }
 
 describe('e2e app: app-prelude-native runtime', { concurrent: false }, () => {
-  it('executes inline app prelude once even after relaunching main and subpackage pages', async (context) => {
+  it.skipIf(requestedMode !== undefined && requestedMode !== 'inline')('executes inline app prelude once even after relaunching main and subpackage pages', async (context) => {
     await verifyPrelude(context, 'inline')
   })
 
-  it('keeps one prelude side effect per package scope under default require mode', async (context) => {
+  it.skipIf(requestedMode !== undefined && requestedMode !== 'default')('keeps one prelude side effect per package scope under default require mode', async (context) => {
     await verifyPrelude(context, 'default')
   })
 
-  it('keeps minified ES5 request runtime and prelude side effects across package scopes', async (context) => {
+  it.skipIf(requestedMode !== undefined && requestedMode !== 'legacy-es5-request-runtime')('keeps minified ES5 request runtime and prelude side effects across package scopes', async (context) => {
     await verifyPrelude(context, 'legacy-es5-request-runtime')
   })
 
-  it('installs request runtime globals through app.prelude.js under default require mode', async (context) => {
+  it.skipIf(requestedMode !== undefined && requestedMode !== 'default-request-runtime')('installs request runtime globals through app.prelude.js under default require mode', async (context) => {
     const acceptance = createDomAcceptance(context, 'e2e-apps/app-prelude-native', [{
       id: 'request-runtime',
       route: ROUTES[0]!.route,
