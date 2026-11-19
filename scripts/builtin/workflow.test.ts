@@ -9,6 +9,7 @@ interface Step {
   'uses'?: string
   'if'?: string
   'continue-on-error'?: boolean
+  'env'?: Record<string, string>
   'with'?: { 'add-paths'?: string }
 }
 
@@ -17,6 +18,11 @@ const workflow = parse(readFileSync(new URL('../../.github/workflows/update-wech
 }
 
 describe('builtin generation workflow gates', () => {
+  it('authenticates the auto-import updater with the workflow token', () => {
+    const step = workflow.jobs.update.steps.find(step => step.run === 'pnpm auto-import:components')
+    expect(step?.env?.GITHUB_TOKEN).toBe(`\${{ github.token }}`)
+  })
+
   it('passes both resolver tests to Vitest without consuming a path as the snapshot update mode', () => {
     const command = workflow.jobs.update.steps.find(step => step.name === 'Update unit test snapshots')?.run
     expect(command).toBeDefined()
@@ -46,6 +52,7 @@ describe('builtin generation workflow gates', () => {
     expect(steps[releaseIntent]?.if).toBe(steps[createPr]?.if)
     expect(steps[createPr]?.with?.['add-paths']).toContain('.changeset/wechat-components-*.md')
     expect(steps[generatorTest]?.run).toContain('scripts/builtin')
+    expect(steps[generatorTest]?.run).toContain('scripts/autoImportComponents')
     expect(steps[generatorTest]?.if).toBeUndefined()
     expect(steps[consumers]?.run).toContain('auto-import-components/builtin.test.ts')
     expect(steps[consumers]?.run).toContain('vueTemplateTags.test.ts')
