@@ -121,7 +121,7 @@
     "@types/set-value": "catalog:",
     "@weapp-vite/wxml": "workspace:*",
     "domhandler": "catalog:",
-    "entities": "^8.1.0",
+    "entities": "^9.0.0",
     "get-value": "catalog:",
     "htmlparser2": "catalog:"
   },

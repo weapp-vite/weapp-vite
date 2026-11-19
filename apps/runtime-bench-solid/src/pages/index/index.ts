@@ -1,5 +1,5 @@
 import type { SolidBenchRuntime } from '../shared'
-import { createMemo, createRoot, createSignal } from 'solid-js/dist/solid.js'
+import { createMemo, createRoot, createSignal } from 'solid-js'
 import { createSolidMiniProgramRoot } from '../../runtime'
 import {
   createBenchCards,

@@ -1,5 +1,20 @@
 import type { Accessor } from 'solid-js'
-import { createRenderEffect, createRoot } from 'solid-js/dist/solid.js'
+import { createRenderEffect, createRoot, flush as flushSolid } from 'solid-js'
+
+function scheduleMicrotask(callback: VoidFunction) {
+  Promise.resolve()
+    .then(callback)
+    .catch((error) => {
+      setTimeout(() => {
+        throw error
+      }, 0)
+    })
+}
+
+const runtimeGlobal = globalThis as typeof globalThis & { queueMicrotask?: typeof scheduleMicrotask }
+if (typeof runtimeGlobal.queueMicrotask !== 'function') {
+  runtimeGlobal.queueMicrotask = scheduleMicrotask
+}
 
 export interface SolidMiniProgramRoot {
   dispose: () => void
@@ -47,6 +62,7 @@ export function createSolidMiniProgramRoot(adapter: {
       disposeOwner = undefined
     },
     flush() {
+      flushSolid()
       return pendingFlush
     },
     mount(bindings) {
@@ -57,15 +73,17 @@ export function createSolidMiniProgramRoot(adapter: {
       let mounting = true
       disposeOwner = createRoot((dispose) => {
         for (const [name, read] of Object.entries(bindings)) {
-          createRenderEffect(() => {
-            const value = read()
-            if (mounting) {
-              initial[name] = value
-            }
-            else {
-              schedule(name, value)
-            }
-          })
+          createRenderEffect(
+            () => read(),
+            (value) => {
+              if (mounting) {
+                initial[name] = value
+              }
+              else {
+                schedule(name, value)
+              }
+            },
+          )
         }
         mounting = false
         return dispose

@@ -9,6 +9,8 @@ TSX template -> Wevu JSX AST compiler -> native WXML
 Solid signal -> binding effect -> microtask batch -> setData
 ```
 
+当前 benchmark 固定使用 `solid-js@2.0.1`。历史报告中的 Solid 1.x 数据仅作历史记录，不作为 v2 的性能基线。
+
 ## 当前覆盖
 
 - 原生 WXML 列表和文本 binding
