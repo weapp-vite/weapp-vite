@@ -44,6 +44,18 @@ describe('vitePluginWeapp plugin api', () => {
       .toBeGreaterThan(names.indexOf('weapp-vite:tailwindcss:output'))
   })
 
+  it('only adds npm pruning when explicitly enabled and keeps it after output finalization', () => {
+    const ctx = createCompilerContext('plugin-api:npm-pruning')
+    ctx.configService.inlineConfig.weapp = { npm: { pruneUnusedFiles: true } }
+
+    const names = vitePluginWeapp(ctx).map(plugin => plugin.name)
+
+    expect(names.indexOf('weapp-vite:npm-pruning'))
+      .toBeGreaterThan(names.indexOf('weapp-vite:output-finalizer'))
+    expect(names.indexOf('weapp-vite:npm-pruning'))
+      .toBeLessThan(names.indexOf('weapp-vite:output-publication'))
+  })
+
   it('places configured compiler phases around CSS and output finalization', () => {
     const ctx = createCompilerContext('plugin-api:compiler-plugin')
     ctx.configService.inlineConfig.weapp = {

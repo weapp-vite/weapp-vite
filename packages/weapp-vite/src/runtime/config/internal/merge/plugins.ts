@@ -3,6 +3,7 @@ import type { MutableCompilerContext } from '../../../../context'
 import type { SubPackageMetaValue } from '../../../../types'
 import { vitePluginWeapp, WEAPP_VITE_CONTEXT_PLUGIN_NAME } from '../../../../plugins'
 import { isWeappCompilerPlugin } from '../../../../plugins/compilerPlugin'
+import { WEAPP_VITE_NPM_PRUNING_PLUGIN_NAME } from '../../../../runtime/buildPlugin/npmPruning'
 
 const WEAPP_VITE_OUTPUT_FINALIZER_PLUGIN_NAME = 'weapp-vite:output-finalizer'
 const WEAPP_VITE_OUTPUT_PUBLICATION_PLUGIN_NAME = 'weapp-vite:output-publication'
@@ -45,7 +46,7 @@ export function arrangePlugins(
     if (!entry) {
       continue
     }
-    if (isNamedPlugin(entry, WEAPP_VITE_OUTPUT_FINALIZER_PLUGIN_NAME)) {
+    if (isNamedPlugin(entry, WEAPP_VITE_OUTPUT_FINALIZER_PLUGIN_NAME) || isNamedPlugin(entry, WEAPP_VITE_NPM_PRUNING_PLUGIN_NAME)) {
       finalizers.push(entry)
       continue
     }
@@ -80,6 +81,7 @@ export function arrangePlugins(
     if (
       isNamedPlugin(entry, WEAPP_VITE_CONTEXT_PLUGIN_NAME)
       || isNamedPlugin(entry, WEAPP_VITE_OUTPUT_FINALIZER_PLUGIN_NAME)
+      || isNamedPlugin(entry, WEAPP_VITE_NPM_PRUNING_PLUGIN_NAME)
       || isNamedPlugin(entry, WEAPP_VITE_OUTPUT_PUBLICATION_PLUGIN_NAME)
     ) {
       continue

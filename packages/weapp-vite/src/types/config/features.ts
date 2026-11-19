@@ -272,6 +272,8 @@ export interface WeappAppPreludeConfig {
 export interface WeappNpmConfig {
   enable?: boolean
   cache?: boolean
+  /** 基于最终产物引用闭包裁剪原生小程序 npm 包内未使用文件 */
+  pruneUnusedFiles?: boolean
   strategy?: NpmStrategy
   include?: NpmDependencyPattern[]
   mainPackage?: NpmMainPackageConfig

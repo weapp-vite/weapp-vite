@@ -13,6 +13,7 @@ function fixture(watchMode = false, serve = false) {
     watchFiles: ['node_modules/mini-card/miniprogram/index.js', 'node_modules/mini-card/package.json'],
   }
   const session = {
+    context: { configService: { weappViteConfig: {} } },
     validateEntries: vi.fn(async () => {}),
     buildDependencies: vi.fn(async () => dependencies),
     publishDependencies: vi.fn(async () => {}),

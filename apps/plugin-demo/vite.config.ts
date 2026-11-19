@@ -21,6 +21,7 @@ export default defineConfig({
     },
     npm: {
       enable: true,
+      pruneUnusedFiles: true,
       pluginPackage: {
         dependencies: ['dayjs'],
       },

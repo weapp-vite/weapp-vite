@@ -51,6 +51,21 @@ describe('e2e suite manifest', () => {
     expect(cases[1]?.routes).toContain('/pages/teleport-root-portal-jsx/index')
   })
 
+  it('keeps issue 844 npm pruning in DevTools and headless runtime suites', async () => {
+    const label = 'ide/github-issues.runtime.issue844.test.ts'
+    for (const suite of ['ide-full:github-issues', 'ide-full', 'ide-full:exhaustive', 'ide-dom-headless', 'ide-headless-full']) {
+      expect((await getSuiteTasks(suite)).filter(task => task.label === label)).toHaveLength(1)
+    }
+    const cases = readTaskCases(path.resolve(import.meta.dirname, '../..'), label)
+    expect(cases).toHaveLength(1)
+    expect(cases[0]?.routes).toEqual([
+      '/pages/issue-844/index',
+      '/subpackages/issue-844-normal/index',
+      '/subpackages/issue-844-independent/index',
+    ])
+    expect(cases[0]?.notes).toEqual([])
+  })
+
   it('includes the generated WASM initializer runtime case in real and headless acceptance', async () => {
     const label = 'ide/issue-1202-wasm.runtime.test.ts'
     for (const suite of ['ide-full:github-issues', 'ide-full:exhaustive', 'ide-dom-headless', 'ide-headless-full']) {

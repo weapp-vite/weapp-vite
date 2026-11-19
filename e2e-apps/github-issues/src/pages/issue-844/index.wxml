@@ -1,0 +1,3 @@
+<view class="issue-844-page">
+  <t-button theme="primary">Button</t-button>
+</view>

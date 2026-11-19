@@ -1,0 +1,3 @@
+<view class="issue-844-normal">
+  <t-button theme="primary">Normal</t-button>
+</view>

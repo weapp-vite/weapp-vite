@@ -54,6 +54,7 @@ describe('runtime config merge plugins', () => {
       compilerSource,
       { name: 'weapp-vite:css' },
       outputFinalizer,
+      { name: 'weapp-vite:npm-pruning', enforce: 'post' },
       compilerOutput,
     ])
     const userPre = { name: 'user-pre', enforce: 'pre' }
@@ -65,6 +66,7 @@ describe('runtime config merge plugins', () => {
       'weapp-vite:compiler:source',
       'weapp-vite:css',
       'weapp-vite:output-finalizer',
+      'weapp-vite:npm-pruning',
       'weapp-vite:compiler:output',
       'weapp-vite:output-publication',
     ])

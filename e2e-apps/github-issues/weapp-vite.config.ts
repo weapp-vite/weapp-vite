@@ -22,6 +22,8 @@ const issue1015HmrRuntime = process.env.WEAPP_GITHUB_ISSUE_1015_HMR_RUNTIME
 const issue826PreserveEnabled = process.env.WEAPP_GITHUB_ISSUE_826_PRESERVE === 'true'
   || e2eTargetFile.endsWith('github-issues.runtime.issue826.test.ts')
 const issue845I18nEnabled = process.env.WEAPP_GITHUB_ISSUE_845_I18N === 'true'
+const issue844PruneEnabled = process.env.WEAPP_GITHUB_ISSUE_844_PRUNE === 'true'
+  || e2eTargetFile.endsWith('github-issues.runtime.issue844.test.ts')
 const issue850OutputReplayEnabled = process.env.WEAPP_GITHUB_ISSUE_850_OUTPUT_REPLAY === 'true'
 const issue793BuildScope = process.env.WEAPP_GITHUB_ISSUE_793_BUILD_SCOPE
 const issue793BuildScopeEnabled = issue793BuildScope === 'true'
@@ -117,6 +119,11 @@ const githubIssuesRouteGroups: Record<string, string[]> = {
   'github-issues.runtime.feature1087.test.ts': ['pages/feature-1087/**'],
   'github-issues.runtime.issue1009.test.ts': ['pages/issue-1009/**'],
   'github-issues.runtime.issue1014.test.ts': ['pages/issue-1014/**'],
+  'github-issues.runtime.issue844.test.ts': [
+    'pages/issue-844/**',
+    'subpackages/issue-844-normal/**',
+    'subpackages/issue-844-independent/**',
+  ],
   'github-issues.runtime.issue779.test.ts': ['pages/issue-779/**'],
   'github-issues.runtime.app-shell.test.ts': [
     'pages/issue-338/**',
@@ -334,6 +341,15 @@ const matchedGithubIssuesTestFile = Object.keys(githubIssuesRouteGroups)
   .find(testFile => e2eTargetFile.endsWith(testFile))
 
 function resolveGithubIssuesAutoRoutes() {
+  if (issue844PruneEnabled) {
+    return {
+      include: [
+        'pages/issue-844/**',
+        'subpackages/issue-844-normal/**',
+        'subpackages/issue-844-independent/**',
+      ],
+    }
+  }
   if (issue850OutputReplayEnabled) {
     return {
       include: [
@@ -521,7 +537,30 @@ function resolveGithubIssuesNpm(): NonNullable<WeappViteConfig['npm']> {
   }
 
   if (!matchedGithubIssuesTestFile) {
+    if (issue844PruneEnabled) {
+      return {
+        enable: true,
+        pruneUnusedFiles: true,
+        mainPackage: { dependencies: [/^tdesign-miniprogram$/] },
+        subPackages: {
+          'subpackages/issue-844-normal': { dependencies: [/^tdesign-miniprogram$/] },
+          'subpackages/issue-844-independent': { dependencies: [/^tdesign-miniprogram$/] },
+        },
+      }
+    }
     return fullNpmConfig
+  }
+
+  if (matchedGithubIssuesTestFile === 'github-issues.runtime.issue844.test.ts') {
+    return {
+      enable: true,
+      pruneUnusedFiles: true,
+      mainPackage: fullNpmConfig.mainPackage,
+      subPackages: {
+        'subpackages/issue-844-normal': { dependencies: [/^tdesign-miniprogram$/] },
+        'subpackages/issue-844-independent': { dependencies: [/^tdesign-miniprogram$/] },
+      },
+    }
   }
 
   if (matchedGithubIssuesTestFile === 'github-issues.runtime.issue466.test.ts') {
@@ -705,6 +744,9 @@ const devtoolsSingleSubpackagePlugin = devtoolsRuntimeSubpackageRoot
   : undefined
 
 function resolveGithubIssuesBuildConfig() {
+  if (issue844PruneEnabled) {
+    return { outDir: 'dist', minify: false }
+  }
   if (issue850OutputReplayEnabled) {
     return { outDir: 'dist-issue-850', minify: false }
   }
@@ -793,13 +835,18 @@ export default defineConfig<UserConfig>({
               independent: true,
             },
           }
-        : issue793BuildScopeEnabled
+        : issue844PruneEnabled
           ? {
-              subs: {},
+              'subpackages/issue-844-normal': {},
+              'subpackages/issue-844-independent': { independent: true },
             }
-          : {
-              'subpackages/require-async': {},
-            },
+          : issue793BuildScopeEnabled
+            ? {
+                subs: {},
+              }
+            : {
+                'subpackages/require-async': {},
+              },
     ...(issue793BuildScopeEnabled
       ? {
           buildScope: {

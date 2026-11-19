@@ -57,6 +57,12 @@ const appSubPackages = routes.subPackages.map((subPackage) => {
   ) {
     return { ...subPackage, independent: true }
   }
+  if (
+    routes.pages.includes('pages/issue-844/index')
+    && subPackage.root === 'subpackages/issue-844-independent'
+  ) {
+    return { ...subPackage, independent: true }
+  }
   return subPackage
 })
 const tabBarList = issue793BuildScopeEnabled

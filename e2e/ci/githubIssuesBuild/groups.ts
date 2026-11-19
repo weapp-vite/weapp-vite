@@ -19,6 +19,7 @@ export const GITHUB_ISSUES_BUILD_GROUPS = [
   'issue829',
   'issue838',
   'issue845',
+  'issue844',
   'issue850',
   'issue892',
   'issue910',
