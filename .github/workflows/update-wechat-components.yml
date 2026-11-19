@@ -43,12 +43,14 @@ jobs:
         run: pnpm --filter @weapp-core/shared --filter @weapp-core/constants build
 
       - name: Test builtin component generator
-        run: pnpm vitest run --config scripts/vitest.config.mjs scripts/builtin
+        run: pnpm vitest run --config scripts/vitest.config.mjs scripts/builtin scripts/autoImportComponents
 
       - name: Update WeChat builtins
         run: pnpm builtin
 
       - name: Update auto-import components
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: pnpm auto-import:components
 
       - name: Detect generated changes
