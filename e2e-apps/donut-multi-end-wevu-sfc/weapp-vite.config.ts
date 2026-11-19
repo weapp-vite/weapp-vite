@@ -4,6 +4,9 @@ export default defineConfig({
   weapp: {
     srcRoot: 'src',
     autoRoutes: true,
+    npm: {
+      pruneUnusedFiles: true,
+    },
     autoImportComponents: {
       components: {
         't-button': 'tdesign-miniprogram/button/button',

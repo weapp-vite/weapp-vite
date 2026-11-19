@@ -22,15 +22,20 @@ describe('e2e app: donut-multi-end-wevu-sfc (build)', { concurrent: false }, () 
       extendEnv: false,
       env: sanitizeBuildCommandEnv(),
     })
+    let buildOutput = ''
     const stats = await runWeappViteBuildWithLogCapture({
       cliPath: CLI_PATH,
       projectRoot: APP_ROOT,
       platform: 'weapp',
       cwd: APP_ROOT,
       label: 'ci:donut-multi-end-wevu-sfc',
-      skipNpm: true,
+      onOutput: (output) => { buildOutput = output },
     })
-    expect(stats).toEqual({ warn: 0, error: 0 })
+    const prunedDependencies = ['marked', 'tinycolor2']
+    expect(stats).toEqual({ warn: prunedDependencies.length, error: 0 })
+    for (const dependency of prunedDependencies) {
+      expect(buildOutput).toContain(`[npm] ${dependency} 在最终产物中没有静态引用，已移除未引用文件。`)
+    }
 
     expect(await fs.pathExists(path.join(DIST_ROOT, 'app.json'))).toBe(true)
     expect(await fs.pathExists(path.join(DIST_ROOT, 'app.miniapp.json'))).toBe(true)
