@@ -96,7 +96,7 @@ export interface VerifiedTerminalProcess {
   process: ProcessIdentityGapObservation
   terminalIdentity: ProcessIdentityMetadata
   firstTerminalPhase: ProcessInventoryLocation['phase']
-  proof: 'anchor-proven-foreign-then-kernel-terminal' | 'only-kernel-terminal-identities-observed' | 'prepare-proven-foreign-then-anchor-exit' | 'prepare-proven-foreign-then-anchor-kernel-terminal'
+  proof: 'anchor-proven-foreign-then-kernel-terminal' | 'only-kernel-terminal-identities-observed' | 'prepare-proven-foreign-then-anchor-exit' | 'prepare-proven-foreign-then-anchor-kernel-terminal' | 'post-anchor-enumeration-then-kernel-exit'
   phases: ProcessInventoryLocation['phase'][]
   ancestry: ProcessIdentityMetadata[]
   semantics: 'terminated-task-without-executable-or-rss; no-ownership-inference'

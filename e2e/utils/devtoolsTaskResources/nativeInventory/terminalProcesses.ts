@@ -1,6 +1,7 @@
 import type { VerifiedTerminalProcess } from '../types'
 import type { NativeInventory } from './closure'
 import { DARWIN_INSPECTOR_PHASES } from '../processInventory/darwinInspector/types'
+import { preparedForeignAncestry } from './anchorExits'
 import { nativeRelation } from './closure'
 import { completeNativeLiveRow, hasNativeExitEvidence, metadata, sameNativeIdentity } from './model'
 import { sameInstance, terminalRow } from './terminalEvidence'
@@ -12,9 +13,40 @@ export function verifiedTerminalProcesses(inventory: NativeInventory, installati
     return []
   }
   const proofs: VerifiedTerminalProcess[] = []
+  const closure = frames[2]!
+  const final = frames[3]!
   for (const [pid, entry] of tracked) {
     if (selectedSeen.has(pid) || entry.imageEvidenceConflict || entry.textImageEvidenceConflict
       || entry.causes.some(cause => !['identity-changed', 'zombie', 'kernel-identity-unverifiable', 'process-absent'].includes(cause.reason))) {
+      continue
+    }
+    const row = entry.row
+    const enumerated = row.entry.enumeratedIdentity
+    const parent = closure.rows.get(enumerated.parentPid)
+    const parentIdentity = parent?.identity
+    if (entry.firstPhase === 'closure1' && !entry.changed && !final.rows.has(pid)
+      && row.identity === null && row.finalIdentity === null && row.images === null
+      && !row.entry.confirmation && hasNativeExitEvidence(row) && parent && parentIdentity) {
+      const parentSeconds = BigInt(parentIdentity.startedSeconds)
+      const childSeconds = BigInt(enumerated.startedSeconds)
+      if (parentSeconds > childSeconds || (parentSeconds === childSeconds
+        && BigInt(parentIdentity.startedMicroseconds) > BigInt(enumerated.startedMicroseconds))) {
+        continue
+      }
+      const ancestry = preparedForeignAncestry(inventory, closure, parent.pid, installationRoot)
+      if (!ancestry || [metadata(parent), ...ancestry].some(identity => tracked.get(identity.pid)?.changed)) {
+        continue
+      }
+      // 仅闭合帧枚举到的进程已由内核证实退出。父进程证据用于排除所选安装的后代。
+      proofs.push({
+        process: inventory.gap(entry),
+        terminalIdentity: metadata({ ...row, identity: enumerated }),
+        firstTerminalPhase: 'closure1',
+        proof: 'post-anchor-enumeration-then-kernel-exit',
+        phases: ['closure1', 'closure2'],
+        ancestry: [metadata(parent), ...ancestry],
+        semantics: 'terminated-task-without-executable-or-rss; no-ownership-inference',
+      })
       continue
     }
     const firstIndex = frames.findIndex(frame => frame.rows.has(pid))

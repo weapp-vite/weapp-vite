@@ -162,6 +162,42 @@ describe('strict native terminal process evidence', () => {
     expect(report).toMatchObject({ uninspectedNewProcessCount: 1, newProcesses: [{ pid: 33, classification: 'unclassified' }] })
   })
 
+  it('closes a PID enumerated only after the RSS anchor when kernel reads prove exit and its ancestry is foreign', async () => {
+    const gone = exited()
+    const parent = entry(44, { parentPid: 22, rssBytes: null })
+    parent.gaps = ['rss-unavailable']
+    gone.enumeratedIdentity.parentPid = parent.pid
+    frames([], [], [gone, parent], [])
+    const report = await sample()
+    expect(report).toMatchObject({
+      installationRssBytes: { status: 'observed', value: 1000 },
+      verifiedTerminalProcessCount: 1,
+      uninspectedNewProcessCount: 0,
+    })
+    expect(report.verifiedTerminalProcesses?.[0]).toMatchObject({
+      process: { pid: 33 },
+      terminalIdentity: { pid: 33, parentPid: 44 },
+      firstTerminalPhase: 'closure1',
+      proof: 'post-anchor-enumeration-then-kernel-exit',
+      ancestry: [{ pid: 44 }, { pid: 22 }],
+    })
+    expect(report.nativeFrames?.[2]?.rows.find(row => row.pid === 33)).toMatchObject({ before: null, after: null, rss: { bytes: null } })
+  })
+
+  it.each(['selected-parent', 'unknown-parent', 'reused-parent', 'permission-denied', 'reused-pid', 'last-frame'] as const)('keeps a closure enumeration gap blocking with %s', async (reason) => {
+    const gone = exited()
+    if (reason === 'permission-denied') {
+      gone.task.errno = 1
+    }
+    const parent = entry(44, {
+      parentPid: reason === 'selected-parent' ? 11 : reason === 'unknown-parent' ? 88 : 22,
+      identity: reason === 'reused-parent' ? { startedMicroseconds: '999999' } : undefined,
+    })
+    gone.enumeratedIdentity.parentPid = parent.pid
+    const report = await rejected([], [], reason === 'last-frame' ? [parent] : [gone, parent], reason === 'last-frame' ? [gone, parent] : reason === 'reused-pid' ? [entry(33, { identity: { startedMicroseconds: '1000' } })] : [])
+    expect(report.closureOwnership?.status).toBe('unavailable')
+  })
+
   it('keeps a separate proof for complete foreign prepare history terminating at the RSS anchor', async () => {
     const live = entry(33, { parentPid: 22, rssBytes: '9000000' })
     frames([entry(11, { rssBytes: '7000' }), live], [zombie()], [zombie()], [zombie()])
