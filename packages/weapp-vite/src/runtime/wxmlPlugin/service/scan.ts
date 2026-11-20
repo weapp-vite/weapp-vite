@@ -33,43 +33,40 @@ export function createWxmlScanner(
     }
     const configService = requireConfigService(state.ctx, '扫描 WXML 前必须初始化 configService。')
     const pinned = readCompilerSourceSnapshot(getCompilerSourceSnapshot(configService), filepath)
-    let stat: { mtimeMs?: number, ctimeMs?: number, size?: number } = {}
+    let wxml: string
     try {
-      if (pinned === undefined) {
-        stat = await fs.stat(filepath)
+      const stat = pinned === undefined ? await fs.stat(filepath) : undefined
+      const signature = pinned === undefined
+        ? `${stat?.mtimeMs ?? ''}:${stat?.ctimeMs ?? ''}:${stat?.size ?? ''}`
+        : `snapshot:${createHash('sha256').update(pinned).digest('hex')}`
+      const shouldRescan = await state.cache.isInvalidate(filepath, { signature, checkMtime: false })
+      if (!shouldRescan) {
+        const cached = state.cache.get(filepath)
+        if (cached) {
+          state.tokenMap.set(filepath, cached)
+          return cached
+        }
       }
+      wxml = await readCompilerInput(configService, filepath)
     }
-    catch (error: any) {
-      if (error && error.code === 'ENOENT') {
-        const baseName = removeExtensionDeep(filepath)
-        state.tokenMap.delete(filepath)
-        state.cache.delete(filepath)
-        state.componentsMap.delete(baseName)
-        state.autoImportComponentsMap.delete(baseName)
-        state.templatePathMap.delete(baseName)
-        invalidateAggregatedComponents(state, filepath, state.aggregatedComponentsMap)
-        invalidateAggregatedComponents(state, filepath, state.aggregatedAutoImportComponentsMap)
-        // 移除已经不存在的 outgoing 依赖，保留其他模板对该路径的引用以跟踪恢复。
-        await options.setTokenDeps(filepath, [])
-        logger.warn(`引用模板 \`${configService.relativeCwd(filepath)}\` 不存在!`)
-        return
+    catch (error) {
+      if ((error as NodeJS.ErrnoException | undefined)?.code !== 'ENOENT') {
+        throw error
       }
-      throw error
-    }
-
-    const signature = pinned === undefined
-      ? `${stat.mtimeMs ?? ''}:${stat.ctimeMs ?? ''}:${stat.size ?? ''}`
-      : `snapshot:${createHash('sha256').update(pinned).digest('hex')}`
-    const shouldRescan = await state.cache.isInvalidate(filepath, { signature, checkMtime: false })
-    if (!shouldRescan) {
-      const cached = state.cache.get(filepath)
-      if (cached) {
-        state.tokenMap.set(filepath, cached)
-        return cached
-      }
+      const baseName = removeExtensionDeep(filepath)
+      state.tokenMap.delete(filepath)
+      state.cache.delete(filepath)
+      state.componentsMap.delete(baseName)
+      state.autoImportComponentsMap.delete(baseName)
+      state.templatePathMap.delete(baseName)
+      invalidateAggregatedComponents(state, filepath, state.aggregatedComponentsMap)
+      invalidateAggregatedComponents(state, filepath, state.aggregatedAutoImportComponentsMap)
+      // 移除已经不存在的 outgoing 依赖，保留其他模板对该路径的引用以跟踪恢复。
+      await options.setTokenDeps(filepath, [])
+      logger.warn(`引用模板 \`${configService.relativeCwd(filepath)}\` 不存在!`)
+      return
     }
 
-    const wxml = await readCompilerInput(configService, filepath)
     const res = analyze(wxml)
     state.tokenMap.set(filepath, res)
     state.cache.set(filepath, res)
