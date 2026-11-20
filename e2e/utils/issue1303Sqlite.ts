@@ -94,11 +94,14 @@ async function ownedSourceSnapshot(project: string) {
   }))
 }
 
-export async function assertIssue1303ColdRuntime(project: string, value: number) {
-  const session = createHeadlessSession({ projectPath: project })
+async function assertIssue1303ColdRuntime(project: string, value: number, withTextDecoder = true) {
+  const TextDecoder = withTextDecoder ? globalThis.TextDecoder : undefined
+  const session = createHeadlessSession({ projectPath: project, globals: { TextDecoder } })
   try {
     session.reLaunch(ISSUE_1303_ROUTE)
+    expect(session.evaluateRuntime('() => typeof globalThis.TextDecoder')).toBe(typeof TextDecoder)
     expect(await session.evaluateRuntime<Promise<unknown>>('() => getCurrentPages()[0].runQuery()')).toEqual({ value, engine: ISSUE_1303_ENGINE })
+    expect(session.evaluateRuntime('() => typeof globalThis.TextDecoder')).toBe(typeof TextDecoder)
     expect(session.renderCurrentPage().wxml).toContain(String(value))
   }
   finally {
@@ -111,6 +114,8 @@ export async function exerciseIssue1303Watch(project: string, mode: Issue1303Pac
   await waitForIssuePublication(project, dev)
   await assertIssue1303Artifacts(project, mode)
   await assertIssue1303ColdRuntime(project, 1303)
+  // #1365：微信 iOS 的 JavaScriptCore 不提供 TextDecoder。
+  await assertIssue1303ColdRuntime(project, 1303, false)
   const sources = await ownedSourceSnapshot(project)
   await assertClassicDevRemainsStable(dev, 120_000, async () => {
     expect(await ownedSourceSnapshot(project)).toEqual(sources)
