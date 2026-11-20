@@ -385,6 +385,7 @@ class StatefulHmrSession {
       outDir: config.outDir,
       inheritedWatchOptions: config.projectConfig?.watchOptions,
       output: this.snapshots.initial.output,
+      classicOwner: getHmrRuntimeSession(this.ctx).classicIdeConfig,
     })
   }
 

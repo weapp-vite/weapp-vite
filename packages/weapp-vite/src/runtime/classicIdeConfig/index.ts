@@ -29,6 +29,7 @@ export class ClassicIdeConfigOwner {
   private readonly identity = randomUUID()
   private readonly leases = new Map<string, ClassicLease>()
   private readonly assetHandoffs = new Map<string, PendingAssetHandoff>()
+  private readonly activeAssets = new Map<string, string>()
   private pending = Promise.resolve()
   private closing?: Promise<void>
   private closed = false
@@ -57,19 +58,29 @@ export class ClassicIdeConfigOwner {
       const source = await read()
       const configPath = path.resolve(file)
       const saved = this.leases.get(configPath)
+      const assetOwner = this.assetHandoffs.get(configPath)?.assetOwner ?? this.activeAssets.get(configPath)
       if (!saved) {
-        const handoff = this.assetHandoffs.get(configPath)
-        if (handoff) {
-          return restoreRequestedAssetWatch(source, await readIdeAssetWatchLease(configPath, handoff.assetOwner)) ?? '{}'
+        if (assetOwner) {
+          return restoreRequestedAssetWatch(source, await readIdeAssetWatchLease(configPath, assetOwner)) ?? '{}'
         }
         const disk = await readClassicLease(configPath, false)
         return disk ? requestedClassicIdeConfig(source, disk) ?? '{}' : source
       }
       await this.assertOwnership(configPath)
       const requested = requestedClassicIdeConfig(source, saved)
-      const handoff = this.assetHandoffs.get(configPath)
-      return (handoff ? restoreRequestedAssetWatch(requested, await readIdeAssetWatchLease(configPath, handoff.assetOwner)) : requested) ?? '{}'
+      return (assetOwner ? restoreRequestedAssetWatch(requested, await readIdeAssetWatchLease(configPath, assetOwner)) : requested) ?? '{}'
     }, false)
+  }
+
+  /** 活跃 stateful 会话也共享配置请求视图，退出时只移除相同租约的登记。 */
+  trackActiveAssetWatch(file: string, owner: string): () => void {
+    const configPath = path.resolve(file)
+    this.activeAssets.set(configPath, owner)
+    return () => {
+      if (this.activeAssets.get(configPath) === owner) {
+        this.activeAssets.delete(configPath)
+      }
+    }
   }
 
   /** 请求视图已在配置解析阶段还原；开发启动在模式选择前统一回收死亡进程的租约。 */
@@ -123,7 +134,9 @@ export class ClassicIdeConfigOwner {
     if (preserveAssetWatch && current !== null) {
       config.watchOptions = parseIdeConfig(current).watchOptions
     }
-    const installed = formatIdeConfig(config, original)
+    const installed = preserveAssetWatch && current !== null && parseIdeConfig(current).setting?.compileHotReLoad === false
+      ? current
+      : formatIdeConfig(config, original)
     const saved: ClassicLease = { schemaVersion: 1, pid: process.pid, owner: this.identity, original, installed }
     const journal = classicIdeConfigLeasePath(configPath)
     if (isActive && !isActive()) {
@@ -247,7 +260,7 @@ export class ClassicIdeConfigOwner {
   preparePublication(file: string, source: string): Promise<ClassicIdeConfigPublication> {
     return this.enqueue(async () => {
       const configPath = path.resolve(file)
-      if (this.assetHandoffs.has(configPath)) {
+      if (this.assetHandoffs.has(configPath) || this.activeAssets.has(configPath)) {
         return { source, deferred: true }
       }
       if (!this.leases.has(configPath)) {

@@ -122,6 +122,9 @@ export async function verifyStylesheetFallback(options: StylesheetFallbackOption
     await check(id)
   }
 
+  const ideConfig = path.join(project, 'project.private.config.json')
+  const installedConfig = await fs.readFile(ideConfig, 'utf8')
+  expect(JSON.parse(installedConfig) as unknown).toMatchObject({ setting: { compileHotReLoad: false } })
   await expect.poll(() => app().evaluate((key: string) => {
     const client = (globalThis as any)[key]
     return client?.getTransportState?.()
@@ -140,7 +143,8 @@ export async function verifyStylesheetFallback(options: StylesheetFallbackOption
     await replaceFileByRename(style, colored('#dbeafe'))
     await dev.waitForOutput('[weapp-vite] HMR fallback ', 'compiled stylesheet capability decision')
     await dev.waitFor(gate.waitEntered(90_000, entering.signal), 'classic native prewrite gate')
-    const privateConfig = await fs.readJSON(path.join(project, 'project.private.config.json')) as { setting?: { compileHotReLoad?: boolean }, watchOptions?: { ignore?: string[] } }
+    expect(await fs.readFile(ideConfig, 'utf8'), 'entering classic prewrite must not trigger an IDE config reload').toBe(installedConfig)
+    const privateConfig = JSON.parse(installedConfig) as { setting?: { compileHotReLoad?: boolean }, watchOptions?: { ignore?: string[] } }
     expect(privateConfig.setting?.compileHotReLoad, 'native script hot reload must stop before classic compilation publishes').toBe(false)
     expect(privateConfig.watchOptions?.ignore?.length, 'asset protection remains owned while classic output is withheld').toBeGreaterThan(0)
     const transition = () => dev.getOutput().slice(transitionOffset)

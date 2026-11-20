@@ -136,6 +136,29 @@ it('preserves user edits while removing owned and inherited temporary rules', as
   })
 })
 
+it('disables IDE script hot reload during startup and leaves the private config byte-identical at classic prewrite', async () => {
+  const original = '{"watchOptions":{"ignore":["user/**"]},"setting":{"compileHotReLoad":true}}\n'
+  const options = await fixture(original)
+  const classic = new ClassicIdeConfigOwner()
+  const restore = await installIdeAssetWatch({ ...options, classicOwner: classic })
+  const installed = await fs.readFile(options.configPath, 'utf8')
+  expect(JSON.parse(installed)).toMatchObject({ setting: { compileHotReLoad: false } })
+  expect(await classic.readRequested(options.configPath)).toBe(original)
+  expect(await classic.preparePublication(options.configPath, original)).toEqual({ source: original, deferred: true })
+  try {
+    await restore(classic)
+    expect(await classic.preparePendingAssetHandoff(options.configPath, options.outDir)).toBe(true)
+    expect(await fs.readFile(options.configPath, 'utf8')).toBe(installed)
+    expect(await classic.activatePendingAssetHandoff(options.configPath, options.outDir)).toBe(true)
+    expect(await fs.readJSON(options.configPath)).toEqual({ setting: { compileHotReLoad: false }, watchOptions: { ignore: ['user/**'] } })
+    expect(await classic.readRequested(options.configPath)).toBe(original)
+  }
+  finally {
+    await classic.close()
+  }
+  expect(await fs.readFile(options.configPath, 'utf8')).toBe(original)
+})
+
 it('refuses an existing asset lease and removes only its own newly created private config', async () => {
   const options = await fixture()
   const firstRestore = await installIdeAssetWatch(options)
