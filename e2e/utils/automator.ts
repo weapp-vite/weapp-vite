@@ -3033,7 +3033,8 @@ function launchDevtoolsAutomator(options: LaunchAutomatorOptions, launchGuard: T
             lifecycle.throwIfAborted()
             await assertLaunchAllowed()
             process.stdout.write(`[info] [runtime:launch-step] connect-start mode=${launchMode || 'direct'} project=${project}\n`)
-            miniProgram = launchMode === AUTOMATOR_LAUNCH_MODE_BRIDGE || Boolean(process.env[MANAGED_PROJECT_JOURNAL_ENV])
+            const usesBridge = launchMode === AUTOMATOR_LAUNCH_MODE_BRIDGE || managedProject
+            miniProgram = usesBridge
               ? await (bridgeLaunch = launchAutomatorViaCliBridge(launchEvidence.enabled ? { ...launchOptions, launchEvidenceId: launchEvidence.launchId } : launchOptions, project, lifecycle, devtoolsLogMonitor, onSessionMetadata, (close) => {
                   closeAttemptProject = close
                 }))
@@ -3064,6 +3065,16 @@ function launchDevtoolsAutomator(options: LaunchAutomatorOptions, launchGuard: T
             devtoolsLogMonitor.assertClean(`connect ${launchMode || 'direct'}`)
             process.stdout.write(`[info] [runtime:launch-step] connect-ready mode=${launchMode || 'direct'} project=${project}\n`)
             const withRuntimeLogs = await lifecycle.step(() => enhanceMiniProgramWithRuntimeLogs(miniProgram, project))
+            if (usesBridge && typeof miniProgram.waitForAppReady === 'function') {
+              // bridge 的 Tool.getInfo 只确认控制接口；AppService 就绪后才能建立 CDP 通道。
+              const readyBudget = lifecycle.remainingMs()
+              await lifecycle.step(() => runWithDevtoolsLogMonitor(
+                () => miniProgram.waitForAppReady(readyBudget),
+                readyBudget,
+                'bridge AppService readiness',
+                devtoolsLogMonitor,
+              ), { stage: 'app-ready' })
+            }
             // 订阅从本阶段开始计时，同时遵守原有整个启动 attempt 的截止时间。
             const subscriptionDeadlineAt = Math.min(performance.now() + launchTimeout, attemptDeadlineAt)
             const subscriptionTimeout = Math.max(1, Math.floor(subscriptionDeadlineAt - performance.now()))

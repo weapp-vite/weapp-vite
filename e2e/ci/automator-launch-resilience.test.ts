@@ -120,7 +120,7 @@ interface MockMiniProgramRuntime {
   disconnect: Mock<() => void>
   currentPage: ReturnType<typeof vi.fn>
   reLaunch: ReturnType<typeof vi.fn>
-  waitForAppReady?: undefined
+  waitForAppReady?: Mock<(timeout: number) => Promise<void>>
   __rawCompile: ReturnType<typeof vi.fn>
   __rawClose: Mock<() => Promise<void>>
   __rawDisconnect: Mock<() => void>
@@ -2339,6 +2339,12 @@ describe('automator launch resilience', { concurrent: false, timeout: 30_000 }, 
     })
 
     const connectedMiniProgram = createMockMiniProgram({ currentPage: createMockPage() })
+    const appReady = Promise.withResolvers<void>()
+    const probeStarted = Promise.withResolvers<void>()
+    connectedMiniProgram.waitForAppReady = vi.fn(() => {
+      probeStarted.resolve()
+      return appReady.promise
+    })
     execaMock.mockResolvedValueOnce({
       exitCode: 0,
       stdout: JSON.stringify({ wsEndpoint: 'ws://127.0.0.1:9420' }),
@@ -2347,7 +2353,17 @@ describe('automator launch resilience', { concurrent: false, timeout: 30_000 }, 
     connectMock.mockResolvedValueOnce(connectedMiniProgram)
 
     const { launchAutomator } = await import('../utils/automator')
-    await launchAutomator({ projectPath: sandboxRoot, timeout: 12_345, warmupAllowRelaunch: false })
+    const launching = launchAutomator({ projectPath: sandboxRoot, timeout: 12_345, warmupAllowRelaunch: false })
+    await Promise.race([probeStarted.promise, launching])
+    try {
+      expect(connectedMiniProgram.waitForAppReady).toHaveBeenCalledExactlyOnceWith(expect.any(Number))
+      expect(connectedMiniProgram.waitForAppReady.mock.calls[0]![0]).toBeLessThan(12_345)
+      expect(connectedMiniProgram.enableLog).not.toHaveBeenCalled()
+    }
+    finally {
+      appReady.resolve()
+      await launching
+    }
 
     expect(launchMock).not.toHaveBeenCalled()
     expect(execaMock).toHaveBeenCalledTimes(1)
@@ -2359,7 +2375,7 @@ describe('automator launch resilience', { concurrent: false, timeout: 30_000 }, 
     })
     expect(connectedMiniProgram.__rawCurrentPage).toHaveBeenCalled()
     expect(connectedMiniProgram.__rawReLaunch).not.toHaveBeenCalled()
-    expect(connectedMiniProgram.waitForAppReady).toBeUndefined()
+    expect(connectedMiniProgram.enableLog).toHaveBeenCalledOnce()
   })
 
   it('launches the complete snapshot without changing roots or clearing startup evidence', async () => {

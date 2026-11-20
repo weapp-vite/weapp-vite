@@ -164,6 +164,9 @@ for (const host of hosts) {
         env: createDevProcessEnv(),
         reject: false,
       })
+      if (host === 'wv') {
+        await devProcess.waitForInitialBuild()
+      }
       await devProcess.waitFor(
         waitForFileContains(DIST_NATIVE_JS, 'STATEFUL-NATIVE-BASE'),
         'classic HMR initial page output',
